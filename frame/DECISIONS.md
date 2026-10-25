@@ -1227,3 +1227,43 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     awaiting when its `unmount()` is called (INTEGRATION § 2 says so); Fuel already guards its own state.
   - **Test**: A16 (three addresses in one task, then one per task, with slow cache reads): one `section[data-module]`, one overlay,
     one sheet, no `pageerror`; it fails on the previous `app.js` (three `maps` sections).
+- **25 Oct 2026 — Non-fixed modules on a phone: the title in the header, the how-to card with a ✕, the "?" at the right paragraph**
+  (relais cloud, branch `v3-cadre-titre`; decision `V3_SPECIFICATION.md` § 7.1 rule 16, the user's proposal after a capture of
+  Carburant on an iPhone: "tu peux laisser le « comment s'en servir » avec une croix de masquage. Une fois lu, ça disparaît, c'est
+  redondant avec le bouton aide contextuelle. Bien vérifier que l'aide contextuelle arrive sur le bon paragraphe. Limite le
+  surligner"). Three things, one lot.
+  - **Who draws the card "Comment s'en servir"**: the frame, not the module: `SogHelp.panel()` (`frame/help/help.js`), called by
+    `moduleHelp()` of `frame/app.js` after the module is mounted (a folded `<details>`, the first `##` section of the chapter).
+    "Première fois ?" (`SogHelp.welcome()`) is the other card, also the frame's, already with a ✕ and a state (`welcomed`). No module
+    code draws either.
+  - **Title in the header**: `meta.title` (a row of four texts) read by `readLevels()` with the level, and again at the route (the
+    module is imported anyway). `paintName(id)` (called by `paintModule`, so by every navigation, screen and return from a screen)
+    writes `#fName` only when it changes, and toggles `html.f-titled`; `frame.css` clips the module's `h1` under that class. Source
+    of the value: the module's own row, no copy in the frame. Not for a fixed module, a frame screen or above 760 px (a `matchMedia`
+    listener repaints at the breakpoint). The back button used to hide the name on a phone: it now hides it only when it is the
+    application's name (the title stays, it is the screen's name). Alternative refused: removing the `h1` from the modules (the
+    module agents' files, and a screen reader would lose the heading) or a second text in the frame.
+  - **The ✕**: a button in the card's `<summary>` (44 px, "Hide" ×4); it writes `hidden.<module>` in `device/help.json` (the
+    file the card already uses for `open` and the welcome card for `welcomed`; cache policy: this device only, never sent) and
+    `panel()` returns nothing for that module. **Way back chosen**: "Show the first steps again" under the chapter title in the help
+    (only for a module whose card is hidden), not a line in Settings: the person who looks for the card goes to the "?" (which is
+    what the card says), and Settings has enough cards. It clears the flag, opens the card, puts it back at once when the module is
+    still drawn under the help, and returns to the module.
+  - **Anchor of the "?"**: `ctx.helpAnchor(id | () => id | null)`, stored by the frame per module (`helpAnchors`, cleared at the
+    next navigation), read by `openHelp()` when "?" is pressed (so a function sees the step as it is then); the address is
+    `#help?m=<id>&a=<anchor>` (`&a=`, not a second `#`: the router reads one hash). Chosen over a `meta.help` function: the module
+    calls it once, the frame owns the address. `help.js` scrolls to the anchor (a `scroll-margin-top` under the sticky header, which
+    the chapter's own title lacked too: "Revoir les premiers pas" was under the header) and gives its paragraph the class `f-hl`
+    for 1.5 s, **only** when `m` and `a` come together (a link of the contents has `a` alone: no highlight), and once (the class
+    is removed by a timer, no observer). Anchors: `<a id>` at the start of a paragraph or in a `##` title (the renderer of the
+    help, `frame/lib/markdown.js`, takes it out of the title and makes it the title's id: the only change to that copy of V2's
+    renderer). In the panel the same ids become `data-a` (one owner of an id in the page).
+  - **Added to the chapters** (four languages, `modules/<id>/help/*.md`): Fuel `fuel-quote` (the introduction), `fuel-step-1` …
+    `fuel-step-5`, `fuel-sheets` (the Sheets title); Report `report-steps`, `report-step-1` (The last flight), `report-step-2` (The
+    mission), `report-step-3` (The result), `report-save`; Flights `flightlog-totals`, `-filters`, `-list`, `-detail`, `-report`, `-current`,
+    `-more`. `build_help.py` checks that the four languages carry the same anchors, with the module's prefix, unique, and that the
+    anchors cited in `helpAnchor(...)` exist.
+  - **Tests**: A2 (title in the header of the three modules, application name on the fixed one and over Settings, `h1` clipped), A17
+    (from Fuel step 3, Report step 2 and Flights: the address, the paragraph in the window with `f-hl`, the class gone within
+    1.5 s, an unknown anchor and a chapter alone highlight nothing; ×4 languages), A18 (✕, still hidden after a reload, per module,
+    the way back).

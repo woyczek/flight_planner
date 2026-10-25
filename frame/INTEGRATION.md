@@ -29,12 +29,27 @@ The frame never mounts two modules in the view; a navigation that arrives during
 on a module whose `mount()` may still be awaiting, and what that `mount()` does after its awaits is not shown (the last address wins).
 
 - The frame loads it on demand and gives it `ctx` (frame/SPEC.md § 3.2): `data`, `aerodb`, `t`, `lang`, `notify`,
-  `ask`, `askText`, `net`, `identity`; a fixed module (§ 9.2) also gets `overlay` (§ 9.3).
+  `ask`, `askText`, `net`, `identity`, `helpAnchor`; a fixed module (§ 9.2) also gets `overlay` (§ 9.3).
 - Its verb in the application's rail (and in its group's popover, § 9.1) is set in `frame/app.js` (`APP.modules`): one short verb, seven
   modules at most. Its place in the phone's bottom bar is set in `APP.tabs` (§ 9); a module never writes either.
 - `meta.help` (true by default): the frame draws the folded "How to use" panel at the top of the module as soon as
-  the module's chapter (`modules/<id>/help/<lang>.md`) is in the application's manual; `false` hides it. Writing the
-  chapter: `frame/help/INTEGRATION.md`.
+  the module's chapter (`modules/<id>/help/<lang>.md`) is in the application's manual; `false` hides it. The card has a
+  ✕ ("Hide", 44 px): once dismissed it stays hidden on the device, per module (`device/help.json`, `hidden`), and the
+  module's help chapter offers "Show the first steps again". A module draws nothing for it. Writing the chapter:
+  `frame/help/INTEGRATION.md`.
+- `meta.title` (a row `[fr, en, de, es]`, absent by default; V3_SPECIFICATION § 7.1 rule 16): the title of a **non-fixed**
+  module. On a phone (760 px and under) the header carries it in place of the application's name (`#fName`), and the page loses
+  its big title row: the frame puts `html.f-titled`, which clips the module's `h1` to 1 px (it stays in the tree for screen
+  readers; above 760 px nothing changes and the `h1` is shown). Draw your `h1` from the same row (`ctx.t(meta.title)`), never
+  a second copy of the text. A fixed module, the frame's screens (Settings, help) and a module with no `meta.title` keep the
+  application's name. Never draw a title row of your own in the page.
+- `ctx.helpAnchor(anchor)` (an anchor id, a function that returns one, or `null`): the paragraph of **your chapter** that
+  describes the screen or the step shown now. The "?" of the header opens `#help?m=<id>&a=<anchor>`: the manual scrolls to
+  that paragraph and highlights it for 1.5 s (once, class `f-hl`); an anchor the chapter lacks falls back on the start of the
+  chapter. Pass a function when the answer changes while the module lives (the step, the view), it is called when "?" is
+  pressed; call it once at `mount()`. The anchors are `<a id="<module>-…"></a>` at the start of a paragraph or in a title
+  of `modules/<id>/help/<lang>.md`, the same in the four languages, prefixed by the module id (`frame/help/INTEGRATION.md`
+  § 1; `build_help.py` checks both and that the anchors you cite exist). Never reach the help any other way.
 - `meta.fixed` (`true`, absent by default): the fixed, full-height view (§ 9).
 - `meta.level` (1 to 3, 1 by default): the menu lists the module only when the device's usage level, chosen in
   Settings, is at least this one (1 discovery, 2 everyday, 3 full); a hidden module stays reachable by `#id`.

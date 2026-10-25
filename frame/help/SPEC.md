@@ -44,6 +44,12 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
 - A folded `<details>` card: its summary is the first section's title (at least 44 px high), its body the section's
   paragraphs, then "Read the whole chapter" → `#help?m=<id>`.
 - Open or folded is remembered per module on the device (`device/help.json`, cache policy).
+- **Dismissed once** (rule 16): a ✕ in the summary (44 px, "Hide" ×4, a button inside the `<summary>`: it neither folds nor
+  unfolds) removes the card and writes `hidden: { <id>: true }` in `device/help.json`; `panel()` then returns nothing for that
+  module. The chapter on the help screen carries "Show the first steps again" under its title (only for a module whose card is
+  hidden): it clears the flag, sets the card open, puts the card back at once if the module is still drawn under the help, and
+  goes to `#<id>`. The panel's anchors (`<a id>` of its paragraphs) become `data-a` there: the manual is the only owner of an
+  id, and `ctx.help.open('<anchor>')` also finds a paragraph by it.
 - `ctx.help.open(subject)`: opens the panel and scrolls to the paragraph whose bold subject starts with `subject`
   (case-insensitive), or to the panel; false when the module has no panel. `ctx.help.link(id)`: `#help?m=<id>`.
 
@@ -61,7 +67,15 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
 - **French typography** as in the frame's texts: a narrow no-break space before `: ; ! ? »` and after `«`.
 - **Language**: the application's; a missing language falls back to French. Offline: the four manuals and the scripts
   are in the frame's service worker list.
-- The header's **?** button opens `#help?m=<current module>`, or `#help?m=settings` from the settings screen.
+- The header's **?** button opens `#help?m=<current module>`, or `#help?m=settings` from the settings screen. When the module
+  published an anchor (`ctx.helpAnchor`), the address is `#help?m=<id>&a=<anchor>`: the screen scrolls to that anchor (under
+  the sticky header: `scroll-margin-top`) and highlights its paragraph (`p`, `li` or title that holds the `<a id>`) with the
+  class `f-hl` for 1.5 s, once; `a` alone (contents, permalinks) and `m` alone never highlight, an anchor that is not in the
+  manual falls back on the chapter.
+- **Anchors**: `<a id="<module>-…"></a>` at the start of a paragraph, or anywhere in a `##` title (the renderer takes it out
+  of the title's text and makes it the title's id); the same ids in the four languages, prefixed by the module id, unique in the
+  manual. `build_help.py` refuses a language whose anchors differ from the French one, a wrong prefix, a duplicate, and an anchor
+  that `module.js` cites in `helpAnchor(...)` but the chapter lacks (a template `fuel-step-${n}` needs one anchor of that prefix).
 - The settings screen shows its own folded panel under its introduction (`helpPanel` of its context).
 
 ## 5. Roadmap (`#roadmap`, `frame/help/roadmap.js`)

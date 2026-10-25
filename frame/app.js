@@ -814,8 +814,27 @@
     const h = document.documentElement,
       m = SCREENS.includes(id) ? 'settings' : id || '';
     if (m && h.dataset.landmark !== m) h.dataset.landmark = m;
+    paintName(id);
     paintBar();
   }
+  // titre du module dans l'en-tête du téléphone (V3_SPECIFICATION § 7.1, règle 16) : un module qui n'est pas une vue fixe y
+  // met son titre (meta.title, quatre langues) à la place du nom de l'application, et sa page perd sa grande ligne de titre
+  // (<html class="f-titled">, frame.css : le h1 reste pour les lecteurs d'écran) ; un module fixe, un écran du cadre et
+  // tout écran large gardent le nom de l'application.
+  const moduleTitle = {}, // meta.title de chaque module (rangée de quatre textes), relevé avec le niveau et au montage
+    phoneQ = matchMedia('(max-width: 760px)');
+  let nameFor = ''; // écran ou module dont l'en-tête porte le nom
+  /** Nom de l'en-tête pour l'écran ou le module id ('' : aucun) ; écrit seulement s'il change. */
+  function paintName(id = nameFor) {
+    nameFor = id;
+    const row = id && !SCREENS.includes(id) && moduleFixed[id] !== true ? moduleTitle[id] : null,
+      on = !!row && phoneQ.matches,
+      txt = t(on ? row : APP.name),
+      h = document.documentElement;
+    if ($('fName').textContent !== txt) $('fName').textContent = txt;
+    if (h.classList.contains('f-titled') !== on) h.classList.toggle('f-titled', on);
+  }
+  phoneQ.addEventListener('change', () => paintName());
   /** Vue fixe (meta.fixed d'un module) : <html class="f-fixed"> donne à la vue toute la hauteur entre l'en-tête et la barre du
    *  bas (ou le bas de la fenêtre), sans défilement de la page (frame.css) ; jamais sous un écran du cadre ouvert par-dessus
    *  (il défile comme une page). id : le module affiché ('' : aucun). Écrit seulement si cela change. */
@@ -1204,8 +1223,21 @@
   function openHelp() {
     if (over && ['help', 'roadmap'].includes(over.id)) return leaveOver();
     const shown = over ? over.id : parseHash().id,
-      at = ['settings', 'device'].includes(shown) ? 'settings' : current?.id || '';
-    location.hash = `#help${at ? `?m=${encodeURIComponent(at)}` : ''}`;
+      at = ['settings', 'device'].includes(shown) ? 'settings' : current?.id || '',
+      a = at === current?.id && !over ? helpAnchorOf(at) : '';
+    location.hash = `#help${at ? `?m=${encodeURIComponent(at)}${a ? `&a=${encodeURIComponent(a)}` : ''}` : ''}`;
+  }
+  // ancre d'aide de l'écran courant d'un module (ctx.helpAnchor) : un identifiant du chapitre, ou une fonction qui le rend au
+  // moment du « ? » ; le « ? » ouvre alors le chapitre à ce paragraphe, surligné (frame/help/help.js)
+  const helpAnchors = {};
+  /** Ancre d'aide du module id ('' sans ancre, ou si la fonction du module échoue). */
+  function helpAnchorOf(id) {
+    try {
+      const a = typeof helpAnchors[id] === 'function' ? helpAnchors[id]() : helpAnchors[id];
+      return /^[\w-]+$/.test(a || '') ? a : '';
+    } catch {
+      return '';
+    }
   }
   /** Suite d'un toucher sur une ligne du bloc d'état : une adresse (un choix de menu : pas de « ← »), une carte des Réglages
    *  (`card:sync,usages` : la première visible, amenée sous l'en-tête, son premier champ pris), la bascule de la position
@@ -1484,12 +1516,14 @@
         const meta = (await import(new URL(`modules/${m.id}/module.js`, ROOT).href)).meta || {};
         moduleLevel[m.id] = levelFrom(meta.level ?? 1);
         moduleFixed[m.id] = meta.fixed === true;
+        if (Array.isArray(meta.title)) moduleTitle[m.id] = meta.title;
       } catch {
         moduleLevel[m.id] = 1;
       }
     }));
     renderMenu();
     paintFixed(current?.id || ''); // le module déjà affiché peut se révéler fixe maintenant
+    paintName(); // ... ou avoir un titre
   }
   /** Menu des verbes du niveau de l'appareil (redessiné seulement quand la liste change), entrée courante marquée ; la
    *  barre d'onglets suit (screen : l'écran du cadre affiché, ou rien). */
@@ -1704,6 +1738,7 @@
       console.error(e);
     }
     current = null;
+    for (const k in helpAnchors) delete helpAnchors[k]; // l'ancre du module démonté ne vaut plus
     closePane();
     // retour : ce module est-il ouvert par passage d'un autre ? (avant de noter l'écran courant)
     origin = originOf(id, h.query);
@@ -1734,7 +1769,9 @@
         mod
       };
       moduleFixed[entry.id] = meta.fixed === true;
+      if (Array.isArray(meta.title)) moduleTitle[entry.id] = meta.title;
       paintFixed(entry.id);
+      paintName(entry.id); // avant le montage : la page naît sans sa grande ligne de titre
       lastScreen = {
         id: entry.id,
         hash: location.hash
@@ -2049,7 +2086,10 @@
       help: Object.freeze({
         open: subject => window.SogHelp ? SogHelp.forModule(entry.id, $('fView')).open(subject) : false,
         link: (m = entry.id) => `#help?m=${encodeURIComponent(m)}`
-      })
+      }),
+      // ctx.helpAnchor(id | () => id | null) : l'ancre du chapitre du module pour l'écran ou le pas affiché ; le « ? » de
+      // l'en-tête ouvre l'aide à ce paragraphe (sans ancre : au début du chapitre). Valable jusqu'au démontage.
+      helpAnchor: a => void(helpAnchors[entry.id] = a || null)
     };
   }
   /** Contexte de l'aide (frame/help/help.js) : textes, langue, documents de l'appareil, racine de la suite. */

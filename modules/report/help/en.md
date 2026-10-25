@@ -6,11 +6,11 @@ move.
 
 ## How to use
 
-**Three steps.** The report is filled in three steps: Flight, Mission, Result. On a phone, one step at a time (“Next”
+<a id="report-steps"></a>**Three steps.** The report is filled in three steps: Flight, Mission, Result. On a phone, one step at a time (“Next”
 at the bottom); on a computer, the three side by side. Nothing is mandatory: what is missing is shown at the last step,
 without ever blocking the save.
 
-**The last flight.** If your IVAO (or VATSIM) identifier is set (⚙) and the device is online, a card offers your last
+<a id="report-step-1"></a>**The last flight.** If your IVAO (or VATSIM) identifier is set (⚙) and the device is online, a card offers your last
 flight on the network: “Use” fills in the aircraft, the callsign, the route and the times taken from the track. The
 flight prepared in Fuel or Map is offered the same way (“Current flight”); if it was started in Fuel (“Start the
 flight”), it comes first, “Flight started at hh:mm”. The card says in one line everything that will be taken, even what
@@ -23,16 +23,16 @@ pasted text: an ICAO flight plan, the page of a flight from the IVAO tracker or 
 are filled; the “Prefilled from: …” line under the card’s title says where they come from. If a source gives something else for fields already entered, a button offers
 to replace them.
 
-**The mission.** At the second step: the family (suggested from your last report), the series, the mission identifier
+<a id="report-step-2"></a>**The mission.** At the second step: the family (suggested from your last report), the series, the mission identifier
 if the flight follows one, then the blocks specific to the family. Some blocks only appear for one series (for example
 VIP or ferry for special missions). Until you open this step it is marked "to check" instead of ✓: the family and
 the series of a new report are taken by default.
 
-**The result.** At the last step: the outcome, your observations, the crew (you first, as aircraft commander) and the
+<a id="report-step-3"></a>**The result.** At the last step: the outcome, your observations, the crew (you first, as aircraft commander) and the
 fuel at departure and at landing. Inconsistencies — times out of order, a future date, fuel that goes up — are
 flagged.
 
-**Saving.** The button at the bottom saves the report and gives it its number at the first save. As long as you have
+<a id="report-save"></a>**Saving.** The button at the bottom saves the report and gives it its number at the first save. As long as you have
 not saved, what you entered is kept on the device and restored the next time you open it.
 
 **Recording on the website.** “Save and record on the website” saves and opens, in the same move, the “Add a flight”
@@ -76,4 +76,4 @@ flight's line on the clipboard.
   flight's page (IVAO tracker, StatSim) into “Other sources”.
 - **Without a trigram**: the report is written all the same; set your trigram (⚙) so that it is in your name.
 
-<!-- fr: 5bd862ad5bb7 -->
+<!-- fr: 7c1d42bd47bd -->

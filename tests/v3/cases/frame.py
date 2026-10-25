@@ -15,9 +15,11 @@ Rules covered
 
   * one module in the view: navigations that arrive during a mount cancel it, the last address wins (A16);
   * the device's keys (trigram, GitHub token, weather key) survive a relaunch of the browser, even when it clears
-    localStorage and keeps IndexedDB, as Safari did on 25 Oct 2026 (A19).
+    localStorage and keeps IndexedDB, as Safari did on 25 Oct 2026 (A19);
+  * non-fixed modules on a phone (rule 16): the module's title is in the header (A2), the "?" lands on the paragraph of the
+    step shown and highlights it once (A17), the "How to use" card is dismissed once and for good, with a way back (A18).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A19.
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19.
 """
 import json
 import re
@@ -35,6 +37,11 @@ TABS = [  # APP.tabs of frame/app.js: id, label in fr en de es, module the tab o
 LANG_IX = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}
 STATUS_TITLE = {'fr': 'État', 'en': 'Status', 'de': 'Status', 'es': 'Estado'}
 CHAPTER_H1 = {'maps': {'fr': 'Carte', 'en': 'Map', 'de': 'Karte', 'es': 'Mapa'}}
+MODULE_TITLES = {  # meta.title of the non-fixed modules, fr en de es (rule 16)
+    'fuel': ('Carburant et niveau', 'Fuel and level', 'Kraftstoff und Flugfläche', 'Combustible y nivel'),
+    'report': ('Compte rendu', 'Mission report', 'Einsatzbericht', 'Informe de misión'),
+    'flightlog': ('Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'),
+}
 
 
 def hscroll(c):
@@ -73,6 +80,20 @@ def a2(c):
     for i in ('fHelp', 'fDevice'):
         b = c.box('#' + i)
         c.ok(b['w'] >= 43.5 and b['h'] >= 43.5, f'#{i} is {b["w"]:.0f}x{b["h"]:.0f}', 'at least 44x44')
+    # rule 16: a fixed module keeps the application's name; a non-fixed one puts its own title in the header and its page loses
+    # the big title row (the h1 stays for screen readers, 1 px clipped)
+    app = c.text('#fName')
+    c.ok(app and app not in MODULE_TITLES['fuel'], f'the header of #maps says {app!r}', 'the name of the application')
+    for m in ('fuel', 'report', 'flightlog'):
+        c.open(m)
+        c.eq(c.text('#fName'), c.pick(dict(zip(('fr', 'en', 'de', 'es'), MODULE_TITLES[m]))), 'the header carries the title of the module', what=f'#{m} header name')
+        h1 = c.box(f'[data-module="{m}"] h1')
+        c.ok(h1 and h1['w'] <= 1.5 and h1['h'] <= 1.5, f'#{m}: the h1 is {h1 and h1["w"]:.0f}x{h1 and h1["h"]:.0f}', 'clipped to 1 px (kept for screen readers)')
+        c.eq(h1['text'], c.pick(dict(zip(('fr', 'en', 'de', 'es'), MODULE_TITLES[m]))), 'the h1 text is still the title', what=f'#{m} h1')
+        c.ok(c.js('document.documentElement.classList.contains("f-titled")'), 'html has no f-titled', 'html.f-titled')
+    c.tap('#fDevice')                                      # a screen of the frame over a module: the name of the application
+    c.until("location.hash === '#settings'", what='the gear opens Settings')
+    c.eq(c.text('#fName'), app, 'over Settings the header says the name of the application again', what='#fName over Settings')
 
 
 @case('A3', 'Screen header', 'A', phone=False, rule='V3_SPECIFICATION 7.1 rule 3 (nothing changes above 760 px)')
@@ -680,3 +701,68 @@ def a19(c):
     finally:
         shutil.rmtree(home, ignore_errors=True)
     c.ok(not errors, errors[:1], 'no JavaScript error in the relaunched browsers')
+
+
+@case('A17', 'Help lands on the right paragraph', 'A', screens=False, langs4=True, designs=('standard',), night=False,
+      rule='V3_SPECIFICATION 7.1 rule 16 (user, 25 Oct: "bien vérifier que l\'aide contextuelle arrive sur le bon paragraphe")')
+def a17(c):
+    # (module, button of the step to show, anchor the "?" must ask)
+    for m, step, anchor in (('fuel', '.fu-steps button[data-step="2"]', 'fuel-step-3'), ('report', '.f-steps button[data-step="1"]', 'report-step-2'),
+                            ('flightlog', None, 'flightlog-list')):
+        c.open(m, flight=True, flights=3, reports=2)
+        if step:
+            c.tap(step)
+        c.tap('#fHelp')
+        c.until("location.hash.startsWith('#help')", what='the help screen opens')
+        c.eq(c.hash(), f'#help?m={m}&a={anchor}', 'the "?" asks the chapter at the paragraph of the screen shown', what=f'#{m} help address')
+        c.until("(a) => !!document.querySelector('.f-screen [id=\"' + a + '\"]')", anchor, timeout=8000, what=f'the anchor {anchor} is in the manual')
+        c.until("(a) => document.querySelector('.f-screen [id=\"' + a + '\"]').closest('p, li, h1, h2, h3').classList.contains('f-hl')", anchor,
+                what='the paragraph is highlighted on arrival')
+        c.settle()
+        r = c.js("""(a) => { const n = document.querySelector('.f-screen [id="' + a + '"]').closest('p, li, h1, h2, h3'), r = n.getBoundingClientRect();
+            return { top: r.top, head: document.querySelector('.f-head').getBoundingClientRect().bottom, vh: innerHeight } }""", anchor)
+        c.ok(r['head'] - 2 <= r['top'] < r['vh'] - 40, f'#{m}: the paragraph starts at {r["top"]:.0f} (header bottom {r["head"]:.0f}, window {r["vh"]})',
+             'inside the window, under the header')
+        c.until("!document.querySelector('.f-screen .f-hl')", timeout=4000, what='the highlight goes after 1.5 s')
+        c.key('Escape')
+        c.until(f"location.hash === '#{m}'", what=f'Escape returns to #{m}')
+    # an anchor the chapter does not have falls back on the start of the chapter, without highlight
+    c.go('help?m=fuel&a=nope')
+    c.until("!!document.querySelector('[data-chapter=\"fuel\"]')", timeout=8000, what='the chapter is drawn')
+    c.wait(300)
+    c.eq(c.count('.f-hl'), 0, 'an unknown anchor highlights nothing', what='.f-hl elements')
+    # a plain chapter request (no anchor) does not highlight either
+    c.go('help?m=report')
+    c.until("!!document.querySelector('[data-chapter=\"report\"]')", timeout=8000, what='the chapter is drawn')
+    c.wait(300)
+    c.eq(c.count('.f-hl'), 0, 'a chapter without anchor highlights nothing', what='.f-hl elements')
+
+
+@case('A18', 'How-to card dismissed once', 'A', screens=False, designs=('standard',), night=False,
+      rule='V3_SPECIFICATION 7.1 rule 16 (user, 25 Oct: "une fois lu, ça disparaît, c\'est redondant avec le bouton aide contextuelle")')
+def a18(c):
+    c.open('fuel', flight=True)
+    c.until("!!document.querySelector('[data-help=\"fuel\"]')", timeout=8000, what='the "How to use" card is drawn')
+    x = c.box('[data-help="fuel"] [data-x]')
+    c.ok(x and x['w'] >= 43.5 and x['h'] >= 43.5, f'the cross is {x and x["w"]:.0f}x{x and x["h"]:.0f}', 'at least 44x44')
+    c.tap('[data-help="fuel"] [data-x]')
+    c.eq(c.count('[data-help="fuel"]'), 0, 'the card is gone at once', what='cards after the cross')
+    c.until_doc('device/help.json', lambda d: d and d.get('hidden', {}).get('fuel') is True, what='the device keeps the card hidden')
+    c.page.reload(wait_until='load')
+    c.ready('fuel')
+    c.wait(800)                                            # the card is added after the module; give it its time
+    c.eq(c.count('[data-help="fuel"]'), 0, 'after a reload the card is still absent', what='cards after the reload')
+    # it is per module: the report card is still there
+    c.go('report')
+    c.until("!!document.querySelector('[data-help=\"report\"]')", timeout=8000, what='the card of another module is drawn')
+    # the way back: the module's chapter in the help carries "Show the first steps again"
+    c.go('help?m=fuel')
+    c.until("!!document.querySelector('[data-howto-show=\"fuel\"]')", timeout=8000, what='the chapter offers the way back')
+    c.eq(c.count('[data-howto-show]'), 1, 'only the dismissed module offers it', what='way-back links')
+    link = c.box('[data-howto-show="fuel"]')
+    c.ok(link['h'] >= 43.5, f'the link is {link["h"]:.0f} px high', 'at least 44 px')
+    c.tap('[data-howto-show="fuel"]')
+    c.until("location.hash === '#fuel'", what='the link returns to the module')
+    c.until("!!document.querySelector('[data-help=\"fuel\"]')", timeout=8000, what='the card is back')
+    c.ok(c.js("document.querySelector('[data-help=\"fuel\"]').open"), 'the card is folded', 'unfolded when it comes back')
+    c.until_doc('device/help.json', lambda d: d and d.get('hidden', {}).get('fuel') is False, what='the device forgets the dismissal')

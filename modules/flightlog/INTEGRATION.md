@@ -27,6 +27,10 @@ writes: [
 files: ['model.js', '../../frame/lib/last_flight.js', '../../frame/lib/js-yaml.min.js']
 ```
 
+**Title and help (rule 16)**: `meta.title` is the title row (the `h1` draws from it; on a phone the frame shows it in the header
+and clips the `h1`); `ctx.helpAnchor` is called once at `mount()`: `flightlog-detail` while a line is unfolded,
+`flightlog-current` while a started flight is listed, else `flightlog-list`; the anchors are in `help/<lang>.md`.
+
 `ctx` used: `data` (get, list, put, watch), `t`, `notify`, `identity` (`trigram`, `ivao`, `vatsim`), `net`
 (IVAO through the launcher's relay and key, VATSIM relayed; without a launcher the refusal is said).
 

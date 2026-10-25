@@ -51,7 +51,7 @@ trip fuel, reserve, block fuel, flight time and top of descent.
 
 ## How to use
 
-Preparation follows five steps, in the order a flight is prepared:
+<a id="fuel-quote"></a>Preparation follows five steps, in the order a flight is prepared:
 **1 Flight, 2 Route, 3 Weather, 4 Result, 5 Departure**. On a phone, the top bar shows one step at a time (touch a number
 to go to it, “Next” at the bottom of each step); on a wide screen, the five steps are one below the other. Everything is
 recomputed at each change: correct the route, and the weather, the quote and the wind follow, with no button to press.
@@ -61,7 +61,7 @@ where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060�
 “Time” and “TOD” (top of descent). The screen always opens on the “Quote” tab; the sheets open with the “Sheets” tab. A ✓ marks a completed step.
 Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in feet below (3,500 ft).
 
-**1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
+<a id="fuel-step-1"></a>**1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
 rather than the observation, the aircraft and the cruise level (as a flight level). The flight date is a single value, kept in the current flight: the quote’s weather (the aerodromes’ TAF, winds and temperatures aloft) is read at that date, the Map’s ETA starts from it while the flight has not started, and Atmosphere’s slider starts from it; empty means now. The aircraft fits on one line: the
 chosen aircraft, its registration, its callsign and where it comes from. A new flight takes the last aircraft chosen on this device; with none
 chosen, the quote waits. The magnifying glass opens the search (the last chosen first): type a
@@ -75,7 +75,7 @@ Next to the date, the “+30” clock sets the flight 30 min from now (rounded t
 goes back to the current time: the aerodrome weather (the TAF if it covers that time) and the winds aloft are read again
 at once.
 
-**2 Route.** Type the route in the “Route” field (Enter confirms it), always visible: the points, the airways and the
+<a id="fuel-step-2"></a>**2 Route.** Type the route in the “Route” field (Enter confirms it), always visible: the points, the airways and the
 levels, as in a flight plan (“LFBO TOU UN460 NTS/F280 LFRN”). You can also paste an ICAO flight plan or the list of an
 OFP there. When you leave the field, the route is tidied up: in capitals on one line, without DCT or speed-level groups,
 the departure and the arrival at the ends, a level change written “/F280” after the point where it starts. Airways stay
@@ -106,7 +106,7 @@ it stay neighbours and in place.
 screen it opens alongside, and follows every change. “Edit the route” on the map brings you back to this step, with the
 route field ready for typing.
 
-**3 Weather.** The wind (direction and speed) and the ISA deviation. Without a direction, or without any wind, the block
+<a id="fuel-step-3"></a>**3 Weather.** The wind (direction and speed) and the ISA deviation. Without a direction, or without any wind, the block
 fuel is given as a range. “Read the aerodromes’ weather” shows the departure, the arrival, the alternate and the
 airfields along the route: all those within 10 NM on either side of the route (radius adjustable in the quote settings)
 that have a METAR or a TAF; the others are ignored. Each airfield gives its distance from the departure (the alternate,
@@ -137,7 +137,7 @@ last forecast read stays. When the route or the time changes, the previous wind 
 until the new forecast arrives; if it does not come, the METARs' surface wind takes over and this is stated (“forecast
 aloft unavailable”).
 
-**4 Result.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
+<a id="fuel-step-4"></a>**4 Result.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
 marks the most economical level, the orange square the fastest; the grey area, the levels that cannot be held on this
 trip. Each level is worked out like the quote, with the forecast wind at that level when the real weather is on:
 at the chosen level, the curve and the quote give the same figure. On a route with steps, every point of the curve is a flat flight at its level, without the steps: the black diamond marks the plan's real quote (with the route's steps and the plan's wind), given under the drawing (“Plan: FL160, 856 kg, 0:54”), and its gap from the curve is the cost of the steps. The fuel axis follows the chosen unit (kg or lb). Touch the curve to choose a level, or use the two buttons. “Climb” chooses how to climb: economical, best rate,
@@ -165,7 +165,7 @@ arrival airfields, login required). A greyed-out entry says what it lacks (airfi
 that is not already in the flight. The quote settings (taxi, reserve, margin, weather corridor, units) are in the last
 fold.
 
-**5 Departure.** A one-page summary: the aircraft, the route as it will be filed, the level (and its steps), the wind
+<a id="fuel-step-5"></a>**5 Departure.** A one-page summary: the aircraft, the route as it will be filed, the level (and its steps), the wind
 and its source, the block fuel. “Start the flight” launches the flight plan (start-up, pushback, taxi…). The preparation
 may date back several days: so it begins by redoing everything at the real time — the flight date returns to now, the
 aerodrome weather and the winds aloft are read again, the quote is redone — and says in one line what has changed (“wind
@@ -185,7 +185,7 @@ fuel. It follows the clock, minute by minute, until the report or the cancellati
 The flight prepared here — aircraft, route, level, climb and descent profile — is shared: Map and Report already have
 it.
 
-## Performance sheets
+## Performance sheets <a id="fuel-sheets"></a>
 
 The “Sheets” tab gathers the airline's sheets, shared with all its devices. They are sorted by category
 (helicopters, turboprops, jets, piston engines, others); each type the airline uses (fleet, reference) that has no
@@ -223,7 +223,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 82119c7ea5b3 -->
+<!-- fr: 74dfdb49af22 -->
 
 <!-- chapter: maps -->
 # Map
@@ -385,11 +385,11 @@ move.
 
 ## How to use
 
-**Three steps.** The report is filled in three steps: Flight, Mission, Result. On a phone, one step at a time (“Next”
+<a id="report-steps"></a>**Three steps.** The report is filled in three steps: Flight, Mission, Result. On a phone, one step at a time (“Next”
 at the bottom); on a computer, the three side by side. Nothing is mandatory: what is missing is shown at the last step,
 without ever blocking the save.
 
-**The last flight.** If your IVAO (or VATSIM) identifier is set (⚙) and the device is online, a card offers your last
+<a id="report-step-1"></a>**The last flight.** If your IVAO (or VATSIM) identifier is set (⚙) and the device is online, a card offers your last
 flight on the network: “Use” fills in the aircraft, the callsign, the route and the times taken from the track. The
 flight prepared in Fuel or Map is offered the same way (“Current flight”); if it was started in Fuel (“Start the
 flight”), it comes first, “Flight started at hh:mm”. The card says in one line everything that will be taken, even what
@@ -402,16 +402,16 @@ pasted text: an ICAO flight plan, the page of a flight from the IVAO tracker or 
 are filled; the “Prefilled from: …” line under the card’s title says where they come from. If a source gives something else for fields already entered, a button offers
 to replace them.
 
-**The mission.** At the second step: the family (suggested from your last report), the series, the mission identifier
+<a id="report-step-2"></a>**The mission.** At the second step: the family (suggested from your last report), the series, the mission identifier
 if the flight follows one, then the blocks specific to the family. Some blocks only appear for one series (for example
 VIP or ferry for special missions). Until you open this step it is marked "to check" instead of ✓: the family and
 the series of a new report are taken by default.
 
-**The result.** At the last step: the outcome, your observations, the crew (you first, as aircraft commander) and the
+<a id="report-step-3"></a>**The result.** At the last step: the outcome, your observations, the crew (you first, as aircraft commander) and the
 fuel at departure and at landing. Inconsistencies — times out of order, a future date, fuel that goes up — are
 flagged.
 
-**Saving.** The button at the bottom saves the report and gives it its number at the first save. As long as you have
+<a id="report-save"></a>**Saving.** The button at the bottom saves the report and gives it its number at the first save. As long as you have
 not saved, what you entered is kept on the device and restored the next time you open it.
 
 **Recording on the website.** “Save and record on the website” saves and opens, in the same move, the “Add a flight”
@@ -455,7 +455,7 @@ flight's line on the clipboard.
   flight's page (IVAO tracker, StatSim) into “Other sources”.
 - **Without a trigram**: the report is written all the same; set your trigram (⚙) so that it is in your name.
 
-<!-- fr: 5bd862ad5bb7 -->
+<!-- fr: 7c1d42bd47bd -->
 
 <!-- chapter: flightlog -->
 # My flights
@@ -465,29 +465,29 @@ airline website's log and your IVAO or VATSIM connections, with no duplicates.
 
 ## How to use
 
-**The totals.** At the top, three boxes: the number of flights, the block hours and the flights that do not have a
+<a id="flightlog-totals"></a>**The totals.** At the top, three boxes: the number of flights, the block hours and the flights that do not have a
 report yet, for the chosen period. Just below, the three aircraft types you have flown the most.
 
-**The filters.** Choose the period (7 days, 31 days, 1 year, all), search for a callsign, a type, a registration, an
+<a id="flightlog-filters"></a>**The filters.** Choose the period (7 days, 31 days, 1 year, all), search for a callsign, a type, a registration, an
 airfield, a mission or a report number, or tick “Without report” to see only the flights waiting for one. Your choices
 stay on the device: at the next visit a chip recalls them ("1 year · LFRS ✕") and removes them in one tap. A "—"
 instead of the block time: a report without times.
 
-**The list.** One line per flight: the date, the callsign, the route and the block time. An orange dot marks a flight
+<a id="flightlog-list"></a>**The list.** One line per flight: the date, the callsign, the route and the block time. An orange dot marks a flight
 without a report. On a computer, the line also shows the aircraft and the report number.
 
-**The details of a flight.** Touch a line to unfold it: where the flight comes from (report, website log, IVAO or
+<a id="flightlog-detail"></a>**The details of a flight.** Touch a line to unfold it: where the flight comes from (report, website log, IVAO or
 VATSIM network), its time, the aircraft, the mission and the notes.
 
-**Writing or opening the report.** On a flight without one, “Write the report” opens a new report, already filled in
+<a id="flightlog-report"></a>**Writing or opening the report.** On a flight without one, “Write the report” opens a new report, already filled in
 with this flight — date, aircraft, callsign, airfields — and a suggested mission family. On a flight that has one,
 “Open the report” opens it again for editing.
 
-**The current flight.** A flight started in Fuel (“Start the flight”) and not yet reported appears at the top, “In
+<a id="flightlog-current"></a>**The current flight.** A flight started in Fuel (“Start the flight”) and not yet reported appears at the top, “In
 progress — started at hh:mm” (a diversion is flagged), even before the website log knows it. “Write the report” opens
 the report, which offers this flight first; once the report is saved, the line disappears.
 
-**More.** Unfold “More” to export the filtered list as CSV (spreadsheet) or read your IVAO and VATSIM connections again.
+<a id="flightlog-more"></a>**More.** Unfold “More” to export the filtered list as CSV (spreadsheet) or read your IVAO and VATSIM connections again.
 
 ## Where the flights come from
 
@@ -506,7 +506,7 @@ the report, which offers this flight first; once the report is saved, the line d
 - **No launcher**: IVAO and VATSIM can only be read again through the launcher of a computer.
 - **No trigram**: set it (⚙); it is what picks your reports and your rows of the log.
 
-<!-- fr: 21df43e2dc4e -->
+<!-- fr: ec2aee8de0eb -->
 
 <!-- chapter: website -->
 # Airline website

@@ -1,5 +1,6 @@
-// V3 frame/lib (propriétaire : help) — rendu Markdown de l'aide, recopié tel quel de la V2 (apps/aide/markdown.js) le
-// 23/10/2026 : l'écran d'aide du cadre (frame/help/help.js) le charge avec le cadre, gardé hors ligne par frame/sw.js.
+// V3 frame/lib (propriétaire : help) — rendu Markdown de l'aide, recopié de la V2 (apps/aide/markdown.js) le 23/10/2026 ;
+// écart du 25/10 : un titre peut porter son ancre explicite (<a id="x"></a> dans son texte). L'écran d'aide du cadre
+// (frame/help/help.js) le charge avec le cadre, gardé hors ligne par frame/sw.js.
 (() => {
   'use strict';
   // Markdown → HTML pour la page Aide (apps/aide/aide.html) : ce qu'emploient les documents de docs/ — titres (ancres
@@ -107,9 +108,11 @@
       const h = /^(#{1,6})\s+(.*?)\s*#*\s*$/.exec(line);
       if (h) {
         flush();
-        const level = h[1].length,
-          text = h[2];
-        let id = slug(text) || 'section';
+        const level = h[1].length;
+        // ancre explicite d'un titre : <a id="x"></a> dans son texte (retirée du texte), son id remplace celui du titre
+        const own = /<a id="([\w-]+)"><\/a>/.exec(h[2]),
+          text = h[2].replace(/\s*<a id="[\w-]+"><\/a>/g, '');
+        let id = own ? own[1] : slug(text) || 'section';
         const n = used.get(id) || 0;
         used.set(id, n + 1);
         if (n) id += `-${n}`;

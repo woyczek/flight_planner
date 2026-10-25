@@ -15,6 +15,7 @@ import {
 
 export const meta = {
   id: 'flightlog',
+  title: ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'], // en-tête du téléphone (règle 16)
   apps: ['pilot'],
   level: 1,
   reads: ['cr/', 'pilot/', 'cache/flightlog/', 'cache/report/'],
@@ -37,7 +38,7 @@ const VIEW = 'cache/flightlog/view.json',
 
 // ---------------------------------------------------------------- textes [fr, en, de, es]
 const TX = {
-  title: ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'],
+  title: meta.title,
   period: ['Période', 'Period', 'Zeitraum', 'Período'],
   periods: {
     7: ['7 jours', '7 days', '7 Tage', '7 días'],
@@ -419,6 +420,8 @@ export async function mount(el, ctx) {
   S.kept = !!keptFilters(); // filtres d'une visite précédente : dits par une puce qui les retire
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
   S.body = el.querySelector('[data-body]');
+  // « ? » de l'en-tête : le chapitre au paragraphe de ce qui est affiché (un vol déplié, le vol en cours, sinon la liste)
+  ctx.helpAnchor?.(() => S?.open ? 'flightlog-detail' : S?.started ? 'flightlog-current' : 'flightlog-list');
   S.body.addEventListener('input', onInput);
   S.body.addEventListener('change', onInput);
   S.body.addEventListener('click', onClick);

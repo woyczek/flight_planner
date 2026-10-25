@@ -284,6 +284,12 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       loses its big title row; the **"Comment s'en servir" card keeps a ✕**: once dismissed it stays hidden on the
       device (it is redundant with the "?" of the header); the contextual help **opens at the paragraph of the current
       screen or step** and highlights it briefly.
+      - **Done by the frame lot** (relay cloud, branch `v3-cadre-titre`; `frame/DECISIONS.md`, 25 Oct 2026): `meta.title` of the
+        module fills `#fName` under 760 px (fixed modules, frame screens and screens keep the application's name) and the page's
+        `h1` is clipped (kept for screen readers); the "How to use" card, drawn by the frame (`SogHelp.panel`), has a ✕ (per module,
+        `device/help.json`) and the help chapter offers "Show the first steps again"; `ctx.helpAnchor` gives the "?" the anchor
+        `#help?m=<id>&a=<anchor>`, the manual scrolls there and highlights the paragraph 1.5 s once (anchors added to the Fuel,
+        Report and Flights chapters in four languages). Tests A2, A17, A18.
   17. **Map chrome under the sheet** (user, 25 Oct: "le double i, invisible. Masqué par le volet"): the map's own
       controls (MapLibre attribution, scale, any other "i") sit **above the sheet**, never under it: `map_base` offsets
       them by the sheet's height (the offset follows the sheet's position); one attribution control only.

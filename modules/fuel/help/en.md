@@ -5,7 +5,7 @@ trip fuel, reserve, block fuel, flight time and top of descent.
 
 ## How to use
 
-Preparation follows five steps, in the order a flight is prepared:
+<a id="fuel-quote"></a>Preparation follows five steps, in the order a flight is prepared:
 **1 Flight, 2 Route, 3 Weather, 4 Result, 5 Departure**. On a phone, the top bar shows one step at a time (touch a number
 to go to it, “Next” at the bottom of each step); on a wide screen, the five steps are one below the other. Everything is
 recomputed at each change: correct the route, and the weather, the quote and the wind follow, with no button to press.
@@ -15,7 +15,7 @@ where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060�
 “Time” and “TOD” (top of descent). The screen always opens on the “Quote” tab; the sheets open with the “Sheets” tab. A ✓ marks a completed step.
 Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in feet below (3,500 ft).
 
-**1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
+<a id="fuel-step-1"></a>**1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
 rather than the observation, the aircraft and the cruise level (as a flight level). The flight date is a single value, kept in the current flight: the quote’s weather (the aerodromes’ TAF, winds and temperatures aloft) is read at that date, the Map’s ETA starts from it while the flight has not started, and Atmosphere’s slider starts from it; empty means now. The aircraft fits on one line: the
 chosen aircraft, its registration, its callsign and where it comes from. A new flight takes the last aircraft chosen on this device; with none
 chosen, the quote waits. The magnifying glass opens the search (the last chosen first): type a
@@ -29,7 +29,7 @@ Next to the date, the “+30” clock sets the flight 30 min from now (rounded t
 goes back to the current time: the aerodrome weather (the TAF if it covers that time) and the winds aloft are read again
 at once.
 
-**2 Route.** Type the route in the “Route” field (Enter confirms it), always visible: the points, the airways and the
+<a id="fuel-step-2"></a>**2 Route.** Type the route in the “Route” field (Enter confirms it), always visible: the points, the airways and the
 levels, as in a flight plan (“LFBO TOU UN460 NTS/F280 LFRN”). You can also paste an ICAO flight plan or the list of an
 OFP there. When you leave the field, the route is tidied up: in capitals on one line, without DCT or speed-level groups,
 the departure and the arrival at the ends, a level change written “/F280” after the point where it starts. Airways stay
@@ -60,7 +60,7 @@ it stay neighbours and in place.
 screen it opens alongside, and follows every change. “Edit the route” on the map brings you back to this step, with the
 route field ready for typing.
 
-**3 Weather.** The wind (direction and speed) and the ISA deviation. Without a direction, or without any wind, the block
+<a id="fuel-step-3"></a>**3 Weather.** The wind (direction and speed) and the ISA deviation. Without a direction, or without any wind, the block
 fuel is given as a range. “Read the aerodromes’ weather” shows the departure, the arrival, the alternate and the
 airfields along the route: all those within 10 NM on either side of the route (radius adjustable in the quote settings)
 that have a METAR or a TAF; the others are ignored. Each airfield gives its distance from the departure (the alternate,
@@ -91,7 +91,7 @@ last forecast read stays. When the route or the time changes, the previous wind 
 until the new forecast arrives; if it does not come, the METARs' surface wind takes over and this is stated (“forecast
 aloft unavailable”).
 
-**4 Result.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
+<a id="fuel-step-4"></a>**4 Result.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
 marks the most economical level, the orange square the fastest; the grey area, the levels that cannot be held on this
 trip. Each level is worked out like the quote, with the forecast wind at that level when the real weather is on:
 at the chosen level, the curve and the quote give the same figure. On a route with steps, every point of the curve is a flat flight at its level, without the steps: the black diamond marks the plan's real quote (with the route's steps and the plan's wind), given under the drawing (“Plan: FL160, 856 kg, 0:54”), and its gap from the curve is the cost of the steps. The fuel axis follows the chosen unit (kg or lb). Touch the curve to choose a level, or use the two buttons. “Climb” chooses how to climb: economical, best rate,
@@ -119,7 +119,7 @@ arrival airfields, login required). A greyed-out entry says what it lacks (airfi
 that is not already in the flight. The quote settings (taxi, reserve, margin, weather corridor, units) are in the last
 fold.
 
-**5 Departure.** A one-page summary: the aircraft, the route as it will be filed, the level (and its steps), the wind
+<a id="fuel-step-5"></a>**5 Departure.** A one-page summary: the aircraft, the route as it will be filed, the level (and its steps), the wind
 and its source, the block fuel. “Start the flight” launches the flight plan (start-up, pushback, taxi…). The preparation
 may date back several days: so it begins by redoing everything at the real time — the flight date returns to now, the
 aerodrome weather and the winds aloft are read again, the quote is redone — and says in one line what has changed (“wind
@@ -139,7 +139,7 @@ fuel. It follows the clock, minute by minute, until the report or the cancellati
 The flight prepared here — aircraft, route, level, climb and descent profile — is shared: Map and Report already have
 it.
 
-## Performance sheets
+## Performance sheets <a id="fuel-sheets"></a>
 
 The “Sheets” tab gathers the airline's sheets, shared with all its devices. They are sorted by category
 (helicopters, turboprops, jets, piston engines, others); each type the airline uses (fleet, reference) that has no
@@ -177,4 +177,4 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 82119c7ea5b3 -->
+<!-- fr: 74dfdb49af22 -->

@@ -346,7 +346,7 @@ used alone:
 - **Usage level**: the device's level (`device/level.json`, 1 to 3, 2 by default, chosen in Settings only) filters
   the menu: a module is listed when its `meta.level` (1 by default) is at most the device's level. A hidden module
   stays reachable by its address. The frame reads each module's `meta.level` once at start.
-- **Header on a phone** (760 px or narrower, rule 14, 24 Oct 2026): **name · "?" · ⚙ and nothing else**, never wider than
+- **Header on a phone** (760 px or narrower, rule 14, 24 Oct 2026; the name is the module's title for a non-fixed module, rule 16 below): **name · "?" · ⚙ and nothing else**, never wider than
   the window (no menu button; the "←" back button takes the name's place after a passage). "?" (`#fHelp`) opens the help
   chapter of the current screen (the Settings chapter when Settings are open), ⚙ (`#fDevice`) the Settings screen and carries the
   state badge. The synchronisation dot, the trigram pastille, the position and the launcher badges are not drawn: their state
@@ -359,6 +359,23 @@ used alone:
   - The page grid's columns are `minmax(0, 1fr)`, so content never widens the page.
   - The header hides its overflow. The back button shows its arrow only.
   - Each button is a 44 px target that shrinks only when the header is crowded; the page stays at 375 px.
+- **Non-fixed modules on a phone** (rule 16, 25 Oct 2026, user's proposal): three rules.
+  - **The module's title is the header's name.** A module that is not fixed and declares `meta.title` shows it in `#fName` under
+    760 px, in place of the application's name; `<html class="f-titled">` then clips the module's own `h1` to 1 px (it stays for
+    screen readers), so the page starts at its content. Fixed modules, the frame's screens (Settings, help) and every width above
+    760 px keep the application's name and the visible `h1`. The name follows the viewport (a media-query listener, no timer). When
+    the "←" back button is shown, the name is hidden as before, except the module's title, which stays (it is the screen's name).
+  - **The "How to use" card has a ✕** (44 px, "Hide" ×4); dismissed, it stays hidden on the device, per module
+    (`device/help.json`, `hidden: { <id>: true }`, cache policy), and comes back from the module's chapter in the help
+    ("Show the first steps again", under the chapter title, shown only for a dismissed module; it clears the flag, unfolds the
+    card and returns to the module). The "Première fois ?" card keeps its own ✕ and its own state (`welcomed`).
+  - **The "?" lands on the right paragraph.** `ctx.helpAnchor` (`frame/INTEGRATION.md` § 2) gives the anchor of the current
+    screen or step; the address is `#help?m=<module>&a=<anchor>` (a link of the contents is `#help?a=…`: no highlight, the
+    highlight is the mark of a contextual arrival). The paragraph is scrolled under the sticky header and highlighted 1.5 s
+    (class `f-hl`, accent at 20 %, fades out), once. Fuel: Quote (`fuel-quote`, the whole quote on a wide module), steps
+    `fuel-step-1` … `fuel-step-5` (the step shown), Sheets (`fuel-sheets`); Report: `report-step-1` … `report-step-3`
+    (`report-steps` on a wide module); Flights: `flightlog-list`, `flightlog-detail` (a line unfolded), `flightlog-current`
+    (a flight started). Test A17; A18 for the card; A2 for the header.
 - **Times**: every time the application shows is in UTC with the suffix Z (`frame/lib/time.js`). The device's local
   time is added in brackets only next to the departure, the planned arrival and the engine start.
 - The frame has three screens of its own: `#help` (`frame/help/SPEC.md`; the header's ? opens it at the current
@@ -431,8 +448,9 @@ used alone:
 
 - A module is `modules/<id>/module.js`, an ES module loaded on demand with `import()` (never a synchronous script).
 - It exports:
-  - `meta`: `{ id, apps, level, reads, writes, files, lazy, net, fixed }`; `id` must match its folder; `fixed: true` asks for
-    the fixed, full-height view (§ 3.1);
+  - `meta`: `{ id, title, apps, level, reads, writes, files, lazy, net, fixed }`; `id` must match its folder; `fixed: true` asks for
+    the fixed, full-height view (§ 3.1); `title` (four texts) is the title a non-fixed module puts in the phone's header (§ 3.1,
+    rule 16);
     - `files` lists the other files the module imports, as paths relative to `module.js`, so that they are kept
       offline from the installation (§ 3.6);
     - `lazy` lists heavy files (a map library, about 1 MB) kept by the service worker at their first use, never
@@ -462,6 +480,7 @@ used alone:
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
 | `live` | the actual position during a started flight (on a device of the local network, the computer's simulator, never the device's GPS): `{ status ('off', 'waiting', 'tracking'), source ('xplane', 'lnm', 'gps', 'ivao', 'vatsim', ''), last ({ at, lat, lon, altFt, gsKt, trackDeg, source }), gps, enable(), disable() }` (below) |
 | `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |
+| `helpAnchor(anchor)` | the anchor of the paragraph of the module's chapter that describes the screen or step shown (an id, a function returning one, or `null`); the header's "?" opens `#help?m=<id>&a=<anchor>` and the manual highlights that paragraph once (rule 16) |
 | `airline` (event) | `frame-airline` on `window` when the airline's settings arrive (read in the background at start) or change; `ctx.airline` then gives them |
 | `tab` | the id of the bottom-bar tab (`APP.tabs`) that groups this module (`'prepare'` for fuel), `null` if it has none (§ 3.1) |
 | `overlay` | a fixed module only (`meta.fixed`), `null` otherwise: the overlay layer over its map, `{ left, right, button({ icon, label, onClick, pressed, side }), over(el), refresh(), full }`; the frame adds the full-screen button to `right` (not in a pane) and fires `frame-fullscreen` then `resize` on `window` when it changes (§ 3.1, `frame/INTEGRATION.md` § 9.3, § 9.4) |

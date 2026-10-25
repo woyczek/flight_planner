@@ -31,6 +31,10 @@ writes: [
 files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../../frame/lib/last_flight.js', '../../frame/lib/website.js', 'families/<each family>.js']
 ```
 
+**Title and help (rule 16)**: `meta.title` is the title row (the `h1` draws from it; on a phone the frame shows it in the
+header and clips the `h1`); `ctx.helpAnchor` is called once at `mount()`: `report-step-<n>` of the step shown (the step bar is
+displayed), `report-steps` when the three steps are side by side; the anchors are in `help/<lang>.md`.
+
 `ctx` used: `data` (get, put, remove, list), `t`, `lang`, `notify`, `identity` (`trigram` for the author and the
 current flight's path, `ivao`, `vatsim`, `simbrief` for the prefill), `aerodb` (`aircraft().record`: model and rotary
 wing of a type), `airline` (`site`, `pages.recordFlight`: the website's "add a flight" page, from the frame's

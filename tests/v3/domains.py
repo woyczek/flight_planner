@@ -11,7 +11,8 @@ import subprocess
 
 FRAME_ALL = list('ABCDEFGHI')
 SHEET = ['B', 'C', 'D', 'E', 'I']
-HELP = ['I', 'A11']
+HELP = ['I', 'A11', 'A17', 'A18']
+TITLED = ['A2', 'A17', 'A18']          # non-fixed modules: title in the phone header, "?" at the right paragraph, how-to card
 BASE_DEFAULT = 'origin/v3'
 
 # (glob, selectors, why) -- order matters: specific before general
@@ -37,9 +38,9 @@ RULES = [
     ('modules/maps/test/routing.html', ['F'], 'routing bench'),
     ('modules/maps/**', ['D', 'B', 'C', 'I'], 'the map module and the primitives it uses'),
     ('modules/atmosphere/**', ['E', 'B', 'C', 'I'], 'the atmosphere module and the primitives it uses'),
-    ('modules/fuel/**', ['F', 'I', 'A7'], 'fuel (in the Preparer group: the popover)'),
-    ('modules/flightlog/**', ['G', 'I', 'A8', 'A9'], 'flightlog (the Status block and the gear read its pending file)'),
-    ('modules/report/**', ['G', 'I', 'A8', 'A9'], 'report (the Status block hands over to it)'),
+    ('modules/fuel/**', ['F', 'I', 'A7'] + TITLED, 'fuel (in the Preparer group: the popover)'),
+    ('modules/flightlog/**', ['G', 'I', 'A8', 'A9'] + TITLED, 'flightlog (the Status block and the gear read its pending file)'),
+    ('modules/report/**', ['G', 'I', 'A8', 'A9'] + TITLED, 'report (the Status block hands over to it)'),
     ('tools/**', ['I'], 'tooling'),
     ('tests/**', ['I'], 'tooling'),
     ('.github/**', ['I'], 'tooling'),

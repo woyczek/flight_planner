@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: on a phone, the module's title is in the header, the "How to use" card has a ✕, and the "?" opens the help at the right
+  paragraph** (`frame/app.js`, `frame.css`, `help/help.js`, `lib/markdown.js`, `help/build_help.py`, the Fuel, Report and Flights
+  modules and chapters in four languages, `INTEGRATION.md` § 2, `SPEC.md`, DECISIONS; V3_SPECIFICATION § 7.1 rule 16; tests A2, A17,
+  A18) — the header of Carburant, Compte rendu and Mes vols says the module's title (`meta.title`, four languages) instead of
+  "Pilote", and the page loses its big title row (the `h1` stays for screen readers); fixed modules, the frame's screens and every
+  screen wider than 760 px keep the application's name. The "Comment s'en servir" card (drawn by the frame) gets a ✕ that hides it
+  for good on the device, per module; the help chapter offers "Revoir les premiers pas" to bring it back. Modules publish the
+  anchor of the screen or step they show (`ctx.helpAnchor`), the "?" opens `#help?m=<module>&a=<anchor>`, the manual scrolls to
+  that paragraph and highlights it for 1.5 s, once (anchors added to the three chapters, checked by `build_help.py`); the help's
+  chapter titles are no longer hidden under the sticky header.
 - Atmosphere: the flight-zone limit follows the `edge.show` key written by the Administration card (the former boolean `edge` is still read).
 - **Settings: the keys survive a Safari relaunch, and the administration is one button per page** (`frame/store/transport_github.js`,
   `frame/store/frame_data.js`, `frame/app.js` data layer, `frame/settings/**`, `frame/frame.css`, help in four languages; tests A12,

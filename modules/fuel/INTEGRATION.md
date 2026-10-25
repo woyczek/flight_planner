@@ -39,6 +39,9 @@ writes: [
 ]
 ```
 
+- **Title and help (rule 16)**: `meta.title` is the title row (the `h1` draws from it; on a phone the frame puts it in the header
+  and clips the `h1`); `ctx.helpAnchor` is called once at `mount()` with a function: Sheets → `fuel-sheets`, a phone (the step bar
+  is displayed) → `fuel-step-<n>` of the step shown, a wide module → `fuel-quote`; the anchors are in `help/<lang>.md`.
 - The pilot's documents are `pilot/<trigram>/…` (the identity's trigram; `ANON` without identity, as the example
   module does).
 - SimBrief: `ctx.net.fetch('https://www.simbrief.com/api/xml.fetcher.php?userid|username=…&json=v2')`, the identifier

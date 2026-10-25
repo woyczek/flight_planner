@@ -5,11 +5,11 @@ usted completa, guarda — y, si lo desea, el vuelo se registra en el sitio de l
 
 ## Cómo usarlo
 
-**Tres pasos.** El informe se rellena en tres pasos: Vuelo, Misión, Resultado. En un teléfono, un paso cada vez
+<a id="report-steps"></a>**Tres pasos.** El informe se rellena en tres pasos: Vuelo, Misión, Resultado. En un teléfono, un paso cada vez
 («Siguiente» abajo); en un ordenador, los tres uno al lado del otro. Nada es obligatorio: lo que falta se indica en el
 último paso, sin bloquear nunca el guardado.
 
-**El último vuelo.** Si su identificador IVAO (o VATSIM) está ajustado (⚙) y el dispositivo está en línea, una tarjeta
+<a id="report-step-1"></a>**El último vuelo.** Si su identificador IVAO (o VATSIM) está ajustado (⚙) y el dispositivo está en línea, una tarjeta
 propone su último vuelo en la red: «Usar» rellena la aeronave, el indicativo, el trayecto y las horas sacadas de la
 traza. El vuelo preparado en Combustible o Mapa se propone de la misma forma («Vuelo actual»); si se ha iniciado en
 Combustible («Iniciar el vuelo»), aparece primero, «Vuelo iniciado a las hh:mm». La tarjeta dice en una línea todo lo
@@ -23,16 +23,16 @@ SimBrief, o un texto pegado: un plan de vuelo OACI, la página de un vuelo del t
 se rellenan los campos vacíos; la línea «Rellenado desde: …» bajo el título de la tarjeta dice de dónde vienen. Si una fuente da otra cosa para campos ya rellenados, un
 botón propone sustituirlos.
 
-**La misión.** En el segundo paso: la familia (propuesta según su último informe), la serie, el identificador de la
+<a id="report-step-2"></a>**La misión.** En el segundo paso: la familia (propuesta según su último informe), la serie, el identificador de la
 misión si el vuelo sigue una, y después los bloques propios de la familia. Algunos bloques solo aparecen para una serie
 (por ejemplo VIP o traslado en las misiones especiales). Mientras no abra este paso, aparece «por ver» en lugar
 de ✓: la familia y la serie de un informe nuevo se toman por defecto.
 
-**El resultado.** En el último paso: el resultado, sus observaciones, la tripulación (usted primero, como comandante) y
+<a id="report-step-3"></a>**El resultado.** En el último paso: el resultado, sus observaciones, la tripulación (usted primero, como comandante) y
 el combustible a la salida y al aterrizaje. Las incoherencias — horas desordenadas, fecha futura, combustible que
 aumenta — se señalan.
 
-**Guardar.** El botón de abajo guarda el informe y le da su número en el primer guardado. Mientras no haya guardado, lo
+<a id="report-save"></a>**Guardar.** El botón de abajo guarda el informe y le da su número en el primer guardado. Mientras no haya guardado, lo
 introducido se conserva en el dispositivo y se recupera la próxima vez que lo abra.
 
 **Registrar en el sitio.** «Guardar y registrar en el sitio» guarda y abre, en el mismo gesto, el formulario «Añadir un
@@ -77,4 +77,4 @@ el formulario, rellena los campos y señala las diferencias. En un teléfono, do
   página del vuelo (tracker IVAO, StatSim) en «Otras fuentes».
 - **Sin trigrama**: el informe se escribe de todos modos; ajuste su trigrama (⚙) para que esté a su nombre.
 
-<!-- fr: 5bd862ad5bb7 -->
+<!-- fr: 7c1d42bd47bd -->

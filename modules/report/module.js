@@ -45,6 +45,7 @@ import SURVEY from './families/survey.js';
 
 export const meta = {
   id: 'report',
+  title: ['Compte rendu', 'Mission report', 'Einsatzbericht', 'Informe de misión'], // en-tête du téléphone (règle 16)
   apps: ['pilot'],
   level: 1,
   reads: ['cr/', 'pilot/', 'cache/report/'],
@@ -100,7 +101,7 @@ const FAMILIES = {
 // ---------------------------------------------------------------- textes [fr, en, de, es]
 const L = V.L;
 const TX = {
-  title: L('Compte rendu', 'Mission report', 'Einsatzbericht', 'Informe de misión'),
+  title: meta.title,
   steps: [L('Vol', 'Flight', 'Flug', 'Vuelo'), L('Mission', 'Mission', 'Einsatz', 'Misión'), L('Résultat', 'Result', 'Ergebnis',
     'Resultado')],
   next: L('Suivant →', 'Next →', 'Weiter →', 'Siguiente →'),
@@ -1069,6 +1070,8 @@ export async function mount(el, ctx) {
   };
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
   S.body = el.querySelector('[data-body]');
+  // « ? » de l'en-tête : le chapitre au paragraphe du pas affiché (les trois pas côte à côte sur un module large : « Trois pas »)
+  ctx.helpAnchor?.(() => S?.body?.querySelector('.f-steps')?.offsetParent ? `report-step-${S.step + 1}` : 'report-steps');
   const d = await ctx.data.get(DRAFT);
   if (d?.mission?.family && FAMILIES[d.mission.family]) {
     S.m = toZ(M.fillDefaults(d.mission, M.emptyMission(d.mission.family)));
