@@ -229,8 +229,8 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       **Amended (user, 25 Oct, 08:55: "il y a un saut entre météo et gfs (normal). Donc je tranche : on affiche le
       cadre (filet fin) avec un mot dans l'aide contextuelle et/ou la légende pour indiquer la différence de modèle
       entre AROME et GFS. Et la précision du modèle")**: the thin line is **drawn by default**; the legend and the help
-      chapter carry one line each: "zone du vol · AROME 1,3 km" / "monde · GFS 0,25°" (the models and their mesh,
-      from the data, four languages). Hiding it is an administrator option.
+      chapter carry one line each: "zone du vol · <model and mesh>" / "monde · GFS, published mesh read from the
+      index" (the models and their mesh come from the data, four languages). Hiding it is an administrator option.
   13. **The drawing fits the sheet; no title over a drawing** (user, 24 Oct, 20:10, iPhone shots of the cut with its
       x axis off screen: "les abscisses invisibles" and "Toujours la ligne « météo fl160 ». On le sait, c'est affiché
       juste au-dessous : FL, distance, etc. Info redondante donc, qui prend de l'espace vertical"): (a) the vertical
