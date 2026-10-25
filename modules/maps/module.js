@@ -915,6 +915,40 @@ function sheetOverlap() {
   if (!(a.width && b.width) || a.left > b.left + 1 || a.right < b.right - 1) return 0;
   return Math.min(b.height, Math.max(0, b.bottom - a.top));
 }
+/** SID et STAR de l'OFP du vol courant (route.procedures, schéma commun d'aerodb, écrites par Carburant) : tracé violet
+ *  par-dessus la route, nommé « SID ROYAN6P ». Une procédure d'un autre terrain que le départ ou l'arrivée de la route (route
+ *  changée à la main depuis) n'est pas dessinée. */
+function drawProcedures(ctx, toC) {
+  const r = S.route?.flight?.route,
+    pr = r?.procedures;
+  if (!pr || !S.route.points.length) return;
+  [
+    [pr.sid, r.dep],
+    [pr.star, r.arr]
+  ].forEach(([rec, icao]) => {
+    const pts = rec?.points || [];
+    if (pts.length < 2 || !icao || String(rec.icao).toUpperCase() !== String(icao).toUpperCase()) return;
+    const ref = S.route.points[rec.kind === 'SID' ? 0 : S.route.points.length - 1],
+      q = pts.map(p => toC(p.lat, nearLon(p.lon, ref.lon)));
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#7c3aed';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    q.forEach((c, i) => (i ? ctx.lineTo(c.x, c.y) : ctx.moveTo(c.x, c.y)));
+    ctx.stroke();
+    ctx.font = '700 12px Arial,sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = S.theme.bg;
+    ctx.lineWidth = 3;
+    const label = [rec.kind, rec.name].filter(Boolean).join(' '),
+      m = q[Math.floor(q.length / 2)];
+    ctx.strokeText(label, m.x + 8, m.y - 8);
+    ctx.fillStyle = '#7c3aed';
+    ctx.fillText(label, m.x + 8, m.y - 8);
+    ctx.restore();
+  });
+}
 /** Redessine la surcouche (et le fond uni sans tuiles) ; données relues si la vue sort de celles chargées. */
 function draw() {
   if (!S?.canvas || !S.fit || !S.route.points.length) return;
@@ -1018,6 +1052,7 @@ function draw() {
     ctx.fillText(altn.id, q.x + 8, q.y);
     ctx.restore();
   }
+  if (!S.mission) drawProcedures(ctx, toC);
   drawPlanOnMap(ctx, toC, got.routeLabels || []);
   if (!S.mission) drawVfr(ctx, toC);
   S.windHits = !S.mission && layersNow().wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];

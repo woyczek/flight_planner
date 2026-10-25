@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: procedures (SID, STAR) through one API — step 1, the SimBrief OFP** (`frame/aerodb/procedures.js`, `aerodb.js`,
+  `test/procedures.html`, `tests/v3/cases/aerodb.py` K1, `modules/fuel/module.js`, `modules/maps/module.js`, Maps help in four
+  languages; aerodb SPEC § 5 quinquies, INTEGRATION, DECISIONS; Fuel and Maps INTEGRATION) — a common procedure schema
+  (kind, name, runways, transition, points with coordinates and constraints, source, cycle, status official / to be checked /
+  seen in an OFP); `AeroDB.procedures(icao, q)` merges the published cycle (`proc/<cycle>/`, filled by the next steps) with the
+  procedures seen in the user's own OFPs (`proc-seen/<ICAO>.json`, synchronised with the private data repository, lowest
+  precedence); `procedureFromOfp` / `rememberOfp` read the filed SID and STAR from the navlog. Loading an OFP in Fuel now keeps
+  them in the current flight and the map draws them in purple. No call to SimBrief besides Fuel's existing fetch. The OFP of the
+  bench is built from SimBrief's documented fields, to be checked on a real one.
+
 - **Frame: on a phone, the module's title is in the header, the "How to use" card has a ✕, and the "?" opens the help at the right
   paragraph** (`frame/app.js`, `frame.css`, `help/help.js`, `lib/markdown.js`, `help/build_help.py`, the Fuel, Report and Flights
   modules and chapters in four languages, `INTEGRATION.md` § 2, `SPEC.md`, DECISIONS; V3_SPECIFICATION § 7.1 rule 16; tests A2, A17,

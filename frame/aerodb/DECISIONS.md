@@ -474,3 +474,121 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
     published as JSON by Maintenance's "Publish the aircraft database" (the V2 `.js` is read as a literal, and the two
     files weigh 135 KB), and the DEFA reference trimmed to the fields the registry uses (registrations, types,
     callsigns, bases: `references/defa_reference.js` and `aircraft_fleet.js` together about 100 KB).
+
+## 25 October 2026 — procedures (SID, STAR, approaches): consolidation through aerodb only
+
+- **Decision of the user (25 October 2026, word for word)**: « On est d'accord que c'est via aerodb que tu récupères
+  les data ? Donc on parle de consolidation uniquement. Step 1 : simbrief. Step 2 : zip. Step 3 en // eurocontrol.
+  Step 4 : us et reste du monde. » And earlier the same day: « Idéalement pas X-Plane ni Navigraph, mais en fallback. »
+- **Meaning**: procedures enter the suite through aerodb only. A builder (`tools/`, Python standard library only)
+  consolidates every source into one common schema; the result is published to the data repository by AIRAC cycle
+  like the SIA base, cached on each device, and read by the modules (Maps, Fuel) through one API
+  (`AeroDB.procedures`). No module reads a source directly. Each procedure keeps its source, its cycle and its status
+  (official / to be checked / seen in an OFP).
+- **Order**: 1 SimBrief navlog · 2 eAIP zip of the SIA (measured on two aerodromes before generalising) · 3 EUROCONTROL
+  instrument flight procedure data sets, AIXM 5.1.1, in parallel (access request written for the user, no account
+  created by the session) · 4 FAA CIFP (ARINC 424 reader), then open AIP datasets (ENAIRE, DFS, NATS…). X-Plane and
+  Navigraph are the fallback: read locally by the launcher, never copied nor published (`LICENSE.md`).
+- **Proposal for step 1, awaiting the user's reaction (nothing coded yet).**
+
+  **Common schema**, one file per aerodrome and cycle, `proc/<cycle>/<ICAO>.json` (+ `proc/<cycle>/index.json`: ICAO →
+  counts per kind and per status, so the Maps module knows what exists without reading a file):
+
+  ```
+  { schema: 1, icao, cycle, updated_at,
+    procedures: [ {
+      id,            // "LFBD.SID.ARCA1A.RW23.ARCAD" = icao.kind.name.runway.transition (stable key)
+      kind,          // "SID" | "STAR" | "APP"
+      name,          // as published or filed: "ARCA1A", "ILS Z RWY 23"
+      runways,       // ["23"] ; [] when the source does not say
+      transition,    // fix / name or null
+      points: [ { seq, id, lat, lon,
+                  alt: null | { type: "at"|"min"|"max"|"between", ft, ft2? },   // published constraint
+                  planned: null | ft,                                           // OFP only: altitude of the plan, not a constraint
+                  via: null | "DCT"|"<airway>"|…,
+                  leg: null | "TF"|"CF"|"DF"|"AF"|…   // ARINC leg type when the source has it; absent = straight line
+              } ],
+      source: { kind: "simbrief"|"eaip"|"eurocontrol"|"cifp"|"xplane"|"navigraph", ref, cycle, at },
+      status         // "official" | "check" | "ofp"
+    } ] }
+  ```
+  Rules: coordinates in WGS84 degrees `lat`, `lon`; `points` is the flown sequence, drawn as straight segments until a
+  source carries real legs (arcs, holds); two sources for the same key are kept as `sources[]` of one record, the
+  displayed geometry is the one of the best status (`official` > `check` > `ofp`).
+
+  **API** (all answers `null` or `[]` without data, never throwing):
+  - `AeroDB.procedures(icao, { kind, runway, name, transition })` → records of the aerodrome, published base first,
+    then the device's overlay of OFP-seen ones (see below), merged by `id`.
+  - `AeroDB.procedureIndex()` → the cycle's index, or null.
+  - `AeroDB.procedureFromOfp(ofp)` → `{ sid, star }` of one OFP, pure and synchronous, for the current flight (no
+    storage needed): the navlog fixes flagged `is_sid_star`, SID before the top of climb, STAR after the top of descent,
+    names from `general.sid_ident` / `star_ident`, runways from `origin.plan_rwy` / `destination.plan_rwy`, constraints
+    none (`planned` only). Fuel passes the OFP it has already fetched; Maps and the profile draw the result.
+  - `AeroDB.rememberOfp(ofp)` → writes the two records into the device overlay (`procedures-seen/<ICAO>.json`, cache
+    policy, status `ofp`) so that the library fills as the user flies.
+  - The SimBrief user name stays a setting of the user (already in Fuel's identity); aerodb never reads it, Fuel does
+    the fetch.
+
+  **Point to confirm with the user**: the OFP-seen procedures stay **on the device** (overlay), not published to the
+  shared data repository: SimBrief serves them per flight and `V3_ROUTES_PROCEDURES_ETAT.md` § 4 notes that nothing of
+  it is copied into the data repository. The published `proc/` files come from step 2 onward (eAIP, EUROCONTROL, CIFP).
+  If the user wants the OFP-seen ones published too, it is one more flag in the builder.
+
+  **Lot 1 would contain**: the schema and API in `SPEC.md` § 5 quinquies and `INTEGRATION.md`, `frame/aerodb/procedures.js`
+  (mapper OFP → schema, overlay, merge), the aerodb test cases, Fuel's one-line hand-over of the OFP, Maps' drawing on
+  the map and the profile (agreed with the Maps session), CHANGELOG entry, four-language manual page if the Maps page
+  changes.
+- **25 October 2026 — answer of the user on the OFP-seen procedures** (« On n'aspire pas depuis simbrief, mais le dépôt
+  data est privé, donc on peut synchro. C'est une source secondaire (même simbrief donne des routes non
+  authoritatives). »):
+  - No harvesting from SimBrief: aerodb only records what the user's own OFPs contain, one flight at a time (no loop,
+    no bulk request on SimBrief).
+  - What is recorded is **synchronised through the data layer to the private data repository** (the overlay is no longer
+    device-only): `proc/seen/<ICAO>.json`, status `ofp`, so the user's other devices have it.
+  - **Secondary source, lowest precedence**: in the merge, `official` > `check` > `ofp`; an OFP-seen procedure never
+    replaces another one, and the interface words it as "seen in an OFP, not authoritative". Never in a public site
+    (Pages): the repository stays private, which `LICENSE.md` must keep saying.
+  - Supersedes the proposal's "stays on the device" point; `rememberOfp` writes with the synchronised policy.
+  - Names kept: the seen ones are in `proc-seen/<ICAO>.json` (not `proc/seen/`, so that `proc/` stays one read-only
+    `reference` prefix for the published cycles).
+- **25 October 2026 — step 2 trial, eAIP of the SIA (AIRAC 2026-10-01), measured on LFBD and LFAV** (hosts allowed by the
+  user the same day; nothing written in the repository but this entry).
+  - **Layout**: each aerodrome page `FR-AD-2.<ICAO>-fr-FR.html` (710 KB for LFBD) lists its PDFs under
+    `Cartes/<ICAO>/` (72 for LFBD, 8 for LFAV). No zip needed to find them: the page and the menu
+    (`FR-menu-fr-FR.html`, 2.3 MB) give the list; the archive stays an option for a one-shot download.
+  - **`AD_2_<ICAO>_DATA_01.pdf` ("POINTS / REPERES ESSENTIELS")** is only the *pool* of fixes used by the aerodrome's
+    procedures: identifier, coordinates (or "REF ENR 4.4/4.1" for en-route fixes already in the base), columns RNAV /
+    CONV and SID / STAR / IAC. No sequence, no procedure name, no altitude. Useful for coordinates of the `BDnnn` /
+    `FAVnn` fixes, not enough by itself.
+  - **`AD_2_<ICAO>_DATA_SID_RWYxx_RNAV_CODE_01.pdf`, `…_DATA_STAR_RWY_ALL_RNAV_CODE_01.pdf`, `…_DATA_RWYxx_RNP_CODE.pdf`**
+    are the real source: ARINC-style coding tables, one row per leg: procedure identification ("ROYAN 6P", "CNA 2L",
+    "INA BOBMA"), path terminator (IF, CF, DF, TF), waypoint, fly-over, magnetic and true direction, distance, turn
+    direction, minimum and maximum altitude, maximum IAS, navigation accuracy, vertical angle for RNP. One page, 55 to
+    76 KB each; LFBD has 4 SID/STAR tables and 12 RNP ones, LFAV 2 RNP ones.
+  - **Not coded**: conventional SID / STAR / IAC (ILS, VOR) exist only as charts and instruction texts (`…_SID_…_INSTR_01.pdf`):
+    out of reach of a table extraction, left for steps 3 and 4.
+  - **Extraction**: `pdftotext -layout` gives clean text; a parser keyed on the header row is plausible. Measured
+    caveats: the column layout differs between SID/STAR and RNP tables (two parsers); a hyphen is written with two
+    different characters; a cell can be empty (LFAV RWY29 `TF VADEP` has no magnetic direction); a table can break
+    across pages (header "AMDT" text inside the body). Coordinates must come from `DATA_01` or from the base's points
+    (`AeroDB.coords`); a fix found nowhere is kept without coordinates and marked.
+  - **Constraint to settle before coding**: `pdftotext` is not the Python standard library; `tools/report-vfr/` uses the
+    optional `pypdf`. Options: same optional dependency (stated in the tool's README), or a small pure-Python PDF
+    text reader (these PDFs are text-based, one page); to be decided with the user.
+  - Status of such procedures: `check` ("to be verified"), source `eaip`, cycle of the eAIP; amendment dates on the pages
+    differ from the AIRAC (LFBD 16 May 24, LFAV 29 Dec 22), so the record keeps the page's own date.
+
+## 25 October 2026 — lot 1, procedures from the SimBrief OFP (`procedures.js`, API, bench K1)
+
+- **What was built**: `frame/aerodb/procedures.js` (pure: `fromOfp`, `merge`, `filter`, `mergeSeen`), `AeroDB.procedures`,
+  `procedureIndex`, `procedureFromOfp`, `rememberOfp`; declaration: read `proc/` (reference), read and write `proc-seen/`
+  (merge: newest record of an id); Fuel hands its OFP to `rememberOfp` and stores `route.procedures` in the current flight;
+  Maps draws the SID / STAR in purple over the route. Schema and rules: SPEC § 5 quinquies.
+- **Choices**: `procedureFromOfp` is asynchronous (it loads `procedures.js` on first use, like `aar.js`), not synchronous as
+  proposed; a procedure from an OFP never replaces a better source; an OFP read again writes nothing; `rememberOfp` returns
+  null on a reader that does not write (Fuel then uses `procedureFromOfp`).
+- **Limits, stated**: no real OFP was available (the user cannot export a JSON from a phone): the OFP of the bench is built
+  from SimBrief's documented fields (`general.sid_ident`, `navlog.fix[].is_sid_star`, `origin.plan_rwy`…) and must be
+  checked on a first real flight; names filed by SimBrief ("ROYAN6P") and published ones ("ROYAN 6P") match after removing
+  spaces, other spellings will not; the vertical profile does not draw procedures yet.
+- **Verified**: bench `frame/aerodb/test/procedures.html` 14 / 14, case K1.

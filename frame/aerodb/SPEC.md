@@ -148,6 +148,7 @@ the suite root) and has no listing.
 | `aarTracks()` | the refuelling tracks of the loaded zones ready to draw (`aar.js`, taken over from `shared/aar_tracks.js`): `[{ name, kind: 'track' \| 'heavy', heading, lengthNm, widthNm, side, ip, cp, ring (racetrack outline) \| legs }]`; built again only when the zones' XML change |
 | `natTracks()` | NAT tracks of the day with their points placed: `[{ id, points: [{ id, lat, lon }], west, east (levels), from, to, by }]`; a named point through `coords`, "61/20" or "6130/20" as degrees north and west; an unknown name is left out |
 | `vfrRoutes(icao)` | VFR reporting points, sequences and instructions of an aerodrome extracted from its VAC charts (§ 5 quater), or null |
+| `procedures(icao, q)`, `procedureIndex()`, `procedureFromOfp(ofp)`, `rememberOfp(ofp)` | SID / STAR / approaches at the common schema (§ 5 quinquies) |
 | `vfrIndex()` | the aerodromes of the VFR compilation with their counts, or null before any import |
 | `cities(q)` | towns of the area, or by `q.prefix` (most populated first), `q.n` at most |
 | `find(text, n)` | ranked places: `{ label, lat, lon, name, kind, code }` |
@@ -318,6 +319,43 @@ both ways.
   interpreted and partial), LFCH (ARR-NE-N along its interpreted geometry, one way; MAN-… vertices), LFAB (automatic
   extraction only), LFBO (WH-WF-WD, EN-EA-EB), lower case, invalid code and missing file. The engine's own tests:
   `tools/report-vfr/tests_vfr.py` (needs `pypdf`).
+
+## 5 quinquies. Procedures (SID, STAR, approaches): `proc/`, `proc-seen/`
+
+- **Principle**: procedures enter the suite through aerodb only, consolidated into one schema whatever the source. A module
+  never reads a source; it asks `procedures(icao, q)`. Decisions: DECISIONS 25 Oct 2026.
+- **Files**: `proc/<cycle>/<ICAO>.json` and `proc/<cycle>/index.json` (published by the workstation, by AIRAC cycle, read as
+  `reference`; the cycle is picked like the base's: the latest in force from the reader's listing, otherwise the first
+  recent AIRAC cycle whose file reads), and `proc-seen/<ICAO>.json` (what the user's own OFPs contained, written by
+  `rememberOfp`, synchronised with the private data repository, newest record of an id wins).
+- **Aerodrome file**: { `schema: 1`, `icao`, `cycle`, `updated_at`, `procedures` [ procedure ] }. **Procedure**:
+  - `id`: `ICAO.KIND.NAME.RWnn.TRANSITION` (`RWALL` without a single runway; name and transition without spaces or hyphens);
+  - `icao`, `kind` (`SID` | `STAR` | `APP`), `name` (as published or filed), `runways` ([`"23"`, `"05R"`] or [] when the
+    source does not say), `transition` (or null);
+  - `points`: [ { `seq`, `id`, `lat`, `lon` (WGS84 degrees), `alt` (null or the published constraint { `type`: `at` | `min` |
+    `max` | `between`, `ft`, `ft2?` }), `planned` (OFP only: altitude of the plan, ft, never a constraint), `via` (airway or
+    null), `leg` (ARINC path terminator IF / CF / DF / TF… when the source has it; absent = straight segment) } ];
+  - `source` { `kind`: `simbrief` | `eaip` | `eurocontrol` | `cifp` | `xplane` | `navigraph`, `ref`, `cycle`, `at` };
+  - `status`: `official` | `check` ("to be checked") | `ofp` ("seen in an OFP", not authoritative).
+- **Merge** (`procedures`): records of the same kind, name and transition with compatible runways (one of the two lists empty,
+  or a common runway) are one procedure; the geometry and status are those of the best source (`official` > `check` > `ofp`),
+  `sources` lists every source with its status, best first.
+- **Calls**:
+
+  | Call | Answer |
+  |---|---|
+  | `procedures(icao, { kind, runway, name, transition })` | merged procedures of the aerodrome (published cycle + seen in OFPs), filtered; `[]` without data or for a bad code |
+  | `procedureIndex()` | `proc/<cycle>/index.json` = { `cycle`, `aerodromes`: { ICAO: { SID, STAR, APP counts } } }, or null |
+  | `procedureFromOfp(ofp)` | `{ sid, star }` of a SimBrief OFP (`json=v2`), each a procedure with status `ofp` or null; writes nothing |
+  | `rememberOfp(ofp)` | same answer, and keeps both in `proc-seen/<ICAO>.json` (nothing written when the same record is already there); null when the reader does not write |
+
+- **OFP reading**: from `navlog.fix`, TOC, TOD and aerodromes are left out; fixes flagged `is_sid_star` before the first
+  unflagged fix are the SID, after the last one the STAR (without any unflagged fix: by `stage`, `CLB` the SID, otherwise the
+  STAR); name and transition from `general.sid_ident` / `sid_trans` / `star_ident` / `star_trans`, runway from
+  `origin.plan_rwy` / `destination.plan_rwy`, altitude of the plan from `altitude_feet`. The OFP is read one flight at a time:
+  aerodb never calls SimBrief and never knows the user name (Fuel's setting). The field names are SimBrief's documented ones,
+  to be checked against a real OFP.
+- **Test**: `frame/aerodb/test/procedures.html` (14 checks), case K1 of `tests/v3/`.
 
 ## 6. Invariants
 

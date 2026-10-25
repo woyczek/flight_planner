@@ -18,7 +18,7 @@
   //   declaration() → préfixes lus et écrits par aerodb (à donner à FrameData.adapter) }.
   // Service : status(), state() (loading, ready, noaccess, offline, unpublished, idle : sans lire), refresh(), ready(q),
   //   on('change' | 'state', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
-  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), cities(q),
+  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), procedures(oaci, q), procedureIndex(), procedureFromOfp(ofp), rememberOfp(ofp), cities(q),
   //   find(texte, n), coords(ident),
   //   coordsAll(ident), aircraft() → registre des aéronefs (types : frame/aerodb/aircraft.js ; fiches, flotte, référence,
   //   recherche unique : registry.js ; logique des fiches : sheets.js, AeroDBSheets), stats(),
@@ -321,6 +321,20 @@
       const today = new Date(now()).toISOString().slice(0, 10),
         past = list.filter(c => c <= today);
       return past.length ? past[past.length - 1] : list[0];
+    };
+    /** Cycle des procédures publiées (proc/<cycle>/…) : dans la liste du lecteur, le plus récent en vigueur qui porte le
+     *  fichier du terrain (icao) ou l'index ; sans liste, le premier des cycles AIRAC récents dont le fichier se lit. */
+    const procCycle = async icao => {
+      const file = icao ? `${icao}.json` : 'index.json',
+        listed = reader.list ? await reader.list('proc/').catch(() => null) : null;
+      if (Array.isArray(listed) && listed.length) {
+        const found = listed.map(p => /^proc\/(\d{4}-\d{2}-\d{2})\/([^/]+)$/.exec(p)).filter(m => m && m[2] === file).map(m => m[1])
+          .sort();
+        return found.length ? pickCycle(found) : null;
+      }
+      for (const c of airacCycles(6, now()))
+        if (await read(`proc/${c}/${file}`)) return c;
+      return null;
     };
     /** Zones dont un cadre (élargi de la marge) touche l'emprise b ; limitées aux zones publiées si elles sont connues. */
     /** Vrai si l'emprise b touche une des cases d'un degré d'une zone ({ "lat": [[lon0, lon1], …] }, manifeste). */
@@ -930,6 +944,48 @@
       async vfrIndex() {
         return valueOf(await read('sia/vfr/index.json')) || null;
       },
+      /** Procédures (SID, STAR, approches) d'un terrain, au schéma commun (SPEC § 5 quinquies) : le fichier publié du cycle
+       *  (proc/<cycle>/<OACI>.json) et ce qui a été vu dans les OFP de l'utilisateur (proc-seen/<OACI>.json, source
+       *  secondaire), fusionnés ; q : { kind, runway, name, transition }. [] sans donnée. */
+      async procedures(icao, q = {}) {
+        const k = String(icao || '').toUpperCase();
+        if (!/^[A-Z0-9]{3,4}$/.test(k)) return [];
+        await loadOwn('procedures.js', 'AeroDBProcedures');
+        const P = window.AeroDBProcedures,
+          cycle = await procCycle(k),
+          [pub, seen] = await Promise.all([cycle ? read(`proc/${cycle}/${k}.json`) : null, read(`proc-seen/${k}.json`)]);
+        return P.filter(P.merge(valueOf(pub)?.procedures || [], valueOf(seen)?.procedures || []), q);
+      },
+      /** Index du cycle publié des procédures : { cycle, aerodromes: { OACI: { SID, STAR, APP, status } } } ; null sans
+       *  publication. */
+      async procedureIndex() {
+        const cycle = await procCycle();
+        return cycle ? valueOf(await read(`proc/${cycle}/index.json`)) || null : null;
+      },
+      /** { sid, star } d'un OFP SimBrief (json=v2), au schéma commun, statut « ofp » ; chacun null sans point marqué. Rien
+       *  n'est écrit : c'est la procédure du vol courant. */
+      async procedureFromOfp(ofp) {
+        await loadOwn('procedures.js', 'AeroDBProcedures');
+        return window.AeroDBProcedures.fromOfp(ofp);
+      },
+      /** Garde la SID et la STAR d'un OFP dans proc-seen/<OACI>.json (synchronisé avec le dépôt privé, source secondaire) ;
+       *  { sid, star } comme procedureFromOfp, ou null si le lecteur n'écrit pas. Un OFP à la fois, aucun appel à SimBrief. */
+      async rememberOfp(ofp) {
+        const out = await api.procedureFromOfp(ofp);
+        if (typeof reader.put !== 'function') return null;
+        for (const rec of [out.sid, out.star].filter(Boolean)) {
+          const path = `proc-seen/${rec.icao}.json`,
+            old = valueOf(await read(path)),
+            merged = window.AeroDBProcedures.mergeSeen(null, {
+              icao: rec.icao,
+              procedures: [rec]
+            }, old);
+          if ((old?.procedures || []).some(p => p.id === rec.id && JSON.stringify(p.points) === JSON.stringify(rec.points) && p
+              .name === rec.name)) continue;
+          await reader.put(path, merged.value);
+        }
+        return out;
+      },
       /** Tracks NAT du jour (zone océanique « nat », ouverte à la demande). */
       async nat() {
         const z = await loadZone('nat');
@@ -1197,12 +1253,21 @@
       prefix: 'sia/vfr/',
       policy: 'reference'
     }, {
+      prefix: 'proc/',
+      policy: 'reference'
+    }, {
       prefix: 'references/',
       policy: 'reference'
-    }, 'airline/', 'planner/', 'aircraft/', 'cache/aerodb/'],
+    }, 'airline/', 'planner/', 'aircraft/', 'proc-seen/', 'cache/aerodb/'],
     writes: [{
       prefix: 'cache/aerodb/',
       policy: 'cache' // manifeste des fichiers .lnmperf de ce poste
+    }, {
+      prefix: 'proc-seen/',
+      merge: (b, l, r) => window.AeroDBProcedures ? window.AeroDBProcedures.mergeSeen(b, l, r) : {
+        value: l,
+        lost: r
+      }
     }, {
       prefix: 'aircraft/sheets/',
       merge: (b, l, r) => window.AeroDBRegistry ? window.AeroDBRegistry.mergeSheets(b, l, r) : {

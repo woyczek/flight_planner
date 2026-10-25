@@ -140,6 +140,13 @@ L.on(s => …); await L.sync();       // state; a pass now
   aerodromes have some. Candidates extracted from the VAC charts: draw them dashed, labelled "extracted from the VAC,
   to be checked", never as published routes (SPEC § 5 quater).
 
+- **Procedures** (maps, fuel): `await aerodb.procedures('LFBD', { kind: 'SID', runway: '23' })` → procedures at the common
+  schema (SPEC § 5 quinquies), each with `status` (`official`, `check`, `ofp`) and `sources`; draw `check` and `ofp` ones
+  apart from published routes and word them "to be checked" / "seen in an OFP". Fuel hands a SimBrief OFP it has fetched to
+  `await aerodb.rememberOfp(ofp)` (the user name stays Fuel's) and writes the returned `{ sid, star }` in the current
+  flight (`route.procedures`); Maps draws that, ignoring a procedure whose aerodrome is no longer the route's departure or
+  arrival. `aerodb.procedureIndex()` says which aerodromes have some.
+
 ## 5. Costs to know (measured, see DECISIONS.md)
 
 - **Only what you ask for is read.** Asking for the aerodromes around Paris reads France's `meta` and aerodromes

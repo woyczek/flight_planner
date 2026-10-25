@@ -3222,6 +3222,23 @@ async function loadSimbrief() {
   if (gone(s)) return;
   S.ofp = ofp;
   applyOfp(ofp);
+  // SID et STAR déposées dans l'OFP : au schéma commun d'aerodb (gardées sur l'appareil et synchronisées si le lecteur
+  // écrit), et dans le vol courant pour que la Carte les trace ; un OFP à la fois, aucun autre appel à SimBrief
+  let pr = null;
+  try {
+    pr = (await s.ctx.aerodb?.rememberOfp?.(ofp)) || (await s.ctx.aerodb?.procedureFromOfp?.(ofp));
+  } catch {
+    /* sans procédures : la route de l'OFP reste telle quelle */
+  }
+  if (gone(s) || S.ofp !== ofp) return;
+  S.flight.route = {
+    ...S.flight.route,
+    procedures: pr && (pr.sid || pr.star) ? {
+      sid: pr.sid,
+      star: pr.star
+    } : null
+  };
+  saveFlight();
 }
 /** Reprend un OFP SimBrief dans le vol courant (route « ID lat lon », départ, arrivée, dégagement, niveau, vent moyen,
  *  écart ISA, appareil s'il a une fiche du même type ou de la même immatriculation). */

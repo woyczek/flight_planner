@@ -135,6 +135,10 @@ report and maps never write nor erase it.
   of climb (`tocNm`) and from the top of descent to arrival (`todNm`) — the quote's own climb and descent, so the four
   values close the profile at the level. The "top of descent" shown in fuel's result is the gradient rule (level ÷
   gradient + buffer), not `todNm`. Maps draws the vertical profile from it and computes its own when it is missing.
+- `route.procedures` (fuel's, optional): `{ sid, star }` of the last SimBrief OFP loaded, each a procedure of the common schema
+  (`frame/aerodb/SPEC.md` § 5 quinquies: `icao`, `kind`, `name`, `runways`, `points` [{ id, lat, lon, planned… }], `status:
+  'ofp'`) or null; set by "Load my OFP" through `aerodb.rememberOfp`. A reader checks `procedure.icao` against `route.dep` /
+  `route.arr`: a route edited by hand since leaves it stale.
 - `route.points[].wind` (fuel's, lot F): `{ dirDeg, kt, tempC, levelFt, at }` — the forecast wind and temperature
   at the level flown at that point (the plan's, or the step's), from Open-Meteo (`at`: the forecast hour, ISO). Maps
   draws the arrows from it. Absent without a forecast for this route; rewritten whenever the route, the level or

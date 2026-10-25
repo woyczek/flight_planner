@@ -234,7 +234,7 @@ beacons, airways, minimum altitudes. The flight's route can also be changed on t
 ## How to use
 
 **The planned flight.** The map shows the flight prepared in Fuel: departure, route points, arrival, and the alternate
-airfield in grey dashes. Its summary (level, distance, planned or in-flight) is not written over the drawing (the drawing shows it): the tooltip of the data block's handle under the map gives it, with departure and arrival, alternate and aircraft type. When the flight changes in Fuel, the map follows by itself.
+airfield in grey dashes. When the SimBrief OFP filed a SID or a STAR, they are drawn in purple over the route, named ("SID ROYAN6P"). Its summary (level, distance, planned or in-flight) is not written over the drawing (the drawing shows it): the tooltip of the data block's handle under the map gives it, with departure and arrival, alternate and aircraft type. When the flight changes in Fuel, the map follows by itself.
 
 **The map and what it shows.** Around the route: the airspaces it crosses or skirts (restricted, danger and prohibited
 areas, controlled airspace), the low or high airways depending on your level, the airfields and the beacons, and in each

@@ -118,6 +118,13 @@ does not give it:
 - **VFR reporting points** (aerodb SPEC § 5 quater): `vfrRoutes(icao)` for a hovered or pinned aerodrome, and for
   departure and arrival in VFR mode.
 
+## 3 bis. Procedures
+
+The map draws `route.procedures.sid` / `.star` of the current flight (written by fuel, aerodb schema) as a purple line over the
+route, labelled "SID <name>" / "STAR <name>"; skipped when its aerodrome is not the route's departure / arrival. The vertical
+profile does not draw them yet (they carry `planned` altitudes only, no constraints); a published library
+(`aerodb.procedures`) is not drawn yet.
+
 ## 4. What it reads from fuel
 
 `pilot/<trigram>/current_flight.json`: `route.points` (resolved positions, optional `alt_ft`), `route.dep / arr /

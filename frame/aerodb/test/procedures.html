@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aerodb — procedures tests</title>
+<!-- Essais des procédures d'aerodb (frame/aerodb/procedures.js et AeroDB.procedures / procedureFromOfp / rememberOfp) sur
+     un lecteur en mémoire (read, list, put) : aucun réseau, aucun lanceur. L'OFP est fabriqué d'après les champs documentés
+     de SimBrief (json=v2) : à remplacer par un vrai OFP dès qu'il y en a un. Résultat dans window.__procBench. -->
+<style>
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px
+  }
+  li.ok::marker {
+    content: '✓ '
+  }
+  li.ko::marker {
+    content: '✗ '
+  }
+</style></head>
+<body>
+<h1>aerodb — procedures tests</h1>
+<p id="state">running…</p>
+<ol id="out"></ol>
+<script src="../zones.js?v=0"></script>
+<script src="../aerodb.js?v=0"></script>
+<script>
+  (async () => {
+    const results = [],
+      check = (name, ok, detail) => results.push({
+        name,
+        ok: !!ok,
+        detail: ok ? '' : JSON.stringify(detail)
+      });
+    try {
+      const files = new Map(),
+        puts = [],
+        reader = {
+          read: async p => files.has(p) ? {
+            value: JSON.parse(files.get(p)),
+            rev: 'r' + files.get(p).length
+          } : null,
+          list: async prefix => [...files.keys()].filter(p => p.startsWith(prefix)),
+          put: async (p, v) => {
+            puts.push(p);
+            files.set(p, JSON.stringify(v));
+          }
+        },
+        db = AeroDB.create({
+          reader,
+          lnmperf: false,
+          now: () => Date.parse('2026-10-25T12:00:00Z')
+        }),
+        fix = (ident, lat, lon, flag, extra = {}) => ({
+          ident,
+          type: 'wpt',
+          is_sid_star: flag ? '1' : '0',
+          pos_lat: String(lat),
+          pos_long: String(lon),
+          ...extra
+        }),
+        ofp = {
+          origin: {
+            icao_code: 'LFBD',
+            plan_rwy: '23'
+          },
+          destination: {
+            icao_code: 'LFML',
+            plan_rwy: '31R'
+          },
+          general: {
+            sid_ident: 'ROYAN6P',
+            sid_trans: '',
+            star_ident: 'MTL2A',
+            star_trans: 'LUC'
+          },
+          params: {
+            time_generated: '1790000000',
+            airac: '2610'
+          },
+          navlog: {
+            fix: [fix('LFBD', 44.8, -0.7, false, {
+              type: 'apt'
+            }), fix('BD230', 44.7, -0.8, true, {
+              stage: 'CLB',
+              altitude_feet: '1500'
+            }), fix('ROYAN', 45.6, -1.0, true, {
+              stage: 'CLB',
+              type: 'vor'
+            }), fix('TOC', 45.9, -0.9, false), fix('MEN', 44.3, 2.0, false, {
+              via_airway: 'UN460'
+            }), fix('TOD', 43.9, 4.0, false), fix('LUC', 43.4, 5.0, true, {
+              stage: 'DSC',
+              type: 'vor'
+            }), fix('LFML', 43.4, 5.2, false, {
+              type: 'apt'
+            })]
+          }
+        };
+      check('nothing without data', (await db.procedures('LFBD')).length === 0 && (await db.procedureIndex()) === null, null);
+      const cur = await db.procedureFromOfp(ofp);
+      check('SID of the OFP: id, points in order, status ofp, planned altitude', cur.sid?.id === 'LFBD.SID.ROYAN6P.RW23' && cur.sid
+        .points.map(p => p.id).join() ===
+        'BD230,ROYAN' && cur.sid.status === 'ofp' && cur.sid.points[0].planned === 1500 && cur.sid.points[0].alt === null, cur.sid);
+      check('STAR of the OFP: transition and runway', cur.star?.id === 'LFML.STAR.MTL2A.RW31R.LUC' && cur.star.transition === 'LUC' &&
+        cur.star.runways[0] ===
+        '31R', cur.star);
+      check('en-route fix, TOC, TOD and aerodromes kept out', ![...cur.sid.points, ...cur.star.points].some(p =>
+        /^(MEN|TOC|TOD|LFBD|LFML)$/.test(p.id)), cur);
+      const none = await db.procedureFromOfp({});
+      check('an OFP without navlog gives nothing', none.sid === null && none.star === null, none);
+      check('nothing written by procedureFromOfp', puts.length === 0, puts);
+      await db.rememberOfp(ofp);
+      check('rememberOfp writes one file per aerodrome', puts.join() === 'proc-seen/LFBD.json,proc-seen/LFML.json', puts);
+      await db.rememberOfp(ofp);
+      check('the same OFP again writes nothing', puts.length === 2, puts);
+      const seen = await db.procedures('LFBD');
+      check('procedures() reads what was seen, status ofp', seen.length === 1 && seen[0].status === 'ofp' && seen[0].sources.length ===
+        1, seen);
+      files.set('proc/2026-10-08/LFBD.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFBD',
+        cycle: '2026-10-08',
+        procedures: [{
+          id: 'LFBD.SID.ROYAN6P.RW23',
+          icao: 'LFBD',
+          kind: 'SID',
+          name: 'ROYAN 6P',
+          runways: ['23'],
+          transition: null,
+          points: [{
+            seq: 1,
+            id: 'BD230',
+            lat: 44.71,
+            lon: -0.81,
+            alt: null
+          }, {
+            seq: 2,
+            id: 'ROYAN',
+            lat: 45.6,
+            lon: -1,
+            alt: null
+          }],
+          source: {
+            kind: 'eaip',
+            cycle: '2026-10-08'
+          },
+          status: 'check'
+        }, {
+          id: 'LFBD.APP.RNPZ23.RW23',
+          icao: 'LFBD',
+          kind: 'APP',
+          name: 'RNP Z RWY 23',
+          runways: ['23'],
+          points: [{
+            seq: 1,
+            id: 'IF',
+            lat: 44.9,
+            lon: -0.5,
+            alt: null
+          }],
+          source: {
+            kind: 'eaip'
+          },
+          status: 'check'
+        }]
+      }));
+      files.set('proc/2026-10-08/index.json', JSON.stringify({
+        schema: 1,
+        cycle: '2026-10-08',
+        aerodromes: {
+          LFBD: {
+            SID: 1,
+            APP: 1
+          }
+        }
+      }));
+      const all = await db.procedures('LFBD');
+      const sid = all.find(p => p.kind === 'SID');
+      check('published and seen merged: one SID, the published geometry wins', all.length === 2 && sid.status === 'check' && sid.points[
+          0].lat === 44.71 &&
+        sid.sources.map(s => s.status).join() === 'check,ofp', all);
+      check('filters kind, runway, name', (await db.procedures('LFBD', {
+        kind: 'app'
+      })).length === 1 && (await db.procedures('LFBD', {
+        runway: '05'
+      })).length === 0 && (await db.procedures('LFBD', {
+        name: 'royan6p'
+      })).length === 1, null);
+      check('index read', (await db.procedureIndex())?.aerodromes?.LFBD?.SID === 1, null);
+      check('bad code answers empty', (await db.procedures('??')).length === 0, null);
+      const ro = AeroDB.create({
+        reader: {
+          read: reader.read,
+          list: reader.list
+        },
+        lnmperf: false
+      });
+      check('a reader that does not write: rememberOfp answers null', (await ro.rememberOfp(ofp)) === null, null);
+    } catch (e) {
+      check('no exception', false, String(e && e.stack || e));
+    }
+    const out = document.getElementById('out');
+    results.forEach(r => {
+      const li = document.createElement('li');
+      li.className = r.ok ? 'ok' : 'ko';
+      li.textContent = r.name + (r.ok ? '' : ' — ' + r.detail);
+      out.append(li);
+    });
+    const fail = results.filter(r => !r.ok).length;
+    document.getElementById('state').textContent = `${results.length - fail} / ${results.length} passed`;
+    window.__procBench = {
+      done: true,
+      pass: results.length - fail,
+      fail,
+      rows: results.map(r => `${r.ok ? 'PASS' : 'FAIL'} ${r.name} ${r.detail}`)
+    };
+  })();
+</script>
+</body></html>
