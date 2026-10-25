@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>atmosphere — weather map bench</title>
+<!-- Banc de la carte météo en bibliothèque (lib/weather_map.js, INTEGRATION.md § 6) : couche de données et réseau simulés
+     (grille du vol écrite dans la réserve par une lecture répondue par la démonstration ; synoptique monde synthétique
+     servi à son adresse) ; états missing / world-only / ok, légende en quatre langues, valeurs en un point, dessin dans un
+     canevas, attach sur un fond uni et detach, aucun appel à Open-Meteo par la bibliothèque. Page d'outil, hors des
+     applications ; servir le dépôt et l'ouvrir. -->
+<style>
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.5 system-ui, sans-serif
+  }
+  .ok {
+    color: #1b7a3a
+  }
+  .ko {
+    color: #b3261e;
+    font-weight: 600
+  }
+  #flat {
+    position: relative;
+    width: 320px;
+    height: 200px;
+    border: 1px solid #ccd
+  }
+</style>
+</head><body><h1>Weather map bench</h1><div id="flat"></div><div id="out"></div>
+<script type="module">
+import {
+  createWeatherMap,
+  attach,
+  gridRequest,
+  daysFor
+} from '../lib/weather_map.js?v=0';
+import {
+  weatherStore
+} from '../weather_store.js?v=0';
+import * as Demo from '../demo.js?v=0';
+
+const out = document.getElementById('out'),
+  results = [];
+const check = (name, ok, more = '') => {
+  results.push(ok);
+  out.insertAdjacentHTML('beforeend', `<div class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'} ${name}${more ? ` — ${more}` : ''}</div>`);
+};
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const until = async (f, ms = 3000) => {
+  for (let t = 0; t < ms; t += 50) {
+    if (f()) return true;
+    await wait(50);
+  }
+  return f();
+};
+
+// couche de données en mémoire
+const db = new Map();
+const data = {
+  get: async p => db.has(p) ? JSON.parse(db.get(p)) : null,
+  put: async (p, v) => db.set(p, JSON.stringify(v)),
+  cached: async pre => [...db.keys()].filter(k => k.startsWith(pre)).map(path => ({
+    path
+  })),
+  remove: async p => db.delete(p)
+};
+
+// synoptique monde synthétique (maille de 30°), servi à l'adresse de la publication
+const now = Math.floor(Date.now() / 1000),
+  t0 = Math.floor(now / 10800) * 10800,
+  lats = [-60, -30, 0, 30, 60],
+  lons = [-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150],
+  times = [0, 1, 2].map(k => t0 + k * 10800),
+  name = t => new Date(t * 1000).toISOString().slice(0, 13) + '.json',
+  fill = f => lats.flatMap(la => lons.map(lo => f(la, lo))),
+  step = t => ({
+    schema: 1,
+    time: t,
+    vars: {
+      p: fill((la, lo) => 1013 + 12 * Math.sin(lo * Math.PI / 90) * Math.cos(la * Math.PI / 120)),
+      t: fill(la => 25 - Math.abs(la) * 0.6),
+      cc: fill((la, lo) => (la + lo + 360) % 100),
+      ws: fill(() => 20),
+      wd: fill(() => 270),
+      js: fill(la => Math.abs(la) === 30 ? 120 : 30),
+      jd: fill(() => 270),
+      cape: fill(la => la === 0 ? 1500 : 0),
+      // nuages par étage, loin de ceux de la démonstration : un aplat pris des deux sources dessinerait le rectangle
+      ccl: fill((la, lo) => 70 + 20 * Math.sin(lo * Math.PI / 60)),
+      ccm: fill(() => 40),
+      cch: fill(() => 10),
+      ps: fill(() => 1000),
+      zs: fill(() => 0)
+    }
+  }),
+  index = {
+    schema: 1,
+    model: 'gfs',
+    run: t0 - 6 * 3600,
+    built: now,
+    step: 30,
+    lats,
+    lons,
+    times,
+    files: times.map(name),
+    altFiles: times.map(t => name(t).replace('.json', '-alt.json')),
+    levels: [],
+    units: {},
+    source: 'bench'
+  };
+const asked = [];
+const net = {
+  fetch: async url => {
+    asked.push(url);
+    const f = String(url).split('/weather/world/')[1];
+    if (f === 'index.json') return new Response(JSON.stringify(index));
+    const k = index.files.indexOf(f);
+    if (k >= 0) return new Response(JSON.stringify(step(times[k])));
+    return new Response(null, {
+      status: 503,
+      headers: {
+        'x-sog-offline': '1'
+      }
+    });
+  }
+};
+const TXT = row => row[1];
+const ctx = {
+  data,
+  net,
+  t: (row, v = {}) => String(TXT(row)).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? ''),
+  lang: () => 'en'
+};
+
+// le vol et la grille écrite dans la réserve comme « Charger » d'Atmosphère le fait (Open-Meteo répondu par la démo)
+const flight = {
+  points: [{
+    id: 'LFRS',
+    lat: 47.15,
+    lon: -1.61
+  }, {
+    id: 'LFML',
+    lat: 43.44,
+    lon: 5.21
+  }],
+  levelFt: 9000
+};
+const fakeOM = {
+  fetch: async url => {
+    const u = new URL(url);
+    if (u.pathname.endsWith('meta.json')) return new Response(JSON.stringify({
+      last_run_initialisation_time: t0 - 3600
+    }));
+    const la = u.searchParams.get('latitude').split(','),
+      lo = u.searchParams.get('longitude').split(','),
+      vars = u.searchParams.get('hourly').split(','),
+      from = Date.parse(u.searchParams.get('start_date')),
+      days = (Date.parse(u.searchParams.get('end_date')) - from) / 864e5 + 1,
+      o = [].concat(Demo.forecast(la.map((x, i) => ({
+        lat: +x,
+        lon: +lo[i]
+      })), vars, from, days * 24));
+    return new Response(JSON.stringify(o.length === 1 ? o[0] : o));
+  }
+};
+
+const canvas = document.createElement('canvas');
+canvas.width = 320;
+canvas.height = 200;
+const c = canvas.getContext('2d'),
+  // Mercator simple sur l'Europe de l'Ouest
+  project = (lat, lon) => ({
+    x: (lon + 10) / 25 * 320,
+    y: 200 - (Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360)) - 0.66) / 0.42 * 200
+  }),
+  view = {
+    W: 320,
+    H: 200,
+    project,
+    bounds: [-10, 38, 15, 52],
+    zoom: 5
+  },
+  painted = () => [...c.getImageData(0, 0, 320, 200).data].some((v, i) => i % 4 === 3 && v > 0);
+
+let changes = 0;
+const wm = createWeatherMap({
+  ctx,
+  time: t0 + 3600,
+  onChange: () => changes++
+});
+check('no flight: missing before any read', wm.state === 'missing');
+wm.draw(c, view);
+await until(() => wm.state === 'world-only');
+check('no flight: world-only once the synoptic is read', wm.state === 'world-only', wm.info().world?.source);
+const lg = wm.legend();
+check('legend: seven layers, a label and four languages each', lg.length === 7 && lg.every(l => l.label && l.labels?.length === 4), lg
+  .map(l => l.key).join(' '));
+wm.update({
+  flight
+});
+check('flight not in the cache: still world-only, the grid box known', wm.state === 'world-only' && !!wm.info().gridBox);
+const req = gridRequest(flight.points, flight.levelFt, 48);
+await weatherStore({
+  data,
+  net: fakeOM
+}).forecast(req.g.places, req.vars, {
+  model: req.model.id,
+  days: daysFor(t0 + 3600),
+  cacheOnly: false
+});
+wm.reload();
+await until(() => wm.state === 'ok');
+check('after « Load » wrote the cache: ok, read from the cache only', wm.state === 'ok', `${wm.info().levels.length} levels`);
+const inside = wm.at(45.3, 1.8),
+  outside = wm.at(10, 100);
+check('values inside the grid, none outside', inside && Number.isFinite(inside.t) && Number.isFinite(inside.p) && outside === null,
+  inside ? `${inside.t.toFixed(1)} °C, ${inside.p.toFixed(1)} hPa` : '');
+const wp = wm.worldPoint(30, 0);
+await until(() => !wm.worldPoint(30, 0)?.reading);
+const wp2 = wm.worldPoint(30, 0);
+check('world values at a point', Number.isFinite(wp2?.values?.p) && Number.isFinite(wp2?.values?.js), wp2?.values ?
+  `${wp2.values.p.toFixed(1)} hPa, jet ${Math.round(wp2.values.js)} kt` : String(wp));
+c.clearRect(0, 0, 320, 200);
+wm.draw(c, view);
+await wait(300);
+c.clearRect(0, 0, 320, 200);
+wm.draw(c, view);
+check('drawn into the host canvas', painted());
+check('surface: the flight grid blended into the world', wm.info().blended === true);
+// la limite de la grille du vol ne se voit dans aucun aplat : luminance moyenne de deux bandes de 10 px de part et d'autre
+// de chaque bord (tiers central), couche par couche
+const gb = wm.info().gridBox,
+  ga = project(gb[3], gb[0]),
+  gz = project(gb[1], gb[2]),
+  [x0, y0, x1, y1] = [ga.x, ga.y, gz.x, gz.y].map(Math.round),
+  lum = (xa, ya, xb, yb) => {
+    const d = c.getImageData(xa, ya, xb - xa, yb - ya).data;
+    let sum = 0;
+    for (let i = 0; i < d.length; i += 4) sum += (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) * d[i + 3] / 255 + 244 * (1 - d[i +
+      3] / 255);
+    return sum / (d.length / 4);
+  },
+  // saut à la limite moins la pente du champ : (dedans − dehors) − (dedans plus loin − dedans), bandes de 10 px
+  edgeJump = () => {
+    const B = 10,
+      mx = [Math.round(x0 + (x1 - x0) / 3), Math.round(x1 - (x1 - x0) / 3)],
+      my = [Math.round(y0 + (y1 - y0) / 3), Math.round(y1 - (y1 - y0) / 3)],
+      jump = (o, i, i2) => Math.abs((i - o) - (i2 - i));
+    return Math.max(jump(lum(x0 - B, my[0], x0, my[1]), lum(x0, my[0], x0 + B, my[1]), lum(x0 + B, my[0], x0 + 2 * B, my[1])),
+      jump(lum(x1, my[0], x1 + B, my[1]), lum(x1 - B, my[0], x1, my[1]), lum(x1 - 2 * B, my[0], x1 - B, my[1])),
+      jump(lum(mx[0], y0 - B, mx[1], y0), lum(mx[0], y0, mx[1], y0 + B), lum(mx[0], y0 + B, mx[1], y0 + 2 * B)),
+      jump(lum(mx[0], y1, mx[1], y1 + B), lum(mx[0], y1 - B, mx[1], y1), lum(mx[0], y1 - 2 * B, mx[1], y1 - B)));
+  },
+  off = Object.fromEntries(['isobar', 'isotherm', 'cloud', 'wind', 'tfill', 'jet', 'conv'].map(l => [l, false])),
+  jumps = {};
+for (const l of ['cloud', 'tfill', 'jet', 'conv']) {
+  wm.update({
+    layers: {
+      ...off,
+      [l]: true
+    }
+  });
+  c.clearRect(0, 0, 320, 200);
+  wm.draw(c, view);
+  jumps[l] = +edgeJump().toFixed(1);
+}
+check('no fill shows the flight grid\'s limit (luminance jump at the limit, field slope removed, < 2)', Object.values(jumps).every(v => v <
+  2), JSON.stringify(jumps));
+// le synoptique se dessine hors de la grille du vol (régression « je n'ai plus que le cadre autour du vol ») : de l'encre au-delà
+// de la limite, toutes couches
+wm.update({
+  layers: Object.fromEntries(Object.keys(off).map(l => [l, true]))
+});
+c.clearRect(0, 0, 320, 200);
+wm.draw(c, view);
+const inkOut = (() => {
+  const d = c.getImageData(0, 0, 320, 200).data;
+  let n = 0;
+  for (let y = 0; y < 200; y++)
+    for (let x = 0; x < 320; x++)
+      if ((x < x0 - 2 || x > x1 + 2 || y < y0 - 2 || y > y1 + 2) && d[(y * 320 + x) * 4 + 3]) n++;
+  return n;
+})();
+check('the world synoptic is drawn outside the flight grid', inkOut > 2000, `${inkOut} px of ink outside`);
+// option edge : la limite tracée en trait fin (réglage de l'administrateur), rien sans elle
+const hairline = () => Array.from({
+  length: 12
+}, (_, i) => c.getImageData(Math.round(x0 + 3 + (x1 - x0 - 6) * i / 11), y0, 1, 1).data[3]).every(v => v === 255);
+wm.update({
+  layers: off
+});
+c.clearRect(0, 0, 320, 200);
+wm.draw(c, view);
+const noLine = !hairline();
+wm.update({
+  edge: true
+});
+c.clearRect(0, 0, 320, 200);
+wm.draw(c, view);
+check('edge option: the limit drawn as a hairline, not without it', noLine && hairline());
+check('legend of the two sides (edge option)', wm.info().zones.map(z => z.key).join() === 'flight,world', wm.info().zones.map(z => z.label)
+  .join(' | '));
+wm.update({
+  edge: false,
+  layers: Object.fromEntries(Object.keys(off).map(l => [l, true]))
+});
+// le fichier des niveaux de pression du monde manque (ou arrive encore) : jamais la surface du monde fondue dans le FL090
+wm.update({
+  levelFt: 9000
+});
+wm.draw(c, view);
+await wait(300);
+wm.draw(c, view);
+check('FL090 without the world levels: not blended with the surface', wm.info().blended === false && wm.state === 'ok');
+wm.update({
+  levelFt: null
+});
+const altW = createWeatherMap({
+  ctx,
+  time: t0 + 3600,
+  grid: {
+    g: req.g,
+    locs: [],
+    levels: []
+  }
+});
+check('an injected grid is taken as is (no read)', altW.state === 'ok');
+altW.detach();
+// attach : fond uni
+const host = document.getElementById('flat');
+let subs = 0;
+const att = attach({
+  container: host,
+  project,
+  size: () => ({
+    W: 320,
+    H: 200
+  }),
+  bounds: () => [-10, 38, 15, 52],
+  zoom: () => 5,
+  onChange: cb => {
+    subs++;
+    return () => subs--;
+  }
+}, {
+  ctx,
+  flight,
+  time: t0 + 3600
+});
+check('attach: its own canvas in the container', !!host.querySelector('canvas.sog-weather-map') && subs === 1);
+await until(() => att.state === 'ok');
+await wait(400);
+const cv = host.querySelector('canvas.sog-weather-map');
+check('attach: drawn', cv && [...cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data].some((v, i) => i % 4 === 3 && v > 0));
+att.update({
+  layers: {
+    isobar: false,
+    cloud: false
+  }
+});
+check('attach: update keeps the other layers', att.legend().find(l => l.key === 'wind').on && !att.legend().find(l => l.key ===
+  'isobar').on);
+att.detach();
+check('detach: canvas and listeners removed', !host.querySelector('canvas.sog-weather-map') && subs === 0);
+check('never a call to Open-Meteo from the library', !asked.some(u => /open-meteo/.test(u)), `${asked.length} reads, all of the published synoptic`);
+wm.detach();
+const ok = results.every(Boolean);
+document.title = `atmosphere — weather map bench — ${ok ? 'ok' : 'KO'}`;
+out.insertAdjacentHTML('afterbegin', `<p class="${ok ? 'ok' : 'ko'}">${results.filter(Boolean).length} / ${results.length}</p>`);
+</script>
+</body></html>

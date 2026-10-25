@@ -4,12 +4,19 @@
 # tools/build_pages.py (fichiers suivis, images Git LFS, empreintes ?v=, sans data/) : la V2 (develop) à la racine du
 # site, la V3 (v3) sous /v3/ (appli Pilote : /v3/frame/) ; icônes de l'écran d'accueil produites depuis
 # assets/favicon-flight.svg de chacune, puis déploiement. Fichier identique sur develop et sur v3.
+# Synoptique monde du module Atmosphère (V3, modules/atmosphere/SPEC.md § 4) : /v3/weather/world/ (un index, une
+# échéance par fichier jusqu'à +72 h), écrit par tools/build_world_weather.py de v3 depuis GFS de la NOAA (NOMADS, sans
+# quota) ; la publication d'avant est reprise tant qu'elle vient du dernier run ; aucun appareil ne demande rien hors de
+# la grille de son vol ; ne fait jamais échouer le déploiement. Toutes les 6 h en plus des poussées (runs de GFS 00, 06, 12, 18 Z, disponibles 4 h après environ ;
+# GitHub ne lance les tâches planifiées que depuis la branche par défaut).
 # Réglage à faire une fois : Settings › Pages › Source : « GitHub Actions » ; Settings › Environments › github-pages :
 # branches autorisées : develop et v3.
 name: Pages (appli)
 on:
   push:
     branches: [develop, v3]
+  schedule:
+    - cron: '25 4,10,16,22 * * *'
   workflow_dispatch:
 permissions:
   contents: read
@@ -41,6 +48,11 @@ jobs:
         run: |
           python v2/tools/build_pages.py _site
           python v3/tools/build_pages.py _site/v3
+      - name: Synoptique monde (Atmosphère, V3)
+        continue-on-error: true
+        run: |
+          python v3/tools/build_world_weather.py _site/v3/weather/world \
+            --keep "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/v3/weather/world/"
       - name: Icônes de l'écran d'accueil
         run: |
           sudo apt-get install -y --no-install-recommends librsvg2-bin >/dev/null
