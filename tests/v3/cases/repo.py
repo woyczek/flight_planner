@@ -129,6 +129,8 @@ def i5(c):
         head = (c.root / f).read_text(encoding='utf-8', errors='replace')[:400]
         return 'GÉNÉRÉ' in head or 'GENERATED' in head
     files = [f for f in files if not generated(f)]
+    if c.touched is not None and not files:
+        raise Skip('the touched js / css / html files are all generated (docs_bundle.js…): nothing to format')
     p = subprocess.run([sys.executable, 'tools/format_sources.py', '--check', *files], capture_output=True, text=True, cwd=str(c.root))
     out = (p.stdout + p.stderr).strip()
     m = re.search(r'(\d+) fichier\(s\) à mettre en forme', out)

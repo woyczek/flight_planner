@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- Tests: I5 (format) skips when the touched sources are all generated files instead of checking the whole tree; `apps/pilot/aujourdhui.html` formatted.
 - **aerodb: whole-France run of the eAIP builder, EUROCONTROL assessment — step 3** (`tools/proc_eaip.py`, `tests/v3/cases/aerodb.py` K3,
   `frame/aerodb/EUROCONTROL_REQUEST.md`, INTEGRATION, DECISIONS) — `--all` reads the 141 aerodromes of the eAIP menu (`--delay` between
   two); the publication command is documented. The EUROCONTROL instrument-procedure data sets are assessed (the EAD Agreement route
