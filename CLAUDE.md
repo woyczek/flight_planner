@@ -40,7 +40,13 @@ Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur l
      seulement si une empreinte réelle s'est glissée ;
   3. pages modifiées rechargées, sans erreur JavaScript ;
   4. entrée au CHANGELOG, en anglais, rubrique « Unreleased » ;
-  5. aucune marque de conflit : `git grep -l -E "^(<<<<<<<|>>>>>>>) "` vide.
+  5. aucune marque de conflit : `git grep -l -E "^(<<<<<<<|>>>>>>>) "` vide ;
+  6. **V3 : la suite de non-régression comme porte** (`tests/v3/`, décision de l'utilisateur du 24 octobre 2026) :
+     avant de dire qu'un lot est bon, `python3 tests/v3/run.py --changed` (les zones et les parcours des fichiers
+     touchés) ; **un test échoué se rejoue deux fois** : seul, tel qu'il a échoué (`--failed <id>` : même design,
+     largeur, langue) pour confirmer le correctif, puis dans son périmètre complet (`--failed-scope` : ses zones, ses
+     parcours, et les fichiers du correctif) pour voir ce que le correctif a déplacé ; le compte rendu du lot cite
+     les commandes et leurs lignes de résumé. Un correctif qui passe le premier et pas le second n'est pas fini.
 - Commits : préfixes gitmoji, message en français ; develop reçoit des avances rapides seulement (rebase, puis push).
 - **Documentation : un commit par lot, jamais un commit par document** (traductions, manuels, tutoriels, aide) ;
   on squashe le plus possible avant de pousser. **La doc d'une fonctionnalité va dans le commit de la
@@ -48,6 +54,7 @@ Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur l
   « un commit fonctionnel + un commit de doc », jamais un commit « paquet régénéré » à part.
 - **Rôles des sessions et synchronisation** : `.claude/agents/README.md` (tableau des sessions, espaces, ports, qui
   pousse quoi) et un fichier par rôle (`ergonomie`, `features-sog`, `bugs-sog`, `securisation`, `landing`,
-  `analyse-defa`). Une session prend le rôle de son nom ; la session ergonomie répartit, valide et intègre.
+  `analyse-defa`, et `relais-cloud` : la session cloud qui remplace la session ergonomie quand le poste principal est
+  hors d'atteinte). Une session prend le rôle de son nom ; la session ergonomie répartit, valide et intègre.
 - Chaque session travaille dans son espace et sur sa branche. La refonte v2 vit sur `feature/v2-niveaux`, les comptes
   signés sur `feature/audit-securite` : rien de ces chantiers sur develop sans l'accord de l'utilisateur.

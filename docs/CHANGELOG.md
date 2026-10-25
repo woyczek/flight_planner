@@ -12,6 +12,362 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: one navigation at a time — a change of address that arrives during a mount cancels it** (`frame/app.js`,
+  `INTEGRATION.md` § 2, DECISIONS; test A16) — two or three changes of address in the same task (`#fuel`, `#atmosphere`,
+  `#fuel?view=sheets`) left one `section[data-module]` per navigation in the view (and as many overlay layers and sheets) because
+  each `route()` appended its section after its `import()` and its `mount()` whatever had happened meanwhile. Each navigation now
+  takes a token; after each await a stale one writes nothing (no section, no help panel, no pane, no error screen), the next one has
+  already unmounted the module and emptied the view. The help and settings screens follow the same token.
+- **Fuel: a mount whose address changed writes nothing, and the Quote / Sheets view is in the address** (`modules/fuel/module.js`,
+  `INTEGRATION.md`, DECISIONS; tests F7, A7, J1) — changing the address while fuel was still reading (`#fuel` then `#atmosphere`, or
+  `#fuel` then `#fuel?view=sheets`) let the first mount draw over the second's state (the Quote screen under a Sheets address) or fail
+  on an emptied state; the mount now carries its own state as a token, checked after its reads, and `unmount()` invalidates it. The
+  internal Quote / Sheets switch writes `?view=sheets` / removes `view` with `history.replaceState` (no navigation), so the bar's
+  Carburant · Fiches popover marks the right row. A field edited while the current flight is still being read (screen inert) is
+  ignored instead of written into the waiting flight (the quote could read "Bloc · 0 ft"). Test suite: F7 (new), A7 no longer waits
+  for fuel's first screen, `open('fuel')` waits for the end of the mount.
+- **Frame: the bar and the header by rule 14 — Météo in the bar, "?" and ⚙ in the header, the status at the top of Settings**
+  (`frame/app.js`, `frame.css`, `index.html`, `lib/icons.js`, `settings/settings.js`, help in four languages, `frame/INTEGRATION.md`
+  § 9.1 and § 10, `frame/SPEC.md` § 3, `frame/settings/SPEC.md` § 1, DECISIONS; V3_SPECIFICATION § 7.1 rule 14) — the phone's bottom bar is
+  Préparer · Carte · CR · Vols · **Météo** (the atmosphere module, `cloud` icon, in four languages); Settings leaves the bar. The
+  performance sheets stay a view of Préparer: a tab can list `views` of its module (`APP.tabs[].views`), so the second touch on Préparer
+  opens **Carburant · Fiches** (`#fuel?view=sheets`); a tab with one row (Carte, CR, Vols, Météo) still does nothing on the second
+  touch, and the landscape rail has the same five entries. The header of a phone is the name (or ←), **"?"** (the help chapter of
+  the current screen) and **⚙**; the "i" button and its pop-up are gone on a phone and on a screen. The badge moves to the ⚙ (green:
+  a flight started or a report to write; amber on a phone: trigram, pending writes, conflicts, sync error, offline, base), with the
+  same rules. Settings opens on a **"Status" block** that carries the former pop-up's lines with the same texts and actions (flight ›
+  Map, report to write › Report with its hand-over, data synchronised n min ago / pending writes / conflicts, aeronautical base,
+  launcher, offline, position), drawn and kept up to date by the frame (`ctx.status`), each line that pointed to "Settings" now
+  scrolling to the card that holds the answer. With Settings open the "?" asks the Settings chapter. Tests A2 A3 A4 A7 A8 (now the
+  Status block) A9 A11 A12 A14 A15 E5 G1 J2 J3 J5 follow.
+- **Report: uniform fields, one provenance line, a two-line action bar on a phone** (`modules/report/module.js`, `SPEC.md` § 2 bis,
+  `DECISIONS.md`, help ×4 and `frame/help/pilot.*.md`, `tests/v3/cases/flightlog.py` G4, `tests/v3/PLAN.md`) — on a 390 px phone the blue source badge of each
+  prefilled field was wider than its half column (it overlapped its neighbour and left the screen) and made the fields of a row
+  different heights (a date 56 px against 44 for the others). The source is no longer an element of the grid: each card has one muted
+  line "Prefilled from: … · …" (four languages) under its title, the "entered 18:30 local" times of an older report too. Grid cells
+  never exceed their column (`min-width: 0`), labels are on one line with an ellipsis, every field is 44 px. The save bar is two
+  44 px buttons ("Save" filled, "Save and record on the website" outline, same font, never folded) in a bar of 105 px at most; when
+  the website address is not set, the reason is the button's `title` and one muted line under the bar, no longer inside the button.
+  No design file changed (the design rules were measured: not the cause). New case G4 (five designs, 390 and 360 px, day and night).
+- **Frame: the sheet's bare handle** (`frame/design/primitives.css`, `frame/lib/sheet.js`, `frame/lib/test/sheet.html`, `frame/INTEGRATION.md`
+  § 11, `frame/design/SPEC.md`, `frame/DECISIONS.md`; V3_SPECIFICATION § 7.1 rule 13 b) — a module that shows a drawing in the sheet
+  puts the class `f-sheet-head-bare` on the header (`head.classList.toggle('f-sheet-head-bare', isDrawing)`): the header becomes a
+  28 px line (`--f-sheet-head-bare`) with the grip bar, no title, and its buttons (segments, ◀ ▶, ✕) 28 px high at the right with a 44 px
+  touch zone; same drag, tap and keys, also at the top of the column in landscape. The collapsed sheet is 29 px high, and the drag stops
+  at the measured header instead of a constant. `createSheet`, `labels(pos, rank)` and the positions are unchanged; nothing uses it yet
+  (maps and atmosphere adopt it in their own lots). The bench grows from 129 to 177 checks.
+- **Atmosphere: no flicker while dragging the sheet** (`modules/atmosphere/module.js`, `lib/weather_map.js`, `test/weather_map.html`,
+  `tests/v3/cases/atmosphere.py` E7; atmosphere DECISIONS, INTEGRATION § 6) — the map and its overlay were resized, cleared and the cut
+  redrawn at every frame of a drag (a grey band, flashes). Nothing is redrawn while the finger drags; the map now lies under the sheet at
+  the module's whole size, so moving the sheet uncovers map already drawn. A world file that failed is asked again after 30 s, not at every
+  frame.
+- **Atmosphere: a legend behind an "i" chip, and a help chapter** (`modules/atmosphere/section.js`, `module.js`, `texts.js`, `help/*.md`,
+  `frame/help/pilot.*.md`; atmosphere DECISIONS, INTEGRATION § 5; V3_SPECIFICATION § 7.1 rule 14) — the "i" chip, after ◀ ▶, shows over the
+  cut or the slice the series really drawn with their symbols, in four languages (`sectionLegend` in `section.js`, for the Map too); a touch
+  or Escape closes it. The pilot's manual gains the "Météo" chapter, legend included.
+- **Atmosphere: the cross-section fits the sheet, no title over it** (`modules/atmosphere/section.js`, `module.js`, `texts.js`; atmosphere
+  DECISIONS, INTEGRATION § 5; V3_SPECIFICATION § 7.1 rule 13) — the cut and the slice are drawn at the sheet body's exact height (`minHeight`,
+  default 0, in `drawSection` for the Map too): fewer level labels on a low chart, the distance axis always visible (on a 390 × 664 phone
+  window the body was 95 px and the axis hidden; now 112 px and visible). Over a drawing the grip row is bare (28 px, ◀ ▶ ✕ kept) in the
+  sheet's default position only: the "Profile · …" line repeated what the chart shows; expanded, collapsed and in landscape the title stays.
+  The slices' ◀ ▶ stand in a 44 px column at the right of the drawing with the bare head, in the title row whenever it shows (expanded,
+  collapsed, landscape: the drawing keeps its whole width), as the map's chips; the cut's and the
+  slice's left gutter is measured from their level labels (54 → 33 px), for the map too.
+- **Atmosphere: the flight's grid no longer shows as a rectangle; 10× cheaper frames; an optional limit line** (`modules/atmosphere/lib/weather_map.js`,
+  `texts.js`, `test/weather_map.html`, `test/weather_map_perf.html`; atmosphere DECISIONS, INTEGRATION § 6) — at a flight level the cloud fill
+  came from AROME inside the grid (dry, clear) and from GFS outside (moist, grey): the fills (clouds, temperature, jet, convection) now come
+  from the world synoptic on both sides, the lines and barbs from the grid blended into it. Only what the view holds is projected: a frame
+  with every layer drops from 76 ms to 8 ms with the CPU slowed ×4. New `edge` option (default off, the administrator's setting to come)
+  drawing the grid's limit as a hairline, with `info().zones` naming both sides. DECISIONS records the measurements and what GFS costs against
+  Open-Meteo.
+- **Map: a legend ("i" chip) over the profile, a drag on the weather cut moves the cursor, the airspaces list on one line per airspace** (`modules/maps/module.js`, `profile.js`, `lib/vertical_profile.js`, manuals ×4, `tests/v3/` D4 / D11; maps SPEC, DECISIONS; V3 spec § 7.1.14) — the last chip opens a translucent legend of what the profile draws (its own list, four languages); the cut has none yet. Dragging on the weather cut moves the common cursor like on the profile (the map's point follows). The airspaces list is "1 · TMA NANTES 4 · FL055|FL065 · D" on one line each, at body size, with a narrower level graph.
+- **Map: the Profile · Weather chips are a column only beside the bare handle** (`modules/maps/module.js`, `tests/v3/` D4; maps SPEC, DECISIONS; V3 spec § 7.1.13) — with the title line (expanded, collapsed, landscape column) they are back in that line, at the right, in a row, and the drawing takes the whole width; the row above the drawing in landscape is gone.
+- **Map: Layers' Complexity slider on one line; airway names above the strokes** (`modules/maps/module.js`, `render.js`, `tests/v3/` D17 / D18; maps SPEC, DECISIONS) — the slider block was 73 px plus a 51 px help sentence (about 120 px): label, value and slider are now one 44 px line in the five designs, the help stays in the tooltip and for screen readers. The airways' strokes are all drawn before their names, so a later airway no longer crosses an earlier name.
+- **Map: the profile and the weather cross-section fit the sheet, with no title above them** (`modules/maps/module.js`,
+  `lib/vertical_profile.js`, manual in four languages, `tests/v3/` D4 and the cases that read the sheet's title; maps SPEC § 4, DECISIONS;
+  V3 spec § 7.1.13) — the distance axis was still off screen on a phone (the cut had a 140 px floor in a 103 px body): both drawings are now
+  drawn at the exact height of the body, without box or padding for the cut, the profile dropping level labels (one in two under 160 px, one
+  in four under 110 px) and shrinking its foot before it would drop its axis. The Profile · Weather chips are a column at the right of the drawing (a row above it in the landscape column) and the drawing starts at the left edge of the body. Over a drawing at the default position the head is a bare handle (expanded, collapsed and in the landscape column it keeps its title; the grip bar and the
+  Profile · Weather chips, `.f-sheet-head-bare`, 28 px): the "Weather · FL160 · 370 NM" line is gone, the handle's label says "Vertical
+  profile" / "Weather cross-section" and the flight summary. At 390 × 844 the default drawing gains 17 px (profile, 174 → 191) and 39 px (cut,
+  152 → 191).
+- **Atmosphere: no rings round the flight's grid** (`modules/atmosphere/lib/weather_map.js`, `test/weather_map.html`; atmosphere
+  DECISIONS, INTEGRATION § 6) — at a flight level, while the world's pressure-level file was still being read, the surface world was
+  blended into the grid: a dark frame of concentric isobars and isotherms with stacked labels. The world is now blended only at the same
+  level and hour, no label sits on the transition band, and a grid alone fades out instead of ending in a rectangle.
+- **Map: the Complexity slider goes lower and comes first; the administrator's thresholds apply to every mode; the tuning page has a button**
+  (`modules/maps/module.js`, `render.js`, `frame/settings/admin_links.js`, `settings.js`, manuals in four languages, `tests/v3/` D14 / D15 / D16;
+  maps SPEC § 4 quinquies, DECISIONS) — the slider only shifts the zoom (one whole zoom level per step, −4 … +4; it was ¾ of a level from −2
+  to +2, which went down 1.5 levels only), so zoomed out on Europe on a phone its minimum leaves nothing passing a range; it is now the
+  first control of the Layers content, right under the flight selector, named "Complexity" (no more "(trial)"), with a help sentence in four
+  languages, and the map follows the finger. The thresholds of the airline's file (`airline/map_profiles.json`) were read and applied, but the
+  file held the VFR mode only (the tuning page saves the mode on screen), so Auto, IFR low / high, Topo and CAM kept the looser built-in values:
+  a mode the airline never tuned now takes the ranges of a tuned mode (its family first; an IFR mode may take VFR's, never the reverse), and
+  the tuning page says where the mode on screen gets its thresholds. Settings, "Administration" card (Full level): the link to the tuning page
+  is the button "Map threshold tuning (administrator)". The map element publishes `data-zoom-eff` and `data-kept` (what the thresholds keep)
+  for the tests.
+- **Atmosphere: the weather map is a library, ready for the Map** (`modules/atmosphere/lib/weather_map.js`, `module.js`, `texts.js`,
+  `test/weather_map.html`; atmosphere INTEGRATION § 6, DECISIONS; V3_SPECIFICATION § 7.1.8) — isobars, isotherms, clouds, barbs,
+  temperature, jet stream and convection, the flight's grid blended into the world synoptic, now drawn by one renderer: `attach(map,
+  { ctx, flight, levelFt, time, layers })` → `{ update, detach, state, legend, … }` over a MapLibre map or a flat background, or
+  `createWeatherMap` for a host drawing into its own canvas. The Atmosphere module draws through it; the Map's Météo chip will. The
+  library reads the weather cache only and the published world synoptic, never Open-Meteo; `legend()` gives the layer rows in four
+  languages. The jet and convection layers lose their "(world)" suffix (drawn everywhere since the shared computation).
+- **Landscape on a phone: a rail at the left, the sheet as a right column, a full-height map** (`frame/app.js`, `frame/index.html`,
+  `frame/frame.css`, `frame/design/primitives.css` and the four designs' bar rules, `frame/lib/sheet.js`, `frame/lib/test/sheet.html`,
+  `tests/v3`; frame INTEGRATION § 9.1–9.4 and § 11, SPEC, design SPEC; the help in four languages) — Safari does not honour the
+  portrait lock, so a phone turned to 844 × 390 now gets its own layout: when the window is wider than high and under 1024 px the frame
+  sets `<html class="f-land">` (once per change, on `resize` / `orientationchange`; `frame-orientation` is fired after). The bottom bar
+  becomes a **44 px rail of icons at the left edge** (full height under the header, no label but an `aria-label`, the same popover on a
+  second touch, opened at its right), the header stays at 57 px, and the view takes the rest. A fixed module's **sheet becomes a column at
+  the right of the map** (`--f-sheet-side` 40 % of the width, 280 px at least; expanded `--f-sheet-side-max` 60 %; two positions, the
+  grip row at its top, a tap or a horizontal drag switches them, the body scrolls inside) and **the map takes the rest at full height**
+  (333 px instead of 163 on an iPhone 13); the overlay buttons stay on the map in one column (4 px gap, six fit, a seventh wraps).
+  `onChange` / `onSettle` give the same position names as in portrait: Maps and Atmosphere change nothing. Full screen in landscape hides
+  the header and the rail and keeps the column. The device's safe areas (notch, home indicator) are left free. **The full-screen exit chip
+  is removed** (the column's button, which shows "minimize" in full screen, and Escape leave it), in portrait too. Portrait is unchanged;
+  the designs' tab-bar rules no longer sit under `max-width: 760px` (the bar is displayed on a phone and in landscape only). New case
+  A14 in the suite and a landscape part in the sheet bench (129 checks).
+
+- **V3 Map: the weather cut is no longer clipped at the bottom; the default sheet shows the drawing alone** (`modules/maps/module.js`, maps
+  DECISIONS, `tests/v3/` D4 and `seed_forecast`) — on a phone the weather cut kept its 140 px readability floor in a body that was
+  `overflow: hidden`, so the distance axis was cut (a short window, landscape before the column: a 117 px body); the body now scrolls and the cut is redrawn at the real
+  height when the sheet settles. At the default position the sheet body shows the profile or the cut alone, on the whole body height
+  (the profile has a 120 px floor); the text line under the cursor and the notes appear only when the sheet is expanded, under the drawing.
+
+- **Aeronautical database: loading, access not set and not published are three different messages** (`frame/aerodb/aerodb.js`, `frame/app.js`,
+  `modules/maps/module.js`, manual note in four languages, `tests/v3/` A15 / D5 / D5b; settings DECISIONS, aerodb INTEGRATION / DECISIONS, frame
+  INTEGRATION § 10) — on a phone (seen in the app added to the iOS home screen) the Map said "Aeronautical database not published" while the base
+  was still coming: an empty list read before the network was ready stayed for the page's life, and the alternate's lookup kept the whole map
+  blank. aerodb now says `loading` / `noaccess` / `unpublished` (`aerodb.state()`, `on('state')`, `refresh()`); the Map's note reads "Aeronautical
+  database loading…" (with the zones being read), "Data access not set on this device" with a Settings button, or "not published" only when the
+  access works; the "i" pop-up has one line for the same states; an empty list is read again after 30 s and when the access or the network
+  changes; the alternate no longer blocks the route. Serving the base from the public pages is noted for decision, nothing changed.
+
+- **Fuel: the flight date belongs to the shared flight** (`modules/fuel/module.js`, `frame/lib/current_flight.js`,
+  `modules/maps/module.js` one condition; fuel SPEC § 9–12 / INTEGRATION § 3 / DECISIONS, maps INTEGRATION / DECISIONS, the manual in
+  four languages) — the "Flight date" field (ex "Flight date (optional: TAF)") writes `current_flight.planned_at` (ISO 8601 UTC,
+  optional, absent = now; schema number and merge rule unchanged), the one value that the quote's weather (aerodromes' TAF, winds
+  and temperatures aloft), the Map's ETA and, from its own session, Atmosphere's slider start from; `weather.when` stays as its copy
+  in local time. A date typed in the field now reads the forecasts again for the new hour (only "+30" / "Now" did). The Map draws the
+  ETA of the route points for a flight that is not started too, counted from `planned_at` (fuel writes `progress.eta` only; nothing
+  without a date or once the arrival is past). Step 4 of the plan is renamed "Result" (fr Résultat, de Ergebnis, es Resultado): "Quote" is the first tab's name only.
+  The date row no longer overflows at 390 px (known failures F4 and F5 of the suite fixed and removed from `known_failures.py`).
+- **Frame finishing touches: `hidden` on overlay buttons, three icons, launcher line in the "i" pop-up** (`frame/design/primitives.css`,
+  `frame/lib/icons.js`, `frame/app.js`, `modules/maps/module.js`; frame INTEGRATION § 9.3 / § 10 and SPEC) — a button of the overlay layer
+  with `hidden` is now really hidden by the frame, so the Map drops its own rule; `cloud`, `undo` and `move4` (four directions) join the
+  frame's icons and the Map no longer carries copies of them; when the data goes through the launcher, the "i" pop-up has a line
+  "Launcher: <computer> · <state>" (four languages) that opens Settings, the only place where a phone shows the host.
+
+- **Flights across the date line: Siberia to Alaska on the Map** (`frame/lib/geo.js` new, `frame/lib/test/geo.html`,
+  `modules/maps/module.js`, `render.js`, `profile.js`, `contours.js`, `lib/map_base.js`, `modules/fuel/winds.js`; frame
+  INTEGRATION § 12 and SPEC, maps SPEC § 4 octies / INTEGRATION / DECISIONS, the manual in four languages) — the helper that
+  Atmosphere wrote (`wrapLon`, `nearLon`, `unwrapLons`) is now the frame's, with the same logic so that the weather cache cells
+  do not move. The Map unrolls the route before any calculation or drawing (UHMA → PAOM runs 177.7° → 194.6° instead of crossing
+  Europe): the distance marks, TOC / TOD, profile, cursor, barbs and framing follow; MapLibre runs with world copies for the Map,
+  every longitude is taken to the copy nearest the view, aerodb boxes are cut in two at 180°, relief, MORA, contour tiles and the
+  route written by the Edit mode are always in [-180, 180[, taps and distances compare modulo 360. Fuel's `winds.js samples`
+  interpolates the winds aloft on the unrolled route (they were read round the world). The "no forecast" message of the Weather
+  chip names the flight ("No forecast for UHMA → PAOM:"). An ordinary flight is unchanged (route, marks, data boxes identical to
+  the previous version). Not done: airspaces that straddle 180°, mission maps whose extent straddles the line, the poles.
+  The note "Aeronautical database not published" in the sheet now carries the "Offline data" button to the settings.
+- **V3 non-regression suite** (`tests/v3/`: `run.py`, `lib.py`, `domains.py`, `cases/*.py`, `README.md`, plan in `PLAN.md`) — one command,
+  `python3 tests/v3/run.py`, no launcher, data repository, network or token: it starts a standard-library static server on a free
+  local port, drives Chromium with Playwright and checks what must stay true on every screen of the Pilot application: the
+  frame's layout and chrome (header 57 px, five-entry bottom bar, group popover, "i" pop-up and badge), the overlay layer and full
+  screen, the sheet primitive, the Maps, Atmosphere, Fuel, Flightlog and Report screens, the five designs and the repository
+  rules (fingerprints, conflict markers, four languages, help bundle, format, module documents, CHANGELOG). Each case runs on the
+  phone in the five designs and once on a screen, four languages where it matters; it records JavaScript errors, names the rule
+  that broke with the measured and the expected value, and keeps a screenshot. The frame's cache is seeded without a launcher
+  (design, identity, a planned flight, a pending report, a tiny SIA base). `--changed`, `--for <paths>`, `--grep`, `--tag` choose
+  the cases from the files changed (the adherence map of PLAN.md section M); `cases/known_failures.py` carries the two known
+  failures (F4, F5) without hiding them. Report in `tests/v3/report.md` and `report.json` (git-ignored).
+- **V3 non-regression suite: the functional scope** (`tests/v3/journeys.py`, `cases/journeys.py`, `run.py`, `lib.py`, `README.md`, PLAN.md sections N and O) — the six journeys of the pilot (prepare a flight, fly, report, read one's flights, install and synchronise, mission map) as data with the files that carry each and the area cases that guard it, and one end-to-end case per journey (J1 to J6: the quote typed by hand to Carte and Météo, the flight started and cancelled in four languages, a flight without a report to the saved report, the flight log's totals, filters and CSV, the first launch to the design and offline). `--changed` / `--for` print one `JOURNEY P1 … — <files>` line per journey a change touches (or `JOURNEY none (areas only)`), add its end-to-end case, and head `report.md` / `report.json`; `--journey P1,P3` runs journeys by name; `--list` shows areas and journeys without running; `--failed [IDS]` replays the failed cases of the last report in the combinations that failed and `--failed-scope [BASE]` runs their full scope (the areas and journeys they belong to, plus the cases chosen by the files the fix touched): PLAN.md section P. A journey case names the step that broke and records, never hides, the steps the suite cannot do (website, data repository, network sessions, language control).
+- **Maps: the screen is header · map · sheet · bar** (`modules/maps/module.js`, `lib/map_base.js`, SPEC § 4, INTEGRATION § 2 quater,
+  DECISIONS, the manual in four languages) — nothing between the frame's header and the map: the flight selector moves into the
+  Layers content, the flight summary becomes the sheet handle's title ("Profile · FL065 · 427 NM · planned flight"), the Profile ·
+  Weather toggle becomes two icon chips at the right of the handle, and the buttons (Edit the route, Recentre, map mode, Edit on the
+  map, Follow, "+", Undo; Layers on the left) are the frame's overlay buttons, the full-screen button last. Layers opens in the
+  sheet like the aerodrome contents (title "Layers · flight", ✕ back to the profile) instead of floating over the map. The status
+  lines are gone: "database not published" and "GPS or network not enabled" are a floating notification once, kept in the sheet's
+  notes, and the empty state is a card on the map area; the hints moved to the manual (the Edit mode's help is shown once per page).
+  Escape closes what the module opened (modes, sheet content, card, "+", Edit mode) without leaving the full screen. MapLibre's
+  attribution is folded on its "i" button and carries the SIA note: one credit text.
+- V3 frame: overlay right column aligns every button to the map's right edge, a wider element included (`align-items` under `wrap-reverse`).
+- **Frame: overlay layer and full screen for fixed modules, a header reduced to name · i · ⚙ on a phone, the tab group as a
+  popover** (`frame/app.js`, `frame/frame.css`, `frame/design/primitives.css`, `frame/lib/icons.js`, `frame/index.html`,
+  `frame/lib/test/sheet.html`; frame SPEC § 3.1, INTEGRATION § 9.1 / 9.3 / 9.4 / 11, DECISIONS, design SPEC and DECISIONS, the
+  manual's introduction in four languages) — the map screens of the user's 24 October rules ("header, map, map, footer"): a fixed
+  module now gets `ctx.overlay`, a layer laid exactly over its map with a left column and a right column of round 44 px buttons
+  (`ctx.overlay.button({ icon, label, onClick, pressed, side })`, `over(el)`), never over the sheet; the frame adds a **full
+  screen** button to every fixed module that hides the header and the bottom bar (the header and the rail on a screen), gives
+  the view the whole window (`--f-view-h` = `--f-vh`), shows a 44 px exit chip, leaves on Escape, and tells the module with a
+  `resize` event. On a phone the **header is name · "i" · ⚙** only: the synchronisation dot becomes the colour of the "i" badge
+  (green: a flight or report applies; amber: no trigram, pending writes, conflicts, error, offline) and lines of its pop-up,
+  which also gets "Position: <source>" and, last, "Help for this screen ›" (the former "?"). The row of group sub-tabs above a
+  module is gone: a **second tap on the active bottom tab** lists the group's modules in a small popover (Prepare: Fuel ·
+  Atmosphere). The sheet's default height is 30 % on a phone (the map gets the room); no margin between the header and a fixed
+  module. Modules migrate their own toolbars in their lots.
+- **Frame: the three-position sheet is a primitive; Maps adopts it and takes the frame's heights** (`frame/lib/sheet.js`,
+  `frame/design/primitives.css`, `frame/lib/test/sheet.html`, `modules/maps/module.js`; frame INTEGRATION § 11 and § 9.2,
+  SPEC § 3.9, design SPEC, DECISIONS, `modules/maps/{INTEGRATION,SPEC,DECISIONS}.md`) — the block under a map that sits
+  collapsed, default or expanded and is pulled by its header line becomes `createSheet({ root, panel, head, grip, pos, ignore,
+  labels, locked, onChange, onSettle })`: the drag follows the finger and snaps to the nearest position (a flick above 0.8 px/ms
+  goes to the next one, a tap collapses or restores and never expands), the keyboard and the ARIA are done, and the heights are
+  the frame tokens `--f-sheet-head` / `-default` / `-expanded` (and their floors) a module may override on its root. It writes
+  no text and keeps no state. Maps drops its own copy and its CSS, and also its two copied pane / split heights and the
+  `!important` of its tuning page (the frame applies `--f-view-h`): the Map screen is pixel-identical in the three positions,
+  at 390 and 1280, in the seven designs and in the dual view. A bench on a bare page (`frame/lib/test/sheet.html`, 76 checks)
+  covers positions, snapping, flick, keyboard, `onChange` / `onSettle`. Atmosphere's copy is replaced by its own session.
+- **Maps: shared map base, weather cross-section in the sheet** (`modules/maps/lib/map_base.js`, `modules/maps/module.js`,
+  `modules/maps/{SPEC,INTEGRATION,DECISIONS}.md`, `modules/maps/help/*.md`) — the MapLibre loading, base styles, tiled base,
+  own-resize marker and plain background of the map move to `lib/map_base.js`, a state-free ES module that the atmosphere
+  module will import instead of its copies (INTEGRATION § 7; the Map screen is pixel-identical, with and without tiles). The
+  data sheet's three functions are one isolated block (`createSheet`) ready to become a frame primitive. The sheet's header
+  gets a small "Profile · Weather" toggle (44 px, four languages, remembered while the page lives): "Weather" draws
+  atmosphere's pure cross-section along the route against the flight's level, following the shared cursor (a tap on it moves the
+  cursor); it only shows the forecast atmosphere has already read into `cache/weather/` (maps never asks Open-Meteo), otherwise
+  one line leads to Weather in Prepare. The airspaces and aerodrome contents are unchanged.
+- **Frame: the "i" status button of the header, a one-row header after any screen, heights for modules in the dual view,
+  a weaker `display` rule** (`frame/app.js`, `frame/frame.css`, `frame/index.html`, `frame/design/primitives.css`; SPEC
+  § 3.1, INTEGRATION § 9.2 and new § 10, DECISIONS) — the status line of the Prepare tab is replaced by an **"i" button**
+  of the header (the iVAC pattern, spec § 7.1): a green badge when something is news, a pop-up under the header with
+  one line each — "Flight in progress › Map" (a started flight), "Report to write for the flight of <date> <DEP>→<ARR>"
+  (read from the cache record `cache/flightlog/pending.json` that flightlog publishes; a touch hands the flight to the
+  report module through `pilot/handoff.json`, or opens My flights without a hand-over), the data state ("synchronised
+  4 min ago · 2 writes pending", the transport in use; a touch opens Settings, or the conflicts) and "Offline: working
+  on this device's copy"; four languages, Escape and ✕ close it. **Bug fixed**: after a screen with a back button
+  (report from the map, then back) the header grew from 57 to 73 px and stayed so on returning to the map — the help's
+  "←" paragraph rule (`.f-back`, 16 px of margin) also hit the header's back button; the rule is scoped to `p.f-back` and
+  the header is now exactly one row of 57 px in every state. New CSS variables `--f-head-h`, `--f-vh`, `--f-view-h`,
+  `--f-split-h`, `--f-pane-h`, and the frame sizes a fixed module itself in the dual view (the split main and the pane),
+  so a module no longer copies "100dvh − 86 px − 44 px". The frame's fixed layout of a module root is now weightless
+  (`:where()`): a module's own `display` wins without `!important`. `status: true` of `APP.tabs` is gone.
+- **Flightlog: the flights without a report are published for the frame's "i" button** (`modules/flightlog/module.js`,
+  `modules/flightlog/model.js`, `modules/flightlog/test/pending.html`; SPEC § 4, INTEGRATION § 5, DECISIONS) — the module
+  writes `cache/flightlog/pending.json` (`{ schema: 2, updated_at, flights: [{ date, dep, arr, registration, source, handoff }] }`,
+  cache policy, device only, never synchronised): the flights without a report that it already finds (website log, IVAO /
+  VATSIM sessions), newest first, five at most, within the last 30 days, `source` being `website`, `ivao` or `vatsim`;
+  an empty array when nothing is pending. It is written through `ctx.data` at mount and each time the list is
+  refreshed (reports saved or received, website log changed, network read), and only when the flights change. The frame
+  reads it to draw its "report to write" lines; each entry carries the `handoff` (`family`, `values`) that the module's "Write the report" action hands to report, built by the same function, so the frame can write `pilot/handoff.json` itself and open `#report?from=flightlog`. One rule decides "without a report" (the "Without report" filter, the
+  tile and the record); no screen change.
+- **Changed — Fuel: the first tab is called "Quote"** (`modules/fuel/module.js`; SPEC § 9, INTEGRATION, DECISIONS, help ×4)
+  — "Préparer / Plan / Planen / Preparar" becomes "Devis / Quote / Berechnung / Cálculo", because "Prepare" is now the name
+  of the frame's bottom tab. The message "No OFP on this device" names the new tab.
+
+- **Fixed — Fuel: the level decision no longer spikes at the plan's level, and its fuel axis follows the displayed unit**
+  (`modules/fuel/levels.js` `requoteSeries`, `modules/fuel/module.js`, `modules/fuel/test/levels.html`; SPEC § 3 and § 9,
+  INTEGRATION, DECISIONS, help ×4, BUGS ×2) — on a route with level steps ("FL160→090→110→070"), the fuel and time curves
+  jumped at the plan's level and made false optimums, because that one point was quoted with the route's steps and its
+  neighbours as flat flights. Every level, the plan's included, is now a flat flight at that level; the plan's real quote
+  (with the steps and the plan's wind) is a diamond on both curves with its own legend line ("Plan: FL160, 856 kg, 0:54").
+  The fuel axis and its unit label are in the displayed unit (kg or lb), not the sheet's.
+
+- **Map: the screen is fixed — one-line toolbar, full-height map, the data block as a three-position sheet, no page
+  scroll** (`modules/maps/module.js`, `modules/maps/test/index.html`; SPEC § 4, INTEGRATION § 2 ter and § 6, DECISIONS,
+  help ×4) — the Map module declares the frame's `meta.fixed`: on a phone and on a screen the page no longer scrolls
+  and nothing slides under the header (the "scroll bar and artefacts in the header" of the bug report). From top to
+  bottom: a 44 px toolbar (flight selector, Edit the route, Recentre and the map mode as icon buttons; the title is gone,
+  the tab bar or the rail names the screen), the flight's information line, the map taking all the rest, and the **data
+  block as a sheet** with a drag handle and three heights: collapsed (its title line only), normal (38 % of the view on
+  a phone, 35 % on a screen) and expanded (70 %); the profile, the airspaces list and an aerodrome's reporting points
+  scroll inside it, the map resizes with it and keeps the route framed unless the user has moved it. A tap on the handle
+  collapses the sheet or brings it back; the keyboard moves it too. The airspaces and reporting-point contents open the
+  sheet when it is collapsed. The dual-view pane and the `#maps?tune=1` tuning page (which scrolls inside the root) work
+  as before. The sheet accepts a content that draws itself (`openData(kind, key, title, build(w, h, el))`), ready for the
+  atmosphere cross-section. A map resize was wrongly taken for a gesture of the user (the route was no longer reframed
+  by a live update): fixed.
+
+- **Frame: orientation locked to portrait for now** (`frame/manifest.webmanifest`, `frame/app.js`; SPEC § 3.6,
+  DECISIONS) — effective when the application runs installed (manifest, `screen.orientation.lock`); a browser page is
+  not locked. The landscape layout of the map and atmosphere screens is to decide (specification § 7.1).
+- **Frame: the phone's bottom tab bar, tabs as groups of modules, flight status line, fixed view** (`frame/app.js`,
+  `frame/frame.css`, `frame/index.html`, `frame/lib/icons.js`, `frame/design/*`; frame SPEC § 3.1 and INTEGRATION § 9,
+  design SPEC, DECISIONS, help intro ×4) — on a phone (760 px or less) the menu button and the drawer are gone: a bar
+  at the bottom, **Prepare · Map · Report · Flights · Settings** (Préparer · Carte · CR · Vols · Réglages, four
+  languages), an icon above a one-word label, 56 px plus the device's safe area, 44 px targets; the selected tab changes
+  form (filled icon on a soft pill, label in the accent). A tab is a group of modules (`APP.tabs`; Prepare = fuel +
+  atmosphere, a module not registered yet is skipped): it stays selected while any module of its group is shown, a
+  touch returns to the last one shown, and a row of sub-tabs above the module switches inside a group of two or more.
+  Website and the example module belong to no tab (still reachable by address; the rail of the screens lists every
+  module as before). A status line tops the Prepare tab while a flight is started ("Flight in progress › Map", one
+  touch to the map, "Hide" for the session). A module may declare `meta.fixed: true` for a view that takes the whole
+  height between the header and the bar with no page scroll (the map's lot will use it). `ctx.tab` gives a module its
+  group. The four mock-up designs (metro, swiss, cupertino, material) each style the bar in their own sheet; sticky
+  result bars and notifications sit above it.
+- **Map: the airspaces and the reporting points move to the data block, short codes, thresholds corrected by the frame's
+  size** (`modules/maps/module.js`, `modules/maps/render.js`; SPEC, DECISIONS, help ×4) — the map view is fixed, the map
+  then the data block: the airspaces list ("n airspaces at this point") and an aerodrome's VFR reporting points (points,
+  VAC sequences, instructions) are no longer cards over the map but open in the data block under it, replacing the
+  vertical profile while open (header line with ✕; closing brings the profile back; the block keeps the profile's height
+  rule and scrolls long content; on a phone the page scrolls to bring it into view, the map never moves). On the map a
+  reporting point shows only its short code ("NA", "E", "SE"); the long name stays in the tooltip and the list. The
+  display thresholds now compare an effective zoom: the zoom (after the Complexity slider) corrected by
+  log2(mean of the frame's height and width / 900 px), so a phone or a pane of the dual view shows fewer elements than a
+  laptop at the same map zoom (shown on the tuning page next to the real zoom); replaces the former fixed step under 600 px.
+- **Map: the airspaces card on a phone** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — "n airspaces at this
+  point" no longer fills the map nor hides under the buttons: its own layer above them, the lower 45 % of the frame on
+  a phone (level block beside the scrolling list, ✕ fixed), 320 px at the tap point on a screen; a tap on an empty spot
+  closes it (✕ and Escape too), a drag or the wheel leave it; the aerodrome's card is unchanged.
+- **Fuel: opens on the Plan, compact result bar on a phone** (`modules/fuel/module.js`; SPEC, INTEGRATION, DECISIONS,
+  help ×4) — the module always opens on the Plan (the Sheets screen by its tab or `#fuel?view=sheets`, the last screen
+  is no longer kept); the sticky result takes about half the height at 390 px (192 → 104 px): context on one line
+  ("Block · FL060→090→110→070 · wind ARPEGE FL060", full text on touch), the figure one size smaller, three one-line
+  tiles Trip / Time / TOD.
+- **Design: "Material" (Material Design 3) mock-up, pending decision** (`frame/design/tokens.css`, `frame/design/material.css`,
+  `frame/design/demo_metro.html`, `frame/app.js`, `frame/frame.css`, `frame/index.html`, `frame/sw.js`; design SPEC,
+  DECISIONS) — a fourth retained design in Settings › Design, built like the others (token set first, few frame rules):
+  tonal surfaces (page, cards, fields), a muted blue-violet primary checked at 4.5 : 1 as text on every surface, day and
+  night, pill buttons, 1 px outlined fields that turn 2 px on focus, underlined tabs, steps as tonal chips, a top app bar on
+  the page surface, a navigation drawer on a phone and a navigation rail on a screen (active indicator tinted with the
+  module's colour), two elevation levels only. System fonts (Roboto when installed). The demo page takes
+  `?design=material`. The other designs are unchanged; the rules left out because three other mock-ups already carry them
+  are listed as token / primitive candidates.
+- **Design: "Swiss" and "Cupertino" mock-ups, pending decision** (`frame/design/tokens.css`, `frame/design/swiss.css`,
+  `frame/design/cupertino.css`, `frame/design/demo_metro.html`, `frame/app.js`, `frame/frame.css`, `frame/index.html`,
+  `frame/sw.js`; design SPEC, DECISIONS) — two more designs in Settings › Design, built like Metro (token sets first,
+  few frame rules): Swiss, the International Typographic Style (grid and air, black / white / grey, one signal red, radius 0,
+  rules instead of cards, small spaced capitals, tabular figures) and Cupertino, the iOS Settings look (grey page, white
+  grouped cards, system blue, segmented tabs, grouped lists with chevrons). System fonts only. The demo page takes
+  `?design=metro|swiss|cupertino`. The other designs are unchanged; open points are listed for decision.
+- **Design: "Metro" mock-up, pending decision** (`frame/design/tokens.css`, `frame/design/metro.css`, `frame/design/demo_metro.html`,
+  `frame/app.js`, `frame/frame.css`, `frame/index.html`, `frame/sw.js`; design SPEC, DECISIONS) — a fourth design, picked
+  in Settings › Design: flat colour blocks, square corners, system fonts, big light page titles, verb blocks in the
+  drawer and a rail on a screen, one landmark colour per module (`--sog-module`, in every design, visible only in
+  Metro). The other designs are unchanged pixel for pixel; the frame amendments it shows are listed for decision.
+- **Technical debt, map module** (`docs/technique/DETTE_TECHNIQUE.md`, new section) — five findings of the user on 23 October:
+  the map stops at the antimeridian; the aerodrome card sometimes misplaced and impossible to close; SFC–UNL volumes
+  drawn; a tap on an empty spot does not close the card; VFR text written over the map. Each with its cause and what to do.
+- **Atmosphere module** (`modules/atmosphere/`: SPEC, INTEGRATION, DECISIONS, ROADMAP; `frame/app.js`; bench
+  `modules/atmosphere/test/weather_store.html`) — the atmosphere along the current flight, born as the `labs/atmosphere`
+  page (which now forwards to `#atmosphere`), in the Préparer group (sub-tab on a phone, rail on a screen). A fixed,
+  full-height view on the maps module's template: nothing between the header and the map, round buttons over the map in
+  the frame's overlay layer (Layers; Flight, Details, Load, an altitude chip; the frame's full screen), the map at a
+  chosen altitude (isobars, isotherms, cloud, wind; constant-altitude isobars aloft; the computed trajectory coloured by
+  the temperature met) drawn with the maps module's technique — MapLibre and a vector overlay redrawn with every frame
+  of the movement, its plain background without tiles (`MapsRender`, countries' outlines) — and a bottom block: the
+  overall profile along the route (cloud by level, isotherms, inversions, indicative icing, density altitude, wind,
+  terrain; requested, planned and computed paths) in the frame's three-position sheet, its handle line titled with the content and the flight in brief (never a status), always the current flight at opening (another flight is a marked, unsaved try; none: Prepare in Fuel or See the example; a load also reads the flight's own level, so the maps module's Weather cross-section is there), nothing written over the map (the tap hint is a notification), the local slice of any point tapped on the map or the profile, the
+  summary (a compact list), aerodromes (METAR / TAF) and table behind "Details", the settings behind "Flight", the layers
+  of the map and the profile in the same block. Profile and slice in SVG
+  (vector lines, smooth fields); the profile is offered to the maps module's sheet as a pure `drawSection` (section.js). The map
+  base is the maps module's (`modules/maps/lib/map_base.js`), the bottom sheet the frame's (`frame/lib/sheet.js`);
+  touch gestures are kept on the map alone, the buttons answer a tap at once. Everything through the frame (`ctx.data` for the current flight, read only; `ctx.net`
+  for Open-Meteo, METAR and TAF, the avwx key added by the frame; `ctx.aerodb` for a route text), four languages,
+  `--sog-*` tokens. **Shared weather cache** `cache/weather/<model>/<cell>/<day>.json` (cells at the model's resolution,
+  0.1° floor; valid for the model run; only the missing cells, days and variables are asked; a tally waits under 600
+  calls a minute and stops before 10,000 a day; past days removed), written to move unchanged into the frame lot
+  `frame/weather`. Nothing is asked when the screen opens; sampling as Fuel (50 NM, 24 places at most): a 370 NM flight
+  costs ≈ 295 weighted calls once, then 0; a slice off the route, one place (≈ 10). **World synoptic** outside the
+  flight's grid, never a call from the device: `/v3/weather/world/` built from NOAA GFS by `tools/build_world_weather.py`
+  (GRIB2 read by `tools/grib2_lite.py`) in the Pages workflow — 5° grid, every 3 h to +72 h, one file per step,
+  pressure, wind, temperature, cloud and its layers, CAPE, 0 °C isotherm, tropopause, jet stream, precipitation,
+  visibility; schedule every 6 h — drawn when the view leaves the grid (jet and convection layers), the handle's title
+  saying what is shown, every value at a tapped point outside the grid. **Flight date slider** under the handle (0 to
+  +72 h): the cross-section, the map and the world synoptic follow, nothing asked; "Load" reads every day it can
+  reach. The slider starts from the shared flight's date (`planned_at`); in landscape the cross-section scrolls instead of being cut. No border between the flight's grid and the world: one computation at the map's altitude (the publication carries 11 pressure levels), jet and convection drawn everywhere, the flight's grid relaxed into the world over its outer quarter. The map goes round the world east or west, the flight on every copy. Routes across the date line
+  (Siberia → Alaska) on continuous longitudes: sampling, grid, framing, cross-section and drawing follow the route.
 - **Map: no town named twice, ETA never over an airfield** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS,
   help ×4) — the base map's own place names are hidden while our towns are drawn (shown again otherwise); a point's ETA
   is placed with the route labels, under its name, before the aerodromes.

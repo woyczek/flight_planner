@@ -32,11 +32,19 @@ Pilote. Cahier des charges et journal des décisions : `docs/technique/V3_SPECIF
 | V3 aerodb (bases SIA et appareils) | `v3-aerodb.md` | `E:\DEFA-v3-aerodb` | 8797 |
 | V3 help (aide, tutoriels, manuels) | `v3-help.md` | `E:\DEFA-v3-help` | 8798 |
 | V3 settings (identité, usages, accès, caches) | `v3-settings.md` | `E:\DEFA-v3-settings` | 8799 |
+| Relais cloud (backup de la session ergonomie, quand le poste principal est hors d'atteinte) | `relais-cloud.md` | conteneur cloud claude.ai/code, un arbre git par lot | statique 8800+ |
 
 Chaque agent V3 : lit la spécification V3 et `v3-frame.md` (façon de travailler commune), travaille sur `v3` dans son
 espace, un lot = un commit avec ses trois documents, « poussé » + SHA à la session ergonomie, jamais de push sur
 `develop`, `master` ou `v2-fable`. La session ergonomie tient la spécification, répartit, valide les lectures et
 intègre.
+
+**Relais cloud** (`relais-cloud.md`) : quand la session ergonomie et les sessions des modules sont injoignables et que
+l'utilisateur le dit, une session cloud prend la main : elle arbitre avec ses mots, instancie des agents moins coûteux
+dans les rôles des modules (un arbre git isolé chacun), pousse sur GitHub seulement (branches `v3-<sujet>`, puis `v3`
+en avance rapide pour les essais sur Pages), et tient `docs/technique/V3_JOURNAL_SESSION_CLOUD.md` : point d'étape de
+référence (dernier commit de la session ergonomie), une ligne par décision, consigne de relecture et de retour arrière.
+À son réveil, la session ergonomie relit ce journal, confirme, mitige ou annule, puis intègre sur Framagit.
 
 ## Synchronisation (ce que chaque session fait, sans exception)
 
