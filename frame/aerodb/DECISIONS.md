@@ -649,3 +649,15 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
 - **Measured**: see SPEC § 5 quinquies. KSEA check (SeaTac): runway 16C threshold at 47.4638, -122.3110, 484 ft, -3.00 degrees.
 - **Not done**: the rest of the world (open AIP data sets: ENAIRE, DFS, NATS…) is the next inventory; X-Plane / Navigraph stay the local fallback and
   are not read by anything yet.
+
+## 25 October 2026 — EAD Basic access of the owner: evaluation (`EAD_BASIC.md`)
+
+- **Read** (public pages only; no login, no credential seen): EAD Basic is a consultation tool, "not connected to the EAD operational
+  database", information "shall not be used for operational purposes"; its **AIP Library** lists AIPs by State, type (AIP, AMDT, SUP, AIC,
+  Charts), part (AD, ENR, GEN) and date, and opens the PDF. It holds documents, not data sets (no AIXM). States covered and freshness: not
+  known before login.
+- **The code repository is public** (`private: false`, Pages on): no State AIP PDF may be committed there, not even as a test fixture. This
+  corrects the relay's first suggestion of `frame/aerodb/test/fixtures/ead/<ICAO>/`; only extracted text rows of one table (a short
+  excerpt, as for the SIA) can be fixtures, if the State's terms allow it.
+- **Plan** (not coded before a real page): layout registry with a detector, `--pdf-dir` mode, status `check`, `source.kind: 'ead-basic'`.
+  Which States code their RNAV / RNP procedures in AD 2 tables is **not known**; the checklist is in § 2 of the document.

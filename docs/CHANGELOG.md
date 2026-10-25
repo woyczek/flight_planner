@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: EAD Basic access evaluated for the procedures of other States** (`frame/aerodb/EAD_BASIC.md`, DECISIONS) — EAD Basic is a PDF library of
+  State AIPs, not a data service, and not for operational use; the code repository being public, no State AIP PDF may enter it. The plan to read
+  the AD 2 coding tables of other States (layout registry, `--pdf-dir` mode, status "to be checked") and the checklist for a first real page are
+  written; nothing is coded before a real page exists.
 - **aerodb: inventory of the open AIP data sets for the rest of the world — step 4, second half** (`frame/aerodb/AIP_OPEN_DATA_INVENTORY.md`) —
   the DFS (Germany) publishes an AIXM 5.1 "SID STAR and IAP" data set with its legs through a public REST API, but its terms forbid storing,
   converting or redistributing it without a licence; ENAIRE's sets do not list procedures; no lead for the UK, Canada, Australia and New Zealand.
