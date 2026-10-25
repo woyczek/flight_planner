@@ -29,6 +29,11 @@ to above the flight level. Touch it to open the slice of the nearest point (the 
 there); ◀ and ▶ move to the next slice, ✕ goes back to the cross-section. The drawing always fits the block, its distance
 axis visible; expand the block for more detail.
 
+**Zooming the cross-section.** Pinch the cross-section with two fingers (or Ctrl + wheel) to show only part of it, and
+slide it with two fingers; distances, points, winds and the height scale follow the part shown. One finger keeps its role
+(opening a slice, moving the block). "Whole flight", in the grip row, a double tap or a double click go back to the whole
+route; a change of route goes back to it too.
+
 **The legend.** The "i" chip, in the grip row at the right (after ◀ and ▶), shows the legend of what is drawn; a touch on
 the legend, the chip or Escape closes it.
 
@@ -46,4 +51,4 @@ the legend, the chip or Escape closes it.
   world synoptic comes from GFS (NOAA), every 3 hours up to 72 hours.
 - What is loaded stays on the device and works offline; the Map reuses its weather cross-section.
 
-<!-- fr: 10a7d47c1ccc -->
+<!-- fr: 0d64bc05e5c1 -->

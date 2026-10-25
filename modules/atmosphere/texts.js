@@ -110,6 +110,12 @@ export const TX = {
     'Vorhersage an diesem Punkt wird gelesen…', 'Leyendo la previsión en este punto…'
   ],
   legend: ['Légende', 'Legend', 'Legende', 'Leyenda'],
+  winWhole: ['Vol entier', 'Whole flight', 'Ganzer Flug', 'Vuelo entero'],
+  winWholeHelp: ['Revenir au vol entier (double toucher ou double clic sur la coupe)',
+    'Back to the whole flight (double tap or double click on the cross-section)',
+    'Zurück zum ganzen Flug (Doppeltipp oder Doppelklick auf den Schnitt)',
+    'Volver al vuelo entero (doble toque o doble clic en el corte)'
+  ],
   lgComputed: ['Trajectoire calculée (montée, croisière, descente)', 'Computed path (climb, cruise, descent)',
     'Berechnete Bahn (Steigflug, Reiseflug, Sinkflug)', 'Trayectoria calculada (ascenso, crucero, descenso)'
   ],

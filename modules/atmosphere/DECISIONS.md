@@ -2,6 +2,23 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 25 October 2026 (evening) — zooming the weather cut (rule 20)
+
+- **The request** (user, relayed: "Trouver le moyen de zoomer (pour être précis) le profil vertical"; the relay asked
+  for the same window on this module's cut, so that the Map can wire it on its own weather cut). `drawSection` /
+  `sectionSvg` take `o.window = { from, to }` (NM); without it, the whole cut as before. What lies outside the window is
+  not drawn; the distance marks take a round step inside it; the height scale is refitted to what is visible (the
+  precision the user asked for comes from there: a window at cruise keeps the cruise levels, a window on the climb shows
+  the low layers at a larger scale). The geometry returns the window, the scale's top, the strips and the layers drawn
+  (the Map asked for the last two in its `INTEGRATION.md` § 8).
+- **The gesture is the Map's** (`createAxisWindow`, `modules/maps/lib/axis_window.js`): two fingers pinch and slide, a
+  double tap or a double click comes back to the whole flight, Ctrl + wheel on a screen; one finger keeps its role (the
+  slice of the nearest point, the sheet's drag). The same gesture on both cuts; no second implementation.
+- **"Vol entier"**: a text button in the grip row, before ◀ ▶ « i », only while zoomed (the three chips stay three,
+  rule 13). On a zoomed cut a tap waits 320 ms before opening the slice, so that a double tap resets instead.
+- **Never stored**: the window lives with the page and is reset when the route changes. A sheet drag keeps it and
+  redraws nothing (rule 19). Cases E8 (pinch, marks, button ×4, reset) and E9 (sheet drag) of the suite.
+
 ## 25 October 2026 — the flight zone's edge by default; the chips in the grip row, always three
 
 - **The edge** (user, rule 15 amended: "il y a un saut entre météo et gfs (normal). Donc je tranche : on affiche le cadre

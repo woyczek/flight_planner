@@ -5,9 +5,10 @@ Rules covered
   * nothing written over the map: no hint pill, no text element (E2, L10);
   * the sheet title carries the flight in brief (E3, L10); Details and Flight contents are compact and closable (E4, L7, L9);
   * one "i" only on the page besides the drawing's legend chip (E5, L8); the "tap the map" hint is a notification, once per page
-    life (E6, L10); nothing redraws while the sheet is dragged (E7).
+    life (E6, L10); nothing redraws while the sheet is dragged (E7); the cut's window on the distance axis: a pinch, its marks,
+    "Vol entier" (E8), kept through a sheet drag (E9).
 
-Cases: E1 E2 E3 E4 E5 E6 E7.  The module is seeded with the planned flight of lib.FLIGHT; no forecast can be read without the
+Cases: E1 E2 E3 E4 E5 E6 E7 E8 E9.  The module is seeded with the planned flight of lib.FLIGHT; no forecast can be read without the
 network, so the cases that need data use the module's offline demonstration (`#atmosphere?donnees=demo`) and say so.
 """
 import re
@@ -178,3 +179,84 @@ def e7(c):
     c.page.mouse.up()
     c.js('() => { window.__dragOn = false }')
     c.eq(during, [], 'nothing is redrawn while the finger drags the sheet (map, overlay, drawing)', what='events during the drag')
+
+
+def _touch(c, kind, pts):
+    """One CDP touch event (real pointer events, several fingers at once); no point: the fingers are lifted."""
+    s = getattr(c, '_cdp', None)
+    if s is None:
+        s = c._cdp = c.context.new_cdp_session(c.page)
+    s.send('Input.dispatchTouchEvent', {'type': kind, 'touchPoints': [{'x': x, 'y': y, 'id': i + 1} for i, (x, y) in enumerate(pts)]})
+
+
+def _pinch(c, cx, cy, d0, d1, steps=8):
+    """Two fingers centred on (cx, cy), their distance going from d0 to d1 px, then lifted."""
+    pair = lambda d: [(cx - d / 2, cy), (cx + d / 2, cy)]
+    _touch(c, 'touchStart', pair(d0))
+    for k in range(1, steps + 1):
+        _touch(c, 'touchMove', pair(d0 + (d1 - d0) * k / steps))
+        c.wait(30)
+    _touch(c, 'touchEnd', [])
+    c.wait(400)
+
+
+def _cut_state(c):
+    """The cut's window (NM, from data-window), its distance marks and its route-point names."""
+    return c.js(f"""() => {{ const b = document.querySelector('{ATM} .at-dbody'), svg = b.querySelector('svg'),
+        t = svg ? [...svg.querySelectorAll('text')] : [], w = (b.dataset.window || '').split(',').map(Number);
+      return {{ from: w[0], to: w[1], ticks: t.filter(x => /^\\d+$/.test(x.textContent) && x.getAttribute('dominant-baseline') === 'hanging').map(x => +x.textContent),
+        whole: !document.querySelector('{ATM} [data-at="whole"]').hidden }} }}""")
+
+
+def _zoom_cut(c):
+    c.open('atmosphere?donnees=demo', flight=True)
+    c.until(f"!!document.querySelector('{ATM} .at-dbody svg')", timeout=10000, what='the cross-section is drawn')
+    c.settle()
+    whole = _cut_state(c)
+    # the middle of the visible part of the cut (the bottom bar or a hint may cover its foot)
+    x, y = c.js(f"""() => {{ const s = document.querySelector('{ATM} .at-dbody svg'), r = s.getBoundingClientRect(), x = r.left + r.width * .4;
+      let y1 = r.top + 20; while (y1 < r.bottom && s.contains(document.elementFromPoint(x, y1 + 4))) y1 += 4;
+      return [x, (r.top + y1) / 2] }}""")
+    _pinch(c, x, y, 24, 200)
+    return whole, _cut_state(c)
+
+
+@case('E8', 'Cut window: pinch, marks, whole flight', 'E', tags=('sheet', 'atmosphere'), screens=False, langs4=True,
+      rule='V3 spec 7.1 rule 20: the same gesture on the weather cut as on the map\'s profile')
+def e8(c):
+    whole, st = _zoom_cut(c)
+    c.ok(whole['from'] == 0 and whole['to'] > 300 and not whole['whole'], f'window {whole}', 'the whole flight, no "whole flight" button, before any gesture')
+    span = st['to'] - st['from']
+    c.ok(5 <= span < whole['to'] / 4, f'window {st["from"]}..{st["to"]} ({span:.1f} NM)', 'a pinch tightens the cut to a part of the flight (5 NM at least)')
+    c.ok(st['ticks'] and all(st['from'] - .01 <= t <= st['to'] + .01 for t in st['ticks']), f'marks {st["ticks"]} in {st["from"]}..{st["to"]}', 'every distance mark is inside the window')
+    c.ok(st['whole'], 'the "whole flight" button is not displayed while zoomed', 'a button in the grip row while the window is tight')
+    c.eq(c.text(f'{ATM} [data-at="whole"]'), row(c, 'winWhole'), 'its label is in the language of the run', what='button label')
+    c.page.locator(f'{ATM} [data-at="whole"]').click()
+    c.wait(400)
+    back = _cut_state(c)
+    c.ok(back['from'] == 0 and abs(back['to'] - whole['to']) < .1 and not back['whole'], f'window {back}', '"Vol entier" gives the whole cut back and hides itself')
+
+
+@case('E9', 'Cut window: a sheet drag keeps it', 'E', tags=('sheet', 'atmosphere'), screens=False,
+      rule='V3 spec 7.1 rules 19 and 20: the window is kept and the cut is not redrawn under the finger while the sheet is dragged')
+def e9(c):
+    whole, st = _zoom_cut(c)
+    c.ok(st['to'] - st['from'] < whole['to'] / 4, f'window {st["from"]}..{st["to"]}', 'the cut is zoomed before the drag')
+    c.js(f"""() => {{ const ev = window.__dragEv = []; new MutationObserver(() => window.__dragOn && ev.push('sheet body rewritten'))
+      .observe(document.querySelector('{ATM} .at-dbody'), {{ childList: true }}) }}""")
+    g = c.box(f'{ATM} .f-sheet-grip')
+    x, y = g['x'] + g['w'] / 2, g['y'] + 10
+    c.page.mouse.move(x, y)
+    c.page.mouse.down()
+    c.js('() => { window.__dragOn = true }')
+    for i in range(1, 13):
+        c.page.mouse.move(x, y + (i if i <= 6 else 12 - i) * 18)
+        c.wait(60 if i % 4 else 220)
+    during = c.js('() => window.__dragEv.slice()')
+    c.page.mouse.up()
+    c.js('() => { window.__dragOn = false }')
+    c.eq(during, [], 'the zoomed cut is not redrawn while the finger drags the sheet', what='events during the drag')
+    c.settle()
+    c.wait(400)
+    end = _cut_state(c)
+    c.eq([round(end['from'], 1), round(end['to'], 1)], [round(st['from'], 1), round(st['to'], 1)], 'the window is the same after the drag', what='window after the drag')

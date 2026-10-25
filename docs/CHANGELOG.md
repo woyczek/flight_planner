@@ -23,6 +23,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   The weather cut does not zoom yet: its option is requested from Atmosphere in `INTEGRATION.md` § 8. D21 pinch / scale / cursor /
   button, D22 sheet drag, D23 kept and reset, D24 screen gestures.
 
+- **Atmosphere: the weather cut zooms like the vertical profile** (`modules/atmosphere/section.js`, `module.js`, `texts.js`, `help/*.md`,
+  `frame/help/pilot.*.md`, `tests/v3` E8-E9; atmosphere INTEGRATION § 5, DECISIONS; V3_SPECIFICATION § 7.1 rule 20) — `drawSection` /
+  `sectionSvg` take `o.window = { from, to }` (NM, the whole cut by default): only the columns, barbs, marks, points, TOC / TOD and labels inside
+  the window are drawn, the distance marks take a round step, the height scale is refitted to what is visible, and the geometry follows the
+  window (`xOf`, `nmOf`, `window`, `top`, plus `strips` and `layers` asked by the Map). The module wires the Map's `createAxisWindow` on its own
+  cut: two fingers pinch and slide, Ctrl + wheel, a double tap or "Whole flight" (grip row, only while zoomed, four languages) comes back to the
+  whole flight; the window is never stored and is reset when the route changes. E8 pinch / marks / button / reset, E9 sheet drag.
+
 - **The weather cut's legend has its symbols** (`modules/maps/module.js`, `tests/v3` D4, `modules/maps/INTEGRATION.md` § 8, DECISIONS) — user 25 Oct
   (iPhone, route LFRS to LFML, Weather chip then "i": "Bug : cf screenshot (légende)"): the six rows of the legend each had an empty grey box.
   Cause: the Map read the cut's legend rows as if their `swatch` were `{ css }` and drew a "band" box from it, while atmosphere's

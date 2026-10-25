@@ -29,6 +29,11 @@ Schnitt und Punktschnitte folgen.
 Atmosphäre dort); ◀ und ▶ wechseln zum Nachbarschnitt, ✕ kehrt zum Schnitt zurück. Die Zeichnung passt immer in den
 Block, ihre Entfernungsachse sichtbar; vergrößern Sie den Block für mehr Einzelheiten.
 
+**Den Schnitt zoomen.** Ziehen Sie den Schnitt mit zwei Fingern auf (oder Strg + Mausrad), um nur einen Teil zu zeigen,
+und verschieben Sie ihn mit zwei Fingern; Entfernungen, Punkte, Winde und die Höhenskala folgen dem gezeigten Teil. Ein
+einzelner Finger behält seine Rolle (Punktschnitt öffnen, Block verschieben). „Ganzer Flug" in der Griffzeile, ein
+Doppeltipp oder ein Doppelklick kehren zur ganzen Route zurück; eine Routenänderung ebenfalls.
+
 **Die Legende.** Der Chip „i" in der Griffzeile rechts (nach ◀ und ▶) zeigt die Legende des Gezeichneten; ein Tippen auf
 die Legende, den Chip oder Escape schließt sie.
 
@@ -46,4 +51,4 @@ die Legende, den Chip oder Escape schließt sie.
   die Weltsynoptik kommt von GFS (NOAA), alle 3 Stunden bis 72 Stunden.
 - Das Geladene bleibt auf dem Gerät und dient offline; die Karte übernimmt seinen Wetterschnitt.
 
-<!-- fr: 10a7d47c1ccc -->
+<!-- fr: 0d64bc05e5c1 -->

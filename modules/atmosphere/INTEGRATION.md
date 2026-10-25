@@ -125,6 +125,16 @@ openData('weather', `wx:${flightKey}`, title, (w, h, el) => {
   60 px is the least it draws). V3_SPECIFICATION § 7.1 rule 13: no title over a drawing, the drawing at the body's
   exact height. The left gutter is measured from the level labels it draws (about 33 px for "FL350"; the surface strips'
   labels widen it when they are shown), so the drawing starts at the body's edge.
+- `o.window` (rule 20): `{ from, to }` in NM from the departure, a window on the distance axis; absent, `null` or the
+  whole route: the whole cut (the default). The window is bounded to the route and is 1 NM at least. Only what lies in it
+  is drawn — columns, barbs, isotherm labels, distance marks (a round step inside the window: 1, 2, 5, 10, 20, 25, 50…),
+  route points and their names, TOC / TOD, the cursor and the selection — and the height scale is refitted to what is
+  visible (the highest of the requested, planned and computed levels and the terrain in the window, plus 1 500 ft,
+  rounded up to 1 000 ft, 3 000 ft at least, the whole cut's top at most). The geometry follows the window: `xOf(nm)`
+  and `nmOf(x)` map the window onto the plot, and it carries `window: { from, to }` (only when one applies), `top` (ft,
+  the height scale's top), `strips` (the surface strips drawn) and `layers` (the layers drawn, defaults filled in).
+  The host keeps the window (never stored) and draws again with it; this module drives it with the maps module's
+  `createAxisWindow` (`modules/maps/lib/axis_window.js`), reset when the route changes.
 - `sectionLegend({ kind, layers, strips, cloudRgb, t })` (rule 14): the legend of what the drawing really shows, in
   reading order — `kind` `'cut'` (the cross-section, with the `layers` passed to `drawSection`) or `'slice'` (the
   sounding), `strips` true when the surface strips are drawn (body of 260 px or more), `t` the host's translation of a

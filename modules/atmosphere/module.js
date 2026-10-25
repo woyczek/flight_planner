@@ -45,6 +45,9 @@ import {
   plainView,
   drawPlain
 } from '../maps/lib/map_base.js';
+import {
+  createAxisWindow
+} from '../maps/lib/axis_window.js';
 // feuille à trois positions : primitive du cadre (frame/INTEGRATION.md § 11)
 import {
   createSheet
@@ -91,7 +94,7 @@ export const meta = {
   }],
   files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'world.js?v=0', 'lib/weather_map.js?v=0', 'section.js?v=0',
     'texts.js?v=0',
-    '../maps/lib/map_base.js?v=0',
+    '../maps/lib/map_base.js?v=0', '../maps/lib/axis_window.js?v=0',
     '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0',
     '../maps/render.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/metar.js?v=0', '../../frame/lib/icons.js?v=0'
@@ -194,6 +197,10 @@ const STYLE = `
 [data-module="atmosphere"] .f-sheet-head:not(.f-sheet-head-bare)>.at-chips{gap:0}
 [data-module="atmosphere"] .f-sheet-head:not(.f-sheet-head-bare)>.at-chips>button{width:var(--sog-touch,44px);height:100%;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:none;color:inherit;box-shadow:none}
 [data-module="atmosphere"] .at-chips>button:disabled{opacity:.35;cursor:default}
+[data-module="atmosphere"] .f-sheet-head>.at-whole{flex:none;box-sizing:border-box;min-height:0;height:100%;min-width:44px;margin:0;padding:0 8px;border:0;border-radius:var(--sog-radius);background:none;color:var(--sog-accent);font:600 var(--sog-size-xs,12px)/1 inherit;font-family:inherit;white-space:nowrap;cursor:pointer;touch-action:manipulation}
+[data-module="atmosphere"] .f-sheet-head>.at-whole[hidden]{display:none}
+/* la coupe : deux doigts sont la fenêtre (pincement, glisser), un doigt le toucher ; pas de défilement de page sous le dessin */
+[data-module="atmosphere"] .f-sheet-body.at-dbody.at-plot{touch-action:none}
 [data-module="atmosphere"] .at-chip-i{font:italic 600 16px/1 Georgia,serif}
 [data-module="atmosphere"] .at-chips>button[aria-pressed=true]{color:var(--sog-accent)}
 /* légende du dessin (règle 14) : panneau translucide sur le dessin, en haut à gauche */
@@ -369,6 +376,7 @@ export async function mount(el, ctx) {
 </div>
 <section class="f-sheet-panel" data-at="data">
   <div class="f-sheet-head"><button type="button" class="f-sheet-grip" data-at="grip"><span class="f-badge at-hidden" data-kind="warn" data-at="srcTag"></span><b class="f-sheet-title" data-at="dtitle"></b></button>
+    <button type="button" class="at-whole" data-at="whole" hidden title="${esc(T('winWholeHelp'))}" aria-label="${esc(T('winWholeHelp'))}">${esc(T('winWhole'))}</button>
     <div class="at-chips" role="group" data-at="chips" aria-label="${esc(T('sliceNav'))}" hidden><button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" title="${esc(T('slicePrev'))}">◀</button><button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" title="${esc(T('sliceNext'))}">▶</button><button type="button" class="at-chip-i" data-at="legendBtn" aria-pressed="false" aria-label="${esc(T('legend'))}" title="${esc(T('legend'))}">i</button></div>
     <button type="button" class="f-sheet-close" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
   <div class="at-when" data-at="when"><input type="range" min="0" max="${SHIFT_MAX}" step="1" value="0" data-at="shift" aria-label="${esc(T('whenAria'))}"><output data-at="whenOut"></output></div>
@@ -669,6 +677,31 @@ export async function mount(el, ctx) {
   // ---------------------------------------------------------------- bloc du bas
 
   const dbody = $('dbody');
+  // fenêtre sur l'axe des distances de la coupe (règle 20, l'aide de la Carte : le même geste) : deux doigts zooment et
+  // déplacent, double toucher ou double clic, ou « Vol entier », la rend entière, Ctrl + molette zoome ; un doigt reste le
+  // toucher qui ouvre une tranche. Gardée pour la vie de la page, jamais enregistrée ; une autre route la remet entière.
+  let winRaf = 0,
+    tapTimer = 0;
+  const axw = createAxisWindow(dbody, {
+    total: () => S.traj?.total || 0,
+    min: 5,
+    plot: () => S.xsGeo ? {
+      x0: S.xsGeo.x0,
+      x1: S.xsGeo.x0 + S.xsGeo.pw
+    } : null,
+    enabled: () => S.view === 'profile' && !!S.traj && !dragging(),
+    onChange: () => {
+      winRaf ||= requestAnimationFrame(() => {
+        winRaf = 0;
+        if (alive && S.view === 'profile' && S.traj) drawProfile();
+      });
+    }
+  });
+  /** « Vol entier » dans la ligne de la poignée : seulement devant la coupe, tant que la fenêtre est resserrée. */
+  const winSync = () => {
+    const on = S.view === 'profile' && !!S.traj && axw.zoomed;
+    if ($('whole').hidden === on) $('whole').hidden = !on;
+  };
 
   /** Affiche un contenu du bloc : profil (défaut), tranche locale, détails, réglages, couches. */
   function show(view) {
@@ -683,6 +716,7 @@ export async function mount(el, ctx) {
     // les puces d'un dessin, toujours trois : ◀ ▶ actives sur une tranche de la route seulement
     $('chips').hidden = !(view === 'profile' || view === 'slice');
     $('prev').disabled = $('next').disabled = !(view === 'slice' && S.local?.kind === 'route');
+    winSync();
     if (view !== 'profile' && view !== 'slice') S.legend = false;
     dbody.classList.toggle('at-plot', view === 'profile' || view === 'slice');
     drawData();
@@ -737,6 +771,14 @@ export async function mount(el, ctx) {
   function drawProfile() {
     baseTitle();
     bareHead(T('cutAria'));
+    // une autre route : la coupe repart entière (la fenêtre vit avec la page, jamais gardée)
+    const sig = JSON.stringify([S.flight.points.map(p => [p.lat, p.lon]), Math.round(S.traj.total)]);
+    if (sig !== S.winSig) {
+      S.winSig = sig;
+      axw.reset({
+        quiet: true
+      });
+    }
     const r = sectionSvg({
       field: S.field,
       traj: S.traj,
@@ -751,21 +793,41 @@ export async function mount(el, ctx) {
       fmtLvl,
       cloudRgb: cloudRgb(),
       dark: dark(),
+      window: axw.zoomed ? {
+        from: axw.from,
+        to: axw.to
+      } : null,
       labels: {
         strips: [T('stLow'), T('stMid'), T('stHigh'), T('stPrecip'), T('stVis')]
       }
     });
     S.xsGeo = r.geo;
+    setAttr(dbody, 'data-window', r.geo.window ? `${r.geo.window.from.toFixed(2)},${r.geo.window.to.toFixed(2)}` : `0,${S.traj.total.toFixed(2)}`);
+    winSync();
     S.drawn = `${dbody.clientWidth}x${dbody.clientHeight}`;
     dbody.innerHTML = r.svg + '<div class="at-tip" data-at="xsTip"></div>';
     const svg = dbody.firstChild;
     svg.onpointermove = xsTip;
     svg.onpointerleave = () => $('xsTip').style.display = 'none';
     svg.onclick = ev => {
-      const nm = S.xsGeo.nmOf(ev.clientX - svg.getBoundingClientRect().left);
-      let k = 0;
-      S.route.samples.forEach((s, j) => Math.abs(s.nm - nm) < Math.abs(S.route.samples[k].nm - nm) && (k = j));
-      openRouteSlice(k);
+      const nm = S.xsGeo.nmOf(ev.clientX - svg.getBoundingClientRect().left),
+        open = () => {
+          let k = 0;
+          S.route.samples.forEach((s, j) => Math.abs(s.nm - nm) < Math.abs(S.route.samples[k].nm - nm) && (k = j));
+          openRouteSlice(k);
+        };
+      // fenêtre resserrée : un double toucher la rend entière, le premier toucher attend donc un instant avant d'ouvrir la
+      // tranche (un second toucher l'annule)
+      if (tapTimer) {
+        clearTimeout(tapTimer);
+        tapTimer = 0;
+        return;
+      }
+      if (!axw.zoomed) return open();
+      tapTimer = setTimeout(() => {
+        tapTimer = 0;
+        if (S.view === 'profile') open();
+      }, 320);
     };
     showLegend();
   }
@@ -2048,6 +2110,7 @@ export async function mount(el, ctx) {
     render();
     show('profile');
   };
+  $('whole').onclick = () => axw.reset();
   $('legendBtn').onclick = () => {
     S.legend = !S.legend;
     showLegend();
@@ -2207,6 +2270,9 @@ export async function mount(el, ctx) {
     mq.removeEventListener('change', repaint);
     document.removeEventListener('visibilitychange', back);
     document.removeEventListener('keydown', legendKey);
+    axw.stop();
+    clearTimeout(tapTimer);
+    cancelAnimationFrame(winRaf);
     window.removeEventListener('pageshow', back);
     unwatch?.();
     unwatchEdge?.();
@@ -2219,7 +2285,7 @@ export async function mount(el, ctx) {
     head: $('grip').parentNode,
     grip: $('grip'),
     pos: sheetKeep,
-    ignore: '[data-at="dclose"],[data-at="prev"],[data-at="next"],[data-at="legendBtn"]',
+    ignore: '[data-at="dclose"],[data-at="prev"],[data-at="next"],[data-at="legendBtn"],[data-at="whole"]',
     labels: (pos, rank) => `${T('sheetSize')} (${T(`sheet${rank}`)})`,
     onChange: pos => sheetKeep = pos,
     onSettle: settled

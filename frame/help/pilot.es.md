@@ -603,6 +603,11 @@ encima del nivel del vuelo. Tóquelo para abrir el corte del punto más cercano 
 ◀ y ▶ pasan al corte vecino, ✕ vuelve al corte de la ruta. El dibujo cabe siempre en el bloque, con su eje de distancias
 visible; amplíe el bloque para ver más detalle.
 
+**Ampliar el corte.** Pellizque el corte con dos dedos (o Ctrl + rueda) para mostrar solo una parte, y deslícelo con dos
+dedos; las distancias, los puntos, los vientos y la escala de alturas siguen la parte mostrada. Un solo dedo conserva su
+papel (abrir un corte de punto, mover el bloque). «Vuelo entero», en la línea del asa, un doble toque o un doble clic
+vuelven a la ruta entera; un cambio de ruta también.
+
 **La leyenda.** La pastilla «i», en la línea del asa a la derecha (después de ◀ y ▶), muestra la leyenda de lo dibujado;
 un toque en la leyenda, en la pastilla o Escape la cierra.
 
@@ -620,7 +625,7 @@ un toque en la leyenda, en la pastilla o Escape la cierra.
   el sinóptico mundial viene de GFS (NOAA), cada 3 horas hasta 72 horas.
 - Lo cargado se queda en el aparato y sirve sin conexión; el Mapa reutiliza su corte meteorológico.
 
-<!-- fr: 10a7d47c1ccc -->
+<!-- fr: 0d64bc05e5c1 -->
 
 <!-- chapter: settings -->
 # Ajustes

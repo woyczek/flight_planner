@@ -589,6 +589,11 @@ Touchez-la pour ouvrir la tranche du point le plus proche (le profil vertical de
 passent à la tranche voisine, ✕ revient à la coupe. Le dessin tient toujours dans le bloc, son axe des distances visible ;
 agrandissez le bloc pour plus de détails.
 
+**Zoomer la coupe.** Pincez la coupe à deux doigts (ou Ctrl + molette) pour n'en montrer qu'une partie, et faites-la
+glisser à deux doigts ; les distances, les points, les vents et l'échelle des hauteurs suivent la partie montrée. Un doigt
+seul garde son rôle (ouvrir une tranche, déplacer le bloc). « Vol entier », dans la ligne de la poignée, un double toucher
+ou un double clic reviennent à la route entière ; un changement de route y revient aussi.
+
 **La légende.** La pastille « i », dans la ligne de la poignée à droite (après ◀ et ▶), montre la légende de ce qui est
 dessiné ; un toucher sur la légende, la pastille ou Échap la ferme.
 
