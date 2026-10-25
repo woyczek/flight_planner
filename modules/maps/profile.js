@@ -6,8 +6,12 @@
   // aux taux reçus ou par défaut ; relief des tuiles Terrarium, ou, sans elles (hors ligne), les MORA des cases traversées.
   // Aucun texte d'interface : codes, niveaux et distances seulement.
   // API : window.MapsProfile = { build(points, { levelFt, profile, airspaces, elevation, mora }) → coupe,
-  //   draw(ctx, coupe, { W, H, scale }) → géométrie, xOf(geo, s), sOf(geo, x), at(coupe, s) → { lat, lon, s, nm, alt,
+  //   draw(ctx, coupe, { W, H, scale, window }) → géométrie, xOf(geo, s), sOf(geo, x), at(coupe, s) → { lat, lon, s, nm, alt,
   //   terrain, mora, zones }, posAt(coupe, s) → { lat, lon }, nearest(coupe, toC, x, y, maxPx) → s | null }.
+  // Fenêtre (V3_SPECIFICATION § 7.1 règle 20) : `window` { from, to } en NM depuis le départ ; seule cette portion est dessinée,
+  // l'axe vertical se recale sur ce qui y est visible. La géométrie rendue porte la fenêtre (w0, w1 en mètres) : xOf et sOf la
+  // lisent, donc le curseur, les marques et la lecture des espaces (at, project, nearest travaillent en distance s et n'en dépendent
+  // pas) restent justes sans que l'appelant s'en soucie.
   if (window.MapsProfile) return;
   const NM = 1852;
   const P = () => window.SiaProfile;
@@ -125,12 +129,17 @@
   function draw(ctx, data, {
     W,
     H,
-    scale = .8
+    scale = .8,
+    window: win = null
   }) {
     const geo = P().draw(ctx, data, {
       W,
       H,
       scale,
+      win: win && Number.isFinite(win.from) && Number.isFinite(win.to) ? {
+        s0: win.from * NM,
+        s1: win.to * NM
+      } : null,
       limitFt: window.SiaAero.limitFt,
       abbrev: true,
       limits: false,
@@ -145,6 +154,11 @@
           geo
           .bottom));
       ctx.save();
+      if (geo.zoomed) { // fenêtre : les marches de MORA sont rognées au cadre
+        ctx.beginPath();
+        ctx.rect(geo.padL, geo.padT, geo.W - geo.padL - geo.padR, geo.H - geo.padT - geo.padB);
+        ctx.clip();
+      }
       ctx.strokeStyle = '#8b2d18';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([5, 3]);
@@ -165,8 +179,13 @@
     }
     return geo;
   }
-  const xOf = (g, s) => g.padL + (g.W - g.padL - g.padR) * s / g.total;
-  const sOf = (g, x) => Math.max(0, Math.min(g.total, (x - g.padL) / (g.W - g.padL - g.padR) * g.total));
+  /** Abscisse de la distance s (mètres) et distance de l'abscisse x ; la fenêtre dessinée (g.w0 .. g.w1), tout le vol sans elle. */
+  const xOf = (g, s) => g.padL + (g.W - g.padL - g.padR) * (s - (g.w0 || 0)) / ((g.w1 ?? g.total) - (g.w0 || 0));
+  const sOf = (g, x) => {
+    const a = g.w0 || 0,
+      b = g.w1 ?? g.total;
+    return Math.max(a, Math.min(b, a + (x - g.padL) / (g.W - g.padL - g.padR) * (b - a)));
+  };
   /** Échantillon le plus proche de la distance s (mètres). */
   const sampleAt = (data, s) => {
     const n = data.samples.length - 1,

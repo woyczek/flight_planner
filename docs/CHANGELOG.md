@@ -12,6 +12,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Zoom the vertical profile** (`modules/maps/lib/axis_window.js` new, `modules/maps/profile.js`, `modules/maps/lib/vertical_profile.js`,
+  `modules/maps/module.js`, manual of the Map x4, `tests/v3` D21-D24, SPEC § 4 bis, `INTEGRATION.md` § 8 and § 10, DECISIONS; V3_SPECIFICATION
+  § 7.1 rule 20) — user 25 Oct, 14:30: "Trouver le moyen de zoomer (pour être précis) le profil vertical". The profile accepts a window on the
+  distance axis: two fingers pinch (around their middle) and slide, one finger stays the reading cursor, a double tap or the new "Whole flight"
+  text button (in the sheet's head line, only while zoomed; no extra chip) comes back to the whole flight; on a screen Ctrl + wheel zooms around
+  the pointer, a drag moves the window, a double click resets. The vertical axis refits to what is visible (that is where the precision comes
+  from), the distance marks take a round step inside the window, points, TOC / TOD and labels outside it are not drawn, the cursor, the
+  airspace reading and the strip stay exact. The window is kept while the page lives and reset when the route changes; it is never stored.
+  The weather cut does not zoom yet: its option is requested from Atmosphere in `INTEGRATION.md` § 8. D21 pinch / scale / cursor /
+  button, D22 sheet drag, D23 kept and reset, D24 screen gestures.
+
 - **The weather cut's legend has its symbols** (`modules/maps/module.js`, `tests/v3` D4, `modules/maps/INTEGRATION.md` § 8, DECISIONS) — user 25 Oct
   (iPhone, route LFRS to LFML, Weather chip then "i": "Bug : cf screenshot (légende)"): the six rows of the legend each had an empty grey box.
   Cause: the Map read the cut's legend rows as if their `swatch` were `{ css }` and drew a "band" box from it, while atmosphere's

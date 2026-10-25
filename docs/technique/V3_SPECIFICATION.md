@@ -321,6 +321,12 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       (rule 13: no new chip). The gesture is the same on both drawings: the window helper is written once (`modules/maps/lib`,
       next to `map_base`) and the cut receives the window through `drawSection` (Atmosphere session's contract); the lot
       starts with the profile and asks Atmosphere for the cut's option in `modules/maps/INTEGRATION.md`.
+      - **Done for the profile** (relay cloud, lot `v3-profil-zoom`, 25 Oct): `modules/maps/lib/axis_window.js` (the gesture, written once), a `window`
+        option of `MapsProfile.draw` (the vertical axis refits to the window, the distance marks take a round step, `xOf` / `sOf` read the
+        window so the cursor and the airspace reading are unchanged), the "Whole flight" text button in the legend row (no chip), the window
+        kept for the page and reset with the route, never stored; manual of the Map x4, tests D21 to D24. **The weather cut stays whole**:
+        `drawSection` has no window option; the request (`o.window = { from, to }` in NM, what to filter, `geo.window` returned) is in
+        `modules/maps/INTEGRATION.md` § 8 for the Atmosphere session.
       - **Done** (relay cloud, branch `v3-feuille-v2`, 25 Oct; `frame/DECISIONS.md` has the diagnosis and the numbers): the flicker was the
         Carte's, not the primitive's (48 of 50 `map.resize()` of a drag came from MapLibre's own `ResizeObserver`, four observers of the module
         redrew the overlay, the profile and the cut at every frame). `frame/lib/sheet.js` is written again with the same API, HTML, classes and

@@ -1119,3 +1119,217 @@ def d20(c):
              f'{what}: settled: MapLibre canvas {end["map"] and round(end["map"]["w"])}x{end["map"] and round(end["map"]["h"])} in a frame of {end["box"]["w"]:.0f}x{end["box"]["h"]:.0f}',
              'after the settle the MapLibre canvas fills its frame')
     c.ok(strips > 0, 'no sample showed the strip beyond the map', 'the drag lowers the sheet far enough for the frame to outgrow the map (the colour check ran)')
+
+
+# ---------------------------------------------------------------------------------------------------------- D21-D24: the profile window
+# V3 spec 7.1 rule 20 (user 25 Oct, 14:30: "Trouver le moyen de zoomer (pour être précis) le profil vertical"): a window on the distance axis.
+# The planned flight of lib.FLIGHT climbs to FL270 over 62 NM (no terrain offline: the climb starts at 0 ft), so the vertical scale of a window
+# near the departure is lower than the whole flight's; the canvas says what it drew (data-window NM, data-scale ft, data-plot px, data-ticks NM).
+def hide_notes(c):
+    c.page.add_style_tag(content='#fNotes{display:none!important}')      # the "data access not set" toast covers the foot of the sheet
+
+
+def win_state(c):
+    """What the profile canvas says it drew: the window (NM), the vertical scale (ft), the plot frame (px of the canvas), the distance marks (NM)."""
+    return c.js("""() => { const d = document.querySelector('.mp-pc').dataset, n = k => (d[k] || '').split(',').filter(Boolean).map(Number);
+        const w = n('window'), s = n('scale'), p = n('plot');
+        return { from: w[0], to: w[1], bottom: s[0], top: s[1], x0: p[0], x1: p[1], ticks: n('ticks') } }""")
+
+
+def plan_alt(nm):
+    """Planned altitude (ft) of the seeded flight at nm from the departure: a straight climb to FL270 over 62 NM (Carburant's tocNm), from 0 ft."""
+    return 27000 * min(nm, 62) / 62
+
+
+def px_of(c, st, nm):
+    """Page x of a distance of the window; the page y of the profile's middle."""
+    cb = c.box('.mp-pc')
+    return cb['x'] + st['x0'] + (nm - st['from']) / (st['to'] - st['from']) * (st['x1'] - st['x0'])
+
+
+def prof_y(c):
+    cb = c.box('.mp-pc')
+    return cb['y'] + cb['h'] / 2
+
+
+def touch(c, kind, pts):
+    """One CDP touch event with the given points ([(x, y), ...]; none for the end): real pointer events, two fingers at once."""
+    s = getattr(c, '_cdp', None)
+    if s is None:
+        s = c._cdp = c.context.new_cdp_session(c.page)
+    s.send('Input.dispatchTouchEvent', {'type': kind, 'touchPoints': [{'x': x, 'y': y, 'id': i + 1} for i, (x, y) in enumerate(pts)]})
+
+
+def pinch(c, cx, cy, d0, d1, steps=8):
+    """Two fingers on the profile, centred on (cx, cy), their distance going from d0 to d1 px (the centre stays), then both lifted."""
+    pair = lambda d: [(cx - d / 2, cy), (cx + d / 2, cy)]
+    touch(c, 'touchStart', pair(d0))
+    for k in range(1, steps + 1):
+        touch(c, 'touchMove', pair(d0 + (d1 - d0) * k / steps))
+        c.wait(30)
+    touch(c, 'touchEnd', [])
+    c.wait(250)
+
+
+def zoom_start(c, nm=12, factor=8):
+    """Opens the map on the seeded flight and pinches the profile around `nm`; returns (whole state, zoomed state)."""
+    c.open('maps', flight=True, forecast=True)
+    hide_notes(c)
+    c.wait(1500)
+    c.settle()
+    whole = win_state(c)
+    pinch(c, px_of(c, whole, nm), prof_y(c), 24, 24 * factor)
+    return whole, win_state(c)
+
+
+@case('D21', 'Profile window: pinch, scale, cursor, whole flight', 'D', tags=('sheet', 'maps'), screens=False, designs=('standard', 'cupertino'), langs4=True,
+      rule='V3 spec 7.1 rule 20 (user 25 Oct 14:30: "Trouver le moyen de zoomer (pour être précis) le profil vertical"): a pinch zooms the profile around its centre, one finger stays the cursor')
+def d21(c):
+    c.open('maps', flight=True, forecast=True)
+    hide_notes(c)
+    c.wait(1500)
+    c.settle()
+    whole = win_state(c)
+    c.ok(whole['from'] == 0 and whole['to'] > 360, f'window {whole["from"]}..{whole["to"]} NM', 'the whole flight (0 to its 366 NM) before any gesture')
+    c.ok(not c.shown('.mp-whole'), 'the "whole flight" button is displayed on a whole flight', 'nothing in the legend row when the window is whole')
+    # a pinch around 12 NM, fingers 24 px then 192 px apart: eight times closer
+    cx, cy = px_of(c, whole, 12), prof_y(c)
+    pinch(c, cx, cy, 24, 192)
+    st = win_state(c)
+    span = st['to'] - st['from']
+    c.ok(span < whole['to'] / 5 and span >= 5, f'window {st["from"]}..{st["to"]} NM ({span:.1f} NM)', 'the window tightened to a fraction of the flight (at least 5 NM) by the pinch')
+    under = st['from'] + (cx - c.box('.mp-pc')['x'] - st['x0']) / (st['x1'] - st['x0']) * span
+    c.eq(round(under, 1), 12, 'the distance under the fingers\' centre stays under it (zoom around the centre)', tol=1.5, what='NM under the pinch centre after the zoom')
+    c.ok(st['from'] >= 0 and st['to'] <= whole['to'] + .1, f'window {st["from"]}..{st["to"]} NM', 'never outside the flight')
+    # the vertical scale fits what is visible: the top follows the climb at the window's end, not the whole flight's FL270
+    c.ge(st['top'], plan_alt(st['to']), 'the vertical scale reaches the highest altitude of the window', what=f'top {st["top"]} ft, planned {plan_alt(st["to"]):.0f} ft at {st["to"]} NM')
+    c.le(st['top'], whole['top'] - 1000, 'the vertical scale is lower than the whole flight\'s (it refits to what is visible)', what=f'top {st["top"]} ft (whole flight {whole["top"]} ft)')
+    c.le(st['top'], plan_alt(st['to']) + 1500 + 1000 + 300, 'with the usual margin (1500 ft, rounded up to 1000) and no more', what=f'top {st["top"]} ft')
+    # graduations of the axis fall inside the window, regularly spaced, and more than the whole flight's two or three
+    tk = st['ticks']
+    c.ge(len(tk), 3, 'distance marks in the window', what=f'marks {tk}')
+    c.ok(all(st['from'] - .01 <= t <= st['to'] + .01 for t in tk), f'marks {tk} in {st["from"]}..{st["to"]}', 'every distance mark is inside the window')
+    c.ok(len({round(b - a, 3) for a, b in zip(tk, tk[1:])}) == 1, f'marks {tk}', 'a round, regular step')
+    # one finger is still the cursor: a tap in the middle of the window reads the distance there
+    mid = (st['from'] + st['to']) / 2
+    c.page.touchscreen.tap(px_of(c, st, mid), prof_y(c))
+    c.wait(250)
+    cur = float(c.attr('.mp-map', 'data-cursor-nm') or 'nan')
+    c.eq(round(cur, 1), round(mid, 1), 'one finger places the cursor at the distance under it, in the window', tol=.6, what='common cursor (NM)')
+    read = re.findall(r'\d+(?:[.,]\d+)?', c.js("document.querySelector('.mp-strip').textContent") or '')
+    c.ok(read and abs(float(read[0].replace(',', '.')) - cur) <= .6, f'strip {read[:2]}, cursor {cur}', 'the line under the profile reads the same distance (MapsProfile.at of the cursor)')
+    # the legend row offers the way back: a text button, visible, finger-sized
+    b = c.box('.mp-whole')
+    c.ok(b and b['shown'], 'the "whole flight" button is not displayed while zoomed', 'a button in the head line while the window is tight')
+    c.eq(b['text'].strip(), row(c, 'winWhole'), 'its label is in the language of the run', what='button label')
+    c.eq(c.attr('.mp-whole', 'title'), row(c, 'winWholeHelp'), 'its help is in the language of the run', what='button title')
+    hit = c.js("""() => { const b = document.querySelector('.mp-whole'), r = b.getBoundingClientRect(), x = r.left + r.width / 2; let lo = null, hi = null;
+        for (let y = Math.max(0, r.top - 30); y < r.bottom + 40; y++) { const e = document.elementFromPoint(x, y); if (e && e.closest('.mp-whole') === b) { if (lo === null) lo = y; hi = y } }
+        return hi === null ? 0 : hi - lo + 1 }""")
+    c.ge(hit, 34, 'the touch zone is the primitive\'s 44 px centred on the 28 px button, its top clipped by the sheet\'s edge (36 px)', what='touch zone height')
+    c.ge(b['w'], 44, 'finger-sized wide too', what='button width')
+    c.tap('.mp-whole')
+    c.wait(250)
+    after = win_state(c)
+    c.eq([after['from'], after['to']], [0, whole['to']], 'a tap on it brings the whole flight back', what='window after the tap')
+    c.eq(after['top'], whole['top'], 'and the vertical scale of the whole flight', what='top after the tap')
+    c.ok(not c.shown('.mp-whole'), 'the button is still displayed on the whole flight', 'it is hidden again')
+    # a double tap does the same
+    pinch(c, px_of(c, whole, 40), prof_y(c), 24, 120)
+    c.ok(win_state(c)['to'] < whole['to'] / 2, 'the second pinch did not tighten the window', 'zoomed again')
+    x, y = px_of(c, win_state(c), 40), prof_y(c)
+    c.page.touchscreen.tap(x, y)
+    c.page.touchscreen.tap(x, y)
+    c.wait(250)
+    c.eq([win_state(c)['from'], win_state(c)['to']], [0, whole['to']], 'a double tap on the profile comes back to the whole flight', what='window after the double tap')
+
+
+@case('D22', 'Profile window: a sheet drag does not touch it', 'D', tags=('sheet', 'maps'), screens=False, designs=('standard', 'cupertino'),
+      rule='V3 spec 7.1 rules 19 and 20: the window is kept and the profile is not redrawn under the finger while the sheet is dragged')
+def d22(c):
+    whole, st = zoom_start(c)
+    c.ok(st['to'] - st['from'] < whole['to'] / 5, f'window {st["from"]}..{st["to"]}', 'the profile is zoomed before the drag')
+    c.js(_DRAG_JS)
+    c.js("""() => { window.__pfill = 0; const o = CanvasRenderingContext2D.prototype.fillRect;
+        CanvasRenderingContext2D.prototype.fillRect = function () { if (window.__dragOn && this.canvas && this.canvas.classList.contains('mp-pc')) window.__pfill++; return o.apply(this, arguments) } }""")
+    samples, during = still_drag(c, False)
+    c.eq({k: during.count(k) for k in dict.fromkeys(during)}, {}, 'nothing is redrawn or resized while the finger drags the sheet', what='events during the drag')
+    c.eq(c.js('window.__pfill'), 0, 'the zoomed profile is not painted under the finger', what='profile paints during the drag')
+    c.ok(any(abs(s['panel']['h'] - samples[0]['panel']['h']) > 40 for s in samples), 'the sheet did not move', 'the drag moved the sheet')
+    c.settle()
+    c.wait(500)
+    end = win_state(c)
+    c.eq([end['from'], end['to']], [st['from'], st['to']], 'the window is the same after the drag (the profile was redrawn at its new size, same window)', what='window after the drag')
+
+
+@case('D23', 'Profile window: kept for the page, reset with the route', 'D', tags=('maps',), screens=False, designs=('standard',),
+      rule='V3 spec 7.1 rule 20: the window lives as long as the page and is never stored; a different route starts whole again')
+def d23(c):
+    whole, st = zoom_start(c)
+    c.ok(st['to'] - st['from'] < whole['to'] / 5, f'window {st["from"]}..{st["to"]}', 'zoomed')
+    c.go('fuel')
+    c.wait(400)
+    c.go('maps')
+    c.wait(1500)
+    c.settle()
+    back = win_state(c)
+    c.eq([back['from'], back['to']], [st['from'], st['to']], 'leaving the Map and coming back keeps the window (same route, same page)', what='window after the round trip')
+    c.eq(c.js("[...Object.keys(localStorage), ...[]].filter(k => /window|axis|zoom/i.test(k))"), [], 'nothing about the window is stored on the device', what='localStorage keys')
+    # another route written to the current flight (Fuel next door): the profile starts whole again
+    path = 'pilot/ABC/current_flight.json'
+    f = c.doc(path)
+    f['route']['points'] = [f['route']['points'][0], {'id': 'LFBO', 'lat': 43.629, 'lon': 1.364}]
+    f['route']['text'] = 'LFRS LFBO'
+    f['route']['arr'] = 'LFBO'
+    f['updated_at'] = '2099-01-01T00:00:00Z'
+    c.js("""(a) => window.FrameData.adapter({ id: 't-d23', reads: ['pilot/'], writes: ['pilot/'] }).put(a[0], a[1])""", [path, f])
+    c.until("() => { const w = (document.querySelector('.mp-pc').dataset.window || '').split(',').map(Number); return w[0] === 0 && w[1] > 200 && w[1] < 300 }",
+            timeout=8000, what='the profile of the new, shorter route is drawn')
+    new = win_state(c)
+    c.eq(new['from'], 0, 'the new route\'s window starts at its departure', what='window start')
+    c.ok(not c.shown('.mp-whole'), 'the "whole flight" button is displayed on the new route', 'the window was reset with the route')
+
+
+@case('D24', 'Profile window on a screen: Ctrl + wheel, drag, double click', 'D', tags=('maps',), phone=False, screens=True,
+      rule='V3 spec 7.1 rule 20: on a screen the wheel with Ctrl zooms around the pointer, a drag pans, a double click comes back to the whole flight')
+def d24(c):
+    c.open('maps', flight=True, forecast=True)
+    hide_notes(c)
+    c.wait(1500)
+    c.settle()
+    whole = win_state(c)
+    c.ok(c.shown('.mp-pc'), 'no profile canvas at 1280', 'the profile is shown')
+    x, y = px_of(c, whole, 100), prof_y(c)
+    c.page.mouse.move(x, y)
+    c.page.mouse.wheel(0, -300)                                       # no Ctrl: the page's wheel, nothing zooms
+    c.wait(250)
+    c.eq(win_state(c)['to'], whole['to'], 'the wheel alone leaves the window whole', what='window after a plain wheel')
+    c.page.keyboard.down('Control')
+    for _ in range(3):
+        c.page.mouse.wheel(0, -200)
+        c.wait(80)
+    c.page.keyboard.up('Control')
+    c.wait(250)
+    st = win_state(c)
+    span = st['to'] - st['from']
+    c.ok(span < whole['to'] * .6, f'window {st["from"]}..{st["to"]}', 'Ctrl + wheel tightens the window')
+    under = st['from'] + (x - c.box('.mp-pc')['x'] - st['x0']) / (st['x1'] - st['x0']) * span
+    c.eq(round(under, 1), 100, 'the distance under the pointer stays under it', tol=2, what='NM under the pointer')
+    c.ok(c.shown('.mp-whole'), 'no "whole flight" button once zoomed', 'the button is shown')
+    # a drag pans (the pointer moves right: the window moves toward the departure)
+    m = c.page.mouse
+    m.move(x, y)
+    m.down()
+    for k in range(1, 9):
+        m.move(x + 12 * k, y)
+        c.wait(20)
+    m.up()
+    c.wait(250)
+    pan = win_state(c)
+    c.eq(round(pan['to'] - pan['from'], 1), round(span, 1), 'a drag keeps the window\'s width', tol=.3, what='window width after the drag')
+    c.ok(pan['from'] < st['from'] - 5, f'window {pan["from"]}..{pan["to"]} (was {st["from"]}..{st["to"]})', 'a drag to the right moves the window toward the departure')
+    # Ctrl + wheel the other way, and the double click
+    m.dblclick(x, y)
+    c.wait(250)
+    c.eq([win_state(c)['from'], win_state(c)['to']], [0, whole['to']], 'a double click on the profile comes back to the whole flight', what='window after the double click')
+    c.ok(not c.shown('.mp-whole'), 'the button is displayed on the whole flight', 'hidden again')

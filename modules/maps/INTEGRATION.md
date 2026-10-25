@@ -275,6 +275,18 @@ The sheet's "Weather" content (SPEC § 4) calls atmosphere's pure renderer. Noth
   read them instead of recomputing the 260 px rule.
 - **The cursor**: `cursorM` = maps' `S.cursor` (metres from the departure), and a tap on the drawn section calls the same
   `setCursor` with `geo.nmOf(x) × 1852`, using the geometry `drawSection` returns.
+- **Asked of atmosphere: a window on the distance axis** (rule 20 of V3_SPECIFICATION § 7.1, 25 Oct 2026; **not done, nothing changed
+  there**). The Map zooms its profile and wants the same gesture on the cut. Option of `drawSection(el, o)` (and of `sectionSvg(M, o)`, which
+  it calls): **`o.window = { from, to }`**, distances **in NM from the departure** (the unit of `geo.xOf(nm)` / `geo.nmOf(x)`), none or
+  `{ from: 0, to: total }` = the whole cut as today. When given, the cut must: (1) map the plot's width to `[from, to]` and clip to it, so
+  `geo.xOf(nm)` and `geo.nmOf(x)` follow the window (the Map places its cursor with `nmOf` and draws nothing else on the cut); (2) draw only the
+  columns / field inside it, **refitting the vertical axis** to what is visible if it can (flight level, terrain, top of the cloud and of
+  the field) — if it keeps its own top, say so; (3) filter the distance-axis graduations, the route points' names and the TOC / TOD, the
+  NM marks and the tick labels to the window, and keep the names inside the frame; (4) put `geo.window = { from, to }` (the window really
+  drawn, after its own bounding) in the geometry, and return the same `geo` fields as now. The window is bounded by the caller (at least 5 NM,
+  inside `[0, total]`); the cut may refuse it and draw whole (then `geo.window` is absent and the Map shows no "Whole flight" button).
+  When it is there the Map passes `window` from the same `createAxisWindow` instance as the profile (`lib/axis_window.js`, § 10) and
+  attaches it to the cut's body.
 
 ## 9. Routing over the airways — `lib/routing.js` (25 Oct 2026, created by the fuel lot "auto")
 
@@ -296,3 +308,28 @@ identifier within 2 NM; a composite designator (`G54-R66`) is read as the airway
 box widened by `reachNm` plus `padPct` % of the direct distance. **Limits**: no one-way airways (the base does not carry
 `Circulation`), no fine level restriction (odd / even levels, conditional routes), no SID / STAR, no crossing of the date line.
 Bench: `modules/maps/test/routing.html`.
+
+## 10. Window on a distance axis — `lib/axis_window.js` (25 Oct 2026, rule 20 of V3_SPECIFICATION § 7.1)
+
+The gesture of the vertical drawings, written once: the Map's profile uses it today, the weather cut (atmosphere) will use it when it
+accepts a window (§ 8). An ES module, no state of its own, no timer, nothing written in the page; `import { createAxisWindow } from
+'../maps/lib/axis_window.js'` (declare it in the module's `meta.files`).
+
+`createAxisWindow(el, { total, onChange, min, plot, enabled })` → `{ from, to, zoomed, active, set(from, to, { quiet }), reset({ quiet }), stop() }`
+
+| Argument | Contract |
+|---|---|
+| `el` | the element that receives the pointers (the module sets `touch-action: none` on it: the pinch is then the helper's, not the page's) |
+| `total` | the flight's length in NM, a number or a function (it changes with the route) |
+| `onChange(from, to)` | called **only if the window changes**, at every pointer event of a gesture: the caller coalesces its redraw (the Map: one `requestAnimationFrame`) |
+| `min` | the least NM visible (default 5; never more than the flight) |
+| `plot()` | `{ x0, x1 }`: the left and right of the plot frame, px from the element's left edge (the window maps to it); default the element's width |
+| `enabled()` | `false` disarms everything (the Map: Edit mode, or another content open in the sheet) |
+
+Gestures, in the capture phase of `el`: two pointers = pinch (zoom around the middle of the fingers, which also moves the window); double
+tap (two short taps within 350 ms and 40 px) or `dblclick` = `reset()`; wheel with `ctrlKey` (a trackpad pinch too) = zoom around the pointer
+(`preventDefault`); a mouse drag beyond 4 px = pan, only when the window is tight; **a single touch or pen pointer is never taken or stopped**.
+While a pinch lasts, and until every finger is up, the events of the pointers are stopped (`stopImmediatePropagation`) so the caller's own
+handlers (the cursor) do not run; `active` says so too. `set()` / `reset()` bound the window (`min`, `[0, total]`, centre kept) and return
+whether it changed; `quiet: true` does not call `onChange` (the caller redraws itself). The window is **never stored** by the helper; the
+Map keeps it for the life of the page.

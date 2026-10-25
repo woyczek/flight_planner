@@ -1204,3 +1204,36 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **To tell atmosphere** (not blocking): expose `strips` and the layers used in the `geo` of `sectionSvg`; the Map recomputes the 260 px rule.
   - **Seen, not changed**: with the sheet at its default position the cut's legend has nine rows and scrolls inside its overlay (terrain and
     route points are below the fold); expanded, it is whole.
+
+- **25 Oct 2026 — zoom the vertical profile** (user, 14:30: "Trouver le moyen de zoomer (pour être précis) le profil vertical"; the relay's
+  reading is rule 20 of V3_SPECIFICATION § 7.1; lot `v3-profil-zoom`, relay cloud).
+  - **What was done with the user's word**: it is an ergonomics intent, kept as the relay read it: a **window on the distance axis**, not a
+    full 2D zoom. The user wants to be precise: the precision of a vertical profile comes from the vertical scale, which the window refits
+    to what it shows (a climb that fills the profile instead of a third of it); a horizontal-only zoom would have stayed as flat as the whole
+    flight at FL270. Not a new chip (rule 13): a gesture, and a text button that exists only while it is useful.
+  - **The gesture**: two fingers pinch (around their middle) and slide (the same two fingers move the window); one finger stays the cursor
+    (airspaces, weather point), as before; a double tap, or the "Whole flight" button in the head line, comes back to the whole flight. On a
+    screen: Ctrl + wheel zooms around the pointer, a mouse drag moves the window when it is tight, a double click resets. Written once in
+    `lib/axis_window.js` (INTEGRATION § 10). The profile's copy of SiaProfile gets a `win` option (`{ s0, s1 }` in metres, no effect by
+    default), `MapsProfile.draw` a `window` option in NM; **`xOf` / `sOf` read the window from the geometry**, so `at`, `project`, `nearest`
+    and `posAt` (which work in distance) and the whole cursor chain did not change: the part of the lot that could break the cursor is the
+    smallest one.
+  - **The vertical axis**: top = the highest of relief, obstacles, airspace floors (+1,500 ft as before), planned trajectory and points'
+    levels *inside the window* (the whole flight keeps its `plan.top`), the 5,000 ft minimum lowered to 2,500 ft in a window (a climb
+    of 2,000 ft would otherwise never fill the frame), bottom raised under the lowest visible relief and trajectory when both are above
+    2,500 ft (a mountain route or a cruise over high ground). The distance marks take a round step 40 px apart (the map's 10 / 50 NM marks,
+    shared with the map, would leave an empty axis in a 40 NM window); TOC / TOD, points and labels outside the window are not posed, the
+    others are kept inside the frame; a level label whose middle is out of the frame is named on the visible part of its level.
+  - **Kept for the page, never stored**: `winKeep` (module level, with the route's signature: ids and positions of the points), restored
+    when the Map is mounted again for the same route, reset when the points differ (a live write of another route by Fuel: D23), nothing in
+    `localStorage` or the settings. The window is not part of the flight.
+  - **Not done, said**: the weather cut does not zoom. `drawSection` / `sectionSvg` have no window option; the request is written in
+    INTEGRATION § 8 ("Asked of atmosphere": `o.window = { from, to }` in NM, what the cut must filter, `geo.window` returned). Until then
+    the cut stays whole and the button is not shown on it. The profile's legend row "Distance marks (NM), as on the map" is slightly off
+    in a window (finer step); the symbol is the same and the legend lists what is drawn, so left as it is. No keyboard route to the zoom
+    (a screen has Ctrl + wheel and the double click; arrows are not bound).
+  - **Tests**: D21 (a pinch on the seeded flight, the NM under the fingers' centre kept, the scale lower than the whole flight's and above
+    the visible altitude, regular marks inside the window, a tap places the cursor at the right distance and the strip reads it, the button
+    in 4 languages with its touch zone, a tap on it and a double tap bring the whole flight back), D22 (a sheet drag: nothing redrawn nor
+    resized under the finger, the window unchanged after it), D23 (the window survives a Map → Fuel → Map trip and is reset by another route
+    written live), D24 (1280: Ctrl + wheel, drag, double click). Verified red on the previous code.

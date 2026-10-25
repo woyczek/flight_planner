@@ -496,7 +496,11 @@
     // résumé en « +n » en haut à droite de la coupe (case réservée) ; TOC / TOD réservés avant, reserveBottom px gardés
     // libres au bas de la coupe (marques posées ensuite par l'appelant), cases prises rendues dans geo.taken
     strictLabels = false,
-    reserveBottom = 0
+    reserveBottom = 0,
+    // V3 maps (ajout, sans effet par défaut) : win { s0, s1 } (mètres depuis le départ) — fenêtre sur l'axe des distances : seule cette
+    // portion est dessinée, l'axe vertical se recale sur ce qui y est visible (relief, obstacles, espaces, trajectoire, niveaux des
+    // points), les points, TOC / TOD et niveaux hors fenêtre ne sont pas posés ; la géométrie rendue dit la fenêtre (w0, w1)
+    win = null
   } = {}) {
     const f = 11 * scale,
       padL = (abbrev && strictLabels ? 50 : 58) * scale, // V3 maps : pas de blanc à gauche des niveaux (profil du vol : « FL 250 » tient)
@@ -505,11 +509,17 @@
     // V3 maps (règle 13 : le dessin tient dans sa hauteur) : les points et leurs distances sont posés d'abord, car ils gardent
     // leur place (l'axe des distances ne sort jamais du cadre) ; sur une seule rangée, sous 200 px, le bas de la coupe se
     // resserre pour rendre la hauteur au tracé
+    const w0 = win ? Math.max(0, +win.s0 || 0) : 0,
+      w1 = win ? Math.min(data.total, +win.s1 || data.total) : data.total,
+      zoomed = !!win && w1 > w0 && (w0 > 0 || w1 < data.total),
+      s0 = zoomed ? w0 : 0,
+      dspan = zoomed ? w1 - w0 : data.total,
+      inWin = s => !zoomed || (s >= w0 - 1 && s <= w1 + 1);
     ctx.save();
     ctx.font = `bold ${f}px Arial, sans-serif`;
     const rowEnd = [-Infinity, -Infinity],
-      placed = data.marks.map(m => {
-        const x = padL + (W - padL - padR) * m.s / data.total,
+      placed = data.marks.filter(m => inWin(m.s)).map(m => {
+        const x = padL + (W - padL - padR) * (m.s - s0) / dspan,
           dist = `${(m.s / NM).toFixed(m.s / NM < 10 ? 1 : 0)} NM`,
           w = Math.max(ctx.measureText(m.name).width, ctx.measureText(dist).width) + 8 * scale,
           tx = Math.min(W - padR - w / 2, Math.max(padL + w / 2, x)),
@@ -525,21 +535,46 @@
       }),
       padB = (H < 200 && !placed.some(q => q.row) ? 38 : 64) * scale;
     ctx.restore();
-    const terrainMax = Math.max(0, ...data.samples.map(q => q.terrain)),
-      obsMax = Math.max(0, ...data.obstacles.map(o => o.elev || 0)),
-      altMax = Math.max(0, ...data.marks.map(m => m.alt || m.lvl?.ft || 0), data.plan?.top || 0);
+    // échantillons visibles : ceux de la fenêtre et le premier de chaque côté (le tracé la traverse jusqu'au bord)
+    let iLo = 0,
+      iHi = data.samples.length - 1;
+    if (zoomed) {
+      while (iLo < iHi && data.samples[iLo + 1].s <= w0) iLo++;
+      while (iHi > iLo && data.samples[iHi - 1].s >= w1) iHi--;
+    }
+    const vis = data.samples.slice(iLo, iHi + 1),
+      obs = data.obstacles.filter(o => inWin(o.s)),
+      // espaces visibles, bornés à la fenêtre (hors fenêtre : sans objet) ; sans fenêtre, tels quels
+      crossed = data.crossed.map(c => ({
+        c,
+        i0: Math.max(c.i0, iLo),
+        i1: Math.min(c.i1, iHi)
+      })).filter(v => v.i0 <= v.i1),
+      terrainMax = Math.max(0, ...vis.map(q => q.terrain)),
+      obsMax = Math.max(0, ...obs.map(o => o.elev || 0)),
+      // fenêtre : le plus haut niveau demandé ou prévu de ce qui est visible (la trajectoire, les paliers, les points), pas celui de tout le vol
+      altMax = Math.max(0, ...data.marks.filter(m => inWin(m.s)).map(m => m.alt || m.lvl?.ft || 0), zoomed ? Math.max(0, ...(data.plan
+        ?.alt || []).slice(
+        iLo, iHi + 1).map(v => v || 0)) : data.plan?.top || 0);
     /** Vrai pour une limite relative au sol (ASFC, AGL, SFC). */
     const rel = t => /ASFC|AGL|SFC/i.test(t || '') && !/AMSL/i.test(t || '');
     /** Plancher d'un espace sur un tronçon de la coupe (relief ajouté pour une limite ASFC). */
-    const floorOf = c => {
-      const mid = Math.round((c.i0 + c.i1) / 2);
-      return (rel(c.a.lower) ? data.samples[mid].center : 0) + limitFt(c.a.lower, false);
+    const floorOf = v => {
+      const mid = Math.round((v.i0 + v.i1) / 2);
+      return (rel(v.c.a.lower) ? data.samples[mid].center : 0) + limitFt(v.c.a.lower, false);
     };
-    const zoneMax = Math.max(0, ...data.crossed.map(floorOf).filter(v => v <= 19500).map(v => v + 1500));
-    const top = ceiling > 0 ? ceiling : Math.ceil((Math.max(terrainMax + 3000, obsMax + 1500, altMax + 1500, zoneMax, 5000)) / 1000) *
-      1000;
-    const bottom = Math.max(0, Math.min(+floor || 0, top - 1000)),
-      X = s => padL + (W - padL - padR) * s / data.total,
+    const zoneMax = Math.max(0, ...crossed.map(floorOf).filter(v => v <= 19500).map(v => v + 1500));
+    const top = ceiling > 0 ? ceiling : Math.ceil((Math.max(terrainMax + 3000, obsMax + 1500, altMax + 1500, zoneMax, zoomed ? 2500 :
+        5000)) /
+      1000) * 1000;
+    // fenêtre : sans plancher demandé, le bas monte sous le plus bas du relief et de la trajectoire visibles quand ils sont hauts
+    // (un vol en montagne ou en altitude : la place sous le relief ne sert à rien)
+    const lowest = Math.min(...vis.map(q => q.terrain), ...(data.plan?.alt ? data.plan.alt.slice(iLo, iHi + 1).filter(v => v != null) : [
+        Infinity
+      ])),
+      bottom = Math.max(0, Math.min(+floor || (zoomed && lowest >= 2500 && lowest < Infinity ? Math.floor((lowest - 1000) / 1000) * 1000 :
+        0), top - 1000)),
+      X = s => padL + (W - padL - padR) * (s - s0) / dspan,
       Y = ft => padT + (H - padT - padB) * (1 - (Math.min(Math.max(ft, bottom), top) - bottom) / (top - bottom));
     ctx.save();
     ctx.fillStyle = '#fff';
@@ -577,7 +612,20 @@
       labels = [],
       taken = [],
       free = r => !taken.some(q => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0);
-    for (const c of data.crossed) {
+    // fenêtre : espaces, relief et obstacles sont tracés plus large que la fenêtre (jusqu'au premier échantillon de chaque côté) et
+    // rognés au cadre de la coupe
+    if (zoomed) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(padL, padT, W - padL - padR, H - padT - padB);
+      ctx.clip();
+    }
+    for (const {
+        c,
+        i0,
+        i1
+      }
+      of crossed) {
       const a = c.a,
         col = COLORS[a.type] || '#6d4c41';
       const lo = i => (rel(a.lower) ? data.samples[i].center : 0) + limitFt(a.lower, false),
@@ -586,7 +634,7 @@
           return Number.isFinite(v) ? (rel(a.upper) ? data.samples[i].center : 0) + v : top;
         };
       let seen = false;
-      for (let i = c.i0; i <= c.i1; i++)
+      for (let i = i0; i <= i1; i++)
         if (lo(i) < top && hi(i) > bottom) {
           seen = true;
           break;
@@ -594,12 +642,12 @@
       if (!seen) continue; // espace entièrement au-dessus du plafond ou au-dessous du plancher de la coupe
       drawnZones.set(a.type, col);
       ctx.beginPath();
-      for (let i = c.i0; i <= c.i1; i++) {
+      for (let i = i0; i <= i1; i++) {
         const x = X(data.samples[i].s),
           y = Y(hi(i));
-        i === c.i0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        i === i0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
-      for (let i = c.i1; i >= c.i0; i--) ctx.lineTo(X(data.samples[i].s), Y(lo(i)));
+      for (let i = i1; i >= i0; i--) ctx.lineTo(X(data.samples[i].s), Y(lo(i)));
       ctx.closePath();
       ctx.globalAlpha = .13;
       ctx.fillStyle = col;
@@ -608,28 +656,31 @@
       ctx.strokeStyle = col;
       ctx.lineWidth = 1.2 * scale;
       ctx.stroke();
-      const mid = Math.round((c.i0 + c.i1) / 2);
+      const mid = Math.round((i0 + i1) / 2);
       let entered = false;
       if (strictLabels && data.plan?.alt)
-        for (let i = c.i0; i <= c.i1 && !entered; i++) entered = data.plan.alt[i] >= lo(i) && data.plan.alt[i] <= hi(i);
+        for (let i = i0; i <= i1 && !entered; i++) entered = data.plan.alt[i] >= lo(i) && data.plan.alt[i] <= hi(i);
+      // fenêtre : la bande et son milieu sont ceux de la partie visible (le libellé reste dans le cadre, contre sa bande)
+      const xa = zoomed ? Math.max(padL, X(data.samples[i0].s)) : X(data.samples[i0].s),
+        xb = zoomed ? Math.min(W - padR, X(data.samples[i1].s)) : X(data.samples[i1].s);
       labels.push({
         entered,
         col,
-        x: X(data.samples[mid].s),
+        x: zoomed ? (xa + xb) / 2 : X(data.samples[mid].s),
         y0: Y(hi(mid)),
         y1: Y(lo(mid)),
         text: abbrev ? a.name : `${a.type} ${a.name}`,
         sub: limits ? `${a.lower || 'SFC'} – ${a.upper || 'UNL'}` : '',
-        xa: X(data.samples[c.i0].s),
-        xb: X(data.samples[c.i1].s),
-        w: X(data.samples[c.i1].s) - X(data.samples[c.i0].s)
+        xa,
+        xb,
+        w: xb - xa
       });
     }
     // relief (profil maximal du corridor)
     ctx.beginPath();
-    ctx.moveTo(X(0), Y(0));
-    for (const q of data.samples) ctx.lineTo(X(q.s), Y(q.terrain));
-    ctx.lineTo(X(data.total), Y(0));
+    ctx.moveTo(X(vis[0].s), Y(0));
+    for (const q of vis) ctx.lineTo(X(q.s), Y(q.terrain));
+    ctx.lineTo(X(vis[vis.length - 1].s), Y(0));
     ctx.closePath();
     const g = ctx.createLinearGradient(0, Y(terrainMax), 0, Y(0));
     g.addColorStop(0, '#b08a5a');
@@ -643,8 +694,8 @@
     ctx.strokeStyle = '#c62828';
     ctx.fillStyle = '#c62828';
     ctx.textAlign = 'center';
-    const tall = [...data.obstacles].sort((a, b) => (b.elev || 0) - (a.elev || 0)).slice(0, 12);
-    for (const o of data.obstacles) {
+    const tall = [...obs].sort((a, b) => (b.elev || 0) - (a.elev || 0)).slice(0, 12);
+    for (const o of obs) {
       const x = X(o.s),
         yT = Y(o.elev || 0),
         yB = Y(Math.max(0, (o.elev || 0) - (o.hgt || 0)));
@@ -673,6 +724,7 @@
         ctx.fillText(String(Math.round(o.elev || 0)), x, y);
       }
     }
+    if (zoomed) ctx.restore(); // fin du rognage au cadre (espaces, relief, obstacles)
     // libellés de TOUS les espaces traversés (visibles dans la coupe) : dans la bande, au-dessus, en
     // dessous, puis première place libre en balayant la coupe (trait de rappel vers la bande) ; faute de
     // place, posé quand même dans la bande.
@@ -694,10 +746,11 @@
           [data.plan.toc, 'TOC'],
           [data.plan.tod, 'TOD']
         ]) {
-        if (!m || (name === 'TOD' && Math.abs(data.plan.tod.s - data.plan.toc.s) < data.total * .005)) continue;
-        const x = X(m.s),
-          y = Y(m.alt),
-          w = ctx.measureText(`${name} ${(m.s / NM).toFixed(0)} NM`).width + 6 * scale;
+        if (!m || !inWin(m.s) || (name === 'TOD' && Math.abs(data.plan.tod.s - data.plan.toc.s) < data.total * .005)) continue;
+        const w = ctx.measureText(`${name} ${(m.s / NM).toFixed(0)} NM`).width + 6 * scale,
+          x = Math.min(W - padR - w / 2, Math.max(padL + w / 2, X(m
+            .s))), // fenêtre : le libellé d'un repère près du bord reste dans le cadre
+          y = Y(m.alt);
         taken.push({
           x0: x - w / 2,
           y0: y - 20 * scale,
@@ -802,31 +855,41 @@
     }
     // plan de vol : trajectoire prévue (violet), TOC / TOD, niveaux des paliers
     const plan = data.plan;
+    let tocShown = false;
     if (plan) {
       const col = '#6a1b9a';
       ctx.strokeStyle = col;
       ctx.lineWidth = 2.4 * scale;
       ctx.lineJoin = 'round';
+      if (zoomed) { // fenêtre : le tracé est rogné au cadre
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(padL, padT, W - padL - padR, H - padT - padB);
+        ctx.clip();
+      }
       ctx.beginPath();
       let pen = false;
-      plan.alt.forEach((v, i) => {
+      for (let i = iLo; i <= iHi; i++) {
+        const v = plan.alt[i];
         if (v == null) {
           pen = false;
-          return;
+          continue;
         }
         const x = X(data.samples[i].s),
           y = Y(v);
         pen ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
         pen = true;
-      });
+      }
       ctx.stroke();
+      if (zoomed) ctx.restore();
       ctx.fillStyle = col;
       ctx.textAlign = 'center';
       for (const [m, name] of [
           [plan.toc, 'TOC'],
           [plan.tod, 'TOD']
         ]) {
-        if (!m || (name === 'TOD' && Math.abs(plan.tod.s - plan.toc.s) < data.total * .005)) continue;
+        if (!m || !inWin(m.s) || (name === 'TOD' && Math.abs(plan.tod.s - plan.toc.s) < data.total * .005)) continue;
+        tocShown = true;
         const x = X(m.s),
           y = Y(m.alt);
         ctx.beginPath();
@@ -838,22 +901,31 @@
         ctx.fill();
         const t = `${name} ${(m.s / NM).toFixed(0)} NM`,
           w = ctx.measureText(t).width + 6 * scale,
+          lx = Math.min(W - padR - w / 2, Math.max(padL + w / 2, x)), // près du bord de la fenêtre, le libellé reste dans le cadre
           r = {
-            x0: x - w / 2,
+            x0: lx - w / 2,
             y0: y - 20 * scale,
-            x1: x + w / 2,
+            x1: lx + w / 2,
             y1: y - 6 * scale
           };
         ctx.fillStyle = 'rgba(255,255,255,.85)';
         ctx.fillRect(r.x0, r.y0, w, r.y1 - r.y0);
         ctx.fillStyle = col;
         ctx.font = `bold ${f}px Arial, sans-serif`;
-        ctx.fillText(t, x, (r.y0 + r.y1) / 2);
+        ctx.fillText(t, lx, (r.y0 + r.y1) / 2);
         ctx.font = `${f}px Arial, sans-serif`;
         taken.push(r);
       }
       for (const l of plan.levels) {
-        const x = X(l.s),
+        let ls = l.s;
+        if (!inWin(ls)) { // fenêtre : le palier dont le milieu est hors cadre se nomme au milieu de la part visible
+          const run = [];
+          for (let i = iLo; i <= iHi; i++)
+            if (plan.alt[i] != null && Math.abs(plan.alt[i] - l.alt) < 1 && inWin(data.samples[i].s)) run.push(data.samples[i].s);
+          if (!run.length) continue;
+          ls = (run[0] + run[run.length - 1]) / 2;
+        }
+        const x = X(ls),
           y = Y(l.alt) + 9 * scale,
           t = l.alt >= 10000 || l.alt % 100 ? `FL${String(Math.round(l.alt / 100)).padStart(3, '0')}` : `${Math.round(l.alt)} ft`,
           w = ctx.measureText(t).width + 6 * scale,
@@ -886,14 +958,17 @@
       top,
       bottom,
       total: data.total,
+      w0: s0, // V3 maps : la fenêtre dessinée sur l'axe des distances, en mètres (tout le vol sans fenêtre) : xOf / sOf la lisent
+      w1: s0 + dspan,
+      zoomed,
       skipped,
       taken: strictLabels ? taken : undefined,
       drawn: { // V3 maps : ce que la coupe a dessiné (la légende de la feuille le lit, jamais un texte fixe)
         plan: !!data.plan,
-        tocTod: !!(data.plan?.toc || data.plan?.tod),
+        tocTod: tocShown,
         zones: [...drawnZones],
         marks: placed.length,
-        obstacles: data.obstacles.length
+        obstacles: obs.length
       },
       marks: placed.length, // V3 maps : points posés sous la coupe, et leur dernière ligne tient dans le cadre (axe des distances)
       axisOk: axisBottom <= H

@@ -417,9 +417,32 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - the map shows it as a blue ring, with TOC and TOD as purple diamonds.
 - **The strip under the profile**: distance (NM) · planned altitude · terrain or MORA · the airspaces under the cursor
   (type, name, limits), or "outside the airspaces shown". Without a cursor the strip is empty (the hint "slide a finger along the profile, or tap the route" is in the manual).
-- **API**: `build(points, { levelFt, profile, airspaces, elevation, mora })`, `draw(ctx, cut, { W, H, scale })` →
+- **API**: `build(points, { levelFt, profile, airspaces, elevation, mora })`, `draw(ctx, cut, { W, H, scale, window })` →
   geometry, `xOf(geo, s)`, `sOf(geo, x)`, `at(cut, s)`, `posAt(cut, s)`, `nearest(cut, toC, x, y, maxPx)`; distances in
   metres, altitudes in feet.
+- **The window (rule 20 of V3_SPECIFICATION § 7.1, 25 Oct 2026)**: the profile accepts a **window on the distance axis**,
+  `draw(…, { window: { from, to } })` in NM (none: the whole flight). Only that part is drawn; the vertical axis refits to what is
+  visible: the top follows the highest of the relief, the obstacles, the airspaces' floors, the planned trajectory and the points' levels
+  *in the window* (with the usual margin, 1,500 ft, rounded up to 1,000 ft; the 5,000 ft minimum becomes 2,500 ft), the bottom rises
+  under the lowest visible relief and trajectory when both are above 2,500 ft; the distance marks take a round step (1, 2, 5, 10, 20, 25,
+  50, 100… NM) that keeps two of them 40 px apart; the points of the route, TOC / TOD, level labels, airspace labels and the airway points
+  outside the window are not drawn, the others stay inside the frame; bands, terrain and trajectory are clipped to the frame. `geo.drawn`
+  and `geo.taken` say what was drawn (the legend never lies); `geo.w0`, `geo.w1` (metres) and `geo.zoomed` say the window, and **`xOf` /
+  `sOf` read them**: `at`, `project`, `nearest` and `posAt` work in distance along the route and do not depend on the window, so the cursor,
+  the reading of the airspaces, the map's blue ring and the strip under the profile stay right with no change. The canvas states what it drew:
+  `data-window` (`from,to` NM), `data-scale` (`bottom,top` ft), `data-plot` (left and right of the plot frame, px), `data-ticks` (NM).
+- **The gesture** (`lib/axis_window.js`, written once for the profile and the weather cut): a pinch with two fingers zooms around the
+  middle of the fingers and two fingers that slide move the window (at least 5 NM visible, never outside the flight); a double tap
+  (two short taps within 350 ms) or a double click goes back to the whole flight; **one finger is not taken**: it is the reading cursor,
+  as before. On a screen: Ctrl + wheel zooms around the pointer (the wheel alone stays the page's), a drag with the mouse moves the
+  window when it is tight (whole, the drag stays the cursor's). Off in Edit mode (the drag sets the levels there) and while another content
+  is open in the sheet. A finger left on the glass after a pinch does not move the cursor until all fingers are up.
+- **The window is a reading convenience**: kept for the life of the page (`winKeep`, with the route's signature: the points' ids and
+  positions), so leaving the Map and coming back keeps it; reset when the route's points differ; never stored (nothing in the settings, nothing
+  on the device). The sheet's head line shows a **text button "Whole flight"** (4 languages; 28 px with the primitive's 44 px touch zone in
+  the bare head, 44 px in the titled one) only while the window is tight and the profile is shown (rule 13: not a fourth chip); it calls
+  `reset()`. A sheet drag neither changes the window nor redraws under the finger (D22). The **weather cut is not zoomable yet**: its
+  renderer has no window option (INTEGRATION § 8, "Asked of atmosphere"); it stays whole and the button is not shown on it.
 
 ## 4 ter. Mission maps (`mission.js`, `window.MapsMission`)
 

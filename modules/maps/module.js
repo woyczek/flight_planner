@@ -36,6 +36,10 @@ import {
   plainView,
   drawPlain
 } from './lib/map_base.js';
+// fenêtre sur l'axe des distances du profil (zoom, déplacement ; lib/axis_window.js, règle 20 de V3_SPECIFICATION § 7.1)
+import {
+  createAxisWindow
+} from './lib/axis_window.js';
 
 // V3 maps — module Carte de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/maps/SPEC.md,
 // INTEGRATION.md, READING.md). La carte de route du vol prévu (pilot/<tri>/current_flight.json écrit par Carburant)
@@ -89,7 +93,7 @@ export const meta = {
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', '../../frame/lib/time.js?v=0', 'contours.js?v=0',
-    'lib/map_base.js?v=0', '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0'
+    'lib/map_base.js?v=0', 'lib/axis_window.js?v=0', '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0'
   ],
   // gardés au premier usage seulement : MapLibre (1 Mo, inutile sans tuiles) ; les contours des pays du fond uni (350 Ko,
   // inutiles avec les tuiles ; gardés d'avance quand MapLibre n'est pas en cache : outlinesAhead)
@@ -153,6 +157,13 @@ const TX = {
   summary: ['{dep} → {arr}', '{dep} → {arr}', '{dep} → {arr}', '{dep} → {arr}'],
   altn: ['dégagement {a}', 'alternate {a}', 'Ausweich {a}', 'alternativa {a}'],
   dist: ['{d} NM', '{d} NM', '{d} NM', '{d} NM'],
+  // fenêtre du profil (règle 20) : l'affordance « vol entier » de la ligne d'en-tête, visible seulement quand on a zoomé
+  winWhole: ['Vol entier', 'Whole flight', 'Ganzer Flug', 'Vuelo entero'],
+  winWholeHelp: ['Revenir au vol entier (double toucher ou double clic sur le profil)',
+    'Back to the whole flight (double tap or double click on the profile)',
+    'Zurück zum ganzen Flug (Doppeltipp oder Doppelklick auf das Profil)',
+    'Volver al vuelo entero (doble toque o doble clic en el perfil)'
+  ],
   profileLabel: ['Profil vertical de la route', 'Vertical profile of the route', 'Vertikalprofil der Route',
     'Perfil vertical de la ruta'
   ],
@@ -1159,6 +1170,19 @@ function drawPlanOnMap(ctx, toC, taken = []) {
 
 // ---------------------------------------------------------------- profil vertical
 const FT_NM = 1852;
+/** Fenêtre du profil gardée pour la vie de la page (pas sur l'appareil : une commodité de lecture), avec la route qu'elle regarde :
+ *  { sig, from, to } en NM, null tant que le vol est entier. Au retour sur la Carte, la même route retrouve sa fenêtre. */
+let winKeep = null;
+/** Repères de distance d'une fenêtre : un pas rond (1, 2, 5, 10, 20, 25, 50, 100, 200 NM) tel que deux repères soient à 40 px au moins. */
+function nmTicks(from, to, plotW) {
+  const step = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500].find(n => plotW * n / Math.max(1e-9, to - from) >= 40) || 500,
+    out = [];
+  for (let nm = Math.ceil(from / step) * step; nm <= to + 1e-9; nm += step)
+    if (nm > 0) out.push({
+      nm
+    });
+  return out;
+}
 /** Coupe du vol : espaces de la route (types du profil, sans plancher ni plafond), relief (Terrarium), sinon MORA. */
 async function buildProfile() {
   const pts = S.route.profilePoints || S.route.points,
@@ -1195,6 +1219,19 @@ async function buildProfile() {
   }).catch(() => null);
   if (!S || S.route.updated !== key) return;
   S.prof = prof;
+  // fenêtre du profil (règle 20) : gardée tant que la route est la même (le niveau ou les taux ont pu changer), remise à zéro dès que
+  // ses points diffèrent ; le total change avec la route, d'où la remise avant le dessin
+  const sig = prof ? pts.map(p => `${p.id || ''}:${(+p.lat).toFixed(4)},${(+p.lon).toFixed(4)}`).join('|') : '';
+  if (winKeep && winKeep.sig === sig) S.axw.set(winKeep.from, winKeep.to, {
+    quiet: true
+  });
+  else {
+    winKeep = null;
+    S.axw.reset({
+      quiet: true
+    });
+  }
+  S.winSig = sig;
   performance.mark('maps:profile');
   drawProfile();
   strip();
@@ -1232,21 +1269,33 @@ function drawProfile() {
   S.geo = MapsProfile.draw(ctx, S.prof, {
     W,
     H,
-    scale: W < 500 ? .78 : 1
+    scale: W < 500 ? .78 : 1,
+    window: S.axw.zoomed ? {
+      from: S.axw.from,
+      to: S.axw.to
+    } : null
   });
   // le dessin tient dans le bloc (§ 7.1.13) : axe des distances et points dessinés, dits pour le test et pour qui mesure
   S.pc.dataset.axis = S.geo.axisOk ? '1' : '0';
   S.pc.dataset.marks = String(S.geo.marks);
-  // marques NM (mêmes que sur la carte) : petits traits au bas du cadre
+  // la fenêtre dessinée (NM) et l'échelle verticale (ft), dites pour le test et pour qui mesure
+  setData(S.pc, 'window', `${Math.round(S.geo.w0 / FT_NM * 10) / 10},${Math.round(S.geo.w1 / FT_NM * 10) / 10}`);
+  setData(S.pc, 'scale', `${S.geo.bottom},${S.geo.top}`);
+  // marques NM (mêmes que sur la carte) : petits traits au bas du cadre ; dans une fenêtre, des repères au pas rond de ce qui est visible
   const g = S.geo,
-    yb = g.H - g.padB;
+    yb = g.H - g.padB,
+    inX = x => x >= g.padL - .5 && x <= g.W - g.padR + .5,
+    ticks = (g.zoomed ? nmTicks(g.w0 / FT_NM, g.w1 / FT_NM, g.W - g.padL - g.padR) : S.marks || []).filter(m => inX(MapsProfile.xOf(g, m
+      .nm * FT_NM)));
+  setData(S.pc, 'plot', `${Math.round(g.padL)},${Math.round(g.W - g.padR)}`);
+  setData(S.pc, 'ticks', ticks.map(m => m.nm).join(','));
   ctx.save();
   ctx.strokeStyle = '#8e24aa';
   ctx.fillStyle = '#8e24aa';
   ctx.font = '600 9px Arial,sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
-  for (const m of S.marks || []) {
+  for (const m of ticks) {
     const x = MapsProfile.xOf(g, m.nm * FT_NM);
     ctx.beginPath();
     ctx.moveTo(x, yb);
@@ -1265,7 +1314,7 @@ function drawProfile() {
   for (const e of g.H - g.padT - g.padB < 90 ? [] : ends.values()) { // coupe basse : les points hors route cèdent la place
     if (own.has(e.id)) continue; // points de la route : déjà nommés sous le cadre
     const pr = MapsProfile.project(S.prof, e.lat, e.lon);
-    if (pr.s != null && pr.offNm <= 3) marks.push({
+    if (pr.s != null && pr.offNm <= 3 && inX(MapsProfile.xOf(g, pr.s))) marks.push({
       id: e.id,
       x: MapsProfile.xOf(g, pr.s)
     });
@@ -1295,6 +1344,32 @@ function drawProfile() {
   S.lgFixes = nFix > 0; // la légende ne dit que ce qui est dessiné
   legendSync();
   drawCursor();
+  winSync();
+}
+/** Écrit un attribut data-* s'il change. */
+function setData(el, k, v) {
+  if (el.dataset[k] !== v) el.dataset[k] = v;
+}
+/** L'affordance « vol entier » : dans la ligne d'en-tête, seulement devant le profil et tant que la fenêtre est resserrée ; écrit s'il change. */
+function winSync() {
+  if (!S?.wholeBtn) return;
+  const on = !S.dpanel && !!S.prof && S.axw.zoomed;
+  if (S.wholeBtn.hidden === on) S.wholeBtn.hidden = !on;
+}
+/** Fenêtre changée par un geste : gardée pour la vie de la page, profil redessiné au prochain tour d'animation (un seul par tour,
+ *  quel que soit le nombre d'événements du geste). */
+let profRaf = 0;
+
+function onWindow() {
+  winKeep = S.axw.zoomed ? {
+    sig: S.winSig,
+    from: S.axw.from,
+    to: S.axw.to
+  } : null;
+  if (!profRaf) profRaf = requestAnimationFrame(() => {
+    profRaf = 0;
+    if (S) drawProfile();
+  });
 }
 /** Curseur sur le profil (trait vertical, point sur l'altitude prévue). */
 function drawCursor() {
@@ -1306,11 +1381,18 @@ function drawCursor() {
   } = fit(S.pcur, S.profBox), ctx = S.pcur.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
+  // fenêtre du profil : rien ne se pose hors du cadre de tracé (sur les niveaux, à gauche)
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(S.geo.padL, 0, S.geo.W - S.geo.padL - S.geo.padR, H);
+  ctx.clip();
   if (!S.mission && inFlight()) drawProgressProfile(ctx);
+  ctx.restore();
   if (S.cursor == null) return;
   const g = S.geo,
     x = MapsProfile.xOf(g, S.cursor),
     info = MapsProfile.at(S.prof, S.cursor);
+  if (x < g.padL - .5 || x > g.W - g.padR + .5) return; // le curseur est hors de la fenêtre
   ctx.save();
   ctx.strokeStyle = S.theme.accent;
   ctx.lineWidth = 2;
@@ -3016,6 +3098,7 @@ function dataHead() {
     chipOff(b, b.dataset.view === 'weather' ? !canWeather() : !S.prof); // la coupe : un vol à deux points ; le profil : une route
   }
   legendSync();
+  winSync();
 }
 /** Ouvre ou remplace le contenu du bloc. key : l'identité du contenu (autre clé : le contenu est neuf et défile en haut ;
  *  même clé : il est seulement redessiné, défilement gardé) ; build(w, h) rend le HTML pour la taille de la zone de
@@ -4688,6 +4771,11 @@ const STYLE = `
 [data-module="maps"] .mp-chips .mp-chip .f-icon{width:20px;height:20px}
 [data-module="maps"] .mp-dhead.f-sheet-head-bare .mp-chips .mp-chip .f-icon{width:18px;height:18px}
 [data-module="maps"] .mp-chips .mp-chip:disabled{opacity:.38;cursor:default}
+/* « vol entier » : un texte-bouton (pas une puce de plus, règle 13), présent seulement tant que le profil est zoomé ; 44 px de haut dans
+   la ligne titrée, 28 px dans la ligne nue avec la zone de toucher de 44 px de la primitive */
+[data-module="maps"] .mp-dhead .mp-chips .mp-whole{box-sizing:border-box;min-height:0;height:44px;min-width:44px;margin:0;padding:0 10px;border:0;border-radius:var(--sog-radius);background:none;color:var(--sog-accent);font-family:inherit;font-size:var(--sog-size-xs);font-weight:600;line-height:1;white-space:nowrap;cursor:pointer;touch-action:manipulation}
+[data-module="maps"] .mp-dhead.f-sheet-head-bare .mp-chips .mp-whole{height:28px}
+[data-module="maps"] .mp-chips .mp-whole[hidden]{display:none}
 /* légende : un panneau translucide sur le dessin (sous la ligne d'en-tête et ses puces), fermé par la puce, un toucher ou Échap */
 [data-module="maps"] .mp-legend{position:absolute;z-index:1;left:4px;right:4px;bottom:0;top:calc(var(--f-sheet-head) - 1px);box-sizing:border-box;overflow:auto;padding:8px 10px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:color-mix(in srgb,var(--sog-surface) 86%,transparent);font-size:var(--sog-size-xs);line-height:1.3;touch-action:pan-y}
 [data-module="maps"] .mp-legend[hidden]{display:none}
@@ -4875,7 +4963,7 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 </div>
-<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-chip" data-view="profile" aria-pressed="true" title="${esc(ctx.t(TX.dataProfile))}" aria-label="${esc(ctx.t(TX.dataProfile))}">${svg('chart', { size: 20 })}</button><button type="button" class="mp-chip" data-view="weather" aria-pressed="false" title="${esc(ctx.t(TX.wxTitle))}" aria-label="${esc(ctx.t(TX.wxTitle))}">${svg('cloud', { size: 20 })}</button><button type="button" class="mp-chip" data-legend aria-pressed="false" disabled aria-disabled="true" title="${esc(ctx.t(TX.legend))}" aria-label="${esc(ctx.t(TX.legend))}">${svg('info', { size: 20 })}</button></div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div><div class="mp-legend" role="region" hidden aria-label="${esc(ctx.t(TX.legend))}"></div>
+<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-whole" hidden title="${esc(ctx.t(TX.winWholeHelp))}" aria-label="${esc(ctx.t(TX.winWholeHelp))}">${esc(ctx.t(TX.winWhole))}</button><button type="button" class="mp-chip" data-view="profile" aria-pressed="true" title="${esc(ctx.t(TX.dataProfile))}" aria-label="${esc(ctx.t(TX.dataProfile))}">${svg('chart', { size: 20 })}</button><button type="button" class="mp-chip" data-view="weather" aria-pressed="false" title="${esc(ctx.t(TX.wxTitle))}" aria-label="${esc(ctx.t(TX.wxTitle))}">${svg('cloud', { size: 20 })}</button><button type="button" class="mp-chip" data-legend aria-pressed="false" disabled aria-disabled="true" title="${esc(ctx.t(TX.legend))}" aria-label="${esc(ctx.t(TX.legend))}">${svg('info', { size: 20 })}</button></div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div><div class="mp-legend" role="region" hidden aria-label="${esc(ctx.t(TX.legend))}"></div>
 <div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
 <div class="mp-strip" aria-live="polite"></div></div>
@@ -4912,6 +5000,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     segEl: el.querySelector('.mp-chips'),
     segBtns: [...el.querySelectorAll('.mp-chip[data-view]')],
     legendBtn: el.querySelector('.mp-chip[data-legend]'),
+    wholeBtn: el.querySelector('.mp-whole'),
     legendEl: el.querySelector('.mp-legend'),
     dprofEl: el.querySelector('.mp-dprof'),
     dbodyEl: el.querySelector('.mp-dbody'),
@@ -4946,9 +5035,24 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     go(v.startsWith('m:') ? v.slice(2) : '', '');
   });
   S.mapPickEl.addEventListener('change', () => go(ctx.query?.mission, S.mapPickEl.value));
+  // fenêtre sur l'axe des distances du profil (règle 20) : deux doigts zooment et déplacent, double toucher ou double clic : le vol
+  // entier, Ctrl + molette zoome ; un seul doigt reste le curseur ci-dessous. La Carte ne la donne pas au mode Modifier, qui prend le
+  // glisser pour régler les paliers. Hors du cadre de tracé (graduations, niveaux), la fenêtre n'a pas de prise.
+  S.axw = createAxisWindow(S.profBox, {
+    total: () => S.prof ? S.prof.total / FT_NM : 0,
+    min: 5,
+    plot: () => S.geo ? {
+      x0: S.geo.padL,
+      x1: S.geo.W - S.geo.padR
+    } : null,
+    enabled: () => !S.edit.on && !S.dpanel,
+    onChange: onWindow
+  });
+  S.stops.push(() => S.axw.stop());
+  S.wholeBtn.addEventListener('click', () => S.axw.reset());
   // curseur commun : doigt (ou souris) sur le profil
   const onProf = e => {
-    if (!S?.geo || (e.type === 'pointermove' && !e.buttons && e.pointerType !== 'mouse')) return;
+    if (S.axw.active || !S?.geo || (e.type === 'pointermove' && !e.buttons && e.pointerType !== 'mouse')) return;
     const r = S.profBox.getBoundingClientRect(),
       x = e.clientX - r.left;
     setCursor(MapsProfile.sOf(S.geo, x));
@@ -5214,6 +5318,8 @@ export function unmount() {
   }
   if (frame) cancelAnimationFrame(frame);
   frame = 0;
+  if (profRaf) cancelAnimationFrame(profRaf);
+  profRaf = 0;
   try {
     S.map?.remove();
   } catch {
