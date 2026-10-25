@@ -70,7 +70,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - mid: plus the airway points and the minimum level under each name ("F195");
   - near: everything, plus each segment's distance (NM) above the name, the true tracks near both ends ("097°"), VRP
     and obstacles.
-- **Airways** (`drawAirways`), as en-route charts: low airways solid blue, high airways dashed purple; the name in a
+- **Airspaces list in the sheet** (`levelsHtml`): one line per airspace, "1 · TMA NANTES 4 · FL055|FL065 · D" (name ellipsed first, levels and class kept), at 0.95 of the body size; activation and information in the tooltip; the level graph narrows (30 % of the width) to leave the list room (case D11).
+- **Airways** (`drawAirways`; all the strokes first, then the names, so that no stroke crosses a name, 24 Oct, case D18), as en-route charts: low airways solid blue, high airways dashed purple; the name in a
   box laid along the segment (always readable left to right). The segment ends are drawn after them
   (`drawFixes`: a triangle and the id; a navaid at the same place is drawn with its own symbol instead). The boxes
   drawn are returned by `draw()` as `{ airways: [{ x, y, r, g }] }` for the tooltips.
@@ -80,10 +81,42 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 
 ## 4. Screen (`module.js`)
 
-- **Header**: title, "Edit the route" (opens `#fuel`), "Recentre", then the summary "dep → arr · alternate · level ·
-  distance · type".
+- **The screen is fixed** (`meta.fixed: true`, frame INTEGRATION § 9.2; user, 24 Oct 2026: "le module carte n'est toujours
+  pas fixe (scroll bar et artefacts en header)"). The module root is a flex column at the height of the frame's view
+  (between the header and the tab bar on a phone, down to the window's bottom on a screen), `overflow: hidden`; nothing
+  scrolls but the content of the data block (the Layers content included).
+- **The layout is header · map · sheet · bar** (user, 24 Oct 2026: "Ce n'était pas le deal. header, carte, carte, footer.
+  Les autres infos sont mises ailleurs", "trop d'éléments sur le header. Prévoir une exemption pour certains boutons
+  communs. Prévoir un full screen", "Maximiser l'espace alloué à la carte"). **Nothing between the frame's header and the
+  map**: no toolbar, no information line, no status line. The root's children are the invisible `h1`, the map
+  (`flex: 1 1 0; min-height: 0`, full width, the aeronautical layer on a canvas over MapLibre) and the data sheet (below).
+  What used to sit above the map went to:
+  1. **Buttons over the map** (the frame's overlay layer, `ctx.overlay.button()`, frame INTEGRATION § 9.3; 44 px round
+     buttons, name in `title` / `aria-label`, `aria-pressed` for the toggles; the layer is laid over the map box, so a
+     column never covers the sheet; hidden ones use `hidden`, see the rule `.f-ov-btn[data-mp][hidden]`). **Right column**,
+     from the top: "Edit the route" (`edit`, opens `#fuel?from=maps&focus=route`; not on a mission map), "Recentre"
+     (`target`), the **map mode** button (the current mode's icon, accent, red for CAM; opens a small panel of six icon
+     buttons to its left, at its height, inside the map box; no mission map), "Edit on the map" (toggle, `aria-pressed`;
+     icon: four arrows, drawn by the module; no mission map), "Follow" (toggle, `plane`; only while the flight is started),
+     and, only in the Edit mode, "Add a point" (`plus`, toggle, armed for one insertion) and "Undo" (a back arrow drawn by
+     the module, disabled with nothing to undo); **the frame's full-screen button is the last one** (the module draws none).
+     **Left column**: "Layers" (`layers`, `aria-pressed` while its content is open; on a mission map it is named "Map to show" and the
+     content keeps only the selector).
+  2. **The Layers content of the sheet** (not a panel over the map: user, 24 Oct 2026, "le sélecteur de couche passe par dessus…
+     c'est assez fouillis"; relay's amendment): the Layers button opens it in the sheet through `openData`, like an aerodrome's
+     content; the handle's title is "Layers · <flight summary>", the ✕ brings the profile back. At its head **the flight
+     selector** (the `select` "Planned flight" with the missions of the repository, and a second one for the maps of a mission,
+     shown only then), then the layer boxes in a grid of two columns on a phone (below). The content is one element the
+     module keeps (the boxes keep their focus between two writes).
+  3. **The sheet's handle**: the summary of the flight, as the handle's title (below).
+  4. **The notes of the sheet and a floating notification**: the progress line of a started flight, the messages that say
+     something is missing, the plain background, the terrain (below).
+  5. **The manual** (`help/*.md`): the hints ("slide a finger along the profile, or tap the route on the map", how the
+     Edit mode works). Entering the Edit mode says its help once per page, in a floating notification; the "+" armed hint
+     stays under the profile while armed.
+  No visible title: the tab bar (phone) or the rail (screen) already names the screen; an invisible `h1` stays for the
+  reader (placed at the root's top-left corner, 1 px, clipped).
 - **The map**:
-  - 60 % of the screen height (at least 280 px), with the aeronautical layer on a canvas over MapLibre;
   - pan and pinch, no rotation, no pitch, Mercator, north up;
   - redrawn on every move (one frame at a time);
   - the alternate: a grey dashed line from the arrival, a grey dot and its code.
@@ -95,19 +128,25 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Base map**: MapLibre is loaded at the first map (script and style sheet from `lib/`).
   - With no network, no WebGL, an error, or no style after 10 s, the map uses the plain background. It is fitted to
     the route and static.
-  - The status line says "Base map unavailable: plain background".
+  - The note "Base map unavailable: plain background" is written in the sheet's notes (under the profile), never over the map.
 - **Empty states**, written only when they change:
-  - no flight: the map is hidden, with a message and "Open Fuel";
-  - no published database: the route alone;
-  - offline with no data for the area: a message and "Offline data" (`#settings`).
+  - no flight (or a mission without maps, or an unreadable mission): the sheet is hidden, so are "Recentre", the route,
+    the mode and Edit buttons, and a card in the middle of the map area says it ("No planned flight", "Open Fuel"); the
+    Layers button stays (its panel holds the selector, hence the way to a mission's maps);
+  - no published database: the route alone, said **once** by a floating notification (`ctx.notify`, once per mount) and kept
+    in the sheet's notes;
+  - offline with no data for the area: a note in the sheet and "Offline data" (`#settings`).
 - **Updates**:
   - the flight file is watched (`ctx.data.watch`): a new `updated_at` refits the map and reads again;
   - `aerodb.on('change')`: the data are read again;
-  - `ResizeObserver`: resize and redraw.
-- **Map modes** (the user's validated mock-up, adapted to the `--sog-*` tokens; hidden for mission maps; icons only
-  since lot 7a): a trigger at the top left showing the current mode's icon, the same size as the Layers button
-  (`--sog-touch`), opens a row of six icon buttons; each has its name and help as tooltip and `aria-label`, the current
-  one pressed (accent ring and inset shadow; red for CAM); the Layers button stays under the trigger.
+  - `ResizeObserver` on the map box: resize and redraw at each step, then (120 ms after the last) the route framed again
+    if the map has not been moved by the user.
+- **Map modes** (the user's validated mock-up, adapted to the `--sog-*` tokens; hidden for mission maps and when there
+  is no map; icons only since lot 7a): a button of the right column of the overlay layer showing the current mode's icon
+  opens a row of six icon buttons as a small panel anchored to its left, at its height (placed when it opens: the column
+  may have wrapped, the map may be low; `z-index` 8, inside the map box, closed by a tap on the map or the sheet, by
+  Escape or by a choice); each has its name and help as tooltip and `aria-label`, the
+  current one pressed (accent ring and inset shadow; red for CAM); the Layers button is in the left column.
   - Auto (wand, the flight's level: High IFR from FL195), Low IFR ("IFR" under a ceiling, `routeProfile(5000)`), High
     IFR ("IFR" over a floor, `routeProfile(30000)`), VFR (map icon, the built-in `vfr-detail` profile on the
     `ofm-liberty` base), Topo (contour lines drawn in CSS: `ofm-liberty` with a hillshade of the Terrarium tiles,
@@ -117,18 +156,129 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - Icons from `frame/lib/icons.js` (`wand-sparkles` added, `map`, `plane`, `chevron-down`); colours: accent for the
     choice, `--sog-err` for CAM; corners from `--sog-radius` (square in cabinet and field).
   - Kept in `cache/maps/ui.json` (`preset`: auto, low, high, vfr, topo, cam); each mode has its own layers.
+- **The data block is a sheet of fixed height** (24 Oct 2026: the block; same day, second decision: the sheet). It sits
+  under the map and holds, one at a time:
+  - the vertical profile (default), with its strip;
+  - **the airspaces list** ("n airspaces at this point"), opened by a tap on airspaces (below);
+  - **the aerodrome's VFR reporting points** (§ 4 septies), opened by a tap on an aerodrome or a reporting point;
+  - **the weather cross-section** (kind `weather`), the profile's alternative, drawn by the atmosphere module's pure renderer
+    (`drawSection`, INTEGRATION § 8) against the flight's level, with the shared cursor;
+  the contents replace the profile while open (one does not need the profile while reading them), and closing them
+  brings the profile back, redrawn to its size. A new content replaces the open one; opening the airspaces list releases
+  a pinned aerodrome (its highlight would stay without its list). The map keeps its size and position when a content
+  opens: nothing overlays it any more except the light hover tooltip and the route-point card of the Edit mode, both
+  inside the map box.
+  - **Three positions**, as parts of the module's height (the frame's view): **collapsed** (the header line only, 44 px
+    and its hairline), **default** (the frame's: 30 % on a phone, 35 % above 760 px; never under 170 px; the module has no value of its own) and **expanded** (70 %; never
+    under 260 px). The numbers are the frame's sheet tokens (`--f-sheet-head`, `-default`, `-default-min`, `-expanded`,
+    `-expanded-min`, frame/INTEGRATION.md § 11), read from the module root; the frame's style sheet is their only source. The map takes the rest: at 390 × 844 (view 730 px) the
+    sheet is 45 / 219 / 511 px and the map 685 / 511 / 219 px.
+  - **The handle** is the header line (44 px; a small bar, the **title** of what the block shows and its context, at the
+    right the two **chips** Profile · Weather (below) or the ✕ of a content, 44 × 44), on Atmosphere's model (V3 spec § 7.1.6);
+    **over a drawing (the profile, the cross-section) and at the default position only the line is bare** (V3 spec § 7.1.13 and its 21:05 refinement, 24 Oct):
+    class `.f-sheet-head-bare` (frame primitive, `--f-sheet-head-bare` = 28 px), the grip bar and the two chips only, no
+    title (the drawing already says level, distance and flight); the handle's `title` / `aria-label` says "Vertical profile"
+    or "Weather cross-section" (four languages), then the flight summary that is no longer written, then the height hint.
+    Expanded, collapsed and in the landscape column (`html.f-land`) the head keeps its title (45 px: there is room, and the title is then
+    what says what the content is); it switches at every position change and at `onSettle` (rotation); the other contents (Layers, airspaces, levels,
+    aerodrome) keep the normal head with their title. The two chips are **not in the head row any more** (§ 7.1.13, second
+    refinement, user: "supprimer espace jaune et texte rayé rouge, aligner boutons verticalement à droite (horizontalement en paysage)"):
+    see "The Profile · Weather chips". As before:
+    no separate title row, no segmented-control row. A drag on it (pointer events on the header only, `touch-action: none` there: the map keeps all its
+    gestures) pulls the sheet live; released, it goes to the nearest position, or to the next one in the direction of a
+    quick flick (more than 0.8 px/ms), with a 200 ms slide (none under `prefers-reduced-motion`). A tap on it collapses
+    the sheet, or brings a collapsed or expanded one back to the default; the keyboard (the handle is a button):
+    Enter / Space like a tap, Up / Down one position, Home / End the extremes. The position is kept while the page lives
+    (a return to the map finds it as left; not kept on the device).
+  - **The map follows**: the sheet's height changes the map box, its `ResizeObserver` resizes the MapLibre canvas and the
+    overlay at each step, and 120 ms after the last one (end of the slide, orientation change, pane resized) the route is
+    framed again if the user has not moved the map (`resize()` itself is not taken for a gesture of the user).
+  - **A content opened while the sheet is collapsed opens it** to the default position, without sliding (the content is
+    measured at once).
+  - **The drawing fits the sheet** (V3 spec § 7.1.13 a): the profile and the cross-section are drawn at the **exact height of the
+    body**, with their x axis (distances, route points) always visible and nothing to scroll; no readability floor above the body
+    (the profile's 120 px floor and the cross-section's body scroll are gone; the cross-section's own box, border and padding too:
+    the drawing takes the whole body). The profile drops level labels before its axis (one level in two under 160 px, one in four
+    under 110 px, never two closer than 13 px; their grid lines with them), shrinks its foot to one row when the points do not
+    overlap (under 200 px), and drops the airways' extra points under a 90 px plot; its canvas reports `data-axis="1"` (the last
+    row of distances is inside the canvas) and `data-marks` (route points drawn), the cross-section's body `data-axis="1"` (its
+    bottom is inside the body). At 390 × 844 the default body goes from 174 to 191 px (profile) and the cut from 152 to 191 px;
+    the sheet's 170 px floor leaves 142 px of body, which `drawSection` (140 px floor of its own, no option yet) still fits.
+  - **Inside the sheet**: header, then the profile (`flex: 1 1 0`, 380 px at most) with its strip (34 px, two lines, scrolls),
+    or the content area (`.mp-dbody`, scrolls, `overscroll-behavior: contain`), then the notes (two lines of
+    `--sog-size-xs` at most, scrolling beyond): the **progress line** of a started flight ("12 NM late · 3.2 NM right of the
+    route · …", "GPS or network not enabled: no actual position · Open the settings"), then what is missing ("Aeronautical
+    database not published", "Offline, without this zone's data" and its button, a mission's notes), then what is only
+    information (plain background, terrain unavailable: the normal offline state). Nothing of it is above the map. The
+    sheet is not there when there is neither profile nor content.
+  - **The "Profile · Weather" chips** (24 Oct 2026). While the sheet shows the profile or the cross-section, a **column of two icon chips at the right of the drawing**
+    **only with the bare handle** (default position, portrait: 44 px wide, chips of 40 px on a 44 px pitch, from the top of the body, the
+    drawing keeps the width left); **as soon as the title line is there (expanded, collapsed, landscape column) the chips are back in that
+    line, at the right, in a row, and the drawing takes the whole width** (user, 24 Oct: "les icônes passent en horizontal quand la ligne du
+    haut apparaît"); a profile chart and a cloud, with a hairline and the accent when pressed; the element is a direct child of the panel
+    placed after the head (outside the drag zone, the title leaves 136 px to its right).
+    **The "i" chip is the last one** (V3 spec § 7.1.14): it opens a **legend** panel over the drawing (translucent, closed by the chip, a
+    tap on it or Escape): the series actually drawn, symbol and name in four languages, produced by the drawing code (`geo.drawn` of
+    `vertical_profile.js`: planned path, TOC / TOD, relief or MORA, the airspace types crossed with their colours, route points; and what the
+    sheet adds: NM marks, airway points). The cut has no legend of its own yet (`drawSection` neither returns nor exposes one: the chip is not
+    shown over it until the module's `loadWeather` gets a `legend` from `section.js`).
+    **A drag on the weather cut moves the common cursor like on the profile** (pointer events with capture, one redraw per animation frame,
+    `geo.nmOf` of the cut; `touch-action: none` on its body): the map's point, the airspaces under it and the text line follow, the cut draws
+    its dashed cursor line; the map element carries `data-cursor-nm`. Edit mode is unchanged (profile only).
+    with `aria-pressed` and their names in `title` / `aria-label` ("Vertical profile", "Weather cross-section", four languages);
+    hidden for a mission map, a route of fewer than two points, and while an airspaces list or an aerodrome's content is open:
+    those have their ✕. A choice is kept for the life of the page (not on the
+    device), also across an airspaces list or an aerodrome opened and closed in between, and not replayed on a sheet that comes
+    back collapsed. Choosing "Weather" on a collapsed sheet opens it to the default position. The cross-section has no ✕: the
+    profile chip (or Escape) brings the profile back.
+    - **What it shows**: only the forecast that atmosphere has already read into the shared weather cache for this flight
+      (same route points, level, model and days); the map never asks Open-Meteo. The departure time is the flight's
+      `weather.when`, else the next full hour. The shared cursor (`cursorM`) is passed to the renderer: a tap on the route
+      on the map moves it on the cross-section, and a tap on the cross-section moves it on the profile and the map. It is
+      redrawn when the sheet is resized, the design or the night tone changes, the cursor moves, and the flight changes.
+    - **Without a forecast**: one 44 px line, "No forecast loaded: open Weather in Prepare" (four languages), a link to
+      `#atmosphere`; if atmosphere's files cannot be loaded (offline, never cached), one muted line says so. Atmosphere's
+      files are loaded at the first "Weather" (`meta.lazy`), not at mount.
+  - **The title of the handle** (collapsed sheet, and every content that is not a drawing; over a drawing see "The handle" above: no
+    title, the same words in the handle's label) says what the block shows and its context: "Profile · FL065 · 427 NM · planned flight" (or
+    "flight in progress"; a mission map: "Profile · I-001A · title · map"), "Weather · FL065 · …"; the tooltip has the whole
+    summary ("Vertical profile · LFRS → LFML · alternate LFMT · FL065 · 427 NM · C30J · planned flight"). A content opened by
+    `openData` (airspaces list, aerodrome's points, levels: "n airspaces at this point", "LFMN: VFR reporting points", the
+    aerodrome's name in the tooltip) keeps its own title; its ✕ shows only for those. Written only when it changes (the flight's
+    summary, a flight that starts, a map that changes).
+  - **Escape** closes one thing per press, the nearest first: the modes panel, the sheet's content (Layers, airspaces
+    list, aerodrome; the weather cross-section goes back to the profile), a route point's card, the armed "+", the Edit mode.
+    The module takes the key in the capture phase and calls `preventDefault()` when it closed something, so that the frame
+    does not also leave the full screen (frame INTEGRATION § 9.4); with nothing to close the key goes to the frame.
+  - **Full screen** (§ 9.4 of the frame's INTEGRATION): nothing to do but follow the size; the `ResizeObserver` on the map box
+    resizes the MapLibre canvas and the overlay (the sheet stays, at its position).
+  - **Closing**: ✕, Escape (on the weather cross-section: back to the profile), a tap on an empty spot of the map for the airspaces list; the aerodrome's content stays until
+    ✕, Escape or another aerodrome (pinned). Nothing scrolls the page to reveal the block: it is always on screen.
+  - The levels chart is drawn at scale 1 for the content area (`levelsHtml(list, w, h)`): 44 % of the width under 600 px
+    (a phone), otherwise the width its columns ask for (400 px at most), never higher than the area; the list beside it
+    in columns of 19 em; the chart stays at the top while the list scrolls.
+  - **Outside the frame's fixed view**: in the dual-view pane the root is given the pane's height by the frame
+    (`--f-pane-h`, § 9.2 of the frame's INTEGRATION; 420 px at least; the pane is `sticky`); with the map on the left of a
+    pane, the view's height (`--f-split-h`); on the test page, the window's (no overlay layer there: the module draws the
+    same two columns inside the map box). The sheet and the buttons are the same there.
+  - **The tuning page** (`#maps?tune=1`) is a page that scrolls: the root scrolls by itself (`overflow: auto`), the map box
+    is 52 vh again, the blocks have their natural height, the thresholds panel sits beside them from 1000 px.
+  - The root is an isolated stacking context (`isolation: isolate`): the z-indices of the map's buttons (3 to 8) never
+    compete with the frame's header or tab bar, in the pane (where the page scrolls under the sticky header) as on the
+    fixed screen.
 - **Tooltip** (lot 7a: one behaviour for hover, tap and click), a light `.mp-tip` (class `mp-hover`: `--sog-chart-bg`
   at 65 %, `--sog-fg`, thin border, 11.5 px, two lines at most) in the map box or the profile box:
   - what is under the pointer, in this order: a wind barb, an airway box, an airspace label (`draw()` returns their
     frames); on a tap or a click only, when no barb nor airway is under the
-    finger (an airspace label does not count), the airspaces under the point in the levels card (`levelsHtml`, from one
-    airspace on, its own element `.mp-lvcard`): the title "1 airspace at this point" or "n airspaces at this point", an SVG block like the vertical profile (altitude
-    axis SFC to the highest finite ceiling with a nice step, "UNL" above, 66,000 ft and more counted as UNL; one
-    numbered column per airspace from floor to ceiling, coloured by type as in the profile; ASFC limits counted from
-    the ground), then the numbered list in SIA notation with activity and service, lowest floor first; the card stays
-    inside the frame (scrolls if taller) and stays open: its ✕ (44 px) or Escape closes it, another tap on airspaces
-    replaces it, a move of the map leaves it; the light tooltip stays for the mouse hover and for the targets that come
-    first (barb, airway box, label);
+    finger (an airspace label does not count), the airspaces under the point **in the data block** (see "The view is
+    fixed" above; `levelsHtml`, from one airspace on): the title "1 airspace at this point" or "n airspaces at this
+    point", a chart like the vertical profile (altitude axis SFC to the highest finite ceiling with a nice step, "UNL"
+    above, 66,000 ft and more counted as UNL; one numbered column per airspace from floor to ceiling, coloured by type as
+    in the profile; ASFC limits counted from the ground), then the numbered list in SIA notation with activity and
+    service, lowest floor first; its ✕ (44 px), Escape or **a tap on an empty spot of the map** close it, another tap on
+    airspaces replaces it, a drag or the wheel leave it (the aerodrome's content, pinned, stays until ✕ / Escape / another
+    aerodrome); the light tooltip stays for the mouse hover and for the targets that come first (barb, airway box,
+    label);
   - a tap or click on one of the first three takes priority over placing the cursor on the route; on nothing, it
     closes the tooltip;
   - it follows the pointer 12 px away (never under it, kept in the box) while the pointer is on the label, stays 5 s at
@@ -145,7 +295,11 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Obstacles**: the studio's symbols (grouped on screen, the highest represents its group) without their label; in a
   close view (300 px per degree or more), "434 AGL (771)" beside the symbol — height above ground in feet, top
   elevation in brackets — where there is room.
-- **Layers panel** (button with a layers icon under the presets; hidden for mission maps): airspace families (TMA /
+- **Layers content** (the Layers button of the left column opens it in the sheet; on a mission map it holds only
+  the selector): the flight / map selector first, then the **Complexity slider** (before any box: "the first thing the
+  administrator asked for"; label "Complexity", the value beside it, and the slider on **one 44 px line** (block ≤ 56 px at 390 px, five designs, case D17);
+  the help sentence in four languages (it acts as if the zoom were different, what each zoom shows is set by the administrator) is
+  the label's tooltip and the slider's `aria-describedby`, out of the page (it took 51 px, and the block 73 px, 24 Oct)), then airspace families (TMA /
   CTR: TMA, CTR, CTA, TMZ, RMZ; D / R / P: R, D, P, TRA, TSA, CBA, PJE, TRVL, TRPVL, ZIT; FIR: FIR, UIR, UTA, LTA, OCA,
   FRA; others: every other type present), lower and upper airways, beacons, airway points (`fixes`), VRP, obstacles,
   MORA, towns, graticule, alternate, and "Around the route only".
@@ -189,7 +343,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     airway point, RNAV point, VRP of the data read, within 20 px) ringed with its id. Released on it: the point takes
     its id and position, and keeps its `alt_ft`. Released elsewhere: a free point at the finger's position, named by its ICAO
     coordinates (`icaoCoord`, "4530N00030E"), for VFR and helicopters; an anchor within 20 px keeps the priority.
-  - Adding is an explicit gesture: the "+" button of the bar (shown in the mode, pressed while armed) arms one
+  - Adding is an explicit gesture: the "+" button of the right column (shown in the mode, pressed while armed) arms one
     insertion, and the next tap adds the anchor under the finger (else a free point at its ICAO coordinates) where it
     lengthens the route least, then disarms; a press held 500 ms without moving (8 px) does the same at once (the
     browser menu is suppressed in the mode). A simple tap never inserts: on a route point it opens its card, elsewhere
@@ -244,7 +398,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     160 kt down.
   TOC and TOD are the ends of the cruise.
 - **Terrain unavailable** (offline, or the first tile refused): the cut has no terrain. The MORA of each 1° cell
-  crossed is drawn as a dashed brown step line (aerodb `mora`), and the status line says so.
+  crossed is drawn as a dashed brown step line (aerodb `mora`), and the sheet's notes say so.
 - **Drawing**: `SiaProfile.draw` (axes in ft / FL, airspace bands and labels, terrain, points with their distances,
   trajectory with TOC / TOD and the cruise level), scale 0.78 under 500 px. Labels use the copy's `strictLabels`
   option: the airspaces the trajectory enters first (then the widest), each label only against its own band (inside,
@@ -259,7 +413,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - a tap on the map within 32 px of the route sets it to the nearest sample;
   - the map shows it as a blue ring, with TOC and TOD as purple diamonds.
 - **The strip under the profile**: distance (NM) · planned altitude · terrain or MORA · the airspaces under the cursor
-  (type, name, limits), or "outside the airspaces shown". Without a cursor, a one-line hint.
+  (type, name, limits), or "outside the airspaces shown". Without a cursor the strip is empty (the hint "slide a finger along the profile, or tap the route" is in the manual).
 - **API**: `build(points, { levelFt, profile, airspaces, elevation, mora })`, `draw(ctx, cut, { W, H, scale })` →
   geometry, `xOf(geo, s)`, `sOf(geo, x)`, `at(cut, s)`, `posAt(cut, s)`, `nearest(cut, toC, x, y, maxPx)`; distances in
   metres, altitudes in feet.
@@ -284,11 +438,11 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Fields written by the V2 studio** (BUGS SOG, develop ea077ae36, v3 f799f8429):
   - `profile_def`: the full display profile, used as is;
   - `resolved_bbox`: the extent drawn;
-  - `cycle`: the AIRAC cycle of the map. A cycle different from aerodb's is said in the status line.
+  - `cycle`: the AIRAC cycle of the map. A cycle different from aerodb's is said in the sheet's notes.
   - In `vertical_profile`: `profile_def`, `cycle`, `route_points` [{ name, lat, lon, alt_ft }].
 - **Without those fields** (older missions):
   - **Profile**: the built-in profile of the same id, else the built-in profile of the type. Detail, target and rdv
-    give `vfr-detail`; approach gives `vfr-simple`; anything else gives `ifr-simple`. The status line says so.
+    give `vfr-detail`; approach gives `vfr-simple`; anything else gives `ifr-simple`. The sheet's notes say so.
   - **Extent**: `view`, else `bbox`, else the automatic frame by type:
     - general: points and zones, 12 % margin;
     - zone: the zone, 20 % margin;
@@ -312,8 +466,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 ## 4 quater. Designs, day and night (frame/design)
 
 - **Page**: frame primitives only (`f-tools`, `f-btn`, `f-muted`); the module's own style only places things.
-  Backgrounds use `--sog-bg` (map box) and `--sog-chart-bg` (profile); the credit line uses `--sog-chart-bg` and
-  `--sog-fg`.
+  Backgrounds use `--sog-bg` (map box) and `--sog-chart-bg` (profile); the attribution is MapLibre's compact control, folded on its "i" button at the map's creation (`map_base.js`), and carries the
+  SIA note ("SIA: published database, not certified") before the sources: one credit text, no line of the module's own.
 - **Canvas**: `MapsRender.tokens()` reads `--sog-chart-bg`, `--sog-bg`, `--sog-fg`, `--sog-muted`,
   `--sog-chart-grid` and `--sog-accent` with `getComputedStyle(document.documentElement)`. Night is a chart background
   darker than 45 % luminance.
@@ -351,7 +505,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   sequences: not imported" without the compilation. Leaving the aerodrome or the map ends the preview.
 - **Tap or click** (not in Edit mode, not on a mission map): the aerodrome is pinned. When its points span less than
   160 px on screen, the map fits them (aerodrome included, zoom 11 at most, room left for the card); that is the
-  user's gesture, so the camera stays theirs afterwards (Follow stops, Recentre comes back). Then its card:
+  user's gesture, so the camera stays theirs afterwards (Follow stops, Recentre comes back). Then its content (in the data block):
   - "LFMN NICE COTE D'AZUR: VFR reporting points", then "Reporting points (n)" with the legend "(black: aeroplanes;
     green: helicopters)" when both kinds are there, one line per point (coloured code, name, restrictions read in the
     VAC); without the compilation, "VAC sequences: not imported" and nothing else;
@@ -360,22 +514,25 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - the sequences in text ("LFBD – NA – NE (page 6)"), identical ones (same codes, same page) shown once, with "(some
     may be only part of a route)" when any is marked `fragment`;
   - the instructions of the VAC, one folded block per page (its title, its page).
-  The card goes to the side opposite the aerodrome, under the buttons of that side; under 600 px it takes the lower 45 %
-  of the frame and the fit leaves that room. The card has its own element (`.mp-adcard`) and stays open while the map
-  moves or is tapped elsewhere: its ✕ (44 px, top right) or Escape closes it and releases the aerodrome; another
-  aerodrome replaces it. The points and sequences stay highlighted while it is open.
+  This content is shown **in the data block** under the map (§ 4, "The view is fixed"), no longer as a card over the
+  map: the title "LFMN: VFR reporting points" in its header line, the content area scrolling, the points list in columns
+  of 19 em. It stays open while the map moves or is tapped elsewhere: its ✕ (44 px, in the header) or Escape closes it,
+  releases the aerodrome and brings the vertical profile back; another aerodrome replaces it. The points and sequences
+  stay highlighted on the map while it is open. The content builder is `showAdCard` (HTML only; placement is the
+  block's).
 - **Tap targets** (22 px, a finger): first a reporting point (the highlighted ones, whose aerodrome is known, then
   those of the VRP layer, `render.draw()` returning them as `vrps`: the aerodrome of their prefix within 30 NM, else
   the nearest within 5 NM) when it is nearer than an aerodrome: its aerodrome is pinned, the point first and in bold in
   the list; a VRP without aerodrome gives its own tooltip (code, name). Then an aerodrome. Both before the tooltips and
-  the levels card.
+  the airspaces list.
 - **VFR mode**: departure and arrival (four-letter codes) are shown anyway, drawing only.
 - **Drawing**, on top of the route (teal): a route with an interpreted geometry follows it (long dashes, its manual
   vertices as small dots), the others are short dashes between their known reporting points; never a line to the
   aerodrome's centre (an integration not digitised stays undrawn, format 2's rule); an arrow at the end of a route
-  only when an analysis made it one-way (`direction: 'forward'`). Each reporting point ringed and named (code, then the
-  base's VRP name when loaded); the aerodrome's reference point is not drawn; "VAC, to be checked" in italics under
-  the aerodrome.
+  only when an analysis made it one-way (`direction: 'forward'`). Each reporting point ringed and named with **its short code only** ("NA", "E", "SE": legibility
+  is a permanent objective; the VRP layer likewise writes `MapsRender.vrpCode(id)`, "BD-EA" → "EA", "MN-H-HE" → "HE"; the
+  long name stays in the tooltip, in the data block's list and in the hover preview); the aerodrome's reference point is
+  not drawn; "VAC, to be checked" in italics under the aerodrome.
 - **Format 2 in the card**: the analysis line ("Manual analysis of the VAC (partial)", "Automatic extraction, not
   reviewed", "Analysis out of date (the VAC changed): automatic extraction only", "VAC reviewed: no published
   sequence") and its notes; each route with its name (`key`), codes and pages, then runways, default altitude, minimum
@@ -428,28 +585,65 @@ when the report is saved), nothing otherwise:
   - `atZoom(profile, z)` cuts the elements out of their range; `byZoom(data, profile, z, tier)` keeps the data shown
     (families, beacons, VRP, obstacles, MORA, towns); from afar (`tier` far) only the large aerodromes. Mission maps are
     not concerned (their studio profile shows what it asks).
-  - The view's zoom is shifted by ¾ of a level per step of the "Complexity (trial)" slider of the Layers panel (−2 to
-    +2, per mode and device), so the whole set moves together; a map frame narrower than 600 px (pane of the dual
-    view, phone) takes one step less.
+  - **Effective zoom** (24 Oct 2026): the zoom compared with the thresholds is not the map's own. It is the view's zoom
+    shifted by one whole level per step of the "Complexity" slider of the Layers content (−4 to +4, per mode and
+    device; 24 Oct 2026, was ¾ of a level from −2 to +2, which went down only 1.5 levels), so the whole set moves
+    together, **then corrected by the size shown in the frame**:
+    `effectiveZoom(zoom, w, h) = zoom + k · log2(((w + h) / 2) / 900)`, with `w` and `h` the map frame's size in CSS
+    pixels, `k = 1` (`MapsRender.effectiveZoom`, `FRAME_REF_PX = 900`). A frame whose mean side is 900 px (a laptop pane)
+    gets no correction; half as large (450 px) counts one level further out, twice as large one level closer. This
+    replaces the former fixed "one step less under 600 px". The one function serves the elements' ranges (`atZoom`,
+    `byZoom`, the VRP layer, labels), the contour lines, the towns' place-name switch and the density tier
+    (`tierOf(pxOfZoom(effective))`: far / mid / near); mission maps are not concerned. What stays in raw pixels per
+    degree is geometry that needs real room (obstacle heights beside their symbol, the ETA labels, the "everything in
+    the view is read" switch, the overview rule of the corridor), not a threshold of the tuning page. `render.draw()`
+    returns `zoom: { shifted, effective, tier, kept }` (counts of what the thresholds kept, `kept.byKey` per family) for bench and
+    tuning; the screen also publishes the effective zoom and `kept` on the map element (`data-zoom-eff`, `data-kept`), the
+    counter the tests read.
+  - **The slider is a zoom shift and nothing else** (administrator, 24 Oct 2026: "the slider only acts as if the zoom were
+    different; what a pilot wants to see at each zoom is what I set on the tuning page"). Steps: `MapsRender.DETAIL_ZOOM = 1`
+    level per step, `DETAIL_MAX = 4` (`MapsRender.detailZoom(step)` clamps and converts, the one function for the screen and for
+    `draw()`). Measured on a phone (390 px) zoomed out on Europe the effective zoom is 2.2 to 3.5, so −4 puts it at or below 0:
+    nothing passes a range any more (a range starting at 0 included, e.g. the built-in IFR TMA / CTA / R); −1 to −3 thin the
+    map progressively, +1 to +4 bring the close-view elements in earlier (+4 shows the VRP and obstacle ranges from a regional
+    view). The step is kept per mode on the device (`cache/maps/ui.json`, `layers[mode].detail`; an older value is clamped).
   - Starting values (`ZOOM_IFR`, `ZOOM_VFR`): in IFR (Auto, Low, High IFR, CAM) the route corridor already thins the
     map, so the airspaces are graded in one intermediate step: the overview shows the route, the winds, the
     aerodromes and the shapes of TMA, CTA, R and TSA / TRA (the only ones above FL195); CTR, D and airspace names from
     4.75, airways from 5, P from 5.25, other airspaces and MORA from 5.5; beacons and airway points from 5.75, segment labels from 7.75, VRP from
     9.25, obstacles from 8.5, medium towns from 6.5, small towns from 8.5, contours from 9); in VFR and Topo the
     airspaces are graded: FIR up to 7, TMA and CTA from 6, R, D and TSA from 6.5, CTR from 7, P from 7.5, others from 8,
-    names from 6. Landmarks: France on a screen ≈ 5.5, on a phone ≈ 4.3, 100 NM wide on a screen ≈ 8.5.
+    names from 6. Landmarks (the map's own zoom; the effective zoom is lower by 0.1 on that screen and by 1.2 on that phone): France on a screen ≈ 5.5, on a phone ≈ 4.3, 100 NM wide on a screen ≈ 8.5.
   - Precedence: the built-in values, then the airline's (`airline/map_profiles.json`), then the device's
     (`cache/maps/ui.json`, `layers[mode].zoom`), then the values being tuned (`#maps?tune=1`).
+  - **A mode the airline never tuned follows a tuned one** (`repoZoom`, 24 Oct 2026). The airline's file holds an entry per
+    mode that the tuning page saved ("Save for the airline" writes the mode on screen only). The file of 23 Oct held `vfr`
+    alone, so Auto, Low / High IFR, Topo and CAM kept the built-in values, looser (IFR: FIR, TMA, CTA, R, TSA from 0), and the
+    administrator who had tuned "the" thresholds saw them not apply on a phone in Auto. Now the thresholds of a mode with no
+    `elements.zoom` of its own come, in this order, from another mode of its family (IFR: Auto, Low, High, CAM; VFR: VFR,
+    Topo), then, **for an IFR mode only**, from the VFR family (the stricter values; the IFR route corridor already thins the
+    map, whereas VFR has no corridor and needs them; the reverse is never done). Only the ranges are inherited: the boxes
+    (`layers`) stay per mode. The tuning page says where the mode on screen takes its thresholds from (the airline's own, taken
+    from mode X, or built-in); saving the mode makes them its own.
+  - **Measured** (24–24 Oct 2026, 390 px, LFRD → LFBD FL160, the published SIA base of FR, GB, DE, BE, NL, IE, ES from the data
+    repository, the real `airline/map_profiles.json`; counters `kept.byKey`): VFR with the file: P from 5 (20 P zones at effective
+    zoom 5.0 where the built-in 7.5 draws none), TMA / R / D absent below 6.75 / 7.5 / 7.75 (at 6.75 the built-in table keeps
+    17 TMA, 15 R, 6 D, the file none of them): the file is read and applied. Auto with or without the file: identical, 54
+    spaces (26 TMA, 19 R, 9 CTA) from effective zoom 2.2 up, the file having no `auto` entry. After the change Auto with the
+    file keeps none at 4.0 and P (3) from 5.
 - **Contour lines** (`contours.js`, `window.MapsContours`): computed in the browser from the Terrarium tiles (the
   host of the relief, nothing new): marching squares on each tile's elevation grid (a cell every 2 tile pixels),
   segments kept per tile and interval, projected at each drawing; tile zoom from the view (8 to 12, at most 16 tiles);
   in memory only (48 tiles). Interval 500 ft (or 100 m when the pilot's altitude unit is metres, `fuel.json`
   `displayAlt`), every fifth an index contour, thicker and numbered. Drawn under the aeronautical overlay, in VFR and
   Topo, within the `contours` range (from 9) and with the "Contour lines" layer.
-- **Tuning of the profiles (administrator)**: `#maps?tune=1`, reachable by its address only (no button, nothing in the
-  user help). A panel beside the live map (on a screen of 1,000 px and more; above the map otherwise; read only on a
-  phone): the current zoom (and its NM per cm of screen), the six mode tabs, one line per key with a double slider
-  "from … to …" (zoom 0 to 18, step ¼; 18 means no upper limit) labelled in zoom and NM per cm, the current zoom
+- **Tuning of the profiles (administrator)**: `#maps?tune=1`, reached from Settings, "Administration" card (Full level), by
+  the button "Map threshold tuning (administrator)" (`frame/settings/admin_links.js`; back by the usual way), or by its address.
+  A panel beside the live map (on a screen of 1,000 px and more; above the map otherwise; read only on a
+  phone): the line "current zoom": the map's zoom, **the effective zoom beside it** with the frame's mean side in px
+  ("Current zoom: 6.01 · effective 4.85 (frame of 403 px on average) · 18 NM per cm of screen"; the mark on each slider is
+  the effective zoom, which the thresholds compare), the six mode tabs, one line per key with a double slider
+  "from … to …" (zoom 0 to 18, step ¼; 18 means no upper limit) labelled in zoom and NM per cm, the effective zoom
   marked on each slider. The map is redrawn at every move of a slider. In front of each line, a "drawn" box: the
   Layers panel's layer for that line in this mode (`LAYER_OF`: one box per airspace family — TMA / CTA / CTR share
   "TMA / CTR", R / D / P / TSA share "D / R / P" —, the three town sizes share "Towns"; airspace and airway names are
@@ -459,7 +653,8 @@ when the report is saved), nothing otherwise:
   sliders" (the mode's starting values),
   "Keep on this device" (`cache/maps/ui.json`), "Save for the airline" (`airline/map_profiles.json`: the
   thresholds in `profiles[mode].elements.zoom`, the boxes in `profiles[mode].layers`, read as the mode's starting
-  layers before the device's choices).
+  layers before the device's choices). A line under the current zoom says where the mode on screen takes its thresholds from
+  (the airline's own, taken from another mode, or built-in).
 - **Map size**: the MapLibre canvas follows the frame. A size observer on the frame, the map's `load` and
   `style.load`, the page's return (`visibilitychange`, `pageshow`, `resume`: observations made while the tab was hidden
   or frozen are lost) and every redraw compare the canvas with its container and call `map.resize()` only when they
@@ -492,7 +687,29 @@ when the report is saved), nothing otherwise:
   - V3 extensions of `profile_def`: `elements.zoom` (above), `elements.vfrDensity`, `hillshade` (Topo relief),
     `elements.fixes`, `elements.awLabels`.
   - The device's override stays in `cache/maps/ui.json` (`layers[mode]`: the Layers panel's ticks, `detail`, `zoom`).
+  - A mode with no `elements.zoom` of its own takes the ranges of a tuned mode (§ 4 quinquies, `repoZoom`).
   - Changes of the file are followed (`ctx.data.watch`): the map takes them at once.
+
+## 4 octies. Flights across the date line (24 Oct 2026)
+
+A flight from Siberia to Alaska (UHMA 177.7° E → PAOM 165.4° W) runs from 177.7° to 194.6°, not from 177.7° to −165.4° the other
+way round the world. The helper is the frame's (`frame/lib/geo.js`: `wrapLon`, `nearLon`, `unwrapLons`; frame INTEGRATION § 12).
+
+- **The route is unrolled first.** `pointsOf` returns continuous longitudes (and `readFlight` puts the alternate on the arrival's
+  side), so the distance marks, TOC / TOD, the profile, the cursor, the ETA, the barbs and the framing need no special case: they
+  interpolate linearly in the unrolled longitude (`S.fit`, `bboxOf`, can exceed 180°). Written back, the route is in
+  [-180, 180[ (`commit`).
+- **MapLibre runs with world copies** (`startTiles({ worldCopies: true })`; atmosphere keeps `false`): the camera centre may be at
+  190° or −174°, `getBounds` and `project` go beyond ±180. The projection the whole screen uses (`wrapTo`) takes a longitude to the
+  copy nearest the view's centre; the route, and what lies in its longitude span, is shifted by one common number of turns so
+  that it is never torn. The plain background draws its own copies of the countries.
+- **Every request is wrapped, every comparison is modulo 360.** aerodb boxes are cut in two at 180° (`wrapBoxes`), the relief tile
+  and the MORA are read at `outLon(lon)`, the weather cross-section keeps asking atmosphere for the raw (wrapped) points (same
+  cache cells as atmosphere's own lookup), a tap's coordinates are wrapped before the airspace test, flat distances use `dLon`.
+- **The "no forecast" message names the flight** (`No forecast for UHMA → PAOM:` then the link to Weather; the old text when the
+  departure or the arrival is unknown).
+- **Not done**: airspace polygons that straddle 180°; a mission map whose extent or zones straddle the line (its trace is
+  unrolled); the poles (no wrap in latitude).
 
 ## 5. Invariants
 
@@ -502,3 +719,5 @@ when the report is saved), nothing otherwise:
 3. No interface text in `render.js`.
 4. The plain background always works offline once seen, or when MapLibre is not cached (core and symbols are in
    `meta.files`; the outlines are in `meta.lazy`, kept ahead in that case).
+5. Longitudes: the route is unrolled before any calculation or drawing; no service, cache or file ever sees a longitude outside
+   [-180, 180[ (§ 4 octies).

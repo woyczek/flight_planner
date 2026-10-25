@@ -13,6 +13,28 @@ import {
   fmtZ,
   fmtZLocal
 } from '../../frame/lib/time.js';
+// longitudes autour de la ligne de changement de date (frame/lib/geo.js, frame/INTEGRATION.md § 12) : la route est déroulée
+// avant tout calcul et tout dessin, les demandes sont enroulées dans [-180, 180[, les comparaisons se font modulo 360
+import {
+  wrapLon,
+  nearLon,
+  unwrapLons
+} from '../../frame/lib/geo.js';
+// la feuille de données à trois positions est une primitive du cadre (frame/lib/sheet.js, frame/INTEGRATION.md § 11)
+import {
+  createSheet
+} from '../../frame/lib/sheet.js';
+// socle de carte partagé avec Atmosphère (lib/map_base.js, INTEGRATION.md § 7) : MapLibre, styles, fond à tuiles, taille du
+// cadre, fond uni
+import {
+  startTiles as baseTiles,
+  styleFor as baseStyle,
+  mapSize as baseSize,
+  isOwnResize,
+  loadOutlines as baseOutlines,
+  plainView,
+  drawPlain
+} from './lib/map_base.js';
 
 // V3 maps — module Carte de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/maps/SPEC.md,
 // INTEGRATION.md, READING.md). La carte de route du vol prévu (pilot/<tri>/current_flight.json écrit par Carburant)
@@ -34,16 +56,25 @@ export const meta = {
   id: 'maps',
   apps: ['pilot'],
   level: 1,
+  // vue fixe (frame/INTEGRATION.md § 9.2) : ni défilement de page ni en-tête collant sur une page qui défile ; la racine du
+  // module est une colonne pleine hauteur (carte, bloc de données en feuille à trois hauteurs ; les boutons de la carte sont la
+  // couche de superposition du cadre : rien entre l'en-tête du cadre et la carte)
+  fixed: true,
   // missions/ : lu à la demande seulement (dossiers lourds : PNG, versions, reçus), jamais tiré d'avance
   // airline/map_profiles.json : profils d'affichage des six modes, affinés par la compagnie (SPEC.md, « Profils des modes »)
   reads: ['pilot/', {
     prefix: 'missions/',
     policy: 'reference'
-  }, 'cache/maps/', 'airline/'],
+  }, 'cache/maps/', 'airline/', 'cache/weather/'],
   // mode et couches de la carte (propres à l'appareil, jamais synchronisés) ; vol courant modifié sur la carte (lot 6 :
   // enregistrement entier, règle record, comme Carburant — modules/fuel/INTEGRATION.md § 3)
+  // cache/weather/ : la réserve météo partagée d'Atmosphère (INTEGRATION.md § 8) ; la Carte n'y lit que ce qu'Atmosphère a
+  // déjà lu (cacheOnly), mais la réserve élague les jours passés et le cadre veut les deux droits déclarés
   writes: [{
     prefix: 'cache/maps/',
+    policy: 'cache'
+  }, {
+    prefix: 'cache/weather/',
     policy: 'cache'
   }, {
     prefix: 'pilot/',
@@ -56,39 +87,29 @@ export const meta = {
   // gardés à l'installation (hors ligne dès la première visite) : le noyau, les symboles
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
-    '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', '../../frame/lib/time.js?v=0', 'contours.js?v=0'
+    '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', '../../frame/lib/time.js?v=0', 'contours.js?v=0',
+    'lib/map_base.js?v=0', '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0'
   ],
   // gardés au premier usage seulement : MapLibre (1 Mo, inutile sans tuiles) ; les contours des pays du fond uni (350 Ko,
   // inutiles avec les tuiles ; gardés d'avance quand MapLibre n'est pas en cache : outlinesAhead)
-  lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0'],
+  // et la coupe météo d'Atmosphère (rendu pur, réserve, calculs ; chargés au premier « Météo » de la feuille)
+  lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0', '../atmosphere/section.js?v=0',
+    '../atmosphere/atmo.js?v=0', '../atmosphere/weather_store.js?v=0', '../fuel/winds.js?v=0'
+  ],
   // hôtes publics de tuiles appelés directement par MapLibre (jamais par ctx.net) ; CSP connect-src du cadre
   net: ['tiles.openfreemap.org', 'tiles.versatiles.org', 's3.amazonaws.com/elevation-tiles-prod']
 };
 
 const LIBS = [
-    ['SiaAero', 'lib/aero_symbols.js'],
-    ['SiaProfile', 'lib/vertical_profile.js'],
-    ['MapsRender', 'render.js'],
-    ['MapsProfile', 'profile.js'],
-    ['MapsMission', 'mission.js'],
-    ['MapsContours', 'contours.js'],
-    ['MAPS_PROFILES', 'lib/profiles.js'],
-    ['jsyaml', '../../frame/lib/js-yaml.min.js']
-  ],
-  STYLE_URL = 'https://tiles.openfreemap.org/styles/positron',
-  STYLE_NIGHT = 'https://tiles.openfreemap.org/styles/dark',
-  // fond d'un profil d'affichage du studio : styles publiés d'OpenFreeMap et de VersaTiles ; le style maison du studio
-  // (vector), OSM standard et OpenTopoMap (hôtes hors de meta.net) sont remplacés par positron
-  STYLES = {
-    'ofm-liberty': 'https://tiles.openfreemap.org/styles/liberty',
-    'ofm-bright': 'https://tiles.openfreemap.org/styles/bright',
-    'ofm-positron': 'https://tiles.openfreemap.org/styles/positron',
-    'vt-colorful': 'https://tiles.versatiles.org/assets/styles/colorful/style.json',
-    'vt-graybeard': 'https://tiles.versatiles.org/assets/styles/graybeard/style.json',
-    'vt-shadow': 'https://tiles.versatiles.org/assets/styles/shadow/style.json',
-    'vt-eclipse': 'https://tiles.versatiles.org/assets/styles/eclipse/style.json'
-  },
-  TILE_WAIT = 10e3; // fond pas prêt après ce délai : fond uni
+  ['SiaAero', 'lib/aero_symbols.js'],
+  ['SiaProfile', 'lib/vertical_profile.js'],
+  ['MapsRender', 'render.js'],
+  ['MapsProfile', 'profile.js'],
+  ['MapsMission', 'mission.js'],
+  ['MapsContours', 'contours.js'],
+  ['MAPS_PROFILES', 'lib/profiles.js'],
+  ['jsyaml', '../../frame/lib/js-yaml.min.js']
+];
 
 // ---------------------------------------------------------------- textes [fr, en, de, es]
 const TX = {
@@ -104,6 +125,17 @@ const TX = {
     'Luftfahrtdatenbank nicht veröffentlicht: die Karte zeigt nur die Route.',
     'Base aeronáutica no publicada: el mapa solo muestra la ruta.'
   ],
+  // trois états de la base, jamais confondus : en cours de chargement, accès aux données non réglé sur cet appareil (elle n'est
+  // pas accessible d'ici), non publiée (l'accès marche, rien n'est publié : noBase)
+  loading: ['Base aéronautique en cours de chargement{z}…', 'Aeronautical database loading{z}…',
+    'Luftfahrtdatenbank wird geladen{z}…', 'Base aeronáutica cargándose{z}…'
+  ],
+  noAccess: ['Accès aux données non réglé sur cet appareil : la carte ne montre que la route.',
+    'Data access not set on this device: the map shows the route only.',
+    'Datenzugriff auf diesem Gerät nicht eingerichtet: die Karte zeigt nur die Route.',
+    'Acceso a los datos no configurado en este dispositivo: el mapa solo muestra la ruta.'
+  ],
+  toAccess: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
   noZone: ['Hors ligne, sans les données de cette zone : gardez-la dans Réglages › Données hors ligne.',
     'Offline, without this zone’s data: keep it in Settings › Offline data.',
     'Offline, ohne die Daten dieser Zone: unter Einstellungen › Offline-Daten behalten.',
@@ -113,17 +145,15 @@ const TX = {
   plain: ['Fond de carte indisponible : fond uni.', 'Base map unavailable: plain background.',
     'Hintergrundkarte nicht verfügbar: einfarbiger Hintergrund.', 'Mapa de fondo no disponible: fondo liso.'
   ],
-  loading: ['Chargement de la carte…', 'Loading the map…', 'Karte wird geladen…', 'Cargando el mapa…'],
+  ttlProfile: ['Profil', 'Profile', 'Profil', 'Perfil'],
+  ttlWeather: ['Météo', 'Weather', 'Wetter', 'Meteo'],
+  stPlanned: ['vol prévu', 'planned flight', 'geplanter Flug', 'vuelo previsto'],
+  stFlying: ['vol en cours', 'flight in progress', 'Flug läuft', 'vuelo en curso'],
   summary: ['{dep} → {arr}', '{dep} → {arr}', '{dep} → {arr}', '{dep} → {arr}'],
   altn: ['dégagement {a}', 'alternate {a}', 'Ausweich {a}', 'alternativa {a}'],
   dist: ['{d} NM', '{d} NM', '{d} NM', '{d} NM'],
   profileLabel: ['Profil vertical de la route', 'Vertical profile of the route', 'Vertikalprofil der Route',
     'Perfil vertical de la ruta'
-  ],
-  hint: ['Glissez le doigt sur le profil, ou touchez la route sur la carte.',
-    'Slide a finger along the profile, or tap the route on the map.',
-    'Mit dem Finger über das Profil fahren oder die Route auf der Karte antippen.',
-    'Deslice el dedo por el perfil o toque la ruta en el mapa.'
   ],
   planned: ['prévu {a}', 'planned {a}', 'geplant {a}', 'previsto {a}'],
   terrain: ['relief {h}', 'terrain {h}', 'Gelände {h}', 'relieve {h}'],
@@ -272,7 +302,7 @@ const TX = {
     awLabels: ['Noms des voies', 'Airway names', 'Namen der Flugwege', 'Nombres de las aerovías']
   },
   layersReset: ['Tout remettre', 'Reset all', 'Alles zurücksetzen', 'Restablecer todo'],
-  detail: ['Complexité (essai)', 'Complexity (trial)', 'Komplexität (Test)', 'Complejidad (prueba)'],
+  detail: ['Complexité', 'Complexity', 'Komplexität', 'Complejidad'],
   zoomNames: {
     asFir: ['FIR / UIR', 'FIR / UIR', 'FIR / UIR', 'FIR / UIR'],
     asTma: ['TMA', 'TMA', 'TMA', 'TMA'],
@@ -318,8 +348,71 @@ const TX = {
     'Jedes Element wird zwischen seinen zwei Zoomschwellen gezeichnet, je Modus eingestellt; die Karte folgt sofort. Die Marke zeigt den aktuellen Zoom. Kästchen nicht angekreuzt: nie gezeichnet, unabhängig von den Schwellen (dasselbe Kästchen wie im Bereich Ebenen, sofort auf diesem Gerät behalten).',
     'Cada elemento se dibuja entre sus dos umbrales de zoom, ajustados por modo; el mapa sigue en directo. La marca indica el zoom actual. Casilla sin marcar: nunca se dibuja, sean cuales sean los umbrales (la misma casilla que en el panel Capas, guardada enseguida en este dispositivo).'
   ],
-  tuneNow: ['Zoom courant : {z} · {s} NM par cm d\'écran', 'Current zoom: {z} · {s} NM per cm of screen',
-    'Aktueller Zoom: {z} · {s} NM pro cm Bildschirm', 'Zoom actual: {z} · {s} NM por cm de pantalla'
+  tuneNow: ['Zoom courant : {z} · effectif {e} (cadre de {m} px en moyenne) · {s} NM par cm d\'écran',
+    'Current zoom: {z} · effective {e} (frame of {m} px on average) · {s} NM per cm of screen',
+    'Aktueller Zoom: {z} · wirksam {e} (Rahmen von durchschnittlich {m} px) · {s} NM pro cm Bildschirm',
+    'Zoom actual: {z} · efectivo {e} (marco de {m} px de media) · {s} NM por cm de pantalla'
+  ],
+  dataProfile: ['Profil vertical', 'Vertical profile', 'Vertikalprofil', 'Perfil vertical'],
+  segLabel: ['Profil ou météo', 'Profile or weather', 'Profil oder Wetter', 'Perfil o meteo'],
+  legend: ['Légende', 'Legend', 'Legende', 'Leyenda'],
+  lgPlan: ['Trajectoire prévue (niveau de croisière)', 'Planned flight path (cruise level)', 'Geplante Flugbahn (Reiseflughöhe)',
+    'Trayectoria prevista (nivel de crucero)'
+  ],
+  lgToc: ['TOC / TOD : début et fin du palier', 'TOC / TOD: start and end of the level segment',
+    'TOC / TOD: Beginn und Ende des Reiseflugs',
+    'TOC / TOD: inicio y fin del tramo en crucero'
+  ],
+  lgTerrain: ['Relief le long de la route (maximum du couloir)', 'Terrain along the route (corridor maximum)',
+    'Gelände entlang der Route (Maximum des Korridors)', 'Relieve a lo largo de la ruta (máximo del corredor)'
+  ],
+  lgMora: ['MORA : altitude minimale de sécurité des cases traversées', 'MORA: minimum safe altitude of the squares crossed',
+    'MORA: Mindestsicherheitshöhe der durchflogenen Felder', 'MORA: altitud mínima de seguridad de las casillas atravesadas'
+  ],
+  lgZone: ['espace traversé (plancher – plafond)', 'airspace crossed (floor – ceiling)',
+    'durchflogener Luftraum (Untergrenze – Obergrenze)',
+    'espacio atravesado (suelo – techo)'
+  ],
+  lgPoints: ['Points de la route : nom et distance depuis le départ', 'Route points: name and distance from departure',
+    'Routenpunkte: Name und Entfernung vom Abflug', 'Puntos de la ruta: nombre y distancia desde la salida'
+  ],
+  lgNm: ['Repères de distance (NM), comme sur la carte', 'Distance marks (NM), as on the map',
+    'Entfernungsmarken (NM), wie auf der Karte',
+    'Marcas de distancia (NM), como en el mapa'
+  ],
+  lgFixes: ['Points des voies et balises à moins de 3 NM de la route', 'Airway points and beacons within 3 NM of the route',
+    'Streckenpunkte und Funkfeuer innerhalb von 3 NM der Route', 'Puntos de aerovías y radioayudas a menos de 3 NM de la ruta'
+  ],
+  wxTitle: ['Coupe météo', 'Weather cross-section', 'Wetterschnitt', 'Corte meteorológico'],
+  wxLabel: ['Coupe météo le long de la route', 'Weather cross-section along the route', 'Wetterschnitt entlang der Route',
+    'Corte meteorológico a lo largo de la ruta'
+  ],
+  wxReading: ['Lecture de la prévision gardée…', 'Reading the stored forecast…', 'Gespeicherte Vorhersage wird gelesen…',
+    'Leyendo la previsión guardada…'
+  ],
+  wxNone: ['Pas de prévision chargée :', 'No forecast loaded:', 'Keine Vorhersage geladen:', 'Sin previsión cargada:'],
+  // le message nomme le vol (Atmosphère garde une prévision par vol : laquelle manque ?)
+  wxNoneFor: ['Pas de prévision pour {f} :', 'No forecast for {f}:', 'Keine Vorhersage für {f}:', 'Sin previsión para {f}:'],
+  wxOpen: ['ouvrir Météo dans Préparer', 'open Weather in Prepare', 'Wetter unter Vorbereiten öffnen',
+    'abrir Meteo en Preparar'
+  ],
+  wxFail: ['Coupe météo indisponible (module non chargé hors ligne)', 'Weather cross-section unavailable (module not loaded offline)',
+    'Wetterschnitt nicht verfügbar (Modul offline nicht geladen)', 'Corte meteorológico no disponible (módulo no cargado sin conexión)'
+  ],
+  wxStrips: [
+    ['Nébul. basse', 'Low cloud', 'Tiefe Bew.', 'Nub. baja'],
+    ['moyenne', 'mid', 'mittel', 'media'],
+    ['haute', 'high', 'hoch', 'alta'],
+    ['Précip.', 'Precip.', 'Niederschl.', 'Precip.'],
+    ['Visi < 8 km', 'Vis < 8 km', 'Sicht < 8 km', 'Visib. < 8 km']
+  ],
+  sheetSize: ['Hauteur du bloc de données : toucher ou glisser', 'Data block height: tap or drag',
+    'Höhe des Datenblocks: antippen oder ziehen', 'Altura del bloque de datos: tocar o arrastrar'
+  ],
+  sheetNames: [
+    ['réduit', 'collapsed', 'eingeklappt', 'reducido'],
+    ['normal', 'default', 'normal', 'normal'],
+    ['agrandi', 'expanded', 'erweitert', 'ampliado']
   ],
   tuneRange: ['de {a} à {b}', 'from {a} to {b}', 'von {a} bis {b}', 'de {a} a {b}'],
   tuneNoLimit: ['sans limite', 'no limit', 'ohne Grenze', 'sin límite'],
@@ -335,6 +428,23 @@ const TX = {
   tuneResetVis: ['Remettre les cases', 'Reset the boxes', 'Kästchen zurücksetzen', 'Restablecer las casillas'],
   tuneResetZoom: ['Remettre les curseurs', 'Reset the sliders', 'Regler zurücksetzen', 'Restablecer los cursores'],
   tuneSaveDev: ['Garder sur cet appareil', 'Keep on this device', 'Auf diesem Gerät behalten', 'Guardar en este dispositivo'],
+  // d'où viennent les seuils du mode montré : propres à la compagnie, repris d'un autre mode, ou intégrés
+  tuneSrc: {
+    own: ['Seuils du mode {m} : réglés pour la compagnie.', 'Thresholds of the {m} mode: set for the airline.',
+      'Schwellen des Modus {m}: für die Fluggesellschaft eingestellt.', 'Umbrales del modo {m}: ajustados para la aerolínea.'
+    ],
+    from: [
+      'Seuils du mode {m} : jamais réglés pour la compagnie, repris du mode {f} ; « Enregistrer pour la compagnie » en fait les siens.',
+      'Thresholds of the {m} mode: never set for the airline, taken from the {f} mode; “Save for the airline” makes them its own.',
+      'Schwellen des Modus {m}: nie für die Fluggesellschaft eingestellt, aus dem Modus {f} übernommen; „Für die Fluggesellschaft speichern“ macht sie zu eigenen.',
+      'Umbrales del modo {m}: nunca ajustados para la aerolínea, tomados del modo {f}; «Guardar para la aerolínea» los hace propios.'
+    ],
+    none: ['Seuils du mode {m} : valeurs intégrées, rien n\'est réglé pour la compagnie.',
+      'Thresholds of the {m} mode: built-in values, nothing is set for the airline.',
+      'Schwellen des Modus {m}: eingebaute Werte, für die Fluggesellschaft ist nichts eingestellt.',
+      'Umbrales del modo {m}: valores integrados, nada ajustado para la aerolínea.'
+    ]
+  },
   tuneSavedCo: ['Seuils du mode {m} enregistrés pour la compagnie.', 'Thresholds of the {m} mode saved for the airline.',
     'Schwellen des Modus {m} für die Fluggesellschaft gespeichert.', 'Umbrales del modo {m} guardados para la aerolínea.'
   ],
@@ -346,10 +456,11 @@ const TX = {
     'Auf dem Telefon nur lesbar: stellen Sie die Schwellen auf einem Bildschirm oder Tablet ein.',
     'Solo lectura en un teléfono: ajuste los umbrales en una pantalla o una tableta.'
   ],
-  detailHelp: ['Moins de détails à gauche, plus à droite : décale d\'un cran ce que chaque zoom montre.',
-    'Fewer details to the left, more to the right: shifts by one step what each zoom shows.',
-    'Weniger Details links, mehr rechts: verschiebt um eine Stufe, was jeder Zoom zeigt.',
-    'Menos detalles a la izquierda, más a la derecha: desplaza un paso lo que muestra cada zoom.'
+  detailHelp: [
+    'Agit comme si le zoom était différent : un cran = un niveau de zoom, moins de détails à gauche, plus à droite. Ce que chaque zoom montre est réglé par l\'administrateur.',
+    'Acts as if the zoom were different: one step = one zoom level, fewer details to the left, more to the right. What each zoom shows is set by the administrator.',
+    'Wirkt, als wäre der Zoom ein anderer: eine Stufe = eine Zoomstufe, links weniger Details, rechts mehr. Was jeder Zoom zeigt, legt der Administrator fest.',
+    'Actúa como si el zoom fuera otro: un paso = un nivel de zoom, menos detalles a la izquierda, más a la derecha. Lo que muestra cada zoom lo fija el administrador.'
   ],
   tipMore: ['+{n} autre(s)', '+{n} more', '+{n} weitere', '+{n} más'],
   close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
@@ -428,10 +539,8 @@ const TX = {
   ],
   awHigh: ['voie haute', 'upper airway', 'oberer Flugweg', 'aerovía superior'],
   awLow: ['voie basse', 'lower airway', 'unterer Flugweg', 'aerovía inferior'],
-  credit: ['© OpenFreeMap © OpenStreetMap ; SIA : base publiée, non certifiée',
-    '© OpenFreeMap © OpenStreetMap; SIA: published database, not certified',
-    '© OpenFreeMap © OpenStreetMap; SIA: veröffentlichte Datenbank, nicht zertifiziert',
-    '© OpenFreeMap © OpenStreetMap; SIA: base publicada, no certificada'
+  credit: ['SIA : base publiée, non certifiée', 'SIA: published database, not certified',
+    'SIA: veröffentlichte Datenbank, nicht zertifiziert', 'SIA: base publicada, no certificada'
   ]
 };
 
@@ -455,8 +564,10 @@ const tt = (row, v) => S.ctx.t(row, v);
 const flightPath = () => `pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`;
 
 /** Style du fond : celui du profil d'affichage, de jour ; la nuit, le style sombre (VersaTiles : eclipse). */
-const styleFor = () => S.theme?.dark ? /^vt-/.test(S.profile?.base || '') ? STYLES['vt-eclipse'] : STYLE_NIGHT : STYLES[S.profile?.base] ||
-  STYLE_URL;
+const styleFor = () => baseStyle({
+  dark: S.theme?.dark,
+  base: S.profile?.base
+});
 /** Charge le noyau (scripts du dossier du module, une fois par page). */
 async function loadLibs() {
   for (const [glob, file] of LIBS)
@@ -472,7 +583,7 @@ async function loadLibs() {
 /** Contours des pays du fond uni (lib/outlines.js, 350 Ko), chargés au premier dessin sans tuiles ; la carte est redessinée
  *  quand ils arrivent (mer seule en attendant). */
 let outlinesP = null;
-const loadOutlines = () => outlinesP ||= import(new URL('lib/outlines.js?v=0', import.meta.url).href).then(() => S && schedule(), () => {
+const loadOutlines = () => outlinesP ||= baseOutlines().then(() => S && schedule(), () => {
   outlinesP = null; // hors ligne sans copie : redemandé au dessin suivant
 });
 /** Contours gardés d'avance (service worker) seulement quand MapLibre n'est pas en cache : sans lui, le premier vol hors
@@ -487,27 +598,15 @@ async function outlinesAhead() {
     /* stockage des copies indisponible : rien à garder */
   }
 }
-/** MapLibre (script UMD et sa feuille), chargé une fois, au premier fond à tuiles ; null s'il ne charge pas. */
-let mlP = null;
-
-function loadMapLibre() {
-  return mlP ||= new Promise(ok => {
-    if (window.maplibregl) return ok(window.maplibregl);
-    const css = document.createElement('link');
-    css.rel = 'stylesheet';
-    css.href = new URL('lib/maplibre-gl.css?v=0', import.meta.url).href;
-    document.head.append(css);
-    const sc = document.createElement('script');
-    sc.src = new URL('lib/maplibre-gl.js?v=0', import.meta.url).href;
-    sc.onload = () => ok(window.maplibregl || null);
-    sc.onerror = () => {
-      mlP = null;
-      ok(null);
-    };
-    document.head.append(sc);
-  });
-}
-
+// ---------------------------------------------------------------- longitudes (ligne de changement de date)
+/** Longitude à envoyer à un service ou à lire dans un fichier d'aerodb : dans [-180, 180[ ; une longitude qui y est déjà est
+ *  rendue telle quelle (pas de bruit d'arrondi sur un vol ordinaire). */
+const outLon = lon => lon >= -180 && lon < 180 ? lon : wrapLon(lon);
+/** Écart de longitude a − b ramené à ]-180, 180] (deux positions de part et d'autre de la ligne de changement de date). */
+const dLon = (a, b) => {
+  const d = a - b;
+  return d - 360 * Math.round(d / 360);
+};
 // ---------------------------------------------------------------- vol
 /** Points de la route (route.points, positions résolues par Carburant) et dégagement (aerodb). */
 async function readFlight() {
@@ -515,11 +614,24 @@ async function readFlight() {
     pts = pointsOf(f);
   let altn = null;
   if (f?.route?.altn && pts.length && S.ctx.aerodb) {
-    const c = await S.ctx.aerodb.coords(f.route.altn).catch(() => null);
+    // le dégagement vient de la base : la carte ne l'attend pas (base en cours de chargement = carte vide et pas de note) ;
+    // la position trouvée est gardée, puis le vol est redessiné une fois
+    const id = f.route.altn,
+      known = S.altnPos ||= new Map();
+    if (!known.has(id)) {
+      known.set(id, null);
+      S.ctx.aerodb.coords(id).catch(() => null).then(c => {
+        if (!S || !c) return;
+        known.set(id, c);
+        applyFlight(true);
+      });
+    }
+    const c = known.get(id);
     if (c) altn = {
-      id: f.route.altn,
+      id,
       lat: c.lat,
-      lon: c.lon
+      // même côté de la ligne de changement de date que l'arrivée (le dégagement est dessiné à la suite de la route)
+      lon: nearLon(c.lon, pts[pts.length - 1].lon)
     };
   }
   return {
@@ -536,7 +648,8 @@ function pointsOf(f) {
     // le vol part à level.ft, un point sans alt_ft continue le précédent. Pour le profil : lvl (niveau à partir du
     // point), comme « /F240 » d'une route OFP ; paliers et TOC / TOD tronçon par tronçon
     raw = (f?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)),
-    pts = raw.map((p, i) => ({
+    // longitudes continues : une route Sibérie → Alaska va de 177° à 195° (frame/lib/geo.js), pas de 177° à −165°
+    pts = unwrapLons(raw.map((p, i) => ({
       id: p.id || '',
       lat: +p.lat,
       lon: +p.lon,
@@ -545,7 +658,7 @@ function pointsOf(f) {
           ft: +p.alt_ft
         }
       } : {})
-    }));
+    })));
   if (pts.some(p => p.lvl) && +f?.level?.ft > 0) pts[0].lvl = {
     ft: +f.level.ft
   };
@@ -574,45 +687,43 @@ const corridorFor = (shown, W) => S.profile?.corridorNm > 0 && W / Math.max(1e-6
 async function loadData(box, corridor = true) {
   const A = S.ctx.aerodb;
   if (!A) return {
+    // le monde entier, et la vue si elle dépasse 180° (ligne de changement de date) : jamais relu sans aerodb
     box: {
-      w: -180,
-      e: 180,
+      w: Math.min(-180, box.w),
+      e: Math.max(180, box.e),
       s: -85,
       n: 85
     },
     data: {},
     empty: true
   };
-  const q = {
-      bbox: [box.w, box.s, box.e, box.n]
-    },
+  // la vue (ou la route) peut dépasser 180° ; aerodb ne connaît que [-180, 180] : emprise coupée en deux au besoin
+  const route = [...S.route.points, ...(S.route.altn ? [S.route.altn] : [])],
+    bboxes = wrapBoxes(alignBox(box, route)),
     p0 = S.profile,
     p = corridor ? p0 : {
       ...p0,
       corridorNm: 0
     },
     E = p.elements,
-    route = [...S.route.points, ...(S.route.altn ? [S.route.altn] : [])],
     // profil à couloir : espaces et voies lus pour le couloir de la route, tronçon par tronçon (un rectangle autour
     // d'une route en diagonale touche des zones voisines : l'Espagne pour une route Nantes → Marseille)
-    boxes = +p.corridorNm > 0 ? corridorBoxes(route, +p.corridorNm + 2, box) : [q.bbox],
+    boxes = +p.corridorNm > 0 ? corridorBoxes(route, +p.corridorNm + 2, alignBox(box, route)) : bboxes,
     t0 = performance.now();
   const [airspaces, aerodromes, navaids, airways, moraCells, obstacles, cities, vrp, points] = await Promise.all([
     many(A.airspaces, boxes),
-    E.aerodromes ? A.aerodromes(q) : [],
-    E.navaids ? A.navaids(q) : [],
+    E.aerodromes ? many(A.aerodromes, bboxes) : [],
+    E.navaids ? many(A.navaids, bboxes) : [],
     E.airwaysLow || E.airwaysHigh ? many(A.airways, boxes) : [],
-    E.mora ? A.moraCells(q) : [],
-    E.obstacles ? A.obstacles({
-      ...q,
+    E.mora ? many(A.moraCells, bboxes) : [],
+    E.obstacles ? many(A.obstacles, bboxes, {
       minHgt: +E.obstacleMin || 300
     }) : [],
-    p.cities || E.agglos ? A.cities({
-      ...q,
+    p.cities || E.agglos ? many(A.cities, bboxes, {
       n: 400
     }) : [],
-    E.vrpPoints ? A.vrp(q) : [],
-    E.rnavPoints ? A.points(q) : []
+    E.vrpPoints ? many(A.vrp, bboxes) : [],
+    E.rnavPoints ? many(A.points, bboxes) : []
   ].map(x => Promise.resolve(x).catch(() => [])));
   // axes de ravitaillement et tracks NAT (aerodb : zones ouvertes par les lectures ci-dessus ; zone « nat » à la demande)
   const [aar, nat] = await Promise.all([E.aarTracks && A.aarTracks ? A.aarTracks() : [], E.natTracks && A.natTracks ? A
@@ -646,23 +757,61 @@ async function loadData(box, corridor = true) {
   };
 }
 const within = (inner, outer) => outer && inner.w >= outer.w && inner.e <= outer.e && inner.s >= outer.s && inner.n <= outer.n;
-/** Emprises du couloir de la route (marge nm NM), une par tronçon, coupées à l'emprise box : [[ouest, sud, est, nord]]. */
+/** Emprise box ramenée au même tour du monde que la route (la vue de MapLibre peut être à −174° quand la route va de 177° à
+ *  195° : mêmes données, autre copie du monde). */
+function alignBox(box, route) {
+  if (!route?.length) return box;
+  const lons = route.map(p => +p.lon),
+    k = 360 * Math.round(((Math.min(...lons) + Math.max(...lons)) / 2 - (box.w + box.e) / 2) / 360);
+  return k ? {
+    ...box,
+    w: box.w + k,
+    e: box.e + k
+  } : box;
+}
+/** Emprise { w, s, e, n } aux longitudes continues (peut dépasser ±180) → emprises [ouest, sud, est, nord] dans
+ *  [-180, 180] : une seule, ou deux si elle franchit la ligne de changement de date ; le monde entier si elle est plus
+ *  large que 360°. */
+function wrapBoxes(b) {
+  if (b.w >= -180 && b.e <= 180) return [
+    [b.w, b.s, b.e, b.n]
+  ]; // le cas ordinaire : l'emprise telle quelle
+  if (b.e - b.w >= 360) return [
+    [-180, b.s, 180, b.n]
+  ];
+  const w = wrapLon(b.w),
+    e = w + (b.e - b.w);
+  return e <= 180 ? [
+    [w, b.s, e, b.n]
+  ] : [
+    [w, b.s, 180, b.n],
+    [-180, b.s, e - 360, b.n]
+  ];
+}
+/** Emprises du couloir de la route (marge nm NM), une par tronçon, coupées à l'emprise box (mêmes longitudes que la route :
+ *  alignBox) puis ramenées à [-180, 180] : [[ouest, sud, est, nord]]. */
 function corridorBoxes(route, nm, box) {
   const out = [];
   for (let i = 1; i < route.length; i++) {
     const b = MapsRender.bboxOf([route[i - 1], route[i]], nm),
-      c = [Math.max(box.w, b.w), Math.max(box.s, b.s), Math.min(box.e, b.e), Math.min(box.n, b.n)];
-    if (c[0] <= c[2] && c[1] <= c[3]) out.push(c);
+      c = box ? {
+        w: Math.max(box.w, b.w),
+        s: Math.max(box.s, b.s),
+        e: Math.min(box.e, b.e),
+        n: Math.min(box.n, b.n)
+      } : b;
+    if (c.w <= c.e && c.s <= c.n) out.push(...wrapBoxes(c));
   }
   return out;
 }
-/** Réunion sans doublons des réponses d'une requête aerodb sur plusieurs emprises. */
-async function many(f, boxes) {
+/** Réunion sans doublons des réponses d'une requête aerodb sur plusieurs emprises ; extra : les autres champs de la requête. */
+async function many(f, boxes, extra = {}) {
   const seen = new Set(),
     out = [];
   for (const bbox of boxes)
     for (const x of await f({
-        bbox
+        bbox,
+        ...extra
       }))
       if (!seen.has(x)) {
         seen.add(x);
@@ -689,12 +838,41 @@ function sizeCanvas() {
     dpr
   };
 }
-/** Vue courante : projection et emprise affichée (MapLibre, sinon Mercator du fond uni sur l'emprise de la route). */
+/** Étendue en longitude de la route déroulée (points et dégagement) : [ouest, est] ; null sans route. Gardée tant que les
+ *  points ne changent pas. */
+function routeSpan() {
+  const r = S.route;
+  if (!r?.points?.length) return null;
+  if (r.span?.of !== r.points || r.span.altn !== r.altn) {
+    const lons = [...r.points, ...(r.altn ? [r.altn] : [])].map(p => +p.lon);
+    r.span = {
+      of: r.points,
+      altn: r.altn,
+      w: Math.min(...lons),
+      e: Math.max(...lons)
+    };
+  }
+  return r.span;
+}
+/** Projection de la vue : une longitude va à la copie du monde la plus proche du centre de la vue (une donnée d'aerodb à
+ *  −170° se dessine à 190° quand la vue est centrée de ce côté de la ligne de changement de date). La route (déroulée : de
+ *  177° à 195°) garde ses longitudes ensemble : elle est décalée d'un même nombre de tours, jamais coupée en deux. raw :
+ *  la projection brute (une longitude, un x) ; c : longitude du centre de la vue. */
+function wrapTo(raw, c) {
+  const sp = routeSpan(),
+    ro = sp ? 360 * Math.round((c - (sp.w + sp.e) / 2) / 360) : 0;
+  return (lat, lon) => raw(lat, sp && lon >= sp.w && lon <= sp.e ? lon + ro : nearLon(lon, c));
+}
+/** Vue courante : projection (toC, longitudes ramenées à la copie du monde de la vue), projection brute (raw : le fond uni
+ *  dessine lui-même ses copies), emprise affichée (MapLibre : continue autour du centre, peut dépasser ±180 ; sinon
+ *  Mercator du fond uni sur l'emprise de la route). */
 function view(W, H) {
   if (S.map) {
-    const bb = S.map.getBounds();
+    const bb = S.map.getBounds(),
+      raw = (lat, lon) => S.map.project([lon, lat]);
     return {
-      toC: (lat, lon) => S.map.project([lon, lat]),
+      toC: wrapTo(raw, S.map.getCenter().lng),
+      raw,
       shown: {
         w: bb.getWest(),
         e: bb.getEast(),
@@ -703,20 +881,22 @@ function view(W, H) {
       }
     };
   }
-  return MapsRender.mercator(S.fit, W, H, 12);
+  const v = plainView(S.fit, W, H, 12);
+  return {
+    ...v,
+    raw: v.toC,
+    toC: wrapTo(v.toC, (S.fit.w + S.fit.e) / 2)
+  };
 }
-/** Fond MapLibre ramené à la taille du cadre s'il ne l'a plus (map.resize seulement dans ce cas). Appelé par
- *  l'observateur de taille, au chargement et au changement de style, au retour de la page (onglet caché, page gelée :
- *  les observations de taille faites pendant ce temps sont perdues) et à chaque dessin, pour qu'aucun cas oublié ne
- *  laisse une bande de fond. */
-function mapSize() {
-  const m = S?.map || S?.mapNew;
-  if (!m) return;
-  const c = m.getCanvas(),
-    w = S.mapEl.clientWidth,
-    h = S.mapEl.clientHeight;
-  if (w && h && (c.clientWidth !== w || c.clientHeight !== h)) m.resize();
+/** Projection courante pour un geste (toucher, survol) : celle de la vue, sans repasser par draw(). */
+function projNow() {
+  return S.map ? wrapTo((lat, lon) => S.map.project([lon, lat]), S.map.getCenter().lng) : S.toC;
 }
+/** Fond MapLibre ramené à la taille du cadre s'il ne l'a plus (lib/map_base.js : map.resize seulement dans ce cas, son
+ *  « movestart » reconnu par isOwnResize). Appelé par l'observateur de taille, au chargement et au changement de style, au
+ *  retour de la page (onglet caché, page gelée : les observations de taille faites pendant ce temps sont perdues) et à
+ *  chaque dessin, pour qu'aucun cas oublié ne laisse une bande de fond. */
+const mapSize = () => baseSize(S?.map || S?.mapNew, S?.mapEl);
 /** Redessine la surcouche (et le fond uni sans tuiles) ; données relues si la vue sort de celles chargées. */
 function draw() {
   if (!S?.canvas || !S.fit || !S.route.points.length) return;
@@ -727,12 +907,13 @@ function draw() {
     dpr
   } = sizeCanvas(), {
     toC,
+    raw: toRaw,
     shown
   } = view(W, H), raw = S.canvas.getContext('2d'), t = S.theme, ctx = MapsRender.themed(raw, t);
   raw.setTransform(dpr, 0, 0, dpr, 0, 0);
   raw.clearRect(0, 0, W, H);
   if (S.plain && !window.MAPS_OUTLINES) loadOutlines(); // fond uni confirmé (pas de tuiles) : pas pendant leur chargement
-  if (!S.map) MapsRender.drawBackground(ctx, toC, W, H, window.MAPS_OUTLINES, {
+  if (!S.map) drawPlain(ctx, toRaw, W, H, {
     sea: t.page,
     land: t.bg,
     border: t.grid
@@ -755,9 +936,12 @@ function draw() {
   }
   // courbes de niveau (Topo, VFR), de près, sous la surcouche aéronautique
   const pxDeg = W / Math.max(1e-6, shown.e - shown.w);
-  const zv = MapsRender.zoomOf(pxDeg) + (S.mission ? 0 : detailShift(W) * .75),
+  // zoom réel de la vue, décalé par le curseur de complexité (un niveau par cran : MapsRender.detailZoom), puis corrigé par
+  // la taille du cadre : c'est ce zoom effectif (zv) qu'on compare aux seuils, ici comme dans MapsRender.draw
+  const zReal = MapsRender.zoomOf(pxDeg),
+    zv = S.mission ? zReal : MapsRender.effectiveZoom(zReal + MapsRender.detailZoom(detailShift()), W, H),
     zoomOn = k => MapsRender.visibleAt(S.profile, k, zv);
-  if (S.tuneEl) markTune(zv, (shown.n + shown.s) / 2);
+  if (S.tuneEl) markTune(zReal, zv, (shown.n + shown.s) / 2, W, H);
   // nos villes dessinées à ce zoom : les noms de lieux du fond s'effacent (sinon « Mérignac » en double)
   baseNames(!!S.profile?.cities && !!S.data?.data?.cities?.length && ['citiesBig', 'citiesMid', 'citiesSmall'].some(zoomOn));
   if (!S.mission && layersNow().contours && zoomOn('contours') && window.MapsContours && navigator.onLine !== false) MapsContours.draw(
@@ -782,7 +966,7 @@ function draw() {
     marks: S.marks,
     theme: S.theme,
     level: formatLevel,
-    detail: S.mission ? 0 : detailShift(W),
+    detail: S.mission ? 0 : detailShift(),
     hideVrp: S.mission ? null : vfrVrpIds(),
     mission: S.mission ? {
       points: S.mission.points,
@@ -790,6 +974,7 @@ function draw() {
     } : null
   }) || {};
   S.awHits = got.airways || [];
+  stat(got.zoom);
   S.zoneHits = got.zoneLabels || [];
   S.adHits = got.aerodromes || [];
   S.navHits = got.navaids || [];
@@ -828,6 +1013,16 @@ function draw() {
   const want = wantBox(shown),
     corr = corridorFor(shown, W);
   if (!within(want, S.data?.box) || corr !== S.data?.corridor) refresh(want, corr);
+}
+/** Zoom effectif et éléments gardés par les seuils, posés sur la racine de la carte (mesures des essais : data-zoom-eff,
+ *  data-kept) ; écrit seulement s'ils changent. */
+function stat(z) {
+  if (!z?.kept) return;
+  const eff = z.effective.toFixed(2),
+    kept = JSON.stringify(z.kept),
+    d = S.mapEl.dataset;
+  if (d.zoomEff !== eff) d.zoomEff = eff;
+  if (d.kept !== kept) d.kept = kept;
 }
 /** TOC et TOD (losanges) et curseur commun (rond) sur la carte, aux distances de la coupe. */
 function drawPlanOnMap(ctx, toC, taken = []) {
@@ -905,12 +1100,7 @@ async function buildProfile() {
   const key = S.route.updated;
   let airspaces = [];
   if (A) {
-    const list = await many(A.airspaces, corridorBoxes(pts, 2, {
-        w: -180,
-        e: 180,
-        s: -85,
-        n: 85
-      })).catch(() => []),
+    const list = await many(A.airspaces, corridorBoxes(pts, 2, null)).catch(() => []),
       p = S.vprofProfile || S.profile;
     airspaces = MapsRender.selectAirspaces(list, {
       ...p,
@@ -930,8 +1120,9 @@ async function buildProfile() {
     // écrit par un autre module (la carte, lot 6) : profile périmé jusqu'au devis refait par Carburant (by 'fuel')
     profile: S.route.flight?.by && S.route.flight.by !== 'fuel' ? null : S.route.flight?.profile || null,
     airspaces,
-    elevation: navigator.onLine === false ? null : S.terrain,
-    mora: A ? (lat, lon) => A.mora(lat, lon) : null
+    // les échantillons sont sur la route déroulée (jusqu'à 195°) : le relief et les MORA se lisent à la longitude enroulée
+    elevation: navigator.onLine === false ? null : (lat, lon) => S.terrain(lat, outLon(lon)),
+    mora: A ? (lat, lon) => A.mora(lat, outLon(lon)) : null
   }).catch(() => null);
   if (!S || S.route.updated !== key) return;
   S.prof = prof;
@@ -960,8 +1151,9 @@ function fit(c, box) {
 /** Coupe dessinée (SiaProfile), marques NM en bas du cadre, puis le curseur. */
 function drawProfile() {
   if (!S?.pc) return;
-  S.profBox.hidden = !S.prof;
-  if (!S.prof) return;
+  if (S.profBox.hidden === !!S.prof) S.profBox.hidden = !S.prof;
+  dataHead();
+  if (!S.prof || S.dpanel) return; // contenu ouvert dans le bloc : le profil est redessiné à sa fermeture
   const {
     W,
     H,
@@ -973,6 +1165,9 @@ function drawProfile() {
     H,
     scale: W < 500 ? .78 : 1
   });
+  // le dessin tient dans le bloc (§ 7.1.13) : axe des distances et points dessinés, dits pour le test et pour qui mesure
+  S.pc.dataset.axis = S.geo.axisOk ? '1' : '0';
+  S.pc.dataset.marks = String(S.geo.marks);
   // marques NM (mêmes que sur la carte) : petits traits au bas du cadre
   const g = S.geo,
     yb = g.H - g.padB;
@@ -998,7 +1193,7 @@ function drawProfile() {
   for (const n of S.data?.data?.navaids || []) ends.set(n.id, n);
   const own = new Set(S.route.points.map(p => p.id)),
     marks = [];
-  for (const e of ends.values()) {
+  for (const e of g.H - g.padT - g.padB < 90 ? [] : ends.values()) { // coupe basse : les points hors route cèdent la place
     if (own.has(e.id)) continue; // points de la route : déjà nommés sous le cadre
     const pr = MapsProfile.project(S.prof, e.lat, e.lon);
     if (pr.s != null && pr.offNm <= 3) marks.push({
@@ -1010,13 +1205,15 @@ function drawProfile() {
   ctx.fillStyle = S.theme.fg;
   ctx.strokeStyle = S.theme.fg;
   ctx.font = '600 9px Arial,sans-serif';
-  let lastX = -Infinity;
+  let lastX = -Infinity,
+    nFix = 0;
   for (const m of marks) {
     const y = yb - 22,
       w = ctx.measureText(m.id).width / 2 + 2;
     // jamais sur un libellé d'espace déjà posé dans la coupe
     if (m.x - lastX < 30 || (g.taken || []).some(r => m.x - w < r.x1 && m.x + w > r.x0 && y - 14 < r.y1 && y + 3 > r.y0)) continue;
     lastX = m.x;
+    nFix++;
     ctx.beginPath();
     ctx.moveTo(m.x, y - 4);
     ctx.lineTo(m.x + 3.5, y + 2);
@@ -1026,6 +1223,8 @@ function drawProfile() {
     ctx.fillText(m.id, m.x, y - 5);
   }
   ctx.restore();
+  S.lgFixes = nFix > 0; // la légende ne dit que ce qui est dessiné
+  legendSync();
   drawCursor();
 }
 /** Curseur sur le profil (trait vertical, point sur l'altitude prévue). */
@@ -1078,16 +1277,20 @@ function strip() {
       h: altTxt(i.mora)
     }) : '', zones.length ? zones.join(', ') : tt(TX.noZoneHere)].filter(Boolean).join(' · ');
   } else if (S.edit?.adding) text = tt(TX.addHint);
-  else if (S.edit?.on) text = tt(TX.editHint);
-  else if (S.prof) text = tt(TX.hint);
-  if (S.stripEl.textContent !== text) S.stripEl.textContent = text;
+  if (S.stripEl.textContent !== text) {
+    S.stripEl.textContent = text;
+    S.stripEl.title = text; // la ligne défile sur deux lignes : le texte entier en infobulle
+  }
 }
 /** Curseur commun à la distance s (mètres ; null : effacé). */
 function setCursor(s) {
   S.cursor = s;
+  const nm = s == null ? '' : String(Math.round(s / FT_NM * 10) / 10); // lu par les tests et par qui mesure : le curseur commun en NM
+  if (S.mapEl.dataset.cursorNm !== nm) S.mapEl.dataset.cursorNm = nm;
   drawCursor();
   strip();
   schedule();
+  redrawWeather(); // la coupe météo de la feuille suit le même curseur
 }
 
 let frame = 0;
@@ -1126,55 +1329,25 @@ async function refresh(b, corridor = true) {
 }
 
 // ---------------------------------------------------------------- fond à tuiles
-/** Fond MapLibre sur l'emprise de la route ; false s'il ne vient pas (pas de réseau, pas de WebGL, hôte refusé). */
+/** Fond MapLibre sur l'emprise de la route (lib/map_base.js) ; false s'il ne vient pas (pas de réseau, pas de WebGL, hôte
+ *  refusé, délai dépassé). */
 async function startTiles() {
-  if (navigator.onLine === false) return false;
-  const ml = await loadMapLibre();
-  if (!ml || !S) return false;
-  return new Promise(ok => {
-    let map, done = false;
-    const finish = v => {
-      if (done) return;
-      done = true;
-      clearTimeout(timer);
-      if (S?.mapNew === map) S.mapNew = null;
-      if (!v && map) try {
-        map.remove();
-      } catch {
-        /* déjà retirée */
-      }
-      ok(v);
-    };
-    const timer = setTimeout(() => finish(false), TILE_WAIT);
-    try {
-      map = S.mapNew = new ml.Map({
-        container: S.mapEl,
-        style: styleFor(),
-        bounds: [
-          [S.fit.w, S.fit.s],
-          [S.fit.e, S.fit.n]
-        ],
-        fitBoundsOptions: {
-          padding: 12
-        },
-        attributionControl: false,
-        dragRotate: false,
-        pitchWithRotate: false,
-        touchPitch: false,
-        renderWorldCopies: false
-      });
-    } catch {
-      return finish(false); // pas de WebGL
-    }
-    map.touchZoomRotate.disableRotation();
-    map.on('style.load', () => {
-      try {
-        if (map.getProjection?.()?.type !== 'mercator') map.setProjection({
-          type: 'mercator'
-        });
-      } catch {
-        /* version sans projection réglable : Mercator */
-      }
+  const map = await baseTiles(S.mapEl, {
+    style: styleFor(),
+    bounds: [
+      [S.fit.w, S.fit.s],
+      [S.fit.e, S.fit.n]
+    ],
+    padding: 12,
+    worldCopies: true, // une route de 177° à 195° : la vue passe la ligne de changement de date (lib/map_base.js)
+    // la mention des sources de MapLibre, repliée (« i ») : la mention du SIA s'y ajoute, un seul texte de crédit
+    attributionControl: {
+      compact: true,
+      customAttribution: tt(TX.credit)
+    },
+    alive: () => !!S,
+    onCreate: m => S.mapNew = m,
+    onStyleLoad: map => {
       if (S?.map === map) {
         mapSize();
         relief();
@@ -1183,10 +1356,8 @@ async function startTiles() {
         S.placeOff = null;
         baseNames(S.placeWant);
       }
-    });
-    map.on('error', () => finish(false));
-    map.on('load', () => {
-      if (!S) return finish(false);
+    },
+    onLoad: map => {
       S.map = map;
       S.mapNew = null;
       mapSize(); // le cadre a pu changer de taille pendant le chargement des tuiles
@@ -1196,16 +1367,16 @@ async function startTiles() {
       map.on('click', e => {
         if (!S) return;
         if (!S.modeOpts.hidden) return toggleModes(false); // grille des modes ouverte : ce toucher la ferme
-        if (!S.layersEl.hidden) return toggleLayers(false); // panneau des couches ouvert : ce toucher le ferme
+        closeLv(); // un toucher sur la carte ferme la liste des espaces ; sur des espaces, la suivante la remplace aussitôt
         if (S.edit.on) return editTap(e.point.x, e.point.y);
-        // carte des niveaux ou d'un terrain ouverte, ou terrain épinglé : ce toucher les ferme
+        // carte d'un point de la route ouverte : ce toucher la ferme ; le contenu d'un terrain, épinglé, reste
         if (!S.mission && vrpTap(e.point.x, e.point.y)) return; // point de report : son terrain (point en tête)
         if (!S.mission && adAt(e.point.x, e.point.y)) return pinAd(adAt(e.point.x, e.point
           .y)); // un autre terrain la remplace
-        if (!S.cardEl.hidden) return hideTips(); // carte des niveaux ouverte : ce toucher la ferme (celle du terrain reste)
+        if (!S.cardEl.hidden) return hideTips();
         // une barbule, un cartouche ou un libellé (posés sur la route ou près d'elle) passent avant le curseur
         if (tipAt(e.point.x, e.point.y)) return mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y);
-        const s = S.prof ? MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y) : null;
+        const s = S.prof ? MapsProfile.nearest(S.prof, projNow(), e.point.x, e.point.y) : null;
         if (s != null) {
           hideTips();
           return setCursor(s);
@@ -1226,14 +1397,15 @@ async function startTiles() {
         hideTips();
         // tout mouvement qui n'est pas un cadrage du module (geste, molette, clavier) est celui de l'utilisateur : sa
         // caméra est gardée par tous les redessins
-        if (S && !S.selfMove) {
+        if (S && !S.selfMove && !isOwnResize(map)) {
           S.userMoved = true;
           if (S.follow) setFollow(false);
         }
       });
-      finish(true);
-    });
+    }
   });
+  if (S) S.mapNew = null;
+  return !!map;
 }
 
 // ---------------------------------------------------------------- infobulles des espaces (notation SIA)
@@ -1287,7 +1459,7 @@ function hoverMap(x, y) {
 const WIND_STEP_NM = 50;
 /** Vents à dessiner : [{ lat, lon, dirDeg, kt, tempC, levelFt, at }]. */
 function windPoints() {
-  const pts = (S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)),
+  const pts = unwrapLons((S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon))),
     ok = w => w && Number.isFinite(+w.dirDeg) && Number.isFinite(+w.kt),
     out = [];
   if (!pts.some(p => ok(p.wind))) return out;
@@ -1465,7 +1637,6 @@ let touchAt = -1e9;
 const fromTouch = e => !!e?.sourceCapabilities?.firesTouchEvents || performance.now() - touchAt < 1000;
 const hideTips = () => {
   if (S?.cardEl && !S.cardEl.hidden) S.cardEl.hidden = true;
-  if (S?.cardEl?.style.maxHeight) S.cardEl.style.maxHeight = ''; // hauteur propre à la carte d'un terrain
   for (const k of ['map', 'prof']) stay(k);
   if (S?.tipEl) S.tipEl.hidden = true;
   if (S?.ptipEl) S.ptipEl.hidden = true;
@@ -1480,8 +1651,9 @@ const hideTips = () => {
 // refait le devis — modules/fuel/INTEGRATION.md § 3).
 const HIT = 22,
   SNAP = 20;
-/** Points de l'enregistrement (positions résolues) : la route telle qu'elle est écrite. */
-const rawPoints = () => (S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon));
+/** Points de l'enregistrement (positions résolues) : la route telle qu'elle est écrite, aux longitudes continues comme la
+ *  carte la dessine (commit() les réécrit dans [-180, 180[). */
+const rawPoints = () => unwrapLons((S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)));
 /** Point de la route sous (x, y) : son rang, ou null ; movable : sans le départ ni l'arrivée. */
 function pointAt(x, y, movable = false) {
   const pts = rawPoints();
@@ -1527,11 +1699,15 @@ function llAt(x, y) {
     const p = S.map.unproject([x, y]);
     return {
       lat: Math.round(p.lat * 1e6) / 1e6,
-      lon: Math.round(p.lng * 1e6) / 1e6
+      lon: Math.round(wrapLon(p.lng) * 1e6) / 1e6 // la carte peut être centrée à 190° : la position écrite est dans [-180, 180[
     };
   }
-  const r = S.box.getBoundingClientRect();
-  return r.width ? MapsRender.mercator(S.fit, r.width, r.height, 12).toLL(x, y) : null;
+  const r = S.box.getBoundingClientRect(),
+    ll = r.width ? MapsRender.mercator(S.fit, r.width, r.height, 12).toLL(x, y) : null;
+  return ll && {
+    lat: ll.lat,
+    lon: outLon(ll.lon)
+  };
 }
 /** Point où se poser le plus proche de (x, y), à moins de SNAP px ; null sinon. */
 function snapAt(x, y) {
@@ -1547,15 +1723,33 @@ function snapAt(x, y) {
   }
   return best;
 }
+/** L'aide du mode Modifier a été dite dans cette page. */
+let editHinted = false;
+/** Nom d'un bouton de la couche de superposition (infobulle et nom accessible) ; écrit seulement s'il change. */
+function setLabel(b, label) {
+  if (b.title !== label) {
+    b.title = label;
+    b.setAttribute('aria-label', label);
+  }
+}
+/** Panneau des modes fermé : un autre geste de la carte le ferme (les couches sont un contenu de la feuille : elles restent). */
+function closePanels() {
+  if (!S.modeOpts.hidden) toggleModes(false);
+}
 /** Mode Modifier ouvert ou fermé. */
 function setEdit(on) {
   S.edit.on = on;
   S.edit.drag = null;
+  closePanels();
   S.editBtn.setAttribute('aria-pressed', String(on));
-  const label = tt(on ? TX.editDone : TX.editMode);
-  if (S.editBtn.textContent !== label) S.editBtn.textContent = label;
+  setLabel(S.editBtn, tt(on ? TX.editDone : TX.editHelp));
   S.undoBtn.hidden = !on;
   S.addBtn.hidden = !on;
+  // l'aide du mode, une fois par page, en notification (plus de ligne d'indice sur l'écran)
+  if (on && !editHinted) {
+    editHinted = true;
+    S.ctx.notify?.(tt(TX.editHint), 'info');
+  }
   setAdding(false);
   if (S.el.classList.contains('mp-editing') !== on) S.el.classList.toggle('mp-editing', on);
   S.undoBtn.disabled = !S.edit.undo.length;
@@ -1565,14 +1759,14 @@ function setEdit(on) {
 }
 const NM_KM = 1.852;
 /** Identifiant OACI de coordonnées (4530N00030E) d'un point sans nom utilisable. */
-const coordId = p => icaoCoord(+p.lat, +p.lon);
+const coordId = p => icaoCoord(+p.lat, outLon(+p.lon));
 /** Geste appliqué : nouveaux points de l'enregistrement, montrés tout de suite, écrits 400 ms après le dernier geste. */
 function commit(points, levelFt = null) {
   const f = S.route.flight || {},
     pts = points.map(p => ({
       ...p,
       lat: Math.round(+p.lat * 1e6) / 1e6,
-      lon: Math.round(+p.lon * 1e6) / 1e6
+      lon: Math.round(outLon(+p.lon) * 1e6) / 1e6 // écrite dans [-180, 180[ : Carburant et Atmosphère la lisent ainsi
     })),
     dist = pts.length >= 2 ? MapsRender.distances(pts.map(p => ({
       lat: +p.lat,
@@ -1874,7 +2068,7 @@ function addAt(x, y) {
       lat: ll.lat,
       lon: ll.lon
     } : null);
-  if (a && !rawPoints().some(p => p.id === a.id && Math.abs(+p.lat - a.lat) < 1e-3 && Math.abs(+p.lon - a.lon) < 1e-3)) insertPoint(a);
+  if (a && !rawPoints().some(p => p.id === a.id && Math.abs(+p.lat - a.lat) < 1e-3 && Math.abs(dLon(+p.lon, a.lon)) < 1e-3)) insertPoint(a);
   setAdding(false);
 }
 /** Position (lat, lon) sous (x, y), pour l'infobulle. */
@@ -1944,7 +2138,7 @@ function editGestures() {
     const r = S.box.getBoundingClientRect();
     return [e.clientX - r.left, e.clientY - r.top];
   };
-  const ui = e => e.target.closest('.mp-modes, .mp-tip, .mp-layers, .mp-layers-btn, .mp-editbar');
+  const ui = e => e.target.closest('.mp-mode-opts, .mp-tip, .mp-layers');
   S.box.addEventListener('pointerdown', e => {
     if (!S.edit.on || e.button > 0 || !S.toC || ui(e)) return;
     const [x, y] = pos(e),
@@ -2009,8 +2203,6 @@ function editGestures() {
   };
   S.box.addEventListener('pointerup', end, true);
   S.box.addEventListener('pointercancel', end, true);
-  S.editBtn.addEventListener('click', () => setEdit(!S.edit.on));
-  S.addBtn.addEventListener('click', () => setAdding(!S.edit.adding));
   // appui long (500 ms) hors d'un point de la route : ajout là où le doigt reste
   let longT = 0,
     longAt = null;
@@ -2042,7 +2234,6 @@ function editGestures() {
   S.box.addEventListener('contextmenu', e => {
     if (S.edit.on && !ui(e)) e.preventDefault();
   });
-  S.undoBtn.addEventListener('click', undoEdit);
   S.cardEl.addEventListener('click', e => {
     const lv = e.target.closest('[data-lvl]');
     if (lv) {
@@ -2082,8 +2273,8 @@ function tipAt(x, y, lat = null, lon = null) {
   })}` : l[1] || ''] : null;
 }
 // ---------------------------------------------------------------- points de report VFR d'un terrain (VAC)
-// Survol d'un terrain (souris) : aperçu de ses points de report et de ses séquences ; toucher : épinglé, avec sa carte
-// (séquences en texte, consignes des VAC repliées par page), jusqu'à Échap ou un toucher ailleurs ; en mode VFR, départ et
+// Survol d'un terrain (souris) : aperçu de ses points de report et de ses séquences ; toucher : épinglé, avec son contenu dans le bloc de données
+// (séquences en texte, consignes des VAC repliées par page), jusqu'à ✕, Échap ou un autre terrain ; en mode VFR, départ et
 // arrivée épinglés d'office (dessin seul). Données : aerodb.vfrRoutes (sia/vfr/<OACI>.json), candidats tirés des VAC,
 // toujours en tirets et marqués « à vérifier », jamais un itinéraire publié ni un sens de parcours.
 const VFR_COL = '#00897b'; // séquences et tracés tirés des VAC (les points de report : MapsRender.vrpColor)
@@ -2119,7 +2310,7 @@ function vrpAt(x, y) {
     name: h.p.name
   };
   const v = h.v,
-    nm = (p, q) => Math.hypot(+p.lat - +q.lat, (+p.lon - +q.lon) * Math.cos(+p.lat * Math.PI / 180)) * 60,
+    nm = (p, q) => Math.hypot(+p.lat - +q.lat, dLon(+p.lon, +q.lon) * Math.cos(+p.lat * Math.PI / 180)) * 60,
     ads = [...(S.adHits || []).map(x => x.a), ...(S.data?.data?.aerodromes || [])].filter(x => /^[A-Z]{4}$/.test(x?.icao || '')),
     pre = String(v.id).split('-')[0],
     own = ads.filter(x => x.icao.slice(2) === pre && nm(x, v) <= 30).sort((p, q) => nm(p, v) - nm(q, v))[0],
@@ -2178,13 +2369,13 @@ function baseVrpOf(icao) {
   })).then(list => {
     if (!S) return;
     const pre = `${icao.slice(2)}-`,
-      nm = v => Math.hypot(+v.lat - at.lat, (+v.lon - at.lon) * Math.cos(at.lat * Math.PI / 180)) * 60,
+      nm = v => Math.hypot(+v.lat - at.lat, dLon(+v.lon, at.lon) * Math.cos(at.lat * Math.PI / 180)) * 60,
       all = (list || []).filter(v => v?.id),
       own = all.filter(v => v.id.startsWith(pre)),
       rows = (own.length ? own : all.filter(v => nm(v) <= 15)).map(v => ({
         id: v.id,
         // code tel que l'écrit la VAC : « HE » pour MN-H-HE (la couleur dit l'hélicoptère)
-        code: (v.id.startsWith(pre) ? v.id.slice(pre.length) : v.id).replace(/^H-/, ''),
+        code: (v.id.startsWith(pre) ? v.id.slice(pre.length) : MapsRender.vrpCode(v.id)).replace(/^H-/, ''),
         name: v.name || '',
         lat: +v.lat,
         lon: +v.lon
@@ -2222,7 +2413,7 @@ function reportPoints(icao) {
     v = vfrOf(icao),
     vac = reportOf(v),
     ids = new Set(base.map(b => b.id)),
-    nm = (a, b) => Math.hypot(+a.lat - +b.lat, (+a.lon - +b.lon) * Math.cos(+a.lat * Math.PI / 180)) * 60,
+    nm = (a, b) => Math.hypot(+a.lat - +b.lat, dLon(+a.lon, +b.lon) * Math.cos(+a.lat * Math.PI / 180)) * 60,
     // VRP de la base d'un point VAC : son identifiant rapproché à l'import, sinon le plus proche à 0,6 NM au plus (une
     // compilation importée avant le rapprochement des points hélicoptères, un code écrit autrement)
     twin = p => p.vrp && ids.has(p.vrp) ? p.vrp : base.map(b => [b, nm(b, p)]).filter(([, d]) => d <= .6).sort((a, b) => a[1] - b[1])[0]?.[
@@ -2274,7 +2465,7 @@ function adHover(a, x, y) {
     c: adCounts(a.icao)
   })));
 }
-/** Terrain épinglé (toucher) : surbrillance gardée et sa carte. */
+/** Terrain épinglé (toucher) : surbrillance gardée et son contenu dans le bloc de données. */
 function pinAd(a, focus = null) {
   hideTips();
   S.vfrPin = a.icao;
@@ -2290,63 +2481,73 @@ function pinAd(a, focus = null) {
   schedule();
 }
 /** Terrain épinglé : la carte se rapproche de ses points de report s'ils sont serrés à l'écran (moins de 160 px ; c'est
- *  le geste de l'utilisateur, la caméra reste ensuite la sienne), en laissant la place de sa carte, puis la carte du
- *  terrain s'ouvre (« … » tant que la base ou la compilation sont en lecture). */
+ *  le geste de l'utilisateur, la caméra reste ensuite la sienne), et son contenu s'ouvre dans le bloc de données
+ *  (« … » tant que la base ou la compilation sont en lecture). */
 function pinView(icao) {
   const c = S.vfrCard;
   if (!c) return;
   if (S.vfrZoomed === icao || baseVrpOf(icao) === undefined || vfrOf(icao) === undefined || !S.map) return showAdCard(icao);
   S.vfrZoomed = icao; // une seule fois par épinglage
-  const pts = [...reportPoints(icao), ...(vfrOf(icao)?.points || []).filter(p => p.role === 'intermediate_waypoint'), c].filter(p => Number
-    .isFinite(+p.lat) && Number.isFinite(+p.lon));
+  // un terrain près de la ligne de changement de date : points d'un seul tenant, sur la copie du monde de la vue
+  const un = unwrapLons([...reportPoints(icao), ...(vfrOf(icao)?.points || []).filter(p => p.role === 'intermediate_waypoint'), c].filter(
+      p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon))),
+    ro = un.length ? 360 * Math.round((S.map.getCenter().lng - un[0].lon) / 360) : 0,
+    pts = ro ? un.map(p => ({
+      ...p,
+      lon: +p.lon + ro
+    })) : un;
   if (pts.length < 2) return showAdCard(icao);
   const px = pts.map(p => S.map.project([+p.lon, +p.lat])),
     span = Math.max(Math.max(...px.map(q => q.x)) - Math.min(...px.map(q => q.x)), Math.max(...px.map(q => q.y)) - Math.min(...px.map(q =>
       q.y)));
   if (span >= 160) return showAdCard(icao);
-  const W = S.box.clientWidth,
-    H = S.box.clientHeight,
-    side = W > 700 ? 380 : 40,
-    left = S.map.project([c.lon, c.lat]).x >= W / 2,
-    narrow = W < 600; // téléphone, volet : la carte du terrain prend le bas du cadre
-  S.map.once('moveend', () => S?.vfrPin === icao && showAdCard(icao));
+  // le contenu du terrain est dans le bloc de données, sous la carte : le cadrage prend toute la carte (sous les boutons du
+  // haut, à droite des modes et des couches)
+  showAdCard(icao);
   S.map.fitBounds([
     [Math.min(...pts.map(p => +p.lon)), Math.min(...pts.map(p => +p.lat))],
     [Math.max(...pts.map(p => +p.lon)), Math.max(...pts.map(p => +p.lat))]
   ], {
-    padding: narrow ? {
+    padding: {
       top: 56,
-      bottom: Math.round(H * .45) + 16,
-      left: 30,
-      right: 30
-    } : {
-      top: 50,
       bottom: 40,
-      left: left ? side : 40,
-      right: left ? 40 : side
+      left: 64,
+      right: 40
     },
     maxZoom: 11,
     duration: 500
   });
 }
 
-function unpinAd() {
-  if (!S.adCardEl.hidden) S.adCardEl.hidden = true;
+/** Terrain relâché (la surbrillance s'arrête) ; le bloc de données n'est pas touché. */
+function releaseAd() {
   if (!S.vfrPin) return;
   S.vfrPin = null;
   S.vfrCard = null;
   S.vfrZoomed = null;
   schedule();
 }
-/** Carte d'un terrain épinglé : ses points de report (base publiée, couleur avion ou hélicoptère), puis, si la
- *  compilation VAC est importée, l'analyse, les séquences, les points restreints, les sommets manuels et les consignes
- *  repliées par page ; sinon « séquences VAC : non importées ». */
+/** Contenu du terrain fermé (✕, Échap, un autre contenu) : le terrain est relâché et le profil vertical revient. */
+function unpinAd() {
+  endData('ad');
+  releaseAd();
+}
+/** Contenu d'un terrain épinglé, dans le bloc de données (à la place du profil vertical) : ses points de report (base
+ *  publiée, couleur avion ou hélicoptère, nom long), puis, si la compilation VAC est importée, l'analyse, les séquences,
+ *  les points restreints, les sommets manuels et les consignes repliées par page ; sinon « séquences VAC : non
+ *  importées ». */
 function showAdCard(icao) {
   const v = vfrOf(icao),
     base = baseVrpOf(icao),
     c = S.vfrCard;
   if (!c) return;
-  const head = `<button type="button" class="mp-adclose" data-adclose aria-label="${esc(tt(TX.close))}" title="${esc(tt(TX.close))}">✕</button><div class="mp-adhead"><b>${esc(tt(TX.vfrTitle, { ad: [icao, c.name].filter(Boolean).join(' ') }))}</b></div>`,
+  // en-tête : « LFBD : points de report VFR » (le nom du terrain va en infobulle de l'en-tête, il ferait tronquer le titre sur un téléphone)
+  const title = tt(TX.vfrTitle, {
+      ad: icao
+    }),
+    label = tt(TX.vfrTitle, {
+      ad: [icao, c.name].filter(Boolean).join(' ')
+    }),
     page = p => p ? ` <span class="f-muted">(${esc(tt(TX.vfrPage, { p }))})</span>` : '',
     pts = (l => c.focus ? [...l.filter(p => p.id === c.focus), ...l.filter(p => p.id !== c.focus)] : l)(reportPoints(icao)),
     heli = pts.some(p => MapsRender.vrpRotary(p.id)),
@@ -2385,26 +2586,7 @@ function showAdCard(icao) {
       body += `<p class="mp-vfr-warn">${esc(tt(TX.vfrLabel))}</p>${st ? `<p><b>${esc(tt(st, { s: tt(TX.vfrScope[A.scope] || TX.vfrScope.partial) }))}</b></p>` : ''}${A.notes?.length ? `<ul class="mp-vfr-seq">${A.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}${seqs.length ? `<div><b>${esc(tt(TX.vfrSeqCount, { r: seqs.length }))}</b>${part ? ` <span class="f-muted">${esc(tt(TX.vfrPart))}</span>` : ''}</div><ul class="mp-vfr-seq">${seqs.map(item).join('')}</ul>` : ''}${man}${v.notes?.length ? `<div><b>${esc(tt(TX.vfrNotes))}</b></div>${v.notes.map(n => `<details class="mp-vfr-note"><summary>${esc(n.title || tt(TX.vfrPage, { p: n.page }))}${page(n.page)}</summary><div>${esc(n.text)}</div></details>`).join('')}` : ''}`;
     }
   }
-  // carte du côté opposé au terrain, sous les boutons du haut du cadre (Modifier, modes et couches) : les points restent
-  // visibles, aucun bouton n'est couvert
-  const W = S.box.clientWidth,
-    q = S.map ? S.map.project([c.lon, c.lat]) : S.toC?.(c.lat, c.lon) || {
-      x: 0
-    },
-    r0 = S.box.getBoundingClientRect(),
-    right = q.x < W / 2,
-    // à droite, sous « Modifier » ; à gauche, sous les boutons des modes et des couches
-    btn = right ? S.editBtn : S.layersBtn,
-    narrow = W < 600,
-    below = narrow ? Math.round(r0.height * .55) : btn && !btn.hidden ? btn.getBoundingClientRect().bottom - r0.top : 0,
-    mh = `${Math.max(120, Math.round(r0.height - below - 14))}px`;
-  const A = S.adCardEl;
-  if (A.style.maxHeight !== mh) A.style.maxHeight = mh;
-  // étroit : en bas du cadre, sur toute sa largeur (les points sont cadrés au-dessus) ; le reste du cadre se déplace au
-  // doigt comme d'habitude
-  showTip(A, S.box, narrow ? -10 : right ? W : -10, below, head + body);
-  const top = `${Math.round(below + 6)}px`; // juste sous les boutons (ou à mi-hauteur), jamais au-dessus
-  if (A.style.top !== top) A.style.top = top;
+  openData('ad', `ad:${icao}`, title, () => body, label);
 }
 /** VRP de la base que la surbrillance dessine (terrains montrés) : la couche des VRP ne les redessine pas. */
 function vfrVrpIds() {
@@ -2487,14 +2669,14 @@ function drawVfr(ctx, toC) {
     for (const p of pts) {
       const q = toC(p.lat, p.lon),
         col = MapsRender.vrpColor(p.id),
-        name = [p.code, p.name.length > 28 ? `${p.name.slice(0, 27)}…` : p.name].filter(Boolean).join(' ');
+        name = p.code; // sur la carte, le code court seul (lisibilité) ; le nom long est dans l'infobulle et dans le bloc de données
       ctx.beginPath();
       ctx.arc(q.x, q.y, 7, 0, Math.PI * 2);
       ctx.fillStyle = MapsRender.withAlpha(col, .12);
       ctx.fill();
       ctx.strokeStyle = col;
       ctx.lineWidth = 2;
-      if (p.restrictions.length) ctx.setLineDash([3, 2]); // usage restreint : cercle tireté (la carte du terrain dit lequel)
+      if (p.restrictions.length) ctx.setLineDash([3, 2]); // usage restreint : cercle tireté (le bloc de données dit lequel)
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.strokeStyle = S.theme.bg;
@@ -2540,10 +2722,13 @@ const ZONE_COL = {
   RMZ: '#555',
   TMZ: '#555'
 };
-/** Carte des niveaux d'un point : un bloc comme le profil vertical (axe des altitudes, une colonne par espace entre son
- *  plancher et son plafond, numérotée), puis la liste numérotée en notation SIA, du plancher le plus bas au plus haut.
- *  Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas lu ici : l'étiquette dit ASFC). */
-function levelsHtml(list) {
+/** Contenu « n espaces sur ce point » du bloc de données : un graphique comme le profil vertical (axe des altitudes, une
+ *  colonne par espace entre son plancher et son plafond, numérotée), à gauche, puis la liste numérotée en notation SIA,
+ *  du plancher le plus bas au plus haut. Le graphique est dessiné à l'échelle 1 pour la place du bloc (bw × bh px) : 44 %
+ *  de sa largeur sur un téléphone (moins de 600 px), sinon la largeur que demandent les colonnes (400 px au plus), et
+ *  jamais plus haut que le bloc. Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas lu ici : l'étiquette
+ *  dit ASFC). */
+function levelsHtml(list, bw = 360, bh = 200) {
   const lim = window.SiaAero?.limitFt || (() => 0),
     rows = list.map(a => {
       const lo = Math.max(0, +lim(a.lower, false) || 0),
@@ -2565,13 +2750,15 @@ function levelsHtml(list) {
     raw = Math.max(5000, ...finite) * 1.08,
     step = nice(raw),
     top = Math.ceil(raw / step) * step,
-    W = 280,
-    H = 150,
-    L = 46,
+    narrow = bw < 600,
+    L = narrow ? 40 : 46,
+    W = Math.round(narrow ? Math.min(bw * .3, L + 8 + rows.length * 20) : Math.min(400, bw * .45, Math.max(240, L + 12 + rows.length *
+      36))),
+    H = Math.round(Math.max(110, Math.min(300, bh - 16))),
     T = unl ? 16 : 6,
     B = H - 6,
     y = ft => B - (Math.min(ft, top) / top) * (B - T),
-    colW = Math.max(10, Math.min(34, (W - L - 6) / rows.length)),
+    colW = Math.max(10, Math.min(narrow ? 22 : 34, (W - L - 6) / rows.length)),
     gap = Math.min(4, colW * .2);
   let svg = '';
   for (let v = 0; v <= top; v += step) svg +=
@@ -2587,22 +2774,393 @@ function levelsHtml(list) {
       `<text x="${(x + colW / 2).toFixed(1)}" y="${Math.min(B - 4, Math.max(T, y0 + 9)).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="${r.col}" font-weight="700">${i + 1}</text>`;
   });
   const items = rows.map((r, i) => {
-    const [a, b] = MapsRender.sia(r.a);
-    return `<li><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><span><b>${esc(a)}</b>${b ? `<br><span class="f-muted">${esc(b)}</span>` : ''}</span></li>`;
+    // une ligne par espace : « 1 · TMA NANTES 4 · FL055|FL065 · D » (le nom cède à l'ellipse, les niveaux et la classe restent) ;
+    // l'activation et les informations, quand il y en a, vont dans l'infobulle
+    const x = r.a,
+      name = [x.type, x.name].filter(Boolean).join(' '),
+      lim = x.lower == null && x.upper == null ? '' : `${MapsRender.siaLimit(x.lower)}|${MapsRender.siaLimit(x.upper)}`,
+      tail = [lim, x.cls].filter(Boolean).join(' · '),
+      note = [x.act, x.info].filter(Boolean).join(' · ');
+    return `<li${note ? ` title="${esc(note)}"` : ''}><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><b class="mp-lv-name">${esc(name)}</b>${tail ? `<span class="mp-lv-lim f-muted">${esc(tail)}</span>` : ''}</li>`;
   }).join('');
-  return `<button type="button" class="mp-adclose" data-lvclose aria-label="${esc(tt(TX.close))}" title="${esc(tt(TX.close))}">✕</button><div class="mp-adhead"><b>${esc(rows.length === 1 ? tt(TX.levelsTitle1) : tt(TX.levelsTitle, { n: rows.length }))}</b></div><svg class="mp-lv" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol>`;
+  return `<div class="mp-lv-body"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>`;
+}
+/** Liste des espaces fermée (écrit seulement si elle est ouverte) : un toucher sur un endroit vide de la carte, ✕ et Échap
+ *  la ferment, le profil vertical revient ; un glisser ou la molette jamais (`hideTips` ne la touche pas). */
+function closeLv() {
+  if (S?.dpanel) endData('lv');
+}
+/** Liste des espaces sous le point touché, dans le bloc de données. Un terrain épinglé est relâché : un seul contenu à la
+ *  fois, la surbrillance ne reste pas sans sa liste. */
+function showLv() {
+  const list = S.lvList;
+  if (!list?.length) return;
+  releaseAd();
+  openData('lv', `lv:${list.map(a => a.id || a.name || '').join('|')}`, list.length === 1 ? tt(TX.levelsTitle1) : tt(TX.levelsTitle, {
+    n: list.length
+  }), (w, h) => levelsHtml(list, w, h));
+}
+// ---------------------------------------------------------------- le bloc de données (sous la carte)
+// La vue est fixe (meta.fixed) : en-tête du cadre, la carte, puis le bloc de données, qui est une FEUILLE de hauteur fixe à
+// trois positions (réduit : sa ligne d'en-tête seule ; normal : la hauteur du cadre, --f-sheet-default, 30 % de la vue sur
+// téléphone et 35 % sur écran ; agrandi : 70 %), tirée par la poignée de son en-tête ; son contenu défile dedans, la page
+// jamais. Le bloc montre le profil vertical ; la liste des espaces d'un point, le contenu d'un terrain (points de report,
+// séquences VAC, consignes) et les couches s'y ouvrent à sa place — on n'a pas besoin du profil pendant qu'on les lit — et,
+// fermés, le profil revient. Rien ne recouvre plus la carte que les boutons de la couche du cadre.
+// ---- la feuille : à trois positions, tirée par sa poignée de l'en-tête. C'est la primitive du cadre (frame/lib/sheet.js,
+// règles dans frame/design/primitives.css, frame/INTEGRATION.md § 11) ; ce qui reste au module : les textes (labels), ce qui
+// change quand la taille s'est arrêtée (onSettle : recadrer la carte), le verrou de la page de réglage (locked) et la
+// position gardée (onChange).
+/** Position de la feuille gardée d'un montage à l'autre dans la même page ('collapsed', 'default' ou 'expanded'). */
+let sheetKeep = 'default';
+/** Après un changement de taille de la carte : le fond MapLibre reprend la taille du cadre, et la route reste cadrée tant
+ *  que l'utilisateur n'a pas déplacé la carte. */
+function onSheetSettled() {
+  if (!S) return;
+  mapSize();
+  if (S.map && S.fit && !S.userMoved && S.route.points.length) fitMap(false);
+  schedule();
+  dataHead(); // la colonne paysage (html.f-land) a pu apparaître ou partir : la ligne nue ou titrée
+  drawProfile(); // la ligne de texte et les notes vont et viennent avec la position : le dessin reprend la hauteur du corps
+  redrawWeather();
+}
+/** Choix « Profil · Météo » mémorisé pour la vie de la page (pas sur l'appareil : une commodité de lecture). */
+let viewKeep = 'profile';
+/** La coupe météo se montre pour un vol à deux points au moins (pas pour une carte de mission). */
+const canWeather = () => !S.mission && S.route.points.length >= 2;
+/** Légende du dessin montré : la liste de ce qui est RÉELLEMENT dessiné (jamais un texte fixe), avec son symbole. Profil : ce que la coupe
+ *  a dessiné (`geo.drawn`, rendu par le code du dessin) et les repères que la feuille ajoute (marques NM, points des voies). Coupe météo :
+ *  la légende que la coupe expose (`legend` de ce que charge loadWeather, absente aujourd'hui : la puce « i » n'y est alors pas). */
+function legendRows(view) {
+  const sw = (k, c = '') => `<i class="mp-lg-sw mp-lg-${k}" style="--c:${c}"></i>`;
+  if (view === 'weather') return (S.wx?.legend?.(S.wx.o) || []).map(r => Array.isArray(r) ? r : [sw('band', r.swatch?.css), esc(r.label)]);
+  const d = S.geo?.drawn;
+  if (!d) return [];
+  const rows = [];
+  if (d.plan) rows.push([sw('line', '#6a1b9a'), esc(tt(TX.lgPlan))]);
+  if (d.tocTod) rows.push([sw('diamond', '#6a1b9a'), esc(tt(TX.lgToc))]);
+  if (d.terrain) rows.push([sw('relief', '#b08a5a'), esc(tt(TX.lgTerrain))]);
+  if (d.mora) rows.push([sw('dash', '#8b2d18'), esc(tt(TX.lgMora))]);
+  for (const [type, col] of d.zones) rows.push([sw('band', col), `<b>${esc(type)}</b> ${esc(tt(TX.lgZone))}`]);
+  if (d.marks) rows.push([sw('vdash', '#17202a'), esc(tt(TX.lgPoints))]);
+  if ((S.marks || []).length) rows.push([sw('tick', '#8e24aa'), esc(tt(TX.lgNm))]);
+  if (S.lgFixes) rows.push([sw('tri', S.theme?.fg || '#17202a'), esc(tt(TX.lgFixes))]);
+  return rows;
+}
+/** Puce « i » et panneau de légende : la puce n'est là que si le dessin montré a une légende ; le panneau recouvre le dessin, se ferme par la
+ *  puce, un toucher sur lui ou Échap ; écrit seulement s'il change. */
+function legendSync() {
+  if (!S?.legendBtn) return;
+  const view = S.dpanel === 'weather' ? 'weather' : !S.dpanel && S.prof ? 'profile' : null,
+    rows = view ? legendRows(view) : [],
+    can = rows.length > 0,
+    on = !!S.legend && can,
+    html = on ? `<ul>${rows.map(([k, t]) => `<li>${k}<span>${t}</span></li>`).join('')}</ul>` : '';
+  if (S.legendBtn.hidden === can) S.legendBtn.hidden = !can;
+  if (S.legendBtn.getAttribute('aria-pressed') !== String(on)) S.legendBtn.setAttribute('aria-pressed', String(on));
+  if (S.legendEl.hidden === on) S.legendEl.hidden = !on;
+  if (S.legendEl.innerHTML !== html) S.legendEl.innerHTML = html;
+}
+/** Libellé de la poignée (infobulle et lecteur d'écran) : la hauteur de la feuille et sa position ; sur une poignée nue
+ *  (§ 7.1.13 : le titre n'est pas écrit au-dessus d'un dessin) elle dit d'abord quel dessin c'est, puis le résumé du vol
+ *  (niveau, distance, état), qui n'est plus affiché mais reste dit à qui n'a pas le dessin sous les yeux. */
+const gripLabel = p => `${S?.bare ? [S.bare, S.sum].filter(Boolean).join(' · ') + ' · ' : ''}${tt(TX.sheetSize)} (${tt(TX.sheetNames[Math.max(0, SHEET_POS.indexOf(p))])})`;
+const SHEET_POS = ['collapsed', 'default', 'expanded'];
+/** En-tête du bloc, sur le modèle de la feuille d'Atmosphère : la poignée porte un titre qui dit ce qu'on regarde et son
+ *  contexte (« Profil · FL065 · 427 NM · vol prévu » ; le titre du contenu ouvert par openData tel
+ *  quel), à droite deux puces icône (profil, coupe météo : seulement quand la coupe est possible) ou la croix d'un contenu
+ *  de la carte ; le bloc n'est là que s'il a quelque chose à montrer ; écrit s'il change.
+ *  Quand le contenu est un dessin (profil, coupe) et que la feuille est en position PAR DÉFAUT, la ligne est NUE
+ *  (.f-sheet-head-bare : la barre de préhension et les puces seulement) : le dessin dit déjà le niveau, la distance et le vol
+ *  (§ 7.1.13) ; agrandie, repliée ou en colonne paysage (html.f-land) elle garde son titre (la place ne manque pas, et le titre
+ *  est alors ce qui dit ce qu'est le contenu). Bascule à chaque changement de position et à onSettle (rotation). */
+function dataHead() {
+  const show = !!S.dpanel || !!S.prof,
+    wx = S.dpanel === 'weather',
+    drawing = wx || (!S.dpanel && !!S.prof),
+    bare = drawing && sheetKeep === 'default' && !document.documentElement.classList.contains('f-land') ? tt(wx ? TX.wxTitle : TX
+      .dataProfile) : '',
+    own = !!S.dpanel && !wx, // contenu ouvert par openData : son titre, sans le résumé du vol
+    lay = S.dpanel === 'layers', // « Couches · <vol> » : le contexte comme le profil
+    title = own && !lay ? S.dtitle : [lay ? S.dtitle : tt(wx ? TX.ttlWeather : TX.ttlProfile), S.sum].filter(Boolean).join(' · '),
+    tip = own && !lay ? S.dlabel : [lay ? S.dlabel : wx ? S.dlabel : tt(TX.dataProfile), S.sumTip].filter(Boolean).join(' · '),
+    chips = canWeather() && !own,
+    close = own;
+  if (S.dataEl.hidden === show) S.dataEl.hidden = !show;
+  if (S.layersBtn.getAttribute('aria-pressed') !== String(lay)) S.layersBtn.setAttribute('aria-pressed', String(lay));
+  if (S.bare !== bare) {
+    S.bare = bare;
+    S.dheadEl.classList.toggle('f-sheet-head-bare', !!bare);
+  }
+  const label = gripLabel(sheetKeep);
+  if (S.gripEl.title !== label) S.gripEl.title = label;
+  if (S.gripEl.getAttribute('aria-label') !== label) S.gripEl.setAttribute('aria-label', label);
+  if (S.dtitleEl.textContent !== (bare ? '' : title)) S.dtitleEl.textContent = bare ? '' : title;
+  if (S.dtitleEl.title !== (bare ? '' : tip)) S.dtitleEl.title = bare ? '' : tip;
+  if (S.dcloseEl.hidden === close) S.dcloseEl.hidden = !close;
+  if (S.segEl.hidden === chips) S.segEl.hidden = !chips;
+  if (S.dataEl.classList.contains('mp-chipcol') !== chips) S.dataEl.classList.toggle('mp-chipcol',
+    chips); // le dessin laisse la colonne des puces à sa droite
+  for (const b of S.segBtns) {
+    const on = String((b.dataset.view === 'weather') === wx);
+    if (b.getAttribute('aria-pressed') !== on) b.setAttribute('aria-pressed', on);
+  }
+  legendSync();
+}
+/** Ouvre ou remplace le contenu du bloc. key : l'identité du contenu (autre clé : le contenu est neuf et défile en haut ;
+ *  même clé : il est seulement redessiné, défilement gardé) ; build(w, h) rend le HTML pour la taille de la zone de
+ *  contenu (largeur et hauteur en pixels : un graphique y puise ce qu'il lui faut) et rend le HTML, OU dessine lui-même
+ *  dans la zone qu'on lui donne en troisième argument (el) et ne rend rien (coupe verticale de l'atmosphère : INTEGRATION.md
+ *  § 6) ; rappelé avec la même clé, il remplace son dessin ; label : le nom complet, pour
+ *  l'infobulle de l'en-tête et le lecteur d'écran. Un contenu neuf ouvre la feuille réduite à sa position normale ; la
+ *  carte et la page ne bougent pas. C'est aussi le point d'entrée des contenus venus d'autres modules (INTEGRATION.md § 6). */
+function openData(kind, key, title, build, label = title) {
+  const fresh = S.dkey !== key;
+  if (fresh && S.sh.pos === 'collapsed') S.sh.set('default',
+    true); // réduite, le contenu serait caché : la feuille s'ouvre, sans glissement
+  S.dpanel = kind;
+  S.dkey = key;
+  S.dtitle = title;
+  if (!S.dprofEl.hidden) S.dprofEl.hidden = true;
+  if (S.dbodyEl.hidden) S.dbodyEl.hidden = false;
+  if (S.dbodyEl.dataset.kind !== kind) S.dbodyEl.dataset.kind = kind; // le style de la zone suit le genre (coupe : sans défilement)
+  if (S.dbodyEl.getAttribute('aria-label') !== label) S.dbodyEl.setAttribute('aria-label', label);
+  S.dlabel = label;
+  if (fresh) {
+    S.dhtml = '';
+    S.dbodyEl.textContent = '';
+  }
+  dataHead(); // d'abord : la ligne nue ou normale et le bloc visible fixent la hauteur que le contenu va prendre
+  const html = build(S.dbodyEl.clientWidth || 360, S.dbodyEl.clientHeight || 200, S.dbodyEl);
+  if (typeof html !== 'string') S.dhtml = null; // le constructeur a dessiné lui-même dans la zone (el) : rien d'autre à écrire
+  else if (S.dhtml !== html) {
+    S.dhtml = html;
+    S.dbodyEl.innerHTML = html;
+  }
+  if (fresh) S.dbodyEl.scrollTop = 0;
+  legendSync(); // la coupe vient d'être dessinée : sa légende
+}
+/** Contenu du bloc fermé (kind : seulement s'il est de ce genre) ; le profil vertical revient, redessiné à sa taille — ou la
+ *  coupe météo, si c'est elle que l'utilisateur avait choisie avant d'ouvrir ce contenu. */
+function endData(kind = null) {
+  if (!S?.dpanel || (kind && S.dpanel !== kind)) return;
+  const back = S.dpanel !== 'weather' && viewKeep === 'weather' && canWeather();
+  S.dpanel = null;
+  S.dkey = null;
+  S.dhtml = '';
+  if (back) return showWeather(); // le contenu neuf remplace celui qui part : la zone n'est pas vidée entre les deux
+  S.dbodyEl.hidden = true;
+  S.dbodyEl.textContent = '';
+  S.dprofEl.hidden = false;
+  drawProfile();
+  dataHead();
+}
+/** Échap : ferme ce qui est ouvert, du plus proche au plus lointain ; vrai si quelque chose l'a été. */
+function escapeKey() {
+  if (!S.legendEl.hidden) {
+    S.legend = false; // la légende, posée sur le dessin, est ce qu'il y a de plus proche
+    legendSync();
+    S.legendBtn.focus();
+  } else if (!S.modeOpts.hidden) {
+    toggleModes(false);
+    S.modeBtn.focus();
+  } else if (S.dpanel || S.vfrPin) {
+    const layers = S.dpanel === 'layers';
+    closeData();
+    if (layers) S.layersBtn.focus();
+  } else if (!S.cardEl.hidden) hideTips();
+  else if (S.edit.adding) setAdding(false);
+  else if (S.edit.on) setEdit(false);
+  else return false;
+  return true;
+}
+/** Fermeture voulue (✕, Échap) : le contenu du bloc, quel qu'il soit ; la coupe météo ferme sur le profil (et le choix
+ *  suit). */
+function closeData() {
+  if (S.dpanel === 'ad' || S.vfrPin) unpinAd();
+  else {
+    if (S.dpanel === 'weather') viewKeep = 'profile';
+    endData();
+  }
+}
+
+// ---------------------------------------------------------------- la coupe météo dans la feuille
+// Rendu pur d'Atmosphère (modules/atmosphere/section.js, INTEGRATION.md § 5 de ce module) ; la Carte ne demande jamais rien
+// à Open-Meteo : elle dessine ce qu'Atmosphère a déjà lu dans la réserve météo partagée (cache/weather/). Les fichiers
+// d'Atmosphère sont chargés au premier « Météo » (meta.lazy), pas au montage.
+/** Réseau de la réserve pour la Carte : toujours « hors ligne ». La réserve demande l'heure du dernier run d'un modèle à
+ *  Open-Meteo même en cacheOnly (fichier statique) ; la Carte s'en passe et prend celle qu'Atmosphère a gardée. */
+const NO_NET = {
+  fetch: async () => new Response(null, {
+    status: 503,
+    headers: {
+      'x-sog-offline': '1'
+    }
+  })
+};
+/** Identité de la coupe : le vol montré (une nouvelle version du vol refait la coupe). */
+const wxKey = () => `wx:${S.route.updated || ''}`;
+/** Points de la route comme Atmosphère les lit dans le vol courant (route.points, alt_ft = niveau tenu à partir du point). */
+const wxPoints = f => (f?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)).map(p => ({
+  id: String(p.id || p.name || ''),
+  lat: +p.lat,
+  lon: +p.lon,
+  alt_ft: +p.alt_ft || 0
+}));
+/** Lit la prévision gardée pour le vol montré et prépare le dessin : { key, state: 'ok' | 'none' | 'fail', draw, o }.
+ *  none : rien (ou pas assez) en réserve pour ce vol ; fail : les fichiers d'Atmosphère n'ont pas pu être chargés. */
+async function loadWeather(key) {
+  let Sx, A, store;
+  try {
+    [Sx, A, store] = await Promise.all([import('../atmosphere/section.js'), import('../atmosphere/atmo.js'),
+      import('../atmosphere/weather_store.js')
+    ]);
+  } catch {
+    return {
+      key,
+      state: 'fail'
+    };
+  }
+  try {
+    const f = S.route.flight,
+      pts = wxPoints(f),
+      levelFt = S.route.levelFt || +f?.quote?.levelFt || 0;
+    if (pts.length < 2 || !levelFt) return {
+      key,
+      state: 'none'
+    };
+    const mid = pts[Math.floor(pts.length / 2)],
+      W = S.wxStore ||= store.weatherStore({
+        data: S.ctx.data,
+        net: NO_NET
+      }),
+      r = await W.forecast(Sx.sectionPlaces(pts), Sx.sectionVars(levelFt, pts), {
+        model: A.modelFor(mid.lat, mid.lon).id,
+        cacheOnly: true
+      });
+    if (!r) return {
+      key,
+      state: 'none'
+    };
+    const when = Date.parse(f?.weather?.when || ''),
+      o = {
+        route: pts,
+        levelFt,
+        // le profil de Carburant n'est repris que s'il est de Carburant (écrit par la carte, il est périmé : taux par défaut)
+        profile: f?.by && f.by !== 'fuel' ? null : f?.profile || null,
+        depTime: Number.isFinite(when) ? when / 1000 : Math.ceil(Date.now() / 36e5) * 3600,
+        cruiseKt: A.cruiseKtOf(f?.route?.text) || 200,
+        locs: A.locations(r.locs),
+        id: 'mp-wx',
+        labels: {
+          strips: TX.wxStrips.map(row => tt(row))
+        }
+      };
+    // le modèle (trajectoire, colonnes, champ) est calculé une fois : le dessin le reprend à chaque taille et à chaque curseur
+    o.model = Sx.sectionModel({
+      points: pts,
+      levelFt,
+      profile: o.profile,
+      profileLevelFt: levelFt,
+      depTime: o.depTime,
+      cruiseKt: o.cruiseKt,
+      samples: Sx.sectionPlaces(pts),
+      locs: o.locs
+    });
+    return {
+      key,
+      state: 'ok',
+      draw: Sx.drawSection,
+      legend: Sx.sectionLegend, // la légende de la coupe, quand Atmosphère l'expose (sinon pas de puce « i » sur la coupe)
+      o
+    };
+  } catch {
+    return {
+      key,
+      state: 'none'
+    };
+  }
+}
+/** Constructeur du contenu « weather » pour openData : dessine dans la zone, ou rend une ligne (lecture, rien en réserve,
+ *  indisponible). */
+const weatherBuild = key => (w, h, el) => {
+  const wx = S.wx?.key === key ? S.wx : null;
+  S.wxGeo = null;
+  if (!wx) return `<p class="f-muted mp-wxmsg">${esc(tt(TX.wxReading))}</p>`;
+  if (wx.state === 'ok') {
+    // la zone de la coupe n'a ni bord ni remplissage (.mp-dbody[data-kind=weather]) : la coupe prend toute sa hauteur et sa
+    // largeur, l'axe des distances au bas du corps (§ 7.1.13) ; minHeight: 0 demande à drawSection de ne pas relever la hauteur
+    S.wxGeo = wx.draw(el, {
+      ...wx.o,
+      width: Math.max(80, w),
+      height: Math.max(40, Math.floor(h)),
+      minHeight: 0,
+      cursorM: S.cursor,
+      dark: !!S.theme?.dark
+    });
+    if (S.wxGeo) {
+      // vrai si le bas du dessin (l'axe) est dans le corps, sans qu'il faille faire défiler
+      const svg = el.querySelector('svg'),
+        ok = svg && svg.getBoundingClientRect().bottom <= el.getBoundingClientRect().bottom + 1 ? '1' : '0';
+      if (el.dataset.axis !== ok) el.dataset.axis = ok;
+      return;
+    }
+  }
+  if (wx.state === 'fail') return `<p class="f-muted mp-wxmsg">${esc(tt(TX.wxFail))}</p>`;
+  const r = S.route.flight?.route,
+    name = r?.dep && r?.arr ? tt(TX.summary, {
+      dep: r.dep,
+      arr: r.arr
+    }) : '';
+  return `<a class="mp-wxlink" href="#atmosphere">${esc(name ? tt(TX.wxNoneFor, {
+    f: name
+  }) : tt(TX.wxNone))}&nbsp;<span>${esc(tt(TX.wxOpen))}</span></a>`;
+};
+/** Montre la coupe météo dans la feuille (la prévision gardée est lue si elle ne l'est pas encore pour ce vol ; force : relue
+ *  même si elle manquait, Atmosphère ayant pu la charger depuis). Même clé : seulement redessinée. */
+async function showWeather(force = false) {
+  const key = wxKey(),
+    open = () => openData('weather', key, tt(TX.wxTitle), weatherBuild(key), tt(TX.wxLabel));
+  open();
+  if (S.wx?.key === key && !(force && S.wx.state !== 'ok')) return;
+  const seq = S.wxSeq = (S.wxSeq || 0) + 1,
+    st = await loadWeather(key);
+  if (!S || S.wxSeq !== seq) return;
+  S.wx = st;
+  if (S.dpanel === 'weather' && S.dkey === key) open();
+}
+/** Coupe redessinée (taille de la zone, curseur, design) sans relire la prévision. */
+function redrawWeather() {
+  if (S?.dpanel === 'weather') openData('weather', S.dkey, S.dtitle, weatherBuild(S.dkey), S.dlabel);
+}
+/** Le vol a changé, la feuille vient de naître ou revient d'un contenu : la coupe suit le choix « Profil · Météo ». */
+function syncView() {
+  if (!canWeather()) {
+    if (S.dpanel === 'weather') endData('weather');
+    return dataHead();
+  }
+  if (S.dpanel === 'weather') showWeather();
+  else if (!S.dpanel && viewKeep === 'weather' && S.sh.pos !== 'collapsed') showWeather();
+  else {
+    // feuille réduite à l'arrivée : le profil s'ouvrira avec elle, le choix de la coupe n'est pas rejoué à son insu
+    if (!S.dpanel && viewKeep === 'weather') viewKeep = 'profile';
+    dataHead();
+  }
 }
 /** Toucher ou clic sur la carte en (x, y) : la même infobulle qu'au survol, posée là, gardée 5 s, remplacée par la
- *  suivante ; rien dessous : l'infobulle se ferme. Plusieurs espaces superposés sous le point (ni barbule ni voie sous le
- *  doigt) : la carte des niveaux, qui reste jusqu'au toucher suivant. Vrai si quelque chose est montré. */
+ *  suivante ; rien dessous : l'infobulle se ferme. Un espace ou plus sous le point (ni barbule ni voie sous le doigt) : leur
+ *  liste dans le bloc de données, qui reste jusqu'à ✕, Échap ou un toucher sur un endroit vide. Vrai si quelque chose est
+ *  montré. */
 function mapTip(lat, lon, x, y) {
   // une barbule ou une voie sous le doigt passent avant ; un libellé d'espace, non (son espace est dans la carte)
   if (!windAt(x, y) && !MapsRender.airwaysAt(S.awHits, x, y).length) {
     const list = MapsRender.airspacesAt(S.data?.data?.airspaces || [], lat, lon);
-    // un espace ou plus sous le point : la carte des niveaux, qui reste (✕, Échap) ; un autre toucher la remplace
+    // un espace ou plus sous le point : leur liste dans le bloc de données, qui reste (✕, Échap, un toucher sur un endroit vide) ;
+    // un autre toucher sur des espaces la remplace
     if (list.length) {
       hideTips();
-      showTip(S.lvCardEl, S.box, x, y, levelsHtml(list));
+      S.lvList = list;
+      showLv();
       return true;
     }
   }
@@ -2622,7 +3180,7 @@ async function setPreset(v) {
   saveUi();
   const before = styleFor();
   S.profile = effectiveProfile();
-  if (!S.layersEl.hidden) fillLayers();
+  if (S.dpanel === 'layers') fillLayers();
   S.data = null;
   if (S.map && styleFor() !== before) S.map.setStyle(styleFor()); // relief posé au chargement du style
   else relief();
@@ -2632,57 +3190,125 @@ async function setPreset(v) {
 }
 
 // ---------------------------------------------------------------- écran
-/** Messages de l'état (vol, base, zone hors ligne, fond) ; écrits seulement s'ils changent. */
+/** Notification flottante dite une fois par montage (pas à chaque rafraîchissement) ; la ligne reste lisible dans les notes
+ *  de la feuille. */
+function noteOnce(k, text) {
+  if (S.noted[k]) return;
+  S.noted[k] = true;
+  S.ctx.notify?.(text, 'warn');
+}
+/** Notes de la feuille : la progression du vol, puis les manques (base, zone, profil), puis l'information (fond uni,
+ *  relief) ; écrites seulement si elles changent. */
+function writeNotes() {
+  const html = [S.progHtml, S.warnHtml, S.softHtml].filter(Boolean).join('');
+  if (S.notesEl.innerHTML !== html) S.notesEl.innerHTML = html;
+}
+/** Messages de l'état (vol, base, zone hors ligne, fond) ; écrits seulement s'ils changent. Rien sur la carte en
+ *  permanence : l'état vide (pas de vol, mission sans carte, erreur) est une carte posée sur la zone de la carte, les
+ *  manques sont dits une fois en notification et restent lisibles dans les notes de la feuille. */
 async function status() {
   if (!S) return;
-  const out = [];
-  if (S.missionError) out.push(`<p>${esc(S.missionError)}</p>`);
+  const empty = [],
+    warn = [];
+  if (S.missionError) empty.push(`<p>${esc(S.missionError)}</p>`);
   else if (S.mission) {
-    if (!S.mission.maps.length) out.push(`<p class="f-muted">${esc(tt(TX.noMaps))}</p>`);
-    if (S.profileSource && S.profileSource !== 'copy') out.push(`<p class="f-muted">${esc(tt(TX.builtin, {
+    if (!S.mission.maps.length) empty.push(`<p class="f-muted">${esc(tt(TX.noMaps))}</p>`);
+    if (S.profileSource && S.profileSource !== 'copy') warn.push(`<p class="f-muted">${esc(tt(TX.builtin, {
       p: S.profile?.name || S.profile?.id || ''
     }))}</p>`);
     const cyc = S.mapDef?.cycle,
       now = (await S.ctx.aerodb?.status().catch(() => null))?.cycle;
-    if (S.mapDef?.cycle && now && S.mapDef.cycle !== now) out.push(`<p class="f-muted">${esc(tt(TX.cycleDiff, {
+    if (S.mapDef?.cycle && now && S.mapDef.cycle !== now) warn.push(`<p class="f-muted">${esc(tt(TX.cycleDiff, {
       a: cyc,
       b: now
     }))}</p>`);
-  } else if (!S.route.points.length) out.push(
+  } else if (!S.route.points.length) empty.push(
     `<p>${esc(tt(TX.noFlight))} <button type="button" class="f-btn" data-go="fuel">${esc(tt(TX.toFuel))}</button></p>`);
+  if (!S) return;
   if (!S.missionError && S.route.points.length) {
-    const st = await S.ctx.aerodb?.status().catch(() => null);
-    if (!st?.published || !Object.keys(st.published).length) out.push(`<p>${esc(tt(TX.noBase))}</p>`);
-    else if (S.data?.empty && navigator.onLine === false) out.push(
+    const a = S.ctx.aerodb,
+      read = a?.status().catch(() => null); // lance la lecture de la liste publiée (attendue plus bas)
+    const was = await a?.state?.().catch(() => null);
+    if (!S) return;
+    if (was?.state === 'loading') { // la lecture est en cours : dit tel quel, la note change à la fin de la lecture
+      S.warnHtml = [...warn, `<p class="f-muted">${esc(tt(TX.loading, { z: was.loading?.length ? ` (${was.loading.join(', ')})` : '' }))}</p>`].join('');
+      writeNotes();
+    }
+    const st = await read;
+    const now = await a?.state?.().catch(() => null);
+    if (!S) return;
+    if (now?.state === 'loading') warn.push(
+      `<p class="f-muted">${esc(tt(TX.loading, { z: now.loading?.length ? ` (${now.loading.join(', ')})` : '' }))}</p>`);
+    else if (!st?.published || !Object.keys(st.published).length) {
+      // la ligne d'état a disparu : cette note est le seul chemin vers le réglage de la base ; la cause d'abord : accès aux
+      // données non réglé ici (rien à lire), hors ligne, sinon l'accès marche et la base n'est pas publiée
+      const noAccess = now?.state === 'noaccess',
+        offline = now?.state === 'offline',
+        tx = noAccess ? TX.noAccess : offline ? TX.noZone : TX.noBase,
+        go = noAccess ? TX.toAccess : TX.toSettings;
+      warn.push(`<p>${esc(tt(tx))} <button type="button" class="f-btn" data-go="settings">${esc(tt(go))}</button></p>`);
+      if (!offline) noteOnce(noAccess ? 'noAccess' : 'noBase', tt(tx));
+    } else if (S.data?.empty && navigator.onLine === false) warn.push(
       `<p>${esc(tt(TX.noZone))} <button type="button" class="f-btn" data-go="settings">${esc(tt(TX.toSettings))}</button></p>`);
   }
-  if (S.plain && S.route.points.length) out.push(`<p class="f-muted">${esc(tt(TX.plain))}</p>`);
-  if (S.prof && !S.prof.terrainOk) out.push(`<p class="f-muted">${esc(tt(TX.noTerrain))}</p>`);
-  const html = out.join('');
+  // pour information (fond uni, relief absent : l'état normal hors ligne)
+  const soft = [];
+  if (S.plain && S.route.points.length) soft.push(`<p>${esc(tt(TX.plain))}</p>`);
+  if (S.prof && !S.prof.terrainOk) soft.push(`<p>${esc(tt(TX.noTerrain))}</p>`);
+  const html = empty.join('');
+  S.warnHtml = warn.join('');
+  S.softHtml = soft.join('');
   if (S.stEl.innerHTML !== html) S.stEl.innerHTML = html;
+  if (S.stEl.hidden === !!html) S.stEl.hidden = !html;
+  writeNotes();
 }
-/** En-tête : départ → arrivée, dégagement, niveau, distance. */
+/** Résumé du vol (ou de la carte de mission) : il est le titre de la poignée de la feuille quand elle montre le profil
+ *  (dataHead) ; la ligne entière en infobulle. Écrit seulement s'il change. */
 function header() {
+  let text, tip;
   if (S.mission) {
-    const m = S.mapDef,
-      text = [S.mission.id, S.mission.title, m ? m.description || m.file : ''].filter(Boolean).join(' · ');
-    if (S.hdEl.textContent !== text) S.hdEl.textContent = text;
-    return;
-  }
-  const f = S.route.flight,
-    r = f?.route || {},
-    lvl = S.route.levelFt ? formatLevel(S.route.levelFt) : '',
-    d = S.route.points.length >= 2 ? MapsRender.distances(S.route.points).pop() : 0,
-    parts = [r.dep || r.arr ? tt(TX.summary, {
-      dep: r.dep || '?',
-      arr: r.arr || '?'
-    }) : '', r.altn ? tt(TX.altn, {
+    const m = S.mapDef;
+    text = tip = [S.mission.id, S.mission.title, m ? m.description || m.file : ''].filter(Boolean).join(' · ');
+  } else {
+    const f = S.route.flight,
+      r = f?.route || {},
+      lvl = S.route.levelFt ? formatLevel(S.route.levelFt) : '',
+      d = S.route.points.length >= 2 ? MapsRender.distances(S.route.points).pop() : 0,
+      state = S.route.points.length ? tt(inFlight(f) ? TX.stFlying : TX.stPlanned) : '',
+      ends = r.dep || r.arr ? tt(TX.summary, {
+        dep: r.dep || '?',
+        arr: r.arr || '?'
+      }) : '',
+      dist = d ? tt(TX.dist, {
+        d: Math.round(d)
+      }) : '';
+    // le titre tient sur une ligne de téléphone : niveau, distance, état ; départ → arrivée, dégagement et appareil en infobulle
+    text = [lvl, dist, state].filter(Boolean).join(' · ');
+    tip = [ends, r.altn ? tt(TX.altn, {
       a: r.altn
-    }) : '', lvl, d ? tt(TX.dist, {
-      d: Math.round(d)
-    }) : '', f?.aircraft?.type || ''].filter(Boolean),
-    text = parts.join(' · ');
-  if (S.hdEl.textContent !== text) S.hdEl.textContent = text;
+    }) : '', lvl, dist, f?.aircraft?.type || '', state].filter(Boolean).join(' · ');
+  }
+  if (S.sum === text && S.sumTip === tip) return;
+  S.sum = text;
+  S.sumTip = tip;
+  dataHead();
+}
+/** Carte montrée ou carte vide (pas de vol, mission sans carte : l'état vide la remplace) : les boutons de la couche de
+ *  superposition qui n'ont pas de sens sans vol suivent (« Recentrer », la route, les modes, Modifier) ; les modes et
+ *  Modifier n'existent pas pour une carte de mission. Écrit seulement ce qui change. */
+function showBox(on) {
+  const flight = on && !S.ctx.query?.mission;
+  for (const [e, v] of [
+      [S.fitBtn, on],
+      [S.routeBtn, flight],
+      [S.modeBtn, flight],
+      [S.editBtn, flight]
+    ])
+    if (e.hidden === v) e.hidden = !v;
+  if (!flight) {
+    closePanels();
+    if (S.edit.on) setEdit(false);
+  }
 }
 /** Vol (re)lu : profil selon le niveau, emprise, marques, données, fond. */
 /** Profil d'affichage du vol selon le préréglage : IFR bas ou haut (voies, espaces de la tranche, MORA, balises), VFR
@@ -2690,21 +3316,43 @@ function header() {
 function flightProfile() {
   return withRepo(builtinProfile());
 }
+/** Familles de modes pour les seuils de la compagnie : un mode jamais réglé reprend ceux d'un mode réglé (voir repoZoom). */
+const IFR_MODES = ['auto', 'low', 'high', 'cam'],
+  VFR_MODES = ['vfr', 'topo'];
+/** Seuils de zoom que la compagnie a réglés pour un mode (airline/map_profiles.json, profiles[mode].elements.zoom) :
+ *  { zoom, from } ; from est le mode dont ils viennent. Un mode que la page de réglage n'a jamais enregistré reprend, dans
+ *  l'ordre, ceux d'un autre mode de sa famille (IFR : Auto, IFR bas, IFR haut, CAM ; VFR : VFR, Topo), puis, pour un mode
+ *  IFR seulement (le couloir de la route y éclaircit déjà la carte), ceux de la famille VFR, plus stricte. Sans cela, un
+ *  administrateur qui n'a réglé que VFR voit Auto garder les valeurs intégrées, plus larges (24 Oct 2026). null : rien de
+ *  réglé, valeurs intégrées. */
+function repoZoom(mode) {
+  const P = S.repoProfiles,
+    own = m => P?.[m]?.elements?.zoom && typeof P[m].elements.zoom === 'object' ? P[m].elements.zoom : null,
+    fam = VFR_MODES.includes(mode) ? VFR_MODES : IFR_MODES,
+    order = [mode, ...fam.filter(m => m !== mode), ...(fam === IFR_MODES ? VFR_MODES : [])],
+    from = order.find(own);
+  return from ? {
+    zoom: own(from),
+    from
+  } : null;
+}
 /** Profil d'un mode affiné par la compagnie (airline/map_profiles.json, profiles[mode] au format profile_def du studio)
- *  posé sur le profil intégré : champs remplacés, éléments fusionnés. */
+ *  posé sur le profil intégré : champs remplacés, éléments fusionnés, seuils de zoom propres au mode ou repris (repoZoom). */
 function withRepo(B) {
-  const own = S.repoProfiles?.[S.preset];
-  if (!own || typeof own !== 'object') return B;
+  const own = S.repoProfiles?.[S.preset],
+    zoom = repoZoom(S.preset)?.zoom;
+  if ((!own || typeof own !== 'object') && !zoom) return B;
+  const O = own && typeof own === 'object' ? own : {};
   return {
     ...B,
-    ...own,
+    ...O,
     id: B.id,
     elements: {
       ...(B.elements || {}),
-      ...(own.elements || {}),
+      ...(O.elements || {}),
       zoom: {
         ...(B.elements?.zoom || {}),
-        ...(own.elements?.zoom || {})
+        ...(zoom || {})
       }
     }
   };
@@ -2838,21 +3486,27 @@ function fillModes() {
       b: tt(TX.modeHelp[S.preset] || TX.modeHelp.auto)
     });
   if (S.modeBtn.innerHTML !== icon) S.modeBtn.innerHTML = icon;
-  if (S.modeBtn.title !== label) {
-    S.modeBtn.title = label;
-    S.modeBtn.setAttribute('aria-label', label);
-  }
+  setLabel(S.modeBtn, label);
   if (S.modeBtn.classList.contains('mp-mil') !== (S.preset === 'cam')) S.modeBtn.classList.toggle('mp-mil');
-  for (const b of S.modesEl.querySelectorAll('[data-mode]')) {
+  for (const b of S.modeOpts.querySelectorAll('[data-mode]')) {
     const v = String(b.dataset.mode === S.preset);
     if (b.getAttribute('aria-pressed') !== v) b.setAttribute('aria-pressed', v);
   }
 }
-/** Grille des modes ouverte ou fermée. */
+/** Choix des modes ouvert ou fermé : un petit panneau ancré à côté du bouton du mode (à sa gauche, à sa hauteur, dans la
+ *  carte) ; les couches se ferment, un seul panneau à la fois. */
 function toggleModes(open = S.modeOpts.hidden) {
   if (S.modeOpts.hidden === !open) return;
   S.modeOpts.hidden = !open;
   S.modeBtn.setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  const b = S.modeBtn.getBoundingClientRect(),
+    r = S.box.getBoundingClientRect(),
+    h = S.modeOpts.offsetHeight,
+    right = Math.round(r.right - b.left + 8);
+  S.modeOpts.style.right = `${right}px`;
+  S.modeOpts.style.maxWidth = `${Math.max(120, Math.round(r.width - right - 8))}px`;
+  S.modeOpts.style.top = `${Math.round(Math.max(8, Math.min(b.top - r.top, r.height - h - 8)))}px`;
 }
 /** Relief ombré (mode Topo) : couche hillshade des tuiles Terrarium (hôte de meta.net), posée sous les libellés du fond,
  *  retirée hors du mode ; rien si le style n'est pas prêt (posée au chargement du style). */
@@ -3048,7 +3702,13 @@ function fillLayers() {
   const L = layersNow();
   for (const c of S.layersEl.querySelectorAll('input[data-layer]')) {
     if (c.type === 'range') {
-      const v = String(Math.round(+L[c.dataset.layer] || 0));
+      // bornes : celles du rendu (MapsRender.DETAIL_MAX), posées une fois les bibliothèques chargées
+      const max = String(MapsRender.DETAIL_MAX),
+        v = String(MapsRender.detailZoom(L[c.dataset.layer]));
+      if (c.max !== max) {
+        c.max = max;
+        c.min = `-${max}`;
+      }
       if (c.value !== v) c.value = v;
       const out = S.layersEl.querySelector('[data-detail-v]'),
         t = +v > 0 ? `+${v}` : v;
@@ -3059,12 +3719,18 @@ function fillLayers() {
     if (c.checked !== v) c.checked = v;
   }
 }
-/** Panneau des couches ouvert ou fermé. */
-function toggleLayers(open = S.layersEl.hidden) {
-  if (S.layersEl.hidden === !open) return;
-  S.layersEl.hidden = !open;
-  S.layersBtn.setAttribute('aria-expanded', String(open));
-  if (open) fillLayers();
+/** Couches : un contenu de la feuille (comme celui d'Atmosphère, V3 § 7.1.6), pas un panneau posé sur la carte. Le titre de
+ *  la poignée est « Couches · <vol> », la croix ramène le profil ; le bouton de la colonne de gauche est pressé tant qu'il
+ *  est ouvert. Le contenu est un élément gardé (ses cases gardent leur focus d'un affichage à l'autre) : openData le pose. */
+function toggleLayers(open = S.dpanel !== 'layers') {
+  if (!open) return endData('layers');
+  if (S.dpanel === 'layers') return;
+  releaseAd(); // un seul contenu à la fois : la surbrillance ne reste pas sans sa fiche
+  fillLayers();
+  const name = tt(S.mission ? TX.pick : TX.layers);
+  openData('layers', 'layers', name, (w, h, el) => {
+    if (S.layersEl.parentNode !== el) el.replaceChildren(S.layersEl);
+  }, name);
 }
 /** Emprise donnée par l'adresse (#maps?view=ouest,sud,est,nord), sinon null. */
 const viewOf = () => {
@@ -3100,7 +3766,6 @@ function tuneSetup(box) {
   S.tuneEl = box;
   S.tuneZoom = {};
   S.tuneRO = matchMedia('(max-width: 599px)').matches;
-  if (!S.el.classList.contains('mp-tuning')) S.el.classList.add('mp-tuning');
   box.addEventListener('input', e => {
     const r = e.target.closest('input[data-z]');
     if (!r || S.tuneRO) return;
@@ -3203,13 +3868,30 @@ function fillTune() {
     ro = S.tuneRO ? ' disabled' : '';
   box.innerHTML = `<h2>${esc(tt(TX.tuneTitle))}</h2><p class="f-muted">${esc(tt(TX.tuneHint))}</p>${S.tuneRO ? `<p class="f-muted"><b>${esc(tt(TX.tuneRO))}</b></p>` : ''}
 <p class="mp-tune-now" data-now></p>
+<p class="f-muted" data-src></p>
 <div class="mp-tune-tabs" role="group">${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-tune-mode="${k}" aria-pressed="${k === S.preset}" title="${esc(modeTitle(S.ctx, k))}" aria-label="${esc(modeTitle(S.ctx, k))}">${icon}</button>`).join('')}</div>
 <div class="mp-tune-rows">${ZOOM_KEYS.map(k => `<div class="mp-tune-row" data-row="${k}"><label class="mp-tune-name" title="${esc(tt(TX.tuneVis, { e: tt(TX.zoomNames[k]), l: tt(TX.layerNames[LAYER_OF[k]]) }))}"><input type="checkbox" data-vis="${LAYER_OF[k]}"${ro}> ${esc(tt(TX.zoomNames[k]))}</label><div class="mp-tune-dual"><span class="mp-tune-mark" aria-hidden="true"></span><input type="range" min="0" max="${Z_MAX}" step="0.25" data-z="${k}" aria-label="${esc(tt(TX.tuneMin, { e: tt(TX.zoomNames[k]) }))}"${ro}><input type="range" min="0" max="${Z_MAX}" step="0.25" data-z="${k}" aria-label="${esc(tt(TX.tuneMax, { e: tt(TX.zoomNames[k]) }))}"${ro}></div><div class="mp-tune-range f-muted" data-range></div></div>`).join('')}</div>
 <div class="f-row"><button type="button" data-tune="resetVis"${ro}>${esc(tt(TX.tuneResetVis))}</button><button type="button" data-tune="reset"${ro}>${esc(tt(TX.tuneResetZoom))}</button><button type="button" data-tune="dev"${ro}>${esc(tt(TX.tuneSaveDev))}</button><button type="button" class="primary" data-tune="co"${ro}>${esc(tt(TX.tuneSaveCo))}</button></div>`;
   for (const k of ZOOM_KEYS) tuneRow(box.querySelector(`[data-row="${k}"]`), k, z[k] || [0, 24]);
   tuneVis();
+  tuneSrc();
   S.tuneMarked = null;
   schedule();
+}
+/** Ligne « d'où viennent les seuils » du mode montré ; écrite seulement si elle change. */
+function tuneSrc() {
+  const r = repoZoom(S.preset),
+    m = tt(TX.presets[S.preset]),
+    t = !r ? tt(TX.tuneSrc.none, {
+      m
+    }) : r.from === S.preset ? tt(TX.tuneSrc.own, {
+      m
+    }) : tt(TX.tuneSrc.from, {
+      m,
+      f: tt(TX.presets[r.from])
+    }),
+    out = S.tuneEl.querySelector('[data-src]');
+  if (out && out.textContent !== t) out.textContent = t;
 }
 /** Cases « visible » de la page de réglage selon les couches du mode (lignes décochées grisées) ; écrit seulement ce qui
  *  change. */
@@ -3223,18 +3905,21 @@ function tuneVis() {
   }
 }
 /** Zoom courant marqué sur chaque curseur, et rappelé en tête (NM par cm) ; écrit seulement s'il change. */
-function markTune(z, lat) {
+function markTune(zReal, zEff, lat, W, H) {
   S.tuneLat = lat;
-  const key = `${z.toFixed(2)}|${lat.toFixed(1)}`;
+  const key = `${zReal.toFixed(2)}|${zEff.toFixed(2)}|${lat.toFixed(1)}|${W}x${H}`;
   if (S.tuneMarked === key) return;
   S.tuneMarked = key;
-  const left = `${Math.max(0, Math.min(100, z / Z_MAX * 100)).toFixed(2)}%`;
+  // la marque est le zoom effectif : c'est lui que les seuils des curseurs comparent
+  const left = `${Math.max(0, Math.min(100, zEff / Z_MAX * 100)).toFixed(2)}%`;
   for (const m of S.tuneEl.querySelectorAll('.mp-tune-mark'))
     if (m.style.left !== left) m.style.left = left;
   const now = S.tuneEl.querySelector('[data-now]'),
     t = tt(TX.tuneNow, {
-      z: z.toFixed(2),
-      s: fmtNm(nmPerCm(z, lat))
+      z: zReal.toFixed(2),
+      e: zEff.toFixed(2),
+      m: Math.round((W + H) / 2),
+      s: fmtNm(nmPerCm(zReal, lat))
     });
   if (now && now.textContent !== t) now.textContent = t;
 }
@@ -3284,11 +3969,13 @@ function progressUpdate() {
     on = inFlight(f),
     a = on ? actualOf(f) : null,
     t0 = Date.parse(f?.started?.at || '');
+  header(); // « vol prévu » devient « vol en cours » dans le titre de la poignée
   if (S.followBtn.hidden === on) S.followBtn.hidden = !on;
   if (!on) {
     S.trail = [];
     if (S.follow) setFollow(false);
-    if (!S.progEl.hidden) S.progEl.hidden = true;
+    S.progHtml = '';
+    writeNotes();
     return;
   }
   const now = Date.now();
@@ -3299,15 +3986,16 @@ function progressUpdate() {
       all[i - 1].lon).slice(-400);
   const st = progressState(),
     html = progressHtml(st);
-  if (S.progEl.innerHTML !== html) S.progEl.innerHTML = html;
-  if (S.progEl.hidden) S.progEl.hidden = false;
+  S.progHtml = html;
+  writeNotes();
+  if (!st.actual) noteOnce('gps', tt(TX.progNoPos)); // une fois par montage ; la ligne et le lien restent dans les notes
   if (S.follow && st.actual && S.map) {
     S.selfMove = true;
     S.map.once('moveend', () => {
       if (S) S.selfMove = false;
     });
     S.map.easeTo({
-      center: [st.actual.lon, st.actual.lat],
+      center: [nearLon(st.actual.lon, S.map.getCenter().lng), st.actual.lat], // la copie du monde où se trouve la vue
       duration: 400
     });
   }
@@ -3322,9 +4010,10 @@ function alongRoute(p) {
     const a = pts[i],
       b = pts[i + 1],
       k = Math.cos((a.lat + b.lat) / 2 * Math.PI / 180),
-      bx = (b.lon - a.lon) * k * 60,
+      bx = dLon(b.lon, a.lon) * k *
+      60, // modulo 360 : la position est lue en [-180, 180[, la route peut passer la ligne de changement de date
       by = (b.lat - a.lat) * 60,
-      px = (p.lon - a.lon) * k * 60,
+      px = dLon(p.lon, a.lon) * k * 60,
       py = (p.lat - a.lat) * 60,
       L2 = bx * bx + by * by || 1e-9,
       t = Math.max(0, Math.min(1, (px * bx + py * by) / L2)),
@@ -3385,7 +4074,7 @@ const nmTxt = v => v.toLocaleString(S.ctx.lang(), {
   minimumFractionDigits: v < 10 ? 1 : 0,
   maximumFractionDigits: v < 10 ? 1 : 0
 });
-/** Ligne d'état du vol démarré (au-dessus de la carte). */
+/** Ligne d'état du vol démarré (dans les notes de la feuille). */
 function progressHtml(st) {
   if (!st.actual) return `<p class="f-muted">${esc(tt(TX.progNoPos))} <a href="#settings">${esc(tt(TX.progSettings))}</a></p>`;
   const parts = [];
@@ -3454,13 +4143,16 @@ function haloText(ctx, t, x, y, col, font = '700 12px Arial,sans-serif', align =
   ctx.fillText(t, x, y);
   ctx.restore();
 }
-/** Points de la route pour le dessin, avec leur heure estimée de près (vol démarré, 300 px par degré et plus) :
+/** Points de la route pour le dessin, avec leur heure estimée de près (300 px par degré et plus) :
  *  progress.eta en liste [{ id, at }] ou en table { id: at } ; heures en UTC (frame/lib/time.js), l'heure locale entre
- *  parenthèses au départ et à l'arrivée seulement. Placée par render avec les libellés de la route. */
+ *  parenthèses au départ et à l'arrivée seulement. Vol démarré : comptées depuis started.at ; sinon depuis la date du vol
+ *  (planned_at, calculées par Carburant, absentes sans date), tant que l'arrivée n'est pas passée. Placée par render avec
+ *  les libellés de la route. */
 function withEta(route, pxDeg) {
   const f = S.route.flight,
-    eta = f?.progress?.eta;
-  if (S.mission || !inFlight(f) || !eta || pxDeg < 300) return route;
+    eta = f?.progress?.eta,
+    last = Array.isArray(eta) ? eta.at(-1)?.at : null;
+  if (S.mission || !eta || pxDeg < 300 || !inFlight(f) && !(Date.parse(last || '') > Date.now())) return route;
   const pts = f.route?.points || [],
     etaOf = (p, i) => Array.isArray(eta) ? (eta[i]?.id === p.id || !eta[i]?.id ? eta[i]?.at : eta.find(e => e.id === p.id)?.at) : eta[p.id];
   return route.map((p, i) => {
@@ -3553,9 +4245,9 @@ function setFollow(on) {
     progressUpdate();
   }
 }
-/** Décalage des seuils en crans : le curseur de complexité, et un cran de moins dans un cadre de moins de 600 px (volet
- *  de la vue double, téléphone). */
-const detailShift = W => (layersNow().detail || 0) - (W < 600 ? 1 : 0);
+/** Décalage des seuils en crans : le curseur de complexité. La taille du cadre (volet de la vue double, téléphone) n'est
+ *  plus un cran fixe : elle corrige le zoom effectif (MapsRender.effectiveZoom). */
+const detailShift = () => layersNow().detail || 0;
 /** Cadre la carte sur le vol (seul mouvement de caméra fait par le module, marqué pour ne pas passer pour celui de
  *  l'utilisateur). */
 function fitMap(animate) {
@@ -3588,11 +4280,18 @@ async function applyFlight(live = false) {
   S.marks = MapsRender.marks(S.route.points);
   S.data = null;
   if (!live) S.cursor = null;
-  S.box.hidden = !S.route.points.length; // pas de vol : pas de carte, le message de l'état
+  showBox(!!S.route.points.length); // pas de vol : pas de carte, le message de l'état
   header();
   const inView = () => {
-      const bb = S.map.getBounds();
-      return all.every(p => p.lon >= bb.getWest() && p.lon <= bb.getEast() && p.lat >= bb.getSouth() && p.lat <= bb.getNorth());
+      const bb = S.map.getBounds(),
+        toC = projNow(),
+        r = S.box.getBoundingClientRect();
+      // à l'écran, pas en longitudes : la vue peut être sur une autre copie du monde que la route (centre à −174° pour une route
+      // de 177° à 195°) ; toC ramène chaque point à la copie de la vue
+      return all.every(p => {
+        const q = toC(p.lat, p.lon);
+        return q.x >= 0 && q.x <= r.width && q.y >= 0 && q.y <= r.height && p.lat >= bb.getSouth() && p.lat <= bb.getNorth();
+      });
     },
     // un autre vol (départ ou arrivée changés) se recadre ; le même vol relu (vue vivante, devis refait par Carburant,
     // geste sur la carte) garde la caméra dès que l'utilisateur a déplacé ou zoomé la carte
@@ -3605,6 +4304,7 @@ async function applyFlight(live = false) {
   progressUpdate();
   schedule();
   buildProfile();
+  syncView();
 }
 
 // ---------------------------------------------------------------- cartes de mission
@@ -3699,7 +4399,7 @@ async function applyMission() {
   S.profile = chosen.profile;
   S.profileSource = chosen.source;
   S.vprofProfile = M?.vprof.profileDef || window.MAPS_PROFILES.find(p => p.id === 'vprof') || null;
-  const pts = M ? await missionRoute(M) : [];
+  const pts = unwrapLons(M ? await missionRoute(M) : []); // cheminement d'un seul tenant au-delà de la ligne de changement de date
   if (!S) return;
   const trace = m?.trace || (M?.vprof.onMap !== false && pts.length > 1 ? 'route' : 'none'),
     shown = trace === 'route' || trace === 'both' ? pts : [];
@@ -3713,7 +4413,7 @@ async function applyMission() {
     levelFt: M?.vprof.cruiseFt || 0,
     updated: `${q.mission}|${m?.file || ''}|${S.missionRev || ''}`
   };
-  S.fit = viewOf() || m?.extent || MapsRender.bboxOf([...pts, ...(M?.points || [])], 10) || {
+  S.fit = viewOf() || m?.extent || MapsRender.bboxOf(unwrapLons([...pts, ...(M?.points || [])]), 10) || {
     w: -5,
     s: 41,
     e: 10,
@@ -3722,7 +4422,7 @@ async function applyMission() {
   S.marks = shown.length > 1 ? MapsRender.marks(shown) : [];
   S.data = null;
   S.cursor = null;
-  S.box.hidden = !M;
+  showBox(!!M);
   header();
   fillPick();
   status();
@@ -3751,55 +4451,59 @@ function go(mission, map) {
 }
 
 const STYLE = `
-[data-module="maps"]{display:flex;flex-direction:column;gap:8px}
-[data-module="maps"] .f-tools{margin-bottom:0}
-[data-module="maps"] .mp-sum{flex:1 1 100%;font-variant-numeric:tabular-nums}
-[data-module="maps"] .mp-picks{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 100%;min-width:0}
-[data-module="maps"] .mp-picks select{min-height:var(--sog-touch);min-width:0;width:100%;flex:1 1 140px;text-overflow:ellipsis}
-[data-module="maps"] .mp-box{position:relative;height:52vh;min-height:260px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:var(--sog-bg);touch-action:none}
+/* L'ÉCRAN EST FIXE (meta.fixed) : la racine est une colonne à la hauteur de la vue du cadre, rien n'en dépasse ni ne fait
+   défiler la page — en-tête du cadre · carte (prend ce qui reste ; ses boutons sont dans la couche de superposition du cadre,
+   frame/INTEGRATION.md § 9.3) · feuille de données de hauteur fixe · barre du cadre ; ce qui est plus grand défile DANS sa zone. La racine est isolée (z-index des boutons de la carte, 3 à 8,
+   gardés sous l'en-tête et la barre du bas du cadre, dans le volet de la vue double aussi). Hors vue fixe (volet,
+   page d'essai) la hauteur est donnée plus bas. */
+[data-module="maps"]{display:flex;flex-direction:column;min-height:0;overflow:hidden;isolation:isolate}
+[data-module="maps"] .mp-sr{position:absolute;top:0;left:0;width:1px;height:1px;margin:0;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+[data-module="maps"] .mp-box{position:relative;flex:1 1 0;min-height:0;border:solid var(--sog-border);border-width:1px 0;overflow:hidden;background:var(--sog-bg);touch-action:none}
 [data-module="maps"] .mp-map{position:absolute;inset:0}
 [data-module="maps"] canvas.mp-over{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-[data-module="maps"] .mp-credit{position:absolute;right:4px;bottom:2px;font-size:10px;color:var(--sog-fg);background:var(--sog-chart-bg);opacity:.85;padding:0 4px;border-radius:var(--sog-radius-s);pointer-events:none}
-[data-module="maps"] .mp-prof{position:relative;height:clamp(200px,30vh,340px);border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:var(--sog-chart-bg);touch-action:pan-y;cursor:crosshair}
+[data-module="maps"] .mp-prof{position:relative;flex:1 1 0;min-height:0;max-height:380px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:var(--sog-chart-bg);touch-action:none;cursor:crosshair}
 [data-module="maps"] .mp-prof canvas{position:absolute;inset:0;width:100%;height:100%}
-[data-module="maps"] .mp-strip{min-height:1.4em;font-size:.92em;font-variant-numeric:tabular-nums}
-[data-module="maps"] .mp-status p{margin:4px 0}
+[data-module="maps"] .mp-strip{flex:none;height:34px;overflow-y:auto;font-size:var(--sog-size-xs);line-height:16px;padding:1px 0;font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-box{container-type:inline-size}
-[data-module="maps"] .mp-modes{position:absolute;left:8px;top:8px;z-index:6;max-width:calc(100% - 16px)}
-[data-module="maps"] .mp-modes[hidden]{display:none}
-[data-module="maps"] .mp-mode-btn,[data-module="maps"] .mp-choice{display:grid;place-items:center;width:var(--sog-touch);height:var(--sog-touch);min-height:0;padding:0;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;cursor:pointer}
-[data-module="maps"] .mp-mode-btn{color:var(--sog-accent)}
-[data-module="maps"] .mp-mode-btn[aria-expanded=true]{box-shadow:inset 0 0 0 1px var(--sog-accent)}
-[data-module="maps"] .mp-mode-opts{display:flex;gap:4px;padding:4px;margin-top:6px;width:max-content;max-width:calc(100cqw - 16px);flex-wrap:wrap;box-sizing:border-box;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);box-shadow:0 4px 12px #0000001f}
+[data-module="maps"] .mp-choice{display:grid;place-items:center;width:var(--sog-touch);height:var(--sog-touch);min-height:0;padding:0;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;cursor:pointer}
+[data-module="maps"] .mp-mode-opts{position:absolute;right:60px;top:8px;z-index:8;display:flex;gap:4px;padding:4px;width:max-content;max-width:calc(100cqw - 16px);flex-wrap:wrap;box-sizing:border-box;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);box-shadow:0 4px 12px #0000001f}
 [data-module="maps"] .mp-mode-opts[hidden]{display:none}
 [data-module="maps"] .mp-choice{border-color:transparent;border-radius:var(--sog-radius-s)}
 [data-module="maps"] .mp-choice:hover{background:color-mix(in srgb,var(--sog-accent) 12%,var(--sog-surface))}
 [data-module="maps"] .mp-choice[aria-pressed=true]{color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface));box-shadow:inset 0 0 0 1.5px var(--sog-accent),inset 0 2px 3px #0000002e}
-[data-module="maps"] .mp-ic{display:grid;place-items:center;width:24px;height:24px}
-[data-module="maps"] .mp-ic svg{width:20px;height:20px}
-[data-module="maps"] .mp-ifr{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:26px;height:20px;font-size:11px;font-weight:700;letter-spacing:.3px;line-height:1}
-[data-module="maps"] .mp-ceil{border-top:2px solid currentColor;padding-top:1px}
-[data-module="maps"] .mp-floor{border-bottom:2px solid currentColor;padding-bottom:1px}
-[data-module="maps"] .mp-topo{display:block;position:relative;box-sizing:border-box;width:29px;height:29px;overflow:hidden;transform:scale(.72)}
-[data-module="maps"] .mp-topo>span{position:absolute;box-sizing:border-box;border:1.6px solid currentColor;border-radius:46% 54% 36% 64% / 36% 62% 38% 64%;transform:rotate(-38deg)}
-[data-module="maps"] .mp-topo>span:nth-child(1){width:40px;height:53px;left:-11px;top:-8px}
-[data-module="maps"] .mp-topo>span:nth-child(2){width:30px;height:41px;left:-6px;top:0}
-[data-module="maps"] .mp-topo>span:nth-child(3){width:20px;height:29px;left:-1px;top:8px}
-[data-module="maps"] .mp-topo>span:nth-child(4){width:10px;height:16px;left:4px;top:16px}
-[data-module="maps"] .mp-mil,[data-module="maps"] .mp-mode-btn.mp-mil{color:var(--sog-err)}
-[data-module="maps"] .mp-ic-cam svg{fill:currentColor}
+:is([data-module="maps"],.f-overlay) .mp-ic{display:grid;place-items:center;width:24px;height:24px}
+:is([data-module="maps"],.f-overlay) .mp-ic svg{width:20px;height:20px}
+:is([data-module="maps"],.f-overlay) .mp-ifr{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:26px;height:20px;font-size:11px;font-weight:700;letter-spacing:.3px;line-height:1}
+:is([data-module="maps"],.f-overlay) .mp-ceil{border-top:2px solid currentColor;padding-top:1px}
+:is([data-module="maps"],.f-overlay) .mp-floor{border-bottom:2px solid currentColor;padding-bottom:1px}
+:is([data-module="maps"],.f-overlay) .mp-topo{display:block;position:relative;box-sizing:border-box;width:29px;height:29px;overflow:hidden;transform:scale(.72)}
+:is([data-module="maps"],.f-overlay) .mp-topo>span{position:absolute;box-sizing:border-box;border:1.6px solid currentColor;border-radius:46% 54% 36% 64% / 36% 62% 38% 64%;transform:rotate(-38deg)}
+:is([data-module="maps"],.f-overlay) .mp-topo>span:nth-child(1){width:40px;height:53px;left:-11px;top:-8px}
+:is([data-module="maps"],.f-overlay) .mp-topo>span:nth-child(2){width:30px;height:41px;left:-6px;top:0}
+:is([data-module="maps"],.f-overlay) .mp-topo>span:nth-child(3){width:20px;height:29px;left:-1px;top:8px}
+:is([data-module="maps"],.f-overlay) .mp-topo>span:nth-child(4){width:10px;height:16px;left:4px;top:16px}
+[data-module="maps"] .mp-mil{color:var(--sog-err)}
+:is([data-module="maps"],.f-overlay) .mp-ic-cam svg{fill:currentColor}
 [data-module="maps"] .mp-mil:hover,[data-module="maps"] .mp-choice.mp-mil[aria-pressed=true]{background:color-mix(in srgb,var(--sog-err) 12%,var(--sog-surface));color:var(--sog-err);box-shadow:inset 0 0 0 1.5px var(--sog-err),inset 0 2px 3px #0000002e}
 [data-module="maps"] .mp-tip{position:absolute;z-index:4;max-width:min(92%,340px);padding:6px 8px;margin:0;font-size:.88em;line-height:1.35;pointer-events:none;box-shadow:0 2px 8px #0003}
 [data-module="maps"] .mp-tip>div+div{margin-top:4px}
 [data-module="maps"] .mp-tip.mp-hover{max-width:min(80%,320px);padding:3px 6px;font-size:11.5px;line-height:1.3;background:color-mix(in srgb,var(--sog-chart-bg) 65%,transparent);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);box-shadow:none}
 [data-module="maps"] .mp-tip.mp-hover>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
-[data-module="maps"] .mp-layers-btn{position:absolute;left:8px;top:calc(14px + var(--sog-touch));z-index:3;width:var(--sog-touch);height:var(--sog-touch);min-height:0;display:grid;place-items:center;padding:0}
-[data-module="maps"] .mp-layers{position:absolute;left:8px;top:calc(20px + 2 * var(--sog-touch));z-index:5;margin:0;padding:8px 10px;max-height:calc(100% - 28px - 2 * var(--sog-touch));overflow:auto;display:flex;flex-direction:column;gap:0;font-size:.9em;min-width:min(220px,80%)}
+/* les couches : un contenu de la feuille (grille de cases sur deux colonnes d'un téléphone, comme celle d'Atmosphère) */
+[data-module="maps"] .mp-layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 16px;font-size:.92em}
+[data-module="maps"] .mp-layers .mp-picks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px;min-width:0}
+[data-module="maps"] .mp-layers .mp-picks select{min-height:var(--sog-touch);min-width:0;width:100%;flex:1 1 150px;text-overflow:ellipsis}
+[data-module="maps"] .mp-layers .mp-picks select[hidden]{display:none}
+[data-module="maps"] .mp-layer-set{display:contents}
+[data-module="maps"] .mp-layers .mp-layer-set[hidden]{display:none}
+[data-module="maps"] .mp-layers [data-layers-reset]{grid-column:1/-1;justify-self:start;margin-top:8px}
 [data-module="maps"] .mp-layers label{display:flex;gap:8px;align-items:center;min-height:32px}
-[data-module="maps"] .mp-layers .mp-l-main{border-bottom:1px solid var(--sog-border);margin-bottom:4px;padding-bottom:4px}
-[data-module="maps"] .mp-layers .mp-l-detail{flex-wrap:wrap;border-top:1px solid var(--sog-border);margin-top:4px;padding-top:6px}
-[data-module="maps"] .mp-layers .mp-l-detail input{flex:1 1 100%;margin:4px 0 0}
-[data-module="maps"] .mp-layers .mp-l-help{font-size:.85em;margin-bottom:2px}
+[data-module="maps"] .mp-layers .mp-l-main{grid-column:1/-1;border-bottom:1px solid var(--sog-border);margin-bottom:4px;padding-bottom:4px}
+/* Complexité : libellé, valeur et curseur sur UNE ligne de 44 px (le bloc faisait 73 px, plus 51 de phrase d'aide) ; l'aide reste
+   dans l'infobulle du libellé et pour le lecteur d'écran (.mp-l-help, hors page), sans réserver de hauteur */
+[data-module="maps"] .mp-layers .mp-l-detail{grid-column:1/-1;flex-wrap:nowrap;min-height:44px;margin:0 0 4px;padding:0 0 4px;border-bottom:1px solid var(--sog-border);box-sizing:border-box}
+[data-module="maps"] .mp-layers .mp-l-detail input{flex:1 1 auto;min-width:90px;margin:0}
+[data-module="maps"] .mp-layers .mp-l-help{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 [data-module="maps"] .mp-tune h2{margin:0 0 4px;font-size:1.1em}
 [data-module="maps"] .mp-tune-now{font-variant-numeric:tabular-nums;margin:4px 0}
 [data-module="maps"] .mp-tune-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 10px}
@@ -3815,45 +4519,216 @@ const STYLE = `
 [data-module="maps"] .mp-tune-dual input:disabled::-webkit-slider-thumb{background:var(--sog-muted);box-shadow:none;cursor:default}
 [data-module="maps"] .mp-tune-dual::before{content:'';position:absolute;left:0;right:0;top:13px;height:2px;background:var(--sog-border)}
 [data-module="maps"] .mp-tune-mark{position:absolute;top:6px;width:2px;height:16px;margin-left:-1px;background:var(--sog-err)}
-@media (min-width:1000px){[data-module="maps"].mp-tuning{display:grid;grid-template-columns:minmax(380px,440px) minmax(0,1fr);column-gap:16px;align-items:start}[data-module="maps"].mp-tuning>*{grid-column:2}[data-module="maps"].mp-tuning>.mp-tune{grid-column:1;grid-row:1 / span 40;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}}
-[data-module="maps"] .mp-layers>*{flex-shrink:0}
-[data-module="maps"] .mp-layers [data-layers-reset]{margin-top:10px;align-self:flex-start}
-[data-module="maps"] .mp-layers[hidden],[data-module="maps"] .mp-layers-btn[hidden]{display:none}
-[data-module="maps"] .mp-editbar{position:absolute;right:8px;top:8px;z-index:6;display:flex;gap:6px}
-[data-module="maps"] .mp-editbar[hidden],[data-module="maps"] .mp-editbar [hidden]{display:none}
-[data-module="maps"] .mp-editbar button{height:var(--sog-touch);min-height:0;padding:0 12px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;font-weight:600;cursor:pointer}
-[data-module="maps"] .mp-editbar .mp-add{width:var(--sog-touch);padding:0;font-size:1.3em}
-[data-module="maps"] .mp-editbar .mp-add[aria-pressed=true]{background:var(--sog-accent);border-color:var(--sog-accent);color:var(--sog-surface)}
-[data-module="maps"] .mp-editbar .mp-follow[aria-pressed=true]{background:var(--sog-accent);border-color:var(--sog-accent);color:var(--sog-surface)}
-[data-module="maps"] .mp-progress{font-variant-numeric:tabular-nums}
-[data-module="maps"] .mp-progress b{font-weight:700}
-[data-module="maps"] .mp-progress .mp-stale{color:var(--sog-muted)}
-[data-module="maps"] .mp-editbar .mp-edit[aria-pressed=true]{background:var(--sog-accent);border-color:var(--sog-accent);color:var(--sog-surface)}
-[data-module="maps"] .mp-editbar button:disabled{opacity:.5;cursor:default}
+/* page de réglage (#maps?tune=1) : une page qui défile, mais DANS la racine fixe (la vue du cadre ne défile pas) : blocs en
+   hauteur naturelle, la carte retrouve une hauteur d'écran, le panneau de seuils à côté sur grand écran */
+[data-module="maps"].mp-tuning{overflow:auto}
+[data-module="maps"].mp-tuning>*{flex:none}
+[data-module="maps"].mp-tuning .mp-box{height:52vh;min-height:260px}
+[data-module="maps"].mp-tuning[data-sheet] .mp-data{height:auto;transition:none}
+[data-module="maps"].mp-tuning .mp-dprof{flex:none}
+[data-module="maps"].mp-tuning .mp-prof{flex:none;height:240px}
+[data-module="maps"].mp-tuning .mp-dbody{flex:none;height:260px}
+/* la règle de la vue fixe du cadre (display: flex) est sans poids (:where, frame/INTEGRATION.md § 9.2) : pas de !important */
+@media (min-width:1000px){[data-module="maps"].mp-tuning{display:grid;grid-template-columns:minmax(380px,440px) minmax(0,1fr);column-gap:16px;align-items:start;align-content:start}[data-module="maps"].mp-tuning>*{grid-column:2}[data-module="maps"].mp-tuning>.mp-tune{grid-column:1;grid-row:1 / span 40;position:sticky;top:8px;max-height:calc(100dvh - 90px);overflow:auto}}
+.f-overlay button.f-ov-btn[data-mp]:disabled{opacity:.5;cursor:default}
+.f-overlay button.f-ov-btn[data-mp=mode]{color:var(--sog-accent)}
+.f-overlay button.f-ov-btn[data-mp=mode].mp-mil{color:var(--sog-err)}
+.f-overlay button.f-ov-btn[data-mp=mode][aria-expanded=true]{box-shadow:0 0 0 1px var(--sog-accent),0 2px 8px #0000002e}
+.f-overlay button.f-ov-btn[data-mp=layers][aria-expanded=true]{border-color:var(--sog-accent)}
+/* l'état vide (pas de vol, mission sans carte, erreur) : une carte au milieu de la zone de la carte, entre les deux colonnes de boutons */
+[data-module="maps"] .mp-empty{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;box-sizing:border-box;width:min(320px,calc(100% - 120px));margin:0;padding:10px 12px;text-align:center}
+[data-module="maps"] .mp-empty[hidden]{display:none}
+[data-module="maps"] .mp-empty p{margin:0 0 4px}
+[data-module="maps"] .mp-empty p:last-child{margin:0}
+[data-module="maps"] .mp-empty p:has(button){display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px}
+[data-module="maps"] .mp-notes p:has(button){display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+[data-module="maps"] .mp-notes b{font-weight:700}
+[data-module="maps"] .mp-notes .mp-stale{color:var(--sog-muted)}
 [data-module="maps"] .mp-pcard{pointer-events:auto;display:flex;flex-direction:column;gap:4px;min-width:140px}
 [data-module="maps"] .mp-pcard[hidden]{display:none}
-[data-module="maps"] .mp-adcard{z-index:5}
-[data-module="maps"] .mp-adclose{position:absolute;top:2px;right:2px;width:44px;height:44px;min-height:0;padding:0;border:0;background:none;font-size:1.2em;line-height:1;cursor:pointer;color:inherit}
-[data-module="maps"] .mp-adhead{padding-right:40px}
 [data-module="maps"] .mp-vfr-focus{font-weight:700;background:color-mix(in srgb,var(--sog-accent) 12%,transparent)}
 [data-module="maps"] .mp-pcard .f-btn{align-self:flex-start;margin-top:4px}
-[data-module="maps"] .mp-pcard:has(.mp-vfr-warn){width:min(92%,360px);max-height:calc(100% - 12px);overflow:auto}
 [data-module="maps"] .mp-vfr-warn{margin:0;font-size:.9em;color:#00695c;font-style:italic}
 [data-module="maps"] .mp-vfr-seq{margin:2px 0 4px;padding-left:1.2em}
-[data-module="maps"] .mp-vfr-pts{margin:2px 0 6px;padding:0;list-style:none}
-[data-module="maps"] .mp-vfr-pts li{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+[data-module="maps"] .mp-vfr-pts{margin:2px 0 6px;padding:0;list-style:none;column-width:19em;column-gap:16px}
+[data-module="maps"] .mp-vfr-pts li{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;break-inside:avoid}
 [data-module="maps"] .mp-vfr-dot{display:inline-block;width:.6em;height:.6em;border-radius:50%;flex:none}
 [data-module="maps"] .mp-vfr-note summary{cursor:pointer}
 [data-module="maps"] .mp-vfr-note>div{white-space:pre-wrap;font-size:.85em;max-height:14em;overflow:auto;border-left:2px solid var(--sog-border);padding-left:6px}
-[data-module="maps"] .mp-pcard:has(.mp-lv){width:min(92%,320px);max-height:calc(100% - 12px);overflow:auto}
-[data-module="maps"] .mp-lv{width:100%;height:auto;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
-[data-module="maps"] .mp-lv-list{margin:2px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
-[data-module="maps"] .mp-lv-list li{display:flex;gap:6px;align-items:baseline}
+/* la feuille de données : la primitive du cadre (frame/design/primitives.css : .f-sheet, .f-sheet-panel, .f-sheet-head, .f-sheet-grip,
+   hauteurs --f-sheet-*, glisser, positions) ; ici seulement ce qu'elle contient : en-tête de 44 px (la poignée : titre de ce qu'elle
+   montre ; la bascule Profil · Météo ; le ✕ d'un contenu à droite), puis le profil vertical (sa bande dessous) ou le contenu ouvert
+   à sa place, puis les notes ; le contenu défile dedans */
+[data-module="maps"] .mp-dprof{flex:1 1 0;min-height:0;display:flex;flex-direction:column;padding:0 4px}
+[data-module="maps"] .mp-notes{flex:none;max-height:5.5em;overflow:auto;padding:0 8px 6px;font-size:var(--sog-size-xs);font-variant-numeric:tabular-nums}
+[data-module="maps"] .mp-notes p{margin:0 0 2px}
+[data-module="maps"] .mp-notes:empty{display:none}
+/* Les puces Profil · Météo (§ 7.1.13, 2e et 3e affinements) : avec la poignée NUE (position par défaut, portrait) une COLONNE de 44 px à
+   droite du dessin, sous la poignée (le dessin reçoit la marge droite, mp-chipcol) ; dès que la LIGNE DE TITRE est là (agrandie, réduite,
+   colonne paysage) elles reviennent dans cette ligne, à droite, en rangée, et le dessin prend toute la largeur. Les puces sont posées sur
+   le panneau (hors de la zone de glisser) ; la poignée leur laisse la place (marge droite du titre). Puces de 40 px, pas de 44 px. */
+[data-module="maps"] .mp-chips{position:absolute;z-index:2;right:0;top:0;height:calc(var(--f-sheet-head) - 1px);box-sizing:border-box;display:flex;flex-direction:row;align-items:center;gap:4px;padding-right:2px}
+[data-module="maps"] .mp-chips[hidden],[data-module="maps"] .mp-chips .mp-chip[hidden]{display:none}
+[data-module="maps"] .mp-dhead.f-sheet-head-bare+.mp-chips{top:var(--f-sheet-head-bare);height:auto;width:44px;flex-direction:column;justify-content:flex-start;padding:2px 0 0}
+[data-module="maps"] .mp-chipcol .mp-dhead:not(.f-sheet-head-bare) .f-sheet-grip{padding-right:136px}
+[data-module="maps"] .mp-chips .mp-chip{box-sizing:border-box;display:grid;place-items:center;width:40px;height:40px;min-height:0;margin:0;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:none;color:var(--sog-muted);box-shadow:none;cursor:pointer;touch-action:manipulation}
+[data-module="maps"] .mp-chipcol .mp-dhead.f-sheet-head-bare~:is(.mp-dprof,.mp-dbody[data-kind=weather]){margin-right:44px}
+[data-module="maps"] .mp-chips .mp-chip .f-icon{width:20px;height:20px}
+/* légende : un panneau translucide sur le dessin (sous la puce « i » et ses voisines), fermé par la puce, un toucher ou Échap */
+[data-module="maps"] .mp-legend{position:absolute;z-index:1;left:4px;right:4px;bottom:0;top:calc(var(--f-sheet-head) - 1px);box-sizing:border-box;overflow:auto;padding:8px 10px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:color-mix(in srgb,var(--sog-surface) 86%,transparent);font-size:var(--sog-size-xs);line-height:1.3;touch-action:pan-y}
+[data-module="maps"] .mp-legend[hidden]{display:none}
+[data-module="maps"] .mp-dhead.f-sheet-head-bare~.mp-legend{top:var(--f-sheet-head-bare);right:48px}
+[data-module="maps"] .mp-legend ul{margin:0;padding:0;list-style:none}
+[data-module="maps"] .mp-legend li{display:flex;align-items:center;gap:8px;min-height:20px}
+[data-module="maps"] .mp-lg-sw{flex:none;position:relative;display:block;width:26px;height:12px;--c:#888}
+[data-module="maps"] .mp-lg-line::after{content:'';position:absolute;left:0;right:0;top:4px;height:3px;border-radius:2px;background:var(--c)}
+[data-module="maps"] .mp-lg-dash::after{content:'';position:absolute;left:0;right:0;top:5px;border-top:2px dashed var(--c)}
+[data-module="maps"] .mp-lg-vdash::after{content:'';position:absolute;left:12px;top:-2px;height:16px;border-left:1.5px dashed var(--c)}
+[data-module="maps"] .mp-lg-diamond::after{content:'';position:absolute;left:8px;top:1px;width:9px;height:9px;transform:rotate(45deg);background:var(--c)}
+[data-module="maps"] .mp-lg-relief{background:linear-gradient(var(--c),color-mix(in srgb,var(--c) 45%,#fff));border-top:1.5px solid #7a5a32}
+[data-module="maps"] .mp-lg-band{background:color-mix(in srgb,var(--c) 16%,transparent);border:1.2px solid var(--c);box-sizing:border-box}
+[data-module="maps"] .mp-lg-tick::after{content:'';position:absolute;left:12px;top:2px;height:8px;border-left:2px solid var(--c)}
+[data-module="maps"] .mp-lg-tri::after{content:'';position:absolute;left:8px;top:1px;border:5px solid transparent;border-bottom:9px solid var(--c);border-top:0}
+[data-module="maps"] .mp-chips .mp-chip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
+[data-module="maps"] .mp-data[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}
+/* la coupe est dessinée à la hauteur exacte du corps, sans bord ni remplissage (§ 7.1.13) : l'axe des distances est toujours visible ;
+   le défilement n'est qu'un filet de sécurité si drawSection relevait un jour sa hauteur */
+[data-module="maps"] .mp-dbody[data-kind=weather]{overflow-x:hidden;overflow-y:auto;margin:0 4px;padding:0;border:0}
+/* position par défaut : le corps de la feuille ne montre que le dessin (profil ou coupe), à toute sa hauteur ; la ligne de texte
+   et les notes n'apparaissent qu'agrandie, sous le dessin (spécification § 7.1.9). Repliée, le cadre cache déjà tout sauf la poignée.
+   La page de réglage (mp-tuning) garde tout. Le profil est dessiné à la hauteur exacte de son bloc (pas de plancher, § 7.1.13). */
+[data-module="maps"].f-sheet:not([data-sheet="expanded"],.mp-tuning) :is(.mp-strip,.mp-notes){display:none}
+[data-module="maps"] .mp-dprof{overflow:hidden}
+[data-module="maps"] .mp-dbody[data-kind=weather] svg{display:block;cursor:crosshair}
+[data-module="maps"] .mp-dbody[data-kind=weather]{touch-action:none}
+[data-module="maps"] .mp-wxmsg{margin:0;padding:6px 0}
+[data-module="maps"] .mp-wxlink{display:flex;align-items:center;min-height:var(--sog-touch);color:var(--sog-fg);text-decoration:none}
+[data-module="maps"] .mp-wxlink span{color:var(--sog-accent);text-decoration:underline}
+[data-module="maps"] .mp-dbody{box-sizing:border-box;margin:0 8px 8px;padding:6px 8px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);font-size:.92em;line-height:1.35}
+[data-module="maps"] .mp-dbody p{margin:2px 0}
+[data-module="maps"] .mp-lv-body{display:flex;align-items:flex-start;gap:12px}
+[data-module="maps"] .mp-lv{flex:none;position:sticky;top:0;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
+[data-module="maps"] .mp-lv-list{flex:1 1 auto;min-width:0;margin:0;padding:0;list-style:none;column-width:19em;column-gap:16px;font-size:.95em;line-height:1.25}
+[data-module="maps"] .mp-lv-list li{display:flex;gap:6px;align-items:baseline;break-inside:avoid;margin-bottom:2px;min-width:0;white-space:nowrap}
+[data-module="maps"] .mp-lv-name{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+[data-module="maps"] .mp-lv-lim{flex:none;font-size:.92em}
+[data-module="maps"] .mp-lv-n::after{content:" ·";font-weight:400}
+[data-module="maps"] .mp-lv-lim::before{content:"· "}
 [data-module="maps"] .mp-lv-n{font-weight:700;min-width:1.4em;text-align:right}
 [data-module="maps"] .mp-lvl{display:flex;align-items:center;gap:8px}
 [data-module="maps"] .mp-lvl .f-btn{margin:0;min-width:var(--sog-touch);font-weight:700}
-[data-module="maps"].mp-editing .mp-prof{touch-action:none;cursor:ns-resize}
+[data-module="maps"].mp-editing .mp-prof{cursor:ns-resize}
+/* hors de la vue fixe du cadre, la hauteur de la racine est celle du cadre (frame/INTEGRATION.md § 9.2) : le volet de la vue double et,
+   carte à gauche d'un volet, la colonne de la vue ; ici seulement le plancher du module */
+.f-pane>[data-module="maps"],.f-view.f-split>[data-module="maps"]{min-height:420px}
 `;
+
+/** Couche de superposition du module (ctx.overlay : colonnes de boutons posées sur la carte par le cadre ; le bouton plein
+ *  écran y est ajouté par le cadre, en dernier). Hors du cadre (page d'essai) la couche est reconstruite dans la boîte de la
+ *  carte avec les mêmes classes. Droite : la route (vers Carburant), recentrer, mode d'affichage, modifier sur la carte, suivre
+ *  (en vol), « + » et annuler (mode Modifier) ; gauche : les couches. */
+function buildOverlay(ctx) {
+  let ov = ctx.overlay;
+  if (!ov) {
+    const layer = document.createElement('div');
+    layer.className = 'f-overlay';
+    layer.style.inset = '0';
+    layer.innerHTML = '<div class="f-ov-col f-ov-left"></div><div class="f-ov-col f-ov-right"></div>';
+    S.box.append(layer);
+    const [left, right] = layer.children;
+    ov = {
+      left,
+      right,
+      button({
+        icon,
+        label = '',
+        onClick,
+        pressed,
+        side = 'right'
+      } = {}) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'f-ov-btn';
+        b.innerHTML = svg(icon, {
+          size: 22
+        });
+        b.title = label;
+        b.setAttribute('aria-label', label);
+        if (pressed !== undefined) b.setAttribute('aria-pressed', String(!!pressed));
+        if (onClick) b.addEventListener('click', onClick);
+        (side === 'left' ? left : right).append(b);
+        return b;
+      },
+      over() {}
+    };
+  }
+  ov.over(S.box);
+  const btn = (key, o) => {
+    const b = ov.button(o);
+    b.dataset.mp = key; // crochet des règles du module (désactivé, mode)
+    return b;
+  };
+  S.routeBtn = btn('route', {
+    icon: 'edit',
+    label: ctx.t(TX.edit),
+    onClick: () => {
+      closePanels();
+      location.hash = '#fuel?from=maps&focus=route';
+    }
+  });
+  S.fitBtn = btn('fit', {
+    icon: 'target',
+    label: ctx.t(TX.fit),
+    onClick: () => {
+      closePanels();
+      S.userMoved = false; // « Recentrer » : la carte suit de nouveau le vol
+      if (S.map) fitMap(true);
+      else schedule();
+    }
+  });
+  S.modeBtn = btn('mode', {
+    icon: 'map',
+    label: ctx.t(TX.preset),
+    onClick: () => toggleModes()
+  });
+  S.modeBtn.setAttribute('aria-expanded', 'false');
+  S.modeBtn.setAttribute('aria-controls', 'mp-mode-opts');
+  S.editBtn = btn('edit', {
+    icon: 'move4',
+    label: ctx.t(TX.editHelp),
+    pressed: false,
+    onClick: () => setEdit(!S.edit.on)
+  });
+  S.followBtn = btn('follow', {
+    icon: 'plane',
+    label: ctx.t(TX.followHelp),
+    pressed: false,
+    onClick: () => {
+      closePanels();
+      setFollow(!S.follow);
+    }
+  });
+  S.addBtn = btn('add', {
+    icon: 'plus',
+    label: ctx.t(TX.addPoint),
+    pressed: false,
+    onClick: () => setAdding(!S.edit.adding)
+  });
+  S.undoBtn = btn('undo', {
+    icon: 'undo',
+    label: ctx.t(TX.undoHelp),
+    onClick: () => undoEdit()
+  });
+  S.layersBtn = btn('layers', {
+    icon: 'layers',
+    side: 'left',
+    label: ctx.t(ctx.query?.mission ? TX.pick : TX.layers),
+    pressed: false,
+    onClick: () => toggleLayers()
+  });
+  for (const b of [S.followBtn, S.addBtn, S.undoBtn]) b.hidden = true; // suivre : en vol ; « + » et annuler : mode Modifier
+  S.undoBtn.disabled = true;
+}
 
 export async function mount(el, ctx) {
   performance.mark('maps:mount');
@@ -3870,62 +4745,85 @@ export async function mount(el, ctx) {
       points: []
     },
     map: null,
-    plain: false
+    plain: false,
+    noted: {}
   };
+  // une carte de mission n'a pas de couches : le panneau ne garde que le choix de la carte
+  const layersName = ctx.query?.mission ? TX.pick : TX.layers;
   el.innerHTML = `<style>${STYLE}</style>
-<div class="f-tools"><h1>${esc(ctx.t(TX.title))}</h1>
-<button type="button" class="f-btn" data-go="fuel?from=maps&amp;focus=route">${esc(ctx.t(TX.edit))}</button>
-<button type="button" class="f-btn" data-fit>${esc(ctx.t(TX.fit))}</button>
-<div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
-<select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
-<div class="mp-sum f-muted" aria-live="polite"></div></div>
-<div class="mp-progress" hidden aria-live="polite"></div>
+<h1 class="mp-sr">${esc(ctx.t(TX.title))}</h1>
 ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>' : ''}
 <div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
-<div class="mp-modes"><button type="button" class="mp-mode-btn" aria-expanded="false" aria-controls="mp-mode-opts" aria-label="${esc(ctx.t(TX.preset))}"></button>
-<div id="mp-mode-opts" class="mp-mode-opts" role="group" aria-label="${esc(ctx.t(TX.modes))}" hidden>${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-mode="${k}" aria-pressed="false" aria-label="${esc(modeTitle(ctx, k))}" title="${esc(modeTitle(ctx, k))}">${icon}</button>`).join('')}</div></div>
-<button type="button" class="mp-layers-btn" aria-expanded="false" aria-label="${esc(ctx.t(TX.layers))}" title="${esc(ctx.t(TX.layers))}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="m2 13 10 5 10-5"/><path d="m2 17.5 10 5 10-5" opacity=".55"/></svg></button>
-<div class="mp-layers f-card" hidden role="group" aria-label="${esc(ctx.t(TX.layers))}"><b>${esc(ctx.t(TX.layers))}</b>
-${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
-<label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-2" max="2" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
-<span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span>
-<button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div>
-<div class="mp-editbar"><button type="button" class="mp-follow" hidden aria-pressed="false" title="${esc(ctx.t(TX.followHelp))}">${esc(ctx.t(TX.follow))}</button><button type="button" class="mp-add" hidden aria-pressed="false" title="${esc(ctx.t(TX.addPoint))}" aria-label="${esc(ctx.t(TX.addPoint))}">+</button><button type="button" class="mp-undo" hidden disabled title="${esc(ctx.t(TX.undoHelp))}">${esc(ctx.t(TX.undo))}</button><button type="button" class="mp-edit" aria-pressed="false" title="${esc(ctx.t(TX.editHelp))}">${esc(ctx.t(TX.editMode))}</button></div>
+<div id="mp-mode-opts" class="mp-mode-opts" role="group" aria-label="${esc(ctx.t(TX.modes))}" hidden>${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-mode="${k}" aria-pressed="false" aria-label="${esc(modeTitle(ctx, k))}" title="${esc(modeTitle(ctx, k))}">${icon}</button>`).join('')}</div>
+<div class="mp-empty f-card" hidden aria-live="polite"></div>
 <div class="mp-tip f-card" hidden role="tooltip"></div>
-<div class="mp-tip mp-pcard f-card" hidden role="dialog"></div><div class="mp-tip mp-pcard mp-adcard f-card" hidden role="dialog"></div><div class="mp-tip mp-pcard mp-lvcard f-card" hidden role="dialog"></div>
-<div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
-<div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
+<div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
+</div>
+<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div><div class="mp-chips" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-chip" data-view="profile" aria-pressed="true" title="${esc(ctx.t(TX.dataProfile))}" aria-label="${esc(ctx.t(TX.dataProfile))}">${svg('chart', { size: 20 })}</button><button type="button" class="mp-chip" data-view="weather" aria-pressed="false" title="${esc(ctx.t(TX.wxTitle))}" aria-label="${esc(ctx.t(TX.wxTitle))}">${svg('cloud', { size: 20 })}</button><button type="button" class="mp-chip" data-legend aria-pressed="false" hidden title="${esc(ctx.t(TX.legend))}" aria-label="${esc(ctx.t(TX.legend))}">${svg('info', { size: 20 })}</button></div><div class="mp-legend" role="region" hidden aria-label="${esc(ctx.t(TX.legend))}"></div>
+<div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
-<div class="mp-strip" aria-live="polite"></div>
-<div class="mp-status" aria-live="polite"><p class="f-muted">${esc(ctx.t(TX.loading))}</p></div>`;
+<div class="mp-strip" aria-live="polite"></div></div>
+<div class="mp-dbody f-sheet-body" hidden role="region" tabindex="-1"><div class="mp-layers" role="group" aria-label="${esc(ctx.t(layersName))}">
+<div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
+<select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
+<div class="mp-layer-set"${ctx.query?.mission ? ' hidden' : ''}>
+<label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-4" max="4" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
+<span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span>
+${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
+<button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div></div></div>
+<div class="mp-notes f-muted" aria-live="polite"></div></div>`;
   Object.assign(S, {
     box: el.querySelector('.mp-box'),
     mapEl: el.querySelector('.mp-map'),
     canvas: el.querySelector('canvas.mp-over'),
-    hdEl: el.querySelector('.mp-sum'),
-    stEl: el.querySelector('.mp-status'),
+    stEl: el.querySelector('.mp-empty'),
     profBox: el.querySelector('.mp-prof'),
     pc: el.querySelector('canvas.mp-pc'),
     pcur: el.querySelector('canvas.mp-pcur'),
     stripEl: el.querySelector('.mp-strip'),
     pickEl: el.querySelector('.mp-pick'),
     mapPickEl: el.querySelector('.mp-mappick'),
-    modesEl: el.querySelector('.mp-modes'),
-    modeBtn: el.querySelector('.mp-mode-btn'),
+    layerSet: el.querySelector('.mp-layer-set'),
     modeOpts: el.querySelector('.mp-mode-opts'),
-    layersBtn: el.querySelector('.mp-layers-btn'),
     layersEl: el.querySelector('.mp-layers'),
-    editBar: el.querySelector('.mp-editbar'),
-    editBtn: el.querySelector('.mp-edit'),
-    followBtn: el.querySelector('.mp-follow'),
-    progEl: el.querySelector('.mp-progress'),
-    undoBtn: el.querySelector('.mp-undo'),
-    addBtn: el.querySelector('.mp-add'),
-    cardEl: el.querySelector('.mp-pcard:not(.mp-adcard)'),
-    adCardEl: el.querySelector('.mp-adcard'),
-    lvCardEl: el.querySelector('.mp-lvcard'),
+    cardEl: el.querySelector('.mp-pcard'),
+    dataEl: el.querySelector('.mp-data'),
+    dheadEl: el.querySelector('.mp-dhead'),
+    gripEl: el.querySelector('.mp-grip'),
+    notesEl: el.querySelector('.mp-notes'),
+    dtitleEl: el.querySelector('.mp-dtitle'),
+    dcloseEl: el.querySelector('.mp-dclose'),
+    segEl: el.querySelector('.mp-chips'),
+    segBtns: [...el.querySelectorAll('.mp-chip[data-view]')],
+    legendBtn: el.querySelector('.mp-chip[data-legend]'),
+    legendEl: el.querySelector('.mp-legend'),
+    dprofEl: el.querySelector('.mp-dprof'),
+    dbodyEl: el.querySelector('.mp-dbody'),
     tipEl: el.querySelector('.mp-box .mp-tip:not(.mp-pcard)'),
     ptipEl: el.querySelector('.mp-prof .mp-tip')
+  });
+  buildOverlay(ctx);
+  // page de réglage (#maps?tune=1) : racine qui défile d'elle-même (la vue du cadre est fixe), blocs en hauteur naturelle
+  if (ctx.query?.tune) el.classList.add('mp-tuning');
+  el.classList.add('f-sheet'); // la racine de la feuille du cadre : jetons --f-sheet-*, data-sheet
+  S.sh = createSheet({
+    root: el,
+    panel: S.dataEl,
+    head: S.dheadEl,
+    grip: S.gripEl,
+    pos: sheetKeep,
+    ignore: '[data-dclose], .mp-chips',
+    labels: p => gripLabel(p),
+    locked: () => el.classList.contains('mp-tuning'),
+    onChange: p => {
+      sheetKeep = p;
+      dataHead(); // nue sur un dessin à la position par défaut seulement
+    },
+    onSettle: onSheetSettled
+  });
+  // le choix des modes se ferme aussi d'un toucher ailleurs que sur la carte (qui le ferme elle-même) : la feuille
+  el.addEventListener('pointerdown', e => {
+    if (!S.modeOpts.hidden && !e.target.closest('.mp-mode-opts, .mp-box')) toggleModes(false);
   });
   S.pickEl.addEventListener('change', () => {
     const v = S.pickEl.value;
@@ -3961,7 +4859,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   S.profBox.addEventListener('pointermove', onProf);
   // toucher sur la carte près de la route (fond uni : la boîte reçoit le toucher ; MapLibre : son « click »)
   S.box.addEventListener('pointermove', e => {
-    if (S.map || e.pointerType !== 'mouse' || e.target.closest('.mp-modes, .mp-tip, .mp-layers, .mp-layers-btn')) return;
+    if (S.map || e.pointerType !== 'mouse' || e.target.closest('.mp-mode-opts, .mp-tip, .mp-layers')) return;
     const r = S.box.getBoundingClientRect();
     hoverMap(e.clientX - r.left, e.clientY - r.top);
   });
@@ -3969,12 +4867,12 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     if (e.pointerType === 'mouse') linger('map');
   });
   S.box.addEventListener('click', e => {
-    if (S.map || e.target.closest('.mp-modes, .mp-tip, .mp-layers, .mp-layers-btn')) return;
+    if (S.map || e.target.closest('.mp-mode-opts, .mp-tip, .mp-layers')) return;
     if (!S.modeOpts.hidden) return toggleModes(false);
-    if (!S.layersEl.hidden) return toggleLayers(false);
     const r = S.box.getBoundingClientRect(),
       x = e.clientX - r.left,
       y = e.clientY - r.top;
+    closeLv(); // comme sur MapLibre : un toucher sur la carte ferme la liste des espaces
     if (S.edit.on) return editTap(x, y);
     if (!S.mission && vrpTap(x, y)) return;
     if (!S.mission && adAt(x, y)) return pinAd(adAt(x, y));
@@ -3989,58 +4887,95 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     }
     mapTip(ll.lat, ll.lon, x, y);
   });
-  S.modeBtn.addEventListener('click', () => toggleModes());
   S.modeOpts.addEventListener('click', e => {
     const m = e.target.closest('[data-mode]')?.dataset.mode;
     if (!m) return;
     toggleModes(false);
     if (m !== S.preset) setPreset(m);
   });
-  S.modesEl.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && !S.modeOpts.hidden) {
-      toggleModes(false);
-      S.modeBtn.focus();
-    }
-  });
-  S.layersBtn.addEventListener('click', () => toggleLayers());
+  // cases : au changement ; curseur de complexité : à chaque cran, la carte suit le doigt
   S.layersEl.addEventListener('change', e => {
     const c = e.target.closest('input[data-layer]'),
       k = c?.dataset.layer;
-    if (k) setLayer(k, c.type === 'range' ? Math.round(+c.value) : c.checked);
+    if (k && c.type !== 'range') setLayer(k, c.checked);
+  });
+  S.layersEl.addEventListener('input', e => {
+    const c = e.target.closest('input[type="range"][data-layer]');
+    if (c) setLayer(c.dataset.layer, MapsRender.detailZoom(c.value));
   });
   S.layersEl.addEventListener('click', e => {
     if (e.target.closest('[data-layers-reset]')) setLayer(null);
   });
-  // Échap : le terrain épinglé est relâché
+  // Échap, un cran à la fois, le plus proche de la main d'abord : le choix des modes, le panneau des couches, le contenu du bloc
+  // de données (espaces, points de report, quel qu'il soit : le profil revient), la carte d'un point, le « + » armé, le mode
+  // Modifier. Quand le module a pris la touche il la retient (preventDefault) : le cadre ne quitte pas aussi le plein écran
+  // (frame/INTEGRATION.md § 9.4). En phase de capture, pour passer avant l'écouteur du cadre, posé avant le nôtre.
   const esc0 = e => {
-    if (e.key !== 'Escape' || !S) return;
-    if (!S.lvCardEl.hidden) S.lvCardEl.hidden = true; // la carte des niveaux d'abord, puis celle du terrain
-    else if (S.vfrPin) unpinAd();
+    if (e.key !== 'Escape' || !S || e.defaultPrevented || document.querySelector('.f-modal') || !S.el.getClientRects().length) return;
+    if (escapeKey()) e.preventDefault();
   };
-  // ✕ de la carte des niveaux
-  S.lvCardEl.addEventListener('click', e => {
-    if (e.target.closest('[data-lvclose]')) S.lvCardEl.hidden = true;
+  // ✕ de l'en-tête du bloc de données
+  S.dheadEl.addEventListener('click', e => {
+    if (e.target.closest('[data-dclose]')) closeData();
   });
-  // ✕ de la carte d'un terrain
-  S.adCardEl.addEventListener('click', e => {
-    if (e.target.closest('[data-adclose]')) unpinAd();
-  });
-  document.addEventListener('keydown', esc0);
-  S.stops.push(() => document.removeEventListener('keydown', esc0));
-  S.layersEl.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      toggleLayers(false);
-      S.layersBtn.focus();
+  // bascule Profil · Météo : la feuille réduite s'ouvre à la position normale (on vient de choisir ce qu'on veut y lire)
+  S.segEl.addEventListener('click', e => {
+    if (e.target.closest('[data-legend]')) {
+      S.legend = !S.legend;
+      return legendSync();
     }
+    const v = e.target.closest('[data-view]')?.dataset.view;
+    if (!v || (v === 'weather') === (S.dpanel === 'weather')) return;
+    if (S.sh.pos === 'collapsed') S.sh.set('default', true);
+    viewKeep = v;
+    if (v === 'weather') showWeather(true);
+    else endData('weather');
   });
+  S.legendEl.addEventListener('click', () => {
+    S.legend = false; // un toucher sur la légende la ferme
+    legendSync();
+  });
+  // glisser sur la coupe météo : les mêmes gestes que sur le profil (le doigt, ou la souris au survol, déplace le curseur commun : la carte,
+  // les espaces au point et la bande de texte le suivent) ; un tour d'animation au plus (la coupe est redessinée à chaque cran) ;
+  // la conversion abscisse → NM est celle que la coupe rend (geo.nmOf), jamais recalculée ici
+  let wxRaf = 0,
+    wxX = 0;
+  const wxMove = e => {
+    if (S.dpanel !== 'weather' || !S.wxGeo || !e.target.closest('svg') && !S.dbodyEl.hasPointerCapture?.(e.pointerId)) return;
+    if (e.type === 'pointermove' && !e.buttons && e.pointerType !== 'mouse') return;
+    wxX = e.clientX;
+    if (wxRaf) return;
+    wxRaf = requestAnimationFrame(() => {
+      wxRaf = 0;
+      const svg = S?.dpanel === 'weather' && S.wxGeo && S.dbodyEl.querySelector('svg');
+      if (!svg) return;
+      const g = S.wxGeo,
+        x = Math.min(Math.max(wxX - svg.getBoundingClientRect().left, g.x0), g.x0 + g.pw);
+      setCursor(Math.round(g.nmOf(x) * FT_NM));
+    });
+  };
+  S.dbodyEl.addEventListener('pointerdown', e => {
+    if (S.dpanel === 'weather' && e.target.closest('svg')) try {
+      S.dbodyEl.setPointerCapture(e.pointerId); // le dessin est remplacé à chaque cran : le glisser reste à la zone
+    } catch {
+      /* pas de capture : le glisser suit quand même tant qu'il est sur la coupe */
+    }
+    wxMove(e);
+  });
+  S.dbodyEl.addEventListener('pointermove', wxMove);
+  // un toucher sur la coupe météo place le curseur commun (la carte et le profil le suivent), comme sur le profil
+  S.dbodyEl.addEventListener('click', e => {
+    const svg = S.dpanel === 'weather' && S.wxGeo && e.target.closest('svg');
+    if (!svg) return;
+    const g = S.wxGeo,
+      x = e.clientX - svg.getBoundingClientRect().left;
+    if (x >= g.x0 && x <= g.x0 + g.pw) setCursor(Math.round(g.nmOf(x) * FT_NM));
+  });
+  document.addEventListener('keydown', esc0, true);
+  S.stops.push(() => document.removeEventListener('keydown', esc0, true));
   el.addEventListener('click', e => {
     const go = e.target.closest('[data-go]')?.dataset.go;
     if (go) location.hash = `#${go}`;
-    if (e.target.closest('[data-fit]')) {
-      S.userMoved = false; // « Recentrer » : la carte suit de nouveau le vol
-      if (S.map) fitMap(true);
-      else schedule();
-    }
   });
   await loadLibs();
   if (!S) return;
@@ -4058,6 +4993,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     S.theme = t;
     if (night && S.map) S.map.setStyle(styleFor());
     drawProfile();
+    redrawWeather();
     schedule();
   };
   const mq = matchMedia('(prefers-color-scheme: dark)'),
@@ -4075,7 +5011,8 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     await readSettings();
     S.profile = S.mission ? S.profile : effectiveProfile();
     S.data = null;
-    if (!S.layersEl.hidden) fillLayers();
+    if (S.dpanel === 'layers') fillLayers();
+    if (S.tuneEl) tuneSrc();
     schedule();
   }));
   S.preset = ui.preset || 'auto';
@@ -4083,9 +5020,8 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   if (!TX.presets[S.preset]) S.preset = 'auto';
   fillModes();
   // une carte de mission garde son profil : ni mode ni couches
-  S.modesEl.hidden = S.layersBtn.hidden = S.editBar.hidden = !!ctx.query?.mission;
+  S.routeBtn.hidden = S.modeBtn.hidden = S.editBtn.hidden = !!ctx.query?.mission;
   editGestures();
-  S.followBtn.addEventListener('click', () => setFollow(!S.follow));
   levelGestures();
   if (ctx.query?.mission) await applyMission();
   else {
@@ -4098,8 +5034,10 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   if (!S) return;
   if (!tiles) {
     S.plain = true;
-    S.el.querySelector('.mp-credit').hidden = true;
   }
+  // page de réglage : construite avant la lecture du mode et du vol (onglet pressé, seuils, origine des seuils : ceux du mode
+  // et du profil, connus maintenant)
+  if (S.tuneEl) fillTune();
   status();
   schedule();
   // vue vivante : chaque écriture du vol courant (Carburant à côté) redessine carte et profil, 300 ms après la dernière
@@ -4125,12 +5063,16 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     if (!S) return;
     S.data = null;
     schedule();
-  }));
+  }), ctx.aerodb.on('state', () => S && status())); // lecture de la base commencée ou finie : la note change
   const ro = new ResizeObserver(() => {
     mapSize();
     schedule();
+    S.sh.settle(); // la feuille a bougé, l'écran a tourné : la route est recadrée une fois la taille arrêtée
   });
   ro.observe(S.box);
+  // rotation, volet redimensionné, feuille tirée : le graphique des niveaux et la coupe météo reprennent la taille du bloc
+  const rd = new ResizeObserver(() => S.dpanel === 'lv' ? showLv() : redrawWeather());
+  rd.observe(S.dbodyEl);
   // retour d'un onglet caché ou d'une page gelée : taille reprise, surcouche redessinée
   const back = () => {
     if (document.hidden || !S) return;
@@ -4147,7 +5089,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   const rp = new ResizeObserver(() => drawProfile());
   rp.observe(S.profBox);
-  S.stops.push(() => ro.disconnect(), () => rp.disconnect());
+  S.stops.push(() => ro.disconnect(), () => rp.disconnect(), () => rd.disconnect(), () => S.sh?.stop());
 }
 
 export function unmount() {

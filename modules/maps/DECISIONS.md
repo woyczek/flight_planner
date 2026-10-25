@@ -544,3 +544,563 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Bench** (test page, 1280 px, view of Bordeaux, flight LFRS → LUGEN → LFBD started): "ETA 17:33Z (19:33)" under
     "LFBD", no overlap among the route labels; the 9 `place` layers of positron visible with Towns off, `none` with
     Towns on. No JavaScript error.
+- **24 Oct 2026 — the airspaces card on a phone (user's bug report; done by the cloud session as temporary stand-in,
+  decisions to be challenged by the ergonomics session, see `docs/technique/V3_JOURNAL_SESSION_CLOUD.md`).**
+  - **Bug**: the card "n airspaces at this point" filled about 90 % of the map on an iPhone (a tooltip element 92 % wide
+    whose SVG level block scaled with that width), sat under the mode grid and the edit bar (`z-index` 4 against 6), so
+    its ✕ was covered, and nothing but ✕ or Escape closed it, which a phone cannot do.
+  - **Own layer**: `.mp-lvcard{z-index:7}`, above the buttons and panels, like a dialog. The aerodrome's card
+    (`z-index` 5) is not changed: its ✕ sits at the left or right side, clear of the edit bar.
+  - **Placement**: `showLv()` replaces `showTip` for this card. Narrow frame (under 600 px, the aerodrome card's rule):
+    the lower part of the frame over its full width (`.mp-lvnarrow`: 8 px margins, 45 % of the height at most), the
+    level block drawn at 150 × 120 and kept at the left of the list (44 % of the width, sticky), the list scrolling
+    (`overscroll-behavior: contain`), ✕ fixed in the head. Otherwise at the tap point, 320 px and 60 % of the height
+    at most, kept inside the frame. Drawn again on a resize while open (rotation, pane width).
+  - **Closing**: a tap on an empty spot of the map closes it (`closeLv()` from the MapLibre and canvas click handlers),
+    ✕ and Escape still do, another airspace tap replaces it; a drag or the wheel never close it (`hideTips` does not
+    touch it). **This reverts, for this card only, the "cards that stay" rule of 23 Oct**: the aerodrome's card keeps
+    staying, since it is pinned on purpose and has a pin gesture to design (debt "tap on an empty spot").
+  - **Bench** (test page, Chromium touch 390 × 844 and mouse 1280 × 800, five airspaces under the point): card 44.8 %
+    of the frame height at 390 px, inside, `z-index` 7, ✕ 44 px and on top (`elementFromPoint`); open after a wheel
+    move and a drag; closed by Escape, by a tap on an empty spot and by ✕; replaced by a tap on two other airspaces;
+    no horizontal scroll, no JavaScript error. Captures: `lvcard_before_390.png`, `lvcard_after_390.png`,
+    `lvcard_after_1280.png` (cloud session scratchpad; the agent that wrote the code was lost with its session, the
+    cloud session finished the documents and ran the bench).
+
+- **24 Oct 2026 — the data block, short codes of the reporting points, thresholds corrected by the frame's size (user's
+  three decisions of 24 Oct, to be reviewed by the ergonomics session).**
+  - **1. The view is fixed: (1) the map, (2) the data block.** User's decision: the airspaces list ("n airspaces at this
+    point") and the aerodrome's VFR reporting points (points, VAC sequences, instructions) are no longer cards over the
+    map; they open in the data block under the map, **replacing the vertical profile while open**, and closing them
+    brings the profile back. Reason given: one does not need the profile while looking at the airspaces or at the
+    reporting points. This ends the debt entries of 23 Oct ("VFR information written on the map itself", the airspaces
+    card on a phone), and replaces the 24 Oct card placement (`.mp-lvcard`, `.mp-lvnarrow`, `.mp-adcard`: code and CSS
+    removed, not hidden; `levelsHtml` and the aerodrome's HTML builder (`showAdCard`) stay as content builders).
+    - **Rules kept as decided**: the map keeps its size and position (nothing overlays it but the light hover tooltip and
+      the Edit mode's route-point card); closing = ✕, Escape, and for the airspaces content a tap on an empty spot of
+      the map (24 Oct); the aerodrome's content stays until ✕ / Escape / another aerodrome (pinned, 23 Oct); the points
+      and sequences stay highlighted on the map while the aerodrome's content is open; the existing fit of the
+      reporting points on a tap is kept; on opening, `scrollIntoView({ block: 'nearest' })` of the block (the map stays
+      on top, the camera is not touched).
+    - **One height rule**: `--mp-prof-h = clamp(200px, 30vh, 340px)`, the profile box's rule, now a variable. The content
+      area is that height plus the strip's 20 px, so the block keeps one height when a content opens (a long content
+      scrolls inside, `overscroll-behavior: contain`). Measured: 260 px of content under a 30 px header at 1280 × 800
+      (the profile block is 30 + 240 + 20), 273 px at 390 × 844 (30 vh = 253 + 20). No frame change was needed: the
+      rule is module-scoped (`[data-module="maps"]`), the dual-view pane gets it at its own width (513 px).
+    - **Header line** (30 px): "Vertical profile" / "n airspaces at this point" / "LFBD: VFR reporting points", the ✕ at
+      the right, 44 × 44 drawn over the line with negative vertical margins (the line stays 30 px). *Judgement call*: the
+      header also shows for the profile (the user listed "profile" among the three things it says) at a cost of 30 px;
+      the ✕ only shows for a content. *Judgement call*: the aerodrome's name is not in the title (the phone truncated
+      "LFBD BORDEAUX MERIGNAC : points de rep…"); title = ICAO only, the full name in the tooltip of the line and in the
+      region's `aria-label`.
+    - **One content at a time; the newer replaces.** *Judgement call*: opening the airspaces list while an aerodrome is
+      pinned **releases the aerodrome** (highlight off), so that no highlight stays without its list. Tapping an
+      aerodrome while the airspaces are open replaces them (the airspaces list is not restored).
+    - **Chart of the levels adapted to the block** (the 24 Oct narrow layout was for a 45 % card): drawn at scale 1 for the
+      measured content area (`levelsHtml(list, w, h)`): 44 % of the width under 600 px, otherwise the width the columns
+      ask for (400 px at most), at most as high as the area, sticky while the list scrolls; the lists (airspaces,
+      reporting points) flow in columns of 19 em, so that 1,250 px are used instead of one long column.
+    - **The fit of the reporting points** has the whole map now (no room reserved for a card: padding 56 / 40 / 64 / 40
+      under the buttons), and the content opens at once instead of after the 500 ms fit (it is only redrawn if its data
+      arrive later; the scroll position is kept in that case).
+    - **`.mp-box { isolation: isolate }`**: revealing the block scrolls the page, which slides the map under the frame's
+      sticky header; the map's buttons (`z-index` 6) drew over the header (z-index 5). Contained now.
+    - Not touched: `DETTE_TECHNIQUE.md` rows of 23 Oct (airspaces card, VFR information on the map) are resolved by this lot;
+      the ergonomics session keeps that file.
+  - **2. A VFR reporting point shows only its short code on the map** ("NA", "E", "SE"), never the long name
+    (legibility is a permanent objective, user). `MapsRender.vrpCode(id)` (prefix of the aerodrome and "H-" removed:
+    "BD-EA" → "EA", "MN-H-HE" → "HE") for the VRP layer, whose label was the whole identifier; `drawVfr` (highlighted
+    points) draws `p.code` only (it appended the base's name, 28 characters at most). The long name stays in the tooltip
+    (`tipAt`), in the data block's list and in the hover preview. Mission maps' VRP labels follow (same function).
+  - **3. Display thresholds depend on the frame size.** User's decision: the effective zoom compared with the
+    thresholds is corrected by the mean of the frame's height and width. `MapsRender.effectiveZoom(zoom, w, h, k)` =
+    `zoom + k · log2(((w + h) / 2) / 900)`, applied **after** the Complexity slider's shift (¾ level per step).
+    - **Reference 900 px, k = 1.** 900 px is a laptop pane (the 1280 × 800 bench frame, 1254 × 414, has a mean of 834:
+      −0.11, so the starting values tuned on a screen are practically unchanged); k = 1 because a frame twice as large
+      shows twice as many pixels per side, which is exactly one zoom level: the elements are as dense on the screen as
+      at the reference size, no other value was justified.
+    - **Replaces the fixed "one step less under 600 px"** (`detailShift(W)`): keeping both would count the small frame
+      twice. The pane of the dual view and the phone now follow the formula (−0.96 for 513 × 416, −1.17 for 364 × 437).
+    - **One function everywhere a threshold is compared**: `render.draw` (`atZoom`, `byZoom`, labels, the VRP layer),
+      the density tier (`tierOf(pxOfZoom(effective))`), `draw()` of the module (contour lines, towns' place names,
+      `zoomOn('wind')`), the tuning page. Mission maps are not concerned (they show what their profile asks). *Not
+      changed*: what needs real pixels (obstacle heights beside the symbol at 300 px/deg, the ETA labels, the
+      "everything in the view is read" switch, the overview corridor rule), which are geometry rather than tuning-page
+      thresholds; say if they should follow too.
+    - **Tuning page**, line "current zoom": "Current zoom: 6.01 · effective 4.85 (frame of 403 px on average) · 18 NM per
+      cm of screen"; the mark on each slider is the **effective** zoom (what the thresholds compare), the NM per cm come
+      from the real zoom. `render.draw()` now returns `zoom: { shifted, effective, tier, kept }`.
+    - **The starting values were not retuned**: on a phone France (map zoom 4.3) is at an effective ≈ 3.1 (was 3.55), so
+      CTR / D / names (4.75) need a map zoom of about 5.9 there (5.5 before). The tuning page is the place to adjust.
+  - **Bench** (Playwright, Chromium, MapLibre with a stub style because tiles are blocked; the maps test page and the
+    Pilot application, 390 × 844 touch and 1280 × 800 mouse; synthetic aerodromes, VRP (BD-N … BD-H-HE), navaids,
+    obstacles and a VAC compilation for LFBD; captures in the cloud session's scratchpad `maps2/`):
+    - map box and MapLibre canvas identical (size and page position) before and after a tap on airspaces and on LFBD:
+      1256 × 416 (canvas 1254 × 414) at 1280, 366 × 439 (364 × 437) at 390, 513 × 416 in the dual-view pane;
+    - airspaces: block title "4 espaces sur ce point", chart + list; closed by ✕ (44 × 44), by Escape and by a tap on an
+      empty spot (also with the camera moved in between: it stays open after a camera move); the profile is back, drawn
+      (canvas 1256 × 240); LFBD: "LFBD : points de report VFR", 11 points (list in four columns at 1280), VAC sequences
+      and instructions scrolling (content 474 px in 258 px at 1280, 676 in 271 at 390), still open after an empty tap,
+      closed by ✕ and Escape; the page scrolled by 58 px (1280) and 69 px (390) to bring the block in view, always
+      entirely on screen; no horizontal scroll, no `pageerror`;
+    - labels on the map after the pin: "NA", "E", "EA", "HE"… and none of the long names (checked on the canvas text
+      calls); VFR mode, Bordeaux at map zoom 9.5: the 11 VRP of the layer drawn as codes;
+    - effective zoom, same camera: 1280 → 5.89 for map zoom 6 (−0.11), 390 → 4.84 (−1.16); aerodromes and navaids
+      thinned (map zoom 6: 40 navaids and tier "mid" at 1280, none and tier "far" at 390; map zoom 7 at 390 equals map
+      zoom 6 at 1280); VFR, Bordeaux: at map zoom 9.5, 11 VRP drawn at 1280 (effective 9.39) and none at 390 (8.34), they
+      appear at map zoom 10.5 (9.34), the threshold being 9.25; tuning page: "Zoom courant : 6.00 · effectif 5.44 (cadre de
+      608 px en moyenne)" at 1280 (panel beside the map), "6.01 · effectif 4.85 (cadre de 403 px)" at 390.
+    - The test page needs the launcher (`FD.launcher.detect()`), so the bench ran `tools/launch.py --data <dir>` on the
+      worktree instead of `http.server`.
+- **24 Oct 2026 (afternoon) — the Map screen is fixed: `meta.fixed`, one-line toolbar, the data block as a three-position
+  sheet (user: "le module carte n'est toujours pas fixe (scroll bar et artefacts en header)"; lot cut by the ergonomics
+  session on the frame's new `meta.fixed` contract, `frame/INTEGRATION.md` § 9.2; native iOS / Android shells will wrap
+  this screen).** To be reviewed by the ergonomics session.
+  - **Adopted `fixed: true`.** The root is a flex column at the frame's view height (`height: 100%; overflow: hidden;
+    isolation: isolate`). Top to bottom: toolbar, information line, [progress line and gesture-asking status messages],
+    map (`flex: 1 1 0; min-height: 0`, full width, only a hairline above and below), sheet. Measured at 390 × 844
+    (header 57, tab bar 57, view 730): toolbar 48 (44 px controls, 2 px above and below), information line 20, map 385,
+    sheet 277 (38 %); at 1280 × 800 (view 743): map 415, sheet 260 (35 %).
+  - **Toolbar** (judgement calls in italics). The flight selector (takes what is left, 380 px at most on a screen), then
+    three 44 px icon buttons: Edit the route (pencil), Recentre (target), the map mode (the current mode's icon).
+    *The mode button left the map box as the lot asked*: its row of six opens as a popover under the toolbar, over the
+    top of the map (`z-index` 8, inside the root), closed by a tap on the map, the toolbar or the sheet, by Escape or by
+    a choice; the Layers button took its place at the top left of the map. *Hidden with the map* when there is no flight
+    (Recentre and the mode button would act on nothing). *The pencil is also the Edit mode's icon family* (the map's own
+    "Edit" toggle stays a text button at the top right of the map): two "edits" with different meaning, as before (the
+    tooltip says "Edit the route" for the pencil, which opens Fuel). *Title "Carte" removed everywhere*: the tab bar names
+    the screen on a phone and the rail marks it on a screen, so the verb is already shown by the frame in both; an
+    invisible `h1` stays for the screen reader.
+  - **Information line** under the toolbar, not in the sheet's header: it describes the flight, not the block's content
+    (which the header already names), and the header must stay short for the ✕. One line of `--sog-size-xs`, ellipsed,
+    full text in `title`.
+  - **The sheet.** Three positions, tokens of the root (`--mp-head: 44`, `--mp-p1: .38` / `.35` above 760 px, `--mp-m1: 170`,
+    `--mp-p2: .7`, `--mp-m2: 260`; the script reads them, `sheetHeights()`): collapsed = the header line (44 px + the
+    hairline: 45), default, expanded. Measured, 390 × 844: sheet 45 / 277 / 511, map box 617 / 385 / 151 (MapLibre canvas
+    390 × 615 / 383 / 149, overlay canvas the same at ×2); 1280 × 800: 45 / 260 / 520, map 630 / 415 / 155 (canvas
+    1070 × 628 / 413 / 153); dual-view pane (513 × 670): sheet 45 / 234 / 469, canvas 513 × 366 at the default and 131
+    expanded. The profile (`flex: 1 1 0`, 380 px at most) is 156 px tall at the default (with the two offline notes) and 380
+    expanded; its strip is 34 px (two lines, scrolls: the Edit mode's hint is 300 characters).
+    - **The handle** is the header line itself (44 px: a 36 × 4 bar, the title, the ✕ of a content at the right, 44 × 44).
+      Pointer events on it only, `touch-action: none` there; the pointer is **captured at `pointerdown`** (a fast mouse
+      drag leaves a 44 px line in one event: the first version captured at the 6 px threshold and lost the drag). It follows
+      the pointer live, then goes to the nearest position, or the next one on a flick above 0.8 px/ms (0.5 made every
+      synthetic mouse drag a flick). *A tap collapses the sheet, or brings a collapsed or expanded one back to the default*
+      (not "next position": collapsing is what one wants most, to give the map the whole view; expanding is a drag, or End).
+      Keyboard: the handle is a button, Up / Down / Home / End. 200 ms slide, none under reduced motion.
+    - *A content opened while collapsed opens the sheet to the default, without sliding* (the chart is measured at once,
+      otherwise `levelsHtml` is drawn for a zero-high area and again at every frame of the slide). *The Layers panel opened
+      with the sheet expanded drops it to the default* (151 px of map would leave a panel of three lines).
+    - *The position is kept while the page lives* (a module-level variable), not on the device: the sheet is a viewing
+      convenience, `cache/maps/ui.json` stays for the mode and the layers.
+    - `scrollIntoView` (the previous lot's reveal of the block) is **removed**: the block is always on screen, and the call
+      was the one thing that could scroll an `overflow: hidden` page by script.
+    - The offline notes ("Base map unavailable", "Terrain unavailable") moved from under the toolbar to the sheet, under the
+      profile: they are the normal offline state and cost the map a line for ever; the messages that ask for a gesture or
+      say something is missing (no flight, no base, offline zone, mission notes) stay under the toolbar.
+    - The sheet is not there (`hidden`) when there is neither profile nor content; the map then takes the height.
+  - **The map follows the sheet.** The existing `ResizeObserver` on the map box resizes the MapLibre canvas and the overlay at
+    each step; `settle()` (120 ms after the last size change: end of the slide, rotation, pane resized) calls `mapSize()` and
+    frames the route again if the user has not moved the map. **Found on the way**: MapLibre's `resize()` fires `movestart`,
+    which the module took for a gesture of the user (`userMoved = true` after the first layout, so a "live" route leaving
+    the view was never reframed); `mapSize()` now marks its own resize (`selfMove`).
+  - **No page scroll.** `scrollHeight === innerHeight` on every design; the wheel and a touch drag on the map, the profile
+    and the sheet leave `scrollY`, the body, the root and the view at 0; the root's `scrollHeight` equals its `clientHeight`
+    (nothing overflows, also with the Layers panel open: it scrolls inside the box, 887 px of content in 547). The hover
+    tooltip, the profile tooltip and the route-point card are children of the map box or the profile box (`overflow:
+    hidden`): they cannot leave them.
+  - **Header and tab bar artefacts.** With `fixed` the header is not sticky over a scrolling page, so the previous lot's
+    cause (the page scrolled to reveal the block, the box's buttons `z-index` 6 slid under the sticky header and drew over
+    it) is gone; checked by `elementFromPoint` on 19 × 3 points of the header and of the bar, on the seven designs: always
+    the header or the bar. **`isolation: isolate` kept, moved from the map box to the root**: useless for the fixed screen
+    itself, but the dual-view pane is not fixed (the page scrolls under the sticky header there) and the toolbar's popover
+    (z 8) is outside the box.
+  - **Dual view.** `#fuel?with=maps` (pane, 1280 × 800): the pane is `sticky` with `max-height: 100vh − 86 px` and a 44 px
+    close bar; the frame gives a pane's module no height, so the root has `100dvh − 86 px − 44 px` (`min-height: 420px`):
+    root 513 × 670, no scroll in the pane, same toolbar and sheet; tap on airspaces, ✕, Escape, drag of the sheet checked
+    there. `#maps?with=fuel` (maps on the left of a pane): the frame leaves `html.f-fixed` on but its full-height rules only
+    cover an unsplit view, so the root has `100dvh − 57 px − 32 px` there; page scroll 0, root 513 × 719. **Frame: a
+    variable or a rule for these two heights would avoid copying its numbers** (`.f-pane` and `.f-view.f-split` in `frame.css`).
+  - **Tuning page** (`#maps?tune=1`). `fixed` is the module's, not the address's, so the page stays a fixed view whose root
+    scrolls by itself (`overflow: auto`): map box 52 vh again, blocks at their natural height, the thresholds panel beside
+    them from 1000 px (sticky in the root). `display: grid !important` there: the frame's rule `html.f-fixed .f-view >
+    .f-module { display: flex }` has five classes of weight. Checked at 390 and 1280: the page does not scroll, the root does.
+  - **Phone, five designs and more**: standard, cabinet, field, metro, swiss, cupertino and material all checked at 390 × 844
+    (no page scroll, nothing over the header or the bar, 44 px targets; the view is 722 to 730 px: the bar of material is 65 px,
+    metro's 59). Landscape 844 × 390 (a "screen" for the frame: rail and header leave a view of 333 px): the default sheet
+    keeps its 170 px floor, so the map is 95 px at the default and 220 collapsed — *limitation, not solved*: a side-by-side
+    layout in landscape would be the real answer (an ergonomics decision).
+  - **Not touched**: `frame/*` (everything above worked around in the module's CSS), the other modules. The frame's header
+    grows from 57 to 73 px after a visit to another screen with a back button and stays so on coming back to `#maps`
+    (the view shrinks to 714 px; the sheet's percentages follow): to tell the frame session.
+  - **Atmosphere's cross-section: awaiting atmosphere's renderer** (placeholder, nothing implemented). The sheet's entry point
+    is `openData(kind, key, title, build, label)`; `build(w, h, el)` may now return an HTML string or draw into `el` and return
+    nothing (the second form is new in this lot). The call maps will make once atmosphere exports a pure
+    `drawSection(el, { width, height, route, levelFt, profile, … })` is written in `INTEGRATION.md` § 6; no button, text or
+    import was added.
+  - **Bench**: Playwright + Chromium, the Pilot application served by the launcher (`--data` the lot-2 synthetic SIA base, tiles
+    stubbed), 390 × 844 touch (CDP touch events), 1280 × 800 mouse, the pane, the test page; screenshots in the cloud
+    session's scratchpad `maps3/` (`fixed_390_{collapsed,default,expanded}.png`, `fixed_1280.png`, `pane_1280.png`,
+    `fixed_<design>_390.png`, tuning and state pages). No `pageerror`.
+- **24 Oct 2026 (evening) — shared map base (`lib/map_base.js`), the sheet isolated for the frame, the weather cross-section in the
+  sheet (relay's lot, `V3_SPECIFICATION.md` § 7.1 "Shared code between maps and atmosphere"; the ergonomics role is held by the
+  relay).** To be reviewed by the ergonomics session.
+  - **Map base extracted** to `modules/maps/lib/map_base.js` (API: INTEGRATION § 7). Compared with atmosphere's copy, the
+    shared surface is: `loadMapLibre`, the day / night styles (and the studio's `STYLES` table), `startTiles` (creation, wait,
+    giving up, removal of the half-built map), `mapSize` with its own-resize marker, and the plain background (`loadRender`,
+    `loadOutlines`, `plainView`, `drawPlain`). *Not shared*: everything that happens once the map is loaded (events,
+    overlay, relief, place names, credits), the choice of the fallback, the draw loop, `outlinesAhead` (maps' service-worker
+    warm-up). `module.js` imports it; the two singletons of the old code (`mlP`, `outlinesP`) live in the base, so a page
+    that mounts both modules loads MapLibre once.
+    - *The own-resize marker*: `selfMove` (a flag of `S`) no longer wraps `resize()`; the base keeps a `WeakSet` of the maps
+      inside their own `resize()` and exposes `isOwnResize(map)`; maps' `movestart` handler tests it as well as its own
+      `S.selfMove` (set for `fitBounds` and `easeTo`).
+    - *Judgement calls*: the base's `startTiles` returns the map (or `null`) and takes the handlers as callbacks
+      (`onCreate`, `onStyleLoad`, `onLoad`) rather than returning a handle with events, so that the order of the old code is
+      kept (events wired before the promise is kept). An `error` before `load` always gives up, as in maps (atmosphere's copy
+      gave up only if `!map.loaded()`); Mercator is forced at each `style.load` for both modules (a no-op for the styles in use).
+      `drawPlain` passes `window.MAPS_OUTLINES` as is (atmosphere's `|| []` is not needed: `drawBackground` accepts an undefined list).
+    - *Checked*: `#maps` of the Pilot application at 390 × 844 and 1280 × 800, with the stubbed tiles and with the plain
+      background (offline), before (git archive of dfc76182d on its own launcher) and after the extraction alone: identical
+      screenshots (no difference at all, the noise between two runs of the same build being nil too); after the whole lot the
+      only difference is the new toggle (a 280 × 34 px box in the sheet's header).
+  - **The sheet isolated**, not extracted (it becomes `frame/lib/sheet.js` in the frame lot): `setSheet`, `sheetGestures`,
+    `settle` and `sheetHeights` are now one block, `createSheet({ root, panel, head, grip, pos, ignore, label, locked,
+    onChange, onSettle })`, with no reference to `S`; what was module code in `settle()` (`mapSize`, re-framing) is the
+    `onSettle` callback, the texts are the `label` callback, the tuning page's lock the `locked` callback, the position kept
+    for the page's life the `onChange` callback. Same behaviour (drag, flick, tap, keyboard, 200 ms slide, the three positions
+    measured again at 390 and 1280). What the frame takes: INTEGRATION § 6.
+  - **Weather cross-section in the sheet** (kind `weather`, INTEGRATION § 8, SPEC § 4). *Toggle*: a small segmented control
+    "Profil · Météo" in the header of the sheet (44 px buttons, `aria-pressed`, four languages), **not** a fourth toolbar
+    button (five items at most). It is shown while the profile or the cross-section is shown, hidden for a mission map and
+    for an airspaces list or an aerodrome's content (those keep their ✕). The choice is remembered for the page's life
+    (module variable), restored after an airspaces list / an aerodrome closes, and not replayed on a sheet that comes back
+    collapsed (the choice is then forgotten: a collapsed sheet must not open by itself). The toggle opens a collapsed sheet to
+    the default position. Escape on the cross-section goes back to the profile. The toggle is out of the drag zone of the
+    header (`ignore`), otherwise pointer capture swallowed its click.
+    - *Judgement calls, in the order the brief gave them*: (1) **dynamic import** of `section.js`, `atmo.js`,
+      `weather_store.js` at the first "Météo" instead of a static `import` at the top (the brief's snippet): 600 lines and the
+      whole weather store for a phone that never opens the toggle; the four files are `meta.lazy`. (2) **`cache/weather/` in both
+      `reads` and `writes`** as atmosphere's doc asks, although maps never writes (the store prunes past days when read). (3)
+      The store is built with a **network that always answers "offline"** instead of `ctx.net`: `cacheOnly: true` stops the
+      API calls but `weatherStore.forecast` still fetches the run's `meta.json` (a static file); "maps never asks
+      Open-Meteo" is taken literally, the run atmosphere kept is used. If atmosphere never kept a run, a file older than 30
+      minutes is not found (the store's blind rule) and the sheet says "No forecast loaded". (4) The **model computed once
+      and passed** (`o.model`) to `drawSection`: not documented in atmosphere's § 5 (to add), needed because the sheet redraws
+      at every step of a drag and at every cursor move. (5) **A tap on the cross-section sets the shared cursor** (not asked:
+      the brief says the cursor of the profile is passed to the renderer). Without it the cursor could only be moved from the
+      map while the cross-section is shown, the profile being hidden. (6) The route is built from the flight's `route.points`
+      as atmosphere's `fromRecord` does (`alt_ft`), not from maps' own points (`lvl`). (7) Fuel's `profile` only when it was
+      written by fuel (maps' own rule for its profile); atmosphere takes it whatever `by`. (8) The weather is looked for with the
+      flight record's level, departure time (`weather.when`), cruise speed (route text), never with what was typed in
+      atmosphere's own form: a level changed there reads other variables and may not be found. (9) The "Pas de prévision
+      chargée : ouvrir Météo dans Préparer" line is one 44 px link to `#atmosphere`; the frame's sub-tab is still called
+      "Atmosphère" (`frame/app.js`), "Météo" being the brief's word.
+    - *Kept from the lot*: the levels content (airspaces) and the aerodrome content are unchanged; no frame file, no other module
+      touched; `modules/atmosphere` untouched (its session switches to the import and documents `model`).
+  - **Frame variables (item 4, relay's note of the evening)**: the frame lot (commit 9c5a1e2d6, not in this base) now provides
+    `--f-head-h`, `--f-vh`, `--f-view-h` (equal to `--f-split-h` on `.f-view.f-split` and `--f-pane-h` on `.f-pane`) and applies
+    them to its split and pane modules. **Not depended on in this lot**: the two copied heights (`.f-pane>[data-module="maps"]`,
+    `.f-view.f-split>[data-module="maps"]`) and the `!important` of the tuning page stay, with a TODO comment in the style
+    sheet. **The next maps lot drops them for `var(--f-view-h)`.**
+  - **Bench**: Playwright + Chromium, the Pilot application served by the launcher on the synthetic SIA base of the earlier
+    lot, tiles stubbed; the forecast seeded through `FrameData` with atmosphere's own store and a fake Open-Meteo answered by
+    its demonstration (`demo.js`, as `modules/atmosphere/test/weather_store.html` does): 9 places, 1 request. Measured at 390 × 844
+    (touch) and 1280 × 800: no `pageerror`, no page scroll (`scrollHeight` = `innerHeight`), no target under 44 px; without a
+    forecast the one-line message (link 356 × 44) ; with it the SVG 356 × 168 at the default position, 356 × 401 expanded (the five
+    strips appear from 260 px), 1036 × 168 / 428 at 1280; collapsed: header only; the cursor: a tap on the route at 129 NM reads
+    129 on the profile's strip and 128.8 on the cross-section, at 75 NM 75.3, a tap on the cross-section at 245 NM puts the
+    profile's strip at 245 NM (1280: 129 / 128.9, 75 / 75.3, 254.6 / 255); seven designs (standard, cabinet, field, metro, swiss,
+    cupertino, material) and the night tone: toggle legible, pressed state visible; the dual-view pane and the test page mount
+    without error; a mission map has no toggle. Screenshots in the cloud session's scratchpad `maps4/`.
+- **24 Oct 2026 — the sheet becomes the frame's; maps takes the frame's heights** (by the frame agent, relay's lot, branch
+  `v3-cadre-feuille` from `v3` b03bd1883; the one exception to "the frame agent touches no module", granted by the relay
+  because the primitive and its first user must land together; frame/DECISIONS.md has the primitive's own entry).
+  - **Dropped from `module.js`**: the local `createSheet` (about 100 lines); the sheet CSS (`.mp-data` heights and transition,
+    `data-sheet` rules, `.mp-dhead`, `.mp-grip`, `.mp-pill`, `.mp-nt`, `.mp-dtitle`, `.mp-dclose`, and the scrolling part of
+    `.mp-dbody`); the root's tokens `--mp-head`, `--mp-p1`, `--mp-m1`, `--mp-p2`, `--mp-m2` and the 761 px media rule; the
+    `<span class="mp-pill">`; `gestures()` and the explicit first `set()`; the two pane / split height rules and the root's
+    `height: 100%` (the frame applies `--f-view-h`, `--f-split-h`, `--f-pane-h` to a `fixed` module, § 9.2); the tuning page's
+    `display: grid !important` (the frame's rule is weightless now). The TODO comment of the previous lot is done.
+  - **Kept**: `openData` / `endData` / `closeData` / `dataHead`; the Profile · Weather toggle (`ignore: '[data-dclose], .mp-seg'`);
+    the texts through `labels` (`(pos, rank) => "Data block height: tap or drag (collapsed)"` in four languages, as before);
+    `onSettle: onSheetSettled` (map size, re-framing); `locked` for the tuning page; the position kept through `onChange`
+    (`sheetKeep`, now a name: `'default'`); the `ResizeObserver` on the map box that settles. Added: the classes `f-sheet`
+    (root, added in `mount`), `f-sheet-panel`, `f-sheet-head`, `f-sheet-grip`, `f-sheet-title`, `f-sheet-close`, `f-sheet-body`
+    beside the module's own, `min-height: 420px` of the pane and the split main as one rule, and `[data-sheet]` in the tuning
+    selector so `height: auto` wins over the frame's position rules.
+  - **Two differences, both on purpose.** (1) `aria-label` of the grip now follows the position, like `title` did
+    ("… (collapsed)"). (2) On the tuning page with the sheet kept expanded, the block was 260 px (the old expanded rule beat
+    `height: auto` by order) and clipped its content; it is now its natural height (344 px), as in the other positions.
+  - **Verified, before (`git archive` b03bd1883, its own launcher) against after**: the three positions 45 / 277.4 / 511 px at
+    390 × 844 and 45 / 260 / 520.1 px at 1280 × 800, the map canvas following (615 / 383 / 149 and 628 / 413 / 153); screenshots
+    identical to the pixel at 390 (collapsed, default, expanded, default again), at 1280 identical in the sheet (88 pixels of at most
+    5 / 765 in the frame's header, above the module); the pane (`#fuel?with=maps`, 670 px = 800 − 86 − 44) and the split main
+    (`#maps?with=fuel`, 711 px = 800 − 57 − 32) are the same size, the rest equal but 1 to 2 levels on a few anti-aliased edge
+    pixels; the seven designs at 390 (sheet header crops) identical; taps, drags (live follow, nearest position, clamps), keys
+    (Enter, Space, Up, Down, Home, End), the Profile · Weather toggle and the ✕ (a drag from them does not move the sheet; a tap
+    works), content opening a collapsed sheet to default, the position kept across `#report` and back, the locked tuning page,
+    touch drags with CDP: same results; no page scroll, no `pageerror`; targets 44 px.
+- **24 Oct 2026 — the Map screen becomes header · map · sheet · bar (relay session "relais cloud", on the user's words:
+  "Ce n'était pas le deal. header, carte, carte, footer. Les autres infos sont mises ailleurs", "trop d'éléments sur le header.
+  Prévoir une exemption pour certains boutons communs. Prévoir un full screen", "Maximiser l'espace alloué à la carte",
+  "J'aime la proposition de volet de la part de météo", then "le sélecteur de couche passe par dessus… c'est assez fouillis").**
+  Layout only: route, spaces, profile, weather cut, `openData`, cards are untouched. Branch `v3-maps-ecran`.
+  - **Nothing between the frame's header and the map**: `.mp-bar`, `.mp-sum`, `.mp-progress`, `.mp-status` left the column;
+    measured gap header → map: 0 px at 390 × 844 and 1280 × 800 in standard, metro, swiss, cupertino and material.
+  - **Buttons are the frame's `ctx.overlay.button()`** (frame § 9.3). Right column from the top: Edit the route (`edit`, to fuel;
+    hidden on a mission map, where it meant nothing), Recentre (`target`), map mode (opens the six modes in a small panel to its
+    left, at its height, placed when it opens because the column may wrap), Edit on the map (toggle), Follow (`plane`, started
+    flight only), "+" and Undo (Edit mode only, `hidden`); the frame's full-screen button last, none drawn by the module. Left:
+    Layers. `.mp-layers-btn`, `.mp-editbar` and their CSS are gone.
+  - **Icons**: the frame has `edit`, `target`, `map`, `plane`, `plus`, `layers`, `chart`. Missing: `cloud` (weather chip), `undo`,
+    and a four-direction `move` (the frame's is a vertical double arrow, which reads as "resize"). The module draws those three
+    in the same style (`localIcon`); nothing added to the frame.
+  - **`hidden` on an overlay button**: the frame's `.f-overlay button.f-ov-btn { display: inline-flex }` beats the browser's
+    `[hidden]`, so the module carries `.f-overlay button.f-ov-btn[data-mp][hidden] { display: none }` (each of its buttons has
+    `data-mp`). The frame should carry the rule itself.
+  - **Mode button** keeps the current mode's own icon (the six `MODES` drawings), so those rules (`.mp-ic`, `.mp-ifr`, `.mp-topo`…)
+    now apply under `.f-overlay` too.
+  - **Flight selector in the Layers content**, at its head. On a mission map the Layers button stays (named "Map to show") and the
+    content keeps only the selector: without it a mission map would have no way back (the bar used to hold the selector).
+  - **Layers is a content of the sheet** (relay's amendment, after the user's remark on Atmosphere): `toggleLayers()` calls
+    `openData('layers', …)`; the title is "Layers · <flight>", ✕ returns the profile, the button is `aria-pressed` while open.
+    The content is one DOM element kept by the module and moved into the sheet's body (`build(w, h, el)` draws into `el`), so
+    ticking a box does not rebuild the list and the keyboard focus stays. The grid is two columns on a phone, as Atmosphere's.
+    A tap on the map does not close it (changing a layer is watched on the map); an airspaces list or an aerodrome's content
+    replaces it, like any content. The old "panel opened with the sheet expanded brings it back to default" rule is gone.
+  - **The summary is the handle's title**: "Profile · FL065 · 427 NM · planned flight" (the user's example), "Weather · …" on the
+    cut, "Layers · …"; departure → arrival, alternate and aircraft type in the tooltip (the title must fit one phone line, and
+    "flight in progress" replaces "planned" as soon as `started` is written). A content opened by `openData` keeps its own title.
+  - **Profile · Weather**: the segmented row is gone; two 40 px icon chips (`chart`, a cloud) at the right of the handle, before the
+    ✕, `aria-pressed`, named "Vertical profile" / "Weather cross-section"; same visibility rule as before. `ignore: '.mp-chips'`.
+  - **Messages**: no status line. The empty state (no flight, a mission without maps, an unreadable mission) is a card in the middle
+    of the map area (the box is no longer hidden: the overlay layer needs a map to cover, and the Layers selector must stay
+    reachable). "Aeronautical database not published" and "GPS or network not enabled" are a floating notification, **once per
+    mount**, and stay in the sheet's notes with their links; "Loading the map…" is dropped (nothing says it any more, the map
+    appears). The progress line of a started flight ("12 NM late · …") is the first block of the notes, which scroll beyond two
+    lines and a half. The notes are visible only when the sheet is (it is there as soon as a profile or a content exists).
+  - **Hints leave the screen**: "Slide a finger along the profile…" is dropped (the manual says it); the Edit mode's long hint is
+    a floating notification the first time the mode is entered in a page; the "+" armed hint stays under the profile while
+    armed (it is feedback of a state, not an instruction).
+  - **Default height**: the module never wrote a 38 % value, only comments and documents did; the frame's `--f-sheet-default`
+    (30 % phone, 35 % screen) applies. SPEC numbers updated (390 × 844: sheet 45 / 219 / 511 px, map 685 / 511 / 219 px).
+  - **Escape** is taken in the capture phase of `document`: the frame's listener is registered first, so a bubble listener of
+    the module would run after it and `defaultPrevented` would be too late. One thing per press, the nearest first: modes panel,
+    sheet content (Layers, list, aerodrome, weather), route-point card, armed "+", Edit mode (new: Escape did not leave the Edit
+    mode before). Nothing to close: the key goes to the frame, which leaves the full screen. Ignored while a `.f-modal` is open or
+    the module is not visible (a frame screen over it).
+  - **Full screen**: nothing of the module's own; the existing `ResizeObserver` on the map box resizes MapLibre and the overlay.
+    The sheet stays at the user's position in full screen (the profile is half the screen's worth); it can be collapsed.
+  - **Attribution** (relay's amendment): `.mp-credit` is gone. `map_base.js` folds MapLibre's compact attribution on its "i"
+    button once the map has loaded (MapLibre starts it open) when `attributionControl.compact` is set; Atmosphere already passes
+    it, so it gains the same; maps passes `customAttribution` with the SIA note, hence one credit text, 24 × 24 px.
+  - **Manual** (four languages, fingerprint of `fr.md` updated): the toolbar, summary line, segmented button, layers button,
+    flight list, "Done" and pencil sentences now describe the buttons on the map, the handle title and the sheet's notes.
+  - **Bench** (Chromium, port 8834, no launcher: aerodb has no published base, tiles reachable): 390 × 844 touch and 1280 × 800 mouse,
+    five designs: no page error, gap 0, nothing of the module above the map, right column = module's buttons then the frame's
+    full-screen, left = Layers, title non-empty, no `.mp-seg`. Layers: opens in the sheet, selector inside, ✕, `aria-pressed`,
+    focus kept after ticking a box, Escape closes it and stays in full screen. Edit mode in full screen: "+" and Undo appear
+    (Undo disabled), Escape leaves the mode and stays in full screen, a second Escape leaves the full screen. Full screen: box
+    390 × 591 from 390 × 511, canvas follows. Started flight: "flight in progress", Follow pressed, GPS notice once. No flight and
+    a missing mission: the card and the Layers selector. Dual view both ways: no error.
+- **24 Oct 2026 — flights across the date line** (relay cloud; the user: "we remember that we want to fly from Siberia to Alaska,
+  through the date line"). Branch `v3-antimeridien` from `origin/v3` (b8607cc8d). Closes the "antimeridian" entry of the technical
+  debt. Model: atmosphere's `wrapLon`, `nearLon`, `unwrapLons` (commit 5f45e0b18), generalised in the frame:
+  - **`frame/lib/geo.js`** (frame INTEGRATION § 12, bench `frame/lib/test/geo.html`): the three functions, same logic as
+    `atmo.js` (the bench compares them value by value, so the weather cache cells stay the same: a reader that passes raw points
+    finds the same cells). `unwrapLons` takes `{ lat, lon }` and `[lon, lat]`, returns the same object for a point already
+    continuous (an ordinary route is unchanged, object for object). `wrapLon` is **not** given an "already in range" shortcut
+    (it would change the float noise atmosphere's cells are made of); the module uses `outLon` (the shortcut) where it hands a
+    value to a service whose cells are not shared (relief tile, MORA, written route), so an ordinary flight sends exactly what it
+    sent before.
+  - **Rule**: the route is unrolled first (`pointsOf` → `unwrapLons`, the alternate with `nearLon` to the arrival), so the
+    profile, the marks, the TOC / TOD, the cursor, the ETA, the winds barbs, the framing and the drawing all work on continuous
+    longitudes with no further change (haversine distances were already periodic; interpolations are linear in the unrolled
+    longitude). What leaves the module is wrapped (`outLon`: terrain, MORA; `commit()` writes `route.points` in [-180, 180[;
+    `llAt` for a tap; aerodb boxes by `wrapBoxes`); what comes in is compared modulo 360 (`dLon`, `nearLon`).
+  - **MapLibre with world copies**: `map_base.startTiles` gains `worldCopies` (false by default: atmosphere is unchanged; the
+    Map passes true). Measured with the bundled MapLibre 5.6: with `renderWorldCopies: false` the camera is clamped to ±180 (a
+    view of 176° to 196° is brought back to 159°–180°); with `true` the camera centre may be 190° or −174° (`fitBounds` picks the
+    wrapped one) and `getBounds` / `project` go beyond ±180. So the view is never assumed to be on the route's copy.
+  - **`wrapTo` (the projection of the view)**: a longitude goes to the world copy nearest the view's centre (`nearLon`), so a datum
+    of aerodb at −170° draws at 190°; the route (and everything inside its longitude span: its marks, TOC / TOD, barbs, cursor) is
+    shifted by one common number of turns, `360 × round((centre − middle of the route) / 360)`, so it is never torn in two when the
+    user pans half the world away. The plain background draws its own copies (`drawBackground`: offsets computed from the canvas).
+  - **Data boxes**: the view or the route box can exceed ±180; `loadData` aligns it to the route's turn (`alignBox`), then
+    `wrapBoxes` gives one box, or two when it crosses 180° (the whole world when wider than 360°), and `many(f, boxes, extra)`
+    merges; `corridorBoxes` clips each leg to the box then wraps. Without aerodb the "empty" data box covers the view (otherwise
+    the draw would reload it forever); the contour tiles are read modulo the tile count.
+  - **Taps and tooltips** compare modulo 360 (`airspacesAt` wraps its longitude, `MapsProfile.project` takes the difference
+    modulo 360, `dLon` in the flat tests); the follow mode centres on the copy where the view is (`nearLon`); the framing test of
+    a re-read flight is made on screen (`inView` through the projection), not on longitudes.
+  - **Edit mode**: `rawPoints()` is unrolled (so hit tests, undo and the inserted point agree with the drawing), `commit()` writes
+    wrapped longitudes, `coordId` writes `…N17049W` from the wrapped longitude. Checked: a point added between the date line and
+    Alaska is written at −170.82°, undo restores the three points.
+  - **Missions**: the trace is unrolled; the YAML extent and zones are taken as stored (`mission.js` still takes [-180, 180] only).
+  - **"No forecast" message** names the flight ("No forecast for UHMA → PAOM:" + the link to Weather; four languages), the
+    atmosphere session's suggestion, kept by the relay; without departure and arrival it says what it said before.
+  - **"The Weather chip is hidden"**: the symptom reported on UHMA → PAOM could not be reproduced on the Map alone (before or after,
+    with a stub of aerodb that answers; the chip is shown as soon as there is a profile or an open content). The sheet, and so the
+    chips, is hidden when the profile cannot be built (`S.prof` null): the likely cause (no coordinates for UHMA and PAOM in the
+    published base, so no points, or a profile build that fails) is aerodb's side, not the date line; if the flight has its points
+    the chip is there. To see on a real run.
+  - **Limits kept**: airspace polygons that straddle 180° are not split (the SIA base has none); the profile's airspace crossings
+    compare the unrolled samples with polygons in [-180, 180[ (right except for volumes beyond 180°); the poles.
+  - **Measured** (Chromium, 390 × 844 touch, port 8836, MapLibre on a stub style because the tiles are blocked, and the plain
+    background): UHMA → PAOM and PAOM → UHMA, both fills: route longitudes continuous (177.74, 180.1, 194.55), projected steps all
+    the same sign, both aerodromes inside the canvas, marks 50 … 400 NM increasing, title 433 NM = sum of the legs (432.7), 0.3 % above the
+    great circle (431.6), chip visible, every aerodb box inside [-180, 180] (two boxes when the view crosses 180°), no tile
+    request beyond the world; panning to −170°, 6°, 0° at zoom 0.6, 170°, 190°: the route keeps its shape on the nearest copy; edit
+    mode as above. LFRS → LFML: the route points, projected x / y, marks, bbox and aerodb boxes are identical to the base commit, plain
+    and MapLibre, at 390 and 1280 px. Smoke of the 50 pages: 0 problem.
+  - **Added at the coordinator's request (suite case D5)**: the sheet note "Aeronautical database not published: the map shows only
+    the route." carries the "Offline data" button (`data-go="settings"`, the label of the `noZone` note, four languages): the status
+    line is gone from the map, so the note is the only way left to the setting.
+- **24 Oct 2026 — icons and `hidden` come from the frame** (relay cloud): `localIcon` and its three SVG copies are gone; the buttons use
+  `cloud`, `undo` and `move4` of `frame/lib/icons.js`, and the `[hidden]` rule on overlay buttons is the frame's (`primitives.css`).
+
+- **24 Oct 2026 — ETA of a flight that is not started** (relay cloud, fuel lot "flight date"; the only change in maps, `withEta`).
+  The ETA labels of the route points were drawn only for a started flight. Fuel now also writes `progress.eta` for a flight that is
+  not started but dated (`planned_at`, the flight date, counted from it as a started flight from `started.at`; INTEGRATION § 3 of fuel):
+  `withEta` no longer requires `started` and ignores the ETAs of a flight that is not started when the last one is past. Nothing else
+  of the started-flight drawing changes (`plannedPos`, the actual position and the trail still need `started`).
+
+- **24 Oct 2026 — the sheet body: the weather cut scrolls instead of being clipped; the drawing alone at the default position**
+  (relay cloud; user's words on iPhone captures: "Toujours le bug en bas (pas d'échelle x)" and "sur ce profil, on ne veut que le profil.
+  Le reste apparaît quand on slide le volet bas. Si on le rétracte, c'est ok par contre.").
+  - Cause of the clipped cut: `weatherBuild` draws at the body's measured height, but `drawSection` keeps a readability floor of 140 px
+    (`Math.max(140, o.height)`); the body was `overflow: hidden` (`.mp-dbody[data-kind=weather]`), so a body lower than 140 px (+12 px of
+    padding), as in landscape 844 × 390 before the frame's landscape column (117 px) or in a short window (390 × 520), cut the bottom: distance axis and labels. Same bug as Atmosphere's (`0f199a72e`).
+    Now `overflow-x: hidden; overflow-y: auto`: the floor is kept and the body scrolls; the cut is redrawn at the real height by the
+    existing `ResizeObserver` on the body and, since this lot, by `onSettle` (with the profile).
+  - The profile is a canvas that fits its box, so it never overflowed; it now has a floor too (`.mp-prof` 120 px) and its block
+    (`.mp-dprof`) scrolls below it, instead of crushing the labels.
+  - Rule (specification § 7.1.9): at the **default position the body shows the drawing alone** (profile or cut, the whole body height);
+    `.mp-strip` (the text line under the cursor) and `.mp-notes` appear only **expanded**, under the drawing. Collapsed: the frame already
+    hides everything but the handle. Pure CSS on the root's `data-sheet` (`:not([data-sheet="expanded"], .mp-tuning)`); the tuning page
+    keeps everything. Warnings stay in the floating notifications; the notes' text stays in the DOM (tests read it).
+  - Tests: `tests/v3/lib.py` `seed_forecast` / `open(forecast=True)` write a synthetic forecast in the weather store (the Weather chip
+    then draws without network); D4 measures, in portrait, landscape (column) and a short 390 × 520 window, that the cut's bottom is visible or reachable by a user scroll
+    (computed `overflow-y` auto, since a hidden body is scrollable by script only), that nothing leaves the sheet, that the profile
+    canvas takes at least 90 % of the body at the default position, and that strip and notes come expanded, under the drawing.
+
+- **24 Oct 2026 — complexity slider, administrator's thresholds, access to the tuning page** (relay cloud). The administrator's principle,
+  word for word: "there is a tuning page of the high and low thresholds for each element, the complexity slider only acts as if the
+  zoom were different. That is the point of these fine-tuning sliders: the admin (me) defines what a pilot wants to see at each zoom
+  level, through this tool page. Formerly reachable in the very advanced settings."
+  - **Slider = a zoom shift, nothing else.** One step is one whole zoom level (was ¾), range −4 … +4 (was −2 … +2: only 1.5 levels
+    down). Measured on a phone zoomed out on Europe: effective zoom 2.2 (28° wide) to 3.5 (zoom 4.5), so −4 puts it at or below 0 and
+    even the ranges that start at 0 (built-in IFR TMA / CTA / R) stop passing: case D14 reads 0 airspaces kept at −4 where step 0
+    keeps the three seeded ones. `MapsRender.detailZoom(step)` (clamp and conversion) and `DETAIL_MAX` are the single place, used by
+    `draw()` and by the screen; the slider's bounds are read from them. The map follows the finger (`input`, not only `change`).
+    Kept per mode on the device as before; an older stored value is clamped.
+  - **The slider is the first control of the Layers content**, right under the flight selector ("Complexité", the "(essai)" gone, the
+    value, a help sentence ×4: acts as if the zoom were different; what each zoom shows is set by the administrator).
+  - **Diagnosis of "the PRD, TMA and CTR sliders are now too lax"** (replay in Chromium, 390 px, LFRD → LFBD FL160, the real SIA base
+    of FR / GB / DE / BE / NL / IE / ES taken from the data repository, the real `airline/map_profiles.json` served through the
+    frame's cache like `tests/v3/lib.py` seeds data, then the same without the file; counters `kept.byKey` of `draw()`):
+    - **The file is read and applied.** `readSettings()` runs before the first drawing and again on every change of the file
+      (`ctx.data.watch`), `airline/` is in `meta.reads`, a missing file is fetched on demand through the transport by the frame;
+      the ranges of `elements.zoom` are merged key by key. In VFR at effective zoom 5.0 the file draws 20 P zones where the built-in
+      table (P from 7.5) draws none, and at 6.75 it keeps no TMA / R / D where the built-in keeps 17 / 15 / 6.
+    - **The cause: the file holds one mode only.** `airline/map_profiles.json` has `profiles.vfr` and nothing else (two commits of the
+      data repository, 23 Oct 15:27 and 17:18, both `vfr` alone): "Save for the airline" on the tuning page writes the mode on screen,
+      and the page opens on the device's current mode. Auto (the default), IFR low / high, Topo and CAM had no entry and drew with the
+      built-in table, which in IFR draws FIR, TMA, CTA, R and TSA from zoom 0: in Auto the file changed nothing (identical counts with
+      and without it: 54 spaces, 26 TMA, 19 R, 9 CTA, from effective zoom 2.2 up). The administrator thought of one table of
+      thresholds ("for each element"), the code had six.
+    - **Fix: a mode never tuned follows a tuned one** (`repoZoom`): its own entry, else another mode of its family (IFR: Auto, Low,
+      High, CAM; VFR: VFR, Topo), else for an IFR mode only the VFR family (stricter values; the IFR corridor already thins the
+      map; never the reverse, which would loosen VFR, which has no corridor). Only the ranges are inherited, not the boxes. The
+      tuning page says where the mode on screen takes its thresholds from; "Save for the airline" makes them the mode's own.
+      After the fix, Auto with the file keeps no airspace at effective zoom 4.0, and P (3) from 5.0.
+    - **The SFC–UNL debt does not take part**: in the published base of FR, GB and DE no volume is SFC → UNL (the upper limit is
+      FL 999 / 660 on 36 GB D, 25 FR D, 6 FR R...: a few dozen of 5,300 airspaces, none of them TMA or CTR); the entry stays open.
+    - **Not testable here**: the real transport (GitHub on the Pages site, a first launch with an empty cache): the frame reads it
+      through `fetchOne`, tested by the frame's own cases; on a real phone, to see after a first install.
+  - **Access to the tuning page**: it already existed, `#maps?tune=1` in the Administration card of Settings (Full level, "Complet"),
+    declared in `frame/settings/admin_links.js`; the user did not find it (a link among others, only at the Full level). It is now
+    the button "Map threshold tuning (administrator)" (`btn: true`, `f-btn primary`), the sentence says what the page is for and
+    that the slider only shifts the zoom; back by the usual way. Settings: one line in its `DECISIONS.md`, the manual in four
+    languages. Case D16 walks it (level 2: no card; level 3: the button, the page, back).
+  - **Tests**: D14 (slider first, label ×4, minimum = nothing on Europe, one step = one level, kept after a reload), D15 (the file's
+    P 5..10 and D 7.75..10 respected in VFR, the built-in values without the file, IFR low following VFR), D16.
+    `lib.Ctx.open(docs=, airspaces=)` seeds more documents and airspaces.
+- **24 Oct 2026 — the drawing fits the sheet; no title above a drawing** (relay cloud, V3 spec § 7.1.13; the user, iPhone 390 px, twice:
+  "c'est toujours le même souci, les abscisses invisibles" and "Toujours la ligne « météo fl160 ». On le sait, c'est affiché juste
+  au-dessous… prend de l'espace vertical").
+  - **Cause of the invisible axis**: the sheet's default panel never goes under 170 px; its body was 170 − 45 (head) − 8 (margin) − 12
+    (padding) − 2 (border) = 103 px of cut for a drawing that `drawSection` never draws under 140 px: the body scrolled (rule 9 of the
+    afternoon made it scroll rather than clip, which the user rightly does not take for an answer). Fixing the scroll was the wrong
+    level: the drawing must be the size of its place.
+  - **Refinement (user, 21:05: "toujours la ligne d'en-tête superfétatoire au niveau moyen. Utile en volet agrandi ou réduit et paysage")**:
+    the bare head is for the **default position only**; expanded, collapsed and in the landscape column (`html.f-land`) the head keeps
+    its title (`dataHead`: `sheetKeep === 'default' && !html.f-land`, re-run by the sheet's `onChange` and by `onSheetSettled`). The
+    handle's label then is the plain height label. `drawSection` has the `minHeight` option now (atmosphere lot, default 0): the call
+    passes 0 explicitly.
+  - **Bare head** (b): over the profile or the cut, at the default position, the module puts `.f-sheet-head-bare` on the head (frame
+    primitive `57f1e77c6`: the module's TEMP rule is gone). Title text and
+    tooltip are emptied (written only on change). The handle keeps its meaning for the ear and the keyboard: `title` / `aria-label` =
+    "Profil vertical" / "Coupe météo" (existing four-language rows), then the flight summary no longer written (FL, NM, planned /
+    flying: still said, the tests read it there), then the height hint. **Collapsed** the head goes back to the normal 45 px line with
+    its title (nothing is drawn under it, and the frame's collapsed height is its head token), as it does expanded and in landscape. The chips are 24 px visible (40 wide) in the 28 px line with a 44 px touch zone that overflows downward (`::after`,
+    `z-index: 2` over the profile box, which is later in the DOM); the top is clipped by the panel. `dataHead` now runs **before**
+    `build` in `openData`: the head and the unhidden panel fix the height the drawing is given.
+  - **Fit** (a): the cut's body loses margin-bottom, border and padding (`data-kind=weather`) and the cut is asked for `floor(clientHeight)`
+    and the whole width, with `minHeight: 0` (`drawSection`'s `minHeight` option, default 0, came with the atmosphere lot of the same evening: its own floor is 60 px now, so a cut shorter than the body never happens at the sheet's 170 px floor, body 142 px). The profile loses its 120 px floor and its scroll. `vertical_profile.js` (maps' copy): level labels thinned
+    by height (÷2 under 160 px, ÷4 under 110 px, never closer than 13 px, grid lines with them), the route points laid out first
+    (`placed`) so that the foot shrinks from 64 to 38 px (× scale) when one row is enough and the canvas is under 200 px, geometry returns
+    `marks` and `axisOk`; `drawProfile` writes `data-axis` / `data-marks` on the canvas and skips the airways' extra points under a 90 px
+    plot. The cut writes `data-axis` on its body (svg bottom inside the body).
+  - **Measured** (390 × 844 iPhone-sized, standard design, seeded flight and forecast; body = the area under the head): profile
+    174 → 191 px (head 44 → 27), cut 152 → 191 px (box 166 → 191 px: head, margin, padding, border); landscape 844 × 390 (column, titled head since the refinement): profile 289 → 289 px (unchanged, the head is 44 px there), cut 267 → 289 px, axis visible. At the 170 px floor the profile is 142 px: ticks 0 / FL100 / FL200, both
+    rows of points, axis in the canvas; below 110 px (not reachable with the frame's tokens) the plot gets thin but the axis stays.
+  - **Not done / for others**: A notification toast (e.g. "Accès aux
+    données non réglé") covers the lower part of the sheet on a phone: the frame's notifications, not the sheet's business, but worth a
+    look on the user's captures.
+  - **Second refinement (user, 21:25, on the cut: "supprimer espace jaune et texte rayé rouge, aligner boutons verticalement à droite
+    (horizontalement en paysage)")**: the Profile · Weather chips leave the handle row. They are a direct child of the sheet panel after
+    the head (outside the drag zone), absolutely placed as a 44 px column at the right under the head (`top` = the head's height, bare 28 or
+    normal 44), the drawing's block gets `margin-right: 44px` while they are shown (`.mp-chipcol` on the panel, set by `dataHead`);
+    in the landscape column (`html.f-land`) they are a static 44 px row after the head, above the drawing. Chips of 40 px on a 44 px
+    pitch (the zones touch, never overlap). The drawing's side margins go from 8 to 4 px (profile block and cut). The "yellow space"
+    left of the FL labels is partly the cut's own label gutter (`sectionSvg`: `l = 54` px, labels right-aligned): that one is in
+    atmosphere's file, not touched. The profile's gutter (`padL`) goes from 58 to 50 × scale (the labels "FL 250" still fit). The
+    frame's bare-handle primitive (`57f1e77c6`) replaces the module's TEMP rule; the cut's chips are not in it any more, so none of
+    the primitive's button rules apply to them.
+  - **Third refinement (user, 21:40: "Les icônes passent en horizontal quand la ligne du haut apparaît (objectif : maximiser la largeur
+    dispo)")** — lot `v3-maps-puces`: the column of chips exists only with the bare handle; with the title line (expanded, collapsed,
+    `html.f-land`) the same element (absolutely placed at the top right of the panel, `.mp-chips`) is a row inside the head band, the
+    grip keeps 92 px free at its right (`.mp-chipcol .mp-dhead:not(.f-sheet-head-bare) .f-sheet-grip`), and the drawing's right margin
+    is added only after a bare head. The landscape row above the drawing is gone. CSS only: the classes already switch at each position
+    change and at `onSettle`.
+  - **Legend, cut drag, airspaces list (relay, same lot `v3-maps-puces`)**: (1) *Legend* (spec § 7.1.14): third chip `data-legend`
+    (icon `info`, "Légende" ×4), overlay `.mp-legend` over the drawing (closed by chip, tap, Escape — `escapeKey` first), rows from
+    `legendRows`: the profile's `geo.drawn` (new, returned by `vertical_profile.draw`, completed by `profile.js` with relief / MORA) and the
+    sheet's own marks; the cut: `Sx.sectionLegend` if atmosphere exposes it — **it does not**, so no "i" over the cut (to ask the
+    atmosphere session: `sectionLegend(o)` → rows with their four-language labels). (2) *Drag on the cut* ("on peut glisser sur le profil
+    vertical… pas sur le même en météo"): the cut only had a tap handler; added pointer capture + rAF-throttled `setCursor` through the
+    geometry `drawSection` already returns (`nmOf`, `x0`, `pw`), body `touch-action: none`; the cursor line was already drawn by
+    `sectionSvg` from `cursorM`. (3) *Airspaces list* ("Texte trop gros : pas uniforme, perd de l'espace"): the measured font was the
+    body's 13.8 px (no inherited `.f-card` size): the list looked big next to the Layers rows (12.7 px) and, above all, each entry was
+    one string `TYPE NAME LOW|UP CLASS` that wrapped by word into 3–4 lines in a 141 px column (the 44 % wide level graph left the list
+    141 of 303 px in the landscape column). Now one nowrap line per entry (name ellipsed, levels and class kept), 0.95 em, graph at most 30 %
+    wide with 20 px columns when narrow. The VFR points, levels and aerodrome lists keep the body size (the same `.mp-dbody` rule).
+  - **Added the same evening (relay, user)**: (1) *Layers, Complexity block*: "Réduire l'espace jaune (slider de couches des cartes)":
+    the block was 73 px (label line 17 + 8 gap + 4 margin + 44 slider, wrapped) plus the help sentence under it (51 px at 390 px,
+    `.mp-l-help`), about 120 px for one slider in the five designs (the designs do not style the label: the gap was the module's own
+    wrapping and the help line). Now label · value · slider on one nowrap row of 44 px (`.mp-l-detail`, slider `flex: 1 1 auto`,
+    `min-width: 90px`), the hairline under it; the help is visually hidden but stays in `aria-describedby` and the label's `title`
+    (the visible sentence is gone, the user asked for the space). Block 49 px in standard, metro, swiss, cupertino, material. Case D17.
+    (2) *Airway names above the strokes* ("Afficher les noms des AWY au-dessus des traits, pas l'inverse"): `drawAirways` stroked and
+    named segment by segment, so a later airway's stroke crossed an earlier name; strokes now first (`named` list), names second, in
+    the same order, same placement (`pl.take`), nothing else moves in the drawing order (zones, points, route, landmarks). Note: the
+    name is a filled cartouche in the airway's colour with the name in paper colour (not a white halo), so the stroke is not
+    interrupted by a white rectangle: the "halo under the stroke" of the user's precision has nothing to apply to here; the end
+    bearings (`deg3`, with a halo) were already drawn last. Case D18 (the recorded call order of `R.draw` on the render bench page:
+    fails on the old `render.js`, passes now).
+  - **Tests**: D4 (bare head 28 ± 2, no visible title, chip touch zone ≥ 40 px, grip label names the drawing in four languages, the
+    drawing's height = the body's, axis inside, `data-axis`, point labels drawn, in portrait, landscape column, 390 × 520, expanded;
+    collapsed gets its title back); D3 / D8 / D11 / C5 / C6 / J1 / J2 read the flight summary and the profile's name from the handle's
+    label (`lib.Ctx.grip`) instead of the title.

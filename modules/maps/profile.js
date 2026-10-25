@@ -137,6 +137,8 @@
       strictLabels: true,
       reserveBottom: 18 * scale // marques NM posées par module.js au bas de la coupe
     });
+    geo.drawn.terrain = !!data.terrainOk;
+    geo.drawn.mora = !data.terrainOk && data.samples.some(q => Number.isFinite(q.mora));
     if (!data.terrainOk && data.samples.some(q => Number.isFinite(q.mora))) {
       const X = s => xOf(geo, s),
         Y = ft => geo.padT + (geo.H - geo.padT - geo.padB) * (1 - (Math.min(Math.max(ft, geo.bottom), geo.top) - geo.bottom) / (geo.top -
@@ -208,7 +210,9 @@
       d = Infinity;
     const k = Math.cos(lat * Math.PI / 180);
     for (const q of data.samples) {
-      const e = Math.hypot(q.lat - lat, (q.lon - lon) * k);
+      const dl = q.lon -
+        lon, // modulo 360 : les échantillons sont sur la route déroulée (un point de l'autre côté de la ligne de changement de date)
+        e = Math.hypot(q.lat - lat, (dl - 360 * Math.round(dl / 360)) * k);
       if (e < d) {
         d = e;
         best = q.s;
