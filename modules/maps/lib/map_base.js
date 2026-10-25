@@ -126,6 +126,10 @@ export async function startTiles(container, {
           }
         }),
         attributionControl,
+        // MapLibre ne suit pas seul la taille de son cadre (fenêtre, ResizeObserver) : il se redimensionnerait à chaque image d'un
+        // mouvement de la feuille, effaçant son canvas avant de le redessiner (le clignotement, la zone grise). La taille est reprise
+        // à l'endroit que choisit l'hôte, une fois qu'elle est arrêtée : mapSize() (plus bas)
+        trackResize: false,
         dragRotate: false,
         pitchWithRotate: false,
         touchPitch: false,
@@ -135,6 +139,8 @@ export async function startTiles(container, {
       return finish(null); // pas de WebGL
     }
     map.touchZoomRotate.disableRotation();
+    if (attributionControl?.compact) collapseAttribution(
+      map); // le contrôle est déjà là (vide) : replié et marqué compact tout de suite
     onCreate?.(map);
     map.on('style.load', () => {
       try {
@@ -157,12 +163,17 @@ export async function startTiles(container, {
 }
 
 /** Mention des sources en contrôle compact : MapLibre la montre d'abord ouverte (tout le texte sur une bande au bas de la carte),
- *  elle est repliée ici sur son bouton « i » ; un toucher sur le bouton la rouvre. */
+ *  elle est repliée sur son bouton « i » ; un toucher sur le bouton la rouvre. Elle est aussi MARQUÉE compacte
+ *  (`maplibregl-compact`) : le contrôle de MapLibre n'ouvre la mention d'office (`open`, `compact-show`) que tant qu'il n'a pas
+ *  cette classe, à chaque `resize` de la carte (_updateCompact) ; dès qu'une mention a un texte et que la carte est
+ *  redimensionnée — ce que fait toute reprise de taille de la feuille —, elle se rouvrait. Posée dès la création du contrôle
+ *  (il existe tout de suite, vide), elle ne dépend plus du moment où le style charge ; écrit seulement si cela change. */
 function collapseAttribution(map) {
   const a = map.getContainer().querySelector('.maplibregl-ctrl-attrib');
   if (!a) return;
-  a.removeAttribute('open');
-  a.classList.remove('maplibregl-compact-show');
+  if (a.hasAttribute('open')) a.removeAttribute('open');
+  if (a.classList.contains('maplibregl-compact-show')) a.classList.remove('maplibregl-compact-show');
+  if (!a.classList.contains('maplibregl-compact')) a.classList.add('maplibregl-compact');
 }
 
 // ---------------------------------------------------------------- taille du cadre
@@ -170,8 +181,8 @@ function collapseAttribution(map) {
 const own = new WeakSet();
 /** Vrai pendant que mapSize() redimensionne la carte : son « movestart » n'est pas un geste de l'utilisateur. */
 export const isOwnResize = map => own.has(map);
-/** Fond MapLibre ramené à la taille de son cadre s'il ne l'a plus (map.resize seulement dans ce cas) : à appeler à chaque
- *  changement de taille, au chargement et au changement de style, au retour d'un onglet caché ou d'une page gelée (les
+/** Fond MapLibre ramené à la taille de son cadre s'il ne l'a plus (map.resize seulement dans ce cas ; MapLibre ne le fait pas seul,
+ *  `trackResize: false`) : à appeler quand la taille du cadre s'est arrêtée, au chargement et au changement de style, au retour d'un onglet caché ou d'une page gelée (les
  *  observations de taille faites pendant ce temps sont perdues) et à chaque dessin. resize() tire « movestart », que l'hôte
  *  ne doit pas prendre pour un geste de l'utilisateur : il le reconnaît par isOwnResize(map). Rend vrai si la carte a été
  *  redimensionnée. */

@@ -6,17 +6,18 @@ Rules covered
   * Layers inside the sheet, flight selector first (D3); the Profile / Weather chips (D4);
   * the "data access not set" / "database not published" notice, once per mount (D5, D5b); the modes panel (D6); the folded attribution (D7);
   * a started flight (D8), no flight (D9), a mission map without data (D10);
-  * the map's own controls stay above the sheet, one attribution, one "i" icon (D19);
+  * the map's own controls stay above the sheet, one attribution, one "i" icon (D19); nothing of the map is redrawn, resized or grey while
+    a finger drags the sheet (D20);
   * L1 the sheet content is closable and leaves the map half the view (D11); L3 the profile canvas draws one level and no
     green / orange dots (D12); L14 a drag on the map or a wheel on the sheet does not close a content (D13).
 
-Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 D17 D18 D19 (the complexity slider, the airline's thresholds, the tuning page's access: 24 Oct).  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
+Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 D17 D18 D19 D20 (the complexity slider, the airline's thresholds, the tuning page's access: 24 Oct).  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
 MapLibre runs on an empty style answered by the runner, so the attribution control exists without any network.
 """
 import re
 import time
 
-from lib import FLIGHT, MAP_JS, ROOT, Fail, Skip, case, forget, norm, tx
+from lib import FLIGHT, MAP_JS, ROOT, STUB_STYLE, Fail, Skip, case, forget, norm, tx
 
 M = 'modules/maps/module.js'
 APP = 'frame/app.js'
@@ -448,20 +449,44 @@ def d6(c):
 
 @case('D7', 'Attribution folded', 'D', tags=('maps', 'overlay'), screens=False, rule='amendment of 24 Oct (one credit, folded)')
 def d7(c):
+    """The credit is folded from the moment the control exists, not from the map's `load` event.  The base style is held back (its
+    request is answered only when the case says so), so the control exists and the map has not loaded: the state is read there,
+    then after the load, then after a resize of the map (MapLibre re-opens an unmarked compact control at every resize).  No delay
+    anywhere: each step waits on a state (the held request, the control, its text)."""
     for m, root in (('maps', MAPS), ('atmosphere', '[data-module="atmosphere"]')):
+        held = []
+        c.page.route(re.compile(r'^https://tiles\.openfreemap\.org/styles/'), lambda route, request, held=held: held.append(route))
         c.open(m, flight=True)
+        sel = f'{root} .maplibregl-ctrl-attrib'
         try:
-            c.page.wait_for_function(f"!!document.querySelector('{root} .maplibregl-ctrl-attrib')", timeout=10000)
+            c.page.wait_for_function(f"!!document.querySelector('{sel}')", timeout=10000)
         except Exception:
             raise Skip(f'#{m}: MapLibre did not start with the empty style, so there is no attribution control to measure') from None
-        c.wait(500)
-        a = c.js(f"""(() => {{ const a = document.querySelector('{root} .maplibregl-ctrl-attrib'); return {{ n: document.querySelectorAll('{root} .maplibregl-ctrl-attrib').length,
+        read = f"""(() => {{ const a = document.querySelector('{sel}'); return {{ n: document.querySelectorAll('{sel}').length,
             open: a.hasAttribute('open'), compact: a.classList.contains('maplibregl-compact'), show: a.classList.contains('maplibregl-compact-show'),
-            w: a.getBoundingClientRect().width, credit: document.querySelectorAll('{root} .mp-credit').length }} }})()""")
-        c.eq(a['n'], 1, 'exactly one credit control on the map', what=f'#{m} attribution controls')
-        c.ok(a['compact'] and not a['open'] and not a['show'], f'#{m} attribution compact={a["compact"]} open={a["open"]} shown={a["show"]}', 'compact and folded after the load')
+            empty: a.classList.contains('maplibregl-attrib-empty'), w: a.getBoundingClientRect().width,
+            credit: document.querySelectorAll('{root} .mp-credit').length }} }})()"""
+        def check(when):
+            a = c.js(read)
+            c.eq(a['n'], 1, 'exactly one credit control on the map', what=f'#{m} attribution controls {when}')
+            c.ok(a['compact'] and not a['open'] and not a['show'], f'#{m} {when}: attribution compact={a["compact"]} open={a["open"]} shown={a["show"]}', 'compact and folded')
+            c.eq(a['credit'], 0, 'no second credit text (.mp-credit)', what=f'#{m} .mp-credit elements {when}')
+            return a
+        check('before the style loaded')
+        deadline = time.time() + 15
+        while not held and time.time() < deadline:
+            c.page.wait_for_timeout(50)
+        c.ok(bool(held), f'#{m}: the base style was never requested', 'MapLibre asks for the style')
+        for route in held:
+            route.fulfill(status=200, content_type='application/json', body=STUB_STYLE)
+        c.page.unroute(re.compile(r'^https://tiles\.openfreemap\.org/styles/'))
+        c.until(f"""(() => {{ const a = document.querySelector('{sel}'); return !!a && !a.classList.contains('maplibregl-attrib-empty') }})()""",
+                timeout=15000, what=f'#{m} the attribution control carries its text (the style loaded)')
+        a = check('after the load')
         c.le(round(a['w']), 40, 'the folded attribution is a small button', what=f'#{m} attribution width')
-        c.eq(a['credit'], 0, 'no second credit text (.mp-credit)', what=f'#{m} .mp-credit elements')
+        c.page.set_viewport_size({'width': c.width, 'height': c.height - 7})      # MapLibre resizes its map on a window resize
+        c.settle()
+        check('after the map was resized')
 
 
 @case('D8', 'Started flight', 'D', tags=('maps',), screens=False, langs4=True, rule='maps lot points 4 and 5')
@@ -892,3 +917,113 @@ def d19(c):
     c.settle()
     c.wait(600)
     chrome_check(c, 'landscape column', side=True)
+
+
+_DRAG_JS = """() => {
+  const r = document.querySelector('[data-module="maps"]'), ev = window.__dragEv = [];
+  window.__dragOn = false;
+  const watch = (el, name) => { if (!el) return;
+    for (const k of ['width', 'height']) { const d = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, k);
+      Object.defineProperty(el, k, { get() { return d.get.call(this) }, set(v) { ev.push({ on: window.__dragOn, k: name + ' ' + k }); d.set.call(this, v) }, configurable: true }) } };
+  watch(r.querySelector('.maplibregl-canvas'), 'map canvas');
+  watch(r.querySelector('canvas.mp-over'), 'overlay canvas');
+  watch(r.querySelector('canvas.mp-pc'), 'profile canvas');
+  if (window.maplibregl && !window.maplibregl.__dragWrapped) { const o = maplibregl.Map.prototype.resize;
+    maplibregl.Map.prototype.resize = function () { ev.push({ on: window.__dragOn, k: 'map.resize' }); return o.apply(this, arguments) };
+    window.maplibregl.__dragWrapped = true }
+  new MutationObserver(() => ev.push({ on: window.__dragOn, k: 'sheet body rewritten' })).observe(r.querySelector('.mp-dbody'), { childList: true });
+}"""
+_SAMPLE_JS = """() => { const r = document.querySelector('[data-module="maps"]'), q = s => r.querySelector(s), rc = e => { const b = e.getBoundingClientRect();
+    return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height } };
+  const m = q('.maplibregl-canvas'), o = q('canvas.mp-over');
+  return { panel: rc(q('.f-sheet-panel')), box: rc(q('.mp-box')), map: m ? rc(m) : null, ocw: o.width, och: o.height, sheet: r.dataset.sheet,
+           base: getComputedStyle(q('.mp-box')).backgroundColor } }"""
+
+
+def still_drag(c, side):
+    """One slow drag of the grip, the finger always down: to the lower end, then up to the upper end, then back; a sample after every move."""
+    g = c.box(f'{MAPS} .f-sheet-grip')
+    x, y = g['x'] + g['w'] / 2, g['y'] + g['h'] / 2
+    path = [0, 5, 10, 15, 20, 25, 30, 35, 30, 20, 10, 0, -10, -20, -30, -35, -30, -20, -10, 0]       # steps of 14 px from the start
+    m = c.page.mouse
+    m.move(x, y)
+    m.down()
+    c.js('() => { window.__dragOn = true; window.__dragEv.length = 0 }')
+    samples = []
+    for i, s in enumerate(path):
+        # portrait: the finger goes down (+y) to lower the sheet; landscape: it goes right (+x) to narrow the column
+        pos = (x + s * 14, y) if side else (x, y + s * 14)
+        m.move(*pos)
+        c.wait(60 if i % 4 else 230)                              # now and then longer than onSettle (120 ms): still nothing
+        smp = c.js(_SAMPLE_JS)
+        smp['f'] = pos[0] if side else pos[1]
+        # the frame of the map grows while the sheet goes down, the map keeps its size (nothing is redrawn): the strip it shows beyond the
+        # map's own edge must be the map's background colour, never the page's grey
+        gap = (smp['box']['r'] - smp['map']['r']) if side else (smp['box']['b'] - smp['map']['b']) if smp['map'] else 0
+        if smp['map'] and gap >= 14:
+            if side:
+                pts = [(smp['map']['r'] - 8, smp['box']['t'] + 4), (smp['box']['r'] - 6, smp['box']['t'] + 4)]
+            else:
+                pts = [(3, smp['map']['b'] - 10), (3, smp['box']['b'] - 6)]
+            smp['inside'], smp['strip'] = c.pixels(pts)
+        samples.append(smp)
+    during = c.js('() => window.__dragEv.filter(e => e.on).map(e => e.k)')
+    m.up()
+    c.js('() => { window.__dragOn = false }')
+    return samples, during
+
+
+@case('D20', 'Still during a sheet drag', 'D', tags=('sheet', 'maps'), screens=False,
+      rule='user 24-25 Oct "Déplacer le volet par la poignée fait clignoter et apparaître une zone grise" (V3 spec 7.1 rule 19): the map is not redrawn or resized while the finger drags the sheet, and no grey strip shows')
+def d20(c):
+    c.open('maps', flight=True, forecast=True)
+    c.page.add_style_tag(content='#fNotes{display:none!important}')
+    c.wait(1200)
+    c.settle()
+    strips = 0
+    for side in (False, True):
+        what = 'landscape column' if side else 'portrait'
+        if side:
+            c.page.set_viewport_size({'width': 844, 'height': 390})
+            c.until("document.documentElement.classList.contains('f-land')", what='the frame switches to the landscape column')
+            c.wait(600)
+            c.settle()
+        c.js(_DRAG_JS)
+        samples, during = still_drag(c, side)
+        # nothing is redrawn, resized or rewritten while the finger is down (map, overlay, profile, sheet body)
+        tally = {k: during.count(k) for k in dict.fromkeys(during)}
+        c.eq(tally, {}, f'{what}: nothing is redrawn while the finger drags the sheet (map, overlay, profile)', what=f'{what}: events during the drag (count by kind)')
+        s0 = samples[0]
+        for k, s in enumerate(samples):
+            # the map's frame stays against the sheet (no hole between them), the map's own canvas keeps its size (it is not resized)
+            gap = (s['panel']['l'] - s['box']['r']) if side else (s['panel']['t'] - s['box']['b'])
+            c.ok(abs(gap) <= 1.5, f'{what}: sample {k}: {gap:.1f} px between the map frame and the sheet', 'the map frame stays against the sheet')
+            if s['map']:
+                c.ok(abs(s['map']['w'] - s0['map']['w']) <= .5 and abs(s['map']['h'] - s0['map']['h']) <= .5,
+                     f'{what}: sample {k}: MapLibre canvas {s["map"]["w"]:.0f}x{s["map"]["h"]:.0f} (was {s0["map"]["w"]:.0f}x{s0["map"]["h"]:.0f})', 'the MapLibre canvas is not resized')
+            c.ok(s['ocw'] == s0['ocw'] and s['och'] == s0['och'], f'{what}: sample {k}: overlay bitmap {s["ocw"]}x{s["och"]} (was {s0["ocw"]}x{s0["och"]})', 'the overlay bitmap keeps its size')
+            if 'strip' in s:
+                strips += 1
+                d = max(abs(a - b) for a, b in zip(s['inside'], s['strip']))
+                c.ok(d <= 6, f'{what}: sample {k}: the strip beyond the map is rgb{s["strip"]}, the map rgb{s["inside"]} (frame background {s["base"]})',
+                     'the strip the frame shows beyond the map has the map\'s background colour, not the page\'s grey')
+        # the sheet follows the finger: its size changes with the finger's travel, never against it
+        key = 'w' if side else 'h'
+        for a, b in zip(samples, samples[1:]):
+            df, dp = b['f'] - a['f'], b['panel'][key] - a['panel'][key]
+            up, down = df < 0, df > 0                              # finger up (portrait) or left (column): a bigger sheet
+            c.ok(not (up and dp < -1.5) and not (down and dp > 1.5), f'{what}: finger moved {df:+.0f} px, sheet {a["panel"][key]:.0f} -> {b["panel"][key]:.0f} px',
+                 'the sheet size is monotone with the finger')
+        lo, hi = min(s['panel'][key] for s in samples), max(s['panel'][key] for s in samples)
+        c.ok(hi - lo > 60, f'{what}: the sheet only moved from {lo:.0f} to {hi:.0f} px', 'the drag moves the sheet by more than 60 px')
+        c.settle()
+        c.wait(400)
+        # released: one resize of the map, one size of the overlay bitmap (the size settled), no more
+        after = c.js('() => window.__dragEv.filter(e => !e.on).map(e => e.k)')
+        c.le(after.count('map.resize'), 1, 'at most one map.resize after the release', what=f'{what}: map.resize calls after the release ({after})')
+        c.le(after.count('overlay canvas width'), 1, 'the overlay bitmap is sized once after the release', what=f'{what}: overlay canvas resets after the release')
+        end = c.js(_SAMPLE_JS)
+        c.ok(end['map'] is None or (abs(end['map']['w'] - end['box']['w']) <= 2 and abs(end['map']['h'] - end['box']['h'] + 2) <= 3),
+             f'{what}: settled: MapLibre canvas {end["map"] and round(end["map"]["w"])}x{end["map"] and round(end["map"]["h"])} in a frame of {end["box"]["w"]:.0f}x{end["box"]["h"]:.0f}',
+             'after the settle the MapLibre canvas fills its frame')
+    c.ok(strips > 0, 'no sample showed the strip beyond the map', 'the drag lowers the sheet far enough for the frame to outgrow the map (the colour check ran)')

@@ -444,8 +444,7 @@ details.f-card[open]>summary {
   background: var(--sog-surface);
   border-top: 1px solid var(--sog-border);
   border-radius: var(--sog-radius) var(--sog-radius) 0 0;
-  box-shadow: 0 -2px 8px #0000001a;
-  transition: height .2s ease
+  box-shadow: 0 -2px 8px #0000001a
 }
 .f-sheet[data-sheet="collapsed"]>.f-sheet-panel {
   height: var(--f-sheet-head)
@@ -458,15 +457,11 @@ details.f-card[open]>summary {
 :where(html:not(.f-land)) .f-sheet[data-sheet="collapsed"]>.f-sheet-panel>:not(.f-sheet-head) {
   display: none
 }
-/* pendant un glisser, et pour un changement sans glissement : pas de transition */
-.f-sheet>.f-sheet-panel.f-sheet-nt {
-  transition: none
-}
-@media (prefers-reduced-motion: reduce) {
-  .f-sheet>.f-sheet-panel {
-    transition: none
-  }
-}
+/* Pas de transition CSS sur la hauteur : le glisser et le glissement jusqu'à la position se font sur une couche que sheet.js
+   pose en ligne le temps du mouvement (hauteur --f-sheet-live, marge opposée calc(--f-sheet-rest − --f-sheet-live) : la carte ne
+   change pas de taille) et retire à la fin ; la hauteur de repos est celle des règles ci-dessus, posée une fois. La classe
+   `f-sheet-nt` n'a pas de règle : elle dit aux modules « la feuille est sous le doigt ou vient d'être placée sans glissement :
+   ne dessinez pas maintenant » (le dessin reprend à onSettle). */
 .f-sheet .f-sheet-head {
   flex: none;
   display: flex;
@@ -616,8 +611,7 @@ html.f-land .f-sheet>.f-sheet-panel {
   border-top: 0;
   border-left: 1px solid var(--sog-border);
   border-radius: var(--sog-radius) 0 0 0;
-  box-shadow: -2px 0 8px #0000001a;
-  transition: width .2s ease
+  box-shadow: -2px 0 8px #0000001a
 }
 html.f-land .f-sheet[data-sheet="expanded"]>.f-sheet-panel {
   width: max(var(--f-sheet-side-max), var(--f-sheet-side-min))
@@ -639,14 +633,6 @@ html.f-land .f-sheet .f-sheet-head.f-sheet-head-bare .f-sheet-grip::after {
 }
 html.f-land .f-sheet[data-sheet="expanded"] .f-sheet-head .f-sheet-grip::after {
   transform: rotate(-135deg)
-}
-@media (prefers-reduced-motion: reduce) {
-  html.f-land .f-sheet>.f-sheet-panel {
-    transition: none
-  }
-}
-html.f-land .f-sheet>.f-sheet-panel.f-sheet-nt {
-  transition: none
 }
 
 /* ---- couche de superposition d'un module fixe (frame/INTEGRATION.md § 9.3) : deux colonnes de boutons posées sur la zone de

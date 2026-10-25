@@ -1267,3 +1267,58 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     (from Fuel step 3, Report step 2 and Flights: the address, the paragraph in the window with `f-hl`, the class gone within
     1.5 s, an unknown anchor and a chapter alone highlight nothing; ×4 languages), A18 (✕, still hidden after a reload, per module,
     the way back).
+- **25 Oct 2026 — The sheet is rewritten from the fixed rules (V3_SPECIFICATION § 7.1 rule 19; relay cloud, branch `v3-feuille-v2`)**:
+  user, 24-25 Oct: "Déplacer le volet par la poignée fait clignoter et apparaître une zone grise" / "il lui arrive de clignoter. C'est le
+  signe qu'il faut totalement le reprendre, à partir des specs maintenant fixées. On repart d'une feuille vierge… Le résultat doit
+  être le même qu'aujourd'hui fonctionnellement".
+  - **Diagnosis, before any code** (Chromium 390 × 844 and 844 × 390, `frame/index.html#maps` with the flight of the D cases and a
+    forecast, MapLibre on the runner's empty style; a `MutationObserver` on attributes, `ResizeObserver`s on the map frame, the panel,
+    the body and the profile frame, setters of every canvas's `width` / `height`, a wrapper of `maplibregl.Map.prototype.resize` with
+    its call stack; the drag is a mouse down on the grip, 4 slow legs of 24 moves every 40 ms, then the same in 6 fast moves every 8 ms;
+    the scripts are in the session's scratchpad). **Reproduced.** Portrait, slow drag, 394 frames, 62 height changes of the panel:
+    **69 `map.resize()`**, 69 resets of the MapLibre canvas (each one clears it; MapLibre draws again on the next `requestAnimationFrame`, and
+    a `ResizeObserver` callback runs after layout and before paint, so the frame in between is painted with an empty canvas and the
+    frame's background, the page's grey: the blink and the grey zone), 62 resets of the module's overlay canvas (redrawn at once),
+    50 resets and redraws of the profile canvases, 138 toggles of the tooltips, 62 `ResizeObserver` callbacks on the map frame; 9 more
+    `map.resize()` and as many resets after the release (the 200 ms height transition keeps the frame moving). Fast drag: 19 resizes for
+    16 changes. Landscape column: 35 and 11. **Who calls `resize`**: of 50 calls in a 48-move drag, **48 come from MapLibre's own
+    `ResizeObserver`** (`trackResize`, on by default: its stack ends in `maplibre-gl.js … ResizeObserver`), 2 from the module's `mapSize()`
+    (the canvas is rarely still at the old size when the module's observer runs, MapLibre has just resized it).
+  - **Conclusion: the flicker is the Carte's, not the primitive's.** The primitive wrote one height per `pointermove` (62 writes for 62
+    changes; but it also read `getComputedStyle`, `clientHeight` and `getBoundingClientRect` at every move, a forced layout each time, and
+    left the 200 ms CSS transition to move the frame for 12 more frames after the release): it changes the frame, it never touches a
+    canvas. The Carte's glue answered every size change of its frame by resizing and redrawing everything: MapLibre's own observer
+    (`map_base.startTiles`, `trackResize` default), the module's observer of the frame (`mapSize` + overlay resize and redraw), of the
+    sheet (`setBottomInset`), of the body (`redrawWeather`) and of the profile frame (`drawProfile`): four observers plus MapLibre's.
+    Atmosphere does not flicker for the same primitive because its map container is oversized under the sheet (`--at-full-h`): its frame
+    clips it, nothing resizes while the sheet moves, and its observers return while `f-sheet-nt` is on the panel (E7 passes there).
+    Measured on the new code: during the same drags 0 `map.resize()`, 0 canvas resets, 0 `ResizeObserver` reactions that act (the
+    observers fire, the module's only calls `sheet.settle()`, which does nothing while the sheet moves); after the release, one
+    `map.resize()` and one resize of the overlay when the position changed.
+  - **`frame/lib/sheet.js` written again**, same API (`createSheet({ root, panel, head, grip, pos, ignore, labels, locked, onChange,
+    onSettle }) → { pos, set, settle, stop }`), same HTML, same classes (`.f-sheet`, `-panel`, `-head`, `-grip`, `-title`, `-close`,
+    `-body`, `-head-bare`, `f-sheet-nt`), same tokens (`--f-sheet-*`, `--f-rail-w` is the frame's), same landscape column. One state, the
+    position; at rest the height is the style sheet's (`data-sheet`, tokens) and nothing else. **A move** (a drag, a glide) is carried by
+    one custom property, `--f-sheet-live`, plus `height: var(--f-sheet-live)` (`width` in a column) written once on the panel: the
+    measures (the three sizes, from the tokens; the size at the start) are taken **once, when the finger takes the sheet**, then one write
+    per move and only if the rounded size changed, no read; `f-sheet-nt` is on the panel under the finger (Atmosphere's `dragging()`
+    reads it). At the release the sheet **glides** by a Web Animation (200 ms `ease`, none under `prefers-reduced-motion`) from where it is
+    to the size of its position, then the property and the inline height are removed (one layout write, the style sheet's height equal to
+    the animation's end) and **`onSettle` is called at once**, in the frame of the last size change (before, `transitionend` + 120 ms: the
+    map showed a stale frame for 120 ms). No minuteur de rattrapage, no `transitionend`: the end of the glide is the animation's. `settle()`
+    (120 ms timer) stays for a size change that comes from elsewhere and does nothing while the sheet moves. `instant` places the sheet
+    without a glide (`f-sheet-nt` for one frame, as before). A finger put on a gliding sheet stops it where it is. `stop()` leaves no inline
+    style. The `transition: height .2s` rules of `primitives.css` are gone (the class `f-sheet-nt` has no rule now: it is a marker).
+  - **Why not a transform**: tried first (the panel at the height of the expanded position, moved by `translateY`, a negative margin to keep
+    the map's frame still, nothing redrawn): it does not reveal the map when the sheet goes down (the strip the frame no longer covers is
+    the page's grey) and it breaks Atmosphere, whose oversized map is revealed by the frame growing. The frame must follow the sheet (it
+    did, it must keep doing so: the C and D cases measure map + panel = view); what changes is that **no module redraws until `onSettle`**.
+  - **Rule of the spec vs § 11**: none contradicted. § 11 said "a 200 ms height transition" and "`onSettle` 120 ms after the last change":
+    both are amended in `INTEGRATION.md` (the glide is the primitive's; `onSettle` at the end of the glide, 120 ms for the rest).
+  - **Contract**: unchanged for a module that follows § 11 (Atmosphere was not touched and passes E1-E7). New in the documentation, not in
+    the API: what a module does while the sheet moves (§ 11 "What a module does while the sheet moves"); `onSettle` can now come
+    earlier than 120 ms after the last change (it never came during a move).
+  - **Bench** `frame/lib/test/sheet.html`: 177 checks before, 186 now (section "mouvement": no `onSettle` during a drag even with pauses
+    longer than 120 ms, at most one style write per move, the height carried by `--f-sheet-live` only, no `onSettle` at the release, one at
+    the end of the glide with the position, nothing left inline, a finger put on a gliding sheet takes it where it is).
+  - **Tests**: C1 (bench), C2-C6, D20 (new, maps), E1-E7 pass; see `tests/v3/PLAN.md`.

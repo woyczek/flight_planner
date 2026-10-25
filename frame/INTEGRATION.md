@@ -456,7 +456,7 @@ const sheet = createSheet({
   labels: (pos, i) => `${t('Height')} (${t(NAMES[i])})`,
   locked: () => editing,            // true: the pointer gestures are refused
   onChange: pos => keep = pos,
-  onSettle: pos => map.resize()     // 120 ms after the last change
+  onSettle: pos => map.resize()     // once the size has stopped (never while the sheet moves)
 });
 // -> { pos, set(pos, instant), settle(), stop() }
 ```
@@ -503,20 +503,25 @@ const sheet = createSheet({
 | `labels` | the grip's text by position, `(pos, rank) => string` or `{ collapsed, default, expanded }`; it becomes the grip's `title` and `aria-label`. Without it the grip keeps its own. The texts are the caller's (four languages) |
 | `locked` | `() => true` refuses the pointer gestures (drag, tap), for instance in an Edit mode that moves things on the map; the keyboard stays |
 | `onChange(pos)` | at every step: a `set()`, the end of a drag, a tap, a key (and once at the start with `pos`) |
-| `onSettle(pos)` | 120 ms after the last change of position or size (end of the height transition, end of a drag): the map re-frames there. Not called for the starting placement |
+| `onSettle(pos)` | **once the size has stopped, never while the sheet moves**: right at the end of the glide that follows a drag, a tap or a key (same frame as the last height change), 120 ms after a change without glide (`set(pos, true)`, a rotation) or after `settle()`. The map resizes and re-frames there, the drawings are redrawn there. Not called for the starting placement |
 
 - **Gestures.** A pointer down on the header (button 0, not on an `ignore`d control, not `locked`) captures the pointer. Past
-  6 px of travel it is a drag: the panel follows the finger live (transitions cut by the class `f-sheet-nt`), between the
-  collapsed and the expanded height. Released, it snaps to the nearest position, or to the next one in the direction of a
-  **flick** (faster than 0.8 px/ms). A **tap** on the grip collapses the sheet, or brings it back to default from collapsed
-  or expanded: **a tap never expands.**
+  6 px of travel it is a drag: the panel follows the finger live, between the collapsed and the expanded size, **by one CSS
+  variable**: the primitive measures once (at the start of the drag), then writes `--f-sheet-live` (and, once, `height:
+  var(--f-sheet-live)` / `width: …` in a column) on the panel, **one write per move and only if the size changed**, no read.
+  The class `f-sheet-nt` is on the panel under the finger: a module that draws must not draw then (Atmosphere tests it). Released,
+  the sheet **glides** (a 200 ms animation, none under `prefers-reduced-motion`) to the nearest position, or to the next one in
+  the direction of a **flick** (faster than 0.8 px/ms), the variable and the inline height are removed (the height is then the
+  style sheet's, written once) and `onSettle` is called at once. A **tap** on the grip collapses the sheet, or brings it back to
+  default from collapsed or expanded: **a tap never expands.** A finger put down on a gliding sheet stops it where it is.
 - **Keyboard** (on the grip): Enter and Space toggle like a tap, Up / Down go one position, Home collapses, End expands.
   The arrows do not scroll the page.
 - **ARIA**: `aria-expanded` (false only when collapsed) and `aria-label` from `labels`; `role="button"` and `tabindex` when
   the grip is not a `<button>`. Written only when they change.
-- **`set(pos, instant)`**: moves the sheet (a name or a rank); `instant` cuts the transition for that change (the content is
-  about to be measured; the height is up to date when it returns). **`settle()`** restarts the 120 ms: call it when the
-  view's size changed by other means (a `ResizeObserver` on the map box). **`stop()`** removes the listeners and the timer
+- **`set(pos, instant)`**: moves the sheet (a name or a rank), with the glide; `instant` places it without (the content is about
+  to be measured; the height is up to date when it returns; the class `f-sheet-nt` stays for one frame). **`settle()`** starts
+  the 120 ms: call it when the view's size changed by other means (a `ResizeObserver` on the map box, the root); it does nothing
+  while the sheet moves (the end of the move calls `onSettle`), so a size observer may call it on every notification. **`stop()`** removes the listeners and the timer
   (call it from `unmount`). `pos` is the current position name.
 
 ### The CSS it gets (`frame/design/primitives.css`)
@@ -538,8 +543,9 @@ reads nothing else (no `calc()`).
 | `--f-sheet-side-max` | `60%` | the expanded column's width (with the same floor) |
 
 - Heights: collapsed `--f-sheet-head`; default `max(--f-sheet-default, --f-sheet-default-min)`; expanded
-  `max(--f-sheet-expanded, --f-sheet-expanded-min)`; a 200 ms height transition (none under `prefers-reduced-motion`
-  nor during a drag or `instant`).
+  `max(--f-sheet-expanded, --f-sheet-expanded-min)`. No CSS transition on the height: the glide (200 ms, none under
+  `prefers-reduced-motion` nor for `instant`) is the primitive's, and a rule of a module that sets the panel's height is
+  overridden for the length of the move by the inline height.
 - Look: `--sog-surface`, a 1 px `--sog-border` top line, `--sog-radius` top corners, a soft upward shadow, the grip bar
   36 × 4 px (`--sog-muted` at 55 %), a header at 44 px with the title at `.92em`. Nothing is hard-coded to a design.
 - The grip and the ✕ are buttons: their rules weigh three classes so that the designs' button rules (`[data-design] :is(button,
@@ -579,8 +585,7 @@ header changes with the content). What it does (`frame/design/primitives.css`):
 **When**: above a drawing (cut, profile, chart), where the drawing and its axes say what is shown. **Never above a list**
 (layers, details, flight, aerodrome contents): a list needs its title, and a title stays for any content that does not
 describe itself. A module that mixes both (maps: Profile · Weather bare, Layers titled) toggles the class when the content
-changes; if the map must re-frame, call `sheet.settle()` (the transition of a collapsed sheet is followed by `onSettle` by
-itself). Test bench: `frame/lib/test/sheet.html` (the "nue" and "paysage nue" checks).
+changes; if the map must re-frame, call `sheet.settle()` (a change of position is followed by `onSettle` by itself). Test bench: `frame/lib/test/sheet.html` (the "nue" and "paysage nue" checks).
 
 ### Landscape on a phone (`html.f-land`): the sheet is a column
 
@@ -591,7 +596,7 @@ scrolling inside. **Two positions**: `default` (`--f-sheet-side`, 40 % of the ro
 `--f-sheet-side-min`, 280 px) and `expanded` (`--f-sheet-side-max`, 60 %); there is **no collapsed position** (a
 `set('collapsed')`, the Home key, a sheet that was collapsed in portrait when the phone turns: all give `default`). The
 module changes nothing: `onChange` and `onSettle` give the same names (`default`, `expanded`), `labels(pos, rank)` the same
-ranks, `pos` and `set()` the same. It measures its boxes as before (`ResizeObserver`, `resize`).
+ranks, `pos` and `set()` the same. It measures its boxes at `onSettle`, as it does in portrait.
 
 - **Tap** on the grip toggles `default` ⇄ `expanded` (in portrait it toggles `default` ⇄ `collapsed`, never expanding); a
   chevron at the end of the title row shows the way (to the left: widen). A **horizontal drag** is accepted (the column follows
@@ -601,12 +606,25 @@ ranks, `pos` and `set()` the same. It measures its boxes as before (`ResizeObser
   listens and places the sheet again in its new form without a transition (`onChange` is called with the position it has now).
 - **Tokens** (on `.f-sheet`, `:where`, a module overrides them on its root): `--f-sheet-side: 40%`, `--f-sheet-side-min:
   280px`, `--f-sheet-side-max: 60%` (parts of the root's width, or px, like the others). The other tokens are not read in
-  landscape. The panel gets a 1 px line at its left (no top line, a shadow to the left); the transition is on `width`.
+  landscape. The panel gets a 1 px line at its left (no top line, a shadow to the left); the drag and the glide are on `width`.
 - **For maps and atmosphere** (read-only here, they ask for nothing): the root, the map and the panel keep their own rules; the
   frame's `html.f-land .f-sheet` rules (a flex row, `min-width: 0` on the children, the panel's width and `height: auto`) weigh
   more than the `[data-module]` rules of a module that sets `display: flex; flex-direction: column` on its root, so those
   rules need no change. What a module must not do: give its map or its panel a fixed height or a `%` height of its own (use
   `flex`), or assume the sheet is under the map (read the rect of the map and of the panel).
+
+### What a module does while the sheet moves (V3_SPECIFICATION § 7.1 rule 19)
+
+While a finger holds the sheet and while it glides, **the module redraws nothing**: the map's frame (the child that grows)
+changes size under the sheet, and its canvases keep their bitmap (clipped when it shrinks; when it grows the frame shows its own
+background, so give it the colour of the map, not the page's grey: Maps sets `--mp-base` from the style). The primitive
+tells the module twice: the class `f-sheet-nt` on the panel under the finger, and `onSettle` once the size has stopped. The
+module therefore (1) resizes its map (`map_base.mapSize`, **MapLibre is created with `trackResize: false`**: it no longer
+resizes itself on every size change of its frame, and every resize of a canvas clears it) and redraws **in `onSettle`**
+and nowhere during the move; (2) has **at most one `ResizeObserver`** for the sizes that change without the sheet (the root, a
+rotation, full screen), and that observer only calls `sheet.settle()`; (3) gives a canvas that is not redrawn the size of its
+bitmap (`style.width/height` in px), never `100 %` of a frame that moves. Tests: D20 (Maps), E7 (Atmosphere), the bench
+`frame/lib/test/sheet.html` (section "mouvement").
 
 ### What a module still owns
 

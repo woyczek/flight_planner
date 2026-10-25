@@ -12,12 +12,25 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **The sheet is rewritten: nothing blinks and no grey zone when the handle is dragged** (`frame/lib/sheet.js`, `frame/design/primitives.css`,
+  `frame/lib/test/sheet.html`, `modules/maps/module.js`, `modules/maps/lib/map_base.js`, `tests/v3` D7 hardened, D20 new, `INTEGRATION.md`
+  § 11, SPEC, DECISIONS of the frame and of the map; V3_SPECIFICATION § 7.1 rule 19) — measured first: the blink came from the map, not from the
+  sheet (48 of the 50 `map.resize()` of a drag were MapLibre's own observer clearing its canvas at every frame; four observers of the module
+  redrew the overlay, the profile and the cut as well). The primitive keeps its API, HTML, classes and tokens: one state (the position), a
+  move carried by one CSS variable written once per move, a 200 ms glide at the release, and `onSettle` called once at the end of the glide
+  (never while the sheet moves). The map is created with `trackResize: false`, has one size observer that only asks the sheet to settle,
+  and is resized, framed and redrawn once, when the size has stopped; its overlay is no longer stretched, and the strip shown when the sheet
+  goes down has the map's colour, not the page's grey. The attribution credit is folded and marked compact as soon as the control exists
+  (it re-opened at the first resize, and the test that watched it raced the map's `load`). The frame's bench has a "movement" section
+  (186 checks).
+
 - **aerodb: the real-OFP test fixture rounded** (`frame/aerodb/test/fixtures/ofp_lfrs_lfml.json`, DECISIONS) — the coordinates of its fixes are rounded to
   2 decimals and the OFP's generation time is removed, the repository being public (decision of the owner).
 - **aerodb: EAD Basic access evaluated for the procedures of other States** (`frame/aerodb/EAD_BASIC.md`, DECISIONS) — EAD Basic is a PDF library of
   State AIPs, not a data service, and not for operational use; the code repository being public, no State AIP PDF may enter it. The plan to read
   the AD 2 coding tables of other States (layout registry, `--pdf-dir` mode, status "to be checked") and the checklist for a first real page are
   written; nothing is coded before a real page exists.
+
 - **aerodb: inventory of the open AIP data sets for the rest of the world — step 4, second half** (`frame/aerodb/AIP_OPEN_DATA_INVENTORY.md`) —
   the DFS (Germany) publishes an AIXM 5.1 "SID STAR and IAP" data set with its legs through a public REST API, but its terms forbid storing,
   converting or redistributing it without a licence; ENAIRE's sets do not list procedures; no lead for the UK, Canada, Australia and New Zealand.
@@ -43,6 +56,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `AeroDB.procedures` places a published point that has no position from the SIA base. Measured on LFBD (38 procedures)
   and LFAV (6); unreadable rows are reported in `warnings`, never guessed. Conventional procedures (ILS, VOR) are not coded in
   the eAIP and stay for the next steps. Checked against a real SimBrief OFP: empty transitions (`{}`) are read as absent.
+
 - **aerodb: procedures (SID, STAR) through one API — step 1, the SimBrief OFP** (`frame/aerodb/procedures.js`, `aerodb.js`,
   `test/procedures.html`, `tests/v3/cases/aerodb.py` K1, `modules/fuel/module.js`, `modules/maps/module.js`, Maps help in four
   languages; aerodb SPEC § 5 quinquies, INTEGRATION, DECISIONS; Fuel and Maps INTEGRATION) — a common procedure schema

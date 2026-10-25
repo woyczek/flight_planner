@@ -1151,3 +1151,39 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   "no airway". Not done (base side): one-way airways (`Circulation` is read by no parser), level code, RNP. Maps does not use it
   yet (its profile follows a *named* airway with `alongAirway`); an "auto" on the map is a later choice. Bench:
   `modules/maps/test/routing.html`; case F8 of fuel.
+- **25 Oct 2026 — The sheet's glue rewritten (relay cloud, branch `v3-feuille-v2`; V3_SPECIFICATION § 7.1 rule 19; frame `DECISIONS.md` has the
+  diagnosis and the numbers)**: the flicker and the grey zone of a sheet drag were the Carte's, not the primitive's: 48 of 50 `map.resize()` of a drag
+  came from MapLibre's own `ResizeObserver` (`trackResize`), and four observers of the module redrew the overlay, the profile and the cut at
+  every frame.
+  - **`map_base.startTiles`: `trackResize: false`.** MapLibre no longer follows its container's size by itself; `mapSize(map, box)` is the only
+    caller of `resize()` and the module calls it when the size has stopped (`onSheetSettled`), at load and style change, on return of a hidden
+    tab and at each draw (a draw does not happen while the sheet moves, nothing asks for one). Atmosphere uses the same `startTiles`: its
+    observers already call `mapSize` (E1-E7 pass).
+  - **One `ResizeObserver`, not four** (`ro` on the root, the map frame, the sheet's body and the profile frame): its callback is
+    `S.sh.settle()` and nothing else (it draws nothing, writes nothing in what it observes; the primitive's `settle()` does nothing while the
+    sheet moves). The observers of the sheet (`setBottomInset`), of the body (`redrawWeather`) and of the profile frame (`drawProfile`) are gone;
+    `setBottomInset` stays as it was, called by `mapSize()` (contract `INTEGRATION.md` § 7 unchanged, Atmosphere calls it too).
+  - **`onSheetSettled` is the only place** that resizes the MapLibre canvas, frames the route again (if the map was not moved by the user),
+    redraws the overlay (`schedule()`), the profile (`drawProfile`) and the open content (`showLv` / `redrawWeather`), and it returns when the sizes of the
+    frame, the body and the profile frame, the position and `f-land` are those of the last time (one string compared), so that the observer's
+    echo after the end of a glide does nothing.
+  - **The overlay canvas has the size of its bitmap** (`sizeCanvas` writes `style.width/height` in px, only if they change; the CSS no longer
+    says `100 %`): while a finger holds the sheet the frame changes size without a redraw, and a bitmap stretched to the frame deformed the
+    route.
+  - **The strip beyond the map**: when the sheet goes down the frame grows before the map does; the strip it shows is the frame's own
+    background, which was the page's grey (`--sog-bg`): `mapBase(map)` writes the style's background colour on the frame as `--mp-base` (at the
+    first load and at each style load, written only if it changes; a style whose background is an expression leaves the page colour) and the
+    frame paints `var(--mp-base, var(--sog-bg))`. Without tiles the map is drawn on `--sog-bg` itself.
+  - **D7 (attribution folded) was racing the map's `load`**: `collapseAttribution` ran at `load`, the test read after a fixed 500 ms; under load
+    the map was not loaded yet and the credit was still open (MapLibre shows it open until then). Cause fixed in `map_base.js`: the control
+    exists as soon as the map is built (empty), so it is folded and marked `maplibregl-compact` **right after `new Map`** (MapLibre's
+    `_updateCompact` reopens an unmarked control at every `resize` once it has a text), and again at `load` (written only if it changes). **The
+    test now waits on states, not on a delay**: the base style's request is held by the test (a route that keeps the request), the state is
+    read with the control built and the map not loaded (it was open before the fix, deterministically), the request is answered, the state
+    is read when the control has its text, then after a resize of the window (the map resizes). Verified red on the old `map_base.js`.
+  - **D20 (new) "Still during a sheet drag"** (symmetric of E7): in portrait and in the landscape column, finger down on the grip, 20 moves to
+    the two ends and back, pauses longer than 120 ms: no `map.resize()`, no reset of the MapLibre, overlay or profile canvas, no rewrite of the
+    sheet's body, the MapLibre canvas keeps its size, the overlay bitmap too, the map's frame stays against the sheet, the sheet's size is
+    monotone with the finger (±1.5 px), and when the frame is taller than the map the strip is of the map's colour (pixels read from a
+    screenshot: `lib.png_rgb`, standard library); after the release at most one `map.resize()` and one resize of the overlay, and the canvas
+    fills the frame. Verified red on the previous code (69 resizes) and on a frame painted `--sog-bg` (grey strip).

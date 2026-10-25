@@ -338,6 +338,61 @@
   await wait(260);
   eq('glisser depuis l\'en-tête hors poignée : glisse aussi (reste normale)', a.pos, 'default');
 
+  // 6b. le mouvement : une écriture par pas sous le doigt, jamais d'onSettle avant la fin, rien de laissé en ligne, un seul onSettle
+  a.set('default', true);
+  await wait(200);
+  {
+    calls.settle.length = 0;
+    const writes = [];
+    const mo = new MutationObserver(ms => ms.forEach(() => writes.push(A.panel.getAttribute('style') || '')));
+    mo.observe(A.panel, {
+      attributes: true,
+      attributeFilter: ['style']
+    });
+    ptr(A.grip, 'pointerdown', 400);
+    const steps = 12;
+    for (let i = 1; i <= steps; i++) {
+      ptr(A.grip, 'pointermove', 400 - 12 * i);
+      await wait(i % 4 ? 20 : 150); // des pauses plus longues que le délai de onSettle (120 ms)
+    }
+    check('mouvement : pas de onSettle pendant le glisser, même pendant les pauses', calls.settle.length === 0, JSON.stringify(calls
+      .settle));
+    await Promise.resolve();
+    const dragWrites = writes.length;
+    check('mouvement : au plus une écriture de style par pas (plus les deux du départ)', dragWrites <= steps + 2, `${dragWrites} écritures pour ${steps} pas`);
+    check('mouvement : sous le doigt, la hauteur est portée par --f-sheet-live seule', /--f-sheet-live: [\d.]+px/.test(writes.at(-1)) &&
+      /height: var\(--f-sheet-live\)/.test(
+        writes.at(-1)) && !/margin|transition/.test(writes.at(-1)), writes.at(-1));
+    const t0 = performance.now();
+    ptr(A.grip, 'pointerup', 400 - 12 * steps);
+    await wait(40);
+    check('mouvement : le lâcher n\'appelle pas onSettle tout de suite (la feuille glisse)', calls.settle.length === 0, JSON.stringify(calls
+      .settle));
+    await wait(330);
+    eq('mouvement : un seul onSettle après le lâcher, avec la position', calls.settle, ['expanded']);
+    check('mouvement : onSettle tombe à la fin du glissement (pas 120 ms plus tard)', calls.settle.length === 1 && performance.now() - t0 <
+      600);
+    check('mouvement : rien de laissé en ligne à la fin', !A.panel.getAttribute('style'), A.panel.getAttribute('style'));
+    check('mouvement : classe f-sheet-nt retirée', !A.panel.classList.contains('f-sheet-nt'));
+    mo.disconnect();
+    // saisie en plein glissement : la feuille s'arrête là où elle est, puis suit le doigt
+    a.set('collapsed', true);
+    await wait(80);
+    a.set('expanded');
+    await wait(90);
+    const hMid = H(A.panel);
+    ptr(A.grip, 'pointerdown', 400);
+    ptr(A.grip, 'pointermove', 390);
+    const hGrab = H(A.panel);
+    check('saisie pendant un glissement : la feuille reste où elle est (pas de saut vers la cible), puis suit le doigt', hMid > hs
+      .collapsed + 20 && hMid <
+      hs.expanded - 20 && Math.abs(hGrab - (hMid + 10)) < 45, `${hMid} -> ${hGrab}`);
+    ptr(A.grip, 'pointerup', 390);
+    await wait(300);
+    a.set('default', true);
+    await wait(80);
+  }
+
   // 7. le coup de pouce (plus de 0,8 px/ms) passe à la position suivante
   a.set('default', true);
   await wait(80);

@@ -833,6 +833,10 @@ function sizeCanvas() {
     c.width = Math.round(W * dpr);
     c.height = Math.round(H * dpr);
   }
+  // la surcouche a la taille de son bitmap (pas « 100 % » du cadre) : pendant qu'un doigt tient la feuille le cadre de la carte
+  // change de taille sans que rien ne soit redessiné, et un bitmap étiré à la taille du cadre déformerait la route
+  if (c.style.width !== `${W}px`) c.style.width = `${W}px`;
+  if (c.style.height !== `${H}px`) c.style.height = `${H}px`;
   return {
     W,
     H,
@@ -894,15 +898,27 @@ function projNow() {
   return S.map ? wrapTo((lat, lon) => S.map.project([lon, lat]), S.map.getCenter().lng) : S.toC;
 }
 /** Fond MapLibre ramené à la taille du cadre s'il ne l'a plus (lib/map_base.js : map.resize seulement dans ce cas, son
- *  « movestart » reconnu par isOwnResize). Appelé par l'observateur de taille, au chargement et au changement de style, au
- *  retour de la page (onglet caché, page gelée : les observations de taille faites pendant ce temps sont perdues) et à
- *  chaque dessin, pour qu'aucun cas oublié ne laisse une bande de fond. */
+ *  « movestart » reconnu par isOwnResize). Appelé quand la taille s'est arrêtée (onSheetSettled : fin d'un glissement de la
+ *  feuille, rotation, plein écran), au chargement et au changement de style, au retour de la page (onglet caché, page gelée :
+ *  les observations de taille faites pendant ce temps sont perdues) et à chaque dessin, pour qu'aucun cas oublié ne laisse une
+ *  bande de fond. Jamais pendant qu'un doigt tient la feuille : la carte n'y change pas de taille (la feuille est sur une
+ *  couche, frame/lib/sheet.js), donc la comparaison de tailles ne trouve rien à faire. */
 const mapSize = () => {
   const map = S?.map || S?.mapNew,
     r = baseSize(map, S?.mapEl);
   if (map) setBottomInset(map, sheetOverlap()); // règle 17 : les contrôles du bas de la carte restent au-dessus de la feuille
   return r;
 };
+/** Couleur de fond du style de la carte, posée sur son cadre (--mp-base) : quand la feuille descend sous le doigt, le cadre grandit
+ *  avant que la carte, qui ne se redessine pas pendant le glisser, reprenne sa taille ; la bande que le cadre montre alors est de la
+ *  couleur du fond de la carte (jamais le gris de la page) et la carte la remplit au lâcher. Écrit seulement si elle change. */
+function mapBase(map) {
+  const bg = map.getStyle?.()?.layers?.find(l => l.type === 'background')?.paint?.['background-color'],
+    v = typeof bg === 'string' ? bg : '';
+  if (S.box.style.getPropertyValue('--mp-base') !== v)
+    if (v) S.box.style.setProperty('--mp-base', v);
+    else S.box.style.removeProperty('--mp-base');
+}
 /** Part du bas du cadre de la carte que la feuille recouvre (px) : le sommet de la feuille contre le bas du cadre, si elle
  *  s'étend sur toute sa largeur (portrait) ; 0 quand la carte est au-dessus d'elle (la taille de la carte est celle de ce qui
  *  reste) ou à côté (colonne paysage : la carte est une colonne, la feuille une autre). */
@@ -1402,6 +1418,7 @@ async function startTiles() {
     onCreate: m => S.mapNew = m,
     onStyleLoad: map => {
       if (S?.map === map) {
+        mapBase(map);
         mapSize();
         relief();
         // nouveau style : ses couches de noms de lieux sont à relever et à régler de nouveau
@@ -1413,6 +1430,7 @@ async function startTiles() {
     onLoad: map => {
       S.map = map;
       S.mapNew = null;
+      mapBase(map);
       mapSize(); // le cadre a pu changer de taille pendant le chargement des tuiles
       relief();
       map.on('move', schedule);
@@ -2866,16 +2884,24 @@ function showLv() {
 // position gardée (onChange).
 /** Position de la feuille gardée d'un montage à l'autre dans la même page ('collapsed', 'default' ou 'expanded'). */
 let sheetKeep = 'default';
-/** Après un changement de taille de la carte : le fond MapLibre reprend la taille du cadre, et la route reste cadrée tant
- *  que l'utilisateur n'a pas déplacé la carte. */
+/** La taille arrêtée de la feuille et de la carte (onSettle de la primitive : une fois à la fin d'un glissement de la poignée, 120 ms
+ *  après un changement de taille venu d'ailleurs, jamais pendant un glisser : la feuille se déplace sur une couche, la carte ne
+ *  change pas de taille tant que le doigt est dessus). C'est ici, et nulle part pendant le mouvement, que le fond MapLibre reprend
+ *  la taille du cadre (une seule resize), que la route est recadrée tant que l'utilisateur n'a pas déplacé la carte et que la
+ *  surcouche, le profil et la coupe sont redessinés. Rien n'est refait si les tailles sont celles du dernier passage. */
 function onSheetSettled() {
   if (!S) return;
+  const key = [S.box, S.dbodyEl, S.profBox].map(e => `${e.clientWidth}x${e.clientHeight}`).join(' ') +
+    ` ${S.sh.pos} ${document.documentElement.classList.contains('f-land')}`;
+  if (key === S.settledKey) return;
+  S.settledKey = key;
   mapSize();
   if (S.map && S.fit && !S.userMoved && S.route.points.length) fitMap(false);
   schedule();
   dataHead(); // la colonne paysage (html.f-land) a pu apparaître ou partir : la ligne nue ou titrée
   drawProfile(); // la ligne de texte et les notes vont et viennent avec la position : le dessin reprend la hauteur du corps
-  redrawWeather();
+  if (S.dpanel === 'lv') showLv();
+  else redrawWeather();
 }
 /** Choix « Profil · Météo » mémorisé pour la vie de la page (pas sur l'appareil : une commodité de lecture). */
 let viewKeep = 'profile';
@@ -4519,9 +4545,9 @@ const STYLE = `
    page d'essai) la hauteur est donnée plus bas. */
 [data-module="maps"]{display:flex;flex-direction:column;min-height:0;overflow:hidden;isolation:isolate}
 [data-module="maps"] .mp-sr{position:absolute;top:0;left:0;width:1px;height:1px;margin:0;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-[data-module="maps"] .mp-box{position:relative;flex:1 1 0;min-height:0;border:solid var(--sog-border);border-width:1px 0;overflow:hidden;background:var(--sog-bg);touch-action:none}
+[data-module="maps"] .mp-box{position:relative;flex:1 1 0;min-height:0;border:solid var(--sog-border);border-width:1px 0;overflow:hidden;background:var(--mp-base,var(--sog-bg));touch-action:none}
 [data-module="maps"] .mp-map{position:absolute;inset:0}
-[data-module="maps"] canvas.mp-over{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+[data-module="maps"] canvas.mp-over{position:absolute;left:0;top:0;pointer-events:none}
 [data-module="maps"] .mp-prof{position:relative;flex:1 1 0;min-height:0;max-height:380px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:var(--sog-chart-bg);touch-action:none;cursor:crosshair}
 [data-module="maps"] .mp-prof canvas{position:absolute;inset:0;width:100%;height:100%}
 [data-module="maps"] .mp-strip{flex:none;height:34px;overflow-y:auto;font-size:var(--sog-size-xs);line-height:16px;padding:1px 0;font-variant-numeric:tabular-nums}
@@ -5128,21 +5154,12 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     S.data = null;
     schedule();
   }), ctx.aerodb.on('state', () => S && status())); // lecture de la base commencée ou finie : la note change
-  const ro = new ResizeObserver(() => {
-    mapSize();
-    schedule();
-    S.sh.settle(); // la feuille a bougé, l'écran a tourné : la route est recadrée une fois la taille arrêtée
-  });
-  ro.observe(S.box);
-  // la feuille peut recouvrir le bas de la carte sans que le cadre de la carte change de taille : les contrôles suivent sa hauteur
-  const rs = new ResizeObserver(() => {
-    const map = S?.map || S?.mapNew;
-    if (map) setBottomInset(map, sheetOverlap());
-  });
-  rs.observe(S.dataEl);
-  // rotation, volet redimensionné, feuille tirée : le graphique des niveaux et la coupe météo reprennent la taille du bloc
-  const rd = new ResizeObserver(() => S.dpanel === 'lv' ? showLv() : redrawWeather());
-  rd.observe(S.dbodyEl);
+  // Un seul observateur de taille : la carte, la racine, le corps de la feuille et le cadre du profil ne changent pas pendant un
+  // glisser (la feuille est sur une couche) ; quand l'un change d'ailleurs (rotation, plein écran, fenêtre, notes qui apparaissent), la
+  // primitive appelle onSettle une fois, 120 ms plus tard (settle() est sans effet pendant un mouvement). L'observateur ne dessine
+  // rien lui-même et n'écrit rien dans ce qu'il observe.
+  const ro = new ResizeObserver(() => S?.sh.settle());
+  for (const e of [el, S.box, S.dbodyEl, S.profBox]) ro.observe(e);
   // retour d'un onglet caché ou d'une page gelée : taille reprise, surcouche redessinée
   const back = () => {
     if (document.hidden || !S) return;
@@ -5157,9 +5174,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     window.removeEventListener('pageshow', back);
     document.removeEventListener('resume', back);
   });
-  const rp = new ResizeObserver(() => drawProfile());
-  rp.observe(S.profBox);
-  S.stops.push(() => ro.disconnect(), () => rs.disconnect(), () => rp.disconnect(), () => rd.disconnect(), () => S.sh?.stop());
+  S.stops.push(() => ro.disconnect(), () => S.sh?.stop());
 }
 
 export function unmount() {

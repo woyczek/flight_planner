@@ -308,6 +308,12 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       résultat doit être le même qu'aujourd'hui fonctionnellement"): a clean rewrite of `frame/lib/sheet.js` and of the
       map's sheet code from rules 6–10 and § 11 of `frame/INTEGRATION.md`, same API, same tests and bench as the gate,
       after a diagnosis that says whether the flicker is the primitive's or the module's.
+      - **Done** (relay cloud, branch `v3-feuille-v2`, 25 Oct; `frame/DECISIONS.md` has the diagnosis and the numbers): the flicker was the
+        Carte's, not the primitive's (48 of 50 `map.resize()` of a drag came from MapLibre's own `ResizeObserver`, four observers of the module
+        redrew the overlay, the profile and the cut at every frame). `frame/lib/sheet.js` is written again with the same API, HTML, classes and
+        tokens (one state, the position; a move carried by one CSS variable, a glide at the release, `onSettle` at the end of it and never during
+        a move); the Carte's glue has one observer that only asks the sheet to settle and `map_base` creates MapLibre with `trackResize: false`;
+        nothing of the map is redrawn while a finger holds the sheet (D20, bench "mouvement", E7).
       - **Done by the frame lot** (relay cloud, branch `v3-cadre-barre`; `frame/DECISIONS.md`, 24 Oct 2026): the bar is Préparer ·
         Carte · CR · Vols · Météo; the performance sheets are a view of the fuel module reached by `#fuel?view=sheets`, listed
         in Préparer's popover as Carburant · Fiches (`APP.tabs[].views`); the "?" and the ⚙ are in the phone header, the "i"

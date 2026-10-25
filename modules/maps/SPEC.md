@@ -139,8 +139,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Updates**:
   - the flight file is watched (`ctx.data.watch`): a new `updated_at` refits the map and reads again;
   - `aerodb.on('change')`: the data are read again;
-  - `ResizeObserver` on the map box: resize and redraw at each step, then (120 ms after the last) the route framed again
-    if the map has not been moved by the user.
+  - one `ResizeObserver` (the root, the map box, the sheet's body, the profile frame): it only calls `sheet.settle()`; resize, route framing
+    (if the map has not been moved by the user) and redraws happen in the sheet's `onSettle`, once the size has stopped.
 - **Map modes** (the user's validated mock-up, adapted to the `--sog-*` tokens; hidden for mission maps and when there
   is no map; icons only since lot 7a): a button of the right column of the overlay layer showing the current mode's icon
   opens a row of six icon buttons as a small panel anchored to its left, at its height (placed when it opens: the column
@@ -190,9 +190,12 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     the sheet, or brings a collapsed or expanded one back to the default; the keyboard (the handle is a button):
     Enter / Space like a tap, Up / Down one position, Home / End the extremes. The position is kept while the page lives
     (a return to the map finds it as left; not kept on the device).
-  - **The map follows**: the sheet's height changes the map box, its `ResizeObserver` resizes the MapLibre canvas and the
-    overlay at each step, and 120 ms after the last one (end of the slide, orientation change, pane resized) the route is
-    framed again if the user has not moved the map (`resize()` itself is not taken for a gesture of the user).
+  - **The map follows, once** (rewritten 25 Oct 2026, V3 spec § 7.1 rule 19): while a finger drags the sheet, and while it glides, the
+    map box changes size and **nothing is redrawn or resized** (the MapLibre canvas and the overlay keep their bitmap, the overlay is
+    not stretched, the strip the box shows when it grows has the map style's background colour: `--mp-base`); when the size has stopped
+    (the end of the glide, an orientation change, a pane resized) the sheet's `onSettle` resizes the MapLibre canvas (`resize()` itself
+    is not taken for a gesture of the user), sizes the overlay, frames the route again if the user has not moved the map, and redraws the
+    profile and the cut. Test D20.
   - **A content opened while the sheet is collapsed opens it** to the default position, without sliding (the content is
     measured at once).
   - **The drawing fits the sheet** (V3 spec § 7.1.13 a): the profile and the cross-section are drawn at the **exact height of the
@@ -250,8 +253,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     list, aerodrome; the weather cross-section goes back to the profile), a route point's card, the armed "+", the Edit mode.
     The module takes the key in the capture phase and calls `preventDefault()` when it closed something, so that the frame
     does not also leave the full screen (frame INTEGRATION § 9.4); with nothing to close the key goes to the frame.
-  - **Full screen** (§ 9.4 of the frame's INTEGRATION): nothing to do but follow the size; the `ResizeObserver` on the map box
-    resizes the MapLibre canvas and the overlay (the sheet stays, at its position).
+  - **Full screen** (§ 9.4 of the frame's INTEGRATION): nothing to do but follow the size; the module's `ResizeObserver` asks the sheet
+    to settle, and `onSettle` resizes the MapLibre canvas and the overlay (the sheet stays, at its position).
   - **Closing**: ✕, Escape (on the weather cross-section: back to the profile), a tap on an empty spot of the map for the airspaces list; the aerodrome's content stays until
     ✕, Escape or another aerodrome (pinned). Nothing scrolls the page to reveal the block: it is always on screen.
   - The levels chart is drawn at scale 1 for the content area (`levelsHtml(list, w, h)`): 44 % of the width under 600 px

@@ -106,8 +106,9 @@ does not give it:
   with the same classes.
 - **Escape** is taken in the capture phase on `document` (the frame's listener, registered first, would otherwise run before the
   module's and see `defaultPrevented` too late); `preventDefault()` only when something was closed.
-- **Full screen**: the module does nothing of its own; the box's `ResizeObserver` runs `mapSize()` (MapLibre `resize()` when the
-  canvas differs) and redraws; the `resize` the frame fires on `window` reaches the same path.
+- **Full screen**: the module does nothing of its own; its one `ResizeObserver` (the root, the map box, the sheet's body and the profile frame) calls
+  `sheet.settle()`, and the sheet's `onSettle` runs `mapSize()` (MapLibre `resize()` when the canvas differs: MapLibre is created with
+  `trackResize: false`, it never resizes itself) and redraws; the `resize` the frame fires on `window` reaches the same path.
 
 ## 3. What it asks of aerodb
 
@@ -183,10 +184,11 @@ maps**, never by another module reaching into the sheet.
 `.f-sheet-head`, the handle button the `.f-sheet-grip`, the ✕ the `.f-sheet-close` and the scrolling area the `.f-sheet-body`
 (maps' own classes `mp-data`, `mp-dhead`, `mp-grip`, `mp-dbody` stay beside them for the module's code). The three positions are
 the frame's tokens (`--f-sheet-head`, `-default`, `-expanded` and their floors), the drag, the flick, the keyboard, the
-ARIA and the transitions are the primitive's, and `data-sheet` on the root is `collapsed`, `default` or `expanded`. What stays
+ARIA and the glide are the primitive's, and `data-sheet` on the root is `collapsed`, `default` or `expanded`. What stays
 in maps: `openData` / `endData` / `closeData` / `dataHead` (the content and the header's texts: the handle's title carries the flight's
 summary), the Profile · Weather · "i" chips (inside the head line, always three, one without content `disabled`; `ignore: '[data-dclose], .mp-chips'`), the grip's texts (`labels`, four languages), the notes, the position kept between
-mounts (`sheetKeep`, through `onChange`), `locked` (the tuning page) and `onSettle` (`mapSize()` and the route's re-framing).
+mounts (`sheetKeep`, through `onChange`), `locked` (the tuning page) and `onSettle` (`mapSize()`, the route's re-framing and the redraw of the overlay, the profile and the cut: **once the size has stopped, never while
+the sheet moves**; nothing of the map is redrawn or resized while a finger drags the sheet, V3 spec § 7.1 rule 19, test D20).
 
 **The atmosphere cross-section** is implemented (24 Oct 2026): § 8.
 
@@ -210,8 +212,8 @@ import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, loadRender, l
 |---|---|
 | `loadMapLibre()` → `Promise<maplibregl \| null>` | script UMD and style sheet of `lib/`, once per page; `null` if the script does not load (the next call tries again) |
 | `styleFor({ dark, base })` → URL | `base`: a key of `STYLES` (the studio profile's base), else `STYLE_DAY` (positron); `dark`: `STYLE_NIGHT`, or VersaTiles' eclipse for a `vt-` base |
-| `startTiles(container, opts)` → `Promise<map \| null>` | the tiled map in `container`, once loaded; `null` when offline, MapLibre missing, no WebGL, an `error` before `load`, `wait` ms elapsed (default `TILE_WAIT` 10 s) or `alive()` false; the half-built map is removed. `opts`: `style`, `bounds` (`[[w, s], [e, n]]`), `padding` (px, optional), `attributionControl` (`false`, or `{ compact: true, customAttribution }`: the control is folded on its "i" button once the map has loaded, a tap opens it), `wait`, `alive()`, `onCreate(map)`, `onStyleLoad(map)` (every `style.load`: the first style and each `setStyle`), `onLoad(map)` (before the promise is kept: wire the events there). Mercator is forced at every style; no rotation, no pitch. `worldCopies` (default `false`): MapLibre's `renderWorldCopies`; with `false` the camera is clamped to ±180° and a route across the date line cannot be framed; with `true` the centre may be 190° or −174°, and `getBounds()` / `project()` go beyond ±180, so the host brings its longitudes to the view's copy (`nearLon` of `frame/lib/geo.js`). The Map passes `true`; Atmosphere keeps its grid on the route's own turn and the default |
-| `mapSize(map, box)` → boolean | `map.resize()` only if the canvas is not the box's size; true when it resized. Call it on every size change, at load and style change, on return of a hidden tab (`visibilitychange`, `pageshow`) and at each draw |
+| `startTiles(container, opts)` → `Promise<map \| null>` | the tiled map in `container`, once loaded; `null` when offline, MapLibre missing, no WebGL, an `error` before `load`, `wait` ms elapsed (default `TILE_WAIT` 10 s) or `alive()` false; the half-built map is removed. `opts`: `style`, `bounds` (`[[w, s], [e, n]]`), `padding` (px, optional), `attributionControl` (`false`, or `{ compact: true, customAttribution }`: the control is folded on its "i" button and marked compact (`maplibregl-compact`) **as soon as it exists**, before the style loads, so that no later `resize` of the map re-opens it; a tap opens it), `wait`, `alive()`, `onCreate(map)`, `onStyleLoad(map)` (every `style.load`: the first style and each `setStyle`), `onLoad(map)` (before the promise is kept: wire the events there). Mercator is forced at every style; no rotation, no pitch. `worldCopies` (default `false`): MapLibre's `renderWorldCopies`; with `false` the camera is clamped to ±180° and a route across the date line cannot be framed; with `true` the centre may be 190° or −174°, and `getBounds()` / `project()` go beyond ±180, so the host brings its longitudes to the view's copy (`nearLon` of `frame/lib/geo.js`). The Map passes `true`; Atmosphere keeps its grid on the route's own turn and the default |
+| `mapSize(map, box)` → boolean | `map.resize()` only if the canvas is not the box's size; true when it resized. **`startTiles` creates the map with `trackResize: false`: MapLibre does not follow its container's size by itself** (its own observer resized, and so cleared, the canvas at every frame of a sheet drag), so call it when the size has stopped (the sheet's `onSettle`, a rotation, full screen), at load and style change, on return of a hidden tab (`visibilitychange`, `pageshow`) and at each draw |
 | `isOwnResize(map)` → boolean | true during the `resize()` that `mapSize` runs: its `movestart` is not a user gesture (`map.on('movestart', () => { if (!isOwnResize(map)) userMoved = true })`) |
 | `setBottomInset(map, px)` → boolean | the map's bottom controls (attribution, scale, any other in `bottom-left` / `bottom-right`) move up by `px`: the part of the map's box that a sheet covers (the sheet's top against the box's bottom; 0 when the map sits above the sheet or beside it). Sets `--mb-inset-b` on the map's container, written only when the value changes (true then); the camera is not touched (frame the route with a bottom `padding`). Call it at every size change and at each `onSettle` of the sheet, and from a `ResizeObserver` on the sheet if the map can sit under it (V3 spec § 7.1 rule 17). Atmosphere: its `--at-hide-b` rule (an oversized map) can give way to one call with the same value |
 | `loadRender()` → `Promise` | loads `render.js` (`window.MapsRender`) if it is not there |
