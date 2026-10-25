@@ -16,12 +16,12 @@ aus. Der in Kraftstoff oder Karte vorbereitete Flug wird auf die gleiche Weise v
 er in Kraftstoff gestartet („Flug starten“), steht er an erster Stelle, „Flug gestartet um hh:mm“. Die Karte nennt in
 einer Zeile alles, was übernommen wird, auch das, wofür eine Einsatzart kein Feld hat (Entfernung, Flugfläche).
 „Übernehmen“ füllt auch die Anlasszeit (die Abflugzeit in Kraftstoff) und den Kraftstoff beim Start (den Blockkraftstoff
-der Kalkulation) aus, jeweils mit ihrer Quelle gekennzeichnet. Das Speichern des Berichts beendet den gestarteten Flug:
+der Kalkulation) aus, alles in der Zeile „Vorausgefüllt aus: …“ unter dem Kartentitel festgehalten. Das Speichern des Berichts beendet den gestarteten Flug:
 Kraftstoff kehrt zur Vorbereitung zurück, Meine Flüge entfernt „Laufend“, und der Flug wird nicht mehr vorgeschlagen.
 
 **Die anderen Quellen.** Klappen Sie „Andere Quellen“ auf, um Ihren letzten IVAO- oder VATSIM-Flug, Ihren
 SimBrief-Flugplan oder einen eingefügten Text zu übernehmen: einen ICAO-Flugplan, die Seite eines Flugs aus dem
-IVAO-Tracker oder von StatSim, ein METAR. Nur leere Felder werden ausgefüllt; neben jedem steht seine Quelle. Liefert
+IVAO-Tracker oder von StatSim, ein METAR. Nur leere Felder werden ausgefüllt; die Zeile „Vorausgefüllt aus: …“ unter dem Kartentitel nennt ihre Herkunft. Liefert
 eine Quelle etwas anderes für bereits ausgefüllte Felder, bietet eine Schaltfläche an, sie zu ersetzen.
 
 **Der Einsatz.** Im zweiten Schritt: die Familie (vorgeschlagen nach Ihrem letzten Bericht), die Serie, die Kennung des
@@ -50,7 +50,7 @@ wieder zu öffnen und zu ändern. „Neuer Bericht“ beginnt mit einem leeren B
   Flug zählt als ein einziger Flug. Anlassen und Abstellen entsprechen Verbindung und Trennung, wenn die Spur am Boden
   beginnt und endet; Start und Landung stammen aus der Spur.
 - **Die Zeiten** sind UTC, mit „(Z)“ an den Feldern; der gestartete Flug und das Netz füllen sie in UTC. Ein älterer
-  Bericht, in der Uhrzeit des Geräts eingegeben, wird umgerechnet gezeigt, darunter die eingegebene Zeit („lokal
+  Bericht, in der Uhrzeit des Geräts eingegeben, wird umgerechnet gezeigt, dazu in der Zeile unter dem Kartentitel die eingegebene Zeit („Start lokal
   eingegeben 18:30“); er wird nur in UTC neu geschrieben, wenn Sie ihn speichern.
 - **SimBrief**: Ihr letzter Plan (Kennung in ⚙ eingestellt) — Luftfahrzeug, Route, Flugfläche, Geschwindigkeit,
   geplanter Kraftstoff, METAR und TAF.

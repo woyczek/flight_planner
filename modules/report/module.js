@@ -118,6 +118,7 @@ const TX = {
   current: L('Vol en cours (carburant / carte)', 'Current flight (fuel / maps)', 'Aktueller Flug (Kraftstoff / Karte)',
     'Vuelo actual (combustible / mapa)'),
   use: L('Utiliser', 'Use', 'Übernehmen', 'Usar'),
+  prefilledFrom: L('Prérempli depuis : {s}', 'Prefilled from: {s}', 'Vorausgefüllt aus: {s}', 'Rellenado desde: {s}'),
   enteredLocal: L('saisi {t} locale', 'entered {t} local', 'lokal eingegeben {t}', 'introducido {t} local'),
   startedAt: L('Vol démarré à {t}', 'Flight started at {t}', 'Flug gestartet um {t}', 'Vuelo iniciado a las {t}'),
   takenBlock: L('carburant bloc {f}', 'block fuel {f}', 'Blockkraftstoff {f}', 'combustible bloque {f}'),
@@ -459,19 +460,35 @@ const lab = x => Array.isArray(x) ? tt(x) : String(x ?? '');
 /** Contrôle HTML d'un champ (définition V2 : path, label, type, options, blank) à la valeur v ; source affichée. */
 function control(fd, v, prefix = '') {
   const path = prefix + fd.path,
-    src = S.sources[path] ? `<span class="f-badge" data-kind="accent">${esc(S.sources[path])}</span>` : '',
     common = `data-path="${esc(path)}" aria-label="${esc(lab(fd.label))}"`,
     opts = fd.path === 'series' ? (FAMILIES[S.m.family]?.series || []) : fd.options || [];
   let input;
   if (fd.type === 'select') input = `<select ${common}>${fd.blank ? '<option value=""></option>' : ''}${opts.map(o => `<option value="${esc(o.value)}"${String(v ?? '') === String(o.value) ? ' selected' : ''}>${esc(lab(o.label))}</option>`).join('')}</select>`;
   else if (fd.type === 'textarea') input = `<textarea rows="3" ${common}>${esc(v ?? '')}</textarea>`;
   else input = `<input ${common} type="${fd.type === 'time' ? 'time' : fd.type === 'date' ? 'date' : 'text'}"${fd.type === 'number' ? ' inputmode="decimal"' : ''}${fd.code ? ' class="rp-code" autocapitalize="characters"' : ''} value="${esc(v ?? '')}">`;
-  const z = fd.type === 'time' && path.startsWith('timeline.') ? ' (Z)' : '',
-    was = S.tzOrigin?.[path] ? `<small class="f-muted rp-was">${esc(tt(TX.enteredLocal, { t: S.tzOrigin[path] }))}</small>` : '';
-  return `<label class="f-field${fd.full || fd.type === 'textarea' ? ' f-full' : ''}"><span>${esc(lab(fd.label))}${z} ${src}${was}</span>${input}</label>`;
+  const z = fd.type === 'time' && path.startsWith('timeline.') ? ' (Z)' : '';
+  // libellé sur une ligne (ellipse, titre complet) ; d'où vient la valeur se lit dans la ligne de la carte (srcLine)
+  return `<label class="f-field${fd.full || fd.type === 'textarea' ? ' f-full' : ''}"><span title="${esc(lab(fd.label) + z)}">${esc(lab(fd.label))}${z}</span>${input}</label>`;
 }
-/** Grille de champs de la mission. */
-const grid = list => `<div class="f-grid">${list.filter(shown).map(fd => control(fd, M.get(S.m, fd.path))).join('')}</div>`;
+/** Une ligne muette sous le titre d'une carte : d'où viennent les champs préremplis (« Prérempli depuis : vol en cours · dernier
+ *  CR ») et, pour un ancien CR, les heures saisies en heure de l'appareil. fields : [{ path, label }], chemins complets. Vide
+ *  quand rien n'est prérempli : aucun élément n'entre dans la grille des champs. */
+function srcLine(fields) {
+  const from = [...new Set(fields.map(x => S.sources[x.path]).filter(Boolean))],
+    was = fields.filter(x => S.tzOrigin?.[x.path]).map(x => `${lab(x.label)} ${tt(TX.enteredLocal, { t: S.tzOrigin[x.path] })}`),
+    parts = [from.length ? tt(TX.prefilledFrom, {
+      s: from.join(' · ')
+    }) : '', ...was].filter(Boolean);
+  return parts.length ? `<p class="rp-src">${esc(parts.join(' · '))}</p>` : '';
+}
+/** Champs (chemin, libellé) d'une liste de définitions affichées. */
+const shownFields = list => list.filter(shown).map(fd => ({
+  path: fd.path,
+  label: fd.label
+}));
+/** Grille de champs de la mission, sous la ligne de provenance de ses champs (line : les champs à résumer, par défaut ceux de
+ *  la grille ; false pour une carte dont la ligne est déjà posée ailleurs). */
+const grid = (list, line = list) => `${line ? srcLine(shownFields(line)) : ''}<div class="f-grid">${list.filter(shown).map(fd => control(fd, M.get(S.m, fd.path))).join('')}</div>`;
 /** Bloc ou champ affiché pour la mission (condition when de la V2, contexte M.context : famille, série, capacités,
  *  catégories d'appareil, drapeaux). */
 const shown = x => !x.when || !!x.when(M.context(S.m, FAMILIES[S.m.family] || {}));
@@ -479,6 +496,7 @@ const shown = x => !x.when || !!x.when(M.context(S.m, FAMILIES[S.m.family] || {}
 function collection(col, title) {
   const items = M.get(S.m, col.path) || [];
   return `<div class="rp-col" data-col="${esc(col.path)}">${title ? `<h3>${esc(title)}</h3>` : ''}
+    ${srcLine(items.flatMap((_, i) => col.fields.map(fd => ({ path: `${col.path}.${i}.${fd.path}`, label: fd.label }))))}
     ${items.map((it, i) => `<div class="rp-item"><div class="f-grid">${col.fields.map(fd => control(fd, it?.[fd.path], `${col.path}.${i}.`)).join('')}</div><button type="button" data-do="del" data-i="${i}">${esc(tt(TX.remove))}</button></div>`).join('')}
     <button type="button" data-do="add">${esc(col.add ? tt(col.add) : tt(TX.addCrew))}</button></div>`;
 }
@@ -508,12 +526,22 @@ const STYLE = `
 [data-module="report"] .rp-code{text-transform:uppercase}
 [data-module="report"] .rp-step[hidden]{display:none}
 [data-module="report"] .f-steps>[data-todo]::after{content:" · " attr(data-todo);font-weight:400}
-[data-module="report"] .rp-item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:8px}
-[data-module="report"] .f-bar button{flex:1;min-width:150px}
-[data-module="report"] .f-bar .rp-unset{display:block}
-[data-module="report"] .rp-was{display:block;font-weight:400} /* ancien CR : l'heure saisie, en heure de l'appareil */
+[data-module="report"] .rp-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-bottom:8px}
+[data-module="report"] .rp-src{margin:0 0 6px;color:var(--sog-muted);font-size:var(--sog-size-xs);overflow-wrap:anywhere} /* provenance du préremplissage, une ligne muette */
+[data-module="report"] .rp-dock{position:sticky;bottom:var(--f-tab-space,0px);z-index:2;background:var(--sog-bg);padding-bottom:var(--sog-gap-s)} /* la barre et sa note restent ensemble en bas */
+[data-module="report"] .rp-dock>.f-bar{position:static;margin:0}
+[data-module="report"] .rp-unset{margin:var(--sog-gap-s) 0 0}
+[data-module="report"] .f-grid{grid-template-columns:repeat(auto-fit,minmax(min(var(--f-min,130px),100%),1fr))}
+[data-module="report"] .f-grid>.f-field{min-width:0;align-content:start} /* une cellule ne dépasse jamais sa colonne, ne s'étire pas avec sa voisine */
+[data-module="report"] .f-field>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} /* libellé sur une ligne */
+[data-module="report"] .rp-prefill>div{min-width:0}
 [data-module="report"] .rp-prefill{display:flex;gap:10px;align-items:center;justify-content:space-between}
-[data-module="report"] .f-badge{margin-left:4px}
+[data-module="report"] .rp-bar{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding:4px 10px} /* deux lignes de 44 px : 105 px, 112 au plus avec le filet épais de metro */
+[data-module="report"] .rp-bar button{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:inherit}
+[data-module="report"] .rp-bar .rp-site{background:transparent;border-color:var(--sog-accent);color:var(--sog-link)}
+@container (min-width: 700px){
+  [data-module="report"] .rp-bar{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @container (min-width: 900px){ /* largeur du module (volet de la vue double compris), pas de la fenêtre */
   [data-module="report"] .f-steps,[data-module="report"] .rp-next{display:none}
   [data-module="report"] .rp-step[hidden]{display:block}
@@ -531,7 +559,9 @@ function renderBody() {
     // pas Mission jamais ouvert (famille et série d'un CR neuf prises par défaut) : « à voir » au lieu du ✓
     stepBtn = (i, ok) => `<button type="button" data-step="${i}"${i === step ? ' aria-current="step"' : ''} ${ok ? ' data-done' : ''}${i === 1 && !S.missionSeen ? ` data-todo="${esc(tt(TX.toSee))}"` : ''}>${i + 1} ${esc(tt(TX.steps[i]))}</button>`,
     done = progress(),
-    site = Site.recordPage(S.ctx.airline || {});
+    site = Site.recordPage(S.ctx.airline || {}),
+    flightFields = [FIELDS.date, FIELDS.registration, FIELDS.type, FIELDS.callsign, FIELDS.dep, FIELDS.arr],
+    timeFields = [FIELDS.engineStart, FIELDS.takeoff, FIELDS.landing, FIELDS.shutdown];
   S.body.innerHTML = `
     <div class="f-row" style="margin-bottom:8px"><span class="f-muted">${S.path ? esc(tt(TX.editing, { id: m.metadata.missionId })) : esc(m.metadata.missionId || '')}</span>
       <button type="button" data-do="new">${esc(tt(TX.newReport))}</button></div>
@@ -540,15 +570,16 @@ function renderBody() {
       <section class="rp-step" data-s="0"${step === 0 ? '' : ' hidden'}>
         <div data-prefill></div><div data-sources></div>
         <div class="f-card"><h2>${esc(tt(TX.steps[0]))}</h2>
-          ${grid([FIELDS.date, FIELDS.registration, FIELDS.type, FIELDS.callsign, FIELDS.dep, FIELDS.arr])}
+          ${grid(flightFields, [...flightFields, ...timeFields])}
           <h3>${esc(lab(L('Heures', 'Times', 'Zeiten', 'Horas')))}</h3>
-          ${grid([FIELDS.engineStart, FIELDS.takeoff, FIELDS.landing, FIELDS.shutdown])}</div>
+          ${grid(timeFields, false)}</div>
         <details class="f-card"><summary>${esc(tt(TX.more))}</summary>${grid([FIELDS.callsignPrefix, FIELDS.callsignNumber, FIELDS.callsignFpl, FIELDS.baseDeparture, FIELDS.baseReturn, FIELDS.landingAd, FIELDS.altn])}</details>
         <details class="f-card" data-recent><summary>${esc(tt(TX.recent))}</summary><div class="f-list" data-recentlist></div></details>
         <div class="f-row rp-next"><button type="button" data-step="1">${esc(tt(TX.next))}</button></div>
       </section>
       <section class="rp-step" data-s="1"${step === 1 ? '' : ' hidden'}>
         <div class="f-card"><h2>${esc(tt(TX.steps[1]))}</h2>
+          ${srcLine(shownFields([FIELDS.series, FIELDS.missionNumber]))}
           <div class="f-grid"><label class="f-field"><span>${esc(tt(TX.family))}</span><select data-family>${Object.entries(V.familyLabels).filter(([k]) => FAMILIES[k]).map(([k, l]) => `<option value="${k}"${k === m.family ? ' selected' : ''}>${esc(tt(l))}</option>`).join('')}</select></label>
           ${control(FIELDS.series, m.series)}${control(FIELDS.missionNumber, m.metadata.missionNumber)}</div></div>
         ${F.ownOrder ? '' : `<details class="f-card"><summary>${esc(tt(TX.tasking))}</summary>${grid([FIELDS.objective, FIELDS.instructions, FIELDS.priority])}</details>`}
@@ -565,8 +596,9 @@ function renderBody() {
           <button type="button" data-do="copyfields">${esc(tt(TX.copyFields))}</button></details>
       </section>
     </div>
-    <div class="f-bar"><button type="button" class="primary" data-do="save">${esc(tt(S.path ? TX.saveEdit : TX.save))}</button>
-      <button type="button" data-do="savesite"${site ? '' : ` disabled title="${esc(tt(TX.siteUnset))}"`}>${esc(tt(TX.saveSite))}${site ? '' : `<small class="f-muted rp-unset">${esc(tt(TX.siteUnset))}</small>`}</button></div>`;
+    <div class="rp-dock"><div class="f-bar rp-bar"><button type="button" class="primary" data-do="save">${esc(tt(S.path ? TX.saveEdit : TX.save))}</button>
+      <button type="button" class="rp-site" data-do="savesite" title="${esc(tt(site ? TX.saveSite : TX.siteUnset))}"${site ? '' : ' disabled aria-describedby="rpUnset"'}>${esc(tt(TX.saveSite))}</button></div>
+      ${site ? '' : `<p class="rp-src rp-unset" id="rpUnset">${esc(tt(TX.siteUnset))}</p>`}</div>`;
   // module large (tous les pas affichés, sans barre de pas) : le pas Mission est sous les yeux, donc vu
   if (!S.missionSeen && S.body.querySelector('.rp-step[data-s="1"]')?.offsetParent) S.missionSeen = true;
   const mark = S.body.querySelector('[data-mark]');
