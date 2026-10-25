@@ -346,7 +346,7 @@ both ways.
   |---|---|
   | `procedures(icao, { kind, runway, name, transition })` | merged procedures of the aerodrome (published cycle + seen in OFPs), filtered; `[]` without data or for a bad code |
   | `procedureIndex()` | `proc/<cycle>/index.json` = { `cycle`, `aerodromes`: { ICAO: { SID, STAR, APP counts } } }, or null |
-  | `procedureFromOfp(ofp)` | `{ sid, star }` of a SimBrief OFP (`json=v2`), each a procedure with status `ofp` or null; writes nothing |
+  | `procedureFromOfp(ofp)` | (asynchronous: loads `procedures.js` on first use) `{ sid, star }` of a SimBrief OFP (`json=v2`), each a procedure with status `ofp` or null; writes nothing |
   | `rememberOfp(ofp)` | same answer, and keeps both in `proc-seen/<ICAO>.json` (nothing written when the same record is already there); null when the reader does not write |
 
 - **OFP reading**: from `navlog.fix`, TOC, TOD and aerodromes are left out; fixes flagged `is_sid_star` before the first
@@ -362,7 +362,7 @@ both ways.
   NM), `vpa` (vertical path angle, degrees, negative = descent), `over` (fly-over), `phase` (`missed`: after the runway point of
   an approach), `placed` (`base`: position found by `procedures()` in the SIA base, nearest to the procedure's first placed
   point, because the published file had none: en-route fixes "REF ENR 4.x" of the eAIP pages). A published point may carry
-  `lat: null`; a module draws only points with a position.
+  `lat: null`; a module draws only points with a position (see the request in `modules/maps/INTEGRATION.md`).
 - **Published aerodrome file, extra keys**: `charts` { `base`, `items` [ { `path`, `kind` } ], `vac` }, `pages` (source pages
   read), `warnings` (rows not read, fixes without position).
   - **For the frame's PDF reader** (links to the VAC charts and the eAIP pages): the address of a chart is `charts.base` +

@@ -121,7 +121,9 @@ does not give it:
 ## 3 bis. Procedures
 
 The map draws `route.procedures.sid` / `.star` of the current flight (written by fuel, aerodb schema) as a purple line over the
-route, labelled "SID <name>" / "STAR <name>"; skipped when its aerodrome is not the route's departure / arrival. The vertical
+route, labelled "SID <name>" / "STAR <name>"; skipped when its aerodrome is not the route's departure / arrival. Request for the Maps agent (aerodb lot 2): in `drawProcedures`, keep only the points with finite `lat` and `lon` (a published point
+may carry `lat: null` until aerodb places it), and, when the vertical profile draws procedures, use `points[].alt` (constraints) when
+present, `planned` otherwise. The vertical
 profile does not draw them yet (they carry `planned` altitudes only, no constraints); a published library
 (`aerodb.procedures`) is not drawn yet.
 
