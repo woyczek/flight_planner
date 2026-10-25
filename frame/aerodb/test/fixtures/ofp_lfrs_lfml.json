@@ -10,18 +10,17 @@
  "origin": {
   "icao_code": "LFRS",
   "plan_rwy": "03",
-  "pos_lat": "47.156944",
-  "pos_long": "-1.607778"
+  "pos_lat": "47.16",
+  "pos_long": "-1.61"
  },
  "destination": {
   "icao_code": "LFML",
   "plan_rwy": "13L",
-  "pos_lat": "43.436667",
-  "pos_long": "5.215000"
+  "pos_lat": "43.44",
+  "pos_long": "5.21"
  },
  "params": {
-  "airac": "2610",
-  "time_generated": "1792417446"
+  "airac": "2610"
  },
  "navlog": {
   "fix": [
@@ -32,8 +31,8 @@
     "is_sid_star": "1",
     "via_airway": "LUGE4N",
     "altitude_feet": "3600",
-    "pos_lat": "47.069250",
-    "pos_long": "-1.490889"
+    "pos_lat": "47.07",
+    "pos_long": "-1.49"
    },
    {
     "ident": "BOBRI",
@@ -42,8 +41,8 @@
     "is_sid_star": "1",
     "via_airway": "LUGE4N",
     "altitude_feet": "8300",
-    "pos_lat": "46.838333",
-    "pos_long": "-1.190278"
+    "pos_lat": "46.84",
+    "pos_long": "-1.19"
    },
    {
     "ident": "LUGEN",
@@ -52,8 +51,8 @@
     "is_sid_star": "0",
     "via_airway": "LUGE4N",
     "altitude_feet": "12800",
-    "pos_lat": "46.583333",
-    "pos_long": "-0.861111"
+    "pos_lat": "46.58",
+    "pos_long": "-0.86"
    },
    {
     "ident": "TUPAR",
@@ -62,8 +61,8 @@
     "is_sid_star": "0",
     "via_airway": "UM184",
     "altitude_feet": "15300",
-    "pos_lat": "46.429167",
-    "pos_long": "-0.662778"
+    "pos_lat": "46.43",
+    "pos_long": "-0.66"
    },
    {
     "ident": "DIDRU",
@@ -72,8 +71,8 @@
     "is_sid_star": "0",
     "via_airway": "DCT",
     "altitude_feet": "20900",
-    "pos_lat": "46.181667",
-    "pos_long": "0.031111"
+    "pos_lat": "46.18",
+    "pos_long": "0.03"
    },
    {
     "ident": "TOC",
@@ -82,8 +81,8 @@
     "is_sid_star": "0",
     "via_airway": "DCT",
     "altitude_feet": "27000",
-    "pos_lat": "45.984852",
-    "pos_long": "0.923585"
+    "pos_lat": "45.98",
+    "pos_long": "0.92"
    },
    {
     "ident": "ADATU",
@@ -92,8 +91,8 @@
     "is_sid_star": "0",
     "via_airway": "DCT",
     "altitude_feet": "27000",
-    "pos_lat": "45.537222",
-    "pos_long": "2.825556"
+    "pos_lat": "45.54",
+    "pos_long": "2.83"
    },
    {
     "ident": "LERGA",
@@ -102,8 +101,8 @@
     "is_sid_star": "0",
     "via_airway": "DCT",
     "altitude_feet": "27000",
-    "pos_lat": "45.257278",
-    "pos_long": "3.750167"
+    "pos_lat": "45.26",
+    "pos_long": "3.75"
    },
    {
     "ident": "TOD",
@@ -112,8 +111,8 @@
     "is_sid_star": "1",
     "via_airway": "LERG1R",
     "altitude_feet": "27000",
-    "pos_lat": "45.049057",
-    "pos_long": "4.206120"
+    "pos_lat": "45.05",
+    "pos_long": "4.21"
    },
    {
     "ident": "LATAM",
@@ -122,8 +121,8 @@
     "is_sid_star": "1",
     "via_airway": "LERG1R",
     "altitude_feet": "26500",
-    "pos_lat": "45.033861",
-    "pos_long": "4.239111"
+    "pos_lat": "45.03",
+    "pos_long": "4.24"
    },
    {
     "ident": "ARDEG",
@@ -132,8 +131,8 @@
     "is_sid_star": "1",
     "via_airway": "LERG1R",
     "altitude_feet": "20300",
-    "pos_lat": "44.669167",
-    "pos_long": "4.537500"
+    "pos_lat": "44.67",
+    "pos_long": "4.54"
    },
    {
     "ident": "OSGOX",
@@ -142,8 +141,8 @@
     "is_sid_star": "1",
     "via_airway": "LERG1R",
     "altitude_feet": "14800",
-    "pos_lat": "44.311306",
-    "pos_long": "4.649056"
+    "pos_lat": "44.31",
+    "pos_long": "4.65"
    },
    {
     "ident": "RIKSI",
@@ -152,8 +151,8 @@
     "is_sid_star": "1",
     "via_airway": "LERG1R",
     "altitude_feet": "11800",
-    "pos_lat": "44.118972",
-    "pos_long": "4.677056"
+    "pos_lat": "44.12",
+    "pos_long": "4.68"
    },
    {
     "ident": "LFML",
@@ -162,8 +161,8 @@
     "is_sid_star": "1",
     "via_airway": "LERG1R",
     "altitude_feet": "2600",
-    "pos_lat": "43.436667",
-    "pos_long": "5.215000"
+    "pos_lat": "43.44",
+    "pos_long": "5.21"
    }
   ]
  }

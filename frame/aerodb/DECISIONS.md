@@ -661,3 +661,12 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
   excerpt, as for the SIA) can be fixtures, if the State's terms allow it.
 - **Plan** (not coded before a real page): layout registry with a detector, `--pdf-dir` mode, status `check`, `source.kind: 'ead-basic'`.
   Which States code their RNAV / RNP procedures in AD 2 tables is **not known**; the checklist is in § 2 of the document.
+
+## 25 October 2026 — the real-OFP fixture in a public repository: rounded
+
+- **Question** (relay, after the correction on State AIP PDFs): `frame/aerodb/test/fixtures/ofp_lfrs_lfml.json` held 14 navlog fixes of one flight
+  with the coordinates SimBrief serves (6 decimals; SimBrief's data derives from Navigraph) and the OFP's generation time, in a public repository.
+- **Decision of the user**: « Arrondi, oui » (the relay's recommendation to drop the generation time accepted in the same word).
+- **Done**: every coordinate of the fixture (fixes, departure, arrival) rounded to 2 decimals (about 1 km); `params.time_generated` removed (the
+  reader then dates a record from the moment it reads the OFP, which no test checks); nothing else changed (identifiers, SID / STAR names, runways,
+  flags, altitudes of the plan, `params.airac`). The bench's checks on the real OFP read identifiers, order and cycle only.

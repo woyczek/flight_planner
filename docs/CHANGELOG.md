@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: the real-OFP test fixture rounded** (`frame/aerodb/test/fixtures/ofp_lfrs_lfml.json`, DECISIONS) — the coordinates of its fixes are rounded to
+  2 decimals and the OFP's generation time is removed, the repository being public (decision of the owner).
 - **aerodb: EAD Basic access evaluated for the procedures of other States** (`frame/aerodb/EAD_BASIC.md`, DECISIONS) — EAD Basic is a PDF library of
   State AIPs, not a data service, and not for operational use; the code repository being public, no State AIP PDF may enter it. The plan to read
   the AD 2 coding tables of other States (layout registry, `--pdf-dir` mode, status "to be checked") and the checklist for a first real page are
