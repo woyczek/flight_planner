@@ -147,6 +147,10 @@ export function merge(...lists) {
   return [...out.values()].sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
 }
 
+/** Un vol n'a pas de compte rendu quand sa meilleure source n'est pas un CR (journal du site ou réseau) : une seule
+ *  règle pour le filtre « Sans CR », la tuile de totaux et la liste publiée pour le cadre (pending). */
+export const lacksReport = f => f.source !== 'cr';
+
 /** Vols retenus (V2 shown) : période en jours (0 : tout), recherche par mots (indicatif, type, immatriculation,
  *  terrains, mission, n° de CR), sans CR seulement ; today : AAAA-MM-JJ. */
 export function filter(flights, {
@@ -157,7 +161,7 @@ export function filter(flights, {
 } = {}) {
   const from = days ? new Date(Date.parse(`${today}T00:00:00Z`) - days * 864e5).toISOString().slice(0, 10) : '',
     words = up(find).split(/\s+/).filter(Boolean);
-  return flights.filter(f => (!from || f.date >= from) && (!noReport || f.source !== 'cr') && words.every(w => up([f.callsign, f.type, f
+  return flights.filter(f => (!from || f.date >= from) && (!noReport || lacksReport(f)) && words.every(w => up([f.callsign, f.type, f
     .reg,
     f.dep, f.arr, f.mission, f.crId
   ].join(' ')).includes(w)));
@@ -171,9 +175,32 @@ export function totals(list) {
   return {
     flights: list.length,
     blockMinutes: list.reduce((s, f) => s + (f.block || 0), 0),
-    noReport: list.filter(f => f.source !== 'cr').length,
+    noReport: list.filter(lacksReport).length,
     types: Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 3)
   };
+}
+
+/** Vols sans compte rendu à écrire, publiés pour le bouton « i » du cadre (cache/flightlog/pending.json, schéma 2) :
+ *  les vols de `flights` (fusionnés) sans CR, du plus récent au plus ancien, des `days` derniers jours (30), `max`
+ *  au plus (5) ; source : website (journal du site), ivao ou vatsim ; handoff : ce que « Écrire le CR » remet à
+ *  report (handoffOf), pour que le cadre le remette lui-même. today : AAAA-MM-JJ. */
+export function pending(flights, {
+  today = new Date().toISOString().slice(0, 10),
+  days = 30,
+  max = 5
+} = {}) {
+  return filter(flights, {
+    days,
+    noReport: true,
+    today
+  }).sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`)).slice(0, max).map(f => ({
+    date: f.date,
+    dep: f.dep,
+    arr: f.arr,
+    registration: f.reg,
+    source: f.source === 'log' ? 'website' : String(f.network || f.source).toLowerCase(),
+    handoff: handoffOf(f)
+  }));
 }
 
 /** Minutes → « 1:35 » ; « — » sans valeur. */
@@ -236,3 +263,11 @@ export function reportValues(f) {
   };
   return Object.fromEntries(Object.entries(v).filter(([, x]) => x !== '' && x != null));
 }
+
+/** Ce que « Écrire le CR » d'un vol remet à report dans pilot/handoff.json, en plus de to / from / source / at / fresh :
+ *  la famille proposée et les valeurs (reportValues). Une seule fonction pour le geste du module et pour l'entrée de
+ *  cache/flightlog/pending.json, d'où le cadre peut écrire le même passage. */
+export const handoffOf = f => ({
+  family: f.family,
+  values: reportValues(f)
+});

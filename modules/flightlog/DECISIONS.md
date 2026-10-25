@@ -2,6 +2,37 @@
 
 Memory of the V3 flightlog module: every choice, dated, with its reason. Chat history is never needed.
 
+- **24 Oct 2026 — the flights without a report published for the frame's "i" button** (user, 24 Oct afternoon, item
+  "6 : bouton « i »": the status line gives way to an "i" button of the header whose pop-up lists "report to write" lines;
+  the pending report comes from a small cache record published by flightlog — relay cloud lot): `cache/flightlog/pending.json`
+  (INTEGRATION § 5, schema verbatim from the brief).
+  - **Rule "without a report"**: the module's own — a flight whose best row after the merge is not a report (website
+    log or network session). It is now one exported predicate, `lacksReport`, used by the "Without report" filter, the
+    tile and `pending`; `pending` is `filter({ days: 30, noReport: true })`, sorted, cut to 5, mapped to the record.
+    The module has no separate "to write" list, so nothing else to unify.
+  - **Judgement calls**: (1) a network session still open (flight under way on IVAO / VATSIM) counts, as it does in the
+    module's list and tile, "in progress" included; (2) the started flight not yet reported (fuel's `current_flight`)
+    is not in the record: the frame has its own "started flight" line; (3) the date is the flight's own (local date for a
+    network session, as in the list); (4) write only when `flights` differs from the last record (`updated_at` out of the
+    comparison; writes queued in a promise chain so two refreshes cannot both think the record is stale); (5) at the first
+    mount with an IVAO / VATSIM id the first (reports + log) stage does not publish, the network stage does, to avoid a
+    record that loses then regains network flights; (6) bench `test/pending.html` added although the module had none,
+    because the function is pure and the lot asked for it.
+  - **Schema 2, `handoff` in each entry** (relay cloud's decision, same day, on the open point below: keep the handoff
+    mechanism rather than teach report a query): each entry carries `handoff` = `{ family, values }`, what "Write the
+    report" hands to report, built by one function (`handoffOf`, used by the action and by `pending`). The brief spoke of
+    `values`; `family` is added because the action also sends it (report starts the new report in that family), so the
+    frame writes `{ to, from, source, at, fresh: true, family, values }` and the result equals the module's own gesture.
+    The record carries no times because the action fills none.
+  - **Report reads no query key** (`ctx.query` unused in `modules/report/module.js`; only `pilot/handoff.json`): the
+    frame's `#report?from=flightlog&date=…&dep=…&arr=…` would open report unchanged; hence the `handoff` above (INTEGRATION
+    § 5). Report is not changed.
+  - Checked on 8816 (Chromium 1194, 390 × 844, flights, reports and an IVAO session seeded through `FrameData`): three
+    website flights (one covered by a report, one older than 30 days) and an IVAO session → record with the website
+    flight, the IVAO session and the second website flight, newest first; a remount without change leaves `updated_at`
+    untouched; saving the report of the newest flight shrinks the record to two lines; no `pageerror`, no horizontal
+    scroll. Schema 2: the first entry's `handoff` equals, field for field, the `pilot/handoff.json` the "Write the report" button
+    wrote (read back before report took it). Bench `test/pending.html`: 9 checks pass (handoff of two sample flights included).
 - **23 Oct 2026 — a flight's time shown in UTC** (report's times in UTC, report INTEGRATION § 3 bis): the detail
   shows `whenZ` — a report marked `timeline.tz = 'Z'` as it is ("2026-10-23 17:14Z"), an older one converted from
   the device's time ("18:30" → "16:30Z"), the flight plan's `metadata.timeUtc` with Z, a network session from its

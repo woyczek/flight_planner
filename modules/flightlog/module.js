@@ -32,6 +32,7 @@ export const meta = {
 
 const VIEW = 'cache/flightlog/view.json',
   NET = 'cache/flightlog/network.json',
+  PENDING = 'cache/flightlog/pending.json', // vols sans CR, lus par le bouton « i » du cadre
   HANDOFF = 'pilot/handoff.json';
 
 // ---------------------------------------------------------------- textes [fr, en, de, es]
@@ -205,6 +206,31 @@ async function startedFlight() {
     arr: r.arr || ''
   };
 }
+/** Publie la liste des vols sans CR (F.pending, la même fonction que le modèle) dans cache/flightlog/pending.json, lue
+ *  par le cadre ; l'écriture n'a lieu que si les vols ont changé (updated_at ne compte pas). Les appels sont mis à la
+ *  file : la comparaison se fait toujours avec la dernière valeur écrite. */
+function publishPending() {
+  const s = S,
+    flights = F.pending(s.flights || []),
+    json = JSON.stringify(flights);
+  s.pubQueue = (s.pubQueue || Promise.resolve()).then(async () => {
+    if (s.pubJson === undefined) {
+      const had = await s.ctx.data.get(PENDING).catch(() => null);
+      s.pubJson = Array.isArray(had?.flights) ? JSON.stringify(had.flights) : null;
+    }
+    if (s.pubJson === json) return;
+    s.pubJson = json;
+    await s.ctx.data.put(PENDING, {
+      schema: 2,
+      updated_at: new Date().toISOString().slice(0, 19) + 'Z',
+      flights
+    }, {
+      policy: 'cache'
+    });
+  }).catch(() => {
+    s.pubJson = undefined; // écriture manquée : la prochaine liste relit puis réécrit
+  });
+}
 /** Lit les sources du device (CR, journal) puis le réseau ; la liste se redessine à chaque étape. */
 async function load(loud = false) {
   const s = S,
@@ -212,13 +238,17 @@ async function load(loud = false) {
   if (S !== s) return;
   S.started = started;
   const [v3, v2, log] = await Promise.all([reportsV3(), reportsV2(), siteLog()]);
+  if (S !== s) return;
   S.base = [v3, v2, log];
   S.flights = F.merge(...S.base, S.net || []);
   render();
+  // au premier passage d'un pilote avec IVAO / VATSIM, le réseau n'est pas encore lu : la liste publiée l'attend
+  if (S.net || !(S.ctx.identity.ivao || S.ctx.identity.vatsim)) publishPending();
   S.net = await network(loud);
   if (!S?.body) return;
   S.flights = F.merge(...S.base, S.net);
   render();
+  publishPending();
 }
 
 // ---------------------------------------------------------------- écran
@@ -344,8 +374,7 @@ async function onClick(e) {
         source: tt(TX.title),
         at: new Date().toISOString(),
         fresh: true,
-        family: f.family,
-        values: F.reportValues(f)
+        ...F.handoffOf(f) // { family, values } : le même objet que l'entrée de pending.json
       }, {
         policy: 'cache'
       });
