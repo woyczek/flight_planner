@@ -145,7 +145,11 @@ L.on(s => …); await L.sync();       // state; a pass now
   apart from published routes and word them "to be checked" / "seen in an OFP". Fuel hands a SimBrief OFP it has fetched to
   `await aerodb.rememberOfp(ofp)` (the user name stays Fuel's) and writes the returned `{ sid, star }` in the current
   flight (`route.procedures`); Maps draws that, ignoring a procedure whose aerodrome is no longer the route's departure or
-  arrival. `aerodb.procedureIndex()` says which aerodromes have some.
+  arrival. `aerodb.procedureIndex()` says which aerodromes have some. A published point without position is placed by
+  `procedures()` from the SIA base; a point still without `lat` is skipped by the drawing.
+- **Charts for the frame's PDF reader**: `procedures(icao)` is not needed; read the aerodrome file of the cycle through the
+  reader (`proc/<cycle>/<ICAO>.json`, key `charts`) — the address of a chart is `charts.base + items[].path`, the VAC chart
+  `charts.vac` (SPEC § 5 quinquies). A call `aerodb.charts(icao)` can wrap it when the reader exists.
 
 ## 5. Costs to know (measured, see DECISIONS.md)
 

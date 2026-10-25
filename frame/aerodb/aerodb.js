@@ -954,7 +954,27 @@
         const P = window.AeroDBProcedures,
           cycle = await procCycle(k),
           [pub, seen] = await Promise.all([cycle ? read(`proc/${cycle}/${k}.json`) : null, read(`proc-seen/${k}.json`)]);
-        return P.filter(P.merge(valueOf(pub)?.procedures || [], valueOf(seen)?.procedures || []), q);
+        const out = P.filter(P.merge(valueOf(pub)?.procedures || [], valueOf(seen)?.procedures || []), q);
+        // points publiés sans position (points en route des pages DATA de l'eAIP) : cherchés dans la base, le plus proche du
+        // premier point placé de la procédure ; copies, le cache du lecteur n'est pas modifié
+        for (const rec of out) {
+          if (!rec.points.some(p => p.lat == null)) continue;
+          let anchor = rec.points.find(p => p.lat != null) || await api.coords(k).catch(() => null);
+          rec.points = await Promise.all(rec.points.map(async p => {
+            if (p.lat != null) return p;
+            const all = await api.coordsAll(p.id).catch(() => []),
+              d = x => (x.item.lat - anchor.lat) ** 2 + ((x.item.lon - anchor.lon) * Math.cos(anchor.lat * Math.PI / 180)) **
+              2,
+              best = anchor ? all.slice().sort((a, b) => d(a) - d(b))[0] : all[0];
+            return best ? {
+              ...p,
+              lat: best.item.lat,
+              lon: best.item.lon,
+              placed: 'base'
+            } : p;
+          }));
+        }
+        return out;
       },
       /** Index du cycle publié des procédures : { cycle, aerodromes: { OACI: { SID, STAR, APP, status } } } ; null sans
        *  publication. */

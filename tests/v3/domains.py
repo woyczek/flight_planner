@@ -42,6 +42,7 @@ RULES = [
     ('modules/fuel/**', ['F', 'I', 'A7'] + TITLED, 'fuel (in the Preparer group: the popover)'),
     ('modules/flightlog/**', ['G', 'I', 'A8', 'A9'] + TITLED, 'flightlog (the Status block and the gear read its pending file)'),
     ('modules/report/**', ['G', 'I', 'A8', 'A9'] + TITLED, 'report (the Status block hands over to it)'),
+    ('tools/proc_eaip.py', ['K', 'I'], 'the eAIP procedures builder and its aerodb cases'),
     ('tools/**', ['I'], 'tooling'),
     ('tests/**', ['I'], 'tooling'),
     ('.github/**', ['I'], 'tooling'),

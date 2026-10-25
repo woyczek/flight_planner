@@ -592,3 +592,28 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
   checked on a first real flight; names filed by SimBrief ("ROYAN6P") and published ones ("ROYAN 6P") match after removing
   spaces, other spellings will not; the vertical profile does not draw procedures yet.
 - **Verified**: bench `frame/aerodb/test/procedures.html` 14 / 14, case K1.
+
+## 25 October 2026 — lot 2, step 2: the eAIP coding tables (`tools/proc_eaip.py`)
+
+- **Decisions of the user** (relayed, word for word): « 1 lecteur pdf, à prévoir pour l'appli (liens vers cartes VAC). Pypdf sur
+  le poste. » `pypdf` is the optional, declared dependency of the workstation builder only (a clear message when missing), never
+  of the launcher or the page; the PDF reader of the app is a frame primitive, decided later.
+- **Built**: the builder (parsers of the SID / STAR "RNAV" tables and the "RNP" approach tables, of the DATA pages' coordinates; the
+  aerodrome file and the cycle index; chart addresses and the VAC address), read at the rows of text pypdf gives (grouped by
+  position; the RNP pages are rotated in the text flow, the orientation is read from each fragment's matrix); fixtures
+  `frame/aerodb/test/fixtures/eaip/` (LFBD SID RWY 23, STAR, RNP 23, DATA 01 / 02, LFAV RNP 11 / 29, DATA 01); cases K2, K3.
+  `procedures()` places the points without position from the SIA base.
+- **Measured on the real pages (AIRAC 2026-10-01)**: LFBD 38 procedures (12 SID, 6 STAR, 20 approaches by transition) from 10
+  pages, 45 warnings; LFAV 6 approaches from 2 pages, 1 warning (the magnetic course of TF VADEP is missing on the page). Whole run:
+  about 15 s with the downloads. The warnings: fixes without position until the base resolves them (37), `CA` legs without fix
+  (4: the SID RWY 29 start), rows of the RNP AR and "VPT" pages whose digits are spaced out ("- 1 . 0"; 3 rows), one approach
+  without runway point (RNP A VPT). A typo of the source is kept visible: `IDB23` for `IBD23` in the LFBD RNP 23 page (the
+  transition LIBRU / DIRAX end at an unknown fix; the join with the final approach is therefore not merged).
+- **Limits**: the amendment date of a page differs from the AIRAC (LFBD 16 May 24, LFAV 29 Dec 22): `source.at` keeps it. No
+  conventional procedure. The SID names of the SIA ("ROYAN 6P") become ids without spaces (`ROYAN6P`) to match SimBrief's.
+- **Real OFP** (the user's, fetched once on 25 October 2026 at their request; the user name is in no file): the field names of
+  lot 1 were right; one defect found and fixed: `sid_trans` / `star_trans` are `{}` when there is none (they became the text
+  "{}"). Bench: 18 checks including the real SID LUGE4N (SUBAK, BOBRI) and STAR LERG1R (LATAM, ARDEG, OSGOX, RIKSI); fixture
+  trimmed to the fields read. The SID of this OFP lists only two fixes: SimBrief gives the named fixes, not the runway legs.
+- **VAC address**: `…/media/dvd/eAIP_01_OCT_2026/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.<ICAO>.pdf` answers 200 (PDF) for LFBD and
+  LFAV and 404 for an unknown code; the builder asks with HEAD and keeps `charts.vac` only if found.

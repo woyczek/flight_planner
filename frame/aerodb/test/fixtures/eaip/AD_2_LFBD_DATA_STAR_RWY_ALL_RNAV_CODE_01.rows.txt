@@ -1,0 +1,41 @@
+AIP
+FRANCE
+BORDEAUX MERIGNAC
+STAR RNAV RWY ALL
+STAR RNAV RWY ALL
+and DME/DME
+RMK REF NAVAID : BMCMAG VAR 2020 0.3°E GNSS et /
+(*) basée sur le concept CDO / based on CDO concept.
+Procedure Path Waypoint Fly Direction Direction Distance Turn MNM Altitude MAX Altitude MAX Navigation
+Identification Terminator Identification Over MAG (°) True (°) (NM) direction (FL or AMSL ft) (FL or AMSL ft) IAS (kt) Accuracy (NM)
+HLDG
+ETPAR - ETPAR Yes 165 165 4.6 L 5000 FL120 220 -
+VAGNA - VAGNA Yes 225 225 4.6 L 5000 FL120 220 -
+LIBRU - LIBRU Yes 260 260 4.6 L 5000 FL120 220 -
+DIRAX - DIRAX Yes 325 325 4.2 L 5000 FL090 220 -
+ROYAN 2L
+- IF ROYAN - - - - - - FL150 - -
+- TF ETPAR - 165 165.3 29.2 - 5000 FL120 - 1.0
+CNA 2L (*)
+- IF CNA - - - - - - FL200 - -
+- TF BD011 - 173 173.4 11.0 - FL080 - - 1.0
+- TF BD002 - 173 173.4 18.6 - - - - 1.0
+- TF VAGNA - 225 225.6 6.3 - 5000 FL120 - 1.0
+LMG 2L (*)
+- IF LMG - - - - - - - - -
+- TF MARRE - 234 234.1 38.7 - FL200 FL240 - 1.0
+- TF CHALA - 233 233.5 8.0 - FL160 FL190 - 1.0
+- TF BD001 - 234 234.0 8.0 - - - - 1.0
+- TF BD002 - 234 233.9 11.0 - - - - 1.0
+- TF VAGNA - 225 225.6 6.3 - 5000 FL120 - 1.0
+VELIN 2L (*)
+- IF VELIN - - - - - - FL150 - -
+- TF LIBRU - 250 165.3 15.7 - 5000 FL120 - 1.0
+MIRBA 2L (*)
+- IF MIRBA - - - - - - FL170 - -
+- TF LIBRU - 294 294.4 24.2 - 5000 FL120 - 1.0
+VAVIX 2L (*)
+- IF VAVIX - - - - - - FL150 - -
+- TF DIRAX - 032 032.0 19.4 - 5000 FL090 - 1.0
+AMDT 05/24 SIA
+AD 2 LFBD DATA STAR RWY ALL RNAV CODE 01 16 MAY 24 ©

@@ -106,6 +106,15 @@
       check('en-route fix, TOC, TOD and aerodromes kept out', ![...cur.sid.points, ...cur.star.points].some(p =>
         /^(MEN|TOC|TOD|LFBD|LFML)$/.test(p.id)), cur);
       const none = await db.procedureFromOfp({});
+      // vrai OFP (allégé aux champs lus, sans identifiant), pris le 25 octobre 2026 : sid_trans et star_trans y sont des objets vides
+      const real = await (await fetch('fixtures/ofp_lfrs_lfml.json')).json(),
+        rr = await db.procedureFromOfp(real);
+      check('real OFP: SID LUGE4N from LFRS runway 03, two points, no transition', rr.sid?.id === 'LFRS.SID.LUGE4N.RW03' && rr.sid
+        .points.map(p => p.id).join() ===
+        'SUBAK,BOBRI' && rr.sid.transition === null && rr.sid.source.cycle === '2610', rr.sid);
+      check('real OFP: STAR LERG1R to LFML runway 13L, four points (TOD and the aerodrome left out)', rr.star?.id ===
+        'LFML.STAR.LERG1R.RW13L' && rr.star.points
+        .map(p => p.id).join() === 'LATAM,ARDEG,OSGOX,RIKSI' && rr.star.transition === null, rr.star);
       check('an OFP without navlog gives nothing', none.sid === null && none.star === null, none);
       check('nothing written by procedureFromOfp', puts.length === 0, puts);
       await db.rememberOfp(ofp);
@@ -185,6 +194,63 @@
       })).length === 0 && (await db.procedures('LFBD', {
         name: 'royan6p'
       })).length === 1, null);
+      // base publiée minimale (zone fr) : un point en route placé à la lecture, les points déjà placés laissés
+      files.set('sia/base/fr/2026-10-01/meta.json', JSON.stringify({
+        schema: 2,
+        zone: 'fr',
+        cycle: '2026-10-01',
+        kind: 'meta',
+        data: {}
+      }));
+      files.set('sia/base/fr/2026-10-01/navaids.json', JSON.stringify({
+        schema: 2,
+        zone: 'fr',
+        cycle: '2026-10-01',
+        kind: 'navaids',
+        data: [{
+          id: 'ROYAN',
+          lat: 45.62,
+          lon: -1.03,
+          name: 'ROYAN'
+        }, {
+          id: 'ROYAN',
+          lat: -20,
+          lon: 55,
+          name: 'ROYAN (far)'
+        }]
+      }));
+      files.set('proc/2026-10-08/LFBX.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFBX',
+        procedures: [{
+          id: 'LFBX.SID.TEST1A.RWALL',
+          icao: 'LFBX',
+          kind: 'SID',
+          name: 'TEST 1A',
+          runways: [],
+          points: [{
+            seq: 1,
+            id: 'BD230',
+            lat: 44.7,
+            lon: -0.8
+          }, {
+            seq: 2,
+            id: 'ROYAN',
+            lat: null,
+            lon: null
+          }],
+          source: {
+            kind: 'eaip'
+          },
+          status: 'check'
+        }]
+      }));
+      const placed = (await db.procedures('LFBX'))[0]?.points;
+      check('a point without position is placed from the base, the nearest one', placed?.[1]?.lat === 45.62 && placed[1].placed ===
+        'base' && placed[0].placed === undefined,
+        placed);
+      check('the reader\'s copy is not modified', JSON.parse(files.get('proc/2026-10-08/LFBX.json')).procedures[0].points[1].lat ===
+        null, null);
       check('index read', (await db.procedureIndex())?.aerodromes?.LFBD?.SID === 1, null);
       check('bad code answers empty', (await db.procedures('??')).length === 0, null);
       const ro = AeroDB.create({

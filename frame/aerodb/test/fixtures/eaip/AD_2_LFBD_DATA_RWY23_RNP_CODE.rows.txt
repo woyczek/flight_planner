@@ -1,0 +1,35 @@
+AIP AD 2 LFBD DATA RWY23 RNP CODE
+FRANCE 16 MAY 24
+BORDEAUX MERIGNAC
+PRECODING RNP RWY 23
+RNP RWY 23
+RMK REF NAVAID : Fonctionnalité d'attente RNAV requise/ RNAV holding functionality required. MAG VAR 2020 00.3°E NIL
+Leg Path Waypoint Fly Direction Direction Distance Turn MNM Altitude (FL MAX Altitude MAX IAS Vertical angle Navigation
+sequence Terminator Identification Over MAG (°) True (°) (NM) direction or AMSL ft) (FL or AMSL ft) (kt) (°) / TCH (ft) Accuracy (NM)
+- ETPAR Yes 165 165.0 4.6 L 5000 FL120 220 - -
+- VAGNA Yes 225 225.0 4.6 L 5000 FL120 220 - -
+HLDG
+- LIBRU Yes 260 260.0 4.6 L 5000 FL120 220 - -
+- DIRAX Yes 325 325.0 4.2 L 5000 FL090 220 - -
+IF ETPAR - - - - - - - - - -
+INA
+TF BD231 - 122 122.8 12.0 - - - 220 - 1.0
+ETPAR
+TF IBD23 - 135 135.5 8.3 - 3000 4200 210 - 1.0
+INA IF VAGNA - - - - - - - - - 1.0
+VAGNA
+TF IBD23 - 224 224.7 9.1 - 3000 4200 210 - 1.0
+IF LIBRU - - - - - - -
+INA LIBRU TF BD232 - 272 272.6 7.2 - - - 220 - 1.0
+TF IDB23 - 315 315.6 7.8 - 3000 4200 210 - 1.0
+IF DIRAX - - - - - - - - - -
+INA DIRAX TF BD232 - 011 011.2 21.0 - - - 220 - 1.0
+TF IDB23 - 315 315.6 7.8 - 3000 4200 210 - 1.0
+IF IBD23 - - - - - 3000 4200 210 - -
+TF FBD23 - 225 225.6 4.0 - 3000 3000 - - 1.0
+TF RW23 Yes 225 225.6 8.8 - - - - -3.00°/ 54 0.3
+APCH
+TF BD230 Yes 225 225.5 4.1 - - 4000 210 - 1.0
+DF ETPAR - - - - R - - 220 - 1.0
+→ HM ETPAR Yes 165 165.0 4.6 L 4000 FL120 220 - -
+AMDT 05/24 © SIA

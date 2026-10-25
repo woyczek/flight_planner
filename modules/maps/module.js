@@ -926,7 +926,7 @@ function drawProcedures(ctx, toC) {
     [pr.sid, r.dep],
     [pr.star, r.arr]
   ].forEach(([rec, icao]) => {
-    const pts = rec?.points || [];
+    const pts = (rec?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon));
     if (pts.length < 2 || !icao || String(rec.icao).toUpperCase() !== String(icao).toUpperCase()) return;
     const ref = S.route.points[rec.kind === 'SID' ? 0 : S.route.points.length - 1],
       q = pts.map(p => toC(p.lat, nearLon(p.lon, ref.lon)));

@@ -11,7 +11,8 @@
       ofp: 2
     },
     KINDS = ['SID', 'STAR', 'APP'],
-    str = v => (v == null ? '' : String(v)).trim(),
+    // SimBrief écrit {} (objet vide) pour un champ absent : seule une chaîne ou un nombre compte
+    str = v => (typeof v === 'string' || typeof v === 'number' ? String(v) : '').trim(),
     num = v => (v === '' || v == null || !Number.isFinite(+v) ? null : +v),
     /** Nom comparable : majuscules, sans espace ni tiret. */
     norm = v => str(v).toUpperCase().replace(/[\s-]+/g, ''),

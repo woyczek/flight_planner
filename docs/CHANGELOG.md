@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: procedures from the eAIP coding tables — step 2** (`tools/proc_eaip.py`, `frame/aerodb/aerodb.js`,
+  `test/procedures.html`, `test/fixtures/eaip/`, `tests/v3/cases/aerodb.py` K2 K3; aerodb SPEC § 5 quinquies, INTEGRATION,
+  DECISIONS) — a workstation builder (standard library + optional `pypdf`) reads the SIA eAIP pages "AD 2 <ICAO> DATA … CODE"
+  and "DATA 01 / 02" and writes `proc/<cycle>/<ICAO>.json` and `index.json` at the common schema (status "to be checked"):
+  SID, STAR and RNP approaches with leg types, turns, courses, distances, altitude constraints, speeds and vertical angles.
+  The file also lists the address of every chart of the aerodrome and of its VAC chart, for the app's PDF reader.
+  `AeroDB.procedures` places a published point that has no position from the SIA base. Measured on LFBD (38 procedures)
+  and LFAV (6); unreadable rows are reported in `warnings`, never guessed. Conventional procedures (ILS, VOR) are not coded in
+  the eAIP and stay for the next steps. Checked against a real SimBrief OFP: empty transitions (`{}`) are read as absent.
 - **aerodb: procedures (SID, STAR) through one API — step 1, the SimBrief OFP** (`frame/aerodb/procedures.js`, `aerodb.js`,
   `test/procedures.html`, `tests/v3/cases/aerodb.py` K1, `modules/fuel/module.js`, `modules/maps/module.js`, Maps help in four
   languages; aerodb SPEC § 5 quinquies, INTEGRATION, DECISIONS; Fuel and Maps INTEGRATION) — a common procedure schema

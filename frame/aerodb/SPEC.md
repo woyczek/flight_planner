@@ -353,9 +353,35 @@ both ways.
   unflagged fix are the SID, after the last one the STAR (without any unflagged fix: by `stage`, `CLB` the SID, otherwise the
   STAR); name and transition from `general.sid_ident` / `sid_trans` / `star_ident` / `star_trans`, runway from
   `origin.plan_rwy` / `destination.plan_rwy`, altitude of the plan from `altitude_feet`. The OFP is read one flight at a time:
-  aerodb never calls SimBrief and never knows the user name (Fuel's setting). The field names are SimBrief's documented ones,
-  to be checked against a real OFP.
-- **Test**: `frame/aerodb/test/procedures.html` (14 checks), case K1 of `tests/v3/`.
+  aerodb never calls SimBrief and never knows the user name (Fuel's setting). Checked on a real OFP (LFRS → LFML, AIRAC
+  2610, `test/fixtures/ofp_lfrs_lfml.json`, trimmed to the fields read): `sid_trans` / `star_trans` are `{}` when empty (read as
+  absent), `general.airac` is null (the cycle is `params.airac`), the STAR's flagged fixes include TOD and the arrival aerodrome
+  (left out).
+- **Leg fields of a point** (published sources with coded legs, all optional): `leg` (ARINC path terminator: IF, TF, CF, DF, RF,
+  HM…), `turn` (`L` | `R`), `crs` (magnetic course, degrees), `nm` (leg length), `kt` (maximum IAS), `rnp` (navigation accuracy,
+  NM), `vpa` (vertical path angle, degrees, negative = descent), `over` (fly-over), `phase` (`missed`: after the runway point of
+  an approach), `placed` (`base`: position found by `procedures()` in the SIA base, nearest to the procedure's first placed
+  point, because the published file had none: en-route fixes "REF ENR 4.x" of the eAIP pages). A published point may carry
+  `lat: null`; a module draws only points with a position.
+- **Published aerodrome file, extra keys**: `charts` { `base`, `items` [ { `path`, `kind` } ], `vac` }, `pages` (source pages
+  read), `warnings` (rows not read, fixes without position).
+  - **For the frame's PDF reader** (links to the VAC charts and the eAIP pages): the address of a chart is `charts.base` +
+    `items[].path` (the eAIP's `Cartes/<ICAO>/AD_2_<ICAO>_…pdf`, one per SID, STAR, IAC, ADC, parking and ground chart, data
+    page…), `kind` being `ADC`, `APDC`, `GMC`, `SID`, `STAR`, `IAC`, `DATA`, `MIA`, `MVA`, `AOC`, `ARC`, `PATC`, `TEXT` or `OTHER`; the
+    VAC chart of the aerodrome is `charts.vac` (full address in the SIA's VFR atlas of the same disc, null when the atlas
+    has none). All of it is per aerodrome and per cycle: the addresses change with the AIRAC folder. The reader opens
+    these addresses; aerodb publishes them and reads no PDF.
+- **eAIP builder** (`tools/proc_eaip.py`, workstation, standard library + optional `pypdf`; launcher and page never import it):
+  `python tools/proc_eaip.py LFBD LFAV --eaip <…/FRANCE/AIRAC-AAAA-MM-JJ> --out data/proc [--base-dir <SIA base of the cycle>]`
+  reads the aerodrome page, downloads its `…_DATA_01/02` (coordinates of the procedure fixes) and `…_CODE` pages (ARINC coding
+  tables: SID and STAR "RNAV", approaches "RNP"), and writes `proc/<cycle>/<ICAO>.json` + `index.json`, status `check`, source
+  `eaip` (`ref` = page, `at` = amendment date of the page). SID / STAR: one procedure per name of the table; approach: one per
+  initial-approach transition (named by its initial fix, joined to the final approach, the shared fix once) or one without
+  transition. Not coded in the eAIP, so absent: conventional SID / STAR / IAC (ILS, VOR), legs without a fix (CA, VA…), holds
+  of the STAR pages (HLDG). A row that cannot be read is reported in `warnings`, never guessed (a missing magnetic course stays
+  empty).
+- **Test**: `frame/aerodb/test/procedures.html` (18 checks), cases K1 (API), K2 (tables read from `test/fixtures/eaip/*.rows.txt`,
+  lines of text kept from the SIA's pages) and K3 (aerodrome file) of `tests/v3/`.
 
 ## 6. Invariants
 
