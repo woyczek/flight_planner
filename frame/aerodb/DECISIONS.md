@@ -382,6 +382,10 @@ With the network cut, the only reads attempted were:
 - **Tests**: registry.html 26 checks (EC45 and A139 helicopters, ceiling at most 20,000 ft, `ecoFt` 3,000; A400 not a
   helicopter).
 
+## 24 October 2026 — option (not done): the published SIA base also served from the public pages
+
+Serving `sia/base/` like the world synoptic (no token) would make the base readable without any access: it needs a source-by-source licence audit first (SIA, ENAIRE, FAA, openAIP are mixed; personal-licence data must never be public), a Pages step that reads the private data repository with a secret, and about 17–19 MB per AIRAC cycle. For the user's decision; the workflow is unchanged.
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.
