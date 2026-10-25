@@ -70,6 +70,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   line marks where the flight's fine forecast meets the world synoptic (the two models do not join); the Layers panel and the help name both
   models and their grid (AROME 1.3 km · ARPEGE 0.1°, GFS 5°); the administrator can hide it (`edge: false` in `airline/map_profiles.json`).
   ◀ ▶ and the legend "i" always sit in the grip row (three, disabled when they have nothing to do), the drawing at full width.
+  MapLibre's bottom controls stay above the sheet through the maps module's `setBottomInset` (rule 17).
 - **Atmosphere: no flicker while dragging the sheet** (`modules/atmosphere/module.js`, `lib/weather_map.js`, `test/weather_map.html`,
   `tests/v3/cases/atmosphere.py` E7; atmosphere DECISIONS, INTEGRATION § 6) — the map and its overlay were resized, cleared and the cut
   redrawn at every frame of a drag (a grey band, flashes). Nothing is redrawn while the finger drags; the map now lies under the sheet at

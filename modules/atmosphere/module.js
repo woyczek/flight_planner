@@ -38,6 +38,7 @@ import {
   styleFor,
   startTiles as startMapTiles,
   mapSize,
+  setBottomInset,
   isOwnResize,
   loadRender,
   loadOutlines,
@@ -167,7 +168,6 @@ const STYLE = `
    dessinée, sans redimensionner MapLibre (plus de clignotement ni de zone grise au glisser) ; --at-hide-b / -r : la part cachée
    par la feuille (en bas en portrait, à droite en paysage), où les contrôles de MapLibre ne vont pas */
 [data-module="atmosphere"] .at-map{position:absolute;left:0;top:0;width:var(--at-full-w,100%);height:var(--at-full-h,100%);touch-action:none}
-[data-module="atmosphere"] .at-map :is(.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-bottom-left){bottom:var(--at-hide-b,0px)}
 [data-module="atmosphere"] .at-map .maplibregl-ctrl-bottom-right{right:var(--at-hide-r,0px)}
 [data-module="atmosphere"] :is(button,select,input,label){touch-action:manipulation}
 [data-module="atmosphere"] canvas.at-over{position:absolute;left:0;top:0;width:var(--at-full-w,100%);height:var(--at-full-h,100%);z-index:2;pointer-events:none}
@@ -1126,7 +1126,12 @@ export async function mount(el, ctx) {
     set('--at-full-h', `${fh}px`);
     set('--at-hide-r', `${Math.max(0, fw - box.clientWidth)}px`);
     set('--at-hide-b', `${Math.max(0, fh - box.clientHeight)}px`);
-    if (S.map) mapSize(S.map, $('map'));
+    if (S.map) {
+      mapSize(S.map, $('map'));
+      // les contrôles du bas de MapLibre au-dessus de la feuille (règle 17 ; map_base, la même fonction que la Carte) ; en
+      // paysage la feuille cache la droite : la règle --at-hide-r les décale à gauche de la colonne
+      setBottomInset(S.map, Math.max(0, fh - box.clientHeight));
+    }
   }
   /** Après un changement de taille (feuille, rotation ; onSettle de la feuille, 120 ms après le dernier) : le fond
    *  MapLibre reprend la taille du cadre, la route reste cadrée tant que l'utilisateur n'a pas déplacé la carte, le bloc

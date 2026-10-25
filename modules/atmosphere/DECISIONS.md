@@ -17,8 +17,10 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
   zone); the drawing takes the full width; the three are always there over a drawing, ◀ ▶ disabled off a route slice,
   « i » disabled without a drawing. Checked: 390 × 664 bare row, chips at 28 px, body 390 × 111; 844 × 390 titled row,
   chips at 44 px.
-- **The map's controls above the sheet** (rule 17): the module already offsets MapLibre's bottom controls by the hidden
-  part at each settle (`--at-hide-b`); it will call the maps module's `map_base` function once named.
+- **The map's controls above the sheet** (rule 17): MapLibre's bottom controls are lifted by the maps module's
+  `setBottomInset(map, px)` (`map_base.js`, the same call as the map), with the height the sheet covers, at each settle;
+  in landscape the sheet hides the right side, so `--at-hide-r` still moves the bottom-right control left of the
+  column. Checked: 390 × 664 default and expanded, 844 × 390: the control's box ends where the sheet begins.
 
 ## 24 October 2026 (night) — two regressions: flicker while dragging the sheet; "only the frame around the flight"
 
