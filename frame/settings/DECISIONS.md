@@ -309,3 +309,65 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   - **Rows that pointed to "Settings"** (trigram, base, data, launcher) now scroll to the card that holds the answer
     (`card:identity`, `card:access`, `card:sync,usages`) and focus its first field: a hash that does not change does nothing.
   - Not changed: the other cards, their order, their saving rule.
+- **25 Oct 2026 — Settings lost after a Safari relaunch: the cause, and the keys now persist like the identity**
+  (relais cloud, branch `v3-settings-admin`; `V3_SPECIFICATION.md` § 10.16; user: "les settings ont tous sauté cette nuit sur
+  les clefs avwx et github. A priori relance de Safari. En revanche, RBR et IVAO sont restés").
+  - **Diagnosis, from the code** (no browser of the user's was available; what follows is what the code proves, and one
+    inference marked as such). Two different stores held the device's settings:
+
+    | Setting | Where it was | Store |
+    |---|---|---|
+    | trigram, IVAO VID, VATSIM CID, SimBrief id | `device/identity.json` | IndexedDB `sogFrame`, store `docs`, policy `cache` |
+    | level, usages, design | `device/level.json`, `usages.json`, `design.json` | same |
+    | GitHub access (repo, branch, **token**) | `localStorage['githubData:frame']` (`frame/store/transport_github.js`) | `localStorage` |
+    | avwx.rest key | `localStorage['githubData:avwx']` (`frame/app.js`, `weatherKey`) | `localStorage` |
+
+    "RBR" and IVAO are fields of the identity: they stayed because IndexedDB stayed; the token and the avwx key went because
+    `localStorage` went. Nothing in the code erases them: no `localStorage.clear()`, no purge at start, no `sessionStorage`
+    (only the status block's dismissal uses it), no memory-only copy, no other policy; the only `removeItem` calls are the
+    user's "Cut access" and "Erase". So the loss happened outside the code: Safari (iOS / macOS) evicts the script-writable
+    storage of a site it considers unused, and **the two stores are not evicted together** (inference, consistent with the
+    observation: the identity survived the very relaunch that cleared the keys). The code had put the two secrets in the
+    store the browser gave up first.
+  - **The reason the keys were in `localStorage`** is written (`frame/DECISIONS.md`, 23 Oct 2026, weather key; the header of
+    `transport_github.js`; `frame/SPEC.md`): *not* a security reason but a backup one — `FrameData.dump()` exports the
+    IndexedDB `docs`, and the keys must stay out of a backup (invariant 1), whereas `localStorage` `githubData:*` was already
+    outside V2's browser backups. The security audits (`AUDIT_SECURITE_2026-10-07.md`, `APPLI_AUTONOME_SECURITE.md` § 4) say
+    only that a token in the browser is readable by an injected script — equally true of IndexedDB — and plan an iOS
+    Keychain (not done). **No written rule forbids IndexedDB for the keys**, so the relay's decision applied.
+  - **Decision (relais cloud)**: the keys persist **like the identity** — same store (IndexedDB `sogFrame`, `docs`), same policy
+    (`cache`), never synchronised — in one file `device/keys.json` (`SPEC.md` § 2).
+  - **What changed**:
+    - `frame/store/transport_github.js`: the access is held in memory (`config()` stays synchronous), `save` / `clear` call the
+      function the frame gave through `persist(fn)`; `hold(cfg)` loads it; `legacy()` returns and erases the old
+      `localStorage` value. `frame/store/frame_data.js`: `dump()` leaves `device/keys.json` out, `load()` ignores it in a
+      backup and a `replace` keeps it (the keys are not in a backup; a replace must not cut the access).
+    - `frame/app.js`, data layer only: `loadKeys()` (new; first line of `loadDevice()`), `keepKeys()` (new), the `avwx` variable
+      in place of `avwxKey()`'s `localStorage` read, `weatherKey.save` / `clear` (now asynchronous), and the `storage` event
+      listener on `githubData:frame` replaced by the existing `own.watch('device/')`. `loadKeys()` takes over the old
+      `localStorage` values **once** (when `device/keys.json` does not exist), so nobody has to type them again, then erases
+      them. A save is memory first, then file; a read waits for the last write and does not overwrite a newer save.
+    - The frame asks the browser for persistent storage (`navigator.storage.persist()`, once, at the first touch — asked at start
+      it shifted the map's attribution folding and made test D7 fail one run in two) and the diagnostic
+      "Copy" now says `storage.persisted`; a granted request is the one thing Safari honours against eviction, and the next
+      report will say whether it was.
+  - **Still possible**: if Safari clears IndexedDB too (its seven-day rule for a site not used, outside a home-screen app),
+    everything goes, identity included; a key lost that way must be typed again. Adding the app to the Home Screen is the
+    remedy the manual now gives.
+  - **Test**: A19 "Keys survive a relaunch" (a persistent browser context closed and opened again: the trigram, the token and
+    the key are set from Settings, then there after a relaunch, then there after a relaunch that cleared `localStorage`). It
+    fails on the code of `82a8f61be` at that last step exactly as the user saw it (`trigram` kept, token and key gone).
+- **25 Oct 2026 — Administration behind buttons** (rule 18; user: "Tous les settings admin vont sur un bouton, comme celui des
+  réglages de seuils"; the word is an intention, here applied as asked):
+  - the Administration card (Full level; absent below, test A12) shows **one button per administrator page**, each with its
+    sentence: "Map threshold tuning" (`#maps?tune=1`), "Flight zone limit", "Export a configuration for a pilot", then the
+    roadmap, the diagnostics, the benches (greyed without a launcher) and the V2 pages (with a launcher). The "(administrator)"
+    in the first title is dropped: the card says it.
+  - **"Flight zone limit"** is a button that folds a panel open on its line, not a new route (nothing else is needed for one
+    box, and the page stays one column): a box "Show the edge line of the flight zone limit", saved at once into
+    `airline/map_profiles.json` as `edge: { show }`, shown by default. The contract for the modules is
+    `INTEGRATION.md` § 4; settings touches no module.
+  - **The export of a pilot's configuration** moved from a fold of the Access card to the Administration card (it is the
+    administrator's steps: invite, export, send). The import stays on the Access card, it is the pilot's. Not moved: the
+    launcher-only cards (data remote, keys, computer access, Little Navmap), which set up a workstation rather than administer
+    the airline; the roadmap and diagnostics are also reachable from About, as before.

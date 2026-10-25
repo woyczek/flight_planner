@@ -383,21 +383,28 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   text-decoration: none;
   font-size: .75em
 }
-/* réglages, carte Administration : une entrée par ligne, lien à hauteur tactile */
+/* réglages, carte Administration : une page par ligne, un bouton (hauteur tactile) puis sa phrase ; le volet d'un bouton
+   (limite de la zone du vol, export d'une configuration) s'ouvre sous sa ligne */
 .f-admin {
   list-style: none;
   padding: 0;
   margin: 4px 0
 }
 .f-admin li {
-  padding: 6px 0;
+  padding: 8px 0;
   border-top: 1px solid var(--sog-border)
 }
-.f-admin a,
-.f-admin b {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--sog-touch)
+.f-admin .f-btn,
+.f-admin button {
+  max-width: 100%;
+  text-align: left
+}
+.f-admin li>.f-muted {
+  display: block;
+  margin-top: 4px
+}
+.f-adminpanel {
+  margin-top: 8px
 }
 /* assistant « Rejoindre la compagnie » et gestes de l'administrateur : pas numérotés aérés ; code QR à la taille d'un
    écran de téléphone, toujours sur fond blanc */

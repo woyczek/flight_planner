@@ -27,6 +27,8 @@ module, because it sets the transport and the device token, which modules never 
 - Texts are `[fr, en, de, es]` rows through the frame's `t` (French typography included); the status block's texts are the
   frame's.
 - Seven cards at most on screen, not counting the status block; the diagnostics are a folded block at the bottom.
+- **Nothing of the administrator's on the ordinary cards** (rule 18 of `docs/technique/V3_SPECIFICATION.md` § 7.1): every
+  administrator page is one button of the Administration card (§ 3.11), Full level only.
 
 ## 2. Device files (policy `cache`, never synchronised)
 
@@ -36,6 +38,7 @@ module, because it sets the transport and the device token, which modules never 
 | `device/level.json` | `level`: 1 (discovery), 2 (everyday, the default), 3 (full); `updated_at` |
 | `device/usages.json` | `devices`, `users`, `backend` (booleans), `single` (true when none of them is ticked), `updated_at` |
 | `device/settings.json` | `v2`: `taken` or `declined` once the V2 take-over was answered |
+| `device/keys.json` | the device's keys, kept **like the identity** (same store, same policy, same file family): `github` (`{ repo, branch, token, api? }` or null), `avwx` (the weather key or `''`), `updated_at`. `FrameData.dump()` leaves it out and a `replace` load keeps it: a backup never carries a key. Read into memory by the frame at each `reload()` (`FrameData.github.config()` and the weather key stay synchronous), written by `FrameData.github.save/clear` and `weatherKey.save/clear`. The old `localStorage` places (`githubData:frame`, `githubData:avwx`) are taken over once, when the file does not exist yet, then erased |
 
 After each write the frame's `reload` is called: the transport and `ctx.identity` follow at once.
 
@@ -112,7 +115,7 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    gives the two ways in: set the access above, or publish the bases from a workstation with the launcher.
 8b. **Weather key (TAF, avwx.rest)**, with or without a launcher, when the frame gives `weatherKey` (`has`, `save`,
    `clear`, `test(icao)`): METAR works without a key; TAF without a launcher needs a personal avwx.rest key. The frame
-   keeps it in `localStorage` (`githubData:avwx`), never in `device/`, never in a backup nor in the repository, and never
+   keeps it in `device/keys.json` with the GitHub token (like the identity), never in a backup nor in the repository, and never
    gives it back; `ctx.net` adds it to calls to avwx.rest. The card shows whether a key is saved (never the key), a
    password field emptied on save, "Test" (`test('LFPG')`: the launcher's or provider's status and message), "Erase"
    (asks), a link to the provider's sign-up page; on a launcher, a sentence says it is not needed (the launcher
@@ -143,8 +146,13 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    folded inside the card: transport, status, usages, launcher, repository (never the token), aerodb state,
    storage, network, browser; the page (`d.page`: secure context, offline use active / not yet / impossible over http
    outside the computer, the launcher's computer and whether through the local network); "Copy".
-11. **Administration** (level Full only; absent otherwise), after About: the links of § 6, one per line with a
-   sentence.
+11. **Administration** (level Full only; absent otherwise), after About: **one button per administrator page** (§ 6), each
+   with its sentence under it, 44 px high: "Map threshold tuning" (`#maps?tune=1`), "Flight zone limit" (folds a panel open under
+   its button: a box "Show the edge line of the flight zone limit", saved at once, for the airline, as the key `edge` of
+   `airline/map_profiles.json`; shown by default; the contract is `INTEGRATION.md` § 4), "Export a configuration for a pilot"
+   (folds the export of § 5 open; absent when the device has no repository to export), then the roadmap, the diagnostics
+   and the benches and V2 pages of § 6. The export used to be a fold of the Access card; the import ("Join the airline…",
+   "Import a configuration…") stays there, it is the pilot's.
 
 Under the screen's introduction, the folded "How to use" panel of the Settings chapter (`frame/settings/help/`,
 `frame/help/SPEC.md`).
@@ -173,13 +181,13 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   framagit — a project access token, role Developer, scope `write_repository` (Maintainer needed, otherwise a personal
   token with the same scope), and the note that a phone reaches it only through a workstation's launcher; other hosts —
   ask the administrator. Each with the repository's exact address.
-- **Export**, in the Access card of a workstation (launcher) or of a device set up on GitHub: "Export a configuration
-  for a pilot…" (folded) asks the pilot's trigram and the address of the published app (this one when it is published
+- **Export**, in the Administration card (Full level) of a workstation (launcher) or of a device set up on GitHub: the
+  button "Export a configuration for a pilot" opens a panel that asks the pilot's trigram and the address of the published app (this one when it is published
   over https, else the last one given, kept in `localStorage` `sogFrame:appUrl`), then "Create the file and the link":
   `sog-config-<TRI>.json` is downloaded, and the link `<app>#settings?config=<z + base64url of the deflate-raw JSON>`
   (`j` + base64url of the JSON where the browser cannot compress) is shown with "Copy the link". A local address is
   flagged: it opens only on that workstation.
-- **Administrator's steps**, listed at the top of the export fold: invite the pilot's account on the repository
+- **Administrator's steps**, listed at the top of the export panel: invite the pilot's account on the repository
   (GitHub: Write role, link to `https://github.com/<repo>/settings/access`; GitLab / framagit: Developer role, link to
   the project's members page), export, then send the link or the file, or show the **QR code** of the link
   (`frame/lib/qr.js`, below the link). The link carries the configuration without its how-to (rebuilt from the template
@@ -200,11 +208,14 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
 
 ## 6. Administration links (`frame/settings/admin_links.js`, `window.SogAdminLinks`)
 
-- **A declared list**, depending on no module: `{ id, href | act, btn, where, title, text }`, texts in four languages (`btn`: the link is drawn as a button).
-  `where`: `app` (everywhere), `bench` (a bench or demonstration page served by the launcher: a link only on a
-  workstation with a launcher, otherwise named without a link; its sentence ends with "workstation with launcher
+- **A declared list**, depending on no module: `{ id, href | act | panel, primary, where, title, text }`, texts in four
+  languages. **Every entry is drawn as one button** (rule 18): `href` a link styled as a button, `act` an action of the card,
+  `panel` a button that folds open the panel of its line (`edge`, `cfg`, written by `settings.js`), `primary` the accent
+  colour of the administrator's own pages. `where`: `app` (everywhere), `bench` (a bench or demonstration page served by the launcher: a link only on a
+  workstation with a launcher, otherwise a greyed button; its sentence ends with "workstation with launcher
   only"), `v2` (a V2 page of the workstation: shown only when a launcher serves the page).
-- **Today**: the button "Map threshold tuning (administrator)" `#maps?tune=1` (read only on a phone), roadmap `#roadmap`, diagnostics (`act:
+- **Today**: "Map threshold tuning" `#maps?tune=1` (read only on a phone), "Flight zone limit" (`panel: edge`), "Export a
+  configuration for a pilot" (`panel: cfg`), roadmap `#roadmap`, diagnostics (`act:
   diagOpen`: opens the folded diagnostics of the About card and scrolls to it); benches `labs/design_primitives.html`,
   `frame/aerodb/bench.html`, `frame/aerodb/offline_bench.html`, `frame/store/test/`, `modules/maps/test/render.html`;
   V2 pages `apps/settings/maintenance.html`, `apps/settings/premier_lancement.html`, `apps/cpco/map_parser.html`.

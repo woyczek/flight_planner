@@ -675,7 +675,7 @@ el dispositivo.
 El METAR funciona sin clave. El TAF, en un dispositivo sin lanzador (teléfono, sitio), requiere una clave personal y
 gratuita de avwx.rest: «Crear una clave en avwx.rest ↗» abre la página del proveedor. Péguela en «Clave meteorológica
 (TAF, avwx.rest)», luego «Guardar»; «Probar» pide el TAF de un aeródromo, «Borrar» la quita. La clave se queda solo en
-este dispositivo, nunca en el repositorio ni en una copia, y nunca vuelve a mostrarse. En un puesto servido por el
+este dispositivo (guardada con su identidad: sobrevive al cierre del navegador), nunca en el repositorio ni en una copia, y nunca vuelve a mostrarse. En un puesto servido por el
 lanzador es innecesaria: el lanzador proporciona el TAF.
 
 ## Fichas de Little Navmap
@@ -740,7 +740,7 @@ se señala.
 ## Configurar un piloto
 
 **Preparar la configuración (administrador).** En un puesto servido por el lanzador, o en un dispositivo configurado con
-GitHub, despliegue «Exportar una configuración para un piloto…» en la tarjeta «Acceso a los datos»: recuerda sus pasos
+GitHub, en el nivel «Completo», toque «Exportar una configuración para un piloto» en la tarjeta «Administración»: recuerda sus pasos
 en orden. Invite primero el nombre de GitHub del piloto al repositorio, con el rol Write (el enlace lleva a la página de
 colaboradores del repositorio). Escriba luego su trigrama y la dirección de la aplicación publicada, y «Crear el archivo
 y el enlace»: el archivo sog-config-<TRI>.json se guarda, el enlace y su código QR aparecen. Contienen la aerolínea, el
@@ -767,9 +767,11 @@ framagit o GitLab, configure el acceso en un puesto con el lanzador.
 ## Administración
 
 **Las páginas de administración.** En el nivel «Completo» (tarjeta «Nivel»), la tarjeta «Administración», bajo «Acerca
-de», reúne las páginas de administración y de prueba, cada una con una frase; en los demás niveles no aparece. En la
-aplicación: el botón «Ajuste de los umbrales del mapa (administrador)» (`#maps?tune=1`, solo lectura en un teléfono; abre la página de ajuste: para cada elemento del mapa y cada modo, los zooms en que aparece, guardados para la aerolínea, `airline/map_profiles.json`; un modo que nunca guardó toma los umbrales de un modo ajustado, la página lo dice; el control «Complejidad» del mapa solo desplaza el zoom), vuelta con la flecha de retroceso, la hoja de ruta
-(`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
+de», reúne las páginas de administración y de prueba, **un botón por página**, cada una con una frase; en los demás niveles no aparece, y nada del administrador está en las demás tarjetas. En la
+aplicación: el botón «Ajuste de los umbrales del mapa» (`#maps?tune=1`, solo lectura en un teléfono; abre la página de ajuste: para cada elemento del mapa y cada modo, los zooms en que aparece, guardados para la aerolínea, `airline/map_profiles.json`; un modo que nunca guardó toma los umbrales de un modo ajustado, la página lo dice; el control «Complejidad» del mapa solo desplaza el zoom), vuelta con la flecha de retroceso; el botón «Límite de la zona del vuelo», que despliega una casilla
+«Mostrar la línea del límite de la zona del vuelo» (guardada al instante para la aerolínea, con los umbrales, en `airline/map_profiles.json`,
+clave `edge`; la línea se muestra mientras no ajuste nada); el botón «Exportar una configuración para un piloto» (véase «Configurar un piloto»);
+la hoja de ruta (`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
 
 **Los bancos, en un puesto.** Servidos por el lanzador, solo se abren en un puesto con lanzador (en otros sitios se
 nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primitives.html` (primitivas y diseños),
@@ -784,6 +786,10 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
 
 - **El token**: un token de grano fino de github.com, solo sobre el repositorio de datos, «Contents» lectura y
   escritura, 90 días como máximo. Nunca se vuelve a mostrar; no lo pegue en ningún mensaje.
+- **Sus ajustes se quedan al cerrar el navegador**: la identidad, el token y la clave meteorológica se guardan en el mismo
+  sitio del dispositivo, nunca sincronizados ni en una copia. Si Safari se los hizo perder igualmente (borra el almacenamiento
+  de un sitio poco visitado), añada la aplicación a la pantalla de inicio: allí está mejor guardada. El diagnóstico
+  («Copiar») dice si el navegador prometió no borrar (`storage.persisted`).
 - **Cortar el acceso**: borra el token de este dispositivo; sus escrituras pendientes se quedan y saldrán cuando el
   acceso vuelva a configurarse. Teléfono perdido o robado: borre también el token en github.com.
 - **Ajustes de la V2**: si este navegador ya se usó para la V2, la tarjeta «Ajustes de la V2 encontrados» propone una
@@ -794,4 +800,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 690a6cb3e469 -->
+<!-- fr: 7ffb54ffacd9 -->

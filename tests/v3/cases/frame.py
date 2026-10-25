@@ -13,11 +13,14 @@ Rules covered
   * landscape on a phone, 844 x 390: the bar becomes a 44 px rail on the left, the sheet a right column, the map takes the
     rest at full height, the overlay buttons stay in one column, full screen keeps the column and has no exit chip (A14).
 
-  * one module in the view: navigations that arrive during a mount cancel it, the last address wins (A16).
+  * one module in the view: navigations that arrive during a mount cancel it, the last address wins (A16);
+  * the device's keys (trigram, GitHub token, weather key) survive a relaunch of the browser, even when it clears
+    localStorage and keeps IndexedDB, as Safari did on 25 Oct 2026 (A19).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16.
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A19.
 """
 import json
+import re
 
 from lib import MAP_JS, Fail, Skip, case, forget, norm, tx
 
@@ -284,7 +287,12 @@ def a11(c):
     c.until("location.hash === '#help?m=settings'", what='"?" over Settings asks the Settings chapter')
 
 
-@case('A12', 'Settings screen', 'A', rule='settings block')
+ADMIN_FR = {   # Settings > Administration at the Full level, French (the run's language): one button per administrator page
+    'tune': 'Réglage des seuils de la carte', 'edge': 'Limite de la zone du vol', 'roadmap': 'Feuille de route', 'diag': 'Diagnostic',
+}
+
+
+@case('A12', 'Settings screen', 'A', rule='settings block; V3_SPECIFICATION 7.1 rule 18 (administration behind one button)')
 def a12(c):
     c.open('fuel')
     c.tap('#fDevice')
@@ -294,12 +302,49 @@ def a12(c):
     c.ok(n >= 1, 'no text field with the trigram placeholder (ABC)', 'a trigram field')
     c.eq(c.attr('#fDevice', 'aria-pressed'), 'true', 'the gear is pressed while the settings are open', what='gear aria-pressed')
     c.eq(c.count('#fView > .f-screen [data-card="status"]'), 1, 'the Status block opens the screen', what='status blocks')
+    c.eq(c.count('[data-card="admin"]'), 0, 'rule 18: the Administration card is for the Full level only', what='Administration cards at the Everyday level')
+    c.eq(c.count('[data-admin], [data-adminpanel], a[href="#maps?tune=1"]'), 0, 'rule 18: nothing of the administrator\'s on the ordinary cards', what='administrator controls at the Everyday level')
     c.tap('#fDevice')                                  # the control that opened the screen closes it
     c.until("location.hash === '#fuel'", what='the gear again returns to the previous module (#fuel)')
     c.tap('#fDevice')
     c.until("location.hash === '#settings'", what='settings reopen')
     c.key('Escape')
     c.until("location.hash === '#fuel'", what='Escape returns to the previous module (#fuel)')
+    # rule 18 at the Full level: one card, one button per administrator page; the airline's thresholds file already holds a mode
+    profiles = {'schema': 1, 'updated_at': '2026-10-23T18:00:00Z', 'by': 'maps', 'profiles': {'vfr': {'elements': {'zoom': {'vrp': [9.25, 24]}}}}}
+    c.open('settings', docs=[['device/level.json', {'level': 3}, 'cache'], ['airline/map_profiles.json', profiles, 'document']])
+    c.until("!!document.querySelector('[data-card=\"admin\"]')", what='the Administration card is drawn at the Full level')
+    c.eq(c.count('[data-card="admin"]'), 1, 'one Administration card', what='cards')
+    ids = c.js("[...document.querySelectorAll('[data-card=\"admin\"] li[data-admin]')].map(li => li.dataset.admin)")
+    for k in ADMIN_FR:
+        c.ok(k in ids, f'entries {ids}', f'an entry "{k}"')
+    c.ok(not any(k in ids for k in ('maintenance', 'firstLaunch', 'mapStudio', 'cfg')), f'entries {ids}', 'no V2 page without a launcher, no export without an access to export')
+    for k, label in ADMIN_FR.items():
+        btn = c.js("(k) => { const e = document.querySelector('[data-card=\"admin\"] li[data-admin=\"' + k + '\"]').firstElementChild; "
+                   "return { tag: e.tagName, cls: e.className, text: e.textContent.trim(), h: e.getBoundingClientRect().height } }", k)
+        c.ok(btn['tag'] in ('BUTTON', 'A') and 'f-btn' in btn['cls'], f'{k}: {btn}', f'the first thing of the "{k}" line is a button')
+        c.eq(norm(btn['text']), norm(label), f'the "{k}" button is worded in the language of the run', what=f'{k} button')
+        c.ge(btn['h'], 43.5, 'touch target of the frame', what=f'{k} button height')
+    c.eq(c.attr('[data-admin="tune"] > a', 'href'), '#maps?tune=1', 'the thresholds button opens the tuning page of the map', what='tune href')
+    c.eq(c.count('[data-card]:not([data-card="admin"]) a[href="#maps?tune=1"]'), 0, 'rule 18: the thresholds button is on no other card', what='tune links elsewhere')
+    c.ok(c.js("[...document.querySelectorAll('[data-card=\"admin\"] li[data-admin]')].filter(li => ['primitives', 'aerodbBench'].includes(li.dataset.admin)).every(li => li.firstElementChild.disabled)"),
+         'a bench button is active without a launcher', 'benches are greyed without a launcher')
+    sw, iw = hscroll(c)
+    c.le(sw, iw, 'no horizontal scroll on a phone', what='page width')
+    # the flight zone limit: a panel under its button, shown by default, saved with the thresholds under the key `edge`
+    c.ok(not c.shown('[data-adminpanel="edge"]'), 'the panel is open before the tap', 'the panel opens on its button')
+    c.tap('[data-admin="edge"] > button')
+    c.until("window.__t.shown(document.querySelector('[data-adminpanel=\"edge\"]'))", what='the flight zone limit panel opens')
+    c.eq(c.attr('[data-admin="edge"] > button', 'aria-expanded'), 'true', 'the button says the panel is open', what='aria-expanded')
+    c.eq(c.js("document.querySelector('[data-edge]').checked"), True, 'the edge line is shown by default (no `edge` key in the file)', what='edge box')
+    c.tap('[data-edge]')
+    d = c.until_doc('airline/map_profiles.json', lambda d: d and (d.get('edge') or {}).get('show') is False, what='edge.show is false (hidden)')
+    c.eq(d.get('profiles'), profiles['profiles'], 'saving the edge option leaves the thresholds of the file as they were', what='profiles')
+    c.eq(d.get('schema'), 1, 'the file keeps its schema', what='schema')
+    c.tap('[data-edge]')
+    c.until_doc('airline/map_profiles.json', lambda d: d and (d.get('edge') or {}).get('show') is True, what='edge.show is true again (shown)')
+    c.tap('[data-admin="edge"] > button')
+    c.until("!window.__t.shown(document.querySelector('[data-adminpanel=\"edge\"]'))", what='a second tap folds the panel')
 
 
 @case('A13', 'Cupertino bar navigates', 'A', screens=False, designs=('cupertino',), night=False,
@@ -399,7 +444,8 @@ def a15(c):
     c.eq(info_row(c, 'base'), None, 'a line for the base is still in the Status block', what='Status row after the read')
     c.step('P5', 3, 'the access is cut and the base not kept: it says the access is not set')
     c.page.evaluate("localStorage.removeItem('githubData:frame')")
-    forget(c.page, [p for p, _, _ in aero_docs()], base=c.base)
+    # the access lives in device/keys.json (taken over from localStorage at the first launch): cutting it is forgetting that file
+    forget(c.page, [p for p, _, _ in aero_docs()] + ['device/keys.json'], base=c.base)
     c.context.add_init_script("try { localStorage.removeItem('githubData:frame') } catch (e) {}")
     c.page.goto(f'{c.base}/frame/index.html#maps', wait_until='load')
     c.ready('maps', sheet=True)
@@ -554,3 +600,83 @@ def a14(c):
     c.eq(round(bar['b']), PORTRAIT[1], 'the bar is at the bottom of the window in portrait', tol=1, what='bar bottom')
     c.eq(round(bar['w']), PORTRAIT[0], 'the bar spans the window in portrait', tol=1, what='bar width')
     c.eq(round(panel['w']), PORTRAIT[0], 'the sheet is under the map, full width, in portrait', tol=1, what='sheet width')
+
+
+@case('A19', 'Keys survive a relaunch', 'A', screens=False, designs=('standard',), night=False,
+      rule='V3_SPECIFICATION 7.1 rule 18 / 10.16: the GitHub token and the weather key persist like the identity (frame/settings/DECISIONS.md, 25 Oct 2026, relais cloud)')
+def a19(c):
+    """The trigram, the GitHub access and the weather key are set from Settings; the browser is closed with its storage kept and
+    reopened: the three are there. Then again after a relaunch that lost localStorage and kept IndexedDB, which is what Safari
+    did on 25 Oct 2026 (the token and the key, which lived in localStorage, were gone while the trigram, in IndexedDB, stayed).
+    A persistent Chromium context stands for the browser that is closed and opened again."""
+    import shutil
+    import tempfile
+    from lib import CHROME, _W
+    home = tempfile.mkdtemp(prefix='a19-')
+    errors = []
+
+    def launch():
+        kw = dict(viewport={'width': 390, 'height': 844}, locale='fr-FR', args=['--no-sandbox'])
+        if CHROME:
+            kw['executable_path'] = CHROME
+        ctx = _W['pw'].chromium.launch_persistent_context(home, **kw)
+        ctx.route(re.compile(r'^https?://(?!127\.0\.0\.1|localhost)'), lambda route: route.abort('blockedbyclient'))
+        page = ctx.pages[0] if ctx.pages else ctx.new_page()
+        page.set_default_timeout(15000)
+        page.on('pageerror', lambda e: errors.append(str(e)[:200]))
+        return ctx, page
+
+    def settings(page):
+        page.goto(f'{c.base}/frame/index.html#settings', wait_until='load')
+        page.wait_for_selector('[data-card="access"] [data-f="repo"]')
+        page.wait_for_selector('[data-card="wx"]')
+        page.wait_for_timeout(600)               # the device files are read: the cards are drawn from them
+
+    def state(page):
+        return page.evaluate("""() => ({
+          trigram: document.querySelector('[data-f="trigram"]').value,
+          token: !!document.querySelector('[data-card="access"] [data-act="cut"]'),
+          repo: document.querySelector('[data-card="access"] [data-f="repo"]').value,
+          weather: !document.querySelector('[data-card="wx"] [data-act="wxTest"]').disabled })""")
+
+    want = {'trigram': 'ABC', 'token': True, 'repo': 'sog/data', 'weather': True}
+    try:
+        c.step('A19', 1, 'set the trigram, the GitHub access and the weather key from Settings')
+        ctx, page = launch()
+        settings(page)
+        page.fill('[data-f="trigram"]', 'abc')
+        page.locator('[data-act="identity"]').click()
+        page.wait_for_timeout(500)
+        page.fill('[data-card="access"] [data-f="repo"]', 'sog/data')
+        page.fill('[data-card="access"] [data-f="token"]', 'ghp_relaunch')
+        page.locator('[data-card="access"] [data-act="access"]').click()
+        page.wait_for_selector('[data-card="access"] [data-act="cut"]')
+        page.fill('[data-card="wx"] [data-f="wxKey"]', 'avwx_relaunch')
+        page.locator('[data-card="wx"] [data-act="wxSave"]').click()
+        page.wait_for_function("!document.querySelector('[data-card=\"wx\"] [data-act=\"wxTest\"]').disabled")
+        page.wait_for_timeout(600)               # the writes to the device are done
+        c.eq(state(page), want, 'the three settings are in the cards that set them', what='state before closing')
+        ctx.close()
+
+        c.step('A19', 2, 'the browser is closed and opened again, its storage kept')
+        ctx, page = launch()
+        settings(page)
+        c.eq(state(page), want, 'the trigram, the token and the weather key are gone after a relaunch', what='state after a relaunch')
+        ctx.close()
+
+        c.step('A19', 3, 'the relaunch lost localStorage and kept IndexedDB (Safari, 25 Oct 2026)')
+        ctx, page = launch()
+        page.goto(f'{c.base}/frame/manifest.webmanifest')
+        page.evaluate('localStorage.clear(); sessionStorage.clear()')
+        ctx.close()
+        ctx, page = launch()
+        settings(page)
+        c.eq(state(page), want, 'the token and the weather key follow localStorage, not the identity', what='state after a relaunch without localStorage')
+        # the keys are in the device file, never in a backup of the device
+        dump = page.evaluate("FrameData.dump().then(d => d.text)")
+        c.ok('ghp_relaunch' not in dump and 'avwx_relaunch' not in dump and 'device/keys.json' not in dump,
+             'the backup of the device holds the token or the weather key', 'neither the token nor the key is in a backup (invariant 1 of frame/settings/SPEC.md)')
+        ctx.close()
+    finally:
+        shutil.rmtree(home, ignore_errors=True)
+    c.ok(not errors, errors[:1], 'no JavaScript error in the relaunched browsers')

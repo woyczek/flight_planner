@@ -159,8 +159,9 @@ The transports:
   - Nothing is ever written to the source.
   - The background pass runs when such a source exists.
 - **`github`** (`frame/store/transport_github.js`): the data repository through the GitHub git data API, with a
-  fine-grained device token (contents read and write on that repository only). The token is kept in `localStorage`
-  `githubData:frame`, excluded from browser backups.
+  fine-grained device token (contents read and write on that repository only). The token is kept like the identity, in
+  `device/keys.json` (IndexedDB, policy `cache`, never synchronised), left out of backups (`frame/settings/DECISIONS.md`,
+  25 Oct 2026; it was in `localStorage` `githubData:frame`, which Safari cleared).
   - `head` is a conditional request on the branch ref: a 304 costs no rate limit.
   - `tree` gets the commit, then its recursive tree.
   - `read` reads a blob (immutable).
@@ -524,9 +525,9 @@ used alone:
 | any other site | 503 `x-sog-unreachable` | 503 | — |
 
 - **The weather key** (avwx.rest, for the TAF without a launcher):
-  - It is entered on the device in Settings › Keys and kept in `localStorage` (`githubData:avwx`), like the GitHub
-    token. It is never in `device/` nor in the IndexedDB that `FrameData.dump()` exports, and never in the
-    repository.
+  - It is entered on the device in Settings › Weather key and kept with the GitHub token in `device/keys.json` (IndexedDB,
+    policy `cache`, like the identity; it was in `localStorage` `githubData:avwx`). `FrameData.dump()` leaves that file
+    out, a backup never carries it, and it is never in the repository.
   - The frame adds it to the call itself; no page or module ever reads it back.
   - The settings screen gets `weatherKey { has(), save(key), clear(), test(icao) → { ok, status, message } }`.
 - A module loads no global style sheet. It uses the frame's tokens (`--sog-*`) and primitives (classes `f-…`): the
@@ -608,7 +609,7 @@ used alone:
     - otherwise GitHub when a repository and a device token are set;
     - otherwise local, with a warning that nothing can be exchanged.
   - Changing the settings switches the transport at once.
-- The GitHub token is entered on the settings screen, kept in `githubData:frame`, and never shown again; "Cut
+- The GitHub token is entered on the settings screen, kept in `device/keys.json`, and never shown again; "Cut
   access" erases it (`FrameData.github.clear`).
 - **Cut access** keeps the copies and the pending writes; the transport switches at once, in the other tabs too.
 

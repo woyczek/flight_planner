@@ -12,10 +12,12 @@
   //     réaffiché, « Couper l'accès » (sans échange coché : lecture des bases seulement) ; Synchronisation si un échange
   //     est coché ;
   //   · Données hors ligne (ctx.aerodb, stockage du navigateur) ; Clé météo (TAF avwx.rest, avec ou sans lanceur : weatherKey
-  //     du cadre, clé dans localStorage githubData:avwx, jamais réaffichée) ; Clés, si un lanceur sert la page ; diagnostic ;
+  //     du cadre, clé dans device/keys.json avec le jeton GitHub, jamais réaffichée) ; Clés, si un lanceur sert la page ; diagnostic ;
   //   · reprise des réglages V2 de la même origine en un geste (identité, accès GitHub), proposée une fois ;
-  //   · Administration (niveau Complet seulement) : liens déclarés dans frame/settings/admin_links.js (SogAdminLinks) —
-  //     pages de l'appli, bancs (actifs sur un poste avec lanceur), pages V2 du poste (avec un lanceur seulement) ;
+  //   · Administration (niveau Complet seulement) : UN BOUTON par page d'administrateur, déclarées dans
+  //     frame/settings/admin_links.js (SogAdminLinks) — seuils de la carte, limite de la zone du vol (option « edge » de
+  //     airline/map_profiles.json), export d'une configuration pour un pilote, feuille de route, diagnostic, bancs (actifs
+  //     sur un poste avec lanceur), pages V2 du poste (avec un lanceur seulement) ; rien de l'administrateur ailleurs ;
   //   · configuration d'un pilote (frame/settings/config.js, SogConfig) : « Exporter une configuration pour un pilote… »
   //     dans la carte Accès d'un poste (fichier sog-config-<TRI>.json et lien #settings?config=…) ; « Importer une
   //     configuration… » (fichier), le lien, ou #settings?import=1 (carte d'accueil) : carte « Configuration reçue » en
@@ -220,16 +222,6 @@
       'Did your airline send you a configuration (sog-config file or link)? It sets up this device in a few steps.',
       'Hat Ihnen Ihre Fluggesellschaft eine Konfiguration geschickt (sog-config-Datei oder Link)? Sie richtet dieses Gerät in wenigen Schritten ein.',
       '¿Su aerolínea le envió una configuración (archivo sog-config o enlace)? Configura este dispositivo en pocos pasos.'
-    ],
-    cfgExport: ['Exporter une configuration pour un pilote…', 'Export a configuration for a pilot…',
-      'Konfiguration für einen Piloten exportieren…',
-      'Exportar una configuración para un piloto…'
-    ],
-    cfgExportHint: [
-      'Un fichier et un lien pour un pilote : la compagnie, le dépôt des données, son trigramme et le mode d’emploi du jeton. Jamais de jeton ni de secret.',
-      'A file and a link for a pilot: the airline, the data repository, their trigram and how to create the token. Never a token or a secret.',
-      'Eine Datei und ein Link für einen Piloten: die Fluggesellschaft, das Datenrepository, sein Kürzel und die Anleitung für das Token. Nie ein Token oder Geheimnis.',
-      'Un archivo y un enlace para un piloto: la aerolínea, el repositorio de datos, su trigrama y cómo crear el token. Nunca un token ni un secreto.'
     ],
     // gestes de l'administrateur, dans l'ordre
     cfgSteps: ['Vos gestes', 'Your steps', 'Ihre Schritte', 'Sus pasos'],
@@ -676,6 +668,15 @@
     adminHint: ['Les pages d’administration et d’essai, réunies ici.', 'The administration and test pages, gathered here.',
       'Die Verwaltungs- und Testseiten, hier gesammelt.', 'Las páginas de administración y de prueba, reunidas aquí.'
     ],
+    edgeShow: ['Afficher le filet de la limite de la zone du vol', 'Show the edge line of the flight zone limit',
+      'Linie der Flugzonengrenze anzeigen', 'Mostrar la línea del límite de la zona del vuelo'
+    ],
+    edgeHint: [
+      'Pour toute la compagnie. La carte lit cette option avec les seuils (airline/map_profiles.json, clé edge) ; sans réglage, le filet est affiché.',
+      'For the whole airline. The map reads this option with the thresholds (airline/map_profiles.json, key edge); with no setting the edge line is shown.',
+      'Für die ganze Fluggesellschaft. Die Karte liest diese Option mit den Schwellen (airline/map_profiles.json, Schlüssel edge); ohne Einstellung wird die Linie angezeigt.',
+      'Para toda la aerolínea. El mapa lee esta opción con los umbrales (airline/map_profiles.json, clave edge); sin ajuste, la línea se muestra.'
+    ],
     launcherOnly: ['poste avec lanceur seulement', 'workstation with launcher only', 'nur Rechner mit Starter',
       'solo puesto con lanzador'
     ],
@@ -806,6 +807,8 @@
     // bloc « État » en tête (les lignes de l'ancien pop-up « i » : vol démarré, CR à écrire, données, base, lanceur, position),
     // dessiné par le cadre qui en a l'état, posé ici en première carte
     const cards = [c.status?.html() || ''];
+    // carte Administration (niveau Complet) : le filet de la limite de la zone du vol, option enregistrée avec les seuils
+    const edgeShow = (c.level?.() || 2) === 3 ? await readEdge(c) : true;
     // configuration d'un pilote : le lien #settings?config=… ou un fichier lancent l'assistant « Rejoindre la compagnie »
     // (frame/settings/join.js), que #settings?join=1 affiche à la place des cartes
     const q = new URLSearchParams(location.hash.split('?')[1] || '');
@@ -915,13 +918,13 @@
       xa = u => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`,
       xfill = (row, v) => esc(t(row)).replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m);
     const cfgSteps = `<h3>${esc(t(T.cfgSteps))}</h3><ol class="f-join-steps"><li>${xinv ? xfill(xk === 'github' ? T.cfgInvite : T.cfgInviteGl, { h: esc(xhost), u: xa(xinv) }) : esc(t(T.cfgInviteOther))}</li><li>${esc(t(T.cfgStepExport))}</li><li>${esc(t(T.cfgStepSend))}</li></ol>`;
-    const cfgOut = window.SogConfig && (L || gh) ? `<details class="f-cfgx" data-cfgx><summary>${esc(t(T.cfgExport))}</summary><p class="f-muted">${esc(t(T.cfgExportHint))}</p>${cfgSteps}
+    const cfgOut = window.SogConfig && (L || gh) ? `<div class="f-cfgx" data-cfgx>${cfgSteps}
       ${xsrc ? '' : `<p class="f-warn">${esc(t(T.cfgNoRepo))}</p>`}${fld('cfgPilot', T.cfgPilot, '', { cap: true, ph: 'ABC' })}${fld('cfgApp', T.cfgApp, appUrl(), { ph: 'https://…/v3/frame/' })}
       <div class="f-row"><button type="button" class="primary" data-act="cfgMake">${esc(t(T.cfgMake))}</button></div><p class="f-msg" data-xmsg></p>
-      <div data-cfgout hidden><label class="f-field">${esc(t(T.cfgLink))}<textarea data-cfglink rows="3" readonly spellcheck="false"></textarea></label><div class="f-row"><button type="button" data-act="cfgCopy">${esc(t(T.cfgCopy))}</button></div><figure class="f-qr" data-cfgqr hidden><div></div><figcaption class="f-muted">${esc(t(T.cfgQr))}</figcaption></figure></div></details>` : '';
+      <div data-cfgout hidden><label class="f-field">${esc(t(T.cfgLink))}<textarea data-cfglink rows="3" readonly spellcheck="false"></textarea></label><div class="f-row"><button type="button" data-act="cfgCopy">${esc(t(T.cfgCopy))}</button></div><figure class="f-qr" data-cfgqr hidden><div></div><figcaption class="f-muted">${esc(t(T.cfgQr))}</figcaption></figure></div></div>` : '';
+    // l'import reste dans la carte Accès (affaire du pilote) ; l'export est une page de l'administrateur : carte Administration
     const ai = cards.findIndex(x => x.startsWith('<div class="f-card" data-card="access">'));
-    if (ai >= 0) cards[ai] = cards[ai].replace(/^(<div class="f-card" data-card="access"><h2>[^<]*<\/h2>)/, `$1${cfgIn}`).replace(
-      /<\/div>$/, `${cfgOut}</div>`);
+    if (ai >= 0) cards[ai] = cards[ai].replace(/^(<div class="f-card" data-card="access"><h2>[^<]*<\/h2>)/, `$1${cfgIn}`);
     // synchronisation : montrée si un échange est coché ou tant que des écritures attendent (suit l'état)
     {
       cards.push(`<div class="f-card" data-card="sync"${exchange || st.pending ? '' : ' hidden'}><h2>${esc(t(T.sync))}</h2><dl class="f-dl" data-sync></dl><div data-queue></div><p class="f-muted">${esc(t(T.syncHint))}</p>
@@ -953,7 +956,7 @@
     let diagJson = '{}'; // diagnostic complet (bouton « Copier »)
     view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${cards.join('')}
       <div class="f-card" data-card="about"><h2>${esc(t(T.about))}</h2><p><a href="#help?m=settings">${esc(t(T.aboutHelp))}</a></p><p><a href="#roadmap">${esc(t(T.aboutRoadmap))}</a></p>
-      <details data-diagbox><summary>${esc(t(T.diag))}</summary><dl class="f-dl" data-diag></dl><p class="f-muted">${esc(t(T.diagHint))}</p><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>${lvl === 3 ? adminCard(t, L) : ''}`;
+      <details data-diagbox><summary>${esc(t(T.diag))}</summary><dl class="f-dl" data-diag></dl><p class="f-muted">${esc(t(T.diagHint))}</p><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>${lvl === 3 ? adminCard(t, L, { cfg: cfgOut, edge: edgeShow }) : ''}`;
     if (help)(view.querySelector('[data-card="status"]') || view.querySelector('h1 + p'))?.after(help); // sous le bloc d'état
 
     const card = k => view.querySelector(`[data-card="${k}"]`);
@@ -1031,7 +1034,9 @@
         } : null,
         storage: est ? {
           usage: est.usage,
-          quota: est.quota
+          quota: est.quota,
+          persisted: await navigator.storage?.persisted?.().catch(() => null) ??
+            null // le navigateur a-t-il promis de ne pas effacer
         } : null,
         online: navigator.onLine,
         agent: navigator.userAgent
@@ -1178,8 +1183,16 @@
         }
         return;
       }
+      if (act === 'adminPanel') {
+        // bouton de la carte Administration : déplie (ou replie) le volet de sa ligne
+        const p = view.querySelector(`[data-adminpanel="${CSS.escape(b.dataset.panel)}"]`);
+        if (!p) return;
+        p.hidden = !p.hidden;
+        b.setAttribute('aria-expanded', String(!p.hidden));
+        return;
+      }
       if (act === 'diagOpen') {
-        e.preventDefault(); // lien de la carte Administration : le diagnostic replié de la carte À propos, ouvert
+        e.preventDefault(); // bouton de la carte Administration : le diagnostic replié de la carte À propos, ouvert
         const d = view.querySelector('[data-diagbox]');
         if (d) d.open = true;
         return d?.scrollIntoView({
@@ -1489,6 +1502,20 @@
       await c.reload();
       again();
     }));
+    // filet de la limite de la zone du vol (carte Administration) : enregistré aussitôt, pour la compagnie
+    view.querySelector('[data-edge]')?.addEventListener('change', async e => {
+      const box = e.target;
+      box.disabled = true;
+      try {
+        await writeEdge(c, box.checked);
+        say('admin', '');
+        c.notify(t(T.saved), 'ok');
+      } catch (err) {
+        box.checked = !box.checked;
+        say('admin', err?.message || String(err));
+      }
+      box.disabled = false;
+    });
     view.querySelector('[data-file]')?.addEventListener('change', async e => {
       const f = e.target.files?.[0];
       e.target.value = '';
@@ -1497,20 +1524,64 @@
     });
   }
 
-  /** Carte Administration (niveau Complet) : un lien et une phrase par entrée de SogAdminLinks ; bancs actifs seulement
-   *  sur un poste avec lanceur (sinon nommés, sans lien), pages V2 montrées seulement avec un lanceur. */
-  function adminCard(t, L) {
+  // profils d'affichage de la compagnie (écrits par la page des seuils du module Carte) : la clé « edge » y est la seule que
+  // cette carte écrit (frame/settings/INTEGRATION.md § 4) ; le reste du fichier est repris tel quel
+  const PROFILES = 'airline/map_profiles.json';
+  let profiles = null;
+  const profilesOf = c => profiles ||= c.FD.adapter({
+    id: 'settings-admin',
+    reads: [PROFILES],
+    writes: [{
+      prefix: PROFILES,
+      merge: 'record'
+    }]
+  });
+  /** Le filet de la limite de la zone du vol est-il affiché pour la compagnie ? (edge.show ; affiché par défaut) */
+  async function readEdge(c) {
+    const f = await profilesOf(c).get(PROFILES, {
+      wait: true
+    }).catch(() => null);
+    return f?.edge?.show !== false;
+  }
+  /** Enregistre edge.show dans airline/map_profiles.json sans toucher au reste du fichier (seuils, profils). */
+  async function writeEdge(c, show) {
+    const data = profilesOf(c),
+      cur = (await data.get(PROFILES, {
+        wait: true
+      }).catch(() => null)) || {};
+    await data.put(PROFILES, {
+      schema: 1,
+      ...cur,
+      edge: {
+        ...(cur.edge && typeof cur.edge === 'object' ? cur.edge : {}),
+        show
+      },
+      by: 'settings',
+      updated_at: now()
+    });
+  }
+
+  /** Carte Administration (niveau Complet) : UN BOUTON par page d'administrateur (SogAdminLinks), sa phrase dessous ; un
+   *  bouton qui porte un volet (edge, cfg) le déplie sous sa ligne. Bancs actifs seulement sur un poste avec lanceur
+   *  (sinon un bouton grisé), pages V2 montrées seulement avec un lanceur. panels : { cfg (HTML du volet, vide sans
+   *  accès à exporter), edge (le filet est affiché) }. */
+  function adminCard(t, L, panels) {
     const links = window.SogAdminLinks || [];
     if (!links.length) return '';
+    const panel = x => x.panel === 'edge' ? `<div class="f-adminpanel" data-adminpanel="edge" hidden><label class="f-check"><input type="checkbox" data-edge ${panels.edge ? 'checked' : ''}>${esc(t(T.edgeShow))}</label>
+      <p class="f-muted">${esc(t(T.edgeHint))}</p><p class="f-msg" data-msg></p></div>` : `<div class="f-adminpanel" data-adminpanel="cfg" hidden>${panels.cfg}</div>`;
     const row = x => {
       const label = esc(t(x.title)),
-        out = x.href && !x.href.startsWith('#');
-      const link = x.act ? `<a href="#settings" data-act="${esc(x.act)}">${label}</a>` : x.where === 'bench' && !L ? `<b>${label}</b>` :
-        `<a${x.btn ? ' class="f-btn primary"' : ''} href="${esc(out ? new URL(x.href, ROOT).href : x.href)}"${out ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
-      return `<li data-admin="${esc(x.id)}">${link}<br><span class="f-muted">${esc(t(x.text))}${x.where === 'bench' ? ` — ${esc(t(T.launcherOnly))}` : ''}</span></li>`;
+        out = x.href && !x.href.startsWith('#'),
+        cls = `f-btn${x.primary ? ' primary' : ''}`;
+      const btn = x.panel ? `<button type="button" class="${cls}" data-act="adminPanel" data-panel="${esc(x.panel)}" aria-expanded="false">${label}</button>` : x.act ?
+        `<button type="button" class="${cls}" data-act="${esc(x.act)}">${label}</button>` : x.where === 'bench' && !L ? `<button type="button" class="${cls}" disabled>${label}</button>` :
+        `<a class="${cls}" href="${esc(out ? new URL(x.href, ROOT).href : x.href)}"${out ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
+      return `<li data-admin="${esc(x.id)}">${btn}<span class="f-muted">${esc(t(x.text))}${x.where === 'bench' ? ` — ${esc(t(T.launcherOnly))}` : ''}</span>${x.panel ? panel(x) : ''}</li>`;
     };
+    const shown = links.filter(x => (x.where !== 'v2' || L) && (x.panel !== 'cfg' || panels.cfg));
     return `<div class="f-card" data-card="admin"><h2>${esc(t(T.admin))}</h2><p class="f-muted">${esc(t(T.adminHint))}</p>
-      <ul class="f-admin">${links.filter(x => x.where !== 'v2' || L).map(row).join('')}</ul></div>`;
+      <ul class="f-admin">${shown.map(row).join('')}</ul></div>`;
   }
 
   /** Copie vers le presse-papiers, aussi hors contexte sûr (appareil appairé en http) : frame/lib/clipboard.js (module,

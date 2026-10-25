@@ -12,6 +12,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: the keys survive a Safari relaunch, and the administration is one button per page** (`frame/store/transport_github.js`,
+  `frame/store/frame_data.js`, `frame/app.js` data layer, `frame/settings/**`, `frame/frame.css`, help in four languages; tests A12,
+  A19; rule 18 and § 10.16 of `V3_SPECIFICATION.md`) — the GitHub token and the avwx key were in `localStorage` while the identity
+  (trigram, IVAO, VATSIM, SimBrief) was in IndexedDB; Safari cleared the first and kept the second, so only the keys were lost
+  (nothing in the code erases them: the cause is the store, written up in `frame/settings/DECISIONS.md`). Both now live in
+  `device/keys.json`, like the identity (IndexedDB, policy `cache`, never synchronised), left out of every backup of the device
+  and kept by a replace; the old `localStorage` values are taken over once. The frame also asks the browser for persistent
+  storage and the diagnostics say whether it was granted. The Administration card (Full level) is now one button per
+  administrator page — map thresholds, **flight zone limit** (new: show or hide the edge line, shown by default, saved with the
+  thresholds as `edge.show` in `airline/map_profiles.json`; contract in `frame/settings/INTEGRATION.md` § 4), export of a
+  pilot's configuration (moved from the Access card), roadmap, diagnostics, benches, V2 pages — and nothing of the administrator's
+  is on the other cards. Test A19 "Keys survive a relaunch" fails on the previous code exactly as the user saw it.
 - **Fuel: an "Auto" button writes the airways between the route's points** (`modules/fuel/module.js`, new library
   `modules/maps/lib/routing.js`, SPEC § 9, INTEGRATION, DECISIONS, manual ×4; bench `modules/maps/test/routing.html`, case F8) —
   next to the route field (44 px, same row at 360 and 390 px): for each pair of named points with no airway between them, V2's

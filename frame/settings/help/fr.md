@@ -53,7 +53,8 @@ qui est sur l'appareil.
 Le METAR marche sans clé. Le TAF, sur un appareil sans lanceur (téléphone, site), demande une clé personnelle et
 gratuite d'avwx.rest : « Créer une clé sur avwx.rest ↗ » ouvre la page du fournisseur. Collez-la dans « Clé météo (TAF,
 avwx.rest) », puis « Enregistrer » ; « Tester » demande le TAF d'un terrain, « Effacer » la retire. La clé reste sur cet
-appareil seulement, jamais dans le dépôt ni dans une sauvegarde, et n'est jamais réaffichée. Sur un poste servi par le
+appareil seulement (rangée avec votre identité : elle survit à la fermeture du navigateur), jamais dans le dépôt ni dans
+une sauvegarde, et n'est jamais réaffichée. Sur un poste servi par le
 lanceur, elle est inutile : le lanceur fournit le TAF.
 
 ## Les fiches Little Navmap
@@ -120,8 +121,8 @@ seulement signalé.
 ## Configurer un pilote
 
 **Préparer la configuration (administrateur).** Sur un poste servi par le lanceur, ou sur un appareil réglé sur GitHub,
-dépliez « Exporter une configuration pour un pilote… » dans la carte « Accès aux données » : il rappelle vos gestes dans
-l'ordre. Invitez d'abord le nom GitHub du pilote sur le dépôt, avec le droit Write (le lien mène à la page des
+au niveau « Complet », touchez « Exporter une configuration pour un pilote » dans la carte « Administration » : elle
+rappelle vos gestes dans l'ordre. Invitez d'abord le nom GitHub du pilote sur le dépôt, avec le droit Write (le lien mène à la page des
 collaborateurs du dépôt). Tapez ensuite son trigramme et l'adresse de l'appli publiée, puis « Créer le fichier et le
 lien » : le fichier sog-config-<TRI>.json est enregistré, le lien et son code QR s'affichent. Ils contiennent la
 compagnie, le dépôt des données, le trigramme et le mode d'emploi du jeton, jamais de jeton ni de secret ; le
@@ -147,9 +148,11 @@ poste avec le lanceur.
 ## Administration
 
 **Les pages d'administration.** Au niveau « Complet » (carte « Niveau »), la carte « Administration », sous « À propos
-», réunit les pages d'administration et d'essai, chacune avec une phrase ; aux autres niveaux, elle n'apparaît pas. Dans
-l'appli : le bouton « Réglage des seuils de la carte (administrateur) » (`#maps?tune=1`, en lecture seule sur un téléphone ; il ouvre la page de réglage : pour chaque élément de la carte et chaque mode, les zooms où il apparaît, enregistrés pour la compagnie, `airline/map_profiles.json` ; un mode que vous n'avez jamais enregistré reprend les seuils d'un mode réglé, la page le dit ; le curseur « Complexité » de la carte ne fait que décaler le zoom), retour par la flèche de retour, la feuille de route
-(`#roadmap`) et le diagnostic de la carte « À propos ».
+», réunit les pages d'administration et d'essai, **un bouton par page**, chacun avec une phrase ; aux autres niveaux, elle
+n'apparaît pas, et rien de l'administrateur n'est sur les autres cartes. Dans l'appli : le bouton « Réglage des seuils de la carte » (`#maps?tune=1`, en lecture seule sur un téléphone ; il ouvre la page de réglage : pour chaque élément de la carte et chaque mode, les zooms où il apparaît, enregistrés pour la compagnie, `airline/map_profiles.json` ; un mode que vous n'avez jamais enregistré reprend les seuils d'un mode réglé, la page le dit ; le curseur « Complexité » de la carte ne fait que décaler le zoom), retour par la flèche de retour ; le bouton « Limite de la zone du vol »,
+qui déplie une case « Afficher le filet de la limite de la zone du vol » (enregistrée aussitôt pour la compagnie, avec les seuils, dans
+`airline/map_profiles.json`, clé `edge` ; le filet est affiché tant que vous n'avez rien réglé) ; le bouton « Exporter une
+configuration pour un pilote » (voir « Configurer un pilote ») ; la feuille de route (`#roadmap`) et le diagnostic de la carte « À propos ».
 
 **Les bancs, sur un poste.** Servis par le lanceur, ils ne s'ouvrent que sur un poste avec lanceur (ailleurs, ils sont
 nommés sans lien) ; chemins relatifs à la racine de la suite : `labs/design_primitives.html` (primitives et designs),
@@ -164,6 +167,10 @@ cartographique (`apps/cpco/map_parser.html`).
 
 - **Le jeton** : un jeton à grain fin de github.com, sur le seul dépôt des données, « Contents » en lecture et
   écriture, 90 jours au plus. Il n'est jamais réaffiché ; ne le collez dans aucun message.
+- **Vos réglages restent après la fermeture du navigateur** : l'identité, le jeton et la clé météo sont rangés au même
+  endroit de l'appareil, jamais synchronisés ni dans une sauvegarde. Si Safari vous les a quand même fait perdre (il
+  efface le stockage d'un site peu visité), ajoutez l'appli à l'écran d'accueil : elle y est mieux gardée. Le diagnostic
+  (« Copier ») dit si le navigateur a promis de ne pas effacer (`storage.persisted`).
 - **Couper l'accès** : efface le jeton de cet appareil ; vos écritures en attente restent et partiront quand l'accès
   sera de nouveau réglé. Téléphone perdu ou volé : supprimez aussi le jeton sur github.com.
 - **Réglages de la V2** : si ce navigateur a déjà servi à la V2, la carte « Réglages de la V2 trouvés » propose une fois

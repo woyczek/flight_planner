@@ -1,23 +1,52 @@
 (() => {
   'use strict';
-  // V3 — liens d'administration (carte « Administration » des réglages, niveau Complet ; frame/settings/SPEC.md § 6) :
-  // une liste déclarée, sans dépendance à aucun module. Chaque lien : { id, href (adresse de l'appli « #… », ou chemin
-  // relatif à la racine de la suite), act (action de la carte, au lieu d'une adresse), btn (lien montré en bouton), where (app : partout ; bench : un
-  // banc ou une démonstration, lien actif seulement sur un poste avec lanceur ; v2 : page V2 du poste, montrée seulement
-  // si un lanceur sert la page), title, text } — textes en quatre langues [fr, en, de, es].
+  // V3 — pages d'administration (carte « Administration » des réglages, niveau Complet ; frame/settings/SPEC.md § 6) :
+  // une liste déclarée, sans dépendance à aucun module ; la carte montre UN BOUTON par entrée (règle 18 de
+  // docs/technique/V3_SPECIFICATION.md § 7.1), rien de l'administrateur n'est sur les autres cartes. Chaque entrée :
+  // { id, href (adresse de l'appli « #… », ou chemin relatif à la racine de la suite), act (action de la carte, au lieu
+  // d'une adresse), panel (le bouton déplie un volet de la carte, écrit par settings.js : edge, cfg), primary (bouton
+  // d'une page de réglage de l'administrateur), where (app : partout ; bench : un banc ou une démonstration, bouton actif
+  // seulement sur un poste avec lanceur ; v2 : page V2 du poste, montrée seulement si un lanceur sert la page), title,
+  // text } — textes en quatre langues [fr, en, de, es].
   window.SogAdminLinks = Object.freeze([{
     id: 'tune',
     href: '#maps?tune=1',
     where: 'app',
-    btn: true,
-    title: ['Réglage des seuils de la carte (administrateur)', 'Map threshold tuning (administrator)',
-      'Abstimmung der Kartenschwellen (Administrator)', 'Ajuste de los umbrales del mapa (administrador)'
+    primary: true,
+    title: ['Réglage des seuils de la carte', 'Map threshold tuning',
+      'Abstimmung der Kartenschwellen', 'Ajuste de los umbrales del mapa'
     ],
     text: [
       'Ce que la carte montre à chaque zoom, élément par élément et mode par mode, pour toute la compagnie (le curseur « Complexité » de la carte ne fait que décaler le zoom) ; en lecture seule sur un téléphone.',
       'What the map shows at each zoom, element by element and mode by mode, for the whole airline (the map’s “Complexity” slider only shifts the zoom); read only on a phone.',
       'Was die Karte bei jedem Zoom zeigt, Element für Element und Modus für Modus, für die ganze Fluggesellschaft (der Regler „Komplexität“ der Karte verschiebt nur den Zoom); auf einem Telefon nur lesbar.',
       'Lo que muestra el mapa en cada zoom, elemento por elemento y modo por modo, para toda la aerolínea (el control «Complejidad» del mapa solo desplaza el zoom); solo lectura en un teléfono.'
+    ]
+  }, {
+    id: 'edge',
+    panel: 'edge',
+    where: 'app',
+    primary: true,
+    title: ['Limite de la zone du vol', 'Flight zone limit', 'Grenze der Flugzone', 'Límite de la zona del vuelo'],
+    text: [
+      'Le filet qui borde la zone du vol sur la carte : affiché (par défaut) ou masqué, pour toute la compagnie ; enregistré avec les seuils de la carte.',
+      'The edge line around the flight zone on the map: shown (the default) or hidden, for the whole airline; saved with the map thresholds.',
+      'Die Linie um die Flugzone auf der Karte: angezeigt (Standard) oder ausgeblendet, für die ganze Fluggesellschaft; zusammen mit den Kartenschwellen gespeichert.',
+      'La línea que bordea la zona del vuelo en el mapa: mostrada (por omisión) u oculta, para toda la aerolínea; guardada con los umbrales del mapa.'
+    ]
+  }, {
+    id: 'cfg',
+    panel: 'cfg',
+    where: 'app',
+    primary: true,
+    title: ['Exporter une configuration pour un pilote', 'Export a configuration for a pilot',
+      'Konfiguration für einen Piloten exportieren', 'Exportar una configuración para un piloto'
+    ],
+    text: [
+      'Un fichier et un lien qui règlent l’appli d’un pilote : la compagnie, le dépôt des données, son trigramme et le mode d’emploi du jeton. Jamais de jeton ni de secret.',
+      'A file and a link that set up a pilot’s app: the airline, the data repository, their trigram and how to create the token. Never a token or a secret.',
+      'Eine Datei und ein Link, die die App eines Piloten einrichten: die Fluggesellschaft, das Datenrepository, sein Kürzel und die Anleitung für das Token. Nie ein Token oder Geheimnis.',
+      'Un archivo y un enlace que configuran la app de un piloto: la aerolínea, el repositorio de datos, su trigrama y cómo crear el token. Nunca un token ni un secreto.'
     ]
   }, {
     id: 'roadmap',

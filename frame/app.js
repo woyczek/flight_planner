@@ -425,35 +425,24 @@
       'metar.vatsim.net', 'api.open-meteo.com'
     ],
     DIRECT = ['www.simbrief.com', 'api.ivao.aero', 'metar.vatsim.net', 'avwx.rest', 'api.open-meteo.com', 'data.vatsim.net'];
-  // clé personnelle avwx.rest (TAF sans lanceur) : sur l'appareil seulement, à côté du jeton GitHub (githubData:…, hors
-  // des sauvegardes : ni device/ ni la base IndexedDB que FrameData.dump() exporte) ; jamais rendue à une page
-  const AVWX = 'githubData:avwx';
-  const avwxKey = () => {
-    try {
-      return localStorage.getItem(AVWX) || '';
-    } catch {
-      return '';
-    }
-  };
+  // clé personnelle avwx.rest (TAF sans lanceur) : sur l'appareil seulement, avec le jeton GitHub, dans device/keys.json
+  // (rangement de l'identité : IndexedDB, politique cache, hors des sauvegardes, jamais synchronisée : voir « clés de
+  // l'appareil » plus bas) ; lue en mémoire, jamais rendue à une page
+  let avwx = '';
+  const avwxKey = () => avwx;
   /** Clé météo de l'appareil, pour la carte des réglages : présence, enregistrement, effacement, essai (TAF d'un
    *  terrain) ; la clé elle-même n'est jamais relue. */
   const weatherKey = {
     has: () => !!avwxKey(),
-    save(key) {
+    async save(key) {
       const k = String(key || '').trim();
-      try {
-        k ? localStorage.setItem(AVWX, k) : localStorage.removeItem(AVWX);
-      } catch {
-        /* stockage indisponible */
-      }
+      avwx = k;
+      await keepKeys();
       return !!k;
     },
-    clear() {
-      try {
-        localStorage.removeItem(AVWX);
-      } catch {
-        /* stockage indisponible */
-      }
+    async clear() {
+      avwx = '';
+      await keepKeys();
     },
     async test(icao = 'LFPG') {
       const r = await net.fetch(`https://avwx.rest/api/taf/${encodeURIComponent(String(icao).trim().toUpperCase())}`);
@@ -551,6 +540,51 @@
       policy: 'cache'
     }]
   });
+  // clés de l'appareil : jeton GitHub (réglage du dépôt) et clé météo, rangés comme l'identité — document
+  // device/keys.json de la base IndexedDB du cadre, politique cache : jamais synchronisés, jamais dans une sauvegarde
+  // (frame/store/frame_data.js le laisse hors de dump()). Ils étaient dans localStorage (githubData:frame, githubData:avwx)
+  // et Safari les y perdait au relancement alors que l'identité restait (frame/settings/DECISIONS.md, 25 oct 2026). En
+  // mémoire pour les lectures synchrones (FD.github.config(), avwxKey()) ; une écriture est mémoire d'abord, puis
+  // document. Une seule reprise de l'ancien localStorage, la première fois où le document n'existe pas.
+  const KEYS = 'device/keys.json';
+  let keysSaved = Promise.resolve(), // dernière écriture du document, que toute relecture attend
+    keysEpoch = 0; // compte les écritures : une relecture partie avant l'une d'elles ne remplace pas la mémoire
+  /** Garde le jeton et la clé météo actuels en mémoire dans device/keys.json ; promesse de l'écriture. */
+  function keepKeys() {
+    keysEpoch++;
+    const doc = {
+      schema: 1,
+      github: FD.github.config(),
+      avwx,
+      updated_at: new Date().toISOString()
+    };
+    return keysSaved = keysSaved.then(() => own.put(KEYS, doc)).catch(e => console.error(e));
+  }
+  FD.github.persist(() => void keepKeys());
+  /** Relit device/keys.json en mémoire (rien n'est remplacé si une écriture est partie entre-temps). */
+  async function loadKeys() {
+    await keysSaved;
+    const epoch = keysEpoch,
+      doc = await own.get(KEYS);
+    if (epoch !== keysEpoch) return;
+    if (doc) {
+      FD.github.hold(doc.github);
+      avwx = typeof doc.avwx === 'string' ? doc.avwx : '';
+      return;
+    }
+    // aucun document : l'ancien rangement de localStorage, repris une fois puis effacé
+    const old = FD.github.legacy();
+    let key = '';
+    try {
+      key = localStorage.getItem('githubData:avwx') || '';
+      localStorage.removeItem('githubData:avwx');
+    } catch {
+      /* stockage indisponible */
+    }
+    if (old) FD.github.hold(old);
+    avwx = key;
+    if (old || key) await keepKeys();
+  }
   let identity = Object.freeze({}),
     identityLoaded = false, // l'identité a été lue une fois (sans cela, « pas de trigramme » serait une fausse alerte au démarrage)
     usages = {},
@@ -605,6 +639,7 @@
   /** Relit l'identité et les usages de l'appareil, puis branche le transport qui leur correspond. */
   async function loadDevice() {
     paintHost();
+    await loadKeys();
     identity = Object.freeze({
       ...((await own.get('device/identity.json')) || {})
     });
@@ -2677,9 +2712,12 @@
     launcherHere = await FD.launcher.detect();
     await timeP; // les heures du cadre (synchronisation, pastilles) en UTC dès leur premier dessin
     await loadDevice();
-    // accès réglé ou coupé dans un autre onglet : transport rebranché ici aussi
-    window.addEventListener('storage', e => {
-      if (e.key === 'githubData:frame') loadDevice();
+    // (accès réglé ou coupé dans un autre onglet : device/keys.json change et own.watch('device/'), plus bas, rebranche ici)
+    // demande au navigateur de ne pas effacer le stockage du site (Safari le fait pour un site peu visité), au premier geste de
+    // l'utilisateur et non au chargement : une demande de stockage pendant le démarrage décale les cartes (essai D7)
+    document.addEventListener('pointerdown', () => navigator.storage?.persist?.().catch(() => {}), {
+      once: true,
+      passive: true
     });
     // aerodb : un service, une instance, lecteur = la couche de données (frame/aerodb/INTEGRATION.md § 3)
     try {

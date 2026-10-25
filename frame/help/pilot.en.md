@@ -655,7 +655,7 @@ downloads it whole (preferably on Wi-Fi); “Free” gives the space back.
 
 METAR works without a key. TAF, on a device without a launcher (phone, website), needs a personal and free avwx.rest
 key: “Create a key on avwx.rest ↗” opens the provider's page. Paste it in “Weather key (TAF, avwx.rest)”, then “Save”;
-“Test” asks for the TAF of an airfield, “Erase” removes it. The key stays on this device only, never in the repository
+“Test” asks for the TAF of an airfield, “Erase” removes it. The key stays on this device only (kept with your identity: it survives closing the browser), never in the repository
 nor in a backup, and is never shown again. On a workstation served by the launcher it is not needed: the launcher
 provides the TAF.
 
@@ -717,7 +717,7 @@ only reported.
 ## Configuring a pilot
 
 **Preparing the configuration (administrator).** On a workstation served by the launcher, or on a device set up on
-GitHub, unfold “Export a configuration for a pilot…” in the “Data access” card: it lists your steps in order. First
+GitHub, at the “Full” level, tap “Export a configuration for a pilot” in the “Administration” card: it lists your steps in order. First
 invite the pilot's GitHub name to the repository, with the Write role (the link leads to the repository's collaborators
 page). Then type their trigram and the address of the published app, and “Create the file and the link”: the file
 sog-config-<TRI>.json is saved, the link and its QR code are shown. They hold the airline, the data repository, the
@@ -742,9 +742,11 @@ repository, set the access on a workstation with the launcher.
 ## Administration
 
 **The administration pages.** At the “Full” level (“Level” card), the “Administration” card, below “About”, gathers the
-administration and test pages, each with a sentence; at the other levels, it does not appear. In the app: the
-“Map threshold tuning (administrator)” button (`#maps?tune=1`, read only on a phone; it opens the tuning page: for each map element and each mode, the zooms where it appears, saved for the airline, `airline/map_profiles.json`; a mode you never saved takes the thresholds of a tuned mode, and the page says so; the map's “Complexity” slider only shifts the zoom), back by the back arrow, the roadmap (`#roadmap`) and the diagnostics of the “About”
-card.
+administration and test pages, **one button per page**, each with a sentence; at the other levels it does not appear, and
+nothing of the administrator's is on the other cards. In the app: the “Map threshold tuning” button (`#maps?tune=1`, read only on a phone; it opens the tuning page: for each map element and each mode, the zooms where it appears, saved for the airline, `airline/map_profiles.json`; a mode you never saved takes the thresholds of a tuned mode, and the page says so; the map's “Complexity” slider only shifts the zoom), back by the back arrow; the “Flight zone limit” button, which unfolds a box
+“Show the edge line of the flight zone limit” (saved at once for the airline, with the thresholds, in `airline/map_profiles.json`,
+key `edge`; the edge line is shown until you set it); the “Export a configuration for a pilot” button (see “Configuring a pilot”);
+the roadmap (`#roadmap`) and the diagnostics of the “About” card.
 
 **The benches, on a workstation.** Served by the launcher, they only open on a workstation with a launcher (elsewhere
 they are named without a link); paths relative to the root of the suite: `labs/design_primitives.html` (primitives and
@@ -759,6 +761,10 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
 
 - **The token**: a fine-grained token from github.com, on the data repository only, “Contents” read and write, 90 days
   at most. It is never shown again; never paste it in a message.
+- **Your settings stay after the browser is closed**: the identity, the token and the weather key are kept in the same place
+  on the device, never synchronised nor in a backup. If Safari made you lose them anyway (it clears the storage of a site
+  that is little used), add the app to the Home Screen: it is better kept there. The diagnostics (“Copy”) say whether the
+  browser promised not to clear (`storage.persisted`).
 - **Cut access**: erases the token from this device; your pending writes stay and will leave once access is set again.
   Lost or stolen phone: also delete the token on github.com.
 - **V2 settings**: if this browser was already used for V2, the “V2 settings found” card offers once to take over your
@@ -768,4 +774,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 690a6cb3e469 -->
+<!-- fr: 7ffb54ffacd9 -->

@@ -38,3 +38,29 @@ Settings is part of the frame: its context is wider than a module's `ctx`.
   full). A module declares its level in `meta.level` (1 by default); the frame's menu shows only the modules whose
   level is at most the device's, and a hidden module stays reachable by its address (`#id`). The level hides verbs,
   never data: a module never reads the level and never changes with it.
+
+## 4. The airline's map options written by the Administration card (`airline/map_profiles.json`, key `edge`)
+
+The card's "Flight zone limit" panel writes one key of the file the map's threshold page already writes
+(`modules/maps/SPEC.md`, "The airline's profiles"): settings adds `edge` and leaves everything else of the file as it was
+(`schema`, `profiles`, any other key); the map module's own save spreads the file it read (`...cur`), so `edge` survives its
+saves too. The file is a `record` (the newest `updated_at` wins), `by` is the last writer (`settings` or `maps`).
+
+```json
+{ "schema": 1, "updated_at": "2026-10-25T09:00:00Z", "by": "settings",
+  "profiles": { "vfr": { "...": "..." } },
+  "edge": { "show": false } }
+```
+
+- **`edge.show`** (boolean): whether the **edge line** that borders the flight zone limit is drawn. **Absent file, absent
+  `edge` or absent `show` means shown (`true`)**: a module reads `file?.edge?.show !== false`.
+- For the whole airline, not per device or per mode. Modules read it with the other profiles (`ctx.data.get` and `watch` on
+  `airline/map_profiles.json`, already in the maps `meta.reads` / `meta.writes`); settings declares the same prefix
+  (`merge: 'record'`) through its own adapter `settings-admin`. Settings never touches a module and a module never writes
+  `edge`. More options of the same kind go in the same object (`edge.<name>`): a reader ignores what it does not know.
+
+## 5. Where the device's keys are
+
+The GitHub access (`repo`, `branch`, `token`, `api`) and the weather key are in `device/keys.json` (`SPEC.md` § 2), read into
+memory by the frame at each `reload()`. A module never reads them (`ctx.net` adds the weather key to avwx.rest calls, the
+frame's transport adds the token); a `FrameData.dump()` never carries them.

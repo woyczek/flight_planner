@@ -293,6 +293,10 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   18. **Administration behind one button** (user: "tous les settings admin vont sur un bouton, comme celui des
       réglages de seuils"): Réglages › Administration is one card with one button per administrator page (map
       thresholds, flight-zone edge, future ones), nothing of the administrator's on the ordinary cards.
+      **Done** (settings lot, branch `v3-settings-admin`, 25 Oct): the card is at the Full level, with the thresholds, the flight
+      zone limit (`edge.show` of `airline/map_profiles.json`, read by the modules: `frame/settings/INTEGRATION.md` § 4, shown by
+      default), the pilot-configuration export (moved from the Access card), the roadmap, the diagnostics, the benches and the
+      V2 pages; test A12.
   19. **The sheet is rewritten from the fixed rules** (user: "il lui arrive de clignoter. C'est le signe qu'il faut
       totalement le reprendre, à partir des specs maintenant fixées. On repart d'une feuille vierge dès que prêt. Le
       résultat doit être le même qu'aujourd'hui fonctionnellement"): a clean rewrite of `frame/lib/sheet.js` and of the
@@ -481,3 +485,7 @@ redesigned for touch at that point.
        avwx et github. A priori relance de Safari. En revanche, RBR et IVAO sont restés"): to diagnose from the code
        (where each setting is stored: the keys and token may live in a store that Safari clears) and decide with the
        user whether the keys persist like the identity.
+       **Done** (settings lot, 25 Oct): cause — the token and the avwx key were in `localStorage`, the identity in IndexedDB,
+       and Safari kept the second while clearing the first (nothing in the code erases anything); decision of the relay —
+       the keys persist like the identity, in `device/keys.json`, never synchronised nor in a backup; test A19; written up in
+       `frame/settings/DECISIONS.md`.

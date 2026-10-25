@@ -1,36 +1,60 @@
 (() => {
   'use strict';
   // Transport « github » de la couche de données (frame/store/frame_data.js) : dépôt des données GitHub par l'API git data,
-  // jeton à grain fin de l'appareil (contenu en lecture et écriture, ce dépôt seulement), gardé dans ce navigateur
-  // (localStorage githubData:frame, hors des sauvegardes : préfixe githubData exclu par shared/browser_store.js).
+  // jeton à grain fin de l'appareil (contenu en lecture et écriture, ce dépôt seulement). Le réglage est gardé comme
+  // l'identité : document `device/keys.json` de la base IndexedDB du cadre (politique cache, jamais synchronisé, jamais
+  // dans une sauvegarde : frame_data.js le laisse hors de dump()). Il était dans localStorage (githubData:frame) et
+  // Safari l'y perdait au relancement alors que l'identité (IndexedDB) restait : frame/settings/DECISIONS.md, 25 oct 2026.
   //   · head() : tête de la branche (requête conditionnelle : un 304 ne compte pas dans la limite de l'API) ;
   //   · tree(tête) : chemins et empreintes de tous les fichiers (arbre récursif, une requête) ;
   //   · read(chemin, empreinte) : contenu d'un fichier (blob, immuable : jamais relu pour une même empreinte) ;
   //   · commit(lot, message, parent) : UN commit pour tout le lot (nouvel arbre sur celui du parent, commit, branche
   //     avancée sans forcer) ; branche partie ailleurs entre-temps : err.conflict (la couche tire et repousse).
   // Erreur réseau : err.offline. API : FrameData.github({ repo, branch, token, api }) → transport ;
-  //   FrameData.github.config() / save(cfg) / clear() (réglage de l'appareil).
+  //   FrameData.github.config() / save(cfg) / clear() (réglage de l'appareil, lus et écrits en mémoire à l'instant) ;
+  //   hold(cfg) : le cadre y met le réglage lu de device/keys.json (sans l'écrire) ; persist(fn) : le cadre donne la
+  //   fonction qui garde le réglage (appelée par save et clear) ; legacy() : l'ancien réglage de localStorage, rendu et
+  //   effacé (reprise une seule fois).
   const FD = window.FrameData;
   if (!FD || FD.github) return;
-  const KEY = 'githubData:frame';
-  /** Réglage gardé { repo, branch, token, api } ; null s'il n'y en a pas. */
-  const config = () => {
-    try {
-      const c = JSON.parse(localStorage.getItem(KEY) || 'null');
-      return c?.repo && c.token ? c : null;
-    } catch {
-      return null;
-    }
-  };
-  const save = c => localStorage.setItem(KEY, JSON.stringify({
+  const LEGACY = 'githubData:frame'; // ancien rangement (localStorage), repris une fois par le cadre
+  let held = null, // réglage { repo, branch, token, api } en mémoire ; null s'il n'y en a pas
+    sink = null; // fonction du cadre qui le garde dans device/keys.json
+  const clean = c => ({
     repo: String(c.repo || '').trim().replace(/^https:\/\/github\.com\//, '').replace(/\.git$/, ''),
     branch: String(c.branch || 'main').trim() || 'main',
     token: String(c.token || '').trim(),
     ...(c.api ? {
       api: c.api
     } : {})
-  }));
-  const clear = () => localStorage.removeItem(KEY);
+  });
+  /** Réglage gardé { repo, branch, token, api } ; null s'il n'y en a pas. */
+  const config = () => held?.repo && held.token ? {
+    ...held
+  } : null;
+  const hold = c => {
+    held = c && typeof c === 'object' ? clean(c) : null;
+  };
+  const save = c => {
+    hold(c);
+    sink?.(held ? {
+      ...held
+    } : null);
+  };
+  const clear = () => {
+    held = null;
+    sink?.(null);
+  };
+  /** L'ancien réglage de localStorage (rendu puis effacé) ; null s'il n'y en a pas ou si le stockage est fermé. */
+  const legacy = () => {
+    try {
+      const c = JSON.parse(localStorage.getItem(LEGACY) || 'null');
+      localStorage.removeItem(LEGACY);
+      return c?.repo && c.token ? c : null;
+    } catch {
+      return null;
+    }
+  };
 
   function github(c = config()) {
     if (!c?.repo || !c.token) throw new Error('github transport: repository and token required');
@@ -155,5 +179,10 @@
   github.config = config;
   github.save = save;
   github.clear = clear;
+  github.hold = hold;
+  github.legacy = legacy;
+  github.persist = fn => {
+    sink = fn;
+  };
   FD.github = github;
 })();
