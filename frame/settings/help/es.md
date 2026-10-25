@@ -5,6 +5,12 @@ intercambian los datos y lo que el dispositivo guarda sin conexión. Se quedan e
 
 ## Cómo usarlo
 
+**El estado.** La pantalla se abre con el bloque «Estado», con el mismo punto que el botón ⚙ de la cabecera (verde: algo
+nuevo; naranja: atención). Una línea por cosa, toque para actuar: el vuelo en curso (al Mapa), los informes por escribir (al
+informe ya rellenado), el trigrama que falta (a «Identidad»), la base aeronáutica mientras no esté lista (a «Acceso a los
+datos»), el estado de los datos y la vía de intercambio usada (a «Sincronización», o a los conflictos), el lanzador, «Sin
+conexión» y, en un teléfono, la posición durante un vuelo.
+
 **Su identidad.** En «Identidad», escriba su trigrama y sus identificadores VID IVAO, CID VATSIM y SimBrief, luego
 «Guardar». Las herramientas los usan para prerrellenar; con varios usuarios, el trigrama es necesario.
 
@@ -27,7 +33,7 @@ hay token: la tarjeta muestra el repositorio remoto de `data/` (vea «Un reposit
 teléfono por primera vez, por ejemplo — no tiene ni la base aeronáutica (espacios, aeródromos, radioayudas) ni la base
 de aeronaves: «Datos sin conexión» lo dice. Dos vías: configure el acceso al repositorio de datos, incluso sin marcar
 intercambio (entonces solo sirve para leer las bases); o, en un puesto con lanzador, publique las bases en el
-repositorio (V2: Ajustes › Mantenimiento › Datos aeronáuticos y Tipos de aeronave), luego sincronice.
+repositorio (V2: Ajustes › Mantenimiento › Datos aeronáuticos y Tipos de aeronave), luego sincronice. Tres estados distintos cuando falta la base: «Base aeronáutica cargándose…» (la lectura no ha terminado: espere), «Acceso a los datos no configurado en este dispositivo» (configure el acceso arriba; una aplicación añadida a la pantalla de inicio tiene su propio almacenamiento, nada de lo de Safari está allí) y «Base aeronáutica no publicada» (el acceso funciona, nada está publicado en el repositorio).
 
 **La sincronización.** Con un intercambio marcado, la tarjeta «Sincronización» da la última correcta, las escrituras
 pendientes y la red; «Sincronizar ahora» envía y recibe en el acto. Si no, se hace sola al inicio, cada 10 minutos en
@@ -139,7 +145,7 @@ framagit o GitLab, configure el acceso en un puesto con el lanzador.
 
 **Las páginas de administración.** En el nivel «Completo» (tarjeta «Nivel»), la tarjeta «Administración», bajo «Acerca
 de», reúne las páginas de administración y de prueba, cada una con una frase; en los demás niveles no aparece. En la
-aplicación: el ajuste de los umbrales del mapa (`#maps?tune=1`, solo lectura en un teléfono), la hoja de ruta
+aplicación: el botón «Ajuste de los umbrales del mapa (administrador)» (`#maps?tune=1`, solo lectura en un teléfono; abre la página de ajuste: para cada elemento del mapa y cada modo, los zooms en que aparece, guardados para la aerolínea, `airline/map_profiles.json`; un modo que nunca guardó toma los umbrales de un modo ajustado, la página lo dice; el control «Complejidad» del mapa solo desplaza el zoom), vuelta con la flecha de retroceso, la hoja de ruta
 (`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
 
 **Los bancos, en un puesto.** Servidos por el lanzador, solo se abren en un puesto con lanzador (en otros sitios se

@@ -269,3 +269,43 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   session being unreachable)**: following the rule "every time in UTC with Z" (`frame/lib/time.js`), "Last sync" goes
   through the frame's `c.time.fmtDateZ`, and each pending write shows `c.time.fmtZ` the same UTC day, otherwise
   `c.time.fmtDateZ`. Nothing else changed in `frame/settings/`.
+- **24 Oct 2026 — "No SIA base" in an app added to the home screen (relais cloud; the user: « j'ai un « pas de base Sia » dans les
+  applis web « sur l'écran d'accueil » », then « La base finit par arriver. Background ? Fausse alerte donc. »)**:
+  - **Scope change during the lot.** The first reading was "the home-screen app has a storage of its own (iOS: no token, no
+    trigram, no cached zones; WebKit's storage notes, recalled, not re-read: this container has no outside access)". The user
+    then said the base does arrive: so the message is a **false alarm during the load**, not a missing setting. The first-launch
+    opening of Settings, the "Home-screen app" card and the standalone detection were dropped (not written to the repository).
+  - **Why "not published" appeared while the base was coming** (read in the code):
+    1. Maps tested `!st.published || no zone` on `aerodb.status()`. `published` is empty both for "read nothing" and "read a
+       repository with nothing published": the two were one message.
+    2. `published()` kept its answer for the page's life. An answer given **before the reference tree was readable** (first
+       launch, network not ready, access set after the first question) stayed "empty" until a synchronisation pulled a changed
+       file: `FrameData.list()` swallows a failed tree read and returns only the cache, so aerodb read `{ zones: {} }`. The base
+       "finished by arriving" when the background synchronisation, or the next launch, filled the cache.
+    3. While the read was in progress nothing was said, and worse the map stayed blank: `readFlight()` awaited the alternate's
+       coordinates from the same base, so the route and the note waited for the whole read.
+  - **Done.** aerodb tells three states apart without reading (`aerodb.state()`, `on('state')`, `refresh()`, option `access`):
+    `loading`, `noaccess` (no launcher and no repository + token), `unpublished` (the access works, nothing published); an empty
+    list is read again after 30 s at the next question, and the frame calls `refresh()` when the access changes
+    (`dataAccess().key`) or the network comes back. Maps' sheet note says "Aeronautical database loading… (zones)", or "Data access
+    not set on this device" with a "Settings" button, or the previous message only for the third state; the alternate no longer
+    blocks the map; the "i" pop-up has one line `base` for the same three states (no amber). Four languages everywhere.
+  - **Tests.** A15 "Aerodb loading state" (fake GitHub held, then released: loading note and "i" line, note gone; access cut:
+    "access not set" with the button), D5 (no access) and D5b (access set, nothing published). Not testable here: a real iPhone.
+  - **Not done.** Serving the base from the public pages: `frame/aerodb/DECISIONS.md`, two lines.
+- 24 Oct 2026 — the map threshold tuning link of the Administration card is now a button "Map threshold tuning (administrator)" (`btn: true` in `admin_links.js`, `f-btn primary`) with a sentence saying what the page is for; nothing else changes (Full level only). Asked by the maps relay lot; case D16.
+- **24 Oct 2026 — The status block opens the screen** (relais cloud, branch `v3-cadre-barre`; `V3_SPECIFICATION.md` § 7.1 rule 14, which
+  removes the header's "i" button and its pop-up; written by the V3 frame session).
+  - **What**: a first card `[data-card="status"]`, titled "Status" / "État" / "Status" / "Estado", that carries the lines of the
+    old pop-up with the same texts and the same actions; the "Help for this screen" line is gone (the header's "?" is that).
+    The screen's folded help panel moves under it.
+  - **Who draws it**: the frame. The state belongs to it (current flight, the pending reports of flightlog, the sync state,
+    aerodb's state, the launcher, the position) and is shared with the badge of the ⚙; settings would have to read all of it
+    again and keep it in step. Settings is an "over" of the frame but draws its content in one `innerHTML` and redraws it
+    by `again()`, so the card could not be prepended once by the frame. Contract: `ctx.status = { html(), bind(card) }`;
+    `html()` is the card at the value of the moment (a string, placed first), `bind(card)` hands it to the frame, which
+    rewrites it only when its content changes (signature in `data-sig`) and lets it go when it leaves the page. Documented in
+    `frame/INTEGRATION.md` § 10.2.
+  - **Rows that pointed to "Settings"** (trigram, base, data, launcher) now scroll to the card that holds the answer
+    (`card:identity`, `card:access`, `card:sync,usages`) and focus its first field: a hash that does not change does nothing.
+  - Not changed: the other cards, their order, their saving rule.

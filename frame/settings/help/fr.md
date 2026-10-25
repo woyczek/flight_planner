@@ -5,6 +5,12 @@ sont échangées, et ce que l'appareil garde hors ligne. Ils restent sur l'appar
 
 ## Comment s'en servir
 
+**L'état.** L'écran s'ouvre sur le bloc « État », avec la même pastille que le bouton ⚙ de l'en-tête (verte : une nouvelle ;
+orange : de l'attention). Une ligne par chose, touchez-la pour agir : le vol en cours (vers la Carte), les comptes rendus à
+écrire (vers le compte rendu prérempli), le trigramme manquant (vers « Identité »), la base aéronautique tant qu'elle n'est
+pas prête (vers « Accès aux données »), l'état des données et le moyen d'échange (vers « Synchronisation », ou les conflits),
+le lanceur, « Hors ligne » et, sur un téléphone, la position pendant un vol.
+
 **Votre identité.** Dans « Identité », tapez votre trigramme et vos identifiants VID IVAO, CID VATSIM et SimBrief, puis
 « Enregistrer ». Les outils s'en servent pour préremplir ; à plusieurs, le trigramme est nécessaire.
 
@@ -27,7 +33,7 @@ carte montre le dépôt distant de `data/` (voir « Un dépôt git pour data/ »
 pour la première fois, par exemple — n'a ni base aéronautique (espaces, terrains, balises) ni base des appareils :
 « Données hors ligne » le dit. Deux portes : réglez l'accès au dépôt des données, même sans cocher d'échange (il sert
 alors seulement à lire les bases) ; ou, sur un poste avec lanceur, publiez les bases dans le dépôt (V2 : Paramètres ›
-Maintenance › Données aéronautiques et Types d'aéronefs), puis synchronisez.
+Maintenance › Données aéronautiques et Types d'aéronefs), puis synchronisez. Trois états distincts quand la base manque : « Base aéronautique en cours de chargement… » (la lecture n'est pas finie : patientez), « Accès aux données non réglé sur cet appareil » (réglez l'accès ci-dessus ; une appli ajoutée à l'écran d'accueil a son propre stockage, rien de ce que vous aviez réglé dans Safari n'y est) et « Base aéronautique non publiée » (l'accès marche, rien n'est publié dans le dépôt).
 
 **La synchronisation.** Avec un échange coché, la carte « Synchronisation » donne la dernière réussie, les écritures en
 attente et le réseau ; « Synchroniser maintenant » envoie et reçoit tout de suite. Sinon, elle se fait seule au
@@ -142,7 +148,7 @@ poste avec le lanceur.
 
 **Les pages d'administration.** Au niveau « Complet » (carte « Niveau »), la carte « Administration », sous « À propos
 », réunit les pages d'administration et d'essai, chacune avec une phrase ; aux autres niveaux, elle n'apparaît pas. Dans
-l'appli : le réglage des seuils de la carte (`#maps?tune=1`, en lecture seule sur un téléphone), la feuille de route
+l'appli : le bouton « Réglage des seuils de la carte (administrateur) » (`#maps?tune=1`, en lecture seule sur un téléphone ; il ouvre la page de réglage : pour chaque élément de la carte et chaque mode, les zooms où il apparaît, enregistrés pour la compagnie, `airline/map_profiles.json` ; un mode que vous n'avez jamais enregistré reprend les seuils d'un mode réglé, la page le dit ; le curseur « Complexité » de la carte ne fait que décaler le zoom), retour par la flèche de retour, la feuille de route
 (`#roadmap`) et le diagnostic de la carte « À propos ».
 
 **Les bancs, sur un poste.** Servis par le lanceur, ils ne s'ouvrent que sur un poste avec lanceur (ailleurs, ils sont
