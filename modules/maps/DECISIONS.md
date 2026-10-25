@@ -1237,3 +1237,34 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     in 4 languages with its touch zone, a tap on it and a double tap bring the whole flight back), D22 (a sheet drag: nothing redrawn nor
     resized under the finger, the window unchanged after it), D23 (the window survives a Map → Fuel → Map trip and is reset by another route
     written live), D24 (1280: Ctrl + wheel, drag, double click). Verified red on the previous code.
+- **25 Oct 2026 — one window for the profile and the weather cut** (rule 20 of V3_SPECIFICATION § 7.1: "Trouver le moyen de zoomer (pour être
+  précis) le profil vertical"; lot `v3-maps-coupe-fenetre`, relay cloud; follows `v3-profil-zoom` and Atmosphere's `d785ec7c6`).
+  - **What was done with the user's word**: the user asked for the profile; the relay's reading (a window on the distance axis, rule 20) is now
+    on both vertical drawings with the same gesture, and the route has **one** window: the user zooms on the part of the flight he is
+    interested in, whichever drawing he is looking at, and the other one shows the same part.
+  - **One helper or two?** The profile's frame (`.mp-prof`) and the sheet's body (`.mp-dbody`, where the cut is drawn) are two different
+    elements, and the head line (chips, legend, grip) lies between them in the panel: one helper on the common parent would take the
+    gestures of the head line and have no plot frame. So **two `createAxisWindow` helpers, one per container, that hand each other the
+    window** at every change (`set(f, t, { quiet: true })` on the other, then one redraw); `S.axw` is the source every drawing reads.
+    Simpler than a shared parent with filters, and each helper keeps its own `plot` (the profile's `padL..W-padR`, the cut's `geo.x0..x0+pw`
+    plus the svg's offset in the body) and its own `enabled` (profile shown and not in Edit mode; cut drawn). `total` is the profile's
+    route length for both, so a whole window is whole on both.
+  - **Redraw**: `onWindow` keeps `winKeep`, then one `requestAnimationFrame` redraws the drawing in view (`redrawWeather` or `drawProfile`);
+    the other one is drawn with the same window when the chip brings it back. A sheet drag never reaches it (the grip is not in the drawings)
+    and the size that settles redraws as before (`onSheetSettled`: D20, D22, D25b).
+  - **The cut's pointer capture** moved to a capture-phase listener registered before the helper's: the cut's svg is replaced at each
+    redraw, and the second finger of a pinch (which the helper's capture-phase listener stops) must be captured by the body too, or it would
+    be lost with the svg it started on. The cut's own cursor handlers ignore the events while the helper has a gesture (`axx.active`).
+  - **Double tap**: Atmosphere waits 320 ms on a zoomed cut because a tap opens a slice there. The Map's cut has no slice: a tap places the
+    common cursor, as on the profile, so the first tap of a double tap moves the cursor and the second brings the whole flight back (the
+    profile does the same, D21). Nothing opens: D25 checks the sheet still shows the cut.
+  - **Legend**: `legendRows('weather')` passes `geo.layers` and `geo.strips` of the drawing to `sectionLegend`; the 260 px rule and
+    `S.wxStrips` are gone. In a window, the legend is what the window drew.
+  - **The button** "Whole flight" shows in front of the cut too (`winSync`, also called after `openData`'s draw); its help text says
+    "profile or cut" in the four languages.
+  - **Not done, said**: no keyboard route to the zoom (as for the profile); the window is `S.prof`'s length, so a route whose profile
+    has not been built yet has no window on the cut either (the profile is built before the Weather chip is available in practice: both need
+    two points); the mission maps have no cut.
+  - **Tests**: D25 (pinch on the cut, marks inside the window, `data-top` lower, the button x4 with its touch zone, the legend agreeing with
+    `data-strips`, Profile chip: the same window; back; a pinch on the profile seen on the cut; the button; a double tap that opens no slice),
+    D25b (a sheet drag: nothing rewritten, same window). Verified red on the previous code (no `data-window` on the cut).

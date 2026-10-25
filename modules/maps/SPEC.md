@@ -440,9 +440,14 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **The window is a reading convenience**: kept for the life of the page (`winKeep`, with the route's signature: the points' ids and
   positions), so leaving the Map and coming back keeps it; reset when the route's points differ; never stored (nothing in the settings, nothing
   on the device). The sheet's head line shows a **text button "Whole flight"** (4 languages; 28 px with the primitive's 44 px touch zone in
-  the bare head, 44 px in the titled one) only while the window is tight and the profile is shown (rule 13: not a fourth chip); it calls
-  `reset()`. A sheet drag neither changes the window nor redraws under the finger (D22). The **weather cut is not zoomable yet**: its
-  renderer has no window option (INTEGRATION § 8, "Asked of atmosphere"); it stays whole and the button is not shown on it.
+  the bare head, 44 px in the titled one) only while the window is tight and the profile **or the weather cut** is shown (rule 13: not a
+  fourth chip); it calls `reset()`. A sheet drag neither changes the window nor redraws under the finger (D22).
+- **The weather cut shares the window** (lot `v3-maps-coupe-fenetre`, 25 Oct 2026): atmosphere's `drawSection(el, { window: { from, to } })`
+  (INTEGRATION § 8) draws only what lies in it and refits its height scale; the Map has **one window per route** for both drawings (two
+  `createAxisWindow` helpers, on the profile's frame and on the sheet's body, that hand each other the window; the profile's one is the source).
+  Zoom on one, switch with the chip, the same part of the flight is on the other. The body says what the cut drew (`data-window`, `data-top`,
+  `data-strips`); the cut's legend reads `geo.strips` and `geo.layers`. A tap on the cut places the cursor and opens nothing, so the double
+  tap that goes back to the whole flight waits for nothing. D25, D25b.
 
 ## 4 ter. Mission maps (`mission.js`, `window.MapsMission`)
 

@@ -20,8 +20,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   the pointer, a drag moves the window, a double click resets. The vertical axis refits to what is visible (that is where the precision comes
   from), the distance marks take a round step inside the window, points, TOC / TOD and labels outside it are not drawn, the cursor, the
   airspace reading and the strip stay exact. The window is kept while the page lives and reset when the route changes; it is never stored.
-  The weather cut does not zoom yet: its option is requested from Atmosphere in `INTEGRATION.md` § 8. D21 pinch / scale / cursor /
-  button, D22 sheet drag, D23 kept and reset, D24 screen gestures.
+  The weather cut zooms too (see the next two entries). D21 pinch / scale / cursor / button, D22 sheet drag, D23 kept and reset, D24 screen gestures.
 
 - **Atmosphere: the weather cut zooms like the vertical profile** (`modules/atmosphere/section.js`, `module.js`, `texts.js`, `help/*.md`,
   `frame/help/pilot.*.md`, `tests/v3` E8-E9; atmosphere INTEGRATION § 5, DECISIONS; V3_SPECIFICATION § 7.1 rule 20) — `drawSection` /
@@ -30,6 +29,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   window (`xOf`, `nmOf`, `window`, `top`, plus `strips` and `layers` asked by the Map). The module wires the Map's `createAxisWindow` on its own
   cut: two fingers pinch and slide, Ctrl + wheel, a double tap or "Whole flight" (grip row, only while zoomed, four languages) comes back to the
   whole flight; the window is never stored and is reset when the route changes. E8 pinch / marks / button / reset, E9 sheet drag.
+
+- **The Map: one window for the profile and the weather cut** (`modules/maps/module.js`, manual of the Map x4, `tests/v3` D25 and D25b,
+  `modules/maps/INTEGRATION.md` § 8, SPEC § 4 bis, DECISIONS; V3_SPECIFICATION § 7.1 rule 20) — the Map uses the option Atmosphere delivered
+  (`drawSection(el, { window: { from, to } })`). The route has **one** window, shared by both drawings: pinch (or Ctrl + wheel, or a mouse drag)
+  on the cut, switch to Profile with the chip, and the same part of the flight is there, and back; "Whole flight" (head line, now also in front of
+  the cut) or a double tap on either brings everything back; the window is kept for the page, reset with the route, never stored. The cut's
+  height scale refits to what the window shows (`geo.top`). The legend now reads `geo.strips` and `geo.layers` (what the cut really drew in the
+  window) instead of recomputing the 260 px rule. A sheet drag does not redraw the cut and keeps the window. D25 pinch / marks / scale /
+  button x4 / switch / double tap, D25b sheet drag.
 
 - **The weather cut's legend has its symbols** (`modules/maps/module.js`, `tests/v3` D4, `modules/maps/INTEGRATION.md` § 8, DECISIONS) — user 25 Oct
   (iPhone, route LFRS to LFML, Weather chip then "i": "Bug : cf screenshot (légende)"): the six rows of the legend each had an empty grey box.

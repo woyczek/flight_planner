@@ -269,14 +269,14 @@ The sheet's "Weather" content (SPEC § 4) calls atmosphere's pure renderer. Noth
   `requested`, `toc`, `cloud`, `temp|da|rh`, `iso`, `inv`, `ice`, `wind`, `cu`, `terrain`, `points`, `strips`. `layers` and `strips` must be
   the ones passed to the drawing, `t` takes a four-language row (the Map passes `row => ctx.t(row)`; without it the labels are French).
   The Map therefore (1) draws the cut with an explicit `layers` (`WX_LAYERS`: the set `drawSection` takes by default) and asks the legend
-  for the same ones, `strips` being what `sectionSvg` decides (a drawing at least 260 px high: the Map computes it from the height it
-  passes), (2) puts each row's SVG as it is in its box (`.mp-lg-svg`, `data-key` = the row's key) and the label beside it. **Asked of
-  atmosphere, nothing changed there**: if `sectionSvg` exposed `strips` (and the layers it used) in the `geo` it returns, the Map would
-  read them instead of recomputing the 260 px rule.
+  for the same ones, `strips` being what `sectionSvg` decided, **read from the `geo` the drawing returns** (`geo.strips`, `geo.layers`: the
+  request of 25 Oct, served by atmosphere's `d785ec7c6`; the Map no longer recomputes the 260 px rule), (2) puts each row's SVG as it is in its
+  box (`.mp-lg-svg`, `data-key` = the row's key) and the label beside it. The legend therefore says what is drawn in the window.
 - **The cursor**: `cursorM` = maps' `S.cursor` (metres from the departure), and a tap on the drawn section calls the same
   `setCursor` with `geo.nmOf(x) × 1852`, using the geometry `drawSection` returns.
-- **Asked of atmosphere: a window on the distance axis** (rule 20 of V3_SPECIFICATION § 7.1, 25 Oct 2026; **not done, nothing changed
-  there**). The Map zooms its profile and wants the same gesture on the cut. Option of `drawSection(el, o)` (and of `sectionSvg(M, o)`, which
+- **A window on the distance axis: served** (rule 20 of V3_SPECIFICATION § 7.1, 25 Oct 2026; contract: atmosphere's `INTEGRATION.md` § 5,
+  `o.window`, `geo.window`, `geo.top`, `geo.strips`, `geo.layers`; used by the Map since lot `v3-maps-coupe-fenetre`). The request, as it was
+  written and as atmosphere delivered it. The Map zooms its profile and wants the same gesture on the cut. Option of `drawSection(el, o)` (and of `sectionSvg(M, o)`, which
   it calls): **`o.window = { from, to }`**, distances **in NM from the departure** (the unit of `geo.xOf(nm)` / `geo.nmOf(x)`), none or
   `{ from: 0, to: total }` = the whole cut as today. When given, the cut must: (1) map the plot's width to `[from, to]` and clip to it, so
   `geo.xOf(nm)` and `geo.nmOf(x)` follow the window (the Map places its cursor with `nmOf` and draws nothing else on the cut); (2) draw only the
@@ -285,8 +285,13 @@ The sheet's "Weather" content (SPEC § 4) calls atmosphere's pure renderer. Noth
   NM marks and the tick labels to the window, and keep the names inside the frame; (4) put `geo.window = { from, to }` (the window really
   drawn, after its own bounding) in the geometry, and return the same `geo` fields as now. The window is bounded by the caller (at least 5 NM,
   inside `[0, total]`); the cut may refuse it and draw whole (then `geo.window` is absent and the Map shows no "Whole flight" button).
-  When it is there the Map passes `window` from the same `createAxisWindow` instance as the profile (`lib/axis_window.js`, § 10) and
-  attaches it to the cut's body.
+  **What the Map does with it**: one window per route, `S.axw` (the profile's frame) and `S.axx` (the sheet's body, where the cut is drawn) are
+  two `createAxisWindow` helpers, one per container, that hand each other the window after every gesture (`set(…, { quiet: true })`);
+  every drawing reads `S.axw`. `total` = the route's length from the profile (`S.prof.total` / 1852, the same number for both), `min` = 5 NM,
+  `plot` = `{ x0, x1 }` from the cut's own `geo` (`geo.x0`, `geo.x0 + geo.pw`, plus the svg's offset in the body). `weatherBuild` passes
+  `window: { from, to }` while zoomed (else `null`), and states what was drawn on the body: `data-window` (`from,to` NM), `data-top` (ft),
+  `data-strips`. One finger stays the cut's cursor (a tap places it, it opens no slice: the Map has none), so a double tap needs no delay
+  (atmosphere waits 320 ms because a tap opens a slice there).
 
 ## 9. Routing over the airways — `lib/routing.js` (25 Oct 2026, created by the fuel lot "auto")
 
@@ -311,8 +316,7 @@ Bench: `modules/maps/test/routing.html`.
 
 ## 10. Window on a distance axis — `lib/axis_window.js` (25 Oct 2026, rule 20 of V3_SPECIFICATION § 7.1)
 
-The gesture of the vertical drawings, written once: the Map's profile uses it today, the weather cut (atmosphere) will use it when it
-accepts a window (§ 8). An ES module, no state of its own, no timer, nothing written in the page; `import { createAxisWindow } from
+The gesture of the vertical drawings, written once: the Map's profile and the weather cut (atmosphere's own screen, and the cut in the Map's sheet; § 8) use it. An ES module, no state of its own, no timer, nothing written in the page; `import { createAxisWindow } from
 '../maps/lib/axis_window.js'` (declare it in the module's `meta.files`).
 
 `createAxisWindow(el, { total, onChange, min, plot, enabled })` → `{ from, to, zoomed, active, set(from, to, { quiet }), reset({ quiet }), stop() }`

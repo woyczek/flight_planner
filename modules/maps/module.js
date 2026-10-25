@@ -157,12 +157,12 @@ const TX = {
   summary: ['{dep} → {arr}', '{dep} → {arr}', '{dep} → {arr}', '{dep} → {arr}'],
   altn: ['dégagement {a}', 'alternate {a}', 'Ausweich {a}', 'alternativa {a}'],
   dist: ['{d} NM', '{d} NM', '{d} NM', '{d} NM'],
-  // fenêtre du profil (règle 20) : l'affordance « vol entier » de la ligne d'en-tête, visible seulement quand on a zoomé
+  // fenêtre du profil et de la coupe (règle 20) : l'affordance « vol entier » de la ligne d'en-tête, visible seulement quand on a zoomé
   winWhole: ['Vol entier', 'Whole flight', 'Ganzer Flug', 'Vuelo entero'],
-  winWholeHelp: ['Revenir au vol entier (double toucher ou double clic sur le profil)',
-    'Back to the whole flight (double tap or double click on the profile)',
-    'Zurück zum ganzen Flug (Doppeltipp oder Doppelklick auf das Profil)',
-    'Volver al vuelo entero (doble toque o doble clic en el perfil)'
+  winWholeHelp: ['Revenir au vol entier (double toucher ou double clic sur le profil ou la coupe)',
+    'Back to the whole flight (double tap or double click on the profile or the cut)',
+    'Zurück zum ganzen Flug (Doppeltipp oder Doppelklick auf Profil oder Schnitt)',
+    'Volver al vuelo entero (doble toque o doble clic en el perfil o el corte)'
   ],
   profileLabel: ['Profil vertical de la route', 'Vertical profile of the route', 'Vertikalprofil der Route',
     'Perfil vertical de la ruta'
@@ -1170,7 +1170,7 @@ function drawPlanOnMap(ctx, toC, taken = []) {
 
 // ---------------------------------------------------------------- profil vertical
 const FT_NM = 1852;
-/** Fenêtre du profil gardée pour la vie de la page (pas sur l'appareil : une commodité de lecture), avec la route qu'elle regarde :
+/** Fenêtre de la route (profil ET coupe météo : une seule) gardée pour la vie de la page (pas sur l'appareil : une commodité de lecture), avec la route qu'elle regarde :
  *  { sig, from, to } en NM, null tant que le vol est entier. Au retour sur la Carte, la même route retrouve sa fenêtre. */
 let winKeep = null;
 /** Repères de distance d'une fenêtre : un pas rond (1, 2, 5, 10, 20, 25, 50, 100, 200 NM) tel que deux repères soient à 40 px au moins. */
@@ -1222,12 +1222,13 @@ async function buildProfile() {
   // fenêtre du profil (règle 20) : gardée tant que la route est la même (le niveau ou les taux ont pu changer), remise à zéro dès que
   // ses points diffèrent ; le total change avec la route, d'où la remise avant le dessin
   const sig = prof ? pts.map(p => `${p.id || ''}:${(+p.lat).toFixed(4)},${(+p.lon).toFixed(4)}`).join('|') : '';
-  if (winKeep && winKeep.sig === sig) S.axw.set(winKeep.from, winKeep.to, {
-    quiet: true
-  });
-  else {
-    winKeep = null;
-    S.axw.reset({
+  const keep = !!winKeep && winKeep.sig === sig;
+  if (!keep) winKeep = null;
+  for (const w of [S.axw, S.axx]) { // les deux aides (profil, coupe) portent la même fenêtre
+    if (keep) w.set(winKeep.from, winKeep.to, {
+      quiet: true
+    });
+    else w.reset({
       quiet: true
     });
   }
@@ -1350,14 +1351,17 @@ function drawProfile() {
 function setData(el, k, v) {
   if (el.dataset[k] !== v) el.dataset[k] = v;
 }
-/** L'affordance « vol entier » : dans la ligne d'en-tête, seulement devant le profil et tant que la fenêtre est resserrée ; écrit s'il change. */
+/** L'affordance « vol entier » : dans la ligne d'en-tête, seulement devant le profil ou la coupe météo dessinée et tant que la fenêtre
+ *  est resserrée ; écrit s'il change. */
 function winSync() {
   if (!S?.wholeBtn) return;
-  const on = !S.dpanel && !!S.prof && S.axw.zoomed;
+  const on = (S.dpanel === 'weather' ? !!S.wxGeo : !S.dpanel && !!S.prof) && S.axw.zoomed;
   if (S.wholeBtn.hidden === on) S.wholeBtn.hidden = !on;
 }
-/** Fenêtre changée par un geste : gardée pour la vie de la page, profil redessiné au prochain tour d'animation (un seul par tour,
- *  quel que soit le nombre d'événements du geste). */
+/** Fenêtre changée par un geste (sur le profil ou sur la coupe) : gardée pour la vie de la page, le dessin montré redessiné au prochain
+ *  tour d'animation (un seul par tour, quel que soit le nombre d'événements du geste) ; l'autre le sera à son tour avec la même
+ *  fenêtre. Un glisser de feuille ne passe jamais par ici : la poignée n'est pas dans le dessin, et la taille arrêtée redessine
+ *  (onSheetSettled). */
 let profRaf = 0;
 
 function onWindow() {
@@ -1368,7 +1372,9 @@ function onWindow() {
   } : null;
   if (!profRaf) profRaf = requestAnimationFrame(() => {
     profRaf = 0;
-    if (S) drawProfile();
+    if (!S) return;
+    if (S.dpanel === 'weather') redrawWeather();
+    else drawProfile();
   });
 }
 /** Curseur sur le profil (trait vertical, point sur l'altitude prévue). */
@@ -3012,8 +3018,8 @@ function legendRows(view) {
     if (wx?.state !== 'ok' || !wx.legend) return [];
     return wx.legend({
       kind: 'cut',
-      layers: WX_LAYERS,
-      strips: !!S.wxStrips,
+      layers: S.wxGeo?.layers || WX_LAYERS, // ce que la coupe a dessiné (geo.layers, geo.strips : INTEGRATION.md § 5 d'Atmosphère)
+      strips: !!S.wxGeo?.strips,
       cloudRgb: wx.o.cloudRgb,
       t: row => tt(row)
     }).map(r => [`<i class="mp-lg-sw mp-lg-svg" data-key="${esc(r.key)}">${r.swatch}</i>`, esc(r.label)]);
@@ -3132,6 +3138,7 @@ function openData(kind, key, title, build, label = title) {
   }
   if (fresh) S.dbodyEl.scrollTop = 0;
   legendSync(); // la coupe vient d'être dessinée : sa légende
+  winSync(); // et « Vol entier » si sa fenêtre est resserrée
 }
 /** Contenu du bloc fermé (kind : seulement s'il est de ce genre) ; le profil vertical revient, redessiné à sa taille — ou la
  *  coupe météo, si c'est elle que l'utilisateur avait choisie avant d'ouvrir ce contenu. */
@@ -3283,11 +3290,14 @@ const weatherBuild = key => (w, h, el) => {
   if (wx.state === 'ok') {
     // la zone de la coupe n'a ni bord ni remplissage (.mp-dbody[data-kind=weather]) : la coupe prend toute sa hauteur et sa
     // largeur, l'axe des distances au bas du corps (§ 7.1.13) ; minHeight: 0 demande à drawSection de ne pas relever la hauteur
-    // les bandes de surface sous la coupe : drawSection les montre dès 260 px de hauteur (sectionSvg) ; la légende suit
-    S.wxStrips = Math.floor(h) >= 260;
+    // la fenêtre de la route (celle du profil) : la coupe ne dessine que ce qui s'y trouve, l'échelle verticale recalée
     S.wxGeo = wx.draw(el, {
       ...wx.o,
       layers: WX_LAYERS,
+      window: S.axw.zoomed ? {
+        from: S.axw.from,
+        to: S.axw.to
+      } : null,
       width: Math.max(80, w),
       height: Math.max(40, Math.floor(h)),
       minHeight: 0,
@@ -3298,7 +3308,12 @@ const weatherBuild = key => (w, h, el) => {
       // vrai si le bas du dessin (l'axe) est dans le corps, sans qu'il faille faire défiler
       const svg = el.querySelector('svg'),
         ok = svg && svg.getBoundingClientRect().bottom <= el.getBoundingClientRect().bottom + 1 ? '1' : '0';
-      if (el.dataset.axis !== ok) el.dataset.axis = ok;
+      setData(el, 'axis', ok);
+      // ce que la coupe a dessiné, dit pour le test et pour qui mesure : la fenêtre (NM), le haut de l'échelle (ft), les bandes de surface
+      const g = S.wxGeo;
+      setData(el, 'window', g.window ? `${g.window.from.toFixed(2)},${g.window.to.toFixed(2)}` : `0,${(S.prof ? S.prof.total / FT_NM : 0).toFixed(2)}`);
+      setData(el, 'top', String(Math.round(g.top)));
+      setData(el, 'strips', g.strips ? '1' : '0');
       return;
     }
   }
@@ -5035,20 +5050,57 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     go(v.startsWith('m:') ? v.slice(2) : '', '');
   });
   S.mapPickEl.addEventListener('change', () => go(ctx.query?.mission, S.mapPickEl.value));
-  // fenêtre sur l'axe des distances du profil (règle 20) : deux doigts zooment et déplacent, double toucher ou double clic : le vol
-  // entier, Ctrl + molette zoome ; un seul doigt reste le curseur ci-dessous. La Carte ne la donne pas au mode Modifier, qui prend le
-  // glisser pour régler les paliers. Hors du cadre de tracé (graduations, niveaux), la fenêtre n'a pas de prise.
+  // fenêtre sur l'axe des distances de la route (règle 20), UNE pour le profil et la coupe météo : deux doigts zooment et déplacent,
+  // double toucher ou double clic : le vol entier, Ctrl + molette zoome ; un seul doigt reste le curseur ci-dessous. Les deux dessins
+  // ont deux conteneurs différents (le cadre du profil, la zone de la feuille où la coupe est dessinée) : deux aides, une par
+  // conteneur, qui se passent la fenêtre à chaque geste (set quiet de l'autre) ; la source est S.axw, que tous les dessins lisent.
+  // La Carte ne la donne pas au mode Modifier, qui prend le glisser pour régler les paliers. Hors du cadre de tracé (graduations,
+  // niveaux), la fenêtre n'a pas de prise. Une coupe n'a pas de tranche au toucher : le double toucher n'attend rien (un toucher
+  // place le curseur commun, deux le placent puis rendent le vol entier, comme sur le profil).
+  const routeNm = () => S.prof ? S.prof.total / FT_NM : 0,
+    pass = (to, f, t) => {
+      to().set(f, t, {
+        quiet: true
+      });
+      onWindow();
+    };
   S.axw = createAxisWindow(S.profBox, {
-    total: () => S.prof ? S.prof.total / FT_NM : 0,
+    total: routeNm,
     min: 5,
     plot: () => S.geo ? {
       x0: S.geo.padL,
       x1: S.geo.W - S.geo.padR
     } : null,
     enabled: () => !S.edit.on && !S.dpanel,
-    onChange: onWindow
+    onChange: (f, t) => pass(() => S.axx, f, t)
   });
-  S.stops.push(() => S.axw.stop());
+  // la coupe : le cadre de tracé est celui que le dessin rend (geo.x0, geo.pw, par rapport au bord de son svg)
+  // avant l'aide : la zone prend la capture du pointeur de TOUS les doigts (le dessin est remplacé à chaque cran, un doigt dont le
+  // dessin disparaît ne doit pas se perdre en route)
+  S.dbodyEl.addEventListener('pointerdown', e => {
+    if (S.dpanel === 'weather' && e.target.closest('svg')) try {
+      S.dbodyEl.setPointerCapture(e.pointerId);
+    } catch {
+      /* pas de capture : le geste suit quand même tant qu'il est sur la coupe */
+    }
+  }, true);
+  S.axx = createAxisWindow(S.dbodyEl, {
+    total: routeNm,
+    min: 5,
+    plot: () => {
+      const g = S.wxGeo,
+        svg = g && S.dbodyEl.querySelector('svg');
+      if (!svg) return null;
+      const dx = svg.getBoundingClientRect().left - S.dbodyEl.getBoundingClientRect().left;
+      return {
+        x0: dx + g.x0,
+        x1: dx + g.x0 + g.pw
+      };
+    },
+    enabled: () => S.dpanel === 'weather' && !!S.wxGeo,
+    onChange: (f, t) => pass(() => S.axw, f, t)
+  });
+  S.stops.push(() => S.axw.stop(), () => S.axx.stop());
   S.wholeBtn.addEventListener('click', () => S.axw.reset());
   // curseur commun : doigt (ou souris) sur le profil
   const onProf = e => {
@@ -5163,31 +5215,25 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   let wxRaf = 0,
     wxX = 0;
   const wxMove = e => {
-    if (S.dpanel !== 'weather' || !S.wxGeo || !e.target.closest('svg') && !S.dbodyEl.hasPointerCapture?.(e.pointerId)) return;
+    if (S.dpanel !== 'weather' || !S.wxGeo || S.axx.active || !e.target.closest('svg') && !S.dbodyEl.hasPointerCapture?.(e.pointerId))
+      return;
     if (e.type === 'pointermove' && !e.buttons && e.pointerType !== 'mouse') return;
     wxX = e.clientX;
     if (wxRaf) return;
     wxRaf = requestAnimationFrame(() => {
       wxRaf = 0;
-      const svg = S?.dpanel === 'weather' && S.wxGeo && S.dbodyEl.querySelector('svg');
+      const svg = S?.dpanel === 'weather' && S.wxGeo && !S.axx.active && S.dbodyEl.querySelector('svg');
       if (!svg) return;
       const g = S.wxGeo,
         x = Math.min(Math.max(wxX - svg.getBoundingClientRect().left, g.x0), g.x0 + g.pw);
       setCursor(Math.round(g.nmOf(x) * FT_NM));
     });
   };
-  S.dbodyEl.addEventListener('pointerdown', e => {
-    if (S.dpanel === 'weather' && e.target.closest('svg')) try {
-      S.dbodyEl.setPointerCapture(e.pointerId); // le dessin est remplacé à chaque cran : le glisser reste à la zone
-    } catch {
-      /* pas de capture : le glisser suit quand même tant qu'il est sur la coupe */
-    }
-    wxMove(e);
-  });
+  S.dbodyEl.addEventListener('pointerdown', wxMove); // la capture du pointeur est prise plus haut (le dessin est remplacé à chaque cran)
   S.dbodyEl.addEventListener('pointermove', wxMove);
   // un toucher sur la coupe météo place le curseur commun (la carte et le profil le suivent), comme sur le profil
   S.dbodyEl.addEventListener('click', e => {
-    const svg = S.dpanel === 'weather' && S.wxGeo && e.target.closest('svg');
+    const svg = S.dpanel === 'weather' && S.wxGeo && !S.axx.active && e.target.closest('svg');
     if (!svg) return;
     const g = S.wxGeo,
       x = e.clientX - svg.getBoundingClientRect().left;

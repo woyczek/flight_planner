@@ -11,7 +11,7 @@ Rules covered
   * L1 the sheet content is closable and leaves the map half the view (D11); L3 the profile canvas draws one level and no
     green / orange dots (D12); L14 a drag on the map or a wheel on the sheet does not close a content (D13).
 
-Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 D17 D18 D19 D20 (the complexity slider, the airline's thresholds, the tuning page's access: 24 Oct).  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
+Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 D17 D18 D19 D20 D21-D24 (the profile window) D25 D25b (one window for the cut) (the complexity slider, the airline's thresholds, the tuning page's access: 24 Oct).  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
 MapLibre runs on an empty style answered by the runner, so the attribution control exists without any network.
 """
 import re
@@ -1333,3 +1333,140 @@ def d24(c):
     c.wait(250)
     c.eq([win_state(c)['from'], win_state(c)['to']], [0, whole['to']], 'a double click on the profile comes back to the whole flight', what='window after the double click')
     c.ok(not c.shown('.mp-whole'), 'the button is displayed on the whole flight', 'hidden again')
+
+
+# ---------------------------------------------------------------------------------------------------------- D25: one window for the profile and the cut
+# V3 spec 7.1 rule 20 (same gesture on the profile and on the weather cut): the Map keeps ONE window per route; the cut is drawn by atmosphere's
+# drawSection(..., { window }) and says what it drew on the sheet's body (data-window NM, data-top ft, data-strips).
+def cut_state(c):
+    """What the cut says it drew (.mp-dbody): the window (NM), the height scale's top (ft), the surface strips, the distance marks (NM, the svg's
+    integer labels under the plot), and whether the "Whole flight" button is shown."""
+    return c.js("""() => { const b = document.querySelector('.mp-dbody'), svg = b.querySelector('svg'), t = svg ? [...svg.querySelectorAll('text')] : [],
+        w = (b.dataset.window || '').split(',').filter(Boolean).map(Number);
+      return { kind: b.dataset.kind, from: w.length ? w[0] : null, to: w.length ? w[1] : null, top: +b.dataset.top, strips: b.dataset.strips,
+        ticks: t.filter(x => /^\\d+$/.test(x.textContent) && x.getAttribute('dominant-baseline') === 'hanging').map(x => +x.textContent),
+        whole: window.__t.shown(document.querySelector('.mp-whole')) } }""")
+
+
+def cut_xy(c, frac=.4):
+    """A point of the cut (page px) on its plot: `frac` of the svg's width, the middle of the part of the svg a bar or a hint does not cover."""
+    return c.js("""(f) => { const s = document.querySelector('.mp-dbody svg'), r = s.getBoundingClientRect(); return [r.left + r.width * f, r.top + r.height * .4] }""", frac)
+
+
+def open_cut(c):
+    c.open('maps', flight=True, forecast=True)
+    hide_notes(c)
+    c.wait(1200)
+    c.settle()
+    c.tap('.mp-chip[data-view="weather"]')
+    c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", timeout=10000, what='the cut is drawn')
+    c.settle()
+    c.wait(300)
+
+
+def legend_keys(c):
+    """The keys of the legend rows the cut shows (the "i" chip opened, then closed)."""
+    c.tap('.mp-chip[data-legend]')
+    c.wait(200)
+    keys = c.js("() => [...document.querySelectorAll('.mp-legend [data-key]')].map(e => e.dataset.key)")
+    c.tap('.mp-chip[data-legend]')
+    c.wait(200)
+    return keys
+
+
+@case('D25', 'One window for the profile and the cut', 'D', tags=('sheet', 'maps'), screens=False, designs=('standard', 'cupertino'), langs4=True,
+      rule='V3 spec 7.1 rule 20 (user 25 Oct: "zoomer (pour être précis) le profil vertical"): the same gesture on the weather cut, ONE window per route shared by both drawings')
+def d25(c):
+    open_cut(c)
+    whole = cut_state(c)
+    c.eq(whole['kind'], 'weather', 'the cut is in the sheet', what='sheet content')
+    c.ok(whole['to'] is not None and whole['from'] == 0 and whole['to'] > 360 and not whole['whole'], f'cut {whole}', 'the cut is whole (0 to its 366 NM) and has no "Whole flight" button before any gesture')
+    keys0 = legend_keys(c)
+    c.eq('strips' in keys0, whole['strips'] == '1', 'the legend lists the surface strips exactly when the cut drew them (geo.strips)', what=f'legend {keys0}, strips drawn {whole["strips"]}')
+    # a pinch on the cut around 12 NM of the plot: eight times closer
+    x, y = cut_xy(c)
+    pinch(c, x, y, 24, 192)
+    st = cut_state(c)
+    span = st['to'] - st['from']
+    c.ok(5 <= span < whole['to'] / 5, f'cut window {st["from"]}..{st["to"]} ({span:.1f} NM)', 'a pinch tightens the cut to a fraction of the flight (5 NM at least)')
+    c.ok(st['from'] >= 0 and st['to'] <= whole['to'] + .1, f'{st["from"]}..{st["to"]}', 'inside the flight')
+    c.ge(len(st['ticks']), 2, 'distance marks in the cut window', what=f'marks {st["ticks"]}')
+    c.ok(all(st['from'] - .01 <= t <= st['to'] + .01 for t in st['ticks']), f'marks {st["ticks"]} in {st["from"]}..{st["to"]}', 'every distance mark of the cut is inside the window')
+    c.le(st['top'], whole['top'] - 1000, 'the cut\'s height scale refits to what is visible (lower than the whole cut\'s)', what=f'top {st["top"]} ft (whole {whole["top"]} ft)')
+    c.ok(st['whole'], 'the "Whole flight" button is not displayed on the zoomed cut', 'the button is shown in the head line')
+    c.eq(c.text('.mp-whole').strip(), row(c, 'winWhole'), 'its label is in the language of the run', what='button label')
+    c.eq(c.attr('.mp-whole', 'title'), row(c, 'winWholeHelp'), 'its help is in the language of the run', what='button title')
+    hit = c.js("""() => { const b = document.querySelector('.mp-whole'), r = b.getBoundingClientRect(), x = r.left + r.width / 2; let lo = null, hi = null;
+        for (let y = Math.max(0, r.top - 30); y < r.bottom + 40; y++) { const e = document.elementFromPoint(x, y); if (e && e.closest('.mp-whole') === b) { if (lo === null) lo = y; hi = y } }
+        return hi === null ? 0 : hi - lo + 1 }""")
+    c.ge(hit, 34, 'the touch zone is the primitive\'s 44 px centred on the 28 px button, its top clipped by the sheet\'s edge', what='touch zone height')
+    c.ge(c.box('.mp-whole')['w'], 44, 'finger-sized wide too', what='button width')
+    keys1 = legend_keys(c)
+    c.eq('strips' in keys1, st['strips'] == '1', 'the legend still says what the zoomed cut drew', what=f'legend {keys1}, strips drawn {st["strips"]}')
+    # to the profile: the same window; back to the weather: still there
+    c.tap('.mp-chip[data-view="profile"]')
+    c.until("() => !!document.querySelector('.mp-pc') && document.querySelector('.mp-dbody').hidden", what='the profile is back')
+    c.wait(300)
+    p = win_state(c)
+    c.eq([round(p['from'], 1), round(p['to'], 1)], [round(st['from'], 1), round(st['to'], 1)], 'the profile shows the same window as the cut', tol=.15, what='profile window after the switch')
+    c.ok(c.shown('.mp-whole'), 'the "Whole flight" button is not displayed on the profile', 'the button stays while the window is tight')
+    c.tap('.mp-chip[data-view="weather"]')
+    c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", what='the cut is back')
+    c.wait(300)
+    back = cut_state(c)
+    c.eq([round(back['from'], 1), round(back['to'], 1)], [round(st['from'], 1), round(st['to'], 1)], 'back on the cut: still the same window', tol=.15, what='cut window after the round trip')
+    # a pinch on the profile is seen on the cut too (one window, not two)
+    c.tap('.mp-chip[data-view="profile"]')
+    c.until("() => !!document.querySelector('.mp-pc') && document.querySelector('.mp-dbody').hidden", what='the profile again')
+    c.wait(300)
+    p0 = win_state(c)
+    pinch(c, px_of(c, p0, (p0['from'] + p0['to']) / 2), prof_y(c), 24, 120)
+    p1 = win_state(c)
+    c.ok(p1['to'] - p1['from'] < (p0['to'] - p0['from']) * .8, f'profile {p0["from"]}..{p0["to"]} -> {p1["from"]}..{p1["to"]}', 'the profile tightens further')
+    c.tap('.mp-chip[data-view="weather"]')
+    c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", what='the cut is back')
+    c.wait(300)
+    q = cut_state(c)
+    c.eq([round(q['from'], 1), round(q['to'], 1)], [round(p1['from'], 1), round(p1['to'], 1)], 'the cut follows what was done on the profile', tol=.15, what='cut window')
+    # the button gives everything back
+    c.tap('.mp-whole')
+    c.wait(300)
+    w = cut_state(c)
+    c.eq([w['from'], w['top']], [0, whole['top']], 'a tap on "Whole flight" gives the whole cut and its scale back', what='window start and top after the tap')
+    c.ok(abs(w['to'] - whole['to']) < .1 and not w['whole'], f'{w}', 'and hides itself')
+    c.tap('.mp-chip[data-view="profile"]')
+    c.until("() => !!document.querySelector('.mp-pc') && document.querySelector('.mp-dbody').hidden", what='the profile')
+    c.wait(300)
+    c.ok(abs(win_state(c)['to'] - whole['to']) < .2 and win_state(c)['from'] == 0, f'{win_state(c)}', 'the profile is whole too')
+    c.tap('.mp-chip[data-view="weather"]')
+    c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", what='the cut')
+    c.wait(300)
+    # a double tap on the zoomed cut: whole again, and nothing else opens (no slice: the sheet still shows the cut)
+    x, y = cut_xy(c)
+    pinch(c, x, y, 24, 160)
+    c.ok(cut_state(c)['to'] < whole['to'] / 2, 'the second pinch did not tighten the cut', 'zoomed again')
+    c.page.touchscreen.tap(x, y)
+    c.page.touchscreen.tap(x, y)
+    c.wait(500)
+    d = cut_state(c)
+    c.ok(d['from'] == 0 and abs(d['to'] - whole['to']) < .1, f'{d}', 'a double tap on the cut brings the whole flight back')
+    c.eq(d['kind'], 'weather', 'and opens nothing: the sheet still shows the cut', what='sheet content after the double tap')
+
+
+@case('D25b', 'One window: a sheet drag keeps it on the cut', 'D', tags=('sheet', 'maps'), screens=False, designs=('standard', 'cupertino'),
+      rule='V3 spec 7.1 rules 19 and 20: the zoomed cut is not redrawn under the finger while the sheet is dragged, and keeps its window')
+def d25b(c):
+    open_cut(c)
+    x, y = cut_xy(c)
+    pinch(c, x, y, 24, 192)
+    st = cut_state(c)
+    c.ok(st['to'] - st['from'] < 80, f'{st}', 'the cut is zoomed before the drag')
+    c.js(_DRAG_JS)
+    samples, during = still_drag(c, False)
+    c.eq({k: during.count(k) for k in dict.fromkeys(during)}, {}, 'nothing is redrawn or rewritten while the finger drags the sheet (cut included)', what='events during the drag')
+    c.ok(any(abs(s['panel']['h'] - samples[0]['panel']['h']) > 40 for s in samples), 'the sheet did not move', 'the drag moved the sheet')
+    c.settle()
+    c.wait(500)
+    end = cut_state(c)
+    c.eq([round(end['from'], 1), round(end['to'], 1)], [round(st['from'], 1), round(st['to'], 1)], 'the window is the same after the drag', what='cut window after the drag')
+    c.ok(end['whole'], 'the "Whole flight" button is gone after the drag', 'still shown')
