@@ -1752,7 +1752,9 @@ _D29_JS = """() => {
   const out = li.filter(l => { const r = l.getBoundingClientRect(); return r.right > br.right + 0.5 || [...l.querySelectorAll('*')].some(e => e.getBoundingClientRect().right > br.right + 0.5) }).length;
   const ar = also ? also.getBoundingClientRect() : null;
   return { pos: q('[data-module="maps"]').dataset.sheet, land: document.documentElement.classList.contains('f-land'), bodyW: body.clientWidth, bodyScrollW: body.scrollWidth, svgW: svg.getBoundingClientRect().width, svgH: svg.getBoundingClientRect().height,
-    cols: getComputedStyle(q('.mp-lv-list')).columnCount, names: [...document.querySelectorAll('.mp-lv-name')].map(e => [e.textContent, shown(e), e.textContent.length]), out,
+    cols: getComputedStyle(q('.mp-lv-list')).columnCount, listTop: q('.mp-lv-list').getBoundingClientRect().top, svgBottom: svg.getBoundingClientRect().bottom,
+    pitch: (() => { const r = [...document.querySelectorAll('svg.mp-lv rect.mp-lv-col')]; return r.length > 1 ? parseFloat(r[1].getAttribute('x')) - parseFloat(r[0].getAttribute('x')) : r.length ? parseFloat(r[0].getAttribute('width')) : 0 })(),
+    ncol: document.querySelectorAll('svg.mp-lv rect.mp-lv-col').length, nnum: [...document.querySelectorAll('svg.mp-lv text[font-weight="700"]:not(.mp-lv-unk)')].filter(t => /^\\d+$/.test(t.textContent)).length, names: [...document.querySelectorAll('.mp-lv-name')].map(e => [e.textContent, shown(e), e.textContent.length]), out,
     rows: li.map(l => l.getBoundingClientRect().height), lh: parseFloat(getComputedStyle(li[0]).lineHeight),
     under: li.map(l => { const n = l.querySelector('.mp-lv-name'), t = l.querySelector('.mp-lv-lim'); return t && n.getBoundingClientRect().bottom <= t.getBoundingClientRect().top + 1 ? Math.abs(t.getBoundingClientRect().left - n.getBoundingClientRect().left) : -1 }),
     also: ar ? { top: ar.top, bottom: ar.bottom, h: ar.height } : null, body: { top: br.top, bottom: br.bottom } } }"""
@@ -1775,7 +1777,12 @@ def d29_pos(c, want):
 def d29_check(c, what, fixture_also):
     g = c.js(_D29_JS)
     c.ge(g['bodyW'], 200, 'the body of the sheet has a width', what=f'{what}: body {g["bodyW"]} px')
-    c.le(round(g['svgW'] / g['bodyW'], 3), 0.401, 'the graph is at most 40 % of the body', what=f'{what}: graph {g["svgW"]:.0f} px of {g["bodyW"]} px')
+    # the only bound is 60 % of the body, except when the 14 px floor of thirteen columns needs more (the list then gives way: two lines per entry, or under the graph)
+    wide = g['svgW'] / g['bodyW'] > 0.601
+    c.ok(not wide or g['pitch'] <= 14.1, f'{what}: graph {g["svgW"]:.0f} px of {g["bodyW"]} px, pitch {g["pitch"]:.1f} px, list top {g["listTop"]:.0f}, graph bottom {g["svgBottom"]:.0f}',
+         'the graph is at most 60 % of the body, unless the 14 px floor of its columns needs more')
+    c.ge(round(g['pitch'], 1), 14, 'each column of the graph is at least 14 px wide', what=f'{what}: {g["ncol"]} columns, pitch {g["pitch"]:.1f} px, graph {g["svgW"]:.0f} px of {g["bodyW"]} px')
+    c.eq(g['nnum'], g['ncol'], 'every column carries its number', what=f'{what}: {g["nnum"]} numbers for {g["ncol"]} columns')
     c.le(g['bodyScrollW'], g['bodyW'] + 1, 'no horizontal scroll in the body', what=f'{what}: scrollWidth {g["bodyScrollW"]}, clientWidth {g["bodyW"]}')
     c.eq(g['out'], 0, 'no line of the list goes out of the body', what=f'{what}: {g["out"]} lines')
     for name, shown, n in g['names']:
@@ -1788,12 +1795,14 @@ def d29_check(c, what, fixture_also):
         a = g['also']
         c.ok(a is not None and a['h'] >= 40, f'{what}: "Aussi ici" {a}', 'the "Aussi ici" line is there, a 44 px target')
         # visible without scrolling, unless the list alone fills the body (thirteen entries, or two lines for each on a small default sheet: the body scrolls)
-        if max(g['svgH'], sum(g['rows']) + 2 * len(g['rows'])) + 54 <= g['body']['bottom'] - g['body']['top'] - 18:
+        lst = sum(g['rows']) + 2 * len(g['rows'])
+        stacked = g['listTop'] >= g['svgBottom'] - 1      # the list went under the graph (thirteen columns of 14 px on a narrow body): both stack
+        if (g['svgH'] + 8 + lst if stacked else max(g['svgH'], lst)) + 54 <= g['body']['bottom'] - g['body']['top'] - 18:
             c.ok(a['top'] >= g['body']['top'] - 1 and a['bottom'] <= g['body']['bottom'] + 1, f'{what}: "Aussi ici" {a}, body {g["body"]}', 'the "Aussi ici" line stays visible under the list')
     return g
 
 
-@case('D29', 'Airspaces sheet: names never cut to one character, graph at most 40 % (landscape column, narrow portrait)', 'D', tags=('sheet', 'maps'), screens=False,
+@case('D29', 'Airspaces sheet: names never cut to one character, the graph keeps its columns (14 px each, at most 60 % of the body), the list wraps (landscape column, narrow portrait)', 'D', tags=('sheet', 'maps'), screens=False,
       rule='user 26 Oct (iPhone landscape, "4 espaces sur ce point"): "Bug affichage de texte coupé"')
 def d29(c):
     docs = [['cache/maps/ui.json', {'preset': 'low', 'layers': {}}, 'cache']]

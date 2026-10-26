@@ -2941,8 +2941,8 @@ const ZONE_COL = {
 /** Contenu « n espaces sur ce point » du bloc de données : un graphique comme le profil vertical (axe des altitudes, une
  *  colonne par espace entre son plancher et son plafond, numérotée), à gauche, puis la liste numérotée en notation SIA,
  *  du plancher le plus bas au plus haut. Le graphique est dessiné à l'échelle 1 pour la place du bloc (bw × bh px) : la
- *  largeur que demandent ses colonnes (22 px au plus sur un téléphone, moins de 600 px ; 400 px au plus sinon), 40 % du
- *  bloc au plus et sans prendre à la liste la place d'un nom de 12 caractères, et jamais plus haut que le bloc. Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas sous la main ici, la
+ *  largeur que demandent ses colonnes (14 px au moins, 22 px au plus sur un téléphone, moins de 600 px ; 400 px au plus sinon), 60 % du
+ *  bloc au plus (les 14 px passent avant : la liste cède, elle passe sur deux lignes puis sous le graphique), et jamais plus haut que le bloc. Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas sous la main ici, la
  *  lecture des terrains est asynchrone : la liste garde la notation SIA « ASFC ») ; plafond inconnu : colonne pointillée « ? ». */
 function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
   bh -= also?.length ? 56 : 0; // la ligne repliée « Aussi ici » (44 px + son espacement) reste dans la vue, sous le graphique
@@ -2982,14 +2982,20 @@ function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
     top = Math.ceil(raw / step) * step,
     narrow = bw < 600,
     L = narrow ? 40 : 46,
-    // la liste garde la place d'un nom de 12 caractères (+ le numéro) : le graphique cède avant elle, et jamais plus de 40 % du bloc
-    // (colonne paysage comme portrait étroit ; la liste passe sur deux lignes par espace plutôt que de rogner le nom à un caractère)
+    // le graphique garde la largeur que ses colonnes demandent (22 px au plus sur un téléphone, 14 au moins : le numéro reste lisible),
+    // l'axe et ses libellés, la marge ; il n'est borné que par 60 % du bloc. Il ne cède jamais à la liste : c'est la liste qui passe sur
+    // deux lignes par espace (le nom, puis les niveaux), et, si même un nom de 8 caractères n'y tient plus à côté du graphique, qui
+    // passe dessous (retour à la ligne du corps, `flex-wrap` et la base de la liste en CSS). Les 14 px l'emportent sur les 60 % quand
+    // beaucoup d'espaces sont lus sur un corps étroit (13 espaces sur 300 px : 60 % ne laissent que 10 px à chaque colonne).
+    floorW = L + 6 + rows.length * 14,
+    // entre 14 et 22 px par colonne, la colonne la plus large qui laisse à la liste la place des niveaux de l'espace le plus long sur la
+    // ligne sous son nom (sinon « 800 ASFC|1800 ASFC » serait rogné) ; jamais sous 14 px
     fs = (el && parseFloat(getComputedStyle(el).fontSize)) || 14,
-    listMin = Math.round(fs * .95 * (2.4 + 12 * .62)),
-    cap = Math.max(L + 30, Math.min(bw * .4, bw - 16 - 12 - listMin)),
-    // une colonne par espace dessiné : la largeur que demandent ses colonnes (22 px au plus sur un téléphone, 14 au moins quand la place
-    // le permet), l'axe et ses libellés, plafonnée par `cap` (plus étroites quand il y en a beaucoup)
-    W = Math.round(narrow ? Math.min(cap, L + 6 + rows.length * 22) : Math.min(400, cap, Math.max(240, L + 12 + rows.length * 36))),
+    tailPx = Math.max(0, ...list.map(a => a.lower == null && a.upper == null ? 0 : `${MapsRender.siaLimit(a.lower)}|${MapsRender.siaLimit(a.upper)}`.length + (a.cls ? 4 : 0))) * fs * .95 * .92 *
+    .6,
+    pitch = Math.max(14, Math.min(22, (bw - 12 - (fs * .95 * 2.4 + tailPx + 4) - L - 6) / Math.max(1, rows.length))),
+    W = Math.min(bw, Math.round(Math.max(floorW, narrow ? Math.min(bw * .6, L + 6 + rows.length * pitch) : Math.min(400, bw * .6, Math.max(
+      240, L + 12 + rows.length * 36))))),
     // avec la ligne « Aussi ici », le plancher de la hauteur laisse la place de la ligne
     H = Math.round(Math.max(also?.length ? 90 : 110, Math.min(300, bh - 16))),
     T = unl ? 16 : 6,
@@ -4920,11 +4926,11 @@ const STYLE = `
 [data-module="maps"] .mp-wxlink span{color:var(--sog-accent);text-decoration:underline}
 [data-module="maps"] .mp-dbody{box-sizing:border-box;margin:0 8px 8px;padding:6px 8px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);font-size:.92em;line-height:1.35}
 [data-module="maps"] .mp-dbody p{margin:2px 0}
-[data-module="maps"] .mp-lv-body{display:flex;align-items:flex-start;gap:12px}
+[data-module="maps"] .mp-lv-body{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 12px}
 [data-module="maps"] .mp-lv-also{margin:8px 0 0}
 [data-module="maps"] .mp-lv-also>p{margin:0;overflow-wrap:anywhere}
 [data-module="maps"] .mp-lv{flex:none;position:sticky;top:0;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
-[data-module="maps"] .mp-lv-list{flex:1 1 auto;min-width:0;margin:0;padding:0;list-style:none;column-width:19em;column-gap:16px;font-size:.95em;line-height:1.25}
+[data-module="maps"] .mp-lv-list{flex:1 1 calc(2.5em + 9ch);min-width:0;margin:0;padding:0;list-style:none;column-width:19em;column-gap:16px;font-size:.95em;line-height:1.25}
 [data-module="maps"] .mp-lv-list li{display:flex;gap:6px;align-items:baseline;break-inside:avoid;margin-bottom:2px;min-width:0;white-space:nowrap}
 /* le texte d'une ligne : le nom, puis les niveaux et la classe ; la base du nom (10ch) décide du retour à la ligne, le nom s'étend jusqu'à
    sa longueur (jamais au-delà) et ne se rogne que sur une ligne pleine, donc jamais sous 10ch ; les niveaux, repassés sous le nom, y sont alignés */

@@ -1349,3 +1349,21 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **The 24 Oct rule "one line per airspace" (D11) gives way**: two lines at most; D11's `lv_text` allows 2.4 lines.
   - **Test**: D29 (five designs; 844 x 390, 390 x 844, 360 x 780; default and expanded; the D26 fixture with the line and thirteen spaces); red on the
     previous code in landscape.
+
+- **26 Oct 2026 — The graph keeps its width, the list wraps** (lot `v3-maps-graphe-priorite`, SPEC § 4 nonies list). The user, on the previous lot (graph at
+  most 40 %, columns down to 6 px with thirteen spaces): "J'aurais préféré garder la largeur du graphique, mais un texte sur 2 lignes ? Objectif :
+  lisibilité des zones du graphe." The priority is reversed.
+  - **The graph**: the width its columns ask for, **14 px at least** (the number stays readable), 22 at most, plus the axis `L` and the margin, bounded by
+    **60 % of the body**. Below 600 px the column is the widest one (14 to 22) that leaves the list the room of the longest levels text under the
+    name (so "800 ASFC|1800 ASFC" is not clipped); that estimate needs the body's font size, hence `el` is passed again to `levelsHtml`.
+  - **The list**: flex-wrap on the body; the list has a base of `2.5em + 9ch`. Beside the graph while that base fits (the entry takes two lines: the name,
+    then the levels and the class), under it otherwise, on the whole width: a name keeps its 8 characters by the wrap, never by trimming the graph. The
+    name alone on its line with the ellipsis, the levels below, is the entry's own behaviour (`.mp-lv-txt`, kept) when even the full-width list is too
+    narrow.
+  - **A conflict in the brief, decided here**: at 301 px of body, thirteen columns of 14 px, the axis and the margin are 228 px, 76 % of the body, so
+    "14 px each" and "60 % at most" cannot both hold. The 14 px come first (the user's aim is the legibility of the zones); the 60 % bound holds for every
+    other case. With thirteen spaces on the landscape column the list therefore goes under the graph, full width; on a 372 px portrait body the graph is
+    61 % (228 px) and the list stays beside it. If the user prefers the 60 % bound, the columns of thirteen spaces would be 10 px: to say.
+  - **Kept from the previous lot**: text block with wrap, the separator dot never orphaned, graph floor of 90 px with "Aussi ici", CSS columns beyond 2 x 19em.
+  - **Test**: D29 adapted (columns >= 14 px with their numbers, graph <= 60 % except the floor case, names, two lines, no overflow, "Aussi ici" 44 px; the
+    visibility rule counts a list stacked under the graph); red on the previous code (13 columns of 5.7 px at 301 px).
