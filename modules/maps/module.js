@@ -2940,11 +2940,11 @@ const ZONE_COL = {
 };
 /** Contenu « n espaces sur ce point » du bloc de données : un graphique comme le profil vertical (axe des altitudes, une
  *  colonne par espace entre son plancher et son plafond, numérotée), à gauche, puis la liste numérotée en notation SIA,
- *  du plancher le plus bas au plus haut. Le graphique est dessiné à l'échelle 1 pour la place du bloc (bw × bh px) : 44 %
- *  de sa largeur sur un téléphone (moins de 600 px), sinon la largeur que demandent les colonnes (400 px au plus), et
- *  jamais plus haut que le bloc. Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas sous la main ici, la
+ *  du plancher le plus bas au plus haut. Le graphique est dessiné à l'échelle 1 pour la place du bloc (bw × bh px) : la
+ *  largeur que demandent ses colonnes (22 px au plus sur un téléphone, moins de 600 px ; 400 px au plus sinon), 40 % du
+ *  bloc au plus et sans prendre à la liste la place d'un nom de 12 caractères, et jamais plus haut que le bloc. Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas sous la main ici, la
  *  lecture des terrains est asynchrone : la liste garde la notation SIA « ASFC ») ; plafond inconnu : colonne pointillée « ? ». */
-function levelsHtml(list, bw = 360, bh = 200, also = []) {
+function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
   bh -= also?.length ? 56 : 0; // la ligne repliée « Aussi ici » (44 px + son espacement) reste dans la vue, sous le graphique
   // la même lecture des limites que la coupe verticale (SiaAero.limitRead) : « 800 ASFC » est 800 ft au-dessus du sol, pas le sol
   const read = window.SiaAero?.limitRead || (() => ({
@@ -2982,10 +2982,16 @@ function levelsHtml(list, bw = 360, bh = 200, also = []) {
     top = Math.ceil(raw / step) * step,
     narrow = bw < 600,
     L = narrow ? 40 : 46,
-    // une colonne par espace dessiné, plus étroite quand il y en a beaucoup (jusqu'à la moitié du bloc sur un téléphone)
-    W = Math.round(narrow ? Math.max(Math.min(bw * .3, L + 8 + rows.length * 20), Math.min(bw * .5, L + 8 + rows.length * 12)) : Math.min(
-      400, bw * .45, Math.max(240, L + 12 + rows.length * 36))),
-    H = Math.round(Math.max(110, Math.min(300, bh - 16))),
+    // la liste garde la place d'un nom de 12 caractères (+ le numéro) : le graphique cède avant elle, et jamais plus de 40 % du bloc
+    // (colonne paysage comme portrait étroit ; la liste passe sur deux lignes par espace plutôt que de rogner le nom à un caractère)
+    fs = (el && parseFloat(getComputedStyle(el).fontSize)) || 14,
+    listMin = Math.round(fs * .95 * (2.4 + 12 * .62)),
+    cap = Math.max(L + 30, Math.min(bw * .4, bw - 16 - 12 - listMin)),
+    // une colonne par espace dessiné : la largeur que demandent ses colonnes (22 px au plus sur un téléphone, 14 au moins quand la place
+    // le permet), l'axe et ses libellés, plafonnée par `cap` (plus étroites quand il y en a beaucoup)
+    W = Math.round(narrow ? Math.min(cap, L + 6 + rows.length * 22) : Math.min(400, cap, Math.max(240, L + 12 + rows.length * 36))),
+    // avec la ligne « Aussi ici », le plancher de la hauteur laisse la place de la ligne
+    H = Math.round(Math.max(also?.length ? 90 : 110, Math.min(300, bh - 16))),
     T = unl ? 16 : 6,
     B = H - 6,
     y = ft => B - (Math.min(ft, top) / top) * (B - T),
@@ -3008,14 +3014,15 @@ function levelsHtml(list, bw = 360, bh = 200, also = []) {
       `<text class="mp-lv-unk" x="${(x + colW / 2).toFixed(1)}" y="${(y0 + 20).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="${r.col}" font-weight="700">?</text>`;
   });
   const items = rows.map((r, i) => {
-    // une ligne par espace : « 1 · TMA NANTES 4 · FL055|FL065 · D » (le nom cède à l'ellipse, les niveaux et la classe restent) ;
+    // une ligne par espace : « 1 · TMA NANTES 4 · FL055|FL065 · D » ; faute de place, la ligne passe sur deux (le nom, puis les niveaux
+    // et la classe sous lui) : le nom ne cède à l'ellipse qu'au-delà d'une ligne pleine, jamais à moins de 8 caractères ;
     // l'activation et les informations, quand il y en a, vont dans l'infobulle
     const x = r.a,
       name = [x.type, x.name].filter(Boolean).join(' '),
       lim = x.lower == null && x.upper == null ? '' : `${MapsRender.siaLimit(x.lower)}|${MapsRender.siaLimit(x.upper)}`,
       tail = [lim, x.cls].filter(Boolean).join(' · '),
       note = [x.act, x.info].filter(Boolean).join(' · ');
-    return `<li${note ? ` title="${esc(note)}"` : ''}><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><b class="mp-lv-name">${esc(name)}</b>${tail ? `<span class="mp-lv-lim f-muted">${esc(tail)}</span>` : ''}</li>`;
+    return `<li${note ? ` title="${esc(note)}"` : ''}><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><span class="mp-lv-txt"><b class="mp-lv-name">${esc(name)}</b>${tail ? `<span class="mp-lv-lim f-muted">${esc(tail)}</span>` : ''}</span></li>`;
   }).join('');
   return `<div class="mp-lv-body"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>${alsoHtml(also)}`;
 }
@@ -3039,7 +3046,7 @@ function showLv() {
   openData('lv', `lv:${list.map(a => a.id || a.name || '').join('|')}#${also.join('|')}`, list.length === 1 ? tt(TX.levelsTitle1) : tt(
     TX.levelsTitle, {
       n: list.length
-    }), (w, h) => levelsHtml(list, w, h, also));
+    }), (w, h, el) => levelsHtml(list, w, h, also, el));
 }
 // ---------------------------------------------------------------- le bloc de données (sous la carte)
 // La vue est fixe (meta.fixed) : en-tête du cadre, la carte, puis le bloc de données, qui est une FEUILLE de hauteur fixe à
@@ -4919,10 +4926,14 @@ const STYLE = `
 [data-module="maps"] .mp-lv{flex:none;position:sticky;top:0;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
 [data-module="maps"] .mp-lv-list{flex:1 1 auto;min-width:0;margin:0;padding:0;list-style:none;column-width:19em;column-gap:16px;font-size:.95em;line-height:1.25}
 [data-module="maps"] .mp-lv-list li{display:flex;gap:6px;align-items:baseline;break-inside:avoid;margin-bottom:2px;min-width:0;white-space:nowrap}
-[data-module="maps"] .mp-lv-name{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
-[data-module="maps"] .mp-lv-lim{flex:none;font-size:.92em}
+/* le texte d'une ligne : le nom, puis les niveaux et la classe ; la base du nom (10ch) décide du retour à la ligne, le nom s'étend jusqu'à
+   sa longueur (jamais au-delà) et ne se rogne que sur une ligne pleine, donc jamais sous 10ch ; les niveaux, repassés sous le nom, y sont alignés */
+[data-module="maps"] .mp-lv-txt{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;column-gap:10px;align-items:baseline;overflow:hidden}
+[data-module="maps"] .mp-lv-name{flex:1 1 10ch;max-width:max-content;min-width:0;overflow:hidden;text-overflow:ellipsis}
+[data-module="maps"] .mp-lv-lim{flex:none;position:relative;font-size:.92em}
 [data-module="maps"] .mp-lv-n::after{content:" ·";font-weight:400}
-[data-module="maps"] .mp-lv-lim::before{content:"· "}
+/* le point qui sépare le nom des niveaux est posé dans l'écart avant eux : en début de seconde ligne il sort du texte (rogné) */
+[data-module="maps"] .mp-lv-lim::before{content:"·";position:absolute;right:100%;width:10px;text-align:center}
 [data-module="maps"] .mp-lv-n{font-weight:700;min-width:1.4em;text-align:right}
 [data-module="maps"] .mp-lvl{display:flex;align-items:center;gap:8px}
 [data-module="maps"] .mp-lvl .f-btn{margin:0;min-width:var(--sog-touch);font-weight:700}

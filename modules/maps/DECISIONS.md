@@ -1332,3 +1332,20 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - Written only when the value changes (`openData` compares the html, `followTip` the bubble); folded state not kept.
   - **Test**: D28 (x4 langs; screen run for the bubble).
 
+
+- **26 Oct 2026 — The airspaces sheet in the landscape column: the name is never cut to one character** (lot `v3-maps-liste-paysage`). The user, on an
+  iPhone in landscape, sheet "4 espaces sur ce point": "Bug affichage de texte coupé" (the names read "T", "(", "·" while the levels and the class stayed
+  whole). Cause: the graph took `W` from `bw` (the body of the column, about 300 px: `narrow`, 30 to 50 % of it, 128 px at four columns) and the list
+  got the rest (about 170 px); a line was `nowrap` with the levels `flex: none`, so the name took what was left, after the number and the levels: nothing.
+  - **The graph**: the width its columns need (22 px each on a phone, the axis `L` and a margin), at most **40 %** of the body, and never so wide that the
+    list loses the room of a 12-character name plus its number (`listMin`, from the font size of the body, passed to `levelsHtml` as the third
+    argument of the build function). The 13-space graph is thinner (6 px columns at 300 px: the cap wins, as asked).
+  - **The list**: each entry is a number and a `.mp-lv-txt` (name, levels): a wrapping flex row whose name has a base of 10ch (decides the wrap) and
+    grows to its length; if the levels do not fit after it they go to a second line, aligned under the name (the separator dot hangs outside the clipped
+    box at the start of a line, so no stray "·"); the ellipsis stays for a name longer than a full line, never under 10ch. No CSS column unless the
+    list is wider than twice 19em (`column-width`, as before).
+  - **Seen on the way**: with the "Aussi ici" line the graph floor of 110 px pushed the line 5 px out of the default sheet at 390 x 844; the floor is
+    90 px when the line exists (the 56 px of the previous lot stay).
+  - **The 24 Oct rule "one line per airspace" (D11) gives way**: two lines at most; D11's `lv_text` allows 2.4 lines.
+  - **Test**: D29 (five designs; 844 x 390, 390 x 844, 360 x 780; default and expanded; the D26 fixture with the line and thirteen spaces); red on the
+    previous code in landscape.

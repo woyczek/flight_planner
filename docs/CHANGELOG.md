@@ -16,6 +16,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `docs/technique/V3_APP_DONNEES.md`, `V3_SPECIFICATION.md` § 10.18 and § 10.19, aerodb DECISIONS; documentation only, no code) — user 26 Oct:
   inventory of the 17 sources and of their chains (7 with a step by hand), the screen `#data` (fetch · compile · push · clean, per row and for all), the
   launcher routes it needs, what runs without the launcher, nine lots; and the project file of an iOS / Android application on the same screen.
+- **Map: the airspaces sheet no longer cuts the names to one character in the landscape column** (`modules/maps/module.js` `levelsHtml` and the
+  `.mp-lv-*` styles, `tests/v3` D29, D11, SPEC, DECISIONS) — user 26 Oct, iPhone in landscape: "Bug affichage de texte coupé". The graph now takes the
+  width its columns need, at most 40 % of the body and always leaving the list the room of a 12-character name; when an entry is too long for its line
+  it takes two (the name, then the levels and the class aligned under it) and a name is never cut under 8 characters (the ellipsis stays for a name
+  longer than a full line). With the "Aussi ici" line the graph keeps a lower floor so the line stays in the default sheet. D29.
 - **Map: the spaces left out of the list are named on one folded line "Aussi ici"** (`modules/maps/render.js` `airspacesAround`,
   `modules/maps/module.js` `alsoHtml` / `alsoTip`, manual of the Map x4, `tests/v3` D28, SPEC § 4 nonies, DECISIONS) — user 26 Oct: "SIV FIR etc.
   C'était un workaround pour ne pas avoir de colonnes nonsense. Soit une coche active tout (FIR ?) soit ça n'a pas d'intérêt". No checkbox: the graph

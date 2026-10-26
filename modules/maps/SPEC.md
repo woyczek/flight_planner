@@ -70,7 +70,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - mid: plus the airway points and the minimum level under each name ("F195");
   - near: everything, plus each segment's distance (NM) above the name, the true tracks near both ends ("097°"), VRP
     and obstacles.
-- **Airspaces list in the sheet** (`levelsHtml`): one line per airspace, "1 · TMA NANTES 4 · FL055|FL065 · D" (name ellipsed first, levels and class kept), at 0.95 of the body size; activation and information in the tooltip; the level graph narrows (30 % of the width) to leave the list room (case D11).
+- **Airspaces list in the sheet** (`levelsHtml`): one line per airspace, "1 · TMA NANTES 4 · FL055|FL065 · D", at 0.95 of the body size; when the line is too short the entry takes two lines (the name, then the levels and the class aligned under it), a name is never cut under 8 characters (the ellipsis is for names longer than a full line); activation and information in the tooltip; the level graph takes the width its columns need (14 to 22 px each, the axis and its labels), at most 40 % of the body, and the list keeps the room of a 12-character name (cases D11, D29).
 - **Airways** (`drawAirways`; all the strokes first, then the names, so that no stroke crosses a name, 24 Oct, case D18), as en-route charts: low airways solid blue, high airways dashed purple; the name in a
   box laid along the segment (always readable left to right). The segment ends are drawn after them
   (`drawFixes`: a triangle and the id; a navaid at the same place is drawn with its own symbol instead). The boxes

@@ -641,13 +641,14 @@ _LV_JS = """() => { const q = s => document.querySelector(s), fs = e => parseFlo
 
 
 def lv_text(c, what):
-    """User 24 Oct (landscape shot of "3 espaces sur ce point"): the list is in the size of the sheet's body text and one line per airspace
-    ("1 · TMA NANTES 4 · FL055|FL065 · D"), never a wrap by word; the levels and the class stay visible, only the name is ellipsed."""
+    """User 24 Oct (landscape shot of "3 espaces sur ce point"): the list is in the size of the sheet's body text, one line per airspace
+    ("1 · TMA NANTES 4 · FL055|FL065 · D"), never a wrap by word; the levels and the class stay visible.  User 26 Oct ("Bug affichage de
+    texte coupé", D29): when the line is too short the entry takes two lines (the name, the levels under it) instead of an ellipsed name."""
     g = c.js(_LV_JS)
     c.le(abs(round(g['list'] - g['body'], 1)), 1, 'the list has the font size of the sheet body (+-1 px)', what=f'{what}: list {g["list"]:.1f} px, body {g["body"]:.1f} px')
     c.ge(g['n'], 2, 'the seeded airspaces are listed', what=f'{what}: entries')
     for i, h in enumerate(g['rows']):
-        c.le(round(h / g['lh'], 2), 1.2, f'entry {i + 1} is {h:.0f} px high for a {g["lh"]:.0f} px line', 'one line per airspace (at most 2 in any case)')
+        c.le(round(h / g['lh'], 2), 2.4, f'entry {i + 1} is {h:.0f} px high for a {g["lh"]:.0f} px line', 'one line per airspace, two when the line is too short (never more)')
     c.ok(all(g['tail']), f'levels visible per entry: {g["tail"]}', 'the levels and the class stay visible (the name is ellipsed, not them)')
 
 
@@ -1735,3 +1736,80 @@ def d28(c):
     tap_airspaces(c)
     c.eq(c.js("document.querySelectorAll('.mp-lv-list li').length"), 4, 'the four drawn spaces', what='entries')
     c.eq(c.js("document.querySelectorAll('details.mp-lv-also').length"), 0, 'nothing left out on this point: no "Aussi ici" line', what='lines')
+
+
+# ------------------------------------------------------------------------------------------------------ D29
+# D29 (user 26 Oct, iPhone in landscape, sheet "4 espaces sur ce point" in the column of html.f-land: "Bug affichage de texte coupé"): the graph kept
+# its width and the names of the list were cut to ONE character ("T · 4500|FL065 · E") while the levels and the class stayed whole.  The graph
+# takes the width its columns need, at most 40 % of the body; a name is never cut under 8 characters: when the line is too short it takes two
+# lines (the name, then the levels and the class under it); the ellipsis stays for very long names on a full line.
+_D29_JS = """() => {
+  const q = s => document.querySelector(s), body = q('.mp-dbody'), br = body.getBoundingClientRect(), svg = q('svg.mp-lv'), also = q('details.mp-lv-also');
+  const shown = e => { const t = e.firstChild, r = e.getBoundingClientRect(); if (!t || t.nodeType !== 3) return 0; const trunc = e.scrollWidth > e.clientWidth + 1, rg = document.createRange(); let n = 0;
+    for (let i = 0; i < t.length; i++) { rg.setStart(t, i); rg.setEnd(t, i + 1); const b = rg.getBoundingClientRect(); if (b.right <= r.right + 0.5 && b.left >= r.left - 0.5) n++ }
+    return trunc ? Math.max(0, n - 1) : t.length };      // an ellipsis takes the place of the last character that fits
+  const li = [...document.querySelectorAll('.mp-lv-list li')];
+  const out = li.filter(l => { const r = l.getBoundingClientRect(); return r.right > br.right + 0.5 || [...l.querySelectorAll('*')].some(e => e.getBoundingClientRect().right > br.right + 0.5) }).length;
+  const ar = also ? also.getBoundingClientRect() : null;
+  return { pos: q('[data-module="maps"]').dataset.sheet, land: document.documentElement.classList.contains('f-land'), bodyW: body.clientWidth, bodyScrollW: body.scrollWidth, svgW: svg.getBoundingClientRect().width, svgH: svg.getBoundingClientRect().height,
+    cols: getComputedStyle(q('.mp-lv-list')).columnCount, names: [...document.querySelectorAll('.mp-lv-name')].map(e => [e.textContent, shown(e), e.textContent.length]), out,
+    rows: li.map(l => l.getBoundingClientRect().height), lh: parseFloat(getComputedStyle(li[0]).lineHeight),
+    under: li.map(l => { const n = l.querySelector('.mp-lv-name'), t = l.querySelector('.mp-lv-lim'); return t && n.getBoundingClientRect().bottom <= t.getBoundingClientRect().top + 1 ? Math.abs(t.getBoundingClientRect().left - n.getBoundingClientRect().left) : -1 }),
+    also: ar ? { top: ar.top, bottom: ar.bottom, h: ar.height } : null, body: { top: br.top, bottom: br.bottom } } }"""
+
+
+def d29_pos(c, want):
+    """Brings the sheet to a position ('default', 'expanded'): a tap on the handle in the landscape column (two positions), a drag in portrait."""
+    cur = c.js("document.querySelector('[data-module=\"maps\"]').dataset.sheet")
+    if cur == want:
+        return
+    if c.js("document.documentElement.classList.contains('f-land')"):
+        c.tap('.f-sheet-grip')
+    else:
+        c.drag('.f-sheet-grip', -420 if want == 'expanded' else 420)
+    c.until(f"document.querySelector('[data-module=\"maps\"]').dataset.sheet === '{want}'", what=f'the sheet goes to {want}')
+    c.settle()
+    c.wait(400)
+
+
+def d29_check(c, what, fixture_also):
+    g = c.js(_D29_JS)
+    c.ge(g['bodyW'], 200, 'the body of the sheet has a width', what=f'{what}: body {g["bodyW"]} px')
+    c.le(round(g['svgW'] / g['bodyW'], 3), 0.401, 'the graph is at most 40 % of the body', what=f'{what}: graph {g["svgW"]:.0f} px of {g["bodyW"]} px')
+    c.le(g['bodyScrollW'], g['bodyW'] + 1, 'no horizontal scroll in the body', what=f'{what}: scrollWidth {g["bodyScrollW"]}, clientWidth {g["bodyW"]}')
+    c.eq(g['out'], 0, 'no line of the list goes out of the body', what=f'{what}: {g["out"]} lines')
+    for name, shown, n in g['names']:
+        c.ge(shown, min(8, n), 'a name shows at least 8 characters (all of it when shorter)', what=f'{what}: {name!r} shows {shown} of {n}')
+    for i, h in enumerate(g['rows']):
+        c.le(round(h / g['lh'], 2), 2.4, 'an entry is at most two lines', what=f'{what}: entry {i + 1} is {h:.0f} px for a {g["lh"]:.0f} px line')
+        if h / g['lh'] > 1.4:
+            c.le(g['under'][i], 1, 'on two lines the levels are aligned under the name', what=f'{what}: entry {i + 1} levels start {g["under"][i]:.1f} px off the name')
+    if fixture_also:
+        a = g['also']
+        c.ok(a is not None and a['h'] >= 40, f'{what}: "Aussi ici" {a}', 'the "Aussi ici" line is there, a 44 px target')
+        # visible without scrolling, unless the list alone fills the body (thirteen entries, or two lines for each on a small default sheet: the body scrolls)
+        if max(g['svgH'], sum(g['rows']) + 2 * len(g['rows'])) + 54 <= g['body']['bottom'] - g['body']['top'] - 18:
+            c.ok(a['top'] >= g['body']['top'] - 1 and a['bottom'] <= g['body']['bottom'] + 1, f'{what}: "Aussi ici" {a}, body {g["body"]}', 'the "Aussi ici" line stays visible under the list')
+    return g
+
+
+@case('D29', 'Airspaces sheet: names never cut to one character, graph at most 40 % (landscape column, narrow portrait)', 'D', tags=('sheet', 'maps'), screens=False,
+      rule='user 26 Oct (iPhone landscape, "4 espaces sur ce point"): "Bug affichage de texte coupé"')
+def d29(c):
+    docs = [['cache/maps/ui.json', {'preset': 'low', 'layers': {}}, 'cache']]
+    for fixture, also, label in ((D26_AS + D28_ALSO, True, '4 spaces + Aussi ici'), (D26_13 + D26_FLAT, True, '13 spaces')):
+        for w, h in ((844, 390), (390, 844), (360, 780)):
+            c.page.set_viewport_size({'width': w, 'height': h})
+            c.open('maps', flight=True, docs=docs, airspaces=fixture)
+            c.wait(1500)
+            c.settle()
+            tap_airspaces(c)
+            c.settle()
+            c.wait(400)
+            c.eq(c.js("document.documentElement.classList.contains('f-land')"), w > h, 'the landscape column (html.f-land) in 844 x 390 only', what=f'{w} x {h}')
+            for pos in ('default', 'expanded'):
+                d29_pos(c, pos)
+                sh = os.environ.get('D29_SHOT')
+                if sh:
+                    c.page.screenshot(path=f'{sh}_{c.design}_{label[:2].strip()}_{w}x{h}_{pos}.png')
+                d29_check(c, f'{label}, {w} x {h}, {pos}', also)
