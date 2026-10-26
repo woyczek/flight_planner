@@ -330,6 +330,17 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       per-type thresholds. ASFC / AGL heights are read as heights above the ground, never as "unknown"; an unreadable limit
       is never turned into UNL. One filter function for the profile and the list; the sheet's count is the count after
       filtering. Lot `v3-maps-asfc`.
+      **Amended (relay, 26 Oct, after the user: "SIV FIR etc. C'était un workaround pour ne pas avoir de colonnes nonsense.
+      Soit une coche active tout (FIR ?) soit ça n'a pas d'intérêt (si ces espaces ne varient que peu). Objectif ergonomie
+      et infos pertinentes. À toi de trancher avec plusieurs cas d'usages et exemple (endroits simples, endroits chargés)")**:
+      no checkbox. Use cases: (a) quiet countryside at FL100 near Poitiers — the vertical question is "what do I cross":
+      CTA Poitiers FL115–FL145 and R 49 N1; the FIR and the SIV Poitiers are not volumes to cross but the service to call,
+      useful as a name, never as a column; (b) Paris area, thirteen volumes and more — the graph is full, FIR / UIR / SIV
+      would add three surface-to-ceiling columns and no information; (c) low-level VFR — the SIV is the information
+      service to call, its name matters, its height does not. Decision: the graph and the profile never draw them (rule
+      kept); the "n espaces sur ce point" sheet and the hover tooltip end with **one folded line "Aussi ici : FIR Paris ·
+      SIV Poitiers · …"** (names only, no column, not counted in the title, folded by default, ×4); no setting. Lot
+      `v3-maps-aussi-ici`.
       - **Done for the profile** (relay cloud, lot `v3-profil-zoom`, 25 Oct): `modules/maps/lib/axis_window.js` (the gesture, written once), a `window`
         option of `MapsProfile.draw` (the vertical axis refits to the window, the distance marks take a round step, `xOf` / `sOf` read the
         window so the cursor and the airspace reading are unchanged), the "Whole flight" text button in the legend row (no chip), the window
@@ -541,3 +552,19 @@ redesigned for touch at that point.
        builder tools** (the only exception to "standard library only"; never the launcher, never the page); the
        application gets a **PDF reader of its own** for the links to the VAC charts (and the eAIP pages) — a frame
        primitive or an aerodb view, to specify. Lot in progress: session `v3-aerodb-proc`.
+   18. **A V3 page to regenerate the data, without V2** (user, 26 Oct: "Envisager une page dédiée régénération des
+       données, sans passer par la v2 (récupérer fichiers en cache local, compiler, pousser, nettoyer)"): one screen behind
+       Administration (settings owns the card, aerodb owns the builders) listing every source (SIA zip / eAIP per cycle,
+       VAC extracts, airways, FAA CIFP, world weather…) with its state (cycle, fetched into the local cache, compiled,
+       published, stale) and four buttons per source or for all: **fetch** (into the workstation's cache), **compile**
+       (the builders, standard library + optional pypdf, through the launcher), **push** (the data repository), **clean**
+       (old cycles); nothing by hand, the page chains and shows the progress; the V2 maintenance pages become a fallback,
+       then go. Open: which steps can run without the launcher (in-browser parsers such as `shared/sia_base.js` versus
+       the Python builders). To specify by aerodb + settings before a lot.
+   19. **A dedicated data application (iOS, Android)** (user, 26 Oct: "L'appli est en bonne voie. On peut imaginer une
+       appli dédiée au parsing et à la compilation de toutes ces données : iOS, android. Chantier dédié."): a separate
+       project — an application of the suite, "Données", on the frame, whose only job is fetching, parsing, compiling
+       and publishing the aeronautical data from a phone or tablet. Implications to study first: builders in JavaScript
+       (no Python on a phone), the SIA zip read in the browser (streams, memory), publication by the GitHub API with the
+       device's token, the same Capacitor pipeline as Pilot. No lot now; a project file (`docs/technique/
+       V3_APP_DONNEES.md`) when the user opens the project. § 10.18 is its first step on the workstation.
