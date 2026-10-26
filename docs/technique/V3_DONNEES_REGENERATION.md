@@ -206,6 +206,12 @@ version — G5), *age* (V2's rules, `aeroAge` in `shared/maintenance_page.js`: A
 X-Plane against its label, NAT after 12 hours, anything else after 28 days), *source newer* (fetched after the last
 compile, or the inputs fingerprint changed), *not pushed*. No stale reason: *up to date*.
 
+**User, 26 Oct ("Ce fichier arrive chez l'utilisateur dans « download » (poste et/ou téléphone) pour l'import")**: a
+hand-downloaded file (SIA zip, CIFP zip, NATS zip) is **picked up from the Downloads folder in one gesture**: on the
+workstation the launcher lists it (`GET /__setup/downloads?glob=…`, the NATS pick-up route) and takes the newest cycle;
+on a phone the file picker (`accept=".zip"`, the help says "Fichiers › Téléchargements": iOS opens no given folder); the
+expected name (`export_xml_bd_sia_<date>-v<nn>.zip`, `CIFP_<yymmdd>.zip`) is checked and the cycle read from it.
+
 ### 2.4 The four verbs and "All"
 
 | Verb | What it does | Result shown |
