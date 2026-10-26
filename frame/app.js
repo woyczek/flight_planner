@@ -1421,6 +1421,7 @@
   const LAZY = {
     help: ['lib/markdown.js?v=0', 'help/help.js?v=0'],
     roadmap: ['help/roadmap.js?v=0'],
+    datalab: ['aerodb/lab.js?v=0'], // laboratoire des données (aerodb, temporaire) : charge lui-même ses mesures
     settings: ['settings/admin_links.js?v=0', 'settings/config.js?v=0', 'settings/join.js?v=0', 'lib/qr.js?v=0',
       'settings/settings.js?v=0'
     ]
@@ -1482,7 +1483,8 @@
   const ROUTES = {
     conflicts: renderConflicts,
     settings: renderSettings,
-    device: renderSettings
+    device: renderSettings,
+    datalab: renderDatalab
   };
   /** Adresse : { id (avant « ? »), query (la suite, en objet gelé : #report?from=flightlog → { from: 'flightlog' }) }. */
   function parseHash() {
@@ -1922,7 +1924,7 @@
   // aide, feuille de route, réglages, conflits : ouverts depuis un module, ils se montrent dans la zone du module sans
   // le démonter (il est seulement masqué) ; le bouton qui les a ouverts (enfoncé tant qu'ils le sont), Échap ou le retour
   // du navigateur les referment, et l'on retrouve le module tel quel : même adresse, même étape, même défilement
-  const SCREENS = ['help', 'roadmap', 'settings', 'device', 'conflicts'];
+  const SCREENS = ['help', 'roadmap', 'settings', 'device', 'conflicts', 'datalab'];
   let over = null; // { id, returnHash, scroll, stack: [adresses des écrans du cadre ouverts], sig }
   // ce qu'un module lit à son montage (identité, usages, niveau, langue, transport) : changé pendant que l'écran du cadre
   // était ouvert (réglages), le module est remonté à la fermeture au lieu d'être rendu tel quel
@@ -2271,6 +2273,56 @@
           updated_at: new Date().toISOString()
         });
         applyDesign(d);
+      }
+    });
+  }
+
+  // ---------------------------------------------------------------- laboratoire des données (#datalab, aerodb, TEMPORAIRE)
+  // écran d'administration (carte Administration des réglages, niveau Complet) dessiné par frame/aerodb/lab.js : il mesure sur
+  // l'appareil ce que le projet « Données » suppose (docs/technique/V3_APP_DONNEES.md). Le cadre lui donne un adaptateur de
+  // données (lit sia/base/ pour comparer, écrit cache/lab/ : politique cache, jamais synchronisé) et, pour l'essai de
+  // publication, le TRANSPORT GitHub de l'appareil (head / tree / commit) ; le jeton reste dans le transport, le laboratoire
+  // ne le reçoit ni ne l'affiche.
+  let labData = null;
+  async function renderDatalab(view) {
+    const tok = navSeq,
+      at = location.hash;
+    try {
+      await need('datalab');
+    } catch (e) {
+      return notify(t(T.loadErr, {
+        m: 'datalab',
+        e: e.message || e
+      }), 'err');
+    }
+    if (tok !== navSeq || location.hash !== at || !view.isConnected) return; // écran quitté pendant le chargement
+    labData ||= FD.adapter({
+      id: 'aerodb-lab',
+      reads: [{
+        prefix: 'sia/base/',
+        policy: 'reference'
+      }],
+      writes: [{
+        prefix: 'cache/lab/',
+        policy: 'cache'
+      }]
+    });
+    return AeroLab.screen(view, {
+      t,
+      lang,
+      notify,
+      ask,
+      data: labData,
+      aerodb,
+      level: () => level,
+      launcher: () => launcherHere,
+      github: () => FD.github.config() ? FD.github() : null,
+      githubInfo: () => {
+        const c = FD.github.config();
+        return c ? {
+          repo: c.repo,
+          branch: c.branch || 'main'
+        } : null;
       }
     });
   }

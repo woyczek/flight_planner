@@ -23,6 +23,14 @@ CONNECT = [
     'https://avwx.rest',
     # base mondiale des aérodromes (sources.airports) et purge de son cache
     'https://cdn.jsdelivr.net', 'https://purge.jsdelivr.net',
+    # laboratoire des données (frame/aerodb/lab_sources.js, écran #datalab, TEMPORAIRE, 26 octobre 2026) : les hôtes des sources
+    # du tableau 1.2 de docs/technique/V3_DONNEES_REGENERATION.md, pour que « Tester l'adresse » mesure le serveur (CORS) et non la
+    # politique de la page. Une décision de sécurité par hôte (AUDIT_SECURITE_2026-10-07.md, M2) : à retirer avec le laboratoire
+    # (ou à garder pour les seuls hôtes que l'appli Données retiendra, après les mesures).
+    'https://www.sia.aviation-civile.gouv.fr', 'https://download.geonames.org', 'https://www.dircam.dsae.defense.gouv.fr',
+    'https://www.aidu.mod.uk', 'https://www.navcanada.ca', 'https://s3.openaip.net', 'https://aip.enaire.es',
+    'https://services6.arcgis.com', 'https://nats-uk.ead-it.com', 'https://nms.aim.faa.gov', 'https://aeronav.faa.gov',
+    'https://nomads.ncep.noaa.gov',
 ]
 SCRIPTS = ['https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/', 'https://cdnjs.cloudflare.com/ajax/libs/acorn/']
 ORIGIN_RE = re.compile(r'^(?:https://[a-z0-9-]+(?:\.[a-z0-9-]+)+(?::\d{1,5})?|http://(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?)$')

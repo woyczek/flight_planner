@@ -380,7 +380,9 @@ used alone:
   time is added in brackets only next to the departure, the planned arrival and the engine start.
 - The frame has three screens of its own: `#help` (`frame/help/SPEC.md`; the header's ? opens it at the current
   module's chapter), `#conflicts` and `#settings` (`#device`, its former name, opens it too;
-  `frame/settings/SPEC.md`).
+  `frame/settings/SPEC.md`); and one temporary administration screen drawn by a service, `#datalab` (aerodb's data laboratory,
+  Full level, `frame/aerodb/SPEC.md` § 5 sexies): in `ROUTES` and `SCREENS`, loaded on demand like Settings (`LAZY.datalab`),
+  given a data adapter and the device's GitHub transport (never the token) by `renderDatalab`.
 - **Start**: the frame mounts the first module as soon as the shell, the device's settings and the transport are
   there. It never waits for a first synchronisation or for the airline's settings.
   - Over a repository's first pass, reading the airline's settings costs the whole ref → commit → tree chain (2.8 s

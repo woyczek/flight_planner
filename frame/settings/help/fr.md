@@ -154,6 +154,8 @@ qui déplie une case « Afficher le filet de la limite de la zone du vol » (enr
 `airline/map_profiles.json`, clé `edge` ; le filet est affiché tant que vous n'avez rien réglé) ; le bouton « Exporter une
 configuration pour un pilote » (voir « Configurer un pilote ») ; la feuille de route (`#roadmap`) et le diagnostic de la carte « À propos ».
 
+<a id="settings-datalab"></a>**Laboratoire données (temporaire).** Le bouton « Laboratoire données » (`#datalab`) mesure, sur cet appareil, si la base aéronautique peut être récupérée, analysée, compilée et publiée depuis un téléphone : testez l'adresse de chaque source, donnez le ZIP du SIA par « Depuis un fichier » (sur iPhone : Fichiers › Téléchargements ; sur un poste avec le lanceur, « Depuis Téléchargements »), publiez un essai, puis « Copier le rapport » et collez-le à la session des données. Rien n'entre dans la base ni dans les modules.
+
 **Les bancs, sur un poste.** Servis par le lanceur, ils ne s'ouvrent que sur un poste avec lanceur (ailleurs, ils sont
 nommés sans lien) ; chemins relatifs à la racine de la suite : `labs/design_primitives.html` (primitives et designs),
 `frame/aerodb/bench.html` et `frame/aerodb/offline_bench.html` (base aéronautique, en ligne et hors ligne),

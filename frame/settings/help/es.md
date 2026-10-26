@@ -150,6 +150,8 @@ aplicación: el botón «Ajuste de los umbrales del mapa» (`#maps?tune=1`, solo
 clave `edge`; la línea se muestra mientras no ajuste nada); el botón «Exportar una configuración para un piloto» (véase «Configurar un piloto»);
 la hoja de ruta (`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
 
+<a id="settings-datalab"></a>**Laboratorio de datos (temporal).** El botón «Laboratorio de datos» (`#datalab`) mide, en este dispositivo, si la base aeronáutica puede obtenerse, analizarse, compilarse y publicarse desde un teléfono: pruebe la dirección de cada fuente, dé el ZIP del SIA con «Desde un archivo» (en iPhone: Archivos › Descargas; en un puesto con lanzador, «Desde Descargas»), publique una prueba, luego «Copiar el informe» y péguelo a la sesión de datos. Nada entra en la base ni en los módulos.
+
 **Los bancos, en un puesto.** Servidos por el lanzador, solo se abren en un puesto con lanzador (en otros sitios se
 nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primitives.html` (primitivas y diseños),
 `frame/aerodb/bench.html` y `frame/aerodb/offline_bench.html` (base aeronáutica, en línea y sin conexión),

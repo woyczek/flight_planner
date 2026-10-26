@@ -17,9 +17,13 @@ Rules covered
   * the device's keys (trigram, GitHub token, weather key) survive a relaunch of the browser, even when it clears
     localStorage and keeps IndexedDB, as Safari did on 25 Oct 2026 (A19);
   * non-fixed modules on a phone (rule 16): the module's title is in the header (A2), the "?" lands on the paragraph of the
-    step shown and highlights it once (A17), the "How to use" card is dismissed once and for good, with a way back (A18).
+    step shown and highlights it once (A17), the "How to use" card is dismissed once and for good, with a way back (A18);
+  * the data laboratory (#datalab, aerodb, temporary): behind Administration at the Full level only, one line per source, 44 px
+    buttons (A20); "Test the address" gives a time and a size and names a CORS block (A21); "From a file" with a small SIA zip runs
+    the three modes and fills the report, which is copied and kept (A22); the trial publication is greyed with its reason and
+    writes only on the button (A23); with a launcher, "From Downloads" takes the newest SIA cycle by the existing route (A24).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19.
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A21 A22 A23 A24.
 """
 import json
 import re
@@ -766,3 +770,341 @@ def a18(c):
     c.until("!!document.querySelector('[data-help=\"fuel\"]')", timeout=8000, what='the card is back')
     c.ok(c.js("document.querySelector('[data-help=\"fuel\"]').open"), 'the card is folded', 'unfolded when it comes back')
     c.until_doc('device/help.json', lambda d: d and d.get('hidden', {}).get('fuel') is False, what='the device forgets the dismissal')
+
+
+# ------------------------------------------------------------------------------------------------ data laboratory (#datalab)
+# frame/aerodb/lab.js: a temporary administration screen of aerodb (frame/aerodb/SPEC.md "Laboratory"), Full level, reached by the
+# "Data laboratory" button of the Administration card.  Everything it calls goes through the page (routes of the suite stand in for
+# the servers: the suite's network is closed), the token never reaches it (it receives the data layer's GitHub transport).
+LAB = 'frame/aerodb/lab.js'
+LEVEL3 = [['device/level.json', {'level': 3}, 'cache']]
+
+
+def lab_zip():
+    """A small zip shaped like the SIA export (synthetic fixtures of frame/aerodb/test/fixtures/lab/), as bytes."""
+    import io
+    import zipfile
+    from lib import ROOT
+    fx = ROOT / 'frame/aerodb/test/fixtures/lab'
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
+        z.write(fx / 'XML_SIA_sample.xml', 'XML_SIA_2026-10-01.xml')
+        z.write(fx / 'AIXM4.5_sample.xml', 'AIXM4.5_all_FR_OM_2026-10-01.xml')
+        z.writestr('Lisez_moi.txt', 'synthetic')
+    return buf.getvalue()
+
+
+def lab_open(c, **kw):
+    c.open('datalab', docs=LEVEL3, **kw)
+    c.until("!!document.querySelector('[data-screen=datalab] li[data-src=cifp]')", timeout=15000, what='the laboratory is drawn')
+
+
+@case('A20', 'Data laboratory: behind Administration at the Full level only; one line per source', 'A', langs4=True,
+      rule='frame/aerodb/SPEC "Laboratory"; docs/technique/V3_DONNEES_REGENERATION 1.2 (15 sources without X-Plane and aircraft); 44 px controls')
+def a20(c):
+    # Everyday level: no button on any card, and the address itself shows why there is nothing
+    c.open('settings')
+    c.until("!!document.querySelector('[data-card=\"status\"]')", what='the settings are drawn')
+    c.eq(c.count('[data-admin="datalab"], a[href="#datalab"]'), 0, 'the button does not exist below the Full level', what='lab buttons at the Everyday level')
+    c.page.evaluate("location.hash = '#datalab'")
+    c.until("!!document.querySelector('[data-screen=datalab] [data-lab=level]')", what='the address alone gives the level message, not the screen')
+    c.eq(c.count('[data-screen=datalab] li[data-src]'), 0, 'no source line below the Full level', what='source lines')
+    c.eq(norm(c.text('[data-lab=level]')), norm(tx(LAB, 'level', c.lang)), 'the message is worded in the run\'s language', what='level message')
+    # Full level: the button of the Administration card, then the screen
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"admin\"] li[data-admin=\"datalab\"]')", what='the Administration card lists the laboratory')
+    btn = c.js("(() => { const e = document.querySelector('[data-admin=\"datalab\"]').firstElementChild; return { tag: e.tagName, cls: e.className, href: e.getAttribute('href'), text: e.textContent.trim(), h: e.getBoundingClientRect().height } })()")
+    c.ok(btn['tag'] == 'A' and 'f-btn' in btn['cls'] and btn['href'] == '#datalab', f'{btn}', 'a frame button to #datalab')
+    c.eq(norm(btn['text']), norm(tx('frame/settings/admin_links.js', 'title', c.lang, after="id: 'datalab'")), 'the button is worded in the language of the run', what='lab button')
+    c.ge(btn['h'], 43.5, 'touch target of the frame', what='lab button height')
+    c.tap('[data-admin="datalab"] > a')
+    c.until("!!document.querySelector('[data-screen=datalab] li[data-src=cifp]')", timeout=15000, what='the laboratory opens')
+    c.eq(c.hash(), '#datalab', 'the address is the screen of the frame', what='hash')
+    c.eq(norm(c.text('[data-screen=datalab] h1')), norm(tx(LAB, 'title', c.lang)), 'the title is worded in the language of the run', what='h1')
+    ids = c.js("[...document.querySelectorAll('[data-screen=datalab] li[data-src]')].map(e => e.dataset.src)")
+    want = ['sia', 'geonames', 'mora', 'dircam', 'ukmil', 'navcan', 'openaip', 'enaire', 'adds', 'nats', 'nat', 'vac', 'eaip', 'cifp', 'weather']
+    c.eq(ids, want, 'one line per source of the table 1.2: 17 without X-Plane and the aircraft types', what='source lines')
+    bad = c.js("""[...document.querySelectorAll('[data-screen=datalab] li[data-src] button')].map(b => ({ s: b.closest('[data-src]').dataset.src, a: b.dataset.act, h: Math.round(b.getBoundingClientRect().height * 10) / 10 })).filter(b => b.h < 43.5)""")
+    c.eq(bad, [], 'every button is at least 44 px high', what='short buttons')
+    c.eq(c.js("[...document.querySelectorAll('[data-screen=datalab] li[data-src]')].filter(e => !e.querySelector('[data-act=test]') || !e.querySelector('[data-act=file]')).length"), 0,
+         'each line has "Test the address" and "From a file"', what='lines missing a button')
+    c.eq(norm(c.text('li[data-src=cifp] [data-act=test]')), norm(tx(LAB, 'test', c.lang)), 'the test button is worded in the language of the run', what='test button')
+    addr = c.js("[...document.querySelectorAll('[data-screen=datalab] [data-addr]')].map(e => e.textContent)")
+    c.ok(all(a.startswith('https://') for a in addr) and any('CIFP_261001.zip' in a for a in addr) and any('eAIP_01_OCT_2026' in a for a in addr),
+         f'{addr}', 'real addresses, the CIFP and eAIP ones derived from the cycle in force (2610)')
+    human = c.js("[...document.querySelectorAll('[data-screen=datalab] li[data-src=sia] .f-warn, [data-screen=datalab] li[data-src=nats] .f-warn')].map(e => e.textContent)")
+    c.eq(len(human), 2, 'the SIA and NATS lines name the human gesture', what='gesture lines')
+    c.ok(norm(tx('frame/aerodb/lab_sources.js', 'human', c.lang, after="id: 'sia'")).split(' ')[0] in norm(human[0]), f'{human[0]}', 'the SIA line says where the file comes from, in the run\'s language')
+    c.eq(c.count('[data-act=downloads]'), 0, '"From Downloads" exists with a launcher only', what='Downloads buttons without launcher')
+    sw, iw = hscroll(c)
+    c.le(sw, iw, 'no horizontal scroll', what='page width')
+    c.eq(c.js("document.querySelector('li[data-src=sia] [data-addr]').textContent.includes('airac-10-26')"), True, 'the SIA line shows the product page of the cycle in force', what='SIA address')
+    c.js("(() => { const s = document.querySelector('[data-cycle]'); s.value = s.options[1].value; s.dispatchEvent(new Event('change', { bubbles: true })) })()")
+    c.until("document.querySelector('li[data-src=cifp] [data-addr]').textContent.endsWith('CIFP_261029.zip')", what='the next cycle (2611) changes the derived addresses')
+    c.shot(f'A20_{c.design}_{c.width}_{c.lang}.png')
+
+
+
+def fake_servers():
+    """Two local servers on other ports (so, other origins for the page): `ok` answers with the CORS header, `bare` answers
+    without it (what most of the aeronautical sources do); a third port with nobody listening.  Returns (urls, calls, stop)."""
+    import http.server
+    import socket
+    import threading
+    calls = []
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            calls.append(self.path)
+            body = (json.dumps({'tracks': ['A', 'B'], 'pad': 'x' * 150000}) if self.path.startswith('/ok') else 'PK').encode()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json' if self.path.startswith('/ok') else 'application/zip')
+            if self.path.startswith('/ok'):
+                self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *a):
+            pass
+    srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    dead = socket.socket()
+    dead.bind(('127.0.0.1', 0))
+    dead_port = dead.getsockname()[1]
+    dead.close()
+    port = srv.server_address[1]
+    urls = {'ok': f'http://127.0.0.1:{port}/ok.json', 'bare': f'http://127.0.0.1:{port}/bare.zip', 'dead': f'http://127.0.0.1:{dead_port}/x.geojson'}
+    return urls, calls, srv.shutdown
+
+
+@case('A21', 'Data laboratory: "Test the address" gives a time, a size, and names a CORS block', 'A', designs=('standard',), night=False, langs4=True,
+      rule='the main measure of the laboratory: does the server let this page read its answer (CORS), how long, how big')
+def a21(c):
+    urls, calls, stop = fake_servers()
+    try:
+        # the table's addresses are replaced, for the test, by the local servers (localStorage "sogLab:urls", read by lab_sources.js)
+        c.context.add_init_script("try { localStorage.setItem('sogLab:urls', JSON.stringify({ nat: %s, cifp: %s, openaip: %s })) } catch (e) {}" %
+                                  (json.dumps(urls['ok']), json.dumps(urls['bare']), json.dumps(urls['dead'])))
+        lab_open(c)
+        c.eq(calls, [], 'nothing is called before a button is pressed', what='calls on opening')
+        # 1. a server that allows the page: code, size and time on the line, and the JSON read
+        c.tap('li[data-src=nat] [data-act=test]')
+        c.until("/HTTP 200/.test(document.querySelector('li[data-src=nat] [data-res]').textContent)", timeout=8000, what='the NAT line shows the answer')
+        line = norm(c.text('li[data-src=nat] [data-res]'))
+        c.ok(re.search(r'HTTP 200 · 14\d,?\.?\d* (Ko|KB)\b', line) or re.search(r'HTTP 200 · 1[45]\d (Ko|KB)', line), line, 'OK, code 200, the size of the body (about 146 KB)')
+        c.ok(re.search(r'\d+ ms|\d[.,]\d+ s', line), line, 'a duration')
+        c.ok('object{tracks,pad}' in line, line, 'the chain read the JSON and says its shape')
+        c.eq(c.attr('li[data-src=nat] [data-res]', 'data-kind'), 'ok', 'the line is marked as a success', what='data-kind')
+        # 2. a server that answers but sends no CORS header: the diagnosis says so
+        c.tap('li[data-src=cifp] [data-act=test]')
+        c.until("document.querySelector('li[data-src=cifp] [data-res]').dataset.kind === 'err'", timeout=8000, what='the CIFP line fails')
+        c.eq(norm(c.text('li[data-src=cifp] [data-res]')), norm(tx(LAB, 'cors', c.lang)), 'the CORS block is named, in the language of the run', what='CIFP diagnosis')
+        # 3. nothing answers: not called a CORS block
+        c.tap('li[data-src=openaip] [data-act=test]')
+        c.until("document.querySelector('li[data-src=openaip] [data-res]').dataset.kind === 'err'", timeout=8000, what='the openAIP line fails')
+        c.eq(norm(c.text('li[data-src=openaip] [data-res]')), norm(tx(LAB, 'unreachable', c.lang)), 'no answer is not called a CORS block', what='openAIP diagnosis')
+        rep = c.text('[data-report]')
+        c.ok(re.search(r'\] probe nat\n\s+url: http://127\.0\.0\.1:\d+/ok\.json\n\s+result: OK HTTP 200 .* 14\d KB', rep), rep[-1100:], 'the NAT test is in the report with its url, code, size and time')
+        c.ok('BLOCKED BY CORS' in rep and 'UNREACHABLE' in rep, rep[-900:], 'the CORS block and the unreachable host are named in the report')
+        c.ok(rep.count('] probe ') == 3, rep[-900:], 'one entry per test')
+        c.eq(len([x for x in calls if x.startswith('/ok')]), 1, 'the allowed address was read once', what='calls')
+        sw, iw = hscroll(c)
+        c.le(sw, iw, 'no horizontal scroll', what='page width')
+        c.shot(f'A21_{c.width}_{c.lang}.png')
+        # the browser logs the refusals it was asked to measure (the CORS block, the closed port): expected here, not errors of the page
+        c.errors[:] = [e for e in c.errors if 'blocked by CORS policy' not in e and 'ERR_CONNECTION_REFUSED' not in e]
+    finally:
+        stop()
+
+
+@case('A22', 'Data laboratory: "From a file" with a small SIA zip runs the three modes and fills the report', 'A', designs=('standard',), night=False, langs4=True,
+      rule='the chain of V2 in three measured modes (a main thread, b Worker, c Worker streamed); the report is copied and kept on the device')
+def a22(c):
+    c.context.grant_permissions(['clipboard-read', 'clipboard-write'])
+    lab_open(c)
+    c.ok(c.js("document.querySelector('[data-act=mode]').disabled"), 'the mode buttons are active without a file', 'greyed until a SIA zip is chosen')
+    c.eq(norm(c.text('[data-zipfile]')), norm(tx(LAB, 'zipNone', c.lang)), 'the card says no zip is chosen, in the language of the run', what='zip card')
+    with c.page.expect_file_chooser() as fc:
+        c.tap('li[data-src=sia] [data-act=file]')
+    fc.value.set_files({'name': 'export_xml_bd_SIA_2026-10-01-v02.zip', 'mimeType': 'application/zip', 'buffer': lab_zip()})
+    c.until("(document.querySelector('[data-report]').textContent.match(/\\] mode SIA zip, mode [abc]/g) || []).length === 3", timeout=60000, what='the three modes are in the report')
+    c.until("/\\] compare modes against each other/.test(document.querySelector('[data-report]').textContent)", timeout=20000, what='the comparison closes the run')
+    rep = c.text('[data-report]')
+    modes = re.findall(r'\] mode SIA zip, mode ([abc])', rep)
+    c.eq(modes, ['c', 'b', 'a'], 'the order is c, b, a (the hungriest last, so a crash keeps what was measured)', what='modes in the report')
+    c.ok('name check: ok · cycle 2610 (2026-10-01)' in rep, rep[:700], 'the cycle is read from the file name')
+    c.ok(re.search(r'read from the picker: stream \d+ ms.*ArrayBuffer \d+ ms', rep), rep[:900], 'the time to read the file from the picker is measured (stream and ArrayBuffer)')
+    for step in ('inflate aixm', 'parse aixm: DOMParser', 'compile (split by kind, JSON)', 'stream aixm (inflate + decode + parse)', 'decode aixm', 'parse sia: airspaces (strings)'):
+        c.ok(step in rep, rep[-1400:], f'the step "{step}" has its time in the report')
+    c.ok('compare modes against each other' in rep and 'DIFFERENT' not in rep, rep[-900:], 'the three modes give the same counts per kind')
+    c.ok(re.search(r'airspaces\(XML_SIA\)=28 rings=40 points=259 vrp=13', rep), rep[-1400:], 'the counts of the synthetic zip (28 spaces, 13 VFR points)')
+    c.ok(re.search(r'peak heap seen (\d+ MB|not measurable on this browser)', rep), rep[-1400:], 'the peak heap is a number or says it is not measurable')
+    live = norm(c.text('[data-live]'))
+    c.ok(live.startswith(norm(tx(LAB, 'modeEnd', c.lang)).split('{m}')[0].strip()), live, 'the live line says mode a ended, in the run\'s language')
+    c.eq(norm(c.text('[data-zipfile]')), norm(tx(LAB, 'zipHave', c.lang).replace('{n}', 'export_xml_bd_SIA_2026-10-01-v02.zip').replace('{b}', c.text('[data-zipfile]').split('·')[1].strip())), 'the card names the file', what='zip card')
+    c.ok(not c.js("document.querySelector('[data-act=mode]').disabled"), 'the mode buttons stay greyed', 'active once a file is there')
+    # one mode again by its own button
+    c.tap('[data-act=mode][data-mode=c]')
+    c.until("(document.querySelector('[data-report]').textContent.match(/\\] mode SIA zip, mode c/g) || []).length === 2", timeout=30000, what='mode c runs again alone')
+    # a wrong file name is said, and the file is measured anyway
+    with c.page.expect_file_chooser() as fc:
+        c.tap('li[data-src=nats] [data-act=file]')
+    fc.value.set_files({'name': 'data.zip', 'mimeType': 'application/zip', 'buffer': lab_zip()})
+    c.until("/UNEXPECTED name/.test(document.querySelector('[data-report]').textContent)", timeout=15000, what='the wrong name is reported')
+    c.ok(norm(tx(LAB, 'nameBad', c.lang)).split('{n}')[0].strip() in norm(c.text('li[data-src=nats] [data-res]')), c.text('li[data-src=nats] [data-res]'), 'the line says the name is unexpected')
+    c.ok('3 entries' in c.text('li[data-src=nats] [data-res]'), c.text('li[data-src=nats] [data-res]'), 'and the zip is measured anyway (3 entries)')
+    # the report: copied, kept on the device (cache policy), reloaded at opening
+    c.tap('[data-act=copy]')
+    c.until("!!document.querySelector('[data-msg]').textContent", what='the copy says what happened')
+    clip = c.js("navigator.clipboard.readText().catch(() => '')")
+    shown = c.js("(document.querySelector('.sog-copybox') || {}).value || ''")
+    c.ok((clip or shown).startswith('SOG data lab report\ngenerated: '), f'clipboard={clip[:60]!r} shown={shown[:60]!r}', 'the whole report is in the clipboard (or shown selected)')
+    c.ok('== device ==' in (clip or shown) and 'userAgent' in (clip or shown) and 'end of report' in (clip or shown), (clip or shown)[:300], 'a structured, dated text with the device block')
+    d = c.until_doc('cache/lab/report.json', lambda d: d and len(d.get('entries', [])) >= 8, what='the report is kept on the device')
+    c.eq(d.get('schema'), 1, 'schema', what='report document')
+    c.page.reload(wait_until='load')
+    c.until("(document.querySelector('[data-report]') || {}).textContent && /mode SIA zip, mode a/.test(document.querySelector('[data-report]').textContent)", timeout=15000, what='the report is reloaded at opening')
+    # an unfinished run (tab killed): noted at the next opening, once
+    c.page.evaluate("localStorage.setItem('sogLab:run-started', JSON.stringify({ at: '2026-10-26T10:00:00.000Z', label: 'SIA zip mode a (x.zip)', step: 'parse aixm: DOMParser' }))")
+    c.page.reload(wait_until='load')
+    c.until("(document.querySelector('[data-crash]') || {}).hidden === false", timeout=15000, what='the crash is said')
+    c.ok('previous run did not finish' in c.text('[data-report]') and 'parse aixm: DOMParser' in c.text('[data-report]'), c.text('[data-report]')[-400:], 'the report notes the run that did not end and its last step')
+    c.eq(c.js("localStorage.getItem('sogLab:run-started')"), None, 'the trace is erased once told', what='run-started')
+    c.page.reload(wait_until='load')
+    c.until("!!document.querySelector('[data-screen=datalab] li[data-src=cifp]')", timeout=15000, what='reopened')
+    c.eq(c.js("document.querySelector('[data-crash]').hidden"), True, 'told once, not again', what='crash note')
+    sw, iw = hscroll(c)
+    c.le(sw, iw, 'no horizontal scroll', what='page width')
+    c.shot(f'A22_{c.width}_{c.lang}.png')
+
+
+def fake_api(context):
+    """A GitHub API for `sog/data` that keeps the files written by trees (inline content) and answers the tree listing; every POST
+    of a tree is recorded.  The page reaches it as it reaches the real one (CORS answered)."""
+    state = {'posts': [], 'files': {}, 'head': 'a' * 40, 'calls': []}
+    hdr = {'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*'}
+
+    def serve(route):
+        req = route.request
+        u, m = req.url.split('?')[0], req.method
+        state['calls'].append((m, u.split('/repos/' + REPO)[1]))
+        ok = lambda body, st=200: route.fulfill(status=st, content_type='application/json', headers=hdr, body=json.dumps(body))
+        if m == 'OPTIONS':
+            return route.fulfill(status=204, headers=hdr)
+        if m == 'GET' and u.endswith('/git/ref/heads/main'):
+            return ok({'object': {'sha': state['head']}})
+        if m == 'GET' and '/git/commits/' in u:
+            return ok({'tree': {'sha': 't' * 40}})
+        if m == 'GET' and '/git/trees/' in u:
+            return ok({'truncated': False, 'tree': [{'path': p, 'type': 'blob', 'sha': f'{i:040x}'} for i, p in enumerate(state['files'], 1)]})
+        if m == 'POST' and u.endswith('/git/trees'):
+            body = json.loads(req.post_data)
+            state['posts'].append(body)
+            for t in body['tree']:
+                if 'sha' in t and t['sha'] is None:      # a deletion (sha: null); a file carries its content inline
+                    state['files'].pop(t['path'], None)
+                else:
+                    state['files'][t['path']] = t['content']
+            return ok({'sha': 'b' * 40}, 201)
+        if m == 'POST' and u.endswith('/git/commits'):
+            state['head'] = str(len(state['posts'])).rjust(40, 'c')
+            return ok({'sha': state['head']}, 201)
+        if m == 'PATCH' and '/git/refs/heads/main' in u:
+            return ok({'object': {'sha': state['head']}})
+        return ok({'message': 'Not Found'}, 404)
+    context.route(re.compile(r'^https://api\.github\.com/repos/%s/' % REPO), serve)
+    return state
+
+
+@case('A23', 'Data laboratory: the trial publication is greyed with its reason, and writes only on the button', 'A', designs=('standard',), night=False, langs4=True,
+      rule='"Rien n\'est publié sans le bouton"; the token stays in the data layer (the laboratory gets the transport); trial files are removable')
+def a23(c):
+    # no repository, no token: greyed, with the reason, and nothing is called
+    state = fake_api(c.context)
+    lab_open(c)
+    c.ok(c.js("document.querySelector('[data-act=pub]').disabled && document.querySelector('[data-act=clean]').disabled"), 'a button is active without access', 'both greyed without a repository and a token')
+    c.eq(c.attr('[data-act=pub]', 'aria-disabled'), 'true', 'aria-disabled', what='publish button')
+    c.eq(norm(c.text('[data-why]')), norm(tx(LAB, 'noAccess', c.lang)), 'the reason is written, in the language of the run', what='reason')
+    c.eq(state['calls'], [], 'the API is not called', what='calls without access')
+    c.ge(c.box('[data-act=pub]')['h'], 43.5, 'touch target', what='publish button height')
+    c.shot(f'A23_greyed_{c.width}_{c.lang}.png')
+    # with an access: active, a repository line, still nothing sent
+    c.context.add_init_script(GITHUB_SET)
+    c.page.reload(wait_until='load')
+    c.until("!!document.querySelector('[data-screen=datalab] li[data-src=cifp]')", timeout=15000, what='reopened with an access')
+    c.until("!document.querySelector('[data-act=pub]').disabled", what='the buttons come alive with an access')
+    c.ok(REPO in c.text('[data-repo]'), c.text('[data-repo]'), 'the repository is named (never the token)')
+    c.eq(c.text('[data-why]'), '', 'no reason when it can', what='reason')
+    c.ok(state['posts'] == [] and not any(m != 'GET' for m, _ in state['calls']), f"{state['calls']}", 'nothing is written by opening the laboratory')
+    # publish: asked first, then two commits (a small file, a block of the size chosen)
+    c.tap('[data-act=pub]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", what='the writing is asked to be confirmed')
+    c.ok(REPO in c.text('.f-modal'), c.text('.f-modal'), 'the question names the repository')
+    c.tap('.f-modal [data-no]')
+    c.wait(300)
+    c.eq(state['posts'], [], 'No writes nothing', what='posts after a refusal')
+    c.tap('[data-act=pub]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", what='asked again')
+    c.tap('.f-modal [data-ok]')
+    c.until("(document.querySelector('[data-report]').textContent.match(/\\] publish /g) || []).length === 2", timeout=20000, what='two publications in the report')
+    c.eq(len(state['posts']), 2, 'two trees were sent: the small file, then the block', what='posts')
+    p1, p2 = state['posts'][0]['tree'], state['posts'][1]['tree']
+    c.ok(len(p1) == 1 and re.fullmatch(r'lab/essai-[\dT-]+\.json', p1[0]['path']) and json.loads(p1[0]['content'])['kind'] == 'lab-trial', f'{p1[0]["path"]}', 'a small lab/essai-<date>.json')
+    c.ok(len(p2) == 1 and p2[0]['path'].startswith('lab/essai-') and p2[0]['path'].endswith('-bloc.json'), f'{p2[0]["path"]}', 'then a block file under lab/')
+    n = len(p2[0]['content'].encode('utf-8'))
+    c.ok(2097152 - 2000 <= n <= 2097152 + 2000, f'{n} bytes', 'the block is 2 MB, as chosen')
+    c.ok('"lab-filler"' in p2[0]['content'][:80] and 'ghp_' not in p2[0]['content'], p2[0]['content'][:80], 'filler, no data, no token')
+    c.ok(all(not t['path'].startswith(('sia/', 'proc/', 'AircraftDB/')) for t in p1 + p2), f'{[t["path"] for t in p1 + p2]}', 'nothing outside lab/')
+    rep = c.text('[data-report]')
+    c.ok(re.search(r'publish small file\n\s+1 file\(s\), \d+ B · OK in', rep) and re.search(r'publish block of 2\.0 MB\n\s+1 file\(s\), 2\.0 MB · OK in', rep), rep[-700:], 'the report has both, with size and time')
+    c.ok('ghp_test' not in c.js('document.documentElement.innerHTML') and 'ghp_test' not in rep, 'the token appears on the page', 'the token is never shown')
+    # clean: the trial files are removed in one commit
+    c.tap('[data-act=clean]')
+    c.until("(document.querySelector('[data-report]').textContent.match(/\\] clean /g) || []).length === 1", timeout=15000, what='the cleaning is in the report')
+    c.eq(len(state['posts']), 3, 'the cleaning sends one commit', what='trees sent')
+    c.eq(sorted(t['path'] for t in state['posts'][2]['tree']), sorted(['lab/essai-' + p1[0]['path'][len('lab/essai-'):], p2[0]['path']]), 'the cleaning removes both trial files', what='deleted paths')
+    c.ok(all(t.get('sha') is None for t in state['posts'][2]['tree']), f"{state['posts'][2]['tree']}", 'as deletions')
+    c.eq(state['files'], {}, 'nothing is left in the repository', what='files')
+    c.eq(norm(c.text('[data-pubres]')), norm(tx(LAB, 'cleanOk', c.lang).replace('{n}', '2')), 'the line says two files were removed', what='clean line')
+    # offline: greyed with its reason
+    c.context.set_offline(True)
+    c.page.evaluate("window.dispatchEvent(new Event('offline'))")
+    c.until("document.querySelector('[data-act=pub]').disabled", what='offline greys the publication')
+    c.eq(norm(c.text('[data-why]')), norm(tx(LAB, 'offline', c.lang, after='csp:')), 'and says offline', what='reason offline')
+    c.context.set_offline(False)
+
+
+@case('A24', 'Data laboratory: with a launcher, "From Downloads" takes the newest SIA cycle by the existing route', 'A', designs=('standard',), night=False, langs4=True,
+      rule='user 26 Oct 2026: the SIA zip arrives in Downloads; GET /__setup/downloads?glob=…; the name gives the cycle; shown by name and date')
+def a24(c):
+    zip_bytes = lab_zip()
+    asked = []
+
+    def status(route):
+        route.fulfill(status=200, content_type='application/json', body=json.dumps({'server': 'sog', 'git': False, 'data': False, 'dataGit': False, 'host': 'test-pc', 'lan': False}))
+
+    def downloads(route):
+        url = route.request.url
+        asked.append(url.split('/__setup/')[1])
+        assert route.request.headers.get('x-sog-setup') == '1', 'the route is called with the launcher header'
+        if '&info' in url:
+            files = [{'name': 'export_xml_bd_SIA_2026-09-03-v04.zip', 'size': 5800000, 'mtime': 1790000000},
+                     {'name': 'export_xml_bd_SIA_2026-10-01-v01.zip', 'size': 5800001, 'mtime': 1790000100},
+                     {'name': 'export_xml_bd_SIA_2026-10-01-v02.zip', 'size': len(zip_bytes), 'mtime': 1789000000}]
+            return route.fulfill(status=200, content_type='application/json', body=json.dumps({'files': files, 'where': ['Downloads']}))
+        route.fulfill(status=200, content_type='application/octet-stream', body=zip_bytes)
+    c.context.route(re.compile(r'/__setup/status$'), status)
+    c.context.route(re.compile(r'/__setup/downloads\?'), downloads)
+    lab_open(c)
+    c.eq(c.count('[data-act=downloads]'), 3, 'the SIA, NATS and CIFP lines offer "From Downloads" on a workstation with the launcher', what='Downloads buttons')
+    c.eq(c.js("[...document.querySelectorAll('[data-act=downloads]')].map(b => b.closest('li').dataset.src)"), ['sia', 'nats', 'cifp'], 'on the three lines that take a file', what='lines')
+    c.eq(norm(c.text('li[data-src=sia] [data-act=downloads]')), norm(tx(LAB, 'fromDownloads', c.lang)), 'worded in the language of the run', what='button')
+    c.ge(c.box('li[data-src=sia] [data-act=downloads]')['h'], 43.5, 'touch target', what='button height')
+    c.tap('li[data-src=sia] [data-act=downloads]')
+    c.until("(document.querySelector('[data-report]').textContent.match(/\\] mode SIA zip, mode [abc]/g) || []).length === 3", timeout=60000, what='the zip taken from Downloads goes through the three modes')
+    c.ok(asked[0].startswith('downloads?glob=export_xml_bd_sia_*.zip&info'), f'{asked}', 'the existing route, with the declared pattern, lists first')
+    c.ok(any('&name=export_xml_bd_SIA_2026-10-01-v02.zip' in a for a in asked), f'{asked}', 'the newest cycle and version by the date in the name (not by file date) is fetched')
+    rep = c.text('[data-report]')
+    c.ok('picked from Downloads by the launcher (Downloads)' in rep and 'name check: ok · cycle 2610 (2026-10-01)' in rep, rep[:900], 'the report says where it came from and the cycle read from the name')
+    c.ok(norm(c.text('[data-zipfile]')).startswith(norm(tx(LAB, 'zipHave', c.lang)).split('{n}')[0].strip()) and 'export_xml_bd_SIA_2026-10-01-v02.zip' in c.text('[data-zipfile]'), c.text('[data-zipfile]'), 'the card names the file')

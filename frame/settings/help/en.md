@@ -143,6 +143,8 @@ nothing of the administrator's is on the other cards. In the app: the “Map thr
 key `edge`; the edge line is shown until you set it); the “Export a configuration for a pilot” button (see “Configuring a pilot”);
 the roadmap (`#roadmap`) and the diagnostics of the “About” card.
 
+<a id="settings-datalab"></a>**Data laboratory (temporary).** The “Data laboratory” button (`#datalab`) measures, on this device, whether the aeronautical base can be fetched, parsed, compiled and published from a phone: test each source’s address, give the SIA ZIP with “From a file” (on iPhone: Files › Downloads; on a workstation with the launcher, “From Downloads”), publish a trial, then “Copy the report” and paste it to the data session. Nothing enters the base or the modules.
+
 **The benches, on a workstation.** Served by the launcher, they only open on a workstation with a launcher (elsewhere
 they are named without a link); paths relative to the root of the suite: `labs/design_primitives.html` (primitives and
 designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeronautical base, online and offline),

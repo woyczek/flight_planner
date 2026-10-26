@@ -371,3 +371,12 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
     administrator's steps: invite, export, send). The import stays on the Access card, it is the pilot's. Not moved: the
     launcher-only cards (data remote, keys, computer access, Little Navmap), which set up a workstation rather than administer
     the airline; the roadmap and diagnostics are also reachable from About, as before.
+
+## 26 October 2026 — a "Data laboratory" button on the Administration card (aerodb lab P0, relay of the cloud)
+
+User, 26 Oct: « Go. Tu inclus toi-même les injecteurs et mesures dans le lab. » The Administration card (Full level, test A12) gets **one more button**,
+"Data laboratory" (`id: 'datalab'`, `href: '#datalab'`, `where: 'app'`, not `primary`: it is a measuring tool, not a setting), with its sentence in four
+languages; the screen itself is aerodb's (`frame/aerodb/lab.js`, `frame/aerodb/DECISIONS.md` of the same day) and the frame's `ROUTES` / `SCREENS` carry its
+address. Absent below the Full level (the address alone shows "reserved to the Full level"): tests A20, A12. Temporary: it goes with the laboratory. The Settings
+manual says it in one paragraph per language, anchor `settings-datalab`, identical in the four.
+

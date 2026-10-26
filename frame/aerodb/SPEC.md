@@ -404,6 +404,42 @@ both ways.
 - **Test**: `frame/aerodb/test/procedures.html` (18 checks), cases K4 (FAA CIFP reader, fixture `test/fixtures/cifp/KSEA_subset.arinc`: the real records of KSEA BANGR9, HAWKZ8 and I16C with the positions they use), K1 (API), K2 (tables read from `test/fixtures/eaip/*.rows.txt`,
   lines of text kept from the SIA's pages) and K3 (aerodrome file) of `tests/v3/`.
 
+## 5 sexies. Data laboratory (`lab*.js`, screen `#datalab`) — **temporary**
+
+Lot P0 of `docs/technique/V3_APP_DONNEES.md`: an administration screen of the frame, drawn by aerodb, that **measures on the owner's phone** (Safari, the
+home-screen app served by GitHub Pages) whether the aeronautical base can be fetched, parsed, compiled and published from a phone. Not a feature for pilots:
+Full level, reached by the "Data laboratory" button of the Administration card (`frame/settings/admin_links.js`); below Full the address shows a message and no
+source. It **builds nothing into the base, writes nothing to the modules**; the only writes are `cache/lab/report.json` (policy `cache`, never synchronised)
+and the trial files `lab/essai-*` the owner publishes by a button. It goes when the measures are taken (the measures stay in `DECISIONS.md`).
+
+- **Sources** (`lab_sources.js`, `AeroLabSources`): one row per source of the table 1.2 of `docs/technique/V3_DONNEES_REGENERATION.md`, 15 of 17 (X-Plane and
+  the aircraft types stay on the workstation): `{ id, no, n[4], url (string or function of the AIRAC cycle), chain, accept, size, cap, lic, human[4], name,
+  downloads }`. `cycleOf(date)` (rank in the year of the effective date: 2610 = 1 Oct 2026, 2611 = 29 Oct), `eaipBase`, `cifpName` (`CIFP_<yymmdd>`, the
+  effective date), `siaPage`, `siaFileInfo` / `cifpFileInfo` (the cycle read from a file name, any case, a copy suffix "(1)" accepted). `localStorage['sogLab:urls']`
+  replaces an address (tests). The hosts must be in the page policy (`tools/csp_policy.py`, K9).
+- **Per row**: "Test the address" (`AeroLabMeasure.probe`: `fetch` with a timeout and a read cap, diagnosis `cors` / `csp` / `offline` / `unreachable` / `timeout`,
+  then the row's chain on the whole body) and "From a file" (a picker; "From Downloads" with a launcher, by `GET /__setup/downloads?glob=…`; the file's read time
+  as a stream and as an `ArrayBuffer`). Chains: `sia` (the three modes), `cifp` (stream `FAACIFP18`, count the 132-column records, read the PA airport records),
+  `json`, `html`, `zip`, `bin` (magic bytes; "PDF not readable in the page without pypdf").
+- **The three modes of the SIA zip** (separately timed, run in the order c, b, a so a crash keeps what was measured): **a** main thread as V2 (`ZipStore.read`,
+  `SiaBase.parseXmlSia*`, `DOMParser`, `parseAixm*`, `SiaAero.parseAixm`, `SiaBase.splitZones`, a JSON per kind); **b** a Worker without `DOMParser` (`zip_store.js`
+  loaded unchanged with `self.window = self`, entry inflated whole, then the tag reader); **c** a Worker, everything streamed (`lab_zip.js`: central directory
+  from the end of the `File`, entry as `File.slice().stream()` through `DecompressionStream`, decoded in streaming mode, read by the tag reader). Per mode: time
+  per step, heap where the browser exposes it (`performance.memory` on the main thread; a Worker has none; `measureUserAgentSpecificMemory` only when cross-origin
+  isolated), output sizes, counts per kind compared with the other modes and with the published `fr` base (`aeroindex.json` rows), the `sogLab:run-started` trace
+  that detects a killed tab.
+- **The tag reader** (`lab_xml.js`, `AeroLabXml`): `create('sia' | 'aixm')` → `{ push(text), end(), stats() }`; a depth machine on tags (comments, `<?…?>`,
+  CDATA skipped; not a conformant parser), blocks held only while open, so the memory is the largest block. Kinds read whole, with the page readers' rules:
+  XML_SIA `Espace` / `Partie` / VFR `NavFix`; AIXM `Ahp`, `Vor` / `Dme` / `Tcn` / `Ndb` / `Ils`, `Dpn`, `Obs`, `Ase` + `Abd` (arcs counted, not built); the other
+  records are counted per name. Golden test K8: the same results as the page's readers at every chunk size.
+- **Trial publication**: by the data layer's GitHub transport (the screen receives `head` / `tree` / `commit`, never the token): asks, then a small
+  `lab/essai-<date>.json` and a filler block (0.5 / 2 / 5.3 / 10 MB), time and API errors measured; "Clean" removes the `lab/essai-*` files in one commit. Greyed
+  with its reason without repository and token, and when offline.
+- **Report** (`lab_report.js`): English text, dated, a device block (user agent, app mode, cores, declared memory, heap API, screen, online) and one entry per run;
+  "Copy the report" (clipboard, else shown selected); kept in `cache/lab/report.json`, reloaded at opening.
+- Invariants 1 and 4 of § 6 are untouched in spirit: the lab writes no base file; its texts (four languages) are a third exception after the `.lnmperf` card,
+  for a screen that goes with the lab. Tests: K8, K9 (`frame/aerodb/test/lab.html`), A20 to A24 (`tests/v3/PLAN.md`).
+
 ## 6. Invariants
 
 1. aerodb never writes the SIA base nor AircraftDB, never builds, never executes a file read from the data

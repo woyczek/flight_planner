@@ -814,6 +814,8 @@ Verwaltungs- und Testseiten, **eine Schaltfläche pro Seite**, jede mit einem Sa
 Schlüssel `edge`; die Linie wird angezeigt, bis Sie etwas einstellen); die Schaltfläche „Konfiguration für einen Piloten exportieren“ (siehe „Einen Piloten einrichten“);
 der Fahrplan (`#roadmap`) und die Diagnose der Karte „Über“.
 
+<a id="settings-datalab"></a>**Daten-Labor (temporär).** Die Taste „Daten-Labor“ (`#datalab`) misst auf diesem Gerät, ob die Luftfahrtbasis von einem Telefon aus geholt, analysiert, kompiliert und veröffentlicht werden kann: Adresse jeder Quelle testen, das SIA-ZIP mit „Aus einer Datei“ geben (iPhone: Dateien › Downloads; auf einem Rechner mit Starter „Aus Downloads“), einen Test veröffentlichen, dann „Bericht kopieren“ und der Datensitzung einfügen. Nichts gelangt in die Basis oder die Module.
+
 **Die Prüfstände, auf einem Rechner.** Vom Starter bedient, öffnen sie sich nur auf einem Rechner mit Starter (anderswo
 werden sie ohne Link genannt); Pfade relativ zur Wurzel der Suite: `labs/design_primitives.html` (Primitive und
 Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftfahrtbasis, online und offline),

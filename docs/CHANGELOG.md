@@ -24,6 +24,19 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **aerodb: one-click design for the EAD Basic procedures** (`frame/aerodb/EAD_BASIC.md` § 5, DECISIONS) — a Maintenance button starting a launcher job
   (login from the secrets store, AIP Library search, AD 2 download into the local cache, layout registry, `proc/`, plan then result), the blockers in
   the order to lift them (terms of automated access, one real page per layout, the AIP Library screens) and a draft question to EUROCONTROL. DFS on standby.
+- **Data laboratory: can the aeronautical base be fetched, parsed, compiled and published from a phone? Measured on the owner's phone** (screen
+  `#datalab`, `frame/aerodb/lab*.js` and `lab.css`, a button of the Administration card at the Full level, `frame/aerodb/test/lab.html` and its
+  synthetic fixtures, `tools/csp_policy.py`, `tools/launch.py` `download_patterns`, `tests/v3` A20–A24 and K8–K9, aerodb SPEC "Data laboratory",
+  DECISIONS, INTEGRATION; **temporary**, lot P0 of `docs/technique/V3_APP_DONNEES.md`) — user 26 Oct: "Go. Tu inclus toi-même les injecteurs et mesures
+  dans le lab. Je m'organise pour download le SIA « payant », tu trouves toutes les autres URLs." One line per source of the table 1.2 (15: the 17 without
+  X-Plane and the aircraft types) with its real address (the eAIP and CIFP ones derived from the AIRAC cycle), expected size and licence;
+  "Test the address" (a timed `fetch`, with the diagnosis "blocked by CORS" / "blocked by the page policy" / "unreachable") and "From a file" (a picker; "From
+  Downloads" on a workstation with the launcher, by the existing `GET /__setup/downloads`; the cycle is read from the SIA file name). The SIA zip goes through
+  the chain of V2 in three separately measured modes — (a) main thread with `DOMParser`, (b) a Worker without `DOMParser` and a tag-based XML reader, zip in memory,
+  (c) the same fully streamed — with time per step, heap where the browser exposes it, a trace that detects a killed tab, and counts per kind compared with
+  the published base; the reader's counts are identical to V2's on the real 2026-10-01 export. A trial publication through the data layer's GitHub transport
+  (never the token), its cleaning, and a report that is copied and kept on the device (`cache/lab/report.json`). The page policy now lists the 12
+  hosts of the sources in `connect-src` (a security decision per host, to be reviewed when the laboratory goes).
 - **Data: the "Data" screen and the dedicated data application, specified** (`docs/technique/V3_DONNEES_REGENERATION.md`,
   `docs/technique/V3_APP_DONNEES.md`, `V3_SPECIFICATION.md` § 10.18 and § 10.19, aerodb DECISIONS; documentation only, no code) — user 26 Oct:
   inventory of the 17 sources and of their chains (7 with a step by hand), the screen `#data` (fetch · compile · push · clean, per row and for all), the

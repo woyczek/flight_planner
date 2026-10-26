@@ -49,6 +49,17 @@
       'Un archivo y un enlace que configuran la app de un piloto: la aerolínea, el repositorio de datos, su trigrama y cómo crear el token. Nunca un token ni un secreto.'
     ]
   }, {
+    id: 'datalab',
+    href: '#datalab',
+    where: 'app',
+    title: ['Laboratoire données', 'Data laboratory', 'Daten-Labor', 'Laboratorio de datos'],
+    text: [
+      'Temporaire : mesure sur cet appareil si la base aéronautique peut être récupérée, analysée, compilée et publiée depuis un téléphone (adresses des sources, ZIP du SIA en trois modes, publication d’un essai) ; le rapport se copie.',
+      'Temporary: measures on this device whether the aeronautical base can be fetched, parsed, compiled and published from a phone (source addresses, the SIA ZIP in three modes, a trial publication); the report can be copied.',
+      'Temporär: misst auf diesem Gerät, ob die Luftfahrtbasis von einem Telefon aus geholt, analysiert, kompiliert und veröffentlicht werden kann (Quelladressen, SIA-ZIP in drei Modi, Testveröffentlichung); der Bericht ist kopierbar.',
+      'Temporal: mide en este dispositivo si la base aeronáutica puede obtenerse, analizarse, compilarse y publicarse desde un teléfono (direcciones de las fuentes, ZIP del SIA en tres modos, publicación de prueba); el informe se copia.'
+    ]
+  }, {
     id: 'roadmap',
     href: '#roadmap',
     where: 'app',

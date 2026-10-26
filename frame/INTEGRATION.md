@@ -667,3 +667,14 @@ copies on. Distances by the haversine formula are already periodic and need noth
 `modules/atmosphere/atmo.js` has the same three functions (its own copy, kept identical so that the weather cache cells are the same);
 the module switches to this helper in its next lot. Bench: `frame/lib/test/geo.html`. A module that loads it from another
 folder lists it in its `meta.files` (`'../../frame/lib/geo.js?v=0'`).
+
+## 13. A frame screen drawn by a service (`#datalab`)
+
+Not a module: a screen of the frame (`ROUTES` / `SCREENS` of `frame/app.js`, opened over the current module like Settings and the roadmap) whose drawing belongs
+to a service. Today one, **temporary**: aerodb's data laboratory (`#datalab`, Full level, reached from the Administration card; `frame/aerodb/SPEC.md` § 5 sexies).
+The frame loads its scripts on demand (`LAZY.datalab`) and `renderDatalab` gives it `{ t, lang, notify, ask, data, aerodb, level, launcher, github,
+githubInfo }`: `data` is an adapter (`reads` `sia/base/`, `writes` `cache/lab/`, policy `cache`), `github()` the device's GitHub transport (`head` / `tree` /
+`commit`; **the token never leaves the transport**) or null, `launcher()` the survey of the launcher or null. A screen of this kind checks the level itself and
+says why it is empty below it. A module still never calls `fetch`: the laboratory is the frame's known exception, as Settings' `setup()` and `lnmperf.js`
+(`V3_DONNEES_REGENERATION.md` § 2.8: they move onto `ctx.launcher` in a later lot).
+

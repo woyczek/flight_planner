@@ -772,3 +772,124 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
   environment variable that accepts nothing but `http://127.0.0.1`). The session never logs in.
 - **Tested** by case K6: the reading helpers on a hand-built form, the sanitising, and the whole flow against a local fake that follows the shape of the
   public login page; **never against the real connected screens**, so a first run may stop at a step the report will name.
+
+## 26 October 2026 — the data laboratory (lot P0 of the data application): built, measured on Chromium, to be measured on the phone (aerodb, relay of the cloud)
+
+User, 26 Oct: « Go. Tu inclus toi-même les injecteurs et mesures dans le lab. Je m'organise pour download le SIA « payant », tu trouves toutes les autres
+URLs. » — then, relayed: « Ce fichier arrive chez l'utilisateur dans « download » (poste et/ou téléphone) pour l'import. » The user also dropped the real SIA
+export of cycle 2026-10-01 (`export_xml_bd_sia_2026-10-01-v02.zip`, 5,838,952 bytes) for local calibration: it was read in place or from a scratchpad copy,
+**never** copied into the repository, a fixture or the data repository; the copy was deleted at the end.
+
+- **What it is**: a temporary administration screen `#datalab` of the frame, drawn by aerodb (`frame/aerodb/lab.js`, `lab.css`), Full level only, reached by
+  the "Data laboratory" button of the Administration card (settings, `admin_links.js`; its decision is in `frame/settings/DECISIONS.md`). It measures **on the
+  owner's iPhone, in the home-screen app served by GitHub Pages**, whether the base can be fetched, parsed, compiled and published from a phone. It writes
+  nothing but its report (`cache/lab/report.json`, policy `cache`) and the trial files the owner publishes by the button (`lab/essai-…`). Nothing of it enters
+  the base or the modules. SPEC § 5 sexies.
+- **Files**: `lab_sources.js` (the table: 15 rows = the 17 sources of the table 1.2 of `V3_DONNEES_REGENERATION.md` without 11 X-Plane and 16 aircraft types,
+  with address, size, licence, human gesture, chain; the AIRAC derivations), `lab_xml.js` (the tag-based streaming XML reader), `lab_zip.js` (zip read as a
+  stream), `lab_run.js` (modes b and c, shared summary), `lab_worker.js`, `lab_measure.js` (device, address test, picker read, mode a, chains, trial
+  publication), `lab_report.js` (the report text), `lab.js` + `lab.css` (the screen), `test/lab.html` + `test/fixtures/lab/` (K8).
+- **The frame's own file touched, minimally** (the frame agent to review): `frame/app.js` — `LAZY.datalab`, `ROUTES.datalab` / `SCREENS` and `renderDatalab`
+  (about 45 lines: it gives the screen an adapter that reads `sia/base/` and writes `cache/lab/`, the level, the launcher survey, and **the GitHub transport
+  of the device** (`FD.github()`: head / tree / commit) — never the token). `frame/settings/admin_links.js` — one entry. `tools/csp_policy.py`, `tools/launch.py`.
+- **Decisions**:
+  1. **Three modes of the SIA zip, measured separately, run in the order c, b, a** (the hungriest last: a killed tab keeps what was measured; a guard
+     `localStorage['sogLab:run-started']` is set before each run, updated at each step, erased after; the next opening says "the run X did not finish, last
+     step Y" and writes it in the report). (a) main thread as V2: `ZipStore.read` → `parseXmlSiaAirspaces`, `parseXmlSiaVfrPoints`, `DOMParser` on the AIXM,
+     `parseAixmAirspaces`, `parseAixmObstacles`, `SiaAero.parseAixm`, then `SiaBase.splitZones` (one zone) and a JSON per kind. (b) a `Worker` (no `DOMParser`):
+     `shared/zip_store.js` loaded **unchanged** with `self.window = self`, entry inflated whole, text decoded whole, read by the tag reader in 1 MB slices.
+     (c) a `Worker`, **zip read as a stream**: `lab_zip.js` reads the central directory at the end of the `File` (`slice`), an entry is
+     `File.slice().stream()` → `DecompressionStream('deflate-raw')` → `TextDecoder` in streaming mode → the reader, so neither the archive nor an entry is
+     ever in memory (the answer to "stream if `zip_store` allows": it does not — `ZipStore.read` holds the whole archive and inflates an entry into one
+     buffer — so c has its own small reader). c also runs an inflate-only pass so that the time splits into inflate and parse.
+  2. **The XML reader is a state machine on tags, not a parser** (no entities, namespaces or DTD; comments, processing instructions and CDATA skipped): it
+     follows the depth, counts the records at the record depth (4 for XML_SIA, 2 for AIXM 4.5), and reads whole only the blocks of the kinds
+     measured, with the page readers' own rules: spaces (XML_SIA `Espace` + `Partie`; AIXM `Ase` + `Abd`, arcs counted by `expandAixmArc`'s step rule but not
+     built), VFR points, aerodromes (`Ahp`), navaids (`Vor` / `Dme` / `Tcn` / `Ndb` / `Ils` merged as `SiaAero.parseAixm` does), points (`Dpn`), obstacles
+     (`Obs`, cells of 1°). Encoding from the prologue (XML_SIA is **ISO-8859-1**, AIXM 4.5 is UTF-8). **Golden test (K8)**: on the synthetic fixtures the
+     reader gives the same results as `parseXmlSiaAirspaces` / `parseXmlSiaVfrPoints` (identical JSON), `SiaAero.parseAixm` (aerodromes, navaid kinds and merge
+     flags, points, obstacles), `parseAixmObstacles` and `parseAixmAirspaces` (type, name, key, parts, outline points) **at chunk sizes 1, 7, 13, 64, 100, 1000
+     and whole**; **and on the real 2026-10-01 export, run locally, every count is identical across the three modes** (below).
+  3. **Sources**: every address was checked from the container with `curl` and an `Origin` header (table below). The container's egress policy blocks eight
+     of the hosts (HTTP 403 on CONNECT: not routed around); those addresses come from the code (`tools/aero_fetch.py` etc.) or, for DIRCAM, from a search, and
+     are marked unverified; **the phone is the measure**. Where an address depends on the cycle it is derived (`cycleOf`, `eaipBase`, `cifpName`, `siaPage`),
+     with a cycle selector (2610 in force, 2611 next). The eAIP folder is removed after its cycle (404 for 2607 to 2609) and appears days before the next
+     (404 for 2611 today); the FAA CIFP of 2611 (`CIFP_261029.zip`, 9,113,631 bytes) is already there.
+  4. **"Test the address" is a `fetch` from the page** with a timeout, a per-source read cap, no cookie. The diagnosis: `csp` (a `securitypolicyviolation` event
+     on `connect-src`), `offline`, `cors` (the same URL fetched with `mode: 'no-cors'` resolves: the server answers but does not let the page read), `unreachable`
+     (nothing answers), `timeout`. `Access-Control-Allow-Origin` cannot be read by a page (it is not an exposed header): "allowed" means the read succeeded.
+     Content-Type, Content-Length and Last-Modified are readable and reported. When the body is whole, the **same chain** as "From a file" runs on it: CIFP
+     (stream `FAACIFP18`, count the 132-column records, read only the **PA** airport reference records), JSON (`JSON.parse` time, shape), HTML (title, links, PDF
+     links: "PDF not readable in the page without pypdf" is stated for the eAIP coding tables and the VAC), binary magic (PDF, GRIB, PNG).
+  5. **CSP**: the 12 hosts of the table are added to `connect-src` (`tools/csp_policy.py`), because the test is meaningless otherwise (the page would block
+     before the server answers). A security decision per host (`AUDIT_SECURITE_2026-10-07.md` M2): **to review when the laboratory goes** or keep only the hosts
+     the data application retains after the measures. A test hook, `localStorage['sogLab:urls']` = `{ id: address }`, replaces a table address (a fake local
+     server in the tests: Playwright's `route.fulfill` adds CORS headers by itself, so it cannot stand for a server without them).
+  6. **Downloads** (user's precision): on a workstation with the launcher, "From Downloads" lists by the **existing** `GET /__setup/downloads?glob=…&info`
+     and takes the newest by the **date in the name, then the version**, then the file; the only launcher change is that `download_patterns()` also reads the
+     `downloads:` patterns of `lab_sources.js` (`export_xml_bd_sia_*.zip`, `CIFP_*.zip`, next to NATS's `EG_*_DS_*_XML.zip`): the route refuses a pattern no source
+     declares. On Linux `fnmatch` is case-sensitive (the SIA's real name is `…_SIA_…`, the user's copy `…_sia_…`): on Windows it is not. On a phone (Pages, no
+     launcher) there is the picker (`accept` by source): **iOS cannot open a given folder** — the line says "Files › Downloads" in four languages and the help says so.
+     The name is checked (`export_xml_bd_SIA_<yyyy-mm-dd>-v<nn>.zip`, `CIFP_<yymmdd>.zip`), the cycle read from it; a wrong name is said and the file is still
+     measured. The time to read the file from the picker is measured as a stream and as an `ArrayBuffer` (the stream first: the second read may be cached).
+  7. **Memory**: `performance.memory` (Chromium, main thread only; **not available in a Worker**), sampled between steps (a synchronous step such as the DOM parse
+     hides its own peak: stated), and `measureUserAgentSpecificMemory` when the page is cross-origin isolated (it is not on Pages). **Safari exposes neither**: the
+     report then says "not measurable on this browser" and keeps the trace of survival. `navigator.deviceMemory` is also absent on Safari: reported as "not exposed".
+  8. **Trial publication** by the data layer's GitHub transport: asks first (`ctx.ask`, names the repository), then **two commits** — `lab/essai-<date>.json`
+     (107 bytes) and `lab/essai-<date>-bloc.json` (filler JSON of 0.5, 2, 5.3 or 10 MB: 5.3 MB is the size of the zone `fr`), measuring head, commit, total time and
+     the API's error and status; a conflict is retried once. "Clean" lists the tree, removes the `lab/essai-*` files in one commit. Greyed with its reason without
+     repository and token, and when offline. The filler holds no data (the SIA's licence).
+  9. **The report is in English** (read by the session, pasted), dated, with a device block and one entry per run; kept in `cache/lab/report.json`, reloaded at
+     opening; capped at 300 entries.
+- **Sources found and what `curl` answered** (26 Oct 2026, Origin header sent; "no CORS" = no `Access-Control-Allow-Origin` in the answer):
+
+  | # | Source | Address in the table | `curl` |
+  |---|---|---|---|
+  | 1 | SIA France (zip: a human gesture) | `https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/donnees-aeronautiques-xml-airac-<nn>-<yy>.html` | 10-26: 200, 63,728 B; 11-26: 200, 63,227 B; no CORS |
+  | 2 | GeoNames | `https://download.geonames.org/export/dump/FR.zip` | host blocked by the container's policy (403): unverified |
+  | 3 | MORA tile | `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/5/16/11.png` | 200, 87,345 B; **`Access-Control-Allow-Origin: *`** (GET; the HEAD answer has none) |
+  | 4 | DIRCAM MIAM ENR 5.7 | `https://www.dircam.dsae.defense.gouv.fr/images/Stories/Doc/MIAM_OACI/MIAM_OACI_ENR%205.7.pdf` | host blocked; the address is the one a search returns (the indexed copy says AMDT 10/24, 05 SEP 24): unverified |
+  | 5 | UK Mil ENR 5.2 | `https://www.aidu.mod.uk/aip/pdf/enr/ENR-5-2.pdf` | host blocked (also `aidu.mod.uk`): unverified |
+  | 6 | NAV CANADA | `https://www.navcanada.ca/en/aeronautical-information/operational-guides.aspx` (the page: the dated `dah<yyyymmdd>.pdf` is scraped from it) | host blocked: unverified |
+  | 7 | openAIP | `https://s3.openaip.net/openaip-system-exports/fr_asp.geojson` | host blocked (a search finds no documentation of the bucket): unverified |
+  | 8 | ENAIRE | `https://aip.enaire.es/AIP/` | host blocked: unverified |
+  | 9 | FAA ADDS | `https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Special_Use_Airspace/FeatureServer/0/query?where=1%3D1&outFields=*&f=geojson&resultOffset=0&resultRecordCount=250&maxAllowableOffset=0.0005&geometryPrecision=5` | host blocked: unverified |
+  | 10 | NATS UK (zip: a human gesture) | `https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/` | host blocked: unverified |
+  | 12 | NAT tracks | `https://nms.aim.faa.gov/datanat/nat.json` | host blocked: unverified |
+  | 13 | VAC chart (LFBD) | `https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_01_OCT_2026/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.LFBD.pdf` | 200, 548,604 B; no CORS |
+  | 14 | eAIP France menu | `…/media/dvd/eAIP_<DD>_<MON>_<YYYY>/FRANCE/AIRAC-<yyyy-mm-dd>/html/eAIP/FR-menu-fr-FR.html` | 2610: 200, 2,324,336 B, no CORS; 2611: 404 (626 B); 2607–2609: 404 |
+  | 15 | FAA CIFP | `https://aeronav.faa.gov/Upload_313-d/cifp/CIFP_<yymmdd>.zip` (date = the AIRAC effective date) | 2610 `CIFP_261001.zip`: 200, 9,112,585 B, `Accept-Ranges: bytes`, no CORS; 2611 `CIFP_261029.zip`: 200, 9,113,631 B |
+  | 17 | World weather | `https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_1p00.pl?file=gfs.t<HH>z.pgrb2.1p00.f000&var_PRMSL=on&lev_mean_sea_level=on&…` (the last published run) | 200, 116,099 B (one field), no CORS |
+  | – | `api.github.com` (the publication) | — | `Access-Control-Allow-Origin: *` |
+
+  So: of the hosts the container could reach, **only AWS's elevation tiles and GitHub's API allow a cross-origin read**; the SIA, FAA and NOAA hosts do not.
+- **Measured on the real export of 2026-10-01, Chromium 141 headless in the container** (precise memory flag; median of three runs; counts identical across the
+  three modes: XML_SIA 1,817 spaces in 2,344 outlines of 124,627 points, 1,098 VFR points; AIXM 1,859 spaces of 32,580 points, 808 aerodromes (544 with an ICAO
+  code), 406 navaids (VOR 93, DME 107, TACAN 17, NDB 89, ILS 100), 4,276 points, 13,836 obstacles in 129 cells; the other records are counted). Times by step:
+
+  | Mode | Total, CPU ×1 | CPU ×4 (phone-like) | JS heap seen (peak) | Renderer peak RSS, over a 143 MB base |
+  |---|---|---|---|---|
+  | a main thread (V2) | 2.5 s | 11.5 s | 179–220 MB (a lower bound: the DOM step is synchronous) | **775 MB** (+632) |
+  | b Worker, zip in memory | 0.68 s | — (the throttle does not reach a Worker) | not measurable in a Worker; 249 MB when the same code runs on the main thread | **420 MB** (+277) |
+  | c Worker, streamed | 0.53 s | — | not measurable in a Worker; 60–76 MB on the main thread | **259 MB** (+116) |
+  | b / c code on the main thread | 0.79 s / 0.65 s | 3.3 s / 2.7 s | 249 / 60–76 MB | 421 / 265 MB |
+
+  Steps of mode a (CPU ×1): inflate AIXM 86 ms, decode 130 ms, **`DOMParser` 1,143 ms**, airspaces from the DOM 244 ms, obstacle cells 51 ms, `SiaAero.parseAixm`
+  345 ms, inflate XML_SIA 83 ms, decode 17 ms, spaces 49 ms, VFR points 287 ms, split and serialise 56 ms. Mode b: inflate 89 + 65 ms, decode 120 + 15 ms, parse
+  233 + 119 ms. Mode c: stream AIXM 267 ms (own inflate pass 41), stream XML_SIA 147 ms (43). Output (JSON): spaces 2.6 MB, VFR 0.09 MB, aerodromes 0.19 MB, obstacles
+  1.4 MB in mode a. With V8's old space capped at **64 MB** (`--max-old-space-size`), every mode still ran (mode a in 5.4 s: collector thrash; at 128 MB 14 s): a heap cap is **not**
+  an iOS kill, which depends on the process footprint (hence the RSS column). **These are Chromium numbers; the iPhone is the measure.** The reduced
+  objects of b and c make them a lower bound of a real builder (full aerodromes, airways), not a like-for-like of a.
+- **The CIFP chain on the real FAA file** (`CIFP_261001.zip`, fetched by `curl` from the allowed host, 9,112,585 bytes; the browser reads it as a local file, as
+  the phone would from the picker): the picker's read 10 to 16 ms (stream) and 10 ms (`ArrayBuffer`) in Chromium; the streamed scan of `FAACIFP18`
+  (**53,187,816 bytes inflated**) **180 ms**, **396,923 records** (the Python builder's 396,924 counts the header), cycle 2610 read from the header, **13,309 airport
+  reference (PA) records** read, JS heap seen 113–168 MB (the 13 k airport objects and the line splits), renderer peak RSS 353 MB over a 152 MB base. The reading of
+  a 47 MB file is no obstacle on a desktop engine; the full port of `proc_cifp.py` (the procedure legs) is not measured.
+- **Limits and not tested**: the reader is not a conformant XML parser; the mode (a) peak inside `DOMParser` and the Workers' heap are not measurable on Chromium;
+  Safari's behaviour (JavaScriptCore: `DecompressionStream` from 16.4, `Blob.stream()`, a `Worker` receiving a `File`, `localStorage` survival) is not tested at
+  all — nothing here ran on WebKit; the iOS tab-kill limit is unknown; the CIFP chain ran on the real file read from disk, not fetched by a browser (the container's browser is closed to the network); "From Downloads" is tested against a
+  stub of the route, not the launcher; the trial publication is tested against a fake GitHub API, not the real one (the API's size limits are the very thing
+  to measure); no source answered a real CORS test from a browser (the container blocks 12 of 15 hosts).
+- **Next**: the owner's phone: open `#datalab` (Full level), test the 15 addresses, give the SIA zip, publish a trial, copy the report. The report decides the
+  rest of `V3_APP_DONNEES.md` (M1 to M5, M7): whether the Worker route holds on iOS, which sources need a native shell, the GitHub limits.
+

@@ -182,6 +182,15 @@ Until then: a phone keeps reading the base it has, which is valid (`COMPAT` 14 t
 reporting points", planner and CPCO map pages). The V3 pages do not read `parserVersion` and show nothing. A base of a parser older
 than `COMPAT` would be ignored; this one is not.
 
+### Data laboratory (`#datalab`, temporary)
+
+A frame screen drawn by aerodb (`frame/aerodb/lab.js`), not a module: nothing to mount, nothing to call. The frame (`frame/app.js` `renderDatalab`) loads it on
+demand and gives it `{ t, lang, notify, ask, data, aerodb, level, launcher, github, githubInfo }`, where `data` reads `sia/base/` (to compare with the published
+base) and writes `cache/lab/` (policy `cache`), `github()` is the device's GitHub transport (`head`, `tree`, `commit`; the token stays inside) or null, and
+`launcher()` is the survey of the launcher or null (it enables "From Downloads", the existing `GET /__setup/downloads`). The lab's declared download patterns are
+read by `tools/launch.py` `download_patterns()` from `frame/aerodb/lab_sources.js` (`downloads: '…'`); the hosts of its table are in `tools/csp_policy.py`. A
+module never reaches it. `frame/aerodb/SPEC.md` § 5 sexies says what it measures.
+
 ## 5. Costs to know (measured, see DECISIONS.md)
 
 - **Only what you ask for is read.** Asking for the aerodromes around Paris reads France's `meta` and aerodromes
