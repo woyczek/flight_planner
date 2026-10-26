@@ -750,3 +750,15 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
   Android; the SIA order by hand on a phone; token and repository; a cloud runner for the PDF rows; cellular data.
 - **Not done**: no route, no screen, no builder port; no test; `frame/aerodb/SPEC.md` and `INTEGRATION.md` unchanged (they change with lot D1 and
   D2).
+
+## 26 October 2026 — EAD preferred over DFS: one-click design (`EAD_BASIC.md` § 5)
+
+- **Word of the user**: « Dfs en standby à beaucoup plus tard. Je privilégie EAD (eurocontrol), mais je le veux en « facile » à utiliser (1 clic et de l'autom
+  derriere). » The DFS licence request stays prepared and unsent.
+- **Read** on the public login page: the login is an AJAX `POST /fwf-eadbasic/ajaxlogin/ajax_security_check.jspx` (`j_username`, `j_password`),
+  JSON answer, no captcha: scriptable with the standard library. The AIP Library (JSF) is not visible without login.
+- **Design**: a Maintenance button → launcher job (login with the owner's credentials from the launcher's secrets store, search, download AD 2 PDFs
+  into the local cache only, layout registry + pypdf, `proc/<cycle>/…`, plan then result, synchronisation); same rules as the other
+  jobs; later once per AIRAC cycle. Credentials never in the repository, a message or a log; the session never logs in.
+- **Not coded**: the terms of EAD Basic on automated access are unknown (question drafted for `ead.service`), no State layout has been seen, and the
+  AIP Library calls need real pages. Two ways to get them are offered to the owner (manual pages, or a read-only probe he runs himself).

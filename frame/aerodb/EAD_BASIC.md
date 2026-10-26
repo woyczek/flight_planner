@@ -81,3 +81,53 @@ data repository is private but outside this session's reach. The way that respec
    needed for a fixture; the owner decides whether quoting it is acceptable under the State's terms.
 
 Sources: [EAD Basic login page](https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/login/ead-basic/), [EAD Basic help — Searching for AIPs](https://www.ead.eurocontrol.int/fwf-eadbasic/public/help/topic/using_aip/searching_for_aips.htm), [EAD (EUROCONTROL)](https://www.eurocontrol.int/service/european-ais-database), [DFS AIP datasets notice](https://aip.dfs.de/datasets/).
+
+## 5. Making it a one-click job (design, 26 October 2026; the owner prefers EAD to DFS and wants "1 click and automation behind")
+
+**What the public login page shows (read):** the login is a plain AJAX form: `POST /fwf-eadbasic/ajaxlogin/ajax_security_check.jspx` with
+`j_username` and `j_password`, answered by a small JSON (`loggedIn`, `redirect`); no captcha on the page. A script can therefore open a
+session with the standard library (`http.cookiejar`). **Not known** (visible only after login): the AIP Library itself is a JSF / PrimeFaces
+screen (form state, partial requests), the one part that needs reverse-engineering, and the file names.
+
+**The click.** In Settings › Maintenance › Aeronautical data (Expert level, launcher only, like "Import a VFR compilation"), a button
+**"Update the procedures of other States (EAD)"**. It calls `POST /__setup/proc-ead` on the launcher (the owner's workstation); the launcher
+(Python standard library + optional `pypdf`) does, with no console and no file to place:
+
+1. **Log in** with the owner's EAD Basic user name and password, kept in the launcher's **secrets store** (the "Keys and external services"
+   card; stored on the workstation only, never served to a page, never in a repository, never in a message or a log).
+2. **Search the AIP Library** for each State chosen in a setting (default: the States of the owner's recent flights and home bases),
+   AIP part AD, and **download the AD 2 PDFs of the aerodromes** that matter (the owner's aerodromes first; "all" as an option), keeping
+   the PDFs in the launcher's local cache only (`data/local/`, never committed, never synchronised).
+3. **Read the coding tables** with the layout registry of § 3 (pypdf), write `proc/<cycle>/<ICAO>.json` into the data repository's
+   working copy, status `check`, source `ead-basic/<State>`, with each page's own amendment date and a notice naming the State's AIP.
+4. **Show the plan, then the result** as the VFR import does: a summary (aerodromes, procedures, pages not understood, files changed),
+   and the existing synchronisation publishes. One tap to start, one to confirm; nothing else.
+5. Only files that changed (page hash) are rewritten; a page whose layout is not recognised is listed, never guessed.
+
+**Automation later**: the same job at the launcher's start once per AIRAC cycle, with a notification; the phone gets the result through
+the usual synchronisation (it never logs in anywhere).
+
+**What blocks it, in the order to lift it:**
+1. **EAD Basic's terms on automated access** are unknown (the site calls itself an advertisement tool not for operational use; its terms
+   of use page is not reachable from here). A script that logs in and downloads documents is not "browsing". **Ask EUROCONTROL first**
+   (`ead.service` at eurocontrol.int, the address the login page gives): draft below. Without an answer the job can still be built, but the
+   owner would run an automated login knowingly outside a granted permission.
+2. **Layouts**: no State's AD 2 coding table has been seen yet (§ 2). The registry needs one real page per layout, so the job starts with
+   the owner's **one State** and grows State by State.
+3. **The AIP Library screens**: written against real pages. Two ways, to be chosen by the owner: (a) the owner downloads the § 4 pages once by
+   hand (fastest for the first parser), then the click replaces him; (b) the session writes a read-only **probe** (`tools/proc_ead.py --probe`:
+   asks for the password at the prompt, never stores it, logs in, opens the AIP Library, saves the **page structure only** (HTML with form
+   state, cookies and the user name removed, no PDF) and a list of States and file names) which the owner runs once and whose sanitised output
+   he sends back, so that the session can write the search and download calls without ever holding a credential. The session never logs in.
+4. **Where the click runs**: a workstation with the launcher (and `pypdf`). A phone cannot run it, but receives the result.
+
+**Draft of the question to EUROCONTROL (English):**
+
+> Dear Sir or Madam, I hold an EAD Basic account. I run the private tools of *[name of the virtual airline]*, a non-commercial virtual
+> airline. Is it permitted to use my EAD Basic access, with a small script that logs in with my own credentials and downloads, for my own
+> use, the AD 2 pages of the AIPs of a few States from the AIP Library, to extract the published procedure tables for a **flight-simulation
+> application** (private, not for operational use, shown with the State's name and the label "not for navigation")? If it is not
+> permitted, may I ask what would be, short of an EAD Agreement? Kind regards, *[name, e-mail]*
+
+**What I need from the owner to go on** (see the message of 26 October): (1) send or not the question above; (2) probe (b) or manual
+pages (a); (3) which State and which aerodrome first.

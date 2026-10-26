@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: one-click design for the EAD Basic procedures** (`frame/aerodb/EAD_BASIC.md` § 5, DECISIONS) — a Maintenance button starting a launcher job
+  (login from the secrets store, AIP Library search, AD 2 download into the local cache, layout registry, `proc/`, plan then result), the blockers in
+  the order to lift them (terms of automated access, one real page per layout, the AIP Library screens) and a draft question to EUROCONTROL. DFS on standby.
 - **Data: the "Data" screen and the dedicated data application, specified** (`docs/technique/V3_DONNEES_REGENERATION.md`,
   `docs/technique/V3_APP_DONNEES.md`, `V3_SPECIFICATION.md` § 10.18 and § 10.19, aerodb DECISIONS; documentation only, no code) — user 26 Oct:
   inventory of the 17 sources and of their chains (7 with a step by hand), the screen `#data` (fetch · compile · push · clean, per row and for all), the
