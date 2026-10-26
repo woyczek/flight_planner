@@ -748,8 +748,33 @@ def d26(c):
     c.ok(d8['up'] == '?' and d8['dash'], f'unreadable ceiling column: up={d8["up"]}, dash={d8["dash"]}', 'dotted outline and a "?" mark, not a full UNL column')
     c.eq(c.js("[...document.querySelectorAll('svg.mp-lv text.mp-lv-unk')].map(t => t.textContent)"), ['?'], 'one "?" mark, on the unreadable column', what='"?" marks')
     c.eq(c.js("[...document.querySelectorAll('.mp-lv-list li')].filter(l => /ASFC/.test(l.textContent)).length"), 2, 'the list keeps the SIA notation (800 ASFC|1800 ASFC)', what='list entries with ASFC')
+    d26_order(c)
     d26_profile(c)
     d26_many(c)
+
+
+# user 26 Oct ("Pour lire, le plus haut en haut, le plus bas en bas. Inverser 12345 quoi."): the list reads like the vertical axis, number 1 is
+# the highest space; the columns of the graph carry the number of their line and go from left to right in the same order.  Ceiling descending
+# (UNL highest), then floor descending, then the name; an unreadable ceiling is ranked with its floor, after the known ceilings above it.
+_D26_ORDER_JS = """() => { const svg = document.querySelector('svg.mp-lv'), sb = svg.getBoundingClientRect();
+  const li = [...document.querySelectorAll('.mp-lv-list li')].map(l => [l.querySelector('.mp-lv-n').textContent, l.querySelector('.mp-lv-name').textContent]);
+  const cols = [...svg.querySelectorAll('rect.mp-lv-col')].map(r => ({ x: r.getBoundingClientRect().left - sb.left, name: r.querySelector('title').textContent }));
+  const nums = [...svg.querySelectorAll('text[font-weight="700"]:not(.mp-lv-unk)')].map(t => ({ x: t.getBoundingClientRect().left - sb.left, n: t.textContent }));
+  return { li, cols, nums } }"""
+
+
+def d26_order(c):
+    r = c.js(_D26_ORDER_JS)
+    want = ['CTA 7', 'TMA 6', 'R 57', 'D 8']       # CTA ceiling UNL, TMA 6,500, R 57 1,800, D 8 (1,500 floor, ceiling unreadable)
+    c.eq([n for n, _ in r['li']], ['1', '2', '3', '4'], 'the list is numbered 1 to 4 from the top', what=f'numbers {[n for n, _ in r["li"]]}')
+    key = lambda t: re.search(r'(?:CTA|TMA|R|D) \d+', t).group(0)        # the name is "TYPE TYPE NUM TEST"
+    c.eq([key(t) for _, t in r['li']], want,
+         'the highest space first: CTA (UNL), TMA, R 57, then the unreadable ceiling ranked with its floor', what=f'order {[t for _, t in r["li"]]}')
+    cols = sorted(r['cols'], key=lambda x: x['x'])
+    c.ok(key(cols[0]['name']) == 'CTA 7', f'leftmost column: {cols[0]["name"]!r}', 'the column 1 (the leftmost) is the CTA, the highest space')
+    c.eq([key(x['name']) for x in cols], want, 'the columns go left to right in the order of the list', what=f'columns {[x["name"] for x in cols]}')
+    nums = sorted(r['nums'], key=lambda x: x['x'])
+    c.eq([x['n'] for x in nums], ['1', '2', '3', '4'], 'the columns carry the number of their line, 1 on the left', what=f'column numbers {[x["n"] for x in nums]}')
 
 
 _D26_PROFILE_JS = """async ([list, level]) => {
@@ -797,6 +822,9 @@ def d26_many(c):
     c.eq(n, 13, 'the sheet lists the thirteen readable spaces (the flat ones left out)', what=f'{n} entries')
     g = c.js("""() => { const s = document.querySelector('svg.mp-lv'), w = +s.getAttribute('width');
         return { w, cols: [...s.querySelectorAll('rect')].map(r => { const b = r.getBoundingClientRect(), o = s.getBoundingClientRect(); return [b.left - o.left, b.right - o.left] }) } }""")
+    o = c.js(_D26_ORDER_JS)
+    c.eq([re.search(r'S\d+', t).group(0) for _, t in o['li']], [f'S{i}' for i in range(12, -1, -1)], 'thirteen spaces: the highest ceiling first (S12 down to S0)', what=f'order {[t for _, t in o["li"]][:4]}...')
+    c.eq([x['n'] for x in sorted(o['nums'], key=lambda x: x['x'])], [str(i) for i in range(1, 14)], 'thirteen columns numbered 1 to 13 from the left', what='column numbers')
     c.eq(len(g['cols']), 13, 'one column per listed space (thirteen)', what=f'{len(g["cols"])} columns')
     c.ok(all(a >= 0 and b <= g['w'] + 0.5 for a, b in g['cols']), f'columns {[round(b) for a, b in g["cols"]]} inside the {g["w"]} px graph', 'no column cut off by the graph\'s edge')
 

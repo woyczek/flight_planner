@@ -767,6 +767,15 @@ way round the world. The helper is the frame's (`frame/lib/geo.js`: `wrapLon`, `
   - **The hover bubble** (screen, mouse) of a space label ends with a muted line "Aussi ici : FIR PARIS · SIV POITIERS" (x4, no fold), without the
     hovered space itself, absent when none. The bubble opens on a label, a barb or an airway cartouche, not on an empty place; the line is not added to
     a touch (a tap on a space opens the sheet). Both are written only when the value changes; the folded / unfolded state is not kept.
+- **Reading order (26 Oct 2026; user: "Pour lire, le plus haut en haut, le plus bas en bas. Inverser 12345 quoi.")**: the spaces of a point read like the vertical
+  axis, **the highest on top**. `MapsRender.sortAirspacesTopDown(list)` (written once; `airspacesAround` applies it to `shown`, the line of the profile
+  cursor in `strip` too) sorts by **ceiling descending** (UNL first), then **floor descending** (ASFC counted from 0, as the graph does), then the name
+  ("TYPE NAME"). Number 1 is the highest space, at the top of the list **and in the leftmost column of the graph**: a column carries the number of its
+  line, columns run left to right in the list's order. The hover bubble's two names follow the same order; the "Aussi ici" line does not change.
+  - **An unreadable ceiling** (empty, unreadable, or under the floor: the dotted "?" column) **is ranked as if the ceiling were its floor**, and after the
+    known ceilings of the same value: D 1,500 ASFC | unreadable comes after R 57 (1,800 ASFC) and before a space whose ceiling is at 1,500 or lower;
+    an unreadable floor counts as 0.
+  - D26 fixture: 1 CTA (UNL), 2 TMA (FL065), 3 R 57 (1,800 ASFC), 4 D (1,500 ASFC | unreadable); thirteen spaces: S12 to S0.
 
 ## 5. Invariants
 

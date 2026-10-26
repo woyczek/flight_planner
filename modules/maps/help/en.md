@@ -60,7 +60,7 @@ bubble gives the essentials in two lines — for an airway, the segment (point �
 floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”). Tapped
 elsewhere inside an airspace, the data block under the map shows the airspaces under your finger, one or several, in
 place of the profile: a chart of levels, like the vertical profile (one numbered column per airspace, from its floor to
-its ceiling), then the numbered list with their limits. FIRs, UIRs, SIVs and control sectors without limits, like any airspace from the surface to the ceiling, are neither drawn nor counted (you do not cross them): their names read on a folded line “Also here (n)” under the list and on a last grey line of the hover bubble (“Also here: FIR PARIS · SIV POITIERS”), the FIR or the SIV to call, without a column. The ✕, Escape or a tap on an empty spot of the map close it and
+its ceiling), then the numbered list with their limits, read like the vertical axis: the highest on top (number 1 is the airspace with the highest ceiling, on the left of the chart), the lowest at the bottom. FIRs, UIRs, SIVs and control sectors without limits, like any airspace from the surface to the ceiling, are neither drawn nor counted (you do not cross them): their names read on a folded line “Also here (n)” under the list and on a last grey line of the hover bubble (“Also here: FIR PARIS · SIV POITIERS”), the FIR or the SIV to call, without a column. The ✕, Escape or a tap on an empty spot of the map close it and
 the profile comes back, another tap on airspaces replaces it; moving the map leaves it. The map neither moves nor
 changes size. The hover bubble follows the pointer, stays 5 seconds, gives way to the next one, and closes with a tap
 elsewhere or a move of the map. Over a beacon, the bubble gives its type, ident and frequency; where several beacons
@@ -150,4 +150,4 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: dc1f0c9c9d2f -->
+<!-- fr: 4f6a636e781c -->

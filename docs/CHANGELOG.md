@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the airspaces of a point read top-down** (`modules/maps/render.js` `sortAirspacesTopDown`, `modules/maps/module.js` `levelsHtml` / `strip`, `tests/v3` D26,
+  SPEC § 4 nonies, DECISIONS, Pilot manual x4) — user 26 Oct: "Pour lire, le plus haut en haut, le plus bas en bas. Inverser 12345 quoi." The list
+  "n espaces sur ce point" now starts with the highest space (ceiling descending, UNL first, then floor descending, then the name); number 1 is that space,
+  the graph's columns keep the number of their line and run left to right in the same order, and the hover bubble and the profile cursor's line use the
+  same order (one function). A ceiling that cannot be read is ranked with its floor, after the known ceilings above it. The "Aussi ici" line is unchanged.
+  D26.
 - **aerodb: EAD Basic probe** (`tools/proc_ead.py --probe`, `tests/v3/cases/aerodb.py` K6, `frame/aerodb/EAD_BASIC.md` § 6, DECISIONS) — a read-only explorer the owner
   runs with his own EAD Basic account (password typed, never kept): login, AIP Library form, search for the United Kingdom / AD, documents found for EGLL;
   no PDF downloaded, output sanitised. It prepares the one-click job and the first State's layout.

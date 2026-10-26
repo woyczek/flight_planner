@@ -1431,7 +1431,8 @@ function strip() {
   let text = '';
   if (S.prof && S.cursor != null) {
     const i = MapsProfile.at(S.prof, S.cursor),
-      zones = i.zones.map(z => MapsRender.sia(z)[0]); // notation SIA, comme l'infobulle
+      zones = MapsRender.sortAirspacesTopDown(i.zones).map(z => MapsRender.sia(z)[
+        0]); // notation SIA, comme l'infobulle ; le plus haut d'abord
     text = [tt(TX.dist, {
       d: i.nm.toFixed(i.nm < 10 ? 1 : 0)
     }), i.alt != null ? tt(TX.planned, {
@@ -2940,7 +2941,8 @@ const ZONE_COL = {
 };
 /** Contenu « n espaces sur ce point » du bloc de données : un graphique comme le profil vertical (axe des altitudes, une
  *  colonne par espace entre son plancher et son plafond, numérotée), à gauche, puis la liste numérotée en notation SIA,
- *  du plancher le plus bas au plus haut. Le graphique est dessiné à l'échelle 1 pour la place du bloc (bw × bh px) : la
+ *  du plus haut au plus bas (le numéro 1 est l'espace le plus haut, en haut de la liste et à gauche du graphique : `MapsRender.sortAirspacesTopDown`,
+ *  appliqué par `airspacesAround`, la liste arrive triée). Le graphique est dessiné à l'échelle 1 pour la place du bloc (bw × bh px) : la
  *  largeur que demandent ses colonnes (14 px au moins, 22 px au plus sur un téléphone, moins de 600 px ; 400 px au plus sinon), 60 % du
  *  bloc au plus (les 14 px passent avant : la liste cède, elle passe sur deux lignes puis sous le graphique), et jamais plus haut que le bloc. Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas sous la main ici, la
  *  lecture des terrains est asynchrone : la liste garde la notation SIA « ASFC ») ; plafond inconnu : colonne pointillée « ? ». */

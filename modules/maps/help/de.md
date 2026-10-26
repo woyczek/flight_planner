@@ -64,7 +64,7 @@ Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und O
 und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, zeigt der
 Datenblock unter der Karte die Lufträume unter Ihrem Finger, einen oder mehrere, anstelle des Profils: ein Diagramm der
 Höhen wie das Vertikalprofil (eine nummerierte Säule je Luftraum, von der Untergrenze bis zur Obergrenze), dann die
-nummerierte Liste mit ihren Grenzen. FIR, UIR, SIV und Kontrollsektoren ohne Grenzen, wie jeder Luftraum von der Oberfläche bis zur Obergrenze, werden weder gezeichnet noch gezählt (man durchfliegt sie nicht): ihre Namen stehen in einer eingeklappten Zeile „Auch hier (n)“ unter der Liste und in einer letzten grauen Zeile der Hinweisblase („Auch hier: FIR PARIS · SIV POITIERS“), die FIR oder das SIV, das man ruft, ohne Säule. Das ✕, Escape oder ein Tippen auf eine leere Stelle der Karte schließen ihn und das
+nummerierte Liste mit ihren Grenzen, gelesen wie die senkrechte Achse: das Höchste oben (Nummer 1 ist der Luftraum mit der höchsten Obergrenze, links im Diagramm), das Niedrigste unten. FIR, UIR, SIV und Kontrollsektoren ohne Grenzen, wie jeder Luftraum von der Oberfläche bis zur Obergrenze, werden weder gezeichnet noch gezählt (man durchfliegt sie nicht): ihre Namen stehen in einer eingeklappten Zeile „Auch hier (n)“ unter der Liste und in einer letzten grauen Zeile der Hinweisblase („Auch hier: FIR PARIS · SIV POITIERS“), die FIR oder das SIV, das man ruft, ohne Säule. Das ✕, Escape oder ein Tippen auf eine leere Stelle der Karte schließen ihn und das
 Profil kommt zurück, ein weiteres Tippen auf Lufträume ersetzt ihn; die Karte zu bewegen lässt ihn stehen. Die Karte
 bewegt sich nicht und ändert ihre Größe nicht. Die Hinweisblase beim Darüberfahren folgt dem Zeiger, bleibt 5 Sekunden,
 macht der nächsten Platz und schließt sich mit einem Tippen woanders oder einer Kartenbewegung. Über einer
@@ -162,4 +162,4 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: dc1f0c9c9d2f -->
+<!-- fr: 4f6a636e781c -->

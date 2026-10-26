@@ -1367,3 +1367,17 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Kept from the previous lot**: text block with wrap, the separator dot never orphaned, graph floor of 90 px with "Aussi ici", CSS columns beyond 2 x 19em.
   - **Test**: D29 adapted (columns >= 14 px with their numbers, graph <= 60 % except the floor case, names, two lines, no overflow, "Aussi ici" 44 px; the
     visibility rule counts a list stacked under the graph); red on the previous code (13 columns of 5.7 px at 301 px).
+
+- **26 Oct 2026 — The spaces of a point read top-down: number 1 is the highest** (lot `v3-maps-ordre-espaces`, SPEC § 4 nonies "Reading order"). The user, on the
+  previous lots: "C'est bien pour les espaces. Pour lire, le plus haut en haut, le plus bas en bas. Inverser 12345 quoi." The list had gone from the lowest
+  floor (1, top of the list) up; it now reads like the vertical axis.
+  - **One function**: `MapsRender.sortAirspacesTopDown(list)` (sorts in place and returns): ceiling descending (UNL first), floor descending, then
+    "TYPE NAME". `airspacesAround` applies it to `shown`, so the sheet's list, the graph's columns and the hover bubble (`airspacesAt`) get it; the line
+    under the profile cursor (`strip`, the crossed spaces) calls it too. `levelsHtml` is unchanged: it numbers the list as given, column i = line i, so
+    the column of number 1 is the leftmost. The old floor-ascending sort (`limitFt` of the floor) is removed.
+  - **Unreadable ceiling, decided here**: ranked as if the ceiling were its floor (the graph draws it from the floor, dotted), after the known ceilings
+    of equal value. In the D26 fixture D 1,500 ASFC | unreadable comes last, after R 57 (ceiling 1,800). An unreadable floor counts as 0, ASFC from 0
+    (as the graph). A ceiling under the floor is treated as unreadable (as the graph).
+  - **Not touched**: the "Aussi ici" line (FIR, UIR, SIV first, then by name), the vertical profile's drawing, the map.
+  - **Test**: D26 extended (`d26_order`, and the thirteen-space case): list numbers 1 to n, order CTA, TMA, R 57, D; the leftmost column is the CTA and the
+    column numbers read 1.. from the left; S12 down to S0 for thirteen. x4 langs. Red on the previous code (order TMA, R, D, CTA).

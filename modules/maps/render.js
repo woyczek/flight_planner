@@ -1560,7 +1560,33 @@
     h,
     d: Math.hypot(h.x - x, h.y - y)
   })).filter(o => o.d <= o.h.r + 4).sort((a, b) => a.d - b.d).map(o => o.h.g);
-  /** Espaces de la liste qui contiennent le point (lat, lon) : `shown`, du plus bas au plus haut, sans ceux qui vont de la
+  /** L'ordre de lecture des espaces d'un point (mot de l'utilisateur, 26 octobre : « le plus haut en haut, le plus bas en bas »), écrit
+   *  ici une seule fois : la feuille « n espaces sur ce point » (liste et colonnes du graphique), l'infobulle et la ligne du curseur du
+   *  profil le prennent. Tri sur place et rendu : plafond décroissant (UNL le plus haut), puis plancher décroissant, puis le nom. Les
+   *  hauteurs ASFC sont comptées depuis 0, comme le graphique. Plafond vide, illisible ou sous le plancher : classé avec son plancher
+   *  (comme si le plafond le valait), après les plafonds connus de même valeur. Fonctionne sur tout objet { type, name, lower, upper }. */
+  function sortAirspacesTopDown(list) {
+    const read = A()?.limitRead;
+    const key = a => {
+      const l = read ? read(a.lower, false) : {},
+        u = read ? read(a.upper, true) : {},
+        lo = l.ok && Number.isFinite(l.ft) ? Math.max(0, l.ft) : 0,
+        known = !!(u.ok && (u.unl || Number.isFinite(u.ft) && u.ft > lo));
+      return {
+        up: u.ok && u.unl ? Infinity : known ? u.ft : lo,
+        unk: known ? 0 : 1,
+        lo,
+        name: [a.type, a.name].filter(Boolean).join(' ')
+      };
+    };
+    const k = new Map((list || []).map(a => [a, key(a)]));
+    return (list || []).sort((x, y) => {
+      const a = k.get(x),
+        b = k.get(y);
+      return a.up === b.up ? a.unk - b.unk || b.lo - a.lo || a.name.localeCompare(b.name) : b.up > a.up ? 1 : -1;
+    });
+  }
+  /** Espaces de la liste qui contiennent le point (lat, lon) : `shown`, du plus haut au plus bas (`sortAirspacesTopDown`), sans ceux qui vont de la
    *  surface au plafond (règle d'affichage du 25 octobre : SiaAero.surfaceToCeiling), et `also`, les noms de ces espaces écartés
    *  (« FIR PARIS », « SIV POITIERS »), sans doublon, FIR, UIR, SIV d'abord puis les autres par nom : la ligne « Aussi ici » de la
    *  feuille et de l'infobulle (règle 21 amendée, 26 octobre : le SIV ou la FIR à appeler se lit, jamais en colonne). `more` : espaces
@@ -1577,8 +1603,7 @@
       }
       return c;
     };
-    const lim = A()?.limitFt,
-      flat = A()?.surfaceToCeiling || (() => false),
+    const flat = A()?.surfaceToCeiling || (() => false),
       shown = [],
       skipped = [];
     for (const a of list || []) {
@@ -1587,7 +1612,7 @@
     }
     for (const a of more || [])
       if (flat(a) && (a.rings || []).some(inRing)) skipped.push(a); // lus mais écartés par le choix des couches
-    shown.sort((x, y) => (lim ? lim(x.lower, false) - lim(y.lower, false) : 0));
+    sortAirspacesTopDown(shown);
     const rank = a => ['FIR', 'UIR', 'SIV'].indexOf(String(a.type || '').toUpperCase()),
       key = a => {
         const r = rank(a);
@@ -1747,6 +1772,7 @@
     siaLimit,
     airspacesAt,
     airspacesAround,
+    sortAirspacesTopDown,
     airwaysAt,
     awLimit,
     zoomOf,
