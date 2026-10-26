@@ -312,7 +312,7 @@ Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und O
 und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, zeigt der
 Datenblock unter der Karte die Lufträume unter Ihrem Finger, einen oder mehrere, anstelle des Profils: ein Diagramm der
 Höhen wie das Vertikalprofil (eine nummerierte Säule je Luftraum, von der Untergrenze bis zur Obergrenze), dann die
-nummerierte Liste mit ihren Grenzen. Das ✕, Escape oder ein Tippen auf eine leere Stelle der Karte schließen ihn und das
+nummerierte Liste mit ihren Grenzen. FIR, UIR, SIV und Kontrollsektoren ohne Grenzen, wie jeder Luftraum von der Oberfläche bis zur Obergrenze, werden weder gezeichnet noch gezählt (man durchfliegt sie nicht): ihre Namen stehen in einer eingeklappten Zeile „Auch hier (n)“ unter der Liste und in einer letzten grauen Zeile der Hinweisblase („Auch hier: FIR PARIS · SIV POITIERS“), die FIR oder das SIV, das man ruft, ohne Säule. Das ✕, Escape oder ein Tippen auf eine leere Stelle der Karte schließen ihn und das
 Profil kommt zurück, ein weiteres Tippen auf Lufträume ersetzt ihn; die Karte zu bewegen lässt ihn stehen. Die Karte
 bewegt sich nicht und ändert ihre Größe nicht. Die Hinweisblase beim Darüberfahren folgt dem Zeiger, bleibt 5 Sekunden,
 macht der nächsten Platz und schließt sich mit einem Tippen woanders oder einer Kartenbewegung. Über einer

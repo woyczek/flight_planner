@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the spaces left out of the list are named on one folded line "Aussi ici"** (`modules/maps/render.js` `airspacesAround`,
+  `modules/maps/module.js` `alsoHtml` / `alsoTip`, manual of the Map x4, `tests/v3` D28, SPEC § 4 nonies, DECISIONS) — user 26 Oct: "SIV FIR etc.
+  C'était un workaround pour ne pas avoir de colonnes nonsense. Soit une coche active tout (FIR ?) soit ça n'a pas d'intérêt". No checkbox: the graph
+  and the vertical profile still never draw FIR, UIR, SIV, control sectors or any space from the surface to the ceiling, but the sheet "n espaces sur
+  ce point" now ends with a folded "Aussi ici (n)" line (names only, FIR, UIR, SIV first, then the others by name, one per name; not a column, not
+  counted in the title) and the bubble of a space label with a muted "Aussi ici : FIR PARIS · SIV POITIERS" line, in four languages. The SIV or the FIR
+  to call reads in one touch, whether or not the Layers draw them. D28.
 - **Base: one entry per VFR reporting point; parser version 17** (`shared/aero_sources.js` `merge`, `shared/sia_base.js` `VERSION` 16 -> 17,
   `frame/aerodb/test/vrp_sources.html`, `tests/v3` K5; aerodb DECISIONS, INTEGRATION "Republication of the base after a parser change") — relay of the
   cloud, user 26 Oct: "Correctif parser report". The published France base carried every reporting point twice ("QT-N" with its description and

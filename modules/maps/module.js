@@ -544,6 +544,9 @@ const TX = {
   levelsTitle: ['{n} espaces sur ce point', '{n} airspaces at this point', '{n} Lufträume an diesem Punkt',
     '{n} espacios en este punto'
   ],
+  // ligne repliée de la feuille et ligne grisée de l'infobulle : les espaces écartés (FIR, UIR, SIV, secteurs, surface au plafond), par leur nom
+  levelsAlso: ['Aussi ici ({n})', 'Also here ({n})', 'Auch hier ({n})', 'También aquí ({n})'],
+  tipAlso: ['Aussi ici : {l}', 'Also here: {l}', 'Auch hier: {l}', 'También aquí: {l}'],
   levelsTitle1: ['1 espace sur ce point', '1 airspace at this point', '1 Luftraum an diesem Punkt', '1 espacio en este punto'],
   levelsAxis: ['Plancher et plafond de chaque espace, du plus bas au plus haut',
     'Floor and ceiling of each airspace, from the lowest to the highest',
@@ -756,6 +759,9 @@ async function loadData(box, corridor = true) {
     corridor,
     data: {
       airspaces: MapsRender.selectAirspaces(airspaces, pz, route),
+      // les espaces lus que la règle « pas de la surface au plafond » écarte de la coupe et de la liste (FIR, UIR, SIV, secteurs...) :
+      // leurs noms vont à la ligne « Aussi ici », que les couches les montrent ou non
+      flat: airspaces.filter(a => window.SiaAero?.surfaceToCeiling?.(a)),
       aerodromes,
       navaids,
       airways,
@@ -1580,8 +1586,8 @@ const airwayLines = g => {
       TX.awHigh : TX.awLow)
   ].filter(Boolean).join(' · ')];
 };
-/** Infobulle de survol (souris) : deux lignes au plus. */
-const hoverHtml = (a, b) => `<div><b>${esc(a)}</b></div>${b ? `<div>${esc(b)}</div>` : ''}`;
+/** Infobulle de survol (souris) : deux lignes, plus la ligne grisée « Aussi ici : … » des espaces écartés. */
+const hoverHtml = (a, b, c) => `<div><b>${esc(a)}</b></div>${b ? `<div>${esc(b)}</div>` : ''}${c ? `<div class="mp-also">${esc(c)}</div>` : ''}`;
 /** Infobulle de survol qui suit la souris : à 12 px du pointeur, jamais dessous, retenue dans le cadre ; plus légère que
  *  celle du toucher (classe mp-hover). Écritures seulement quand la valeur change. */
 function followTip(tip, box, x, y, html) {
@@ -1610,7 +1616,7 @@ function hoverMap(x, y) {
   if (ad) return adHover(ad, x, y);
   if (!t) return linger('map');
   stay('map');
-  followTip(S.tipEl, S.box, x, y, hoverHtml(t[0], t[1]));
+  followTip(S.tipEl, S.box, x, y, hoverHtml(t[0], t[1], t[2]));
 }
 
 // ---------------------------------------------------------------- vents en altitude (lot 6c)
@@ -2408,8 +2414,19 @@ function editGestures() {
     removePoint(+i);
   });
 }
+/** Dernière ligne grisée de l'infobulle d'un libellé d'espace : « Aussi ici : FIR PARIS · SIV POITIERS », les espaces écartés de la
+ *  coupe (surface au plafond) au point survolé, sauf l'espace du libellé lui-même ; vide s'il n'y en a pas. */
+function alsoTip(a, ll) {
+  if (!ll) return '';
+  const own = [a.type, a.name].filter(Boolean).join(' '),
+    also = MapsRender.airspacesAround(S.data?.data?.airspaces || [], ll.lat, ll.lon, S.data?.data?.flat).also.filter(n => n !== own);
+  return also.length ? tt(TX.tipAlso, {
+    l: also.join(' · ')
+  }) : '';
+}
 /** Ce qu'il y a sous (x, y) pour l'infobulle : barbule de vent, cartouche de voie, libellé d'espace ; avec area, les
- *  espaces sous le point (lat, lon) en dernier (toucher, clic). Deux lignes, ou null. */
+ *  espaces sous le point (lat, lon) en dernier (toucher, clic). Deux lignes, plus la ligne grisée « Aussi ici » d'un libellé
+ *  d'espace, ou null. */
 function tipAt(x, y, lat = null, lon = null) {
   const w = windAt(x, y);
   if (w) return windLines(w);
@@ -2426,7 +2443,10 @@ function tipAt(x, y, lat = null, lon = null) {
     l: nv.merged.map(navName).join(', ')
   }) : nv.n.name || ''];
   const z = (S.zoneHits || []).find(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1);
-  if (z) return MapsRender.sia(z.a);
+  if (z) return [...MapsRender.sia(z.a), alsoTip(z.a, lat == null ? llAt(x, y) : {
+    lat,
+    lon
+  })];
   if (lat == null) return null;
   const l = MapsRender.airspacesAt(S.data?.data?.airspaces || [], lat, lon).map(a => MapsRender.sia(a)[0]);
   return l.length ? [l[0], l.length > 2 ? `${l[1]} ${tt(TX.tipMore, {
@@ -2924,7 +2944,8 @@ const ZONE_COL = {
  *  de sa largeur sur un téléphone (moins de 600 px), sinon la largeur que demandent les colonnes (400 px au plus), et
  *  jamais plus haut que le bloc. Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas sous la main ici, la
  *  lecture des terrains est asynchrone : la liste garde la notation SIA « ASFC ») ; plafond inconnu : colonne pointillée « ? ». */
-function levelsHtml(list, bw = 360, bh = 200) {
+function levelsHtml(list, bw = 360, bh = 200, also = []) {
+  bh -= also?.length ? 56 : 0; // la ligne repliée « Aussi ici » (44 px + son espacement) reste dans la vue, sous le graphique
   // la même lecture des limites que la coupe verticale (SiaAero.limitRead) : « 800 ASFC » est 800 ft au-dessus du sol, pas le sol
   const read = window.SiaAero?.limitRead || (() => ({
       ft: 0,
@@ -2996,8 +3017,13 @@ function levelsHtml(list, bw = 360, bh = 200) {
       note = [x.act, x.info].filter(Boolean).join(' · ');
     return `<li${note ? ` title="${esc(note)}"` : ''}><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><b class="mp-lv-name">${esc(name)}</b>${tail ? `<span class="mp-lv-lim f-muted">${esc(tail)}</span>` : ''}</li>`;
   }).join('');
-  return `<div class="mp-lv-body"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>`;
+  return `<div class="mp-lv-body"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>${alsoHtml(also)}`;
 }
+/** Ligne repliée sous la liste : les espaces écartés du point (FIR, UIR, SIV, secteurs, surface au plafond), par leur nom, sans
+ *  colonne ni compte dans le titre (règle 21 amendée). Rien quand il n'y en a pas ; repliée à chaque écriture. */
+const alsoHtml = also => also?.length ? `<details class="f-card mp-lv-also"><summary>${esc(tt(TX.levelsAlso, {
+  n: also.length
+}))}</summary><p class="f-muted">${esc(also.join(' · '))}</p></details>` : '';
 /** Liste des espaces fermée (écrit seulement si elle est ouverte) : un toucher sur un endroit vide de la carte, ✕ et Échap
  *  la ferment, le profil vertical revient ; un glisser ou la molette jamais (`hideTips` ne la touche pas). */
 function closeLv() {
@@ -3006,12 +3032,14 @@ function closeLv() {
 /** Liste des espaces sous le point touché, dans le bloc de données. Un terrain épinglé est relâché : un seul contenu à la
  *  fois, la surbrillance ne reste pas sans sa liste. */
 function showLv() {
-  const list = S.lvList;
+  const list = S.lvList,
+    also = S.lvAlso || [];
   if (!list?.length) return;
   releaseAd();
-  openData('lv', `lv:${list.map(a => a.id || a.name || '').join('|')}`, list.length === 1 ? tt(TX.levelsTitle1) : tt(TX.levelsTitle, {
-    n: list.length
-  }), (w, h) => levelsHtml(list, w, h));
+  openData('lv', `lv:${list.map(a => a.id || a.name || '').join('|')}#${also.join('|')}`, list.length === 1 ? tt(TX.levelsTitle1) : tt(
+    TX.levelsTitle, {
+      n: list.length
+    }), (w, h) => levelsHtml(list, w, h, also));
 }
 // ---------------------------------------------------------------- le bloc de données (sous la carte)
 // La vue est fixe (meta.fixed) : en-tête du cadre, la carte, puis le bloc de données, qui est une FEUILLE de hauteur fixe à
@@ -3419,12 +3447,17 @@ function syncView() {
 function mapTip(lat, lon, x, y) {
   // une barbule ou une voie sous le doigt passent avant ; un libellé d'espace, non (son espace est dans la carte)
   if (!windAt(x, y) && !MapsRender.airwaysAt(S.awHits, x, y).length) {
-    const list = MapsRender.airspacesAt(S.data?.data?.airspaces || [], lat, lon); // sans les espaces de la surface au plafond
+    const {
+      shown: list,
+      also
+    } = MapsRender.airspacesAround(S.data?.data?.airspaces || [], lat, lon, S.data?.data
+      ?.flat); // sans les espaces de la surface au plafond (ils vont dans « Aussi ici »)
     // un espace ou plus sous le point : leur liste dans le bloc de données, qui reste (✕, Échap, un toucher sur un endroit vide) ;
     // un autre toucher sur des espaces la remplace
     if (list.length) {
       hideTips();
       S.lvList = list;
+      S.lvAlso = also;
       showLv();
       return true;
     }
@@ -4754,6 +4787,7 @@ const STYLE = `
 [data-module="maps"] .mp-tip>div+div{margin-top:4px}
 [data-module="maps"] .mp-tip.mp-hover{max-width:min(80%,320px);padding:3px 6px;font-size:11.5px;line-height:1.3;background:color-mix(in srgb,var(--sog-chart-bg) 65%,transparent);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);box-shadow:none}
 [data-module="maps"] .mp-tip.mp-hover>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+[data-module="maps"] .mp-tip.mp-hover>.mp-also{color:var(--sog-muted)}
 /* les couches : un contenu de la feuille (grille de cases sur deux colonnes d'un téléphone, comme celle d'Atmosphère) */
 [data-module="maps"] .mp-layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 16px;font-size:.92em}
 [data-module="maps"] .mp-layers .mp-picks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px;min-width:0}
@@ -4880,6 +4914,8 @@ const STYLE = `
 [data-module="maps"] .mp-dbody{box-sizing:border-box;margin:0 8px 8px;padding:6px 8px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);font-size:.92em;line-height:1.35}
 [data-module="maps"] .mp-dbody p{margin:2px 0}
 [data-module="maps"] .mp-lv-body{display:flex;align-items:flex-start;gap:12px}
+[data-module="maps"] .mp-lv-also{margin:8px 0 0}
+[data-module="maps"] .mp-lv-also>p{margin:0;overflow-wrap:anywhere}
 [data-module="maps"] .mp-lv{flex:none;position:sticky;top:0;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
 [data-module="maps"] .mp-lv-list{flex:1 1 auto;min-width:0;margin:0;padding:0;list-style:none;column-width:19em;column-gap:16px;font-size:.95em;line-height:1.25}
 [data-module="maps"] .mp-lv-list li{display:flex;gap:6px;align-items:baseline;break-inside:avoid;margin-bottom:2px;min-width:0;white-space:nowrap}
@@ -5283,6 +5319,12 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
       setCursor(Math.round(g.nmOf(x) * FT_NM));
     });
   };
+  // « Aussi ici » dépliée : sa ligne de noms vient sous le doigt (la feuille est basse, le contenu défile) ; 'toggle' ne remonte pas
+  S.dbodyEl.addEventListener('toggle', e => {
+    if (e.target.open) e.target.scrollIntoView({
+      block: 'nearest'
+    });
+  }, true);
   S.dbodyEl.addEventListener('pointerdown', wxMove); // la capture du pointeur est prise plus haut (le dessin est remplacé à chaque cran)
   S.dbodyEl.addEventListener('pointermove', wxMove);
   // un toucher sur la coupe météo place le curseur commun (la carte et le profil le suivent), comme sur le profil

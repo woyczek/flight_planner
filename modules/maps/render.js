@@ -1560,9 +1560,13 @@
     h,
     d: Math.hypot(h.x - x, h.y - y)
   })).filter(o => o.d <= o.h.r + 4).sort((a, b) => a.d - b.d).map(o => o.h.g);
-  /** Espaces de la liste qui contiennent le point (lat, lon), du plus bas au plus haut, sans ceux qui vont de la surface au
-   *  plafond (règle d'affichage du 25 octobre : SiaAero.surfaceToCeiling). */
-  function airspacesAt(list, lat, lon) {
+  /** Espaces de la liste qui contiennent le point (lat, lon) : `shown`, du plus bas au plus haut, sans ceux qui vont de la
+   *  surface au plafond (règle d'affichage du 25 octobre : SiaAero.surfaceToCeiling), et `also`, les noms de ces espaces écartés
+   *  (« FIR PARIS », « SIV POITIERS »), sans doublon, FIR, UIR, SIV d'abord puis les autres par nom : la ligne « Aussi ici » de la
+   *  feuille et de l'infobulle (règle 21 amendée, 26 octobre : le SIV ou la FIR à appeler se lit, jamais en colonne). `more` : espaces
+   *  de la même lecture que le choix des couches a écartés (la FIR décochée reste un service à appeler) ; seuls les écartés par la
+   *  règle y sont repris. */
+  function airspacesAround(list, lat, lon, more = []) {
     lon = wrapLon(lon); // un toucher sur la carte de l'autre côté de la ligne de changement de date : 195° → 165° W
     const inRing = r => {
       let c = false;
@@ -1574,10 +1578,30 @@
       return c;
     };
     const lim = A()?.limitFt,
-      flat = A()?.surfaceToCeiling || (() => false);
-    return (list || []).filter(a => !flat(a) && (a.rings || []).some(inRing)).sort((x, y) => (lim ? lim(x.lower, false) - lim(y.lower,
-      false) : 0));
+      flat = A()?.surfaceToCeiling || (() => false),
+      shown = [],
+      skipped = [];
+    for (const a of list || []) {
+      if (!(a.rings || []).some(inRing)) continue;
+      (flat(a) ? skipped : shown).push(a);
+    }
+    for (const a of more || [])
+      if (flat(a) && (a.rings || []).some(inRing)) skipped.push(a); // lus mais écartés par le choix des couches
+    shown.sort((x, y) => (lim ? lim(x.lower, false) - lim(y.lower, false) : 0));
+    const rank = a => ['FIR', 'UIR', 'SIV'].indexOf(String(a.type || '').toUpperCase()),
+      key = a => {
+        const r = rank(a);
+        return r < 0 ? 3 : r;
+      },
+      name = a => [a.type, a.name].filter(Boolean).join(' ');
+    skipped.sort((x, y) => key(x) - key(y) || name(x).localeCompare(name(y)));
+    return {
+      shown,
+      also: [...new Set(skipped.map(name).filter(Boolean))]
+    };
   }
+  /** Espaces à dessiner au point (lat, lon) : `airspacesAround(...).shown`. */
+  const airspacesAt = (list, lat, lon) => airspacesAround(list, lat, lon).shown;
   /** Surcouche aéronautique complète, dans l'ordre du studio : espaces (formes), route (réservée en premier pour ses
    *  libellés), voies, aérodromes et balises, libellés d'espaces, canevas et MORA. data : { airspaces (déjà choisis),
    *  aerodromes, navaids, obstacles, airways, moraCells } ; bbox : emprise affichée { w, s, e, n }. */
@@ -1722,6 +1746,7 @@
     sia,
     siaLimit,
     airspacesAt,
+    airspacesAround,
     airwaysAt,
     awLimit,
     zoomOf,

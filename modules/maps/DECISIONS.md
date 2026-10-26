@@ -1316,3 +1316,19 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Tests**: D26 (reading table; the list and the graph with the five flat spaces; the R 57 column 1,000 ft high, 800 ft above the ground
     line; "?" column; the profile's R 57 band between 800 and 1,800 ft and no flat space; thirteen spaces, thirteen columns), verified red on the
     previous code (the flat ones counted: 6 for 4).
+
+- **26 Oct 2026 — "Aussi ici": the spaces left out are named, never drawn** (lot `v3-maps-aussi-ici`, SPEC § 4 nonies, rule 21 amended in
+  `docs/technique/V3_SPECIFICATION.md` § 7.1). The user: "SIV FIR etc. C'était un workaround pour ne pas avoir de colonnes nonsense. Soit une coche
+  active tout (FIR ?) soit ça n'a pas d'intérêt (si ces espaces ne varient que peu). Objectif ergonomie et infos pertinentes." The relay decided: no
+  checkbox; the graph and the profile never draw them (the 25 Oct rule stands); the "n espaces sur ce point" sheet and the hover bubble end with one
+  folded line of names. The SIV or the FIR to call reads in one touch, without a column that says nothing.
+  - **Content decided here**: every space `surfaceToCeiling` leaves out goes in the line, not only FIR / UIR / SIV / CTL (the relay's reading: an R
+    SFC-UNL really exists and must be known). Order FIR, UIR, SIV, then the others by name; one entry per name; "TYPE NAME" as the base gives it.
+  - **Not tied to the Layers**: the line reads `data.flat`, the flat spaces of the whole read, because `selectAirspaces` had already dropped the FIR /
+    SIV families (the test showed it: only the R and the D came through) and a family unticked on the map is still a service to call.
+  - **The bubble**: found on reading the code that the hover bubble opens on a label, a barb or a cartouche, never on an empty place (`tipAt` has
+    no position then, and a tap with spaces opens the sheet); the end of `tipAt` that lists the spaces of a point was reached by neither. So the
+    line is on the **label bubble** (the space under the pointer, itself excluded from the line), computed from the pointer's position.
+  - Written only when the value changes (`openData` compares the html, `followTip` the bubble); folded state not kept.
+  - **Test**: D28 (x4 langs; screen run for the bubble).
+

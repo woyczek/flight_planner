@@ -11,7 +11,7 @@ Rules covered
   * L1 the sheet content is closable and leaves the map half the view (D11); L3 the profile canvas draws one level and no
     green / orange dots (D12); L14 a drag on the map or a wheel on the sheet does not close a content (D13).
 
-Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 D17 D18 D19 D20 D21-D24 (the profile window) D25 D25b (one window for the cut) D27 (one line per VFR reporting point) (the complexity slider, the airline's thresholds, the tuning page's access: 24 Oct).  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
+Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 D17 D18 D19 D20 D21-D24 (the profile window) D25 D25b (one window for the cut) D27 (one line per VFR reporting point) D28 (the folded "Aussi ici" line) (the complexity slider, the airline's thresholds, the tuning page's access: 24 Oct).  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
 MapLibre runs on an empty style answered by the runner, so the attribution control exists without any network.
 """
 import os
@@ -1653,3 +1653,85 @@ def d27(c):
     last = c.js('() => window.__ft.cur')
     c.eq({k: last.count(k) for k in ('N', 'NA', 'W', 'WA', 'X')}, {'N': 1, 'NA': 1, 'W': 1, 'WA': 1, 'X': 1}, 'one label per point on the chart (the base twice, the highlight and the layer both drew them before)',
          what=f'labels in the last overlay frame {last}')
+
+
+# ------------------------------------------------------------------------------------------------------ D28
+# D28 (user 26 Oct: "SIV FIR etc. C'était un workaround pour ne pas avoir de colonnes nonsense. Soit une coche active tout (FIR ?) soit ça
+# n'a pas d'intérêt. Objectif ergonomie et infos pertinentes"; relay: no checkbox, one folded line): the spaces left out of the graph and the
+# profile by SiaAero.surfaceToCeiling (FIR, UIR, SIV, control sectors, any space from the surface to the ceiling) are named on one folded
+# line "Aussi ici (n)" at the end of the "n espaces sur ce point" sheet and on a last grey line of the hover bubble; not a column, not
+# counted in the title.  RULE decided here: EVERY space left out goes in the line (not only the service types FIR / UIR / SIV / CTL): an
+# R SFC-UNL or a D with no limits exists and the pilot must know it; they come after FIR, UIR, SIV, by name; one entry per name.
+D28_ALSO = D26_FLAT + [
+    {'type': 'UIR', 'name': 'UIR TESTVILLE', 'rings': [_BIG]},
+    {'type': 'FIR', 'name': 'FIR TESTVILLE', 'rings': [[[43.0, 0.0], [43.0, 5.0], [47.0, 5.0], [47.0, 0.0], [43.0, 0.0]]]},   # the same FIR twice (two rings): one name
+    {'type': 'TMA', 'name': 'TMA FAR', 'lower': 'SFC', 'upper': 'FL100', 'rings': [[[50.0, 8.0], [50.0, 9.0], [51.0, 9.0], [51.0, 8.0], [50.0, 8.0]]]},   # not on the point
+]
+D28_NAMES = ['FIR FIR TESTVILLE', 'UIR UIR TESTVILLE', 'SIV SIV TESTVILLE', 'CTL LM TEST', 'D D 91 FLAT', 'R R 90 FLAT']
+
+
+@case('D28', 'Airspaces sheet and hover: one folded "Aussi ici" line for the spaces left out', 'D', tags=('sheet', 'maps'), designs=('standard',), langs4=True,
+      rule='user 26 Oct: "SIV FIR etc. C\'était un workaround pour ne pas avoir de colonnes nonsense" (rule 21 amended: no checkbox, one folded line)')
+def d28(c):
+    c.open('maps', flight=True, docs=[['cache/maps/ui.json', {'preset': 'low', 'layers': {}}, 'cache']], airspaces=D26_AS + D28_ALSO)
+    c.wait(1500)
+    want = ' · '.join(D28_NAMES)
+    if c.width >= 1000:
+        # the hover bubble (screen, mouse) over the label of a drawn space: the usual lines, then a grey "Aussi ici : ..." line, no fold
+        # (the bubble opens on a label, a wind barb or an airway cartouche, not on an empty place: the labels are found by scanning the map)
+        mp = c.js(MAP_JS, 'maps')
+        tip = None
+        for _ in range(8):                                                          # the base is read asynchronously
+            for gy in range(24):
+                for gx in range(40):
+                    c.page.mouse.move(mp['x'] + (gx + 0.5) * mp['w'] / 40, mp['y'] + (gy + 0.5) * mp['h'] / 24)
+                    tip = c.js("""() => { const t = document.querySelector('[data-module="maps"] .mp-tip.mp-hover'); if (!t || t.hidden || !/TEST/.test(t.textContent)) return null;
+                        return { lines: [...t.children].map(e => e.textContent), cls: [...t.children].map(e => e.className), col: [...t.children].map(e => getComputedStyle(e).color) } }""")
+                    if tip:
+                        break
+                if tip:
+                    break
+            if tip:
+                break
+            c.wait(700)
+        c.ok(bool(tip), 'no hover bubble over a space label of the seeded base', 'a bubble opens on a label')
+        exp = tx(M, 'tipAlso', c.lang).replace('{l}', want)
+        c.eq(norm(tip['lines'][-1]), norm(exp), 'the last line of the bubble names the spaces left out, in the language, FIR UIR SIV then the others by name, once each', what=f'lines {tip["lines"]}')
+        c.ok(tip['cls'][-1] == 'mp-also' and tip['col'][-1] != tip['col'][0], f'classes {tip["cls"]}, colours {tip["col"]}', 'the line is greyed (not the colour of the first line)')
+        c.ok(len(tip['lines']) <= 3, f'lines {tip["lines"]}', 'at most the two usual lines and "Aussi ici"')
+        c.page.mouse.move(mp['x'] + 2, mp['y'] + 2)
+    tap_airspaces(c)
+    n = c.js("document.querySelectorAll('.mp-lv-list li').length")
+    title = c.text('.f-sheet-head .f-sheet-title') or ''
+    c.eq(n, 4, 'the list and the graph hold the four drawn spaces only', what=f'{n} entries')
+    c.eq(norm(title), norm(tx(M, 'levelsTitle', c.lang).replace('{n}', '4')), 'the title counts the drawn spaces (4), not the ones named on the line', what=f'title {title!r}')
+    c.eq(c.js("document.querySelectorAll('svg.mp-lv rect').length"), 4, 'no column for the spaces left out', what='columns')
+    d = c.js("""() => { const q = document.querySelector('.mp-dbody[data-kind="lv"] details.mp-lv-also'); if (!q) return null; const s = q.querySelector('summary'), r = s.getBoundingClientRect(),
+        l = document.querySelector('.mp-lv-body').getBoundingClientRect();
+        return { open: q.open, summary: s.textContent, h: r.height, p: q.querySelector('p') ? q.querySelector('p').textContent : null, hiddenP: q.querySelector('p') ? q.querySelector('p').getBoundingClientRect().height === 0 : true,
+                 after: r.top >= l.bottom - 1, inList: !!document.querySelector('.mp-lv-list details'), n: document.querySelectorAll('details.mp-lv-also').length } }""")
+    c.ok(d is not None, 'no details.mp-lv-also in the sheet', 'a folded "Aussi ici (n)" line ends the sheet')
+    c.eq(d['n'], 1, 'one "Aussi ici" line', what=f'{d["n"]} found')
+    c.eq(d['open'], False, 'the line is folded by default', what=f'open={d["open"]}')
+    c.eq(norm(d['summary']), norm(tx(M, 'levelsAlso', c.lang).replace('{n}', str(len(D28_NAMES)))), 'the summary says "Aussi ici (n)" in the language, n = names (once each)', what=f'summary {d["summary"]!r}')
+    c.ge(round(d['h']), 44, 'the summary is a 44 px target', what=f'{d["h"]:.1f} px')
+    c.ok(d['after'] and not d['inList'], f'after-list {d["after"]}, in the list {d["inList"]}', 'after the graph and the list, not a line of the list')
+    c.eq(c.js("[...document.querySelectorAll('.mp-lv-list .mp-lv-name')].some(e => /SIV|FIR|UIR|LM TEST|FLAT/.test(e.textContent))"), False, 'none of the spaces left out is in the list', what='list names')
+    sh = os.environ.get('D28_SHOT')
+    if sh:
+        c.page.screenshot(path=f'{sh}_{c.lang}_{c.width}_folded.png')
+    c.tap('details.mp-lv-also > summary')
+    c.until("document.querySelector('details.mp-lv-also').open", what='a tap on the line unfolds it')
+    t = c.js("document.querySelector('details.mp-lv-also > p').textContent")
+    c.eq(t, want, 'the unfolded line names the spaces left out: type prefix as the base gives it, FIR UIR SIV first then the others by name, once each, separated by " · "', what=f'content {t!r}')
+    c.ok('TMA FAR' not in t and 'TMA 6' not in t, f'content {t!r}', 'only spaces on the point, only spaces left out')
+    if sh:
+        c.page.screenshot(path=f'{sh}_{c.lang}_{c.width}_open.png')
+    # a point with no space left out has no line
+    c.tap('.f-sheet-close')
+    c.until("!window.__t.shown(document.querySelector('.f-sheet-close'))", what='✕ closes the list')
+    c.open('maps', flight=True, docs=[['cache/maps/ui.json', {'preset': 'low', 'layers': {}}, 'cache']], airspaces=D26_AS)
+    c.wait(1500)
+    tap_airspaces(c)
+    c.eq(c.js("document.querySelectorAll('.mp-lv-list li').length"), 4, 'the four drawn spaces', what='entries')
+    c.eq(c.js("document.querySelectorAll('details.mp-lv-also').length"), 0, 'nothing left out on this point: no "Aussi ici" line', what='lines')

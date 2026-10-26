@@ -756,6 +756,17 @@ way round the world. The helper is the frame's (`frame/lib/geo.js`: `wrapLon`, `
   base publishes without limits) and for any space from the surface (SFC / GND, or an unreadable floor) to the ceiling (UNL, or an unreadable or
   empty ceiling). Such a space is neither in the list "n espaces sur ce point" (`MapsRender.airspacesAt`; the count in the title is after
   filtering) nor in the vertical profile (`MapsProfile.build`). The map itself does not change: its thresholds by type stay those of the tuning page.
+- **"Aussi ici" (26 Oct, rule 21 amended; user: "SIV FIR etc. C'était un workaround pour ne pas avoir de colonnes nonsense. Soit une coche
+  active tout (FIR ?) soit ça n'a pas d'intérêt")**: no checkbox. The spaces that `surfaceToCeiling` leaves out are still *named*, never drawn:
+  `MapsRender.airspacesAround(list, lat, lon, more)` returns `{ shown, also }` (`airspacesAt` is its `.shown`). `also` holds every space on the point
+  that the rule leaves out, **all of them, not only the service types** (an R SFC-UNL or a D with no limits exists and must be known), by
+  "TYPE NAME" as the base gives it ("FIR PARIS", "SIV POITIERS"), once per name, FIR, UIR, SIV first and then the others by name. `more` is the
+  loaded base's `data.flat`, so that a family unticked in the Layers does not hide the SIV to call (the line does not depend on the display).
+  - **The sheet** ends, after the graph and the list, with `<details class="f-card mp-lv-also">`: a 44 px `summary` "Aussi ici (n)" (n = names, x4),
+    folded at every write, the names in a muted paragraph separated by " · ". Absent when none. The title and the graph keep the drawn spaces only.
+  - **The hover bubble** (screen, mouse) of a space label ends with a muted line "Aussi ici : FIR PARIS · SIV POITIERS" (x4, no fold), without the
+    hovered space itself, absent when none. The bubble opens on a label, a barb or an airway cartouche, not on an empty place; the line is not added to
+    a touch (a tap on a space opens the sheet). Both are written only when the value changes; the folded / unfolded state is not kept.
 
 ## 5. Invariants
 
