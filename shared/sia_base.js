@@ -26,9 +26,10 @@
     INPUTS = 'siaBaseInputs:v1', // empreinte des fichiers et réglages lus par la dernière relecture (inputsOf)
     FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
-  const COMPAT = 14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp)
+  const COMPAT =
+    14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp ; 17 ne change pas le format : une base 14 à 16 se lit, signalée « outdated »)
   const VERSION =
-    16; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js)
+    17; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge)
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
@@ -2683,6 +2684,7 @@
     appAsset,
     inspectXml,
     parseXmlSiaAirspaces,
+    parseXmlSiaVfrPoints,
     parseAixmAirspaces,
     parseAixmObstacles,
     parseLegacyAirspaces,

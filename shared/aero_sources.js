@@ -1049,8 +1049,22 @@
     };
   }
 
+  /** Code d'un point de report VFR comparé sans casse ni espaces (« Qt-n » → « QT-N »). */
+  const vrpCode = id => String(id ?? '').toUpperCase().replace(/\s+/g, '');
+  /** Code nu d'un point de report VFR : sans le préfixe du terrain du SIA (« QT-N » → « N ») ni le « H- » des hélistations
+   *  (« HM-H-EH » → « EH »). Un identifiant sans préfixe (« N », openAIP) est rendu tel quel. */
+  const vrpBareCode = id => vrpCode(id).replace(/^[A-Z0-9]{2}-(?:H-)?/, '');
+  /** Rayon (NM) dans lequel un point de report d'une autre source est le même point que celui du SIA : les positions diffèrent
+   *  de quelques mètres (5 décimales contre 6) ; deux terrains voisins qui ont le même code (« QT-N », « AQ-N ») sont à
+   *  plusieurs milles l'un de l'autre. */
+  const VRP_TWIN_NM = .5;
+  /** Vrai si a et b (lat, lon) sont à au plus nm milles marins l'un de l'autre. */
+  const within = (a, b, nm) => Math.hypot((a.lat - b.lat) * 60, (a.lon - b.lon) * 60 * Math.cos(a.lat * Math.PI / 180)) <= nm;
+
   /** Fusionne part dans base (modifiée en place et renvoyée) selon les règles anti-doublons décrites au-dessus de FAMILY ;
-   *  les MTR sont toujours ajoutées, voies et obstacles ajoutés sans contrôle. */
+   *  les MTR sont toujours ajoutées, voies et obstacles ajoutés sans contrôle. Points de report VFR d'une autre source
+   *  (openAIP : id = nom = code) : écartés quand la liste a déjà le même point sous son identifiant préfixé du SIA (même code
+   *  nu à moins de 0,5 NM) — le SIA, lu en premier, garde son identifiant, sa description et sa position à 6 décimales. */
   function merge(base, part) {
     base.airspaces ||= [];
     const seenZ = new Set(base.airspaces.map(a => a.type + '|' + String(a.name).toUpperCase())),
@@ -1083,11 +1097,21 @@
         // index par identifiant : la recherche de voisins reste rapide sur des centaines de milliers de points
         const by = new Map;
         for (const y of list)(by.get(y.id) || by.set(y.id, []).get(y.id)).push(y);
+        // points de report VFR : le SIA les range sous « <préfixe>-<code> » (« QT-N », « HM-H-EH »), openAIP sous le code
+        // seul (« N », nom = code) : même point, deux identifiants. Index par code nu de ce qui est déjà dans la liste.
+        const byCode = new Map;
+        if (k === 'vrp')
+          for (const y of list) {
+            const c = vrpBareCode(y.id);
+            (byCode.get(c) || byCode.set(c, []).get(c)).push(y);
+          }
         for (const x of part.aero[k] || []) {
           const same = by.get(x.id) || [];
           if (near(same, x)) continue;
+          if (k === 'vrp' && (byCode.get(vrpCode(x.id)) || []).some(y => within(y, x, VRP_TWIN_NM))) continue;
           list.push(x);
           (by.get(x.id) || by.set(x.id, []).get(x.id)).push(x);
+          if (k === 'vrp')(byCode.get(vrpBareCode(x.id)) || byCode.set(vrpBareCode(x.id), []).get(vrpBareCode(x.id))).push(x);
         }
       }
       (base.aero.airways ||= []).push(...(part.aero.airways || []));

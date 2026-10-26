@@ -5,8 +5,10 @@ Rules covered
     status `ofp`, planned altitude, no constraint), nothing written by a read, one file per aerodrome by `rememberOfp`,
     the same OFP again writes nothing, published and seen procedures merged with the best status winning, filters, a
     reader that does not write.
+  * K5 the base keeps one entry per VFR reporting point: the SIA's (prefixed id, description, 6 decimals), not the bare
+    openAIP twin merged on top of it (shared/aero_sources.js `merge`; the SIA parser reads each point once).
 
-Cases: K1.  The OFP of the bench is built from SimBrief's documented fields (no real OFP in the repository yet).
+Cases: K1, K5.  The OFP of the bench is built from SimBrief's documented fields (no real OFP in the repository yet).
 """
 from lib import Fail, case
 
@@ -19,6 +21,19 @@ def k1(c):
     except Exception:
         raise Fail('the bench never reported done (window.__procBench.done)', 'a finished bench', 'frame/aerodb/test/procedures.html') from None
     r = c.js('({ pass: window.__procBench.pass, fail: window.__procBench.fail, rows: window.__procBench.rows })')
+    bad = [x for x in (r['rows'] or []) if x.startswith('FAIL')][:3]
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}", 'every assertion of the bench passes')
+
+
+@case('K5', 'VFR reporting points of the base: one per point', 'K', tags=('aerodb',), phone=False,
+      rule='aerodb DECISIONS 26 Oct 2026 (relay of the cloud): the SIA point wins over the bare openAIP twin')
+def k5(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__vrpBench && window.__vrpBench.done', timeout=30000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__vrpBench.done)', 'a finished bench', 'frame/aerodb/test/vrp_sources.html') from None
+    r = c.js('({ pass: window.__vrpBench.pass, fail: window.__vrpBench.fail, rows: window.__vrpBench.rows })')
     bad = [x for x in (r['rows'] or []) if x.startswith('FAIL')][:3]
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}", 'every assertion of the bench passes')
 

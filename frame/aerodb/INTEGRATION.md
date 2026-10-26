@@ -163,6 +163,25 @@ L.on(s => …); await L.sync();       // state; a pass now
   reader (`proc/<cycle>/<ICAO>.json`, key `charts`) — the address of a chart is `charts.base + items[].path`, the VAC chart
   `charts.vac` (SPEC § 5 quinquies). A call `aerodb.charts(icao)` can wrap it when the reader exists.
 
+### Republication of the base after a parser change
+
+When `VERSION` of `shared/sia_base.js` rises (17 for "one entry per VFR reporting point"), the published base
+(`sia/base/<zone>/<cycle>/*.json`, each file carries `parserVersion`) is rebuilt by the owner of the data repository, on the
+workstation with the launcher; there is no tool for the phone and nothing to type or to place by hand:
+
+1. Update the suite on the workstation (git pull of the branch), start the launcher, open the V2 page **Settings >
+   Maintenance > Aeronautical data** (`apps/settings/maintenance.html`).
+2. Press **"Rebuild the aeronautical database"** (or a zone's "Fetch and recompute everything"). The page reads the SIA folder and
+   the other sources ticked for the active zones, rebuilds the base and **publishes every active zone** into the data
+   repository (`data/sia/base/<zone>/<cycle>/`): one rebuild covers all the zones, not one run per zone. A file whose content does not change is not
+   rewritten; since `parserVersion` is inside every file, all of them change once.
+3. Press **"Synchronise"** to send the files (the pending-writes line shows how many). Phones receive them with their next synchronisation.
+
+Until then: a phone keeps reading the base it has, which is valid (`COMPAT` 14 to 17) and shows the duplicates the Map already hides
+(`MapsRender.dedupeVrp`); V2 pages that read the published base mark it `outdated` (the notice "re-read the SIA folder for the VFR
+reporting points", planner and CPCO map pages). The V3 pages do not read `parserVersion` and show nothing. A base of a parser older
+than `COMPAT` would be ignored; this one is not.
+
 ## 5. Costs to know (measured, see DECISIONS.md)
 
 - **Only what you ask for is read.** Asking for the aerodromes around Paris reads France's `meta` and aerodromes

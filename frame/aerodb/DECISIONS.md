@@ -680,3 +680,29 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
 - **Done**: final text in English and German with the fields to fill, the four uses asked for (download per cycle, automatic conversion, storage
   only in the private repository, a one-procedure sample in the public repository only if allowed) and the plan on receipt of the licence,
   including the REST sequence (metadata, amendment 0, file name, sha512). Nothing downloaded, converted or stored.
+
+## 26 October 2026 — VFR reporting points twice in the published base: the cause is the merge, not the SIA parser (relay of the cloud)
+
+- **Word of the user** (26 Oct, relayed): "Correctif parser report : à spawner sur un agent « outils déconnectés »." The finding came from lot
+  `v3-maps-report-vfr` (Map DECISIONS, 25 Oct): 1,772 entries in France's `vrp.json`, 674 bare (id = name = code, 5 decimals), 554 with an exact
+  prefixed twin; the Map hides them at reading (`dedupeVrp`), the source remained.
+- **Cause, measured on the files of the data repository** (cycle 2026-10-01): the XML_SIA holds **1,098** `NavFix` with `<NavType>VFR`, all with a
+  prefixed `Ident` (`MM-CV`, `HM-H-EH`), unique, 4 without `Description`; `parseXmlSiaVfrPoints` returns exactly these. `sia/openaip/fr_rpp.geojson`
+  holds 675 reporting points (`name` = code, `compulsory`, 5 decimals); `AeroSources.geojson` turns each into `{ id: name, name: name }`; after the
+  merge of exact duplicates (same id within 0.04 x 0.06 degrees) 674 remain; 1,098 + 674 = 1,772, the published count. `AeroSources.merge` compared the
+  identifiers only: "N" is not "QT-N". The "other forms" feared in the brief (a second tag, a second file of the export) do not exist: the real XML
+  was read, no extract needed.
+- **Fix at the source** (`shared/aero_sources.js` `merge`, `vrp` kind only): an incoming point is dropped when the list has a point whose bare code
+  (prefix of the aerodrome and the "H-" of heliports removed, case and spaces ignored) equals its code within 0.5 NM (the radius of the Map's
+  `dedupeVrp`; the two positions differ by metres, two aerodromes sharing a code lie miles apart). The SIA is read first, so its prefixed id (carries
+  the aerodrome and "-H-"), its description and its 6-decimal position stay. Replayed on the real files: 1,772 -> 1,116; 18 openAIP points remain
+  (e.g. "S" 1.18 NM from "BG-S", "N1", "E2", "SW", "SE", "W" near 47 N 5 E), for which no SIA point has the same code nearby: kept, they are not twins by
+  this rule. Not changed: the SIA parser, the openAIP reader, the formats, any other kind (navaids, points).
+- **Parser version 17** (`COMPAT` stays 14: the format is unchanged, a base of 14 to 16 is read and marked `outdated`). Every published file carries
+  `parserVersion`, so the next rebuild rewrites them all once. Procedure for the owner: INTEGRATION, "Republication of the base after a parser change".
+- **Python tools**: no tool of `tools/` reads the XML_SIA's reporting points (`tools/vfr_import.py` reads the published `vrp.json`; `tools/aero_fetch.py`
+  only downloads the openAIP file): nothing to change there.
+- **Test**: K5 (`frame/aerodb/test/vrp_sources.html`): XML_SIA fixture of the real shape (prefixed, heliport, no description, non-VFR) and an openAIP
+  fixture (twins, a code shared by two aerodromes, a point with no twin, a point read twice); 14 checks; red on the previous code (12 entries instead
+  of 7, parser version 16). Not tested: the user's real files in the suite (they are not in this repository); they were replayed by hand (above).
+

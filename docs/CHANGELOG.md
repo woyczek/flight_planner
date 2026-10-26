@@ -12,6 +12,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Base: one entry per VFR reporting point; parser version 17** (`shared/aero_sources.js` `merge`, `shared/sia_base.js` `VERSION` 16 -> 17,
+  `frame/aerodb/test/vrp_sources.html`, `tests/v3` K5; aerodb DECISIONS, INTEGRATION "Republication of the base after a parser change") — relay of the
+  cloud, user 26 Oct: "Correctif parser report". The published France base carried every reporting point twice ("QT-N" with its description and
+  "N" bare, name = code, 5 decimals: 1,772 entries for 1,098 points). The SIA parser was not the cause: `parseXmlSiaVfrPoints` reads the 1,098 VFR
+  `NavFix` of the XML_SIA once each, all prefixed. The bare entries (674) come from the openAIP file `openaip/fr_rpp.geojson` (675 points, identifier
+  and name = code), added after the SIA by `AeroSources.merge`, which only recognised the same identifier. `merge` now drops an incoming reporting
+  point whose code equals the bare code of one already in the list ("QT-N" -> "N", "HM-H-EH" -> "EH") within 0.5 NM: the SIA entry keeps its
+  prefixed identifier, description and 6-decimal position. On the real files: 1,772 -> 1,116 entries (18 openAIP-only points remain, none with a SIA
+  point of the same code within 0.5 NM). `parserVersion` 17 (`COMPAT` unchanged: a base of parser 14 to 16 still reads, marked `outdated`). The
+  published base is rebuilt from Settings > Maintenance > Aeronautical data > "Rebuild the aeronautical database", then "Synchronise". The Map's
+  `dedupeVrp` stays (older published bases, other sources).
 - **Map: "800 ASFC" is no longer the ground; no space from the surface to the ceiling in the list and the profile** (`modules/maps/lib/aero_symbols.js`
   `limitRead` / `surfaceToCeiling`, `render.js`, `profile.js`, `lib/vertical_profile.js`, `module.js`, `tests/v3` D26; SPEC § 4 nonies, DECISIONS) —
   user 25 Oct (iPhone, near Rennes): "Bug de hauteur. La R57 est affichée plus haut que sa hauteur plafond indiquée" (R 57, 800 ASFC|1800 ASFC, drawn
