@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: EAD Basic probe** (`tools/proc_ead.py --probe`, `tests/v3/cases/aerodb.py` K6, `frame/aerodb/EAD_BASIC.md` § 6, DECISIONS) — a read-only explorer the owner
+  runs with his own EAD Basic account (password typed, never kept): login, AIP Library form, search for the United Kingdom / AD, documents found for EGLL;
+  no PDF downloaded, output sanitised. It prepares the one-click job and the first State's layout.
 - **aerodb: one-click design for the EAD Basic procedures** (`frame/aerodb/EAD_BASIC.md` § 5, DECISIONS) — a Maintenance button starting a launcher job
   (login from the secrets store, AIP Library search, AD 2 download into the local cache, layout registry, `proc/`, plan then result), the blockers in
   the order to lift them (terms of automated access, one real page per layout, the AIP Library screens) and a draft question to EUROCONTROL. DFS on standby.

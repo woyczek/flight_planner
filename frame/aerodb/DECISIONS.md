@@ -762,3 +762,13 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
   jobs; later once per AIRAC cycle. Credentials never in the repository, a message or a log; the session never logs in.
 - **Not coded**: the terms of EAD Basic on automated access are unknown (question drafted for `ead.service`), no State layout has been seen, and the
   AIP Library calls need real pages. Two ways to get them are offered to the owner (manual pages, or a read-only probe he runs himself).
+
+## 26 October 2026 — the EAD Basic probe (`tools/proc_ead.py --probe`)
+
+- **Word of the user**: « Sonde, UK, EGGL » — the probe option of § 5, for the United Kingdom, aerodrome read as EGLL (EGGL does not exist).
+- **Built**: a read-only explorer (standard library): login by the page's own AJAX form, home page, AIP Library form, search attempt, documents listed;
+  no PDF downloaded; password at the prompt or `EAD_PASSWORD`, never stored; output sanitised (password, user name, ViewState, session ids, mails, long
+  tokens) and refused if a secret slipped in; only `www.ead.eurocontrol.int` can be called (a local address only for the test, through an
+  environment variable that accepts nothing but `http://127.0.0.1`). The session never logs in.
+- **Tested** by case K6: the reading helpers on a hand-built form, the sanitising, and the whole flow against a local fake that follows the shape of the
+  public login page; **never against the real connected screens**, so a first run may stop at a step the report will name.

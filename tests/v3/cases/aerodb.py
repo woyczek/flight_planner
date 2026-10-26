@@ -172,3 +172,85 @@ def k4(c):
         idx = json.loads((out / '2026-10-01' / 'index.json').read_text(encoding='utf-8'))
         c.ok(doc['cycle'] == '2026-10-01' and 'tel quel' in doc['notice'], f"{doc.get('notice')}", 'the file carries the FAA warranty notice')
         c.eq((sorted(idx['aerodromes']), idx['aerodromes']['KSEA']['SID']), (['KSEA', 'LFBD'], 8), 'the cycle index keeps (BANGR9: six runway records and two enroute transitions) the other sources and adds KSEA', what='index')
+
+
+# ------------------------------------------------------------------------------------------------ EAD Basic probe (static)
+@case('K6', 'EAD Basic probe', 'K', static=True, rule='aerodb DECISIONS 26 Oct 2026: a read-only probe that never keeps nor shows a credential')
+def k5(c):
+    import importlib
+    import http.server
+    import os
+    import sys
+    import tempfile
+    import threading
+    from pathlib import Path
+    tools = str(c.root / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    html_ = ('<form id="f" action="/lib.faces;jsessionid=ABCDEF123" method="post"><input type="hidden" name="javax.faces.ViewState" value="' + 'A' * 50 + '"/>'
+             '<select name="auth"><option value="1">Belgium</option><option value="2">United Kingdom</option></select>'
+             '<select name="part"><option value="a">AD</option><option value="e">ENR</option><option value="g">GEN</option></select>'
+             '<button id="f:go" name="f:go" type="submit">Search</button></form>')
+    # the HTML above is hand-built to test the reading helpers; it says nothing about the real EAD Basic screens
+    E = importlib.import_module('proc_ead')
+    f = E.parse_forms(html_)[0]
+    c.eq((f['id'], sorted(f['selects']), f['buttons'][0]['id'], E.pick(f['selects']['auth'], 'United Kingdom')), ('f', ['auth', 'part'], 'f:go', '2'),
+         'form, lists, button and the option picked by label', what='parse_forms')
+    clean = E.sanitize('user=bob mail a@b.fr jsessionid=QWE ViewState value="x" ' + 'A' * 45 + ' pw=hunter22', ['bob', 'hunter22'])
+    c.ok(all(x not in clean for x in ('bob', 'hunter22', 'a@b.fr', 'QWE', 'A' * 45)), clean, 'no secret, mail, session or token survives sanitize')
+    c.eq((E.login_result('{"loggedIn":true}')[0], E.login_result('{"loggedIn":false,"errorMessage":"x"}'), E.login_result('x')[0]), (True, (False, 'x'), False),
+         'login answers read, never raising', what='login_result')
+    # the whole flow against a local fake that follows the shapes read on the public login page (POST /fwf-eadbasic/ajaxlogin/ajax_security_check.jspx
+    # answering JSON) and a hand-built library: it checks the probe's own logic, not the real site
+    pages = {}
+    class H(http.server.BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+        def _send(self, body, ctype='text/html'):
+            b = body.encode()
+            self.send_response(200)
+            self.send_header('Content-Type', ctype)
+            self.send_header('Content-Length', str(len(b)))
+            self.end_headers()
+            self.wfile.write(b)
+        def do_GET(self):
+            if self.path.startswith('/cms-eadbasic/opencms/en/login/ead-basic/'):
+                self._send('<form id="ajaxLoginForm"><input name="j_username"><input name="j_password" type="password"></form>')
+            elif self.path.startswith('/fwf-eadbasic/public/static/home.faces'):
+                self._send('<a href="/fwf-eadbasic/secure/aip.faces;jsessionid=ZZZ">AIP Library</a><a href="/x">Other</a> hello bob@example.org')
+            elif self.path.startswith('/fwf-eadbasic/secure/aip.faces'):
+                self._send(html_.replace('action="/lib.faces;jsessionid=ABCDEF123"', 'action="/fwf-eadbasic/secure/aip.faces"'))
+            else:
+                self.send_error(404)
+        def do_POST(self):
+            n = int(self.headers.get('Content-Length') or 0)
+            body = self.rfile.read(n).decode()
+            pages['last'] = body
+            if self.path.endswith('ajax_security_check.jspx'):
+                ok = 'j_password=secret%21pw' in body
+                self._send('{"loggedIn": %s, "errorMessage": "bad login"}' % ('true' if ok else 'false'), 'application/json')
+            else:
+                self._send('<a href="/doc/EGLL_AD_2.pdf">AD 2 EGLL</a><a href="/doc/EGLL_AD_2_DATA.pdf">AD 2 EGLL DATA</a><a href="/doc/EGKK.pdf">AD 2 EGKK</a>')
+    srv = http.server.HTTPServer(('127.0.0.1', 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        env = dict(os.environ)
+        os.environ['EAD_PROBE_HOST'] = f'http://127.0.0.1:{srv.server_port}'
+        importlib.reload(E)
+        with tempfile.TemporaryDirectory() as td:
+            import contextlib
+            import io
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                E.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td)
+            rep = (Path(td) / 'report.txt').read_text(encoding='utf-8')
+            allfiles = '\n'.join(p.read_text(encoding='utf-8') for p in Path(td).iterdir())
+            c.ok('connexion: OUI' in rep and 'bibliothèque AIP' in rep and 'documents trouvés: 3 | dont EGLL : 2' in rep, rep, 'login, library found, three documents of which two for EGLL')
+            c.ok("{'auth': 'État', 'part': 'partie'}" in rep, rep, 'the State and the AD part were chosen in the lists')
+            c.ok(all(x not in allfiles for x in ('secret!pw', 'bob@example.org', 'ZZZ', 'A' * 45)) and 'bob' not in allfiles.lower().replace('bob@', ''),
+                 allfiles[:400], 'no password, mail, session id or state token in any file written')
+            c.ok(not list(Path(td).glob('*.pdf')), 'a pdf was written', 'no PDF is ever downloaded')
+    finally:
+        srv.shutdown()
+        os.environ.clear()
+        os.environ.update(env)
+        importlib.reload(E)

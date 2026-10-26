@@ -131,3 +131,29 @@ the usual synchronisation (it never logs in anywhere).
 
 **What I need from the owner to go on** (see the message of 26 October): (1) send or not the question above; (2) probe (b) or manual
 pages (a); (3) which State and which aerodrome first.
+
+## 6. The probe (`tools/proc_ead.py --probe`, 26 October 2026: "Sonde, UK, EGGL" — read as the UK and **EGLL**, London Heathrow)
+
+**Run it** on the workstation, from a clone of the suite (Python standard library only, no pypdf, nothing to install):
+
+```
+python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL
+```
+
+It asks for the EAD Basic user name and the password (typed, hidden, **never stored, shown or sent anywhere but `www.ead.eurocontrol.int`**;
+`EAD_USER` / `EAD_PASSWORD` can stand in for the prompts). It then, read-only: logs in through the login page's own form, follows the home page to
+the **AIP Library**, reads its form (lists, buttons), chooses *United Kingdom* / part *AD* / type *AIP* / language *EN* in the lists it
+recognises, tries the search (JSF partial request, then a classic submit) and lists the documents found, noting those for EGLL. **It downloads no
+PDF and writes nothing outside `ead_probe/`.**
+
+**What it leaves** in `ead_probe/`: `report.txt` (what to send back) and the sanitised pages it received (`01_accueil.html`, `02_bibliotheque.html`,
+`03_recherche_*.html`) — kept on the workstation, sent only if the session asks. The sanitising removes the password, the user name, cookies (never
+written), the page-state token (`ViewState`), session ids, e-mail addresses and any long token. **Read `report.txt` before sending it**: it contains
+the home page's menu, the library's lists (the States offered, with their option values) and the documents' names.
+
+**Send back**: paste `report.txt` in the session (it is text). If the probe stops early ("NON", "lien introuvable", "aucun formulaire"), the
+report says at which step and the session adapts; that is expected, the probe was written without seeing the connected screens, and was
+tested only against a local copy built from the public login page (case K6). The cost of a failure is a second round, not a risk.
+
+**What the session does with it**: the search and download calls of the one-click job (§ 5, step 2), against the real shapes; then the layout of
+EGLL's coding tables once the owner has downloaded that aerodrome's pages by hand (§ 4) or the job fetches them.

@@ -44,6 +44,7 @@ RULES = [
     ('modules/report/**', ['G', 'I', 'A8', 'A9'] + TITLED, 'report (the Status block hands over to it)'),
     ('tools/proc_eaip.py', ['K', 'I'], 'the eAIP procedures builder and its aerodb cases'),
     ('tools/proc_cifp.py', ['K', 'I'], 'the FAA CIFP procedures builder and its aerodb case'),
+    ('tools/proc_ead.py', ['K', 'I'], 'the EAD Basic probe and its aerodb case'),
     ('tools/**', ['I'], 'tooling'),
     ('tests/**', ['I'], 'tooling'),
     ('.github/**', ['I'], 'tooling'),
