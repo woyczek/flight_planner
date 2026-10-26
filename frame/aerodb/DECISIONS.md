@@ -706,3 +706,47 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
   fixture (twins, a code shared by two aerodromes, a point with no twin, a point read twice); 14 checks; red on the previous code (12 entries instead
   of 7, parser version 16). Not tested: the user's real files in the suite (they are not in this repository); they were replayed by hand (above).
 
+
+## 26 October 2026 — the Data screen and the dedicated data application: specified, not coded (relay of the cloud)
+
+- **Words of the user** (26 Oct, relayed): « Envisager une page dédiée régénération des données, sans passer par la v2 (récupérer
+  fichiers en cache local, compiler, pousser, nettoyer). L'appli est en bonne voie. On peut imaginer une appli dédiée au parsing et à
+  la compilation de toutes ces données : iOS, android. Chantier dédié. » — `V3_SPECIFICATION.md` § 10.18 and § 10.19; then « Go »
+  (documentation only: no code, no test written).
+- **Done**: `docs/technique/V3_DONNEES_REGENERATION.md` (the screen) and `docs/technique/V3_APP_DONNEES.md` (the project file of the
+  application), both from an inventory read in the code. Nothing was published or built.
+- **Inventory** (17 sources; the table is in the first document): five unrelated chains today (the V2 Maintenance page, command lines, the
+  launcher's aircraft thread, GitHub Actions, git by hand); **7 sources have a step with no tool** — the SIA ZIP (an order with account and
+  licence: never fully automatable), NATS, the DIRCAM PDF, the VAC PDFs, the FAA CIFP download, the typed eAIP address, and the **push of
+  `proc/`** (outside `data_sync.POOL`; also the commit of `mora.csv`). Nothing cleans `proc/<cycle>/`, `.proc_cache/` or the `report-vfr`
+  caches; the NAT tracks (twice a day) ride the base.
+- **Decisions taken in the documents** (for the ergonomics session to confirm where marked):
+  1. The screen is a **frame screen `#data`** (like `#roadmap`) drawn by aerodb (`frame/aerodb/regen.js`), reached from a new button of the
+     Administration card (settings owns the button); *to confirm*: screen rather than module.
+  2. Four verbs per row and "All", the states *fetched / compiled / published* compared with the cycle in force and the builders'
+     `parserVersion`; V2's age rules reused (AIRAC, X-Plane label, NAT 12 h, otherwise 28 days); a manual download is a "waiting for you" row
+     with one link and one gesture, never a command.
+  3. **One job runner in the launcher** (`/__setup/regen/state`, `job`, `put`, `publish`, `clean`) modelled on the aircraft thread; raw sources
+     read with the existing static `data/` GET; the frame's `/__setup/batch` is *not* used for outputs (trigram, 5,000 cap, text only, copies
+     into IndexedDB); **the screen calls it through a new `ctx.launcher` adapter** (the frame agent extends the adapter and its guide), not a
+     `fetch` in a module — the direct calls of `settings.js` and `lnmperf.js` stay a known exception.
+  4. **The runner contract** (`state`, `can`, `run`) separates the screen from whoever does the work: the launcher runner is lot D2; the
+     dedicated application's device runner is the same screen on another runner.
+  5. The base's compile moves out of `shared/sia_base.js` (page, IndexedDB, Chromium folder handles) to **pure builders in a worker** (lot
+     D5), checked by a golden test against V2's output; the Python builders stay jobs of the launcher.
+  6. SPEC § 6 invariants 1 and 4 will be amended in lot D1 (the API never writes the base; the Data screen's builders do, on a workstation, on
+     the owner's command; a second exception to "no interface text" after the `.lnmperf` card). SPEC not edited today: the amendment ships with
+     the lot.
+  7. Application: the Data screen on a device runner; a fourth application profile in the frame; v1 on a phone = SIA base, NAT, FAA CIFP; eAIP,
+     VAC, aircraft types renounced there; **measure first (lot P0), run inside Pilote as a lab, split into a shell of its own only with the
+     numbers**.
+- **Facts measured that day** (container, through the allowed hosts): the SIA ZIP of AIRAC 10/26 is 5.6 MB (product page, 0.00 €, cart); the FAA
+  CIFP ZIP 9,112,585 bytes without any `Access-Control-Allow-Origin`; `proc_cifp.py` replayed (3,070 aerodromes, 3,071 files, 47 MB, 4.3 s) and the
+  tree packed in git to **3.64 MiB**; the SIA eAIP answers without CORS; the eAIP folder of cycle 2611 returned 404 three days before it; the
+  Terrarium tiles answer `Access-Control-Allow-Origin: *`.
+- **Questions left to the user** (screen document § 5, application § 6): where the list of published zones lives; installing `pypdf` from the
+  launcher; NAT tracks published with the site; unattended CIFP in Actions; the licence of X-Plane content in the published zones; cycles kept in
+  `proc/`; frame screen or module; who may push; whether the V2 studio pages stay on `v3`; v1 scope of the phone; Pilote first or a shell; iOS then
+  Android; the SIA order by hand on a phone; token and repository; a cloud runner for the PDF rows; cellular data.
+- **Not done**: no route, no screen, no builder port; no test; `frame/aerodb/SPEC.md` and `INTEGRATION.md` unchanged (they change with lot D1 and
+  D2).

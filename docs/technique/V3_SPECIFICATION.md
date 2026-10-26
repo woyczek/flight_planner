@@ -561,6 +561,8 @@ redesigned for touch at that point.
        (old cycles); nothing by hand, the page chains and shows the progress; the V2 maintenance pages become a fallback,
        then go. Open: which steps can run without the launcher (in-browser parsers such as `shared/sia_base.js` versus
        the Python builders). To specify by aerodb + settings before a lot.
+       **Specified** (relay of the cloud, 26 Oct): see `docs/technique/V3_DONNEES_REGENERATION.md` (inventory of the 17 sources and of
+       their chains, the screen `#data`, the launcher routes, what runs without the launcher, nine lots).
    19. **A dedicated data application (iOS, Android)** (user, 26 Oct: "L'appli est en bonne voie. On peut imaginer une
        appli dédiée au parsing et à la compilation de toutes ces données : iOS, android. Chantier dédié."): a separate
        project — an application of the suite, "Données", on the frame, whose only job is fetching, parsing, compiling
@@ -568,3 +570,5 @@ redesigned for touch at that point.
        (no Python on a phone), the SIA zip read in the browser (streams, memory), publication by the GitHub API with the
        device's token, the same Capacitor pipeline as Pilot. No lot now; a project file (`docs/technique/
        V3_APP_DONNEES.md`) when the user opens the project. § 10.18 is its first step on the workstation.
+       **Specified** (relay of the cloud, 26 Oct): see `docs/technique/V3_APP_DONNEES.md` (project file: implications, measurements, architecture,
+       questions; still no lot until the user's go).

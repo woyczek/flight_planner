@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: the "Data" screen and the dedicated data application, specified** (`docs/technique/V3_DONNEES_REGENERATION.md`,
+  `docs/technique/V3_APP_DONNEES.md`, `V3_SPECIFICATION.md` § 10.18 and § 10.19, aerodb DECISIONS; documentation only, no code) — user 26 Oct:
+  inventory of the 17 sources and of their chains (7 with a step by hand), the screen `#data` (fetch · compile · push · clean, per row and for all), the
+  launcher routes it needs, what runs without the launcher, nine lots; and the project file of an iOS / Android application on the same screen.
 - **Map: the spaces left out of the list are named on one folded line "Aussi ici"** (`modules/maps/render.js` `airspacesAround`,
   `modules/maps/module.js` `alsoHtml` / `alsoTip`, manual of the Map x4, `tests/v3` D28, SPEC § 4 nonies, DECISIONS) — user 26 Oct: "SIV FIR etc.
   C'était un workaround pour ne pas avoir de colonnes nonsense. Soit une coche active tout (FIR ?) soit ça n'a pas d'intérêt". No checkbox: the graph
