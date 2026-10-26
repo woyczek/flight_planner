@@ -556,8 +556,8 @@
       altMax = Math.max(0, ...data.marks.filter(m => inWin(m.s)).map(m => m.alt || m.lvl?.ft || 0), zoomed ? Math.max(0, ...(data.plan
         ?.alt || []).slice(
         iLo, iHi + 1).map(v => v || 0)) : data.plan?.top || 0);
-    /** Vrai pour une limite relative au sol (ASFC, AGL, SFC). */
-    const rel = t => /ASFC|AGL|SFC/i.test(t || '') && !/AMSL/i.test(t || '');
+    /** Vrai pour une limite relative au sol (ASFC, AGL, SFC) : la même lecture que la liste des espaces (SiaAero.limitRead). */
+    const rel = t => window.SiaAero.limitRead(t).rel;
     /** Plancher d'un espace sur un tronçon de la coupe (relief ajouté pour une limite ASFC). */
     const floorOf = v => {
       const mid = Math.round((v.i0 + v.i1) / 2);
@@ -655,7 +655,10 @@
       ctx.globalAlpha = 1;
       ctx.strokeStyle = col;
       ctx.lineWidth = 1.2 * scale;
+      // plafond illisible : la bande monte au haut de la coupe, mais bord pointillé (elle n'est pas « UNL »)
+      if (!window.SiaAero.limitRead(a.upper, true).ok) ctx.setLineDash([4 * scale, 3 * scale]);
       ctx.stroke();
+      ctx.setLineDash([]);
       const mid = Math.round((i0 + i1) / 2);
       let entered = false;
       if (strictLabels && data.plan?.alt)

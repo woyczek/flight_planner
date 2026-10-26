@@ -12,6 +12,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: "800 ASFC" is no longer the ground; no space from the surface to the ceiling in the list and the profile** (`modules/maps/lib/aero_symbols.js`
+  `limitRead` / `surfaceToCeiling`, `render.js`, `profile.js`, `lib/vertical_profile.js`, `module.js`, `tests/v3` D26; SPEC § 4 nonies, DECISIONS) —
+  user 25 Oct (iPhone, near Rennes): "Bug de hauteur. La R57 est affichée plus haut que sa hauteur plafond indiquée" (R 57, 800 ASFC|1800 ASFC, drawn
+  from SFC to UNL) and "Retour, dans certains cas, des espaces UNL" (ten CTL sectors and a SIV of the base, which carry no limit, drawn from the
+  ground to UNL; the graph showed 7 columns for 13 lines). Cause: `limitFt` tested `/SFC|GND/` before the number, so "800 ASFC" and "1800 ASFC"
+  both read 0 ft (the ceiling fell under the floor: UNL), and an empty limit read 0 / infinity. One reading now, `SiaAero.limitRead` (value, from the
+  ground, UNL, readable), for the list's graph, the vertical profile and the filters. The user's rule: "pas d'espace de la surface au plafond" - SIV,
+  FIR, UIR, the CTL sectors and any space from the surface to the ceiling (or whose limits cannot be read and would amount to that) are in neither
+  the list "n espaces sur ce point" (count after filtering) nor the vertical profile (`SiaAero.surfaceToCeiling`, one function for both); the map
+  keeps its own thresholds by type. An unreadable ceiling is a dotted column marked "?", never UNL; one column per listed space, narrower when there are
+  many. D26 (four languages).
 - **The Map: one line per VFR reporting point** (`modules/maps/render.js` `dedupeVrp`, `modules/maps/module.js` `reportPoints` and the layer's read,
   manual of the Map x4, `tests/v3` D27 and its `aero_extra` seed, DECISIONS) — user 25 Oct: "Bug LFQN. Points de report VFR doublonnés". LFQN's card
   listed each of its four points twice ("N Relais hertzien 2 NM Sud Steenvoorde", then "N N") and the map wrote each label twice. Cause: the published

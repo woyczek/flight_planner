@@ -1560,7 +1560,8 @@
     h,
     d: Math.hypot(h.x - x, h.y - y)
   })).filter(o => o.d <= o.h.r + 4).sort((a, b) => a.d - b.d).map(o => o.h.g);
-  /** Espaces de la liste qui contiennent le point (lat, lon), du plus bas au plus haut. */
+  /** Espaces de la liste qui contiennent le point (lat, lon), du plus bas au plus haut, sans ceux qui vont de la surface au
+   *  plafond (règle d'affichage du 25 octobre : SiaAero.surfaceToCeiling). */
   function airspacesAt(list, lat, lon) {
     lon = wrapLon(lon); // un toucher sur la carte de l'autre côté de la ligne de changement de date : 195° → 165° W
     const inRing = r => {
@@ -1572,8 +1573,10 @@
       }
       return c;
     };
-    const lim = A()?.limitFt;
-    return (list || []).filter(a => (a.rings || []).some(inRing)).sort((x, y) => (lim ? lim(x.lower, false) - lim(y.lower, false) : 0));
+    const lim = A()?.limitFt,
+      flat = A()?.surfaceToCeiling || (() => false);
+    return (list || []).filter(a => !flat(a) && (a.rings || []).some(inRing)).sort((x, y) => (lim ? lim(x.lower, false) - lim(y.lower,
+      false) : 0));
   }
   /** Surcouche aéronautique complète, dans l'ordre du studio : espaces (formes), route (réservée en premier pour ses
    *  libellés), voies, aérodromes et balises, libellés d'espaces, canevas et MORA. data : { airspaces (déjà choisis),

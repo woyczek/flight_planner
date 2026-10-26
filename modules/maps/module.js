@@ -2922,22 +2922,35 @@ const ZONE_COL = {
  *  colonne par espace entre son plancher et son plafond, numérotée), à gauche, puis la liste numérotée en notation SIA,
  *  du plancher le plus bas au plus haut. Le graphique est dessiné à l'échelle 1 pour la place du bloc (bw × bh px) : 44 %
  *  de sa largeur sur un téléphone (moins de 600 px), sinon la largeur que demandent les colonnes (400 px au plus), et
- *  jamais plus haut que le bloc. Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas lu ici : l'étiquette
- *  dit ASFC). */
+ *  jamais plus haut que le bloc. Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas sous la main ici, la
+ *  lecture des terrains est asynchrone : la liste garde la notation SIA « ASFC ») ; plafond inconnu : colonne pointillée « ? ». */
 function levelsHtml(list, bw = 360, bh = 200) {
-  const lim = window.SiaAero?.limitFt || (() => 0),
+  // la même lecture des limites que la coupe verticale (SiaAero.limitRead) : « 800 ASFC » est 800 ft au-dessus du sol, pas le sol
+  const read = window.SiaAero?.limitRead || (() => ({
+      ft: 0,
+      rel: false,
+      unl: false,
+      ok: false
+    })),
     rows = list.map(a => {
-      const lo = Math.max(0, +lim(a.lower, false) || 0),
-        up = +lim(a.upper, true);
+      const l = read(a.lower, false),
+        u = read(a.upper, true),
+        lo = l.ok && Number.isFinite(l.ft) ? Math.max(0, l.ft) : 0,
+        // UNL seulement pour UNL (ou 66 000 ft et plus, comme les voies) ; un plafond vide, illisible ou sous le plancher est
+        // inconnu : colonne pointillée marquée « ? », jamais pleine hauteur « UNL » ; un plancher illisible : idem, depuis le sol
+        unl = u.ok && u.unl,
+        unkUp = !unl && !(u.ok && Number.isFinite(u.ft) && u.ft > lo);
       return {
         a,
         lo,
-        up: Number.isFinite(up) && up > lo && up < 66000 ? up : null, // 66 000 ft et plus : UNL (comme les voies)
+        up: unl || unkUp ? null : u.ft,
+        unl,
+        unk: unkUp || !l.ok,
         col: ZONE_COL[String(a.type || '').toUpperCase()] || '#6d4c41'
       };
     }),
     finite = rows.map(r => r.up ?? r.lo).filter(Number.isFinite),
-    unl = rows.some(r => r.up == null),
+    unl = rows.some(r => r.unl),
     nice = v => {
       for (const s of [1000, 2000, 2500, 5000, 10000, 20000])
         if (v / s <= 5) return s;
@@ -2948,13 +2961,14 @@ function levelsHtml(list, bw = 360, bh = 200) {
     top = Math.ceil(raw / step) * step,
     narrow = bw < 600,
     L = narrow ? 40 : 46,
-    W = Math.round(narrow ? Math.min(bw * .3, L + 8 + rows.length * 20) : Math.min(400, bw * .45, Math.max(240, L + 12 + rows.length *
-      36))),
+    // une colonne par espace dessiné, plus étroite quand il y en a beaucoup (jusqu'à la moitié du bloc sur un téléphone)
+    W = Math.round(narrow ? Math.max(Math.min(bw * .3, L + 8 + rows.length * 20), Math.min(bw * .5, L + 8 + rows.length * 12)) : Math.min(
+      400, bw * .45, Math.max(240, L + 12 + rows.length * 36))),
     H = Math.round(Math.max(110, Math.min(300, bh - 16))),
     T = unl ? 16 : 6,
     B = H - 6,
     y = ft => B - (Math.min(ft, top) / top) * (B - T),
-    colW = Math.max(10, Math.min(narrow ? 22 : 34, (W - L - 6) / rows.length)),
+    colW = Math.min(narrow ? 22 : 34, (W - L - 6) / Math.max(1, rows.length)),
     gap = Math.min(4, colW * .2);
   let svg = '';
   for (let v = 0; v <= top; v += step) svg +=
@@ -2962,12 +2976,15 @@ function levelsHtml(list, bw = 360, bh = 200) {
   if (unl) svg += `<text x="${L - 4}" y="${T - 8}" text-anchor="end" dominant-baseline="middle">UNL</text>`;
   rows.forEach((r, i) => {
     const x = L + 4 + i * colW,
-      y0 = r.up == null ? T - 12 : y(r.up),
-      y1 = y(r.lo);
+      y0 = r.unl ? T - 12 : r.unk ? T : y(r.up),
+      y1 = y(r.lo),
+      ft = r.unl ? 'UNL' : r.unk ? '?' : Math.round(r.up);
     svg +=
-      `<rect x="${(x + gap / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${(colW - gap).toFixed(1)}" height="${Math.max(2, y1 - y0).toFixed(1)}" fill="${r.col}" fill-opacity=".18" stroke="${r.col}"/>`;
-    if (colW >= 12) svg +=
+      `<rect class="mp-lv-col" data-lo="${Math.round(r.lo)}" data-up="${ft}" x="${(x + gap / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${(colW - gap).toFixed(1)}" height="${Math.max(2, y1 - y0).toFixed(1)}" fill="${r.col}" fill-opacity="${r.unk ? '.07' : '.18'}" stroke="${r.col}"${r.unk ? ' stroke-dasharray="3 2"' : ''}><title>${esc([r.a.type, r.a.name].filter(Boolean).join(' '))} ${esc(MapsRender.siaLimit(r.a.lower))}|${esc(MapsRender.siaLimit(r.a.upper))}</title></rect>`;
+    if (colW >= 10) svg +=
       `<text x="${(x + colW / 2).toFixed(1)}" y="${Math.min(B - 4, Math.max(T, y0 + 9)).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="${r.col}" font-weight="700">${i + 1}</text>`;
+    if (r.unk && colW >= 10 && y1 - y0 > 24) svg +=
+      `<text class="mp-lv-unk" x="${(x + colW / 2).toFixed(1)}" y="${(y0 + 20).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="${r.col}" font-weight="700">?</text>`;
   });
   const items = rows.map((r, i) => {
     // une ligne par espace : « 1 · TMA NANTES 4 · FL055|FL065 · D » (le nom cède à l'ellipse, les niveaux et la classe restent) ;
@@ -3402,7 +3419,7 @@ function syncView() {
 function mapTip(lat, lon, x, y) {
   // une barbule ou une voie sous le doigt passent avant ; un libellé d'espace, non (son espace est dans la carte)
   if (!windAt(x, y) && !MapsRender.airwaysAt(S.awHits, x, y).length) {
-    const list = MapsRender.airspacesAt(S.data?.data?.airspaces || [], lat, lon);
+    const list = MapsRender.airspacesAt(S.data?.data?.airspaces || [], lat, lon); // sans les espaces de la surface au plafond
     // un espace ou plus sous le point : leur liste dans le bloc de données, qui reste (✕, Échap, un toucher sur un endroit vide) ;
     // un autre toucher sur des espaces la remplace
     if (list.length) {

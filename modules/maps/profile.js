@@ -96,11 +96,13 @@
       profile
       .tocNm, +profile.todNm);
     data.terrainOk = terrainOk;
+    // règle d'affichage du 25 octobre : pas d'espace de la surface au plafond (SIV, FIR, UIR, secteurs sans limites, SFC → UNL)
+    data.crossed = data.crossed.filter(c => !window.SiaAero.surfaceToCeiling(c.a));
     // espaces gardés : ceux où entre la trajectoire prévue (limites ASFC au-dessus du relief) ; sur un téléphone, les
     // autres (au-dessus ou au-dessous du vol) rendent la coupe illisible ; sans trajectoire (pas de niveau) : tous
     const alt = data.plan?.alt,
       lim = window.SiaAero.limitFt,
-      rel = t => /ASFC|AGL|SFC/i.test(t || '') && !/AMSL/i.test(t || '');
+      rel = t => window.SiaAero.limitRead(t).rel;
     if (alt && lim) data.crossed = data.crossed.filter(c => {
       for (let i = c.i0; i <= c.i1; i++) {
         const a = alt[i],

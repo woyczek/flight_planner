@@ -742,6 +742,21 @@ way round the world. The helper is the frame's (`frame/lib/geo.js`: `wrapLon`, `
 - **Not done**: airspace polygons that straddle 180°; a mission map whose extent or zones straddle the line (its trace is
   unrolled); the poles (no wrap in latitude).
 
+## 4 nonies. Airspace limits: one reading, and no space from the surface to the ceiling (25 Oct 2026)
+
+- **One reading of a vertical limit** (`SiaAero.limitRead(text, top)` in `lib/aero_symbols.js`): `{ ft, rel, unl, ok }`. The number is read
+  before the word ("ASFC" contains "SFC": it is not the ground), FL times 100, metres converted, `rel` for ASFC / AGL / SFC / GND and never with
+  AMSL, `unl` for UNL or 66,000 ft and over, `ok` false when the text is empty or unreadable. `limitFt` is its value in feet (filters). The
+  list's graph, the vertical profile (`rel` adds the relief of the sample) and the filters read a limit with this function and no other.
+- **The list's graph** counts ASFC from 0 (the relief at the tapped point is read asynchronously and is not at hand; the list keeps the SIA
+  notation "ASFC"). A ceiling that cannot be read (or lies under the floor) is a dotted column from the floor to the top marked "?", never the
+  full-height UNL column; only "UNL" (or 66,000 ft and over) is UNL. One column per listed space, narrower when there are many.
+- **The user's rule (25 Oct): "La règle, pour simplifier l'affichage, c'est « pas d'espace de la surface au plafond ». Ne pas afficher les
+  SIV, FIR, dans le profil vertical."** `SiaAero.surfaceToCeiling(space)` is true for the types SIV, FIR, UIR and CTL (control sectors, which the
+  base publishes without limits) and for any space from the surface (SFC / GND, or an unreadable floor) to the ceiling (UNL, or an unreadable or
+  empty ceiling). Such a space is neither in the list "n espaces sur ce point" (`MapsRender.airspacesAt`; the count in the title is after
+  filtering) nor in the vertical profile (`MapsProfile.build`). The map itself does not change: its thresholds by type stay those of the tuning page.
+
 ## 5. Invariants
 
 1. Read only: the module writes nothing (`meta.writes` is empty).

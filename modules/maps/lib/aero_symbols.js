@@ -251,15 +251,61 @@
   }
 
   // ---- limites verticales (numériques, ft) et libellés « carte »
-  function limitFt(text, top) {
-    const t = String(text || '').toUpperCase();
-    if (!t) return top ? Infinity : 0;
-    if (/UNL/.test(t)) return Infinity;
-    if (/SFC|GND/.test(t)) return 0;
+  /** Lecture unique d'une limite verticale du SIA (« 800 ASFC », « 1500 ft AMSL », « FL 065 », « 2500 M », « SFC », « UNL »,
+   *  sans ou avec espaces, en minuscules) : { ft, rel, unl, ok }. `ft` : valeur en pieds, telle qu'écrite (le nombre seul,
+   *  sans le relief) ; `rel` : comptée depuis le sol (ASFC, AGL, SFC, GND, et jamais avec AMSL / MSL) ; `unl` : sans limite
+   *  (UNL, ou 66 000 ft et plus comme les voies) ; `ok` : faux si le texte est vide ou illisible (alors `ft` vaut 0 pour un
+   *  plancher et l'infini pour un plafond : un filtre garde l'espace, mais un dessin doit le marquer « ? » et ne pas le
+   *  prendre pour UNL). Le nombre se lit avant le mot : « ASFC » contient « SFC », ce n'est pas le sol (0 ft). */
+  function limitRead(text, top) {
+    const t = String(text == null ? '' : text).toUpperCase().trim(),
+      bad = {
+        ft: top ? Infinity : 0,
+        rel: false,
+        unl: false,
+        ok: false
+      };
+    if (!t) return bad;
+    if (/UNL/.test(t)) return {
+      ft: Infinity,
+      rel: false,
+      unl: true,
+      ok: true
+    };
     const m = /(FL)?\s*(\d+(?:[.,]\d+)?)/.exec(t);
-    if (!m) return top ? Infinity : 0;
-    const v = +m[2].replace(',', '.');
-    return m[1] ? v * 100 : / M\b/.test(t) ? v * 3.28084 : v;
+    if (!m) return /\b(SFC|GND|GROUND|SOL)\b/.test(t) ? {
+      ft: 0,
+      rel: true,
+      unl: false,
+      ok: true
+    } : bad;
+    const n = +m[2].replace(',', '.'),
+      ft = m[1] ? n * 100 : /\d\s*M\b/.test(t) ? n * 3.28084 : n,
+      rel = !m[1] && /ASFC|AGL|AAL|GND|\bSFC\b/.test(t) && !/AMSL|\bMSL\b/.test(t);
+    return {
+      ft,
+      rel,
+      unl: ft >= 66000,
+      ok: true
+    };
+  }
+  /** Limite verticale en pieds (nombre seul : le relief d'une limite ASFC n'est pas ajouté, voir limitRead). */
+  function limitFt(text, top) {
+    const r = limitRead(text, top);
+    return r.unl ? Infinity : r.ft;
+  }
+  /** Règle d'affichage du 25 octobre 2026 (utilisateur : « La règle, pour simplifier l'affichage, c'est « pas d'espace de la
+   *  surface au plafond ». Ne pas afficher les SIV, FIR, dans le profil vertical ») : vrai pour un espace qui n'a pas à être dessiné
+   *  en coupe ni listé « sur ce point » — les types SIV, FIR, UIR et CTL (secteurs de contrôle, sans limites publiées), et tout
+   *  espace qui va de la surface au plafond (plancher SFC / GND ou illisible, plafond UNL, illisible ou vide : ce qui reviendrait à
+   *  cela). Une seule fonction pour la coupe (profile.js) et la liste (render.js, airspacesAt). La carte ne s'en sert pas. */
+  const FLAT_TYPES = new Set(['SIV', 'FIR', 'UIR', 'CTL']);
+
+  function surfaceToCeiling(a) {
+    if (FLAT_TYPES.has(String(a?.type || '').toUpperCase())) return true;
+    const lo = limitRead(a?.lower, false),
+      up = limitRead(a?.upper, true);
+    return (!lo.ok || lo.ft <= 0) && (!up.ok || up.unl);
   }
   /** Limite verticale au format carte (FL 065, 1500 ft AMSL…). */
   const chartLimit = t => String(t || '').replace(/^FL\s*(\d+)$/, (_, n) => 'FL ' + n.padStart(3, '0')).replace(/ ft /, ' ').replace(
@@ -1180,6 +1226,8 @@
   window.SiaAero = {
     parseAixm,
     limitFt,
+    limitRead,
+    surfaceToCeiling,
     chartLimit,
     drawAirspaces,
     drawSites,

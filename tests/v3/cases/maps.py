@@ -681,6 +681,125 @@ def d11(c):
     c.ok(norm(c.grip()).startswith(norm(tx(M, 'dataProfile', c.lang))), 'the profile did not come back', 'back to the profile')
 
 
+# D26 (user 25 Oct, iPhone 390 px, R 57 near Rennes "800 ASFC|1800 ASFC" drawn from the ground to the top): the airspaces graph and the
+# vertical profile read a limit with ONE function (SiaAero.limitRead).  Five airspaces on the tapped point, one per notation.
+_BIG = [[44.0, 1.0], [44.0, 3.8], [46.0, 3.8], [46.0, 1.0], [44.0, 1.0]]
+D26_AS = [
+    {'type': 'R', 'name': 'R 57 TEST', 'lower': '800 ASFC', 'upper': '1800 ASFC', 'rings': [_BIG]},
+    {'type': 'TMA', 'name': 'TMA 6 TEST', 'lower': 'SFC', 'upper': 'FL065', 'cls': 'D', 'rings': [_BIG]},
+    {'type': 'CTA', 'name': 'CTA 7 TEST', 'lower': 'FL065', 'upper': 'UNL', 'cls': 'D', 'rings': [_BIG]},
+    {'type': 'D', 'name': 'D 8 TEST', 'lower': '1500 ASFC', 'upper': 'ABC', 'rings': [_BIG]},
+]
+# user 25 Oct: "pas d'espace de la surface au plafond" - a SIV, a FIR, a control sector (CTL) with no limits at all (as the published base
+# carries them: no lower / upper), and a plain SFC-UNL area: neither in the list nor in the profile
+D26_FLAT = [
+    {'type': 'SIV', 'name': 'SIV TESTVILLE', 'rings': [_BIG]},
+    {'type': 'FIR', 'name': 'FIR TESTVILLE', 'rings': [_BIG]},
+    {'type': 'CTL', 'name': 'LM TEST', 'rings': [_BIG]},
+    {'type': 'R', 'name': 'R 90 FLAT', 'lower': 'SFC', 'upper': 'UNL', 'rings': [_BIG]},
+    {'type': 'D', 'name': 'D 91 FLAT', 'lower': '', 'upper': '', 'rings': [_BIG]},
+]
+# what the reading must say: text -> [ft, rel, unl, ok]  (top = the text is a ceiling)
+D26_READ = [
+    ('SFC', 0, 1, 0, 1), ('sfc', 0, 1, 0, 1), ('GND', 0, 1, 0, 1), ('UNL', None, 0, 1, 1), ('unl', None, 0, 1, 1), ('FL065', 6500, 0, 0, 1),
+    ('FL 065', 6500, 0, 0, 1), ('fl065', 6500, 0, 0, 1), ('3500', 3500, 0, 0, 1), ('3500 AMSL', 3500, 0, 0, 1), ('3500AMSL', 3500, 0, 0, 1),
+    ('1500 ASFC', 1500, 1, 0, 1), ('1500ASFC', 1500, 1, 0, 1), ('1500 asfc', 1500, 1, 0, 1), ('800 AGL', 800, 1, 0, 1), ('800AGL', 800, 1, 0, 1),
+    ('2500 FT AMSL', 2500, 0, 0, 1), ('2500 ft asfc', 2500, 1, 0, 1), ('1800 ASFC', 1800, 1, 0, 1), ('FL999', None, 0, 1, 1),
+    ('300 M', 984, 0, 0, 1), ('', None, 0, 0, 0), ('ABC', None, 0, 0, 0)]
+
+
+@case('D26', 'Airspaces graph: ASFC read from the ground, unknown ceiling is not UNL', 'D', tags=('sheet', 'maps'), screens=False, langs4=True,
+      rule='user 25 Oct (iPhone, R 57 near Rennes "800 ASFC|1800 ASFC"): "La R57 est affichée plus haut que sa hauteur plafond indiquée"')
+def d26(c):
+    c.open('maps', flight=True, docs=[['cache/maps/ui.json', {'preset': 'low', 'layers': {}}, 'cache']], airspaces=D26_AS + D26_FLAT)   # IFR low: the low spaces are drawn
+    c.wait(1500)
+    # the one reading (list graph and vertical profile): every notation of the SIA
+    rd = c.js("""(rows) => rows.map(r => [r[0], window.SiaAero.limitRead(r[0], true), window.SiaAero.limitRead(r[0], false)])""", D26_READ)
+    for (t, ft, rel, unl, ok), (_, up, lo) in zip(D26_READ, rd):
+        c.eq([bool(up['rel']), bool(up['unl']), bool(up['ok'])], [bool(rel), bool(unl), bool(ok)], f'limitRead({t!r}) rel / unl / ok', what=f'reading of {t!r}')
+        if ft is not None and ok:
+            c.le(abs(up['ft'] - ft), 1, f'limitRead({t!r}) is {ft} ft', what=f'{t!r}: {up["ft"]} ft')
+        if not ok:
+            c.eq([lo['ft'], up['ft'] == float('inf') or up['ft'] is None], [0, True], f'{t!r} unreadable: a floor of 0 and an open ceiling for a filter', what=f'{t!r}')
+    tap_airspaces(c)
+    n = c.js("document.querySelectorAll('.mp-lv-list li').length")
+    title = c.text('.f-sheet-head .f-sheet-title') or ''
+    c.eq(norm(title), norm(tx(M, 'levelsTitle', c.lang).replace('{n}', str(n))), 'the sheet title counts the airspaces, in the language', what=f'title {title!r}, {n} entries')
+    c.eq(n, 4, 'four airspaces (R 57, TMA 6, CTA 7, D 8): the five flat ones are left out and not counted', what=f'{n} entries')
+    names = c.js("[...document.querySelectorAll('.mp-lv-list .mp-lv-name')].map(e => e.textContent)")
+    c.ok(not [x for x in names if re.search(r'SIV|FIR|LM TEST|FLAT', x)], f'listed: {names}', 'no SIV, FIR, sector without limits or SFC-UNL area in the list')
+    c.eq(c.js("document.querySelectorAll('svg.mp-lv rect').length"), n, 'one column per listed airspace', what='columns vs list entries')
+    c.eq(c.attr('svg.mp-lv', 'aria-label'), tx(M, 'levelsAxis', c.lang), 'the graph is named in the language', what='svg aria-label')
+    cols = c.js("""() => { const li = [...document.querySelectorAll('.mp-lv-list li')];       // the column i is the line i
+        return [...document.querySelectorAll('svg.mp-lv rect')].map((r, i) => { const b = r.getBoundingClientRect();
+          return { name: li[i] ? li[i].textContent : '', lo: r.dataset.lo, up: r.dataset.up, top: b.top, bot: b.bottom, h: b.height, dash: r.getAttribute('stroke-dasharray') } }) }""")
+    by = {m.group(1): x for x in cols for m in [re.search(r'(R 57|TMA 6|CTA 7|D 8) TEST', x['name'])] if m}
+    for k in ('R 57', 'TMA 6', 'CTA 7', 'D 8'):
+        c.ok(k in by, f'the graph has a column for {k}: {sorted(by)}', 'one column per airspace')
+    r57, tma, cta, d8 = by['R 57'], by['TMA 6'], by['CTA 7'], by['D 8']
+    per_ft = tma['h'] / 6500                                     # the SFC-FL065 column fixes the scale
+    c.le(abs(r57['h'] / per_ft - 1000), 250, 'R 57 is as high as 1,000 ft of the graph\'s axis (not the whole axis)', what=f'R 57 {r57["h"]:.1f} px = {r57["h"] / per_ft:.0f} ft; whole axis {tma["h"] / per_ft:.0f}+ ft')
+    c.le(abs((tma['bot'] - r57['bot']) / per_ft - 800), 250, 'R 57 starts 800 ft above the ground line (800 ASFC counted from 0)', what=f'floor {(tma["bot"] - r57["bot"]) / per_ft:.0f} ft')
+    c.ge(r57['top'] - tma['top'], 2, 'the top of R 57 is below the top of the SFC-FL065 column', what=f'R 57 top {r57["top"]:.1f}, TMA top {tma["top"]:.1f}')
+    c.ok(cta['up'] == 'UNL' and r57['up'] == '1800' and tma['up'] == '6500', f'ceilings: R 57 {r57["up"]}, TMA {tma["up"]}, CTA {cta["up"]}', 'only the UNL ceiling is UNL')
+    tops = {k: v['top'] for k, v in by.items()}
+    c.ok(cta['top'] == min(tops.values()), f'tops {tops}', 'the UNL column alone reaches the top of the graph')
+    c.ok(d8['up'] == '?' and d8['dash'], f'unreadable ceiling column: up={d8["up"]}, dash={d8["dash"]}', 'dotted outline and a "?" mark, not a full UNL column')
+    c.eq(c.js("[...document.querySelectorAll('svg.mp-lv text.mp-lv-unk')].map(t => t.textContent)"), ['?'], 'one "?" mark, on the unreadable column', what='"?" marks')
+    c.eq(c.js("[...document.querySelectorAll('.mp-lv-list li')].filter(l => /ASFC/.test(l.textContent)).length"), 2, 'the list keeps the SIA notation (800 ASFC|1800 ASFC)', what='list entries with ASFC')
+    d26_profile(c)
+    d26_many(c)
+
+
+_D26_PROFILE_JS = """async ([list, level]) => {
+  const as = list.map(a => ({ ...a, rings: [[[44.8, 1.5], [44.8, 3.5], [45.2, 3.5], [45.2, 1.5], [44.8, 1.5]]] }));   // a vertex near the route (the cut's box)
+  const pts = [{ id: 'A', lat: 45, lon: 0.8 }, { id: 'B', lat: 45, lon: 4.0 }];
+  const d = await MapsProfile.build(pts, { levelFt: level, airspaces: as, elevation: null });
+  const names = d.crossed.map(c => c.a.name);
+  const cv = document.createElement('canvas'); cv.width = 600; cv.height = 400;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 600, 400);
+  const g = MapsProfile.draw(ctx, d, { W: 600, H: 400, scale: 1 });
+  // rows tinted red on the column in the middle of the route (the R band)
+  const x = Math.round(g.padL + (600 - g.padL - g.padR) / 2), rows = [];
+  for (let y = 0; y < 400; y++) { const p = ctx.getImageData(x, y, 1, 1).data; if (p[0] - p[1] >= 10 && Math.abs(p[1] - p[2]) <= 6) rows.push(y) }   // the outline and the pale red fill of R (g = b); the terrain is brown (b < g)
+  const Y = ft => g.padT + (400 - g.padT - g.padB) * (1 - (Math.min(Math.max(ft, g.bottom), g.top) - g.bottom) / (g.top - g.bottom));
+  return { names, rows, y800: Y(800), y1800: Y(1800), y0: Y(0), ytop: Y(g.top), top: g.top }
+}"""
+
+
+def d26_profile(c):
+    """The vertical profile reads the limits with the same function: R 57 "800 ASFC|1800 ASFC" is drawn between 800 and 1,800 ft above
+    the ground (the ground is 0 here: no relief), not over the whole height; the flat ones (SIV, FIR, sector, SFC-UNL) are not in the cut."""
+    r57 = [a for a in D26_AS if a['name'].startswith('R 57')]
+    r = c.js(_D26_PROFILE_JS, [r57, 1200])
+    rows = r['rows']
+    c.ok(rows and min(rows) <= r['y1800'] + 2 and max(rows) >= r['y800'] - 2, f'R 57 outline rows {rows[:1]}..{rows[-1:]} for Y(1800)={r["y1800"]:.0f}, Y(800)={r["y800"]:.0f}', 'R 57 is drawn')
+    c.ge(min(rows) , r['y1800'] - 3, 'R 57 does not go above its 1,800 ft ceiling', what=f'top row {min(rows)}, Y(1800) {r["y1800"]:.0f}')
+    c.le(max(rows), r['y800'] + 3, 'R 57 does not go below its 800 ft floor (not from the ground)', what=f'bottom row {max(rows)}, Y(800) {r["y800"]:.0f}')
+    c.ge(r['y800'] - r['y1800'], 4, 'the profile scale shows the 1,000 ft of R 57 as a band', what=f'{r["y800"] - r["y1800"]:.1f} px')
+    allc = c.js(_D26_PROFILE_JS, [D26_AS + D26_FLAT, 1200])
+    got = set(allc['names'])
+    c.ok({'R 57 TEST', 'TMA 6 TEST'} <= got, f'profile spaces {sorted(got)}', 'the readable spaces the route enters (R 57 at 1,200 ft, TMA 6) are in the cut')
+    c.ok(not [n for n in got if re.search(r'SIV|FIR|LM TEST|FLAT', n)], f'profile spaces {sorted(got)}', 'no SIV, FIR, sector without limits or SFC-UNL area in the cut')
+
+
+# thirteen readable spaces on one point (user 25 Oct: "13 espaces" and a graph of 7 columns)
+D26_13 = [{'type': 'TMA' if i % 2 else 'CTA', 'name': f'S{i} TEST', 'lower': f'FL{10 + 10 * i:03d}', 'upper': f'FL{50 + 10 * i:03d}', 'rings': [_BIG]} for i in range(13)]
+
+
+def d26_many(c):
+    c.open('maps', flight=True, docs=[['cache/maps/ui.json', {'preset': 'low', 'layers': {}}, 'cache']], airspaces=D26_13 + D26_FLAT)
+    c.wait(1500)
+    tap_airspaces(c)
+    n = c.js("document.querySelectorAll('.mp-lv-list li').length")
+    c.eq(n, 13, 'the sheet lists the thirteen readable spaces (the flat ones left out)', what=f'{n} entries')
+    g = c.js("""() => { const s = document.querySelector('svg.mp-lv'), w = +s.getAttribute('width');
+        return { w, cols: [...s.querySelectorAll('rect')].map(r => { const b = r.getBoundingClientRect(), o = s.getBoundingClientRect(); return [b.left - o.left, b.right - o.left] }) } }""")
+    c.eq(len(g['cols']), 13, 'one column per listed space (thirteen)', what=f'{len(g["cols"])} columns')
+    c.ok(all(a >= 0 and b <= g['w'] + 0.5 for a, b in g['cols']), f'columns {[round(b) for a, b in g["cols"]]} inside the {g["w"]} px graph', 'no column cut off by the graph\'s edge')
+
+
 @case('D12', 'Profile canvas: one level, no dots', 'D', tags=('maps',), screens=False,
       rule='L3: the profile drew two levels and green / orange dots at a step (24 Oct)')
 def d12(c):

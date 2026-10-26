@@ -1291,3 +1291,28 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     aerodromes' points of the same code in the 15 NM fallback (QT-N and AQ-N) stay two lines, they are two points.
   - **Tests**: D27 (LFQN seed from the real shapes: `tests/v3/lib.py` `aero_docs(extra=...)`, `c.open(aero_extra=...)`), verified red on the previous
     code (ten lines "N N", "NA NA", "W W", "WA WA", W twice, X). Before / after captures 390 x 844 in the relay's scratchpad.
+- **25 Oct 2026 — "800 ASFC" read as the ground; no space from the surface to the ceiling** (relay cloud, SPEC § 4 nonies; the user, iPhone
+  390 px, twice: "Bug de hauteur. La R57 est affichée plus haut que sa hauteur plafond indiquée" and "Bug. Retour, dans certains cas, des
+  espaces UNL"; then the rule: "La règle, pour simplifier l'affichage, c'est « pas d'espace de la surface au plafond ». Ne pas afficher les SIV,
+  FIR, dans le profil vertical").
+  - **Cause 1**: `limitFt` (the map's copy `lib/aero_symbols.js`) tested `/SFC|GND/` before reading the number: "800 ASFC" and "1800 ASFC"
+    both returned 0 ft. In the list's graph the ceiling (0) was not above the floor (0), so `levelsHtml` made it UNL: a column from SFC to the
+    top. The vertical profile drew the same space as a zero-height band on the ground (floor and ceiling both = the relief). The profile's `rel`
+    test (ASFC / AGL / SFC) and the list's reading were two different pieces of code.
+  - **Cause 2**: the published base carries no `lower` / `upper` at all for 368 CTL sectors, 35 SIV, 113 FBZ, 91 OTHER, FIR, UIR, FRA, RMZ, TMZ...
+    (checked on the FR base of 1 Oct: the field is absent, the frame's `zone()` writes ''). An empty limit read 0 / infinity, so each of them
+    was a column from the ground to UNL, and the graph (columns of 10 px minimum in a graph 30 % of the width) cut off at the 7th.
+    No earlier decision removed the CTL or the SIV from the list "on this point" (searched DECISIONS, SPEC, READING: none); the only
+    precedent is the 23 Oct one that leaves the FIR family out of the vertical profile ("a region is a landmark, not a volume to cross"),
+    which the user's rule of 25 Oct now extends to every space from the surface to the ceiling.
+  - **Fix, one place (the map's copy, not the frame: `limitFt` is not in `frame/aerodb`)**: `SiaAero.limitRead` (see SPEC), used by the graph,
+    the profile (`rel`, dotted outline for an unreadable ceiling) and, through `limitFt`, by the filters; `SiaAero.surfaceToCeiling` (the user's
+    rule), used by `airspacesAt` (list, hover tip, title count) and `MapsProfile.build`. SIV, FIR, UIR and CTL are excluded whatever they
+    carry; an unreadable ceiling is a dotted "?" column, never UNL.
+  - **ASFC in the graph counts from 0**: the terrain is read asynchronously (`SiaProfile.terrainSampler`), not at hand when the sheet is drawn;
+    the list keeps the SIA notation. The profile adds the relief of each sample (as it did).
+  - **Not touched**: the studio's own copy `shared/carto/aero_symbols.js` and `vertical_profile.js` (the same `limitFt`, the same bug, outside
+    this module); to tell the studio's owner.
+  - **Tests**: D26 (reading table; the list and the graph with the five flat spaces; the R 57 column 1,000 ft high, 800 ft above the ground
+    line; "?" column; the profile's R 57 band between 800 and 1,800 ft and no flat space; thirteen spaces, thirteen columns), verified red on the
+    previous code (the flat ones counted: 6 for 4).
