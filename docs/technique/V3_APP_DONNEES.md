@@ -274,3 +274,32 @@ prerequisites of P2.
 | The iOS chain was never run | paused, still building V2, "never built by us yet" | P5 starts by making Pilote's own build run |
 | Scope creep | 17 sources on a phone | v1 = 3 sources; the rest greyed with a reason |
 | Licences | SIA licence of use, openAIP non-commercial, X-Plane content | § 2.7; question 5 |
+
+## P0 results, measured on the user's iPhone (27 October 2026)
+
+Device: iPhone, iOS 18.7, Safari 26.6 in a browser tab, 4 cores, 375 × 667, no memory API, `DecompressionStream`,
+`Worker` and `DOMParser` present. Report copied from the laboratory screen (`#datalab`, lot `v3-donnees-lab`).
+
+| Measure | Result |
+|---|---|
+| SIA zip 2026-10-01 (5,6 MB → 71 MB) read from the picker | 14 ms (400 MB/s) |
+| Mode c (worker, streamed) | **0,41 s** total (AIXM 222 ms, XML_SIA 97 ms), twice |
+| Mode b (worker, zip in memory) | 0,37 s |
+| Mode a (main thread as V2, DOMParser) | 2,7 s (DOMParser 0,8 s, VFR regex 1,2 s) |
+| Survival | the three modes finished twice; counts identical between modes and with the workstation (1 817 airspaces, 2 344 rings, 124 627 points, 1 098 VRP, 1 859 AIXM airspaces, 808 aerodromes, 406 navaids, 4 276 points, 13 836 obstacles) |
+| FAA CIFP 261001 (8,7 MB → 51 MB) | 121 ms streamed, 396 923 records, 13 309 airports |
+| openAIP `fr_asp.geojson` (3,9 MB, from a file) | parse 16 ms, 1 806 features |
+| GeoNames FR.zip (7 MB, from a file) | 24 MB inflated, read |
+| Publication by the GitHub API (device token) | 107 B in 2,8 s; 2,0 MB in 3,2 s; the 5,3 and 10 MB blocks are **not in the report** (stopped or lost: to ask) |
+| Cross-origin reads allowed | AWS terrarium tiles, ENAIRE AIP index (955 KB), FAA ArcGIS Special Use Airspace (CORS on) |
+| Blocked by CORS | SIA (product page, VAC PDF, eAIP menu), FAA aeronav CIFP, NOAA NOMADS, openAIP S3, GeoNames, DIRCAM, NAV CANADA, NATS, NAT tracks |
+| Unreachable | UK Mil AIP (aidu.mod.uk) |
+| VAC PDF, GRIB | recognised by magic bytes; text not readable without pypdf / pdf.js |
+
+**Reading.** Parsing and compiling the whole French base on the phone is a non-issue (0,4 s, no crash, exact counts): the
+only obstacle is the download, which a web page cannot do for 9 of 15 sources. Two ways: in the web page, a **direct link
+per source** (Safari: long press › "Download Linked File" saves any type into Files, which also answers the user's "JSON
+saved as PDF") followed by the import from Files; in the dedicated application, Capacitor's native HTTP, which ignores
+CORS. Publication through the GitHub API works at the size of a zone (2 MB in 3 s); the larger blocks remain to measure.
+User (27 Oct): "Un certain nombre de fichiers json récupérés mais téléchargés en pdf (impossible de sauvegarder un json
+depuis safari). Prochaine passe du labo : lien direct sans Copy/paste en cas d'échec." → lot `v3-donnees-lab2`.
