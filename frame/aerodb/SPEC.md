@@ -416,7 +416,7 @@ and the trial files `lab/essai-*` the owner publishes by a button. It goes when 
   the aircraft types stay on the workstation), plus EAD Basic (no. 18, pass 2): `{ id, no, n[4], url (string or function of the AIRAC cycle), chain, accept, size, cap, lic, human[4], name,
   downloads }`. `cycleOf(date)` (rank in the year of the effective date: 2610 = 1 Oct 2026, 2611 = 29 Oct), `eaipBase`, `cifpName` (`CIFP_<yymmdd>`, the
   effective date), `siaPage`, `siaFileInfo` / `cifpFileInfo` (the cycle read from a file name, any case, a copy suffix "(1)" accepted). `localStorage['sogLab:urls']`
-  replaces an address (tests). The hosts must be in the page policy (`tools/csp_policy.py`, K9).
+  replaces an address (tests; only on a page served from localhost / 127.0.0.1, only by an https string, or http to the machine itself; ignored on the published site). The hosts must be in the page policy (`tools/csp_policy.py`, K9).
 - **Per row (pass 2, 27 Oct)**: a real link `<a href target=_blank rel=noopener>` "Open / Download" to the row's address (`linkSet`: the cycle in force, plus the next
   cycle's when the list asks for it or its last test answered; "blocked by CORS" does not say the file exists), and a folded `details` "How to save it on iPhone"
   (long press › Download Linked File › Files › Downloads › From a file; a page row says what to download there: `get`; a JSON row says Safari's display is not the

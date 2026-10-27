@@ -945,3 +945,27 @@ instead of saving it (he ended with Share › Save, as a PDF); parsing holds (0.
   buttons, one tree each of the size asked, the silence written, the late answer, "Clean" listing). All ×4 languages, 390 and 1280.
 - **Limits and not tested**: nothing ran on WebKit; the real GitHub API (the sizes it accepts) is untested; the real EAD login endpoint is untested (no host reachable from the container, and
   no credential is ever used); the real answer of the SIA, FAA, NOAA… hosts to a long-press download is untested; `navigator.share` is a stub.
+
+
+## 27 October 2026 — laboratory: "every link went to openAIP" (aerodb, relay of the cloud)
+
+Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de6`): « Tous les essais de lien du labo "ouvrir le lien" sont partis sur openaip, et timeout. »
+
+- **Not reproduced.** Playwright (Chromium, 375 x 667, `isMobile`, `hasTouch`, iOS 18.7 user agent) on `#datalab` at the Full level: for each of the 16 lines (16 links, none asked
+  for), the real `href` read in the DOM equals the table address, and a touch on the link opens a tab on that address. Same result in the five designs, day and night; with
+  `sogLab:urls` absent, `{}`, `null`, `{oops`, `["x"]`, `"abc"`; after a "Test the address" blocked by CORS on openAIP and NAT (the reordering of the buttons); after a reload with a
+  report present. Read, nothing found either: `actionsHtml` / `sourceRow` / `paintRow` (the signature is the whole HTML of the buttons, which contains the source id and the
+  address, so no row can reuse another's), the click handler (`button[data-act]` only), `frame/app.js` (the only `closest('a')` are the menus), `frame/sw.js` (scope of the
+  frame, same origin only), `lab.css` (no overlay, no `::after`, no `touch-action`). No WebKit in the container: an iOS-only behaviour (a tab opened by `target=_blank` that stays
+  on the first slow address; a Safari tab that the user takes for the new one) is neither shown nor excluded. If it happens again, the report should say which line was tapped first.
+- **What was weak and is fixed** (the only mechanism by which one stored value could change an address on a device): `override(id)` returned `(JSON.parse(…) || {})[id] || ''`, i.e.
+  any truthy value of any type, on any page. It now answers only on a page served from `localhost`, `127.0.0.1` or `[::1]` (the launcher and `tests/v3`, which serve from there),
+  only for an own key of a plain object, and only for a string that parses as an https address (http only towards the machine itself: the fake servers of A21). On the published
+  site the hook does not exist, whatever `localStorage` holds. `loginOf` goes through the same function.
+- **The delay** is the host's: S3 openAIP is slow to answer a 6 MB export; a link in a new tab does not wait for anything on the lab's side. The folded help of the openAIP line
+  (and the Settings and pilot manuals, four languages) says so and says that the long press is the right gesture (`note` of the source, shown after the other help lines).
+- **Test** A20: for every line the link's host and full address equal the table's (`new URL(href).host === new URL(rawUrl(s)).host`), no two lines share an address, a touch on
+  the SIA, CIFP and NAT links opens a tab on the link's address (external hosts answered by a stub; the suite's phone runs are touch with `is_mobile` off, see L16), and the hook's
+  sixteen cases are evaluated on a copy of `lab_sources.js` run with a fake `location` (local, `localhost`, and a published host). Red on the previous code for the hook (a number, an
+  object, `javascript:`, a web address and the published host were all accepted); green on the links, which were never wrong in Chromium. Not tested: WebKit, the real hosts.
+

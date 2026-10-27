@@ -213,6 +213,12 @@
       'openAIP: espacios de Francia'
     ],
     url: 'https://s3.openaip.net/openaip-system-exports/fr_asp.geojson',
+    note: [
+      'L’export S3 d’openAIP peut mettre longtemps à répondre (le serveur, pas la page) : n’attendez pas l’onglet, faites l’appui long sur le lien pour enregistrer le fichier.',
+      'The openAIP S3 export can be slow to answer (the server, not the page): do not wait on the tab, long-press the link to save the file.',
+      'Der S3-Export von openAIP kann lange brauchen (der Server, nicht die Seite): nicht auf den Tab warten, den Link lange drücken, um die Datei zu speichern.',
+      'La exportación S3 de openAIP puede tardar en responder (el servidor, no la página): no espere a la pestaña, mantenga pulsado el enlace para guardar el archivo.'
+    ],
     chain: 'json',
     accept: '.geojson,.json',
     size: 6 * MB,
@@ -376,12 +382,21 @@
   const byId = id => SOURCES.find(s => s.id === id) || null;
   /** Adresse de la table d'une source pour un cycle (« 2610 », date ou rien : le cycle en vigueur). */
   const rawUrl = (s, cycle) => typeof s.url === 'function' ? s.url(cycle || cycleOf().id) : s.url;
-  /** Adresse de remplacement d'une source (essais : un faux serveur local, localStorage « sogLab:urls » = { id: adresse }). */
+  /** Le crochet d'essai n'existe que sur une page servie depuis la machine elle-même (localhost / 127.0.0.1 : le lanceur, les
+   *  essais de tests/v3) : jamais sur le site publié, où un reste de localStorage ne doit rien pouvoir changer. */
+  const isLocalPage = () => typeof location !== 'undefined' && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+  /** Adresse de remplacement d'une source (essais : un faux serveur local, localStorage « sogLab:urls » = { id: adresse }).
+   *  '' hors page locale, pour tout ce qui n'est pas une chaîne https (ou http vers la machine locale : les faux serveurs). */
   const override = id => {
+    if (!isLocalPage()) return '';
     try {
-      return (JSON.parse(localStorage.getItem('sogLab:urls') || 'null') || {})[id] || '';
+      const all = JSON.parse(localStorage.getItem('sogLab:urls') || 'null'),
+        v = all && typeof all === 'object' && !Array.isArray(all) && Object.prototype.hasOwnProperty.call(all, id) ? all[id] : '';
+      if (typeof v !== 'string') return '';
+      const u = new URL(v);
+      return u.protocol === 'https:' || u.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname) ? v : '';
     } catch {
-      return ''; // pas de stockage (Worker) ou texte illisible
+      return ''; // pas de stockage (Worker), texte illisible ou adresse invalide
     }
   };
   /** Adresse effective d'une source : celle de remplacement s'il y en a une, sinon celle de la table. */

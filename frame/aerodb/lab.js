@@ -364,7 +364,7 @@
     };
     // l'aide d'appui long (repliée ; dépliée par un test « bloqué par CORS ») ; pour une page, d'abord ce qu'il faut y télécharger
     const helpHtml = s => `<details class="lab-help" data-help data-kind="${s.get ? 'page' : s.chain === 'json' ? 'json' : 'file'}"><summary>${esc(t(T.helpTitle))}</summary>${
-      [s.get ? t(s.get) : '', t(T.helpPhone), !s.get && s.chain === 'json' ? t(T.helpJson) : ''].filter(Boolean).map(x => `<p>${esc(x)}</p>`).join('')}</details>`;
+      [s.get ? t(s.get) : '', t(T.helpPhone), !s.get && s.chain === 'json' ? t(T.helpJson) : '', s.note ? t(s.note) : ''].filter(Boolean).map(x => `<p>${esc(x)}</p>`).join('')}</details>`;
     const sigs = new Map; // source → dernier HTML des boutons posé (une écriture dans le DOM seulement si elle change)
     const sourceRow = s => {
       const url = S.urlOf(s, cycle),

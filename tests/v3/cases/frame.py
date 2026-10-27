@@ -845,6 +845,47 @@ def a20(c):
     c.eq([l['s'] for l in links if l['target'] != '_blank' or 'noopener' not in l['rel']], [], 'every link opens in a new tab with rel=noopener', what='links without target/rel')
     c.eq([l['s'] for l in links if l['href'] != l['addr']], [], 'the link goes to the real address of the line (the one shown), nothing to copy', what='links that differ from the address')
     c.eq([l['s'] for l in links if l['h'] < 43.5], [], 'every link is 44 px high', what='short links')
+    # the link of each line goes to the host the table says for that source (27 Oct: "every try went to openAIP" on an iPhone)
+    hosts = c.js("""[...document.querySelectorAll('[data-screen=datalab] li[data-src] a.lab-link')].filter(a => {
+        const s = AeroLabSources.byId(a.closest('li').dataset.src);
+        return new URL(a.href).host !== new URL(AeroLabSources.rawUrl(s)).host || a.getAttribute('href') !== AeroLabSources.rawUrl(s) }).map(a => a.closest('li').dataset.src)""")
+    c.eq(hosts, [], 'the href of every link has the host (and the address) of its source in the table', what='links to another host than their source')
+    c.eq(len(set(l['href'] for l in links)), len(links), 'no two lines share an address', what='distinct links')
+    # a touch on the link opens a new tab on the address of the link, for a page (SIA), a file (CIFP) and a JSON (NAT)
+    c.context.route(re.compile(r'^https://(?!api\.github\.com)'), lambda route: route.fulfill(status=200, content_type='text/html', body='<p>external</p>'))
+    for sid in ('sia', 'cifp', 'nat'):
+        loc = c.page.locator(f'li[data-src={sid}] a.lab-link').first
+        want = loc.evaluate('a => a.href')
+        loc.scroll_into_view_if_needed()
+        try:
+            with c.context.expect_page(timeout=6000) as opened:
+                c.tap(loc)
+            tab = opened.value
+            got = tab.url
+            tab.close()
+        except Fail:
+            raise
+        except Exception as e:
+            got = 'no new tab: ' + str(e).splitlines()[0][:100]
+        c.eq(got, want, f'a touch on the link of the {sid} line opens a new tab on that line\'s address', what=f'tab opened by {sid}')
+    c.context.unroute(re.compile(r'^https://(?!api\.github\.com)'))
+    # the test hook of the addresses (localStorage sogLab:urls) answers on a local page only, and only with an https address
+    # (or http to the machine itself: the fake servers of A21); a published site ignores it whatever is stored
+    gate = c.js("""(async () => {
+        const src = await (await fetch('/frame/aerodb/lab_sources.js')).text(), out = {};
+        const load = (host, stored) => { const store = { getItem: () => stored }, w = {};
+          new Function('window', 'location', 'localStorage', 'self', src)(w, { hostname: host }, store, w); return w.AeroLabSources; };
+        const nat = load('127.0.0.1', null), raw = nat.rawUrl(nat.byId('nat')), cases = {
+          absent: null, empty: '{}', nul: 'null', bad: '{oops', arr: '["x"]', str: '"abc"', num: '{"nat": 5}', obj: '{"nat": {"a": 1}}',
+          js: '{"nat": "javascript:alert(1)"}', web: '{"nat": "http://example.com/x"}', rel: '{"nat": "/x"}', inh: '{"constructor": "https://x.test/"}' };
+        for (const [k, v] of Object.entries(cases)) out[k] = load('127.0.0.1', v).urlOf(load('127.0.0.1', v).byId('nat')) === raw;
+        const ok = '{"nat": "https://fake.test/n.json"}', loc = '{"nat": "http://127.0.0.1:9/n.json"}';
+        out.local_https = load('localhost', ok).urlOf(nat.byId('nat')) === 'https://fake.test/n.json';
+        out.local_http = load('127.0.0.1', loc).urlOf(nat.byId('nat')) === 'http://127.0.0.1:9/n.json';
+        out.published = load('defa.example.org', ok).urlOf(nat.byId('nat')) === raw && load('defa.example.org', loc).urlOf(nat.byId('nat')) === raw;
+        out.published_login = load('defa.example.org', '{"ead-login": "https://fake.test/l"}').loginOf(nat.byId('ead')) === nat.byId('ead').login;
+        return out; })()""")
+    c.eq([k for k, v in gate.items() if not v], [], 'the hook gives back the table address unless the page is local and the value an https string; a published site ignores it', what='override cases that fail')
     c.ok(all(norm(l['text']).startswith(norm(tx(LAB, 'link', c.lang))) for l in links), f'{[l["text"] for l in links][:3]}', 'the link is worded in the language of the run')
     c.eq(c.js("[...document.querySelectorAll('[data-screen=datalab] li[data-src]')].filter(li => !li.querySelector('details[data-help]') || li.querySelector('details[data-help]').open).map(li => li.dataset.src)"), [],
          'the long-press help exists on every line and is folded until a test says "blocked by CORS"', what='help folded')

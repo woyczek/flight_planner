@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data laboratory: the test hook of the addresses no longer exists on a published site; the openAIP line says its S3 export is slow** (`frame/aerodb/lab_sources.js`,
+  `lab.js`, the Settings manual and the pilot manual in four languages, `tests/v3/cases/frame.py` A20). User, 27 Oct, iPhone, Safari: "all the lab's 'open the link' tries went
+  to openAIP, and timed out". **Not reproduced**: in Chromium with an iPhone emulation (375 x 667, touch, iOS user agent), five designs, day and night, every one of the 16
+  lines has an `href` equal to its table address and a touch on it opens a tab on that same address, with `sogLab:urls` absent, `{}`, `null`, malformed, an array or a string,
+  after a "blocked by CORS" test (links moved first) and after a reload with a report. The code path (`linkSet` > `urlOf` > `override` or `rawUrl`) cannot give one address to every
+  line; WebKit is not available here, so an iOS-only behaviour is neither shown nor excluded. What was wrong and is fixed: `override` took any stored value (a number, an
+  object, `javascript:`) and worked on any page; it now answers only on a page served from `localhost` / `127.0.0.1` and only with an https string (or http to the machine itself,
+  the fake servers of the tests), otherwise `''`. The openAIP help (folded) says that the S3 export can be slow to answer and that the long press is the right gesture. A20
+  checks every link's host and address against the table, three touches (SIA, CIFP, NAT) on a touch emulation, and the hook's cases including a "published" host.
 - **Data laboratory, pass 2: a direct link on every source, no address to copy; four publication buttons; a ten-line summary; EAD Basic; a real link from the
   Administration card** (`frame/aerodb/lab.js`, `lab_sources.js`, `lab_report.js`, `lab_measure.js`, `lab.css`, `frame/aerodb/test/lab.html`,
   `frame/settings/admin_links.js` + `settings.js`, `tools/csp_policy.py`, `tests/v3` A20 A21 A23 K8, aerodb SPEC § 5 sexies, DECISIONS, `V3_APP_DONNEES.md`, Settings
