@@ -893,3 +893,55 @@ export of cycle 2026-10-01 (`export_xml_bd_sia_2026-10-01-v02.zip`, 5,838,952 by
 - **Next**: the owner's phone: open `#datalab` (Full level), test the 15 addresses, give the SIA zip, publish a trial, copy the report. The report decides the
   rest of `V3_APP_DONNEES.md` (M1 to M5, M7): whether the Worker route holds on iOS, which sources need a native shell, the GitHub limits.
 
+
+## 27 October 2026 — data laboratory, pass 2: a direct link per source, publication by size, a ten-line summary, EAD Basic (aerodb, relay of the cloud)
+
+Words of the user, 27 Oct, after running pass 1 on his iPhone: « Un certain nombre de fichiers json récupérés mais téléchargés en pdf (impossible de sauvegarder un json
+depuis safari). Prochaine passe du labo : lien direct sans Copy/paste en cas d'échec. » Then, added to the same lot: « Pas vu de test eurocontrol ead dans le labo. » and
+« Ajouter un lien direct vers le labo depuis la page admin ; pour tester via github. » (the last one is the Administration card: `frame/settings/DECISIONS.md` of the same day).
+Facts measured on the phone (`V3_APP_DONNEES.md` § "P0 results"): nine sources of fifteen are blocked by CORS from the page; the user copied addresses by hand; Safari shows a JSON
+instead of saving it (he ended with Share › Save, as a PDF); parsing holds (0.4 s); the 5.3 and 10 MB publications are missing from his report.
+
+- **The link** (`lab.js`, `lab_sources.js` `linkSet`): each line has an `<a href target=_blank rel=noopener>` "Open / Download" (44 px) to the real address; never an address to
+  copy. For the four lines whose address follows the AIRAC cycle (`cycled`: SIA product page, VAC, eAIP, CIFP) the link is the cycle in force, plus the next cycle's when it is
+  asked for in the cycle list **or** its last test answered. A test that says "blocked by CORS" cannot say that the file exists (a missing file is blocked just the same), so
+  it does not add the next link by itself: that was the one place where "published according to the last test" needed a choice; the list of cycles is the user's way to ask.
+  The page that is not a file (SIA product page, ENAIRE index, NAV CANADA, NATS, eAIP menu, EAD login) says what to download there (`get`, four languages).
+- **The help and the order** follow the last test of the line (`lastDiag`, rebuilt from the report at opening): "blocked by CORS" unfolds the `details` "How to save it on
+  iPhone" (the user's sentence: long press › "Download Linked File" › Files › Downloads › "From a file") and puts link, then "From a file" (primary), before the test; a
+  permitted read, an unreachable host or an HTTP error leave it folded and the test first. A row is rewritten only when its buttons' HTML changes (the project's rule).
+  **Not tested on an iPhone**: that a long press saves a JSON / GeoJSON as a file (it is how Safari's "Download Linked File" works for other types, and what the relay
+  proposed); that the picker's `accept` (`.geojson,.json`) lets iOS select such a file (iOS maps extensions to types; an unknown extension may be greyed: if it is, the fix is
+  to drop `accept` for those rows). The next report will tell by what the user manages.
+- **"Save the result"** by `navigator.share({ files })`: offered after a permitted JSON read (ArcGIS, ENAIRE's index is HTML so not) only when `navigator.canShare({ files: [file] })`
+  is true. I cannot measure `canShare` on an iPhone from here: the device block of the report now carries it (`web share (share / canShare / files json / files geojson)`), so the
+  user's next report answers. Web Share level 2 exists in Safari since iOS 15 (from memory, not measured). The call is made directly in the tap handler (iOS drops the activation
+  after an await). "Share the report" (`navigator.share({ text })`) appears only when `navigator.share` exists.
+- **Publication**: four buttons (0.5 / 2 / 5.3 / 10 MB), one commit each, one block each (the small trial file is gone: 2.8 s for 107 B is already measured). The promise is
+  raced against 120 s (`sogLab:pubTimeoutMs` for tests); no answer is written as "NO ANSWER … no answer after 120 s", the late answer as a second entry, and the launch guard
+  notes a tab killed in the middle. "Clean" lists and removes the `lab/essai-*` files and lists them on the screen and in the report.
+- **GitHub's size limit, found in its documentation** (the OpenAPI description of the REST API and the `github/docs` sources, 27 Oct 2026; docs.github.com itself is not reachable
+  from the container): the frame's transport writes through the **git data API** (`POST git/trees` with the entry's `content` inline, UTF-8, no Base64; then a commit; then the
+  ref), and the documentation states **no maximum request size** for create-blob or create-tree: the 5.3 and 10 MB buttons are the only measure. What is written: *get a blob*
+  "supports blobs up to 100 megabytes"; a recursive *get a tree* is cut at **100,000 entries or 7 MB** (`truncated: true`, which the transport already turns into an error); the
+  *contents* API (not used) takes the file in Base64 (+33 %: a 10 MB file is a 13.3 MB body) with no maximum written, and *reads* 1 MB with all features, 1-100 MB as raw / object only,
+  nothing above 100 MB; repository rules: a warning above **50 MiB**, a push blocked above **100 MiB** per file, 25 MiB by browser upload. So a zone of 5.3 MB is far below every
+  written limit; what may stop it is the phone's connection and Safari's handling of a 5-10 MB `fetch` body, not the API. Written in the report (block "github api limits") and in
+  `V3_APP_DONNEES.md`.
+- **The summary** (`R.summary`, ten lines at most, computed from the entries, English): parsing (mode c, b, a times; counts identical or not), publication (passed / failed / not
+  tried by size), sources (tested of 16; allowed, blocked by CORS, unreachable by name; other answers), files imported, the EAD Basic line.
+- **EAD Basic** (no. 18, after NATS; not in the inventory: it is the future source of the European procedures, `EAD_BASIC.md` § 5-6): "Test the address" on the public login page
+  `https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/login/ead-basic/` (code, size, CORS, the page chain: title and links); "Test the login call (empty)" POSTs
+  `j_username=&j_password=` (urlencoded, no custom header so that no preflight is added, no cookie) to `…/fwf-eadbasic/ajaxlogin/ajax_security_check.jspx` and says whether the page can
+  only call it (CORS), whether it refuses (HTTP code) or answers (code; only the boolean `loggedIn` is read). **No credential** is asked, sent, stored or written. When the call is blocked by
+  CORS the probe repeats it once with `no-cors` to tell a CORS block from a dead host, as for every address: the second request is the same empty form. "From a file" takes a PDF (magic bytes,
+  "not readable without pypdf") or a ZIP; the link opens the login page, the help says to log in, download the AD 2 pages of one aerodrome into Files, then "From a file". Host added to
+  `connect-src`. The report line: "EAD Basic: login page …, login call …, files imported n".
+- **Tests**: K8 (the table has 16 rows, EAD after NATS; `linkSet` for the cycle in force and the next: eAIP and CIFP derived by cycle, the two links when asked or answered, not when only
+  blocked; every link valid; every page row has its `get`; the summary on synthetic entries: ten lines, the sizes, the names, the EAD line; the GitHub limits in the report), A20 (a link
+  on every line: `target`, `rel`, 44 px, `href` = the address shown; folded help; the next cycle adds a second link; EAD line; back link; the Administration card's address and
+  copy button), A21 (permitted read: help folded, test first, "Save the result" hands `nat.json` to a stubbed `navigator.share`; CORS block: help unfolded, order link / file / test, no share;
+  unreachable: neither; EAD page, login call POST carries empty fields only and no cookie, a blocked login call is named, a PDF imported; the report shared; the ten-line summary), A23 (four
+  buttons, one tree each of the size asked, the silence written, the late answer, "Clean" listing). All ×4 languages, 390 and 1280.
+- **Limits and not tested**: nothing ran on WebKit; the real GitHub API (the sizes it accepts) is untested; the real EAD login endpoint is untested (no host reachable from the container, and
+  no credential is ever used); the real answer of the SIA, FAA, NOAA… hosts to a long-press download is untested; `navigator.share` is a stub.

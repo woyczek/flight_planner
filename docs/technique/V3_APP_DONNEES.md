@@ -303,3 +303,22 @@ saved as PDF") followed by the import from Files; in the dedicated application, 
 CORS. Publication through the GitHub API works at the size of a zone (2 MB in 3 s); the larger blocks remain to measure.
 User (27 Oct): "Un certain nombre de fichiers json récupérés mais téléchargés en pdf (impossible de sauvegarder un json
 depuis safari). Prochaine passe du labo : lien direct sans Copy/paste en cas d'échec." → lot `v3-donnees-lab2`.
+
+### GitHub API size limits (read in GitHub's documentation, 27 October 2026; pass 2 of the laboratory)
+
+The frame writes the data repository through the **git data API** (`POST git/trees` with each file's `content` inline in UTF-8, then a commit, then the ref), not through the
+contents API. What the documentation (the REST API's OpenAPI description and the `github/docs` sources) says:
+
+| Endpoint | Limit written |
+|---|---|
+| Create a blob / create a tree (inline `content`) | **no maximum request size is documented** |
+| Get a blob | "supports blobs up to 100 megabytes" |
+| Get a tree (recursive) | `truncated: true` beyond **100,000 entries or 7 MB** (the transport turns it into an error) |
+| Contents API (not used by the frame) | create / update takes the file in **Base64** (+33 %: 10 MB become 13.3 MB), no maximum written; reading: 1 MB with all features, 1-100 MB only as `raw` / `object`, above 100 MB unsupported |
+| Repository files | warning above **50 MiB**, push **blocked above 100 MiB** per file, **25 MiB** by browser upload |
+
+So a zone of 5.3 MB is far below everything that is written. What can stop a 5.3 or 10 MB write is not a documented API cap but the phone: the connection and Safari's handling of a
+large `fetch` body. That is what the buttons "Publish 5.3 MB" / "Publish 10 MB" of the laboratory measure (their result, or "no answer after 120 s", goes in the report). The first run's
+missing 5.3 and 10 MB lines are not explained by a documented limit. Also in pass 2: a direct link per source with the long-press gesture (Safari saves a JSON through "Download Linked File"
+instead of displaying it; **not yet tested on the phone**), "Save the result" by the share sheet where `navigator.canShare({ files })` is true (**not measured on an iPhone**: the report's
+device block now says it), a ten-line summary at the top of the report, and a line for EAD Basic (login page, the login call with empty fields, files imported by hand).

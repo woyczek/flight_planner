@@ -22,6 +22,10 @@ Rules covered
     buttons (A20); "Test the address" gives a time and a size and names a CORS block (A21); "From a file" with a small SIA zip runs
     the three modes and fills the report, which is copied and kept (A22); the trial publication is greyed with its reason and
     writes only on the button (A23); with a launcher, "From Downloads" takes the newest SIA cycle by the existing route (A24).
+    Pass 2 (27 Oct 2026): a direct link on every line (44 px, target _blank, rel noopener), the long-press help unfolded after a
+    "blocked by CORS" test and the import put forward (A20, A21); the EAD Basic line asks for no credential (A21); four publication
+    buttons, the 120 s silence written in the report, "Clean" lists what it removes, the ten-line summary opens the report (A21,
+    A23); the Administration card carries the absolute address of the laboratory with "Copy the link" (A20).
 
 Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A21 A22 A23 A24.
 """
@@ -817,15 +821,45 @@ def a20(c):
     c.ok(btn['tag'] == 'A' and 'f-btn' in btn['cls'] and btn['href'] == '#datalab', f'{btn}', 'a frame button to #datalab')
     c.eq(norm(btn['text']), norm(tx('frame/settings/admin_links.js', 'title', c.lang, after="id: 'datalab'")), 'the button is worded in the language of the run', what='lab button')
     c.ge(btn['h'], 43.5, 'touch target of the frame', what='lab button height')
+    # the published address of the laboratory under its link, built from location, copyable (27 Oct 2026)
+    here = c.js("new URL('#datalab', location.href).href")
+    c.eq(c.text('[data-admin=datalab] [data-adminurl]'), here, 'the absolute address shown under the link is the one of location (published or local)', what='absolute address')
+    c.eq(c.js("document.querySelector('[data-admin=datalab] > a').href"), here, 'the link itself is a real <a href="#datalab"> that resolves to that address', what='link href')
+    c.eq(c.attr('[data-admin=datalab] > a', 'href'), '#datalab', 'href', what='link')
+    c.eq(norm(c.text('[data-admin=datalab] [data-act=adminCopy]')), norm(tx('frame/settings/settings.js', 'copyLink', c.lang)), 'a "Copy the link" button, worded in the language of the run', what='copy button')
+    c.ge(c.box('[data-admin=datalab] [data-act=adminCopy]')['h'], 43.5, 'touch target', what='copy button height')
+    c.eq(c.count('[data-admin] [data-adminurl]'), 1, 'only the laboratory carries an address', what='addresses')
     c.tap('[data-admin="datalab"] > a')
     c.until("!!document.querySelector('[data-screen=datalab] li[data-src=cifp]')", timeout=15000, what='the laboratory opens')
     c.eq(c.hash(), '#datalab', 'the address is the screen of the frame', what='hash')
     c.eq(norm(c.text('[data-screen=datalab] h1')), norm(tx(LAB, 'title', c.lang)), 'the title is worded in the language of the run', what='h1')
     ids = c.js("[...document.querySelectorAll('[data-screen=datalab] li[data-src]')].map(e => e.dataset.src)")
-    want = ['sia', 'geonames', 'mora', 'dircam', 'ukmil', 'navcan', 'openaip', 'enaire', 'adds', 'nats', 'nat', 'vac', 'eaip', 'cifp', 'weather']
-    c.eq(ids, want, 'one line per source of the table 1.2: 17 without X-Plane and the aircraft types', what='source lines')
-    bad = c.js("""[...document.querySelectorAll('[data-screen=datalab] li[data-src] button')].map(b => ({ s: b.closest('[data-src]').dataset.src, a: b.dataset.act, h: Math.round(b.getBoundingClientRect().height * 10) / 10 })).filter(b => b.h < 43.5)""")
-    c.eq(bad, [], 'every button is at least 44 px high', what='short buttons')
+    want = ['sia', 'geonames', 'mora', 'dircam', 'ukmil', 'navcan', 'openaip', 'enaire', 'adds', 'nats', 'ead', 'nat', 'vac', 'eaip', 'cifp', 'weather']
+    c.eq(ids, want, 'one line per source of the table 1.2 (17 without X-Plane and the aircraft types) plus EAD Basic, after NATS', what='source lines')
+    bad = c.js("""[...document.querySelectorAll('[data-screen=datalab] li[data-src] :is(button, a.lab-link, summary)')].map(b => ({ s: b.closest('[data-src]').dataset.src, a: b.dataset.act || b.tagName, h: Math.round(b.getBoundingClientRect().height * 10) / 10 })).filter(b => b.h < 43.5)""")
+    c.eq(bad, [], 'every button, link and help title is at least 44 px high', what='short controls')
+    # pass 2: a real link on every line, to the real address, never an address to copy
+    links = c.js("""[...document.querySelectorAll('[data-screen=datalab] li[data-src]')].map(li => { const a = li.querySelector('a.lab-link'); return { s: li.dataset.src, n: li.querySelectorAll('a.lab-link').length, a: a && a.tagName, href: a && a.href,
+        target: a && a.target, rel: a && a.rel, addr: li.querySelector('[data-addr]').textContent, h: a ? a.getBoundingClientRect().height : 0, text: a ? a.textContent.trim() : '' } })""")
+    c.eq([l['s'] for l in links if l['n'] != 1], [], 'each line has exactly one link while the next cycle is not asked for', what='lines without a single link')
+    c.eq([l['s'] for l in links if l['target'] != '_blank' or 'noopener' not in l['rel']], [], 'every link opens in a new tab with rel=noopener', what='links without target/rel')
+    c.eq([l['s'] for l in links if l['href'] != l['addr']], [], 'the link goes to the real address of the line (the one shown), nothing to copy', what='links that differ from the address')
+    c.eq([l['s'] for l in links if l['h'] < 43.5], [], 'every link is 44 px high', what='short links')
+    c.ok(all(norm(l['text']).startswith(norm(tx(LAB, 'link', c.lang))) for l in links), f'{[l["text"] for l in links][:3]}', 'the link is worded in the language of the run')
+    c.eq(c.js("[...document.querySelectorAll('[data-screen=datalab] li[data-src]')].filter(li => !li.querySelector('details[data-help]') || li.querySelector('details[data-help]').open).map(li => li.dataset.src)"), [],
+         'the long-press help exists on every line and is folded until a test says "blocked by CORS"', what='help folded')
+    c.ok(norm(tx(LAB, 'helpPhone', c.lang)) in norm(c.js("document.querySelector('li[data-src=cifp] details[data-help]').textContent")), c.text('li[data-src=cifp] details[data-help]'), 'the help gives the long-press gesture in the language of the run')
+    pages = c.js("[...document.querySelectorAll('[data-screen=datalab] li[data-src] details[data-help][data-kind=page]')].map(d => d.closest('li').dataset.src)")
+    c.eq(pages, ['sia', 'navcan', 'enaire', 'nats', 'ead', 'eaip'], 'a page that is not a file says what to download there (the expected file name)', what='page helps')
+    c.ok(norm(tx('frame/aerodb/lab_sources.js', 'get', c.lang, after="id: 'ead'")) in norm(c.js("document.querySelector('li[data-src=ead] details[data-help]').textContent")), 'EAD help', 'the EAD line tells to log in, download the AD 2 pages, then "From a file"')
+    c.eq(c.count('li[data-src=ead] [data-act=login]'), 1, 'the EAD line has "Test the login call (empty)"', what='login buttons')
+    c.eq(c.count('[data-act=login]'), 1, 'and only that line', what='login buttons')
+    c.eq(norm(c.text('li[data-src=ead] [data-act=login]')), norm(tx(LAB, 'login', c.lang)), 'worded in the language of the run', what='login button')
+    c.eq(c.js("document.querySelector('li[data-src=ead] [data-addr]').textContent"), 'https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/login/ead-basic/', 'the public login page of EAD Basic', what='EAD address')
+    c.eq(c.count('li[data-src=ead] input'), 0, 'no field for a user name or a password on the line', what='credential fields')
+    c.eq(c.js("document.querySelector('[data-lab=back]').getAttribute('href')"), '#settings', 'a link back to Settings › Administration opens the screen', what='back link')
+    c.ge(c.box('[data-lab=back]')['h'], 43.5, 'touch target', what='back link height')
+    c.eq(norm(c.text('[data-lab=back]')), norm(tx(LAB, 'back', c.lang)), 'worded in the language of the run', what='back link')
     c.eq(c.js("[...document.querySelectorAll('[data-screen=datalab] li[data-src]')].filter(e => !e.querySelector('[data-act=test]') || !e.querySelector('[data-act=file]')).length"), 0,
          'each line has "Test the address" and "From a file"', what='lines missing a button')
     c.eq(norm(c.text('li[data-src=cifp] [data-act=test]')), norm(tx(LAB, 'test', c.lang)), 'the test button is worded in the language of the run', what='test button')
@@ -841,6 +875,12 @@ def a20(c):
     c.eq(c.js("document.querySelector('li[data-src=sia] [data-addr]').textContent.includes('airac-10-26')"), True, 'the SIA line shows the product page of the cycle in force', what='SIA address')
     c.js("(() => { const s = document.querySelector('[data-cycle]'); s.value = s.options[1].value; s.dispatchEvent(new Event('change', { bubbles: true })) })()")
     c.until("document.querySelector('li[data-src=cifp] [data-addr]').textContent.endsWith('CIFP_261029.zip')", what='the next cycle (2611) changes the derived addresses')
+    # the cycle in force and, once the next is asked for, the next: two links on the lines whose address follows the cycle
+    two = c.js("Object.fromEntries([...document.querySelectorAll('[data-screen=datalab] li[data-src]')].map(li => [li.dataset.src, [...li.querySelectorAll('a.lab-link')].map(a => a.href)]).filter(x => x[1].length > 1))")
+    c.eq(sorted(two), ['cifp', 'eaip', 'sia', 'vac'], 'asking for the next cycle adds its link on the four lines that follow the cycle', what='lines with two links')
+    c.ok(two['cifp'][0].endswith('CIFP_261001.zip') and two['cifp'][1].endswith('CIFP_261029.zip') and 'AIRAC-2026-10-01' in two['eaip'][0] and 'AIRAC-2026-10-29' in two['eaip'][1], f"{two['cifp']} {two['eaip']}",
+         'the CIFP and eAIP links are derived by cycle: 2610 then 2611')
+    c.eq(c.js("[...document.querySelectorAll('li[data-src=cifp] a.lab-link')].map(a => a.textContent.trim().slice(-4))"), ['2610', '2611'], 'each link names its cycle', what='link cycles')
     c.shot(f'A20_{c.design}_{c.width}_{c.lang}.png')
 
 
@@ -851,14 +891,32 @@ def fake_servers():
     import http.server
     import socket
     import threading
-    calls = []
+    class Calls(list):
+        posts = None
+    calls = Calls()
+    calls.posts = []     # what the POSTs carried: (path, body, headers) - EAD's login call must carry empty fields and nothing else
 
     class H(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
             calls.append(self.path)
-            body = (json.dumps({'tracks': ['A', 'B'], 'pad': 'x' * 150000}) if self.path.startswith('/ok') else 'PK').encode()
+            page = self.path.endswith('.html')
+            body = ('<html><title>EAD login</title><a href="x.pdf">x</a></html>' if page else
+                    json.dumps({'tracks': ['A', 'B'], 'pad': 'x' * 150000}) if self.path.startswith('/ok') else 'PK').encode()
             self.send_response(200)
-            self.send_header('Content-Type', 'application/json' if self.path.startswith('/ok') else 'application/zip')
+            self.send_header('Content-Type', 'text/html' if page else 'application/json' if self.path.startswith('/ok') else 'application/zip')
+            if self.path.startswith('/ok'):
+                self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_POST(self):
+            n = int(self.headers.get('Content-Length') or 0)
+            calls.append('POST ' + self.path)
+            calls.posts.append((self.path, self.rfile.read(n).decode(), {k.lower(): v for k, v in self.headers.items()}))
+            body = json.dumps({'loggedIn': False, 'redirect': ''}).encode()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
             if self.path.startswith('/ok'):
                 self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Content-Length', str(len(body)))
@@ -874,7 +932,8 @@ def fake_servers():
     dead_port = dead.getsockname()[1]
     dead.close()
     port = srv.server_address[1]
-    urls = {'ok': f'http://127.0.0.1:{port}/ok.json', 'bare': f'http://127.0.0.1:{port}/bare.zip', 'dead': f'http://127.0.0.1:{dead_port}/x.geojson'}
+    urls = {'ok': f'http://127.0.0.1:{port}/ok.json', 'bare': f'http://127.0.0.1:{port}/bare.zip', 'dead': f'http://127.0.0.1:{dead_port}/x.geojson',
+            'page': f'http://127.0.0.1:{port}/ok-page.html', 'login_ok': f'http://127.0.0.1:{port}/ok-login', 'login_bare': f'http://127.0.0.1:{port}/bare-login'}
     return urls, calls, srv.shutdown
 
 
@@ -884,8 +943,10 @@ def a21(c):
     urls, calls, stop = fake_servers()
     try:
         # the table's addresses are replaced, for the test, by the local servers (localStorage "sogLab:urls", read by lab_sources.js)
-        c.context.add_init_script("try { localStorage.setItem('sogLab:urls', JSON.stringify({ nat: %s, cifp: %s, openaip: %s })) } catch (e) {}" %
-                                  (json.dumps(urls['ok']), json.dumps(urls['bare']), json.dumps(urls['dead'])))
+        c.context.add_init_script("try { localStorage.setItem('sogLab:urls', JSON.stringify({ nat: %s, cifp: %s, openaip: %s, ead: %s, 'ead-login': %s })) } catch (e) {}" %
+                                  (json.dumps(urls['ok']), json.dumps(urls['bare']), json.dumps(urls['dead']), json.dumps(urls['page']), json.dumps(urls['login_ok'])))
+        # Web Share level 2 as an iPhone offers it (Chromium on Linux has none): the page must offer "Save the result" and "Share the report"
+        c.context.add_init_script("window.__shares = []; navigator.canShare = d => !!(d && d.files && d.files.length); navigator.share = async d => { window.__shares.push({ files: (d.files || []).map(f => ({ name: f.name, size: f.size })), text: d.text || null }) }")
         lab_open(c)
         c.eq(calls, [], 'nothing is called before a button is pressed', what='calls on opening')
         # 1. a server that allows the page: code, size and time on the line, and the JSON read
@@ -896,24 +957,81 @@ def a21(c):
         c.ok(re.search(r'\d+ ms|\d[.,]\d+ s', line), line, 'a duration')
         c.ok('object{tracks,pad}' in line, line, 'the chain read the JSON and says its shape')
         c.eq(c.attr('li[data-src=nat] [data-res]', 'data-kind'), 'ok', 'the line is marked as a success', what='data-kind')
+        first = lambda sid: c.js("document.querySelector('li[data-src=%s] [data-actions]').firstElementChild.dataset.act" % sid)
+        c.eq(c.js("document.querySelector('li[data-src=nat] details[data-help]').open"), False, 'a permitted read does not unfold the long-press help', what='help after a permitted test')
+        c.eq(first('nat'), 'test', '"Test the address" stays first when the cross-origin read is permitted, and the chain ran directly', what='first control (permitted)')
+        # a JSON read that worked can be saved by the share sheet (Web Share level 2), under the name of the source
+        c.eq(c.count('li[data-src=nat] [data-act=share]'), 1, '"Save the result" appears for a JSON read when the device can share files', what='share button')
+        c.eq(norm(c.text('li[data-src=nat] [data-act=share]')), norm(tx(LAB, 'shareFile', c.lang)), 'worded in the language of the run', what='share button')
+        c.tap('li[data-src=nat] [data-act=share]')
+        c.until("window.__shares.length === 1", what='the share sheet is asked for the file')
+        sh = c.js("window.__shares[0]")
+        c.ok(sh['files'][0]['name'] == 'nat.json' and 140000 < sh['files'][0]['size'] < 160000, f'{sh}', 'the file nat.json carries the body that was read')
         # 2. a server that answers but sends no CORS header: the diagnosis says so
         c.tap('li[data-src=cifp] [data-act=test]')
         c.until("document.querySelector('li[data-src=cifp] [data-res]').dataset.kind === 'err'", timeout=8000, what='the CIFP line fails')
         c.eq(norm(c.text('li[data-src=cifp] [data-res]')), norm(tx(LAB, 'cors', c.lang)), 'the CORS block is named, in the language of the run', what='CIFP diagnosis')
+        # the long-press help unfolds, the link then the import come first and the import is put forward; the test is last
+        c.eq(c.js("document.querySelector('li[data-src=cifp] details[data-help]').open"), True, 'a test that says "blocked by CORS" unfolds the long-press help', what='help after a CORS block')
+        c.eq(c.js("[...document.querySelector('li[data-src=cifp] [data-actions]').children].map(e => e.dataset.act)"), ['link', 'file', 'test'], 'the link comes first, then the import, then the test', what='control order (blocked)')
+        c.ok(c.js("document.querySelector('li[data-src=cifp] [data-act=file]').classList.contains('primary')"), 'class', '"From a file" is put forward (primary)')
+        c.ge(c.box('li[data-src=cifp] a.lab-link')['h'], 43.5, 'the link keeps its 44 px', what='link height after the test')
+        c.js("document.querySelector('li[data-src=cifp]').scrollIntoView({ block: 'center' })")
+        c.shot(f'A21_blocked_{c.width}_{c.lang}.png')
+        c.eq(c.count('li[data-src=cifp] [data-act=share]'), 0, 'no "Save the result" for a read that was blocked', what='share button (blocked)')
+        c.ok(c.js("document.querySelector('li[data-src=cifp] a.lab-link').href") == urls['bare'], urls['bare'], 'the link opens the very address that was blocked (nothing to copy)')
         # 3. nothing answers: not called a CORS block
         c.tap('li[data-src=openaip] [data-act=test]')
         c.until("document.querySelector('li[data-src=openaip] [data-res]').dataset.kind === 'err'", timeout=8000, what='the openAIP line fails')
         c.eq(norm(c.text('li[data-src=openaip] [data-res]')), norm(tx(LAB, 'unreachable', c.lang)), 'no answer is not called a CORS block', what='openAIP diagnosis')
+        c.eq(c.js("document.querySelector('li[data-src=openaip] details[data-help]').open"), False, 'an unreachable host does not unfold the help (the link would not help either way)', what='help after unreachable')
+        c.eq(first('openaip'), 'test', 'the test stays first', what='first control (unreachable)')
+        # EAD Basic: the public login page, then the login call with EMPTY fields (nothing else is sent), never a credential
+        c.tap('li[data-src=ead] [data-act=test]')
+        c.until("/HTTP 200/.test(document.querySelector('li[data-src=ead] [data-res]').textContent)", timeout=8000, what='the EAD login page answers')
+        c.ok('EAD login' in c.text('li[data-src=ead] [data-res]'), c.text('li[data-src=ead] [data-res]'), 'the page chain read the HTML (title, links)')
+        c.tap('li[data-src=ead] [data-act=login]')
+        c.until("/loggedIn/.test(document.querySelector('li[data-src=ead] [data-res]').textContent)", timeout=8000, what='the login call answers')
+        c.ok('loggedIn=false' in c.text('li[data-src=ead] [data-res]') and 'redirect' not in c.text('li[data-src=ead] [data-res]'), c.text('li[data-src=ead] [data-res]'), 'only the boolean loggedIn of the answer is shown')
+        c.eq(len(calls.posts), 1, 'one POST to the login address', what='posts')
+        path, body, hdr = calls.posts[0]
+        c.ok(path == '/ok-login' and body == 'j_username=&j_password=' and 'cookie' not in hdr and 'authorization' not in hdr and 'x-requested-with' not in hdr and hdr.get('content-type', '').startswith('application/x-www-form-urlencoded'),
+             f'{path} {body!r} {sorted(hdr)}', 'the POST carries empty fields, no cookie, no authorization')
+        c.js("(() => { const u = JSON.parse(localStorage.getItem('sogLab:urls')); u['ead-login'] = %s; localStorage.setItem('sogLab:urls', JSON.stringify(u)) })()" % json.dumps(urls['login_bare']))
+        c.tap('li[data-src=ead] [data-act=login]')
+        c.until("document.querySelector('li[data-src=ead] [data-res]').dataset.kind === 'err'", timeout=8000, what='the second login call is blocked')
+        c.eq(norm(c.text('li[data-src=ead] [data-res]')), norm(tx(LAB, 'cors', c.lang)), 'a login call the page may not read is named as a CORS block', what='login diagnosis')
+        c.ok(all(b == 'j_username=&j_password=' for _, b, _ in calls.posts) and len(calls.posts) >= 2, f'{[b for _, b, _ in calls.posts]}', 'whatever is sent, the fields are empty')
+        # a file from the EAD library goes through the pdf chain (magic, "not readable without pypdf") and is counted
+        with c.page.expect_file_chooser() as fc:
+            c.tap('li[data-src=ead] [data-act=file]')
+        c.ok('pdf' in (fc.value.element.get_attribute('accept') or '') and 'zip' in (fc.value.element.get_attribute('accept') or ''), fc.value.element.get_attribute('accept'), 'the picker takes a PDF or a ZIP')
+        fc.value.set_files({'name': 'AD_2_EGLL.pdf', 'mimeType': 'application/pdf', 'buffer': b'%PDF-1.4\n% synthetic, no content\n'})
+        c.until("/PDF/.test(document.querySelector('li[data-src=ead] [data-res]').textContent) && /AD_2_EGLL\\.pdf/.test(document.querySelector('li[data-src=ead] [data-res]').textContent)", timeout=8000, what='the PDF is measured')
+        # the whole report can be shared by the share sheet when the device has one
+        c.tap('[data-act=shareReport]')
+        c.until("window.__shares.length === 2", what='the share sheet gets the report')
+        c.ok(c.js("window.__shares[1].text").startswith('SOG data lab report\ngenerated: '), c.js("(window.__shares[1].text || '').slice(0, 60)"), 'the shared text is the whole report')
         rep = c.text('[data-report]')
         c.ok(re.search(r'\] probe nat\n\s+url: http://127\.0\.0\.1:\d+/ok\.json\n\s+result: OK HTTP 200 .* 14\d KB', rep), rep[-1100:], 'the NAT test is in the report with its url, code, size and time')
         c.ok('BLOCKED BY CORS' in rep and 'UNREACHABLE' in rep, rep[-900:], 'the CORS block and the unreachable host are named in the report')
-        c.ok(rep.count('] probe ') == 3, rep[-900:], 'one entry per test')
-        c.eq(len([x for x in calls if x.startswith('/ok')]), 1, 'the allowed address was read once', what='calls')
+        c.ok(rep.count('] probe ') == 6, rep[-900:], 'one entry per test: 3 addresses, the EAD page and the two login calls')
+        c.eq(len([x for x in calls if x == '/ok.json']), 1, 'the allowed address was read once', what='calls')
+        # the ten-line summary opens the report, counted from the entries
+        head = rep.split('== summary ==\n')[1].split('\n\n== device ==')[0].split('\n')
+        c.ok(1 <= len(head) <= 10, f'{len(head)} lines', 'at most ten lines')
+        j = '\n'.join(head)
+        c.ok('sources: 4 of 16 tested; files imported by hand: 1 (EAD Basic (EUROCONTROL))' in j, j, 'the sources tested of the table and the files imported')
+        c.ok(re.search(r'allowed to read \(2\): NAT tracks of the day \(FAA\), EAD Basic \(EUROCONTROL\)', j) and re.search(r'blocked by CORS \(1\): FAA CIFP \(ARINC 424-18\)', j) and re.search(r'unreachable \(1\): openAIP', j), j,
+             'the names of the sources allowed, blocked and unreachable')
+        c.ok('EAD Basic: login page OK (HTTP 200), login call blocked by CORS, files imported 1' in j, j, 'the EAD line: login page, login call, files imported')
+        c.ok(j.startswith('parsing of the SIA zip: not measured') and 'publication passed: none' in j, j, 'parsing and publication say they were not measured yet')
+        c.ok('web share (share / canShare / files json / files geojson): true / true' in rep, rep[:1500], 'the device block says what Web Share allows')
         sw, iw = hscroll(c)
         c.le(sw, iw, 'no horizontal scroll', what='page width')
         c.shot(f'A21_{c.width}_{c.lang}.png')
         # the browser logs the refusals it was asked to measure (the CORS block, the closed port): expected here, not errors of the page
-        c.errors[:] = [e for e in c.errors if 'blocked by CORS policy' not in e and 'ERR_CONNECTION_REFUSED' not in e]
+        c.errors[:] = [e for e in c.errors if 'blocked by CORS policy' not in e and 'ERR_CONNECTION_REFUSED' not in e and 'ERR_FAILED' not in e]
     finally:
         stop()
 
@@ -982,7 +1100,7 @@ def a22(c):
 def fake_api(context):
     """A GitHub API for `sog/data` that keeps the files written by trees (inline content) and answers the tree listing; every POST
     of a tree is recorded.  The page reaches it as it reaches the real one (CORS answered)."""
-    state = {'posts': [], 'files': {}, 'head': 'a' * 40, 'calls': []}
+    state = {'posts': [], 'files': {}, 'head': 'a' * 40, 'calls': [], 'hang': False, 'held': []}
     hdr = {'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*'}
 
     def serve(route):
@@ -998,6 +1116,9 @@ def fake_api(context):
             return ok({'tree': {'sha': 't' * 40}})
         if m == 'GET' and '/git/trees/' in u:
             return ok({'truncated': False, 'tree': [{'path': p, 'type': 'blob', 'sha': f'{i:040x}'} for i, p in enumerate(state['files'], 1)]})
+        if m == 'POST' and u.endswith('/git/trees') and state['hang']:
+            state['held'].append(route)      # the API never answers (the request stays open): released later by the test
+            return
         if m == 'POST' and u.endswith('/git/trees'):
             body = json.loads(req.post_data)
             state['posts'].append(body)
@@ -1013,18 +1134,29 @@ def fake_api(context):
         if m == 'PATCH' and '/git/refs/heads/main' in u:
             return ok({'object': {'sha': state['head']}})
         return ok({'message': 'Not Found'}, 404)
+    state['serve'] = serve
     context.route(re.compile(r'^https://api\.github\.com/repos/%s/' % REPO), serve)
     return state
 
 
-@case('A23', 'Data laboratory: the trial publication is greyed with its reason, and writes only on the button', 'A', designs=('standard',), night=False, langs4=True,
-      rule='"Rien n\'est publié sans le bouton"; the token stays in the data layer (the laboratory gets the transport); trial files are removable')
+def size_text(lang, mb):
+    """The size as the screen writes it: decimal comma in fr / de / es, point in en; Mo in French, MB elsewhere."""
+    n = {0.5: '0,5', 2: '2', 5.3: '5,3', 10: '10'}[mb]
+    return f"{n if lang != 'en' else n.replace(',', '.')} {'Mo' if lang == 'fr' else 'MB'}"
+
+
+@case('A23', 'Data laboratory: four publication buttons, greyed with their reason, writing only on the button, silence written in the report', 'A', designs=('standard',), night=False, langs4=True,
+      rule='"Rien n\'est publié sans le bouton"; one button per size (0.5 / 2 / 5.3 / 10 MB), each with its result or its error in the report, even without an answer after 120 s; "Clean" lists what it removes; the token stays in the data layer')
 def a23(c):
     # no repository, no token: greyed, with the reason, and nothing is called
     state = fake_api(c.context)
     lab_open(c)
-    c.ok(c.js("document.querySelector('[data-act=pub]').disabled && document.querySelector('[data-act=clean]').disabled"), 'a button is active without access', 'both greyed without a repository and a token')
-    c.eq(c.attr('[data-act=pub]', 'aria-disabled'), 'true', 'aria-disabled', what='publish button')
+    sizes = [(524288, 0.5), (2097152, 2), (5560000, 5.3), (10485760, 10)]
+    c.eq(c.js("[...document.querySelectorAll('[data-act=pub]')].map(b => +b.dataset.size)"), [z for z, _ in sizes], 'four buttons, one per size: 0.5, 2, 5.3 (the zone fr) and 10 MB', what='publication buttons')
+    c.eq(c.js("[...document.querySelectorAll('[data-act=pub]')].map(b => b.textContent.trim())"), [norm(tx(LAB, 'pubN', c.lang).replace('{s}', size_text(c.lang, m))) for _, m in sizes], 'worded with the size, in the language of the run', what='button labels')
+    c.eq(c.count('select[data-size]'), 0, 'no size list any more', what='size list')
+    c.ok(c.js("[...document.querySelectorAll('[data-act=pub], [data-act=clean]')].every(b => b.disabled)"), 'a button is active without access', 'all five greyed without a repository and a token')
+    c.eq(c.js("[...document.querySelectorAll('[data-act=pub]')].map(b => b.getAttribute('aria-disabled'))"), ['true'] * 4, 'aria-disabled', what='publish buttons')
     c.eq(norm(c.text('[data-why]')), norm(tx(LAB, 'noAccess', c.lang)), 'the reason is written, in the language of the run', what='reason')
     c.eq(state['calls'], [], 'the API is not called', what='calls without access')
     c.ge(c.box('[data-act=pub]')['h'], 43.5, 'touch target', what='publish button height')
@@ -1033,40 +1165,72 @@ def a23(c):
     c.context.add_init_script(GITHUB_SET)
     c.page.reload(wait_until='load')
     c.until("!!document.querySelector('[data-screen=datalab] li[data-src=cifp]')", timeout=15000, what='reopened with an access')
-    c.until("!document.querySelector('[data-act=pub]').disabled", what='the buttons come alive with an access')
+    c.until("![...document.querySelectorAll('[data-act=pub]')].some(b => b.disabled)", what='the buttons come alive with an access')
     c.ok(REPO in c.text('[data-repo]'), c.text('[data-repo]'), 'the repository is named (never the token)')
     c.eq(c.text('[data-why]'), '', 'no reason when it can', what='reason')
+    c.ok('120 s' in c.text('[data-lab=publish] p.f-muted'), c.text('[data-lab=publish] p.f-muted'), 'the hint states the delay without an answer: 120 s')
     c.ok(state['posts'] == [] and not any(m != 'GET' for m, _ in state['calls']), f"{state['calls']}", 'nothing is written by opening the laboratory')
-    # publish: asked first, then two commits (a small file, a block of the size chosen)
-    c.tap('[data-act=pub]')
+    btn = lambda z: f'[data-act=pub][data-size="{z}"]'
+    # asked first, No writes nothing
+    c.tap(btn(2097152))
     c.until("!!document.querySelector('.f-modal [data-ok]')", what='the writing is asked to be confirmed')
     c.ok(REPO in c.text('.f-modal'), c.text('.f-modal'), 'the question names the repository')
     c.tap('.f-modal [data-no]')
     c.wait(300)
     c.eq(state['posts'], [], 'No writes nothing', what='posts after a refusal')
-    c.tap('[data-act=pub]')
-    c.until("!!document.querySelector('.f-modal [data-ok]')", what='asked again')
-    c.tap('.f-modal [data-ok]')
-    c.until("(document.querySelector('[data-report]').textContent.match(/\\] publish /g) || []).length === 2", timeout=20000, what='two publications in the report')
-    c.eq(len(state['posts']), 2, 'two trees were sent: the small file, then the block', what='posts')
-    p1, p2 = state['posts'][0]['tree'], state['posts'][1]['tree']
-    c.ok(len(p1) == 1 and re.fullmatch(r'lab/essai-[\dT-]+\.json', p1[0]['path']) and json.loads(p1[0]['content'])['kind'] == 'lab-trial', f'{p1[0]["path"]}', 'a small lab/essai-<date>.json')
-    c.ok(len(p2) == 1 and p2[0]['path'].startswith('lab/essai-') and p2[0]['path'].endswith('-bloc.json'), f'{p2[0]["path"]}', 'then a block file under lab/')
-    n = len(p2[0]['content'].encode('utf-8'))
-    c.ok(2097152 - 2000 <= n <= 2097152 + 2000, f'{n} bytes', 'the block is 2 MB, as chosen')
-    c.ok('"lab-filler"' in p2[0]['content'][:80] and 'ghp_' not in p2[0]['content'], p2[0]['content'][:80], 'filler, no data, no token')
-    c.ok(all(not t['path'].startswith(('sia/', 'proc/', 'AircraftDB/')) for t in p1 + p2), f'{[t["path"] for t in p1 + p2]}', 'nothing outside lab/')
+    # each button: one block of its size, one tree sent, its own entry in the report
+    for i, (z, m) in enumerate(sizes, 1):
+        c.tap(btn(z))
+        c.until("!!document.querySelector('.f-modal [data-ok]')", what='asked')
+        c.tap('.f-modal [data-ok]')
+        c.until("(document.querySelector('[data-report]').textContent.match(/\\] publish /g) || []).length === %d" % i, timeout=40000, what=f'the {m} MB publication is in the report')
+        c.eq(len(state['posts']), i, 'one tree per button', what='posts')
+        tree = state['posts'][-1]['tree']
+        c.ok(len(tree) == 1 and re.fullmatch(r'lab/essai-[\dT-]+-bloc-%dk\.json' % round(z / 1024), tree[0]['path']), f"{tree[0]['path']}", f'a block file under lab/essai-… named by its size ({m} MB)')
+        n = len(tree[0]['content'].encode('utf-8'))
+        c.ok(z - 2000 <= n <= z + 2000, f'{n} bytes', f'the block is {m} MB, as the button says')
+        c.ok('"lab-filler"' in tree[0]['content'][:80] and 'ghp_' not in tree[0]['content'][:200], tree[0]['content'][:80], 'filler, no data, no token')
+    c.ok(all(not t['path'].startswith(('sia/', 'proc/', 'AircraftDB/')) for p in state['posts'] for t in p['tree']), 'paths', 'nothing outside lab/')
     rep = c.text('[data-report]')
-    c.ok(re.search(r'publish small file\n\s+1 file\(s\), \d+ B · OK in', rep) and re.search(r'publish block of 2\.0 MB\n\s+1 file\(s\), 2\.0 MB · OK in', rep), rep[-700:], 'the report has both, with size and time')
+    for _, m in sizes:
+        c.ok(re.search(r'publish block of %.1f MB\n\s+1 file\(s\), %.1f MB · OK in' % (m, m), rep), rep[-900:], f'the report has the {m} MB block with size and time')
     c.ok('ghp_test' not in c.js('document.documentElement.innerHTML') and 'ghp_test' not in rep, 'the token appears on the page', 'the token is never shown')
-    # clean: the trial files are removed in one commit
+    head = rep.split('== summary ==\n')[1].split('\n\n== device ==')[0]
+    c.ok(re.search(r'publication passed: 0\.5 MB in .*, 2\.0 MB in .*, 5\.3 MB in .*, 10\.0 MB in ', head) and 'not tried' not in head and 'publication failed' not in head, head, 'the summary lists the four sizes that passed')
+    c.ok('== github api limits' in rep and '100 MB' in rep and 'no maximum request size is documented' in rep, rep[rep.index('== github api'):][:500], 'the report writes the limits found in GitHub\'s documentation')
+    # the API never answers: after the delay, "no answer after 1.5 s" is written (report and screen), the screen is usable again
+    state['hang'] = True
+    c.js("localStorage.setItem('sogLab:pubTimeoutMs', '1500')")      # the 120 s of the screen, shortened for the test (read at each press)
+    c.tap(btn(10485760))
+    c.until("!!document.querySelector('.f-modal [data-ok]')", what='asked')
+    c.tap('.f-modal [data-ok]')
+    c.until("(document.querySelector('[data-report]').textContent.match(/\\] publish /g) || []).length === 5", timeout=20000, what='the silence is written in the report')
+    rep = c.text('[data-report]')
+    c.ok(re.search(r'publish block of 10\.0 MB\n\s+1 file\(s\), 10\.0 MB · NO ANSWER in 1\.50 s', rep) and 'error: no answer after 1.5 s' in rep, rep[-600:], 'the report says NO ANSWER and the delay')
+    c.eq(norm(c.text('[data-pubres]')), norm(tx(LAB, 'pubTimeout', c.lang).replace('{s}', '1.5')), 'the screen says it too, in the language of the run', what='silence line')
+    c.ok(re.search(r'publication failed: 10\.0 MB \(no answer after 1\.5 s\)', rep.split('== device ==')[0]) and re.search(r'publication passed: 0\.5 MB in .*, 2\.0 MB in .*, 5\.3 MB in', rep.split('== device ==')[0]), rep[:900], 'the summary moves it from passed to failed')
+    c.ok(not c.js("document.querySelector('[data-act=pub]').disabled"), 'busy', 'the buttons are usable again after the silence')
+    # the answer finally comes: the late result is written too (the write may have succeeded in spite of the silence)
+    state['hang'] = False
+    for route in state['held']:
+        state['serve'](route)
+    c.until("/\\] publish block of 10\\.0 MB \\(late answer\\)/.test(document.querySelector('[data-report]').textContent)", timeout=20000, what='the late answer is written')
+    rep = c.text('[data-report]')
+    c.ok(re.search(r'publication passed: .*10\.0 MB in .* \(late answer\)', rep.split('== device ==')[0]), rep[:900], 'the summary names the late answer')
+    # clean: lists what it removes (screen and report), in one commit
+    before = list(state['files'])
+    nposts = len(state['posts'])
     c.tap('[data-act=clean]')
     c.until("(document.querySelector('[data-report]').textContent.match(/\\] clean /g) || []).length === 1", timeout=15000, what='the cleaning is in the report')
-    c.eq(len(state['posts']), 3, 'the cleaning sends one commit', what='trees sent')
-    c.eq(sorted(t['path'] for t in state['posts'][2]['tree']), sorted(['lab/essai-' + p1[0]['path'][len('lab/essai-'):], p2[0]['path']]), 'the cleaning removes both trial files', what='deleted paths')
-    c.ok(all(t.get('sha') is None for t in state['posts'][2]['tree']), f"{state['posts'][2]['tree']}", 'as deletions')
+    c.eq(len(state['posts']), nposts + 1, 'the cleaning sends one commit', what='trees sent')
+    c.eq(sorted(t['path'] for t in state['posts'][-1]['tree']), sorted(before), 'the cleaning removes every trial file', what='deleted paths')
+    c.ok(all(t.get('sha') is None for t in state['posts'][-1]['tree']), f"{state['posts'][-1]['tree']}", 'as deletions')
     c.eq(state['files'], {}, 'nothing is left in the repository', what='files')
-    c.eq(norm(c.text('[data-pubres]')), norm(tx(LAB, 'cleanOk', c.lang).replace('{n}', '2')), 'the line says two files were removed', what='clean line')
+    c.eq(norm(c.text('[data-pubres]')), norm(tx(LAB, 'cleanOk', c.lang).replace('{n}', str(len(before))).replace('{l}', ', '.join(before))), 'the line lists the files it removed', what='clean line')
+    c.ok(('removed: ' + ', '.join(before)) in c.text('[data-report]'), c.text('[data-report]')[-700:], 'and the report lists them too')
+    c.tap('[data-act=clean]')
+    c.until("/Nothing|Rien|Nichts|Nada/.test(document.querySelector('[data-pubres]').textContent)", what='a second cleaning finds nothing')
+    c.eq(norm(c.text('[data-pubres]')), norm(tx(LAB, 'cleanNone', c.lang)), 'and says so', what='nothing to clean')
     # offline: greyed with its reason
     c.context.set_offline(True)
     c.page.evaluate("window.dispatchEvent(new Event('offline'))")

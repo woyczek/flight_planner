@@ -38,6 +38,30 @@
 
   // ------------------------------------------------------------------------------------------ appareil et garde
   /** L'appareil, tel que le navigateur le dit (rien d'inventé : null quand il ne le dit pas). */
+  /** Partage de fichiers (Web Share niveau 2) : ce que cet appareil permet, mesuré avec deux petits fichiers sans contenu. */
+  function webShare() {
+    try {
+      const can = typeof navigator.canShare === 'function',
+        f = (n, t) => new File(['{}'], n, {
+          type: t
+        });
+      return {
+        share: typeof navigator.share === 'function',
+        canShare: can,
+        json: can ? !!navigator.canShare({
+          files: [f('test.json', 'application/json')]
+        }) : false,
+        geojson: can ? !!navigator.canShare({
+          files: [f('test.geojson', 'application/geo+json')]
+        }) : false
+      };
+    } catch (e) {
+      return {
+        error: String(e && e.message || e)
+      };
+    }
+  }
+
   function device() {
     const mem = G.performance && performance.memory;
     return {
@@ -60,6 +84,7 @@
       worker: typeof Worker !== 'undefined',
       domParser: typeof DOMParser !== 'undefined',
       lang: navigator.language,
+      share: webShare(),
       connection: navigator.connection ? {
         type: navigator.connection.effectiveType || null,
         downlinkMbps: navigator.connection.downlink ?? null,
@@ -140,12 +165,16 @@
     keep = false,
     signal,
     timeoutMs = 120000,
-    onProgress
+    onProgress,
+    method = 'GET', // POST : le formulaire de connexion d'EAD Basic, champs vides (jamais d'identifiant)
+    body,
+    headers
   } = {}) {
     const t0 = now(),
       ctl = new AbortController(),
       out = {
         url: u,
+        method,
         ok: false
       };
     let violation = null,
@@ -161,6 +190,9 @@
     });
     try {
       const r = await fetch(u, {
+        method,
+        body,
+        headers,
         cache: 'no-store',
         credentials: 'omit',
         signal: ctl.signal
@@ -213,6 +245,9 @@
           const c2 = new AbortController();
           try {
             await Promise.race([fetch(u, {
+              method,
+              body,
+              headers,
               mode: 'no-cors',
               cache: 'no-store',
               credentials: 'omit',
@@ -619,6 +654,7 @@
         tree = await tr.tree(head),
         paths = Object.keys(tree).filter(p => /^lab\/essai-/.test(p));
       out.listed = paths.length;
+      out.paths = paths;
       out.treeMs = Math.round(now() - t0);
       if (paths.length) await tr.commit(paths.map(path => ({
         path,
@@ -637,6 +673,7 @@
 
   G.AeroLabMeasure = {
     device,
+    webShare,
     storage,
     memory,
     guard,

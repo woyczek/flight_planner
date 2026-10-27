@@ -39,3 +39,21 @@
   max-height: 340px;
   font-size: var(--sog-size-xs)
 }
+
+/* retour vers Réglages › Administration : un lien, 44 px */
+[data-screen="datalab"] .lab-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--sog-touch)
+}
+/* lien direct (même gabarit que les boutons du cadre : 44 px, retour à la ligne) */
+[data-screen="datalab"] .lab-link {
+  text-align: center
+}
+[data-screen="datalab"] .lab-help {
+  margin: 4px 0
+}
+[data-screen="datalab"] .lab-help p {
+  margin: 4px 0 4px 20px;
+  font-size: var(--sog-size-xs)
+}

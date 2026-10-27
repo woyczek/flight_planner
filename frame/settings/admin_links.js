@@ -7,7 +7,7 @@
   // d'une adresse), panel (le bouton déplie un volet de la carte, écrit par settings.js : edge, cfg), primary (bouton
   // d'une page de réglage de l'administrateur), where (app : partout ; bench : un banc ou une démonstration, bouton actif
   // seulement sur un poste avec lanceur ; v2 : page V2 du poste, montrée seulement si un lanceur sert la page), title,
-  // text } — textes en quatre langues [fr, en, de, es].
+  // text, copyLink (sous le lien : l'adresse absolue de la page et « Copier le lien ») } — textes en quatre langues [fr, en, de, es].
   window.SogAdminLinks = Object.freeze([{
     id: 'tune',
     href: '#maps?tune=1',
@@ -51,6 +51,7 @@
   }, {
     id: 'datalab',
     href: '#datalab',
+    copyLink: true, // sous le lien, l'adresse absolue publiée (depuis location) et « Copier le lien » : à ouvrir sur le téléphone
     where: 'app',
     title: ['Laboratoire données', 'Data laboratory', 'Daten-Labor', 'Laboratorio de datos'],
     text: [

@@ -12,6 +12,23 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data laboratory, pass 2: a direct link on every source, no address to copy; four publication buttons; a ten-line summary; EAD Basic; a real link from the
+  Administration card** (`frame/aerodb/lab.js`, `lab_sources.js`, `lab_report.js`, `lab_measure.js`, `lab.css`, `frame/aerodb/test/lab.html`,
+  `frame/settings/admin_links.js` + `settings.js`, `tools/csp_policy.py`, `tests/v3` A20 A21 A23 K8, aerodb SPEC § 5 sexies, DECISIONS, `V3_APP_DONNEES.md`, Settings
+  manual x4; **temporary**) — user 27 Oct, after the first run on his iPhone: "Un certain nombre de fichiers json récupérés mais téléchargés en pdf (impossible de
+  sauvegarder un json depuis safari). Prochaine passe du labo : lien direct sans Copy/paste en cas d'échec." Nine sources of fifteen are blocked by CORS from a
+  page, so each line now has a real `<a href target=_blank rel=noopener>` "Open / Download" to its address (the cycle in force; the next cycle's too when it is
+  asked for in the cycle list or its last test answered), with a folded help "long-press the link, then Download Linked File; the file lands in Files ›
+  Downloads; then From a file" that **unfolds after a test that says "blocked by CORS"**, which also puts the link and "From a file" before "Test the address"; where the
+  read is permitted the test stays first and the chain runs directly. A page that is not a file (SIA product page, ENAIRE index, NAV CANADA, NATS, eAIP menu)
+  says what to download there. A JSON read that worked can be saved by the share sheet (`navigator.share({ files })`) when the device offers it; the report's device
+  block now says whether it does (`share / canShare / files json / files geojson`). Publication: four buttons (0.5 / 2 / 5.3 / 10 MB), one block each, each with its
+  result or error in the report, even when the API never answers ("no answer after 120 s", then the late answer if it comes); "Clean" lists what it removes. The report
+  opens with a summary of ten lines at most (parsing times, sizes published, sources allowed / blocked / unreachable by name, EAD Basic), "Share the report" when
+  the device can. New line **EAD Basic (EUROCONTROL)** after NATS: "Test the address" on the public login page, "Test the login call (empty)" (the form's POST with
+  empty fields, nothing else, no cookie; never a credential), the link and the help, a PDF or ZIP by "From a file"; host added to `connect-src`. The GitHub limits
+  found in its documentation are in the report and in `V3_APP_DONNEES.md`. The Administration card's lab entry shows the absolute address of the screen (from
+  `location`) under its link, with "Copy the link"; a "Settings › Administration" link at the top of the screen. A20 A21 A23 K8.
 - **Map: the airspaces of a point read top-down** (`modules/maps/render.js` `sortAirspacesTopDown`, `modules/maps/module.js` `levelsHtml` / `strip`, `tests/v3` D26,
   SPEC § 4 nonies, DECISIONS, Pilot manual x4) — user 26 Oct: "Pour lire, le plus haut en haut, le plus bas en bas. Inverser 12345 quoi." The list
   "n espaces sur ce point" now starts with the highest space (ceiling descending, UNL first, then floor descending, then the name); number 1 is that space,

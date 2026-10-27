@@ -31,6 +31,8 @@ CONNECT = [
     'https://www.aidu.mod.uk', 'https://www.navcanada.ca', 'https://s3.openaip.net', 'https://aip.enaire.es',
     'https://services6.arcgis.com', 'https://nats-uk.ead-it.com', 'https://nms.aim.faa.gov', 'https://aeronav.faa.gov',
     'https://nomads.ncep.noaa.gov',
+    # passe 2 (27 octobre 2026) : EAD Basic (EUROCONTROL), page de connexion et formulaire AJAX appelé à vide par « Tester la connexion »
+    'https://www.ead.eurocontrol.int',
 ]
 SCRIPTS = ['https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/', 'https://cdnjs.cloudflare.com/ajax/libs/acorn/']
 ORIGIN_RE = re.compile(r'^(?:https://[a-z0-9-]+(?:\.[a-z0-9-]+)+(?::\d{1,5})?|http://(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?)$')

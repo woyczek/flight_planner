@@ -65,9 +65,11 @@
       const S = AeroLabSources;
       // ------------------------------------------------------------------ la table des sources
       const urls = S.SOURCES.map(s => S.urlOf(s, '2610'));
-      check('15 sources (the 17 of the table without X-Plane and the aircraft types)', S.SOURCES.length === 15 && new Set(S.SOURCES.map(
-          s => s.no)).size === 15 &&
-        !S.SOURCES.some(s => s.no === 11 || s.no === 16), S.SOURCES.map(s => s.no));
+      check('16 sources (the 17 of the table without X-Plane and the aircraft types, plus EAD Basic as no. 18)', S.SOURCES.length ===
+        16 &&
+        new Set(S.SOURCES.map(s => s.no)).size === 16 && !S.SOURCES.some(s => s.no === 11 || s.no === 16) && S.byId('ead').no ===
+        18 &&
+        S.SOURCES[S.SOURCES.findIndex(s => s.id === 'nats') + 1].id === 'ead', S.SOURCES.map(s => s.no));
       check('every source has an https address that is a valid URL', urls.every(u => {
         try {
           return new URL(u).protocol === 'https:'
@@ -81,6 +83,63 @@
         const s = S.byId(id);
         return s.human && s.human.length === 4 && s.human.every(x => x) && s.name && s.nameText
       }), 0);
+      // ---- passe 2 : le lien direct de chaque ligne (jamais d'adresse à recopier)
+      const eai = S.byId('eaip'),
+        cif = S.byId('cifp'),
+        now = S.cycleOf(Date.UTC(2026, 9, 26)),
+        seenOk = new Map([
+          [S.urlOf(eai, '2611'), {
+            ok: true,
+            diag: null
+          }]
+        ]),
+        seenCors = new Map([
+          [S.urlOf(eai, '2611'), {
+            ok: false,
+            diag: 'cors'
+          }]
+        ]);
+      const one = S.linkSet(eai, new Map, now),
+        two = S.linkSet(eai, new Map, now, '2611');
+      check('link: the eAIP row links to the cycle in force, derived by cycle (2610)', one.length === 1 && one[0].cycle === '2610' &&
+        one[0].url ===
+        'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_01_OCT_2026/FRANCE/AIRAC-2026-10-01/html/eAIP/FR-menu-fr-FR.html', one
+      );
+      check('link: the next cycle (2611) is added when it is asked for, with its own derived address', two.length === 2 && two[1]
+        .next === true &&
+        two[1].cycle === '2611' && two[1].url ===
+        'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/FRANCE/AIRAC-2026-10-29/html/eAIP/FR-menu-fr-FR.html', two
+      );
+      check(
+        'link: the next cycle is added when its last test answered, not when it was only blocked by CORS (that says nothing of the file)',
+        S.linkSet(eai, seenOk, now).length === 2 && S.linkSet(eai, seenCors, now).length === 1 && S.linkSet(eai, new Map, now)
+        .length === 1, 0);
+      const cfl = S.linkSet(cif, new Map, now, '2611');
+      check('link: the CIFP row gives CIFP_261001.zip then CIFP_261029.zip', cfl.map(x => x.url.split('/').pop()).join() ===
+        'CIFP_261001.zip,CIFP_261029.zip' && cfl.every(x => x.url.startsWith('https://aeronav.faa.gov/Upload_313-d/cifp/')), cfl);
+      check('link: SIA product page and VAC chart follow the cycle too; the others have a single link', ['sia', 'vac'].every(id => S
+          .linkSet(S
+            .byId(id), new Map, now, '2611').length === 2 && S.linkSet(S.byId(id), new Map, now, '2611')[1].url !== S.linkSet(S.byId(
+              id), new Map,
+            now)[0].url) && S.SOURCES.filter(s => !s.cycled).every(s => S.linkSet(s, new Map, now, '2611').length === 1) &&
+        S.SOURCES.filter(s => s.cycled).map(s => s.id).join() === 'sia,vac,eaip,cifp', S.SOURCES.filter(s => s.cycled).map(s => s.id));
+      check('link: every link is a valid https address', S.SOURCES.every(s => S.linkSet(s, new Map, now, '2611').every(l => {
+        try {
+          return new URL(l.url).protocol === 'https:'
+        } catch {
+          return false
+        }
+      })), 0);
+      check('every page that is not a file says what to download there, in four languages (get)', S.SOURCES.filter(s => s.asPage).every(
+        s => s.get && s.get.length === 4 && s.get.every(x => x)), S.SOURCES.filter(s => s.asPage && !s.get).map(s => s.id));
+      const ead = S.byId('ead');
+      check('EAD Basic: the public login page, the AJAX form to call with empty fields, the host, no credential anywhere', ead.url ===
+        'https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/login/ead-basic/' && ead.login ===
+        'https://www.ead.eurocontrol.int/fwf-eadbasic/ajaxlogin/ajax_security_check.jspx' && ead.asPage && ead.pageChain === 'html' &&
+        ead.chain === 'pdf' &&
+        /\.pdf/.test(ead.accept) && /\.zip/.test(ead.accept) && S.hosts().includes('https://www.ead.eurocontrol.int') &&
+        ead.human.length === 4 && ead.get.length === 4 && !/password|passwd|j_password=\w|token/i.test(JSON.stringify(ead.url) + ead
+          .login), ead);
       check('the SIA row names the picker path "Files > Downloads" for iPhone', /Fichiers/.test(S.byId('sia').human[0]) && /Files/.test(
           S.byId('sia').human[1]) && /Dateien/.test(S.byId('sia').human[2]) && /Archivos/.test(S.byId('sia').human[3]), S.byId('sia')
         .human);
@@ -116,7 +175,7 @@
         .ok && !S.siaFileInfo('data.zip').ok && !S.siaFileInfo('export_xml_bd_SIA_2026.zip').ok, 0);
       check('CIFP file name: cycle read from the name', S.cifpFileInfo('CIFP_261001.zip').cycle === '2610' && S.cifpFileInfo(
         'CIFP_261029.zip').cycle === '2611' && !S.cifpFileInfo('cifp.zip').ok, S.cifpFileInfo('CIFP_261001.zip'));
-      check('hosts of the table are listed for the page policy', S.hosts().length >= 10 && S.hosts().every(h =>
+      check('hosts of the table are listed for the page policy', S.hosts().length >= 11 && S.hosts().every(h =>
         /^https:\/\/[a-z0-9.-]+$/.test(h)), S.hosts());
 
       // ------------------------------------------------------------------ la fixture
@@ -386,6 +445,108 @@
         entries,
         cycle: '2610'
       }) && !/\bundefined\b|NaN|\[object/.test(txt), txt.match(/undefined|NaN|\[object[^\n]*/g));
+      // ---- le résumé de tête : au plus dix lignes, lu dans les entrées
+      const mk = (id, name, o) => R.ofProbe({
+        id,
+        n: ['', name]
+      }, probe(o));
+      const sum = R.summary([
+        mk('nat', 'NAT tracks', {
+          ok: true,
+          status: 200,
+          bytes: 1000
+        }), mk('adds', 'FAA ADDS', {
+          ok: true,
+          status: 200,
+          bytes: 1000
+        }), mk('cifp', 'FAA CIFP', {
+          ok: false,
+          diag: 'cors',
+          status: 0
+        }), mk('sia', 'SIA France', {
+          ok: false,
+          diag: 'cors',
+          status: 0
+        }), mk('ukmil', 'UK Mil AIP', {
+          ok: false,
+          diag: 'unreachable',
+          status: 0
+        }), mk('enaire', 'ENAIRE', {
+          ok: false,
+          diag: 'http',
+          status: 404
+        }), mk('ead', 'EAD Basic', {
+          ok: false,
+          diag: 'cors',
+          status: 0
+        }), mk('ead-login', 'x', {
+          ok: false,
+          diag: 'cors',
+          status: 0
+        }),
+        R.ofFile(S.byId('ead'), {
+          name: 'AD2.pdf',
+          size: 100,
+          streamMs: 1,
+          bufferMs: 1
+        }), R.ofFile(S.byId('ead'), {
+          name: 'AD2b.pdf',
+          size: 100,
+          streamMs: 1,
+          bufferMs: 1
+        }), R.ofMode(rc, 'SIA zip, mode c'), R.ofMode(rb, 'SIA zip, mode b'), R.ofMode(ra), R.ofCompare([ra, rb, rc], null),
+        R.ofPublish('block of 0.5 MB', {
+          ok: true,
+          files: 1,
+          bytes: 524288,
+          ms: 2800,
+          headMs: 300
+        }, 524288), R.ofPublish('block of 2.0 MB', {
+          ok: true,
+          files: 1,
+          bytes: 2097152,
+          ms: 3200,
+          headMs: 300
+        }, 2097152), R.ofPublish('block of 5.3 MB', {
+          ok: false,
+          timedOut: true,
+          files: 1,
+          bytes: 5560000,
+          ms: 120000,
+          error: 'no answer after 120 s'
+        }, 5560000)
+      ], 16);
+      const stxt = sum.join('\n');
+      check('summary: ten lines at most', sum.length <= 10 && sum.length >= 8, sum);
+      check('summary: parsing gives the time of mode c first, then b and a, and says the counts agree',
+        /^parsing of the SIA zip: mode c [^,]+, mode b [^,]+, mode a [^(]+\(counts identical between modes\)$/
+        .test(sum[0]), sum[0]);
+      check('summary: publication lists the sizes that passed, the one without answer and the one not tried',
+        /^publication passed: 0\.5 MB in 2\.80 s, 2\.0 MB in 3\.20 s$/
+        .test(sum[1]) && /^publication failed: 5\.3 MB \(no answer after 120 s\)$/.test(sum[2]) && /^publication not tried: 10\.0 MB$/
+        .test(sum[3]), sum.slice(1,
+          4));
+      check('summary: sources count the tested ones of the table and the files imported by hand, and name each class',
+        /sources: 7 of 16 tested; files imported by hand: 2 \(EAD Basic \(EUROCONTROL\)\)/
+        .test(stxt) && /allowed to read \(2\): NAT tracks, FAA ADDS/.test(stxt) &&
+        /blocked by CORS \(3\): FAA CIFP, SIA France, EAD Basic/.test(stxt) &&
+        /unreachable \(1\): UK Mil AIP/.test(stxt) && /other answers \(1\): ENAIRE \(HTTP 404\)/.test(stxt), sum);
+      check('summary: the EAD line says the login page, the login call and the files imported', sum.at(-1) ===
+        'EAD Basic: login page blocked by CORS, login call blocked by CORS, files imported 2', sum.at(-1));
+      check('summary: an empty report says so without failing', R.summary([], 16).length >= 4 && R.summary([], 16).length <= 10 &&
+        /not measured/.test(R.summary([], 16)[0]) &&
+        /not tried: 0\.5 MB, 2\.0 MB, 5\.3 MB, 10\.0 MB/.test(R.summary([], 16).join()) &&
+        /login page not tested, login call not tested, files imported 0/.test(R.summary([], 16)
+          .at(-1)), R.summary([], 16));
+      check('report: the summary opens the text, before the device block; the GitHub limits are written', (t2 => t2.indexOf(
+        '== summary ==') < t2.indexOf(
+        '== device ==') && /== github api limits/.test(t2) && /100 MB/.test(t2) && /7 MB/.test(t2) && /Base64/.test(t2))(R.format({
+        at: 'x',
+        device: dev,
+        entries,
+        cycle: '2610',
+        total: 16
+      })), 0);
       check('the guard marks a run, the next load finds it, then forgets it', (() => {
         AeroLabMeasure.guard.start('x');
         AeroLabMeasure.guard.step('s1');

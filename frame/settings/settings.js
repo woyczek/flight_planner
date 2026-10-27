@@ -732,7 +732,12 @@
     viaLan: ['{h}, par le réseau local', '{h}, through the local network', '{h}, über das lokale Netz', '{h}, por la red local'],
     viaHere: ['{h}, ce poste', '{h}, this computer', '{h}, dieser Rechner', '{h}, este equipo'],
     copy: ['Copier', 'Copy', 'Kopieren', 'Copiar'],
-    copied: ['Diagnostic copié.', 'Diagnostics copied.', 'Diagnose kopiert.', 'Diagnóstico copiado.']
+    copied: ['Diagnostic copié.', 'Diagnostics copied.', 'Diagnose kopiert.', 'Diagnóstico copiado.'],
+    copyLink: ['Copier le lien', 'Copy the link', 'Link kopieren', 'Copiar el enlace'],
+    linkCopied: ['Lien copié.', 'Link copied.', 'Link kopiert.', 'Enlace copiado.'],
+    linkOpen: ['Adresse à ouvrir ou à mettre en favori sur le téléphone :', 'Address to open or bookmark on the phone:',
+      'Adresse zum Öffnen oder als Lesezeichen auf dem Telefon:', 'Dirección para abrir o guardar como favorito en el teléfono:'
+    ]
   };
 
   /** Taille lisible (Ko, Mo, Go). */
@@ -1183,6 +1188,12 @@
         }
         return;
       }
+      if (act === 'adminCopy') {
+        const how = await copy(b.dataset.text || '', {
+          near: b.closest('.f-row')
+        });
+        return c.notify(t(how === 'shown' ? T.copyShown : T.linkCopied), how === 'shown' ? 'warn' : 'ok');
+      }
       if (act === 'adminPanel') {
         // bouton de la carte Administration : déplie (ou replie) le volet de sa ligne
         const p = view.querySelector(`[data-adminpanel="${CSS.escape(b.dataset.panel)}"]`);
@@ -1577,7 +1588,12 @@
       const btn = x.panel ? `<button type="button" class="${cls}" data-act="adminPanel" data-panel="${esc(x.panel)}" aria-expanded="false">${label}</button>` : x.act ?
         `<button type="button" class="${cls}" data-act="${esc(x.act)}">${label}</button>` : x.where === 'bench' && !L ? `<button type="button" class="${cls}" disabled>${label}</button>` :
         `<a class="${cls}" href="${esc(out ? new URL(x.href, ROOT).href : x.href)}"${out ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
-      return `<li data-admin="${esc(x.id)}">${btn}<span class="f-muted">${esc(t(x.text))}${x.where === 'bench' ? ` — ${esc(t(T.launcherOnly))}` : ''}</span>${x.panel ? panel(x) : ''}</li>`;
+      // `copyLink` : sous le lien, l'adresse absolue de la page, construite depuis location (publiée sur GitHub Pages ou locale), à
+      // ouvrir ou à mettre en favori sur le téléphone, copiable par un appui
+      const abs = x.copyLink && x.href ? new URL(x.href, location.href).href : '',
+        under = abs ? `<span class="f-muted f-admin-url">${esc(t(T.linkOpen))} <code data-adminurl>${esc(abs)}</code></span>
+        <span class="f-row"><button type="button" data-act="adminCopy" data-text="${esc(abs)}">${esc(t(T.copyLink))}</button></span>` : '';
+      return `<li data-admin="${esc(x.id)}">${btn}<span class="f-muted">${esc(t(x.text))}${x.where === 'bench' ? ` — ${esc(t(T.launcherOnly))}` : ''}</span>${under}${x.panel ? panel(x) : ''}</li>`;
     };
     const shown = links.filter(x => (x.where !== 'v2' || L) && (x.panel !== 'cfg' || panels.cfg));
     return `<div class="f-card" data-card="admin"><h2>${esc(t(T.admin))}</h2><p class="f-muted">${esc(t(T.adminHint))}</p>

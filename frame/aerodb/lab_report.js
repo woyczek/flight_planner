@@ -4,15 +4,27 @@
   // un texte structuré, daté, lisible et collable (« Copier le rapport »), toujours en anglais (il est lu par la session
   // qui lit les mesures, pas par un pilote). Pur : aucune dépendance au DOM, aucun accès au stockage (le rapport est gardé
   // par lab.js dans cache/lab/report.json, politique cache). Les fonctions `of*` construisent les entrées à partir des
-  // résultats de lab_measure.js. API : AeroLabReport.{ format, fmt, ofProbe, ofFile, ofMode, ofChain, ofCompare, ofPublish,
-  // ofClean, ofCrash, MAX }.
+  // résultats de lab_measure.js. En tête du texte, un résumé de dix lignes au plus (`summary`, passe 2 du 27 octobre : parsing,
+  // publication, sources permises / bloquées / injoignables, EAD Basic) ; le détail suit. API : AeroLabReport.{ format, summary,
+  // fmt, ofProbe, ofFile, ofMode, ofChain, ofCompare, ofPublish, ofClean, ofCrash, MAX }.
   const MAX = 300;
   const fmt = {
+    mbf: n => n == null ? 'n/a' : `${(n / 1048576).toFixed(1)} MB`, // toujours en Mo, une décimale (0.5 MB, 5.3 MB) : les tailles des blocs publiés
     mb: n => n == null ? 'n/a' : n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : n >= 1024 ? `${Math.round(n / 1024)} KB` : `${n} B`,
     s: ms => ms == null ? 'n/a' : ms >= 10000 ? `${(ms / 1000).toFixed(0)} s` : ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${Math.round(ms)} ms`,
     rate: (bytes, ms) => bytes && ms ? `${(bytes / 1048576 / (ms / 1000)).toFixed(1)} MB/s` : 'n/a',
     heap: b => b == null ? 'not measurable on this browser' : `${(b / 1048576).toFixed(0)} MB`
   };
+  // Ce que la documentation de GitHub dit (docs.github.com, description OpenAPI de l'API, 27 octobre 2026) : le transport du cadre
+  // écrit par l'API git data (arbre avec `content` en UTF-8, sans Base64), dont la documentation ne donne aucun maximum de requête.
+  const LIMITS = [
+    'git blob / tree (the frame transport: tree entries with inline UTF-8 content): no maximum request size is documented for create-blob or create-tree;',
+    '  reading a blob is documented up to 100 MB; a recursive tree read is cut at 100,000 entries or 7 MB (truncated=true).',
+    'contents API (not used by the frame): PUT takes the file as Base64 (+33%: a 10 MB file is a 13.3 MB body), no maximum documented; GET: 1 MB all',
+    '  features, 1-100 MB raw/object media types only, above 100 MB unsupported.',
+    'repository files: a warning above 50 MiB, a push is blocked above 100 MiB; a browser upload is limited to 25 MiB.'
+  ];
+  const short = n => String(n).split(':')[0].trim(); // le nom court d'une source (avant le « : »)
   const pad = (s, n) => String(s).padEnd(n);
   /** Le texte du rapport : en-tête daté, appareil, essais dans l'ordre. `at` : instant du texte (ISO). */
   function format({
@@ -20,9 +32,10 @@
     device = {},
     storage = {},
     entries = [],
-    cycle = ''
+    cycle = '',
+    total = 0
   } = {}) {
-    const L = ['SOG data lab report', `generated: ${at || new Date().toISOString()}`, `airac in force: ${cycle || 'n/a'}`, '', '== device =='];
+    const L = ['SOG data lab report', `generated: ${at || new Date().toISOString()}`, `airac in force: ${cycle || 'n/a'}`, '', '== summary ==', ...summary(entries, total), '', '== device =='];
     const d = device;
     const rows = [
       ['userAgent', d.userAgent],
@@ -37,9 +50,11 @@
       ['DecompressionStream / Worker / DOMParser', `${d.decompressionStream} / ${d.worker} / ${d.domParser}`],
       ['secure context / cross-origin isolated', `${d.secureContext} / ${d.crossOriginIsolated}`],
       ['storage', storage.quotaMB == null ? 'n/a' : `${storage.usageMB} MB used of ${storage.quotaMB} MB`],
+      ['web share (share / canShare / files json / files geojson)', d.share ? (d.share.error ? `error: ${d.share.error}` : `${d.share.share} / ${d.share.canShare} / ${d.share.json} / ${d.share.geojson}`) : 'n/a'],
       ['connection', d.connection ? `${d.connection.type || '?'} ${d.connection.downlinkMbps ?? '?'} Mbps${d.connection.saveData ? ' (save-data)' : ''}` : 'n/a']
     ];
     for (const [k, v] of rows) L.push(`${k}: ${v == null || v === '' ? 'n/a' : v}`);
+    L.push('', '== github api limits (documented; the buttons measure what is real) ==', ...LIMITS);
     L.push('', `== runs (${entries.length}) ==`);
     if (!entries.length) L.push('(nothing measured yet)');
     for (const e of entries) {
@@ -48,6 +63,84 @@
     }
     L.push('', 'end of report');
     return L.join('\n') + '\n';
+  }
+  // ---- le résumé de tête : lu dans les entrées (jamais dans le texte), au plus dix lignes
+  const PUB_SIZES = [524288, 2097152, 5560000, 10485760];
+  const last = (entries, pred) => {
+    for (let i = entries.length - 1; i >= 0; i--)
+      if (pred(entries[i])) return entries[i];
+    return null;
+  };
+  /** Un résultat d'essai d'adresse en quelques mots (d : data de l'entrée). */
+  function shortOf(d) {
+    if (!d) return 'not tested';
+    if (d.ok) return `OK (HTTP ${d.status}${d.json ? `; ${d.json}` : ''})`;
+    if (d.diag === 'http') return `HTTP ${d.status}`;
+    return ({
+      cors: 'blocked by CORS',
+      csp: 'blocked by the page CSP',
+      unreachable: 'unreachable',
+      timeout: 'timeout',
+      offline: 'offline',
+      aborted: 'stopped'
+    })[d.diag] || d.diag || 'failed';
+  }
+  /** Les lignes du résumé : parsing (temps du mode c d'abord), publication (tailles passées, en échec, non essayées), sources
+   *  (permises, bloquées, injoignables, autres, avec les noms), EAD Basic. `total` : nombre de sources de la table. */
+  function summary(entries = [], total = 0) {
+    const L = [],
+      sec = ms => fmt.s(ms);
+    // parsing : le dernier résultat de chaque mode, dans l'ordre c, b, a
+    const modes = ['c', 'b', 'a'].map(m => ({
+      m,
+      e: last(entries, e => e.kind === 'mode' && e.data && e.data.mode === m)
+    })).filter(x => x.e);
+    const cmp = last(entries, e => e.kind === 'compare');
+    L.push(modes.length ? `parsing of the SIA zip: ${modes.map(({m, e}) => e.data.failed ? `mode ${m} FAILED` : `mode ${m} ${sec(e.data.totalMs)}`).join(', ')}${cmp && cmp.lines.some(l => /DIFFERENT/.test(l)) ? ' (counts DIFFER between modes)' : cmp && cmp.lines.some(l => /same/.test(l)) ? ' (counts identical between modes)' : ''}` :
+      'parsing of the SIA zip: not measured (no zip given)');
+    // publication : le dernier résultat par taille ; un « late » (réponse arrivée après le délai) remplace le sans-réponse
+    const pubs = PUB_SIZES.map(size => ({
+      size,
+      e: last(entries, e => e.kind === 'publish' && e.data && e.data.size === size)
+    }));
+    const passed = pubs.filter(p => p.e && p.e.data.ok),
+      failed = pubs.filter(p => p.e && !p.e.data.ok),
+      none = pubs.filter(p => !p.e);
+    L.push(`publication passed: ${passed.length ? passed.map(p => `${fmt.mbf(p.size)} in ${sec(p.e.data.ms)}${p.e.data.late ? ' (late answer)' : ''}`).join(', ') : 'none'}`);
+    if (failed.length) L.push(`publication failed: ${failed.map(p => `${fmt.mbf(p.size)} (${p.e.data.timedOut ? p.e.data.error : p.e.data.error || 'error'})`).join(', ')}`);
+    if (none.length) L.push(`publication not tried: ${none.map(p => fmt.mbf(p.size)).join(', ')}`);
+    // sources : le dernier essai d'adresse de chacune
+    const probes = new Map;
+    for (const e of entries)
+      if (e.kind === 'probe' && e.data && e.data.id && e.data.id !== 'ead-login') probes.set(e.data.id, e);
+    const cls = {
+      allowed: [],
+      cors: [],
+      unreachable: [],
+      other: []
+    };
+    for (const e of probes.values()) {
+      const d = e.data,
+        name = d.name || d.id;
+      if (d.ok) cls.allowed.push(name);
+      else if (d.diag === 'cors') cls.cors.push(name);
+      else if (['unreachable', 'timeout', 'offline'].includes(d.diag)) cls.unreachable.push(name);
+      else cls.other.push(`${name} (${shortOf(d)})`);
+    }
+    const fl = entries.filter(e => e.kind === 'file' && e.data && e.data.id),
+      files = new Set(fl.map(e => e.data.name || e.data.id));
+    L.push(`sources: ${probes.size}${total ? ` of ${total}` : ''} tested; files imported by hand: ${fl.length}${files.size ? ` (${[...files].join(', ')})` : ''}`);
+    const list = (k, a) => L.push(`  ${k} (${a.length}): ${a.length ? a.join(', ') : '-'}`);
+    list('allowed to read', cls.allowed);
+    list('blocked by CORS', cls.cors);
+    list('unreachable', cls.unreachable);
+    if (cls.other.length) list('other answers', cls.other);
+    // EAD Basic : la page de connexion, l'appel de connexion à vide, les fichiers importés
+    const page = probes.get('ead'),
+      call = last(entries, e => e.kind === 'probe' && e.data && e.data.id === 'ead-login'),
+      n = entries.filter(e => e.kind === 'file' && e.data && e.data.id === 'ead').length;
+    L.push(`EAD Basic: login page ${shortOf(page && page.data)}, login call ${shortOf(call && call.data)}, files imported ${n}`);
+    return L;
   }
   const entry = (kind, title, lines, data = {}) => ({
     at: new Date().toISOString(),
@@ -67,7 +160,7 @@
   };
 
   function ofProbe(src, r, extra = []) {
-    const lines = [`url: ${r.url}`];
+    const lines = [`url: ${r.url}${r.method && r.method !== 'GET' ? ` (${r.method} with empty form fields, nothing else sent)` : ''}`];
     if (r.diag && r.diag !== 'http') lines.push(`result: ${DIAG[r.diag] || r.diag} after ${fmt.s(r.ms)}`);
     else lines.push(`result: ${r.ok ? 'OK' : 'FAIL'} HTTP ${r.status} ${r.statusText || ''}`.trim() + ` · ${fmt.mb(r.bytes)}${r.truncated ? ' (truncated by the cap)' : ''} · ${fmt.s(r.ms)} (first byte ${fmt.s(r.ttfbMs)}) · ${fmt.rate(r.bytes, r.ms)}`);
     if (r.status) lines.push(`headers read by CORS: content-type=${r.type || 'n/a'} content-length=${r.length ?? 'n/a'} last-modified=${r.lastModified || 'n/a'}`);
@@ -75,6 +168,9 @@
     if (r.error) lines.push(`error: ${r.error}`);
     return entry('probe', src.id, [...lines, ...extra], {
       id: src.id,
+      name: src.n ? short(src.n[1]) : src.id,
+      url: r.url,
+      json: r.jsonNote || null,
       ok: r.ok,
       status: r.status || null,
       diag: r.diag || null,
@@ -89,6 +185,7 @@
       ...extra
     ], {
       id: src ? src.id : null,
+      name: src && src.n ? short(src.n[1]) : null,
       size: f.size,
       streamMs: f.streamMs,
       bufferMs: f.bufferMs ?? null
@@ -148,12 +245,16 @@
     return entry('compare', 'modes against each other and the published base', lines);
   }
 
-  function ofPublish(step, r) {
-    const lines = [`${r.files} file(s), ${fmt.mb(r.bytes)} · ${r.ok ? 'OK' : 'FAIL'} in ${fmt.s(r.ms)} (head ${fmt.s(r.headMs)}) · ${fmt.rate(r.bytes, r.ms)}`];
+  function ofPublish(step, r, size = null) {
+    const lines = [`${r.files} file(s), ${r.bytes >= 262144 ? fmt.mbf(r.bytes) : fmt.mb(r.bytes)} · ${r.timedOut ? 'NO ANSWER' : r.ok ? 'OK' : 'FAIL'} in ${fmt.s(r.ms)} (head ${fmt.s(r.headMs)}) · ${fmt.rate(r.bytes, r.ms)}`];
     if (r.error) lines.push(`error: ${r.error}${r.status ? ` (HTTP ${r.status})` : ''}${r.offline ? ' (offline)' : ''}`);
     if (r.paths) lines.push(`paths: ${r.paths.join(', ')}`);
     return entry('publish', step, lines, {
       ok: r.ok,
+      size,
+      timedOut: !!r.timedOut,
+      late: !!r.late,
+      error: r.error || null,
       bytes: r.bytes,
       ms: r.ms,
       status: r.status || null
@@ -162,6 +263,7 @@
 
   function ofClean(r) {
     return entry('clean', 'remove the trial files', [`${r.ok ? 'OK' : 'FAIL'} · ${r.listed ?? 0} file(s) found · ${fmt.s(r.ms)}${r.treeMs != null ? ` (tree read ${fmt.s(r.treeMs)})` : ''}`,
+      ...(r.paths && r.paths.length ? [`removed: ${r.paths.join(', ')}`] : []),
       ...(r.error ? [`error: ${r.error}${r.status ? ` (HTTP ${r.status})` : ''}`] : [])
     ], {
       ok: r.ok
@@ -175,6 +277,7 @@
   }
   window.AeroLabReport = {
     format,
+    summary,
     fmt,
     entry,
     ofProbe,

@@ -413,10 +413,18 @@ source. It **builds nothing into the base, writes nothing to the modules**; the 
 and the trial files `lab/essai-*` the owner publishes by a button. It goes when the measures are taken (the measures stay in `DECISIONS.md`).
 
 - **Sources** (`lab_sources.js`, `AeroLabSources`): one row per source of the table 1.2 of `docs/technique/V3_DONNEES_REGENERATION.md`, 15 of 17 (X-Plane and
-  the aircraft types stay on the workstation): `{ id, no, n[4], url (string or function of the AIRAC cycle), chain, accept, size, cap, lic, human[4], name,
+  the aircraft types stay on the workstation), plus EAD Basic (no. 18, pass 2): `{ id, no, n[4], url (string or function of the AIRAC cycle), chain, accept, size, cap, lic, human[4], name,
   downloads }`. `cycleOf(date)` (rank in the year of the effective date: 2610 = 1 Oct 2026, 2611 = 29 Oct), `eaipBase`, `cifpName` (`CIFP_<yymmdd>`, the
   effective date), `siaPage`, `siaFileInfo` / `cifpFileInfo` (the cycle read from a file name, any case, a copy suffix "(1)" accepted). `localStorage['sogLab:urls']`
   replaces an address (tests). The hosts must be in the page policy (`tools/csp_policy.py`, K9).
+- **Per row (pass 2, 27 Oct)**: a real link `<a href target=_blank rel=noopener>` "Open / Download" to the row's address (`linkSet`: the cycle in force, plus the next
+  cycle's when the list asks for it or its last test answered; "blocked by CORS" does not say the file exists), and a folded `details` "How to save it on iPhone"
+  (long press › Download Linked File › Files › Downloads › From a file; a page row says what to download there: `get`; a JSON row says Safari's display is not the
+  file). The last test drives the row (`lastDiag`, kept in the report and reloaded): after "blocked by CORS" the help is unfolded and the order is link, "From a file"
+  (primary), test; otherwise the test is first. A JSON read that worked offers "Save the result" (`navigator.share({ files })`) when `navigator.canShare` says so.
+  **EAD Basic** (no. 18, after NATS): the public login page (`url`, HTML chain), `login` = the AJAX form's address called by "Test the login call (empty)" with the POST
+  `j_username=&j_password=` and nothing else (no header, `credentials: omit`; only the boolean `loggedIn` of the answer is shown), and "From a file" taking a PDF (magic
+  bytes, "not readable without pypdf") or a ZIP; no credential anywhere in the page, the code or the report.
 - **Per row**: "Test the address" (`AeroLabMeasure.probe`: `fetch` with a timeout and a read cap, diagnosis `cors` / `csp` / `offline` / `unreachable` / `timeout`,
   then the row's chain on the whole body) and "From a file" (a picker; "From Downloads" with a launcher, by `GET /__setup/downloads?glob=…`; the file's read time
   as a stream and as an `ArrayBuffer`). Chains: `sia` (the three modes), `cifp` (stream `FAACIFP18`, count the 132-column records, read the PA airport records),
@@ -432,10 +440,19 @@ and the trial files `lab/essai-*` the owner publishes by a button. It goes when 
   CDATA skipped; not a conformant parser), blocks held only while open, so the memory is the largest block. Kinds read whole, with the page readers' rules:
   XML_SIA `Espace` / `Partie` / VFR `NavFix`; AIXM `Ahp`, `Vor` / `Dme` / `Tcn` / `Ndb` / `Ils`, `Dpn`, `Obs`, `Ase` + `Abd` (arcs counted, not built); the other
   records are counted per name. Golden test K8: the same results as the page's readers at every chunk size.
-- **Trial publication**: by the data layer's GitHub transport (the screen receives `head` / `tree` / `commit`, never the token): asks, then a small
-  `lab/essai-<date>.json` and a filler block (0.5 / 2 / 5.3 / 10 MB), time and API errors measured; "Clean" removes the `lab/essai-*` files in one commit. Greyed
-  with its reason without repository and token, and when offline.
-- **Report** (`lab_report.js`): English text, dated, a device block (user agent, app mode, cores, declared memory, heap API, screen, online) and one entry per run;
+- **Trial publication** (pass 2: one button per size): by the data layer's GitHub transport (the screen receives `head` / `tree` / `commit`, never the token): four
+  buttons "Publish 0.5 MB" / "2 MB" / "5.3 MB" / "10 MB", each asks, then writes ONE filler block `lab/essai-<date>-bloc-<n>k.json` of its size, time and API
+  error in the report. The promise is raced against a delay (120 s; `localStorage['sogLab:pubTimeoutMs']` shortens it for tests): no answer → an entry "NO ANSWER …
+  no answer after 120 s", and if the request answers later, a second entry "(late answer)"; a launch guard also notes a killed tab. "Clean" lists the `lab/essai-*`
+  files, removes them in one commit and lists them (screen and report). Greyed with its reason without repository and token, and when offline.
+  **Size limits** (GitHub documentation, read on 27 Oct 2026): the frame transport writes by the git data API with the tree entry's `content` inline in UTF-8 (no
+  Base64: the body is the file's size); the documentation gives **no maximum request size** for create-blob / create-tree. What it does state: reading a blob is
+  supported up to 100 MB; a recursive tree read stops at 100,000 entries or 7 MB (`truncated`); the contents API (not used) takes the file in Base64 (+33 %) with no
+  maximum written and reads 1 MB with all features, 1-100 MB as raw / object only; a push is blocked above 100 MiB per file (warning at 50 MiB), a browser upload at 25 MiB.
+  The 5.3 and 10 MB buttons measure what is real from the phone.
+- **Report** (`lab_report.js`): opens with a summary of ten lines at most (`summary(entries, total)`: parsing times of modes c, b, a and whether the counts agree;
+  publication: sizes passed / failed / not tried; sources tested of the table, allowed / blocked by CORS / unreachable by name, other answers; files imported; the EAD
+  Basic line "login page …, login call …, files imported n"), then the GitHub limits, then the detail. English text, dated, a device block (user agent, app mode, cores, declared memory, heap API, screen, online) and one entry per run;
   "Copy the report" (clipboard, else shown selected); kept in `cache/lab/report.json`, reloaded at opening.
 - Invariants 1 and 4 of § 6 are untouched in spirit: the lab writes no base file; its texts (four languages) are a third exception after the `.lnmperf` card,
   for a screen that goes with the lab. Tests: K8, K9 (`frame/aerodb/test/lab.html`), A20 to A24 (`tests/v3/PLAN.md`).

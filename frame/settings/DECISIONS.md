@@ -380,3 +380,12 @@ languages; the screen itself is aerodb's (`frame/aerodb/lab.js`, `frame/aerodb/D
 address. Absent below the Full level (the address alone shows "reserved to the Full level"): tests A20, A12. Temporary: it goes with the laboratory. The Settings
 manual says it in one paragraph per language, anchor `settings-datalab`, identical in the four.
 
+
+## 27 October 2026 — the laboratory entry shows its absolute address (aerodb lab pass 2, relay of the cloud)
+
+User, 27 Oct: « Ajouter un lien direct vers le labo depuis la page admin ; pour tester via github. » The entry was already a real `<a class="f-btn" href="#datalab">`
+(44 px); what was missing is the address to open on the phone. `admin_links.js` gets an optional `copyLink`; `adminCard` then writes, under the sentence, "Address to open
+or bookmark on the phone:" and the absolute address `new URL(href, location.href)` (on GitHub Pages `https://<owner>.github.io/<repo>/v3/frame/index.html#datalab`, locally the local
+address: nothing is written in the code), with a "Copy the link" button (`act: adminCopy`, the shared `copy()`, notification "Link copied."). Same level as before (Full,
+rule 18); only the lab entry has it. The lab screen starts with a "Settings › Administration" link (`#settings`) to come back. Test A20. Two small rules for `frame.css`
+(`.f-admin-url`, `.f-admin li > .f-row`).

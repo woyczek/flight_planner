@@ -456,6 +456,13 @@ html.f-titled .f-module>h1 {
   display: block;
   margin-top: 4px
 }
+.f-admin-url code {
+  overflow-wrap: anywhere;
+  font: var(--sog-size-xs)/1.35 var(--sog-font-mono)
+}
+.f-admin li>.f-row {
+  margin-top: 4px
+}
 .f-adminpanel {
   margin-top: 8px
 }

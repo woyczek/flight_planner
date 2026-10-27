@@ -1,8 +1,8 @@
 (() => {
   'use strict';
   // V3 aerodb — laboratoire des données (TEMPORAIRE, frame/aerodb/SPEC.md § « Laboratoire ») : la table des sources du
-  // tableau 1.2 de docs/technique/V3_DONNEES_REGENERATION.md (15 lignes : les 17 sources sans X-Plane, ligne 11, ni les
-  // types d'avion, ligne 16, qui restent sur le poste), avec l'adresse réelle, vérifiée le 26 octobre 2026 depuis le
+  // tableau 1.2 de docs/technique/V3_DONNEES_REGENERATION.md (16 lignes : les 17 sources sans X-Plane, ligne 11, ni les
+  // types d'avion, ligne 16, qui restent sur le poste, plus EAD Basic, no 18, passe 2), avec l'adresse réelle, vérifiée le 26 octobre 2026 depuis le
   // conteneur quand le proxy le permettait (curl -sI : code, taille, en-tête Access-Control-Allow-Origin ; voir
   // frame/aerodb/DECISIONS.md), la taille attendue, la licence et le geste humain.
   //   · une adresse est une chaîne ou une fonction du cycle AIRAC (eAIP, CIFP, page du SIA) ;
@@ -10,10 +10,14 @@
   //     entre par « Depuis un fichier » (iOS n'ouvre pas un dossier donné : Fichiers › Téléchargements) ;
   //   · `name` : le nom attendu d'un fichier fourni (le cycle est lu dans le nom) ; `downloads` : motif du ramassage dans
   //     Téléchargements par le lanceur (GET /__setup/downloads?glob=…, tools/launch.py download_patterns lit ce fichier) ;
+  //   · `cycled` : l'adresse dépend du cycle AIRAC (page du SIA, VAC, eAIP, CIFP) : le lien direct de la ligne montre le cycle en
+  //     vigueur, et celui du suivant quand il est demandé ou que son test a répondu (linkSet) ;
+  //   · `get` : pour une adresse qui est une PAGE, ce qu'il faut y télécharger (4 langues) ; `login` : l'adresse du formulaire de
+  //     connexion que « Tester la connexion (à vide) » appelle (EAD Basic : champs vides, jamais d'identifiant) ;
   //   · `chain` : ce que fait la mesure du fichier (sia : trois modes ; cifp : l'enregistrement PA ; json : lecture JSON ;
   //     html, pdf, grib : taille et en-tête seulement) ; `cap` : octets lus au plus par « Tester l'adresse » (0 : tout).
   // Aucun jeton, aucune adresse personnelle. API : AeroLabSources.{ SOURCES, cycleOf, cycleDate, eaipBase, cifpName,
-  // cifpUrl, siaPage, siaFileInfo, byId, urlOf, rawUrl }.
+  // cifpUrl, siaPage, siaFileInfo, byId, urlOf, rawUrl, linkSet }.
   const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   const DAY = 86400000;
   const ANCHOR = Date.UTC(2026, 0, 22); // AIRAC 2601 : 22 janvier 2026 ; 28 jours entre deux cycles
@@ -113,12 +117,19 @@
   // n : [fr, en, de, es] ; lic : licence en une ligne (même texte dans les quatre langues : sigle) ; human : geste, 4 langues
   const SOURCES = [{
     id: 'sia',
+    cycled: true,
     no: 1,
     n: ['SIA France (XML SIA + AIXM 4.5)', 'SIA France (XML SIA + AIXM 4.5)', 'SIA Frankreich (XML SIA + AIXM 4.5)',
       'SIA Francia (XML SIA + AIXM 4.5)'
     ],
     url: c => siaPage(c),
     asPage: true,
+    get: [
+      'Sur la page du produit : la commande (0 €), puis le lien du ZIP export_xml_bd_SIA_<date>-v<nn>.zip ; appui long sur ce lien.',
+      'On the product page: the order (0 €), then the link of the ZIP export_xml_bd_SIA_<date>-v<nn>.zip; long-press that link.',
+      'Auf der Produktseite: die Bestellung (0 €), dann der Link zur ZIP-Datei export_xml_bd_SIA_<Datum>-v<nn>.zip; diesen Link lange drücken.',
+      'En la página del producto: el pedido (0 €), luego el enlace del ZIP export_xml_bd_SIA_<fecha>-v<nn>.zip; mantenga pulsado ese enlace.'
+    ],
     chain: 'sia',
     accept: '.zip,application/zip',
     name: /^export_xml_bd_sia_\d{4}-\d{2}-\d{2}/i,
@@ -185,6 +196,11 @@
     ],
     url: 'https://www.navcanada.ca/en/aeronautical-information/operational-guides.aspx',
     asPage: true,
+    get: ['Sur la page, repérez le guide DAH (fichier dah<aaaammjj>.pdf) ; appui long sur son lien.',
+      'On the page, find the DAH guide (file dah<yyyymmdd>.pdf); long-press its link.',
+      'Auf der Seite den DAH-Leitfaden suchen (Datei dah<jjjjmmtt>.pdf); seinen Link lange drücken.',
+      'En la página, localice la guía DAH (archivo dah<aaaammdd>.pdf); mantenga pulsado su enlace.'
+    ],
     chain: 'html',
     accept: '.pdf,.html',
     size: 0.3 * MB,
@@ -210,6 +226,11 @@
     ],
     url: 'https://aip.enaire.es/AIP/',
     asPage: true,
+    get: ['L’index s’ouvre : téléchargez-y le jeu de données AIXM 5.1 (fichier .xml ou .zip) ; appui long sur son lien.',
+      'The index opens: download the AIXM 5.1 data set there (.xml or .zip file); long-press its link.',
+      'Der Index öffnet sich: laden Sie dort den AIXM-5.1-Datensatz (.xml- oder .zip-Datei) herunter; seinen Link lange drücken.',
+      'Se abre el índice: descargue allí el conjunto de datos AIXM 5.1 (archivo .xml o .zip); mantenga pulsado su enlace.'
+    ],
     chain: 'html',
     accept: '.xml,.zip',
     size: 0.05 * MB,
@@ -233,6 +254,11 @@
     n: ['NATS UK (AIXM 5.1)', 'NATS UK (AIXM 5.1)', 'NATS UK (AIXM 5.1)', 'NATS UK (AIXM 5.1)'],
     url: 'https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/',
     asPage: true,
+    get: ['Sur la page des jeux de données (après inscription) : le ZIP EG_…_DS_…_XML.zip ; appui long sur son lien.',
+      'On the data sets page (after registering): the ZIP EG_…_DS_…_XML.zip; long-press its link.',
+      'Auf der Datensatz-Seite (nach der Registrierung): die ZIP-Datei EG_…_DS_…_XML.zip; ihren Link lange drücken.',
+      'En la página de conjuntos de datos (tras registrarse): el ZIP EG_…_DS_…_XML.zip; mantenga pulsado su enlace.'
+    ],
     chain: 'zip',
     accept: '.zip',
     name: /^EG_.*_DS_.*_XML\.zip$/i,
@@ -247,6 +273,33 @@
       'Gesto humano: el registro en el sitio de NATS, luego el ZIP en Descargas; aquí, «Desde un archivo».'
     ]
   }, {
+    id: 'ead',
+    no: 18,
+    n: ['EAD Basic (EUROCONTROL) : page de connexion', 'EAD Basic (EUROCONTROL): login page', 'EAD Basic (EUROCONTROL): Anmeldeseite',
+      'EAD Basic (EUROCONTROL): página de conexión'
+    ],
+    url: 'https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/login/ead-basic/',
+    login: 'https://www.ead.eurocontrol.int/fwf-eadbasic/ajaxlogin/ajax_security_check.jspx',
+    asPage: true,
+    chain: 'pdf',
+    pageChain: 'html',
+    accept: '.pdf,.zip,application/pdf',
+    size: 0.05 * MB,
+    cap: 2 * MB,
+    lic: 'EUROCONTROL EAD Basic (compte de l’utilisateur, usage non opérationnel)',
+    human: [
+      'Aucun identifiant n’est demandé ni envoyé par le laboratoire : « Tester la connexion (à vide) » envoie le formulaire de connexion avec des champs vides, rien d’autre.',
+      'The laboratory neither asks for nor sends any credential: “Test the login call (empty)” sends the login form with empty fields, nothing else.',
+      'Das Labor fragt keine Zugangsdaten ab und sendet keine: „Anmeldeaufruf testen (leer)“ sendet das Anmeldeformular mit leeren Feldern, sonst nichts.',
+      'El laboratorio no pide ni envía ninguna credencial: «Probar la conexión (vacía)» envía el formulario de conexión con los campos vacíos, nada más.'
+    ],
+    get: [
+      'Connectez-vous sur la page, téléchargez les pages AD 2 d’un terrain dans Fichiers (un PDF, ou un ZIP), puis « Depuis un fichier ».',
+      'Log in on the page, download the AD 2 pages of an aerodrome into Files (a PDF, or a ZIP), then “From a file”.',
+      'Melden Sie sich auf der Seite an, laden Sie die AD-2-Seiten eines Flugplatzes in Dateien (ein PDF oder ein ZIP) und wählen Sie dann „Aus einer Datei“.',
+      'Conéctese en la página, descargue las páginas AD 2 de un aeródromo en Archivos (un PDF o un ZIP) y luego «Desde un archivo».'
+    ]
+  }, {
     id: 'nat',
     no: 12,
     n: ['Routes NAT du jour (FAA)', 'NAT tracks of the day (FAA)', 'NAT-Routen des Tages (FAA)', 'Rutas NAT del día (FAA)'],
@@ -258,6 +311,7 @@
     lic: 'Domaine public (FAA)'
   }, {
     id: 'vac',
+    cycled: true,
     no: 13,
     n: ['Cartes VAC du SIA (une carte : LFBD)', 'SIA VAC charts (one chart: LFBD)', 'SIA VAC-Karten (eine Karte: LFBD)',
       'Cartas VAC del SIA (una carta: LFBD)'
@@ -270,10 +324,17 @@
     lic: 'Licence d’utilisation du SIA'
   }, {
     id: 'eaip',
+    cycled: true,
     no: 14,
     n: ['eAIP France (menu du cycle)', 'eAIP France (cycle menu)', 'eAIP Frankreich (Zyklusmenü)', 'eAIP Francia (menú del ciclo)'],
     url: c => `${eaipBase(c)}/html/eAIP/FR-menu-fr-FR.html`,
     asPage: true,
+    get: [
+      'Le menu de l’eAIP s’ouvre dans Safari : ouvrez une partie (par exemple AD 2) et enregistrez un de ses PDF (appui long sur le lien du PDF).',
+      'The eAIP menu opens in Safari: open a part (for example AD 2) and save one of its PDFs (long-press the PDF link).',
+      'Das eAIP-Menü öffnet sich in Safari: einen Teil öffnen (zum Beispiel AD 2) und eines seiner PDFs speichern (PDF-Link lange drücken).',
+      'El menú del eAIP se abre en Safari: abra una parte (por ejemplo AD 2) y guarde uno de sus PDF (mantenga pulsado el enlace del PDF).'
+    ],
     chain: 'html',
     accept: '.html,.pdf',
     size: 2.3 * MB,
@@ -281,6 +342,7 @@
     lic: 'Licence d’utilisation du SIA'
   }, {
     id: 'cifp',
+    cycled: true,
     no: 15,
     n: ['FAA CIFP (ARINC 424-18)', 'FAA CIFP (ARINC 424-18)', 'FAA CIFP (ARINC 424-18)', 'FAA CIFP (ARINC 424-18)'],
     url: c => cifpUrl(c),
@@ -324,6 +386,30 @@
   };
   /** Adresse effective d'une source : celle de remplacement s'il y en a une, sinon celle de la table. */
   const urlOf = (s, cycle) => override(s.id) || rawUrl(s, cycle);
+  /** Adresse du formulaire de connexion d'une source (EAD Basic) ; remplaçable dans les essais par `sogLab:urls` { '<id>-login': … }. */
+  const loginOf = s => override(`${s.id}-login`) || s.login || '';
+  /** Les liens directs d'une ligne : [{ cycle?, url, next? }]. Une adresse qui ne dépend pas du cycle : un seul lien. Sinon le
+   *  cycle en vigueur, puis celui du suivant quand il est demandé (`wanted` : son id, choisi dans la liste) ou quand le dernier
+   *  test de son adresse a répondu (`seen` : Map adresse → { ok, diag } ; « bloqué par CORS » ne dit pas si le fichier existe :
+   *  il ne suffit pas). Deux cycles qui donnent la même adresse (adresse de remplacement des essais) : un seul lien. */
+  function linkSet(s, seen, cyc = cycleOf(), wanted = '') {
+    const a = urlOf(s, cyc.id);
+    if (!s.cycled) return [{
+      url: a
+    }];
+    const out = [{
+      cycle: cyc.id,
+      url: a
+    }];
+    const b = urlOf(s, cyc.next.id),
+      st = seen && seen.get ? seen.get(b) : null;
+    if (b !== a && (wanted === cyc.next.id || st && st.ok)) out.push({
+      cycle: cyc.next.id,
+      url: b,
+      next: true
+    });
+    return out;
+  }
   /** Hôtes (origines https) des adresses de la table, pour la politique de contenu (tools/csp_policy.py les lit aussi). */
   const hosts = () => [...new Set(SOURCES.map(s => new URL(rawUrl(s, '2610')).origin))];
   const api = {
@@ -339,6 +425,8 @@
     byId,
     urlOf,
     rawUrl,
+    linkSet,
+    loginOf,
     hosts
   };
   if (typeof window !== 'undefined') window.AeroLabSources = api;
