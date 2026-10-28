@@ -346,3 +346,12 @@ the twelve `connect-src` hosts, the launcher patterns), keep its measurements he
 worker modes as the base builder of the workstation module** (lot D5 of `V3_DONNEES_REGENERATION.md`), and put the
 dedicated application to sleep until the iOS chain resumes and native HTTP can be tried. The user decides.
 
+**User's decision (28 Oct, after the pass-2 report)**: « oui pour le retrait. Du moins, la transformation du lab en
+« sources » avec les liens vers les différents AIP ou sources qu'on utilise ou utiliserait. » → the laboratory
+(`#datalab`: probes, parsing modes, publication trials, `renderDatalab`, the twelve `connect-src` hosts, the launcher
+patterns) is retired and replaced by a plain **« Sources » screen**: one row per source used or candidate (the 16 rows of
+`lab_sources.js` plus EAD Basic and the free national AIPs of `AIP_OPEN_DATA_INVENTORY.md`), with its link, what it
+gives, its licence and its status (used in the base / candidate / abandoned), no fetch, no parser, no publication; the
+streaming XML reader and the worker modes are kept for the workstation builder (lot D5). Lot for the local sessions
+(frame + aerodb), dispatched by the ergonomics session.
+

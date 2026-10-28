@@ -164,3 +164,17 @@ tested only against a local copy built from the public login page (case K6). The
 
 **What the session does with it**: the search and download calls of the one-click job (§ 5, step 2), against the real shapes; then the layout of
 EGLL's coding tables once the owner has downloaded that aerodrome's pages by hand (§ 4) or the job fetches them.
+
+## 7. Probe run by the user on the workstation (28 October 2026, United Kingdom / EGLL)
+
+Login page 200; login **yes** (200, `home.faces`); home page read with its links (Pre-Flight Briefing, AIP Library,
+SDO Reporting, Prepare my Flight, User Profile, Help); AIP Library reached (`aip_overview.faces`, 200) and its form
+read: `mainForm` with the lists *Authority* (47 States, ICAO prefix: EB, ED, EG, EH, EI, LE, LF, LI, LS… and non-ECAC
+ones such as OJ, RP, UA), *Authority type* (Civil), *Language* (EN), *AIP type* (AIP, AMDT, SUP, AIC, Charts), *AIP part*
+(GEN, ENR, AD), buttons Search / Reset; the partial JSF search answered 200 with 56 KB; **documents found: 1, EGLL not
+identified** in it: the result rows are not parsed yet (the next iteration of the probe needs the structure of the result
+table: a `--dump` of the sanitised result page). The report printed the JSF `ViewState` values: the sanitiser must blank
+them too. Conclusion: the one-click chain is feasible with the standard library and the Basic account; next steps, in
+order: parse the result list, list the AD 2 pages of one aerodrome, download **one** page into the local cache only,
+then the layout registry on it.
+
