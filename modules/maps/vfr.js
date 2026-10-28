@@ -25,6 +25,9 @@ import {
   endData
 } from './sheet_view.js';
 import {
+  cardHtml
+} from './procs.js';
+import {
   hideTips,
   followTip,
   hoverHtml,
@@ -380,6 +383,8 @@ function showAdCard(icao) {
       body += `<p class="mp-vfr-warn">${esc(tt(TX.vfrLabel))}</p>${st ? `<p><b>${esc(tt(st, { s: tt(TX.vfrScope[A.scope] || TX.vfrScope.partial) }))}</b></p>` : ''}${A.notes?.length ? `<ul class="mp-vfr-seq">${A.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}${seqs.length ? `<div><b>${esc(tt(TX.vfrSeqCount, { r: seqs.length }))}</b>${part ? ` <span class="f-muted">${esc(tt(TX.vfrPart))}</span>` : ''}</div><ul class="mp-vfr-seq">${seqs.map(item).join('')}</ul>` : ''}${man}${v.notes?.length ? `<div><b>${esc(tt(TX.vfrNotes))}</b></div>${v.notes.map(n => `<details class="mp-vfr-note"><summary>${esc(n.title || tt(TX.vfrPage, { p: n.page }))}${page(n.page)}</summary><div>${esc(n.text)}</div></details>`).join('')}` : ''}`;
     }
   }
+  // piste et procédures choisies dans Carburant pour ce terrain (départ ou arrivée du vol), avec « Changer » ; la Carte ne les écrit jamais
+  body = cardHtml(icao) + body;
   openData('ad', `ad:${icao}`, title, () => body, label);
 }
 /** VRP de la base que la surbrillance dessine (terrains montrés) : la couche des VRP ne les redessine pas. */

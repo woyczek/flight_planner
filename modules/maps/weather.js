@@ -91,7 +91,7 @@ async function loadWeather(key) {
       route: pts,
       levelFt,
       // le profil de Carburant n'est repris que s'il est de Carburant (écrit par la carte, il est périmé : taux par défaut)
-      profile: f?.by && f.by !== 'fuel' ? null : f?.profile || null,
+      profile: f?.by === 'maps' ? null : f?.profile || null, // périmé après une modification sur la carte seulement
       profileLevelFt: levelFt,
       depTime: dep,
       cruiseKt: A.cruiseKtOf(f?.route?.text) || 200,

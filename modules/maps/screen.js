@@ -305,7 +305,8 @@ export function header() {
     const f = S.route.flight,
       r = f?.route || {},
       lvl = S.route.levelFt ? level(S.route.levelFt) : '',
-      d = S.route.points.length >= 2 ? MapsRender.distances(S.route.points).pop() : 0,
+      // la distance du chemin volé (route et procédures choisies), la même que celle du profil
+      d = S.route.flown?.length > 1 ? S.route.flown.at(-1).nm : S.route.points.length >= 2 ? MapsRender.distances(S.route.points).pop() : 0,
       state = S.route.points.length ? tt(isStarted(f) ? TX.stFlying : TX.stPlanned) : '',
       ends = r.dep || r.arr ? tt(TX.summary, {
         dep: r.dep || '?',

@@ -150,6 +150,9 @@ export const STYLE = `
 [data-module="maps"] .mp-lg-relief{background:linear-gradient(var(--c),color-mix(in srgb,var(--c) 45%,#fff));border-top:1.5px solid #7a5a32}
 [data-module="maps"] .mp-lg-band{background:color-mix(in srgb,var(--c) 16%,transparent);border:1.2px solid var(--c);box-sizing:border-box}
 [data-module="maps"] .mp-lg-tick::after{content:'';position:absolute;left:12px;top:2px;height:8px;border-left:2px solid var(--c)}
+[data-module="maps"] .mp-lg-cons::after{content:'';position:absolute;left:5px;right:5px;top:6px;border-top:2px solid var(--c)}
+[data-module="maps"] .mp-lg-cons::before{content:'';position:absolute;left:10px;top:1px;border:3px solid transparent;border-bottom:4px solid var(--c);border-top:0}
+[data-module="maps"] .mp-ad-proc{margin:0 0 6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 6px}
 [data-module="maps"] .mp-lg-tri::after{content:'';position:absolute;left:8px;top:1px;border:5px solid transparent;border-bottom:9px solid var(--c);border-top:0}
 [data-module="maps"] .mp-chips .mp-chip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
 [data-module="maps"] .mp-data[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}

@@ -5,7 +5,7 @@
   // montée et descente données par Carburant (profile : vario, vitesse, tocNm, todNm), sinon calculées par SiaProfile
   // aux taux reçus ou par défaut ; relief des tuiles Terrarium, ou, sans elles (hors ligne), les MORA des cases traversées.
   // Aucun texte d'interface : codes, niveaux et distances seulement.
-  // API : window.MapsProfile = { build(points, { levelFt, profile, airspaces, elevation, mora }) → coupe,
+  // API : window.MapsProfile = { build(points, { levelFt, profile, path, airspaces, elevation, mora }) → coupe,
   //   draw(ctx, coupe, { W, H, scale, window }) → géométrie, xOf(geo, s), sOf(geo, x), at(coupe, s) → { lat, lon, s, nm, alt,
   //   terrain, mora, zones }, posAt(coupe, s) → { lat, lon }, nearest(coupe, toC, x, y, maxPx) → s | null }.
   // Fenêtre (V3_SPECIFICATION § 7.1 règle 20) : `window` { from, to } en NM depuis le départ ; seule cette portion est dessinée,
@@ -45,11 +45,77 @@
     };
   }
 
-  /** Coupe de la route : points [{ id, lat, lon }], levelFt (niveau de croisière), profile (Carburant), airspaces
-   *  (déjà choisis), elevation(lat, lon) → mètres (promesse ; rejet : relief inconnu), mora(lat, lon) → ft | null. */
+  /** Trajectoire que Carburant a calculée sous les contraintes des procédures (profile.path [{ nm, ft }], V3_SPECIFICATION
+   *  § 10.20) : l'altitude de chaque échantillon est lue sur la polyligne du plan ; TOC / TOD = début et fin du plus haut palier
+   *  (TOC : la première fois qu'il est atteint), paliers nommés comme ceux de planPath. Même forme que fuelPlan. */
+  function pathPlan(samples, total, path) {
+    const at = nm => {
+      if (nm <= path[0].nm) return path[0].ft;
+      for (let k = 1; k < path.length; k++) {
+        if (nm <= path[k].nm) {
+          const a = path[k - 1],
+            b = path[k];
+          return b.nm > a.nm ? a.ft + (b.ft - a.ft) * (nm - a.nm) / (b.nm - a.nm) : b.ft;
+        }
+      }
+      return path[path.length - 1].ft;
+    };
+    const alt = samples.map(q => at(q.s / NM)),
+      n = samples.length - 1,
+      top = Math.max(...alt),
+      start = alt[0],
+      eps = 1;
+    let iToc = alt.findIndex(v => v >= top - eps),
+      iTod = alt.length - 1 - [...alt].reverse().findIndex(v => v >= top - eps);
+    if (iToc < 0) iToc = 0;
+    if (iTod < iToc) iTod = iToc;
+    const levels = [];
+    let run = 0;
+    for (let i = 1; i <= n + 1; i++) {
+      if (i <= n && Math.abs(alt[i] - alt[i - 1]) < eps) continue;
+      if (samples[Math.min(i, n)].s - samples[run].s > total * .02 && alt[run] > start + 100) levels.push({
+        s: (samples[run].s + samples[Math.min(i - 1, n)].s) / 2,
+        alt: alt[run]
+      });
+      run = i;
+    }
+    return {
+      alt,
+      toc: {
+        s: samples[iToc].s,
+        alt: alt[iToc]
+      },
+      tod: {
+        s: samples[iTod].s,
+        alt: alt[iTod]
+      },
+      top,
+      levels,
+      fuel: true,
+      path: true
+    };
+  }
+  /** profile.path utilisable : au moins deux { nm, ft } finis, nm croissants, qui couvrent la distance du vol (à 3 NM ou 3 % près :
+   *  un chemin périmé, d'une autre route, est écarté) ; sinon null. */
+  function validPath(path, totalNm) {
+    if (!Array.isArray(path) || path.length < 2) return null;
+    const p = path.map(x => ({
+      nm: x?.nm,
+      ft: x?.ft
+    }));
+    if (!p.every((x, i) => typeof x.nm === 'number' && typeof x.ft === 'number' && Number.isFinite(x.nm) && Number.isFinite(x.ft) && (!
+        i || x
+        .nm >= p[i - 1].nm))) return null;
+    return Math.abs(p[p.length - 1].nm - totalNm) <= Math.max(3, totalNm * .03) ? p : null;
+  }
+
+  /** Coupe de la route : points [{ id, lat, lon, noMark? }] (noMark : un point de procédure, sans nom sous la coupe), levelFt
+   *  (niveau de croisière), profile (Carburant), path (profile.path de Carburant : la trajectoire sous les contraintes, quand il
+   *  existe), airspaces (déjà choisis), elevation(lat, lon) → mètres (promesse ; rejet : relief inconnu), mora(lat, lon) → ft | null. */
   async function build(points, {
     levelFt = 0,
     profile = null,
+    path = null,
     airspaces = [],
     elevation = null,
     mora = null
@@ -91,10 +157,16 @@
       climb: rate(profile?.climbFpm, profile?.climbKt),
       descent: rate(profile?.descentFpm, profile?.descentKt)
     });
-    // trajectoire de Carburant (un seul niveau) ; pas quand les points portent leurs altitudes (paliers par tronçon)
-    if (!own && levelFt > 0 && +profile?.tocNm > 0 && +profile?.todNm > 0) data.plan = fuelPlan(data.samples, data.total, levelFt, +
+    // trajectoire de Carburant sous les contraintes des procédures (profile.path), sinon son plan à un seul niveau ; pas quand
+    // les points portent leurs altitudes (paliers par tronçon)
+    const planned = validPath(path, data.total / NM);
+    if (planned) data.plan = pathPlan(data.samples, data.total, planned);
+    else if (!own && levelFt > 0 && +profile?.tocNm > 0 && +profile?.todNm > 0) data.plan = fuelPlan(data.samples, data.total, levelFt,
+      +
       profile
       .tocNm, +profile.todNm);
+    // les points de procédure tracent la coupe sans se nommer sous elle (les noms et distances sont ceux de la route)
+    if (points.some(p => p.noMark)) data.marks = data.marks.filter((m, i) => !points[i].noMark);
     data.terrainOk = terrainOk;
     // règle d'affichage du 25 octobre : pas d'espace de la surface au plafond (SIV, FIR, UIR, secteurs sans limites, SFC → UNL)
     data.crossed = data.crossed.filter(c => !window.SiaAero.surfaceToCeiling(c.a));

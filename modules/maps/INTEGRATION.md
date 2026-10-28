@@ -38,11 +38,12 @@ export const meta = {
 | `state.js` | the mount's state `S` (live binding, `setS`), what lives for the page (`keep`), shared helpers, `got` / `need` for the lazy files |
 | `texts.js`, `style.js` | the texts (four languages), the module's style |
 | `screen.js` | the overlay buttons and which are shown, empty state, notes and notifications, flight summary, camera, MapLibre or plain background, design and night, the help anchor |
-| `draw.js` | the drawing loop of the map (one frame per animation frame), projection across world copies, map size, hillshade, base-map place names, TOC / TOD, procedures |
-| `data.js` | the current flight, aerodb's data for the useful area, the live view, the device's and airline's settings |
+| `draw.js` | the drawing loop of the map (one frame per animation frame), projection across world copies, map size, hillshade, base-map place names, TOC / TOD, the shared route lines |
+| `data.js` | the current flight, the path "route + procedures", aerodb's data for the useful area, the live view, the device's and airline's settings |
 | `layers.js` | modes, zoom thresholds, the effective profile, the Layers content, the modes panel |
 | `sheet_view.js` | the sheet: head, chips, legend, contents, Escape, `onSettle` |
 | `profile_view.js` | the vertical profile, the common cursor, the strip, the window on the distance axis |
+| `procs.js` | the chosen SID, STAR and approach: the trace, the constraints, the labels, the profile's constraint steps, the aerodrome card's rows |
 | `tips.js` | tooltip, winds aloft, a tap on the map |
 | `lv.js`, `vfr.js` | the airspaces at a point, an aerodrome's VFR reporting points |
 | `flight_time.js` | ETA labels, planned and actual positions, the progress line, Follow |
@@ -172,16 +173,30 @@ does not give it:
 
 ## 3 bis. Procedures
 
-The map draws `route.procedures.sid` / `.star` of the current flight (written by fuel, aerodb schema) as a purple line over the
-route, labelled "SID <name>" / "STAR <name>", with the points whose `lat` and `lon` are finite; skipped when its aerodrome is not
-the route's departure / arrival. The vertical profile does not draw them (they carry `planned` altitudes only, no
-constraints); a published library (`aerodb.procedures`) is not drawn.
+The map draws the runway, SID, STAR and approach that **fuel** recorded in `route.procedures` (v2, `{ dep: { rwy, sid, trans },
+arr: { rwy, star, trans, app, appTrans }, by, at }`, identifiers of aerodb's common schema; `null` = none, absent = not chosen;
+V3_SPECIFICATION § 10.20). It reads through `proceduresOf(flight)` of `frame/lib/current_flight.js` (the v2 view, also of an
+old `{ sid, star }` record; a side whose aerodrome is not the route's is read as not chosen) and never writes the field.
+- **Asked of aerodb**: `procedure(id)` for each chosen identifier and `runways(icao)` for the chosen runways, through
+  `loadProcedures(aerodb, flight)`, once per change of `route.procedures` (or of departure and arrival), without waiting; a
+  `refreshed` event of aerodb reads them again. The map never calls `procedures(icao)`: nothing that is not chosen is drawn, and
+  the on-demand reading (`fetchProcedures`) is fuel's gesture.
+- **Kept in the state**: `S.procs` (the records), `S.route.path` (`expandedPath`: route and procedures in flight order, legs
+  without a fix and the missed approach included) and `S.route.flown` (`flownPath`: the points flown, with cumulative NM).
+  Without `aerodb`, without a choice or without a record, both are the route.
+- **Read from the record**: `profile.path` [{ nm, ft }] (drawn by the profile when it covers the path's length, else the profile's
+  own fallback) and `quote.legs` [{ id, min, origin }] (the times, through `etaOf(flight, now, { path })`).
+- **The map's aerodrome card** gives the runway and procedures chosen for that aerodrome (departure and / or arrival) and a
+  "Change" button, `data-go="fuel?focus=dep"` or `fuel?focus=arr`; fuel's step focuses the row.
+- **Source states** shown in the label: `status` `xplane` → "X-Plane, local", `lnm` → "Little Navmap, local", `outdated` →
+  "outdated"; the other statuses add nothing.
 
 ## 4. What it reads from fuel
 
 `pilot/<trigram>/current_flight.json`: `route.points` (resolved positions, optional `alt_ft`), `route.dep / arr /
 altn`, `level.ft`, `aircraft.type`, and `profile: { climbFpm, climbKt, descentFpm, descentKt, tocNm, todNm }` for the
-vertical profile (drawn as fuel computed it; without it, the profile computes its own). "Edit the route" opens
+vertical profile (drawn as fuel computed it; without it, the profile computes its own), and `profile.path` [{ nm, ft }], the
+planned vertical path under the procedures' constraints (§ 3 bis). "Edit the route" opens
 `#fuel?from=maps&focus=route`: fuel shows its Route step with the text field focused (in the dual view, the frame
 keeps the module and fuel scrolls to that step).
 
@@ -190,13 +205,14 @@ keeps the module and fuel scrolls to that step).
   profile then draws the steps and computes TOC and TOD per segment.
 - **Writes** of the Edit mode go through `frame/lib/current_flight.js` `merge`, on the record read just before, with
   `by: 'maps'`; the map writes `level.ft` when the first segment's level changed and **merges into `route`**: `points`, `text`,
-  `distanceNm`, `trackDeg`, `from: 'points'`, `manual: false`; every other key of `route` is kept, `procedures` while departure
-  and arrival are unchanged (removed otherwise), `wind` removed from the points that moved, `via` / `awy` kept on the points
+  `distanceNm`, `trackDeg`, `from: 'points'`, `manual: false`; every other key of `route` is kept, **`procedures` as it is** (fuel's choice: the
+  map never writes nor removes it; fuel sets to "none" the side whose aerodrome no longer matches `route.dep` / `route.arr` at its
+  next write, and the readers check the aerodrome), `wind` removed from the points that moved, `via` / `awy` kept on the points
   left intact. Nothing outside `route` and `level` (`progress` is fuel's and the frame's, `quote` and `profile` fuel's);
   `updated_at` is then the version shown (the live view takes only a newer one). **Maps is a writer of `route` and `level`**:
   fuel's "who writes what" table (fuel INTEGRATION § 3) lists it.
-- **Fuel writes `quote.legs` `[{ id, min }]` and `quote.taxiMin`** with every quote (minutes from brake release at each route
-  point; the taxi apart): the source of the derived times (§ 2 bis).
+- **Fuel writes `quote.legs` `[{ id, min, origin }]` and `quote.taxiMin`** with every quote (minutes from brake release at each
+  point of the flown path, `origin` ∈ route | sid | star | app; the taxi apart): the source of the derived times (§ 2 bis).
 - Missions keep the studio's meaning for `route_points[].alt_ft`: the altitude reached at the point (`mission.js`).
 - Every write of the file redraws the map and the profile (debounced 300 ms).
 - `route.text` comes from `textFromPoints(points, previousText, previousPoints)` of `frame/lib/route_text.js` (airways of

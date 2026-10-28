@@ -7,7 +7,8 @@
 //   · state.js : l'état partagé, les aides communes, le chargement à la demande ; texts.js : les textes ×4 ; style.js ;
 //   · screen.js : boutons de la carte, état vide, notes, fond MapLibre, thème ; draw.js : le dessin de la carte ;
 //   · data.js : le vol, les données d'aerodb, la vue vivante ; layers.js : modes, seuils, contenu Couches ;
-//   · sheet_view.js : la feuille ; profile_view.js : le profil vertical ; tips.js : infobulles, vents, toucher sur la carte ;
+//   · sheet_view.js : la feuille ; profile_view.js : le profil vertical ; procs.js : SID, STAR et approche choisies ;
+//     tips.js : infobulles, vents, toucher sur la carte ;
 //   · lv.js : les espaces d'un point ; vfr.js : les points de report d'un terrain ; flight_time.js : heures et vol démarré ;
 //   · mission_view.js : cartes de mission ; weather.js : la coupe météo ; à la demande : edit.js (mode Édition), tune.js
 //     (réglage des seuils).
@@ -37,7 +38,8 @@ import {
 import {
   applyFlight,
   watchFlight,
-  readSettings
+  readSettings,
+  loadProcs
 } from './data.js';
 import {
   effectiveProfile,
@@ -107,7 +109,8 @@ export const meta = {
   }],
   // gardés à l'installation (hors ligne dès la première visite)
   files: ['state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'data.js?v=0', 'layers.js?v=0',
-    'sheet_view.js?v=0', 'profile_view.js?v=0', 'tips.js?v=0', 'lv.js?v=0', 'vfr.js?v=0', 'flight_time.js?v=0', 'mission_view.js?v=0',
+    'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'tips.js?v=0', 'lv.js?v=0', 'vfr.js?v=0', 'flight_time.js?v=0',
+    'mission_view.js?v=0',
     'weather.js?v=0',
     'render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/profiles.js?v=0', 'lib/map_base.js?v=0', 'lib/axis_window.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
@@ -295,6 +298,10 @@ export async function mount(el, ctx) {
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', e => {
     if (!S || (e?.aircraft && !e.zone && !e.changed)) return; // la base appareils ne touche pas la carte
     S.data = null;
+    if (e?.refreshed) { // la base a été relue (Paramètres) : les procédures du vol aussi
+      S.procsKey = null;
+      loadProcs();
+    }
     schedule();
   }), ctx.aerodb.on('state', () => S && status()));
   // un seul observateur de taille : il ne dessine rien, il demande à la feuille sa taille arrêtée (onSettle, SPEC § 7.5)

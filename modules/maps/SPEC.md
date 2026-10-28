@@ -17,7 +17,7 @@ The Pilot application's map, fast on a phone:
 
 | File | Role |
 |---|---|
-| `module.js` and the files it imports | the screen (§ 4–14), split by concern (INTEGRATION § 1): `state.js`, `texts.js`, `style.js`, `screen.js`, `draw.js`, `data.js`, `layers.js`, `sheet_view.js`, `profile_view.js`, `tips.js`, `lv.js`, `vfr.js`, `flight_time.js`, `mission_view.js`, `weather.js`; on demand (`meta.lazy`) `edit.js` (§ 12) and `tune.js` (§ 14); no file above 60 KB |
+| `module.js` and the files it imports | the screen (§ 4–14), split by concern (INTEGRATION § 1): `state.js`, `texts.js`, `style.js`, `screen.js`, `draw.js`, `data.js`, `layers.js`, `sheet_view.js`, `profile_view.js`, `procs.js`, `tips.js`, `lv.js`, `vfr.js`, `flight_time.js`, `mission_view.js`, `weather.js`; on demand (`meta.lazy`) `edit.js` (§ 12) and `tune.js` (§ 14); no file above 60 KB |
 | `render.js` (`window.MapsRender`) | the rendering core (§ 3), no interface text |
 | `profile.js` (`window.MapsProfile`) | the vertical profile (§ 8) |
 | `mission.js` (`window.MapsMission`) | a mission's maps (§ 15) |
@@ -37,8 +37,10 @@ position are derived by the frame's `frame/lib/current_flight.js` (§ 13).
 
 - **The current flight**: `pilot/<trigram>/current_flight.json` (schema: `modules/fuel/INTEGRATION.md` § 3). Used:
   `route.points` [{ id, lat, lon, alt_ft?, via?, awy?, wind? }], `route.dep`, `route.arr`, `route.altn`,
-  `route.procedures` (`sid`, `star`), `route.text`, `level.ft`, `aircraft.type`, `profile` { climbFpm, climbKt,
-  descentFpm, descentKt, tocNm, todNm }, `quote` (`minutes`, `legs` [{ id, min }], `taxiMin`), `planned_at`, `started`
+  `route.procedures` (v2: `{ dep: { rwy, sid, trans }, arr: { rwy, star, trans, app, appTrans }, by, at }`, read through
+  `proceduresOf`), `route.text`, `level.ft`, `aircraft.type`, `profile` { climbFpm, climbKt, descentFpm, descentKt, tocNm,
+  todNm, `path` [{ nm, ft }] (the planned vertical path under the procedures' constraints) }, `quote` (`minutes`, `legs`
+  [{ id, min, origin }], `taxiMin`), `planned_at`, `started`
   (`at`, `diverted`), `progress` (`actual`, `phase`, `fuelRemainingKg`, `remainingNm`), `by`, `updated_at`.
   - `alt_ft` is the level held from that point on, never on the first or the last point; the flight leaves at
     `level.ft` and a point without `alt_ft` keeps the previous level. It becomes the point's level for the profile
@@ -52,7 +54,9 @@ position are derived by the frame's `frame/lib/current_flight.js` (§ 13).
 - **Missions**: `missions/<l>_<FAMILY>/<ID>/mission<ID>.yaml` (§ 15), on demand.
 - **Weather**: the frame's weather layer `ctx.weather` (grid, world; cache only: the map never asks Open-Meteo), frame
   INTEGRATION § 14 (§ 9).
-- **Aeronautical data**: `ctx.aerodb`, by area only (INTEGRATION § 3).
+- **Aeronautical data**: `ctx.aerodb`, by area only (INTEGRATION § 3), and, for the procedures the flight chose, the records
+  `aerodb.procedure(id)` and the runways `aerodb.runways(icao)` through `loadProcedures` of `frame/lib/current_flight.js`, read
+  once per change of `route.procedures` (§ 5).
 - **Terrain**: Terrarium elevation tiles (zoom 9, about 300 m), fetched through `ctx.net` from the host declared in
   `meta.net`, never with `fetch`: the module hands the bricks a `load(url)` built on `ctx.net` (profile relief, contour
   lines; `lib/vertical_profile.js` and `contours.js` diverge from the studio there). The Topo hillshade is a MapLibre source,
@@ -85,7 +89,9 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - `bboxOf(points, marginNm)`, `distances(points)` (great circle, NM), `marks(points, stepNm)` (every 10 NM, every 50 NM
   beyond 150 NM), `mercator(bbox, W, H, pad)` → `{ toC, shown }`.
 - `drawBackground(ctx, toC, W, H, rings)`: sea, land, borders.
-- `draw(ctx, { toC, W, H, scale, bbox, profile, data, route, marks, hideVrp, zoom })`, drawing order:
+- `draw(ctx, { toC, W, H, scale, bbox, profile, data, route, marks, hideVrp, zoom, lines, reserve })`, where `lines` are the
+  polylines of the route's points that the route itself traces (null: all of them; § 5, Procedures) and `reserve(placer)` is
+  called right after the route's labels so that the screen reserves its own (the chosen procedures' names and constraints), drawing order:
   1. the route's labels (points, levels, ETA, NM marks) are reserved first in the shared label placer
      (`SiaAero.placer`);
   2. airspace shapes (ICAO symbology, `SiaAero.drawAirspaces`);
@@ -223,9 +229,34 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **The alternate**: a grey dashed line from the arrival, a grey dot and its code.
 - **TOC and TOD**: purple diamonds; their label goes north-east of the diamond, else south-east, north-west, south-west,
   wherever it does not cover a route label.
-- **Procedures**: `route.procedures.sid` / `.star` drawn as a purple line over the route, labelled "SID <name>" /
-  "STAR <name>", only when their aerodrome is the route's departure / arrival, with the points that have finite `lat` and
-  `lon`; the vertical profile does not draw them.
+- **Procedures** (V3_SPECIFICATION § 10.20): the runway, SID, STAR and approach the pilot **chose in Fuel** (`route.procedures` v2,
+  read through `proceduresOf`: a side whose aerodrome is not the route's is read as not chosen; the map never writes it, not even
+  in Edit mode, which keeps it as it is). The records come from `aerodb.procedure(id)`, the runways from `aerodb.runways(icao)`
+  (`loadProcedures`, once per change of the choice, without waiting: the route is drawn first and redrawn when they arrive); without
+  `aerodb`, without a choice or without a record the path is the route and nothing changes. **One path**: `expandedPath(flight,
+  procs)` gives the points "route + procedures" in flight order (kept in the state as `S.route.path`), `flownPath(path)` the points
+  flown with their cumulative NM (`S.route.flown`: the only measure of distances, for the profile, the NM marks, the cursor, the
+  times and the header's distance). Drawn over the route, thinner, violet with a background edge (`procs.js`):
+  - the SID from the **threshold** of the chosen runway, the STAR and the approach to the threshold; the leg between the aerodrome
+    and its threshold is not drawn; **`phase` `trans` (transition) and the missed approach are dashed**;
+  - a **leg without a fix** (VA, CA, VM, FM: `lat` and `lon` null) is a 2 NM stroke along its course (`crs`, taken as the true
+    course: the error over 2 NM is a few tenths of a NM), then a dashed line to the next point; never an invented point;
+  - an **RF leg** with `arc { centre, radius }` is an arc (centre and end points projected, left or right by `turn`, else the shorter
+    one); without `arc`, a segment;
+  - **join with the route**: when the SID's last point (or its transition's) is a route point, the leg aerodrome → that point is
+    the SID's alone (the route does not draw it again: the route is drawn only between its consecutive points of the path); when
+    it is not, the SID ends at its last point and a **dashed direct** goes to the first route point; the arrival is symmetric (a
+    dashed direct from the last route point to the STAR's first, or the STAR's own leg when the route point is one of its fixes);
+  - **labels**: "SID NAME", "STAR NAME", "APP NAME" at the middle of each, always written (reserved in the placer after the
+    route's labels, forced when no place is free); the state of the source follows: "· X-Plane, local" (status `xplane`),
+    "· Little Navmap, local" (`lnm`), "· outdated" (a hand-read file whose cycle is past); the texts are in `texts.js`;
+  - **constraints** from 300 px per degree, as on the AIP charts, written after the fix's name: altitude **underlined** = at or above
+    (`min`), **overlined** = at or below (`max`), both = exactly (`at`), "5000–7000" for `between` (the lower underlined, the higher
+    overlined), "≤ 220 kt" for the speed; altitudes as `formatLevel` writes them (FL from the transition altitude, else the feet).
+    They are reserved in the placer **after** the route's labels (a label without room is not written); fixes are dotted
+    from the same zoom;
+  - **not chosen = not drawn**: the Layers content has no box for the procedures.
+  The aerodrome's card (§ 16) shows the choice with a "Change" button to `#fuel?focus=arr` (`dep` for the departure).
 - **The common cursor** on the map: a blue ring (`--sog-accent`); a tap within 32 px of the route sets it to the nearest
   profile sample (§ 8.4).
 
@@ -447,7 +478,15 @@ relative to the ground are raised by the terrain of each sample.
 
 ### 8.2 Trajectory
 
-- With fuel's `profile` and a level, and a record written by fuel (`by` absent or `fuel`): linear climb from the
+- The cut follows the **flown path** (§ 5, Procedures): the route and the chosen procedures, so its length is the path's, its
+  NM marks and its cursor are on it, and the points of the procedures draw the line without being named under it.
+- With fuel's **`profile.path` [{ nm, ft }]** (the planned vertical path under the procedures' constraints, written by fuel; a record
+  last written by the map's Edit mode (`by: 'maps'`; the frame's `by: 'frame'` for the live position does not count) or a path that does not cover the cut's length to 3 NM or 3 % is stale and ignored): that path is
+  drawn, the altitude of each sample read on its polyline; TOC and TOD are the first and last reach of its highest level.
+- **Constraint steps**: at each flown point that carries an altitude constraint, a bar at that altitude on the profile, an arrow
+  up (at or above), an arrow down (at or below), a dot (exactly) or a vertical bar (between two altitudes), the constraint written
+  beside it in the AIP notation when 40 px are free; the legend says what is drawn.
+- Without `profile.path`, with fuel's `profile` and a level, and a record written by fuel (`by` absent or `fuel`): linear climb from the
   departure's terrain to the level over `tocNm`, cruise, linear descent to the arrival's terrain over `todNm`.
 - Otherwise (no `profile`, steps from `alt_ft`, or a record written by the map): `SiaProfile`'s own plan with fuel's rates
   if given, else 1,000 ft/min at 140 kt up and 800 ft/min at 160 kt down.
@@ -588,8 +627,10 @@ Hidden for mission maps. The Edit toggle enters the mode; entering it says its h
   `route.points` (rounded to 1e-6°, wrapped to [-180, 180[), `route.text` from `textFromPoints(points, previousText,
   previousPoints)` of `frame/lib/route_text.js` (airways of unchanged segments kept, ICAO coordinates for a point without a
   usable name), `distanceNm`, `trackDeg`, `from: 'points'`, `manual: false`; the other keys of `route` are kept, with
-  `procedures` kept while departure and arrival are unchanged (removed otherwise), `wind` removed from the points that moved,
-  `via` / `awy` kept on the points left intact. Nothing outside `route` and `level` is touched (`progress`, `quote`,
+  `procedures` kept as it is (it is Fuel's choice: the map never writes it nor removes it; Fuel sets to "none" the side whose
+  aerodrome no longer matches at its next write, and every reader checks the aerodrome), `wind` removed from the points that moved,
+  `via` / `awy` kept on the points left intact. The profile's level drag finds the segment under the finger by projecting the route's
+  points on the cut (the cut follows the flown path, longer than the route). Nothing outside `route` and `level` is touched (`progress`, `quote`,
   `profile` are fuel's or the frame's). Fuel requotes on `by` ≠ `fuel`; until then the profile computes its own TOC and TOD.
   Without a trigram the record is `pilot/ANON/current_flight.json`, as for fuel: the frame keeps it on the device, sends
   nothing, and moves it under the trigram once one is set (frame SPEC § 3.5).
@@ -602,8 +643,10 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 `etaOf(flight)` and `plannedPositionAt(flight, now)`, shared by every reader (the map, the frame's status block, Flights).
 - Reference time: `started.at` when the flight is started (`started` not null and `started.at` set — never the presence of
   `progress`), else `planned_at`, else none (no ETA, no planned position).
-- Times: the taxi (`quote.taxiMin`, written by fuel with `quote.legs`; 10 minutes without it), then `quote.legs` [{ id, min }]
-  (minutes from brake release at each route point, written by fuel with every quote); without `quote.legs`, minutes computed from the route: climb at `profile.climbKt` to `tocNm`,
+- Times: the taxi (`quote.taxiMin`, written by fuel with `quote.legs`; 10 minutes without it), then `quote.legs` [{ id, min,
+  origin }] (minutes from brake release at each point of the flown path, written by fuel with every quote; the map passes `{ path }`
+  = the flown path to `etaOf` and `plannedPositionAt`, so the NM, the times, the planned position and the progress line are those of
+  the route and its procedures); without `quote.legs`, minutes computed from the route: climb at `profile.climbKt` to `tocNm`,
   descent at `descentKt` from `todNm`, cruise over what is left of `quote.minutes` (one mean speed without a profile);
   without a quote, none.
 - `etaOf` → `[{ id, at }]` (ISO UTC), none once the arrival is past for a flight not started.
@@ -612,7 +655,7 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 
 ### 13.2 What the map shows
 
-- **ETA** labels: "ETA 14:52Z" for each point in a close view (300 px per degree and more), in the accent colour, reserved
+- **ETA** labels: "ETA 14:52Z" for each route point in a close view (300 px per degree and more), in the accent colour, reserved
   in the placer with the other route labels before the aerodromes (under the point's name, else above the point, else on
   its left, the first free place); departure and arrival add the device's local time, "ETA 16:10Z (18:10)". Shown for a
   started flight and for a dated one. Times come from `frame/lib/time.js` (`fmtZ`, `fmtZLocal`).
@@ -689,6 +732,11 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 
 ## 16. VFR reporting points of an aerodrome (VAC)
 
+- **The flight's choice at the top of the card**: for the aerodrome that is the flight's departure and / or arrival, a row per side
+  (`.mp-ad-proc[data-proc=dep|arr]`) — "Departure : runway 03 · SID XX1A · transition TRA", "Arrival : runway 31 · STAR … · APP …"
+  with the source's state, "none" when the pilot chose none, "not chosen yet" otherwise — and a **Change** button, `data-go` =
+  `fuel?focus=dep` or `fuel?focus=arr` (the module's own link handler sets the address). The map writes nothing.
+
 - **Data**: the reporting points of the published base (`aerodb.vrp({ lat, lon, radiusNm: 30 })`: those whose id carries
   the aerodrome's prefix, "MN-" for LFMN, otherwise those within 15 NM), deduplicated by `MapsRender.dedupeVrp` (same code
   within 0.5 NM: the richest description, then the prefixed id); then the VAC compilation when imported
@@ -760,7 +808,7 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 | airspaces | `.mp-lv` (content), `.mp-lv-col` (graph column), `.mp-lv-list`, `.mp-lv-n`, `.mp-lv-name`, `.mp-lv-lim`, `.mp-lv-unk` (unreadable ceiling), `details.mp-lv-also` |
 | tooltip | `.mp-tip.mp-hover`, its "Aussi ici" line `.mp-also` |
 | Layers | `.mp-layers` (the content, kept by the module), the complexity block `.mp-l-detail` (value `[data-detail-v]`), help `#mp-detail-help`, boxes `[data-layer=<key>]`, "Around the route only" `.mp-l-main`, the selectors `select.mp-pick` and `select.mp-mappick` (last) |
-| VFR, point card | `.mp-vfr-pts` (points list); the route point's card `.mp-tip.mp-pcard` (`role="dialog"`) |
+| VFR, point card | `.mp-vfr-pts` (points list); the chosen runway and procedures of the flight's aerodrome `.mp-ad-proc[data-proc=dep\|arr]` with its `[data-go="fuel?focus=dep\|arr"]` button; the route point's card `.mp-tip.mp-pcard` (`role="dialog"`) |
 | empty state, links | `.mp-empty` (card in the map area); buttons `[data-go=fuel\|settings]` |
 | tuning | `.mp-tune`, rows `.mp-tune-row` |
 

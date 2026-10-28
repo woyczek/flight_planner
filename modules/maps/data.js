@@ -4,13 +4,20 @@
 
 import {
   S,
-  flightPath
+  flightPath,
+  flownPts
 } from './state.js';
 import {
   wrapLon,
   nearLon,
   unwrapLons
 } from '../../frame/lib/geo.js';
+import {
+  expandedPath,
+  flownPath,
+  loadProcedures,
+  proceduresOf
+} from '../../frame/lib/current_flight.js';
 import {
   effectiveProfile,
   groupOf
@@ -91,6 +98,76 @@ export function pointsOf(f) {
   };
   return pts;
 }
+// ---------------------------------------------------------------- le chemin « route + procédures » (V3_SPECIFICATION § 10.20)
+/** Clé des procédures à charger : le choix du vol (v2) et les terrains de la route ; elle change, on relit les enregistrements. */
+const procKey = f => JSON.stringify([proceduresOf(f), f?.route?.dep || '', f?.route?.arr || '']);
+/** Chemin du vol (route + procédures choisies) et ses points volés, rangés dans S.route (path : tout, tronçons sans point et
+ *  approche interrompue compris ; flown : les points volés avec nm), marques NM sur le chemin volé. Sans aerodb, sans
+ *  procédure ou sans enregistrement : le chemin est la route. Longitudes continues. */
+export function buildPath() {
+  const f = S.route.flight,
+    path = expandedPath(f, S.procs || {});
+  S.route.path = unwrapLons(path);
+  S.route.flown = unwrapLons(flownPath(path));
+  S.marks = MapsRender.marks(flownPts());
+}
+/** Vrai si le vol a une piste ou une procédure choisie (route.procedures v2, côtés vérifiés). */
+const isChosen = f => {
+  const v = proceduresOf(f);
+  return [v.dep?.sid, v.dep?.trans, v.dep?.rwy, v.arr?.star, v.arr?.trans, v.arr?.app, v.arr?.appTrans, v.arr?.rwy].some(Boolean);
+};
+/** Procédures du vol (aerodb, loadProcedures de frame/lib/current_flight.js), relues une fois par changement de
+ *  route.procedures : le chemin est refait et la carte redessinée à leur arrivée, sans attendre (le dessin d'avant reste). La
+ *  Carte ne les écrit jamais. */
+export function loadProcs() {
+  const f = S.route.flight,
+    key = procKey(f);
+  if (key === S.procsKey) return;
+  S.procsKey = key;
+  if (!isChosen(f) || !S.ctx.aerodb) {
+    if (S.procs) {
+      S.procs = null;
+      afterPath();
+    }
+    return;
+  }
+  loadProcedures(S.ctx.aerodb, f).then(procs => {
+    if (!S || S.procsKey !== key) return;
+    S.procs = procs;
+    afterPath();
+  }, () => {});
+}
+/** Le chemin a changé (procédures arrivées ou retirées) : refait, puis la carte et le profil redessinés. */
+function afterPath() {
+  buildPath();
+  schedule();
+  buildProfile();
+}
+/** Points du profil d'après les points volés : longitudes continues, niveaux tenus (alt_ft des points de la route, jamais le
+ *  premier ni le dernier ; le premier prend level.ft dès qu'un palier existe) ; noMark pour les points de procédure, qui ne
+ *  portent pas de nom sous la coupe. */
+export function flownProfilePoints(flown, f) {
+  const routeIdx = flown.map((p, i) => p.origin === 'route' ? i : -1).filter(i => i >= 0),
+    ends = new Set([routeIdx[0], routeIdx.at(-1)]),
+    pts = flown.map((p, i) => ({
+      id: p.id || '',
+      lat: +p.lat,
+      lon: +p.lon,
+      nm: p.nm,
+      ...(p.origin === 'route' && !ends.has(i) && p.alt_ft != null && +p.alt_ft > 0 ? {
+        lvl: {
+          ft: +p.alt_ft
+        }
+      } : {}),
+      ...(p.origin !== 'route' ? {
+        noMark: true
+      } : {})
+    }));
+  if (pts.some(p => p.lvl) && +f?.level?.ft > 0) pts[0].lvl = {
+    ft: +f.level.ft
+  };
+  return pts;
+}
 /** Emprise donnée par l'adresse (#maps?view=ouest,sud,est,nord), sinon null. */
 export const viewOf = () => {
   const v = String(S.ctx.query?.view || '').split(',').map(Number);
@@ -107,6 +184,9 @@ export const viewOf = () => {
 export async function applyFlight(live = false) {
   S.route = await readFlight();
   if (!S) return;
+  if (S.procs && !isChosen(S.route.flight)) S.procs = null; // le choix est vidé : le chemin redevient la route tout de suite
+  buildPath();
+  loadProcs();
   S.profile = effectiveProfile();
   const all = [...S.route.points, ...(S.route.altn ? [S.route.altn] : [])];
   S.fit = viewOf() || MapsRender.bboxOf(all, 25) || {
@@ -115,7 +195,6 @@ export async function applyFlight(live = false) {
     e: 10,
     n: 51.5
   };
-  S.marks = MapsRender.marks(S.route.points);
   S.data = null;
   if (!live) S.cursor = null;
   showBox(!!S.route.points.length);

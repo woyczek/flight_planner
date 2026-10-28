@@ -1,12 +1,13 @@
 """Area D - maps, the cases added with the recode of 28 Oct 2026 (PLAN.md D30-D38; modules/maps/SPEC.md as rewritten).
 
 Rules covered
-  * the Edit mode writes the route by merging: the moved point loses its wind, the others keep wind and airway, the procedures
-    of the same aerodromes are kept, nothing outside route and level is touched; Undo; "+" inserts and disarms (D30);
+  * the Edit mode writes the route by merging: the moved point loses its wind, the others keep wind and airway, route.procedures
+    (Fuel's choice) is neither written nor removed, nothing outside route and level is touched; Undo; "+" inserts and disarms (D30);
   * the ETA and the planned position are derived (frame/lib/current_flight.js), "started" is started.at (D31);
   * a route across the date line (D32); a mission map from the synthetic fixture (D33); the plain background (D34);
   * the device's settings kept per mode, only the differences (D35); Escape closes one thing at a time (D36);
-  * the base map's place names hidden under our towns (D37); the module's benches (D38).
+  * the base map's place names hidden under our towns (D37); the module's benches (D38);
+  * the chosen SID, STAR and approach: path, trace, constraints, profile, aerodrome card (D41-D44).
 
 Coordinates on the map come from MapLibre itself: the case wraps `Map.prototype.project` once to keep the map the module draws
 with (`window.__mpMap`), then asks it where a position is.  Texts drawn on the canvas are read by wrapping `fillText`.
@@ -116,7 +117,7 @@ def d30(c):
         p['wind'] = {'dirDeg': 270, 'kt': 30 + i, 'tempC': -20, 'levelFt': 27000, 'at': '2026-10-24T10:00:00Z'}
     pts[1]['via'] = 'UN460'
     pts[2]['alt_ft'] = 31000
-    f['route']['procedures'] = {'sid': _SID, 'star': _STAR_OTHER}    # the STAR is another aerodrome's: dropped at the first write
+    f['route']['procedures'] = {'sid': _SID, 'star': _STAR_OTHER}    # a choice of fuel (here an old one): the Map never writes it
     f['quote'] = {'minutes': 80, 'block': 4000, 'unit': 'kg'}
     f['progress'] = {'phase': None, 'at': '2026-10-24T10:00:00Z'}
     c.open('maps', docs=fdocs(f), flight=False)
@@ -139,8 +140,7 @@ def d30(c):
     c.eq(r['points'][1].get('via'), 'UN460', 'a point left intact keeps its airway (via)', what='via of LUGEN')
     c.ok(COORD.match(moved['id']) and moved['id'] in r['text'], f'route.text {r["text"]!r}', 'route.text rebuilt with the ICAO coordinates')
     c.eq(r.get('from'), 'points', 'route.from is "points"', what='route.from')
-    c.eq((r.get('procedures') or {}).get('sid', {}).get('name'), 'XX1A', 'the SID of the departure is kept', what='procedures.sid')
-    c.eq((r.get('procedures') or {}).get('star'), None, 'the STAR of another aerodrome is dropped', what='procedures.star')
+    c.eq(r.get('procedures'), f['route']['procedures'], 'route.procedures belongs to Fuel: kept as it is, even a side whose aerodrome is not the one of the route', what='procedures')
     c.eq(doc.get('quote'), f['quote'], 'quote untouched', what='quote')
     c.eq(doc.get('profile'), f['profile'], 'profile untouched (fuel requotes)', what='profile')
     c.eq(doc.get('progress'), f['progress'], 'progress untouched', what='progress')
@@ -491,3 +491,196 @@ def d40(c):
     c.ok(all(n['off'] < 1 for n in r['on']), f'distances to their segments {[(n["s"], round(n["off"], 1)) for n in r["on"]]}', 'every box sits on its own segment (never beside it)')
     c.ok(all(n['i'] > r['lastRoute'] for n in x10), f'route line stroked at call {r["lastRoute"]}, X10 names at {[n["i"] for n in x10]}', 'the boxes on the route are painted after the route line')
     c.ok(r['same'], 'the boxes moved when the route was added', 'the same place with or without the route (no jump)')
+
+
+# ------------------------------------------------------------------------------------------------------ D41-D44
+# The chosen runway, SID, STAR and approach (V3_SPECIFICATION § 10.20, maps SPEC § 5): route.procedures v2 written by fuel, the records
+# read by aerodb (proc/manual/ for LFRS, read at a past cycle so the SID is "outdated"; proc/local/ for LFML, the X-Plane fallback).
+# LFRS: SID XX1A (a leg without a fix, a published point with a "between" constraint and a speed, an RF arc), its transition TRA
+# which ends on the route's LUGEN; a SID ZZ9Z that is not chosen.  LFML: STAR XX2B (no point in common with the route: a dashed direct
+# from NEPIX), approach I31 ending on RW31, its missed approach (a leg without a fix, then XM01).
+_MLMAP_HOOK = """(() => { let ml; Object.defineProperty(window, 'maplibregl', { configurable: true, get() { return ml },
+  set(v) { ml = v; if (v && v.Map && !v.Map.__cap) { const o = v.Map.prototype.project; v.Map.__cap = 1;
+    v.Map.prototype.project = function (...a) { window.__mlMap = this; return o.apply(this, a) } } } }) })()"""
+
+
+def _pp(seq, id, lat, lon, **kw):
+    return {'seq': seq, 'id': id, 'lat': lat, 'lon': lon, 'phase': 'main', **kw}
+
+
+def _proc(icao, kind, name, rwy, points, trans=None, status='check', cycle='2025-01-02'):
+    return {'id': f'{icao}.{kind}.{name}.RW{rwy}.{trans or "NONE"}', 'icao': icao, 'kind': kind, 'name': name, 'runways': [rwy],
+            'transition': trans, 'points': points, 'status': status, 'source': {'kind': 'manual', 'cycle': cycle, 'how': 'hand'}}
+
+
+_LFRS_PROCS = [
+    _proc('LFRS', 'SID', 'XX1A', '03', [
+        _pp(1, None, None, None, leg='VA', crs=30, alt={'type': 'min', 'ft': 1500}),
+        _pp(2, 'XS01', 47.30, -1.45, leg='TF', alt={'type': 'between', 'ft': 3000, 'ft2': 5000}, kt=220),
+        _pp(3, 'XS02', 47.15, -1.25, leg='RF', turn='R', arc={'centre': {'id': 'C01', 'lat': 47.22, 'lon': -1.36}, 'radius': 6},
+            alt={'type': 'at', 'ft': 4000})]),
+    _proc('LFRS', 'SID', 'XX1A', '03', [
+        _pp(1, 'XS03', 46.90, -1.30, phase='trans', alt={'type': 'min', 'ft': 6000}),
+        _pp(2, 'LUGEN', 46.5833, -1.2, phase='trans')], trans='TRA'),
+    _proc('LFRS', 'SID', 'ZZ9Z', '03', [_pp(1, 'ZZFIX', 47.0, -1.7), _pp(2, 'LUGEN', 46.5833, -1.2)]),
+]
+_LFRS_FILE = {'schema': 1, 'icao': 'LFRS', 'cycle': '2025-01-02', 'updated_at': '2025-01-02T00:00:00Z', 'procedures': _LFRS_PROCS,
+              'runways': [{'id': '03', 'lat': 47.15, 'lon': -1.62, 'elev': 90, 'qfu': 30, 'displaced': 0}]}
+_LFML_PROCS = [
+    _proc('LFML', 'STAR', 'XX2B', '31', [
+        _pp(1, 'XT01', 43.95, 3.75, alt={'type': 'between', 'ft': 7000, 'ft2': 9000}),
+        _pp(2, 'XT02', 43.62, 4.55, alt={'type': 'max', 'ft': 5000}, kt=210)], status='xplane'),
+    _proc('LFML', 'APP', 'I31', '31', [
+        _pp(1, 'XF01', 43.52, 4.95, alt={'type': 'at', 'ft': 3000}, kt=180),
+        _pp(2, 'RW31', 43.44, 5.20, alt={'type': 'at', 'ft': 60}),
+        _pp(3, None, None, None, leg='CA', crs=310, alt={'type': 'min', 'ft': 2000}, phase='missed'),
+        _pp(4, 'XM01', 43.60, 4.90, phase='missed')], status='xplane'),
+]
+_LFML_FILE = {'schema': 1, 'icao': 'LFML', 'cycle': '2025-01-02', 'updated_at': '2025-01-02T00:00:00Z', 'procedures': _LFML_PROCS,
+              'runways': [{'id': '31', 'lat': 43.44, 'lon': 5.20, 'elev': 21, 'qfu': 310, 'displaced': 0}]}
+_PROC_DOCS = [['proc/manual/LFRS.json', _LFRS_FILE, 'reference'], ['proc/local/LFML.json', _LFML_FILE, 'reference']]
+_CHOSEN = {'dep': {'rwy': '03', 'sid': 'LFRS.SID.XX1A.RW03.NONE', 'trans': 'LFRS.SID.XX1A.RW03.TRA'},
+           'arr': {'rwy': '31', 'star': 'LFML.STAR.XX2B.RW31.NONE', 'app': 'LFML.APP.I31.RW31.NONE'}, 'by': 'fuel',
+           'at': '2026-10-28T10:00:00Z'}
+# the flown path (what flownPath must give, in order): the departure, the threshold, the fixes, the route, the fixes, the threshold, the arrival
+_FLOWN = [('LFRS', 47.1569, -1.6078), ('RW03', 47.15, -1.62), ('XS01', 47.30, -1.45), ('XS02', 47.15, -1.25), ('XS03', 46.90, -1.30),
+          ('LUGEN', 46.5833, -1.2), ('NEPIX', 44.9, 2.4), ('XT01', 43.95, 3.75), ('XT02', 43.62, 4.55), ('XF01', 43.52, 4.95),
+          ('RW31', 43.44, 5.20), ('LFML', 43.4367, 5.215)]
+_FLOWN_NM = sum(_gc(a[1:], b[1:]) for a, b in zip(_FLOWN, _FLOWN[1:]))
+_STATE_JS = """async () => { window.__mp = await import('/modules/maps/state.js'); window.__pr = await import('/modules/maps/procs.js'); return true }"""
+_PATH_JS = """() => { const S = window.__mp.S; return S && S.route && S.route.path ? S.route.path.map(p => p.origin + (p.id ? ':' + p.id : '')) : null }"""
+_FLOWN_JS = """() => { const S = window.__mp.S; return S.route.flown.map(p => [p.id, p.nm]) }"""
+_LAYOUT_JS = """() => { const ctx = document.createElement('canvas').getContext('2d'),
+  L = window.__pr.layout(ctx, (lat, lon) => ({ x: (lon + 2) * 400, y: (48 - lat) * 400 }), 400);
+  return L && { segs: L.segs.map(s => [!!s.dash, !!s.arc]), names: L.names.map(n => n.text), dots: L.dots.length,
+                lines: window.__pr.routeLines().map(r => r.length) } }"""
+
+
+def _proc_flight(**over):
+    f = flight(**over)
+    f['route']['procedures'] = json.loads(json.dumps(_CHOSEN))
+    return f
+
+
+def _open_proc(c, f, view='maps?view=-1.8,46.95,-1.1,47.35', extra=()):
+    c.open(view, docs=fdocs(f) + [list(d) for d in _PROC_DOCS] + [list(d) for d in extra], flight=False, airfields=True, wait=False)
+    c.js(_TEXTS_JS)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.route && window.__mp.S.route.path && window.__mp.S.route.path.some(p => p.origin === 'sid'))",
+            timeout=10000, what='the path holds the chosen SID')
+
+
+@case('D41', 'The chosen SID, STAR and approach are drawn from the runway', 'D', tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='V3 § 10.20, maps SPEC § 5: path from the threshold; transition and missed approach dashed; a leg without a fix = 2 NM stroke then dashes; RF = arc; join on a common point or dashed direct; unchosen procedures never drawn')
+def d41(c):
+    _open_proc(c, _proc_flight())
+    c.eq(c.js(_PATH_JS), ['route:LFRS', 'sid:RW03', 'sid', 'sid:XS01', 'sid:XS02', 'sid:XS03', 'route:LUGEN', 'route:NEPIX', 'star:XT01', 'star:XT02',
+                          'app:XF01', 'app:RW31', 'route:LFML', 'missed', 'missed:XM01'],
+         'the expanded path: threshold, SID, transition joined on LUGEN, STAR and approach to the threshold, the arrival, the missed approach last',
+         what='the path origins')
+    fl = c.js(_FLOWN_JS)
+    c.eq([x[0] for x in fl], [p[0] for p in _FLOWN], 'the flown points: no leg without a fix, no missed approach', what='the flown points')
+    c.ok(abs(fl[-1][1] - _FLOWN_NM) < .5, f'{fl[-1][1]:.1f} NM against {_FLOWN_NM:.1f}', 'nm is the cumulative great-circle distance of the flown points')
+    lay = c.js(_LAYOUT_JS)
+    # th→stub, stub→XS01 (dashes), XS01→XS02 (the RF arc), XS02→XS03 (transition), XS03→LUGEN (transition), NEPIX→XT01 (direct), STAR, STAR, approach,
+    # RW31→stub (missed), stub→XM01
+    c.eq([s[0] for s in lay['segs']], [False, True, False, True, True, True, False, False, False, True, True],
+         'dashes: the stub is solid, then dashed to the next fix; transition, direct and missed approach dashed', what='segments dashed')
+    c.eq([i for i, s in enumerate(lay['segs']) if s[1]], [2], 'only the RF leg is drawn as an arc', what='arc segments')
+    c.eq(lay['lines'], [2], 'the route draws only LUGEN → NEPIX (the SID and the STAR draw the rest of the way)', what='route polylines')
+    want = [f'SID XX1A · {row(c, "procOutdated")}', f'STAR XX2B · {row(c, "procX")}', f'APP I31 · {row(c, "procX")}']
+    c.eq(lay['names'], want, 'labelled "SID NAME", "STAR NAME", "APP NAME", with the state of the source', what='procedure labels')
+    c.until("(window.__mpTexts || []).some(t => /^SID /.test(t))", timeout=6000, what='the SID label drawn')
+    c.wait(400)
+    drawn = [norm(t) for t in c.js('window.__mpTexts || []')]
+    c.ok(want[0] in drawn, f'{sorted(set(t for t in drawn if t.startswith(("SID", "STAR", "APP"))))}', 'the SID label is written on the map')
+    # the airline's transition altitude is 5,000 ft by default: up to it an altitude in feet, as in the AIP ("5000", not "FL050")
+    c.ok('≤ 220 kt' in drawn and '3000' in drawn and '5000' in drawn and 'FL050' not in drawn and '–' in drawn, f'{sorted(set(drawn))[:30]}',
+         'a close view writes the constraints in the AIP notation (3000–5000, ≤ 220 kt)')
+    c.ok(not any('ZZ9Z' in t or 'ZZFIX' in t for t in drawn), f'{[t for t in drawn if "ZZ" in t]}', 'a procedure that is not chosen is never drawn')
+    c.tap('[data-mp="layers"]')
+    c.until("window.__t.shown(document.querySelector('input[data-layer]'))", what='the Layers content')
+    keys = c.js("[...document.querySelectorAll('input[data-layer]')].map(i => i.dataset.layer)")
+    c.ok(not any(re.search(r'proc|sid|star|app', k, re.I) for k in keys), f'{keys}', 'no box for the procedures in Layers')
+    c.eq(c.doc(PATH)['route']['procedures'], _CHOSEN, 'the map wrote nothing to route.procedures', what='route.procedures after the page')
+
+
+@case('D42', 'The profile follows the flown path and the constraints', 'D', tags=('maps',), screens=False, designs=('standard',),
+      rule='V3 § 10.20, maps SPEC § 8: profile.path drawn when it exists, else the fallback; NM marks, cursor and ETA on the flown path; constraints as steps')
+def d42(c):
+    T = _FLOWN_NM
+    path = [{'nm': 0, 'ft': 90}, {'nm': round(T * .1, 1), 'ft': 6000}, {'nm': round(T * .2, 1), 'ft': 27000}, {'nm': round(T * .8, 1), 'ft': 27000},
+            {'nm': round(T * .95, 1), 'ft': 3000}, {'nm': round(T, 1), 'ft': 20}]
+    legs = [{'id': p[0], 'min': round(i * 6.5, 1), 'origin': 'route' if p[0] in ('LFRS', 'LUGEN', 'NEPIX', 'LFML') else ('sid' if i < 5 else 'star')}
+            for i, p in enumerate(_FLOWN)]
+    f = _proc_flight(planned_at=iso(now() + datetime.timedelta(hours=2)), by='fuel')
+    f['profile'] = {**f['profile'], 'path': path}
+    f['quote'] = {'minutes': 80, 'block': 4000, 'unit': 'kg', 'taxiMin': 12, 'legs': legs}
+    _open_proc(c, f, view='maps?view=-1.5,46.35,-0.9,46.8')
+    c.until("() => !!window.__mp.S.prof", timeout=10000, what='the profile is built')
+    r = c.js("""() => { const S = window.__mp.S; return { path: !!S.prof.plan?.path, mid: S.prof.plan.alt[Math.round((S.prof.plan.alt.length - 1) / 2)],
+      names: S.prof.marks.map(m => m.name), total: S.prof.total / 1852, marks: S.marks.map(m => m.nm), cons: !!S.lgCons } }""")
+    c.ok(r['path'], 'profile.path not used', 'profile.path drawn when it exists')
+    c.eq(r['mid'], 27000, 'the planned altitude at the middle is the path\'s', what='plan altitude at mid distance')
+    c.eq(r['names'], ['LFRS', 'LUGEN', 'NEPIX', 'LFML'], 'only the route points are named under the profile', what='profile marks')
+    c.ok(abs(r['total'] - _FLOWN_NM) < 1, f'{r["total"]:.1f} NM against {_FLOWN_NM:.1f}', 'the profile is cut along the flown path')
+    c.ok(r['marks'] and r['marks'][-1] < _FLOWN_NM and r['marks'][0] == 50, f'{r["marks"]}', 'the NM marks follow the flown path')
+    c.ok(r['cons'], 'no constraint step drawn', 'the constraints are drawn as steps on the profile')
+    # the ETA labels are etaOf(flight, { path: flown })
+    want = c.js("""async () => { const CF = await import('/frame/lib/current_flight.js'), T = await import('/frame/lib/time.js'), S = window.__mp.S,
+      e = CF.etaOf(S.route.flight, Date.now(), { path: S.route.flown }), i = e.findIndex(x => x.id === 'LUGEN'); return 'ETA ' + T.fmtZ(e[i].at) }""")
+    c.until("(window.__mpTexts || []).some(t => /^ETA /.test(t))", timeout=8000, what='ETA labels')
+    c.ok(norm(want) in set(texts(c, 'ETA ')), f'drawn {texts(c, "ETA ")}', f'the ETA of LUGEN is etaOf\'s on the flown path ({want})')
+    # without profile.path: the fallback
+    g = _proc_flight()
+    _open_proc(c, g, view='maps?view=-1.5,46.35,-0.9,46.8')
+    c.until("() => !!window.__mp.S.prof", timeout=10000, what='the profile is built')
+    c.eq(c.js("() => !!window.__mp.S.prof.plan?.path"), False, 'without profile.path the profile keeps its fallback', what='plan.path')
+
+
+@case('D43', 'The aerodrome card shows the choice and a button to Fuel', 'D', tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='V3 § 10.20: the Map shows the chosen runway and procedures on the aerodrome card, "Changer" goes to #fuel?focus=arr, and never writes route.procedures')
+def d43(c):
+    c.page.add_init_script(_MLMAP_HOOK)
+    f = _proc_flight()
+    c.open('maps?view=4.7,43.2,5.7,43.8', docs=fdocs(f) + [list(d) for d in _PROC_DOCS] + [['cache/maps/ui.json', {'preset': 'vfr', 'layers': {}}, 'cache']],
+           flight=False, airfields=True, aero_extra={'aerodromes': [{'icao': 'LFML', 'name': 'MARSEILLE PROVENCE', 'lat': 43.4367, 'lon': 5.215, 'elev': 21,
+                                                                   'hardLen': 3500, 'public': True}], 'cells': {'43': [[0, 6]], '44': [[0, 6]]}})
+    c.until("() => !!window.__mlMap", timeout=20000, what='the map instance is seen')
+    c.settle()
+    c.wait(1500)
+    xyz = c.js("""() => { const m = window.__mlMap, p = m.project([5.215, 43.4367]), r = m.getCanvas().getBoundingClientRect(); return [r.left + p.x, r.top + p.y] }""")
+    c.page.mouse.click(xyz[0], xyz[1])
+    c.until("() => !!document.querySelector('.mp-ad-proc')", timeout=10000, what='the aerodrome card shows the chosen procedures')
+    row_ = norm(c.js("() => document.querySelector('.mp-ad-proc[data-proc=arr]').textContent"))
+    c.ok(norm(row(c, 'adProcRwy').replace('{r}', '31')) in row_ and 'STAR XX2B' in row_ and 'APP I31' in row_ and norm(row(c, 'procX')) in row_, row_,
+         'the card gives the runway, the STAR and the approach chosen, and where they come from')
+    c.ok(not c.count('.mp-ad-proc[data-proc=dep]'), 'a departure row on the arrival aerodrome', 'only the side the aerodrome is')
+    go = c.attr('.mp-ad-proc[data-proc=arr] [data-go]', 'data-go')
+    c.eq(go, 'fuel?focus=arr', 'the button leads to Fuel\'s arrival row', what='data-go')
+    c.eq(c.doc(PATH)['route']['procedures'], _CHOSEN, 'route.procedures untouched', what='route.procedures')
+    c.tap('.mp-ad-proc[data-proc=arr] [data-go]')
+    c.until("location.hash.startsWith('#fuel')", what='Fuel opens')
+    c.eq(c.hash(), '#fuel?focus=arr', 'the address of the arrival row', what='hash')
+
+
+@case('D44', 'Without records the path is the route; the live view sees the choice', 'D', tags=('maps',), screens=False, designs=('standard',),
+      rule='V3 § 10.20: without aerodb, without procedure or without record the path is the route (today\'s behaviour); a new choice or profile.path is a new route for the live view')
+def d44(c):
+    # procedures chosen but no record at all (nothing under proc/): the route as it was
+    f = _proc_flight()
+    c.open('maps?view=-1.8,46.95,-1.1,47.35', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.js(_TEXTS_JS)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.route && window.__mp.S.route.path)", timeout=10000, what='the path is built')
+    c.wait(800)
+    c.eq(c.js(_PATH_JS), ['route:LFRS', 'route:LUGEN', 'route:NEPIX', 'route:LFML'], 'no record: the path is the route', what='path')
+    c.eq(c.js("() => window.__pr.routeLines()"), None, 'the route is drawn whole', what='routeLines')
+    c.ok(not [t for t in c.js('window.__mpTexts || []') if re.match(r'^(SID|STAR|APP) ', t)], 'a procedure label', 'nothing drawn for a choice without record')
+    # the signature of the live view
+    r = c.js("""async (f) => { const T = await import('/modules/maps/flight_time.js'), g = JSON.parse(JSON.stringify(f)); const same = T.sameRoute(f, g);
+      g.route.procedures.arr.star = 'LFML.STAR.YY.RW31.NONE'; const proc = T.sameRoute(f, g); g.route.procedures = f.route.procedures;
+      g.profile = { ...g.profile, path: [{ nm: 0, ft: 0 }, { nm: 9, ft: 9 }] }; return [same, proc, T.sameRoute(f, g)] }""", f)
+    c.eq(r, [True, False, False], 'a changed choice or profile.path is a new route; the same record is not', what='sameRoute')

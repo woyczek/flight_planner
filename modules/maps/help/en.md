@@ -6,7 +6,7 @@ beacons, airways, minimum altitudes. The flight's route can also be changed on t
 ## How to use
 
 **The planned flight.** The map shows the flight prepared in Fuel: departure, route points, arrival, and the alternate
-airfield in grey dashes. When the SimBrief OFP filed a SID or a STAR, they are drawn in purple over the route, named ("SID ROYAN6P"). Its summary (level, distance, planned or in-flight) is not written over the drawing (the drawing shows it): the tooltip of the data block's handle under the map gives it, with departure and arrival, alternate and aircraft type. When the flight changes in Fuel, the map follows by itself.
+airfield in grey dashes. The runway, SID, STAR and approach chosen in Fuel are drawn in purple over the route, named ("SID ROYAN6P"). Its summary (level, distance, planned or in-flight) is not written over the drawing (the drawing shows it): the tooltip of the data block's handle under the map gives it, with departure and arrival, alternate and aircraft type. When the flight changes in Fuel, the map follows by itself.
 
 **The map and what it shows.** Around the route: the airspaces it crosses or skirts (restricted, danger and prohibited
 areas, controlled airspace), the low or high airways depending on your level, the airfields and the beacons, and in each
@@ -15,6 +15,8 @@ The small purple figures along the route are the distances from the departure, i
 finger, spread two fingers to zoom; “Recentre” (the target, at the top right of the map) comes back to the whole route. The map stays where you put it, even when
 the route changes: only “Recentre” (or another flight) reframes it. Seen from afar, the map only shows what is near the
 route; zoom in to see everything.
+
+<a id="maps-procs"></a>**The runway and procedures chosen.** What you chose in Fuel (runway, SID, STAR, approach) is drawn in purple, from the threshold of the departure runway to the first point of the route, and from the last point of the route to the threshold of the arrival runway. Transitions and the missed approach are dashed; a leg without a fix (a climb on a heading, for example) is a short stroke along its course, then dashes to the next point; a constant-radius turn is an arc. When the SID does not reach a point of the route, a dashed straight line joins it to the route (likewise for the STAR). A procedure you did not choose is never drawn, and the Layers list has no box for it. The procedure's name is written on its trace, followed by where its data come from when they come from X-Plane or Little Navmap ("X-Plane, local") or when they are outdated ("outdated"). Close up, each point carries its constraints, as on procedure charts: an **underlined** altitude means "at or above", **overlined** "at or below", both "exactly", "5000–7000" "between the two"; "≤ 220 kt" is the speed not to exceed. The vertical profile follows the same path and shows these constraints as steps (up arrow: at or above, down arrow: at or below, dot: exactly, bar: between two altitudes); distances, estimated times and the cursor are measured along that path. The map never changes this choice: touch an aerodrome of the route and its card gives the runway and procedures chosen, with a "Change" button that opens Fuel on the row to change.
 
 <a id="maps-weather"></a>**The profile and the cursor.** In the data block under the map, the vertical profile cuts through the route from end to end: the terrain,
 the airspaces you enter at the planned altitude, and the flight path in purple. Slide your finger along the profile: a
@@ -150,4 +152,4 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 462716f97b09 -->
+<!-- fr: 428dc3ad1baa -->

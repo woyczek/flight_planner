@@ -12,6 +12,24 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the chosen runway, SID, STAR and approach are drawn, and the profile follows the path "route + procedures"**
+  (`modules/maps/procs.js`, `data.js`, `draw.js`, `render.js`, `profile.js`, `profile_view.js`, `flight_time.js`, `edit.js`,
+  `vfr.js`, `texts.js`, help ×4; V3_SPECIFICATION § 10.20) — the procedures chosen in Fuel (`route.procedures` v2) are loaded once
+  per change (`loadProcedures`) and the map keeps the expanded path and the flown path (`expandedPath`, `flownPath`); without
+  aerodb, a choice or a record the path is the route and nothing changes. The trace starts at the runway threshold, transitions
+  and the missed approach are dashed, a leg without a fix is a 2 NM stroke along its course then dashes, an RF leg is an arc,
+  the SID and the STAR join the route on a common point or by a dashed direct (the route no longer draws the legs they draw),
+  labelled "SID NAME" / "STAR NAME" / "APP NAME" with "X-Plane, local", "Little Navmap, local" or "outdated" when the source says
+  so; from 300 px per degree each fix carries its altitude (underlined = at or above, overlined = at or below, both = exactly,
+  "5000–7000" between) and speed ("≤ 220 kt") constraints, reserved in the label placer after the route's labels; procedures that
+  are not chosen are never drawn and Layers has no box for them. The profile is cut along the flown path (distance, NM marks,
+  cursor, ETA and planned position by `{ path }`), draws fuel's `profile.path` when it exists (else its fallback) and shows the
+  constraints as steps. The aerodrome card gives the runway and procedures chosen with a "Change" button to
+  `#fuel?focus=arr` (`dep`); the map never writes `route.procedures`, Edit mode no longer removes it. Constraint altitudes are in
+  feet up to the airline's transition altitude included ("5000", never "FL050" at a 5,000 ft transition). Fixed on the way:
+  fuel's profile was ignored whenever the frame had written the live position (`by: 'frame'`); only the map's own edit
+  (`by: 'maps'`) makes it stale. Cases D41–D44, D30 updated.
+
 - **Fuel: runway, SID, STAR and approach chosen in the preparation, the quote on their path, the arrival changed in flight**
   (`modules/fuel/module.js`, `progress.js`, `INTEGRATION.md` § 3, `SPEC.md`, `DECISIONS.md`; help ×4; cases F11–F19) —
   V3_SPECIFICATION § 10.20. Step Flight gets two short rows ("Departure: runway · SID · transition", "Arrival: runway · STAR ·

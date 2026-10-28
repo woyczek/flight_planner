@@ -1442,20 +1442,25 @@
   /** Route : trait violet, points, marques de distance (NM), libellés réservés (routeLabels). */
   function drawRoute(ctx, route, toC, scale, labels = [], {
     marks: mk = [],
-    color = '#8e24aa'
+    color = '#8e24aa',
+    lines = null
   } = {}) {
     const pts = (route || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
     if (pts.length < 2) return;
     ctx.save();
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
+    // lines : les suites de points que la route trace (la SID et la STAR choisies dessinent leurs propres tronçons) ; sans elles,
+    // tous les points de la route
     const line = () => {
-      ctx.beginPath();
-      pts.forEach((p, i) => {
-        const q = toC(p.lat, p.lon);
-        i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
-      });
-      ctx.stroke();
+      for (const run of lines || [pts]) {
+        ctx.beginPath();
+        run.forEach((p, i) => {
+          const q = toC(p.lat, p.lon);
+          i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+        });
+        ctx.stroke();
+      }
     };
     // liseré du fond (détache la route des voies et des limites qu'elle croise), puis le trait : le plus épais de la carte
     ctx.strokeStyle = paper();
@@ -1678,7 +1683,9 @@
     theme = null,
     level = null,
     detail = 0,
-    hideVrp = null // identifiants de VRP que l'écran dessine lui-même (terrain survolé ou épinglé) : pas deux fois
+    hideVrp = null, // identifiants de VRP que l'écran dessine lui-même (terrain survolé ou épinglé) : pas deux fois
+    lines = null, // suites de points que la route trace (null : toute la route), voir drawRoute
+    reserve = null // reserve(placeur) : l'écran réserve ses libellés (procédures choisies) juste après ceux de la route
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
     T = theme || tokens();
@@ -1696,6 +1703,7 @@
     if (!mission) profile = atZoom(profile, zv);
     const shown = mission ? data : byZoom(data, profile, zv, tier),
       labels = routeLabels(route, toC, scale, pl, mk, level);
+    if (reserve) reserve(pl);
     reservePoints(pl, mission?.points, toC, scale, profile);
     const towns = cityList(shown.cities, profile, toC, bbox, scale, pl);
     drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes');
@@ -1744,7 +1752,8 @@
     drawMissionPoints(ctx, mission?.points, toC, W, H, scale, profile);
     drawCities(ctx, towns, profile, scale, W, H);
     drawRoute(ctx, route, toC, scale, labels, {
-      marks: mk
+      marks: mk,
+      lines
     });
     // cartouches des voies que suit la route : par-dessus son trait (le mode Édition de l'écran dessine ensuite ses poignées)
     for (const f of ends.over || []) f();

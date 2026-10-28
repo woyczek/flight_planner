@@ -263,7 +263,7 @@ Flugplätze, Funkfeuer, Luftstraßen, Mindesthöhen. Die Route des Flugs lässt 
 ## So geht’s
 
 **Der geplante Flug.** Die Karte zeigt den in Kraftstoff vorbereiteten Flug: Abflug, Routenpunkte, Ankunft, und den
-Ausweichflugplatz grau gestrichelt. Hat das SimBrief-OFP eine SID oder eine STAR eingereicht, werden sie violett über der Route gezeichnet, mit Namen („SID ROYAN6P“). Seine Zusammenfassung (Flugfläche, Entfernung, geplant oder im Flug) steht nicht über der Zeichnung (die Zeichnung zeigt sie): der Tooltip des Griffs des Datenblocks unter der Karte nennt sie, mit Abflug und Ankunft, Ausweichflugplatz und Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
+Ausweichflugplatz grau gestrichelt. Die in Kraftstoff gewählten Piste, SID, STAR und Anflugverfahren werden violett über der Route gezeichnet, mit Namen („SID ROYAN6P“). Seine Zusammenfassung (Flugfläche, Entfernung, geplant oder im Flug) steht nicht über der Zeichnung (die Zeichnung zeigt sie): der Tooltip des Griffs des Datenblocks unter der Karte nennt sie, mit Abflug und Ankunft, Ausweichflugplatz und Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
 
 **Die Karte und was sie zeigt.** Rund um die Route: die Lufträume, die sie durchquert oder streift (Flugbeschränkungs-,
 Gefahren- und Sperrgebiete, kontrollierte Lufträume), die unteren oder oberen Luftstraßen je nach Ihrer Flugfläche, die
@@ -273,6 +273,8 @@ Abflug, in nautischen Meilen. Verschieben Sie die Karte mit einem Finger, spreiz
 „Zentrieren“ (das Zielsymbol oben rechts auf der Karte) kehrt zur ganzen Route zurück. Die Karte bleibt, wo Sie sie hingelegt haben, auch wenn sich die Route
 ändert: nur „Zentrieren“ (oder ein anderer Flug) richtet sie neu aus. Von weitem gesehen zeigt die Karte nur, was nahe
 der Route liegt; zoomen Sie hinein, um alles zu sehen.
+
+<a id="maps-procs"></a>**Gewählte Piste und Verfahren.** Was Sie in Kraftstoff gewählt haben (Piste, SID, STAR, Anflug), wird violett gezeichnet, von der Schwelle der Abflugpiste bis zum ersten Punkt der Route und vom letzten Punkt der Route bis zur Schwelle der Landepiste. Übergänge und das Fehlanflugverfahren sind gestrichelt; ein Abschnitt ohne Punkt (zum Beispiel ein Steigflug auf einem Kurs) ist ein kurzer Strich entlang seines Kurses, dann eine Strichlinie bis zum nächsten Punkt; eine Kurve mit konstantem Radius ist ein Bogen. Erreicht die SID keinen Punkt der Route, verbindet eine gestrichelte Gerade sie mit der Route (ebenso bei der STAR). Ein nicht gewähltes Verfahren wird nie gezeichnet, und die Ebenenliste hat kein Kästchen dafür. Der Name des Verfahrens steht auf seiner Linie, gefolgt von der Herkunft seiner Daten, wenn sie von X-Plane oder Little Navmap stammen („X-Plane, lokal“) oder veraltet sind („veraltet“). Aus der Nähe trägt jeder Punkt seine Beschränkungen, wie auf Verfahrenskarten: eine **unterstrichene** Höhe heißt „mindestens“, eine **überstrichene** „höchstens“, beides „genau“, „5000–7000“ „dazwischen“; „≤ 220 kt“ ist die nicht zu überschreitende Geschwindigkeit. Das Vertikalprofil folgt demselben Weg und zeigt diese Beschränkungen als Stufen (Pfeil nach oben: mindestens, nach unten: höchstens, Punkt: genau, Balken: zwischen zwei Höhen); Entfernungen, geschätzte Zeiten und der Cursor werden entlang dieses Wegs gemessen. Die Karte ändert diese Wahl nie: Tippen Sie auf einen Flugplatz der Route, seine Karte nennt die gewählte Piste und die Verfahren, mit einer Schaltfläche „Ändern“, die Kraftstoff bei der zu ändernden Zeile öffnet.
 
 <a id="maps-weather"></a>**Profil und Cursor.** Im Datenblock unter der Karte schneidet das Vertikalprofil die Route von Anfang bis Ende: das Gelände, die
 Lufträume, in die Sie auf der geplanten Höhe einfliegen, und die Flugbahn in Violett. Fahren Sie mit dem Finger über das
@@ -419,7 +421,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 462716f97b09 -->
+<!-- fr: 428dc3ad1baa -->
 
 <!-- chapter: report -->
 # Bericht

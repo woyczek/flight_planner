@@ -42,6 +42,11 @@ import {
 import {
   drawWinds
 } from './tips.js';
+import {
+  layout as procLayout,
+  draw as drawProcs,
+  routeLines
+} from './procs.js';
 
 // ---------------------------------------------------------------- un dessin par tour d'animation
 let frame = 0;
@@ -93,11 +98,14 @@ function sizeCanvas() {
 function routeSpan() {
   const r = S.route;
   if (!r?.points?.length) return null;
-  if (r.span?.of !== r.points || r.span.altn !== r.altn) {
-    const lons = [...r.points, ...(r.altn ? [r.altn] : [])].map(p => +p.lon);
+  if (r.span?.of !== r.points || r.span.altn !== r.altn || r.span.path !== r.path) {
+    // les points des procédures choisies comptent aussi : une SID peut sortir de la route d'un degré ou deux
+    const lons = [...r.points, ...(r.altn ? [r.altn] : []), ...(r.path || []).filter(p => p.lon != null && Number.isFinite(+p.lon))].map(
+      p => +p.lon);
     r.span = {
       of: r.points,
       altn: r.altn,
+      path: r.path,
       w: Math.min(...lons),
       e: Math.max(...lons)
     };
@@ -221,39 +229,6 @@ export function baseNames(off) {
 }
 
 // ---------------------------------------------------------------- dessin
-/** SID et STAR du vol courant (route.procedures, écrites par Carburant) : tracé violet par-dessus la route, « SID ROYAN6P » ;
- *  une procédure d'un autre terrain que le départ ou l'arrivée de la route n'est pas dessinée (SPEC § 5). */
-function drawProcedures(ctx, toC) {
-  const r = S.route?.flight?.route,
-    pr = r?.procedures;
-  if (!pr || !S.route.points.length) return;
-  for (const [rec, icao, end] of [
-      [pr.sid, r.dep, 0],
-      [pr.star, r.arr, S.route.points.length - 1]
-    ]) {
-    const pts = (rec?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon));
-    if (pts.length < 2 || !icao || String(rec.icao).toUpperCase() !== String(icao).toUpperCase()) continue;
-    const ref = S.route.points[end],
-      q = pts.map(p => toC(+p.lat, nearLon(+p.lon, ref.lon)));
-    ctx.save();
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#7c3aed';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    q.forEach((c, i) => (i ? ctx.lineTo(c.x, c.y) : ctx.moveTo(c.x, c.y)));
-    ctx.stroke();
-    ctx.font = '700 12px Arial,sans-serif';
-    ctx.textBaseline = 'middle';
-    ctx.strokeStyle = S.theme.bg;
-    ctx.lineWidth = 3;
-    const label = [rec.kind || (end ? 'STAR' : 'SID'), rec.name].filter(Boolean).join(' '),
-      m = q[Math.floor(q.length / 2)];
-    ctx.strokeText(label, m.x + 8, m.y - 8);
-    ctx.fillStyle = '#7c3aed';
-    ctx.fillText(label, m.x + 8, m.y - 8);
-    ctx.restore();
-  }
-}
 /** Dégagement : tireté gris de l'arrivée au terrain (sous la surcouche), puis rond gris et code (par-dessus). */
 function drawAltn(ctx, toC, altn, on) {
   const route = S.route.points,
@@ -313,7 +288,10 @@ function draw() {
   const pxDeg = W / Math.max(1e-6, shown.e - shown.w),
     zReal = MapsRender.zoomOf(pxDeg),
     zv = mission ? zReal : MapsRender.effectiveZoom(zReal + MapsRender.detailZoom(detailShift()), W, H),
-    zoomOn = k => MapsRender.visibleAt(S.profile, k, zv);
+    zoomOn = k => MapsRender.visibleAt(S.profile, k, zv),
+    // procédures choisies (SID, STAR, approche) : mise en page à l'écran ; leurs libellés se réservent dans le placeur de la
+    // carte, après ceux de la route
+    procs = mission ? null : procLayout(ctx, toC, pxDeg);
   if (S.tuneEl) got('tune')?.markTune(zReal, zv, (shown.n + shown.s) / 2, W, H);
   // nos villes dessinées à ce zoom : les noms de lieux du fond s'effacent (sinon « Mérignac » en double)
   baseNames(!!S.profile?.cities && !!S.data?.data?.cities?.length && ['citiesBig', 'citiesMid', 'citiesSmall'].some(zoomOn));
@@ -342,6 +320,8 @@ function draw() {
     level,
     detail: mission ? 0 : detailShift(),
     hideVrp: mission ? null : vfrVrpIds(),
+    lines: mission ? null : routeLines(),
+    reserve: procs ? pl => procs.reserve(pl) : null,
     mission: mission && S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones
@@ -354,8 +334,9 @@ function draw() {
   S.navHits = got0.navaids || [];
   S.vrpHits = got0.vrps || [];
   if (altn) drawAltn(ctx, toC, altn, true);
-  if (!mission) drawProcedures(ctx, toC);
-  drawPlanOnMap(ctx, toC, got0.routeLabels || []);
+  if (procs) drawProcs(ctx, procs);
+  drawPlanOnMap(ctx, toC, [...(got0.routeLabels || []), ...(procs?.labels || []).map(l => l
+    .r)]); // TOC / TOD : ni sur la route ni sur une procédure
   if (!mission) drawVfr(ctx, toC);
   S.windHits = !mission && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
   if (!mission && isStarted(S.route.flight)) drawProgress(ctx, toC);

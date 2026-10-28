@@ -48,6 +48,10 @@ export const tileLoader = ctx => async url => {
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.blob();
 };
+/** Points volés du vol courant, ceux de la route et de ses procédures choisies (frame/lib/current_flight.js flownPath, rangés dans
+ *  S.route par data.js : longitudes continues, nm = distance cumulée) ; sans eux, les points de la route. La seule base des
+ *  distances du profil, des marques NM, du curseur et des heures. */
+export const flownPts = () => S?.route?.flown?.length > 1 ? S.route.flown : S?.route?.points || [];
 /** Vrai si le montage est sur une carte de mission (#maps?mission=…). */
 export const onMission = () => !!S?.ctx.query?.mission;
 

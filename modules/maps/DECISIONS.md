@@ -194,7 +194,9 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     after the last gesture. `meta.writes` gains `pilot/` (document policy, same declaration as fuel).
   - **The quote**: fuel requotes when it sees a record written by another module (`by` ≠ `fuel`), at once when it is
     mounted (the dual view shows both), else at its next mount; it then writes `profile` again. Until then maps draws
-    its own TOC and TOD and ignores the stale `profile.tocNm` / `todNm`. To agree with the fuel session (one line in
+    its own TOC and TOD and ignores the stale `profile.tocNm` / `todNm`. Reviewed 28 Oct (lot 2): only `by: 'maps'` makes the profile stale — `by` is the
+    last writer of the whole record, and the frame writes `by: 'frame'` with the live position (`progress.actual`), which
+    hid fuel's profile. To agree with the fuel session (one line in
     its INTEGRATION § 3).
   - **Cut**:
     - 6a: the mode, dragging and snapping, insertion, removal, undo, writing; checked at 375 px touch and 1280 px mouse;
@@ -1476,3 +1478,36 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   proof of concept at 390 and 1280 px, five designs, day and night, profile, Layers, airspaces and expanded sheet: the same
   buttons, titles, chips, profile attributes, kept counts, notes and strip, except the Weather chip (above) and the order of
   Layers (§ 6.7).
+- **28 Oct 2026 — lot 2: the chosen SID, STAR and approach, and the profile on the path "route + procedures"** (V3_SPECIFICATION
+  § 10.20 and its two refinements; branch `v3-maps-proc`; the frame's `proceduresOf`, `loadProcedures`, `expandedPath`, `flownPath`
+  and aerodb's `procedure(id)`, `runways(icao)` were already there). The old `drawProcedures` (which read `{ sid, star }` records
+  with their points) is replaced by `procs.js`; SPEC § 5, § 8, § 12, § 13, INTEGRATION § 3 bis and § 4 say the result. Choices of
+  the session, with their reasons:
+  - **The route is drawn only between its consecutive path points.** Rather than drawing the route whole and the procedure over it
+    (a SID that leaves the route's first leg would show two lines), `MapsRender.draw` takes `lines` (the polylines of the route's
+    runs in the path); the route's markers and labels stay those of its points. A route point that a SID covers but the join did not
+    keep (a point between the first and the join) keeps its marker without a line: rare, and it is the route's own point.
+  - **Labels are reserved through a callback, not drawn by the core.** `MapsRender.draw` gains `reserve(placer)`, called right after
+    the route's labels: the render core stays free of texts and of the flight's state, the screen's `procs.js` builds the labels
+    (names, fix ids, constraints) and writes them after the core's drawing, so "after the route's labels" holds without changing the
+    order of the rest.
+  - **A direct is a dashed line, decided from the ids.** `expandedPath` does not say whether the SID joined the route on a common
+    point; the map decides: the leg between a procedure point and a route point (neither the departure nor the arrival) is the
+    procedure's own, solid, when the route point is one of the procedure's fixes, else a dashed direct. A joined point reached by the
+    SID's transition is dashed too (transition).
+  - **The course of a leg without a fix is drawn as given**, magnetic taken as true: over 2 NM a variation of a few degrees moves the
+    end by a few tenths of a NM, and no variation model is in the suite; the stroke says "somewhere that way", the dashes lead on.
+  - **Altitudes in the notation**: the feet alone up to the transition altitude included ("3000", "5000" when it is 5,000 ft, as
+    the AIP writes it), "FL060" above it (review of 28 Oct: "FL050" at a 5,000 ft transition read as a level) — the airline's own
+    `transitionFt` (5,000 ft by default), not the chart's; the transition level of a given aerodrome is not known to the map.
+  - **The profile's own plan stays the fallback**, with no constraints fed to it (a constraint "at 3000" read as the new cruise level
+    would hold the flight at 3000 ft): the steps are drawn on the profile from the points, the planned path comes from fuel's
+    `profile.path`; a path that does not cover the cut to 3 NM or 3 % is stale and ignored.
+  - **Level drag in Edit mode** finds its segment by projecting the route's points on the cut (the cut is longer than the route), no
+    longer by scaling the route's cumulative distances.
+  - **Edit mode no longer drops `route.procedures`** (the user's rule: the map never writes it): D30 expects it kept as it is, even
+    for a side whose aerodrome is not the route's, which every reader ignores (`proceduresOf`).
+  - **Not done here**: the Fuel side (rows, "Changer" target `#fuel?focus=`, `profile.path`, `quote.legs` with `origin`) is the fuel
+    lot's; until it writes `profile.path` the profile draws its fallback, and a quote without `origin` gives times by the quote's
+    total over the flown path.
+

@@ -112,6 +112,7 @@ function legendRows(view) {
   if (d.marks) rows.push([sw('vdash', '#17202a'), esc(tt(TX.lgPoints))]);
   if ((S.marks || []).length) rows.push([sw('tick', '#8e24aa'), esc(tt(TX.lgNm))]);
   if (S.lgFixes) rows.push([sw('tri', S.theme?.fg || '#17202a'), esc(tt(TX.lgFixes))]);
+  if (S.lgCons) rows.push([sw('cons', '#7c3aed'), esc(tt(TX.lgCons))]);
   return rows;
 }
 /** Puce « i » et panneau de légende : la puce est toujours là, désactivée tant que le dessin n'a pas de légende ; le panneau

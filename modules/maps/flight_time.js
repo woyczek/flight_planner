@@ -9,7 +9,8 @@ import {
   setPressed,
   dLon,
   level,
-  nmTxt
+  nmTxt,
+  flownPts
 } from './state.js';
 import {
   nearLon
@@ -48,9 +49,10 @@ const STALE_MS = 120e3,
 /** Vrai si le vol démarré est arrivé (progress.phase « arrived »). */
 export const isArrived = f => isStarted(f) && f?.progress?.phase === 'arrived';
 /** Même route (points, niveau, départ) : seule la progression a changé. */
-export const sameRoute = (a, b) => !!a && !!b && JSON.stringify([a.route?.points, a.level?.ft, a.started?.at]) === JSON.stringify([b.route
-  ?.points, b.level?.ft, b.started?.at
-]);
+export const sameRoute = (a, b) => !!a && !!b && JSON.stringify(sigOf(a)) === JSON.stringify(sigOf(b));
+/** Ce qui change la route dessinée : les points, le niveau, le départ, la route et les terrains, les procédures choisies et le
+ *  profil prévu par Carburant (profile.path suit les procédures). */
+const sigOf = f => [f.route?.points, f.level?.ft, f.started?.at, f.route?.dep, f.route?.arr, f.route?.procedures, f.profile?.path];
 /** Position valide { lat, lon, … } d'un objet, sinon null. */
 const posOf = p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) ? {
   ...p,
@@ -114,7 +116,7 @@ export function progressUpdate() {
 }
 /** Projection d'une position sur la route : { nm (depuis le départ), xtk (écart latéral, NM, positif à droite), total }. */
 function alongRoute(p) {
-  const pts = S.route.points;
+  const pts = flownPts();
   if (pts.length < 2 || !p) return null;
   const cum = MapsRender.distances(pts);
   let best = null;
@@ -145,7 +147,9 @@ function alongRoute(p) {
  *  péremption. */
 function progressState() {
   const f = S.route.flight,
-    pl = plannedPositionAt(f),
+    pl = plannedPositionAt(f, Date.now(), {
+      path: flownPts()
+    }),
     planned = pl ? {
       ...pl,
       altFt: pl.phase === 'taxi' ? 0 : null
@@ -153,7 +157,7 @@ function progressState() {
     actual = actualOf(f),
     ageMs = actual?.at ? Date.now() - Date.parse(actual.at) : 0,
     pa = actual ? alongRoute(actual) : null,
-    total = pa?.total ?? (S.route.points.length > 1 ? MapsRender.distances(S.route.points).pop() : 0),
+    total = pa?.total ?? (flownPts().length > 1 ? MapsRender.distances(flownPts()).pop() : 0),
     pp = planned ? {
       nm: planned.nmFromDep,
       total
@@ -247,7 +251,9 @@ function haloText(ctx, t, x, y, col) {
  *  locale de l'appareil en plus au départ et à l'arrivée ; placées par render.js avec les libellés de la route (SPEC § 13.2). */
 export function withEta(route, pxDeg) {
   if (S.ctx.query?.mission || pxDeg < 300) return route;
-  const eta = etaOf(S.route.flight);
+  const eta = etaOf(S.route.flight, Date.now(), {
+    path: flownPts()
+  });
   if (!eta) return route;
   const last = route.length - 1;
   return route.map((p, i) => {
@@ -260,7 +266,7 @@ export function withEta(route, pxDeg) {
 }
 /** Route vraie de la route au point à nm du départ (pour orienter la position prévue). */
 function trackAt(nm) {
-  const pts = S.route.points,
+  const pts = flownPts(),
     cum = MapsRender.distances(pts);
   for (let i = 0; i < pts.length - 1; i++)
     if (nm <= cum[i + 1] || i === pts.length - 2) return MapsRender.trackOf(pts[i], pts[i + 1]);

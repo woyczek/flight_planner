@@ -282,6 +282,29 @@ export const TX = {
   lgFixes: ['Points des voies et balises à moins de 3 NM de la route', 'Airway points and beacons within 3 NM of the route',
     'Streckenpunkte und Funkfeuer innerhalb von 3 NM der Route', 'Puntos de aerovías y radioayudas a menos de 3 NM de la ruta'
   ],
+  lgCons: [
+    'Contraintes des procédures : flèche haute = au moins, flèche basse = au plus, point = exactement, barre = entre deux altitudes',
+    'Procedure constraints: up arrow = at or above, down arrow = at or below, dot = exactly, bar = between two altitudes',
+    'Verfahrensbeschränkungen: Pfeil nach oben = mindestens, nach unten = höchstens, Punkt = genau, Balken = zwischen zwei Höhen',
+    'Restricciones de los procedimientos: flecha arriba = como mínimo, abajo = como máximo, punto = exactamente, barra = entre dos altitudes'
+  ],
+  // procédures choisies (V3_SPECIFICATION § 10.20) : état de la source ajouté au libellé du tracé, carte du terrain
+  procX: ['X-Plane, local', 'X-Plane, local', 'X-Plane, lokal', 'X-Plane, local'],
+  procLnm: ['Little Navmap, local', 'Little Navmap, local', 'Little Navmap, lokal', 'Little Navmap, local'],
+  procOutdated: ['périmé', 'outdated', 'veraltet', 'caducado'],
+  adProcDep: ['Départ', 'Departure', 'Abflug', 'Salida'],
+  adProcArr: ['Arrivée', 'Arrival', 'Ankunft', 'Llegada'],
+  adProcRwy: ['piste {r}', 'runway {r}', 'Piste {r}', 'pista {r}'],
+  adProcTrans: ['transition {t}', 'transition {t}', 'Übergang {t}', 'transición {t}'],
+  adProcNone: ['aucune procédure', 'no procedure', 'kein Verfahren', 'sin procedimiento'],
+  adProcUnset: ['pas encore choisi', 'not chosen yet', 'noch nicht gewählt', 'aún sin elegir'],
+  adProcLost: ['{id} (introuvable dans les données)', '{id} (not found in the data)', '{id} (in den Daten nicht gefunden)',
+    '{id} (no encontrado en los datos)'
+  ],
+  adProcChange: ['Changer', 'Change', 'Ändern', 'Cambiar'],
+  adProcChangeTip: ['Changer la piste et les procédures dans Carburant', 'Change the runway and procedures in Fuel',
+    'Piste und Verfahren im Kraftstoff ändern', 'Cambiar la pista y los procedimientos en Combustible'
+  ],
   wxTitle: ['Coupe météo', 'Weather cross-section', 'Wetterschnitt', 'Corte meteorológico'],
   wxLabel: ['Coupe météo le long de la route', 'Weather cross-section along the route', 'Wetterschnitt entlang der Route',
     'Corte meteorológico a lo largo de la ruta'
