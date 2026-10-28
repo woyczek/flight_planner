@@ -249,6 +249,8 @@
     const lines = [`${r.files} file(s), ${r.bytes >= 262144 ? fmt.mbf(r.bytes) : fmt.mb(r.bytes)} · ${r.timedOut ? 'NO ANSWER' : r.ok ? 'OK' : 'FAIL'} in ${fmt.s(r.ms)} (head ${fmt.s(r.headMs)}) · ${fmt.rate(r.bytes, r.ms)}`];
     if (r.error) lines.push(`error: ${r.error}${r.status ? ` (HTTP ${r.status})` : ''}${r.offline ? ' (offline)' : ''}`);
     if (r.paths) lines.push(`paths: ${r.paths.join(', ')}`);
+    // ce qui a été écrit, et où : la branche jetable, jamais la branche principale
+    if (r.branch) lines.push(`written to: ${r.repo ? `${r.repo}, ` : ''}branch ${r.branch}${r.created ? ` (created from the head of ${r.base || 'the main branch'})` : ''}${r.commit ? `, commit ${String(r.commit).slice(0, 7)}` : ''}; ${r.base || 'the main branch'} not touched; "Clean" deletes the branch`);
     return entry('publish', step, lines, {
       ok: r.ok,
       size,
@@ -261,12 +263,15 @@
     });
   }
 
-  function ofClean(r) {
-    return entry('clean', 'remove the trial files', [`${r.ok ? 'OK' : 'FAIL'} · ${r.listed ?? 0} file(s) found · ${fmt.s(r.ms)}${r.treeMs != null ? ` (tree read ${fmt.s(r.treeMs)})` : ''}`,
-      ...(r.paths && r.paths.length ? [`removed: ${r.paths.join(', ')}`] : []),
-      ...(r.error ? [`error: ${r.error}${r.status ? ` (HTTP ${r.status})` : ''}`] : [])
-    ], {
-      ok: r.ok
+  function ofClean(r, auto = false) {
+    const lines = [`${r.ok ? 'OK' : 'FAIL'} · branch ${r.branch || '?'} ${r.deleted ? 'deleted' : 'not found (nothing to delete)'} · ${r.listed ?? 0} trial file(s) on it · ${fmt.s(r.ms)}${r.treeMs != null ? ` (tree read ${fmt.s(r.treeMs)})` : ''}`];
+    if (r.paths && r.paths.length) lines.push(`removed: ${r.paths.join(', ')}`);
+    if (r.onMain && r.onMain.length) lines.push(`old trial files still on the main branch (before 28 Oct 2026, not touched; purge: frame/aerodb/INTEGRATION.md): ${r.onMain.join(', ')}`);
+    else if (r.onMain === null) lines.push('main branch: not readable to look for old trial files');
+    if (r.error) lines.push(`error: ${r.error}${r.status ? ` (HTTP ${r.status})` : ''}`);
+    return entry('clean', auto ? 'delete the trial branch left by an earlier session (on opening)' : 'delete the trial branch', lines, {
+      ok: r.ok,
+      auto
     });
   }
 

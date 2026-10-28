@@ -614,21 +614,30 @@
     parts.push('{}]}');
     return parts.join('');
   }
-  /** Commit d'essai par le transport GitHub du cadre : tête, un commit de [{ path, text }], temps de chaque appel. Un conflit
-   *  (branche partie ailleurs) est repris une fois. Rend { ok, ms, bytes, head, commit, error, status }. */
+  /** Commit d'essai sur la branche jetable du transport réduit (`tr` : frame/store/transport_github.js, scratch) : sa tête,
+   *  ou la branche créée depuis la tête de la branche principale, puis un commit de [{ path, text }] ; temps de chaque appel.
+   *  Un conflit (branche avancée ou supprimée ailleurs) est repris une fois. Rend { ok, ms, bytes, branch, base, created,
+   *  commit, error, status }. */
   async function publish(tr, changes, message) {
     const out = {
       ok: false,
       bytes: changes.reduce((n, c) => n + (c.text ? new TextEncoder().encode(c.text).length : 0), 0),
-      files: changes.length
+      files: changes.length,
+      branch: tr.branch,
+      base: tr.base,
+      created: false
     };
     const t0 = now();
     try {
       for (let attempt = 0; attempt < 2; attempt++) {
-        const head = await tr.head();
+        let head = await tr.head();
+        if (!head) {
+          head = await tr.create();
+          out.created = true;
+        }
         out.headMs = Math.round(now() - t0);
         try {
-          out.commit = await tr.commit(changes, message, head, null);
+          out.commit = await tr.commit(changes, message, head);
           out.ok = true;
           break;
         } catch (e) {
@@ -643,25 +652,36 @@
     out.ms = Math.round(now() - t0);
     return out;
   }
-  /** Les fichiers d'essai du dépôt (chemins `lab/essai-…`) puis leur suppression en un commit. */
+  /** Nettoyage : les fichiers d'essai de la branche jetable (ceux qu'elle a de plus que la branche principale), puis la
+   *  branche supprimée ; et, en lecture seule, les fichiers `lab/essai-…` restés sur la branche principale (publiés avant le
+   *  28 octobre 2026 : à purger sur le poste, frame/aerodb/INTEGRATION.md). Rend { ok, branch, deleted, listed, paths,
+   *  onMain, ms, treeMs, error, status }. */
   async function clean(tr) {
     const t0 = now(),
       out = {
-        ok: false
-      };
+        ok: false,
+        branch: tr.branch,
+        deleted: false,
+        listed: 0,
+        paths: []
+      },
+      trial = tree => Object.keys(tree).filter(p => /^lab\/essai-/.test(p));
     try {
-      const head = await tr.head(),
-        tree = await tr.tree(head),
-        paths = Object.keys(tree).filter(p => /^lab\/essai-/.test(p));
-      out.listed = paths.length;
-      out.paths = paths;
-      out.treeMs = Math.round(now() - t0);
-      if (paths.length) await tr.commit(paths.map(path => ({
-        path,
-        text: null
-      })), 'lab: nettoyage des essais', head, {
-        tree
-      });
+      const head = await tr.head();
+      let main = null;
+      try {
+        main = await tr.baseTree();
+        out.onMain = trial(main);
+      } catch {
+        out.onMain = null; // illisible (arbre trop grand, droits) : le rapport le dit
+      }
+      if (head) {
+        const tree = await tr.tree(head);
+        out.paths = trial(tree).filter(p => !main || main[p] !== tree[p]);
+        out.listed = out.paths.length;
+        out.treeMs = Math.round(now() - t0);
+        out.deleted = await tr.deleteBranch();
+      }
       out.ok = true;
     } catch (e) {
       out.error = String(e && e.message || e);

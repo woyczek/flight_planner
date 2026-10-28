@@ -410,7 +410,8 @@ Lot P0 of `docs/technique/V3_APP_DONNEES.md`: an administration screen of the fr
 home-screen app served by GitHub Pages) whether the aeronautical base can be fetched, parsed, compiled and published from a phone. Not a feature for pilots:
 Full level, reached by the "Data laboratory" button of the Administration card (`frame/settings/admin_links.js`); below Full the address shows a message and no
 source. It **builds nothing into the base, writes nothing to the modules**; the only writes are `cache/lab/report.json` (policy `cache`, never synchronised)
-and the trial files `lab/essai-*` the owner publishes by a button. It goes when the measures are taken (the measures stay in `DECISIONS.md`).
+and the trial files `lab/essai-*` the owner publishes by a button, on the disposable branch `lab/<trigram>` of the data
+repository, never on its main branch. It goes when the measures are taken (the measures stay in `DECISIONS.md`).
 
 - **Sources** (`lab_sources.js`, `AeroLabSources`): one row per source of the table 1.2 of `docs/technique/V3_DONNEES_REGENERATION.md`, 15 of 17 (X-Plane and
   the aircraft types stay on the workstation), plus EAD Basic (no. 18, pass 2): `{ id, no, n[4], url (string or function of the AIRAC cycle), chain, accept, size, cap, lic, human[4], name,
@@ -440,11 +441,22 @@ and the trial files `lab/essai-*` the owner publishes by a button. It goes when 
   CDATA skipped; not a conformant parser), blocks held only while open, so the memory is the largest block. Kinds read whole, with the page readers' rules:
   XML_SIA `Espace` / `Partie` / VFR `NavFix`; AIXM `Ahp`, `Vor` / `Dme` / `Tcn` / `Ndb` / `Ils`, `Dpn`, `Obs`, `Ase` + `Abd` (arcs counted, not built); the other
   records are counted per name. Golden test K8: the same results as the page's readers at every chunk size.
-- **Trial publication** (pass 2: one button per size): by the data layer's GitHub transport (the screen receives `head` / `tree` / `commit`, never the token): four
-  buttons "Publish 0.5 MB" / "2 MB" / "5.3 MB" / "10 MB", each asks, then writes ONE filler block `lab/essai-<date>-bloc-<n>k.json` of its size, time and API
-  error in the report. The promise is raced against a delay (120 s; `localStorage['sogLab:pubTimeoutMs']` shortens it for tests): no answer → an entry "NO ANSWER …
-  no answer after 120 s", and if the request answers later, a second entry "(late answer)"; a launch guard also notes a killed tab. "Clean" lists the `lab/essai-*`
-  files, removes them in one commit and lists them (screen and report). Greyed with its reason without repository and token, and when offline.
+- **Trial publication** (pass 2: one button per size; **disposable branch since 28 Oct 2026**): the screen receives the frame's **reduced
+  transport** `FrameData.github.scratch('lab/<trigram>')` (`frame/store/transport_github.js`): `branch`, `base`, `head()` (null: no branch), `create()` (the
+  branch made on the head of the main branch), `tree(commit)`, `baseTree()` (the main branch's files, read only), `commit(changes, message, parent)` (paths under
+  `lab/` only, refused otherwise, on the disposable branch only) and `deleteBranch()`; never the generic transport, never a write on the main branch, never the
+  token. The prefix and the branch are enforced by the frame, not by the lab. Four buttons "Publish 0.5 MB" / "2 MB" / "5.3 MB" / "10 MB", each asks (the
+  question names the repository, the branch and the main branch it never writes), then writes ONE filler block `lab/essai-<date>-bloc-<n>k.json` of its size on
+  `lab/<trigram>` (created at the first block from the head of the main branch), time, API error and **where it was written** (repository, branch, commit, "main
+  not touched") in the report. **One block at a time**: while a block has no answer, the four buttons are greyed with the reason (Clean stays possible).
+  **10 MB per session**: the bytes sent are counted at sending in `sessionStorage['sogLab:sentBytes']` (a tab or a home-screen app session; the page's own count
+  when storage is closed); a size that would pass 10 MB is greyed with the reason. The promise is raced against a delay (120 s;
+  `localStorage['sogLab:pubTimeoutMs']` shortens it for tests): no answer → an entry "NO ANSWER … no answer after 120 s", and if the request answers later, a
+  second entry "(late answer)"; a launch guard also notes a killed tab. "Clean" lists the trial files of the branch (those it has more than the main branch),
+  **deletes the branch** (no commit) and lists them (screen and report); it also counts, read only, the `lab/essai-*` files still on the main branch (published
+  before 28 Oct 2026) and points to the purge procedure of `INTEGRATION.md`. **At the next opening**, a branch left behind (tab closed before Clean) is deleted
+  and said (screen and report). Greyed with its reason without repository and token, without trigram (the branch carries it), and when offline. The blobs of a
+  deleted branch are no longer reachable; GitHub collects them; they never enter the main branch's history, so a pilot's clone never carries them.
   **Size limits** (GitHub documentation, read on 27 Oct 2026): the frame transport writes by the git data API with the tree entry's `content` inline in UTF-8 (no
   Base64: the body is the file's size); the documentation gives **no maximum request size** for create-blob / create-tree. What it does state: reading a blob is
   supported up to 100 MB; a recursive tree read stops at 100,000 entries or 7 MB (`truncated`); the contents API (not used) takes the file in Base64 (+33 %) with no

@@ -132,7 +132,7 @@
     // écrans de service : écrans du cadre ouverts par-dessus le module courant (comme les Réglages), dessinés par un service ;
     // le cadre ne connaît que cette déclaration (frame/INTEGRATION.md § 13) : scripts chargés à la première ouverture, niveau
     // d'usage requis, préfixes lus et écrits (comme meta.reads / meta.writes), transport GitHub de l'appareil si github
-    // (jamais le jeton) ; le script s'enregistre lui-même : window.SogScreens[id] = { screen(view, ctx) }
+    // (jamais le jeton ; 'scratch' : réduit à une branche jetable lab/<trigramme>) ; le script s'enregistre lui-même : window.SogScreens[id] = { screen(view, ctx) }
     screens: [{
       id: 'datalab', // laboratoire des données (aerodb), temporaire : retiré à la livraison de l'écran Données
       scripts: ['aerodb/lab.js?v=0'],
@@ -145,7 +145,7 @@
         prefix: 'cache/lab/',
         policy: 'cache'
       }],
-      github: true
+      github: 'scratch' // la branche jetable lab/<trigramme> seulement (relecture de sécurité du 28 octobre 2026)
     }]
   };
   // module d'exemple pour les développeurs (modules/hello/, frame/INTEGRATION.md) : absent de l'appli ; il rejoint le
@@ -2429,19 +2429,28 @@
       aerodb,
       level: () => level,
       launcher: () => launcherHere,
-      // le transport GitHub de l'appareil (head, tree, commit), seulement si la déclaration le demande ; jamais le jeton
+      // le transport GitHub de l'appareil, seulement si la déclaration le demande ; jamais le jeton. github: 'scratch' : le
+      // transport réduit d'une branche jetable lab/<trigramme> (frame/store/transport_github.js, scratch : commits sous lab/ sur
+      // cette branche seulement, jamais la branche principale ; sans trigramme, null) ; github: true : le transport entier
       ...(s.github ? {
-        github: () => FD.github.config() ? FD.github() : null,
+        github: () => !FD.github.config() ? null : s.github === 'scratch' ? labBranch() ? FD.github.scratch(labBranch()) : null :
+          FD.github(),
         githubInfo: () => {
           const c = FD.github.config();
           return c ? {
             repo: c.repo,
-            branch: c.branch || 'main'
+            branch: c.branch || 'main',
+            ...(s.github === 'scratch' ? {
+              lab: labBranch()
+            } : {})
           } : null;
         }
       } : {})
     });
   }
+
+  /** Branche jetable du laboratoire : lab/<trigramme> ; null sans trigramme utilisable. */
+  const labBranch = () => /^[A-Za-z0-9_-]{1,32}$/.test(identity.trigram || '') ? `lab/${identity.trigram}` : null;
 
   // ---------------------------------------------------------------- position réelle pendant un vol démarré
   // actif tant que pilot/<tri>/current_flight.json porte started (remis à null par l'annulation de fuel ou

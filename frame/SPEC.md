@@ -168,6 +168,10 @@ The transports:
   - `commit` makes one tree on the parent's tree (content for written files, `sha: null` for removed ones; a removal
     of a file absent from the tree is skipped), one commit, then a non-forced ref update.
   - A truncated tree is an error.
+  - `FrameData.github.scratch('lab/<name>')` is the **reduced transport of the data laboratory** (`frame/aerodb/SPEC.md`
+    § 5 sexies): a disposable branch only (created from the head of the main branch, deleted by the lab's "Clean"),
+    commits under `lab/` only, the main branch read only; no generic `commit`, no token. Branch names with a slash are
+    sent segment by segment in the ref URLs.
 - **`launcher`** (`frame/store/transport_launcher.js`, workstation): the `data/` folder of the workstation is the
   repository, served by `tools/launch.py`. Every route requires the `X-SOG-Setup` header.
   - `GET /__setup/changes?since=<head>`: the head (a hash of the tree), and the tree `{ path: git blob sha }` when the

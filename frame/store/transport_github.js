@@ -14,7 +14,8 @@
   //   FrameData.github.config() / save(cfg) / clear() (réglage de l'appareil, lus et écrits en mémoire à l'instant) ;
   //   hold(cfg) : le cadre y met le réglage lu de device/keys.json (sans l'écrire) ; persist(fn) : le cadre donne la
   //   fonction qui garde le réglage (appelée par save et clear) ; legacy() : l'ancien réglage de localStorage, rendu et
-  //   effacé (reprise une seule fois).
+  //   effacé (reprise une seule fois) ; scratch('lab/<trigramme>') : le transport réduit du laboratoire des données, sur
+  //   une branche jetable (frame/aerodb/SPEC.md § 5 sexies) — jamais la branche principale, jamais hors de lab/.
   const FD = window.FrameData;
   if (!FD || FD.github) return;
   const LEGACY = 'githubData:frame'; // ancien rangement (localStorage), repris une fois par le cadre
@@ -56,10 +57,12 @@
     }
   };
 
-  function github(c = config()) {
+  /** Transport sur la branche de c ; refs : il sait aussi créer et supprimer SA branche (réservé à scratch). */
+  function github(c = config(), refs = false) {
     if (!c?.repo || !c.token) throw new Error('github transport: repository and token required');
     const api = (c.api || 'https://api.github.com').replace(/\/$/, ''),
       branch = c.branch || 'main',
+      ref = branch.split('/').map(encodeURIComponent).join('/'), // lab/ABC : chaque segment, jamais la barre
       repo = `${api}/repos/${c.repo}`;
     let refTag = '',
       refSha = '';
@@ -107,7 +110,7 @@
       kind: 'remote',
       /** Tête de la branche (sha du dernier commit). */
       async head() {
-        const r = await call(`${repo}/git/ref/heads/${encodeURIComponent(branch)}`, {
+        const r = await call(`${repo}/git/ref/heads/${ref}`, {
           etag: refTag
         });
         if (r.status === 304 && refSha) return refSha;
@@ -161,7 +164,7 @@
           }
         })).json()).sha;
         // avancée sans forcer : refusée (422) si quelqu'un a poussé entre-temps → err.conflict
-        await call(`${repo}/git/refs/heads/${encodeURIComponent(branch)}`, {
+        await call(`${repo}/git/refs/heads/${ref}`, {
           method: 'PATCH',
           ref: true,
           body: {
@@ -173,14 +176,92 @@
         refSha = commit;
         refTag = '';
         return commit;
+      },
+      ...(refs ? {
+        /** Crée la branche sur le commit sha ; false si elle existe déjà. */
+        async createBranch(sha) {
+          try {
+            await call(`${repo}/git/refs`, {
+              method: 'POST',
+              body: {
+                ref: `refs/heads/${branch}`,
+                sha
+              }
+            });
+          } catch (e) {
+            if (e.status === 422) return false;
+            throw e;
+          }
+          refSha = sha;
+          refTag = '';
+          return true;
+        },
+        /** Supprime la branche ; false si elle n'existe pas (ou plus). */
+        async deleteBranch() {
+          try {
+            await call(`${repo}/git/refs/heads/${ref}`, {
+              method: 'DELETE'
+            });
+          } catch (e) {
+            if (e.status === 404 || e.status === 422) return false;
+            throw e;
+          }
+          refSha = '';
+          refTag = '';
+          return true;
+        }
+      } : {})
+    };
+  }
+  /** Transport réduit du laboratoire des données : la branche jetable `name` (lab/<trigramme>) seulement, créée depuis la
+   *  tête de la branche principale, supprimée par « Nettoyer ». Rend { branch, base, head() (null : pas de branche),
+   *  create() (tête de la branche principale, branche créée dessus ; tête de lab si elle existe déjà), tree(commit),
+   *  baseTree() (fichiers de la branche principale, lecture seule), commit(lot, message, parent) (chemins sous lab/
+   *  seulement, sur la branche jetable), deleteBranch() } : ni commit générique, ni écriture sur la branche principale, ni
+   *  jeton. */
+  function scratch(name, c = config()) {
+    if (!/^lab\/[A-Za-z0-9_-]{1,32}$/.test(String(name || ''))) throw new Error(`github scratch: branch lab/<name> expected, got ${name}`);
+    if (!c?.repo || !c.token) throw new Error('github transport: repository and token required');
+    const base = c.branch || 'main';
+    if (name === base) throw new Error('github scratch: never the main branch');
+    const main = github(c),
+      lab = github({
+        ...c,
+        branch: name
+      }, true);
+    const head = async () => {
+      try {
+        return await lab.head();
+      } catch (e) {
+        if (e.status === 404) return null;
+        throw e;
       }
     };
+    return Object.freeze({
+      id: 'github-scratch',
+      branch: name,
+      base,
+      head,
+      async create() {
+        const sha = await main.head();
+        return await lab.createBranch(sha) ? sha : head();
+      },
+      tree: commit => lab.tree(commit),
+      baseTree: async () => main.tree(await main.head()),
+      commit(changes, message, parent) {
+        const out = changes.find(x => !/^lab\/[^/].*$/.test(String(x.path || '')) || x.path.includes('..'));
+        if (out) return Promise.reject(new Error(`github scratch: ${out.path} is outside lab/`));
+        return lab.commit(changes, message, parent);
+      },
+      deleteBranch: () => lab.deleteBranch()
+    });
   }
   github.config = config;
   github.save = save;
   github.clear = clear;
   github.hold = hold;
   github.legacy = legacy;
+  github.scratch = scratch;
   github.persist = fn => {
     sink = fn;
   };

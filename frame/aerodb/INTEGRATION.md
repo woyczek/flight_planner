@@ -186,10 +186,41 @@ than `COMPAT` would be ignored; this one is not.
 
 A frame screen drawn by aerodb (`frame/aerodb/lab.js`), not a module: nothing to mount, nothing to call. The frame (`frame/app.js` `renderDatalab`) loads it on
 demand and gives it `{ t, lang, notify, ask, data, aerodb, level, launcher, github, githubInfo }`, where `data` reads `sia/base/` (to compare with the published
-base) and writes `cache/lab/` (policy `cache`), `github()` is the device's GitHub transport (`head`, `tree`, `commit`; the token stays inside) or null, and
+base) and writes `cache/lab/` (policy `cache`), `github()` is the reduced transport of the disposable branch `lab/<trigram>`
+(`FrameData.github.scratch`: `head`, `create`, `tree`, `baseTree`, `commit` under `lab/` on that branch, `deleteBranch`; the token stays inside; never the
+main branch) or null without access or trigram, and
 `launcher()` is the survey of the launcher or null (it enables "From Downloads", the existing `GET /__setup/downloads`). The lab's declared download patterns are
 read by `tools/launch.py` `download_patterns()` from `frame/aerodb/lab_sources.js` (`downloads: '…'`); the hosts of its table are in `tools/csp_policy.py`. A
 module never reaches it. `frame/aerodb/SPEC.md` § 5 sexies says what it measures.
+
+#### Purging the trial blocks published on the main branch (before 28 Oct 2026) — on a workstation, not run by the app
+
+Until 28 October 2026 the laboratory wrote its trial blocks (`lab/essai-*.json`, 0.5 to 10 MB each) and its cleaning commits on the
+**main branch** of the data repository: "Clean" removed the files, but their blobs stay in the history and every pilot's clone
+downloads them. Removing them means rewriting that history, which only the owner does, from a workstation, once:
+
+1. **Before**: every workstation and phone has sent its pending writes (pending-writes line at zero), and nobody publishes during
+   the purge. Note the size: `git count-objects -vH` in a fresh clone. If the main branch is protected against force pushes on
+   GitHub, allow it for the time of the purge (Settings › Branches).
+2. **Rewrite** (git-filter-repo, `pip install git-filter-repo`, the recommended tool):
+   ```
+   git clone --mirror https://github.com/<owner>/<data-repo>.git data-purge.git
+   cd data-purge.git
+   git filter-repo --path-glob 'lab/essai-*' --invert-paths
+   git remote add origin https://github.com/<owner>/<data-repo>.git
+   git push --force --all origin
+   git push --force --tags origin
+   ```
+   The trial commits ("lab: essai (…)", "lab: nettoyage des essais") become empty and are dropped. Without git-filter-repo,
+   git alone does the same, more slowly: `git filter-branch --index-filter "git rm -r --cached --ignore-unmatch lab" --prune-empty
+   -- --all` in a normal clone, then the two pushes.
+3. **After**, on every workstation with a clone of the data (the launcher's data folder): `git status` must be clean, then
+   `git fetch origin` and `git reset --hard origin/main` (or a fresh clone). The phones read through the API and need nothing.
+   Delete any `lab/*` branch left on GitHub (`git push origin --delete lab/<trigram>`), put the branch protection back, and
+   check the size again. GitHub reclaims the unreachable objects on its own schedule; nothing secret is in those blobs (filler
+   only), so no support request is needed.
+
+Since 28 October 2026 the trials go to the disposable branch `lab/<trigram>` only (SPEC § 5 sexies): nothing more to purge.
 
 ## 5. Costs to know (measured, see DECISIONS.md)
 

@@ -9,19 +9,38 @@
   //      (sélecteur ; sur un poste avec lanceur, « Depuis Téléchargements » par la route existante GET /__setup/downloads) ;
   //   2. la chaîne du ZIP du SIA en trois modes mesurés à part (lab_measure.js, lab_run.js) : a fil principal comme V2
   //      (DOMParser), b Worker sans DOMParser (ZIP en mémoire), c Worker tout en flux ;
-  //   3. la publication d'un essai par le transport GitHub du cadre, un bouton par taille (0,5 / 2 / 5,3 / 10 Mo : un bloc
-  //      lab/essai-….json), chacun avec son résultat ou son erreur dans le rapport, même sans réponse (délai de 120 s), et le
-  //      nettoyage qui liste ce qu'il supprime, seulement sur les boutons ;
+  //   3. la publication d'un essai par le transport réduit du cadre, sur la branche jetable lab/<trigramme> (jamais la branche
+  //      principale : ses blobs resteraient à vie dans l'historique du dépôt des données), un bouton par taille (0,5 / 2 /
+  //      5,3 / 10 Mo : un bloc lab/essai-….json), un bloc à la fois, 10 Mo par session au plus, chacun avec son résultat ou
+  //      son erreur dans le rapport, même sans réponse (délai de 120 s) ; « Nettoyer » supprime la branche (et l'ouverture
+  //      suivante si elle est restée), et liste ce qu'il supprime ;
   //   4. le rapport (lab_report.js), un résumé de dix lignes en tête, copiable et partageable, gardé dans cache/lab/report.json
   //      (politique cache, jamais synchronisé).
   // Il n'écrit rien d'autre : rien n'entre dans la base ni dans les modules. Contexte (frame/app.js) : { t, lang, notify, ask,
-  // data (adaptateur : lit sia/base/ et écrit cache/lab/), aerodb, github() (transport ou null : le jeton reste dans le
-  // cadre), githubInfo() ({ repo, branch } ou null), launcher() (relevé du lanceur ou null), level() }.
+  // data (adaptateur : lit sia/base/ et écrit cache/lab/), aerodb, github() (transport réduit à la branche jetable, ou null :
+  // le jeton reste dans le cadre, frame/store/transport_github.js scratch), githubInfo() ({ repo, branch, lab } ou null),
+  // launcher() (relevé du lanceur ou null), level() }.
   const BASE = document.currentScript.src;
   const ROOT = new URL('../../', BASE).href;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   const REPORT = 'cache/lab/report.json';
   const PUB_SIZES = [524288, 2097152, 5560000, 10485760]; // 0,5 / 2 / 5,3 (la zone fr) / 10 Mo
+  const PUB_CAP = 10485760; // plafond d'envoi par session (onglet ou app ouverte) : 10 Mo
+  const SENT = 'sogLab:sentBytes'; // octets envoyés dans la session (sessionStorage : repart à zéro à la fermeture)
+  const sent = () => {
+    try {
+      return +sessionStorage.getItem(SENT) || 0;
+    } catch {
+      return 0;
+    }
+  };
+  const addSent = n => {
+    try {
+      sessionStorage.setItem(SENT, String(sent() + n));
+    } catch {
+      /* stockage fermé : le plafond vaut pour la page seulement (pageSent) */
+    }
+  };
   const pubMs = () => { // délai sans réponse de la publication (essais : localStorage « sogLab:pubTimeoutMs »)
     try {
       return +localStorage.getItem('sogLab:pubTimeoutMs') || 120000;
@@ -193,40 +212,77 @@
     ],
     publish: ['Publication d’un essai', 'Trial publication', 'Testveröffentlichung', 'Publicación de prueba'],
     publishHint: [
-      'Chaque bouton écrit dans le dépôt des données un bloc de remplissage de cette taille (lab/essai-….json), avec le jeton de cet appareil (le laboratoire ne le lit ni ne l’affiche), et note dans le rapport le temps ou l’erreur de l’API, même si l’API ne répond jamais (délai de {s} s). Rien n’est publié sans un bouton. « Nettoyer » liste puis supprime ces fichiers.',
-      'Each button writes a filler block of that size (lab/essai-….json) to the data repository, with this device’s token (the laboratory neither reads nor shows it), and writes the API’s time or error in the report, even if the API never answers (timeout {s} s). Nothing is published without a button. “Clean” lists then removes those files.',
-      'Jede Taste schreibt einen Füllblock dieser Größe (lab/essai-….json) ins Datenrepository, mit dem Token dieses Geräts (das Labor liest und zeigt es nicht), und vermerkt Zeit oder Fehler der API im Bericht, auch wenn die API nie antwortet (Zeitlimit {s} s). Ohne eine Taste wird nichts veröffentlicht. „Aufräumen“ listet und löscht diese Dateien.',
-      'Cada botón escribe en el repositorio de datos un bloque de relleno de ese tamaño (lab/essai-….json), con el token de este dispositivo (el laboratorio no lo lee ni lo muestra), y anota en el informe el tiempo o el error de la API, aunque la API no responda nunca (límite de {s} s). Nada se publica sin un botón. «Limpiar» lista y luego borra esos archivos.'
+      'Chaque bouton écrit un bloc de remplissage de cette taille (lab/essai-….json) sur une branche jetable du dépôt des données, {b}, créée depuis la tête de la branche principale, qui n’est jamais touchée ; avec le jeton de cet appareil (le laboratoire ne le lit ni ne l’affiche). Un bloc à la fois, 10 Mo par session au plus. Le rapport note le temps ou l’erreur de l’API, même si l’API ne répond jamais (délai de {s} s). Rien n’est publié sans un bouton. « Nettoyer » supprime la branche ; si elle reste, l’ouverture suivante du laboratoire la supprime.',
+      'Each button writes a filler block of that size (lab/essai-….json) to a disposable branch of the data repository, {b}, created from the head of the main branch, which is never touched; with this device’s token (the laboratory neither reads nor shows it). One block at a time, 10 MB per session at most. The report writes the API’s time or error, even if the API never answers (timeout {s} s). Nothing is published without a button. “Clean” deletes the branch; if it stays, the next opening of the laboratory deletes it.',
+      'Jede Taste schreibt einen Füllblock dieser Größe (lab/essai-….json) in einen Wegwerf-Zweig des Datenrepositorys, {b}, angelegt vom Stand des Hauptzweigs, der nie berührt wird; mit dem Token dieses Geräts (das Labor liest und zeigt es nicht). Ein Block nach dem anderen, höchstens 10 MB pro Sitzung. Der Bericht vermerkt Zeit oder Fehler der API, auch wenn die API nie antwortet (Zeitlimit {s} s). Ohne eine Taste wird nichts veröffentlicht. „Aufräumen“ löscht den Zweig; bleibt er, löscht ihn das nächste Öffnen des Labors.',
+      'Cada botón escribe un bloque de relleno de ese tamaño (lab/essai-….json) en una rama desechable del repositorio de datos, {b}, creada desde la cabeza de la rama principal, que nunca se toca; con el token de este dispositivo (el laboratorio no lo lee ni lo muestra). Un bloque cada vez, 10 MB por sesión como máximo. El informe anota el tiempo o el error de la API, aunque la API no responda nunca (límite de {s} s). Nada se publica sin un botón. «Limpiar» borra la rama; si queda, la siguiente apertura del laboratorio la borra.'
     ],
     pubN: ['Publier {s}', 'Publish {s}', '{s} veröffentlichen', 'Publicar {s}'],
     pubTimeout: [
-      'Sans réponse après {s} s. Le transfert n’a, à ce jour, ni réussi ni échoué : le rapport le note, et « Nettoyer » retire le fichier s’il arrive après coup.',
-      'No answer after {s} s. The transfer has neither succeeded nor failed so far: the report notes it, and “Clean” removes the file if it arrives later.',
-      'Keine Antwort nach {s} s. Die Übertragung ist bisher weder gelungen noch gescheitert: der Bericht vermerkt es, und „Aufräumen“ entfernt die Datei, falls sie später ankommt.',
-      'Sin respuesta tras {s} s. La transferencia no ha tenido éxito ni ha fallado hasta ahora: el informe lo anota, y «Limpiar» retira el archivo si llega después.'
+      'Sans réponse après {s} s. Le transfert n’a, à ce jour, ni réussi ni échoué : le rapport le note ; aucun autre bloc ne part avant sa réponse, et « Nettoyer » supprime la branche s’il arrive après coup.',
+      'No answer after {s} s. The transfer has neither succeeded nor failed so far: the report notes it; no other block leaves before its answer, and “Clean” deletes the branch if it arrives later.',
+      'Keine Antwort nach {s} s. Die Übertragung ist bisher weder gelungen noch gescheitert: der Bericht vermerkt es; kein anderer Block geht vor ihrer Antwort los, und „Aufräumen“ löscht den Zweig, falls sie später ankommt.',
+      'Sin respuesta tras {s} s. La transferencia no ha tenido éxito ni ha fallado hasta ahora: el informe lo anota; ningún otro bloque sale antes de su respuesta, y «Limpiar» borra la rama si llega después.'
     ],
     clean: ['Nettoyer', 'Clean', 'Aufräumen', 'Limpiar'],
-    repo: ['Dépôt : {r} (branche {b})', 'Repository: {r} (branch {b})', 'Repository: {r} (Zweig {b})', 'Repositorio: {r} (rama {b})'],
+    repo: ['Dépôt : {r} — essais sur la branche jetable {l} (la branche {b} n’est jamais touchée)',
+      'Repository: {r} — trials on the disposable branch {l} (the branch {b} is never touched)',
+      'Repository: {r} — Tests im Wegwerf-Zweig {l} (der Zweig {b} wird nie berührt)',
+      'Repositorio: {r} — pruebas en la rama desechable {l} (la rama {b} nunca se toca)'
+    ],
     noAccess: ['Grisé : aucun dépôt ni jeton réglés sur cet appareil (Réglages › Accès).',
       'Greyed: no repository or token set on this device (Settings › Access).',
       'Ausgegraut: auf diesem Gerät sind weder Repository noch Token eingestellt (Einstellungen › Zugang).',
       'Atenuado: ningún repositorio ni token ajustados en este dispositivo (Ajustes › Acceso).'
     ],
-    askPub: ['Écrire dans le dépôt {r} : lab/essai-….json puis un bloc de {s} ?',
-      'Write to the repository {r}: lab/essai-….json then a block of {s}?',
-      'Ins Repository {r} schreiben: lab/essai-….json und dann ein Block von {s}?',
-      '¿Escribir en el repositorio {r}: lab/essai-….json y luego un bloque de {s}?'
+    askPub: ['Écrire sur la branche jetable {l} du dépôt {r} (jamais sur {b}) un bloc lab/essai-….json de {s} ?',
+      'Write to the disposable branch {l} of the repository {r} (never to {b}) a block lab/essai-….json of {s}?',
+      'In den Wegwerf-Zweig {l} des Repositorys {r} (nie in {b}) einen Block lab/essai-….json von {s} schreiben?',
+      '¿Escribir en la rama desechable {l} del repositorio {r} (nunca en {b}) un bloque lab/essai-….json de {s}?'
     ],
     pubStep: ['Publication : {s}', 'Publishing: {s}', 'Veröffentlichung: {s}', 'Publicación: {s}'],
-    pubOk: ['Publié : {b} en {t}.', 'Published: {b} in {t}.', 'Veröffentlicht: {b} in {t}.', 'Publicado: {b} en {t}.'],
-    pubFail: ['Publication refusée : {e}', 'Publication refused: {e}', 'Veröffentlichung abgelehnt: {e}', 'Publicación rechazada: {e}'],
-    cleanOk: ['Nettoyé : {n} fichier(s) supprimé(s) : {l}.', 'Cleaned: {n} file(s) removed: {l}.',
-      'Aufgeräumt: {n} Datei(en) gelöscht: {l}.',
-      'Limpiado: {n} archivo(s) eliminado(s): {l}.'
+    pubOk: ['Publié sur la branche {l} : {b} en {t}.',
+      'Published to the branch {l}: {b} in {t}.',
+      'Im Zweig {l} veröffentlicht: {b} in {t}.',
+      'Publicado en la rama {l}: {b} en {t}.'
     ],
-    cleanNone: ['Rien à nettoyer : aucun fichier lab/essai-… dans le dépôt.',
-      'Nothing to clean: no lab/essai-… file in the repository.',
-      'Nichts aufzuräumen: keine Datei lab/essai-… im Repository.', 'Nada que limpiar: ningún archivo lab/essai-… en el repositorio.'
+    pubFail: ['Publication refusée : {e}', 'Publication refused: {e}', 'Veröffentlichung abgelehnt: {e}', 'Publicación rechazada: {e}'],
+    cleanOk: ['Nettoyé : branche {b} supprimée, avec {n} fichier(s) d’essai : {l}.',
+      'Cleaned: branch {b} deleted, with {n} trial file(s): {l}.',
+      'Aufgeräumt: Zweig {b} gelöscht, mit {n} Testdatei(en): {l}.',
+      'Limpiado: rama {b} borrada, con {n} archivo(s) de prueba: {l}.'
+    ],
+    cleanNone: ['Rien à nettoyer : pas de branche {b} dans le dépôt.',
+      'Nothing to clean: no branch {b} in the repository.',
+      'Nichts aufzuräumen: kein Zweig {b} im Repository.',
+      'Nada que limpiar: ninguna rama {b} en el repositorio.'
+    ],
+    cleanOpen: ['À l’ouverture : la branche d’essai {b} d’une séance précédente a été supprimée ({n} fichier(s)).',
+      'On opening: the trial branch {b} of an earlier session was deleted ({n} file(s)).',
+      'Beim Öffnen: der Testzweig {b} einer früheren Sitzung wurde gelöscht ({n} Datei(en)).',
+      'Al abrir: la rama de prueba {b} de una sesión anterior se ha borrado ({n} archivo(s)).'
+    ],
+    oldOnMain: [
+      '{n} ancien(s) fichier(s) d’essai sont encore sur la branche principale (publiés avant le 28 octobre) : le laboratoire n’y écrit plus ; les retirer de l’historique se fait sur le poste (frame/aerodb/INTEGRATION.md, purge des essais).',
+      '{n} old trial file(s) are still on the main branch (published before 28 October): the laboratory no longer writes there; removing them from the history is done on the workstation (frame/aerodb/INTEGRATION.md, purge of the trials).',
+      '{n} alte Testdatei(en) liegen noch im Hauptzweig (vor dem 28. Oktober veröffentlicht): das Labor schreibt dort nicht mehr; sie aus der Historie zu entfernen geschieht am Arbeitsplatz (frame/aerodb/INTEGRATION.md, Bereinigung der Tests).',
+      '{n} archivo(s) de prueba antiguo(s) siguen en la rama principal (publicados antes del 28 de octubre): el laboratorio ya no escribe allí; quitarlos del historial se hace en el puesto (frame/aerodb/INTEGRATION.md, purga de las pruebas).'
+    ],
+    noTri: ['Grisé : aucun trigramme sur cet appareil (Réglages › Identité) ; la branche d’essai porte son nom, lab/<trigramme>.',
+      'Greyed: no trigram on this device (Settings › Identity); the trial branch carries it, lab/<trigram>.',
+      'Ausgegraut: kein Kürzel auf diesem Gerät (Einstellungen › Identität); der Testzweig trägt es, lab/<Kürzel>.',
+      'Atenuado: ningún trigrama en este dispositivo (Ajustes › Identidad); la rama de prueba lo lleva, lab/<trigrama>.'
+    ],
+    pending: ['Un bloc est encore en route (sans réponse) : aucun autre ne part avant sa réponse ; « Nettoyer » reste possible.',
+      'A block is still on its way (no answer): no other leaves before its answer; “Clean” is still possible.',
+      'Ein Block ist noch unterwegs (ohne Antwort): kein anderer geht vor seiner Antwort los; „Aufräumen“ bleibt möglich.',
+      'Un bloque sigue en camino (sin respuesta): ningún otro sale antes de su respuesta; «Limpiar» sigue siendo posible.'
+    ],
+    cap: [
+      'Plafond de 10 Mo par session : {u} déjà envoyés ; les tailles qui le dépasseraient sont grisées jusqu’à la fermeture de l’onglet ou de l’app.',
+      'Cap of 10 MB per session: {u} already sent; the sizes that would exceed it are greyed until the tab or the app is closed.',
+      'Obergrenze 10 MB pro Sitzung: {u} bereits gesendet; die Größen, die sie überschreiten würden, sind ausgegraut, bis der Tab oder die App geschlossen wird.',
+      'Límite de 10 MB por sesión: {u} ya enviados; los tamaños que lo superarían quedan atenuados hasta cerrar la pestaña o la app.'
     ],
     cleanFail: ['Nettoyage impossible : {e}', 'Cleaning failed: {e}', 'Aufräumen fehlgeschlagen: {e}', 'Limpieza imposible: {e}'],
     report: ['Rapport', 'Report', 'Bericht', 'Informe'],
@@ -308,8 +364,11 @@
       M = window.AeroLabMeasure,
       R = window.AeroLabReport;
     const cyc = S.cycleOf();
+    const labName = () => (ctx.githubInfo && ctx.githubInfo() || {}).lab || 'lab/<…>'; // branche jetable des essais
     let cycle = cyc.id,
       busy = null, // { ctl: AbortController } pendant une mesure
+      inFlight = null, // la publication encore en route (sans réponse) : aucun autre bloc ne part avant elle
+      pageSent = 0, // octets envoyés depuis l'ouverture (le plafond, si sessionStorage est fermé)
       sia = null, // File du ZIP du SIA choisi
       entries = [],
       dev = M.device(),
@@ -393,7 +452,7 @@
         <button type="button" data-act="mode" data-mode="b">${esc(t(T.modeB))}</button>
         <button type="button" data-act="mode" data-mode="a">${esc(t(T.modeA))}</button></div>
         <p class="f-muted lab-res" data-live aria-live="polite"></p></div>
-      <div class="f-card" data-lab="publish"><h2>${esc(t(T.publish))}</h2><p class="f-muted">${esc(t(T.publishHint, { s: pubMs() / 1000 }))}</p>
+      <div class="f-card" data-lab="publish"><h2>${esc(t(T.publish))}</h2><p class="f-muted">${esc(t(T.publishHint, { s: pubMs() / 1000, b: labName() }))}</p>
         <p class="f-muted" data-repo></p>
         <div class="f-row" data-pubs>${PUB_SIZES.map(z => `<button type="button" data-act="pub" data-size="${z}">${esc(t(T.pubN, { s: mbs(z) }))}</button>`).join('')}
         <button type="button" data-act="clean">${esc(t(T.clean))}</button></div>
@@ -440,19 +499,28 @@
       paintReport();
       save();
     };
-    // ---- boutons : une mesure à la fois ; la publication est grisée avec sa raison
+    // ---- boutons : une mesure à la fois ; la publication est grisée avec sa raison (accès, trigramme, réseau, un bloc encore
+    // en route, plafond de la session pour les tailles qui le dépasseraient)
     const access = () => {
       const info = ctx.githubInfo ? ctx.githubInfo() : null;
-      return info && ctx.github && ctx.github() ? info : null;
+      return info && info.lab ? info : null;
     };
-    const reason = () => !access() ? t(T.noAccess) : !navigator.onLine ? t(T.offline) : '';
+    const reason = () => {
+      const info = ctx.githubInfo ? ctx.githubInfo() : null;
+      return !info ? t(T.noAccess) : !info.lab ? t(T.noTri) : !navigator.onLine ? t(T.offline) : '';
+    };
+    const capOf = z => Math.max(sent(), pageSent) + z > PUB_CAP;
 
     function paintPublish() {
-      const info = access();
-      setText($('[data-why]'), reason());
+      const info = access(),
+        why = reason();
+      setText($('[data-why]'), why || (inFlight ? t(T.pending) : PUB_SIZES.some(capOf) ? t(T.cap, {
+        u: mbs(Math.max(sent(), pageSent))
+      }) : ''));
       setText($('[data-repo]'), info ? t(T.repo, {
         r: info.repo,
-        b: info.branch
+        b: info.branch,
+        l: info.lab
       }) : '');
     }
 
@@ -460,7 +528,8 @@
       for (const b of $$('button[data-act]')) {
         const a = b.dataset.act;
         if (!['test', 'login', 'file', 'downloads', 'share', 'mode', 'pub', 'clean'].includes(a)) continue;
-        const dis = !!busy || a === 'mode' && !sia || (a === 'pub' || a === 'clean') && !!reason();
+        const held = a === 'pub' && (!!inFlight || capOf(+b.dataset.size)),
+          dis = !!busy || a === 'mode' && !sia || (a === 'pub' || a === 'clean') && !!reason() || held;
         if (b.disabled !== dis) b.disabled = dis;
         if (dis && !busy && (a === 'pub' || a === 'clean')) b.setAttribute('aria-disabled', 'true');
         else if (b.hasAttribute('aria-disabled')) b.removeAttribute('aria-disabled');
@@ -879,15 +948,17 @@
       }
     }
 
-    // ---- publication d'un essai : un bouton par taille, un bloc de remplissage par bouton ; le résultat ou l'erreur va dans le
-    // rapport, y compris quand la promesse ne revient jamais (délai : « sans réponse après 120 s », puis la réponse tardive
-    // si elle vient) ; le garde de lancement note l'onglet tué
+    // ---- publication d'un essai : un bouton par taille, un bloc de remplissage par bouton, sur la branche jetable ; le résultat
+    // ou l'erreur va dans le rapport, y compris quand la promesse ne revient jamais (délai : « sans réponse après 120 s », puis
+    // la réponse tardive si elle vient ; aucun autre bloc ne part avant elle) ; le garde de lancement note l'onglet tué
     async function publishTrial(size) {
       const info = access(),
         tr = info && ctx.github();
-      if (!tr) return;
+      if (!tr || inFlight || capOf(size)) return;
       if (!await ctx.ask(t(T.askPub, {
           r: info.repo,
+          b: info.branch,
+          l: tr.branch,
           s: mbs(size)
         }))) return;
       setBusy({
@@ -897,17 +968,32 @@
         ms = pubMs(),
         stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19),
         path = `lab/essai-${stamp}-bloc-${Math.round(size / 1024)}k.json`,
-        label = `block of ${R.fmt.mbf(size)}`;
+        label = `block of ${R.fmt.mbf(size)}`,
+        where = {
+          repo: info.repo,
+          branch: tr.branch,
+          base: tr.base,
+          paths: [path]
+        };
       M.guard.start(`publication of a ${R.fmt.mb(size)} block`);
       try {
         setText(out, t(T.pubStep, {
-          s: `${path} (${mbs(size)})`
+          s: `${tr.branch} : ${path} (${mbs(size)})`
         }));
         const text = M.filler(size),
-          pending = M.publish(tr, [{
-            path,
-            text
-          }], `lab: essai (${mbs(size)})`);
+          bytes = new TextEncoder().encode(text).length;
+        // compté dès l'envoi (un bloc sans réponse a pu arriver) : le plafond vaut pour ce qui part, pas pour ce qui réussit
+        addSent(bytes);
+        pageSent += bytes;
+        const pending = M.publish(tr, [{
+          path,
+          text
+        }], `lab: essai (${mbs(size)})`);
+        inFlight = pending;
+        pending.finally(() => {
+          if (inFlight === pending) inFlight = null;
+          paintButtons();
+        });
         M.guard.step('waiting for the GitHub API');
         let timer;
         const r = await Promise.race([pending, new Promise(res => {
@@ -917,9 +1003,10 @@
         if (r) {
           add(R.ofPublish(label, {
             ...r,
-            paths: [path]
+            ...where
           }, size));
           setText(out, r.ok ? t(T.pubOk, {
+            l: tr.branch,
             b: mb(r.bytes),
             t: secs(r.ms)
           }) : t(T.pubFail, {
@@ -931,10 +1018,10 @@
             ok: false,
             timedOut: true,
             files: 1,
-            bytes: new TextEncoder().encode(text).length,
+            bytes,
             ms,
             error: `no answer after ${secsText} s`,
-            paths: [path]
+            ...where
           }, size));
           setText(out, t(T.pubTimeout, {
             s: secsText
@@ -943,7 +1030,7 @@
           pending.then(late => add(R.ofPublish(`${label} (late answer)`, {
             ...late,
             late: true,
-            paths: [path]
+            ...where
           }, size)));
         }
       } finally {
@@ -951,21 +1038,31 @@
         setBusy(null);
       }
     }
-    async function cleanTrial() {
-      const tr = ctx.github();
+    /** « Nettoyer » (auto : à l'ouverture, quand la branche d'une séance précédente est restée) : la branche jetable
+     *  supprimée, ce qu'elle portait listé ; les anciens essais de la branche principale comptés, jamais touchés. */
+    async function cleanTrial(auto = false) {
+      const tr = access() && ctx.github();
       if (!tr) return;
       setBusy({
         ctl: new AbortController()
       });
       try {
         const r = await M.clean(tr);
-        add(R.ofClean(r));
-        setText($('[data-pubres]'), !r.ok ? t(T.cleanFail, {
+        if (auto && r.ok && !r.deleted) return; // rien à dire : pas de branche
+        add(R.ofClean(r, auto));
+        const line = !r.ok ? t(T.cleanFail, {
           e: r.error
-        }) : r.listed ? t(T.cleanOk, {
+        }) : auto ? t(T.cleanOpen, {
+          b: r.branch,
+          n: r.listed
+        }) : r.deleted ? t(T.cleanOk, {
+          b: r.branch,
           n: r.listed,
-          l: r.paths.join(', ')
-        }) : t(T.cleanNone));
+          l: r.paths.join(', ') || '—'
+        }) : t(T.cleanNone, {
+          b: r.branch
+        });
+        setText($('[data-pubres]'), r.onMain && r.onMain.length ? `${line} ${t(T.oldOnMain, { n: r.onMain.length })}` : line);
       } finally {
         setBusy(null);
       }
@@ -1038,6 +1135,12 @@
     window.addEventListener('online', paintButtons);
     window.addEventListener('offline', paintButtons);
     paintReport();
+    // la branche d'essai d'une séance précédente, restée (onglet fermé avant « Nettoyer ») : supprimée à l'ouverture, dit à
+    // l'écran et dans le rapport ; une lecture de sa tête seulement quand elle n'existe pas
+    if (access() && navigator.onLine) {
+      const tr = ctx.github();
+      if (tr) tr.head().then(h => h && !busy && cleanTrial(true), () => {});
+    }
     // le test et la dérivation de l'adresse d'un fichier donné sont en test sans passer par le sélecteur
     box.__lab = {
       fromFile,

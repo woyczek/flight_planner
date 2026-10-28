@@ -31,6 +31,7 @@ Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A2
 """
 import json
 import re
+import urllib.parse
 
 from lib import MAP_JS, Fail, Skip, case, forget, norm, tx
 
@@ -1138,44 +1139,72 @@ def a22(c):
     c.shot(f'A22_{c.width}_{c.lang}.png')
 
 
+OLD_TRIAL = 'lab/essai-2026-10-20T09-00-00-bloc-2048k.json'      # published on the main branch before 28 Oct 2026
+
+
 def fake_api(context):
-    """A GitHub API for `sog/data` that keeps the files written by trees (inline content) and answers the tree listing; every POST
-    of a tree is recorded.  The page reaches it as it reaches the real one (CORS answered)."""
-    state = {'posts': [], 'files': {}, 'head': 'a' * 40, 'calls': [], 'hang': False, 'held': []}
+    """A GitHub API for `sog/data` with branches: refs, commits and trees kept by the fake (content-addressed by a counter),
+    the main branch at `c0` with one published file and one OLD trial file (`OLD_TRIAL`, written before the disposable
+    branch); refs created (POST git/refs), moved (PATCH) and deleted (DELETE) as GitHub does; every write recorded.  The page
+    reaches it as it reaches the real one (CORS answered)."""
+    state = {'refs': {'main': 'c0'}, 'commits': {'c0': 't0'}, 'trees': {'t0': {'sia/base/fr/2610/aeroindex.json': 's1', OLD_TRIAL: 's2'}},
+             'n': 0, 'posts': [], 'calls': [], 'hang': False, 'held': []}
     hdr = {'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*'}
 
     def serve(route):
         req = route.request
         u, m = req.url.split('?')[0], req.method
-        state['calls'].append((m, u.split('/repos/' + REPO)[1]))
-        ok = lambda body, st=200: route.fulfill(status=st, content_type='application/json', headers=hdr, body=json.dumps(body))
+        path = urllib.parse.unquote(u.split('/repos/' + REPO)[1])
+        state['calls'].append((m, path))
+        ok = lambda body, st=200: route.fulfill(status=st, content_type='application/json', headers=hdr, body='' if st == 204 else json.dumps(body))
         if m == 'OPTIONS':
             return route.fulfill(status=204, headers=hdr)
-        if m == 'GET' and u.endswith('/git/ref/heads/main'):
-            return ok({'object': {'sha': state['head']}})
-        if m == 'GET' and '/git/commits/' in u:
-            return ok({'tree': {'sha': 't' * 40}})
-        if m == 'GET' and '/git/trees/' in u:
-            return ok({'truncated': False, 'tree': [{'path': p, 'type': 'blob', 'sha': f'{i:040x}'} for i, p in enumerate(state['files'], 1)]})
-        if m == 'POST' and u.endswith('/git/trees') and state['hang']:
+        ref = re.match(r'^/git/refs?/heads/(.+)$', path)
+        name = ref and ref.group(1)
+        if m == 'GET' and ref:
+            return ok({'object': {'sha': state['refs'][name]}}) if name in state['refs'] else ok({'message': 'Not Found'}, 404)
+        if m == 'POST' and path == '/git/refs':
+            body = json.loads(req.post_data)
+            n = body['ref'].replace('refs/heads/', '')
+            if n in state['refs']:
+                return ok({'message': 'Reference already exists'}, 422)
+            state['refs'][n] = body['sha']
+            return ok({'ref': body['ref']}, 201)
+        if m == 'DELETE' and ref:
+            if state['refs'].pop(name, None) is None:
+                return ok({'message': 'Reference does not exist'}, 422)
+            return ok(None, 204)
+        if m == 'PATCH' and ref:
+            state['refs'][name] = json.loads(req.post_data)['sha']
+            return ok({'object': {'sha': state['refs'][name]}})
+        if m == 'GET' and path.startswith('/git/commits/'):
+            return ok({'tree': {'sha': state['commits'][path.rsplit('/', 1)[1]]}})
+        if m == 'GET' and path.startswith('/git/trees/'):
+            t = state['trees'].get(path.rsplit('/', 1)[1], {})
+            return ok({'truncated': False, 'tree': [{'path': p, 'type': 'blob', 'sha': s} for p, s in t.items()]})
+        if m == 'POST' and path == '/git/trees' and state['hang']:
             state['held'].append(route)      # the API never answers (the request stays open): released later by the test
             return
-        if m == 'POST' and u.endswith('/git/trees'):
+        if m == 'POST' and path == '/git/trees':
             body = json.loads(req.post_data)
             state['posts'].append(body)
-            for t in body['tree']:
-                if 'sha' in t and t['sha'] is None:      # a deletion (sha: null); a file carries its content inline
-                    state['files'].pop(t['path'], None)
+            state['n'] += 1
+            t = dict(state['trees'][body['base_tree']])
+            for e in body['tree']:
+                if 'sha' in e and e['sha'] is None:      # a deletion (sha: null); a file carries its content inline
+                    t.pop(e['path'], None)
                 else:
-                    state['files'][t['path']] = t['content']
-            return ok({'sha': 'b' * 40}, 201)
-        if m == 'POST' and u.endswith('/git/commits'):
-            state['head'] = str(len(state['posts'])).rjust(40, 'c')
-            return ok({'sha': state['head']}, 201)
-        if m == 'PATCH' and '/git/refs/heads/main' in u:
-            return ok({'object': {'sha': state['head']}})
+                    t[e['path']] = f"b{state['n']}"
+            state['trees'][f"t{state['n']}"] = t
+            return ok({'sha': f"t{state['n']}"}, 201)
+        if m == 'POST' and path == '/git/commits':
+            state['n'] += 1
+            state['commits'][f"c{state['n']}"] = json.loads(req.post_data)['tree']
+            return ok({'sha': f"c{state['n']}"}, 201)
         return ok({'message': 'Not Found'}, 404)
     state['serve'] = serve
+    state['files'] = lambda b='lab/ABC': dict(state['trees'][state['commits'][state['refs'][b]]]) if b in state['refs'] else None
+    state['writes'] = lambda: [(m, p) for m, p in state['calls'] if m not in ('GET', 'OPTIONS')]
     context.route(re.compile(r'^https://api\.github\.com/repos/%s/' % REPO), serve)
     return state
 
@@ -1186,8 +1215,8 @@ def size_text(lang, mb):
     return f"{n if lang != 'en' else n.replace(',', '.')} {'Mo' if lang == 'fr' else 'MB'}"
 
 
-@case('A23', 'Data laboratory: four publication buttons, greyed with their reason, writing only on the button, silence written in the report', 'A', designs=('standard',), night=False, langs4=True,
-      rule='"Rien n\'est publié sans le bouton"; one button per size (0.5 / 2 / 5.3 / 10 MB), each with its result or its error in the report, even without an answer after 120 s; "Clean" lists what it removes; the token stays in the data layer')
+@case('A23', 'Data laboratory: trial publication on a disposable branch, one block at a time, 10 MB per session, greyed with its reason, silence written in the report', 'A', designs=('standard',), night=False, langs4=True,
+      rule='"Rien n\'est publié sans le bouton"; trials on lab/<trigram> only, never the main branch (blobs would stay in its history: audit of 28 Oct 2026); one button per size (0.5 / 2 / 5.3 / 10 MB), one block at a time, 10 MB per session; "Clean" deletes the branch, the next opening too; each result or error in the report, even without an answer after 120 s; the token stays in the data layer')
 def a23(c):
     # no repository, no token: greyed, with the reason, and nothing is called
     state = fake_api(c.context)
@@ -1202,82 +1231,123 @@ def a23(c):
     c.eq(state['calls'], [], 'the API is not called', what='calls without access')
     c.ge(c.box('[data-act=pub]')['h'], 43.5, 'touch target', what='publish button height')
     c.shot(f'A23_greyed_{c.width}_{c.lang}.png')
-    # with an access: active, a repository line, still nothing sent
+    # with an access: active, the repository and the disposable branch named, still nothing written
     c.context.add_init_script(GITHUB_SET)
     c.page.reload(wait_until='load')
     c.until("!!document.querySelector('[data-screen=datalab] li[data-src=cifp]')", timeout=15000, what='reopened with an access')
     c.until("![...document.querySelectorAll('[data-act=pub]')].some(b => b.disabled)", what='the buttons come alive with an access')
-    c.ok(REPO in c.text('[data-repo]'), c.text('[data-repo]'), 'the repository is named (never the token)')
+    c.ok(REPO in c.text('[data-repo]') and 'lab/ABC' in c.text('[data-repo]'), c.text('[data-repo]'), 'the repository and the disposable branch lab/<trigram> are named (never the token)')
     c.eq(c.text('[data-why]'), '', 'no reason when it can', what='reason')
-    c.ok('120 s' in c.text('[data-lab=publish] p.f-muted'), c.text('[data-lab=publish] p.f-muted'), 'the hint states the delay without an answer: 120 s')
-    c.ok(state['posts'] == [] and not any(m != 'GET' for m, _ in state['calls']), f"{state['calls']}", 'nothing is written by opening the laboratory')
+    c.ok('120 s' in c.text('[data-lab=publish] p.f-muted') and 'lab/ABC' in c.text('[data-lab=publish] p.f-muted'), c.text('[data-lab=publish] p.f-muted'), 'the hint states the delay without an answer (120 s) and the branch')
+    c.wait(800)
+    c.eq(state['writes'](), [], 'nothing is written by opening the laboratory (no trial branch left)', what='writes at opening')
     btn = lambda z: f'[data-act=pub][data-size="{z}"]'
-    # asked first, No writes nothing
+    # asked first (the branch and "never main" in the question), No writes nothing
     c.tap(btn(2097152))
     c.until("!!document.querySelector('.f-modal [data-ok]')", what='the writing is asked to be confirmed')
-    c.ok(REPO in c.text('.f-modal'), c.text('.f-modal'), 'the question names the repository')
+    c.ok(REPO in c.text('.f-modal') and 'lab/ABC' in c.text('.f-modal') and 'main' in c.text('.f-modal'), c.text('.f-modal'), 'the question names the repository, the disposable branch and the main branch it never writes')
     c.tap('.f-modal [data-no]')
     c.wait(300)
-    c.eq(state['posts'], [], 'No writes nothing', what='posts after a refusal')
-    # each button: one block of its size, one tree sent, its own entry in the report
-    for i, (z, m) in enumerate(sizes, 1):
+    c.eq(state['writes'](), [], 'No writes nothing', what='writes after a refusal')
+
+    def publish(z, m, n):
         c.tap(btn(z))
         c.until("!!document.querySelector('.f-modal [data-ok]')", what='asked')
         c.tap('.f-modal [data-ok]')
-        c.until("(document.querySelector('[data-report]').textContent.match(/\\] publish /g) || []).length === %d" % i, timeout=40000, what=f'the {m} MB publication is in the report')
+        c.until("(document.querySelector('[data-report]').textContent.match(/\\] publish /g) || []).length === %d" % n, timeout=40000, what=f'the {m} MB publication is in the report')
+    # three sizes (7.8 MB): one tree each, on lab/ABC created from the head of main, never main
+    for i, (z, m) in enumerate(sizes[:3], 1):
+        publish(z, m, i)
         c.eq(len(state['posts']), i, 'one tree per button', what='posts')
         tree = state['posts'][-1]['tree']
         c.ok(len(tree) == 1 and re.fullmatch(r'lab/essai-[\dT-]+-bloc-%dk\.json' % round(z / 1024), tree[0]['path']), f"{tree[0]['path']}", f'a block file under lab/essai-… named by its size ({m} MB)')
         n = len(tree[0]['content'].encode('utf-8'))
         c.ok(z - 2000 <= n <= z + 2000, f'{n} bytes', f'the block is {m} MB, as the button says')
         c.ok('"lab-filler"' in tree[0]['content'][:80] and 'ghp_' not in tree[0]['content'][:200], tree[0]['content'][:80], 'filler, no data, no token')
-    c.ok(all(not t['path'].startswith(('sia/', 'proc/', 'AircraftDB/')) for p in state['posts'] for t in p['tree']), 'paths', 'nothing outside lab/')
+    w = state['writes']()
+    c.eq([x for x in w if x[0] == 'POST' and x[1] == '/git/refs'], [('POST', '/git/refs')], 'the branch is created once, at the first block', what='branch creations')
+    c.eq(sorted({p for m, p in w if m == 'PATCH'}), ['/git/refs/heads/lab/ABC'], 'only lab/ABC moves', what='refs moved')
+    c.eq(state['refs']['main'], 'c0', 'the main branch never moves', what='main')
+    c.ok(all(t['path'].startswith('lab/') for p in state['posts'] for t in p['tree']), 'paths', 'nothing outside lab/')
+    on_lab = [x for x in state['files']() if x.startswith('lab/essai-') and x != OLD_TRIAL]      # in the tree's order, as the page lists them
+    c.eq(len(on_lab), 3, 'the three blocks are on lab/ABC', what='trial files on the branch')
     rep = c.text('[data-report]')
-    for _, m in sizes:
+    for _, m in sizes[:3]:
         c.ok(re.search(r'publish block of %.1f MB\n\s+1 file\(s\), %.1f MB · OK in' % (m, m), rep), rep[-900:], f'the report has the {m} MB block with size and time')
+    c.ok(re.search(r'written to: sog/data, branch lab/ABC \(created from the head of main\), commit \w+; main not touched', rep), rep[-900:], 'the report says what was written and where: the branch, created from main, main untouched')
     c.ok('ghp_test' not in c.js('document.documentElement.innerHTML') and 'ghp_test' not in rep, 'the token appears on the page', 'the token is never shown')
     head = rep.split('== summary ==\n')[1].split('\n\n== device ==')[0]
-    c.ok(re.search(r'publication passed: 0\.5 MB in .*, 2\.0 MB in .*, 5\.3 MB in .*, 10\.0 MB in ', head) and 'not tried' not in head and 'publication failed' not in head, head, 'the summary lists the four sizes that passed')
+    c.ok(re.search(r'publication passed: 0\.5 MB in .*, 2\.0 MB in .*, 5\.3 MB in ', head) and 'publication not tried: 10.0 MB' in head, head, 'the summary lists the three sizes that passed, 10 MB not tried')
     c.ok('== github api limits' in rep and '100 MB' in rep and 'no maximum request size is documented' in rep, rep[rep.index('== github api'):][:500], 'the report writes the limits found in GitHub\'s documentation')
-    # the API never answers: after the delay, "no answer after 1.5 s" is written (report and screen), the screen is usable again
+    # 10 MB per session: 7.8 MB sent, the sizes that would pass it are greyed with the reason
+    c.eq(c.js("[...document.querySelectorAll('[data-act=pub]')].map(b => b.disabled)"), [False, False, True, True], 'the sizes above what is left of the 10 MB are greyed', what='buttons at 7.8 MB sent')
+    c.ok(norm(tx(LAB, 'cap', c.lang).split('{u}')[0]) in norm(c.text('[data-why]')), c.text('[data-why]'), 'the cap of the session is the reason, in the language of the run')
+    # clean: the branch deleted (one DELETE, no commit), its files listed; the old trial file of main counted, not touched
+    nposts, before = len(state['posts']), on_lab
+    c.tap('[data-act=clean]')
+    c.until("(document.querySelector('[data-report]').textContent.match(/\\] clean /g) || []).length === 1", timeout=15000, what='the cleaning is in the report')
+    c.eq(len(state['posts']), nposts, 'the cleaning sends no commit', what='trees sent')
+    c.eq(state['writes']()[-1], ('DELETE', '/git/refs/heads/lab/ABC'), 'the cleaning deletes the branch', what='last write')
+    c.ok('lab/ABC' not in state['refs'] and state['refs']['main'] == 'c0' and OLD_TRIAL in state['files']('main'), f"{state['refs']}", 'the branch is gone, main untouched')
+    old = tx(LAB, 'oldOnMain', c.lang).replace('{n}', '1')
+    c.eq(norm(c.text('[data-pubres]')), norm(tx(LAB, 'cleanOk', c.lang).replace('{b}', 'lab/ABC').replace('{n}', '3').replace('{l}', ', '.join(before)) + ' ' + old), 'the line lists the files of the branch and counts the old trial file of main', what='clean line')
+    rep = c.text('[data-report]')
+    c.ok(('removed: ' + ', '.join(before)) in rep and 'branch lab/ABC deleted' in rep and OLD_TRIAL in rep and 'INTEGRATION.md' in rep, rep[-900:], 'the report lists them, and the old file with the purge procedure')
+    c.tap('[data-act=clean]')
+    c.until("/Nothing|Rien|Nichts|Nada/.test(document.querySelector('[data-pubres]').textContent)", what='a second cleaning finds nothing')
+    c.eq(norm(c.text('[data-pubres]')), norm(tx(LAB, 'cleanNone', c.lang).replace('{b}', 'lab/ABC') + ' ' + old), 'and says so', what='nothing to clean')
+    # the report is kept before each reload (a reload during its write would lose the entry)
+    kept = lambda kind, n: c.until_doc('cache/lab/report.json', lambda d: sum(1 for e in d['entries'] if e.get('kind') == kind) >= n, what=f'{n} {kind} entries kept on the device')
+    # a new session (sessionStorage cleared): 10 MB passes; the branch left behind is deleted at the next opening, and said
+    kept('clean', 2)
+    c.js("sessionStorage.clear()")
+    c.page.reload(wait_until='load')
+    c.until("!!document.querySelector('[data-screen=datalab] li[data-src=cifp]')", timeout=15000, what='reopened in a new session')
+    c.until("(b => !!b && !b.disabled)(document.querySelector('[data-act=pub][data-size=\"10485760\"]'))", timeout=15000, what='a new session can send 10 MB')
+    publish(10485760, 10, 4)
+    c.ok('lab/ABC' in state['refs'], f"{state['refs']}", 'the 10 MB block made the branch again')
+    kept('publish', 4)
+    c.page.reload(wait_until='load')
+    c.until("/delete the trial branch left by an earlier session \\(on opening\\)/.test((document.querySelector('[data-report]') || {}).textContent || '')", timeout=15000, what='the branch left behind is cleaned at the opening')
+    c.ok('lab/ABC' not in state['refs'], f"{state['refs']}", 'deleted at the opening')
+    c.eq(norm(c.text('[data-pubres]')), norm(tx(LAB, 'cleanOpen', c.lang).replace('{b}', 'lab/ABC').replace('{n}', '1') + ' ' + old), 'the screen says it, in the language of the run', what='opening line')
+    c.ok('delete the trial branch left by an earlier session (on opening)' in c.text('[data-report]'), c.text('[data-report]')[-700:], 'and the report')
+    # the API never answers: after the delay, "no answer after 1.5 s"; no other block leaves before the answer; Clean stays
+    kept('clean', 3)
+    c.js("sessionStorage.clear()")
+    c.page.reload(wait_until='load')
+    c.until("(b => !!b && !b.disabled)(document.querySelector('[data-act=pub]'))", timeout=15000, what='reopened')
     state['hang'] = True
     c.js("localStorage.setItem('sogLab:pubTimeoutMs', '1500')")      # the 120 s of the screen, shortened for the test (read at each press)
-    c.tap(btn(10485760))
-    c.until("!!document.querySelector('.f-modal [data-ok]')", what='asked')
-    c.tap('.f-modal [data-ok]')
-    c.until("(document.querySelector('[data-report]').textContent.match(/\\] publish /g) || []).length === 5", timeout=20000, what='the silence is written in the report')
+    publish(524288, 0.5, 5)
     rep = c.text('[data-report]')
-    c.ok(re.search(r'publish block of 10\.0 MB\n\s+1 file\(s\), 10\.0 MB · NO ANSWER in 1\.50 s', rep) and 'error: no answer after 1.5 s' in rep, rep[-600:], 'the report says NO ANSWER and the delay')
+    c.ok(re.search(r'publish block of 0\.5 MB\n\s+1 file\(s\), 0\.5 MB · NO ANSWER in 1\.50 s', rep) and 'error: no answer after 1.5 s' in rep, rep[-600:], 'the report says NO ANSWER and the delay')
     c.eq(norm(c.text('[data-pubres]')), norm(tx(LAB, 'pubTimeout', c.lang).replace('{s}', '1.5')), 'the screen says it too, in the language of the run', what='silence line')
-    c.ok(re.search(r'publication failed: 10\.0 MB \(no answer after 1\.5 s\)', rep.split('== device ==')[0]) and re.search(r'publication passed: 0\.5 MB in .*, 2\.0 MB in .*, 5\.3 MB in', rep.split('== device ==')[0]), rep[:900], 'the summary moves it from passed to failed')
-    c.ok(not c.js("document.querySelector('[data-act=pub]').disabled"), 'busy', 'the buttons are usable again after the silence')
-    # the answer finally comes: the late result is written too (the write may have succeeded in spite of the silence)
+    c.ok(re.search(r'publication failed: 0\.5 MB \(no answer after 1\.5 s\)', rep.split('== device ==')[0]), rep[:900], 'the summary moves it to failed')
+    c.eq(c.js("[...document.querySelectorAll('[data-act=pub]')].map(b => b.disabled)"), [True] * 4, 'one block at a time: no other leaves before the answer', what='buttons while a block is on its way')
+    c.eq(norm(c.text('[data-why]')), norm(tx(LAB, 'pending', c.lang)), 'and says why', what='reason while a block is on its way')
+    c.ok(not c.js("document.querySelector('[data-act=clean]').disabled"), 'clean greyed', 'Clean stays possible')
+    # the answer finally comes: the late result is written too, the buttons come back
     state['hang'] = False
     for route in state['held']:
         state['serve'](route)
-    c.until("/\\] publish block of 10\\.0 MB \\(late answer\\)/.test(document.querySelector('[data-report]').textContent)", timeout=20000, what='the late answer is written')
+    c.until("/\\] publish block of 0\\.5 MB \\(late answer\\)/.test(document.querySelector('[data-report]').textContent)", timeout=20000, what='the late answer is written')
     rep = c.text('[data-report]')
-    c.ok(re.search(r'publication passed: .*10\.0 MB in .* \(late answer\)', rep.split('== device ==')[0]), rep[:900], 'the summary names the late answer')
-    # clean: lists what it removes (screen and report), in one commit
-    before = list(state['files'])
-    nposts = len(state['posts'])
-    c.tap('[data-act=clean]')
-    c.until("(document.querySelector('[data-report]').textContent.match(/\\] clean /g) || []).length === 1", timeout=15000, what='the cleaning is in the report')
-    c.eq(len(state['posts']), nposts + 1, 'the cleaning sends one commit', what='trees sent')
-    c.eq(sorted(t['path'] for t in state['posts'][-1]['tree']), sorted(before), 'the cleaning removes every trial file', what='deleted paths')
-    c.ok(all(t.get('sha') is None for t in state['posts'][-1]['tree']), f"{state['posts'][-1]['tree']}", 'as deletions')
-    c.eq(state['files'], {}, 'nothing is left in the repository', what='files')
-    c.eq(norm(c.text('[data-pubres]')), norm(tx(LAB, 'cleanOk', c.lang).replace('{n}', str(len(before))).replace('{l}', ', '.join(before))), 'the line lists the files it removed', what='clean line')
-    c.ok(('removed: ' + ', '.join(before)) in c.text('[data-report]'), c.text('[data-report]')[-700:], 'and the report lists them too')
-    c.tap('[data-act=clean]')
-    c.until("/Nothing|Rien|Nichts|Nada/.test(document.querySelector('[data-pubres]').textContent)", what='a second cleaning finds nothing')
-    c.eq(norm(c.text('[data-pubres]')), norm(tx(LAB, 'cleanNone', c.lang)), 'and says so', what='nothing to clean')
+    c.ok(re.search(r'publication passed: 0\.5 MB in .* \(late answer\)', rep.split('== device ==')[0]), rep[:900], 'the summary names the late answer')
+    c.until("!document.querySelector('[data-act=pub]').disabled", what='the buttons are usable again after the answer')
+    c.eq(state['refs']['main'], 'c0', 'the main branch never moved', what='main at the end')
+    c.ok(all(not p.endswith('/heads/main') for m, p in state['writes']()), f"{state['writes']()}", 'no write ever on the main branch')
     # offline: greyed with its reason
     c.context.set_offline(True)
     c.page.evaluate("window.dispatchEvent(new Event('offline'))")
     c.until("document.querySelector('[data-act=pub]').disabled", what='offline greys the publication')
     c.eq(norm(c.text('[data-why]')), norm(tx(LAB, 'offline', c.lang, after='csp:')), 'and says offline', what='reason offline')
     c.context.set_offline(False)
+    # no trigram: no branch, so no publication, with the reason
+    forget(c.page, ['device/identity.json'], c.base)
+    lab_open(c, trigram='')
+    c.until("document.querySelector('[data-act=pub]').disabled", what='no trigram greys the publication')
+    c.eq(norm(c.text('[data-why]')), norm(tx(LAB, 'noTri', c.lang)), 'the reason names the trigram, in the language of the run', what='reason without a trigram')
 
 
 @case('A24', 'Data laboratory: with a launcher, "From Downloads" takes the newest SIA cycle by the existing route', 'A', designs=('standard',), night=False, langs4=True,

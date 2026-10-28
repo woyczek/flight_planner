@@ -78,6 +78,12 @@ def k7(c):
     pats = launch.download_patterns()
     for want in ('export_xml_bd_sia_*.zip', 'CIFP_*.zip', 'EG_*_DS_*_XML.zip'):
         c.ok(want in pats, f'{sorted(pats)}', f'the launcher offers the pick-up of "{want}" in Downloads (read from the laboratory table)')
+    app = (c.root / 'frame/app.js').read_text(encoding='utf-8')
+    tg = (c.root / 'frame/store/transport_github.js').read_text(encoding='utf-8')
+    c.ok('FD.github.scratch(labBranch())' in app and not re.search(r'github: \(\) => FD\.github\.config\(\) \? FD\.github\(\)', app), 'frame/app.js',
+         'the laboratory receives the reduced transport of its disposable branch, never the generic one (audit of 28 Oct 2026)')
+    c.ok('function scratch(' in tg and 'is outside lab/' in tg and 'never the main branch' in tg, 'frame/store/transport_github.js',
+         'the frame enforces the branch and the lab/ prefix')
     files = [p for p in (c.root / 'frame/aerodb').glob('lab*') if p.is_file()] + [p for p in (c.root / 'frame/aerodb/test').glob('lab*') if p.is_file()]
     c.ok(len(files) >= 9, f'{[p.name for p in files]}', 'the laboratory files exist')
     for p in files:

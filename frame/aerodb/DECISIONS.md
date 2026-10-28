@@ -977,3 +977,25 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   SimBrief OFP (step 1) as the per-flight source everywhere else. What EAD would add is only a **library** of SID / STAR /
   approach legs for aerodromes outside France and the United States (France: eAIP coding tables; US: FAA CIFP); the
   planned procedures of a flight already come with its OFP.
+
+## 28 October 2026 — the laboratory's trials on a disposable branch (blocking point of the frame, audit of 28 Oct)
+
+- **What was wrong**: the trial blocks (0.5 / 2 / 5.3 / 10 MB) went by the generic GitHub transport onto the **main branch** of the real data repository;
+  "Clean" removed the files in a commit, but the blobs stay in the history forever and weigh on every pilot's clone (2 MB already published from the owner's
+  iPhone). The lab also received the generic transport (`commit` anywhere).
+- **Decided**: the trials go to the disposable branch `lab/<trigram>`, created from the head of the main branch at the first block, deleted by "Clean" and
+  by the next opening of the lab when it is still there; never the main branch. A deleted branch's blobs are unreachable and never enter a pilot's clone.
+  The lab receives a **reduced transport** made by the frame (`FrameData.github.scratch`): head / create / tree / main tree read only / commit under `lab/`
+  on that branch / deleteBranch; the prefix and the branch are enforced in `frame/store/transport_github.js`, not by the lab. **One block at a time** (no
+  block leaves while one has no answer) and **10 MB per session** (counted at sending, `sessionStorage`). Without trigram, no branch: greyed with the reason.
+  The report says what was written and where (repository, branch, commit, main untouched), and what "Clean" deleted.
+- **Not done by the app**: the blocks already on the main branch stay until the owner rewrites the history on a workstation (git-filter-repo, procedure in
+  `INTEGRATION.md`); "Clean" counts them and points to it.
+- **Measured** (CDP bench, a GitHub API with branches simulated in the page, 390 px, fr and en): 0.5, 2, 5.3 MB on `lab/ABC` created from `main` at the first
+  block, `main` never moved, no write on it; 10 MB greyed at 7.8 MB sent with the reason; Clean: one `DELETE refs/heads/lab/ABC`, three files listed, the old
+  trial file of `main` counted; a new session: 10 MB passes, the next opening deletes the branch and says so; an API that never answers: "no answer after
+  1.5 s", the four buttons greyed ("a block is still on its way"), Clean possible, the late answer written and the buttons back; no trigram: greyed with its
+  reason; token never on the page; no JavaScript error. `tests/v3` A23 rewritten for this (an API with branches): it passes in its five runs
+  (1280 fr, 390 × 4 languages; Playwright with `py -3`). The `--changed` run (116 cases, `frame/app.js` touched) on this Windows workstation at four
+  workers has many timeouts and "missing file 503" errors that the same cases also give on `origin/v3` without this lot; rerun one worker at a time,
+  they pass, except J2 step 1 (gear badge amber), which fails on `origin/v3` too, and A22's clipboard check (CRLF line ends of Windows).

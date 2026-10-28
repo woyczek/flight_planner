@@ -720,7 +720,7 @@ roadmap, whose drawing belongs to a service. The frame knows only its declaratio
 
 ```js
 screens: [{ id: 'datalab', scripts: ['aerodb/lab.js?v=0'], level: 3,
-  reads: [{ prefix: 'sia/base/', policy: 'reference' }], writes: [{ prefix: 'cache/lab/', policy: 'cache' }], github: true }]
+  reads: [{ prefix: 'sia/base/', policy: 'reference' }], writes: [{ prefix: 'cache/lab/', policy: 'cache' }], github: 'scratch' }]
 ```
 
 - `scripts` (relative to `frame/`) load in order the first time the screen opens. The script registers itself:
@@ -728,12 +728,15 @@ screens: [{ id: 'datalab', scripts: ['aerodb/lab.js?v=0'], level: 3,
 - `level`: below it, the frame shows "This screen is not offered at this usage level" and loads nothing more.
 - `reads` / `writes` declare the screen's data adapter, as a module's `meta`.
 - `github: true` gives `github()` (the device's GitHub transport: `head` / `tree` / `commit`, **the token never leaves the
-  transport**, or null) and `githubInfo()` (`{ repo, branch }` or null). Without it, neither exists.
+  transport**, or null) and `githubInfo()` (`{ repo, branch }` or null). `github: 'scratch'` gives instead the **reduced
+  transport of a disposable branch** `lab/<trigram>` (`FrameData.github.scratch`: `head`, `create`, `tree`, `baseTree`,
+  `commit` under `lab/` on that branch only, `deleteBranch`; never the main branch; null without access or trigram) and
+  `githubInfo()` with `lab` (the branch name). Without `github`, neither exists.
 - The context: `{ t, lang, notify, ask, data, aerodb, level(), launcher() }` and the GitHub pair above.
 - One navigation at a time: a screen left while its scripts load draws nothing.
 - Today one, **temporary**: aerodb's data laboratory (`#datalab`, Full level, reached from the Administration card;
   `frame/aerodb/SPEC.md` § 5 sexies), removed when the Data screen is delivered.
-  - Its publishing test writes blocks into the data repository through `github()`. That goes to a throwaway branch with a
-    cap (aerodb's urgent lot); until then, do not publish from the laboratory.
+  - Its publishing test writes blocks through `github()`, declared `'scratch'` since 28 October 2026: on `lab/<trigram>`
+    only, deleted by its "Clean", one block at a time, 10 MB per session (aerodb SPEC § 5 sexies).
 - A module still never calls `fetch`; see the debt in § 7 (`ctx.launcher`).
 

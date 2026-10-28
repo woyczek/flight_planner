@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data laboratory: trials on a disposable branch** (`frame/aerodb/lab*.js`, `frame/store/transport_github.js`, `frame/app.js`;
+  SPEC, INTEGRATION, DECISIONS, frame SPEC, tests A23 and K9) — the trial blocks go to `lab/<trigram>`, created from the main
+  branch's head and deleted by "Clean" (and by the next opening), never to the main branch whose history kept them; the lab
+  receives a reduced transport enforced by the frame (commits under `lab/` on that branch only); one block at a time, 10 MB per
+  session; the report says what was written and where; INTEGRATION documents the purge of the blocks already published.
 - **My flights: status lines for Settings** (`modules/flightlog/model.js`, `module.js`; INTEGRATION, SPEC, DECISIONS) —
   the reports to write are published ready to show (four languages, times in UTC); the frame no longer reads the
   module's own list.
