@@ -1,6 +1,6 @@
 # DFS (Germany): licence request for the "ED Procedure" data set, ready to send (25 October 2026)
 
-*For the owner to send. The session sends nothing, downloads nothing from DFS and writes no converter before the licence is in hand.*
+*Abandoned on 28 October 2026 (user: « dfs on oublie totalement ») — kept as a record, nothing to send.* *For the owner to send. The session sends nothing, downloads nothing from DFS and writes no converter before the licence is in hand.*
 
 ## 1. Who to write to
 

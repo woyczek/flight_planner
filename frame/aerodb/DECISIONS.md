@@ -969,3 +969,11 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   sixteen cases are evaluated on a copy of `lab_sources.js` run with a fake `location` (local, `localhost`, and a published host). Red on the previous code for the hook (a number, an
   object, `javascript:`, a web address and the published host were all accepted); green on the links, which were never wrong in Chromium. Not tested: WebKit, the real hosts.
 
+- **28 Oct 2026 (relay cloud)** — user: « dfs on oublie totalement » → the DFS licence request is abandoned
+  (`DFS_LICENCE_REQUEST.md` kept as a record, nothing sent, no converter); « EAD eurocontrol, pour le moment, on garde le
+  status-quo. il faudrait probablement un accès payant, on se débrouillera avec un basic pour le moment (et les AIP libres
+  des différents pays) » → no EUROCONTROL request, EAD Basic as is (the probe of § 6 at the user's hand), the free
+  national AIPs (France eAIP done, ENAIRE, others of `AIP_OPEN_DATA_INVENTORY.md`) as the procedure sources abroad, and the
+  SimBrief OFP (step 1) as the per-flight source everywhere else. What EAD would add is only a **library** of SID / STAR /
+  approach legs for aerodromes outside France and the United States (France: eAIP coding tables; US: FAA CIFP); the
+  planned procedures of a flight already come with its OFP.

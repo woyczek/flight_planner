@@ -1,5 +1,7 @@
 # EAD Basic: what the owner's access gives, and how it could feed the procedures (25 October 2026)
 
+*Status on 28 October 2026 (user): « EAD eurocontrol, pour le moment, on garde le status-quo. il faudrait probablement un accès payant, on se débrouillera avec un basic pour le moment (et les AIP libres des différents pays) ». No access request; the probe (§ 6) is run by the user when they wish; procedures abroad come from the SimBrief OFP of each flight (step 1) until a free national AIP gives coding tables.*
+
 *The owner has a free **EAD Basic** account. This session connected to nothing: it read only the public pages (help, login page) and
 never saw a credential. Facts are marked **read** (public page opened today) or **not known** (visible only after logging in).*
 
