@@ -1092,3 +1092,9 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Done**: 18 STAR tables read from the page images, all 61 legs agree with their own co-ordinates; with the 4 approaches of `8-13`: 22 procedures, 91 points. `tools/proc_manual.py` installs a hand-read file only
   if the geometry check passes (K11); aerodb reads the result as is (checked in a browser against a fake reader).
 - **Not in the public repository**: the file holds UK AIP data; the session sent it to the owner for the private data repository. The tool and its test (invented points) are in the repository.
+
+## 28 Oct 2026 — automation per aerodrome and per State
+
+- **Word of the user**: « comment automatiser la récupération de ces données, AD par AD (à la demande). En outre, on doit faire l'exercice pour chaque pays de l'EAD. »
+- **Decision**: `--fetch <ICAO>` (one aerodrome, on demand) and `--survey` (one line per State, one classified sample) in `tools/proc_ead.py`; a State is parsed only after its layout is seen in the survey; unknown or
+  vector layouts are reported, never guessed. Test K12 (hand-built fake library). The launcher button comes next.

@@ -360,3 +360,18 @@ With the four RNP approaches read from `8-13`, that is **22 procedures, 91 point
 `tools/proc_manual.py EGLL.json --out <data repository>/proc` re-runs the geometry check, refuses any procedure that fails, writes `proc/2026-10-01/EGLL.json` and merges the cycle's index. The file is **not in this public repository**
 (it carries the UK AIP's data): the session sends it to the owner, who installs it in the private data repository. aerodb reads it unchanged (checked: 18 STAR, 4 approaches, index entry, every point placed).
 When the UK reissues pages 7-13 to 7-17 the file must be redone: the page's amendment date (`source.at`, 2025-12-25) tells whether it is out of date. OCR (§ 6 undecies, option 1) would make this automatic.
+
+### 6 terdecies. Automation: per-State survey and on-demand fetch (28 Oct 2026)
+
+The owner's question: how to automate the retrieval of these documents aerodrome by aerodrome (on demand), and do the exercise for every EAD authority. Two commands now sit on the proven request shape
+(`EadLibrary` in `tools/proc_ead.py`: login, AIP Library, advanced search, State list replayed, name and heading filters, ViewState renewed, download from the row link):
+
+- `python tools/proc_ead.py --survey all --out ead_survey` (or `--survey EG,ED,LF`): for each State, the number of AD documents and charts, the number of charts whose heading says CODING / DEPARTURE / ARRIVAL / APPROACH,
+  and **one** coding document (else a STAR, else a SID) downloaded and classified (`text` / `vector` / `image` / `sparse`, layout, fingerprint). Output: `survey.txt` (one line per State, to paste back) and `survey.json`.
+  Requests are spaced by `--delay` (default 1 s); the password is asked, never kept.
+- `python tools/proc_ead.py --fetch EGLL --out proc_work [--manual-dir DIR]`: the on-demand job for one aerodrome: charts named `AD_2_<ICAO>_` per heading keyword, coding documents downloaded to the local cache, each
+  one read when its layout is known (format and geometry guards), reported when it is not (nothing guessed), a hand-read `<ICAO>.json` from `--manual-dir` added for vector pages. Result: `<ICAO>.json` with `procedures`,
+  `formats`, `warnings` and `documents` (chart names and headings, for the PDF reader).
+
+Not done yet: the Settings › Maintenance button that launches `--fetch` from the page (§ 5), the layouts of States other than FR / UK, OCR for vector pages. The survey tells which layouts exist before any parser is written.
+Whether EAD Basic's terms allow automated access is still unanswered; the owner kept the status quo (a Basic account, spaced requests, read-only).

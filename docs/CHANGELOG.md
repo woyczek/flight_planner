@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: EAD Basic per-State survey and on-demand per-aerodrome fetch** (`tools/proc_ead.py --survey / --fetch`, `classify_pdf` in `tools/proc_eaip.py`, K12, `frame/aerodb/EAD_BASIC.md` § 6 terdecies) — one command
+  counts, for every authority, the coding / departure / arrival / approach charts and classifies one sample (text, vector, image); another downloads and reads one aerodrome's coding tables, reporting unknown layouts instead of guessing.
+
 - **aerodb: manual interpretations installed through a geometry gate; EGLL's UK STARs** (`tools/proc_manual.py`, K11, `frame/aerodb/EAD_BASIC.md` § 6 duodecies, SPEC) — a procedure read by hand from a page whose text is drawn as
   outlines is installed only if the printed course and distance of each TF leg agree with its positions; the 18 UK STARs of EGLL (OTMET 1H … SIRIC 1Z) and its 4 RNP approaches were prepared this way (22 procedures, 91 points,
   status "to be checked"); the data file itself stays out of the public repository.

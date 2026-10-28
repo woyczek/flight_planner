@@ -17,6 +17,7 @@ import http.cookiejar
 import json
 import os
 import re
+import time
 import sys
 import urllib.error
 import urllib.parse
@@ -457,6 +458,272 @@ def probe(user, password, state, icao, out, name=None, download=False, aip_type=
     return finish(out, rep, s)
 
 
+# ---------------------------------------------------------------------------------------------------------- bibliothèque AIP : relevé des États et récupération d'un terrain
+SELECT_KINDS = [('authority', r'AuthorityCode', r'Albania|Belgium|France'), ('atype', r'AuthorityType', r'Civil'), ('lang', r'Language', r'^EN$'),
+                ('type', r'AipType', r'AMDT'), ('part', r'AipPart', r'ENR')]
+SURVEY_KEYS = {'CODING': 'CODING', 'SID': 'DEPARTURE', 'STAR': 'ARRIVAL', 'IAP': 'APPROACH'}
+SHAPES = [('mainForm', 'mainForm'), ('@form', '@all'), ('@all', '@all')]
+
+
+class EadLibrary:
+    """La bibliothèque AIP d'EAD Basic pilotée comme le fait le navigateur (formes de requête établies sur le vrai écran, 28 octobre 2026) : États, type de document, filtres
+    nom et titre, recherche, téléchargement. Lecture seule ; le mot de passe n'est jamais gardé ; `delay` espace les requêtes."""
+
+    def __init__(self, user, password, say=print, keep=None, delay=0.0):
+        self.s = Session([user, password])
+        self.say, self.keep, self.delay = say, keep or (lambda n, b: None), delay
+        self.data, self.sel, self.opts, self.f = {}, {}, {}, {}
+        self.shape, self.url, self.action, self.src = 0, '', '', ''
+
+    def _wait(self):
+        if self.delay:
+            time.sleep(self.delay)
+
+    def open(self):
+        """Connexion, page d'accueil, bibliothèque AIP, recherche avancée ouverte. Rend True si la bibliothèque est prête."""
+        s, say = self.s, self.say
+        s.call(LOGIN_PAGE)
+        code, url, body = s.call(LOGIN_POST, {'j_username': s.secrets[0], 'j_password': s.secrets[1]}, {'X-Requested-With': 'XMLHttpRequest', 'Referer': LOGIN_PAGE})
+        ok, msg = login_result(body)
+        say('connexion:', 'OUI' if ok else 'NON', msg[:120] if not ok else '')
+        if not ok:
+            return False
+        j = login_json(body) or {}
+        code, url, body = s.call(urllib.parse.urljoin(HOST, j.get('redirect') or '/fwf-eadbasic/public/static/home.faces'))
+        links = parse_links(body)
+        lib = next(((l, h) for l, h in links if re.search(r'AIP', l + h, re.I) and re.search(r'librar|bibli', l + h, re.I)), None) or next(((l, h) for l, h in links if re.search(r'AIP', l, re.I)), None)
+        if not lib:
+            say('bibliothèque AIP: lien introuvable')
+            return False
+        code, self.url, body = s.call(urllib.parse.urljoin(url, lib[1]))
+        self.keep('bibliotheque', body)
+        forms = parse_forms(body)
+        form = next((f for f in forms if f['selects']), None)
+        if not form:
+            say('bibliothèque AIP: aucun formulaire de recherche')
+            return False
+        self.action = urllib.parse.urljoin(self.url, form['action'] or self.url)
+        self.data = dict(form['fields'])
+        for sel_name, opts in form['selects'].items():
+            labels = ' | '.join(l + ' ' + v for v, l in opts)
+            kind = next((k for k, rx, lab in SELECT_KINDS if re.search(rx, sel_name) or re.search(lab, labels)), None)
+            if kind and kind not in self.sel:
+                self.sel[kind] = sel_name
+                self.opts[kind] = opts
+            self.data[sel_name] = form['defaults'].get(sel_name, '')
+        btn = next((b for b in form['buttons'] if re.search(r'search|suche|recherche', b['label'] + b['value'] + b['id'], re.I)), None)
+        if not btn or 'authority' not in self.sel:
+            say('formulaire de recherche non reconnu: boutons', [b['id'] for b in form['buttons']], 'listes', list(form['selects']))
+            return False
+        self.src = btn['id'] or btn['name']
+        adv = next((k for k in form['checkboxes'] if re.search(r'advanced', k, re.I)), None)
+        if adv:
+            wid = adv[:-6] if adv.endswith('_input') else adv
+            for event in ('valueChange', 'change'):
+                code, tb = self._ajax({adv: 'on'}, 'recherche_avancee', wid, event=event, execute=wid)
+                labels, extra = fields_by_label(tb)
+                if any(re.search(r'document.?name', l, re.I) for l in labels):
+                    break
+            self.data[adv] = 'on'
+            self.data.update({k: v for k, v in extra.items() if not re.search(r'ViewState', k)})
+            self.f = {'name': next((n for l, n in labels.items() if re.search(r'document.?name', l, re.I)), None),
+                      'heading': next((n for l, n in labels.items() if re.search(r'document.?head', l, re.I)), None)}
+        say('bibliothèque prête: listes', {k: v.split(':')[-1] for k, v in self.sel.items()}, '| filtres', self.f)
+        return bool(self.f.get('name'))
+
+    def _ajax(self, extra, tag, source, event=None, execute='mainForm', render='mainForm'):
+        self._wait()
+        d = dict(self.data)
+        d.update(extra)
+        d.update({'javax.faces.partial.ajax': 'true', 'javax.faces.source': source, 'javax.faces.partial.execute': execute, 'javax.faces.partial.render': render})
+        if event:
+            d['javax.faces.partial.event'] = event
+        code, _, body = self.s.call(self.action, d, {'Faces-Request': 'partial/ajax', 'X-Requested-With': 'XMLHttpRequest', 'Referer': self.url})
+        self.keep(tag, body)
+        vs = view_state(body)
+        if vs:
+            self.data['javax.faces.ViewState'] = vs
+        return code, body
+
+    def choose(self, kind, wanted):
+        """Fixe une liste (authority, atype, lang, type, part) sur l'option dont la valeur ou le libellé est `wanted` ; rend la valeur, ou None si elle n'existe pas."""
+        opts = self.opts.get(kind) or []
+        v = next((v for v, l in opts if v == wanted or l.strip() == wanted or l.strip().endswith(f'({wanted})')), None)
+        if v is not None:
+            self.data[self.sel[kind]] = v
+        return v
+
+    def authority(self, prefix):
+        """Choisit l'autorité (préfixe OACI : EG, LF…), type civil, langue EN, et rejoue l'événement de sélection de l'État ; False si elle n'est pas proposée."""
+        if self.choose('authority', prefix) is None:
+            return False
+        for k, w in (('atype', 'Civil'), ('lang', 'EN')):
+            if k in self.sel:
+                self.choose(k, w)
+        name = self.sel['authority']
+        w = name[:-6] if name.endswith('_input') else name
+        for event in ('valueChange', 'change'):
+            code, cb = self._ajax({}, 'changement_etat', w, event=event, execute=w)
+            if code == 200 and '<error' not in cb and 'redirect' not in cb:
+                break
+        return True
+
+    def search(self, name=None, heading=None):
+        """Recherche avec les listes en cours et les filtres « nom du document » et « titre » (contient) ; rend { rows, count, msg } ; la forme de requête qui marche est gardée."""
+        extra = {self.f['name']: name or '', self.src: self.src}
+        if self.f.get('heading'):
+            extra[self.f['heading']] = heading or ''
+        for i in range(len(SHAPES)):
+            ex, rn = SHAPES[(self.shape + i) % len(SHAPES)]
+            code, body = self._ajax(extra, 'recherche', self.src, execute=ex, render=rn)
+            rows, count, msg = result_info(body)
+            if count is not None or rows:
+                self.shape = (self.shape + i) % len(SHAPES)
+                return {'rows': rows, 'count': count if count is not None else len(rows), 'msg': msg}
+        return {'rows': [], 'count': 0, 'msg': 'réponse sans tableau de résultats'}
+
+    def fetch(self, row):
+        """Octets du document d'une ligne de résultats (lien direct, sinon bouton ▶ de la ligne), ou None."""
+        target = next((h for l, h in row['links'] if h), None)
+        self._wait()
+        if target:
+            code, _, raw = self.s.call(urllib.parse.urljoin(self.url, target), headers={'Referer': self.url}, raw=True)
+        elif row['buttons']:
+            bt = row['buttons'][-1]
+            d = dict(self.data)
+            d[bt['name'] or bt['id']] = bt['value'] or bt['name'] or bt['id']
+            code, _, raw = self.s.call(self.action, d, {'Referer': self.url}, raw=True)
+        else:
+            return None
+        return raw if raw[:5] == b'%PDF-' else None
+
+
+def row_summary(row):
+    """(nom du document, titre) d'une ligne de résultats : le nom est la cellule qui finit par .pdf, le titre la plus longue des autres."""
+    name = next((c.split()[0] for c in row['cells'] if re.search(r'\.pdf\b', c)), row['cells'][1] if len(row['cells']) > 1 else '')
+    title = max((c for c in row['cells'] if c and '.pdf' not in c), key=len, default='')
+    return name, title[:100]
+
+
+def survey(lib, states, out, say=print):
+    """Relevé par État : pour chaque autorité, le nombre de documents AD (AIP) et de cartes (Charts), le nombre de cartes dont le titre dit CODING / DEPARTURE / ARRIVAL / APPROACH,
+    et UN document de tables de codage (sinon d'arrivée, de départ) téléchargé et classé (texte lisible, dessiné en vecteurs, image) avec sa disposition. Écrit survey.json et survey.txt."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import proc_eaip
+    cache = Path(out) / 'cache'
+    cache.mkdir(parents=True, exist_ok=True)
+    res = []
+    for st in states:
+        rec = {'state': st}
+        if not lib.authority(st):
+            rec['error'] = 'autorité non proposée'
+            res.append(rec)
+            say(f'{st}: autorité non proposée')
+            continue
+        lib.choose('part', 'AD')
+        lib.choose('type', 'AIP')
+        rec['aip_ad'] = lib.search()['count']
+        lib.choose('type', 'Charts')
+        rec['charts_ad'] = lib.search()['count']
+        rows_for = {}
+        for k, kw in SURVEY_KEYS.items():
+            r = lib.search(heading=kw)
+            rec[k] = r['count']
+            rows_for[k] = r['rows']
+            rec['sample_' + k] = [row_summary(x) for x in r['rows'][:3]]
+        pick = next(((k, rows_for[k][0]) for k in ('CODING', 'STAR', 'SID') if rows_for[k]), None)
+        if pick:
+            name, title = row_summary(pick[1])
+            raw = lib.fetch(pick[1])
+            if raw:
+                f = cache / (re.sub(r'[^A-Za-z0-9._-]+', '_', name)[:80] or 'doc')
+                f.write_bytes(raw)
+                rec['document'] = {'from': pick[0], 'name': name, 'title': title, **classify_name(f)}
+            else:
+                rec['document'] = {'from': pick[0], 'name': name, 'error': 'téléchargement impossible'}
+        res.append(rec)
+        d = rec.get('document') or {}
+        say(f'{st}: AD {rec["aip_ad"]} | cartes {rec["charts_ad"]} | CODING {rec["CODING"]} SID {rec["SID"]} STAR {rec["STAR"]} IAP {rec["IAP"]} | doc: {d.get("name", "-")} -> {d.get("kind", d.get("error", "-"))} {d.get("layout") or ""}')
+    outdir = Path(out)
+    (outdir / 'survey.json').write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding='utf-8')
+    (outdir / 'survey.txt').write_text('\n'.join(
+        f'{r["state"]} | AD {r.get("aip_ad", "-")} | cartes {r.get("charts_ad", "-")} | CODING {r.get("CODING", "-")} SID {r.get("SID", "-")} STAR {r.get("STAR", "-")} IAP {r.get("IAP", "-")} | '
+        f'{(r.get("document") or {}).get("name", "-")} {(r.get("document") or {}).get("kind", r.get("error", ""))} {(r.get("document") or {}).get("layout") or ""}' for r in res) + '\n', encoding='utf-8')
+    return res
+
+
+def fetch_ad(lib, icao, out, say=print, manual_dir=None):
+    """Récupère les documents de procédures d'UN terrain, à la demande : cartes (Charts) dont le titre dit CODING / DEPARTURE / ARRIVAL / APPROACH et nom contenant AD_2_<OACI>_ ;
+    télécharge et lit les tables de codage (textes lisibles ; disposition inconnue ou dessinée en vecteurs signalée, jamais devinée ; un fichier d'interprétation manuelle
+    <manual_dir>/<OACI>.json est ajouté s'il est là) ; écrit <out>/<OACI>.json (format publié) et la liste de tous les documents trouvés (adresses de cartes pour le lecteur PDF)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import proc_eaip
+    icao = icao.upper()
+    if not lib.authority(icao[:2]):
+        raise SystemExit(f'autorité {icao[:2]} non proposée par la bibliothèque')
+    lib.choose('part', 'AD')
+    found = {}
+    lib.choose('type', 'Charts')
+    for k, kw in SURVEY_KEYS.items():
+        r = lib.search(name=f'AD_2_{icao}_', heading=kw)
+        say(f'{icao}: {k}: {r["count"]} document(s)')
+        for row in r['rows']:
+            name, title = row_summary(row)
+            found.setdefault(name, {'name': name, 'title': title, 'kinds': [], 'row': row})['kinds'].append(k)
+    cache = Path(out) / 'cache' / icao
+    cache.mkdir(parents=True, exist_ok=True)
+    pdfs = []
+    for name, d in sorted(found.items()):
+        if 'CODING' in d['kinds']:
+            raw = lib.fetch(d['row'])
+            say(f'  {name}: téléchargé' if raw else f'  {name}: téléchargement impossible')
+            if raw:
+                (cache / name).write_bytes(raw)
+                pdfs.append(name)
+    doc = proc_eaip.build_pdf_dir(icao, pdfs, lambda n: safe_rows(cache / n), lib_cycle(out)) if pdfs else \
+        {'schema': 1, 'icao': icao, 'cycle': lib_cycle(out), 'procedures': [], 'formats': [], 'warnings': ['aucun document de tables de codage trouvé']}
+    for fm in doc['formats']:
+        k = classify_name(cache / fm['file'])
+        fm['pdf'] = k
+        say(f'  {"OK " if fm["ok"] else "NON"} {fm["file"]} | {k.get("kind")} | {fm["layout"]} ' + ''.join(f'| {x}' for x in fm['problems']))
+    mf = Path(manual_dir) / f'{icao}.json' if manual_dir else None
+    if mf and mf.is_file():
+        man = json.loads(mf.read_text(encoding='utf-8'))
+        have = {p['id'] for p in doc['procedures']}
+        doc['procedures'] += [p for p in man.get('procedures', []) if p['id'] not in have]
+        doc['warnings'].append(f'interprétation manuelle ajoutée: {mf.name}')
+    doc['documents'] = [{'name': d['name'], 'title': d['title'], 'kinds': d['kinds']} for d in found.values()]
+    (Path(out) / f'{icao}.json').write_text(json.dumps(doc, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
+    say(f'{icao}: {len(doc["procedures"])} procédure(s), {len(doc["documents"])} document(s) listé(s), {len(doc["warnings"])} avertissement(s)')
+    return doc
+
+
+def safe_rows(path):
+    """Lignes de la première page, ou [] si le fichier n'est pas un PDF lisible (le terrain est alors signalé « disposition non reconnue », rien n'est deviné)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import proc_eaip
+    try:
+        return proc_eaip.rows_from_pdf(path, 0)
+    except (SystemExit, Exception):
+        return []
+
+
+def classify_name(path):
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import proc_eaip
+    try:
+        return proc_eaip.classify_pdf(path)
+    except (SystemExit, Exception) as e:
+        return {'kind': 'erreur', 'error': str(e)[:80]}
+
+
+def lib_cycle(out):
+    """Cycle AIRAC en vigueur (date de début) d'après le calendrier de 28 jours (AIRAC 2401 = 2024-01-25)."""
+    from datetime import date, timedelta
+    ref, today = date(2024, 1, 25), date.today()
+    return (ref + timedelta(days=28 * ((today - ref).days // 28))).isoformat()
+
+
 def finish(out, rep, s):
     text = '\n'.join(rep) + '\n'
     (out / 'report.txt').write_text(text, encoding='utf-8')
@@ -475,11 +742,37 @@ def main(argv=None):
     ap.add_argument('--out', default='ead_probe')
     ap.add_argument('--name', default=None, help='filtre « nom de document » (recherche avancée), ex. EGLL')
     ap.add_argument('--aip-type', default='AIP', help='type de document : AIP, AMDT, SUP, AIC ou Charts (les cartes, dont les tables de codage du Royaume-Uni)')
+    ap.add_argument('--survey', default=None, help="relevé par État : « all » ou une liste de préfixes (EG,ED,LF…) ; écrit survey.json et survey.txt dans --out")
+    ap.add_argument('--fetch', default=None, help='récupère les documents de procédures d\'UN terrain (code OACI) : tables de codage téléchargées et lues, liste des documents')
+    ap.add_argument('--manual-dir', default=None, help='dossier d\'interprétations manuelles <OACI>.json ajoutées à --fetch')
+    ap.add_argument('--delay', type=float, default=1.0, help='pause entre deux requêtes (relevé et récupération), en secondes')
     ap.add_argument('--docs', default=None, help='noms exacts à chercher et télécharger, séparés par des virgules (avec --name pour ouvrir la recherche avancée)')
     ap.add_argument('--download', action='store_true', help='télécharge UN document du terrain dans ead_probe/cache/ (cache local)')
     a = ap.parse_args(argv)
+    if a.survey or a.fetch:
+        user = a.user or input('EAD Basic, nom d\'utilisateur: ').strip()
+        password = os.environ.get('EAD_PASSWORD') or getpass.getpass('EAD Basic, mot de passe (non gardé): ')
+        out = Path(a.out)
+        out.mkdir(parents=True, exist_ok=True)
+        lines = []
+
+        def say(*x):
+            t = sanitize(' '.join(str(i) for i in x), [user, password])
+            lines.append(t)
+            print(t)
+        lib = EadLibrary(user, password, say, delay=a.delay)
+        if not lib.open():
+            raise SystemExit('bibliothèque non ouverte (voir ci-dessus)')
+        if a.survey:
+            states = [o[0] for o in lib.opts['authority']] if a.survey == 'all' else [x.strip().upper() for x in a.survey.split(',') if x.strip()]
+            states = [x for x in states if re.fullmatch(r'[A-Z]{2}', x)]
+            survey(lib, states, out, say)
+        else:
+            fetch_ad(lib, a.fetch, out, say, a.manual_dir)
+        (out / 'report.txt').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+        return
     if not a.probe:
-        raise SystemExit('rien à faire: ajouter --probe')
+        raise SystemExit('rien à faire: ajouter --probe, --survey ou --fetch')
     user = a.user or input('EAD Basic, nom d\'utilisateur: ').strip()
     password = os.environ.get('EAD_PASSWORD') or getpass.getpass('EAD Basic, mot de passe (non gardé): ')
     docs = [d.strip() for d in a.docs.split(',') if d.strip()] if a.docs else None

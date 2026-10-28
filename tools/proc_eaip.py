@@ -69,6 +69,26 @@ def rows_from_pdf(path, page=0, reader=None):
     return [' '.join(' '.join(t for _, _, t in sorted(r)).split()) for _, r in rows]
 
 
+def classify_pdf(path):
+    """Nature d'un PDF d'AIP d'après sa première page : 'text' (couche de texte lisible), 'vector' (texte dessiné en tracés : aucune couche de texte), 'image', 'sparse' (presque rien) ;
+    avec le nombre de pages, de lignes de texte, d'opérations de tracé, la disposition reconnue et l'empreinte d'en-tête. Sert au relevé des États (tools/proc_ead.py --survey)."""
+    reader = pdf_reader(path)
+    page = reader.pages[0]
+    try:                                                     # AVANT la lecture du texte : elle transforme le flux de la page en cache
+        cs = page.get_contents()
+        data = cs.get_data() if cs is not None else b''
+        paths = len(re.findall(rb'(?<=\s)(?:re|l|c|m)(?=\s)', data))
+    except Exception:
+        paths = 0
+    try:
+        images = len(page.images)
+    except Exception:
+        images = 0
+    rows = rows_from_pdf(path, 0, pdf_reader(path))
+    kind = 'text' if len(rows) >= 15 else 'vector' if paths > 2000 else 'image' if images else 'sparse'
+    return {'pages': len(reader.pages), 'text_rows': len(rows), 'path_ops': paths, 'images': images, 'kind': kind, 'layout': detect_layout(rows), 'fingerprint': fingerprint(rows)}
+
+
 # ---------------------------------------------------------------------------------------------------------- repérage dans un PDF
 SCAN_KEYS = [('Path Terminator', r'path\s*terminator'), ('Fly Over', r'fly\s*over'), ('Coding', r'coding'), ('Waypoint Identification', r'waypoint\s*identification'),
              ('SID', r'\bSID\b'), ('STAR', r'\bSTAR\b'), ('RNAV', r'\bRNAV\b'), ('RNP', r'\bRNP\b'), ('Approach', r'instrument\s+approach|\bIAC\b|\bILS\b')]
