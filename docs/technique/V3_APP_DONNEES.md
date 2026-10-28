@@ -322,3 +322,27 @@ large `fetch` body. That is what the buttons "Publish 5.3 MB" / "Publish 10 MB" 
 missing 5.3 and 10 MB lines are not explained by a documented limit. Also in pass 2: a direct link per source with the long-press gesture (Safari saves a JSON through "Download Linked File"
 instead of displaying it; **not yet tested on the phone**), "Save the result" by the share sheet where `navigator.canShare({ files })` is true (**not measured on an iPhone**: the report's
 device block now says it), a ten-line summary at the top of the report, and a line for EAD Basic (login page, the login call with empty fields, files imported by hand).
+
+## P0, pass 2, measured on the user's iPhone (28 October 2026) — and the user's verdict
+
+Same iPhone, this time the **home-screen app** (standalone), report of 09:32. Parsing unchanged (mode c 0,39 s, b 0,45 s,
+a 2,6 s, counts identical, three runs); publication 0,5 MB in 3,55 s (2 / 5,3 / 10 MB not tried); Web Share with files
+available (`canShare` true, the sheet closed by the user); 16 sources tested: 3 readable cross-origin (AWS tiles,
+ENAIRE, FAA ArcGIS), **12 blocked by CORS** (SIA ×3, GeoNames, NAV CANADA, openAIP, NATS, EAD Basic login page, NAT,
+CIFP, NOMADS, DIRCAM), 1 unreachable (UK Mil); 7 files imported by hand (SIA zip, GeoNames, openAIP, an ENAIRE
+amendment zip fed to the HTML chain: 0 links — the row expects a page). A wrong file on the SIA row (GeoNames) passed
+the name check warning and gave undefined counts: the row should refuse it (moot if the laboratory goes).
+
+**User (28 Oct)**: « Beaucoup de liens ne passent pas entre l'appli et safari, ou difficultés d'enregistrement, ou encore
+fichier enregistré, mais non reconnu en lecture. Bref, ce process est obscur et long, je ne suis même pas sûr qu'il soit
+utile. »
+
+**Relay's reading.** P0 answered its question: compiling the base on a phone is trivial (0,4 s, exact counts, no crash)
+and publishing works; **fetching is the obstacle**, and on a web page it cannot be solved: 12 of 15 sources refuse a
+cross-origin read, the fallback (link → Safari → Files → picker) is long and brittle from a home-screen app. A phone
+data application is therefore worth building **only as a native shell** (Capacitor HTTP ignores CORS), never as a web
+page; and the SIA zip stays a human gesture even then. Recommendation: retire the laboratory (screen, `renderDatalab`,
+the twelve `connect-src` hosts, the launcher patterns), keep its measurements here and its **streaming XML reader and
+worker modes as the base builder of the workstation module** (lot D5 of `V3_DONNEES_REGENERATION.md`), and put the
+dedicated application to sleep until the iOS chain resumes and native HTTP can be tried. The user decides.
+
