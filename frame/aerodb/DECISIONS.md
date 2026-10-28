@@ -1189,3 +1189,15 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   against `^[A-Z0-9]{4}$` before they name a file (K12); every document is read by pypdf in a separate process, `PDF_TIMEOUT` = 60 s,
   a document past the limit or unreadable reported as not read without stopping the tool (`proc_eaip.limited`, `pdf_pages`, `pdf_kind`;
   K10); "his" → "their" in this file and in `EAD_BASIC.md`.
+
+## 28 October 2026 — EAD Basic: terms read, manual access, not operational (user's decisions)
+
+- **Word of the user** (relayed by the ergonomics session): EAD Basic's own terms (quoted in `EAD_BASIC.md` § 1); a simulation use is admitted, the
+  data are not operational; the survey of the documents per State is admitted; an aerodrome is read one at a time on an explicit gesture
+  (`--fetch` by hand today, a Settings › Maintenance button later), never scheduled, never in bulk. `LICENSE.md` § 5: "EAD Basic (EUROCONTROL) →
+  the States' AIPs: personal use only, not operational, fetched on demand per aerodrome; the airline's private repository only". OCR: decided.
+- **Done**: `proc_eaip.ead_notice()` writes the "not operational" mention in every file read through EAD Basic (`build_pdf_dir`, the OCR
+  document, the OCR pass of `--fetch`, and `proc_manual` when an installed file holds `ead-basic` procedures); `--fetch` refuses a list of
+  aerodromes (K12); `EAD_BASIC.md` § 1 rewritten, § 8.1 one State per line with its outcome and the rules for States without coding tables
+  (ergonomics session's decision: OFP as the per-flight source, manual gesture and geometry gate otherwise, no model reading drawings or prose
+  without a request per aerodrome, France from the SIA only, one sample per State as a reserve).

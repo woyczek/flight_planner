@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: EAD Basic used as its terms allow** (`tools/proc_eaip.py` `ead_notice`, `tools/proc_ead.py`, `tools/proc_ocr.py`,
+  `tools/proc_manual.py`; `LICENSE.md` § 5, `frame/aerodb/EAD_BASIC.md` § 1 and § 8.1, DECISIONS; test K12) — the user's decisions: simulation
+  use, data not operational (a mention in every file read through EAD Basic), the survey by hand, one aerodrome per `--fetch` on an explicit
+  gesture, never scheduled nor in bulk; a licence line for EAD Basic; one State per line with its outcome, the OFP as the per-flight source
+  where a State publishes no coding tables, France from the SIA only.
 - **aerodb: OCR of drawn pages, survey of the 47 EAD Basic authorities, whole-document reading, nine layouts** (`tools/proc_ocr.py` new,
   `tools/proc_eaip.py`, `tools/proc_ead.py`; `frame/aerodb/EAD_BASIC.md` § 7 to 9, DECISIONS; tests K12, K14 to K20, `.gitignore`) — pages
   without a text layer are rendered (`pypdfium2`) and read by OCR (Tesseract or `rapidocr-onnxruntime`, optional, workstation builders only,

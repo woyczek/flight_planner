@@ -765,7 +765,7 @@ def ocr_pass(doc, pdfs, cache, icao, out, say=print):
     if not proc_ocr.backend():
         say(f'{icao}: {len(vect)} document(s) sans couche de texte, non lu(s) : ' + str(proc_ocr._missing()).replace('OCR manque : ', 'OCR absent, ') )
         return None
-    merged = {'schema': 1, 'icao': icao, 'cycle': doc['cycle'], 'procedures': [], 'formats': [], 'warnings': []}
+    merged = {'schema': 1, 'icao': icao, 'cycle': doc['cycle'], 'procedures': [], 'formats': [], 'warnings': [], 'notice': proc_eaip.ead_notice(icao)}
     have = set()
     for name in vect:
         try:
@@ -859,6 +859,9 @@ def main(argv=None):
     a = ap.parse_args(argv)
     a.icao = icao_code(a.icao)
     if a.fetch:
+        # EAD Basic : un terrain par appel, sur un geste de l'utilisateur ; jamais en masse (décision de l'utilisateur, EAD_BASIC.md § 1)
+        if re.search(r'[,;\s]', a.fetch.strip()):
+            raise SystemExit('--fetch : un seul terrain par appel (EAD Basic se lit terrain par terrain, à la demande ; jamais en masse)')
         a.fetch = icao_code(a.fetch)
     if a.survey or a.fetch:
         user = a.user or input('EAD Basic, nom d\'utilisateur: ').strip()

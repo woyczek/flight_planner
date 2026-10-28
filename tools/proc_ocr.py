@@ -310,7 +310,7 @@ def read_document(path, icao, cycle, file=None, pages=None, dpis=(300, 500, 200)
     (au moins une table retenue, aucune rejetée) ; la meilleure lecture est gardée (le plus de procédures retenues). Une page de disposition inconnue n'est lue qu'une fois.
     Les pages sont fusionnées : procédures (sans doublon d'identifiant), formats (avec leur numéro de page), avertissements."""
     file = file or Path(path).name
-    merged = {'schema': 1, 'icao': icao, 'cycle': cycle, 'procedures': [], 'formats': [], 'warnings': []}
+    merged = {'schema': 1, 'icao': icao, 'cycle': cycle, 'procedures': [], 'formats': [], 'warnings': [], 'notice': proc_eaip.ead_notice(icao)}
     have = set()
     for n in (range(page_count(path)) if pages is None else pages):
         best = None

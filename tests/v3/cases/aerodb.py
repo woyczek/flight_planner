@@ -513,6 +513,13 @@ def k12(c):
             f = json.loads((Path(td) / 'EGLL.json').read_text(encoding='utf-8'))
             c.ok(f['procedures'] == [] and f['formats'] and not f['formats'][0]['ok'] and f['documents'], json.dumps(f)[:300], 'fetch: an unreadable document yields no procedure, a format problem, and the list of documents; nothing is guessed')
             c.ok((Path(td) / 'cache' / 'EGLL' / 'EG_AD_2_EGLL_7-13_en.pdf').is_file(), 'cache', 'the document is kept in the local cache')
+            c.ok('NON OPÉRATIONNELLES' in (f.get('notice') or '') and 'EAD Basic' in f['notice'], f.get('notice'), "a file read through EAD Basic says it is not operational (user's decision, 28 Oct 2026)")
+        refused = ''
+        try:
+            E.main(['--fetch', 'EGLL,EGKK'])
+        except SystemExit as e:
+            refused = str(e)
+        c.ok('un seul terrain' in refused, refused or 'accepted', '--fetch reads one aerodrome per call, never several')
     finally:
         srv.shutdown()
         os.environ.clear()

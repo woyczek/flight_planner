@@ -18,16 +18,18 @@ never saw a credential. Facts are marked **read** (public page opened today) or 
 - **Not known** until logged in: which States the library holds, how fresh each document is (the login page warns it is not the
   latest), whether the AD 2 pages come as one PDF per aerodrome or per page, and the terms shown on the registration form and
   in the site's terms of use (`eurocontrol.int/articles/terms-of-use` answers 404 from here).
-- **Terms that already apply**, whatever the pages say: each State's AIP is that State's copyright (the DFS notice, read on
-  25 October: use "by the organisation to which it was issued", no storage or redistribution without permission), and EAD Basic's
-  own text excludes operational use. A private, non-commercial, **simulation** use is not operational navigation, but it is not
-  granted either: the owner decides whether to ask (a short question to `ead.service` at eurocontrol.int, the address the login
-  page gives for operational use).
-
-- **Automated access, to be checked by the owner before keeping `tools/proc_ead.py`** (security review of 28 October 2026): EAD
-  Basic is a personal account; whether its terms (registration form, terms of use) allow a script to log in and search for the
-  account holder is **not known here** and must be read by the owner on the registration form or asked to EUROCONTROL. Until then
-  the probe stays a one-off manual run, never scheduled.
+- **Terms of EAD Basic, read by the user and decided (28 October 2026)**: « EAD Basic is an advertisement tool showing the capabilities and
+  functionalities of the EAD operational system (EAD Pro). This tool is not connected to the EAD operational database and does not display the
+  latest available information for a specific service. Consequently, the information displayed shall not be used for operational purposes. »
+  **The user's decision**: a **simulation** use is admitted; the data are **not operational**, and every procedure file read through EAD Basic
+  carries that mention (`notice`, written by `proc_eaip.ead_notice()`, as the CIFP files carry the FAA's); the access is **manual**:
+  - the **survey** (the list of documents per State, one sample each, `--survey`) is admitted, run by hand, at least one second between requests;
+  - an **aerodrome is read one at a time, on an explicit gesture of the user**: `--fetch <ICAO>` typed by hand today (it refuses a list), a
+    Settings › Maintenance button "manual access / reading" later (a lot to come, not now);
+  - **never scheduled, never in bulk**.
+- **Rights of the States' AIPs**: each State's AIP stays that State's (the DFS notice, read on 25 October: use "by the organisation to which it
+  was issued", no storage or redistribution without permission). What is read through EAD Basic is for personal use, kept in the airline's
+  **private** data repository only, never in the public code repository (`LICENSE.md` § 5).
 
 ## 2. Can the AD 2 pages of other States feed the procedures?
 
@@ -444,6 +446,65 @@ Survey of all 47 authorities run by the owner (one sample per State, delay 1 s).
 | Outdated edition | LF (1) | EAD sample is a 2015 SIA "PRECODING" edition (older `sia-code`, "Leg sequence / P/T / ID" header, chart text in a /MTnn glyph font): not parsed; France comes from the SIA's own eAIP through `tools/proc_eaip.py` |
 | Nothing obtained | BK (no files), LB and LT (no coding / SID / STAR headings, IAP charts only), UA and UC (download failed: rows without a direct link) (5) | |
 
+### 8.1 One State per line, and what follows (ergonomics session's decision, 28 Oct 2026)
+
+| State | Outcome | Reading |
+|---|---|---|
+| UD | read | `am-coding` |
+| ED | read | `de-route` |
+| EG | read | `uk-app` (text) and `uk-star` (OCR) |
+| BI | read | `icao-tab` |
+| EY | read | `icao-tab`, co-ordinates from the list |
+| LI | read | `icao-tab` |
+| LD | read | `icao-tab` with a route column |
+| LA | read | `icao-tab` (shifted-glyph font decoded) |
+| RP | read | route table + list + `icao-tab` (shifted-glyph font decoded) |
+| EI | read | `ei-coding` |
+| LO | read | `at-coding` |
+| LZ | read | `at-coding` |
+| LU | read | `de-route` |
+| LP | read | `de-route` |
+| EP | read | `de-route` |
+| EB | read | `be-coding` (OCR) |
+| UG | read | `ge-coding` (OCR) |
+| LQ | charts as images | no text to read |
+| LG | charts as images | no text to read |
+| UB | scattered labels | charts only: labels, no table |
+| EK | scattered labels | charts only: labels, no table |
+| EE | scattered labels | charts only: labels, no table |
+| XX | scattered labels | charts only: labels, no table |
+| LH | scattered labels | charts only: labels, no table |
+| LJ | scattered labels | charts only: labels, no table |
+| EH | scattered labels | charts only: labels, no table |
+| ES | scattered labels | charts only: labels, no table |
+| EV | scattered labels | charts only: labels, no table |
+| LY | scattered labels | charts only: labels, no table |
+| UK | scattered labels | charts only: labels, no table |
+| LK | VFR only | VFR charts or strings only |
+| LM | VFR only | VFR charts or strings only |
+| LR | points only | lists of points, no procedure table |
+| EF | points only | lists of points, no procedure table |
+| EN | prose | route descriptions in text, no co-ordinates |
+| OJ | prose | route descriptions in text, no co-ordinates |
+| LE | prose | route descriptions in text, no co-ordinates |
+| LC | prose | route descriptions in text, no co-ordinates |
+| LW | prose | route descriptions in text, no co-ordinates |
+| LS | prose | route descriptions in text, no co-ordinates |
+| BG | prose | route descriptions in text, no co-ordinates |
+| LF | from the SIA | France comes from the SIA's own eAIP (`tools/proc_eaip.py`), never from EAD (EAD's sample is a 2015 edition) |
+| BK | nothing | no file, or no coding / SID / STAR document, or a failed download |
+| LB | nothing | no file, or no coding / SID / STAR document, or a failed download |
+| LT | nothing | no file, or no coding / SID / STAR document, or a failed download |
+| UA | nothing | no file, or no coding / SID / STAR document, or a failed download |
+| UC | nothing | no file, or no coding / SID / STAR document, or a failed download |
+
+- **A State without coding tables**: the per-flight source stays the SimBrief OFP (status `ofp`, `proc-seen/`). An aerodrome of such a State is
+  read only on demand, by the owner's manual gesture, through the geometry gate, status `check`.
+- **No model reads chart drawings or prose** without an explicit request for that aerodrome.
+- **France comes from the SIA** (`tools/proc_eaip.py`), never from EAD.
+- **Reserve**: one sample per State only; another form of the same State's pages is caught by the format check (`formats`, `ok: false`), never
+  guessed.
+
 Tooling of the lot: `build_pdf_dir` reads every page of every PDF; `classify_pdf` reports `table_page` and `page_kinds`; shifted-glyph fonts are decoded by font (`chr(c+29)`, fragile, guarded by the format and geometry checks); `waypoint_coords(rows)` reads co-ordinate lists in five printed forms and `build_pdf_dir` fills points with `lat` `None` from them (`coords_from: 'liste'`) before the gate; `check_geometry` also checks a leg without a printed true course when it has a magnetic course (within 30 degrees) or a distance (within 0.55 NM); `survey.json` records the authority label; `kind_hint` is carried between pages of a document. New layouts: `icao-tab` (K18), `ei-coding` (K19), `at-coding` text order (K17 extended), `de-route` widened to LU / LP / EP (K15 extended), waypoint lists (K20). `python tests/v3/run.py --grep K`: 19 cases pass.
 
 **`de-route`** (`parse_de_route`): the German AIP's textual SID / STAR route tables (Designator / Significant points / Mag track / Distance / Minimum altitude); one STAR page seen through EAD. The page carries no co-ordinates: points keep `lat` / `lon` `None` with the warning "to be resolved by aerodb from the points base", so the geometry gate has nothing to check; instead the counts are checked (fixes = legs + 1) and a table that disagrees is rejected. Case K15 on an invented page. The parsers are now chosen through the `PARSERS` dispatch dictionary in `build_pdf_dir`.
@@ -457,6 +518,5 @@ Families read: `sia-code` (France, eAIP), `uk-app` / `uk-star`, `am-coding`, `de
 Owner decisions still open:
 
 - installing the UK and Austrian OCR files in `data/proc` and committing `data/proc` in the data repository;
-- the States to skip (charts only, image only, prose);
 - the Settings › Maintenance button (not done);
 - unsigned altitudes in `de-route` tables typed "min" when the header says Minimum altitude (session choice, to confirm).

@@ -1552,7 +1552,14 @@ def build_pdf_dir(icao, pdfs, rows_of, cycle):
                             'problems': ['disposition non reconnue' + (' (très peu de texte: tableau dessiné en vecteurs ou image ? ' + str(most) + ' ligne(s))' if most < 8 else '')]})
             warnings.append(f'{f}: {len(pages_of[f])} page(s) NON lue(s), disposition non reconnue' + (' (texte absent: tables dessinées sans couche de texte)' if most < 8 else ''))
     return {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'procedures': procs, 'formats': formats,
-            'warnings': warnings, 'notice': f'Source : AIP de l\'État ({icao[:2]}) via EAD Basic ; à vérifier, pour la simulation seulement, jamais pour la navigation.'}
+            'warnings': warnings, 'notice': ead_notice(icao)}
+
+
+def ead_notice(icao):
+    """Mention portée par tout fichier de procédures issu d'EAD Basic (décision de l'utilisateur, 28 octobre 2026 ; EAD_BASIC.md § 1) : EAD Basic
+    n'est pas relié à la base opérationnelle d'EAD et ses informations « shall not be used for operational purposes »."""
+    return (f'Source : AIP de l\'État ({icao[:2]}) via EAD Basic (EUROCONTROL) ; données NON OPÉRATIONNELLES (« shall not be used for operational '
+            'purposes ») : à vérifier, pour la simulation seulement, jamais pour la navigation.')
 
 
 # ---------------------------------------------------------------------------------------------------------- schéma commun
