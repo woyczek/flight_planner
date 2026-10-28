@@ -14,7 +14,7 @@ VATSIM) ID there too, and the device online.
 the one started in Fuel, or “Last flight on IVAO” from the network. Touch “Use”.
 
 **Fill in the rest.** The card says in one line what it takes: aircraft, airfields, engine start time and departure
-fuel from Fuel, or all the times from the network. A small label above each field says where it comes from. Add what
+fuel from Fuel, or all the times from the network. A line under each card's title says where its fields come from. Add what
 is missing: registration, callsign, the other times. Then “Next →”.
 
 ## 2. Mission
