@@ -265,3 +265,177 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   - The state key holds the minutes left, not the seconds, so the card is drawn again only when something shown
     changes.
   - The help's last bullet ×4 is updated, with the fingerprints.
+- **23 Oct 2026 — Times of the Synchronisation card in UTC (written by the V3 frame session, lot 23, the settings
+  session being unreachable)**: following the rule "every time in UTC with Z" (`frame/lib/time.js`), "Last sync" goes
+  through the frame's `c.time.fmtDateZ`, and each pending write shows `c.time.fmtZ` the same UTC day, otherwise
+  `c.time.fmtDateZ`. Nothing else changed in `frame/settings/`.
+- **24 Oct 2026 — "No SIA base" in an app added to the home screen (relais cloud; the user: « j'ai un « pas de base Sia » dans les
+  applis web « sur l'écran d'accueil » », then « La base finit par arriver. Background ? Fausse alerte donc. »)**:
+  - **Scope change during the lot.** The first reading was "the home-screen app has a storage of its own (iOS: no token, no
+    trigram, no cached zones; WebKit's storage notes, recalled, not re-read: this container has no outside access)". The user
+    then said the base does arrive: so the message is a **false alarm during the load**, not a missing setting. The first-launch
+    opening of Settings, the "Home-screen app" card and the standalone detection were dropped (not written to the repository).
+  - **Why "not published" appeared while the base was coming** (read in the code):
+    1. Maps tested `!st.published || no zone` on `aerodb.status()`. `published` is empty both for "read nothing" and "read a
+       repository with nothing published": the two were one message.
+    2. `published()` kept its answer for the page's life. An answer given **before the reference tree was readable** (first
+       launch, network not ready, access set after the first question) stayed "empty" until a synchronisation pulled a changed
+       file: `FrameData.list()` swallows a failed tree read and returns only the cache, so aerodb read `{ zones: {} }`. The base
+       "finished by arriving" when the background synchronisation, or the next launch, filled the cache.
+    3. While the read was in progress nothing was said, and worse the map stayed blank: `readFlight()` awaited the alternate's
+       coordinates from the same base, so the route and the note waited for the whole read.
+  - **Done.** aerodb tells three states apart without reading (`aerodb.state()`, `on('state')`, `refresh()`, option `access`):
+    `loading`, `noaccess` (no launcher and no repository + token), `unpublished` (the access works, nothing published); an empty
+    list is read again after 30 s at the next question, and the frame calls `refresh()` when the access changes
+    (`dataAccess().key`) or the network comes back. Maps' sheet note says "Aeronautical database loading… (zones)", or "Data access
+    not set on this device" with a "Settings" button, or the previous message only for the third state; the alternate no longer
+    blocks the map; the "i" pop-up has one line `base` for the same three states (no amber). Four languages everywhere.
+  - **Tests.** A15 "Aerodb loading state" (fake GitHub held, then released: loading note and "i" line, note gone; access cut:
+    "access not set" with the button), D5 (no access) and D5b (access set, nothing published). Not testable here: a real iPhone.
+  - **Not done.** Serving the base from the public pages: `frame/aerodb/DECISIONS.md`, two lines.
+- 24 Oct 2026 — the map threshold tuning link of the Administration card is now a button "Map threshold tuning (administrator)" (`btn: true` in `admin_links.js`, `f-btn primary`) with a sentence saying what the page is for; nothing else changes (Full level only). Asked by the maps relay lot; case D16.
+- **24 Oct 2026 — The status block opens the screen** (relais cloud, branch `v3-cadre-barre`; `V3_SPECIFICATION.md` § 7.1 rule 14, which
+  removes the header's "i" button and its pop-up; written by the V3 frame session).
+  - **What**: a first card `[data-card="status"]`, titled "Status" / "État" / "Status" / "Estado", that carries the lines of the
+    old pop-up with the same texts and the same actions; the "Help for this screen" line is gone (the header's "?" is that).
+    The screen's folded help panel moves under it.
+  - **Who draws it**: the frame. The state belongs to it (current flight, the pending reports of flightlog, the sync state,
+    aerodb's state, the launcher, the position) and is shared with the badge of the ⚙; settings would have to read all of it
+    again and keep it in step. Settings is an "over" of the frame but draws its content in one `innerHTML` and redraws it
+    by `again()`, so the card could not be prepended once by the frame. Contract: `ctx.status = { html(), bind(card) }`;
+    `html()` is the card at the value of the moment (a string, placed first), `bind(card)` hands it to the frame, which
+    rewrites it only when its content changes (signature in `data-sig`) and lets it go when it leaves the page. Documented in
+    `frame/INTEGRATION.md` § 10.2.
+  - **Rows that pointed to "Settings"** (trigram, base, data, launcher) now scroll to the card that holds the answer
+    (`card:identity`, `card:access`, `card:sync,usages`) and focus its first field: a hash that does not change does nothing.
+  - Not changed: the other cards, their order, their saving rule.
+- **25 Oct 2026 — Settings lost after a Safari relaunch: the cause, and the keys now persist like the identity**
+  (relais cloud, branch `v3-settings-admin`; `V3_SPECIFICATION.md` § 10.16; user: "les settings ont tous sauté cette nuit sur
+  les clefs avwx et github. A priori relance de Safari. En revanche, RBR et IVAO sont restés").
+  - **Diagnosis, from the code** (no browser of the user's was available; what follows is what the code proves, and one
+    inference marked as such). Two different stores held the device's settings:
+
+    | Setting | Where it was | Store |
+    |---|---|---|
+    | trigram, IVAO VID, VATSIM CID, SimBrief id | `device/identity.json` | IndexedDB `sogFrame`, store `docs`, policy `cache` |
+    | level, usages, design | `device/level.json`, `usages.json`, `design.json` | same |
+    | GitHub access (repo, branch, **token**) | `localStorage['githubData:frame']` (`frame/store/transport_github.js`) | `localStorage` |
+    | avwx.rest key | `localStorage['githubData:avwx']` (`frame/app.js`, `weatherKey`) | `localStorage` |
+
+    "RBR" and IVAO are fields of the identity: they stayed because IndexedDB stayed; the token and the avwx key went because
+    `localStorage` went. Nothing in the code erases them: no `localStorage.clear()`, no purge at start, no `sessionStorage`
+    (only the status block's dismissal uses it), no memory-only copy, no other policy; the only `removeItem` calls are the
+    user's "Cut access" and "Erase". So the loss happened outside the code: Safari (iOS / macOS) evicts the script-writable
+    storage of a site it considers unused, and **the two stores are not evicted together** (inference, consistent with the
+    observation: the identity survived the very relaunch that cleared the keys). The code had put the two secrets in the
+    store the browser gave up first.
+  - **The reason the keys were in `localStorage`** is written (`frame/DECISIONS.md`, 23 Oct 2026, weather key; the header of
+    `transport_github.js`; `frame/SPEC.md`): *not* a security reason but a backup one — `FrameData.dump()` exports the
+    IndexedDB `docs`, and the keys must stay out of a backup (invariant 1), whereas `localStorage` `githubData:*` was already
+    outside V2's browser backups. The security audits (`AUDIT_SECURITE_2026-10-07.md`, `APPLI_AUTONOME_SECURITE.md` § 4) say
+    only that a token in the browser is readable by an injected script — equally true of IndexedDB — and plan an iOS
+    Keychain (not done). **No written rule forbids IndexedDB for the keys**, so the relay's decision applied.
+  - **Decision (relais cloud)**: the keys persist **like the identity** — same store (IndexedDB `sogFrame`, `docs`), same policy
+    (`cache`), never synchronised — in one file `device/keys.json` (`SPEC.md` § 2).
+  - **What changed**:
+    - `frame/store/transport_github.js`: the access is held in memory (`config()` stays synchronous), `save` / `clear` call the
+      function the frame gave through `persist(fn)`; `hold(cfg)` loads it; `legacy()` returns and erases the old
+      `localStorage` value. `frame/store/frame_data.js`: `dump()` leaves `device/keys.json` out, `load()` ignores it in a
+      backup and a `replace` keeps it (the keys are not in a backup; a replace must not cut the access).
+    - `frame/app.js`, data layer only: `loadKeys()` (new; first line of `loadDevice()`), `keepKeys()` (new), the `avwx` variable
+      in place of `avwxKey()`'s `localStorage` read, `weatherKey.save` / `clear` (now asynchronous), and the `storage` event
+      listener on `githubData:frame` replaced by the existing `own.watch('device/')`. `loadKeys()` takes over the old
+      `localStorage` values **once** (when `device/keys.json` does not exist), so nobody has to type them again, then erases
+      them. A save is memory first, then file; a read waits for the last write and does not overwrite a newer save.
+    - The frame asks the browser for persistent storage (`navigator.storage.persist()`, once, at the first touch — asked at start
+      it shifted the map's attribution folding and made test D7 fail one run in two) and the diagnostic
+      "Copy" now says `storage.persisted`; a granted request is the one thing Safari honours against eviction, and the next
+      report will say whether it was.
+  - **Still possible**: if Safari clears IndexedDB too (its seven-day rule for a site not used, outside a home-screen app),
+    everything goes, identity included; a key lost that way must be typed again. Adding the app to the Home Screen is the
+    remedy the manual now gives.
+  - **Test**: A19 "Keys survive a relaunch" (a persistent browser context closed and opened again: the trigram, the token and
+    the key are set from Settings, then there after a relaunch, then there after a relaunch that cleared `localStorage`). It
+    fails on the code of `82a8f61be` at that last step exactly as the user saw it (`trigram` kept, token and key gone).
+- **25 Oct 2026 — Administration behind buttons** (rule 18; user: "Tous les settings admin vont sur un bouton, comme celui des
+  réglages de seuils"; the word is an intention, here applied as asked):
+  - the Administration card (Full level; absent below, test A12) shows **one button per administrator page**, each with its
+    sentence: "Map threshold tuning" (`#maps?tune=1`), "Flight zone limit", "Export a configuration for a pilot", then the
+    roadmap, the diagnostics, the benches (greyed without a launcher) and the V2 pages (with a launcher). The "(administrator)"
+    in the first title is dropped: the card says it.
+  - **"Flight zone limit"** is a button that folds a panel open on its line, not a new route (nothing else is needed for one
+    box, and the page stays one column): a box "Show the edge line of the flight zone limit", saved at once into
+    `airline/map_profiles.json` as `edge: { show }`, shown by default. The contract for the modules is
+    `INTEGRATION.md` § 4; settings touches no module.
+  - **The export of a pilot's configuration** moved from a fold of the Access card to the Administration card (it is the
+    administrator's steps: invite, export, send). The import stays on the Access card, it is the pilot's. Not moved: the
+    launcher-only cards (data remote, keys, computer access, Little Navmap), which set up a workstation rather than administer
+    the airline; the roadmap and diagnostics are also reachable from About, as before.
+
+## 26 October 2026 — a "Data laboratory" button on the Administration card (aerodb lab P0, relay of the cloud)
+
+User, 26 Oct: « Go. Tu inclus toi-même les injecteurs et mesures dans le lab. » The Administration card (Full level, test A12) gets **one more button**,
+"Data laboratory" (`id: 'datalab'`, `href: '#datalab'`, `where: 'app'`, not `primary`: it is a measuring tool, not a setting), with its sentence in four
+languages; the screen itself is aerodb's (`frame/aerodb/lab.js`, `frame/aerodb/DECISIONS.md` of the same day) and the frame's `ROUTES` / `SCREENS` carry its
+address. Absent below the Full level (the address alone shows "reserved to the Full level"): tests A20, A12. Temporary: it goes with the laboratory. The Settings
+manual says it in one paragraph per language, anchor `settings-datalab`, identical in the four.
+
+
+## 27 October 2026 — the laboratory entry shows its absolute address (aerodb lab pass 2, relay of the cloud)
+
+User, 27 Oct: « Ajouter un lien direct vers le labo depuis la page admin ; pour tester via github. » The entry was already a real `<a class="f-btn" href="#datalab">`
+(44 px); what was missing is the address to open on the phone. `admin_links.js` gets an optional `copyLink`; `adminCard` then writes, under the sentence, "Address to open
+or bookmark on the phone:" and the absolute address `new URL(href, location.href)` (on GitHub Pages `https://<owner>.github.io/<repo>/v3/frame/index.html#datalab`, locally the local
+address: nothing is written in the code), with a "Copy the link" button (`act: adminCopy`, the shared `copy()`, notification "Link copied."). Same level as before (Full,
+rule 18); only the lab entry has it. The lab screen starts with a "Settings › Administration" link (`#settings`) to come back. Test A20. Two small rules for `frame.css`
+(`.f-admin-url`, `.f-admin li > .f-row`).
+- **28 Oct 2026 — Keys in `device/keys.json`: replaces the rule of 23 October** (ergonomics session's decision; security
+  review of 28 October favourable). The rule of 23 October kept the weather key (and the GitHub token) out of `device/` and
+  out of the IndexedDB cache, in `localStorage` only. Since the cloud relay's change of 25 October (Safari evicted
+  `localStorage` without IndexedDB, so the keys were lost while the identity stayed), both keys live in `device/keys.json`
+  like the identity, and that rule is withdrawn. What still holds: the file is never synchronised, left out of `dump()` and
+  kept by a `replace` load, so no backup carries it; never shown again, never in the diagnostics nor in a pilot's
+  configuration. The protection against reading it from the page is the content security policy and, for GitHub, a token
+  of the narrowest reach the repository allows (§ 3.6, § 5). SPEC § 4 invariant 1 rewritten accordingly; § 3.6 gives the
+  token advice decided on 23 October (classic `repo` for a user's repository, fine-grained for an organisation's, one
+  year); INTEGRATION § 1 lists the scripts loaded on demand.
+- **28 Oct 2026 — `settings.js` split into parts** (ergonomics session's answer 5, a lot of its own, no change of
+  behaviour): 122 KB became `settings.js` (57 KB: `render()`, identity, usages, offline data, export / import, joining)
+  and five parts loaded before it, each under 60 KB and by concern: `kit.js` (helpers and the shared text table),
+  `launcher.js` (launcher cards), `access.js` (access and transport without a launcher, synchronisation),
+  `diagnostic.js` (about, diagnostics), `admin.js` (Administration, publication edge, pilot configuration). Each part
+  exposes `acts` (the button actions it answers), `run(env, act, button, event)`, its HTML builders and `live(env)`;
+  `render()` builds one `env` (view, context, identity, preferences, launcher state…) and passes it to all. Parity
+  checked by a snapshot of the screen before and after (launcher / no launcher × fr / en × levels 2 / 3: cards, texts,
+  buttons, fields, links): no difference; no JS error at levels 1 to 3.
+- **28 Oct 2026 — Seven cards, then groups; the launcher's administration behind Administration** (ergonomics session,
+  answers 2 and 4; question 6 of the relay closed):
+  - Discovery shows seven cards at most, flat, in the order of the path (Identity, Access, Synchronisation, Usages,
+    Level, Design, About); Backup, Offline data, Weather key, Little Navmap sheets and Computer access start at
+    Everyday. Everyday and Full: seven folded groups (Identity, Access, Data, Device, Display, Administration, Help),
+    open only when they carry an attention (warning, error, target of an amber status line), with the amber dot on
+    their title. Cards of circumstance (V2 found, configuration received, joining resume) come first at every level,
+    outside the count. My first reading ("more than seven visible cards → groups, at every level") was corrected: the
+    "Simple" level of the rule is Discovery.
+  - The launcher's cards that are the administrator's — remote repository of `data/`, the airline's API keys (IVAO) —
+    became two panels of the Administration card (`admin_links.js`: `where: 'launcher'`), so they are seen at the Full
+    level only. What a pilot uses on the workstation stays in place and at its level (Computer access, Little Navmap
+    sheets, the clone / take-over door of `data/` in Access), drawn only when the launcher answers.
+  - A line of the status block, the Administration card's "Diagnostics" and the `?offline` / `?import` entries open the
+    group of their card first: the frame's `goStatus` (frame/app.js) is left as it is, settings listens in the capture
+    phase.
+  - `groups.js` is a part of its own (settings.js would have gone over 60 KB).
+  - Same lot, review of the Computer access card (points 2 and 3, the ergonomics session's go): pairing date in UTC
+    (`c.time.fmtDateZ`), "Device "…" forgotten." for one device, a failed Forget keeps the state shown and says the
+    launcher does not answer, "Open them too" names an address still closed. Point 1 (`lan_open(every)` touching the
+    pairing code) is the frame's (`tools/launch.py`).
+- **28 Oct 2026 — Design card and Aqua** (ergonomics session; the frame's contract `design()` → `{ design, tone,
+  applied }` of origin/v3-aqua b13cffe73): when the design applied is not the one chosen (Aqua chosen, a device that is
+  not a computer), one line ×4 under the thumbnails says so and that touching a thumbnail replaces the choice; the
+  thumbnail marked as set is the applied one (Standard). `designs()` already leaves Aqua out there. Test A26 (phone,
+  Aqua remembered) skips itself while the frame does not give `applied`.
+- **28 Oct 2026 — A card reached by its address, whatever the level** (ergonomics session, answering the joining
+  assistant's "Offline data" button, which led nowhere at Discovery): `#settings?card=<name>` and `#settings?offline=1`
+  draw that card alone, under "← Settings"; the level only filters the list, which stays at seven at Discovery. Not
+  chosen: moving the pilot to Everyday, an eighth card. `?offline=1` no longer scrolls to the card nor clears the
+  address (the address is what keeps the card through a redraw). Test A27.

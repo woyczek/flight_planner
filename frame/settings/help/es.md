@@ -5,6 +5,24 @@ intercambian los datos y lo que el dispositivo guarda sin conexión. Se quedan e
 
 ## Cómo usarlo
 
+**El estado.** La pantalla se abre con el bloque «Estado», con el mismo punto que el botón ⚙ de la cabecera (verde: algo
+nuevo; naranja: atención). Una línea por cosa, toque para actuar: el vuelo en curso (al Mapa), los informes por escribir (al
+informe ya rellenado), el trigrama que falta (a «Identidad»), la base aeronáutica mientras no esté lista (a «Acceso a los
+datos»), el estado de los datos y la vía de intercambio usada (a «Sincronización», o a los conflictos), el lanzador, «Sin
+conexión» y, en un teléfono, la posición durante un vuelo.
+
+**Los grupos.** En el nivel Descubrimiento, la pantalla muestra siete tarjetas como mucho, una debajo de otra:
+Identidad, Acceso a los datos, Sincronización (cuando sirve), Usos, Nivel, Diseño y Acerca de. La copia de seguridad, los
+datos sin conexión, la clave meteorológica, las fichas de Little Navmap y el acceso del equipo llegan en el nivel
+Habitual. En los niveles Habitual y Completo, las tarjetas se ordenan bajo siete títulos, en el orden en que se
+configuran las cosas: Identidad, Acceso, Datos, Dispositivo, Visualización, Administración (nivel Completo) y Ayuda.
+Cada título está plegado; tóquelo para abrirlo. Un grupo que requiere atención (un aviso, un error o la tarjeta a la que
+lleva una línea naranja del estado) se abre solo, con un punto naranja; una línea del bloque «Estado» abre el grupo de su
+tarjeta. Un grupo abierto a mano sigue abierto mientras la página está abierta. Las tarjetas de circunstancia (ajustes de
+la V2 encontrados, configuración recibida, reanudación de la adhesión) van primero, en todos los niveles, y desaparecen
+una vez atendidas. Una tarjeta abierta por su dirección (el botón «Datos sin conexión» del asistente «Unirse a la
+aerolínea», por ejemplo) se muestra sola, sea cual sea el nivel; «← Ajustes» vuelve a la lista.
+
 **Su identidad.** En «Identidad», escriba su trigrama y sus identificadores VID IVAO, CID VATSIM y SimBrief, luego
 «Guardar». Las herramientas los usan para prerrellenar; con varios usuarios, el trigrama es necesario.
 
@@ -12,7 +30,9 @@ intercambian los datos y lo que el dispositivo guarda sin conexión. Se quedan e
 la línea «Menú:» indica qué herramientas muestra; una herramienta oculta sigue accesible por su dirección.
 
 **El diseño.** «Diseño» muestra una miniatura por aspecto — Estándar, Gabinete, Robusto — y el tono: Automático
-(como el sistema), Día o Noche. Un toque lo aplica en el acto, solo en este dispositivo.
+(como el sistema), Día o Noche. Un toque lo aplica en el acto, solo en este dispositivo. Un diseño reservado al
+ordenador no se aplica en un teléfono: la tarjeta dice cuál se muestra en su lugar, y su miniatura está marcada; tocar
+una miniatura sustituye esa elección.
 
 **Los usos.** La frase al principio de «Usos» indica cómo se intercambian los datos. Sin casilla marcada, está «Solo en
 este dispositivo»: nada sale a otro lugar. Marque «Solo, en varios dispositivos» o «Varios usuarios (repositorio git de
@@ -21,13 +41,14 @@ del lanzador, incluso sin casilla marcada; un uso de intercambio la comparte ade
 
 **El acceso a los datos.** En un teléfono o en el sitio, configure en «Acceso a los datos» el repositorio
 (cuenta/repositorio), la rama y su token personal, luego «Probar» y «Guardar». En un puesto servido por el lanzador no
-hay token: la tarjeta muestra el repositorio remoto de `data/` (vea «Un repositorio git para data/»).
+hay token; mientras `data/` no es un repositorio git, la tarjeta abre la vía para obtenerlo o retomarlo; su repositorio
+remoto se configura en la tarjeta «Administración» (vea «Un repositorio git para data/»).
 
 **Sin acceso ni lanzador, no hay bases.** Un dispositivo sin acceso configurado y sin lanzador — el sitio abierto en un
 teléfono por primera vez, por ejemplo — no tiene ni la base aeronáutica (espacios, aeródromos, radioayudas) ni la base
 de aeronaves: «Datos sin conexión» lo dice. Dos vías: configure el acceso al repositorio de datos, incluso sin marcar
 intercambio (entonces solo sirve para leer las bases); o, en un puesto con lanzador, publique las bases en el
-repositorio (V2: Ajustes › Mantenimiento › Datos aeronáuticos y Tipos de aeronave), luego sincronice.
+repositorio (V2: Ajustes › Mantenimiento › Datos aeronáuticos y Tipos de aeronave), luego sincronice. Tres estados distintos cuando falta la base: «Base aeronáutica cargándose…» (la lectura no ha terminado: espere), «Acceso a los datos no configurado en este dispositivo» (configure el acceso arriba; una aplicación añadida a la pantalla de inicio tiene su propio almacenamiento, nada de lo de Safari está allí) y «Base aeronáutica no publicada» (el acceso funciona, nada está publicado en el repositorio).
 
 **La sincronización.** Con un intercambio marcado, la tarjeta «Sincronización» da la última correcta, las escrituras
 pendientes y la red; «Sincronizar ahora» envía y recibe en el acto. Si no, se hace sola al inicio, cada 10 minutos en
@@ -46,7 +67,7 @@ el dispositivo.
 El METAR funciona sin clave. El TAF, en un dispositivo sin lanzador (teléfono, sitio), requiere una clave personal y
 gratuita de avwx.rest: «Crear una clave en avwx.rest ↗» abre la página del proveedor. Péguela en «Clave meteorológica
 (TAF, avwx.rest)», luego «Guardar»; «Probar» pide el TAF de un aeródromo, «Borrar» la quita. La clave se queda solo en
-este dispositivo, nunca en el repositorio ni en una copia, y nunca vuelve a mostrarse. En un puesto servido por el
+este dispositivo (guardada con su identidad: sobrevive al cierre del navegador), nunca en el repositorio ni en una copia, y nunca vuelve a mostrarse. En un puesto servido por el
 lanzador es innecesaria: el lanzador proporciona el TAF.
 
 ## Fichas de Little Navmap
@@ -60,11 +81,11 @@ archivo nunca se borra: el de una ficha retirada va a la subcarpeta `_removed`. 
 seguida, «Detener» corta el vínculo. Las fichas a las que les falta un valor requerido por Little Navmap se listan y no
 se escriben. En un teléfono, Combustible descarga la ficha en .lnmperf.
 
-## Las claves del lanzador
+## Las claves API de la aerolínea
 
-En un puesto servido por el lanzador, «Claves del lanzador» configura la clave de la API IVAO: se queda en la carpeta
-`secrets/` del lanzador, nunca en el navegador ni en los datos. «Probar» comprueba que IVAO responde; «Borrar» la
-quita.
+En un puesto servido por el lanzador, en el nivel Completo, el botón «Claves API de la aerolínea (IVAO)» de la tarjeta
+«Administración» despliega el ajuste de la clave de la API IVAO: se queda en la carpeta `secrets/` del lanzador, nunca en
+el navegador ni en los datos. «Probar» comprueba que IVAO responde; «Borrar» la quita.
 
 ## La tableta junto al simulador
 
@@ -87,12 +108,14 @@ Vuela en el equipo (X-Plane) y quiere el mapa en una tableta o un teléfono: en 
   posición viene del simulador del equipo.
 - Un código sirve una sola vez y dura 10 minutos: «Código nuevo» da otro. 5 códigos erróneos desde un dispositivo:
   un minuto de espera; 30 en una hora: la vinculación se cierra hasta el siguiente «Código nuevo». «Olvidar», junto
-  a un dispositivo, retira solo ese.
-- Solo se abre la dirección principal del equipo; las demás (VPN, máquinas virtuales) solo con «Abrirlas también».
+  a un dispositivo (con su fecha de vinculación, en UTC), retira solo ese.
+- Solo se abre la dirección principal del equipo; las demás (VPN, máquinas virtuales) solo con «Abrirlas también». Una
+  dirección que no puede abrirse se nombra en la tarjeta; la ventana del lanzador dice por qué.
 
 ## Un repositorio git para data/
 
-En un puesto servido por el lanzador, «Acceso a los datos» muestra el repositorio remoto de `data/`: su dirección y su
+En un puesto servido por el lanzador, en el nivel Completo, el botón «Repositorio remoto de data/» de la tarjeta
+«Administración» muestra el repositorio remoto de `data/`: su dirección y su
 rama. Para configurarlo o cambiarlo, escriba la dirección (`git@host:cuenta/repo.git` o `https://…`, sin contraseña ni
 token dentro): «Comprobar» indica si el repositorio responde, «Guardar» lo configura. Hacia otra dirección distinta de la configurada, se abre una ventana Sí / No en el equipo, no en la página: la tarjeta lo dice antes del clic; respóndala (puede estar detrás de otras ventanas) y vuelva. Rechazada, cerrada o ya abierta: la tarjeta da el motivo y `data/` se queda tal cual. Es a propósito: una página trampa no debe poder enviar sus datos a otro lugar. Nada bloquea: un repositorio que no responde solo
 se señala.
@@ -101,7 +124,7 @@ se señala.
   guardadas en Git para una dirección `https://…`.
 - **Varios usuarios por git** necesitan este repositorio remoto: sin él, la casilla «Varios usuarios» no lleva a
   ninguna parte, y la tarjeta «Usos» lo recuerda.
-- **data/ ausente o sin git**: la tarjeta abre una vía. `data/` es una carpeta ignorada por el repositorio del código;
+- **data/ ausente o sin git**: la tarjeta «Acceso a los datos» abre una vía, en todos los niveles. `data/` es una carpeta ignorada por el repositorio del código;
   se convierte en su propio repositorio git, enlazado al repositorio de datos (no un submódulo). Escriba la dirección
   del repositorio de datos y, si hace falta, un usuario y una contraseña o token (nunca guardados por la página;
   «Recordar» los confía a Git en este equipo). Sin `data/`, «Recuperar los datos» lo clona; con un `data/` sin git
@@ -111,7 +134,7 @@ se señala.
 ## Configurar un piloto
 
 **Preparar la configuración (administrador).** En un puesto servido por el lanzador, o en un dispositivo configurado con
-GitHub, despliegue «Exportar una configuración para un piloto…» en la tarjeta «Acceso a los datos»: recuerda sus pasos
+GitHub, en el nivel «Completo», toque «Exportar una configuración para un piloto» en la tarjeta «Administración»: recuerda sus pasos
 en orden. Invite primero el nombre de GitHub del piloto al repositorio, con el rol Write (el enlace lleva a la página de
 colaboradores del repositorio). Escriba luego su trigrama y la dirección de la aplicación publicada, y «Crear el archivo
 y el enlace»: el archivo sog-config-<TRI>.json se guarda, el enlace y su código QR aparecen. Contienen la aerolínea, el
@@ -138,9 +161,15 @@ framagit o GitLab, configure el acceso en un puesto con el lanzador.
 ## Administración
 
 **Las páginas de administración.** En el nivel «Completo» (tarjeta «Nivel»), la tarjeta «Administración», bajo «Acerca
-de», reúne las páginas de administración y de prueba, cada una con una frase; en los demás niveles no aparece. En la
-aplicación: el ajuste de los umbrales del mapa (`#maps?tune=1`, solo lectura en un teléfono), la hoja de ruta
-(`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
+de», reúne las páginas de administración y de prueba, **un botón por página**, cada una con una frase; en los demás niveles no aparece, y nada del administrador está en las demás tarjetas. En la
+aplicación: el botón «Ajuste de los umbrales del mapa» (`#maps?tune=1`, solo lectura en un teléfono; abre la página de ajuste: para cada elemento del mapa y cada modo, los zooms en que aparece, guardados para la aerolínea, `airline/map_profiles.json`; un modo que nunca guardó toma los umbrales de un modo ajustado, la página lo dice; el control «Complejidad» del mapa solo desplaza el zoom), vuelta con la flecha de retroceso; el botón «Límite de la zona del vuelo», que despliega una casilla
+«Mostrar la línea del límite de la zona del vuelo» (guardada al instante para la aerolínea, con los umbrales, en `airline/map_profiles.json`,
+clave `edge`; la línea se muestra mientras no ajuste nada); el botón «Exportar una configuración para un piloto» (véase «Configurar un piloto»); en un puesto servido por el
+lanzador, los botones «Repositorio remoto de data/» y «Claves API de la aerolínea (IVAO)», que despliegan su ajuste (véase
+«Un repositorio git para data/» y «Las claves API de la aerolínea»);
+la hoja de ruta (`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
+
+<a id="settings-sources"></a>**Fuentes de datos.** El botón «Fuentes de datos» (`#sources`, nivel Completo) enumera las fuentes de datos aeronáuticos que la suite utiliza, considera o ha descartado: para cada una, lo que da, su licencia, su estado y un enlace que se abre en una pestaña nueva; para las que cambian con cada ciclo AIRAC (SIA, VAC, eAIP, CIFP), el enlace es el del ciclo vigente, escrito arriba de la pantalla. La pantalla no descarga nada. Bajo el botón de la tarjeta Administración, la dirección absoluta de la pantalla, para abrirla o guardarla en favoritos («Copiar el enlace»). Sustituye al laboratorio de datos, retirado el 28 de octubre de 2026.
 
 **Los bancos, en un puesto.** Servidos por el lanzador, solo se abren en un puesto con lanzador (en otros sitios se
 nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primitives.html` (primitivas y diseños),
@@ -155,6 +184,10 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
 
 - **El token**: un token de grano fino de github.com, solo sobre el repositorio de datos, «Contents» lectura y
   escritura, 90 días como máximo. Nunca se vuelve a mostrar; no lo pegue en ningún mensaje.
+- **Sus ajustes se quedan al cerrar el navegador**: la identidad, el token y la clave meteorológica se guardan en el mismo
+  sitio del dispositivo, nunca sincronizados ni en una copia. Si Safari se los hizo perder igualmente (borra el almacenamiento
+  de un sitio poco visitado), añada la aplicación a la pantalla de inicio: allí está mejor guardada. El diagnóstico
+  («Copiar») dice si el navegador prometió no borrar (`storage.persisted`).
 - **Cortar el acceso**: borra el token de este dispositivo; sus escrituras pendientes se quedan y saldrán cuando el
   acceso vuelva a configurarse. Teléfono perdido o robado: borre también el token en github.com.
 - **Ajustes de la V2**: si este navegador ya se usó para la V2, la tarjeta «Ajustes de la V2 encontrados» propone una
@@ -165,4 +198,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 690a6cb3e469 -->
+<!-- fr: 47f9199a8ffd -->
