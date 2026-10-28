@@ -678,9 +678,11 @@ die Legende, den Chip oder Escape schließt sie.
 
 - Die Vorhersage kommt von Open-Meteo (Météo-France AROME und ARPEGE über Frankreich, ICON in Europa, GFS anderswo);
   die Weltsynoptik kommt von GFS (NOAA), alle 3 Stunden bis 72 Stunden.
-- Das Geladene bleibt auf dem Gerät und dient offline; die Karte übernimmt seinen Wetterschnitt.
+- Das Geladene bleibt auf dem Gerät und dient offline, im Wetterspeicher, den Kraftstoff, Karte und Wetter teilen;
+  die Karte übernimmt seinen Wetterschnitt. Die Aufrufe des Tages bei Open-Meteo werden im Statusblock der
+  Einstellungen gezählt.
 
-<!-- fr: 148822fd2e55 -->
+<!-- fr: 9e625efa8e4e -->
 
 <!-- chapter: data -->
 # Daten

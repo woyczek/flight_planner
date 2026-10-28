@@ -7,9 +7,9 @@ Rules covered
   * one "i" only on the page besides the drawing's legend chip (E5, L8); the "tap the map" hint is a notification, once per page
     life (E6, L10); nothing redraws while the sheet is dragged (E7); the cut's window on the distance axis: a pinch, its marks,
     "Vol entier" (E8), kept through a sheet drag (E9); the frame's "?" opens the Weather chapter at the paragraph of the view
-    shown (E10).
+    shown (E10); Escape closes the legend and leaves the full screen on (E11).
 
-Cases: E1 E2 E3 E4 E5 E6 E7 E8 E9 E10.  The module is seeded with the planned flight of lib.FLIGHT; no forecast can be read without the
+Cases: E1 E2 E3 E4 E5 E6 E7 E8 E9 E10 E11.  The module is seeded with the planned flight of lib.FLIGHT; no forecast can be read without the
 network, so the cases that need data use the module's offline demonstration (`#atmosphere?donnees=demo`) and say so.
 """
 import re
@@ -377,3 +377,21 @@ def e13(c):
         elif setup:
             open_view(c, setup)
         _help_at(c, anchor)
+
+
+@case('E14', 'Escape closes the legend only', 'E', tags=('atmosphere', 'overlay'), screens=True, designs=('standard',), night=False,
+      rule='frame/INTEGRATION.md 9.4: Escape closes the innermost first; a module that closes something calls preventDefault')
+def e14(c):
+    c.open('atmosphere?donnees=demo', flight=True)
+    c.until(f"!!document.querySelector('{ATM} .at-dbody svg')", timeout=10000, what='the cross-section is drawn')
+    c.settle()
+    c.tap('.f-ov-full')
+    c.until("document.documentElement.classList.contains('f-full')", what='full screen on')
+    c.tap(f'{ATM} [data-at="legendBtn"]')
+    c.until(f"!!document.querySelector('{ATM} .at-legend')", what='the legend is shown')
+    c.key('Escape')
+    c.until(f"!document.querySelector('{ATM} .at-legend')", what='Escape closes the legend')
+    c.ok(c.js("document.documentElement.classList.contains('f-full')"), 'the same Escape also left the full screen',
+         'the full screen stays: the module consumed the key')
+    c.key('Escape')
+    c.until("!document.documentElement.classList.contains('f-full')", what='a second Escape leaves the full screen')

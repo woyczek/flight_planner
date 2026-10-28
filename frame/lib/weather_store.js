@@ -291,19 +291,22 @@ export function weatherStore({
 
   // ---------------------------------------------------------------- prévision (cœur)
   /** Prévision de lieux [{ lat, lon }] pour des variables horaires, depuis la réserve, Open-Meteo pour ce qui manque.
-   *  opts : model (requis), days, cacheOnly (rien demandé : null s'il manque quelque chose), stale, onWait. Rend { locs
+   *  opts : model (requis), days, from (ms : premier jour quand il est passé — un vol daté d'avant aujourd'hui ; Open-Meteo
+   *  sert jusqu'à 92 jours passés), cacheOnly (rien demandé : null s'il manque quelque chose), stale, onWait. Rend { locs
    *  (un par lieu, à la forme d'Open-Meteo), run, weight, requests, cells }. */
   async function forecast(places, vars, {
     model,
     days = 2,
+    from = null,
     cacheOnly = false,
     stale = () => false,
     onWait
   }) {
     prune().catch(() => {});
-    const curRun = await run(model),
+    const today = Date.parse(dayOf(now())),
+      curRun = await run(model),
       size = cellSize(model),
-      first = Date.parse(dayOf(now())),
+      first = Number.isFinite(from) ? Math.max(today - 92 * 864e5, Math.min(today, Date.parse(dayOf(from)))) : today,
       dayList = Array.from({
         length: days
       }, (_, k) => dayOf(first + k * 864e5)),
@@ -504,6 +507,7 @@ export function weatherStore({
   async function grid(places, when, vars, {
     model,
     days,
+    from = null,
     cacheOnly = false,
     stale,
     onWait
@@ -520,6 +524,7 @@ export function weatherStore({
       r = await forecast(pts, [...new Set(vars)], {
         model: m.id,
         days: days || daysFor(secOf(when, now()), now()),
+        from,
         cacheOnly,
         stale,
         onWait

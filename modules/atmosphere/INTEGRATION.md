@@ -2,91 +2,95 @@
 
 ## 1. Files
 
+Every file is 60 KB at most; the three contents opened by a button are loaded at their first opening (and fetched once
+the screen is drawn, so that they work offline).
+
 | File | Role |
 |---|---|
-| `module.js` | `meta`, `mount(el, ctx)`, `unmount()`: the screen, the loads, the drawings |
+| `module.js` | `meta`, `mount(el, ctx)`, `unmount()`: the hub — state, skeleton, buttons over the map, the sheet and its head, the contents' switch, the load |
+| `style.js` | the screen's styles (`STYLE`), set once in a `<style>` |
+| `fmt.js` | formats in the interface's language (levels, temperatures, winds, times, numbers) and the DOM writes made only when the value changes |
+| `flight.js` | the flight shown: `fromRecord` (current flight, example, file), `fromText` (route text), `EXAMPLE`, `flightSig` |
+| `wx.js` | the data: `ctx.weather` only (§ 3), or the demonstration; `forecast`, `aerodromes`, `why` |
+| `screen_map.js` | the map: MapLibre or the plain background, the weather map (`lib/weather_map.js`), the flight over it, taps, the altitude chip |
+| `screen_cut.js` | the cross-section and its window (rule 20), the soundings, the legend |
+| `screen_details.js` | Details (loaded on demand): summary, aerodromes, table |
+| `screen_flight.js` | Flight and settings (loaded on demand) |
+| `screen_layers.js` | Layers (loaded on demand) |
 | `texts.js` | every text, `[fr, en, de, es]`, for `ctx.t` |
 | `section.js` | pure SVG renderers of the profile and the slice (§ 5) |
-| `atmo.js` | pure computations: columns at an hour, reading at a pressure altitude, density, inversions, icing, trajectory, grid, contours; reuses `modules/fuel/winds.js` |
-| `weather_store.js` | the shared weather cache (§ 3), written to move unchanged into `frame/weather` |
-| `world.js` | the world synoptic (SPEC § 4): `worldReader({ data, net })` → `{ index(), step(index, k) }`, `valid`, `validStep`, `stepAt`, `worldGrid(index, step)`, `worldAt(index, step, lat, lon)`; pure but the reader |
+| `atmo.js` | pure computations: columns at an hour, reading at a pressure altitude, density, inversions, icing, trajectory, grid, contours; reuses `modules/fuel/winds.js`, the model by region from `frame/lib/weather_store.js` |
+| `world.js` | the world synoptic's pure functions (SPEC § 5): `valid`, `validStep`, `stepAt`, `worldGrid(index, step)`, `worldLocs`, `worldAt(index, step, lat, lon)`; the reading is `ctx.weather.world` |
+| `lib/weather_map.js` | the weather map renderer (§ 6), shared by this module and the maps module: `createWeatherMap`, `attach`, `gridRequest`, `legend()` |
+| `demo.js` | offline demonstration, answered in Open-Meteo's own format, never written to the shared cache |
 | `tools/build_world_weather.py` | builds `/v3/weather/world/` from NOAA GFS in the Pages workflow (`.github/workflows/pages.yml`, step "Synoptique monde") |
 | `tools/grib2_lite.py` | minimal GRIB2 reader (grid 3.0, products 4.0–4.15, packing 5.0 and 5.3, bitmap), standard library |
-| `lib/weather_map.js` | the weather map renderer (§ 6), shared by this module and the maps module: `createWeatherMap`, `attach`, `gridRequest`, `legend()` |
 | `help/<lang>.md` | the "Météo" chapter of the pilot's manual, four languages (built by `frame/help/build_help.py`) |
-| `demo.js` | offline demonstration, answered in Open-Meteo's own format |
-| `test/weather_store.html` | bench of the weather cache (fake data layer and network) |
-| `test/weather_map.html` | bench of the weather map library: states, legend, values, no fill showing the grid's limit, `edge`, `attach` / `detach`, no Open-Meteo call |
+| `test/weather_map.html` | bench of the weather map library on `ctx.weather` (the frame's store over an in-memory data layer): states, legend, values, no fill showing the grid's limit, `edge`, `attach` / `detach`, no Open-Meteo call |
 | `test/weather_map_perf.html` | performance page of the library (first draw, cost of a frame per layer, canvas memory, bytes read); run with the CPU slowed ×4 |
 | `ROADMAP.md` | what is done, what is next |
 
 ## 2. Mounting
 
-- `meta`: `id: 'atmosphere'`, `level: 1`, `fixed: true`, `help: false`; `reads: ['pilot/', 'cache/weather/',
-  'cache/atmosphere/']`; `writes`: `cache/weather/` and `cache/atmosphere/`, both `policy: 'cache'` (never
-  synchronised); `files` (the libraries it imports, `../maps/render.js` included), `lazy` (MapLibre and the countries'
-  outlines of the maps module), `net: ['tiles.openfreemap.org']`.
-- In `APP.modules` (`frame/app.js`), icon `layers`, and in the **Préparer** group of `APP.tabs` (with fuel): on a phone
-  the frame draws the sub-tabs Fuel · Atmosphere; on a screen it is in the rail. `#atmosphere?donnees=demo` opens the
-  demonstration; `labs/atmosphere/index.html` forwards there.
-- **Map: the maps module's technique and base, shared.** The base is `modules/maps/lib/map_base.js` (maps INTEGRATION
-  § 7): `startTiles` (MapLibre, the style of `styleFor({ dark })`, 8 s wait, gives up on an error before `load`),
-  `mapSize` on every size change and on return of a hidden tab, `isOwnResize` in `movestart`, `loadRender`,
-  `loadOutlines`, `plainView` and `drawPlain` for the plain background; the weather overlay on a canvas over the map, redrawn on every frame of the map's
-  movement (`move` → `requestAnimationFrame`) with `map.project`; its geometry (field images, isobar and isotherm
-  segments in lon / lat, labels, highs and lows, winds, coloured trajectory) is computed once per data set, never per
-  frame. Without tiles (offline, no WebGL, host refused): the plain background (`plainView`, `drawPlain`, the countries'
-  outlines). What stays in the module: the map's events once loaded, the overlay and its redraw loop.
-- **Bottom sheet: the frame's** (`frame/lib/sheet.js`, `frame/INTEGRATION.md` § 11): `f-sheet` on the module's root,
-  `f-sheet-panel` / `f-sheet-head` / `f-sheet-grip` / `f-sheet-title` / `f-sheet-close` / `f-sheet-body` on its parts;
-  `createSheet({ root, panel, head, grip, pos, ignore, labels, onChange, onSettle })`, the position kept between two
-  mounts; `onSettle` resizes the map, reframes it unless the user moved it, and redraws the block when its size changed.
-- **Buttons over the map: the frame's overlay layer** (`ctx.overlay`, `frame/INTEGRATION.md` § 9.3), laid over `.at-box`
-  (`ov.over`): `ov.button()` for Layers (`side: 'left'`), Flight, Details and Load (`aria-pressed` kept up to date for the
-  three toggles); the altitude chip is the module's own element appended to `ov.right` (a 44 px round label holding the
-  level in brief and a transparent `<select>` over it, so a tap opens the system's list). The overlay is a sibling of the
-  module's root: its rules are written `[data-module="atmosphere"] ~ .f-overlay …`. Full screen (§ 9.4) needs nothing
-  here: the map box's `ResizeObserver` resizes the map.
-- **Touch**: `touch-action: none` on the map alone (MapLibre takes its gestures there), `manipulation` on the module's
-  buttons, selects and fields (no double-tap zoom, no delay).
-- Everything goes through `ctx`: `data` (current flight read only, its own cache files), `net` (Open-Meteo, METAR,
-  TAF), `aerodb.coords` (names of a route text), `t` / `lang`, `notify`, `identity.trigram`. No `fetch`, no storage
-  of its own, no key.
-- It redraws on its size (`ResizeObserver`), on the design and tone (`data-design`, `data-tone` on `<html>`, and the
-  system's colour scheme), and reads the current flight again on `watch`.
+- `meta`: `id: 'atmosphere'`, `level: 1`, `fixed: true`, `help: true`; `reads: ['pilot/', 'cache/atmosphere/',
+  'airline/map_profiles.json']`; `writes`: `cache/atmosphere/` (`policy: 'cache'`, the screen's settings); `files` (every
+  file above that the screen imports, the maps module's base and render included), `lazy` (MapLibre and the countries'
+  outlines of the maps module), `net: ['tiles.openfreemap.org']`. The weather is not in `reads` / `writes`: the frame's
+  weather layer keeps its own cache.
+- In `APP.modules` (`frame/app.js`), its own tab of the bar (Météo, `cloud` icon; rule 14) and the rail on a screen.
+  `#atmosphere?donnees=demo` (or `?data=demo`) opens the demonstration. `ctx.helpAnchor` gives the "?" the paragraph of
+  the view shown (SPEC § 1).
+- **Map: the maps module's base, shared.** `modules/maps/lib/map_base.js` (maps INTEGRATION § 7): `startTiles` (MapLibre,
+  the style of `styleFor({ dark })`, 8 s wait), `mapSize`, `setBottomInset` (MapLibre's bottom controls above the sheet,
+  rule 17), `isOwnResize` in `movestart`, `loadRender`, `loadOutlines`, `plainView` and `drawPlain` for the plain
+  background. The map and its overlay have the module's whole size, under the sheet (`--at-full-w/h`, `--at-hide-r/b`):
+  a move of the sheet resizes nothing. The overlay canvas is redrawn on every frame of the map's movement
+  (`requestAnimationFrame`) with `map.project`; its geometry is computed once per data set.
+- **Bottom sheet: the frame's** (`frame/lib/sheet.js`, `frame/INTEGRATION.md` § 11): `createSheet({ root, panel, head,
+  grip, pos, ignore, labels, onChange, onSettle })`, the position kept between two mounts of the page; nothing is redrawn
+  while the panel carries `f-sheet-nt` (a drag, rule 19); `onSettle` sizes the map, reframes it unless the user moved it,
+  and redraws the drawing when the body's size changed. The bare head (`f-sheet-head-bare`, rule 13) in the default
+  position in portrait only.
+- **Buttons over the map: the frame's overlay layer** (`ctx.overlay`, `frame/INTEGRATION.md` § 9.3): Layers (`side:
+  'left'`), Flight, Details and Load, `aria-pressed` kept up to date; the altitude chip is the module's own element in
+  `ov.right` (a 44 px round label with the level in brief and a transparent `<select>` over it). The overlay's rules are
+  written `[data-module="atmosphere"] ~ .f-overlay …`.
+- **Touch**: `touch-action: none` on the map and on the drawing (two fingers are the cut's window), `manipulation` on the
+  buttons, selects and fields.
+- Everything goes through `ctx`: `data` (current flight read only, the screen's settings), `weather` (§ 3), `aerodb.coords`
+  (names of a route text), `t` / `lang`, `notify`, `overlay`, `helpAnchor`, `identity.trigram`. No `fetch`, no
+  `ctx.net`, no storage of its own, no key.
+- It redraws on its size (`ResizeObserver`, never during a drag), on the design and tone (`data-design`, `data-tone` on
+  `<html>`, and the system's colour scheme: events, nothing rewritten outside the module), and reads the current flight
+  and `airline/map_profiles.json` again on `watch`.
 
-## 3. The weather cache — `cache/weather/`
+## 3. The weather — `ctx.weather`
 
-For every reader of Open-Meteo (this module today; Fuel's winds aloft and the maps later). Decision of 24 October
-2026 (`docs/technique/V3_SPECIFICATION.md` § 8): a frame lot, `frame/weather`, will hold it; until then it lives
-here, and moving it is a substitution.
+The frame's single weather layer (`frame/lib/weather_store.js`, contract in `frame/INTEGRATION.md` § 14): one cache
+`cache/weather/<model>/<cell>/<UTC day>.json`, one count of the calls to Open-Meteo, one model by region. This module asks
+it and nothing else (`wx.js`):
 
-```js
-import { weatherStore } from '../atmosphere/weather_store.js';
-const W = weatherStore({ data: ctx.data, net: ctx.net });   // data must allow cache/weather/ (policy cache)
-const run = await W.run('meteofrance_seamless');             // seconds, or null (meta.json kept 10 min)
-const r = await W.forecast(places, ['temperature_850hPa', 'wind_speed_850hPa'], {
-  model: 'meteofrance_seamless', cacheOnly: false, stale: () => false, onWait: s => {} });
-// r = { locs: [{ latitude, longitude, elevation, hourly: { time, temperature_850hPa, … } }], weight, requests, cells }
-// cacheOnly: null when anything is missing; nothing asked
-await W.spent();   // weighted calls over 24 h on this device
-```
+- the route's columns and the map's grid: `grid(places, until, vars, { model, days, from, cacheOnly, stale, onWait })` —
+  the places of `sectionPlaces` / `gridRequest`, the variables of `sectionVars` / `gridRequest`, the model of `modelFor`
+  at the route's midpoint by length (`frame/lib/flight_path.js` `routeMidpoint`, the Map's point), the days from the
+  first day read to the last instant wanted plus ten hours (`daysUntil`); the first day is today, or the departure's day
+  for a flight dated before today (`firstDay`, passed as `from`, 92 days back at most); **at opening
+  `cacheOnly: true`** (null when anything is missing: "Forecast not loaded"), on "Load" every day the slider can reach;
+  the answer's `locs` (Open-Meteo's shape) go through `atmo.locations`;
+- a point touched on the map (in the flight's grid): the same call for one place;
+- `metar(ids, { cacheOnly })`, `taf(ids, { cacheOnly })`: the aerodromes' messages (aviationweather.gov's JSON form,
+  read by `station()` of `modules/fuel/weather.js`), their source said in the Details;
+- `run(model)` (the head names it), `spentToday()` (the status line);
+- the world synoptic: `world()` and `world(k, { alt })`, read by `lib/weather_map.js`.
 
-- Files: `cache/weather/<model>/<cell>/<YYYY-MM-DD>.json` =
-  `{ schema: 1, model, cell, size, lat, lon, elevation, day, times[24], vars: { name: [24] }, refused: [], run, at }`.
-  Cell: `cellOf(lat, lon, size)`, its centre, named `47.15_-1.65`; size by model (`CELL_OF`, 0.1° floor).
-- A file is valid for the run it was read from (6 h at most), 30 min when a run is unknown; another run replaces it
-  whole. A variable refused by a model (400) is noted in `refused` and not asked again.
-- `cache/weather/<model>/meta.json`: the model's last run; `cache/weather/ledger.json`: the tally
-  `{ entries: [[ms, weight]] }`; `cache/weather/pruned.json`: the last day past files were removed.
-- Errors carry a mark: `offline`, `status` (HTTP), `quota` (with `spent`), `stale`, `incomplete`; the caller words
-  them.
+Errors carry the layer's marks (`quota`, `offline`, `unreachable`, `incomplete`, `status`, `stale`); `wx.why` words them.
+The demonstration answers in the same shape without the layer.
 
 ## 4. The current flight
 
 Schema 1 of `modules/fuel/INTEGRATION.md` § 3, read only: `route.points[] { id, lat, lon, alt_ft }`,
 `route.dep / arr / altn / text`, `level.ft` (else `quote.levelFt`), `profile`, `planned_at` (the flight date written by
-Fuel: the origin of the flight date slider; else `weather.when`, else now), `aircraft`,
+Fuel, its only date: the origin of the flight date slider; else now), `aircraft`,
 `updated_at`. If the module ever writes it, it goes through `merge(stored, mine, { fields, progressKeys, by })` of
 `frame/lib/current_flight.js`, with its own fields and `by`.
 
@@ -98,10 +102,8 @@ computation. The contract is the one of `modules/maps/INTEGRATION.md` § 6 (`ope
 
 ```js
 import { drawSection, sectionPlaces, sectionVars } from '../atmosphere/section.js';
-import { weatherStore } from '../atmosphere/weather_store.js';      // until frame/weather (ctx.weather)
-const W = weatherStore({ data: ctx.data, net: ctx.net });            // maps declares cache/weather/ (policy cache)
 const places = sectionPlaces(route.points), vars = sectionVars(levelFt, route.points);
-const r = await W.forecast(places, vars, { model, cacheOnly: true }); // nothing asked: what atmosphere already read
+const r = await ctx.weather.grid(places, depTime, vars, { model, cacheOnly: true }); // nothing asked: what was already read
 openData('weather', `wx:${flightKey}`, title, (w, h, el) => {
   drawSection(el, { width: w, height: h, route: route.points, levelFt, profile, depTime, locs: A.locations(r.locs), cursorM });
 });
@@ -110,10 +112,9 @@ openData('weather', `wx:${flightKey}`, title, (w, h, el) => {
 - `o.model`: a `sectionModel(…)` already computed. The maps module's sheet redraws at every step of a drag: it computes
   the model once per flight and forecast and passes it, so a redraw is only the SVG (`route` and `cursorM` are still
   read from `o`; the other inputs are the model's).
-- **Read from the cache only** (`cacheOnly: true`, as the maps module does): the cross-section is there when this module
-  (or Fuel, later) has read it. The model run kept in `cache/weather/<model>/meta.json` decides how long it is valid
-  (6 h for the same run); without it (never read on this device, or older than 30 min with no run known), the forecast
-  is not found and `drawSection` returns `null`.
+- **Read from the device only** (`cacheOnly: true`): the cross-section is there when this module (or Fuel) has read it
+  through the frame's weather layer, whose run decides how long it is valid (`frame/INTEGRATION.md` § 14.2); otherwise
+  the forecast is not found and `drawSection` returns `null`.
 - `drawSection(el, o)`: replaces `el`'s content by the SVG cross-section of `o.width` × `o.height` CSS pixels and returns
   its geometry `{ x0, y0, pw, ph, xOf(nm), yOf(ft), nmOf(x), ftOf(y) }` (tooltips, taps); `null` (and `el` emptied)
   without a forecast. `o`: `route` (points with `alt_ft` steps), `levelFt`, `profile` and `profileLevelFt` (Fuel's;
@@ -173,7 +174,7 @@ wx.detach();                               // the Profil chip: the canvas and it
 - **`createWeatherMap(opts)`** draws into the host's canvas, at its place in the host's drawing order (this module:
   background, weather, then the route): `draw(c, { W, H, project, bounds, zoom, visible })` — `visible`: the part the
   user sees when the canvas runs on under a panel (this module draws its map under the sheet), for `info().outside`.
-- **`opts`**: `ctx` (`data`, `net`, `t`, `lang`); `flight` (`{ points, levelFt }`: the route and its planned level;
+- **`opts`**: `ctx` (`weather` — the frame's weather layer —, `t`, `lang`); `flight` (`{ points, levelFt }`: the route and its planned level;
   `null`: the world alone); `levelFt` (the pressure altitude shown, ft; `null`: the surface); `time` (s, the map's
   hour); `layers` (`{ isobar, isotherm, cloud, wind, tfill, jet, conv }`, defaults `DEFAULT_LAYERS`); `gridMax` (places
   of the flight's grid, 48); `grid` (a grid already read, `{ g, locs, levels }`: a host that loads it itself, as this
@@ -190,8 +191,8 @@ wx.detach();                               // the Profil chip: the canvas and it
   level, hour within 2 h), with no contour label on that band.
 - **`state`**: `'ok'` (the flight's grid is in the cache), `'world-only'` (the world synoptic alone: nothing loaded for
   this flight, or no flight), `'missing'` (nothing yet: offer "Load in Météo").
-- **The cache is read without the network** (`cacheOnly`, with a network that always answers offline): the run kept in
-  `cache/weather/<model>/meta.json` decides validity, as for the cross-section (§ 5). The grid is found when this module
+- **The device is read, never Open-Meteo** (`ctx.weather.grid(…, { cacheOnly: true })`; the world by `ctx.weather.world`):
+  the layer's run decides validity, as for the cross-section (§ 5). The grid is found when this module
   (or Fuel) loaded the same request: **`gridRequest(points, levelFt, gridMax)`** → `{ g, levels, vars, model }` is the
   one computation of places, levels and variables for whoever loads and whoever reads; `daysFor(time)` the days to
   ask.
