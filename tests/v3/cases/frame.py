@@ -26,7 +26,9 @@ Rules covered
   * a store script lost on the way: asked again once, the frame starts; lost for good, the page says why with a Reload button (A28);
   * the frame's launcher and publication services: their benches pass (A29, A30); the end-of-cycle line of the Status block, ×4 (A31).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28 A29 A30 A31.
+  * the launcher's keys panel gives the EAD Basic user name and password once, and never reads them back (A32).
+
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28 A29 A30 A31 A32.
 """
 import json
 import re
@@ -1006,3 +1008,60 @@ def a31(c):
     soon = c.js("Date.parse(new Date(Date.parse(AeroDB.airacCycles(1)[0] + 'T00:00:00Z') + 28 * 864e5).toISOString().slice(0, 10) + 'T00:00:00Z') - Date.now() <= 3 * 864e5")
     c.eq(c.count('[data-card="status"] li[data-k="cycle-proc"]'), 1 if soon else 0, 'procedures published for the cycle in force: a line only in the last 3 days of the cycle', what='proc lines')
     c.eq(c.count('[data-card="status"] li[data-k="cycle-base"] [data-go]'), 0, 'no launcher here: nothing to press', what='links on the line')
+
+
+@case('A32', 'EAD Basic credentials in the launcher keys panel', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 3 item 9: given once, never read back')
+def a32(c):
+    # the suite has no launcher: a fake one answers the routes the Settings screen asks for (detect(), secrets, the rest empty)
+    posts = []
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
+              'relaxNav': False, 'host': 'TEST', 'lan': False}
+    secrets = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}},
+                       'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
+
+    def launcher(route):
+        req = route.request
+        path = urllib.parse.urlparse(req.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/secrets'):
+            if req.method == 'POST':
+                posts.append(json.loads(req.post_data or '{}'))
+                body = {'ok': True, **secrets}
+            else:
+                body = secrets
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"admin\"] li[data-admin=\"keys\"]')", what='the Administration card lists the keys panel')
+    if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
+        c.tap('[data-group="admin"] > summary')
+    c.tap('[data-admin="keys"] > button')
+    c.until("!!document.querySelector('[data-adminpanel=\"keys\"]:not([hidden]) [data-card=\"ead\"]')", what='the EAD Basic block is shown')
+    ead = '[data-adminpanel="keys"] [data-card="ead"]'
+    c.eq(norm(c.text(f'{ead} h3')), norm(tx('frame/settings/launcher.js', 'eadTitle', c.lang)), 'the block is titled', what='EAD title')
+    c.eq(norm(c.text(f'{ead} p.f-msg[data-kind="warn"]')), norm(tx('frame/settings/launcher.js', 'eadNotice', c.lang)),
+         'the notice (demonstration tool, simulation use) is worded in the language of the run', what='EAD notice')
+    c.until(f"document.querySelector('{ead} [data-ead]').textContent.trim() !== '…'", what='the state of the credentials is painted')
+    c.eq(norm(c.text(f'{ead} [data-ead]')), norm(tx('frame/settings/launcher.js', 'eadMissing', c.lang)), 'nothing saved yet: missing', what='EAD state')
+    c.eq(c.count(f'{ead} input[data-f="eadUser"]'), 1, 'a user name field', what='user field')
+    c.eq(c.attr(f'{ead} input[data-f="eadPassword"]', 'type'), 'password', 'the password field hides what is typed', what='password type')
+    # both are required: one alone calls nothing
+    c.page.fill(f'{ead} input[data-f="eadUser"]', 'test-user')
+    c.tap(f'{ead} [data-act="eadSave"]')
+    c.wait(300)
+    c.eq(len(posts), 0, 'a user name without a password is refused in the card, no call', what='posts')
+    c.eq(norm(c.text(f'{ead} [data-msg]')), norm(tx('frame/settings/launcher.js', 'eadBoth', c.lang)), 'the card says what is missing', what='EAD message')
+    # save: the launcher receives both values, the page keeps none
+    c.page.fill(f'{ead} input[data-f="eadPassword"]', 'test-pass')
+    c.tap(f'{ead} [data-act="eadSave"]')
+    for _ in range(30):                           # the call is sent once the fields are emptied
+        if posts:
+            break
+        c.wait(100)
+    c.eq(posts, [{'scope': 'app', 'service': 'ead', 'values': {'user': 'test-user', 'password': 'test-pass'}}],
+         'one call to the launcher with the scope, the service and both values', what='posts')
+    c.eq(c.js(f"[...document.querySelectorAll('{ead} input[data-f]')].map(i => i.value)"), ['', ''], 'both fields are emptied: the page keeps no secret', what='fields after save')
+    c.ok('test-pass' not in c.js('document.body.innerText') and 'test-user' not in c.js('document.body.innerText'), 'a value is shown', 'the values are shown nowhere')

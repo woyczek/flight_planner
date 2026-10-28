@@ -83,9 +83,11 @@ se escriben. En un teléfono, Combustible descarga la ficha en .lnmperf.
 
 ## Las claves API de la aerolínea
 
-En un puesto servido por el lanzador, en el nivel Completo, el botón «Claves API de la aerolínea (IVAO)» de la tarjeta
+En un puesto servido por el lanzador, en el nivel Completo, el botón «Claves API de la aerolínea (IVAO, EAD Basic)» de la tarjeta
 «Administración» despliega el ajuste de la clave de la API IVAO: se queda en la carpeta `secrets/` del lanzador, nunca en
 el navegador ni en los datos. «Probar» comprueba que IVAO responde; «Borrar» la quita.
+
+Bajo la clave IVAO, el bloque «EAD Basic (EUROCONTROL)» recibe el usuario y la contraseña de su cuenta EAD Basic: los entrega una sola vez al lanzador de este equipo (carpeta `secrets/`), que los guarda; la página no los vuelve a mostrar nunca, solo dice si están guardados y cuándo. Sirven para «Leer un aeródromo desde EAD» (un aeródromo por gesto). EAD Basic es una herramienta de demostración con datos no operativos, para usar solo en simulación (el aviso sigue visible). «Borrar» los quita del lanzador.
 
 ## La tableta junto al simulador
 
@@ -165,7 +167,7 @@ de», reúne las páginas de administración y de prueba, **un botón por págin
 aplicación: el botón «Ajuste de los umbrales del mapa» (`#maps?tune=1`, solo lectura en un teléfono; abre la página de ajuste: para cada elemento del mapa y cada modo, los zooms en que aparece, guardados para la aerolínea, `airline/map_profiles.json`; un modo que nunca guardó toma los umbrales de un modo ajustado, la página lo dice; el control «Complejidad» del mapa solo desplaza el zoom), vuelta con la flecha de retroceso; el botón «Límite de la zona del vuelo», que despliega una casilla
 «Mostrar la línea del límite de la zona del vuelo» (guardada al instante para la aerolínea, con los umbrales, en `airline/map_profiles.json`,
 clave `edge`; la línea se muestra mientras no ajuste nada); el botón «Exportar una configuración para un piloto» (véase «Configurar un piloto»); en un puesto servido por el
-lanzador, los botones «Repositorio remoto de data/» y «Claves API de la aerolínea (IVAO)», que despliegan su ajuste (véase
+lanzador, los botones «Repositorio remoto de data/» y «Claves API de la aerolínea (IVAO, EAD Basic)», que despliegan su ajuste (véase
 «Un repositorio git para data/» y «Las claves API de la aerolínea»);
 la hoja de ruta (`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
 
@@ -198,4 +200,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 47f9199a8ffd -->
+<!-- fr: 9e9ac77130ef -->

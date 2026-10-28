@@ -439,3 +439,13 @@ rule 18); only the lab entry has it. The lab screen starts with a "Settings › 
   draw that card alone, under "← Settings"; the level only filters the list, which stays at seven at Discovery. Not
   chosen: moving the pilot to Everyday, an eighth card. `?offline=1` no longer scrolls to the card nor clears the
   address (the address is what keeps the card through a redraw). Test A27.
+- **28 Oct 2026 — EAD Basic credentials in the launcher's keys panel** (ergonomics session's notice, EAD line's
+  `proc/ead-fetch`): a second block under the IVAO key (`[data-card="ead"]`): the owner gives the EAD Basic user name and
+  password once; the launcher stores them in `secrets/ead.json` and the page only learns whether they are set and when
+  (`secrets_view` gives `{ set, at }` for `ead`, no `hint`: not a character of either value reaches the page). Both
+  fields are emptied before the call, so the page keeps no secret; saving needs both, erasing asks. The notice (EAD Basic
+  is a demonstration tool, non-operational data, simulation use) is always visible, wording from the ergonomics session.
+  Not chosen: a "Test" button (logging in to EAD is a gesture of the EAD line, not of Settings); showing the last
+  characters of the user name (the IVAO `hint` rule is for keys, an EAD user name is a personal identifier). The routes
+  stay refused to a paired device of the local network. Test A32. The panel's title in `admin_links.js` still reads "(IVAO)":
+  to be widened by the frame's owner of that file.

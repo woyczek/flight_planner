@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: EAD Basic credentials in the launcher's keys panel** (`frame/settings/launcher.js`, `tools/launch.py`, help ×4)
+  — under the IVAO key, a block for the EAD Basic user name and password (given once to the launcher, kept in
+  `secrets/ead.json`, never read back by the page, which only shows « saved on <date> » or « missing »), with the notice
+  « demonstration tool, non-operational data, simulation use » ×4; used by the procedures job `proc/ead-fetch`; never
+  synchronised. Test A32.
 - **Data module: specification aligned on aerodb's and the frame's contracts (documentation only)** (`modules/data/SPEC.md`,
   `INTEGRATION.md`, `DECISIONS.md`, `ROADMAP.md`): compiling (builders, workstation) kept apart from using (reader, every
   device); cycles as effective dates shown `YYNN`; the module reads aerodb's `publication()`, `zones()`, `sources()` only;

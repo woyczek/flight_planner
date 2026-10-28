@@ -1470,10 +1470,10 @@ _ivao = {'at': 0.0, 'areas': None}
 
 
 # ---- secrets locaux (dossier secrets/ à la racine de la suite, exclu de git, hors des données et des sauvegardes) :
-#   secrets/<service>.json            clés de la suite (IVAO : apiKey, savedAt) — Paramètres › Installation › Clés et services externes
+#   secrets/<service>.json            clés de la suite (IVAO : apiKey, savedAt ; EAD Basic : user, password, savedAt) — Paramètres › Installation › Clés et services externes
 #   secrets/users/<TRI>.json          identifiants d'un utilisateur ({ ivao: { clientId, clientSecret } }) — Mon profil
 # Champs admis par service et portée ; écrits par POST /__setup/secrets, jamais relus par la page (indicateurs seuls).
-SECRET_FIELDS = {'app': {'ivao': {'apiKey': True}}, 'user': {'ivao': {'clientId': False, 'clientSecret': True}}}
+SECRET_FIELDS = {'app': {'ivao': {'apiKey': True}, 'ead': {'user': True, 'password': True}}, 'user': {'ivao': {'clientId': False, 'clientSecret': True}}}
 SECRETS = os.path.join(ROOT, 'secrets')
 
 
@@ -1550,6 +1550,9 @@ def secrets_view(tri=''):
     for service, fields in SECRET_FIELDS['app'].items():
         cur = _read_json(_secret_file('app', service=service))
         saved = cur.get('savedAt') if isinstance(cur.get('savedAt'), dict) else {}
+        if service == 'ead':  # identifiants EAD Basic : jamais le moindre caractère vers la page (réglé ou non, et quand)
+            out['app'][service] = {k: {'set': bool(cur.get(k)), 'at': str(saved.get(k) or '') if cur.get(k) else ''} for k in fields}
+            continue
         out['app'][service] = {k: {**_hint(cur.get(k)), 'at': str(saved.get(k) or '') if cur.get(k) else ''} for k in fields}
     if os.environ.get('IVAO_API_KEY'):
         out['app']['ivao']['apiKey'] = {**_hint(os.environ['IVAO_API_KEY']), 'env': True}

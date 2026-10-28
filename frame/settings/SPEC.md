@@ -155,6 +155,14 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    its last characters, given by the launcher's environment, or missing), a new key (empty: unchanged), "Save",
    "Test" (`/__setup/secrets/test?service=ivao`), "Erase" (asks). The key goes to the launcher's `secrets/` folder,
    never to the browser nor to the data.
+   Below it, a second block `[data-card="ead"]`, **EAD Basic (EUROCONTROL)**: the notice "demonstration tool,
+   non-operational data, for simulation use" (×4, always visible), a sentence saying the credentials are given once, never
+   shown again and used by "Read an aerodrome from EAD", the state ("saved on <date>" or "missing", from
+   `GET /__setup/secrets` `app.ead.{user,password}` = `{ set, at }`, never a character of the values), a user name field
+   and a password field (`type=password`), "Save" (both required; the fields are emptied before the call) and "Erase"
+   (asks). `POST /__setup/secrets { scope: 'app', service: 'ead', values: { user, password } }` writes
+   `secrets/ead.json` (`{ user, password, savedAt }`), read by `tools/regen_jobs.py` for the verb `proc/ead-fetch`; never
+   synchronised (`secrets/` is outside the data repository). No "Test" button: signing in to EAD belongs to the EAD line.
 9b. **Little Navmap sheets (.lnmperf)** (page served by a launcher, when `aerodb.lnmperf` exists): an empty, hidden
    `[data-card="lnmperf"]` block that settings places after the launcher keys; its content and states (folder, Little
    Navmap folders found, "Save", "Synchronise now", "Stop", last pass, sheets not written) are drawn by aerodb
@@ -184,7 +192,7 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    its button: a box "Show the edge line of the flight zone limit", saved at once, for the airline, as the key `edge` of
    `airline/map_profiles.json`; shown by default; the contract is `INTEGRATION.md` § 4), "Export a configuration for a pilot"
    (folds the export of § 5 open; absent when the device has no repository to export), on a launcher "Remote repository
-   of data/" and "Airline API keys (IVAO)" (panels, § 3 items 6 and 9), then the roadmap, the diagnostics
+   of data/" and "Airline API keys (IVAO, EAD Basic)" (panels, § 3 items 6 and 9), then the roadmap, the diagnostics
    and the benches and V2 pages of § 6. The export used to be a fold of the Access card; the import ("Join the airline…",
    "Import a configuration…") stays there, it is the pilot's.
 
@@ -254,7 +262,7 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   this computer's launcher: shown only when a launcher serves the page).
 - **Today**: "Map threshold tuning" `#maps?tune=1` (read only on a phone), "Flight zone limit" (`panel: edge`), "Export a
   configuration for a pilot" (`panel: cfg`), "Remote repository of data/" (`panel: remote`, `where: launcher`), "Airline
-  API keys (IVAO)" (`panel: keys`, `where: launcher`), "Data sources" `#sources` (aerodb's Sources screen, links only; `copyLink`: under its link the absolute address of the screen built from `location`, and "Copy the link"; it replaced the data laboratory `#datalab` on 28 Oct 2026), roadmap `#roadmap`, diagnostics (`act:
+  API keys (IVAO, EAD Basic)" (`panel: keys`, `where: launcher`), "Data sources" `#sources` (aerodb's Sources screen, links only; `copyLink`: under its link the absolute address of the screen built from `location`, and "Copy the link"; it replaced the data laboratory `#datalab` on 28 Oct 2026), roadmap `#roadmap`, diagnostics (`act:
   diagOpen`: opens the folded diagnostics of the About card and scrolls to it); benches `labs/design_primitives.html`,
   `frame/aerodb/bench.html`, `frame/aerodb/offline_bench.html`, `frame/store/test/`, `modules/maps/test/render.html`;
   V2 pages `apps/settings/maintenance.html`, `apps/settings/premier_lancement.html`, `apps/cpco/map_parser.html`.

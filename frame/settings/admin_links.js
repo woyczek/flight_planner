@@ -68,14 +68,15 @@
     panel: 'keys',
     where: 'launcher',
     primary: true,
-    title: ['Clés d’API de la compagnie (IVAO)', 'Airline API keys (IVAO)', 'API-Schlüssel der Fluggesellschaft (IVAO)',
-      'Claves API de la aerolínea (IVAO)'
+    title: ['Clés d’API de la compagnie (IVAO, EAD Basic)', 'Airline API keys (IVAO, EAD Basic)',
+      'API-Schlüssel der Fluggesellschaft (IVAO, EAD Basic)',
+      'Claves API de la aerolínea (IVAO, EAD Basic)'
     ],
     text: [
-      'Gardées par le lanceur de ce poste (dossier secrets/), jamais par le navigateur ni dans les données.',
-      'Kept by this computer’s launcher (secrets/ folder), never by the browser nor in the data.',
-      'Vom Starter dieses Rechners verwahrt (Ordner secrets/), nie vom Browser und nie in den Daten.',
-      'Guardadas por el lanzador de este equipo (carpeta secrets/), nunca por el navegador ni en los datos.'
+      'La clé IVAO et les identifiants EAD Basic, gardés par le lanceur de ce poste (dossier secrets/), jamais par le navigateur ni dans les données.',
+      'The IVAO key and the EAD Basic credentials, kept by this computer’s launcher (secrets/ folder), never by the browser nor in the data.',
+      'Der IVAO-Schlüssel und die EAD-Basic-Zugangsdaten, vom Starter dieses Rechners verwahrt (Ordner secrets/), nie vom Browser und nie in den Daten.',
+      'La clave IVAO y las credenciales de EAD Basic, guardadas por el lanzador de este equipo (carpeta secrets/), nunca por el navegador ni en los datos.'
     ]
   }, {
     id: 'sources',
