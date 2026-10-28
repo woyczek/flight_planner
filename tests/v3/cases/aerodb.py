@@ -1503,6 +1503,8 @@ def k22(c):
             r = run(ctx, job=job)
             c.ok(r.get('ok') is True and r['icao'] == 'EGXX' and r['procedures'] == 1 and r['ocr'] is False and r['warnings'] == ['page 3 NON retenue'], str(r),
                  'success: ok, the aerodrome, one procedure installed, no OCR, the warnings of the reading')
+            c.ok(r['stats']['procedures'] == 1 and r['stats']['dropped'] == 0 and set(r['stats']) == {'pages', 'read', 'rejected', 'procedures', 'dropped', 'reasons'} and r['file']['icao'] == 'EGXX'
+                 and len(r['file']['procedures']) == 1, str(r)[:300], 'the result carries the same stats keys as the eAIP job and the installed file as written')
             inst = json.loads((data / 'proc' / 'manual' / 'EGXX.json').read_text())
             idx = json.loads((data / 'proc' / 'manual' / 'index.json').read_text())
             c.ok(len(inst['procedures']) == 1 and sorted(idx['aerodromes']) == ['EGXX', 'KSEA'] and idx['aerodromes']['EGXX']['STAR'] == 1, str(idx),
@@ -1743,6 +1745,21 @@ def k23(c):
             c.ok(not git(data, 'remote').strip(), git(data, 'remote'), 'no push (no remote)')
             c.ok(job.view()['step'] and job.view()['log'] and job.view()['total'] >= 1, str(job.view()['step']), 'the job reports its steps and keeps a log')
 
+            # the report of the reading (counts, not a bare « 0 procedures ») and the installed file as written, for the page
+            c.eq(r['stats'], {'pages': 3, 'read': 3, 'rejected': 0, 'procedures': 14, 'dropped': 0, 'reasons': []}, 'stats: coding pages found / read / rejected, procedures, dropped, reasons', what='stats')
+            c.eq(r['file'], json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text(encoding='utf-8')), 'the result carries the installed file, read back from the disk (the same JSON)', what='file')
+            c.ok(any('14 procédure' in x and '3 page' in x for x in job.view()['log']), str(job.view()['log'])[-300:], 'the job log says the same counts')
+            # a former reading of the same source under an identifier the reader no longer produces does not stay beside the new one
+            stale = json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text())
+            stale['procedures'] += [{'id': 'LFBD.APP.OLDNAME.RW23', 'icao': 'LFBD', 'kind': 'APP', 'status': 'check', 'source': {'kind': 'eaip', 'cycle': '2026-01-01'}, 'points': []}]
+            (data / 'proc' / 'manual' / 'LFBD.json').write_text(json.dumps(stale))
+            try:
+                r1 = run(ctx)
+            except Exception as e:
+                r1 = {'ok': False, 'message': str(e)}
+            kept = [p['id'] for p in json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text())['procedures']]
+            c.ok(r1.get('ok') and 'LFBD.APP.OLDNAME.RW23' not in kept and len(kept) == 14, str(r1)[:200] + str(kept[-3:]),
+                 'a new reading replaces the former eaip procedures of the aerodrome: a changed identifier leaves no ghost beside the new ones')
             # the same reading again (a new `updated_at`): merged by id, still 14 procedures, never duplicated
             r2 = run(ctx)
             c.ok(r2['ok'] and r2['procedures'] == 14 and len(json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text())['procedures']) == 14, str(r2)[:300],
@@ -1854,3 +1871,146 @@ def k23(c):
                 os.environ.pop(k, None)
             else:
                 os.environ[k] = v
+
+
+
+# ------------------------------------------------------------------------------------------------ eAIP real layouts of LFBO and LFPO (static)
+# Pages of the AIRAC 2026-10-01 that the reader refused or half read before: cells spelled one character at a time, a leg row cut in two, the first legs of each runway
+# of a departure, INA / FNA ILS pages. Rows kept in frame/aerodb/test/fixtures/eaip/ (trimmed pages, content unchanged).
+@case('K24', 'eAIP real layouts of LFBO and LFPO: spelled cells, per-runway starts, INA and ILS pages', 'K', static=True,
+      rule='aerodb DECISIONS 28 Oct 2026 (eAIP layouts of Toulouse and Orly): every page of the cycle read, a row that stays ambiguous is reported and left out, never guessed')
+def k24(c):
+    P, fx, rows = _eaip(c)
+    T = lambda stem: P.parse_code_table(rows(stem))
+    legs = lambda g: [(l['leg'], l['id']) for l in g['legs']]
+    # 1. every fixture of the two aerodromes: layout recognised, header known, at least 85 % of the leg rows read, each row counted once
+    names = sorted(f.name.replace('.rows.txt', '') for f in fx.glob('*.rows.txt') if '_LFBO_' in f.name or '_LFPO_' in f.name)
+    bad = []
+    for n in names:
+        t = T(n)
+        ok, pb, fp, lay = P.verify_page(rows(n), t)
+        if not (ok and lay == 'sia-code' and not pb and t['read'] == t['rows']):
+            bad.append((n, ok, pb, t['read'], t['rows']))
+    c.eq(bad, [], 'every LFBO / LFPO page is read, header known, all its leg rows read', what=f'{len(names)} pages')
+    # 2. spelled characters and glued cells are put back, values untouched
+    c.eq(P.norm_tokens('- D F P O 2 0 4 Y e s ---- - - - 1,0'), ['-', 'DF', 'PO204', 'Yes', '----', '-', '-', '-', '1.0'], 'spelled terminator, point, Yes and a decimal comma', what='norm_tokens')
+    c.eq(P.norm_tokens('IF VEBEK ----- F L 1 1 0 F L 1 1 0 2 5 0 - -'), ['IF', 'VEBEK', '-----', 'FL110', 'FL110', '250', '-', '-'], 'spelled flight levels and a speed', what='norm_tokens')
+    c.eq(P.norm_tokens('F M-- 2 2 4 --- - - -- 1.0'), ['FM', '--', '224', '---', '-', '-', '--', '1.0'], 'FM glued to dashes', what='norm_tokens')
+    c.eq(P.norm_tokens('DF MLN - --- L- 4000 -- 1.0')[4:6], ['L', '-'], 'a turn glued to a dash', what='norm_tokens')
+    c.eq(P.norm_tokens('TF PB 096 331 332,1 18,1 - - - - 1,0')[:3], ['TF', 'PB096', '331'], 'a point name cut in two (PB 096)', what='norm_tokens')
+    c.eq(P.norm_tokens('IF AMB - ---- - F L260 280 1.0')[5:7], ['FL260', '280'], 'a flight level cut after the F', what='norm_tokens')
+    # a row that lost an empty cell: rebuilt only when ONE layout fits the type of every column; else not read
+    warns = []
+    leg = P._leg(['TF', 'PO302', '083', '084.4', '19.4', '-', '-', '-', '-', '1.0'], False, warns.append)
+    c.ok(leg and leg['id'] == 'PO302' and leg['over'] is None and leg['crs'] == 83 and leg['nm'] == 19.4, f'{leg} {warns}', 'a missing Fly Over cell is put back (one layout fits)')
+    warns = []
+    c.ok(P._leg(['TF', 'SOTIP', '033', '034.0', '5.2', 'FL120', '250', '1.0'], False, warns.append) is None and warns, str(warns), 'a row short of three cells stays ambiguous: not read, reported')
+    # 3. Toulouse departures: the runway headers give per-runway starts, one procedure per runway
+    sid = T('AD_2_LFBO_DATA_SID_RWY14L-14R_RNAV_CODE_01')
+    c.eq(sorted((g['label'], g['runway']) for g in sid['groups']), sorted((n, r) for n in ('AMOLO 7A', 'MEN 7A', 'MORIL 7A') for r in ('14L', '14R')), 'three departures x two runways', what='LFBO SID 14')
+    amolo = {g['runway']: g for g in sid['groups'] if g['label'] == 'AMOLO 7A'}
+    c.eq(legs(amolo['14R']), [('CA', None), ('DF', 'BO140'), ('CA', None), ('DF', 'BO143'), ('TF', 'BO145'), ('TF', 'MEDAP'), ('TF', 'AMOLO')], 'RWY14R: its CA, then the common route', what='AMOLO 7A')
+    c.eq(legs(amolo['14L']), legs(amolo['14R'])[1:], 'RWY14L (the last header): the common route only', what='AMOLO 7A')
+    ca = amolo['14R']['legs'][0]
+    c.eq((ca['crs'], ca['alt']), (141, {'type': 'min', 'ft': 1000}), 'the CA takes the course of the runway header and its altitude', what='CA 141 / 1000')
+    c.eq((amolo['14R']['legs'][1]['over'], amolo['14R']['legs'][3]['turn'], amolo['14R']['legs'][6]['alt']), (True, 'L', {'type': 'min', 'ft': 20000}), 'fly-over, turn and level kept', what='AMOLO 7A cells')
+    men = next(g for g in sid['groups'] if g['label'] == 'MEN 7A' and g['runway'] == '14R')
+    c.eq((men['legs'][0]['leg'], men['legs'][0]['crs'], men['legs'][0]['alt']), ('CA', 141, {'type': 'min', 'ft': 1000}), 'MEN 7A: the CA row whose cells were scrambled by the extractor is read the same', what='scrambled CA')
+    c.ok(any('plusieurs pistes' in w for w in sid['warnings']), str(sid['warnings']), 'the page says how the per-runway starts were read')
+    s32 = T('AD_2_LFBO_DATA_SID_RWY32L-32R_RNAV_CODE_01')
+    fis = {g['runway']: g for g in s32['groups'] if g['label'] == 'FISTO 7B'}
+    c.eq((fis['32L']['legs'][0]['leg'], fis['32R']['legs'][0]['id'], fis['32R']['legs'][0]['over']), ('CA', 'BO320', None), 'FISTO 7B: the CA is on RWY32L this time (the headers come in the other order)', what='32L / 32R')
+    gau = {g['runway']: g for g in s32['groups'] if g['label'] == 'GAUDE 7B'}
+    c.eq(legs(gau['32R']), [('DF', 'TOU'), ('FA', 'TOU'), ('VI', None), ('CF', 'BO852'), ('TF', 'GAUDE')], 'GAUDE 7B: legs without a fix (VI) kept with a null point', what='GAUDE 7B')
+    c.eq((gau['32R']['legs'][2]['crs'], gau['32R']['legs'][2]['turn']), (169, 'L'), 'VI: heading 169, turn left', what='VI')
+    s14b = T('AD_2_LFBO_DATA_SID_RWY14L-14R_RNAV_CODE_02')
+    c.eq(sorted({g['label'] for g in s14b['groups']}), ['AMOLO 7H', 'FINOT 7H', 'MEN 7H'], 'the second page of the departures', what='LFBO SID 14 / 02')
+    c.eq(next(g for g in s14b['groups'] if g['label'] == 'AMOLO 7H' and g['runway'] == '14R')['legs'][0]['alt'], {'type': 'min', 'ft': 1000}, 'a CA row with the accuracy before the altitude is read too', what='CA order')
+    # 4. the 85 % rule counts a row once: per-runway copies do not count twice, a table with a new column is still refused
+    c.eq((sid['rows'], sid['read']), (sid['rows'], sid['rows']), 'rows seen = rows read', what='LFBO SID 14 counts')
+    c.ok(sid['rows'] < sum(len(g['legs']) for g in sid['groups']), f"{sid['rows']} {sum(len(g['legs']) for g in sid['groups'])}", 'the common route is shared by the runway copies: legs of the groups are more than the rows of the page')
+    base = rows('AD_2_LFBO_DATA_STAR_RWY14_RNAV_CODE_01')
+    widened = [re.sub(r'^(- (?:IF|TF) \S+) ', r'\1 NEW ', r) for r in base]
+    ok, pb, fp, lay = P.verify_page(widened, P.parse_code_table(widened))
+    c.ok(not ok and any('moins de 85' in x for x in pb), f'{ok} {pb}', 'a column added to a Toulouse STAR page: refused')
+    # 5. STAR
+    star = T('AD_2_LFBO_DATA_STAR_RWY14_RNAV_CODE_01')
+    c.eq([(g['label'], g['legs'][0]['leg'], g['legs'][0]['id']) for g in star['groups']], [('AFRIC 8S', 'IF', 'AFRIC'), ('LMB 8S', 'IF', 'LMB'), ('NARAK 8S', 'IF', 'NARAK')], 'STAR of Toulouse: spelled « I F L M B » read as IF LMB', what='LFBO STAR 14')
+    c.eq(star['groups'][2]['legs'][0]['alt'], {'type': 'max', 'ft': 15000}, 'FL150 in the MAX column', what='NARAK 8S')
+    pstar = T('AD_2_LFPO_DATA_STAR_RWY02_RNAV_CODE_01')
+    c.eq([g['label'] for g in pstar['groups']], ['MATIX 9E', 'EPL 9E'], 'Orly STAR: « (FIR) » / « (UIR) » are not part of the name, one procedure each (they were one long procedure)', what='LFPO STAR')
+    c.eq(pstar['groups'][0]['legs'][1]['nm'], 43.6, 'decimal comma read', what='GITAN')
+    # 6. Orly departures
+    s20 = T('AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE_01')
+    o2y = next(g for g in s20['groups'] if g['label'] == 'OPALE 2Y')
+    c.eq(legs(o2y), [('CA', None), ('CF', 'PO202'), ('DF', 'PO204'), ('DF', 'PO260'), ('TF', 'PO262'), ('TF', 'BOV'), ('TF', 'OPALE')], 'RWY20: the CA without a fix and the spelled DF are read', what='OPALE 2Y')
+    c.eq((o2y['legs'][0]['crs'], o2y['legs'][0]['alt'], o2y['legs'][4]['nm']), (197, {'type': 'min', 'ft': 700}, 30.2), 'CA 197 / 700 ft, distance with a decimal comma', what='OPALE 2Y cells')
+    o2s = next(g for g in s20['groups'] if g['label'] == 'OPALE 2S')
+    c.ok(('TF', 'PB096') in legs(o2s) and next(l for l in o2s['legs'] if l['id'] == 'PB096')['crs'] == 331, str(legs(o2s)), 'PB 096 is the point PB096 (its Fly Over cell was lost: put back)')
+    d04 = T('AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE_04')
+    c.eq(len(d04['groups']), 6, 'RWY20 page 04: six departures of two legs', what='DORDI/OLZOM/MONOT 2Y / 2S')
+    pogo = T('AD_2_LFPO_DATA_SID_RWY06-07_RNAV_POGO_LFPG_CODE_01')
+    c.eq([(g['label'], g['runway']) for g in pogo['groups']], [('PG 2E', '07'), ('PG 2F', '06'), ('PG 2G', '07'), ('PG 2H', '06')], 'POGO: the runway is printed before the first leg', what='POGO')
+    c.eq(pogo['groups'][0]['legs'][-1]['leg'], 'FM', 'a heading leg closes the POGO departure', what='FM')
+    # 7. approaches: INA pages are named, transitions by STAR designator
+    ina = T('AD_2_LFBO_DATA_RWY14R_INA_CODE_GNSS')
+    c.eq((ina['kind'], ina['runways'], ina['title']), ('APP', ['14R'], 'INA RNAV (GNSS) RWY 14R'), 'INA page title (not the « Linked to FNA RNP RWY 14R » line)', what='LFBO INA 14R')
+    c.eq([g['label'] for g in ina['groups']], ['INA ADIMO', 'INA AGN', 'INA FUZAP', 'INA SURAS'], 'four transitions named by their initial fix', what='LFBO INA 14R')
+    c.ok(not any('piste' in w for w in ina['warnings']), str(ina['warnings']), 'an INA page has no runway point and does not say so')
+    i32 = T('AD_2_LFBO_DATA_RWY32L_INA_CODE_GNSS')
+    c.eq((i32['runways'], i32['title']), (['32L'], 'INA RNAV (GNSS) RWY 32L'), '« RNAV(GNSS) RWY 32 L » read as RWY 32L', what='LFBO INA 32L')
+    opo = T('AD_2_LFPO_DATA_RWY06_INA_RNAV_CODE_GNSS')
+    c.eq([g['label'] for g in opo['groups']], ['INA VEBEK 1E', 'INA VEBEK 1Y', 'INA MOLBA 1E', 'INA ODILO 1E', 'INA ODILO 1A'],
+         'Orly INA: two transitions leave VEBEK, two leave ODILO: named by the STAR designators the page prints, in order', what='LFPO INA 06')
+    recs, w = P.records('LFPO', opo, {}, 'x', '2026-10-01')
+    c.eq(sorted(r['id'] for r in recs), sorted(f'LFPO.APP.INARNAVRWY06.RW06.{t}' for t in ('VEBEK1E', 'VEBEK1Y', 'MOLBA1E', 'ODILO1E', 'ODILO1A')), 'five distinct identifiers', what='INA records')
+    c.ok(recs[0]['points'][-1]['leg'] == 'FM' and recs[0]['points'][-1]['id'] is None, str(recs[0]['points'][-1]), 'the closing FM keeps a null point')
+    # the same page with the designators removed: two transitions share their initial fix, the page cannot tell them apart: those are not kept, the others are
+    blind = [r for r in rows('AD_2_LFPO_DATA_RWY06_INA_RNAV_CODE_GNSS') if not re.match(r'^(?:VEBEK 1E|VEBEK 1Y|MOLBA 1E|ODILO 1E|ODILO 1A)$', r)]
+    blind = [re.sub(r'^(?:VEBEK 1Y|MOLBA 1E|ODILO 1A) (TF|FM)', r'\1', r) for r in blind]
+    bt = P.parse_code_table(blind)
+    c.eq([g['label'] for g in bt['groups'] if not g.get('skip')], ['INA MOLBA'], 'without designators: the transitions of a shared initial fix are skipped, the single one kept', what='blind INA')
+    c.ok(sum(1 for w in bt['warnings'] if 'non retenue' in w) == 4, str(bt['warnings']), 'each of the four skipped transitions is reported')
+    # 8. ILS pages: the table codes the initial fix, then « See chart »; what follows is the missed approach
+    ils = T('AD_2_LFBO_DATA_RWY14L_FNA_ILS_Z_LOC_Z_CODE')
+    c.eq((ils['title'], ils['groups'][0]['label']), ('ILS Z or LOC Z RWY 14L', 'APCH'), 'ILS page title and role', what='LFBO ILS 14L')
+    rec = P.records('LFBO', ils, {}, 'x', '2026-10-01')[0][0]
+    c.eq(rec['id'], 'LFBO.APP.ILSZORLOCZRWY14L.RW14L', 'identifier', what='ILS 14L')
+    c.eq([(p['id'], p.get('phase'), p.get('gap')) for p in rec['points']][:3], [('IO14L', None, None), ('BO512', 'missed', True), ('BO513', 'missed', None)],
+         'initial fix, then the missed approach; the first missed leg is flagged `gap`', what='ILS 14L points')
+    c.ok(any('TF déduit' in w for w in ils['warnings']) and any('See chart' in w for w in ils['warnings']), str(ils['warnings']), 'the lost leg type (TF) is deduced from the printed course and distance and SAID; the gap is said')
+    ol = T('AD_2_LFPO_DATA_RWY24_FNA_ILS_CAT123_LOC_CODE')
+    c.eq(ol['title'], 'ILS CAT I or CAT II or CAT III RWY 24', 'Orly ILS title', what='LFPO ILS 24')
+    c.ok(any('non lue' in w and 'PO431' in w for w in ol['warnings']), str(ol['warnings']), 'a row with no leg type and no distance is NOT read, and reported')
+    # gap: the first leg after the gap is not compared with the previous point
+    pts = [{'id': 'A', 'leg': 'IF', 'lat': 45.0, 'lon': 1.0, 'crs': None, 'nm': None}, {'id': 'B', 'leg': 'TF', 'lat': 47.0, 'lon': 5.0, 'crs': 10, 'nm': 5.0}]
+    c.ok(P.gaps_of({'points': pts}) and not P.gaps_of({'points': [pts[0], {**pts[1], 'gap': True}]}), 'gap', 'the geometry check skips the leg flagged gap, and still catches the same leg without the flag')
+    # 9. the missed approach of the RNP pages: after the threshold point; none before
+    r20 = P.records('LFPO', T('AD_2_LFPO_DATA_RWY20_FNA_RNP_CODE'), {}, 'x', '2026-10-01')[0]
+    c.eq(len(r20), 1, 'RWY20: one approach (the former reading gave two, without its threshold)', what='LFPO RNP 20')
+    pm = [(p['id'], p.get('phase')) for p in r20[0]['points']]
+    k = [p[0] for p in pm].index('RW20')
+    c.ok(k > 0 and all(ph is None for _, ph in pm[:k + 1]) and [p for p, ph in pm[k + 1:] if ph == 'missed'] == ['PO425', 'MLN', 'MOLBA'] and all(ph == 'missed' for _, ph in pm[k + 1:]), str(pm),
+         'RWY20: PO425, MLN and MOLBA (7000 ft) are the missed approach; nothing before the threshold is')
+    c.eq(next(p for p in r20[0]['points'] if p['id'] == 'RW20')['vpa'], -3.4, 'the vertical angle with its decimal comma (-3,4°) read at the threshold', what='RW20 vpa')
+    r25 = P.records('LFPO', T('AD_2_LFPO_DATA_RWY25_FNA_RNP_CODE'), {}, 'x', '2026-10-01')[0][0]
+    c.eq([(p['leg'], p.get('phase')) for p in r25['points'] if p.get('phase')][0], ('CA', 'missed'), 'RWY25: the missed approach starts with a CA (a leg without a fix)', what='RW25')
+    # fallback: the threshold point missing from the table, the leg that carries the vertical angle marks the end of the final approach, with a warning
+    nort = [r.replace('TF RW20', 'TF XX20') for r in rows('AD_2_LFPO_DATA_RWY20_FNA_RNP_CODE')]
+    rn, wn = P.records('LFPO', P.parse_code_table(nort), {}, 'x', '2026-10-01')
+    pn = [(p['id'], p.get('phase')) for p in rn[0]['points']]
+    c.ok([i for i, (_, ph) in enumerate(pn) if ph][0] == [p[0] for p in pn].index('XX20') + 1 and any('angle vertical' in x for x in wn), str(pn), 'without the RWnn row: missed after the leg that carries the vertical angle, and a warning says so')
+    # 10. the aerodrome file: runways only when a threshold has a position
+    base = '/AIRAC-2026-10-01'
+    f1 = ['AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE_04.pdf']
+    d1 = P.build_aerodrome('LFPO', f1, lambda n: rows(n.replace('.pdf', '')), 'https://example.org' + base, '2026-10-01')
+    c.ok('runways' not in d1 and len(d1['procedures']) == 6 and d1['formats'][0]['ok'], str(list(d1)), 'thresholds not positioned in the tables: no `runways` in the file (aerodb derives them from the records)')
+    d2 = P.build_aerodrome('LFPO', f1 + ['AD_2_LFPO_DATA_01.pdf'], lambda n: ["RW20 48°44'00.0'' N 002°23'00.0'' E XX", 'RW24 REF AD 2 LFPO.12 + THR 24 XX'] if n.endswith('DATA_01.pdf') else rows(n.replace('.pdf', '')),
+                           'https://example.org' + base, '2026-10-01')
+    c.eq(d2.get('runways'), [{'id': '20', 'lat': 48.733333, 'lon': 2.383333, 'elev': None, 'qfu': 200, 'displaced': None, 'length': None, 'width': None, 'source': 'eaip'}],
+         'a positioned threshold gives a runway record in the format of the CIFP ones; a « REF » row gives none', what='runways')
+    # 11. the report of a reading
+    st = P.stats_of([{'ok': True, 'problems': []}, {'ok': False, 'problems': ['info: x', '3 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}, {'ok': False, 'problems': ['disposition non reconnue (x)']},
+                     {'ok': False, 'problems': ['2 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}], 12, ['géométrie incohérente'])
+    c.eq(st, {'pages': 4, 'read': 1, 'rejected': 3, 'procedures': 12, 'dropped': 1, 'reasons': [['lignes de tronçon illisibles (moins de 85 % lues)', 2], ['géométrie incohérente', 1], ['mise en page non reconnue', 1]]},
+         'pages found / read / rejected, procedures, dropped, the three most frequent reasons', what='stats_of')

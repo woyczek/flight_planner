@@ -207,6 +207,12 @@ than `COMPAT` would be ignored; this one is not.
   | `failed` | the reading failed; `message` has the cause (login refused, the eAIP folder of the cycle not published yet, nothing read, geometry check failed, another source's file, a launcher older than the page: restart it) |
 
   `warnings` of a success are the reading's own (a table dropped by the geometry check, coordinates to resolve): show them as floating notifications.
+- **`stats` — the counts for the notification** (success, and failure when the job has them; `null` from an older launcher): `{ pages, read, rejected, procedures, dropped, reasons }` — `pages` the coding pages found, `read` those read,
+  `rejected` those not read, `procedures` installed, `dropped` removed by the geometry check, `reasons` the three most frequent `[text, count]` (the text is a short stable French phrase of the tool: « lignes de tronçon illisibles (moins de 85 % lues) »,
+  « mise en page non reconnue », « titre de la page non reconnu », « aucun tronçon lisible », « géométrie incohérente »; map them to the four languages, show the tool's text when unknown). Never answer a bare « 0 procédures » :
+  suggested French wording « 18 procédures lues sur 22 pages ; 4 pages non lues (motif le plus fréquent : lignes de tronçon illisibles) » — `procedures.length` of the answer for the first number (it is built from the file the job
+  returned, so it is right on the first reading), `stats.pages`, `stats.rejected` and `stats.reasons[0][0]`; with `dropped` > 0 add « · 2 procédures écartées par le contrôle de géométrie ». Fuel words and translates it; aerodb gives numbers.
+- **Runways** (`runways(icao)`): for a French aerodrome the tables give no threshold position, so the runways come from the procedures' `runways` lists with `lat` / `lon` null and `approx: true`: select them by `id`, never draw them.
 - **Every leg** carries `phase` (`main` | `trans` | `missed`); a leg without a fix (`id` null: VA, CA, VM, FM…) has no
   position, only its course and constraint: draw it along its course (a 2 NM stroke, then dashes to the next point), never
   invent a point. Hand-read procedures may be `outdated` (show « périmé »).

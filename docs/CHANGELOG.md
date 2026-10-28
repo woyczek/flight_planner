@@ -40,6 +40,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   reading, the button says "Reading the SIA eAIP…" (France) or "Reading EAD Basic…"; a State without published procedure
   tables is told so (and that Little Navmap has a database on this workstation, when it has); the old "layout unknown" refusal
   is gone.
+- **aerodb: « Lire les procédures » for Toulouse and Orly — every page of the eAIP read, counts in the answer, runways of Orly selectable** (`tools/proc_eaip.py`, `tools/regen_jobs.py`, `tools/proc_manual.py`,
+  `frame/aerodb/aerodb.js`; SPEC § 5 quinquies, INTEGRATION, DECISIONS; tests K1, K22, K23, K24) — LFBO installed 18 approaches and no SID / STAR, LFPO 160 procedures with whole pages missing, because the SIA's pages
+  have layouts the reader refused (spelled cells `Y e s` / `1 . 0`, a runway header before each runway's own first legs, glued dashes, decimal commas, `F L 070`, a name cut in two `PB 096`, STAR titles with `(FIR)`, INA and ILS pages). All
+  74 pages of the two aerodromes are now read (LFBO: 38 SID, 14 STAR, 26 approaches; LFPO: 181 SID, 102 STAR, 33 approaches), the one row that stays ambiguous is reported. Departures for two runways give one procedure per runway;
+  legs without a fix (CA, FM) are kept; INA transitions are named by their STAR designator; ILS pages give the initial fix and the missed approach (`gap`). The missed approach of the RNP page of Orly RWY 20 was lost
+  (its threshold row held a decimal comma): found. The first reading answered « 0 procédures » although the files were installed: the job result now carries `file` (the installed file) and aerodb serves it until its reader
+  catches up; it also carries `stats` `{ pages, read, rejected, procedures, dropped, reasons }` for Fuel's notification (INTEGRATION). `runways(icao)` adds the runways the records name (Orly: 02, 06, 07, 20, 24, 25). A new reading of an
+  aerodrome replaces the previous eAIP reading in `proc/manual/` (no ghost procedure under an old identifier).
 - **aerodb: coverage of the procedures — `coverage(icao)`, `coverageByState()`, `AeroCatalogue.COVERAGE`**
   (`frame/aerodb/aerodb.js`, `catalogue.js`; SPEC § 5 and § 6 invariant 4, INTEGRATION « Coverage of the procedures », DECISIONS, V3_SPECIFICATION § 10.22; tests K1, K21) — what the
   Map's « Procédures » layer and the Données module's State list need: per aerodrome, green (procedures held: published, hand reading, X-Plane fallback, with the source, `outdated`

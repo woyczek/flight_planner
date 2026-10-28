@@ -74,14 +74,18 @@ def merge(old, doc):
     return {**old, **{k: v for k, v in doc.items() if k != 'procedures'}, 'procedures': list(by.values()), 'warnings': warnings}
 
 
-def install(doc, out, replace=False):
+def install(doc, out, replace=False, replace_source=None):
     """Écrit le fichier du terrain (fusionné avec celui qui est déjà là) et l'entrée du terrain dans l'index du cycle. Un fichier qui porte
-    des procédures d'une autre source, ou officielles, n'est touché qu'avec `replace` (SystemExit sinon, rien n'est écrit)."""
+    des procédures d'une autre source, ou officielles, n'est touché qu'avec `replace` (SystemExit sinon, rien n'est écrit). `replace_source` (« eaip ») : une nouvelle lecture de CETTE source
+    remplace la précédente (les procédures du fichier déjà là de cette source, de statut « check », sont retirées avant la fusion : un identifiant d'une lecture plus ancienne, changé
+    depuis par une règle de lecture meilleure, ne reste pas à côté du nouveau) ; les procédures des autres sources sont gardées."""
     out = Path(out) / 'manual'
     path = out / f'{doc["icao"]}.json'
     for p in doc['procedures']:                                 # le cycle de la page lue reste sur chaque procédure (outdated plus tard)
         p['source'] = {**(p.get('source') or {}), 'cycle': (p.get('source') or {}).get('cycle') or doc['cycle']}
     old = json.loads(path.read_text(encoding='utf-8')) if path.exists() else None
+    if old and replace_source:
+        old = {**old, 'procedures': [p for p in old.get('procedures', []) if not (p.get('status') == 'check' and (p.get('source') or {}).get('kind') == replace_source)]}
     other = foreign(doc, old)
     if other and not replace:
         raise SystemExit(f'{doc["icao"]}: le fichier du terrain (proc/manual) porte déjà {len(other)} procédure(s) d\'une autre source ou officielles '

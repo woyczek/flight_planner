@@ -275,6 +275,24 @@ def _ead_commit(data, icao, git_cmd, git_env, warnings, source='ead'):
         return None
 
 
+def _installed_file(data, icao):
+    """Le fichier du terrain tel que proc_manual.install vient de l'écrire (data/proc/manual/<OACI>.json), relu sur le disque ; None s'il ne se lit pas. Rendu dans le résultat du
+    travail (`file`) : aerodb le sert tout de suite, sans attendre que sa copie de lecture rattrape (la première lecture répondait « 0 procédures »)."""
+    try:
+        with open(os.path.join(data, 'proc', 'manual', f'{icao}.json'), encoding='utf-8') as f:
+            doc = json.load(f)
+        return doc if isinstance(doc, dict) and isinstance(doc.get('procedures'), list) else None
+    except (OSError, ValueError):
+        return None
+
+
+def _summary(stats):
+    """Ligne de journal d'un compte rendu `stats` : « 18 procédure(s) sur 22 page(s) de codage ; 4 non lue(s) ; 2 procédure(s) écartée(s) (motifs : …) »."""
+    why = '; '.join(f'{t} ×{n}' for t, n in stats.get('reasons', []))
+    return (f'{stats.get("procedures", 0)} procédure(s) installée(s) ; {stats.get("read", 0)} page(s) lue(s) sur {stats.get("pages", 0)}, {stats.get("rejected", 0)} non lue(s)'
+            f'{"; " + str(stats["dropped"]) + " procédure(s) écartée(s) par le contrôle de géométrie" if stats.get("dropped") else ""}{" (motifs : " + why + ")" if why else ""}')
+
+
 def _ead_fetch(job, args, ctx):
     """Verbe proc/ead-fetch : lit dans EAD Basic les procédures d'UN terrain, les installe sous data/proc/manual/ et les valide dans
     le dépôt des données (aerodb.fetchProcedures, § 10.20). Règle d'EAD Basic (frame/aerodb/EAD_BASIC.md § 1) : un terrain par geste de
@@ -296,6 +314,7 @@ def _ead_fetch(job, args, ctx):
     if tools not in sys.path:
         sys.path.insert(0, tools)
     import proc_ead
+    import proc_eaip
     import proc_manual
 
     def clean(text, n=300):
@@ -334,6 +353,7 @@ def _ead_fetch(job, args, ctx):
             if problems:
                 return failed('geometry check failed: ' + '; '.join(problems[:3]), warnings)
         installed = 0
+        formats = [f for d in (doc, ocr) if d for f in d.get('formats', [])]
         for d in todo:
             try:
                 proc_manual.install(d, os.path.join(data, 'proc'), replace=False)
@@ -347,8 +367,10 @@ def _ead_fetch(job, args, ctx):
     except (SystemExit, Exception) as e:
         return failed(e)
     commit = _ead_commit(data, icao, ctx.get('git_cmd'), ctx.get('git_env', dict), warnings)
+    stats = proc_eaip.stats_of(formats, installed)       # pages = documents lus (une entrée par page de tableau vue) ; pas de contrôle de géométrie par procédure ici : dropped 0
+    job.log(clean(_summary(stats)))
     return {'ok': True, 'icao': icao, 'procedures': installed, 'warnings': [clean(w) for w in warnings][:50], 'commit': commit,
-            'ocr': bool(ocr and ocr.get('procedures')), 'source': 'ead'}
+            'ocr': bool(ocr and ocr.get('procedures')), 'source': 'ead', 'stats': stats, 'file': _installed_file(data, icao)}
 
 
 def _eaip_args(a):
@@ -414,21 +436,24 @@ def _eaip_fetch(job, args, ctx):
         if job.cancelled():
             raise _Cancelled()
         warnings = list(doc.get('warnings', []))
-        kept = []
+        kept, dropped = [], []
         for p in doc.get('procedures', []):             # géométrie : proc_eaip.gaps_of (cap magnétique et distance imprimés)
             gaps = proc_eaip.gaps_of(p)
             if gaps:
                 warnings.append(f'{p.get("id")}: NON retenue, géométrie incohérente: ' + '; '.join(gaps[:2]))
+                dropped.append('géométrie incohérente')
             else:
                 kept.append(p)
+        stats = proc_eaip.stats_of(doc.get('formats', []), len({p.get('id') for p in kept}), dropped)
+        job.log(clean(_summary(stats)))
         if not kept:
-            return failed('no procedure could be read for this aerodrome' + (' (geometry check failed)' if doc.get('procedures') else ''), warnings)
+            return {**failed('no procedure could be read for this aerodrome' + (' (geometry check failed)' if doc.get('procedures') else ''), warnings), 'stats': stats}
         doc['procedures'] = kept
         doc['warnings'] = warnings
-        try:
-            proc_manual.install(doc, os.path.join(data, 'proc'), replace=False)
+        try:      # une relecture REMPLACE la lecture précédente de la même source (eaip) : ses identifiants d'avant (autre nom, autre règle de lecture) ne restent pas
+            proc_manual.install(doc, os.path.join(data, 'proc'), replace=False, replace_source='eaip')
         except SystemExit as e:                         # procédures d'une autre source dans le fichier du terrain : rien n'est écrit
-            return failed(e, warnings)
+            return {**failed(e, warnings), 'stats': stats}
     except _Cancelled:
         return {'ok': False, 'reason': 'cancelled'}
     except urllib.error.HTTPError as e:
@@ -439,7 +464,7 @@ def _eaip_fetch(job, args, ctx):
         return failed(e)
     commit = _ead_commit(data, icao, ctx.get('git_cmd'), ctx.get('git_env', dict), warnings, source='eaip')
     return {'ok': True, 'icao': icao, 'procedures': len({p.get('id') for p in kept}), 'warnings': [clean(w) for w in warnings][:50], 'commit': commit,
-            'source': 'eaip', 'cycle': cycle}
+            'source': 'eaip', 'cycle': cycle, 'stats': stats, 'file': _installed_file(data, icao)}
 
 
 # verbes du lot D0 ; les constructeurs (D2) ajoutent les leurs ici, chacun avec son contrôle d'arguments

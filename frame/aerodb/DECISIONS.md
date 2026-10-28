@@ -1418,3 +1418,29 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Choices to review**: an index entry whose counts are all zero is not « held » (it would colour a pin green with nothing behind it); the catalogue failing to load does not cache
   the table (every State then reads `unknown` for that call only); `outdated` is computed by `procedureIndex` at build time, so a cycle change while a page stays open is seen at the next
   invalidation, not at midnight.
+
+## 29 October 2026 — « Lire les procédures » for Toulouse and Orly: the SIA's real layouts, counts, a fresh file, runways from the records (§ 10.20)
+
+- **Asked** (the user's report, Fuel through `proc/eaip-fetch`): LFBO installs 18 approaches and no SID / STAR, LFPO 160 procedures but whole pages missing; the first run answers « 0 procédures » although the files were installed
+  (the next shows them); LFPO offers no runway in Fuel; the notification must give counts. The Map session added: the RNP page of LFPO RWY 20 has no missed approach.
+- **Causes** (read on the real pages of the cycle, kept as trimmed rows in the fixtures): (1) the extractor spells some cells one character at a time and cuts or glues others (`Y e s`, `1 . 0`, `D F P O 2 0 4`, `F L 070`, `L-`, `F M--`, `PB 096`), so a leg
+  row had the wrong count of cells and was dropped — silently when it was not even counted among the leg rows; (2) Toulouse prints, under each departure, a runway header (`RWY14R 141 142.9`) before the runway's own first legs (a CA to 1000 ft,
+  or the first DF), the CA row sometimes scrambled; (3) Orly writes decimal commas (`198,4`, `-3,4° / 49`), the vertical-angle row of RWY 20 included, so the threshold point `RW20` was never read and the missed approach never began;
+  (4) STAR titles carry `(FIR)` / `(UIR)`, so a whole page became one procedure; (5) INA and ILS pages were not titled nor shaped like RNP pages (labels `INA` / `VEBEK 1E` scattered between rows, « See chart » hiding a leg type); (6) the aerodb answer was built from the
+  reader's copy, still the old file when the job ended; (7) `runways()` knew only `RWnn` points, which Orly's tables position for three runways of six.
+- **Done**: see SPEC § 5 quinquies (« Layouts read »), INTEGRATION (« `stats` »), the tests K24 (real pages: every page read, each row counted once, a new column still refused), K23 (`stats`, `file`, replacement of a former reading), K1 (stale reader,
+  runways from records). Before / after on the 74 pages: LFBO 18 → 78 procedures (APP 18 → 26, SID 0 → 38, STAR 0 → 14), LFPO 160 → 316 (SID 137 → 181, STAR 18 → 102, APP 5 → 33); pages read 43 / 74 → 74 / 74 (LFBO 7 / 18 → 18 / 18, LFPO 36 / 56 → 56 / 56).
+- **Choices to review**:
+  - **Departures for several runways**: the table does not say where a runway's own legs end. Read as: the legs under a runway header are that runway's, the legs after the LAST header are the common route (so the last runway has only the
+    common route, the others their own CA first). It matches every page seen (one CA row, then the common route starting with the DF of the other runway), and ARINC's runway-transition / common-route structure; a procedure for runway 14R then starts
+    `CA 141° to 1000 ft, DF BO140…` where 14L starts `DF BO140…`. A warning says it on each page. If the SIA's chart says otherwise, only `parse_code_table` changes.
+  - **CA altitude of a scrambled row** goes in the MNM column as on the clean rows of the same page (the row is read by content: CA, one altitude, the accuracy 1.0, six empty cells).
+  - **Missing cells rebuilt only when unique** (`_fit`): the extractor loses a dash now and then; the row is rebuilt when exactly one placement of the empty cells fits every column's type (Fly Over `Yes`, courses, distance, turn L / R, altitudes, speed, accuracy) — never when two fit.
+  - **INA transitions are not joined to the FNA page** (they end on the initial fix of the ILS / RNP page, `IO14L`): separate procedures named `INA RNAV (GNSS) RWY 14R` with the transition `ADIMO`; two transitions from one initial fix are told apart by the STAR designators when the page prints
+    them in order, else both are left out with a warning.
+  - **ILS pages** keep the initial fix as `main` and what follows « See chart » as `missed` with `gap: true` on the first leg (no line from the previous point; the geometry check skips it); the leg type hidden by « See chart » is deduced as TF only when a course and a
+    distance are printed (said in a warning).
+  - **A new eAIP reading replaces the former eAIP reading of the aerodrome** in `proc/manual/` (`proc_manual.install(…, replace_source='eaip')`): an identifier changed by a better reading would otherwise stay beside the new one. Other sources' files are still never touched.
+  - **`stats.reasons` texts are French phrases of the tool**, as the warnings; Fuel maps them to its four languages.
+  - **`runways` in the eAIP file only when a threshold has a position** (it has none for LFBO / LFPO: the DATA pages refer to AD 2.12); aerodb names the runways from the records instead, `lat` / `lon` null, `approx: true`.
+  - Known and left: one STAR row of LFPO (`TF SOTIP`, three empty cells lost) stays unread, reported; the first fix of the RNP page of RWY 20 (`(*) PO420`, its type hidden by the footnote mark) is not read, so its transition starts at PO421.

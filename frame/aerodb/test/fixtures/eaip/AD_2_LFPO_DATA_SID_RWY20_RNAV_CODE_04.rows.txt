@@ -1,0 +1,36 @@
+AIP AD 2 LFPO DATA SID RWY20 RNAV CODE 04
+FRANCE 31 OCT 24
+PARIS ORLY (LFPO)
+Réacteurs (R) et hélices (H) / Jets (R) and Propellers (H)
+OPALE - ATREX - NURMO - OKASI - PILUL - ELCOB - LGL - DIKOL - BAXIR
+RANUX - BUBLI - AGOPA - ERIXU - LATRA - OLZOM - MONOT - DORDI
+(Protégés pour / Protected for CAT A, B, C, D)
+SID RNAV RWY 20
+RMK GNSS ou/or DME/DME MAG VAR 2020 1.0°E Ref N AVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+DORDI 2Y
+- CA - - 197 198,4 - - 700 - - 1,0
+- CF PO203 Yes 225 225,9 - - - - - 1,0
+- D F D O R D I - ---- - - - 1,0
+OLZOM 2Y
+- CA - - 197 198,4 - - 700 - - 1,0
+- CF PO203 Yes 225 225,9 - - - - - 1,0
+- D F O L Z O M - ---- - - - 1,0
+MONOT 2Y
+- CA - - 197 198,4 - - 700 - - 1,0
+- CF PO203 Yes 225 225,9 - - - - - 1,0
+- D F M O N O T - ---- - - - 1,0
+DORDI 2S
+- CA - - 197 198,4 - - 700 - - 1,0
+- CF PO203 Yes 225 225,9 - - - - - 1,0
+- D F D O R D I - ---- - - - 1,0
+OLZOM 2S
+- CA - - 197 198,4 - - 700 - - 1,0
+- CF PO203 Yes 225 225,9 - - - - - 1,0
+- D F O L Z O M - ---- - - - 1,0
+MONOT 2S
+- CA - - 197 198,4 - - 700 - - 1,0
+- CF PO203 Yes 225 225,9 - - - - - 1,0
+- D F M O N O T - ---- - - - 1,0
+AMDT 11/24 © SIA

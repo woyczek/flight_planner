@@ -383,6 +383,58 @@
         .length === 2 && rws[0].id === '09' &&
         rws[0].approx === false && rws[0].elev === 410 && rws[1].id === '27' && rws[1].approx === true && rws[1].qfu === 270 && rws[1]
         .lat === 45.01, rws);
+      // France : les points RWnn n'ont que 02, 06, 07 (pistes du SIA sans seuil dans les tables) alors que les listes `runways` des fiches nomment aussi 20, 24, 25 ; jamais ALL, « 16B » coupé
+      files.set('proc/manual/LFPX.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFPX',
+        cycle: '2026-10-01',
+        updated_at: '2026-10-28T10:00:00+00:00',
+        procedures: [
+          ...['02', '06', '07'].map(r => ({
+            ...man(`LFPX.APP.RNP${r}.RW${r}`, 'APP', `RNP RWY ${r}`, '2026-10-01', [pt('IPO' + r, 48.5, 2.3), pt('RW' + r, 48.7, 2.4)], {
+              icao: 'LFPX',
+              runways: [r],
+              source: {
+                kind: 'eaip',
+                cycle: '2026-10-01'
+              }
+            })
+          })),
+          ...['20', '24', '25'].map(r => ({
+            ...man(`LFPX.SID.OPALE.RW${r}`, 'SID', 'OPALE ' + r, '2026-10-01', [pt(null, null, null, {
+              leg: 'CA',
+              crs: 197
+            }), pt('PO' + r, 48.8, 2.5)], {
+              icao: 'LFPX',
+              runways: [r],
+              source: {
+                kind: 'eaip',
+                cycle: '2026-10-01'
+              }
+            })
+          })),
+          man('LFPX.STAR.ALL1A.RWALL', 'STAR', 'ALL1A', '2026-10-01', [pt('AAAAA', 48, 2)], {
+            icao: 'LFPX',
+            runways: ['ALL', 'RWALL']
+          }),
+          man('LFPX.SID.PAR1A.RW16B', 'SID', 'PAR1A', '2026-10-01', [pt('BBBBB', 48, 2)], {
+            icao: 'LFPX',
+            runways: ['16B']
+          }),
+          man('LFPX.STAR.TOU1A.RW14', 'STAR', 'TOU1A', '2026-10-01', [pt('CCCCC', 48, 2)], {
+            icao: 'LFPX',
+            runways: ['14', '14L', '14R']
+          })
+        ]
+      }));
+      const lfpx = await db.runways('LFPX');
+      check(
+        'runways(icao): the runways named by the records (SID, STAR) with no threshold in the tables are added (lat and lon null, QFU of the number, approx), never ALL; 16B is split; a bare 14 is dropped when 14L and 14R are there',
+        lfpx.map(r => r.id).join() === '02,06,07,14L,14R,16L,16R,20,24,25' && lfpx.filter(r => r.lat === null).map(r => r.id)
+        .join() ===
+        '14L,14R,16L,16R,20,24,25' &&
+        lfpx.every(r => r.approx === true) && lfpx.find(r => r.id === '24').qfu === 240 && lfpx.find(r => r.id === '02').lat === 48.7,
+        lfpx);
       check('runways(): nothing without data, nothing for a bad code', (await db.runways('LFXX')).length === 0 && (await db.runways(
         '??')).length === 0, null);
       const ix = await db.procedureIndex();
@@ -735,6 +787,92 @@
       const ead = await okDb.fetchProcedures('EGLL');
       check('fetchProcedures(): a State readable in EAD Basic (EG) still asks ead-fetch', ead.ok === true && ead.source === 'ead' &&
         calls.length === 1 && calls[0].body.verb === 'ead-fetch', [ead, calls.map(x => x.body)]);
+      // ------------------------------------------------------------------ copie périmée du lecteur : le résultat du travail fait foi (lecture « 0 procédures »)
+      calls.length = 0;
+      const oldLfbx = man('LFBW.SID.OLD1A.RW14', 'SID', 'OLD1A', '2026-10-01', [pt('AAAAA', 45, 1)], {
+          icao: 'LFBW',
+          runways: ['14'],
+          source: {
+            kind: 'eaip',
+            cycle: '2026-10-01'
+          }
+        }),
+        mkLfbx = (at, ps) => ({
+          schema: 1,
+          icao: 'LFBW',
+          cycle: '2026-10-01',
+          updated_at: at,
+          procedures: ps
+        }),
+        freshLfbx = mkLfbx('2026-10-28T10:00:00+00:00', [oldLfbx, {
+          ...oldLfbx,
+          id: 'LFBW.SID.NEW1A.RW14',
+          name: 'NEW1A'
+        }, {
+          ...oldLfbx,
+          id: 'LFBW.SID.NEW1A.RW32',
+          name: 'NEW1A',
+          runways: ['32']
+        }]);
+      files.set('proc/manual/LFBW.json', JSON.stringify(mkLfbx('2026-10-27T10:00:00+00:00', [])));
+      jobAnswer.r = {
+        ok: true,
+        state: 'done',
+        result: {
+          ok: true,
+          icao: 'LFBW',
+          procedures: 3,
+          warnings: [],
+          commit: null,
+          source: 'eaip',
+          cycle: '2026-10-01',
+          stats: {
+            pages: 22,
+            read: 18,
+            rejected: 4,
+            procedures: 3,
+            dropped: 0,
+            reasons: [
+              ['lignes de tronçon illisibles (moins de 85 % lues)', 4]
+            ]
+          },
+          file: freshLfbx
+        }
+      };
+      const staleRead = await okDb.fetchProcedures('LFBW');
+      check(
+        'fetchProcedures(): the reader still holds the OLD file after the job: the answer is built from the file the job returns (3 procedures, not 0), with the stats',
+        staleRead.ok === true && staleRead.procedures.length === 3 && staleRead.stats?.read === 18 && staleRead.stats.rejected ===
+        4 && staleRead.stats.reasons[0][1] === 4, staleRead);
+      check(
+        'fetchProcedures(): procedures() goes on serving the fresh file while the reader has not caught up (same updated_at not reached)',
+        (await okDb.procedures('LFBW')).length === 3 && (await okDb.runways('LFBW')).map(r => r.id).join() === '14,32', null);
+      files.set('proc/manual/LFBW.json', JSON.stringify(mkLfbx('2026-10-28T10:00:00+00:00', [oldLfbx])));
+      check('fetchProcedures(): once the reader holds a copy as recent, the reader\'s copy is served again (the override is dropped)',
+        (await okDb.procedures('LFBW')).length === 1, null);
+      jobAnswer.r = {
+        ok: true,
+        state: 'done',
+        result: {
+          ok: false,
+          reason: 'failed',
+          message: 'no procedure could be read for this aerodrome',
+          warnings: ['w'],
+          stats: {
+            pages: 3,
+            read: 0,
+            rejected: 3,
+            procedures: 0,
+            dropped: 0,
+            reasons: [
+              ['mise en page non reconnue', 3]
+            ]
+          }
+        }
+      };
+      const failStats = await okDb.fetchProcedures('LFBW');
+      check('fetchProcedures(): a failure passes the stats on when the job gives them', failStats.ok === false && failStats.reason ===
+        'failed' && failStats.stats?.rejected === 3 && failStats.warnings[0] === 'w', failStats);
       // ------------------------------------------------------------------ coverage(icao), coverageByState() (§ 10.22)
       // un lecteur en mémoire à révisions (un fichier changé change de révision), qui compte ses lectures et garde les observateurs
       const cf = new Map(),

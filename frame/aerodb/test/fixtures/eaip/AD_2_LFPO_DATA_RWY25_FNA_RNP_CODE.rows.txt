@@ -1,0 +1,17 @@
+AD 2 LFPO DATA RWY25 FNA RNP CODEAIP
+27 NOV 2025FRANCE
+PARIS ORLY
+PRECODING FNA RNP RWY 25
+AMDT 12/25© Service de l'Information Aéronautique, France
+FNA RNP RWY25
+RMK - MAG VAR 2020 1.0°E REF NAVAID : BT
+V er ti ca l angle (°) / TCH (ft) Navigation Accuracy (NM)
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt)
+HLDG - MOLBA - ---- - - -- -
+IF VEKUH -- - -- 3000 -- - -
+TF FPO25 - 254 254.7 5.9 - 3000 3000 -- 1.0
+TF RW25 Yes 254 254.6 8.4 - - - - -3.0°/54 0.3
+APCH CA -- 254 254.6 -- 700 -- - 1.0
+DF PO432 - ---L - 2000 -- 1.0
+TF MLN - 101 102.5 21.6 L - 4000 -- 1.0
+TF MOLBA Yes 133 133.9 13.9 - FL070 FL070 230 - 1.0

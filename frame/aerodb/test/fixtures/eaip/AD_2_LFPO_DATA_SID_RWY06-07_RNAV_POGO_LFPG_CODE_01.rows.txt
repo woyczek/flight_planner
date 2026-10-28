@@ -1,0 +1,32 @@
+AIP AD 2 LFPO DATA SID RWY06-07 RNAV POGO LFPG CODE 01
+FRANCE 31 OCT 24
+PARIS ORLY (LFPO)
+SID RNAV POGO
+(Protégés pour / Protected for CAT A, B, C, D)
+POGO RNAV RWY 06-07
+RMK GNSS requis/ required MAG VAR 2020 1,0°E Ref N AVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+PG 2E
+RWY07 CF PO081 Yes 073 074,4 - - - - - 1.0
+- D F P O 0 8 2 Y e s ---- - - - 1.0
+- DF PO771 - - - - R - - - 1.0
+- TF PO772 - 298 298,6 18,8 - - FL070 220 1.0
+- FM - - 298 298,6 - - - - - -
+PG 2F
+RWY06 CF PO060 Yes 061 061,8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- DF PO771 - - - - R - - - 1.0
+- TF PO772 - 298 298,6 18,8 - - FL070 220 1.0
+- FM - - 298 298,6 - - - - - -
+PG 2G
+RWY07 CF PO081 Yes 073 074,4 - - - - - 1.0
+- D F P O 0 8 2 Y e s ---- - - - 1.0
+- TF PO773 - 082 083,1 22,3 - - 5000 220 1.0
+- FM - - 082 083,1 - - - - - -
+PG 2H
+RWY06 CF PO060 Yes 061 061,8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- CF PO773 - 082 083,1 - - - 5000 220 1.0
+- FM - - 082 083,1 - - - - - -
+AMDT 11/24 © SIA

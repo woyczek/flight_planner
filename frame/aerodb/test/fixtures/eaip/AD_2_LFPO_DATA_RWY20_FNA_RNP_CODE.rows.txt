@@ -1,0 +1,25 @@
+AD 2 LFPO DATA RWY20 FNA RNP CODEAIP
+11 JUN 2026FRANCE
+PARIS ORLY
+PRECODING FNA RNP RWY 20
+AMDT 06/26© Service de l'Information Aéronautique, France
+FNA RNP RWY20
+RMK (*) Radar vectoring before PO420 MAG VAR 2020 1,0°E REF NAVAID : -
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+HLDG - MOLBA - - - - - - - - - -
+(*) PO420 - - - - - 3000 3000 - - -
+INA
+TF PO421 - 254 254,7 3,0 - 3000 3000 - - 1,0
+(AFTER RWY WEST
+INA RNAV VEBEK TF PO422 - 292 293,0 3,0 - 3000 3000 - - 1,0
+OR MOLBA OR
+TF PO423 - 292 292,9 4,0 - 2000 - - - 1,0
+ODILO)
+TF IPO20 - 292 292,9 1,6 - 1600 - 180 - 1,0
+IF IPO20 - - - - - 1600 - 180 - -
+TF FPO20 - 227 228,4 3,8 - 1600 1600 180 - 1,0
+TF RW20 Yes 197 198,4 3,5 - - - - -3,4° / 49 0,3
+APCH
+TF PO425 - 197 198,4 13,5 - - - - - 1,0
+TF MLN - 100 100,9 21,7 L - 4000 - - 1,0
+TF MOLBA Yes 133 133,9 13,9 - FL070 FL070 230 - 1,0

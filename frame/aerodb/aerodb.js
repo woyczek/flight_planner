@@ -227,6 +227,10 @@
       }
     });
     const revs = new Map(); // chemin lu → révision lue (un fichier changé se reconnaît à sa révision)
+    /** Fichier de terrain que le travail du poste vient d'installer (proc/manual/<OACI>.json tel qu'écrit, rendu dans le résultat du travail) :
+     *  servi à la place de la copie du lecteur tant que celle-ci n'est pas aussi récente (même updated_at ou plus) — la première lecture
+     *  répondait « 0 procédures » parce que le lecteur tenait encore l'ancienne copie. Retiré dès que le lecteur rattrape. */
+    const manualFresh = new Map();
     const eadBusy = new Map(); // OACI → lecture EAD Basic en cours (fetchProcedures : une seule à la fois par terrain)
     const read = path => reader.read(path, {
       policy: 'reference',
@@ -351,8 +355,13 @@
         [pub, man, seen, loc] = await Promise.all([cycle ? read(`proc/${cycle}/${k}.json`) : null, read(`proc/manual/${k}.json`),
           read(`proc-seen/${k}.json`), read(`proc/local/${k}.json`)
         ]),
-        inForce = airacCycles(1, now())[0],
-        mv = valueOf(man);
+        inForce = airacCycles(1, now())[0];
+      let mv = valueOf(man);
+      const fresh = manualFresh.get(k);
+      if (fresh) {
+        if (mv?.updated_at && mv.updated_at >= fresh.updated_at) manualFresh.delete(k);
+        else mv = fresh;
+      }
       return {
         pub: valueOf(pub)?.procedures || [],
         manual: (mv?.procedures || []).map(p => {
@@ -1108,7 +1117,8 @@
         const ad = (await api.aerodromes({
           icao: k
         }).catch(() => []))[0];
-        for (const rec of await api.procedures(k))
+        const recs = await api.procedures(k);
+        for (const rec of recs)
           for (const p of rec.points) {
             const m = /^RW(\d\d)([LRC]?)$/.exec(p.id || '');
             if (!m || p.lat == null || byId.has(m[1] + m[2])) continue;
@@ -1125,6 +1135,30 @@
               approx: true
             });
           }
+        // les pistes que les fiches nomment (`runways`) sans que la table en donne le seuil (le SIA renvoie les seuils à la page AD 2.12) :
+        // sans position (lat, lon null), QFU du numéro ; jamais « ALL » (ni RWALL) ; une forme « 16B » (les deux parallèles) est coupée en 16L et 16R
+        for (const rec of recs)
+          for (const name of rec.runways || []) {
+            const m = /^(?:RW)?(\d\d)([LRCB]?)$/.exec(String(name).trim().toUpperCase());
+            if (!m || +m[1] < 1 || +m[1] > 36) continue;
+            const ids = m[2] === 'B' ? [m[1] + 'L', m[1] + 'R'] : [m[1] + m[2]]; // « 16B » : les deux parallèles
+            for (const id of ids)
+              if (!byId.has(id)) byId.set(id, {
+                id,
+                lat: null,
+                lon: null,
+                elev: null,
+                qfu: +m[1] * 10,
+                displaced: null,
+                length: null,
+                width: null,
+                source: rec.source?.kind || null,
+                approx: true
+              });
+          }
+        // « 14 » d'une STAR commune aux deux parallèles n'est pas une piste de plus quand 14L / 14R sont là (sans position, seulement)
+        for (const [id, r] of byId)
+          if (/^\d\d$/.test(id) && r.lat == null && [...byId.keys()].some(o => o.length === 3 && o.startsWith(id))) byId.delete(id);
         return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
       },
       /** Index des procédures publiées : { cycle, aerodromes: { OACI: { SID, STAR, APP, status } } }, les terrains lus à la main
@@ -1234,6 +1268,9 @@
               message: String(res?.message || r.message || (r.offline ? 'launcher unreachable' : '')),
               ...(Array.isArray(res?.warnings) ? {
                 warnings: res.warnings
+              } : {}),
+              ...(res?.stats && typeof res.stats === 'object' ? {
+                stats: res.stats
               } : {})
             });
           }
@@ -1250,6 +1287,8 @@
           }
           if ((await Promise.resolve(reader.status?.()).catch(() => null))?.transport === 'local') await Promise.resolve(reader
             .sync?.()).catch(() => null);
+          if (res.file && typeof res.file === 'object' && Array.isArray(res.file.procedures)) manualFresh.set(k, res
+            .file); // le résultat fait foi sur la copie du lecteur
           dropCoverage(); // le terrain lu est désormais détenu (proc/manual/index.json)
           emit({
             procedures: k,
@@ -1261,7 +1300,8 @@
             procedures: await api.procedures(k),
             warnings: Array.isArray(res.warnings) ? res.warnings : [],
             commit: res.commit ?? null,
-            source
+            source,
+            stats: res.stats && typeof res.stats === 'object' ? res.stats : null
           };
         })();
         eadBusy.set(k, run);

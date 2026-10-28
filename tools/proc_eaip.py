@@ -341,43 +341,201 @@ def _cells(tokens):
     return out
 
 
+RUNWAY_LIST = re.compile(r'((?:\s*[/-]\s*\d{2}[LRC]?)+)')
+
+
+def _runway_list(first, rest):
+    """Pistes d'un titre : « 14L » suivi de « / 14R » ou « -14R » (« RWY 14L / 14R », « RWY14L-14R », « RWY 20-24-25 »)."""
+    m = RUNWAY_LIST.match(rest)
+    return [first] + (re.findall(r'\d{2}[LRC]?', m.group(1)) if m else [])
+
+
+def _own_title(rows):
+    """Titre d'une page INA / FNA qui n'est pas « RNP » : la ligne que la page imprime pour elle-même (« INA RNAV (GNSS) RWY 14R », « FNA ILS Z or LOC Z RWY 14L »,
+    « FNA ILS CAT I ou / or CAT II et / and CAT III ou / or LOC RWY 07 ») ; les lignes qui la citent (« Linked to FNA RNP RWY 14L ») ne comptent pas. (type, pistes, intitulé) ou None."""
+    for r in rows:
+        m = re.match(r'^(INA|FNA)\s+(.*?)\s*RWY\s*(\d{2})\s*([LRC]?)\s*$', r)          # « RWY 32 L » (INA RNAV(GNSS) RWY 32 L) comme « RWY 32L »
+        if not m or (m.group(1) == 'FNA' and m.group(2).startswith('RNP')):
+            continue
+        rw = m.group(3) + m.group(4)
+        mid = re.sub(r'\s*\b(?:ou|et)\s*/\s*(or|and)\b', r' \1', re.sub(r'(\w)\(', r'\1 (', re.sub(r'\s+', ' ', m.group(2))))
+        return 'APP', [rw], f'{m.group(1) if m.group(1) == "INA" else ""} {mid} RWY {rw}'.strip().replace('  ', ' ')
+    return None
+
+
 def _title(rows):
-    """(type, pistes, intitulé) d'après le titre de la page (« SID RNAV RWY 23 », « RNP RWY 29 », « STAR RNAV RWY ALL »)."""
+    """(type, pistes, intitulé) d'après le titre de la page (« SID RNAV RWY 23 », « SID RNAV RWY 14L / 14R », « RNP RWY 29 », « STAR RNAV RWY ALL », « INA RNAV (GNSS) RWY 14R »,
+    « FNA ILS … RWY 14L ») ; le départ POGO (« SID RNAV POGO » puis « POGO RNAV RWY 06-07 ») n'a pas de piste dans son titre de type."""
+    own = _own_title(rows)
+    if own:
+        return own
     for r in rows:
         m = re.search(r'\b(SID|STAR|RNP[A-Z ]*?)\s*(?:RNAV\s+)?RWY\s*(\d{2}[LRC]?|ALL)\b', r)
         if m:
             kind = 'APP' if m.group(1).startswith('RNP') else m.group(1)
-            return kind, ([] if m.group(2) == 'ALL' else [m.group(2)]), re.sub(r'\s+', ' ', m.group(0)).strip()
+            return kind, ([] if m.group(2) == 'ALL' else _runway_list(m.group(2), r[m.end():])), re.sub(r'\s+', ' ', m.group(0)).strip()
+    kind = next((m.group(1) for m in (re.match(r'^(SID|STAR)\b', r) for r in rows) if m), None)
+    if kind:
+        for r in rows:
+            m = re.search(r'\bRWY\s*(\d{2}[LRC]?)', r)
+            if m:
+                return kind, _runway_list(m.group(1), r[m.end():]), re.sub(r'\s+', ' ', r).strip()
+        return kind, [], ''
     return None, [], ''
 
 
-def _leg(tokens, rnp, warn):
+FIXLESS = {'CA', 'VA', 'VI', 'VM', 'VR', 'FM', 'CI'}       # tronçons sans point : un cap jusqu'à une altitude ou à un vecteur (id null, SPEC § 5 quinquies)
+LANE = re.compile(r'^RWY ?(\d{2}[LRC]?) (\d{1,3}) (\d{1,3}\.\d)$')       # « RWY14R 141 142.9 » : en-tête de piste d'un départ à plusieurs pistes (cap magnétique et vrai de la piste)
+
+
+def _spelled(run):
+    """Mot(s) recomposé(s) d'une suite de caractères que l'extracteur a espacés un à un (« D F P O 2 0 4 Y e s » → DF PO204 Yes ; « F L 1 1 0 F L 1 1 0 2 5 0 » → FL110 FL110 250)."""
+    if len(run) > 1 and run[0] in 'LR' and (run[1].isdigit() or run.startswith(('LFL', 'RFL'))):        # le sens du virage collé au nombre qui suit
+        return [run[0]] + _spelled(run[1:])
+    m = re.fullmatch(r'([A-Z]{2})([A-Z0-9]{2,6}?)(Yes)?', run)
+    if m and m.group(1) in PATH_TERMINATORS:
+        return [m.group(1), m.group(2)] + (['Yes'] if m.group(3) else [])
+    if 'FL' in run and re.fullmatch(r'(?:FL\d{3}|\d+(?:\.\d+)?)+', run):
+        return re.findall(r'FL\d{3}|\d+(?:\.\d+)?', run)
+    return [run]
+
+
+def norm_tokens(row):
+    """Mots d'une ligne de tableau, remis en forme avant lecture : lettres et chiffres espacés un à un recomposés (« Y e s », « 1 . 0 », « D F P O 2 0 4 »), « FL 070 » → FL070,
+    terminateur collé à des tirets (« F M-- » → FM --) ou virage collé à des tirets (« L- », « ---L »), virgule décimale → point (« 198,4 » → 198.4). Ne change aucune valeur :
+    elle remet seulement les mots où l'extracteur les avait coupés ou collés."""
+    t = row.split()
+    out, i = [], 0
+    while i < len(t):
+        w = t[i]
+        if len(w) == 1 and w.isalpha() and i + 1 < len(t) and re.fullmatch(r'[A-Z]-+', t[i + 1]) and (w + t[i + 1][0]) in PATH_TERMINATORS:       # « F M-- »
+            out += [w + t[i + 1][0], t[i + 1][1:]]
+            i += 2
+            continue
+        if w == 'F' and i + 1 < len(t) and re.fullmatch(r'L\d{3}', t[i + 1]):         # « F L260 » : niveau de vol coupé après le F
+            out.append('F' + t[i + 1])
+            i += 2
+            continue
+        j = i
+        while j < len(t) and re.fullmatch(r'[A-Za-z0-9.,]', t[j]):
+            j += 1
+        if j - i >= 2:
+            out += _spelled(''.join(t[i:j]))
+            i = j
+            continue
+        out.append(w)
+        i += 1
+    res = []
+    for n, w in enumerate(out):
+        m = re.fullmatch(r'([A-Z]{2})(-+)', w)
+        if res and res[-1] in PATH_TERMINATORS and re.fullmatch(r'[A-Z]{2}', w) and n + 1 < len(out) and re.fullmatch(r'\d{3}', out[n + 1]):
+            res.append(w)                  # point dont le nom est coupé en deux par la page (« PB 096 », « FF 305 » → PB096, FF305) : rejoint ci-dessous
+            continue
+        if res and re.fullmatch(r'[A-Z]{2}', res[-1]) and n > 1 and res[-2] in PATH_TERMINATORS and re.fullmatch(r'\d{3}', w):
+            res[-1] += w
+            continue
+        if m and m.group(1) in PATH_TERMINATORS:
+            res += [m.group(1), m.group(2)]
+        elif re.fullmatch(r'[LR]-+', w):
+            res += [w[0], w[1:]]
+        elif re.fullmatch(r'-+[LR]', w):
+            res += [w[:-1], w[-1]]
+        elif res and res[-1] == 'FL' and re.fullmatch(r'\d{2,3}', w):
+            res[-1] = 'FL' + w
+        elif re.fullmatch(r'-?\d+,\d+°?', w):
+            res.append(w.replace(',', '.'))
+        else:
+            res.append(w)
+    if res and res[-1] == 'FL':
+        res.pop()
+    return res
+
+
+def _col_ok(i, v, rnp, leg, last):
+    """La valeur `v` peut-elle tenir dans la colonne `i` de la table (0 point, 1 survol, 2 cap magnétique, 3 cap vrai, 4 distance, 5 virage, 6 mini, 7 maxi, 8 vitesse, [9 angle vertical], dernier :
+    précision) ? Sert à rétablir une cellule vide perdue (voir _fit) : on ne place une cellule que là où son type l'admet."""
+    if v is None:
+        return i != 0 or leg in FIXLESS
+    if i == 0:
+        return bool(re.fullmatch(r'[A-Z0-9]{2,6}', v))
+    if i == 1:
+        return v == 'Yes'
+    if i == 2:
+        return bool(re.fullmatch(r'\d{1,3}', v))
+    if i in (3, 4):
+        return bool(re.fullmatch(r'\d{1,3}(?:\.\d+)?', v))
+    if i == 5:
+        return v in ('L', 'R')
+    if i in (6, 7):
+        return alt_ft(v) is not None
+    if i == 8:
+        return bool(re.fullmatch(r'\d{2,3}', v))
+    if last:
+        return bool(re.fullmatch(r'\d+(?:\.\d+)?|RN(?:AV|P).*', v))
+    return bool(re.fullmatch(r'@-?[\d.]+/[\d.]+|-?\d+(?:\.\d+)?', v))      # angle vertical (rnp)
+
+
+def _fit(c, want, rnp, leg):
+    """Cellules d'une ligne qui en a de MOINS qu'il n'en faut (la page a perdu un tiret) : les rangées possibles où l'on ajoute des cellules vides de façon que chaque cellule tombe dans
+    une colonne de son type. Rend la liste si UNE SEULE disposition convient, None sinon (aucune, ou plusieurs : la ligne n'est pas lue, jamais devinée)."""
+    import itertools
+    k = want - len(c)
+    if not 0 < k <= 3:
+        return None
+    seen = []
+    for pos in itertools.combinations_with_replacement(range(1, len(c) + 1), k):
+        d = list(c)
+        for p in reversed(pos):
+            d.insert(p, None)
+        if d not in seen and all(_col_ok(i, v, rnp, leg, i == want - 1) for i, v in enumerate(d)):
+            seen.append(d)
+    return seen[0] if len(seen) == 1 else None
+
+
+def _leg(tokens, rnp, warn, lane=None, fixed=None):
     """Tronçon d'une ligne (tokens à partir du type de tronçon) ou None. SID / STAR : 10 cellules après le type ; RNP : 10
-    puis la spécification de navigation (texte)."""
+    puis la spécification de navigation (texte). `lane` : (cap magnétique, cap vrai) de l'en-tête de piste quand la ligne (CA) ne les porte pas ;
+    `fixed` : liste où l'on note une ligne dont une cellule vide perdue a été rétablie (_fit)."""
     text = ' '.join(tokens[1:])
     text = re.sub(r'(-\d+(?:\.\d+)?)\s*°?\s*/\s*(\d+(?:\.\d+)?)', r'@\1/\2', text)
     tok = text.split()
     nav = None
     if rnp:
-        k = len(tok)
-        while k > 0 and re.match(r'^[A-Za-z]', tok[k - 1]) and not re.fullmatch(r'Yes|[LR]', tok[k - 1]):
-            k -= 1
-        nav, tok = ' '.join(tok[k:]) or None, tok[:k]
+        m = re.search(r'(?:^|\s)(RN(?:AV|P)(?:\s+\d+(?:\.\d+)?)?(?:\s+(?:APCH|AR))?)$', text)        # « RNP APCH », « RNAV 1 » (colonne « NAV Spec »)
+        if m:
+            nav, tok = m.group(1), text[:m.start(1)].split()
+        else:
+            k = len(tok)
+            while k > 0 and re.match(r'^[A-Za-z]', tok[k - 1]) and not re.fullmatch(r'Yes|[LR]', tok[k - 1]):
+                k -= 1
+            nav, tok = ' '.join(tok[k:]) or None, tok[:k]
     c = _cells(tok)
     if nav:
         c.append(nav)
     want = 11 if rnp else 10
-    if len(c) == want - 1 and len(c) > 2 and c[2] and re.fullmatch(r'\d{3}\.\d', c[2]):   # le cap magnétique manque dans la page
+    if lane and len(c) == want - 2:
+        c[2:2] = list(lane)
+    if len(c) == want - 1 and len(c) > 2 and c[2] and re.fullmatch(r'\d{3}\.\d', c[2]) and c[1] in (None, 'Yes'):   # le cap magnétique manque dans la page
         c.insert(2, None)
         warn(f'cap magnétique absent: {" ".join(tokens)}')
     if len(c) != want:
         if c and c[0] and all(x is None for x in c[1:]) and tokens[0] == 'IF':      # point initial sans autre donnée: gardé
             c += [None] * (want - len(c))
         else:
-            warn(f'ligne illisible ({len(c)} cellules au lieu de {want}): {" ".join(tokens)}')
-            return None
+            d = _fit(c, want, rnp, tokens[0]) if len(c) < want else None
+            if d is None:
+                warn(f'ligne illisible ({len(c)} cellules au lieu de {want}): {" ".join(tokens)}')
+                return None
+            c = d
+            if fixed is not None:
+                fixed.append(' '.join(tokens))
+    return _leg_of(tokens, c, rnp, warn)
+
+
+def _leg_of(tokens, c, rnp, warn):
+    """Tronçon d'une liste de cellules complète (point, survol, cap magnétique, cap vrai, distance, virage, mini, maxi, vitesse, [angle vertical,] précision)."""
     wpt, over, mag, tru, nm, turn, lo, hi, ias, last, *extra = c
-    if not wpt:
+    if not wpt and tokens[0] not in FIXLESS:
         warn(f'point sans identifiant: {" ".join(tokens)}')
         return None
     leg = {'id': wpt, 'leg': tokens[0], 'over': True if over == 'Yes' else None,
@@ -396,49 +554,185 @@ def _leg(tokens, rnp, warn):
     return leg
 
 
+def _lane_ca(raw, lane, warn):
+    """Premier tronçon d'une piste, « CA » (cap jusqu'à une altitude) : la page imprime son cap dans l'en-tête de la piste et l'extracteur brouille parfois l'ordre des cellules de la
+    ligne (« -- 1000 - -1 . 0CA - - »). Lue sans tenir compte de l'ordre : le mot CA, une altitude et la précision 1.0 sont les seules cellules non vides, les six tirets restants sont les
+    cellules vides ; l'altitude va dans la colonne MNM, comme sur les lignes propres de la même page. Rend le tronçon ou None (la ligne n'est alors pas de cette forme)."""
+    s = re.sub(r'\s+', '', raw)
+    if s.count('CA') != 1:
+        return None
+    s = s.replace('CA', '', 1)
+    body = s.replace('-', '')
+    m = re.fullmatch(r'(\d{3,4}|FL\d{3})(\d\.\d)', body)
+    if m:
+        alt, acc = m.group(1), m.group(2)
+    else:                                             # précision puis altitude : l'ordre peut être inversé
+        m = re.fullmatch(r'(\d\.\d)(\d{3,4}|FL\d{3})', body)
+        alt, acc = (m.group(2), m.group(1)) if m else (None, None)
+    if not alt or s.count('-') != 6:
+        return None
+    return _leg_of(['CA'], [None, None, lane[0], lane[1], None, None, alt, None, None, acc], False, warn)
+
+
+def _is_leg_tokens(t):
+    """Index du type de tronçon d'une ligne (dans ses 6 premiers mots) si la ligne est une ligne de tronçon (au moins 7 cellules après le type), sinon None."""
+    k = next((i for i, w in enumerate(t[:6]) if w in PATH_TERMINATORS and i + 1 < len(t)), None)
+    return k if k is not None and len(_cells(t[k + 1:])) >= 7 else None
+
+
+DESIGNATOR = re.compile(r'^[A-Z]{3,6} \d[A-Z]$')
+
+
 def parse_code_table(rows):
-    """Page « CODE » → { kind, runways, title, groups: [{ label, legs }], warnings, amdt }.
-    SID / STAR : l'intitulé d'un groupe est la ligne seule qui précède ses tronçons (« ROYAN 6P »).
-    RNP : un groupe commence à chaque point initial (IF) ; le dernier, qui porte le point de piste (RWnn), est l'approche
-    finale (« APCH »), les autres sont les transitions d'approche initiale (« INA X »), nommées par leur point initial.
-    Les lignes d'attente (HLDG, sans type de tronçon) sont laissées de côté."""
+    """Page « CODE » → { kind, runways, title, groups: [{ label, runway?, legs }], warnings, amdt, rows, read }.
+    SID / STAR : l'intitulé d'un groupe est la ligne seule qui précède ses tronçons (« ROYAN 6P »). Un départ à plusieurs pistes (« SID RNAV RWY 14L / 14R ») porte, sous son
+    intitulé, un en-tête par piste (« RWY14R 141 142.9 », cap magnétique et vrai de la piste) : les tronçons listés sous l'en-tête d'une piste sont propres à cette piste, ceux qui
+    suivent l'en-tête de la DERNIÈRE piste sont la route commune ; la page ne les sépare pas autrement. Un groupe est rendu par piste (`runway`), ses tronçons propres puis la route
+    commune. Le départ POGO imprime la piste devant son premier tronçon (« RWY07 CF PO081 »).
+    RNP et INA : un groupe commence à chaque point initial (IF) ; le dernier, qui porte le point de piste (RWnn) ou, pour une page ILS, le renvoi « See chart » (les tronçons entre
+    le point initial et la piste ne sont pas codés : ce qui suit est l'approche interrompue, `phase: missed`, le premier tronçon `gap`), est l'approche finale (« APCH »), les autres
+    sont les transitions d'approche initiale (« INA X »), nommées par leur désignateur de STAR (« VEBEK 1E ») quand la page les imprime dans l'ordre des groupes, sinon par leur point
+    initial ; deux transitions de même point initial sans désignateur lisible ne sont pas retenues (`skip`).
+    Les lignes d'attente (HLDG, sans type de tronçon) sont laissées de côté. `rows` / `read` : lignes de tronçon vues / lues, chacune une fois (contrôle des 85 %)."""
     warnings = []
     kind, runways, title = _title(rows)
     rnp = kind == 'APP'
+    ina = title.startswith('INA')
     start = next((i for i, r in enumerate(rows) if re.search(r'Accuracy \(NM\)|NAV Spec|Navigation|Accuracy', r)), -1)
     groups, cur = [], None
+    seen = read = 0
+    fixed, designators = [], []
     for r in rows[start + 1:]:
-        t = r.split()
-        k = next((i for i, w in enumerate(t[:6]) if w in PATH_TERMINATORS and i + 1 < len(t)), None)
+        t = norm_tokens(r)
+        if not t:
+            continue
+        lane = LANE.match(' '.join(t)) if not rnp else None
+        if lane:
+            if cur is None:
+                warnings.append(f'en-tête de piste sans procédure: {r}')
+            else:
+                cur.setdefault('lanes', []).append({'runway': lane.group(1), 'mm': (lane.group(2), lane.group(3)), 'legs': []})
+            continue
+        if rnp and re.search(r'(?i)\bsee chart\b', r):                 # page ILS : ce que la table ne code pas entre le point initial et la piste
+            if cur is None:
+                cur = {'label': None, 'legs': []}
+                groups.append(cur)
+            cur['gap'] = len(cur['legs'])
+            cur['gap_open'] = True
+            continue
+        laned = cur['lanes'][-1] if not rnp and cur is not None and cur.get('lanes') else None
+        if laned and not laned['legs']:                                 # premier tronçon de la piste : « CA », cellules parfois brouillées
+            leg = _lane_ca(r, laned['mm'], warnings.append)
+            if leg:
+                seen += 1
+                read += 1
+                laned['legs'].append(leg)
+                continue
+        k = _is_leg_tokens(t)
+        if k is None and rnp and cur is not None and cur.get('gap_open') and t[0] != 'HLDG':
+            # page ILS : le renvoi « See chart » recouvre le type du premier tronçon d'après (« - BO512 - 143 144.6 5.7 … ») ; TF s'il imprime un cap ET une distance, sinon non lu
+            i = 0
+            while i < len(t) and t[i] in ('-', 'APCH', '(*)'):
+                i += 1
+            rest = t[i:]
+            cand = _leg(['TF'] + rest, True, lambda *_: None) if rest else None
+            if cand and cand['id'] and cand['crs'] is not None and cand['nm'] is not None:
+                seen += 1
+                read += 1
+                cur['gap_open'] = False
+                cur['legs'].append(cand)
+                warnings.append(f'type de tronçon absent (recouvert par le renvoi « See chart »), TF déduit du cap et de la distance imprimés: {r}')
+            elif rest and re.fullmatch(r'[A-Z0-9]{2,6}', rest[0]):
+                warnings.append(f'ligne sans type de tronçon, non lue: {r}')
+            continue
         if k is not None:
-            leg = _leg(t[k:], rnp, warnings.append)
-            label = ' '.join(w for w in t[:k] if not all(c in DASHES for c in w))
-            if not rnp and label and cur is not None and not cur['legs']:
+            seen += 1
+            prefix = [w for w in t[:k] if not all(c in DASHES for c in w)]
+            rw = next((m.group(1) for m in (re.fullmatch(r'RWY(\d{2}[LRC]?)', w) for w in prefix) if m), None)
+            prefix = [w for w in prefix if not re.fullmatch(r'RWY\d{2}[LRC]?', w)]
+            label = ' '.join(prefix)
+            if rnp:
+                if len(prefix) >= 2 and DESIGNATOR.match(' '.join(prefix[-2:])):
+                    designators.append(' '.join(prefix[-2:]))
+                leg = _leg(t[k:], True, warnings.append, fixed=fixed)
+            else:
+                leg = _leg(t[k:], False, warnings.append, laned['mm'] if laned and t[k] == 'CA' else None, fixed)
+            if not rnp and label and cur is not None and not cur['legs'] and not any(x['legs'] for x in cur.get('lanes', [])):
                 label = ''
             if not leg:
                 continue
+            read += 1
             if rnp:
                 if leg['leg'] == 'IF' and cur and cur['legs']:
                     cur = None
                 if cur is None:
                     cur = {'label': None, 'legs': []}
                     groups.append(cur)
+                cur['gap_open'] = False
             elif cur is None or label:
                 cur = {'label': re.sub(r'\s*\(\*\)$', '', label) or None, 'legs': []}
                 groups.append(cur)
-            cur['legs'].append(leg)
-        elif not rnp and re.fullmatch(r'[A-Z]{3,5} ?\d[A-Z](?: \(\*\))?', r):
-            cur = {'label': re.sub(r'\s*\(\*\)$', '', r), 'legs': []}
+            if rw and not rnp:
+                cur['runway'] = rw
+            (cur['lanes'][-1]['legs'] if cur.get('lanes') else cur['legs']).append(leg)
+        elif not rnp and re.fullmatch(r'[A-Z]{2,5} ?\d[A-Z](?: \((?:\*|FIR|UIR|FIR UIR|UIR FIR)\))?', r):         # « (FIR) » / « (UIR) » : espace aérien du point d'entrée d'une STAR
+            cur = {'label': re.sub(r'\s*\((?:\*|FIR|UIR|FIR UIR|UIR FIR)\)$', '', ' '.join(t)), 'legs': []}
             groups.append(cur)
-    groups = [g for g in groups if g['legs']]
+        elif rnp and DESIGNATOR.match(' '.join(t)):
+            designators.append(' '.join(t))
+    # départs à plusieurs pistes : un groupe par piste
+    spread, notes = [], []
+    for g in groups:
+        if not g.get('lanes'):
+            spread.append(g)
+            continue
+        common = g['lanes'][-1]['legs']
+        if g['legs']:
+            warnings.append(f'{g["label"]}: tronçons avant le premier en-tête de piste, non lus')
+        for ln in g['lanes']:
+            own = [] if ln is g['lanes'][-1] else ln['legs']
+            spread.append({'label': g['label'], 'runway': ln['runway'], 'legs': own + [dict(x) for x in common]})
+        notes.append(', '.join(ln['runway'] for ln in g['lanes']))
+    groups = [g for g in spread if g['legs']]
+    if notes:
+        warnings.append(f'départs à plusieurs pistes ({"; ".join(dict.fromkeys(notes))}): tronçons sous l\'en-tête d\'une piste lus comme propres à cette piste, ceux qui suivent '
+                        'l\'en-tête de la dernière piste comme la route commune (la page ne les sépare pas autrement)')
+    if fixed:
+        warnings.append(f'{len(fixed)} ligne(s) dont une cellule vide manquait, rétablie parce qu\'une seule disposition des cellules convenait au type de chaque colonne')
     if rnp:
-        final = next((g for g in reversed(groups) if any(re.fullmatch(r'RW\d{2}[LRC]?', l['id']) for l in g['legs'])), None)
+        final = next((g for g in reversed(groups) if any(re.fullmatch(r'RW\d{2}[LRC]?', l['id'] or '') for l in g['legs'])), None) \
+            or next((g for g in groups if g.get('gap') is not None), None)
+        if final is None:           # ni point de piste ni renvoi « See chart » : le groupe qui porte l'angle vertical (le seuil) est l'approche finale (records le dit)
+            final = next((g for g in reversed(groups) if any(l.get('vpa') is not None for l in g['legs'])), None)
+        others = [g for g in groups if g is not final]
+        first_id = lambda g: next((l['id'] for l in g['legs'] if l['id']), '?')
+        named = len(designators) == len(others) and all(d.split()[0] == first_id(g) for d, g in zip(designators, others))
+        counts = {}
+        for g in others:
+            counts[first_id(g)] = counts.get(first_id(g), 0) + 1
         for g in groups:
-            g['label'] = 'APCH' if g is final else f'INA {g["legs"][0]["id"]}'
-        if not final:
+            if g is final:
+                g['label'] = 'APCH'
+            elif named:
+                g['label'] = f'INA {designators[others.index(g)]}'
+            elif counts[first_id(g)] > 1:
+                g['label'], g['skip'] = f'INA {first_id(g)}', True
+            else:
+                g['label'] = f'INA {first_id(g)}'
+        for g in groups:
+            if g.get('skip'):
+                warnings.append(f'{g["label"]}: plusieurs transitions partent de ce point et la page ne dit pas laquelle est laquelle (désignateurs de STAR non lus dans l\'ordre): non retenue')
+            if g is final and g.get('gap') is not None:
+                for i, l in enumerate(g['legs']):
+                    if i >= g['gap']:
+                        l['phase'] = 'missed'
+                if g['gap'] < len(g['legs']):
+                    g['legs'][g['gap']]['gap'] = True
+                warnings.append('tronçons entre le point initial et la piste non codés (renvoi « See chart »): les tronçons lus après sont l\'approche interrompue')
+        if not final and not ina:
             warnings.append('point de piste (RWnn) introuvable: approche finale non reconnue')
     return {'kind': kind, 'runways': runways, 'title': title, 'groups': groups, 'warnings': warnings,
-            'amdt': page_date(rows)}
+            'amdt': page_date(rows), 'rows': seen, 'read': read}
 
 
 # ---------------------------------------------------------------------------------------------------------- vérification du format des pages
@@ -494,8 +788,8 @@ def fingerprint(rows):
     return hashlib.sha1(' '.join(words).encode()).hexdigest()[:10]
 
 
-# empreintes des en-têtes vus (cycle AIRAC 2026-10-01, pages de LFBD et de LFAV) ; une autre est signalée « en-tête inconnu », pas bloquante
-KNOWN_FINGERPRINTS = {'sia-code': {'4d7d8e47d5', '96546cf4c0', 'de5a236c1c'}, 'uk-app': {'fc0e4cc8ff'}, 'am-coding': set(), 'de-route': set(), 'uk-star': set(), 'at-coding': set(), 'be-coding': set(), 'ge-coding': set(), 'icao-tab': set(), 'ei-coding': set()}
+# empreintes des en-têtes vus (cycle AIRAC 2026-10-01, pages de LFBD, LFAV, LFBO et LFPO : mêmes colonnes, une faute (« Identifcation »), des mots coupés (« V er ti ca l ») ou une colonne « NAV Spec ») ; une autre est signalée « en-tête inconnu », pas bloquante
+KNOWN_FINGERPRINTS = {'sia-code': {'4d7d8e47d5', '96546cf4c0', 'de5a236c1c', '32bceb3062', '30a2533e69', 'd4e263c080', '5abb2f38c4', 'a6e2a3ca47'}, 'uk-app': {'fc0e4cc8ff'}, 'am-coding': set(), 'de-route': set(), 'uk-star': set(), 'at-coding': set(), 'be-coding': set(), 'ge-coding': set(), 'icao-tab': set(), 'ei-coding': set()}
 
 
 def verify_page(rows, table=None):
@@ -510,8 +804,9 @@ def verify_page(rows, table=None):
         problems.append(f'info: en-tête inconnu (empreinte {fp}): format changé depuis les pages vues ?')
     ok = True
     if table is not None:
-        want = sum(1 for r in rows if _is_leg_row(r))
-        got = sum(len(g['legs']) for g in table['groups'])
+        # lignes de tronçon vues / lues, chacune UNE fois (parse_code_table) : les tronçons d'un départ à plusieurs pistes sont rendus une fois par piste, ils ne comptent pas double
+        want = table['rows'] if 'rows' in table else sum(1 for r in rows if _is_leg_row(r))
+        got = table['read'] if 'read' in table else sum(len(g['legs']) for g in table['groups'])
         if not table['kind']:
             ok = False
             problems.append('titre de la page non reconnu (SID / STAR / RNP)')
@@ -1592,7 +1887,7 @@ def ead_notice(icao):
 
 # ---------------------------------------------------------------------------------------------------------- schéma commun
 def _id_of(icao, kind, name, runways, trans):
-    norm = lambda v: re.sub(r'[\s-]+', '', (v or '').upper())
+    norm = lambda v: re.sub(r'[^A-Z0-9]+', '', (v or '').upper())      # « INA RNAV (GNSS) RWY 14R » → INARNAVGNSSRWY14R
     rw = f'RW{runways[0]}' if len(runways) == 1 else 'RWALL'
     return '.'.join([icao, kind, norm(name) or 'NONAME', rw] + ([norm(trans)] if norm(trans) else []))
 
@@ -1600,9 +1895,13 @@ def _id_of(icao, kind, name, runways, trans):
 def _points(icao, legs, coords, warnings, missed_after=None):
     pts, seen_rw = [], False
     missing = []
+    # l'approche interrompue commence après le point de piste (RWnn) ; sans lui dans la table, après le tronçon qui porte l'angle vertical (le seuil : « -3.0° / 50 »), avertissement
+    by_angle = bool(missed_after) and not any(re.fullmatch(r'RW\d{2}[LRC]?', l['id'] or '') for l in legs) and any(l.get('vpa') is not None for l in legs)         and not any(l.get('phase') for l in legs)
+    if by_angle:
+        warnings.append('point de piste (RWnn) absent de la table: approche interrompue repérée après le tronçon qui porte l\'angle vertical')
     for leg in legs:
-        c = coords.get(leg['id'])
-        if not c and leg['id'] not in missing:
+        c = coords.get(leg['id']) if leg['id'] else None        # un tronçon sans point (CA, FM…) : id, lat et lon null, jamais un point inventé
+        if leg['id'] and not c and leg['id'] not in missing:
             missing.append(leg['id'])
         p = {'seq': len(pts) + 1, 'id': leg['id'], 'lat': c[0] if c else None, 'lon': c[1] if c else None,
              'alt': leg['alt'], 'leg': leg['leg']}
@@ -1611,9 +1910,11 @@ def _points(icao, legs, coords, warnings, missed_after=None):
                 p[k] = leg[k]
         if leg['over']:
             p['over'] = True
-        if seen_rw:
+        if seen_rw or leg.get('phase'):
             p['phase'] = 'missed'
-        if missed_after and re.fullmatch(r'RW\d{2}[LRC]?', leg['id']):
+        if leg.get('gap'):
+            p['gap'] = True        # la table ne code pas ce qui sépare ce tronçon du précédent (page ILS, « See chart »)
+        if missed_after and (re.fullmatch(r'RW\d{2}[LRC]?', leg['id'] or '') or (by_angle and leg.get('vpa') is not None)):
             seen_rw = True
         pts.append(p)
     if missing:
@@ -1628,15 +1929,16 @@ def records(icao, table, coords, source, cycle):
     if table['kind'] in ('SID', 'STAR'):
         for g in table['groups']:
             name = g['label'] or None
-            out.append({'id': _id_of(icao, table['kind'], name, table['runways'], None), 'icao': icao, 'kind': table['kind'],
-                        'name': name, 'runways': table['runways'], 'transition': None,
+            rws = [g['runway']] if g.get('runway') else table['runways']       # un départ à plusieurs pistes : une procédure par piste
+            out.append({'id': _id_of(icao, table['kind'], name, rws, None), 'icao': icao, 'kind': table['kind'],
+                        'name': name, 'runways': rws, 'transition': None,
                         'points': _points(icao, g['legs'], coords, warnings), 'source': src, 'status': 'check'})
     elif table['kind'] == 'APP':
         final = next((g for g in reversed(table['groups']) if g['label'] == 'APCH'), None)
-        inas = [g for g in table['groups'] if g is not final and (g['label'] or '').startswith('INA ')]
+        inas = [g for g in table['groups'] if g is not final and (g['label'] or '').startswith('INA ') and not g.get('skip')]
         name = table['title']
         for g in inas or [None]:
-            legs = (g['legs'] if g else []) + ([l for l in final['legs'] if not (g and l is final['legs'][0] and
+            legs = (g['legs'] if g else []) + ([l for l in final['legs'] if not (g and l is final['legs'][0] and l['id'] and
                                                                                   g['legs'][-1]['id'] == l['id'])] if final else [])
             trans = g['label'][4:] if g else None
             out.append({'id': _id_of(icao, 'APP', name, table['runways'], trans), 'icao': icao, 'kind': 'APP', 'name': name,
@@ -1681,16 +1983,39 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
             continue
         for g in table['groups']:
             for leg in g['legs']:
-                if leg['id'] not in coords and resolve and resolve(leg['id']):
+                if leg['id'] and leg['id'] not in coords and resolve and resolve(leg['id']):
                     coords[leg['id']] = resolve(leg['id'])
         recs, w = records(icao, table, coords, f, cycle)
-        procs += recs
+        have = {p['id'] for p in procs}
+        for r in recs:
+            if r['id'] in have:               # deux pages donnent le même identifiant (même nom, même piste) : la première est gardée
+                warnings.append(f'{f}: {r["id"]} déjà lu à une page précédente, ignoré')
+            else:
+                have.add(r['id'])
+                procs.append(r)
         warnings += [f'{f}: {x}' for x in w]
         used.append(f)
     charts = [{'path': f'Cartes/{icao}/{f}', 'kind': chart_kind(f)} for f in sorted(files)]
-    return {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
-            'procedures': procs, 'charts': {'base': base_url.rstrip('/') + '/html/eAIP/', 'items': charts, 'vac': vac},
-            'pages': used, 'formats': formats, 'warnings': warnings}
+    doc = {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
+           'procedures': procs, 'charts': {'base': base_url.rstrip('/') + '/html/eAIP/', 'items': charts, 'vac': vac},
+           'pages': used, 'formats': formats, 'warnings': warnings}
+    runways = runways_of(coords)
+    if runways:
+        doc['runways'] = runways
+    return doc
+
+
+def runways_of(coords):
+    """Pistes de l'aérodrome d'après les points RWnn dont la position est connue (page DATA ou base) : { id, lat, lon (seuil), elev null, qfu (numéro × 10, pas le relèvement mesuré), displaced /
+    length / width null, source 'eaip' }, au format des fichiers du FAA CIFP (proc_cifp). Une piste dont le seuil n'est pas positionné n'y est pas : les pages DATA du SIA renvoient souvent
+    les seuils à la page AD 2.12 (« REF AD 2 LFPO.12 + THR 02 »), qu'aucun constructeur ne lit ; aerodb déduit alors les pistes des listes `runways` des procédures."""
+    out = []
+    for k, v in sorted(coords.items()):
+        m = re.fullmatch(r'RW(\d{2})([LRC]?)', k)
+        if m and 1 <= int(m.group(1)) <= 36 and v and v[0] is not None:
+            out.append({'id': m.group(1) + m.group(2), 'lat': v[0], 'lon': v[1], 'elev': None, 'qfu': int(m.group(1)) * 10, 'displaced': None, 'length': None, 'width': None,
+                        'source': 'eaip'})
+    return out
 
 
 def index_of(files_by_icao, cycle):
@@ -1763,9 +2088,42 @@ def gaps_of(proc):
     distance de chaque tronçon, pas le cap vrai : c'est la branche large de check_geometry (cap à 30° près, distance à 0,55 NM près), qui
     attrape une position fausse (point homonyme pris dans la base, coordonnée mal lue) sans rejeter les arrondis de la page. Le contrôle de
     proc_manual.verify, fait pour des lectures à la main qui impriment `trk`, ne s'applique pas ici."""
-    legs = [{'id': q.get('id'), 'leg': q.get('leg'), 'lat': q.get('lat'), 'lon': q.get('lon'), 'true': None, 'crs': q.get('crs'), 'nm': q.get('nm')}
-            for q in proc.get('points', [])]
+    legs = [{'id': q.get('id'), 'leg': None if q.get('gap') else q.get('leg'), 'lat': q.get('lat'), 'lon': q.get('lon'), 'true': None, 'crs': q.get('crs'), 'nm': q.get('nm')}
+            for q in proc.get('points', [])]       # un tronçon `gap` (ce qui le sépare du précédent n'est pas codé) n'est pas comparé au précédent
     return check_geometry(legs)
+
+
+def reason_of(problem):
+    """Motif court, stable, d'un problème de page ou d'une procédure écartée (`formats[].problems`, géométrie) : sert au compte rendu `stats.reasons` de la lecture à la demande
+    (le texte est celui que Carburant montre, ou associe à sa traduction)."""
+    t = problem or ''
+    if 'moins de 85' in t:
+        return 'lignes de tronçon illisibles (moins de 85 % lues)'
+    if 'disposition non reconnue' in t:
+        return 'mise en page non reconnue'
+    if 'titre de la page non reconnu' in t or 'titre non reconnu' in t:
+        return 'titre de la page non reconnu'
+    if 'aucun groupe' in t or 'aucune table lue' in t:
+        return 'aucun tronçon lisible'
+    if 'géométrie' in t:
+        return 'géométrie incohérente'
+    return re.sub(r'\s+', ' ', t.split(':')[0]).strip()[:80] or 'autre'
+
+
+def stats_of(formats, procedures, dropped=()):
+    """Compte rendu d'une lecture : { pages (pages de codage trouvées), read (lues), rejected (non lues), procedures (installées), dropped (écartées par le contrôle de géométrie), reasons
+    (les 3 motifs les plus fréquents, [texte, nombre], sur les pages non lues et les procédures écartées) }. `formats` : la liste `formats` du fichier du terrain ; `dropped` : un motif par
+    procédure écartée."""
+    counts, dropped = {}, list(dropped)
+    for f in formats:
+        if not f.get('ok'):
+            why = next((reason_of(x) for x in f.get('problems', []) if not x.startswith('info:')), 'autre')
+            counts[why] = counts.get(why, 0) + 1
+    for why in dropped:
+        counts[why] = counts.get(why, 0) + 1
+    top = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:3]
+    read = sum(1 for f in formats if f.get('ok'))
+    return {'pages': len(formats), 'read': read, 'rejected': len(formats) - read, 'procedures': procedures, 'dropped': len(dropped), 'reasons': [[k, v] for k, v in top]}
 
 
 def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, step=None):
