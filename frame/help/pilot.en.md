@@ -223,7 +223,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 74dfdb49af22 -->
+<!-- fr: f2764e9c409c -->
 
 <!-- chapter: maps -->
 # Map
@@ -785,4 +785,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 7ffb54ffacd9 -->
+<!-- fr: 753e5523b719 -->

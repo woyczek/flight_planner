@@ -177,4 +177,4 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 74dfdb49af22 -->
+<!-- fr: f2764e9c409c -->

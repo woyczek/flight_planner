@@ -230,7 +230,7 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: 74dfdb49af22 -->
+<!-- fr: f2764e9c409c -->
 
 <!-- chapter: maps -->
 # Mapa
@@ -811,4 +811,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 7ffb54ffacd9 -->
+<!-- fr: 753e5523b719 -->
