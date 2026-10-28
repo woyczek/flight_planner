@@ -599,51 +599,64 @@ class EadLibrary:
 
 
 def row_summary(row):
-    """(nom du document, titre) d'une ligne de résultats : le nom est la cellule qui finit par .pdf, le titre la plus longue des autres."""
-    name = next((c.split()[0] for c in row['cells'] if re.search(r'\.pdf\b', c)), row['cells'][1] if len(row['cells']) > 1 else '')
-    title = max((c for c in row['cells'] if c and '.pdf' not in c), key=len, default='')
+    """(nom du document, titre) d'une ligne de résultats : le nom est la cellule (ou le texte d'un lien) qui ressemble à un nom de fichier AIP (« EB_AD_2_… », avec ou sans .pdf),
+    le titre la plus longue des autres cellules."""
+    texts = [c for c in row['cells'] if c] + [l for l, h in row['links'] if l]
+    name = next((t.split()[0] for t in texts if re.match(r'[A-Z]{2}[_-][A-Za-z0-9_.-]+', t)), '')
+    title = max((c for c in row['cells'] if c and c.split()[0] != name), key=len, default='')
     return name, title[:100]
+
+
+def survey_state(lib, st, cache, say):
+    """Relevé d'UN État (voir `survey`) ; rend sa fiche."""
+    rec = {'state': st}
+    if not lib.authority(st):
+        rec['error'] = 'autorité non proposée'
+        say(f'{st}: autorité non proposée')
+        return rec
+    lib.choose('part', 'AD')
+    lib.choose('type', 'AIP')
+    rec['aip_ad'] = lib.search()['count']
+    lib.choose('type', 'Charts')
+    rec['charts_ad'] = lib.search()['count']
+    rows_for = {}
+    for k, kw in SURVEY_KEYS.items():
+        r = lib.search(heading=kw)
+        rec[k] = r['count']
+        rows_for[k] = r['rows']
+        rec['sample_' + k] = [row_summary(x) for x in r['rows'][:3]]
+    pick = next(((k, rows_for[k][0]) for k in ('CODING', 'STAR', 'SID') if rows_for[k]), None)
+    if pick:
+        name, title = row_summary(pick[1])
+        raw = lib.fetch(pick[1])
+        if raw:
+            f = cache / (re.sub(r'[^A-Za-z0-9._-]+', '_', name)[:80] or 'doc')
+            f.write_bytes(raw)
+            rec['document'] = {'from': pick[0], 'name': name, 'title': title, **classify_name(f)}
+        else:
+            rec['document'] = {'from': pick[0], 'name': name, 'error': 'téléchargement impossible', 'row_cells': [c[:60] for c in pick[1]['cells']],
+                               'row_links': [h[:80] for l, h in pick[1]['links']], 'row_buttons': len(pick[1]['buttons'])}
+    d = rec.get('document') or {}
+    say(f'{st}: AD {rec["aip_ad"]} | cartes {rec["charts_ad"]} | CODING {rec["CODING"]} SID {rec["SID"]} STAR {rec["STAR"]} IAP {rec["IAP"]} | doc: {d.get("name", "-")} -> {d.get("kind", d.get("error", "-"))} {d.get("layout") or ""} {d.get("row_cells", "")} {d.get("row_links", "")} {d.get("row_buttons", "")}')
+    return rec
 
 
 def survey(lib, states, out, say=print):
     """Relevé par État : pour chaque autorité, le nombre de documents AD (AIP) et de cartes (Charts), le nombre de cartes dont le titre dit CODING / DEPARTURE / ARRIVAL / APPROACH,
     et UN document de tables de codage (sinon d'arrivée, de départ) téléchargé et classé (texte lisible, dessiné en vecteurs, image) avec sa disposition. Écrit survey.json et survey.txt."""
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    import proc_eaip
     cache = Path(out) / 'cache'
     cache.mkdir(parents=True, exist_ok=True)
     res = []
     for st in states:
         rec = {'state': st}
-        if not lib.authority(st):
-            rec['error'] = 'autorité non proposée'
-            res.append(rec)
-            say(f'{st}: autorité non proposée')
-            continue
-        lib.choose('part', 'AD')
-        lib.choose('type', 'AIP')
-        rec['aip_ad'] = lib.search()['count']
-        lib.choose('type', 'Charts')
-        rec['charts_ad'] = lib.search()['count']
-        rows_for = {}
-        for k, kw in SURVEY_KEYS.items():
-            r = lib.search(heading=kw)
-            rec[k] = r['count']
-            rows_for[k] = r['rows']
-            rec['sample_' + k] = [row_summary(x) for x in r['rows'][:3]]
-        pick = next(((k, rows_for[k][0]) for k in ('CODING', 'STAR', 'SID') if rows_for[k]), None)
-        if pick:
-            name, title = row_summary(pick[1])
-            raw = lib.fetch(pick[1])
-            if raw:
-                f = cache / (re.sub(r'[^A-Za-z0-9._-]+', '_', name)[:80] or 'doc')
-                f.write_bytes(raw)
-                rec['document'] = {'from': pick[0], 'name': name, 'title': title, **classify_name(f)}
-            else:
-                rec['document'] = {'from': pick[0], 'name': name, 'error': 'téléchargement impossible'}
+        try:
+            rec = survey_state(lib, st, cache, say)
+        except Exception as e:
+            rec['error'] = f'{type(e).__name__}: {str(e)[:100]}'
+            say(f'{st}: erreur {rec["error"]}')
         res.append(rec)
-        d = rec.get('document') or {}
-        say(f'{st}: AD {rec["aip_ad"]} | cartes {rec["charts_ad"]} | CODING {rec["CODING"]} SID {rec["SID"]} STAR {rec["STAR"]} IAP {rec["IAP"]} | doc: {d.get("name", "-")} -> {d.get("kind", d.get("error", "-"))} {d.get("layout") or ""}')
+        (Path(out) / 'survey.json').write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding='utf-8')
     outdir = Path(out)
     (outdir / 'survey.json').write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding='utf-8')
     (outdir / 'survey.txt').write_text('\n'.join(
