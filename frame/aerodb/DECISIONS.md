@@ -1259,3 +1259,26 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   source, zones the suite knows, https links, the dated links of 2610, the file names, the 47 States; `publication()` on a reader in memory with
   two cycles of `fr`, a whole-format zone, an index of procedures, the VFR index and the aircraft base, reading no kind file but `meta.json`;
   `zones()` and `sources()`. K21 also checks that `airac.js` and the Python calculation (`proc_ead.lib_cycle`, the 28-day suite) agree.
+
+## 28 October 2026 — procedures chosen in the preparation (§ 10.20), aerodb's first commit: the API
+
+- **Asked** (§ 10.20 and its two refinements, the ergonomics session's go): runways and transitions in `procedures()`, `phase` on every leg, `arc`
+  for RF legs, what each source provides (legs without a fix said), `runways(icao)`, the `proc/manual/` code, an OFP procedure found by its
+  identifier, the contract of `fetchProcedures` (implemented in the second commit, with the frame's `ctx.launcher.job`), `EAD_BASIC.md` § 1 amended.
+- **Done**:
+  - `tools/proc_cifp.py`: legs without a fix kept (`id`, `lat`, `lon` null, course and constraint; they were left out); `phase` main / trans
+    (enroute transitions, an approach's transition legs) / missed; `arc { centre, radius }` of RF legs (ARINC 5.144, 5.204); `runways` from the
+    PG records (threshold, elevation, magnetic bearing, displaced threshold, length, width) written in the aerodrome file. Data published before
+    keep their shape until the next build (the reader gives the phase a default; nothing invents the left-out legs).
+  - `tools/proc_manual.py`: installs into `proc/manual/<ICAO>.json` and `proc/manual/index.json` (with `cycle`), each procedure keeping its page's cycle.
+  - reader (`aerodb.js`, `procedures.js`): `procedures()` merges `proc/manual/`, marks `outdated`, gives every leg its phase, never places a leg
+    without a fix; at equal status a procedure that is not outdated wins; `procedure(id)`, `runways(icao)`, `procedureIndex()` with
+    `proc/manual/`, `fetchProcedures()` answering `bad-icao`, `cancelled` or `unavailable` until the job is wired.
+  - INTEGRATION: the table of what each source provides; `EAD_BASIC.md` § 1: the gesture lives in Fuel, then in the Données module.
+  - **`proc/local/`** (the ergonomics session's addition, the user's decision): the workstation's X-Plane fallback, status `xplane`
+    (lowest rank), forced by the reader, `local: true`; never synchronised (`frame/store/frame_data.js`: `LOCAL_ONLY`, like
+    `pilot/ANON/` — a small edit of the frame, reported), invariant 6. The file's shape is the aerodrome file's; the converter belongs
+    to the procedures survey session, which also keeps the folder out of the data repository's commits.
+- **Bench**: K1 (`procedures.html`, 28 checks: the manual folder and `outdated`, phases, the leg without a fix, `procedure(id)` with an OFP record,
+  `runways`, the index, `fetchProcedures`), K4 (CIFP: the VA leg kept, phases, the runway record, an RF arc built from the fixture), K11
+  (`proc/manual/`, never a cycle folder).

@@ -25,7 +25,9 @@ never saw a credential. Facts are marked **read** (public page opened today) or 
   carries that mention (`notice`, written by `proc_eaip.ead_notice()`, as the CIFP files carry the FAA's); the access is **manual**:
   - the **survey** (the list of documents per State, one sample each, `--survey`) is admitted, run by hand, at least one second between requests;
   - an **aerodrome is read one at a time, on an explicit gesture of the user**: `--fetch <ICAO>` typed by hand today (it refuses a list), a
-    Settings › Maintenance button "manual access / reading" later (a lot to come, not now);
+    gesture in the screens later — **in Fuel** (« Lire les procédures de LFXX », when an aerodrome has none; § 10.20 of the
+    specification), then **in the Données module** (its EAD line, « Relire » for an outdated one) — through
+    `aerodb.fetchProcedures(icao)`, never in Settings › Maintenance (amended 28 Oct 2026, the ergonomics session);
   - **never scheduled, never in bulk**.
 - **Rights of the States' AIPs**: each State's AIP stays that State's (the DFS notice, read on 25 October: use "by the organisation to which it
   was issued", no storage or redistribution without permission). What is read through EAD Basic is for personal use, kept in the airline's

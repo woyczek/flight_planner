@@ -16,6 +16,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   ChatGPT) stayed on one line in the "before / after" table and pushed it into a sideways scroll; numbers stay right-aligned on
   one line, texts wrap in their column.
 
+- **aerodb: procedures for the preparation** (`frame/aerodb/aerodb.js`, `procedures.js`, `tools/proc_cifp.py`, `tools/proc_manual.py`;
+  SPEC § 5 quinquies, INTEGRATION, EAD_BASIC § 1, DECISIONS; tests K1, K4, K11) — every leg with its phase (main, transition, missed),
+  RF arcs and runway records from the FAA CIFP, legs without a fix kept without a position; hand-read procedures installed outside
+  the cycles (`proc/manual/`) and served « outdated » once their cycle is past; `procedure(id)` (an OFP procedure included),
+  `runways(icao)`, the index with the hand-read aerodromes, and the contract of `fetchProcedures` (the on-demand reading, wired next);
+  a local X-Plane fallback (`proc/local/`, lowest rank, never synchronised).
 - **Airway routing and map: the airways a route follows are found and readable** (`frame/lib/routing.js`, `modules/maps/render.js`;
   bench `frame/lib/test/routing.html`, 45 checks; fuel SPEC) — the user's route "LFBO GOSAD AULON LAVRA OBLOC VELIN LMG … LFPO":
   VELIN → LMG stayed direct although R10 joins them through NORON (a point on a node reached the next node by a direct entry

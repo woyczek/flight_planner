@@ -339,6 +339,56 @@
         if (await read(`proc/${c}/${file}`)) return c;
       return null;
     };
+    const procLib = () => loadOwn('procedures.js', 'AeroDBProcedures').then(() => window.AeroDBProcedures);
+    /** Les fiches d'un terrain par source : publiées (cycle en vigueur), lues à la main (proc/manual/, hors des cycles : marquées
+     *  `outdated` quand le cycle de leur page n'est plus en vigueur), vues dans un OFP (proc-seen/), repli X-Plane du poste
+     *  (proc/local/ : jamais synchronisé ; statut forcé à `xplane`, le rang le plus bas, et `local: true`). Copies : le cache
+     *  du lecteur n'est pas modifié. */
+    async function procLists(k) {
+      const cycle = await procCycle(k),
+        [pub, man, seen, loc] = await Promise.all([cycle ? read(`proc/${cycle}/${k}.json`) : null, read(`proc/manual/${k}.json`),
+          read(`proc-seen/${k}.json`), read(`proc/local/${k}.json`)
+        ]),
+        inForce = airacCycles(1, now())[0],
+        mv = valueOf(man);
+      return {
+        pub: valueOf(pub)?.procedures || [],
+        manual: (mv?.procedures || []).map(p => {
+          const c = p.source?.cycle || mv.cycle || null;
+          return c && c !== inForce ? {
+            ...p,
+            outdated: true
+          } : p;
+        }),
+        seen: valueOf(seen)?.procedures || [],
+        local: (valueOf(loc)?.procedures || []).map(p => ({
+          ...p,
+          status: 'xplane',
+          local: true
+        }))
+      };
+    }
+    /** Points publiés sans position (points en route des pages DATA de l'eAIP) : cherchés dans la base, le plus proche du premier
+     *  point placé de la procédure ; un tronçon SANS point (id null : VA, CA, VM, FM…) reste sans position, jamais placé. */
+    async function placeProc(k, rec) {
+      if (!rec.points.some(p => p.lat == null && p.id)) return rec;
+      const anchor = rec.points.find(p => p.lat != null) || await api.coords(k).catch(() => null);
+      return {
+        ...rec,
+        points: await Promise.all(rec.points.map(async p => {
+          if (p.lat != null || !p.id) return p;
+          const all = await api.coordsAll(p.id).catch(() => []),
+            d = x => (x.item.lat - anchor.lat) ** 2 + ((x.item.lon - anchor.lon) * Math.cos(anchor.lat * Math.PI / 180)) ** 2,
+            best = anchor ? all.slice().sort((a, b) => d(a) - d(b))[0] : all[0];
+          return best ? {
+            ...p,
+            lat: best.item.lat,
+            lon: best.item.lon,
+            placed: 'base'
+          } : p;
+        }))
+      };
+    }
     /** Zones dont un cadre (élargi de la marge) touche l'emprise b ; limitées aux zones publiées si elles sont connues. */
     /** Vrai si l'emprise b touche une des cases d'un degré d'une zone ({ "lat": [[lon0, lon1], …] }, manifeste). */
     const cellsHit = (cells, b) => {
@@ -954,37 +1004,130 @@
       async procedures(icao, q = {}) {
         const k = String(icao || '').toUpperCase();
         if (!/^[A-Z0-9]{3,4}$/.test(k)) return [];
-        await loadOwn('procedures.js', 'AeroDBProcedures');
-        const P = window.AeroDBProcedures,
-          cycle = await procCycle(k),
-          [pub, seen] = await Promise.all([cycle ? read(`proc/${cycle}/${k}.json`) : null, read(`proc-seen/${k}.json`)]);
-        const out = P.filter(P.merge(valueOf(pub)?.procedures || [], valueOf(seen)?.procedures || []), q);
-        // points publiés sans position (points en route des pages DATA de l'eAIP) : cherchés dans la base, le plus proche du
-        // premier point placé de la procédure ; copies, le cache du lecteur n'est pas modifié
-        for (const rec of out) {
-          if (!rec.points.some(p => p.lat == null)) continue;
-          let anchor = rec.points.find(p => p.lat != null) || await api.coords(k).catch(() => null);
-          rec.points = await Promise.all(rec.points.map(async p => {
-            if (p.lat != null) return p;
-            const all = await api.coordsAll(p.id).catch(() => []),
-              d = x => (x.item.lat - anchor.lat) ** 2 + ((x.item.lon - anchor.lon) * Math.cos(anchor.lat * Math.PI / 180)) **
-              2,
-              best = anchor ? all.slice().sort((a, b) => d(a) - d(b))[0] : all[0];
-            return best ? {
-              ...p,
-              lat: best.item.lat,
-              lon: best.item.lon,
-              placed: 'base'
-            } : p;
-          }));
-        }
+        const P = await procLib(),
+          lists = await procLists(k);
+        const out = P.filter(P.merge(lists.pub, lists.manual, lists.seen, lists.local), q);
+        return Promise.all(out.map(rec => placeProc(k, P.withPhases(rec))));
+      },
+      /** Une procédure par son identifiant (OACI.TYPE.NOM.PISTE[.TRANSITION]) : la fiche fusionnée qui le porte, sinon la fiche
+       *  de la source qui le porte (publiée, proc/manual/ ou proc-seen/ : une procédure d'OFP, statut ofp, se retrouve ainsi) ;
+       *  null sinon. Carburant y retrouve le choix gardé dans route.procedures (§ 10.20). */
+      async procedure(id) {
+        const s = String(id || '').trim().toUpperCase(),
+          k = s.split('.')[0];
+        if (!/^[A-Z0-9]{3,4}$/.test(k)) return null;
+        const merged = (await api.procedures(k)).find(p => p.id === s);
+        if (merged) return merged;
+        const P = await procLib(),
+          lists = await procLists(k),
+          raw = [...lists.pub, ...lists.manual, ...lists.seen, ...lists.local].find(p => p && p.id === s);
+        return raw ? placeProc(k, P.withPhases({
+          ...raw,
+          sources: [{
+            ...raw.source,
+            status: raw.status
+          }]
+        })) : null;
+      },
+      /** Pistes d'un terrain (§ 10.20) : [{ id ('23', '05R'), lat, lon (seuil), elev (ft, seuil), qfu (relèvement magnétique, °),
+       *  displaced (ft), length, width, source, approx }] — celles que les fichiers de procédures portent (FAA CIFP : enregistrements
+       *  de piste, complets), sinon déduites des points RWnn des procédures (seuil seulement : `approx: true`, QFU du numéro de la
+       *  piste, altitude du terrain) ; [] sans rien. */
+      async runways(icao) {
+        const k = String(icao || '').toUpperCase();
+        if (!/^[A-Z0-9]{3,4}$/.test(k)) return [];
+        const cycle = await procCycle(k),
+          [pub, man, loc] = await Promise.all([cycle ? read(`proc/${cycle}/${k}.json`) : null, read(`proc/manual/${k}.json`),
+            read(`proc/local/${k}.json`)
+          ]),
+          byId = new Map();
+        for (const r of [...(valueOf(pub)?.runways || []), ...(valueOf(man)?.runways || []), ...(valueOf(loc)?.runways || [])])
+          if (r && r.id && !byId.has(r.id)) byId.set(r.id, {
+            ...r,
+            approx: false
+          });
+        const ad = (await api.aerodromes({
+          icao: k
+        }).catch(() => []))[0];
+        for (const rec of await api.procedures(k))
+          for (const p of rec.points) {
+            const m = /^RW(\d\d)([LRC]?)$/.exec(p.id || '');
+            if (!m || p.lat == null || byId.has(m[1] + m[2])) continue;
+            byId.set(m[1] + m[2], {
+              id: m[1] + m[2],
+              lat: p.lat,
+              lon: p.lon,
+              elev: ad && Number.isFinite(+ad.elev) ? +ad.elev : null,
+              qfu: +m[1] * 10,
+              displaced: null,
+              length: null,
+              width: null,
+              source: rec.source?.kind || null,
+              approx: true
+            });
+          }
+        return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
+      },
+      /** Index des procédures publiées : { cycle, aerodromes: { OACI: { SID, STAR, APP, status } } }, les terrains lus à la main
+       *  (proc/manual/index.json) ajoutés quand le cycle n'en a rien, avec `manual: true` et `outdated`, puis ceux du repli
+       *  X-Plane du poste (proc/local/index.json) avec `local: true` ; null sans rien. */
+      async procedureIndex() {
+        const cycle = await procCycle(),
+          [ix, mx, lx] = await Promise.all([cycle ? read(`proc/${cycle}/index.json`) : null, read('proc/manual/index.json'),
+            read('proc/local/index.json')
+          ]),
+          v = valueOf(ix),
+          m = valueOf(mx),
+          l = valueOf(lx);
+        if (!v && !m && !l) return null;
+        const inForce = airacCycles(1, now())[0],
+          out = {
+            ...(v || {}),
+            cycle: v?.cycle || cycle || null,
+            aerodromes: {
+              ...(v?.aerodromes || {})
+            }
+          };
+        for (const [k, e] of Object.entries(m?.aerodromes || {}))
+          if (!out.aerodromes[k]) out.aerodromes[k] = {
+            ...e,
+            manual: true,
+            outdated: !!e.cycle && e.cycle !== inForce
+          };
+        for (const [k, e] of Object.entries(l?.aerodromes || {}))
+          if (!out.aerodromes[k]) out.aerodromes[k] = {
+            ...e,
+            status: 'xplane',
+            local: true
+          };
         return out;
       },
-      /** Index du cycle publié des procédures : { cycle, aerodromes: { OACI: { SID, STAR, APP, status } } } ; null sans
-       *  publication. */
-      async procedureIndex() {
-        const cycle = await procCycle();
-        return cycle ? valueOf(await read(`proc/${cycle}/index.json`)) || null : null;
+      /** Lecture À LA DEMANDE des procédures d'un terrain (§ 10.20, contrat du 28 octobre 2026) : le travail du poste (EAD Basic,
+       *  un terrain par geste, EAD_BASIC.md § 1), lancé par le cadre (ctx.launcher.job('ead/fetch', { icao })) ; le résultat est
+       *  installé dans proc/manual/ et publié dans le dépôt privé, puis servi par procedures(). Rend { ok: true, icao, procedures,
+       *  warnings } ou { ok: false, reason } — reason : 'bad-icao', 'no-launcher' (sans lanceur : l'OFP SimBrief reste la source
+       *  du vol), 'paired' (appareil appairé au poste : le geste se fait sur le poste), 'unknown-layout' (État sans disposition
+       *  connue, EAD_STATES), 'busy', 'cancelled', 'failed' ; 'unavailable' tant que le travail du poste n'est pas branché
+       *  (second commit du lot). `onProgress({ step, done, total })`, `signal` (AbortSignal). Jamais silencieux, jamais deux fois
+       *  pour le même terrain en même temps. */
+      async fetchProcedures(icao, {
+        onProgress,
+        signal
+      } = {}) {
+        const k = String(icao || '').trim().toUpperCase();
+        if (!/^[A-Z0-9]{4}$/.test(k)) return {
+          ok: false,
+          reason: 'bad-icao'
+        };
+        if (signal?.aborted) return {
+          ok: false,
+          reason: 'cancelled'
+        };
+        void onProgress;
+        return {
+          ok: false,
+          reason: 'unavailable'
+        };
       },
       // ---- pour le module Données (lot D1, SPEC § 5 « For the Données module ») : ce qui est publié, les zones, le catalogue
       /** Ce qui est publié, SANS charger la base : la liste du lecteur, le manifeste, le meta.json de chaque cycle d'une zone,

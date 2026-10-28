@@ -4,11 +4,13 @@
 (() => {
   'use strict';
   if (window.AeroDBProcedures) return;
-  /** Précédence des statuts : officiel > à vérifier > vu dans un OFP (source secondaire, jamais prioritaire). */
+  /** Précédence des statuts : officiel > à vérifier > vu dans un OFP (source secondaire, jamais prioritaire) > repli X-Plane
+   *  (proc/local/, le poste seulement). */
   const RANK = {
       official: 0,
       check: 1,
-      ofp: 2
+      ofp: 2,
+      xplane: 3
     },
     KINDS = ['SID', 'STAR', 'APP'],
     // SimBrief écrit {} (objet vide) pour un champ absent : seule une chaîne ou un nombre compte
@@ -112,7 +114,8 @@
       });
     });
     return groups.map(g => {
-      const items = g.items.slice().sort((a, b) => (RANK[a.status] ?? 9) - (RANK[b.status] ?? 9)),
+      // le meilleur statut d'abord ; à statut égal, une procédure non périmée (outdated) avant une périmée
+      const items = g.items.slice().sort((a, b) => (RANK[a.status] ?? 9) - (RANK[b.status] ?? 9) || !!a.outdated - !!b.outdated),
         best = items[0];
       return {
         ...best,
@@ -122,6 +125,20 @@
         }))
       };
     });
+  }
+
+  /** Fiche servie : chaque tronçon avec sa phase (`main` | `trans` | `missed`, § 10.20). Les fichiers d'avant la phase en ont
+   *  une par défaut : `trans` pour une transition en route d'une SID ou d'une STAR (sa fiche ne porte qu'elle), `main` sinon ; un
+   *  tronçon déjà marqué `missed` le reste. Copie : le cache du lecteur n'est pas modifié. */
+  function withPhases(rec) {
+    const dflt = rec.transition && rec.kind !== 'APP' ? 'trans' : 'main';
+    return rec.points.every(p => p.phase) ? rec : {
+      ...rec,
+      points: rec.points.map(p => p.phase ? p : {
+        ...p,
+        phase: dflt
+      })
+    };
   }
 
   /** Filtre d'une liste par { kind, runway, name, transition }. */
@@ -159,6 +176,7 @@
     idOf,
     fromOfp,
     merge,
+    withPhases,
     filter,
     mergeSeen
   };

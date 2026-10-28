@@ -261,6 +261,166 @@
         lnmperf: false
       });
       check('a reader that does not write: rememberOfp answers null', (await ro.rememberOfp(ofp)) === null, null);
+      // ---------------------------------------------------------- § 10.20 : proc/manual, phases, tronçon sans point, procédure par
+      // identifiant, pistes, index, lecture à la demande (l'heure du banc : 25 octobre 2026, cycle en vigueur 2026-10-01)
+      const pt = (id, lat, lon, extra = {}) => ({
+        seq: 0,
+        id,
+        lat,
+        lon,
+        alt: null,
+        leg: 'TF',
+        ...extra
+      });
+      const man = (id, kind, name, cycle, points, extra = {}) => ({
+        id,
+        icao: 'LFZZ',
+        kind,
+        name,
+        runways: [],
+        transition: null,
+        points,
+        source: {
+          kind: 'ead-basic',
+          cycle
+        },
+        status: 'check',
+        ...extra
+      });
+      files.set('proc/manual/LFZZ.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFZZ',
+        cycle: '2026-09-03',
+        procedures: [man('LFZZ.STAR.OLD1A.RWALL', 'STAR', 'OLD1A', '2026-09-03', [pt('AAAAA', 45, 1), pt('BBBBB', 45.1, 1.1)]),
+          man('LFZZ.STAR.BOTH1A.RWALL', 'STAR', 'BOTH1A', '2026-09-03', [pt('CCCCC', 45, 1), pt('DDDDD', 45.1, 1.1)]),
+          man('LFZZ.STAR.BOTH1A.RWALL.TRANS', 'STAR', 'BOTH1A', '2026-10-01', [pt('EEEEE', 46, 1), pt('CCCCC', 45, 1)], {
+            transition: 'TRANS'
+          }),
+          man('LFZZ.APP.R27.RW27', 'APP', 'R27', '2026-10-01', [pt('FFFFF', 45, 2), pt('RW27', 45.01, 2.2, {
+            alt: {
+              type: 'at',
+              ft: 500
+            }
+          }), pt(null, null, null, {
+            leg: 'VA',
+            crs: 270,
+            phase: 'missed'
+          })], {
+            runways: ['27']
+          })
+        ]
+      }));
+      files.set('proc/2026-10-08/LFZZ.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFZZ',
+        cycle: '2026-10-08',
+        runways: [{
+          id: '09',
+          lat: 45.0,
+          lon: 2.0,
+          elev: 410,
+          qfu: 92,
+          displaced: 0,
+          length: 2400,
+          width: 45,
+          source: 'cifp'
+        }],
+        procedures: [{
+          ...man('LFZZ.STAR.BOTH1A.RWALL', 'STAR', 'BOTH1A', null, [pt('CCCCC', 45, 1), pt('DDDDD', 45.1, 1.1)]),
+          source: {
+            kind: 'eaip'
+          }
+        }]
+      }));
+      files.set('proc/manual/index.json', JSON.stringify({
+        schema: 1,
+        folder: 'manual',
+        aerodromes: {
+          LFZZ: {
+            STAR: 3,
+            APP: 1,
+            status: 'check',
+            cycle: '2026-10-01'
+          },
+          LFYY: {
+            SID: 2,
+            status: 'check',
+            cycle: '2026-09-03'
+          }
+        }
+      }));
+      const zz = await db.procedures('LFZZ'),
+        by = id => zz.find(p => p.id === id);
+      check('proc/manual/: a procedure of a past cycle is served as it is, marked outdated; one of the cycle in force is not', by(
+          'LFZZ.STAR.OLD1A.RWALL')?.outdated ===
+        true && !by('LFZZ.APP.R27.RW27')?.outdated && by('LFZZ.STAR.OLD1A.RWALL').points.length === 2, zz.map(p => [p.id, p.outdated])
+      );
+      check('the same procedure published for the cycle and read by hand earlier: the one not outdated wins, both sources listed', by(
+        'LFZZ.STAR.BOTH1A.RWALL') && !by(
+        'LFZZ.STAR.BOTH1A.RWALL').outdated && by('LFZZ.STAR.BOTH1A.RWALL').sources.length === 2, by('LFZZ.STAR.BOTH1A.RWALL'));
+      check('every leg has a phase: main by default, trans for an enroute transition, missed kept', by('LFZZ.STAR.OLD1A.RWALL').points
+        .every(p => p.phase === 'main') && by(
+          'LFZZ.STAR.BOTH1A.RWALL.TRANS').points.every(p => p.phase === 'trans') && by('LFZZ.APP.R27.RW27').points[2].phase ===
+        'missed', zz.map(p => p.points.map(q => q
+          .phase)));
+      const va = by('LFZZ.APP.R27.RW27').points[2];
+      check('a leg without a fix (VA) keeps no position and is never placed', va.id === null && va.lat === null && va.placed ===
+        undefined && va.crs === 270, va);
+      check('the reader\'s copy of proc/manual/ is not modified (outdated and phases are on copies)', !JSON.parse(files.get(
+          'proc/manual/LFZZ.json')).procedures[0]
+        .outdated && !JSON.parse(files.get('proc/manual/LFZZ.json')).procedures[0].points[0].phase, null);
+      const byOfp = await db.procedure('LFML.STAR.MTL2A.RW31R.LUC'),
+        byMan = await db.procedure('lfzz.app.r27.rw27');
+      check('procedure(id): an OFP procedure found by its identifier (proc-seen/, status ofp), a hand-read one too; unknown → null',
+        byOfp?.status === 'ofp' &&
+        byOfp.points.length >= 1 && (await db.procedure('LFBD.SID.ROYAN6P.RW23'))?.sources.some(x => x.status === 'ofp') && byMan
+        ?.id === 'LFZZ.APP.R27.RW27' && (await db.procedure('LFZZ.SID.NONE.RWALL')) === null && (
+          await db.procedure('x')) === null, [byOfp
+          ?.id, byMan?.id
+        ]);
+      const rws = await db.runways('LFZZ');
+      check('runways(icao): the full record from the file, the others from the RWnn points (threshold, QFU of the number, approx)', rws
+        .length === 2 && rws[0].id === '09' &&
+        rws[0].approx === false && rws[0].elev === 410 && rws[1].id === '27' && rws[1].approx === true && rws[1].qfu === 270 && rws[1]
+        .lat === 45.01, rws);
+      check('runways(): nothing without data, nothing for a bad code', (await db.runways('LFXX')).length === 0 && (await db.runways(
+        '??')).length === 0, null);
+      const ix = await db.procedureIndex();
+      check('procedureIndex(): the hand-read aerodromes added, marked manual, outdated when their cycle is past', ix.aerodromes.LFYY
+        ?.manual === true && ix.aerodromes.LFYY
+        .outdated === true && ix.aerodromes.LFBD?.SID === 1 && !ix.aerodromes.LFBD.manual, ix.aerodromes);
+      files.set('proc/local/LFZZ.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFZZ',
+        procedures: [{
+          ...man('LFZZ.STAR.BOTH1A.RWALL', 'STAR', 'BOTH1A', null, [pt('XXXXX', 44, 1), pt('DDDDD', 45.1, 1.1)]),
+          source: {
+            kind: 'xplane'
+          },
+          status: 'official'
+        }, {
+          ...man('LFZZ.SID.XP1A.RW27', 'STAR', 'XP1A', null, [pt('RW27', 45.01, 2.2), pt('GGGGG', 45.2, 2.5)]),
+          kind: 'SID',
+          source: {
+            kind: 'xplane'
+          }
+        }]
+      }));
+      const zl = await db.procedures('LFZZ'),
+        xp = zl.find(p => p.id === 'LFZZ.SID.XP1A.RW27'),
+        both = zl.find(p => p.id === 'LFZZ.STAR.BOTH1A.RWALL');
+      check('proc/local/ (X-Plane fallback): served last, status forced to xplane and local, never above another source', xp?.status ===
+        'xplane' && xp.local === true && both.points[0].id === 'CCCCC' && both.sources.at(-1).status === 'xplane' && (await db
+          .procedure(
+            'LFZZ.SID.XP1A.RW27'))?.local === true, [xp, both.sources]);
+      const ac = new AbortController();
+      ac.abort();
+      check('fetchProcedures(): a reason, never silent (bad code, cancelled, unavailable until the workstation job is wired)', (await db
+          .fetchProcedures('XX')).reason ===
+        'bad-icao' && (await db.fetchProcedures('LFZZ', {
+          signal: ac.signal
+        })).reason === 'cancelled' && (await db.fetchProcedures('LFZZ')).reason === 'unavailable' && (await db.fetchProcedures(
+          'LFZZ')).ok === false, null);
     } catch (e) {
       check('no exception', false, String(e && e.stack || e));
     }

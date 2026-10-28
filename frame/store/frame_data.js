@@ -285,8 +285,9 @@
     }
   }
   // documents écrits sans trigramme (pilot/ANON/…) : gardés sur l'appareil, jamais envoyés ; le cadre les reprend sous
-  // pilot/<TRI>/ dès que le trigramme est posé (frame/SPEC.md § 2)
-  const LOCAL_ONLY = ['pilot/ANON/'];
+  // pilot/<TRI>/ dès que le trigramme est posé (frame/SPEC.md § 2). proc/local/ : procédures converties des CIFP de X-Plane,
+  // propres au poste, jamais envoyées (licence, frame/aerodb/SPEC.md § 5 quinquies)
+  const LOCAL_ONLY = ['pilot/ANON/', 'proc/local/'];
   const localOnly = path => LOCAL_ONLY.some(p => under(path, p));
   /** Vrai si un chemin s'écrit en politique « cache » (préfixe déclaré ainsi, ou documents sans trigramme). */
   const isCache = path => localOnly(path) || caches.some(c => under(path, c));

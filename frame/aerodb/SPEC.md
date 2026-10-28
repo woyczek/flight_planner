@@ -344,7 +344,7 @@ both ways.
   extraction only), LFBO (WH-WF-WD, EN-EA-EB), lower case, invalid code and missing file. The engine's own tests:
   `tools/report-vfr/tests_vfr.py` (needs `pypdf`).
 
-## 5 quinquies. Procedures (SID, STAR, approaches): `proc/`, `proc-seen/`
+## 5 quinquies. Procedures (SID, STAR, approaches): `proc/`, `proc-seen/`, `proc/local/`
 
 - **Principle**: procedures enter the suite through aerodb only, consolidated into one schema whatever the source. A module
   never reads a source; it asks `procedures(icao, q)`. Decisions: DECISIONS 25 Oct 2026.
@@ -352,38 +352,56 @@ both ways.
   `reference`; the cycle is picked like the base's: the latest in force from the reader's listing, otherwise the first
   recent AIRAC cycle whose file reads), and `proc-seen/<ICAO>.json` (what the user's own OFPs contained, written by
   `rememberOfp`, synchronised with the private data repository, newest record of an id wins).
-- **Aerodrome file**: { `schema: 1`, `icao`, `cycle`, `updated_at`, `procedures` [ procedure ] }. **Procedure**:
+- **Aerodrome file**: { `schema: 1`, `icao`, `cycle`, `updated_at`, `procedures` [ procedure ], `runways?` [ { `id`, `lat`,
+  `lon` (threshold), `elev` (ft), `qfu` (magnetic bearing), `displaced` (ft), `length`, `width`, `source` } ] (when the source
+  gives them: the FAA CIFP's runway records) }. **Procedure**:
   - `id`: `ICAO.KIND.NAME.RWnn.TRANSITION` (`RWALL` without a single runway; name and transition without spaces or hyphens);
   - `icao`, `kind` (`SID` | `STAR` | `APP`), `name` (as published or filed), `runways` ([`"23"`, `"05R"`] or [] when the
     source does not say), `transition` (or null);
   - `points`: [ { `seq`, `id`, `lat`, `lon` (WGS84 degrees), `alt` (null or the published constraint { `type`: `at` | `min` |
     `max` | `between`, `ft`, `ft2?` }), `planned` (OFP only: altitude of the plan, ft, never a constraint), `via` (airway or
-    null), `leg` (ARINC path terminator IF / CF / DF / TF… when the source has it; absent = straight segment) } ];
+    null), `leg` (ARINC path terminator IF / CF / DF / TF… when the source has it; absent = straight segment), **`phase`**
+    (`main` | `trans` | `missed`, on every leg as served, § 10.20), and when the source gives them `kt` (speed limit, ≤),
+    `crs` (magnetic course), `nm`, `turn` (`L` | `R`), `over` (fly-over), `vpa`, `rnp`, **`arc`** { `centre` { `id`, `lat`,
+    `lon` }, `radius` (NM) } (RF legs) } ]. **A leg without a fix** (VA, CA, VM, FM…: a course to an altitude or to a vector)
+    is kept with `id`, `lat` and `lon` null, its course and constraint: a module draws it along its course, never an invented
+    point; the reader never places it;
   - `source` { `kind`: `simbrief` | `eaip` | `eurocontrol` | `cifp` | `ead-basic` | `manual` | `xplane` | `navigraph`, `ref`,
     `cycle`, `at`, `how?` (`ocr` | `hand`: a table read from a drawn page, `tools/proc_ocr.py` or by hand, installed by
     `tools/proc_manual.py`) }; a file read through EAD Basic also carries `notice` (not operational, `EAD_BASIC.md` § 1);
-  - `status`: `official` | `check` ("to be checked") | `ofp` ("seen in an OFP", not authoritative).
+  - `status`: `official` | `check` ("to be checked") | `ofp` ("seen in an OFP", not authoritative) | `xplane` (the
+    workstation's X-Plane fallback, `proc/local/`).
 - **Hand-read files are kept, outside the cycles** (the user's amendment, 28 Oct 2026: « les données coûtent cher à être
   générées. je préfère les marquer en « outdated » »). The files of the sources that the cycle's builders do not rebuild —
   EAD Basic, manual and OCR readings, status `check` — live in **`proc/manual/<ICAO>.json`** and `proc/manual/index.json`,
   outside the cycle folders; each procedure keeps the cycle of the page it was read from (`source.cycle`). They are
-  installed there by `tools/proc_manual.py` (its target moves from `proc/<cycle>/` to `proc/manual/` in the next lot of
-  aerodb; the merge and `--replace` rules stay).
+  installed there by `tools/proc_manual.py` (`--out <data repository>/proc` → `proc/manual/`; the merge and `--replace`
+  rules stay; `proc/manual/index.json` { aerodromes: { ICAO: { SID, STAR, APP, status, cycle } } }).
   - **Read whatever their age**: `procedures(icao)` merges `proc/<cycle in force>/<ICAO>.json`, `proc/manual/<ICAO>.json`
     and `proc-seen/<ICAO>.json`; a procedure from `proc/manual/` whose `source.cycle` is not the cycle in force is served as
     it is, marked **`outdated: true`** (a module shows it « périmé »). At equal status, a procedure that is not outdated wins.
   - **Never removed by itself**: the Données module's Purger never touches `proc/manual/`; the module lists the outdated
     aerodromes « périmé » with a button « Relire » (one aerodrome per gesture, EAD Basic's rule); only the owner's
     explicit removal takes one away.
+- **X-Plane fallback, local only** (the user's decision, 28 Oct 2026): **`proc/local/<ICAO>.json`** and
+  `proc/local/index.json`, the procedures converted from the CIFP files of the workstation's X-Plane (the converter of the
+  procedures survey session), same aerodrome-file schema. **Never synchronised, never pushed** (`LICENSE.md`): the store
+  keeps `proc/local/` on the device like `pilot/ANON/` (never sent), and the data repository ignores the folder. The reader
+  reads it after everything else; its records are served with `status: 'xplane'` (whatever the file says) and
+  `local: true`, the lowest rank: they show only where no other source has the procedure (the Map labels them « X-Plane,
+  local »). Absent on a device without the workstation's files: nothing changes.
 - **Merge** (`procedures`): records of the same kind, name and transition with compatible runways (one of the two lists empty,
-  or a common runway) are one procedure; the geometry and status are those of the best source (`official` > `check` > `ofp`),
+  or a common runway) are one procedure; the geometry and status are those of the best source (`official` > `check` > `ofp` > `xplane`),
   `sources` lists every source with its status, best first.
 - **Calls**:
 
   | Call | Answer |
   |---|---|
-  | `procedures(icao, { kind, runway, name, transition })` | merged procedures of the aerodrome (published cycle + seen in OFPs), filtered; `[]` without data or for a bad code |
-  | `procedureIndex()` | `proc/<cycle>/index.json` = { `cycle`, `aerodromes`: { ICAO: { SID, STAR, APP counts } } }, or null |
+  | `procedures(icao, { kind, runway, name, transition })` | merged procedures of the aerodrome (published cycle + `proc/manual/` + seen in OFPs + `proc/local/`), filtered, every leg with its `phase` (files built before the phase: `trans` for an enroute transition record of a SID or STAR, else `main`), hand-read ones marked `outdated` when their cycle is past; `[]` without data or for a bad code |
+  | `procedure(id)` | one procedure by its identifier: the merged record carrying it, else the record of the source carrying it (published, `proc/manual/`, `proc-seen/`, `proc/local/`: an OFP procedure is found so, status `ofp`); null otherwise. The flight's `route.procedures` keeps identifiers (§ 10.20) |
+  | `runways(icao)` | `[{ id, lat, lon, elev, qfu, displaced, length, width, source, approx }]`: the runway records of the aerodrome files (complete, `approx: false`), else derived from the procedures' `RWnn` points (threshold only, QFU from the runway's number, the aerodrome's elevation: `approx: true`); `[]` without data |
+  | `procedureIndex()` | `proc/<cycle>/index.json` = { `cycle`, `aerodromes`: { ICAO: { SID, STAR, APP counts, status } } }, the hand-read aerodromes of `proc/manual/index.json` added when the cycle has none (`manual: true`, `outdated`), then those of `proc/local/index.json` (`local: true`, status `xplane`); or null |
+  | `fetchProcedures(icao, { onProgress, signal })` | the on-demand reading (§ 10.20): the workstation's job (EAD Basic, one aerodrome per gesture), run by the frame (`ctx.launcher.job('ead/fetch', { icao })`), installed under `proc/manual/` and committed to the private data repository; `{ ok: true, icao, procedures, warnings }` or `{ ok: false, reason }` with `reason` ∈ `bad-icao`, `no-launcher` (the OFP stays the flight's source), `paired` (a device paired to the workstation: the gesture is made on the workstation), `unknown-layout` (the State's `EAD_STATES` outcome is not `read`), `busy`, `cancelled`, `failed`; **`unavailable` until the job is wired** (the lot's second commit). Never silent, never twice at once for one aerodrome |
   | `procedureFromOfp(ofp)` | (asynchronous: loads `procedures.js` on first use) `{ sid, star }` of a SimBrief OFP (`json=v2`), each a procedure with status `ofp` or null; writes nothing |
   | `rememberOfp(ofp)` | same answer, and keeps both in `proc-seen/<ICAO>.json` (nothing written when the same record is already there); null when the reader does not write |
 
@@ -532,6 +550,8 @@ Agreed with the ergonomics session on 28 Oct 2026 (the Données module's INTEGRA
    Settings card of the `.lnmperf` folder (§ 5 ter), in four languages, so that the Settings screen does not carry the
    synchronisation's states; and the Sources screen (§ 5 sexies), a service screen of the frame.
 5. ICAO and EUROCONTROL data are never part of the public website.
+6. `proc/local/` (procedures converted from X-Plane's files) never leaves the workstation: never sent by the store, never
+   committed to the data repository, never part of a publication or of the public website.
 
 ## 7. Out of scope (later lots)
 

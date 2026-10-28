@@ -1,11 +1,13 @@
-"""Procédures d'une interprétation manuelle (lues à la main ou par un modèle sur l'image d'une page dont le texte est dessiné en vecteurs) → proc/<cycle>/<OACI>.json.
+"""Procédures d'une interprétation manuelle (lues à la main ou par un modèle sur l'image d'une page dont le texte est dessiné en vecteurs) → proc/manual/<OACI>.json.
 
   python tools/proc_manual.py EGLL.json --out <dépôt de données>/proc [--check]
 
 Le fichier est au format publié d'un terrain (SPEC § 5 quinquies) avec, pour chaque point, ce que la page imprime : `trk` (cap vrai), `nm` (distance), en plus de la position.
 Avant d'installer, l'outil REFAIT le contrôle de géométrie : pour chaque tronçon TF, le cap vrai et la distance recalculés d'après les deux positions doivent être ceux imprimés
-(tolérance 0,25° et 0,2 NM) ; une procédure qui échoue n'est pas installée (code de sortie 1). Écrit <out>/<cycle>/<OACI>.json et fusionne <out>/<cycle>/index.json (les entrées
-des autres terrains sont gardées). Un fichier du terrain déjà là qui porte des procédures d'une AUTRE source (ou officielles) n'est jamais écrasé
+(tolérance 0,25° et 0,2 NM) ; une procédure qui échoue n'est pas installée (code de sortie 1). Écrit <out>/manual/<OACI>.json et fusionne
+<out>/manual/index.json (les entrées des autres terrains sont gardées) : HORS des dossiers de cycle (décision de l'utilisateur du 28 octobre 2026,
+SPEC § 5 quinquies) ; chaque procédure garde le cycle de la page lue (`source.cycle`), et le lecteur la sert « outdated » quand ce cycle n'est plus
+en vigueur ; rien ne la retire de soi-même. Un fichier du terrain déjà là qui porte des procédures d'une AUTRE source (ou officielles) n'est jamais écrasé
 (SPEC § 5 quinquies) : l'outil refuse, sauf --replace, qui fusionne par identifiant en gardant le meilleur statut (official > check > ofp).
 Bibliothèque standard seulement ; ne lit aucune page.
 """
@@ -61,12 +63,14 @@ def merge(old, doc):
 def install(doc, out, replace=False):
     """Écrit le fichier du terrain (fusionné avec celui qui est déjà là) et l'entrée du terrain dans l'index du cycle. Un fichier qui porte
     des procédures d'une autre source, ou officielles, n'est touché qu'avec `replace` (SystemExit sinon, rien n'est écrit)."""
-    out = Path(out) / doc['cycle']
+    out = Path(out) / 'manual'
     path = out / f'{doc["icao"]}.json'
+    for p in doc['procedures']:                                 # le cycle de la page lue reste sur chaque procédure (outdated plus tard)
+        p['source'] = {**(p.get('source') or {}), 'cycle': (p.get('source') or {}).get('cycle') or doc['cycle']}
     old = json.loads(path.read_text(encoding='utf-8')) if path.exists() else None
     other = foreign(doc, old)
     if other and not replace:
-        raise SystemExit(f'{doc["icao"]}: le fichier du cycle porte déjà {len(other)} procédure(s) d\'une autre source ou officielles '
+        raise SystemExit(f'{doc["icao"]}: le fichier du terrain (proc/manual) porte déjà {len(other)} procédure(s) d\'une autre source ou officielles '
                          f'({", ".join(sorted({p.get("status", "?") for p in other}))}) : rien n\'est écrit ; --replace pour fusionner par identifiant '
                          '(le meilleur statut gardé)')
     full = merge(old, doc)
@@ -76,13 +80,14 @@ def install(doc, out, replace=False):
     out.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(full, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
     idx_path = out / 'index.json'
-    idx = json.loads(idx_path.read_text(encoding='utf-8')) if idx_path.exists() else {'schema': 1, 'cycle': doc['cycle'], 'aerodromes': {}}
+    idx = json.loads(idx_path.read_text(encoding='utf-8')) if idx_path.exists() else {'schema': 1, 'folder': 'manual', 'aerodromes': {}}
     n = {'SID': 0, 'STAR': 0, 'APP': 0}
     for p in full['procedures']:
         if p.get('kind') in n:
             n[p['kind']] += 1
     best = min((p.get('status') for p in full['procedures']), key=lambda s: RANK.get(s, 9), default='check')
-    idx['aerodromes'][doc['icao']] = {**n, 'status': best}
+    cycles = sorted({(p.get('source') or {}).get('cycle') for p in full['procedures']} - {None})
+    idx['aerodromes'][doc['icao']] = {**n, 'status': best, 'cycle': cycles[-1] if cycles else doc['cycle']}
     idx_path.write_text(json.dumps(idx, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
 
 
@@ -102,7 +107,7 @@ def main(argv=None):
     print(f'{doc["icao"]}: {len(doc["procedures"])} procédure(s) cohérentes (caps et distances recalculés)', file=sys.stderr)
     if not a.check:
         install(doc, a.out, a.replace)
-        print(f'installé dans {Path(a.out) / doc["cycle"]}', file=sys.stderr)
+        print(f'installé dans {Path(a.out) / "manual"} (cycle de la page : {doc["cycle"]})', file=sys.stderr)
 
 
 if __name__ == '__main__':

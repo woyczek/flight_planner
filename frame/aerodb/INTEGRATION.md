@@ -182,6 +182,30 @@ Until then: a phone keeps reading the base it has, which is valid (`COMPAT` 14 t
 reporting points", planner and CPCO map pages). The V3 pages do not read `parserVersion` and show nothing. A base of a parser older
 than `COMPAT` would be ignored; this one is not.
 
+### Procedures chosen in the preparation (§ 10.20 of the specification) — what aerodb gives Fuel and the Map
+
+- **Calls**: `procedures(icao, q)` (lists for the selects: runways in `runways` of each record, transitions in `transition`),
+  `procedure(id)` (the record of an identifier kept in `route.procedures`, an OFP one included), `runways(icao)`,
+  `procedureIndex()`, `fetchProcedures(icao, { onProgress, signal })` (the on-demand reading; refused with a reason, never
+  silent). SPEC § 5 quinquies. Fuel writes `route.procedures`; the Map never does; aerodb never writes the flight.
+- **Every leg** carries `phase` (`main` | `trans` | `missed`); a leg without a fix (`id` null: VA, CA, VM, FM…) has no
+  position, only its course and constraint: draw it along its course (a 2 NM stroke, then dashes to the next point), never
+  invent a point. Hand-read procedures may be `outdated` (show « périmé »).
+- **What each source provides** (what a module can count on; a field a source does not give is absent, never guessed):
+
+  | Source (`source.kind`) | Status | Positions | Constraints `alt` / speed `kt` | Course `crs`, `nm`, `turn`, `over` | `phase` | RF `arc` | Legs without a fix | Runways |
+  |---|---|---|---|---|---|---|---|---|
+  | FAA CIFP (`cifp`) | official | every fix (terminal, enroute, navaid records) | yes / yes | yes (and `vpa`, `rnp`) | main, trans, missed (from the next build; before: defaults) | yes, centre and radius (from the next build) | kept, `id` null, with course (from the next build; before: left out, counted in `warnings`) | complete (PG records, from the next build) |
+  | SIA eAIP (`eaip`) | official or check | from the DATA pages, en-route fixes placed from the base (`placed: 'base'`) | yes / yes | yes (and `vpa`, `rnp`) | missed after the missed-approach point, else default | no | as printed, without a position | derived from `RWnn` points (`approx`) |
+  | EAD Basic, read by layout (`ead-basic`) | check | from the table or the State's list of points; some to be placed | yes / yes | course and distance (for the geometry check), turn and fly-over when printed | missed after the runway, else default | no | as printed | derived (`approx`) |
+  | EAD Basic, through OCR (`ead-basic`, `how: ocr`) | check | as the layout | yes / yes | course and distance; **turn and fly-over lost** (single-letter cells) | as the layout | no | as printed | derived (`approx`) |
+  | Manual reading (`manual`, `how: hand`) | check | as written, checked by the geometry gate | as written | true course `trk` and `nm` | default | no | — | derived (`approx`) |
+  | SimBrief OFP (`simbrief`, `proc-seen/`) | ofp | the navlog's fixes | **no** (only the plan's altitude `planned`) | no | default (`main`) | no | — | none |
+  | X-Plane fallback (`xplane`, `proc/local/`, the workstation only, `local: true`) | xplane (lowest) | as the converter writes them (ARINC 424 like the CIFP) | as converted | as converted | as converted, else default | as converted | as converted | as converted, else derived |
+
+  A record with `local: true` comes from the workstation's X-Plane: label it « X-Plane, local » (four languages), never
+  copy it into the flight's files or a shared document; keep its identifier only.
+
 ### The Données module (`modules/data/`, Full level) — contracts of 28 Oct 2026
 
 What aerodb gives the module that regenerates the published data (its SPEC and INTEGRATION § 2, written with the settings

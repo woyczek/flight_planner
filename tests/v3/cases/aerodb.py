@@ -232,21 +232,37 @@ def k4(c):
                  'KSEA.APP.I16C.RW16C.GRIFY'):
         c.ok(want in procs, f'{sorted(procs)}', f'{want} among the procedures')
     sid = procs['KSEA.SID.BANGR9.RW16C']
-    c.eq([p['id'] for p in sid['points']], ['OTLIE', 'RENBE', 'RICHR', 'TOMRE', 'BANGR'], 'runway transition then common route; the VA leg (no fix) left out', what='BANGR9 16C')
-    c.ok(all(p['lat'] is not None for p in sid['points']), f"{sid['points']}", 'every fix placed from the terminal waypoint records')
-    c.eq((sid['points'][0]['leg'], sid['points'][1]['alt'], sid['status'], sid['source']['kind']), ('DF', {'type': 'min', 'ft': 3000}, 'official', 'cifp'),
+    c.eq([p['id'] for p in sid['points']], [None, 'OTLIE', 'RENBE', 'RICHR', 'TOMRE', 'BANGR'], 'runway transition then common route; the VA leg kept without a fix (§ 10.20)', what='BANGR9 16C')
+    va = sid['points'][0]
+    c.eq((va['leg'], va['lat'], va['lon'], va.get('crs'), va['alt']), ('VA', None, None, 164.3, {'type': 'min', 'ft': 932}),
+         'a leg without a fix has no position, its course and its altitude: the Map draws it along its course, never an invented point', what='VA leg')
+    c.ok(all(p['lat'] is not None for p in sid['points'] if p['id']), f"{sid['points']}", 'every fix placed from the terminal waypoint records')
+    c.eq((sid['points'][1]['leg'], sid['points'][2]['alt'], sid['status'], sid['source']['kind']), ('DF', {'type': 'min', 'ft': 3000}, 'official', 'cifp'),
          'DF then TF, at or above 3000 ft', what='BANGR9 16C legs')
+    c.ok(all(p['phase'] == 'main' for p in sid['points']) and all(p['phase'] == 'trans' for p in procs['KSEA.SID.BANGR9.RWALL.ARRIE']['points']),
+         f"{[(p['id'], p['phase']) for p in procs['KSEA.SID.BANGR9.RWALL.ARRIE']['points']]}", 'every leg has its phase: main for the runway and common route, trans for an enroute transition')
     c.eq(procs['KSEA.STAR.HAWKZ8.RW16B']['runways'], ['16L', '16R'], 'runway "B" (both) is the two parallel runways', what='HAWKZ8')
     app = procs['KSEA.APP.I16C.RW16C']
     c.eq((app['type'], app['runways']), ('ILS', ['16C']), 'ILS approach to 16C', what='I16C')
     rw = next(p for p in app['points'] if p['id'] == 'RW16C')
     c.eq((rw['alt'], rw['vpa'], rw['lat'] is not None), ({'type': 'at', 'ft': 484}, -3.0, True), 'threshold at 484 ft, -3 degrees, placed', what='RW16C')
     after = app['points'][[p['id'] for p in app['points']].index('RW16C') + 1:]
-    c.ok(after and all(p.get('phase') == 'missed' for p in after) and not any(p.get('phase') for p in app['points'][:app['points'].index(rw) + 1]),
-         f"{[(p['id'], p.get('phase')) for p in app['points']]}", 'the legs after the missed-approach point are "missed", none before')
+    c.ok(after and all(p.get('phase') == 'missed' for p in after) and all(p.get('phase') == 'main' for p in app['points'][:app['points'].index(rw) + 1]),
+         f"{[(p['id'], p.get('phase')) for p in app['points']]}", 'the legs after the missed-approach point are "missed", main before')
     tr = procs['KSEA.APP.I16C.RW16C.GRIFY']
     c.eq(([p['id'] for p in tr['points']][:3], tr['points'][0].get('kt'), [p['id'] for p in tr['points']].count('MGNUM')), (['GRIFY', 'MGNUM', 'ANVIL'], 210, 1),
          'transition joined to the final approach, the shared fix once, speed 210 kt at the IAF', what='GRIFY transition')
+    c.eq([p['phase'] for p in tr['points']][:3], ['trans', 'trans', 'main'], "an approach's transition legs are trans, then the final approach is main", what='GRIFY phases')
+    # runways from the PG records (§ 10.20: runways(icao)) and an RF leg's arc (centre fix and radius, ARINC 5.144 / 5.204)
+    c.eq(docs['KSEA']['runways'], [{'id': '16C', 'lat': 47.463811, 'lon': -122.310983, 'elev': 429, 'qfu': 164.0, 'displaced': 0, 'length': 9426, 'width': 150,
+                                   'source': 'cifp'}], 'the runway record: threshold, elevation, magnetic bearing, displaced threshold, length and width', what='runways')
+    lines = [l.rstrip('\r\n') for l in open(fx, encoding='latin-1')]
+    k = next(i for i, l in enumerate(lines) if l[4] == 'P' and l[12] == 'D' and l[13:19].strip() == 'BANGR9' and l[47:49] == 'TF')
+    l = lines[k]
+    lines[k] = l[:47] + 'RF' + l[49:56] + '002500' + l[62:106] + 'OTLIE' + l[111] + 'K1' + 'PC' + l[116:]
+    rf = next(p for p in C.parse(lines)[0]['KSEA']['procedures'] if any(q['leg'] == 'RF' for q in p['points']))
+    arc = next(q['arc'] for q in rf['points'] if q['leg'] == 'RF')
+    c.ok(arc['centre']['id'] == 'OTLIE' and arc['radius'] == 2.5 and arc['centre']['lat'] is not None, f'{arc}', 'an RF leg carries its arc: centre placed, radius 2.5 NM')
     c.ok(any('sans point' in w for w in docs['KSEA']['warnings']), f"{docs['KSEA']['warnings']}", 'legs without a fix are counted, not silently dropped')
     with tempfile.TemporaryDirectory() as td:
         out = Path(td) / 'proc'
@@ -256,6 +272,7 @@ def k4(c):
         doc = json.loads((out / '2026-10-01' / 'KSEA.json').read_text(encoding='utf-8'))
         idx = json.loads((out / '2026-10-01' / 'index.json').read_text(encoding='utf-8'))
         c.ok(doc['cycle'] == '2026-10-01' and 'tel quel' in doc['notice'], f"{doc.get('notice')}", 'the file carries the FAA warranty notice')
+        c.eq([r['id'] for r in doc.get('runways', [])], ['16C'], 'the aerodrome file carries its runways', what='runways written')
         c.eq((sorted(idx['aerodromes']), idx['aerodromes']['KSEA']['SID']), (['KSEA', 'LFBD'], 8), 'the cycle index keeps (BANGR9: six runway records and two enroute transitions) the other sources and adds KSEA', what='index')
 
 
@@ -769,12 +786,16 @@ def k11(c):
     bad2['procedures'][0]['status'] = 'official'
     c.ok(M.verify(bad2), 'official accepted', 'a manual interpretation can only be status check')
     with tempfile.TemporaryDirectory() as td:
-        (Path(td) / '2026-10-01').mkdir()
-        (Path(td) / '2026-10-01' / 'index.json').write_text(json.dumps({'schema': 1, 'cycle': '2026-10-01', 'aerodromes': {'KSEA': {'SID': 1}}}))
+        (Path(td) / 'manual').mkdir()
+        (Path(td) / 'manual' / 'index.json').write_text(json.dumps({'schema': 1, 'folder': 'manual', 'aerodromes': {'KSEA': {'SID': 1}}}))
         M.install(doc, td)
-        idx = json.loads((Path(td) / '2026-10-01' / 'index.json').read_text())
+        idx = json.loads((Path(td) / 'manual' / 'index.json').read_text())
+        # outside the cycle folders (the user's decision of 28 Oct 2026): proc/manual/, the cycle of the page kept on every procedure
+        inst = json.loads((Path(td) / 'manual' / 'EGXX.json').read_text())
+        c.ok(not (Path(td) / '2026-10-01').exists() and all(p['source'].get('cycle') == '2026-10-01' for p in inst['procedures']) and idx['aerodromes']['EGXX']['cycle'] == '2026-10-01',
+             json.dumps(idx)[:200], 'installed under proc/manual/, never in a cycle folder; each procedure keeps the cycle of its page')
         # another source's file of the same aerodrome is never overwritten: refused without --replace; with it, merged by id, the best status kept
-        f = Path(td) / '2026-10-01' / 'EGYY.json'
+        f = Path(td) / 'manual' / 'EGYY.json'
         off = {'schema': 1, 'icao': 'EGYY', 'cycle': '2026-10-01', 'procedures': [{'id': 'EGYY.SID.A', 'kind': 'SID', 'status': 'official', 'source': {'kind': 'eaip'}},
                                                                                   {'id': 'EGYY.STAR.TEST1A.RWALL', 'kind': 'STAR', 'status': 'official', 'source': {'kind': 'eaip'}}]}
         f.write_text(json.dumps(off))
@@ -788,10 +809,10 @@ def k11(c):
         c.ok('--replace' in refused and json.loads(f.read_text()) == off, refused or 'written', "another source's file is refused without --replace and left as it was")
         M.install(man, td, replace=True)
         got = {p['id']: p['status'] for p in json.loads(f.read_text())['procedures']}
-        idx2 = json.loads((Path(td) / '2026-10-01' / 'index.json').read_text())['aerodromes']['EGYY']
-        c.eq((got, idx2), ({'EGYY.SID.A': 'official', 'EGYY.STAR.TEST1A.RWALL': 'official', 'EGYY.STAR.TEST2A.RWALL': 'check'}, {'SID': 1, 'STAR': 2, 'APP': 0, 'status': 'official'}),
+        idx2 = json.loads((Path(td) / 'manual' / 'index.json').read_text())['aerodromes']['EGYY']
+        c.eq((got, idx2), ({'EGYY.SID.A': 'official', 'EGYY.STAR.TEST1A.RWALL': 'official', 'EGYY.STAR.TEST2A.RWALL': 'check'}, {'SID': 1, 'STAR': 2, 'APP': 0, 'status': 'official', 'cycle': '2026-10-01'}),
              'with --replace: merged by id, the official procedure kept over the manual one, the new one added, the index counted on the whole', what='merge')
-        c.eq((sorted(idx['aerodromes']), idx['aerodromes']['EGXX']['STAR'], (Path(td) / '2026-10-01' / 'EGXX.json').exists()), (['EGXX', 'KSEA'], 1, True), 'installed, the index keeps the other aerodromes', what='install')
+        c.eq((sorted(idx['aerodromes']), idx['aerodromes']['EGXX']['STAR'], (Path(td) / 'manual' / 'EGXX.json').exists()), (['EGXX', 'KSEA'], 1, True), 'installed, the index keeps the other aerodromes', what='install')
 
 
 # ------------------------------------------------------------------------------------------------ ICAO tables without co-ordinates, Irish single-line tables (static)
