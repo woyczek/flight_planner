@@ -687,8 +687,10 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None):
     cache = Path(out) / 'cache' / icao
     cache.mkdir(parents=True, exist_ok=True)
     pdfs = []
+    # sans document « CODING » (ex. Arménie, Albanie), on télécharge les cartes SID / STAR / IAP : seules celles dont la disposition est connue seront lues, les autres signalées
+    only_coding = any('CODING' in d['kinds'] for d in found.values())
     for name, d in sorted(found.items()):
-        if 'CODING' in d['kinds']:
+        if 'CODING' in d['kinds'] or not only_coding:
             raw = lib.fetch(d['row'])
             say(f'  {name}: téléchargé' if raw else f'  {name}: téléchargement impossible')
             if raw:
