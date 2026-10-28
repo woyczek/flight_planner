@@ -6,32 +6,33 @@ move.
 
 ## How to use
 
-**Three steps.** The report is filled in three steps: Flight, Mission, Result. On a phone, one step at a time (“Next”
+<a id="report-steps"></a>**Three steps.** The report is filled in three steps: Flight, Mission, Result. On a phone, one step at a time (“Next”
 at the bottom); on a computer, the three side by side. Nothing is mandatory: what is missing is shown at the last step,
 without ever blocking the save.
 
-**The last flight.** If your IVAO (or VATSIM) identifier is set (⚙) and the device is online, a card offers your last
+<a id="report-step-1"></a>**The last flight.** If your IVAO (or VATSIM) identifier is set (⚙) and the device is online, a card offers your last
 flight on the network: “Use” fills in the aircraft, the callsign, the route and the times taken from the track. The
 flight prepared in Fuel or Map is offered the same way (“Current flight”); if it was started in Fuel (“Start the
 flight”), it comes first, “Flight started at hh:mm”. The card says in one line everything that will be taken, even what
 a mission type has no box to show (distance, level). “Use” also fills in the start-up time (the departure time in Fuel)
-and the fuel at departure (the block fuel of the quote), each marked with its source. Saving the report ends the started
+and the fuel at departure (the block fuel of the quote), the whole recalled in the “Prefilled from: …” line under the card’s title. Saving the report ends the started
 flight: Fuel goes back to preparation, My flights removes “In progress”, and the flight is no longer offered.
 
 **The other sources.** Unfold “Other sources” to take your last IVAO or VATSIM flight, your SimBrief flight plan, or a
 pasted text: an ICAO flight plan, the page of a flight from the IVAO tracker or from StatSim, a METAR. Only empty fields
-are filled; next to each one, its source. If a source gives something else for fields already entered, a button offers
+are filled; the “Prefilled from: …” line under the card’s title says where they come from. If a source gives something else for fields already entered, a button offers
 to replace them.
 
-**The mission.** At the second step: the family (suggested from your last report), the series, the mission identifier
+<a id="report-step-2"></a>**The mission.** At the second step: the family (suggested from your last report), the series, the mission identifier
 if the flight follows one, then the blocks specific to the family. Some blocks only appear for one series (for example
-VIP or ferry for special missions).
+VIP or ferry for special missions). Until you open this step it is marked "to check" instead of ✓: the family and
+the series of a new report are taken by default.
 
-**The result.** At the last step: the outcome, your observations, the crew (you first, as aircraft commander) and the
+<a id="report-step-3"></a>**The result.** At the last step: the outcome, your observations, the crew (you first, as aircraft commander) and the
 fuel at departure and at landing. Inconsistencies — times out of order, a future date, fuel that goes up — are
 flagged.
 
-**Saving.** The button at the bottom saves the report and gives it its number at the first save. As long as you have
+<a id="report-save"></a>**Saving.** The button at the bottom saves the report and gives it its number at the first save. As long as you have
 not saved, what you entered is kept on the device and restored the next time you open it.
 
 **Recording on the website.** “Save and record on the website” saves and opens, in the same move, the “Add a flight”
@@ -47,7 +48,9 @@ report” starts again from a blank report.
 - **IVAO and VATSIM**: the flights of the last seven days for your identifier. A flight cut by disconnections counts as
   a single flight. Start-up and shutdown match the connection and the disconnection when the track begins and ends on
   the ground; take-off and landing come from the track.
-- **Times** are written in your device's time.
+- **Times** are UTC, marked "(Z)" on the fields; the started flight and the network fill them in UTC. An older
+  report, entered in the device's time, is shown converted with the entered time in the line under the card's title ("Take-off entered 18:30 local"); it
+  is rewritten in UTC only if you save it.
 - **SimBrief**: your last plan (identifier set in ⚙) — aircraft, route, level, speed, planned fuel, METAR and TAF.
 - **From My flights**: “Write the report” on a flight opens a new report, already filled with that flight and its date;
   “Open the report” reopens the existing one.
@@ -73,4 +76,4 @@ flight's line on the clipboard.
   flight's page (IVAO tracker, StatSim) into “Other sources”.
 - **Without a trigram**: the report is written all the same; set your trigram (⚙) so that it is in your name.
 
-<!-- fr: 5bd862ad5bb7 -->
+<!-- fr: 7c1d42bd47bd -->

@@ -2,6 +2,62 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **28 Oct 2026 — the `h1` follows `ctx.titled`** (frame lot 25, INTEGRATION § 6): while the phone's header carries
+  the module's title (`ctx.titled`), the module's `h1` gets `f-sr` (screen readers only), toggled again on every
+  `frame-titled` event; the listener goes at unmount. Checked on 8804 at 375 px.
+- **24 Oct 2026 — the Report screen on a phone: uniform fields, source line, action bar** (relay session "relais cloud", on the
+  user's words, iPhone 390 px, Cupertino, night: "uniformity and font-size problem on Cupertino, but also on Swiss, across this
+  CR page (object sizes vary, badly wrapped text leaves the screen)"). Causes, measured: (1) the module put a `f-badge`
+  (`white-space: nowrap`, 175 px) in each prefilled field's label: a grid item has `min-width: auto`, so the badge pushed it out
+  of its 164 px column, over its neighbour and past the right edge; (2) the labels that got two lines made their row taller, and
+  the neighbour's `label` (a grid, stretched to the row) gave the extra to its input row: dates 56 px, others 44, then 55, 70, 93,
+  94 px cells; (3) the save bar's second button was free text that folded on three lines, its "website address not set" inside
+  it. **No design rule is the cause**: `cupertino.css` and `swiss.css` do not set `label`, `input[type=date]` or `h2`
+  sizes (measured: 16 px label and value, `h2` 16.8 px in the five designs); nothing in `frame/design/*` changed. Choices:
+  - **Source = one muted line under the card's title** (not a dot in the label): "Prefilled from: … · …" (`TX.prefilledFrom`
+    ×4, `srcLine`, `.rp-src`, `--sog-size-xs`), computed per card from the sources of its fields (and the "entered … local"
+    times of an older report, which also left the labels). A dot with a `title` says nothing on a touch screen, and the
+    provenance is the thing the pilot checks before saving. No element of the grid is wider than its field.
+  - Grid cells `min-width: 0; align-content: start`, labels one line with ellipsis (full label as `title`), `.f-grid` columns
+    `minmax(min(130px, 100%), 1fr)`: in the module's own style, scoped, not in `primitives.css` (another agent's file); the
+    same two lines belong in the primitive if the frame wants them for every module.
+  - **Save bar**: two 44 px buttons on two lines (one line from a 700 px wide pane), "Save" filled, "Save and record on the
+    website" outline, same font and weight (`font-weight: inherit`), `nowrap` + ellipsis with the full text as `title`
+    (no short label: "Enregistrer + site" would be a fifth text to keep in four languages, and the long one fits at 360 px
+    in fr, en, es; de ellipsizes, its `title` is the whole). Bar padding 4 px and gap 6 px: 105 px high, 110 px with
+    `metro`'s 6 px rule (limit 112). The unavailable reason is the button's `title`, `aria-describedby`, and one muted line under
+    the bar; bar and line are in one sticky `.rp-dock` (a plain line after a sticky bar scrolls away) with the page background.
+  - Case **G4** (`tests/v3/cases/flightlog.py`, PLAN § G): prefilled flight, 390 and 360 px, day and night, five designs, three
+    steps: no overflow, no badge in the grid, one height per card, at most two font sizes in the grids, one `h2` size, bar
+    ≤ 112 px, buttons on one line with the same font.
+- **23 Oct 2026 — the airline arriving after the mount** (frame lot 24: `ctx.airline` read in the background, event
+  `frame-airline`): the module listens to it and redraws, so the save bar's "Save and record on the website" turns on
+  when the airline arrives. Bench (fake GitHub, cleared profile, new repository with `airline/settings.json`): the
+  button "disabled — website address not set" at 2.8 s, enabled at 3.3 s, without reloading.
+- **23 Oct 2026 — the report's times in UTC** (Simplification's decision, points 1 to 5): a new report carries
+  `timeline.tz = 'Z'`, its times in UTC and its day in UTC (`todayZ`); the time fields say "(Z)". A report without
+  the marker (V2, older V3) is converted in memory (`toZ`: the report's date as the day, the device's time zone with
+  summer time), shown with "entered 18:30 local" under each field, and rewritten in UTC with the marker only when
+  saved; nothing migrated in bulk. Its date is never moved, even when the first time falls the day before in UTC: the
+  date is part of the V2 registry key and the bridge would add a duplicate. The marker is not in `emptyMission`
+  (`fillDefaults` would put it on an old report before its conversion). Imports in UTC: the started flight
+  (`hhmmZ(started.at)`), the network (`T.apply(…, { tz: 'UTC', today: todayZ() })`). The bridge copies `tz` as is
+  (checked in `tools/report_bridge.py`); the site gets the values without conversion (website SPEC § 5). Checked on
+  8804: CRF-A01-0 (18:30, no marker) shown "16:30" (Z) with "entered 18:30 local", the stored record unchanged; a
+  new report taking the started flight gets 17:14, the UTC time of the start.
+- **23 Oct 2026 — times shown in UTC** (suite rule, `frame/lib/time.js`, frame lot 22): the started-flight card says
+  "Flight started at 16:59Z (18:59)" (engine start: UTC and the device's time), the network flights and the
+  restored draft "23/10/2026 16:57Z" (`fmtDateZ`). The report's time fields (`timeline.*`, `type=time`) keep their
+  values in the device's time, like the V2 reports already saved: turning them to UTC changes the data, a decision
+  asked to Simplification.
+- **23 Oct 2026 — the Mission step is "to check" until seen** (end-to-end pass, Simplification's go): a new report
+  takes the family of the last report (`PREFS`) and its first series, so "2 Mission ✓" showed on a report whose
+  Mission step was never opened, and a family nobody chose went to the log. Now `S.missionSeen`: false for a new
+  report (button, mount without a draft, a module's handoff), true for a report reopened, set by opening the step,
+  by a field of the step or the family, and when the step is on screen (wide module: every step shown); kept in the
+  draft (a draft from before counts as seen). Unseen: the step says "to check" (`data-todo`) instead of ✓, and the
+  Result step lists "mission (family and series taken by default, not seen yet)". Saving stays possible. The family
+  stays the last report's (no empty family: the families' fields depend on it). Checked on 8804 at 375 and 1280 px.
 - **23 Oct 2026 — "Copy the fields" on a tablet over http**: through `copyText` (`frame/lib/clipboard.js`);
   as a last resort the line is shown selected under the button with "copy it". Checked on 8804 without
   `navigator.clipboard`: copied by `execCommand`.

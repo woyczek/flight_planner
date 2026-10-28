@@ -23,8 +23,8 @@ what is missing is said in the Result step, never blocking.
 - **Desktop** (980 px and wider): the three steps side by side, no step bar, no "Next".
 - **Flight**: a "current flight" card when `pilot/<trigram>/current_flight.json` (fuel and maps) has an aircraft or a
   route — "Use" fills the empty fields only (registration, callsign, type, departure, arrival, alternate, distance,
-  level), each
-  filled field shows its source until it is edited. Then date, registration, type, full callsign, departure,
+  level),
+  and the card says where its prefilled fields come from in **one muted line under its title** (§ 2 bis). Then date, registration, type, full callsign, departure,
   arrival, engine start, take-off, landing, shutdown; folded: callsign parts, flight plan callsign, departure and
   return bases, actual landing aerodrome, alternate. Then the **sources** (§ 6).
 - **Mission**: family (the sixteen V2 families; a new report takes the family of my last saved report, HEMS the
@@ -40,13 +40,34 @@ what is missing is said in the Result step, never blocking.
 - **Top**: the report number (or "Editing CR…") and "New report". **My last reports** is a folded list at the end
   of the Flight step, one line per report (number, date, registration, family; ten most recent of mine), a line
   reopens it for editing — never a screen of its own.
-- **Save bar** (sticky): **Save**, and **Save and record on the website** (§ 3 bis); the latter is greyed with "website
-  address not set" when the airline setting has no address.
+- **Save bar** (sticky, with its note): two buttons of 44 px, **Save** (filled) and **Save and record on the website**
+  (§ 3 bis; outline, same font, never folded: an ellipsis and the full text as `title` when the width is short), on two
+  lines (one line from a 700 px wide pane), 112 px high at most with the thick rule of `metro`. Greyed when the airline
+  setting has no address: the reason is the button's `title` and one muted line under the bar ("website address not
+  set"), never inside the button; bar and line stick together (`.rp-dock`).
 - **Result step, folded "On the airline website"**: how the hand-off works, the "→ Vol" bookmark to drag to the
   bookmarks bar (a click on it in the suite only explains), "Copy the fields" (one line, for a phone).
 - **Draft**: every change is kept on the device (`cache/report/draft.json`, after a quiet time) and restored at the
   next mount with a notice; saving removes it.
 - Texts in four languages (labels of V2); codes typed in capitals; time and date fields of the device.
+
+## 2 bis. Uniform fields, provenance line
+
+- **One look for every card**: all fields of a grid are one `--sog-touch` (44 px) high, label and value in the frame's field
+  size (`--sog-field-text`), labels on one line (ellipsis, the full label as `title`); a grid cell has `min-width: 0` and
+  `align-content: start`, so nothing is wider than its column and a field never stretches to its neighbour's height. Card
+  titles are the frame's `h2`; the module has no `font-size` of its own (G4 reads the source for `font-size` outside
+  `--sog-size-*`).
+- **Where a value came from** is never an element of the grid. Each card has **one muted line** (`--sog-size-xs`,
+  `.rp-src`) before its fields: "Prefilled from: <source> · <source>" (the distinct sources of the card's fields, in the
+  four languages), followed, for an older report, by the times entered in the device's time ("Take-off entered 18:30
+  local"). It disappears when nothing is prefilled. The line is a plain text, readable on a touch screen (a coloured dot
+  with a `title` was rejected for that reason, see DECISIONS).
+- **V2's rule amended** (28 Oct 2026, Simplification, on every width): V2 showed each prefilled field's source in its
+  label until the field was edited; V3 names the sources once per card, in that line. A field edited by hand leaves the
+  line (its source is forgotten, as in V2). "Entered 18:30 local" of an older report stays in the line for each converted
+  time **until that field is edited or the report is saved** (then the time is the pilot's, or written in UTC): it is the
+  only place where the time as it was entered remains visible.
 
 ## 3. Saving
 
@@ -115,9 +136,11 @@ SPECIAL, SURVEY (DEMO, a V2 demonstration family, is not carried). Their `flags`
 
 ## 6. Prefill
 
-Every source fills **empty fields only**; each filled field shows its source until it is edited; when the source
+Every source fills **empty fields only**; the sources of the filled fields are named in one muted line under the card's title
+(§ 2 bis); when the source
 gave another value for fields already filled, a button offers "Replace the n fields already filled" (V2's rule).
-Times are written in the device's time zone (V2 used the aerodrome's: aerodb has no time zone yet); helicopter
+Times are written in UTC, the report marked `timeline.tz = "Z"` (since 23 Oct 2026; before, the device's time
+zone, and V2 used the aerodrome's): INTEGRATION § 3 bis; helicopter
 thresholds for the track when the aircraft (or the family's default category) is rotary.
 
 - **Current flight** of fuel and maps (§ 2).

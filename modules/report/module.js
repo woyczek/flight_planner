@@ -21,6 +21,11 @@ import {
 import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
+import {
+  fmtZ,
+  fmtZLocal,
+  fmtDateZ
+} from '../../frame/lib/time.js'; // heures en UTC, l'heure locale seulement à la mise en route
 import AAR from './families/aar.js';
 import AIRBORNE from './families/airborne.js';
 import AIRLIFT from './families/airlift.js';
@@ -40,6 +45,7 @@ import SURVEY from './families/survey.js';
 
 export const meta = {
   id: 'report',
+  title: ['Compte rendu', 'Mission report', 'Einsatzbericht', 'Informe de misión'], // en-tête du téléphone (règle 16)
   apps: ['pilot'],
   level: 1,
   reads: ['cr/', 'pilot/', 'cache/report/'],
@@ -63,7 +69,7 @@ export const meta = {
     'families/airborne.js', 'families/airlift.js', 'families/combat.js', 'families/command.js', 'families/fire.js',
     'families/flight_inspection.js', 'families/hadr.js', 'families/hems.js', 'families/isr.js', 'families/law_enforcement.js',
     'families/maritime.js', 'families/sar.js', 'families/sof.js', 'families/special.js', 'families/survey.js', '../../frame/lib/dom.js',
-    '../../frame/lib/clipboard.js'
+    '../../frame/lib/clipboard.js', '../../frame/lib/time.js'
   ]
 };
 
@@ -95,7 +101,7 @@ const FAMILIES = {
 // ---------------------------------------------------------------- textes [fr, en, de, es]
 const L = V.L;
 const TX = {
-  title: L('Compte rendu', 'Mission report', 'Einsatzbericht', 'Informe de misión'),
+  title: meta.title,
   steps: [L('Vol', 'Flight', 'Flug', 'Vuelo'), L('Mission', 'Mission', 'Einsatz', 'Misión'), L('Résultat', 'Result', 'Ergebnis',
     'Resultado')],
   next: L('Suivant →', 'Next →', 'Weiter →', 'Siguiente →'),
@@ -113,6 +119,8 @@ const TX = {
   current: L('Vol en cours (carburant / carte)', 'Current flight (fuel / maps)', 'Aktueller Flug (Kraftstoff / Karte)',
     'Vuelo actual (combustible / mapa)'),
   use: L('Utiliser', 'Use', 'Übernehmen', 'Usar'),
+  prefilledFrom: L('Prérempli depuis : {s}', 'Prefilled from: {s}', 'Vorausgefüllt aus: {s}', 'Rellenado desde: {s}'),
+  enteredLocal: L('saisi {t} locale', 'entered {t} local', 'lokal eingegeben {t}', 'introducido {t} local'),
   startedAt: L('Vol démarré à {t}', 'Flight started at {t}', 'Flug gestartet um {t}', 'Vuelo iniciado a las {t}'),
   takenBlock: L('carburant bloc {f}', 'block fuel {f}', 'Blockkraftstoff {f}', 'combustible bloque {f}'),
   takenAltn: L('dégagement {a}', 'alternate {a}', 'Ausweich {a}', 'alternativo {a}'),
@@ -150,8 +158,13 @@ const TX = {
     times: L('décollage et atterrissage', 'take-off and landing', 'Start und Landung', 'despegue y aterrizaje'),
     crew: L('équipage', 'crew', 'Besatzung', 'tripulación'),
     fuel: L('carburant départ et arrivée', 'fuel at start and landing', 'Kraftstoff Start und Landung', 'combustible inicial y final'),
-    outcome: L('résultat', 'outcome', 'Ergebnis', 'resultado')
+    outcome: L('résultat', 'outcome', 'Ergebnis', 'resultado'),
+    mission: L('mission (famille et série reprises par défaut, pas encore vues)',
+      'mission (family and series taken by default, not seen yet)',
+      'Mission (Familie und Serie standardmäßig übernommen, noch nicht angesehen)',
+      'misión (familia y serie tomadas por defecto, aún no vistas)')
   },
+  toSee: L('à voir', 'to check', 'prüfen', 'por ver'),
   warnings: L('Vérifier : {l}.', 'Check: {l}.', 'Prüfen: {l}.', 'Comprobar: {l}.'),
   // sources du préremplissage
   sources: L('Autres sources', 'Other sources', 'Andere Quellen', 'Otras fuentes'),
@@ -292,6 +305,35 @@ const today = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
+/** Aujourd'hui en UTC, AAAA-MM-JJ : le jour d'un CR aux heures UTC (timeline.tz = 'Z'). */
+const todayZ = () => new Date().toISOString().slice(0, 10);
+/** Heures de la frise (timeline.*) : en UTC dans un CR marqué timeline.tz = 'Z'. */
+const TIME_KEYS = ['briefing', 'engineStart', 'offBlock', 'takeoff', 'zoneEntry', 'missionStart', 'missionEnd', 'zoneExit',
+  'landing', 'onBlock', 'shutdown'
+];
+/** « HH:MM » UTC d'un instant (ISO, nombre ou Date) ; vide s'il est illisible. */
+const hhmmZ = iso => fmtZ(iso).slice(0, 5);
+/** CR sans le marqueur timeline.tz (V2, anciens V3) : ses heures sont celles de l'appareil ; converties en UTC en
+ *  mémoire (le jour du CR comme date), le marqueur posé. Le jour du CR ne bouge pas, même si la première heure tombe
+ *  la veille en UTC : il fait partie de la clé du registre V2 (famille | n° | date), le pont créerait un doublon.
+ *  S.tzOrigin garde ce qui a été saisi, pour « saisi 18:30 locale ». Rien n'est écrit : le CR n'est réécrit (en UTC,
+ *  marqué) que s'il est enregistré. */
+function toZ(m) {
+  S.tzOrigin = {};
+  const t = m.timeline || (m.timeline = {});
+  if (t.tz === 'Z') return m;
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(m.metadata?.date || '') ? m.metadata.date : today();
+  for (const k of TIME_KEYS) {
+    const v = String(t[k] || '');
+    if (!/^\d{2}:\d{2}$/.test(v)) continue;
+    const d = new Date(`${day}T${v}:00`); // heure de l'appareil, ce jour-là (heure d'été comprise)
+    if (!Number.isFinite(d.getTime())) continue;
+    S.tzOrigin[`timeline.${k}`] = v;
+    t[k] = hhmmZ(d);
+  }
+  t.tz = 'Z';
+  return m;
+}
 /** Valeur vide (chaîne vide, null, indéfinie) ? */
 const empty = v => v === undefined || v === null || v === '';
 
@@ -322,10 +364,12 @@ async function recentReports() {
 /** CR neuf : mission vide de la famille (première série, date du jour, catégorie de la famille, moi commandant de bord,
  *  identifiants réseau de l'identité) — le fresh() de la V2 sans le registre ni la météo. */
 function freshMission(fam = 'HEMS') {
+  S.tzOrigin = {};
   const F = FAMILIES[fam],
     m = M.emptyMission(fam);
   m.series = F.series?.[0]?.value || '';
-  m.metadata.date = today();
+  m.metadata.date = todayZ();
+  m.timeline.tz = 'Z'; // heures du CR en UTC (règle de l'appli Pilote)
   m.aircraft[0].category = F.defaultCategory || '';
   const tri = S.ctx.identity.trigram || '';
   if (tri) m.crew = [{
@@ -346,7 +390,8 @@ function saveDraft() {
     at: new Date().toISOString(),
     path: s.path,
     mission: s.m,
-    sources: s.sources
+    sources: s.sources,
+    missionSeen: !!s.missionSeen
   }, {
     policy: 'cache'
   }), 600);
@@ -403,6 +448,7 @@ async function save() {
   }, {
     policy: 'cache'
   });
+  S.tzOrigin = {}; // ancien CR : réécrit en UTC et marqué, les heures saisies n'ont plus à être rappelées
   S.ctx.notify(tt(TX.saved, {
     id: m.metadata.missionId
   }), 'ok');
@@ -415,17 +461,35 @@ const lab = x => Array.isArray(x) ? tt(x) : String(x ?? '');
 /** Contrôle HTML d'un champ (définition V2 : path, label, type, options, blank) à la valeur v ; source affichée. */
 function control(fd, v, prefix = '') {
   const path = prefix + fd.path,
-    src = S.sources[path] ? `<span class="f-badge" data-kind="accent">${esc(S.sources[path])}</span>` : '',
     common = `data-path="${esc(path)}" aria-label="${esc(lab(fd.label))}"`,
     opts = fd.path === 'series' ? (FAMILIES[S.m.family]?.series || []) : fd.options || [];
   let input;
   if (fd.type === 'select') input = `<select ${common}>${fd.blank ? '<option value=""></option>' : ''}${opts.map(o => `<option value="${esc(o.value)}"${String(v ?? '') === String(o.value) ? ' selected' : ''}>${esc(lab(o.label))}</option>`).join('')}</select>`;
   else if (fd.type === 'textarea') input = `<textarea rows="3" ${common}>${esc(v ?? '')}</textarea>`;
   else input = `<input ${common} type="${fd.type === 'time' ? 'time' : fd.type === 'date' ? 'date' : 'text'}"${fd.type === 'number' ? ' inputmode="decimal"' : ''}${fd.code ? ' class="rp-code" autocapitalize="characters"' : ''} value="${esc(v ?? '')}">`;
-  return `<label class="f-field${fd.full || fd.type === 'textarea' ? ' f-full' : ''}"><span>${esc(lab(fd.label))} ${src}</span>${input}</label>`;
+  const z = fd.type === 'time' && path.startsWith('timeline.') ? ' (Z)' : '';
+  // libellé sur une ligne (ellipse, titre complet) ; d'où vient la valeur se lit dans la ligne de la carte (srcLine)
+  return `<label class="f-field${fd.full || fd.type === 'textarea' ? ' f-full' : ''}"><span title="${esc(lab(fd.label) + z)}">${esc(lab(fd.label))}${z}</span>${input}</label>`;
 }
-/** Grille de champs de la mission. */
-const grid = list => `<div class="f-grid">${list.filter(shown).map(fd => control(fd, M.get(S.m, fd.path))).join('')}</div>`;
+/** Une ligne muette sous le titre d'une carte : d'où viennent les champs préremplis (« Prérempli depuis : vol en cours · dernier
+ *  CR ») et, pour un ancien CR, les heures saisies en heure de l'appareil. fields : [{ path, label }], chemins complets. Vide
+ *  quand rien n'est prérempli : aucun élément n'entre dans la grille des champs. */
+function srcLine(fields) {
+  const from = [...new Set(fields.map(x => S.sources[x.path]).filter(Boolean))],
+    was = fields.filter(x => S.tzOrigin?.[x.path]).map(x => `${lab(x.label)} ${tt(TX.enteredLocal, { t: S.tzOrigin[x.path] })}`),
+    parts = [from.length ? tt(TX.prefilledFrom, {
+      s: from.join(' · ')
+    }) : '', ...was].filter(Boolean);
+  return parts.length ? `<p class="rp-src">${esc(parts.join(' · '))}</p>` : '';
+}
+/** Champs (chemin, libellé) d'une liste de définitions affichées. */
+const shownFields = list => list.filter(shown).map(fd => ({
+  path: fd.path,
+  label: fd.label
+}));
+/** Grille de champs de la mission, sous la ligne de provenance de ses champs (line : les champs à résumer, par défaut ceux de
+ *  la grille ; false pour une carte dont la ligne est déjà posée ailleurs). */
+const grid = (list, line = list) => `${line ? srcLine(shownFields(line)) : ''}<div class="f-grid">${list.filter(shown).map(fd => control(fd, M.get(S.m, fd.path))).join('')}</div>`;
 /** Bloc ou champ affiché pour la mission (condition when de la V2, contexte M.context : famille, série, capacités,
  *  catégories d'appareil, drapeaux). */
 const shown = x => !x.when || !!x.when(M.context(S.m, FAMILIES[S.m.family] || {}));
@@ -433,6 +497,7 @@ const shown = x => !x.when || !!x.when(M.context(S.m, FAMILIES[S.m.family] || {}
 function collection(col, title) {
   const items = M.get(S.m, col.path) || [];
   return `<div class="rp-col" data-col="${esc(col.path)}">${title ? `<h3>${esc(title)}</h3>` : ''}
+    ${srcLine(items.flatMap((_, i) => col.fields.map(fd => ({ path: `${col.path}.${i}.${fd.path}`, label: fd.label }))))}
     ${items.map((it, i) => `<div class="rp-item"><div class="f-grid">${col.fields.map(fd => control(fd, it?.[fd.path], `${col.path}.${i}.`)).join('')}</div><button type="button" data-do="del" data-i="${i}">${esc(tt(TX.remove))}</button></div>`).join('')}
     <button type="button" data-do="add">${esc(col.add ? tt(col.add) : tt(TX.addCrew))}</button></div>`;
 }
@@ -461,11 +526,23 @@ const crewCol = () => ({
 const STYLE = `
 [data-module="report"] .rp-code{text-transform:uppercase}
 [data-module="report"] .rp-step[hidden]{display:none}
-[data-module="report"] .rp-item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:8px}
-[data-module="report"] .f-bar button{flex:1;min-width:150px}
-[data-module="report"] .f-bar .rp-unset{display:block}
+[data-module="report"] .f-steps>[data-todo]::after{content:" · " attr(data-todo);font-weight:400}
+[data-module="report"] .rp-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-bottom:8px}
+[data-module="report"] .rp-src{margin:0 0 6px;color:var(--sog-muted);font-size:var(--sog-size-xs);overflow-wrap:anywhere} /* provenance du préremplissage, une ligne muette */
+[data-module="report"] .rp-dock{position:sticky;bottom:var(--f-tab-space,0px);z-index:2;background:var(--sog-bg);padding-bottom:var(--sog-gap-s)} /* la barre et sa note restent ensemble en bas */
+[data-module="report"] .rp-dock>.f-bar{position:static;margin:0}
+[data-module="report"] .rp-unset{margin:var(--sog-gap-s) 0 0}
+[data-module="report"] .f-grid{grid-template-columns:repeat(auto-fit,minmax(min(var(--f-min,130px),100%),1fr))}
+[data-module="report"] .f-grid>.f-field{min-width:0;align-content:start} /* une cellule ne dépasse jamais sa colonne, ne s'étire pas avec sa voisine */
+[data-module="report"] .f-field>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} /* libellé sur une ligne */
+[data-module="report"] .rp-prefill>div{min-width:0}
 [data-module="report"] .rp-prefill{display:flex;gap:10px;align-items:center;justify-content:space-between}
-[data-module="report"] .f-badge{margin-left:4px}
+[data-module="report"] .rp-bar{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding:4px 10px} /* deux lignes de 44 px : 105 px, 112 au plus avec le filet épais de metro */
+[data-module="report"] .rp-bar button{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:inherit}
+[data-module="report"] .rp-bar .rp-site{background:transparent;border-color:var(--sog-accent);color:var(--sog-link)}
+@container (min-width: 700px){
+  [data-module="report"] .rp-bar{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @container (min-width: 900px){ /* largeur du module (volet de la vue double compris), pas de la fenêtre */
   [data-module="report"] .f-steps,[data-module="report"] .rp-next{display:none}
   [data-module="report"] .rp-step[hidden]{display:block}
@@ -480,9 +557,12 @@ function renderBody() {
   const m = S.m,
     F = FAMILIES[m.family] || HEMS,
     step = S.step,
-    stepBtn = (i, ok) => `<button type="button" data-step="${i}"${i === step ? ' aria-current="step"' : ''} ${ok ? ' data-done' : ''}>${i + 1} ${esc(tt(TX.steps[i]))}</button>`,
+    // pas Mission jamais ouvert (famille et série d'un CR neuf prises par défaut) : « à voir » au lieu du ✓
+    stepBtn = (i, ok) => `<button type="button" data-step="${i}"${i === step ? ' aria-current="step"' : ''} ${ok ? ' data-done' : ''}${i === 1 && !S.missionSeen ? ` data-todo="${esc(tt(TX.toSee))}"` : ''}>${i + 1} ${esc(tt(TX.steps[i]))}</button>`,
     done = progress(),
-    site = Site.recordPage(S.ctx.airline || {});
+    site = Site.recordPage(S.ctx.airline || {}),
+    flightFields = [FIELDS.date, FIELDS.registration, FIELDS.type, FIELDS.callsign, FIELDS.dep, FIELDS.arr],
+    timeFields = [FIELDS.engineStart, FIELDS.takeoff, FIELDS.landing, FIELDS.shutdown];
   S.body.innerHTML = `
     <div class="f-row" style="margin-bottom:8px"><span class="f-muted">${S.path ? esc(tt(TX.editing, { id: m.metadata.missionId })) : esc(m.metadata.missionId || '')}</span>
       <button type="button" data-do="new">${esc(tt(TX.newReport))}</button></div>
@@ -491,15 +571,16 @@ function renderBody() {
       <section class="rp-step" data-s="0"${step === 0 ? '' : ' hidden'}>
         <div data-prefill></div><div data-sources></div>
         <div class="f-card"><h2>${esc(tt(TX.steps[0]))}</h2>
-          ${grid([FIELDS.date, FIELDS.registration, FIELDS.type, FIELDS.callsign, FIELDS.dep, FIELDS.arr])}
+          ${grid(flightFields, [...flightFields, ...timeFields])}
           <h3>${esc(lab(L('Heures', 'Times', 'Zeiten', 'Horas')))}</h3>
-          ${grid([FIELDS.engineStart, FIELDS.takeoff, FIELDS.landing, FIELDS.shutdown])}</div>
+          ${grid(timeFields, false)}</div>
         <details class="f-card"><summary>${esc(tt(TX.more))}</summary>${grid([FIELDS.callsignPrefix, FIELDS.callsignNumber, FIELDS.callsignFpl, FIELDS.baseDeparture, FIELDS.baseReturn, FIELDS.landingAd, FIELDS.altn])}</details>
         <details class="f-card" data-recent><summary>${esc(tt(TX.recent))}</summary><div class="f-list" data-recentlist></div></details>
         <div class="f-row rp-next"><button type="button" data-step="1">${esc(tt(TX.next))}</button></div>
       </section>
       <section class="rp-step" data-s="1"${step === 1 ? '' : ' hidden'}>
         <div class="f-card"><h2>${esc(tt(TX.steps[1]))}</h2>
+          ${srcLine(shownFields([FIELDS.series, FIELDS.missionNumber]))}
           <div class="f-grid"><label class="f-field"><span>${esc(tt(TX.family))}</span><select data-family>${Object.entries(V.familyLabels).filter(([k]) => FAMILIES[k]).map(([k, l]) => `<option value="${k}"${k === m.family ? ' selected' : ''}>${esc(tt(l))}</option>`).join('')}</select></label>
           ${control(FIELDS.series, m.series)}${control(FIELDS.missionNumber, m.metadata.missionNumber)}</div></div>
         ${F.ownOrder ? '' : `<details class="f-card"><summary>${esc(tt(TX.tasking))}</summary>${grid([FIELDS.objective, FIELDS.instructions, FIELDS.priority])}</details>`}
@@ -516,8 +597,11 @@ function renderBody() {
           <button type="button" data-do="copyfields">${esc(tt(TX.copyFields))}</button></details>
       </section>
     </div>
-    <div class="f-bar"><button type="button" class="primary" data-do="save">${esc(tt(S.path ? TX.saveEdit : TX.save))}</button>
-      <button type="button" data-do="savesite"${site ? '' : ` disabled title="${esc(tt(TX.siteUnset))}"`}>${esc(tt(TX.saveSite))}${site ? '' : `<small class="f-muted rp-unset">${esc(tt(TX.siteUnset))}</small>`}</button></div>`;
+    <div class="rp-dock"><div class="f-bar rp-bar"><button type="button" class="primary" data-do="save">${esc(tt(S.path ? TX.saveEdit : TX.save))}</button>
+      <button type="button" class="rp-site" data-do="savesite" title="${esc(tt(site ? TX.saveSite : TX.siteUnset))}"${site ? '' : ' disabled aria-describedby="rpUnset"'}>${esc(tt(TX.saveSite))}</button></div>
+      ${site ? '' : `<p class="rp-src rp-unset" id="rpUnset">${esc(tt(TX.siteUnset))}</p>`}</div>`;
+  // module large (tous les pas affichés, sans barre de pas) : le pas Mission est sous les yeux, donc vu
+  if (!S.missionSeen && S.body.querySelector('.rp-step[data-s="1"]')?.offsetParent) S.missionSeen = true;
   const mark = S.body.querySelector('[data-mark]');
   if (mark) mark.onclick = e => {
     e.preventDefault(); // depuis la barre des favoris seulement
@@ -535,7 +619,9 @@ function progress() {
   const m = S.m,
     a = m.aircraft?.[0] || {},
     t = m.timeline || {};
-  return [!!(a.registration || a.type && a.callsign) && !!(t.takeoff && t.landing), !!m.series, !!m.results?.outcome];
+  return [!!(a.registration || a.type && a.callsign) && !!(t.takeoff && t.landing), !!m.series && !!S.missionSeen, !!m.results
+    ?.outcome
+  ];
 }
 /** Ce qui manque (non bloquant) et les contrôles de cohérence de la V2, au pas Résultat. */
 function check() {
@@ -550,6 +636,7 @@ function check() {
   if (!(m.crew || []).some(c => c.name)) need.push(tt(TX.need.crew));
   if (empty(m.fuel?.start) || empty(m.fuel?.landing)) need.push(tt(TX.need.fuel));
   if (!m.results?.outcome) need.push(tt(TX.need.outcome));
+  if (!S.missionSeen) need.push(tt(TX.need.mission));
   const issues = M.checkMission(m).map(i => tt(TX.issues[i.kind] || TX.issues.invalid, {
     v: i.value,
     o: i.other
@@ -572,10 +659,7 @@ async function prefillCard() {
   const a = cf.aircraft || {},
     r = cf.route || {},
     title = started ? tt(TX.startedAt, {
-      t: new Date(started).toLocaleTimeString(S.ctx.lang(), {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      t: fmtZLocal(started) // mise en route : l'heure UTC et celle de l'appareil
     }) : tt(TX.current);
   const q = cf.quote || {},
     taken = [a.registration, a.callsign, a.type, [r.dep, r.arr].filter(Boolean).join(' → '), r.altn ? tt(TX.takenAltn, {
@@ -594,12 +678,7 @@ function sourcesCard() {
   if (!box) return;
   const id = S.ctx.identity,
     p = S.proposal,
-    when = v => v ? new Date(v).toLocaleString(S.ctx.lang(), {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    }) : '',
+    when = v => v ? fmtDateZ(v, S.ctx.lang()) : '',
     flight = (net, f) => `${esc(f.callsign)} · ${esc([f.dep, f.arr].filter(Boolean).join(' → ') || '—')} · ${esc(when(f.start))}${f.open ? ' …' : ''}`;
   box.innerHTML = `${p?.flights?.length ? `<div class="f-card f-accent rp-prefill"><div><b>${esc(tt(TX.lastOn, { net: p.label }))}</b><div class="f-muted">${flight(p.net, p.flights[0])}</div></div>
       <button type="button" class="primary" data-do="pick" data-net="${p.net}" data-id="${esc(p.flights[0].id)}">${esc(tt(TX.use))}</button></div>` : ''}
@@ -691,14 +770,14 @@ async function flightsOf(net, quiet = false) {
     return null;
   }
 }
-/** Reprend un résultat analysé (text_import.js) dans les champs vides : heures dans le fuseau de l'appareil, seuils
+/** Reprend un résultat analysé (text_import.js) dans les champs vides : heures et jour en UTC, seuils
  *  hélicoptère si l'appareil est à voilure tournante ; source notée par champ ; « Remplacer » proposé pour les champs
  *  déjà saisis qui différaient. replace : remplace aussi les champs déjà saisis. */
 function importResult(result, source, replace = false) {
   const res = T.apply(S.m, result, {
-    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    tz: 'UTC', // heures du CR en UTC (timeline.tz = 'Z')
     rotary: (S.m.aircraft?.[0]?.category || FAMILIES[S.m.family]?.defaultCategory) === 'rotary',
-    today: today(),
+    today: todayZ(),
     replace
   });
   for (const path of res.done) S.sources[path] = source;
@@ -772,6 +851,7 @@ async function takeHandoff() {
   if (h.open) return openReport(h.open);
   if (h.fresh) {
     S.m = freshMission(FAMILIES[h.family] ? h.family : S.m.family);
+    S.missionSeen = false;
     S.path = null;
     S.sources = {};
     S.step = 0;
@@ -793,7 +873,8 @@ async function openReport(path) {
     by,
     ...mission
   } = r;
-  S.m = M.fillDefaults(mission, M.emptyMission(mission.family));
+  S.m = toZ(M.fillDefaults(mission, M.emptyMission(mission.family)));
+  S.missionSeen = true; // CR déjà enregistré : sa mission a été choisie
   S.path = path;
   S.sources = {};
   S.step = 0;
@@ -844,6 +925,10 @@ function readControl(el) {
 /** Saisie : la mission suit le champ, la source d'un champ retouché s'efface, brouillon et repères mis à jour. */
 function onInput(e) {
   const el = e.target;
+  if (!S.missionSeen && (el.dataset.family !== undefined || el.closest('.rp-step[data-s="1"]'))) {
+    S.missionSeen = true;
+    S.body.querySelector('.f-steps [data-todo]')?.removeAttribute('data-todo');
+  }
   if (el.dataset.family !== undefined) {
     const fam = el.value;
     if (FAMILIES[fam] && fam !== S.m.family) {
@@ -858,6 +943,7 @@ function onInput(e) {
   const [path, v] = readControl(el);
   M.set(S.m, path, v);
   delete S.sources[path];
+  if (S.tzOrigin?.[path]) delete S.tzOrigin[path]; // heure d'un ancien CR retouchée : « saisi … locale » ne la décrit plus
   saveDraft();
   if (path === 'series' && e.type === 'change') return render();
   check();
@@ -870,6 +956,10 @@ async function onClick(e) {
   if (!b) return;
   if (b.dataset.step) {
     S.step = +b.dataset.step;
+    if (S.step === 1 && !S.missionSeen) { // pas Mission ouvert : vu
+      S.missionSeen = true;
+      saveDraft();
+    }
     renderBody(); // changement de pas : la page remonte en haut, exprès
     return scrollTo(0, 0);
   }
@@ -897,6 +987,7 @@ async function onClick(e) {
     }
     case 'new':
       S.m = freshMission(S.m.family);
+      S.missionSeen = false;
       S.path = null;
       S.sources = {};
       S.step = 0;
@@ -942,12 +1033,8 @@ async function onClick(e) {
         'navigation.altn': r.altn,
         'navigation.distanceNm': r.distanceNm,
         'navigation.altitude': cf.level?.ft ? formatLevel(cf.level.ft) : '',
-        // heure de départ du carburant (fuseau de l'appareil, comme les autres reprises) et carburant bloc du devis
-        'timeline.engineStart': cf.started?.at ? new Date(cf.started.at).toLocaleTimeString('fr-FR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hourCycle: 'h23'
-        }) : '',
+        // heure de départ du carburant (UTC, comme toutes les heures du CR) et carburant bloc du devis
+        'timeline.engineStart': cf.started?.at ? hhmmZ(cf.started.at) : '',
         'fuel.unit': cf.quote?.block > 0 ? cf.quote.unit : '',
         'fuel.start': cf.quote?.block > 0 ? cf.quote.block : ''
       }, tt(TX.current), {
@@ -983,19 +1070,34 @@ export async function mount(el, ctx) {
     path: null
   };
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
+  // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
+  // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
+  S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);
+  S.srTitle();
+  window.addEventListener('frame-titled', S.srTitle);
   S.body = el.querySelector('[data-body]');
+  // « ? » de l'en-tête : le chapitre au paragraphe du pas affiché (les trois pas côte à côte sur un module large : « Trois pas »)
+  ctx.helpAnchor?.(() => S?.body?.querySelector('.f-steps')?.offsetParent ? `report-step-${S.step + 1}` : 'report-steps');
   const d = await ctx.data.get(DRAFT);
   if (d?.mission?.family && FAMILIES[d.mission.family]) {
-    S.m = M.fillDefaults(d.mission, M.emptyMission(d.mission.family));
+    S.m = toZ(M.fillDefaults(d.mission, M.emptyMission(d.mission.family)));
+    S.missionSeen = d.missionSeen !== false; // brouillon d'avant ce repère : tenu pour vu
     S.path = d.path || null;
     S.sources = d.sources || {};
     ctx.notify(tt(TX.draft, {
-      d: new Date(d.at).toLocaleString(ctx.lang())
+      d: fmtDateZ(d.at, ctx.lang())
     }), 'info');
-  } else S.m = freshMission(FAMILIES[(await ctx.data.get(PREFS))?.family] ? (await ctx.data.get(PREFS)).family : 'HEMS');
+  } else {
+    S.m = freshMission(FAMILIES[(await ctx.data.get(PREFS))?.family] ? (await ctx.data.get(PREFS)).family : 'HEMS');
+    S.missionSeen = false;
+  }
   S.body.addEventListener('input', onInput);
   S.body.addEventListener('change', onInput);
   S.body.addEventListener('click', onClick);
+  // compagnie lue en fond par le cadre (frame INTEGRATION § 6) : arrivée ou changée après le montage, la barre
+  // d'enregistrement (« Enregistrer et inscrire sur le site ») est redessinée
+  S.onAirline = () => S?.body && render();
+  window.addEventListener('frame-airline', S.onAirline);
   // plan de vol : appels par ctx.net ; types d'appareil par aerodb (modèle, voilure tournante)
   const ac = ctx.aerodb?.aircraft ? await ctx.aerodb.aircraft().catch(() => null) : null;
   Fpl.configure({
@@ -1021,6 +1123,8 @@ export async function mount(el, ctx) {
 
 export function unmount() {
   if (!S) return;
+  window.removeEventListener('frame-titled', S.srTitle);
+  window.removeEventListener('frame-airline', S.onAirline);
   // un brouillon en attente part quand même (son minuteur garde l'état)
   S.body = null;
   S = null;

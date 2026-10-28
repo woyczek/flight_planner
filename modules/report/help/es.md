@@ -5,33 +5,34 @@ usted completa, guarda — y, si lo desea, el vuelo se registra en el sitio de l
 
 ## Cómo usarlo
 
-**Tres pasos.** El informe se rellena en tres pasos: Vuelo, Misión, Resultado. En un teléfono, un paso cada vez
+<a id="report-steps"></a>**Tres pasos.** El informe se rellena en tres pasos: Vuelo, Misión, Resultado. En un teléfono, un paso cada vez
 («Siguiente» abajo); en un ordenador, los tres uno al lado del otro. Nada es obligatorio: lo que falta se indica en el
 último paso, sin bloquear nunca el guardado.
 
-**El último vuelo.** Si su identificador IVAO (o VATSIM) está ajustado (⚙) y el dispositivo está en línea, una tarjeta
+<a id="report-step-1"></a>**El último vuelo.** Si su identificador IVAO (o VATSIM) está ajustado (⚙) y el dispositivo está en línea, una tarjeta
 propone su último vuelo en la red: «Usar» rellena la aeronave, el indicativo, el trayecto y las horas sacadas de la
 traza. El vuelo preparado en Combustible o Mapa se propone de la misma forma («Vuelo actual»); si se ha iniciado en
 Combustible («Iniciar el vuelo»), aparece primero, «Vuelo iniciado a las hh:mm». La tarjeta dice en una línea todo lo
 que se va a retomar, incluso lo que un tipo de misión no tiene casilla para mostrar (distancia, nivel). «Usar» rellena
 también la hora de puesta en marcha (la hora de salida en Combustible) y el combustible a la salida (el combustible de
-bloque del cálculo), cada uno marcado con su fuente. Guardar el informe termina el vuelo iniciado: Combustible vuelve a
+bloque del cálculo), todo recordado en la línea «Rellenado desde: …» bajo el título de la tarjeta. Guardar el informe termina el vuelo iniciado: Combustible vuelve a
 la preparación, Mis vuelos quita «En curso», y el vuelo ya no se propone.
 
 **Las otras fuentes.** Despliegue «Otras fuentes» para retomar su último vuelo IVAO o VATSIM, su plan de vuelo
 SimBrief, o un texto pegado: un plan de vuelo OACI, la página de un vuelo del tracker IVAO o de StatSim, un METAR. Solo
-se rellenan los campos vacíos; junto a cada uno, su fuente. Si una fuente da otra cosa para campos ya rellenados, un
+se rellenan los campos vacíos; la línea «Rellenado desde: …» bajo el título de la tarjeta dice de dónde vienen. Si una fuente da otra cosa para campos ya rellenados, un
 botón propone sustituirlos.
 
-**La misión.** En el segundo paso: la familia (propuesta según su último informe), la serie, el identificador de la
+<a id="report-step-2"></a>**La misión.** En el segundo paso: la familia (propuesta según su último informe), la serie, el identificador de la
 misión si el vuelo sigue una, y después los bloques propios de la familia. Algunos bloques solo aparecen para una serie
-(por ejemplo VIP o traslado en las misiones especiales).
+(por ejemplo VIP o traslado en las misiones especiales). Mientras no abra este paso, aparece «por ver» en lugar
+de ✓: la familia y la serie de un informe nuevo se toman por defecto.
 
-**El resultado.** En el último paso: el resultado, sus observaciones, la tripulación (usted primero, como comandante) y
+<a id="report-step-3"></a>**El resultado.** En el último paso: el resultado, sus observaciones, la tripulación (usted primero, como comandante) y
 el combustible a la salida y al aterrizaje. Las incoherencias — horas desordenadas, fecha futura, combustible que
 aumenta — se señalan.
 
-**Guardar.** El botón de abajo guarda el informe y le da su número en el primer guardado. Mientras no haya guardado, lo
+<a id="report-save"></a>**Guardar.** El botón de abajo guarda el informe y le da su número en el primer guardado. Mientras no haya guardado, lo
 introducido se conserva en el dispositivo y se recupera la próxima vez que lo abra.
 
 **Registrar en el sitio.** «Guardar y registrar en el sitio» guarda y abre, en el mismo gesto, el formulario «Añadir un
@@ -47,7 +48,9 @@ modificarlo. «Nuevo informe» vuelve a empezar con un informe en blanco.
 - **IVAO y VATSIM**: los vuelos de los últimos siete días de su identificador. Un vuelo cortado por desconexiones
   cuenta como un solo vuelo. La puesta en marcha y la parada corresponden a la conexión y a la desconexión cuando la
   traza empieza y termina en tierra; el despegue y el aterrizaje vienen de la traza.
-- **Las horas** se escriben en la hora de su dispositivo.
+- **Las horas** están en UTC, marcadas «(Z)» en los campos; el vuelo iniciado y la red las rellenan en UTC. Un
+  informe más antiguo, introducido en la hora del dispositivo, se muestra convertido con la hora introducida en la línea bajo el título de la tarjeta
+  («Despegue introducido 18:30 local»); solo se reescribe en UTC si lo guarda.
 - **SimBrief**: su último plan (identificador ajustado en ⚙) — aeronave, ruta, nivel, velocidad, combustible previsto,
   METAR y TAF.
 - **Desde Mis vuelos**: «Escribir el informe» de un vuelo abre un informe nuevo, ya rellenado con ese vuelo y su fecha;
@@ -74,4 +77,4 @@ el formulario, rellena los campos y señala las diferencias. En un teléfono, do
   página del vuelo (tracker IVAO, StatSim) en «Otras fuentes».
 - **Sin trigrama**: el informe se escribe de todos modos; ajuste su trigrama (⚙) para que esté a su nombre.
 
-<!-- fr: 5bd862ad5bb7 -->
+<!-- fr: 7c1d42bd47bd -->
