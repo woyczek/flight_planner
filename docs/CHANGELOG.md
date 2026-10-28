@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: manual interpretations installed through a geometry gate** (`tools/proc_manual.py`; SPEC § 5 quinquies `trk`, `nav`,
+  `source.how`; `frame/aerodb/EAD_BASIC.md` § 6 duodecies, DECISIONS; test K11) — a procedure read by hand (or by a model) from a page whose
+  text is drawn as outlines is installed only if the printed course and distance of each TF leg agree with its positions, with status
+  `check`; the installer merges by procedure id into the aerodrome's file, keeps the best status (`official` > `check`), and refuses to
+  touch a file of another source without `--replace`. The UK STARs of EGLL were prepared this way (the data go to the private data
+  repository only).
 - **aerodb: format check of the coding pages, UK coding tables, geometry check** (`tools/proc_eaip.py` `detect_layout` /
   `verify_page` / `fingerprint` / `--check` / `--page` / `parse_uk_app` / `records_uk_app` / `check_geometry` / `build_pdf_dir` /
   `--pdf-dir`, `tools/proc_ead.py` `--aip-type` / `--docs`; SPEC `formats`, `frame/aerodb/EAD_BASIC.md` § 6 septies to 6 undecies,

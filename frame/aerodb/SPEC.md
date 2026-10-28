@@ -363,6 +363,10 @@ both ways.
   an approach), `placed` (`base`: position found by `procedures()` in the SIA base, nearest to the procedure's first placed
   point, because the published file had none: en-route fixes "REF ENR 4.x" of the eAIP pages). A published point may carry
   `lat: null`; a module draws only points with a position (see the request in `modules/maps/INTEGRATION.md`).
+- **Fields of a hand-read table** (`tools/proc_manual.py`): a point may carry `trk` (the true course printed on the page) next to `nm` (printed distance); a procedure may carry `nav` (navigation
+  performance, e.g. RNAV1, RNAV5) and `source.how` (how it was read). The installer refuses a procedure whose TF legs' printed course and distance disagree with their positions (0.25° / 0.2 NM). It never overwrites
+  a file of another source: an aerodrome file already holding procedures of another source (or official ones) is refused without
+  `--replace`, which merges by procedure id keeping the best status (`official` > `check` > `ofp`); the index entry is counted on the merged file.
 - **Published aerodrome file, extra keys**: `charts` { `base`, `items` [ { `path`, `kind` } ], `vac` }, `pages` (source pages
   read), `formats` [ { `file`, `layout`, `fingerprint`, `ok`, `problems` } ] (the format check of each coding page: a page whose layout is not recognised, or
   of which less than 85 % of the leg rows were read, is **not read** and has `ok: false`; `tools/proc_eaip.py --check` runs it alone), `warnings` (rows not read, fixes

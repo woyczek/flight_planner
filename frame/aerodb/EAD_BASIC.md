@@ -347,6 +347,20 @@ a co-ordinate, whether made by OCR, by a person or by a model, moves a course or
 `python tools/proc_eaip.py EGLL --pdf-dir <folder of the downloaded PDFs> --cycle 2026-10-01 [--check]` reads every PDF of a folder: a known layout is read, an unknown or text-less one is reported (`NON`), never guessed;
 `--check` writes nothing and exits 1 if a page is refused. (Tested here on 8-13 and 7-13 together: 4 procedures read, 7-13 reported.)
 
+## 6 duodecies. The UK STARs of EGLL, read from the page images (28 October 2026)
+
+The owner's aim for now: **show the chain of fixes and the speed / level constraints, as the airways are shown** (a polyline of named points), not the full leg model. The turn direction is kept as information only: on a TF
+(track-to-fix) leg the line is straight between the two fixes whatever the turn, so it does not change the drawing; it matters only for legs that curve (DF, RF), which the UK STAR tables do not use.
+
+The five STAR documents (7-13 to 7-17) have no text layer, so the session **read the 18 tables from the page images** (OTMET 1H, ROXOG 1H, ALESO 1H, LAM 1X · TANET 1Z, OCK 1Z, NUGRA 2H, LAM 1Z · HON 2H, BARMI 1H, LOGAN 2H, TOBID 1X ·
+HAZEL 1H, BIG 1Z, LAM 1Y, FITBO 2H · SIRIC 1H, SIRIC 1Z) and checked each with the geometry check: **all 61 legs agree** (true course within 0.25°, distance within 0.2 NM, the printed values recomputed from the co-ordinates).
+With the four RNP approaches read from `8-13`, that is **22 procedures, 91 points**: `EGLL.json`, status `check`, source `ead-basic/UK/<file>`, level constraints "at" (the tables print levels without a sign), speeds as maximum IAS
+(the tables print "-250", "-220"), turn direction `L` / `R`, `nav` RNAV1 / RNAV5.
+
+`tools/proc_manual.py EGLL.json --out <data repository>/proc` re-runs the geometry check, refuses any procedure that fails, writes `proc/2026-10-01/EGLL.json` and merges the cycle's index. The file is **not in this public repository**
+(it carries the UK AIP's data): the session sends it to the owner, who installs it in the private data repository. aerodb reads it unchanged (checked: 18 STAR, 4 approaches, index entry, every point placed).
+When the UK reissues pages 7-13 to 7-17 the file must be redone: the page's amendment date (`source.at`, 2025-12-25) tells whether it is out of date. OCR (§ 6 undecies, option 1) would make this automatic.
+
 ## 7. Probe run by the user on the workstation (28 October 2026, United Kingdom / EGLL)
 
 Login page 200; login **yes** (200, `home.faces`); home page read with its links (Pre-Flight Briefing, AIP Library,
