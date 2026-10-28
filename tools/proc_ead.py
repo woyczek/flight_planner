@@ -680,7 +680,7 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None):
     lib.choose('type', 'Charts')
     for k, kw in SURVEY_KEYS.items():
         r = lib.search(name=f'AD_2_{icao}_', heading=kw)
-        say(f'{icao}: {k}: {r["count"]} document(s)')
+        say(f'{icao}: {k}: {r["count"]} document(s)' + (f' (ATTENTION : {len(r["rows"])} seulement lus, la page suivante n\'est pas parcourue)' if r['count'] > len(r['rows']) else ''))
         for row in r['rows']:
             name, title = row_summary(row)
             found.setdefault(name, {'name': name, 'title': title, 'kinds': [], 'row': row})['kinds'].append(k)
