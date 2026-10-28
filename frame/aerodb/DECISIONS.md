@@ -1355,3 +1355,6 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   file of this run, cancellation, and `Jobs` refusing a second job with 409 then marking the cancelled one).
 - **Not done / to say**: the real EAD Basic site was never contacted and no credential exists in this session; the job is exercised on fakes only. The first
   real run is the user's (a gesture in Fuel, then the Données module).
+- **Addendum (same day, the user)**: `engineCriticalAltFt` is counted by `sheetMissingPaths` and asked to ChatGPT only when the
+  effective propulsion (`effectiveFacts`: the sheet's, else the catalogue's) is `piston` or unknown; for jet, turboprop,
+  turboshaft, electric, none and other it is never listed. The prompt's rule 7 asks ChatGPT to leave it null then.

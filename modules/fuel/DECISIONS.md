@@ -16,6 +16,10 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
     continuous, 7,800 climb, 7,750 cruise, 5,000–5,780 transient only, 2,800–3,250 ground idle, 4,600 approach — a sheet
     with a single "nominal" number would lose all of that, so the nominal RPM per phase and the engine map are still
     requested.
+  - **Addendum (same day, the user): the critical altitude `engineCriticalAltFt` is counted and asked for a piston
+    propulsion only** (the value in force: the sheet's, else the catalogue's); an unknown propulsion still counts it. Jet,
+    turboprop, turboshaft, electric, none and other: neither counted nor asked, so the "aircraft" family and the missing
+    prompt follow. The prompt's rule 7 says it too (null for any other propulsion).
   - **The sheets list names what is missing by family** instead of a count: "To complete: rpm, speeds, cruise, taxi,
     runway" (rpm, speeds, cruise, rates, fuel flows, taxi, runway, fuel, aircraft, other; the same set of empty paths as
     before, minus the deduced ones). "complete" is unchanged.

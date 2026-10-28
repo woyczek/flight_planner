@@ -42,6 +42,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   which the ICAO catalogue fills in by itself ("auto · helicopter" in the form); you only choose when the catalogue is silent or
   wrong. They are no longer counted as empty nor asked of ChatGPT, whose prompt got the new keys. Old sheets are converted when read.
   The sheets list now says what is missing by family ("To complete: rpm, speeds, cruise, taxi, runway") instead of a count.
+  The critical altitude is only counted (and asked of ChatGPT) for piston engines.
 
 - **aerodb: the on-demand reading of an aerodrome's procedures is wired** (`frame/aerodb/aerodb.js` `fetchProcedures`, `tools/regen_jobs.py` verb
   `proc/ead-fetch`, `frame/app.js`; SPEC § 5 quinquies, INTEGRATION, EAD_BASIC § 1, DECISIONS; tests K1, K22) — one aerodrome per gesture: the launcher

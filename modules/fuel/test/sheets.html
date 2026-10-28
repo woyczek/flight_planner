@@ -377,6 +377,44 @@
         tasKt: 300
       }
     }).includes('cruise.iasKt'), true);
+    // altitude de rétablissement : comptée et demandée pour un moteur à pistons ou une propulsion inconnue seulement
+    const crit = p => miss(p).includes('engineCriticalAltFt');
+    check('missing: critical altitude not listed for a jet (catalogue)', crit({
+      id: 'X',
+      icao: 'ZZJ2'
+    }), false);
+    check('missing: critical altitude not listed for a turboshaft helicopter (catalogue)', crit({
+      id: 'X',
+      icao: 'ZZH2'
+    }), false);
+    check('missing: critical altitude not listed for a stored jet propulsion', crit({
+      id: 'X',
+      icao: 'QQQQ',
+      propulsion: 'jet'
+    }), false);
+    check('missing: critical altitude listed for a piston (catalogue) when empty', crit({
+      id: 'X',
+      icao: 'ZZP1'
+    }), true);
+    check('missing: critical altitude listed for a stored piston when empty', crit({
+      id: 'X',
+      icao: 'QQQQ',
+      propulsion: 'piston'
+    }), true);
+    check('missing: critical altitude not listed for a piston once filled', crit({
+      id: 'X',
+      icao: 'ZZP1',
+      engineCriticalAltFt: 8000
+    }), false);
+    check('missing: critical altitude listed when the propulsion is unknown', crit({
+      id: 'X',
+      icao: 'QQQQ'
+    }), true);
+    check('missing: the stored propulsion wins over the catalogue for the critical altitude', crit({
+      id: 'X',
+      icao: 'ZZJ2',
+      propulsion: 'piston'
+    }), true);
     // familles de champs manquants, dans l'ordre de la liste des fiches
     check('families: ordered, once each', F.sheetMissingFamilies(['pressurized', 'taxiFuel', 'runwayType', 'cruise.tasKt',
       'climb.rpmNominal',

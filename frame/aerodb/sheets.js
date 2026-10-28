@@ -1444,10 +1444,14 @@
     return out
   }
   /** Champs vides d'une fiche (chemins du schéma), plus « rpmFuelCurve » quand elle n'a aucune ligne de cartographie ;
-   *  sans ceux que la base OACI donne (cellule, propulsion, pressurisation), jamais demandés à ChatGPT. */
+   *  sans ceux que la base OACI donne (cellule, propulsion, pressurisation), jamais demandés à ChatGPT ; l'altitude de
+   *  rétablissement (moteur suralimenté) n'est comptée et demandée que pour un moteur à pistons ou une propulsion inconnue
+   *  (propulsion en vigueur : celle de la fiche, sinon celle de la base). */
   function sheetMissingPaths(p) {
     const facts = catalogFacts(p),
-      paths = gptSchemaPaths().filter(k => !(k in facts) && isBlankValue(pathGet(p, k)));
+      propulsion = effectiveFacts(p).propulsion,
+      paths = gptSchemaPaths().filter(k => !(k in facts) && !(k === "engineCriticalAltFt" && propulsion && propulsion !== "piston") &&
+        isBlankValue(pathGet(p, k)));
     if (!(p.rpmFuelCurve || []).some(r => r.rpm !== null && r.rpm !== "" && Number.isFinite(+r.rpm))) paths.push("rpmFuelCurve");
     return paths
   }
