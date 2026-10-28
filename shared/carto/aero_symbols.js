@@ -230,15 +230,49 @@
   }
 
   // ---- limites verticales (numériques, ft) et libellés « carte »
-  function limitFt(text, top) {
-    const t = String(text || '').toUpperCase();
-    if (!t) return top ? Infinity : 0;
-    if (/UNL/.test(t)) return Infinity;
-    if (/SFC|GND/.test(t)) return 0;
+  /** Lecture unique d'une limite verticale du SIA (« 800 ASFC », « 1500 ft AMSL », « FL 065 », « 2500 M », « SFC », « UNL »,
+   *  sans ou avec espaces, en minuscules) : { ft, rel, unl, ok }. `ft` : valeur en pieds, telle qu'écrite (le nombre seul,
+   *  sans le relief) ; `rel` : comptée depuis le sol (ASFC, AGL, AAL, SFC, GND, jamais avec AMSL / MSL) ; `unl` : sans limite
+   *  (UNL, ou 66 000 ft et plus) ; `ok` : faux si le texte est vide ou illisible (`ft` vaut alors 0 pour un plancher et
+   *  l'infini pour un plafond). Le nombre se lit avant le mot : « ASFC » contient « SFC », ce n'est pas le sol — « 800 ASFC »
+   *  valait 0 ft (plafond ≤ plancher : espace de la surface au plafond, coupe d'épaisseur nulle). Même lecture que la V3
+   *  (modules/maps/lib/aero_symbols.js). */
+  function limitRead(text, top) {
+    const t = String(text == null ? '' : text).toUpperCase().trim(),
+      bad = {
+        ft: top ? Infinity : 0,
+        rel: false,
+        unl: false,
+        ok: false
+      };
+    if (!t) return bad;
+    if (/UNL/.test(t)) return {
+      ft: Infinity,
+      rel: false,
+      unl: true,
+      ok: true
+    };
     const m = /(FL)?\s*(\d+(?:[.,]\d+)?)/.exec(t);
-    if (!m) return top ? Infinity : 0;
-    const v = +m[2].replace(',', '.');
-    return m[1] ? v * 100 : / M\b/.test(t) ? v * 3.28084 : v;
+    if (!m) return /\b(SFC|GND|GROUND|SOL)\b/.test(t) ? {
+      ft: 0,
+      rel: true,
+      unl: false,
+      ok: true
+    } : bad;
+    const n = +m[2].replace(',', '.'),
+      ft = m[1] ? n * 100 : /\d\s*M\b/.test(t) ? n * 3.28084 : n,
+      rel = !m[1] && /ASFC|AGL|AAL|GND|\bSFC\b/.test(t) && !/AMSL|\bMSL\b/.test(t);
+    return {
+      ft,
+      rel,
+      unl: ft >= 66000,
+      ok: true
+    };
+  }
+  /** Limite verticale en pieds (nombre seul : le relief d'une limite ASFC n'est pas ajouté, voir limitRead). */
+  function limitFt(text, top) {
+    const r = limitRead(text, top);
+    return r.unl ? Infinity : r.ft;
   }
   /** Limite verticale au format carte (FL 065, 1500 ft AMSL…). */
   const chartLimit = t => String(t || '').replace(/^FL\s*(\d+)$/, (_, n) => 'FL ' + n.padStart(3, '0')).replace(/ ft /, ' ').replace(/ m /, ' m ');
@@ -1123,6 +1157,7 @@
   window.SiaAero = {
     parseAixm,
     limitFt,
+    limitRead,
     chartLimit,
     drawAirspaces,
     drawSites,
