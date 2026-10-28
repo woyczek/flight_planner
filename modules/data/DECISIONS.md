@@ -41,3 +41,20 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   test zone L; the end-of-cycle line computed by the frame from `aerodb.publication()`; EAD credentials in the launcher's
   keys panel, never read back; no « Cartes » group, the VAC reporting points in « Base aéronautique » (four groups).
   Nothing is coded before the reviews of aerodb and of the frame.
+- **28 Oct 2026 — Aligned on aerodb's contracts** (aerodb's review 20c8d920c and 51a028f48, validated by the ergonomics
+  session): cycles stored as effective dates, shown `YYNN` through `airac.js`; the module reads only `publication()`,
+  `zones()`, `sources()` (the catalogue stays aerodb's, `catalogue.js`, `eadStates` as data); builders in two stages (a
+  piece per source, `worker` or `python`; an assembler per zone), nothing written by them, aerodb's invariant 1 amended;
+  EAD reads *Charts* documents and installs through `proc_manual` (« remplacer ou fusionner »); towns: a status and
+  Télécharger by the launcher; « OCR manque » as a grey reason.
+- **28 Oct 2026 — Compiled procedures never purged** (user: « les données coûtent cher à être générées… on doit pouvoir bien
+  séparer la compilation des données brutes, et l'utilisation des données compilées »): compiling (builders, workstation)
+  stays apart from using (reader, every device); the compiled JSON live in the private data repository, the user's side.
+  Procedures read by hand, EAD or OCR live in `proc/manual/` (aerodb's choice), are never in the Purger's scope nor lost at a
+  change of cycle, shown « Périmé » with « Relire » (one aerodrome per gesture); only the owner's explicit « Retirer »
+  removes one. Replaces the rule « previous kept cycle only » of the same afternoon.
+- **28 Oct 2026 — Aligned on the frame's lot D0** (`frame/INTEGRATION.md` § 15, bd4cc5109): `meta.launcher` (`routes:
+  ['regen/']`, `read` of the source and output prefixes) and `meta.publish` (the output roots) in the module's `meta`; the
+  launcher's operations are verbs of `regen/job` from a fixed registry (the EAD line is `proc/ead-fetch`, delivered);
+  without a launcher, `ctx.publish` one commit per zone or per cycle of `proc/`, a conflict returned and resumed, never
+  `github()`; the end-of-cycle line is the frame's on every device; the rail's verb comes with `module.js`.

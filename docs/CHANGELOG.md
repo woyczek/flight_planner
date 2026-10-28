@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data module: specification aligned on aerodb's and the frame's contracts (documentation only)** (`modules/data/SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`, `ROADMAP.md`): compiling (builders, workstation) kept apart from using (reader, every
+  device); cycles as effective dates shown `YYNN`; the module reads aerodb's `publication()`, `zones()`, `sources()` only;
+  procedures read by hand, EAD or OCR in `proc/manual/`, never purged, « Périmé » with « Relire », removed only by the
+  owner's « Retirer »; `meta.launcher` / `meta.publish`, the launcher's operations as verbs of `regen/job`, `ctx.publish`
+  one commit per zone; D0 and aerodb's D1 marked delivered.
 - **Atmosphere: the date slider no longer jumps, and says when it is outside the forecast** (`modules/atmosphere/module.js`,
   `texts.js`, help ×4) — the time line beside the slider has a fixed width: a longer text (the day added past midnight) no
   longer shortened the slider, whose thumb moved under the pointer and changed the hour back and forth (+30 h ↔ +32 h); when
