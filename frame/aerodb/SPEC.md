@@ -86,6 +86,13 @@ the suite root) and has no listing.
 - **Cycle.** When the published zones are known, take the most recent cycle already in force (its date is not after
   today), otherwise the oldest one (published in advance). When they are unknown, try the AIRAC cycle in force, then
   the five before it (28-day cycles from 25 January 2024 = AIRAC 2401); the first file found wins.
+- **Cycle names** (contract with the Données module, 28 Oct 2026). **Stored and exchanged** by the effective date
+  `YYYY-MM-DD` (folders `sia/base/<zone>/2026-10-01/`, `proc/2026-10-01/`, every API answer); **shown** as the AIRAC id
+  `YYNN` ("2610"), by the module that shows it. One calculation, `frame/aerodb/airac.js` (`AeroAirac`, lot D1: `cycleOf(date)`
+  → `{ id, date, next, prev }`, `cycleDate(id)`, `next(date)`, `prev(date)`, the anchor AIRAC 2401 = 2024-01-25, 28 days); the
+  reader, the catalogue, the builders and the Python tools (`tools/proc_ead.py` `lib_cycle`) use it or are aligned on it by a
+  K case. **Three cycles are kept** for the base and `proc/` (the previous, the one in force, the next; the Données module's
+  Purger removes the others, never the one in force).
 - **Missing zones.** A zone with no file is remembered as missing until the next change, but only when nothing says it
   is published. A published zone that cannot be read (offline, not kept) is asked for again at the next question.
   Likewise, a kind that could not be read answers empty this time and is read again next time.
@@ -161,6 +168,17 @@ the suite root) and has no listing.
 | `offline.release(zone)` | evicts the zone's folder (`sia/base/<zone>/`: every cycle, both formats) in one call and closes the zone in memory; common files stay; returns the zone's state |
 | `offline.common()` | state of the common files |
 | `offline.aircraft()` | aircraft base: `{ files: [{ path, cached, kb }], types, state, cachedKb, at }` (JSON files, or the V2 `.js` when only those are cached) |
+
+**For the Données module** (`modules/data/`, lot D1; contract of 28 Oct 2026, the module's INTEGRATION § 2):
+
+| Call | Answer |
+|---|---|
+| `publication()` | what is published, **without loading the data** (the reader's listing, the manifest, `proc/<cycle>/index.json`, `sia/vfr/index.json`, the `AircraftDB/` listing only): `{ base: { zone: { cycles: { date: { parserVersion, at, by } }, inForce } }, proc: { cycles: { date: { aerodromes, bySource } }, inForce }, vfr: { cycle, at, count }, aircraft: { at, types } }`. `at` and `by` come from the zone's `meta.json` (`builtAt`, `builtBy`, written by the builders, § 5 septies); until the builders write them, `at` is `meta.json`'s `updated_at` and `by` is null. The weather is the frame's (`ctx.weather`); the NAT tracks join after lot D9 |
+| `zones()` | every zone the suite knows (`AERODB_ZONES`), published or not: `{ id, names: [fr, en, de, es], frames, published }`, for « Ajouter un pays » |
+| `sources()` | the catalogue (§ 5 sexies, `catalogue.js`): the sources with their group, the zones they feed, how they are fetched and built, whether they are published, the link of a cycle, the licence and status; the EAD Basic outcome per State (`eadStates`); the file-name readers `siaFileInfo`, `cifpFileInfo` |
+
+The module never reads `sia/base/`, `proc/` or `AircraftDB/` itself, never loads aerodb's files: these three calls are its
+only way in.
 
 Every call is asynchronous except the aircraft base's methods once `aircraft()` resolved.
 
@@ -335,8 +353,15 @@ both ways.
   - `points`: [ { `seq`, `id`, `lat`, `lon` (WGS84 degrees), `alt` (null or the published constraint { `type`: `at` | `min` |
     `max` | `between`, `ft`, `ft2?` }), `planned` (OFP only: altitude of the plan, ft, never a constraint), `via` (airway or
     null), `leg` (ARINC path terminator IF / CF / DF / TF… when the source has it; absent = straight segment) } ];
-  - `source` { `kind`: `simbrief` | `eaip` | `eurocontrol` | `cifp` | `xplane` | `navigraph`, `ref`, `cycle`, `at` };
+  - `source` { `kind`: `simbrief` | `eaip` | `eurocontrol` | `cifp` | `ead-basic` | `manual` | `xplane` | `navigraph`, `ref`,
+    `cycle`, `at`, `how?` (`ocr` | `hand`: a table read from a drawn page, `tools/proc_ocr.py` or by hand, installed by
+    `tools/proc_manual.py`) }; a file read through EAD Basic also carries `notice` (not operational, `EAD_BASIC.md` § 1);
   - `status`: `official` | `check` ("to be checked") | `ofp` ("seen in an OFP", not authoritative).
+- **An aerodrome missing from the cycle in force** (contract of 28 Oct 2026, the Données module): files of status
+  `check` (EAD Basic, manual, OCR) are made for one cycle and are not rebuilt by the cycle's builders. When the cycle in
+  force has no file for an aerodrome, aerodb reads that aerodrome's file of the **previous kept cycle**, its procedures
+  marked `stale: true` (a module says « cycle précédent »); only `check` and `official` files are read this way, never
+  across more than one cycle. The Données module's Purger keeps a cycle as long as it serves so.
 - **Merge** (`procedures`): records of the same kind, name and transition with compatible runways (one of the two lists empty,
   or a common runway) are one procedure; the geometry and status are those of the best source (`official` > `check` > `ofp`),
   `sources` lists every source with its status, best first.
@@ -424,6 +449,13 @@ différents AIP ou sources qu'on utilise ou utiliserait. »). Its measures stay 
   beside it. The rows whose address depends on the AIRAC cycle (SIA product page, VAC, eAIP, CIFP) are built for the cycle in force, which
   the screen writes at the top with the next one. **No fetch, no parser, no publication, no data adapter, no GitHub transport**: the page
   policy needs no host for it (a link is navigation, not `connect-src`). Texts in four languages in the screen; the rows' texts in the data.
+- **At lot D1 of the Données module** (`modules/data/`, which replaces this screen): `sources_data.js` becomes
+  **`catalogue.js`**, kept by aerodb and served by `aerodb.sources()` (a module never loads aerodb's files), its schema
+  extended to `{ id, group: base | proc | aircraft | weather, zones (fed), fetch: { how: launcher | pick | none, provider,
+  glob, name }, build: { runtime: worker | python, id }, publish (bool), cycled, url(cycle), lic[4], status }`, with
+  `eadStates` (the outcome per State of `EAD_BASIC.md` § 8.1, which greys « Mise en page inconnue pour cet État ») and the
+  file-name readers `siaFileInfo` / `cifpFileInfo` (the cycle read from the name of a picked file) back; the cycle helpers
+  move to `airac.js`. The screen `#sources`, its declaration and its Administration button go in the same lot.
 - **The list** (`sources_data.js`, `window.AeroSources`, data only): `{ id, no, status, cycled, n[4], url (string or function of the cycle),
   gives[4], lic[4], how[4]? }` for the 16 sources of the laboratory (table 1.2 of `docs/technique/V3_DONNEES_REGENERATION.md`, X-Plane and
   the aircraft types excepted), EAD Basic, the X-Plane CIFP / Navigraph fallback and the national AIPs of `AIP_OPEN_DATA_INVENTORY.md`
@@ -443,12 +475,42 @@ différents AIP ou sources qu'on utilise ou utiliserait. »). Its measures stay 
   - Fixtures: `test/fixtures/stream/` (synthetic, `test/fixtures/SOURCES.md`).
 - Invariant 4 of § 6: the screen's texts (four languages) are an exception, like the `.lnmperf` card. Tests: A20 (the screen), K8, K9.
 
+## 5 septies. Builders (`frame/aerodb/build/`, lot D5 of the Données module) — **contract, not built**
+
+Agreed with the ergonomics session on 28 Oct 2026 (the Données module's INTEGRATION § 2.2). The base's compilation leaves
+`shared/sia_base.js` for builders run on the owner's order from the module; the same code with or without a launcher.
+
+- **Two stages.**
+  1. **One builder per source** → a **piece**: `{ source, zone, cycle, kinds: { airspaces?, aerodromes?, … }, counts,
+     warnings, parserVersion, inputs (fingerprint: SHA-256 of the input files) }`. Declared in the catalogue with its
+     `runtime`: `worker` (JavaScript, a Worker: SIA XML through the stream readers, openAIP / FAA ADDS GeoJSON, AIXM 5.1 of
+     ENAIRE and NATS) or `python` (the launcher: UK Mil AIP, NAV CANADA DAH, DIRCAM's PDF, VAC points, eAIP, CIFP, EAD,
+     OCR). A builder that needs the network (MORA: elevation tiles, OSM peaks) gets its inputs from a download step of the
+     launcher first; a builder never fetches.
+  2. **One assembler per zone** (JavaScript, a Worker): merges the zone's pieces with the priority rule into the kind files
+     `sia/base/<zone>/<cycle>/<kind>.json`, `aeroindex.json` and `meta.json` (`builtAt`, `builtBy` (the trigram), `parserVersion`,
+     `inputs`, `sources`), and the zone's entry of the manifest. **France's outlines are an explicit piece** (`fr` airspaces)
+     given to every other zone, never an implicit state. A zone built alone equals the same zone in a whole build (a test).
+- **Nothing is written by them**: both stages return files (`{ path, text }`); the launcher (`regen/put`, then its commit)
+  or the frame's publication service (`ctx.publish`, without a launcher) writes. X-Plane / Navigraph inputs are dropped
+  when the output is to be published (`publish: true`); `false` builds the local fallback, never published.
+- **The manifest with several cycles** (written by the assembler): `sia/base/index.json` { `zones`: { zone: { `cycle` (in
+  force), `cycles`: { date: { `at`, `by`, `parserVersion`, `kb` } }, `prefixes`, `kb`, `cells` } } }. The reader keeps
+  choosing a cycle as in § 4.
+- **Before D5, a lot « complete readers »**: `xml_stream.js` counts the AIXM arcs (`Abd`) without building them and keeps
+  only counts of some records; the builders need every field and the arcs' geometry. Proved by a golden test on the
+  data: the same fixtures through `SiaBase` (V2, the reference until it leaves) and through the new builders give the same
+  `data` (`updated_at` excluded, a fixed order).
+- `parserVersion` and `COMPAT` stay aerodb's; the module only compares numbers.
+
 ## 6. Invariants
 
-1. aerodb never writes the SIA base nor AircraftDB, never builds, never executes a file read from the data
-   repository. It writes only the performance sheets (`aircraft/sheets/`) and their V2 mirror, and, through the
-   launcher, the `.lnmperf` files of the folder set by the user. Keeping and releasing only fill and empty the
-   device's cache.
+1. aerodb's reader never writes the base. The builders (`frame/aerodb/build/` and the tools `tools/proc_*.py`) produce the
+   published files from sources the user supplies, only on an order of the owner from the Données module (or the
+   workstation's command line); they never execute a downloaded file and do not publish themselves: they return files,
+   which the launcher or the frame's publication service writes and commits (amended 28 Oct 2026, the Données module).
+   The reader writes only the performance sheets (`aircraft/sheets/`) and their V2 mirror, and, through the launcher,
+   the `.lnmperf` files of the folder set by the user. Keeping and releasing only fill and empty the device's cache.
 2. A module never names a zone or a file; aerodb chooses them.
 3. A question over the whole world returns exactly the published base (same counts as the workstation's base).
 4. No interface text: labels, translations and formatting belong to the modules and the frame. Two exceptions: the

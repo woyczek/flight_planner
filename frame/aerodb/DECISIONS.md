@@ -1201,3 +1201,25 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   aerodromes (K12); `EAD_BASIC.md` § 1 rewritten, § 8.1 one State per line with its outcome and the rules for States without coding tables
   (ergonomics session's decision: OFP as the per-flight source, manual gesture and geometry gate otherwise, no model reading drawings or prose
   without a request per aerodrome, France from the SIA only, one sample per State as a reserve).
+
+## 28 October 2026 — contracts with the Données module (aerodb review of its SPEC, validated by the ergonomics session)
+
+- **Reviewed**: `modules/data/SPEC.md` and `INTEGRATION.md` § 2 (settings session, 30b13a95d). Agreed on the whole; eight points decided
+  with the ergonomics session, written here and in SPEC / INTEGRATION:
+  1. cycles stored and exchanged as effective dates, shown as `YYNN`; one `airac.js`, the Python aligned by a K case; a manifest with several
+     cycles written by the builders (D5);
+  2. `publication()` in the shape of SPEC § 5 (`by` from the builders' `meta.json`, null until D5; the weather is the frame's; NAT after D9)
+     and `zones()`;
+  3. builders in two stages (a piece per source, `worker` or `python`; an assembler per zone in a Worker; nothing written by them), a lot
+     « complete readers » before D5 with a golden test on the data;
+  4. invariant 1 amended (the reader never writes; the builders produce, on the owner's order, and do not publish);
+  5. the catalogue stays aerodb's: `catalogue.js` served by `sources()`, `eadStates` as data, `siaFileInfo` / `cifpFileInfo` back (they went
+     with the laboratory), the schema extended;
+  6. procedure sources `ead-basic` and `manual` (`how`: `ocr`, `hand`) in the schema; EAD reads *Charts* documents and installs through
+     `proc_manual` (« remplacer ou fusionner » in the screen); an aerodrome missing from the cycle in force read from the previous kept
+     cycle, `stale: true`, the Purger keeping that cycle; « OCR manque » as a grey reason;
+  7. towns: a status and Télécharger by the launcher (`tools/update_cities_geonames.py`); `worker-src 'self' blob:` already in the page
+     policy; splitting a publication without launcher per zone is the frame's (`ctx.publish`);
+  8. ready: D1 (`publication()`, `zones()`, `sources()`, `airac.js`, `catalogue.js`) is a short aerodb lot; D5 waits for the complete
+     readers, the pieces' and the manifest's formats; D10 has its tools (`proc_ead --fetch`, `proc_ocr`, `proc_manual`).
+- **Next**: the settings session aligns `modules/data/` (§ 2 written together, the file stays with that session); then aerodb's lot D1.

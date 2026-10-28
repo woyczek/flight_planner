@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: contracts with the Données module** (`frame/aerodb/SPEC.md` § 4, § 5, § 5 quinquies to 5 septies, § 6,
+  `INTEGRATION.md`, DECISIONS; documentation only) — cycles stored as effective dates and shown as AIRAC ids through one
+  `airac.js`, three cycles kept; `publication()`, `zones()` and `sources()` for the module (lot D1); the catalogue kept by
+  aerodb as `catalogue.js`; builders in two stages (pieces per source, an assembler per zone, nothing written by them, lot
+  D5, complete readers first); invariant 1 amended; procedure sources `ead-basic` and `manual`, and an aerodrome missing
+  from the cycle in force read from the previous kept cycle.
 - **Data module specified (documentation only)** (`modules/data/SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`, `ROADMAP.md`;
   a pointer in `docs/technique/V3_DONNEES_REGENERATION.md`): the module « Données » (Full level) that regenerates the
   published data without V2 — coverage (every published zone ticked at first), data sets in four groups, « Tout mettre à jour » on top, the verbs Télécharger, Construire, Publier, Purger and

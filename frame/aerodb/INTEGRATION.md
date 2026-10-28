@@ -182,13 +182,33 @@ Until then: a phone keeps reading the base it has, which is valid (`COMPAT` 14 t
 reporting points", planner and CPCO map pages). The V3 pages do not read `parserVersion` and show nothing. A base of a parser older
 than `COMPAT` would be ignored; this one is not.
 
+### The Données module (`modules/data/`, Full level) — contracts of 28 Oct 2026
+
+What aerodb gives the module that regenerates the published data (its SPEC and INTEGRATION § 2, written with the settings
+session, which keeps the module's files):
+
+- **Reading** (lot D1): `aerodb.publication()` (what is published, per zone and cycle, without loading the data),
+  `aerodb.zones()` (every known zone, published or not), `aerodb.sources()` (the catalogue: groups, zones fed, fetch and
+  build modes, links by cycle, licences, statuses, EAD outcome per State, file-name readers). SPEC § 5. The module reads
+  nothing else of aerodb and never `sia/base/`, `proc/` or `AircraftDB/` itself.
+- **Cycles**: dates `YYYY-MM-DD` in every answer, the AIRAC id `YYNN` only on screen, converted by `frame/aerodb/airac.js`
+  (SPEC § 4). Three cycles kept for the base and `proc/`.
+- **Building** (lot D5): two stages, pieces per source (`worker` or `python`) and an assembler per zone; nothing written by
+  them (SPEC § 5 septies). A lot « complete readers » comes first.
+- **Procedures**: EAD Basic reads one aerodrome per gesture (*Charts* documents `AD_2_<ICAO>_…`, first page of results only,
+  15 rows); its output is installed by `tools/proc_manual.py`, which refuses another source's file without `--replace`:
+  the module asks « remplacer ou fusionner » then. An aerodrome missing from the cycle in force is read from the previous
+  kept cycle (`stale: true`); the Purger keeps that cycle (SPEC § 5 quinquies). Grey reasons that come from aerodb's side:
+  « pypdf manque », « OCR manque » (drawn pages: UK STARs, Belgium, Georgia), « Mise en page inconnue pour cet État ».
+
 ### Sources screen (`#sources`)
 
 A frame screen drawn by aerodb (`frame/aerodb/sources.js` and its data `sources_data.js`), not a module: nothing to mount, nothing to
 call. The frame declares it in `APP.screens` (`frame/app.js`: Full level, its two scripts, no data adapter, no GitHub transport) and the
 Administration card of Settings links to it. It shows links only (`frame/aerodb/SPEC.md` § 5 sexies): no fetch, so no host in the page
 policy. It replaced the data laboratory (`#datalab`) on 28 October 2026; the laboratory's stream readers (`xml_stream.js`, `zip_stream.js`)
-stay as bricks for the Data module.
+stay as bricks for the Data module. At the Données module's lot D1 it goes in turn: its data become `catalogue.js`, served
+by `aerodb.sources()`.
 
 #### Purging the trial blocks published on the main branch (before 28 Oct 2026) — on a workstation, not run by the app
 
