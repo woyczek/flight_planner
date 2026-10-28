@@ -48,6 +48,11 @@ weather layer, Settings by level, Aqua on a computer, procedures from four sourc
 - EAD Basic is a demonstration tool: its data are not operational and are for simulation only (`EAD_BASIC.md` § 1).
 - The detailed history of this alpha is kept on `v3-avant-squash-2026-10-28`; `v3` holds one commit per block.
 
+### Delivery
+
+- Delivery archive: `xplane-web-suite-6.0.0-alpha.2.zip` — SHA-256 `c3b262d74812ee4ece2233053cc68c3cfc73310a458bbb8da9a86cf007a1b9c7` (code only, outside the repository: `dist/` folder).
+- Module package: `dispos-module-6.0.0-alpha.2.zip` — SHA-256 `a1bd93c26a95aeccbc13c0220bf30916447fcb84c3b0da28e616d0c6e26aedb3` (outside the repository: `dist/` folder).
+
 ## 6.0.0-alpha.1 — 23 October 2026
 
 First alpha of the **Pilot application** (V3). It lives next to the V2 suite: same site (`/v3/frame/`), same

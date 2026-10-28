@@ -924,6 +924,11 @@ formats and screens may still change; Atmosphere is being recoded for the next a
   own names over the place names of the vector background. The background's place layers (`place`, `place_labels`) are
   now hidden while "Town labels" is ticked, and shown again when it is not.
 
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-6.0.0-alpha.2.zip` — SHA-256 `c3b262d74812ee4ece2233053cc68c3cfc73310a458bbb8da9a86cf007a1b9c7` (code seul, hors dépôt : dossier `dist/`).
+- Module package: `dispos-module-6.0.0-alpha.2.zip` — SHA-256 `a1bd93c26a95aeccbc13c0220bf30916447fcb84c3b0da28e616d0c6e26aedb3` (outside the repository: `dist/` folder).
+
 ## [6.0.0-alpha.1] — 2026-10-23
 
 First alpha of the V3 **Pilot application** (`frame/`, `modules/`), published under `/v3/frame/` on the same site
