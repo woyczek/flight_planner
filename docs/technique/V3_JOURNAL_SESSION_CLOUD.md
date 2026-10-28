@@ -46,7 +46,7 @@ est en français.*
    base à reconstruire et synchroniser par l'utilisateur sur le poste).
 8. **En attente de l'utilisateur au 28 octobre** : rapport de la passe 2 du laboratoire données depuis l'iPhone (appui
    long, `.geojson`, partage, blocs de 5,3 et 10 Mo, appel de connexion EAD), rapport de la sonde EAD sur le poste,
-   reconstruction de la base, réponses aux huit questions de `V3_DONNEES_REGENERATION.md` § 5 avant le lot D1, envoi
+   reconstruction de la base, réponses aux neuf questions de `V3_DONNEES_REGENERATION.md` § 5 avant le lot D1, envoi
    ou non des demandes EUROCONTROL et DFS, cartes « poste » derrière Administration ou non, légende de la coupe sur
    deux colonnes ou non.
 

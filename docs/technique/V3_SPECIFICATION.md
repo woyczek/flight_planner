@@ -279,6 +279,9 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
         gear). Performance sheets stay a view of Préparer (Devis / Fiches); the Préparer popover on a second tap
         lists Carburant · Fiches, the principle "second tap = more buttons" is kept for every tab with several
         entries. Screen rail: unchanged order, Réglages kept at the end of the rail.
+  15. *(Number reserved. The flight-zone edge rule is point 12 above; the journal of 25 October, the synthesis of
+      24–27 October and the module DECISIONS of that day call it « rule 15 » (amended: edge drawn by default). The
+      numbering is kept so that those references stay true.)*
   16. **Non-fixed modules on a phone (Carburant, CR, Vols)** (user's proposal, 25 Oct, 08:51, retained): the
       **header carries the module's title** ("Carburant et niveau") in place of the application's name, so the page
       loses its big title row; the **"Comment s'en servir" card keeps a ✕**: once dismissed it stays hidden on the
