@@ -663,7 +663,19 @@
   /** Voies aériennes : basses (trait bleu) et hautes (tireté violet), selon le profil ; étiquettes comme les cartes en
    *  route : nom de la voie dans un cartouche couché le long du tronçon, niveau minimal dessous (F195) ; de près, la
    *  distance du tronçon (NM) et les routes vraies à chaque bout. Rend les bouts des tronçons dessinés (leurs points). */
-  function drawAirways(ctx, airways, toC, scale, b, pl, profile, tier = 'near') {
+  /** Branches de la route (paires d'identifiants consécutifs, dans les deux sens) : une voie qui en suit une a son cartouche à côté
+   *  du trait de la route, qui le couvrirait sinon. */
+  const routeLegs = route => {
+    const s = new Set();
+    for (let i = 1; i < (route || []).length; i++) {
+      const a = String(route[i - 1]?.id || ''),
+        b = String(route[i]?.id || '');
+      if (a && b) s.add(`${a}|${b}`).add(`${b}|${a}`);
+    }
+    return s;
+  };
+
+  function drawAirways(ctx, airways, toC, scale, b, pl, profile, tier = 'near', onRoute = new Set()) {
     const lo = on(profile, 'airwaysLow'),
       hi = on(profile, 'airwaysHigh'),
       ends = new Map();
@@ -720,14 +732,18 @@
         len
       }
       of named) {
-      // cartouche couché le long du tronçon (texte toujours lisible de gauche à droite)
-      const x = (P.x + Q.x) / 2,
-        y = (P.y + Q.y) / 2,
-        k = `${g.route}|${Math.round(x / 90)}|${Math.round(y / 90)}`;
-      if (seen.has(k)) continue;
+      // cartouche couché le long du tronçon (texte toujours lisible de gauche à droite) ; sur une branche de la route, poussé à
+      // côté du trait de la route (dessiné par-dessus tout) : du côté du haut de l'écran, à une demi-hauteur de cartouche plus
+      // la demi-largeur du trait et son liseré
       let ang = Math.atan2(Q.y - P.y, Q.x - P.x);
       if (ang > Math.PI / 2) ang -= Math.PI;
       if (ang < -Math.PI / 2) ang += Math.PI;
+      const along = onRoute.has(`${g.a?.id}|${g.b?.id}`),
+        off = along ? f * 1.85 + Math.max(2.5, 3.75 * scale) + 2 : 0, // le niveau minimal, sous le cartouche, dégagé aussi
+        x = (P.x + Q.x) / 2 + Math.sin(ang) * off,
+        y = (P.y + Q.y) / 2 - Math.cos(ang) * off,
+        k = `${g.route}|${Math.round(x / 90)}|${Math.round(y / 90)}`;
+      if (seen.has(k)) continue;
       const lvl = +g.lower >= 1000 ? `F${String(Math.round(+g.lower / 100)).padStart(3, '0')}` : '',
         w = g.route.length * f * .62 + 6 * scale,
         r = Math.max(w, f * 3) / 2 + 2;
@@ -1665,7 +1681,7 @@
     reservePoints(pl, mission?.points, toC, scale, profile);
     const towns = cityList(shown.cities, profile, toC, bbox, scale, pl);
     drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes');
-    const ends = drawAirways(ctx, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier);
+    const ends = drawAirways(ctx, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier, routeLegs(route));
     // points des voies dessinées (sauf de loin) : les balises avec leur symbole (ajoutées aux balises montrées), les
     // autres en triangle
     const fixes = [],

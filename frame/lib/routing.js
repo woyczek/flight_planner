@@ -12,6 +12,10 @@
 // Changé par rapport à la V2 : le couloir. aerodb ne rend que les segments d'une emprise : celle des points du trajet,
 // élargie de reachNm de chaque côté plus padPct % de la distance directe (le chemin peut s'écarter de la ligne) ;
 // plusieurs zones de la base si la route les traverse (aerodb les assemble).
+// Changé le 28 oct. 2026 (« … LAVRA OBLOC VELIN LMG … ne trouve pas LMG VELIN OBLOC par une voie ») : à longueur égale, la voie
+// l'emporte sur une entrée ou une sortie directe (un point posé sur un nœud suivait sinon sa voie en direct, sans la nommer) ;
+// un tronçon de 40 NM ou moins dont les deux bouts sont des nœuds que relient des voies ouvertes, sans détour, prend la voie
+// (« OBLOC R10 VELIN ») quand la base est lue pour un tronçon long de la même chaîne.
 //
 // API :
 //   DEFAULTS : { reachNm: 60, detourPct: 40, minNm: 40, padPct: 15, ifrMinFt: 6500 }.
@@ -163,21 +167,31 @@ class Heap {
   }
 }
 
-/** Plus court chemin de a à b par le graphe : entrée et sortie directes vers les nœuds proches ; null sinon. */
+/** Poids d'un morceau direct (entrée, sortie) dans le calcul du chemin : à longueur égale, la voie l'emporte. Sans lui, un point
+ *  posé sur un nœud (VELIN) rejoignait en direct le nœud suivant de sa voie (NORON, même longueur que le segment R10) et le
+ *  tronçon n'avait plus aucun segment de voie (« none »). La longueur rendue reste la vraie. */
+const DCT_WEIGHT = 1.05,
+  DCT_EXTRA = .2;
+const dctCost = d => d < .5 ? d : d * DCT_WEIGHT + DCT_EXTRA;
+
+/** Plus court chemin de a à b par le graphe : entrée et sortie directes vers les nœuds proches (un peu pénalisées, voir
+ *  DCT_WEIGHT) ; { pts, nm (longueur réelle) } ou null. */
 export function shortest(graph, a, b, alt, reach = DEFAULTS.reachNm) {
   // entrée / sortie : nœuds proches portant au moins une voie ouverte à ce niveau
   const usable = n => n.out.some(e => alt >= e.lo - 100 && alt <= e.hi + 100),
     near = p => graph.nodes.filter(usable).map(n => [n, nm(p, n)]).filter(([, d]) => d <= reach).sort((x, y) => x[1] - y[1]).slice(0, 8);
   const starts = near(a),
-    ends = new Map(near(b).map(([n, d]) => [n.k, d]));
+    ends = new Map(near(b).map(([n, d]) => [n.k, d])),
+    real = new Map(); // longueur réelle jusqu'à chaque nœud (le coût du tas pénalise le direct)
   if (!starts.length || !ends.size) return null;
   const dist = new Map(),
     prev = new Map(),
     done = new Set(),
     queue = new Heap();
-  const push = (n, d, from, route) => {
+  const push = (n, d, from, route, len) => {
     if (d < (dist.get(n.k) ?? Infinity)) {
       dist.set(n.k, d);
+      real.set(n.k, len);
       prev.set(n.k, {
         from,
         route,
@@ -186,7 +200,7 @@ export function shortest(graph, a, b, alt, reach = DEFAULTS.reachNm) {
       queue.push([d, n]);
     }
   };
-  for (const [n, d] of starts) push(n, d, null, 'DCT');
+  for (const [n, d] of starts) push(n, dctCost(d), null, 'DCT', d);
   let best = null,
     bestCost = Infinity;
   while (queue.size) {
@@ -194,12 +208,12 @@ export function shortest(graph, a, b, alt, reach = DEFAULTS.reachNm) {
     if (done.has(n.k)) continue;
     if (d > bestCost) break; // le tas rend les coûts dans l'ordre : plus rien de meilleur
     done.add(n.k);
-    if (ends.has(n.k) && d + ends.get(n.k) < bestCost) {
-      bestCost = d + ends.get(n.k);
+    if (ends.has(n.k) && d + dctCost(ends.get(n.k)) < bestCost) {
+      bestCost = d + dctCost(ends.get(n.k));
       best = n;
     }
     for (const e of n.out)
-      if (alt >= e.lo - 100 && alt <= e.hi + 100 && !done.has(e.to.k)) push(e.to, d + e.d, n, e.route);
+      if (alt >= e.lo - 100 && alt <= e.hi + 100 && !done.has(e.to.k)) push(e.to, d + e.d, n, e.route, real.get(n.k) + e.d);
   }
   if (!best) return null;
   const path = [];
@@ -215,7 +229,7 @@ export function shortest(graph, a, b, alt, reach = DEFAULTS.reachNm) {
   }
   return {
     pts: path,
-    nm: bestCost
+    nm: real.get(best.k) + ends.get(best.k)
   };
 }
 
@@ -254,12 +268,17 @@ export function leg(segments, a, b, altFt, opts = {}) {
       nm: direct,
       why
     });
-  if (direct <= S.minNm) return none('short');
   const graph = airwayGraph(segments),
+    onNode = p => graph.nodes.some(n => nm(p, n) < .5),
     // départ ou arrivée loin de tout point du réseau (hors de la couverture des données)
-    far = p => !graph.nodes.some(n => nm(p, n) <= Math.max(S.reachNm, 150));
-  if (far(a) || far(b)) return none('far');
-  const r = shortest(graph, a, b, altFt, S.reachNm);
+    far = p => !graph.nodes.some(n => nm(p, n) <= Math.max(S.reachNm, 150)),
+    short = direct <= S.minNm;
+  // tronçon court : direct, sauf quand ses deux bouts sont des nœuds que relient des voies ouvertes à ce niveau, sans entrée ni
+  // sortie directe et sans détour (« OBLOC R10 VELIN ») : la voie est alors nommée
+  if (short && (!onNode(a) || !onNode(b))) return none('short');
+  if (!short && (far(a) || far(b))) return none('far');
+  const r = shortest(graph, a, b, altFt, short ? .5 : S.reachNm);
+  if (short && (!r || r.pts.some(p => p.via === 'DCT' && nm(p, a) >= .5) || r.nm > direct * (1 + S.detourPct / 100))) return none('short');
   if (r) unify(r.pts);
   const routes = r ? [...new Set(r.pts.map(p => p.via).filter(v => v && v !== 'DCT'))] : [];
   // pas de chemin, ou aucun segment du réseau (entrée et sortie par un même nœud)
@@ -354,9 +373,12 @@ export async function expand(aerodb, chain, opts = {}) {
     },
     pts = (chain || []).filter(p => p && isNum(p.lat) && isNum(p.lon)),
     alt = i => Math.round(+(opts.altOf?.(i) ?? opts.altFt ?? S.ifrMinFt)) || S.ifrMinFt;
-  const wanted = [];
+  // la base n'est lue que si un tronçon long (plus de minNm) en a besoin ; elle sert alors aussi aux courts, qui prennent la voie
+  // reliant leurs deux bouts quand il y en a une (leg) ; une chaîne de tronçons courts seulement ne demande rien
+  let wanted = [];
   for (let i = 0; i < pts.length - 1; i++)
-    if (!opts.skip?.(i) && nm(pts[i], pts[i + 1]) > S.minNm) wanted.push(i);
+    if (!opts.skip?.(i)) wanted.push(i);
+  if (!wanted.some(i => nm(pts[i], pts[i + 1]) > S.minNm)) wanted = [];
   let segments = [];
   if (wanted.length && aerodb?.airways) {
     const sel = [...new Set(wanted.flatMap(i => [i, i + 1]))].map(i => pts[i]);

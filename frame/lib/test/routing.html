@@ -353,6 +353,50 @@
     lat: 45,
     lon: 4.2
   }, 10000).points.map(p => p.id), ['AAA', '4500N00100E', '4500N00400E', 'BBB']);
+  // 28 Oct 2026 (« LFBO … LAVRA OBLOC VELIN LMG … LFPO ne trouve pas LMG VELIN OBLOC par une voie ») : un point posé sur un nœud
+  // suit sa voie au lieu d'entrer en direct au nœud suivant (même longueur : la voie l'emporte) ; un tronçon court dont les deux
+  // bouts sont des nœuds d'une voie la prend, quand la base est lue pour un tronçon long. Positions de R10 (VELIN, NORON, LMG,
+  // OBLOC) sous des codes fictifs.
+  const P = {
+      XVEL: [44.98, .1556],
+      XNOR: [45.4847, .6775],
+      XLMG: [45.8159, 1.0256],
+      XOBL: [44.7958, -.2236],
+      XOFF: [46.1, 1.4]
+    },
+    pt = id => ({
+      id,
+      lat: P[id][0],
+      lon: P[id][1]
+    }),
+    x10 = (a, b) => ({
+      route: 'X10',
+      a: pt(a),
+      b: pt(b),
+      lower: 6500,
+      upper: 19500
+    }),
+    X10 = [x10('XOBL', 'XVEL'), x10('XVEL', 'XNOR'), x10('XNOR', 'XLMG')],
+    via = await R.expand(fakeDb(X10), [pt('XVEL'), pt('XLMG')], {
+      altFt: 15000
+    });
+  check('a point on a node follows its airway (XVEL X10 XNOR X10 XLMG, not a direct entry to XNOR)', [via.legs[0].status, via.points.map(
+    p => `${p.id}:${p.via || ''}`)], ['routed', ['XVEL:', 'XNOR:X10', 'XLMG:X10']]);
+  const mix = await R.expand(fakeDb(X10), [pt('XOBL'), pt('XVEL'), pt('XLMG')], {
+    altFt: 15000
+  });
+  check('a short leg between two nodes takes their airway when the base is read', mix.legs.map(l => [l.status, l.routes.join()]), [
+    ['routed', 'X10'],
+    ['routed', 'X10']
+  ]);
+  const off = await R.expand(fakeDb(X10), [pt('XOBL'), pt('XVEL'), pt('XLMG')], {
+    altFt: 25000
+  });
+  check('  not when the airway is closed at the level (FL250 on a low airway)', off.legs.map(l => l.status), ['short', 'none']);
+  const free = await R.expand(fakeDb(X10), [pt('XOBL'), pt('XVEL'), pt('XLMG'), pt('XOFF')], {
+    altFt: 15000
+  });
+  check('  nor from a point off the network (a short leg stays direct)', free.legs.map(l => l.status), ['routed', 'routed', 'short']);
   document.getElementById('out').innerHTML = `${pass} passed, ${fail} failed\n` + lines.join('\n');
   document.title = `maps — routing bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
   window.__bench = {
