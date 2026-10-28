@@ -267,6 +267,11 @@ def k5(c):
     c.ok(all(x not in clean for x in forms + [pw]), clean, 'the URL-encoded and HTML-escaped forms of a secret are removed too (security review of 28 Oct 2026)')
     c.eq((E.login_result('{"loggedIn":true}')[0], E.login_result('{"loggedIn":false,"errorMessage":"x"}'), E.login_result('x')[0]), (True, (False, 'x'), False),
          'login answers read, never raising', what='login_result')
+    # the real login answer met by the owner's probe (28 Oct 2026): a JSON string holding the object (encoded twice)
+    import json
+    c.eq((E.login_result(json.dumps('{"loggedIn":true}')), E.login_result('[1, 2]')[0], E.login_result('<html>maintenance</html>')),
+         ((True, ''), False, (False, 'réponse non JSON: <html>maintenance</html>')),
+         'JSON encoded twice is read again; another JSON value is an unexpected answer; a non-JSON answer shows its beginning', what='login_result (encoded twice)')
     # the whole flow against a local fake that follows the shapes read on the public login page (POST /fwf-eadbasic/ajaxlogin/ajax_security_check.jspx
     # answering JSON) and a hand-built library: it checks the probe's own logic, not the real site
     pages = {}

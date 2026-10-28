@@ -1017,3 +1017,12 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   licence (read on 28 Oct 2026: free reuse, commercial or not, reproduction, extraction, redistribution, with the source and the date of
   the last update named, the information not altered); the attribution is written in that file. `AIXM4.5_sample.xml` is synthetic
   (fictitious aerodromes and navaids; its header copies the export's shape only), like `XML_SIA_sample.xml`; KSEA CIFP is public domain.
+
+## 28 October 2026 — EAD probe: the login answer encoded twice (the owner's run)
+
+- During the owner's probe run, the login form answered a **JSON string holding the object** (encoded twice), which the probe read as
+  "not logged in". The fix, made in the owner's working folder during that run and left uncommitted, is taken here unchanged:
+  `login_json(body)` reads such a string again, turns another JSON value into `{ errorMessage: "réponse JSON inattendue …" }`, and gives
+  None for a non-JSON body; `login_result` then says "réponse non JSON: " with the first 200 characters (the report's lines all go
+  through `sanitize`, and `finish` refuses to write a report holding a secret); `probe` reads the redirect through it. K6 checks the
+  three answers.

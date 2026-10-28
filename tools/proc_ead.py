@@ -99,12 +99,23 @@ def pick(options, wanted):
     return next((v for v, label in options if rx.search(label) or rx.search(v)), None)
 
 
-def login_result(body):
-    """(connecté, message) d'après la réponse JSON du formulaire de connexion ; jamais d'exception."""
+def login_json(body):
+    """Réponse du formulaire de connexion lue en objet : du JSON encodé deux fois (une chaîne qui contient l'objet) est relu ;
+    une autre valeur (chaîne, liste, nombre) devient { errorMessage: « réponse inattendue … » } ; None si ce n'est pas du JSON."""
     try:
         j = json.loads(body)
+        if isinstance(j, str) and j.lstrip().startswith('{'):
+            j = json.loads(j)
     except ValueError:
-        return False, 'réponse non JSON'
+        return None
+    return j if isinstance(j, dict) else {'errorMessage': 'réponse JSON inattendue: ' + str(j)[:200]}
+
+
+def login_result(body):
+    """(connecté, message) d'après la réponse JSON du formulaire de connexion ; jamais d'exception."""
+    j = login_json(body)
+    if j is None:
+        return False, 'réponse non JSON: ' + body[:200]
     return bool(j.get('loggedIn')), str(j.get('errorMessage') or j.get('redirect') or '')
 
 
@@ -164,10 +175,7 @@ def probe(user, password, state, icao, out):
     say('2. connexion:', 'OUI' if ok else 'NON', '| code', code, '|', msg[:200])
     if not ok:
         return finish(out, rep, s)
-    try:
-        j = json.loads(body)
-    except ValueError:
-        j = {}
+    j = login_json(body) or {}
     home = j.get('redirect') or '/fwf-eadbasic/public/static/home.faces'
     home = urllib.parse.urljoin(HOST, home)
     code, url, body = s.call(home)

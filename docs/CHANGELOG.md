@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **EAD probe: the login answer encoded twice** (`tools/proc_ead.py`; DECISIONS, test K6) — the login form's answer, met as a JSON
+  string holding the object during the owner's run, is read again (`login_json`); another JSON value is named as unexpected, a
+  non-JSON answer shows its beginning in the report (sanitised like every line). Taken from the uncommitted change of the run.
 - **Security review of 28 October: CSP, EAD probe, fixtures** (`tools/csp_policy.py`, `tools/proc_ead.py`, `.gitignore`,
   `frame/aerodb/EAD_BASIC.md`, `frame/aerodb/test/fixtures/SOURCES.md`; DECISIONS, INTEGRATION, tests K6 and K9) — the
   laboratory's hosts get an end date in the code (31 Dec 2026) and ArcGIS Online only the path of the measured service; the
