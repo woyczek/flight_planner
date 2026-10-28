@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: EAD Basic probe, fifth round** (`tools/proc_ead.py`, K6, `frame/aerodb/EAD_BASIC.md` § 6 quinquies) — results are read only from the data table with the announced count (the earlier
+  "rows" were layout tables), every list is sent with its default, the request shape is `@form`, and the State's change event is replayed before searching.
 - **aerodb: EAD Basic probe, fourth round** (`tools/proc_ead.py`, K6, `frame/aerodb/EAD_BASIC.md` § 6 quater) — the report prints the anatomy of each answer and the names of the
   parameters sent, runs a control search and tries four request shapes for the name search (the previous one found nothing on the real screen), keeping the first that returns rows.
 - **aerodb: EAD Basic probe, third round** (`tools/proc_ead.py`, K6, `frame/aerodb/EAD_BASIC.md` § 6 ter) — advanced search opened by partial request, "Document Name" found by its label,

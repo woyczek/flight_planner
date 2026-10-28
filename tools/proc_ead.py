@@ -76,7 +76,7 @@ def parse_forms(markup):
         attrs, body = fm.group(1), fm.group(2)
         get = lambda a, s: (re.search(a + r'\s*=\s*"([^"]*)"', s, re.I) or [None, ''])[1]
         f = {'id': get('id', attrs), 'action': html.unescape(get('action', attrs)), 'method': (get('method', attrs) or 'get').lower(),
-             'fields': {}, 'selects': {}, 'buttons': [], 'checkboxes': []}
+             'fields': {}, 'selects': {}, 'defaults': {}, 'buttons': [], 'checkboxes': []}
         for im in re.finditer(r'(?is)<input\b([^>]*)>', body):
             a = im.group(1)
             name, typ, val = get('name', a), (get('type', a) or 'text').lower(), html.unescape(get('value', a))
@@ -93,6 +93,8 @@ def parse_forms(markup):
             name = get('name', sm.group(1)) or get('id', sm.group(1))
             opts = [(html.unescape(get('value', o.group(1))), text_of(o.group(2))) for o in re.finditer(r'(?is)<option\b([^>]*)>(.*?)</option>', sm.group(2))]
             f['selects'][name] = opts
+            chosen_opt = next((html.unescape(get('value', o.group(1))) for o in re.finditer(r'(?is)<option\b([^>]*)>', sm.group(2)) if re.search(r'\bselected\b', o.group(1), re.I)), None)
+            f['defaults'][name] = chosen_opt if chosen_opt is not None else (opts[0][0] if opts else '')
         forms.append(f)
     return forms
 
@@ -138,6 +140,22 @@ def fields_by_label(markup):
 def pager_text(body):
     """Texte du paginateur PrimeFaces (« Page 1 of 16 », « 1-15 of 1155 ») s'il y en a un."""
     return [text_of(m) for m in re.findall(r'(?is)ui-paginator-current[^>]*>(.*?)</span>', body)][:2]
+
+
+def result_info(body):
+    """(lignes, nombre, message) des RÉSULTATS d'une réponse : lignes du <tbody id=…searchResults_data> seulement (les autres tableaux de la page sont de la mise en page), nombre
+    de « Number of search results: N » et « No data found. » s'ils y sont."""
+    rows, count, msg = [], None, ''
+    for _, frag in partial_updates(body):
+        for m in re.finditer(r'(?is)<tbody\b[^>]*id="[^"]*searchResults_data"[^>]*>(.*?)</tbody>', frag):
+            rows += [r for r in parse_rows('<table><tbody>' + m.group(1) + '</tbody></table>')]
+        t = text_of(frag)
+        c = re.search(r'Number of search results:\s*(\d+)', t)
+        if c:
+            count = int(c.group(1))
+        if 'No data found' in t:
+            msg = 'No data found'
+    return rows, count, msg
 
 
 def describe(body):
@@ -287,12 +305,17 @@ def probe(user, password, state, icao, out, name=None, download=False):
                     chosen[sel] = kind
                     data[sel] = v
                     break
+    for sel, opts in form['selects'].items():
+        if sel not in data:
+            civil = pick(opts, r'^Civil') if re.search(r'Civil', ' '.join(l for _, l in opts)) else None
+            data[sel] = civil if civil is not None else form['defaults'].get(sel, '')          # le navigateur envoie TOUTES les listes
+            chosen[sel] = 'défaut' if civil is None else 'type d\'autorité'
     say('5. choix faits dans les listes:', chosen or 'aucun (voir les options ci-dessus)')
     adv = next((k for k in form['checkboxes'] if re.search(r'advanced', k, re.I)), None)
     btn = next((b for b in form['buttons'] if re.search(r'search|suche|recherche', b['label'] + b['value'] + b['id'], re.I)), form['buttons'][0] if form['buttons'] else None)
     action = urllib.parse.urljoin(url, form['action'] or url)
     hdr = {'Faces-Request': 'partial/ajax', 'X-Requested-With': 'XMLHttpRequest', 'Referer': url}
-    rows_of = lambda body: [r for _, frag in partial_updates(body) for r in parse_rows(frag)]
+    rows_of = lambda body: result_info(body)[0]
     if not btn:
         say('6. aucun bouton de recherche reconnu')
         return finish(out, rep, s)
@@ -316,16 +339,25 @@ def probe(user, password, state, icao, out, name=None, download=False):
 
     last = {'body': ''}
 
-    def search(extra, tag, execute='@all', render='@all'):
+    def search(extra, tag, execute='@form', render='@all'):
         code, body = ajax({**extra, src: src}, tag, src, execute=execute, render=render)
         if rows_of(body):
             last['body'] = body                           # la dernière réponse qui portait des lignes
         return code, body, rows_of(body)
+    st = next((k for k, v in chosen.items() if v == 'État'), None)
+    if st:                                               # le navigateur déclenche un événement à la sélection de l'État : on le rejoue avant de chercher
+        w = st[:-6] if st.endswith('_input') else st
+        for event in ('valueChange', 'change'):
+            code, cb = ajax({}, 'changement_etat', w, event=event, execute=w)
+            ok_ev = '<error' not in cb and 'redirect' not in cb and code == 200
+            say('   sélection de l\'État, événement', event, '->', code, describe(cb)[:260])
+            if ok_ev:
+                break
     code, body, rows = search({}, 'recherche_ajax')
-    say('6. recherche (État + partie AD):', code, len(body), 'octets |', len(rows), 'ligne(s) |', 'paginateur:', pager_text(body) or 'aucun')
+    say('6. recherche (État + partie AD):', code, len(body), 'octets |', len(rows), 'ligne(s) de résultats | nombre annoncé:', result_info(body)[1], result_info(body)[2], '| paginateur:', pager_text(body) or 'aucun')
     say('   réponse:', describe(body))
     say('   paramètres envoyés:', sent_summary(sent['last']))
-    result_ids = [m.group(1) for m in re.finditer(r'(?s)<update id="([^"]*)">\s*<!\[CDATA\[(.*?)\]\]>', body) if '<tr' in m.group(2) and 'ViewState' not in m.group(1) and 'ViewRoot' not in m.group(1)]
+    result_ids = [m.group(1) for m in re.finditer(r'(?s)<update id="([^"]*)">\s*<!\[CDATA\[(.*?)\]\]>', body) if 'searchResults' in m.group(2) and 'ViewState' not in m.group(1)]
     say('   composant(s) portant les lignes:', result_ids or 'aucun identifié')
     hit = lambda r: icao.upper() in ' '.join(r['cells'] + [h for _, h in r['links']]).upper()
     if name:
@@ -346,16 +378,16 @@ def probe(user, password, state, icao, out, name=None, download=False):
             say('   case recherche avancée: aucune dans le formulaire')
         say('   champ « Document Name »:', field or 'INTROUVABLE')
         code, cbody, crows = search({}, 'recherche_apres_bascule')
-        say('   contrôle: la recherche sans nom, après la bascule, rend', len(crows), 'ligne(s) |', describe(cbody)[:300])
+        say('   contrôle: la recherche sans nom, après la bascule, rend', len(crows), 'ligne(s) de résultats, nombre annoncé', result_info(cbody)[1], '|', describe(cbody)[:300])
         if field:
-            variants = [('tout (execute et render @all)', '@all', '@all'), ('formulaire (execute @form, render @all)', '@form', '@all'),
+            variants = [('formulaire (execute @form, render @all)', '@form', '@all'), ('tout (execute et render @all)', '@all', '@all'),
                         ('ciblée (execute champs + bouton, render composants des lignes)', f'{src} {field} {adv}', ' '.join(result_ids) or '@all'),
                         ('ciblée, tout le formulaire', 'mainForm', 'mainForm')]
             use = {'v': variants[0]}
 
             def by_name(text, tag):
                 code, body, rs = search({field: text}, tag, use['v'][1], use['v'][2])
-                say(f'   nom « {text} »:', code, len(rs), 'ligne(s) |', 'paginateur:', pager_text(body) or 'aucun')
+                say(f'   nom « {text} »:', code, len(rs), 'ligne(s) de résultats | nombre annoncé:', result_info(body)[1], result_info(body)[2], '| paginateur:', pager_text(body) or 'aucun')
                 if not rs:
                     say('      réponse:', describe(body)[:400])
                 return rs

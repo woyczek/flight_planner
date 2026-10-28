@@ -232,3 +232,21 @@ no name, after the box was opened) tells whether opening the box itself broke th
 **If it still finds nothing — the most reliable help** is the browser's own request, once, for the same search: in the browser's developer tools (F12), tab *Network*, keep
 the log, fill *Advanced Search / Document Name* with `EG_AD_2_EGLL`, press *Search*, click the `aip_overview.faces` request (method POST) and copy its **Form Data** (the
 list of `name: value`), **replacing the value of `javax.faces.ViewState` by `x`**; no cookie, no header, no password is needed. That list is what the probe must reproduce.
+
+## 6 quinquies. The probe, fifth round (28 October 2026): what the fourth run's report proved
+
+**The "65" and "68 rows" were not results.** They were the `<tr>` of the page's own layout tables (the lists' options: "Albania (LA)", "Armenia (UD)"…, the labels
+"Effective Date", "Document Name"…). The real answer, at the end of the same report: **"Number of search results: 0 — No data found."** So no search of the previous runs
+ever ran as the browser's does, the plain one (State + AD) included; and opening the advanced box with `execute=@all` ended in the server's error page
+(`error.faces?msg=http.error.unknown`). What the report did prove: the data table is `mainForm:searchResults` (its parameter `searchResults_selection` is sent), and the
+request shape `execute=@form` is accepted (it answered a full page where `@all` answered an error).
+
+**Changes, from that evidence:**
+- **results are read only from the data table** (`<tbody id="…searchResults_data">`) and the announced count ("Number of search results: N" / "No data found.") is printed
+  with every search: a layout table can no longer pass for results, and the enumeration of exact names now runs when the count is zero;
+- **every list is sent, as the browser does**: those the probe does not choose get their default (or *Civil* for the authority type; the previous requests lacked
+  `selectAuthorityType_input`); the first request shape is now `execute=@form` (PrimeFaces' default for a command button);
+- **the State selection's own event is replayed** (`valueChange`, then `change`) before searching, since the lists are linked server-side, and its answer is described.
+
+**Still asked of the owner if this fails**: the browser's own requests, as in § 6 quater, for the three steps — choosing *United Kingdom*, ticking *Advanced Search*, then *Search*
+with a Document Name — each request's Form Data (`javax.faces.ViewState` replaced by `x`). They settle what the probe cannot guess.

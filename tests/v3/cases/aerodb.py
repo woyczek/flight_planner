@@ -331,11 +331,13 @@ def k5(c):
                     return
                 docs = ['EG_AD_2_EGLL_6-1_en.pdf', 'EG_AD_2_EGLL_7-1_en.pdf', 'EG_AD_2_EGKK_6-1_en.pdf']
                 pick = [d for d in docs if name in d] if name else docs      # « contient » : ce que le vrai champ fait est précisément ce que la sonde doit apprendre
-                if name and q.get('javax.faces.partial.execute') == ['@all']:
-                    pick = []                                                # imite le vrai site, qui ne rend rien pour une exécution « @all » avec un nom (rapport du 28 octobre)
+                if name and q.get('javax.faces.partial.execute') == ['@form']:
+                    pick = []                                                # un premier type de requête qui ne rend rien : la sonde doit en essayer un autre
                 rows = ''.join('<tr data-ri="%d"><td>2026-01-22</td><td>%s</td><td></td><td>NON-AIRAC</td><td>AD 2 chart %d</td><td><button id="mainForm:results:%d:dl" name="mainForm:dl0" type="submit">▶</button></td></tr>' % (i, d, i, i)
                                for i, d in enumerate(pick))
-                self._send(head + '<update id="mainForm:results"><![CDATA[<table><tbody>' + rows + '</tbody></table><span class="ui-paginator-current">Page 1 of 1</span>]]></update>' + tail, 'text/xml')
+                layout = '<table><tbody><tr><td>Albania (LA)</td></tr><tr><td>Belgium (EB)</td></tr></tbody></table>'      # tableaux de mise en page : ne sont pas des résultats
+                self._send(head + '<update id="mainForm:results"><![CDATA[' + layout + '<table><tbody id="mainForm:searchResults_data" class="ui-datatable-data">' + rows + '</tbody></table>'
+                           '<div>Number of search results: %d</div><span class="ui-paginator-current">Page 1 of 1</span>]]></update>' % len(pick) + tail, 'text/xml')
     srv = http.server.HTTPServer(('127.0.0.1', 0), H)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     try:
@@ -348,10 +350,11 @@ def k5(c):
             rep = (Path(td) / 'report.txt').read_text(encoding='utf-8')
             allfiles = '\n'.join(p.read_text(encoding='utf-8') for p in Path(td).iterdir())
             c.ok('connexion: OUI' in rep and 'bibliothèque AIP' in rep, rep, 'login and library found')
-            c.ok('recherche (État + partie AD): 200' in rep and '3 ligne(s)' in rep and "paginateur: ['Page 1 of 1']" in rep, rep, 'the plain search read three rows and the pager')
-            c.ok("champ « Document Name »: mainForm:docName" in rep and 'nom « EG_AD_2_EGLL »' in rep and '2 ligne(s)' in rep, rep,
+            c.ok('recherche (État + partie AD): 200' in rep and '3 ligne(s) de résultats | nombre annoncé: 3' in rep and "paginateur: ['Page 1 of 1']" in rep, rep,
+                 'the plain search read three result rows (the layout tables are not counted) and the announced number')
+            c.ok("champ « Document Name »: mainForm:docName" in rep and 'nom « EG_AD_2_EGLL »' in rep and '2 ligne(s) de résultats' in rep, rep,
                  'the advanced box opened the fields, Document Name found by its label, two rows for the prefix')
-            c.ok('variante tout (execute et render @all) -> 0 ligne(s)' in rep and 'variante formulaire (execute @form, render @all) -> 2 ligne(s)' in rep, rep,
+            c.ok('variante formulaire (execute @form, render @all) -> 0 ligne(s)' in rep and 'variante tout (execute et render @all) -> 2 ligne(s)' in rep, rep,
                  'the first request shape finds nothing, the second one finds the two rows, and the probe keeps it')
             c.ok('« contient »' in rep, rep, 'the probe says whether the name field is "contains" or "starts with"')
             c.ok("{'mainForm:auth': 'État', 'mainForm:part': 'partie'}" in rep, rep, 'the State and the AD part were chosen in the lists')

@@ -1052,3 +1052,10 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Cause not known** (answer not printed). Hypotheses: the request shape (`execute=@all` with a filter), the fields added by the box (empty date field), the renewed
   page state. **Done**: answer anatomy and sent parameter names printed, a control search, four request shapes tried in turn, the first that works kept; and a request to
   the owner for the browser's own Form Data if this fails too. Test K6: the fake now refuses the `@all` shape for a name, so the test proves the probe switches shape.
+
+## 28 October 2026 — probe, fifth round (the previous "rows" were layout tables)
+
+- **Evidence** (owner's run of round four): "Number of search results: 0 — No data found." under 68 "rows" that are the page's layout tables; the advanced box with
+  `execute=@all` gives the server's error page; `execute=@form` is accepted; the data table is `mainForm:searchResults`.
+- **Done**: results read from the `searchResults_data` body only, the announced count printed, all lists sent (defaults; *Civil*), `@form` first, the State's change event replayed.
+  Lesson for the probe: never count rows without naming the table they come from.
