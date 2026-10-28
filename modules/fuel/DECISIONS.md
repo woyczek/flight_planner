@@ -4,6 +4,9 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **28 Oct 2026 — `quote.taxiMin`** (Simplification, with `quote.legs`): the taxi minutes the quote counts are written
+  beside `legs` (which starts at brake release), so the frame's ETA helpers need not guess them (their fallback: 10
+  min). Checked on 8804: `taxiMin: 10` with the legs.
 - **28 Oct 2026 — the `h1` follows `ctx.titled`** (frame lot 25, INTEGRATION § 6): while the phone's header carries
   the module's title (`ctx.titled`), the module's `h1` gets `f-sr` (screen readers only), toggled again on every
   `frame-titled` event; the listener goes at unmount. Checked on 8804 at 375 px.

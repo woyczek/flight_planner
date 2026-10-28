@@ -161,12 +161,14 @@ report and maps never write nor erase it.
   longer written: `planned_at` above; `mid`,
   the former intermediate aerodrome, is no longer written nor read: the corridor's aerodromes replace it); `windSource`: `{ kind: 'weather', ids: ['LFBO (TAF)', …] }` when the wind came from it, else
   null.
-- `quote` (fuel's): `{ block, trip, unit ('kg' | 'lb', the sheet's), minutes, levelFt, approx, legs }` — the quote's
+- `quote` (fuel's): `{ block, trip, unit ('kg' | 'lb', the sheet's), minutes, levelFt, approx, taxiMin, legs }` — the quote's
   block fuel and trip, rounded, rewritten with every quote that changes them (null without a quote with fuel); Report
   fills "fuel at start" with `block`. **`legs`** (28 Oct 2026, for the recoded Map): `[{ id, min }]`, one per route
   point in order, `min` = minutes from brake release (taxi apart: the quote settings' `taxiMin`) to that point, to a tenth
   — the quote's own timetable (climb, cruise by leg with its wind, descent; `progress.js` `plan` / `etas`), the departure
-  at 0; `null` without a route of two points or more.
+  at 0; `null` without a route of two points or more. **`taxiMin`** (28 Oct 2026): the taxi minutes the quote counts
+  (the quote settings' `taxiMin`), written beside `legs`: the frame's helpers (`etaOf`, `plannedPositionAt`) add it to
+  `started.at` / `planned_at` before `legs` (fallback 10 min without it).
 - `progress` (fuel's, lot H): `{ at, plannedPos { lat, lon, legIndex, nmFromDep }, eta [{ id, at }], fuelRemainingKg,
   remainingNm, phase ('taxi' | 'climb' | 'cruise' | 'descent' | 'arrived'), actual? }` — the planned progress of the
   started flight, written at most once a minute while it flies (at once on a phase change, a cancelled start or a
