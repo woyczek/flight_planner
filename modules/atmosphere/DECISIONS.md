@@ -2,6 +2,85 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 30 October 2026 — lots 0 and 1 rebased on `v3`, the ergonomics session's answers
+
+- **Rebase** (ergonomics session, 30 Oct: "rebase tes trois commits … sur la tête d'origin/v3 … jamais en forcé"):
+  the three commits (help anchors, lot 0, lot 1) replayed on `v3` `ddfee4bc`, whose history was rewritten on 28 October
+  (same content, other SHAs). Pushed on GitHub under a new branch, `feature/atmosphere-route-v3` (the old branch would
+  have needed a forced push); the ergonomics session fast-forwards `v3`.
+- **What `v3` had added since** (`c9c63968`, 30 Oct, user's requests of 29 Oct), carried into the final-state SPEC and
+  into the recode: the Layers **panel over the map** (the cut stays in view and follows each box; one tap, one
+  toggle); the cut on **Fuel's vertical path** (`profile.path`) and times at the **ground speed** (headwind read on the
+  path); a flight **dated before today** read from the day of its departure; the slider's fixed-width text, ⚠ and the
+  band of covered hours; the departure with its day; the model chosen at `routeMidpoint` (same point as the Map);
+  "World synoptic · run hh:mmZ" while its step is read, and the cut's title kept when the sheet is expanded. Tests
+  E10–E12 are `v3`'s; the help test of rule 16 becomes E13.
+- **Answers to the open points of lot 0** (ergonomics session, 30 Oct): **6** yes — file and route text at the Full
+  level only; **7** yes — the "Data" choice is removed, the frame's weather layer is the only source; **14** yes — the
+  zoom window is not shared with the Map (no event between modules), but the cut's zoom gesture is the Map's (same
+  controls, same frame of reference). Written in the SPEC; the code follows in the next lot. The thirteen other points
+  are answered at integration. **Gap § 14** (cost estimate before "Load"): rule to write in the SPEC, next lot.
+
+## 28 October 2026 (afternoon) — recode from the specs, lot 0: the SPEC as final state, open points
+
+- **The decision** (user, relayed by the ergonomics session, 28 Oct): the work of 24–27 October is a completed proof of
+  concept; Atmosphere is recoded in full from its specs with the stable V3 methods (rule 19's method). Kept as bricks:
+  `lib/weather_map.js`, `section.js` (its API reviewed below), `tools/build_world_weather.py` and `tools/grib2_lite.py`.
+  Recoded from a blank file: `module.js`, the screen, the sheet, the gestures (`world.js` if needed). Removed:
+  `weather_store.js` — the frame delivers the single weather layer (`ctx.weather`, frame lot 26, contract in
+  `frame/INTEGRATION.md` § 14). Freeze: no new weather function until lot 1.
+- **Channel**: cloud sessions cannot message the ergonomics session; the SHAs of this module's lots are given on GitHub,
+  branch `feature/atmosphere-route` rebased on `v3` (its head is the lot to integrate), and written here. Lot "help"
+  (rule 16): `aa6e5717` on `v3` 632a0ea0. Lot 0: the head of the branch after it.
+- **Lot 0**: `SPEC.md` rewritten as the final state (rules 1–21 applied, no dated amendment; the world synoptic § 5, the
+  sources § 7). **Open points, with a proposal each, for the ergonomics session to settle:**
+  1. *SPEC said "mock-up, level 3", "portrait only"*: contradicted by rule 14 (own tab, level 1) and rule 7 (landscape
+     column, done). Written as level 1 with landscape. — Nothing to settle unless you object.
+  2. *SPEC § 4 said "no border with the flight's grid"*: rule 12 amended says the thin line by default. Written as the
+     rule; fills from the world on both sides, lines and barbs blended (as built). — Confirm.
+  3. *SPEC said ◀ ▶ "when they mean something" and "i" = Details*: rule 13 (fourth refinement) and rule 14 say three
+     chips always (◀ ▶ i, disabled when empty), "i" = legend, Details = list icon. Written as the rules.
+  4. *V3_SPECIFICATION § 8 contradicts itself on the world synoptic*: its first paragraph says a 15° mesh to +24 h, its
+     "as built" paragraph 5° to +72 h (the publication is 5° / +72 h). Proposal: amend the first paragraph (your
+     document).
+  5. *Sources table said "today and tomorrow"* while the slider reaches +72 h and Load reads every day it can reach.
+     Written as +72 h. — Needs `ctx.weather` to read a range of days in one load (point 9).
+  6. *Flight sources "file" and "route text"* (mock-up era, for the visit only): useful for testing, foreign to a pilot
+     who has Fuel. Proposal: keep the current flight and "See the example" for everyone; the file and the route text
+     at the Full level only (frame levels). Written as today (all four) until you settle.
+  7. *The "Data" choice (forecast / offline demonstration) in Flight and settings* duplicates `?donnees=demo` and "See
+     the example". Proposal: remove the choice from the form; the address and the example stay. Grid size (35 / 48 / 96)
+     and cruise speed: Full level only, cruise speed read from Fuel's flight when it has one.
+  8. *Status line (frame lot 25, `cache/<module>/status.json`)*: Atmosphere has no pending action to report. Proposal:
+     none for now; later "forecast older than the run" if the user wants it.
+  9. *`ctx.weather` contract (§ 14, to be published) — what Atmosphere needs from it*: (a) cache-only reads (nothing asked
+     at opening) and a `cost(request)` that says the weighted calls of what is missing, for "Load (≈ n calls)"; (b) a
+     range of days per load; (c) the answer in the shape the bricks already read — Open-Meteo-shaped locations
+     `{ latitude, longitude, elevation, hourly: { time, <variable>: [] } }` (what `section.js`, `weather_map.js`,
+     `atmo.js` and `fuel/winds.js` read; `world.js` already converts the world steps to it); (d) the model run of each
+     answer (the head names it) and the model by region (`modelFor`, today in `fuel/winds.js`, imported by `atmo.js`):
+     which of the frame or Fuel owns it; (e) METAR and TAF with their time; (f) the world: index and steps, the
+     pressure-level file on demand; (g) the quota tally shown in Réglages › Diagnostics, not in this module.
+  10. *The demonstration* (`demo.js`): the weather layer has no demonstration source. Proposal: it stays in the module,
+      answers in the same shape, and is never written to the shared cache.
+  11. *`lib/weather_map.js` imports `weather_store.js`* (it reads the flight's grid itself when the host passes none, as
+      the Map does) and `world.js`: the brick must switch to `ctx.weather` in lot 1, its API unchanged (`ctx` is already
+      an option). The Map imports `weather_store.js` for its cut and must switch too (Map lot, same contract).
+  12. *`section.js` API* holds: `drawSection(el, o)` / `sectionSvg(model, o)` with `window`, `sectionLegend`,
+      `sectionModel`, `soundingSvg`, the geometry; `sectionPlaces` / `sectionVars` describe what the cut needs and
+      become the request given to `ctx.weather.aloft`. No change proposed.
+  13. *Files ≤ 60 KB loaded on demand*: proposal — `module.js` (meta, state, mount, wiring), `screen_map.js` (MapLibre,
+      overlay, taps, altitude chip), `screen_sheet.js` (head, chips, legend, slider, zoom), `screen_cut.js` (cross-section
+      and sounding), and on demand `screen_details.js` (summary, aerodromes, table), `screen_flight.js` (flight sources,
+      settings), `screen_layers.js`; `texts.js` split per screen if it passes 60 KB.
+  14. *The zoom window is not shared with the Map* (separate screens, page-life only; the Map shares one window between
+      its profile and its cut). — Confirm.
+  15. *The flight's date*: Fuel no longer writes `weather.when` (`planned_at` is the only date, `modules/fuel/INTEGRATION.md`
+      § 3, 28 Oct); the SPEC reads `planned_at`, else now; the recode drops the `weather.when` fallback.
+  16. *Parity gate*: zone E (E1–E10), J1 (P1 journey), the benches `test/weather_map.html` and
+      `test/weather_map_perf.html` (`test/weather_store.html` goes with the store), and screenshots at 390 and 1280, five
+      designs, day and night, against the current version; differences listed with their rule.
+
 ## 28 October 2026 — the frame's "?" opens the Weather chapter (rule 16)
 
 - **The request** (ergonomics session, through the relay): the chapter existed (`help/<lang>.md`, assembled into
