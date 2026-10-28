@@ -943,6 +943,7 @@ function onInput(e) {
   const [path, v] = readControl(el);
   M.set(S.m, path, v);
   delete S.sources[path];
+  if (S.tzOrigin?.[path]) delete S.tzOrigin[path]; // heure d'un ancien CR retouchée : « saisi … locale » ne la décrit plus
   saveDraft();
   if (path === 'series' && e.type === 'change') return render();
   check();

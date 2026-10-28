@@ -63,6 +63,11 @@ what is missing is said in the Result step, never blocking.
   four languages), followed, for an older report, by the times entered in the device's time ("Take-off entered 18:30
   local"). It disappears when nothing is prefilled. The line is a plain text, readable on a touch screen (a coloured dot
   with a `title` was rejected for that reason, see DECISIONS).
+- **V2's rule amended** (28 Oct 2026, Simplification, on every width): V2 showed each prefilled field's source in its
+  label until the field was edited; V3 names the sources once per card, in that line. A field edited by hand leaves the
+  line (its source is forgotten, as in V2). "Entered 18:30 local" of an older report stays in the line for each converted
+  time **until that field is edited or the report is saved** (then the time is the pilot's, or written in UTC): it is the
+  only place where the time as it was entered remains visible.
 
 ## 3. Saving
 

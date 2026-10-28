@@ -81,7 +81,8 @@ empty fields, and removes it.
   take-off, zone, mission, landing, on-block, shutdown) are UTC "HH:MM", and `metadata.date` is the UTC day of a new
   report. The fields say "(Z)".
 - A report without the marker (V2, older V3) has the device's times. Report shows them converted to UTC (the report's
-  date as the day, summer time included) with "entered 18:30 local" under each field, and rewrites them in UTC with
+  date as the day, summer time included) with "entered 18:30 local" in the card's provenance line for each converted time
+  (until that field is edited or the report saved; SPEC § 2 bis), and rewrites them in UTC with
   the marker only when the report is saved; nothing is migrated in bulk. Its `metadata.date` never changes (it is part
   of the V2 registry key: family | number | date).
 - The imports fill in UTC: the started flight (`started.at`), the network (IVAO / VATSIM, `text_import.apply` with
