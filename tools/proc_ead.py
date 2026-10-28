@@ -149,7 +149,8 @@ def result_info(body):
     rows, count, msg = [], None, ''
     for _, frag in partial_updates(body):
         for m in re.finditer(r'(?is)<tbody\b[^>]*id="[^"]*searchResults_data"[^>]*>(.*?)</tbody>', frag):
-            rows += [r for r in parse_rows('<table><tbody>' + m.group(1) + '</tbody></table>')]
+            # la ligne « No data found. » d'un tableau vide n'est pas un résultat (vue le 28 octobre 2026 : elle précédait les vraies lignes, d'où un document au nom vide)
+            rows += [r for r in parse_rows('<table><tbody>' + m.group(1) + '</tbody></table>') if not (len(r['cells']) == 1 and r['cells'][0].startswith('No data found'))]
         t = text_of(frag)
         c = re.search(r'Number of search results:\s*(\d+)', t)
         if c:
