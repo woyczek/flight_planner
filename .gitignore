@@ -56,3 +56,6 @@ ead_survey/
 ead_udsg/
 ead_fetch/
 proc_work/
+
+# identifiant EAD Basic du poste (jamais dans le dépôt)
+pass

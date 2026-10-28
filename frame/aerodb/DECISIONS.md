@@ -1142,16 +1142,50 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Decision**: `--fetch <ICAO>` (one aerodrome, on demand) and `--survey` (one line per State, one classified sample) in `tools/proc_ead.py`; a State is parsed only after its layout is seen in the survey; unknown or
   vector layouts are reported, never guessed. Test K12 (hand-built fake library). The launcher button comes next.
 
+## 28 Oct 2026 — OCR included, as the second optional dependency
+
+- **Word of the user**: « OCR inclus ».
+- **Decision**: OCR (`pypdfium2` + Tesseract or `rapidocr-onnxruntime`) is an optional dependency of the workstation builders only, after `pypdf`; never the launcher, never a page; a clear message when missing.
+- **Done**: `tools/proc_ocr.py` (render, OCR, rows, existing layout detection and parsers); output `<ICAO>.ocr.json` installed only by `tools/proc_manual.py` after its geometry gate (source prefixed `ocr:`). Real trial: 5-10 s per page, 300 dpi or more needed. K14.
+- **Open**: engine choice (rapidocr proven, Tesseract untried); installing the scratch environment's packages in the workstation Python.
+
+## 28 Oct 2026 — cheaper agents for the lots
+
+- **Word of the user**: « Tu pop des agents low cost dès que possible pour limiter les crédits ».
+- **Decision**: well-specified lots (documentation, mechanical edits, tests) are delegated to cheaper agents as early as possible; the main session keeps design and verification.
+- **Done**: this lot's documentation was written by such an agent.
+
+## 28 Oct 2026 — layouts through OCR and by text, survey of 8 States
+
+- **Done**: `uk-star` (UK STARs of EGLL: 18 tables, 79 legs, 0 rejected, same 61 TF legs as the hand transcription, now automatic), `at-coding` (LOWG: 2 tables per page, 0 rejected) and `de-route` (German textual route tables, no co-ordinates, counts checked instead of geometry); K15, K16, K17. Survey records extended (`rows_head`, alternative keywords for States with non-English headings such as France, `sample_any`).
+- **Survey of 8 States**: LA image, UD text, LO vector, UB drawn chart with no table, EB vector with a not-yet-parsed ARINC table, EG text + vector, ED text, LF 0 hits (alternative keywords added).
+- **Decision**: charts without a table (image-only, e.g. LA, UB, Albania) are skipped: OCR reads tables, not chart drawings.
+- **Open**: survey of all 47 authorities (needs the owner's credentials at the prompt); EB's degrees-minutes table; the fly-over flag is not read by OCR (left empty with a warning).
+
+## 28 Oct 2026 — survey of all 47 authorities, whole-document reading
+
+- **Word of the user**: survey run by the owner on every authority of EAD Basic, one sample per State, delay 1 s.
+- **Decision**: a State is parsed only when its layout is seen; charts-only, image-only and prose States are listed, not parsed (nothing the geometry gate can check); France comes from the SIA's own eAIP (the EAD sample is an older edition); unsigned altitudes of `de-route` tables are typed "min" when the header says Minimum altitude (session choice, to confirm).
+- **Done**: 14 States read (5 new layouts or extensions: K15, K17, K18, K19, K20), 2 with vector tables, 16 charts only, 2 image only, 7 prose, 1 outdated edition, 5 nothing obtained; all pages of every PDF read; waypoint lists fill co-ordinates; the gate also covers a leg without a printed true course. `python tests/v3/run.py --grep K`: 19 cases pass.
+- **Open**: OCR engine and its installation in the workstation Python; OCR of the two vector-table States (same gate); States to skip; the Settings › Maintenance button; the "min" choice.
+
+## 28 Oct 2026 — OCR installed, Belgian and Georgian tables read
+
+- **Word of the user**: « Oui, OCR EB et UG ».
+- **Decision**: `pypdfium2` and `rapidocr-onnxruntime` are installed in the workstation Python 3.14.7 (`rapidocr-onnxruntime` 1.2.3; Tesseract absent); EB and UG tables are read through OCR with the same geometry gate; `--fetch` runs the OCR pass by itself on documents whose pages are all unknown and drawn.
+- **Done**: layouts `be-coding` (ARINC coding table in vectors, no distance nor magnetic course; its "WAYPOINTS COORDINATES" list in degrees and decimal minutes is read by `be_coords`, also used by `waypoint_coords`) and `ge-coding` (one-line legs, degrees-minutes-seconds; holding table left out by design); `read_document` re-reads a page at 300, 500 then 200 dpi while it is not fully read and keeps the best reading; `OCR_LAYOUTS` lists the 7 layouts readable through OCR; `ocr_pass` in `--fetch`. Results: 2 Belgian APP tables (10 legs each, 20 of 20 points resolved), 2 Georgian APP tables (2 legs each), gate clean, installed in the private data repository (cycle 2026-10-01). K14 extended, 19 K cases pass.
+- **Open**: single-letter cells (fly-over, turn) are lost by the OCR, so `over` and `turn` stay `None`; the gate checks true courses and printed distances only, not altitude nor speed; points come from the OCR, not from an official base; installing the UK and Austrian OCR files in `data/proc`; commit of `data/proc` in the data repository; Settings › Maintenance button; States to skip.
+
 ## 28 October 2026 — integration of the cloud session's EAD lot (branch `v3-aerodb-proc-15`), with the review's fixes
 
 - Reviewed by the aerodb session and the security session; integrated as four commits by subject on `v3-aerodb-ead` (probe and library;
   coding pages, format check, UK tables and geometry; manual interpretations; per-State survey and fetch), rebased on v3 with its K8 / K9
-  (the stream readers). `frame/aerodb/LOCAL_SESSION_PROMPT.md` stays on the cloud branch (a session brief, not a document of the module).
+  (the stream readers). Then, at the ergonomics session's word, the local session's
+  lots up to `aa0aa2047` (OCR, survey of the 47 authorities, nine layouts) as a fifth commit, with the same fixes (`proc_ocr.py`: reading under
+  `OCR_TIMEOUT`, `--icao` checked). `frame/aerodb/LOCAL_SESSION_PROMPT.md` stays on the cloud branch (a session brief, not a document of the module).
 - **Fixes made at integration**: `tools/proc_manual.py` never overwrites another source's file (refused without `--replace`, merged by id
   keeping the best status with it; K11); `EadLibrary` never waits less than 1 s between requests (`MIN_DELAY`; K12); `survey.json` and
   `survey.txt` go through `sanitize` with the user name and password (K12); `--icao`, `--fetch` and the manual file name are checked
   against `^[A-Z0-9]{4}$` before they name a file (K12); every document is read by pypdf in a separate process, `PDF_TIMEOUT` = 60 s,
   a document past the limit or unreadable reported as not read without stopping the tool (`proc_eaip.limited`, `pdf_pages`, `pdf_kind`;
   K10); "his" → "their" in this file and in `EAD_BASIC.md`.
-- **Open, for the user**: the terms of EAD Basic on automated access (`--survey all` stays a one-off run by hand, never scheduled), and a line
-  "EAD Basic → the States' AIPs" in `LICENSE.md` § 5 for the UK and Armenian data kept in the private data repository; OCR.

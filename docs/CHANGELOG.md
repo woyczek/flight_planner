@@ -12,6 +12,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: OCR of drawn pages, survey of the 47 EAD Basic authorities, whole-document reading, nine layouts** (`tools/proc_ocr.py` new,
+  `tools/proc_eaip.py`, `tools/proc_ead.py`; `frame/aerodb/EAD_BASIC.md` § 7 to 9, DECISIONS; tests K12, K14 to K20, `.gitignore`) — pages
+  without a text layer are rendered (`pypdfium2`) and read by OCR (Tesseract or `rapidocr-onnxruntime`, optional, workstation builders only,
+  the user's decision), re-read at 300, 500 then 200 dpi, regrouped into rows and passed to the usual parsers; the result `<ICAO>.ocr.json`
+  is installed only by `tools/proc_manual.py` after its geometry gate, and `--fetch` runs this OCR pass on drawn documents. Every page of
+  every PDF is read (the table is often on page 2 or later), co-ordinate lists in five printed forms fill the points of tables without
+  co-ordinates before the gate, a leg without a printed true course is checked from its magnetic course or its distance. Layouts `uk-star`
+  (EGLL's 18 STARs, now automatic), `at-coding`, `de-route`, `icao-tab`, `ei-coding`, `be-coding`, `ge-coding` join `sia-code`, `uk-app` and
+  `am-coding`; the survey of the 47 authorities (one sample per State, 1 s apart) reads 14 States, lists the others (charts only, image
+  only, prose, vector tables). Single-letter cells (fly-over, turn) are not read by the OCR. Each document is rendered and read under a time
+  limit (`OCR_TIMEOUT`, 10 min).
 - **aerodb: EAD Basic per-State survey, on-demand fetch of one aerodrome, Armenian coding tables** (`tools/proc_ead.py --survey /
   --fetch`, `tools/proc_eaip.py` `classify_pdf` / `am-coding`; `frame/aerodb/EAD_BASIC.md` § 6 terdecies, DECISIONS; tests K12, K13,
   `.gitignore`) — one command counts, for every authority, the coding / departure / arrival / approach charts and classifies one

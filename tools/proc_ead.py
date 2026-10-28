@@ -463,6 +463,8 @@ def probe(user, password, state, icao, out, name=None, download=False, aip_type=
 SELECT_KINDS = [('authority', r'AuthorityCode', r'Albania|Belgium|France'), ('atype', r'AuthorityType', r'Civil'), ('lang', r'Language', r'^EN$'),
                 ('type', r'AipType', r'AMDT'), ('part', r'AipPart', r'ENR')]
 SURVEY_KEYS = {'CODING': 'CODING', 'SID': 'DEPARTURE', 'STAR': 'ARRIVAL', 'IAP': 'APPROACH'}
+# intitulés français (AIP de la France…) cherchés quand aucun des quatre mots anglais ne donne rien
+ALT_KEYS = ['SID', 'STAR', 'IAC', 'RNAV', 'CODAGE', 'ARRIVEE', 'DEPART', 'APPROCHE']
 SHAPES = [('mainForm', 'mainForm'), ('@form', '@all'), ('@all', '@all')]
 MIN_DELAY = 1.0  # secondes au moins entre deux requêtes de la bibliothèque (conditions d'accès automatisé inconnues : EAD_BASIC.md § 1)
 ICAO_RE = re.compile(r'^[A-Z0-9]{4}$')  # un code OACI : entre dans un nom de fichier (cache, interprétation manuelle), jamais un chemin
@@ -619,9 +621,17 @@ def row_summary(row):
     return name, title[:100]
 
 
+def alt_text(rec):
+    """Fin de ligne du relevé : les mots-clés français qui ont répondu (vide si aucun)."""
+    hits = {k: v for k, v in (rec.get('alt_keys') or {}).items() if v}
+    return f' | alt {hits}' if hits else ''
+
+
 def survey_state(lib, st, cache, say):
     """Relevé d'UN État (voir `survey`) ; rend sa fiche."""
     rec = {'state': st}
+    # libellé de l'option d'autorité choisie (la clé 'XX' d'un État dont les fichiers portent un autre préfixe : le libellé dit de quelle autorité il s'agit, rien n'est deviné)
+    rec['label'] = next((l.strip() for v, l in lib.opts.get('authority', []) if v == st or l.strip() == st or l.strip().endswith(f'({st})')), None)
     if not lib.authority(st):
         rec['error'] = 'autorité non proposée'
         say(f'{st}: autorité non proposée')
@@ -638,18 +648,29 @@ def survey_state(lib, st, cache, say):
         rows_for[k] = r['rows']
         rec['sample_' + k] = [row_summary(x) for x in r['rows'][:3]]
     pick = next(((k, rows_for[k][0]) for k in ('CODING', 'STAR', 'SID') if rows_for[k]), None)
+    if not any(rec[k] for k in SURVEY_KEYS) and rec['charts_ad'] > 0:
+        # vocabulaire français : on compte chaque mot-clé de ALT_KEYS ; le premier qui répond fournit l'échantillon (et le document à lire si rien d'autre n'a été trouvé)
+        alt_rows = {kw: lib.search(heading=kw) for kw in ALT_KEYS}
+        rec['alt_keys'] = {kw: r['count'] for kw, r in alt_rows.items()}
+        first = next((kw for kw in ALT_KEYS if alt_rows[kw]['rows']), None)
+        if first:
+            rec['sample_alt'] = [row_summary(x) for x in alt_rows[first]['rows'][:3]]
+            if not pick:
+                pick = (first, alt_rows[first]['rows'][0])
+    rec['sample_any'] = [row_summary(x) for x in lib.search(name='AD_2_')['rows'][:5]]     # vocabulaire de l'État, même quand aucun mot-clé ne répond
     if pick:
         name, title = row_summary(pick[1])
         raw = lib.fetch(pick[1])
         if raw:
             f = cache / (re.sub(r'[^A-Za-z0-9._-]+', '_', name)[:80] or 'doc')
             f.write_bytes(raw)
-            rec['document'] = {'from': pick[0], 'name': name, 'title': title, **classify_name(f)}
+            cls = classify_name(f)
+            rec['document'] = {'from': pick[0], 'name': name, 'title': title, **cls, 'rows_head': safe_rows(f, cls.get('table_page') or 1)[:30]}   # rows_head: étudier la disposition sans retélécharger (survey.json local seulement)
         else:
             rec['document'] = {'from': pick[0], 'name': name, 'error': 'téléchargement impossible', 'row_cells': [c[:60] for c in pick[1]['cells']],
                                'row_links': [h[:80] for l, h in pick[1]['links']], 'row_buttons': len(pick[1]['buttons'])}
     d = rec.get('document') or {}
-    say(f'{st}: AD {rec["aip_ad"]} | cartes {rec["charts_ad"]} | CODING {rec["CODING"]} SID {rec["SID"]} STAR {rec["STAR"]} IAP {rec["IAP"]} | doc: {d.get("name", "-")} -> {d.get("kind", d.get("error", "-"))} {d.get("layout") or ""} {d.get("row_cells", "")} {d.get("row_links", "")} {d.get("row_buttons", "")}')
+    say(f'{st}: AD {rec["aip_ad"]} | cartes {rec["charts_ad"]} | CODING {rec["CODING"]} SID {rec["SID"]} STAR {rec["STAR"]} IAP {rec["IAP"]} | doc: {d.get("name", "-")} -> {d.get("kind", d.get("error", "-"))} {d.get("layout") or ""} {d.get("row_cells", "")} {d.get("row_links", "")} {d.get("row_buttons", "")}' + alt_text(rec))
     return rec
 
 
@@ -677,7 +698,7 @@ def survey(lib, states, out, say=print):
     keep(outdir / 'survey.json', json.dumps(res, ensure_ascii=False, indent=1))
     keep(outdir / 'survey.txt', '\n'.join(
         f'{r["state"]} | AD {r.get("aip_ad", "-")} | cartes {r.get("charts_ad", "-")} | CODING {r.get("CODING", "-")} SID {r.get("SID", "-")} STAR {r.get("STAR", "-")} IAP {r.get("IAP", "-")} | '
-        f'{(r.get("document") or {}).get("name", "-")} {(r.get("document") or {}).get("kind", r.get("error", ""))} {(r.get("document") or {}).get("layout") or ""}' for r in res) + '\n')
+        f'{(r.get("document") or {}).get("name", "-")} {(r.get("document") or {}).get("kind", r.get("error", ""))} {(r.get("document") or {}).get("layout") or ""}' + alt_text(r) for r in res) + '\n')
     return res
 
 
@@ -711,12 +732,13 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None):
             if raw:
                 (cache / name).write_bytes(raw)
                 pdfs.append(name)
-    doc = proc_eaip.build_pdf_dir(icao, pdfs, lambda n: safe_rows(cache / n), lib_cycle(out)) if pdfs else \
+    doc = proc_eaip.build_pdf_dir(icao, pdfs, lambda n: safe_pages(cache / n), lib_cycle(out)) if pdfs else \
         {'schema': 1, 'icao': icao, 'cycle': lib_cycle(out), 'procedures': [], 'formats': [], 'warnings': ['aucun document de tables de codage trouvé']}
     for fm in doc['formats']:
         k = classify_name(cache / fm['file'])
         fm['pdf'] = k
         say(f'  {"OK " if fm["ok"] else "NON"} {fm["file"]} | {k.get("kind")} | {fm["layout"]} ' + ''.join(f'| {x}' for x in fm['problems']))
+    ocr_pass(doc, pdfs, cache, icao, out, say)
     mf = Path(manual_dir) / f'{icao}.json' if manual_dir else None
     if mf and mf.is_file():
         man = json.loads(mf.read_text(encoding='utf-8'))
@@ -729,12 +751,64 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None):
     return doc
 
 
-def safe_rows(path):
-    """Lignes de la première page, ou [] si le fichier n'est pas un PDF lisible (le terrain est alors signalé « disposition non reconnue », rien n'est deviné)."""
+def ocr_pass(doc, pdfs, cache, icao, out, say=print):
+    """Lecture par OCR des documents dont aucune page n'a de disposition connue ET que la lecture signale « dessinés en vecteurs ou image » (pas de couche de texte). Sans moteur
+    d'OCR (tools/proc_ocr.py : pypdfium2 et Tesseract ou rapidocr-onnxruntime), le message d'installation est affiché et on continue. Avec un moteur, chaque document est lu page par
+    page, les pages fusionnées dans <out>/<OACI>.ocr.json (que tools/proc_manual.py installe : il refait caps et distances) ; la console dit ce qui a été lu et ce que la porte géométrique
+    a écarté. Rend le document OCR, ou None."""
+    vect = [fm['file'] for fm in doc['formats'] if 'pages' in fm and any('vecteurs' in x for x in fm['problems'])]
+    if not vect:
+        return None
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import proc_eaip
+    import proc_ocr
+    if not proc_ocr.backend():
+        say(f'{icao}: {len(vect)} document(s) sans couche de texte, non lu(s) : ' + str(proc_ocr._missing()).replace('OCR manque : ', 'OCR absent, ') )
+        return None
+    merged = {'schema': 1, 'icao': icao, 'cycle': doc['cycle'], 'procedures': [], 'formats': [], 'warnings': []}
+    have = set()
+    for name in vect:
+        try:
+            # rendu et OCR dans un processus séparé, au plus OCR_TIMEOUT s par document (un PDF piégé ou démesuré ne bloque pas l'outil)
+            d = proc_eaip.limited('read_document', cache / name, icao, doc['cycle'], module='proc_ocr', timeout=proc_ocr.OCR_TIMEOUT, file=name)
+        except (SystemExit, Exception) as e:
+            say(f'  {name}: OCR impossible : {str(e)[:150]}')
+            continue
+        dropped = [x for x in d['warnings'] if 'NON retenue' in x]
+        read = [f for f in d['formats'] if f['layout']]
+        say(f'  OCR {name}: {len(d["formats"])} page(s), {len(read)} de disposition reconnue ({", ".join(sorted({f["layout"] for f in read})) or "aucune"}), '
+            f'{len(d["procedures"])} procédure(s) retenue(s), {len(dropped)} table(s) écartée(s) par la porte géométrique ou les comptes')
+        merged['formats'] += d['formats']
+        merged['warnings'] += d['warnings']
+        for rec in d['procedures']:
+            if rec['id'] not in have:
+                have.add(rec['id'])
+                merged['procedures'].append(rec)
+    if not merged['formats']:
+        return None
+    dest = Path(out) / f'{icao}.ocr.json'
+    dest.write_text(json.dumps(merged, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
+    say(f'{icao}: {len(merged["procedures"])} procédure(s) lue(s) par OCR dans {dest.name} ; à installer par python tools/proc_manual.py {dest} --out <dépôt de données>/proc (contrôle de caps et distances refait)')
+    return merged
+
+
+def safe_rows(path, page=1):
+    """Lignes de la page `page` (à partir de 1 ; la meilleure page du relevé), ou [] si le fichier n'est pas un PDF lisible."""
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import proc_eaip
     try:
-        return proc_eaip.first_page_rows(path)      # lu dans un processus séparé, au plus PDF_TIMEOUT s
+        _, pages = proc_eaip.pdf_some_pages(path, [page - 1])   # lu dans un processus séparé, au plus PDF_TIMEOUT s
+        return pages[0] if pages else []
+    except (SystemExit, Exception):
+        return []
+
+
+def safe_pages(path):
+    """Lignes de TOUTES les pages (liste de pages), ou [] si le fichier n'est pas un PDF lisible (le terrain est alors signalé « disposition non reconnue », rien n'est deviné)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import proc_eaip
+    try:
+        return proc_eaip.pdf_pages(path)             # lu dans un processus séparé, au plus PDF_TIMEOUT s
     except (SystemExit, Exception):
         return []
 
@@ -765,7 +839,10 @@ def finish(out, rep, s):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+    for stream in (sys.stdout, sys.stderr):              # console cp1252 : un caractère exotique ne doit pas faire échouer l'affichage
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8', errors='replace')
+    ap =argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--probe', action='store_true', help='explorer la bibliothèque AIP (lecture seule)')
     ap.add_argument('--user', default=os.environ.get('EAD_USER'))
     ap.add_argument('--state', default='United Kingdom')
