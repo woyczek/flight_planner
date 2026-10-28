@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the review of a re-imported sheet wraps its texts** (`modules/fuel/module.js`) — a long value (the description written by
+  ChatGPT) stayed on one line in the "before / after" table and pushed it into a sideways scroll; numbers stay right-aligned on
+  one line, texts wrap in their column.
+
 - **Airway routing and map: the airways a route follows are found and readable** (`frame/lib/routing.js`, `modules/maps/render.js`;
   bench `frame/lib/test/routing.html`, 45 checks; fuel SPEC) — the user's route "LFBO GOSAD AULON LAVRA OBLOC VELIN LMG … LFPO":
   VELIN → LMG stayed direct although R10 joins them through NORON (a point on a node reached the next node by a direct entry

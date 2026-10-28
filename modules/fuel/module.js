@@ -1307,6 +1307,7 @@ function climbSvg(G, box) {
 // couleurs dans --sog-chart-* (suivent le design et la nuit sans redessin)
 const STYLE = `
 [data-module="fuel"] .fu-g3{--f-min:96px}
+[data-module="fuel"] .f-table .fu-txt{white-space:normal;overflow-wrap:anywhere;min-width:9em} /* aperçu d'un réimport : un texte revient à la ligne */
 [data-module="fuel"] .fu-ads{grid-template-columns:repeat(3,minmax(0,8em))} /* codes OACI : 4 lettres, pas plus large */
 [data-module="fuel"] .fu-flight{display:flex;flex-wrap:wrap;align-items:flex-end} /* niveau et date à leur largeur utile ; la date passe dessous sur un téléphone */
 [data-module="fuel"] .fu-flight>.f-field:first-child{flex:0 0 8em}
@@ -3752,6 +3753,9 @@ function review(before, after, o = {}) {
       }
       return esc(String(v));
     },
+    // cellule d'une valeur : un nombre (ou une suite de nombres) aligné à droite sans retour à la ligne ; un texte (description,
+    // nom) revient à la ligne dans sa colonne, sans pousser le tableau en défilement de côté
+    cell = v => `<td class="${typeof v === 'number' || /^[-+\d\s.,/–%°]{0,24}$/.test(String(v ?? '')) ? 'f-num' : 'fu-txt'}">${show(v)}</td>`,
     box = (attr, on) => before ? `<td><input type="checkbox" ${attr}${on ? ' checked' : ''}></td>` : '<td></td>',
     ff = r => [r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x !== null && x !== undefined && x !== '').join(' / '),
     gone = (before?.rpmFuelCurve || []).filter(r => r.rpm !== null && r.rpm !== '' && !(after.rpmFuelCurve || []).some(a => rpmKey(a) ===
@@ -3765,7 +3769,7 @@ function review(before, after, o = {}) {
   };
   S.body.innerHTML = `<div class="f-card"><h2>${esc(before ? tt(TX.review) : tt(TX.reviewNew, { n: after.name || after.id }))}${o.src ? ` <span class="f-muted">· ${esc(o.src)}</span>` : ''}</h2>
     ${rows.length || diff.curve.length || gone.length ? `<div class="f-scroll"><table class="f-table"><thead><tr><th></th><th>${esc(tt(TX.field))}</th><th class="f-num">${esc(tt(TX.before))}</th><th class="f-num">${esc(tt(TX.after))}</th></tr></thead><tbody>
-      ${rows.map(r => `<tr>${box(`data-path="${esc(r.path)}"`, !o.checked || o.checked(r.path))}<td>${esc(fieldLabel(r.path, true))}</td><td class="f-num">${show(r.old)}</td><td class="f-num">${show(r.now)}</td></tr>`).join('')}
+      ${rows.map(r => `<tr>${box(`data-path="${esc(r.path)}"`, !o.checked || o.checked(r.path))}<td>${esc(fieldLabel(r.path, true))}</td>${cell(r.old)}${cell(r.now)}</tr>`).join('')}
       ${diff.curve.map(c => `<tr>${box(`data-curve="${esc(c.key)}"`, true)}<td>RPM ${esc(c.label)} <span class="f-muted">(${esc(tt(c.kind === 'added' ? TX.added : TX.replaced))})</span></td><td class="f-num">${esc(c.old)}</td><td class="f-num">${esc(c.now)}</td></tr>`).join('')}
       ${gone.map((r, i) => `<tr>${box(`data-gone="${i}"`, true)}<td>RPM ${esc(r.rpm)}${r.altFt !== null && r.altFt !== undefined && r.altFt !== '' ? ` @ ${esc(r.altFt)} ft` : ''} <span class="f-muted">(${esc(tt(TX.rpmGone))})</span></td><td class="f-num">${esc(ff(r))}</td><td class="f-num">—</td></tr>`).join('')}
     </tbody></table></div>` : `<p class="f-muted">${esc(tt(TX.reviewNone))}</p>`}
