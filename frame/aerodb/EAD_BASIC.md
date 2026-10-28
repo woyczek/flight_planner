@@ -178,3 +178,15 @@ them too. Conclusion: the one-click chain is feasible with the standard library 
 order: parse the result list, list the AD 2 pages of one aerodrome, download **one** page into the local cache only,
 then the layout registry on it.
 
+### 7.1 What the user saw in the AIP Library (28 October, two screenshots)
+
+- « United Kingdom / AD » returns **1 155 documents on 16 pages** (PrimeFaces datatable, no « show all »); the page numbers
+  shift while browsing: a probe must not page through the list.
+- **Advanced Search** (checkbox) adds *Effective Date* (`dd/MM/yyyy`), *Document Name* and *Document Heading*. With
+  *Document Name* = `EG_AD_2_EGLF_8-1_en.pdf` the search returns one row: « AD 2 EGLF 8 INSTRUMENT APPROACH CHART ILS/DME
+  RWY 06 - ICAO », effective 2026-01-22, eAIP column empty, AIRAC = NON-AIRAC, a ▶ button per row (the download).
+- Naming seen: `<prefix>_AD_2_<ICAO>_<section>-<n>_en.pdf` (2-x aerodrome charts, 4-x zones, 5-x MSA, 6-x SID,
+  7-x STAR presumed, 8-x IAC). The probe can therefore **index by document name** (prefix `EG_AD_2_EGLL`, or the sections
+  enumerated) instead of paging. The user kept the saved results page (`Downloads\EDA Basic - EUROCONTROL…`) with its linked
+  files, if the table's HTML is needed.
+
