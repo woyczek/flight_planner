@@ -184,3 +184,31 @@ python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL --name EGL
 
 Send back the same way (`report.txt`, read first). Tested on a hand-built partial answer and a local fake (case K6): it checks the probe's logic, not
 EAD's real screens, which is what this round settles.
+
+## 6 ter. The probe, third round (28 October 2026): the real screen, as described by the owner
+
+What the owner's two captures showed (relayed): the search *United Kingdom / AD* returns **1,155 documents on 16 pages** (PrimeFaces datatable, no
+"show all", and the page numbers move while navigating: **the probe never walks the pages**). The *Advanced Search* box
+(`mainForm:enableAdvancedSearch_input`) opens three fields: *Effective Date* (`dd/MM/yyyy`), **Document Name** and *Document Heading*. With Document
+Name = `EG_AD_2_EGLF_8-1_en.pdf`, a single row: "AD 2 EGLF 8 INSTRUMENT APPROACH CHART ILS/DME RWY 06 - ICAO", effective 2026-01-22, eAIP column empty,
+AIRAC = NON-AIRAC, and one ▶ button per row (the download). File names follow `<prefix>_AD_2_<ICAO>_<section>-<n>_en.pdf` (6-x SID, 7-x STAR
+presumed, 8-x IAC, 2-x aerodrome charts, 4-x zones, 5-x MSA).
+
+What the probe now does with `--name EG_AD_2_EGLL`:
+
+1. ticks Advanced Search through a JSF partial request (event `valueChange`, then `change`) and reads the fields that appear by their **labels**
+   (not by guessed ids): Document Name is the field labelled so;
+2. searches that name, then the same without its two-letter prefix (`AD_2_EGLL`): it **says whether the field means "contains" or "starts with"**;
+3. if the prefix finds nothing, it **enumerates exact names** `EG_AD_2_EGLL_<s>-<n>_en.pdf` (s 1 to 8, n 1 to 9, stopping at the first empty one in each
+   section: at most about 8 + the number found requests);
+4. lists the rows (date, name, eAIP, AIRAC, title, the ▶ button's id and name) and the pager text, and writes the `<table>` of the results, sanitised,
+   to `ead_probe/tables.html` (what to paste if the session asks for the exact HTML);
+5. with `--download`, presses the ▶ button of the first EGLL row (a classic form submit carrying that button, as a PrimeFaces download button does) and keeps
+   **one** PDF in `ead_probe/cache/` if the answer starts with `%PDF-`; otherwise it reports the beginning of the answer (sanitised).
+
+The page state (`ViewState`) is renewed from each answer, as JSF requires. A defect found by the test of this round, present since the second round:
+the loop over the lists reused the variable holding `--name`, so the filter silently took the name of the last list; fixed.
+
+```
+python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL --name EG_AD_2_EGLL --download
+```

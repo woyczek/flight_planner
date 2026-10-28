@@ -1035,3 +1035,12 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Done**: ViewState blanked everywhere; result rows read from the JSF partial answer; `--name` and `--download` (one PDF, local cache only, direct
   links only); case K6 extended (a defect found by it: the cache file name). Owner decisions of the day respected: EAD Basic as it is, no request to
   EUROCONTROL, DFS dropped, national free AIPs as the other sources; the session still never logs in.
+
+## 28 October 2026 — probe, third round (real screen: advanced search, Document Name, ▶ button)
+
+- **From the owner's captures** (relayed): 1,155 documents on 16 paginated pages whose numbers move; Advanced Search opens Effective Date, Document Name,
+  Document Heading; one row per name with a ▶ download button; names `<prefix>_AD_2_<ICAO>_<section>-<n>_en.pdf`. Decision: search by Document Name with the
+  prefix `EG_AD_2_EGLL`, learn whether the field is "contains" or "starts with", enumerate exact names otherwise, never page through results.
+- **Done**: advanced box toggled by partial request, fields found by label, renewed ViewState, contains/prefix test, enumeration fallback, rows with their
+  ▶ button, `tables.html`, download through the button. Defect found by the test and fixed: a loop variable shadowed the `--name` argument (also in round two).
+- **Still unknown until the owner's next run**: the real shapes of the toggle response and of the ▶ button (the test uses hand-built screens).

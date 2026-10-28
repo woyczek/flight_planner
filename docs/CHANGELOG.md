@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: EAD Basic probe, third round** (`tools/proc_ead.py`, K6, `frame/aerodb/EAD_BASIC.md` § 6 ter) — advanced search opened by partial request, "Document Name" found by its label,
+  prefix `EG_AD_2_EGLL` searched ("contains" or "starts with" learned, exact-name enumeration as a fallback, no page walking), rows with their ▶ button, `tables.html`
+  for the exact table, one PDF through the button. Fixes a variable that shadowed `--name`.
 - **aerodb: EAD Basic probe, second round** (`tools/proc_ead.py`, `tests/v3/cases/aerodb.py` K6, `frame/aerodb/EAD_BASIC.md` § 6 bis) — page-state tokens blanked
   in the report, the result table of the AIP Library read from the JSF partial answer, `--name` (document-name filter) and `--download` (one document into the
   local cache).

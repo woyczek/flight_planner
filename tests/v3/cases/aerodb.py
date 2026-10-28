@@ -244,6 +244,7 @@ def k5(c):
     import sys
     import tempfile
     import threading
+    import urllib.parse
     import contextlib
     import io
     from pathlib import Path
@@ -297,7 +298,11 @@ def k5(c):
                 self.send_header('Location', 'https://example.invalid/steal')
                 self.end_headers()
             elif self.path.startswith('/fwf-eadbasic/secure/aip.faces'):
-                self._send(html_.replace('action="/lib.faces;jsessionid=ABCDEF123"', 'action="/fwf-eadbasic/secure/aip.faces"'))
+                self._send('<form id="mainForm" action="/fwf-eadbasic/secure/aip.faces" method="post"><input type="hidden" name="javax.faces.ViewState" value="' + 'A' * 50 + '"/>'
+                           '<select name="mainForm:auth"><option value="1">Belgium</option><option value="2">United Kingdom</option></select>'
+                           '<select name="mainForm:part"><option value="a">AD</option><option value="e">ENR</option><option value="g">GEN</option></select>'
+                           '<input type="checkbox" id="mainForm:enableAdvancedSearch_input" name="mainForm:enableAdvancedSearch_input"/>'
+                           '<button id="mainForm:search" name="mainForm:search" type="submit">Search</button></form>')
             elif self.path.startswith('/doc/'):
                 self._send('%PDF-1.4 hand-built for the test', 'application/pdf')
             else:
@@ -310,12 +315,25 @@ def k5(c):
                 ok = 'j_password=secret%21pw' in body
                 self._send('{"loggedIn": %s, "errorMessage": "bad login"}' % ('true' if ok else 'false'), 'application/json')
             else:
-                # réponse JSF partielle bâtie à la main (tableau de résultats + jeton d'état) : forme supposée, non vue sur le vrai écran
-                self._send('<?xml version="1.0"?><partial-response><changes><update id="mainForm:results"><![CDATA[<table><tbody>'
-                           '<tr data-ri="0"><td>EGLL AD 2.1</td><td>AD</td><td><a href="/doc/EGLL_AD_2.pdf">pdf</a></td></tr>'
-                           '<tr data-ri="1"><td>EGLL AD 2 DATA</td><td>AD</td><td><a href="#" onclick="PrimeFaces.ab({s:&quot;mainForm:results:1:dl&quot;,f:&quot;mainForm&quot;});return false;">open</a></td></tr>'
-                           '<tr data-ri="2"><td>EGKK AD 2.1</td><td>AD</td><td><a href="/doc/EGKK.pdf">pdf</a></td></tr></tbody></table>]]></update>'
-                           '<update id="j_id1:javax.faces.ViewState:0"><![CDATA[123456789:987654321]]></update></changes></partial-response>', 'text/xml')
+                # écran de bibliothèque BÂTI À LA MAIN d'après la description de l'utilisateur (recherche avancée, nom de document, bouton par ligne) ;
+                # les formes JSF ne sont pas celles du vrai site, elles servent à essayer la logique de la sonde
+                q = urllib.parse.parse_qs(body)
+                name = (q.get('mainForm:docName') or [''])[0]
+                if 'mainForm:dl0' in q:
+                    self._send('%PDF-1.4 hand-built for the test', 'application/pdf')
+                    return
+                head = '<?xml version="1.0"?><partial-response><changes>'
+                tail = '<update id="j_id1:javax.faces.ViewState:0"><![CDATA[123456789:987654321]]></update></changes></partial-response>'
+                if q.get('javax.faces.source') == ['mainForm:enableAdvancedSearch']:
+                    self._send(head + '<update id="mainForm:adv"><![CDATA[<label for="mainForm:docDate">Effective Date</label><input id="mainForm:docDate" name="mainForm:docDate" type="text" value=""/>'
+                               '<label for="mainForm:docName">Document Name</label><input id="mainForm:docName" name="mainForm:docName" type="text" value=""/>'
+                               '<label for="mainForm:docHead">Document Heading</label><input id="mainForm:docHead" name="mainForm:docHead" type="text" value=""/>]]></update>' + tail, 'text/xml')
+                    return
+                docs = ['EG_AD_2_EGLL_6-1_en.pdf', 'EG_AD_2_EGLL_7-1_en.pdf', 'EG_AD_2_EGKK_6-1_en.pdf']
+                pick = [d for d in docs if name in d] if name else docs      # « contient » : ce que le vrai champ fait est précisément ce que la sonde doit apprendre
+                rows = ''.join('<tr data-ri="%d"><td>2026-01-22</td><td>%s</td><td></td><td>NON-AIRAC</td><td>AD 2 chart %d</td><td><button id="mainForm:results:%d:dl" name="mainForm:dl0" type="submit">▶</button></td></tr>' % (i, d, i, i)
+                               for i, d in enumerate(pick))
+                self._send(head + '<update id="mainForm:results"><![CDATA[<table><tbody>' + rows + '</tbody></table><span class="ui-paginator-current">Page 1 of 1</span>]]></update>' + tail, 'text/xml')
     srv = http.server.HTTPServer(('127.0.0.1', 0), H)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     try:
@@ -324,19 +342,21 @@ def k5(c):
         importlib.reload(E)
         with tempfile.TemporaryDirectory() as td:
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-                E.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td)
+                E.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td, name='EG_AD_2_EGLL')
             rep = (Path(td) / 'report.txt').read_text(encoding='utf-8')
             allfiles = '\n'.join(p.read_text(encoding='utf-8') for p in Path(td).iterdir())
             c.ok('connexion: OUI' in rep and 'bibliothèque AIP' in rep, rep, 'login and library found')
-            c.ok('tableau des résultats: 3 ligne(s) | 2 pour EGLL' in rep and 'mainForm:results:1:dl' in rep, rep,
-                 'three result rows, two for EGLL, the command-link source of the second one reported')
-            c.ok("{'auth': 'État', 'part': 'partie'}" in rep, rep, 'the State and the AD part were chosen in the lists')
+            c.ok('recherche (État + partie AD): 200' in rep and '3 ligne(s)' in rep and "paginateur: ['Page 1 of 1']" in rep, rep, 'the plain search read three rows and the pager')
+            c.ok("champ « Document Name »: mainForm:docName" in rep and 'nom « EG_AD_2_EGLL »' in rep and '2 ligne(s)' in rep, rep,
+                 'the advanced box opened the fields, Document Name found by its label, two rows for the prefix')
+            c.ok('« contient »' in rep, rep, 'the probe says whether the name field is "contains" or "starts with"')
+            c.ok("{'mainForm:auth': 'État', 'mainForm:part': 'partie'}" in rep, rep, 'the State and the AD part were chosen in the lists')
             c.ok(all(x not in allfiles for x in ('secret!pw', 'bob@example.org', 'ZZZ', 'A' * 45, '123456789:987654321')) and 'bob' not in allfiles.lower().replace('bob@', ''),
                  allfiles[:400], 'no password, mail, session id or state token in any file written')
             c.ok(not list(Path(td).rglob('*.pdf')), 'a pdf was written', 'no PDF without --download')
         with tempfile.TemporaryDirectory() as td:
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-                E.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td, name='EGLL', download=True)
+                E.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td, name='EG_AD_2_EGLL', download=True)
             rep = (Path(td) / 'report.txt').read_text(encoding='utf-8')
             pdfs = list((Path(td) / 'cache').glob('*.pdf'))
             c.ok('| PDF' in rep and len(pdfs) == 1 and pdfs[0].read_bytes().startswith(b'%PDF-'), rep, 'with --download, exactly one PDF, in cache/')

@@ -113,8 +113,36 @@ def parse_rows(markup):
         cells = [text_of(c.group(1)) for c in re.finditer(r'(?is)<td\b[^>]*>(.*?)</td>', body)]
         ri = (re.search(r'data-ri="([^"]*)"', tm.group(1)) or [None, ''])[1]
         acts = [html.unescape(m.group(1)) for m in re.finditer(r'PrimeFaces\.ab\(\{[^}]*?s:\\?"([^"\\]+)', html.unescape(body))]
-        rows.append({'ri': ri, 'cells': cells, 'links': parse_links(body), 'actions': acts})
+        btns = []
+        for bm in re.finditer(r'(?is)<(button|input|a)\b([^>]*)>', body):
+            a = bm.group(2)
+            g = lambda n: html.unescape((re.search(n + r'\s*=\s*"([^"]*)"', a, re.I) or [None, ''])[1])
+            if g('id') or g('name'):
+                btns.append({'id': g('id'), 'name': g('name'), 'value': g('value'), 'onclick': g('onclick')[:120]})
+        rows.append({'ri': ri, 'cells': cells, 'links': parse_links(body), 'actions': acts, 'buttons': btns})
     return rows
+
+
+def fields_by_label(markup):
+    """{ libellé: nom du champ de saisie } d'après <label for=ID>texte</label> et l'<input id=ID name=NOM> correspondant ; et tous les champs texte du fragment."""
+    ids = {}
+    for m in re.finditer(r'(?is)<input\b([^>]*)>', markup):
+        a = m.group(1)
+        i, n = (re.search(r'\bid="([^"]*)"', a) or [None, ''])[1], (re.search(r'\bname="([^"]*)"', a) or [None, ''])[1]
+        if i and n:
+            ids[i] = (n, html.unescape((re.search(r'\bvalue="([^"]*)"', a) or [None, ''])[1]), (re.search(r'\btype="([^"]*)"', a) or [None, 'text'])[1].lower())
+    labels = {text_of(m.group(2)): ids[m.group(1)][0] for m in re.finditer(r'(?is)<label\b[^>]*\bfor="([^"]*)"[^>]*>(.*?)</label>', markup) if m.group(1) in ids}
+    return labels, {n: v for n, v, t in ids.values() if t in ('text', 'hidden')}
+
+
+def pager_text(body):
+    """Texte du paginateur PrimeFaces (« Page 1 of 16 », « 1-15 of 1155 ») s'il y en a un."""
+    return [text_of(m) for m in re.findall(r'(?is)ui-paginator-current[^>]*>(.*?)</span>', body)][:2]
+
+
+def view_state(body):
+    m = re.search(r'ViewState[^>]*>\s*<!\[CDATA\[([^\]]+)', body)
+    return m.group(1) if m else None
 
 
 def pick(options, wanted):
@@ -224,8 +252,8 @@ def probe(user, password, state, icao, out, name=None, download=False):
         say('   formulaire', f['id'], f['method'], f['action'][:100])
         say('     champs:', {k: ('<état>' if re.search(r'ViewState|jid|token|nonce', k, re.I) else (v[:30] if len(v) < 40 else '<long>')) for k, v in f['fields'].items()})
         say('     cases à cocher:', f['checkboxes'])
-        for name, opts in f['selects'].items():
-            say(f'     liste {name}: {len(opts)} options:', '; '.join(f'{v}={l}'[:60] for v, l in opts[:400]))
+        for sel_name, opts in f['selects'].items():
+            say(f'     liste {sel_name}: {len(opts)} options:', '; '.join(f'{v}={l}'[:60] for v, l in opts[:400]))
         for b in f['buttons']:
             say('     bouton', b)
     form = next((f for f in forms if f['selects']), forms[0] if forms else None)
@@ -234,7 +262,7 @@ def probe(user, password, state, icao, out, name=None, download=False):
         return finish(out, rep, s)
     data = dict(form['fields'])
     chosen = {}
-    for name, opts in form['selects'].items():
+    for sel, opts in form['selects'].items():
         labels = ' | '.join(l for _, l in opts)
         for kind, test, wanted in (('État', lambda: pick(opts, state) is not None, state), ('partie', lambda: re.search(r'\bENR\b', labels) and re.search(r'\bAD\b', labels), r'^AD$'),
                                    ('type', lambda: re.search(r'\bAMDT\b', labels) and re.search(r'\bSUP\b', labels), r'^AIP$'),
@@ -242,62 +270,109 @@ def probe(user, password, state, icao, out, name=None, download=False):
             if kind not in chosen.values() and test():
                 v = pick(opts, wanted)
                 if v is not None:
-                    chosen[name] = kind
-                    data[name] = v
+                    chosen[sel] = kind
+                    data[sel] = v
                     break
     say('5. choix faits dans les listes:', chosen or 'aucun (voir les options ci-dessus)')
-    if name:
-        fld = [k for k in form['fields'] if re.search(r'document.?name|heading|title', k, re.I) and not re.search(r'ViewState', k)]
-        for k in fld[:1]:
-            data[k] = name
-        for k in form['checkboxes']:
-            if re.search(r'advanced', k, re.I):
-                data[k] = 'on'
-        say('   filtre par nom de document:', name, '-> champ', fld[:1] or 'AUCUN champ reconnu', '| case recherche avancée:', [k for k in form['checkboxes'] if re.search(r'advanced', k, re.I)] or 'aucune')
+    adv = next((k for k in form['checkboxes'] if re.search(r'advanced', k, re.I)), None)
     btn = next((b for b in form['buttons'] if re.search(r'search|suche|recherche', b['label'] + b['value'] + b['id'], re.I)), form['buttons'][0] if form['buttons'] else None)
-    results = []
-    b_ajax = b2 = ''
     action = urllib.parse.urljoin(url, form['action'] or url)
-    if btn:
-        ajax = dict(data)
-        ajax.update({'javax.faces.partial.ajax': 'true', 'javax.faces.source': btn['id'] or btn['name'], 'javax.faces.partial.execute': '@all',
-                     'javax.faces.partial.render': '@all', (btn['id'] or btn['name']): (btn['id'] or btn['name'])})
-        code, u2, b2 = s.call(action, ajax, {'Faces-Request': 'partial/ajax', 'X-Requested-With': 'XMLHttpRequest', 'Referer': url})
-        keep('recherche_ajax', b2)
-        b_ajax = b2
-        say('6. recherche (requête partielle JSF):', code, len(b2), 'octets')
-        results = parse_links(b2)
-        if not results:
-            plain = dict(data)
-            plain[btn['name'] or btn['id']] = btn['value'] or btn['name']
-            code, u2, b2 = s.call(action, plain, {'Referer': url})
-            keep('recherche_simple', b2)
-            say('6b. recherche (envoi classique):', code, len(b2), 'octets')
-            results = parse_links(b2)
-    else:
+    hdr = {'Faces-Request': 'partial/ajax', 'X-Requested-With': 'XMLHttpRequest', 'Referer': url}
+    rows_of = lambda body: [r for _, frag in partial_updates(body) for r in parse_rows(frag)]
+    if not btn:
         say('6. aucun bouton de recherche reconnu')
-    docs = [(l, h) for l, h in results if re.search(r'\.pdf|download|document|aip', h, re.I)]
-    rows = [r for _, frag in partial_updates(b_ajax if btn else '') for r in parse_rows(frag)] or [r for _, frag in partial_updates(b2 if btn else '') for r in parse_rows(frag)]
+        return finish(out, rep, s)
+    src = btn['id'] or btn['name']
+
+    def ajax(extra, tag, source, event=None, execute='@all'):
+        d = dict(data)
+        d.update(extra)
+        d.update({'javax.faces.partial.ajax': 'true', 'javax.faces.source': source, 'javax.faces.partial.execute': execute, 'javax.faces.partial.render': '@all'})
+        if event:
+            d['javax.faces.partial.event'] = event
+        code, _, body = s.call(action, d, hdr)
+        keep(tag, body)
+        vs = view_state(body)
+        if vs:
+            data['javax.faces.ViewState'] = vs          # JSF peut renouveler l'état de la page : le suivant est utilisé
+        return code, body
+
+    last = {'body': ''}
+
+    def search(extra, tag):
+        code, body = ajax({**extra, src: src}, tag, src)
+        if rows_of(body):
+            last['body'] = body                           # la dernière réponse qui portait des lignes
+        return code, body, rows_of(body)
+    code, body, rows = search({}, 'recherche_ajax')
+    say('6. recherche (État + partie AD):', code, len(body), 'octets |', len(rows), 'ligne(s) |', 'paginateur:', pager_text(body) or 'aucun')
     hit = lambda r: icao.upper() in ' '.join(r['cells'] + [h for _, h in r['links']]).upper()
-    say('7. tableau des résultats:', len(rows), 'ligne(s) |', sum(1 for r in rows if hit(r)), 'pour', icao, '| documents (liens):', len(docs))
-    for r in rows[:200]:
-        say('     ', f"[{r['ri']}]", ' | '.join(c[:60] for c in r['cells']), '| liens:', [(l[:40], h[:100]) for l, h in r['links']][:3],
-            '| commandes:', r['actions'][:2])
-    for label, href in docs[:60]:
-        say('     lien', label[:80], '->', href[:140])
-    if download:
-        target = next(((l, h) for r in rows if hit(r) for l, h in r['links'] if h), None) or next(((l, h) for l, h in docs if icao.upper() in (l + h).upper()), None)
-        if not target:
-            say('8. téléchargement: aucun lien direct pour', icao, '(un lien de commande JSF demandera un appel de plus: voir la colonne « commandes »)')
+    if name:
+        if adv:
+            wid = adv[:-6] if adv.endswith('_input') else adv
+            labels, extra_fields = {}, {}
+            for event in ('valueChange', 'change'):
+                code, tb = ajax({adv: 'on'}, 'recherche_avancee', wid, event=event, execute=wid)
+                labels, extra_fields = fields_by_label(tb)
+                if any(re.search(r'document.?name', l, re.I) for l in labels) or extra_fields:
+                    break
+            say('   case recherche avancée', adv, '->', code, '| champs apparus:', labels or extra_fields or 'aucun')
+            data[adv] = 'on'
+            data.update({k: v for k, v in extra_fields.items() if not re.search(r'ViewState', k)})
+            field = next((n for l, n in labels.items() if re.search(r'document.?name', l, re.I)), None)
         else:
+            field = next((k for k in form['fields'] if re.search(r'document.?name', k, re.I)), None)
+            say('   case recherche avancée: aucune dans le formulaire')
+        say('   champ « Document Name »:', field or 'INTROUVABLE')
+        if field:
+            def by_name(text, tag):
+                code, body, rs = search({field: text}, tag)
+                say(f'   nom « {text} »:', code, len(rs), 'ligne(s) |', 'paginateur:', pager_text(body) or 'aucun')
+                return rs
+            rows = by_name(name, 'recherche_nom')
+            tail = name.split('_', 1)[1] if '_' in name else name
+            contains = by_name(tail, 'recherche_nom_contient') if tail != name else []
+            say('   le champ fait', '« contient »' if contains else ('« commence par » (ou rien de plus large trouvé)' if rows else 'pas de résultat'), f'(« {name} »: {len(rows)}, « {tail} »: {len(contains)})')
+            if not rows:
+                say('   repli: noms exacts', f'{name}_<section>-<n>_en.pdf', '(section 1 à 8, n de 1 à 9, arrêt au premier vide par section)')
+                for sec in range(1, 9):
+                    for n in range(1, 10):
+                        rs = by_name(f'{name}_{sec}-{n}_en.pdf', f'recherche_{sec}_{n}')
+                        if not rs:
+                            break
+                        rows += rs
+    tables = [t for _, frag in partial_updates(last['body']) for t in re.findall(r'(?is)<table\b.*?</table>', frag)]
+    if tables:
+        (out / 'tables.html').write_text(sanitize('\n\n'.join(tables)[:40000], s.secrets), encoding='utf-8')
+        say('   ead_probe/tables.html: le(s) <table> des résultats, nettoyé(s) (à coller si je le demande)')
+    say('7. tableau des résultats retenu:', len(rows), 'ligne(s) |', sum(1 for r in rows if hit(r)), 'pour', icao)
+    for r in rows[:300]:
+        say('     ', f"[{r['ri']}]", ' | '.join(c[:70] for c in r['cells']), '| liens:', [(l[:40], h[:100]) for l, h in r['links']][:3],
+            '| boutons:', [(b['id'][-40:], b['name'][-40:], b['onclick'][:60]) for b in r['buttons']][:2], '| commandes:', r['actions'][:2])
+    if download:
+        row = next((r for r in rows if hit(r)), None)
+        target = next(((l, h) for l, h in row['links'] if h), None) if row else None
+        if row and not target and row['buttons']:
+            bt = row['buttons'][-1]                          # le bouton ▶ de la ligne : envoi classique du formulaire avec ce bouton
+            d = dict(data)
+            d[bt['name'] or bt['id']] = bt['value'] or bt['name'] or bt['id']
+            code, u3, raw = s.call(action, d, {'Referer': url}, raw=True)
+            label = ' '.join(row['cells'])[:60]
+            say('8. téléchargement par le bouton', bt['id'][-40:], 'de', label, ':', code, len(raw), 'octets', '| PDF' if raw[:5] == b'%PDF-' else '| PAS un PDF')
+            if raw[:5] != b'%PDF-':
+                say('   début de la réponse:', sanitize(raw[:300].decode('utf-8', 'replace'), s.secrets).replace('\n', ' '))
+        elif target:
             code, u3, raw = s.call(urllib.parse.urljoin(url, target[1]), headers={'Referer': url}, raw=True)
-            ok_pdf = raw[:5] == b'%PDF-'
-            say('8. téléchargement de', target[0][:60], ':', code, len(raw), 'octets', '| PDF' if ok_pdf else '| PAS un PDF')
-            if ok_pdf:
-                cache = out / 'cache'
-                cache.mkdir(exist_ok=True)
-                (cache / ((re.sub(r'[^A-Za-z0-9._-]+', '_', target[0])[:80] or 'page') + '.pdf')).write_bytes(raw)
-                say('   gardé dans', 'ead_probe/cache/ (cache local: ne va jamais dans le dépôt)')
+            label = target[0]
+            say('8. téléchargement de', label[:60], ':', code, len(raw), 'octets', '| PDF' if raw[:5] == b'%PDF-' else '| PAS un PDF')
+        else:
+            raw, label = b'', ''
+            say('8. téléchargement: aucune ligne pour', icao)
+        if raw[:5] == b'%PDF-':
+            cache = out / 'cache'
+            cache.mkdir(exist_ok=True)
+            (cache / ((re.sub(r'[^A-Za-z0-9._-]+', '_', label)[:80] or 'page') + '.pdf')).write_bytes(raw)
+            say('   gardé dans', 'ead_probe/cache/ (cache local: ne va jamais dans le dépôt)')
     return finish(out, rep, s)
 
 
