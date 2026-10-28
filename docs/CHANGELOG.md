@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the runway, the STAR and the approach filter one another** (`modules/fuel/module.js` `procChosen`, SPEC, DECISIONS; help ×4;
+  case F21) — a runway keeps the procedures that serve it (those with no runway named or `ALL` serve all); the choice that no longer
+  fits goes back to « not chosen » with one floating line saying which; a SID, STAR or approach chosen first that serves one runway
+  sets it.
+
 - **Fuel: an aerodrome with approaches only shows them — LFBO's 18 were hidden behind « aucune procédure publiée »**
   (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4; case F20) — the rows ask aerodb once per aerodrome for all kinds, so
   the Departure row of an aerodrome with approaches but no SID is no longer « without data »; without a runway chosen

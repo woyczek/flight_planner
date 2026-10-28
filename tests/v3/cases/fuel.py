@@ -16,9 +16,10 @@ Rules covered
     shows the refusal (F14), the quote runs on the procedures path with legs and profile.path (F15), after the start only legs, the
     vertical path and the length are rewritten (F16), the Map's `focus=arr` (F17), the v1 record migrated at the next write (F18), "Load my OFP" replaces the choice and says what changed (F19).
 
-  * an aerodrome with approaches only (no SID, no STAR, no runway record) still lists them, by runway, on both rows (F20).
+  * an aerodrome with approaches only (no SID, no STAR, no runway record) still lists them, by runway, on both rows (F20);
+  * the runway, the STAR and the approach filter one another: what no longer fits is removed with one line, a procedure serving one runway sets it (F21).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 import json
@@ -674,3 +675,33 @@ def f20(c):
     c.until("!!document.querySelector('[data-module=fuel] [data-proc=arr] [data-do=procfetch]')", what='LFQQ has nothing: the reading is offered')
     set_icao(c, 'arr', 'LFVA')
     c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"] optgroup')", what='back on LFVA the approaches are listed again')
+
+
+@case('F21', 'The runway, the STAR and the approach filter one another', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.20: a runway keeps the procedures that serve it; a procedure serving one runway sets it; a choice that no longer fits is removed (absent) with one notification')
+def f21(c):
+    kinds = lambda k: norm(tx(F, k, c.lang, after='procKinds: {'))
+    # the approach first: it serves one runway (13R), which becomes the runway and keeps the STARs that serve it
+    open_proc(c)
+    wait_rows(c, 'arr')
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFML.APP.I13R.RW13R.NONE')
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the approach is written')
+    c.eq(procs_of(d, 'arr'), {'rwy': '13R', 'app': 'LFML.APP.I13R.RW13R.NONE'}, 'the approach serves one runway: it is the runway', what='route.procedures.arr')
+    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]'); return !!s && s.value === '13R' })()", what='the runway select shows 13R')
+    c.ok(not any('MEN2B' in lab for _, lab in sel_opts(c, 'p-arr-star')), f"STAR options {sel_opts(c, 'p-arr-star')}", 'the STAR list follows the runway the approach set (no MEN2B, 31L)')
+    # the STAR chosen next, then another runway: both choices that do not serve it go, one line says which, absent not null
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN1A.RW13R.NONE')
+    cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFML.STAR.MEN1A.RW13R.NONE', 'the STAR is written')
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '31L')
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '31L', 'the other runway is written')
+    c.eq(procs_of(d, 'arr'), {'rwy': '31L'}, 'the STAR and the approach that do not serve 31L are removed (absent, not null)', what='route.procedures.arr')
+    want = norm(row(c, 'procReset').replace('{rwy}', '31L').replace('{what}', f"{kinds('star')} MEN1A, {kinds('app')} I13R"))
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=6000, what=f'one line says what was removed: {want}')
+    stars = [v for v, _ in sel_opts(c, 'p-arr-star') if v not in ('', '__none')]
+    c.eq(stars, ['LFML.STAR.MEN2B.RW31L.NONE'], 'and the STAR list is the one of 31L', what='STAR options')
+    # a transition belongs to its STAR: another STAR drops it
+    open_proc(c, procs={'arr': {'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'trans': 'LFML.STAR.MEN1A.RW.NEPIX'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'})
+    wait_rows(c, 'arr')
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN2B.RW31L.NONE')
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFML.STAR.MEN2B.RW31L.NONE', 'the other STAR is written')
+    c.eq(procs_of(d, 'arr'), {'rwy': '31L', 'star': 'LFML.STAR.MEN2B.RW31L.NONE'}, 'another STAR drops the transition and sets its single runway', what='route.procedures.arr')

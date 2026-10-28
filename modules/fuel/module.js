@@ -272,6 +272,11 @@ const TX = {
     appTrans: ['transition d’approche', 'approach transition', 'Anflugübergang', 'transición de aproximación']
   },
   procChange: ['{side} : {parts}', '{side}: {parts}', '{side}: {parts}', '{side}: {parts}'],
+  // choix retirés parce qu'une autre procédure ou une autre piste ne les dessert plus : une ligne
+  procReset: ['Retiré du choix (ne dessert pas la piste {rwy}) : {what}.',
+    'Removed from the choice (does not serve runway {rwy}): {what}.',
+    'Aus der Auswahl entfernt (bedient Piste {rwy} nicht): {what}.', 'Retirado de la selección (no sirve a la pista {rwy}): {what}.'
+  ],
   procReasons: {
     'bad-icao': ['Code OACI invalide : {icao}.', 'Invalid ICAO code: {icao}.', 'Ungültiger ICAO-Code: {icao}.',
       'Código OACI no válido: {icao}.'
@@ -1565,24 +1570,40 @@ function procChosen(k, raw) {
   if (!PROC_FIELDS[side]?.includes(field)) return;
   if (val === undefined) delete o[field];
   else o[field] = val;
-  if (field === 'rwy' && val) { // les procédures choisies qui ne desservent pas cette piste sont retirées, avec leur transition
-    const serves = id => {
-      const rec = S.procRecs?.get(id);
-      return !rec || !(rec.runways || []).length || rec.runways.map(rwKey).includes(rwKey(val));
-    };
-    for (const [main, tr] of side === 'dep' ? [
-        ['sid', 'trans']
-      ] : [
-        ['star', 'trans'],
-        ['app', 'appTrans']
-      ])
-      if (typeof o[main] === 'string' && !serves(o[main])) {
+  // les listes se filtrent l'une l'autre : une procédure choisie qui ne dessert pas la piste est retirée avec sa transition (absente,
+  // pas « aucune »), et une seule ligne le dit ; une procédure choisie avant la piste, qui n'en dessert qu'une, pose cette piste
+  const pairs = side === 'dep' ? [
+      ['sid', 'trans']
+    ] : [
+      ['star', 'trans'],
+      ['app', 'appTrans']
+    ],
+    removed = [],
+    prune = () => {
+      for (const [main, tr] of pairs) {
+        const rec = typeof o[main] === 'string' ? S.procRecs?.get(o[main]) : null;
+        if (!rec || servesRwy(rec, o.rwy)) continue;
+        removed.push(`${tt(TX.procKinds[main])} ${nameOfId(o[main], main)}`);
         delete o[main];
         delete o[tr];
       }
+    };
+  if (field === 'rwy' && val) prune();
+  if (pairs.some(([main]) => main === field) && typeof val === 'string' && !o.rwy) {
+    const rec = S.procRecs?.get(val),
+      only = rec && !servesAll(rec) ? [...new Set(rec.runways.map(rwKey))] : [];
+    if (only.length === 1) {
+      o.rwy = only[0];
+      prune();
+    }
   }
   if (field === 'sid' || field === 'star') delete o.trans;
   if (field === 'app') delete o.appTrans;
+  if (o.appTrans && o.appTrans === o.app) delete o.appTrans; // la transition d'une approche n'est pas l'approche elle-même
+  if (removed.length) S.ctx.notify(tt(TX.procReset, {
+    rwy: o.rwy,
+    what: removed.join(', ')
+  }), 'warn');
   // l'autre côté reste tel quel : un « aucune » posé sur tout le côté (null) n'est pas changé en « pas choisi »
   const keep = x => x === null ? null : cleanSide(x);
   r.procedures = {

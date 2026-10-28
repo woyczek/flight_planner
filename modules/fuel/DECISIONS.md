@@ -4,6 +4,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **28 Oct 2026 — the runway, the STAR and the approach filter one another** (user's report, same session as the previous
+  entry): `procChosen` now decides in both directions. A runway chosen removes the SID / STAR / approach (and its transition)
+  that does not serve it — « serves » = the record names that runway, names none, or names `ALL` / `RWALL`; a bare number
+  (« 14 ») matches « 14L » / « 14R » — to « not chosen » (absent, never `null`), with one `ctx.notify` line (×4: « Retiré du
+  choix (ne dessert pas la piste 31L) : STAR MEN1A, approche I13R. »). The records come from the new `S.procRecs`, which holds
+  ALL the records of both aerodromes (before, only the filtered lists: a record already out of the list could not be judged).
+  Decision taken: a SID, STAR or approach chosen while no runway is, and serving ONE runway only, sets that runway (the select
+  shows it; the other lists follow; a choice that the new runway does not serve is removed as above). A record serving several
+  runways (parallel ones) sets nothing. The transition of a STAR / SID / approach follows its procedure as before (another
+  procedure drops it, silently: it is not an incompatibility).
 - **28 Oct 2026 — the procedure rows show every procedure of the aerodrome, grouped by runway** (the user's report: LFBO, 18
   approaches installed in `proc/manual/`, and the Departure row said « aucune procédure publiée » with the reading button):
   the cause was in `sideModel`, which asked aerodb for the kinds of the side only (SID for the departure) and called an

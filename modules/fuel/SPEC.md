@@ -283,8 +283,13 @@ mount. Inside a mount, the two buttons switch as before.
      lists are read again when aerodb announces new procedures. Options: empty = not chosen ("—"),
      "aucune" (writes `null`; SID, STAR and approach), then the procedures by name; a record with `status: 'xplane'` (local)
      comes last, worded "X-Plane, local"; an `outdated` one says "périmé"; a name that comes back (one record per runway)
-     carries its runways. A change rewrites `route.procedures` v2 (`by: 'fuel'`, `at`) and drops what depended on it (another
-     runway removes the SID / STAR / approach that does not serve it; another procedure removes its transition). An aerodrome
+     carries its runways. A change rewrites `route.procedures` v2 (`by: 'fuel'`, `at`) and drops what depended on it. The lists filter one
+     another: a runway keeps the procedures that serve it (a record with no runway named, or `ALL` / `RWALL`, serves them all) and
+     removes the chosen SID / STAR / approach (with its transition) that does not, back to « not chosen » (the field is absent,
+     not `null`) with ONE floating notification naming what was removed; a SID, STAR or approach chosen while no runway is,
+     and serving one runway only, sets that runway (and removes in the same way the other choice it does not serve); the STAR
+     chosen offers its transitions, the approach chosen its approach transitions, another STAR / approach / SID removes the
+     transition. An aerodrome
      without data: the row says "aucune procédure publiée" and offers one button, "Lire les procédures de LFXX"
      (`aerodb.fetchProcedures(icao, { onProgress, signal })`, one aerodrome per gesture, nothing fetched silently); a refusal
      shows its reason in a floating notification (`ctx.notify`), and without a launcher (or on a device paired with the
