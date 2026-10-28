@@ -2,6 +2,9 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **28 Oct 2026 — the `h1` follows `ctx.titled`** (frame lot 25, INTEGRATION § 6): while the phone's header carries
+  the module's title (`ctx.titled`), the module's `h1` gets `f-sr` (screen readers only), toggled again on every
+  `frame-titled` event; the listener goes at unmount. Checked on 8804 at 375 px.
 - **24 Oct 2026 — the Report screen on a phone: uniform fields, source line, action bar** (relay session "relais cloud", on the
   user's words, iPhone 390 px, Cupertino, night: "uniformity and font-size problem on Cupertino, but also on Swiss, across this
   CR page (object sizes vary, badly wrapped text leaves the screen)"). Causes, measured: (1) the module put a `f-badge`

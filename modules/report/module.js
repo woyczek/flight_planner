@@ -1070,6 +1070,11 @@ export async function mount(el, ctx) {
     path: null
   };
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
+  // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
+  // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
+  S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);
+  S.srTitle();
+  window.addEventListener('frame-titled', S.srTitle);
   S.body = el.querySelector('[data-body]');
   // « ? » de l'en-tête : le chapitre au paragraphe du pas affiché (les trois pas côte à côte sur un module large : « Trois pas »)
   ctx.helpAnchor?.(() => S?.body?.querySelector('.f-steps')?.offsetParent ? `report-step-${S.step + 1}` : 'report-steps');
@@ -1118,6 +1123,7 @@ export async function mount(el, ctx) {
 
 export function unmount() {
   if (!S) return;
+  window.removeEventListener('frame-titled', S.srTitle);
   window.removeEventListener('frame-airline', S.onAirline);
   // un brouillon en attente part quand même (son minuteur garde l'état)
   S.body = null;
