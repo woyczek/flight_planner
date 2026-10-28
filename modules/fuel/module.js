@@ -10,7 +10,6 @@
 // module ([data-module="fuel"]) sur les jetons --sog-… du cadre ; aucune feuille globale.
 import * as XL from '../../frame/lib/external_links.js';
 import * as WX from './weather.js';
-import * as MT from '../../frame/lib/metar.js';
 import * as WD from './winds.js';
 import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
@@ -47,7 +46,7 @@ export const meta = {
   }],
   // gardés hors ligne dès la première visite (service worker du cadre)
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js',
-    '../../frame/lib/metar.js',
+    '../../frame/lib/weather_store.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../maps/lib/routing.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/time.js', '../../frame/lib/geo.js'
@@ -55,8 +54,8 @@ export const meta = {
 };
 
 const OFP_PATH = 'cache/fuel/last_ofp.json',
-  WX_PATH = 'cache/fuel/weather.json',
-  ALOFT_PATH = 'cache/fuel/aloft.json', // prévision en altitude (Open-Meteo) : profils aux lieux de la route
+  // anciennes réserves de fuel (avant la couche météo du cadre, ctx.weather) : retirées une fois de l'appareil
+  OLD_WEATHER = ['cache/fuel/weather.json', 'cache/fuel/aloft.json'],
   UI_PATH = 'cache/fuel/ui.json',
   LAST_AC_PATH = 'cache/fuel/last_aircraft.json', // dernier appareil choisi sur cet appareil : proposé, repris d'office
   LIBS = [
@@ -1496,7 +1495,7 @@ function renderPlanBody() {
   renderAloft();
   windSourceLine();
   // météo lue une fois par montage quand l'appareil est en ligne et la route a ses terrains
-  if (!S.wxTried && wxIds().length && S.ctx.net?.online?.() !== false) {
+  if (!S.wxTried && wxIds().length) { // hors ligne aussi : la couche répond de sa réserve
     S.wxTried = true;
     wxFetch(false);
   }
@@ -1817,9 +1816,10 @@ function scheduleWx() {
   if (!S.wx && !S.flight.weather?.real) return;
   S.wxTimer = setTimeout(() => wxFetch(false), 1200);
 }
-/** METAR et TAF des terrains par ctx.net (aviationweather.gov, relayé par le lanceur), gardés sur l'appareil ; hors
- *  réseau, les dernières valeurs gardées, avec leur heure. Fiche des terrains (axe de piste) par aerodb. loud : les
- *  refus sont dits. */
+/** METAR et TAF des terrains du couloir par la couche météo du cadre (ctx.weather.metar / taf : aviationweather.gov
+ *  relayé par le lanceur, sinon metar.vatsim.net et avwx.rest avec la clé de l'appareil ; gardés 30 min par terrain) ;
+ *  hors ligne, sa réserve. Les TAF seulement quand une date de vol les rend utiles (terrains avec METAR, départ,
+ *  arrivée, dégagement). Fiche des terrains (axe de piste) par aerodb. loud : les refus sont dits. */
 async function wxFetch(loud = false) {
   if (!S) return; // lecture programmée (scheduleWx) partie après le démontage
   const s = S,
@@ -1831,100 +1831,34 @@ async function wxFetch(loud = false) {
     if (loud) S.ctx.notify(tt(TX.wxNone), 'warn');
     return renderWx();
   }
-  const chunks = [];
-  for (let i = 0; i < ids.length; i += 40) chunks.push(ids.slice(i, i + 40));
-  /** Appel par le cadre : réponse, ou erreur codée (offline : hors réseau ; relay : site injoignable d'ici, sans
-   *  lanceur ou sans clé ; http : refus du service). */
-  const call = async (url, accept = 'application/json') => {
-    const res = await s.ctx.net.fetch(url, {
-      headers: {
-        accept
-      }
-    });
-    if (res.headers.get('x-sog-offline') || res.headers.get('x-sog-unreachable')) throw Object.assign(new Error('net'), {
-      code: s.ctx.net.online?.() === false || res.headers.get('x-sog-offline') ? 'offline' : 'relay'
-    });
-    if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), {
-      code: 'http'
-    });
-    return res;
-  };
-  // 1. aviationweather.gov (JSON décodé), relayé par le lanceur quand la page est servie par un
-  const viaLauncher = async () => {
-    const get = async kind => (await Promise.all(chunks.map(async c => {
-      const res = await call(`https://aviationweather.gov/api/data/${kind}?ids=${encodeURIComponent(c.join(','))}&format=json`);
-      return res.status === 204 ? [] : res.json();
-    }))).flat();
-    const [metars, tafs] = await Promise.all([get('metar'), get('taf')]);
-    return {
-      metars,
-      tafs,
-      source: 'launcher',
-      noTaf: false
-    };
-  };
-  // 2. sans lanceur : METAR bruts de metar.vatsim.net (décodés par frame/lib/metar.js), TAF d'avwx.rest avec la clé de
-  // l'appareil (ajoutée par le cadre) — seulement si une date de vol les rend utiles, terrain par terrain, douze au plus
-  const direct = async () => {
-    const metars = (await Promise.all(chunks.map(async c => MT.decodeMetars(await (await call(
-      `https://metar.vatsim.net/metar.php?id=${encodeURIComponent(c.join(','))}`, 'text/plain')).text())))).flat();
-    const tafs = [];
-    let noTaf = false;
-    if (when != null) {
-      const withMetar = new Set(metars.map(m => m.icaoId)),
-        r = s.flight.route || {},
-        want = ids.filter(id => withMetar.has(id) || [r.dep, r.arr, r.altn].includes(id)).slice(0, 12);
-      for (const id of want) {
-        try {
-          const t = MT.fromAvwxTaf(await (await call(`https://avwx.rest/api/taf/${encodeURIComponent(id)}`)).json());
-          if (t) tafs.push(t);
-        } catch (e) {
-          if (e.code === 'relay') {
-            noTaf = true; // pas de clé météo sur l'appareil : inutile d'insister
-            break;
-          }
-        }
-      }
-    }
-    return {
-      metars,
-      tafs,
-      source: 'direct',
-      noTaf
-    };
-  };
-  const kept = (await s.ctx.data.get(WX_PATH).catch(() => null)) || {
-    metar: {},
-    taf: {}
-  };
+  const W = s.ctx.weather,
+    cacheOnly = s.ctx.net?.online?.() === false;
   try {
-    let got;
-    try {
-      got = await viaLauncher();
-    } catch (e) {
-      if (e.code !== 'relay') throw e;
-      got = await direct(); // aviationweather injoignable d'ici (pas de lanceur) : sources directes
-    }
-    for (const x of got.metars || []) kept.metar[x.icaoId] = x;
-    for (const x of got.tafs || []) kept.taf[x.icaoId] = x;
-    kept.at = new Date().toISOString();
-    kept.source = got.source;
-    kept.noTaf = got.noTaf;
-    await s.ctx.data.put(WX_PATH, kept, {
-      policy: 'cache'
+    if (!W) throw Object.assign(new Error('ctx.weather'), {
+      unreachable: true
     });
+    const m = await W.metar(ids, {
+        cacheOnly
+      }),
+      r = s.flight.route || {},
+      tafIds = when == null ? [] : ids.filter(id => m.items[id] || [r.dep, r.arr, r.altn].includes(id)),
+      t = tafIds.length ? await W.taf(tafIds, {
+        cacheOnly
+      }) : null;
     if (gone(s)) return;
+    const newest = Math.max(0, ...Object.values(m.items).map(x => +x?.obsTime || 0)); // heure du plus récent METAR gardé
     S.wx = {
-      ...kept,
-      cached: false
+      metar: m.items,
+      taf: t?.items || {},
+      at: m.offline || cacheOnly ? newest ? new Date(newest * 1000).toISOString() : null : new Date().toISOString(),
+      source: m.source === 'cache' ? S.wx?.source || 'cache' : m.source,
+      noTaf: !!t?.noTaf,
+      cached: !!(m.offline || cacheOnly)
     };
   } catch (e) {
     if (gone(s)) return;
-    S.wx = kept.at ? {
-      ...kept,
-      cached: true
-    } : null;
-    if (loud) S.ctx.notify(e.code === 'offline' ? tt(TX.offline) : e.code === 'relay' ? tt(TX.wxRelay) : tt(TX.sbError, {
+    if (S.wx) S.wx.cached = true;
+    if (loud) S.ctx.notify(e.offline ? tt(TX.offline) : e.unreachable ? tt(TX.wxRelay) : tt(TX.sbError, {
       e: e.message
     }), 'warn');
   }
@@ -1947,10 +1881,10 @@ function aloftKey() {
   const pts = (S.flight.route?.points || []).filter(p => Number.isFinite(+p.lat));
   return JSON.stringify([pts.map(p => [(+p.lat).toFixed(2), (+p.lon).toFixed(2)]), Math.round((wxWhen() ?? Date.now() / 1000) / 3600)]);
 }
-/** Prévision par niveaux aux lieux de la route (points, plus un lieu tous les 50 NM environ, 24 au plus), par ctx.net
- *  (relayée par le lanceur ou directe, sans clé), modèle selon la région (WD.modelFor), heure la plus proche de la date
- *  du vol (sinon maintenant) ; heure du run lue à part si le service la donne. Gardée sur l'appareil ; hors réseau, la
- *  dernière. Puis appliquée au vol (aloftApply). */
+/** Prévision par niveaux aux lieux de la route (points, plus un lieu tous les 50 NM environ, 24 au plus) par la couche
+ *  météo du cadre (ctx.weather.aloft : modèle selon la région, heure la plus proche de la date du vol, sinon maintenant ;
+ *  sa réserve d'abord, Open-Meteo pour ce qui manque, appels comptés pour l'appareil). Hors ligne, sa réserve seulement.
+ *  Puis appliquée au vol (aloftApply). */
 async function aloftFetch(loud = false) {
   const s = S,
     pts = (S.flight.route?.points || []).filter(p => Number.isFinite(+p.lat));
@@ -1959,50 +1893,48 @@ async function aloftFetch(loud = false) {
   if (S.aloft?.key === key && !S.aloft.cached) return aloftApply();
   S.aloftState = 'loading';
   const smp = WD.samples(pts),
-    mid = smp[Math.floor(smp.length / 2)],
-    model = WD.modelFor(mid.lat, mid.lon),
-    t = wxWhen() ?? Math.round(Date.now() / 1000);
+    t = wxWhen() ?? Math.round(Date.now() / 1000),
+    W = s.ctx.weather,
+    offline = s.ctx.net?.online?.() === false,
+    ask = cacheOnly => W.aloft(smp, t, {
+      cacheOnly,
+      stale: () => gone(s)
+    });
   try {
-    const res = await s.ctx.net.fetch(WD.forecastUrl(smp, model.id), {
-      headers: {
-        accept: 'application/json'
-      }
+    if (!W) throw Object.assign(new Error('ctx.weather'), {
+      unreachable: true
     });
-    if (res.headers.get('x-sog-offline') || res.headers.get('x-sog-unreachable') || !res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), {
-      code: res.headers.get('x-sog-offline') ? 'offline' : 'http'
-    });
-    const profiles = WD.profiles(await res.json(), t);
-    let run = null;
-    try { // heure du dernier run du modèle (métadonnées d'Open-Meteo), facultative
-      const meta = await s.ctx.net.fetch(`https://api.open-meteo.com/data/${{
-        meteofrance_seamless: 'meteofrance_arpege_europe',
-        icon_seamless: 'dwd_icon',
-        gfs_seamless: 'ncep_gfs025'
-      }[model.id]}/static/meta.json`);
-      const m = meta.ok && !meta.headers.get('x-sog-unreachable') ? await meta.json() : null;
-      run = Number.isFinite(+m?.last_run_initialisation_time) ? +m.last_run_initialisation_time : null;
-    } catch {
-      /* sans heure du run */
+    let r = null,
+      cached = offline;
+    try {
+      r = await ask(offline);
+    } catch (e) {
+      if (!e.offline) throw e;
+      r = await ask(true); // le réseau est tombé en route : la réserve de la couche
+      cached = true;
     }
     if (gone(s)) return;
+    if (!r) throw Object.assign(new Error('offline'), {
+      offline: true
+    });
     S.aloftState = 'ok';
     S.aloft = {
       key,
-      model: model.name,
-      short: model.short,
-      run,
-      time: profiles[0]?.time ?? t,
+      model: r.model.name,
+      short: r.model.short,
+      run: r.run,
+      time: r.time ?? t,
       at: new Date().toISOString(),
       samples: smp,
-      profiles
+      profiles: r.profiles,
+      ...(cached ? {
+        cached: true
+      } : {})
     };
-    await s.ctx.data.put(ALOFT_PATH, S.aloft, {
-      policy: 'cache'
-    });
   } catch (e) {
     if (gone(s)) return;
     S.aloftState = 'failed'; // le vent au sol des METAR prend le relais, et c'est dit
-    if (loud && e.code !== 'offline') S.ctx.notify(tt(TX.sbError, {
+    if (loud && !e.offline && !e.stale) S.ctx.notify(tt(TX.sbError, {
       e: e.message
     }), 'warn');
     if (S.aloft) S.aloft.cached = true;
@@ -3945,9 +3877,9 @@ export async function mount(el, ctx) {
   // vol courant ou les réglages jamais lus arrivent ensuite (completeMount) — en attendant « chargement… », et rien
   // n'est écrit ni calculé
   const rd = path => Promise.resolve().then(() => ctx.data.read(path)).then(r => r?.value ?? null).catch(() => null),
-    [, kept0, fuelSettings, ofp, wxKept, ui, aloftKept, lastAcKept] = await Promise.all([loadLibs(), rd(pilotPath(
-      'current_flight.json')), rd(pilotPath('fuel.json')), rd(OFP_PATH), rd(WX_PATH), rd(UI_PATH), rd(ALOFT_PATH), rd(
-      LAST_AC_PATH)]);
+    [, kept0, fuelSettings, ofp, ui, lastAcKept] = await Promise.all([loadLibs(), rd(pilotPath('current_flight.json')),
+      rd(pilotPath('fuel.json')), rd(OFP_PATH), rd(UI_PATH), rd(LAST_AC_PATH)
+    ]);
   if (gone(self)) return; // démonté, ou remplacé par un autre montage, pendant les lectures
   S.refsPending = true; // registre d'aerodb et fiches pas encore là : ni devis, ni écriture du devis
   S.flightPending = kept0 == null; // vol courant jamais lu sur cet appareil : écran en attente, aucune écriture
@@ -3968,17 +3900,12 @@ export async function mount(el, ctx) {
   S.lastAc = lastAcKept?.aircraft || null;
   if (!S.flightPending) flightDefaults(kept);
   S.ofp = ofp;
-  // météo : dernières valeurs gardées sur l'appareil, relues ensuite si l'appareil est en ligne
-  S.wx = wxKept?.at ? {
-    ...wxKept,
-    cached: true
-  } : null;
+  // météo : la couche du cadre (ctx.weather) la garde ; relue au premier dessin (hors ligne : sa réserve seulement)
+  S.wx = null;
   S.ui = ui || {};
   delete S.ui.view; // gardé par les versions précédentes, plus lu ni écrit : l'écran s'ouvre toujours sur le Plan
-  S.aloft = aloftKept?.profiles ? {
-    ...aloftKept,
-    cached: true
-  } : null;
+  S.aloft = null;
+  for (const path of OLD_WEATHER) ctx.data.remove?.(path)?.catch?.(() => {});
   // pas de la préparation : celui gardé, ou Route quand la Carte envoie « Modifier la route » (#fuel?focus=route)
   S.focusRoute = ctx.query?.focus === 'route';
   S.step = S.focusRoute ? 1 : Math.max(0, Math.min(4, +S.ui.step || 0));

@@ -36,6 +36,9 @@
 <pre id="out">running…</pre>
 <script type="module">
   import * as W from '../winds.js';
+  import {
+    profilesAt
+  } from '../../../frame/lib/weather_store.js';
   const lines = [];
   let pass = 0,
     fail = 0;
@@ -181,14 +184,15 @@
     hourly[`wind_speed_${l}hPa`] = [10, 20, 30];
     hourly[`wind_direction_${l}hPa`] = [90, 180, 270];
   }
-  const one = W.profiles({
+  // la forme des profils que fuel lit (ctx.weather.aloft) : profilesAt de la couche météo du cadre
+  const one = profilesAt({
     latitude: 45,
     longitude: 1,
     hourly
   }, 5000);
   check('one place: the nearest hour', [one.length, one[0].time, one[0].levels[0].kt], [1, 4600, 20]);
   check('one place: every level', one[0].levels.length, W.LEVELS.length);
-  check('several places', W.profiles([{
+  check('several places', profilesAt([{
     hourly
   }, {
     hourly
@@ -196,13 +200,6 @@
   check('model in France', W.modelFor(46, 2).id, 'meteofrance_seamless');
   check('model in Germany', W.modelFor(52, 20).id, 'icon_seamless');
   check('model elsewhere', W.modelFor(40, -100).id, 'gfs_seamless');
-  check('URL: places and levels', /latitude=45\.000,46\.000&longitude=1\.000,2\.000&hourly=temperature_1000hPa/.test(W.forecastUrl([{
-    lat: 45,
-    lon: 1
-  }, {
-    lat: 46,
-    lon: 2
-  }], 'icon_seamless')), true);
   document.getElementById('out').innerHTML = `${pass} passed, ${fail} failed\n` + lines.join('\n');
   document.title = `fuel — winds bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
 </script>

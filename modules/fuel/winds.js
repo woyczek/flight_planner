@@ -1,5 +1,5 @@
 // V3 fuel — vents et températures en altitude en calcul pur (modules/fuel/SPEC.md § 11) : prévision par niveaux de
-// pression d'Open-Meteo (api.open-meteo.com/v1/forecast, sans clé), lue aux points de la route ; vent et température
+// pression lue par la couche météo du cadre (ctx.weather.aloft, frame/lib/weather_store.js) aux points de la route ; vent et température
 // au niveau planifié (un niveau de vol est une pression : interpolation en logarithme de la pression), vent moyen le
 // long de la route pondéré par la longueur des tronçons, et profil de l'atmosphère au départ (température par
 // niveau, inversions, altitude-densité). Ni page, ni stockage, ni réseau : module.js appelle et garde.
@@ -8,6 +8,9 @@ import {
   wrapLon,
   unwrapLons
 } from '../../frame/lib/geo.js';
+import {
+  modelFor as layerModelFor
+} from '../../frame/lib/weather_store.js';
 
 /** Niveaux de pression demandés (hPa), du sol vers le haut. */
 export const LEVELS = [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500, 400, 300, 250, 200];
@@ -19,62 +22,9 @@ export const hPaOf = ft => 1013.25 * (1 - 6.87559e-6 * ft) ** 5.25588;
 /** Température type (°C) à une altitude pression (ft), troposphère. */
 export const isaC = ft => 15 - 0.0019812 * ft;
 
-/** Modèle de prévision selon le lieu (milieu de la route) : AROME / ARPEGE de Météo-France sur la France et ses
- *  abords, ICON (DWD) sur le reste de l'Europe, GFS (NOAA) ailleurs. { id (paramètre models d'Open-Meteo), name, short }. */
-export function modelFor(lat, lon) {
-  if (lat >= 38 && lat <= 55 && lon >= -10 && lon <= 16) return {
-    id: 'meteofrance_seamless',
-    name: 'Météo-France AROME / ARPEGE',
-    short: 'ARPEGE'
-  };
-  if (lat >= 30 && lat <= 72 && lon >= -30 && lon <= 45) return {
-    id: 'icon_seamless',
-    name: 'DWD ICON',
-    short: 'ICON'
-  };
-  return {
-    id: 'gfs_seamless',
-    name: 'NOAA GFS',
-    short: 'GFS'
-  };
-}
-
-/** Variables horaires demandées : température, vent (force, direction) à chaque niveau de LEVELS. */
-export const hourlyVars = () => LEVELS.flatMap(l => [`temperature_${l}hPa`, `wind_speed_${l}hPa`, `wind_direction_${l}hPa`]).join(',');
-
-/** Adresse d'une demande pour des lieux [{ lat, lon }] (une seule demande, lieux séparés par des virgules) : vent en
- *  nœuds, heures en secondes Unix, deux jours. */
-export function forecastUrl(places, model) {
-  const f = v => (+v).toFixed(3);
-  return 'https://api.open-meteo.com/v1/forecast' +
-    `?latitude=${places.map(p => f(p.lat)).join(',')}&longitude=${places.map(p => f(p.lon)).join(',')}` +
-    `&hourly=${hourlyVars()}&wind_speed_unit=kn&timeformat=unixtime&forecast_days=2&models=${encodeURIComponent(model)}`;
-}
-
-/** Réponse d'Open-Meteo (un objet ou un tableau, un par lieu) → profils à l'heure la plus proche de t (secondes) :
- *  [{ lat, lon, time, levels: [{ hPa, ft, tC, dir, kt }] }] (niveaux sans valeur écartés). */
-export function profiles(json, t) {
-  return [].concat(json || []).map(loc => {
-    const h = loc?.hourly || {},
-      times = h.time || [];
-    let k = 0;
-    for (let i = 1; i < times.length; i++)
-      if (Math.abs(times[i] - t) < Math.abs(times[k] - t)) k = i;
-    const levels = LEVELS.map(l => ({
-      hPa: l,
-      ft: paFt(l),
-      tC: h[`temperature_${l}hPa`]?.[k],
-      dir: h[`wind_direction_${l}hPa`]?.[k],
-      kt: h[`wind_speed_${l}hPa`]?.[k]
-    })).filter(x => Number.isFinite(x.tC) && Number.isFinite(x.dir) && Number.isFinite(x.kt));
-    return {
-      lat: +loc?.latitude,
-      lon: +loc?.longitude,
-      time: times[k] ?? null,
-      levels
-    };
-  });
-}
+/** Modèle de prévision selon le lieu : celui de la couche météo du cadre (une seule règle pour la suite, frame/INTEGRATION
+ *  § 14) ; gardé ici pour les lecteurs qui l'importent encore de ce fichier (Atmosphère). { id, name, short }. */
+export const modelFor = (lat, lon) => layerModelFor(lat, lon);
 
 /** Vent et température d'un profil à une altitude pression ft : interpolation en ln(p) entre les deux niveaux qui
  *  l'encadrent, le vent en vecteur ; au-delà des niveaux, le plus proche. { dirDeg, kt, tC, isaDev } ou null. */

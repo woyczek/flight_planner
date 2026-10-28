@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel reads the shared weather layer** (`modules/fuel/module.js`, `winds.js`; SPEC, INTEGRATION, DECISIONS) — the
+  winds aloft and the aerodromes' METAR / TAF come from the frame's weather store: one cache and one count of calls for
+  the whole app; fuel no longer calls any weather service itself.
 - **Frame: `progress.actual` fixed, Escape taken by a module** (`frame/app.js`; INTEGRATION § 6 and § 9.4, DECISIONS;
   test B11): the actual position the frame writes into the current flight has a written shape (fields, units, nulls,
   frequency); the frame ignores an Escape a module already took (`preventDefault`) and marks the ones it uses.

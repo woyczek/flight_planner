@@ -4,6 +4,18 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **28 Oct 2026 — fuel reads the frame's weather layer** (frame lot 26, INTEGRATION § 14; Simplification): winds and
+  temperatures aloft through `ctx.weather.aloft(samples, when, { cacheOnly, stale })` (same shape as `winds.js` gave),
+  METAR / TAF of the corridor through `ctx.weather.metar` / `taf` (TAF only with a flight date, as before), `cacheOnly`
+  offline. `winds.js` loses `forecastUrl`, `profiles`, `hourlyVars`; its `modelFor` delegates to the layer's (Atmosphere
+  still imports it from here). `cache/fuel/weather.json` and `aloft.json` are no longer written and removed once; fuel no
+  longer imports `frame/lib/metar.js`. **Measured** (built-in browser, network on, fresh origin, the suite's seeded
+  flight LFRS LUGEN NEPIX LFML, C-130J FL270, real weather): before, wind 317°/25 kt, ISA +1, block 4,148 kg, trip
+  3,112 kg, 84 min, the layer's count absent (fuel was not counted); after, 317°/24 kt, ISA +1, 4,153 kg, 3,117 kg,
+  85 min, "Weather: 38 calls today" (one Open-Meteo request of 9 cells × 42 variables = 37.8); a reload asks nothing
+  (the layer's reserve), same figures. The 1 kt / 5 kg difference is the layer's: it reads Open-Meteo at the centre of
+  its 0.1° cell (47.150 for LFRS's 47.157), not at the exact point; the run shown moved from 06:00Z to 03:00Z because
+  the layer reads the AROME HD metadata where fuel read ARPEGE's (reported to the frame). Bench `test/winds.html` 35/35.
 - **28 Oct 2026 — `quote.taxiMin`** (Simplification, with `quote.legs`): the taxi minutes the quote counts are written
   beside `legs` (which starts at brake release), so the frame's ETA helpers need not guess them (their fallback: 10
   min). Checked on 8804: `taxiMin: 10` with the legs.
