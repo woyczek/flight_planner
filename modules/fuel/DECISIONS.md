@@ -4,6 +4,12 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **28 Oct 2026 — `quote.legs` for the recoded Map** (its lot 0, through Simplification): every quote writes
+  `quote.legs = [{ id, min }]`, the minutes from brake release to each route point (taxi apart), from the quote's own
+  timetable (`progressPlan` → `PG.etas(P, 0)` minus `taxiMin`, to a tenth). `shareProfile` already rewrites `quote`
+  when it changes, so `legs` follows every quote change. INTEGRATION § 3: `legs`, maps as a writer of `route` and
+  `level` (its Edit mode), and the announced debt: ETA and planned position derived by `frame/lib/current_flight.js`
+  (`etaOf`, `plannedPositionAt`) at the recoded Map's delivery, fuel then stops writing `progress.eta` / `plannedPos`.
 - **28 Oct 2026 — after the relay: one flight date; `progress` is a started flight's** (review of the relay's work,
   Simplification's decisions): (2) the level decision's flat basis for every level with the "Plan" diamond (relay,
   24 Oct) is confirmed: it **replaces** the 23 Oct decision "at the chosen level, curve and quote give the same

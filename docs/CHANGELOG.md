@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: minutes to each route point in the quote** (`modules/fuel/module.js`; INTEGRATION, DECISIONS) —
+  `quote.legs` gives the Map the planned time from brake release to every point.
 - **Fuel: one flight date** (`modules/fuel/module.js`; INTEGRATION, DECISIONS, help ×4) — the
   flight date is only `planned_at` (no more `weather.when` copy), its field says it is in the device's local time;
   readers of `progress` test the start (`started.at`).

@@ -70,6 +70,7 @@ report and maps never write nor erase it.
 | Writer | Fields | Keys of `progress` |
 |---|---|---|
 | fuel | `FUEL_FIELDS`: `aircraft`, `route`, `level`, `wind`, `windSource`, `isaDev`, `profile`, `quote`, `weather`, `ofp`, `started`, `planned_at` | `FUEL_PROGRESS`: `at`, `plannedPos`, `eta`, `fuelRemainingKg`, `remainingNm`, `phase` |
+| maps (Edit mode of the Map) | `route` (merged into it: `procedures` kept while `dep` / `arr` are unchanged, `wind` removed from the points it moved), `level` | — |
 | report (report saved) | `started` (null) | `FUEL_PROGRESS` cleared |
 | frame | — | `actual` |
 
@@ -160,9 +161,12 @@ report and maps never write nor erase it.
   longer written: `planned_at` above; `mid`,
   the former intermediate aerodrome, is no longer written nor read: the corridor's aerodromes replace it); `windSource`: `{ kind: 'weather', ids: ['LFBO (TAF)', …] }` when the wind came from it, else
   null.
-- `quote` (fuel's): `{ block, trip, unit ('kg' | 'lb', the sheet's), minutes, levelFt, approx }` — the quote's block
-  fuel and trip, rounded, rewritten with every quote that changes them (null without a quote with fuel); Report fills
-  "fuel at start" with `block`.
+- `quote` (fuel's): `{ block, trip, unit ('kg' | 'lb', the sheet's), minutes, levelFt, approx, legs }` — the quote's
+  block fuel and trip, rounded, rewritten with every quote that changes them (null without a quote with fuel); Report
+  fills "fuel at start" with `block`. **`legs`** (28 Oct 2026, for the recoded Map): `[{ id, min }]`, one per route
+  point in order, `min` = minutes from brake release (taxi apart: the quote settings' `taxiMin`) to that point, to a tenth
+  — the quote's own timetable (climb, cruise by leg with its wind, descent; `progress.js` `plan` / `etas`), the departure
+  at 0; `null` without a route of two points or more.
 - `progress` (fuel's, lot H): `{ at, plannedPos { lat, lon, legIndex, nmFromDep }, eta [{ id, at }], fuelRemainingKg,
   remainingNm, phase ('taxi' | 'climb' | 'cruise' | 'descent' | 'arrived'), actual? }` — the planned progress of the
   started flight, written at most once a minute while it flies (at once on a phase change, a cancelled start or a
@@ -175,6 +179,11 @@ report and maps never write nor erase it.
   at }] }` only (`plannedPos`, `fuelRemainingKg`, `remainingNm` and `phase` are `null`), the ETAs counted from
   `planned_at` as a started flight counts them from `started.at`; rewritten with every quote change, cleared when the date
   is cleared, the flight is started (then from `started.at`) or its arrival is past.
+  **Announced (debt dated 28 Oct 2026, lifted at the delivery of the recoded Map)**: the ETA and the planned position
+  become derived values, computed by a shared helper of `frame/lib/current_flight.js` (`etaOf`, `plannedPositionAt`)
+  from `quote.legs` and `started.at` or `planned_at`; then fuel stops writing `progress.eta` and `progress.plannedPos`
+  (it keeps `fuelRemainingKg`, `remainingNm`, `phase`) and every reader (Map, My flights, Report) goes through the
+  helper.
   `actual` (the real position: phone GPS, IVAO / VATSIM network) belongs to the frame; fuel and report keep it as
   written (table above).
 - `started` (lot G): `{ at (ISO), by: 'fuel', diverted? }` — written by fuel at the start (after the weather and the

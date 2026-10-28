@@ -3329,17 +3329,26 @@ function shareProfile(q) {
   S.flight.quote = sum;
   saveFlight();
 }
-/** Résumé du devis pour le compte rendu (current_flight.quote) : carburant bloc et délestage arrondis, dans l'unité de
- *  la fiche, temps de vol (min), niveau ; null sans devis chiffré. */
+/** Résumé du devis pour le compte rendu et la Carte (current_flight.quote) : carburant bloc et délestage arrondis,
+ *  dans l'unité de la fiche, temps de vol (min), niveau, et legs : à chaque point de la route, les minutes cumulées
+ *  depuis le lâcher des freins (roulage à part : settings.taxiMin), tirées de l'horaire prévu du devis (montée,
+ *  croisière par tronçon avec son vent, descente) ; null sans devis chiffré. */
 function quoteSummary(q) {
   if (!q?.hasFuel) return null;
+  const P = progressPlan(S.C),
+    pts = S.flight.route?.points || [],
+    taxi = +S.settings.taxiMin || 0;
   return {
     block: Math.round(q.block),
     trip: Math.round(q.trip),
     unit: S.C?.sheet?.unit || 'kg',
     minutes: Math.round(q.minutes),
     levelFt: q.levelFt || null,
-    approx: !!q.approx
+    approx: !!q.approx,
+    legs: P ? PG.etas(P, 0).map(e => ({
+      id: pts[e.i]?.id || '',
+      min: Math.max(0, Math.round((e.at / 60000 - taxi) * 10) / 10)
+    })) : null
   };
 }
 
