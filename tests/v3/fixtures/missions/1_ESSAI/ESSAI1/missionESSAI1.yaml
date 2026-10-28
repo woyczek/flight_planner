@@ -1,0 +1,34 @@
+# Mission synthétique des essais de la Carte V3 (tests/v3/PLAN.md D33, J6 ; modules/maps/test/mission.html) : codes XX…,
+# positions inventées, aucune donnée réelle. Deux cartes : la première porte les champs de dessin du studio V2 (profile_def,
+# resolved_bbox, cycle différent de celui d'aerodb), la seconde aucun (repli sur le profil intégré de son type).
+mission:
+  id: ESSAI1
+title: Mission d'essai
+origin: {id: XXAA, name: XXAA, lat: 46.9, lon: 0.4}
+destination: {id: XXZZ, name: XXZZ, lat: 44.3, lon: 5.1}
+target: {id: CIBLE, name: Cible, lat: 45.6, lon: 2.8}
+turning_points:
+  - {id: TP1, name: TP1, lat: 46.0, lon: 1.6}
+zones:
+  - {id: Z1, name: Zone de recherche, kind: search, center: {lat: 45.6, lon: 2.8}, radius_km: 15}
+  - id: Z2
+    name: Zone interdite
+    kind: exclusion
+    points:
+      - {lat: 45.0, lon: 3.5}
+      - {lat: 45.0, lon: 4.0}
+      - {lat: 44.7, lon: 4.0}
+      - {lat: 44.7, lon: 3.5}
+maps:
+  - filename: carte_generale.png
+    type: general
+    description: Carte générale
+    profile_def: {id: essai-copy, name: Copie du studio, base: ofm-positron, zones: [TMA, CTR, R, D], corridorNm: 0, elements: {aerodromes: true, navaids: true}}
+    resolved_bbox: [0.0, 43.8, 5.6, 47.3]
+    cycle: '2026-09-11'
+  - filename: carte_cible.png
+    type: target
+    description: Carte de la cible
+vertical_profile:
+  route: XXAA TP1 CIBLE XXZZ
+  cruise: FL065
