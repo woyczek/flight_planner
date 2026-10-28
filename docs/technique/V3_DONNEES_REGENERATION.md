@@ -6,6 +6,12 @@ the cloud container (the Python builder replayed on the real FAA file, HTTP requ
 verified is marked **to check**, with the question. Origin: `V3_SPECIFICATION.md` § 10.18; the dedicated application it
 leads to is [V3_APP_DONNEES.md](V3_APP_DONNEES.md) (§ 10.19).*
 
+*28 October 2026: the screen is now a **module**, `modules/data/` (ergonomics session), specified in its final state in
+[`modules/data/SPEC.md`](../../modules/data/SPEC.md) with its requests to the frame and aerodb
+([`INTEGRATION.md`](../../modules/data/INTEGRATION.md)) and the reviewed lots ([`ROADMAP.md`](../../modules/data/ROADMAP.md)).
+This document stays the inventory and the measures; where § 2 and § 4 differ from the module's documents, the module's
+documents rule.*
+
 User, 26 Oct: « Envisager une page dédiée régénération des données, sans passer par la v2 (récupérer fichiers en cache
 local, compiler, pousser, nettoyer). L'appli est en bonne voie. On peut imaginer une appli dédiée au parsing et à la
 compilation de toutes ces données : iOS, android. Chantier dédié. »

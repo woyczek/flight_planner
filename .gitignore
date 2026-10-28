@@ -1,6 +1,8 @@
 # v3 : l'application seule est versionnée ici. Les données (registres, missions, références DEFA, MORA, AIRAC…)
 # vivent dans data/, clone du dépôt de données (privé) — voir docs/INSTALL.md.
 data/
+# … sauf le module Données de l'appli (modules/data/), qui est du code
+!modules/data/
 
 # Caches et fichiers de travail
 # synoptique monde d'Atmosphère : écrit par le workflow des pages (tools/build_world_weather.py), jamais versionné
