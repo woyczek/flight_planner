@@ -6,10 +6,10 @@ Rules covered
     even when a wide element is put in the column (B2, the "wide element" fix of 24 Oct);
   * nothing sits between the header and the map (B3); buttons never cover the sheet (B4);
   * full screen on a phone and on a screen (no exit chip: the column's button and Escape leave it), its memory across frame
-    screens, the order of Escape (B5-B8);
+    screens, the order of Escape (B5-B8), an Escape the module took ignored by the frame (B11);
   * the layer lets gestures through, only the buttons take touches (B9); panes get no full-screen button (B10).
 
-Cases: B1 B2 B3 B4 B5 B6 B7 B8 B9 B10.  Both fixed modules (maps, atmosphere) are measured with a flight seeded.
+Cases: B1 B2 B3 B4 B5 B6 B7 B8 B9 B10 B11.  Both fixed modules (maps, atmosphere) are measured with a flight seeded.
 """
 from lib import MAP_JS, Fail, Skip, case, tx
 
@@ -209,3 +209,31 @@ def b10(c):
     n = c.js("document.querySelectorAll('.f-pane .f-overlay').length + document.querySelectorAll('.f-pane ~ .f-overlay').length")
     full = c.js("document.querySelectorAll('.f-pane .f-ov-full').length")
     c.eq(full, 0, 'a pane has no full-screen button', what=f'.f-ov-full inside the pane ({n} pane layer(s))')
+
+
+@case('B11', 'Escape taken by the module', 'B', tags=('overlay', 'fullscreen'), screens=False,
+      rule='frame/INTEGRATION 9.4 (Escape): a key press the module took (preventDefault) is ignored by the frame, wherever the module listens')
+def b11(c):
+    c.open('maps', flight=True)
+    c.tap('.f-ov-full')
+    c.until("document.documentElement.classList.contains('f-full')", what='full screen')
+    # a module's listener on document, bubbling, added after the frame's start (the case the frame used to see first)
+    c.js("""() => { window.__took = 0; window.__seen = [];
+      window.__take = e => { if (e.key === 'Escape' && window.__took < 1) { window.__took++; e.preventDefault() } };
+      document.addEventListener('keydown', window.__take);
+      window.addEventListener('keydown', e => { if (e.key === 'Escape') window.__seen.push(e.defaultPrevented) }) }""")
+    c.key('Escape')
+    c.wait(300)
+    c.ok('f-full' in c.js('document.documentElement.className'), 'full screen left by a key press the module took',
+         'the frame ignores an Escape whose defaultPrevented is true')
+    c.key('Escape')
+    c.until("!document.documentElement.classList.contains('f-full')", what='the next Escape, not taken, leaves full screen')
+    c.eq(c.js('window.__seen.slice(-1)[0]'), True, 'the frame marks the key it used (preventDefault)', what='defaultPrevented after the frame')
+    # a frame screen opened over the module: same rule
+    c.js("() => { window.__took = 0; location.hash = '#settings' }")
+    c.until("!!document.querySelector('[data-card=\"status\"]')", what='the settings are open over the map')
+    c.key('Escape')
+    c.wait(300)
+    c.eq(c.js('location.hash'), '#settings', 'the screen stays when the module took the key', what='address after a taken Escape')
+    c.key('Escape')
+    c.until("location.hash === '#maps'", what='the next Escape closes the settings')

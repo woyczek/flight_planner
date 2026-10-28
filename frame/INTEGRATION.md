@@ -135,7 +135,23 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - `ctx.live` (read): the actual position during a started flight, from the device's GPS or the pilot's IVAO / VATSIM
   session: `status`, `source`, `last` `{ at, lat, lon, altFt, gsKt, trackDeg, source }`. A module that wants the GPS
   offers a button that calls `ctx.live.enable()` (the permission needs a gesture). The frame writes
-  `progress.actual` in the current flight; read it there with `watch`, never write it.
+  `progress.actual` in the current flight; read it there with `watch`, never write it. Its shape is fixed (28 Oct 2026):
+
+  | Field | Type, unit | |
+  | --- | --- | --- |
+  | `at` | ISO text (UTC) | when the frame received the position |
+  | `lat`, `lon` | degrees (WGS 84), `lon` in [-180, 180[ | never null; a position at 0°, 0° is never written |
+  | `altFt` | feet (integer) or null | altitude above sea level as the source gives it (GPS: converted from metres) |
+  | `gsKt` | knots (integer) or null | ground speed |
+  | `trackDeg` | degrees (integer, 0–359) or null | the source's heading or track (GPS: course over ground) |
+  | `source` | `'xplane'` \| `'lnm'` \| `'gps'` \| `'ivao'` \| `'vatsim'` | where it comes from |
+
+  - Written at most once every 10 s, and only when the aircraft moved (30 m or 50 ft), with the shared merge of
+    `frame/lib/current_flight.js` (`progressKeys: ['actual']`, `by: 'frame'`).
+  - `progress.actual` is `null` (or absent) when there is no position: no started flight, the flight stopped (report
+    written, departure cancelled, more than 24 h), or a position older than `started.at`. A reader treats a position whose
+    `at` is old as old (show its age), never as current.
+  - A new field may be added; none of these changes meaning or unit without a dated note here.
 - `ctx.query`: what follows `?` in the address, as an object (`#report?from=flightlog` → `{ from: 'flightlog' }`).
   Another module or page opens yours with it.
 - `ctx.net.fetch(url, init)` for any outgoing call (SimBrief, IVAO, VATSIM, the DEFA website). It never throws:
@@ -375,7 +391,7 @@ The full-screen button of § 9.3 toggles `<html class="f-fixed f-full">`:
   the view leaves free: `env(safe-area-inset-top / bottom)`). A module whose root is `height: 100%` or `var(--f-view-h)` follows
   with nothing of its own.
 - **Leaving**: the full-screen button itself (now showing `minimize`, label "Quitter le plein écran" / "Exit full screen" /
-  "Vollbild beenden" / "Salir de pantalla completa", `aria-pressed="true"`); Escape. **There is no exit chip** (removed on 24 Oct
+  "Vollbild beenden" / "Salir de pantalla completa", `aria-pressed="true"`); Escape (see **Escape** below). **There is no exit chip** (removed on 24 Oct
   2026: it duplicated the column's button since the modules' toolbars left, `frame/DECISIONS.md`); the right column
   starts at the top of the map.
 - **Memory**: for the page's life (also while a frame screen is opened over the module, where the header comes back, and
@@ -388,6 +404,12 @@ The full-screen button of § 9.3 toggles `<html class="f-fixed f-full">`:
 - **Landscape on a phone (`html.f-land`)**: full screen hides the header **and the rail**; **the sheet's column stays** (full
   height, at the right) and the map takes everything else, from `0 / 0` (less the safe areas). Same button, same Escape, same
   `frame-fullscreen` and `resize`.
+- **Escape** closes one thing at a time, the innermost first: **what the module opened** (a drawing's legend, a card, an
+  editor), then the group's popover, then the frame screen opened over the module, then full screen.
+  - A module that closes something on Escape calls `event.preventDefault()`: the frame then ignores that key press. The
+    module listens on its own element or on `document`; the frame listens on `window`, so it always comes after.
+  - When the frame uses the key itself, it calls `preventDefault()` too.
+  - A question window of the frame (`ask`) keeps Escape for itself (it answers "no").
 
 ## 10. What the frame reads from modules' caches
 

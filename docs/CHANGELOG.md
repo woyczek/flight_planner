@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: `progress.actual` fixed, Escape taken by a module** (`frame/app.js`; INTEGRATION § 6 and § 9.4, DECISIONS;
+  test B11): the actual position the frame writes into the current flight has a written shape (fields, units, nulls,
+  frequency); the frame ignores an Escape a module already took (`preventDefault`) and marks the ones it uses.
 - **Frame: the level message of a service screen is marked** (`frame/app.js`: `data-screen-level="<id>"`, for a test to
   find it without reading its text); the frame's debt "GitHub token within the page's reach" is written in
   `docs/technique/DETTE_TECHNIQUE.md`.

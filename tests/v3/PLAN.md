@@ -82,6 +82,7 @@ the laboratory's files are gone). The data laboratory (A21 to A24, its K8 and K9
 | B8 | Escape order | On `#maps` in full screen with the Layers sheet content open: first Escape closes Layers and **keeps** full screen; second Escape leaves full screen | § 9.4, maps lot point 8 |
 | B9 | Gestures pass through | `.f-overlay` has `pointer-events: none`; each `.f-ov-btn` has `pointer-events: auto` (computed styles) | § 9.3 |
 | B10 | Panes | `#maps?with=fuel` and `#fuel?with=maps` at 1280: no error; the pane's layer (if the pane is fixed) has no `.f-ov-full` | § 9.3 last bullet |
+| B11 | Escape taken by the module | `#maps` in full screen at 390 with a flight; a listener on `document` (bubbling, added after the frame's start) takes the first Escape (`preventDefault`): full screen stays; the next Escape leaves it and reaches a later `window` listener with `defaultPrevented` true; the same over `#settings`: a taken Escape keeps the screen, the next one goes back to `#maps` | `frame/INTEGRATION.md` § 9.4 (Escape) |
 
 ## C. Sheet primitive (`frame/INTEGRATION.md` § 11, `frame/lib/test/sheet.html`)
 

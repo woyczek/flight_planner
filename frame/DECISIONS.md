@@ -1393,3 +1393,17 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - The CSS rule that hid `.f-module > h1` under `html.f-titled` is removed: fuel, report, flightlog and website give their
     `h1` the class `f-sr` themselves (website keeps a visible `h1`: the frame does not title it). Dated debt closed
     (SPEC § 4).
+- **28 Oct 2026 — `progress.actual` fixed; Escape taken by a module** (lot 0 of the recoded Map, through the coordinator):
+  - **`progress.actual`**: the shape the frame writes is now a contract (INTEGRATION § 6): `at`, `lat`, `lon`, `altFt`,
+    `gsKt`, `trackDeg`, `source`, with their units, what may be null, when it is null, and how often it is written. The names
+    stay those of the code (`altFt`, `gsKt`, `trackDeg`): the unit in the name, value at the source; the brief's short
+    names (`alt`, `gs`, `track`) would have meant a second shape for the same record.
+  - **Escape** (INTEGRATION § 9.4): the frame now listens on `window` and ignores a key press whose `defaultPrevented` is
+    true, whatever it would have closed (popover, frame screen, full screen); before, it listened on `document` from its
+    start, so it saw the key before a module's own `document` listener, and only full screen looked at `defaultPrevented`.
+    When it uses the key it calls `preventDefault()` too. Order: what the module opened, the popover, the frame screen,
+    full screen.
+    - Maps already takes the key (`esc0`, capture, `preventDefault`). Atmosphere closes its legend on Escape without
+      `preventDefault`, so the same key also leaves full screen: one line for its next lot.
+  - **Tests**: new case B11 (a module's `document` listener takes Escape: full screen and the Settings screen stay; the next
+    Escape closes them and is marked taken); A7, A14, B5, B7, B8 and B11 pass.

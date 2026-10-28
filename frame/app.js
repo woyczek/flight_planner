@@ -2922,13 +2922,16 @@
       if (over && ['settings', 'device'].includes(over.id)) return leaveOver();
       location.hash = '#settings';
     };
-    // Échap, dans l'ordre : le popover du groupe, l'écran du cadre ouvert par-dessus, le plein écran (sauf une fenêtre de
-    // question ouverte, ou un module qui a déjà pris la touche)
-    document.addEventListener('keydown', e => {
-      if (e.key !== 'Escape' || document.querySelector('.f-modal')) return;
+    // Échap (INTEGRATION § 9.4), dans l'ordre : ce que le module a ouvert (il prend la touche : preventDefault), le popover du
+    // groupe, l'écran du cadre ouvert par-dessus, le plein écran ; une fenêtre de question ouverte la garde pour elle. Écouté
+    // sur window, donc après les écouteurs du module (sur son élément ou sur document) : une touche déjà prise est ignorée
+    window.addEventListener('keydown', e => {
+      if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector('.f-modal')) return;
       if (tabPop) closeTabPop(true);
       else if (over) leaveOver();
-      else if (full && !e.defaultPrevented) setFull(false);
+      else if (full) setFull(false);
+      else return;
+      e.preventDefault();
     });
     $('fPane').onclick = () => togglePane();
     $('fLive').onclick = () => gpsWatch !== null ? liveApi().disable() : liveApi().enable();
