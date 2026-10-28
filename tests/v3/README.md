@@ -44,7 +44,12 @@ them. Nothing else, and nothing is written outside `tests/v3/` (the temporary co
 | `--list` | print, run nothing: for paths (`--for`, `--changed`) the areas and the journeys they touch, then the selected cases and how many runs each one has (no browser needed) |
 | `--keep-server` | leave the static server running after the run and print its address |
 
-The runner starts `python -m http.server` (standard library) on a free port of `127.0.0.1`, at the repository root, runs the
+The runner starts its own static server (`static_server.py`, standard library: HTTP/1.1 with keep-alive, a long listen
+queue, one thread per connection, fixed file types; `python -m http.server`, one connection per file, ran Windows out of
+ports during a run and lost module loads at random) on a free
+port of `127.0.0.1`, at the repository root. A run that fails on a file the server did not give ("Failed to fetch
+dynamically imported module", a 503 on a module file, a refused connection) is played once more, and the report says
+"played twice" with the first error. The runner runs the
 cases in Chromium, kills the server at the end (even on an error), and exits **0 only if no case failed outside
 `cases/known_failures.py`**. It prints one line per case (`PASS`, `FAIL`, `FAIL (known: ...)`, `SKIP`, `ERROR`), the first
 failing run with its measured and expected values and the rule, then a summary line, and writes `report.md` and

@@ -854,10 +854,21 @@ def worker_init(base):
     _W.update(pw=pw, base=base, browser=pw.chromium.launch(executable_path=CHROME, args=['--no-sandbox']) if CHROME else pw.chromium.launch(args=['--no-sandbox']))
 
 
+# a file the static server failed to give (not a fault of the page): the run is played once more, and the report says so
+LOAD_FAILURE = re.compile(r'Failed to fetch dynamically imported module|Importing a module script failed|missing file 503|'
+                          r'net::ERR_(?:CONNECTION_\w+|EMPTY_RESPONSE|ADDRESS_IN_USE)')
+
+
 def worker_run(job):
     case_id, width, design, lang, tone = job
     try:
-        return run_one(_W['browser'], _W['base'], case_id, width, design, lang, tone)
+        res = run_one(_W['browser'], _W['base'], case_id, width, design, lang, tone)
+        why = ' '.join([str(res.get('measured', ''))] + [str(x) for x in res.get('errors', [])])
+        if res['status'] in ('FAIL', 'ERROR') and LOAD_FAILURE.search(why):
+            first = LOAD_FAILURE.search(why).group(0)
+            res = run_one(_W['browser'], _W['base'], case_id, width, design, lang, tone)
+            res['retried'] = f'{first} on the first try'
+        return res
     except Exception as e:                        # browser crash: restart it once, report the run as an error
         try:
             _W['browser'].close()

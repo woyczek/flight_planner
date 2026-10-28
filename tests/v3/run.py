@@ -49,7 +49,8 @@ def free_port():
 def start_server():
     """Static server of the repository root; returns (Popen, base url).  The caller terminates it."""
     port = free_port()
-    proc = subprocess.Popen([sys.executable, '-m', 'http.server', str(port), '--bind', '127.0.0.1', '--directory', str(ROOT)],
+    # our own server (static_server.py): python -m http.server lost loads at random under Windows (its queue of 5)
+    proc = subprocess.Popen([sys.executable, str(Path(__file__).with_name('static_server.py')), str(port), str(ROOT)],
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=str(ROOT))
     base = f'http://127.0.0.1:{port}'
     for _ in range(100):                         # wait until it answers
@@ -277,6 +278,9 @@ def aggregate(case, runs, known):
             out['shot'] = shots[0]
     else:
         out.update(status='SKIP', reason=runs[0].get('reason', ''))
+    retried = [f"{run_label(r)}: {r['retried']}" for r in runs if r.get('retried')]
+    if retried:
+        out['retried'] = retried
     return out
 
 
@@ -344,6 +348,8 @@ def write_reports(results, n, header, args, dur, touched=None, tracked=None, rep
                 detail = 'skipped runs: ' + ', '.join(r['skipped_runs'][:6])
             if r['status'] == 'PASS' and r.get('skipped_steps'):
                 detail = (detail + ' - ' if detail else '') + 'skipped steps: ' + ' / '.join(r['skipped_steps'])
+            if r.get('retried'):
+                detail = (detail + ' - ' if detail else '') + 'played twice (load failure of the static server): ' + ', '.join(r['retried'][:4])
             L.append(f"| {r['id']} | {md_cell(r['title'])} | {md_cell(status_text(r))} | {md_cell(detail)} | {r.get('shot', '')} |")
         L.append('')
     (HERE / 'report.md').write_text('\n'.join(L) + '\n', encoding='utf-8')
@@ -470,6 +476,8 @@ def main():
         print(line)
         for st in r.get('skipped_steps', []) if r['status'] == 'PASS' else []:
             print(f'      skipped step: {st}')
+        for rt in r.get('retried', []):
+            print(f'      played twice (load failure of the static server): {rt}')
         if r['status'] in ('FAIL', 'ERROR'):
             print(f"      [{r['where']}] measured: {r['measured']}\n      expected: {r['expected']}" + (f"\n      rule: {r['rule']}" if r.get('rule') else '')
                   + (f"\n      failing runs: {', '.join(r['failing'][:6])}" + (' ...' if len(r['failing']) > 6 else '') if len(r['failing']) > 1 else '')

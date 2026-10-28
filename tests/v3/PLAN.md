@@ -10,7 +10,7 @@ fails names the rule that broke, not a selector.*
 - **Where**: `tests/v3/` — `run.py` (runner), `cases/<area>.py` (one file per area below), `lib.py` (shared helpers),
   `report.md` + `report.json` (written by each run, ignored by git), `README.md` (how to run, how to read a failure).
 - **How it runs**: `python3 tests/v3/run.py [--grep <id or text>] [--designs a,b] [--widths 390,1280] [--langs fr,en]
-  [--keep-server]`. The runner starts a static server itself (`python3 -m http.server`, standard library, a free port
+  [--keep-server]`. The runner starts a static server itself (`tests/v3/static_server.py`, standard library, a free port
   chosen at start, bound to 127.0.0.1) at the repository root, opens Chromium with Playwright (Python package already
   installed; executable `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`, `--no-sandbox`), runs every case,
   writes the report, prints one line per case (`PASS`/`FAIL`/`SKIP` + id + title), a summary line, and exits 0 only if

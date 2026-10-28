@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Tests V3 under Windows: the runner's own static server** (`tests/v3/static_server.py`, `run.py`, `lib.py`, README,
+  PLAN): `python -m http.server` lost module loads at random (HTTP/1.0, one connection per file: a run left 13,375
+  ports in TIME_WAIT and Windows ran out of them; a listen queue of 5); the new server speaks HTTP/1.1 with keep-alive,
+  has a long queue, one thread per connection, fixed file types and no cache. A run failing on a file the server did not give is played once more, and the report says "played twice". F1,
+  which failed on every try, passes 10 times out of 10.
 - **Frame: one weather layer** (`frame/lib/weather_store.js`, `ctx.weather`; `frame/app.js`, `frame/store/frame_data.js`;
   INTEGRATION § 14, SPEC, DECISIONS; bench `frame/lib/test/weather_store.html`, case A25):
   - one cache for the device (`cache/weather/<model>/<cell>/<UTC day>.json`, never synchronised, out of backups);
