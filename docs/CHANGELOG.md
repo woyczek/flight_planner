@@ -1327,6 +1327,11 @@ formats and screens may still change; Atmosphere is being recoded for the next a
   airspace reading and the strip stay exact. The window is kept while the page lives and reset when the route changes; it is never stored.
   The weather cut zooms too (see the next two entries). D21 pinch / scale / cursor / button, D22 sheet drag, D23 kept and reset, D24 screen gestures.
 
+- **Atmosphere: the frame's "?" opens the Weather chapter at the view's paragraph** (`modules/atmosphere/module.js`, `help/*.md`,
+  `frame/help/pilot.*.md`, `SPEC.md` § 6, `tests/v3` E10; atmosphere DECISIONS; V3_SPECIFICATION § 7.1 rule 16) — `meta.help` was still `false`:
+  the chapter existed but the "?" did not open it. Now `help: true` and `ctx.helpAnchor` lands on the paragraph of the view shown (no flight,
+  cut or slice, zoomed cut, legend, Details, Flight and settings, Layers or a point of the map), the same anchors in the four languages; Details
+  and Flight and settings gain a paragraph each.
 - **Atmosphere: the weather cut zooms like the vertical profile** (`modules/atmosphere/section.js`, `module.js`, `texts.js`, `help/*.md`,
   `frame/help/pilot.*.md`, `tests/v3` E8-E9; atmosphere INTEGRATION § 5, DECISIONS; V3_SPECIFICATION § 7.1 rule 20) — `drawSection` /
   `sectionSvg` take `o.window = { from, to }` (NM, the whole cut by default): only the columns, barbs, marks, points, TOC / TOD and labels inside
