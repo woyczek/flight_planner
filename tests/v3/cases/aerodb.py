@@ -459,7 +459,7 @@ def k12(c):
                 self._send('<a href="/fwf-eadbasic/secure/aip.faces">AIP Library</a>')
             elif self.path.startswith('/fwf-eadbasic/secure/aip.faces'):
                 self._send('<form id="mainForm" action="/fwf-eadbasic/secure/aip.faces" method="post"><input type="hidden" name="javax.faces.ViewState" value="' + 'A' * 50 + '"/>'
-                           '<select name="mainForm:AuthorityCode"><option value="1">Belgium (EB)</option><option value="2">United Kingdom (EG)</option><option value="3">France (LF)</option></select>'
+                           '<select name="mainForm:AuthorityCode"><option value="1">Belgium (EB)</option><option value="2">United Kingdom (EG)</option><option value="3">France (LF)</option><option value="4">Paged State (ZP)</option><option value="5">Failing pager (ZQ)</option></select>'
                            '<select name="mainForm:AipPart"><option value="a">AD</option><option value="e">ENR</option></select>'
                            '<select name="mainForm:AipType"><option value="p">AIP</option><option value="c">Charts</option></select>'
                            '<input type="checkbox" id="mainForm:enableAdvancedSearch_input" name="mainForm:enableAdvancedSearch_input"/>'
@@ -482,7 +482,22 @@ def k12(c):
             if q.get('javax.faces.source') == ['mainForm:AuthorityCode']:
                 self._send(head + tail, 'text/xml')
                 return
-            state = {'2': 'EG', '3': 'LF'}.get((q.get('mainForm:AuthorityCode') or [''])[0], 'EB')
+            state = {'2': 'EG', '3': 'LF', '4': 'ZP', '5': 'ZQ'}.get((q.get('mainForm:AuthorityCode') or [''])[0], 'EB')
+            if state in ('ZP', 'ZQ'):                      # a result set of 20 documents shown 15 per page (PrimeFaces paging: _pagination, _first, _rows)
+                every = ['%s_AD_2_%sAA_%02d_en.pdf' % (state, state, i) for i in range(20)]
+                every = [d for d in every if (q.get('mainForm:docName') or [''])[0] in d] if (q.get('mainForm:AipType') == ['c'] and (q.get('mainForm:docHead') or [''])[0] == 'CODING') else []
+                paged = q.get('mainForm:searchResults_pagination') == ['true']
+                if paged and (q.get('javax.faces.source') != ['mainForm:searchResults'] or q.get('mainForm:searchResults_rows') != ['15'] or q.get('mainForm:searchResults') != ['mainForm:searchResults']):
+                    self._send(head + '<error><error-name>bad paging request</error-name></error></partial-response>', 'text/xml')
+                    return
+                if paged and state == 'ZQ':
+                    self._send(head + '<error><error-name>view expired</error-name></error></partial-response>', 'text/xml')
+                    return
+                first = int((q.get('mainForm:searchResults_first') or ['0'])[0]) if paged else 0
+                rows = ''.join('<tr data-ri="%d"><td>2026-01-22</td><td><a href="/doc/%s">%s</a></td><td>%s</td></tr>' % (first + i, d, d, heads['CODING']) for i, d in enumerate(every[first:first + 15]))
+                count = '' if paged else '<div>Number of search results: %d</div>' % len(every)
+                self._send(head + '<update id="mainForm:results"><![CDATA[<table><tbody id="mainForm:searchResults_data">' + rows + '</tbody></table>' + count + ']]></update>' + tail, 'text/xml')
+                return
             name, hd = (q.get('mainForm:docName') or [''])[0], (q.get('mainForm:docHead') or [''])[0]
             pick = docs[state] if (q.get('mainForm:AipType') == ['c']) else []
             pick = [d for d in pick if name in d]
@@ -557,6 +572,27 @@ def k12(c):
             c.ok(f['procedures'] == [] and f['formats'] and not f['formats'][0]['ok'] and f['documents'], json.dumps(f)[:300], 'fetch: an unreadable document yields no procedure, a format problem, and the list of documents; nothing is guessed')
             c.ok((Path(td) / 'cache' / 'EGLL' / 'EG_AD_2_EGLL_7-13_en.pdf').is_file(), 'cache', 'the document is kept in the local cache')
             c.ok('NON OPÉRATIONNELLES' in (f.get('notice') or '') and 'EAD Basic' in f['notice'], f.get('notice'), "a file read through EAD Basic says it is not operational (user's decision, 28 Oct 2026)")
+        # pagination: 20 results at 15 per page: every page is walked (the second page is a PrimeFaces paging request), the ATTENTION message stays only when the walk stopped early
+        with tempfile.TemporaryDirectory() as td:
+            said = []
+            O = importlib.import_module('proc_ocr')
+            real_backend = O.backend
+            O.backend = lambda: None
+            try:
+                out = E.fetch_ad(lib, 'ZPAA', td, said.append)
+            finally:
+                O.backend = real_backend
+            c.ok(len(out['documents']) == 20 and any('CODING: 20 document(s) en 2 pages' in x for x in said) and not any('ATTENTION' in x for x in said), '\n'.join(said)[:600],
+                 'fetch: a result set of 20 documents (15 per page) is read in full, over two pages, with no ATTENTION message')
+            c.ok(sum('pagination (noms de paramètres non vus' in x for x in lines) == 1 and 'mainForm:searchResults_first' in ''.join(lines) and 'mises à jour' in ''.join(lines), '\n'.join(lines)[-600:],
+                 'the first paging request prints, once, the parameters sent and the anatomy of the answer')
+        lib.authority('ZQ')
+        lib.choose('part', 'AD')
+        lib.choose('type', 'Charts')
+        bad_page = lib.search(name='AD_2_ZQAA_', heading='CODING', all_pages=True)
+        c.ok(len(bad_page['rows']) == 15 and bad_page['count'] == 20 and '15 ligne(s) lue(s) sur 20' in bad_page['warning'], str(bad_page['warning']),
+             'a page that answers with an error stops the walk with a warning naming the rows read (15 of 20); no loop')
+        lib.authority('EG')
         refused = ''
         try:
             E.main(['--fetch', 'EGLL,EGKK'])
@@ -644,7 +680,7 @@ def k15(c):
 
 
 # ------------------------------------------------------------------------------------------------ coding tables with split cells (static)
-@case('K13', 'Coding tables with split cells (one table per procedure)', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: one layout per State, values read by order, counts checked, geometry gate')
+@case('K13', 'Coding tables with split cells (one table per procedure)', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: one layout per State, values read by order, counts checked, geometry check')
 def k13(c):
     import sys
     tools = str(c.root / 'tools')
@@ -678,7 +714,7 @@ def k13(c):
          'fixes, level constraint (FL130+ minimum) and speed (K210- maximum IAS)', what='constraints')
     c.eq(([lg['id'] for lg in t1['legs']], t1['runways']), (['AAA', 'DDD'], ['20']), 'the fix printed before its path terminator (IAF DDD ... TF N) is attached to the right leg; the runway comes from the page title', what='id before terminator')
     recs, w = P.records_uk_app('XXXX', r, 'f.pdf', '2026-10-01', None, 'XX')
-    c.eq((len(recs), sum('NON retenue' in x for x in w)), (2, 1), 'the geometry gate keeps the two consistent tables and rejects the one whose printed course is 5° off', what='geometry gate')
+    c.eq((len(recs), sum('NON retenue' in x for x in w)), (2, 1), 'the geometry check keeps the two consistent tables and rejects the one whose printed course is 5° off', what='geometry check')
     c.ok(recs[0]['source']['ref'] == 'ead-basic/XX/f.pdf' and recs[0]['kind'] == 'STAR' and recs[0]['status'] == 'check', str(recs[0]['source']), 'source and status are those of a State read through EAD, to be checked')
     bad = [x for x in rows if 'TF BBB N A11500+' not in x]
     c.ok(any('NON retenue' in x for x in P.parse_am_coding(bad)['warnings']), 'counts', 'a table whose counts disagree (course missing) is rejected and reported, never completed')
@@ -817,6 +853,32 @@ def k11(c):
         c.eq((got, idx2), ({'EGYY.SID.A': 'official', 'EGYY.STAR.TEST1A.RWALL': 'official', 'EGYY.STAR.TEST2A.RWALL': 'check'}, {'SID': 1, 'STAR': 2, 'APP': 0, 'status': 'official', 'cycle': '2026-10-01'}),
              'with --replace: merged by id, the official procedure kept over the manual one, the new one added, the index counted on the whole', what='merge')
         c.eq((sorted(idx['aerodromes']), idx['aerodromes']['EGXX']['STAR'], (Path(td) / 'manual' / 'EGXX.json').exists()), (['EGXX', 'KSEA'], 1, True), 'installed, the index keeps the other aerodromes', what='install')
+    # a file without any procedure is refused (never installed as « 0 procédure(s) cohérentes »): its warnings are printed, and the sibling OCR file is pointed at
+    import contextlib
+    import io
+    with tempfile.TemporaryDirectory() as td2:
+        empty = {'schema': 1, 'icao': 'EGZZ', 'cycle': '2026-10-01', 'procedures': [], 'formats': [],
+                 'warnings': ['EGZZ_a.pdf: page NON lue, disposition non reconnue', 'T1 (table 1): 2 tronçon(s) lu(s), table NON retenue']}
+        ef = Path(td2) / 'EGZZ.json'
+        ef.write_text(json.dumps(empty), encoding='utf-8')
+        outdir = Path(td2) / 'data' / 'proc'
+
+        def run_main():
+            err = io.StringIO()
+            code = None
+            with contextlib.redirect_stderr(err):
+                try:
+                    M.main([str(ef), '--out', str(outdir)])
+                except SystemExit as e:
+                    code = e.code
+            return code, err.getvalue()
+        code, msg = run_main()
+        c.ok(code == 1 and 'AUCUNE procédure' in msg and 'disposition non reconnue' in msg and 'table NON retenue' in msg and 'cohérentes' not in msg and 'installé dans' not in msg
+             and not outdir.exists() and '.ocr.json' not in msg, f'{code} {msg}', 'an empty file is refused (exit 1), each warning printed, nothing installed, no success line')
+        (Path(td2) / 'EGZZ.ocr.json').write_text(json.dumps({**empty, 'procedures': [{'id': 'x'}]}), encoding='utf-8')
+        code, msg = run_main()
+        c.ok(code == 1 and f'python tools/proc_manual.py {Path(td2) / "EGZZ.ocr.json"} --out {outdir}' in msg and not outdir.exists(), f'{code} {msg}',
+             'with EGZZ.ocr.json beside it, the refusal says the OCR procedures are there and gives the exact command')
 
 
 # ------------------------------------------------------------------------------------------------ ICAO tables without co-ordinates, Irish single-line tables (static)
@@ -883,7 +945,7 @@ def k18(c):
     c.eq(([x['ok'] for x in d['formats']], [x['name'] for x in d['procedures']]), ([False, True], ['NNNNN 1M']), 'the type is never carried backwards: a first page without type stays rejected', what='no backward carry')
 
 
-@case('K19', 'Irish single-line coding tables with co-ordinates: parser and geometry gate', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: one layout per State, values read by position, the table is installed only through the geometry gate')
+@case('K19', 'Irish single-line coding tables with co-ordinates: parser and geometry check', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: one layout per State, values read by position, the table is installed only through the geometry check')
 def k19(c):
     import importlib
     import sys
@@ -932,11 +994,11 @@ def k19(c):
     c.eq(P.check_geometry(t0['legs']), [], 'courses and distances agree with the printed positions', what='geometry')
     recs, w = P.records_uk_app('EIXX', r, 'f.pdf', '2026-10-01', None, 'EI')
     c.eq((len(recs), sum('NON retenue' in x and 'incoh' in x for x in w), recs[0]['kind'], recs[0]['status']), (1, 1, 'STAR', 'check'),
-         'the geometry gate keeps the consistent table and rejects the one whose true track is 5 degrees off', what='geometry gate')
+         'the geometry check keeps the consistent table and rejects the one whose true track is 5 degrees off', what='geometry check')
 
 
 # ------------------------------------------------------------------------------------------------ OCR of drawn pages (static)
-@case('K14', 'OCR of drawn pages: rows from word boxes, geometry gate', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: OCR included as an optional workstation dependency; its output is installed only through the geometry gate')
+@case('K14', 'OCR of drawn pages: rows from word boxes, geometry check', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: OCR included as an optional workstation dependency; its output is installed only through the geometry check')
 def k14(c):
     import importlib
     import random
@@ -948,6 +1010,28 @@ def k14(c):
     P = importlib.import_module('proc_eaip')
     M = importlib.import_module('proc_manual')
     O = importlib.import_module('proc_ocr')
+    # security review of 28 Oct 2026: the current directory is never searched for tesseract, the resolution is capped
+    import argparse
+    import os
+    seen, real_which = [], shutil.which
+    shutil.which = lambda name, *a, **k: (seen.append(os.environ.get('NoDefaultCurrentDirectoryInExePath')), '/abs/tesseract')[1]
+    try:
+        found = O.tesseract_path()
+    finally:
+        shutil.which = real_which
+    c.eq((seen, found), (['1'], '/abs/tesseract'), 'which is called with NoDefaultCurrentDirectoryInExePath set to 1 and its absolute answer is what gets run', what='tesseract lookup')
+    refused = []
+    for bad_dpi in ('601', '5000'):
+        try:
+            O.dpi_arg(bad_dpi)                                     # the type function of --dpi (argparse turns it into exit 2)
+        except argparse.ArgumentTypeError:
+            refused.append('arg')
+    try:
+        O.render_page('x.pdf', 0, 601)
+        refused.append('rendered')
+    except SystemExit as e:
+        refused.append(str(e)[:20])
+    c.eq(refused, ['arg', 'arg', 'résolution refusée :'], 'a resolution above 600 dpi is refused by the command line and by render_page', what='dpi cap')
 
     def dms(v, lon=False):
         a = abs(v)
@@ -1007,7 +1091,7 @@ def k14(c):
         else:
             sys.modules.pop('rapidocr', None)
 
-    # carte IAC belge (codage ARINC dessiné en vecteurs) : liste de points en degrés et minutes décimales puis tronçons, lue par OCR, points résolus, porte géométrique
+    # carte IAC belge (codage ARINC dessiné en vecteurs) : liste de points en degrés et minutes décimales puis tronçons, lue par OCR, points résolus, contrôle de géométrie
     def dm(v, lon):
         a = abs(v)
         d = int(a)
@@ -1034,9 +1118,9 @@ def k14(c):
     d = O.document_from_rows('EBXX', 'be.pdf', be, '2026-10-01')
     f = d['formats'][0]
     c.eq((len(d['procedures']), f['layout'], f['ok'], M.verify(d), d['procedures'][0]['kind'], [p['lat'] is not None for p in d['procedures'][0]['points']]),
-         (1, 'be-coding', True, [], 'APP', [True] * 4), 'OCR rows of a Belgian page: table kept, every point resolved from the list, gate clean, proc_manual.verify finds nothing', what='document_from_rows')
+         (1, 'be-coding', True, [], 'APP', [True] * 4), 'OCR rows of a Belgian page: table kept, every point resolved from the list, geometry check clean, proc_manual.verify finds nothing', what='document_from_rows')
     d2 = O.document_from_rows('EBXX', 'be.pdf', belgian(shift=0.2), '2026-10-01')
-    c.ok(d2['procedures'] == [] and any('NON retenue' in x for x in d2['warnings']) and not d2['formats'][0]['ok'], str(d2['formats']), 'one corrupted list co-ordinate: the table is dropped by the gate and reported')
+    c.ok(d2['procedures'] == [] and any('NON retenue' in x for x in d2['warnings']) and not d2['formats'][0]['ok'], str(d2['formats']), 'one corrupted list co-ordinate: the table is dropped by the geometry check and reported')
     d3 = O.document_from_rows('EBXX', 'be.pdf', [r for r in be if not r.startswith('RW22R:')], '2026-10-01')
     c.ok(d3['procedures'] == [] and any('NON retenue' in x for x in d3['warnings']), str(d3['warnings']), 'a point missing from the list: the table is dropped, never completed')
 
@@ -1057,7 +1141,7 @@ def k14(c):
         return rows + ['CHANGES: TEST']
     sd = O.document_from_rows('EBXX', 'sid.pdf', sid(), '2026-10-01')
     c.eq((P.detect_layout(sid()), len(sd['procedures']), sd['formats'][0]['ok'], M.verify(sd), sd['procedures'][0]['kind'], sd['procedures'][0]['name'], all(p['lat'] is not None for p in sd['procedures'][0]['points'])),
-         ('be-coding', 2, True, [], 'SID', 'BE 04F', True), 'SID variant: two tables kept (points resolved, only IF/TF/CF/DF, printed course passes the gate), kind SID, name from the title', what='document_from_rows')
+         ('be-coding', 2, True, [], 'SID', 'BE 04F', True), 'SID variant: two tables kept (points resolved, only IF/TF/CF/DF, printed course passes the geometry check), kind SID, name from the title', what='document_from_rows')
     c.ok(sum('cap non imprimé : géométrie non contrôlable' in x for x in sd['warnings']) == 2, str(sd['warnings']), 'each kept SID table carries the warning "cap non imprimé : géométrie non contrôlable"')
     sb = O.document_from_rows('EBXX', 'sid.pdf', sid(bump=5.0), '2026-10-01')
     c.ok(sb['procedures'] == [] and any('NON retenue' in x for x in sb['warnings']), str(sb['warnings']), 'SID variant: the one printed course that exists is checked, 5 degrees off drops the table')
@@ -1079,7 +1163,7 @@ def _dms_compact(v, lon, hemi_first):
     return h + body if hemi_first else body + h
 
 
-@case('K16', 'UK STAR coding tables read by OCR: parser, gate, rejection', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: OCR included; its output is installed only through the geometry gate, a table with disagreeing counts is rejected, never completed')
+@case('K16', 'UK STAR coding tables read by OCR: parser, geometry check, rejection', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: OCR included; its output is installed only through the geometry check, a table with disagreeing counts is rejected, never completed')
 def k16(c):
     import importlib
     import sys
@@ -1134,7 +1218,7 @@ def k16(c):
     cut = P.parse_uk_star(page(drop_lon=True))
     c.ok(cut['tables'] == [] and any('NON retenue' in x for x in cut['warnings']), str(cut['warnings']), 'a leg without its longitude: the table is rejected, never completed')
     badp = P.parse_uk_star(page(bump=5.0))
-    c.ok(P.check_geometry(badp['tables'][0]['legs']), 'gate', 'a printed true course 5 degrees off is caught by the gate')
+    c.ok(P.check_geometry(badp['tables'][0]['legs']), 'geometry check', 'a printed true course 5 degrees off is caught by the geometry check')
     r2, w2 = P.records_uk_app('EGXX', badp, 'x.pdf', '2026-10-01')
     c.ok(r2 == [] and any('NON retenue' in x for x in w2), str(w2), 'and nothing is written from that table')
     bd = O.document_from_rows('EGXX', 'p.pdf', page(bump=5.0), '2026-10-01')
@@ -1142,7 +1226,7 @@ def k16(c):
 
 
 # ------------------------------------------------------------------------------------------------ Austrian RNAV transition coding tables read by OCR (static)
-@case('K17', 'Austria transition coding tables read by OCR: parser, gate, rejection', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: OCR included; its output is installed only through the geometry gate, a table with disagreeing counts is rejected, never completed')
+@case('K17', 'Austria transition coding tables read by OCR: parser, geometry check, rejection', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: OCR included; its output is installed only through the geometry check, a table with disagreeing counts is rejected, never completed')
 def k17(c):
     import importlib
     import sys
@@ -1189,7 +1273,7 @@ def k17(c):
     cut = P.parse_at_coding(page(drop_lat=True))
     c.ok(cut['tables'] == [] and any('NON retenue' in x for x in cut['warnings']), str(cut['warnings']), 'a leg without its latitude: the table is rejected, never completed')
     badp = P.parse_at_coding(page(bump=5.0))
-    c.ok(P.check_geometry(badp['tables'][0]['legs']), 'gate', 'a printed true course 5 degrees off is caught by the gate')
+    c.ok(P.check_geometry(badp['tables'][0]['legs']), 'geometry check', 'a printed true course 5 degrees off is caught by the geometry check')
     r2, w2 = P.records_uk_app('LOXX', badp, 'x.pdf', '2026-10-01')
     c.ok(r2 == [] and any('NON retenue' in x for x in w2), str(w2), 'and nothing is written from that table')
     bd = O.document_from_rows('LOXX', 'p.pdf', page(bump=5.0), '2026-10-01')
@@ -1239,7 +1323,7 @@ def k17(c):
         c.ok(lg and abs(lg[1]['lat'] - 47.35) < 1e-4 and abs(lg[1]['lon'] - 14.80) < 1e-4 and lg[1]['crs'] == round(brg) - 1 and abs(lg[1]['true'] - brg) < 0.06 and lg[1]['nm'] == float(f'{nm:.1f}'),
              str(lg[1:2]), f'{variant}-like: co-ordinates, magnetic course before, true course and distance after')
         c.eq((lg[3]['turn'], lg[3]['over'], lg[0]['lat'] is not None), ('L', True if variant == 'LO' else None, True), f'{variant}-like: turn read from the line after the leg', what=f'{variant} cells')
-        c.eq(P.check_geometry(lg), [], f'{variant}-like: the geometry gate finds nothing', what=f'{variant} gate')
+        c.eq(P.check_geometry(lg), [], f'{variant}-like: the geometry check finds nothing', what=f'{variant} geometry check')
     lz = P.parse_at_coding(text_page('LZ'))['tables'][0]['legs']
     c.eq((lz[1]['alt'], lz[0]['alt']), ({'type': 'min', 'ft': 8001}, {'type': 'min', 'ft': 10000}), 'LZ-like: « A 10000+ » with a space is read as a level', what='LZ level')
     cut = P.parse_at_coding(text_page('LZ', drop_lon=True))
@@ -1247,7 +1331,7 @@ def k17(c):
 
 
 # ------------------------------------------------------------------------------------------------ co-ordinates printed in a list (static)
-@case('K20', 'Waypoint co-ordinate lists complete a route page; the gate runs after', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: co-ordinates read from a list fill the points, then the geometry gate judges the completed procedure')
+@case('K20', 'Waypoint co-ordinate lists complete a route page; the geometry check runs after', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: co-ordinates read from a list fill the points, then the geometry check judges the completed procedure')
 def k20(c):
     import sys
     tools = str(c.root / 'tools')
@@ -1300,7 +1384,7 @@ def k20(c):
          'without the list the points stay unresolved and the warning stays')
     bad = P.build_pdf_dir('EDXX', ['route.pdf', 'list.pdf'], lambda n: [route_page()] if n == 'route.pdf' else [list_page(moved=0.2)], '2026-01-01')
     c.ok(len(bad['procedures']) == 1 and bad['procedures'][0]['name'].startswith('DDD') and any('NON retenue' in x for x in bad['warnings']) and not bad['formats'][0]['ok'],
-         str(bad['warnings']), 'a list that contradicts the printed distances rejects that procedure (gate after resolution), the other one stays')
+         str(bad['warnings']), 'a list that contradicts the printed distances rejects that procedure (geometry check after resolution), the other one stays')
     first_only = P.build_pdf_dir('EDXX', ['chart.pdf'], lambda n: [['SOME CHART']], '2026-01-01')
     c.ok(first_only['formats'][0]['ok'] is False and first_only['procedures'] == [] and first_only['formats'][0]['pages'] == 1, str(first_only['formats']), 'a document whose pages are all unknown gets one summary entry')
 
@@ -1664,14 +1748,14 @@ def k23(c):
             c.ok(r2['ok'] and r2['procedures'] == 14 and len(json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text())['procedures']) == 14, str(r2)[:300],
                  'the same reading again: installed over the former one by procedure id, 14 procedures and no duplicate')
 
-            # a base placed with the data resolves the en-route points; a wrong position fails the geometry gate: that procedure is not installed
+            # a base placed with the data resolves the en-route points; a wrong position fails the geometry check: that procedure is not installed
             base = data / 'sia' / 'base' / 'fr' / cycle
             base.mkdir(parents=True)
             (base / 'points.json').write_text(json.dumps({'data': [{'id': 'ROYAN', 'lat': 10.0, 'lon': 10.0}, {'id': 'CNA', 'lat': 45.0, 'lon': 1.0}]}))
             (data / 'proc' / 'manual' / 'LFBD.json').unlink()
             r3 = run(ctx)
             c.ok(r3['ok'] and r3['procedures'] < 14 and any('NON retenue' in w for w in r3['warnings']), str(r3)[:300],
-                 'a wrong position from the base of the workstation fails the geometry gate: that procedure is not installed, the others are, a warning says which')
+                 'a wrong position from the base of the workstation fails the geometry check: that procedure is not installed, the others are, a warning says which')
 
         # another source's file is never overwritten; git absent keeps ok with a warning
         with tempfile.TemporaryDirectory() as td:

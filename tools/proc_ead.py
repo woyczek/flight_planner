@@ -5,7 +5,8 @@
 Ce que la sonde fait : se connecte (formulaire AJAX de la page de connexion publique), parcourt les pages jusqu'à la bibliothèque AIP, lit son
 formulaire (listes déroulantes, boutons), tente une recherche (État choisi, partie AD, type AIP, langue EN) et liste les documents trouvés.
 Ce qu'elle ne fait pas : télécharger un PDF (sauf --download : un seul, dans ead_probe/cache/), écrire quoi que ce soit hors du dossier --out, garder le mot de passe (demandé à l'invite, ou
-variable EAD_PASSWORD), le montrer, ou l'envoyer ailleurs qu'à www.ead.eurocontrol.int. Le compte rendu (report.txt) est nettoyé : ni mot de passe, ni nom
+variable EAD_PASSWORD ; il n'est gardé, en clair, que dans secrets/ead.json quand l'utilisateur l'a choisi pour le lanceur : dossier ignoré par git, jamais dans un dossier synchronisé
+comme Synology Drive ou OneDrive), le montrer, ou l'envoyer ailleurs qu'à www.ead.eurocontrol.int. Le compte rendu (report.txt) est nettoyé : ni mot de passe, ni nom
 d'utilisateur, ni cookie, ni jeton d'état de page, ni adresse de courriel. Relisez-le avant de me le transmettre.
 Écrite sans avoir vu l'écran connecté : si une étape échoue, le compte rendu dit laquelle et garde la page reçue (nettoyée) pour la suite.
 Bibliothèque standard seulement. Aucun PDF, aucune dépendance (pypdf n'est pas nécessaire ici).
@@ -467,6 +468,13 @@ SURVEY_KEYS = {'CODING': 'CODING', 'SID': 'DEPARTURE', 'STAR': 'ARRIVAL', 'IAP':
 ALT_KEYS = ['SID', 'STAR', 'IAC', 'RNAV', 'CODAGE', 'ARRIVEE', 'DEPART', 'APPROCHE']
 SHAPES = [('mainForm', 'mainForm'), ('@form', '@all'), ('@all', '@all')]
 MIN_DELAY = 1.0  # secondes au moins entre deux requêtes de la bibliothèque (conditions d'accès automatisé inconnues : EAD_BASIC.md § 1)
+# Pagination du tableau de résultats (PrimeFaces, 15 lignes par page). NOMS DE PARAMÈTRES NON VUS sur le vrai écran (28 octobre 2026) : ce sont ceux que PrimeFaces envoie
+# pour un changement de page de <p:dataTable> ; si l'EAD répond autrement, la console imprime ce qui a été envoyé et l'anatomie de la réponse (voir EadLibrary._more_pages), et ce
+# dictionnaire seul est à corriger. {t} = identifiant du tableau (mainForm:searchResults), {first} = rang de la première ligne de la page demandée.
+PAGE_ROWS = 15
+MAX_PAGES = 50      # pages parcourues au plus par recherche (jamais de boucle sans fin)
+PAGE_TABLE = 'mainForm:searchResults'
+PAGE_PARAMS = {'{t}': '{t}', '{t}_pagination': 'true', '{t}_first': '{first}', '{t}_rows': str(PAGE_ROWS), '{t}_skipChildren': 'true', '{t}_encodeFeature': 'true'}
 ICAO_RE = re.compile(r'^[A-Z0-9]{4}$')  # un code OACI : entre dans un nom de fichier (cache, interprétation manuelle), jamais un chemin
 
 
@@ -488,6 +496,7 @@ class EadLibrary:
         self.say, self.keep, self.delay = say, keep or (lambda n, b: None), max(MIN_DELAY, float(delay or 0))
         self.data, self.sel, self.opts, self.f = {}, {}, {}, {}
         self.shape, self.url, self.action, self.src = 0, '', '', ''
+        self.last_sent, self._page_diag = {}, False
 
     def _wait(self):
         if self.delay:
@@ -552,6 +561,7 @@ class EadLibrary:
         d.update({'javax.faces.partial.ajax': 'true', 'javax.faces.source': source, 'javax.faces.partial.execute': execute, 'javax.faces.partial.render': render})
         if event:
             d['javax.faces.partial.event'] = event
+        self.last_sent = d
         code, _, body = self.s.call(self.action, d, {'Faces-Request': 'partial/ajax', 'X-Requested-With': 'XMLHttpRequest', 'Referer': self.url})
         self.keep(tag, body)
         vs = view_state(body)
@@ -582,8 +592,10 @@ class EadLibrary:
                 break
         return True
 
-    def search(self, name=None, heading=None):
-        """Recherche avec les listes en cours et les filtres « nom du document » et « titre » (contient) ; rend { rows, count, msg } ; la forme de requête qui marche est gardée."""
+    def search(self, name=None, heading=None, all_pages=False):
+        """Recherche avec les listes en cours et les filtres « nom du document » et « titre » (contient) ; rend { rows, count, msg } ; la forme de requête qui marche est gardée.
+        `all_pages` : parcourt aussi les pages suivantes du tableau (15 lignes par page), chacune par une requête espacée comme les autres ; la clé `warning` dit pourquoi le parcours
+        s'est arrêté avant d'avoir lu toutes les lignes annoncées (réponse d'erreur, page sans ligne nouvelle, 50 pages) ; `pages` compte les pages lues."""
         extra = {self.f['name']: name or '', self.src: self.src}
         if self.f.get('heading'):
             extra[self.f['heading']] = heading or ''
@@ -593,8 +605,42 @@ class EadLibrary:
             rows, count, msg = result_info(body)
             if count is not None or rows:
                 self.shape = (self.shape + i) % len(SHAPES)
-                return {'rows': rows, 'count': count if count is not None else len(rows), 'msg': msg}
-        return {'rows': [], 'count': 0, 'msg': 'réponse sans tableau de résultats'}
+                res = {'rows': rows, 'count': count if count is not None else len(rows), 'msg': msg, 'pages': 1, 'warning': ''}
+                if all_pages and rows and res['count'] > len(rows):
+                    self._more_pages(res, extra, body)
+                return res
+        return {'rows': [], 'count': 0, 'msg': 'réponse sans tableau de résultats', 'pages': 0, 'warning': ''}
+
+    def _more_pages(self, res, extra, first_body):
+        """Lit les pages 2, 3… du tableau de résultats (changement de page PrimeFaces, requête partielle sur le tableau) et ajoute leurs lignes à `res`. S'arrête quand les lignes lues
+        atteignent le nombre annoncé, quand une page ne donne aucune ligne nouvelle, quand la réponse est une erreur ou n'a pas de tableau, ou après MAX_PAGES pages : `res['warning']`
+        dit alors combien de lignes ont été lues. La première fois, la console imprime les paramètres envoyés et l'anatomie de la réponse (les noms de PAGE_PARAMS n'ont pas été vus)."""
+        m = re.search(r'id="([^"]*searchResults)_data"', first_body)
+        table = m.group(1) if m else PAGE_TABLE
+        key = lambda r: (tuple(r['cells']), tuple(h for _, h in r['links']))
+        seen = {key(r) for r in res['rows']}
+        base = {k: v for k, v in extra.items() if k != self.src}          # le bouton « Search » n'est pas cliqué par un changement de page
+        for page in range(1, MAX_PAGES):
+            if len(res['rows']) >= res['count']:
+                return
+            params = {k.format(t=table, first=''): v.format(t=table, first=page * PAGE_ROWS) for k, v in PAGE_PARAMS.items()}
+            code, body = self._ajax({**base, **params}, 'page', table, execute=table, render=table)
+            if not self._page_diag:
+                self._page_diag = True
+                self.say('pagination (noms de paramètres non vus sur le vrai écran) — envoyé :', sent_summary(self.last_sent), '| réponse :', describe(body))
+            got = result_info(body)[0]
+            if code != 200 or '<error' in body or 'searchResults_data' not in body:
+                res['warning'] = f'{len(res["rows"])} ligne(s) lue(s) sur {res["count"]} : la page {page + 1} a répondu par une erreur ou sans tableau de résultats'
+                return
+            new = [r for r in got if key(r) not in seen]
+            if not new:
+                res['warning'] = f'{len(res["rows"])} ligne(s) lue(s) sur {res["count"]} : la page {page + 1} ne donne aucune ligne nouvelle'
+                return
+            seen.update(key(r) for r in new)
+            res['rows'] += new
+            res['pages'] += 1
+        if len(res['rows']) < res['count']:
+            res['warning'] = f'{len(res["rows"])} ligne(s) lue(s) sur {res["count"]} : arrêt après {MAX_PAGES} pages'
 
     def fetch(self, row):
         """Octets du document d'une ligne de résultats (lien direct, sinon bouton ▶ de la ligne), ou None."""
@@ -715,8 +761,9 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None):
     found = {}
     lib.choose('type', 'Charts')
     for k, kw in SURVEY_KEYS.items():
-        r = lib.search(name=f'AD_2_{icao}_', heading=kw)
-        say(f'{icao}: {k}: {r["count"]} document(s)' + (f' (ATTENTION : {len(r["rows"])} seulement lus, la page suivante n\'est pas parcourue)' if r['count'] > len(r['rows']) else ''))
+        r = lib.search(name=f'AD_2_{icao}_', heading=kw, all_pages=True)
+        say(f'{icao}: {k}: {r["count"]} document(s)' + (f' en {r["pages"]} pages' if r['pages'] > 1 else '')
+            + (f' (ATTENTION : {r["warning"] or str(len(r["rows"])) + " seulement lus"})' if r['count'] > len(r['rows']) else ''))
         for row in r['rows']:
             name, title = row_summary(row)
             found.setdefault(name, {'name': name, 'title': title, 'kinds': [], 'row': row})['kinds'].append(k)
@@ -738,7 +785,7 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None):
         k = classify_name(cache / fm['file'])
         fm['pdf'] = k
         say(f'  {"OK " if fm["ok"] else "NON"} {fm["file"]} | {k.get("kind")} | {fm["layout"]} ' + ''.join(f'| {x}' for x in fm['problems']))
-    ocr_pass(doc, pdfs, cache, icao, out, say)
+    ocr = ocr_pass(doc, pdfs, cache, icao, out, say)
     mf = Path(manual_dir) / f'{icao}.json' if manual_dir else None
     if mf and mf.is_file():
         man = json.loads(mf.read_text(encoding='utf-8'))
@@ -748,13 +795,21 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None):
     doc['documents'] = [{'name': d['name'], 'title': d['title'], 'kinds': d['kinds']} for d in found.values()]
     (Path(out) / f'{icao}.json').write_text(json.dumps(doc, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
     say(f'{icao}: {len(doc["procedures"])} procédure(s), {len(doc["documents"])} document(s) listé(s), {len(doc["warnings"])} avertissement(s)')
+    # quel fichier contient quelles procédures, et la commande qui installe chacun (un fichier sans procédure n'est pas à installer : proc_manual le refuse)
+    install = lambda f: f'python tools/proc_manual.py {f} --out <dépôt de données>/proc'
+    text_file = Path(out) / f'{icao}.json'
+    say(f'  {text_file.name} (tables de texte' + (' et interprétation manuelle' if mf and mf.is_file() else '') + f') : {len(doc["procedures"])} procédure(s)'
+        + (f' ; à installer par {install(text_file)}' if doc['procedures'] else ' ; rien à installer'))
+    if ocr is not None:
+        ocr_file = Path(out) / f'{icao}.ocr.json'
+        say(f'  {ocr_file.name} (pages lues par OCR) : {len(ocr["procedures"])} procédure(s)' + (f' ; à installer par {install(ocr_file)}' if ocr['procedures'] else ' ; rien à installer'))
     return doc
 
 
 def ocr_pass(doc, pdfs, cache, icao, out, say=print):
     """Lecture par OCR des documents dont aucune page n'a de disposition connue ET que la lecture signale « dessinés en vecteurs ou image » (pas de couche de texte). Sans moteur
     d'OCR (tools/proc_ocr.py : pypdfium2 et Tesseract ou rapidocr-onnxruntime), le message d'installation est affiché et on continue. Avec un moteur, chaque document est lu page par
-    page, les pages fusionnées dans <out>/<OACI>.ocr.json (que tools/proc_manual.py installe : il refait caps et distances) ; la console dit ce qui a été lu et ce que la porte géométrique
+    page, les pages fusionnées dans <out>/<OACI>.ocr.json (que tools/proc_manual.py installe : il refait caps et distances) ; la console dit ce qui a été lu et ce que le contrôle de géométrie
     a écarté. Rend le document OCR, ou None."""
     vect = [fm['file'] for fm in doc['formats'] if 'pages' in fm and any('vecteurs' in x for x in fm['problems'])]
     if not vect:
@@ -777,7 +832,7 @@ def ocr_pass(doc, pdfs, cache, icao, out, say=print):
         dropped = [x for x in d['warnings'] if 'NON retenue' in x]
         read = [f for f in d['formats'] if f['layout']]
         say(f'  OCR {name}: {len(d["formats"])} page(s), {len(read)} de disposition reconnue ({", ".join(sorted({f["layout"] for f in read})) or "aucune"}), '
-            f'{len(d["procedures"])} procédure(s) retenue(s), {len(dropped)} table(s) écartée(s) par la porte géométrique ou les comptes')
+            f'{len(d["procedures"])} procédure(s) retenue(s), {len(dropped)} table(s) écartée(s) par le contrôle de géométrie ou les comptes')
         merged['formats'] += d['formats']
         merged['warnings'] += d['warnings']
         for rec in d['procedures']:
@@ -788,7 +843,10 @@ def ocr_pass(doc, pdfs, cache, icao, out, say=print):
         return None
     dest = Path(out) / f'{icao}.ocr.json'
     dest.write_text(json.dumps(merged, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
-    say(f'{icao}: {len(merged["procedures"])} procédure(s) lue(s) par OCR dans {dest.name} ; à installer par python tools/proc_manual.py {dest} --out <dépôt de données>/proc (contrôle de caps et distances refait)')
+    if merged['procedures']:
+        say(f'{icao}: {len(merged["procedures"])} procédure(s) lue(s) par OCR dans {dest.name} ; à installer par python tools/proc_manual.py {dest} --out <dépôt de données>/proc (contrôle de caps et distances refait)')
+    else:
+        say(f'{icao}: aucune procédure retenue par OCR ({dest.name} écrit pour ses avertissements) : rien à installer depuis ce fichier')
     return merged
 
 

@@ -38,6 +38,20 @@ def verify(doc):
     return problems
 
 
+def empty_refusal(doc, path, out):
+    """Message de refus d'un fichier SANS procédure (rien n'est installé, jamais « 0 procédure(s) cohérentes » comme un succès) : les avertissements du fichier, un par ligne
+    (les « NON retenue » et « non reconnue » disent pourquoi), et, quand `<OACI>.ocr.json` est à côté, la commande qui installe les procédures lues par OCR."""
+    lines = [f'{doc.get("icao", "?")}: {Path(path).name} ne contient AUCUNE procédure : rien n\'est installé.']
+    warnings = [w for w in doc.get('warnings', []) if w]
+    if warnings:
+        lines.append('Avertissements du fichier :')
+        lines += [f'  - {w}' for w in warnings[:40]] + ([f'  - … et {len(warnings) - 40} autre(s)'] if len(warnings) > 40 else [])
+    sibling = Path(path).with_name(f'{doc.get("icao")}.ocr.json')
+    if sibling.is_file() and sibling.name != Path(path).name:
+        lines.append(f'Les procédures lues par OCR sont dans {sibling.name} (même dossier) ; pour les installer : python tools/proc_manual.py {sibling} --out {out}')
+    return '\n'.join(lines)
+
+
 RANK = {'official': 0, 'check': 1, 'ofp': 2}      # meilleur statut d'abord
 
 
@@ -103,6 +117,9 @@ def main(argv=None):
     for p in problems:
         print('PROBLÈME:', p, file=sys.stderr)
     if problems:
+        raise SystemExit(1)
+    if not doc.get('procedures'):                                 # un fichier vide n'est pas « cohérent » : il n'est jamais installé
+        print(empty_refusal(doc, a.file, a.out), file=sys.stderr)
         raise SystemExit(1)
     print(f'{doc["icao"]}: {len(doc["procedures"])} procédure(s) cohérentes (caps et distances recalculés)', file=sys.stderr)
     if not a.check:

@@ -26,10 +26,32 @@ import proc_manual  # noqa: E402
 
 
 OCR_TIMEOUT = 600  # secondes au plus par document lu par OCR (rendu et moteur, plusieurs pages et résolutions) : proc_eaip.limited
+MAX_DPI = 600      # résolution de rendu au plus (une page A4 à 600 dpi pèse déjà 35 millions de pixels) : au-delà, refus
+
+
+def dpi_arg(text):
+    """Valeur de --dpi : entier entre 1 et MAX_DPI (argparse.ArgumentTypeError sinon)."""
+    try:
+        n = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f'{text!r} n\'est pas un entier') from None
+    if not 0 <= n <= MAX_DPI:
+        raise argparse.ArgumentTypeError(f'résolution refusée : {n} dpi (au plus {MAX_DPI})')
+    return n
+
+
+def tesseract_path():
+    """Chemin ABSOLU du programme tesseract trouvé dans le PATH, ou None. Sous Windows, `which` regarde d'abord le dossier courant : on le lui interdit
+    (NoDefaultCurrentDirectoryInExePath, comme tools/data_sync.py) pour qu'un tesseract.exe déposé dans une archive téléchargée ne soit jamais lancé ;
+    le programme est ensuite appelé par ce chemin, jamais par son nom."""
+    os.environ['NoDefaultCurrentDirectoryInExePath'] = '1'
+    return shutil.which('tesseract')
 
 
 def render_page(path, page=0, dpi=300):
     """Image PIL d'une page de PDF rendue par pypdfium2 ; il manque : message clair (dépendance facultative des constructeurs de poste)."""
+    if not 0 < dpi <= MAX_DPI:
+        raise SystemExit(f'résolution refusée : {dpi} dpi (entre 1 et {MAX_DPI})')
     try:
         import pypdfium2
     except ImportError:
@@ -56,7 +78,7 @@ def _rapidocr_module():
 
 def backend():
     """Moteur d'OCR présent : 'tesseract' (programme dans le PATH), sinon 'rapidocr' (module importable), sinon None."""
-    if shutil.which('tesseract'):
+    if tesseract_path():
         return 'tesseract'
     return 'rapidocr' if _rapidocr_module() else None
 
@@ -71,7 +93,7 @@ def _tesseract_words(image):
     with tempfile.TemporaryDirectory() as td:
         png = os.path.join(td, 'page.png')
         image.save(png)
-        out = subprocess.run([shutil.which('tesseract'), png, '-', '--psm', '6', 'tsv'], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        out = subprocess.run([tesseract_path(), png, '-', '--psm', '6', 'tsv'], capture_output=True, text=True, encoding='utf-8', errors='replace')
     if out.returncode:
         raise SystemExit('tesseract a échoué : ' + (out.stderr or '').strip()[:300])
     words = []
@@ -119,7 +141,7 @@ def _rapidocr_words(image):
 def ocr_words(image, engine=None):
     """Mots {x0, y0, x1, y1, text, conf} d'une image. `engine` : 'tesseract' ou 'rapidocr' ; None = celui qui est présent. Aucun moteur : message clair."""
     engine = engine or backend()
-    if engine == 'tesseract' and shutil.which('tesseract'):
+    if engine == 'tesseract' and tesseract_path():
         return _tesseract_words(image)
     if engine == 'rapidocr':
         try:
@@ -242,7 +264,7 @@ def normalize_ge_coding(rows):
 # normalisation propre à chaque disposition lue par OCR (celles qui n'y figurent pas sont lues telles quelles)
 NORMALIZERS = {'uk-app': normalize_uk_app, 'uk-star': normalize_uk_star, 'at-coding': normalize_at_coding, 'be-coding': normalize_be_coding, 'ge-coding': normalize_ge_coding}
 
-# dispositions lisibles par OCR : celles dont chaque tronçon porte ou retrouve ses coordonnées dans la page (la porte géométrique les contrôle toutes)
+# dispositions lisibles par OCR : celles dont chaque tronçon porte ou retrouve ses coordonnées dans la page (le contrôle de géométrie les contrôle toutes)
 OCR_LAYOUTS = {'uk-app', 'uk-star', 'am-coding', 'at-coding', 'ei-coding', 'be-coding', 'ge-coding'}
 
 
@@ -336,7 +358,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('file', nargs='?')
     ap.add_argument('--page', type=int, default=None, help='numéro de page à partir de 0 (sans --icao : première page ; avec --icao : toutes les pages si absent)')
-    ap.add_argument('--dpi', type=int, default=0, help='résolution du rendu (défaut : 300 pour afficher les lignes ; 300, 500 puis 200 selon la page pour écrire un document)')
+    ap.add_argument('--dpi', type=dpi_arg, default=0, help=f'résolution du rendu, au plus {MAX_DPI} (défaut : 300 pour afficher les lignes ; 300, 500 puis 200 selon la page pour écrire un document)')
     ap.add_argument('--engine', choices=['tesseract', 'rapidocr'])
     ap.add_argument('--deps', action='store_true', help='indique les moteurs présents')
     ap.add_argument('--icao')
@@ -352,14 +374,19 @@ def main(argv=None):
         except ImportError:
             pdfium = False
         print(f'pypdfium2: {"présent" if pdfium else "absent"}')
-        print(f'tesseract: {"présent" if shutil.which("tesseract") else "absent"}')
+        print(f'tesseract: {"présent" if tesseract_path() else "absent"}')
         print(f'rapidocr: {_rapidocr_module() or "absent"}')
         print(f'moteur retenu: {backend() or "aucun"}')
         return
     if not a.file:
         ap.error('FILE requis (ou --deps)')
     if not (a.icao or a.cycle or a.out):
-        print('\n'.join(proc_eaip.format_rows(rows_from_pdf_ocr(a.file, a.page or 0, a.dpi or 300, a.engine))))
+        # affichage des lignes : lui aussi dans un processus séparé, au plus OCR_TIMEOUT s (un PDF piégé ou démesuré ne bloque pas l'outil)
+        try:
+            rows = proc_eaip.limited('rows_from_pdf_ocr', a.file, a.page or 0, a.dpi or 300, a.engine, module='proc_ocr', timeout=OCR_TIMEOUT)
+        except proc_eaip.PdfTimeout as e:
+            raise SystemExit(f'lecture impossible: {e}') from None
+        print('\n'.join(proc_eaip.format_rows(rows)))
         return
     if not (a.icao and a.cycle and a.out):
         ap.error('--icao, --cycle et --out vont ensemble')

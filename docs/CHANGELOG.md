@@ -25,6 +25,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `missed` point now stops at its fix nearest to the chosen threshold (else the aerodrome); the fixes after it are its missed
   approach, drawn dashed and never flown.
 
+- **aerodb: `--fetch` walks every results page, `proc_manual` refuses an empty file, safer Tesseract lookup** (`tools/proc_ead.py`, `tools/proc_manual.py`, `tools/proc_ocr.py`, K11 K12 K14) — the EAD results table is paged through (15 rows a page, 1 s between pages; the PrimeFaces paging parameters were not seen on the real screen: the first paged walk prints what it sends); `--fetch` ends by naming the text file and the OCR file with their counts and install commands; a file without procedures is never installed and its reasons are printed; Tesseract is looked up with `NoDefaultCurrentDirectoryInExePath` and run by absolute path, `--dpi` is capped at 600, the display mode runs under the OCR timeout.
 - **Fuel: "Read the procedures" says where it reads** (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4; case F14) — while
   reading, the button says "Reading the SIA eAIP…" (France) or "Reading EAD Basic…"; a State without published procedure
   tables is told so (and that Little Navmap has a database on this workstation, when it has); the old "layout unknown" refusal
