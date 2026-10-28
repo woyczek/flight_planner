@@ -244,6 +244,13 @@
           "en": "Pre-release 6.0.0-alpha.2: recoded Map, weather layer, grouped Settings, Aqua, EAD tools; history squashed by block before the release (recoded Atmosphere in alpha 3)",
           "de": "Vorabversion 6.0.0-alpha.2: neu geschriebene Karte, Wetterschicht, gruppierte Einstellungen, Aqua, EAD-Werkzeuge; Historie vor dem Release blockweise zusammengefasst (neu geschriebene Atmosphäre in Alpha 3)",
           "es": "Preversión 6.0.0-alpha.2: Mapa recodificado, capa meteorológica, Ajustes agrupados, Aqua, herramientas EAD; historial compactado por bloque antes de la publicación (Atmósfera recodificada en la alfa 3)"
+        },
+        {
+          "state": "done",
+          "fr": "Le lanceur ouvre l'appli Pilote (V3) au démarrage ; les pages V2 restent à leurs adresses",
+          "en": "The launcher opens the Pilot application (V3) at start; the V2 pages stay at their addresses",
+          "de": "Der Launcher öffnet beim Start die Pilot-App (V3); die V2-Seiten bleiben unter ihren Adressen",
+          "es": "El lanzador abre la aplicación Piloto (V3) al inicio; las páginas V2 permanecen en sus direcciones"
         }
       ]
     },
@@ -377,7 +384,7 @@
           "es": "Combustible lee la capa meteorológica del marco: sin llamadas directas a los servicios meteorológicos, tiempos por tramo del cálculo escritos para el Mapa"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Piste, SID, STAR et approche choisies dans la préparation, modifiables en route ; lecture des procédures à la demande",
           "en": "Runway, SID, STAR and approach chosen in the preparation, changeable en route; procedures read on demand",
           "de": "Piste, SID, STAR und Anflug in der Vorbereitung gewählt, unterwegs änderbar; Verfahren auf Abruf gelesen",
@@ -550,11 +557,18 @@
           "es": "Mapa recodificado según su especificación (28/10): módulo en archivos por tema, horas y posición prevista derivadas de los tiempos del cálculo, modo Edición que fusiona en la ruta, meteo por la capa del marco"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Tracés des procédures choisies avec altitudes et vitesses, un seul chemin route + procédures, profil avec contraintes",
           "en": "Traces of the chosen procedures with altitudes and speeds, one route + procedures path, profile with constraints",
           "de": "Spuren der gewählten Verfahren mit Höhen und Geschwindigkeiten, ein Pfad Route + Verfahren, Profil mit Auflagen",
           "es": "Trazados de los procedimientos elegidos con altitudes y velocidades, un solo camino ruta + procedimientos, perfil con restricciones"
+        },
+        {
+          "state": "planned",
+          "fr": "Carte de couverture des procédures : terrains verts (procédures connues), orange (lisibles à la demande), rouges (rien)",
+          "en": "Coverage map of the procedures: green aerodromes (procedures held), orange (readable on demand), red (nothing)",
+          "de": "Abdeckungskarte der Verfahren: grüne Plätze (Verfahren vorhanden), orange (auf Abruf lesbar), rot (nichts)",
+          "es": "Mapa de cobertura de los procedimientos: aeródromos verdes (procedimientos disponibles), naranja (legibles bajo demanda), rojos (nada)"
         }
       ]
     },
@@ -907,6 +921,13 @@
           "en": "Procedures from Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) as a local fallback, never published; MSFS position through Little Navmap",
           "de": "Verfahren aus Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) als lokaler Rückfall, nie veröffentlicht; MSFS-Position über Little Navmap",
           "es": "Procedimientos desde Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) como respaldo local, nunca publicados; posición MSFS por Little Navmap"
+        },
+        {
+          "state": "planned",
+          "fr": "Lecture à la demande par État : la France par l'eAIP du SIA sans identifiants, les États à tables par EAD, sinon Little Navmap",
+          "en": "On-demand reading by State: France through the SIA eAIP without credentials, States with tables through EAD, else Little Navmap",
+          "de": "Lesen auf Abruf je Staat: Frankreich über das eAIP des SIA ohne Zugangsdaten, Staaten mit Tabellen über EAD, sonst Little Navmap",
+          "es": "Lectura bajo demanda por Estado: Francia por el eAIP del SIA sin credenciales, Estados con tablas por EAD, si no Little Navmap"
         }
       ]
     },

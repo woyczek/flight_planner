@@ -601,6 +601,12 @@ redesigned for touch at that point.
          time. The altitude constraints of the procedures do not enter the fuel figures (the quote counts the
          procedures' length; the constraints live in `profile.path`, drawn by the Map); a constrained climb / descent
          model in `model.js` is a later lot if the user wants it.
+         **On-demand reading by State (user, 28 Oct evening, "bug sur les AD français, pourtant prioritaires")**: the
+         gesture "Lire les procédures de LFXX" dispatches by the aerodrome's State: France (LF) reads the SIA eAIP coding
+         tables (`tools/proc_eaip.py`, free, no credentials, AIRAC folder derived from the cycle in force), the States with
+         EAD coding tables read EAD Basic, a State without tables answers "aucune table publiée pour cet État" and offers
+         Little Navmap when present; never "mise en page inconnue" for France. Lot: aerodb (`regen_jobs` verb
+         `proc/eaip-fetch`, `fetchProcedures` dispatch), fuel (texts ×4).
        - **What the Map draws.** The chosen SID, STAR and approach as the procedure trace (today's purple line), from the
          runway's threshold (SID) to the first en-route fix, and from the last en-route fix to the runway (STAR, approach);
          every point of the trace with its altitude constraint ("at / min / max / between", formatted by `formatLevel`) and
@@ -667,3 +673,13 @@ redesigned for touch at that point.
        Navmap is absent. The catalogue lists MSFS 2020, MSFS 2024 and Little Navmap as local sources; `LICENSE.md` § 5
        gets their rows. Lots: survey session (reader, tests on a synthetic database), aerodb (status `lnm`, labels,
        catalogue, licence rows), position check in `tools/sim_position.py`.
+   22. **Coverage map of the procedures** (user, 28 Oct evening: "il faut, du coup, une carte des ADs connus, et/ou des
+       zones vertes, orange, rouges"): planned, ergonomics session. On the Map, a layer "Procédures" (off by default,
+       on when a procedure row is open in Fuel) colours the aerodrome pins by what the device can give: **green** =
+       procedures held (official or check, from the published cycle, `proc/manual/` or `proc/local/`), **orange** =
+       readable on demand (France by the SIA, a State with EAD coding tables, an aerodrome in Little Navmap's local
+       database), **red** = nothing (image-only or prose States, nothing local); one legend line through the "i" chip;
+       aerodb gives `coverage(icao)` → green | orange | red with its reason, and `coverageByState()` for the Data
+       module, which shows the same three colours per State in its Procédures group (the EAD table § 8.1 as data). No
+       new screen: the Map and the Data module carry it. Lots after the economy mode: aerodb (coverage API), maps
+       (layer and pins), data module (State list).

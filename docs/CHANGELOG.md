@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher opens the Pilot application** (`tools/launch.py`) — the browser now opens `/frame/` (V3) at start; the V2
+  pages stay at their addresses (`--page apps/…`, Settings › Administration). User: "le lanceur lance la v2, désormais
+  obsolète".
+
 - **Map: the chosen runway, SID, STAR and approach are drawn, and the profile follows the path "route + procedures"**
   (`modules/maps/procs.js`, `data.js`, `draw.js`, `render.js`, `profile.js`, `profile_view.js`, `flight_time.js`, `edit.js`,
   `vfr.js`, `texts.js`, help ×4; V3_SPECIFICATION § 10.20) — the procedures chosen in Fuel (`route.procedures` v2) are loaded once

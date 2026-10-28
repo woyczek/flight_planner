@@ -9,8 +9,8 @@
      identifiants ; sinon, la page de premier lancement les demande (ou l'archive).
 2. Serveur web local (http://127.0.0.1, premier port libre à partir de 8000) servi depuis la racine du dossier, avec
    l'interface de la page de premier lancement (/__setup/…, voir Setup) ; déjà lancé : on ouvre seulement le navigateur.
-3. Navigateur ouvert sur la page de premier lancement (apps/settings/premier_lancement.html), qui renvoie vers
-   l'accueil une fois la suite réglée.
+3. Navigateur ouvert sur l'appli Pilote (frame/, V3) ; --page apps/settings/premier_lancement.html pour l'assistant V2,
+   --page apps/… pour une page V2.
 
 Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [--no-data]
 Arrêt : fermer la fenêtre, ou Ctrl+C.
@@ -32,7 +32,7 @@ import regen_jobs  # travaux longs du module Données (régénération) : un à 
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.path.join(ROOT, 'data')
-PAGE = 'apps/settings/premier_lancement.html'
+PAGE = 'frame/'  # l'appli Pilote (V3) ; la V2 reste servie à ses adresses (apps/…) et depuis Réglages › Administration
 try:
     sys.stdout.reconfigure(encoding='utf-8')
 except Exception:
