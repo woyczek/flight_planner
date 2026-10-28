@@ -301,7 +301,7 @@ mount. Inside a mount, the two buttons switch as before.
      coding tables from EAD Basic; while it reads, the button names the source it announces (`onProgress` `source`: "Lecture de
      l'eAIP du SIA…" / "Lecture d'EAD Basic…", with the progress n/total); any other State is refused `no-tables` ("Aucune table de
      procédures publiée pour cet État", plus "Little Navmap a une base sur ce poste" when the answer carries `lnm: true`);
-     `no-credentials` only comes from EAD. "Load my OFP" replaces the choice by the OFP's SID and STAR (one notification line per side).
+     `no-credentials` only comes from EAD. A success says its counts when aerodb gives them (`stats`): "LFXX : 78 procédures lues sur 18 pages", plus the pages not read with the most frequent reason (the tool's French phrase, translated when known) and the procedures dropped by the geometry check; never a bare "0 procédures". "Load my OFP" replaces the choice by the OFP's SID and STAR (one notification line per side).
      **The quote runs on the procedures path** (before the start): when procedures are chosen and read (`CF.loadProcedures`),
      the distance is the last point's `nm` of `CF.flownPath(CF.expandedPath(flight, procs))` (never recomputed here), the
      level steps are the route points' `alt_ft` at their `nm`, `quote.legs` has one `{ id, min, origin }` per flown point and

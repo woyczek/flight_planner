@@ -257,6 +257,29 @@ const TX = {
   procLnm: [' Little Navmap a une base sur ce poste.', ' Little Navmap has a database on this workstation.',
     ' Little Navmap hat eine Datenbank auf diesem Arbeitsplatz.', ' Little Navmap tiene una base en este puesto.'
   ],
+  // lecture réussie avec les comptes du travail (aerodb stats : pages, rejected, dropped, reasons) ; jamais « 0 procédures » seul
+  procFetchedPages: ['{icao} : {n} procédures lues sur {p} pages.{rej}{drop}', '{icao}: {n} procedures read from {p} pages.{rej}{drop}',
+    '{icao}: {n} Verfahren aus {p} Seiten gelesen.{rej}{drop}', '{icao}: {n} procedimientos leídos en {p} páginas.{rej}{drop}'
+  ],
+  procRejected: [' {r} pages non lues (motif le plus fréquent : {why}).', ' {r} pages not read (most frequent reason: {why}).',
+    ' {r} Seiten nicht gelesen (häufigster Grund: {why}).', ' {r} páginas no leídas (motivo más frecuente: {why}).'
+  ],
+  procDropped: [' {d} procédures écartées par le contrôle de géométrie.', ' {d} procedures dropped by the geometry check.',
+    ' {d} Verfahren von der Geometrieprüfung verworfen.', ' {d} procedimientos descartados por el control de geometría.'
+  ],
+  // motifs de rejet de l'outil du poste (texte français stable, frame/aerodb/INTEGRATION.md) ; un motif inconnu est montré tel quel
+  procWhy: {
+    'lignes de tronçon illisibles (moins de 85 % lues)': ['lignes de tronçon illisibles (moins de 85 % lues)',
+      'unreadable leg lines (less than 85 % read)', 'unlesbare Abschnittszeilen (unter 85 % gelesen)',
+      'líneas de tramo ilegibles (menos del 85 % leídas)'
+    ],
+    'mise en page non reconnue': ['mise en page non reconnue', 'layout not recognised', 'Layout nicht erkannt', 'formato no reconocido'],
+    'titre de la page non reconnu': ['titre de la page non reconnu', 'page title not recognised', 'Seitentitel nicht erkannt',
+      'título de página no reconocido'
+    ],
+    'aucun tronçon lisible': ['aucun tronçon lisible', 'no readable leg', 'kein lesbarer Abschnitt', 'ningún tramo legible'],
+    'géométrie incohérente': ['géométrie incohérente', 'inconsistent geometry', 'inkonsistente Geometrie', 'geometría incoherente']
+  },
   procFetched: ['{icao} : {n} procédures lues.', '{icao}: {n} procedures read.', '{icao}: {n} Verfahren gelesen.',
     '{icao}: {n} procedimientos leídos.'
   ],
@@ -1656,6 +1679,9 @@ function procChosen(k, raw) {
   saveFlight();
   refresh();
 }
+/** Motif de rejet le plus fréquent d'une lecture (texte français de l'outil du poste) dans la langue de l'appli ; tel quel s'il est
+ *  inconnu, « ? » sans motif. */
+const procWhyText = why => TX.procWhy[why] ? tt(TX.procWhy[why]) : String(why || '?');
 /** « Lire les procédures de LFXX » : aerodb.fetchProcedures (un terrain par geste, rien en silence) ; un refus montre sa raison dans
  *  une notification flottante (sans lanceur : la lecture se fait sur le poste, l'OFP SimBrief reste la source du vol). */
 async function fetchProcs(icao, btn) {
@@ -1700,9 +1726,22 @@ async function fetchProcs(icao, btn) {
   if (gone(s)) return;
   S.procFetch = null;
   if (res?.ok) {
-    S.ctx.notify(tt(TX.procFetched, {
+    const n = Array.isArray(res.procedures) ? res.procedures.length : +res.procedures || 0,
+      st = res.stats;
+    S.ctx.notify(st && +st.pages > 0 ? tt(TX.procFetchedPages, {
       icao,
-      n: Array.isArray(res.procedures) ? res.procedures.length : +res.procedures || 0
+      n,
+      p: +st.pages,
+      rej: +st.rejected > 0 ? tt(TX.procRejected, {
+        r: +st.rejected,
+        why: procWhyText(st.reasons?.[0]?.[0])
+      }) : '',
+      drop: +st.dropped > 0 ? tt(TX.procDropped, {
+        d: +st.dropped
+      }) : ''
+    }) : tt(TX.procFetched, {
+      icao,
+      n
     }), 'ok');
     S.procCache = null;
     S.procs = null;

@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: "Read the procedures" gives its counts** (`modules/fuel/module.js`, SPEC, DECISIONS; case F14) — e.g. "78
+  procedures read from 18 pages", with the pages not read and their most frequent reason, and the procedures dropped by
+  the geometry check.
 - **Fuel: the vertical path no longer folds — no vertical jump, no climb back in the descent; an approach given by its entries is
   listed once** (`modules/fuel/progress.js` `verticalPath`, `module.js` `dedupProcs`, SPEC, DECISIONS; help ×4; cases F23, F24) — on the
   user's LFBO → LFPO the saved choice had the same record as approach and as transition (its fixes chained twice, 524 NM for 327), the

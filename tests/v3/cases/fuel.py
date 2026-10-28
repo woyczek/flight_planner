@@ -516,6 +516,9 @@ def f14(c):
     c.ok(bool(tx(F, "no-tables'", c.lang, after='procReasons').strip()), 'missing', '"no procedure tables published for this State" is written in the language of the run')
     for k in ('eaip', 'ead'):
         c.ok(bool(tx(F, k, c.lang, after='procReadingSrc').strip()), 'missing', f'the reading in progress names its source ({k})')
+    # comptes d'une lecture réussie (aerodb stats) : jamais « 0 procédures » seul
+    for k in ('procFetchedPages', 'procRejected', 'procDropped'):
+        c.ok('{' in tx(F, k, c.lang), 'missing', f'the success notification wording {k} exists in the language of the run')
 
 
 @case('F15', 'Quote on the procedures path: legs with origins, profile.path', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,

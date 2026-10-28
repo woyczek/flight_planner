@@ -4,6 +4,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — the reading's counts in the success notification** (aerodb 636a020f4, `stats`; Simplification): « {n} procédures
+  lues sur {p} pages », then « {r} pages non lues (motif le plus fréquent : …) » when `rejected` > 0 and « {d} procédures écartées
+  par le contrôle de géométrie » when `dropped` > 0; `n` is the answer's `procedures.length` (right on the first reading). The
+  tool's five reason phrases are translated ×4 (`TX.procWhy`), an unknown one is shown as given. Without `stats` (older
+  launcher), the former « {n} procédures lues ».
 - **28 Oct 2026 — the vertical path folded back on the user's flight LFBO → LFPO** (user's report: 524 NM, the profile drops to
   1,600 ft around 400 NM, jumps back up around 520 NM). Reproduced from the user's own saved flight and files (read only; no
   procedure content is kept here). Causes: (1) the saved choice had the SAME record as approach and as approach transition, so
