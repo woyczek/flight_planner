@@ -40,9 +40,9 @@ category, the wind on its runway, the ceiling and the visibility. “Read the ae
 
 **The real wind.** Tick “Real weather: wind along the route”: the wind fields take the forecast wind at your level.
 
-**The temperature.** “Use ISA …” takes the day's temperature from the departure airfield. Then “Next · Quote”.
+**The temperature.** “Use ISA …” takes the day's temperature from the departure airfield. Then “Next · Result”.
 
-## 4. Quote
+## 4. Result
 
 ![The level decision: fuel and time for each level](img/prepare-flight-4.en.png)
 

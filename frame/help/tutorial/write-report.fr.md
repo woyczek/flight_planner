@@ -14,8 +14,8 @@ identifiant IVAO (ou VATSIM) au même endroit, et l'appareil en ligne.
 … » pour celui démarré dans Carburant, ou « Dernier vol IVAO » depuis le réseau. Touchez « Utiliser ».
 
 **Complétez le reste.** La carte dit en une ligne ce qu'elle reprend : appareil, terrains, heure de mise en route et
-carburant au départ depuis Carburant, ou toutes les heures depuis le réseau. Une petite étiquette au-dessus de chaque
-champ dit d'où il vient. Ajoutez ce qui manque : immatriculation, indicatif, les autres heures. Puis « Suivant → ».
+carburant au départ depuis Carburant, ou toutes les heures depuis le réseau. Une ligne sous le titre de chaque carte
+dit d'où viennent ses champs. Ajoutez ce qui manque : immatriculation, indicatif, les autres heures. Puis « Suivant → ».
 
 ## 2. Mission
 
@@ -58,4 +58,4 @@ son compte rendu porte un point orange : touchez-le, puis « Écrire le CR ».
 
 **Pour aller plus loin.** Les chapitres [Compte rendu](#help?m=report) et [Mes vols](#help?m=flightlog) du manuel.
 
-<!-- en: 03d6a5dfc7e7 -->
+<!-- en: a8f3d568a5a6 -->

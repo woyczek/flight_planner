@@ -10,6 +10,9 @@ Règles :
   · un module sans dossier help/ est signalé (« sans chapitre ») et laissé de côté ;
   · une traduction porte <!-- fr: <empreinte> --> (12 premiers caractères du SHA-1 de fr.md) : une empreinte absente ou
     différente est signalée « à retraduire », sans refus ;
+  · les ancres (<a id="x"></a> d'un paragraphe ou d'un titre) : les mêmes dans les quatre langues, préfixées par l'id du
+    chapitre, uniques dans le manuel ; celles qu'un module cite dans ctx.helpAnchor(...) existent (le « ? » du téléphone
+    y mène : #help?m=<id>&a=<ancre>) ;
   · la feuille de route (frame/help/roadmap.json) : chaque texte en quatre langues et des états connus, sinon refus ;
   · les tutoriels (liste TUTORIALS de help.js) : frame/help/tutorial/<id>.<langue>.md, écrits en anglais ; anglais et
     français obligatoires, un seul titre « # » en tête, chaque image citée présente dans tutorial/img/, sinon refus ;
@@ -90,6 +93,32 @@ def roadmap_errors():
     return out
 
 
+ANCHOR = re.compile(r'<a id="([\w-]+)"></a>')
+
+
+def anchor_errors(mid, texts):
+    """Ancres d'un chapitre : les mêmes dans les quatre langues, préfixées par « <id>- » ; et, pour un module, celles que
+    son module.js cite dans ctx.helpAnchor(...) (un gabarit `fuel-step-${n}` : au moins une ancre de ce préfixe)."""
+    out = []
+    sets = {lang: ANCHOR.findall(t) for lang, t in texts.items()}
+    ref = sets.get('fr', [])
+    for lang, found in sets.items():
+        if found != ref:
+            out.append(f'modules/{mid}/help/{lang}.md : ancres {found} ≠ celles du français {ref}')
+    for a in ref:
+        if not a.startswith(mid + '-'):
+            out.append(f'chapitre {mid} : l\'ancre « {a} » doit commencer par « {mid}- »')
+    module_js = os.path.join(ROOT, 'modules', mid, 'module.js')
+    if os.path.isfile(module_js):
+        for call in re.findall(r'helpAnchor\??\.?\((.*?)\);', read(module_js), re.S):
+            for lit, tmpl in re.findall(r'[\'"`]([\w-]+)(\$\{)?', call):
+                if not lit.startswith(mid + '-'):
+                    continue
+                if not any((a.startswith(lit) if tmpl else a == lit) for a in ref):
+                    out.append(f'modules/{mid}/module.js : ctx.helpAnchor cite « {lit}{"…" if tmpl else ""} », absent du chapitre')
+    return out
+
+
 def tutorial_check():
     """Tutoriels (TUTORIALS de help.js) : (erreurs, notes) — anglais et français présents, titre, images, empreintes."""
     errors, notes = [], []
@@ -132,6 +161,7 @@ def main(args):
         else:
             intro[lang] = read(p).strip()
     chapters = {lang: [] for lang in LANGS}
+    seen_anchors = {}
     # chapitres des modules dans l'ordre du menu, puis ceux des écrans du cadre (Réglages)
     for mid, d in [(m, os.path.join(ROOT, 'modules', m, 'help')) for m in module_order()] + FRAME_CHAPTERS:
         if not os.path.isdir(d):
@@ -157,6 +187,12 @@ def main(args):
                 got = re.search(r'<!-- fr: ([0-9a-f]{12}) -->', texts.get(lang, ''))
                 if lang in texts and (not got or got.group(1) != fp):
                     notes.append(f'{rel(d)}/{lang}.md : à retraduire (fr: {fp})')
+        if texts:
+            errors += anchor_errors(mid, texts)
+            for a in ANCHOR.findall(texts.get('fr', '')):
+                if a in seen_anchors:
+                    errors.append(f'ancre « {a} » en double (chapitres {seen_anchors[a]} et {mid})')
+                seen_anchors[a] = mid
         for lang, t in texts.items():
             title, _, rest = t.partition('\n')
             chapters[lang].append(f'<!-- chapter: {mid} -->\n{title}\n\n{rest.strip()}\n')

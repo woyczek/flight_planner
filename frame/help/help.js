@@ -14,6 +14,11 @@
   //     langue absente : l'anglais ; carte d'accueil à la première ouverture (welcome), jusqu'à sa fermeture ou à
   //     l'ouverture d'un tutoriel (device/help.json, welcomed) ; elle mène aussi à l'import d'une configuration
   //     (#settings?import=1).
+  //   · carte « Comment s'en servir » : un ✕ (« Masquer ») la masque pour ce module sur l'appareil (device/help.json,
+  //     hidden) ; l'écran d'aide propose « Revoir les premiers pas » dans le chapitre d'un module masqué ;
+  //   · aide au bon paragraphe : #help?m=<module>&a=<ancre> ouvre le chapitre et défile jusqu'au paragraphe, surligné
+  //     1,5 s (classe f-hl) ; les ancres sont des <a id="<module>-…"></a> du chapitre (le module publie l'ancre de son
+  //     écran par ctx.helpAnchor, le cadre la met dans l'adresse du « ? »).
   // Contexte donné par frame/app.js : { t, lang, own (device/, politique cache), root }.
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   const LANGS = ['fr', 'en', 'de', 'es'];
@@ -39,6 +44,10 @@
       'Beide bleiben in der Hilfe (?), am Anfang des Handbuchs.', 'Ambos quedan en la ayuda (?), al principio del manual.'
     ],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+    hide: ['Masquer', 'Hide', 'Ausblenden', 'Ocultar'],
+    showAgain: ['Revoir les premiers pas', 'Show the first steps again', 'Erste Schritte erneut anzeigen',
+      'Volver a ver los primeros pasos'
+    ],
     welcomeImport: ['Vous rejoignez une compagnie ? Commencez ici', 'Joining an airline? Start here',
       'Sie treten einer Fluggesellschaft bei? Hier beginnen', '¿Se une a una aerolínea? Empiece aquí'
     ],
@@ -87,6 +96,14 @@
     }
     return null;
   }
+  /** Fichiers de l'aide pour une langue (chemins relatifs à frame/help/) : le manuel, et chaque tutoriel dans cette
+   *  langue, plus l'anglais (sa langue d'écriture) quand elle n'est ni le français ni l'anglais ; le cadre les garde dès
+   *  l'installation, les autres langues l'étant à leur première lecture. */
+  function files(l) {
+    const lg = LANGS.includes(l) ? l : 'fr',
+      tl = lg === 'fr' || lg === 'en' ? [lg] : [lg, 'en'];
+    return [`pilot.${lg}.md`, ...TUTORIALS.flatMap(x => tl.map(k => `tutorial/${x.id}.${k}.md`))];
+  }
   /** Note la carte d'accueil comme vue (device/help.json : welcomed) ; elle ne revient plus, et celle encore posée sous
    *  l'écran d'aide (le module reste dessous) est retirée. */
   async function welcomed(c) {
@@ -98,6 +115,43 @@
       welcomed: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }).catch(() => {});
+  }
+  /** Change l'état d'une carte « Comment s'en servir » dans device/help.json : hidden[id] (masquée pour de bon sur cet
+   *  appareil) et, en la rouvrant, open[id] (dépliée). Lit puis écrit : welcomed et open[] des autres modules sont gardés. */
+  async function setHidden(c, id, hidden) {
+    const s = (await c.own.get('device/help.json').catch(() => null)) || {};
+    await c.own.put('device/help.json', {
+      ...s,
+      hidden: {
+        ...(s.hidden || {}),
+        [id]: hidden
+      },
+      ...(hidden ? {} : {
+        open: {
+          ...(s.open || {}),
+          [id]: true
+        }
+      }),
+      updated_at: new Date().toISOString()
+    }).catch(() => {});
+  }
+  /** « Revoir les premiers pas » : la carte du module id redevient visible (posée tout de suite si le module est affiché
+   *  dessous, l'aide étant ouverte par-dessus), puis retour au module. */
+  async function showAgain(c, id) {
+    await setHidden(c, id, false);
+    const el = document.querySelector(`.f-module[data-module="${CSS.escape(id)}"]`);
+    if (el && !el.parentNode.querySelector(`[data-help="${CSS.escape(id)}"]`)) {
+      const p = await panel(id, c);
+      if (p && el.isConnected) el.parentNode.insertBefore(p, el);
+    }
+    location.hash = `#${id}`;
+  }
+  /** Surligne un paragraphe 1,5 s (classe f-hl, fondu par la feuille de style) : une seule fois, à l'arrivée. */
+  function highlight(node) {
+    const box = node?.closest?.('p, li, h1, h2, h3, h4, h5, h6') || node;
+    if (!box) return;
+    box.classList.add('f-hl');
+    setTimeout(() => box.classList.remove('f-hl'), 1500);
   }
   /** Chapitres du manuel : { intro, chapters: { id: texte } } (marqueurs <!-- chapter: id -->). */
   function split(text) {
@@ -153,11 +207,23 @@
     if (!sec) return null;
     const state = (await c.own.get('device/help.json').catch(() => null)) || {},
       d = document.createElement('details');
+    if (state.hidden?.[id]) return null; // masquée sur cet appareil (✕) : rouverte par « Revoir les premiers pas » de l'aide
     d.className = 'f-card f-help';
     d.dataset.help = id;
     d.open = !!state.open?.[id];
-    d.innerHTML = `<summary>${esc(sec.title)}</summary><div class="f-doc">${md(sec.body).html}</div><p><a href="#help?m=${encodeURIComponent(id)}">${esc(c.t(T.chapter))}</a></p>`;
+    d.innerHTML = `<summary><span>${esc(sec.title)}</span><button type="button" class="f-help-x" data-x aria-label="${esc(c.t(T.hide))}" title="${esc(c.t(T.hide))}">✕</button></summary><div class="f-doc">${md(sec.body).html}</div><p><a href="#help?m=${encodeURIComponent(id)}">${esc(c.t(T.chapter))}</a></p>`;
     labelTables(d, c.t);
+    // le chapitre de l'écran d'aide porte les mêmes ancres : ici elles ne sont que des repères (data-a), jamais deux id
+    for (const n of d.querySelectorAll('a[id]')) {
+      n.dataset.a = n.id;
+      n.removeAttribute('id');
+    }
+    d.querySelector('[data-x]').onclick = async e => {
+      e.preventDefault(); // le bouton est dans le <summary> : il ne plie ni ne déplie
+      e.stopPropagation();
+      d.remove();
+      await setHidden(c, id, true);
+    };
     d.addEventListener('toggle', async () => {
       const s = (await c.own.get('device/help.json').catch(() => null)) || {};
       await c.own.put('device/help.json', {
@@ -180,7 +246,8 @@
         if (!d) return false;
         d.open = true;
         const s = String(subject).toLowerCase(),
-          p = s && [...d.querySelectorAll('p')].find(x => x.querySelector('strong')?.textContent.toLowerCase().startsWith(s));
+          p = s && ([...d.querySelectorAll('p')].find(x => x.querySelector('strong')?.textContent.toLowerCase().startsWith(s)) ||
+            d.querySelector(`[data-a="${CSS.escape(subject)}"]`)?.closest('p, li'));
         (p || d).scrollIntoView({
           block: 'start',
           behavior: 'smooth'
@@ -256,6 +323,7 @@
       view.innerHTML = `<h1>${esc(c.t(T.title))}</h1><p class="f-card">${esc(c.t(T.missing))}</p>`;
       return;
     }
+    const hidden = ((await c.own.get('device/help.json').catch(() => null)) || {}).hidden || {}; // cartes masquées (✕)
     // une seule passe de rendu : ancres uniques dans tout le manuel ; un chapitre = son titre « # » (un seul par
     // chapitre, vérifié par build_help.py), dans l'ordre des marqueurs <!-- chapter: <id> --> ; les titres « # » de
     // l'introduction viennent avant
@@ -286,7 +354,13 @@
       }
       (sections.at(-1) || intro).append(n);
     }
-    for (const sec of sections) sec.insertAdjacentHTML('beforeend', back);
+    for (const sec of sections) {
+      sec.insertAdjacentHTML('beforeend', back);
+      const id = sec.dataset.chapter;
+      // « Revoir les premiers pas » sous le titre d'un chapitre dont la carte est masquée sur cet appareil
+      if (hidden[id]) sec.querySelector('h1').insertAdjacentHTML('afterend',
+        `<p class="f-howto-show"><a href="#${esc(id)}" data-howto-show="${esc(id)}">${esc(c.t(T.showAgain))}</a></p>`);
+    }
     view.replaceChildren(intro);
     intro.insertAdjacentHTML('afterbegin', `<p class="f-rm-link"><a href="#roadmap">${esc(c.t(T.roadmap))}</a></p>`);
     // « Commencer par… » : les tutoriels, après le titre du manuel
@@ -298,18 +372,30 @@
     view.append(...sections);
     labelTables(view, c.t);
     // texte d'abord : le chapitre demandé (ou l'ancre) en tête de l'écran ; « ↑ Sommaire » ouvre le sommaire
-    const target = q.a === 'top' ? view.querySelector('[data-toc]') : q.a ? view.querySelector(`[id="${CSS.escape(q.a)}"]`) : q.m ? view.querySelector(
-      `[data-chapter="${CSS.escape(q.m)}"]`) : null;
+    for (const a of view.querySelectorAll('[data-howto-show]')) a.onclick = e => {
+      e.preventDefault();
+      showAgain(c, a.dataset.howtoShow);
+    };
+    // l'ancre demandée (une ancre inconnue retombe sur le chapitre) ; surlignée seulement quand elle vient du « ? » d'un
+    // module (m et a ensemble), pas d'un lien du sommaire
+    const byId = a => view.querySelector(`[id="${CSS.escape(a)}"]`) || view.querySelector(`a[id="${CSS.escape(a)}"]`),
+      chapter = q.m ? view.querySelector(`[data-chapter="${CSS.escape(q.m)}"]`) : null,
+      target = q.a === 'top' ? view.querySelector('[data-toc]') : (q.a && byId(q.a)) || chapter;
     if (q.a === 'top') target.open = true;
     // après la mise en page (pas requestAnimationFrame : arrêté dans un onglet en arrière-plan)
-    if (target) setTimeout(() => target.scrollIntoView({
-      block: 'start'
-    }), 0);
+    if (target) setTimeout(() => {
+      const mark = q.m && q.a && target !== chapter ? target.closest('p, li, h1, h2, h3, h4, h5, h6') || target : null;
+      (mark || target).scrollIntoView({
+        block: 'start'
+      });
+      if (mark) highlight(mark);
+    }, 0);
   }
 
   window.SogHelp = {
     panel,
     forModule,
+    files,
     screen,
     welcome,
     split,

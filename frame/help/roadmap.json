@@ -1,6 +1,6 @@
 {
   "schema": "sog-roadmap/1",
-  "updated": "2026-10-23",
+  "updated": "2026-10-28",
   "owner": "ergonomics session (Simplification interface et ergonomie)",
   "note": {
     "fr": "Ce qui est « livré » doit marcher : un écart est un bug à signaler. Ce qui est « en cours », « prévu » ou « plus tard » n'est pas un bug.",
@@ -195,6 +195,55 @@
           "en": "GitHub sign-in without a token to copy (OAuth / GitHub App) once a relay exists (the site's web service)",
           "de": "GitHub-Anmeldung ohne zu kopierendes Token (OAuth / GitHub App), sobald ein Relais existiert (Webdienst der Website)",
           "es": "Inicio de sesión GitHub sin token que copiar (OAuth / GitHub App) en cuanto exista un relé (servicio web del sitio)"
+        },
+        {
+          "state": "done",
+          "fr": "Premier écran sans attendre le réseau : champs de Carburant à 0,8 s au premier passage GitHub (compagnie lue en fond, lectures du dépôt partagées)",
+          "en": "First screen without waiting for the network: Fuel's fields at 0.8 s on the first GitHub pass (airline read in the background, repository reads shared)",
+          "de": "Erster Bildschirm ohne Warten auf das Netz: Felder von Kraftstoff nach 0,8 s beim ersten GitHub-Durchlauf (Gesellschaft im Hintergrund gelesen, geteilte Lesevorgänge)",
+          "es": "Primera pantalla sin esperar a la red: campos de Combustible a 0,8 s en el primer paso GitHub (compañía leída en segundo plano, lecturas compartidas)"
+        },
+        {
+          "state": "done",
+          "fr": "Téléphone : barre Préparer · Carte · CR · Vols · Météo, ⚙ avec badge, bloc d'état en tête des Réglages, titre du module dans l'en-tête, aide ouverte au bon paragraphe",
+          "en": "Phone: bar Prepare · Map · Report · Flights · Weather, gear with badge, status block at the top of Settings, module title in the header, help opened at the right paragraph",
+          "de": "Telefon: Leiste Vorbereiten · Karte · Bericht · Flüge · Wetter, Zahnrad mit Abzeichen, Statusblock oben in den Einstellungen, Modultitel in der Kopfzeile, Hilfe am richtigen Absatz",
+          "es": "Teléfono: barra Preparar · Mapa · Informe · Vuelos · Meteo, engranaje con insignia, bloque de estado arriba en Ajustes, título del módulo en la cabecera, ayuda abierta en el párrafo correcto"
+        },
+        {
+          "state": "done",
+          "fr": "Vue fixe des modules carte : boutons en superposition, plein écran, feuille à trois positions (primitive du cadre, rien ne se redessine pendant le glisser), paysage en rail et colonne",
+          "en": "Fixed view for map modules: overlay buttons, full screen, three-position sheet (frame primitive, nothing redraws during a drag), landscape as a rail and a column",
+          "de": "Feste Ansicht für Kartenmodule: Overlay-Tasten, Vollbild, Blatt mit drei Positionen (Primitive des Rahmens, nichts wird beim Ziehen neu gezeichnet), Querformat als Leiste und Spalte",
+          "es": "Vista fija para los módulos de mapa: botones superpuestos, pantalla completa, hoja de tres posiciones (primitiva del marco, nada se redibuja al arrastrar), apaisado como riel y columna"
+        },
+        {
+          "state": "done",
+          "fr": "Une navigation à la fois (jeton), montage abandonnable, géométrie partagée (ligne de changement de date)",
+          "en": "One navigation at a time (token), abandonable mount, shared geometry (date line)",
+          "de": "Eine Navigation zur Zeit (Token), abbrechbares Mounten, geteilte Geometrie (Datumsgrenze)",
+          "es": "Una navegación a la vez (token), montaje abandonable, geometría compartida (línea de cambio de fecha)"
+        },
+        {
+          "state": "done",
+          "fr": "Couche météo unique du cadre : un cache, une API ctx.weather, quota compté ; Carburant et Atmosphère deviennent lecteurs",
+          "en": "One weather layer in the frame: one cache, one ctx.weather API, counted quota; Fuel and Atmosphere become readers",
+          "de": "Eine Wetterschicht im Rahmen: ein Cache, eine ctx.weather-API, gezählte Quote; Kraftstoff und Atmosphäre werden Leser",
+          "es": "Una capa meteorológica del marco: una caché, una API ctx.weather, cuota contada; Combustible y Atmósfera pasan a lectores"
+        },
+        {
+          "state": "done",
+          "fr": "Ordinateur reconnu par le cadre (html.f-desk) pour les designs réservés à l'écran",
+          "en": "Computer recognised by the frame (html.f-desk) for screen-only designs",
+          "de": "Computer vom Rahmen erkannt (html.f-desk) für Designs nur am Bildschirm",
+          "es": "Ordenador reconocido por el marco (html.f-desk) para los diseños solo de pantalla"
+        },
+        {
+          "state": "planned",
+          "fr": "Préversion 6.0.0-alpha.2 : Carte recodée, couche météo, Réglages groupés, Aqua, outils EAD ; historique squashé par bloc avant la release (Atmosphère recodée à l'alpha 3)",
+          "en": "Pre-release 6.0.0-alpha.2: recoded Map, weather layer, grouped Settings, Aqua, EAD tools; history squashed by block before the release (recoded Atmosphere in alpha 3)",
+          "de": "Vorabversion 6.0.0-alpha.2: neu geschriebene Karte, Wetterschicht, gruppierte Einstellungen, Aqua, EAD-Werkzeuge; Historie vor dem Release blockweise zusammengefasst (neu geschriebene Atmosphäre in Alpha 3)",
+          "es": "Preversión 6.0.0-alpha.2: Mapa recodificado, capa meteorológica, Ajustes agrupados, Aqua, herramientas EAD; historial compactado por bloque antes de la publicación (Atmósfera recodificada en la alfa 3)"
         }
       ]
     },
@@ -286,7 +335,7 @@
           "es": "Ruta como lista de puntos editable (añadir, quitar, mover, altitud por punto) vista en directo en el Mapa; bloque Aeronave reducido a una línea"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Sélecteur d'appareil sur toutes les sources (mes fiches, flotte, types, code libre) par le registre aerodb",
           "en": "Aircraft picker over every source (my sheets, fleet, types, free code) through the aerodb registry",
           "de": "Luftfahrzeugauswahl über alle Quellen (meine Blätter, Flotte, Typen, freier Code) über das aerodb-Register",
@@ -312,6 +361,20 @@
           "en": "Weather without a launcher (phone): METAR through metar.vatsim.net without a key, TAF through a personal avwx.rest key entered on the device; en-route airfields derived from the route",
           "de": "Wetter ohne Starter (Telefon): METAR über metar.vatsim.net ohne Schlüssel, TAF über einen persönlichen avwx.rest-Schlüssel auf dem Gerät; Streckenplätze aus der Route abgeleitet",
           "es": "Meteo sin lanzador (teléfono): METAR por metar.vatsim.net sin clave, TAF con una clave personal avwx.rest introducida en el dispositivo; aeródromos intermedios deducidos de la ruta"
+        },
+        {
+          "state": "done",
+          "fr": "Ouverture sur le Devis, date du vol partagée (planned_at), unités d'affichage, bouton « Auto » des voies aériennes, courses de montage closes",
+          "en": "Opens on the Quote, shared flight date (planned_at), display units, airway \"Auto\" button, mount races closed",
+          "de": "Öffnet mit der Berechnung, geteiltes Flugdatum (planned_at), Anzeigeeinheiten, Taste „Auto“ für Luftstraßen, Mount-Races geschlossen",
+          "es": "Abre en el Cálculo, fecha del vuelo compartida (planned_at), unidades de visualización, botón «Auto» de aerovías, carreras de montaje cerradas"
+        },
+        {
+          "state": "done",
+          "fr": "Carburant lecteur de la couche météo du cadre : plus d'appel direct aux services météo, temps par tronçon du devis écrits pour la Carte",
+          "en": "Fuel reads the frame's weather layer: no more direct call to weather services, the quote's leg times written for the Map",
+          "de": "Kraftstoff liest die Wetterschicht des Rahmens: kein direkter Aufruf von Wetterdiensten mehr, Abschnittszeiten der Berechnung für die Karte geschrieben",
+          "es": "Combustible lee la capa meteorológica del marco: sin llamadas directas a los servicios meteorológicos, tiempos por tramo del cálculo escritos para el Mapa"
         }
       ]
     },
@@ -333,7 +396,7 @@
           "es": "Mapa IFR del vuelo previsto (teselas o fondo liso sin conexión), perfil vertical, cursor común, TOC / TOD"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Points VAC rapprochés dessinés une seule fois ; fusion des balises co-localisées : VOR avant NDB avant ILS",
           "en": "Matched VAC points drawn once; co-located navaids merged: VOR before NDB before ILS",
           "de": "Zugeordnete VAC-Punkte nur einmal gezeichnet; ko-lokalisierte Funkfeuer zusammengeführt: VOR vor NDB vor ILS",
@@ -429,6 +492,102 @@
           "en": "VFR reporting points and sequences per aerodrome, extracted from VAC charts by the user: imported into the data repository (Maintenance), drawn dashed “to verify” on hover and when an aerodrome is pinned; full airspace tooltip under a point (level bars); Report VFR tool (tools/report-vfr) in the suite, rerun at each VAC cycle",
           "de": "VFR-Meldepunkte und -Sequenzen je Platz, vom Nutzer aus VAC-Karten extrahiert: ins Datenrepository importiert (Wartung), gestrichelt „zu prüfen“ bei Hover und angepinntem Platz; vollständiger Luftraum-Tooltip unter einem Punkt (Höhenbalken); Werkzeug Report VFR (tools/report-vfr) in der Suite, bei jedem VAC-Zyklus neu ausgeführt",
           "es": "Puntos de notificación y secuencias VFR por aeródromo, extraídos de las cartas VAC por el usuario: importados al repositorio de datos (Mantenimiento), dibujados a trazos «por verificar» al pasar y al fijar un aeródromo; tooltip completo de espacios bajo un punto (barras de niveles); herramienta Report VFR (tools/report-vfr) en la suite, relanzada en cada ciclo VAC"
+        },
+        {
+          "state": "done",
+          "fr": "Cartes qui restent : la carte d'un terrain et celle des espaces restent ouvertes (✕, Échap), un point de report touché ouvre la carte de son terrain, la carte des espaces dès un seul espace",
+          "en": "Cards that stay: the aerodrome's card and the airspaces card stay open (✕, Escape), a tapped reporting point opens its aerodrome's card, the airspaces card from one airspace on",
+          "de": "Karten, die bleiben: die Karte eines Platzes und die der Lufträume bleiben offen (✕, Esc), ein angetippter Meldepunkt öffnet die Karte seines Platzes, die Luftraumkarte ab einem Luftraum",
+          "es": "Tarjetas que permanecen: la tarjeta de un aeródromo y la de los espacios quedan abiertas (✕, Esc), un punto de notificación tocado abre la tarjeta de su aeródromo, la tarjeta de espacios desde un solo espacio"
+        },
+        {
+          "state": "done",
+          "fr": "Noms de lieux du fond masqués sous nos villes ; l'ETA placé comme un libellé de la route",
+          "en": "Background place names hidden under our towns; the ETA placed like a route label",
+          "de": "Ortsnamen des Hintergrunds unter unseren Städten ausgeblendet; die ETA wie ein Streckenlabel gesetzt",
+          "es": "Nombres de lugares del fondo ocultos bajo nuestras ciudades; la ETA colocada como una etiqueta de la ruta"
+        },
+        {
+          "state": "done",
+          "fr": "Écran en-tête · carte · volet · barre ; puces Profil · Météo · i, légende, zoom du profil et de la coupe, un glisser déplace le curseur commun",
+          "en": "Screen header · map · sheet · bar; Profile · Weather · i chips, legend, zoom on the profile and the cut, a drag moves the shared cursor",
+          "de": "Bildschirm Kopf · Karte · Blatt · Leiste; Chips Profil · Wetter · i, Legende, Zoom auf Profil und Schnitt, ein Ziehen bewegt den gemeinsamen Cursor",
+          "es": "Pantalla cabecera · mapa · hoja · barra; chips Perfil · Meteo · i, leyenda, zoom del perfil y del corte, un arrastre mueve el cursor común"
+        },
+        {
+          "state": "done",
+          "fr": "Espaces à un point : limites lues à la source, pas d'espace de la surface au plafond, ligne « Aussi ici », lecture du plus haut au plus bas, graphique prioritaire",
+          "en": "Airspaces at a point: limits read at the source, no surface-to-ceiling airspace, \"Also here\" line, read from the highest down, graph first",
+          "de": "Lufträume an einem Punkt: Grenzen an der Quelle gelesen, kein Luftraum vom Boden bis zur Decke, Zeile „Auch hier“, von oben nach unten gelesen, Grafik zuerst",
+          "es": "Espacios en un punto: límites leídos en la fuente, ningún espacio de la superficie al techo, línea «También aquí», lectura de arriba abajo, gráfico primero"
+        },
+        {
+          "state": "done",
+          "fr": "Seuils par famille de mode, curseur de complexité = décalage de zoom ; ligne de changement de date ; SID et STAR de l'OFP dessinées",
+          "en": "Thresholds per mode family, complexity slider = zoom shift; date line; SID and STAR of the OFP drawn",
+          "de": "Schwellen je Modusfamilie, Komplexitätsregler = Zoomverschiebung; Datumsgrenze; SID und STAR des OFP gezeichnet",
+          "es": "Umbrales por familia de modo, control de complejidad = desplazamiento de zoom; línea de cambio de fecha; SID y STAR del OFP dibujadas"
+        },
+        {
+          "state": "planned",
+          "fr": "Calques météo sur la carte depuis la bibliothèque d'Atmosphère (puce Météo) et bord de la zone du vol : lot 2 après le recodage",
+          "en": "Weather layers on the map from Atmosphere's library (Weather chip) and flight-zone edge: lot 2 after the recode",
+          "de": "Wetterebenen auf der Karte aus der Bibliothek von Atmosphäre (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
+          "es": "Capas meteorológicas en el mapa desde la biblioteca de Atmósfera (chip Meteo) y borde de la zona del vuelo: lote 2 tras la recodificación"
+        },
+        {
+          "state": "done",
+          "fr": "Carte recodée depuis sa spécification (28/10) : module en fichiers par sujet, heures et position prévue dérivées des temps du devis, mode Édition qui fusionne dans la route, météo par la couche du cadre",
+          "en": "Map recoded from its specification (28 Oct): module in files by concern, times and planned position derived from the quote's leg times, Edit mode merging into the route, weather through the frame's layer",
+          "de": "Karte nach ihrer Spezifikation neu geschrieben (28.10.): Modul in Dateien je Thema, Zeiten und geplante Position aus den Abschnittszeiten der Berechnung, Bearbeitungsmodus, der in die Route einfügt, Wetter über die Schicht des Rahmens",
+          "es": "Mapa recodificado según su especificación (28/10): módulo en archivos por tema, horas y posición prevista derivadas de los tiempos del cálculo, modo Edición que fusiona en la ruta, meteo por la capa del marco"
+        }
+      ]
+    },
+    {
+      "id": "atmosphere",
+      "app": "pilot",
+      "label": {
+        "fr": "Météo",
+        "en": "Weather",
+        "de": "Wetter",
+        "es": "Meteo"
+      },
+      "items": [
+        {
+          "state": "done",
+          "fr": "Module Atmosphère : coupe le long du vol, tranche locale, carte à l'altitude choisie, curseur « date du vol » (0 à +72 h), légende, tout le vol courant",
+          "en": "Atmosphere module: cut along the flight, local slice, map at the chosen altitude, \"flight date\" slider (0 to +72 h), legend, always the current flight",
+          "de": "Modul Atmosphäre: Schnitt entlang des Flugs, lokale Scheibe, Karte in der gewählten Höhe, Regler „Flugdatum“ (0 bis +72 h), Legende, immer der aktuelle Flug",
+          "es": "Módulo Atmósfera: corte a lo largo del vuelo, rebanada local, mapa a la altitud elegida, control «fecha del vuelo» (0 a +72 h), leyenda, siempre el vuelo actual"
+        },
+        {
+          "state": "done",
+          "fr": "Synoptique monde depuis NOAA GFS publié par le site toutes les 6 h ; Open-Meteo réservé à la grille du vol, une lecture par pilote, quota compté",
+          "en": "World synoptic from NOAA GFS published by the site every 6 h; Open-Meteo reserved to the flight grid, one read per pilot, counted quota",
+          "de": "Weltsynoptik aus NOAA GFS alle 6 h vom Site veröffentlicht; Open-Meteo nur für das Flugraster, eine Lesung je Pilot, gezählte Quote",
+          "es": "Sinóptico mundial desde NOAA GFS publicado por el sitio cada 6 h; Open-Meteo reservado a la rejilla del vuelo, una lectura por piloto, cuota contada"
+        },
+        {
+          "state": "done",
+          "fr": "Bibliothèque weather_map partagée avec la Carte (un seul rendu des deux côtés de la grille, bord de la zone du vol tracé)",
+          "en": "weather_map library shared with the Map (one rendering on both sides of the grid, flight-zone edge drawn)",
+          "de": "Bibliothek weather_map mit der Karte geteilt (eine Darstellung beidseits des Rasters, Rand der Flugzone gezeichnet)",
+          "es": "Biblioteca weather_map compartida con el Mapa (un solo dibujo a ambos lados de la rejilla, borde de la zona del vuelo trazado)"
+        },
+        {
+          "state": "later",
+          "fr": "TEMSI ; SIGMET et METAR du monde par le relais du lanceur",
+          "en": "TEMSI; world SIGMET and METAR through the launcher relay",
+          "de": "TEMSI; SIGMET und METAR der Welt über das Launcher-Relais",
+          "es": "TEMSI; SIGMET y METAR del mundo por el relé del lanzador"
+        },
+        {
+          "state": "doing",
+          "fr": "Atmosphère recodée depuis sa spécification sur la couche météo du cadre (session cloud)",
+          "en": "Atmosphere recoded from its specification on the frame's weather layer (cloud session)",
+          "de": "Atmosphäre nach ihrer Spezifikation auf der Wetterschicht des Rahmens neu geschrieben (Cloud-Sitzung)",
+          "es": "Atmósfera recodificada según su especificación sobre la capa meteorológica del marco (sesión en la nube)"
         }
       ]
     },
@@ -469,6 +628,20 @@
           "en": "Recording on the site without copy-paste (PHP web service)",
           "de": "Eintragen auf der Website ohne Kopieren und Einfügen (PHP-Webservice)",
           "es": "Inscripción en el sitio sin copiar y pegar (servicio web PHP)"
+        },
+        {
+          "state": "done",
+          "fr": "Heures du compte rendu en UTC (marqueur Z) ; un ancien CR est montré converti et réécrit à l'enregistrement ; Mes vols en UTC",
+          "en": "Report times in UTC (Z marker); an older report is shown converted and rewritten when saved; My flights in UTC",
+          "de": "Zeiten des Berichts in UTC (Z-Marker); ein älterer Bericht wird umgerechnet gezeigt und beim Speichern neu geschrieben; Meine Flüge in UTC",
+          "es": "Horas del informe en UTC (marcador Z); un informe antiguo se muestra convertido y se reescribe al guardar; Mis vuelos en UTC"
+        },
+        {
+          "state": "done",
+          "fr": "Écran uniforme sur téléphone : provenance en une ligne, champs de 44 px, barre d'actions sur deux rangées",
+          "en": "Uniform phone screen: one provenance line, 44 px fields, two-row action bar",
+          "de": "Einheitlicher Telefonbildschirm: eine Herkunftszeile, 44-px-Felder, Aktionsleiste in zwei Reihen",
+          "es": "Pantalla uniforme en el teléfono: una línea de procedencia, campos de 44 px, barra de acciones en dos filas"
         }
       ]
     },
@@ -488,6 +661,13 @@
           "en": "One row per flight from reports, the site log and IVAO / VATSIM sessions; filters, totals, CSV, “Write the report”",
           "de": "Eine Zeile pro Flug aus den Berichten, dem Flugbuch der Website und den IVAO- / VATSIM-Sitzungen; Filter, Summen, CSV, „Bericht schreiben“",
           "es": "Una línea por vuelo a partir de los informes, el diario del sitio y las sesiones IVAO / VATSIM; filtros, totales, CSV, «Escribir el informe»"
+        },
+        {
+          "state": "done",
+          "fr": "Vols sans compte rendu publiés pour le badge et le bloc d'état (cache/flightlog/pending.json)",
+          "en": "Flights without a report published for the badge and the status block (cache/flightlog/pending.json)",
+          "de": "Flüge ohne Bericht für Abzeichen und Statusblock veröffentlicht (cache/flightlog/pending.json)",
+          "es": "Vuelos sin informe publicados para la insignia y el bloque de estado (cache/flightlog/pending.json)"
         }
       ]
     },
@@ -575,6 +755,27 @@
           "en": "Design card (design choice, day / night)",
           "de": "Karte Design (Wahl des Designs, Tag / Nacht)",
           "es": "Tarjeta Diseño (elección del diseño, día / noche)"
+        },
+        {
+          "state": "done",
+          "fr": "Clés gardées comme l'identité (plus de perte au relancement de Safari), carte Administration en un bouton par page, bloc d'état en tête",
+          "en": "Keys kept like the identity (no loss at a Safari relaunch), Administration card with one button per page, status block first",
+          "de": "Schlüssel wie die Identität bewahrt (kein Verlust beim Neustart von Safari), Karte Verwaltung mit einer Taste je Seite, Statusblock zuerst",
+          "es": "Claves guardadas como la identidad (sin pérdida al relanzar Safari), tarjeta Administración con un botón por página, bloque de estado primero"
+        },
+        {
+          "state": "doing",
+          "fr": "Écran « Données » : récupérer, compiler, pousser, nettoyer les sources sans la V2 (module au niveau Complet)",
+          "en": "\"Data\" screen: fetch, compile, push, clean the sources without V2 (a module at the Full level)",
+          "de": "Bildschirm „Daten“: Quellen holen, kompilieren, pushen, bereinigen ohne V2 (Modul auf Stufe Vollständig)",
+          "es": "Pantalla «Datos»: obtener, compilar, publicar, limpiar las fuentes sin la V2 (módulo en el nivel Completo)"
+        },
+        {
+          "state": "done",
+          "fr": "Réglages : fichier découpé par sujet ; Découverte en sept cartes à plat, Courant et Complet en sept groupes repliés ; cartes d'administration derrière Administration ; une carte atteinte par son adresse s'affiche à tout niveau",
+          "en": "Settings: file split by concern; Discovery as seven flat cards, Current and Full as seven folded groups; administration cards behind Administration; a card reached by its address shows at any level",
+          "de": "Einstellungen: Datei je Thema aufgeteilt; Entdeckung mit sieben flachen Karten, Üblich und Vollständig mit sieben eingeklappten Gruppen; Verwaltungskarten hinter Verwaltung; eine über ihre Adresse erreichte Karte erscheint auf jeder Stufe",
+          "es": "Ajustes: archivo dividido por tema; Descubrimiento con siete tarjetas planas, Habitual y Completo con siete grupos plegados; tarjetas de administración tras Administración; una tarjeta alcanzada por su dirección se muestra en cualquier nivel"
         }
       ]
     },
@@ -596,7 +797,7 @@
           "es": "Base SIA por zona, ciclo y tipo; ciudades; tipos de aeronave; lectura bajo demanda, caché por zona"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Un seul registre des aéronefs (livré) : types, performances, fiches du pilote, flotte, référence au même endroit, une seule recherche ; .lnmperf tenus à jour dans les deux sens (réexport à chaque changement, fusion si le fichier change)",
           "en": "One aircraft registry: types, performances, the pilot's sheets, fleet and reference at one place, one search; .lnmperf kept in sync both ways (re-export on change, merge when the file changes)",
           "de": "Ein einziges Luftfahrzeugregister: Typen, Leistungen, Pilotenblätter, Flotte und Referenz an einem Ort, eine Suche; .lnmperf in beide Richtungen aktuell (Neuexport bei Änderung, Zusammenführung, wenn die Datei sich ändert)",
@@ -629,6 +830,62 @@
           "en": "Base generation (SIA by zone, MORA, aircraft base): done today by V2 only, on the workstation; a desktop client will probably be needed, unless something better is found; failing better, that part of V2 is kept",
           "de": "Erzeugung der Datenbanken (SIA nach Zone, MORA, Luftfahrzeugbasis): heute nur durch die V2 am Arbeitsplatz; wahrscheinlich wird ein Desktop-Client nötig sein, sofern nichts Besseres gefunden wird; andernfalls bleibt dieser Teil der V2",
           "es": "Generación de las bases (SIA por zona, MORA, base de aeronaves): hoy solo la hace la V2, en el puesto; probablemente hará falta un cliente de escritorio, salvo algo mejor; a falta de algo mejor, se conserva esa parte de la V2"
+        },
+        {
+          "state": "done",
+          "fr": "État de la base en six valeurs (chargement, prête, accès non réglé, hors ligne, non publiée) ; points de report dédoublonnés à la source (parseur 17, base à reconstruire)",
+          "en": "Base state in six values (loading, ready, no access, offline, unpublished); reporting points deduplicated at the source (parser 17, base to rebuild)",
+          "de": "Basiszustand in sechs Werten (lädt, bereit, kein Zugang, offline, unveröffentlicht); Meldepunkte an der Quelle entdoppelt (Parser 17, Basis neu bauen)",
+          "es": "Estado de la base en seis valores (cargando, lista, sin acceso, sin conexión, no publicada); puntos de notificación deduplicados en la fuente (parser 17, base a reconstruir)"
+        },
+        {
+          "state": "done",
+          "fr": "Procédures SID / STAR / approche par une seule API : OFP SimBrief (source secondaire privée), eAIP du SIA (pypdf sur le poste), CIFP de la FAA",
+          "en": "SID / STAR / approach procedures through one API: SimBrief OFP (private secondary source), SIA eAIP (pypdf on the workstation), FAA CIFP",
+          "de": "SID- / STAR- / Anflugverfahren über eine API: SimBrief-OFP (private Nebenquelle), eAIP des SIA (pypdf am Arbeitsplatz), FAA CIFP",
+          "es": "Procedimientos SID / STAR / aproximación por una sola API: OFP de SimBrief (fuente secundaria privada), eAIP del SIA (pypdf en el puesto), CIFP de la FAA"
+        },
+        {
+          "state": "done",
+          "fr": "Laboratoire données (retiré le 28/10 après ses mesures : la base se compile sur l'iPhone en 0,4 s, l'obstacle est le téléchargement)",
+          "en": "Data laboratory (removed on 28 Oct after its measurements: the base compiles on the iPhone in 0.4 s, the obstacle is the download)",
+          "de": "Datenlabor (am 28.10. nach seinen Messungen entfernt: die Basis kompiliert auf dem iPhone in 0,4 s, das Hindernis ist der Download)",
+          "es": "Laboratorio de datos (retirado el 28/10 tras sus mediciones: la base se compila en el iPhone en 0,4 s, el obstáculo es la descarga)"
+        },
+        {
+          "state": "done",
+          "fr": "Publication d'essai du laboratoire sur une branche jetable du dépôt des données, avec plafond (les blocs d'essai ne restent pas dans l'historique de chaque pilote)",
+          "en": "Laboratory trial publication on a throwaway branch of the data repository, with a cap (trial blocks do not stay in every pilot's history)",
+          "de": "Testveröffentlichung des Labors auf einem Wegwerf-Zweig des Datendepots, mit Obergrenze (Testblöcke bleiben nicht in der Historie jedes Piloten)",
+          "es": "Publicación de prueba del laboratorio en una rama desechable del depósito de datos, con tope (los bloques de prueba no quedan en el historial de cada piloto)"
+        },
+        {
+          "state": "done",
+          "fr": "EAD Basic sur le poste : relevé des 47 autorités, lecture d'un terrain sur un geste (tables de codage de 17 États, OCR des pages dessinées, interprétations manuelles sous contrôle de géométrie) ; données non opérationnelles, usage simulation",
+          "en": "EAD Basic on the workstation: survey of the 47 authorities, one aerodrome read per gesture (coding tables of 17 States, OCR of drawn pages, manual readings under a geometry check); non-operational data, simulation use",
+          "de": "EAD Basic am Arbeitsplatz: Erhebung der 47 Behörden, ein Platz je Geste gelesen (Kodierungstabellen von 17 Staaten, OCR gezeichneter Seiten, manuelle Lesungen unter Geometrieprüfung); nicht operationelle Daten, Simulationsgebrauch",
+          "es": "EAD Basic en el puesto: relevamiento de las 47 autoridades, un aeródromo leído por gesto (tablas de codificación de 17 Estados, OCR de páginas dibujadas, lecturas manuales bajo control de geometría); datos no operacionales, uso en simulación"
+        },
+        {
+          "state": "later",
+          "fr": "Application « Données » dédiée (iOS, Android) : chantier à part, à ouvrir",
+          "en": "Dedicated \"Data\" application (iOS, Android): separate project, to open",
+          "de": "Eigene App „Daten“ (iOS, Android): eigenes Vorhaben, noch zu eröffnen",
+          "es": "Aplicación «Datos» dedicada (iOS, Android): proyecto aparte, por abrir"
+        },
+        {
+          "state": "done",
+          "fr": "Écran « Sources » derrière Administration : une ligne par source utilisée, candidate ou écartée, avec lien, licence et statut, sans récupération ; remplacé par le module Données à son premier lot",
+          "en": "\"Sources\" screen behind Administration: one line per source used, candidate or dropped, with link, licence and status, no fetching; replaced by the Data module at its first lot",
+          "de": "Bildschirm „Quellen“ hinter Verwaltung: eine Zeile je genutzter, möglicher oder verworfener Quelle, mit Link, Lizenz und Status, ohne Abruf; vom Modul Daten bei dessen erstem Los ersetzt",
+          "es": "Pantalla «Fuentes» tras Administración: una línea por fuente usada, candidata o descartada, con enlace, licencia y estado, sin descarga; sustituida por el módulo Datos en su primer lote"
+        },
+        {
+          "state": "doing",
+          "fr": "Module « Données » : spécification écrite (Couverture, Jeux de données, Télécharger · Construire · Publier · Purger) ; services du cadre en cours (accès au lanceur déclaré, tâches, publication sans lanceur, fin de cycle), puis l'état publié et le catalogue d'aerodb",
+          "en": "\"Data\" module: specification written (Coverage, Data sets, Fetch · Build · Publish · Purge); frame services in progress (declared launcher access, jobs, publication without launcher, end of cycle), then aerodb's published state and catalogue",
+          "de": "Modul „Daten“: Spezifikation geschrieben (Abdeckung, Datensätze, Holen · Bauen · Veröffentlichen · Bereinigen); Dienste des Rahmens in Arbeit (deklarierter Launcher-Zugang, Aufgaben, Veröffentlichung ohne Launcher, Zyklusende), dann veröffentlichter Zustand und Katalog von aerodb",
+          "es": "Módulo «Datos»: especificación escrita (Cobertura, Conjuntos de datos, Descargar · Construir · Publicar · Purgar); servicios del marco en curso (acceso al lanzador declarado, tareas, publicación sin lanzador, fin de ciclo), luego el estado publicado y el catálogo de aerodb"
         }
       ]
     },
@@ -655,6 +912,27 @@
           "en": "Other V2 designs, report printing",
           "de": "Weitere V2-Designs, Drucken des Berichts",
           "es": "Otros diseños V2, impresión del informe"
+        },
+        {
+          "state": "done",
+          "fr": "Quatre maquettes retenues : metro, swiss, cupertino, material (cabinet abandonné) ; boutons ronds ou carrés selon le design",
+          "en": "Four mock-ups retained: metro, swiss, cupertino, material (cabinet dropped); round or square buttons per design",
+          "de": "Vier Entwürfe behalten: metro, swiss, cupertino, material (cabinet verworfen); runde oder eckige Tasten je Design",
+          "es": "Cuatro maquetas retenidas: metro, swiss, cupertino, material (cabinet abandonado); botones redondos o cuadrados según el diseño"
+        },
+        {
+          "state": "later",
+          "fr": "Teintes, police, règles répétées à promouvoir en jetons (choix de l'utilisateur)",
+          "en": "Hues, font, repeated rules to promote to tokens (user's choice)",
+          "de": "Farbtöne, Schrift, wiederholte Regeln als Tokens (Wahl des Nutzers)",
+          "es": "Tonos, fuente, reglas repetidas a promover en tokens (elección del usuario)"
+        },
+        {
+          "state": "done",
+          "fr": "Aqua en V3, réservé à l'ordinateur (livré) : textures sur l'habillage du cadre seulement, règles communes promues en jetons d'abord, un panneau par module jamais précaché ; sur téléphone le choix reste mémorisé et Standard est posé, dit dans Réglages",
+          "en": "Aqua in V3, computer only (delivered): textures on the frame's chrome only, shared rules promoted to tokens first, one panel per module never precached; on a phone the choice stays and Standard is applied, said in Settings",
+          "de": "Aqua in V3, nur am Computer (geliefert): Texturen nur auf dem Rahmen, gemeinsame Regeln zuerst als Tokens, ein Panel je Modul nie vorab zwischengespeichert; am Telefon bleibt die Wahl und Standard wird gesetzt, in den Einstellungen gesagt",
+          "es": "Aqua en V3, solo en ordenador (entregado): texturas solo en el marco, reglas comunes promovidas a tokens primero, un panel por módulo nunca precacheado; en el teléfono la elección se conserva y se aplica Standard, dicho en Ajustes"
         }
       ]
     },
@@ -681,6 +959,39 @@
           "en": "Tutorials “Prepare a flight” and “Write a report”, en and fr with screenshots, welcome card on the first module (de and es later)",
           "de": "Tutorials „Flug vorbereiten“ und „Bericht schreiben“, en und fr mit Bildschirmfotos, Begrüßungskarte im ersten Modul (de und es später)",
           "es": "Tutoriales «Preparar un vuelo» y «Escribir un informe», en y fr con capturas, tarjeta de bienvenida en el primer módulo (de y es más adelante)"
+        },
+        {
+          "state": "done",
+          "fr": "Chapitres Carte, Météo, Réglages et légendes assemblés en quatre langues ; ancres par paragraphe",
+          "en": "Map, Weather, Settings chapters and legends assembled in four languages; anchors per paragraph",
+          "de": "Kapitel Karte, Wetter, Einstellungen und Legenden in vier Sprachen zusammengestellt; Anker je Absatz",
+          "es": "Capítulos Mapa, Meteo, Ajustes y leyendas ensamblados en cuatro idiomas; anclas por párrafo"
+        }
+      ]
+    },
+    {
+      "id": "tests",
+      "app": "pilot",
+      "label": {
+        "fr": "Tests",
+        "en": "Tests",
+        "de": "Tests",
+        "es": "Pruebas"
+      },
+      "items": [
+        {
+          "state": "done",
+          "fr": "Suite de non-régression tests/v3 : 118 cas, parcours P1–P6, sélection par fichiers touchés, rejeu d'un test échoué seul puis dans son périmètre",
+          "en": "Non-regression suite tests/v3: 118 cases, journeys P1–P6, selection by touched files, replay of a failed test alone then in its scope",
+          "de": "Regressionssuite tests/v3: 118 Fälle, Pfade P1–P6, Auswahl nach berührten Dateien, Wiederholung eines fehlgeschlagenen Tests allein und dann in seinem Umfang",
+          "es": "Suite de no regresión tests/v3: 118 casos, recorridos P1–P6, selección por archivos tocados, repetición de una prueba fallida sola y luego en su ámbito"
+        },
+        {
+          "state": "planned",
+          "fr": "Exécution sur le poste Windows (Playwright et Chromium à installer) ; en attendant, le runner cloud",
+          "en": "Run on the Windows workstation (Playwright and Chromium to install); the cloud runner meanwhile",
+          "de": "Ausführung am Windows-Arbeitsplatz (Playwright und Chromium zu installieren); bis dahin der Cloud-Runner",
+          "es": "Ejecución en el puesto Windows (Playwright y Chromium por instalar); mientras tanto, el runner en la nube"
         }
       ]
     },
