@@ -102,7 +102,7 @@ def changed_paths(root, base=None):
     base = base or BASE_DEFAULT
 
     def run(*a):
-        p = subprocess.run(['git', *a], cwd=root, capture_output=True, text=True)
+        p = subprocess.run(['git', *a], cwd=root, capture_output=True, text=True, encoding='utf-8', errors='replace')
         return p.returncode, p.stdout.split('\n')
     rc, committed = run('diff', '--name-only', f'{base}...HEAD')
     if rc != 0:

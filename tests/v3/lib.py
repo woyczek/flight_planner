@@ -30,18 +30,40 @@ SHOTS = HERE / 'shots'
 
 
 def find_chrome():
-    """The Chromium to drive: SOG_CHROME, else the newest Playwright build under /opt/pw-browsers or ~/.cache/ms-playwright,
-    else Playwright's own default (None). The build number changes with the container image: never a constant."""
+    """The Chromium to drive: SOG_CHROME, else the newest Playwright build (/opt/pw-browsers, ~/.cache/ms-playwright, and on
+    Windows %LOCALAPPDATA%\\ms-playwright), else on Windows the installed Chrome (Program Files, Program Files (x86),
+    %LOCALAPPDATA%\\Google\\Chrome), else Playwright's own default (None). The build number changes with the container
+    image: never a constant."""
     env = os.environ.get('SOG_CHROME')
     if env:
         return env
     import glob
+    local = os.environ.get('LOCALAPPDATA', '')
     found = []
-    for root in ('/opt/pw-browsers', os.path.expanduser('~/.cache/ms-playwright')):
+    for root in ('/opt/pw-browsers', os.path.expanduser('~/.cache/ms-playwright'), *([os.path.join(local, 'ms-playwright')] if local else [])):
         found += glob.glob(os.path.join(root, 'chromium-*', 'chrome-linux', 'chrome'))
         found += glob.glob(os.path.join(root, 'chromium-*', 'chrome-linux*', 'chrome'))
-    found = sorted(set(f for f in found if os.access(f, os.X_OK)))
-    return found[-1] if found else None
+        found += glob.glob(os.path.join(root, 'chromium-*', 'chrome-win*', 'chrome.exe'))
+    found = sorted(set(f for f in found if os.path.isfile(f) and (os.name == 'nt' or os.access(f, os.X_OK))))
+    if found:
+        return found[-1]
+    if os.name == 'nt':  # Chrome installed on the computer (Playwright drives it through executable_path)
+        for base in (os.environ.get('PROGRAMFILES', ''), os.environ.get('PROGRAMFILES(X86)', ''), local):
+            f = os.path.join(base, 'Google', 'Chrome', 'Application', 'chrome.exe') if base else ''
+            if f and os.path.isfile(f):
+                return f
+    return None
+
+
+def playwright_chromium():
+    """Playwright's own Chromium if it is installed (its path), else None."""
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            path = p.chromium.executable_path
+        return path if path and os.path.isfile(path) else None
+    except Exception:
+        return None
 
 
 CHROME = find_chrome()
@@ -55,8 +77,9 @@ def preflight():
         import playwright  # noqa: F401
     except Exception:
         problems.append('the Playwright Python package is missing: pip install playwright')
-    if CHROME is None:
-        problems.append('no Chromium found: set SOG_CHROME=<path to chrome>, or install one with: python3 -m playwright install chromium')
+    if CHROME is None and not (not problems and playwright_chromium()):
+        problems.append('no Chromium found: set SOG_CHROME=<path to chrome> (Windows: SOG_CHROME="C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"),'
+                        ' or install one with: python -m playwright install chromium')
     elif not os.path.exists(CHROME):
         problems.append(f'Chromium not found at {CHROME} (SOG_CHROME)')
     return problems
@@ -815,7 +838,7 @@ class StaticCtx(Asserts):
 
     def git(self, *args):
         import subprocess
-        p = subprocess.run(['git', *args], cwd=ROOT, capture_output=True, text=True)
+        p = subprocess.run(['git', *args], cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
         return p.returncode, p.stdout, p.stderr
 
 

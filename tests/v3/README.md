@@ -3,7 +3,7 @@
 One command, no launcher, no data repository, no network, no token:
 
 ```
-python3 tests/v3/run.py            # everything (same as --all)
+python tests/v3/run.py            # everything (same as --all)
 ```
 
 The suite checks what must stay true on every screen of the Pilot application (`frame/index.html`) and in the repository,
@@ -11,9 +11,18 @@ from the plan in [PLAN.md](PLAN.md): the frame's layout and chrome, the overlay 
 Maps, Atmosphere, Fuel, Flightlog and Report screens, the designs, and the repository rules. A case that fails names the
 **rule** that broke, the value it **measured** and the value it **expected**, not a selector.
 
-Requirements: Python 3, the Playwright Python package (`pip install playwright`), and a Chromium: the runner takes
-`SOG_CHROME` if set, else the newest build under `/opt/pw-browsers` or `~/.cache/ms-playwright` (the build number changes
-with the container image), else Playwright's own (`python3 -m playwright install chromium`). A missing package or browser
+Commands are written `python tests/v3/run.py` (Windows); on Linux or macOS, `python3` where `python` is not Python 3.
+
+Requirements: Python 3, the Playwright Python package (`pip install playwright`), and a Chromium. The runner takes:
+- `SOG_CHROME` if set (Windows, the installed Chrome:
+  `set SOG_CHROME=C:\Program Files\Google\Chrome\Application\chrome.exe`, or in PowerShell
+  `$env:SOG_CHROME = 'C:\Program Files\Google\Chrome\Application\chrome.exe'`);
+- else the newest Playwright build under `/opt/pw-browsers`, `~/.cache/ms-playwright` or `%LOCALAPPDATA%\ms-playwright` (the
+  build number changes with the container image);
+- else, on Windows, Chrome installed under Program Files, Program Files (x86) or `%LOCALAPPDATA%\Google\Chrome`;
+- else Playwright's own (`python -m playwright install chromium`).
+
+The output is UTF-8 whatever the console (Windows included). A missing package or browser
 stops the run before any worker starts, with the fix printed and exit code 2. Case I5 also
 needs `jsbeautifier` and `cssbeautifier` (`pip install jsbeautifier cssbeautifier`) and is skipped, with the reason, without
 them. Nothing else, and nothing is written outside `tests/v3/` (the temporary copies of I4 are removed).
@@ -22,7 +31,7 @@ them. Nothing else, and nothing is written outside `tests/v3/` (the temporary co
 
 | Command | What runs |
 |---|---|
-| `python3 tests/v3/run.py` or `--all` | every case |
+| `python tests/v3/run.py` or `--all` | every case |
 | `--changed [<base>]` | the cases chosen by the files changed: `git diff --name-only <base>...HEAD` (default base `origin/v3`) plus the working tree and untracked files |
 | `--for <path> [<path>...]` | the cases chosen by these paths, by hand |
 | `--grep <id or text>` | a case id (`B2`), an area letter (`B`), or text of a title or tag (3 letters or more); commas for several |
@@ -35,7 +44,7 @@ them. Nothing else, and nothing is written outside `tests/v3/` (the temporary co
 | `--list` | print, run nothing: for paths (`--for`, `--changed`) the areas and the journeys they touch, then the selected cases and how many runs each one has (no browser needed) |
 | `--keep-server` | leave the static server running after the run and print its address |
 
-The runner starts `python3 -m http.server` (standard library) on a free port of `127.0.0.1`, at the repository root, runs the
+The runner starts `python -m http.server` (standard library) on a free port of `127.0.0.1`, at the repository root, runs the
 cases in Chromium, kills the server at the end (even on an error), and exits **0 only if no case failed outside
 `cases/known_failures.py`**. It prints one line per case (`PASS`, `FAIL`, `FAIL (known: ...)`, `SKIP`, `ERROR`), the first
 failing run with its measured and expected values and the rule, then a summary line, and writes `report.md` and
@@ -61,10 +70,10 @@ or case ids (`A12`) to run; the first glob that matches a path decides for that 
 union. A path that matches nothing runs `A1` and the area `I`. Examples:
 
 ```
-python3 tests/v3/run.py --for modules/atmosphere/module.js    # E, B, C and I
-python3 tests/v3/run.py --for docs/x.md                      # I only
-python3 tests/v3/run.py --for frame/lib/sheet.js             # B, C, D, E, I
-python3 tests/v3/run.py --changed                            # what your branch touches since origin/v3
+python tests/v3/run.py --for modules/atmosphere/module.js    # E, B, C and I
+python tests/v3/run.py --for docs/x.md                      # I only
+python tests/v3/run.py --for frame/lib/sheet.js             # B, C, D, E, I
+python tests/v3/run.py --changed                            # what your branch touches since origin/v3
 ```
 
 The first line of `report.md` says which areas ran and which paths chose them, the second which journeys they touch. A lot is
@@ -94,7 +103,7 @@ to the journeys (`journeys.py`), adds the `J` case of every touched journey to t
 before the first case:
 
 ```
-$ python3 tests/v3/run.py --for modules/fuel/progress.js --list
+$ python tests/v3/run.py --for modules/fuel/progress.js --list
 Paths: modules/fuel/progress.js
 Areas: F I (+A7)
 JOURNEY P1 Préparer un vol — modules/fuel/progress.js
@@ -121,7 +130,7 @@ J2 seeds the planned flight and clicks "Démarrer le vol" and the cancellation; 
 
 **Adding a file to a journey, in the same commit as the feature.** When a new screen, record or module file serves a journey, add
 its glob to that journey's `paths` in `journeys.py` (and the guard case, if you wrote one, to `cases`); a file that belongs to no
-journey is a question for the relay, not a silent gap. Check it with `python3 tests/v3/run.py --for <your file> --list`: the
+journey is a question for the relay, not a silent gap. Check it with `python tests/v3/run.py --for <your file> --list`: the
 journey must appear. A new journey is a new entry plus its `J` case (`cases/journeys.py`, `lib.case('J7', ...)`); the runner
 reports a `cases` or `e2e` id that is not registered (`JOURNEYS TABLE ...`).
 
@@ -130,8 +139,8 @@ reports a `cases` or `e2e` id that is not registered (`JOURNEYS TABLE ...`).
 > A failed case is replayed twice before a lot is called good. First alone, as it failed (`run.py --failed <id>`: same design, width and language), to confirm the fix on the exact failure. Then in its full scope (`run.py --failed-scope`: every area and journey the case belongs to, plus the cases chosen by the files the fix touched), to see what the fix moved around. The lot's report quotes both commands and their summary lines. A fix that passes the first and not the second is not done.
 
 ```
-python3 tests/v3/run.py --failed B2            # 1. alone, as it failed: the combinations of B2 that failed in the last report.json
-python3 tests/v3/run.py --failed-scope         # 2. its full scope: its areas and journeys + the cases chosen by the files the fix touched
+python tests/v3/run.py --failed B2            # 1. alone, as it failed: the combinations of B2 that failed in the last report.json
+python tests/v3/run.py --failed-scope         # 2. its full scope: its areas and journeys + the cases chosen by the files the fix touched
 ```
 
 - `--failed [IDS]` reads the **last `report.json`**: every `FAIL` / `ERROR` case (a known failure too, reported as known), and
@@ -171,7 +180,7 @@ FAIL                                   B2   Columns
 To look at a failure, run only that case, one process, and read the screenshot:
 
 ```
-python3 tests/v3/run.py --grep B2 --designs cupertino --widths 390 --jobs 1
+python tests/v3/run.py --grep B2 --designs cupertino --widths 390 --jobs 1
 ```
 
 ## What the suite does for you

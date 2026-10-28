@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Runner of the V3 non-regression suite (tests/v3/PLAN.md; how-to in tests/v3/README.md).
 
-    python3 tests/v3/run.py                       # --all
-    python3 tests/v3/run.py --changed [<base>]    # cases chosen by the files changed since <base> (default origin/v3)
-    python3 tests/v3/run.py --for modules/atmosphere/module.js docs/x.md
-    python3 tests/v3/run.py --grep B2             # an id, or text of a title / tag; commas for several
-    python3 tests/v3/run.py --journey P1,P3       # the guard cases and the end-to-end case of those journeys (PLAN.md section N)
-    python3 tests/v3/run.py --for modules/fuel/progress.js --list     # the areas and the journeys of a change, nothing run
-    python3 tests/v3/run.py --failed [B2,D5]      # replay the failed cases of the last report, in the combinations that failed
-    python3 tests/v3/run.py --failed-scope [BASE] # their full scope: every area and journey they belong to + the files changed since BASE
-    python3 tests/v3/run.py --designs standard,metro --widths 390 --langs fr --tag overlay
+    python tests/v3/run.py                       # --all
+    python tests/v3/run.py --changed [<base>]    # cases chosen by the files changed since <base> (default origin/v3)
+    python tests/v3/run.py --for modules/atmosphere/module.js docs/x.md
+    python tests/v3/run.py --grep B2             # an id, or text of a title / tag; commas for several
+    python tests/v3/run.py --journey P1,P3       # the guard cases and the end-to-end case of those journeys (PLAN.md section N)
+    python tests/v3/run.py --for modules/fuel/progress.js --list     # the areas and the journeys of a change, nothing run
+    python tests/v3/run.py --failed [B2,D5]      # replay the failed cases of the last report, in the combinations that failed
+    python tests/v3/run.py --failed-scope [BASE] # their full scope: every area and journey they belong to + the files changed since BASE
+    python tests/v3/run.py --designs standard,metro --widths 390 --langs fr --tag overlay
 
 Starts a static server (standard library) on a free port of 127.0.0.1 at the repository root, runs the selected cases
 in Chromium (Playwright) in a few worker processes, writes tests/v3/report.md and report.json, prints one line per case
@@ -76,8 +76,9 @@ def csv(v):
 
 
 def git_head():
-    p = subprocess.run(['git', 'log', '-1', '--format=%h %s'], cwd=ROOT, capture_output=True, text=True)
-    b = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=ROOT, capture_output=True, text=True)
+    p = subprocess.run(['git', 'log', '-1', '--format=%h %s'], cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
+    b = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=ROOT, capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
     return f'{b.stdout.strip()} @ {p.stdout.strip()[:90]}'
 
 
@@ -485,4 +486,7 @@ def main():
 
 
 if __name__ == '__main__':
+    # case titles and commit subjects in UTF-8 (→, ✕…): a Windows console or an output redirected in cp1252 no longer crashes
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
     sys.exit(main())
