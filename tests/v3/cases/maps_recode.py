@@ -439,7 +439,7 @@ def d39(c):
     c.until("!!document.querySelector('.mp-tune [data-tune=\"co\"]')", timeout=8000, what='the tuning page')
     c.tap('.mp-tune [data-tune="co"]')
     want = norm(row(c, 'tuneCoLevel'))
-    c.until(f"(window.__notes || []).some(n => n.replace(/[\s\u00a0\u202f]+/g, ' ').trim() === {json.dumps(want)})", what='the refusal said')
+    c.until(f"(window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === {json.dumps(want)})", what='the refusal said')
     c.wait(500)
     c.eq(c.doc('airline/map_profiles.json'), None, 'nothing written for the airline below the Full level', what='airline/map_profiles.json')
     c.tap('.mp-tune [data-tune="dev"]')
@@ -450,3 +450,44 @@ def d39(c):
     c.tap('.mp-tune [data-tune="co"]')
     d = c.until_doc('airline/map_profiles.json', lambda d: d and d.get('by') == 'maps', what='saved for the airline at the Full level')
     c.ok(any((p or {}).get('elements', {}).get('zoom') for p in (d.get('profiles') or {}).values()), f'{d}', 'the thresholds of the mode written')
+
+
+# ------------------------------------------------------------------------------------------------------ D40
+_ON_ROUTE_JS = r"""() => {
+  const R = window.MapsRender, W = 600, H = 400, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const raw = cv.getContext('2d'), log = [];
+  const ctx = new Proxy(raw, {
+    get(o, p) {
+      if (p === 'fillText') return (s, x, y) => { const m = o.getTransform(); log.push(['t', String(s), m.e + x * m.a + y * m.c, m.f + x * m.b + y * m.d]); return o.fillText(s, x, y) };
+      if (p === 'stroke') return a => { log.push(['s', o.lineWidth]); return a ? o.stroke(a) : o.stroke() };
+      const v = o[p]; return typeof v === 'function' ? v.bind(o) : v;
+    },
+    set(o, p, v) { o[p] = v; return true }
+  });
+  const A = { id: 'XOBL', lat: 44.80, lon: -0.22 }, B = { id: 'XVEL', lat: 44.98, lon: 0.16 }, C = { id: 'XNOR', lat: 45.48, lon: 0.68 },
+    route = [{ id: 'XDEP', lat: 44.6, lon: -0.7 }, A, B, C, { id: 'XARR', lat: 45.7, lon: 1.0 }],
+    aw = [{ route: 'X10', a: A, b: B, lower: 6500, upper: 19500, nm: 22 }, { route: 'X10', a: B, b: C, lower: 6500, upper: 19500, nm: 37 },
+      { route: 'Y20', a: { id: 'XQ1', lat: 45.3, lon: -0.6 }, b: { id: 'XQ2', lat: 45.6, lon: -0.1 }, lower: 6500, upper: 19500, nm: 30 }],
+    fit = R.bboxOf(route, 10), { toC, shown } = R.mercator(fit, W, H, 12);
+  const run = rt => { log.length = 0; R.draw(ctx, { toC, W, H, scale: 1, bbox: shown, profile: R.routeProfile(9000), data: { airways: aw }, route: rt, marks: [] }); return log.slice() };
+  const dist = (p, a, b) => { const ax = b.x - a.x, ay = b.y - a.y, t = Math.max(0, Math.min(1, ((p.x - a.x) * ax + (p.y - a.y) * ay) / (ax * ax + ay * ay)));
+    return Math.hypot(p.x - a.x - t * ax, p.y - a.y - t * ay) };
+  const names = l => l.map((e, i) => [e, i]).filter(([e]) => e[0] === 't' && /^[XY]\d0$/.test(e[1]))
+    .map(([e, i]) => ({ s: e[1], i, off: Math.min(...aw.filter(w => w.route === e[1]).map(w => dist({ x: e[2], y: e[3] }, toC(w.a.lat, w.a.lon), toC(w.b.lat, w.b.lon)))), x: e[2], y: e[3] }));
+  const withRoute = run(route), lastRoute = withRoute.map((e, i) => e[0] === 's' && e[1] >= 4 ? i : -1).reduce((a, b) => Math.max(a, b), -1),
+    on = names(withRoute), off = names(run([])), noRoute = off.filter(n => n.s === 'X10');
+  return { on, lastRoute, same: on.filter(n => n.s === 'X10').every(n => noRoute.some(m => Math.hypot(m.x - n.x, m.y - n.y) < 1)) };
+}"""
+
+
+@case('D40', 'An airway the route follows: its box on the line, above the route', 'D', tags=('maps',), screens=False, designs=('standard',),
+      night=False, rule='user 28 Oct (via ergonomics): the box stays on the airway, drawn over the route line which it interrupts; never beside it')
+def d40(c):
+    c.page.goto(f'{c.base}/modules/maps/test/render.html', wait_until='load')
+    c.until("() => window.MapsRender && document.getElementById('out') && document.getElementById('out').textContent.length > 20", what='the render bench is drawn')
+    r = c.js(_ON_ROUTE_JS)
+    x10 = [n for n in r['on'] if n['s'] == 'X10']
+    c.ge(len(x10), 2, 'both boxes of the airway the route follows are written', what=f'X10 names {x10}')
+    c.ok(all(n['off'] < 1 for n in r['on']), f'distances to their segments {[(n["s"], round(n["off"], 1)) for n in r["on"]]}', 'every box sits on its own segment (never beside it)')
+    c.ok(all(n['i'] > r['lastRoute'] for n in x10), f'route line stroked at call {r["lastRoute"]}, X10 names at {[n["i"] for n in x10]}', 'the boxes on the route are painted after the route line')
+    c.ok(r['same'], 'the boxes moved when the route was added', 'the same place with or without the route (no jump)')

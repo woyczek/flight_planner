@@ -18,7 +18,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   of the same length, so the path had no airway segment); the airway now wins a tie, and a leg of 40 NM or less whose two ends
   are airway nodes takes the airway (OBLOC R10 VELIN, GOSAD G36 AULON) when the base is read for the chain; above FL195 these
   low airways stay closed, as they should. LAVRA → OBLOC is V14 through IBDER in the published base (V44 runs MTL – ROLIR). On
-  the map, the boxed name of an airway that a route leg follows is drawn beside the route's line instead of under it.
+  the map, the boxed name of an airway that a route leg follows stays on the airway and is drawn over the route's line, which
+  it interrupts (the en-route charts' convention; decided with the user), sliding along the segment, never beside it, when a
+  route label is in the way (case D40).
 
 - **Frame, lot D0: services for the Data module** (`frame/lib/launcher.js`, `frame/app.js`,
   `frame/store/transport_github.js`, `tools/regen_jobs.py`, `tools/launch.py`, Settings' `kit.js`, aerodb's `lnmperf.js`;

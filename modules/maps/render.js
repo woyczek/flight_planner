@@ -663,8 +663,8 @@
   /** Voies aériennes : basses (trait bleu) et hautes (tireté violet), selon le profil ; étiquettes comme les cartes en
    *  route : nom de la voie dans un cartouche couché le long du tronçon, niveau minimal dessous (F195) ; de près, la
    *  distance du tronçon (NM) et les routes vraies à chaque bout. Rend les bouts des tronçons dessinés (leurs points). */
-  /** Branches de la route (paires d'identifiants consécutifs, dans les deux sens) : une voie qui en suit une a son cartouche à côté
-   *  du trait de la route, qui le couvrirait sinon. */
+  /** Branches de la route (paires d'identifiants consécutifs, dans les deux sens) : le cartouche d'une voie qui en suit une est
+   *  dessiné au-dessus du trait de la route (qui le couvrirait sinon), toujours posé sur son tronçon. */
   const routeLegs = route => {
     const s = new Set();
     for (let i = 1; i < (route || []).length; i++) {
@@ -681,6 +681,7 @@
       ends = new Map();
     ends.later = []; // étiquettes à poser après les points des voies
     ends.hits = []; // cartouches posés (centre, rayon, tronçon) : infobulle des voies
+    ends.over = []; // cartouches des voies que suit la route : peints après le trait de la route, par-dessus
     if (!(lo || hi) || !airways?.length) return ends;
     const lab = el(profile, 'airwayLabels') !== false,
       t = {
@@ -732,55 +733,72 @@
         len
       }
       of named) {
-      // cartouche couché le long du tronçon (texte toujours lisible de gauche à droite) ; sur une branche de la route, poussé à
-      // côté du trait de la route (dessiné par-dessus tout) : du côté du haut de l'écran, à une demi-hauteur de cartouche plus
-      // la demi-largeur du trait et son liseré
+      // cartouche couché sur le tronçon (texte toujours lisible de gauche à droite), en son milieu ; s'il couvrirait un libellé
+      // déjà posé (les libellés de la route sont réservés les premiers), il glisse le long du trait, jamais à côté. Sur une
+      // branche de la route il est peint après le trait de la route, par-dessus, fond plein : la route y est interrompue
+      // (convention des cartes en route) ; sa place ne dépend pas de la route
       let ang = Math.atan2(Q.y - P.y, Q.x - P.x);
       if (ang > Math.PI / 2) ang -= Math.PI;
       if (ang < -Math.PI / 2) ang += Math.PI;
       const along = onRoute.has(`${g.a?.id}|${g.b?.id}`),
-        off = along ? f * 1.85 + Math.max(2.5, 3.75 * scale) + 2 : 0, // le niveau minimal, sous le cartouche, dégagé aussi
-        x = (P.x + Q.x) / 2 + Math.sin(ang) * off,
-        y = (P.y + Q.y) / 2 - Math.cos(ang) * off,
-        k = `${g.route}|${Math.round(x / 90)}|${Math.round(y / 90)}`;
-      if (seen.has(k)) continue;
-      const lvl = +g.lower >= 1000 ? `F${String(Math.round(+g.lower / 100)).padStart(3, '0')}` : '',
+        lvl = +g.lower >= 1000 ? `F${String(Math.round(+g.lower / 100)).padStart(3, '0')}` : '',
         w = g.route.length * f * .62 + 6 * scale,
-        r = Math.max(w, f * 3) / 2 + 2;
-      if (pl && !pl.take({
-          x0: x - r,
-          y0: y - r,
-          x1: x + r,
-          y1: y + r
-        })) continue;
-      seen.add(k);
+        r = Math.max(w, f * 3) / 2 + 2,
+        at = u => ({
+          x: P.x + (Q.x - P.x) * u,
+          y: P.y + (Q.y - P.y) * u
+        }),
+        box = c => ({
+          x0: c.x - r,
+          y0: c.y - r,
+          x1: c.x + r,
+          y1: c.y + r
+        }),
+        // le milieu, puis de part et d'autre, sans sortir du tronçon (un demi-cartouche des bouts)
+        lim = Math.min(.45, Math.max(0, .5 - (r + 4) / Math.max(1, len))),
+        spots = [0, .1, -.1, .2, -.2, .3, -.3, .4, -.4].filter(d => Math.abs(d) <= lim).map(d => at(.5 + d)),
+        c = pl ? spots.find(q => !seen.has(`${g.route}|${Math.round(q.x / 90)}|${Math.round(q.y / 90)}`) && pl.take(box(q))) : spots[0];
+      if (!c) continue;
+      const {
+        x,
+        y
+      } = c;
+      seen.add(`${g.route}|${Math.round(x / 90)}|${Math.round(y / 90)}`);
       ends.hits.push({
         x,
         y,
         r,
         g
       });
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(ang);
-      ctx.fillStyle = col;
-      ctx.fillRect(-w / 2, -f * .7, w, f * 1.4);
-      ctx.font = `700 ${f}px Arial,sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = paper();
-      ctx.fillText(g.route, 0, 0);
-      if (lvl && tier !== 'far') {
-        ctx.font = `700 ${f * .85}px Arial,sans-serif`;
-        ctx.fillStyle = '#c62828';
-        ctx.fillText(lvl, 0, f * 1.35);
-      }
-      if (el(profile, 'awLabels') !== false && Number.isFinite(+g.nm)) {
-        ctx.font = `700 ${f * .85}px Arial,sans-serif`;
+      const paint = () => {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(ang);
+        if (along) { // la route interrompue : un liseré du fond autour du cartouche
+          ctx.fillStyle = paper();
+          ctx.fillRect(-w / 2 - 2 * scale, -f * .7 - 2 * scale, w + 4 * scale, f * 1.4 + 4 * scale);
+        }
         ctx.fillStyle = col;
-        ctx.fillText(String(Math.round(+g.nm)), 0, -f * 1.3);
-      }
-      ctx.restore();
+        ctx.fillRect(-w / 2, -f * .7, w, f * 1.4);
+        ctx.font = `700 ${f}px Arial,sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = paper();
+        ctx.fillText(g.route, 0, 0);
+        if (lvl && tier !== 'far') {
+          ctx.font = `700 ${f * .85}px Arial,sans-serif`;
+          ctx.fillStyle = '#c62828';
+          ctx.fillText(lvl, 0, f * 1.35);
+        }
+        if (el(profile, 'awLabels') !== false && Number.isFinite(+g.nm)) {
+          ctx.font = `700 ${f * .85}px Arial,sans-serif`;
+          ctx.fillStyle = col;
+          ctx.fillText(String(Math.round(+g.nm)), 0, -f * 1.3);
+        }
+        ctx.restore();
+      };
+      if (along) ends.over.push(paint);
+      else paint();
       if (el(profile, 'awLabels') !== false && len > 140 * scale) {
         // routes vraies près de chaque bout (comme « 097° » sur les cartes)
         for (const [A, B, from] of [
@@ -1728,6 +1746,8 @@
     drawRoute(ctx, route, toC, scale, labels, {
       marks: mk
     });
+    // cartouches des voies que suit la route : par-dessus son trait (le mode Édition de l'écran dessine ensuite ses poignées)
+    for (const f of ends.over || []) f();
     // cadres posés, pour les infobulles et les libellés ajoutés par l'écran (TOC, TOD) : cartouches des voies, libellés
     // d'espaces, libellés de la route
     return {

@@ -93,7 +93,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   4. aerodromes and navaids (`SiaAero.drawPoints`, § 3.2);
   5. airspace labels;
   6. graticule and MORA (the highest MORA of 2, 4… degree groups when a degree is narrower than 70 px);
-  7. the route on top: line, points, NM marks and their labels.
+  7. the route on top: line, points, NM marks and their labels;
+  8. over the route's line, the boxed names of the airways that route legs follow (§ 3, airways).
   It returns the frames it drew for the tooltips and the gestures: `airways [{ x, y, r, g }]`, `labels`, `barbs`,
   `navaids [{ n, x, y, merged }]`, `aerodromes [{ a, x, y }]`, `vrps`, `tocTod`, and `zoom { shifted, effective, tier,
   kept }` (`kept.byKey` per family).
@@ -106,8 +107,12 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - near: everything, plus each segment's distance (NM) above the name, the true tracks near both ends ("097°"), VRP
     and obstacles.
 - **Airways** (`drawAirways`), as en-route charts: low airways solid blue, high airways dashed purple, the name in a
-  filled box laid along the segment (readable left to right). Segment ends after them (`drawFixes`: a triangle and the
-  id; a navaid at the same place is drawn with its own symbol instead).
+  filled box laid on the segment (readable left to right), at its middle; when that place is taken (the route's labels are
+  reserved first) the box slides along the segment, never beside it, and is left out if no place is free. The box of an
+  airway that a route leg follows (the leg's two points are the segment's ends) is painted after the route's line, over it,
+  with a background edge that interrupts the line; its place does not depend on the route (no jump when a leg is added).
+  In Edit mode the dragged point and its ring stay above everything (the screen draws them last). Segment ends after them
+  (`drawFixes`: a triangle and the id; a navaid at the same place is drawn with its own symbol instead).
 - **AIP notation** (`sia(airspace)` → [main line, activation · information]; `siaLimit`): "TMA 8 AQUITAINE 2000|FL145 D":
   SFC, FL### (FL999 → UNL), ASFC, plain feet AMSL. Airways: `awLimit(ft)` (FL from 5,000 ft, UNL from 66,000 ft).
 - `airspacesAround(list, lat, lon, more)` → `{ shown, also }` and `airspacesAt` (its `.shown`), `airwaysAt(hits, x, y)`:
