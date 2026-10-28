@@ -117,7 +117,7 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   overflow: hidden;
   background: var(--sog-head-bg, var(--sog-surface));
   border-bottom: var(--sog-head-border, 1px solid var(--sog-border));
-  box-shadow: var(--sog-head-shadow)
+  box-shadow: var(--sog-head-shadow, none)
 }
 .f-head>* {
   margin-top: 0;

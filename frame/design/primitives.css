@@ -42,7 +42,7 @@ button,
   border-radius: var(--sog-radius);
   background: var(--sog-btn-bg, var(--sog-surface));
   color: var(--sog-btn-ink, var(--sog-fg));
-  box-shadow: var(--sog-btn-shadow);
+  box-shadow: var(--sog-btn-shadow, none);
   text-shadow: var(--sog-btn-text-shadow);
   font: inherit;
   text-decoration: none;
@@ -74,7 +74,7 @@ textarea {
   border: 1px solid var(--sog-border);
   border-radius: var(--sog-radius);
   background: var(--sog-surface-2);
-  box-shadow: var(--sog-field-shadow);
+  box-shadow: var(--sog-field-shadow, none);
   font-size: var(--sog-field-text)
 }
 input[type="checkbox"],
@@ -118,7 +118,7 @@ input[type="radio"] {
 .f-card {
   background: var(--sog-card-bg, var(--sog-surface));
   border: var(--sog-card-border, 1px solid var(--sog-border));
-  box-shadow: var(--sog-card-shadow);
+  box-shadow: var(--sog-card-shadow, none);
   border-radius: var(--sog-radius);
   padding: 12px 14px;
   margin-bottom: var(--sog-gap)

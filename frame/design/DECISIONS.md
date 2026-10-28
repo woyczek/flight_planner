@@ -370,7 +370,8 @@ The design agent's memory: every choice, dated, with its reason. Newest last. Pr
   (background, ink, border, shadow, text shadow), the primary button and with it the selected tab or step and the rail's
   current verb, fields (shadow), cards (background, border, shadow), the sticky bar (background, radius), the header
   (background, bottom border, shadow, text shadow of the name), the rail (background, right border). Shadows have no fallback: an unset
-  `var()` makes the property `unset` (no shadow; the text shadow inherited as before).
+  `var()` makes the property `unset` (no shadow; the text shadow inherited as before). Fixup asked by the ergonomics session: the shadows
+  now say `var(--sog-…-shadow, none)` (intention written; same drawing: 128 screenshots, the 8 designs, identical).
   - Measured: 112 screenshots (7 designs × 390 / 1280 × day / night × fuel, settings, flightlog, maps) identical to the
     pixel before and after. Material at 1280 differed by 1 to 2 levels in the very first run only: a second run of the
     unchanged code gave the same pixels as the new one (first-run noise of the 1 dp shadows).
