@@ -1083,3 +1083,12 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Built**: `parse_uk_app`, `records_uk_app` (status `check`, source `ead-basic/UK/<file>`), `check_geometry` (true course and distance recomputed from the co-ordinates, tolerance 0.25° / 0.2 NM; an incoherent table is not kept),
   layout `uk-app` with its fingerprint, `build_pdf_dir` and `--pdf-dir` / `--cycle` / `--check`; case K10 on an **invented** page of the same layout (no UK AIP text in the repository).
 - **Open question to the owner**: OCR (a new optional dependency, needs his word and an amendment of CLAUDE.md), a one-off transcription kept privately, or leaving the UK STARs out. See `EAD_BASIC.md` § 6 undecies.
+
+## 28 October 2026 — UK STARs of EGLL transcribed from the images, installed through a geometry gate
+
+- **Word of the user**: « on a des informations avec des fix rnav, des altitudes et vitesse. le sens de virage est (peut-être ?) à conserver, je ne parviens pas à me le figurer. Dans l'immédiat, on cherche à afficher
+  l'enchainement des fix et la contrainte vitesse/altitude, comme pour les AWY. » Decision: option 2 of the previous choice (one-off reading of the pictures), kept as information only for the turn direction (a TF leg is
+  straight whatever the turn).
+- **Done**: 18 STAR tables read from the page images, all 61 legs agree with their own co-ordinates; with the 4 approaches of `8-13`: 22 procedures, 91 points. `tools/proc_manual.py` installs a hand-read file only
+  if the geometry check passes (K11); aerodb reads the result as is (checked in a browser against a fake reader).
+- **Not in the public repository**: the file holds UK AIP data; the session sent it to the owner for the private data repository. The tool and its test (invented points) are in the repository.

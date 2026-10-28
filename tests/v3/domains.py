@@ -45,6 +45,7 @@ RULES = [
     ('tools/proc_eaip.py', ['K', 'I'], 'the eAIP procedures builder and its aerodb cases'),
     ('tools/proc_cifp.py', ['K', 'I'], 'the FAA CIFP procedures builder and its aerodb case'),
     ('tools/proc_ead.py', ['K', 'I'], 'the EAD Basic probe and its aerodb case'),
+    ('tools/proc_manual.py', ['K', 'I'], 'the manual interpretations installer and its aerodb case'),
     ('tools/**', ['I'], 'tooling'),
     ('tests/**', ['I'], 'tooling'),
     ('.github/**', ['I'], 'tooling'),

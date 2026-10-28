@@ -456,3 +456,41 @@ def k10(c):
     byf = {f['file']: f for f in doc['formats']}
     c.ok(byf['a_8-13.pdf']['ok'] and not byf['b_7-13.pdf']['ok'] and any('vecteurs' in p for p in byf['b_7-13.pdf']['problems']) and len(doc['procedures']) == 1, f"{doc['formats']}",
          'a page with almost no text is reported as probably drawn in vectors, never guessed; the readable one is read')
+
+
+@case('K11', 'Manual interpretation file: geometry check and install', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: a table read by hand is installed only if its own course and distance agree with its positions')
+def k11(c):
+    import importlib
+    import json
+    import sys
+    import tempfile
+    from pathlib import Path
+    tools = str(c.root / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    P = importlib.import_module('proc_eaip')
+    M = importlib.import_module('proc_manual')
+    pos = [('TESTA', 51.00, -1.00), ('TESTB', 51.10, -0.50), ('TESTC', 51.20, -0.10)]                 # points fictifs : essai de l'outil, pas des données d'AIP
+    pts = []
+    for i, (n, la, lo) in enumerate(pos):
+        p = {'seq': i + 1, 'id': n, 'lat': la, 'lon': lo, 'alt': None, 'leg': 'IF' if i == 0 else 'TF'}
+        if i:
+            brg, nm = P.bearing_nm((pos[i - 1][1], pos[i - 1][2]), (la, lo))
+            p['trk'], p['nm'] = round(brg, 1), round(nm, 1)
+        pts.append(p)
+    doc = {'schema': 1, 'icao': 'EGXX', 'cycle': '2026-10-01', 'procedures': [{'id': 'EGXX.STAR.TEST1A.RWALL', 'icao': 'EGXX', 'kind': 'STAR', 'name': 'TEST 1A', 'runways': [], 'transition': None,
+                                                                          'points': pts, 'source': {'kind': 'ead-basic'}, 'status': 'check'}]}
+    c.eq(M.verify(doc), [], 'a table whose printed course and distance agree with its positions is installable', what='verify')
+    bad = json.loads(json.dumps(doc))
+    bad['procedures'][0]['points'][2]['nm'] += 1.0
+    pb = M.verify(bad)
+    c.ok(pb and 'distance calculée' in pb[0], f'{pb}', 'a distance one mile off is refused')
+    bad2 = json.loads(json.dumps(doc))
+    bad2['procedures'][0]['status'] = 'official'
+    c.ok(M.verify(bad2), 'official accepted', 'a manual interpretation can only be status check')
+    with tempfile.TemporaryDirectory() as td:
+        (Path(td) / '2026-10-01').mkdir()
+        (Path(td) / '2026-10-01' / 'index.json').write_text(json.dumps({'schema': 1, 'cycle': '2026-10-01', 'aerodromes': {'KSEA': {'SID': 1}}}))
+        M.install(doc, td)
+        idx = json.loads((Path(td) / '2026-10-01' / 'index.json').read_text())
+        c.eq((sorted(idx['aerodromes']), idx['aerodromes']['EGXX']['STAR'], (Path(td) / '2026-10-01' / 'EGXX.json').exists()), (['EGXX', 'KSEA'], 1, True), 'installed, the index keeps the other aerodromes', what='install')

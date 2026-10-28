@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: manual interpretations installed through a geometry gate; EGLL's UK STARs** (`tools/proc_manual.py`, K11, `frame/aerodb/EAD_BASIC.md` § 6 duodecies, SPEC) — a procedure read by hand from a page whose text is drawn as
+  outlines is installed only if the printed course and distance of each TF leg agree with its positions; the 18 UK STARs of EGLL (OTMET 1H … SIRIC 1Z) and its 4 RNP approaches were prepared this way (22 procedures, 91 points,
+  status "to be checked"); the data file itself stays out of the public repository.
 - **aerodb: UK RNP approach tables read, geometry check of any table, folder of PDFs** (`tools/proc_eaip.py` `parse_uk_app` / `records_uk_app` / `check_geometry` / `build_pdf_dir` / `--pdf-dir`, K10,
   `frame/aerodb/EAD_BASIC.md` § 6 undecies) — the UK "Instrument Approach Procedure Coding Tables" page (text layer) is read into approaches, each table verified by recomputing the true course and distance from
   its own co-ordinates (an incoherent table is not kept); a page drawn as vector outlines (the UK STAR coding tables) is reported as unreadable instead of guessed.
