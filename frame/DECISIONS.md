@@ -1492,3 +1492,17 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     real launcher: a `state/scan` job followed to its end by the client, an unknown operation refused (400), a call
     without the frame's header refused (403); Settings at the Full level reach `lan`, `lnmperf-folder`, `secrets`,
     `sync-remote` through the client, no JavaScript error.
+- **29 Oct 2026 — Four touches to the frame's files reviewed; « Météo », one word** (coordinator, after 6.0.0-alpha.2):
+  - Agreed as they are: the launcher opens the Pilot application (`PAGE = 'frame/'`, 482e87705); the EAD Basic secrets kept
+    without any hint towards the page (`SECRET_FIELDS`, `secrets_view`, ffb026685); `proc/ead-fetch` and `proc/eaip-fetch`
+    in INTEGRATION § 15.1.
+  - Narrowed: `/__setup/status`, open to the paired devices of the local network, gives them only what the frame's
+    detection reads (`server`, `data`, `dataGit`, `host`, `lan`, `lnm: []`): no longer the installation's absolute path
+    (`root`), the data repository's address, git, LFS, the policy or navigation settings, nor the Little Navmap database
+    kinds (82eeef3b5); the workstation's own page gets everything as before. The job the frame gives aerodb (`launcher.job`, daff9f1fb) is null on a paired device, like `ctx.launcher`,
+    instead of calling a route refused there.
+  - **« Météo »**: the weather module is « Météo » / Weather / Wetter / Meteo everywhere — the computer's rail (it said
+    « Atmosphère »), the phone's bar, the group popover, the header's title (`APP.modules` label), the help (fuel's and
+    the map's chapters name it so) and the roadmap. The id and the address stay `atmosphere`. « Atmosphère réelle au
+    départ » (a card of fuel) and the German help's « Atmosphäre entlang des Flugs » name the physical atmosphere, not the
+    module: kept. Translation fingerprints of fuel's and the map's help updated (they were in step before).

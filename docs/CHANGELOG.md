@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **« Météo », one word for the weather module** (`frame/app.js`, help of fuel and the map, roadmap; DECISIONS): the computer's
+  rail said « Atmosphère » while the phone's bar said « Météo »; now « Météo » / Weather / Wetter / Meteo everywhere (rail,
+  bar, popover, header title, help). The address stays `#atmosphere`.
+- **Launcher: nothing local to the workstation for a paired device** (`tools/launch.py`, `frame/app.js`): `/__setup/status`
+  gives a paired device of the local network only what the frame's detection needs (no installation path, repository
+  address, settings or Little Navmap databases), and aerodb's launcher job is null on such a device.
 - **Flight path: an approach whose missed approach is not marked no longer flies it** (`frame/lib/current_flight.js`; bench
   `frame/lib/test/current_flight.html`) — LFPO RNP 20 read from the eAIP gave IPO20, FPO20, then PO425, MLN and MOLBA at
   7,000 ft without the `missed` phase: the path flew the missed approach before LFPO, the profile went down to 1,600 ft

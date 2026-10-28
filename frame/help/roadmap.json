@@ -226,10 +226,10 @@
         },
         {
           "state": "done",
-          "fr": "Couche météo unique du cadre : un cache, une API ctx.weather, quota compté ; Carburant et Atmosphère deviennent lecteurs",
-          "en": "One weather layer in the frame: one cache, one ctx.weather API, counted quota; Fuel and Atmosphere become readers",
-          "de": "Eine Wetterschicht im Rahmen: ein Cache, eine ctx.weather-API, gezählte Quote; Kraftstoff und Atmosphäre werden Leser",
-          "es": "Una capa meteorológica del marco: una caché, una API ctx.weather, cuota contada; Combustible y Atmósfera pasan a lectores"
+          "fr": "Couche météo unique du cadre : un cache, une API ctx.weather, quota compté ; Carburant et Météo deviennent lecteurs",
+          "en": "One weather layer in the frame: one cache, one ctx.weather API, counted quota; Fuel and Weather become readers",
+          "de": "Eine Wetterschicht im Rahmen: ein Cache, eine ctx.weather-API, gezählte Quote; Kraftstoff und Wetter werden Leser",
+          "es": "Una capa meteorológica del marco: una caché, una API ctx.weather, cuota contada; Combustible y Meteo pasan a lectores"
         },
         {
           "state": "done",
@@ -544,10 +544,10 @@
         },
         {
           "state": "planned",
-          "fr": "Calques météo sur la carte depuis la bibliothèque d'Atmosphère (puce Météo) et bord de la zone du vol : lot 2 après le recodage",
-          "en": "Weather layers on the map from Atmosphere's library (Weather chip) and flight-zone edge: lot 2 after the recode",
-          "de": "Wetterebenen auf der Karte aus der Bibliothek von Atmosphäre (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
-          "es": "Capas meteorológicas en el mapa desde la biblioteca de Atmósfera (chip Meteo) y borde de la zona del vuelo: lote 2 tras la recodificación"
+          "fr": "Calques météo sur la carte depuis la bibliothèque de Météo (puce Météo) et bord de la zone du vol : lot 2 après le recodage",
+          "en": "Weather layers on the map from Weather's library (Weather chip) and flight-zone edge: lot 2 after the recode",
+          "de": "Wetterebenen auf der Karte aus der Bibliothek von Wetter (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
+          "es": "Capas meteorológicas en el mapa desde la biblioteca de Meteo (chip Meteo) y borde de la zona del vuelo: lote 2 tras la recodificación"
         },
         {
           "state": "done",
@@ -584,10 +584,10 @@
       "items": [
         {
           "state": "done",
-          "fr": "Module Atmosphère : coupe le long du vol, tranche locale, carte à l'altitude choisie, curseur « date du vol » (0 à +72 h), légende, tout le vol courant",
-          "en": "Atmosphere module: cut along the flight, local slice, map at the chosen altitude, \"flight date\" slider (0 to +72 h), legend, always the current flight",
-          "de": "Modul Atmosphäre: Schnitt entlang des Flugs, lokale Scheibe, Karte in der gewählten Höhe, Regler „Flugdatum“ (0 bis +72 h), Legende, immer der aktuelle Flug",
-          "es": "Módulo Atmósfera: corte a lo largo del vuelo, rebanada local, mapa a la altitud elegida, control «fecha del vuelo» (0 a +72 h), leyenda, siempre el vuelo actual"
+          "fr": "Module Météo : coupe le long du vol, tranche locale, carte à l'altitude choisie, curseur « date du vol » (0 à +72 h), légende, tout le vol courant",
+          "en": "Weather module: cut along the flight, local slice, map at the chosen altitude, \"flight date\" slider (0 to +72 h), legend, always the current flight",
+          "de": "Modul Wetter: Schnitt entlang des Flugs, lokale Scheibe, Karte in der gewählten Höhe, Regler „Flugdatum“ (0 bis +72 h), Legende, immer der aktuelle Flug",
+          "es": "Módulo Meteo: corte a lo largo del vuelo, rebanada local, mapa a la altitud elegida, control «fecha del vuelo» (0 a +72 h), leyenda, siempre el vuelo actual"
         },
         {
           "state": "done",
@@ -612,10 +612,10 @@
         },
         {
           "state": "doing",
-          "fr": "Atmosphère recodée depuis sa spécification sur la couche météo du cadre (session cloud)",
-          "en": "Atmosphere recoded from its specification on the frame's weather layer (cloud session)",
-          "de": "Atmosphäre nach ihrer Spezifikation auf der Wetterschicht des Rahmens neu geschrieben (Cloud-Sitzung)",
-          "es": "Atmósfera recodificada según su especificación sobre la capa meteorológica del marco (sesión en la nube)"
+          "fr": "Module Météo recodé depuis sa spécification sur la couche météo du cadre (session cloud)",
+          "en": "Weather module recoded from its specification on the frame's weather layer (cloud session)",
+          "de": "Modul Wetter nach seiner Spezifikation auf der Wetterschicht des Rahmens neu geschrieben (Cloud-Sitzung)",
+          "es": "Módulo Meteo recodificado según su especificación sobre la capa meteorológica del marco (sesión en la nube)"
         }
       ]
     },

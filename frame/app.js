@@ -159,7 +159,7 @@
       // module dédié (vue fixe, gabarit de la Carte) : son onglet « Météo » de la barre du téléphone (APP.tabs, règle 14), dans
       // le rail sur écran ; réinclus plus tard dans Préparer et la Carte (modules/atmosphere/DECISIONS.md, 24 oct 2026)
       id: 'atmosphere',
-      label: ['Atmosphère', 'Atmosphere', 'Atmosphäre', 'Atmósfera'],
+      label: ['Météo', 'Weather', 'Wetter', 'Meteo'],
       icon: 'layers'
     }],
     // barre d'onglets du téléphone (760 px et moins), cinq au plus (V3_SPECIFICATION.md § 7.1 règle 14) : un onglet = un groupe
@@ -3252,9 +3252,9 @@
           info: () => launcherHere,
           // travail long du lanceur (fetchProcedures : regen/job, verbe proc/ead-fetch) : par le client du cadre, route
           // déclarée à la volée ; null sans lanceur (INTEGRATION § 15.1)
-          job: (route, body, opts) => launcherClient()?.forModule({
+          job: (route, body, opts) => (launcherHere?.lan ? null : launcherClient()?.forModule({
             routes: ['regen/job']
-          }).job(route, body, opts) ?? Promise.resolve(null)
+          }).job(route, body, opts)) ?? Promise.resolve(null)
         }
       }) : null;
       aerodb?.on('state', syncBase);
