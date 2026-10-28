@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the rendering core split in three files** (`modules/maps/render.js`, `render_airspace.js`, `render_route.js`; SPEC § 1,
+  INTEGRATION) — `render.js` had grown to 78 KB, above the module's 60 KB rule; airspaces, airways, AAR and NAT
+  (21 KB) and the route's labels and trace (7 KB) moved as they were into two classic scripts loaded after the core
+  (50 KB), which shares its helpers in `MapsRender.kit`. Nothing changes on screen.
+
 - **Fuel: a procedure read without a name says "STAR without a name"** (`modules/fuel/module.js`, DECISIONS) — no longer
   "NONAME".
 - **Fuel: "Read the procedures" gives its counts** (`modules/fuel/module.js`, SPEC, DECISIONS; case F14) — e.g. "78

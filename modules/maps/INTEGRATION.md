@@ -18,7 +18,7 @@ export const meta = {
   files: [/* the module's own files */ 'state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'data.js?v=0',
     'layers.js?v=0', 'sheet_view.js?v=0', 'profile_view.js?v=0', 'tips.js?v=0', 'lv.js?v=0', 'vfr.js?v=0', 'flight_time.js?v=0',
     'mission_view.js?v=0', 'weather.js?v=0',
-    /* its libraries */ 'render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0', 'lib/aero_symbols.js?v=0',
+    /* its libraries */ 'render.js?v=0', 'render_airspace.js?v=0', 'render_route.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0', 'lib/aero_symbols.js?v=0',
     'lib/vertical_profile.js?v=0', 'lib/profiles.js?v=0', 'lib/map_base.js?v=0', 'lib/axis_window.js?v=0',
     /* the frame's */ '../../frame/lib/js-yaml.min.js?v=0', '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0',
     '../../frame/lib/time.js?v=0', '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/icons.js?v=0'],
@@ -307,7 +307,7 @@ import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, loadRender, l
 | `mapSize(map, box)` → boolean | `map.resize()` only if the canvas is not the box's size; true when it resized. **`startTiles` creates the map with `trackResize: false`: MapLibre does not follow its container's size by itself** (its own observer resized, and so cleared, the canvas at every frame of a sheet drag), so call it when the size has stopped (the sheet's `onSettle`, a rotation, full screen), at load and style change, on return of a hidden tab (`visibilitychange`, `pageshow`) and at each draw |
 | `isOwnResize(map)` → boolean | true during the `resize()` that `mapSize` runs: its `movestart` is not a user gesture (`map.on('movestart', () => { if (!isOwnResize(map)) userMoved = true })`) |
 | `setBottomInset(map, px)` → boolean | the map's bottom controls (attribution, scale, any other in `bottom-left` / `bottom-right`) move up by `px`: the part of the map's box that a sheet covers (the sheet's top against the box's bottom; 0 when the map sits above the sheet or beside it). Sets `--mb-inset-b` on the map's container, written only when the value changes (true then); the camera is not touched (frame the route with a bottom `padding`). Call it at every size change and at each `onSettle` of the sheet, and from a `ResizeObserver` on the sheet if the map can sit under it (V3 spec § 7.1 rule 17). Atmosphere: its `--at-hide-b` rule (an oversized map) can give way to one call with the same value |
-| `loadRender()` → `Promise` | loads `render.js` (`window.MapsRender`) if it is not there |
+| `loadRender()` → `Promise` | loads `render.js` (`window.MapsRender`) if it is not there: the core only (background, `mercator`, `tokens`), enough for atmosphere; the map's own loader adds `render_airspace.js` and `render_route.js` |
 | `loadOutlines()` → `Promise` | loads `lib/outlines.js` (`window.MAPS_OUTLINES`, 350 KB), once; rejects (and the next call tries again) if it does not come |
 | `plainView(fit, W, H, pad = 12)` → `{ toC(lat, lon), toLL(x, y), shown }` | Mercator fitting the box `fit` (`{ w, e, s, n }`) in W × H, north up (`MapsRender.mercator`; `loadRender()` first) |
 | `drawPlain(ctx, toC, W, H, colors)` | sea, then land from the outlines (sea only until they arrive); `colors` `{ sea, land, border }`, day defaults |

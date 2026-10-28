@@ -58,11 +58,13 @@ import {
   previewAd
 } from './vfr.js';
 
-/** Bibliothèques du dossier du module (scripts classiques, une fois par page) : [variable globale, fichier]. */
+/** Bibliothèques du dossier du module (scripts classiques, une fois par page) : [variable globale (chemin pointé), fichier]. */
 const LIBS = [
   ['SiaAero', 'lib/aero_symbols.js'],
   ['SiaProfile', 'lib/vertical_profile.js'],
   ['MapsRender', 'render.js'],
+  ['MapsRender.kit.drawAirways', 'render_airspace.js'], // les parties du rendu, après son noyau (SPEC § 1)
+  ['MapsRender.kit.drawRoute', 'render_route.js'],
   ['MapsProfile', 'profile.js'],
   ['MapsMission', 'mission.js'],
   ['MapsContours', 'contours.js'],
@@ -73,7 +75,7 @@ const LIBS = [
  *  conserve dès l'installation. */
 export async function loadLibs() {
   for (const [glob, file] of LIBS)
-    if (!window[glob]) await import(new URL(`${file}?v=0`, import.meta.url).href);
+    if (!glob.split('.').reduce((o, k) => o?.[k], window)) await import(new URL(`${file}?v=0`, import.meta.url).href);
 }
 /** Style du fond : celui du profil d'affichage, de jour ; la nuit, le style sombre. */
 export const styleFor = () => baseStyle({
