@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher, access of the computer: "Open them too" leaves the pairing code alone** (`tools/launch.py`; frame SPEC,
+  DECISIONS): on an access already open it adds the other private addresses without issuing a code, so a pairing closed
+  after 30 wrong codes stays closed until "New code".
 - **Settings: `settings.js` split into five parts, no change of behaviour** (`frame/settings/kit.js`, `launcher.js`,
   `access.js`, `diagnostic.js`, `admin.js`, `settings.js`; `frame/app.js` `LAZY.settings`, `frame/sw.js` `SHELL`;
   INTEGRATION § 1, SPEC, DECISIONS): files of at most 60 KB by concern; the screen is identical (snapshot compared in

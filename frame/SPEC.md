@@ -755,7 +755,9 @@ launcher can serve that device over the local network, so the device works as th
     { open: true | false }` (settings context: `lan()`, below).
   - The launcher then also listens on the computer's **private IPv4 address of the default route** (10/8,
     172.16/12, 192.168/16), on the same port. Its other private addresses (VPN, WSL, Hyper-V, Docker) are opened
-    only on request (`{ open: true, all: true }`, "Open them too" in Settings). It never listens on `0.0.0.0`, so
+    only on request (`{ open: true, all: true }`, "Open them too" in Settings); on an access already open this adds
+    the addresses and leaves the code as it is: it never issues one, nor reopens a pairing closed by wrong codes (only
+    "New code" does, 28 Oct 2026). It never listens on `0.0.0.0`, so
     no public interface is opened, and the port never clashes with 127.0.0.1.
   - The console shows the address of the Pilot application (`http://<ip>:<port>/frame/`) and the pairing code.
 - **Every request from the local network**:

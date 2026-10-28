@@ -1354,10 +1354,13 @@ def lan_state():
 
 def lan_open(every=False):
     """Ouvre l'accès du réseau local sur l'adresse privée de la route par défaut (toutes les adresses privées de ce
-    poste si every : VPN, machines virtuelles…), même port, avec un nouveau code ; déjà ouvert, every ajoute les autres."""
+    poste si every : VPN, machines virtuelles…), même port, avec un nouveau code ; déjà ouvert, every ajoute les autres
+    adresses sans toucher au code (ni en émettre un, ni rouvrir un appairage fermé après 30 codes faux : seul « Nouveau
+    code » le fait)."""
     with LAN_LOCK:
         if not LAN['handler'] or (LAN['servers'] and not every):
             return lan_state()
+        was_open = bool(LAN['servers'])
         order = list(LAN['order'])
         for ip in lan_access.addresses()[:None if every else 1]:
             if f'{ip}:{LAN["port"]}' in LAN['hosts']:
@@ -1375,7 +1378,7 @@ def lan_open(every=False):
         if not order:
             say('  Réseau local : aucune adresse privée sur ce poste (réseau 10.x, 172.16-31.x ou 192.168.x).')
             return lan_state()
-        if every and lan_access.code_state().get('code'):
+        if was_open:
             say(f'  Réseau local : adresses ouvertes : {", ".join(order)}')
             return lan_state()
         code = lan_access.new_code()

@@ -1427,3 +1427,15 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     in INTEGRATION § 14.2 ("Expected precision").
   - Bench 73 / 73 (three checks added: the metadata of ARPEGE Europe and of GFS 0.25°, an hour kept for another model
     ignored).
+- **28 Oct 2026 — "Open them too" leaves the code alone** (review of the Settings session, through the coordinator):
+  `lan_open(every=True)` on an access already open issued a code when none was running, and so reopened a pairing closed
+  after 30 wrong codes, against the rule "closed until the next New code". Now, on an open access, it only adds the
+  other private addresses; the code is the business of "New code" alone. Opening the access itself (closed before) still
+  issues a code: that is the gesture that starts pairing. Checked in the launcher's process with a fake server and fake
+  addresses (nothing opened on the network): open → one address and a code; "Open them too" → two addresses, same code;
+  no code running → none issued; pairing closed → stays closed; a fresh open with every → a code.
+- **28 Oct 2026 — "Failed to register a ServiceWorker … unknown error when fetching the script"** (coordinator, launcher
+  on 8774): not the launcher. The same registration fails in the desktop app's built-in browser on a bare static server
+  (no Clear-Site-Data, no CSP, no nosniff; the script fetched by `fetch` answers 200 `text/javascript`), and succeeds in
+  Playwright's Chromium, with the launcher's purge page included. The built-in browser does not register service workers
+  for these pages: the frame works without one (no offline copy there), nothing to change.
