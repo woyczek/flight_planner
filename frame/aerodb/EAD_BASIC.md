@@ -270,3 +270,10 @@ by page, **titles and keywords only** (Path Terminator, Fly Over, Coding, Waypoi
 pastes that report; the session decides from it whether this document holds coding tables (then the layout parser follows, on text rows of one page) or only charts (then the *Charts* type is searched).
 
 **Branches** (owner's request, 28 October): all further work on this topic goes onto **one branch**, `v3-aerodb-proc-15`; the older ones are deleted when GitHub lets the session do it.
+
+## 6 septies. First scan of the EGLL document (28 October 2026)
+
+`--scan-pdf` on the downloaded `EG_AD_2_EGLL_en.pdf` (41 pages, UNITED KINGDOM AIP, AD 2.EGLL-1 to -41): **no page has "Path Terminator", "Fly Over" or "Waypoint Identification"** (0 each), so
+this part holds **no table of legs in the SIA's form**. The word "Coding" appears on pages 40 and 41 only (with SID, STAR, RNAV, RNP, Approach); pages 26–30 and 11–13 mention approaches and
+procedures (the textual AD 2.22 "flight procedures" section). The scan now also prints the few lines with a coding word on those two pages, which decides whether they describe a coding
+table, name the document where the coded data is published, or only state a rule. Charts (SID / STAR / IAC drawings) are a separate document type, *Charts*.

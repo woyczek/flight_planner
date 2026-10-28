@@ -83,6 +83,14 @@ def scan_rows(pages):
     return out
 
 
+def context_lines(pages, wanted, rx=r'coding|ARINC|path\s*terminator|fly[- ]?(?:by|over)|leg\s+type|waypoint\s+list|tabular', limit=6):
+    """Pour les pages demandées (numéros à partir de 1), les lignes — au plus `limit`, 140 caractères — qui portent un mot du codage : de quoi savoir de quoi parle la page."""
+    out = {}
+    for n in wanted:
+        out[n] = [re.sub(r'\s+', ' ', r)[:140] for r in pages[n - 1] if re.search(rx, r, re.I)][:limit]
+    return out
+
+
 def scan_pdf(path, report=print):
     """Repère dans un PDF d'AIP (une partie AD 2 entière) les pages à tableau de tronçons (« Path Terminator »…) : titres et mots-clés seulement."""
     if not Path(path).is_file():
@@ -104,6 +112,10 @@ def scan_pdf(path, report=print):
     report(f'Pages à tableau de tronçons probable ({len(tab)}):')
     for n, t, ks in tab[:80]:
         report(f'  p{n} | {t} | {", ".join(ks)}')
+    report('Lignes à mot de codage des pages ci-dessus (au plus 6 par page, 140 caractères):')
+    for n, lines in context_lines(pages, [n for n, _, _ in tab[:20]]).items():
+        for ln in lines:
+            report(f'  p{n} | {ln}')
     report('Titres des pages SID / STAR / approche (aperçu):')
     for n, t, ks in [x for x in info if {'SID', 'STAR', 'Approach'} & set(x[2])][:150]:
         report(f'  p{n} | {t}')
