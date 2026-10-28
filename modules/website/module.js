@@ -385,6 +385,11 @@ export async function mount(el, ctx) {
     canFetch: !!ctx.net // le premier refus du site le coupe pour la session
   };
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
+  // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
+  // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
+  S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);
+  S.srTitle();
+  window.addEventListener('frame-titled', S.srTitle);
   S.body = el.querySelector('[data-body]');
   S.body.addEventListener('click', onClick);
   S.airline = W.airlineSettings((await ctx.data.get(SETTINGS)) || ctx.airline || {});
@@ -410,6 +415,7 @@ export async function mount(el, ctx) {
 
 export function unmount() {
   if (!S) return;
+  window.removeEventListener('frame-titled', S.srTitle);
   S.mq?.removeEventListener('change', S.onMq);
   window.removeEventListener('frame-airline', S.onAirline);
   S.body = null;

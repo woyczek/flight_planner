@@ -2,6 +2,9 @@
 
 Memory of the V3 website module: every choice, dated, with its reason. Chat history is never needed.
 
+- **28 Oct 2026 — the `h1` follows `ctx.titled`** (frame lot 25, INTEGRATION § 6): while the phone's header carries
+  the module's title (`ctx.titled`), the module's `h1` gets `f-sr` (screen readers only), toggled again on every
+  `frame-titled` event; the listener goes at unmount. Checked on 8804 at 375 px. The frame titles fuel, report and flightlog on a phone (rule 16), not website: its `h1` stays visible.
 - **23 Oct 2026 — the airline arriving after the mount** (frame lot 24, event `frame-airline`): the module reads
   `airline/settings.json` again (`read`, already fetched by the frame) and redraws its cards, unless something is being
   typed in it. Bench (fake GitHub, cleared profile, new repository): the Airline card "not set" at 0.8 s, then the
