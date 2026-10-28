@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>atmosphere — weather map performance</title>
+<!-- Mesure de la carte météo en bibliothèque (lib/weather_map.js ; DECISIONS « performance ») : premier dessin après
+     attach, coût d'une image pendant un panoramique (toutes les couches, puis couche par couche), mémoire des canevas,
+     octets lus (synoptique monde publié servi à son adresse ; grille du vol de la démonstration, de la taille d'une vraie,
+     écrite dans une réserve en mémoire : aucun appel à Open-Meteo). Pour imiter un téléphone, ralentir le processeur (×4)
+     depuis les outils du navigateur ou le pilote de test. Paramètres : ?ft=16000 (niveau ; vide : la surface). Résultat
+     dans window.perf et dans la page. Page d'outil, hors des applications. -->
+<style>
+  body {
+    margin: 0;
+    padding: 8px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 12px/1.4 system-ui, sans-serif
+  }
+  #map {
+    position: relative;
+    width: 390px;
+    height: 520px;
+    background: #e9e7e2;
+    overflow: hidden
+  }
+  pre {
+    white-space: pre-wrap
+  }
+</style>
+</head><body><div id="map"></div><pre id="out">…</pre>
+<script type="module">
+// les canevas créés (images des champs comprises) : leur mémoire
+const made = [],
+  mk = document.createElement.bind(document);
+document.createElement = (tag, ...a) => {
+  const el = mk(tag, ...a);
+  if (String(tag).toLowerCase() === 'canvas') made.push(el);
+  return el;
+};
+const {
+  createWeatherMap,
+  attach,
+  gridRequest,
+  daysFor,
+  MAP_LAYERS
+} = await import('../lib/weather_map.js?v=0');
+const {
+  weatherStore
+} = await import('../weather_store.js?v=0');
+const Demo = await import('../demo.js?v=0');
+
+const q = new URLSearchParams(location.search),
+  ft = q.has('ft') ? (q.get('ft') === '' ? null : +q.get('ft')) : 16000,
+  out = document.getElementById('out'),
+  wait = ms => new Promise(r => setTimeout(r, ms)),
+  frame = () => new Promise(r => requestAnimationFrame(r)),
+  now = Math.floor(Date.now() / 1000),
+  time = Math.ceil(now / 3600) * 3600;
+
+// réserve en mémoire, octets lus
+const db = new Map();
+let readBytes = 0;
+const data = {
+  get: async p => {
+    if (!db.has(p)) return null;
+    readBytes += db.get(p).length;
+    return JSON.parse(db.get(p));
+  },
+  put: async (p, v) => db.set(p, JSON.stringify(v)),
+  cached: async pre => [...db.keys()].filter(k => k.startsWith(pre)).map(path => ({
+    path
+  })),
+  remove: async p => db.delete(p)
+};
+let netBytes = 0;
+const files = [];
+const net = {
+  fetch: async (url, o) => {
+    const r = await fetch(url, o),
+      b = await r.clone().arrayBuffer();
+    netBytes += b.byteLength;
+    files.push([String(url).split('/').pop(), b.byteLength]);
+    return r;
+  }
+};
+const ctx = {
+  data,
+  net,
+  t: (row, v = {}) => String(row[1]).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? ''),
+  lang: () => 'en'
+};
+
+// le vol (LFRD → LFBD, comme la capture de l'utilisateur) et sa grille écrite dans la réserve (démonstration)
+const flight = {
+  points: [{
+    id: 'LFRD',
+    lat: 48.5877,
+    lon: -2.08
+  }, {
+    id: 'TUPAR',
+    lat: 46.5,
+    lon: -1.2
+  }, {
+    id: 'LFBD',
+    lat: 44.8283,
+    lon: -0.7156
+  }],
+  levelFt: 16000
+};
+const req = gridRequest(flight.points, flight.levelFt, 48);
+await weatherStore({
+  data,
+  net: {
+    fetch: async url => {
+      const u = new URL(url);
+      if (u.pathname.endsWith('meta.json')) return new Response(JSON.stringify({
+        last_run_initialisation_time: now - 3600
+      }));
+      const la = u.searchParams.get('latitude').split(','),
+        lo = u.searchParams.get('longitude').split(','),
+        from = Date.parse(u.searchParams.get('start_date')),
+        days = (Date.parse(u.searchParams.get('end_date')) - from) / 864e5 + 1;
+      return new Response(JSON.stringify(Demo.forecast(la.map((x, i) => ({
+        lat: +x,
+        lon: +lo[i]
+      })), u.searchParams.get('hourly').split(','), from, days * 24)));
+    }
+  }
+}).forecast(req.g.places, req.vars, {
+  model: req.model.id,
+  days: daysFor(time),
+  cacheOnly: false
+});
+
+// fond uni en Mercator, 390 × 520 (la carte d'un téléphone en portrait), zoom 6 sur l'ouest de la France
+const W = 390,
+  H = 520,
+  view = {
+    lon: -1.4,
+    lat: 46.6,
+    zoom: 6
+  },
+  k = () => 256 * 2 ** view.zoom / (2 * Math.PI),
+  my = la => Math.log(Math.tan(Math.PI / 4 + la * Math.PI / 360)),
+  project = (lat, lon) => ({
+    x: W / 2 + (lon - view.lon) * Math.PI / 180 * k(),
+    y: H / 2 - (my(lat) - my(view.lat)) * k()
+  }),
+  unproject = (x, y) => [view.lon + (x - W / 2) / k() * 180 / Math.PI, (2 * Math.atan(Math.exp(my(view.lat) - (y - H / 2) / k())) - Math
+    .PI / 2) * 180 / Math.PI],
+  bounds = () => {
+    const [w, n] = unproject(0, 0), [e, s] = unproject(W, H);
+    return [w, s, e, n];
+  };
+let notify = () => {};
+const target = {
+  container: document.getElementById('map'),
+  project,
+  size: () => ({
+    W,
+    H
+  }),
+  bounds,
+  zoom: () => view.zoom,
+  onChange: cb => {
+    notify = cb;
+    return () => notify = () => {};
+  }
+};
+const ready = i => i.state === 'ok' && i.world?.k != null && i.zones.length === 2 && !i.worldReading;
+const all = Object.fromEntries(MAP_LAYERS.map(l => [l, true]));
+
+// 1. premier dessin après attach (réseau compris : la publication monde lue du serveur), puis réserve chaude
+async function firstDraw() {
+  const t0 = performance.now(),
+    att = attach(target, {
+      ctx,
+      flight,
+      levelFt: ft,
+      time,
+      layers: all
+    });
+  while (!ready(att.info()) && performance.now() - t0 < 30000) await frame();
+  await wait(400); // l'échéance des niveaux de pression peut arriver après l'index
+  await frame();
+  await frame();
+  const ms = performance.now() - t0;
+  att.detach();
+  return Math.round(ms);
+}
+const n0 = netBytes,
+  coldMs = await firstDraw(),
+  coldNet = netBytes - n0,
+  r0 = readBytes,
+  warmMs = await firstDraw(),
+  warmRead = readBytes - r0;
+
+// 2. coût d'une image : draw() appelé directement, la vue glissée de 4 px par image
+async function pan(layers, frames = 90) {
+  const cv = mk('canvas'),
+    dpr = 3;
+  cv.width = W * dpr;
+  cv.height = H * dpr;
+  const c = cv.getContext('2d'),
+    wm = createWeatherMap({
+      ctx,
+      flight,
+      levelFt: ft,
+      time,
+      layers
+    });
+  while (!ready(wm.info())) {
+    wm.draw(c, {
+      W,
+      H,
+      project,
+      bounds: bounds(),
+      zoom: view.zoom
+    });
+    await wait(20);
+  }
+  const lon0 = view.lon,
+    times = [];
+  // une image de chauffe (géométries en cache), puis le glissé
+  for (let i = -1; i < frames; i++) {
+    view.lon = lon0 + i * 4 / k() * 180 / Math.PI;
+    const t = performance.now();
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, W, H);
+    wm.draw(c, {
+      W,
+      H,
+      project,
+      bounds: bounds(),
+      zoom: view.zoom
+    });
+    if (i >= 0) times.push(performance.now() - t);
+    await frame();
+  }
+  view.lon = lon0;
+  wm.detach();
+  times.sort((a, b) => a - b);
+  return {
+    mean: +(times.reduce((s, v) => s + v, 0) / times.length).toFixed(2),
+    p95: +times[Math.floor(times.length * 0.95)].toFixed(2)
+  };
+}
+const panAll = await pan(all),
+  perLayer = {};
+for (const l of MAP_LAYERS) perLayer[l] = await pan({
+  ...Object.fromEntries(MAP_LAYERS.map(x => [x, false])),
+  [l]: true
+}, 45);
+
+// 3. images par seconde réelles : attach et glissé de 2 s (redessin à chaque image de l'écran)
+const made0 = made.length,
+  att = attach(target, {
+    ctx,
+    flight,
+    levelFt: ft,
+    time,
+    layers: all
+  });
+while (!ready(att.info())) await frame();
+await wait(300);
+let frames = 0;
+const lon0 = view.lon,
+  gaps = [],
+  t0 = performance.now();
+let tl = t0;
+while (performance.now() - t0 < 2000) {
+  view.lon += 4 / k() * 180 / Math.PI;
+  notify();
+  await frame();
+  frames++;
+  gaps.push(Math.round(performance.now() - tl));
+  tl = performance.now();
+}
+const fps = Math.round(frames / ((performance.now() - t0) / 1000));
+view.lon = lon0;
+
+// 4. mémoire des canevas (le canevas de la carte et les images des champs)
+const overlay = target.container.querySelector('canvas.sog-weather-map'),
+  bytes = c => c.width * c.height * 4,
+  images = made.slice(made0).filter(c => c !== overlay && c.width * c.height > 0);
+const memory = {
+  overlayKB: Math.round(bytes(overlay) / 1024),
+  overlayPx: `${overlay.width}×${overlay.height}`,
+  imagesKB: Math.round(images.reduce((s, c) => s + bytes(c), 0) / 1024),
+  images: images.length,
+  largest: images.map(c => `${c.width}×${c.height}`).sort((a, b) => eval(b.replace('×', '*')) - eval(a.replace('×', '*')))[0]
+};
+
+// 5. changement d'échéance (+3 h) : ce qui est lu
+const n1 = netBytes,
+  f1 = files.length,
+  k1 = att.info().world.k;
+att.update({
+  time: time + 3 * 3600
+});
+const t1 = performance.now();
+// jusqu'au dessin de la nouvelle échéance
+while (att.info().world?.k === k1 && performance.now() - t1 < 20000) await frame();
+await frame();
+const step = {
+  netKB: Math.round((netBytes - n1) / 1024),
+  files: files.slice(f1).map(([f, b]) => `${f} ${Math.round(b / 1024)} KB`),
+  ms: Math.round(performance.now() - t1)
+};
+att.detach();
+
+const perf = {
+  ft,
+  firstDraw: {
+    coldMs,
+    coldNetKB: Math.round(coldNet / 1024),
+    coldFiles: files.slice(0, 3).map(([f, b]) => `${f} ${Math.round(b / 1024)} KB`),
+    warmMs,
+    warmReadKB: Math.round(warmRead / 1024)
+  },
+  frameMs: panAll,
+  perLayerMs: perLayer,
+  fps,
+  frameGaps: gaps.slice(0, 12),
+  memory,
+  stepChange: step,
+  grid: `${req.g.nx}×${req.g.ny} places, ${req.levels.length} levels`
+};
+window.perf = perf;
+out.textContent = JSON.stringify(perf, null, 1);
+document.title = 'atmosphere — weather map performance — done';
+</script>
+</body></html>
