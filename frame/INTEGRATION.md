@@ -880,7 +880,9 @@ in the launcher; `resume` finds it again.
 - `POST /__setup/regen/job { set, verb, args }`, `GET …/job[?id=]`, `POST …/job/cancel { id }`: one job at a time in a thread;
   `set` and `verb` from a fixed list (`regen_jobs.REGISTRY`), each with its check of `args`; nothing from the page is a path,
   an address or a command. 400: unknown operation or bad arguments; 409: a job is running; 410: no such job. Lot D0 has one
-  verb, `state/scan` (the state as a job, with its progress); the builders' verbs come with them (lot D2).
+  verb, `state/scan` (the state as a job, with its progress); the builders' verbs come with them (lot D2). `proc/ead-fetch` (args `{ icao }`: one
+  four-character code, nothing else) reads one aerodrome in EAD Basic and installs it under `proc/manual/` (aerodb's `fetchProcedures`; the frame
+  gives aerodb `launcher.job`, built on this client with `regen/job` declared).
 - The frame itself uses the same client for its own calls (Settings' `setup()`, aerodb's `.lnmperf` sheets, the
   simulator's position, the local network's access): no piece of the frame calls the launcher with `fetch` any more,
   except the network relay (`/__setup/net`, whose answer is the relayed site's, not JSON).

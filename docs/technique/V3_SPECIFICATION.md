@@ -614,6 +614,9 @@ redesigned for touch at that point.
          module brought forward), `proc/manual/` code; fuel — the two rows of step Vol, the arrival row of step Départ, the
          quote with constraints, `route.procedures` v2 (INTEGRATION § 3); maps — the traces with constraints and the
          profile steps; help ×4 and tests per lot. The Map and Fuel lots start after the aerodb lot publishes its API.
+       **aerodb status (28 Oct 2026)**: commit 1 (`c0027f4ad`, pushed) = the API (`procedures()` with runways, transitions and phases, `runways()`,
+       `proc/manual/`, the contract of `fetchProcedures`); commit 2 = `fetchProcedures` wired, through the launcher job `proc/ead-fetch` of the
+       route `regen/job` (the job is named so, not `ead/fetch`).
        **Refinements (ergonomics session, 28 Oct evening, after the Map session's reading)**: the Map never writes
        `route.procedures` (its aerodrome card shows the choice and a "Changer" button to `#fuel?focus=arr`); aerodb adds
        `runways(icao)` (threshold, elevation, QFU, displaced threshold), `arc { centre, radius }` on RF legs when the source

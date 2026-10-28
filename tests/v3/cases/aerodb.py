@@ -1299,3 +1299,230 @@ def k20(c):
          str(bad['warnings']), 'a list that contradicts the printed distances rejects that procedure (gate after resolution), the other one stays')
     first_only = P.build_pdf_dir('EDXX', ['chart.pdf'], lambda n: [['SOME CHART']], '2026-01-01')
     c.ok(first_only['formats'][0]['ok'] is False and first_only['procedures'] == [] and first_only['formats'][0]['pages'] == 1, str(first_only['formats']), 'a document whose pages are all unknown gets one summary entry')
+
+
+# ------------------------------------------------------------------------------------------------ the launcher's EAD Basic job (static)
+@case('K22', 'EAD Basic job of the launcher: proc/ead-fetch (aerodb.fetchProcedures, commit 2)', 'K', static=True,
+      rule='aerodb DECISIONS 28 Oct 2026 (commit 2): one aerodrome per gesture, installed in proc/manual/, only those two paths committed, no secret anywhere')
+def k22(c):
+    import importlib
+    import json
+    import os
+    import subprocess
+    import sys
+    import tempfile
+    import threading
+    import time
+    from pathlib import Path
+    tools = str(c.root / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    RJ = importlib.import_module('regen_jobs')
+    EAD = importlib.import_module('proc_ead')
+    P = importlib.import_module('proc_eaip')
+    DS = importlib.import_module('data_sync')
+    USER, PASS = 'k22-user-zq', 'K22-s3cr3t-pw!'
+    # args check: one aerodrome, nothing else
+    ck = RJ.REGISTRY[('proc', 'ead-fetch')][1]
+    c.eq(ck({'icao': ' egll '}), {'icao': 'EGLL'}, 'the code is upper-cased and trimmed', what='args')
+    refused = [{'icao': 'LFBD,LFBO'}, {'icao': 'LFBD', 'all': True}, {}, {'icao': 'LFB'}, {'icao': 'LFBDX'}, {'icao': 12}, {'icao': 'LF*D'}, {'icao': 'LF BD'}, {'icao': ['LFBD']}, None, 'LFBD']
+    c.eq([a for a in refused if ck(a) is not None], [], 'a list, a wildcard, an extra key or a bad length is refused (→ 400)', what='args')
+    c.eq(RJ.Jobs(RJ.REGISTRY).start('proc', 'ead-fetch', {'icao': 'LFBD,LFBO'}).get('status'), 400, 'the launcher answers 400 to a list', what='start')
+
+    pos = [('TESTA', 51.00, -1.00), ('TESTB', 51.10, -0.50), ('TESTC', 51.20, -0.10)]               # fictitious points: a tool test, not AIP data
+    pts = []
+    for i, (n, la, lo) in enumerate(pos):
+        p = {'seq': i + 1, 'id': n, 'lat': la, 'lon': lo, 'alt': None, 'leg': 'IF' if i == 0 else 'TF'}
+        if i:
+            brg, nm = P.bearing_nm((pos[i - 1][1], pos[i - 1][2]), (la, lo))
+            p['trk'], p['nm'] = round(brg, 1), round(nm, 1)
+        pts.append(p)
+
+    def doc_of(icao='EGXX'):
+        return {'schema': 1, 'icao': icao, 'cycle': '2026-10-01', 'warnings': ['page 3 NON retenue'], 'procedures': [
+            {'id': f'{icao}.STAR.TEST1A.RWALL', 'icao': icao, 'kind': 'STAR', 'name': 'TEST 1A', 'runways': [], 'transition': None,
+             'points': json.loads(json.dumps(pts)), 'source': {'kind': 'ead-basic', 'ref': 'ead-basic/EG/x'}, 'status': 'check'}]}
+
+    def git(cwd, *a):
+        r = subprocess.run(DS.git_cmd('-C', str(cwd), *a), capture_output=True, text=True, encoding='utf-8', errors='replace', env=DS.git_env())
+        return r.stdout
+
+    def scene(td, creds=True):
+        data, secrets = Path(td) / 'data', Path(td) / 'secrets'
+        (data / 'proc' / 'manual').mkdir(parents=True)
+        secrets.mkdir()
+        if creds:
+            (secrets / 'ead.json').write_text(json.dumps({'user': USER, 'password': PASS}))
+        (data / 'proc' / 'manual' / 'index.json').write_text(json.dumps({'schema': 1, 'folder': 'manual', 'aerodromes': {'KSEA': {'SID': 1}}}))
+        (data / 'notes.txt').write_text('first\n')
+        (data / '.gitignore').write_text('local/\n')                                          # as the data repository template: the cache is never tracked
+        git(data, 'init', '-q')
+        git(data, 'add', '-A')
+        git(data, '-c', 'user.name=T', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'initial')
+        (data / 'notes.txt').write_text('first\nedited by the user, not staged\n')           # unrelated modified file
+        (data / 'staged.txt').write_text('new file staged by the user\n')                    # unrelated staged file
+        git(data, 'add', 'staged.txt')
+        return data, secrets
+
+    def ctx_of(data, secrets):
+        return {'data': str(data), 'secrets': str(secrets), 'git_cmd': DS.git_cmd, 'git_env': DS.git_env}
+
+    def run(ctx, icao='EGXX', job=None):
+        return RJ._ead_fetch(job or RJ.Job('proc', 'ead-fetch', {'icao': icao}), {'icao': icao}, ctx)
+
+    saved = (EAD.EadLibrary, EAD.fetch_ad, dict(os.environ))
+    for k in ('EAD_USER', 'EAD_PASSWORD'):
+        os.environ.pop(k, None)
+    seen = {}
+
+    class FakeLib:
+        def __init__(self, user, password, say=print, keep=None, delay=0.0):
+            seen['user'], self.say, self.ok = user, say, seen.get('open', True)
+
+        def open(self):
+            return self.ok
+
+    def fake_fetch(lib, icao, out, say=print):
+        say(f'{icao}: connecté en tant que {USER} avec le mot de passe {PASS}')               # a leak, to see it cleaned
+        say(f'GET http://x/?j_username={USER}&j_password=' + EAD.urllib.parse.quote(PASS))
+        Path(out).mkdir(parents=True, exist_ok=True)
+        d = seen['doc'] if 'doc' in seen else doc_of(icao)
+        (Path(out) / f'{icao}.json').write_text(json.dumps(d))
+        if seen.get('during'):
+            seen['during']()
+        return d
+    EAD.EadLibrary, EAD.fetch_ad = FakeLib, fake_fetch
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            data, secrets = scene(td, creds=False)
+            ctx = ctx_of(data, secrets)
+            r = run(ctx)
+            c.eq(r, {'ok': False, 'reason': 'no-credentials'}, 'no secrets/ead.json and no variable: no-credentials, nothing run', what='no credentials')
+            c.ok(not (data / 'proc' / 'manual' / 'EGXX.json').exists() and 'user' not in seen, str(seen), 'nothing was read or installed without credentials')
+            os.environ.update(EAD_USER='envuser-k22', EAD_PASSWORD='env-pass-k22')
+            r = run(ctx)
+            c.ok(r.get('ok') and seen.get('user') == 'envuser-k22', f'{r} {seen}', 'EAD_USER / EAD_PASSWORD are the fallback of secrets/ead.json')
+        for k in ('EAD_USER', 'EAD_PASSWORD'):
+            os.environ.pop(k, None)
+
+        # success: installed, committed, and only those two paths
+        seen.clear()
+        with tempfile.TemporaryDirectory() as td:
+            data, secrets = scene(td)
+            ctx = ctx_of(data, secrets)
+            before = git(data, 'rev-parse', 'HEAD').strip()
+            job = RJ.Job('proc', 'ead-fetch', {'icao': 'EGXX'})
+            r = run(ctx, job=job)
+            c.ok(r.get('ok') is True and r['icao'] == 'EGXX' and r['procedures'] == 1 and r['ocr'] is False and r['warnings'] == ['page 3 NON retenue'], str(r),
+                 'success: ok, the aerodrome, one procedure installed, no OCR, the warnings of the reading')
+            inst = json.loads((data / 'proc' / 'manual' / 'EGXX.json').read_text())
+            idx = json.loads((data / 'proc' / 'manual' / 'index.json').read_text())
+            c.ok(len(inst['procedures']) == 1 and sorted(idx['aerodromes']) == ['EGXX', 'KSEA'] and idx['aerodromes']['EGXX']['STAR'] == 1, str(idx),
+                 'proc/manual/EGXX.json written, proc/manual/index.json merged (the other aerodromes kept)')
+            head = git(data, 'rev-parse', 'HEAD').strip()
+            c.ok(r['commit'] == head and head != before and git(data, 'rev-parse', 'HEAD~1').strip() == before, f"{r['commit']} {head}", 'one new commit, returned by the job')
+            c.eq(sorted(git(data, 'show', '--name-only', '--format=', 'HEAD').split()), ['proc/manual/EGXX.json', 'proc/manual/index.json'],
+                 'the commit holds ONLY the two installed paths', what='commit paths')
+            c.ok(git(data, 'log', '-1', '--format=%s').startswith(':card_file_box: Procédures EGXX lues dans EAD Basic'), git(data, 'log', '-1', '--format=%s'),
+                 'the commit message says what was read, from where, and that it is not operational')
+            st = git(data, 'status', '--porcelain').splitlines()
+            c.ok(' M notes.txt' in st and 'A  staged.txt' in st and len(st) == 2, str(st),
+                 "the user's unrelated modified file is still modified and the staged one still staged, neither committed")
+            c.ok(git(data, 'diff', '--cached', '--name-only').split() == ['staged.txt'], git(data, 'diff', '--cached', '--name-only'), 'the index holds only what the user staged')
+            c.ok(not git(data, 'remote').strip(), git(data, 'remote'), 'no push (the repository has no remote and none was asked for)')
+            # nothing secret in the job log, the result, the files of the tree, the commit
+            blob = json.dumps(job.view()) + json.dumps(r)
+            for f in data.rglob('*'):
+                if f.is_file() and '.git' not in f.parts:
+                    blob += f.read_text(encoding='utf-8', errors='replace')
+            blob += git(data, 'log', '--format=%B%an%ae') + git(data, 'show', '--stat', 'HEAD')
+            c.ok(USER not in blob and PASS not in blob and EAD.urllib.parse.quote(PASS) not in blob and any('<secret>' in x for x in job.view()['log']),
+                 str(job.view()['log'][:3]), 'neither the user name nor the password (nor its encoded form) appears in the log, the result, a written file or the commit')
+            # a second run of the same file: nothing changed, no empty commit, a warning
+            r2 = run(ctx)
+            c.ok(r2['ok'] and r2['commit'] is None and git(data, 'rev-parse', 'HEAD').strip() == head and any('aucun commit' in w for w in r2['warnings']), str(r2),
+                 'the same reading again: installed, no empty commit, a warning instead')
+
+        # git absent keeps ok, with commit None and a warning; a foreign file, a login refusal, a failing geometry, nothing read
+        with tempfile.TemporaryDirectory() as td:
+            data, secrets = scene(td)
+            r = run({'data': str(data), 'secrets': str(secrets)})
+            c.ok(r['ok'] and r['commit'] is None and any(w.startswith('git') for w in r['warnings']), str(r), 'without git the files are installed, commit None, a warning')
+        with tempfile.TemporaryDirectory() as td:
+            data, secrets = scene(td)
+            ctx = ctx_of(data, secrets)
+            (data / 'proc' / 'manual' / 'EGXX.json').write_text(json.dumps({'schema': 1, 'icao': 'EGXX', 'cycle': '2026-10-01', 'procedures': [
+                {'id': 'EGXX.SID.A', 'kind': 'SID', 'status': 'official', 'source': {'kind': 'eaip'}}]}))
+            r = run(ctx)
+            c.ok(r['ok'] is False and r['reason'] == 'failed' and '--replace' in r['message'] and json.loads((data / 'proc' / 'manual' / 'EGXX.json').read_text())['procedures'][0]['id'] == 'EGXX.SID.A',
+                 str(r), "another source's file is never overwritten: failed with the reason")
+            seen['open'] = False
+            r = run(ctx)
+            c.ok(r['ok'] is False and r['reason'] == 'failed' and r['message'] == 'login refused', str(r), 'a refused login is failed, with its message')
+            seen['open'] = True
+            bad = doc_of()
+            bad['procedures'][0]['points'][2]['nm'] += 2.0
+            seen['doc'] = bad
+            r = run(ctx)
+            c.ok(r['ok'] is False and 'geometry check failed' in r['message'], str(r), 'a table that fails the geometry check is not installed')
+            seen['doc'] = {**doc_of(), 'procedures': []}
+            r = run(ctx)
+            c.ok(r['ok'] is False and r['reason'] == 'failed' and 'no procedure' in r['message'], str(r), 'nothing read is failed, not an empty file installed')
+            seen.pop('doc')
+
+        # an OCR document written by THIS run is installed too (a stale one is ignored)
+        with tempfile.TemporaryDirectory() as td:
+            data, secrets = scene(td)
+            ctx = ctx_of(data, secrets)
+            ocr_file = data / 'local' / 'ead' / 'EGXX.ocr.json'
+            ocr_file.parent.mkdir(parents=True)
+            ocr = doc_of()
+            ocr['procedures'][0]['id'] = 'EGXX.STAR.OCRD1A.RWALL'
+            ocr_file.write_text(json.dumps(ocr))
+            os.utime(ocr_file, (time.time() - 3600, time.time() - 3600))
+            seen['doc'] = {**doc_of(), 'procedures': []}
+            r = run(ctx)
+            c.ok(r['ok'] is False, str(r), 'a stale OCR file of a former reading is not installed')
+            seen['during'] = lambda: ocr_file.write_text(json.dumps(ocr))
+            r = run(ctx)
+            c.ok(r['ok'] and r['ocr'] is True and r['procedures'] == 1, str(r), 'an OCR document written by this run is verified and installed (alone when the main one is empty)')
+            seen.pop('during')
+            seen.pop('doc')
+
+        # cancellation: raised by the next message, nothing installed, nothing committed; Jobs marks the state
+        with tempfile.TemporaryDirectory() as td:
+            data, secrets = scene(td)
+            ctx = ctx_of(data, secrets)
+            head = git(data, 'rev-parse', 'HEAD').strip()
+            job = RJ.Job('proc', 'ead-fetch', {'icao': 'EGXX'})
+            job._cancel.set()
+            r = run(ctx, job=job)
+            c.ok(r == {'ok': False, 'reason': 'cancelled'} and not (data / 'proc' / 'manual' / 'EGXX.json').exists() and git(data, 'rev-parse', 'HEAD').strip() == head,
+                 str(r), 'a cancelled job answers cancelled, installs nothing and commits nothing')
+            # through Jobs: a second start while one runs is 409; the cancel is seen between two messages
+            gate = threading.Event()
+
+            def slow_fetch(lib, icao, out, say=print):
+                gate.set()
+                for _ in range(300):
+                    say('waiting')
+                    time.sleep(0.02)
+                return doc_of(icao)
+            EAD.fetch_ad = slow_fetch
+            jobs = RJ.Jobs(RJ.REGISTRY, ctx)
+            s1 = jobs.start('proc', 'ead-fetch', {'icao': 'EGXX'})
+            gate.wait(5)
+            s2 = jobs.start('proc', 'ead-fetch', {'icao': 'EGYY'})
+            c.ok(s1.get('ok') and s2.get('ok') is False and s2.get('status') == 409, f'{s1} {s2}', 'a second job while one runs is refused with 409')
+            jobs.cancel(s1['job'])
+            for _ in range(200):
+                if jobs.cur.data['state'] != 'running':
+                    break
+                time.sleep(0.05)
+            v = jobs.cur.view()
+            c.ok(v['state'] == 'cancelled' and v['result'] == {'ok': False, 'reason': 'cancelled'} and not (data / 'proc' / 'manual' / 'EGXX.json').exists(), str(v['state']) + str(v['result']),
+                 'Jobs marks the cancelled job cancelled, with the reason cancelled in its result')
+    finally:
+        EAD.EadLibrary, EAD.fetch_ad = saved[0], saved[1]
+        os.environ.clear()
+        os.environ.update(saved[2])

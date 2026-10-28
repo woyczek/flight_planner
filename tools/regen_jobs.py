@@ -13,10 +13,12 @@ Routes (tools/launch.py, ce poste seulement : refusées à un appareil du résea
 POST /__setup/regen/job { set, verb, args } → { job }, GET /__setup/regen/job[?id=], POST /__setup/regen/job/cancel { id }.
 """
 import importlib.util
+import json
 import os
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -203,7 +205,151 @@ def _scan(job, args, ctx):
                  step=lambda t, d, n: job.step(t, d, n, 'parts'), cancelled=job.cancelled)
 
 
+class _Cancelled(BaseException):
+    """Annulation demandée, levée par say() de _ead_fetch. BaseException : les « except Exception » de proc_ead (lecture de PDF,
+    OCR) ne l'avalent pas ; _ead_fetch l'attrape toujours."""
+
+
+def _ead_args(a):
+    """Contrôle des arguments de proc/ead-fetch : { 'icao': 4 caractères [A-Z0-9] } et rien d'autre ; None sinon (→ 400).
+    Une liste (« LFBD,LFBO »), un joker, un champ en plus : refusés, EAD Basic ne se lit pas en masse."""
+    if not isinstance(a, dict) or set(a) != {'icao'} or not isinstance(a['icao'], str):
+        return None
+    icao = a['icao'].strip().upper()
+    return {'icao': icao} if re.fullmatch(r'[A-Z0-9]{4}', icao) else None
+
+
+def _ead_credentials(secrets):
+    """(identifiant, mot de passe) d'EAD Basic : <secrets>/ead.json { user, password }, sinon les variables EAD_USER et
+    EAD_PASSWORD ; ('', '') sans rien. Les valeurs ne sont ni journalisées ni rendues."""
+    try:
+        with open(os.path.join(secrets, 'ead.json'), encoding='utf-8') as f:
+            j = json.load(f)
+        if isinstance(j, dict):
+            user, password = str(j.get('user') or '').strip(), str(j.get('password') or '')
+            if user and password:
+                return user, password
+    except (OSError, ValueError):
+        pass
+    return os.environ.get('EAD_USER', '').strip(), os.environ.get('EAD_PASSWORD', '')
+
+
+def _ead_commit(data, icao, git_cmd, git_env, warnings):
+    """Valide dans data/ les deux fichiers installés et eux seuls : `git add` puis `git commit -m … -- <chemins>` (la forme
+    avec chemins vaut --only : le commit est fait de HEAD + ces fichiers tels qu'ils sont sur le disque, jamais de l'index ni
+    d'un autre chemin ; ce que l'utilisateur a mis en attente ou modifié ailleurs dans data/ reste où il est). Pas de push.
+    Rend le SHA du commit, ou None (avertissement ajouté à `warnings` : pas de dépôt, git en échec, rien à valider)."""
+    if not git_cmd or not os.path.isdir(os.path.join(data, '.git')):
+        warnings.append("git: data/ n'est pas un dépôt, rien n'est validé")
+        return None
+    paths = [f'proc/manual/{icao}.json', 'proc/manual/index.json']
+    env = dict(git_env())
+
+    def run(*args):
+        return subprocess.run(git_cmd('-C', data, *args), capture_output=True, text=True, encoding='utf-8', errors='replace',
+                              timeout=60, env=env)
+    try:
+        who = []
+        if not run('config', 'user.name').stdout.strip() or not run('config', 'user.email').stdout.strip():
+            who = ['-c', 'user.name=POSTE', '-c', 'user.email=poste@defa.local']   # comme les autres validations du lanceur
+        a = run('add', '--', *paths)
+        if a.returncode != 0:
+            warnings.append('git add: ' + (a.stderr or a.stdout).strip()[:200])
+            return None
+        if run('diff', '--cached', '--quiet', '--', *paths).returncode == 0:
+            warnings.append('git: rien de changé dans les fichiers installés, aucun commit')
+            return None
+        c = run(*who, 'commit', '-m', f':card_file_box: Procédures {icao} lues dans EAD Basic (à la demande, non opérationnelles)',
+                '--', *paths)
+        if c.returncode != 0:
+            warnings.append('git commit: ' + (c.stderr or c.stdout).strip()[:200])
+            return None
+        h = run('rev-parse', 'HEAD')
+        sha = h.stdout.strip()
+        return sha if h.returncode == 0 and re.fullmatch(r'[0-9a-f]{40}', sha) else None
+    except (OSError, subprocess.TimeoutExpired) as e:
+        warnings.append(f'git: {str(e)[:200]}')
+        return None
+
+
+def _ead_fetch(job, args, ctx):
+    """Verbe proc/ead-fetch : lit dans EAD Basic les procédures d'UN terrain, les installe sous data/proc/manual/ et les valide dans
+    le dépôt des données (aerodb.fetchProcedures, § 10.20). Règle d'EAD Basic (frame/aerodb/EAD_BASIC.md § 1) : un terrain par geste de
+    l'utilisateur, jamais une liste, jamais en masse, jamais planifié — le contrôle d'arguments n'admet qu'un code OACI.
+    Identifiants : <secrets>/ead.json { user, password }, sinon EAD_USER / EAD_PASSWORD ; jamais journalisés (say() nettoie), jamais rendus.
+    Étapes : connexion à la bibliothèque, proc_ead.fetch_ad (cache local data/local/ead/, jamais publié), contrôle de géométrie de
+    proc_manual.verify (caps et distances refaits : une procédure qui échoue n'est pas installée), proc_manual.install (sans --replace : un
+    fichier du terrain qui porte des procédures d'une autre source n'est jamais écrasé), puis commit de proc/manual/<OACI>.json et
+    proc/manual/index.json SEULS (_ead_commit), sans push. L'annulation est regardée à chaque message et avant d'installer ; une fois les
+    fichiers écrits, le travail va jusqu'au commit (sinon data/ resterait sali).
+    Rend { ok: True, icao, procedures, warnings, commit (SHA | None), ocr } ou { ok: False, reason: 'no-credentials' | 'cancelled' |
+    'failed', message? }."""
+    icao = args['icao']
+    data = ctx['data']
+    user, password = _ead_credentials(ctx['secrets'])
+    if not user or not password:
+        return {'ok': False, 'reason': 'no-credentials'}
+    tools = os.path.dirname(os.path.abspath(__file__))
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    import proc_ead
+    import proc_manual
+
+    def clean(text, n=300):
+        return proc_ead.sanitize(str(text), [user, password])[:n]
+
+    def say(*parts):
+        text = proc_ead.sanitize(' '.join(map(str, parts)), [user, password])
+        job.log(text)
+        job.step(text[:200])
+        if job.cancelled():
+            raise _Cancelled()
+
+    def failed(message, warnings=()):
+        return {'ok': False, 'reason': 'failed', 'message': clean(message), 'warnings': [clean(w) for w in warnings][:50]}
+    out = os.path.join(data, 'local', 'ead')
+    t0 = time.time()
+    try:
+        os.makedirs(out, exist_ok=True)
+        lib = proc_ead.EadLibrary(user, password, say, delay=1.0)
+        if not lib.open():
+            return failed('login refused')
+        doc = proc_ead.fetch_ad(lib, icao, out, say)
+        ocr = None
+        ocr_path = os.path.join(out, f'{icao}.ocr.json')
+        if os.path.isfile(ocr_path) and os.stat(ocr_path).st_mtime >= t0 - 1:   # écrit par CE travail (un reste d'une lecture ancienne est ignoré)
+            with open(ocr_path, encoding='utf-8') as f:
+                ocr = json.load(f)
+        if job.cancelled():
+            raise _Cancelled()
+        todo = [d for d in (doc, ocr) if d and d.get('procedures')]
+        warnings = [w for d in (doc, ocr) if d for w in d.get('warnings', [])]
+        if not todo:
+            return failed('no procedure could be read for this aerodrome', warnings)
+        for d in todo:                                    # ce que fait proc_manual.main() avant d'installer
+            problems = proc_manual.verify(d)
+            if problems:
+                return failed('geometry check failed: ' + '; '.join(problems[:3]), warnings)
+        installed = 0
+        for d in todo:
+            try:
+                proc_manual.install(d, os.path.join(data, 'proc'), replace=False)
+                installed += len(d['procedures'])
+            except SystemExit as e:                       # procédures d'une autre source dans le fichier du terrain : rien n'est écrit
+                if not installed:
+                    return failed(e, warnings)
+                warnings.append(str(e))                   # le premier document est déjà installé : le second est signalé
+    except _Cancelled:
+        return {'ok': False, 'reason': 'cancelled'}
+    except (SystemExit, Exception) as e:
+        return failed(e)
+    commit = _ead_commit(data, icao, ctx.get('git_cmd'), ctx.get('git_env', dict), warnings)
+    return {'ok': True, 'icao': icao, 'procedures': installed, 'warnings': [clean(w) for w in warnings][:50], 'commit': commit,
+            'ocr': bool(ocr and ocr.get('procedures'))}
+
+
 # verbes du lot D0 ; les constructeurs (D2) ajoutent les leurs ici, chacun avec son contrôle d'arguments
 REGISTRY = {
     ('state', 'scan'): (_scan, lambda a: {} if not a else None),
+    ('proc', 'ead-fetch'): (_ead_fetch, _ead_args),
 }

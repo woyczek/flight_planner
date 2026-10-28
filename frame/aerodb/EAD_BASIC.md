@@ -27,7 +27,10 @@ never saw a credential. Facts are marked **read** (public page opened today) or 
   - an **aerodrome is read one at a time, on an explicit gesture of the user**: `--fetch <ICAO>` typed by hand today (it refuses a list), a
     gesture in the screens later — **in Fuel** (« Lire les procédures de LFXX », when an aerodrome has none; § 10.20 of the
     specification), then **in the Données module** (its EAD line, « Relire » for an outdated one) — through
-    `aerodb.fetchProcedures(icao)`, never in Settings › Maintenance (amended 28 Oct 2026, the ergonomics session);
+    `aerodb.fetchProcedures(icao)`, never in Settings › Maintenance (amended 28 Oct 2026, the ergonomics session). **Wired on 28 Oct 2026**: the gesture
+    goes through the launcher job `proc/ead-fetch` (`tools/regen_jobs.py`, one four-character code, nothing else accepted); the account is read on the
+    workstation only, from `secrets/ead.json` (`{ "user", "password" }`) or `EAD_USER` / `EAD_PASSWORD`, never shown, never logged (every message is
+    cleaned of both values) and never sent to a page; the request spacing is the library's one second;
   - **never scheduled, never in bulk**.
 - **Rights of the States' AIPs**: each State's AIP stays that State's (the DFS notice, read on 25 October: use "by the organisation to which it
   was issued", no storage or redistribution without permission). What is read through EAD Basic is for personal use, kept in the airline's

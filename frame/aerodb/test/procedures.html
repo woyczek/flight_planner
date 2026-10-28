@@ -415,12 +415,245 @@
             'LFZZ.SID.XP1A.RW27'))?.local === true, [xp, both.sources]);
       const ac = new AbortController();
       ac.abort();
-      check('fetchProcedures(): a reason, never silent (bad code, cancelled, unavailable until the workstation job is wired)', (await db
-          .fetchProcedures('XX')).reason ===
+      // fetchProcedures() : le travail du poste est simulé par un faux lanceur (aucun réseau) ; chaque refus a sa raison
+      const fetchDb = launcher => AeroDB.create({
+          reader,
+          lnmperf: false,
+          launcher,
+          now: () => Date.parse('2026-10-25T12:00:00Z')
+        }),
+        installed = {
+          schema: 1,
+          icao: 'EGLL',
+          cycle: '2026-10-08',
+          procedures: [{
+            id: 'EGLL.STAR.OCK1H.RW27L',
+            icao: 'EGLL',
+            kind: 'STAR',
+            name: 'OCK1H',
+            runways: ['27L'],
+            transition: null,
+            points: [{
+              seq: 1,
+              id: 'AAAAA',
+              lat: 51.4,
+              lon: -0.5,
+              leg: 'IF'
+            }, {
+              seq: 2,
+              id: 'BBBBB',
+              lat: 51.5,
+              lon: -0.4,
+              leg: 'TF'
+            }],
+            source: {
+              kind: 'ead-basic',
+              ref: 'ead-basic/EG/x',
+              cycle: '2026-10-08'
+            },
+            status: 'check'
+          }]
+        },
+        calls = [],
+        jobAnswer = {
+          r: null
+        },
+        fake = (over = {}) => ({
+          info: () => ({
+            data: true,
+            lan: false
+          }),
+          request: async () => null,
+          job: async (route, body, opts) => {
+            calls.push({
+              route,
+              body,
+              opts
+            });
+            opts.onProgress?.({
+              step: 'EGLL: login',
+              done: 1,
+              total: 3
+            });
+            await new Promise(r => setTimeout(r, 30));
+            return typeof jobAnswer.r === 'function' ? jobAnswer.r() : jobAnswer.r;
+          },
+          ...over
+        }),
+        reasonOf = async (d, icao = 'EGLL', o) => (await d.fetchProcedures(icao, o)).reason;
+      check('fetchProcedures(): bad code and a signal already aborted answer at once', (await db.fetchProcedures('XX')).reason ===
         'bad-icao' && (await db.fetchProcedures('LFZZ', {
           signal: ac.signal
-        })).reason === 'cancelled' && (await db.fetchProcedures('LFZZ')).reason === 'unavailable' && (await db.fetchProcedures(
-          'LFZZ')).ok === false, null);
+        })).reason === 'cancelled', null);
+      check('fetchProcedures(): no launcher (none given, no job, no survey) is « no-launcher »', await reasonOf(db) ===
+        'no-launcher' && await reasonOf(fetchDb({
+          request: async () => null,
+          info: () => ({
+            data: true
+          })
+        })) === 'no-launcher' && await reasonOf(fetchDb(fake({
+          info: () => null
+        }))) === 'no-launcher' && calls.length === 0, calls);
+      check('fetchProcedures(): a device paired to the workstation (lan) is « paired », nothing is asked', await reasonOf(fetchDb(
+        fake({
+          info: () => ({
+            data: true,
+            lan: true
+          })
+        }))) === 'paired' && calls.length === 0, calls);
+      const ul = await fetchDb(fake()).fetchProcedures('LBSF');
+      check('fetchProcedures(): a State without a known layout is « unknown-layout » with its outcome, nothing is asked', ul.reason ===
+        'unknown-layout' && ul.outcome === 'none' && (await fetchDb(fake()).fetchProcedures('LFBD')).outcome === 'sia' && calls
+        .length === 0, [ul, calls.length]);
+      // le travail : un faux lanceur qui écrit proc/manual/ comme le ferait le poste, puis rend le résultat du verbe
+      let evicted = [],
+        synced = 0;
+      const rdr = {
+          ...reader,
+          evict: async x => evicted.push(x),
+          status: async () => ({
+            transport: 'local'
+          }),
+          sync: async () => ++synced
+        },
+        okDb = AeroDB.create({
+          reader: rdr,
+          lnmperf: false,
+          launcher: fake(),
+          now: () => Date.parse('2026-10-25T12:00:00Z')
+        }),
+        progress = [];
+      jobAnswer.r = () => {
+        files.set('proc/manual/EGLL.json', JSON.stringify(installed));
+        files.set('proc/manual/index.json', JSON.stringify({
+          schema: 1,
+          folder: 'manual',
+          aerodromes: {
+            EGLL: {
+              SID: 0,
+              STAR: 1,
+              APP: 0,
+              status: 'check',
+              cycle: '2026-10-08'
+            }
+          }
+        }));
+        return {
+          ok: true,
+          state: 'done',
+          result: {
+            ok: true,
+            icao: 'EGLL',
+            procedures: 1,
+            warnings: ['w1'],
+            commit: 'a'.repeat(40),
+            ocr: false
+          }
+        };
+      };
+      const before = (await okDb.procedures('EGLL')).length,
+        two = [okDb.fetchProcedures('EGLL', {
+          onProgress: st => {
+            progress.push(st);
+            throw new Error('a listener that fails must not stop the job');
+          }
+        }), okDb.fetchProcedures('egll'), okDb.fetchProcedures(' EGLL ')],
+        res = await Promise.all(two);
+      check(
+        'fetchProcedures(): one reading per aerodrome at a time (the others are « busy »), the job is asked once with the fixed verb',
+        res.filter(x => x.ok).length === 1 && res.filter(x => x.reason === 'busy').length === 2 && calls.length === 1 && calls[0]
+        .route === 'regen/job' && JSON.stringify(calls[0].body) === '{"set":"proc","verb":"ead-fetch","args":{"icao":"EGLL"}}', [res
+          .map(x => x.reason || 'ok'), calls
+        ]);
+      const win = res.find(x => x.ok);
+      check(
+        'fetchProcedures(): the success gives the merged procedures read after the install, the warnings and the commit; progress forwarded',
+        before === 0 && win.procedures.length === 1 && win.procedures[0].id === 'EGLL.STAR.OCK1H.RW27L' && win.procedures[0]
+        .status ===
+        'check' && win.icao === 'EGLL' && win.warnings.join() === 'w1' && win.commit === 'a'.repeat(40) && progress[0].step ===
+        'EGLL: login' && progress[0].total === 3, [before, win, progress]);
+      check('fetchProcedures(): the reader is made to forget both files, and refresh its references without an exchange',
+        evicted.includes('proc/manual/EGLL.json') && evicted.includes('proc/manual/index.json') && synced === 1, [evicted, synced]);
+      check('fetchProcedures(): the aerodrome can be read again once the first reading is over',
+        (await okDb.fetchProcedures('EGLL')).ok === true && calls.length === 2, calls.length);
+      // les raisons rendues par le poste, et celles du lanceur lui-même
+      const answers = {
+          'no-credentials': {
+            ok: true,
+            state: 'done',
+            result: {
+              ok: false,
+              reason: 'no-credentials'
+            }
+          },
+          failed: {
+            ok: true,
+            state: 'done',
+            result: {
+              ok: false,
+              reason: 'failed',
+              message: 'login refused'
+            }
+          },
+          'cancelled (result)': {
+            ok: false,
+            state: 'cancelled',
+            result: {
+              ok: false,
+              reason: 'cancelled'
+            }
+          },
+          'cancelled (signal)': {
+            ok: false,
+            cancelled: true
+          },
+          busy: {
+            ok: false,
+            status: 409,
+            message: 'a job is already running'
+          },
+          paired: {
+            ok: false,
+            status: 403,
+            refused: true
+          },
+          'failed (older launcher)': {
+            ok: false,
+            status: 400,
+            message: 'unknown operation proc/ead-fetch'
+          },
+          'failed (error state)': {
+            ok: false,
+            state: 'error',
+            result: {
+              message: 'boom'
+            }
+          },
+          'no-launcher': null
+        },
+        want = {
+          'no-credentials': 'no-credentials',
+          failed: 'failed',
+          'cancelled (result)': 'cancelled',
+          'cancelled (signal)': 'cancelled',
+          busy: 'busy',
+          paired: 'paired',
+          'failed (older launcher)': 'failed',
+          'failed (error state)': 'failed',
+          'no-launcher': 'no-launcher'
+        },
+        got = {};
+      for (const [name, r] of Object.entries(answers)) {
+        jobAnswer.r = r;
+        got[name] = await okDb.fetchProcedures('EGLL');
+      }
+      check(
+        'fetchProcedures(): every answer of the job maps to its reason (no-credentials, failed, cancelled, busy, paired, no-launcher)',
+        Object.keys(want).every(k => got[k].ok === false && got[k].reason === want[k]), got);
+      check('fetchProcedures(): the message of a failure is handed on (login refused, older launcher, error state)', got.failed
+        .message === 'login refused' && /unknown operation/.test(got['failed (older launcher)'].message) && got[
+          'failed (error state)']
+        .message === 'boom', got);
     } catch (e) {
       check('no exception', false, String(e && e.stack || e));
     }

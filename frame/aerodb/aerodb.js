@@ -194,7 +194,8 @@
     now = () => Date.now(),
     lnmperf: lnmAuto = true, // fiches .lnmperf suivies d'elles-mêmes sur un poste au dossier réglé (les essais l'éteignent)
     // lanceur du poste, donné par le cadre (frame/INTEGRATION.md § 15) : { request(route, opts) → { status, body } | null,
-    // info() → relevé | null } ; sans lui (bancs d'aerodb), lnmperf.js appelle le lanceur lui-même
+    // info() → relevé | null, job(route, corps, { onProgress, signal }) → fin du travail suivi (client du cadre) | null } ;
+    // sans lui (bancs d'aerodb), lnmperf.js appelle le lanceur lui-même et fetchProcedures() répond 'no-launcher'
     launcher = null,
     access = () =>
     true // l'appareil a-t-il de quoi lire la base (lanceur, dépôt réglé) ? Sans cela, « non réglé » et non « non publiée »
@@ -226,6 +227,7 @@
       }
     });
     const revs = new Map(); // chemin lu → révision lue (un fichier changé se reconnaît à sa révision)
+    const eadBusy = new Map(); // OACI → lecture EAD Basic en cours (fetchProcedures : une seule à la fois par terrain)
     const read = path => reader.read(path, {
       policy: 'reference',
       wait: true
@@ -1103,31 +1105,101 @@
         return out;
       },
       /** Lecture À LA DEMANDE des procédures d'un terrain (§ 10.20, contrat du 28 octobre 2026) : le travail du poste (EAD Basic,
-       *  un terrain par geste, EAD_BASIC.md § 1), lancé par le cadre (ctx.launcher.job('ead/fetch', { icao })) ; le résultat est
-       *  installé dans proc/manual/ et publié dans le dépôt privé, puis servi par procedures(). Rend { ok: true, icao, procedures,
-       *  warnings } ou { ok: false, reason } — reason : 'bad-icao', 'no-launcher' (sans lanceur : l'OFP SimBrief reste la source
-       *  du vol), 'paired' (appareil appairé au poste : le geste se fait sur le poste), 'unknown-layout' (État sans disposition
-       *  connue, EAD_STATES), 'busy', 'cancelled', 'failed' ; 'unavailable' tant que le travail du poste n'est pas branché
-       *  (second commit du lot). `onProgress({ step, done, total })`, `signal` (AbortSignal). Jamais silencieux, jamais deux fois
-       *  pour le même terrain en même temps. */
+       *  un terrain par geste, EAD_BASIC.md § 1) est lancé par le cadre sur le lanceur (route regen/job, jeu proc, verbe ead-fetch,
+       *  tools/regen_jobs.py) ; il installe le résultat dans proc/manual/ et le valide dans le dépôt des données (ces deux fichiers
+       *  seulement, sans envoi), puis procedures() le sert. Rend { ok: true, icao, procedures, warnings, commit } ou
+       *  { ok: false, reason, message? } — reason : 'bad-icao', 'no-launcher' (sans lanceur : l'OFP SimBrief reste la source du
+       *  vol), 'paired' (appareil appairé au poste : le geste se fait sur le poste), 'unknown-layout' (État sans disposition
+       *  connue, EAD_STATES ; `outcome` dit pourquoi), 'no-credentials' (secrets/ead.json absent : à régler sur le poste),
+       *  'busy' (ce terrain est déjà en lecture, ou le lanceur fait un autre travail), 'cancelled', 'failed' (`message` : refus de
+       *  connexion, aucune procédure lue, contrôle de géométrie, lanceur plus ancien…). `onProgress({ step, done, total })`,
+       *  `signal` (AbortSignal). Jamais silencieux, jamais deux fois pour le même terrain en même temps. */
       async fetchProcedures(icao, {
         onProgress,
         signal
       } = {}) {
-        const k = String(icao || '').trim().toUpperCase();
-        if (!/^[A-Z0-9]{4}$/.test(k)) return {
-          ok: false,
-          reason: 'bad-icao'
-        };
-        if (signal?.aborted) return {
-          ok: false,
-          reason: 'cancelled'
-        };
-        void onProgress;
-        return {
-          ok: false,
-          reason: 'unavailable'
-        };
+        const k = String(icao || '').trim().toUpperCase(),
+          no = (reason, more = {}) => ({
+            ok: false,
+            reason,
+            ...more
+          });
+        if (!/^[A-Z0-9]{4}$/.test(k)) return no('bad-icao');
+        if (signal?.aborted) return no('cancelled');
+        if (typeof launcher?.job !== 'function' || !launcher.info?.()) return no('no-launcher');
+        if (launcher.info().lan) return no('paired');
+        if (eadBusy.has(k)) return no('busy');
+        // enregistrée avant le premier await : un second appel du même instant trouve la lecture en cours
+        const run = (async () => {
+          const st = (await api.sources().catch(() => null))?.EAD_STATES?.[k.slice(0, 2)];
+          if (!st || st.outcome !== 'read') return no('unknown-layout', {
+            outcome: st?.outcome ?? null
+          });
+          const r = await launcher.job('regen/job', {
+            set: 'proc',
+            verb: 'ead-fetch',
+            args: {
+              icao: k
+            }
+          }, {
+            onProgress: st => {
+              try {
+                onProgress?.({
+                  step: st.step,
+                  done: st.done,
+                  total: st.total
+                });
+              } catch {
+                /* écouteur du module en échec : la lecture continue */
+              }
+            },
+            signal
+          });
+          if (!r) return no('no-launcher');
+          const res = r.result;
+          if (r.cancelled) return no('cancelled');
+          if (res?.ok !== true) { // un travail annulé trop tard pour l'être (fichiers déjà installés) vaut sa réussite
+            if (r.status === 409) return no('busy');
+            if (r.status === 403) return no('paired');
+            if (r.state === 'cancelled') return no('cancelled');
+            const why = res?.ok === false && typeof res.reason === 'string' ? res.reason : 'failed';
+            return no(['no-credentials', 'cancelled', 'failed'].includes(why) ? why : 'failed', {
+              message: String(res?.message || r.message || (r.offline ? 'launcher unreachable' : '')),
+              ...(Array.isArray(res?.warnings) ? {
+                warnings: res.warnings
+              } : {})
+            });
+          }
+          // Les fichiers viennent d'être écrits par le lanceur, hors de toute écriture de la couche de données : sa copie locale de
+          // ces deux fichiers (policy 'reference') est périmée. evict la retire (relue au prochain read) ; mais sans échange
+          // (transport 'local'), l'arbre des références est gardé tel quel et ne connaît pas le fichier neuf : un passage de
+          // synchronisation, qui sans échange se borne à revalider les références, le renouvelle. Avec un transport qui échange
+          // (lanceur, GitHub), l'arbre est relu de lui-même pour un chemin qu'il ne connaît pas : on ne lance PAS de passage ici
+          // (il enverrait le dépôt). Un lecteur sans evict ni sync (bancs) n'a rien à oublier.
+          const paths = [`proc/manual/${k}.json`, 'proc/manual/index.json'];
+          for (const path of paths) {
+            revs.delete(path);
+            await Promise.resolve(reader.evict?.(path)).catch(() => 0);
+          }
+          if ((await Promise.resolve(reader.status?.()).catch(() => null))?.transport === 'local') await Promise.resolve(reader
+            .sync?.()).catch(() => null);
+          emit({
+            procedures: k
+          });
+          return {
+            ok: true,
+            icao: k,
+            procedures: await api.procedures(k),
+            warnings: Array.isArray(res.warnings) ? res.warnings : [],
+            commit: res.commit ?? null
+          };
+        })();
+        eadBusy.set(k, run);
+        try {
+          return await run;
+        } finally {
+          eadBusy.delete(k);
+        }
       },
       // ---- pour le module Données (lot D1, SPEC § 5 « For the Données module ») : ce qui est publié, les zones, le catalogue
       /** Ce qui est publié, SANS charger la base : la liste du lecteur, le manifeste, le meta.json de chaque cycle d'une zone,

@@ -1311,3 +1311,47 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Form**: two `select:` rows after "Type / ICAO" in "Identité et format", `lnm` flag false like `engineType`.
 - **Prompt**: `PROMPT_PROFIL_PERFORMANCES.md` gets the two keys; the V2 planner keeps its own `perf_prompt.js` (not built on
   this line, V2 being maintained on `v2-maintenance`).
+## 28 October 2026 — procedures chosen in the preparation (§ 10.20), aerodb's second commit: `fetchProcedures` wired
+
+- **Asked** (the ergonomics session, commit 2 of § 10.20): `aerodb.fetchProcedures(icao, { onProgress, signal })` becomes real — a launcher job reads ONE
+  aerodrome in EAD Basic, installs it under `data/proc/manual/`, commits it in the data repository and returns the merged procedures; the frame hands
+  aerodb the launcher's `job`; no push, no real data, no password written anywhere.
+- **Done**:
+  - `tools/regen_jobs.py`: verb `proc/ead-fetch` (args check: exactly `{ icao }`, four characters `[A-Z0-9]` after upper-casing; a list, an extra key or a
+    wrong length is a 400). Credentials from `secrets/ead.json` (`user`, `password`), else `EAD_USER` / `EAD_PASSWORD`; none → `no-credentials` before any
+    request. Every message of the reading goes through `proc_ead.sanitize` with both values before the job's log and step (a leak is replaced by
+    `<secret>`); the result carries neither. Then `EadLibrary(..., delay=1.0)`, `fetch_ad` into the cache `data/local/ead/` (never published), the
+    geometry check of `proc_manual.verify` on the document (and on `<ICAO>.ocr.json` when THIS run wrote it: a file older than the start is ignored),
+    `proc_manual.install(replace=False)` (another source's file is never overwritten: `failed`). Nothing read is `failed` (no empty file installed).
+    Cancellation is looked at at every message and before the install (a private `BaseException`, so that the `except Exception` of the readers do not
+    swallow it); once the files are written the job goes to the commit, otherwise `data/` would stay dirty.
+  - **The commit** : `git add -- <the two paths>`, then `git commit -m … -- <the two paths>`. With paths, `commit` is `--only`: the commit is HEAD plus
+    those files as they are on the disk, built apart from the index, so a file the user has staged, or modified, elsewhere in `data/` is not in it and stays
+    staged / modified (case K22 checks both). No push. No repository, git failing, or nothing changed: `ok` stays true, `commit: null`, a warning.
+    A repository without an identity gets `POSTE <poste@defa.local>` for this one commit, like the launcher's other commits.
+  - `frame/app.js` (reported to the frame owner): `AeroDB.create({ launcher: { request, info, job } })`, `job` = `launcherClient()?.forModule({ routes: ['regen/job'] })
+    .job(route, body, opts)`, null without a client. aerodb's own `fetchProcedures` only ever asks `regen/job`.
+  - `aerodb.js` `fetchProcedures`: `bad-icao`, `cancelled` (signal already aborted), `no-launcher` (no `launcher.job` or no `info()`), `paired` (`info().lan`),
+    `unknown-layout` (`EAD_STATES[prefix].outcome !== 'read'`, the outcome handed back: France is `sia`, i.e. never EAD), `busy` (a map of the readings in
+    progress, registered before the first `await`, so two calls of the same instant are not both run; the launcher's 409 is `busy` too), then the job; the
+    answer is mapped: `result.reason` (`no-credentials`, `cancelled`, `failed`) with its `message`; 403 `paired`; any other failure (400 unknown operation of an
+    older launcher, 404, state `error`) is `failed` with the launcher's message. A job cancelled too late to be (files already installed) counts as done.
+  - **The reader's copies** (the point to review). After a success the files were written by the launcher, outside the data layer, so its local copies of
+    `proc/manual/<ICAO>.json` and `proc/manual/index.json` (policy `reference`) are stale: aerodb calls `reader.evict(path)` on both (the adapter offers it). That
+    is enough with a transport that exchanges (launcher, GitHub): a path the cached tree does not know makes the layer read the tree again. Without
+    exchange (transport `local`, the single-user case with a launcher) the tree of the references is kept as it is (`refTree`) and does not know a new file,
+    so aerodb also calls `reader.sync()` when `reader.status().transport === 'local'`: in that mode a pass only revalidates the references (`pullRefs`), no
+    exchange, no push. With an exchanging transport it does NOT call `sync()` (it would exchange the repository, which this job promised not to do). A
+    bench reader without `evict` / `status` / `sync` has nothing to forget. Known limit: a pass already running when the job ends is the one `sync()` returns,
+    and it may have read the head before the commit; the next pass (2 s after any write, or the 30 s tick) completes it.
+  - Docs: SPEC § 5 quinquies (the row of `fetchProcedures`), INTEGRATION (the button of Fuel and the reasons a module words), frame INTEGRATION § 15.1,
+    EAD_BASIC § 1, § 10.20 of the specification (aerodb's status only), CHANGELOG, help bundle regenerated.
+- **Bench**: K1 (`procedures.html`, 38 checks; the `fetchProcedures` ones replace the old « unavailable »: a fake launcher passed to `AeroDB.create` — `no-launcher`
+  (none, no `job`, no survey), `paired`, `unknown-layout` (`LBSF` none, `LFBD` sia), two concurrent calls (`busy`), the verb and the fixed body, the
+  progress forwarded through a listener that throws, the success reading what the fake job wrote into `proc/manual/`, the reader made to forget both
+  files and `sync` called once, every mapped answer) and K22 (`regen_jobs._ead_fetch` with `EadLibrary` and `fetch_ad` replaced, no network: the args check,
+  `no-credentials` and the environment fallback, the install and the commit of two paths with an unrelated staged file and an unrelated modified file left alone,
+  no user name or password in the log, the result, any file or the commit, git absent, a foreign file, a refused login, a failing geometry, nothing read, the OCR
+  file of this run, cancellation, and `Jobs` refusing a second job with 409 then marking the cancelled one).
+- **Not done / to say**: the real EAD Basic site was never contacted and no credential exists in this session; the job is exercised on fakes only. The first
+  real run is the user's (a gesture in Fuel, then the Données module).

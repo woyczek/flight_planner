@@ -3249,7 +3249,12 @@
         // le lanceur du poste (fiches .lnmperf) : par le client du cadre, jamais par un fetch d'aerodb
         launcher: {
           request: launcherRequest,
-          info: () => launcherHere
+          info: () => launcherHere,
+          // travail long du lanceur (fetchProcedures : regen/job, verbe proc/ead-fetch) : par le client du cadre, route
+          // déclarée à la volée ; null sans lanceur (INTEGRATION § 15.1)
+          job: (route, body, opts) => launcherClient()?.forModule({
+            routes: ['regen/job']
+          }).job(route, body, opts) ?? Promise.resolve(null)
         }
       }) : null;
       aerodb?.on('state', syncBase);

@@ -37,6 +37,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   wrong. They are no longer counted as empty nor asked of ChatGPT, whose prompt got the new keys. Old sheets are converted when read.
   The sheets list now says what is missing by family ("To complete: rpm, speeds, cruise, taxi, runway") instead of a count.
 
+- **aerodb: the on-demand reading of an aerodrome's procedures is wired** (`frame/aerodb/aerodb.js` `fetchProcedures`, `tools/regen_jobs.py` verb
+  `proc/ead-fetch`, `frame/app.js`; SPEC § 5 quinquies, INTEGRATION, EAD_BASIC § 1, DECISIONS; tests K1, K22) — one aerodrome per gesture: the launcher
+  logs in to EAD Basic with `secrets/ead.json` (never shown or logged), reads the aerodrome, repeats the geometry check, installs it under `proc/manual/`
+  and commits those two files only in the data repository (whatever else the user has staged or modified there stays; no push); `fetchProcedures`
+  answers the merged procedures, or a reason (`no-launcher`, `paired`, `unknown-layout`, `no-credentials`, `busy`, `cancelled`, `failed`). The frame hands
+  aerodb `launcher.job`.
 - **Fuel: the review of a re-imported sheet wraps its texts** (`modules/fuel/module.js`) — a long value (the description written by
   ChatGPT) stayed on one line in the "before / after" table and pushed it into a sideways scroll; numbers stay right-aligned on
   one line, texts wrap in their column.
