@@ -168,7 +168,7 @@ the measurements of § 5.
   `.github/workflows/ios.yml` is **paused and still builds the V2 site** (it needs `--start frame/index.html` and the `v3`
   branch, `mobile/README.md`); the 20 Oct plan listed as unknowns the first macOS run, the `capacitor://localhost` origin
   and the synchronous XHR of `data_files.js` (V2). The user "holds a TestFlight key" (24 Oct, `V3_SPECIFICATION.md` § 7.1);
-  the four secrets are listed as pending in `V3_DECISIONS_RELAIS_2026-10-24.md`. **To check**: whether a TestFlight build of
+  the four secrets are listed as pending in `V3_DECISIONS_RELAIS_2026-10-24_27.md`. **To check**: whether a TestFlight build of
   Pilote has ever run.
 - **Android**: nothing exists (`mobile/package.json` lists `@capacitor/ios` only). To add: `@capacitor/android`, a Gradle
   build on an Ubuntu runner (cheaper than the macOS one), a signing key, distribution by internal testing or by APK.

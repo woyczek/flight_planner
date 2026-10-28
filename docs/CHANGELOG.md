@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Relay synthesis brought up to 27 October** (`docs/technique/V3_DECISIONS_RELAIS_2026-10-24_27.md`, renamed from `..._2026-10-24.md`; documentation only): Part 1 keeps the 24 October document with italic "Superseded" lines, Part 2 gives the final state by area of 25, 26 and 27 October (rules 13 to 21, the sheet rewrite, the airspaces graph, procedures through aerodb, the data laboratory and the iPhone measures, the suite from 86 to 118 cases, process, open points); references in the journal and in `V3_APP_DONNEES.md` follow the new name, help bundle rebuilt.
 - **Data laboratory: the test hook of the addresses no longer exists on a published site; the openAIP line says its S3 export is slow** (`frame/aerodb/lab_sources.js`,
   `lab.js`, the Settings manual and the pilot manual in four languages, `tests/v3/cases/frame.py` A20). User, 27 Oct, iPhone, Safari: "all the lab's 'open the link' tries went
   to openAIP, and timed out". **Not reproduced**: in Chromium with an iPhone emulation (375 x 667, touch, iOS user agent), five designs, day and night, every one of the 16
