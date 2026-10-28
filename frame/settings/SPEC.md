@@ -97,8 +97,9 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    already open (`confirm: 'open'`, or the message). A link to the help section "A git repository for data/" stays. On the Usages card, "Several users" ticked with no remote shows a warning pointing to
    this card, and the state sentence says "a git repository with no remote: nothing goes elsewhere". Without an exchange, a hint says the access then only reads the aeronautical and aircraft bases published in
    the data repository, nothing is sent (the frame's local transport with the GitHub repository as reference source). Otherwise repository, branch and
-   token; the token field is always empty, its placeholder says a token is saved, an empty field keeps it. Hint: a
-   fine-grained token on this repository only, Contents read and write, 90 days at most, never pasted in a message.
+   token; the token field is always empty, its placeholder says a token is saved, an empty field keeps it. Hint, by the
+   repository's owner (§ 5): a **classic** token with the `repo` box for a user's repository, a **fine-grained** token
+   (this repository only, Contents read and write) for an organisation's; one year at most; never pasted in a message.
    "Save", "Test" (the branch head through the transport; offline said as such) and "Cut access" (asks, then
    the context's `cutAccess`; pending writes stay queued).
 7. **Synchronisation** (an exchange ticked, or writes waiting — the card follows the state): last success, pending
@@ -159,7 +160,9 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
 
 ## 4. Invariants
 
-1. No token or key is ever shown, written to a file, exported or put in the diagnostics.
+1. No token or key is ever shown again, synchronised, put in a backup (`dump()` leaves `device/keys.json` out, a `replace`
+   load keeps it), exported in a pilot's configuration or put in the diagnostics. It lives in `device/keys.json` on the
+   device only (§ 2).
 2. "Alone on this device" is never a box that contradicts another one.
 3. A device setting is never synchronised.
 4. Nothing on this screen blocks: offline, every card still draws from the device.

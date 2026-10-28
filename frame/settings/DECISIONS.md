@@ -389,3 +389,13 @@ or bookmark on the phone:" and the absolute address `new URL(href, location.href
 address: nothing is written in the code), with a "Copy the link" button (`act: adminCopy`, the shared `copy()`, notification "Link copied."). Same level as before (Full,
 rule 18); only the lab entry has it. The lab screen starts with a "Settings › Administration" link (`#settings`) to come back. Test A20. Two small rules for `frame.css`
 (`.f-admin-url`, `.f-admin li > .f-row`).
+- **28 Oct 2026 — Keys in `device/keys.json`: replaces the rule of 23 October** (ergonomics session's decision; security
+  review of 28 October favourable). The rule of 23 October kept the weather key (and the GitHub token) out of `device/` and
+  out of the IndexedDB cache, in `localStorage` only. Since the cloud relay's change of 25 October (Safari evicted
+  `localStorage` without IndexedDB, so the keys were lost while the identity stayed), both keys live in `device/keys.json`
+  like the identity, and that rule is withdrawn. What still holds: the file is never synchronised, left out of `dump()` and
+  kept by a `replace` load, so no backup carries it; never shown again, never in the diagnostics nor in a pilot's
+  configuration. The protection against reading it from the page is the content security policy and, for GitHub, a token
+  of the narrowest reach the repository allows (§ 3.6, § 5). SPEC § 4 invariant 1 rewritten accordingly; § 3.6 gives the
+  token advice decided on 23 October (classic `repo` for a user's repository, fine-grained for an organisation's, one
+  year); INTEGRATION § 1 lists the scripts loaded on demand.

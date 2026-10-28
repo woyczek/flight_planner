@@ -5,8 +5,13 @@ in [SPEC.md](SPEC.md).
 
 ## 1. Loading and route
 
-- `frame/index.html` loads `settings/settings.js` (classic script) before `app.js`; the service worker keeps it with
-  the frame's files (`frame/sw.js`, `SHELL`).
+- The settings scripts are classic scripts **loaded on demand** by the frame at the first opening of `#settings`
+  (`frame/app.js`, `LAZY.settings`, one after the other, in this order): `settings/admin_links.js` (`SogAdminLinks`, the
+  Administration card's list), `settings/config.js` (`SogConfig`, a pilot's configuration), `settings/join.js`
+  (`SogJoin`, the "Join the airline" assistant), `lib/qr.js` (`SogQR`, QR codes) and last `settings/settings.js`
+  (`SogSettings`). `lib/clipboard.js` (fuel's module, `copyText`) is imported by `settings.js` when something is copied.
+  Start-up, the menu and the first module never wait for them. The service worker keeps them all with the frame's files
+  (`frame/sw.js`, `SHELL`).
 - `frame/app.js` routes `#settings` and the old `#device` to `renderSettings(view)`, which calls
   `SogSettings.render(view, context)`. The ⚙ button of the header opens `#settings`.
 
