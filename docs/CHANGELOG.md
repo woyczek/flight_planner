@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Flight path: an approach whose missed approach is not marked no longer flies it** (`frame/lib/current_flight.js`; bench
+  `frame/lib/test/current_flight.html`) — LFPO RNP 20 read from the eAIP gave IPO20, FPO20, then PO425, MLN and MOLBA at
+  7,000 ft without the `missed` phase: the path flew the missed approach before LFPO, the profile went down to 1,600 ft
+  and climbed back, the distance grew by about 60 NM and the extra fixes crowded the labels. A final approach with no
+  `missed` point now stops at its fix nearest to the chosen threshold (else the aerodrome); the fixes after it are its missed
+  approach, drawn dashed and never flown.
+
 - **Fuel: "Read the procedures" says where it reads** (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4; case F14) — while
   reading, the button says "Reading the SIA eAIP…" (France) or "Reading EAD Basic…"; a State without published procedure
   tables is told so (and that Little Navmap has a database on this workstation, when it has); the old "layout unknown" refusal

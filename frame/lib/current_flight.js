@@ -356,6 +356,32 @@ function chainOf(parts) {
     }
   return out;
 }
+/** Approche finale dont l'approche interrompue n'est pas marquée (aucun point de phase 'missed' : une lecture de l'eAIP qui
+ *  ne l'a pas reconnue, LFPO RNP 20 du 28 octobre) : ses points après celui le plus proche de ref (seuil choisi, sinon le
+ *  terrain) passent en phase 'missed' — une approche finale ne s'éloigne jamais de la piste avant le point d'approche
+ *  interrompue. Rendue telle quelle quand elle marque déjà sa phase ou se termine à ce point. */
+function withMissed(rec, ref) {
+  const pts = rec?.points;
+  if (!Array.isArray(pts) || !ref || pts.some(p => p?.phase === 'missed')) return rec;
+  let best = -1,
+    dBest = Infinity;
+  pts.forEach((p, i) => {
+    if (coord(p?.lat) === null || coord(p?.lon) === null) return;
+    const d = gcNm(ref, {
+      lat: +p.lat,
+      lon: +p.lon
+    });
+    if (d < dBest)[best, dBest] = [i, d];
+  });
+  if (best < 0 || best === pts.length - 1) return rec;
+  return {
+    ...rec,
+    points: pts.map((p, i) => i > best ? {
+      ...p,
+      phase: 'missed'
+    } : p)
+  };
+}
 /** Seuil d'une piste choisie en point de chemin (« RW23 », rwy: true), ou null. */
 const thresholdPoint = (rw, origin) => rw && coord(rw.lat) !== null && coord(rw.lon) !== null ? {
   id: `RW${String(rw.id).replace(/^RW/i, '')}`,
@@ -415,7 +441,7 @@ export function expandedPath(f, procs = {}) {
       [ofIcao(P.starTrans, arrIcao), 'star', 'trans'],
       [ofIcao(P.star, arrIcao), 'star', 'main'],
       [ofIcao(P.appTrans, arrIcao), 'app', 'trans'],
-      [ofIcao(P.app, arrIcao), 'app', 'main']
+      [withMissed(ofIcao(P.app, arrIcao), thresholdPoint(P.arrRwy, 'app') || R[n - 1]), 'app', 'main']
     ]),
     missed = arrAll.filter(p => p.origin === 'missed'),
     arrChain = arrAll.filter(p => p.origin !== 'missed'),
