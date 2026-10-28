@@ -2,6 +2,15 @@
 
 Memory of the V3 website module: every choice, dated, with its reason. Chat history is never needed.
 
+- **28 Oct 2026 — the `h1` follows `ctx.titled`** (frame lot 25, INTEGRATION § 6): while the phone's header carries
+  the module's title (`ctx.titled`), the module's `h1` gets `f-sr` (screen readers only), toggled again on every
+  `frame-titled` event; the listener goes at unmount. Checked on 8804 at 375 px. The frame titles fuel, report and flightlog on a phone (rule 16), not website: its `h1` stays visible.
+- **23 Oct 2026 — the airline arriving after the mount** (frame lot 24, event `frame-airline`): the module reads
+  `airline/settings.json` again (`read`, already fetched by the frame) and redraws its cards, unless something is being
+  typed in it. Bench (fake GitHub, cleared profile, new repository): the Airline card "not set" at 0.8 s, then the
+  site and its pages at 3.2 s, without reloading.
+- **23 Oct 2026 — times shown in UTC** (suite rule, `frame/lib/time.js`, frame lot 22): the update dates of the kept
+  log and fleet ("Kept: … updated 23/10/2026 16:57Z", `fmtDateZ`).
 - **23 Oct 2026 — "Paste from the clipboard" only when it can work**: without `navigator.clipboard.read` /
   `readText` (the app served over http to a tablet, frame lot 18) the button is not shown (`canPaste()`,
   `frame/lib/clipboard.js`); the paste box stays.

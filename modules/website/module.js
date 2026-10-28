@@ -13,6 +13,9 @@ import * as W from './model.js';
 import {
   canPaste
 } from '../../frame/lib/clipboard.js'; // marche aussi en http (tablette servie par le poste)
+import {
+  fmtDateZ
+} from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »)
 
 export const meta = {
   id: 'website',
@@ -29,7 +32,7 @@ export const meta = {
     prefix: 'pilot/',
     merge: 'record'
   }],
-  files: ['model.js', '../../frame/lib/clipboard.js']
+  files: ['model.js', '../../frame/lib/clipboard.js', '../../frame/lib/time.js']
 };
 
 const SETTINGS = 'airline/settings.json',
@@ -140,8 +143,8 @@ const tri = () => String(S.ctx.identity.trigram || '').trim().toUpperCase();
 const logPath = () => `pilot/${tri()}/site_log.json`;
 /** Écran d'ordinateur (la carte Compagnie s'y modifie). */
 const wide = () => matchMedia('(min-width: 980px)').matches;
-/** Date lisible. */
-const when = iso => iso ? new Date(iso).toLocaleString(S.ctx.lang()) : '—';
+/** Date et heure UTC lisibles (« 23/10/2026 16:57Z »). */
+const when = iso => iso ? fmtDateZ(iso, S.ctx.lang()) || '—' : '—';
 
 // ---------------------------------------------------------------- écran
 // placement seulement (primitives et jetons du cadre : frame/design/INTEGRATION.md) : aperçu borné en hauteur
@@ -382,9 +385,25 @@ export async function mount(el, ctx) {
     canFetch: !!ctx.net // le premier refus du site le coupe pour la session
   };
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
+  // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
+  // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
+  S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);
+  S.srTitle();
+  window.addEventListener('frame-titled', S.srTitle);
   S.body = el.querySelector('[data-body]');
   S.body.addEventListener('click', onClick);
   S.airline = W.airlineSettings((await ctx.data.get(SETTINGS)) || ctx.airline || {});
+  // compagnie lue en fond par le cadre (frame INTEGRATION § 6) : arrivée ou changée après le montage (premier passage
+  // d'un dépôt), le fichier est relu et les cartes redessinées ; pas pendant une saisie dans le module
+  S.onAirline = async () => {
+    const self = S;
+    if (!self?.body || self.body.contains(document.activeElement)) return;
+    const v = await Promise.resolve().then(() => ctx.data.read(SETTINGS)).then(r => r?.value).catch(() => null);
+    if (S !== self || !S.body || S.body.contains(document.activeElement)) return;
+    S.airline = W.airlineSettings(v || ctx.airline || {});
+    render();
+  };
+  window.addEventListener('frame-airline', S.onAirline);
   S.logDoc = tri() ? await ctx.data.get(logPath()) : null;
   S.fleetDoc = await ctx.data.get(FLEET);
   render();
@@ -396,7 +415,9 @@ export async function mount(el, ctx) {
 
 export function unmount() {
   if (!S) return;
+  window.removeEventListener('frame-titled', S.srTitle);
   S.mq?.removeEventListener('change', S.onMq);
+  window.removeEventListener('frame-airline', S.onAirline);
   S.body = null;
   S = null;
 }
