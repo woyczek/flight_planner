@@ -382,6 +382,10 @@ With the network cut, the only reads attempted were:
 - **Tests**: registry.html 26 checks (EC45 and A139 helicopters, ceiling at most 20,000 ft, `ecoFt` 3,000; A400 not a
   helicopter).
 
+## 24 October 2026 — option (not done): the published SIA base also served from the public pages
+
+Serving `sia/base/` like the world synoptic (no token) would make the base readable without any access: it needs a source-by-source licence audit first (SIA, ENAIRE, FAA, openAIP are mixed; personal-licence data must never be public), a Pages step that reads the private data repository with a secret, and about 17–19 MB per AIRAC cycle. For the user's decision; the workflow is unchanged.
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.
@@ -426,3 +430,818 @@ With the network cut, the only reads attempted were:
     ATC instruction; LFCH: P helicopter short flights under protocol) and, for a manual vertex, `accuracyM` (null for
     all 14 today) and `accuracyNote`.
   - **Check**: the user's file of 16:34 (2.0, 418 aerodromes) is accepted as it is.
+- **23 Oct 2026 — the registry's reads in parallel (weight audit of the frame: first GitHub screen at 7.4 s).**
+  - **Cause**: `aircraft()` read the types base, then loaded `registry.js`, whose `load()` read the V2 fpdb, the fleet
+    (V2 fleet when `airline/fleet.json` is absent) and the reference one after the other, each sheet too: four round
+    trips of 0.6 to 0.9 s on Fast 3G after the types base.
+  - **Now**: the scripts, the types base and every source of the registry are asked at once
+    (`AeroDBRegistry.readAll`, started as soon as `registry.js` is there, handed to `create({ raw })`); JSON or V2 `.js`
+    chosen from the tree; the V2 fleet read only when the tree says the V3 fleet is missing.
+  - **Measure** (audit kit of the frame session, `audit_run.py`: fake GitHub serving the real tree of the data
+    repository, Chrome 375 px, CPU ×4, Fast 3G, fresh profile; before = v3 0a0cf3c95, after = this change):
+
+    | GitHub first pass | Before | After |
+    |---|---|---|
+    | Fuel module shown | 7.46 s | 5.70 s |
+    | First synchronisation done | 7.6 s | 5.7 s |
+    | API reads (count, KB) | 9, 381 | 9, 381 |
+    | Types base + registry sources | 2.84 → 6.62 s, four in series | all from 2.78 s, done at 4.82 s |
+
+    The remaining wait is the network's bandwidth (381 KB at Fast 3G) and the frame's own reads before aerodb
+    (reference of the branch, commit, tree, `airline/settings.json`: 2.4 s); the 3 to 4 s aimed at would need lighter
+    files (the types base as JSON, the reference trimmed).
+  - Tests: `test/registry.html` 26 / 26; Fuel › Sheets lists the same entries.
+- **23 Oct 2026 — `.lnmperf` follow-up only where a launcher serves the page.** It started 1.5 s after every opening
+  as soon as the reader could write, so a phone loaded `lnmperf.js` (27 KB) for nothing (it needs `/__setup/lnmperf`).
+  Now it starts only when `FrameData.launcher.detect()` finds a launcher. Bench: through the launcher, `lnmperf.js`
+  loaded; served statically (no launcher), not loaded.
+- **23 Oct 2026 — light index of the aerodromes (`aeroindex.json`).**
+  - **Why**: the first flight entered in Fuel read the zone's whole `aerodromes.json` (France 328 KB, 1,872 records,
+    heliports and private strips included) to find two ICAO codes and the aerodromes along the route.
+  - **Format**: one file per zone and cycle next to the others, compact rows of the aerodromes with an ICAO code only
+    (code, name, position, elevation, runway axis, magnetic variation: what Fuel uses for the route, the corridor's
+    weather and the crosswind). France: 555 rows, 31 KB. Published by `shared/sia_base.js` with the other kinds (its
+    size goes into the manifest); the user's base gets it at its next publication (Settings › Maintenance ›
+    Aeronautical data). A zone without it is read as before.
+  - **Reader**: the code lookup and `aerodromes({ icao })` use it while the full kind is not read; `aerodromes({ bbox,
+    lite: true })` too (Fuel's corridor, one word in `modules/fuel/module.js`); the map keeps the full file (its
+    symbols need the type, the state and the hard runway).
+  - **Measure** (audit kit, `audit_run.py`, CPU ×4, Fast 3G, GitHub mode with the real tree, `aeroindex.json` added to
+    the bench's tree by the same computation): route LFRS → LFML entered in Fuel, points resolved after 5.7 s → 4.0 s,
+    3 API reads 414 KB → 118 KB (manifest, `meta.json`, the index). The map reads `aerodromes.json` when it opens, as
+    before.
+  - **Still to do for the first GitHub screen (5.7 s), on the publication side, in a later lot**: the types base
+    published as JSON by Maintenance's "Publish the aircraft database" (the V2 `.js` is read as a literal, and the two
+    files weigh 135 KB), and the DEFA reference trimmed to the fields the registry uses (registrations, types,
+    callsigns, bases: `references/defa_reference.js` and `aircraft_fleet.js` together about 100 KB).
+
+## 25 October 2026 — procedures (SID, STAR, approaches): consolidation through aerodb only
+
+- **Decision of the user (25 October 2026, word for word)**: « On est d'accord que c'est via aerodb que tu récupères
+  les data ? Donc on parle de consolidation uniquement. Step 1 : simbrief. Step 2 : zip. Step 3 en // eurocontrol.
+  Step 4 : us et reste du monde. » And earlier the same day: « Idéalement pas X-Plane ni Navigraph, mais en fallback. »
+- **Meaning**: procedures enter the suite through aerodb only. A builder (`tools/`, Python standard library only)
+  consolidates every source into one common schema; the result is published to the data repository by AIRAC cycle
+  like the SIA base, cached on each device, and read by the modules (Maps, Fuel) through one API
+  (`AeroDB.procedures`). No module reads a source directly. Each procedure keeps its source, its cycle and its status
+  (official / to be checked / seen in an OFP).
+- **Order**: 1 SimBrief navlog · 2 eAIP zip of the SIA (measured on two aerodromes before generalising) · 3 EUROCONTROL
+  instrument flight procedure data sets, AIXM 5.1.1, in parallel (access request written for the user, no account
+  created by the session) · 4 FAA CIFP (ARINC 424 reader), then open AIP datasets (ENAIRE, DFS, NATS…). X-Plane and
+  Navigraph are the fallback: read locally by the launcher, never copied nor published (`LICENSE.md`).
+- **Proposal for step 1, awaiting the user's reaction (nothing coded yet).**
+
+  **Common schema**, one file per aerodrome and cycle, `proc/<cycle>/<ICAO>.json` (+ `proc/<cycle>/index.json`: ICAO →
+  counts per kind and per status, so the Maps module knows what exists without reading a file):
+
+  ```
+  { schema: 1, icao, cycle, updated_at,
+    procedures: [ {
+      id,            // "LFBD.SID.ARCA1A.RW23.ARCAD" = icao.kind.name.runway.transition (stable key)
+      kind,          // "SID" | "STAR" | "APP"
+      name,          // as published or filed: "ARCA1A", "ILS Z RWY 23"
+      runways,       // ["23"] ; [] when the source does not say
+      transition,    // fix / name or null
+      points: [ { seq, id, lat, lon,
+                  alt: null | { type: "at"|"min"|"max"|"between", ft, ft2? },   // published constraint
+                  planned: null | ft,                                           // OFP only: altitude of the plan, not a constraint
+                  via: null | "DCT"|"<airway>"|…,
+                  leg: null | "TF"|"CF"|"DF"|"AF"|…   // ARINC leg type when the source has it; absent = straight line
+              } ],
+      source: { kind: "simbrief"|"eaip"|"eurocontrol"|"cifp"|"xplane"|"navigraph", ref, cycle, at },
+      status         // "official" | "check" | "ofp"
+    } ] }
+  ```
+  Rules: coordinates in WGS84 degrees `lat`, `lon`; `points` is the flown sequence, drawn as straight segments until a
+  source carries real legs (arcs, holds); two sources for the same key are kept as `sources[]` of one record, the
+  displayed geometry is the one of the best status (`official` > `check` > `ofp`).
+
+  **API** (all answers `null` or `[]` without data, never throwing):
+  - `AeroDB.procedures(icao, { kind, runway, name, transition })` → records of the aerodrome, published base first,
+    then the device's overlay of OFP-seen ones (see below), merged by `id`.
+  - `AeroDB.procedureIndex()` → the cycle's index, or null.
+  - `AeroDB.procedureFromOfp(ofp)` → `{ sid, star }` of one OFP, pure and synchronous, for the current flight (no
+    storage needed): the navlog fixes flagged `is_sid_star`, SID before the top of climb, STAR after the top of descent,
+    names from `general.sid_ident` / `star_ident`, runways from `origin.plan_rwy` / `destination.plan_rwy`, constraints
+    none (`planned` only). Fuel passes the OFP it has already fetched; Maps and the profile draw the result.
+  - `AeroDB.rememberOfp(ofp)` → writes the two records into the device overlay (`procedures-seen/<ICAO>.json`, cache
+    policy, status `ofp`) so that the library fills as the user flies.
+  - The SimBrief user name stays a setting of the user (already in Fuel's identity); aerodb never reads it, Fuel does
+    the fetch.
+
+  **Point to confirm with the user**: the OFP-seen procedures stay **on the device** (overlay), not published to the
+  shared data repository: SimBrief serves them per flight and `V3_ROUTES_PROCEDURES_ETAT.md` § 4 notes that nothing of
+  it is copied into the data repository. The published `proc/` files come from step 2 onward (eAIP, EUROCONTROL, CIFP).
+  If the user wants the OFP-seen ones published too, it is one more flag in the builder.
+
+  **Lot 1 would contain**: the schema and API in `SPEC.md` § 5 quinquies and `INTEGRATION.md`, `frame/aerodb/procedures.js`
+  (mapper OFP → schema, overlay, merge), the aerodb test cases, Fuel's one-line hand-over of the OFP, Maps' drawing on
+  the map and the profile (agreed with the Maps session), CHANGELOG entry, four-language manual page if the Maps page
+  changes.
+- **25 October 2026 — answer of the user on the OFP-seen procedures** (« On n'aspire pas depuis simbrief, mais le dépôt
+  data est privé, donc on peut synchro. C'est une source secondaire (même simbrief donne des routes non
+  authoritatives). »):
+  - No harvesting from SimBrief: aerodb only records what the user's own OFPs contain, one flight at a time (no loop,
+    no bulk request on SimBrief).
+  - What is recorded is **synchronised through the data layer to the private data repository** (the overlay is no longer
+    device-only): `proc/seen/<ICAO>.json`, status `ofp`, so the user's other devices have it.
+  - **Secondary source, lowest precedence**: in the merge, `official` > `check` > `ofp`; an OFP-seen procedure never
+    replaces another one, and the interface words it as "seen in an OFP, not authoritative". Never in a public site
+    (Pages): the repository stays private, which `LICENSE.md` must keep saying.
+  - Supersedes the proposal's "stays on the device" point; `rememberOfp` writes with the synchronised policy.
+  - Names kept: the seen ones are in `proc-seen/<ICAO>.json` (not `proc/seen/`, so that `proc/` stays one read-only
+    `reference` prefix for the published cycles).
+- **25 October 2026 — step 2 trial, eAIP of the SIA (AIRAC 2026-10-01), measured on LFBD and LFAV** (hosts allowed by the
+  user the same day; nothing written in the repository but this entry).
+  - **Layout**: each aerodrome page `FR-AD-2.<ICAO>-fr-FR.html` (710 KB for LFBD) lists its PDFs under
+    `Cartes/<ICAO>/` (72 for LFBD, 8 for LFAV). No zip needed to find them: the page and the menu
+    (`FR-menu-fr-FR.html`, 2.3 MB) give the list; the archive stays an option for a one-shot download.
+  - **`AD_2_<ICAO>_DATA_01.pdf` ("POINTS / REPERES ESSENTIELS")** is only the *pool* of fixes used by the aerodrome's
+    procedures: identifier, coordinates (or "REF ENR 4.4/4.1" for en-route fixes already in the base), columns RNAV /
+    CONV and SID / STAR / IAC. No sequence, no procedure name, no altitude. Useful for coordinates of the `BDnnn` /
+    `FAVnn` fixes, not enough by itself.
+  - **`AD_2_<ICAO>_DATA_SID_RWYxx_RNAV_CODE_01.pdf`, `…_DATA_STAR_RWY_ALL_RNAV_CODE_01.pdf`, `…_DATA_RWYxx_RNP_CODE.pdf`**
+    are the real source: ARINC-style coding tables, one row per leg: procedure identification ("ROYAN 6P", "CNA 2L",
+    "INA BOBMA"), path terminator (IF, CF, DF, TF), waypoint, fly-over, magnetic and true direction, distance, turn
+    direction, minimum and maximum altitude, maximum IAS, navigation accuracy, vertical angle for RNP. One page, 55 to
+    76 KB each; LFBD has 4 SID/STAR tables and 12 RNP ones, LFAV 2 RNP ones.
+  - **Not coded**: conventional SID / STAR / IAC (ILS, VOR) exist only as charts and instruction texts (`…_SID_…_INSTR_01.pdf`):
+    out of reach of a table extraction, left for steps 3 and 4.
+  - **Extraction**: `pdftotext -layout` gives clean text; a parser keyed on the header row is plausible. Measured
+    caveats: the column layout differs between SID/STAR and RNP tables (two parsers); a hyphen is written with two
+    different characters; a cell can be empty (LFAV RWY29 `TF VADEP` has no magnetic direction); a table can break
+    across pages (header "AMDT" text inside the body). Coordinates must come from `DATA_01` or from the base's points
+    (`AeroDB.coords`); a fix found nowhere is kept without coordinates and marked.
+  - **Constraint to settle before coding**: `pdftotext` is not the Python standard library; `tools/report-vfr/` uses the
+    optional `pypdf`. Options: same optional dependency (stated in the tool's README), or a small pure-Python PDF
+    text reader (these PDFs are text-based, one page); to be decided with the user.
+  - Status of such procedures: `check` ("to be verified"), source `eaip`, cycle of the eAIP; amendment dates on the pages
+    differ from the AIRAC (LFBD 16 May 24, LFAV 29 Dec 22), so the record keeps the page's own date.
+
+## 25 October 2026 — lot 1, procedures from the SimBrief OFP (`procedures.js`, API, bench K1)
+
+- **What was built**: `frame/aerodb/procedures.js` (pure: `fromOfp`, `merge`, `filter`, `mergeSeen`), `AeroDB.procedures`,
+  `procedureIndex`, `procedureFromOfp`, `rememberOfp`; declaration: read `proc/` (reference), read and write `proc-seen/`
+  (merge: newest record of an id); Fuel hands its OFP to `rememberOfp` and stores `route.procedures` in the current flight;
+  Maps draws the SID / STAR in purple over the route. Schema and rules: SPEC § 5 quinquies.
+- **Choices**: `procedureFromOfp` is asynchronous (it loads `procedures.js` on first use, like `aar.js`), not synchronous as
+  proposed; a procedure from an OFP never replaces a better source; an OFP read again writes nothing; `rememberOfp` returns
+  null on a reader that does not write (Fuel then uses `procedureFromOfp`).
+- **Limits, stated**: no real OFP was available (the user cannot export a JSON from a phone): the OFP of the bench is built
+  from SimBrief's documented fields (`general.sid_ident`, `navlog.fix[].is_sid_star`, `origin.plan_rwy`…) and must be
+  checked on a first real flight; names filed by SimBrief ("ROYAN6P") and published ones ("ROYAN 6P") match after removing
+  spaces, other spellings will not; the vertical profile does not draw procedures yet.
+- **Verified**: bench `frame/aerodb/test/procedures.html` 14 / 14, case K1.
+
+## 25 October 2026 — lot 2, step 2: the eAIP coding tables (`tools/proc_eaip.py`)
+
+- **Decisions of the user** (relayed, word for word): « 1 lecteur pdf, à prévoir pour l'appli (liens vers cartes VAC). Pypdf sur
+  le poste. » `pypdf` is the optional, declared dependency of the workstation builder only (a clear message when missing), never
+  of the launcher or the page; the PDF reader of the app is a frame primitive, decided later.
+- **Built**: the builder (parsers of the SID / STAR "RNAV" tables and the "RNP" approach tables, of the DATA pages' coordinates; the
+  aerodrome file and the cycle index; chart addresses and the VAC address), read at the rows of text pypdf gives (grouped by
+  position; the RNP pages are rotated in the text flow, the orientation is read from each fragment's matrix); fixtures
+  `frame/aerodb/test/fixtures/eaip/` (LFBD SID RWY 23, STAR, RNP 23, DATA 01 / 02, LFAV RNP 11 / 29, DATA 01); cases K2, K3.
+  `procedures()` places the points without position from the SIA base.
+- **Measured on the real pages (AIRAC 2026-10-01)**: LFBD 38 procedures (12 SID, 6 STAR, 20 approaches by transition) from 10
+  pages, 45 warnings; LFAV 6 approaches from 2 pages, 1 warning (the magnetic course of TF VADEP is missing on the page). Whole run:
+  about 15 s with the downloads. The warnings: fixes without position until the base resolves them (37), `CA` legs without fix
+  (4: the SID RWY 29 start), rows of the RNP AR and "VPT" pages whose digits are spaced out ("- 1 . 0"; 3 rows), one approach
+  without runway point (RNP A VPT). A typo of the source is kept visible: `IDB23` for `IBD23` in the LFBD RNP 23 page (the
+  transition LIBRU / DIRAX end at an unknown fix; the join with the final approach is therefore not merged).
+- **Limits**: the amendment date of a page differs from the AIRAC (LFBD 16 May 24, LFAV 29 Dec 22): `source.at` keeps it. No
+  conventional procedure. The SID names of the SIA ("ROYAN 6P") become ids without spaces (`ROYAN6P`) to match SimBrief's.
+- **Real OFP** (the user's, fetched once on 25 October 2026 at their request; the user name is in no file): the field names of
+  lot 1 were right; one defect found and fixed: `sid_trans` / `star_trans` are `{}` when there is none (they became the text
+  "{}"). Bench: 18 checks including the real SID LUGE4N (SUBAK, BOBRI) and STAR LERG1R (LATAM, ARDEG, OSGOX, RIKSI); fixture
+  trimmed to the fields read. The SID of this OFP lists only two fixes: SimBrief gives the named fixes, not the runway legs.
+- **Whole France**: `--all` lists the 141 aerodromes of the eAIP menu (`icao_list`); an aerodrome without `…CODE` pages writes no file.
+- **VAC address**: `…/media/dvd/eAIP_01_OCT_2026/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.<ICAO>.pdf` answers 200 (PDF) for LFBD and
+  LFAV and 404 for an unknown code; the builder asks with HEAD and keeps `charts.vac` only if found.
+
+## 25 October 2026 — step 3, EUROCONTROL: assessment and request, no converter yet
+
+- **Hosts**: `ext.eurocontrol.int` (AIXM Confluence) answers 403 Cloudflare to the cloud container whatever the headers; `www.eurocontrol.int`
+  and `www.ead.eurocontrol.int` answer. The pages of the data sets were therefore not read; their content is known from search extracts only.
+- **Found**: the EAD Agreement route carries charges and third-party royalties (page read in full): not suited. The AIXM Confluence
+  data sets (Procedures, AIXM 5.1.1, snapshot / baseline, checksums, REST) may be open; terms and scope unknown.
+- **Decided**: no converter is written without a real AIXM 5.1.1 sample (no simulated input). `frame/aerodb/EUROCONTROL_REQUEST.md`
+  carries the assessment, the planned element mapping and the draft request for the owner to adapt and send; no account was created.
+- **Publishing**: the command for the eAIP procedures is in `INTEGRATION.md`; it is run by the owner (the relay's rule: the session does not
+  publish to the data repository).
+## 25 October 2026 — step 4, FAA CIFP (`tools/proc_cifp.py`)
+
+- **Source read**: `https://aeronav.faa.gov/Upload_313-d/cifp/CIFP_261001.zip` (cycle 2610, effective 1 October 2026): `FAACIFP18` (ARINC 424-18,
+  396,924 records of 132 characters), the readme, the disclaimer, `IN_CIFP.txt`. The server answers 200 to a HEAD request for any file name
+  (empty), so existence is checked by downloading. The next cycle (2611, effective 29 October 2026) is announced in the readme dated 7 October.
+- **Terms** (disclaimer and readme, read in full): the CIFP is a product of the FAA, "not copyrighted under Title 17 U.S.C."; the FAA asks
+  product developers to include the warranty disclaimer (10 U.S.C. 456; "as is") and, as a recipient, to notify its customers and the FAA of
+  any error found. The builder writes the notice in each file and `LICENSE.md` (FAA row) records the condition.
+- **Offsets verified on the real file** (0-based, not from memory): airport 6:10, subsection 12, identifier 13:19, route type 19, transition
+  20:25, sequence 26:29, fix 29:34, region 34:36, section 36:38, continuation 38, description 39:43 (fly-over at 40, missed-approach point at 42),
+  turn 43, RNP 44:47, path terminator 47:49, course 70:74 and length 74:78 in tenths, altitude description 82, altitude 1 84:89 and 2 89:94
+  (one blank between the code and the digits), speed limit 99:102, vertical angle 102:106. The altitude codes other than blank, `+`, `-`, `B`
+  are left out rather than guessed.
+- **Choices**: records are compact (no indentation) because there are 275,000 points; the shared fix of a transition and the final approach
+  appears once; a SID's or a STAR's transitions are separate records holding only their own legs, so that a flight's SID name plus its transition
+  can be joined by a module without duplicating the common route 40 times; `official` status (the data is the FAA's, unchanged), the conversion
+  limits being in `warnings`.
+- **Measured**: see SPEC § 5 quinquies. KSEA check (SeaTac): runway 16C threshold at 47.4638, -122.3110, 484 ft, -3.00 degrees.
+- **Not done**: the rest of the world (open AIP data sets: ENAIRE, DFS, NATS…) is the next inventory; X-Plane / Navigraph stay the local fallback and
+  are not read by anything yet.
+
+## 25 October 2026 — EAD Basic access of the owner: evaluation (`EAD_BASIC.md`)
+
+- **Read** (public pages only; no login, no credential seen): EAD Basic is a consultation tool, "not connected to the EAD operational
+  database", information "shall not be used for operational purposes"; its **AIP Library** lists AIPs by State, type (AIP, AMDT, SUP, AIC,
+  Charts), part (AD, ENR, GEN) and date, and opens the PDF. It holds documents, not data sets (no AIXM). States covered and freshness: not
+  known before login.
+- **The code repository is public** (`private: false`, Pages on): no State AIP PDF may be committed there, not even as a test fixture. This
+  corrects the relay's first suggestion of `frame/aerodb/test/fixtures/ead/<ICAO>/`; only extracted text rows of one table (a short
+  excerpt, as for the SIA) can be fixtures, if the State's terms allow it.
+- **Plan** (not coded before a real page): layout registry with a detector, `--pdf-dir` mode, status `check`, `source.kind: 'ead-basic'`.
+  Which States code their RNAV / RNP procedures in AD 2 tables is **not known**; the checklist is in § 2 of the document.
+
+## 25 October 2026 — the real-OFP fixture in a public repository: rounded
+
+- **Question** (relay, after the correction on State AIP PDFs): `frame/aerodb/test/fixtures/ofp_lfrs_lfml.json` held 14 navlog fixes of one flight
+  with the coordinates SimBrief serves (6 decimals; SimBrief's data derives from Navigraph) and the OFP's generation time, in a public repository.
+- **Decision of the user**: « Arrondi, oui » (the relay's recommendation to drop the generation time accepted in the same word).
+- **Done**: every coordinate of the fixture (fixes, departure, arrival) rounded to 2 decimals (about 1 km); `params.time_generated` removed (the
+  reader then dates a record from the moment it reads the OFP, which no test checks); nothing else changed (identifiers, SID / STAR names, runways,
+  flags, altitudes of the plan, `params.airac`). The bench's checks on the real OFP read identifiers, order and cycle only.
+
+## 25 October 2026 — DFS licence: request ready to send (`DFS_LICENCE_REQUEST.md`)
+
+- **Word of the user** (relayed): « Dfs : procédure. » read by the relay as: follow the licence procedure, the owner sends the request drafted in
+  `AIP_OPEN_DATA_INVENTORY.md`. If that reading is wrong, the owner corrects it in the session.
+- **Address found**: `data@dfs.de`, the contact on every page of DFS's *REST-API aip.dfs.de/datasets* documentation (edition 10 January 2023).
+  The legal notice names no address; `www.dfs.de` is refused to the container.
+- **Done**: final text in English and German with the fields to fill, the four uses asked for (download per cycle, automatic conversion, storage
+  only in the private repository, a one-procedure sample in the public repository only if allowed) and the plan on receipt of the licence,
+  including the REST sequence (metadata, amendment 0, file name, sha512). Nothing downloaded, converted or stored.
+
+## 26 October 2026 — VFR reporting points twice in the published base: the cause is the merge, not the SIA parser (relay of the cloud)
+
+- **Word of the user** (26 Oct, relayed): "Correctif parser report : à spawner sur un agent « outils déconnectés »." The finding came from lot
+  `v3-maps-report-vfr` (Map DECISIONS, 25 Oct): 1,772 entries in France's `vrp.json`, 674 bare (id = name = code, 5 decimals), 554 with an exact
+  prefixed twin; the Map hides them at reading (`dedupeVrp`), the source remained.
+- **Cause, measured on the files of the data repository** (cycle 2026-10-01): the XML_SIA holds **1,098** `NavFix` with `<NavType>VFR`, all with a
+  prefixed `Ident` (`MM-CV`, `HM-H-EH`), unique, 4 without `Description`; `parseXmlSiaVfrPoints` returns exactly these. `sia/openaip/fr_rpp.geojson`
+  holds 675 reporting points (`name` = code, `compulsory`, 5 decimals); `AeroSources.geojson` turns each into `{ id: name, name: name }`; after the
+  merge of exact duplicates (same id within 0.04 x 0.06 degrees) 674 remain; 1,098 + 674 = 1,772, the published count. `AeroSources.merge` compared the
+  identifiers only: "N" is not "QT-N". The "other forms" feared in the brief (a second tag, a second file of the export) do not exist: the real XML
+  was read, no extract needed.
+- **Fix at the source** (`shared/aero_sources.js` `merge`, `vrp` kind only): an incoming point is dropped when the list has a point whose bare code
+  (prefix of the aerodrome and the "H-" of heliports removed, case and spaces ignored) equals its code within 0.5 NM (the radius of the Map's
+  `dedupeVrp`; the two positions differ by metres, two aerodromes sharing a code lie miles apart). The SIA is read first, so its prefixed id (carries
+  the aerodrome and "-H-"), its description and its 6-decimal position stay. Replayed on the real files: 1,772 -> 1,116; 18 openAIP points remain
+  (e.g. "S" 1.18 NM from "BG-S", "N1", "E2", "SW", "SE", "W" near 47 N 5 E), for which no SIA point has the same code nearby: kept, they are not twins by
+  this rule. Not changed: the SIA parser, the openAIP reader, the formats, any other kind (navaids, points).
+- **Parser version 17** (`COMPAT` stays 14: the format is unchanged, a base of 14 to 16 is read and marked `outdated`). Every published file carries
+  `parserVersion`, so the next rebuild rewrites them all once. Procedure for the owner: INTEGRATION, "Republication of the base after a parser change".
+- **Python tools**: no tool of `tools/` reads the XML_SIA's reporting points (`tools/vfr_import.py` reads the published `vrp.json`; `tools/aero_fetch.py`
+  only downloads the openAIP file): nothing to change there.
+- **Test**: K5 (`frame/aerodb/test/vrp_sources.html`): XML_SIA fixture of the real shape (prefixed, heliport, no description, non-VFR) and an openAIP
+  fixture (twins, a code shared by two aerodromes, a point with no twin, a point read twice); 14 checks; red on the previous code (12 entries instead
+  of 7, parser version 16). Not tested: the user's real files in the suite (they are not in this repository); they were replayed by hand (above).
+
+
+## 26 October 2026 — the Data screen and the dedicated data application: specified, not coded (relay of the cloud)
+
+- **Words of the user** (26 Oct, relayed): « Envisager une page dédiée régénération des données, sans passer par la v2 (récupérer
+  fichiers en cache local, compiler, pousser, nettoyer). L'appli est en bonne voie. On peut imaginer une appli dédiée au parsing et à
+  la compilation de toutes ces données : iOS, android. Chantier dédié. » — `V3_SPECIFICATION.md` § 10.18 and § 10.19; then « Go »
+  (documentation only: no code, no test written).
+- **Done**: `docs/technique/V3_DONNEES_REGENERATION.md` (the screen) and `docs/technique/V3_APP_DONNEES.md` (the project file of the
+  application), both from an inventory read in the code. Nothing was published or built.
+- **Inventory** (17 sources; the table is in the first document): five unrelated chains today (the V2 Maintenance page, command lines, the
+  launcher's aircraft thread, GitHub Actions, git by hand); **7 sources have a step with no tool** — the SIA ZIP (an order with account and
+  licence: never fully automatable), NATS, the DIRCAM PDF, the VAC PDFs, the FAA CIFP download, the typed eAIP address, and the **push of
+  `proc/`** (outside `data_sync.POOL`; also the commit of `mora.csv`). Nothing cleans `proc/<cycle>/`, `.proc_cache/` or the `report-vfr`
+  caches; the NAT tracks (twice a day) ride the base.
+- **Decisions taken in the documents** (for the ergonomics session to confirm where marked):
+  1. The screen is a **frame screen `#data`** (like `#roadmap`) drawn by aerodb (`frame/aerodb/regen.js`), reached from a new button of the
+     Administration card (settings owns the button); *to confirm*: screen rather than module.
+  2. Four verbs per row and "All", the states *fetched / compiled / published* compared with the cycle in force and the builders'
+     `parserVersion`; V2's age rules reused (AIRAC, X-Plane label, NAT 12 h, otherwise 28 days); a manual download is a "waiting for you" row
+     with one link and one gesture, never a command.
+  3. **One job runner in the launcher** (`/__setup/regen/state`, `job`, `put`, `publish`, `clean`) modelled on the aircraft thread; raw sources
+     read with the existing static `data/` GET; the frame's `/__setup/batch` is *not* used for outputs (trigram, 5,000 cap, text only, copies
+     into IndexedDB); **the screen calls it through a new `ctx.launcher` adapter** (the frame agent extends the adapter and its guide), not a
+     `fetch` in a module — the direct calls of `settings.js` and `lnmperf.js` stay a known exception.
+  4. **The runner contract** (`state`, `can`, `run`) separates the screen from whoever does the work: the launcher runner is lot D2; the
+     dedicated application's device runner is the same screen on another runner.
+  5. The base's compile moves out of `shared/sia_base.js` (page, IndexedDB, Chromium folder handles) to **pure builders in a worker** (lot
+     D5), checked by a golden test against V2's output; the Python builders stay jobs of the launcher.
+  6. SPEC § 6 invariants 1 and 4 will be amended in lot D1 (the API never writes the base; the Data screen's builders do, on a workstation, on
+     the owner's command; a second exception to "no interface text" after the `.lnmperf` card). SPEC not edited today: the amendment ships with
+     the lot.
+  7. Application: the Data screen on a device runner; a fourth application profile in the frame; v1 on a phone = SIA base, NAT, FAA CIFP; eAIP,
+     VAC, aircraft types renounced there; **measure first (lot P0), run inside Pilote as a lab, split into a shell of its own only with the
+     numbers**.
+- **Facts measured that day** (container, through the allowed hosts): the SIA ZIP of AIRAC 10/26 is 5.6 MB (product page, 0.00 €, cart); the FAA
+  CIFP ZIP 9,112,585 bytes without any `Access-Control-Allow-Origin`; `proc_cifp.py` replayed (3,070 aerodromes, 3,071 files, 47 MB, 4.3 s) and the
+  tree packed in git to **3.64 MiB**; the SIA eAIP answers without CORS; the eAIP folder of cycle 2611 returned 404 three days before it; the
+  Terrarium tiles answer `Access-Control-Allow-Origin: *`.
+- **Questions left to the user** (screen document § 5, application § 6): where the list of published zones lives; installing `pypdf` from the
+  launcher; NAT tracks published with the site; unattended CIFP in Actions; the licence of X-Plane content in the published zones; cycles kept in
+  `proc/`; frame screen or module; who may push; whether the V2 studio pages stay on `v3`; v1 scope of the phone; Pilote first or a shell; iOS then
+  Android; the SIA order by hand on a phone; token and repository; a cloud runner for the PDF rows; cellular data.
+- **Not done**: no route, no screen, no builder port; no test; `frame/aerodb/SPEC.md` and `INTEGRATION.md` unchanged (they change with lot D1 and
+  D2).
+
+## 26 October 2026 — EAD preferred over DFS: one-click design (`EAD_BASIC.md` § 5)
+
+- **Word of the user**: « Dfs en standby à beaucoup plus tard. Je privilégie EAD (eurocontrol), mais je le veux en « facile » à utiliser (1 clic et de l'autom
+  derriere). » The DFS licence request stays prepared and unsent.
+- **Read** on the public login page: the login is an AJAX `POST /fwf-eadbasic/ajaxlogin/ajax_security_check.jspx` (`j_username`, `j_password`),
+  JSON answer, no captcha: scriptable with the standard library. The AIP Library (JSF) is not visible without login.
+- **Design**: a Maintenance button → launcher job (login with the owner's credentials from the launcher's secrets store, search, download AD 2 PDFs
+  into the local cache only, layout registry + pypdf, `proc/<cycle>/…`, plan then result, synchronisation); same rules as the other
+  jobs; later once per AIRAC cycle. Credentials never in the repository, a message or a log; the session never logs in.
+- **Not coded**: the terms of EAD Basic on automated access are unknown (question drafted for `ead.service`), no State layout has been seen, and the
+  AIP Library calls need real pages. Two ways to get them are offered to the owner (manual pages, or a read-only probe he runs himself).
+
+## 26 October 2026 — the EAD Basic probe (`tools/proc_ead.py --probe`)
+
+- **Word of the user**: « Sonde, UK, EGGL » — the probe option of § 5, for the United Kingdom, aerodrome read as EGLL (EGGL does not exist).
+- **Built**: a read-only explorer (standard library): login by the page's own AJAX form, home page, AIP Library form, search attempt, documents listed;
+  no PDF downloaded; password at the prompt or `EAD_PASSWORD`, never stored; output sanitised (password, user name, ViewState, session ids, mails, long
+  tokens) and refused if a secret slipped in; only `www.ead.eurocontrol.int` can be called (a local address only for the test, through an
+  environment variable that accepts nothing but `http://127.0.0.1`). The session never logs in.
+- **Tested** by case K6: the reading helpers on a hand-built form, the sanitising, and the whole flow against a local fake that follows the shape of the
+  public login page; **never against the real connected screens**, so a first run may stop at a step the report will name.
+
+## 26 October 2026 — the data laboratory (lot P0 of the data application): built, measured on Chromium, to be measured on the phone (aerodb, relay of the cloud)
+
+User, 26 Oct: « Go. Tu inclus toi-même les injecteurs et mesures dans le lab. Je m'organise pour download le SIA « payant », tu trouves toutes les autres
+URLs. » — then, relayed: « Ce fichier arrive chez l'utilisateur dans « download » (poste et/ou téléphone) pour l'import. » The user also dropped the real SIA
+export of cycle 2026-10-01 (`export_xml_bd_sia_2026-10-01-v02.zip`, 5,838,952 bytes) for local calibration: it was read in place or from a scratchpad copy,
+**never** copied into the repository, a fixture or the data repository; the copy was deleted at the end.
+
+- **What it is**: a temporary administration screen `#datalab` of the frame, drawn by aerodb (`frame/aerodb/lab.js`, `lab.css`), Full level only, reached by
+  the "Data laboratory" button of the Administration card (settings, `admin_links.js`; its decision is in `frame/settings/DECISIONS.md`). It measures **on the
+  owner's iPhone, in the home-screen app served by GitHub Pages**, whether the base can be fetched, parsed, compiled and published from a phone. It writes
+  nothing but its report (`cache/lab/report.json`, policy `cache`) and the trial files the owner publishes by the button (`lab/essai-…`). Nothing of it enters
+  the base or the modules. SPEC § 5 sexies.
+- **Files**: `lab_sources.js` (the table: 15 rows = the 17 sources of the table 1.2 of `V3_DONNEES_REGENERATION.md` without 11 X-Plane and 16 aircraft types,
+  with address, size, licence, human gesture, chain; the AIRAC derivations), `lab_xml.js` (the tag-based streaming XML reader), `lab_zip.js` (zip read as a
+  stream), `lab_run.js` (modes b and c, shared summary), `lab_worker.js`, `lab_measure.js` (device, address test, picker read, mode a, chains, trial
+  publication), `lab_report.js` (the report text), `lab.js` + `lab.css` (the screen), `test/lab.html` + `test/fixtures/lab/` (K8).
+- **The frame's own file touched, minimally** (the frame agent to review): `frame/app.js` — `LAZY.datalab`, `ROUTES.datalab` / `SCREENS` and `renderDatalab`
+  (about 45 lines: it gives the screen an adapter that reads `sia/base/` and writes `cache/lab/`, the level, the launcher survey, and **the GitHub transport
+  of the device** (`FD.github()`: head / tree / commit) — never the token). `frame/settings/admin_links.js` — one entry. `tools/csp_policy.py`, `tools/launch.py`.
+- **Decisions**:
+  1. **Three modes of the SIA zip, measured separately, run in the order c, b, a** (the hungriest last: a killed tab keeps what was measured; a guard
+     `localStorage['sogLab:run-started']` is set before each run, updated at each step, erased after; the next opening says "the run X did not finish, last
+     step Y" and writes it in the report). (a) main thread as V2: `ZipStore.read` → `parseXmlSiaAirspaces`, `parseXmlSiaVfrPoints`, `DOMParser` on the AIXM,
+     `parseAixmAirspaces`, `parseAixmObstacles`, `SiaAero.parseAixm`, then `SiaBase.splitZones` (one zone) and a JSON per kind. (b) a `Worker` (no `DOMParser`):
+     `shared/zip_store.js` loaded **unchanged** with `self.window = self`, entry inflated whole, text decoded whole, read by the tag reader in 1 MB slices.
+     (c) a `Worker`, **zip read as a stream**: `lab_zip.js` reads the central directory at the end of the `File` (`slice`), an entry is
+     `File.slice().stream()` → `DecompressionStream('deflate-raw')` → `TextDecoder` in streaming mode → the reader, so neither the archive nor an entry is
+     ever in memory (the answer to "stream if `zip_store` allows": it does not — `ZipStore.read` holds the whole archive and inflates an entry into one
+     buffer — so c has its own small reader). c also runs an inflate-only pass so that the time splits into inflate and parse.
+  2. **The XML reader is a state machine on tags, not a parser** (no entities, namespaces or DTD; comments, processing instructions and CDATA skipped): it
+     follows the depth, counts the records at the record depth (4 for XML_SIA, 2 for AIXM 4.5), and reads whole only the blocks of the kinds
+     measured, with the page readers' own rules: spaces (XML_SIA `Espace` + `Partie`; AIXM `Ase` + `Abd`, arcs counted by `expandAixmArc`'s step rule but not
+     built), VFR points, aerodromes (`Ahp`), navaids (`Vor` / `Dme` / `Tcn` / `Ndb` / `Ils` merged as `SiaAero.parseAixm` does), points (`Dpn`), obstacles
+     (`Obs`, cells of 1°). Encoding from the prologue (XML_SIA is **ISO-8859-1**, AIXM 4.5 is UTF-8). **Golden test (K8)**: on the synthetic fixtures the
+     reader gives the same results as `parseXmlSiaAirspaces` / `parseXmlSiaVfrPoints` (identical JSON), `SiaAero.parseAixm` (aerodromes, navaid kinds and merge
+     flags, points, obstacles), `parseAixmObstacles` and `parseAixmAirspaces` (type, name, key, parts, outline points) **at chunk sizes 1, 7, 13, 64, 100, 1000
+     and whole**; **and on the real 2026-10-01 export, run locally, every count is identical across the three modes** (below).
+  3. **Sources**: every address was checked from the container with `curl` and an `Origin` header (table below). The container's egress policy blocks eight
+     of the hosts (HTTP 403 on CONNECT: not routed around); those addresses come from the code (`tools/aero_fetch.py` etc.) or, for DIRCAM, from a search, and
+     are marked unverified; **the phone is the measure**. Where an address depends on the cycle it is derived (`cycleOf`, `eaipBase`, `cifpName`, `siaPage`),
+     with a cycle selector (2610 in force, 2611 next). The eAIP folder is removed after its cycle (404 for 2607 to 2609) and appears days before the next
+     (404 for 2611 today); the FAA CIFP of 2611 (`CIFP_261029.zip`, 9,113,631 bytes) is already there.
+  4. **"Test the address" is a `fetch` from the page** with a timeout, a per-source read cap, no cookie. The diagnosis: `csp` (a `securitypolicyviolation` event
+     on `connect-src`), `offline`, `cors` (the same URL fetched with `mode: 'no-cors'` resolves: the server answers but does not let the page read), `unreachable`
+     (nothing answers), `timeout`. `Access-Control-Allow-Origin` cannot be read by a page (it is not an exposed header): "allowed" means the read succeeded.
+     Content-Type, Content-Length and Last-Modified are readable and reported. When the body is whole, the **same chain** as "From a file" runs on it: CIFP
+     (stream `FAACIFP18`, count the 132-column records, read only the **PA** airport reference records), JSON (`JSON.parse` time, shape), HTML (title, links, PDF
+     links: "PDF not readable in the page without pypdf" is stated for the eAIP coding tables and the VAC), binary magic (PDF, GRIB, PNG).
+  5. **CSP**: the 12 hosts of the table are added to `connect-src` (`tools/csp_policy.py`), because the test is meaningless otherwise (the page would block
+     before the server answers). A security decision per host (`AUDIT_SECURITE_2026-10-07.md` M2): **to review when the laboratory goes** or keep only the hosts
+     the data application retains after the measures. A test hook, `localStorage['sogLab:urls']` = `{ id: address }`, replaces a table address (a fake local
+     server in the tests: Playwright's `route.fulfill` adds CORS headers by itself, so it cannot stand for a server without them).
+  6. **Downloads** (user's precision): on a workstation with the launcher, "From Downloads" lists by the **existing** `GET /__setup/downloads?glob=…&info`
+     and takes the newest by the **date in the name, then the version**, then the file; the only launcher change is that `download_patterns()` also reads the
+     `downloads:` patterns of `lab_sources.js` (`export_xml_bd_sia_*.zip`, `CIFP_*.zip`, next to NATS's `EG_*_DS_*_XML.zip`): the route refuses a pattern no source
+     declares. On Linux `fnmatch` is case-sensitive (the SIA's real name is `…_SIA_…`, the user's copy `…_sia_…`): on Windows it is not. On a phone (Pages, no
+     launcher) there is the picker (`accept` by source): **iOS cannot open a given folder** — the line says "Files › Downloads" in four languages and the help says so.
+     The name is checked (`export_xml_bd_SIA_<yyyy-mm-dd>-v<nn>.zip`, `CIFP_<yymmdd>.zip`), the cycle read from it; a wrong name is said and the file is still
+     measured. The time to read the file from the picker is measured as a stream and as an `ArrayBuffer` (the stream first: the second read may be cached).
+  7. **Memory**: `performance.memory` (Chromium, main thread only; **not available in a Worker**), sampled between steps (a synchronous step such as the DOM parse
+     hides its own peak: stated), and `measureUserAgentSpecificMemory` when the page is cross-origin isolated (it is not on Pages). **Safari exposes neither**: the
+     report then says "not measurable on this browser" and keeps the trace of survival. `navigator.deviceMemory` is also absent on Safari: reported as "not exposed".
+  8. **Trial publication** by the data layer's GitHub transport: asks first (`ctx.ask`, names the repository), then **two commits** — `lab/essai-<date>.json`
+     (107 bytes) and `lab/essai-<date>-bloc.json` (filler JSON of 0.5, 2, 5.3 or 10 MB: 5.3 MB is the size of the zone `fr`), measuring head, commit, total time and
+     the API's error and status; a conflict is retried once. "Clean" lists the tree, removes the `lab/essai-*` files in one commit. Greyed with its reason without
+     repository and token, and when offline. The filler holds no data (the SIA's licence).
+  9. **The report is in English** (read by the session, pasted), dated, with a device block and one entry per run; kept in `cache/lab/report.json`, reloaded at
+     opening; capped at 300 entries.
+- **Sources found and what `curl` answered** (26 Oct 2026, Origin header sent; "no CORS" = no `Access-Control-Allow-Origin` in the answer):
+
+  | # | Source | Address in the table | `curl` |
+  |---|---|---|---|
+  | 1 | SIA France (zip: a human gesture) | `https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/donnees-aeronautiques-xml-airac-<nn>-<yy>.html` | 10-26: 200, 63,728 B; 11-26: 200, 63,227 B; no CORS |
+  | 2 | GeoNames | `https://download.geonames.org/export/dump/FR.zip` | host blocked by the container's policy (403): unverified |
+  | 3 | MORA tile | `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/5/16/11.png` | 200, 87,345 B; **`Access-Control-Allow-Origin: *`** (GET; the HEAD answer has none) |
+  | 4 | DIRCAM MIAM ENR 5.7 | `https://www.dircam.dsae.defense.gouv.fr/images/Stories/Doc/MIAM_OACI/MIAM_OACI_ENR%205.7.pdf` | host blocked; the address is the one a search returns (the indexed copy says AMDT 10/24, 05 SEP 24): unverified |
+  | 5 | UK Mil ENR 5.2 | `https://www.aidu.mod.uk/aip/pdf/enr/ENR-5-2.pdf` | host blocked (also `aidu.mod.uk`): unverified |
+  | 6 | NAV CANADA | `https://www.navcanada.ca/en/aeronautical-information/operational-guides.aspx` (the page: the dated `dah<yyyymmdd>.pdf` is scraped from it) | host blocked: unverified |
+  | 7 | openAIP | `https://s3.openaip.net/openaip-system-exports/fr_asp.geojson` | host blocked (a search finds no documentation of the bucket): unverified |
+  | 8 | ENAIRE | `https://aip.enaire.es/AIP/` | host blocked: unverified |
+  | 9 | FAA ADDS | `https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Special_Use_Airspace/FeatureServer/0/query?where=1%3D1&outFields=*&f=geojson&resultOffset=0&resultRecordCount=250&maxAllowableOffset=0.0005&geometryPrecision=5` | host blocked: unverified |
+  | 10 | NATS UK (zip: a human gesture) | `https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/` | host blocked: unverified |
+  | 12 | NAT tracks | `https://nms.aim.faa.gov/datanat/nat.json` | host blocked: unverified |
+  | 13 | VAC chart (LFBD) | `https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_01_OCT_2026/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.LFBD.pdf` | 200, 548,604 B; no CORS |
+  | 14 | eAIP France menu | `…/media/dvd/eAIP_<DD>_<MON>_<YYYY>/FRANCE/AIRAC-<yyyy-mm-dd>/html/eAIP/FR-menu-fr-FR.html` | 2610: 200, 2,324,336 B, no CORS; 2611: 404 (626 B); 2607–2609: 404 |
+  | 15 | FAA CIFP | `https://aeronav.faa.gov/Upload_313-d/cifp/CIFP_<yymmdd>.zip` (date = the AIRAC effective date) | 2610 `CIFP_261001.zip`: 200, 9,112,585 B, `Accept-Ranges: bytes`, no CORS; 2611 `CIFP_261029.zip`: 200, 9,113,631 B |
+  | 17 | World weather | `https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_1p00.pl?file=gfs.t<HH>z.pgrb2.1p00.f000&var_PRMSL=on&lev_mean_sea_level=on&…` (the last published run) | 200, 116,099 B (one field), no CORS |
+  | – | `api.github.com` (the publication) | — | `Access-Control-Allow-Origin: *` |
+
+  So: of the hosts the container could reach, **only AWS's elevation tiles and GitHub's API allow a cross-origin read**; the SIA, FAA and NOAA hosts do not.
+- **Measured on the real export of 2026-10-01, Chromium 141 headless in the container** (precise memory flag; median of three runs; counts identical across the
+  three modes: XML_SIA 1,817 spaces in 2,344 outlines of 124,627 points, 1,098 VFR points; AIXM 1,859 spaces of 32,580 points, 808 aerodromes (544 with an ICAO
+  code), 406 navaids (VOR 93, DME 107, TACAN 17, NDB 89, ILS 100), 4,276 points, 13,836 obstacles in 129 cells; the other records are counted). Times by step:
+
+  | Mode | Total, CPU ×1 | CPU ×4 (phone-like) | JS heap seen (peak) | Renderer peak RSS, over a 143 MB base |
+  |---|---|---|---|---|
+  | a main thread (V2) | 2.5 s | 11.5 s | 179–220 MB (a lower bound: the DOM step is synchronous) | **775 MB** (+632) |
+  | b Worker, zip in memory | 0.68 s | — (the throttle does not reach a Worker) | not measurable in a Worker; 249 MB when the same code runs on the main thread | **420 MB** (+277) |
+  | c Worker, streamed | 0.53 s | — | not measurable in a Worker; 60–76 MB on the main thread | **259 MB** (+116) |
+  | b / c code on the main thread | 0.79 s / 0.65 s | 3.3 s / 2.7 s | 249 / 60–76 MB | 421 / 265 MB |
+
+  Steps of mode a (CPU ×1): inflate AIXM 86 ms, decode 130 ms, **`DOMParser` 1,143 ms**, airspaces from the DOM 244 ms, obstacle cells 51 ms, `SiaAero.parseAixm`
+  345 ms, inflate XML_SIA 83 ms, decode 17 ms, spaces 49 ms, VFR points 287 ms, split and serialise 56 ms. Mode b: inflate 89 + 65 ms, decode 120 + 15 ms, parse
+  233 + 119 ms. Mode c: stream AIXM 267 ms (own inflate pass 41), stream XML_SIA 147 ms (43). Output (JSON): spaces 2.6 MB, VFR 0.09 MB, aerodromes 0.19 MB, obstacles
+  1.4 MB in mode a. With V8's old space capped at **64 MB** (`--max-old-space-size`), every mode still ran (mode a in 5.4 s: collector thrash; at 128 MB 14 s): a heap cap is **not**
+  an iOS kill, which depends on the process footprint (hence the RSS column). **These are Chromium numbers; the iPhone is the measure.** The reduced
+  objects of b and c make them a lower bound of a real builder (full aerodromes, airways), not a like-for-like of a.
+- **The CIFP chain on the real FAA file** (`CIFP_261001.zip`, fetched by `curl` from the allowed host, 9,112,585 bytes; the browser reads it as a local file, as
+  the phone would from the picker): the picker's read 10 to 16 ms (stream) and 10 ms (`ArrayBuffer`) in Chromium; the streamed scan of `FAACIFP18`
+  (**53,187,816 bytes inflated**) **180 ms**, **396,923 records** (the Python builder's 396,924 counts the header), cycle 2610 read from the header, **13,309 airport
+  reference (PA) records** read, JS heap seen 113–168 MB (the 13 k airport objects and the line splits), renderer peak RSS 353 MB over a 152 MB base. The reading of
+  a 47 MB file is no obstacle on a desktop engine; the full port of `proc_cifp.py` (the procedure legs) is not measured.
+- **Limits and not tested**: the reader is not a conformant XML parser; the mode (a) peak inside `DOMParser` and the Workers' heap are not measurable on Chromium;
+  Safari's behaviour (JavaScriptCore: `DecompressionStream` from 16.4, `Blob.stream()`, a `Worker` receiving a `File`, `localStorage` survival) is not tested at
+  all — nothing here ran on WebKit; the iOS tab-kill limit is unknown; the CIFP chain ran on the real file read from disk, not fetched by a browser (the container's browser is closed to the network); "From Downloads" is tested against a
+  stub of the route, not the launcher; the trial publication is tested against a fake GitHub API, not the real one (the API's size limits are the very thing
+  to measure); no source answered a real CORS test from a browser (the container blocks 12 of 15 hosts).
+- **Next**: the owner's phone: open `#datalab` (Full level), test the 15 addresses, give the SIA zip, publish a trial, copy the report. The report decides the
+  rest of `V3_APP_DONNEES.md` (M1 to M5, M7): whether the Worker route holds on iOS, which sources need a native shell, the GitHub limits.
+
+
+## 27 October 2026 — data laboratory, pass 2: a direct link per source, publication by size, a ten-line summary, EAD Basic (aerodb, relay of the cloud)
+
+Words of the user, 27 Oct, after running pass 1 on their iPhone: « Un certain nombre de fichiers json récupérés mais téléchargés en pdf (impossible de sauvegarder un json
+depuis safari). Prochaine passe du labo : lien direct sans Copy/paste en cas d'échec. » Then, added to the same lot: « Pas vu de test eurocontrol ead dans le labo. » and
+« Ajouter un lien direct vers le labo depuis la page admin ; pour tester via github. » (the last one is the Administration card: `frame/settings/DECISIONS.md` of the same day).
+Facts measured on the phone (`V3_APP_DONNEES.md` § "P0 results"): nine sources of fifteen are blocked by CORS from the page; the user copied addresses by hand; Safari shows a JSON
+instead of saving it (they ended with Share › Save, as a PDF); parsing holds (0.4 s); the 5.3 and 10 MB publications are missing from their report.
+
+- **The link** (`lab.js`, `lab_sources.js` `linkSet`): each line has an `<a href target=_blank rel=noopener>` "Open / Download" (44 px) to the real address; never an address to
+  copy. For the four lines whose address follows the AIRAC cycle (`cycled`: SIA product page, VAC, eAIP, CIFP) the link is the cycle in force, plus the next cycle's when it is
+  asked for in the cycle list **or** its last test answered. A test that says "blocked by CORS" cannot say that the file exists (a missing file is blocked just the same), so
+  it does not add the next link by itself: that was the one place where "published according to the last test" needed a choice; the list of cycles is the user's way to ask.
+  The page that is not a file (SIA product page, ENAIRE index, NAV CANADA, NATS, eAIP menu, EAD login) says what to download there (`get`, four languages).
+- **The help and the order** follow the last test of the line (`lastDiag`, rebuilt from the report at opening): "blocked by CORS" unfolds the `details` "How to save it on
+  iPhone" (the user's sentence: long press › "Download Linked File" › Files › Downloads › "From a file") and puts link, then "From a file" (primary), before the test; a
+  permitted read, an unreachable host or an HTTP error leave it folded and the test first. A row is rewritten only when its buttons' HTML changes (the project's rule).
+  **Not tested on an iPhone**: that a long press saves a JSON / GeoJSON as a file (it is how Safari's "Download Linked File" works for other types, and what the relay
+  proposed); that the picker's `accept` (`.geojson,.json`) lets iOS select such a file (iOS maps extensions to types; an unknown extension may be greyed: if it is, the fix is
+  to drop `accept` for those rows). The next report will tell by what the user manages.
+- **"Save the result"** by `navigator.share({ files })`: offered after a permitted JSON read (ArcGIS, ENAIRE's index is HTML so not) only when `navigator.canShare({ files: [file] })`
+  is true. I cannot measure `canShare` on an iPhone from here: the device block of the report now carries it (`web share (share / canShare / files json / files geojson)`), so the
+  user's next report answers. Web Share level 2 exists in Safari since iOS 15 (from memory, not measured). The call is made directly in the tap handler (iOS drops the activation
+  after an await). "Share the report" (`navigator.share({ text })`) appears only when `navigator.share` exists.
+- **Publication**: four buttons (0.5 / 2 / 5.3 / 10 MB), one commit each, one block each (the small trial file is gone: 2.8 s for 107 B is already measured). The promise is
+  raced against 120 s (`sogLab:pubTimeoutMs` for tests); no answer is written as "NO ANSWER … no answer after 120 s", the late answer as a second entry, and the launch guard
+  notes a tab killed in the middle. "Clean" lists and removes the `lab/essai-*` files and lists them on the screen and in the report.
+- **GitHub's size limit, found in its documentation** (the OpenAPI description of the REST API and the `github/docs` sources, 27 Oct 2026; docs.github.com itself is not reachable
+  from the container): the frame's transport writes through the **git data API** (`POST git/trees` with the entry's `content` inline, UTF-8, no Base64; then a commit; then the
+  ref), and the documentation states **no maximum request size** for create-blob or create-tree: the 5.3 and 10 MB buttons are the only measure. What is written: *get a blob*
+  "supports blobs up to 100 megabytes"; a recursive *get a tree* is cut at **100,000 entries or 7 MB** (`truncated: true`, which the transport already turns into an error); the
+  *contents* API (not used) takes the file in Base64 (+33 %: a 10 MB file is a 13.3 MB body) with no maximum written, and *reads* 1 MB with all features, 1-100 MB as raw / object only,
+  nothing above 100 MB; repository rules: a warning above **50 MiB**, a push blocked above **100 MiB** per file, 25 MiB by browser upload. So a zone of 5.3 MB is far below every
+  written limit; what may stop it is the phone's connection and Safari's handling of a 5-10 MB `fetch` body, not the API. Written in the report (block "github api limits") and in
+  `V3_APP_DONNEES.md`.
+- **The summary** (`R.summary`, ten lines at most, computed from the entries, English): parsing (mode c, b, a times; counts identical or not), publication (passed / failed / not
+  tried by size), sources (tested of 16; allowed, blocked by CORS, unreachable by name; other answers), files imported, the EAD Basic line.
+- **EAD Basic** (no. 18, after NATS; not in the inventory: it is the future source of the European procedures, `EAD_BASIC.md` § 5-6): "Test the address" on the public login page
+  `https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/login/ead-basic/` (code, size, CORS, the page chain: title and links); "Test the login call (empty)" POSTs
+  `j_username=&j_password=` (urlencoded, no custom header so that no preflight is added, no cookie) to `…/fwf-eadbasic/ajaxlogin/ajax_security_check.jspx` and says whether the page can
+  only call it (CORS), whether it refuses (HTTP code) or answers (code; only the boolean `loggedIn` is read). **No credential** is asked, sent, stored or written. When the call is blocked by
+  CORS the probe repeats it once with `no-cors` to tell a CORS block from a dead host, as for every address: the second request is the same empty form. "From a file" takes a PDF (magic bytes,
+  "not readable without pypdf") or a ZIP; the link opens the login page, the help says to log in, download the AD 2 pages of one aerodrome into Files, then "From a file". Host added to
+  `connect-src`. The report line: "EAD Basic: login page …, login call …, files imported n".
+- **Tests**: K8 (the table has 16 rows, EAD after NATS; `linkSet` for the cycle in force and the next: eAIP and CIFP derived by cycle, the two links when asked or answered, not when only
+  blocked; every link valid; every page row has its `get`; the summary on synthetic entries: ten lines, the sizes, the names, the EAD line; the GitHub limits in the report), A20 (a link
+  on every line: `target`, `rel`, 44 px, `href` = the address shown; folded help; the next cycle adds a second link; EAD line; back link; the Administration card's address and
+  copy button), A21 (permitted read: help folded, test first, "Save the result" hands `nat.json` to a stubbed `navigator.share`; CORS block: help unfolded, order link / file / test, no share;
+  unreachable: neither; EAD page, login call POST carries empty fields only and no cookie, a blocked login call is named, a PDF imported; the report shared; the ten-line summary), A23 (four
+  buttons, one tree each of the size asked, the silence written, the late answer, "Clean" listing). All ×4 languages, 390 and 1280.
+- **Limits and not tested**: nothing ran on WebKit; the real GitHub API (the sizes it accepts) is untested; the real EAD login endpoint is untested (no host reachable from the container, and
+  no credential is ever used); the real answer of the SIA, FAA, NOAA… hosts to a long-press download is untested; `navigator.share` is a stub.
+
+
+## 27 October 2026 — laboratory: "every link went to openAIP" (aerodb, relay of the cloud)
+
+Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de6`): « Tous les essais de lien du labo "ouvrir le lien" sont partis sur openaip, et timeout. »
+
+- **Not reproduced.** Playwright (Chromium, 375 x 667, `isMobile`, `hasTouch`, iOS 18.7 user agent) on `#datalab` at the Full level: for each of the 16 lines (16 links, none asked
+  for), the real `href` read in the DOM equals the table address, and a touch on the link opens a tab on that address. Same result in the five designs, day and night; with
+  `sogLab:urls` absent, `{}`, `null`, `{oops`, `["x"]`, `"abc"`; after a "Test the address" blocked by CORS on openAIP and NAT (the reordering of the buttons); after a reload with a
+  report present. Read, nothing found either: `actionsHtml` / `sourceRow` / `paintRow` (the signature is the whole HTML of the buttons, which contains the source id and the
+  address, so no row can reuse another's), the click handler (`button[data-act]` only), `frame/app.js` (the only `closest('a')` are the menus), `frame/sw.js` (scope of the
+  frame, same origin only), `lab.css` (no overlay, no `::after`, no `touch-action`). No WebKit in the container: an iOS-only behaviour (a tab opened by `target=_blank` that stays
+  on the first slow address; a Safari tab that the user takes for the new one) is neither shown nor excluded. If it happens again, the report should say which line was tapped first.
+- **What was weak and is fixed** (the only mechanism by which one stored value could change an address on a device): `override(id)` returned `(JSON.parse(…) || {})[id] || ''`, i.e.
+  any truthy value of any type, on any page. It now answers only on a page served from `localhost`, `127.0.0.1` or `[::1]` (the launcher and `tests/v3`, which serve from there),
+  only for an own key of a plain object, and only for a string that parses as an https address (http only towards the machine itself: the fake servers of A21). On the published
+  site the hook does not exist, whatever `localStorage` holds. `loginOf` goes through the same function.
+- **The delay** is the host's: S3 openAIP is slow to answer a 6 MB export; a link in a new tab does not wait for anything on the lab's side. The folded help of the openAIP line
+  (and the Settings and pilot manuals, four languages) says so and says that the long press is the right gesture (`note` of the source, shown after the other help lines).
+- **Test** A20: for every line the link's host and full address equal the table's (`new URL(href).host === new URL(rawUrl(s)).host`), no two lines share an address, a touch on
+  the SIA, CIFP and NAT links opens a tab on the link's address (external hosts answered by a stub; the suite's phone runs are touch with `is_mobile` off, see L16), and the hook's
+  sixteen cases are evaluated on a copy of `lab_sources.js` run with a fake `location` (local, `localhost`, and a published host). Red on the previous code for the hook (a number, an
+  object, `javascript:`, a web address and the published host were all accepted); green on the links, which were never wrong in Chromium. Not tested: WebKit, the real hosts.
+
+- **28 Oct 2026 (relay cloud)** — user: « dfs on oublie totalement » → the DFS licence request is abandoned
+  (`DFS_LICENCE_REQUEST.md` kept as a record, nothing sent, no converter); « EAD eurocontrol, pour le moment, on garde le
+  status-quo. il faudrait probablement un accès payant, on se débrouillera avec un basic pour le moment (et les AIP libres
+  des différents pays) » → no EUROCONTROL request, EAD Basic as is (the probe of § 6 at the user's hand), the free
+  national AIPs (France eAIP done, ENAIRE, others of `AIP_OPEN_DATA_INVENTORY.md`) as the procedure sources abroad, and the
+  SimBrief OFP (step 1) as the per-flight source everywhere else. What EAD would add is only a **library** of SID / STAR /
+  approach legs for aerodromes outside France and the United States (France: eAIP coding tables; US: FAA CIFP); the
+  planned procedures of a flight already come with its OFP.
+
+## 28 October 2026 — the laboratory's trials on a disposable branch (blocking point of the frame, audit of 28 Oct)
+
+- **What was wrong**: the trial blocks (0.5 / 2 / 5.3 / 10 MB) went by the generic GitHub transport onto the **main branch** of the real data repository;
+  "Clean" removed the files in a commit, but the blobs stay in the history forever and weigh on every pilot's clone (2 MB already published from the owner's
+  iPhone). The lab also received the generic transport (`commit` anywhere).
+- **Decided**: the trials go to the disposable branch `lab/<trigram>`, created from the head of the main branch at the first block, deleted by "Clean" and
+  by the next opening of the lab when it is still there; never the main branch. A deleted branch's blobs are unreachable and never enter a pilot's clone.
+  The lab receives a **reduced transport** made by the frame (`FrameData.github.scratch`): head / create / tree / main tree read only / commit under `lab/`
+  on that branch / deleteBranch; the prefix and the branch are enforced in `frame/store/transport_github.js`, not by the lab. **One block at a time** (no
+  block leaves while one has no answer) and **10 MB per session** (counted at sending, `sessionStorage`). Without trigram, no branch: greyed with the reason.
+  The report says what was written and where (repository, branch, commit, main untouched), and what "Clean" deleted.
+- **Not done by the app**: the blocks already on the main branch stay until the owner rewrites the history on a workstation (git-filter-repo, procedure in
+  `INTEGRATION.md`); "Clean" counts them and points to it.
+- **Measured** (CDP bench, a GitHub API with branches simulated in the page, 390 px, fr and en): 0.5, 2, 5.3 MB on `lab/ABC` created from `main` at the first
+  block, `main` never moved, no write on it; 10 MB greyed at 7.8 MB sent with the reason; Clean: one `DELETE refs/heads/lab/ABC`, three files listed, the old
+  trial file of `main` counted; a new session: 10 MB passes, the next opening deletes the branch and says so; an API that never answers: "no answer after
+  1.5 s", the four buttons greyed ("a block is still on its way"), Clean possible, the late answer written and the buttons back; no trigram: greyed with its
+  reason; token never on the page; no JavaScript error. `tests/v3` A23 rewritten for this (an API with branches): it passes in its five runs
+  (1280 fr, 390 × 4 languages; Playwright with `py -3`). The `--changed` run (116 cases, `frame/app.js` touched) on this Windows workstation at four
+  workers has many timeouts and "missing file 503" errors that the same cases also give on `origin/v3` without this lot; rerun one worker at a time,
+  they pass, except J2 step 1 (gear badge amber), which fails on `origin/v3` too, and A22's clipboard check (CRLF line ends of Windows).
+
+## 28 October 2026 — security review of the relay's work: the other verdicts (CSP, EAD probe, fixtures)
+
+- **CSP** (`tools/csp_policy.py`): the laboratory's hosts are a separate list `LAB_CONNECT` with an end date in the code, `LAB_UNTIL` =
+  31 Dec 2026: they leave with the laboratory at the delivery of the Données screen (`docs/technique/V3_APP_DONNEES.md`), and at the
+  latest at that date `value()` stops adding them (K9 turns red once it is passed, so that moving it is a written decision). The date is
+  this session's choice (no delivery date is written anywhere); the ergonomics session may move it. They still apply to every page
+  (a policy per page would need the launcher and `build_pages.py` to know the screen; not worth it for a temporary screen).
+  `services6.arcgis.com` (ArcGIS Online, multi-tenant: an exfiltration channel) is narrowed to the exact path of the measured service,
+  `…/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Special_Use_Airspace/FeatureServer/0/query`.
+- **EAD probe** (`tools/proc_ead.py`): the sanitising also removes the URL-encoded (`quote`, `quote_plus`, `safe=''`) and HTML-escaped
+  forms of each secret; a redirect that leaves `www.ead.eurocontrol.int` (or the local copy of the tests) is refused, never followed nor
+  kept; `ead_probe/` is in `.gitignore`; `EAD_BASIC.md` § 1 says the owner must check EAD Basic's terms on automated access before
+  keeping the tool (not known here). K6 tests the encoded forms and the refused redirect.
+- **Fixtures** (`frame/aerodb/test/fixtures/SOURCES.md`): the eAIP extracts of LFAV and LFBD (AIRAC 2610) are covered by the SIA's open
+  licence (read on 28 Oct 2026: free reuse, commercial or not, reproduction, extraction, redistribution, with the source and the date of
+  the last update named, the information not altered); the attribution is written in that file. `AIXM4.5_sample.xml` is synthetic
+  (fictitious aerodromes and navaids; its header copies the export's shape only), like `XML_SIA_sample.xml`; KSEA CIFP is public domain.
+
+## 28 October 2026 — EAD probe: the login answer encoded twice (the owner's run)
+
+- During the owner's probe run, the login form answered a **JSON string holding the object** (encoded twice), which the probe read as
+  "not logged in". The fix, made in the owner's working folder during that run and left uncommitted, is taken here unchanged:
+  `login_json(body)` reads such a string again, turns another JSON value into `{ errorMessage: "réponse JSON inattendue …" }`, and gives
+  None for a non-JSON body; `login_result` then says "réponse non JSON: " with the first 200 characters (the report's lines all go
+  through `sanitize`, and `finish` refuses to write a report holding a secret); `probe` reads the redirect through it. K6 checks the
+  three answers.
+
+## 28 October 2026 — a built page keeps its policy (reserve of the security review on the dated CSP)
+
+- `tools/build_pages.py` writes the policy as a meta tag in every page of the site without launcher (and the iOS app embeds that site):
+  a page built before `LAB_UNTIL` keeps the lab's hosts until it is built again, whatever the date. The site is rebuilt at every push of
+  develop and v3 (`pages.yml`), the iOS app at every push of develop touching the app; an app installed from an older build keeps them
+  until updated.
+- **Decided**: the build says it (`lab_notice()`: the number of hosts and the end date, "rebuild after this date") while they are in it;
+  past the date, with the laboratory still in the code, it prints a `::warning::` annotation (its hosts are already out of the policy:
+  `value()`), and **does not refuse**: an unrelated fix must be able to leave on 1 January. K9 builds `frame/index.html` into a
+  temporary folder (`main(out, only=…)`, no LFS image needed) and reads its meta: the eight hosts brought by the lab alone (the five
+  others are also V2 source addresses of `config/repository_tree`) are there before the date and gone after it (date moved back in the
+  test), with the warning.
+
+## 28 October 2026 — the data laboratory removed, the Sources screen in its place (user's decision)
+
+- **User** (relayed by the cloud session, word for word): « oui pour le retrait. Du moins, la transformation du lab en « sources » avec les liens
+  vers les différents AIP ou sources qu'on utilise ou utiliserait. » The P0 measures had answered the question (compiling on a phone is easy,
+  fetching from a web page is the obstacle: `docs/technique/V3_APP_DONNEES.md`).
+- **Removed**: the screen `#datalab` (`lab.js`, `lab_run.js`, `lab_worker.js`, `lab_measure.js`, `lab_report.js`, `lab.css`, `test/lab.html`),
+  its declaration in `frame/app.js` (the frame's `renderScreen` keeps its plain `github: true` and nothing else), the reduced transport
+  `FrameData.github.scratch` (`frame/store/transport_github.js` back to its state before 28 Oct), the laboratory's hosts and their end date in
+  `tools/csp_policy.py` (`LAB_CONNECT`, `LAB_UNTIL`, `lab_hosts()`) and the build's notice in `tools/build_pages.py`, the laboratory's download
+  patterns in `tools/launch.py` (`download_patterns()` back to `shared/aero_zones.js` alone), the Administration button, tests A21 to A24 and
+  the old K8 / K9, the manual paragraphs (four languages). The purge procedure of the trial blocks stays in `INTEGRATION.md` (they are still
+  in the data repository's history). A device keeps `cache/lab/report.json` (cache policy, never synchronised) until its cache is cleared:
+  harmless, nothing reads it.
+- **Kept, renamed**: `lab_xml.js` → `xml_stream.js` (`AeroXmlStream`) and `lab_zip.js` → `zip_stream.js` (`AeroZipStream`), code unchanged,
+  for the Data module (D5); their benches `test/xml_stream.html` (K8: the golden test against the V2 readers, 46 checks, from the
+  laboratory's bench) and `test/zip_stream.html` (K9: entries, an entry byte for byte, the streamed chain giving the V2 chain's counts, 7
+  checks); fixtures moved to `test/fixtures/stream/`. The worker modes went with the laboratory (a harness around these two readers).
+- **Added**: the Sources screen (`sources.js`, `#sources`, Full level, "Data sources" in the Administration card) and its data
+  (`sources_data.js`, the laboratory's table without its probing fields): 19 rows — 15 used (the laboratory's 16 minus EAD Basic), 2
+  candidates (EAD Basic, the X-Plane CIFP / Navigraph fallback), 2 set aside (DFS: licence needed, request abandoned; EUROCONTROL's AIXM sets:
+  unknown terms, old samples). The two screen and data files are named apart (`sources.js` the screen, `sources_data.js` the data), the request
+  having named both `sources.js`. Links to a human page rather than a raw file where the file was a query (FAA ADDS: the open-data hub instead of
+  the ArcGIS query) or a folder (GeoNames dump, Terrain Tiles registry, NOMADS, openAIP); the dated sources link to the cycle in force.
+- **Bench** (`tests/v3`, Playwright): A20 passes in its runs (1280 fr, 390 × 4 languages, the five designs, night): the level gate, the
+  button and its absolute address, one line per source with its status, licence and https link (44 px, new tab), the cycle in force in the eAIP
+  and CIFP links, no external request; K8 and K9 pass.
+
+## 28 October 2026 — probe, second round (result table, ViewState, one download)
+
+- **From the owner's first run** (relayed): connection OK, AIP Library and its lists read (47 authorities by ICAO prefix, types AIP / AMDT / SUP / AIC /
+  Charts, parts GEN / ENR / AD), the partial search answered, the table not analysed, `ViewState` values printed. (The login answer encoded twice, fixed by the
+  owner's local change, is already in `v3`: `login_json`.)
+- **Done**: ViewState blanked everywhere; result rows read from the JSF partial answer; `--name` and `--download` (one PDF, local cache only, direct
+  links only); case K6 extended (a defect found by it: the cache file name). Owner decisions of the day respected: EAD Basic as it is, no request to
+  EUROCONTROL, DFS dropped, national free AIPs as the other sources; the session still never logs in.
+
+## 28 October 2026 — probe, third round (real screen: advanced search, Document Name, ▶ button)
+
+- **From the owner's captures** (relayed): 1,155 documents on 16 paginated pages whose numbers move; Advanced Search opens Effective Date, Document Name,
+  Document Heading; one row per name with a ▶ download button; names `<prefix>_AD_2_<ICAO>_<section>-<n>_en.pdf`. Decision: search by Document Name with the
+  prefix `EG_AD_2_EGLL`, learn whether the field is "contains" or "starts with", enumerate exact names otherwise, never page through results.
+- **Done**: advanced box toggled by partial request, fields found by label, renewed ViewState, contains/prefix test, enumeration fallback, rows with their
+  ▶ button, `tables.html`, download through the button. Defect found by the test and fixed: a loop variable shadowed the `--name` argument (also in round two).
+- **Still unknown until the owner's next run**: the real shapes of the toggle response and of the ▶ button (the test uses hand-built screens).
+
+## 28 October 2026 — probe, fourth round (searches by name found nothing)
+
+- **From the owner's run** (relayed in the session): login, library, lists, advanced box (fields found by label: `documentName`, `effectiveDate_input`, `documentHeader`) all
+  worked; plain search 65 rows; **every search by name: 200, 0 rows, no pager**, enumeration included; no download possible.
+- **Cause not known** (answer not printed). Hypotheses: the request shape (`execute=@all` with a filter), the fields added by the box (empty date field), the renewed
+  page state. **Done**: answer anatomy and sent parameter names printed, a control search, four request shapes tried in turn, the first that works kept; and a request to
+  the owner for the browser's own Form Data if this fails too. Test K6: the fake now refuses the `@all` shape for a name, so the test proves the probe switches shape.
+
+## 28 October 2026 — probe, fifth round (the previous "rows" were layout tables)
+
+- **Evidence** (owner's run of round four): "Number of search results: 0 — No data found." under 68 "rows" that are the page's layout tables; the advanced box with
+  `execute=@all` gives the server's error page; `execute=@form` is accepted; the data table is `mainForm:searchResults`.
+- **Done**: results read from the `searchResults_data` body only, the announced count printed, all lists sent (defaults; *Civil*), `@form` first, the State's change event replayed.
+  Lesson for the probe: never count rows without naming the table they come from.
+
+## 28 October 2026 — first success of the probe, and one branch from now on
+
+- **Result**: the whole-form request shape finds `EG_AD_2_EGLL`; Document Name is "contains"; one document "AD 2 EGLL" (3.0 MB PDF) downloaded by its direct link into the owner's local cache. Details:
+  `EAD_BASIC.md` § 6 sexies. The probe's first shape is now the one that worked; `proc_eaip.py --scan-pdf` added to look for coding tables inside a downloaded AD 2 part (titles and keywords only).
+- **Word of the user**: « arrête de créer des branches à répétition, et tu peux supprimer les anciennes ». From now on one branch, `v3-aerodb-proc-15` (all unintegrated work is on it); the
+  old `v3-aerodb-proc*` branches that were fully integrated or contained in it were deleted (eleven went; `-12`, `-13`, `-14`, ancestors of `-15`, could not be deleted from the session: the push was cut).
+
+## 28 October 2026 — pages 40–41 of the UK document, and the format check
+
+- **Read** (the owner uploaded `EG_AD_2_EGLL_en.pdf` to the session; kept out of the repository): pages 40–41 are the index of the AD 2.24 charts. The UK's **coding tables are separate *Charts* documents**
+  (STAR 7-13 to 7-17, RNAV holds 7-18 and 7-19, RNP approaches 8-13); no SID table (the SIDs are charts only, "RNAV substitution only"). The probe gained `--aip-type Charts` and `--docs` (exact names, one
+  download each).
+- **Word of the user**: « les formats peuvent changer. Il faudra prévoir une vérification du format des pages par script. » Built: `detect_layout`, `verify_page` (85 % of the leg rows read), header `fingerprint` with the
+  known ones, `formats` in the aerodrome file, `--check` (exit 1, writes nothing) to run before each publication. A refused page is never read. A layout enters the registry with its detector, its
+  fingerprints and its fixtures, and cannot be published without them.
+
+## 28 October 2026 — the UK coding documents: one readable, five drawn
+
+- **Read** (uploaded by the owner, kept out of the repository): `8-13` (RNP approaches) has a text layer: parsed (`uk-app`), 4 procedures, geometry coherent. `7-13` to `7-17` (STAR coding tables) are **drawn as vector
+  outlines** (about 40,000 path operations, 4 text operations): no script reads them without OCR; the geometry check is the safeguard for any reading of them.
+- **Built**: `parse_uk_app`, `records_uk_app` (status `check`, source `ead-basic/UK/<file>`), `check_geometry` (true course and distance recomputed from the co-ordinates, tolerance 0.25° / 0.2 NM; an incoherent table is not kept),
+  layout `uk-app` with its fingerprint, `build_pdf_dir` and `--pdf-dir` / `--cycle` / `--check`; case K10 on an **invented** page of the same layout (no UK AIP text in the repository).
+- **Open question to the owner**: OCR (a new optional dependency, needs their word and an amendment of CLAUDE.md), a one-off transcription kept privately, or leaving the UK STARs out. See `EAD_BASIC.md` § 6 undecies.
+
+## 28 October 2026 — UK STARs of EGLL transcribed from the images, installed through a geometry gate
+
+- **Word of the user**: « on a des informations avec des fix rnav, des altitudes et vitesse. le sens de virage est (peut-être ?) à conserver, je ne parviens pas à me le figurer. Dans l'immédiat, on cherche à afficher
+  l'enchainement des fix et la contrainte vitesse/altitude, comme pour les AWY. » Decision: option 2 of the previous choice (one-off reading of the pictures), kept as information only for the turn direction (a TF leg is
+  straight whatever the turn).
+- **Done**: 18 STAR tables read from the page images, all 61 legs agree with their own co-ordinates; with the 4 approaches of `8-13`: 22 procedures, 91 points. `tools/proc_manual.py` installs a hand-read file only
+  if the geometry check passes (K11); aerodb reads the result as is (checked in a browser against a fake reader).
+- **Fixed at integration** (aerodb review of 28 Oct): `install` replaced the aerodrome's whole file and index entry, whatever was there (an
+  official file of another source became a single manual STAR); it now refuses another source's (or official) file without `--replace`, and
+  merges by procedure id keeping the best status with it, as the CIFP builder never overwrites another source's file. K11 covers both.
+- **Not in the public repository**: the file holds UK AIP data; the session sent it to the owner for the private data repository. The tool and its test (invented points) are in the repository.
+
+## 28 Oct 2026 — automation per aerodrome and per State
+
+- **Word of the user**: « comment automatiser la récupération de ces données, AD par AD (à la demande). En outre, on doit faire l'exercice pour chaque pays de l'EAD. »
+- **Decision**: `--fetch <ICAO>` (one aerodrome, on demand) and `--survey` (one line per State, one classified sample) in `tools/proc_ead.py`; a State is parsed only after its layout is seen in the survey; unknown or
+  vector layouts are reported, never guessed. Test K12 (hand-built fake library). The launcher button comes next.
+
+## 28 Oct 2026 — OCR included, as the second optional dependency
+
+- **Word of the user**: « OCR inclus ».
+- **Decision**: OCR (`pypdfium2` + Tesseract or `rapidocr-onnxruntime`) is an optional dependency of the workstation builders only, after `pypdf`; never the launcher, never a page; a clear message when missing.
+- **Done**: `tools/proc_ocr.py` (render, OCR, rows, existing layout detection and parsers); output `<ICAO>.ocr.json` installed only by `tools/proc_manual.py` after its geometry gate (source prefixed `ocr:`). Real trial: 5-10 s per page, 300 dpi or more needed. K14.
+- **Open**: engine choice (rapidocr proven, Tesseract untried); installing the scratch environment's packages in the workstation Python.
+
+## 28 Oct 2026 — cheaper agents for the lots
+
+- **Word of the user**: « Tu pop des agents low cost dès que possible pour limiter les crédits ».
+- **Decision**: well-specified lots (documentation, mechanical edits, tests) are delegated to cheaper agents as early as possible; the main session keeps design and verification.
+- **Done**: this lot's documentation was written by such an agent.
+
+## 28 Oct 2026 — layouts through OCR and by text, survey of 8 States
+
+- **Done**: `uk-star` (UK STARs of EGLL: 18 tables, 79 legs, 0 rejected, same 61 TF legs as the hand transcription, now automatic), `at-coding` (LOWG: 2 tables per page, 0 rejected) and `de-route` (German textual route tables, no co-ordinates, counts checked instead of geometry); K15, K16, K17. Survey records extended (`rows_head`, alternative keywords for States with non-English headings such as France, `sample_any`).
+- **Survey of 8 States**: LA image, UD text, LO vector, UB drawn chart with no table, EB vector with a not-yet-parsed ARINC table, EG text + vector, ED text, LF 0 hits (alternative keywords added).
+- **Decision**: charts without a table (image-only, e.g. LA, UB, Albania) are skipped: OCR reads tables, not chart drawings.
+- **Open**: survey of all 47 authorities (needs the owner's credentials at the prompt); EB's degrees-minutes table; the fly-over flag is not read by OCR (left empty with a warning).
+
+## 28 Oct 2026 — survey of all 47 authorities, whole-document reading
+
+- **Word of the user**: survey run by the owner on every authority of EAD Basic, one sample per State, delay 1 s.
+- **Decision**: a State is parsed only when its layout is seen; charts-only, image-only and prose States are listed, not parsed (nothing the geometry gate can check); France comes from the SIA's own eAIP (the EAD sample is an older edition); unsigned altitudes of `de-route` tables are typed "min" when the header says Minimum altitude (session choice, to confirm).
+- **Done**: 14 States read (5 new layouts or extensions: K15, K17, K18, K19, K20), 2 with vector tables, 16 charts only, 2 image only, 7 prose, 1 outdated edition, 5 nothing obtained; all pages of every PDF read; waypoint lists fill co-ordinates; the gate also covers a leg without a printed true course. `python tests/v3/run.py --grep K`: 19 cases pass.
+- **Open**: OCR engine and its installation in the workstation Python; OCR of the two vector-table States (same gate); States to skip; the Settings › Maintenance button; the "min" choice.
+
+## 28 Oct 2026 — OCR installed, Belgian and Georgian tables read
+
+- **Word of the user**: « Oui, OCR EB et UG ».
+- **Decision**: `pypdfium2` and `rapidocr-onnxruntime` are installed in the workstation Python 3.14.7 (`rapidocr-onnxruntime` 1.2.3; Tesseract absent); EB and UG tables are read through OCR with the same geometry gate; `--fetch` runs the OCR pass by itself on documents whose pages are all unknown and drawn.
+- **Done**: layouts `be-coding` (ARINC coding table in vectors, no distance nor magnetic course; its "WAYPOINTS COORDINATES" list in degrees and decimal minutes is read by `be_coords`, also used by `waypoint_coords`) and `ge-coding` (one-line legs, degrees-minutes-seconds; holding table left out by design); `read_document` re-reads a page at 300, 500 then 200 dpi while it is not fully read and keeps the best reading; `OCR_LAYOUTS` lists the 7 layouts readable through OCR; `ocr_pass` in `--fetch`. Results: 2 Belgian APP tables (10 legs each, 20 of 20 points resolved), 2 Georgian APP tables (2 legs each), gate clean, installed in the private data repository (cycle 2026-10-01). K14 extended, 19 K cases pass.
+- **Open**: single-letter cells (fly-over, turn) are lost by the OCR, so `over` and `turn` stay `None`; the gate checks true courses and printed distances only, not altitude nor speed; points come from the OCR, not from an official base; installing the UK and Austrian OCR files in `data/proc`; commit of `data/proc` in the data repository; Settings › Maintenance button; States to skip.
+
+## 28 October 2026 — integration of the cloud session's EAD lot (branch `v3-aerodb-proc-15`), with the review's fixes
+
+- Reviewed by the aerodb session and the security session; integrated as four commits by subject on `v3-aerodb-ead` (probe and library;
+  coding pages, format check, UK tables and geometry; manual interpretations; per-State survey and fetch), rebased on v3 with its K8 / K9
+  (the stream readers). Then, at the ergonomics session's word, the local session's
+  lots up to `aa0aa2047` (OCR, survey of the 47 authorities, nine layouts) as a fifth commit, with the same fixes (`proc_ocr.py`: reading under
+  `OCR_TIMEOUT`, `--icao` checked). `frame/aerodb/LOCAL_SESSION_PROMPT.md` stays on the cloud branch (a session brief, not a document of the module).
+- **Fixes made at integration**: `tools/proc_manual.py` never overwrites another source's file (refused without `--replace`, merged by id
+  keeping the best status with it; K11); `EadLibrary` never waits less than 1 s between requests (`MIN_DELAY`; K12); `survey.json` and
+  `survey.txt` go through `sanitize` with the user name and password (K12); `--icao`, `--fetch` and the manual file name are checked
+  against `^[A-Z0-9]{4}$` before they name a file (K12); every document is read by pypdf in a separate process, `PDF_TIMEOUT` = 60 s,
+  a document past the limit or unreadable reported as not read without stopping the tool (`proc_eaip.limited`, `pdf_pages`, `pdf_kind`;
+  K10); "his" → "their" in this file and in `EAD_BASIC.md`.
+
+## 28 October 2026 — EAD Basic: terms read, manual access, not operational (user's decisions)
+
+- **Word of the user** (relayed by the ergonomics session): EAD Basic's own terms (quoted in `EAD_BASIC.md` § 1); a simulation use is admitted, the
+  data are not operational; the survey of the documents per State is admitted; an aerodrome is read one at a time on an explicit gesture
+  (`--fetch` by hand today, a Settings › Maintenance button later), never scheduled, never in bulk. `LICENSE.md` § 5: "EAD Basic (EUROCONTROL) →
+  the States' AIPs: personal use only, not operational, fetched on demand per aerodrome; the airline's private repository only". OCR: decided.
+- **Done**: `proc_eaip.ead_notice()` writes the "not operational" mention in every file read through EAD Basic (`build_pdf_dir`, the OCR
+  document, the OCR pass of `--fetch`, and `proc_manual` when an installed file holds `ead-basic` procedures); `--fetch` refuses a list of
+  aerodromes (K12); `EAD_BASIC.md` § 1 rewritten, § 8.1 one State per line with its outcome and the rules for States without coding tables
+  (ergonomics session's decision: OFP as the per-flight source, manual gesture and geometry gate otherwise, no model reading drawings or prose
+  without a request per aerodrome, France from the SIA only, one sample per State as a reserve).
+
+## 28 October 2026 — contracts with the Données module (aerodb review of its SPEC, validated by the ergonomics session)
+
+- **Reviewed**: `modules/data/SPEC.md` and `INTEGRATION.md` § 2 (settings session, 30b13a95d). Agreed on the whole; eight points decided
+  with the ergonomics session, written here and in SPEC / INTEGRATION:
+  1. cycles stored and exchanged as effective dates, shown as `YYNN`; one `airac.js`, the Python aligned by a K case; a manifest with several
+     cycles written by the builders (D5);
+  2. `publication()` in the shape of SPEC § 5 (`by` from the builders' `meta.json`, null until D5; the weather is the frame's; NAT after D9)
+     and `zones()`;
+  3. builders in two stages (a piece per source, `worker` or `python`; an assembler per zone in a Worker; nothing written by them), a lot
+     « complete readers » before D5 with a golden test on the data;
+  4. invariant 1 amended (the reader never writes; the builders produce, on the owner's order, and do not publish);
+  5. the catalogue stays aerodb's: `catalogue.js` served by `sources()`, `eadStates` as data, `siaFileInfo` / `cifpFileInfo` back (they went
+     with the laboratory), the schema extended;
+  6. procedure sources `ead-basic` and `manual` (`how`: `ocr`, `hand`) in the schema; EAD reads *Charts* documents and installs through
+     `proc_manual` (« remplacer ou fusionner » in the screen); an aerodrome missing from the cycle in force read from the previous kept
+     cycle, `stale: true`, the Purger keeping that cycle; « OCR manque » as a grey reason;
+  7. towns: a status and Télécharger by the launcher (`tools/update_cities_geonames.py`); `worker-src 'self' blob:` already in the page
+     policy; splitting a publication without launcher per zone is the frame's (`ctx.publish`);
+  8. ready: D1 (`publication()`, `zones()`, `sources()`, `airac.js`, `catalogue.js`) is a short aerodb lot; D5 waits for the complete
+     readers, the pieces' and the manifest's formats; D10 has its tools (`proc_ead --fetch`, `proc_ocr`, `proc_manual`).
+- **Next**: the settings session aligns `modules/data/` (§ 2 written together, the file stays with that session); then aerodb's lot D1.
+## 28 Oct 2026 — the real `--fetch` run, Belgian SID tables (session aerodb procedures, worktree E:\DEFA-v3-aerodb-ocr)
+
+- **Word of the user**: « j'ai besoin de savoir si tous les wrappers pour tous les pays sont bons. OCR doit pouvoir fonctionner sur un terrain donné ».
+- **Done**: first real end-to-end `--fetch` with OCR on three aerodromes (local outputs only): EGLL 4 approaches (`uk-app`) + 18 STAR by OCR (`uk-star`), gate clean, the two RNAV holding documents reported unread (out of scope); LOWG 4 procedures (`at-coding`, text); EBBE 3 of 6 tables before the fix, 5 of 6 after.
+- **Decision**: a `be-coding` SID/STAR table whose middle legs print no course is kept with a warning when all its points come from its own list, the first leg is IF or CF and every leg is IF/TF/CF/DF; the printed courses still pass the gate; approaches keep the strict rule. The sixth EBBE table prints a course 1.2° off its own co-ordinates at every resolution: an AIP printing inconsistency, rejected by design (no tolerance widening, no consensus trick).
+- **Honest status of the wrappers**: each layout is verified on one real sample per State (17 States) and an invented K page, not on every aerodrome; an unknown shape is reported, never guessed. Known limits: single-letter cells (fly-over, turn) are lost by the OCR; `--fetch` reads only the first results page (15 rows per search).
+
+## 28 October 2026 — hand-read files kept and marked outdated (the user's amendment)
+
+- **Word of the user**, relayed word for word: « les données coûtent cher à être générées. je préfère les marquer en « outdated » sur une page
+  de maintenance. Stockées dans le git privé, ça reste user side, c'est autorisé, du moins les données json compilées. on doit pouvoir bien
+  séparer la compilation des données brutes, et l'utilisation des données compilées. »
+- **Replaces** the fallback of the same day (an aerodrome missing from the cycle in force read from the previous kept cycle, `stale`, one
+  cycle at most, the Purger keeping that cycle).
+- **Decided** (the simplest of the two places the ergonomics session offered): `proc/manual/<ICAO>.json` (and its `index.json`), outside the
+  cycle folders, each procedure with its cycle of origin (`source.cycle`) and source; read whatever its age, `outdated: true` once its cycle is
+  not the one in force; never purged by the module, listed « périmé » with « Relire »; at equal status a procedure that is not outdated wins.
+  Keeping the cycle of origin indefinitely was the other way: it would have kept whole cycle folders for a few files and made the Purger's rule
+  depend on what each one holds.
+- **The principle** at the head of the SPEC: compiling the raw sources (builders, workstation) is strictly apart from using the compiled data
+  (reader, devices); the compiled JSON live in the private data repository, on the user's side.
+- **To code** (next aerodb lot after D1): `tools/proc_manual.py` installs into `proc/manual/`; the reader merges it and marks `outdated`.

@@ -26,9 +26,10 @@
     INPUTS = 'siaBaseInputs:v1', // empreinte des fichiers et réglages lus par la dernière relecture (inputsOf)
     FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
-  const COMPAT = 14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp)
+  const COMPAT =
+    14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp ; 17 ne change pas le format : une base 14 à 16 se lit, signalée « outdated »)
   const VERSION =
-    16; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js)
+    17; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge)
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
@@ -2011,6 +2012,23 @@
     await writeText(d, name, text);
     return text.length;
   }
+  /** Index léger des terrains d'une zone (V3 : frame/aerodb SPEC § 2) : les terrains à code OACI seulement, en lignes
+   *  compactes { fields, rows } — code, nom, position, altitude, axe de piste, déclinaison —, lu par l'appli Pilote
+   *  pour trouver un terrain ou ceux d'une route sans lire aerodromes.json (dix fois plus lourd). */
+  const AEROINDEX_FIELDS = ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'];
+
+  function aeroIndex(list) {
+    const n = (v, d) => {
+      const x = parseFloat(v);
+      return Number.isFinite(x) ? Math.round(x * 10 ** d) / 10 ** d : null;
+    };
+    return {
+      fields: AEROINDEX_FIELDS,
+      rows: (list || []).filter(a => /^[A-Z]{4}$/.test(String(a?.icao || '').toUpperCase())).map(a => [String(a.icao).toUpperCase(),
+        String(a.name || ''), n(a.lat, 5), n(a.lon, 5), n(a.elev, 0), n(a.bearing, 0), n(a.magVar, 2)
+      ])
+    };
+  }
   /** Ville publiée : sans son pays (cc ne sert qu'à la ranger ; les fichiers publiés gardent leur taille). */
   const plainCity = ({
     cc,
@@ -2141,6 +2159,7 @@
         files = {
           airspaces: airspaces || [],
           ...Object.fromEntries(SPLIT_KINDS.map(k => [k, aero[k] || []])),
+          aeroindex: aeroIndex(aero.aerodromes),
           mora: moraCells || [],
           obstaclemax: obstacleMax || {},
           cities: byZone[z] || [],
@@ -2665,6 +2684,7 @@
     appAsset,
     inspectXml,
     parseXmlSiaAirspaces,
+    parseXmlSiaVfrPoints,
     parseAixmAirspaces,
     parseAixmObstacles,
     parseLegacyAirspaces,

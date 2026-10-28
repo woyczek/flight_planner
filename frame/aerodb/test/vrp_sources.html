@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aerodb — VFR points of several sources</title>
+<!-- Essais des points de report VFR de la base (shared/sia_base.js parseXmlSiaVfrPoints, shared/aero_sources.js geojson et
+     merge) : le XML_SIA porte chaque point une fois (« QT-N », avec sa description), l'export openAIP « rpp » une fois aussi
+     (« N », nom = code, 5 décimales) ; la base ne doit en garder qu'une entrée, celle du SIA. Les extraits sont de la forme
+     des vrais fichiers du 2026-10-01 (XML_SIA : 1 098 points VFR, tous préfixés ; fr_rpp.geojson : 675 points, 674 après la
+     fusion des doublons exacts ; 1 098 + 674 = 1 772, le compte publié avant la correction). Résultat : window.__vrpBench. -->
+<style>
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px
+  }
+  li.ok::marker {
+    content: '✓ '
+  }
+  li.ko::marker {
+    content: '✗ '
+  }
+</style></head>
+<body>
+<h1>aerodb — VFR points of several sources</h1>
+<p id="state">running…</p>
+<ol id="out"></ol>
+<script src="../../../shared/kit.js?v=0"></script>
+<script src="../../../shared/sia_base.js?v=0"></script>
+<script src="../../../shared/aero_sources.js?v=0"></script>
+<script>
+  (async () => {
+    const results = [],
+      check = (name, ok, detail) => results.push({
+        name,
+        ok: !!ok,
+        detail: ok ? '' : JSON.stringify(detail)
+      });
+    try {
+      /** NavFix du XML_SIA (forme des vrais fichiers) : identifiant, type, description facultative, position à 6 décimales. */
+      const navFix = (ident, type, lat, lon, desc) => `
+        <NavFix pk="${ident.length}" lk="[${ident}]">
+            <Territoire pk="100" lk="[LF]"/>
+            <NavType>${type}</NavType>
+            <Ident>${ident}</Ident>
+            <Wgs84>2</Wgs84>
+            <Latitude>${lat}</Latitude>
+            <Longitude>${lon}</Longitude>${desc ? `
+            <Description>${desc}</Description>` : ''}
+            <Geometrie>${lat},${lon}</Geometrie>
+        </NavFix>`;
+      const xml = `<?xml version="1.0" encoding="ISO-8859-1"?><SIA-Export><NavFixS>${[
+        navFix('QT-N', 'VFR', '50.775278', '2.563889', 'VRP-Relais hertzien 2 NM Sud Steenvoorde'),
+        navFix('QT-NA', 'VFR', '50.683333', '2.570833', 'VRP-Château de La Motte-au-Bois'),
+        navFix('AQ-N', 'VFR', '49.990833', '2.280278', 'VRP-Pont de la Somme'),
+        navFix('HM-H-EH', 'VFR', '45.8445', '6.68117', 'VRP-Hélistation Est'),
+        navFix('QT-W', 'VFR', '50.77', '2.44'),
+        navFix('NANTU', 'DESIGNATED', '47.1', '-1.5', 'Point nommé')
+      ].join('')}</NavFixS></SIA-Export>`;
+      const sia = SiaBase.parseXmlSiaVfrPoints(xml);
+      check('the SIA parser reads each VFR point once, with its prefixed id (nothing bare)', sia.length === 5 && new Set(sia.map(p => p
+        .id)).size === 5 && sia.every(p => /^[A-Z0-9]{2}-/.test(p.id)), sia);
+      check('the SIA parser keeps the description without "VRP-" and the 6-decimal position', sia[0].name ===
+        'Relais hertzien 2 NM Sud Steenvoorde' && sia[0].lat === 50.775278 && sia[0].lon === 2.563889, sia[0]);
+      check('a non-VFR NavFix is left out', !sia.some(p => p.id === 'NANTU'), sia);
+      // openAIP « rpp » : nom = code, position à 5 décimales (GeoJSON : [lon, lat])
+      const rpp = (name, lon, lat) => ({
+        type: 'Feature',
+        properties: {
+          _id: 'x' + name + lon,
+          name,
+          compulsory: true,
+          country: 'FR'
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [lon, lat]
+        }
+      });
+      const oa = AeroSources.geojson({
+        type: 'FeatureCollection',
+        features: [
+          rpp('N', 2.56389, 50.77528), // jumeau de QT-N (à 5 décimales)
+          rpp('NA', 2.57083, 50.68333), // jumeau de QT-NA
+          rpp('N', 2.28028, 49.99083), // jumeau de AQ-N : même code, autre terrain, 30 NM plus loin
+          rpp('EH', 6.68117, 45.8445), // jumeau de HM-H-EH (le « -H- » des hélistations)
+          rpp('W', 2.44, 50.77), // jumeau de QT-W (sans description)
+          rpp('SW', 5.25278, 46.88278), // sans jumeau : à garder
+          rpp('N', 2.66222, 50.06556), // même code que QT-N, mais ailleurs (autre terrain) : à garder
+          rpp('N', 2.66222, 50.06556) // le même, lu deux fois : une seule entrée
+        ]
+      }, 'fr_rpp.geojson');
+      check('openAIP reads its points bare (id = name = code): the form the base showed twice', oa.aero.vrp.length === 8 && oa.aero.vrp[
+          0]
+        .id === 'N' && oa.aero.vrp[0].name === 'N', oa.aero.vrp[0]);
+      // la fusion de la base : le SIA d'abord (aero.vrp = XML_SIA), puis les autres sources
+      const base = {
+        airspaces: [],
+        aero: {
+          aerodromes: [],
+          navaids: [],
+          points: [],
+          airways: [],
+          obstacles: [],
+          vrp: sia.slice()
+        }
+      };
+      AeroSources.merge(base, oa);
+      const list = base.aero.vrp,
+        at = (lat, lon) => list.filter(p => Math.abs(p.lat - lat) < .01 && Math.abs(p.lon - lon) < .01);
+      check('one entry per point: the 5 SIA points, plus the 2 openAIP points that have no SIA twin', list.length === 7, list.map(p => p
+        .id + '/' + p.name));
+      check('QT-N: a single entry at its place, the prefixed one, with its description and its 6-decimal position', at(50.7753, 2.5639)
+        .length === 1 && at(50.7753, 2.5639)[0].id === 'QT-N' && at(50.7753, 2.5639)[0].name ===
+        'Relais hertzien 2 NM Sud Steenvoorde' && at(50.7753, 2.5639)[0].lat === 50.775278, at(50.7753, 2.5639));
+      check('the bare "N" of another aerodrome (30 NM away) is not taken for QT-N or AQ-N', at(50.06556, 2.66222).length === 1 &&
+        at(50.06556, 2.66222)[0].id === 'N', at(50.06556, 2.66222));
+      check('AQ-N keeps its own place', at(49.99083, 2.28028).length === 1 && at(49.99083, 2.28028)[0].id === 'AQ-N', at(49.99083,
+        2.28028));
+      check('the helicopter point "HM-H-EH" absorbs openAIP "EH"', at(45.8445, 6.68117).length === 1 && at(45.8445, 6.68117)[0].id ===
+        'HM-H-EH', at(45.8445, 6.68117));
+      check('a point without description (QT-W) still absorbs the bare twin', at(50.77, 2.44).length === 1 && at(50.77, 2.44)[0].id ===
+        'QT-W', at(50.77, 2.44));
+      check('an openAIP point with no SIA twin is kept', list.some(p => p.id === 'SW'), list);
+      check('no bare point is left at the place of a prefixed one', list.every(p => /^[A-Z0-9]{2}-/.test(p.id) || !sia.some(s => Math
+        .abs(s.lat - p.lat) < .01 && Math.abs(s.lon - p.lon) < .01)), list);
+      // l'ordre de lecture ne change pas le nombre de points : openAIP d'abord, SIA ensuite n'est pas le chemin de la base
+      // (le SIA ouvre toujours la fusion), mais deux imports du même fichier ne doublent rien
+      AeroSources.merge(base, oa);
+      check('merging the same openAIP file twice adds nothing', base.aero.vrp.length === 7, base.aero.vrp.length);
+      check('the parser version was raised (a base of an older parser is "outdated" and must be rebuilt)', SiaBase.VERSION >= 17,
+        SiaBase.VERSION);
+    } catch (e) {
+      check('no exception', false, String(e && e.stack || e));
+    }
+    const out = document.getElementById('out');
+    results.forEach(r => {
+      const li = document.createElement('li');
+      li.className = r.ok ? 'ok' : 'ko';
+      li.textContent = r.name + (r.ok ? '' : ' — ' + r.detail);
+      out.append(li);
+    });
+    const fail = results.filter(r => !r.ok).length;
+    document.getElementById('state').textContent = `${results.length - fail} / ${results.length} passed`;
+    window.__vrpBench = {
+      done: true,
+      pass: results.length - fail,
+      fail,
+      rows: results.map(r => `${r.ok ? 'PASS' : 'FAIL'} ${r.name} ${r.detail}`)
+    };
+  })();
+</script>
+</body></html>

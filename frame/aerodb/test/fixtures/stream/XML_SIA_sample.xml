@@ -1,0 +1,748 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<SiaExport Date="2026-01-01T00:00:00.000+01:00" Origine="Sia-France" Version="5">
+    <Situation pubDate="2026-01-01" effDate="2026-10-01">
+        <AdS>
+            <Ad pk="1" lk="[LF][XX1]">
+                <AdCode>XX1</AdCode>
+                <AdNomComplet>TERRAIN FICTIF 1 (é)</AdNomComplet>
+                <ArpLat>45.1</ArpLat>
+                <ArpLong>2.1</ArpLong>
+            </Ad>
+            <Ad pk="2" lk="[LF][XX2]">
+                <AdCode>XX2</AdCode>
+                <AdNomComplet>TERRAIN FICTIF 2 (é)</AdNomComplet>
+                <ArpLat>45.2</ArpLat>
+                <ArpLong>2.2</ArpLong>
+            </Ad>
+            <Ad pk="3" lk="[LF][XX3]">
+                <AdCode>XX3</AdCode>
+                <AdNomComplet>TERRAIN FICTIF 3 (é)</AdNomComplet>
+                <ArpLat>45.3</ArpLat>
+                <ArpLong>2.3</ArpLong>
+            </Ad>
+            <Ad pk="4" lk="[LF][XX4]">
+                <AdCode>XX4</AdCode>
+                <AdNomComplet>TERRAIN FICTIF 4 (é)</AdNomComplet>
+                <ArpLat>45.4</ArpLat>
+                <ArpLong>2.4</ArpLong>
+            </Ad>
+            <Ad pk="5" lk="[LF][XX5]">
+                <AdCode>XX5</AdCode>
+                <AdNomComplet>TERRAIN FICTIF 5 (é)</AdNomComplet>
+                <ArpLat>45.5</ArpLat>
+                <ArpLong>2.5</ArpLong>
+            </Ad>
+        </AdS>
+        <EspaceS>
+            <Espace pk="303900" lk="[LF][CTR ESPACE 00 é]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>CTR</TypeEspace>
+                <Nom>ESPACE 00 é</Nom>
+            </Espace>
+            <Espace pk="303901" lk="[LF][TMA ZONE-01]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>TMA</TypeEspace>
+                <Nom>ZONE-01</Nom>
+            </Espace>
+            <Espace pk="303902" lk="[LF][SIV ZONE-02]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>SIV</TypeEspace>
+                <Nom>ZONE-02</Nom>
+            </Espace>
+            <Espace pk="303903" lk="[LF][FIR ESPACE 03 é]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>FIR</TypeEspace>
+                <Nom>ESPACE 03 é</Nom>
+            </Espace>
+            <Espace pk="303904" lk="[LF][Aer ZONE-04]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>Aer</TypeEspace>
+                <Nom>ZONE-04</Nom>
+            </Espace>
+            <Espace pk="303905" lk="[LF][RMZ ZONE-05]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>RMZ</TypeEspace>
+                <Nom>ZONE-05</Nom>
+            </Espace>
+            <Espace pk="303906" lk="[LF][TMZ ESPACE 06 é]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>TMZ</TypeEspace>
+                <Nom>ESPACE 06 é</Nom>
+            </Espace>
+            <Espace pk="303907" lk="[LF][AP ZONE-07]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>AP</TypeEspace>
+                <Nom>ZONE-07</Nom>
+            </Espace>
+            <Espace pk="303908" lk="[LF][CTR ZONE-08]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>CTR</TypeEspace>
+                <Nom>ZONE-08</Nom>
+            </Espace>
+            <Espace pk="303909" lk="[LF][TMA ESPACE 09 é]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>TMA</TypeEspace>
+                <Nom>ESPACE 09 é</Nom>
+            </Espace>
+            <Espace pk="303910" lk="[LF][SIV ZONE-10]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>SIV</TypeEspace>
+                <Nom>ZONE-10</Nom>
+            </Espace>
+            <Espace pk="303911" lk="[LF][FIR ZONE-11]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>FIR</TypeEspace>
+                <Nom>ZONE-11</Nom>
+            </Espace>
+            <Espace pk="303912" lk="[LF][Aer ESPACE 12 é]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>Aer</TypeEspace>
+                <Nom>ESPACE 12 é</Nom>
+            </Espace>
+            <Espace pk="303913" lk="[LF][RMZ ZONE-13]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>RMZ</TypeEspace>
+                <Nom>ZONE-13</Nom>
+            </Espace>
+            <Espace pk="303914" lk="[LF][TMZ ZONE-14]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>TMZ</TypeEspace>
+                <Nom>ZONE-14</Nom>
+            </Espace>
+            <Espace pk="303915" lk="[LF][AP ESPACE 15 é]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>AP</TypeEspace>
+                <Nom>ESPACE 15 é</Nom>
+            </Espace>
+            <Espace pk="303916" lk="[LF][CTR ZONE-16]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>CTR</TypeEspace>
+                <Nom>ZONE-16</Nom>
+            </Espace>
+            <Espace pk="303917" lk="[LF][TMA ZONE-17]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>TMA</TypeEspace>
+                <Nom>ZONE-17</Nom>
+            </Espace>
+            <Espace pk="303918" lk="[LF][SIV ESPACE 18 é]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>SIV</TypeEspace>
+                <Nom>ESPACE 18 é</Nom>
+            </Espace>
+            <Espace pk="303919" lk="[LF][FIR ZONE-19]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>FIR</TypeEspace>
+                <Nom>ZONE-19</Nom>
+            </Espace>
+            <Espace pk="303920" lk="[LF][Aer ZONE-20]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>Aer</TypeEspace>
+                <Nom>ZONE-20</Nom>
+            </Espace>
+            <Espace pk="303921" lk="[LF][RMZ ESPACE 21 é]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>RMZ</TypeEspace>
+                <Nom>ESPACE 21 é</Nom>
+            </Espace>
+            <Espace pk="303922" lk="[LF][TMZ ZONE-22]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>TMZ</TypeEspace>
+                <Nom>ZONE-22</Nom>
+            </Espace>
+            <Espace pk="303923" lk="[LF][AP ZONE-23]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>AP</TypeEspace>
+                <Nom>ZONE-23</Nom>
+            </Espace>
+            <Espace pk="303924" lk="[LF][CTR ESPACE 24 é]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>CTR</TypeEspace>
+                <Nom>ESPACE 24 é</Nom>
+            </Espace>
+            <Espace pk="303925" lk="[LF][TMA ZONE-25]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>TMA</TypeEspace>
+                <Nom>ZONE-25</Nom>
+            </Espace>
+            <Espace pk="303926" lk="[LF][SIV ZONE-26]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>SIV</TypeEspace>
+                <Nom>ZONE-26</Nom>
+            </Espace>
+            <Espace pk="303927" lk="[LF][FIR ESPACE 27 é]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>FIR</TypeEspace>
+                <Nom>ESPACE 27 é</Nom>
+            </Espace>
+            <Espace pk="303928" lk="[LF][Aer ZONE-28]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>Aer</TypeEspace>
+                <Nom>ZONE-28</Nom>
+            </Espace>
+            <Espace pk="303929" lk="[LF][RMZ ZONE-29]">
+                <Territoire pk="100" lk="[LF]"/>
+                <TypeEspace>RMZ</TypeEspace>
+                <Nom>ZONE-29</Nom>
+            </Espace>
+        </EspaceS>
+        <PartieS>
+            <Partie pk="1" lk="[LF][P1][.]">
+                <Espace pk="303900" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 1</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>44.000000,1.100000 44.100000,1.000000 44.000000,0.900000 43.900000,1.000000</Geometrie>
+            </Partie>
+            <Partie pk="2" lk="[LF][P2][.]">
+                <Espace pk="303900" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>11</NumeroPartie>
+                <NomUsuel>PARTIE 2</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>44.000000,1.510000 44.110000,1.400000 44.000000,1.290000 43.890000,1.400000</Geometrie>
+            </Partie>
+            <Partie pk="3" lk="[LF][P3][.]">
+                <Espace pk="303900" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>12</NumeroPartie>
+                <NomUsuel>PARTIE 3</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>44.000000,1.920000 44.120000,1.800000 44.000000,1.680000 43.880000,1.800000</Geometrie>
+            </Partie>
+            <Partie pk="4" lk="[LF][P4][.]">
+                <Espace pk="303901" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 4</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>44.150000,1.200000 44.245106,1.130902 44.208779,1.019098 44.091221,1.019098 44.054894,1.130902</Geometrie>
+            </Partie>
+            <Partie pk="5" lk="[LF][P5][.]">
+                <Espace pk="303902" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 5</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>44.300000,1.300000 44.386603,1.250000 44.386603,1.150000 44.300000,1.100000 44.213397,1.150000 44.213397,1.250000</Geometrie>
+            </Partie>
+            <Partie pk="6" lk="[LF][P6][.]">
+                <Espace pk="303903" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 6</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>44.450000,1.400000 44.528183,1.362349 44.547493,1.277748 44.493388,1.209903 44.406612,1.209903 44.352507,1.277748 44.371817,1.362349</Geometrie>
+            </Partie>
+            <Partie pk="7" lk="[LF][P7][.]">
+                <Espace pk="303904" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 7</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>44.600000,1.500000 44.670711,1.470711 44.700000,1.400000 44.670711,1.329289 44.600000,1.300000 44.529289,1.329289 44.500000,1.400000 44.529289,1.470711</Geometrie>
+            </Partie>
+            <Partie pk="8" lk="[LF][P8][.]">
+                <Espace pk="303905" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 8</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>44.750000,1.600000 44.814279,1.576604 44.848481,1.517365 44.836603,1.450000 44.784202,1.406031 44.715798,1.406031 44.663397,1.450000 44.651519,1.517365 44.685721,1.576604</Geometrie>
+            </Partie>
+            <Partie pk="9" lk="[LF][P9][.]">
+                <Espace pk="303905" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>11</NumeroPartie>
+                <NomUsuel>PARTIE 9</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>44.750000,2.010000 44.820707,1.984265 44.858329,1.919101 44.845263,1.845000 44.787622,1.796634 44.712378,1.796634 44.654737,1.845000 44.641671,1.919101 44.679293,1.984265</Geometrie>
+            </Partie>
+            <Partie pk="10" lk="[LF][P10][.]">
+                <Espace pk="303905" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>12</NumeroPartie>
+                <NomUsuel>PARTIE 10</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>44.750000,2.420000 44.827135,2.391925 44.868177,2.320838 44.853923,2.240000 44.791042,2.187237 44.708958,2.187237 44.646077,2.240000 44.631823,2.320838 44.672865,2.391925</Geometrie>
+            </Partie>
+            <Partie pk="11" lk="[LF][P11][.]">
+                <Espace pk="303906" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 11</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>44.900000,1.700000 45.000000,1.600000 44.900000,1.500000 44.800000,1.600000</Geometrie>
+            </Partie>
+            <Partie pk="12" lk="[LF][P12][.]">
+                <Espace pk="303908" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 12</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>45.200000,1.900000 45.286603,1.850000 45.286603,1.750000 45.200000,1.700000 45.113397,1.750000 45.113397,1.850000</Geometrie>
+            </Partie>
+            <Partie pk="13" lk="[LF][P13][.]">
+                <Espace pk="303909" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 13</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>45.350000,2.000000 45.428183,1.962349 45.447493,1.877748 45.393388,1.809903 45.306612,1.809903 45.252507,1.877748 45.271817,1.962349</Geometrie>
+            </Partie>
+            <Partie pk="14" lk="[LF][P14][.]">
+                <Espace pk="303910" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 14</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>45.500000,2.100000 45.570711,2.070711 45.600000,2.000000 45.570711,1.929289 45.500000,1.900000 45.429289,1.929289 45.400000,2.000000 45.429289,2.070711</Geometrie>
+            </Partie>
+            <Partie pk="15" lk="[LF][P15][.]">
+                <Espace pk="303910" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>11</NumeroPartie>
+                <NomUsuel>PARTIE 15</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>45.500000,2.510000 45.577782,2.477782 45.610000,2.400000 45.577782,2.322218 45.500000,2.290000 45.422218,2.322218 45.390000,2.400000 45.422218,2.477782</Geometrie>
+            </Partie>
+            <Partie pk="16" lk="[LF][P16][.]">
+                <Espace pk="303910" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>12</NumeroPartie>
+                <NomUsuel>PARTIE 16</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>45.500000,2.920000 45.584853,2.884853 45.620000,2.800000 45.584853,2.715147 45.500000,2.680000 45.415147,2.715147 45.380000,2.800000 45.415147,2.884853</Geometrie>
+            </Partie>
+            <Partie pk="17" lk="[LF][P17][.]">
+                <Espace pk="303911" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 17</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>44.500000,1.500000</Geometrie>
+            </Partie>
+            <Partie pk="18" lk="[LF][P18][.]">
+                <Espace pk="303912" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 18</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>45.800000,2.300000 45.900000,2.200000 45.800000,2.100000 45.700000,2.200000</Geometrie>
+            </Partie>
+            <Partie pk="19" lk="[LF][P19][.]">
+                <Espace pk="303913" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 19</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>45.950000,2.400000 46.045106,2.330902 46.008779,2.219098 45.891221,2.219098 45.854894,2.330902</Geometrie>
+            </Partie>
+            <Partie pk="20" lk="[LF][P20][.]">
+                <Espace pk="303914" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 20</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>46.100000,2.500000 46.186603,2.450000 46.186603,2.350000 46.100000,2.300000 46.013397,2.350000 46.013397,2.450000</Geometrie>
+            </Partie>
+            <Partie pk="21" lk="[LF][P21][.]">
+                <Espace pk="303915" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 21</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>46.250000,2.600000 46.328183,2.562349 46.347493,2.477748 46.293388,2.409903 46.206612,2.409903 46.152507,2.477748 46.171817,2.562349</Geometrie>
+            </Partie>
+            <Partie pk="22" lk="[LF][P22][.]">
+                <Espace pk="303915" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>11</NumeroPartie>
+                <NomUsuel>PARTIE 22</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>46.250000,3.010000 46.336001,2.968584 46.357242,2.875523 46.297727,2.800893 46.202273,2.800893 46.142758,2.875523 46.163999,2.968584</Geometrie>
+            </Partie>
+            <Partie pk="23" lk="[LF][P23][.]">
+                <Espace pk="303915" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>12</NumeroPartie>
+                <NomUsuel>PARTIE 23</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>46.250000,3.420000 46.343820,3.374819 46.366991,3.273297 46.302066,3.191884 46.197934,3.191884 46.133009,3.273297 46.156180,3.374819</Geometrie>
+            </Partie>
+            <Partie pk="24" lk="[LF][P24][.]">
+                <Espace pk="303916" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 24</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>46.400000,2.700000 46.470711,2.670711 46.500000,2.600000 46.470711,2.529289 46.400000,2.500000 46.329289,2.529289 46.300000,2.600000 46.329289,2.670711</Geometrie>
+            </Partie>
+            <Partie pk="25" lk="[LF][P25][.]">
+                <Espace pk="303917" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 25</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>46.550000,2.800000 46.614279,2.776604 46.648481,2.717365 46.636603,2.650000 46.584202,2.606031 46.515798,2.606031 46.463397,2.650000 46.451519,2.717365 46.485721,2.776604</Geometrie>
+            </Partie>
+            <Partie pk="26" lk="[LF][P26][.]">
+                <Espace pk="303918" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 26</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>46.700000,2.900000 46.800000,2.800000 46.700000,2.700000 46.600000,2.800000</Geometrie>
+            </Partie>
+            <Partie pk="27" lk="[LF][P27][.]">
+                <Espace pk="303919" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 27</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>46.850000,3.000000 46.945106,2.930902 46.908779,2.819098 46.791221,2.819098 46.754894,2.930902</Geometrie>
+            </Partie>
+            <Partie pk="28" lk="[LF][P28][.]">
+                <Espace pk="303920" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 28</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>47.000000,3.100000 47.086603,3.050000 47.086603,2.950000 47.000000,2.900000 46.913397,2.950000 46.913397,3.050000</Geometrie>
+            </Partie>
+            <Partie pk="29" lk="[LF][P29][.]">
+                <Espace pk="303920" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>11</NumeroPartie>
+                <NomUsuel>PARTIE 29</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>47.000000,3.510000 47.095263,3.455000 47.095263,3.345000 47.000000,3.290000 46.904737,3.345000 46.904737,3.455000</Geometrie>
+            </Partie>
+            <Partie pk="30" lk="[LF][P30][.]">
+                <Espace pk="303920" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>12</NumeroPartie>
+                <NomUsuel>PARTIE 30</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>47.000000,3.920000 47.103923,3.860000 47.103923,3.740000 47.000000,3.680000 46.896077,3.740000 46.896077,3.860000</Geometrie>
+            </Partie>
+            <Partie pk="31" lk="[LF][P31][.]">
+                <Espace pk="303921" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 31</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>47.150000,3.200000 47.228183,3.162349 47.247493,3.077748 47.193388,3.009903 47.106612,3.009903 47.052507,3.077748 47.071817,3.162349</Geometrie>
+            </Partie>
+            <Partie pk="32" lk="[LF][P32][.]">
+                <Espace pk="303922" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 32</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>47.300000,3.300000 47.370711,3.270711 47.400000,3.200000 47.370711,3.129289 47.300000,3.100000 47.229289,3.129289 47.200000,3.200000 47.229289,3.270711</Geometrie>
+            </Partie>
+            <Partie pk="33" lk="[LF][P33][.]">
+                <Espace pk="303923" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 33</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>47.450000,3.400000 47.514279,3.376604 47.548481,3.317365 47.536603,3.250000 47.484202,3.206031 47.415798,3.206031 47.363397,3.250000 47.351519,3.317365 47.385721,3.376604</Geometrie>
+            </Partie>
+            <Partie pk="34" lk="[LF][P34][.]">
+                <Espace pk="303924" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 34</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>47.600000,3.500000 47.700000,3.400000 47.600000,3.300000 47.500000,3.400000</Geometrie>
+            </Partie>
+            <Partie pk="35" lk="[LF][P35][.]">
+                <Espace pk="303925" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 35</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>47.750000,3.600000 47.845106,3.530902 47.808779,3.419098 47.691221,3.419098 47.654894,3.530902</Geometrie>
+            </Partie>
+            <Partie pk="36" lk="[LF][P36][.]">
+                <Espace pk="303925" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>11</NumeroPartie>
+                <NomUsuel>PARTIE 36</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>47.750000,4.010000 47.854616,3.933992 47.814656,3.811008 47.685344,3.811008 47.645384,3.933992</Geometrie>
+            </Partie>
+            <Partie pk="37" lk="[LF][P37][.]">
+                <Espace pk="303925" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>12</NumeroPartie>
+                <NomUsuel>PARTIE 37</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>47.750000,4.420000 47.864127,4.337082 47.820534,4.202918 47.679466,4.202918 47.635873,4.337082</Geometrie>
+            </Partie>
+            <Partie pk="38" lk="[LF][P38][.]">
+                <Espace pk="303926" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 38</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>47.900000,3.700000 47.986603,3.650000 47.986603,3.550000 47.900000,3.500000 47.813397,3.550000 47.813397,3.650000</Geometrie>
+            </Partie>
+            <Partie pk="39" lk="[LF][P39][.]">
+                <Espace pk="303927" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 39</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>48.050000,3.800000 48.128183,3.762349 48.147493,3.677748 48.093388,3.609903 48.006612,3.609903 47.952507,3.677748 47.971817,3.762349</Geometrie>
+            </Partie>
+            <Partie pk="40" lk="[LF][P40][.]">
+                <Espace pk="303928" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 40</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>48.200000,3.900000 48.270711,3.870711 48.300000,3.800000 48.270711,3.729289 48.200000,3.700000 48.129289,3.729289 48.100000,3.800000 48.129289,3.870711</Geometrie>
+            </Partie>
+            <Partie pk="41" lk="[LF][P41][.]">
+                <Espace pk="303929" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 41</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>48.350000,4.000000 48.414279,3.976604 48.448481,3.917365 48.436603,3.850000 48.384202,3.806031 48.315798,3.806031 48.263397,3.850000 48.251519,3.917365 48.285721,3.976604</Geometrie>
+            </Partie>
+            <Partie pk="42" lk="[LF][P42][.]">
+                <Espace pk="999999" lk="[LF][E]"/>
+                <NomPartie>.</NomPartie>
+                <NumeroPartie>10</NumeroPartie>
+                <NomUsuel>PARTIE 42</NomUsuel>
+                <Contour>1000010,Cloture=1234,47.123456 1.654321,grc(47.123456 1.654321:0m:=)	oui</Contour>
+                <Geometrie>45.000000,1.000000 45.100000,1.100000 45.2,1.0</Geometrie>
+            </Partie>
+        </PartieS>
+        <NavFixS>
+            <NavFix pk="307100" lk="[LF][VOR 0]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VOR</NavType>
+                <Ident>ID0</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>43.000000</Latitude>
+                <Longitude>1.000000</Longitude>
+                <Geometrie>43.000000,1.000000</Geometrie>
+            </NavFix>
+            <NavFix pk="307101" lk="[LF][VFR 1]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M1-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>43.110000</Latitude>
+                <Longitude>1.130000</Longitude>
+                <Description>VRP-Point fictif 1 (près du château)</Description>
+                <Geometrie>43.110000,1.130000</Geometrie>
+            </NavFix>
+            <NavFix pk="307102" lk="[LF][VFR 2]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M2-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>43.220000</Latitude>
+                <Longitude>1.260000</Longitude>
+                <Geometrie>43.220000,1.260000</Geometrie>
+            </NavFix>
+            <NavFix pk="307103" lk="[LF][DME-ATT 3]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>DME-ATT</NavType>
+                <Ident>ID3</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>43.330000</Latitude>
+                <Longitude>1.390000</Longitude>
+                <Geometrie>43.330000,1.390000</Geometrie>
+            </NavFix>
+            <NavFix pk="307104" lk="[LF][VFR 4]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M4-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>43.440000</Latitude>
+                <Longitude>1.520000</Longitude>
+                <Geometrie>43.440000,1.520000</Geometrie>
+            </NavFix>
+            <NavFix pk="307105" lk="[LF][VFR 5]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M5-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>43.550000</Latitude>
+                <Longitude>1.650000</Longitude>
+                <Description>VRP-Point fictif 5 (près du château)</Description>
+                <Geometrie>43.550000,1.650000</Geometrie>
+            </NavFix>
+            <NavFix pk="307106" lk="[LF][VOR 6]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VOR</NavType>
+                <Ident>ID6</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>43.660000</Latitude>
+                <Longitude>1.780000</Longitude>
+                <Geometrie>43.660000,1.780000</Geometrie>
+            </NavFix>
+            <NavFix pk="307107" lk="[LF][VFR 7]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M7-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>43.770000</Latitude>
+                <Longitude>1.910000</Longitude>
+                <Description>VRP-Point fictif 7 (près du château)</Description>
+                <Geometrie>43.770000,1.910000</Geometrie>
+            </NavFix>
+            <NavFix pk="307108" lk="[LF][VFR 8]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M8-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>43.880000</Latitude>
+                <Longitude>2.040000</Longitude>
+                <Geometrie>43.880000,2.040000</Geometrie>
+            </NavFix>
+            <NavFix pk="307109" lk="[LF][DME-ATT 9]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>DME-ATT</NavType>
+                <Ident>ID9</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>43.990000</Latitude>
+                <Longitude>2.170000</Longitude>
+                <Geometrie>43.990000,2.170000</Geometrie>
+            </NavFix>
+            <NavFix pk="307110" lk="[LF][VFR 10]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M10-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>44.100000</Latitude>
+                <Longitude>2.300000</Longitude>
+                <Geometrie>44.100000,2.300000</Geometrie>
+            </NavFix>
+            <NavFix pk="307111" lk="[LF][VFR 11]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M11-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>44.210000</Latitude>
+                <Longitude>2.430000</Longitude>
+                <Description>VRP-Point fictif 11 (près du château)</Description>
+                <Geometrie>44.210000,2.430000</Geometrie>
+            </NavFix>
+            <NavFix pk="307112" lk="[LF][VOR 12]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VOR</NavType>
+                <Ident>ID12</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>44.320000</Latitude>
+                <Longitude>2.560000</Longitude>
+                <Geometrie>44.320000,2.560000</Geometrie>
+            </NavFix>
+            <NavFix pk="307113" lk="[LF][VFR 13]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M13-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>44.430000</Latitude>
+                <Longitude>2.690000</Longitude>
+                <Description>VRP-Point fictif 13 (près du château)</Description>
+                <Geometrie>44.430000,2.690000</Geometrie>
+            </NavFix>
+            <NavFix pk="307114" lk="[LF][VFR 14]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M14-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>44.540000</Latitude>
+                <Longitude>2.820000</Longitude>
+                <Geometrie>44.540000,2.820000</Geometrie>
+            </NavFix>
+            <NavFix pk="307115" lk="[LF][DME-ATT 15]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>DME-ATT</NavType>
+                <Ident>ID15</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>44.650000</Latitude>
+                <Longitude>2.950000</Longitude>
+                <Geometrie>44.650000,2.950000</Geometrie>
+            </NavFix>
+            <NavFix pk="307116" lk="[LF][VFR 16]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M16-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>44.760000</Latitude>
+                <Longitude>3.080000</Longitude>
+                <Geometrie>44.760000,3.080000</Geometrie>
+            </NavFix>
+            <NavFix pk="307117" lk="[LF][VFR 17]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M17-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>44.870000</Latitude>
+                <Longitude>3.210000</Longitude>
+                <Description>VRP-Point fictif 17 (près du château)</Description>
+                <Geometrie>44.870000,3.210000</Geometrie>
+            </NavFix>
+            <NavFix pk="307118" lk="[LF][VOR 18]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VOR</NavType>
+                <Ident>ID18</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>44.980000</Latitude>
+                <Longitude>3.340000</Longitude>
+                <Geometrie>44.980000,3.340000</Geometrie>
+            </NavFix>
+            <NavFix pk="307119" lk="[LF][VFR 19]">
+                <Territoire pk="100" lk="[LF]"/>
+                <NavType>VFR</NavType>
+                <Ident>M19-X</Ident>
+                <Wgs84>2</Wgs84>
+                <Latitude>45.090000</Latitude>
+                <Longitude>3.470000</Longitude>
+                <Description>VRP-Point fictif 19 (près du château)</Description>
+                <Geometrie>45.090000,3.470000</Geometrie>
+            </NavFix>
+        </NavFixS>
+        <ObstacleS>
+            <Obstacle pk="0" lk="[O0]">
+                <Hauteur>100</Hauteur>
+            </Obstacle>
+            <Obstacle pk="1" lk="[O1]">
+                <Hauteur>101</Hauteur>
+            </Obstacle>
+            <Obstacle pk="2" lk="[O2]">
+                <Hauteur>102</Hauteur>
+            </Obstacle>
+            <Obstacle pk="3" lk="[O3]">
+                <Hauteur>103</Hauteur>
+            </Obstacle>
+            <Obstacle pk="4" lk="[O4]">
+                <Hauteur>104</Hauteur>
+            </Obstacle>
+            <Obstacle pk="5" lk="[O5]">
+                <Hauteur>105</Hauteur>
+            </Obstacle>
+            <Obstacle pk="6" lk="[O6]">
+                <Hauteur>106</Hauteur>
+            </Obstacle>
+            <Obstacle pk="7" lk="[O7]">
+                <Hauteur>107</Hauteur>
+            </Obstacle>
+        </ObstacleS>
+        <RouteS>
+            <Route pk="0" lk="[R0]"/>
+            <Route pk="1" lk="[R1]"/>
+            <Route pk="2" lk="[R2]"/>
+            <Route pk="3" lk="[R3]"/>
+        </RouteS>
+    </Situation>
+</SiaExport>

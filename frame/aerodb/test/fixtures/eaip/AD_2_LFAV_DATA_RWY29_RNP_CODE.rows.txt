@@ -1,0 +1,27 @@
+AIP AD 2 LFAV DA T A RWY29 RNP CODE
+FRANCE 29 DEC 22
+VALENCIENNES DENAIN
+PRECODING RNP RWY 29
+AMDT 13/22 © SIA
+RNP RWY 29
+RMK - MAG VAR 2020 1.3°E REF NAVAID : -
+Waypoint Direction True Distance MAX Altitude
+Leg sequence Path
+Terminator Identification Fly Over Direction MAG (°) (°) (NM) Turn direction MNM Altitude (FL or AMSL ft) (FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (m) NAV Spec
+HLDG - EXEKO - ---- - - -- -
+IF EXEKO - ---- 3000 - 220 - RNP APCH
+INA EXEKO
+TF VADEP - 001.1 4.8 - 3000 - 210 - RNP APCH
+IF ERLED - ---- 3000 - 220 - RNP APCH
+INA ERLED
+TF VADEP - 220 221.1 4.4 - 3000 - 210 - RNP APCH
+INA VADEP IF VADEP - ---- 3000 - 210 - RNP APCH
+IF VADEP - ---- 3000 - 210 - RNP APCH
+TF FAV29 - 290 291.1 5.0 - 3000 3000 - - RNP APCH
+TF RW29 Yes 290 291.0 8.8 - - - - -3.0° / 15.0 RNP APCH
+DF AV410 - 290 290.8 3.5 - - - 160 - RNP APCH
+APCH
+TF AV412 - 019 020.8 3.7 - - - - - RNP APCH
+TF AV414 - 071 072.3 4.9 - - - - - RNP APCH
+TF AV416 - 146 147.7 3.0 - - 2000 210 - RNP APCH
+TF EXEKO - 146 147.8 15.8 - 3000 - 220 - RNP APCH

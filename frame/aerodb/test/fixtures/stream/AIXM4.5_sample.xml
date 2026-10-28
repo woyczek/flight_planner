@@ -1,0 +1,1272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AIXM-Snapshot created="2026-01-01T00:00:00.000+01:00" origin="Sia-France" version="4.5" effective="2026-10-01T00:00:00.000+02:00">
+    <Org>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <codeId>LF</codeId>
+        <codeType>O</codeType>
+    </Org>
+    <Ahp>
+        <AhpUid mid="1521000">
+            <codeId>LFAB</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AERODROME D ESSAI 0 é</txtName>
+        <codeType>AD</codeType>
+        <codeIcao>LFAB</codeIcao>
+        <geoLat>440000.00N</geoLat>
+        <geoLong>0010000.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <valElev>100</valElev>
+        <valMagVar>1.5</valMagVar>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521001">
+            <codeId>XX1</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AERODROME D ESSAI 1 é</txtName>
+        <codeType>AD</codeType>
+        <geoLat>441200.00N</geoLat>
+        <geoLong>0011800.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <valElev>110</valElev>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521002">
+            <codeId>LFCD</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AERODROME D ESSAI 2 é</txtName>
+        <codeType>AD</codeType>
+        <codeIcao>LFCD</codeIcao>
+        <geoLat>442360.00N</geoLat>
+        <geoLong>0013600.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <valElev>120</valElev>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521003">
+            <codeId>XX3</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AERODROME D ESSAI 3 é</txtName>
+        <codeType>AD</codeType>
+        <geoLat>443600.00N</geoLat>
+        <geoLong>0015360.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <valElev>130</valElev>
+        <valMagVar>1.5</valMagVar>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521004">
+            <codeId>LFEF</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AERODROME D ESSAI 4 é</txtName>
+        <codeType>AD</codeType>
+        <codeIcao>LFEF</codeIcao>
+        <geoLat>444760.00N</geoLat>
+        <geoLong>0021200.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <valElev>140</valElev>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521005">
+            <codeId>XX5</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AERODROME D ESSAI 5 é</txtName>
+        <codeType>AD</codeType>
+        <geoLat>450000.00N</geoLat>
+        <geoLong>0023000.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <valElev>150</valElev>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521006">
+            <codeId>LFGH</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AERODROME D ESSAI 6 é</txtName>
+        <codeType>AD</codeType>
+        <codeIcao>LFGH</codeIcao>
+        <geoLat>451200.00N</geoLat>
+        <geoLong>0024760.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <valElev>160</valElev>
+        <valMagVar>1.5</valMagVar>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521007">
+            <codeId>XX7</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AERODROME D ESSAI 7 é</txtName>
+        <codeType>AD</codeType>
+        <geoLat>452360.00N</geoLat>
+        <geoLong>0030600.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <valElev>170</valElev>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521008">
+            <codeId>LFIJ</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AERODROME D ESSAI 8 é</txtName>
+        <codeType>AD</codeType>
+        <codeIcao>LFIJ</codeIcao>
+        <geoLat>453600.00N</geoLat>
+        <geoLong>0032360.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <valElev>180</valElev>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521009">
+            <codeId>XX9</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AERODROME D ESSAI 9 é</txtName>
+        <codeType>AD</codeType>
+        <geoLat>454760.00N</geoLat>
+        <geoLong>0034160.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <valElev>190</valElev>
+        <valMagVar>1.5</valMagVar>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521010">
+            <codeId>LFKL</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AERODROME D ESSAI 10 é</txtName>
+        <codeType>AD</codeType>
+        <codeIcao>LFKL</codeIcao>
+        <geoLat>460000.00N</geoLat>
+        <geoLong>0040000.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <valElev>200</valElev>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521011">
+            <codeId>XX11</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AERODROME D ESSAI 11 é</txtName>
+        <codeType>AD</codeType>
+        <geoLat>461200.00N</geoLat>
+        <geoLong>0041760.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <valElev>210</valElev>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521020">
+            <codeId>LFZZ</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>PISTE FERMEE (CLOSED)</txtName>
+        <codeType>AD</codeType>
+        <codeIcao>LFZZ</codeIcao>
+        <geoLat>460000.00N</geoLat>
+        <geoLong>0020000.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <txtRmk>AD CLOSED</txtRmk>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521021">
+            <codeId>LFYY</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AD FICTIF</txtName>
+        <codeType>AD</codeType>
+        <codeIcao>LFYY</codeIcao>
+        <geoLat>460600.00N</geoLat>
+        <geoLong>0020600.00E</geoLong>
+        <codeDatum>WGE</codeDatum>
+        <txtRmk>FICTI</txtRmk>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521022">
+            <codeId>LFXX</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AD COORD DECIMALES</txtName>
+        <codeType>AD</codeType>
+        <codeIcao>LFXX</codeIcao>
+        <geoLat>47.46654728N</geoLat>
+        <geoLong>007.66545889E</geoLong>
+        <codeDatum>WGE</codeDatum>
+    </Ahp>
+    <Ahp>
+        <AhpUid mid="1521023">
+            <codeId>LFWW</codeId>
+        </AhpUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>AD SANS POSITION</txtName>
+        <codeType>AD</codeType>
+        <codeIcao>LFWW</codeIcao>
+        <geoLat></geoLat>
+        <geoLong></geoLong>
+        <codeDatum>WGE</codeDatum>
+    </Ahp>
+    <Rwy>
+        <RwyUid mid="1527900">
+            <AhpUid mid="1521000">
+                <codeId>LFAB</codeId>
+            </AhpUid>
+            <txtDesig>05/23</txtDesig>
+        </RwyUid>
+        <valLen>1200</valLen>
+        <uomDimRwy>M</uomDimRwy>
+        <codeComposition>ASPH</codeComposition>
+    </Rwy>
+    <Rwy>
+        <RwyUid mid="1527901">
+            <AhpUid mid="1521001">
+                <codeId>LFBC</codeId>
+            </AhpUid>
+            <txtDesig>05/23</txtDesig>
+        </RwyUid>
+        <valLen>1300</valLen>
+        <uomDimRwy>M</uomDimRwy>
+        <codeComposition>ASPH</codeComposition>
+    </Rwy>
+    <Rwy>
+        <RwyUid mid="1527902">
+            <AhpUid mid="1521002">
+                <codeId>LFCD</codeId>
+            </AhpUid>
+            <txtDesig>05/23</txtDesig>
+        </RwyUid>
+        <valLen>1400</valLen>
+        <uomDimRwy>M</uomDimRwy>
+        <codeComposition>ASPH</codeComposition>
+    </Rwy>
+    <Rwy>
+        <RwyUid mid="1527903">
+            <AhpUid mid="1521003">
+                <codeId>LFDE</codeId>
+            </AhpUid>
+            <txtDesig>05/23</txtDesig>
+        </RwyUid>
+        <valLen>1500</valLen>
+        <uomDimRwy>M</uomDimRwy>
+        <codeComposition>ASPH</codeComposition>
+    </Rwy>
+    <Rwy>
+        <RwyUid mid="1527904">
+            <AhpUid mid="1521004">
+                <codeId>LFEF</codeId>
+            </AhpUid>
+            <txtDesig>05/23</txtDesig>
+        </RwyUid>
+        <valLen>1600</valLen>
+        <uomDimRwy>M</uomDimRwy>
+        <codeComposition>ASPH</codeComposition>
+    </Rwy>
+    <Rwy>
+        <RwyUid mid="1527905">
+            <AhpUid mid="1521005">
+                <codeId>LFFG</codeId>
+            </AhpUid>
+            <txtDesig>05/23</txtDesig>
+        </RwyUid>
+        <valLen>1700</valLen>
+        <uomDimRwy>M</uomDimRwy>
+        <codeComposition>ASPH</codeComposition>
+    </Rwy>
+    <Vor>
+        <VorUid mid="1526850">
+            <codeId>V00</codeId>
+            <geoLat>433000.00N</geoLat>
+            <geoLong>0003000.00E</geoLong>
+        </VorUid>
+        <OrgUid mid="1520788">
+            <txtName>ANTILLES FRANCAISES</txtName>
+        </OrgUid>
+        <txtName>VOR FICTIF V00</txtName>
+        <codeType>VOR</codeType>
+        <valFreq>112.0</valFreq>
+    </Vor>
+    <Vor>
+        <VorUid mid="1526851">
+            <codeId>V01</codeId>
+            <geoLat>434760.00N</geoLat>
+            <geoLong>0005400.00E</geoLong>
+        </VorUid>
+        <OrgUid mid="1520788">
+            <txtName>ANTILLES FRANCAISES</txtName>
+        </OrgUid>
+        <txtName>VOR FICTIF V01</txtName>
+        <codeType>VOR</codeType>
+        <valFreq>112.1</valFreq>
+    </Vor>
+    <Vor>
+        <VorUid mid="1526852">
+            <codeId>V02</codeId>
+            <geoLat>440600.00N</geoLat>
+            <geoLong>0011800.00E</geoLong>
+        </VorUid>
+        <OrgUid mid="1520788">
+            <txtName>ANTILLES FRANCAISES</txtName>
+        </OrgUid>
+        <txtName>VOR FICTIF V02</txtName>
+        <codeType>VOR</codeType>
+        <valFreq>112.2</valFreq>
+    </Vor>
+    <Vor>
+        <VorUid mid="1526853">
+            <codeId>V03</codeId>
+            <geoLat>442360.00N</geoLat>
+            <geoLong>0014200.00E</geoLong>
+        </VorUid>
+        <OrgUid mid="1520788">
+            <txtName>ANTILLES FRANCAISES</txtName>
+        </OrgUid>
+        <txtName>VOR FICTIF V03</txtName>
+        <codeType>VOR</codeType>
+        <valFreq>112.3</valFreq>
+    </Vor>
+    <Vor>
+        <VorUid mid="1526854">
+            <codeId>V04</codeId>
+            <geoLat>444200.00N</geoLat>
+            <geoLong>0020600.00E</geoLong>
+        </VorUid>
+        <OrgUid mid="1520788">
+            <txtName>ANTILLES FRANCAISES</txtName>
+        </OrgUid>
+        <txtName>VOR FICTIF V04</txtName>
+        <codeType>VOR</codeType>
+        <valFreq>112.4</valFreq>
+    </Vor>
+    <Dme>
+        <DmeUid mid="1527360">
+            <codeId>V00</codeId>
+            <geoLat>433000.00N</geoLat>
+            <geoLong>0003000.00E</geoLong>
+        </DmeUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <VorUid mid="1526850">
+            <codeId>V00</codeId>
+            <geoLat>433000.00N</geoLat>
+            <geoLong>0003000.00E</geoLong>
+        </VorUid>
+        <txtName>DME V00</txtName>
+        <codeChannel>103X</codeChannel>
+        <valGhostFreq>115.6</valGhostFreq>
+    </Dme>
+    <Dme>
+        <DmeUid mid="1527361">
+            <codeId>V01</codeId>
+            <geoLat>434760.00N</geoLat>
+            <geoLong>0005400.00E</geoLong>
+        </DmeUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <VorUid mid="1526851">
+            <codeId>V01</codeId>
+            <geoLat>434760.00N</geoLat>
+            <geoLong>0005400.00E</geoLong>
+        </VorUid>
+        <txtName>DME V01</txtName>
+        <codeChannel>103X</codeChannel>
+        <valGhostFreq>115.6</valGhostFreq>
+    </Dme>
+    <Dme>
+        <DmeUid mid="1527362">
+            <codeId>V02</codeId>
+            <geoLat>440600.00N</geoLat>
+            <geoLong>0011800.00E</geoLong>
+        </DmeUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <VorUid mid="1526852">
+            <codeId>V02</codeId>
+            <geoLat>440600.00N</geoLat>
+            <geoLong>0011800.00E</geoLong>
+        </VorUid>
+        <txtName>DME V02</txtName>
+        <codeChannel>103X</codeChannel>
+        <valGhostFreq>115.6</valGhostFreq>
+    </Dme>
+    <Dme>
+        <DmeUid mid="1527400">
+            <codeId>DS0</codeId>
+            <geoLat>450000.00N</geoLat>
+            <geoLong>0030000.00E</geoLong>
+        </DmeUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>DME SEUL 0</txtName>
+        <codeChannel>110X</codeChannel>
+    </Dme>
+    <Dme>
+        <DmeUid mid="1527401">
+            <codeId>DS1</codeId>
+            <geoLat>460000.00N</geoLat>
+            <geoLong>0040000.00E</geoLong>
+        </DmeUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>DME SEUL 1</txtName>
+        <codeChannel>110X</codeChannel>
+    </Dme>
+    <Tcn>
+        <TcnUid mid="1527195">
+            <codeId>V01</codeId>
+            <geoLat>434760.00N</geoLat>
+            <geoLong>0005400.00E</geoLong>
+        </TcnUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>TACAN V01</txtName>
+        <codeChannel>109X</codeChannel>
+    </Tcn>
+    <Tcn>
+        <TcnUid mid="1527196">
+            <codeId>TS0</codeId>
+            <geoLat>470000.00N</geoLat>
+            <geoLong>0040000.00E</geoLong>
+        </TcnUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>TACAN SEUL</txtName>
+        <codeChannel>109X</codeChannel>
+    </Tcn>
+    <Ndb>
+        <NdbUid mid="1523956">
+            <codeId>N0</codeId>
+            <geoLat>460000.00N</geoLat>
+            <geoLong>0010000.00E</geoLong>
+        </NdbUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>NDB FICTIF 0</txtName>
+        <valFreq>430</valFreq>
+    </Ndb>
+    <Ndb>
+        <NdbUid mid="1523957">
+            <codeId>N1</codeId>
+            <geoLat>461200.00N</geoLat>
+            <geoLong>0011160.00E</geoLong>
+        </NdbUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>NDB FICTIF 1</txtName>
+        <valFreq>431</valFreq>
+    </Ndb>
+    <Ndb>
+        <NdbUid mid="1523958">
+            <codeId>N2</codeId>
+            <geoLat>462360.00N</geoLat>
+            <geoLong>0012360.00E</geoLong>
+        </NdbUid>
+        <OrgUid mid="1520800">
+            <txtName>FRANCE</txtName>
+        </OrgUid>
+        <txtName>NDB FICTIF 2</txtName>
+        <valFreq>432</valFreq>
+    </Ndb>
+    <Ils>
+        <IlsUid mid="1543314">
+            <RdnUid mid="1535725">
+                <RwyUid mid="1527971">
+                    <AhpUid mid="1520910">
+                        <codeId>LFAB</codeId>
+                    </AhpUid>
+                    <txtDesig>05/23</txtDesig>
+                </RwyUid>
+                <txtDesig>05</txtDesig>
+            </RdnUid>
+        </IlsUid>
+        <DmeUid mid="1527630">
+            <codeId>DO</codeId>
+            <geoLat>470000.00N</geoLat>
+            <geoLong>0050000.00E</geoLong>
+        </DmeUid>
+        <codeCat>I</codeCat>
+        <Ilz>
+            <codeId>DO</codeId>
+            <valFreq>109.35</valFreq>
+            <geoLat>470036.00N</geoLat>
+            <geoLong>0050036.00E</geoLong>
+        </Ilz>
+    </Ils>
+    <Ils>
+        <IlsUid mid="1543315">
+            <RdnUid mid="1535726">
+                <RwyUid mid="1527972">
+                    <AhpUid mid="1520911">
+                        <codeId>LFAC</codeId>
+                    </AhpUid>
+                    <txtDesig>09/27</txtDesig>
+                </RwyUid>
+                <txtDesig>09</txtDesig>
+            </RdnUid>
+        </IlsUid>
+        <codeCat>I</codeCat>
+    </Ils>
+    <Dpn>
+        <DpnUid mid="1538188">
+            <codeId>PT000</codeId>
+            <geoLat>44.00000000N</geoLat>
+            <geoLong>2.00000000E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT000</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538189">
+            <codeId>PT001</codeId>
+            <geoLat>440412.00N</geoLat>
+            <geoLong>0020336.00E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT001</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538190">
+            <codeId>PT002</codeId>
+            <geoLat>440824.00N</geoLat>
+            <geoLong>0020712.00E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT002</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538191">
+            <codeId>PT003</codeId>
+            <geoLat>441236.00N</geoLat>
+            <geoLong>0021048.00E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT003</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538192">
+            <codeId>PT004</codeId>
+            <geoLat>441648.00N</geoLat>
+            <geoLong>0021424.00E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT004</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538193">
+            <codeId>PT005</codeId>
+            <geoLat>442100.00N</geoLat>
+            <geoLong>0021760.00E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT005</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538194">
+            <codeId>PT006</codeId>
+            <geoLat>442512.00N</geoLat>
+            <geoLong>0022136.00E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT006</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538195">
+            <codeId>PT007</codeId>
+            <geoLat>44.49000000N</geoLat>
+            <geoLong>2.42000000E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT007</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538196">
+            <codeId>PT008</codeId>
+            <geoLat>443336.00N</geoLat>
+            <geoLong>0022848.00E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT008</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538197">
+            <codeId>PT009</codeId>
+            <geoLat>443748.00N</geoLat>
+            <geoLong>0023224.00E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT009</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538198">
+            <codeId>PT010</codeId>
+            <geoLat>444200.00N</geoLat>
+            <geoLong>0023600.00E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT010</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538199">
+            <codeId>PT011</codeId>
+            <geoLat>444612.00N</geoLat>
+            <geoLong>0023936.00E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT011</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538200">
+            <codeId>PT012</codeId>
+            <geoLat>445024.00N</geoLat>
+            <geoLong>0024312.00E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT012</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538201">
+            <codeId>PT013</codeId>
+            <geoLat>445436.00N</geoLat>
+            <geoLong>0024648.00E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT013</txtName>
+    </Dpn>
+    <Dpn>
+        <DpnUid mid="1538202">
+            <codeId>PT014</codeId>
+            <geoLat>44.98000000N</geoLat>
+            <geoLong>2.84000000E</geoLong>
+        </DpnUid>
+        <codeDatum>WGE</codeDatum>
+        <codeType>ICAO</codeType>
+        <txtName>PT014</txtName>
+    </Dpn>
+    <Obs>
+        <ObsUid mid="1577950">
+            <geoLat>480600.00N</geoLat>
+            <geoLong>0011160.00E</geoLong>
+        </ObsUid>
+        <txtName>22033</txtName>
+        <txtDescrType>Pylône</txtDescrType>
+        <codeGroup>N</codeGroup>
+        <codeLgt>N</codeLgt>
+        <valElev>300</valElev>
+        <valHgt>200</valHgt>
+        <uomDistVer>FT</uomDistVer>
+    </Obs>
+    <Obs>
+        <ObsUid mid="1577951">
+            <geoLat>482360.00N</geoLat>
+            <geoLong>0011800.00E</geoLong>
+        </ObsUid>
+        <txtName>22034</txtName>
+        <txtDescrType>Pylône</txtDescrType>
+        <codeGroup>N</codeGroup>
+        <codeLgt>N</codeLgt>
+        <valElev>420</valElev>
+        <valHgt>320</valHgt>
+        <uomDistVer>FT</uomDistVer>
+    </Obs>
+    <Obs>
+        <ObsUid mid="1577952">
+            <geoLat>484200.00N</geoLat>
+            <geoLong>0010600.00E</geoLong>
+        </ObsUid>
+        <txtName>22035</txtName>
+        <txtDescrType>Pylône</txtDescrType>
+        <codeGroup>N</codeGroup>
+        <codeLgt>N</codeLgt>
+        <valElev>95</valElev>
+        <valHgt>-5</valHgt>
+        <uomDistVer>M</uomDistVer>
+    </Obs>
+    <Obs>
+        <ObsUid mid="1577953">
+            <geoLat>491200.00N</geoLat>
+            <geoLong>0014800.00E</geoLong>
+        </ObsUid>
+        <txtName>22036</txtName>
+        <txtDescrType>Pylône</txtDescrType>
+        <codeGroup>N</codeGroup>
+        <codeLgt>N</codeLgt>
+        <valElev>150</valElev>
+        <valHgt>50</valHgt>
+        <uomDistVer>FT</uomDistVer>
+    </Obs>
+    <Obs>
+        <ObsUid mid="1577954">
+            <geoLat>491760.00N</geoLat>
+            <geoLong>0015360.00E</geoLong>
+        </ObsUid>
+        <txtName>22037</txtName>
+        <txtDescrType>Pylône</txtDescrType>
+        <codeGroup>N</codeGroup>
+        <codeLgt>N</codeLgt>
+        <valElev>600</valElev>
+        <valHgt>500</valHgt>
+        <uomDistVer>FT</uomDistVer>
+    </Obs>
+    <Obs>
+        <ObsUid mid="1577955">
+            <geoLat>491836.00N</geoLat>
+            <geoLong>0015700.00E</geoLong>
+        </ObsUid>
+        <txtName>22038</txtName>
+        <txtDescrType>Pylône</txtDescrType>
+        <codeGroup>N</codeGroup>
+        <codeLgt>N</codeLgt>
+        <valElev>50</valElev>
+        <valHgt>-50</valHgt>
+        <uomDistVer>M</uomDistVer>
+    </Obs>
+    <Obs>
+        <ObsUid mid="1577956">
+            <geoLat>501200.00N</geoLat>
+            <geoLong>0021200.00E</geoLong>
+        </ObsUid>
+        <txtName>22039</txtName>
+        <txtDescrType>Pylône</txtDescrType>
+        <codeGroup>N</codeGroup>
+        <codeLgt>N</codeLgt>
+        <valElev>210</valElev>
+        <valHgt>110</valHgt>
+        <uomDistVer>FT</uomDistVer>
+    </Obs>
+    <Obs>
+        <ObsUid mid="1577957">
+            <geoLat>511760.00N</geoLat>
+            <geoLong>0003000.00E</geoLong>
+        </ObsUid>
+        <txtName>22040</txtName>
+        <txtDescrType>Pylône</txtDescrType>
+        <codeGroup>N</codeGroup>
+        <codeLgt>N</codeLgt>
+        <valElev>80</valElev>
+        <valHgt>-20</valHgt>
+        <uomDistVer>M</uomDistVer>
+    </Obs>
+    <Obs>
+        <ObsUid mid="1577958">
+            <geoLat>520600.00N</geoLat>
+            <geoLong>0031760.00E</geoLong>
+        </ObsUid>
+        <txtName>22041</txtName>
+        <txtDescrType>Pylône</txtDescrType>
+        <codeGroup>N</codeGroup>
+        <codeLgt>N</codeLgt>
+        <valElev>130</valElev>
+        <valHgt>30</valHgt>
+        <uomDistVer>FT</uomDistVer>
+    </Obs>
+    <Obs>
+        <ObsUid mid="1577990">
+            <geoLat>48.1234567N</geoLat>
+            <geoLong>001.2345678E</geoLong>
+        </ObsUid>
+        <txtName>DEC</txtName>
+        <valElev>200</valElev>
+        <uomDistVer>FT</uomDistVer>
+    </Obs>
+    <Ase>
+        <AseUid mid="1560400">
+            <codeType>CTR</codeType>
+            <codeId>LF00</codeId>
+        </AseUid>
+        <txtName>NOM 0</txtName>
+    </Ase>
+    <Ase>
+        <AseUid mid="1560401">
+            <codeType>TMA</codeType>
+            <codeId>LF01</codeId>
+        </AseUid>
+        <txtName>NOM 1</txtName>
+    </Ase>
+    <Ase>
+        <AseUid mid="1560402">
+            <codeType>R</codeType>
+            <codeId>LF02</codeId>
+        </AseUid>
+        <txtName>NOM 2</txtName>
+    </Ase>
+    <Ase>
+        <AseUid mid="1560403">
+            <codeType>D-OTHER</codeType>
+            <codeId>LF03</codeId>
+        </AseUid>
+        <txtName>NOM 3</txtName>
+    </Ase>
+    <Ase>
+        <AseUid mid="1560404">
+            <codeType>D-OTHER</codeType>
+            <codeId>LF04</codeId>
+        </AseUid>
+        <txtName>NOM 4</txtName>
+        <txtLocalType>SIV</txtLocalType>
+    </Ase>
+    <Ase>
+        <AseUid mid="1560405">
+            <codeType>FIR</codeType>
+            <codeId>LF05</codeId>
+        </AseUid>
+        <txtName>NOM 5</txtName>
+    </Ase>
+    <Ase>
+        <AseUid mid="1560406">
+            <codeType>CTA</codeType>
+            <codeId>LF06</codeId>
+        </AseUid>
+        <txtName>NOM 6</txtName>
+    </Ase>
+    <Ase>
+        <AseUid mid="1560407">
+            <codeType>P</codeType>
+            <codeId>LF07</codeId>
+        </AseUid>
+        <txtName>NOM 7</txtName>
+    </Ase>
+    <Ase>
+        <AseUid mid="1560408">
+            <codeType>D-OTHER</codeType>
+            <codeId>LF08</codeId>
+        </AseUid>
+        <txtName>NOM 8</txtName>
+        <txtLocalType>PRN</txtLocalType>
+    </Ase>
+    <Abd>
+        <AbdUid mid="1568000">
+            <AseUid mid="1560400">
+                <codeType>CTR</codeType>
+                <codeId>LF00</codeId>
+            </AseUid>
+        </AbdUid>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>440000.00N</geoLat>
+            <geoLong>0010000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>440600.00N</geoLat>
+            <geoLong>0010000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>440600.00N</geoLat>
+            <geoLong>0010600.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>CWA</codeType>
+            <geoLat>440000.00N</geoLat>
+            <geoLong>0010600.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+            <geoLatArc>440260.00N</geoLatArc>
+            <geoLongArc>0010600.00E</geoLongArc>
+            <valRadiusArc>7</valRadiusArc>
+            <uomRadiusArc>NM</uomRadiusArc>
+        </Avx>
+    </Abd>
+    <Abd>
+        <AbdUid mid="1568001">
+            <AseUid mid="1560400">
+                <codeType>CTR</codeType>
+                <codeId>LF00</codeId>
+            </AseUid>
+        </AbdUid>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>460000.00N</geoLat>
+            <geoLong>0030000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>460600.00N</geoLat>
+            <geoLong>0030000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>460600.00N</geoLat>
+            <geoLong>0030600.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>460000.00N</geoLat>
+            <geoLong>0030600.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+    </Abd>
+    <Abd>
+        <AbdUid mid="1568002">
+            <AseUid mid="1560401">
+                <codeType>TMA</codeType>
+                <codeId>LF01</codeId>
+            </AseUid>
+        </AbdUid>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>441200.00N</geoLat>
+            <geoLong>0011160.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>441800.00N</geoLat>
+            <geoLong>0011160.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>441800.00N</geoLat>
+            <geoLong>0011800.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>CWA</codeType>
+            <geoLat>441200.00N</geoLat>
+            <geoLong>0011800.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+            <geoLatArc>441500.00N</geoLatArc>
+            <geoLongArc>0011800.00E</geoLongArc>
+            <valRadiusArc>7</valRadiusArc>
+            <uomRadiusArc>NM</uomRadiusArc>
+        </Avx>
+    </Abd>
+    <Abd>
+        <AbdUid mid="1568003">
+            <AseUid mid="1560401">
+                <codeType>TMA</codeType>
+                <codeId>LF01</codeId>
+            </AseUid>
+        </AbdUid>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>470000.00N</geoLat>
+            <geoLong>0030000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>470600.00N</geoLat>
+            <geoLong>0030000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>470600.00N</geoLat>
+            <geoLong>0030600.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>470000.00N</geoLat>
+            <geoLong>0030600.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+    </Abd>
+    <Abd>
+        <AbdUid mid="1568004">
+            <AseUid mid="1560402">
+                <codeType>R</codeType>
+                <codeId>LF02</codeId>
+            </AseUid>
+        </AbdUid>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>442360.00N</geoLat>
+            <geoLong>0012360.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>443000.00N</geoLat>
+            <geoLong>0012360.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>443000.00N</geoLat>
+            <geoLong>0013000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>CWA</codeType>
+            <geoLat>442360.00N</geoLat>
+            <geoLong>0013000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+            <geoLatArc>442660.00N</geoLatArc>
+            <geoLongArc>0013000.00E</geoLongArc>
+            <valRadiusArc>7</valRadiusArc>
+            <uomRadiusArc>NM</uomRadiusArc>
+        </Avx>
+    </Abd>
+    <Abd>
+        <AbdUid mid="1568005">
+            <AseUid mid="1560403">
+                <codeType>D-OTHER</codeType>
+                <codeId>LF03</codeId>
+            </AseUid>
+        </AbdUid>
+        <Circle>
+            <geoLatCen>434210.00N</geoLatCen>
+            <geoLongCen>0052347.00E</geoLongCen>
+            <codeDatum>WGE</codeDatum>
+            <valRadius>300</valRadius>
+            <uomRadius>M</uomRadius>
+        </Circle>
+    </Abd>
+    <Abd>
+        <AbdUid mid="1568006">
+            <AseUid mid="1560404">
+                <codeType>D-OTHER</codeType>
+                <codeId>LF04</codeId>
+            </AseUid>
+        </AbdUid>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>444760.00N</geoLat>
+            <geoLong>0014800.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>445360.00N</geoLat>
+            <geoLong>0014800.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>445360.00N</geoLat>
+            <geoLong>0015400.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>CWA</codeType>
+            <geoLat>444760.00N</geoLat>
+            <geoLong>0015400.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+            <geoLatArc>445060.00N</geoLatArc>
+            <geoLongArc>0015400.00E</geoLongArc>
+            <valRadiusArc>7</valRadiusArc>
+            <uomRadiusArc>NM</uomRadiusArc>
+        </Avx>
+    </Abd>
+    <Abd>
+        <AbdUid mid="1568007">
+            <AseUid mid="1560405">
+                <codeType>FIR</codeType>
+                <codeId>LF05</codeId>
+            </AseUid>
+        </AbdUid>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>450000.00N</geoLat>
+            <geoLong>0020000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>450600.00N</geoLat>
+            <geoLong>0020000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>450600.00N</geoLat>
+            <geoLong>0020600.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>CWA</codeType>
+            <geoLat>450000.00N</geoLat>
+            <geoLong>0020600.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+            <geoLatArc>450260.00N</geoLatArc>
+            <geoLongArc>0020600.00E</geoLongArc>
+            <valRadiusArc>7</valRadiusArc>
+            <uomRadiusArc>NM</uomRadiusArc>
+        </Avx>
+    </Abd>
+    <Abd>
+        <AbdUid mid="1568008">
+            <AseUid mid="1560406">
+                <codeType>CTA</codeType>
+                <codeId>LF06</codeId>
+            </AseUid>
+        </AbdUid>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>440000.00N</geoLat>
+            <geoLong>0020000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>440600.00N</geoLat>
+            <geoLong>0020600.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+    </Abd>
+    <Abd>
+        <AbdUid mid="1568009">
+            <AseUid mid="1560407">
+                <codeType>P</codeType>
+                <codeId>LF07</codeId>
+            </AseUid>
+        </AbdUid>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>452360.00N</geoLat>
+            <geoLong>0022400.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>453000.00N</geoLat>
+            <geoLong>0022400.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>453000.00N</geoLat>
+            <geoLong>0023000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>CWA</codeType>
+            <geoLat>452360.00N</geoLat>
+            <geoLong>0023000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+            <geoLatArc>452660.00N</geoLatArc>
+            <geoLongArc>0023000.00E</geoLongArc>
+            <valRadiusArc>7</valRadiusArc>
+            <uomRadiusArc>NM</uomRadiusArc>
+        </Avx>
+    </Abd>
+    <Abd>
+        <AbdUid mid="1568010">
+            <AseUid mid="1560408">
+                <codeType>D-OTHER</codeType>
+                <codeId>LF08</codeId>
+            </AseUid>
+        </AbdUid>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>453600.00N</geoLat>
+            <geoLong>0023600.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>454200.00N</geoLat>
+            <geoLong>0023600.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>454200.00N</geoLat>
+            <geoLong>0024200.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>CWA</codeType>
+            <geoLat>453600.00N</geoLat>
+            <geoLong>0024200.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+            <geoLatArc>453860.00N</geoLatArc>
+            <geoLongArc>0024200.00E</geoLongArc>
+            <valRadiusArc>7</valRadiusArc>
+            <uomRadiusArc>NM</uomRadiusArc>
+        </Avx>
+    </Abd>
+    <Abd>
+        <AbdUid mid="1568011">
+            <AseUid mid="1569999">
+                <codeType>D</codeType>
+                <codeId>ORPHELIN</codeId>
+            </AseUid>
+        </AbdUid>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>400000.00N</geoLat>
+            <geoLong>0010000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>400600.00N</geoLat>
+            <geoLong>0010000.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+        <Avx>
+            <codeType>GRC</codeType>
+            <geoLat>400600.00N</geoLat>
+            <geoLong>0010600.00E</geoLong>
+            <codeDatum>WGE</codeDatum>
+        </Avx>
+    </Abd>
+</AIXM-Snapshot>

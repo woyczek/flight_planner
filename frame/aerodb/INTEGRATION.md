@@ -55,7 +55,7 @@ const aerodb = AeroDB.create({ reader: FrameData.adapter(AeroDB.declaration()) }
 reference zones: the listing comes from the frame's tree, only the files asked for are read, the whole world is
 identical, and a republished file gives one `change` event and a fresh read of its zone. With the **local**
 transport (single user, no exchange), the reference files come from the launcher serving the page, otherwise from the
-configured GitHub repository. On the public website with neither, aerodb answers empty.
+configured GitHub repository. On the public website with neither, aerodb answers empty. The three states of the base are told apart by `aerodb.state()` (no read): `loading` (the list of published zones or a zone is being read), `noaccess` (no launcher and no repository + token set here: the frame gives `AeroDB.create({ access })`), `unpublished` (the access works, nothing is published), plus `ready`, `offline` and `idle` (never asked). `on('state', fn)` follows them (a read starts or ends, `refresh()`), and `refresh()` makes the list be read again (the frame calls it when the access changes or the network comes back). An empty list is not kept for more than 30 s: it is read again at the next question, so an answer given before the network was ready (first launch of a home-screen app) does not stay for the page's life.
 
 Scripts, in this order: `frame/aerodb/zones.js`, `frame/aerodb/aircraft.js`, `frame/aerodb/aerodb.js`; aerodb loads
 `registry.js` and `sheets.js` itself at the first `aircraft()` (the frame's service worker keeps them).
@@ -139,6 +139,108 @@ L.on(s => …); await L.sync();       // state; a pass now
   (with the base's VRP id when matched), sequences and instructions by page, or null; `await aerodb.vfrIndex()` → which
   aerodromes have some. Candidates extracted from the VAC charts: draw them dashed, labelled "extracted from the VAC,
   to be checked", never as published routes (SPEC § 5 quater).
+
+- **Procedures** (maps, fuel): `await aerodb.procedures('LFBD', { kind: 'SID', runway: '23' })` → procedures at the common
+  schema (SPEC § 5 quinquies), each with `status` (`official`, `check`, `ofp`) and `sources`; draw `check` and `ofp` ones
+  apart from published routes and word them "to be checked" / "seen in an OFP". Fuel hands a SimBrief OFP it has fetched to
+  `await aerodb.rememberOfp(ofp)` (the user name stays Fuel's) and writes the returned `{ sid, star }` in the current
+  flight (`route.procedures`); Maps draws that, ignoring a procedure whose aerodrome is no longer the route's departure or
+  arrival. `aerodb.procedureIndex()` says which aerodromes have some. A published point without position is placed by
+  `procedures()` from the SIA base; a point still without `lat` is skipped by the drawing.
+- **Publishing the procedures of the eAIP** (workstation, by the owner of the data repository, once per AIRAC cycle):
+  `pip install pypdf`, then, from a clone of the suite, `python tools/proc_eaip.py --all --delay 0.3 --eaip
+  https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_<DD>_<MON>_<YYYY>/FRANCE/AIRAC-<YYYY-MM-DD> --out <clone of the data
+  repository>/proc [--base-dir <clone>/sia/base/fr/<cycle>]`, read the `warnings` in each `<ICAO>.json`, then commit and push the
+  data repository (the frame synchronises it like the SIA base). `--all` takes the 141 aerodromes of the eAIP menu (about 0.7 MB of
+  page each, then the few PDF pages of each; aerodromes without coding tables are skipped); the old cycle folders can stay (the
+  reader takes the latest one in force). The tool downloads from the SIA only and writes nothing outside `--out` and `--cache`.
+- **Publishing the FAA procedures** (workstation, by the owner, once per cycle, 28 days): download `CIFP_AAMMJJ.zip` from
+  `https://aeronav.faa.gov/Upload_313-d/cifp/` (the file of the cycle in force; its readme gives the dates), then `python
+  tools/proc_cifp.py CIFP_AAMMJJ.zip --out <clone of the data repository>/proc` (5 seconds, 47 MB, one file per aerodrome), commit and push the
+  data repository. Wherever a module shows procedures with `status: 'official'` and `source.kind: 'cifp'`, it shows the file's `notice`
+  (as is, no warranty, not for navigation) and the source "FAA".
+- **Charts for the frame's PDF reader**: `procedures(icao)` is not needed; read the aerodrome file of the cycle through the
+  reader (`proc/<cycle>/<ICAO>.json`, key `charts`) — the address of a chart is `charts.base + items[].path`, the VAC chart
+  `charts.vac` (SPEC § 5 quinquies). A call `aerodb.charts(icao)` can wrap it when the reader exists.
+
+### Republication of the base after a parser change
+
+When `VERSION` of `shared/sia_base.js` rises (17 for "one entry per VFR reporting point"), the published base
+(`sia/base/<zone>/<cycle>/*.json`, each file carries `parserVersion`) is rebuilt by the owner of the data repository, on the
+workstation with the launcher; there is no tool for the phone and nothing to type or to place by hand:
+
+1. Update the suite on the workstation (git pull of the branch), start the launcher, open the V2 page **Settings >
+   Maintenance > Aeronautical data** (`apps/settings/maintenance.html`).
+2. Press **"Rebuild the aeronautical database"** (or a zone's "Fetch and recompute everything"). The page reads the SIA folder and
+   the other sources ticked for the active zones, rebuilds the base and **publishes every active zone** into the data
+   repository (`data/sia/base/<zone>/<cycle>/`): one rebuild covers all the zones, not one run per zone. A file whose content does not change is not
+   rewritten; since `parserVersion` is inside every file, all of them change once.
+3. Press **"Synchronise"** to send the files (the pending-writes line shows how many). Phones receive them with their next synchronisation.
+
+Until then: a phone keeps reading the base it has, which is valid (`COMPAT` 14 to 17) and shows the duplicates the Map already hides
+(`MapsRender.dedupeVrp`); V2 pages that read the published base mark it `outdated` (the notice "re-read the SIA folder for the VFR
+reporting points", planner and CPCO map pages). The V3 pages do not read `parserVersion` and show nothing. A base of a parser older
+than `COMPAT` would be ignored; this one is not.
+
+### The Données module (`modules/data/`, Full level) — contracts of 28 Oct 2026
+
+What aerodb gives the module that regenerates the published data (its SPEC and INTEGRATION § 2, written with the settings
+session, which keeps the module's files):
+
+- **Reading** (lot D1): `aerodb.publication()` (what is published, per zone and cycle, without loading the data),
+  `aerodb.zones()` (every known zone, published or not), `aerodb.sources()` (the catalogue: groups, zones fed, fetch and
+  build modes, links by cycle, licences, statuses, EAD outcome per State, file-name readers). SPEC § 5. The module reads
+  nothing else of aerodb and never `sia/base/`, `proc/` or `AircraftDB/` itself.
+- **Cycles**: dates `YYYY-MM-DD` in every answer, the AIRAC id `YYNN` only on screen, converted by `frame/aerodb/airac.js`
+  (SPEC § 4). Three cycles kept for the base and `proc/`.
+- **Building** (lot D5): two stages, pieces per source (`worker` or `python`) and an assembler per zone; nothing written by
+  them (SPEC § 5 septies). A lot « complete readers » comes first.
+- **Procedures**: EAD Basic reads one aerodrome per gesture (*Charts* documents `AD_2_<ICAO>_…`, first page of results only,
+  15 rows); its output is installed by `tools/proc_manual.py`, which refuses another source's file without `--replace`:
+  the module asks « remplacer ou fusionner » then. Hand-read files (EAD Basic, manual, OCR) live in `proc/manual/<ICAO>.json`,
+  outside the cycles: read whatever their age, marked `outdated: true` once their cycle is no longer in force, never purged
+  by the module, which lists them « périmé » with « Relire » (SPEC § 5 quinquies). Compiling (workstation) and using
+  (devices) stay apart; the compiled JSON live in the private data repository (SPEC § 1). Grey reasons that come from aerodb's side:
+  « pypdf manque », « OCR manque » (drawn pages: UK STARs, Belgium, Georgia), « Mise en page inconnue pour cet État ».
+
+### Sources screen (`#sources`)
+
+A frame screen drawn by aerodb (`frame/aerodb/sources.js` and its data `sources_data.js`), not a module: nothing to mount, nothing to
+call. The frame declares it in `APP.screens` (`frame/app.js`: Full level, its two scripts, no data adapter, no GitHub transport) and the
+Administration card of Settings links to it. It shows links only (`frame/aerodb/SPEC.md` § 5 sexies): no fetch, so no host in the page
+policy. It replaced the data laboratory (`#datalab`) on 28 October 2026; the laboratory's stream readers (`xml_stream.js`, `zip_stream.js`)
+stay as bricks for the Data module. At the Données module's lot D1 it goes in turn: its data become `catalogue.js`, served
+by `aerodb.sources()`.
+
+#### Purging the trial blocks published on the main branch (before 28 Oct 2026) — on a workstation, not run by the app
+
+Until 28 October 2026 the laboratory wrote its trial blocks (`lab/essai-*.json`, 0.5 to 10 MB each) and its cleaning commits on the
+**main branch** of the data repository: "Clean" removed the files, but their blobs stay in the history and every pilot's clone
+downloads them. Removing them means rewriting that history, which only the owner does, from a workstation, once:
+
+1. **Before**: every workstation and phone has sent its pending writes (pending-writes line at zero), and nobody publishes during
+   the purge. Note the size: `git count-objects -vH` in a fresh clone. If the main branch is protected against force pushes on
+   GitHub, allow it for the time of the purge (Settings › Branches).
+2. **Rewrite** (git-filter-repo, `pip install git-filter-repo`, the recommended tool):
+   ```
+   git clone --mirror https://github.com/<owner>/<data-repo>.git data-purge.git
+   cd data-purge.git
+   git filter-repo --path-glob 'lab/essai-*' --invert-paths
+   git remote add origin https://github.com/<owner>/<data-repo>.git
+   git push --force --all origin
+   git push --force --tags origin
+   ```
+   The trial commits ("lab: essai (…)", "lab: nettoyage des essais") become empty and are dropped. Without git-filter-repo,
+   git alone does the same, more slowly: `git filter-branch --index-filter "git rm -r --cached --ignore-unmatch lab" --prune-empty
+   -- --all` in a normal clone, then the two pushes.
+3. **After**, on every workstation with a clone of the data (the launcher's data folder): `git status` must be clean, then
+   `git fetch origin` and `git reset --hard origin/main` (or a fresh clone). The phones read through the API and need nothing.
+   Delete any `lab/*` branch left on GitHub (`git push origin --delete lab/<trigram>`), put the branch protection back, and
+   check the size again. GitHub reclaims the unreachable objects on its own schedule; nothing secret is in those blobs (filler
+   only), so no support request is needed.
+
+From 28 October 2026 the trials went to a disposable branch `lab/<trigram>` (deleted by "Clean"), and the laboratory itself was
+removed the same day: nothing more is written there. A `lab/<trigram>` branch left on GitHub can simply be deleted.
 
 ## 5. Costs to know (measured, see DECISIONS.md)
 

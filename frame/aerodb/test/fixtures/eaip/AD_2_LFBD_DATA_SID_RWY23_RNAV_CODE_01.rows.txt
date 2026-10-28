@@ -1,0 +1,29 @@
+AIP AD 2 LFBD DATA SID RWY23 RNAV CODE 01
+FRANCE
+BORDEAUX MERIGNAC
+SID RNAV RWY 23
+(Protégés pour / Protected for CAT A, B, C, D)
+SID RNAV RWY 23
+RMK GNSS only. MAG VAR 2020 0.3°E REF NAVAID : BMC
+Procedure Path Waypoint Fly Direction Direction Distance Turn MNM Altitude MAX Altitude MAX IAS Navigation
+Identification Terminator Identification Over MAG (°) True (°) (NM) direction (FL or AMSL ft) (FL or AMSL ft) (kt) Accuracy (NM)
+ROYAN 6P
+‐ CF BD230 Yes 225 225.5 ‐‐ ‐ ‐ ‐ 1.0
+‐ DF BD923 ‐ ‐‐‐ R ‐‐ ‐ 1.0
+‐ TF BD927 ‐ 358 358.2 11.1 ‐‐ ‐ ‐ 1.0
+‐ TF ROYAN ‐ 345 345.2 34.1 ‐‐ ‐ ‐ 1.0
+CNA 6P
+- CF BD230 Yes 225 225.5 - - - - - 1.0
+- DF BD923 - - - - R - - - 1.0
+- TF ROVFU - 041 041.7 17.3 - - - - 1.0
+- TF CNA - 018 018.1 32.3 - - - - 1.0
+OBLOC 6P
+- CF BD423 Yes 225 225.5 - - - - 220 1.0
+- CF BD427 - 126 125.9 - - 5000 - - 1.0
+- TF OBLOC - 087 087.2 21.2 - - - - 1.0
+VAVIX 6P
+- CF BD423 Yes 225 225.5 - - - - - 1.0
+- DF BD425 - - - - L - - - 1.0
+- TF VAVIX - 170 170.8 23.0 - - - - 1.0
+AMDT 05/24 SIA
+© 16 MAY 24

@@ -16,8 +16,9 @@
   // le frame, par AeroDB.fetchReader() (lanceur : fichiers servis ; mode GitHub : GitHubData).
   // API : window.AeroDB = { create({ reader, zones, now }) → service, fetchReader({ root }), airacCycles(n, date), literal,
   //   declaration() → préfixes lus et écrits par aerodb (à donner à FrameData.adapter) }.
-  // Service : status(), ready(q), on('change', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
-  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), cities(q),
+  // Service : status(), state() (loading, ready, noaccess, offline, unpublished, idle : sans lire), refresh(), ready(q),
+  //   on('change' | 'state', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
+  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), procedures(oaci, q), procedureIndex(), procedureFromOfp(ofp), rememberOfp(ofp), cities(q),
   //   find(texte, n), coords(ident),
   //   coordsAll(ident), aircraft() → registre des aéronefs (types : frame/aerodb/aircraft.js ; fiches, flotte, référence,
   //   recherche unique : registry.js ; logique des fiches : sheets.js, AeroDBSheets), stats(),
@@ -39,9 +40,9 @@
   const PUB = 'sia/base/',
     PUB_WHOLE = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\.json$/,
     PUB_SPLIT = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\/([a-z_]+)\.json$/,
-    SPLIT_KINDS = ['meta', 'airspaces', 'aerodromes', 'navaids', 'points', 'vrp', 'airways', 'obstacles', 'mora', 'obstaclemax',
-      'cities'
-    ], // sortes publiées d'une zone (format découpé)
+    SPLIT_KINDS = ['meta', 'airspaces', 'aerodromes', 'aeroindex', 'navaids', 'points', 'vrp', 'airways', 'obstacles', 'mora',
+      'obstaclemax', 'cities'
+    ], // sortes publiées d'une zone (format découpé) ; aeroindex : index léger des terrains à code OACI (SPEC § 2)
     COMMON = ['sia/base/index.json', 'sia/base/cities_major.json'], // fichiers communs à toutes les zones
     POINT_KINDS = ['aerodromes', 'navaids', 'points', 'vrp', 'obstacles'],
     MARGIN = .5, // marge des cadres de zone (côtes, eaux territoriales, espaces au large), comme la V2
@@ -191,16 +192,29 @@
     reader = fetchReader(),
     zones = window.AERODB_ZONES || {},
     now = () => Date.now(),
-    lnmperf: lnmAuto = true // fiches .lnmperf suivies d'elles-mêmes sur un poste au dossier réglé (les essais l'éteignent)
+    lnmperf: lnmAuto = true, // fiches .lnmperf suivies d'elles-mêmes sur un poste au dossier réglé (les essais l'éteignent)
+    access = () =>
+    true // l'appareil a-t-il de quoi lire la base (lanceur, dépôt réglé) ? Sans cela, « non réglé » et non « non publiée »
   } = {}) {
     const loaded = new Map(), // zone → { id, cycle, split, base | data, parts, reads, idx } ; chargée une fois
       loading = new Map(), // zone → promesse de chargement
       missing = new Set(), // zones sans fichier publié (sondées en vain)
-      listeners = new Set();
-    let listedP = null, // promesse de { zones: { zone: { cycles, split: Set, whole: Set, prefixes } }, source }
+      listeners = new Set(),
+      stateFns = new Set(); // écouteurs de l'état de la base (on('state')) : lecture commencée ou finie, base rafraîchie
+    let listing = false, // la liste des zones publiées est en cours de lecture
+      asked = false, // la base a été demandée au moins une fois
+      emptyAt = 0, // quand une liste vide a été reçue (0 : en cours, ou non vide) : redemandée passé EMPTY_RETRY
+      listedP = null, // promesse de { zones: { zone: { cycles, split: Set, whole: Set, prefixes } }, source }
       majorP = null, // grandes villes du monde (format découpé)
       worldP = null, // villes du monde entier (ancien format)
       aircraftP = null;
+    const emitState = () => stateFns.forEach(fn => {
+      try {
+        fn();
+      } catch {
+        /* écouteur en échec : les autres sont appelés */
+      }
+    });
     const emit = what => listeners.forEach(fn => {
       try {
         fn(what);
@@ -219,7 +233,26 @@
 
     // ---- zones publiées : liste du lecteur (arbre du dépôt), sinon manifeste sia/base/index.json, sinon inconnues
     function published() {
-      return listedP ||= (async () => {
+      // une liste vide n'est pas une réponse sûre (réseau pas encore prêt au lancement, accès réglé depuis) : redemandée
+      // à la question suivante passé EMPTY_RETRY, jamais en boucle ni par minuteur
+      if (listedP && emptyAt && now() - emptyAt > EMPTY_RETRY) listedP = null;
+      if (listedP) return listedP;
+      asked = true;
+      emptyAt = 0;
+      listing = true;
+      const mine = listedP = listZones().then(r => {
+        if (listedP === mine && !Object.keys(r.zones || {}).length) emptyAt = now();
+        return r;
+      }).finally(() => {
+        if (listedP === mine) listing = false;
+        emitState();
+      });
+      emitState(); // après listedP : un écouteur qui questionne aussitôt trouve la lecture en cours
+      return mine;
+    }
+
+    function listZones() {
+      return (async () => {
         const out = {},
           zone = id => out[id] ||= {
             cycles: [],
@@ -262,11 +295,46 @@
         };
       })();
     }
+    /** La base est-elle prête, en cours de lecture, sans accès ou non publiée ? 'loading' (liste ou zone en cours de
+     *  lecture : rien n'est encore su), 'ready' (des zones publiées, lues ou gardées ici), 'noaccess' (rien pour la lire sur
+     *  cet appareil : ni lanceur ni dépôt réglé), 'offline' (rien de publié connu et pas de réseau), 'unpublished' (l'accès
+     *  marche, rien n'est publié), 'idle' (jamais demandée). Ne lit rien. */
+    async function baseState() {
+      if (listing || loading.size) return {
+        state: 'loading',
+        asked,
+        loading: [...loading.keys()]
+      };
+      if (!asked || !listedP) return {
+        state: access() ? 'idle' : 'noaccess',
+        asked
+      };
+      const n = Object.keys((await listedP).zones || {}).length;
+      return {
+        state: n ? 'ready' : !access() ? 'noaccess' : navigator.onLine === false ? 'offline' : 'unpublished',
+        asked,
+        zones: n
+      };
+    }
     /** Cycle à lire parmi ceux publiés : le plus récent déjà en vigueur, sinon le plus ancien (publié d'avance). */
     const pickCycle = list => {
       const today = new Date(now()).toISOString().slice(0, 10),
         past = list.filter(c => c <= today);
       return past.length ? past[past.length - 1] : list[0];
+    };
+    /** Cycle des procédures publiées (proc/<cycle>/…) : dans la liste du lecteur, le plus récent en vigueur qui porte le
+     *  fichier du terrain (icao) ou l'index ; sans liste, le premier des cycles AIRAC récents dont le fichier se lit. */
+    const procCycle = async icao => {
+      const file = icao ? `${icao}.json` : 'index.json',
+        listed = reader.list ? await reader.list('proc/').catch(() => null) : null;
+      if (Array.isArray(listed) && listed.length) {
+        const found = listed.map(p => /^proc\/(\d{4}-\d{2}-\d{2})\/([^/]+)$/.exec(p)).filter(m => m && m[2] === file).map(m => m[1])
+          .sort();
+        return found.length ? pickCycle(found) : null;
+      }
+      for (const c of airacCycles(6, now()))
+        if (await read(`proc/${c}/${file}`)) return c;
+      return null;
     };
     /** Zones dont un cadre (élargi de la marge) touche l'emprise b ; limitées aux zones publiées si elles sont connues. */
     /** Vrai si l'emprise b touche une des cases d'un degré d'une zone ({ "lat": [[lon0, lon1], …] }, manifeste). */
@@ -309,7 +377,10 @@
               cycle,
               parts: new Map(),
               reads: [],
-              idx: {}
+              idx: {},
+              // index léger des terrains publié pour ce cycle (liste de l'arbre ou tailles du manifeste) : lu pour
+              // trouver un terrain par son code ou le long d'une route, au lieu de aerodromes.json (dix fois plus lourd)
+              lite: !!e && ((e.kinds?.[cycle] || []).includes('aeroindex') || e.kb?.[cycle]?.aeroindex != null)
             };
           // découpé : préféré ; méta lue d'emblée (petite : cycle, axes AAR, tracks NAT)
           if (!pub || e.split.has(cycle)) {
@@ -357,8 +428,12 @@
         // gardée) : redemandée à la prochaine question
         if (!e) missing.add(id);
         return null;
-      })().finally(() => loading.delete(id));
+      })().finally(() => {
+        loading.delete(id);
+        emitState();
+      });
       loading.set(id, p);
+      emitState();
       return p;
     }
     /** Zones qui couvrent l'emprise b (ouvertes à la demande). */
@@ -397,7 +472,7 @@
     function idx(z, kind) {
       if (z.idx[kind]) return z.idx[kind];
       const p = z.idx[kind] = buildIdx(z, kind),
-        k = kind.startsWith('ident:') ? kind.slice(6) : kind;
+        k = kind.startsWith('ident:') ? kind.slice(6) : kind === 'aerodromes:lite' ? 'aeroindex:list' : kind;
       // index bâti sur une sorte illisible : oublié avec elle, rebâti à la prochaine question
       p.then(() => !z.parts.has(k) && z.idx[kind] === p && delete z.idx[kind], () => z.idx[kind] === p && delete z.idx[kind]);
       return p;
@@ -438,10 +513,11 @@
           };
         }
         if (kind === 'mora') return new Map((await part(z, 'mora')).map(c => [cellKey(c.lat, c.lon), c]));
-        if (kind.startsWith('ident:')) { // identifiant → éléments d'une sorte (aérodromes par code OACI)
+        if (kind === 'aerodromes:lite') return pointIndex(await aerodromesFor(z));
+        if (kind.startsWith('ident:')) { // identifiant → éléments d'une sorte (aérodromes par code OACI : index léger d'abord)
           const k = kind.slice(6),
             m = new Map();
-          for (const x of await part(z, k)) {
+          for (const x of await (k === 'aerodromes' ? aerodromesFor(z) : part(z, k))) {
             const id = fold(k === 'aerodromes' ? x.icao || x.id : x.id);
             if (id)(m.get(id) || m.set(id, []).get(id)).push(x);
           }
@@ -457,14 +533,38 @@
         return pointIndex(await part(z, kind));
       })();
     }
-    /** Éléments d'une sorte de points dans l'emprise de q (filtre : f(x)) ; toutes zones couvrantes. */
+    /** Terrains légers d'une zone (aeroindex.json : { fields, rows }) en objets { icao, id, name, lat, lon, elev, bearing,
+     *  magVar, lite: true } ; lus une fois. */
+    function liteAerodromes(z) {
+      if (z.parts.has('aeroindex:list')) return z.parts.get('aeroindex:list');
+      const p = part(z, 'aeroindex').then(d => {
+        const f = Array.isArray(d?.fields) ? d.fields : [];
+        if (!f.length || !Array.isArray(d?.rows)) z.parts.delete('aeroindex:list'); // illisible : redemandé ensuite
+        return (d?.rows || []).map(r => {
+          const o = Object.fromEntries(f.map((k, i) => [k, r[i]]));
+          return {
+            ...o,
+            id: o.icao,
+            lite: true
+          };
+        });
+      });
+      z.parts.set('aeroindex:list', p);
+      return p;
+    }
+    /** Terrains d'une zone pour une recherche par code ou le long d'une route : l'index léger s'il est publié et que la
+     *  sorte complète n'est pas déjà lue, sinon aerodromes.json. */
+    const aerodromesFor = z => z.split && z.lite && !z.parts.has('aerodromes') ? liteAerodromes(z) : part(z, 'aerodromes');
+    /** Éléments d'une sorte de points dans l'emprise de q (filtre : f(x)) ; toutes zones couvrantes. q.lite (terrains) :
+     *  l'index léger suffit (code, nom, position, altitude, axe de piste). */
     async function pointsIn(kind, q, f = () => true) {
       const b = boxOf(q);
       if (!b) return [];
       const out = [],
-        seen = new Set();
+        seen = new Set(),
+        k = kind === 'aerodromes' && q?.lite ? 'aerodromes:lite' : kind;
       for (const z of await zonesOf(b))
-        for (const list of within(await idx(z, kind), b))
+        for (const list of within(await idx(z, k), b))
           for (const x of list)
             if (!seen.has(x) && x.lon >= b[0] && x.lon <= b[2] && x.lat >= b[1] && x.lat <= b[3] && f(x)) {
               seen.add(x);
@@ -493,11 +593,23 @@
     function aircraft() {
       return aircraftP ||= (async () => {
         aircraftBusy = true;
+        // tout en parallèle (premier écran sur un réseau lent : une attente au lieu de six) : les scripts du registre, les
+        // sources du registre dès que registry.js est là (readAll), et la base des types ; JSON ou .js de la V2 choisi
+        // d'après l'arbre du dépôt quand le lecteur le connaît (sinon les deux demandés à la fois, le JSON préféré)
+        const libsP = Promise.all([loadOwn('registry.js', 'AeroDBRegistry'), loadOwn('sheets.js', 'AeroDBSheets')]),
+          rawP = libsP.then(() => window.AeroDBRegistry.readAll(reader)),
+          listed = reader.list ? await reader.list('AircraftDB/').catch(() => null) : null;
         const one = async (base, name) => {
-          const j = await read(`AircraftDB/${base}.json`);
+          const jp = `AircraftDB/${base}.json`,
+            sp = `AircraftDB/${base}.js`,
+            has = p => !Array.isArray(listed) || listed.includes(p),
+            [j, s] = await Promise.all([has(jp) ? read(jp) : null, has(sp) && !(Array.isArray(listed) && listed.includes(jp)) ?
+              read(sp) :
+              null
+            ]);
           if (j) return valueOf(j);
-          const s = await read(`AircraftDB/${base}.js`);
-          return s ? literal(s.text ?? s.value, name) : null;
+          const t = s || (Array.isArray(listed) && listed.includes(jp) && has(sp) ? await read(sp) : null);
+          return t ? literal(t.text ?? t.value, name) : null;
         };
         const [db, perf] = await Promise.all([one('aircraft_db', 'AIRCRAFT_DB'), one('aircraft_perf', 'AIRCRAFT_PERF')]),
           catalog = window.AeroDBAircraft.create({
@@ -505,11 +617,12 @@
             perf: perf || {}
           });
         // registre : fiches, flotte, référence, recherche unique (registry.js) ; logique des fiches (sheets.js)
-        await Promise.all([loadOwn('registry.js', 'AeroDBRegistry'), loadOwn('sheets.js', 'AeroDBSheets')]);
+        await libsP;
         const reg = registry = window.AeroDBRegistry.create({
             reader,
             catalog,
-            now
+            now,
+            raw: rawP
           }),
           state = await reg.load(),
           fleet = await reg.fleetTypes();
@@ -700,7 +813,22 @@
       }
     };
 
+    const EMPTY_RETRY = 30e3;
     const api = {
+      /** État de la base (sans rien lire), voir baseState : { state, asked, zones, loading }. */
+      state: baseState,
+      /** L'accès ou la source a changé (dépôt réglé, accès coupé, réseau revenu) : la liste des zones publiées est relue
+       *  à la prochaine question ; les zones déjà ouvertes restent. */
+      refresh() {
+        listedP = null;
+        listing = false;
+        emptyAt = 0;
+        missing.clear();
+        emitState();
+        emit({
+          refreshed: true
+        });
+      },
       /** État : zones publiées et leur cycle (null : inconnues), source de la liste (list, index, none), zones ouvertes et
        *  leur format, zones sans fichier, cycle le plus récent ouvert. */
       async status() {
@@ -720,9 +848,10 @@
       },
       /** Écoute des changements (zone ouverte, fichier publié changé) ; rend la fonction de désabonnement. */
       on(event, fn) {
-        if (event !== 'change') return () => {};
-        listeners.add(fn);
-        return () => listeners.delete(fn);
+        const set = event === 'change' ? listeners : event === 'state' ? stateFns : null;
+        if (!set) return () => {};
+        set.add(fn);
+        return () => set.delete(fn);
       },
       /** Espaces qui touchent l'emprise de q ; q.types : types gardés (« R », « D », « TMA »…). */
       async airspaces(q = {}) {
@@ -743,7 +872,8 @@
         }
         return out;
       },
-      /** Aérodromes de l'emprise de q, ou celui de q.icao. */
+      /** Aérodromes de l'emprise de q, ou celui de q.icao (index léger quand il est publié : { icao, name, lat, lon,
+       *  elev, bearing, magVar, lite }) ; q.lite : l'emprise aussi dans l'index léger (pas de type ni de piste en dur). */
       aerodromes: async (q = {}) => q.icao ? (await api.coordsAll(q.icao)).filter(x => x.kind === 'aerodrome').map(x => x.item) :
         pointsIn(
           'aerodromes', q),
@@ -813,6 +943,68 @@
        *  unmatched }], generatedAt, label } ; null sans import. */
       async vfrIndex() {
         return valueOf(await read('sia/vfr/index.json')) || null;
+      },
+      /** Procédures (SID, STAR, approches) d'un terrain, au schéma commun (SPEC § 5 quinquies) : le fichier publié du cycle
+       *  (proc/<cycle>/<OACI>.json) et ce qui a été vu dans les OFP de l'utilisateur (proc-seen/<OACI>.json, source
+       *  secondaire), fusionnés ; q : { kind, runway, name, transition }. [] sans donnée. */
+      async procedures(icao, q = {}) {
+        const k = String(icao || '').toUpperCase();
+        if (!/^[A-Z0-9]{3,4}$/.test(k)) return [];
+        await loadOwn('procedures.js', 'AeroDBProcedures');
+        const P = window.AeroDBProcedures,
+          cycle = await procCycle(k),
+          [pub, seen] = await Promise.all([cycle ? read(`proc/${cycle}/${k}.json`) : null, read(`proc-seen/${k}.json`)]);
+        const out = P.filter(P.merge(valueOf(pub)?.procedures || [], valueOf(seen)?.procedures || []), q);
+        // points publiés sans position (points en route des pages DATA de l'eAIP) : cherchés dans la base, le plus proche du
+        // premier point placé de la procédure ; copies, le cache du lecteur n'est pas modifié
+        for (const rec of out) {
+          if (!rec.points.some(p => p.lat == null)) continue;
+          let anchor = rec.points.find(p => p.lat != null) || await api.coords(k).catch(() => null);
+          rec.points = await Promise.all(rec.points.map(async p => {
+            if (p.lat != null) return p;
+            const all = await api.coordsAll(p.id).catch(() => []),
+              d = x => (x.item.lat - anchor.lat) ** 2 + ((x.item.lon - anchor.lon) * Math.cos(anchor.lat * Math.PI / 180)) **
+              2,
+              best = anchor ? all.slice().sort((a, b) => d(a) - d(b))[0] : all[0];
+            return best ? {
+              ...p,
+              lat: best.item.lat,
+              lon: best.item.lon,
+              placed: 'base'
+            } : p;
+          }));
+        }
+        return out;
+      },
+      /** Index du cycle publié des procédures : { cycle, aerodromes: { OACI: { SID, STAR, APP, status } } } ; null sans
+       *  publication. */
+      async procedureIndex() {
+        const cycle = await procCycle();
+        return cycle ? valueOf(await read(`proc/${cycle}/index.json`)) || null : null;
+      },
+      /** { sid, star } d'un OFP SimBrief (json=v2), au schéma commun, statut « ofp » ; chacun null sans point marqué. Rien
+       *  n'est écrit : c'est la procédure du vol courant. */
+      async procedureFromOfp(ofp) {
+        await loadOwn('procedures.js', 'AeroDBProcedures');
+        return window.AeroDBProcedures.fromOfp(ofp);
+      },
+      /** Garde la SID et la STAR d'un OFP dans proc-seen/<OACI>.json (synchronisé avec le dépôt privé, source secondaire) ;
+       *  { sid, star } comme procedureFromOfp, ou null si le lecteur n'écrit pas. Un OFP à la fois, aucun appel à SimBrief. */
+      async rememberOfp(ofp) {
+        const out = await api.procedureFromOfp(ofp);
+        if (typeof reader.put !== 'function') return null;
+        for (const rec of [out.sid, out.star].filter(Boolean)) {
+          const path = `proc-seen/${rec.icao}.json`,
+            old = valueOf(await read(path)),
+            merged = window.AeroDBProcedures.mergeSeen(null, {
+              icao: rec.icao,
+              procedures: [rec]
+            }, old);
+          if ((old?.procedures || []).some(p => p.id === rec.id && JSON.stringify(p.points) === JSON.stringify(rec.points) && p
+              .name === rec.name)) continue;
+          await reader.put(path, merged.value);
+        }
+        return out;
       },
       /** Tracks NAT du jour (zone océanique « nat », ouverte à la demande). */
       async nat() {
@@ -1057,7 +1249,12 @@
       });
     });
     // .lnmperf : passages automatiques seulement avec une couche de données qui écrit (le lecteur provisoire lit)
-    if (lnmAuto && typeof reader.put === 'function') setTimeout(() => lnmperf().then(c => c.start()).catch(() => {}), 1500);
+    // suivi des .lnmperf : seulement quand un lanceur sert la page (il lui faut /__setup/lnmperf) ; ailleurs (téléphone,
+    // site), lnmperf.js n'est pas chargé
+    if (lnmAuto && typeof reader.put === 'function') setTimeout(async () => {
+      const here = await Promise.resolve(window.FrameData?.launcher?.detect?.()).catch(() => null);
+      if (here) lnmperf().then(c => c.start()).catch(() => {});
+    }, 1500);
     return api;
   }
 
@@ -1076,12 +1273,21 @@
       prefix: 'sia/vfr/',
       policy: 'reference'
     }, {
+      prefix: 'proc/',
+      policy: 'reference'
+    }, {
       prefix: 'references/',
       policy: 'reference'
-    }, 'airline/', 'planner/', 'aircraft/', 'cache/aerodb/'],
+    }, 'airline/', 'planner/', 'aircraft/', 'proc-seen/', 'cache/aerodb/'],
     writes: [{
       prefix: 'cache/aerodb/',
       policy: 'cache' // manifeste des fichiers .lnmperf de ce poste
+    }, {
+      prefix: 'proc-seen/',
+      merge: (b, l, r) => window.AeroDBProcedures ? window.AeroDBProcedures.mergeSeen(b, l, r) : {
+        value: l,
+        lost: r
+      }
     }, {
       prefix: 'aircraft/sheets/',
       merge: (b, l, r) => window.AeroDBRegistry ? window.AeroDBRegistry.mergeSheets(b, l, r) : {
