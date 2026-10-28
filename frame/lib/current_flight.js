@@ -338,10 +338,23 @@ const samePoint = (a, b) => {
   return a.id && b.id && a.id.toUpperCase() === b.id.toUpperCase() ? d < 3 : d < .3;
 };
 /** Points de plusieurs procédures bout à bout ; le point partagé par deux d'entre elles (fin de transition, début de
- *  procédure) une seule fois, avec les contraintes de la seconde. */
+ *  procédure) une seule fois, avec les contraintes de la seconde ; au-delà de ce point, la fin du premier est écartée. */
 function chainOf(parts) {
   const out = [];
-  for (const [rec, origin, phase] of parts)
+  for (const [rec, origin, phase] of parts) {
+    // jonction : le premier point de cet enregistrement déjà dans la chaîne (une transition qui reprend le début de
+    // l'approche, une STAR qui va au-delà de son point de sortie) : la chaîne est coupée à ce point, la fin propre du
+    // précédent n'est jamais volée et aucun tronçon ne l'est deux fois
+    const first = rec?.points?.length ? procPoint(rec.points[0], origin, phase) : null;
+    if (first && first.origin !== 'missed') {
+      let k = -1;
+      for (let i = out.length - 1; i >= 0; i--)
+        if (out[i].origin !== 'missed' && samePoint(out[i], first)) {
+          k = i;
+          break;
+        }
+      if (k >= 0) out.length = k + 1;
+    }
     for (const p of rec?.points || []) {
       const q = procPoint(p, origin, phase),
         last = out.at(-1);
@@ -354,6 +367,7 @@ function chainOf(parts) {
       }
       out.push(q);
     }
+  }
   return out;
 }
 /** Approche finale dont l'approche interrompue n'est pas marquée (aucun point de phase 'missed' : une lecture de l'eAIP qui

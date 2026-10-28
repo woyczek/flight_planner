@@ -696,6 +696,65 @@
   ck('expandedPath : une approche qui marque sa phase reste telle quelle', expandedPath(FV, LP).filter(p => p.origin === 'missed').map(p =>
     p.id).join(' ') === 'MAP1');
 
+  // transition d'approche qui va au-delà du point commun (elle reprend IF et FAF de l'approche) : la jonction se fait au
+  // premier point de l'approche, la fin propre de la transition n'est pas volée, aucun tronçon deux fois
+  const TR2 = {
+    id: 'LFPO.APP.T.RW24.T1',
+    icao: 'LFPO',
+    kind: 'APP',
+    transition: 'T1',
+    points: [{
+      seq: 1,
+      id: 'T1',
+      lat: 48.5,
+      lon: 1.9
+    }, {
+      seq: 2,
+      id: 'IF1',
+      lat: 48.6,
+      lon: 2.1
+    }, {
+      seq: 3,
+      id: 'FAF1',
+      lat: 48.66,
+      lon: 2.25
+    }]
+  };
+  const AP2 = {
+    id: 'LFPO.APP.T.RW24.IF1',
+    icao: 'LFPO',
+    kind: 'APP',
+    points: [{
+      seq: 1,
+      id: 'IF1',
+      lat: 48.6,
+      lon: 2.1,
+      alt: {
+        type: 'at',
+        ft: 3000
+      }
+    }, {
+      seq: 2,
+      id: 'FAF1',
+      lat: 48.66,
+      lon: 2.25
+    }, {
+      seq: 3,
+      id: 'M1',
+      lat: 48.8,
+      lon: 2.5,
+      phase: 'missed'
+    }]
+  };
+  const XT = expandedPath(fl({}), {
+      appTrans: TR2,
+      app: AP2
+    }),
+    FT = flownPath(XT),
+    idsT = FT.map(p => p.id).join(' ');
+  ck('expandedPath : transition au-delà du point commun, aucun tronçon deux fois', idsT === 'LFBD AAA BBB CCC T1 IF1 FAF1 LFPO', idsT);
+  ck('expandedPath : le point de jonction prend les contraintes de l’approche', FT.find(p => p.id === 'IF1')?.alt?.ft === 3000);
+
   window.__cfBench = {
     done: true,
     pass: rows.filter(r => r.ok).length,
