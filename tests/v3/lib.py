@@ -230,11 +230,11 @@ def flight_docs(started=False, trigram='ABC', steps=False):
 
 
 # A synthetic forecast for the planned flight, written where the shared weather store reads it (cache/weather/<model>/<cell>/<day>.json,
-# modules/atmosphere/weather_store.js): the Weather chip of the map then draws the vertical cut without any network.  The places,
+# frame/lib/weather_store.js, ctx.weather): the Weather chip of the map then draws the vertical cut without any network.  The places,
 # variables, model and cells are the ones the module itself asks for (section.js / atmo.js), the values a standard atmosphere.
 _FORECAST_JS = r"""async (route) => {
   const [Sx, A, W] = await Promise.all([import('/modules/atmosphere/section.js'), import('/modules/atmosphere/atmo.js'),
-    import('/modules/atmosphere/weather_store.js')]);
+    import('/frame/lib/weather_store.js')]);
   const pts = route.points.map(p => ({ id: p.id, lat: p.lat, lon: p.lon, alt_ft: 0 }));
   const mid = pts[Math.floor(pts.length / 2)], model = A.modelFor(mid.lat, mid.lon).id, size = W.cellSize(model);
   const vars = Sx.sectionVars(route.levelFt, pts), cells = new Map();

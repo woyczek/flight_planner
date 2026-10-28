@@ -45,7 +45,7 @@ const {
 } = await import('../lib/weather_map.js?v=0');
 const {
   weatherStore
-} = await import('../weather_store.js?v=0');
+} = await import('../../../frame/lib/weather_store.js?v=0');
 const Demo = await import('../demo.js?v=0');
 
 const q = new URLSearchParams(location.search),
@@ -85,6 +85,7 @@ const net = {
 const ctx = {
   data,
   net,
+  weather: null,
   t: (row, v = {}) => String(row[1]).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? ''),
   lang: () => 'en'
 };
@@ -107,28 +108,34 @@ const flight = {
   levelFt: 16000
 };
 const req = gridRequest(flight.points, flight.levelFt, 48);
-await weatherStore({
-  data,
-  net: {
-    fetch: async url => {
-      const u = new URL(url);
-      if (u.pathname.endsWith('meta.json')) return new Response(JSON.stringify({
-        last_run_initialisation_time: now - 3600
-      }));
-      const la = u.searchParams.get('latitude').split(','),
-        lo = u.searchParams.get('longitude').split(','),
-        from = Date.parse(u.searchParams.get('start_date')),
-        days = (Date.parse(u.searchParams.get('end_date')) - from) / 864e5 + 1;
-      return new Response(JSON.stringify(Demo.forecast(la.map((x, i) => ({
-        lat: +x,
-        lon: +lo[i]
-      })), u.searchParams.get('hourly').split(','), from, days * 24)));
-    }
+// la couche météo du cadre (ctx.weather) : le synoptique publié lu sur la même origine (net : octets comptés), Open-Meteo
+// répondu par la démonstration
+const omFake = {
+  fetch: async url => {
+    const u = new URL(url);
+    if (u.pathname.endsWith('meta.json')) return new Response(JSON.stringify({
+      last_run_initialisation_time: now - 3600
+    }));
+    const la = u.searchParams.get('latitude').split(','),
+      lo = u.searchParams.get('longitude').split(','),
+      from = Date.parse(u.searchParams.get('start_date')),
+      days = (Date.parse(u.searchParams.get('end_date')) - from) / 864e5 + 1;
+    return new Response(JSON.stringify(Demo.forecast(la.map((x, i) => ({
+      lat: +x,
+      lon: +lo[i]
+    })), u.searchParams.get('hourly').split(','), from, days * 24)));
   }
-}).forecast(req.g.places, req.vars, {
+};
+ctx.weather = weatherStore({
+  data,
+  root: new URL('../../../', location.href).href,
+  net: {
+    fetch: (url, o) => /open-meteo\.com/.test(String(url)) ? omFake.fetch(url, o) : net.fetch(url, o)
+  }
+});
+await ctx.weather.grid(req.g.places, time, req.vars, {
   model: req.model.id,
-  days: daysFor(time),
-  cacheOnly: false
+  days: daysFor(time)
 });
 
 // fond uni en Mercator, 390 × 520 (la carte d'un téléphone en portrait), zoom 6 sur l'ouest de la France
