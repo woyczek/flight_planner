@@ -645,3 +645,17 @@ redesigned for touch at that point.
        gesture lives in Fuel (and later in the Data module), not in Settings › Maintenance. `expandedPath` joins the
        procedure to the route on the first common point and never adds a leg twice (an OFP route often already carries
        the SID / STAR points). `route.procedures.at` is the choice's time; `merge` sets `updated_at` on the record.
+   21. **MSFS 2020 / 2024 and Little Navmap data** (user, 28 Oct: "dans la foulée, on ajoute le support msfs2024 et
+       msfs2020. ils sont tous deux installés ici en local, et ont sans doute des données également. littlenavmap a sans
+       doute des données aussi (navigraph ?)"): decided by the ergonomics session. **Position**: Little Navmap's web API
+       (`/api/sim/info`, port 8965) already gives the position of any simulator it is connected to, MSFS included; no
+       direct SimConnect (not standard-library Python). **Procedures**: the main local fallback becomes **Little Navmap's
+       SQLite databases** (`%APPDATA%\ABarthel\little_navmap_db\little_navmap_<navigraph|xp12|msfs|msfs24>.sqlite`; on
+       the user's workstation the Navigraph one holds 268 MB of worldwide procedures with legs, the MSFS ones are empty
+       until the MSFS scenery is loaded in Little Navmap), read by `tools/proc_lnm.py` (standard-library `sqlite3`, read
+       only) into `proc/local/` with status `lnm` (same lowest rank as `xplane`), `source { kind: 'lnm', db, cycle }`,
+       **local only, never synchronised nor published** (Navigraph and Microsoft / Asobo licences are personal); one
+       aerodrome per gesture, `--all` on the workstation; the X-Plane CIFP converter comes second, only where Little
+       Navmap is absent. The catalogue lists MSFS 2020, MSFS 2024 and Little Navmap as local sources; `LICENSE.md` § 5
+       gets their rows. Lots: survey session (reader, tests on a synthetic database), aerodb (status `lnm`, labels,
+       catalogue, licence rows), position check in `tools/sim_position.py`.
