@@ -1066,3 +1066,12 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   `EAD_BASIC.md` § 6 sexies. The probe's first shape is now the one that worked; `proc_eaip.py --scan-pdf` added to look for coding tables inside a downloaded AD 2 part (titles and keywords only).
 - **Word of the user**: « arrête de créer des branches à répétition, et tu peux supprimer les anciennes ». From now on one branch, `v3-aerodb-proc-15` (all unintegrated work is on it); the
   old `v3-aerodb-proc*` branches that were fully integrated or contained in it were deleted (eleven went; `-12`, `-13`, `-14`, ancestors of `-15`, could not be deleted from the session: the push was cut).
+
+## 28 October 2026 — pages 40–41 of the UK document, and the format check
+
+- **Read** (the owner uploaded `EG_AD_2_EGLL_en.pdf` to the session; kept out of the repository): pages 40–41 are the index of the AD 2.24 charts. The UK's **coding tables are separate *Charts* documents**
+  (STAR 7-13 to 7-17, RNAV holds 7-18 and 7-19, RNP approaches 8-13); no SID table (the SIDs are charts only, "RNAV substitution only"). The probe gained `--aip-type Charts` and `--docs` (exact names, one
+  download each).
+- **Word of the user**: « les formats peuvent changer. Il faudra prévoir une vérification du format des pages par script. » Built: `detect_layout`, `verify_page` (85 % of the leg rows read), header `fingerprint` with the
+  known ones, `formats` in the aerodrome file, `--check` (exit 1, writes nothing) to run before each publication. A refused page is never read. A layout enters the registry with its detector, its
+  fingerprints and its fixtures, and cannot be published without them.

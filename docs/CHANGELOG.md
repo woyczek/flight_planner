@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: format check of the coding pages, UK coding tables located** (`tools/proc_eaip.py` `detect_layout` / `verify_page` / `fingerprint` / `--check`, `tools/proc_ead.py` `--aip-type` / `--docs`, K3 K6,
+  `frame/aerodb/EAD_BASIC.md` § 6 nonies and decies, SPEC `formats`) — a page is read only if its layout is recognised and at least 85 % of its leg rows are read; the aerodrome file lists the verdict of each page and
+  `--check` runs it alone before a publication. The UK document's pages 40–41 turned out to be the charts index: its coding tables (STAR, RNAV holds, RNP approaches) are separate *Charts* documents the probe can now fetch by exact name.
 - **aerodb: EAD Basic probe finds and downloads the AD 2 document of EGLL; page scan of a downloaded PDF** (`tools/proc_ead.py`, `tools/proc_eaip.py --scan-pdf`, K3 K6, `frame/aerodb/EAD_BASIC.md` § 6 sexies) —
   the request shape that works on the real screen (whole form) is the probe's first; `--scan-pdf` reports, page by page, titles and keywords of a PDF to find coding tables, copying no content; the cache file no longer gets a doubled `.pdf.pdf`, and `--scan-pdf` names the PDFs present when the path is wrong and shows the few lines with a coding word of the pages that look like tables; `--page N` prints one page's text rows. The scan found STAR, hold and RNP coding tables in the UK document (pages 40–41).
 - **aerodb: EAD Basic probe, fifth round** (`tools/proc_ead.py`, K6, `frame/aerodb/EAD_BASIC.md` § 6 quinquies) — results are read only from the data table with the announced count (the earlier

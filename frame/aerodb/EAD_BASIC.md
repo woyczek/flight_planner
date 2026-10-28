@@ -285,3 +285,38 @@ The scan's coding lines on pages 40 and 41 of `EG_AD_2_EGLL_en.pdf`: **"STANDARD
 STAR and RNP coding tables, but **not under the SIA's header words** (no "Path Terminator"): its layout is its own. No SID table was seen (the SIDs are in the charts). The layout is now read page by page:
 `python tools/proc_eaip.py --scan-pdf FILE --page 40` prints that page's text rows (numbered, 160 characters, 90 rows), the very rows the analysers would read; the owner pastes pages 40 and 41 here (a UK AIP
 excerpt in the session only, never in the repository). The UK layout parser, a second entry of the layout registry (§ 3), is then written on them.
+
+## 6 nonies. Pages 40–41 of the UK document, read (28 October 2026): the coding tables are separate *Charts* documents
+
+The owner put `EG_AD_2_EGLL_en.pdf` in the session; pages 40 and 41 are **the index of the charts of AD 2.24** (a list of chart titles with their numbers), not tables. It tells where
+the coding tables are — **each one is a document of its own**, of type *Charts*, numbered `AD 2.EGLL-<section>-<n>`:
+
+| Number | Title (as listed) |
+|---|---|
+| 7-13 to 7-17 | STANDARD INSTRUMENT ARRIVAL CODING TABLES (OTMET 1H, ROXOG 1H, ALESO 1H, LAM 1X · TANET 1Z, OCK 1Z, NUGRA 2H, LAM 1Z · HON 2H, BARMI 1H, LOGAN 2H, TOBID 1X · HAZEL 1H, BIG 1Z, LAM 1Y, FITBO 2H · SIRIC 1H, SIRIC 1Z) |
+| 7-18, 7-19 | RNAV HOLD CODING TABLES |
+| 8-13 | INSTRUMENT APPROACH PROCEDURE CODING TABLES - RNP RWY 09L/R and 27L/R |
+| 6-1 to 6-6 | the SIDs: charts only ("RNAV SUBSTITUTION ONLY"), **no SID coding table** |
+
+By the library's naming, these are `EG_AD_2_EGLL_7-13_en.pdf` … `EG_AD_2_EGLL_8-13_en.pdf`. The probe reaches them with the AIP type *Charts*:
+
+```
+python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL --aip-type Charts --docs EG_AD_2_EGLL_7-13_en.pdf,EG_AD_2_EGLL_7-14_en.pdf,EG_AD_2_EGLL_7-15_en.pdf,EG_AD_2_EGLL_7-16_en.pdf,EG_AD_2_EGLL_7-17_en.pdf,EG_AD_2_EGLL_8-13_en.pdf
+```
+
+(`--docs` searches each exact name and downloads its row's document into `ead_probe/cache/`, named after it; nothing else is downloaded.) Then `python tools/proc_eaip.py --scan-pdf ead_probe/cache/EG_AD_2_EGLL_7-13_en.pdf` and
+`--scan-pdf … --page 1` show what those pages look like, and the UK layout (a second entry of the registry, § 3) is written on that evidence.
+
+## 6 decies. Checking the format of the pages by script (the owner's request, 28 October 2026)
+
+« On voit les limites de ces parsers : les formats peuvent changer. Il faudra prévoir une vérification du format des pages par script. » Done for the SIA's layout, and the frame every future layout enters:
+
+- **Before reading** a page, `detect_layout` names its layout (`sia-code` today) from its header words, wherever they fall on the page; no known layout → the page is **not read** (never guessed) and reported.
+- **After reading** it, `verify_page` checks that the parser took what the page carries: at least **85 % of the leg rows** were read, groups and a kind (SID / STAR / APP) were found. A column added, a header reworded to the point of
+  breaking the cells, a page turned the other way: refused and listed (`page NON lue, format à vérifier`) instead of giving wrong legs.
+- **Header fingerprint** (`fingerprint`): the words of the header lines, hashed. The three fingerprints of the pages seen (LFBD SID / STAR, LFBD RNP, LFAV RNP) are known; a different one is reported as *info: en-tête inconnu*
+  (not blocking when every leg was still read): the early sign that a format moved.
+- **Each aerodrome file** now carries `formats`: [{ file, layout, fingerprint, ok, problems }] next to `pages`; the builder prints a line per page and a summary of the refused ones.
+- **`--check`** runs the whole reading without writing anything and exits with 1 if a page is refused: to run **before each publication** (every AIRAC cycle), since the eAIP changes under it.
+- Tests (K3): the five real pages pass; a reworded header is *info* only; a widened table is refused; a page without a header is refused; an aerodrome file with a refused page has no procedure and says so.
+Not caught by design: text lost from a page (the parser cannot know what is missing); the guard catches a layout that moved, not a page that was cut.

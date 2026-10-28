@@ -16,6 +16,8 @@ Rules covered
 
 Cases: K1, K5, K8, K9 (and K2 K3 K4 K6 below).  The OFP of the bench is built from SimBrief's documented fields (no real OFP in the repository yet).
 """
+import re
+
 from lib import Fail, case
 
 
@@ -185,6 +187,24 @@ def k3(c):
     cl = P.context_lines([['x'], ['Intro', 'The coding of the SID is by ARINC 424', 'Fly-by turns', 'plain']], [2])
     c.eq(cl, {2: ['The coding of the SID is by ARINC 424', 'Fly-by turns']}, 'context lines: only those with a coding word', what='context_lines')
     c.eq(P.format_rows(['a  b', 'c'], limit=1), ['  1 | a b', '... (1 ligne(s) de plus)'], 'page rows numbered, long pages cut', what='format_rows')
+    # vérification du format des pages (user, 28 Oct : « il faudra prévoir une vérification du format des pages par script »)
+    for name in ('AD_2_LFBD_DATA_SID_RWY23_RNAV_CODE_01', 'AD_2_LFBD_DATA_STAR_RWY_ALL_RNAV_CODE_01', 'AD_2_LFBD_DATA_RWY23_RNP_CODE', 'AD_2_LFAV_DATA_RWY11_RNP_CODE', 'AD_2_LFAV_DATA_RWY29_RNP_CODE'):
+        rws = rows(name)
+        ok, pb, fp, lay = P.verify_page(rws, P.parse_code_table(rws))
+        c.ok(ok and lay == 'sia-code' and not pb, f'{name}: {ok} {lay} {fp} {pb}', 'every known page: recognised layout, known header fingerprint, all leg rows read')
+    base = rows('AD_2_LFAV_DATA_RWY29_RNP_CODE')
+    renamed = [r.replace('Terminator', 'Termination') for r in base]
+    ok, pb, fp, lay = P.verify_page(renamed, P.parse_code_table(renamed))
+    c.ok(ok and any(x.startswith('info: en-tête inconnu') for x in pb), f'{ok} {pb}', 'a reworded header is reported as unknown but does not block the page when the legs are still all read')
+    widened = [re.sub(r'^((?:INA \S+ )?(?:IF|TF|DF|CF) \S+) ', r'\1 NEW ', r) for r in base]
+    ok, pb, fp, lay = P.verify_page(widened, P.parse_code_table(widened))
+    c.ok(not ok and any('moins de 85' in x for x in pb), f'{ok} {pb}', 'a column added to the table: the page is refused (less than 85 % of the leg rows read), nothing is guessed')
+    nohead = [r for r in base if not re.search(r'Terminator|Leg sequence|Path|Waypoint', r)]
+    c.ok(P.verify_page(nohead)[0] is False and P.detect_layout(nohead) is None, 'a page with no header was accepted', 'a page without its header is refused')
+    doc2 = P.build_aerodrome('LFAV', ['AD_2_LFAV_DATA_RWY29_RNP_CODE.pdf', 'AD_2_LFAV_DATA_01.pdf'], lambda n: widened if 'RNP_CODE' in n else rows(n.replace('.pdf', '')),
+                             'https://example.org/AIRAC-2026-10-01', '2026-10-01')
+    c.ok(doc2['procedures'] == [] and doc2['formats'][0]['ok'] is False and any('NON lue' in w for w in doc2['warnings']), f"{doc2['formats']} {doc2['warnings']}",
+         'in the aerodrome file a refused page gives no procedure, a "formats" entry with ok false and a "page NON lue" warning')
     idx = P.index_of({'LFBD': doc}, '2026-10-01')
     c.eq((idx['aerodromes']['LFBD']['SID'], idx['aerodromes']['LFBD']['STAR'], idx['aerodromes']['LFBD']['APP']), (4, 6, 4), 'counts per kind', what='index')
 
@@ -372,6 +392,11 @@ def k5(c):
             rep = (Path(td) / 'report.txt').read_text(encoding='utf-8')
             pdfs = list((Path(td) / 'cache').glob('*.pdf'))
             c.ok('| PDF' in rep and len(pdfs) == 1 and pdfs[0].read_bytes().startswith(b'%PDF-'), rep, 'with --download, exactly one PDF, in cache/')
+        with tempfile.TemporaryDirectory() as td:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                E.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td, name='EG_AD_2_EGLL_6-1_en.pdf', docs=['EG_AD_2_EGLL_6-1_en.pdf', 'EG_AD_2_EGLL_7-1_en.pdf'])
+            names = sorted(p.name for p in (Path(td) / 'cache').glob('*.pdf'))
+            c.eq(names, ['EG_AD_2_EGLL_6-1_en.pdf', 'EG_AD_2_EGLL_7-1_en.pdf'], 'with --docs, one PDF per exact name asked, named after it (no doubled extension)', what='docs')
     finally:
         srv.shutdown()
         os.environ.clear()

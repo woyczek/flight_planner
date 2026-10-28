@@ -242,7 +242,7 @@ class Session:
             raise SystemExit('redirection hors de www.ead.eurocontrol.int refusée: ' + sanitize(str(e), self.secrets)) from None
 
 
-def probe(user, password, state, icao, out, name=None, download=False):
+def probe(user, password, state, icao, out, name=None, download=False, aip_type='AIP', docs=None):
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     s = Session([user, password])
@@ -297,7 +297,7 @@ def probe(user, password, state, icao, out, name=None, download=False):
     for sel, opts in form['selects'].items():
         labels = ' | '.join(l for _, l in opts)
         for kind, test, wanted in (('État', lambda: pick(opts, state) is not None, state), ('partie', lambda: re.search(r'\bENR\b', labels) and re.search(r'\bAD\b', labels), r'^AD$'),
-                                   ('type', lambda: re.search(r'\bAMDT\b', labels) and re.search(r'\bSUP\b', labels), r'^AIP$'),
+                                   ('type', lambda: re.search(r'\bAMDT\b', labels) and re.search(r'\bSUP\b', labels), '^' + re.escape(aip_type) + '$'),
                                    ('langue', lambda: re.search(r'\bEN\b', labels), r'^EN\b|^English')):
             if kind not in chosen.values() and test():
                 v = pick(opts, wanted)
@@ -360,6 +360,7 @@ def probe(user, password, state, icao, out, name=None, download=False):
     result_ids = [m.group(1) for m in re.finditer(r'(?s)<update id="([^"]*)">\s*<!\[CDATA\[(.*?)\]\]>', body) if 'searchResults' in m.group(2) and 'ViewState' not in m.group(1)]
     say('   composant(s) portant les lignes:', result_ids or 'aucun identifié')
     hit = lambda r: icao.upper() in ' '.join(r['cells'] + [h for _, h in r['links']]).upper()
+    field = None
     if name:
         if adv:
             wid = adv[:-6] if adv.endswith('_input') else adv
@@ -399,11 +400,12 @@ def probe(user, password, state, icao, out, name=None, download=False):
                     say('   paramètres envoyés (variante):', sent_summary(sent['last']))
                     if len(vrs):
                         break
-            rows = by_name(name, 'recherche_nom')
+            rows = [] if docs else by_name(name, 'recherche_nom')
             tail = name.split('_', 1)[1] if '_' in name else name
-            contains = by_name(tail, 'recherche_nom_contient') if tail != name else []
-            say('   le champ fait', '« contient »' if contains else ('« commence par » (ou rien de plus large trouvé)' if rows else 'pas de résultat'), f'(« {name} »: {len(rows)}, « {tail} »: {len(contains)})')
-            if not rows:
+            contains = by_name(tail, 'recherche_nom_contient') if tail != name and not docs else []
+            if not docs:
+                say('   le champ fait', '« contient »' if contains else ('« commence par » (ou rien de plus large trouvé)' if rows else 'pas de résultat'), f'(« {name} »: {len(rows)}, « {tail} »: {len(contains)})')
+            if not rows and not docs:
                 say('   repli: noms exacts', f'{name}_<section>-<n>_en.pdf', '(section 1 à 8, n de 1 à 9, arrêt au premier vide par section)')
                 for sec in range(1, 9):
                     for n in range(1, 10):
@@ -419,30 +421,39 @@ def probe(user, password, state, icao, out, name=None, download=False):
     for r in rows[:300]:
         say('     ', f"[{r['ri']}]", ' | '.join(c[:70] for c in r['cells']), '| liens:', [(l[:40], h[:100]) for l, h in r['links']][:3],
             '| boutons:', [(b['id'][-40:], b['name'][-40:], b['onclick'][:60]) for b in r['buttons']][:2], '| commandes:', r['actions'][:2])
-    if download:
-        row = next((r for r in rows if hit(r)), None)
+    def fetch(rs, label0):
+        """Télécharge le document de la première ligne de `rs` (lien direct, sinon bouton ▶ de la ligne) dans ead_probe/cache/ ; PDF seulement."""
+        row = next((r for r in rs if hit(r)), None)
         target = next(((l, h) for l, h in row['links'] if h), None) if row else None
+        raw, label = b'', ''
         if row and not target and row['buttons']:
             bt = row['buttons'][-1]                          # le bouton ▶ de la ligne : envoi classique du formulaire avec ce bouton
             d = dict(data)
             d[bt['name'] or bt['id']] = bt['value'] or bt['name'] or bt['id']
             code, u3, raw = s.call(action, d, {'Referer': url}, raw=True)
-            label = ' '.join(row['cells'])[:60]
+            label = label0 or ' '.join(row['cells'])[:60]
             say('8. téléchargement par le bouton', bt['id'][-40:], 'de', label, ':', code, len(raw), 'octets', '| PDF' if raw[:5] == b'%PDF-' else '| PAS un PDF')
             if raw[:5] != b'%PDF-':
                 say('   début de la réponse:', sanitize(raw[:300].decode('utf-8', 'replace'), s.secrets).replace('\n', ' '))
         elif target:
             code, u3, raw = s.call(urllib.parse.urljoin(url, target[1]), headers={'Referer': url}, raw=True)
-            label = target[0]
+            label = label0 or target[0]
             say('8. téléchargement de', label[:60], ':', code, len(raw), 'octets', '| PDF' if raw[:5] == b'%PDF-' else '| PAS un PDF')
         else:
-            raw, label = b'', ''
-            say('8. téléchargement: aucune ligne pour', icao)
+            say('8. téléchargement:', label0 or icao, ': aucune ligne')
         if raw[:5] == b'%PDF-':
             cache = out / 'cache'
             cache.mkdir(exist_ok=True)
             (cache / ((re.sub(r'[^A-Za-z0-9._-]+', '_', label)[:80] or 'page').removesuffix('.pdf') + '.pdf')).write_bytes(raw)
             say('   gardé dans', 'ead_probe/cache/ (cache local: ne va jamais dans le dépôt)')
+    if docs and field:
+        for d_name in docs:                                  # noms exacts demandés (--docs) : une recherche et un téléchargement chacun
+            rs = by_name(d_name, 'recherche_doc')
+            say('   document', d_name, ':', len(rs), 'ligne(s)')
+            if rs:
+                fetch(rs, d_name)
+    elif download:
+        fetch(rows, '')
     return finish(out, rep, s)
 
 
@@ -463,13 +474,16 @@ def main(argv=None):
     ap.add_argument('--icao', default='EGLL')
     ap.add_argument('--out', default='ead_probe')
     ap.add_argument('--name', default=None, help='filtre « nom de document » (recherche avancée), ex. EGLL')
+    ap.add_argument('--aip-type', default='AIP', help='type de document : AIP, AMDT, SUP, AIC ou Charts (les cartes, dont les tables de codage du Royaume-Uni)')
+    ap.add_argument('--docs', default=None, help='noms exacts à chercher et télécharger, séparés par des virgules (avec --name pour ouvrir la recherche avancée)')
     ap.add_argument('--download', action='store_true', help='télécharge UN document du terrain dans ead_probe/cache/ (cache local)')
     a = ap.parse_args(argv)
     if not a.probe:
         raise SystemExit('rien à faire: ajouter --probe')
     user = a.user or input('EAD Basic, nom d\'utilisateur: ').strip()
     password = os.environ.get('EAD_PASSWORD') or getpass.getpass('EAD Basic, mot de passe (non gardé): ')
-    probe(user, password, a.state, a.icao, a.out, a.name, a.download)
+    docs = [d.strip() for d in a.docs.split(',') if d.strip()] if a.docs else None
+    probe(user, password, a.state, a.icao, a.out, a.name or (docs[0] if docs else None), a.download, a.aip_type, docs)
 
 
 if __name__ == '__main__':
