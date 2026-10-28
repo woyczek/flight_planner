@@ -595,7 +595,12 @@ redesigned for touch at that point.
          "Démarrer le vol": the approach, the STAR and the arrival runway may change at any time, the departure too while
          the flight is not past its first fix; a change rewrites `route.procedures` with `by: 'fuel'` and a fresh
          `updated_at`; the Map redraws, the ETA is derived again, the quote is **not** redone after the start (the remaining
-         fuel is the frame's / fuel's progress). Nothing else of the flight is editable after the start.
+         fuel is the frame's / fuel's progress). **Amended (28 Oct, evening, after Fuel's delivery)**: nothing of the Plan is
+         locked after the start (today's behaviour stays: another departure resets the start, another arrival is the
+         diversion by hand, level, date, aircraft, route, wind and ISA stay editable); the start is only the reference
+         time. The altitude constraints of the procedures do not enter the fuel figures (the quote counts the
+         procedures' length; the constraints live in `profile.path`, drawn by the Map); a constrained climb / descent
+         model in `model.js` is a later lot if the user wants it.
        - **What the Map draws.** The chosen SID, STAR and approach as the procedure trace (today's purple line), from the
          runway's threshold (SID) to the first en-route fix, and from the last en-route fix to the runway (STAR, approach);
          every point of the trace with its altitude constraint ("at / min / max / between", formatted by `formatLevel`) and
