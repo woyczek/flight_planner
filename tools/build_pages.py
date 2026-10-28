@@ -17,6 +17,11 @@ Page de départ (--start chemin, enveloppe Capacitor de mobile/ : l'appli ouvre 
 d'accueil du site est remplacée par un renvoi vers ce chemin (par ex. frame/index.html, l'appli Pilote de la V3),
 adresse et ancre gardées ; le chemin doit faire partie du site construit.
 
+Hôtes du laboratoire des données (csp_policy.LAB_CONNECT, jusqu'à LAB_UNTIL) : une page construite garde sa CSP telle
+quelle jusqu'à sa prochaine construction (site Pages, appli iOS qui l'embarque). La construction le dit avec la date tant
+qu'ils y sont ; passé LAB_UNTIL ils n'y sont plus, et si le laboratoire est encore dans le code elle avertit (annotation
+::warning:: des GitHub Actions) sans refuser : un correctif sans rapport doit pouvoir partir.
+
 Usage : python tools/build_pages.py _site [--start frame/index.html]
 """
 import json
@@ -60,11 +65,29 @@ def start_page(out, start, meta):
     print(f'page de départ : {start}')
 
 
-def main(out, start=''):
+def lab_notice():
+    """Ce que la construction dit des hôtes du laboratoire (csp_policy.LAB_CONNECT) ; '' sans laboratoire."""
+    lab = csp_policy.lab_hosts()
+    present = os.path.isfile(os.path.join(ROOT, 'frame', 'aerodb', 'lab_sources.js'))
+    if lab:
+        return (f"CSP : {len(lab)} hôtes du laboratoire des données jusqu'au {csp_policy.LAB_UNTIL.isoformat()} ; ce site (et l'appli "
+                "iOS qui l'embarque) les garde jusqu'à sa prochaine construction : reconstruire après cette date.")
+    if present:
+        return (f'::warning::CSP : LAB_UNTIL ({csp_policy.LAB_UNTIL.isoformat()}) est passée et le laboratoire des données '
+                "(frame/aerodb/lab*.js) est encore là : ses hôtes ne sont plus dans la politique (ses essais d'adresse sont "
+                'bloqués par la page). Retirer le laboratoire, ou repousser la date par une décision écrite (tools/csp_policy.py).')
+    return ''
+
+
+def main(out, start='', only=None):
+    """Construit le site dans out ; only : seulement ces chemins (essais : une page, sans images Git LFS)."""
     out = os.path.abspath(out)
     if os.path.isdir(out):
         shutil.rmtree(out)
-    files = [f for f in git('ls-files', '-z').split('\0') if f and not f.startswith(SKIP)]
+    files = [f for f in git('ls-files', '-z').split('\0') if f and not f.startswith(SKIP) and (only is None or f in only)]
+    note = lab_notice()
+    if note:
+        print(note)
     # politique de sécurité des pages (balise meta, avant tout script) : liste fixe, adresses de la configuration et
     # hôtes que les bibliothèques des modules V3 appellent elles-mêmes (meta.net)
     with open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8') as f:

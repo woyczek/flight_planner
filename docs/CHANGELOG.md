@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Built pages and the laboratory's end date** (`tools/build_pages.py`; DECISIONS, test K9) — a page built without launcher freezes
+  its policy in a meta tag (Pages site, iOS app) until it is built again: the build names `LAB_UNTIL` while the lab's hosts are in
+  it, and once the date is passed with the laboratory still in the code it warns (GitHub Actions annotation) without refusing; K9
+  builds `frame/index.html` in a temporary folder and checks its meta policy before and after the date.
 - **EAD probe: the login answer encoded twice** (`tools/proc_ead.py`; DECISIONS, test K6) — the login form's answer, met as a JSON
   string holding the object during the owner's run, is read again (`login_json`); another JSON value is named as unexpected, a
   non-JSON answer shows its beginning in the report (sanitised like every line). Taken from the uncommitted change of the run.

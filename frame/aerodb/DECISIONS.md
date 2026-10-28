@@ -1026,3 +1026,16 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   None for a non-JSON body; `login_result` then says "réponse non JSON: " with the first 200 characters (the report's lines all go
   through `sanitize`, and `finish` refuses to write a report holding a secret); `probe` reads the redirect through it. K6 checks the
   three answers.
+
+## 28 October 2026 — a built page keeps its policy (reserve of the security review on the dated CSP)
+
+- `tools/build_pages.py` writes the policy as a meta tag in every page of the site without launcher (and the iOS app embeds that site):
+  a page built before `LAB_UNTIL` keeps the lab's hosts until it is built again, whatever the date. The site is rebuilt at every push of
+  develop and v3 (`pages.yml`), the iOS app at every push of develop touching the app; an app installed from an older build keeps them
+  until updated.
+- **Decided**: the build says it (`lab_notice()`: the number of hosts and the end date, "rebuild after this date") while they are in it;
+  past the date, with the laboratory still in the code, it prints a `::warning::` annotation (its hosts are already out of the policy:
+  `value()`), and **does not refuse**: an unrelated fix must be able to leave on 1 January. K9 builds `frame/index.html` into a
+  temporary folder (`main(out, only=…)`, no LFS image needed) and reads its meta: the eight hosts brought by the lab alone (the five
+  others are also V2 source addresses of `config/repository_tree`) are there before the date and gone after it (date moved back in the
+  test), with the warning.

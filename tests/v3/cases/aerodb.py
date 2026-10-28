@@ -78,6 +78,35 @@ def k7(c):
     c.ok('https://services6.arcgis.com' not in connect and any(x.startswith('https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/') for x in connect), f'{connect}',
          'services6.arcgis.com only by the path of the measured service, never the whole host')
     c.eq(csp_policy.lab_hosts(csp_policy.LAB_UNTIL + datetime.timedelta(days=1)), [], "past LAB_UNTIL the policy no longer carries the laboratory's hosts", what='lab hosts after the end date')
+    # a built page freezes its policy in a meta tag (site without launcher, the iOS app): the build carries the lab's hosts
+    # until LAB_UNTIL and says so; built past the date, the page no longer has them and the build warns
+    import contextlib
+    import importlib
+    import io
+    import os
+    import tempfile
+    build = importlib.import_module('build_pages')
+
+    def built_policy():
+        with tempfile.TemporaryDirectory() as td, contextlib.redirect_stdout(io.StringIO()) as said:
+            build.main(td, only={'frame/index.html', 'config/repository_tree'})
+            page = open(os.path.join(td, 'frame', 'index.html'), encoding='utf-8').read()
+        m = re.search(r'<meta http-equiv="Content-Security-Policy" content="([^"]*)">', page)
+        return (m.group(1) if m else ''), said.getvalue()
+    pol, said = built_policy()
+    # the lab's own hosts: those that neither the configuration's addresses (V2 sources) nor the modules' meta.net bring in as well
+    others = set(csp_policy.config_sites((c.root / 'config/repository_tree').read_text(encoding='utf-8'))) | set(csp_policy.module_hosts(str(c.root)))
+    lab = [h for h in csp_policy.LAB_CONNECT if h not in others]
+    c.ok(pol and all(h in pol for h in lab) and str(csp_policy.LAB_UNTIL) in said, said[:300] + ' | ' + pol[:200],
+         "a page built before LAB_UNTIL carries the lab's hosts in its meta policy, and the build names the end date")
+    keep = csp_policy.LAB_UNTIL
+    try:
+        csp_policy.LAB_UNTIL = datetime.date.today() - datetime.timedelta(days=1)
+        pol, said = built_policy()
+    finally:
+        csp_policy.LAB_UNTIL = keep
+    c.ok(pol and not any(h in pol for h in lab) and '::warning::' in said, said[:300] + ' | ' + pol[:200],
+         "built past LAB_UNTIL, the page has none of the lab's hosts and the build warns while the laboratory is still there")
     c.ok(datetime.date.today() <= csp_policy.LAB_UNTIL, f'LAB_UNTIL {csp_policy.LAB_UNTIL}', "the laboratory's end date is not passed (remove the lab, or move the date by a written decision)")
     import importlib
     launch = importlib.import_module('launch')
