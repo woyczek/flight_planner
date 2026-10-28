@@ -1059,3 +1059,10 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   `execute=@all` gives the server's error page; `execute=@form` is accepted; the data table is `mainForm:searchResults`.
 - **Done**: results read from the `searchResults_data` body only, the announced count printed, all lists sent (defaults; *Civil*), `@form` first, the State's change event replayed.
   Lesson for the probe: never count rows without naming the table they come from.
+
+## 28 October 2026 — first success of the probe, and one branch from now on
+
+- **Result**: the whole-form request shape finds `EG_AD_2_EGLL`; Document Name is "contains"; one document "AD 2 EGLL" (3.0 MB PDF) downloaded by its direct link into the owner's local cache. Details:
+  `EAD_BASIC.md` § 6 sexies. The probe's first shape is now the one that worked; `proc_eaip.py --scan-pdf` added to look for coding tables inside a downloaded AD 2 part (titles and keywords only).
+- **Word of the user**: « arrête de créer des branches à répétition, et tu peux supprimer les anciennes ». From now on one branch, `v3-aerodb-proc-15` (all unintegrated work is on it); the
+  old `v3-aerodb-proc*` branches that were fully integrated or contained in it were deleted (eleven went; `-12`, `-13`, `-14`, ancestors of `-15`, could not be deleted from the session: the push was cut).

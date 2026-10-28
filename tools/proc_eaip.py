@@ -31,16 +31,23 @@ MONTHS = {m: i + 1 for i, m in enumerate('JAN FEB MAR APR MAY JUN JUL AUG SEP OC
 
 
 # ---------------------------------------------------------------------------------------------------------- lecture PDF
-def rows_from_pdf(path):
-    """Lignes de texte d'une page PDF (la première), du haut vers le bas : fragments regroupés par ordonnée (2,5 pt) puis
-    triés par abscisse. pypdf manque : message clair. Chaque ligne est une chaîne de mots séparés par une espace."""
+def pdf_reader(path):
+    """Lecteur pypdf d'un fichier ; pypdf manque : message clair (dépendance facultative des constructeurs de poste, jamais du lanceur ni de la page)."""
     try:
         from pypdf import PdfReader
     except ImportError:
         raise SystemExit('pypdf manque : python -m pip install pypdf (dépendance facultative des constructeurs de poste, '
                          'voir tools/proc_eaip.py ; ni le lanceur ni la page n\'en ont besoin).')
+    return PdfReader(str(path))
+
+
+def rows_from_pdf(path, page=0, reader=None):
+    """Lignes de texte d'une page PDF (la première), du haut vers le bas : fragments regroupés par ordonnée (2,5 pt) puis
+    triés par abscisse. pypdf manque : message clair. Chaque ligne est une chaîne de mots séparés par une espace."""
+    if reader is None:
+        reader = pdf_reader(path)
     frags = []
-    page = PdfReader(str(path)).pages[0]
+    page = reader.pages[page]
 
     def visit(text, cm, tm, fd, fs):
         if text.strip():
@@ -58,6 +65,46 @@ def rows_from_pdf(path):
         else:
             rows.append([y, [(x, i, t)]])
     return [' '.join(' '.join(t for _, _, t in sorted(r)).split()) for _, r in rows]
+
+
+# ---------------------------------------------------------------------------------------------------------- repérage dans un PDF
+SCAN_KEYS = [('Path Terminator', r'path\s*terminator'), ('Fly Over', r'fly\s*over'), ('Coding', r'coding'), ('Waypoint Identification', r'waypoint\s*identification'),
+             ('SID', r'\bSID\b'), ('STAR', r'\bSTAR\b'), ('RNAV', r'\bRNAV\b'), ('RNP', r'\bRNP\b'), ('Approach', r'instrument\s+approach|\bIAC\b|\bILS\b')]
+
+
+def scan_rows(pages):
+    """Repérage page par page (sans copier de contenu) : [(n, titre, [mots-clés])] d'après les lignes de texte de chaque page (liste de lignes)."""
+    out = []
+    for n, rows in enumerate(pages, 1):
+        text = ' '.join(rows)
+        keys = [k for k, rx in SCAN_KEYS if re.search(rx, text, re.I)]
+        title = next((r for r in rows[:8] if re.search(r'\bAD\b|\b[A-Z]{4}\b.*(?:CHART|SID|STAR|APPROACH)', r)), rows[0] if rows else '')
+        out.append((n, re.sub(r'\s+', ' ', title)[:110], keys))
+    return out
+
+
+def scan_pdf(path, report=print):
+    """Repère dans un PDF d'AIP (une partie AD 2 entière) les pages à tableau de tronçons (« Path Terminator »…) : titres et mots-clés seulement."""
+    reader = pdf_reader(path)
+    pages = []
+    for i in range(len(reader.pages)):
+        try:
+            pages.append(rows_from_pdf(path, i, reader))
+        except Exception as e:                       # une page illisible n'arrête pas le repérage
+            pages.append([f'(page illisible: {type(e).__name__})'])
+    info = scan_rows(pages)
+    report(f'{len(info)} page(s). Pages portant chaque mot-clé:')
+    for k, _ in SCAN_KEYS:
+        ns = [n for n, _, ks in info if k in ks]
+        report(f'  {k}: {len(ns)}', ns[:40])
+    tab = [(n, t, ks) for n, t, ks in info if 'Path Terminator' in ks or 'Coding' in ks]
+    report(f'Pages à tableau de tronçons probable ({len(tab)}):')
+    for n, t, ks in tab[:80]:
+        report(f'  p{n} | {t} | {", ".join(ks)}')
+    report('Titres des pages SID / STAR / approche (aperçu):')
+    for n, t, ks in [x for x in info if {'SID', 'STAR', 'Approach'} & set(x[2])][:150]:
+        report(f'  p{n} | {t}')
+    return info
 
 
 # ---------------------------------------------------------------------------------------------------------- valeurs
@@ -365,12 +412,18 @@ def main(argv=None):
     ap.add_argument('icao', nargs='*', help='codes OACI ; vide avec --all')
     ap.add_argument('--all', action='store_true', help='tous les terrains du menu de l\'eAIP (une page de 0,7 Mo chacun)')
     ap.add_argument('--delay', type=float, default=0.0, help='pause entre deux terrains, en secondes')
-    ap.add_argument('--eaip', required=True, help='adresse du dossier AIRAC de l\'eAIP (…/FRANCE/AIRAC-AAAA-MM-JJ)')
+    ap.add_argument('--scan-pdf', default=None, help='repère les pages à tableau de tronçons d\'un PDF AD 2 déjà téléchargé (titres et mots-clés seulement)')
+    ap.add_argument('--eaip', default=None, help='adresse du dossier AIRAC de l\'eAIP (…/FRANCE/AIRAC-AAAA-MM-JJ)')
     ap.add_argument('--out', default='data/proc')
     ap.add_argument('--cache', default=None, help='dossier des PDF téléchargés (gardés, pour ne pas recharger)')
     ap.add_argument('--base-dir', default=None, help='dossier de la base SIA du cycle (navaids.json, points.json)')
     ap.add_argument('--rows-dir', default=None, help='écrit les lignes de chaque PDF lu (fixtures de test)')
     a = ap.parse_args(argv)
+    if a.scan_pdf:
+        scan_pdf(a.scan_pdf)
+        return
+    if not a.eaip:
+        raise SystemExit('--eaip est requis (adresse du dossier AIRAC de l\'eAIP), ou --scan-pdf FICHIER')
     m = AIRAC_IN_URL.search(a.eaip)
     if not m:
         raise SystemExit('adresse sans « AIRAC-AAAA-MM-JJ »: cycle inconnu')

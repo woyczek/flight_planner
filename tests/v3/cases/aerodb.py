@@ -180,6 +180,8 @@ def k3(c):
          'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_01_OCT_2026/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.LFBD.pdf', 'VAC address of the same disc', what='vac_url')
     c.eq(P.icao_list('<a href="FR-AD-2.LFBD-fr-FR.html#x">a</a> <a href="FR-AD-2.LFAV-fr-FR.html">b</a> <a href="FR-AD-2.LFBD-fr-FR.html">c</a> FR-AD-2.eAIP.html'),
          ['LFAV', 'LFBD'], 'airfields of the eAIP menu, once each, sorted', what='icao_list')
+    sc = P.scan_rows([['AIP', 'AD 2 EGLL 1-1 SID', 'EG SID DEPARTURE', 'blah'], ['Procedure Path Terminator Waypoint Fly Over', 'AD 2.EGLL coding table SID RNAV'], ['nothing here']])
+    c.eq([(n, ks) for n, _, ks in sc], [(1, ['SID']), (2, ['Path Terminator', 'Fly Over', 'Coding', 'SID', 'RNAV']), (3, [])], 'page scan: keywords per page, no content copied', what='scan_rows')
     idx = P.index_of({'LFBD': doc}, '2026-10-01')
     c.eq((idx['aerodromes']['LFBD']['SID'], idx['aerodromes']['LFBD']['STAR'], idx['aerodromes']['LFBD']['APP']), (4, 6, 4), 'counts per kind', what='index')
 
@@ -331,7 +333,7 @@ def k5(c):
                     return
                 docs = ['EG_AD_2_EGLL_6-1_en.pdf', 'EG_AD_2_EGLL_7-1_en.pdf', 'EG_AD_2_EGKK_6-1_en.pdf']
                 pick = [d for d in docs if name in d] if name else docs      # « contient » : ce que le vrai champ fait est précisément ce que la sonde doit apprendre
-                if name and q.get('javax.faces.partial.execute') == ['@form']:
+                if name and q.get('javax.faces.partial.execute') == ['mainForm']:
                     pick = []                                                # un premier type de requête qui ne rend rien : la sonde doit en essayer un autre
                 rows = ''.join('<tr data-ri="%d"><td>2026-01-22</td><td>%s</td><td></td><td>NON-AIRAC</td><td>AD 2 chart %d</td><td><button id="mainForm:results:%d:dl" name="mainForm:dl0" type="submit">▶</button></td></tr>' % (i, d, i, i)
                                for i, d in enumerate(pick))
@@ -354,7 +356,7 @@ def k5(c):
                  'the plain search read three result rows (the layout tables are not counted) and the announced number')
             c.ok("champ « Document Name »: mainForm:docName" in rep and 'nom « EG_AD_2_EGLL »' in rep and '2 ligne(s) de résultats' in rep, rep,
                  'the advanced box opened the fields, Document Name found by its label, two rows for the prefix')
-            c.ok('variante formulaire (execute @form, render @all) -> 0 ligne(s)' in rep and 'variante tout (execute et render @all) -> 2 ligne(s)' in rep, rep,
+            c.ok('variante ciblée, tout le formulaire -> 0 ligne(s)' in rep and 'variante formulaire (execute @form, render @all) -> 2 ligne(s)' in rep, rep,
                  'the first request shape finds nothing, the second one finds the two rows, and the probe keeps it')
             c.ok('« contient »' in rep, rep, 'the probe says whether the name field is "contains" or "starts with"')
             c.ok("{'mainForm:auth': 'État', 'mainForm:part': 'partie'}" in rep, rep, 'the State and the AD part were chosen in the lists')

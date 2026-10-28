@@ -339,7 +339,7 @@ def probe(user, password, state, icao, out, name=None, download=False):
 
     last = {'body': ''}
 
-    def search(extra, tag, execute='@form', render='@all'):
+    def search(extra, tag, execute='mainForm', render='mainForm'):
         code, body = ajax({**extra, src: src}, tag, src, execute=execute, render=render)
         if rows_of(body):
             last['body'] = body                           # la dernière réponse qui portait des lignes
@@ -380,9 +380,9 @@ def probe(user, password, state, icao, out, name=None, download=False):
         code, cbody, crows = search({}, 'recherche_apres_bascule')
         say('   contrôle: la recherche sans nom, après la bascule, rend', len(crows), 'ligne(s) de résultats, nombre annoncé', result_info(cbody)[1], '|', describe(cbody)[:300])
         if field:
-            variants = [('formulaire (execute @form, render @all)', '@form', '@all'), ('tout (execute et render @all)', '@all', '@all'),
-                        ('ciblée (execute champs + bouton, render composants des lignes)', f'{src} {field} {adv}', ' '.join(result_ids) or '@all'),
-                        ('ciblée, tout le formulaire', 'mainForm', 'mainForm')]
+            variants = [('ciblée, tout le formulaire', 'mainForm', 'mainForm'),      # la seule forme qui a rendu des lignes sur le vrai écran (28 octobre)
+                        ('formulaire (execute @form, render @all)', '@form', '@all'), ('tout (execute et render @all)', '@all', '@all'),
+                        ('ciblée (execute champs + bouton, render composants des lignes)', f'{src} {field} {adv}', ' '.join(result_ids) or '@all')]
             use = {'v': variants[0]}
 
             def by_name(text, tag):

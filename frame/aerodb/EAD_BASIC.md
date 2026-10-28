@@ -250,3 +250,23 @@ request shape `execute=@form` is accepted (it answered a full page where `@all` 
 
 **Still asked of the owner if this fails**: the browser's own requests, as in § 6 quater, for the three steps — choosing *United Kingdom*, ticking *Advanced Search*, then *Search*
 with a Document Name — each request's Form Data (`javax.faces.ViewState` replaced by `x`). They settle what the probe cannot guess.
+
+## 6 sexies. First success (28 October 2026): the document of EGLL, downloaded
+
+**Result of the owner's run on the fourth-round probe** (United Kingdom, EGLL): the search by Document Name `EG_AD_2_EGLL` returned **one document, "AD 2 EGLL"**, and `--download`
+fetched it: `EG_AD_2_EGLL_en.pdf`, a **PDF of 3,038,627 bytes** (the whole AD 2 part of the aerodrome in one file), kept in the owner's `ead_probe/cache/` only. Established:
+
+- **The request shape that works** is the whole form: `javax.faces.partial.execute=mainForm`, `javax.faces.partial.render=mainForm`, `javax.faces.source=mainForm:querySearch`, with every list sent
+  (authority `EG`, authority type `C`, language `EN`, AIP type `AIP`, part `AD`), `mainForm:enableAdvancedSearch_input=on` and `mainForm:documentName=<name>`. The other shapes
+  (`@all`, `@form`, targeted) found nothing or an error page. It is now the probe's first shape.
+- **Document Name is a "contains" filter** (`EG_AD_2_EGLL` and `AD_2_EGLL` both give the one row).
+- **The download is a direct link** of the row, `/fwf-eadbasic/aip/redirect?link=…`, fetched with the session (no button press needed).
+- **The AIP type matters**: with type *AIP* the aerodrome has this one document; the charts seen in the owner's captures (`EG_AD_2_EGLF_8-1_en.pdf`, "INSTRUMENT APPROACH CHART") are
+  listed under type **Charts** (not searched yet).
+- The row's "eAIP" cell carries the text "IB-903: File not found" (no eAIP link for this document): harmless.
+
+**Next** (nothing to download again): look inside the PDF for coding tables with `python tools/proc_eaip.py --scan-pdf ead_probe/cache/EG_AD_2_EGLL_en.pdf` (needs `pypdf`). It reports, page
+by page, **titles and keywords only** (Path Terminator, Fly Over, Coding, Waypoint Identification, SID, STAR, RNAV, RNP, Approach), copies no content, and lists the pages that probably carry a table of legs. The owner
+pastes that report; the session decides from it whether this document holds coding tables (then the layout parser follows, on text rows of one page) or only charts (then the *Charts* type is searched).
+
+**Branches** (owner's request, 28 October): all further work on this topic goes onto **one branch**, `v3-aerodb-proc-15`; the older ones are deleted when GitHub lets the session do it.
