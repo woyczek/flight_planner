@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the vertical path no longer folds — no vertical jump, no climb back in the descent; an approach given by its entries is
+  listed once** (`modules/fuel/progress.js` `verticalPath`, `module.js` `dedupProcs`, SPEC, DECISIONS; help ×4; cases F23, F24) — on the
+  user's LFBO → LFPO the saved choice had the same record as approach and as transition (its fixes chained twice, 524 NM for 327), the
+  path dropped from FL260 to 1,600 ft in 4 NM and rose to 7,000 ft; a ceiling now pulls the path down along the model's descent
+  gradient, and once the descent has started the path never rises.
+
 - **Fuel: a runway can be chosen at LFPO and LFBO — the runways are those of the procedures when aerodb has none**
   (`modules/fuel/module.js` `runwayChoices`, SPEC, DECISIONS; help ×4; case F22) — `aerodb.runways()` answers `[]` for files whose
   `RWnn` points have no position; the select now offers the runways the procedures name, then the two ends of the runway axis of the base.

@@ -4,6 +4,22 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **28 Oct 2026 — the vertical path folded back on the user's flight LFBO → LFPO** (user's report: 524 NM, the profile drops to
+  1,600 ft around 400 NM, jumps back up around 520 NM). Reproduced from the user's own saved flight and files (read only; no
+  procedure content is kept here). Causes: (1) the saved choice had the SAME record as approach and as approach transition, so
+  `expandedPath` chained its fixes twice (524 NM for a 327 NM route, the chain's fixes flown twice); (2) that record, which has no
+  `missed` mark, went on after the final approach to a climb to 7,000 ft (the Map's fix 7606aec4b stops a final without a
+  `missed` point at the point nearest the threshold); (3) `verticalPath` applied each constraint at its own point: a ceiling
+  4 NM after the cruise dropped the path 24,000 ft in 4 NM, and an `at` later lifted it back. Fuel's part: the list offered every
+  record of an approach that the eAIP gives by entry (one record per initial fix) as an approach and as the transition of every
+  other; now such an approach lists its final record once (the one no other record leads to), its transitions are the records
+  whose last fix is the first fix of the final, and a transition equal to the approach is shown as not chosen and ignored by the
+  path (`dedupProcs`), so a stored choice like the user's heals itself. `verticalPath` is rewritten on a gradient-limited
+  envelope: nodes at the base's breaks and the points' `nm`, plus where each ceiling's gradient meets the cruise; ceilings in the
+  descent hold from the model's descent gradient taken back from them, ceilings in the climb are flat up to them; the slope never
+  exceeds the model's climb or descent; once the descent has started (first node past the top of climb that a ceiling pulls under
+  the base) the path never rises. A floor that the gradient or the monotony cannot hold is not held (no vertical jump wins).
+  Cases F23, F24.
 - **28 Oct 2026 — no runway could be chosen at LFPO (nor LFBO): fuel offers the runways its procedures name** (user's report).
   Measured in a page with the user's files (`proc/manual/LFPO.json`, `LFBO.json`, read only): `aerodb.runways('LFPO')` and
   `aerodb.runways('LFBO')` both answer `[]`. The files carry no `runways`, and the `RWnn` points that aerodb would deduce the

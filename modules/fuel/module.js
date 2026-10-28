@@ -1258,6 +1258,20 @@ function procsPending() {
   const v = CF.proceduresOf(S.flight);
   return (sideChosen(v.dep) || sideChosen(v.arr)) && S.procs?.key !== procsKey();
 }
+/** Procédures lues du vol sans doublon : une transition identique à sa procédure (un ancien choix, ou venu d'ailleurs) est ignorée,
+ *  la chaîne de ses points serait volée deux fois. */
+function dedupProcs(p) {
+  const out = {
+    ...p
+  };
+  for (const [main, tr] of [
+      ['sid', 'sidTrans'],
+      ['star', 'starTrans'],
+      ['app', 'appTrans']
+    ])
+    if (out[main] && out[tr] && out[main].id === out[tr].id) out[tr] = null;
+  return out;
+}
 /** Lit les procédures choisies par aerodb (CF.loadProcedures : enregistrements et pistes) quand les choix ou les terrains ont
  *  changé, puis redessine ; sans procédure choisie, rien à lire. Une lecture à la fois par clé. */
 function ensureProcs() {
@@ -1279,7 +1293,7 @@ function ensureProcs() {
     if (s.procsBusy === key) s.procsBusy = null;
     s.procs = {
       key,
-      procs: procs || {}
+      procs: dedupProcs(procs || {})
     };
     refresh();
   });
@@ -1477,7 +1491,10 @@ function procRowHtml(side, m, edit) {
     const busy = S.procFetch?.icao === m.icao;
     return `<div class="fu-proc" data-proc="${side}">${head}<span class="f-muted">${esc(tt(TX.procNoData))}</span>${edit ? `<button type="button" data-do="procfetch" data-icao="${esc(m.icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? tt(TX.procReading, { icao: m.icao }) : tt(TX.procRead, { icao: m.icao }))}</button>` : ''}</div>`;
   }
-  const o = CF.proceduresOf(S.flight)[side] || {};
+  const o = {
+    ...(CF.proceduresOf(S.flight)[side] || {})
+  };
+  if (o.appTrans && o.appTrans === o.app) delete o.appTrans; // un ancien choix : la transition n'est pas l'approche elle-même
   if (!edit) { // plus modifiable (la SID est passée) : le choix, en lecture seule
     const said = PROC_FIELDS[side].filter(key => o[key] !== undefined).map(key => procValueText(o[key], key)).join(' · ');
     return `<div class="fu-proc" data-proc="${side}">${head}<span class="f-muted">${esc(said || '—')}</span></div>`;
@@ -1500,11 +1517,17 @@ function procRowHtml(side, m, edit) {
     body += sel('star', TX.procStar, main(m.lists.STAR));
     const t = transOf(m.lists.STAR, o.star);
     if (t.length) body += sel('trans', TX.procTrans, t, false);
-    // l'approche : celles sans transition, et, pour une approche que l'eAIP ne donne que par transition, chacune de ses fiches
+    // l'approche : celles sans transition et, pour une approche que l'eAIP ne donne que par point d'entrée (une fiche par entrée), la
+    // fiche qui mène à la piste ; les fiches qui en alimentent une autre (leur dernier point est le premier de l'autre) sont ses
+    // transitions
     const apps = m.lists.APP,
-      named = new Set(main(apps).map(r => r.name));
-    body += sel('app', TX.procApp, [...main(apps), ...apps.filter(r => r.transition && !named.has(r.name))]);
-    const at = transOf(apps, o.app);
+      named = new Set(main(apps).map(r => r.name)),
+      entry = apps.filter(r => r.transition && !named.has(r.name)),
+      feeds = (a, b) => a !== b && a.name === b.name && !!a.points?.at(-1)?.id && a.points.at(-1).id === b.points?.[0]?.id,
+      finals = entry.filter(r => !entry.some(x => feeds(r, x))),
+      chosen = entry.find(r => r.id === o.app);
+    body += sel('app', TX.procApp, [...main(apps), ...(finals.length ? finals : entry)]);
+    const at = chosen ? entry.filter(r => feeds(r, chosen)) : transOf(apps, o.app).filter(r => r.id !== o.app);
     if (at.length) body += sel('appTrans', TX.procAppTrans, at, false);
   }
   return `<div class="fu-proc" data-proc="${side}">${head}${body}</div>`;

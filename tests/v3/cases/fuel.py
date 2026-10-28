@@ -21,7 +21,12 @@ Rules covered
 
   * an aerodrome whose files carry no runway still offers runways: those its procedures name, else the two ends of its axis in the base (F22).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+  * the vertical path never folds back: a constraint 23,000 ft under the cruise 4 NM further, then a climb after the approach (a missed approach the
+    file does not mark), give a path that keeps the cruise until the descent from the constraint reaches it, never rises again, never jumps (F23);
+  * an approach given only by its entries lists the final record once, its transitions are the records that lead to it, and a transition equal to
+    the approach is ignored (F24).
+
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 import json
@@ -368,6 +373,9 @@ def proc_docs(cycle=PROC_CYCLE):
         rec('LFVA', 'APP', 'ILS09', ['09'], [pt(1, 'VA201', 44.8, 2.7, {'type': 'min', 'ft': 4000}), pt(2, 'VA101', 45.0, 3.0)], transition='VA201'),
         rec('LFVA', 'APP', 'VOR09', ['09'], [pt(1, 'VA111', 45.0, 3.0, {'type': 'at', 'ft': 3000}), pt(2, 'RW09', 45.03, 3.4)]),
         rec('LFVA', 'APP', 'VOR27', ['27'], [pt(1, 'VA127', 45.05, 3.8, {'type': 'at', 'ft': 3000}), pt(2, 'RW27', 45.03, 3.45)]),
+        # RNP27: no main record, one per entry; VB301 leads to VB127, which is the approach (VB301 -> VB127 -> threshold)
+        rec('LFVA', 'APP', 'RNP27', ['27'], [pt(1, 'VB127', 45.06, 3.9, {'type': 'at', 'ft': 3000}), pt(2, 'RW27', 45.03, 3.45)], transition='VB127'),
+        rec('LFVA', 'APP', 'RNP27', ['27'], [pt(1, 'VB301', 45.2, 4.3, {'type': 'at', 'ft': 5000}), pt(2, 'VB127', 45.06, 3.9)], transition='VB301'),
     ]
     # LFVB (invented): one STAR that names no runway (it serves them all), no runway record; the base knows its runway axis
     lfvb = [rec('LFVB', 'STAR', 'BET1A', [], [pt(1, 'VB101', 45.8, 3.1, {'type': 'max', 'ft': 9000}), pt(2, 'VB102', 45.6, 3.4, {'type': 'at', 'ft': 4000})])]
@@ -668,7 +676,7 @@ def f20(c):
     rw = norm(row(c, 'procRwy'))
     c.eq(opt_groups(c, 'p-arr-app'), [f'{rw} 09', f'{rw} 27'], 'the approaches are grouped by runway (no runway chosen)', what='approach groups')
     apps = [lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')]
-    c.eq(sorted(apps), ['ILS09', 'VOR09', 'VOR27'], 'the three approaches without transition, in the language-free names', what='approach options')
+    c.eq(sorted(apps), ['ILS09', 'RNP27', 'VOR09', 'VOR27'], 'the approaches without transition and the one given by its entries (listed once), in the language-free names', what='approach options')
     c.eq([v for v, _ in sel_opts(c, 'p-arr-star')], ['', '__none'], 'the STAR list is empty (— and none): the approach does not wait for a STAR', what='STAR options')
     # departure: the same aerodrome has no SID, the row still shows (runway, SID "none") and not the reading
     set_icao(c, 'dep', 'LFVA')
@@ -727,11 +735,67 @@ def f22(c):
     c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '27')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '27', 'a runway of that list is written')
     c.eq(procs_of(d, 'arr'), {'rwy': '27'}, 'it is the pilot\'s choice', what='route.procedures.arr')
-    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"]'); return !!s && [...s.options].length === 3 })()", what='the approach list follows 27')
-    c.eq([lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')], ['VOR27'], 'runway 27: its single approach', what='approaches')
+    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"]'); return !!s && [...s.options].length === 4 })()", what='the approach list follows 27')
+    c.eq([lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')], ['RNP27', 'VOR27'], 'runway 27: its approaches', what='approaches')
     # LFVB: the only procedure names no runway; the base gives the axis (95 true, 2 E: 09 and 27)
     set_icao(c, 'arr', 'LFVB')
     c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /BET1A/.test(o.textContent))", what='the row of LFVB is drawn')
     c.eq([v for v, _ in sel_opts(c, 'p-arr-rwy')], ['', '09', '27'], 'the two ends of the runway axis of the base', what='LFVB runways')
     stars = sel_opts(c, 'p-arr-star')
     c.ok(any('BET1A' in lab for _, lab in stars), f'STAR options {stars}', 'a STAR serving every runway is listed')
+
+
+VERTICAL_JS = """async () => {
+  const PG = await import('/modules/fuel/progress.js');
+  // a flown path, nm from the departure: the route to 296 NM, a STAR fix at 300 (at 3000 ft: 23,000 ft under the cruise, 4 NM further),
+  // the approach (floor, then "at 1600"), then what the file does not mark as the missed approach: a climb to 7000 ft, then the aerodrome
+  const at = ft => ({ type: 'at', ft }), min = ft => ({ type: 'min', ft });
+  const fp = [{ id: 'AAAA', nm: 0 }, { id: 'BBBB', nm: 150 }, { id: 'CCCC', nm: 296 }, { id: 'E1', nm: 300, alt: at(3000) }, { id: 'I1', nm: 310, alt: min(1600) },
+    { id: 'F1', nm: 314, alt: at(1600) }, { id: 'M1', nm: 330 }, { id: 'M2', nm: 360, alt: at(7000) }, { id: 'XXAD', nm: 380 }];
+  const q = { levelFt: 26000, climb: { nm: 60 }, descent: { nm: 78 } };
+  return { fp: fp.map(p => [p.id, p.nm]), vp: PG.verticalPath(fp, q), up: 26000 / 60, dn: 26000 / 78 };
+}"""
+
+
+@case('F23', 'Vertical path: no fold, no jump, no climb back in the descent', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='V3 spec 10.20: profile.path keeps the cruise until the descent from the arrival reaches the first constraint, then never rises and never jumps')
+def f23(c):
+    c.open('fuel')
+    r = c.js(VERTICAL_JS)
+    vp, fp = r['vp'], dict(r['fp'])
+    nms = [p['nm'] for p in vp]
+    c.ok(all(b > a for a, b in zip(nms, nms[1:])), f'nm {nms}', 'the path grows in distance, strictly')
+    grad = max(abs(b['ft'] - a['ft']) / (b['nm'] - a['nm']) for a, b in zip(vp, vp[1:]))
+    c.le(round(grad), round(max(r['up'], r['dn']) * 1.05), 'no vertical jump: no slope steeper than the model\'s climb or descent', what=f'steepest slope {grad:.0f} ft/NM, path {vp}')
+    top = next(i for i, p in enumerate(vp) if p['ft'] >= 26000)
+    after = [p['ft'] for p in vp[top:]]
+    first_down = next(i for i, ft in enumerate(after) if ft < 26000)
+    down = after[first_down - 1:]
+    c.ok(all(b <= a for a, b in zip(down, down[1:])), f'altitudes {down}', 'once the descent has started the path never rises again (the climb of the missed approach is not drawn)')
+    by = {p['nm']: p['ft'] for p in vp}
+    c.eq(by[fp['BBBB']], 26000, 'the cruise is kept at BBBB (the first constraint is far: the descent has not started)', what='altitude at BBBB')
+    c.le(by[fp['E1']], 3000, 'the "at 3000" constraint holds at E1', what='altitude at E1')
+    c.le(by[fp['CCCC']], 26000 - 2000, 'the descent has started before CCCC: the constraint 4 NM later does not drop 23,000 ft at once', what='altitude at CCCC')
+    c.ge(by[fp['I1']], 1600, 'the approach floor holds at I1', what='altitude at I1')
+    c.eq(vp[-1]['ft'], 0, 'the path ends on the ground', what='last altitude')
+    c.ge(min(p['ft'] for p in vp), 0, 'and never below it', what='lowest altitude')
+
+
+@case('F24', 'An approach given by its entries: listed once, its transitions lead to it, a transition equal to it is ignored', 'F', tags=('fuel', 'aerodb', 'maps'), designs=('standard',),
+      screens=False, rule='V3 spec 10.20: the eAIP gives some approaches as one record per entry; the final one is the approach, the records that lead to it are its transitions; never the same record twice')
+def f24(c):
+    app, trans = 'LFVA.APP.RNP27.RW27.VB127', 'LFVA.APP.RNP27.RW27.VB301'
+    docs = proc_flight({'arr': {'rwy': '27', 'app': app, 'appTrans': app}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'})
+    for d in docs:                          # the flight lands at LFVA (invented), 44 NM from its last route point
+        if d[0].endswith('current_flight.json'):
+            d[1]['route'].update(arr='LFVA')
+            d[1]['route']['points'][-1] = {'id': 'LFVA', 'lat': 45.03, 'lon': 3.45}
+    c.open('fuel', docs=proc_docs() + docs, airfields=True)
+    wait_rows(c, 'arr')
+    apps = [lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')]
+    c.eq(apps.count('RNP27'), 1, 'the approach given by its entries is listed once (not once per entry)', what=f'approach options {apps}')
+    c.eq([v for v, _ in sel_opts(c, 'p-arr-appTrans')], ['', trans], 'its transitions are the records that lead to it, not itself', what='approach transition options')
+    c.eq(c.js("document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]').value"), '', 'a stored transition equal to the approach is shown as not chosen', what='approach transition select')
+    d = cf_doc(c, lambda d: len(((d.get('quote') or {}).get('legs')) or []) > 3, 'the quote runs on the procedures path', timeout=15000)
+    ids = [x['id'] for x in d['quote']['legs']]
+    c.eq(len(ids), len(set(ids)), 'no fix is flown twice', what=f'legs {ids}')

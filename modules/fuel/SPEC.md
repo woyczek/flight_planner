@@ -305,7 +305,10 @@ mount. Inside a mount, the two buttons switch as before.
      **The quote runs on the procedures path** (before the start): when procedures are chosen and read (`CF.loadProcedures`),
      the distance is the last point's `nm` of `CF.flownPath(CF.expandedPath(flight, procs))` (never recomputed here), the
      level steps are the route points' `alt_ft` at their `nm`, `quote.legs` has one `{ id, min, origin }` per flown point and
-     `profile.path` is the planned vertical path (`progress.js` `verticalPath`). The procedures' altitude constraints reach
+     `profile.path` is the planned vertical path (`progress.js` `verticalPath`: nm strictly increasing; the model's climb, cruise
+     and descent, then the constraints without any vertical jump — a ceiling in the descent pulls the path down only from where the
+     model's descent gradient, taken back from it, meets the cruise; a ceiling in the climb holds the path level up to it; once the
+     descent has started the path never rises again, so a floor or a missed-approach climb does not lift it). The procedures' altitude constraints reach
      `profile.path` only, not the quote's level steps (the step machinery models cruise levels, not a descent through
      restrictions): fuel and time count the distance. Without procedures: the route's points, legs with origin `'route'`.
      **After "Start the flight"** the Departure step carries a "Procedures" card: the arrival row stays editable at any time,
