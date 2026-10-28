@@ -1,0 +1,277 @@
+<!doctype html>
+<!-- Banc du profil vertical (modules/maps/profile.js sur lib/vertical_profile.js, SPEC § 8) : coupe d'une route fictive (XXAA →
+     XXMM → XXZZ, relief synthétique), trajectoire de Carburant (tocNm, todNm) ou calculée, espaces gardés seulement si la
+     trajectoire y entre, pas d'espace de la surface au plafond, MORA sans relief, dessin à la hauteur du corps (axe des
+     distances dedans), fenêtre sur l'axe (w0, w1, xOf / sOf), lecture au curseur, point le plus proche d'un toucher.
+     Page nue ; window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>maps — profile bench</title>
+<link rel="stylesheet" href="../../../frame/frame.css?v=0">
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  canvas {
+    display: block;
+    border: 1px solid #ccc;
+    margin: 4px 0
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">maps — profile bench</h1>
+<canvas id="a"></canvas>
+<canvas id="b"></canvas>
+<pre id="out"></pre>
+<script src="../lib/aero_symbols.js?v=0"></script>
+<script src="../lib/vertical_profile.js?v=0"></script>
+<script src="../render.js?v=0"></script>
+<script src="../profile.js?v=0"></script>
+<script src="../contours.js?v=0"></script>
+<script>
+  (async () => {
+    const rows = [],
+      out = document.getElementById('out'),
+      P = window.MapsProfile,
+      R = window.MapsRender,
+      NM = 1852,
+      near = (a, b, e) => Math.abs(a - b) <= e;
+    const ck = (name, ok, detail = '') => {
+      rows.push({
+        name,
+        ok: !!ok,
+        detail
+      });
+      const l = document.createElement('div');
+      l.className = ok ? 'PASS' : 'FAIL';
+      l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+      out.append(l);
+    };
+    const canvas = (id, W, H) => {
+      const c = document.getElementById(id);
+      c.width = W;
+      c.height = H;
+      c.style.width = `${W}px`;
+      c.style.height = `${H}px`;
+      return R.themed(c.getContext('2d'), R.tokens());
+    };
+    try {
+      const pts = [{
+          id: 'XXAA',
+          lat: 47.0,
+          lon: -1.0
+        }, {
+          id: 'XXMM',
+          lat: 46.0,
+          lon: 1.5
+        }, {
+          id: 'XXZZ',
+          lat: 44.0,
+          lon: 4.0
+        }],
+        gc = R.distances(pts).pop(),
+        ring = (s, w, n, e) => [
+          [
+            [s, w],
+            [s, e],
+            [n, e],
+            [n, w],
+            [s, w]
+          ]
+        ],
+        // relief synthétique (mètres) : une bosse de 1 200 m au milieu de la route
+        elevation = async (lat, lon) => 100 + 1100 * Math.exp(-((lat - 46) ** 2 + (lon - 1.5) ** 2) / .1),
+          airspaces = [{
+            type: 'TMA',
+            name: 'TMA XX 1',
+            lower: 'SFC',
+            upper: 'FL095',
+            rings: ring(46.7, -1.5, 47.3, -.4)
+          }, {
+            type: 'R',
+            name: 'R XX 2',
+            lower: 'FL350',
+            upper: 'FL450',
+            rings: ring(45.5, .8, 46.4, 2.2)
+          }, {
+            type: 'SIV',
+            name: 'SIV XX',
+            lower: 'SFC',
+            upper: 'FL115',
+            rings: ring(43, -2, 48, 5)
+          }],
+          fuel = {
+            climbFpm: 1800,
+            climbKt: 220,
+            descentFpm: 1800,
+            descentKt: 280,
+            tocNm: 62,
+            todNm: 78
+          },
+          cut = await P.build(pts, {
+            levelFt: 27000,
+            profile: fuel,
+            airspaces,
+            elevation
+          });
+      ck('coupe : longueur du grand cercle (± 1 NM)', near(cut.total / NM, gc, 1), `${(cut.total / NM).toFixed(1)} / ${gc.toFixed(1)} NM`);
+      ck('coupe : 100 à 800 échantillons', cut.samples.length >= 100 && cut.samples.length <= 801, String(cut.samples.length));
+      ck('relief lu (terrainOk)', cut.terrainOk === true);
+      ck('trajectoire de Carburant : TOC à tocNm', near(cut.plan.toc.s / NM, 62, .5), String(cut.plan.toc.s / NM));
+      ck('trajectoire de Carburant : TOD à todNm de l\'arrivée', near((cut.total - cut.plan.tod.s) / NM, 78, .5), String((cut.total -
+        cut.plan
+        .tod.s) / NM));
+      ck('croisière au niveau du vol', P.at(cut, cut.total / 2).alt === 27000, String(P.at(cut, cut.total / 2).alt));
+      const names = cut.crossed.map(c => c.a.name).sort().join(',');
+      ck('espaces : la TMA où entre la trajectoire, pas la R au-dessus du vol ni le SIV de la surface au plafond', names === 'TMA XX 1',
+        names);
+      const own = await P.build(pts, {
+        levelFt: 27000,
+        profile: null,
+        airspaces: [],
+        elevation
+      });
+      ck('sans profil de Carburant : trajectoire calculée (TOC avant le milieu)', own.plan?.toc && own.plan.toc.s < own.total / 2 && own
+        .plan
+        .top >= 27000, JSON.stringify(own.plan?.toc));
+      const off = await P.build(pts, {
+        levelFt: 27000,
+        profile: fuel,
+        airspaces: [],
+        elevation: async () => {
+          throw new Error('offline');
+        },
+        mora: async () => 4500
+      });
+      ck('relief indisponible : terrainOk faux, MORA par échantillon', !off.terrainOk && off.samples.every(q => q.mora === 4500));
+      // dessin à la hauteur du corps
+      const g = P.draw(canvas('a', 360, 200), cut, {
+        W: 360,
+        H: 200,
+        scale: .78
+      });
+      ck('dessin 360 × 200 : axe des distances dans le cadre', g.axisOk === true);
+      ck('dessin : points de la route posés', g.marks >= 2, String(g.marks));
+      ck('dessin : vol entier (w0 = 0, w1 = total)', !g.zoomed && near(g.w0, 0, 1) && near(g.w1, cut.total, 1));
+      ck('dessin : légende (geo.drawn) dit la trajectoire, le relief et la TMA', g.drawn?.plan && g.drawn.terrain && g.drawn.zones.some(
+        ([t]) =>
+        t === 'TMA'), JSON.stringify(g.drawn));
+      const low = P.draw(canvas('b', 360, 110), cut, {
+        W: 360,
+        H: 110,
+        scale: .78
+      });
+      ck('dessin bas (110 px) : l\'axe des distances reste dans le cadre', low.axisOk === true);
+      // fenêtre
+      const w = P.draw(canvas('a', 360, 200), cut, {
+        W: 360,
+        H: 200,
+        scale: .78,
+        window: {
+          from: 100,
+          to: 200
+        }
+      });
+      ck('fenêtre 100–200 NM : w0, w1, zoomed', w.zoomed && near(w.w0 / NM, 100, .01) && near(w.w1 / NM, 200, .01), `${w.w0 / NM} ${w.w1 / NM}`);
+      const x150 = P.xOf(w, 150 * NM);
+      ck('fenêtre : 150 NM au milieu du cadre de tracé', near(x150, (w.padL + w.W - w.padR) / 2, 1), `${x150} vs ${(w.padL + w.W - w.padR) / 2}`);
+      ck('fenêtre : sOf(xOf(s)) = s', near(P.sOf(w, x150), 150 * NM, 1), String(P.sOf(w, x150) / NM));
+      ck('fenêtre : l\'échelle se recale (sommet au-dessus de la croisière, au plus 32 000 ft)', w.top > 27000 && w.top <= 32000,
+        String(w.top));
+      // lecture et toucher
+      const mid = P.at(cut, cut.total / 2);
+      ck('at : NM, relief et espaces au curseur', near(mid.nm, cut.total / 2 / NM, .01) && Number.isFinite(mid.terrain) && Array
+        .isArray(mid
+          .zones));
+      const toC = (lat, lon) => ({
+          x: (lon + 2) * 100,
+          y: (48 - lat) * 100
+        }),
+        s = P.nearest(cut, toC, toC(46.0, 1.5).x + 5, toC(46.0, 1.5).y);
+      ck('nearest : un toucher à 5 px du point XXMM le vise', s != null && near(s / NM, R.distances(pts.slice(0, 2)).pop(), 2), String(
+        s / NM));
+      ck('nearest : rien au-delà de 32 px', P.nearest(cut, toC, 5, 5) === null);
+      // tuiles d'altitude : lues par le load de l'appelant (la Carte : ctx.net), jamais par fetch (SPEC § 2.1)
+      let fetched = 0;
+      const realFetch = window.fetch,
+        urls = [],
+        // tuile plate de 1 000 m : Terrarium code h + 32 768 en R × 256 + G + B / 256 (131, 232, 0)
+        tile = await (() => {
+          const k = new OffscreenCanvas(256, 256),
+            g = k.getContext('2d');
+          g.fillStyle = 'rgb(131,232,0)';
+          g.fillRect(0, 0, 256, 256);
+          return k.convertToBlob({
+            type: 'image/png'
+          });
+        })(),
+        fakeLoad = async url => {
+          urls.push(url);
+          return tile;
+        };
+      window.fetch = (...a) => {
+        fetched++;
+        return realFetch(...a);
+      };
+      try {
+        const h = await SiaProfile.terrainSampler(9, fakeLoad)(46, 1.5);
+        ck('relief : lu par load (1 000 m)', near(h, 1000, 1) && urls.some(u => /\/terrarium\/9\//.test(u)), `${h} ${urls[0]}`);
+        let refused = false;
+        await SiaProfile.terrainSampler(9)(46, 1.5).catch(() => refused = true);
+        ck('relief sans load : refusé (pas de relief), sans appel réseau', refused);
+        const n0 = urls.length;
+        let ready = 0;
+        const cv = canvas('b', 360, 200),
+          opts = {
+            toC: (lat, lon) => ({
+              x: (lon - 1) * 360,
+              y: (46.5 - lat) * 360
+            }),
+            bbox: {
+              w: 1,
+              e: 2,
+              s: 46,
+              n: 46.5
+            },
+            pxPerDeg: 360,
+            W: 360,
+            H: 200,
+            load: fakeLoad,
+            onReady: () => ready++
+          };
+        window.MapsContours.draw(cv, opts);
+        await new Promise(r => setTimeout(r, 300));
+        window.MapsContours.draw(cv, opts);
+        ck('courbes de niveau : tuiles lues par load', urls.length > n0 && urls.slice(n0).every(u => /\/terrarium\/\d+\/\d+\/\d+\.png$/
+            .test(u)),
+          urls.slice(n0, n0 + 2).join(' '));
+        ck('aucune brique n’appelle fetch', fetched === 0, `${fetched} appel(s)`);
+      } finally {
+        window.fetch = realFetch;
+      }
+    } catch (e) {
+      ck('banc exécuté sans exception', false, String(e?.stack || e));
+    }
+    window.__bench = {
+      done: true,
+      pass: rows.filter(r => r.ok).length,
+      fail: rows.filter(r => !r.ok).length,
+      rows
+    };
+    const h = document.createElement('div');
+    h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+    out.prepend(h);
+  })();
+</script>
+</body>
+</html>

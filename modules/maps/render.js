@@ -7,6 +7,7 @@
   // de Mercator du fond uni). Symboles OACI et placeur de libellés : window.SiaAero (lib/aero_symbols.js, copie de la V2).
   // Aucun texte d'interface : libellés de données seulement (codes, noms, niveaux).
   // API : window.MapsRender = { routeProfile(levelFt), selectAirspaces(list, profile, route), bboxOf(points, marginNm),
+  //   nearLon(lon, ref), wrapLon(lon) (copies of frame/lib/geo.js),
   //   distances(points), marks(points, stepNm), mercator(bbox, W, H, pad), drawBackground(ctx, toC, W, H, rings, colors),
   //   draw(ctx, { toC, W, H, scale, bbox, profile, data, route, marks, mission }), tokens(), themed(ctx, tokens),
   //   contrast(c1, c2) (rapport WCAG) } ;
@@ -18,6 +19,14 @@
   const A = () => window.SiaAero,
     PT = 4 / 3,
     NM = 1852;
+
+  // ---------------------------------------------------------------- longitudes autour de la ligne de changement de date
+  // Copie de frame/lib/geo.js (render.js est un script classique, il n'importe rien ; frame/lib/test/geo.html compare les
+  // deux) : la route arrive déroulée (une route Sibérie → Alaska va de 177° à 195°), les données d'aerodb sont en
+  // [-180, 180[ ; une donnée se compare et se dessine à la copie la plus proche de la vue (nearLon), une longitude
+  // envoyée à un service ou comparée à un polygone d'aerodb est enroulée (wrapLon, rendue telle quelle si elle y est déjà).
+  const nearLon = (lon, ref) => +lon + 360 * Math.round((ref - lon) / 360),
+    wrapLon = lon => lon >= -180 && lon < 180 ? +lon : ((((+lon + 180) % 360) + 360) % 360) - 180;
 
   // ---------------------------------------------------------------- jetons du design
   /** Composantes [r, g, b] (0-255) d'une couleur « #rgb », « #rrggbb » ou « rgb(…) » ; null sinon. */
@@ -350,9 +359,10 @@
       const a = points[i - 1],
         b = points[i],
         n = Math.max(1, Math.ceil(gc(a, b) / 2));
-      for (let k = 0; k < n; k++) out.push([a.lat + (b.lat - a.lat) * k / n, a.lon + (b.lon - a.lon) * k / n]);
+      // les espaces d'aerodb sont en [-180, 180[ : les échantillons (route déroulée) y sont ramenés
+      for (let k = 0; k < n; k++) out.push([a.lat + (b.lat - a.lat) * k / n, wrapLon(a.lon + (b.lon - a.lon) * k / n)]);
     }
-    if (points.length) out.push([points[points.length - 1].lat, points[points.length - 1].lon]);
+    if (points.length) out.push([points[points.length - 1].lat, wrapLon(points[points.length - 1].lon)]);
     return out;
   }
   /** Vrai si l'espace est à moins de nm NM des échantillons de la route (un échantillon dedans ou un bord proche). */
@@ -420,7 +430,13 @@
     ctx.fillText(text, x, y);
     ctx.restore();
   }
-  const inBox = (b, lat, lon) => lat >= b.s && lat <= b.n && lon >= b.w && lon <= b.e;
+  /** Le point est dans l'emprise b (qui peut dépasser 180° : vue de la ligne de changement de date) : sa longitude est
+   *  prise à la copie la plus proche du milieu de l'emprise. */
+  const inBox = (b, lat, lon) => {
+    if (!(lat >= b.s && lat <= b.n)) return false;
+    const l = lon >= b.w && lon <= b.e ? lon : nearLon(lon, (b.w + b.e) / 2);
+    return l >= b.w && l <= b.e;
+  };
   /** Fond uni (pas de tuiles) : mer, puis terres d'après les contours de pays [lon, lat]. */
   function drawBackground(ctx, toC, W, H, rings, {
     sea = '#dfe9f2',
@@ -433,16 +449,26 @@
     ctx.fillStyle = land;
     ctx.strokeStyle = border;
     ctx.lineWidth = 1;
-    for (const r of rings || []) {
-      ctx.beginPath();
-      r.forEach(([lon, lat], i) => {
-        const q = toC(lat, lon);
-        i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
-      });
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-    }
+    // copies du monde dans la vue (une vue de la ligne de changement de date : 170° à 205° montre la Sibérie et, à 360° de
+    // là, l'Alaska) ; toC est la projection brute (une longitude = un x), les contours sont en [-180, 180[
+    const x0 = toC(0, 0).x,
+      k = toC(0, 1).x - x0,
+      offs = [];
+    if (k > 0)
+      for (let c = Math.floor((-x0 / k + 180) / 360); c <= Math.floor(((W - x0) / k + 180) / 360) && offs.length < 4; c++) offs.push(c *
+        360);
+    if (!offs.length) offs.push(0);
+    for (const off of offs)
+      for (const r of rings || []) {
+        ctx.beginPath();
+        r.forEach(([lon, lat], i) => {
+          const q = toC(lat, lon + off);
+          i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
     ctx.restore();
   }
 
@@ -524,7 +550,10 @@
     const ad = on(profile, 'aerodromes'),
       nv = on(profile, 'navaids'),
       ob = on(profile, 'obstacles');
-    if (!(ad || nv || ob)) return [];
+    if (!(ad || nv || ob)) return {
+      ads: [],
+      navs: []
+    };
     const c = {
         lat: (b.n + b.s) / 2,
         lon: (b.e + b.w) / 2
@@ -537,7 +566,7 @@
         'navDme') : n.kind === 'TACAN' || n.tacan ? on(profile, 'navTacan') : on(profile, 'navVor');
     const pxDeg = toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x,
       ads = ad ? (data.aerodromes || []).filter(adOk) : [];
-    A().drawPoints(ctx, {
+    const got = A().drawPoints(ctx, {
       aerodromes: ads,
       navaids: nv ? (data.navaids || []).filter(navOk) : [],
       obstacles: []
@@ -557,7 +586,10 @@
       navLabels: on(profile, 'navLabels')
     });
     if (ob) drawObstacles(ctx, data.obstacles || [], toC, W, H, scale, pl, profile, pxDeg);
-    return ads;
+    return {
+      ads,
+      navs: got?.navaids || []
+    };
   }
   /** Obstacles : symboles de la copie du studio (regroupés à l'écran, sans leur libellé), puis, de près (vue rapprochée,
    *  300 px par degré et plus), la hauteur à côté du symbole : « 450 AGL (1230) » — hauteur sol en pieds, altitude du
@@ -646,6 +678,7 @@
         e: b.e + .5
       },
       seen = new Set(),
+      named = [], // tronçons à nommer, dans l'ordre des traits
       f = 8.5 * PT * scale * .8;
     ctx.save();
     ctx.lineCap = 'round';
@@ -669,7 +702,24 @@
       ctx.globalAlpha = 1;
       for (const e of [g.a, g.b])
         if (e?.id) ends.set(`${e.id}|${e.lat.toFixed(3)}|${e.lon.toFixed(3)}`, e);
-      if (!lab || len < 60 * scale) continue;
+      if (lab && len >= 60 * scale) named.push({
+        g,
+        P,
+        Q,
+        col,
+        len
+      });
+    }
+    // les noms après TOUS les traits (V3 maps, 24 Oct : « les noms des AWY au-dessus des traits, pas l'inverse ») : posés dans la
+    // boucle des traits, ils étaient barrés par les voies tracées ensuite
+    for (const {
+        g,
+        P,
+        Q,
+        col,
+        len
+      }
+      of named) {
       // cartouche couché le long du tronçon (texte toujours lisible de gauche à droite)
       const x = (P.x + Q.x) / 2,
         y = (P.y + Q.y) / 2,
@@ -873,14 +923,57 @@
   /** Points de report VFR (losange vert) et points RNAV en route (triangle bleu), identifiant à côté. */
   /** VRP d'hélicoptères : « -H- » dans l'identifiant de la base publiée (MN-H-HE). */
   const vrpRotary = id => /-H-/.test(String(id || ''));
+  /** Code court d'un point de report : celui que la carte écrit (lisibilité d'abord), jamais le nom long. L'identifiant de
+   *  la base porte le préfixe du terrain (« MN-SE » → « SE ») et « H- » pour un hélicoptère (« MN-H-HE » → « HE »). */
+  const vrpCode = id => {
+    const s = String(id || ''),
+      i = s.indexOf('-');
+    return (i > 0 ? s.slice(i + 1) : s).replace(/^H-/, '');
+  };
   /** Couleur d'un point de report VFR : voilure fixe dans la couleur du texte (--sog-fg), voilure tournante en vert. */
   const vrpColor = id => vrpRotary(id) ? VRP_HELI : (T || tokens()).fg;
+  /** Clé d'un code de point de report : sans casse ni espaces (« na », « N A » = « NA »). */
+  const vrpNorm = c => String(c || '').toUpperCase().replace(/\s+/g, '');
+  /** Un point de report par code et par lieu. Le SIA publie chaque VRP deux fois dans le XML : « QT-N » avec sa description
+   *  (« Relais hertzien 2 NM Sud Steenvoorde ») et « N » nu, dont le nom est le code, au même endroit (25 octobre 2026,
+   *  « Bug LFQN. Points de report VFR doublonnés »). Deux entrées de même code à 0,5 NM au plus sont le même point, si l'une
+   *  des deux au moins est nue (ou si elles ont le même identifiant : deux zones qui se recouvrent) ; deux identifiants
+   *  préfixés différents (deux terrains) restent deux points. On garde la description la plus riche (celle qui n'est pas
+   *  égale au code), puis l'identifiant préfixé (il porte « -H- » des hélicoptères), puis le premier lu ; sa position est
+   *  celle de l'entrée gardée. L'ordre de lecture est conservé. */
+  function dedupeVrp(list, tolNm = .5) {
+    const kept = [],
+      by = new Map(),
+      nm = (a, b) => Math.hypot(+a.lat - +b.lat, ((+a.lon - +b.lon + 540) % 360 - 180) * Math.cos(+a.lat * Math.PI / 180)) * 60,
+      bare = v => !String(v.id).includes('-'),
+      rich = v => !!v.name && vrpNorm(v.name) !== vrpNorm(vrpCode(v.id)),
+      rank = v => (rich(v) ? 2 : 0) + (bare(v) ? 0 : 1);
+    for (const v of list || []) {
+      if (!v) continue;
+      const k = vrpNorm(vrpCode(v.id)),
+        row = by.get(k) || by.set(k, []).get(k),
+        i = row.findIndex(q => nm(q.v, v) <= tolNm && (q.v.id === v.id || bare(q.v) || bare(v)));
+      if (i < 0) {
+        const q = {
+          v,
+          at: kept.length
+        };
+        row.push(q);
+        kept.push(v);
+      } else if (rank(v) > rank(row[i].v)) {
+        row[i].v = v;
+        kept[row[i].at] = v;
+      }
+    }
+    return kept;
+  }
   const VRP_HELI = '#2e7d32';
 
   function drawVrp(ctx, data, toC, W, H, scale, b, pl, profile) {
     const vrp = on(profile, 'vrpPoints') && data.vrp?.length,
-      rnav = on(profile, 'rnavPoints') && data.points?.length;
-    if (!vrp && !rnav) return;
+      rnav = on(profile, 'rnavPoints') && data.points?.length,
+      hits = []; // points de report dessinés, à leur place à l'écran (toucher d'un point de report)
+    if (!vrp && !rnav) return hits;
     const lab = el(profile, 'vrpLabels') !== false,
       t = {
         s: b.s - .2,
@@ -889,10 +982,10 @@
         e: b.e + .3
       },
       f = 8 * PT * scale * .85,
-      mark = (v, col, r, shape) => {
-        if (!inBox(t, v.lat, v.lon)) return;
+      mark = (v, col, r, shape, text = v.id) => {
+        if (!inBox(t, v.lat, v.lon)) return false;
         const p = toC(v.lat, v.lon);
-        if (p.x < -20 || p.y < -20 || p.x > W + 20 || p.y > H + 20) return;
+        if (p.x < -20 || p.y < -20 || p.x > W + 20 || p.y > H + 20) return false;
         ctx.beginPath();
         if (shape === 'tri') {
           ctx.moveTo(p.x, p.y - r);
@@ -910,23 +1003,29 @@
         ctx.strokeStyle = col;
         ctx.lineWidth = 1.5 * scale;
         ctx.stroke();
-        if (lab && v.id) {
-          const w = v.id.length * f * .62;
+        if (lab && text) {
+          const w = text.length * f * .62;
           if (!pl || pl.take({
               x0: p.x + r + 2,
               y0: p.y - f * .7,
               x1: p.x + r + 4 + w,
               y1: p.y + f * .7
-            })) halo(ctx, v.id, p.x + r + 3, p.y, f, col, 'left');
+            })) halo(ctx, text, p.x + r + 3, p.y, f, col, 'left');
         }
+        return true;
       };
     ctx.save();
     if (rnav)
       for (const v of data.points)
         if (v.type === 'ICAO') mark(v, '#1f5fa8', 4 * scale, 'tri');
     if (vrp)
-      for (const v of data.vrp) mark(v, vrpColor(v.id), 4.5 * scale, 'diamond');
+      for (const v of data.vrp)
+        if (mark(v, vrpColor(v.id), 4.5 * scale, 'diamond', vrpCode(v.id))) hits.push({
+          v,
+          ...toC(v.lat, v.lon)
+        });
     ctx.restore();
+    return hits;
   }
   /** Villes à dessiner (les plus peuplées d'abord, sans recouvrement) : libellés au-dessus de cityLabelMin si le profil
    *  montre les villes, symboles OACI au-dessus de population si « agglomérations ». */
@@ -1098,7 +1197,8 @@
   }
 
   function geoLabel(value, lat = false) {
-    const hemi = lat ? (value < 0 ? 'S' : 'N') : (value < 0 ? 'W' : 'E'),
+    if (!lat) value = wrapLon(value); // 195° → 165° W
+    const hemi = lat ? (value < 0 ? 'S' : 'N') : value === -180 ? '' : (value < 0 ? 'W' : 'E'), // 180° : ni est ni ouest
       a = Math.abs(value);
     let d = Math.floor(a + 1e-9),
       m = Math.round((a - d) * 60);
@@ -1253,6 +1353,36 @@
         size: f,
         align: 'left'
       });
+      // heure estimée du point (vol démarré, de près : p.eta, posé par l'écran) : sous son nom, sinon au-dessus du point,
+      // sinon à sa gauche ; réservée avec les libellés de la route, avant les terrains (jamais sur « LFBD »)
+      if (p.eta) {
+        const fe = f * .85,
+          we = p.eta.length * fe * .6,
+          spots = [
+            [r.x0, r.y1 + 1 * scale, 'left'],
+            [q.x + 7 * scale, q.y - 6 * scale - fe * 1.2, 'left'],
+            [q.x - 9 * scale - we, q.y + 2 * scale, 'left'],
+            [q.x - 9 * scale - we, q.y - 6 * scale - fe * 1.2, 'left']
+          ];
+        for (const [x, y, align] of spots) {
+          const e = {
+            x0: x,
+            y0: y,
+            x1: x + we + 2 * scale,
+            y1: y + fe * 1.2
+          };
+          if (pl && !pl.take(e)) continue;
+          out.push({
+            text: p.eta,
+            x,
+            y: y + fe * .6,
+            size: fe,
+            align,
+            color: (T || tokens()).accent
+          });
+          break;
+        }
+      }
     }
     const f = f0;
     for (const m of mk) {
@@ -1320,7 +1450,7 @@
       ctx.lineWidth = Math.max(1.5, (end ? 2.5 : 2) * scale);
       ctx.stroke();
     }
-    for (const l of labels) halo(ctx, l.text, l.x, l.y, l.size, color, l.align);
+    for (const l of labels) halo(ctx, l.text, l.x, l.y, l.size, l.color || color, l.align);
     ctx.restore();
   }
   /** Densité selon le zoom (px par degré) : loin (moins de 80) — grands terrains, voies et leurs noms ; moyen (moins de
@@ -1333,6 +1463,23 @@
   /** Zoom MapLibre d'une échelle en px par degré, et l'inverse. */
   const zoomOf = px => Math.log2(Math.max(1e-6, px) * 360 / 512),
     pxOfZoom = z => 512 * 2 ** z / 360;
+  /** Zoom effectif, celui qu'on compare aux seuils : le zoom (déjà décalé par le curseur de complexité) corrigé par la
+   *  taille montrée dans le cadre, la moyenne de sa hauteur et de sa largeur (px CSS). À la taille de référence
+   *  (FRAME_REF_PX, un cadre de portable) aucune correction ; un cadre deux fois plus petit compte pour un niveau de
+   *  moins (moins d'éléments), deux fois plus grand pour un niveau de plus. Une seule fonction, pour le dessin, les
+   *  libellés, la couche des VRP et la densité. */
+  const FRAME_REF_PX = 900,
+    FRAME_K = 1;
+  const effectiveZoom = (zoom, w, h, k = FRAME_K) => {
+    const mean = ((+w || 0) + (+h || 0)) / 2;
+    return mean > 0 ? zoom + Math.log2(mean / FRAME_REF_PX) * k : zoom;
+  };
+  /** Curseur de complexité : un cran décale le zoom effectif d'un niveau entier, de −DETAIL_MAX à +DETAIL_MAX crans (±4 : un
+   *  téléphone dézoomé sur l'Europe, zoom effectif ≈ 3, tombe sous zéro au cran −4, où plus rien ne passe un seuil). Le
+   *  curseur ne fait que cela : ce que montre chaque zoom vient des seuils de la page de réglage (#maps?tune=1). */
+  const DETAIL_ZOOM = 1,
+    DETAIL_MAX = 4;
+  const detailZoom = d => Math.max(-DETAIL_MAX, Math.min(DETAIL_MAX, Math.round(+d) || 0)) * DETAIL_ZOOM;
   /** Clé de seuil de la famille d'un espace. */
   const zoneKey = t => {
     t = String(t || '').toUpperCase();
@@ -1413,8 +1560,40 @@
     h,
     d: Math.hypot(h.x - x, h.y - y)
   })).filter(o => o.d <= o.h.r + 4).sort((a, b) => a.d - b.d).map(o => o.h.g);
-  /** Espaces de la liste qui contiennent le point (lat, lon), du plus bas au plus haut. */
-  function airspacesAt(list, lat, lon) {
+  /** L'ordre de lecture des espaces d'un point (mot de l'utilisateur, 26 octobre : « le plus haut en haut, le plus bas en bas »), écrit
+   *  ici une seule fois : la feuille « n espaces sur ce point » (liste et colonnes du graphique), l'infobulle et la ligne du curseur du
+   *  profil le prennent. Tri sur place et rendu : plafond décroissant (UNL le plus haut), puis plancher décroissant, puis le nom. Les
+   *  hauteurs ASFC sont comptées depuis 0, comme le graphique. Plafond vide, illisible ou sous le plancher : classé avec son plancher
+   *  (comme si le plafond le valait), après les plafonds connus de même valeur. Fonctionne sur tout objet { type, name, lower, upper }. */
+  function sortAirspacesTopDown(list) {
+    const read = A()?.limitRead;
+    const key = a => {
+      const l = read ? read(a.lower, false) : {},
+        u = read ? read(a.upper, true) : {},
+        lo = l.ok && Number.isFinite(l.ft) ? Math.max(0, l.ft) : 0,
+        known = !!(u.ok && (u.unl || Number.isFinite(u.ft) && u.ft > lo));
+      return {
+        up: u.ok && u.unl ? Infinity : known ? u.ft : lo,
+        unk: known ? 0 : 1,
+        lo,
+        name: [a.type, a.name].filter(Boolean).join(' ')
+      };
+    };
+    const k = new Map((list || []).map(a => [a, key(a)]));
+    return (list || []).sort((x, y) => {
+      const a = k.get(x),
+        b = k.get(y);
+      return a.up === b.up ? a.unk - b.unk || b.lo - a.lo || a.name.localeCompare(b.name) : b.up > a.up ? 1 : -1;
+    });
+  }
+  /** Espaces de la liste qui contiennent le point (lat, lon) : `shown`, du plus haut au plus bas (`sortAirspacesTopDown`), sans ceux qui vont de la
+   *  surface au plafond (règle d'affichage du 25 octobre : SiaAero.surfaceToCeiling), et `also`, les noms de ces espaces écartés
+   *  (« FIR PARIS », « SIV POITIERS »), sans doublon, FIR, UIR, SIV d'abord puis les autres par nom : la ligne « Aussi ici » de la
+   *  feuille et de l'infobulle (règle 21 amendée, 26 octobre : le SIV ou la FIR à appeler se lit, jamais en colonne). `more` : espaces
+   *  de la même lecture que le choix des couches a écartés (la FIR décochée reste un service à appeler) ; seuls les écartés par la
+   *  règle y sont repris. */
+  function airspacesAround(list, lat, lon, more = []) {
+    lon = wrapLon(lon); // un toucher sur la carte de l'autre côté de la ligne de changement de date : 195° → 165° W
     const inRing = r => {
       let c = false;
       for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
@@ -1424,9 +1603,30 @@
       }
       return c;
     };
-    const lim = A()?.limitFt;
-    return (list || []).filter(a => (a.rings || []).some(inRing)).sort((x, y) => (lim ? lim(x.lower, false) - lim(y.lower, false) : 0));
+    const flat = A()?.surfaceToCeiling || (() => false),
+      shown = [],
+      skipped = [];
+    for (const a of list || []) {
+      if (!(a.rings || []).some(inRing)) continue;
+      (flat(a) ? skipped : shown).push(a);
+    }
+    for (const a of more || [])
+      if (flat(a) && (a.rings || []).some(inRing)) skipped.push(a); // lus mais écartés par le choix des couches
+    sortAirspacesTopDown(shown);
+    const rank = a => ['FIR', 'UIR', 'SIV'].indexOf(String(a.type || '').toUpperCase()),
+      key = a => {
+        const r = rank(a);
+        return r < 0 ? 3 : r;
+      },
+      name = a => [a.type, a.name].filter(Boolean).join(' ');
+    skipped.sort((x, y) => key(x) - key(y) || name(x).localeCompare(name(y)));
+    return {
+      shown,
+      also: [...new Set(skipped.map(name).filter(Boolean))]
+    };
   }
+  /** Espaces à dessiner au point (lat, lon) : `airspacesAround(...).shown`. */
+  const airspacesAt = (list, lat, lon) => airspacesAround(list, lat, lon).shown;
   /** Surcouche aéronautique complète, dans l'ordre du studio : espaces (formes), route (réservée en premier pour ses
    *  libellés), voies, aérodromes et balises, libellés d'espaces, canevas et MORA. data : { airspaces (déjà choisis),
    *  aerodromes, navaids, obstacles, airways, moraCells } ; bbox : emprise affichée { w, s, e, n }. */
@@ -1453,9 +1653,11 @@
         lat: (bbox.n + bbox.s) / 2,
         lon: (bbox.e + bbox.w) / 2
       },
-      // zoom de la vue, décalé de ¾ de niveau par cran du curseur de complexité (detail, de −2 à +2 : plus de détails à
-      // droite) ; carte de mission : tout ce que son profil montre ; vol : les seuils de zoom de chaque élément
-      zv = zoomOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x) + (Math.round(+detail) || 0) * .75,
+      // zoom de la vue, décalé d'un niveau par cran du curseur de complexité (detail, de −4 à +4 : plus de détails à
+      // droite ; detailZoom), puis corrigé par la taille du cadre (effectiveZoom) ; carte de mission : tout ce que son
+      // profil montre (ni curseur ni taille) ; vol : les seuils de zoom de chaque élément se comparent à ce zoom effectif
+      zs = zoomOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x) + detailZoom(detail),
+      zv = mission ? zs : effectiveZoom(zs, W, H),
       tier = tierOf(pxOfZoom(zv));
     if (!mission) profile = atZoom(profile, zv);
     const shown = mission ? data : byZoom(data, profile, zv, tier),
@@ -1483,7 +1685,7 @@
         ...n,
         name: ''
       });
-    const adsDrawn = drawPoints(ctx, {
+    const pts = drawPoints(ctx, {
       ...shown,
       navaids: navShown
     }, toC, W, H, scale, bbox, pl, navShown.length && !navAll ? {
@@ -1498,7 +1700,7 @@
     if (on(profile, 'aarTracks')) drawAar(ctx, data.aar, toC, scale, bbox, pl);
     if (on(profile, 'natTracks')) drawNat(ctx, data.nat, toC, scale, bbox, pl);
     for (const f of ends.later || []) f();
-    drawVrp(ctx, hideVrp?.size ? {
+    const vrpHits = drawVrp(ctx, hideVrp?.size ? {
       ...shown,
       vrp: (shown.vrp || []).filter(v => !hideVrp.has(v.id))
     } : shown, toC, W, H, scale, bbox, pl, profile);
@@ -1513,9 +1715,33 @@
     // cadres posés, pour les infobulles et les libellés ajoutés par l'écran (TOC, TOD) : cartouches des voies, libellés
     // d'espaces, libellés de la route
     return {
+      // zoom effectif comparé aux seuils et ce que la vue en garde (mesures, page d'essai : window.__maps.mod)
+      zoom: {
+        shifted: zs,
+        effective: zv,
+        tier,
+        kept: mission ? null : {
+          airspaces: shown.airspaces?.length || 0,
+          // par famille de seuil (asTma, asCtr, asP, asR, asD, …) : ce que les curseurs gardent, pour les mesures
+          byKey: (shown.airspaces || []).reduce((n, a) => {
+            const k = zoneKey(a.type);
+            n[k] = (n[k] || 0) + 1;
+            return n;
+          }, {}),
+          aerodromes: shown.aerodromes?.length || 0,
+          navaids: shown.navaids?.length || 0,
+          vrp: shown.vrp?.length || 0,
+          obstacles: shown.obstacles?.length || 0,
+          moraCells: shown.moraCells?.length || 0,
+          cities: shown.cities?.length || 0
+        }
+      },
       airways: ends.hits || [],
       // terrains dessinés dans le cadre, à leur place à l'écran (survol et toucher d'un terrain : points de report VFR)
-      aerodromes: (adsDrawn || []).map(a => ({
+      // balises dessinées et celles qui leur sont rattachées faute de place (même endroit) : infobulle
+      navaids: pts.navs,
+      vrps: vrpHits || [],
+      aerodromes: (pts.ads || []).map(a => ({
         a,
         ...toC(+a.lat, +a.lon)
       })).filter(h => h.x > -10 && h.y > -10 && h.x < W + 10 && h.y < H + 10),
@@ -1535,6 +1761,8 @@
     routeProfile,
     selectAirspaces,
     bboxOf,
+    nearLon,
+    wrapLon,
     distances,
     marks,
     mercator,
@@ -1543,10 +1771,19 @@
     sia,
     siaLimit,
     airspacesAt,
+    airspacesAround,
+    sortAirspacesTopDown,
     airwaysAt,
     awLimit,
     zoomOf,
     pxOfZoom,
+    effectiveZoom,
+    detailZoom,
+    DETAIL_MAX,
+    FRAME_REF_PX,
+    vrpCode,
+    vrpNorm,
+    dedupeVrp,
     zoneKey,
     visibleAt,
     atZoom,

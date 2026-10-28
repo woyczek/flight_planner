@@ -6,8 +6,12 @@
   // aux taux reçus ou par défaut ; relief des tuiles Terrarium, ou, sans elles (hors ligne), les MORA des cases traversées.
   // Aucun texte d'interface : codes, niveaux et distances seulement.
   // API : window.MapsProfile = { build(points, { levelFt, profile, airspaces, elevation, mora }) → coupe,
-  //   draw(ctx, coupe, { W, H, scale }) → géométrie, xOf(geo, s), sOf(geo, x), at(coupe, s) → { lat, lon, s, nm, alt,
+  //   draw(ctx, coupe, { W, H, scale, window }) → géométrie, xOf(geo, s), sOf(geo, x), at(coupe, s) → { lat, lon, s, nm, alt,
   //   terrain, mora, zones }, posAt(coupe, s) → { lat, lon }, nearest(coupe, toC, x, y, maxPx) → s | null }.
+  // Fenêtre (V3_SPECIFICATION § 7.1 règle 20) : `window` { from, to } en NM depuis le départ ; seule cette portion est dessinée,
+  // l'axe vertical se recale sur ce qui y est visible. La géométrie rendue porte la fenêtre (w0, w1 en mètres) : xOf et sOf la
+  // lisent, donc le curseur, les marques et la lecture des espaces (at, project, nearest travaillent en distance s et n'en dépendent
+  // pas) restent justes sans que l'appelant s'en soucie.
   if (window.MapsProfile) return;
   const NM = 1852;
   const P = () => window.SiaProfile;
@@ -92,11 +96,13 @@
       profile
       .tocNm, +profile.todNm);
     data.terrainOk = terrainOk;
+    // règle d'affichage du 25 octobre : pas d'espace de la surface au plafond (SIV, FIR, UIR, secteurs sans limites, SFC → UNL)
+    data.crossed = data.crossed.filter(c => !window.SiaAero.surfaceToCeiling(c.a));
     // espaces gardés : ceux où entre la trajectoire prévue (limites ASFC au-dessus du relief) ; sur un téléphone, les
     // autres (au-dessus ou au-dessous du vol) rendent la coupe illisible ; sans trajectoire (pas de niveau) : tous
     const alt = data.plan?.alt,
       lim = window.SiaAero.limitFt,
-      rel = t => /ASFC|AGL|SFC/i.test(t || '') && !/AMSL/i.test(t || '');
+      rel = t => window.SiaAero.limitRead(t).rel;
     if (alt && lim) data.crossed = data.crossed.filter(c => {
       for (let i = c.i0; i <= c.i1; i++) {
         const a = alt[i],
@@ -125,24 +131,36 @@
   function draw(ctx, data, {
     W,
     H,
-    scale = .8
+    scale = .8,
+    window: win = null
   }) {
     const geo = P().draw(ctx, data, {
       W,
       H,
       scale,
+      win: win && Number.isFinite(win.from) && Number.isFinite(win.to) ? {
+        s0: win.from * NM,
+        s1: win.to * NM
+      } : null,
       limitFt: window.SiaAero.limitFt,
       abbrev: true,
       limits: false,
       strictLabels: true,
       reserveBottom: 18 * scale // marques NM posées par module.js au bas de la coupe
     });
+    geo.drawn.terrain = !!data.terrainOk;
+    geo.drawn.mora = !data.terrainOk && data.samples.some(q => Number.isFinite(q.mora));
     if (!data.terrainOk && data.samples.some(q => Number.isFinite(q.mora))) {
       const X = s => xOf(geo, s),
         Y = ft => geo.padT + (geo.H - geo.padT - geo.padB) * (1 - (Math.min(Math.max(ft, geo.bottom), geo.top) - geo.bottom) / (geo.top -
           geo
           .bottom));
       ctx.save();
+      if (geo.zoomed) { // fenêtre : les marches de MORA sont rognées au cadre
+        ctx.beginPath();
+        ctx.rect(geo.padL, geo.padT, geo.W - geo.padL - geo.padR, geo.H - geo.padT - geo.padB);
+        ctx.clip();
+      }
       ctx.strokeStyle = '#8b2d18';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([5, 3]);
@@ -163,8 +181,13 @@
     }
     return geo;
   }
-  const xOf = (g, s) => g.padL + (g.W - g.padL - g.padR) * s / g.total;
-  const sOf = (g, x) => Math.max(0, Math.min(g.total, (x - g.padL) / (g.W - g.padL - g.padR) * g.total));
+  /** Abscisse de la distance s (mètres) et distance de l'abscisse x ; la fenêtre dessinée (g.w0 .. g.w1), tout le vol sans elle. */
+  const xOf = (g, s) => g.padL + (g.W - g.padL - g.padR) * (s - (g.w0 || 0)) / ((g.w1 ?? g.total) - (g.w0 || 0));
+  const sOf = (g, x) => {
+    const a = g.w0 || 0,
+      b = g.w1 ?? g.total;
+    return Math.max(a, Math.min(b, a + (x - g.padL) / (g.W - g.padL - g.padR) * (b - a)));
+  };
   /** Échantillon le plus proche de la distance s (mètres). */
   const sampleAt = (data, s) => {
     const n = data.samples.length - 1,
@@ -208,7 +231,9 @@
       d = Infinity;
     const k = Math.cos(lat * Math.PI / 180);
     for (const q of data.samples) {
-      const e = Math.hypot(q.lat - lat, (q.lon - lon) * k);
+      const dl = q.lon -
+        lon, // modulo 360 : les échantillons sont sur la route déroulée (un point de l'autre côté de la ligne de changement de date)
+        e = Math.hypot(q.lat - lat, (dl - 360 * Math.round(dl / 360)) * k);
       if (e < d) {
         d = e;
         best = q.s;

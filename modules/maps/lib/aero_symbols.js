@@ -28,7 +28,8 @@
     return h === 'S' || h === 'W' ? -x : x;
   }
   // Blocs d'un type, sans la référence à l'organisme (son txtName précède celui de l'objet).
-  const blocks = (text, t) => text.split(`<${t}>`).slice(1).map(c => c.slice(0, c.indexOf(`</${t}>`)).replace(/<OrgUid[\s\S]*?<\/OrgUid>/, ''));
+  const blocks = (text, t) => text.split(`<${t}>`).slice(1).map(c => c.slice(0, c.indexOf(`</${t}>`)).replace(/<OrgUid[\s\S]*?<\/OrgUid>/,
+    ''));
   /** Position { lat, lon } d'un bloc AIXM (geoLat / geoLong). */
   const geo = b => ({
     lat: dms(tag(b, 'geoLat')),
@@ -214,13 +215,31 @@
     // Voies aériennes (Rsg : segments de route ATS) : extrémités (point RNAV ou balise), niveaux ; pour le calcul
     // des routes (shared/mission_routing.js). Niveau en ft : FL × 100, sinon valeur (ft ou m).
     const airways = [];
-    const lvl = (b, w) => { const v = +tag(b, `valDistVer${w}`), u = tag(b, `uomDistVer${w}`).toUpperCase(); return !Number.isFinite(v) || !tag(b, `valDistVer${w}`) ? null : u === 'FL' ? v * 100 : u === 'M' ? Math.round(v * 3.28084) : v; };
+    const lvl = (b, w) => {
+      const v = +tag(b, `valDistVer${w}`),
+        u = tag(b, `uomDistVer${w}`).toUpperCase();
+      return !Number.isFinite(v) || !tag(b, `valDistVer${w}`) ? null : u === 'FL' ? v * 100 : u === 'M' ? Math.round(v * 3.28084) : v;
+    };
     for (const b of blocks(text, 'Rsg')) {
       const route = /<RteUid[^>]*>\s*<txtDesig>([^<]+)/.exec(b)?.[1] || '',
-        end = w => { const m = new RegExp(`<(\\w+)Uid${w}[^>]*>([\\s\\S]*?)</\\1Uid${w}>`).exec(b); return m ? { id: tag(m[2], 'codeId'), ...geo(m[2]) } : null; },
-        a = end('Sta'), z = end('End');
+        end = w => {
+          const m = new RegExp(`<(\\w+)Uid${w}[^>]*>([\\s\\S]*?)</\\1Uid${w}>`).exec(b);
+          return m ? {
+            id: tag(m[2], 'codeId'),
+            ...geo(m[2])
+          } : null;
+        },
+        a = end('Sta'),
+        z = end('End');
       if (!a || !z || !Number.isFinite(a.lat) || !Number.isFinite(z.lat)) continue;
-      airways.push({ route, a, b: z, lower: lvl(b, 'Lower'), upper: lvl(b, 'Upper'), nm: +tag(b, 'valLen') || null });
+      airways.push({
+        route,
+        a,
+        b: z,
+        lower: lvl(b, 'Lower'),
+        upper: lvl(b, 'Upper'),
+        nm: +tag(b, 'valLen') || null
+      });
     }
     return {
       aerodromes,
@@ -232,18 +251,65 @@
   }
 
   // ---- limites verticales (numériques, ft) et libellés « carte »
-  function limitFt(text, top) {
-    const t = String(text || '').toUpperCase();
-    if (!t) return top ? Infinity : 0;
-    if (/UNL/.test(t)) return Infinity;
-    if (/SFC|GND/.test(t)) return 0;
+  /** Lecture unique d'une limite verticale du SIA (« 800 ASFC », « 1500 ft AMSL », « FL 065 », « 2500 M », « SFC », « UNL »,
+   *  sans ou avec espaces, en minuscules) : { ft, rel, unl, ok }. `ft` : valeur en pieds, telle qu'écrite (le nombre seul,
+   *  sans le relief) ; `rel` : comptée depuis le sol (ASFC, AGL, SFC, GND, et jamais avec AMSL / MSL) ; `unl` : sans limite
+   *  (UNL, ou 66 000 ft et plus comme les voies) ; `ok` : faux si le texte est vide ou illisible (alors `ft` vaut 0 pour un
+   *  plancher et l'infini pour un plafond : un filtre garde l'espace, mais un dessin doit le marquer « ? » et ne pas le
+   *  prendre pour UNL). Le nombre se lit avant le mot : « ASFC » contient « SFC », ce n'est pas le sol (0 ft). */
+  function limitRead(text, top) {
+    const t = String(text == null ? '' : text).toUpperCase().trim(),
+      bad = {
+        ft: top ? Infinity : 0,
+        rel: false,
+        unl: false,
+        ok: false
+      };
+    if (!t) return bad;
+    if (/UNL/.test(t)) return {
+      ft: Infinity,
+      rel: false,
+      unl: true,
+      ok: true
+    };
     const m = /(FL)?\s*(\d+(?:[.,]\d+)?)/.exec(t);
-    if (!m) return top ? Infinity : 0;
-    const v = +m[2].replace(',', '.');
-    return m[1] ? v * 100 : / M\b/.test(t) ? v * 3.28084 : v;
+    if (!m) return /\b(SFC|GND|GROUND|SOL)\b/.test(t) ? {
+      ft: 0,
+      rel: true,
+      unl: false,
+      ok: true
+    } : bad;
+    const n = +m[2].replace(',', '.'),
+      ft = m[1] ? n * 100 : /\d\s*M\b/.test(t) ? n * 3.28084 : n,
+      rel = !m[1] && /ASFC|AGL|AAL|GND|\bSFC\b/.test(t) && !/AMSL|\bMSL\b/.test(t);
+    return {
+      ft,
+      rel,
+      unl: ft >= 66000,
+      ok: true
+    };
+  }
+  /** Limite verticale en pieds (nombre seul : le relief d'une limite ASFC n'est pas ajouté, voir limitRead). */
+  function limitFt(text, top) {
+    const r = limitRead(text, top);
+    return r.unl ? Infinity : r.ft;
+  }
+  /** Règle d'affichage du 25 octobre 2026 (utilisateur : « La règle, pour simplifier l'affichage, c'est « pas d'espace de la
+   *  surface au plafond ». Ne pas afficher les SIV, FIR, dans le profil vertical ») : vrai pour un espace qui n'a pas à être dessiné
+   *  en coupe ni listé « sur ce point » — les types SIV, FIR, UIR et CTL (secteurs de contrôle, sans limites publiées), et tout
+   *  espace qui va de la surface au plafond (plancher SFC / GND ou illisible, plafond UNL, illisible ou vide : ce qui reviendrait à
+   *  cela). Une seule fonction pour la coupe (profile.js) et la liste (render.js, airspacesAt). La carte ne s'en sert pas. */
+  const FLAT_TYPES = new Set(['SIV', 'FIR', 'UIR', 'CTL']);
+
+  function surfaceToCeiling(a) {
+    if (FLAT_TYPES.has(String(a?.type || '').toUpperCase())) return true;
+    const lo = limitRead(a?.lower, false),
+      up = limitRead(a?.upper, true);
+    return (!lo.ok || lo.ft <= 0) && (!up.ok || up.unl);
   }
   /** Limite verticale au format carte (FL 065, 1500 ft AMSL…). */
-  const chartLimit = t => String(t || '').replace(/^FL\s*(\d+)$/, (_, n) => 'FL ' + n.padStart(3, '0')).replace(/ ft /, ' ').replace(/ m /, ' m ');
+  const chartLimit = t => String(t || '').replace(/^FL\s*(\d+)$/, (_, n) => 'FL ' + n.padStart(3, '0')).replace(/ ft /, ' ').replace(
+    / m /, ' m ');
 
   // ---- placement des libellés : un rectangle n'est posé que s'il ne recouvre aucun autre
   // Grille de cases de 64 px : un rectangle n'est comparé qu'à ceux des cases qu'il touche (des milliers
@@ -400,7 +466,8 @@
         B: 1,
         A: 2
       },
-      isRdp = a => a.type === 'R' || a.type === 'D' || a.type === 'P' || a.type === 'W' || a.type === 'A'; // W, A : zones d'alerte et d'avertissement (autres pays)
+      isRdp = a => a.type === 'R' || a.type === 'D' || a.type === 'P' || a.type === 'W' || a.type ===
+      'A'; // W, A : zones d'alerte et d'avertissement (autres pays)
     const sorted = [...zones].sort((a, c) => (isRdp(a) ? 3 : order[a.cls] ?? 1) - (isRdp(c) ? 3 : order[c.cls] ?? 1));
     for (const a of sorted) {
       const ring = bigRing(a);
@@ -1007,9 +1074,11 @@
     ctx.restore();
   }
   // Points aéronautiques de l'emprise ; densité : obstacles filtrés par hauteur, libellés selon le zoom.
-  const NAV_RANK = n => n.kind === 'TACAN' || n.tacan ? 6 : n.kind === 'VOR' ? 5 : n.kind === 'DME' ? (n.ils ? 1 : 4) : n.kind === 'NDB' ? 3 : 2;
+  const NAV_RANK = n => n.kind === 'TACAN' || n.tacan ? 6 : n.kind === 'VOR' ? 5 : n.kind === 'DME' ? (n.ils ? 1 : 4) : n.kind === 'NDB' ?
+    3 : 2;
   /** Rang d'importance d'un aérodrome (contrôlé, longueur de piste en dur, public) : ordre de dessin et priorité des étiquettes. */
-  const AD_RANK = a => (a.controlled ? 10 : 0) + (a.hardLen > 2300 ? 3 : a.hardLen >= 1000 ? 2 : a.hardLen > 0 ? 1 : 0) + (a.public || a.state ? 1 : 0) - (a.type === 'HP' ? 1 : 0);
+  const AD_RANK = a => (a.controlled ? 10 : 0) + (a.hardLen > 2300 ? 3 : a.hardLen >= 1000 ? 2 : a.hardLen > 0 ? 1 : 0) + (a.public || a
+    .state ? 1 : 0) - (a.type === 'HP' ? 1 : 0);
 
   /** Dessine les points de la carte (aérodromes, radionavigation, obstacles, points de report) avec placement des étiquettes sans chevauchement. */
   function drawPoints(ctx, data, toC, {
@@ -1074,17 +1143,46 @@
         labelOnly: true
       })));
     }
+    let navHits = [];
     if (navaids) {
+      // V3 maps (divergence de la copie du studio) : la place se prend du rang le plus haut au plus bas (TACAN, VOR,
+      // DME, NDB, ILS) ; l'empennage d'un ILS compte dans sa place ; une balise sans place est rattachée à la balise
+      // gardée la plus proche (infobulle de l'écran) ; de près (vue rapprochée), toutes sont dessinées sauf celles dont
+      // le symbole tomberait sur celui d'une balise gardée (même endroit : ILS et VOR de Brest, ILS et DME de Calvi) ; le
+      // dessin va du rang le plus bas au plus haut : un ILS reste dessous.
       const navs = (data.navaids || []).map(n => ({
         n,
         p: toC(n.lat, n.lon)
       })).filter(x => inside(x.p)).sort((a, b) => NAV_RANK(b.n) - NAV_RANK(a.n));
-      const shown = navs.filter(x => navPl.take(sym(x.p)));
-      shown.forEach(x => {
+      const box = x => sym(x.p, x.n.kind === 'ILS' || x.n.kind === 'LOC' ? 2.6 : 1.2),
+        shown = [];
+      for (const x of navs) {
+        if (navPl.take(box(x)) || (detailed && !shown.some(y => Math.hypot(y.p.x - x.p.x, y.p.y - x.p.y) < s * 1.5))) {
+          shown.push(x);
+          continue;
+        }
+        let host = null,
+          hd = s * 6;
+        for (const y of shown) {
+          const d = Math.hypot(y.p.x - x.p.x, y.p.y - x.p.y);
+          if (d < hd) {
+            hd = d;
+            host = y;
+          }
+        }
+        if (host)(host.merged ||= []).push(x.n);
+      }
+      [...shown].reverse().forEach(x => {
         drawNavaid(ctx, x.n, x.p, s, 0, detailed ? nearestMag(x.n.lat, x.n.lon) : 0, detailed ? rose : 0);
         reserve(sym(x.p));
       });
       if (navLabels) shown.forEach(x => drawNavaid(ctx, x.n, x.p, s, font * .85, 0, 0, true));
+      navHits = shown.map(x => ({
+        n: x.n,
+        x: x.p.x,
+        y: x.p.y,
+        merged: x.merged || []
+      }));
     }
     // Obstacles regroupés à l'écran (cellule ~ 3 symboles) : le plus haut représente le groupe.
     if (obstacles) {
@@ -1120,11 +1218,16 @@
       } : o, p, s * .9, detailed ? font * .85 : 0);
     }
     place = null;
+    return {
+      navaids: navHits
+    };
   }
 
   window.SiaAero = {
     parseAixm,
     limitFt,
+    limitRead,
+    surfaceToCeiling,
     chartLimit,
     drawAirspaces,
     drawSites,
