@@ -174,23 +174,17 @@ report and maps never write nor erase it.
   at 0; `null` without a route of two points or more. **`taxiMin`** (28 Oct 2026): the taxi minutes the quote counts
   (the quote settings' `taxiMin`), written beside `legs`: the frame's helpers (`etaOf`, `plannedPositionAt`) add it to
   `started.at` / `planned_at` before `legs` (fallback 10 min without it).
-- `progress` (fuel's, lot H): `{ at, plannedPos { lat, lon, legIndex, nmFromDep }, eta [{ id, at }], fuelRemainingKg,
-  remainingNm, phase ('taxi' | 'climb' | 'cruise' | 'descent' | 'arrived'), actual? }` — the planned progress of the
-  started flight, written at most once a minute while it flies (at once on a phase change, a cancelled start or a
-  quote change) — a frame write (the real position) no longer causes a fuel write; fuel's keys cleared once the start
-  is cancelled or the report saved. **Rule (28 Oct 2026): `progress` is a started flight's; readers test `started.at`,
-  never the presence of `progress`** (a `progress.actual` kept from an earlier flight, or an ETA written before the start,
-  say nothing about this flight being in the air). **Debt dated 28 Oct 2026, lifted at the delivery of the recoded Map**
-  (it will compute a planned flight's ETAs from `planned_at` itself): until then fuel still writes, for a flight that is
-  not started but dated (`planned_at` set, the quote done, the arrival still in the future), `progress = { at, eta [{ id,
-  at }] }` only (`plannedPos`, `fuelRemainingKg`, `remainingNm` and `phase` are `null`), the ETAs counted from
-  `planned_at` as a started flight counts them from `started.at`; rewritten with every quote change, cleared when the date
-  is cleared, the flight is started (then from `started.at`) or its arrival is past.
-  **Announced (debt dated 28 Oct 2026, lifted at the delivery of the recoded Map)**: the ETA and the planned position
-  become derived values, computed by a shared helper of `frame/lib/current_flight.js` (`etaOf`, `plannedPositionAt`)
-  from `quote.legs` and `started.at` or `planned_at`; then fuel stops writing `progress.eta` and `progress.plannedPos`
-  (it keeps `fuelRemainingKg`, `remainingNm`, `phase`) and every reader (Map, My flights, Report) goes through the
-  helper.
+- `progress` (fuel's, lot H): `{ at, fuelRemainingKg, remainingNm, phase ('taxi' | 'climb' | 'cruise' | 'descent' |
+  'arrived'), actual? }` — the started flight's planned fuel remaining, distance remaining and phase, written at most
+  once a minute while it flies (at once on a phase change, a cancelled start or a quote change) — a frame write (the
+  real position) causes no fuel write; fuel's keys cleared once the start is cancelled or the report saved. **Rule:
+  `progress` is a started flight's; readers test `started.at`, never the presence of `progress`** (a `progress.actual`
+  kept from an earlier flight says nothing about this flight being in the air). **The ETAs and the planned position are
+  derived values** (since the recoded Map, 28 Oct 2026; the debts of that day are lifted): every reader computes them
+  with `frame/lib/current_flight.js` — `etaOf(flight, now)`, `plannedPositionAt(flight, now)`, from `quote.legs`,
+  `quote.taxiMin` and `started.at` or `planned_at` (`isStarted`, `refTime`, `legTimes`); fuel writes neither
+  `progress.eta` nor `progress.plannedPos` any more (nor the ETAs of a flight that is only dated), and its next write
+  removes those a previous version had left. My flights and Report show neither.
   `actual` (the real position: phone GPS, IVAO / VATSIM network) belongs to the frame; fuel and report keep it as
   written (table above).
 - `started` (lot G): `{ at (ISO), by: 'fuel', diverted? }` — written by fuel at the start (after the weather and the

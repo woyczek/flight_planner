@@ -108,7 +108,7 @@ def f5(c):
 
 
 @case('F6', 'Flight date is one value', 'F', tags=('fuel', 'maps'), screens=False, langs4=True,
-      rule='fuel INTEGRATION 3 (28 Oct): the field writes current_flight.planned_at, the only value (no weather.when copy); the Map reads the ETA fuel writes for a dated flight (debt until the recoded Map)')
+      rule='fuel INTEGRATION 3 (28 Oct): the field writes current_flight.planned_at, the only value (no weather.when copy); a dated flight has no progress: its ETAs are derived from quote.legs by frame/lib/current_flight.js etaOf, as the Map does')
 def f6(c):
     c.open('fuel', flight=True)
     wait_quote(c)
@@ -129,10 +129,10 @@ def f6(c):
     c.page.fill(f'{FUEL} [data-k="wxdate"]', local)
     r = waited(lambda r: r.get('planned_at') == want, 'a typed date is written as ISO UTC')
     c.eq((r.get('weather') or {}).get('when'), None, 'no weather.when copy: planned_at is the only value', what='weather.when')
-    r = waited(lambda r: (r.get('progress') or {}).get('eta'), 'a dated flight that is not started carries the ETAs the Map draws')
-    eta = r['progress']['eta']
-    c.eq(len(eta), 4, 'one ETA per route point', what='progress.eta')
-    c.eq(r['progress'].get('phase'), None, 'no phase before the start', what='progress.phase')
+    r = waited(lambda r: len(((r.get('quote') or {}).get('legs')) or []) == 4, 'the quote writes its legs (minutes from brake release)')
+    c.eq(r.get('progress'), None, 'a dated flight that is not started has no progress (the ETAs are derived by the reader)', what='progress')
+    eta = c.js("(f) => import('/frame/lib/current_flight.js').then(m => m.etaOf(f))", r)
+    c.eq(len(eta or []), 4, 'one ETA per route point, derived by etaOf from quote.legs', what='etaOf')
     c.eq(c.js("(a) => Date.parse(a[1].at) - Date.parse(a[0].at) > 0", eta), True, 'ETAs increase along the route', what='ETA order')
     c.eq(c.js("([t, e]) => Math.round((Date.parse(e) - Date.parse(t)) / 60000)", [want, eta[0]['at']]), 10, 'the first ETA is the date plus the taxi time (10 min)', what='minutes from planned_at to the first ETA')
     c.tap(f'{FUEL} [data-do="when30"]')
@@ -142,7 +142,7 @@ def f6(c):
     c.tap(f'{FUEL} [data-do="whennow"]')
     r = waited(lambda r: r.get('planned_at') is None, '"Now" empties the date')
     c.eq((r.get('weather') or {}).get('when'), None, 'still no weather.when copy', what='weather.when after Now')
-    r = waited(lambda r: not (r.get('progress') or {}).get('eta'), 'an undated flight has no ETA to promise')
+    c.eq(c.js("(f) => import('/frame/lib/current_flight.js').then(m => m.etaOf(f))", r), None, 'an undated flight has no ETA to promise', what='etaOf after Now')
 
 
 # a read of the frame's cache that comes back late: only the reads of `pilot/` and `cache/` documents are delayed, by `ms`

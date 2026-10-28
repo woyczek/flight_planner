@@ -176,14 +176,12 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   wind), durations scaled so the cruise keeps the quote's time —, the quote's descent; fuel burnt along it by phase.
   From it: the estimated time over each point, the planned position at a given time (leg, NM from departure), the
   distance and planned fuel remaining.
-- **Current flight**: `progress = { at, plannedPos { lat, lon, legIndex, nmFromDep }, eta [{ id, at }],
-  fuelRemainingKg, remainingNm, phase }`, written when it changes — every minute during the flight, at every quote
-  change — until the report or the cancellation; `progress.actual` (the real position) is written by the frame and kept.
-- **Not started, dated** (24 Oct 2026; **debt dated 28 Oct 2026**, lifted when the recoded Map computes a planned
-  flight's ETAs itself): with `planned_at` set and a quote, `progress = { at, eta }` is written for the Map: the same
-  timeline counted from `planned_at` (taxi, climb, cruise by leg, descent), `null` for the position, fuel and phase;
-  nothing once the arrival is past or without a date. The rule stays: `progress` is a started flight's, readers test
-  `started.at` (INTEGRATION § 3).
+- **Current flight**: `progress = { at, fuelRemainingKg, remainingNm, phase }` for a started flight, written when it
+  changes — every minute during the flight, at every quote change — until the report or the cancellation;
+  `progress.actual` (the real position) is written by the frame and kept. The ETAs and the planned position are not
+  written (28 Oct 2026): readers derive them from `quote.legs` (`frame/lib/current_flight.js` `etaOf`,
+  `plannedPositionAt`); a flight that is only dated has no `progress`. The screen keeps its own computation for the
+  card below.
 - **Shown**: the Departure step's "Planned progress" card: the line of the moment and the points with their ETA, the
   next point highlighted.
 - Bench `test/progress.html` (14 checks).

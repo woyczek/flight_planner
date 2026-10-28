@@ -2799,16 +2799,6 @@ function progressCalc(C = S.C) {
     etas: PG.etas(P, start)
   };
 }
-/** Heures prévues de passage d'un vol pas démarré, comptées depuis sa date (planned_at, comme la mise en route d'un vol
- *  démarré) : [{ i, at (ms) }] ; null sans date, sans devis, arrivée déjà passée ou vol démarré (progressCalc fait alors
- *  foi). */
-function plannedEtas(C = S.C) {
-  const t = Date.parse(S.flight.planned_at || '');
-  if (S.flight.started?.at || !Number.isFinite(t)) return null;
-  const P = progressPlan(C),
-    etas = P ? PG.etas(P, t) : null;
-  return etas?.length && etas.at(-1).at > Date.now() ? etas : null; // un vol daté dans le passé n'a plus d'heures à montrer
-}
 /** Horaire prévu du vol (progress.js plan) d'après le devis, les vents de la route et le roulage ; null sans devis ou
  *  sans route. */
 function progressPlan(C) {
@@ -2843,43 +2833,22 @@ function progressPlan(C) {
  *  même si seul « at » change. */
 function updateProgress(force = false) {
   const c = progressCalc(),
-    f = S.flight,
-    pts = f.route?.points || [];
+    f = S.flight;
   let next = null;
   if (c) {
     const unit = S.C?.sheet?.unit || 'kg',
       rem = Math.max(0, (S.C.q.block || 0) - c.st.fuelUsed);
     next = {
       at: new Date().toISOString(),
-      plannedPos: {
-        lat: +c.pos.lat.toFixed(4),
-        lon: +c.pos.lon.toFixed(4),
-        legIndex: c.pos.legIndex,
-        nmFromDep: Math.round(c.st.nmFromDep * 10) / 10
-      },
-      eta: c.etas.map(e => ({
-        id: pts[e.i]?.id || '',
-        at: new Date(e.at).toISOString()
-      })),
+      // heures de passage et position prévue : dérivées chez le lecteur de quote.legs (frame/lib/current_flight.js
+      // etaOf, plannedPositionAt) ; undefined efface ce qu'une version précédente avait écrit (JSON le laisse tomber)
+      plannedPos: undefined,
+      eta: undefined,
       fuelRemainingKg: Math.round(window.FuelModel.convertFuel(rem, unit, 'kg')),
       remainingNm: Math.round(c.st.remainingNm),
       phase: c.st.phase
     };
   }
-  // vol pas démarré mais daté (planned_at) : seules les heures de passage sont écrites (la Carte les affiche) ; la
-  // position, le carburant restant et la phase n'existent qu'en vol
-  const pe = c ? null : plannedEtas();
-  if (pe) next = {
-    at: new Date().toISOString(),
-    plannedPos: null,
-    eta: pe.map(e => ({
-      id: pts[e.i]?.id || '',
-      at: new Date(e.at).toISOString()
-    })),
-    fuelRemainingKg: null,
-    remainingNm: null,
-    phase: null
-  };
   // comparées sur les seules clés de fuel (hors at) : la position réelle écrite par le cadre (progress.actual) ne
   // déclenche aucune réécriture ; elle reste en mémoire et dans le fichier (CF.merge ne touche pas aux clés d'autrui)
   const mine = x => JSON.stringify(CF.FUEL_PROGRESS.filter(k => k !== 'at').map(k => x?.[k] ?? null));
@@ -2887,10 +2856,10 @@ function updateProgress(force = false) {
   if (!force && next && f.progress && mine(next) === mine(f.progress)) return;
   // la position prévue avance à chaque rendu (une écriture du cadre en provoque un) : écrite au plus une fois par
   // minute, sauf changement de phase, effacement ou demande expresse
-  if (!force && next && !pe && f.progress && next.phase === f.progress.phase && Date.now() - (S.progressWritten || 0) < 60000) {
+  if (!force && next && f.progress && next.phase === f.progress.phase && Date.now() - (S.progressWritten || 0) < 60000) {
     return; // f.progress reste la dernière écrite : la suivante part dès la minute passée
   }
-  S.progressWritten = next && !pe ? Date.now() : 0;
+  S.progressWritten = next ? Date.now() : 0;
   f.progress = next ? {
     ...(f.progress?.actual ? {
       actual: f.progress.actual

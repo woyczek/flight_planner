@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: times over the points derived, not written** (`modules/fuel/module.js`; INTEGRATION, SPEC, DECISIONS) — the
+  Map computes the ETAs and the planned position from the quote's legs; fuel keeps only the fuel and distance remaining
+  and the phase of a started flight.
 - **Frame: the recoded Map's touches, reviewed** (`frame/app.js`; INTEGRATION § 6, SPEC § 3, DECISIONS): the elevation
   tiles' direct path is limited to https and GET; `ctx.level`, the flight-in-time helpers of `frame/lib/current_flight.js`
   and `frame/lib/routing.js` are documented.

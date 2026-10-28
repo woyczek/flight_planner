@@ -4,6 +4,14 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **28 Oct 2026 — ETA and planned position no longer written** (the recoded Map, 4dd3e232b, derives them; Simplification):
+  `updateProgress` writes `{ at, fuelRemainingKg, remainingNm, phase }` for a started flight only; `plannedPos` and `eta`
+  are set `undefined` in the next write so that `merge` removes what an earlier version left (JSON drops them), and the
+  ETAs of a flight that is only dated are gone with `plannedEtas` — both debts of 28 Oct lifted. Readers use
+  `frame/lib/current_flight.js` (`etaOf`, `plannedPositionAt` from `quote.legs` / `taxiMin`); My flights and Report
+  show neither, nothing to change there. `FUEL_PROGRESS` keeps `plannedPos` and `eta` so that a cancelled start or a
+  saved report still clears an old record. Case F6 now checks that a dated flight has no `progress` and that `etaOf`
+  gives its four ETAs (the first at the date plus the taxi time).
 - **28 Oct 2026 — fuel reads the frame's weather layer** (frame lot 26, INTEGRATION § 14; Simplification): winds and
   temperatures aloft through `ctx.weather.aloft(samples, when, { cacheOnly, stale })` (same shape as `winds.js` gave),
   METAR / TAF of the corridor through `ctx.weather.metar` / `taf` (TAF only with a flight date, as before), `cacheOnly`
