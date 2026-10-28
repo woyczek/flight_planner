@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the level message of a service screen is marked** (`frame/app.js`: `data-screen-level="<id>"`, for a test to
+  find it without reading its text); the frame's debt "GitHub token within the page's reach" is written in
+  `docs/technique/DETTE_TECHNIQUE.md`.
 - **Frame: the module's title across a resize** (`frame/app.js`, `frame/frame.css`; INTEGRATION § 6, SPEC § 4,
   DECISIONS): the header's title and `frame-titled` are also recomputed on `resize` and `orientationchange`; the rule
   that hid the modules' `h1` is removed, the modules now hide it themselves.

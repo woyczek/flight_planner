@@ -2472,7 +2472,7 @@
       }), 'err');
     }
     if (tok !== navSeq || location.hash !== at || !view.isConnected) return; // écran quitté pendant le chargement
-    if ((s.level || 1) > level) return void(view.innerHTML = `<p class="f-card f-muted">${esc(t(T.screenLevel))}</p>`);
+    if ((s.level || 1) > level) return void(view.innerHTML = `<p class="f-card f-muted" data-screen-level="${esc(s.id)}">${esc(t(T.screenLevel))}</p>`);
     const impl = window.SogScreens?.[s.id];
     if (typeof impl?.screen !== 'function') return notify(t(T.loadErr, {
       m: s.id,
