@@ -1358,3 +1358,43 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Addendum (same day, the user)**: `engineCriticalAltFt` is counted by `sheetMissingPaths` and asked to ChatGPT only when the
   effective propulsion (`effectiveFacts`: the sheet's, else the catalogue's) is `piston` or unknown; for jet, turboprop,
   turboshaft, electric, none and other it is never listed. The prompt's rule 7 asks ChatGPT to leave it null then.
+
+## 28 October 2026 (evening) — on-demand reading dispatched by State: France reads the SIA eAIP (§ 10.20)
+
+- **Asked** (the user: "bug sur les AD français, pourtant prioritaires"): Fuel's « Lire les procédures de LFPO » answered « sa mise en page n'est pas connue » because
+  `fetchProcedures` knew EAD Basic only and France is not an EAD `read` State (its outcome is `sia`). France is read in the SIA's own eAIP, free and without account.
+- **Done**:
+  - `aerodb.js` `fetchProcedures` dispatches by the prefix before any job: `LF` → verb `eaip-fetch` (no `EAD_STATES` lookup, never a layout refusal);
+    `EAD_STATES[prefix].outcome === 'read'` → `ead-fetch` as before; any other State → `{ ok: false, reason: 'no-tables', outcome, lnm }` without asking the
+    launcher. `unknown-layout` is gone from the contract (a module words `no-tables`: « aucune table publiée pour cet État »). `onProgress` and the success answer
+    carry `source` (`'eaip'` | `'ead'`). The job's own `no-tables` (the aerodrome's page lists no coding PDF) is mapped through. Everything else is unchanged.
+  - `tools/regen_jobs.py` verb `proc/eaip-fetch`: the arguments check is `ead-fetch`'s plus a code starting with `LF`. No credentials. **No address comes from the page**:
+    the AIRAC folder is computed in Python from the cycle in force (`proc_ead.lib_cycle`, the 28-day calendar from 2024-01-25, the helper that already existed)
+    by `proc_eaip.eaip_url(cycle)` — English three-letter month, same address as `eaipBase()` of `catalogue.js` (K21 compares them).
+  - `tools/proc_eaip.py`: the per-aerodrome body of `main()` (fetch the AD 2 page, `pdf_names`, `CODE_PAGE` check, `rows_of` with a cache, the VAC `HEAD`,
+    `build_aerodrome`) became `read_aerodrome(eaip, icao, cache, resolve, say, rows_dir, step)`, used by `main()` (same output, same messages) and by the job. Helpers `eaip_url`,
+    `url_exists`, `gaps_of`. Cache: `data/local/eaip/<cycle>/` (under `local/`, never published). `resolve`: `base_resolver` on `data/sia/base/fr/<cycle>/` (the
+    workstation's SIA base, `navaids.json` and `points.json`) when that folder is there, else none (aerodb places the en-route points at read time anyway).
+  - **Geometry** (the point to review). `proc_manual.verify` is NOT applied to the eAIP records: it is made for hand readings and asks the printed TRUE course (`trk`),
+    which the SIA tables do not print (they print the magnetic course `crs` and the leg distance `nm`); and `build_aerodrome` has no geometry gate of its own
+    (only the page check: layout known, at least 85 % of the leg rows read). The job runs `proc_eaip.gaps_of` on each procedure: the broad branch of `check_geometry`
+    (magnetic course within 30°, distance within 0.55 NM, only for legs whose two points have a position). A procedure that fails is **not installed** and a
+    warning names it (« NON retenue »), like `build_pdf_dir` does; none left → `failed`. The fixture pages of LFBD (14 procedures) pass; a point put 800 km away fails.
+  - Install and commit as for EAD: `proc_manual.install(replace=False)` (a `proc/manual/LFxx.json` that carries another source's procedures — EAD Basic, a hand
+    reading, an official file — is never overwritten: `failed` with the reason), then `_ead_commit(..., source='eaip')` for `proc/manual/<ICAO>.json` and
+    `proc/manual/index.json` only, message `:card_file_box: Procédures LFPO lues dans l'eAIP du SIA (à la demande)`, no push. Records keep `source.kind: 'eaip'` and
+    status `check`. Result `{ ok, icao, procedures, warnings, commit, source: 'eaip', cycle }`; `ead-fetch` now answers `source: 'ead'`.
+    Failures: no coding table on the page → `no-tables`; HTTP 404 → `failed`, the message says the AIRAC folder of the cycle is not published yet (or the aerodrome has
+    no AD 2 page); another network error or `pypdf` missing → `failed` with its message; cancellation looked at at every message and every PDF, before the install.
+  - **Little Navmap hint** (support itself stays in § 10.21): `tools/launch.py` `/__setup/status` has `lnm`, the sorted kinds of the `little_navmap_<kind>.sqlite`
+    files in `%APPDATA%\ABarthel\little_navmap_db` (Windows) or `~/.config/ABarthel/little_navmap_db`; names only, `[]` when absent, never raising.
+    `FrameData.launcher.detect()` filtered the status to four fields: it now passes `lnm` (strings only). aerodb answers `lnm: true` when the list is not empty
+    (`[]` is truthy in JavaScript, so the test is on the length), which a module words as « Little Navmap a des bases sur ce poste ».
+  - Docs: SPEC § 5 quinquies (the row), INTEGRATION (the refusal table, `source`), frame INTEGRATION § 15.1 (verb, `lnm`), § 10.20 of the specification, CHANGELOG, help bundle.
+- **Bench**: K1 (43 checks: `no-tables` with its outcome and `lnm` true / false, LF → `eaip-fetch` and `source` in the progress and the answer, an EAD State → `ead-fetch`,
+  the job's `no-tables`, no `unknown-layout`), K23 (`regen_jobs._eaip_fetch` with `proc_eaip.fetch`, `first_page_rows` and `url_exists` replaced, the fixture pages of LFBD read
+  by the real parsers: the arguments check, the address for 2026-10-01 and 2026-10-29, no table, the install and the two-path commit with an unrelated modified file left alone,
+  only addresses under the computed folder, a wrong base position dropped by the gate, a foreign file, git absent, 404 and network error, cancellation through `Jobs`,
+  `proc_eaip.main()` unchanged, `lnm_db_kinds()`), K21 (the Python address equals `eaipBase()`).
+- **Not done / to say**: the SIA site was not contacted (fakes only); the first real run of « Lire les procédures de LFPO » is the user's. The `trk` question stays open for a later
+  step if the SIA ever prints true courses.

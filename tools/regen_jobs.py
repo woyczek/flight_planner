@@ -21,6 +21,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import uuid
 
 # sorties publiées (chemins de data/) et sorties locales jamais publiées ; caches des sources : data/sia/<source>/
@@ -234,11 +235,12 @@ def _ead_credentials(secrets):
     return os.environ.get('EAD_USER', '').strip(), os.environ.get('EAD_PASSWORD', '')
 
 
-def _ead_commit(data, icao, git_cmd, git_env, warnings):
+def _ead_commit(data, icao, git_cmd, git_env, warnings, source='ead'):
     """Valide dans data/ les deux fichiers installés et eux seuls : `git add` puis `git commit -m … -- <chemins>` (la forme
     avec chemins vaut --only : le commit est fait de HEAD + ces fichiers tels qu'ils sont sur le disque, jamais de l'index ni
     d'un autre chemin ; ce que l'utilisateur a mis en attente ou modifié ailleurs dans data/ reste où il est). Pas de push.
-    Rend le SHA du commit, ou None (avertissement ajouté à `warnings` : pas de dépôt, git en échec, rien à valider)."""
+    `source` ('ead' | 'eaip') ne change que le message. Rend le SHA du commit, ou None (avertissement ajouté à `warnings` : pas de dépôt,
+    git en échec, rien à valider)."""
     if not git_cmd or not os.path.isdir(os.path.join(data, '.git')):
         warnings.append("git: data/ n'est pas un dépôt, rien n'est validé")
         return None
@@ -259,8 +261,9 @@ def _ead_commit(data, icao, git_cmd, git_env, warnings):
         if run('diff', '--cached', '--quiet', '--', *paths).returncode == 0:
             warnings.append('git: rien de changé dans les fichiers installés, aucun commit')
             return None
-        c = run(*who, 'commit', '-m', f':card_file_box: Procédures {icao} lues dans EAD Basic (à la demande, non opérationnelles)',
-                '--', *paths)
+        message = (f":card_file_box: Procédures {icao} lues dans l'eAIP du SIA (à la demande)" if source == 'eaip' else
+                   f':card_file_box: Procédures {icao} lues dans EAD Basic (à la demande, non opérationnelles)')
+        c = run(*who, 'commit', '-m', message, '--', *paths)
         if c.returncode != 0:
             warnings.append('git commit: ' + (c.stderr or c.stdout).strip()[:200])
             return None
@@ -282,7 +285,7 @@ def _ead_fetch(job, args, ctx):
     fichier du terrain qui porte des procédures d'une autre source n'est jamais écrasé), puis commit de proc/manual/<OACI>.json et
     proc/manual/index.json SEULS (_ead_commit), sans push. L'annulation est regardée à chaque message et avant d'installer ; une fois les
     fichiers écrits, le travail va jusqu'au commit (sinon data/ resterait sali).
-    Rend { ok: True, icao, procedures, warnings, commit (SHA | None), ocr } ou { ok: False, reason: 'no-credentials' | 'cancelled' |
+    Rend { ok: True, icao, procedures, warnings, commit (SHA | None), ocr, source: 'ead' } ou { ok: False, reason: 'no-credentials' | 'cancelled' |
     'failed', message? }."""
     icao = args['icao']
     data = ctx['data']
@@ -345,11 +348,103 @@ def _ead_fetch(job, args, ctx):
         return failed(e)
     commit = _ead_commit(data, icao, ctx.get('git_cmd'), ctx.get('git_env', dict), warnings)
     return {'ok': True, 'icao': icao, 'procedures': installed, 'warnings': [clean(w) for w in warnings][:50], 'commit': commit,
-            'ocr': bool(ocr and ocr.get('procedures'))}
+            'ocr': bool(ocr and ocr.get('procedures')), 'source': 'ead'}
+
+
+def _eaip_args(a):
+    """Contrôle des arguments de proc/eaip-fetch : ceux d'ead-fetch (un code OACI et rien d'autre) et un code de la France (« LF… »),
+    seule à avoir son eAIP lu ainsi ; None sinon (→ 400)."""
+    r = _ead_args(a)
+    return r if r and r['icao'].startswith('LF') else None
+
+
+def _eaip_fetch(job, args, ctx):
+    """Verbe proc/eaip-fetch : lit dans l'eAIP du SIA (France) les procédures d'UN terrain (tables de codage ARINC des pages AD 2), les
+    installe sous data/proc/manual/ et les valide dans le dépôt des données (aerodb.fetchProcedures, § 10.20) ; le pendant d'ead-fetch pour
+    un État dont l'AIP est publiée sans compte. Aucun identifiant ; AUCUNE adresse ne vient de la page : le dossier AIRAC est calculé ici
+    (cycle en vigueur d'après le calendrier de 28 jours, proc_eaip.eaip_url). Étapes : proc_eaip.read_aerodrome (page AD 2, pages DATA et CODE,
+    cache data/local/eaip/<cycle>/ jamais publié ; les points en route sont placés d'après la base SIA du poste, data/sia/base/fr/<cycle>/, si
+    elle y est, sinon à la lecture par aerodb), contrôle de géométrie par procédure (proc_eaip.gaps_of : une procédure qui échoue n'est pas
+    installée, elle est signalée), proc_manual.install (sans --replace : un fichier du terrain qui porte des procédures d'une autre source n'est
+    jamais écrasé), puis commit de proc/manual/<OACI>.json et proc/manual/index.json SEULS (_ead_commit), sans push. Le contrôle de
+    proc_manual.verify n'est PAS appliqué : il demande le cap vrai (`trk`) que seules les lectures à la main portent, les tables du SIA
+    impriment le cap magnétique. L'annulation est regardée à chaque message et avant d'installer.
+    Rend { ok: True, icao, procedures, warnings, commit (SHA | None), source: 'eaip', cycle } ou { ok: False, reason: 'no-tables' (la page du
+    terrain ne cite aucune table de codage) | 'cancelled' | 'failed', message? }."""
+    icao = args['icao']
+    data = ctx['data']
+    tools = os.path.dirname(os.path.abspath(__file__))
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    import proc_ead
+    import proc_eaip
+    import proc_manual
+    cycle = proc_ead.lib_cycle(data)                    # cycle en vigueur (la date du dossier AIRAC de l'eAIP)
+    eaip = proc_eaip.eaip_url(cycle)
+
+    def clean(text, n=300):
+        return str(text)[:n]
+
+    def say(*parts):
+        text = ' '.join(map(str, parts))
+        job.log(text)
+        job.step(text[:200])
+        if job.cancelled():
+            raise _Cancelled()
+
+    def step(text, done, total):
+        job.step(text, done, total, 'pages')
+        if job.cancelled():
+            raise _Cancelled()
+
+    def failed(message, warnings=()):
+        return {'ok': False, 'reason': 'failed', 'message': clean(message), 'warnings': [clean(w) for w in warnings][:50]}
+    cache = os.path.join(data, 'local', 'eaip', cycle)
+    base = os.path.join(data, 'sia', 'base', 'fr', cycle)
+    try:
+        os.makedirs(cache, exist_ok=True)
+        try:
+            resolve = proc_eaip.base_resolver(base) if os.path.isdir(base) else None
+        except (OSError, ValueError, AttributeError, TypeError):    # base illisible : les points en route sont placés à la lecture
+            resolve = None
+        say(f'{icao}: eAIP du SIA, cycle {cycle}')
+        doc = proc_eaip.read_aerodrome(eaip, icao, cache, resolve, say, step=step)
+        if doc is None:
+            return {'ok': False, 'reason': 'no-tables'}
+        if job.cancelled():
+            raise _Cancelled()
+        warnings = list(doc.get('warnings', []))
+        kept = []
+        for p in doc.get('procedures', []):             # géométrie : proc_eaip.gaps_of (cap magnétique et distance imprimés)
+            gaps = proc_eaip.gaps_of(p)
+            if gaps:
+                warnings.append(f'{p.get("id")}: NON retenue, géométrie incohérente: ' + '; '.join(gaps[:2]))
+            else:
+                kept.append(p)
+        if not kept:
+            return failed('no procedure could be read for this aerodrome' + (' (geometry check failed)' if doc.get('procedures') else ''), warnings)
+        doc['procedures'] = kept
+        doc['warnings'] = warnings
+        try:
+            proc_manual.install(doc, os.path.join(data, 'proc'), replace=False)
+        except SystemExit as e:                         # procédures d'une autre source dans le fichier du terrain : rien n'est écrit
+            return failed(e, warnings)
+    except _Cancelled:
+        return {'ok': False, 'reason': 'cancelled'}
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return failed(f'eAIP page not found (HTTP 404): the AIRAC folder of cycle {cycle} is not published yet on the SIA site, or {icao} has no AD 2 page in it')
+        return failed(f'SIA site answered HTTP {e.code}')
+    except (OSError, SystemExit, Exception) as e:       # réseau (URLError, délai), pypdf manquant (SystemExit), PDF illisible…
+        return failed(e)
+    commit = _ead_commit(data, icao, ctx.get('git_cmd'), ctx.get('git_env', dict), warnings, source='eaip')
+    return {'ok': True, 'icao': icao, 'procedures': len({p.get('id') for p in kept}), 'warnings': [clean(w) for w in warnings][:50], 'commit': commit,
+            'source': 'eaip', 'cycle': cycle}
 
 
 # verbes du lot D0 ; les constructeurs (D2) ajoutent les leurs ici, chacun avec son contrôle d'arguments
 REGISTRY = {
     ('state', 'scan'): (_scan, lambda a: {} if not a else None),
     ('proc', 'ead-fetch'): (_ead_fetch, _ead_args),
+    ('proc', 'eaip-fetch'): (_eaip_fetch, _eaip_args),
 }

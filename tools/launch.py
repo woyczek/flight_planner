@@ -664,7 +664,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             git = data_sync.git_exe()
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
                                'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
-                               'csp': True, 'relaxNav': RELAX['nav'], 'host': socket.gethostname(), 'lan': self._lan()})
+                               'csp': True, 'relaxNav': RELAX['nav'], 'host': socket.gethostname(), 'lan': self._lan(),
+                               'lnm': lnm_db_kinds()})
         if self.path.split('?')[0] == '/__setup/lan':
             # accès des appareils du réseau local (Réglages du poste) : état, adresses, code — ce poste seulement
             if not self._allowed() or self._lan():
@@ -1506,6 +1507,21 @@ def lnmperf_suggestions():
             if os.path.isdir(p) and p not in out:
                 out.append(p)
     return out
+
+
+def lnm_db_kinds():
+    """Genres de bases de données de Little Navmap présents sur ce poste, triés (« navigraph », « userdata »…) : les fichiers
+    little_navmap_<genre>.sqlite de %APPDATA%/ABarthel/little_navmap_db (Windows) ou ~/.config/ABarthel/little_navmap_db.
+    Des noms seulement, jamais un chemin ni un contenu ; [] si le dossier est absent ; ne lève jamais. Sert d'indice à aerodb
+    (frame/aerodb : « Little Navmap a ces données ») ; la lecture de ces bases n'est pas faite ici (V3 § 10.21)."""
+    try:
+        home = os.path.expanduser('~')
+        base = (os.environ.get('APPDATA') or os.path.join(home, 'AppData', 'Roaming')) if sys.platform == 'win32' else os.path.join(home, '.config')
+        folder = os.path.join(base, 'ABarthel', 'little_navmap_db')
+        found = (re.fullmatch(r'little_navmap_([a-z0-9_]+)\.sqlite', n) for n in os.listdir(folder))
+        return sorted({m.group(1) for m in found if m})
+    except Exception:
+        return []
 
 
 def lnmperf_entry(path):

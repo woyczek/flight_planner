@@ -75,6 +75,10 @@ def k21(c):
     py = [(ref + datetime.timedelta(days=28 * ((datetime.date.fromisoformat(d) - ref).days // 28))).isoformat() for d in dates]
     c.eq(js, py, 'airac.js and the Python calculation give the same cycle for every date', what='cycles by date')
     c.eq(E.lib_cycle('.'), c.js('AeroAirac.cycleOf(Date.now()).date'), 'proc_ead.lib_cycle (the EAD tools) gives the cycle in force of airac.js', what='cycle in force')
+    P = importlib.import_module('proc_eaip')
+    cycles = ['2026-10-01', '2026-10-29', '2027-01-21']
+    c.eq([P.eaip_url(d) for d in cycles], c.js('(ds) => ds.map(d => AeroCatalogue.eaipBase(d))', cycles),
+         'proc_eaip.eaip_url (the launcher job) writes the same eAIP folder address as catalogue.js eaipBase()', what='eAIP folder address')
 
 
 @case('K8', 'XML stream reader: golden test against the V2 readers', 'K', tags=('aerodb',), phone=False,
@@ -1526,3 +1530,243 @@ def k22(c):
         EAD.EadLibrary, EAD.fetch_ad = saved[0], saved[1]
         os.environ.clear()
         os.environ.update(saved[2])
+
+
+# ------------------------------------------------------------------------------------------------ the launcher's eAIP job (static)
+@case('K23', 'eAIP job of the launcher: proc/eaip-fetch (aerodb.fetchProcedures for France)', 'K', static=True,
+      rule='aerodb DECISIONS 28 Oct 2026 (LF by the SIA eAIP): one aerodrome per gesture, address computed by the tool, installed in proc/manual/, only those two paths committed')
+def k23(c):
+    import contextlib
+    import importlib
+    import io
+    import json
+    import subprocess
+    import sys
+    import tempfile
+    import threading
+    import time
+    import urllib.error
+    from pathlib import Path
+    tools = str(c.root / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    RJ = importlib.import_module('regen_jobs')
+    P = importlib.import_module('proc_eaip')
+    EAD = importlib.import_module('proc_ead')
+    DS = importlib.import_module('data_sync')
+    fx = c.root / 'frame/aerodb/test/fixtures/eaip'
+
+    def raises(fn, *a):
+        try:
+            fn(*a)
+        except Exception:
+            return True
+        return False
+
+    # args check: one aerodrome of France, nothing else
+    ck = RJ.REGISTRY[('proc', 'eaip-fetch')][1]
+    c.eq(ck({'icao': ' lfpo '}), {'icao': 'LFPO'}, 'the code is upper-cased and trimmed', what='args')
+    refused = [{'icao': 'EGLL'}, {'icao': 'KSEA'}, {'icao': 'LFBD,LFBO'}, {'icao': 'LFBD', 'all': True}, {}, {'icao': 'LFB'}, {'icao': 'LFBDX'}, {'icao': 12},
+               {'icao': 'LF*D'}, {'icao': ['LFBD']}, None, 'LFBD']
+    c.eq([a for a in refused if ck(a) is not None], [], 'another State, a list, a wildcard, an extra key or a bad length is refused (-> 400)', what='args')
+    c.eq(RJ.Jobs(RJ.REGISTRY).start('proc', 'eaip-fetch', {'icao': 'EGLL'}).get('status'), 400, 'the launcher answers 400 to a code outside France', what='start')
+    # the address is computed here, with English month names, whatever the locale
+    c.eq(P.eaip_url('2026-10-01'), 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_01_OCT_2026/FRANCE/AIRAC-2026-10-01', 'cycle 2026-10-01', what='eaip_url')
+    c.eq(P.eaip_url('2026-10-29'), 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/FRANCE/AIRAC-2026-10-29', 'cycle 2026-10-29', what='eaip_url')
+    c.eq(P.eaip_url('2027-01-21').split('/')[5], 'eAIP_21_JAN_2027', 'the month is the English three letters', what='eaip_url')
+    c.ok(raises(P.eaip_url, '2026-13-01') and raises(P.eaip_url, 'x') and raises(P.eaip_url, '../etc'), 'bad cycles', 'a cycle that is not a date is refused (nothing is a free address)')
+
+    def pdfs_of(icao='LFBD'):
+        return [f.name.replace('.rows.txt', '.pdf') for f in fx.glob('*.rows.txt') if f'_{icao}_' in f.name]
+
+    def page_of(names):
+        return ''.join(f'<a href="../Cartes/{n[5:9]}/{n}">{n}</a>' for n in names)
+
+    def git(cwd, *a):
+        r = subprocess.run(DS.git_cmd('-C', str(cwd), *a), capture_output=True, text=True, encoding='utf-8', errors='replace', env=DS.git_env())
+        return r.stdout
+
+    def scene(td):
+        data = Path(td) / 'data'
+        (data / 'proc' / 'manual').mkdir(parents=True)
+        (data / 'proc' / 'manual' / 'index.json').write_text(json.dumps({'schema': 1, 'folder': 'manual', 'aerodromes': {'KSEA': {'SID': 1}}}))
+        (data / 'notes.txt').write_text('first\n')
+        (data / '.gitignore').write_text('local/\n')
+        git(data, 'init', '-q')
+        git(data, 'add', '-A')
+        git(data, '-c', 'user.name=T', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'initial')
+        (data / 'notes.txt').write_text('first\nedited by the user, not staged\n')
+        return data
+
+    def ctx_of(data):
+        return {'data': str(data), 'secrets': str(Path(data).parent / 'secrets'), 'git_cmd': DS.git_cmd, 'git_env': DS.git_env}
+
+    asked = []                                               # every address the job asks for: nothing else than the SIA's AIRAC folder
+    state = {'names': pdfs_of(), 'fail': None}
+
+    def fake_fetch(url, timeout=60):
+        asked.append(url)
+        if state['fail']:
+            raise state['fail']
+        if '/html/eAIP/FR-AD-2.' in url:
+            return page_of(state['names']).encode()
+        return b'%PDF fake ' + url.rsplit('/', 1)[-1].encode()
+
+    def fake_rows(path):
+        return (fx / f'{Path(path).stem}.rows.txt').read_text(encoding='utf-8').splitlines()
+
+    def run(ctx, icao='LFBD', job=None):
+        return RJ._eaip_fetch(job or RJ.Job('proc', 'eaip-fetch', {'icao': icao}), {'icao': icao}, ctx)
+
+    saved = (P.fetch, P.first_page_rows, P.url_exists)
+    P.fetch, P.first_page_rows, P.url_exists = fake_fetch, fake_rows, lambda url, timeout=30: False
+    try:
+        cycle = EAD.lib_cycle('.')
+        folder = P.eaip_url(cycle) + '/html/eAIP/'
+        with tempfile.TemporaryDirectory() as td:
+            data = scene(td)
+            ctx = ctx_of(data)
+            # no coding table on the aerodrome page (charts only): no-tables, nothing installed
+            state['names'] = ['AD_2_LFXX_ADC.pdf', 'AD_2_LFXX_VAC.pdf']
+            r = run(ctx, 'LFXX')
+            c.eq(r, {'ok': False, 'reason': 'no-tables'}, 'a page that lists no coding PDF: no-tables', what='no tables')
+            c.ok(not (data / 'proc' / 'manual' / 'LFXX.json').exists() and asked and all(u.startswith(folder) for u in asked), str(asked),
+                 'nothing installed, and the only address asked is under the AIRAC folder computed by the tool')
+
+            # success: LFBD of the fixtures, read through the real parsers
+            state['names'] = pdfs_of()
+            asked.clear()
+            before = git(data, 'rev-parse', 'HEAD').strip()
+            job = RJ.Job('proc', 'eaip-fetch', {'icao': 'LFBD'})
+            r = run(ctx, job=job)
+            c.ok(r.get('ok') is True and r['icao'] == 'LFBD' and r['procedures'] == 14 and r['source'] == 'eaip' and r['cycle'] == cycle, str(r)[:300],
+                 'success: ok, the aerodrome, its 14 procedures, source eaip, the cycle in force')
+            c.ok(asked and all(u.startswith(folder) for u in asked), str(asked[:3]), 'every address asked is under the AIRAC folder computed by the tool')
+            inst = json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text())
+            idx = json.loads((data / 'proc' / 'manual' / 'index.json').read_text())
+            c.ok(len(inst['procedures']) == 14 and all(p['status'] == 'check' and p['source']['kind'] == 'eaip' and p['source']['cycle'] == cycle for p in inst['procedures']),
+                 str([(p['status'], p['source']) for p in inst['procedures']][:2]), 'installed records keep status check and source eaip, with the cycle')
+            c.ok(sorted(idx['aerodromes']) == ['KSEA', 'LFBD'] and idx['aerodromes']['LFBD']['SID'] == 4 and idx['aerodromes']['LFBD']['STAR'] == 6, str(idx),
+                 'proc/manual/index.json merged (the other aerodromes kept)')
+            c.ok((data / 'local' / 'eaip' / cycle / 'AD_2_LFBD_DATA_01.pdf').exists(), 'cache', 'the PDF are cached under data/local/eaip/<cycle>/ (never published)')
+            head = git(data, 'rev-parse', 'HEAD').strip()
+            c.ok(r['commit'] == head and head != before, f"{r['commit']} {head}", 'one new commit, returned by the job')
+            c.eq(sorted(git(data, 'show', '--name-only', '--format=', 'HEAD').split()), ['proc/manual/LFBD.json', 'proc/manual/index.json'],
+                 'the commit holds ONLY the two installed paths', what='commit paths')
+            c.eq(git(data, 'log', '-1', '--format=%s').strip(), ":card_file_box: Procédures LFBD lues dans l'eAIP du SIA (à la demande)",
+                 'the commit message says what was read and from where', what='message')
+            c.ok(' M notes.txt' in git(data, 'status', '--porcelain'), git(data, 'status', '--porcelain'), "the user's unrelated modified file is still modified, not committed")
+            c.ok(not git(data, 'remote').strip(), git(data, 'remote'), 'no push (no remote)')
+            c.ok(job.view()['step'] and job.view()['log'] and job.view()['total'] >= 1, str(job.view()['step']), 'the job reports its steps and keeps a log')
+
+            # the same reading again (a new `updated_at`): merged by id, still 14 procedures, never duplicated
+            r2 = run(ctx)
+            c.ok(r2['ok'] and r2['procedures'] == 14 and len(json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text())['procedures']) == 14, str(r2)[:300],
+                 'the same reading again: installed over the former one by procedure id, 14 procedures and no duplicate')
+
+            # a base placed with the data resolves the en-route points; a wrong position fails the geometry gate: that procedure is not installed
+            base = data / 'sia' / 'base' / 'fr' / cycle
+            base.mkdir(parents=True)
+            (base / 'points.json').write_text(json.dumps({'data': [{'id': 'ROYAN', 'lat': 10.0, 'lon': 10.0}, {'id': 'CNA', 'lat': 45.0, 'lon': 1.0}]}))
+            (data / 'proc' / 'manual' / 'LFBD.json').unlink()
+            r3 = run(ctx)
+            c.ok(r3['ok'] and r3['procedures'] < 14 and any('NON retenue' in w for w in r3['warnings']), str(r3)[:300],
+                 'a wrong position from the base of the workstation fails the geometry gate: that procedure is not installed, the others are, a warning says which')
+
+        # another source's file is never overwritten; git absent keeps ok with a warning
+        with tempfile.TemporaryDirectory() as td:
+            data = scene(td)
+            (data / 'proc' / 'manual' / 'LFBD.json').write_text(json.dumps({'schema': 1, 'icao': 'LFBD', 'cycle': '2026-10-01', 'procedures': [
+                {'id': 'LFBD.SID.A', 'kind': 'SID', 'status': 'check', 'source': {'kind': 'ead-basic'}}]}))
+            r = run(ctx_of(data))
+            c.ok(r['ok'] is False and r['reason'] == 'failed' and '--replace' in r['message'] and json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text())['procedures'][0]['id'] == 'LFBD.SID.A',
+                 str(r)[:300], "another source's file is never overwritten: failed with the reason")
+        with tempfile.TemporaryDirectory() as td:
+            data = scene(td)
+            r = run({'data': str(data), 'secrets': str(Path(td) / 's')})
+            c.ok(r['ok'] and r['commit'] is None and any(w.startswith('git') for w in r['warnings']), str(r)[:300], 'without git the files are installed, commit None, a warning')
+
+        # network failures: a 404 says the cycle folder is not published yet; another error is failed with its message
+        with tempfile.TemporaryDirectory() as td:
+            data = scene(td)
+            ctx = ctx_of(data)
+            state['fail'] = urllib.error.HTTPError('https://x/y', 404, 'Not Found', {}, None)
+            r = run(ctx)
+            c.ok(r['ok'] is False and r['reason'] == 'failed' and '404' in r['message'] and 'not published yet' in r['message'] and cycle in r['message'], str(r),
+                 'a 404 is failed, and the message says the AIRAC folder of the cycle is not published yet')
+            state['fail'] = urllib.error.URLError('connection refused')
+            r = run(ctx)
+            c.ok(r['ok'] is False and r['reason'] == 'failed' and 'connection refused' in r['message'], str(r), 'a network error is failed, with its message')
+            state['fail'] = None
+            c.ok(not (data / 'proc' / 'manual' / 'LFBD.json').exists(), 'nothing', 'nothing was installed by the failures')
+
+        # cancellation: seen at the next message, nothing installed, nothing committed; Jobs marks the state
+        with tempfile.TemporaryDirectory() as td:
+            data = scene(td)
+            ctx = ctx_of(data)
+            head = git(data, 'rev-parse', 'HEAD').strip()
+            job = RJ.Job('proc', 'eaip-fetch', {'icao': 'LFBD'})
+            job._cancel.set()
+            r = run(ctx, job=job)
+            c.ok(r == {'ok': False, 'reason': 'cancelled'} and not (data / 'proc' / 'manual' / 'LFBD.json').exists() and git(data, 'rev-parse', 'HEAD').strip() == head, str(r),
+                 'a cancelled job answers cancelled, installs nothing and commits nothing')
+            gate = threading.Event()
+
+            def slow_fetch(url, timeout=60):
+                gate.set()
+                time.sleep(0.5)
+                return fake_fetch(url, timeout)
+            P.fetch = slow_fetch
+            jobs = RJ.Jobs(RJ.REGISTRY, ctx)
+            s1 = jobs.start('proc', 'eaip-fetch', {'icao': 'LFBD'})
+            gate.wait(5)
+            jobs.cancel(s1['job'])
+            for _ in range(200):
+                if jobs.cur.data['state'] != 'running':
+                    break
+                time.sleep(0.05)
+            v = jobs.cur.view()
+            c.ok(v['state'] == 'cancelled' and v['result'] == {'ok': False, 'reason': 'cancelled'} and not (data / 'proc' / 'manual' / 'LFBD.json').exists(),
+                 str(v['state']) + str(v['result'])[:200], 'Jobs marks the cancelled job cancelled, with the reason cancelled in its result')
+            P.fetch = fake_fetch
+
+        # the command line of proc_eaip works through the same per-aerodrome body (main -> read_aerodrome)
+        state['names'] = pdfs_of()
+        with tempfile.TemporaryDirectory() as td:
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                P.main(['LFBD', '--eaip', P.eaip_url('2026-10-01'), '--out', str(Path(td) / 'proc'), '--cache', str(Path(td) / 'cache')])
+            out = json.loads((Path(td) / 'proc' / '2026-10-01' / 'LFBD.json').read_text(encoding='utf-8'))
+            c.ok(len(out['procedures']) == 14 and 'LFBD: 14 procédure(s)' in err.getvalue(), err.getvalue()[:200], 'proc_eaip.main() still writes the cycle folder and reports on stderr')
+            state['names'] = ['AD_2_LFXX_ADC.pdf']
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                P.main(['LFXX', '--eaip', P.eaip_url('2026-10-01'), '--out', str(Path(td) / 'proc2'), '--cache', str(Path(td) / 'cache')])
+            c.ok('LFXX: aucune table de codage' in err.getvalue() and not (Path(td) / 'proc2' / '2026-10-01' / 'LFXX.json').exists(), err.getvalue()[:200],
+                 'proc_eaip.main() still skips an aerodrome with no coding table')
+    finally:
+        P.fetch, P.first_page_rows, P.url_exists = saved
+
+    # the launcher's status tells which Little Navmap databases the workstation has (names only), never raising
+    import os
+    L = importlib.import_module('launch')
+    env = {k: os.environ.get(k) for k in ('APPDATA', 'HOME', 'USERPROFILE')}
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            if sys.platform == 'win32':
+                os.environ['APPDATA'] = td
+                folder = Path(td) / 'ABarthel' / 'little_navmap_db'
+            else:
+                os.environ['HOME'] = td
+                folder = Path(td) / '.config' / 'ABarthel' / 'little_navmap_db'
+            c.eq(L.lnm_db_kinds(), [], 'no Little Navmap folder: an empty list', what='lnm absent')
+            folder.mkdir(parents=True)
+            for n in ('little_navmap_userdata.sqlite', 'little_navmap_navigraph.sqlite', 'little_navmap_navigraph.sqlite-journal', 'notes.txt', 'little_navmap_.sqlite'):
+                (folder / n).write_bytes(b'')
+            c.eq(L.lnm_db_kinds(), ['navigraph', 'userdata'], 'the kinds of the little_navmap_<kind>.sqlite files, sorted, names only', what='lnm kinds')
+    finally:
+        for k, v in env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v

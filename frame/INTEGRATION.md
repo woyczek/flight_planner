@@ -881,8 +881,12 @@ in the launcher; `resume` finds it again.
   `set` and `verb` from a fixed list (`regen_jobs.REGISTRY`), each with its check of `args`; nothing from the page is a path,
   an address or a command. 400: unknown operation or bad arguments; 409: a job is running; 410: no such job. Lot D0 has one
   verb, `state/scan` (the state as a job, with its progress); the builders' verbs come with them (lot D2). `proc/ead-fetch` (args `{ icao }`: one
-  four-character code, nothing else) reads one aerodrome in EAD Basic and installs it under `proc/manual/` (aerodb's `fetchProcedures`; the frame
-  gives aerodb `launcher.job`, built on this client with `regen/job` declared).
+  four-character code, nothing else) reads one aerodrome in EAD Basic and installs it under `proc/manual/`; `proc/eaip-fetch` (same args, the code must
+  start with `LF`) does the same from the SIA eAIP of the cycle in force, without credentials, the address being computed by the launcher (aerodb's
+  `fetchProcedures` picks the verb by the aerodrome's State; the frame gives aerodb `launcher.job`, built on this client with `regen/job` declared).
+  `GET /__setup/status` also carries `lnm`: the sorted list of Little Navmap database kinds present on the workstation (the
+  `little_navmap_<kind>.sqlite` files of its `little_navmap_db` folder; names only, `[]` when absent); `FrameData.launcher.detect()` hands it on in
+  `info()`, aerodb uses it as a hint when a State has no coding tables.
 - The frame itself uses the same client for its own calls (Settings' `setup()`, aerodb's `.lnmperf` sheets, the
   simulator's position, the local network's access): no piece of the frame calls the launcher with `fetch` any more,
   except the network relay (`/__setup/net`, whose answer is the relayed site's, not JSON).

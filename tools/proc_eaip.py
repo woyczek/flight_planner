@@ -1736,6 +1736,79 @@ def base_resolver(base_dir):
     return pos.get
 
 
+MONTHS_EN = tuple(MONTHS)    # JAN … DEC, dans l'ordre : le mois d'une adresse eAIP s'écrit en anglais, jamais dans la langue du poste
+
+
+def eaip_url(cycle):
+    """Dossier AIRAC de l'eAIP du SIA d'un cycle donné par sa date (« 2026-10-01 ») : …/media/dvd/eAIP_01_OCT_2026/FRANCE/AIRAC-2026-10-01.
+    Même adresse que eaipBase() de frame/aerodb/catalogue.js."""
+    m = re.fullmatch(r'(\d{4})-(\d{2})-(\d{2})', str(cycle))
+    if not m or not 1 <= int(m.group(2)) <= 12:
+        raise ValueError(f'cycle AIRAC « AAAA-MM-JJ » attendu, reçu : {cycle!r}')
+    y, mo, d = m.groups()
+    return f'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_{d}_{MONTHS_EN[int(mo) - 1]}_{y}/FRANCE/AIRAC-{y}-{mo}-{d}'
+
+
+def url_exists(url, timeout=30):
+    """L'adresse répond-elle à une requête HEAD ? (faux au moindre échec : sert à savoir si une carte est publiée)."""
+    try:
+        urllib.request.urlopen(urllib.request.Request(url, method='HEAD', headers={'User-Agent': 'SOG-aerodb-builder'}), timeout=timeout)
+        return True
+    except Exception:
+        return False
+
+
+def gaps_of(proc):
+    """Écarts de géométrie d'une procédure lue dans l'eAIP (liste vide = cohérente). Les tables du SIA impriment le cap MAGNÉTIQUE et la
+    distance de chaque tronçon, pas le cap vrai : c'est la branche large de check_geometry (cap à 30° près, distance à 0,55 NM près), qui
+    attrape une position fausse (point homonyme pris dans la base, coordonnée mal lue) sans rejeter les arrondis de la page. Le contrôle de
+    proc_manual.verify, fait pour des lectures à la main qui impriment `trk`, ne s'applique pas ici."""
+    legs = [{'id': q.get('id'), 'leg': q.get('leg'), 'lat': q.get('lat'), 'lon': q.get('lon'), 'true': None, 'crs': q.get('crs'), 'nm': q.get('nm')}
+            for q in proc.get('points', [])]
+    return check_geometry(legs)
+
+
+def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, step=None):
+    """Fichier d'UN terrain lu dans l'eAIP (page AD 2, pages DATA et CODE) : build_aerodrome, ou None si la page ne cite aucune table de
+    codage (rien à lire : cartes seules). `eaip` : dossier AIRAC (…/FRANCE/AIRAC-AAAA-MM-JJ) ; `cache` : dossier (existant) des PDF déjà
+    téléchargés ; `resolve(id)` : position d'un point en route ; `say(texte)` : messages ; `rows_dir` : lignes de chaque PDF (fixtures) ;
+    `step(texte, fait, total)` : avancement (le lanceur). Les erreurs réseau (urllib) et pypdf manquant remontent à l'appelant."""
+    cycle = AIRAC_IN_URL.search(eaip)
+    if not cycle:
+        raise ValueError('adresse sans « AIRAC-AAAA-MM-JJ »: cycle inconnu')
+    cache = Path(cache)
+    if step:
+        step(f'{icao}: page AD 2', 0, 0)
+    page = fetch(f'{eaip}/html/eAIP/FR-AD-2.{icao}-fr-FR.html').decode('utf-8', 'replace')
+    files = pdf_names(icao, page)
+    if not any(CODE_PAGE.match(f) for f in files):      # rien à lire (cartes seules) : pas de fichier
+        say(f'{icao}: aucune table de codage')
+        return None
+    wanted = [f for f in files if re.search(r'_DATA_0\d\.pdf$', f) or (CODE_PAGE.match(f) and 'FASDB' not in f)]
+    seen = set()
+
+    def rows_of(name):
+        p = cache / name
+        if step:
+            step(f'{icao}: {name}', len(seen), len(wanted))
+        seen.add(name)
+        if not p.exists():
+            p.write_bytes(fetch(f'{eaip}/html/eAIP/Cartes/{icao}/{name}'))
+        try:
+            rows = first_page_rows(p)
+        except PdfTimeout as e:                       # document non lu : signalé, la page est vide pour le constructeur
+            say(f'{icao}: {e}')
+            rows = []
+        if rows_dir:
+            Path(rows_dir).mkdir(parents=True, exist_ok=True)
+            (Path(rows_dir) / (p.stem + '.rows.txt')).write_text('\n'.join(rows) + '\n', encoding='utf-8')
+        return rows
+    vac = vac_url(eaip, icao)
+    if vac and not url_exists(vac):                      # carte VAC : seulement si l'atlas VFR la publie
+        vac = None
+    return build_aerodrome(icao, files, rows_of, eaip, cycle.group(1), resolve, vac)
+
+
 def main(argv=None):
     for stream in (sys.stdout, sys.stderr):              # console cp1252 : un caractère exotique ne doit pas faire échouer l'affichage
         if hasattr(stream, 'reconfigure'):
@@ -1792,32 +1865,10 @@ def main(argv=None):
     for n, icao in enumerate(codes):
         if n and a.delay:
             time.sleep(a.delay)
-        page = fetch(f'{a.eaip}/html/eAIP/FR-AD-2.{icao}-fr-FR.html').decode('utf-8', 'replace')
-        files = pdf_names(icao, page)
-        if not any(CODE_PAGE.match(f) for f in files):      # rien à lire (cartes seules) : pas de fichier
-            print(f'{icao}: aucune table de codage', file=sys.stderr)
+        d = read_aerodrome(a.eaip, icao, cache, resolve, lambda *t: print(*t, file=sys.stderr), a.rows_dir)   # le corps par terrain, partagé avec le travail du lanceur (regen_jobs._eaip_fetch)
+        if d is None:
             continue
-
-        def rows_of(name, icao=icao):
-            p = cache / name
-            if not p.exists():
-                p.write_bytes(fetch(f'{a.eaip}/html/eAIP/Cartes/{icao}/{name}'))
-            try:
-                rows = first_page_rows(p)
-            except PdfTimeout as e:                       # document non lu : signalé, la page est vide pour le constructeur
-                print(f'{icao}: {e}', file=sys.stderr)
-                rows = []
-            if a.rows_dir:
-                Path(a.rows_dir).mkdir(parents=True, exist_ok=True)
-                (Path(a.rows_dir) / (p.stem + '.rows.txt')).write_text('\n'.join(rows) + '\n', encoding='utf-8')
-            return rows
-        vac = vac_url(a.eaip, icao)
-        try:                                                  # carte VAC : seulement si l'atlas VFR la publie
-            urllib.request.urlopen(urllib.request.Request(vac, method='HEAD', headers={'User-Agent': 'SOG-aerodb-builder'}), timeout=30)
-        except Exception:
-            vac = None
-        docs[icao] = build_aerodrome(icao, files, rows_of, a.eaip, cycle, resolve, vac)
-        d = docs[icao]
+        docs[icao] = d
         print(f'{icao}: {len(d["procedures"])} procédure(s), {len(d["warnings"])} avertissement(s)', file=sys.stderr)
         for fm in d['formats']:
             print(f'  {"OK " if fm["ok"] else "NON"} {fm["file"]} | {fm["layout"]} | {fm["fingerprint"]}' + ''.join(f' | {x}' for x in fm['problems']), file=sys.stderr)

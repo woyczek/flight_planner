@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: « Lire les procédures de LFPO » works for France — the on-demand reading is dispatched by State**
+  (`frame/aerodb/aerodb.js` `fetchProcedures`, `tools/regen_jobs.py` verb `proc/eaip-fetch`, `tools/proc_eaip.py` `read_aerodrome`
+  / `eaip_url`, `tools/launch.py` `/__setup/status › lnm`, `frame/store/transport_launcher.js`; SPEC § 5 quinquies, INTEGRATION,
+  DECISIONS, V3_SPECIFICATION § 10.20; tests K1, K21, K23) — France (`LF`) reads the SIA eAIP coding tables (free, no account; the AIRAC
+  folder address is computed by the launcher from the cycle in force, nothing from the page is an address), a State readable in EAD Basic
+  keeps `proc/ead-fetch`, any other State answers `no-tables` (« aucune table publiée pour cet État », with `lnm` set when Little Navmap
+  databases are on the workstation); `unknown-layout` is gone, `onProgress` and the success carry `source` (`eaip` | `ead`). Records stay
+  `check` / `eaip`; a procedure whose geometry (magnetic course, distance) disagrees with its positions is not installed; installed under
+  `proc/manual/` without overwriting another source and committed (those two paths, no push).
+
 - **Launcher opens the Pilot application** (`tools/launch.py`) — the browser now opens `/frame/` (V3) at start; the V2
   pages stay at their addresses (`--page apps/…`, Settings › Administration). User: "le lanceur lance la v2, désormais
   obsolète".

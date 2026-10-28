@@ -565,7 +565,7 @@
       };
     }
   };
-  let launcherHere = null; // { data, dataGit } si la page est servie par un lanceur (relevé au démarrage)
+  let launcherHere = null; // { data, dataGit, host, lan, lnm } si la page est servie par un lanceur (relevé au démarrage)
   // client du lanceur (frame/lib/launcher.js, INTEGRATION § 15) : chargé au démarrage ; le cadre s'en sert pour lui-même
   // (Réglages, fiches .lnmperf d'aerodb : toutes ses routes), un module par ctx.launcher (ce que son meta.launcher déclare)
   let LC = null,

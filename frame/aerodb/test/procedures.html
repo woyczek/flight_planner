@@ -501,10 +501,29 @@
             lan: true
           })
         }))) === 'paired' && calls.length === 0, calls);
-      const ul = await fetchDb(fake()).fetchProcedures('LBSF');
-      check('fetchProcedures(): a State without a known layout is « unknown-layout » with its outcome, nothing is asked', ul.reason ===
-        'unknown-layout' && ul.outcome === 'none' && (await fetchDb(fake()).fetchProcedures('LFBD')).outcome === 'sia' && calls
-        .length === 0, [ul, calls.length]);
+      // un État ni LF ni lisible dans EAD Basic : « no-tables », rien n'est lancé ; lnm dit si le poste a des bases de Little Navmap
+      const ul = await fetchDb(fake()).fetchProcedures('LBSF'),
+        ulLnm = await fetchDb(fake({
+          info: () => ({
+            data: true,
+            lan: false,
+            lnm: ['navigraph']
+          })
+        })).fetchProcedures('LBSF'),
+        ulNone = await fetchDb(fake({
+          info: () => ({
+            data: true,
+            lan: false,
+            lnm: []
+          })
+        })).fetchProcedures('LBSF');
+      check('fetchProcedures(): a State with no coding table to read is « no-tables » with its outcome, nothing is asked', ul.reason ===
+        'no-tables' && ul.outcome === 'none' && ul.lnm === false && calls.length === 0, [ul, calls.length]);
+      check('fetchProcedures(): « no-tables » carries lnm = true when the workstation reports Little Navmap databases, false when none',
+        ulLnm.reason === 'no-tables' && ulLnm.lnm === true && ulNone.reason === 'no-tables' && ulNone.lnm === false && [ul, ulLnm,
+          ulNone
+        ]
+        .every(x => x.reason !== 'unknown-layout') && calls.length === 0, [ulLnm, ulNone]);
       // le travail : un faux lanceur qui écrit proc/manual/ comme le ferait le poste, puis rend le résultat du verbe
       let evicted = [],
         synced = 0;
@@ -571,7 +590,7 @@
         before === 0 && win.procedures.length === 1 && win.procedures[0].id === 'EGLL.STAR.OCK1H.RW27L' && win.procedures[0]
         .status ===
         'check' && win.icao === 'EGLL' && win.warnings.join() === 'w1' && win.commit === 'a'.repeat(40) && progress[0].step ===
-        'EGLL: login' && progress[0].total === 3, [before, win, progress]);
+        'EGLL: login' && progress[0].total === 3 && progress[0].source === 'ead' && win.source === 'ead', [before, win, progress]);
       check('fetchProcedures(): the reader is made to forget both files, and refresh its references without an exchange',
         evicted.includes('proc/manual/EGLL.json') && evicted.includes('proc/manual/index.json') && synced === 1, [evicted, synced]);
       check('fetchProcedures(): the aerodrome can be read again once the first reading is over',
@@ -617,6 +636,14 @@
             status: 403,
             refused: true
           },
+          'no-tables': {
+            ok: true,
+            state: 'done',
+            result: {
+              ok: false,
+              reason: 'no-tables'
+            }
+          },
           'failed (older launcher)': {
             ok: false,
             status: 400,
@@ -633,6 +660,7 @@
         },
         want = {
           'no-credentials': 'no-credentials',
+          'no-tables': 'no-tables',
           failed: 'failed',
           'cancelled (result)': 'cancelled',
           'cancelled (signal)': 'cancelled',
@@ -648,12 +676,65 @@
         got[name] = await okDb.fetchProcedures('EGLL');
       }
       check(
-        'fetchProcedures(): every answer of the job maps to its reason (no-credentials, failed, cancelled, busy, paired, no-launcher)',
+        'fetchProcedures(): every answer of the job maps to its reason (no-credentials, no-tables, failed, cancelled, busy, paired, no-launcher)',
         Object.keys(want).every(k => got[k].ok === false && got[k].reason === want[k]), got);
       check('fetchProcedures(): the message of a failure is handed on (login refused, older launcher, error state)', got.failed
         .message === 'login refused' && /unknown operation/.test(got['failed (older launcher)'].message) && got[
           'failed (error state)']
         .message === 'boom', got);
+      // l'aiguillage par État : la France (LF) lit l'eAIP du SIA (eaip-fetch, jamais un refus de disposition), un État lisible dans EAD
+      // Basic prend ead-fetch ; la source est dite dans la progression et dans la réponse
+      calls.length = 0;
+      const lfProgress = [];
+      jobAnswer.r = {
+        ok: true,
+        state: 'done',
+        result: {
+          ok: true,
+          icao: 'LFPO',
+          procedures: 3,
+          warnings: [],
+          commit: 'b'.repeat(40),
+          source: 'eaip',
+          cycle: '2026-10-01'
+        }
+      };
+      const lf = await okDb.fetchProcedures('lfpo', {
+        onProgress: st => lfProgress.push(st)
+      });
+      check('fetchProcedures(): a French aerodrome (LF) asks the verb eaip-fetch, with the code and nothing else', lf.ok === true &&
+        calls.length === 1 && calls[0].route === 'regen/job' && JSON.stringify(calls[0].body) ===
+        '{"set":"proc","verb":"eaip-fetch","args":{"icao":"LFPO"}}', [lf, calls.map(x => x.body)]);
+      check('fetchProcedures(): the progress of a French reading carries source « eaip », and so does the answer', lfProgress.length >
+        0 && lfProgress.every(x => x.source === 'eaip') && lf.source === 'eaip', [lfProgress, lf.source]);
+      calls.length = 0;
+      jobAnswer.r = {
+        ok: true,
+        state: 'done',
+        result: {
+          ok: false,
+          reason: 'no-tables'
+        }
+      };
+      const lfNone = await okDb.fetchProcedures('LFXX');
+      check('fetchProcedures(): a French aerodrome whose page lists no coding table is « no-tables » (never « unknown-layout »)',
+        lfNone.ok === false && lfNone.reason === 'no-tables' && calls.length === 1, lfNone);
+      calls.length = 0;
+      jobAnswer.r = () => ({
+        ok: true,
+        state: 'done',
+        result: {
+          ok: true,
+          icao: 'EGLL',
+          procedures: 1,
+          warnings: [],
+          commit: null,
+          source: 'ead'
+        }
+      });
+      const ead = await okDb.fetchProcedures('EGLL');
+      check('fetchProcedures(): a State readable in EAD Basic (EG) still asks ead-fetch', ead.ok === true && ead.source === 'ead' &&
+        calls.length === 1 && calls[0].body.verb === 'ead-fetch', [ead, calls.map(x => x.body)]);
     } catch (e) {
       check('no exception', false, String(e && e.stack || e));
     }

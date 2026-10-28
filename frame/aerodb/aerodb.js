@@ -1104,16 +1104,20 @@
           };
         return out;
       },
-      /** Lecture À LA DEMANDE des procédures d'un terrain (§ 10.20, contrat du 28 octobre 2026) : le travail du poste (EAD Basic,
-       *  un terrain par geste, EAD_BASIC.md § 1) est lancé par le cadre sur le lanceur (route regen/job, jeu proc, verbe ead-fetch,
-       *  tools/regen_jobs.py) ; il installe le résultat dans proc/manual/ et le valide dans le dépôt des données (ces deux fichiers
-       *  seulement, sans envoi), puis procedures() le sert. Rend { ok: true, icao, procedures, warnings, commit } ou
+      /** Lecture À LA DEMANDE des procédures d'un terrain (§ 10.20, contrat du 28 octobre 2026) : le travail du poste est lancé par
+       *  le cadre sur le lanceur (route regen/job, jeu proc, tools/regen_jobs.py), choisi par l'ÉTAT du terrain : la France (LF) par
+       *  l'eAIP du SIA (verbe eaip-fetch, sans compte), un État dont EAD Basic se lit (EAD_STATES, outcome 'read') par EAD Basic
+       *  (verbe ead-fetch, un terrain par geste, EAD_BASIC.md § 1), tout autre État : rien à lire, 'no-tables'. Le poste installe le
+       *  résultat dans proc/manual/ et le valide dans le dépôt des données (ces deux fichiers seulement, sans envoi), puis
+       *  procedures() le sert. Rend { ok: true, icao, procedures, warnings, commit, source: 'eaip' | 'ead' } ou
        *  { ok: false, reason, message? } — reason : 'bad-icao', 'no-launcher' (sans lanceur : l'OFP SimBrief reste la source du
-       *  vol), 'paired' (appareil appairé au poste : le geste se fait sur le poste), 'unknown-layout' (État sans disposition
-       *  connue, EAD_STATES ; `outcome` dit pourquoi), 'no-credentials' (secrets/ead.json absent : à régler sur le poste),
-       *  'busy' (ce terrain est déjà en lecture, ou le lanceur fait un autre travail), 'cancelled', 'failed' (`message` : refus de
-       *  connexion, aucune procédure lue, contrôle de géométrie, lanceur plus ancien…). `onProgress({ step, done, total })`,
-       *  `signal` (AbortSignal). Jamais silencieux, jamais deux fois pour le même terrain en même temps. */
+       *  vol), 'paired' (appareil appairé au poste : le geste se fait sur le poste), 'no-tables' (aucune table de codage publiée
+       *  pour cet État, ou la page du terrain n'en cite pas ; pour un État sans lecture, `outcome` (EAD_STATES) dit pourquoi et `lnm`
+       *  vaut true quand le poste a des bases de Little Navmap : indice, leur lecture est prévue à part, § 10.21), 'no-credentials'
+       *  (EAD : secrets/ead.json absent, à régler sur le poste), 'busy' (ce terrain est déjà en lecture, ou le lanceur fait un autre
+       *  travail), 'cancelled', 'failed' (`message` : refus de connexion, page non publiée, aucune procédure lue, contrôle de
+       *  géométrie, lanceur plus ancien…). `onProgress({ step, done, total, source })`, `signal` (AbortSignal). Jamais silencieux,
+       *  jamais deux fois pour le même terrain en même temps. */
       async fetchProcedures(icao, {
         onProgress,
         signal
@@ -1131,13 +1135,18 @@
         if (eadBusy.has(k)) return no('busy');
         // enregistrée avant le premier await : un second appel du même instant trouve la lecture en cours
         const run = (async () => {
-          const st = (await api.sources().catch(() => null))?.EAD_STATES?.[k.slice(0, 2)];
-          if (!st || st.outcome !== 'read') return no('unknown-layout', {
-            outcome: st?.outcome ?? null
-          });
+          let source = 'eaip'; // la France : l'eAIP du SIA, jamais EAD_STATES
+          if (!k.startsWith('LF')) {
+            const st = (await api.sources().catch(() => null))?.EAD_STATES?.[k.slice(0, 2)];
+            if (st?.outcome !== 'read') return no('no-tables', { // ni l'eAIP lu ici ni EAD Basic : rien à lancer
+              outcome: st?.outcome ?? null,
+              lnm: Array.isArray(launcher.info()?.lnm) && launcher.info().lnm.length > 0
+            });
+            source = 'ead';
+          }
           const r = await launcher.job('regen/job', {
             set: 'proc',
-            verb: 'ead-fetch',
+            verb: source === 'eaip' ? 'eaip-fetch' : 'ead-fetch',
             args: {
               icao: k
             }
@@ -1147,7 +1156,8 @@
                 onProgress?.({
                   step: st.step,
                   done: st.done,
-                  total: st.total
+                  total: st.total,
+                  source
                 });
               } catch {
                 /* écouteur du module en échec : la lecture continue */
@@ -1163,7 +1173,7 @@
             if (r.status === 403) return no('paired');
             if (r.state === 'cancelled') return no('cancelled');
             const why = res?.ok === false && typeof res.reason === 'string' ? res.reason : 'failed';
-            return no(['no-credentials', 'cancelled', 'failed'].includes(why) ? why : 'failed', {
+            return no(['no-credentials', 'no-tables', 'cancelled', 'failed'].includes(why) ? why : 'failed', {
               message: String(res?.message || r.message || (r.offline ? 'launcher unreachable' : '')),
               ...(Array.isArray(res?.warnings) ? {
                 warnings: res.warnings
@@ -1191,7 +1201,8 @@
             icao: k,
             procedures: await api.procedures(k),
             warnings: Array.isArray(res.warnings) ? res.warnings : [],
-            commit: res.commit ?? null
+            commit: res.commit ?? null,
+            source
           };
         })();
         eadBusy.set(k, run);

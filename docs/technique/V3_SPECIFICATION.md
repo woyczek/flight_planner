@@ -627,7 +627,7 @@ redesigned for touch at that point.
          profile steps; help ×4 and tests per lot. The Map and Fuel lots start after the aerodb lot publishes its API.
        **aerodb status (28 Oct 2026)**: commit 1 (`c0027f4ad`, pushed) = the API (`procedures()` with runways, transitions and phases, `runways()`,
        `proc/manual/`, the contract of `fetchProcedures`); commit 2 = `fetchProcedures` wired, through the launcher job `proc/ead-fetch` of the
-       route `regen/job` (the job is named so, not `ead/fetch`).
+       route `regen/job` (the job is named so, not `ead/fetch`). The dispatch by State of the "On-demand reading by State" paragraph above is wired (28 Oct evening): `LF` reads the SIA eAIP through the job `proc/eaip-fetch`, a State readable in EAD Basic keeps `proc/ead-fetch`, any other answers `no-tables` (with a Little Navmap hint from the status `lnm`), and `unknown-layout` no longer exists.
        **Refinements (ergonomics session, 28 Oct evening, after the Map session's reading)**: the Map never writes
        `route.procedures` (its aerodrome card shows the choice and a "Changer" button to `#fuel?focus=arr`); aerodb adds
        `runways(icao)` (threshold, elevation, QFU, displaced threshold), `arc { centre, radius }` on RF legs when the source

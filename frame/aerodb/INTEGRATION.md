@@ -190,8 +190,9 @@ than `COMPAT` would be ignored; this one is not.
   silent). SPEC § 5 quinquies. Fuel writes `route.procedures`; the Map never does; aerodb never writes the flight.
 - **The on-demand reading** (`fetchProcedures`, wired): Fuel's « Lire les procédures de LFXX » button (shown when an aerodrome has none) calls
   `aerodb.fetchProcedures(icao, { onProgress, signal })` and nothing else: no launcher route in Fuel's `meta`, the frame hands `launcher.job` to aerodb.
-  One aerodrome per gesture, never a list. It takes minutes (about one request a second): show `onProgress({ step, done, total })`, offer a cancel
-  (`signal`). On success `procedures` is the merged list read again, the files are installed and committed in the data repository of the workstation
+  One aerodrome per gesture, never a list; aerodb picks the source from the aerodrome's State (France: the SIA eAIP, no account; a State readable in EAD Basic: EAD Basic;
+  any other: `no-tables`) — the button is the same, and a module never branches on it. It takes minutes (about one request a second): show `onProgress({ step, done, total, source })` (`source`: `eaip` | `ead`), offer a cancel
+  (`signal`). On success `procedures` is the merged list read again (the answer carries `source` too), the files are installed and committed in the data repository of the workstation
   (not pushed: the usual synchronisation carries them). A refusal is `{ ok: false, reason, message? }` and the module words it — never silent:
 
   | `reason` | What to tell the pilot |
@@ -199,11 +200,11 @@ than `COMPAT` would be ignored; this one is not.
   | `bad-icao` | not a four-character code (a programming error: the button should not be there) |
   | `no-launcher` | this device has no workstation launcher; the SimBrief OFP stays the source of the flight's procedures |
   | `paired` | the device is paired to a workstation: do the reading on the workstation |
-  | `unknown-layout` | this State's documents cannot be read automatically (`outcome` says why: images, prose, VFR only, SIA for France…) |
-  | `no-credentials` | no EAD Basic account is set on the workstation (`secrets/ead.json` or `EAD_USER` / `EAD_PASSWORD`): set it there |
+  | `no-tables` | « aucune table publiée pour cet État » (×4): no coding table is published for this State, or the aerodrome's page lists none (`outcome` says why: images, prose, VFR only…). When `lnm` is `true` the workstation has Little Navmap databases: add that they may hold the procedures (a hint only; reading them is planned, § 10.21) |
+  | `no-credentials` | (a State read in EAD Basic only, never France) no EAD Basic account is set on the workstation (`secrets/ead.json` or `EAD_USER` / `EAD_PASSWORD`): set it there |
   | `busy` | this aerodrome is already being read, or the workstation is busy with another job: wait |
   | `cancelled` | the pilot cancelled |
-  | `failed` | the reading failed; `message` has the cause (login refused, nothing read, geometry check failed, another source's file, a launcher older than the page: restart it) |
+  | `failed` | the reading failed; `message` has the cause (login refused, the eAIP folder of the cycle not published yet, nothing read, geometry check failed, another source's file, a launcher older than the page: restart it) |
 
   `warnings` of a success are the reading's own (a table dropped by the geometry check, coordinates to resolve): show them as floating notifications.
 - **Every leg** carries `phase` (`main` | `trans` | `missed`); a leg without a fix (`id` null: VA, CA, VM, FM…) has no

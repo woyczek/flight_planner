@@ -10,8 +10,9 @@
   //   · exchange() (si demandé : usages « plusieurs appareils » ou « plusieurs utilisateurs ») : POST /__setup/sync, le
   //     passage git du poste (commit du pool, fusion fiche par fiche, envoi).
   // En-tête X-SOG-Setup sur chaque route du lanceur ; réseau coupé → err.offline. API : FrameData.launcher({ exchange,
-  //   author }) → transport ; FrameData.launcher.detect() → { data, dataGit, host, lan } | null (page servie par un
-  //   lanceur ? host : nom du poste ; lan : page ouverte depuis un autre appareil du réseau local).
+  //   author }) → transport ; FrameData.launcher.detect() → { data, dataGit, host, lan, lnm } | null (page servie par un
+  //   lanceur ? host : nom du poste ; lan : page ouverte depuis un autre appareil du réseau local ; lnm : genres de bases de
+  //   Little Navmap présents sur le poste, noms seulement : indice pour aerodb).
   const FD = window.FrameData;
   if (!FD || FD.launcher) return;
   const ROOT = new URL('../../', document.currentScript?.src || location.href).href;
@@ -112,7 +113,8 @@
         data: !!j.data,
         dataGit: !!j.dataGit,
         host: String(j.host || ''),
-        lan: !!j.lan
+        lan: !!j.lan,
+        lnm: Array.isArray(j.lnm) ? j.lnm.filter(k => typeof k === 'string').map(k => k.slice(0, 40)).slice(0, 20) : []
       } : null;
     } catch {
       return null;
