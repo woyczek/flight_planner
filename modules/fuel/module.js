@@ -3984,6 +3984,11 @@ export async function mount(el, ctx) {
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
     <div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>
     <div data-body></div>`;
+  // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
+  // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
+  S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);
+  S.srTitle();
+  window.addEventListener('frame-titled', S.srTitle);
   S.body = el.querySelector('[data-body]');
   // « ? » de l'en-tête : le chapitre au paragraphe de l'écran (Fiches ; le pas affiché sur téléphone, où la barre des pas est
   // visible ; le devis entier sur un module large, où les cinq pas sont les uns sous les autres)
@@ -4036,6 +4041,8 @@ export async function mount(el, ctx) {
   const onLayout = () => S?.body?.querySelector('[data-do="showmap"]')?.classList.toggle('fu-hide', S.ctx.layout?.with === 'maps');
   window.addEventListener('frame-layout', onLayout);
   S.stops.push(() => window.removeEventListener('frame-layout', onLayout));
+  const srTitle = S.srTitle;
+  S.stops.push(() => window.removeEventListener('frame-titled', srTitle));
   // dessins à la largeur de l'écran
   const ro = new ResizeObserver(() => {
     clearTimeout(S.roTimer);
