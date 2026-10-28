@@ -1456,3 +1456,13 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   wait }`; `frame/lib/launcher.js` hands a refusal's `reason` and `wait` on (nothing else of the body; a small edit of the frame, reported);
   `fetchProcedures` answers `too-soon` with `wait`. The eAIP of the SIA has no gap (free, no account).
 - **Bench**: K22 (the cleaned error, the gap and its end), K1 (`too-soon` and its `wait`).
+
+## 29 October 2026 — procedure files arrived by the synchronisation are announced
+
+- **Asked** (Features SOG through the ergonomics session): aerodb watched only the procedure indexes, so a `proc/manual/<ICAO>.json`
+  read on the workstation and synchronised to another device was never announced, and Fuel kept its empty answer in cache.
+- **Done**: the `proc/` watcher (and a new one on `proc-seen/`) also takes the aerodrome files of `proc/<cycle>/`, `proc/manual/`,
+  `proc/local/` and `proc-seen/`: a file whose revision changed, or that aerodb never read, drops the coverage table and is announced
+  `{ procedures: ICAO, coverage: true }`; more than 50 at once (a published cycle) give one `{ coverage: true, refreshed: true }`. The
+  echo of aerodb's own read does not count (its read records the revision).
+- **Bench**: K1 (an arrived file announced once, not again after its read; `proc-seen/` likewise; a path that is no procedure file ignored).

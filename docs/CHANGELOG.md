@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: procedures synchronised from the workstation are announced** (`frame/aerodb/aerodb.js`; SPEC, INTEGRATION, DECISIONS;
+  test K1) — an aerodrome read on the workstation now shows on the other devices as soon as its file arrives: aerodb announces
+  `{ procedures, coverage }` for it, and Fuel and the Map ask again instead of keeping an empty answer.
 - **Flight path: a transition that runs past its junction with the approach is cut there** (`frame/lib/current_flight.js`;
   bench `frame/lib/test/current_flight.html`) — when the first point of a procedure (the approach after its transition, the
   approach after the STAR) is already in the chain, the chain is cut at that point: the previous procedure's own tail is

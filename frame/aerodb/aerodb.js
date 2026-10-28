@@ -1700,19 +1700,36 @@
         changed: out
       });
     });
-    // index des procédures changés (cycle publié, proc/manual/, proc/local/ : synchronisation, autre onglet, lecture à la demande) :
-    // la table de couverture est jetée. Comme pour la base, seul compte un index dont la révision a changé ou que rien n'avait lu
-    // (l'écho d'une lecture d'aerodb lui-même ne compte pas).
-    reader.watch?.('proc/', async paths => {
-      let hit = false;
-      for (const p of paths || [])
-        if (/^proc\/(?:manual|local|\d{4}-\d{2}-\d{2})\/index\.json$/.test(p) && (!revs.has(p) || await changedRev(p))) hit = true;
-      if (!hit) return;
+    // procédures changées (cycle publié, proc/manual/, proc/local/, proc-seen/ : synchronisation depuis un autre appareil, autre
+    // onglet, lecture à la demande) : la table de couverture est jetée ; un index changé s'annonce { coverage: true }, le fichier
+    // d'un terrain { procedures: OACI, coverage: true } (Carburant et la Carte relisent ce terrain). Comme pour la base, seul compte un
+    // fichier dont la révision a changé ou que rien n'avait lu (l'écho d'une lecture d'aerodb lui-même ne compte pas).
+    const PROC_FILE = /^proc(?:\/(?:manual|local|\d{4}-\d{2}-\d{2})|-seen)\/([A-Z0-9]{3,4}|index)\.json$/;
+    const procWatch = async paths => {
+      let index = false;
+      const icaos = new Set();
+      for (const p of paths || []) {
+        const m = PROC_FILE.exec(p);
+        if (!m || !(!revs.has(p) || await changedRev(p))) continue;
+        if (m[1] === 'index') index = true;
+        else icaos.add(m[1]);
+      }
+      if (!index && !icaos.size) return;
       dropCoverage();
-      emit({
-        coverage: true
+      if (!icaos.size || icaos.size > 50) emit({ // beaucoup de terrains d'un coup (cycle publié) : une annonce générale
+        coverage: true,
+        ...(icaos.size ? {
+          refreshed: true
+        } : {})
       });
-    });
+      else
+        for (const k of icaos) emit({
+          procedures: k,
+          coverage: true
+        });
+    };
+    reader.watch?.('proc/', procWatch);
+    reader.watch?.('proc-seen/', procWatch);
     // fiches, flotte, référence changées (synchronisation, autre onglet, écriture) : registre relu à la prochaine demande
     for (const prefix of ['aircraft/', 'airline/', 'planner/', 'references/'])
       reader.watch?.(prefix, () => {

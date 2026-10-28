@@ -263,7 +263,9 @@ Neither reads an index or the catalogue: they ask aerodb.
   no procedure is not « held ».
 - **Staying current**: `aerodb.on('change', fn)` receives `{ coverage: true }` when the index may have changed (after a successful `fetchProcedures`, which
   also carries `procedures: icao`; on `refresh()`, which also carries `refreshed`; when a procedure index changes in the data layer: synchronisation, another
-  tab). aerodb has already dropped its table: **ask again, never keep an answer past that event** — the Map redraws its pins, the Données module its State
+  tab; when one aerodrome's file arrives or changes there — a reading made on the workstation and synchronised to this device —, `procedures: icao` comes
+  with it, so Fuel re-asks `procedures(icao)` instead of keeping an empty answer; more than 50 at once (a published cycle): one `{ coverage, refreshed }`).
+  aerodb has already dropped its table: **ask again, never keep an answer past that event** — the Map redraws its pins, the Données module its State
   list. `coverageByState()` has no cache to refresh (47 States) and changes only with the workstation's Little Navmap hint.
 
 ### The Données module (`modules/data/`, Full level) — contracts of 28 Oct 2026

@@ -1188,7 +1188,7 @@
         .refreshed === true && e.coverage === true) && fresh.level === 'green' && fresh.counts.SID === 3, [stale, evs, fresh]);
       // l'observateur du dossier proc/ : un index dont la révision a changé invalide, l'écho d'une lecture d'aerodb ne compte pas
       evs.length = 0;
-      await wp.fn(['proc/manual/index.json', 'proc/manual/EGLL.json']);
+      await wp.fn(['proc/manual/index.json', 'proc/manual/notes.txt']);
       const echo = evs.length;
       cput('proc/manual/index.json', {
         schema: 1,
@@ -1214,9 +1214,36 @@
       await wp.fn(['proc/manual/index.json']);
       const fresh2 = await inv.coverage('EGBB'),
         gone = await inv.coverage('EGKK');
-      check('coverage(): the proc/ watcher ignores an unchanged file and a non-index path, and drops the table for a changed index',
+      check(
+        'coverage(): the proc/ watcher ignores an unchanged file and a path that is no procedure file, and drops the table for a changed index',
         echo === 0 && stale2.level === 'orange' && evs.filter(e => e.coverage === true).length === 1 && fresh2.level === 'green' &&
         fresh2.counts.STAR === 2 && gone.source === 'local', [echo, stale2, evs, fresh2, gone]);
+      // le fichier d'un terrain arrivé par la synchronisation (autre appareil) : annoncé { procedures: OACI, coverage } ; relu, il ne
+      // s'annonce plus tant qu'il ne change pas ; proc-seen/ de même
+      evs.length = 0;
+      cput('proc/manual/EGZZ.json', {
+        schema: 1,
+        icao: 'EGZZ',
+        cycle: '2026-10-01',
+        procedures: []
+      });
+      await wp.fn(['proc/manual/EGZZ.json']);
+      const arrived = evs.slice();
+      await inv.procedures('EGZZ');
+      evs.length = 0;
+      await wp.fn(['proc/manual/EGZZ.json']);
+      const again = evs.length,
+        ws = cWatch[cWatch.indexOf(wp) + 1]; // le même lecteur d'aerodb : proc-seen/ observé juste après proc/
+      cput('proc-seen/EGZZ.json', {
+        schema: 1,
+        icao: 'EGZZ',
+        procedures: []
+      });
+      await ws?.fn(['proc-seen/EGZZ.json']);
+      check(
+        'procedures: a file of an aerodrome arrived by the synchronisation is announced { procedures, coverage } (Fuel and the Map re-read it), once',
+        arrived.length === 1 && arrived[0].procedures === 'EGZZ' && arrived[0].coverage === true && again === 0 && evs.some(e => e
+          .procedures === 'EGZZ'), [arrived, again, evs]);
       off();
       // coverageByState : les mêmes règles sans terrain détenu
       const cs = await c0.coverageByState(),
