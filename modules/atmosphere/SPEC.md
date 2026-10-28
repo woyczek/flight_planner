@@ -1,160 +1,258 @@
 # atmosphere — specification
 
-The V3 module **Atmosphere** of the Pilot application: the atmosphere along the current flight. Born as a standalone
-mock-up (`labs/atmosphere`, 24 October 2026), turned into a module the same day. Still a mock-up: level 3, its lasting
-place in the application is to be decided (DECISIONS.md).
+The V3 module **Atmosphere** ("Météo" in the bar) of the Pilot application: the atmosphere along the current flight — a
+weather map at a chosen altitude, the vertical cross-section of the route, the sounding of a point — at the planned
+departure time or up to 72 h later. This document is the final state the module is coded from; the reasons and their
+history are in DECISIONS.md, the contracts with other modules in INTEGRATION.md. Rule numbers refer to
+`docs/technique/V3_SPECIFICATION.md` § 7.1.
 
-## 1. The screen
+## 1. Place in the application
 
-A fixed, full-height view on the maps module's template (`meta.fixed`, `frame/INTEGRATION.md` § 9.2): no page scroll,
-the phone's whole frame; portrait only for now (the landscape layout is a later lot, `V3_SPECIFICATION.md` § 7.1).
+- Level 1 module, its own tab of the bottom bar: Préparer · Carte · CR · Vols · **Météo** (rule 14), `cloud` icon; on a
+  screen, its entry in the rail. Address `#atmosphere`; `#atmosphere?donnees=demo` (or `?data=demo`) opens the offline
+  demonstration (§ 6).
+- Help: the chapter `modules/atmosphere/help/<lang>.md` ("# Météo", built into `frame/help/pilot.*.md`), four
+  languages, French first; `meta.help: true`. The frame's "?" opens it at the paragraph of the view shown
+  (`ctx.helpAnchor`, rule 16): `atmosphere-flight` (no flight), `atmosphere-cut` (cross-section or sounding),
+  `atmosphere-zoom` (zoomed cross-section), `atmosphere-legend` (legend shown), `atmosphere-details`,
+  `atmosphere-settings`, `atmosphere-map` (Layers, a point of the map). The anchors are the same in the four languages.
+  No "How to use" card (fixed module).
+- Every text of the screen, tooltips and composed sentences included, comes from `texts.js` through `ctx.t` in fr, en,
+  de, es.
 
-- **Nothing between the header and the map** (`V3_SPECIFICATION.md` § 7.1): the controls are round 44 px buttons laid
-  over the map in the frame's overlay layer (`frame/INTEGRATION.md` § 9.3). Left: **Layers**. Right: **Flight** (the
-  settings in the bottom block: flight source, departure time, level, cruise speed, data, map grid, Load), **Details**
-  (list icon, not an "i": the frame's header has its own; the details in the bottom block), **Load**, the **altitude pill** (the map's level in brief — Sol / SFC, FL270, Traj.;
-  a tap opens the system's list with the full names; hidden until the map's grid is read), then the frame's **full screen** (header and bar hidden).
-- **Map** (top, all the height the block leaves): at the altitude chosen with its chip — sea level (MSL isobars every
-  2 hPa, highs and lows, 2 m isotherms, cloud, 10 m wind), the requested level, each planned step, fixed levels
-  (5,000 ft … FL300), or the computed trajectory (route coloured by the temperature met, thicker in cloud, ❄ where
-  icing is possible); aloft, isobars at constant true altitude. The Layers button opens a **panel over the map**, under its
-  button (scrolling when taller than the map, never over the sheet), with the layers of the map and of the profile side by side,
-  each with its key; the cut stays in the bottom block and is redrawn by each box (user, 29 Oct 2026: "choisir les éléments météo
-  masque le profil vertical"). The panel is written only when its rows change; a box's state is set in place, so one tap is one
-  toggle. Its cross, Escape, or another content of the block (Flight, Details) closes it. **A tap on the map opens the local slice at that point** (said once per page in a notification; nothing is
-  written over the map). What the map shows (its time, level and lines) heads the Layers content.
-- **Bottom block**: the frame's sheet (`frame/lib/sheet.js`) — three heights (collapsed to its header, default, expanded) pulled by
-  its handle, its content scrolling inside. **Its handle line carries the title: the content, then its context** — the
-  profile and **i** with the flight in brief (aircraft, route, level, departure time, model and run; the demonstration
-  marked), a slice with its place, distance and time; ◀ ▶ when they mean something, ✕ at the right (the reference sheet
-  of the suite, `V3_SPECIFICATION.md` § 7.1.6). By default the **overall profile** (cross-section along the route: cloud by level, isotherms every
-  5 °C with 0 °C emphasised, inversions, indicative icing, cumulus base, wind, terrain; optional backgrounds:
-  temperature, humidity, density altitude; the requested, planned and computed paths with TOC and TOD; surface strips
-  when the block is tall enough). A tap on the profile opens the slice of the nearest reading place (◀ ▶ walk along
-  the route). The **local slice** is a sounding (temperature, dew point, standard atmosphere, inversions, cloud column,
-  wind, the flight's levels there) with its reading (ground, cloud, inversions, 0 °C, cumulus base, conditions on the
-  trajectory) beside it on a wide block. ✕ goes back to the profile. **Details**: the summary as a compact list (one line per value: name, value,
-  note), aerodromes (METAR, TAF), the
-  table along the computed trajectory (a row opens its slice), sources.
-- **Flight date slider** (user: "prévoir un slider « date du vol » pour ajouter x heures à la planification (et la
-  carto). Utiliser au max les données gratuites."): a line under the handle, 0 to +72 h by hours, "Departure +12 h ·
-  Sun 25 03:00Z". The departure is the planned one — the shared flight's date (`planned_at`, Fuel's "Flight date"),
-  else `weather.when`, else now — plus those hours; the cross-section, the flight's map and the world
-  synoptic follow while it moves, from what the device keeps — nothing asked. "Load" reads at once every day the slider
-  can reach (Open-Meteo counts places and variables, not days, up to two weeks), so moving it costs nothing more; beyond
-  what was read, the line turns amber and "Load" reads the rest. Kept for the visit only.
-- Every reading place at the time the flight passes it (departure + estimated time, no wind — stated on screen); the
-  map at the time of the chosen slice.
-- Rendering: the profile and the slice are SVG (vector lines, smooth fields); the map's overlay is vector, redrawn
-  with every frame of the map's movement.
-- Offline **demonstration** data (`#atmosphere?donnees=demo`).
+## 2. The screen
 
-## 2. The flight
+A fixed, full-height view (`meta.fixed`, `frame/INTEGRATION.md` § 9.2) on the map's template: **header · map · sheet
+· bar, nothing else**, no page scroll (rules 1, 5).
+
+### 2.1 Portrait
+
+- **Map** under the whole frame; the sheet slides over it. The map and its overlay have the module's size, never the
+  sheet's: a move of the sheet only uncovers map already drawn. Fitting the route pads the part the sheet hides.
+- **Buttons over the map**, in the frame's overlay layer (`frame/INTEGRATION.md` § 9.3), round, 44 px (rule 1):
+  - left: **Layers**: a **panel over the map**, under its button (scrolling when taller than the map, never over the
+    sheet), with the layers of the map and of the cross-section side by side, each with its key; the cross-section
+    stays in the sheet and is redrawn by each box (user, 29 Oct 2026: "choisir les éléments météo masque le profil
+    vertical"). The panel is written only when its rows change and a box's state is set in place, so one tap is one
+    toggle ("certaines coches doivent être cliquées deux fois"). Its cross, Escape, or another content of the sheet
+    (Flight, Details) closes it; opening it over a non-drawing content brings the cross-section back;
+  - right: **Flight** (plane icon: the flight and settings in the sheet), **Details** (list icon), **Load** (down
+    arrow), the **altitude chip** (the map's altitude in brief — Sol / SFC, FL270, Traj.; a tap opens the system list
+    with the full names; hidden until the flight's grid is read), then the frame's **Full screen** (rule 2).
+  - A button whose content is shown (or whose panel is open) is pressed (`aria-pressed`); a second tap goes back to
+    the cross-section (closes the panel).
+- **MapLibre's own controls** (attribution, scale) stay above the sheet: `setBottomInset(map, px)` of
+  `modules/maps/lib/map_base.js` with the height the sheet covers, at each settle (rule 17). One attribution control.
+- **Sheet**: the frame's primitive (`frame/lib/sheet.js`, rule 19), three positions — collapsed to its head, default
+  (30 % of the view on a phone, 170 px at least; 35 % on a screen), expanded — moved by its grip, its content scrolling
+  inside when it is a list.
+
+### 2.2 Landscape and screens
+
+- Window wider than high and under 1024 px (`html.f-land`, rule 7): the sheet is a right column (40 % of the width,
+  280 px at least, default and expanded 60 %), the map takes the rest; the overlay columns stay on the map in one
+  column each; the right-hand MapLibre control moves left of the column. Full screen hides the header and the rail, the
+  column stays.
+- Wider screens: the same layout as portrait with the screen's sheet height.
+
+### 2.3 The sheet's head
+
+- **Default position, portrait, a drawing shown** (cross-section or sounding): the bare head (`.f-sheet-head-bare`,
+  28 px, rule 13) — the grip, the chips, ✕; **no title** (the drawing says what it is).
+- **Expanded, collapsed, landscape column, or a content that is not a drawing** (Details, Flight, a point of the
+  world, no flight): the titled head — the title says the content, then its context:
+  - cross-section: the flight in brief (aircraft, route, level, departure time, model and run; "demonstration"
+    marked);
+  - sounding: its place, its distance from the route and its time;
+  - when there is no cross-section and the map's view is mostly outside the flight's grid (§ 4.4): "World synoptic ·
+    18:00Z · run 06:00Z +12 h" ("World synoptic · run 06:00Z" until its step is read); with a cross-section the
+    title stays the cross-section's (expanding the sheet does not change it).
+- **The chips**, always in the head at its right, before ✕, **always three** (rule 13): ◀ ▶ (the previous and next
+  route sounding; disabled off a route sounding) and **i** (the legend; disabled without a drawing). 28 px in the bare
+  head, 44 px touch zones; 44 px in the titled head.
+- **"Vol entier"** (text button, before the chips, only while the cross-section is zoomed, rule 20).
+
+### 2.4 The flight date slider
+
+A row under the head, with the cross-section and the sounding (a control, kept in the default position, rule 9):
+0 to +72 h by hours, "Départ +12 h · dim. 25 03:00Z". The departure is the planned one (the shared flight's
+`planned_at`, Fuel's "Flight date", the only date of the flight since Fuel's lot of 28 October; else now) plus those hours. The map, the cross-section,
+the soundings and the world synoptic follow while it moves, from what the device keeps — nothing is asked. Its text has
+a **fixed width** (a longer text — the day, the warning — never shortens the slider, whose thumb would slide under
+the finger). Beyond what was read the row turns amber, starts with ⚠ (said again in its tooltip), a floating warning
+appears once per exit, and Load reads the rest; when part of the slider is outside the forecast read, a **band under
+the slider shows the hours covered** (elsewhere the nearest hour is shown). Kept for the visit only. In the landscape
+column it stays horizontal under the head. The departure is written with its day ("dim. 25 03:00Z") wherever it is
+shown, the sheet's title included.
+
+### 2.5 Contents of the sheet
+
+- **Cross-section** (default): the route from end to end, from the ground to above the flight level, every reading place
+  at the time the flight passes it (§ 3.3). Drawn **at the body's exact height and full width** (rule 13): the distance
+  axis and the waypoint names always visible, level labels thinned before the axis is dropped, nothing under the
+  drawing in the default position (rule 9). Layers: cloud by level (grey, darker = more cover), isotherms every 5 °C
+  (0 °C emphasised), inversions and indicative icing (hatching), wind barbs, estimated cumulus base, terrain, route
+  points; optional backgrounds (temperature, humidity, density altitude); the requested (dotted), planned (dashed) and
+  computed (solid) paths with TOC and TOD; on a body of 260 px or more, the surface strips (low, middle, high cloud,
+  precipitation, visibility under 8 km). A tap opens the sounding of the nearest reading place.
+- **Zoom of the cross-section** (rule 20): a window on the distance axis, the Map's gesture (`createAxisWindow`,
+  `modules/maps/lib/axis_window.js`): two fingers pinch around their middle and slide; Ctrl + wheel and a drag on a
+  screen; a double tap, a double click or "Vol entier" go back to the whole flight. One finger keeps its role (a tap
+  opens a sounding; the sheet's drag). The height scale refits to what is visible, the distance marks take a round step,
+  what lies outside is not drawn. On a zoomed cross-section a tap waits 320 ms before opening the sounding (a double tap
+  resets instead). The window is kept for the page's life, reset when the route changes, never stored.
+- **Sounding** of a point (from the cross-section, the map or the Details table): temperature, dew point, standard
+  atmosphere, inversions, cloud column, wind, terrain, the flight's three levels there; on a wide body, its reading
+  beside it (ground, cloud, inversions, 0 °C, cumulus base, conditions on the path). ◀ ▶ walk along the route; ✕ goes
+  back to the cross-section.
+- **Legend** (rule 14): the "i" chip shows over the drawing the series actually drawn, with their symbol and name in four
+  languages, produced by the drawing code (`sectionLegend`); closed by the chip, a tap on it, or Escape; it closes when
+  the content is not a drawing.
+- **Details**: the summary as a compact list (one line per value: name, value, note — distance, profile, climb, mean
+  wind and deviation from the standard atmosphere in cruise, 0 °C isotherm, inversions under the level), the aerodromes
+  (METAR, TAF), the table along the computed path (a row opens its sounding), the sources and the status line.
+- **Flight and settings**: the flight's source (§ 3.1), departure (UTC), requested level, Load; at the Full level
+  only, the cruise speed (read from Fuel's flight when it has one) and the map's grid. No "data" choice: the frame's
+  weather layer is the only source; the demonstration is the address and "See the example" (§ 6).
+- **Layers** (the panel over the map, § 2.1, not a content of the sheet): what the map shows heads it (time, altitude,
+  lines); the layers of the map and of the cross-section side by side, each with its key; the two zones of the map
+  (§ 4.4) with their model and grid.
+- **Point of the world**: a tap on the map outside the flight's grid opens every value of the world synoptic's step at
+  that point (pressure, wind, temperature, cloud and its three layers, precipitation, visibility, CAPE, 0 °C isotherm,
+  tropopause, jet).
+- **No flight**: "No planned flight", with **Prepare in Fuel** and **See the example**.
+
+### 2.6 Behaviour
+
+- **Nothing happens while a finger holds the sheet** (rule 19): no redraw of the map, its overlay or the drawing; one
+  layout at the release.
+- A DOM write happens only when the value changes (CLAUDE.md).
+- The map's tap hint is said once per page, in a notification (`AppFramework.notify`); nothing is written over the map.
+- Warnings in notifications; no `alert`, no console for the user.
+
+## 3. The flight and the forecast
+
+### 3.1 The flight
 
 - **Always the current flight at opening**: `pilot/<trigram>/current_flight.json` (schema 1,
-  `modules/fuel/INTEGRATION.md` § 3), the one Fuel and the maps module read, **read only**; read again when it changes
-  (`watch`), the forecast then only from the device's cache. None: nothing drawn, "No planned flight" with Prepare in
-  Fuel and See the example.
-- **Round the world on the map** (user: "Est-ce qu'on fait un tour avec la carte, si on décolle vers la droite ou la
-  gauche ? Spoiler : je le veux."): the map repeats the world (MapLibre's world copies, the shared base's option
-  `worldCopies`); the flight, its grid and markers, the synoptic and the taps follow on every copy, east or west,
-  as many turns as wanted.
-- **Across the date line** (user: "on veut voler de Sibérie à l'Alaska en passant par la ligne de changement de
-  date"): the route's longitudes are made continuous (`unwrapLons`: UHMA 177.7° → PAOM 194.6° rather than −165.4°), so
-  the sampling, the map grid, the framing, the cross-section and the drawing follow the route instead of going round
-  the world; the requests to Open-Meteo are brought back to [−180, 180[ by the cache's cells; taps and tooltips compare
-  longitudes modulo 360 (`frame/lib/geo.js`, shared with the maps module and Fuel).
-- For the visit only (never kept, marked in the handle): the example of the schema, a `current_flight.json` file, or a
-  route text — names resolved by
-  `ctx.aerodb.coords`, ICAO or decimal coordinates, `/F270` after a point for a step.
+  `modules/fuel/INTEGRATION.md` § 3), read only, watched: when it changes the screen follows, the forecast then only
+  from the device.
+- For the visit only, never kept, marked in the head: the schema's example ("See the example", every level) and, at
+  the Full level only (frame levels), a `current_flight.json` file or a route text (names resolved by `ctx.aerodb.coords`, ICAO or decimal coordinates,
+  `/F270` after a point for a step).
+- **Round the world**: the map repeats the world (`worldCopies`); the flight, its grid, the synoptic and the taps follow
+  on every copy.
+- **Across the date line**: the route's longitudes are made continuous (`unwrapLons`), so the sampling, the grid, the
+  framing, the cross-section and the drawing follow the route; requests are brought back to [−180, 180[ by the weather
+  layer; taps compare longitudes modulo 360 (`frame/lib/geo.js`).
 
-## 3. The forecast and the quota
+### 3.2 The forecast comes from the frame's weather layer
 
-Open-Meteo's free quota is counted per IP address: 600 weighted calls a minute, 10,000 a day; a call is one place
-and up to 10 variables (more variables count pro rata).
+- Atmosphere reads **only `ctx.weather`** (the frame's single weather layer, V3_SPECIFICATION § 8, contract in
+  `frame/INTEGRATION.md` § 14): the route's columns (`aloft`), the map's grid (`grid`), METAR and TAF (`metar`,
+  `taf`), the world synoptic (`world`). It never calls Open-Meteo, never builds a request URL, never writes
+  `cache/weather/`, never counts the quota: the layer caches, deduplicates, counts and says what a load costs.
+- **Nothing is asked at opening**: the screen shows what the device keeps (cache-only reads); **Load** is the only
+  gesture that asks the network, for what is missing, with its cost stated before.
+- Load reads at once every day the slider can reach (planned departure to +72 h plus the flight), so moving the slider
+  costs nothing more. **A flight dated before today** is read from the day of its departure (Open-Meteo serves up to 92
+  past days), not from today (user, 29 Oct 2026: "pas de météo avant H+56" on a flight of the 26th).
+- The route reads its levels up to the top of the cross-section; the map's grid the levels around the offered
+  altitudes; the grid has 35, 48 (default) or 96 places.
 
-- **Sampling first** (as Fuel): one reading place every 50 NM, 24 at most per flight (`samples` of
-  `modules/fuel/winds.js`); the map grid 35, 48 or 96 places.
-- **Shared device cache** `cache/weather/` (`weather_store.js`, see INTEGRATION.md): by model, **cell** and hour.
-  The cell follows the model's resolution with a floor of 0.1° (Météo-France and ICON 0.1°, GFS 0.25°): it is the key
-  that removes duplicates between routes and readers. One file per model, cell and UTC day.
-- **Only what is missing is asked**: cells, days and variables absent from the cache, in as few requests as
-  possible (`start_date` / `end_date`); a file is valid for the model run it was read from (6 h at most), 30 min
-  when the run is unknown; a file of an older run is replaced whole.
-- The route reads its levels up to the top of the cross-section only; the map the levels around the offered
-  altitudes.
-- **Nothing is asked when the module opens**: it shows what the device keeps, or states the cost and waits for
-  "Load".
-- **Tally** of the calls on the device (`cache/weather/ledger.json`, 24 h rolling): waits rather than exceed 600 a
-  minute, stops before 10,000 a day. The status line gives the calls spent by each load and the device's 24 h total.
-- Past days are removed from the device once a day.
-- One full load of a 370 NM flight, nothing in cache: ≈ 295 weighted calls (9 route places × 98 variables, 48 map
-  places × 43 variables); again, or the page reloaded: 0.
+### 3.3 Time along the route
 
-## 4. The world synoptic — nothing asked outside the flight's grid
+Every reading place at the time the flight passes it: departure + estimated time at the **ground speed** — the
+phase's true airspeed minus the headwind read at that distance and altitude (30 kt on the nose = 30 kt less ground
+speed, never under 40 kt; user, 29 Oct 2026). The vertical path is **Fuel's** when the flight has one
+(`profile.path` [{ nm, ft }], procedures and imposed altitudes included, scaled to the route's length; TOC and TOD at
+the first and last point of its highest level: "la coupe météo ignore les altitudes imposées"), else climb and descent
+from Fuel's profile rates, else the defaults. The forecast model is chosen at the route's midpoint by length
+(`frame/lib/flight_path.js` `routeMidpoint`, the same point as the Map's). The map at the time of the shown sounding,
+else of the departure.
 
-User, 24 Oct 2026: "si on zoom out la carte météo, on n'a pas les infos… sans cramer des crédits… users are dumb",
-then "NOAA approuvé. Idem, compilation vers le même format pour unifier l'api. Quitte à augmenter la granularité ou le
-niveau de paramètres du fichier"; relay's decision (`docs/technique/V3_SPECIFICATION.md` § 8). **A device never asks
-Open-Meteo for anything outside its flight's grid, whatever the map shows.**
+## 4. The weather map
 
-- **The publication**: `/v3/weather/world/` on the pages, built by the Pages workflow (`tools/build_world_weather.py`,
-  GRIB2 decoded by `tools/grib2_lite.py`, standard-library Python) from **NOAA GFS 1°** (NOMADS GRIB filter: no key,
-  no call quota), reduced to a **5°** grid (lat −80…80, lon −180…175: 33 × 72 = 2,376 places), **every 3 h from the
-  current 3-hour step to +72 h** (25 steps). One index and one file per step (≈ 140 KB, ≈ 38 KB compressed): a device
-  reads only the steps it shows. GFS is read once per run (≈ 70 s, 25 downloads); at every other build (each push,
-  every 6 h) the previous publication is taken again while it comes from the latest run and covers 66 h more; NOMADS
-  unreachable: its steps still ahead are published again; never a failed deployment.
-- **Format** (schema 1, the same for any source, so that readers have one API): `index.json` = `{ schema, model, run
-  (s), built (s), step (°), lats [south → north], lons [west → east], times [s], files [one per step], units, source }`;
-  `YYYY-MM-DDTHH.json` = `{ schema, time (s), vars: { name: [lat × lon, row by row from the south] } }`, and
-  `YYYY-MM-DDTHH-alt.json` (named in `altFiles`, levels in `levels`) the same for the pressure levels: `z<hPa>` (m),
-  `t<hPa>` (°C), `rh<hPa>` (%), `ws<hPa>` / `wd<hPa>` (kt, °), for 1000, 925, 850, 800, 700, 600, 500, 400, 300, 250 and
-  200 hPa. Variables: the
-  five every source gives — `p` sea-level pressure (hPa), `t` 2 m temperature (°C), `cc` total cloud (%), `ws` / `wd`
-  10 m wind (kt, from °) — and what GFS adds: `ccl` / `ccm` / `cch` low, middle, high cloud (%), `cape` (J/kg), `frz`
-  0 °C isotherm (ft), `trop` tropopause (ft), `js` / `jd` 250 hPa wind — the jet stream (kt, °), `pr` precipitation
-  (mm/h), `vis` visibility (m), `ps` surface pressure (hPa), `zs` surface height (m). Values rounded, `null` where
-  missing.
-- **On the device** (`world.js`): read on the same origin through `ctx.net` (no extra host), kept in
-  `cache/weather/world/` (policy `cache`): the index 6 h, each step until it is past (removed with a new index).
-  Served by the launcher (no publication), no world layer until `frame/weather`.
-- **No border with the flight's grid**: both sides are computed by the same code at the same altitude (the world's
-  pressure levels, a second file per step read only when the map shows an altitude; the flight grid's true altitude
-  for the isobars), with the same steps of lines (by the map's scale) and the same spacing of barbs; over the outer
-  quarter of the flight's grid its values pass progressively into the world's (the models differ, more so far ahead),
-  for the map only.
-- **On the map**: as soon as the view goes beyond the flight's grid (or with no flight at all), the synoptic is drawn
-  outside the grid at the step nearest the map's time: isobars every 4 hPa with the marked highs and lows (an extremum
-  over 15° around and 2 hPa deep; 70 px apart on screen, the deepest first), isotherms every 10 °C, cloud, wind barbs
-  (30 px apart on screen), temperature backdrop, and two layers of their own — **jet stream** (250 hPa wind from 60 kt,
-  purple) and **convection** (CAPE from 500 J/kg, orange); Mercator-correct images, the world's copies when zoomed out.
-  Inside the grid the flight's fine forecast stays. **No extra button.** When the view is mostly outside the grid (the
-  grid covers less than 40 % of it, or its centre is outside), the handle's title says what is shown: "World synoptic ·
-  18:00Z · run 06:00Z +12 h"; back in the grid, the profile's title returns. A tap outside the grid opens every value of
-  the step at that point (pressure, wind, temperature, cloud and its three layers, precipitation, visibility, CAPE, 0 °C
-  isotherm, tropopause, jet) — never a call.
-- SIGMET and METAR of the world (aviationweather.gov, no CORS): through the launcher's relay only, later. Satellite
-  (NASA GIBS) and radar (RainViewer) tiles answer with CORS: candidates.
+### 4.1 Altitudes
 
-## 5. Sources
+The altitude chip chooses: the surface (MSL isobars every 2 hPa with highs and lows, 2 m isotherms, cloud, 10 m wind),
+the requested level, each planned step, fixed altitudes (5,000, 10,000, 18,000, 24,000 ft, FL300), or the computed path
+(the route coloured by the temperature met, thicker in cloud, ❄ where icing is possible). Aloft, isobars at constant
+true altitude.
 
-| Data | Source, through | Key |
+### 4.2 Layers
+
+Isobars, isotherms, cloud, wind, temperature backdrop, **jet stream** (250 hPa wind from 60 kt, purple) and
+**convection** (CAPE from 500 J/kg, orange). Line steps follow the map's scale; barbs 30 px apart on screen; highs and
+lows 70 px apart, the deepest first.
+
+### 4.3 Rendering
+
+The shared library `lib/weather_map.js` (the same for the Map, rule 8): a vector overlay on a canvas redrawn with
+every frame of the map's movement (`map.project`), geometry computed once per data set; only what is in view is
+projected. The cross-section and the sounding are SVG (`section.js`): smooth field images, vector lines.
+
+### 4.4 The flight's grid and the world
+
+- Inside the flight's grid, the fine forecast loaded for the flight (Météo-France AROME 1.3 km and ARPEGE 0.1° over
+  France, ICON in Europe, GFS elsewhere); outside, the **world synoptic** (§ 5); the same code computes both at the same
+  altitude.
+- Fills (cloud, temperature, jet, convection) come from the world synoptic on both sides; lines and barbs from the
+  flight's grid, passing into the world's over the outer quarter of the grid.
+- **A thin line marks the flight zone's limit, by default** (rule 12): the two models do not join, a jump across it is
+  normal. The Layers content names both zones with their model and grid; the help says the same. The administrator
+  hides it (`edge.show: false` in `airline/map_profiles.json`, Réglages › Administration, rule 18); the module watches
+  the key.
+- When the view is mostly outside the grid (the grid covers less than 40 % of it, or its centre is outside), the head
+  says what is shown (§ 2.3); back in the grid, the cross-section's title returns. No extra button.
+- No airspace is drawn: rule 21 does not apply.
+
+## 5. The world synoptic
+
+A device never asks for anything outside its flight's grid, whatever the map shows.
+
+- **Publication** `/v3/weather/world/` on the pages, built in the Pages workflow by `tools/build_world_weather.py`
+  (standard-library Python; GRIB2 read by `tools/grib2_lite.py`) from **NOAA GFS 1°** (NOMADS GRIB filter, no key, no
+  quota), on a **5°** grid (lat −80…80, lon −180…175: 33 × 72 = 2,376 places), **every 3 h to +72 h** (25 steps). The
+  previous publication is taken again while it comes from the latest run; NOMADS unreachable: its steps still ahead are
+  published again; never a failed deployment.
+- **Format, schema 1** (the same for any source): `index.json` = `{ schema, model, run, built, step, lats [south →
+  north], lons [west → east], times, files, altFiles, levels, units, source }`; `YYYY-MM-DDTHH.json` = `{ schema, time,
+  vars: { name: [lat × lon, row by row from the south] } }` — `p` (hPa), `t` (°C), `cc` (%), `ws` / `wd` (kt, °) from
+  every source, and from GFS `ccl ccm cch` (%), `cape` (J/kg), `frz` and `trop` (ft), `js` / `jd` (250 hPa wind), `pr`
+  (mm/h), `vis` (m), `ps` (hPa), `zs` (m); `YYYY-MM-DDTHH-alt.json` the pressure levels 1000 … 200 hPa (`z` m, `t` °C,
+  `rh` %, `ws` / `wd`). Values rounded, `null` where missing.
+- **On the device**: read through `ctx.weather.world` (same origin), only the steps shown, the pressure-level file only
+  when the map shows an altitude.
+
+## 6. Demonstration
+
+`?donnees=demo` (and "See the example" without a flight): a synthetic forecast and METAR computed on the device
+(`demo.js`), the same shape as the weather layer's answers, never written to the shared cache, marked in the head.
+No network at all.
+
+## 7. Sources
+
+| Data | Source | Through |
 |---|---|---|
-| Forecast (14 pressure levels + surface, hourly, today and tomorrow) | `api.open-meteo.com/v1/forecast`, `ctx.net` | none |
-| Model run | `api.open-meteo.com/data/<model>/static/meta.json`, `ctx.net` | none |
-| METAR | `metar.vatsim.net`, `ctx.net` | none |
-| TAF | `avwx.rest`, `ctx.net` (kept 30 min in `cache/atmosphere/taf/`) | the device's, added by the frame |
-| World synoptic (outside the flight's grid) | `/v3/weather/world/` of the pages (§ 4: NOAA GFS by the workflow), same origin, `ctx.net` | none |
-| Base map | `tiles.openfreemap.org` (MapLibre of `modules/maps/lib/`, `meta.net`) | none |
-| Model | `modelFor` of `modules/fuel/winds.js`, by the route's middle | — |
+| Route columns, map grid (hourly, pressure levels and surface) | Open-Meteo (model by region: Météo-France, ICON, GFS) | `ctx.weather.aloft` / `grid` |
+| METAR | the frame's source | `ctx.weather.metar` |
+| TAF | the frame's source (device key) | `ctx.weather.taf` |
+| World synoptic | `/v3/weather/world/` (NOAA GFS by the workflow) | `ctx.weather.world` |
+| Base map | `tiles.openfreemap.org` (MapLibre of `modules/maps/lib/`) | `meta.net` |
+| Terrain along the route | the forecast's surface height | — |
 
-## 6. Limits
+## 8. Code
 
-- Times without wind; cloud cover from the model's level cloud cover, else from humidity; icing and cumulus base
-  indicative only. Not an official weather briefing.
-- Help chapter `modules/atmosphere/help/<lang>.md` ("# Météo", built into `frame/help/pilot.*.md`; `meta.help: true`):
-  the frame's "?" opens it at the paragraph of the view shown (`ctx.helpAnchor`, V3_SPECIFICATION § 7.1 rule 16) —
-  `atmosphere-flight` (no flight), `atmosphere-cut` (cut or slice), `atmosphere-zoom` (zoomed cut), `atmosphere-legend`
-  (legend shown), `atmosphere-details`, `atmosphere-settings`, `atmosphere-map` (layers, a point of the map); the anchors
-  are the same in the four languages (case E10).
+- `module.js` and the files of the screen, each 60 KB at most, loaded on demand, every function commented.
+- Shared bricks: `lib/weather_map.js` (the weather map, also the Map's), `section.js` (`drawSection`, `sectionSvg`,
+  `soundingSvg`, `sectionLegend`, `sectionModel`: also the Map's), `atmo.js` (pure atmosphere functions), `texts.js`.
+- Kept on the device by the module: its screen settings only (`cache/atmosphere/ui.json`: route text, grid, layers,
+  map altitude), written only when they change.
+
+## 9. Limits
+
+- Times with the forecast headwind but no turn or acceleration model; cloud from the model's level cover, else from humidity; icing and cumulus base indicative only.
+  Not an official weather briefing.
+- SIGMET and world METAR (aviationweather.gov, no CORS): through the launcher's relay only, later. Satellite (NASA GIBS)
+  and radar (RainViewer) tiles: candidates.

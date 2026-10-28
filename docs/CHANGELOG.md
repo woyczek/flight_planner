@@ -1327,6 +1327,12 @@ formats and screens may still change; Atmosphere is being recoded for the next a
   airspace reading and the strip stay exact. The window is kept while the page lives and reset when the route changes; it is never stored.
   The weather cut zooms too (see the next two entries). D21 pinch / scale / cursor / button, D22 sheet drag, D23 kept and reset, D24 screen gestures.
 
+- **Atmosphere: specification rewritten as the final state, before the recode** (`modules/atmosphere/SPEC.md`, DECISIONS) — the work of
+  24–27 October is a completed proof of concept and the module is recoded from its specs (user's decision of 28 Oct). Lot 0: the SPEC
+  describes the screen, the sheet, the flight, the weather map, the world synoptic and the sources as they must be, with V3_SPECIFICATION
+  § 7.1 rules 1–21 applied and no dated amendment; the forecast comes from the frame's weather layer (`ctx.weather`) only. DECISIONS lists
+  sixteen open points with a proposal each (contradictions with the former SPEC and § 8, flight sources, the demonstration, what the module
+  needs from the `ctx.weather` contract, the files of the recode, the parity gate).
 - **Atmosphere: the frame's "?" opens the Weather chapter at the view's paragraph** (`modules/atmosphere/module.js`, `help/*.md`,
   `frame/help/pilot.*.md`, `SPEC.md` § 6, `tests/v3` E10; atmosphere DECISIONS; V3_SPECIFICATION § 7.1 rule 16) — `meta.help` was still `false`:
   the chapter existed but the "?" did not open it. Now `help: true` and `ctx.helpAnchor` lands on the paragraph of the view shown (no flight,
