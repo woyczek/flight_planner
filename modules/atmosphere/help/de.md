@@ -53,4 +53,4 @@ die Legende, den Chip oder Escape schließt sie.
   die Weltsynoptik kommt von GFS (NOAA), alle 3 Stunden bis 72 Stunden.
 - Das Geladene bleibt auf dem Gerät und dient offline; die Karte übernimmt seinen Wetterschnitt.
 
-<!-- fr: 0d64bc05e5c1 -->
+<!-- fr: 3e486fd7b110 -->

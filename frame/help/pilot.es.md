@@ -641,7 +641,7 @@ un toque en la leyenda, en la pastilla o Escape la cierra.
   el sinóptico mundial viene de GFS (NOAA), cada 3 horas hasta 72 horas.
 - Lo cargado se queda en el aparato y sirve sin conexión; el Mapa reutiliza su corte meteorológico.
 
-<!-- fr: 0d64bc05e5c1 -->
+<!-- fr: 3e486fd7b110 -->
 
 <!-- chapter: settings -->
 # Ajustes

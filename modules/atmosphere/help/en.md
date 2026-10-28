@@ -53,4 +53,4 @@ the legend, the chip or Escape closes it.
   world synoptic comes from GFS (NOAA), every 3 hours up to 72 hours.
 - What is loaded stays on the device and works offline; the Map reuses its weather cross-section.
 
-<!-- fr: 0d64bc05e5c1 -->
+<!-- fr: 3e486fd7b110 -->
