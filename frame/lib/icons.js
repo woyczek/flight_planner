@@ -4,8 +4,12 @@
 // page, aucun stockage ; le cadre s'en sert pour le menu et l'en-tête, un module l'importe s'il veut une icône
 // (import { svg } from '../../frame/lib/icons.js').
 //
-// API : svg(nom, { size, title }) → chaîne SVG (vide si le nom est inconnu ; décorative sauf si title est donné) ;
-// has(nom) ; names().
+// Variantes pleines (barre d'onglets du téléphone : l'onglet choisi change de forme, pas seulement de couleur) : fuel,
+// map, edit, list, cloud (Météo, 24 oct 2026), settings, mêmes dessins et même grille, formes remplies (currentColor) avec les détails en creux.
+//
+// API : svg(nom, { size, title, filled }) → chaîne SVG (vide si le nom est inconnu, ou si filled est demandé sans variante
+// pleine ; décorative sauf si title est donné ; filled : la variante pleine, marquée data-filled) ; has(nom) ;
+// hasFilled(nom) ; names().
 const P = {
   // navigation / applications
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
@@ -42,6 +46,7 @@ const P = {
   send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
   maximize: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
+  minimize: '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>',
   wand: '<path d="m3 21 12-12M14 6l4 4"/><path d="M19 2v4M17 4h4M8 3v2M7 4h2M20 12v2M19 13h2"/>',
   'wand-sparkles': '<path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3M5 6v4M19 14v4M10 2v2M7 8H3M21 16h-4M11 3H9"/>',
   sparkles: '<path d="m12 3 1.8 4.9L19 9.5l-5.2 1.7L12 16l-1.8-4.8L5 9.5l5.2-1.6z"/><path d="M19 15v4M17 17h4M5 17v3M3.5 18.5h3"/>',
@@ -51,6 +56,9 @@ const P = {
   'chevron-up': '<path d="m18 15-6-6-6 6"/>',
   'chevron-down': '<path d="m6 9 6 6 6-6"/>',
   move: '<path d="M12 3v18M9 6l3-3 3 3M9 18l3 3 3-3"/>',
+  move4: '<path d="M12 2v20M2 12h20M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
   // champs
   box: '<path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/>',
@@ -69,19 +77,34 @@ const P = {
   // cadre V3
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>'
 };
+// variantes pleines : racine remplie et cernée de currentColor (trait 1, jointures rondes) ; ce qui doit rester un trait
+// (tuyau, socle, rayons) le dit (fill="none", trait 2)
+const F = {
+  cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  fuel: '<path fill-rule="evenodd" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16zM6.5 6h5v4h-5z"/><path fill="none" stroke-width="2" d="M3 21h12M14 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/>',
+  map: '<path d="M3 6 8 4.33v14L3 20z"/><path d="M10 4.33 14 5.67v14l-4-1.34z"/><path d="M16 5.67 21 4v14l-5 1.67z"/>',
+  edit: '<path d="M12 8 16 12 8 20H4v-4z"/><path d="m15 5 4 4-1.5 1.5-4-4z"/>',
+  list: '<path fill="none" stroke-width="3" d="M9 6h11M9 12h11M9 18h11"/><circle cx="4" cy="6" r="1.8"/><circle cx="4" cy="12" r="1.8"/><circle cx="4" cy="18" r="1.8"/>',
+  settings: '<path fill-rule="evenodd" d="M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm0 4.2a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6z"/><path fill="none" stroke-width="2" d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>'
+};
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 
-/** SVG d'une icône (chaîne) ; décorative (aria-hidden) sauf si title est donné ; nom inconnu : chaîne vide. */
+/** SVG d'une icône (chaîne) ; décorative (aria-hidden) sauf si title est donné ; nom inconnu : chaîne vide. filled : la
+ *  variante pleine (data-filled), vide si l'icône n'en a pas. */
 export function svg(name, {
   size = 20,
-  title = ''
+  title = '',
+  filled = false
 } = {}) {
-  const body = P[name];
+  const body = filled ? F[name] : P[name];
   if (!body) return '';
-  const a11y = title ? `role="img" aria-label="${esc(title)}"` : 'aria-hidden="true" focusable="false"';
-  return `<svg class="f-icon" data-i="${esc(name)}" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}${body}</svg>`;
+  const a11y = title ? `role="img" aria-label="${esc(title)}"` : 'aria-hidden="true" focusable="false"',
+    paint = filled ? 'fill="currentColor" stroke="currentColor" stroke-width="1"' : 'fill="none" stroke="currentColor" stroke-width="2"';
+  return `<svg class="f-icon" data-i="${esc(name)}"${filled ? ' data-filled' : ''} viewBox="0 0 24 24" width="${size}" height="${size}" ${paint} stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}${body}</svg>`;
 }
 /** Vrai si l'icône existe. */
 export const has = name => Object.prototype.hasOwnProperty.call(P, name);
+/** Vrai si l'icône a une variante pleine. */
+export const hasFilled = name => Object.prototype.hasOwnProperty.call(F, name);
 /** Noms de toutes les icônes. */
 export const names = () => Object.keys(P);

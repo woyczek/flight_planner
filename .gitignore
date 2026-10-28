@@ -1,8 +1,12 @@
 # v3 : l'application seule est versionnée ici. Les données (registres, missions, références DEFA, MORA, AIRAC…)
 # vivent dans data/, clone du dépôt de données (privé) — voir docs/INSTALL.md.
 data/
+# … sauf le module Données de l'appli (modules/data/), qui est du code
+!modules/data/
 
 # Caches et fichiers de travail
+# synoptique monde d'Atmosphère : écrit par le workflow des pages (tools/build_world_weather.py), jamais versionné
+weather/
 __pycache__/
 AircraftDB/aircraft_http_cache.json
 AircraftDB/icao_doc8643_cache/
@@ -48,3 +52,12 @@ tools/report-vfr/cache/
 tools/report-vfr/*.json
 !tools/report-vfr/config.json
 tools/report-vfr/reviews/*.png
+# sonde EAD Basic (tools/proc_ead.py --probe) : pages reçues et compte rendu, gardés sur le poste, jamais dans le dépôt public
+ead_probe/
+ead_survey/
+ead_udsg/
+ead_fetch/
+proc_work/
+
+# identifiant EAD Basic du poste (jamais dans le dépôt)
+pass

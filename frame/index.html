@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Pilote — SOG</title>
-<!-- V3 : appli Pilote, squelette du cadre (frame/app.js) : navigation par verbes, modules chargés à la demande
+<!-- V3 : appli Pilote, squelette du cadre (frame/app.js) : navigation par verbes (colonne sur écran) et barre d'onglets du bas (téléphone), modules chargés à la demande
      (modules/<nom>/module.js), bouton de synchronisation et son état, écran des conflits, réglages de l'appareil
      (frame/settings/settings.js). -->
 <!-- design et ton de l'appareil posés avant le premier affichage (copie de device/design.json, frame/app.js) -->
@@ -9,9 +9,25 @@
 try {
   const d = JSON.parse(localStorage.getItem('sogFrame:design') || '{}'),
     h = document.documentElement;
-  if (/^(standard|cabinet|field)$/.test(d.design)) h.dataset.design = d.design;
+  if (/^(standard|cabinet|field|metro|swiss|cupertino|material|aqua)$/.test(d.design)) h.dataset.design = d.design;
   if (/^(day|night)$/.test(d.tone)) h.dataset.tone = d.tone
 } catch (e) {}
+// paysage sur un téléphone (même règle que landNow() de frame/app.js, qui la tient ensuite à jour) : la mise en page du rail et de la
+// colonne est juste dès le premier affichage
+try {
+  if (innerWidth > innerHeight && innerWidth < 1024 && !/^portrait/.test(screen.orientation?.type || '')) document.documentElement.classList
+    .add('f-land')
+  // ordinateur (frame/app.js, paintDesk) : le design d'un ordinateur (Aqua) juste dès le premier affichage
+  else if (innerWidth > 760 && matchMedia('(pointer: fine) and (hover: hover)').matches) document.documentElement.classList.add('f-desk')
+  // design réservé à l'ordinateur (Aqua) ailleurs : standard (frame/app.js, applyDesign)
+  if (document.documentElement.dataset.design === 'aqua' && !document.documentElement.classList.contains('f-desk')) delete document
+    .documentElement.dataset.design
+} catch (e) {}
+// module de l'adresse : la couleur repère des designs metro, swiss, cupertino et material dès le premier affichage (frame/app.js, paintModule)
+{
+  const m = /^#([a-z]+)/.exec(location.hash);
+  if (m) document.documentElement.dataset.landmark = m[1]
+}
 </script>
 <link rel="stylesheet" href="frame.css?v=0">
 <link rel="manifest" href="manifest.webmanifest">
@@ -23,19 +39,20 @@ try {
 </head>
 <body>
 <header class="f-head">
-  <button type="button" class="f-burger" id="fBurger" aria-controls="fNav" aria-expanded="false">☰</button>
   <button type="button" class="f-back" id="fBack" hidden></button>
   <span class="f-name" id="fName"></span>
   <button type="button" class="f-pane-btn" id="fPane" aria-pressed="false" hidden></button>
   <button type="button" class="f-who" id="fWho" hidden></button>
   <span class="f-host" id="fHost" hidden></span>
   <button type="button" class="f-live" id="fLive" aria-pressed="false" hidden></button>
-  <button type="button" class="f-sync" id="fSync" data-state="local"><span class="f-dot"></span><span class="f-lbl"></span><span class="f-lbl-short" aria-hidden="true"></span></button>
+  <button type="button" class="f-sync" id="fSync" data-state="local"><span class="f-dot"></span><span class="f-lbl"></span></button>
   <button type="button" id="fHelp" aria-label="help">?</button>
   <button type="button" id="fDevice" aria-label="device">⚙</button>
 </header>
 <nav class="f-nav" id="fNav"><ul id="fMenu"></ul></nav>
 <main class="f-view" id="fView"></main>
+<!-- barre du bas du téléphone (760 px et moins ; en paysage, un rail à gauche) : Préparer · Carte · CR · Vols · Météo, dessinée par frame/app.js (APP.tabs) ; Réglages : le ⚙ de l'en-tête -->
+<nav class="f-tabbar" id="fTabs"></nav>
 <div class="f-notes" id="fNotes" aria-live="polite"></div>
 <script src="store/frame_data.js?v=0"></script>
 <script src="store/transport_github.js?v=0"></script>
@@ -43,13 +60,6 @@ try {
 <script src="aerodb/zones.js?v=0"></script>
 <script src="aerodb/aircraft.js?v=0"></script>
 <script src="aerodb/aerodb.js?v=0"></script>
-<script src="settings/admin_links.js?v=0"></script>
-<script src="settings/config.js?v=0"></script>
-<script src="settings/join.js?v=0"></script>
-<script src="lib/qr.js?v=0"></script>
-<script src="settings/settings.js?v=0"></script>
-<script src="lib/markdown.js?v=0"></script>
-<script src="help/help.js?v=0"></script>
-<script src="help/roadmap.js?v=0"></script>
+<!-- Réglages, aide et feuille de route : chargés à la première ouverture de leur écran (app.js, need) -->
 <script src="app.js?v=0"></script>
 </body></html>

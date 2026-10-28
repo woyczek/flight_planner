@@ -32,11 +32,19 @@ Pilote. Cahier des charges et journal des décisions : `docs/technique/V3_SPECIF
 | V3 aerodb (bases SIA et appareils) | `v3-aerodb.md` | `E:\DEFA-v3-aerodb` | 8797 |
 | V3 help (aide, tutoriels, manuels) | `v3-help.md` | `E:\DEFA-v3-help` | 8798 |
 | V3 settings (identité, usages, accès, caches) | `v3-settings.md` | `E:\DEFA-v3-settings` | 8799 |
+| Relais cloud (backup de la session ergonomie, quand le poste principal est hors d'atteinte) | `relais-cloud.md` | conteneur cloud claude.ai/code, un arbre git par lot | statique 8800+ |
 
 Chaque agent V3 : lit la spécification V3 et `v3-frame.md` (façon de travailler commune), travaille sur `v3` dans son
 espace, un lot = un commit avec ses trois documents, « poussé » + SHA à la session ergonomie, jamais de push sur
 `develop`, `master` ou `v2-fable`. La session ergonomie tient la spécification, répartit, valide les lectures et
 intègre.
+
+**Relais cloud** (`relais-cloud.md`) : quand la session ergonomie et les sessions des modules sont injoignables et que
+l'utilisateur le dit, une session cloud prend la main : elle arbitre avec ses mots, instancie des agents moins coûteux
+dans les rôles des modules (un arbre git isolé chacun), pousse sur GitHub seulement (branches `v3-<sujet>`, puis `v3`
+en avance rapide pour les essais sur Pages), et tient `docs/technique/V3_JOURNAL_SESSION_CLOUD.md` : point d'étape de
+référence (dernier commit de la session ergonomie), une ligne par décision, consigne de relecture et de retour arrière.
+À son réveil, la session ergonomie relit ce journal, confirme, mitige ou annule, puis intègre sur Framagit.
 
 ## Synchronisation (ce que chaque session fait, sans exception)
 
@@ -62,10 +70,11 @@ intègre.
    la session ergonomie annonce les gels.
 8. **Jamais** : dialogue natif du navigateur, clé ou jeton dans le dépôt ou dans un message, push sur `master`,
    `gitnet` ou `hg`, modification des remotes, suppression d'un fichier déposé par l'utilisateur.
-9. **`v3` suit `develop` par rebase, jamais par cherry-pick ni fusion.** Quand `develop` avance (corrections V2),
-   la session ergonomie rebase `v3` sur `origin/develop` et pousse `--force-with-lease` (framagit et github), puis
-   prévient les sessions V3. Chaque session V3 réaligne alors sa branche locale : `git fetch origin` puis
-   `git rebase origin/v3` (ses seuls commits non poussés sont rejoués) ; une branche sans commit local :
-   `git reset --hard origin/v3`. Personne d'autre ne réécrit `v3`.
+9. **`develop` est la ligne V3 depuis le 23 octobre 2026** (les pages V2 y vivent aussi, inchangées). `v3` est la
+   même ligne : les sessions V3 poussent sur `origin/v3` comme avant ; la session ergonomie avance `develop` en avance
+   rapide sur `v3` à chaque intégration et miroite sur github. Plus de rebase ni de cherry-pick entre `v3` et `develop`.
+   Les correctifs V2 se font sur `v2-maintenance` (tirée de `master` 5.4.0), poussés par BUGS SOG ; la session ergonomie
+   les reporte sur `v3` (cherry-pick, seule exception à la règle 1) ; une release V2 de maintenance part de
+   `v2-maintenance` vers `master`. Les releases V3 (6.x) partent de `develop` vers `master` quand la V2 sera éteinte.
 
 Les règles de codage et de documentation sont dans `CLAUDE.md` à la racine ; ce dossier ne les répète pas.

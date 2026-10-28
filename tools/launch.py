@@ -1354,10 +1354,13 @@ def lan_state():
 
 def lan_open(every=False):
     """Ouvre l'accès du réseau local sur l'adresse privée de la route par défaut (toutes les adresses privées de ce
-    poste si every : VPN, machines virtuelles…), même port, avec un nouveau code ; déjà ouvert, every ajoute les autres."""
+    poste si every : VPN, machines virtuelles…), même port, avec un nouveau code ; déjà ouvert, every ajoute les autres
+    adresses sans toucher au code (ni en émettre un, ni rouvrir un appairage fermé après 30 codes faux : seul « Nouveau
+    code » le fait)."""
     with LAN_LOCK:
         if not LAN['handler'] or (LAN['servers'] and not every):
             return lan_state()
+        was_open = bool(LAN['servers'])
         order = list(LAN['order'])
         for ip in lan_access.addresses()[:None if every else 1]:
             if f'{ip}:{LAN["port"]}' in LAN['hosts']:
@@ -1375,7 +1378,7 @@ def lan_open(every=False):
         if not order:
             say('  Réseau local : aucune adresse privée sur ce poste (réseau 10.x, 172.16-31.x ou 192.168.x).')
             return lan_state()
-        if every and lan_access.code_state().get('code'):
+        if was_open:
             say(f'  Réseau local : adresses ouvertes : {", ".join(order)}')
             return lan_state()
         code = lan_access.new_code()
@@ -1760,12 +1763,12 @@ def frame_batch(a):
             rel = c.get('path') if isinstance(c.get('path'), str) else ''
             full = data_file(rel)
             if not full or rel.startswith('.') or '/.' in rel or FRAME_SKIP.search(rel):
-                return {'ok': False, 'message': f'chemin refusé : {str(c.get("path"))[:200]}'}, 400
+                return {'ok': False, 'message': f'chemin refusé : {str(c.get("path"))[:200]}', 'path': rel}, 400
             text = c.get('text')
             if text is not None and rel.startswith('pilot/ANON/'):
-                return {'ok': False, 'message': f'{rel} : document sans trigramme, gardé sur l’appareil'}, 400
+                return {'ok': False, 'message': f'{rel} : document sans trigramme, gardé sur l’appareil', 'path': rel}, 400
             if text is not None and (not isinstance(text, str) or not rel.lower().endswith(DATA_WRITE_EXT)):
-                return {'ok': False, 'message': f'type de fichier refusé : {rel} ({", ".join(DATA_WRITE_EXT)})'}, 400
+                return {'ok': False, 'message': f'type de fichier refusé : {rel} ({", ".join(DATA_WRITE_EXT)})', 'path': rel}, 400
             fulls[rel] = full
             if text is not None and rel.lower().endswith('.js'):
                 with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as f:
@@ -1774,7 +1777,7 @@ def frame_batch(a):
                 ok, why = data_guard.check_file(tmp)
                 os.remove(tmp)
                 if not ok:
-                    return {'ok': False, 'message': f'{rel} : pas au format des données ({why})'}, 400
+                    return {'ok': False, 'message': f'{rel} : pas au format des données ({why})', 'path': rel}, 400
             todo.append((rel, text))
         for rel, text in todo:
             full = fulls[rel]

@@ -12,19 +12,20 @@
 const CACHE = 'sog-frame-v1',
   SCOPE = new URL('./', self.location).pathname, // …/frame/
   ROOT = new URL('../', self.location).pathname, // racine de la suite
-  SHELL = ['./', 'app.js', 'frame.css', 'design/tokens.css', 'design/primitives.css', 'lib/icons.js', 'manifest.webmanifest',
+  SHELL = ['./', 'app.js', 'frame.css', 'design/tokens.css', 'design/primitives.css', 'design/metro.css', 'design/swiss.css',
+    'design/cupertino.css', 'design/material.css', 'design/aqua.css', 'lib/icons.js',
+    'manifest.webmanifest',
     'store/frame_data.js', 'store/transport_github.js',
     'store/transport_launcher.js', 'aerodb/zones.js', 'aerodb/aircraft.js', 'aerodb/aerodb.js', 'aerodb/registry.js', 'aerodb/sheets.js',
-    'aerodb/lnmperf.js', 'aerodb/aar.js',
-    'settings/admin_links.js', 'settings/config.js', 'settings/join.js', 'lib/qr.js', 'lib/clipboard.js', 'settings/settings.js',
+    // aerodb/lnmperf.js et aerodb/aar.js : chargés par aerodb à leur première demande, gardés alors (pas à l'installation)
+    'settings/admin_links.js', 'settings/config.js', 'settings/join.js', 'lib/qr.js', 'lib/clipboard.js', 'settings/kit.js',
+    'settings/launcher.js',
+    'settings/access.js', 'settings/diagnostic.js', 'settings/admin.js', 'settings/groups.js', 'settings/settings.js',
     'lib/markdown.js',
-    'lib/dom.js', 'lib/current_flight.js',
+    'lib/dom.js', 'lib/current_flight.js', 'lib/time.js',
     'help/help.js', 'help/roadmap.js', 'help/roadmap.json',
-    'help/pilot.fr.md', 'help/pilot.en.md', 'help/pilot.de.md', 'help/pilot.es.md',
-    // tutoriels (anglais et français ; leurs captures sont gardées au premier passage)
-    'help/tutorial/join-airline.en.md', 'help/tutorial/join-airline.fr.md', 'help/tutorial/prepare-flight.en.md',
-    'help/tutorial/prepare-flight.fr.md',
-    'help/tutorial/write-report.en.md', 'help/tutorial/write-report.fr.md',
+    // l'aide (manuel, tutoriels) : seulement dans la langue de l'appli, demandée par la page (message « precache ») ;
+    // les autres langues et les captures des tutoriels sont gardées à leur première lecture
     '../assets/favicon-flight.svg'
   ];
 /** Fichier de l'appli (gardé) ? Le cadre, les modules, l'icône ; pas les essais. */

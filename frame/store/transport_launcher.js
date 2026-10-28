@@ -36,6 +36,10 @@
       });
     }
     const j = await r.json().catch(() => ({}));
+    // 400 qui nomme un chemin : cette écriture est refusée pour de bon (la couche la sort de la file)
+    if (r.status === 400 && j.path) throw Object.assign(new Error(j.message || 'refused'), {
+      refused: String(j.path)
+    });
     if (!r.ok) throw Object.assign(new Error(j.message || j.error || `launcher ${r.status}`), {
       status: r.status,
       conflict: r.status === 409
@@ -99,7 +103,9 @@
   }
   /** Page servie par un lanceur ? { data, dataGit } ; null sinon (site, appli, fichier). */
   launcher.detect = async () => {
-    if (!/^https?:$/.test(location.protocol)) return null;
+    // un lanceur ne sert qu'en http (ce poste, ou une adresse privée du réseau local) : en https (GitHub Pages), aucun
+    // aller-retour au démarrage
+    if (location.protocol !== 'http:') return null;
     try {
       const j = await call('__setup/status');
       return j?.server ? {

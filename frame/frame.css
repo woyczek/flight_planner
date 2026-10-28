@@ -1,9 +1,40 @@
-/* V3 frame — mise en page de l'appli : en-tête (menu sur téléphone, nom, bouton de synchronisation, aide, réglages),
-   colonne des verbes (à gauche sur écran, tiroir sur téléphone), vue du module, notes et fenêtres du cadre. Les jetons
-   (couleurs, polices, rayons, densité ; designs standard, cabinet, field ; jour / nuit) et les primitives données aux
+/* V3 frame — mise en page de l'appli : en-tête (nom, bouton de synchronisation, aide, réglages), colonne des verbes (à gauche
+   sur écran) ou barre d'onglets du bas (téléphone), vue du module, notes et fenêtres du cadre. Les jetons
+   (couleurs, polices, rayons, densité ; designs standard, cabinet, field, metro, swiss, cupertino, material, aqua ; jour / nuit) et les primitives données aux
    modules viennent de frame/design/ (importés ici : une page qui charge frame.css a tout). */
 @import url("design/tokens.css");
 @import url("design/primitives.css");
+@import url("design/metro.css");
+@import url("design/swiss.css");
+@import url("design/cupertino.css");
+@import url("design/material.css");
+@import url("design/aqua.css");
+/* Mesures du cadre, données aux modules (frame/INTEGRATION.md § 9.2) : un module ne recopie jamais ces nombres.
+   --f-head-h : l'en-tête, une seule ligne (6 + 44 + 6 + filet de 1 px), à tout état et toute largeur.
+   --f-vh : la hauteur de la fenêtre (dvh quand le navigateur le sait : la barre d'adresse d'un téléphone n'y compte pas).
+   --f-view-h : la hauteur dont dispose un module de vue fixe (html.f-fixed) : la fenêtre moins l'en-tête (et la barre du
+   bas sur téléphone) ; elle vaut --f-split-h dans une vue double (.f-view.f-split) et --f-pane-h dans le volet (.f-pane),
+   donc « height: var(--f-view-h) » est juste partout.
+   --f-split-h : le module principal d'une vue double fixe (la vue a 16 px de marge en haut et en bas).
+   --f-pane-h : le module du volet (le volet moins sa barre de fermeture de 44 px).
+   --f-rail-w : la largeur du rail d'icônes à gauche, en paysage sur un téléphone (html.f-land, plus bas) ; la barre du bas n'y
+   prend plus de hauteur (--f-tab-space vaut 0). */
+:root {
+  --f-head-h: 57px;
+  --f-rail-w: 44px;
+  --f-vh: 100vh;
+  --f-view-pad: 16px;
+  --f-pane-top: calc(var(--f-head-h) + 13px);
+  --f-pane-max-h: calc(var(--f-vh) - var(--f-head-h) - 29px);
+  --f-view-h: calc(var(--f-vh) - var(--f-head-h));
+  --f-split-h: calc(var(--f-vh) - var(--f-head-h) - 2 * var(--f-view-pad));
+  --f-pane-h: calc(var(--f-pane-max-h) - var(--sog-touch))
+}
+@supports (height: 100dvh) {
+  :root {
+    --f-vh: 100dvh
+  }
+}
 * {
   box-sizing: border-box
 }
@@ -19,8 +50,55 @@ body {
   min-height: 100%;
   display: grid;
   grid-template-rows: auto 1fr;
-  grid-template-columns: 210px 1fr;
+  /* minmax(0, …) : une colonne ne s'élargit jamais à la largeur minimale de son contenu (un en-tête chargé élargissait
+     toute la page au-delà de l'écran du téléphone) */
+  grid-template-columns: 210px minmax(0, 1fr);
   grid-template-areas: "head head" "nav main"
+}
+/* vue fixe (meta.fixed d'un module, frame/INTEGRATION.md § 2) : <html class="f-fixed"> — la page ne défile plus ; l'en-tête
+   en haut, la vue prend tout le reste (jusqu'à la barre du bas sur téléphone, jusqu'au bas de la fenêtre sur écran) ; la
+   racine du module (section.f-module) la remplit et range ses blocs en colonne (carte, puis feuille) */
+html.f-fixed,
+html.f-fixed body {
+  height: 100%;
+  overflow: hidden
+}
+html.f-fixed body {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  overscroll-behavior: none
+}
+html.f-fixed .f-nav {
+  position: static;
+  height: auto;
+  align-self: stretch
+}
+html.f-fixed .f-view:not(.f-split):not(.f-over) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden
+}
+/* :where() : aucun poids. Le module qui pose son propre display (grille, bloc) l'emporte sans !important ; celui qui n'en pose
+   pas garde la colonne de la vue fixe */
+:where(html.f-fixed .f-view:not(.f-split):not(.f-over)>.f-module) {
+  flex: 1 1 0;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column
+}
+/* vue double : le module principal fixe a la hauteur de la vue moins ses marges ; le module fixe du volet, celle du volet
+   moins sa barre (data-fixed est posé par le cadre d'après meta.fixed) */
+:where(html.f-fixed .f-view.f-split:not(.f-over)>.f-module),
+:where(.f-pane>.f-module[data-fixed]) {
+  height: var(--f-view-h);
+  min-height: 0;
+  display: flex;
+  flex-direction: column
 }
 .f-head {
   grid-area: head;
@@ -31,11 +109,23 @@ body {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  background: var(--sog-surface);
-  border-bottom: 1px solid var(--sog-border)
+  min-width: 0;
+  /* une seule ligne de --f-head-h : jamais plus haut, quel que soit l'état (retour, pastilles, écran du cadre) ; ses enfants
+     n'ont pas de marge verticale (la règle « p.f-back » de l'aide ne les atteint plus, et rien ne les y remettrait) */
+  height: var(--f-head-h);
+  flex-wrap: nowrap;
+  overflow: hidden;
+  background: var(--sog-head-bg, var(--sog-surface));
+  border-bottom: var(--sog-head-border, 1px solid var(--sog-border));
+  box-shadow: var(--sog-head-shadow, none)
+}
+.f-head>* {
+  margin-top: 0;
+  margin-bottom: 0
 }
 .f-head .f-name {
   font-weight: 700;
+  text-shadow: var(--sog-head-text-shadow);
   margin-right: auto;
   min-width: 0;
   overflow: hidden;
@@ -55,9 +145,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap
-}
-.f-burger {
-  display: none
 }
 .f-sync[data-state="ok"] .f-dot {
   background: var(--sog-ok)
@@ -80,24 +167,21 @@ body {
 .f-sync .f-dot {
   margin-right: 8px
 }
-.f-lbl-short {
-  display: none
-}
 @keyframes f-pulse {
   to {
     opacity: .3
   }
 }
-/* colonne des verbes collée sous l'en-tête (57 px) : elle reste à l'écran quand la page défile (aide, réglages) */
+/* colonne des verbes collée sous l'en-tête (--f-head-h) : elle reste à l'écran quand la page défile (aide, réglages) */
 .f-nav {
   grid-area: nav;
   padding: 10px 8px;
-  border-right: 1px solid var(--sog-border);
-  background: var(--sog-surface);
+  border-right: var(--sog-nav-border, 1px solid var(--sog-border));
+  background: var(--sog-nav-bg, var(--sog-surface));
   position: sticky;
-  top: 57px;
+  top: var(--f-head-h);
   align-self: start;
-  height: calc(100vh - 57px);
+  height: calc(var(--f-vh) - var(--f-head-h));
   overflow: auto
 }
 /* écran du cadre par-dessus un module : le module (et son volet) masqué, pas démonté ; l'écran prend toute la zone, vue
@@ -133,8 +217,9 @@ body {
   text-decoration: none
 }
 .f-nav a[aria-current="page"] {
-  background: var(--sog-accent);
-  color: var(--sog-accent-ink)
+  background: var(--sog-btn-primary-bg, var(--sog-accent));
+  color: var(--sog-btn-primary-ink, var(--sog-accent-ink));
+  text-shadow: var(--sog-btn-primary-text-shadow)
 }
 .f-view {
   grid-area: main;
@@ -202,7 +287,8 @@ body {
   display: none
 }
 @media (max-width: 760px) {
-  .f-head.f-has-back .f-name {
+  /* le nom de l'application cède la place au bouton retour ; le titre du module (html.f-titled), lui, reste */
+  html:not(.f-titled) .f-head.f-has-back .f-name {
     display: none
   }
 }
@@ -245,10 +331,14 @@ body {
   grid-column: 2;
   grid-row: 1 / span 20;
   position: sticky;
-  top: 70px;
-  max-height: calc(100vh - 86px);
+  top: var(--f-pane-top);
+  max-height: var(--f-pane-max-h);
   overflow: auto;
-  min-width: 0
+  min-width: 0;
+  --f-view-h: var(--f-pane-h)
+}
+.f-view.f-split {
+  --f-view-h: var(--f-split-h)
 }
 @media (max-width: 979px) {
   .f-pane,
@@ -273,7 +363,56 @@ body {
 .f-level input {
   margin-top: 3px
 }
+/* groupes de cartes des réglages (plus de sept cartes) : un titre repliable de la taille d'un titre de carte, pastille
+   d'attention à droite */
+.f-group>summary {
+  font-weight: 600;
+  font-size: 1.1em
+}
+.f-group>summary>span {
+  flex: 1;
+  min-width: 0
+}
 /* aide (frame/help/help.js) : panneau replié en tête d'un module, écran #help ; tableaux en listes sur téléphone */
+.f-help>summary>span {
+  flex: 1;
+  min-width: 0
+}
+/* ✕ « Masquer » de la carte « Comment s'en servir » : cible de 44 px dans la ligne de titre, sans cadre */
+.f-help-x {
+  flex: none;
+  width: var(--sog-touch);
+  height: var(--sog-touch);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sog-muted)
+}
+/* aide ouverte au paragraphe du « ? » : fond accent à 20 % pendant 1,5 s (classe posée puis retirée par help.js) ; l'ancre se
+   cale sous l'en-tête collant */
+.f-doc[data-chapter],
+.f-doc p,
+.f-doc li,
+.f-doc h1,
+.f-doc h2,
+.f-doc h3 {
+  scroll-margin-top: calc(var(--f-head-h) + 12px);
+  transition: background-color .5s
+}
+.f-doc .f-hl {
+  background: color-mix(in srgb, var(--sog-accent) 20%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--sog-accent) 20%, transparent);
+  border-radius: var(--sog-radius-s)
+}
+.f-howto-show {
+  margin: 4px 0 8px
+}
+.f-howto-show a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--sog-touch)
+}
 .f-doc {
   overflow-wrap: anywhere
 }
@@ -298,21 +437,35 @@ body {
   text-decoration: none;
   font-size: .75em
 }
-/* réglages, carte Administration : une entrée par ligne, lien à hauteur tactile */
+/* réglages, carte Administration : une page par ligne, un bouton (hauteur tactile) puis sa phrase ; le volet d'un bouton
+   (limite de la zone du vol, export d'une configuration) s'ouvre sous sa ligne */
 .f-admin {
   list-style: none;
   padding: 0;
   margin: 4px 0
 }
 .f-admin li {
-  padding: 6px 0;
+  padding: 8px 0;
   border-top: 1px solid var(--sog-border)
 }
-.f-admin a,
-.f-admin b {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--sog-touch)
+.f-admin .f-btn,
+.f-admin button {
+  max-width: 100%;
+  text-align: left
+}
+.f-admin li>.f-muted {
+  display: block;
+  margin-top: 4px
+}
+.f-admin-url code {
+  overflow-wrap: anywhere;
+  font: var(--sog-size-xs)/1.35 var(--sog-font-mono)
+}
+.f-admin li>.f-row {
+  margin-top: 4px
+}
+.f-adminpanel {
+  margin-top: 8px
 }
 /* assistant « Rejoindre la compagnie » et gestes de l'administrateur : pas numérotés aérés ; code QR à la taille d'un
    écran de téléphone, toujours sur fond blanc */
@@ -390,7 +543,9 @@ body {
 .f-toc li.f-toc2 a {
   padding-left: 16px
 }
-.f-back {
+/* lien « ← » en tête d'un chapitre d'aide (p.f-back) : pas le bouton de retour de l'en-tête (.f-head .f-back), qui partage la
+   classe et à qui cette marge de 16 px donnait 73 px de haut */
+p.f-back {
   margin: 4px 0 var(--sog-gap)
 }
 @container (max-width: 760px) {
@@ -625,39 +780,428 @@ body {
   display: grid;
   gap: 12px
 }
-/* téléphone : une colonne, verbes dans un tiroir ouvert par le bouton de menu */
+/* ⚙ de l'en-tête : la pastille de l'état de l'appli (V3_SPECIFICATION.md § 7.1 règle 14) ; verte quand quelque chose s'applique
+   (vol en cours, CR à écrire), dessinée dans le bouton (les bords de l'en-tête rognent ce qui dépasse) */
+#fDevice {
+  position: relative
+}
+#fDevice[data-badge]::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sog-ok);
+  box-shadow: 0 0 0 2px var(--sog-surface)
+}
+/* téléphone : pastille orange quand une chose demande de l'attention (pas de trigramme, écritures en attente, conflits, hors
+   ligne, erreur) ; elle l'emporte sur la verte (le bouton de synchronisation n'est plus dans l'en-tête) */
 @media (max-width: 760px) {
-  body {
-    grid-template-columns: 1fr;
-    grid-template-areas: "head" "main"
+  #fDevice[data-attn]::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--sog-warn);
+    box-shadow: 0 0 0 2px var(--sog-surface)
   }
-  .f-burger {
-    display: inline-block
-  }
-  .f-nav {
-    position: fixed;
-    inset: 57px 0 0 0;
-    z-index: 10;
-    border-right: 0;
+}
+/* bloc « État » de tête des Réglages : une ligne de 44 px au moins par information, un chevron quand elle mène quelque part,
+   une pastille quand elle compte (verte : une nouvelle, orange : de l'attention) ; la carte garde son titre et ses bords, les
+   lignes vont d'un bord à l'autre */
+.f-card.f-status {
+  padding: 12px 0 0;
+  overflow: hidden
+}
+.f-status>h2 {
+  margin: 0 14px 8px
+}
+.f-status-list {
+  list-style: none;
+  margin: 0;
+  padding: 0
+}
+.f-status .f-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--sog-touch);
+  padding: 6px 12px 6px 16px;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--sog-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--sog-fg);
+  font: inherit;
+  text-align: left
+}
+.f-status button.f-status-row {
+  cursor: pointer
+}
+.f-status button.f-status-row:active {
+  background: color-mix(in srgb, var(--sog-accent) 12%, var(--sog-surface))
+}
+.f-status-txt {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  overflow-wrap: anywhere
+}
+.f-status-txt small {
+  color: var(--sog-muted);
+  font-size: var(--sog-size-s)
+}
+.f-status-row .f-icon {
+  flex: none;
+  color: var(--sog-muted)
+}
+.f-status-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sog-ok)
+}
+/* pas de pastille : sa place reste vide, les textes restent alignés */
+.f-status-dot[hidden] {
+  display: block;
+  visibility: hidden
+}
+.f-status-dot[data-attn] {
+  background: var(--sog-warn)
+}
+/* la ligne « Position » remplace, sur téléphone, le bouton de position de l'en-tête : sur un écran l'en-tête le garde */
+@media (min-width: 761px) {
+  .f-status-list>li[data-phone] {
     display: none
   }
-  body.f-nav-open .f-nav {
-    display: block
+}
+/* une carte amenée par une ligne d'état (« Trigramme non réglé › ») s'arrête sous l'en-tête collant */
+.f-screen [data-card] {
+  scroll-margin-top: calc(var(--f-head-h) + 8px)
+}
+/* barre du bas : seulement sur téléphone (la colonne des verbes la remplace sur un écran) */
+.f-tabbar {
+  display: none
+}
+/* téléphone : une colonne, cinq onglets en bas (Préparer · Carte · CR · Vols · Météo) à la place du tiroir.
+   --f-tab-h : hauteur de la barre sans la zone sûre ; --f-tab-space : tout ce qu'elle prend en bas de la fenêtre (filet,
+   barre, zone sûre de l'appareil), pour ce qui se colle en bas par-dessus la page (barre de résultat .f-bar, notes) */
+@media (max-width: 760px) {
+  :root {
+    --f-tab-h: 56px;
+    --f-tab-space: calc(var(--f-tab-h) + 1px + env(safe-area-inset-bottom, 0px));
+    /* la vue fixe s'arrête à la barre du bas */
+    --f-view-h: calc(var(--f-vh) - var(--f-head-h) - var(--f-tab-space))
+  }
+  body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: "head" "main" "tabs"
+  }
+  html.f-fixed body {
+    grid-template-rows: auto minmax(0, 1fr) auto
+  }
+  /* en-tête du téléphone (règle 14) : le nom (le retour en flèche seule prend sa place), « ? » (l'aide de l'écran) et ⚙ (les
+     Réglages, avec la pastille d'état). Le bouton de synchronisation et la pastille du trigramme sont la couleur du ⚙ et des
+     lignes du bloc d'état des Réglages, la position réelle et le lanceur n'y sont plus (frame/SPEC.md § 3.1) */
+  .f-head .f-sync,
+  .f-head .f-who,
+  .f-head .f-host,
+  .f-head .f-live {
+    display: none
+  }
+  .f-back span {
+    display: none
+  }
+  .f-back {
+    flex: 0 1 var(--sog-touch);
+    /* une cible tactile, qui ne rétrécit que si l'en-tête est encombré */
+    min-width: 0;
+    justify-content: center;
+    padding: 0
+  }
+  .f-nav {
+    display: none
   }
   .f-view {
     padding: 12px
   }
-  .f-sync .f-lbl-long {
+  /* la barre : dernière ligne de la grille, collée au bas de la fenêtre (rien ne passe dessous : la vue est au-dessus) ;
+     la zone sûre de l'appareil (barre d'accueil de l'iPhone) est son bas, sur la même couleur */
+  .f-tabbar {
+    grid-area: tabs;
+    display: block;
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    background: var(--sog-surface);
+    border-top: 1px solid var(--sog-border);
+    padding-bottom: env(safe-area-inset-bottom, 0px)
+  }
+  .f-tabbar:empty {
     display: none
   }
-  /* bouton de synchronisation : la pastille et un état court (✓, 3, ⟳, ✕) ; le détail dans l'infobulle */
-  .f-sync .f-lbl {
+  /* notifications au-dessus de la barre */
+  .f-notes {
+    bottom: calc(var(--f-tab-space) + 8px)
+  }
+}
+/* les cases de la barre : icône (au trait, ou pleine sur l'onglet choisi), libellé d'un mot. La barre n'est affichée que sur
+   téléphone (ci-dessus) et, en paysage, en rail à gauche (html.f-land, plus bas) : ces règles ne dépendent donc pas de la
+   largeur de la fenêtre */
+.f-tabbar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex
+}
+.f-tabbar li {
+  flex: 1 1 0;
+  min-width: 0
+}
+/* un onglet : l'icône au-dessus d'un libellé d'un mot ; hauteur de la barre, au moins une cible tactile */
+.f-tabbar a {
+  --f-tab-pill: color-mix(in srgb, var(--sog-accent) 14%, var(--sog-surface));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: max(var(--f-tab-h), var(--sog-touch));
+  padding: 4px 2px;
+  color: var(--sog-muted);
+  font-size: 11px;
+  line-height: 1.2;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent
+}
+/* le plus long libellé (« Einstellungen ») tient dans une cinquième de 360 px */
+@media (max-width: 400px) {
+  .f-tabbar a {
+    font-size: 10px
+  }
+}
+.f-tab-ico {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 30px;
+  border-radius: 15px;
+  transition: background-color .15s
+}
+.f-tab-ico .f-icon {
+  grid-area: 1 / 1;
+  width: 24px;
+  height: 24px
+}
+.f-tab-lbl {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+/* l'onglet choisi change de forme : l'icône pleine sur une pastille arrondie, le libellé en couleur d'accent et plus gras ;
+   les autres gardent l'icône au trait, en gris */
+.f-tabbar .f-icon[data-filled],
+.f-tabbar a[aria-current="page"] .f-icon:not([data-filled]) {
+  display: none
+}
+.f-tabbar a[aria-current="page"] .f-icon[data-filled] {
+  display: block
+}
+.f-tabbar a[aria-current="page"] {
+  color: var(--sog-link);
+  font-weight: 600
+}
+.f-tabbar a[aria-current="page"] .f-tab-ico {
+  background: var(--f-tab-pill)
+}
+.f-tabbar a:active .f-tab-ico {
+  background: var(--f-tab-pill)
+}
+/* second toucher sur l'onglet choisi d'un groupe de modules : un popover au-dessus de la barre (frame/INTEGRATION.md § 9.1) ;
+   posé par app.js (haut, gauche, --f-pop-caret) ; des lignes de 44 px, le module affiché marqué ; jamais sur un écran */
+.f-tabpop {
+  position: fixed;
+  z-index: 7;
+  min-width: 200px;
+  max-width: calc(100vw - 16px);
+  padding: 4px 0;
+  background: var(--sog-surface);
+  color: var(--sog-fg);
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  box-shadow: var(--sog-shadow)
+}
+/* la pointe, sur l'onglet */
+.f-tabpop::after {
+  content: "";
+  position: absolute;
+  left: var(--f-pop-caret, 50%);
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  background: var(--sog-surface);
+  border: solid var(--sog-border);
+  border-width: 0 1px 1px 0;
+  transform: rotate(45deg)
+}
+/* trois classes : les règles des designs sur les boutons (`[data-design] :is(button, .f-btn)`) ne les atteignent pas */
+.f-tabpop button.f-tabpop-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--sog-touch);
+  margin: 0;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--sog-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer
+}
+.f-tabpop button.f-tabpop-row[aria-current] {
+  background: color-mix(in srgb, var(--sog-accent) 12%, var(--sog-surface));
+  font-weight: 600
+}
+.f-tabpop button.f-tabpop-row:active {
+  background: color-mix(in srgb, var(--sog-accent) 18%, var(--sog-surface))
+}
+@media (min-width: 761px) {
+  .f-tabpop {
     display: none
   }
-  .f-sync .f-lbl-short {
-    display: inline
-  }
-  .f-sync .f-dot {
-    margin-right: 4px
-  }
+}
+/* ---- paysage sur un téléphone (V3_SPECIFICATION.md § 7.1 règle 7, frame/INTEGRATION.md § 9) : <html class="f-land"> est posé
+   par app.js quand la fenêtre est plus large que haute et de moins de 1024 px (téléphone ou petite tablette tournée). La barre
+   du bas devient un rail vertical d'icônes à gauche (--f-rail-w, sans libellé : le nom accessible est l'aria-label), pleine
+   hauteur sous l'en-tête, et la vue prend le reste de la largeur ; --f-tab-space vaut 0 (la hauteur de la vue n'y perd rien).
+   Hors d'un @media : ces règles valent sous 761 px (où la barre était en bas) comme au-dessus (où la colonne des verbes de 210 px
+   était affichée) ; les zones sûres de l'appareil (encoche à gauche ou à droite, barre d'accueil en bas) sont laissées libres. */
+html.f-land {
+  --f-tab-space: 0px;
+  --f-view-h: calc(var(--f-vh) - var(--f-head-h) - env(safe-area-inset-bottom, 0px))
+}
+html.f-land body,
+html.f-land.f-fixed body {
+  grid-template-columns: calc(var(--f-rail-w) + env(safe-area-inset-left, 0px)) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "head head" "tabs main"
+}
+html.f-land .f-head {
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px))
+}
+html.f-land .f-nav {
+  display: none
+}
+html.f-land .f-tabbar {
+  grid-area: tabs;
+  display: block;
+  position: sticky;
+  top: var(--f-head-h);
+  bottom: auto;
+  align-self: start;
+  z-index: 6;
+  height: calc(var(--f-vh) - var(--f-head-h));
+  overflow: hidden auto;
+  padding: 4px 0 env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  background: var(--sog-surface);
+  border-top: 0;
+  /* le filet à droite est dedans (une bordure ferait des cases de 43 px) */
+  box-shadow: inset -1px 0 0 var(--sog-border)
+}
+html.f-land .f-tabbar:empty {
+  display: none
+}
+html.f-land .f-tabbar ul {
+  flex-direction: column;
+  gap: 4px;
+  padding: 0
+}
+html.f-land .f-tabbar li {
+  flex: none
+}
+html.f-land .f-tabbar a {
+  min-height: var(--sog-touch);
+  padding: 4px 0
+}
+html.f-land .f-tab-ico {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px
+}
+html.f-land .f-tab-lbl {
+  display: none
+}
+html.f-land .f-view {
+  margin-right: env(safe-area-inset-right, 0px)
+}
+html.f-land.f-fixed .f-view:not(.f-split):not(.f-over) {
+  padding: 0 0 env(safe-area-inset-bottom, 0px) 0
+}
+/* le popover du groupe s'ouvre à droite du rail (app.js le place : haut aligné sur l'icône, --f-pop-caret = sa pointe) ; il
+   n'est montré qu'en paysage sous 761 px et au-dessus : la règle des écrans (plus haut) le cachait */
+html.f-land .f-tabpop {
+  display: block
+}
+html.f-land .f-tabpop::after {
+  left: -6px;
+  top: var(--f-pop-caret, 50%);
+  bottom: auto;
+  margin: -5px 0 0;
+  border-width: 0 0 1px 1px
+}
+/* couche de superposition d'un module fixe (frame/INTEGRATION.md § 9.3) : posée en pixels par app.js sur la zone de carte du
+   module ; la vue est son repère, hors de la grille de la vue double (une case de grille changerait son repère) */
+html.f-fixed .f-view {
+  position: relative
+}
+.f-view>.f-overlay,
+.f-pane>.f-overlay {
+  grid-column: auto;
+  grid-row: auto
+}
+/* plein écran d'un module fixe (frame/INTEGRATION.md § 9.4) : <html class="f-fixed f-full"> — l'en-tête, la barre du bas et la
+   colonne des verbes sont retirés (sur écran comme sur téléphone : la colonne des verbes se cache plutôt que de se réduire aux
+   icônes ; le bouton plein écran, qui montre alors « réduire », et Échap suffisent à revenir) ; la vue prend toute la fenêtre. Les mesures données aux modules suivent :
+   l'en-tête et la barre pèsent 0, --f-view-h vaut --f-vh (moins les zones sûres de l'appareil, que la vue laisse libres). */
+html.f-fixed.f-full {
+  --f-head-h: 0px;
+  --f-tab-space: 0px;
+  --f-view-h: calc(var(--f-vh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))
+}
+html.f-fixed.f-full .f-head,
+html.f-fixed.f-full .f-nav,
+html.f-fixed.f-full .f-tabbar {
+  display: none
+}
+html.f-fixed.f-full body {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "main"
+}
+html.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px)
+}
+/* plein écran en paysage : l'en-tête et le rail sont retirés par les règles du plein écran ci-dessus (la grille, --f-view-h) ;
+   la feuille en colonne reste (primitives.css) et la carte prend tout le reste ; les zones sûres de l'appareil restent libres
+   des quatre côtés (l'encoche est à gauche ou à droite : le côté droit est la marge de la vue, posée plus haut) */
+html.f-land.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px)
 }

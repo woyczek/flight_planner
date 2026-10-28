@@ -532,25 +532,44 @@
   // peek : arbre du moment lu pour une lecture ou une liste faites avant le premier passage (en mémoire seulement :
   // l'arbre gardé reste celui du dernier tirage, qui sait ainsi ce qui a changé depuis)
   let treeChecked = false,
-    peek = null;
+    peek = null,
+    peekP = null; // lecture de l'arbre du moment en cours : partagée par les lectures lancées en même temps
   /** Arbre à jour pour une lecture : celui du dernier tirage s'il a été comparé à la tête dans cette page, sinon celui
-   *  du moment (tête relue, arbre lu si elle a bougé) ; hors ligne ou en échec : l'arbre gardé. */
+   *  du moment (tête relue, arbre lu si elle a bougé), lu une seule fois pour toutes les lectures qui l'attendent (un
+   *  module qui lit ses références au premier passage en lance plusieurs à la fois) ; hors ligne ou en échec : l'arbre
+   *  gardé. */
   async function liveTree(T, remote) {
     if (treeChecked || navigator.onLine === false) return remote?.tree || null;
     if (peek) return peek.tree;
-    try {
-      const head = await T.head();
-      peek = {
-        head,
-        tree: head === remote?.head && remote?.tree ? remote.tree : await T.tree(head)
-      };
-      return peek.tree;
-    } catch {
-      return remote?.tree || null;
-    }
+    peekP ||= (async () => {
+      try {
+        const head = await T.head();
+        peek = {
+          head,
+          tree: head === remote?.head && remote?.tree ? remote.tree : await T.tree(head)
+        };
+        return peek.tree;
+      } catch {
+        return remote?.tree || null;
+      }
+    })().finally(() => peekP = null);
+    return peekP;
   }
   /** Lit un fichier absent du cache par le transport (arbre lu d'abord s'il n'est pas connu) ; enveloppe ou null. */
   let lastReadError = null; // { path, message, at } : dernière lecture d'un fichier en échec (diagnostic)
+  let treeNowP = null; // { head, tree } du moment en cours de lecture, partagé tant qu'il n'est pas lu
+  /** Tête et arbre du dépôt du moment, lus une seule fois pour toutes les demandes faites pendant la lecture : au
+   *  premier passage, la reprise des copies locales et les premières lectures d'un module monté aussitôt partagent une
+   *  seule chaîne ref → commit → arbre au lieu d'une chacune. Rien n'est gardé après : ni un échec (hors ligne), ni un
+   *  arbre qui vieillirait. */
+  const treeNow = T => treeNowP ||= (async () => {
+    const head = await T.head();
+    return {
+      head,
+      tree: await T.tree(head)
+    };
+  })().finally(() => treeNowP = null);
+
   function fetchOne(path, policy) {
     if (fetching.has(path)) return fetching.get(path);
     const job = (async () => {
@@ -562,11 +581,10 @@
         tree = await refTree(T);
       } else {
         let remote = await getMeta('remote');
+        // aucun arbre encore (tout premier passage) : celui du moment, lu une seule fois pour tout ce qui le demande
         if (!remote?.tree) {
-          const head = await T.head();
           remote = {
-            head,
-            tree: await T.tree(head),
+            ...(await treeNow(T)),
             at: Date.now()
           };
           await setMeta('remote', remote);
@@ -705,7 +723,7 @@
       if (reason !== 'write' && who) await exchange(T, result);
       // premier passage avec un dépôt après un usage sans échange : les copies écrites ici sont reprises
       const mode = await getMeta('mode');
-      if (mode?.kind === 'local' || (!mode && !(await getMeta('remote')))) await adoptLocal(T, await T.head(), result);
+      if (mode?.kind === 'local' || (!mode && !(await getMeta('remote')))) await adoptLocal(T, (await treeNow(T)).tree, result);
       for (let i = 0; i < TRIES; i++) {
         const head = await T.head();
         const pulled = await pull(T, head);
@@ -730,6 +748,11 @@
           if (reason !== 'write' && who) await exchange(T, result);
           return done(result);
         } catch (e) {
+          // écriture refusée pour de bon (chemin ou type interdit) : sortie de la file vers les conflits, le reste repart
+          if (e?.refused && await refuseWrite(e.refused, e.message, T.id)) {
+            i--;
+            continue;
+          }
           if (!e?.conflict) throw e; // le dépôt a bougé pendant l'envoi : tirer et repousser
         }
       }
@@ -738,6 +761,30 @@
       result.error = e?.offline ? 'offline' : e?.message || String(e);
       return done(result);
     }
+  }
+  /** Écriture refusée définitivement par le transport (chemin ou type interdit) : retirée de la file, gardée dans les
+   *  conflits (side 'refused' : ce qui devait être écrit, la raison, le transport) pour la reprendre ou l'écarter ; vrai
+   *  si elle était en file. */
+  async function refuseWrite(path, why, by) {
+    const p = await idb('pending', 'get', path);
+    if (!p) return false;
+    await idb('pending', 'delete', path);
+    await idb('conflicts', 'add', {
+      path,
+      kept: null,
+      lost: p.text,
+      side: 'refused',
+      why: String(why || '').slice(0, 300),
+      by: by || '',
+      at: new Date().toISOString()
+    });
+    window.dispatchEvent(new CustomEvent('frame-data-conflict', {
+      detail: {
+        count: 1
+      }
+    }));
+    emitStatus();
+    return true;
   }
   /** Écritures en file sous un préfixe gardé sur l'appareil (pilot/ANON/, mises en file avant cette règle) : rangées dans
    *  le cache de l'appareil ; une suppression reste en file (elle retire du dépôt un fichier qui y était déjà). */
@@ -762,9 +809,8 @@
    *  dépôt devient une écriture en attente ; présente des deux côtés et différente, fusion habituelle sans base commune
    *  (la plus récente gagne, l'autre est gardée dans les conflits) ; identique, rien. Ni le cache de l'appareil ni les
    *  références. Faite ici plutôt qu'au tirage, qui ne regarde que les préfixes des modules montés. */
-  async function adoptLocal(T, head, result) {
-    const tree = await T.tree(head),
-      same = (path, a, b) => a === b || JSON.stringify(valueOf(path, a)) === JSON.stringify(valueOf(path, b));
+  async function adoptLocal(T, tree, result) {
+    const same = (path, a, b) => a === b || JSON.stringify(valueOf(path, a)) === JSON.stringify(valueOf(path, b));
     for (const d of await idb('docs', 'getAll')) {
       const pol = d.policy || policyOf(d.path) || 'document';
       if (pol === 'cache' || pol === 'reference' || isCache(d.path) || tree[d.path] === d.rev || await idb('pending', 'get', d.path))
@@ -1052,7 +1098,7 @@
    *  synchronisation), le conflit est marqué vu. Retour : le chemin, ou '' si le conflit n'existe plus. */
   async function restore(id) {
     const c = await idb('conflicts', 'get', id);
-    if (!c?.lost) return '';
+    if (!c?.lost && !(c?.side === 'refused' && c.lost === null)) return ''; // une suppression refusée se reprend aussi
     await idb('pending', 'put', {
       path: c.path,
       text: c.lost,
@@ -1108,13 +1154,20 @@
     return n;
   }
   const EXPORT = 'sog-frame-export/1';
+  // clés de l'appareil (jeton GitHub, clé météo) : un document « cache » comme l'identité, mais jamais dans une
+  // sauvegarde ni reprise d'une sauvegarde, et gardé par un remplacement
+  const KEYS = 'device/keys.json';
+  // réserve météo de l'appareil (frame/lib/weather_store.js) : une réserve relisible à sa source, propre à cet appareil
+  // (son décompte des appels compris), jamais dans une sauvegarde ni reprise d'une sauvegarde
+  const WEATHER = 'cache/weather/';
+  const saved = path => path !== KEYS && !path.startsWith(WEATHER);
   /** Sauvegarde des données de l'appareil en un fichier JSON : { name, text, counts }. Copies (docs), écritures en attente,
    *  conflits ; les bases de référence (relisibles à leur source) seulement avec { references: true } ; ni jeton ni
-   *  réglage d'accès (ils ne sont pas dans cette base), ni l'état du transport (meta, propre à l'appareil). */
+   *  clé (device/keys.json laissé de côté), ni l'état du transport (meta, propre à l'appareil). */
   async function dump({
     references = false
   } = {}) {
-    const docs = (await idb('docs', 'getAll')).filter(d => references || d.policy !== 'reference'),
+    const docs = (await idb('docs', 'getAll')).filter(d => saved(d.path) && (references || d.policy !== 'reference')),
       pending = await idb('pending', 'getAll'),
       conflicts = await idb('conflicts', 'getAll'),
       at = new Date().toISOString();
@@ -1157,8 +1210,9 @@
       conflicts: 0,
       device: 0
     };
-    let docs = src.docs.filter(d => d && typeof d.path === 'string' && typeof d.text === 'string'),
-      pend = (src.pending || []).filter(p => p && typeof p.path === 'string' && (typeof p.text === 'string' || p.text === null)),
+    let docs = src.docs.filter(d => d && typeof d.path === 'string' && typeof d.text === 'string' && saved(d.path)),
+      pend = (src.pending || []).filter(p => p && typeof p.path === 'string' && (typeof p.text === 'string' || p.text === null) &&
+        saved(p.path)),
       confl = (src.conflicts || []).filter(c => c && typeof c.path === 'string');
     const paths = [];
     if (mode !== 'replace') {
@@ -1169,7 +1223,10 @@
       r.device = n - docs.length - pend.length;
     }
     if (mode === 'replace') {
+      // les clés et la réserve météo de cet appareil ne sont pas dans une sauvegarde : gardées
+      const own = (await idb('docs', 'getAll')).filter(d => !saved(d.path));
       for (const s of ['docs', 'pending', 'conflicts']) await idb(s, 'clear');
+      for (const d of own) await idb('docs', 'put', d);
       for (const d of docs) await idb('docs', 'put', d);
       for (const p of pend) await idb('pending', 'put', p);
       for (const {
@@ -1303,6 +1360,8 @@
       });
       reads.length = rules.length = caches.length = 0;
       lastError = '';
+      treeNowP = peekP = peek = null;
+      treeChecked = false;
     }
   };
 })();

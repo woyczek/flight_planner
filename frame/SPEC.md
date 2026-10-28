@@ -159,8 +159,9 @@ The transports:
   - Nothing is ever written to the source.
   - The background pass runs when such a source exists.
 - **`github`** (`frame/store/transport_github.js`): the data repository through the GitHub git data API, with a
-  fine-grained device token (contents read and write on that repository only). The token is kept in `localStorage`
-  `githubData:frame`, excluded from browser backups.
+  fine-grained device token (contents read and write on that repository only). The token is kept like the identity, in
+  `device/keys.json` (IndexedDB, policy `cache`, never synchronised), left out of backups (`frame/settings/DECISIONS.md`,
+  25 Oct 2026; it was in `localStorage` `githubData:frame`, which Safari cleared).
   - `head` is a conditional request on the branch ref: a 304 costs no rate limit.
   - `tree` gets the commit, then its recursive tree.
   - `read` reads a blob (immutable).
@@ -223,7 +224,9 @@ used alone:
 
 - `dump({ references })` returns `{ name, text, counts }`: one JSON file (`sog-frame-export/1`) with the copies,
   the pending writes and the conflicts. Reference bases only with `references: true` (they can be read again from
-  their source). Never a token or an access setting (they are not in this database), never the transport state.
+  their source). Never a token or an access setting (they are not in this database), never the transport state, never
+  the weather cache (`cache/weather/`, its ledger included: it can be read again, and its count belongs to this device;
+  `load` drops it from a backup and `replace` keeps this device's).
 - `load(file | text | object, { mode })`:
   - `merge` (default): nothing of this device is lost. A file absent here, or newer in the backup (`updated_at`),
     becomes a pending write (a device cache file or a reference copy is written directly). A pending write here
@@ -244,22 +247,175 @@ used alone:
 
 ## 3. Application skeleton (`frame/index.html`, `frame/app.js`, `frame/frame.css`)
 
+**Start** (28 Oct 2026): `index.html` loads the store (`store/frame_data.js`, `transport_github.js`,
+`transport_launcher.js`), aerodb, then `app.js`, as classic scripts in that order. If one store script is missing when
+`app.js` runs (lost on the network, no copy in the service worker), `app.js` asks it again once (bypassing the HTTP
+cache), then puts itself back in the page and starts from scratch. Still missing: the view shows a card naming the file
+with a "Reload" button (×4), never a blank page and never a JavaScript error. Test A28.
+
 ### 3.1 Navigation
 
 - An application (today: Pilot) lists its modules, one short **verb** each, seven at most.
-- On a screen, the verbs sit in a column on the left. On a phone (760 px or narrower), they sit in a drawer opened by
-  the menu button, and choosing a verb closes it.
+- On a screen (wider than 760 px), the verbs sit in a column on the left (the **rail**): every module that has a screen,
+  the current one marked. On a phone (760 px or narrower) there is **no menu button and no drawer**: a **bottom tab
+  bar** replaces them (below).
+- **Bottom tab bar** (phone only, `APP.tabs`, five tabs at most): **Préparer · Carte · CR · Vols · Météo** (Prepare · Map ·
+  Report · Flights · Weather; Vorbereiten · Karte · Bericht · Flüge · Wetter; Preparar · Mapa · Informe · Vuelos · Meteo).
+  It is the user's "option A" of 24 Oct 2026 (the flight's path, in the order of a day; `docs/technique/V3_SPECIFICATION.md`
+  § 7.1), whose last tab, Réglages, gave way to **Météo** by rule 14 (24 Oct, 22:15: the atmosphere screen is the richest and
+  was hidden behind a second touch). **Settings is the ⚙ of the header**, which carries the state badge.
+  - **Shape.** The last row of the page grid, sticky at the bottom of the window, on `--sog-surface` with a top
+    hairline. Each tab is an icon above a one-word label, at least 44 px wide and high; the bar is 56 px (`--f-tab-h`)
+    plus the hairline plus the device's safe area (`padding-bottom: env(safe-area-inset-bottom)`, the viewport has
+    `viewport-fit=cover`). `--f-tab-space` (bar + hairline + safe area) is what anything stuck at the bottom of the
+    window must clear: the sticky result bar `.f-bar` (`bottom: var(--f-tab-space, 0px)`) and the notifications. The
+    view is above the bar in the grid, so nothing hides under it.
+  - **The selected tab changes form, not only colour**: its icon switches from the outline to the **filled variant**
+    (`frame/lib/icons.js`: fuel, map, edit, list, cloud, settings) on a soft rounded pill (12 to 14 % of the accent mixed into
+    the surface); its label takes the link colour and a heavier weight; the others are outline icons in `--sog-muted`.
+  - **A tab is a group of modules or a frame screen** (`tabs`, `frame/INTEGRATION.md` § 9). The tab stays selected
+    while any module of its group is shown (`#atmosphere`, a module id that is not registered, is skipped without a
+    word). Touching a tab opens the last module of its group shown in this session, otherwise the first one at the
+    device's level. Over Settings (the ⚙) no tab is selected. A module in no tab (`website`, `hello`) selects none and stays
+    reachable by its address and in the rail. A tab may also list **views** of a module of its group (`views`: Préparer lists
+    the fuel module's Sheets view, `#fuel?view=sheets`): they have no tab, only a popover row.
+  - **Group popover, no sub-tabs row** (24 Oct 2026, 14:05: "no group sub-tabs row above a fixed module"; rule 14 kept the
+    principle "a second touch = more buttons" for every tab with several entries). When a tab has two or more rows (its
+    registered modules at the device's level and their views: **Préparer lists Carburant · Fiches**), a **second touch on
+    the active tab** opens a small popover above that tab (`.f-tabpop`, a pointer on the tab, 44 px rows, the group's modules
+    and views with their icon and verb, the current one marked `aria-current`); a touch on a row switches (a menu choice: no
+    "←"); a touch elsewhere, Escape, a scroll, a resize or a change of address closes it; a third touch on the tab closes it
+    too. The tab carries `aria-haspopup` (and `aria-expanded` while open). On a tab with a single row (Carte, CR, Vols, Météo)
+    the second touch does nothing: it neither reloads the view nor drops what follows `?` in the address. While a frame screen is
+    open over the module, a touch on the tab is the ordinary first touch (it closes the screen). No module knows its
+    siblings; a module's own tabs (Fuel's Plan / Sheets) stay inside it. On a screen the rail lists the modules as before and
+    nothing else is drawn.
+  - **Landscape on a phone** (24 Oct 2026, 17:45, `docs/technique/V3_SPECIFICATION.md` § 7.1 rule 7, `frame/INTEGRATION.md`
+    § 9.1): `<html class="f-land">` is set by the frame when the window is wider than high and under 1024 px (one write when
+    the value changes, on `resize` and `orientationchange`; `frame-orientation` fired after; the screen's orientation must
+    not be portrait, so an on-screen keyboard does not flip a portrait phone). The bar becomes a **rail of icons at the left
+    edge** (`--f-rail-w`, 44 px, full height under the header, no label: the label is the `aria-label`; the same popover on a
+    second touch, opened at the right of the rail); the 210 px rail is not shown; the header stays at 57 px; `--f-tab-space`
+    is 0; the view takes the rest of the width. The designs' bar rules apply to the rail at any width (they no longer wait for
+    760 px: the bar is displayed only on a phone and in landscape). The safe areas of the device (notch, home indicator) are
+    left free on every side.
+  - **A computer** (28 Oct 2026, for the Aqua design, `frame/INTEGRATION.md` § 9.1): `<html class="f-desk">` is set by the
+    frame when the window is wider than 760 px with a precise, hovering pointer (`(pointer: fine) and (hover: hover)`) and
+    not `f-land`; before the first paint by `index.html`, then on `resize`, `orientationchange` and a change of pointer, one
+    write when the value changes; `frame-desk` fired after. Designs only: no layout of the frame depends on it.
+- **The status block and the badge of the ⚙** (rule 14, 24 Oct 2026, 22:15, which replaces the header's "i" button and its
+  pop-up, themselves a replacement of the Préparer status line). The state of the application is read in two places only:
+  - **The badge on the ⚙ of the header** (`#fDevice`; `data-badge`, `data-attn`): **green** (`--sog-ok`) when something is
+    new (a flight is started, a report is to write), on every width; **amber** (`--sog-warn`) when attention is needed (no
+    trigram, writes pending, conflicts, a synchronisation error, offline, the aeronautical base not ready), **phone only**
+    (a screen keeps its sync dot and its trigram pastille); amber wins when both apply; no dot when neither. The data line
+    and the offline line are a state, not news: they alone never turn it green. The button's name adds "something to see".
+  - **The "Status" card that opens the Settings screen** (`data-card="status"`, drawn by the frame, placed first by
+    `frame/settings`; `frame/INTEGRATION.md` § 10.2), 44 px lines, a chevron on a line that leads somewhere, a dot (green or
+    amber) on the lines that count. The lines, in this order, each when it applies: **"Flight in progress › Map"** (the
+    current flight record has `started` not null; touch → `#maps`); **"Report to write for the flight of <date> <DEP>→<ARR>"**,
+    one per entry of `cache/flightlog/pending.json` (contract: INTEGRATION § 10; touch → the entry's `handoff` is written to
+    `pilot/handoff.json` and `#report?from=flightlog` opens; no `handoff`: `#flightlog`); **"Trigram not set: your
+    documents stay on this device"** (touch → the Identity card); the **aeronautical base** while it loads, has no access or is
+    not published (touch → the Access card); **the data state**, always ("Data: synchronised 4 min ago · 2 writes pending",
+    "on this device, nothing to synchronise", "synchronising…", "n conflict(s) to review", the error), under it "Transport:
+    this device / launcher / GitHub" (touch → the Synchronisation card, else Usages; `#conflicts` when there are
+    conflicts); **"Launcher: <host> · <state>"** on a launcher (touch → the Access card); **"Offline: working on this
+    device's copy"** when `ctx.net.online()` is false; **"Weather: n calls today"** when the weather layer has called
+    Open-Meteo today (weighted calls of the UTC day, read from `cache/weather/ledger.json`; under it the limit, 10,000 a
+    day; INTEGRATION § 14); and, **on a phone only**, **"Position: <source>"** while a flight is
+    started (touch toggles the device's GPS like the header's badge on a screen). The "Help for this screen" line no longer
+    exists: the "?" of the header is that. The block follows the state while it is on screen. Four languages.
+  - There is **no "i" button and no pop-up** any more.
+- **Fixed, full-height view** (`meta.fixed: true`, a module's choice, for a map plus a sheet). The frame puts
+  `class="f-fixed"` on `<html>`: no page scroll (`html, body { height: 100%; overflow: hidden }`, the body `100dvh`), the
+  header stays at the top, the view takes the grid row between the header and the bar (phone) or the bottom of the window
+  (screen), without padding; the module's root `section.f-module` is `height: 100%; min-height: 0; display: flex;
+  flex-direction: column`. A fixed module gets neither the folded help panel nor the welcome card (no room; the "?" of the
+  header opens its chapter, on a phone as on a screen). A frame screen opened over it (Settings, help,
+  conflicts) scrolls as a page. Without `fixed`, nothing changes. **Nothing sits between the header and the module**: no
+  sub-tabs row, no padding, no margin (the module's top is `--f-head-h`, measured at 57 px in `maps` and `atmosphere`, 390 and
+  1280 px).
+  - **Overlay layer** (24 Oct 2026, `frame/INTEGRATION.md` § 9.3): the only controls allowed between the header and the
+    module's data block are buttons drawn *over the map*, in a layer the frame gives every fixed module (`ctx.overlay`): a
+    left column and a right column of round 44 px buttons (`.f-ov-btn`, 48 px hit area), laid on the module's map area (the
+    child of its root that grows) and never on the sheet. Where a column is too long for a low map it wraps to a second
+    column on its left. In landscape on a phone the gap between buttons is 4 px (six buttons fit a 333 px map before the column
+    wraps).
+  - **Full screen** (24 Oct 2026, § 9.4): the frame appends a button to the right column of every fixed module (not in a
+    pane) that toggles `<html class="f-full">`: the header and the bar (phone) or the rail (landscape phone), the header and
+    the rail (screen) are hidden and the view takes the whole window (`--f-view-h` = `--f-vh`, less the device's safe
+    areas); **no exit chip** (removed 24 Oct: the column's button, which then shows "minimize", and Escape leave); it is
+    remembered while the page lives (also under a frame screen opened over the module) and reset at a module change; the
+    window gets a `resize` event after each change. **Judgement call: on a screen the rail is hidden too** (not folded to
+    icons), so the map gets all the width. In landscape on a phone the sheet's column stays and the map takes the rest.
+  - **Heights given to modules** (`frame/frame.css`, `:root`): `--f-head-h`, `--f-vh`, `--f-view-h`, `--f-split-h`,
+    `--f-pane-h` (INTEGRATION § 9.2). In a dual view the frame itself gives a fixed module its height: the split main
+    (`html.f-fixed .f-view.f-split > .f-module`) `--f-split-h`, the module of the pane (`.f-pane > .f-module[data-fixed]`)
+    `--f-pane-h`.
+  - **Low specificity**: the fixed layout of the module root (`display: flex` column, `height: 100%`) is under `:where()`,
+    so any rule of the module (`[data-module="x"] { display: grid }`) outweighs it with no `!important`.
 - The address `#<module>` is enough to come back to a screen. What follows a `?` is given to the module as
   `ctx.query`, an object: `#report?from=flightlog` opens report with `{ from: 'flightlog' }`.
 - **Usage level**: the device's level (`device/level.json`, 1 to 3, 2 by default, chosen in Settings only) filters
   the menu: a module is listed when its `meta.level` (1 by default) is at most the device's level. A hidden module
   stays reachable by its address. The frame reads each module's `meta.level` once at start.
+- **Header on a phone** (760 px or narrower, rule 14, 24 Oct 2026; the name is the module's title for a non-fixed module, rule 16 below): **name · "?" · ⚙ and nothing else**, never wider than
+  the window (no menu button; the "←" back button takes the name's place after a passage). "?" (`#fHelp`) opens the help
+  chapter of the current screen (the Settings chapter when Settings are open), ⚙ (`#fDevice`) the Settings screen and carries the
+  state badge. The synchronisation dot, the trigram pastille, the position and the launcher badges are not drawn: their state
+  is the colour of the ⚙ badge and the lines of the Settings status block (above). Above 760 px the header keeps all of them,
+  as before, without an "i".
+  - **One row, always**: the header is exactly `--f-head-h` (57 px = 6 + 44 + 6 + the 1 px rule) high, at every width and in
+    every state, in the five designs (`height: var(--f-head-h)`, no wrapping, children with no vertical margin). The "back"
+    button used to make it 73 px: it shares the class `f-back` with the help's "←" paragraph, whose 4 px + 12 px margin
+    added 16 px (DECISIONS, 24 Oct 2026); that rule is now `p.f-back`.
+  - The page grid's columns are `minmax(0, 1fr)`, so content never widens the page.
+  - The header hides its overflow. The back button shows its arrow only.
+  - Each button is a 44 px target that shrinks only when the header is crowded; the page stays at 375 px.
+- **Non-fixed modules on a phone** (rule 16, 25 Oct 2026, user's proposal): three rules.
+  - **The module's title is the header's name.** A module that is not fixed and declares `meta.title` shows it in `#fName` under
+    760 px, in place of the application's name; `<html class="f-titled">` then clips the module's own `h1` to 1 px (it stays for
+    screen readers), so the page starts at its content. Fixed modules, the frame's screens (Settings, help) and every width above
+    760 px keep the application's name and the visible `h1`. The name follows the viewport (a media-query listener, no timer). When
+    the "←" back button is shown, the name is hidden as before, except the module's title, which stays (it is the screen's name).
+  - **The "How to use" card has a ✕** (44 px, "Hide" ×4); dismissed, it stays hidden on the device, per module
+    (`device/help.json`, `hidden: { <id>: true }`, cache policy), and comes back from the module's chapter in the help
+    ("Show the first steps again", under the chapter title, shown only for a dismissed module; it clears the flag, unfolds the
+    card and returns to the module). The "Première fois ?" card keeps its own ✕ and its own state (`welcomed`).
+  - **The "?" lands on the right paragraph.** `ctx.helpAnchor` (`frame/INTEGRATION.md` § 2) gives the anchor of the current
+    screen or step; the address is `#help?m=<module>&a=<anchor>` (a link of the contents is `#help?a=…`: no highlight, the
+    highlight is the mark of a contextual arrival). The paragraph is scrolled under the sticky header and highlighted 1.5 s
+    (class `f-hl`, accent at 20 %, fades out), once. Fuel: Quote (`fuel-quote`, the whole quote on a wide module), steps
+    `fuel-step-1` … `fuel-step-5` (the step shown), Sheets (`fuel-sheets`); Report: `report-step-1` … `report-step-3`
+    (`report-steps` on a wide module); Flights: `flightlog-list`, `flightlog-detail` (a line unfolded), `flightlog-current`
+    (a flight started). Test A17; A18 for the card; A2 for the header.
+- **Times**: every time the application shows is in UTC with the suffix Z (`frame/lib/time.js`). The device's local
+  time is added in brackets only next to the departure, the planned arrival and the engine start.
 - The frame has three screens of its own: `#help` (`frame/help/SPEC.md`; the header's ? opens it at the current
   module's chapter), `#conflicts` and `#settings` (`#device`, its former name, opens it too;
-  `frame/settings/SPEC.md`).
+  `frame/settings/SPEC.md`); and the service screens declared in `APP.screens` (INTEGRATION § 13), drawn by a service and
+  loaded on demand: today `#sources` (aerodb's data sources, Full level, links only, `frame/aerodb/SPEC.md` § 5 sexies), which
+  replaced the data laboratory `#datalab` on 28 Oct 2026.
+- **Start**: the frame mounts the first module as soon as the shell, the device's settings and the transport are
+  there. It never waits for a first synchronisation or for the airline's settings.
+  - Over a repository's first pass, reading the airline's settings costs the whole ref → commit → tree chain (2.8 s
+    at Fast 3G). The frame reads them in the background, and `ctx.airline` always gives the latest.
+  - When they arrive or change, `frame-airline` is dispatched on `window`.
+  - The relay waits for that first reading only for a host it does not otherwise know (it may be the airline's site).
+  - The launcher is looked for only over http: a launcher never serves https, so GitHub Pages saves a round trip.
+- **Loaded on demand**: the scripts of Settings (`settings/admin_links`, `config`, `join`, `lib/qr`,
+  `settings/settings`), of the help (`lib/markdown`, `help/help`) and of the roadmap (`help/roadmap`) are not in
+  `index.html`. The frame injects them, in order, the first time their screen opens (`need`).
+  - A screen left while its scripts load draws nothing: the address is checked after loading.
+  - A module's help (its folded panel, the welcome card) loads after the module has mounted, never before.
+  - `ctx.help.open()` opens the panel already drawn; `ctx.help.link()` is an address.
+  - So the menu and the first module never wait for them. The service worker keeps them like the frame's other
+    files, so they open offline.
 - **The frame's screens** (help, roadmap, settings, conflicts) opened from a module show in the module's area, over
   it. The module stays mounted, only hidden, with its pane.
-  - The menu stays in place, sticky under the header at any scroll, with the current module still marked.
+  - The rail (screen) or the bar (phone) stays in place, with the current module still marked; over Settings, no tab of
+    the bar is selected (the ⚙ is the pressed button).
   - Their header buttons are toggles: "?" for help and roadmap, "⚙" for settings, the sync button for conflicts. Each
     is pressed while its screen is open (background tinted with the accent, accent border).
   - A second click on the same button, Escape (unless a dialog is open) or the browser's back closes the screen. The
@@ -271,7 +427,7 @@ used alone:
   - The "←" back link is not shown: this is not a passage between modules.
   - The dual view belongs to modules only: on a frame screen the "Map" toggle is neither shown nor active, and the
     screen takes the whole area. An open Map pane comes back with the module.
-  - Choosing a module in the menu from a frame screen closes it and opens that module.
+  - Choosing a module in the rail or a tab from a frame screen closes it and opens that module.
   - A frame screen opened directly by its address, with no module behind, shows alone as before.
 - **Back to the origin module**: a module opened by a passage from another shows "← <origin module>" in the header.
   - A passage is either an explicit `?from=<module>` (`#report?from=flightlog`), or an address set by the previous
@@ -308,7 +464,9 @@ used alone:
 
 - A module is `modules/<id>/module.js`, an ES module loaded on demand with `import()` (never a synchronous script).
 - It exports:
-  - `meta`: `{ id, apps, level, reads, writes, files, lazy, net }`; `id` must match its folder;
+  - `meta`: `{ id, title, apps, level, reads, writes, files, lazy, net, fixed }`; `id` must match its folder; `fixed: true` asks for
+    the fixed, full-height view (§ 3.1); `title` (four texts) is the title a non-fixed module puts in the phone's header (§ 3.1,
+    rule 16);
     - `files` lists the other files the module imports, as paths relative to `module.js`, so that they are kept
       offline from the installation (§ 3.6);
     - `lazy` lists heavy files (a map library, about 1 MB) kept by the service worker at their first use, never
@@ -335,9 +493,16 @@ used alone:
 | `net.fetch(url, init)`, `net.online()` | outgoing calls through the frame, never an exception: offline or on a network failure, an immediate 503 marked `x-sog-offline`; same origin: direct; SimBrief, IVAO, VATSIM, aviationweather.gov (METAR / TAF): relayed by the launcher when the page is served by one (`POST /__setup/net`), otherwise direct for the sites that allow it (SimBrief, IVAO; aviationweather.gov sends no CORS header, so without a launcher it gets the 503); the airline's website (`airline.site`, https): the same, GET only (any other method: 503); any other site: 503 marked `x-sog-unreachable` |
 | `identity` | read only: the identity record of the device (`trigram`, `ivao`, `vatsim`, `simbrief`), an empty object when there is none |
 | `airline` | read only: `{ name, site, pages: { recordFlight, log, fleet } }` from `airline/settings.json` of the data repository (a document, pulled ahead and followed with `watch`; text fields only), an empty object when there is none; no address is written in the code |
+| `weather` | the device's weather layer (INTEGRATION § 14): `aloft`, `grid`, `metar`, `taf`, `world`, `modelFor`, `run`, `spentToday`, all asynchronous; one cache `cache/weather/`, one count of the calls to Open-Meteo |
+| `level` | read only (getter): the device's usage level, 1–3; what a screen offers, not a right (INTEGRATION § 6) |
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
 | `live` | the actual position during a started flight (on a device of the local network, the computer's simulator, never the device's GPS): `{ status ('off', 'waiting', 'tracking'), source ('xplane', 'lnm', 'gps', 'ivao', 'vatsim', ''), last ({ at, lat, lon, altFt, gsKt, trackDeg, source }), gps, enable(), disable() }` (below) |
 | `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |
+| `helpAnchor(anchor)` | the anchor of the paragraph of the module's chapter that describes the screen or step shown (an id, a function returning one, or `null`); the header's "?" opens `#help?m=<id>&a=<anchor>` and the manual highlights that paragraph once (rule 16) |
+| `airline` (event) | `frame-airline` on `window` when the airline's settings arrive (read in the background at start) or change; `ctx.airline` then gives them |
+| `tab` | the id of the bottom-bar tab (`APP.tabs`) that groups this module (`'prepare'` for fuel), `null` if it has none (§ 3.1) |
+| `overlay` | a fixed module only (`meta.fixed`), `null` otherwise: the overlay layer over its map, `{ left, right, button({ icon, label, onClick, pressed, side }), over(el), refresh(), full }`; the frame adds the full-screen button to `right` (not in a pane) and fires `frame-fullscreen` then `resize` on `window` when it changes (§ 3.1, `frame/INTEGRATION.md` § 9.3, § 9.4) |
+| `layout` | the dual view: `{ with }`, the module shown beside this one (the pane for the current module, and the other way round), or `null`. The frame dispatches `frame-layout` on `window`, with `{ main, pane }`, each time the pane opens or closes (Fuel hides "Show the map" while Maps is beside it) |
 
 - **Actual position during a flight** (`ctx.live`, a frame service):
   - **When**: it runs while `pilot/<trigram>/current_flight.json` has `started` (set back to null when fuel cancels the
@@ -366,7 +531,12 @@ used alone:
     3. Nothing.
   - **Offline**: the GPS only.
   - **Writing**: only `progress.actual = { at, lat, lon, altFt, gsKt, trackDeg, source }` in the current flight (the
-    record, `by: 'frame'`), never fuel's or maps' fields. It goes through the shared `merge` of
+    record, `by: 'frame'`), never fuel's or maps' fields.
+    - **Cleared** (`actual: null`) when the service stops, whatever stopped it: report saved, departure cancelled, flight
+      older than 24 h, here or on another device.
+    - Cleared too at a new departure when it is older than `started.at`.
+    - So a new flight never shows the previous one's position. Maps also ignores an `actual.at` older than
+      `started.at`. It goes through the shared `merge` of
     `frame/lib/current_flight.js`, on the record re-read just before.
     - This is the form maps reads: `at` is ISO, `source` is `xplane`, `lnm`, `gps`, `ivao` or `vatsim`, and `trackDeg` / `gsKt` may be
       null.
@@ -392,9 +562,9 @@ used alone:
 | any other site | 503 `x-sog-unreachable` | 503 | — |
 
 - **The weather key** (avwx.rest, for the TAF without a launcher):
-  - It is entered on the device in Settings › Keys and kept in `localStorage` (`githubData:avwx`), like the GitHub
-    token. It is never in `device/` nor in the IndexedDB that `FrameData.dump()` exports, and never in the
-    repository.
+  - It is entered on the device in Settings › Weather key and kept with the GitHub token in `device/keys.json` (IndexedDB,
+    policy `cache`, like the identity; it was in `localStorage` `githubData:avwx`). `FrameData.dump()` leaves that file
+    out, a backup never carries it, and it is never in the repository.
   - The frame adds it to the call itself; no page or module ever reads it back.
   - The settings screen gets `weatherKey { has(), save(key), clear(), test(icao) → { ok, status, message } }`.
 - A module loads no global style sheet. It uses the frame's tokens (`--sog-*`) and primitives (classes `f-…`): the
@@ -433,6 +603,13 @@ used alone:
 - Each unseen conflict shows the file and its date, the version set aside (this device's or another device's) and the
   version kept.
 - Two actions: "Take this version back" (`FrameData.restore`) and "Seen".
+- **A write refused for good** (`side: 'refused'`): the transport refused that file itself, not the batch's timing
+  (the launcher: a path or file type it never accepts, answered 400 with that `path`).
+  - The data layer takes the write out of the queue, so the next writes leave and the button no longer shows a
+    permanent error.
+  - The screen says "Write refused: <path> — take it back or set it aside", with the transport's reason and what was
+    to be written (a deletion says so).
+  - "Take this version back" queues it again (after, for instance, setting the trigram); "Seen" sets it aside.
 - **Conflicts found outside a pass** (a file of the workstation, such as a Little Navmap `.lnmperf` sheet read by
   aerodb): `FrameData.noteConflict({ path, kept, lost, side })` keeps the losing version in the same form.
   - `path` is the record in the data repository (`aircraft/sheets/<id>.json`), so "Take this version back" makes the
@@ -469,7 +646,7 @@ used alone:
     - otherwise GitHub when a repository and a device token are set;
     - otherwise local, with a warning that nothing can be exchanged.
   - Changing the settings switches the transport at once.
-- The GitHub token is entered on the settings screen, kept in `githubData:frame`, and never shown again; "Cut
+- The GitHub token is entered on the settings screen, kept in `device/keys.json`, and never shown again; "Cut
   access" erases it (`FrameData.github.clear`).
 - **Cut access** keeps the copies and the pending writes; the transport switches at once, in the other tabs too.
 
@@ -491,6 +668,10 @@ used alone:
   (message `precache`): each entry point and the files its `meta.files` declares (paths relative to `module.js`). So
   every module opens offline after the first visit, even one never opened. A file a module imports without declaring
   it is kept the first time it is loaded; a module that fails to load sends its entry point only.
+- **Help**: only in the application's language at installation. The page adds to `precache` the files that
+  `SogHelp.files(lang)` gives: the manual `pilot.<lang>.md`, and each tutorial in that language, plus English when the
+  language is neither French nor English. Another language, and the tutorials' captures, are kept the first time
+  they are read.
 - **New version**:
   - when a background check finds a changed file, all copies are fetched again, so the new version arrives whole;
   - then the open pages receive `sog-frame-update` and the frame shows "A new version of the app is ready" with a
@@ -503,6 +684,11 @@ used alone:
 - **No storage for copies** (private browsing, quota, failure): the service worker installs anyway and lets requests
   through to the network. The application works, without offline.
 - **Manifest**: name "SOG — Pilote", start and scope `./`, standalone display, colours, SVG icon.
+- **Orientation**: locked to portrait for now (`orientation: portrait` in the manifest, `screen.orientation.lock`
+  attempted when the application runs installed; a browser page cannot be locked and the call's failure is ignored).
+  The Capacitor shell of the V3 frame, when it is built, sets `UISupportedInterfaceOrientations` to portrait on iPhone
+  (iPad keeps every orientation) and `screenOrientation="portrait"` on Android. The landscape layout is to decide
+  (`docs/technique/V3_SPECIFICATION.md` § 7.1); the lock goes when it exists.
 - **Offline start**: on the data already cached, the frame, the module and the synchronisation control are drawn with
   no error. The transport falls back as § 3.5 says. When the network comes back, the launcher is looked for again
   and the transport follows.
@@ -552,13 +738,18 @@ touch only the element they are given.
 | `frame/lib/last_flight.js` | report | report, flightlog | "my last flight" on IVAO and VATSIM (the V2 launcher's route in JavaScript): the flights of the last 7 days, then one flight's details |
 | `frame/lib/js-yaml.min.js` | flightlog | flightlog | js-yaml 4.1.0, a copy of V2's vendored library, to read V2's YAML registry |
 | `frame/lib/external_links.js` | fuel | fuel | "Open in" links (SimBrief, SkyVector, Navigraph, ChartFox): the pure part of V2's `shared/external_links.js`, translation passed as a parameter |
-| `frame/lib/current_flight.js` | fuel | fuel, report, maps, the frame | `merge(stored, mine, { fields, progressKeys, by })`: each author of the current flight (`pilot/<trigram>/current_flight.json`) re-reads it and replaces only its own fields; `progress.actual` belongs to the frame (its position service writes it with `progressKeys: ['actual'], by: 'frame'`) |
+| `frame/lib/current_flight.js` | fuel (merge), frame (the flight in time, written by the Map's recoding, reviewed 28 Oct 2026) | fuel, report, maps, the frame | `merge(stored, mine, { fields, progressKeys, by })`: each author of the current flight (`pilot/<trigram>/current_flight.json`) re-reads it and replaces only its own fields; `progress.actual` belongs to the frame (its position service writes it with `progressKeys: ['actual'], by: 'frame'`). The flight in time: `isStarted`, `refTime`, `legTimes`, `etaOf(f, now)`, `plannedPositionAt(f, now)`, `TAXI_MIN` (derived from `started.at` / `planned_at` and `quote`; longitudes by `geo.js`, positions along the great circle; INTEGRATION § 6, `modules/maps/SPEC.md` § 13); bench `frame/lib/test/current_flight.html` |
 | `frame/lib/clipboard.js` | fuel | fuel, report, website, settings | `copyText(text, { box, near })` → `'clipboard'` \| `'exec'` \| `'shown'`, and `canPaste()`: copies also over http (a paired tablet has no `navigator.clipboard`), falling back to `execCommand` and then to a selected field shown next to the button |
+| `frame/lib/time.js` | frame | the frame, fuel, maps, report | the application's times: all in UTC with the suffix Z. `fmtZ(iso)` → "16:30Z"; `fmtZLocal(iso)` → "16:30Z (18:30)", the device's local time in brackets, only next to the departure, the planned arrival and the engine start; `fmtDateZ(iso, lang)` → "23/10/2026 16:30Z", the UTC date in the language's writing. The frame uses it for its own times (sync button, conflicts, position badge) and gives it to Settings (`time`) |
 | `frame/lib/dom.js` | frame | any module (fuel, report, flightlog first) | `keepScroll(box, draw, { focus })`: draws without moving the scroll and without losing the field being typed in. It keeps the scroll position of every scrolling container above `box` (the page included) and holds `box`'s height during the draw. It puts the positions back after the draw and on the next two frames. It finds the focused field again (by `data-k` / `data-i`, or by `id`) and restores its value, its focus (`preventScroll`) and its selection. It replaces the three copies made in fuel, report and flightlog |
 | `frame/lib/icons.js` | design | frame, any module | the line icon set (V2's 53 icons plus `menu` and `wand-sparkles`), `svg(name)` |
 | `frame/lib/markdown.js` | help | the frame's help screen | the Markdown rendering of the help, copied as it is from V2 (`apps/aide/markdown.js`); a classic script loaded with the frame |
 | `frame/lib/metar.js` | fuel | fuel | the raw METAR decoder to the JSON form of aviationweather.gov, and the conversion of avwx's METAR / TAF to that form (weather without a launcher) |
+| `frame/lib/weather_store.js` | frame | the frame (`ctx.weather`); fuel and atmosphere through it | the weather layer: one cache by model, cell and UTC day, Open-Meteo only for what is missing, the weighted count and its limits, METAR / TAF, the published world forecast (INTEGRATION § 14); bench `frame/lib/test/weather_store.html` |
+| `frame/lib/routing.js` | frame (moved from `modules/maps/lib/` on 28 Oct 2026) | fuel (Auto button), maps | airway path finding on the published base, pure: `airwayGraph`, `shortest`, `leg`, `expand`, `route(aerodb, a, b, opts)`, `tokensOf` / `textOf`, `nm`, `RoutingError`, `DEFAULTS` (V2's rules: a segment open within 100 ft of its limits, both ways, 8 nearest nodes within 60 NM, direct when the detour is over 40 %; no SID / STAR, no one-way, not across the date line); bench `frame/lib/test/routing.html` |
 | `frame/lib/route_text.js` | fuel | fuel, maps | the route text, pure: `tokenize`, `textFromTokens` (normalised "DEP PT1 UN869 PT2/F280 … ARR"), `textFromPoints` (the text rebuilt from edited points, airways kept between two unchanged neighbouring points), `icaoCoord` |
+| `frame/lib/geo.js` | maps, atmosphere (its own copy until its next lot) | maps, fuel (`winds.js`), atmosphere | longitudes around the date line, pure: `wrapLon(lon)` ([-180, 180[), `nearLon(lon, ref)` (the copy within 180° of `ref`), `unwrapLons(points)` (a route on continuous longitudes: `{ lat, lon }` or `[lon, lat]`, the same object back for a point already continuous). A module unrolls its route first, wraps what it sends to a service or a cache, compares modulo 360. Bench `frame/lib/test/geo.html`. Contract: INTEGRATION § 12 |
+| `frame/lib/sheet.js` | frame | maps, atmosphere (any fixed module) | the three-position sheet under a map (collapsed / default / expanded): `createSheet({ root, panel, head, grip, pos, ignore, labels, locked, onChange, onSettle })` → `{ pos, set(pos, instant), settle(), stop() }`. The header line is the drag handle (pointer capture, live follow by one CSS variable written once per move, a 200 ms glide to the nearest position, flick above 0.8 px/ms to the next one, a tap collapses or restores and never expands; **while the sheet moves a module redraws nothing and `onSettle` is called once, when the size has stopped**: V3 spec § 7.1 rule 19), the keyboard and the ARIA of the grip are done; heights are the frame tokens `--f-sheet-*` read from the root, the look is `.f-sheet*` in `primitives.css`. **Under `html.f-land` (landscape on a phone) the sheet is a column at the right of the map**, as high as the view, two positions (`default` 40 % of the root's width, 280 px at least; `expanded` 60 %; tokens `--f-sheet-side`, `-side-min`, `-side-max`), no collapsed position, a tap toggles the two, a horizontal drag is accepted; `onChange` / `onSettle` give the same names, `frame-orientation` makes it re-place itself. It writes no text (the caller passes `labels`) and keeps no state (the caller keeps the position). Contract: INTEGRATION § 11 |
 | `frame/lib/website.js` | website | report, website | the flight's fields for the airline website, the `#defa=` address, the line to copy, the "→ Vol" bookmark (moved from `modules/report/website_handoff.js`) |
 
 ### 3.10 Devices of the local network (`tools/lan_access.py`, `tools/launch.py`)
@@ -572,7 +763,9 @@ launcher can serve that device over the local network, so the device works as th
     { open: true | false }` (settings context: `lan()`, below).
   - The launcher then also listens on the computer's **private IPv4 address of the default route** (10/8,
     172.16/12, 192.168/16), on the same port. Its other private addresses (VPN, WSL, Hyper-V, Docker) are opened
-    only on request (`{ open: true, all: true }`, "Open them too" in Settings). It never listens on `0.0.0.0`, so
+    only on request (`{ open: true, all: true }`, "Open them too" in Settings); on an access already open this adds
+    the addresses and leaves the code as it is: it never issues one, nor reopens a pairing closed by wrong codes (only
+    "New code" does, 28 Oct 2026). It never listens on `0.0.0.0`, so
     no public interface is opened, and the port never clashes with 127.0.0.1.
   - The console shows the address of the Pilot application (`http://<ip>:<port>/frame/`) and the pairing code.
 - **Every request from the local network**:
@@ -636,3 +829,12 @@ launcher can serve that device over the local network, so the device works as th
 ## 4. To come in the frame
 
 Usage levels, a language choice, designs taken from V2, the backend transports.
+
+**Debts, dated**:
+- 28 Oct 2026: Settings' `setup()` and `aerodb/lnmperf.js` call the launcher with `fetch` (the data laboratory, removed the same day, did too). They move
+  onto `ctx.launcher` in the frame lot after the weather layer (INTEGRATION § 7).
+- 28 Oct 2026: the frame still reads flightlog's `pending.json` (schema 2) until flightlog publishes its
+  `status.json` (INTEGRATION § 10.0).
+- 28 Oct 2026: fuel's own request for the winds aloft (`aloftFetch`, `cache/fuel/aloft.json`) and Atmosphere's store
+  (`modules/atmosphere/weather_store.js`) stay until their readers' lots move them onto `ctx.weather` (INTEGRATION § 14);
+  their calls are not in the weather line's count until then.
