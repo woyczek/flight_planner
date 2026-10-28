@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquettes de design</title>
+<!-- Maquettes « Metro », « Swiss », « Cupertino » et « Material » du cadre V3 (frame/design/DECISIONS.md, 23 octobre 2026) : page de
+     démonstration statique, sans code de module (le nom du fichier est resté, le lien est connu). Le design vient de la
+     requête : ?design=metro|swiss|cupertino|material (metro par défaut), à combiner avec les paramètres ci-dessous. Sans scène :
+     une galerie de scènes, jour et nuit, téléphone (390 px) et écran (1280 px), chacune dans un cadre de la largeur voulue (les requêtes @media du cadre ont besoin d'une vraie fenêtre) ; avec ?scene=home|fuel|report
+     &tone=day|night (&design=…) : la scène elle-même, faite du balisage du cadre (en-tête, verbes, vue) et des primitives de
+     frame/design/primitives.css. Textes d'exemple en français, aucune donnée ; les icônes viennent de frame/lib/icons.js. -->
+<script>
+  // design de la requête posé avant le premier affichage (metro sans paramètre ou si le nom est inconnu)
+  {
+    const d = new URLSearchParams(location.search).get('design');
+    document.documentElement.dataset.design = /^(swiss|cupertino|material)$/.test(d) ? d : 'metro'
+  }
+</script>
+<link rel="stylesheet" href="../frame.css?v=0">
+<style>
+  /* galerie seulement : la grille de la page du cadre (en-tête / verbes / vue) ne vaut que pour une scène */
+  body.demo-gallery {
+    display: block;
+    padding: 16px
+  }
+  .demo-gallery .demo-set {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 28px
+  }
+  .demo-gallery figure {
+    margin: 0
+  }
+  .demo-gallery figcaption {
+    margin: 0 0 6px;
+    color: var(--sog-muted);
+    font-size: var(--sog-size-s)
+  }
+  .demo-gallery .demo-box {
+    overflow: hidden;
+    border: 1px solid var(--sog-border);
+    background: var(--sog-bg)
+  }
+  .demo-gallery .demo-box iframe {
+    display: block;
+    border: 0;
+    transform-origin: 0 0
+  }
+  .demo-gallery .demo-set[data-tone="night"] {
+    background: var(--demo-night-bg, #000);
+    padding: 16px 16px 0;
+    margin-inline: -16px;
+    color: var(--demo-night-fg, #f2f2f2);
+    --sog-fg: var(--demo-night-fg, #f2f2f2);
+    --sog-muted: var(--demo-night-muted, #a6a6a6)
+  }
+  html[data-design="swiss"] {
+    --demo-night-bg: #0a0a0a;
+    --demo-night-muted: #a3a3a3
+  }
+  html[data-design="cupertino"] {
+    --demo-night-muted: #98989d;
+    --demo-night-fg: #fff
+  }
+  html[data-design="material"] {
+    --demo-night-bg: #1c1b1f;
+    --demo-night-fg: #e6e1e9;
+    --demo-night-muted: #cac4d0
+  }
+  .demo-gallery .demo-set[data-tone="night"] h2 {
+    flex-basis: 100%;
+    margin: 0
+  }
+  .demo-gallery .demo-set h2 {
+    flex-basis: 100%;
+    margin: 0
+  }
+</style>
+</head>
+<body>
+<script type="module">
+  import {
+    svg
+  } from '../lib/icons.js';
+  const q = new URLSearchParams(location.search),
+    scene = q.get('scene'),
+    tone = q.get('tone') === 'night' ? 'night' : 'day',
+    h = document.documentElement,
+    design = h.dataset.design,
+    VERBS = [
+      ['fuel', 'Carburant', 'fuel'],
+      ['maps', 'Carte', 'map'],
+      ['report', 'Compte rendu', 'edit'],
+      ['flightlog', 'Mes vols', 'list'],
+      ['website', 'Site', 'globe']
+    ];
+  h.dataset.tone = tone;
+  const head = mod => `<header class="f-head">
+    <span class="f-name">Pilote</span>
+    <button type="button" class="f-sync" data-state="ok"><span class="f-dot"></span><span class="f-lbl">Synchronisé il y a 4 min</span><span class="f-lbl-short">✓</span></button>
+    <button type="button" aria-label="aide">${svg('help')}</button>
+    <button type="button" aria-label="réglages">${svg('settings')}</button>
+  </header>`;
+  const nav = cur => `<nav class="f-nav"><ul>${VERBS.map(([id, l, ic]) => `<li><a href="#" data-id="${id}" data-landmark="${id}"${id === cur ? ' aria-current="page"' : ''}>${svg(ic)}${l}</a></li>`).join('')}</ul></nav>`;
+  // barre du bas du téléphone (frame/app.js, renderTabs) : icône au trait et icône pleine, l'onglet choisi marqué
+  const TABS = [
+    ['prepare', 'Préparer', 'fuel', 'fuel'],
+    ['maps', 'Carte', 'map', 'maps'],
+    ['report', 'CR', 'edit', 'report'],
+    ['flightlog', 'Vols', 'list', 'flightlog'],
+    ['settings', 'Réglages', 'settings', 'settings']
+  ];
+  const tabbar = cur => `<nav class="f-tabbar"><ul>${TABS.map(([id, l, ic, lm]) => `<li><a href="#" data-tab="${id}" data-landmark="${lm}"${id === cur ? ' aria-current="page"' : ''}><span class="f-tab-ico">${svg(ic)}${svg(ic, { filled: true })}</span><span class="f-tab-lbl">${l}</span></a></li>`).join('')}</ul></nav>`;
+  const FUEL = `<main class="f-view"><section class="f-module" data-module="fuel" data-landmark="fuel">
+    <h1>Carburant et niveau</h1>
+    <div class="f-tabs"><button type="button" aria-pressed="true">Plan</button><button type="button" aria-pressed="false">Fiches</button></div>
+    <div class="f-cols">
+      <div class="f-card"><h2>Vol</h2>
+        <div class="f-grid">
+          <label class="f-field"><span>Départ</span><input value="LFBO"></label>
+          <label class="f-field"><span>Arrivée</span><input value="LFMT"></label>
+          <label class="f-field"><span>Dégagement</span><input placeholder="OACI"></label>
+          <label class="f-field"><span>Niveau (FL)</span><input value="085" inputmode="numeric"></label>
+          <label class="f-field f-full"><span>Appareil</span><select><option>TB-20 Trinidad</option><option>DR400-140B</option></select></label>
+        </div>
+        <label class="f-check"><input type="checkbox" checked>Réserve finale 30 min</label>
+      </div>
+      <div class="f-card"><h2>Route</h2>
+        <div class="f-callout">Corridor : 3 aérodromes de dégagement dans 20 NM.</div>
+        <h3>Vents</h3>
+        <dl class="f-dl"><dt>FL085</dt><dd>270° / 18 kt</dd><dt>Sol</dt><dd>260° / 9 kt</dd></dl>
+        <div class="f-row"><button type="button" class="primary">Calculer</button><button type="button">Modifier la route</button></div>
+      </div>
+      <div class="f-card"><h2>Résultat</h2>
+        <div class="f-tiles"><div><b>142 kg</b>carburant</div><div><b>1 h 12</b>temps</div><div><b>3</b>niveaux</div></div>
+        <div class="f-scroll"><table class="f-table"><thead><tr><th>Niveau</th><th class="f-num">Carburant</th><th class="f-num">Temps</th></tr></thead>
+          <tbody><tr><td>FL065</td><td class="f-num">146 kg</td><td class="f-num">1 h 14</td></tr><tr><td>FL085</td><td class="f-num">142 kg</td><td class="f-num">1 h 12</td></tr><tr><td>FL105</td><td class="f-num">139 kg</td><td class="f-num">1 h 11</td></tr></tbody></table></div>
+      </div>
+    </div>
+    <div class="f-bar"><b>142 kg</b><span class="f-muted">à l'embarquement</span><span class="f-badge" data-kind="ok">réserve ok</span><button type="button" class="primary" style="margin-left:auto">Valider</button></div>
+  </section></main>`;
+  const REPORT = `<main class="f-view"><section class="f-module" data-module="report" data-landmark="report">
+    <h1>Compte rendu</h1>
+    <div class="f-steps"><button type="button" data-done>1 Vol</button><button type="button" aria-current="step">2 Mission</button><button type="button">3 Résultat</button></div>
+    <div class="f-card"><h2>Mission</h2>
+      <div class="f-grid">
+        <label class="f-field"><span>Date</span><input value="2026-10-23"></label>
+        <label class="f-field"><span>Immatriculation</span><input value="F-HDEF"></label>
+        <label class="f-field f-full"><span>Remarques</span><textarea rows="2">Vent de travers marqué à l'arrivée.</textarea></label>
+      </div>
+      <h3>Heures</h3>
+      <div class="f-grid"><label class="f-field"><span>Mise en route (Z)</span><input value="16:57"></label><label class="f-field"><span>Décollage (Z)</span><input value="17:05"></label></div>
+    </div>
+    <div class="f-list"><button type="button" class="f-item"><span>Mes derniers comptes rendus<br><small class="f-muted">LFBO → LFMT, 22 oct.</small></span><span class="f-badge" data-kind="ok">gardé</span></button>
+      <button type="button" class="f-item"><span>Autres sources</span><span class="f-badge">2</span></button></div>
+    <div class="f-bar"><button type="button" class="primary">Enregistrer</button><button type="button">Enregistrer et inscrire sur le site</button></div>
+  </section></main>`;
+  if (!scene) {
+    document.body.classList.add('demo-gallery');
+    const W = {
+        phone: 390,
+        desk: 1280
+      },
+      HH = {
+        phone: 800,
+        desk: 800
+      },
+      SC = [
+        ['phone', 'home', 'Accueil du Pilote : la barre du bas'],
+        ['phone', 'fuel', 'Carburant'],
+        ['phone', 'report', 'Compte rendu, trois pas'],
+        ['desk', 'fuel', 'Carburant, écran : rail des verbes, trois colonnes'],
+        ['desk', 'report', 'Compte rendu, écran']
+      ];
+    const INTRO = {
+      metro: `Une couleur repère par module (Carburant bleu, Carte cyan, Compte rendu orange, Mes vols vert, Site violet,
+        Réglages gris), des aplats, des angles droits, des champs à filet inférieur, les titres de page et de section
+        grands et légers. Police du système : « Segoe UI » sur Windows, sinon celle de l'appareil.`,
+      swiss: `Style typographique international : grille et beaucoup d'air, noir, blanc et gris, un seul rouge signal,
+        angles nuls, des filets fins au lieu de cartes, titres de section en petites capitales espacées, chiffres
+        tabulaires. La couleur du module n'apparaît que sur le filet du verbe courant. Police du système : Helvetica ou
+        Arial.`,
+      cupertino: `Façon Réglages d'iOS : fond gris très clair, cartes blanches groupées, bleu système pour les actions,
+        hiérarchie par les espaces et les filets, listes groupées à chevron, contrôle segmenté, icône du verbe teintée
+        de la couleur du module. Police du système : San Francisco sur Apple, sinon celle de l'appareil.`,
+      material: `Material Design 3 : surfaces tonales (page, cartes et champs de trois teintes), un primaire bleu-violet,
+        boutons en pastille, champs à filet fin qui passe à 2 px à la saisie, onglets à indicateur souligné, pas en puces,
+        deux niveaux d'élévation seulement, barre d'application sur la surface, barre de navigation sur téléphone et rail
+        sur écran (indicateur actif teinté de la couleur du module). Police : Roboto si elle est installée, sinon celle du
+        système.`
+    };
+    document.body.innerHTML = `<h1>${design[0].toUpperCase() + design.slice(1)} — maquette du cadre</h1>
+      <p>${INTRO[design]} Aucun module n'a été modifié : tout passe par les jetons et le balisage du cadre. Maquette,
+      <b>à trancher</b> (frame/design/DECISIONS.md). Autres maquettes : <a href="?design=metro">metro</a>,
+      <a href="?design=swiss">swiss</a>, <a href="?design=cupertino">cupertino</a>,
+      <a href="?design=material">material</a>.</p>` + ['day', 'night'].map(t => `<div class="demo-set" data-tone="${t}"><h2>${t === 'day' ? 'Jour' : 'Nuit'}</h2>${SC.map(([k, s, cap]) => `<figure data-k="${k}"><figcaption>${cap}</figcaption><div class="demo-box"><iframe title="${cap}" src="?scene=${s}&tone=${t}&design=${design}" width="${W[k]}" height="${HH[k]}" loading="lazy"></iframe></div></figure>`).join('')}</div>`).join('');
+    // les cadres sont réduits pour tenir dans la largeur de la page (écran : deux de front sur un grand écran), sans
+    // changer leur fenêtre
+    const fit = () => document.querySelectorAll('figure[data-k]').forEach(f => {
+      const k = f.dataset.k,
+        box = f.querySelector('.demo-box'),
+        fr = box.firstElementChild,
+        sc = Math.min(1, ((k === 'desk' && innerWidth > 1400 ? 620 : innerWidth - 32 - 2)) / W[k]);
+      fr.style.transform = `scale(${sc})`;
+      box.style.width = `${Math.round(W[k] * sc)}px`;
+      box.style.height = `${Math.round(HH[k] * sc)}px`
+    });
+    fit();
+    addEventListener('resize', fit);
+  } else {
+    if (scene === 'home') {
+      document.body.innerHTML = head() + nav('fuel') + FUEL + tabbar('prepare');
+      h.dataset.landmark = 'fuel';
+    } else if (scene === 'report') {
+      document.body.innerHTML = head() + nav('report') + REPORT + tabbar('report');
+      h.dataset.landmark = 'report';
+    } else {
+      document.body.innerHTML = head() + nav('fuel') + FUEL + tabbar('prepare');
+      h.dataset.landmark = 'fuel';
+    }
+  }
+</script>
+</body></html>

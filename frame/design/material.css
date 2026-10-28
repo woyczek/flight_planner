@@ -1,0 +1,183 @@
+/* V3 design — « Material » : ce que le cadre doit changer pour un habillage Material Design 3 (maquette à trancher,
+   frame/design/SPEC.md § 3, DECISIONS.md du 23 octobre 2026). Tout est derrière [data-design="material"] : les autres designs ne
+   changent pas d'un pixel. Les jetons (surfaces tonales, primaire bleu-violet, rayons 12 / 4, deux niveaux d'élévation, Roboto ou
+   la police du système) sont dans tokens.css ; ici, seulement les règles que les jetons ne portent pas : barre d'application sur la
+   surface, boutons en pastille à filet (le principal plein), champs à filet de 1 px qui passe à 2 px à la saisie, onglets à
+   indicateur souligné, pas en puces, ombre de 1 dp des cartes, tiroir de navigation (téléphone) et rail (écran) dont l'indicateur
+   actif est teinté de la couleur du module. Les règles déjà écrites dans deux des trois autres maquettes (boutons d'en-tête sans
+   cadre, titre de page qui passe à la ligne, carte sans filet, menu sur la couleur de la page) ne sont PAS recopiées ici : voir
+   DECISIONS.md, candidats jeton / primitive. Aucun module n'est touché. Écran seulement : l'impression garde l'encre du jour
+   (primitives.css). Les règles du cadre (frame.css) viennent après ce fichier : à égalité de poids elles l'emportent, d'où les
+   :where() (poids nul) pour les boutons et les sélecteurs composés ailleurs. Le sélecteur est [data-design="material"] (et non
+   html[…]) pour la page de démonstration. */
+@media screen {
+  /* ---- barre d'application : sur la surface de la page (et non teintée), nom en titre de 22 px */
+  [data-design="material"] .f-head {
+    background: var(--sog-bg)
+  }
+  [data-design="material"] .f-head .f-name {
+    font-size: 1.375rem;
+    font-weight: 400
+  }
+
+  /* ---- boutons : pastille (la moitié de la hauteur d'une cible), filet « outline », texte de la couleur primaire ; le principal
+     est plein (primitives.css) ; enfoncé : calque d'état. Hors lignes de liste, vignettes des réglages (leur forme est la leur) */
+  [data-design="material"] :where(button, .f-btn):where(:not(.f-item, .f-design)) {
+    border-color: var(--sog-outline);
+    border-radius: calc(var(--sog-touch) / 2);
+    color: var(--sog-link)
+  }
+  [data-design="material"] :where(button, .f-btn):where(:not(.f-item, .f-design, .primary)):not(:disabled):active {
+    background: color-mix(in srgb, var(--sog-accent) 14%, transparent)
+  }
+  [data-design="material"] :where(button.primary, .f-btn.primary):not(:disabled):active {
+    background: color-mix(in srgb, var(--sog-accent) 82%, var(--sog-fg))
+  }
+
+  /* ---- champs : rayon de 4, filet de 1 px « outline » ; à la saisie, 2 px de la couleur primaire (un filet intérieur de plus :
+     la boîte ne bouge pas) à la place de l'anneau de focus */
+  [data-design="material"] :is(input, select, textarea):not([type="checkbox"], [type="radio"]) {
+    border-color: var(--sog-outline);
+    border-radius: var(--sog-radius-s)
+  }
+  [data-design="material"] :is(input, select, textarea):not([type="checkbox"], [type="radio"]):focus {
+    border-color: var(--sog-accent);
+    box-shadow: inset 0 0 0 1px var(--sog-accent);
+    outline: none
+  }
+
+  /* ---- cartes : ombre de 1 dp (premier des deux niveaux ; le second, 3 dp, est --sog-shadow / --sog-shadow-up : barre collante,
+     notes, fenêtres) ; tuiles de chiffres : fond tonal ; barre collante : filet discret à la place du filet primaire */
+  [data-design="material"] .f-card {
+    box-shadow: var(--sog-shadow-card)
+  }
+  [data-design="material"] .f-tiles>* {
+    background: var(--sog-surface-2)
+  }
+  [data-design="material"] .f-bar {
+    border-color: var(--sog-border)
+  }
+
+  /* ---- onglets : texte, indicateur de 3 px de la couleur primaire sous l'onglet courant, filet fin sous la rangée ; pas : puces
+     tonales (rayon 8), la courante teintée du primaire */
+  [data-design="material"] .f-tabs {
+    gap: 0;
+    border-bottom: 1px solid var(--sog-border)
+  }
+  [data-design="material"] .f-tabs>button {
+    flex: 1;
+    border-width: 0 0 3px;
+    border-color: transparent;
+    border-radius: 0;
+    background: transparent;
+    color: var(--sog-muted)
+  }
+  [data-design="material"] .f-tabs>:is([aria-pressed="true"], [aria-selected="true"], [aria-current]:not([aria-current="false"])) {
+    background: transparent;
+    border-color: var(--sog-accent);
+    color: var(--sog-link);
+    font-weight: 500
+  }
+  [data-design="material"] .f-steps>button {
+    border-color: transparent;
+    border-radius: 8px;
+    background: var(--sog-surface-2);
+    color: var(--sog-fg)
+  }
+  [data-design="material"] .f-steps>:is([aria-pressed="true"], [aria-selected="true"], [aria-current]:not([aria-current="false"])) {
+    background: color-mix(in srgb, var(--sog-accent) 24%, var(--sog-surface-2));
+    border-color: transparent;
+    color: var(--sog-fg);
+    font-weight: 600
+  }
+
+  /* ---- verbes : barre de navigation sur téléphone (64 px, icône au-dessus du libellé, indicateur actif en pastille de
+     64 × 32 derrière l'icône) ; rail sur écran (colonne de 88 px, même indicateur de 56 × 32). L'indicateur actif est teinté
+     de la couleur du module (seul usage de cette couleur ; sa variante « texte », plus claire la nuit, pour qu'il se voie sur
+     le fond sombre) ; le texte garde l'encre. */
+  [data-design="material"] .f-nav a {
+    --mat-indicator: color-mix(in srgb, var(--sog-module-text) 24%, var(--sog-surface));
+    font-weight: 500
+  }
+  [data-design="material"] .f-nav a[aria-current="page"] {
+    background: var(--mat-indicator);
+    color: var(--sog-fg)
+  }
+  [data-design="material"] .f-nav a .f-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--sog-muted)
+  }
+  [data-design="material"] .f-nav a[aria-current="page"] .f-icon {
+    color: var(--sog-fg)
+  }
+  @media (max-width: 760px) {
+    :root[data-design="material"] {
+      --f-tab-h: 64px
+    }
+  }
+  [data-design="material"] .f-tabbar {
+    border-top-color: transparent;
+    box-shadow: var(--sog-shadow-up)
+  }
+  [data-design="material"] .f-tabbar a {
+    --f-tab-pill: color-mix(in srgb, var(--sog-module-text) 24%, var(--sog-surface));
+    color: var(--sog-fg);
+    font-weight: 500
+  }
+  [data-design="material"] .f-tabbar a[aria-current="page"] {
+    color: var(--sog-fg);
+    font-weight: 600
+  }
+  [data-design="material"] .f-tab-ico {
+    width: 64px;
+    height: 32px;
+    border-radius: 16px
+  }
+  [data-design="material"] .f-tabbar .f-icon {
+    color: var(--sog-muted)
+  }
+  [data-design="material"] .f-tabbar a[aria-current="page"] .f-icon {
+    color: var(--sog-fg)
+  }
+  @media (min-width: 761px) {
+    [data-design="material"] body {
+      grid-template-columns: 88px minmax(0, 1fr)
+    }
+    [data-design="material"] .f-nav {
+      padding: 12px 4px
+    }
+    [data-design="material"] .f-nav ul {
+      gap: 12px
+    }
+    [data-design="material"] .f-nav a {
+      position: relative;
+      isolation: isolate;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 4px;
+      min-height: 64px;
+      padding: 8px 2px 4px;
+      border-radius: 16px;
+      font-size: .75rem;
+      line-height: 1.2;
+      text-align: center;
+      overflow-wrap: anywhere
+    }
+    [data-design="material"] .f-nav a[aria-current="page"] {
+      background: transparent
+    }
+    [data-design="material"] .f-nav a[aria-current="page"]::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 4px;
+      left: 50%;
+      width: 56px;
+      height: 32px;
+      margin-left: -28px;
+      border-radius: 16px;
+      background: var(--mat-indicator)
+    }
+  }
+}

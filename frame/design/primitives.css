@@ -38,10 +38,12 @@ button,
 .f-btn {
   min-height: var(--sog-touch);
   padding: 0 14px;
-  border: 1px solid var(--sog-border);
+  border: var(--sog-btn-border, 1px solid var(--sog-border));
   border-radius: var(--sog-radius);
-  background: var(--sog-surface);
-  color: var(--sog-fg);
+  background: var(--sog-btn-bg, var(--sog-surface));
+  color: var(--sog-btn-ink, var(--sog-fg));
+  box-shadow: var(--sog-btn-shadow, none);
+  text-shadow: var(--sog-btn-text-shadow);
   font: inherit;
   text-decoration: none;
   cursor: pointer
@@ -54,9 +56,10 @@ button,
 }
 button.primary,
 .f-btn.primary {
-  background: var(--sog-accent);
-  color: var(--sog-accent-ink);
-  border-color: var(--sog-accent)
+  background: var(--sog-btn-primary-bg, var(--sog-accent));
+  color: var(--sog-btn-primary-ink, var(--sog-accent-ink));
+  border-color: var(--sog-btn-primary-border, var(--sog-accent));
+  text-shadow: var(--sog-btn-primary-text-shadow)
 }
 button:disabled,
 .f-btn[aria-disabled="true"] {
@@ -71,6 +74,7 @@ textarea {
   border: 1px solid var(--sog-border);
   border-radius: var(--sog-radius);
   background: var(--sog-surface-2);
+  box-shadow: var(--sog-field-shadow, none);
   font-size: var(--sog-field-text)
 }
 input[type="checkbox"],
@@ -94,10 +98,11 @@ input[type="radio"] {
   font-family: var(--sog-font-title);
   text-transform: var(--sog-title-case);
   letter-spacing: var(--sog-title-spacing);
+  font-weight: var(--sog-title-weight);
   line-height: 1.25
 }
 .f-view h1 {
-  font-size: var(--sog-h1);
+  font-size: var(--sog-title-size);
   margin: 0 0 10px
 }
 .f-view h2 {
@@ -111,14 +116,27 @@ input[type="radio"] {
 
 /* ---- carte, ligne, champ, case, texte secondaire, messages */
 .f-card {
-  background: var(--sog-surface);
-  border: 1px solid var(--sog-border);
+  background: var(--sog-card-bg, var(--sog-surface));
+  border: var(--sog-card-border, 1px solid var(--sog-border));
+  box-shadow: var(--sog-card-shadow, none);
   border-radius: var(--sog-radius);
   padding: 12px 14px;
   margin-bottom: var(--sog-gap)
 }
 .f-card.f-accent {
   border-color: var(--sog-accent)
+}
+/* lecteurs d'écran seulement : présent dans l'arbre (h1 d'un module dont l'en-tête porte le titre : ctx.titled), invisible */
+.f-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0
 }
 .f-muted {
   color: var(--sog-muted);
@@ -236,9 +254,10 @@ details.f-card[open]>summary {
   flex: 1
 }
 :is(.f-tabs, .f-steps)>:is([aria-pressed="true"], [aria-selected="true"], [aria-current]:not([aria-current="false"])) {
-  background: var(--sog-accent);
-  color: var(--sog-accent-ink);
-  border-color: var(--sog-accent)
+  background: var(--sog-btn-primary-bg, var(--sog-accent));
+  color: var(--sog-btn-primary-ink, var(--sog-accent-ink));
+  border-color: var(--sog-btn-primary-border, var(--sog-accent));
+  text-shadow: var(--sog-btn-primary-text-shadow)
 }
 .f-steps>[data-done]::after {
   content: " ✓"
@@ -265,18 +284,19 @@ details.f-card[open]>summary {
   }
 }
 
-/* ---- barre collante en bas (résultat, enregistrement) */
+/* ---- barre collante en bas (résultat, enregistrement) ; sur téléphone elle se colle au-dessus de la barre d'onglets du cadre
+   (--f-tab-space, frame.css : 0 quand il n'y en a pas) */
 .f-bar {
   position: sticky;
-  bottom: 0;
+  bottom: var(--f-tab-space, 0px);
   z-index: 2;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  background: var(--sog-surface);
+  background: var(--sog-bar-bg, var(--sog-surface));
   border: 1px solid var(--sog-accent);
-  border-radius: var(--sog-radius);
+  border-radius: var(--sog-bar-radius, var(--sog-radius));
   padding: 10px 14px;
   margin-bottom: var(--sog-gap);
   box-shadow: var(--sog-shadow-up)
@@ -404,6 +424,322 @@ details.f-card[open]>summary {
   margin: 8px 0
 }
 
+/* ---- feuille à trois positions (frame/lib/sheet.js, frame/INTEGRATION.md § 11) : le bloc du bas d'une vue fixe, réduit (sa
+   ligne d'en-tête seule), normal, agrandi. Neutre : --sog-surface, un filet en haut, une barrette de poignée. Le module
+   donne le balisage (racine .f-sheet, dedans .f-sheet-panel avec .f-sheet-head puis son contenu) et peut poser les jetons
+   sur sa racine ; la feuille ne sait pas ce qu'elle contient. Les jetons valent « <n>% » (part de la hauteur de la racine)
+   ou « <n>px » : sheet.js les lit. Poids nul sur les jetons (:where) : une règle du module les remplace sans !important. La poignée et le ✕ sont des boutons :
+   leurs règles pèsent trois classes pour l'emporter sur celles des designs (`[data-design] :is(button, .f-btn)`).
+   Poignée nue (règle 13 b de V3_SPECIFICATION § 7.1) : le module pose la classe `f-sheet-head-bare` sur `.f-sheet-head` quand le
+   contenu est un dessin ; voir plus bas. */
+:where(.f-sheet) {
+  --f-sheet-head: 45px;
+  --f-sheet-head-bare: 28px;
+  --f-sheet-default: 30%;
+  --f-sheet-default-min: 170px;
+  --f-sheet-expanded: 70%;
+  --f-sheet-expanded-min: 260px;
+  --f-sheet-side: 40%;
+  --f-sheet-side-min: 280px;
+  --f-sheet-side-max: 60%
+}
+@media (min-width: 761px) {
+  :where(.f-sheet) {
+    --f-sheet-default: 35%
+  }
+}
+.f-sheet>.f-sheet-panel {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: max(var(--f-sheet-default), var(--f-sheet-default-min));
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: var(--sog-surface);
+  border-top: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius) var(--sog-radius) 0 0;
+  box-shadow: 0 -2px 8px #0000001a
+}
+.f-sheet[data-sheet="collapsed"]>.f-sheet-panel {
+  height: var(--f-sheet-head)
+}
+.f-sheet[data-sheet="expanded"]>.f-sheet-panel {
+  height: max(var(--f-sheet-expanded), var(--f-sheet-expanded-min))
+}
+/* réduite : seule la ligne d'en-tête reste (le reste n'est ni vu ni atteint au clavier) ; en paysage la feuille est une colonne
+   à deux positions, sans position réduite (:where : le poids de la règle ne change pas) */
+:where(html:not(.f-land)) .f-sheet[data-sheet="collapsed"]>.f-sheet-panel>:not(.f-sheet-head) {
+  display: none
+}
+/* Pas de transition CSS sur la hauteur : le glisser et le glissement jusqu'à la position se font sur une couche que sheet.js
+   pose en ligne le temps du mouvement (hauteur --f-sheet-live, marge opposée calc(--f-sheet-rest − --f-sheet-live) : la carte ne
+   change pas de taille) et retire à la fin ; la hauteur de repos est celle des règles ci-dessus, posée une fois. La classe
+   `f-sheet-nt` n'a pas de règle : elle dit aux modules « la feuille est sous le doigt ou vient d'être placée sans glissement :
+   ne dessinez pas maintenant » (le dessin reprend à onSettle). */
+.f-sheet .f-sheet-head {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  height: calc(var(--f-sheet-head) - 1px);
+  font-size: .92em;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none
+}
+.f-sheet .f-sheet-head [hidden] {
+  display: none
+}
+.f-sheet .f-sheet-head .f-sheet-grip {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 6px 8px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: grab;
+  touch-action: none
+}
+.f-sheet .f-sheet-head .f-sheet-grip:active {
+  cursor: grabbing
+}
+.f-sheet .f-sheet-head .f-sheet-grip::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: 36px;
+  height: 4px;
+  margin-left: -18px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--sog-muted) 55%, transparent)
+}
+.f-sheet .f-sheet-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+.f-sheet .f-sheet-head .f-sheet-close {
+  flex: none;
+  width: var(--sog-touch);
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 1.2em;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+  touch-action: manipulation
+}
+/* ---- poignée nue (frame/INTEGRATION.md § 11, « Bare handle ») : `.f-sheet-head-bare` posée par le module sur `.f-sheet-head` quand
+   le contenu est un dessin qui se décrit lui-même (coupe, profil). Une ligne de --f-sheet-head-bare (28 px) : la barrette de
+   préhension, pas de titre, les boutons de la ligne (puces, ◀ ▶, ✕) à droite sur la même ligne. Même glisser et même toucher que
+   la poignée normale (le primitif ne sait pas que la ligne est nue : il mesure la tête). Les boutons font 28 px de haut à l'écran
+   et une zone de toucher plus grande par ::after, centrée sur le bouton quelle que soit sa bordure (44 px de haut, au moins 32 de
+   large ; comme .f-ov-btn : le haut est rogné par le bord de la feuille, le bas mord de 8 px sur le corps) ; l'écart de 4 px entre
+   eux garde les zones côte à côte, sans recouvrement. Réduite, la feuille ne montre que cette ligne : la règle :has donne la
+   hauteur (28 px et le filet de 1 px), le primitif mesure la même chose pour le glisser. */
+.f-sheet .f-sheet-head.f-sheet-head-bare {
+  gap: 4px;
+  align-items: center;
+  height: var(--f-sheet-head-bare);
+  font-size: .85em
+}
+.f-sheet .f-sheet-head.f-sheet-head-bare .f-sheet-grip {
+  align-self: stretch;
+  padding: 0
+}
+.f-sheet .f-sheet-head.f-sheet-head-bare .f-sheet-grip::before {
+  top: 5px
+}
+.f-sheet .f-sheet-head.f-sheet-head-bare .f-sheet-title {
+  display: none
+}
+.f-sheet .f-sheet-head.f-sheet-head-bare button:not(.f-sheet-grip) {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  height: 28px;
+  min-height: 0;
+  min-width: 28px;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1;
+  touch-action: manipulation
+}
+.f-sheet .f-sheet-head.f-sheet-head-bare button:not(.f-sheet-grip)::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(100% + 6px);
+  min-width: 32px;
+  height: 44px;
+  transform: translate(-50%, -50%)
+}
+.f-sheet .f-sheet-head.f-sheet-head-bare .f-sheet-close {
+  width: 28px;
+  font-size: 1.1em
+}
+.f-sheet[data-sheet="collapsed"]>.f-sheet-panel:has(>.f-sheet-head-bare) {
+  height: calc(var(--f-sheet-head-bare) + 1px)
+}
+/* la zone qui défile dans la feuille (sous l'en-tête) : la page, elle, ne défile jamais */
+.f-sheet .f-sheet-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y
+}
+/* paysage sur un téléphone (html.f-land, frame.css ; frame/INTEGRATION.md § 11) : la feuille devient une colonne à droite de la
+   carte, sur toute la hauteur de la vue, à deux positions (normale : --f-sheet-side, agrandie : --f-sheet-side-max, parts de la
+   largeur de la racine, avec le plancher --f-sheet-side-min) ; sa ligne d'en-tête reste en haut, titre de la colonne et poignée
+   (un toucher bascule entre les deux positions), le corps défile dedans. La racine passe en rangée : la carte (l'enfant qui
+   grandit) prend le reste, pleine hauteur. Le module n'écrit rien : positions, onChange et onSettle sont ceux du portrait. */
+html.f-land .f-sheet {
+  display: flex;
+  flex-direction: row
+}
+html.f-land .f-sheet>* {
+  min-width: 0
+}
+html.f-land .f-sheet>.f-sheet-panel {
+  align-self: stretch;
+  width: max(var(--f-sheet-side), var(--f-sheet-side-min));
+  height: auto;
+  border-top: 0;
+  border-left: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius) 0 0 0;
+  box-shadow: -2px 0 8px #0000001a
+}
+html.f-land .f-sheet[data-sheet="expanded"]>.f-sheet-panel {
+  width: max(var(--f-sheet-side-max), var(--f-sheet-side-min))
+}
+/* la poignée d'une colonne : un chevron au bout de la ligne de titre, vers la gauche pour agrandir, vers la droite pour revenir */
+html.f-land .f-sheet .f-sheet-head .f-sheet-grip::after {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 0 6px 0 8px;
+  border: solid var(--sog-muted);
+  border-width: 0 0 2px 2px;
+  transform: rotate(45deg)
+}
+/* poignée nue : sans titre pour la repousser, le chevron va au bout de la zone de préhension, contre les boutons */
+html.f-land .f-sheet .f-sheet-head.f-sheet-head-bare .f-sheet-grip::after {
+  margin-left: auto
+}
+html.f-land .f-sheet[data-sheet="expanded"] .f-sheet-head .f-sheet-grip::after {
+  transform: rotate(-135deg)
+}
+
+/* ---- couche de superposition d'un module fixe (frame/INTEGRATION.md § 9.3) : deux colonnes de boutons posées sur la zone de
+   carte du module (le cadre dessine la couche et la place en pixels, app.js ; ctx.overlay.left / .right / .button). Jamais sur
+   la feuille : la couche a la taille de la carte. Les cases sont des boutons ronds de 44 px (cible de 48 px, la zone cliquable
+   déborde de 2 px), --sog-surface à 92 %, un filet, une ombre légère ; un design qui n'arrondit rien (--sog-radius: 0) les garde
+   carrés. La couche laisse passer les gestes de la carte : seuls ses boutons les prennent. La colonne de droite passe à une
+   deuxième colonne, à sa gauche, quand la carte est trop basse pour tous ses boutons. Le bouton plein écran du cadre est
+   toujours le dernier (order). Les règles des boutons pèsent trois classes : celles des designs ne les atteignent pas. */
+.f-overlay {
+  position: absolute;
+  z-index: 3;
+  box-sizing: border-box;
+  pointer-events: none
+}
+.f-overlay[hidden] {
+  display: none
+}
+.f-ov-col {
+  position: absolute;
+  top: 0;
+  box-sizing: border-box;
+  max-height: 100%;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none
+}
+.f-ov-left {
+  left: 0;
+  align-items: flex-start
+}
+.f-ov-right {
+  right: 0;
+  align-items: flex-start;
+  /* sous wrap-reverse, l'axe transversal est inversé : flex-start = bord droit de la ligne */
+  flex-wrap: wrap-reverse;
+  align-content: flex-start
+}
+.f-overlay button.f-ov-btn {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--sog-border);
+  border-radius: min(50%, calc(var(--sog-radius) * 22));
+  background: color-mix(in srgb, var(--sog-surface) 92%, transparent);
+  color: var(--sog-fg);
+  box-shadow: 0 2px 8px #0000002e;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation
+}
+.f-overlay button.f-ov-btn[hidden] {
+  display: none
+}
+.f-overlay button.f-ov-btn::after {
+  content: "";
+  position: absolute;
+  inset: -2px
+}
+.f-overlay button.f-ov-btn .f-icon {
+  width: 22px;
+  height: 22px;
+  vertical-align: 0
+}
+.f-overlay button.f-ov-btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--sog-accent) 18%, var(--sog-surface));
+  border-color: var(--sog-accent)
+}
+.f-overlay button.f-ov-btn:active {
+  background: color-mix(in srgb, var(--sog-accent) 24%, var(--sog-surface))
+}
+.f-overlay button.f-ov-btn.f-ov-full {
+  order: 99
+}
+/* paysage sur un téléphone : la carte n'a que ~333 px de haut ; l'écart entre les boutons passe de 8 à 4 px avant que la colonne
+   ne se replie (six boutons de 44 px tiennent alors dans la carte, sept se replient) */
+html.f-land .f-ov-col {
+  gap: 4px
+}
+
 /* ---- impression (le compte rendu d'abord) : encre du jour (les jeux de nuit ne valent qu'à l'écran), une colonne,
    sans en-tête, menu, barres, boutons ni notes ; les sections repliées sont ouvertes par le cadre (beforeprint).
    !important : l'impression doit l'emporter sur toute règle d'écran, celles des modules comprises. */
@@ -415,11 +751,14 @@ details.f-card[open]>summary {
   }
   .f-head,
   .f-nav,
+  .f-tabbar,
   .f-notes,
   .f-modal,
   .f-bar,
   .f-tabs,
   .f-steps,
+  .f-overlay,
+  .f-tabpop,
   .f-tools button,
   button,
   .f-btn {
