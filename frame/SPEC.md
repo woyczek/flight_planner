@@ -247,6 +247,12 @@ used alone:
 
 ## 3. Application skeleton (`frame/index.html`, `frame/app.js`, `frame/frame.css`)
 
+**Start** (28 Oct 2026): `index.html` loads the store (`store/frame_data.js`, `transport_github.js`,
+`transport_launcher.js`), aerodb, then `app.js`, as classic scripts in that order. If one store script is missing when
+`app.js` runs (lost on the network, no copy in the service worker), `app.js` asks it again once (bypassing the HTTP
+cache), then puts itself back in the page and starts from scratch. Still missing: the view shows a card naming the file
+with a "Reload" button (×4), never a blank page and never a JavaScript error. Test A28.
+
 ### 3.1 Navigation
 
 - An application (today: Pilot) lists its modules, one short **verb** each, seven at most.

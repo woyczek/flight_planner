@@ -1450,3 +1450,14 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     `etaOf` for a past unstarted flight, numbers read as numbers, positions along the great circle). Its row in SPEC § 3
     and a paragraph in INTEGRATION § 6.
   - **`frame/lib/routing.js`** (moved from the Map): its row in SPEC § 3.
+- **28 Oct 2026 — A store script lost on the way no longer leaves a blank page** (E1 of the Settings gate, Atmosphere at
+  390 / material / fr, 1 run in 6: "Cannot read properties of undefined (reading 'detect')"):
+  - Cause: not a race in `app.js`. `FD` was there but `FD.launcher` was not: `store/transport_launcher.js` had not run
+    (its load lost, the runner's server or a service worker without its copy). Reproduced by aborting the file: the frame
+    stopped on the first `FD.launcher.detect()`; with `transport_github.js` lost, on `FD.github.persist` ("reading
+    'persist'"), before anything was drawn.
+  - Fix at the source rather than a guard on each of the 21 uses: `app.js` checks its three store scripts first; a
+    missing one is asked again once (`?retry=`), then `app.js` runs again from scratch. Still missing: a card in the view
+    names the file and offers "Reload" (×4, the language of the device or of the browser), no JavaScript error.
+  - Checked: each of the three files lost once → the frame starts, the module mounted, no error; lost for good → the
+    card, no module, no error. Case A28 (A26 and A27 were taken by the Settings session).

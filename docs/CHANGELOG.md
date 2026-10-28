@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: a store script lost at start no longer breaks the page** (`frame/app.js`; SPEC § 3, DECISIONS; test A28): the
+  frame asks a missing store file again once and starts; if it is still missing, the page says which file and offers
+  "Reload" instead of a blank page and a JavaScript error ("reading 'detect'").
 - **Design: Aqua, for computers** (`frame/design/tokens.css`, `aqua.css`, `aqua/`; `frame/app.js`, `frame/index.html`,
   `frame/sw.js`; design SPEC § 1–3, DECISIONS, V3_SPECIFICATION § 10.3; tests H5, H6): brushed metal header and rail, glass
   cards, gel buttons, striped page and one desk panel per module, day and night. Offered and drawn on a computer only

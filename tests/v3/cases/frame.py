@@ -22,9 +22,10 @@ Rules covered
     only, one line per source with a real link (44 px, a new tab), its status, its licence and the cycle in force; the screen
     fetches nothing (A20).
 
-  * the weather layer (frame/lib/weather_store.js, INTEGRATION 14): its bench passes (A25).
+  * the weather layer (frame/lib/weather_store.js, INTEGRATION 14): its bench passes (A25);
+  * a store script lost on the way: asked again once, the frame starts; lost for good, the page says why with a Reload button (A28).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25.
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28.
 """
 import json
 import re
@@ -924,3 +925,36 @@ def a25(c):
     r = c.js('({ pass: window.__weatherBench.pass, fail: window.__weatherBench.fail, rows: window.__weatherBench.rows })')
     bad = [x for x in (r['rows'] or []) if str(x).startswith('FAIL')][:3]
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}", 'every assertion of the bench passes')
+
+
+@case('A28', 'A store script lost on the way', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/SPEC 3 (start): a store script lost once is asked again and the frame starts; lost for good, the page says why')
+def a28(c):
+    # lost once (the network, a service worker without its copy): asked again, the frame starts as usual
+    lost = {'n': 0}
+
+    def once(route):
+        if lost['n'] == 0:
+            lost['n'] += 1
+            return route.abort()
+        route.continue_()
+    c.context.route(re.compile(r'/frame/store/transport_launcher\.js'), once)
+    c.open('atmosphere')
+    c.eq(lost['n'], 1, 'the first load of the launcher transport was lost', what='lost loads')
+    c.eq(c.count('#fView section[data-module]'), 1, 'one module in the view after the second try', what='modules mounted')
+    c.eq(c.count('#fView .f-err'), 0, 'no failure message once the file came', what='failure messages')
+    # lost for good (a fresh context, no service worker to serve its copy): no blank page, the reason and a Reload button
+    ctx = c.context.browser.new_context(viewport=c.page.viewport_size, service_workers='block')
+    try:
+        ctx.route(re.compile(r'/frame/store/transport_github\.js'), lambda route: route.abort())
+        p, errs = ctx.new_page(), []
+        p.on('pageerror', lambda e: errs.append(str(e)[:200]))
+        p.goto(f'{c.base}/frame/index.html#atmosphere', wait_until='load')
+        p.wait_for_selector('#fView .f-err[role=alert]', timeout=8000)
+        msg = p.inner_text('#fView .f-err')
+        c.ok('store/transport_github.js' in msg, msg, 'the message names the lost file')
+        c.ge(p.locator('#fView .f-err button').bounding_box()['height'], 43.5, "a Reload button of the frame's touch size", what='Reload button height')
+        c.eq(p.locator('#fView section[data-module]').count(), 0, 'no module is mounted on a frame without its store', what='modules mounted')
+        c.eq(errs, [], 'no JavaScript error, the store missing', what='page errors')
+    finally:
+        ctx.close()

@@ -21,6 +21,55 @@
   //     adresse ;
   //   · hors ligne : service worker du cadre (frame/sw.js : le cadre et les modules gardés, nouvelle version proposée au
   //     rechargement), appels sortants des modules relayés par le lanceur s'il y en a un (ctx.net).
+  // scripts du store posés avant le cadre (index.html) : un fichier perdu en route (réseau, copie du service worker
+  // indisponible) laissait la page vide sur une erreur (« reading 'detect' », « reading 'persist' ») ; il est redemandé
+  // une fois, puis le cadre repart de zéro (app.js remis dans la page) ; toujours perdu, la page dit pourquoi et propose
+  // de recharger, au lieu de rester blanche
+  const STORE = [
+      ['store/frame_data.js', () => window.FrameData],
+      ['store/transport_github.js', () => window.FrameData?.github],
+      ['store/transport_launcher.js', () => window.FrameData?.launcher]
+    ],
+    lost = STORE.filter(([, has]) => !has()).map(([p]) => p);
+  if (lost.length) {
+    const me = document.currentScript.src,
+      add = (src, where) => new Promise(r => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = s.onerror = r;
+        where.append(s);
+      });
+    if (!window.__sogStoreRetry) {
+      window.__sogStoreRetry = lost;
+      (async () => {
+        for (const p of lost) await add(new URL(`${p}?retry=${Date.now()}`, me).href, document.head);
+        add(me, document.body);
+      })();
+    } else {
+      const l = (localStorage.getItem('sogFrame:lang') || navigator.language || 'fr').slice(0, 2),
+        k = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(l)),
+        txt = ['L’application n’a pas pu charger tous ses fichiers ({f}). Vérifiez le réseau, puis rechargez la page.',
+          'The application could not load all its files ({f}). Check the network, then reload the page.',
+          'Die Anwendung konnte nicht alle Dateien laden ({f}). Prüfen Sie das Netz und laden Sie die Seite neu.',
+          'La aplicación no pudo cargar todos sus archivos ({f}). Compruebe la red y vuelva a cargar la página.'
+        ][k].replace('{f}', lost.join(', ')),
+        btn = ['Recharger', 'Reload', 'Neu laden', 'Recargar'][k],
+        v = document.getElementById('fView') || document.body,
+        box = document.createElement('div');
+      box.className = 'f-card f-err';
+      box.setAttribute('role', 'alert');
+      box.append(Object.assign(document.createElement('p'), {
+        textContent: txt
+      }), Object.assign(document.createElement('button'), {
+        type: 'button',
+        className: 'f-btn primary',
+        textContent: btn,
+        onclick: () => location.reload()
+      }));
+      v.replaceChildren(box);
+    }
+    return;
+  }
   const FD = window.FrameData;
   // paysage sur un téléphone (V3_SPECIFICATION.md § 7.1 règle 7) : <html class="f-land"> quand la fenêtre est plus large que haute
   // et de moins de 1024 px (téléphone ou petite tablette tournée) ; la barre du bas devient un rail à gauche, la feuille d'un
