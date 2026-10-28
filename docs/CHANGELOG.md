@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: the Design card says when Aqua does not apply** (`frame/settings/settings.js`; SPEC § 3 item 3b,
+  DECISIONS, Settings help ×4; test A26): on a device that is not a computer, Aqua chosen shows Standard; one line under
+  the thumbnails says so, Standard's thumbnail is marked, and touching a thumbnail replaces the choice.
 - **Settings: seven cards at Discovery, folded groups above; the launcher's administration behind Administration**
   (`frame/settings/groups.js` new, `settings.js`, `launcher.js`, `admin.js`, `admin_links.js`, `diagnostic.js`,
   `frame/frame.css`, `frame/app.js` `LAZY.settings`, `frame/sw.js`; SPEC § 1, § 3, § 6, INTEGRATION § 1, DECISIONS,

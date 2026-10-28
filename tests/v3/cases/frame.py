@@ -879,6 +879,24 @@ def a20(c):
     c.shot(f'A20_{c.design}_{c.width}_{c.lang}.png')
 
 
+@case('A26', 'Design card: a computer-only design on a phone', 'A', screens=False, designs=('standard',), night=False,
+      rule='frame/settings SPEC 3 item 3b: applied differs from design → one line, the applied thumbnail marked, no Aqua thumbnail')
+def a26(c):
+    if not c.phone:
+        c.skip('a phone only')
+    c.open('settings', docs=[['device/design.json', {'design': 'aqua', 'tone': 'auto'}, 'cache']])
+    c.until("!!document.querySelector('[data-card=\"design\"]')", what='the Design card is drawn')
+    # until the frame gives design().applied (Aqua's lot, origin/v3-aqua), there is nothing to check
+    if not c.js("fetch(new URL('/frame/app.js', location.href)).then(r => r.text()).then(t => t.includes('appliedDesign'))"):
+        c.skip('the frame does not give design().applied yet (Aqua not integrated)')
+    c.eq(c.count('[data-design-pick="aqua"]'), 0, 'no Aqua thumbnail on a phone (designs() leaves it out)', what='Aqua thumbnails')
+    c.eq(c.attr('[data-design-pick="standard"]', 'aria-pressed'), 'true', 'Standard, the design applied, is marked as set', what='Standard aria-pressed')
+    line = c.text('[data-card="design"] [data-design-applied]') or ''
+    c.ok('Aqua' in line and 'Standard' in line, f'line {line!r}', 'one line names Aqua and Standard')
+    c.ok(c.js("(() => { const p = document.querySelector('[data-design-applied]'); return !!p.previousElementSibling?.matches('.f-designs') })()"),
+         'the line is not right after the thumbnails', 'the line sits under the thumbnails')
+
+
 @case('A25', 'Weather layer bench', 'A', tags=('weather',), designs=('standard',), screens=False, night=False,
       rule='frame/INTEGRATION 14; the bench reported 73/73')
 def a25(c):

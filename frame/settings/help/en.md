@@ -28,7 +28,8 @@ tools use them to prefill; with several users, the trigram is needed.
 
 **The design.** “Design” shows one thumbnail per look — Standard, Cabinet, Rugged — and the tone: Automatic (as the
 system), Day or Night. One tap applies it at once, on this device only. A design reserved for the computer does not
-apply on a phone: the card says which one is shown instead.
+apply on a phone: the card says which one is shown instead, and its thumbnail is marked; touching a thumbnail replaces
+that choice.
 
 **The usages.** The sentence at the top of “Usages” says how data are exchanged. With no box ticked you are “Alone on
 this device”: nothing goes elsewhere. Tick “Alone, on several devices” or “Several users (git data repository)” to
@@ -185,4 +186,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: d98a12536cd0 -->
+<!-- fr: b426d7271662 -->

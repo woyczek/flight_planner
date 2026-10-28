@@ -141,8 +141,10 @@
     textured: ['texturé', 'textured', 'texturiert', 'texturizado'],
     sample: ['Carte d’exemple', 'Sample card', 'Beispielkarte', 'Tarjeta de ejemplo'],
     // design choisi qui ne s'applique pas ici (Aqua : ordinateur seulement) : ce que l'appareil montre à la place
-    designDesk: ['{d} est réservé à l’ordinateur ; ici : {a}', '{d} is for the computer only; here: {a}',
-      '{d} ist dem Computer vorbehalten; hier: {a}', '{d} está reservado al ordenador; aquí: {a}'
+    designDesk: ['{d}, choisi sur ce poste, ne vaut que sur un ordinateur : {a} ici. Toucher une vignette remplace ce choix.',
+      '{d}, chosen on this device, only applies on a computer: {a} here. Touching a thumbnail replaces this choice.',
+      '{d}, auf diesem Gerät gewählt, gilt nur auf einem Computer: hier {a}. Ein Tippen auf eine Vorschau ersetzt diese Wahl.',
+      '{d}, elegido en este dispositivo, solo vale en un ordenador: aquí {a}. Tocar una miniatura sustituye esta elección.'
     ],
     // usages
     usages: ['Usages', 'Usages', 'Nutzungen', 'Usos'],
@@ -526,10 +528,10 @@
         return d ? t(d.label) : String(id || '').replace(/^./, ch => ch.toUpperCase());
       };
       const desk = cur.applied && cur.design && cur.applied !== cur.design ? `<p class="f-muted" data-design-applied>${esc(t(T.designDesk, { d: nameOf(cur.design), a: nameOf(cur.applied) }))}</p>` : '';
-      cards.push(`<div class="f-card" data-card="design"><h2>${esc(t(T.design))}</h2><p class="f-muted">${esc(t(T.designHint))}</p>${desk}
-        <div class="f-designs">${sets.map(d => `<button type="button" class="f-design" data-design-pick="${esc(d.id)}" aria-pressed="${cur.design === d.id}">
+      cards.push(`<div class="f-card" data-card="design"><h2>${esc(t(T.design))}</h2><p class="f-muted">${esc(t(T.designHint))}</p>
+        <div class="f-designs">${sets.map(d => `<button type="button" class="f-design" data-design-pick="${esc(d.id)}" aria-pressed="${(cur.applied || cur.design) === d.id}">
           <span class="f-design-thumb" data-design="${esc(d.id)}" data-tone="${night ? 'night' : 'day'}"><span class="f-design-bar"></span><span class="f-design-card">${esc(t(T.sample))}<span class="f-design-chip"></span></span></span>
-          <span class="f-design-name">${esc(t(d.label))}${d.textured ? ` <span class="f-muted">· ${esc(t(T.textured))}</span>` : ''}</span></button>`).join('')}</div>
+          <span class="f-design-name">${esc(t(d.label))}${d.textured ? ` <span class="f-muted">· ${esc(t(T.textured))}</span>` : ''}</span></button>`).join('')}</div>${desk}
         <h3>${esc(t(T.tone))}</h3>${['auto', 'day', 'night'].map(k => `<label class="f-check"><input type="radio" name="sogTone" data-tone-pick="${k}" ${(cur.tone || 'auto') === k ? 'checked' : ''}>${esc(t(T.tones[k]))}</label>`).join('')}</div>`);
     }
     // usages

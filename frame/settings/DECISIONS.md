@@ -429,3 +429,8 @@ rule 18); only the lab entry has it. The lab screen starts with a "Settings › 
     (`c.time.fmtDateZ`), "Device "…" forgotten." for one device, a failed Forget keeps the state shown and says the
     launcher does not answer, "Open them too" names an address still closed. Point 1 (`lan_open(every)` touching the
     pairing code) is the frame's (`tools/launch.py`).
+- **28 Oct 2026 — Design card and Aqua** (ergonomics session; the frame's contract `design()` → `{ design, tone,
+  applied }` of origin/v3-aqua b13cffe73): when the design applied is not the one chosen (Aqua chosen, a device that is
+  not a computer), one line ×4 under the thumbnails says so and that touching a thumbnail replaces the choice; the
+  thumbnail marked as set is the applied one (Standard). `designs()` already leaves Aqua out there. Test A26 (phone,
+  Aqua remembered) skips itself while the frame does not give `applied`.

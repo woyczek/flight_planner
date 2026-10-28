@@ -662,7 +662,8 @@ la línea «Menú:» indica qué herramientas muestra; una herramienta oculta si
 
 **El diseño.** «Diseño» muestra una miniatura por aspecto — Estándar, Gabinete, Robusto — y el tono: Automático
 (como el sistema), Día o Noche. Un toque lo aplica en el acto, solo en este dispositivo. Un diseño reservado al
-ordenador no se aplica en un teléfono: la tarjeta dice cuál se muestra en su lugar.
+ordenador no se aplica en un teléfono: la tarjeta dice cuál se muestra en su lugar, y su miniatura está marcada; tocar
+una miniatura sustituye esa elección.
 
 **Los usos.** La frase al principio de «Usos» indica cómo se intercambian los datos. Sin casilla marcada, está «Solo en
 este dispositivo»: nada sale a otro lugar. Marque «Solo, en varios dispositivos» o «Varios usuarios (repositorio git de
@@ -828,4 +829,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: d98a12536cd0 -->
+<!-- fr: b426d7271662 -->

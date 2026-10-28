@@ -80,7 +80,9 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    outlined; the tone Automatic (as the system), Day, Night. One tap calls `saveDesign({ design, tone })`: the frame
    applies it and keeps `device/design.json`; settings never writes it. When the design applied is not the one chosen
    (`design()` → `{ design, tone, applied }`, `applied !== design`: Aqua is for the computer only and `designs()` leaves it
-   out elsewhere), one line under the hint says so: "Aqua is for the computer only; here: Standard" (×4, `[data-design-applied]`); the screen is drawn again on the frame's `frame-desk` event while the Design card is on screen. The thumbnails keep `[data-design-pick="<id>"]` (Aqua's tests H5, H6).
+   out elsewhere), one line under the thumbnails says so: "Aqua, chosen on this device, only applies on a computer: Standard
+   here. Touching a thumbnail replaces this choice." (×4, `[data-design-applied]`), and the thumbnail of the design applied
+   (`applied`, else `design`) is the one marked `aria-pressed="true"`; the screen is drawn again on the frame's `frame-desk` event while the Design card is on screen. The thumbnails keep `[data-design-pick="<id>"]` (Aqua's tests H5, H6).
 4. **Usages**: one sentence first — "Alone on this device: nothing is exchanged" when no exchange is ticked (it is a
    state, not a box), otherwise how data are exchanged: through this workstation's launcher (`data/` folder, git or
    not), through the GitHub repository, or "no way to exchange here: set the access below". Then three boxes:

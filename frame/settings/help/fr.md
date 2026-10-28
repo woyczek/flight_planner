@@ -29,7 +29,8 @@ choix, la ligne « Menu : » dit quels outils il montre ; un outil caché reste 
 
 **Le design.** « Design » montre une vignette par habillage — Standard, Cabinet, Durci — et le ton : Automatique
 (comme le système), Jour ou Nuit. Un toucher l'applique aussitôt, sur cet appareil seulement. Un design réservé à
-l'ordinateur ne s'applique pas sur un téléphone : la carte dit lequel est montré à la place.
+l'ordinateur ne s'applique pas sur un téléphone : la carte dit lequel est montré à la place, et sa vignette est marquée ;
+toucher une vignette remplace ce choix.
 
 **Les usages.** La phrase en tête de « Usages » dit comment les données sont échangées. Sans case cochée, vous êtes
 « Seul sur cet appareil » : rien ne part ailleurs. Cochez « Seul, sur plusieurs appareils » ou « À plusieurs (dépôt git
