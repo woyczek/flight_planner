@@ -809,3 +809,11 @@ launcher can serve that device over the local network, so the device works as th
 ## 4. To come in the frame
 
 Usage levels, a language choice, designs taken from V2, the backend transports.
+
+**Debts, dated**:
+- 28 Oct 2026: Settings' `setup()`, `aerodb/lnmperf.js` and the data laboratory call the launcher with `fetch`. They move
+  onto `ctx.launcher` in the frame lot after the weather layer (INTEGRATION § 7).
+- 28 Oct 2026: the frame still hides `.f-module > h1` under `html.f-titled` until the modules use `ctx.titled`
+  (INTEGRATION § 6).
+- 28 Oct 2026: the frame still reads flightlog's `pending.json` (schema 2) until flightlog publishes its
+  `status.json` (INTEGRATION § 10.0).

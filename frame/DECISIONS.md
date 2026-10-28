@@ -1322,3 +1322,36 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     longer than 120 ms, at most one style write per move, the height carried by `--f-sheet-live` only, no `onSettle` at the release, one at
     the end of the glide with the position, nothing left inline, a finger put on a gliding sheet takes it where it is).
   - **Tests**: C1 (bench), C2-C6, D20 (new, maps), E1-E7 pass; see `tests/v3/PLAN.md`.
+- **28 Oct 2026 — Lot 25, after the review of the relay's frame** (points 1, 5, 6, 7 and 8 of the review, agreed by the
+  coordinator):
+  - **Service screens** (`APP.screens`). The laboratory's 45 lines leave `app.js` (`renderDatalab`, `LAZY.datalab`, the
+    `aerodb-lab` adapter).
+    - One declaration (`id`, `scripts`, `level`, `reads` / `writes`, `github`) and one generic `renderScreen()`. The
+      frame checks the level and gives the context; the script registers `window.SogScreens[id]` (one line added to
+      `aerodb/lab.js`).
+    - `app.js` names no service outside the declaration.
+  - **`unmount` during `mount`**: now a contract of INTEGRATION § 7, with what a module does about it.
+  - **Status lines published by the modules** (`cache/<module>/status.json`, INTEGRATION § 10.0). Each line has a text
+    ×4 ready, an address (`#module` or a frame screen, anything else dropped), `news` / `attn`, and an optional
+    `handoff` that the frame writes as it is, adding `from`, `source`, `at` and `fresh`.
+    - Every module may publish, not only flightlog: value at the source.
+    - The frame still reads flightlog's `pending.json` (schema 2) until it switches, and ignores it as soon as
+      flightlog's `status.json` exists.
+    - Flightlog's switch is briefed to Features SOG by the coordinator.
+  - **`ctx.titled`** and the event `frame-titled` (`{ module, titled }`), with a primitive `.f-sr` (screen readers only).
+    The module draws its `h1` hidden itself. The CSS rule hiding `.f-module > h1` stays until fuel, report, flightlog and
+    website switch (dated debt).
+  - **Dated debts** in SPEC § 4: `ctx.launcher` (setup, lnmperf, laboratory), the `h1` rule, `pending.json`.
+  - **Tests** (`t_l25`, 9 / 9):
+    - `app.js` has no `AeroLab` / `renderDatalab` / `aerodb-lab`, and `'datalab'` only in its declaration;
+    - `#datalab` drawn by `SogScreens` at the Full level, refused with the reason at Everyday;
+    - a published line shown in French with the green badge;
+    - a line whose address is `javascript:` shown without a link, a line without text dropped, the old `pending.json`
+      ignored;
+    - the touch opens `#report?from=flightlog`; report takes the hand-over (LFRS) and the header says "← My flights";
+    - `frame-titled` `{ flightlog, true }` at 375 px, then `false` at 1280 px;
+    - no JavaScript error.
+    - Also checked: without `status.json`, `pending.json` still gives its "report" line. `frame/store/test/` 90 / 90;
+      lot 21 bench 12 / 12. My older application bench stops at the phone's menu button, which the relay replaced with
+      the tab bar: a stale bench, not a regression.
+  - `tests/v3/run.py` could not run here: Playwright is not installed (the user's decision, coordinator).

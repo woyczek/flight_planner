@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: service screens, published status lines, `ctx.titled`** (`frame/app.js`, `frame/aerodb/lab.js`,
+  `frame/design/primitives.css`; INTEGRATION § 6, 7, 10, 13, SPEC § 4, DECISIONS):
+  - frame screens drawn by a service are declared (`APP.screens`), and the frame's code no longer names the data
+    laboratory;
+  - modules may publish ready status lines (`cache/<module>/status.json`), which the frame shows without knowing their
+    formats;
+  - `ctx.titled` tells a module that the phone's header carries its title;
+  - "unmount during mount" is written as a module contract;
+  - the remaining debts are dated.
 - **Tests: the V3 suite runs on Windows** (`tests/v3/lib.py`, `run.py`, `domains.py`, `README.md`) — the runner finds
   Playwright's Chromium under `%LOCALAPPDATA%` or the installed Chrome, accepts Playwright's own browser, writes UTF-8
   whatever the console, reads git in UTF-8; commands written `python tests/v3/run.py`, `SOG_CHROME` shown with the

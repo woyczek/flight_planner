@@ -128,6 +128,24 @@
       label: ['Météo', 'Weather', 'Wetter', 'Meteo'],
       icon: 'cloud',
       modules: ['atmosphere']
+    }],
+    // écrans de service : écrans du cadre ouverts par-dessus le module courant (comme les Réglages), dessinés par un service ;
+    // le cadre ne connaît que cette déclaration (frame/INTEGRATION.md § 13) : scripts chargés à la première ouverture, niveau
+    // d'usage requis, préfixes lus et écrits (comme meta.reads / meta.writes), transport GitHub de l'appareil si github
+    // (jamais le jeton) ; le script s'enregistre lui-même : window.SogScreens[id] = { screen(view, ctx) }
+    screens: [{
+      id: 'datalab', // laboratoire des données (aerodb), temporaire : retiré à la livraison de l'écran Données
+      scripts: ['aerodb/lab.js?v=0'],
+      level: 3,
+      reads: [{
+        prefix: 'sia/base/',
+        policy: 'reference'
+      }],
+      writes: [{
+        prefix: 'cache/lab/',
+        policy: 'cache'
+      }],
+      github: true
     }]
   };
   // module d'exemple pour les développeurs (modules/hello/, frame/INTEGRATION.md) : absent de l'appli ; il rejoint le
@@ -345,6 +363,11 @@
     paneClose: ['Fermer le volet {m}', 'Close the {m} pane', 'Bereich {m} schließen', 'Cerrar el panel {m}'],
     loadErr: ['Module « {m} » impossible à charger : {e}', 'Module “{m}” could not be loaded: {e}',
       'Modul „{m}“ konnte nicht geladen werden: {e}', 'No se pudo cargar el módulo «{m}»: {e}'
+    ],
+    screenLevel: ['Cet écran n’est pas proposé à ce niveau d’usage : voir Réglages.',
+      'This screen is not offered at this usage level: see Settings.',
+      'Dieser Bildschirm wird auf dieser Nutzungsstufe nicht angeboten: siehe Einstellungen.',
+      'Esta pantalla no se ofrece en este nivel de uso: vea Ajustes.'
     ]
   };
   /** Durée lisible depuis une date ISO (« 4 min », « 2 h », « 3 j »). */
@@ -832,7 +855,16 @@
       txt = t(on ? row : APP.name),
       h = document.documentElement;
     if ($('fName').textContent !== txt) $('fName').textContent = txt;
-    if (h.classList.contains('f-titled') !== on) h.classList.toggle('f-titled', on);
+    if (h.classList.contains('f-titled') !== on) {
+      h.classList.toggle('f-titled', on);
+      // ctx.titled du module change : il dessine sa grande ligne de titre pour les lecteurs d'écran seulement (f-sr), ou en clair
+      window.dispatchEvent(new CustomEvent('frame-titled', {
+        detail: {
+          module: id || '',
+          titled: on
+        }
+      }));
+    }
   }
   phoneQ.addEventListener('change', () => paintName());
   /** Vue fixe (meta.fixed d'un module) : <html class="f-fixed"> donne à la vue toute la hauteur entre l'en-tête et la barre du
@@ -1021,7 +1053,7 @@
   const infoData = FD.adapter({
     id: 'frame-info',
     reads: [{
-      prefix: 'cache/flightlog/',
+      prefix: 'cache/', // status.json de chaque module (INTEGRATION § 10) ; pending.json de flightlog (schéma 2, en attendant)
       policy: 'cache'
     }],
     writes: [{
@@ -1034,6 +1066,54 @@
     pendingReports = []; // CR à écrire, d'après cache/flightlog/pending.json
   const statusViews = new Set(); // blocs d'état affichés (éléments) : redessinés quand l'état change, oubliés une fois retirés
 
+  // lignes d'état publiées par les modules eux-mêmes (cache/<module>/status.json, INTEGRATION § 10.1) : texte prêt dans les
+  // quatre langues, adresse, passage éventuel à un autre module ; le cadre les vérifie et les affiche, sans connaître le
+  // format d'un module. Un module qui publie son status.json remplace ce que le cadre déduisait de son ancien
+  // enregistrement (cache/flightlog/pending.json, schéma 2 : dette, retirée quand flightlog publie le sien)
+  let moduleLines = [],
+    statusFiles = new Set(); // modules qui publient un status.json
+  /** Ligne d'état publiée par le module from, vérifiée : texte (rangée de 1 à 4 textes), adresse d'un module ou d'un écran du
+   *  cadre, passage optionnel à un module (handoff.to) ; null si elle ne suit pas le contrat. */
+  function statusLineOf(from, l) {
+    const text = Array.isArray(l?.text) ? l.text.filter(x => typeof x === 'string' && x).slice(0, 4) : typeof l?.text === 'string' && l
+      .text ? [l
+        .text
+      ] : [];
+    if (!text.length) return null;
+    const target = typeof l.go === 'string' && /^#[\w-]+(\?[\w=&%.+-]*)?$/.test(l.go) ? l.go.slice(1).split('?')[0] : '',
+      go = target && (isModule(target) || SCREENS.includes(target)) ? l.go : '',
+      handoff = l.handoff && typeof l.handoff === 'object' && !Array.isArray(l.handoff) && isModule(l.handoff.to) ? l.handoff : null;
+    return {
+      from,
+      text,
+      go,
+      handoff,
+      news: l.news === true,
+      attn: l.attn === true
+    };
+  }
+  /** Lignes d'état de tous les modules (50 au plus), lues seulement sur l'appareil (jamais de réseau) ; redessinées si elles
+   *  changent. */
+  async function readModuleLines() {
+    const have = new Set((await infoData.cached('cache/').catch(() => [])).map(d => d.path)),
+      out = [],
+      files = new Set();
+    for (const m of APP.modules) {
+      const path = `cache/${m.id}/status.json`;
+      if (!have.has(path)) continue;
+      files.add(m.id);
+      const rec = await infoData.get(path).catch(() => null);
+      for (const l of Array.isArray(rec?.lines) ? rec.lines : []) {
+        const line = out.length < 50 && statusLineOf(m.id, l);
+        if (line) out.push(line);
+      }
+    }
+    statusFiles = files;
+    if (JSON.stringify(out) !== JSON.stringify(moduleLines)) {
+      moduleLines = out;
+      paintStatus();
+    }
+  }
   /** CR à écrire : les vols de l'enregistrement de flightlog, ceux qui ont une date, un départ et une arrivée (50 au plus). */
   async function readPending() {
     let rec = null;
@@ -1096,7 +1176,15 @@
       go: '#maps',
       news: true
     });
-    pendingReports.forEach((f, i) => items.push({
+    moduleLines.forEach((l, i) => items.push({
+      k: `line-${l.from}`,
+      text: t(l.text),
+      go: `line:${i}`,
+      news: l.news,
+      attn: l.attn
+    }));
+    // ancien enregistrement de flightlog (schéma 2), tant qu'il ne publie pas son status.json
+    if (!statusFiles.has('flightlog')) pendingReports.forEach((f, i) => items.push({
       k: 'report',
       text: t(T.info.report, {
         date: infoDate(f.date),
@@ -1258,6 +1346,29 @@
       return;
     }
     let to = go;
+    // ligne publiée par un module : le passage éventuel (pilot/handoff.json, tel que le module l'a donné, avec sa source et
+    // l'heure), puis son adresse
+    if (go.startsWith('line:')) {
+      const l = moduleLines[+go.slice(5)];
+      if (!l) return;
+      if (l.handoff) try {
+        const from = APP.modules.find(m => m.id === l.from);
+        await infoData.put(HANDOFF, {
+          ...l.handoff,
+          from: l.from,
+          source: from ? t(from.label) : l.from,
+          at: new Date().toISOString(),
+          fresh: true
+        }, {
+          policy: 'cache'
+        });
+      } catch (e) {
+        return notify(String(e.message || e), 'err');
+      }
+      to = l.go || (l.handoff ? `#${l.handoff.to}?from=${l.from}` : '');
+      if (!to) return;
+      if (location.hash === to) return l.handoff ? route() : undefined; // même adresse : le passage est repris au remontage
+    }
     if (go.startsWith('report:')) {
       const f = pendingReports[+go.slice(7)],
         flightlog = APP.modules.find(m => m.id === 'flightlog');
@@ -1421,7 +1532,6 @@
   const LAZY = {
     help: ['lib/markdown.js?v=0', 'help/help.js?v=0'],
     roadmap: ['help/roadmap.js?v=0'],
-    datalab: ['aerodb/lab.js?v=0'], // laboratoire des données (aerodb, temporaire) : charge lui-même ses mesures
     settings: ['settings/admin_links.js?v=0', 'settings/config.js?v=0', 'settings/join.js?v=0', 'lib/qr.js?v=0',
       'settings/settings.js?v=0'
     ]
@@ -1483,9 +1593,9 @@
   const ROUTES = {
     conflicts: renderConflicts,
     settings: renderSettings,
-    device: renderSettings,
-    datalab: renderDatalab
+    device: renderSettings
   };
+  for (const s of APP.screens) ROUTES[s.id] = view => renderScreen(s, view); // écrans de service
   /** Adresse : { id (avant « ? »), query (la suite, en objet gelé : #report?from=flightlog → { from: 'flightlog' }) }. */
   function parseHash() {
     const h = location.hash.slice(1),
@@ -1924,7 +2034,7 @@
   // aide, feuille de route, réglages, conflits : ouverts depuis un module, ils se montrent dans la zone du module sans
   // le démonter (il est seulement masqué) ; le bouton qui les a ouverts (enfoncé tant qu'ils le sont), Échap ou le retour
   // du navigateur les referment, et l'on retrouve le module tel quel : même adresse, même étape, même défilement
-  const SCREENS = ['help', 'roadmap', 'settings', 'device', 'conflicts', 'datalab'];
+  const SCREENS = ['help', 'roadmap', 'settings', 'device', 'conflicts', ...APP.screens.map(s => s.id)];
   let over = null; // { id, returnHash, scroll, stack: [adresses des écrans du cadre ouverts], sig }
   // ce qu'un module lit à son montage (identité, usages, niveau, langue, transport) : changé pendant que l'écran du cadre
   // était ouvert (réglages), le module est remonté à la fermeture au lieu d'être rendu tel quel
@@ -2079,6 +2189,11 @@
       // plein écran est ajouté par le cadre à la colonne de droite, sauf dans un volet) ; null sinon (INTEGRATION § 9.3)
       overlay: meta.fixed === true && root ? makeOverlay(root, !inPane).api : null,
       // vue double : { with } le module montré à côté (ou null) ; l'événement « frame-layout » (window) suit chaque changement
+      // titre : vrai quand l'en-tête du téléphone porte le titre de ce module (meta.title) ; le module donne alors à sa grande
+      // ligne de titre la classe f-sr (lecteurs d'écran seulement) ; « frame-titled » sur window suit chaque changement
+      get titled() {
+        return nameFor === entry.id && document.documentElement.classList.contains('f-titled');
+      },
       get layout() {
         return Object.freeze({
           with: besideOf(entry.id)
@@ -2277,53 +2392,54 @@
     });
   }
 
-  // ---------------------------------------------------------------- laboratoire des données (#datalab, aerodb, TEMPORAIRE)
-  // écran d'administration (carte Administration des réglages, niveau Complet) dessiné par frame/aerodb/lab.js : il mesure sur
-  // l'appareil ce que le projet « Données » suppose (docs/technique/V3_APP_DONNEES.md). Le cadre lui donne un adaptateur de
-  // données (lit sia/base/ pour comparer, écrit cache/lab/ : politique cache, jamais synchronisé) et, pour l'essai de
-  // publication, le TRANSPORT GitHub de l'appareil (head / tree / commit) ; le jeton reste dans le transport, le laboratoire
-  // ne le reçoit ni ne l'affiche.
-  let labData = null;
-  async function renderDatalab(view) {
+  // ---------------------------------------------------------------- écrans de service (APP.screens, INTEGRATION § 13)
+  const screenData = {}; // adaptateur de données de chaque écran de service, fait à sa première ouverture
+  /** Écran de service s (une entrée d'APP.screens) : ses scripts chargés à la première ouverture, le niveau d'usage vérifié,
+   *  puis son dessin (window.SogScreens[id].screen) avec son contexte ; rien si l'adresse a changé entre-temps. Le cadre
+   *  ne connaît que la déclaration : aucun nom de service ici. */
+  async function renderScreen(s, view) {
     const tok = navSeq,
       at = location.hash;
     try {
-      await need('datalab');
+      for (const p of s.scripts || []) await script(p);
     } catch (e) {
       return notify(t(T.loadErr, {
-        m: 'datalab',
+        m: s.id,
         e: e.message || e
       }), 'err');
     }
     if (tok !== navSeq || location.hash !== at || !view.isConnected) return; // écran quitté pendant le chargement
-    labData ||= FD.adapter({
-      id: 'aerodb-lab',
-      reads: [{
-        prefix: 'sia/base/',
-        policy: 'reference'
-      }],
-      writes: [{
-        prefix: 'cache/lab/',
-        policy: 'cache'
-      }]
+    if ((s.level || 1) > level) return void(view.innerHTML = `<p class="f-card f-muted">${esc(t(T.screenLevel))}</p>`);
+    const impl = window.SogScreens?.[s.id];
+    if (typeof impl?.screen !== 'function') return notify(t(T.loadErr, {
+      m: s.id,
+      e: 'SogScreens'
+    }), 'err');
+    screenData[s.id] ||= FD.adapter({
+      id: `screen-${s.id}`,
+      reads: s.reads || [],
+      writes: s.writes || []
     });
-    return AeroLab.screen(view, {
+    return impl.screen(view, {
       t,
       lang,
       notify,
       ask,
-      data: labData,
+      data: screenData[s.id],
       aerodb,
       level: () => level,
       launcher: () => launcherHere,
-      github: () => FD.github.config() ? FD.github() : null,
-      githubInfo: () => {
-        const c = FD.github.config();
-        return c ? {
-          repo: c.repo,
-          branch: c.branch || 'main'
-        } : null;
-      }
+      // le transport GitHub de l'appareil (head, tree, commit), seulement si la déclaration le demande ; jamais le jeton
+      ...(s.github ? {
+        github: () => FD.github.config() ? FD.github() : null,
+        githubInfo: () => {
+          const c = FD.github.config();
+          return c ? {
+            repo: c.repo,
+            branch: c.branch || 'main'
+          } : null;
+        }
+      } : {})
     });
   }
 
@@ -2835,7 +2951,11 @@
     airlineData.watch('airline/', () => loadAirline(1e4));
     setInterval(() => FD.status().then(paintSync), 30e3); // « il y a 4 min » vieillit
     window.addEventListener('hashchange', route);
-    infoData.watch('cache/flightlog/', () => readPending());
+    infoData.watch('cache/', paths => {
+      if (paths.some(p => /^cache\/[\w-]+\/status\.json$/.test(p))) readModuleLines();
+      if (paths.includes(PENDING_REPORTS)) readPending();
+    });
+    readModuleLines();
     readPending();
     window.addEventListener('online', async () => {
       FD.status().then(paintSync);

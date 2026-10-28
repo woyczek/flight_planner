@@ -108,6 +108,12 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 
 - **Times are in UTC with the suffix Z**, through `frame/lib/time.js`: `fmtZ`, `fmtDateZ`, and `fmtZLocal` (the local
   time in brackets) only for the departure, the planned arrival and the engine start.
+- **The title** (`ctx.titled`): on a phone the header shows a module's `meta.title` in place of the application's name;
+  `ctx.titled` is then true. Your page's big title line is then for screen readers only: give your `h1` the class `f-sr`
+  (`frame/design/primitives.css`) while `ctx.titled` is true, and follow `frame-titled` on `window` (`{ module, titled }`,
+  dispatched when it changes, for instance when the window crosses 760 px). Until every module does so, the frame still
+  hides `.f-module > h1` itself under `html.f-titled` (debt: the rule goes once fuel, report, flightlog and website use
+  `ctx.titled`).
 - **The airline's settings** (`ctx.airline`) are read in the background at start: a module mounted before they
   arrive sees an empty object. Read `ctx.airline` when you draw, not once at `mount`, and redraw on `frame-airline`
   (on `window`) if what you show depends on it.
@@ -160,6 +166,15 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   handling, no global style sheet.
 - No reading of `sia/base/` or `AircraftDB/`: use `adapter.aerodb` (frame/aerodb/INTEGRATION.md).
 - No native dialog (`alert`, `confirm`, `prompt`).
+- **No assumption that `mount()` finishes before `unmount()`.** The frame runs one navigation at a time (`navSeq`): a
+  new address during your `mount()` calls your `unmount()` at once, and your `mount()` then goes on with a section that
+  is no longer on the page.
+  - So `unmount()` must work at any point of `mount()`: stop timers and watches you have started, and set a flag.
+  - After each `await` of `mount()`, stop if that flag is set (or `el.isConnected` is false), and write nothing more.
+  - The frame itself writes nothing for a mount it has given up.
+- **Debt (noted 28 Oct 2026)**: three pieces still call the launcher with `fetch`: Settings' `setup()`,
+  `frame/aerodb/lnmperf.js` and the data laboratory. They move onto a frame service `ctx.launcher` in the frame lot that
+  follows the weather layer. No new piece calls the launcher directly.
 
 ## 8. Trying a module
 
@@ -382,7 +397,37 @@ prefix in its `meta.writes` with `policy: 'cache'`.
 The lines of the **status block** (§ 10.2) and the badge of the ⚙ come from these records, from the sync state and from
 `ctx.aerodb.state()`. The "i" button and its pop-up of 24 Oct 2026 (afternoon) no longer exist (rule 14).
 
-### 10.1 `cache/flightlog/pending.json` (written by flightlog, read for the status block)
+### 10.0 `cache/<module>/status.json`: status lines a module publishes, ready to show
+
+Any module may publish the lines it wants in the status block (and on the ⚙ badge). It writes them ready: the frame checks
+them and shows them, and never knows a module's own formats. This replaces what the frame deduced from flightlog's
+record (§ 10.1).
+
+```json
+{ "schema": 1, "updated_at": "2026-10-28T09:00:00Z",
+  "lines": [ {
+    "text": ["CR à écrire pour le vol du 23/10/2026 LFRS→LFML", "Report to write for the flight of 23/10/2026 LFRS→LFML",
+             "Bericht für den Flug vom 23.10.2026 LFRS→LFML schreiben", "Informe por escribir del vuelo del 23/10/2026 LFRS→LFML"],
+    "go": "#report?from=flightlog",
+    "news": true,
+    "handoff": { "to": "report", "family": "AIRBORNE", "values": { "navigation.dep": "LFRS" } } } ] }
+```
+
+- `text`: a row of the four languages (fr, en, de, es; one text is accepted), already formatted (dates included). A line
+  without text is ignored.
+- `go`: `#<module or frame screen>[?query]`, opened by a touch. Any other value (another site, `javascript:`…) is dropped,
+  and the line is then shown without a link.
+- `news: true`: a green badge on the ⚙ (something new). `attn: true`: an amber badge on a phone (asks for attention).
+- `handoff` (optional): the hand-over the touch writes to `pilot/handoff.json` as it is. The frame adds only `from` (the
+  publishing module), `source` (its label in the device's language), `at` and `fresh: true`. `to` must be a module of the
+  application. Without `go`, the touch opens `#<to>?from=<module>`.
+- At most 50 lines in all. The frame reads the file only from the device (never the network), and redraws when it
+  changes (`watch` on `cache/`).
+- The module rewrites the whole file when its lines change, and an empty `lines` when nothing is left.
+- As soon as flightlog publishes its `status.json`, the frame ignores `pending.json` (§ 10.1). That reading is a debt,
+  removed once flightlog has switched.
+
+### 10.1 `cache/flightlog/pending.json` (written by flightlog, read for the status block) — replaced by § 10.0
 
 ```json
 { "schema": 2, "updated_at": "2026-10-24T10:00:00Z",
@@ -668,13 +713,27 @@ copies on. Distances by the haversine formula are already periodic and need noth
 the module switches to this helper in its next lot. Bench: `frame/lib/test/geo.html`. A module that loads it from another
 folder lists it in its `meta.files` (`'../../frame/lib/geo.js?v=0'`).
 
-## 13. A frame screen drawn by a service (`#datalab`)
+## 13. Service screens (`APP.screens`)
 
-Not a module: a screen of the frame (`ROUTES` / `SCREENS` of `frame/app.js`, opened over the current module like Settings and the roadmap) whose drawing belongs
-to a service. Today one, **temporary**: aerodb's data laboratory (`#datalab`, Full level, reached from the Administration card; `frame/aerodb/SPEC.md` § 5 sexies).
-The frame loads its scripts on demand (`LAZY.datalab`) and `renderDatalab` gives it `{ t, lang, notify, ask, data, aerodb, level, launcher, github,
-githubInfo }`: `data` is an adapter (`reads` `sia/base/`, `writes` `cache/lab/`, policy `cache`), `github()` the device's GitHub transport (`head` / `tree` /
-`commit`; **the token never leaves the transport**) or null, `launcher()` the survey of the launcher or null. A screen of this kind checks the level itself and
-says why it is empty below it. A module still never calls `fetch`: the laboratory is the frame's known exception, as Settings' `setup()` and `lnmperf.js`
-(`V3_DONNEES_REGENERATION.md` § 2.8: they move onto `ctx.launcher` in a later lot).
+A service screen is not a module. It is a screen of the frame, opened over the current module like Settings and the
+roadmap, whose drawing belongs to a service. The frame knows only its declaration, and its code names no service.
+
+```js
+screens: [{ id: 'datalab', scripts: ['aerodb/lab.js?v=0'], level: 3,
+  reads: [{ prefix: 'sia/base/', policy: 'reference' }], writes: [{ prefix: 'cache/lab/', policy: 'cache' }], github: true }]
+```
+
+- `scripts` (relative to `frame/`) load in order the first time the screen opens. The script registers itself:
+  `window.SogScreens[id] = { screen(view, ctx) }`.
+- `level`: below it, the frame shows "This screen is not offered at this usage level" and loads nothing more.
+- `reads` / `writes` declare the screen's data adapter, as a module's `meta`.
+- `github: true` gives `github()` (the device's GitHub transport: `head` / `tree` / `commit`, **the token never leaves the
+  transport**, or null) and `githubInfo()` (`{ repo, branch }` or null). Without it, neither exists.
+- The context: `{ t, lang, notify, ask, data, aerodb, level(), launcher() }` and the GitHub pair above.
+- One navigation at a time: a screen left while its scripts load draws nothing.
+- Today one, **temporary**: aerodb's data laboratory (`#datalab`, Full level, reached from the Administration card;
+  `frame/aerodb/SPEC.md` § 5 sexies), removed when the Data screen is delivered.
+  - Its publishing test writes blocks into the data repository through `github()`. That goes to a throwaway branch with a
+    cap (aerodb's urgent lot); until then, do not publish from the laboratory.
+- A module still never calls `fetch`; see the debt in § 7 (`ctx.launcher`).
 

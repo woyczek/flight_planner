@@ -1055,4 +1055,6 @@
     screen,
     T
   };
+  // écran de service du cadre (APP.screens, frame/INTEGRATION.md § 13) : le cadre le trouve par son id
+  (window.SogScreens ||= {}).datalab = window.AeroLab;
 })();
