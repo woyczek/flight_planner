@@ -435,6 +435,34 @@ green: K1–K5, A12, A15, A19, I4, I6, I7. Case numbers (K6…, A20…) are prov
 9. **V2 studio pages on `v3`** (`apps/cpco/map_parser.html`, `apps/planner/…`) still read `SiaBase` from IndexedDB. Do
    they stay served by the `v3` branch? Lot D8 removes the writers of `shared/sia_base.js` only if they do not.
 
+### 5.1 Answers of the user (28 October 2026, verbatim in French, read by the relay)
+
+1. **Zones**: « liste perso, données communes. Tout ce qui est disponible sur GIT en base est activable. Si update par un
+   user, update pour tout le monde (affichage de divergence local/remote). ergonomie : la terminologie fr n'est pas bonne. »
+   → the list of ticked zones is personal (per workstation), the data is common: every zone present in the data
+   repository can be ticked; a rebuild by one user updates everyone, and the screen shows the divergence between the
+   local cache and the published repository; the French wording of the screen (zones, sources) is to be redone by the
+   ergonomics session.
+2. **pypdf**: « ajouter que c'est un prérequis, mais autoriser l'installation des prq via l'assistant de première install
+   déjà existant » → declared as a prerequisite; installed, with the other prerequisites, by the existing first-install
+   assistant (`apps/settings/premier_lancement.html`), not by the data screen.
+3. **NAT tracks**: « lus sur le site » → published with the site like the world weather (GitHub Actions, public domain), read
+   from there by aerodb; no rebuild of the base for them.
+4. **Unattended cycles**: « le jeton expire de toute façon tous les 30j. pas de recompilation auto, mais une alerte sur les
+   postes en fin de cycle (sur les téléphones, un simple warn, sur les postes, un vrai bouton de recalcul) » → no Actions
+   with a write token; an end-of-cycle alert: a warning on phones, a real recompute button on workstations (lot D9 dropped,
+   replaced by the cycle watcher of D7).
+5. **X-Plane / Navigraph**: « non, on ne publie rien qui viendrait de navigraph ou de x-plane pour la redistribution. on
+   utilise en fallback uniquement. En revanche, on peut compiler localement les données navigraph (sid/star quand on ne les
+   a pas autrement, par ex.) » → the compile of a published zone drops every X-Plane / Navigraph input; a local-only
+   compile (never pushed) may use them, procedures included, as the fallback.
+6. **Cycles kept**: « le précédent, le courant, le suivant » → three cycles for the base and for `proc/`.
+7. **Screen or module**: « il n'y en a pas ? » → there is no data screen today; the ergonomics session decided (28 Oct) a
+   **module** at the Complete level, the frame intact, `ctx.launcher` provided by the frame.
+8. **Who may push**: « droits du poste » → the git credentials of the workstation decide, nothing more in the screen.
+9. **V2 pages on `v3`**: « on n'utilise pas la V2 sur V3. on liste ce qui manque, et on portera ce qui doit être porté » →
+   the V2 studio pages are not used from V3; lot D8 lists what V3 still lacks from them and ports what must be ported.
+
 ## 6. Measured on 26 October 2026, and what remains to measure
 
 **Measured** (cloud container, standard library, through the allowed hosts):
