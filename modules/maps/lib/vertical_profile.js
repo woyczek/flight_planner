@@ -1144,15 +1144,17 @@
   }
 
   // ===== Relief : tuiles d'altitude Terrarium (AWS), z10 ≈ 150 m, gardées en mémoire =====
-  function terrainSampler(z = 10) {
+  // V3 (divergence du studio, modules/maps/SPEC.md § 2.1) : la brique n'appelle jamais fetch ; l'appelant donne load(url) →
+  // Blob (la Carte : ctx.net) ; sans load, pas de relief (chaque lecture est refusée).
+  function terrainSampler(z = 10, load = null) {
     const tiles = new Map();
     /** Tuile de relief (altitudes) pour l'échantillonnage du terrain le long de la route. */
     const tile = (x, y) => {
       const key = `${x}/${y}`;
       if (!tiles.has(key)) tiles.set(key, (async () => {
-        const r = await fetch(`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`);
-        if (!r.ok) throw Error(`Tuile de relief ${z}/${x}/${y} : ${r.status}`);
-        const img = await createImageBitmap(await r.blob()),
+        if (!load) throw Error('Tuile de relief : aucune lecture (load)');
+        const b = await load(`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`),
+          img = await createImageBitmap(b instanceof Blob ? b : new Blob([b])),
           c = new OffscreenCanvas(256, 256),
           g = c.getContext('2d');
         g.drawImage(img, 0, 0);

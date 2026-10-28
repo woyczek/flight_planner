@@ -128,7 +128,7 @@ report and maps never write nor erase it.
   readable form. A module that rewrites the text from the points (`textFromPoints`) writes every point, `awy` ones included,
   and drops the airway name (it only keeps a word between two points that were neighbours in the old text); it must keep the
   points it does not understand. Fuel's reading of the text takes the `awy` points back when the text still holds the same
-  airway between the same two points. The airway's path is computed by `modules/maps/lib/routing.js` (maps INTEGRATION § 9);
+  airway between the same two points. The airway's path is computed by `frame/lib/routing.js` (maps INTEGRATION § 9);
   fuel's `meta.files` lists it.
 - **A flight written by another module** (`by` ≠ `fuel`: maps, lot 6, the route changed on the map; contract of
   23 Oct 2026): fuel, when it sees such a record (watch while mounted, or at its next mount), keeps the route as

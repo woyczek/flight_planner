@@ -470,7 +470,12 @@
   const RELAY = ['www.simbrief.com', 'api.ivao.aero', 'api.vatsim.net', 'data.vatsim.net', 'my.vatsim.net', 'aviationweather.gov',
       'metar.vatsim.net', 'api.open-meteo.com'
     ],
-    DIRECT = ['www.simbrief.com', 'api.ivao.aero', 'metar.vatsim.net', 'avwx.rest', 'api.open-meteo.com', 'data.vatsim.net'];
+    DIRECT = ['www.simbrief.com', 'api.ivao.aero', 'metar.vatsim.net', 'avwx.rest', 'api.open-meteo.com', 'data.vatsim.net'],
+    // tuiles d'altitude Terrarium (relief du profil et courbes de niveau de la Carte, modules/maps/SPEC.md § 2.1) : appelées
+    // directement, ce chemin seulement de l'hôte (s3.amazonaws.com en sert bien d'autres)
+    DIRECT_PATHS = [
+      ['s3.amazonaws.com', '/elevation-tiles-prod/']
+    ];
   // clé personnelle avwx.rest (TAF sans lanceur) : sur l'appareil seulement, avec le jeton GitHub, dans device/keys.json
   // (rangement de l'identité : IndexedDB, politique cache, hors des sauvegardes, jamais synchronisée : voir « clés de
   // l'appareil » plus bas) ; lue en mémoire, jamais rendue à une page
@@ -569,7 +574,9 @@
             headers
           });
         }
-        if (DIRECT.includes(u.hostname) || site) return await fetch(u, init);
+        if (DIRECT.includes(u.hostname) || site || DIRECT_PATHS.some(([h, p]) => u.hostname === h && u.pathname.startsWith(p)))
+          return await fetch(u,
+            init);
         return unreachable();
       } catch {
         return offline();
@@ -2269,6 +2276,11 @@
       },
       get live() {
         return liveApi();
+      },
+      // niveau d'usage de l'appareil (1 Découverte, 2 Courant, 3 Complet), en lecture : un module y réserve ce qui engage la
+      // compagnie
+      get level() {
+        return level;
       },
       query,
       // l'onglet de la barre du bas qui groupe ce module (id de APP.tabs), null s'il n'en a pas

@@ -12,7 +12,7 @@ Cases: C1 C2 C3 C4 C5 C6.  Maps and atmosphere are the two users of the primitiv
 from lib import MAP_JS, Fail, Skip, case, tx
 
 FIXED = ('maps', 'atmosphere')
-PROFILE = {'maps': ('modules/maps/module.js', 'ttlProfile'), 'atmosphere': ('modules/atmosphere/texts.js', 'profileTitle')}
+PROFILE = {'maps': ('modules/maps/texts.js', 'ttlProfile'), 'atmosphere': ('modules/atmosphere/texts.js', 'profileTitle')}
 STATE_WORDS = ('non chargée', 'non chargé', 'not loaded', 'chargement', 'loading', 'nicht geladen', 'lädt', 'no cargad', 'cargando')
 
 
@@ -102,7 +102,7 @@ def c5(c):
             # a drawing's head is bare (V3 spec 7.1.13): no title written over it, the handle says what it is
             c.ok(not c.shown('.f-sheet-head .f-sheet-title'), f'#{m}: a title is shown over the profile', 'the bare head carries no title')
             title = c.grip()
-            c.ok(title.startswith(tx('modules/maps/module.js', 'dataProfile', c.lang)), f'#{m} grip label {title!r}', 'starts with the name of the drawing')
+            c.ok(title.startswith(tx('modules/maps/texts.js', 'dataProfile', c.lang)), f'#{m} grip label {title!r}', 'starts with the name of the drawing')
         else:
             title = c.text('.f-sheet-head .f-sheet-title') or ''
             c.ok(title.startswith(profile_word(m, c.lang)), f'#{m} title {title!r}', f'starts with "{profile_word(m, c.lang)}"')
@@ -130,7 +130,7 @@ def c6(c):
         c.until("!window.__t.shown(document.querySelector('.f-sheet-close'))", what=f'#{m} the close button hides again')
         if m == 'maps':
             title = c.grip()
-            c.ok(title.startswith(tx('modules/maps/module.js', 'dataProfile', c.lang)), f'#{m} grip label after closing {title!r}', 'the bare profile head is back')
+            c.ok(title.startswith(tx('modules/maps/texts.js', 'dataProfile', c.lang)), f'#{m} grip label after closing {title!r}', 'the bare profile head is back')
         else:
             title = c.text('.f-sheet-head .f-sheet-title') or ''
             c.ok(title.startswith(profile_word(m, c.lang)), f'#{m} title after closing {title!r}', f'starts with "{profile_word(m, c.lang)}"')

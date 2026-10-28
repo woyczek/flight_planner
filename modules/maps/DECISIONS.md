@@ -1381,3 +1381,98 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Not touched**: the "Aussi ici" line (FIR, UIR, SIV first, then by name), the vertical profile's drawing, the map.
   - **Test**: D26 extended (`d26_order`, and the thirteen-space case): list numbers 1 to n, order CTA, TMA, R 57, D; the leftmost column is the CTA and the
     column numbers read 1.. from the left; S12 down to S0 for thirteen. x4 langs. Red on the previous code (order TMA, R, D, CTA).
+- **28 Oct 2026 — Recoded from the specs: role, lot 0 and the decisions taken** (user's decision of 28 Oct, relayed by the ergonomics
+  session: the V3 work of 24–27 Oct is a finished proof of concept; where it went back and forth, the module is written again from its
+  specs with the V3's stable methods, as the sheet was for rule 19). Role taken by the BUGS SOG session: worktree `E:\DEFA-v3-maps-recode`,
+  branch `v3-maps-recode` from `origin/v3` (38b861031), port 8805; the branch is pushed to origin, the ergonomics session reviews and
+  integrates; no other Map lot during the recode.
+  - **Lot 0, reading of the specs**: 52 contradictions, gaps and ambiguities between SPEC, INTEGRATION, V3_SPECIFICATION § 7.1, the
+    frame, atmosphere, aerodb and fuel contracts and tests/v3/PLAN, each with a proposal; decided by the ergonomics session the same day.
+    SPEC.md is rewritten as a final state (renumbered, no dates or quotes: the reasons stay here), INTEGRATION.md and PLAN zone D follow.
+  - **Scope**: the weather layers on the map (rule 8) and the flight-zone edge (rule 12) were never wired: out of parity, a lot after the
+    recode (the Weather chip attaches `weather_map`, `edge` read from `map_profiles.json`). SID / STAR procedures enter the SPEC. The test
+    page outside the frame stays.
+  - **Times are derived**: fuel's quote holds total minutes only, so the map cannot compute the times of each leg. Fuel writes
+    `quote.legs [{ id, min }]` with each quote; `frame/lib/current_flight.js` gets `etaOf` and `plannedPositionAt` (reference
+    `started.at` when started, else `planned_at`; fallback from the route's speeds), written in the recode's commit and reviewed by the
+    frame; every reader goes through them; fuel stops writing `progress.eta` and `plannedPos` at the delivery of the recode. "Started"
+    is `started.at`, never the presence of `progress`.
+  - **The Edit mode merges into `route`**: replacing `route` dropped `procedures` and left stale `wind`; now `procedures` are kept while
+    departure and arrival do not change, `wind` leaves the moved points, `via` / `awy` stay on the intact ones; maps is a writer of `route`
+    and `level` in fuel's table.
+  - **`lib/routing.js` moves to `frame/lib/routing.js`** (shared code; fuel imports it), with its bench, in the recode's commit.
+  - **The newest rule wins** wherever the old texts disagreed: three chips always in the head (disabled, never hidden); the drawing alone at
+    the default position, strip and notes when expanded, the armed "+" and the Edit help as notifications; the overlay column, the Layers
+    content and the notes replace every leftover of the toolbar; the cut's legend is atmosphere's `sectionLegend`, one column; the highest
+    airspace first; the 60 % / 14 px graph with two-line entries; only `onSettle` resizes MapLibre; three-line tooltip; the camera rule;
+    the cut's departure time `started.at`, else `planned_at`, else now; `minHeight: 0` and the whole body; "Open Weather"; the frame's icons
+    and `hidden`; aerodb's `state()` and its four texts; the LFQN merge of the VFR points; AAL relative; two positions in the landscape
+    column; `ui.json` with layers per mode.
+  - **Other decisions**: Terrarium tiles through `ctx.net` (never `fetch`); `formatLevel` with `ctx.airline.transitionFt`; GPS through
+    `ctx.live.enable()`; "arrived" keeps route and trail, hides Follow, says "Arrived"; "diverted" marks the diversion aerodrome; the modes
+    panel goes into `ctx.overlay`; bare / titled head switched only at `onChange` / `onSettle`; profile and cut keep their own height
+    floors under a shared window; the Topo hillshade is CSS and the contour lines are canvas; `contours.js` is in `meta.lazy` (the
+    "outlines kept ahead when MapLibre is not cached" claim is dropped: no API tells what the service worker holds); the cut's legend in
+    one column; the hover bubble without SIV / FIR confirmed; "Aussi ici" does not repeat a type the name already starts with; no line on
+    a mission map; a section "DOM contract"; addresses: only those in the code (`mission`, `map`, `tune`, `view`).
+  - **Gate of the recode**: tests/v3 zone D (D8, D11, D14, P1, P2, P6 reworded; D30–D38 added: Edit mode, derived times, date line,
+    synthetic mission fixture, plain background, device settings, Escape order, base-map names, module benches), P2 and P6, the benches,
+    and behaviour parity measured against the current module (390 and 1280, five designs, day and night, every sheet content), every
+    difference justified by a rule.
+  - **Asked of other owners**: the frame (state `ctx.airline.transitionFt`, the `defaultPrevented` Escape rule, the shape of
+    `progress.actual`, review of `current_flight.js`), atmosphere (document the `id` option of `drawSection`), fuel / Features SOG
+    (`quote.legs`, maps as a writer, stop writing `eta` / `plannedPos`).
+- **28 Oct 2026 — The SPEC approved, six amendments** (ergonomics session's review).
+  - `weather.when` is no longer read (fuel stopped writing it, 5285bb3d8); the cut's departure is `started.at`, else `planned_at`,
+    else now.
+  - The weather is read through the frame's single weather layer `ctx.weather` (frame INTEGRATION § 14, cache only), not through
+    atmosphere's store; the map writes nothing in `cache/weather/`. The recode codes the cut against § 14; until it is published that
+    part waits, with no transition code.
+  - The Layers content starts with the Complexity slider (the user: "J'avais demandé le slider de complexité en tout premier"), then
+    the boxes, the flight selector last (rarely used); a mission map shows the selector alone.
+  - In Edit mode the right column shows only Edit, Add, Undo, Recentre and the full screen: Edit the route, the mode and Follow do not
+    apply while editing, and the column stays at five buttons.
+  - The taxi time is fuel's `quote.taxiMin` (10 minutes without it).
+  - The header's "?" opens the map's chapter for a fixed module without `help`; the module gives the paragraph of what is shown
+    through `ctx.helpAnchor` (rule 16), anchors added in the four languages at the recode.
+- **28 Oct 2026 — recoded from the specification (lot 1)** (the user's decision relayed by the ergonomics session: the V3 work
+  of 24–27 Oct is a finished proof of concept; where it went back and forth, it is recoded from the specs). The 5,490-line
+  `module.js` is replaced by a short `module.js` and fifteen files split by concern, plus two loaded on demand (`edit.js`, `tune.js`), none above
+  60 KB, every function commented; the libraries (`render.js`, `profile.js`, `lib/map_base.js`, `lib/axis_window.js`,
+  `lib/aero_symbols.js`, `lib/vertical_profile.js`, `contours.js`) are unchanged. Where the SPEC did not change a behaviour,
+  the code of the proof of concept was kept, reorganised; what the lot 0 decisions changed was written new:
+  - **times derived** (SPEC § 13): `frame/lib/current_flight.js` gains `isStarted`, `refTime`, `legTimes`, `etaOf`,
+    `plannedPositionAt` (bench `frame/lib/test/current_flight.html`, 38 checks); the map no longer reads `progress.eta` nor
+    `progress.plannedPos`; "started" is `started.at`; arrived and diverted have their note; the progress line's button calls
+    `ctx.live.enable()`. The fallback without `quote.legs` takes the cruise from what is left of `quote.minutes` once climb and
+    descent are counted (rather than one mean speed over the whole route): it ends on the quote's total, as D31 (f) asks.
+    After the frame's review: longitudes by `frame/lib/geo.js`, the planned position along the great circle (a straight line in
+    degrees was several NM off on an oceanic leg), `plannedPositionAt` null like `etaOf` for a flight not started whose
+    arrival is past, `taxiMin` and `legs[].min` read only as numbers (bench: 38 checks);
+  - **Edit mode** (§ 12): written by merging into `route` (procedures kept while their aerodrome is the route's departure or
+    arrival, the moved point's wind and airway dropped, the others kept), the last gesture flushed at unmount; in the mode the
+    right column keeps Edit, "+", Undo, Recentre and full screen;
+  - **Layers** (§ 6.7): Complexity first, the boxes, "Around the route only" last of the boxes, the flight selector at the
+    bottom; the content element is created at mount and laid in the sheet when opened;
+  - **modes panel** in the frame's overlay layer (not in the map box);
+  - **weather** (`weather.js`): the cut reads `ctx.weather.grid` (frame INTEGRATION § 14, frame lot 26) with `cacheOnly`,
+    the model of the route's middle point by `ctx.weather.modelFor`, the departure at `started.at`, else `planned_at`, else
+    now; `meta` no longer declares `cache/weather/`; atmosphere's renderer (`section.js`, `atmo.js` and what they import) is
+    loaded at the first "Weather" (`meta.lazy`). The profile writes its `data-window` to the hundredth of a NM like the cut:
+    two roundings of one window made D25 fail on v3 (141.45 read 141.4 on the cut, 141.5 on the profile);
+  - **`lib/routing.js` → `frame/lib/routing.js`** with its bench (`frame/lib/test/routing.html`), fuel's import, F9;
+  - `mission.js`: a role point keeps its role when it carries its own code (`routeTokens` found no ORIGIN for an origin "LFBD");
+  - **no `fetch` in the module** (review of 28 Oct): the Terrarium tiles of the profile's relief and of the contour lines go
+    through `ctx.net` — the bricks take a `load(url)` (`terrainSampler(z, load)`, `MapsContours.draw({ load })`) and call
+    nothing themselves; `ctx.net` lets `s3.amazonaws.com/elevation-tiles-prod/` through (`DIRECT_PATHS` in `frame/app.js`, a
+    path, not the whole host). The two self-fetches of the proof of concept are gone: the libraries' refetch at the service
+    worker's takeover (they are in `meta.files`, which the frame keeps at installation) and the outlines fetched ahead when
+    MapLibre was not cached (no measure behind it; the plain background still works offline once seen, `meta.lazy`);
+  - **security review** (28 Oct): "Save for the airline" of the tuning page writes for every pilot, so it is refused by the
+    module below the Full level (`ctx.level` ≥ 3, added to the module context in `frame/app.js`; the V3 frame has three levels,
+    Full is 3), with a notification ×4; "Keep on this device" stays at every level (case D39). Without a trigram the Edit
+    mode writes `pilot/ANON/`, the frame's rule shared with fuel: said in SPEC § 12, no code change.
+  Gate: the D zone (D30–D38 new) and P2 / P6 pass on the phone and the screen in `standard`; parity measured against the
+  proof of concept at 390 and 1280 px, five designs, day and night, profile, Layers, airspaces and expanded sheet: the same
+  buttons, titles, chips, profile attributes, kept counts, notes and strip, except the Weather chip (above) and the order of
+  Layers (§ 6.7).

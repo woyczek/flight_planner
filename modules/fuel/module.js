@@ -13,7 +13,7 @@ import * as WX from './weather.js';
 import * as WD from './winds.js';
 import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
-import * as RG from '../maps/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque de maps)
+import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
 import {
   svg
@@ -47,7 +47,7 @@ export const meta = {
   // gardés hors ligne dès la première visite (service worker du cadre)
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js',
     '../../frame/lib/weather_store.js',
-    '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../maps/lib/routing.js',
+    '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/routing.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/time.js', '../../frame/lib/geo.js'
   ]
@@ -3009,7 +3009,7 @@ function resolveRoute(normalize = true) {
 }
 /** Bouton « Auto » : inscrit les voies aériennes entre les points nommés consécutifs qui n'en ont pas, au niveau prévu
  *  (celui du vol, sinon celui du devis, sinon 6 500 ft comme la V2 — dit dans une notification). Le routage est celui de
- *  la bibliothèque de maps (modules/maps/lib/routing.js : plus court chemin sur les segments de la base publiée, tronçons
+ *  la bibliothèque du cadre (frame/lib/routing.js : plus court chemin sur les segments de la base publiée, tronçons
  *  ouverts au niveau, détour limité à 40 %, pas de sens unique ni de restriction fine). Écrit route.text (« PT1 UN460 PT2 »)
  *  et route.points (les points de la voie y compris ceux que le texte n'écrit pas : distance et carte suivent la voie), puis
  *  relit la route (resolveRoute) et refait le devis. Un point d'extrémité de voie qu'aerodb ne connaît pas garde la

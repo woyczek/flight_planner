@@ -266,7 +266,7 @@ Abflug, in nautischen Meilen. Verschieben Sie die Karte mit einem Finger, spreiz
 ändert: nur „Zentrieren“ (oder ein anderer Flug) richtet sie neu aus. Von weitem gesehen zeigt die Karte nur, was nahe
 der Route liegt; zoomen Sie hinein, um alles zu sehen.
 
-**Profil und Cursor.** Im Datenblock unter der Karte schneidet das Vertikalprofil die Route von Anfang bis Ende: das Gelände, die
+<a id="maps-weather"></a>**Profil und Cursor.** Im Datenblock unter der Karte schneidet das Vertikalprofil die Route von Anfang bis Ende: das Gelände, die
 Lufträume, in die Sie auf der geplanten Höhe einfliegen, und die Flugbahn in Violett. Fahren Sie mit dem Finger über das
 Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der Karte ein. Tippen Sie auf die Route auf der
 Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem Abflug,
@@ -295,7 +295,7 @@ ihre Namen. Näher: die Punkte der Flugwege (Dreiecke und Funkfeuer), die Mindes
 die Länge des Abschnitts, sein Kurs („097°“), die Meldepunkte und die Hindernisse. Aus der Nähe trägt jedes Hindernis
 seine Höhe über Grund und die Höhe seiner Spitze in Klammern („434 AGL (771)“).
 
-**Ebenen.** Die Ebenen-Schaltfläche links auf der Karte öffnet im Datenblock, anstelle des Profils, die Liste dessen, was die Karte zeichnet (das ✕ bringt das Profil zurück). Zuerst, unter der Flugauswahl, der Regler „Komplexität“: Er wirkt, als wäre der Zoom ein anderer, eine Zoomstufe pro Raststellung (−4 bis +4) — nach links weniger, nach rechts mehr Details. Was jeder Zoom zeigt, legt der Administrator fest (Einstellungen, Karte „Verwaltung“). Dann die
+<a id="maps-layers"></a>**Ebenen.** Die Ebenen-Schaltfläche links auf der Karte öffnet im Datenblock, anstelle des Profils, die Liste dessen, was die Karte zeichnet (das ✕ bringt das Profil zurück). Zuerst, unter der Flugauswahl, der Regler „Komplexität“: Er wirkt, als wäre der Zoom ein anderer, eine Zoomstufe pro Raststellung (−4 bis +4) — nach links weniger, nach rechts mehr Details. Was jeder Zoom zeigt, legt der Administrator fest (Einstellungen, Karte „Verwaltung“). Dann die
 Luftraumfamilien (TMA / CTR, D / R / P, FIR, andere), untere und obere Flugwege, Funkfeuer, Flugwegpunkte,
 VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplatz, Namen der Lufträume, Namen der
 Flugwege. Haken setzen oder entfernen: die Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät
@@ -307,7 +307,7 @@ einem kleinen Rahmen (Telefon, Fenster der Doppelansicht) zeigt sie bei gleichem
 großen, als wären Sie weiter weg (der Zoom wird um den Mittelwert aus Höhe und Breite des Rahmens korrigiert, 900 px
 bedeuten keine Korrektur).
 
-**Antippen oder darüberfahren für mehr.** Tippen, klicken oder fahren Sie über den Namen eines Flugwegs, die
+<a id="maps-airspaces"></a>**Antippen oder darüberfahren für mehr.** Tippen, klicken oder fahren Sie über den Namen eines Flugwegs, die
 Beschriftung eines Luftraums oder eine Windfieder: eine kleine Blase nennt das Wesentliche in zwei Zeilen — für einen
 Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und Obergrenze; für einen Luftraum seinen Namen
 und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, zeigt der
@@ -321,7 +321,7 @@ Funkfeuer-Anlage nennt die Blase Art, Kennung und Frequenz; wo mehrere Anlagen a
 die nützlichste (VOR, TACAN oder DME, dann NDB, dann ILS) und die Blase nennt die anderen („auch hier: ILS 25L BG
 109.9“). Auf dem Profil geben Finger oder Maus ebenso die durchflogenen Lufträume an.
 
-**Die VFR-Meldepunkte eines Flugplatzes.** Fahren Sie mit der Maus über einen Flugplatz: seine Meldepunkte und die
+<a id="maps-vfr"></a>**Die VFR-Meldepunkte eines Flugplatzes.** Fahren Sie mit der Maus über einen Flugplatz: seine Meldepunkte und die
 Abläufe aus seinen VAC-Karten leuchten auf (benannte Kreise, Striche zwischen den Punkten). Auf der Karte trägt ein
 Meldepunkt nur sein Kurzzeichen („NA“, „E“, „SE“ …), damit die Karte lesbar bleibt; der lange Name steht in der Blase
 und in der Liste. Tippen Sie den Flugplatz an: Die Karte zoomt auf seine Punkte, wenn sie gedrängt sind, und der
@@ -338,14 +338,14 @@ und Anweisungen der VAC kommen hinzu, sobald der Administrator sie importiert ha
 VAC-Karte ihn beide nennen: die Zeile behält die Beschreibung und die veröffentlichte Position der Datenbank und sagt „VAC-Position 1,2 NM entfernt“,
 wenn die VAC-Karte ihn mehr als eine halbe Meile davon setzt.
 
-**Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
+<a id="maps-started"></a>**Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
 „geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
 Minuten). In den Notizen des Datenblocks, unter dem Profil, nennt eine Zeile die Abweichung: voraus oder verspätet (Minuten und NM), wie viele NM neben der
 Route, und Ihre Höhe gegenüber der geplanten; das Profil zeigt beide Höhen. Aus der Nähe trägt jeder Punkt seine
 voraussichtliche Zeit (ETA) unter seinem Namen, nie über einem Flugplatz, in UTC („14:52Z“), die Ortszeit in Klammern bei Abflug und Ankunft. „Folgen“ hält die Karte auf Ihrer Position; ein Verschieben der Karte beendet es. Ohne
-Position (GPS oder Netz nicht aktiviert) sagt es eine Benachrichtigung einmal, die Zeile bleibt in den Notizen und ihr Link öffnet die Einstellungen; eine Position, die älter als 2
+Position (GPS oder Netz nicht aktiviert) sagt es eine Benachrichtigung einmal, die Zeile bleibt in den Notizen, mit einer Schaltfläche „Position aktivieren“; eine Position, die älter als 2
 Minuten ist, erscheint grau. Die Zeile endet mit der Quelle der Position: GPS, Netz, IVAO, VATSIM, X-Plane oder Little
-Navmap.
+Navmap. Die voraussichtlichen Zeiten erscheinen auch für einen in Kraftstoff datierten Flug, vor dem Abflug. Nach der Ankunft ersetzt die Notiz „Angekommen“ die Zeile und „Folgen“ verschwindet; eine Ausweichlandung wird in den Notizen genannt.
 
 **Höhenwinde.** Hat Kraftstoff die Windvorhersage in der Flughöhe, zeigt die Karte sie als Windfiedern entlang der
 Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, woher der Wind kommt; ein Wimpel steht für
@@ -361,12 +361,12 @@ Die Wegpunkte der Route sind auch auf dem Profil markiert.
 (TOD), auf der Karte wie im Profil. Sie stammen aus der Berechnung in Kraftstoff; ohne sie schätzt die Karte sie mit
 üblichen Steig- und Sinkraten.
 
-**Die Missionskarten.** Die erste Liste, am Kopf der Ebenen (die Ebenen-Schaltfläche), wählt, was die Karte zeigt: den geplanten Flug oder eine Mission der
+**Die Missionskarten.** Die Liste unten in den Ebenen (die Ebenen-Schaltfläche) wählt, was die Karte zeigt: den geplanten Flug oder eine Mission der
 Fluggesellschaft. Für eine Mission wählt eine zweite Liste unter ihren Karten (Übersicht, Ziel, Detail…). Jede Karte
 wird wie im Studio neu gezeichnet: gleicher Rahmen, gleiches Anzeigeprofil, mit den Punkten der Mission, ihren
 schraffierten Gebieten und ihrer Route. Das Vertikalprofil zeigt dann das der Mission.
 
-**Die Route auf der Karte ändern.** Tippen Sie auf „Auf der Karte bearbeiten“ (die vier Pfeile, rechts auf der Karte; beim ersten Mal erscheint eine kurze Hilfe): die Wegpunkte erhalten einen
+<a id="maps-edit"></a>**Die Route auf der Karte ändern.** Tippen Sie auf „Auf der Karte bearbeiten“ (die vier Pfeile, rechts auf der Karte; beim ersten Mal erscheint eine kurze Hilfe): die Wegpunkte erhalten einen
 Kreis. Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz: er setzt sich dort (anderswo
 losgelassen, wird er ein freier Punkt, nach seinen Koordinaten benannt, etwa 4530N00030E). Um einen Punkt hinzuzufügen,
 tippen Sie auf „+“ (in derselben Spalte) und dann auf die gewünschte Stelle (oder halten Sie eine halbe Sekunde gedrückt):
@@ -377,7 +377,7 @@ Auf dem Profil ziehen Sie eine Flughöhe nach oben oder unten: sie ändert sich 
 eröffnet, in Schritten von FL10 (auf dem ersten Abschnitt ist es die Flughöhe des Flugs); in der Karte eines Punkts tun
 „−“ und „+“ dasselbe. „Rückgängig“ nimmt die letzte Geste zurück. Jede Änderung wird sofort im Flug gespeichert, und
 Kraftstoff rechnet neu; das Profil folgt. Erneutes Tippen auf die Schaltfläche (oder Esc) schließt den Modus, und die Karte lässt sich wieder mit dem Finger
-verschieben. Um die Route als Text einzugeben, öffnet der Stift oben in der rechten Spalte („Route bearbeiten“) den Schritt Route von Kraftstoff.
+verschieben. Um die Route als Text einzugeben, öffnet der Stift oben in der rechten Spalte („Route bearbeiten“) den Schritt Route von Kraftstoff. Solange der Modus aktiv ist, behält die rechte Spalte nur „Auf der Karte bearbeiten“, „+“, „Rückgängig“, „Zentrieren“ und den Vollbildmodus.
 
 ## Ohne Netz
 
@@ -411,7 +411,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 4f6a636e781c -->
+<!-- fr: 462716f97b09 -->
 
 <!-- chapter: report -->
 # Bericht

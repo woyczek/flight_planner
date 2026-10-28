@@ -16,12 +16,13 @@ A failure names the step ("P3 step 5 (`#report` prefilled): navigation.dep '' (e
 first failed step.  Seeding goes through lib.py only (`seed_flights`, `seed_plan`, `Ctx.open(flights=, reports=, airfields=)`).
 Once per run: no case here is repeated across designs (a journey is slow by nature).
 """
+import json
 import re
 
 from lib import Fail, Skip, case, norm, tx, ROOT
 
 FU = 'modules/fuel/module.js'
-MP = 'modules/maps/module.js'
+MP = 'modules/maps/texts.js'
 AT = 'modules/atmosphere/texts.js'
 FL = 'modules/flightlog/module.js'
 APP = 'frame/app.js'
@@ -460,9 +461,25 @@ def j5(c):
 # ------------------------------------------------------------------------------------------------------ J6
 @case('J6', 'P6 Carte de mission', 'J', tags=('journey', 'P6', 'maps'), designs=('standard',), screens=False, rule='PLAN N, P6')
 def j6(c):
-    fixtures = ROOT / 'tests' / 'v3' / 'fixtures'
-    found = sorted(fixtures.glob('*mission*')) if fixtures.is_dir() else []
-    if not found:
-        raise Skip('no mission fixture in tests/v3/fixtures/ (a mission YAML of the studio and the way to serve it): '
-                   'the mission map is only checked without data by D10')
-    raise Skip(f'a fixture is there ({found[0].name}) but the walk is not written yet: add the steps of P6 here')
+    from cases.maps_recode import FIXTURE, MISSION_PATH, _RAW_JS, _TEXTS_JS
+    c.step('P6', 1, 'the synthetic mission in the data, Carte open on the planned flight')
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('maps', flight=True, aero=True)
+    c.step('P6', 2, 'Couches: the flight selector lists the mission, choosing it opens its map')
+    c.tap('[data-mp="layers"]')
+    c.until("[...document.querySelectorAll('.mp-pick option')].some(o => o.value === 'm:ESSAI1')", what='the mission in the flight selector')
+    c.page.select_option('.mp-pick', 'm:ESSAI1')
+    c.until("location.hash.startsWith('#maps?mission=ESSAI1')", what='the address of the mission map')
+    c.ready('maps')
+    c.step('P6', 3, 'the buttons of a mission map')
+    c.until(f"document.querySelector('[data-mp=layers]')?.title === {json.dumps(tx(MP, 'pick', c.lang))}", timeout=8000,
+            what='the Layers button named "Carte à montrer"')
+    for mp in ('route', 'mode', 'edit'):
+        c.ok(not c.shown(f'[data-mp="{mp}"]'), f'[data-mp={mp}] shown on a mission map', 'route-edit buttons hidden')
+    c.step('P6', 4, "the mission's points drawn, its profile in the sheet")
+    c.js(_TEXTS_JS)
+    c.tap('[data-mp="fit"]')
+    c.until("(window.__mpTexts || []).some(t => t === 'Cible')", timeout=8000, what="the mission's points named on the map")
+    c.until("window.__t.shown(document.querySelector('.mp-prof'))", timeout=8000, what='the profile of the mission in the sheet')
+    c.eq(c.js("document.querySelector('.mp-chip[data-view=weather]').disabled"), True, 'the Weather chip is disabled on a mission map', what='Weather chip')

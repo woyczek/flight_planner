@@ -1,0 +1,193 @@
+<!doctype html>
+<!-- Banc de la fenêtre sur l'axe des distances (modules/maps/lib/axis_window.js, SPEC § 8.6) : bornes (5 NM au moins, jamais
+     hors du vol), pincement à deux doigts autour de leur centre, glisser à deux doigts, double toucher et double clic (vol
+     entier), Ctrl + molette, un seul doigt jamais pris, désarmée par enabled, onChange seulement quand la fenêtre change.
+     Événements de pointeur fabriqués sur un cadre de 400 px. Page nue ; window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>maps — axis window bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  #el {
+    position: relative;
+    width: 400px;
+    height: 120px;
+    background: #eef
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">maps — axis window bench</h1>
+<div id="el"></div>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    createAxisWindow
+  } from '../lib/axis_window.js?v=0';
+  const rows = [],
+    out = document.getElementById('out'),
+    el = document.getElementById('el'),
+    near = (a, b, e = 1e-6) => Math.abs(a - b) <= e;
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  let calls = 0,
+    on = true,
+    callerSaw = 0;
+  const W = createAxisWindow(el, {
+    total: 100,
+    min: 5,
+    plot: () => ({
+      x0: 0,
+      x1: 400
+    }),
+    enabled: () => on,
+    onChange: () => calls++
+  });
+  // ce que voit l'appelant (le curseur de lecture) : ses écouteurs viennent après ceux de l'aide (capture)
+  el.addEventListener('pointerdown', () => callerSaw++);
+  const r = el.getBoundingClientRect(),
+    P = (type, id, x, kind = 'touch', extra = {}) => el.dispatchEvent(new PointerEvent(type, {
+      pointerId: id,
+      pointerType: kind,
+      clientX: r.left + x,
+      clientY: r.top + 60,
+      bubbles: true,
+      cancelable: true,
+      isPrimary: id === 1,
+      button: 0,
+      buttons: type === 'pointerup' ? 0 : 1,
+      ...extra
+    })),
+    win = () => `${W.from.toFixed(2)}–${W.to.toFixed(2)}`;
+
+  ck('au départ : le vol entier', !W.zoomed && W.from === 0 && W.to === 100, win());
+  ck('set(20, 40) : fenêtre posée, onChange une fois', W.set(20, 40) && W.zoomed && near(W.from, 20) && near(W.to, 40) && calls === 1,
+    `${win()} calls ${calls}`);
+  ck('set à l\'identique : rien, pas d\'onChange', !W.set(20, 40) && calls === 1);
+  W.set(-1, 2);
+  ck('bornes : 5 NM au moins, jamais avant le départ', near(W.from, 0) && near(W.to, 5), win());
+  W.set(97, 120);
+  ck('bornes : jamais après l\'arrivée', near(W.to, 100) && W.to - W.from >= 5 - 1e-9, win());
+  W.reset();
+  ck('reset : le vol entier', !W.zoomed && W.from === 0 && W.to === 100);
+  W.set(10, 20, {
+    quiet: true
+  });
+  const c0 = calls;
+  W.reset({
+    quiet: true
+  });
+  ck('quiet : pas d\'onChange', calls === c0);
+
+  // un seul doigt : jamais pris
+  callerSaw = 0;
+  P('pointerdown', 1, 100);
+  P('pointermove', 1, 180);
+  ck('un seul doigt : pas actif, fenêtre inchangée', !W.active && !W.zoomed, win());
+  P('pointerup', 1, 180);
+  ck('un seul doigt : l\'appelant le reçoit', callerSaw === 1, String(callerSaw));
+
+  // pincement : deux doigts qui s'écartent autour du centre (200 px = 50 NM)
+  callerSaw = 0;
+  P('pointerdown', 1, 150);
+  P('pointerdown', 2, 250);
+  ck('second doigt : la fenêtre est active, l\'appelant ne le voit pas', W.active && callerSaw === 1, `active ${W.active}, saw ${callerSaw}`);
+  P('pointermove', 1, 50);
+  P('pointermove', 2, 350);
+  ck('pincement × 3 : un tiers du vol, centré sur 50 NM', W.zoomed && near(W.to - W.from, 100 / 3, .5) && near((W.from + W.to) / 2, 50, .5),
+    win());
+  // glisser à deux doigts : la fenêtre suit
+  const f0 = W.from;
+  P('pointermove', 1, 10);
+  P('pointermove', 2, 310);
+  ck('deux doigts qui glissent : la fenêtre se déplace', W.from > f0, `${f0.toFixed(2)} → ${W.from.toFixed(2)}`);
+  P('pointerup', 2, 310);
+  ck('un doigt reste après le pincement : toujours retenu', W.active);
+  P('pointermove', 1, 200);
+  P('pointerup', 1, 200);
+  ck('tous les doigts levés : la main est rendue', !W.active);
+
+  // double toucher : le vol entier
+  P('pointerdown', 1, 200);
+  P('pointerup', 1, 200);
+  P('pointerdown', 1, 205);
+  P('pointerup', 1, 205);
+  ck('double toucher : le vol entier', !W.zoomed, win());
+
+  // Ctrl + molette : zoom autour du pointeur ; sans Ctrl, rien
+  el.dispatchEvent(new WheelEvent('wheel', {
+    deltaY: -200,
+    clientX: r.left + 100,
+    clientY: r.top + 60,
+    bubbles: true,
+    cancelable: true
+  }));
+  ck('molette sans Ctrl : rien (elle reste à la page)', !W.zoomed);
+  el.dispatchEvent(new WheelEvent('wheel', {
+    deltaY: -200,
+    ctrlKey: true,
+    clientX: r.left + 100,
+    clientY: r.top + 60,
+    bubbles: true,
+    cancelable: true
+  }));
+  ck('Ctrl + molette : zoom autour du pointeur (25 NM reste sous lui)', W.zoomed && near(W.from + (W.to - W.from) * .25, 25, .5), win());
+  // souris : glisser déplace une fenêtre resserrée
+  const g0 = W.from;
+  P('pointerdown', 1, 200, 'mouse');
+  P('pointermove', 1, 100, 'mouse');
+  P('pointerup', 1, 100, 'mouse');
+  ck('souris : glisser déplace la fenêtre resserrée', W.from > g0, `${g0.toFixed(2)} → ${W.from.toFixed(2)}`);
+  el.dispatchEvent(new MouseEvent('dblclick', {
+    bubbles: true
+  }));
+  ck('double clic : le vol entier', !W.zoomed, win());
+
+  // désarmée (mode Édition, autre contenu)
+  on = false;
+  P('pointerdown', 1, 150);
+  P('pointerdown', 2, 250);
+  P('pointermove', 1, 50);
+  P('pointermove', 2, 350);
+  P('pointerup', 1, 50);
+  P('pointerup', 2, 350);
+  ck('désarmée : un pincement ne change rien', !W.zoomed && !W.active, win());
+  W.stop();
+  on = true;
+  P('pointerdown', 1, 150);
+  P('pointerdown', 2, 250);
+  P('pointermove', 2, 390);
+  ck('stop() : plus aucun écouteur', !W.zoomed);
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(x => x.ok).length,
+    fail: rows.filter(x => !x.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

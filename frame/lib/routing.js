@@ -1,5 +1,5 @@
-// V3 maps/lib (propriétaire : maps ; créée par le lot « auto » de fuel, relais cloud, 25 oct. 2026) — routage sur les voies
-// aériennes. Port de shared/mission_routing.js (V2 : airwayGraph, shortest, leg, expand) sur les segments de la base
+// V3 frame/lib (code partagé ; créée dans modules/maps/lib par le lot « auto » de fuel le 25 oct. 2026, passée au cadre au
+// recodage de la Carte, 28 oct. 2026) — routage sur les voies aériennes. Port de shared/mission_routing.js (V2 : airwayGraph, shortest, leg, expand) sur les segments de la base
 // publiée (AeroDB.airways({ bbox }) : { route, a: { id, lat, lon }, b, lower, upper (ft), nm }) au lieu de window.SiaBase.
 // Module ES, sans état propre (le graphe se refait à chaque appel, sur le couloir demandé), ni page, ni stockage, ni réseau :
 // la base publiée est lue dans le cache du cadre par aerodb.
@@ -30,7 +30,7 @@
 import {
   textFromTokens,
   icaoCoord
-} from '../../../frame/lib/route_text.js';
+} from './route_text.js';
 
 export const DEFAULTS = {
   reachNm: 60,

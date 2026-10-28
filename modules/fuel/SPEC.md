@@ -297,7 +297,7 @@ mount. Inside a mount, the two buttons switch as before.
      deviation and aircraft taken into the current flight.
      **"Auto" button** (25 Oct 2026, next to the route field, 44 px, in the field's row): for each pair of consecutive named
      points with nothing between them in the text (no airway, no procedure), the shortest path over the published base's
-     airways (`AeroDB.airways`, V2's rules ported in `modules/maps/lib/routing.js`: a leg open at the level when floor − 100 ≤
+     airways (`AeroDB.airways`, V2's rules ported in `frame/lib/routing.js`: a leg open at the level when floor − 100 ≤
      level ≤ ceiling + 100 ft, direct entry and exit within 60 NM, no detour over 40 %, no leg of 40 NM or less) at the
      planned level (the flight's, else the quote's, else 6,500 ft, said in a notification; a point's own level holds from that
      point on). It writes `route.text` ("LFRS TSA01 UT460 TSA05 LFML": the airway's middle points are not written) and

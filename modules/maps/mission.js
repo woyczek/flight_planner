@@ -193,7 +193,9 @@
         ['degagement', 'ALTERNATE']
       ]) {
       const p = addPoint(points, root[key] ?? meta[key], id);
-      if (p) roleRefs.set(keyNorm(id), p);
+      if (!p) continue;
+      roleRefs.set(keyNorm(id), p);
+      p.role ||= id; // le rôle reste connu quand le point porte son propre code (départ « LFBD »)
     }
     for (const key of ['turning_points', 'turningPoints', 'points_tournants', 'waypoints', 'points', 'rendezvous', 'rdv'])
       for (const p of asList(root[key] ?? meta[key])) addPoint(points, p, keyNorm(key).toUpperCase());
@@ -298,8 +300,8 @@
     const v = mission.vprof;
     if (v.route) return v.route;
     const ps = mission.points,
-      by = id => ps.find(p => p.id === id),
-      tps = ps.filter(p => !/^(ORIGIN|DESTINATION|TARGET|ALTERNATE)$/.test(p.id) && !/^RDV/i.test(p.id)),
+      by = role => ps.find(p => p.role === role || p.id === role),
+      tps = ps.filter(p => !p.role && !/^(ORIGIN|DESTINATION|TARGET|ALTERNATE)$/.test(p.id) && !/^RDV/i.test(p.id)),
       list = [by('ORIGIN'), ...(tps.length ? tps : [by('TARGET')]), by('DESTINATION')].filter(Boolean);
     return (list.length >= 2 ? list : ps).map(p => p.id).join(' ');
   }

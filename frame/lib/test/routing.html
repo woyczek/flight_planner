@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>maps — routing bench</title>
-<!-- Banc du routage sur les voies aériennes (modules/maps/lib/routing.js) : chemin trouvé, plancher et plafond des voies
+<!-- Banc du routage sur les voies aériennes (frame/lib/routing.js) : chemin trouvé, plancher et plafond des voies
      respectés (à 100 ft près, comme la V2), détour de plus de 40 % rejeté, tronçon court laissé direct, texte regroupé
      « A VOIE B », points d'une voie non écrits (awy), voies composées (G54-R66) ramenées à une seule, couloir demandé à aerodb,
      base absente dite par RoutingError, aucune voie → null. Les segments sont synthétiques (les mêmes que
@@ -36,7 +36,7 @@
 <h1 style="font-size:16px;margin:0 0 8px">maps — routing bench</h1>
 <pre id="out">running…</pre>
 <script type="module">
-  import * as R from '../lib/routing.js';
+  import * as R from '../routing.js';
   const lines = [];
   let pass = 0,
     fail = 0;

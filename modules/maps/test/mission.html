@@ -1,0 +1,135 @@
+<!doctype html>
+<!-- Banc de la lecture d'une mission (modules/maps/mission.js, SPEC § 15) sur la mission synthétique des essais
+     (tests/v3/fixtures/missions/1_ESSAI/ESSAI1/missionESSAI1.yaml) : points, zones, cartes, emprise écrite par le studio
+     (resolved_bbox) ou par type, profil copié ou intégré (id, puis type), cycle, cheminement, carte « off » écartée.
+     Page nue servie depuis la racine du dépôt ; window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>maps — mission bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">maps — mission bench</h1>
+<pre id="out"></pre>
+<script src="../../../frame/lib/js-yaml.min.js?v=0"></script>
+<script src="../lib/profiles.js?v=0"></script>
+<script src="../mission.js?v=0"></script>
+<script>
+  (async () => {
+    const rows = [],
+      out = document.getElementById('out'),
+      M = window.MapsMission,
+      near = (a, b, e) => Math.abs(a - b) <= e;
+    const ck = (name, ok, detail = '') => {
+      rows.push({
+        name,
+        ok: !!ok,
+        detail
+      });
+      const l = document.createElement('div');
+      l.className = ok ? 'PASS' : 'FAIL';
+      l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+      out.append(l);
+    };
+    try {
+      const text = await (await fetch('../../../tests/v3/fixtures/missions/1_ESSAI/ESSAI1/missionESSAI1.yaml')).text(),
+        m = M.parse(window.jsyaml.load(text)),
+        ids = m.points.map(p => p.id).sort().join(',');
+      ck('mission : identifiant et titre', m.id === 'ESSAI1' && m.title === 'Mission d\'essai', `${m.id} / ${m.title}`);
+      ck('points : départ, destination, cible, point tournant', ids === 'CIBLE,TP1,XXAA,XXZZ', ids);
+      ck('zones : un cercle de 15 km et un polygone', m.zones.length === 2 && m.zones[0].radiusKm === 15 && m.zones[1].points.length ===
+        4,
+        JSON.stringify(m.zones.map(z => [z.id, z.radiusKm, z.points.length])));
+      ck('zones : genre recherche et interdite', m.zones[0].kind === 'search' && m.zones[1].kind === 'exclusion');
+      ck('cartes : deux', m.maps.length === 2, String(m.maps.length));
+      const [g, t] = m.maps,
+        ex = g.extent;
+      ck('carte 1 : emprise écrite par le studio (resolved_bbox) telle quelle', ex.w === 0 && ex.s === 43.8 && ex.e === 5.6 && ex.n ===
+        47.3,
+        JSON.stringify(ex));
+      ck('carte 1 : cycle gardé', g.cycle === '2026-09-11', g.cycle);
+      const pg = M.profileFor(g, window.MAPS_PROFILES);
+      ck('carte 1 : profil copié du studio (profile_def)', pg.source === 'copy' && pg.profile.id === 'essai-copy', `${pg.source} ${pg.profile?.id}`);
+      const pt = M.profileFor(t, window.MAPS_PROFILES);
+      ck('carte 2 : sans profil, celui du type (cible → vfr-detail)', pt.source === 'builtin-type' && pt.profile?.id === 'vfr-detail',
+        `${pt.source} ${pt.profile?.id}`);
+      const te = t.extent,
+        midLat = (te.s + te.n) / 2,
+        wKm = (te.e - te.w) * 111.32 * Math.cos(midLat * Math.PI / 180),
+        hKm = (te.n - te.s) * 110.57;
+      ck('carte 2 : emprise par type, centrée sur la cible', near(midLat, 45.6, .05) && near((te.w + te.e) / 2, 2.8, .05), JSON
+        .stringify(te));
+      ck('carte 2 : cible 100 × 62 km au moins, au format 1,6 du studio', wKm >= 99 && hKm >= 61 && near(wKm / hKm, M.OUT_RATIO, .1),
+        `${wKm.toFixed(0)} × ${hKm.toFixed(0)} km`);
+      ck('profil vertical : cheminement et croisière', m.vprof.route === 'XXAA TP1 CIBLE XXZZ' && m.vprof.cruiseFt === 6500,
+        `${m.vprof.route} ${m.vprof.cruiseFt}`);
+      ck('profil vertical : taux par défaut', m.vprof.rates.climbFpm === 1000 && m.vprof.rates.descentKt === 160);
+      ck('routeTokens : le cheminement écrit', M.routeTokens(m) === 'XXAA TP1 CIBLE XXZZ');
+      const bare = M.parse({
+        mission: {
+          id: 'B'
+        },
+        origin: {
+          id: 'A1',
+          lat: 45,
+          lon: 1
+        },
+        destination: {
+          id: 'A2',
+          lat: 44,
+          lon: 2
+        },
+        turning_points: [{
+          id: 'P1',
+          lat: 44.5,
+          lon: 1.5
+        }],
+        maps: [{
+          filename: 'a.png',
+          profile: 'off'
+        }, {
+          filename: 'b.png',
+          profile: 'ifr-simple'
+        }]
+      });
+      ck('carte « off » écartée', bare.maps.length === 1 && bare.maps[0].file === 'b.png');
+      ck('profil intégré de même id', M.profileFor(bare.maps[0], window.MAPS_PROFILES).source === 'builtin-id');
+
+      ck('routeTokens sans cheminement : départ, points tournants, destination', M.routeTokens(bare) === 'A1 P1 A2', M.routeTokens(
+        bare));
+      let threw = false;
+      try {
+        M.parse(null);
+      } catch {
+        threw = true;
+      }
+      ck('YAML vide : une erreur', threw);
+    } catch (e) {
+      ck('banc exécuté sans exception', false, String(e));
+    }
+    window.__bench = {
+      done: true,
+      pass: rows.filter(r => r.ok).length,
+      fail: rows.filter(r => !r.ok).length,
+      rows
+    };
+    const h = document.createElement('div');
+    h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+    out.prepend(h);
+  })();
+</script>
+</body>
+</html>

@@ -89,7 +89,7 @@ LANGS = ('fr', 'en', 'de', 'es')
 LANGS4 = ('en', 'de', 'es')
 PHONE = (390, 844)
 SCREEN = (1280, 800)
-CASE_FILES = ('frame', 'overlay', 'sheet', 'maps', 'atmosphere', 'fuel', 'flightlog', 'designs', 'repo', 'aerodb', 'journeys')
+CASE_FILES = ('frame', 'overlay', 'sheet', 'maps', 'maps_recode', 'atmosphere', 'fuel', 'flightlog', 'designs', 'repo', 'aerodb', 'journeys')
 
 
 # ------------------------------------------------------------------------------------------------------ outcomes
@@ -987,7 +987,7 @@ def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=(), airways=(
         docs.append(kind('aerodromes', [{'icao': i, 'name': i + ' TEST', 'lat': p['lat'], 'lon': p['lon'], 'elev': 100}
                                         for i, p in [('LFRS', pts['LFRS']), ('LFML', pts['LFML']), ('LFMT', altn)]]))
         docs.append(kind('points', [{'id': i, 'lat': pts[i]['lat'], 'lon': pts[i]['lon'], 'type': 'RNAV'} for i in ('LUGEN', 'NEPIX')]))
-    for k in ('aerodromes', 'vrp'):   # a case's own aerodromes and VRPs, beside those of the route
+    for k in ('aerodromes', 'vrp', 'cities'):   # a case's own aerodromes, VRPs and towns, beside those of the route
         if extra.get(k):
             docs = [d for d in docs if d[0] != f'sia/base/fr/{cycle}/{k}.json'] + [kind(k, (extra.get(k) or []) + ([x for d in docs if d[0] == f'sia/base/fr/{cycle}/{k}.json' for x in d[1]['data']]))]
     return docs

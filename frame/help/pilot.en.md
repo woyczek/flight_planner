@@ -245,7 +245,7 @@ finger, spread two fingers to zoom; “Recentre” (the target, at the top right
 the route changes: only “Recentre” (or another flight) reframes it. Seen from afar, the map only shows what is near the
 route; zoom in to see everything.
 
-**The profile and the cursor.** In the data block under the map, the vertical profile cuts through the route from end to end: the terrain,
+<a id="maps-weather"></a>**The profile and the cursor.** In the data block under the map, the vertical profile cuts through the route from end to end: the terrain,
 the airspaces you enter at the planned altitude, and the flight path in purple. Slide your finger along the profile: a
 blue cursor follows it, and the same cursor moves on the map. Tap the route on the map to put it there. The line below
 the profile says what is under the cursor: distance from the departure, planned altitude, terrain height, and the
@@ -274,7 +274,7 @@ names. Closer: the airway points (triangles and beacons), each airway's minimum 
 distance, its track (“097°”), the reporting points and the obstacles. Close up, each obstacle carries its height above
 ground, and the elevation of its top in brackets (“434 AGL (771)”).
 
-**Layers.** The layers button, at the left of the map, opens in the data block, in place of the profile, the list of what the map draws (the ✕ brings the profile back). First, under the flight selector, the “Complexity” slider: it acts as if the zoom were different, one zoom level per step (−4 to +4) — fewer details to the left, more to the right. What each zoom shows is set by the administrator (Settings, “Administration” card). Then the airspace families (TMA /
+<a id="maps-layers"></a>**Layers.** The layers button, at the left of the map, opens in the data block, in place of the profile, the list of what the map draws (the ✕ brings the profile back). First, under the flight selector, the “Complexity” slider: it acts as if the zoom were different, one zoom level per step (−4 to +4) — fewer details to the left, more to the right. What each zoom shows is set by the administrator (Settings, “Administration” card). Then the airspace families (TMA /
 CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points, obstacles, minimum
 altitudes, towns, graticule, alternate, airspace names, airway names. Tick or untick: the map follows, and your choice
 is kept for this setting on this device. “Reset all” goes back to the original choice. “Around the route only”, ticked
@@ -284,7 +284,7 @@ very close, CTRs close up, TMAs in a medium view, FIRs from afar. The size of th
 (phone, pane of the dual view) it shows fewer elements than a large one at the same zoom, as if you were further out
 (the zoom is corrected by the mean of the frame's height and width, 900 px meaning no correction).
 
-**Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a small
+<a id="maps-airspaces"></a>**Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a small
 bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks, its
 floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”). Tapped
 elsewhere inside an airspace, the data block under the map shows the airspaces under your finger, one or several, in
@@ -296,7 +296,7 @@ elsewhere or a move of the map. Over a beacon, the bubble gives its type, ident 
 share a place, the map keeps the most useful one (VOR, TACAN or DME, then NDB, then ILS) and the bubble names the others
 (“also here: ILS 25L BG 109.9”). On the profile, your finger or the mouse give the airspaces crossed in the same way.
 
-**The VFR reporting points of an airfield.** Move the mouse over an airfield: its reporting points and the sequences
+<a id="maps-vfr"></a>**The VFR reporting points of an airfield.** Move the mouse over an airfield: its reporting points and the sequences
 taken from its VAC charts light up (named circles, dashes between the points). On the map, a reporting point carries
 only its short code (“NA”, “E”, “SE”…), so that the map stays legible; the long name is in the bubble and in the list.
 Tap the airfield: the map zooms in on its points when they are crowded, and the data block under the map, in place of
@@ -313,11 +313,11 @@ Maintenance). A reporting point is one line in the list and one label on the map
 it: the line keeps the database's description and published position, and says “VAC position 1.2 NM away” when the VAC chart puts it more than half
 a mile from there.
 
-**In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
+<a id="maps-started"></a>**In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
 and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). In the data block's notes, under the profile, a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your altitude against the
 planned one; the profile shows both altitudes. Close up, each point carries its estimated time (ETA) under its name, never over an airfield, in UTC (“14:52Z”), the local time in brackets at departure and arrival. “Follow” keeps the
-map on your position; moving the map stops it. Without a position (GPS or network not enabled), a notification says so once, the line stays in the notes and its link opens the settings; a position older than 2 minutes is greyed. The line ends with the position's source: GPS, network,
-IVAO, VATSIM, X-Plane or Little Navmap.
+map on your position; moving the map stops it. Without a position (GPS or network not enabled), a notification says so once, the line stays in the notes with an “Enable the position” button; a position older than 2 minutes is greyed. The line ends with the position's source: GPS, network,
+IVAO, VATSIM, X-Plane or Little Navmap. The estimated times are also shown for a flight dated in Fuel, before it leaves. Once arrived, the note “Arrived” replaces the line and “Follow” goes; a diversion is said in the notes.
 
 **Winds aloft.** When Fuel has the wind forecast at the flight level, the map shows it as barbs along the route: at
 each point, and every 50 NM between two points. The staff points to where the wind comes from; a pennant is 50 kt, a
@@ -332,12 +332,12 @@ the profile.
 the profile. They come from the Fuel calculation; without it, the map estimates them with common rates of climb and
 descent.
 
-**Mission maps.** The first list, at the head of the layers (the layers button), chooses what the map shows: the planned flight, or a mission of the
+**Mission maps.** The list at the bottom of the layers (the layers button) chooses what the map shows: the planned flight, or a mission of the
 airline. For a mission, a second list chooses among its maps (overview, target, detail…). Each map is redrawn as in
 the studio: same frame, same display profile, with the mission's points, its hatched areas and its route. The vertical
 profile then shows the mission's.
 
-**Editing the route on the map.** Tap “Edit on the map” (the four arrows, at the right of the map; a short help appears the first time you enter the mode): the waypoints get a circle. Drag a point onto
+<a id="maps-edit"></a>**Editing the route on the map.** Tap “Edit on the map” (the four arrows, at the right of the map; a short help appears the first time you enter the mode): the waypoints get a circle. Drag a point onto
 a fix, a beacon or an airfield: it settles there (dropped elsewhere, it becomes a free point named by its coordinates,
 such as 4530N00030E). To add a point, tap “+” (in the same column), then tap the place you want (or keep pressing for half a
 second): on a fix, a beacon or an airfield it settles there, elsewhere it is a free point; it is added to the nearest
@@ -346,7 +346,7 @@ segment. A simple tap adds nothing: it shows the bubble. Tap a route point: its 
 point that opens that segment, in steps of FL10 (on the first segment, it is the flight's level); in a point's card, “−”
 and “+” do the same. “Undo” takes back the last gesture. Each change is saved in the flight at once, and Fuel redoes the
 quote; the profile follows. Tapping the button again (or Escape) closes the mode, and the map moves under your finger again. To type the route as
-text, the pencil at the top of the right column (“Edit the route”) opens Fuel's Route step.
+text, the pencil at the top of the right column (“Edit the route”) opens Fuel's Route step. While the mode is on, the right column keeps only “Edit on the map”, “+”, “Undo”, “Recentre” and full screen.
 
 ## Without network
 
@@ -379,7 +379,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 4f6a636e781c -->
+<!-- fr: 462716f97b09 -->
 
 <!-- chapter: report -->
 # Report

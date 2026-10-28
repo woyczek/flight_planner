@@ -20,7 +20,7 @@ import time
 
 from lib import FLIGHT, MAP_JS, ROOT, STUB_STYLE, Fail, Skip, case, forget, norm, tx
 
-M = 'modules/maps/module.js'
+M = 'modules/maps/texts.js'
 APP = 'frame/app.js'
 MAPS = '[data-module="maps"]'
 
@@ -95,9 +95,9 @@ def d3(c):
     c.ok(norm(title).startswith(norm(row(c, 'layers'))), f'sheet title {title!r}', f'starts with "{row(c, "layers")}"')
     first = c.js("""() => { const b = document.querySelector('.mp-dbody'); const e = [...b.querySelectorAll('select, input, button')].find(x => window.__t.shown(x));
         return e ? e.tagName.toLowerCase() + (e.type ? ':' + e.type : '') : null }""")
-    c.eq(first, 'select:select-one', 'the flight selector is the first control of the content', what='first control')
+    c.eq(first, 'input:range', 'the Complexity slider is the first control of the content (SPEC § 6.7)', what='first control')
     n = c.js("[...document.querySelectorAll('.mp-dbody input[type=checkbox]')].filter(e => window.__t.shown(e.parentElement)).length")
-    c.ge(n, 5, 'the layer checkboxes follow the selector', what='visible layer checkboxes')
+    c.ge(n, 5, 'the layer checkboxes follow the slider', what='visible layer checkboxes')
     c.eq(c.attr(layers_btn(c), 'aria-pressed'), 'true', 'the Layers button is pressed while its content is open', what='Layers aria-pressed')
     c.tap('.f-sheet-close')
     c.until("!window.__t.shown(document.querySelector('.f-sheet-close'))", what='the close button hides')
@@ -921,20 +921,21 @@ def kept(c, what, still=500, timeout=9000):
 
 
 @case('D14', 'Complexity slider', 'D', tags=('sheet', 'maps'), screens=False, designs=('standard', 'cupertino'), langs4=True,
-      rule='user 24 Oct: the slider first in Layers, "Complexité", acts only as a different zoom, goes low enough (SPEC § 4 quinquies)')
+      rule='user 24 Oct: the slider first in Layers, "Complexité", acts only as a different zoom, goes low enough (SPEC § 6.6, § 6.7)')
 def d14(c):
     c.open('maps?view=' + EUROPE, flight=True, aero=True)
     c.tap(layers_btn(c))
     c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=detail]'))", what='the Layers content shows the slider')
     order = c.js("""() => [...document.querySelectorAll('.mp-dbody select, .mp-dbody input, .mp-dbody button')].filter(e => window.__t.shown(e) || e.type === 'range')
         .map(e => e.tagName.toLowerCase() + (e.type ? ':' + e.type : ''))""")
-    c.eq(order[:2], ['select:select-one', 'input:range'], 'the Complexity slider comes right after the flight selector, before any checkbox', what='first controls of the Layers content')
+    c.eq(order[:2], ['input:range', 'input:checkbox'], 'the Complexity slider comes first, before any checkbox (SPEC § 6.7)', what='first controls of the Layers content')
+    c.eq(order[-1:], ['select:select-one'], 'the flight selector comes last (rarely used, SPEC § 6.7)', what='last control of the Layers content')
     label = norm(c.text('.mp-l-detail') or '')
     c.ok(label.startswith(norm(row(c, 'detail'))), f'slider label {label!r}', f'starts with "{row(c, "detail")}"')
     c.ok(not re.search(r'essai|trial|test|prueba', label, re.I), f'slider label {label!r}', 'no "(trial)" any more: the function is assumed')
     c.eq(norm(c.text('#mp-detail-help') or ''), norm(row(c, 'detailHelp')), 'the help says it acts as if the zoom were different (four languages)', what='slider help')
     lo, hi = c.js("(() => { const r = document.querySelector('input[data-layer=detail]'); return [+r.min, +r.max] })()")
-    c.ok(lo <= -3 and hi >= 3, f'slider range {lo}..{hi}', 'at least -3..+3')
+    c.eq([lo, hi], [-4, 4], 'the slider goes from -4 to +4 (DETAIL_MAX, SPEC § 6.6)', what='slider range')
     # an empty Layers sheet leaves the map the room to be measured: close, then read the counters at each step
     c.tap('.f-sheet-close')
     base = kept(c, 'step 0')
@@ -1049,7 +1050,7 @@ def d17(c):
     c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=detail]'))", what='the Layers content shows the slider')
     c.wait(300)
     g = c.js("""() => { const r = e => { const b = e.getBoundingClientRect(); return { t: b.top, b: b.bottom, h: b.height, l: b.left, r: b.right } };
-        const lab = document.querySelector('.mp-l-detail'), inp = lab.querySelector('input'), val = lab.querySelector('[data-detail-v]'), help = document.getElementById('mp-detail-help'), nxt = document.querySelector('.mp-l-main');
+        const lab = document.querySelector('.mp-l-detail'), inp = lab.querySelector('input'), val = lab.querySelector('[data-detail-v]'), help = document.getElementById('mp-detail-help'), nxt = document.querySelector('.mp-l-detail ~ label');
         return { lab: r(lab), inp: r(inp), val: r(val), help: r(help), nxt: r(nxt), described: inp.getAttribute('aria-describedby') } }""")
     c.le(round(g['lab']['h']), 56, 'the whole Complexity block (label, value, slider) is at most 56 px high at 390 px', what=f'{c.design}: block {g["lab"]["h"]:.0f} px')
     c.ge(round(g['inp']['h']), 40, 'the slider keeps a finger-sized height', what='slider height')

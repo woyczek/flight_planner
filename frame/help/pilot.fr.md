@@ -245,7 +245,7 @@ zoomer ; « Recentrer » (la cible, en haut à droite de la carte) revient sur t
 seul « Recentrer » (ou un autre vol) la recadre. Vue de loin, la carte ne montre que ce qui est près de la route ;
 rapprochez-vous pour tout voir.
 
-**Le profil et le curseur.** Dans le bloc de données sous la carte, le profil vertical coupe la route de bout en bout : le relief, les espaces
+<a id="maps-weather"></a>**Le profil et le curseur.** Dans le bloc de données sous la carte, le profil vertical coupe la route de bout en bout : le relief, les espaces
 aériens où vous entrez à l'altitude prévue, et la trajectoire du vol en violet. Faites glisser le doigt sur le profil :
 un curseur bleu le suit, et le même curseur se place sur la carte. Touchez la route sur la carte pour le placer là. La
 ligne sous le profil dit ce qu'il y a sous le curseur : distance depuis le départ, altitude prévue, hauteur du relief,
@@ -275,7 +275,7 @@ En vous rapprochant : les points des voies (triangles et balises), le niveau min
 la distance du tronçon, sa route (« 097° »), les points de report et les obstacles. De près, chaque obstacle porte sa hauteur au-dessus du
 sol, et l'altitude de son sommet entre parenthèses (« 434 AGL (771) »).
 
-**Les couches.** Le bouton aux calques, à gauche de la carte, ouvre dans le bloc de données, à la place du profil, la liste de ce qu'elle dessine (la croix ✕ ramène le profil). En premier, sous le choix du vol, le curseur « Complexité » : il agit comme si le zoom était différent, d'un niveau de zoom par cran (de −4 à +4) — moins de détails vers la gauche, plus vers la droite. Ce que chaque zoom montre est réglé par l'administrateur (Réglages, carte « Administration »). Puis les familles
+<a id="maps-layers"></a>**Les couches.** Le bouton aux calques, à gauche de la carte, ouvre dans le bloc de données, à la place du profil, la liste de ce qu'elle dessine (la croix ✕ ramène le profil). En premier, sous le choix du vol, le curseur « Complexité » : il agit comme si le zoom était différent, d'un niveau de zoom par cran (de −4 à +4) — moins de détails vers la gauche, plus vers la droite. Ce que chaque zoom montre est réglé par l'administrateur (Réglages, carte « Administration »). Puis les familles
 d'espaces (TMA / CTR, D / R / P, FIR, autres), voies basses et hautes, balises, points des voies, points de report VFR,
 obstacles, altitudes minimales, villes, canevas, dégagement, noms des espaces, noms des voies. Cochez ou décochez : la
 carte suit, et votre choix est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au choix d'origine. «
@@ -286,7 +286,7 @@ près, les TMA en vue moyenne, les FIR de loin. La taille de la carte compte aus
 de la vue double) elle montre moins d'éléments qu'un grand au même zoom, comme si vous étiez plus loin (le zoom est
 corrigé par la moyenne de la hauteur et de la largeur du cadre, 900 px sans correction).
 
-**Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace ou
+<a id="maps-airspaces"></a>**Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace ou
 une barbule de vent : une petite bulle donne l'essentiel en deux lignes — pour une voie, le tronçon (point → point), sa
 distance, ses routes, son plancher et son plafond ; pour un espace, son nom et ses limites en notation SIA (« TMA 8
 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, le bloc de données sous la carte montre les espaces sous le
@@ -299,7 +299,7 @@ bulle donne son type, son indicatif et sa fréquence ; quand plusieurs balises s
 plus utile (VOR, TACAN ou DME, puis NDB, puis ILS) et la bulle nomme les autres (« aussi ici : ILS 25L BG 109.9 »). Sur
 le profil, le doigt ou la souris donnent de même les espaces traversés.
 
-**Les points de report VFR d'un terrain.** Passez la souris sur un terrain : ses points de report et les séquences
+<a id="maps-vfr"></a>**Les points de report VFR d'un terrain.** Passez la souris sur un terrain : ses points de report et les séquences
 tirées de ses cartes VAC s'allument (cercles nommés, tirets entre les points). Sur la carte, un point de report ne porte
 que son code court (« NA », « E », « SE »…), pour que la carte reste lisible ; le nom long est dans la bulle et dans la
 liste. Touchez le terrain : la carte se rapproche de ses points s'ils sont serrés, et le bloc de données sous la carte,
@@ -316,12 +316,12 @@ pour les hélicoptères ; les séquences et les consignes des VAC s'y ajoutent u
 carte VAC le nomment toutes deux : la ligne garde la description de la base et sa position publiée, et dit « position VAC à 1,2 NM » quand la
 carte VAC le place à plus d'un demi-mille de là.
 
-**En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu
+<a id="maps-started"></a>**En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu
 14:32Z ») et où vous êtes (avion plein, orienté à votre route, avec la trace des 30 dernières minutes en pointillé). Dans les notes du bloc de données, sous le profil, une ligne dit l'écart : en avance ou en retard (minutes et NM), à combien de NM de la route, et
 votre altitude contre celle prévue ; le profil montre les deux altitudes. De près, chaque point porte son heure
 estimée (ETA) sous son nom, sans jamais couvrir un terrain, en UTC (« 14:52Z »), l'heure locale entre parenthèses au départ et à l'arrivée. « Suivre » garde la carte sur votre position ; un déplacement de la carte l'arrête. Sans position (GPS
-ou réseau non activés), une notification le dit une fois, la ligne reste dans les notes et son lien ouvre les réglages ; une position de plus de 2 minutes est grisée.
-La ligne finit par la source de la position : GPS, réseau, IVAO, VATSIM, X-Plane ou Little Navmap.
+ou réseau non activés), une notification le dit une fois, la ligne reste dans les notes avec un bouton « Activer la position » ; une position de plus de 2 minutes est grisée.
+La ligne finit par la source de la position : GPS, réseau, IVAO, VATSIM, X-Plane ou Little Navmap. Les heures estimées sont aussi montrées pour un vol daté dans Carburant, avant son départ. Vol arrivé : la note « Arrivé » remplace la ligne et « Suivre » disparaît ; un déroutement est dit dans les notes.
 
 **Les vents en altitude.** Quand Carburant a la prévision du vent au niveau du vol, la carte la montre en barbules
 le long de la route : à chaque point, et tous les 50 NM entre deux points. La hampe pointe d'où vient le vent ; un
@@ -337,12 +337,12 @@ de la route sont aussi repérés sur le profil.
 sur la carte comme sur le profil. Ils viennent du calcul de Carburant ; sans lui, la carte les estime avec des taux
 de montée et de descente courants.
 
-**Les cartes de mission.** La première liste, en tête des couches (le bouton aux calques), choisit ce que montre la carte : le vol prévu, ou une mission
+**Les cartes de mission.** La liste en bas des couches (le bouton aux calques) choisit ce que montre la carte : le vol prévu, ou une mission
 de la compagnie. Pour une mission, une seconde liste choisit parmi ses cartes (vue d'ensemble, cible, détail…).
 Chaque carte est redessinée comme dans le studio : même cadre, même réglage d'affichage, avec les points de la
 mission, ses zones hachurées et son cheminement. Le profil vertical montre alors celui de la mission.
 
-**Modifier la route sur la carte.** Touchez « Modifier sur la carte » (les quatre flèches, à droite de la carte ; une aide s'affiche à la première entrée dans le mode) : les points tournants
+<a id="maps-edit"></a>**Modifier la route sur la carte.** Touchez « Modifier sur la carte » (les quatre flèches, à droite de la carte ; une aide s'affiche à la première entrée dans le mode) : les points tournants
 s'entourent d'un cercle. Faites glisser un point jusqu'à un fixe, une balise ou un terrain : il s'y pose (lâché
 ailleurs, il devient un point libre, nommé par ses coordonnées, comme 4530N00030E). Pour ajouter un point, touchez « + » (dans la même colonne), puis touchez
 l'endroit voulu (ou restez appuyé une demi-seconde) : sur un fixe, une balise ou un terrain il s'y pose, ailleurs c'est
@@ -351,7 +351,7 @@ bougent pas ici. Sur le profil, glissez un palier vers le haut ou le bas : le ni
 ouvre ce tronçon, par pas de FL10 (sur le premier tronçon, c'est le niveau du vol) ; dans la carte d'un point, « − »
 et « + » font de même. « Annuler » reprend le dernier geste. Chaque changement est enregistré aussitôt dans le vol, et
 Carburant refait le devis ; le profil suit. Retoucher le bouton (ou Échap) ferme le mode, et la carte se déplace de nouveau au doigt.
-Pour taper la route en texte, le crayon en haut de la colonne de droite (« Modifier la route ») ouvre l'étape Route de Carburant.
+Pour taper la route en texte, le crayon en haut de la colonne de droite (« Modifier la route ») ouvre l'étape Route de Carburant. Pendant le mode, la colonne de droite ne garde que « Modifier sur la carte », « + », « Annuler », « Recentrer » et le plein écran.
 
 ## Sans réseau
 

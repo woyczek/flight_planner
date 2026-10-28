@@ -1,0 +1,336 @@
+<!doctype html>
+<!-- Banc du vol dans le temps (frame/lib/current_flight.js, modules/maps/SPEC.md § 13) : vol démarré, heure de référence,
+     horaire (quote.legs, roulage, repli sur la route et le devis), heures estimées et position prévue, ligne de
+     changement de date. Page nue, aucun module du cadre ; window.__cfBench = { done, pass, fail, rows } pour un pilote
+     (Playwright). Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>current_flight — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">current_flight.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    isStarted,
+    refTime,
+    legTimes,
+    etaOf,
+    plannedPositionAt,
+    TAXI_MIN
+  } from '../current_flight.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  const near = (a, b, e = 1e-6) => Math.abs(a - b) <= e;
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  const T0 = Date.parse('2030-01-01T10:00:00Z'),
+    min = m => T0 + m * 60e3,
+    pts = [{
+      id: 'LFRS',
+      lat: 47.1569,
+      lon: -1.6078
+    }, {
+      id: 'LUGEN',
+      lat: 46.5833,
+      lon: -1.2
+    }, {
+      id: 'LFML',
+      lat: 43.4367,
+      lon: 5.215
+    }],
+    flight = (o = {}) => ({
+      route: {
+        points: pts
+      },
+      planned_at: '2030-01-01T10:00:00Z',
+      quote: {
+        minutes: 80,
+        legs: [{
+          id: 'LFRS',
+          min: 0
+        }, {
+          id: 'LUGEN',
+          min: 12
+        }, {
+          id: 'LFML',
+          min: 80
+        }],
+        taxiMin: 15
+      },
+      profile: {
+        tocNm: 48.2,
+        todNm: 56.1,
+        climbKt: 196,
+        descentKt: 253
+      },
+      ...o
+    });
+
+  // vol démarré : started.at, jamais la présence de progress
+  ck('isStarted : started.at posé', isStarted({
+    started: {
+      at: '2030-01-01T10:00:00Z'
+    }
+  }));
+  ck('isStarted : started sans at → faux', !isStarted({
+    started: {}
+  }));
+  ck('isStarted : progress présent, started null → faux', !isStarted({
+    started: null,
+    progress: {
+      plannedPos: {
+        lat: 1,
+        lon: 1
+      }
+    }
+  }));
+
+  // heure de référence
+  ck('refTime : planned_at', refTime(flight()) === T0);
+  ck('refTime : started.at l\'emporte sur planned_at', refTime(flight({
+    started: {
+      at: '2030-01-01T11:00:00Z'
+    }
+  })) === min(60));
+  ck('refTime : ni l\'un ni l\'autre → null', refTime(flight({
+    planned_at: null
+  })) === null);
+
+  // horaire : quote.legs et roulage
+  const L = legTimes(flight());
+  ck('legTimes : minutes de quote.legs', JSON.stringify(L?.min) === '[0,12,80]', JSON.stringify(L?.min));
+  ck('legTimes : roulage de quote.taxiMin', L?.taxi === 15);
+  ck(`legTimes : roulage par défaut ${TAXI_MIN} min`, legTimes(flight({
+    quote: {
+      minutes: 80,
+      legs: [{
+        min: 0
+      }, {
+        min: 12
+      }, {
+        min: 80
+      }]
+    }
+  }))?.taxi === TAXI_MIN);
+  ck('legTimes : quote.legs dans un autre ordre, lus par leur nom', JSON.stringify(legTimes(flight({
+    quote: {
+      minutes: 80,
+      legs: [{
+        id: 'LFML',
+        min: 80
+      }, {
+        id: 'LFRS',
+        min: 0
+      }, {
+        id: 'LUGEN',
+        min: 12
+      }]
+    }
+  }))?.min) === '[0,12,80]');
+  ck('legTimes : sans devis → null', legTimes(flight({
+    quote: null
+  })) === null);
+  ck('legTimes : un seul point → null', legTimes(flight({
+    route: {
+      points: [pts[0]]
+    }
+  })) === null);
+
+  // repli : sans quote.legs, la route et le devis
+  const R = legTimes(flight({
+    quote: {
+      minutes: 80
+    }
+  }));
+  ck('repli : arrivée au temps du devis (± 2 min)', R && Math.abs(R.total - 80) <= 2, String(R?.total));
+  ck('repli : minutes croissantes', R && R.min.every((v, i) => !i || v > R.min[i - 1]), JSON.stringify(R?.min));
+  ck('repli : départ à 0', R?.min[0] === 0);
+  ck('repli : sans profil, une seule vitesse (temps proportionnel à la distance)', (() => {
+    const U = legTimes(flight({
+      quote: {
+        minutes: 80
+      },
+      profile: null
+    }));
+    return U && near(U.min[1] / U.total, U.cum[1] / U.D, 1e-9);
+  })());
+  ck('repli : sans quote.minutes → null', legTimes(flight({
+    quote: {
+      block: 4000
+    }
+  })) === null);
+
+  // heures estimées
+  const E = etaOf(flight(), T0);
+  ck('etaOf : départ = référence + roulage', E?.[0].at === new Date(min(15)).toISOString(), E?.[0].at);
+  ck('etaOf : arrivée = référence + roulage + 80 min', E?.[2].at === new Date(min(95)).toISOString(), E?.[2].at);
+  ck('etaOf : identifiants des points', E?.map(e => e.id).join() === 'LFRS,LUGEN,LFML');
+  ck('etaOf : vol non démarré, arrivée passée → null', etaOf(flight(), min(200)) === null);
+  ck('etaOf : vol démarré, arrivée passée → gardées', etaOf(flight({
+    started: {
+      at: '2030-01-01T10:00:00Z'
+    }
+  }), min(200))?.length === 3);
+  ck('etaOf : sans référence → null', etaOf(flight({
+    planned_at: null
+  }), T0) === null);
+
+  // position prévue
+  const f = flight({
+    started: {
+      at: '2030-01-01T10:00:00Z'
+    }
+  });
+  ck('plannedPositionAt : avant la mise en route → null', plannedPositionAt(f, min(-1)) === null);
+  const tx = plannedPositionAt(f, min(5));
+  ck('plannedPositionAt : roulage au départ', tx?.phase === 'taxi' && tx.lat === pts[0].lat && near(tx.lon, pts[0].lon) && tx.nmFromDep ===
+    0, JSON.stringify(tx));
+  const mid = plannedPositionAt(f, min(15 + 6));
+  // distance orthodromique (NM), pour vérifier les positions sur le grand cercle
+  const gc = (a, b) => {
+    const r = Math.PI / 180,
+      d = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
+    return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(d)));
+  };
+  ck('plannedPositionAt : à mi-temps du premier tronçon, à mi-chemin sur le grand cercle', mid && mid.legIndex === 0 && near(gc(pts[0],
+      mid),
+    gc(mid, pts[1]), .05) && near(gc(pts[0], mid) + gc(mid, pts[1]), gc(pts[0], pts[1]), .05), JSON.stringify(mid));
+  ck('plannedPositionAt : en montée avant tocNm', mid?.phase === 'climb');
+  const cr = plannedPositionAt(f, min(15 + 40));
+  ck('plannedPositionAt : croisière au milieu', cr?.phase === 'cruise' && cr.legIndex === 1, JSON.stringify(cr));
+  const ar = plannedPositionAt(f, min(15 + 81));
+  ck('plannedPositionAt : arrivé', ar?.phase === 'arrived' && ar.lat === pts[2].lat, JSON.stringify(ar));
+  ck('plannedPositionAt : distance prévue croissante', mid.nmFromDep < cr.nmFromDep && cr.nmFromDep < ar.nmFromDep);
+  ck('plannedPositionAt : vol non démarré dont l’arrivée est passée → null (comme etaOf)', plannedPositionAt(flight(), min(200)) === null);
+  ck('plannedPositionAt : vol daté pas encore arrivé → une position', plannedPositionAt(flight(), min(15 + 40))?.phase === 'cruise');
+
+  // lectures strictes : un texte n'est pas une minute
+  ck('taxiMin en texte : ignoré (10 min)', legTimes(flight({
+    quote: {
+      minutes: 80,
+      taxiMin: '15',
+      legs: [{
+        min: 0
+      }, {
+        min: 12
+      }, {
+        min: 80
+      }]
+    }
+  }))?.taxi === TAXI_MIN);
+  const strict = legTimes(flight({
+    quote: {
+      minutes: 80,
+      legs: [{
+        id: 'LFRS',
+        min: 0
+      }, {
+        id: 'LUGEN',
+        min: '12'
+      }, {
+        id: 'LFML',
+        min: 80
+      }]
+    }
+  }));
+  ck('legs[].min en texte : quote.legs écarté, repli sur la route', strict && strict.min[1] !== 12 && near(strict.total, 80, 2),
+    JSON.stringify(
+      strict?.min));
+
+  // branche océanique : la position suit le grand cercle (au nord de la droite des latitudes)
+  const ocean = {
+      route: {
+        points: [{
+          id: 'KJFK',
+          lat: 40.64,
+          lon: -73.78
+        }, {
+          id: 'EGLL',
+          lat: 51.47,
+          lon: -0.45
+        }]
+      },
+      started: {
+        at: '2030-01-01T10:00:00Z'
+      },
+      quote: {
+        minutes: 400,
+        taxiMin: 0
+      }
+    },
+    op = plannedPositionAt(ocean, min(200));
+  ck('océan : à mi-temps, sur le grand cercle (plus de 52° N, la droite donnerait 46° N)',
+    op && op.lat > 52, JSON.stringify(op));
+  ck('océan : à mi-chemin des deux terrains (± 1 NM)', op && near(gc({
+    lat: 40.64,
+    lon: -73.78
+  }, op), gc(op, {
+    lat: 51.47,
+    lon: -0.45
+  }), 1), JSON.stringify(op));
+
+  // ligne de changement de date : UHMA → PAOM
+  const dl = {
+      route: {
+        points: [{
+          id: 'UHMA',
+          lat: 64.7349,
+          lon: 177.7414
+        }, {
+          id: 'PAOM',
+          lat: 64.5122,
+          lon: -165.4453
+        }]
+      },
+      started: {
+        at: '2030-01-01T10:00:00Z'
+      },
+      quote: {
+        minutes: 100,
+        taxiMin: 0
+      }
+    },
+    DL = legTimes(dl);
+  ck('date : distance du grand cercle (≈ 434 NM, pas le tour du monde)', DL && DL.D > 400 && DL.D < 470, String(DL
+    ?.D));
+  const dp = plannedPositionAt(dl, min(50));
+  ck('date : position à mi-temps au-delà de 180° rendue dans [-180, 180[', dp && dp.lon >= -
+    180 && dp.lon < 180 && (dp.lon > 175 || dp
+      .lon < -170), JSON.stringify(dp));
+
+  window.__cfBench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__cfBench.pass} PASS · ${window.__cfBench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

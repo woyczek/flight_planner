@@ -286,13 +286,13 @@ def f8(c):
     c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS LFML', 'no airway serves FL100: the text is unchanged', what='route text at FL100')
 
 
-@case('F9', 'Routing bench', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False, rule='modules/maps/lib/routing.js: the bench passes (41 checks)')
+@case('F9', 'Routing bench', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False, rule='frame/lib/routing.js: the bench passes (41 checks)')
 def f9(c):
-    c.page.goto(f'{c.base}/modules/maps/test/routing.html', wait_until='load')
+    c.page.goto(f'{c.base}/frame/lib/test/routing.html', wait_until='load')
     try:
         c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
     except Exception:
-        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/maps/test/routing.html') from None
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'frame/lib/test/routing.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
 

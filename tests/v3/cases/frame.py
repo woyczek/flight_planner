@@ -389,7 +389,7 @@ def a13(c):
 
 
 FRAME = 'frame/app.js'
-MAPS_M = 'modules/maps/module.js'
+MAPS_M = 'modules/maps/texts.js'
 REPO = 'sog/data'
 GITHUB_SET = ("try { localStorage.setItem('githubData:frame', JSON.stringify({ repo: '%s', branch: 'main', token: 'ghp_test' })) } catch (e) {}" % REPO)
 

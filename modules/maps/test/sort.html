@@ -1,0 +1,140 @@
+<!doctype html>
+<!-- Banc des limites verticales et de l'ordre des espaces (modules/maps/SPEC.md § 3.1, § 10) : SiaAero.limitRead (le nombre
+     avant le mot, FL, mètres, relatif au sol, UNL, illisible), SiaAero.surfaceToCeiling, MapsRender.sortAirspacesTopDown
+     (plafond décroissant, UNL d'abord, plafond illisible rangé à son plancher après les plafonds connus, puis plancher, puis
+     nom). Page nue ; window.__bench = { done, pass, fail, rows } pour un pilote (Playwright). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>maps — sort bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">maps — sort bench</h1>
+<pre id="out"></pre>
+<script src="../lib/aero_symbols.js?v=0"></script>
+<script src="../render.js?v=0"></script>
+<script>
+  (() => {
+    const rows = [],
+      out = document.getElementById('out'),
+      A = window.SiaAero,
+      R = window.MapsRender;
+    const ck = (name, ok, detail = '') => {
+      rows.push({
+        name,
+        ok: !!ok,
+        detail
+      });
+      const l = document.createElement('div');
+      l.className = ok ? 'PASS' : 'FAIL';
+      l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+      out.append(l);
+    };
+    const lr = (t, top = false) => A.limitRead(t, top);
+    // une lecture des limites (SPEC § 3.1)
+    ck('limitRead « 800 ASFC » : 800 ft relatifs au sol (pas le sol)', lr('800 ASFC').ft === 800 && lr('800 ASFC').rel && lr('800 ASFC')
+      .ok,
+      JSON.stringify(lr('800 ASFC')));
+    ck('limitRead « FL065 » : 6 500 ft', lr('FL065').ft === 6500 && !lr('FL065').rel);
+    ck('limitRead « 2000 AMSL » : pas relatif', lr('2000 AMSL').ft === 2000 && !lr('2000 AMSL').rel);
+    ck('limitRead « 300 M » : 984 ft', Math.round(lr('300 M').ft) === 984, JSON.stringify(lr('300 M')));
+    ck('limitRead « SFC » : le sol', lr('SFC').ft === 0 && lr('SFC').rel && lr('SFC').ok);
+    ck('limitRead « UNL » : illimité', lr('UNL', true).unl && lr('UNL', true).ok);
+    ck('limitRead vide : illisible (plancher 0)', !lr('').ok && lr('').ft === 0);
+    ck('limitRead « ABC » plafond : illisible (infini)', !lr('ABC', true).ok && lr('ABC', true).ft === Infinity);
+    ck('limitFt suit limitRead', A.limitFt('800 ASFC') === 800, String(A.limitFt('800 ASFC')));
+    // pas de la surface au plafond
+    ck('surfaceToCeiling : SIV', A.surfaceToCeiling({
+      type: 'SIV',
+      lower: 'SFC',
+      upper: 'FL065'
+    }));
+    ck('surfaceToCeiling : FIR sans limites', A.surfaceToCeiling({
+      type: 'FIR'
+    }));
+    ck('surfaceToCeiling : SFC à UNL', A.surfaceToCeiling({
+      type: 'TMA',
+      lower: 'SFC',
+      upper: 'UNL'
+    }));
+    ck('surfaceToCeiling : plancher illisible, plafond vide', A.surfaceToCeiling({
+      type: 'R',
+      lower: '',
+      upper: ''
+    }));
+    ck('surfaceToCeiling : TMA SFC à FL065 gardée', !A.surfaceToCeiling({
+      type: 'TMA',
+      lower: 'SFC',
+      upper: 'FL065'
+    }));
+    // ordre de la liste et du graphique (SPEC § 10)
+    const L = [{
+        type: 'R',
+        name: 'R 57',
+        lower: '800 ASFC',
+        upper: '1800 ASFC'
+      }, {
+        type: 'D',
+        name: 'D 8',
+        lower: '1500 ASFC',
+        upper: 'ABC'
+      }, {
+        type: 'CTA',
+        name: 'CTA 7',
+        lower: 'FL065',
+        upper: 'UNL'
+      }, {
+        type: 'TMA',
+        name: 'TMA 6',
+        lower: 'SFC',
+        upper: 'FL065'
+      }, {
+        type: 'TMA',
+        name: 'TMA 5',
+        lower: '3000',
+        upper: 'FL065'
+      }],
+      got = R.sortAirspacesTopDown(L.slice()).map(a => a.name).join(' · ');
+    ck('sortAirspacesTopDown : UNL, puis FL065 (plancher le plus haut d\'abord), puis le reste', got ===
+      'CTA 7 · TMA 5 · TMA 6 · R 57 · D 8', got);
+    const same = R.sortAirspacesTopDown([{
+      type: 'D',
+      name: 'D 9',
+      lower: '1800',
+      upper: 'ABC'
+    }, {
+      type: 'R',
+      name: 'R 10',
+      lower: 'SFC',
+      upper: '1800'
+    }]).map(a => a.name).join(' · ');
+    ck('sortAirspacesTopDown : un plafond illisible se range à son plancher, après un plafond connu de même valeur', same ===
+      'R 10 · D 9',
+      same);
+    ck('sortAirspacesTopDown : liste vide', R.sortAirspacesTopDown([]).length === 0);
+    window.__bench = {
+      done: true,
+      pass: rows.filter(r => r.ok).length,
+      fail: rows.filter(r => !r.ok).length,
+      rows
+    };
+    const h = document.createElement('div');
+    h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+    out.prepend(h);
+  })();
+</script>
+</body>
+</html>

@@ -12,6 +12,35 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map recoded from its specification (lot 1)** (`modules/maps/`: `module.js` split into `state.js`, `texts.js`, `style.js`,
+  `screen.js`, `draw.js`, `data.js`, `layers.js`, `sheet_view.js`, `profile_view.js`, `tips.js`, `lv.js`, `vfr.js`,
+  `flight_time.js`, `mission_view.js`, `weather.js`, and `edit.js`, `tune.js` loaded on demand; `frame/lib/current_flight.js`,
+  `frame/lib/routing.js`; benches `modules/maps/test/profile.html`, `axis_window.html`, `mission.html`, `sort.html`,
+  `frame/lib/test/current_flight.html`; tests D30–D38, J6, mission fixture; help ×4; SPEC, INTEGRATION, DECISIONS): the
+  5,490-line module becomes eighteen files of at most 60 KB, the libraries unchanged. The flight's ETA and planned position
+  are derived from fuel's `quote.legs` by the frame's `etaOf` / `plannedPositionAt` (a flight is started when `started.at`
+  is set, never because `progress` exists; arrived and diverted flights get their note; the progress line has an "Enable
+  the position" button); the Edit mode merges into `route` (procedures of the same aerodromes kept, the moved point's wind
+  dropped) and shows only Edit, "+", Undo, Recentre and full screen; Layers starts with Complexity and ends with the flight
+  selector; the modes panel lives in the frame's overlay layer; the airway routing moves to `frame/lib/routing.js`; a
+  mission's origin and destination are found again when they carry their own codes. The weather cut reads the frame's weather
+  layer (`ctx.weather.grid`, cache only, frame INTEGRATION § 14) instead of atmosphere's store, and departs at `started.at`, else
+  `planned_at`; the elevation tiles of the profile and the contour lines are read through `ctx.net` (the bricks take a `load`
+  function and never call `fetch`; the frame lets `s3.amazonaws.com/elevation-tiles-prod/` through), the module fetches none of
+  its own files any more; "Save for the airline" of the tuning page is refused below the Full level (`ctx.level`, new in the
+  module context); the profile states its window to the hundredth of a NM like the cut (D25). The map's help chapter carries the
+  French fingerprint in English, German and Spanish again.
+
+- **Map: the specification rewritten as a final state, before the module is recoded from it** (`modules/maps/SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`, `tests/v3/PLAN.md`): the 52 contradictions, gaps and ambiguities found between the map's
+  documents, V3_SPECIFICATION § 7.1, the frame, atmosphere, aerodb and fuel contracts and the tests were decided; the SPEC now
+  states one behaviour per subject, renumbered, with what is written, the addresses and a DOM contract; the times of the flight
+  (ETA, planned position) become derived values of `frame/lib/current_flight.js` from fuel's `quote.legs`; the Edit mode merges
+  into `route` instead of replacing it; `lib/routing.js` is to move to `frame/lib/`; the test plan's map cases are reworded and
+  D30–D38 added (Edit mode, derived times, date line, mission fixture, plain background, device settings, Escape order, base-map
+  names, benches). Amended after review: weather read through the frame's `ctx.weather`, Complexity first in Layers and the
+  flight selector last, the Edit mode's column limited to five buttons, fuel's `quote.taxiMin`, contextual help anchors. No
+  code changes.
 - **Launcher, access of the computer: "Open them too" leaves the pairing code alone** (`tools/launch.py`; frame SPEC,
   DECISIONS): on an access already open it adds the other private addresses without issuing a code, so a pairing closed
   after 30 wrong codes stays closed until "New code".

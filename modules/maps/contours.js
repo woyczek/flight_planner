@@ -4,14 +4,17 @@
   // meta.net, celles du relief du profil et de l'ombrage du mode Topo) : marching squares sur la grille d'altitudes de
   // chaque tuile, segments gardés par tuile et par équidistance, projetés à chaque dessin. Aucune dépendance, aucun
   // stockage : un cache en mémoire (tuiles et segments), borné.
-  // API : MapsContours.draw(ctx, { toC, bbox, pxPerDeg, W, H, unit ('ft' | 'm'), scale, onReady }) — dessine les tuiles
+  // API : MapsContours.draw(ctx, { toC, bbox, pxPerDeg, W, H, unit ('ft' | 'm'), scale, onReady, load }) — dessine les tuiles
   //   prêtes, demande les autres (onReady quand une arrive) ; intervalOf(unit) ; reset().
+  // La brique n'appelle jamais fetch (modules/maps/SPEC.md § 2.1) : load(url) → Blob est donné par l'appelant (la Carte :
+  // ctx.net) ; sans lui, aucune tuile n'est lue.
   const TILE = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
     MAX_TILES = 48,
     MAX_VIEW = 16, // tuiles au plus par vue (au-delà, un zoom de tuile plus grossier)
     STEP = 2, // pas de la grille (pixels de tuile) : 128 cellules par côté
     FT = .3048;
   const cache = new Map(); // 'z/x/y' → { p: Promise, h: Float32Array | null, segs: Map(intervalle → { xy, lv }) }
+  let loader = null; // load(url) → Blob du dernier dessin
 
   /** Équidistance (m) et rang des courbes maîtresses : 100 m (maîtresse 500 m) ou 500 ft (maîtresse 2 500 ft). */
   const intervalOf = unit => unit === 'm' ? {
@@ -39,9 +42,9 @@
       p: null
     };
     e.p = (async () => {
-      const r = await fetch(TILE.replace('{z}', z).replace('{x}', x).replace('{y}', y));
-      if (!r.ok) throw new Error(String(r.status));
-      const img = await createImageBitmap(await r.blob()),
+      if (!loader) throw new Error('no load');
+      const b = await loader(TILE.replace('{z}', z).replace('{x}', x).replace('{y}', y)),
+        img = await createImageBitmap(b instanceof Blob ? b : new Blob([b])),
         c = new OffscreenCanvas(256, 256),
         g = c.getContext('2d');
       g.drawImage(img, 0, 0);
@@ -154,8 +157,10 @@
     H,
     unit = 'ft',
     scale = 1,
-    onReady = () => {}
+    onReady = () => {},
+    load: read = null // la lecture des tuiles de l'appelant (le nom load est celui de la fonction de la brique)
   }) {
+    loader = read;
     const I = intervalOf(unit);
     let z = Math.max(8, Math.min(12, Math.floor(Math.log2(pxPerDeg * 360 / 256)) - 1)),
       a = tileOf(Math.min(85, bbox.n), bbox.w, z),
