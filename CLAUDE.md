@@ -35,6 +35,10 @@ Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur l
   25 octobre 2026, « Pypdf sur le poste ») : `pypdf`, dépendance **optionnelle déclarée** des constructeurs de poste qui
   lisent des PDF (tables de codage de l'eAIP, cartes VAC), avec un message clair quand elle manque ; jamais le lanceur,
   jamais la page.
+  Deuxième exception (décision de l'utilisateur du 28 octobre 2026, « OCR inclus ») : l'OCR des pages dessinées
+  (`tools/proc_ocr.py` : `pypdfium2` et Tesseract ou `rapidocr-onnxruntime`), mêmes conditions (facultatif, constructeurs
+  de poste seulement, message clair quand il manque) ; le résultat n'est installé que par le contrôle de géométrie de
+  `tools/proc_manual.py`.
 - Avant chaque commit :
   1. `python tools/format_sources.py <fichiers touchés>`, puis contrôle par `tools/verify_format.html`
      (arbres syntaxiques identiques) ;
