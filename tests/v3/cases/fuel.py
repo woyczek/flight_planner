@@ -16,7 +16,9 @@ Rules covered
     shows the refusal (F14), the quote runs on the procedures path with legs and profile.path (F15), after the start only legs, the
     vertical path and the length are rewritten (F16), the Map's `focus=arr` (F17), the v1 record migrated at the next write (F18), "Load my OFP" replaces the choice and says what changed (F19).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+  * an aerodrome with approaches only (no SID, no STAR, no runway record) still lists them, by runway, on both rows (F20).
+
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 import json
@@ -356,11 +358,20 @@ def proc_docs(cycle=PROC_CYCLE):
         rec('LFML', 'APP', 'I13R', ['13R'], [pt(1, 'FAF13', 43.5, 5.0, {'type': 'at', 'ft': 2500}, kt=180), pt(2, 'RW13R', 43.445, 5.19),
                                              pt(3, 'MAP13', 43.38, 5.3, phase='missed')]),
     ]
+    # LFVA (invented): approaches only, on two runways, one with a transition; no SID, no STAR, no runway record
+    lfva = [
+        rec('LFVA', 'APP', 'ILS09', ['09'], [pt(1, 'VA101', 45.0, 3.0, {'type': 'at', 'ft': 3000}), pt(2, 'VA102', 45.02, 3.2, {'type': 'at', 'ft': 2000}),
+                                             pt(3, 'RW09', 45.03, 3.4)]),
+        rec('LFVA', 'APP', 'ILS09', ['09'], [pt(1, 'VA201', 44.8, 2.7, {'type': 'min', 'ft': 4000}), pt(2, 'VA101', 45.0, 3.0)], transition='VA201'),
+        rec('LFVA', 'APP', 'VOR09', ['09'], [pt(1, 'VA111', 45.0, 3.0, {'type': 'at', 'ft': 3000}), pt(2, 'RW09', 45.03, 3.4)]),
+        rec('LFVA', 'APP', 'VOR27', ['27'], [pt(1, 'VA127', 45.05, 3.8, {'type': 'at', 'ft': 3000}), pt(2, 'RW27', 45.03, 3.45)]),
+    ]
     rw_lfrs = [{'id': '03', 'lat': 47.138, 'lon': -1.62, 'elev': 90, 'qfu': 30}, {'id': '21', 'lat': 47.17, 'lon': -1.595, 'elev': 60, 'qfu': 210}]
     rw_lfml = [{'id': '13R', 'lat': 43.445, 'lon': 5.19, 'elev': 30, 'qfu': 130}, {'id': '31L', 'lat': 43.41, 'lon': 5.24, 'elev': 20, 'qfu': 310}]
     old = rec('LFML', 'STAR', 'MAN1A', ['13R'], [pt(1, 'MAN01', 44.0, 3.8)], status='check', kind_src='manual', src_cycle='2025-01-01')
     xpl = rec('LFML', 'STAR', 'XPL1A', ['13R'], [pt(1, 'XPL01', 44.0, 3.7)], status='official', kind_src='cifp')
     return [[f'proc/{cycle}/LFRS.json', file('LFRS', lfrs, rw_lfrs), 'reference'], [f'proc/{cycle}/LFML.json', file('LFML', lfml, rw_lfml), 'reference'],
+            [f'proc/{cycle}/LFVA.json', file('LFVA', lfva), 'reference'],
             ['proc/manual/LFML.json', file('LFML', [old], cy='2025-01-01'), 'reference'], ['proc/local/LFML.json', file('LFML', [xpl]), 'reference']]
 
 
@@ -626,3 +637,40 @@ def f19(c):
     sid_line = norm(row(c, 'procChange').replace('{side}', row(c, 'dep')).replace('{parts}', f"{kinds('rwy')} — → 03 · {kinds('sid')} NTS1A → LUGE4N"))
     c.ok(star_line in notes, f'notifications {notes}', f'one line for the arrival: {star_line}')
     c.ok(sid_line in notes, f'notifications {notes}', f'one line for the departure: {sid_line}')
+
+
+def set_icao(c, side, icao):
+    """Types an aerodrome in the departure or arrival field of the route."""
+    c.page.fill(f'{FUEL} input[data-k="{side}"]', icao)
+
+
+def opt_groups(c, k):
+    """Labels of the <optgroup> of the select data-k=`k`."""
+    return c.js("""(k) => [...document.querySelectorAll('[data-module=fuel] select[data-k="' + k + '"] optgroup')].map(g => g.label.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())""", k)
+
+
+@case('F20', 'Aerodrome with approaches only: they are listed, by runway, on both rows', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      langs4=True, rule='V3 spec 10.20: without a runway chosen a row lists all the procedures of the aerodrome, one group per runway; the approaches show without a STAR')
+def f20(c):
+    open_proc(c)
+    wait_rows(c, 'arr')
+    # arrival: an aerodrome with approaches only; the row is not "no published procedure", the approaches are grouped by runway
+    set_icao(c, 'arr', 'LFVA')
+    c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"] optgroup')", what='the approach list of LFVA is drawn')
+    txt = norm(c.text(f'{FUEL} [data-proc="arr"]') or '')
+    c.ok(norm(row(c, 'procNoData')) not in txt, f'row {txt!r}', 'an aerodrome with approaches only is not "no published procedure"')
+    c.eq(c.count(f'{FUEL} [data-proc="arr"] [data-do="procfetch"]'), 0, 'and offers no reading', what='reading buttons')
+    rw = norm(row(c, 'procRwy'))
+    c.eq(opt_groups(c, 'p-arr-app'), [f'{rw} 09', f'{rw} 27'], 'the approaches are grouped by runway (no runway chosen)', what='approach groups')
+    apps = [lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')]
+    c.eq(sorted(apps), ['ILS09', 'VOR09', 'VOR27'], 'the three approaches without transition, in the language-free names', what='approach options')
+    c.eq([v for v, _ in sel_opts(c, 'p-arr-star')], ['', '__none'], 'the STAR list is empty (— and none): the approach does not wait for a STAR', what='STAR options')
+    # departure: the same aerodrome has no SID, the row still shows (runway, SID "none") and not the reading
+    set_icao(c, 'dep', 'LFVA')
+    c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-dep-sid\"]')", what='the departure row of LFVA is drawn')
+    c.eq(c.count(f'{FUEL} [data-proc="dep"] [data-do="procfetch"]'), 0, 'the departure row of an aerodrome with approaches only offers no reading', what='reading buttons')
+    # a file installed after a first empty answer is seen at the next question (an empty answer is not kept)
+    set_icao(c, 'arr', 'LFQQ')
+    c.until("!!document.querySelector('[data-module=fuel] [data-proc=arr] [data-do=procfetch]')", what='LFQQ has nothing: the reading is offered')
+    set_icao(c, 'arr', 'LFVA')
+    c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"] optgroup')", what='back on LFVA the approaches are listed again')

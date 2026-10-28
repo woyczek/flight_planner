@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: an aerodrome with approaches only shows them — LFBO's 18 were hidden behind « aucune procédure publiée »**
+  (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4; case F20) — the rows ask aerodb once per aerodrome for all kinds, so
+  the Departure row of an aerodrome with approaches but no SID is no longer « without data »; without a runway chosen
+  a list shows all the procedures, one group per runway; the lists are read again when aerodb installs or announces
+  procedures.
 - **Map: "Aerodrome procedures" layer — the aerodrome pins coloured by what the device holds of their procedures**
   (`modules/maps/coverage.js`, `render.js`, `draw.js`, `layers.js`, `sheet_view.js`, `vfr.js`, `texts.js`, `lib/aero_symbols.js`,
   help ×4; V3_SPECIFICATION § 10.22) — green (held), orange (readable on demand), red (nothing readable), from

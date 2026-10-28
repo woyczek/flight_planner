@@ -4,6 +4,17 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **28 Oct 2026 — the procedure rows show every procedure of the aerodrome, grouped by runway** (the user's report: LFBO, 18
+  approaches installed in `proc/manual/`, and the Departure row said « aucune procédure publiée » with the reading button):
+  the cause was in `sideModel`, which asked aerodb for the kinds of the side only (SID for the departure) and called an
+  aerodrome « without data » when that kind was empty, although it had approaches (no SID, no STAR, no `runways` in the file).
+  Now one question per aerodrome, `aerodb.procedures(icao)` (all kinds), sorted by kind and filtered by the runway in fuel;
+  « without data » means no procedure of any kind and no runway. Without a runway chosen a list shows ALL its procedures
+  (the approach list does not wait for a STAR) in one `<optgroup>` per runway ("Piste 14L"; a procedure serving all runways
+  — none named, or `ALL` / `RWALL` — comes first, ungrouped); a runway chosen gives a flat list of the procedures that serve it.
+  The memo of aerodb's answers no longer keeps an empty answer, and is dropped when aerodb says `change` with `procedures`
+  (`fetchProcedures` installed files), `changed` or `refreshed` (`onProcChange`): the lists are read again without another
+  gesture. aerodb does not watch `proc/` (a file synchronised after the first question is not announced): reported to AeroDB.
 - **28 Oct 2026 — reading on demand dispatched by State** (aerodb 82eeef3b5; Simplification, the user's report: « Lire les
   procédures de LFPO » answered « mise en page inconnue »): aerodb now reads France from the SIA eAIP and the States with coding
   tables from EAD Basic, and refuses every other State with `no-tables`. Fuel: the reason `unknown-layout` and its text are

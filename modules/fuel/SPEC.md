@@ -277,7 +277,10 @@ mount. Inside a mount, the two buttons switch as before.
   0. **Runway, SID, STAR and approach** (28 Oct 2026, V3_SPECIFICATION § 10.20), in step 1 after the aerodromes: two short rows,
      "Departure: runway · SID · transition" and "Arrival: runway · STAR · transition · approach" (+ the approach transition
      select, only when the chosen approach has transitions). Each is a `select` filled by `aerodb.runways(icao)` and
-     `aerodb.procedures(icao, { kind, runway })`: choosing a runway filters the lists. Options: empty = not chosen ("—"),
+     one `aerodb.procedures(icao)` (all kinds; fuel sorts them): without a runway chosen a list shows ALL the procedures of the
+     aerodrome, grouped by runway (`<optgroup>`; the approach list does not wait for a STAR), choosing a runway keeps the
+     procedures that serve it; an aerodrome is « without data » only when it has no procedure of any kind and no runway; the
+     lists are read again when aerodb announces new procedures. Options: empty = not chosen ("—"),
      "aucune" (writes `null`; SID, STAR and approach), then the procedures by name; a record with `status: 'xplane'` (local)
      comes last, worded "X-Plane, local"; an `outdated` one says "périmé"; a name that comes back (one record per runway)
      carries its runways. A change rewrites `route.procedures` v2 (`by: 'fuel'`, `at`) and drops what depended on it (another

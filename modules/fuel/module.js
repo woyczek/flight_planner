@@ -1354,37 +1354,52 @@ const nameOfId = (id, key) => {
 };
 /** Piste sans « RW » (« RW23 » → « 23 »), pour comparer. */
 const rwKey = x => String(x ?? '').trim().toUpperCase().replace(/^RW/, '');
-/** Réponse d'aerodb gardée pour le montage (clé : appel + paramètres) ; vidée après une lecture à la demande. */
+/** Réponse d'aerodb gardée pour le montage (clé : appel + paramètres) ; vidée après une lecture à la demande ou un changement
+ *  d'aerodb (onProcChange). Une réponse vide n'est pas gardée : un fichier installé après la première question (lecture à la
+ *  demande, synchronisation) est vu à la question suivante. */
 function procMemo(key, make) {
-  S.procCache ||= new Map();
-  if (!S.procCache.has(key)) S.procCache.set(key, Promise.resolve().then(make).then(v => v || [], () => []));
-  return S.procCache.get(key);
+  const cache = S.procCache ||= new Map();
+  if (!cache.has(key)) {
+    const p = Promise.resolve().then(make).then(v => v || [], () => []).then(v => {
+      if (!v.length && cache.get(key) === p) cache.delete(key);
+      return v;
+    });
+    cache.set(key, p);
+  }
+  return cache.get(key);
 }
 /** Pistes d'un terrain (aerodb.runways) ; [] sans donnée. */
 const runwaysOf = icao => procMemo(`rwy|${icao}`, () => S.ctx.aerodb?.runways?.(icao));
-/** Procédures d'un terrain d'une sorte (SID, STAR, APP), filtrées par la piste choisie (aerodb.procedures(icao, { kind, runway })). */
-const procsOf = (icao, kind, runway) => procMemo(`${icao}|${kind}|${rwKey(runway)}`, () => S.ctx.aerodb?.procedures?.(icao, runway ? {
-  kind,
-  runway: rwKey(runway)
-} : {
-  kind
-}));
+/** Toutes les procédures d'un terrain, de toutes sortes (aerodb.procedures(icao)) : la ligne les trie elle-même par sorte et par piste. */
+const procsOf = icao => procMemo(`${icao}|all`, () => S.ctx.aerodb?.procedures?.(icao));
+/** Même piste : « 24 » et « RW24 » se valent ; un numéro sans côté (« 14 ») vaut ses pistes parallèles (« 14L », « 14R »). */
+const sameRwy = (a, b) => {
+  const x = rwKey(a),
+    y = rwKey(b);
+  return !!x && !!y && (x === y || /^\d\d$/.test(x) && y.startsWith(x) || /^\d\d$/.test(y) && x.startsWith(y));
+};
+/** Une fiche qui dessert toutes les pistes : aucune piste nommée, ou « ALL » / « RWALL ». */
+const servesAll = rec => !(rec.runways || []).length || rec.runways.some(x => rwKey(x) === 'ALL');
+/** La fiche dessert-elle la piste ? Vrai sans piste choisie ou quand la fiche les dessert toutes. */
+const servesRwy = (rec, rwy) => !rwKey(rwy) || servesAll(rec) || rec.runways.some(x => sameRwy(x, rwy));
 
-/** Ce qu'une ligne montre pour un côté : { icao, rwys, lists: { SID | STAR | APP: [enregistrements] }, nodata } ; null sans terrain
- *  de quatre caractères. Les listes suivent la piste choisie ; nodata : aucun enregistrement ni piste, quelle que soit la piste. */
+/** Ce qu'une ligne montre pour un côté : { icao, rwys, all, lists: { SID | STAR | APP: [enregistrements] }, nodata } ; null sans
+ *  terrain de quatre caractères. Toutes les fiches du terrain sont lues en une fois (all) ; les listes en gardent les sortes du
+ *  côté et, une piste choisie, celles qui la desservent (sans piste choisie : toutes). nodata : ni fiche (de n'importe quelle
+ *  sorte) ni piste. */
 async function sideModel(side) {
   const r = S.flight.route || {},
     icao = String((side === 'dep' ? r.dep : r.arr) || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{4}$/.test(icao)) return null;
   const o = CF.proceduresOf(S.flight)[side] || {},
     kinds = side === 'dep' ? ['SID'] : ['STAR', 'APP'],
-    [rwys, ...all] = await Promise.all([runwaysOf(icao), ...kinds.map(k => procsOf(icao, k, ''))]),
-    lists = o.rwy ? await Promise.all(kinds.map(k => procsOf(icao, k, o.rwy))) : all;
+    [rwys, all] = await Promise.all([runwaysOf(icao), procsOf(icao)]);
   return {
     icao,
     rwys,
-    lists: Object.fromEntries(kinds.map((k, i) => [k, lists[i]])),
-    nodata: !rwys.length && all.every(l => !l.length)
+    all,
+    lists: Object.fromEntries(kinds.map(k => [k, all.filter(p => p.kind === k && servesRwy(p, o.rwy))])),
+    nodata: !rwys.length && !all.length
   };
 }
 /** Libellé d'un enregistrement dans une liste : son nom, la piste quand le nom revient (une fiche par piste), « X-Plane, local »
@@ -1394,19 +1409,36 @@ function procLabel(rec, dup) {
     rec.status === 'xplane' || rec.local ? tt(TX.procXplane) : '', rec.outdated ? tt(TX.procOutdated) : ''
   ].filter(Boolean).join(' · ');
 }
+/** Piste (ou pistes, « 14L/14R ») sous laquelle une fiche est rangée dans une liste groupée ; '' pour une fiche qui les dessert toutes. */
+const rwGroupOf = rec => servesAll(rec) ? '' : rec.runways.map(rwKey).join('/');
+/** Ordre des pistes : par numéro, puis par côté (« 02 », « 06 », « 14L », « 14R »). */
+const rwOrder = (a, b) => String(a).localeCompare(String(b), undefined, {
+  numeric: true
+});
 /** Options d'une liste : vide (pas choisi, « — »), « aucune » (null) si none, puis les enregistrements par nom, ceux du repli
- *  X-Plane en dernier ; le choix gardé hors liste (autre piste, OFP) reste proposé. cur : undefined, null ou un identifiant. */
-function procOptions(recs, cur, key, none = true) {
+ *  X-Plane en dernier ; le choix gardé hors liste (autre piste, OFP) reste proposé. cur : undefined, null ou un identifiant. group :
+ *  sans piste choisie, les fiches sont rangées par piste (un <optgroup> par piste, celles qui les desservent toutes d'abord, sans
+ *  groupe, celles du repli X-Plane en dernier dans leur propre groupe) ; le nom d'une fiche n'y reçoit pas sa piste (le groupe la dit). */
+function procOptions(recs, cur, key, none = true, group = false) {
   const opt = (v, l, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}>${esc(l)}</option>`,
     x = r => r.status === 'xplane' || r.local ? 1 : 0,
     list = [...new Map(recs.map(r => [r.id, r])).values()].sort((a, b) => x(a) - x(b) || String(a.name).localeCompare(String(b.name)) ||
       String(
         a.transition || '').localeCompare(String(b.transition || ''))),
-    names = list.map(r => r.name),
-    html = [opt('', '—', cur === undefined), none ? opt('__none', tt(TX.procNone), cur === null) : ''];
-  for (const r of list) html.push(opt(r.id, key === 'trans' || key === 'appTrans' ? r.transition || r.name : procLabel(r, names.filter(n =>
-      n === r.name)
-    .length > 1), r.id === cur));
+    html = [opt('', '—', cur === undefined), none ? opt('__none', tt(TX.procNone), cur === null) : ''],
+    sub = key === 'trans' || key === 'appTrans',
+    XP = '\u0001x-plane',
+    // un nom qui revient dans son groupe (ou dans la liste, hors groupe) porte sa piste
+    items = pool => pool.map(r => opt(r.id, sub ? r.transition || r.name : procLabel(r, !group && pool.filter(q => q.name === r.name)
+        .length > 1),
+      r.id === cur)).join('');
+  if (group && !sub) {
+    const by = new Map(),
+      gx = r => x(r) ? XP : rwGroupOf(r);
+    for (const r of list) by.set(gx(r), [...(by.get(gx(r)) || []), r]);
+    for (const g of [...by.keys()].sort((a, b) => !a || b === XP ? -1 : !b || a === XP ? 1 : rwOrder(a, b)))
+      html.push(g ? `<optgroup label="${esc(g === XP ? tt(TX.procXplane) : `${tt(TX.procRwy)} ${g}`)}">${items(by.get(g))}</optgroup>` : items(by.get(g)));
+  } else html.push(items(list));
   if (typeof cur === 'string' && cur && !list.some(r => r.id === cur)) html.push(opt(cur, nameOfId(cur, key), true));
   return html.join('');
 }
@@ -1427,7 +1459,7 @@ function procRowHtml(side, m, edit) {
     const said = PROC_FIELDS[side].filter(key => o[key] !== undefined).map(key => procValueText(o[key], key)).join(' · ');
     return `<div class="fu-proc" data-proc="${side}">${head}<span class="f-muted">${esc(said || '—')}</span></div>`;
   }
-  const sel = (key, label, recs, none = true) => procSelect(side, key, label, procOptions(recs, o[key], key, none)),
+  const sel = (key, label, recs, none = true) => procSelect(side, key, label, procOptions(recs, o[key], key, none, !o.rwy)),
     main = recs => recs.filter(r => !r.transition),
     // les transitions de la procédure choisie : mêmes sorte et nom, avec une transition
     transOf = (recs, id) => {
@@ -1492,8 +1524,8 @@ async function renderProcRows() {
   const passed = depPassed(),
     [dep, arr] = await Promise.all([sideModel('dep'), sideModel('arr')]);
   if (gone(s) || seq !== S.procSeq || !S.body) return;
-  // les enregistrements montrés, retrouvés par leur identifiant quand une piste choisie en retire (procChosen)
-  S.procRecs = new Map([dep, arr].filter(Boolean).flatMap(m => Object.values(m.lists).flat()).map(r => [r.id, r]));
+  // toutes les fiches des deux terrains, retrouvées par leur identifiant quand une piste choisie en retire (procChosen)
+  S.procRecs = new Map([dep, arr].filter(Boolean).flatMap(m => m.all).map(r => [r.id, r]));
   const k = box.contains(document.activeElement) ? document.activeElement.dataset?.k : null;
   box.innerHTML = (started && passed && dep ? `<p class="f-muted fu-procpassed">${esc(tt(TX.procPassed))}</p>` : '') + procRowHtml('dep', dep, !started || !passed) + procRowHtml('arr', arr,
     true);
@@ -1624,6 +1656,23 @@ async function fetchProcs(icao, btn) {
   }
   S.rowsKey = null;
   renderProcRows();
+}
+/** Changement signalé par aerodb ('change') : des procédures ont été écrites ({ procedures: icao }, lecture à la demande) ou les
+ *  données publiées ont changé ({ changed }, { refreshed }) : les réponses gardées sont jetées et les lignes relues, sans attendre un
+ *  autre geste ; pour des procédures d'un terrain du vol, celles lues du vol le sont aussi (leur géométrie a pu changer). Les
+ *  autres signaux (fiches d'aéronef, zone ouverte) ne concernent pas les lignes. */
+function onProcChange(e, s) {
+  if (!e || gone(s) || !S.body || !(e.procedures || e.changed || e.refreshed)) return;
+  S.procCache = null;
+  const r = S.flight?.route || {};
+  if (e.procedures && [r.dep, r.arr].some(i => String(i || '').toUpperCase() === String(e.procedures).toUpperCase())) {
+    S.procs = null;
+    S.rowsKey = null;
+    refresh();
+  } else if (S.view === 'plan') {
+    S.rowsKey = null;
+    renderProcRows();
+  }
 }
 /** Libellé d'une valeur de route.procedures dans une notification : « — » (pas choisi), « aucune », la piste, ou le nom. */
 const procValueText = (v, key) => v === undefined ? '—' : v === null ? tt(TX.procNone) : key === 'rwy' ? String(v) : nameOfId(v, key);
@@ -4530,6 +4579,7 @@ export async function mount(el, ctx) {
     'fuel-quote');
   el.querySelector('.f-tabs').onclick = e => e.target.dataset.view && show(e.target.dataset.view);
   // fiches changées ailleurs (synchronisation, autre onglet) ; vol courant écrit par maps
+  S.stops.push(ctx.aerodb?.on?.('change', e => onProcChange(e, self)));
   S.stops.push(ctx.aerodb?.on?.('change', async e => {
     if (!e?.aircraft || gone(self) || !S.body) return;
     const A = await ctx.aerodb.aircraft().catch(() => S.A);
