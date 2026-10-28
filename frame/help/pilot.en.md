@@ -62,7 +62,7 @@ where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060�
 Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in feet below (3,500 ft).
 
 <a id="fuel-step-1"></a>**1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
-rather than the observation, the aircraft and the cruise level (as a flight level). The flight date is a single value, kept in the current flight: the quote’s weather (the aerodromes’ TAF, winds and temperatures aloft) is read at that date, the Map’s ETA starts from it while the flight has not started, and Atmosphere’s slider starts from it; empty means now. The aircraft fits on one line: the
+rather than the observation, the aircraft and the cruise level (as a flight level). The flight date (entered in the device's local time) is a single value, kept in the current flight: the quote’s weather (the aerodromes’ TAF, winds and temperatures aloft) is read at that date, the Map’s ETA starts from it while the flight has not started, and Atmosphere’s slider starts from it; empty means now. The aircraft fits on one line: the
 chosen aircraft, its registration, its callsign and where it comes from. A new flight takes the last aircraft chosen on this device; with none
 chosen, the quote waits. The magnifying glass opens the search (the last chosen first): type a
 sheet, a registration, a callsign or a type. The results come in this order: your performance sheets, the airline's

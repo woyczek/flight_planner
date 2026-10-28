@@ -4,6 +4,19 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **28 Oct 2026 — after the relay: one flight date; `progress` is a started flight's** (review of the relay's work,
+  Simplification's decisions): (2) the level decision's flat basis for every level with the "Plan" diamond (relay,
+  24 Oct) is confirmed: it **replaces** the 23 Oct decision "at the chosen level, curve and quote give the same
+  figure" (that basis put the route's steps on one point only and made a spike). (3) fuel no longer writes
+  `weather.when`: `planned_at` is the only value ("one source per subject"); a flight written before it gets its
+  `planned_at` from `weather.when` and the copy is dropped in memory, so the next write removes it — a stale copy would
+  mislead. Still reading it: the current Map (`module.js`, the weather cut's departure time, `f.weather.when`), which
+  falls back on now; Atmosphere already reads `planned_at` first. (4) the rule is written in INTEGRATION § 3:
+  `progress` is a started flight's, readers test `started.at`, never the presence of `progress` (it closes the
+  end-to-end pass's bug 2 on the readers' side). The ETAs fuel writes for a flight only dated stay for now — **debt
+  dated 28 Oct 2026**, lifted when the recoded Map (BUGS SOG, `v3-maps-recode`) computes them from `planned_at`; removing
+  them before would take the ETAs off the map in production. (8) the field's label says "device's local time" ×4 (the
+  picker is the system's; every time shown elsewhere is UTC), the manual too.
 - **25 Oct 2026 (relais cloud) — the "Auto" button writes the airways** (lot `v3-route-auto`; the user: "Oui pour auto"; state of
   play: `docs/technique/V3_ROUTES_PROCEDURES_ETAT.md` § 1). **Where the code lives**: the path finding is V2's
   (`shared/mission_routing.js`: `airwayGraph`, `shortest`, `leg`, `expand`) ported to the published base's segments

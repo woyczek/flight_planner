@@ -108,7 +108,7 @@ def f5(c):
 
 
 @case('F6', 'Flight date is one value', 'F', tags=('fuel', 'maps'), screens=False, langs4=True,
-      rule='fuel INTEGRATION 3 (24 Oct): the field writes current_flight.planned_at; weather.when is its copy; the Map reads the ETA from it')
+      rule='fuel INTEGRATION 3 (28 Oct): the field writes current_flight.planned_at, the only value (no weather.when copy); the Map reads the ETA fuel writes for a dated flight (debt until the recoded Map)')
 def f6(c):
     c.open('fuel', flight=True)
     wait_quote(c)
@@ -128,7 +128,7 @@ def f6(c):
     want = c.js("(l) => new Date(l).toISOString().slice(0, 19) + 'Z'", local)
     c.page.fill(f'{FUEL} [data-k="wxdate"]', local)
     r = waited(lambda r: r.get('planned_at') == want, 'a typed date is written as ISO UTC')
-    c.eq((r.get('weather') or {}).get('when'), local, 'weather.when is the same date in the device time', what='weather.when')
+    c.eq((r.get('weather') or {}).get('when'), None, 'no weather.when copy: planned_at is the only value', what='weather.when')
     r = waited(lambda r: (r.get('progress') or {}).get('eta'), 'a dated flight that is not started carries the ETAs the Map draws')
     eta = r['progress']['eta']
     c.eq(len(eta), 4, 'one ETA per route point', what='progress.eta')
@@ -141,7 +141,7 @@ def f6(c):
     c.ok(30 <= added <= 34 and c.js("(t) => Date.parse(t) % 300000 === 0", r['planned_at']), f'{added} min added, planned_at {r["planned_at"]}', '30 minutes more, rounded up to 5 minutes')
     c.tap(f'{FUEL} [data-do="whennow"]')
     r = waited(lambda r: r.get('planned_at') is None, '"Now" empties the date')
-    c.eq((r.get('weather') or {}).get('when'), '', 'weather.when is empty too', what='weather.when after Now')
+    c.eq((r.get('weather') or {}).get('when'), None, 'still no weather.when copy', what='weather.when after Now')
     r = waited(lambda r: not (r.get('progress') or {}).get('eta'), 'an undated flight has no ETA to promise')
 
 

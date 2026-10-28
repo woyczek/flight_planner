@@ -322,7 +322,9 @@ const TX = {
   ],
   alt: ['Alt.', 'Alt.', 'Höhe', 'Alt.'],
   thr: ['Gaz', 'Thr.', 'Gas', 'Gases'],
-  wxDate: ['Date du vol', 'Flight date', 'Flugdatum', 'Fecha del vuelo'],
+  wxDate: ['Date du vol (heure locale de l’appareil)', 'Flight date (device’s local time)', 'Flugdatum (Ortszeit des Geräts)',
+    'Fecha del vuelo (hora local del dispositivo)'
+  ],
   wxDateHint: ['La météo du devis (TAF, vents en altitude) et la Carte sont lues à cette date ; vide : maintenant.',
     'The quote’s weather (TAF, winds aloft) and the Map are read at this date; empty: now.',
     'Das Wetter der Kalkulation (TAF, Höhenwinde) und die Karte werden für dieses Datum gelesen; leer: jetzt.',
@@ -1027,17 +1029,18 @@ const isoToWhen = iso => {
   const t = Date.parse(iso || '');
   return Number.isFinite(t) ? new Date(t - new Date(t).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
 };
-/** La date du vol n'a qu'une valeur : current_flight.planned_at (ISO UTC, null = maintenant). weather.when n'en est que
- *  la copie en heure de l'appareil (le champ de saisie ; Atmosphère la lit encore) : elle est posée avec planned_at, à la
- *  source (setPlanned) et à chaque lecture du vol (ici). Un vol écrit avant planned_at (weather.when seul) en reçoit un. */
+/** La date du vol n'a qu'une valeur : current_flight.planned_at (ISO UTC, null = maintenant) ; le champ de saisie en
+ *  montre l'heure de l'appareil (isoToWhen). Un vol écrit avant planned_at (weather.when seul, l'ancienne copie) en reçoit
+ *  un ; la copie est retirée (fuel ne l'écrit plus : une copie périmée tromperait ses lecteurs). */
 function syncPlanned(f) {
-  const iso = Number.isFinite(Date.parse(f.planned_at || '')) ? f.planned_at : whenToIso(f.weather?.when),
-    local = isoToWhen(iso);
-  f.planned_at = iso;
-  if ((f.weather?.when || '') !== local) f.weather = {
-    ...f.weather,
-    when: local
-  };
+  f.planned_at = Number.isFinite(Date.parse(f.planned_at || '')) ? f.planned_at : whenToIso(f.weather?.when);
+  if (f.weather && 'when' in f.weather) {
+    const {
+      when,
+      ...rest
+    } = f.weather;
+    f.weather = rest;
+  }
   return f;
 }
 /** Vol courant lu (enregistrement gardé ou reçu) : les champs vides du schéma complétés, la date du vol accordée. */
@@ -1411,7 +1414,7 @@ function renderPlanBody() {
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
       <div class="f-grid fu-ads">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
-      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(f.weather?.when || '')}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
+      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(isoToWhen(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
       <div class="fu-hide" data-acpanel>
@@ -2161,17 +2164,11 @@ function setWhen(plus) {
   saveFlight();
   whenChanged();
 }
-/** Pose la date du vol : current_flight.planned_at (ISO UTC, null = maintenant) et sa copie weather.when (heure de
- *  l'appareil, le champ de saisie), le champ à l'écran seulement si sa valeur change. L'écriture du vol et le calcul
- *  suivent (saveFlight, whenChanged). */
+/** Pose la date du vol : current_flight.planned_at (ISO UTC, null = maintenant), et le champ à l'écran (heure de
+ *  l'appareil) seulement si sa valeur change. L'écriture du vol et le calcul suivent (saveFlight, whenChanged). */
 function setPlanned(iso) {
-  const f = S.flight,
-    local = isoToWhen(iso);
-  f.planned_at = iso;
-  f.weather = {
-    ...f.weather,
-    when: local
-  };
+  const local = isoToWhen(iso);
+  S.flight.planned_at = iso;
   const wd = S.body?.querySelector('[data-k="wxdate"]');
   if (wd && wd.value !== local) wd.value = local;
 }
@@ -4014,7 +4011,7 @@ export async function mount(el, ctx) {
     if ((S.flight.planned_at ?? null) !==
       oldPlanned) { // date du vol changée ailleurs (autre appareil) : champ, météo et vents relus
       const wd = S.body?.querySelector('[data-k="wxdate"]');
-      if (wd && wd.value !== S.flight.weather.when) wd.value = S.flight.weather.when;
+      if (wd && wd.value !== isoToWhen(S.flight.planned_at)) wd.value = isoToWhen(S.flight.planned_at);
       whenChanged();
     }
     if (keepText != null) S.flight.route = { // route en cours de frappe : la valeur du champ reste la vérité

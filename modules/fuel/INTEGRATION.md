@@ -152,10 +152,12 @@ report and maps never write nor erase it.
   hour nearest to it, § 11) and, for a flight that is not started, the Map's ETA. A started flight is read from `started.at`
   (fuel resets `planned_at` to `null` when it starts: the start redoes everything for now). **Atmosphere (its session
   reads this): the slider's origin is `planned_at` of the current flight** — "now" when it is absent — and the slider adds
-  its 0 to +72 h to it; until it does, it reads `weather.when`, which fuel keeps equal to `planned_at` (below).
-- `weather` (fuel's): `{ when (the flight date as the device's local time, `YYYY-MM-DDThh:mm`, the value of the
-  datetime-local field: **a copy of `planned_at`**, not a second value — fuel sets both together and, when it reads a flight,
-  `planned_at` wins; a flight written before `planned_at` existed gets its `planned_at` from `when`; `''` = now), real (wind from the aerodromes' weather) }` (`mid`,
+  its 0 to +72 h to it. **Since 28 Oct 2026 fuel no longer writes `weather.when`** (the former copy in the device's
+  time): `planned_at` is the only value; a flight written before it gets its `planned_at` from `weather.when` when fuel
+  reads it, and the copy is then dropped. A reader that still falls back on `weather.when` finds it absent (= now).
+  The field shows `planned_at` in the device's local time and says so in its label.
+- `weather` (fuel's): `{ real (wind from the aerodromes' weather) }` (`when`, the former copy of the flight date, is no
+  longer written: `planned_at` above; `mid`,
   the former intermediate aerodrome, is no longer written nor read: the corridor's aerodromes replace it); `windSource`: `{ kind: 'weather', ids: ['LFBO (TAF)', …] }` when the wind came from it, else
   null.
 - `quote` (fuel's): `{ block, trip, unit ('kg' | 'lb', the sheet's), minutes, levelFt, approx }` — the quote's block
@@ -165,11 +167,14 @@ report and maps never write nor erase it.
   remainingNm, phase ('taxi' | 'climb' | 'cruise' | 'descent' | 'arrived'), actual? }` — the planned progress of the
   started flight, written at most once a minute while it flies (at once on a phase change, a cancelled start or a
   quote change) — a frame write (the real position) no longer causes a fuel write; fuel's keys cleared once the start
-  is cancelled or the report saved. **Not started but dated** (`planned_at` set, the quote done, the arrival still in the
-  future): `progress = { at, eta [{ id, at }] }` only (`plannedPos`, `fuelRemainingKg`, `remainingNm` and `phase` are `null`:
-  they exist only in flight), the ETAs counted from `planned_at` as a started flight counts them from `started.at` (taxi,
-  climb, cruise by leg, descent); rewritten with every quote change, cleared when the date is cleared, the flight is started
-  (then from `started.at`) or its arrival is past. Maps draws them as it draws a started flight's.
+  is cancelled or the report saved. **Rule (28 Oct 2026): `progress` is a started flight's; readers test `started.at`,
+  never the presence of `progress`** (a `progress.actual` kept from an earlier flight, or an ETA written before the start,
+  say nothing about this flight being in the air). **Debt dated 28 Oct 2026, lifted at the delivery of the recoded Map**
+  (it will compute a planned flight's ETAs from `planned_at` itself): until then fuel still writes, for a flight that is
+  not started but dated (`planned_at` set, the quote done, the arrival still in the future), `progress = { at, eta [{ id,
+  at }] }` only (`plannedPos`, `fuelRemainingKg`, `remainingNm` and `phase` are `null`), the ETAs counted from
+  `planned_at` as a started flight counts them from `started.at`; rewritten with every quote change, cleared when the date
+  is cleared, the flight is started (then from `started.at`) or its arrival is past.
   `actual` (the real position: phone GPS, IVAO / VATSIM network) belongs to the frame; fuel and report keep it as
   written (table above).
 - `started` (lot G): `{ at (ISO), by: 'fuel', diverted? }` — written by fuel at the start (after the weather and the

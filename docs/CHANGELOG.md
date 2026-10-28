@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: one flight date** (`modules/fuel/module.js`; INTEGRATION, DECISIONS, help ×4) — the
+  flight date is only `planned_at` (no more `weather.when` copy), its field says it is in the device's local time;
+  readers of `progress` test the start (`started.at`).
 - **Frame: service screens, published status lines, `ctx.titled`** (`frame/app.js`, `frame/aerodb/lab.js`,
   `frame/design/primitives.css`; INTEGRATION § 6, 7, 10, 13, SPEC § 4, DECISIONS):
   - frame screens drawn by a service are declared (`APP.screens`), and the frame's code no longer names the data
