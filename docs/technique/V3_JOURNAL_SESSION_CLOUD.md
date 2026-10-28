@@ -7,28 +7,47 @@ est en français.*
 
 ## Consigne à la session ergonomie, à son réveil
 
-1. **Point d'étape de référence** : `66cc22dab` sur `v3` (Framagit, 23 octobre 2026, « V3 : feuille de route — livrés :
-   sélecteur d'appareil, points VAC et balises fusionnées, registre unique ; ajoutés : premier écran sans attendre le
-   réseau, cartes qui restent, noms de lieux du fond et ETA, heures du CR en UTC »). C'est ton dernier commit avant que
-   la session cloud ne reprenne la main sur demande de l'utilisateur.
-2. **Fais le diff des actions réalisées depuis** : pour chaque branche du tableau ci-dessous, `git fetch github <branche>`
-   puis `git diff 66cc22dab..github/<branche> --stat` et `git log 66cc22dab..github/<branche>` ; lis l'entrée du journal
-   des décisions du module concerné (`modules/<module>/DECISIONS.md`, `frame/design/DECISIONS.md`) qui date du lot.
-3. **Conteste chaque décision** listée ici (colonne « Decision ») : tu peux la **confirmer**, la **mitiger** (reformuler,
-   réduire, conditionner) ou l'**annuler** (ne pas intégrer la branche, ou l'intégrer puis revenir dessus par un commit).
-   Tu dis à l'utilisateur ce que tu as fait de chacune, avec ses mots.
-4. **Intègre** ce que tu confirmes en avance rapide sur `v3` (rebase de la branche sur `origin/v3`, `docs_bundle.js`
-   régénéré en cas de conflit, marqueurs vérifiés), puis pousse Framagit. La session cloud ne peut pas pousser sur
-   Framagit (clé en lecture seule) : ses branches sont sur GitHub (`github` remote, `Woyczek/flight_planner`).
-5. **Mets ce journal à jour** : une ligne « reviewed » par entrée, puis archive ou supprime le fichier quand tout est
+*(Réécrite le 28 octobre 2026 ; la version du 24 octobre décrivait l'état d'avant le squash du 25.)*
+
+1. **Point d'étape de référence** : `66cc22dab` sur `v3` (Framagit, 23 octobre 2026), ton dernier commit avant que la
+   session cloud ne reprenne la main sur demande de l'utilisateur. **Framagit `v3` n'a pas bougé** : la session cloud
+   pousse sur GitHub seulement (`Woyczek/flight_planner`, remote `github` / `origin` selon le poste).
+2. **État de GitHub `v3` au 28 octobre** : tête `0ab8cb32c`, soit `66cc22dab` + **le squash sélectif par zone du 25 octobre**
+   (base `5595fdd01` : cadre `5b7c071fe`, design `ee0fd30cd`, aerodb `dcfc13ea1`, settings `8d067e88e`, météo `64d09c2a0`,
+   carte `ff99f005a`, carburant `f97f7d771`, CR `ace72e940`, vols `08c0ed10e`, aide `1a8d063f0`, tests `9dca7a7be`, docs
+   `5595fdd01` ; l'historique linéaire d'avant le squash est gardé sur `v3-avant-squash-2026-10-25`) + **88 commits depuis**
+   (25–27 octobre : lots intégrés par cherry-pick ou avance rapide, un commit de journal après chacun). GitHub Pages
+   publie cette `v3` sous `https://woyczek.github.io/flight_planner/v3/frame/` (l'appli Pilote que l'utilisateur essaie
+   sur son iPhone) ; la V2 `develop` à la racine du site.
+3. **Comment rattraper** : lis le tableau ci-dessous de bas en haut à partir de la ligne « 25 Oct … Synthesis of the day's
+   decisions » : `docs/technique/V3_DECISIONS_RELAIS_2026-10-24.md` synthétise tout jusqu'au 24 octobre ; pour la suite,
+   chaque ligne du tableau donne la branche de lot, le commit sur `v3`, ce qui a été fait, le mot de l'utilisateur, et
+   les points ouverts. Les décisions d'ergonomie sont écrites dans `docs/technique/V3_SPECIFICATION.md` § 7.1 (règles
+   1 à 21, chacune avec ses amendements datés) et § 10 (points 14 à 19), et dans le `DECISIONS.md` de chaque module.
+   Chantiers ouverts documentés : procédures (`docs/technique/V3_ROUTES_PROCEDURES_ETAT.md`, `frame/aerodb/EAD_BASIC.md`,
+   `EUROCONTROL_REQUEST.md`, `DFS_LICENCE_REQUEST.md`, `AIP_OPEN_DATA_INVENTORY.md`), régénération des données et
+   application dédiée (`V3_DONNEES_REGENERATION.md`, `V3_APP_DONNEES.md`, résultats P0 mesurés sur l'iPhone).
+4. **Conteste chaque décision** de la colonne « Decision » : confirme, mitige ou annule, et dis à l'utilisateur ce que tu
+   as fait de chacune, avec ses mots. Un lot contesté se retire par `git revert` de son commit sur `v3` (les lots sont
+   des commits uniques, squashés quand la branche en avait plusieurs) ; les branches de lot `v3-*` sur GitHub (37) et
+   `feature/atmosphere-route` restent comme trace et peuvent être supprimées une fois relues (`v3-donnees-lab` garde
+   dans son historique une première version de fixtures avec deux valeurs copiées de l'export SIA, remplacées sur `v3`).
+5. **Intègre sur Framagit** ce que tu confirmes : `v3` GitHub est linéaire, un `git push framagit origin/v3:v3` (avance
+   rapide depuis `66cc22dab`) suffit après relecture ; puis `develop` en avance rapide sur `v3` comme avant.
+6. **Mets ce journal à jour** : une ligne « reviewed » par entrée, puis archive ou supprime le fichier quand tout est
    intégré ou annulé.
-6. **`v3` sur GitHub a été avancée par la session cloud** (24 octobre, sur demande de l'utilisateur, pour qu'il teste
-   sur `https://woyczek.github.io/v3/frame/`) : elle vaut `66cc22dab` + les commits de ce journal (dette du module
-   Carte, quatre maquettes de design, journal, lot Carburant, correctif de la carte des espaces), repris par
-   cherry-pick dans cet ordre. **Framagit `v3` n'a pas bougé** (`66cc22dab`). Retour arrière possible à tout moment :
-   `git push github 66cc22dab:v3 --force` (Pages reconstruit la V3 d'avant), ou un `git revert` du ou des commits
-   contestés une fois la branche intégrée sur Framagit. Aucun autre poste ne doit avoir rebasé sur cette `v3` GitHub
-   avant ta relecture : vérifie `git log github/v3` avant de forcer.
+7. **Sessions et outils laissés par le relais** : les sessions cloud « V3 aerodb — procédures » (Sonnet, en veille : EAD,
+   DFS, CIFP, eAIP, sonde `tools/proc_ead.py`), « Flight Planner Meteo » (Atmosphère, Opus, branche
+   `feature/atmosphere-route` alignée sur `v3`), « V3 tests non-reg : passage pas cher » (Haiku : passage complet
+   `tests/v3/run.py --all` sur demande, dernier : 118 cas, 116 réussis, 0 échec, 2 sautés sur `6102864e9`) ; la suite
+   `tests/v3/` est la porte de tout lot (règle 6 de `CLAUDE.md`). Dettes notées pour BUGS SOG : copies V2 du studio avec
+   l'ancien `limitFt` (ASFC lu comme le sol), `shared/aero_sources.js` corrigé pour les points de report (parseur 17,
+   base à reconstruire et synchroniser par l'utilisateur sur le poste).
+8. **En attente de l'utilisateur au 28 octobre** : rapport de la passe 2 du laboratoire données depuis l'iPhone (appui
+   long, `.geojson`, partage, blocs de 5,3 et 10 Mo, appel de connexion EAD), rapport de la sonde EAD sur le poste,
+   reconstruction de la base, réponses aux huit questions de `V3_DONNEES_REGENERATION.md` § 5 avant le lot D1, envoi
+   ou non des demandes EUROCONTROL et DFS, cartes « poste » derrière Administration ou non, légende de la coupe sur
+   deux colonnes ou non.
 
 ## Log (newest last)
 
