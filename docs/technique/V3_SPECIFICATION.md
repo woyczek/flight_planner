@@ -629,3 +629,19 @@ redesigned for touch at that point.
        vertical path under the constraints, and the Map draws it (its own computation only as a fallback); a record with
        the old `route.procedures { sid, star }` is migrated to v2 by Fuel at read, the Map reads v2 only; constraints and
        speeds are labelled in a close view only (300 px per degree), reserved after the route's labels.
+       **Second refinement (after Fuel's reading, same evening)**: after the start, a change of STAR, approach or runway
+       rewrites only `quote.legs`, `profile.path` and the length (same wind and level model, `quote.legsAt` marked); the
+       fuel figures (block, offload, reserves, `quote.at`) do not move, so the ETA and the remaining distance follow; the
+       departure may change while the first en-route point (the end of the SID in the expanded path) is not passed,
+       judged on `progress.actual` when younger than two minutes, else on `plannedPositionAt`. The Map never writes
+       `route.procedures`, not even in Edit mode: Fuel sets to `null` the side whose aerodrome no longer matches
+       `route.dep` / `route.arr` at its next write, and readers check the aerodrome. Migration of the old `{ sid, star }`
+       record: a pure helper `proceduresOf(flight)` of `frame/lib/current_flight.js` returns the v2 view, every reader
+       uses it, Fuel writes v2 at its next ordinary write (nothing written at mount); aerodb finds an OFP procedure by its
+       identifier (`proc-seen/`, status `ofp`). `null` = "none", chosen by the pilot; absent = not chosen yet, which the OFP
+       may fill; "Charger mon OFP" replaces a choice and says what changed. The on-demand reading is
+       `aerodb.fetchProcedures(icao, { onProgress, signal })`, which wraps the launcher job and refuses with a reason
+       without a launcher or on a paired device: Fuel declares no launcher route; `EAD_BASIC.md` § 1 is amended: the
+       gesture lives in Fuel (and later in the Data module), not in Settings › Maintenance. `expandedPath` joins the
+       procedure to the route on the first common point and never adds a leg twice (an OFP route often already carries
+       the SID / STAR points). `route.procedures.at` is the choice's time; `merge` sets `updated_at` on the record.
