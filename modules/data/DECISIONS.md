@@ -35,3 +35,9 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   the frame's GitHub transport without a launcher (INTEGRATION § 1.3, the frame's choice).
 - **28 Oct 2026 — Coverage not taken over from V2**: V2 kept the zones in `localStorage` (`aeroZones:v1`), which a module
   may not read; the first coverage is an open question (ROADMAP question 1).
+- **28 Oct 2026 — The eight open questions answered** (ergonomics session; ROADMAP keeps the list): every published zone
+  ticked at the first opening; « Tout mettre à jour » kept as the main gesture; pypdf through the V2 first-install
+  assistant while it exists (a D8 debt); the Sources screen replaced by the module at D1, `sources_data.js` its catalogue;
+  test zone L; the end-of-cycle line computed by the frame from `aerodb.publication()`; EAD credentials in the launcher's
+  keys panel, never read back; no « Cartes » group, the VAC reporting points in « Base aéronautique » (four groups).
+  Nothing is coded before the reviews of aerodb and of the frame.

@@ -38,10 +38,10 @@ for `modules/data/module.js` and its files. Every rule below is a requirement.
 | **Mettre à jour** | Update | Aktualisieren | Actualizar | the four in a row for one data set |
 | **Tout mettre à jour** | Update all | Alle aktualisieren | Actualizar todo | « Mettre à jour » for every data set of the coverage, in order (§ 5.3) |
 
-One verb per button, never two words of action on one button. Groups: **Base aéronautique** (Aeronautical base,
+One verb per button, never two words of action on one button. Four groups: **Base aéronautique** (Aeronautical base,
 Luftfahrtdatenbank, Base aeronáutica), **Procédures** (Procedures, Verfahren, Procedimientos), **Appareils** (Aircraft,
-Luftfahrzeuge, Aeronaves), **Météo** (Weather, Wetter, Meteorología), **Cartes** (Charts, Karten, Cartas). French
-typography (U+202F before « : ; ! ? »), as everywhere.
+Luftfahrzeuge, Aeronaves), **Météo** (Weather, Wetter, Meteorología). French typography (U+202F before « : ; ! ? »), as
+everywhere.
 
 ## 3. The screen
 
@@ -54,15 +54,21 @@ A non-fixed module (it scrolls like a page), `meta.title` « Données ». From t
    that folds open the list: every zone published in the repository (from aerodb), each a checkbox, plus « Ajouter un
    pays » (the zones the suite knows but nobody publishes yet, from the zone table). Saved at once in
    `cache/data/coverage.json` (§ 7). A zone ticked here and published by nobody is built and published by this workstation.
-3. **« Tout mettre à jour »**: one primary button (§ 5.3), with the count of data sets it will touch.
-4. **The groups**, in this order: Base aéronautique, Procédures, Appareils, Météo, Cartes. Each group is a fold
-   (`details`), open when one of its rows needs attention (stale, gap, failure), like the Settings groups; **seven rows at
-   most visible** in a group, the others under « n autres jeux » (a fold inside the group).
-5. **A row** (one data set): its name; its **cycle** (or edition); a **state** pill (§ 6.2) with its date; the **gap**
-   between the workstation and the repository (§ 6.4) in one short phrase; the buttons **Télécharger · Construire ·
-   Publier · Purger** and **Mettre à jour**, each 44 px, icon and label on a phone; under a tap, a folded detail: files and
-   sizes, counts, warnings, the zones it feeds, the licence, the source's link (the same as the Sources screen's), the
-   last lines of its log.
+   **At the first opening every published zone is ticked** (the screen shows what the airline publishes; unticking is the
+   rare gesture); nothing is taken over from V2.
+3. **« Tout mettre à jour »**: the main gesture, one primary button at the top (§ 5.3), with the count of data sets it will
+   touch; the four verbs stay on each row.
+4. **The groups**, in this order: Base aéronautique, Procédures, Appareils, Météo. Each group is a fold (`details`), open
+   when one of its rows needs attention (stale, gap, failure), like the Settings groups; **seven rows at most visible** in a
+   group, the others under « n autres jeux » (a fold inside the group).
+5. **A row** (one data set) = **link, licence, status and state**: its name; its **cycle** (or edition); a **state** pill
+   (§ 6.2) with its date; the **gap** between the workstation and the repository (§ 6.4) in one short phrase; the buttons
+   **Télécharger · Construire · Publier · Purger** and **Mettre à jour**, each 44 px, icon and label on a phone; under a
+   tap, a folded detail: the source's link (with its address written beside it), its licence and its status (used,
+   considered, set aside) from the catalogue (§ 7), files and sizes, counts, warnings, the zones it feeds, the last lines
+   of its log. The catalogue's sources that are **considered or set aside** have no verbs: they are rows of the « n autres
+   jeux » fold of their group, with their link, licence and status. This replaces the Sources screen (`#sources`), which
+   goes with lot D1.
 6. **The EAD line** in the Procédures group (§ 4.3): an ICAO code field and « Lire un terrain ».
 7. **Journal**: a fold at the foot, the last 50 operations (time UTC with Z, data set, verb, duration, result), each
    unfolding to its log; « Copier ».
@@ -102,6 +108,7 @@ sources that feed at least one zone of the coverage.
 | DIRCAM ENR 5.7 (ravitaillement) | ◐ the PDF, picked | ● | `meta.aarXml` |
 | openAIP, ENAIRE, FAA ADDS, UK Mil AIP, NAV CANADA DAH | ● launcher (`aero-fetch` providers) | ● | per zone |
 | NATS UK | ◐ pick up `EG_*_DS_*_XML.zip` | ● | zone `gb` |
+| Points VFR des cartes VAC | ◐ the VAC PDFs (folder pointed once, or picked) | ● Python + pypdf; publish `sia/vfr/` | the importer matches the base's `vrp.json`: after the fr base (France only) |
 
 ● the button does it all; ◐ one gesture of the user is part of it; ○ no such step. A step that needs the user says *what
 to do* with one link and one gesture, never a command.
@@ -119,21 +126,21 @@ to do* with one link and one gesture, never a command.
 - A field for **one ICAO code** and the button « Lire un terrain »: one aerodrome per call, an explicit gesture, never a
   list, never scheduled (decision of the data owner of the day, `frame/aerodb/EAD_BASIC.md`).
 - The line says, always visible: « EAD Basic : non opérationnel, pour la simulation ; un terrain à la fois ».
-- The launcher logs in with the owner's EAD Basic credentials kept in its secrets store (never shown, never in a page, a
+- The launcher logs in with the owner's EAD Basic credentials, given once to the launcher in Settings' keys panel
+  (Administration, launcher only, never synchronised) and kept in its secrets store (never read back by a page, never in a
   repository or a log), downloads that aerodrome's AD 2 pages into the workstation's local cache only, reads the coding
   tables with the known layouts, writes `proc/<cycle>/<ICAO>.json` with status `check` and the source `ead-basic/<State>`;
   then the result: procedures read, pages not understood (listed, never guessed). Publishing is the Procédures group's
   « Publier ».
 - Grey with its reason when there is no launcher, no EAD credentials, or no known layout for that State.
 
-### 4.4 Appareils, Météo, Cartes
+### 4.4 Appareils, Météo
 
 | Group | Data set | Chain | Notes |
 |---|---|---|---|
 | Appareils | Types et performances | ● all four, by the launcher (`AircraftDB/`) | Python, pypdf for the Doc 8643 PDFs |
 | Météo | Météo mondiale (GFS) | status only: the cycle of the last run from the site | built and published with the site; no button |
 | Météo | Pistes NAT du jour | status only: the time of the message from the site | read on the site (user, 28 Oct), not in the base: no rebuild for them |
-| Cartes | Points VFR des cartes VAC | ◐ the VAC PDFs (folder pointed once, or picked), ● build (Python + pypdf), ● publish `sia/vfr/` | the importer matches the base's `vrp.json`: after the fr base |
 
 **X-Plane / Navigraph** inputs never enter a published file: a published zone's build drops them; a workstation may build
 them for itself (« local, jamais publié »), into its local cache only, read by its own devices through the launcher.
@@ -210,7 +217,7 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
 | « data/ n'est pas un dépôt git » / « sans dépôt distant » | Publier on a launcher; link to Settings › Accès |
 | « Votre trigramme n'est pas réglé » | Publier (the commit author, `[A-Z0-9]{2,5}`) |
 | « Accès au dépôt non réglé » | Publier without a launcher and without the device's GitHub access |
-| « pypdf manque : l'assistant de première installation l'installe » | Construire of eAIP, VAC points, aircraft |
+| « pypdf manque : l'assistant de première installation l'installe » | Construire of eAIP, VAC points, aircraft; a link to the first-install assistant (`apps/settings/premier_lancement.html`, a V2 page served by the launcher) as long as it exists — to be ported (ROADMAP D8) |
 | « Rien à télécharger encore » | the source has not published the cycle |
 | « Aucun fichier trouvé dans Téléchargements » | SIA, NATS, CIFP picked up; « Choisir le fichier… » beside it |
 | « Une autre opération est en cours » / « hors ligne » / « disque plein » | any |
@@ -220,7 +227,9 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
 ## 7. Reads and writes
 
 - **Reads**: the published state through `ctx.aerodb` only (INTEGRATION § 2), never `sia/base/`, `proc/` or
-  `AircraftDB/` directly; the workstation's state through `ctx.launcher` (INTEGRATION § 1).
+  `AircraftDB/` directly; the workstation's state through `ctx.launcher` (INTEGRATION § 1); the **catalogue** of the
+  sources (name, link by cycle, licence, status) from today's `frame/aerodb/sources_data.js`, which becomes the module's
+  catalogue at D1 (INTEGRATION § 2.3).
 - **Writes through `ctx.data`** (policy `cache`, never synchronised, never in a backup): `cache/data/coverage.json`
   (`{ zones: [id], updated_at }`) and `cache/data/journal.json` (the last 50 operations). Nothing else.
 - **The outputs** (`sia/base/`, `proc/`, `sia/vfr/`, `AircraftDB/`, `sia/mora.csv`) are never written through `ctx.data`
@@ -244,7 +253,7 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
   `[data-cycle-alert]`.
 - Coverage `[data-coverage]`, its checkboxes `[data-zone="<id>"]`.
 - « Tout mettre à jour » `[data-verb="all"]`.
-- Group `details[data-group="base|proc|aircraft|weather|charts"]`; its overflow fold `[data-more]`.
+- Group `details[data-group="base|proc|aircraft|weather"]`; its overflow fold `[data-more]`.
 - Row `[data-set="<id>"]` with `data-state` (`stale-cycle`, `new-cycle`, `parser`, `source-newer`, `unpushed`, `ok`),
   `data-cycle`, gap `[data-gap]`, reason `[data-reason]`; buttons `[data-verb="download|build|publish|purge|update"]`
   (`disabled` when grey); running bar `[data-running]`, « Arrêter » `[data-verb="stop"]`.

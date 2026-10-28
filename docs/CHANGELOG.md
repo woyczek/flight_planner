@@ -14,10 +14,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 - **Data module specified (documentation only)** (`modules/data/SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`, `ROADMAP.md`;
   a pointer in `docs/technique/V3_DONNEES_REGENERATION.md`): the module « Données » (Full level) that regenerates the
-  published data without V2 — coverage, data sets in five groups, the verbs Télécharger, Construire, Publier, Purger and
+  published data without V2 — coverage (every published zone ticked at first), data sets in four groups, « Tout mettre à jour » on top, the verbs Télécharger, Construire, Publier, Purger and
   « Mettre à jour », states and the gap between the workstation and the repository, three cycles, the EAD line, what works
   without the launcher; its requests to the frame (`ctx.launcher`, the launcher's routes, publishing without a launcher,
-  the end-of-cycle line) and to aerodb (the published state, the builders); lots D0–D10 and the open questions. No code.
+  the end-of-cycle line) and to aerodb (the published state, the builders); lots D0–D10; it replaces the Sources screen at
+  D1 (test zone L). No code.
 - **aerodb: EAD Basic used as its terms allow** (`tools/proc_eaip.py` `ead_notice`, `tools/proc_ead.py`, `tools/proc_ocr.py`,
   `tools/proc_manual.py`; `LICENSE.md` § 5, `frame/aerodb/EAD_BASIC.md` § 1 and § 8.1, DECISIONS; test K12) — the user's decisions: simulation
   use, data not operational (a mention in every file read through EAD Basic), the survey by hand, one aerodrome per `--fetch` on an explicit

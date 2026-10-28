@@ -59,8 +59,9 @@ outputs). The frame chooses.
 ### 1.4 The end-of-cycle line of the Status block
 
 A phone never mounts this module (level 3, and the phone has no launcher), so the warning of SPEC § 6.3 cannot come from
-it. Request: the frame computes it from `aerodb` (published cycle of the base and of `proc/` against the AIRAC cycle in
-force) and shows it in the Status block on every device; amber on a phone (nothing to press); on a workstation with a
+it. Agreed by the ergonomics session (28 Oct), asked by it to the frame: the frame computes it from `aerodb.publication()`
+(§ 2.1: published cycle of the base and of `proc/` against the AIRAC cycle in force) and shows it in the Status block on
+every device, the phone included; amber on a phone (nothing to press); on a workstation with a
 launcher and at the Full level, the line leads to `#data`. The module's own status lines (`cache/data/status.json`,
 `frame/INTEGRATION.md` § 10.0) carry only what this workstation is doing (a job running, « n publications à envoyer »).
 
@@ -101,16 +102,22 @@ without a launcher. Proposed contract, for aerodb to correct:
 - **SPEC § 6 invariant 1 of aerodb** ("aerodb never builds the base") must be amended by aerodb: the builders build, in a
   Worker, on the owner's command from this module; the reader still never writes.
 
-### 2.3 What the module does not ask
+### 2.3 The catalogue of the sources, and the end of the Sources screen
 
-aerodb's reading API is unchanged; the module never reads `sia/base/` itself; the Sources screen (`#sources`) stays as it is
-(the module's row detail reuses the same links from `sources_data.js`).
+- **The Sources screen is replaced by the module at lot D1** (ergonomics session, 28 Oct 2026): `sources_data.js`
+  (`window.AeroSources`: name, link by cycle, licence, status, the cycle helpers) becomes the module's catalogue — kept by
+  aerodb or moved into `modules/data/`, to settle with aerodb at D1. In the same lot the screen `#sources` (`sources.js`,
+  `sources.css`), its entry in `APP.screens` (frame) and the « Sources des données » button of the Administration card
+  (Settings, `admin_links.js`) go. Until then both coexist.
+- aerodb's reading API is otherwise unchanged; the module never reads `sia/base/` itself.
 
 ## 3. From Settings
 
-- The launcher's keys panel of the Administration card gains an **EAD Basic** entry (user name and password, kept in the
-  launcher's secrets store, never shown again, « Tester » the login), for the EAD line (SPEC § 4.3).
-- No other change: the module is reached from the rail; the Administration card keeps « Sources des données ».
+- The launcher's keys panel of the Administration card gains an **EAD Basic** entry (agreed 28 Oct): user name and
+  password given once to the launcher (Administration, launcher only, never synchronised), kept in its secrets store, never
+  read back by the page; « Tester » the login; for the EAD line (SPEC § 4.3).
+- At D1, the « Sources des données » button of the Administration card goes with the Sources screen (§ 2.3). The module is
+  reached from the rail.
 
 ## 4. Files (planned)
 
