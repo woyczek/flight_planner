@@ -54,6 +54,10 @@ for this pilot (V2 `defa_log.js` record fields). The website module writes it wh
 - **More** (folded): **Export (CSV)** of the filtered list (V2 columns date, callsign, aircraft, route, block, mission,
   report; `;`, quoted, BOM, CRLF), **Read IVAO / VATSIM again** (refusals said: offline, launcher needed).
 - The list is redrawn when a report is saved or received (`cr/`) and when the website log changes.
+- **Published for the frame** (`cache/flightlog/status.json`, INTEGRATION § 5, since 28 Oct 2026): one ready status line
+  per flight without a report (same rule as the "Without report" filter), newest first, five at most, last 30 days: its
+  text ×4 with the time in UTC, the address of the report and the `handoff` the "Write the report" action would hand to
+  report (same function); rewritten only when the lines change. The former `pending.json` is no longer written.
 
 ## 5. Hand-over to report
 

@@ -9,9 +9,13 @@ import * as LF from '../../frame/lib/last_flight.js';
 import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
+import {
+  fmtZLocal
+} from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »)
 
 export const meta = {
   id: 'flightlog',
+  title: ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'], // en-tête du téléphone (règle 16)
   apps: ['pilot'],
   level: 1,
   reads: ['cr/', 'pilot/', 'cache/flightlog/', 'cache/report/'],
@@ -22,16 +26,20 @@ export const meta = {
     prefix: 'cache/flightlog/',
     policy: 'cache'
   }],
-  files: ['model.js', '../../frame/lib/last_flight.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/dom.js']
+  files: ['model.js', '../../frame/lib/last_flight.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/dom.js',
+    '../../frame/lib/time.js'
+  ]
 };
 
 const VIEW = 'cache/flightlog/view.json',
   NET = 'cache/flightlog/network.json',
+  PENDING = 'cache/flightlog/pending.json', // ancienne liste pour le cadre (§ 10.1) : retirée, remplacée par STATUS
+  STATUS = 'cache/flightlog/status.json', // lignes d'état prêtes pour le cadre (frame/INTEGRATION.md § 10.0)
   HANDOFF = 'pilot/handoff.json';
 
 // ---------------------------------------------------------------- textes [fr, en, de, es]
 const TX = {
-  title: ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'],
+  title: meta.title,
   period: ['Période', 'Period', 'Zeitraum', 'Período'],
   periods: {
     7: ['7 jours', '7 days', '7 Tage', '7 días'],
@@ -41,6 +49,10 @@ const TX = {
   },
   find: ['Rechercher', 'Search', 'Suchen', 'Buscar'],
   noReport: ['Sans CR', 'Without report', 'Ohne Bericht', 'Sin informe'],
+  noTimes: ['CR sans heures', 'Report without times', 'Bericht ohne Zeiten', 'Informe sin horas'],
+  filtersKept: ['Filtres de la dernière visite : {l} — les retirer', 'Filters from the last visit: {l} — remove them',
+    'Filter des letzten Besuchs: {l} — entfernen', 'Filtros de la última visita: {l} — quitarlos'
+  ],
   tFlights: ['vols', 'flights', 'Flüge', 'vuelos'],
   tBlock: ['heures de bloc', 'block hours', 'Blockstunden', 'horas bloque'],
   tNoCr: ['sans CR', 'without report', 'ohne Bericht', 'sin informe'],
@@ -196,6 +208,36 @@ async function startedFlight() {
     arr: r.arr || ''
   };
 }
+/** Publie les lignes d'état des vols sans CR (F.statusLines, sur la règle de F.pending) dans cache/flightlog/status.json,
+ *  lu et montré tel quel par le cadre (§ 10.0 : textes ×4 prêts, adresse, passage vers report) ; l'écriture n'a lieu que
+ *  si les lignes ont changé (updated_at ne compte pas). L'ancien pending.json (§ 10.1) est retiré une fois. Les appels
+ *  sont mis à la file : la comparaison se fait toujours avec la dernière valeur écrite. */
+function publishStatus() {
+  const s = S,
+    lines = F.statusLines(s.flights || []),
+    json = JSON.stringify(lines);
+  s.pubQueue = (s.pubQueue || Promise.resolve()).then(async () => {
+    if (!s.pendingGone) {
+      await s.ctx.data.remove(PENDING).catch(() => {});
+      s.pendingGone = true;
+    }
+    if (s.pubJson === undefined) {
+      const had = await s.ctx.data.get(STATUS).catch(() => null);
+      s.pubJson = Array.isArray(had?.lines) ? JSON.stringify(had.lines) : null;
+    }
+    if (s.pubJson === json) return;
+    s.pubJson = json;
+    await s.ctx.data.put(STATUS, {
+      schema: 1,
+      updated_at: new Date().toISOString().slice(0, 19) + 'Z',
+      lines
+    }, {
+      policy: 'cache'
+    });
+  }).catch(() => {
+    s.pubJson = undefined; // écriture manquée : la prochaine liste relit puis réécrit
+  });
+}
 /** Lit les sources du device (CR, journal) puis le réseau ; la liste se redessine à chaque étape. */
 async function load(loud = false) {
   const s = S,
@@ -203,13 +245,17 @@ async function load(loud = false) {
   if (S !== s) return;
   S.started = started;
   const [v3, v2, log] = await Promise.all([reportsV3(), reportsV2(), siteLog()]);
+  if (S !== s) return;
   S.base = [v3, v2, log];
   S.flights = F.merge(...S.base, S.net || []);
   render();
+  // au premier passage d'un pilote avec IVAO / VATSIM, le réseau n'est pas encore lu : la liste publiée l'attend
+  if (S.net || !(S.ctx.identity.ivao || S.ctx.identity.vatsim)) publishStatus();
   S.net = await network(loud);
   if (!S?.body) return;
   S.flights = F.merge(...S.base, S.net);
   render();
+  publishStatus();
 }
 
 // ---------------------------------------------------------------- écran
@@ -217,6 +263,7 @@ async function load(loud = false) {
 // recherche qui prend la place, colonnes d'une ligne de vol (téléphone, puis écran large), détail sous sa ligne
 const STYLE = `
 [data-module="flightlog"] .f-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}
+[data-module="flightlog"] .fl-chip{min-height:44px;border:1px solid var(--sog-accent);color:var(--sog-accent);background:transparent} /* filtres repris */
 [data-module="flightlog"] .f-tools input[type=search]{flex:1;min-width:8em}
 [data-module="flightlog"] .f-list .f-item{grid-template-columns:5.5em minmax(0,1fr) auto}
 [data-module="flightlog"] .fl-mid{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -249,10 +296,10 @@ function renderBody() {
       route = [f.dep, f.arr].filter(Boolean).join(' → ') || '—',
       dot = f.source === 'cr' ? '' : '<span class="f-dot" data-kind="warn" aria-hidden="true"></span>';
     return `<div data-key="${esc(k)}">
-      <button type="button" class="f-item" aria-expanded="${open}">${wide ? `<span>${dot}${esc(f.date)}</span><span>${esc(f.callsign || '—')}</span><span>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</span><span class="fl-mid">${esc(route)}</span><span class="f-num">${F.hm(f.block)}</span><span class="fl-mid">${esc(f.crId || f.mission || '')}</span>` : `<span>${dot}${esc(f.date.slice(5))}</span><span class="fl-mid">${esc(f.callsign || '—')} · ${esc(route)}</span><span class="f-num">${F.hm(f.block)}</span>`}</button>
+      <button type="button" class="f-item" aria-expanded="${open}">${wide ? `<span>${dot}${esc(f.date)}</span><span>${esc(f.callsign || '—')}</span><span>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</span><span class="fl-mid">${esc(route)}</span>${blockCell(f)}<span class="fl-mid">${esc(f.crId || f.mission || '')}</span>` : `<span>${dot}${esc(f.date.slice(5))}</span><span class="fl-mid">${esc(f.callsign || '—')} · ${esc(route)}</span>${blockCell(f)}`}</button>
       ${open ? `<div class="f-card fl-detail"><dl class="f-dl">
         <dt>${esc(tt(TX.source))}</dt><dd>${esc(tt(TX.sources[f.source], { n: f.network || '' }))}${f.open ? ` (${esc(tt(TX.inFlight))})` : ''}</dd>
-        <dt>${esc(tt(TX.time))}</dt><dd>${esc(f.date)} ${esc(f.time)}</dd>
+        <dt>${esc(tt(TX.time))}</dt><dd>${esc(f.whenZ || `${f.date} ${f.time}`)}</dd>
         <dt>${esc(tt(TX.aircraft))}</dt><dd>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</dd>
         <dt>${esc(tt(TX.mission))}</dt><dd>${esc(f.mission || f.family || '—')}</dd>
         ${f.notes ? `<dt>${esc(tt(TX.notes))}</dt><dd>${esc(f.notes)}</dd>` : ''}
@@ -263,20 +310,41 @@ function renderBody() {
   S.body.innerHTML = `
     <div class="f-tiles"><div><b>${tot.flights}</b><span>${esc(tt(TX.tFlights))}</span></div><div><b>${F.hm(tot.blockMinutes)}</b><span>${esc(tt(TX.tBlock))}</span></div><div><b>${tot.noReport}</b><span>${esc(tt(TX.tNoCr))}</span></div></div>
     ${tot.types.length ? `<p class="f-muted">${esc(tt(TX.types, { l: tot.types.map(([k, n]) => `${k} ×${n}`).join(', ') }))}</p>` : ''}
+    ${S.kept ? `<div class="f-row"><button type="button" class="fl-chip" data-do="clearfilters" aria-label="${esc(tt(TX.filtersKept, { l: keptFilters() }))}" title="${esc(tt(TX.filtersKept, { l: keptFilters() }))}">${esc(keptFilters())} ✕</button></div>` : ''}
     <div class="f-tools"><select data-k="days" aria-label="${esc(tt(TX.period))}">${[7, 31, 365, 0].map(d => `<option value="${d}"${+v.days === d ? ' selected' : ''}>${esc(tt(TX.periods[d]))}</option>`).join('')}</select>
       <input type="search" data-k="find" value="${esc(v.find)}" placeholder="${esc(tt(TX.find))}" aria-label="${esc(tt(TX.find))}">
       <label class="f-check"><input type="checkbox" data-k="noReport"${v.noReport ? ' checked' : ''}>${esc(tt(TX.noReport))}</label></div>
-    ${S.started ? `<div class="f-card f-accent fl-now"><div><b>${esc(tt(TX.startedNow, { t: new Date(S.started.at).toLocaleTimeString(S.ctx.lang(), { hour: '2-digit', minute: '2-digit' }) }))}${S.started.diverted ? esc(tt(TX.diverted)) : ''}</b>
+    ${S.started ? `<div class="f-card f-accent fl-now"><div><b>${esc(tt(TX.startedNow, { t: fmtZLocal(S.started.at) }))}${S.started.diverted ? esc(tt(TX.diverted)) : ''}</b>
       <div class="f-muted">${esc([S.started.callsign, [S.started.type, S.started.reg].filter(Boolean).join(' '), [S.started.dep, S.started.arr].filter(Boolean).join(' → ')].filter(Boolean).join(' · '))}</div></div>
       <button type="button" class="primary" data-do="writeNow">${esc(tt(TX.write))}</button></div>` : ''}
     <div class="f-list">${list.map(row).join('') || `<p class="f-card f-muted">${esc(tt(TX.empty))}</p>`}</div>
     <details class="f-card"><summary>${esc(tt(TX.more))}</summary><div class="f-row">
       <button type="button" data-do="csv">${esc(tt(TX.csv))}</button><button type="button" data-do="refresh">${esc(tt(TX.refresh))}</button></div></details>`;
 }
+/** Case du bloc : sa durée, ou « — » (un CR sans heures le dit en infobulle). */
+function blockCell(f) {
+  if (f.block != null) return `<span class="f-num">${F.hm(f.block)}</span>`;
+  const t = f.source === 'cr' ? tt(TX.noTimes) : '';
+  return `<span class="f-num"${t ? ` title="${esc(t)}" aria-label="${esc(t)}"` : ''}>—</span>`;
+}
+/** Défauts des filtres (une visite neuve). */
+const VIEW_DEFAULT = {
+  days: 365,
+  find: '',
+  noReport: false
+};
+/** Filtres actifs repris d'une visite précédente : « 1 an · LFRS · Sans CR » ; vide s'ils sont ceux par défaut. */
+function keptFilters() {
+  const v = S.view;
+  if (+v.days === VIEW_DEFAULT.days && !String(v.find || '').trim() && !v.noReport) return '';
+  return [tt(TX.periods[+v.days] || TX.periods[365]), String(v.find || '').trim(), v.noReport ? tt(TX.noReport) : ''].filter(Boolean)
+    .join(' · ');
+}
 /** Filtres : gardés sur l'appareil, liste redessinée. */
 function onInput(e) {
   const k = e.target.dataset?.k;
   if (!k) return;
+  S.kept = false; // filtres touchés dans cette visite : la puce des filtres repris s'en va
   S.view[k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
   S.ctx.data.put(VIEW, S.view, {
     policy: 'cache'
@@ -294,6 +362,15 @@ async function onClick(e) {
     return render();
   }
   switch (b.dataset.do) {
+    case 'clearfilters': // puce des filtres repris : retour aux filtres par défaut
+      S.view = {
+        ...VIEW_DEFAULT
+      };
+      S.kept = false;
+      S.ctx.data.put(VIEW, S.view, {
+        policy: 'cache'
+      });
+      return render();
     case 'writeNow': // le compte rendu propose d'abord le vol démarré (« Vol démarré à hh:mm »)
       location.hash = '#report?from=flightlog';
       return;
@@ -304,8 +381,7 @@ async function onClick(e) {
         source: tt(TX.title),
         at: new Date().toISOString(),
         fresh: true,
-        family: f.family,
-        values: F.reportValues(f)
+        ...F.handoffOf(f) // { family, values } : le même objet que l'entrée de pending.json
       }, {
         policy: 'cache'
       });
@@ -343,14 +419,20 @@ export async function mount(el, ctx) {
     ctx,
     flights: [],
     view: {
-      days: 365,
-      find: '',
-      noReport: false,
+      ...VIEW_DEFAULT,
       ...((await ctx.data.get(VIEW)) || {})
     }
   };
+  S.kept = !!keptFilters(); // filtres d'une visite précédente : dits par une puce qui les retire
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
+  // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
+  // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
+  S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);
+  S.srTitle();
+  window.addEventListener('frame-titled', S.srTitle);
   S.body = el.querySelector('[data-body]');
+  // « ? » de l'en-tête : le chapitre au paragraphe de ce qui est affiché (un vol déplié, le vol en cours, sinon la liste)
+  ctx.helpAnchor?.(() => S?.open ? 'flightlog-detail' : S?.started ? 'flightlog-current' : 'flightlog-list');
   S.body.addEventListener('input', onInput);
   S.body.addEventListener('change', onInput);
   S.body.addEventListener('click', onClick);
@@ -362,6 +444,7 @@ export async function mount(el, ctx) {
 
 export function unmount() {
   if (!S) return;
+  window.removeEventListener('frame-titled', S.srTitle);
   for (const f of S.stops || []) f?.();
   S.body = null;
   S = null;
