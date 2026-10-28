@@ -22,7 +22,9 @@ NOAA, publié avec une maille de 5°). Les deux modèles ne disent pas tout à f
 passage du trait est normal. Le panneau des couches nomme les deux modèles et leur maille.
 
 **La date du vol.** Le curseur sous la poignée avance l'heure de 0 à 72 heures à partir du départ prévu : la carte, la
-coupe et les tranches suivent.
+coupe et les tranches suivent. Quand une partie du curseur sort de la prévision lue (un départ prévu déjà passé, des
+jours pas encore chargés), une bande sous le curseur montre les heures couvertes ; ailleurs, l'heure la plus proche est
+montrée, ⚠ le dit sur la ligne du curseur et dans la poignée, et une alerte s'affiche.
 
 **La coupe et les tranches.** Sous la carte, la coupe montre la route de bout en bout, du sol au-dessus du niveau du vol.
 Touchez-la pour ouvrir la tranche du point le plus proche (le profil vertical de l'atmosphère à cet endroit) ; ◀ et ▶

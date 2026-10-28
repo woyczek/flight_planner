@@ -208,8 +208,15 @@ const STYLE = `
 [data-module="atmosphere"] .at-legend>div{display:flex;gap:8px;align-items:center}
 [data-module="atmosphere"] .at-legend svg{flex:none}
 [data-module="atmosphere"] .at-when{flex:none;display:flex;align-items:center;gap:10px;height:30px;padding:0 12px;font-size:12px}
+/* la ligne d'heure a une largeur fixe : un texte plus long (le jour ajouté, l'alerte) ne raccourcit jamais le curseur, dont le
+   bouton glisserait sous le doigt et changerait l'heure en boucle */
+[data-module="atmosphere"] .at-when .at-track{position:relative;flex:1 1 auto;min-width:0;display:flex;align-items:center;height:100%}
 [data-module="atmosphere"] .at-when input{flex:1 1 auto;min-width:0;margin:0;accent-color:var(--sog-accent);touch-action:manipulation}
-[data-module="atmosphere"] .at-when output{flex:none;min-width:9.5em;text-align:right;font-variant-numeric:tabular-nums;color:var(--sog-muted)}
+[data-module="atmosphere"] .at-when output{flex:none;box-sizing:border-box;width:17em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;color:var(--sog-muted)}
+@container (max-width:560px){[data-module="atmosphere"] .at-when output{width:13em}}
+/* heures du curseur couvertes par la prévision lue (montrée seulement quand une partie ne l'est pas) */
+[data-module="atmosphere"] .at-cover{position:absolute;bottom:7px;height:3px;border-radius:2px;background:var(--sog-accent);opacity:.45;pointer-events:none;left:calc(8px + (100% - 16px) * var(--a,0));width:calc((100% - 16px) * (var(--b,1) - var(--a,0)))}
+[data-module="atmosphere"] .at-cover[hidden]{display:none}
 [data-module="atmosphere"] .at-when output.at-out{color:var(--sog-warn,#b26a00)}
 [data-module="atmosphere"] .f-sheet-body.at-dbody.at-plot{overflow-x:hidden;overflow-y:auto}
 [data-module="atmosphere"] .at-tip{position:absolute;pointer-events:none;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);padding:6px 8px;font-size:12px;line-height:1.4;box-shadow:var(--sog-shadow);white-space:nowrap;z-index:5;display:none;font-variant-numeric:tabular-nums}
@@ -379,7 +386,7 @@ export async function mount(el, ctx) {
     <button type="button" class="at-whole" data-at="whole" hidden title="${esc(T('winWholeHelp'))}" aria-label="${esc(T('winWholeHelp'))}">${esc(T('winWhole'))}</button>
     <div class="at-chips" role="group" data-at="chips" aria-label="${esc(T('sliceNav'))}" hidden><button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" title="${esc(T('slicePrev'))}">◀</button><button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" title="${esc(T('sliceNext'))}">▶</button><button type="button" class="at-chip-i" data-at="legendBtn" aria-pressed="false" aria-label="${esc(T('legend'))}" title="${esc(T('legend'))}">i</button></div>
     <button type="button" class="f-sheet-close" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
-  <div class="at-when" data-at="when"><input type="range" min="0" max="${SHIFT_MAX}" step="1" value="0" data-at="shift" aria-label="${esc(T('whenAria'))}"><output data-at="whenOut"></output></div>
+  <div class="at-when" data-at="when"><span class="at-track"><input type="range" min="0" max="${SHIFT_MAX}" step="1" value="0" data-at="shift" aria-label="${esc(T('whenAria'))}"><span class="at-cover" data-at="cover" hidden title="${esc(T('coverHelp'))}"></span></span><output data-at="whenOut"></output></div>
   <div class="f-sheet-body at-dbody" data-at="dbody"></div>
 </section>`;
   el.classList.add('f-sheet');
@@ -1457,10 +1464,13 @@ export async function mount(el, ctx) {
   function worldTitle() {
     const i = wm.info();
     if (!i.world) return T(i.worldReading ? 'worldReading' : 'worldNone');
+    if (i.world.time == null || i.world.h == null) return i.world.run ? T('worldTitleRun', {
+      run: fmtHM(i.world.run)
+    }) : T('worldReading');
     return T('worldTitle', {
       at: fmtHM(i.world.time),
-      run: i.world.run ? fmtHM(i.world.run) : '—',
-      h: i.world.h ?? '—'
+      run: fmtHM(i.world.run),
+      h: i.world.h
     });
   }
   /** Heure montrée par la carte météo : celle de la carte (passage du vol), sinon le départ, sinon maintenant. */
@@ -1776,8 +1786,9 @@ export async function mount(el, ctx) {
   /** Titre du profil et des informations : le contenu, puis le vol en bref (ou l'état de la lecture). */
   function baseTitle() {
     const ctxt = s => S.sum ? `${s} · ${S.sum}` : s;
-    // la carte montre le synoptique monde (vue hors de la grille du vol, ou sans vol) : le titre dit ce qu'on regarde
-    if (S.view === 'profile' && S.worldShown) return sheetTitle(worldTitle());
+    // sans coupe, la carte montre le synoptique monde (vue hors de la grille du vol, ou sans vol) : le titre dit ce qu'on
+    // regarde ; avec une coupe, le bloc la montre et le titre reste le sien (élargir le bloc ne le change pas)
+    if (S.view === 'profile' && S.worldShown && !S.traj) return sheetTitle(worldTitle());
     if (S.view === 'profile') sheetTitle(ctxt(T('profileTitle')), S.route ? T('xsSub', {
       n: S.route.samples.length
     }) : '');
@@ -1813,10 +1824,46 @@ export async function mount(el, ctx) {
       }) : T('whenPlanned', {
         at: fmtWhen(t)
       });
-    setText(out, s);
-    out.classList.toggle('at-out', !!(S.route && S.outOfRange));
+    // hors de la prévision lue : l'alerte dite sur la ligne du curseur, bloc déplié comme replié (le titre la porte aussi)
+    const oor = !!(S.route && S.outOfRange);
+    setText(out, oor ? `⚠ ${s}` : s);
+    setAttr(out, 'title', oor ? `${s}
+${T('outOfRange')}` : s);
+    out.classList.toggle('at-out', oor);
+    coverBand();
     const v = String(S.shiftH);
     if ($('shift').value !== v) $('shift').value = v;
+  }
+  /** Bande des heures du curseur couvertes par la prévision lue (le vol entier dedans) : montrée quand une partie du curseur
+   *  ne l'est pas, ces heures-là montrant l'heure la plus proche. */
+  function coverBand() {
+    const band = $('cover'),
+      tm = S.route?.locs?.[0]?.times,
+      end = S.route?.samples?.at(-1)?.t;
+    let a = 0,
+      b = 1;
+    if (S.route && tm?.length && Number.isFinite(end) && Number.isFinite(S.depTime)) {
+      const base = depValue(),
+        dur = Math.max(0, end - S.depTime);
+      a = clamp((tm[0] - 3600 - base) / 3600 / SHIFT_MAX, 0, 1);
+      b = clamp((tm.at(-1) + 3600 - dur - base) / 3600 / SHIFT_MAX, 0, 1);
+    }
+    const part = a > 0 || b < 1;
+    if (band.hidden === part) band.hidden = !part;
+    if (!part) return;
+    // aucune heure du curseur ne couvre le vol entier : bande vide, l'alerte seule le dit
+    const va = a.toFixed(4),
+      vb = Math.max(a, b).toFixed(4);
+    if (band.style.getPropertyValue('--a') !== va) band.style.setProperty('--a', va);
+    if (band.style.getPropertyValue('--b') !== vb) band.style.setProperty('--b', vb);
+  }
+  /** Alerte flottante quand l'heure du vol sort de la prévision lue (une fois par sortie, au relâché ou après une lecture). */
+  let rangeWarned = false;
+
+  function warnRange() {
+    const oor = !!(S.route && S.outOfRange);
+    if (oor && !rangeWarned) notify(T('outOfRange'));
+    rangeWarned = oor;
   }
   /** Le vol en bref, connu avant la météo : appareil, route, niveau, départ, modèle et run. */
   function flightSum() {
@@ -1832,7 +1879,7 @@ export async function mount(el, ctx) {
     $('srcTag').classList.toggle('at-hidden', !tag);
     whenText(); // l'heure de départ du vol lu (sa date du vol), même sans prévision
     if (!f) return setSum('');
-    setSum([ac, `${f.dep} → ${f.arr}`, fmtLvl(S.levelFt), fmtHM(S.depTime), S.data === 'demo' ? T('demoSrc') :
+    setSum([ac, `${f.dep} → ${f.arr}`, fmtLvl(S.levelFt), fmtWhen(S.depTime), S.data === 'demo' ? T('demoSrc') :
       `${S.model?.name || ''}${S.run ? ` · run ${fmtHM(S.run)}` : ''}`
     ].filter(Boolean).join(' · ') + (S.outOfRange ? ' ⚠' : ''));
   }
@@ -1986,6 +2033,7 @@ export async function mount(el, ctx) {
       show(S.view);
       render();
       fitMap();
+      warnRange();
       let grid;
       try {
         grid = await gridP;
@@ -2166,7 +2214,8 @@ export async function mount(el, ctx) {
   $('shift').onchange = () => {
     if (S.route && S.outOfRange) load({
       cacheOnly: true
-    });
+    }).then(warnRange, () => {});
+    else warnRange();
   };
   whenText();
   $f('levelSel').onchange = () => {

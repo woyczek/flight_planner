@@ -22,7 +22,9 @@ published on a 5° grid). The two models do not say quite the same thing: a jump
 is normal. The layers panel names both models and their grid.
 
 **The flight date.** The slider under the grip moves the time from 0 to 72 hours after the planned departure: the map,
-the cross-section and the slices follow.
+the cross-section and the slices follow. When part of the slider is outside the forecast read (a planned departure
+already past, days not loaded yet), a band under the slider shows the hours covered; elsewhere the nearest hour is shown,
+⚠ says so on the slider line and in the grip, and a warning appears.
 
 **The cross-section and the slices.** Under the map, the cross-section shows the route from end to end, from the ground
 to above the flight level. Touch it to open the slice of the nearest point (the vertical profile of the atmosphere

@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Atmosphere: the date slider no longer jumps, and says when it is outside the forecast** (`modules/atmosphere/module.js`,
+  `texts.js`, help ×4) — the time line beside the slider has a fixed width: a longer text (the day added past midnight) no
+  longer shortened the slider, whose thumb moved under the pointer and changed the hour back and forth (+30 h ↔ +32 h); when
+  part of the slider is outside the forecast read (a planned departure already past: the first hours seemed inoperative), a
+  band under it shows the hours covered, ⚠ is shown on the slider line (not only in the collapsed grip) and a floating
+  warning says it once; widening the panel no longer turns the cross-section's title into "World synoptic · 00:00Z · run
+  00:00Z +— h" (the world title is for the map without a cross-section, and never shows an unknown hour); the departure in
+  the title carries its day.
+
 - **Flight path with the chosen procedures** (`frame/lib/current_flight.js`; bench `frame/lib/test/current_flight.html`) —
   `proceduresOf(flight)` gives the v2 view of `route.procedures` (`{ dep: { rwy, sid, trans }, arr: { rwy, star, trans, app,
   appTrans } }`; an old `{ sid, star }` migrated, a side naming another aerodrome returned empty), `loadProcedures(aerodb,

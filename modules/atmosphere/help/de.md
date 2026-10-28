@@ -22,7 +22,9 @@ einem 5°-Raster veröffentlicht). Die beiden Modelle sagen nicht ganz dasselbe:
 ist normal. Das Ebenen-Feld nennt beide Modelle und ihr Raster.
 
 **Das Flugdatum.** Der Regler unter dem Griff verschiebt die Zeit von 0 bis 72 Stunden nach dem geplanten Abflug: Karte,
-Schnitt und Punktschnitte folgen.
+Schnitt und Punktschnitte folgen. Liegt ein Teil des Reglers außerhalb der gelesenen Vorhersage (ein geplanter Abflug in
+der Vergangenheit, noch nicht geladene Tage), zeigt ein Band unter dem Regler die abgedeckten Stunden; sonst wird die
+nächste Stunde gezeigt, ⚠ sagt es in der Zeile des Reglers und im Griff, und eine Warnung erscheint.
 
 **Der Schnitt und die Punktschnitte.** Unter der Karte zeigt der Schnitt die Route von Anfang bis Ende, vom Boden bis
 über die Flughöhe. Tippen Sie darauf, um den Schnitt des nächsten Punkts zu öffnen (das senkrechte Profil der

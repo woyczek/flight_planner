@@ -23,7 +23,9 @@ publicado con una malla de 5°). Los dos modelos no dicen exactamente lo mismo: 
 es normal. El panel de capas nombra los dos modelos y su malla.
 
 **La fecha del vuelo.** El cursor bajo el asa adelanta la hora de 0 a 72 horas desde la salida prevista: el mapa, el
-corte y los cortes de punto siguen.
+corte y los cortes de punto siguen. Cuando una parte del cursor queda fuera de la previsión leída (una salida prevista ya
+pasada, días aún no cargados), una banda bajo el cursor muestra las horas cubiertas; fuera de ellas se muestra la hora más
+cercana, ⚠ lo indica en la línea del cursor y en el asa, y aparece un aviso.
 
 **El corte y los cortes de punto.** Bajo el mapa, el corte muestra la ruta de un extremo a otro, del suelo hasta por
 encima del nivel del vuelo. Tóquelo para abrir el corte del punto más cercano (el perfil vertical de la atmósfera allí);

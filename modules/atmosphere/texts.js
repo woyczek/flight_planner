@@ -42,6 +42,14 @@ export const TX = {
   worldTitle: ['Synoptique monde · {at} · run {run} +{h} h', 'World synoptic · {at} · run {run} +{h} h',
     'Weltsynoptik · {at} · Lauf {run} +{h} h', 'Sinóptico mundial · {at} · pasada {run} +{h} h'
   ],
+  worldTitleRun: ['Synoptique monde · run {run}', 'World synoptic · run {run}', 'Weltsynoptik · Lauf {run}',
+    'Sinóptico mundial · pasada {run}'
+  ],
+  coverHelp: ['Heures couvertes par la prévision lue ; ailleurs, l’heure la plus proche est montrée',
+    'Hours covered by the forecast read; elsewhere the nearest hour is shown',
+    'Von der gelesenen Vorhersage abgedeckte Stunden; sonst wird die nächste Stunde gezeigt',
+    'Horas cubiertas por la previsión leída; fuera de ellas se muestra la hora más cercana'
+  ],
   worldReading: ['Synoptique monde…', 'World synoptic…', 'Weltsynoptik…', 'Sinóptico mundial…'],
   worldNone: ['Synoptique monde non publié : rien n’est demandé hors de la zone du vol',
     'World synoptic not published: nothing is asked outside the flight’s area',
