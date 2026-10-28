@@ -363,3 +363,20 @@ The design agent's memory: every choice, dated, with its reason. Newest last. Pr
     name · i · ⚙ in each (metro's coloured band, swiss's 2 px rule, cupertino's blue glyphs, material's pill-bordered buttons),
     popover above each bar, overlay buttons over a map-coloured box.
   - The sheet's default height is 30 % on a phone (relay: "maximiser l'espace alloué à la carte"), the table of § 4 follows.
+
+- **28 Oct 2026 — Skin tokens (Aqua, lot 1a)** (asked by the user: an Aqua design for computers; condition 1 of the
+  ergonomics session: no fifth copy of the rules the mock-ups repeat). Before `aqua.css` exists, the rules Aqua needs to
+  change read optional tokens, with today's values as fallbacks (`var(--sog-btn-bg, var(--sog-surface))`…): buttons
+  (background, ink, border, shadow, text shadow), the primary button and with it the selected tab or step and the rail's
+  current verb, fields (shadow), cards (background, border, shadow), the sticky bar (background, radius), the header
+  (background, bottom border, shadow, text shadow of the name), the rail (background, right border). Shadows have no fallback: an unset
+  `var()` makes the property `unset` (no shadow; the text shadow inherited as before).
+  - Measured: 112 screenshots (7 designs × 390 / 1280 × day / night × fuel, settings, flightlog, maps) identical to the
+    pixel before and after. Material at 1280 differed by 1 to 2 levels in the very first run only: a second run of the
+    unchanged code gave the same pixels as the new one (first-run noise of the 1 dp shadows).
+  - Not promoted, because Aqua does not need them: the header's icon buttons without a frame (metro, swiss, cupertino), `h3`
+    as small capitals, the table header, the outlined buttons, the nav on the page colour (§ 10.3 point 13 of
+    V3_SPECIFICATION stays open for them).
+  - No `url()` in a token: Chrome resolves a relative address in a custom property against the sheet that uses it
+    (measured: declared in `a/decl.css` as `b/t.webp`, used in `a/b/use.css`, fetched `a/b/b/t.webp`), Firefox against the
+    sheet that declares it. Textures stay in the design's own sheet, on elements no other design styles.

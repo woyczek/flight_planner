@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Design: skin tokens** (`frame/design/primitives.css`, `frame/frame.css`; design SPEC § 2, DECISIONS): buttons, the
+  primary button, fields, cards, the sticky bar, the header and the rail read optional `--sog-btn-*`, `--sog-card-*`,
+  `--sog-field-shadow`, `--sog-bar-bg`, `--sog-bar-radius`, `--sog-head-*`, `--sog-nav-*` tokens, falling back to today's
+  values: every design draws the same to the pixel; a design can now change their material with tokens only (first user:
+  Aqua).
 - **Settings: a card reached by its address is shown whatever the level** (`frame/settings/settings.js`, `groups.js`;
   SPEC § 1, DECISIONS, Settings help ×4; test A27): `#settings?card=<name>` and the joining assistant's
   `#settings?offline=1` show that card alone under "← Settings", even at Discovery, whose list stays at seven cards.

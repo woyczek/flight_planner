@@ -38,10 +38,12 @@ button,
 .f-btn {
   min-height: var(--sog-touch);
   padding: 0 14px;
-  border: 1px solid var(--sog-border);
+  border: var(--sog-btn-border, 1px solid var(--sog-border));
   border-radius: var(--sog-radius);
-  background: var(--sog-surface);
-  color: var(--sog-fg);
+  background: var(--sog-btn-bg, var(--sog-surface));
+  color: var(--sog-btn-ink, var(--sog-fg));
+  box-shadow: var(--sog-btn-shadow);
+  text-shadow: var(--sog-btn-text-shadow);
   font: inherit;
   text-decoration: none;
   cursor: pointer
@@ -54,9 +56,10 @@ button,
 }
 button.primary,
 .f-btn.primary {
-  background: var(--sog-accent);
-  color: var(--sog-accent-ink);
-  border-color: var(--sog-accent)
+  background: var(--sog-btn-primary-bg, var(--sog-accent));
+  color: var(--sog-btn-primary-ink, var(--sog-accent-ink));
+  border-color: var(--sog-btn-primary-border, var(--sog-accent));
+  text-shadow: var(--sog-btn-primary-text-shadow)
 }
 button:disabled,
 .f-btn[aria-disabled="true"] {
@@ -71,6 +74,7 @@ textarea {
   border: 1px solid var(--sog-border);
   border-radius: var(--sog-radius);
   background: var(--sog-surface-2);
+  box-shadow: var(--sog-field-shadow);
   font-size: var(--sog-field-text)
 }
 input[type="checkbox"],
@@ -112,8 +116,9 @@ input[type="radio"] {
 
 /* ---- carte, ligne, champ, case, texte secondaire, messages */
 .f-card {
-  background: var(--sog-surface);
-  border: 1px solid var(--sog-border);
+  background: var(--sog-card-bg, var(--sog-surface));
+  border: var(--sog-card-border, 1px solid var(--sog-border));
+  box-shadow: var(--sog-card-shadow);
   border-radius: var(--sog-radius);
   padding: 12px 14px;
   margin-bottom: var(--sog-gap)
@@ -249,9 +254,10 @@ details.f-card[open]>summary {
   flex: 1
 }
 :is(.f-tabs, .f-steps)>:is([aria-pressed="true"], [aria-selected="true"], [aria-current]:not([aria-current="false"])) {
-  background: var(--sog-accent);
-  color: var(--sog-accent-ink);
-  border-color: var(--sog-accent)
+  background: var(--sog-btn-primary-bg, var(--sog-accent));
+  color: var(--sog-btn-primary-ink, var(--sog-accent-ink));
+  border-color: var(--sog-btn-primary-border, var(--sog-accent));
+  text-shadow: var(--sog-btn-primary-text-shadow)
 }
 .f-steps>[data-done]::after {
   content: " ✓"
@@ -288,9 +294,9 @@ details.f-card[open]>summary {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  background: var(--sog-surface);
+  background: var(--sog-bar-bg, var(--sog-surface));
   border: 1px solid var(--sog-accent);
-  border-radius: var(--sog-radius);
+  border-radius: var(--sog-bar-radius, var(--sog-radius));
   padding: 10px 14px;
   margin-bottom: var(--sog-gap);
   box-shadow: var(--sog-shadow-up)

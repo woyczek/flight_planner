@@ -114,8 +114,9 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   height: var(--f-head-h);
   flex-wrap: nowrap;
   overflow: hidden;
-  background: var(--sog-surface);
-  border-bottom: 1px solid var(--sog-border)
+  background: var(--sog-head-bg, var(--sog-surface));
+  border-bottom: var(--sog-head-border, 1px solid var(--sog-border));
+  box-shadow: var(--sog-head-shadow)
 }
 .f-head>* {
   margin-top: 0;
@@ -123,6 +124,7 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
 }
 .f-head .f-name {
   font-weight: 700;
+  text-shadow: var(--sog-head-text-shadow);
   margin-right: auto;
   min-width: 0;
   overflow: hidden;
@@ -173,8 +175,8 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
 .f-nav {
   grid-area: nav;
   padding: 10px 8px;
-  border-right: 1px solid var(--sog-border);
-  background: var(--sog-surface);
+  border-right: var(--sog-nav-border, 1px solid var(--sog-border));
+  background: var(--sog-nav-bg, var(--sog-surface));
   position: sticky;
   top: var(--f-head-h);
   align-self: start;
@@ -214,8 +216,9 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   text-decoration: none
 }
 .f-nav a[aria-current="page"] {
-  background: var(--sog-accent);
-  color: var(--sog-accent-ink)
+  background: var(--sog-btn-primary-bg, var(--sog-accent));
+  color: var(--sog-btn-primary-ink, var(--sog-accent-ink));
+  text-shadow: var(--sog-btn-primary-text-shadow)
 }
 .f-view {
   grid-area: main;
