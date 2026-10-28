@@ -148,14 +148,41 @@ class Job:
         return {**self.data, 'log': list(self.data['log'])}
 
 
-class Jobs:
-    """Un travail à la fois ; REGISTRY : (jeu, verbe) → (fonction(job, args, ctx) → résultat, contrôle(args) → args | None)."""
+# délai minimal entre deux départs d'un même verbe, en secondes : EAD Basic se lit terrain par terrain, sur un geste, jamais en
+# masse (EAD_BASIC.md § 1) ; un travail à la fois ne suffit pas à le garantir, ce délai rend la règle réelle
+MIN_GAP = {('proc', 'ead-fetch'): 30}
 
-    def __init__(self, registry, ctx=None):
+
+def clean_error(text, ctx=None):
+    """Texte d'une erreur sans secret, avant le journal du travail et la page : les identifiants d'EAD Basic du poste (s'il y en a),
+    les jetons, identifiants de session et adresses de courriel (proc_ead.sanitize), puis les « utilisateur:mot de passe@ » et les
+    paramètres de session ou de jeton d'une adresse. Ne lève jamais."""
+    out = str(text)
+    try:
+        tools = os.path.dirname(os.path.abspath(__file__))
+        if tools not in sys.path:
+            sys.path.insert(0, tools)
+        import proc_ead
+        secrets = _ead_credentials(ctx['secrets']) if ctx and ctx.get('secrets') else ()
+        out = proc_ead.sanitize(out, [s for s in secrets if s])
+    except Exception:  # le filtre ci-dessous s'applique quand même
+        pass
+    out = re.sub(r'(?i)(\b[a-z][a-z0-9+.-]*://)[^/\s:@]+:[^/\s@]*@', r'\1<secret>@', out)
+    out = re.sub(r'(?i)([?&;](?:jsessionid|session|sid|token|access_token|key|apikey|password|pwd|pass)=)[^&#\s]*', r'\1<secret>', out)
+    return out
+
+
+class Jobs:
+    """Un travail à la fois ; REGISTRY : (jeu, verbe) → (fonction(job, args, ctx) → résultat, contrôle(args) → args | None) ;
+    MIN_GAP : délai minimal entre deux départs d'un verbe (refus 'too-soon', 429, avec `wait` en secondes)."""
+
+    def __init__(self, registry, ctx=None, min_gap=None):
         self.registry = dict(registry)
         self.ctx = ctx or {}
         self.lock = threading.Lock()
         self.cur = None
+        self.min_gap = dict(MIN_GAP if min_gap is None else min_gap)
+        self.last = {}  # (jeu, verbe) → heure (time.monotonic) du dernier départ
 
     def start(self, set_, verb, args):
         key = (str(set_ or ''), str(verb or ''))
@@ -168,6 +195,11 @@ class Jobs:
         with self.lock:
             if self.cur and self.cur.data['state'] == 'running':
                 return {'ok': False, 'status': 409, 'message': 'a job is already running', 'job': self.cur.id}
+            gap, now = self.min_gap.get(key), time.monotonic()
+            if gap and key in self.last and now - self.last[key] < gap:
+                wait = max(1, int(gap - (now - self.last[key]) + 0.999))
+                return {'ok': False, 'status': 429, 'reason': 'too-soon', 'wait': wait, 'message': f'too soon: wait {wait} s'}
+            self.last[key] = now
             job = self.cur = Job(*key, a)
         threading.Thread(target=self._run, args=(job, fn, a), daemon=True).start()
         return {'ok': True, 'job': job.id}
@@ -177,10 +209,11 @@ class Jobs:
             res = fn(job, a, self.ctx)
             job.data['state'] = 'cancelled' if job.cancelled() else 'done'
             job.data['result'] = res
-        except Exception as e:  # le travail s'arrête, le lanceur continue : l'erreur est dite à la page
-            job.log(f'error: {e}')
+        except Exception as e:  # le travail s'arrête, le lanceur continue : l'erreur est dite à la page, nettoyée
+            msg = clean_error(e, self.ctx)
+            job.log(f'error: {msg}')
             job.data['state'] = 'error'
-            job.data['result'] = {'message': str(e)[:300]}
+            job.data['result'] = {'message': msg[:300]}
         job.data['ended'] = int(time.time())
 
     def view(self, id_=None):

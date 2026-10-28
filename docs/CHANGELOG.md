@@ -47,6 +47,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   the Departure row of an aerodrome with approaches but no SID is no longer « without data »; without a runway chosen
   a list shows all the procedures, one group per runway; the lists are read again when aerodb installs or announces
   procedures.
+- **Launcher jobs: errors cleaned, EAD Basic paced** (`tools/regen_jobs.py`, `frame/lib/launcher.js`, `frame/aerodb/aerodb.js`; INTEGRATION,
+  SPEC, DECISIONS; tests K1, K22) — an error escaping a job no longer carries credentials, session identifiers or tokens into the job's log
+  or the page; two EAD Basic readings are at least 30 s apart (« too soon », with the seconds left), so it is never read in bulk.
 - **Map: "Aerodrome procedures" layer — the aerodrome pins coloured by what the device holds of their procedures**
   (`modules/maps/coverage.js`, `render.js`, `draw.js`, `layers.js`, `sheet_view.js`, `vfr.js`, `texts.js`, `lib/aero_symbols.js`,
   help ×4; V3_SPECIFICATION § 10.22) — green (held), orange (readable on demand), red (nothing readable), from

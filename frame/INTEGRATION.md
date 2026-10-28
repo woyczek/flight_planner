@@ -879,7 +879,10 @@ in the launcher; `resume` finds it again.
   a value).
 - `POST /__setup/regen/job { set, verb, args }`, `GET …/job[?id=]`, `POST …/job/cancel { id }`: one job at a time in a thread;
   `set` and `verb` from a fixed list (`regen_jobs.REGISTRY`), each with its check of `args`; nothing from the page is a path,
-  an address or a command. 400: unknown operation or bad arguments; 409: a job is running; 410: no such job. Lot D0 has one
+  an address or a command. 400: unknown operation or bad arguments; 409: a job is running; 410: no such job; 429 `{ reason:
+  'too-soon', wait }`: the verb has a minimal gap between two starts (`regen_jobs.MIN_GAP`: 30 s for `proc/ead-fetch`), the client
+  hands `reason` and `wait` on. An error escaping a verb is cleaned (`regen_jobs.clean_error`: the workstation's EAD credentials,
+  tokens, session identifiers, `user:password@` and token parameters of an address) before the job's log and its result. Lot D0 has one
   verb, `state/scan` (the state as a job, with its progress); the builders' verbs come with them (lot D2). `proc/ead-fetch` (args `{ icao }`: one
   four-character code, nothing else) reads one aerodrome in EAD Basic and installs it under `proc/manual/`; `proc/eaip-fetch` (same args, the code must
   start with `LF`) does the same from the SIA eAIP of the cycle in force, without credentials, the address being computed by the launcher (aerodb's

@@ -1444,3 +1444,15 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   - **`stats.reasons` texts are French phrases of the tool**, as the warnings; Fuel maps them to its four languages.
   - **`runways` in the eAIP file only when a threshold has a position** (it has none for LFBO / LFPO: the DATA pages refer to AD 2.12); aerodb names the runways from the records instead, `lat` / `lon` null, `approx: true`.
   - Known and left: one STAR row of LFPO (`TF SOTIP`, three empty cells lost) stays unread, reported; the first fix of the RNP page of RWY 20 (`(*) PO420`, its type hidden by the footnote mark) is not read, so its transition starts at PO421.
+
+## 29 October 2026 — the launcher's jobs: errors cleaned, 30 s between two EAD Basic readings
+
+- **Asked** (the ergonomics session's security review of the chain, nothing blocking): `Jobs._run` logged and returned `str(e)` as it was:
+  an exception from `proc_ead` or `urllib` carrying an address with a `jsessionid` or the user name would have reached the job's log served
+  by `/__setup/regen/job`; and « never in bulk » held only by one job at a time.
+- **Done** (`tools/regen_jobs.py`): `clean_error()` (the workstation's EAD credentials when set, `proc_ead.sanitize` — tokens, session
+  identifiers, mail addresses — then `user:password@` and the session / token / key / password parameters of an address) before the log
+  and the result of a failed job; `MIN_GAP` `{ ('proc', 'ead-fetch'): 30 }`: a second start within 30 s answers 429 `{ reason: 'too-soon',
+  wait }`; `frame/lib/launcher.js` hands a refusal's `reason` and `wait` on (nothing else of the body; a small edit of the frame, reported);
+  `fetchProcedures` answers `too-soon` with `wait`. The eAIP of the SIA has no gap (free, no account).
+- **Bench**: K22 (the cleaned error, the gap and its end), K1 (`too-soon` and its `wait`).

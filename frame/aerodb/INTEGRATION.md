@@ -202,6 +202,7 @@ than `COMPAT` would be ignored; this one is not.
   | `paired` | the device is paired to a workstation: do the reading on the workstation |
   | `no-tables` | « aucune table publiée pour cet État » (×4): no coding table is published for this State, or the aerodrome's page lists none (`outcome` says why: images, prose, VFR only…). When `lnm` is `true` the workstation has Little Navmap databases: add that they may hold the procedures (a hint only; reading them is planned, § 10.21) |
   | `no-credentials` | (a State read in EAD Basic only, never France) no EAD Basic account is set on the workstation (`secrets/ead.json` or `EAD_USER` / `EAD_PASSWORD`): set it there |
+  | `too-soon` | (EAD Basic only) a reading started less than 30 s ago: EAD Basic is read one aerodrome per gesture, never in bulk; `wait` gives the seconds left (« Patientez {n} s avant la lecture suivante ») |
   | `busy` | this aerodrome is already being read, or the workstation is busy with another job: wait |
   | `cancelled` | the pilot cancelled |
   | `failed` | the reading failed; `message` has the cause (login refused, the eAIP folder of the cycle not published yet, nothing read, geometry check failed, another source's file, a launcher older than the page: restart it) |

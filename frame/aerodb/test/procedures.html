@@ -683,6 +683,13 @@
             status: 409,
             message: 'a job is already running'
           },
+          'too-soon': {
+            ok: false,
+            status: 429,
+            reason: 'too-soon',
+            wait: 12,
+            message: 'too soon: wait 12 s'
+          },
           paired: {
             ok: false,
             status: 403,
@@ -717,6 +724,7 @@
           'cancelled (result)': 'cancelled',
           'cancelled (signal)': 'cancelled',
           busy: 'busy',
+          'too-soon': 'too-soon',
           paired: 'paired',
           'failed (older launcher)': 'failed',
           'failed (error state)': 'failed',
@@ -728,8 +736,11 @@
         got[name] = await okDb.fetchProcedures('EGLL');
       }
       check(
-        'fetchProcedures(): every answer of the job maps to its reason (no-credentials, no-tables, failed, cancelled, busy, paired, no-launcher)',
+        'fetchProcedures(): every answer of the job maps to its reason (no-credentials, no-tables, failed, cancelled, busy, too-soon, paired, no-launcher)',
         Object.keys(want).every(k => got[k].ok === false && got[k].reason === want[k]), got);
+      check('fetchProcedures(): too-soon hands on the seconds to wait (EAD Basic, 30 s between two readings)', got['too-soon'].wait ===
+        12, got[
+          'too-soon']);
       check('fetchProcedures(): the message of a failure is handed on (login refused, older launcher, error state)', got.failed
         .message === 'login refused' && /unknown operation/.test(got['failed (older launcher)'].message) && got[
           'failed (error state)']

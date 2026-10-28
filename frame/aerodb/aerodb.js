@@ -1205,7 +1205,8 @@
        *  vol), 'paired' (appareil appairé au poste : le geste se fait sur le poste), 'no-tables' (aucune table de codage publiée
        *  pour cet État, ou la page du terrain n'en cite pas ; pour un État sans lecture, `outcome` (EAD_STATES) dit pourquoi et `lnm`
        *  vaut true quand le poste a des bases de Little Navmap : indice, leur lecture est prévue à part, § 10.21), 'no-credentials'
-       *  (EAD : secrets/ead.json absent, à régler sur le poste), 'busy' (ce terrain est déjà en lecture, ou le lanceur fait un autre
+       *  (EAD : secrets/ead.json absent, à régler sur le poste), 'too-soon' (EAD : une lecture il y a moins de 30 s ; `wait` dit les
+       *  secondes restantes), 'busy' (ce terrain est déjà en lecture, ou le lanceur fait un autre
        *  travail), 'cancelled', 'failed' (`message` : refus de connexion, page non publiée, aucune procédure lue, contrôle de
        *  géométrie, lanceur plus ancien…). `onProgress({ step, done, total, source })`, `signal` (AbortSignal). Jamais silencieux,
        *  jamais deux fois pour le même terrain en même temps. */
@@ -1261,6 +1262,9 @@
           if (r.cancelled) return no('cancelled');
           if (res?.ok !== true) { // un travail annulé trop tard pour l'être (fichiers déjà installés) vaut sa réussite
             if (r.status === 409) return no('busy');
+            if (r.status === 429 || r.reason === 'too-soon') return no('too-soon', { // EAD Basic : 30 s entre deux lectures
+              wait: Number.isFinite(r.wait) ? r.wait : null
+            });
             if (r.status === 403) return no('paired');
             if (r.state === 'cancelled') return no('cancelled');
             const why = res?.ok === false && typeof res.reason === 'string' ? res.reason : 'failed';

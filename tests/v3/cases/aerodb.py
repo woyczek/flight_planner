@@ -1616,6 +1616,35 @@ def k22(c):
         EAD.EadLibrary, EAD.fetch_ad = saved[0], saved[1]
         os.environ.clear()
         os.environ.update(saved[2])
+    # an error escaping a verb is cleaned before the job's log and the page (the security review of 29 Oct 2026)
+    with tempfile.TemporaryDirectory() as tmp:
+        sec = Path(tmp)
+        (sec / 'ead.json').write_text(json.dumps({'user': USER, 'password': PASS}), encoding='utf-8')
+
+        def boom(job, args, ctx):
+            raise RuntimeError(f'GET https://{USER}:{PASS}@www.ead.eurocontrol.int/x;jsessionid=AbC123xyz?token=T0K3NVALUE&a=1 refused for {USER}')
+        jobs = RJ.Jobs({('t', 'boom'): (boom, lambda a: {})}, {'secrets': str(sec)})
+        jobs.start('t', 'boom', {})
+        for _ in range(100):
+            if jobs.cur.data['state'] != 'running':
+                break
+            time.sleep(0.02)
+        v = json.dumps(jobs.cur.view())
+        c.ok(jobs.cur.data['state'] == 'error' and all(x not in v for x in (USER, PASS, 'AbC123xyz', 'T0K3NVALUE')) and 'refused' in v, v[:300],
+             "Jobs._run cleans an error: the workstation's EAD credentials, user:password@, jsessionid and token parameters never reach the log or the page")
+    # EAD Basic is never read in bulk: 30 s at least between two ead-fetch starts (429 'too-soon' with the seconds left)
+    quick = RJ.Jobs({('proc', 'ead-fetch'): (lambda job, a, ctx: {'ok': True}, lambda a: {})})
+    s1 = quick.start('proc', 'ead-fetch', {})
+    for _ in range(100):
+        if quick.cur.data['state'] != 'running':
+            break
+        time.sleep(0.02)
+    s2 = quick.start('proc', 'ead-fetch', {})
+    c.ok(s1.get('ok') and s2.get('status') == 429 and s2.get('reason') == 'too-soon' and 25 <= s2.get('wait', 0) <= 30, f'{s1} {s2}',
+         'a second ead-fetch within 30 s is refused too-soon, with the seconds left')
+    quick.last[('proc', 'ead-fetch')] -= 31
+    c.ok(quick.start('proc', 'ead-fetch', {}).get('ok'), quick.last, 'after 30 s a new reading starts')
+    c.eq(RJ.MIN_GAP, {('proc', 'ead-fetch'): 30}, 'only EAD Basic has a minimal gap (the eAIP of the SIA is free)', what='MIN_GAP')
 
 
 # ------------------------------------------------------------------------------------------------ the launcher's eAIP job (static)

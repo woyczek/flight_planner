@@ -109,7 +109,14 @@ export function launcherClient({
         status: res.status,
         route: r,
         // 404 : un lanceur plus ancien que le module (« relancez-le à jour ») ; sinon son message
-        message: res.status === 404 ? 'unknown route' : String(res.body?.message || res.body?.error || `HTTP ${res.status}`)
+        message: res.status === 404 ? 'unknown route' : String(res.body?.message || res.body?.error || `HTTP ${res.status}`),
+        // refus motivé d'un travail (429 'too-soon' : `wait` secondes) : le code et le délai, rien d'autre du corps
+        ...(typeof res.body?.reason === 'string' ? {
+          reason: res.body.reason.slice(0, 40)
+        } : {}),
+        ...(Number.isFinite(res.body?.wait) ? {
+          wait: res.body.wait
+        } : {})
       };
       return res.body && typeof res.body === 'object' && !Array.isArray(res.body) ? res.body : {
         ok: true,
