@@ -85,7 +85,7 @@ export const meta = {
   level: 1,
   // vue fixe plein cadre (frame/INTEGRATION.md § 9.2) : carte en haut, bloc de données en bas, pas de défilement de page
   fixed: true,
-  help: false,
+  help: true,
   reads: ['pilot/', 'cache/weather/', 'cache/atmosphere/', 'airline/map_profiles.json'],
   // réserve météo partagée (politique « cache », jamais synchronisée) ; réglages de l'écran et TAF gardés sur l'appareil
   writes: [{
@@ -2221,6 +2221,15 @@ ${T('outOfRange')}` : s);
     show('profile');
   };
   $('whole').onclick = () => axw.reset();
+  // le « ? » du cadre ouvre le chapitre au paragraphe de la vue montrée (V3_SPECIFICATION § 7.1 règle 16 ; ancres
+  // identiques dans les quatre langues de help/*.md)
+  ctx.helpAnchor?.(() => !alive ? null : !S.traj && S.view !== 'settings' && S.view !== 'layers' && S.view !== 'wpoint' ?
+    'atmosphere-flight' : {
+      settings: 'atmosphere-settings',
+      layers: 'atmosphere-map',
+      wpoint: 'atmosphere-map',
+      info: 'atmosphere-details'
+    } [S.view] || (S.legend ? 'atmosphere-legend' : S.view === 'profile' && axw.zoomed ? 'atmosphere-zoom' : 'atmosphere-cut'));
   $('legendBtn').onclick = () => {
     S.legend = !S.legend;
     showLegend();

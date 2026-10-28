@@ -6,9 +6,10 @@ Rules covered
   * the sheet title carries the flight in brief (E3, L10); Details and Flight contents are compact and closable (E4, L7, L9);
   * one "i" only on the page besides the drawing's legend chip (E5, L8); the "tap the map" hint is a notification, once per page
     life (E6, L10); nothing redraws while the sheet is dragged (E7); the cut's window on the distance axis: a pinch, its marks,
-    "Vol entier" (E8), kept through a sheet drag (E9).
+    "Vol entier" (E8), kept through a sheet drag (E9); the frame's "?" opens the Weather chapter at the paragraph of the view
+    shown (E10).
 
-Cases: E1 E2 E3 E4 E5 E6 E7 E8 E9.  The module is seeded with the planned flight of lib.FLIGHT; no forecast can be read without the
+Cases: E1 E2 E3 E4 E5 E6 E7 E8 E9 E10.  The module is seeded with the planned flight of lib.FLIGHT; no forecast can be read without the
 network, so the cases that need data use the module's offline demonstration (`#atmosphere?donnees=demo`) and say so.
 """
 import re
@@ -344,3 +345,35 @@ def e12(c):
     c.until(f"window.__t.shown(document.querySelector('{_POP}'))", what='open again')
     c.tap(button_sel(c, 'flightTitle'))
     c.until(f"!window.__t.shown(document.querySelector('{_POP}'))", what='Flight takes the sheet and closes the panel')
+
+
+def _help_at(c, anchor):
+    """The frame's "?" asks the Weather chapter at `anchor`; the paragraph is in the manual of the run's language and highlighted."""
+    c.tap('#fHelp')
+    c.until("location.hash.startsWith('#help')", what='the help screen opens')
+    c.eq(c.hash(), f'#help?m=atmosphere&a={anchor}', 'the "?" asks the Weather chapter at the paragraph of the view shown', what='help address')
+    c.until("(a) => !!document.querySelector('.f-screen [id=\"' + a + '\"]')", anchor, timeout=8000, what=f'the anchor {anchor} is in the manual')
+    c.until("(a) => document.querySelector('.f-screen [id=\"' + a + '\"]').closest('p, li, h1, h2, h3').classList.contains('f-hl')", anchor,
+            what='the paragraph is highlighted on arrival')
+
+
+@case('E13', 'Help lands on the view\'s paragraph', 'E', tags=('atmosphere', 'help'), screens=False, langs4=True, designs=('standard',), night=False,
+      rule='V3_SPECIFICATION 7.1 rule 16 (user, 25 Oct: "bien vérifier que l\'aide contextuelle arrive sur le bon paragraphe"); meta.help true')
+def e13(c):
+    c.open('atmosphere')
+    c.until(f"!!document.querySelector('{ATM} [data-at=\"seeExample\"]')", timeout=10000, what='the page says there is no flight')
+    _help_at(c, 'atmosphere-flight')
+    whole, st = _zoom_cut(c)
+    c.ok(st['whole'], f'window {st["from"]}..{st["to"]}', 'the cut is zoomed')
+    _help_at(c, 'atmosphere-zoom')
+    for setup, anchor in ((None, 'atmosphere-cut'), ('legend', 'atmosphere-legend'), ('infoTitle', 'atmosphere-details'),
+                          ('flightTitle', 'atmosphere-settings'), ('layers', 'atmosphere-map')):
+        c.open('atmosphere?donnees=demo', flight=True)
+        c.until(f"!!document.querySelector('{ATM} .at-dbody svg')", timeout=10000, what='the cross-section is drawn')
+        c.settle()
+        if setup == 'legend':
+            c.tap(f'{ATM} [data-at="legendBtn"]')
+            c.until(f"!!document.querySelector('{ATM} .at-legend:not([hidden])')", what='the legend is shown')
+        elif setup:
+            open_view(c, setup)
+        _help_at(c, anchor)

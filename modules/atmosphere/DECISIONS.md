@@ -2,6 +2,18 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 28 October 2026 — the frame's "?" opens the Weather chapter (rule 16)
+
+- **The request** (ergonomics session, through the relay): the chapter existed (`help/<lang>.md`, assembled into
+  `frame/help/pilot.*.md`) but `meta.help` was still `false`, so the frame's "?" did not open it. `meta.help: true`, and
+  `ctx.helpAnchor` gives the paragraph of the view shown, the same anchors in the four languages: no flight →
+  `atmosphere-flight`; the cut or a slice → `atmosphere-cut`; a zoomed cut → `atmosphere-zoom`; the legend shown →
+  `atmosphere-legend`; Details → `atmosphere-details`; Flight and settings → `atmosphere-settings`; Layers or a point of
+  the map → `atmosphere-map`.
+- Two views had no paragraph: **Details** and **Flight and settings** gain one each (four languages), so that the "?"
+  never lands on a paragraph that does not speak of what is shown. Case E10 (four languages): the address, the anchor in
+  the manual, the highlight, for the seven views.
+
 ## 25 October 2026 (evening) — zooming the weather cut (rule 20)
 
 - **The request** (user, relayed: "Trouver le moyen de zoomer (pour être précis) le profil vertical"; the relay asked
