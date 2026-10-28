@@ -805,13 +805,13 @@
         },
         {
           "state": "done",
-          "fr": "Laboratoire données (temporaire, retiré à la livraison de l'écran Données) : la base se compile sur l'iPhone en 0,4 s ; l'obstacle est le téléchargement (CORS)",
-          "en": "Data laboratory (temporary, removed when the Data screen ships): the base compiles on the iPhone in 0.4 s; the obstacle is the download (CORS)",
-          "de": "Datenlabor (vorläufig, entfernt mit dem Bildschirm Daten): die Basis kompiliert auf dem iPhone in 0,4 s; das Hindernis ist der Download (CORS)",
-          "es": "Laboratorio de datos (temporal, retirado con la pantalla Datos): la base se compila en el iPhone en 0,4 s; el obstáculo es la descarga (CORS)"
+          "fr": "Laboratoire données (retiré le 28/10 après ses mesures : la base se compile sur l'iPhone en 0,4 s, l'obstacle est le téléchargement)",
+          "en": "Data laboratory (removed on 28 Oct after its measurements: the base compiles on the iPhone in 0.4 s, the obstacle is the download)",
+          "de": "Datenlabor (am 28.10. nach seinen Messungen entfernt: die Basis kompiliert auf dem iPhone in 0,4 s, das Hindernis ist der Download)",
+          "es": "Laboratorio de datos (retirado el 28/10 tras sus mediciones: la base se compila en el iPhone en 0,4 s, el obstáculo es la descarga)"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Publication d'essai du laboratoire sur une branche jetable du dépôt des données, avec plafond (les blocs d'essai ne restent pas dans l'historique de chaque pilote)",
           "en": "Laboratory trial publication on a throwaway branch of the data repository, with a cap (trial blocks do not stay in every pilot's history)",
           "de": "Testveröffentlichung des Labors auf einem Wegwerf-Zweig des Datendepots, mit Obergrenze (Testblöcke bleiben nicht in der Historie jedes Piloten)",
@@ -830,6 +830,13 @@
           "en": "Dedicated \"Data\" application (iOS, Android): separate project, to open",
           "de": "Eigene App „Daten“ (iOS, Android): eigenes Vorhaben, noch zu eröffnen",
           "es": "Aplicación «Datos» dedicada (iOS, Android): proyecto aparte, por abrir"
+        },
+        {
+          "state": "done",
+          "fr": "Écran « Sources » derrière Administration : une ligne par source utilisée, candidate ou écartée, avec lien, licence et statut, sans récupération",
+          "en": "\"Sources\" screen behind Administration: one line per source used, candidate or dropped, with link, licence and status, no fetching",
+          "de": "Bildschirm „Quellen“ hinter Verwaltung: eine Zeile je genutzter, möglicher oder verworfener Quelle, mit Link, Lizenz und Status, ohne Abruf",
+          "es": "Pantalla «Fuentes» tras Administración: una línea por fuente usada, candidata o descartada, con enlace, licencia y estado, sin descarga"
         }
       ]
     },
