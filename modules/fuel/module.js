@@ -248,6 +248,15 @@ const TX = {
     'Leer los procedimientos de {icao}'
   ],
   procReading: ['Lecture de {icao}…', 'Reading {icao}…', '{icao} wird gelesen…', 'Leyendo {icao}…'],
+  // lecture en cours selon la source qu'aerodb annonce (onProgress source) : la France par l'eAIP du SIA, un État à tables par EAD
+  procReadingSrc: {
+    eaip: ['Lecture de l’eAIP du SIA…', 'Reading the SIA eAIP…', 'eAIP des SIA wird gelesen…', 'Leyendo el eAIP del SIA…'],
+    ead: ['Lecture d’EAD Basic…', 'Reading EAD Basic…', 'EAD Basic wird gelesen…', 'Leyendo EAD Basic…']
+  },
+  // ajouté au refus « no-tables » quand aerodb dit que ce poste a des bases de Little Navmap (lnm: true)
+  procLnm: [' Little Navmap a une base sur ce poste.', ' Little Navmap has a database on this workstation.',
+    ' Little Navmap hat eine Datenbank auf diesem Arbeitsplatz.', ' Little Navmap tiene una base en este puesto.'
+  ],
   procFetched: ['{icao} : {n} procédures lues.', '{icao}: {n} procedures read.', '{icao}: {n} Verfahren gelesen.',
     '{icao}: {n} procedimientos leídos.'
   ],
@@ -279,10 +288,10 @@ const TX = {
       'Dieses Gerät ist mit dem Arbeitsplatz gekoppelt: {icao} wird dort gelesen. Für diesen Flug liefert Ihr SimBrief-OFP SID und STAR.',
       'Este dispositivo está emparejado con el puesto: {icao} se lee en el puesto. Para este vuelo, su OFP de SimBrief aporta la SID y la STAR.'
     ],
-    'unknown-layout': ['Lecture impossible pour l’État de {icao} : sa mise en page n’est pas connue.',
-      'Cannot read {icao}: the layout of its State is not known.',
-      '{icao} lässt sich nicht lesen: das Layout seines Staates ist unbekannt.',
-      'No se puede leer {icao}: se desconoce el formato de su Estado.'
+    'no-tables': ['Aucune table de procédures publiée pour cet État ({icao}).{l}',
+      'No procedure tables published for this State ({icao}).{l}',
+      'Für diesen Staat sind keine Verfahrenstabellen veröffentlicht ({icao}).{l}',
+      'No hay tablas de procedimientos publicadas para este Estado ({icao}).{l}'
     ],
     'no-credentials': ['Les identifiants EAD Basic manquent sur le poste : à régler dans Réglages › Clés du lanceur.',
       'The EAD Basic credentials are missing on the workstation: set them in Settings › Launcher keys.',
@@ -1563,10 +1572,12 @@ async function fetchProcs(icao, btn) {
     icao,
     ctl
   };
+  // texte du bouton : la source dès qu'aerodb la dit (eAIP du SIA, EAD Basic), sinon le terrain ; n : avancement « 3/12 »
+  let src = null;
   const label = (n = '') => {
-    if (btn.isConnected) btn.textContent = tt(TX.procReading, {
+    if (btn.isConnected) btn.textContent = (TX.procReadingSrc[src] ? tt(TX.procReadingSrc[src]) : tt(TX.procReading, {
       icao
-    }) + n;
+    })) + n;
   };
   if (btn.isConnected) {
     btn.disabled = true;
@@ -1576,7 +1587,11 @@ async function fetchProcs(icao, btn) {
   let res;
   try {
     res = S.ctx.aerodb?.fetchProcedures ? await S.ctx.aerodb.fetchProcedures(icao, {
-      onProgress: p => !gone(s) && label(p && p.total ? ` ${p.done || 0}/${p.total}` : ''),
+      onProgress: p => {
+        if (gone(s)) return;
+        if (p?.source) src = p.source;
+        label(p && p.total ? ` ${p.done || 0}/${p.total}` : '');
+      },
       signal: ctl.signal
     }) : {
       ok: false,
@@ -1603,7 +1618,8 @@ async function fetchProcs(icao, btn) {
     S.ctx.notify(tt(row, {
       icao,
       r: res?.reason || '?',
-      m: res?.message ? ` (${res.message})` : '' // la cause donnée par le lanceur (refus de connexion, rien de lu…)
+      m: res?.message ? ` (${res.message})` : '', // la cause donnée par le lanceur (refus de connexion, rien de lu…)
+      l: res?.reason === 'no-tables' && res.lnm ? tt(TX.procLnm) : '' // indice : les bases de Little Navmap du poste (§ 10.21)
     }), 'warn');
   }
   S.rowsKey = null;

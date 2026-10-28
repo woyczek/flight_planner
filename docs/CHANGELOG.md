@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: "Read the procedures" says where it reads** (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4; case F14) — while
+  reading, the button says "Reading the SIA eAIP…" (France) or "Reading EAD Basic…"; a State without published procedure
+  tables is told so (and that Little Navmap has a database on this workstation, when it has); the old "layout unknown" refusal
+  is gone.
 - **aerodb: « Lire les procédures de LFPO » works for France — the on-demand reading is dispatched by State**
   (`frame/aerodb/aerodb.js` `fetchProcedures`, `tools/regen_jobs.py` verb `proc/eaip-fetch`, `tools/proc_eaip.py` `read_aerodrome`
   / `eaip_url`, `tools/launch.py` `/__setup/status › lnm`, `frame/store/transport_launcher.js`; SPEC § 5 quinquies, INTEGRATION,

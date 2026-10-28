@@ -485,6 +485,13 @@ def f14(c):
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=6000,
             what='the refusal reason (no launcher serves the test page: aerodb answers "no-launcher") is shown in a notification')
     c.until("!!document.querySelector('[data-module=fuel] [data-do=procfetch]:not([disabled])')", what='the button is available again after a refusal')
+    # dispatch par État d'aerodb (82eeef3b5) : France par l'eAIP du SIA, État à tables par EAD Basic, sinon 'no-tables' ; plus de
+    # « mise en page inconnue »
+    src = (ROOT / F).read_text(encoding='utf-8')
+    c.ok("'unknown-layout'" not in src, 'still there', 'the refusal "unknown layout" is gone (aerodb no longer answers it)')
+    c.ok(bool(tx(F, "no-tables'", c.lang, after='procReasons').strip()), 'missing', '"no procedure tables published for this State" is written in the language of the run')
+    for k in ('eaip', 'ead'):
+        c.ok(bool(tx(F, k, c.lang, after='procReadingSrc').strip()), 'missing', f'the reading in progress names its source ({k})')
 
 
 @case('F15', 'Quote on the procedures path: legs with origins, profile.path', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,

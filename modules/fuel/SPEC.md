@@ -286,7 +286,11 @@ mount. Inside a mount, the two buttons switch as before.
      (`aerodb.fetchProcedures(icao, { onProgress, signal })`, one aerodrome per gesture, nothing fetched silently); a refusal
      shows its reason in a floating notification (`ctx.notify`), and without a launcher (or on a device paired with the
      workstation) the reason says the reading is done on the workstation and proposes the SimBrief OFP as the per-flight
-     source. "Load my OFP" replaces the choice by the OFP's SID and STAR (one notification line per side).
+     source. aerodb picks the source by State (82eeef3b5): France from the SIA eAIP (no account), a State whose AIP publishes
+     coding tables from EAD Basic; while it reads, the button names the source it announces (`onProgress` `source`: "Lecture de
+     l'eAIP du SIA…" / "Lecture d'EAD Basic…", with the progress n/total); any other State is refused `no-tables` ("Aucune table de
+     procédures publiée pour cet État", plus "Little Navmap a une base sur ce poste" when the answer carries `lnm: true`);
+     `no-credentials` only comes from EAD. "Load my OFP" replaces the choice by the OFP's SID and STAR (one notification line per side).
      **The quote runs on the procedures path** (before the start): when procedures are chosen and read (`CF.loadProcedures`),
      the distance is the last point's `nm` of `CF.flownPath(CF.expandedPath(flight, procs))` (never recomputed here), the
      level steps are the route points' `alt_ft` at their `nm`, `quote.legs` has one `{ id, min, origin }` per flown point and

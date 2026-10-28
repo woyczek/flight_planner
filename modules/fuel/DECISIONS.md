@@ -4,6 +4,12 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **28 Oct 2026 — reading on demand dispatched by State** (aerodb 82eeef3b5; Simplification, the user's report: « Lire les
+  procédures de LFPO » answered « mise en page inconnue »): aerodb now reads France from the SIA eAIP and the States with coding
+  tables from EAD Basic, and refuses every other State with `no-tables`. Fuel: the reason `unknown-layout` and its text are
+  removed; `no-tables` gets its text ×4, with the Little Navmap hint when `lnm` is true; the button shows the source announced
+  by `onProgress` (`source: 'eaip' | 'ead'`) instead of the aerodrome alone; `no-credentials` keeps its EAD wording (France
+  needs no account). Case F14 checks the texts statically (the test page has no launcher: the live answer is `no-launcher`).
 - **28 Oct 2026 — runway, SID, STAR and approach in the preparation (§ 10.20)** (the user's decision relayed by the ergonomics
   session; lot `v3-fuel-proc`, with `frame/lib/current_flight.js` of the Map's owner and aerodb's `procedures` / `runways`):
   - `route.procedures` is v2 (`{ dep: { rwy, sid, trans }, arr: { rwy, star, trans, app, appTrans }, by, at }`, identifiers,
