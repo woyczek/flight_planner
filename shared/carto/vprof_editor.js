@@ -275,7 +275,7 @@
     const sAt = ll => { let best = 0, d = Infinity; for (const a of data?.samples || []) { const k = Math.cos(a.lat * Math.PI / 180), e = (a.lat - ll.lat) ** 2 + ((a.lon - ll.lng) * k) ** 2; if (e < d) { d = e; best = a.s; } } return best; };
     /** Plancher et plafond (ft) d'un espace au point d'échantillon i (ASFC : relief compté). */
     const bandAt = (a, i) => {
-      const L = window.SiaAero?.limitFt, rel = v => /SFC|GND|ASFC|AGL/i.test(String(v || '')), c = data.samples[i]?.center || 0;
+      const L = window.SiaAero?.limitFt, rel = v => window.SiaAero?.limitRead ? window.SiaAero.limitRead(v).rel : /SFC|GND|ASFC|AGL/i.test(String(v || '')), c = data.samples[i]?.center || 0;
       if (!L) return [0, Infinity];
       const lo = (rel(a.lower) ? c : 0) + (L(a.lower, false) || 0), hi = L(a.upper, true);
       return [lo, Number.isFinite(hi) ? (rel(a.upper) ? c : 0) + hi : Infinity];

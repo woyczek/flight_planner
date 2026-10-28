@@ -3515,7 +3515,11 @@ function applyLayerGroups(map, mapDef) {
     if (group === 'land' && /residential|urban|built|settlement/i.test(layer.id)) group = 'urban';
     if (group === 'urban' && !/residential|urban|built|settlement|landuse/i.test(layer.id + ' ' + JSON.stringify(layer.filter || '')))
       group = 'land';
-    if (/^(poi|pois|addresses|housenumber)$/.test(src)) map.setLayoutProperty(layer.id, 'visibility', 'none');
+    // noms de lieux du fond (OpenMapTiles « place », Shortbread « place_labels ») : masqués quand le studio écrit les siens
+    // (« Libellés de villes »), sinon chaque ville paraît deux fois ; rendus quand la case est décochée
+    if (/^(place|place_labels)$/.test(src)) map.setLayoutProperty(layer.id, 'visibility', profileForMap(mapDef)?.cities ? 'none' :
+      'visible');
+    else if (/^(poi|pois|addresses|housenumber)$/.test(src)) map.setLayoutProperty(layer.id, 'visibility', 'none');
     else if (group) map.setLayoutProperty(layer.id, 'visibility', group !== 'urban' && osmGroupEnabled(group, mapDef) ? 'visible' : 'none')
   }
 }

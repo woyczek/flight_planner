@@ -442,8 +442,8 @@
     const terrainMax = Math.max(0, ...data.samples.map(q => q.terrain)),
       obsMax = Math.max(0, ...data.obstacles.map(o => o.elev || 0)),
       altMax = Math.max(0, ...data.marks.map(m => m.alt || m.lvl?.ft || 0), data.plan?.top || 0);
-    /** Vrai pour une limite relative au sol (ASFC, AGL, SFC). */
-    const rel = t => /ASFC|AGL|SFC/i.test(t || '') && !/AMSL/i.test(t || '');
+    /** Vrai pour une limite relative au sol (ASFC, AGL, AAL, SFC, GND ; SiaAero.limitRead, lecture commune). */
+    const rel = t => window.SiaAero?.limitRead ? window.SiaAero.limitRead(t).rel : /ASFC|AGL|SFC/i.test(t || '') && !/AMSL/i.test(t || '');
     /** Plancher d'un espace sur un tronçon de la coupe (relief ajouté pour une limite ASFC). */
     const floorOf = c => {
       const mid = Math.round((c.i0 + c.i1) / 2);
