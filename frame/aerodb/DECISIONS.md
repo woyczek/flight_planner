@@ -1124,7 +1124,7 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   layout `uk-app` with its fingerprint, `build_pdf_dir` and `--pdf-dir` / `--cycle` / `--check`; case K10 on an **invented** page of the same layout (no UK AIP text in the repository).
 - **Open question to the owner**: OCR (a new optional dependency, needs their word and an amendment of CLAUDE.md), a one-off transcription kept privately, or leaving the UK STARs out. See `EAD_BASIC.md` § 6 undecies.
 
-## 28 October 2026 — UK STARs of EGLL transcribed from the images, installed through a geometry gate
+## 28 October 2026 — UK STARs of EGLL transcribed from the images, installed through a geometry check
 
 - **Word of the user**: « on a des informations avec des fix rnav, des altitudes et vitesse. le sens de virage est (peut-être ?) à conserver, je ne parviens pas à me le figurer. Dans l'immédiat, on cherche à afficher
   l'enchainement des fix et la contrainte vitesse/altitude, comme pour les AWY. » Decision: option 2 of the previous choice (one-off reading of the pictures), kept as information only for the turn direction (a TF leg is
@@ -1146,7 +1146,7 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 
 - **Word of the user**: « OCR inclus ».
 - **Decision**: OCR (`pypdfium2` + Tesseract or `rapidocr-onnxruntime`) is an optional dependency of the workstation builders only, after `pypdf`; never the launcher, never a page; a clear message when missing.
-- **Done**: `tools/proc_ocr.py` (render, OCR, rows, existing layout detection and parsers); output `<ICAO>.ocr.json` installed only by `tools/proc_manual.py` after its geometry gate (source prefixed `ocr:`). Real trial: 5-10 s per page, 300 dpi or more needed. K14.
+- **Done**: `tools/proc_ocr.py` (render, OCR, rows, existing layout detection and parsers); output `<ICAO>.ocr.json` installed only by `tools/proc_manual.py` after its geometry check (source prefixed `ocr:`). Real trial: 5-10 s per page, 300 dpi or more needed. K14.
 - **Open**: engine choice (rapidocr proven, Tesseract untried); installing the scratch environment's packages in the workstation Python.
 
 ## 28 Oct 2026 — cheaper agents for the lots
@@ -1165,16 +1165,16 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 ## 28 Oct 2026 — survey of all 47 authorities, whole-document reading
 
 - **Word of the user**: survey run by the owner on every authority of EAD Basic, one sample per State, delay 1 s.
-- **Decision**: a State is parsed only when its layout is seen; charts-only, image-only and prose States are listed, not parsed (nothing the geometry gate can check); France comes from the SIA's own eAIP (the EAD sample is an older edition); unsigned altitudes of `de-route` tables are typed "min" when the header says Minimum altitude (session choice, to confirm).
-- **Done**: 14 States read (5 new layouts or extensions: K15, K17, K18, K19, K20), 2 with vector tables, 16 charts only, 2 image only, 7 prose, 1 outdated edition, 5 nothing obtained; all pages of every PDF read; waypoint lists fill co-ordinates; the gate also covers a leg without a printed true course. `python tests/v3/run.py --grep K`: 19 cases pass.
-- **Open**: OCR engine and its installation in the workstation Python; OCR of the two vector-table States (same gate); States to skip; the Settings › Maintenance button; the "min" choice.
+- **Decision**: a State is parsed only when its layout is seen; charts-only, image-only and prose States are listed, not parsed (nothing the geometry check can check); France comes from the SIA's own eAIP (the EAD sample is an older edition); unsigned altitudes of `de-route` tables are typed "min" when the header says Minimum altitude (session choice, to confirm).
+- **Done**: 14 States read (5 new layouts or extensions: K15, K17, K18, K19, K20), 2 with vector tables, 16 charts only, 2 image only, 7 prose, 1 outdated edition, 5 nothing obtained; all pages of every PDF read; waypoint lists fill co-ordinates; the geometry check also covers a leg without a printed true course. `python tests/v3/run.py --grep K`: 19 cases pass.
+- **Open**: OCR engine and its installation in the workstation Python; OCR of the two vector-table States (same geometry check); States to skip; the Settings › Maintenance button; the "min" choice.
 
 ## 28 Oct 2026 — OCR installed, Belgian and Georgian tables read
 
 - **Word of the user**: « Oui, OCR EB et UG ».
-- **Decision**: `pypdfium2` and `rapidocr-onnxruntime` are installed in the workstation Python 3.14.7 (`rapidocr-onnxruntime` 1.2.3; Tesseract absent); EB and UG tables are read through OCR with the same geometry gate; `--fetch` runs the OCR pass by itself on documents whose pages are all unknown and drawn.
-- **Done**: layouts `be-coding` (ARINC coding table in vectors, no distance nor magnetic course; its "WAYPOINTS COORDINATES" list in degrees and decimal minutes is read by `be_coords`, also used by `waypoint_coords`) and `ge-coding` (one-line legs, degrees-minutes-seconds; holding table left out by design); `read_document` re-reads a page at 300, 500 then 200 dpi while it is not fully read and keeps the best reading; `OCR_LAYOUTS` lists the 7 layouts readable through OCR; `ocr_pass` in `--fetch`. Results: 2 Belgian APP tables (10 legs each, 20 of 20 points resolved), 2 Georgian APP tables (2 legs each), gate clean, installed in the private data repository (cycle 2026-10-01). K14 extended, 19 K cases pass.
-- **Open**: single-letter cells (fly-over, turn) are lost by the OCR, so `over` and `turn` stay `None`; the gate checks true courses and printed distances only, not altitude nor speed; points come from the OCR, not from an official base; installing the UK and Austrian OCR files in `data/proc`; commit of `data/proc` in the data repository; Settings › Maintenance button; States to skip.
+- **Decision**: `pypdfium2` and `rapidocr-onnxruntime` are installed in the workstation Python 3.14.7 (`rapidocr-onnxruntime` 1.2.3; Tesseract absent); EB and UG tables are read through OCR with the same geometry check; `--fetch` runs the OCR pass by itself on documents whose pages are all unknown and drawn.
+- **Done**: layouts `be-coding` (ARINC coding table in vectors, no distance nor magnetic course; its "WAYPOINTS COORDINATES" list in degrees and decimal minutes is read by `be_coords`, also used by `waypoint_coords`) and `ge-coding` (one-line legs, degrees-minutes-seconds; holding table left out by design); `read_document` re-reads a page at 300, 500 then 200 dpi while it is not fully read and keeps the best reading; `OCR_LAYOUTS` lists the 7 layouts readable through OCR; `ocr_pass` in `--fetch`. Results: 2 Belgian APP tables (10 legs each, 20 of 20 points resolved), 2 Georgian APP tables (2 legs each), geometry check clean, installed in the private data repository (cycle 2026-10-01). K14 extended, 19 K cases pass.
+- **Open**: single-letter cells (fly-over, turn) are lost by the OCR, so `over` and `turn` stay `None`; the geometry check verifies true courses and printed distances only, not altitude nor speed; points come from the OCR, not from an official base; installing the UK and Austrian OCR files in `data/proc`; commit of `data/proc` in the data repository; Settings › Maintenance button; States to skip.
 
 ## 28 October 2026 — integration of the cloud session's EAD lot (branch `v3-aerodb-proc-15`), with the review's fixes
 
@@ -1199,7 +1199,7 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Done**: `proc_eaip.ead_notice()` writes the "not operational" mention in every file read through EAD Basic (`build_pdf_dir`, the OCR
   document, the OCR pass of `--fetch`, and `proc_manual` when an installed file holds `ead-basic` procedures); `--fetch` refuses a list of
   aerodromes (K12); `EAD_BASIC.md` § 1 rewritten, § 8.1 one State per line with its outcome and the rules for States without coding tables
-  (ergonomics session's decision: OFP as the per-flight source, manual gesture and geometry gate otherwise, no model reading drawings or prose
+  (ergonomics session's decision: OFP as the per-flight source, manual gesture and geometry check otherwise, no model reading drawings or prose
   without a request per aerodrome, France from the SIA only, one sample per State as a reserve).
 
 ## 28 October 2026 — contracts with the Données module (aerodb review of its SPEC, validated by the ergonomics session)
@@ -1226,8 +1226,8 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 ## 28 Oct 2026 — the real `--fetch` run, Belgian SID tables (session aerodb procedures, worktree E:\DEFA-v3-aerodb-ocr)
 
 - **Word of the user**: « j'ai besoin de savoir si tous les wrappers pour tous les pays sont bons. OCR doit pouvoir fonctionner sur un terrain donné ».
-- **Done**: first real end-to-end `--fetch` with OCR on three aerodromes (local outputs only): EGLL 4 approaches (`uk-app`) + 18 STAR by OCR (`uk-star`), gate clean, the two RNAV holding documents reported unread (out of scope); LOWG 4 procedures (`at-coding`, text); EBBE 3 of 6 tables before the fix, 5 of 6 after.
-- **Decision**: a `be-coding` SID/STAR table whose middle legs print no course is kept with a warning when all its points come from its own list, the first leg is IF or CF and every leg is IF/TF/CF/DF; the printed courses still pass the gate; approaches keep the strict rule. The sixth EBBE table prints a course 1.2° off its own co-ordinates at every resolution: an AIP printing inconsistency, rejected by design (no tolerance widening, no consensus trick).
+- **Done**: first real end-to-end `--fetch` with OCR on three aerodromes (local outputs only): EGLL 4 approaches (`uk-app`) + 18 STAR by OCR (`uk-star`), geometry check clean, the two RNAV holding documents reported unread (out of scope); LOWG 4 procedures (`at-coding`, text); EBBE 3 of 6 tables before the fix, 5 of 6 after.
+- **Decision**: a `be-coding` SID/STAR table whose middle legs print no course is kept with a warning when all its points come from its own list, the first leg is IF or CF and every leg is IF/TF/CF/DF; the printed courses still pass the geometry check; approaches keep the strict rule. The sixth EBBE table prints a course 1.2° off its own co-ordinates at every resolution: an AIP printing inconsistency, rejected by design (no tolerance widening, no consensus trick).
 - **Honest status of the wrappers**: each layout is verified on one real sample per State (17 States) and an invented K page, not on every aerodrome; an unknown shape is reported, never guessed. Known limits: single-letter cells (fly-over, turn) are lost by the OCR; `--fetch` reads only the first results page (15 rows per search).
 
 ## 28 October 2026 — hand-read files kept and marked outdated (the user's amendment)
@@ -1376,7 +1376,7 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
     `url_exists`, `gaps_of`. Cache: `data/local/eaip/<cycle>/` (under `local/`, never published). `resolve`: `base_resolver` on `data/sia/base/fr/<cycle>/` (the
     workstation's SIA base, `navaids.json` and `points.json`) when that folder is there, else none (aerodb places the en-route points at read time anyway).
   - **Geometry** (the point to review). `proc_manual.verify` is NOT applied to the eAIP records: it is made for hand readings and asks the printed TRUE course (`trk`),
-    which the SIA tables do not print (they print the magnetic course `crs` and the leg distance `nm`); and `build_aerodrome` has no geometry gate of its own
+    which the SIA tables do not print (they print the magnetic course `crs` and the leg distance `nm`); and `build_aerodrome` has no geometry check of its own
     (only the page check: layout known, at least 85 % of the leg rows read). The job runs `proc_eaip.gaps_of` on each procedure: the broad branch of `check_geometry`
     (magnetic course within 30°, distance within 0.55 NM, only for legs whose two points have a position). A procedure that fails is **not installed** and a
     warning names it (« NON retenue »), like `build_pdf_dir` does; none left → `failed`. The fixture pages of LFBD (14 procedures) pass; a point put 800 km away fails.
@@ -1394,7 +1394,7 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Bench**: K1 (43 checks: `no-tables` with its outcome and `lnm` true / false, LF → `eaip-fetch` and `source` in the progress and the answer, an EAD State → `ead-fetch`,
   the job's `no-tables`, no `unknown-layout`), K23 (`regen_jobs._eaip_fetch` with `proc_eaip.fetch`, `first_page_rows` and `url_exists` replaced, the fixture pages of LFBD read
   by the real parsers: the arguments check, the address for 2026-10-01 and 2026-10-29, no table, the install and the two-path commit with an unrelated modified file left alone,
-  only addresses under the computed folder, a wrong base position dropped by the gate, a foreign file, git absent, 404 and network error, cancellation through `Jobs`,
+  only addresses under the computed folder, a wrong base position dropped by the geometry check, a foreign file, git absent, 404 and network error, cancellation through `Jobs`,
   `proc_eaip.main()` unchanged, `lnm_db_kinds()`), K21 (the Python address equals `eaipBase()`).
 - **Not done / to say**: the SIA site was not contacted (fakes only); the first real run of « Lire les procédures de LFPO » is the user's. The `trk` question stays open for a later
   step if the SIA ever prints true courses.

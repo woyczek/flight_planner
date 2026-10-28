@@ -850,14 +850,14 @@ def parse_be_coding(rows):
     """Page « <TYPE> ARINC CODING » de la Belgique (carte IAC ou SID dont le codage est dessiné en vecteurs : lue par OCR) → { kind, tables: [{ title, kind, name, runways, transition,
     legs }], warnings }. Une table commence à chaque « WAYPOINTS COORDINATES » : la liste des points (« BE123: 50°44.12' N 004°21.34'E - IAF », degrés et minutes décimales), puis
     les tronçons, un par ligne : « 003 TF BE123 FAF 12.3 @ 3000 -3.00% » (séquence, type, point, rôle, cap vrai, contrainte d'altitude, vitesse « 210Kts », angle vertical). Ni distance
-    ni cap magnétique ne sont imprimés : la porte géométrique ne vérifie que le cap vrai des TF. Les coordonnées viennent de la liste de la table ; un identifiant présent dans
+    ni cap magnétique ne sont imprimés : le contrôle de géométrie ne vérifie que le cap vrai des TF. Les coordonnées viennent de la liste de la table ; un identifiant présent dans
     plusieurs listes de la page doit y avoir les mêmes coordonnées, sinon les tables concernées sont rejetées (lectures concurrentes : jamais de choix entre deux valeurs).
     Approche (« EBBE RNP RWY 09R COORDINATES AND CODING ») : premier tronçon IF, chaque TF porte son cap vrai, sinon la table est rejetée (« NON retenue »). Une table sans titre
     est nommée d'après son point de piste (RWnn).
     SID / STAR (« SID BE 04F (RNAV1) COORDINATES AND CODING ») : la page n'imprime le cap vrai que de certains TF (et celui d'un CF, qui n'est pas contrôlable : aucun point avant lui). RÈGLE :
     la table est gardée, avec l'avertissement « cap non imprimé : géométrie non contrôlable » (nombre de tronçons concernés), SEULEMENT si tous ses points sont résolus par la liste, si son
-    premier tronçon est IF ou CF, si tous ses tronçons sont IF, TF, CF ou DF (une chaîne de points nommés, sans arc, attente ni tronçon sans point) et si les caps imprimés passent la
-    porte ; sinon elle est rejetée. Le sens de virage et le survol (cellules d'une lettre) ne sont pas lus par OCR : `turn` et `over` valent None."""
+    premier tronçon est IF ou CF, si tous ses tronçons sont IF, TF, CF ou DF (une chaîne de points nommés, sans arc, attente ni tronçon sans point) et si les caps imprimés passent le contrôle de
+    géométrie ; sinon elle est rejetée. Le sens de virage et le survol (cellules d'une lettre) ne sont pas lus par OCR : `turn` et `over` valent None."""
     warnings, tables = [], []
     starts = [i for i, r in enumerate(rows) if re.search(r'(?i)waypoints\s+coordinates', r)]
     titles = []                                  # (ligne, type, nom, pistes)

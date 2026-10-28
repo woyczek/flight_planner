@@ -218,7 +218,7 @@ than `COMPAT` would be ignored; this one is not.
   | SIA eAIP (`eaip`) | official or check | from the DATA pages, en-route fixes placed from the base (`placed: 'base'`) | yes / yes | yes (and `vpa`, `rnp`) | missed after the missed-approach point, else default | no | as printed, without a position | derived from `RWnn` points (`approx`) |
   | EAD Basic, read by layout (`ead-basic`) | check | from the table or the State's list of points; some to be placed | yes / yes | course and distance (for the geometry check), turn and fly-over when printed | missed after the runway, else default | no | as printed | derived (`approx`) |
   | EAD Basic, through OCR (`ead-basic`, `how: ocr`) | check | as the layout | yes / yes | course and distance; **turn and fly-over lost** (single-letter cells) | as the layout | no | as printed | derived (`approx`) |
-  | Manual reading (`manual`, `how: hand`) | check | as written, checked by the geometry gate | as written | true course `trk` and `nm` | default | no | — | derived (`approx`) |
+  | Manual reading (`manual`, `how: hand`) | check | as written, checked by the geometry check | as written | true course `trk` and `nm` | default | no | — | derived (`approx`) |
   | SimBrief OFP (`simbrief`, `proc-seen/`) | ofp | the navlog's fixes | **no** (only the plan's altitude `planned`) | no | default (`main`) | no | — | none |
   | X-Plane fallback (`xplane`, `proc/local/`, the workstation only, `local: true`) | xplane (lowest) | as the converter writes them (ARINC 424 like the CIFP) | as converted | as converted | as converted, else default | as converted | as converted | as converted, else derived |
 
