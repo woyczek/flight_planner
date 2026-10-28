@@ -999,3 +999,21 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   (1280 fr, 390 × 4 languages; Playwright with `py -3`). The `--changed` run (116 cases, `frame/app.js` touched) on this Windows workstation at four
   workers has many timeouts and "missing file 503" errors that the same cases also give on `origin/v3` without this lot; rerun one worker at a time,
   they pass, except J2 step 1 (gear badge amber), which fails on `origin/v3` too, and A22's clipboard check (CRLF line ends of Windows).
+
+## 28 October 2026 — security review of the relay's work: the other verdicts (CSP, EAD probe, fixtures)
+
+- **CSP** (`tools/csp_policy.py`): the laboratory's hosts are a separate list `LAB_CONNECT` with an end date in the code, `LAB_UNTIL` =
+  31 Dec 2026: they leave with the laboratory at the delivery of the Données screen (`docs/technique/V3_APP_DONNEES.md`), and at the
+  latest at that date `value()` stops adding them (K9 turns red once it is passed, so that moving it is a written decision). The date is
+  this session's choice (no delivery date is written anywhere); the ergonomics session may move it. They still apply to every page
+  (a policy per page would need the launcher and `build_pages.py` to know the screen; not worth it for a temporary screen).
+  `services6.arcgis.com` (ArcGIS Online, multi-tenant: an exfiltration channel) is narrowed to the exact path of the measured service,
+  `…/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Special_Use_Airspace/FeatureServer/0/query`.
+- **EAD probe** (`tools/proc_ead.py`): the sanitising also removes the URL-encoded (`quote`, `quote_plus`, `safe=''`) and HTML-escaped
+  forms of each secret; a redirect that leaves `www.ead.eurocontrol.int` (or the local copy of the tests) is refused, never followed nor
+  kept; `ead_probe/` is in `.gitignore`; `EAD_BASIC.md` § 1 says the owner must check EAD Basic's terms on automated access before
+  keeping the tool (not known here). K6 tests the encoded forms and the refused redirect.
+- **Fixtures** (`frame/aerodb/test/fixtures/SOURCES.md`): the eAIP extracts of LFAV and LFBD (AIRAC 2610) are covered by the SIA's open
+  licence (read on 28 Oct 2026: free reuse, commercial or not, reproduction, extraction, redistribution, with the source and the date of
+  the last update named, the information not altered); the attribution is written in that file. `AIXM4.5_sample.xml` is synthetic
+  (fictitious aerodromes and navaids; its header copies the export's shape only), like `XML_SIA_sample.xml`; KSEA CIFP is public domain.

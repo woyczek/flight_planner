@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Security review of 28 October: CSP, EAD probe, fixtures** (`tools/csp_policy.py`, `tools/proc_ead.py`, `.gitignore`,
+  `frame/aerodb/EAD_BASIC.md`, `frame/aerodb/test/fixtures/SOURCES.md`; DECISIONS, INTEGRATION, tests K6 and K9) — the
+  laboratory's hosts get an end date in the code (31 Dec 2026) and ArcGIS Online only the path of the measured service; the
+  probe's report removes the encoded forms of a secret and refuses a redirect off the EAD host, its folder is ignored by git;
+  the fixtures say their source and licence (SIA open licence for the eAIP extracts, the AIXM sample is synthetic).
 - **Data laboratory: trials on a disposable branch** (`frame/aerodb/lab*.js`, `frame/store/transport_github.js`, `frame/app.js`;
   SPEC, INTEGRATION, DECISIONS, frame SPEC, tests A23 and K9) — the trial blocks go to `lab/<trigram>`, created from the main
   branch's head and deleted by "Clean" (and by the next opening), never to the main branch whose history kept them; the lab

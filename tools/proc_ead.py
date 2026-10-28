@@ -35,7 +35,13 @@ def sanitize(text, secrets=()):
     """Texte sans secret : les valeurs données (mot de passe, nom d'utilisateur…), les jetons d'état de page JSF, les identifiants de session
     et les adresses de courriel sont remplacés ; toute longue suite hexadécimale ou base64 aussi."""
     out = text
-    for s in sorted({x for x in secrets if x and len(x) >= 3}, key=len, reverse=True):
+    # chaque secret tel que tapé, et ses formes encodées qu'une page peut renvoyer : adresse (quote, quote_plus), HTML (échappé)
+    forms = set()
+    for x in secrets:
+        if x and len(x) >= 3:
+            forms |= {x, urllib.parse.quote(x), urllib.parse.quote(x, safe=''), urllib.parse.quote_plus(x), html.escape(x), html.escape(x, quote=False),
+                      html.escape(urllib.parse.quote_plus(x))}
+    for s in sorted(forms, key=len, reverse=True):
         out = re.sub(re.escape(s), '<secret>', out, flags=re.I)
     out = re.sub(r'(javax\.faces\.ViewState[^>]{0,80}?value=")[^"]*', r'\1<viewstate>', out)
     out = re.sub(r'(<update id="[^"]*ViewState[^"]*"><!\[CDATA\[)[^\]]*', r'\1<viewstate>', out)
@@ -103,10 +109,24 @@ def login_result(body):
 
 
 # ---------------------------------------------------------------------------------------------------------- la sonde
+class OffHost(Exception):
+    """Redirection hors de HOST : refusée, jamais suivie."""
+
+
+class StayOnHost(urllib.request.HTTPRedirectHandler):
+    """Suit une redirection seulement vers HOST (www.ead.eurocontrol.int, ou la copie locale des essais) : une page d'un autre hôte
+    n'est ni demandée ni gardée dans le compte rendu."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not urllib.parse.urljoin(req.full_url, newurl).startswith(HOST + '/'):
+            raise OffHost(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 class Session:
     def __init__(self, secrets):
         self.jar = http.cookiejar.CookieJar()
-        self.op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
+        self.op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar), StayOnHost())
         self.secrets = secrets
         self.n = 0
 
@@ -121,6 +141,8 @@ class Session:
                 return r.status, r.geturl(), r.read().decode('utf-8', 'replace')
         except urllib.error.HTTPError as e:
             return e.code, url, e.read().decode('utf-8', 'replace')
+        except OffHost as e:
+            raise SystemExit('redirection hors de www.ead.eurocontrol.int refusée: ' + sanitize(str(e), self.secrets)) from None
 
 
 def probe(user, password, state, icao, out):

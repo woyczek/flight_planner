@@ -73,6 +73,12 @@ def k7(c):
     missing = [h for h in hosts if not any(x == f'https://{h}' or x.startswith(f'https://{h}/') for x in connect)]
     c.eq(missing, [], 'every host of the laboratory\'s table is in connect-src, so that the test measures the server and not the page policy', what='hosts missing from connect-src')
     c.ok(len(hosts) >= 11, f'{hosts}', 'the table has at least the 11 hosts of the 15 sources')
+    # security review of 28 Oct 2026: ArcGIS Online is multi-tenant, only the measured service's path; the lab's hosts end at LAB_UNTIL
+    import datetime
+    c.ok('https://services6.arcgis.com' not in connect and any(x.startswith('https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/') for x in connect), f'{connect}',
+         'services6.arcgis.com only by the path of the measured service, never the whole host')
+    c.eq(csp_policy.lab_hosts(csp_policy.LAB_UNTIL + datetime.timedelta(days=1)), [], "past LAB_UNTIL the policy no longer carries the laboratory's hosts", what='lab hosts after the end date')
+    c.ok(datetime.date.today() <= csp_policy.LAB_UNTIL, f'LAB_UNTIL {csp_policy.LAB_UNTIL}', "the laboratory's end date is not passed (remove the lab, or move the date by a written decision)")
     import importlib
     launch = importlib.import_module('launch')
     pats = launch.download_patterns()
@@ -253,6 +259,12 @@ def k5(c):
          'form, lists, button and the option picked by label', what='parse_forms')
     clean = E.sanitize('user=bob mail a@b.fr jsessionid=QWE ViewState value="x" ' + 'A' * 45 + ' pw=hunter22', ['bob', 'hunter22'])
     c.ok(all(x not in clean for x in ('bob', 'hunter22', 'a@b.fr', 'QWE', 'A' * 45)), clean, 'no secret, mail, session or token survives sanitize')
+    import html as html_mod
+    import urllib.parse
+    pw = 'p@ss&w<rd"x'
+    forms = [urllib.parse.quote(pw), urllib.parse.quote(pw, safe=''), urllib.parse.quote_plus(pw), html_mod.escape(pw), html_mod.escape(pw, quote=False)]
+    clean = E.sanitize(' | '.join(['echo'] + forms + [pw]), [pw])
+    c.ok(all(x not in clean for x in forms + [pw]), clean, 'the URL-encoded and HTML-escaped forms of a secret are removed too (security review of 28 Oct 2026)')
     c.eq((E.login_result('{"loggedIn":true}')[0], E.login_result('{"loggedIn":false,"errorMessage":"x"}'), E.login_result('x')[0]), (True, (False, 'x'), False),
          'login answers read, never raising', what='login_result')
     # the whole flow against a local fake that follows the shapes read on the public login page (POST /fwf-eadbasic/ajaxlogin/ajax_security_check.jspx
@@ -273,6 +285,10 @@ def k5(c):
                 self._send('<form id="ajaxLoginForm"><input name="j_username"><input name="j_password" type="password"></form>')
             elif self.path.startswith('/fwf-eadbasic/public/static/home.faces'):
                 self._send('<a href="/fwf-eadbasic/secure/aip.faces;jsessionid=ZZZ">AIP Library</a><a href="/x">Other</a> hello bob@example.org')
+            elif self.path == '/redir':
+                self.send_response(302)
+                self.send_header('Location', 'https://example.invalid/steal')
+                self.end_headers()
             elif self.path.startswith('/fwf-eadbasic/secure/aip.faces'):
                 self._send(html_.replace('action="/lib.faces;jsessionid=ABCDEF123"', 'action="/fwf-eadbasic/secure/aip.faces"'))
             else:
@@ -304,6 +320,13 @@ def k5(c):
             c.ok(all(x not in allfiles for x in ('secret!pw', 'bob@example.org', 'ZZZ', 'A' * 45)) and 'bob' not in allfiles.lower().replace('bob@', ''),
                  allfiles[:400], 'no password, mail, session id or state token in any file written')
             c.ok(not list(Path(td).glob('*.pdf')), 'a pdf was written', 'no PDF is ever downloaded')
+        # security review of 28 Oct 2026: a redirect off the host is refused (never followed, never kept)
+        try:
+            E.Session(['bob']).call(E.HOST + '/redir')
+            refused = ''
+        except SystemExit as e:
+            refused = str(e)
+        c.ok('refusée' in refused and 'example.invalid' in refused, refused or 'followed', 'a redirect off www.ead.eurocontrol.int is refused')
     finally:
         srv.shutdown()
         os.environ.clear()

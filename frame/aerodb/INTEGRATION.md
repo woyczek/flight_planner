@@ -190,7 +190,8 @@ base) and writes `cache/lab/` (policy `cache`), `github()` is the reduced transp
 (`FrameData.github.scratch`: `head`, `create`, `tree`, `baseTree`, `commit` under `lab/` on that branch, `deleteBranch`; the token stays inside; never the
 main branch) or null without access or trigram, and
 `launcher()` is the survey of the launcher or null (it enables "From Downloads", the existing `GET /__setup/downloads`). The lab's declared download patterns are
-read by `tools/launch.py` `download_patterns()` from `frame/aerodb/lab_sources.js` (`downloads: '…'`); the hosts of its table are in `tools/csp_policy.py`. A
+read by `tools/launch.py` `download_patterns()` from `frame/aerodb/lab_sources.js` (`downloads: '…'`); the hosts of its table are in `tools/csp_policy.py` (`LAB_CONNECT`, until `LAB_UNTIL`, 31 Dec 2026; ArcGIS by the
+measured service's path only). A
 module never reaches it. `frame/aerodb/SPEC.md` § 5 sexies says what it measures.
 
 #### Purging the trial blocks published on the main branch (before 28 Oct 2026) — on a workstation, not run by the app

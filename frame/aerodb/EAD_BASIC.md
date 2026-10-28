@@ -24,6 +24,11 @@ never saw a credential. Facts are marked **read** (public page opened today) or 
   granted either: the owner decides whether to ask (a short question to `ead.service` at eurocontrol.int, the address the login
   page gives for operational use).
 
+- **Automated access, to be checked by the owner before keeping `tools/proc_ead.py`** (security review of 28 October 2026): EAD
+  Basic is a personal account; whether its terms (registration form, terms of use) allow a script to log in and search for the
+  account holder is **not known here** and must be read by the owner on the registration form or asked to EUROCONTROL. Until then
+  the probe stays a one-off manual run, never scheduled.
+
 ## 2. Can the AD 2 pages of other States feed the procedures?
 
 Same lead as the SIA's eAIP: a page of an aerodrome's part AD 2 that carries the **coding tables** of its RNAV / RNP procedures
