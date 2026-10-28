@@ -897,6 +897,22 @@ def a26(c):
          'the line is not right after the thumbnails', 'the line sits under the thumbnails')
 
 
+@case('A27', 'A card reached by its address, whatever the level', 'A', screens=False, designs=('standard',), night=False,
+      rule='frame/settings SPEC 1: a card reached by its address is shown whatever the level; the level only filters the list')
+def a27(c):
+    if not c.phone:
+        c.skip('a phone only')
+    c.open('settings?offline=1', docs=[['device/level.json', {'level': 1}, 'cache']])
+    c.until("!!document.querySelector('[data-card=\"offline\"]')", what='the offline data card is drawn at the Discovery level')
+    c.ok(c.shown('[data-card="offline"]'), 'the card is hidden', 'the card reached by its address is visible')
+    others = c.js("[...document.querySelectorAll('[data-card]')].map(k => k.dataset.card).filter(k => k !== 'offline')")
+    c.eq(others, [], 'the card is alone on the screen', what='other cards')
+    c.eq(c.attr('[data-settings-back]', 'href'), '#settings', 'a "← Settings" link back to the list', what='back link')
+    c.tap('[data-settings-back]')
+    c.until("!!document.querySelector('[data-card=\"identity\"]')", what='the list is drawn again')
+    c.eq(c.count('[data-card="offline"]'), 0, 'back in the list at Discovery, the offline data card is not there', what='offline in the Discovery list')
+
+
 @case('A25', 'Weather layer bench', 'A', tags=('weather',), designs=('standard',), screens=False, night=False,
       rule='frame/INTEGRATION 14; the bench reported 73/73')
 def a25(c):

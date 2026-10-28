@@ -636,7 +636,9 @@ Affichage, Administration (niveau Complet) et Aide. Chaque titre est replié ; t
 demande de l'attention (un avertissement, une erreur, ou la carte visée par une ligne orange de l'état) s'ouvre seul,
 avec une pastille orange ; une ligne du bloc « État » ouvre le groupe de sa carte. Un groupe ouvert à la main le reste
 tant que la page est ouverte. Les cartes de circonstance (réglages de la V2 trouvés, configuration reçue, reprise de
-l'adhésion) viennent en tête, à tous les niveaux, et disparaissent une fois traitées.
+l'adhésion) viennent en tête, à tous les niveaux, et disparaissent une fois traitées. Une carte ouverte par son adresse
+(le bouton « Données hors ligne » de l'assistant « Rejoindre la compagnie », par exemple) s'affiche seule, quel que soit
+le niveau ; « ← Réglages » ramène à la liste.
 
 **Votre identité.** Dans « Identité », tapez votre trigramme et vos identifiants VID IVAO, CID VATSIM et SimBrief, puis
 « Enregistrer ». Les outils s'en servent pour préremplir ; à plusieurs, le trigramme est nécessaire.

@@ -44,6 +44,11 @@ diagnostic, admin); the split is a matter of size, not of behaviour, and a regen
   - A line of the status block that leads to a card opens that card's group first (listened to in the capture phase,
     before the frame brings the card under the header); so do "Diagnostics" of the Administration card, the
     `#settings?offline=1` and `#settings?import=1` entries.
+- **A card reached by its address is shown whatever the level; the level only filters the list** (ergonomics session,
+  28 Oct 2026): `#settings?card=<name>` (a `data-card` name: `offline`, `backup`, `wx`, `lan`, `lnmperf`, `admin`…) and
+  `#settings?offline=1` (the joining assistant's last button) draw that card alone, at the top, under a "← Settings" link
+  to `#settings` (`[data-settings-back]`); no status block, no help panel. The address stays as it is, so a redraw (after
+  an action) keeps the card. An unknown name draws the ordinary list.
 - The diagnostics are a folded block of the About card.
 - **Nothing of the administrator's on the ordinary cards** (rule 18 of `docs/technique/V3_SPECIFICATION.md` § 7.1): every
   administrator page is one button of the Administration card (§ 3.11), Full level only.

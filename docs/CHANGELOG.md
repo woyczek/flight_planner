@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: a card reached by its address is shown whatever the level** (`frame/settings/settings.js`, `groups.js`;
+  SPEC § 1, DECISIONS, Settings help ×4; test A27): `#settings?card=<name>` and the joining assistant's
+  `#settings?offline=1` show that card alone under "← Settings", even at Discovery, whose list stays at seven cards.
 - **Settings: the Design card says when Aqua does not apply** (`frame/settings/settings.js`; SPEC § 3 item 3b,
   DECISIONS, Settings help ×4; test A26): on a device that is not a computer, Aqua chosen shows Standard; one line under
   the thumbnails says so, Standard's thumbnail is marked, and touching a thumbnail replaces the choice.

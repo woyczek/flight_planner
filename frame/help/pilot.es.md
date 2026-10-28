@@ -652,7 +652,8 @@ Cada título está plegado; tóquelo para abrirlo. Un grupo que requiere atenci�
 lleva una línea naranja del estado) se abre solo, con un punto naranja; una línea del bloque «Estado» abre el grupo de su
 tarjeta. Un grupo abierto a mano sigue abierto mientras la página está abierta. Las tarjetas de circunstancia (ajustes de
 la V2 encontrados, configuración recibida, reanudación de la adhesión) van primero, en todos los niveles, y desaparecen
-una vez atendidas.
+una vez atendidas. Una tarjeta abierta por su dirección (el botón «Datos sin conexión» del asistente «Unirse a la
+aerolínea», por ejemplo) se muestra sola, sea cual sea el nivel; «← Ajustes» vuelve a la lista.
 
 **Su identidad.** En «Identidad», escriba su trigrama y sus identificadores VID IVAO, CID VATSIM y SimBrief, luego
 «Guardar». Las herramientas los usan para prerrellenar; con varios usuarios, el trigrama es necesario.
@@ -829,4 +830,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: b426d7271662 -->
+<!-- fr: 47f9199a8ffd -->

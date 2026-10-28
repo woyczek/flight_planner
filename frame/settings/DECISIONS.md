@@ -434,3 +434,8 @@ rule 18); only the lab entry has it. The lab screen starts with a "Settings › 
   not a computer), one line ×4 under the thumbnails says so and that touching a thumbnail replaces the choice; the
   thumbnail marked as set is the applied one (Standard). `designs()` already leaves Aqua out there. Test A26 (phone,
   Aqua remembered) skips itself while the frame does not give `applied`.
+- **28 Oct 2026 — A card reached by its address, whatever the level** (ergonomics session, answering the joining
+  assistant's "Offline data" button, which led nowhere at Discovery): `#settings?card=<name>` and `#settings?offline=1`
+  draw that card alone, under "← Settings"; the level only filters the list, which stays at seven at Discovery. Not
+  chosen: moving the pilot to Everyday, an eighth card. `?offline=1` no longer scrolls to the card nor clears the
+  address (the address is what keeps the card through a redraw). Test A27.

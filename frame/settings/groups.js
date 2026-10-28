@@ -54,6 +54,12 @@
       return inG.length ? `<details class="f-group" data-group="${g}"${OPEN.has(g) ? ' open' : ''}><summary><span>${esc(t(T.groups[g]))}</span><i class="f-status-dot" data-attn hidden title="${esc(t(T.groupAttn))}"></i></summary>${inG.join('')}</details>` : '';
     }).join('');
   }
+  /** La carte `key` de la liste, visible (sans son attribut hidden), '' si la liste ne l'a pas : une carte atteinte par
+   *  son adresse (#settings?card=…) s'affiche seule. */
+  function pick(list, key) {
+    const h = list.find(x => x && keyOf(x) === key) || '';
+    return h.replace(/^(<div[^>]*?)\shidden(?=[\s>])/, '$1');
+  }
   /** Carte visée par une ligne du bloc d'état (`card:a,b` : la première présente et non masquée), comme le cadre. */
   function goCard(view, go) {
     return go.slice(5).split(',').map(k => view.querySelector(`[data-card="${k}"]`)).find(x => x && !x.hidden) || null;
@@ -91,6 +97,7 @@
 
   (window.SogSettingsParts ||= {}).groups = {
     arrange,
+    pick,
     markAttention,
     wireGroups
   };

@@ -633,7 +633,9 @@ cards are arranged under seven titles, in the order things are set: Identity, Ac
 Administration (Full level) and Help. Each title is folded; touch it to open it. A group that needs attention (a warning,
 an error, or the card an amber status line leads to) opens by itself, with an amber dot; a line of the “Status” block
 opens the group of its card. A group opened by hand stays open while the page is open. The cards of circumstance (V2
-settings found, configuration received, joining resume) come first, at every level, and go once dealt with.
+settings found, configuration received, joining resume) come first, at every level, and go once dealt with. A card
+opened by its address (the “Offline data” button of the “Join the airline” assistant, for instance) is shown alone,
+whatever the level; “← Settings” goes back to the list.
 
 **Your identity.** In “Identity”, type your trigram and your IVAO VID, VATSIM CID and SimBrief IDs, then “Save”. The
 tools use them to prefill; with several users, the trigram is needed.
@@ -801,4 +803,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: b426d7271662 -->
+<!-- fr: 47f9199a8ffd -->

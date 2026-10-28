@@ -140,6 +140,7 @@
     },
     textured: ['texturé', 'textured', 'texturiert', 'texturizado'],
     sample: ['Carte d’exemple', 'Sample card', 'Beispielkarte', 'Tarjeta de ejemplo'],
+    backToList: ['← Réglages', '← Settings', '← Einstellungen', '← Ajustes'],
     // design choisi qui ne s'applique pas ici (Aqua : ordinateur seulement) : ce que l'appareil montre à la place
     designDesk: ['{d}, choisi sur ce poste, ne vaut que sur un ordinateur : {a} ici. Toucher une vignette remplace ce choix.',
       '{d}, chosen on this device, only applies on a computer: {a} here. Touching a thumbnail replaces this choice.',
@@ -451,11 +452,15 @@
     // bloc « État » en tête (les lignes de l'ancien pop-up « i » : vol démarré, CR à écrire, données, base, lanceur, position),
     // dessiné par le cadre qui en a l'état, posé ici en première carte
     const cards = [c.status?.html() || ''];
-    // carte Administration (niveau Complet) : le filet de la limite de la zone du vol, option enregistrée avec les seuils
-    const edgeShow = (c.level?.() || 2) === 3 ? await P.admin.readEdge(c) : true;
     // configuration d'un pilote : le lien #settings?config=… ou un fichier lancent l'assistant « Rejoindre la compagnie »
     // (frame/settings/join.js), que #settings?join=1 affiche à la place des cartes
     const q = new URLSearchParams(location.hash.split('?')[1] || '');
+    // une carte atteinte par son adresse (#settings?card=<nom>, #settings?offline=1 de l'assistant) : seule, quel que soit
+    // le niveau ; le niveau ne filtre que la liste (SPEC § 1)
+    const focus = q.get('card') || (q.get('offline') ? 'offline' : '');
+    // carte Administration (niveau Complet, ou atteinte par son adresse) : le filet de la limite de la zone du vol, option
+    // enregistrée avec les seuils
+    const edgeShow = (c.level?.() || 2) === 3 || focus === 'admin' ? await P.admin.readEdge(c) : true;
     let inErr = '';
     if (q.get('config') && window.SogConfig && window.SogJoin) {
       try {
@@ -540,7 +545,7 @@
       ${chk('devices', T.devices)}${chk('users', T.users)}${chk('backend', T.backend, true)}${us.users && L?.data && !remote?.url ? `<p class="f-warn">${esc(t(T.needRemote))}</p>` : ''}</div>`);
     // à Découverte : sept cartes au plus (SPEC § 1) — sauvegarde, données hors ligne, clé météo, accès du poste et
     // Little Navmap à partir du niveau Courant
-    if (!exchange && lvl > 1) cards.push(`<div class="f-card" data-card="backup"><h2>${esc(t(T.backup))}</h2><p class="f-muted">${esc(t(T.backupHint))}</p>
+    if (!exchange && (lvl > 1 || focus === 'backup')) cards.push(`<div class="f-card" data-card="backup"><h2>${esc(t(T.backup))}</h2><p class="f-muted">${esc(t(T.backupHint))}</p>
       <div class="f-row"><button type="button" class="primary" data-act="export">${esc(t(T.export))}</button><button type="button" data-act="import">${esc(t(T.import))}</button><button type="button" data-act="replace">${esc(t(T.replace))}</button><input type="file" accept="application/json,.json" data-file hidden></div></div>`);
     // carte Accès toujours : sur un lanceur, le dépôt distant de data/ ; sinon dépôt GitHub et jeton (sans échange coché :
     // lecture des bases seulement)
@@ -576,11 +581,11 @@
     // synchronisation : montrée si un échange est coché ou tant que des écritures attendent (access.js)
     cards.push(P.access.syncHtml(env));
     // données hors ligne
-    if (lvl > 1) cards.push(`<div class="f-card" data-card="offline"><h2>${esc(t(T.offlineData))}</h2><dl class="f-dl" data-offline><dt>${esc(t(T.zones))}</dt><dd>…</dd><dt>${esc(t(T.storage))}</dt><dd>…</dd></dl>
+    if (lvl > 1 || focus === 'offline') cards.push(`<div class="f-card" data-card="offline"><h2>${esc(t(T.offlineData))}</h2><dl class="f-dl" data-offline><dt>${esc(t(T.zones))}</dt><dd>…</dd><dt>${esc(t(T.storage))}</dt><dd>…</dd></dl>
       <div data-zones></div>${!L?.data && !gh ? `<p class="f-warn">${esc(t(T.noBases))}</p>` : ''}<p class="f-muted">${esc(t(T.zoneHint))}</p></div>`);
     // clé météo de l'appareil, avec ou sans lanceur (le cadre la garde hors de device/ et de toute sauvegarde)
     const wk = c.weatherKey;
-    if (wk && lvl > 1) cards.push(`<div class="f-card" data-card="wx"><h2>${esc(t(T.wx))}</h2><p class="f-muted">${esc(t(T.wxHint))}</p>
+    if (wk && (lvl > 1 || focus === 'wx')) cards.push(`<div class="f-card" data-card="wx"><h2>${esc(t(T.wx))}</h2><p class="f-muted">${esc(t(T.wxHint))}</p>
       ${L ? `<p class="f-muted">${esc(t(T.wxLauncher))}</p>` : ''}<p><b>${esc(t(wk.has() ? T.wxSet : T.wxNone))}</b></p>
       ${fld('wxKey', T.wxKey, '', { type: 'password', ph: wk.has() ? t(T.wxKeySet) : '' })}<p class="f-msg" data-msg></p>
       <div class="f-row"><button type="button" class="primary" data-act="wxSave">${esc(t(T.save))}</button><button type="button" data-act="wxTest" ${wk.has() ? '' : 'disabled'}>${esc(t(T.test))}</button><button type="button" data-act="wxErase" ${wk.has() ? '' : 'disabled'}>${esc(t(T.erase))}</button></div>
@@ -588,20 +593,25 @@
     // clés d'API de la compagnie et dépôt distant de data/ (lanceur) : volets de la carte Administration (admin.js)
     // accès des appareils du réseau local : sur le poste qui sert la page seulement (c.lan() nul ailleurs, même sur un
     // appareil appairé) ; état dessiné et relu toutes les 5 s par paintLan
-    const lanCard = lvl > 1 ? P.launcher.lanHtml(env) : '';
+    const lanCard = lvl > 1 || focus === 'lan' ? P.launcher.lanHtml(env) : '';
     if (lanCard) cards.push(lanCard);
     // fiches Little Navmap (.lnmperf), si un lanceur sert la page : carte écrite par aerodb (frame/aerodb/lnmperf.js)
-    if (L && lvl > 1 && c.aerodb()?.lnmperf) cards.push('<div class="f-card" data-card="lnmperf" hidden></div>');
+    if (L && (lvl > 1 || focus === 'lnmperf') && c.aerodb()?.lnmperf) cards.push(
+      '<div class="f-card" data-card="lnmperf" hidden></div>');
     const help = await c.helpPanel?.().catch(() => null);
-    const adminHtml = lvl === 3 ? P.admin.adminCard(t, L, {
+    const adminHtml = lvl === 3 || focus === 'admin' ? P.admin.adminCard(t, L, {
       cfg: cfgOut,
       edge: edgeShow,
       remote: L ? P.launcher.remoteHtml(env) : '',
       keys: L ? P.launcher.keysHtml(env) : ''
     }) : '';
-    view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${P.groups.arrange([...cards, P.diagnostic.aboutHtml(env), adminHtml], t, lvl)}`;
+    const all = [...cards, P.diagnostic.aboutHtml(env), adminHtml],
+      one = focus ? P.groups.pick(all, focus) : '';
+    // carte demandée par l'adresse : elle seule, sous « ← Réglages » ; sinon la liste, rangée selon le niveau
+    view.innerHTML = one ? `<h1>${esc(t(T.title))}</h1><p><a class="f-btn" href="#settings" data-settings-back>${esc(t(T.backToList))}</a></p>${one}` :
+      `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${P.groups.arrange(all, t, lvl)}`;
     P.groups.wireGroups(view);
-    if (help)(view.querySelector('[data-card="status"]') || view.querySelector('h1 + p'))?.after(help); // sous le bloc d'état
+    if (help && !one)(view.querySelector('[data-card="status"]') || view.querySelector('h1 + p'))?.after(help); // sous le bloc d'état
 
     /** Carte de l'écran par son nom (data-card). */
     const card = k => view.querySelector(`[data-card="${k}"]`);
@@ -821,14 +831,7 @@
       e.target.value = '';
       if (f) await joinFromFile(c, f, view);
     });
-    // #settings?offline=1 (fin de l'assistant) : la carte Données hors ligne à portée
-    if (q.get('offline')) {
-      dropConfigHash();
-      card('offline')?.closest('details.f-group')?.setAttribute('open', ''); // son groupe ouvert d'abord
-      setTimeout(() => card('offline')?.scrollIntoView({
-        block: 'start'
-      }), 0);
-    }
+    // #settings?offline=1 (fin de l'assistant) : la carte Données hors ligne seule (focus), l'adresse reste telle quelle
     // #settings?import=1 (carte d'accueil) : le bouton d'import à portée
     if (q.get('import')) {
       dropConfigHash(); // une fois : le dessin suivant (après le choix du fichier) reste en tête
@@ -917,7 +920,7 @@
   }) : t(T.cfgBadFile);
   /** Retire config= / import= de l'adresse (la configuration n'est plus proposée au dessin suivant). */
   const dropConfigHash = () => {
-    if (/[?&](config|import|offline)=/.test(location.hash)) history.replaceState(null, '', `${location.pathname}${location.search}#settings`);
+    if (/[?&](config|import)=/.test(location.hash)) history.replaceState(null, '', `${location.pathname}${location.search}#settings`);
   };
 
   /** Exporte la sauvegarde de cet appareil en un fichier (FrameData.dump : copies, écritures en attente, conflits ; jamais
