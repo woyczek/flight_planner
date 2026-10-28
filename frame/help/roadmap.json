@@ -225,11 +225,18 @@
           "es": "Una navegación a la vez (token), montaje abandonable, geometría compartida (línea de cambio de fecha)"
         },
         {
-          "state": "planned",
+          "state": "done",
           "fr": "Couche météo unique du cadre : un cache, une API ctx.weather, quota compté ; Carburant et Atmosphère deviennent lecteurs",
           "en": "One weather layer in the frame: one cache, one ctx.weather API, counted quota; Fuel and Atmosphere become readers",
           "de": "Eine Wetterschicht im Rahmen: ein Cache, eine ctx.weather-API, gezählte Quote; Kraftstoff und Atmosphäre werden Leser",
           "es": "Una capa meteorológica del marco: una caché, una API ctx.weather, cuota contada; Combustible y Atmósfera pasan a lectores"
+        },
+        {
+          "state": "done",
+          "fr": "Ordinateur reconnu par le cadre (html.f-desk) pour les designs réservés à l'écran",
+          "en": "Computer recognised by the frame (html.f-desk) for screen-only designs",
+          "de": "Computer vom Rahmen erkannt (html.f-desk) für Designs nur am Bildschirm",
+          "es": "Ordenador reconocido por el marco (html.f-desk) para los diseños solo de pantalla"
         }
       ]
     },
@@ -354,6 +361,13 @@
           "en": "Opens on the Quote, shared flight date (planned_at), display units, airway \"Auto\" button, mount races closed",
           "de": "Öffnet mit der Berechnung, geteiltes Flugdatum (planned_at), Anzeigeeinheiten, Taste „Auto“ für Luftstraßen, Mount-Races geschlossen",
           "es": "Abre en el Cálculo, fecha del vuelo compartida (planned_at), unidades de visualización, botón «Auto» de aerovías, carreras de montaje cerradas"
+        },
+        {
+          "state": "done",
+          "fr": "Carburant lecteur de la couche météo du cadre : plus d'appel direct aux services météo, temps par tronçon du devis écrits pour la Carte",
+          "en": "Fuel reads the frame's weather layer: no more direct call to weather services, the quote's leg times written for the Map",
+          "de": "Kraftstoff liest die Wetterschicht des Rahmens: kein direkter Aufruf von Wetterdiensten mehr, Abschnittszeiten der Berechnung für die Karte geschrieben",
+          "es": "Combustible lee la capa meteorológica del marco: sin llamadas directas a los servicios meteorológicos, tiempos por tramo del cálculo escritos para el Mapa"
         }
       ]
     },
@@ -509,10 +523,17 @@
         },
         {
           "state": "planned",
-          "fr": "Calques météo sur la carte depuis la bibliothèque d'Atmosphère (puce Météo)",
-          "en": "Weather layers on the map from Atmosphere's library (Weather chip)",
-          "de": "Wetterebenen auf der Karte aus der Bibliothek von Atmosphäre (Chip Wetter)",
-          "es": "Capas meteorológicas en el mapa desde la biblioteca de Atmósfera (chip Meteo)"
+          "fr": "Calques météo sur la carte depuis la bibliothèque d'Atmosphère (puce Météo) et bord de la zone du vol : lot 2 après le recodage",
+          "en": "Weather layers on the map from Atmosphere's library (Weather chip) and flight-zone edge: lot 2 after the recode",
+          "de": "Wetterebenen auf der Karte aus der Bibliothek von Atmosphäre (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
+          "es": "Capas meteorológicas en el mapa desde la biblioteca de Atmósfera (chip Meteo) y borde de la zona del vuelo: lote 2 tras la recodificación"
+        },
+        {
+          "state": "done",
+          "fr": "Carte recodée depuis sa spécification (28/10) : module en fichiers par sujet, heures et position prévue dérivées des temps du devis, mode Édition qui fusionne dans la route, météo par la couche du cadre",
+          "en": "Map recoded from its specification (28 Oct): module in files by concern, times and planned position derived from the quote's leg times, Edit mode merging into the route, weather through the frame's layer",
+          "de": "Karte nach ihrer Spezifikation neu geschrieben (28.10.): Modul in Dateien je Thema, Zeiten und geplante Position aus den Abschnittszeiten der Berechnung, Bearbeitungsmodus, der in die Route einfügt, Wetter über die Schicht des Rahmens",
+          "es": "Mapa recodificado según su especificación (28/10): módulo en archivos por tema, horas y posición prevista derivadas de los tiempos del cálculo, modo Edición que fusiona en la ruta, meteo por la capa del marco"
         }
       ]
     },
@@ -553,6 +574,13 @@
           "en": "TEMSI; world SIGMET and METAR through the launcher relay",
           "de": "TEMSI; SIGMET und METAR der Welt über das Launcher-Relais",
           "es": "TEMSI; SIGMET y METAR del mundo por el relé del lanzador"
+        },
+        {
+          "state": "doing",
+          "fr": "Atmosphère recodée depuis sa spécification sur la couche météo du cadre (session cloud)",
+          "en": "Atmosphere recoded from its specification on the frame's weather layer (cloud session)",
+          "de": "Atmosphäre nach ihrer Spezifikation auf der Wetterschicht des Rahmens neu geschrieben (Cloud-Sitzung)",
+          "es": "Atmósfera recodificada según su especificación sobre la capa meteorológica del marco (sesión en la nube)"
         }
       ]
     },
@@ -734,6 +762,13 @@
           "en": "\"Data\" screen: fetch, compile, push, clean the sources without V2 (a module at the Full level)",
           "de": "Bildschirm „Daten“: Quellen holen, kompilieren, pushen, bereinigen ohne V2 (Modul auf Stufe Vollständig)",
           "es": "Pantalla «Datos»: obtener, compilar, publicar, limpiar las fuentes sin la V2 (módulo en el nivel Completo)"
+        },
+        {
+          "state": "doing",
+          "fr": "Réglages : fichier découpé par sujet (livré) ; cartes groupées sous sept titres au-delà de Découverte, cartes d'administration derrière Administration",
+          "en": "Settings: file split by concern (delivered); cards grouped under seven headings above Discovery, administration cards behind Administration",
+          "de": "Einstellungen: Datei je Thema aufgeteilt (geliefert); Karten über Entdeckung unter sieben Titeln gruppiert, Verwaltungskarten hinter Verwaltung",
+          "es": "Ajustes: archivo dividido por tema (entregado); tarjetas agrupadas bajo siete títulos por encima de Descubrimiento, tarjetas de administración tras Administración"
         }
       ]
     },
@@ -877,6 +912,13 @@
           "en": "Hues, font, repeated rules to promote to tokens (user's choice)",
           "de": "Farbtöne, Schrift, wiederholte Regeln als Tokens (Wahl des Nutzers)",
           "es": "Tonos, fuente, reglas repetidas a promover en tokens (elección del usuario)"
+        },
+        {
+          "state": "doing",
+          "fr": "Aqua en V3, réservé à l'ordinateur : textures sur l'habillage du cadre seulement, règles communes promues en jetons d'abord, panneaux jamais précachés",
+          "en": "Aqua in V3, computer only: textures on the frame's chrome only, shared rules promoted to tokens first, panels never precached",
+          "de": "Aqua in V3, nur am Computer: Texturen nur auf dem Rahmen, gemeinsame Regeln zuerst als Tokens, Panels nie vorab zwischengespeichert",
+          "es": "Aqua en V3, solo en ordenador: texturas solo en el marco, reglas comunes promovidas a tokens primero, paneles nunca precacheados"
         }
       ]
     },
