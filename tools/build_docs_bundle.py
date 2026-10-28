@@ -4,6 +4,9 @@ lanceur : le navigateur y interdit la lecture des fichiers par programme, pas le
 Servie par le lanceur, l'Aide lit toujours les fichiers eux-mêmes ; le paquet ne sert qu'en fichier local ou si le
 lanceur ne répond plus.
 
+Exclus : les journaux et synthèses du relais cloud (docs/technique/V3_JOURNAL_*, V3_DECISIONS_RELAIS_*), journaux de
+travail pour la session ergonomie, pas de l'aide (400 Ko, et chaque commit de journal rendait le paquet périmé).
+
 Appelé par tools/bump_versions.py (avant le calcul des versions) ; à la main : python tools/build_docs_bundle.py
 """
 import io, json, os, sys
@@ -11,6 +14,8 @@ import io, json, os, sys
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DOCS = os.path.join(ROOT, 'docs')
 OUT = os.path.join(ROOT, 'apps', 'aide', 'docs_bundle.js')
+# Préfixes (relatifs à docs/) des documents laissés hors du paquet.
+EXCLUDE = ('technique/V3_JOURNAL_', 'technique/V3_DECISIONS_RELAIS_')
 
 
 def build(verbose=True):
@@ -21,6 +26,8 @@ def build(verbose=True):
             if f.endswith('.md'):
                 p = os.path.join(d, f)
                 rel = os.path.relpath(p, DOCS).replace(os.sep, '/')
+                if rel.startswith(EXCLUDE):
+                    continue
                 docs[rel] = io.open(p, encoding='utf-8').read().replace('\r\n', '\n')
     text = ('// GÉNÉRÉ par tools/build_docs_bundle.py depuis docs/**/*.md : ne pas éditer à la main.\n'
             '// Documents de l\'Aide pour l\'ouverture en fichier local (apps/aide/aide.js).\n'

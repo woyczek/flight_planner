@@ -47,6 +47,11 @@ launcher, same data repository. The V2 pages are unchanged (see 5.4.0 below).
 - VFR routes are the user's VAC extraction, marked "to verify": the VAC chart prevails.
 - Not yet: CPCO and SOG client applications, PHP web service of the site, iOS / Android shells for V3, TEMSI.
 
+### Delivery
+
+- Delivery archive: `xplane-web-suite-6.0.0-alpha.1.zip` — SHA-256 `5026985db8c0bafc202ddae70a4989aa578d697db47fb82407a38f3f4791ae71` (code only, outside the repository: `dist/` folder).
+- Module package: `dispos-module-6.0.0-alpha.1.zip` — SHA-256 `09fa2a2a484acc78f78d940bec91de44351e9803d600e8852cd9154f003fff0b` (outside the repository: `dist/` folder).
+
 ## 5.4.0 — 23 October 2026
 
 Last release of the V2 line. The next line (6.0, "Pilot" application) is being built on the `v3` branch; the V2
