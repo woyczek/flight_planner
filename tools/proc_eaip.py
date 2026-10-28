@@ -40,6 +40,8 @@ def pdf_reader(path):
     except ImportError:
         raise SystemExit('pypdf manque : python -m pip install pypdf (dépendance facultative des constructeurs de poste, '
                          'voir tools/proc_eaip.py ; ni le lanceur ni la page n\'en ont besoin).')
+    import logging
+    logging.getLogger('pypdf').setLevel(logging.ERROR)    # l'avertissement « fontTools is required » (polices Type1) se répète à chaque page et n'apprend rien
     return PdfReader(str(path))
 
 
