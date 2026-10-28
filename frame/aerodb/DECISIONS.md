@@ -1245,3 +1245,17 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **The principle** at the head of the SPEC: compiling the raw sources (builders, workstation) is strictly apart from using the compiled data
   (reader, devices); the compiled JSON live in the private data repository, on the user's side.
 - **To code** (next aerodb lot after D1): `tools/proc_manual.py` installs into `proc/manual/`; the reader merges it and marks `outdated`.
+
+## 28 October 2026 — lot D1 for the Données module: airac.js, catalogue.js, publication(), zones(), sources()
+
+- **Done**: `frame/aerodb/airac.js` (`AeroAirac`: `cycleOf` with next and previous, `cycleDate`, `idOf`, `next`, `prev`, `inForce`, the anchor 2401 =
+  2024-01-25), the one calculation of the AIRAC cycle; `catalogue.js` (was `sources_data.js`, moved so that its history follows) with the extended
+  schema (group, zones fed, fetch, build, publish), the EAD Basic outcome of the 47 States, `siaFileInfo` / `cifpFileInfo` back, a twentieth source
+  (the aircraft types, group « Appareils »); `aerodb.publication()`, `zones()`, `sources()` (SPEC § 5). The Sources screen keeps working
+  (`window.AeroSources`, its declaration in `frame/app.js` loading `airac.js` and `catalogue.js`) until the module replaces it.
+- **Two details against the contract of the morning**: `proc` gives `byStatus` (the index carries a status per aerodrome, not a source); a zone still
+  in the whole format is listed (`format: 'whole'`) but never read, its file being the whole zone. `aircraft` also gives the number of files.
+- **Bench** `frame/aerodb/test/catalogue.html` (K21, 24 checks): the cycles of 2024 to 2027 round-trip, the year end, the anchor; the schema of every
+  source, zones the suite knows, https links, the dated links of 2610, the file names, the 47 States; `publication()` on a reader in memory with
+  two cycles of `fr`, a whole-format zone, an index of procedures, the VFR index and the aircraft base, reading no kind file but `meta.json`;
+  `zones()` and `sources()`. K21 also checks that `airac.js` and the Python calculation (`proc_ead.lib_cycle`, the 28-day suite) agree.

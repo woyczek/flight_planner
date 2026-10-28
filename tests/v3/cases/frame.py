@@ -810,7 +810,7 @@ def a18(c):
 # ------------------------------------------------------------------------------------------------ data sources (#sources)
 # The screen that replaced the data laboratory on 28 Oct 2026 (user's decision): links only, nothing fetched, parsed or published.
 SRC = 'frame/aerodb/sources.js'
-DATA = 'frame/aerodb/sources_data.js'
+DATA = 'frame/aerodb/catalogue.js'
 LEVEL3 = [['device/level.json', {'level': 3}, 'cache']]
 
 
@@ -847,7 +847,7 @@ def a20(c):
     src = (ROOT / DATA).read_text(encoding='utf-8')
     ids = re.findall(r"^\s{4}id: '([a-z0-9]+)',", src, re.M)
     rows = c.js("[...document.querySelectorAll('[data-screen=sources] li[data-src]')].map(li => ({ id: li.dataset.src, status: li.dataset.status, chip: li.querySelector('.src-status').textContent.trim(), a: (a => a && { href: a.getAttribute('href'), target: a.target, rel: a.rel, h: a.getBoundingClientRect().height, text: a.textContent.trim() })(li.querySelector('a[data-open]')), text: li.innerText }))")
-    c.eq(sorted(r['id'] for r in rows), sorted(ids), 'one line per source of sources_data.js', what='source lines')
+    c.eq(sorted(r['id'] for r in rows), sorted(ids), 'one line per source of the catalogue', what='source lines')
     for want in ('sia', 'eaip', 'cifp', 'ead', 'dfs', 'enaire', 'nats'):
         c.ok(want in [r['id'] for r in rows], [r['id'] for r in rows], f'the line {want} is there (the table of the laboratory, EAD Basic, the national AIPs)')
     order = {'used': 0, 'candidate': 1, 'abandoned': 2}
@@ -874,7 +874,7 @@ def a20(c):
     req = c.js('window.__srcReq')
     ext = [u for u in req if not u.startswith(c.js('location.origin'))]
     c.eq(ext, [], 'the screen calls no external host (links only)', what='external requests')
-    c.ok(all('/aerodb/' not in u or re.search(r'/frame/aerodb/sources(_data)?\.(js|css)', u) for u in req), f'{req}', "of aerodb, only the screen's own files are asked for")
+    c.ok(all('/aerodb/' not in u or re.search(r'/frame/aerodb/(sources\.(js|css)|catalogue\.js|airac\.js)', u) for u in req), f'{req}', "of aerodb, only the screen's own files are asked for")
     sw, iw = hscroll(c)
     c.le(sw, iw, 'no horizontal scroll', what='page width')
     c.shot(f'A20_{c.design}_{c.width}_{c.lang}.png')

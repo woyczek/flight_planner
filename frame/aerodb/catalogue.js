@@ -1,58 +1,23 @@
 (() => {
   'use strict';
-  // V3 aerodb — la liste des sources de données aéronautiques que la suite utilise ou envisagerait (écran « Sources », #sources,
-  // frame/aerodb/sources.js ; SPEC § 5 sexies) : données seules, aucun appel réseau. Elle reprend la table des sources du
-  // laboratoire des données (retiré le 28 octobre 2026 ; tableau 1.2 de docs/technique/V3_DONNEES_REGENERATION.md), EAD Basic
-  // et les AIP nationaux de AIP_OPEN_DATA_INVENTORY.md ; licences d'après LICENSE.md. Une adresse est une chaîne ou une
-  // fonction du cycle AIRAC (page du SIA, VAC, eAIP, CIFP) : l'écran montre le cycle en vigueur.
-  // API : AeroSources.{ SOURCES, ORDER, cycleOf, cycleDate, eaipBase, cifpName, cifpUrl, siaPage, byId, urlOf }.
+  // V3 aerodb — le catalogue des sources de données aéronautiques (SPEC § 5 sexies ; contrat du module Données, 28 octobre 2026) :
+  // données seules, aucun appel réseau, servi aux modules par aerodb.sources() (un module ne charge pas les fichiers d'aerodb) et
+  // lu par l'écran « Sources » (sources.js) tant qu'il existe. Une ligne par source utilisée, envisagée ou écartée :
+  //   { id, no (ligne du tableau 1.2 de docs/technique/V3_DONNEES_REGENERATION.md, ou null), status ('used' | 'candidate' |
+  //     'abandoned'), group ('base' | 'proc' | 'aircraft' | 'weather' : le groupe du module Données), zones (zones nourries, '*' :
+  //     toutes celles de la couverture), fetch { how: 'launcher' | 'pick' | 'none', provider?, glob?, name? } (comment la source
+  //     arrive sur le poste : téléchargée par le lanceur, prise dans Téléchargements ou un sélecteur, ou rien), build { runtime:
+  //     'worker' | 'python' | 'none', id } (le constructeur, SPEC § 5 septies), publish (vers le dépôt des données ; jamais pour
+  //     X-Plane / Navigraph), cycled (adresse du cycle AIRAC), n [fr, en, de, es], url (chaîne, ou fonction du cycle), gives [4],
+  //     lic [4] (d'après LICENSE.md), how [4]? (le geste pour l'obtenir) }.
+  // Les cycles sont ceux d'airac.js (AeroAirac) : une adresse se construit pour une date d'effet « AAAA-MM-JJ » ou un « AANN ».
+  // API : AeroCatalogue.{ SOURCES, ORDER, GROUPS, EAD_STATES, byId, urlOf, eaipBase, cifpName, cifpUrl, siaPage, siaFileInfo,
+  //   cifpFileInfo } ; AeroSources : le même objet avec cycleOf / cycleDate (écran « Sources », jusqu'à son retrait).
+  const A = (typeof window !== 'undefined' ? window : self).AeroAirac;
+  if (!A) throw new Error('catalogue.js: airac.js must be loaded first');
   const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  const DAY = 86400000;
-  const ANCHOR = Date.UTC(2026, 0, 22); // AIRAC 2601 : 22 janvier 2026 ; 28 jours entre deux cycles
-  const p2 = n => String(n).padStart(2, '0');
-  const iso = ms => new Date(ms).toISOString().slice(0, 10);
-
-  /** Cycle AIRAC en vigueur à la date (Date ou ms, aujourd'hui par défaut) : { id: '2610', date: '2026-10-01', num: 10,
-   *  next: { id, date } } — le numéro est le rang de la date d'effet dans son année (la première tombe avant le 29 janvier). */
-  function cycleOf(when = Date.now()) {
-    const t = +when,
-      ms = ANCHOR + Math.floor((t - ANCHOR) / (28 * DAY)) * 28 * DAY,
-      mk = m => {
-        const y = new Date(m).getUTCFullYear(),
-          num = Math.floor((m - Date.UTC(y, 0, 1)) / (28 * DAY)) + 1;
-        return {
-          id: p2(y % 100) + p2(num),
-          date: iso(m),
-          num,
-          year: y
-        };
-      };
-    return {
-      ...mk(ms),
-      next: (n => ({
-        id: n.id,
-        date: n.date
-      }))(mk(ms + 28 * DAY))
-    };
-  }
-  /** Date d'effet (AAAA-MM-JJ) d'un cycle « AANN ». */
-  function cycleDate(id) {
-    const m = /^(\d\d)(\d\d)$/.exec(String(id));
-    if (!m) return '';
-    const y = 2000 + +m[1];
-    let ms = ANCHOR;
-    for (let i = 0; i < 40 * 14; i++, ms += 28 * DAY) { // 14 ans de cycles au plus
-      const c = new Date(ms);
-      if (c.getUTCFullYear() === y && Math.floor((ms - Date.UTC(y, 0, 1)) / (28 * DAY)) + 1 === +m[2]) return iso(ms);
-    }
-    for (let i = 1; i < 40 * 14; i++) { // avant 2026
-      const ms2 = ANCHOR - i * 28 * DAY;
-      const c = new Date(ms2);
-      if (c.getUTCFullYear() === y && Math.floor((ms2 - Date.UTC(y, 0, 1)) / (28 * DAY)) + 1 === +m[2]) return iso(ms2);
-    }
-    return '';
-  }
-  const dateOf = c => (/^\d{4}$/.test(c) ? cycleDate(c) : String(c || cycleOf().date));
+  /** Date d'effet d'un cycle donné en « AANN », en date, ou rien (le cycle en vigueur). */
+  const dateOf = c => (/^\d{4}$/.test(String(c || '')) ? A.cycleDate(c) : c ? A.cycleOf(c).date : A.cycleOf().date);
   /** Dossier AIRAC de l'eAIP du SIA : …/media/dvd/eAIP_01_OCT_2026/FRANCE/AIRAC-2026-10-01 (cycle « 2610 » ou date). Les
    *  dossiers des cycles passés sont retirés (404 le 26 octobre pour 2607 à 2609) ; celui du suivant paraît quelques jours avant. */
   function eaipBase(cycle) {
@@ -68,8 +33,41 @@
   const cifpUrl = cycle => `https://aeronav.faa.gov/Upload_313-d/cifp/${cifpName(cycle)}`;
   /** Page du SIA du produit « Données aéronautiques XML » du cycle (rang dans l'année, deux chiffres, et année). */
   function siaPage(cycle) {
-    const c = /^\d{4}$/.test(cycle) ? cycle : cycleOf(Date.parse(dateOf(cycle))).id;
+    const c = /^\d{4}$/.test(String(cycle || '')) ? cycle : A.idOf(dateOf(cycle));
     return `https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/donnees-aeronautiques-xml-airac-${c.slice(2)}-${c.slice(0, 2)}.html`;
+  }
+
+  /** Nom d'un ZIP du SIA export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip (casse libre, copie « (1) » admise) : { ok, date, version, cycle
+   *  (date d'effet du cycle en vigueur à cette date), id } ; ok faux si le nom ne suit pas le modèle. */
+  function siaFileInfo(name) {
+    const m = /^export_xml_bd_sia_(\d{4})-(\d{2})-(\d{2})(?:-v(\d+))?(?:\s*\(\d+\))?\.zip$/i.exec(String(name || '').trim());
+    if (!m) return {
+      ok: false
+    };
+    const date = `${m[1]}-${m[2]}-${m[3]}`,
+      c = A.cycleOf(date);
+    return {
+      ok: true,
+      date,
+      version: m[4] ? +m[4] : 1,
+      cycle: c.date,
+      id: c.id
+    };
+  }
+  /** Nom d'un CIFP fourni : CIFP_<aammjj>.zip → { ok, date, cycle (date d'effet), id }. */
+  function cifpFileInfo(name) {
+    const m = /^CIFP_(\d{2})(\d{2})(\d{2})(?:\s*\(\d+\))?\.zip$/i.exec(String(name || '').trim());
+    if (!m) return {
+      ok: false
+    };
+    const date = `20${m[1]}-${m[2]}-${m[3]}`,
+      c = A.cycleOf(date);
+    return {
+      ok: true,
+      date,
+      cycle: c.date,
+      id: c.id
+    };
   }
 
   // ---------------------------------------------------------------------------------------------------- les sources
@@ -80,6 +78,18 @@
   // l'écran (sources.js) ne fait qu'afficher des liens, aucune récupération.
   const SOURCES = [{
     id: 'sia',
+    group: 'base',
+    zones: ['fr'],
+    fetch: {
+      how: 'pick',
+      glob: 'export_xml_bd_sia_*.zip',
+      name: 'export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'sia'
+    },
+    publish: true,
     no: 1,
     status: 'used',
     cycled: true,
@@ -102,6 +112,17 @@
     ]
   }, {
     id: 'geonames',
+    group: 'base',
+    zones: '*',
+    fetch: {
+      how: 'launcher',
+      provider: 'geonames'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'cities'
+    },
+    publish: true,
     no: 2,
     status: 'used',
     n: ['Villes (GeoNames)', 'Towns (GeoNames)', 'Städte (GeoNames)', 'Ciudades (GeoNames)'],
@@ -114,6 +135,17 @@
     lic: ['CC BY 4.0', 'CC BY 4.0', 'CC BY 4.0', 'CC BY 4.0']
   }, {
     id: 'mora',
+    group: 'base',
+    zones: '*',
+    fetch: {
+      how: 'launcher',
+      provider: 'terrain'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'mora'
+    },
+    publish: true,
     no: 3,
     status: 'used',
     n: ['Relief (Terrain Tiles, Terrarium)', 'Elevation (Terrain Tiles, Terrarium)', 'Relief (Terrain Tiles, Terrarium)',
@@ -129,6 +161,17 @@
     ]
   }, {
     id: 'dircam',
+    group: 'base',
+    zones: ['fr'],
+    fetch: {
+      how: 'pick',
+      glob: '*ENR*5.7*.pdf'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'aar'
+    },
+    publish: true,
     no: 4,
     status: 'used',
     n: ['DIRCAM MIAM ENR 5.7 (axes de ravitaillement)', 'DIRCAM MIAM ENR 5.7 (refuelling tracks)',
@@ -143,6 +186,17 @@
     ]
   }, {
     id: 'ukmil',
+    group: 'base',
+    zones: ['gb'],
+    fetch: {
+      how: 'launcher',
+      provider: 'ukmil'
+    },
+    build: {
+      runtime: 'python',
+      id: 'ukmil_aip'
+    },
+    publish: true,
     no: 5,
     status: 'used',
     n: ['UK Mil AIP ENR 5.2', 'UK Mil AIP ENR 5.2', 'UK Mil AIP ENR 5.2', 'UK Mil AIP ENR 5.2'],
@@ -157,6 +211,17 @@
     ]
   }, {
     id: 'navcan',
+    group: 'base',
+    zones: ['ca'],
+    fetch: {
+      how: 'launcher',
+      provider: 'navcan'
+    },
+    build: {
+      runtime: 'python',
+      id: 'navcan_dah'
+    },
+    publish: true,
     no: 6,
     status: 'used',
     n: ['NAV CANADA DAH', 'NAV CANADA DAH', 'NAV CANADA DAH', 'NAV CANADA DAH'],
@@ -171,6 +236,17 @@
     ]
   }, {
     id: 'openaip',
+    group: 'base',
+    zones: '*',
+    fetch: {
+      how: 'launcher',
+      provider: 'openaip'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'openaip'
+    },
+    publish: true,
     no: 7,
     status: 'used',
     n: ['openAIP (exports par pays)', 'openAIP (exports per country)', 'openAIP (Exporte pro Land)',
@@ -187,6 +263,17 @@
     ]
   }, {
     id: 'enaire',
+    group: 'base',
+    zones: ['es'],
+    fetch: {
+      how: 'launcher',
+      provider: 'enaire'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'aixm5'
+    },
+    publish: true,
     no: 8,
     status: 'used',
     n: ['ENAIRE (Espagne, AIXM 5.1)', 'ENAIRE (Spain, AIXM 5.1)', 'ENAIRE (Spanien, AIXM 5.1)', 'ENAIRE (España, AIXM 5.1)'],
@@ -201,6 +288,17 @@
     ]
   }, {
     id: 'adds',
+    group: 'base',
+    zones: ['us'],
+    fetch: {
+      how: 'launcher',
+      provider: 'adds'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'adds'
+    },
+    publish: true,
     no: 9,
     status: 'used',
     n: ['FAA ADDS (espaces à usage spécial, classes)', 'FAA ADDS (special use airspace, classes)',
@@ -215,6 +313,18 @@
     lic: ['Domaine public (FAA)', 'Public domain (FAA)', 'Gemeinfrei (FAA)', 'Dominio público (FAA)']
   }, {
     id: 'nats',
+    group: 'base',
+    zones: ['gb'],
+    fetch: {
+      how: 'pick',
+      glob: 'EG_*_DS_*_XML.zip',
+      name: 'EG_…_DS_…_XML.zip'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'aixm5'
+    },
+    publish: true,
     no: 10,
     status: 'used',
     n: ['NATS UK (AIXM 5.1)', 'NATS UK (AIXM 5.1)', 'NATS UK (AIXM 5.1)', 'NATS UK (AIXM 5.1)'],
@@ -231,6 +341,16 @@
     ]
   }, {
     id: 'nat',
+    group: 'weather',
+    zones: ['nat'],
+    fetch: {
+      how: 'none'
+    },
+    build: {
+      runtime: 'none',
+      id: null
+    },
+    publish: false,
     no: 12,
     status: 'used',
     n: ['Routes NAT du jour (FAA)', 'NAT tracks of the day (FAA)', 'NAT-Routen des Tages (FAA)', 'Rutas NAT del día (FAA)'],
@@ -241,6 +361,17 @@
     lic: ['Domaine public (FAA)', 'Public domain (FAA)', 'Gemeinfrei (FAA)', 'Dominio público (FAA)']
   }, {
     id: 'vac',
+    group: 'base',
+    zones: ['fr'],
+    fetch: {
+      how: 'pick',
+      glob: 'AD-2.*.pdf'
+    },
+    build: {
+      runtime: 'python',
+      id: 'report_vfr'
+    },
+    publish: true,
     no: 13,
     status: 'used',
     cycled: true,
@@ -256,6 +387,17 @@
     ]
   }, {
     id: 'eaip',
+    group: 'proc',
+    zones: ['fr'],
+    fetch: {
+      how: 'launcher',
+      provider: 'eaip'
+    },
+    build: {
+      runtime: 'python',
+      id: 'proc_eaip'
+    },
+    publish: true,
     no: 14,
     status: 'used',
     cycled: true,
@@ -271,6 +413,19 @@
     ]
   }, {
     id: 'cifp',
+    group: 'proc',
+    zones: ['us'],
+    fetch: {
+      how: 'launcher',
+      provider: 'cifp',
+      glob: 'CIFP_*.zip',
+      name: 'CIFP_<aammjj>.zip'
+    },
+    build: {
+      runtime: 'python',
+      id: 'proc_cifp'
+    },
+    publish: true,
     no: 15,
     status: 'used',
     cycled: true,
@@ -286,6 +441,16 @@
     ]
   }, {
     id: 'weather',
+    group: 'weather',
+    zones: [],
+    fetch: {
+      how: 'none'
+    },
+    build: {
+      runtime: 'none',
+      id: null
+    },
+    publish: false,
     no: 17,
     status: 'used',
     n: ['Météo mondiale (NOAA GFS, NOMADS)', 'World weather (NOAA GFS, NOMADS)', 'Weltwetter (NOAA GFS, NOMADS)',
@@ -299,7 +464,48 @@
     ],
     lic: ['Domaine public (NOAA)', 'Public domain (NOAA)', 'Gemeinfrei (NOAA)', 'Dominio público (NOAA)']
   }, {
+    id: 'aircraft',
+    group: 'aircraft',
+    zones: [],
+    fetch: {
+      how: 'launcher',
+      provider: 'aircraft'
+    },
+    build: {
+      runtime: 'python',
+      id: 'update_aircraft_db'
+    },
+    publish: true,
+    no: 16,
+    status: 'used',
+    n: ['Types et performances d’aéronefs', 'Aircraft types and performance', 'Luftfahrzeugmuster und Leistungen',
+      'Tipos y prestaciones de aeronaves'
+    ],
+    url: 'https://www.icao.int/publications/DOC8643/',
+    gives: [
+      'La base des types (OACI Doc 8643, recoupée EUROCONTROL, Wikidata) et des performances (EUROCONTROL APD, SimBrief) : AircraftDB/.',
+      'The base of types (ICAO Doc 8643, cross-checked with EUROCONTROL, Wikidata) and of performance (EUROCONTROL APD, SimBrief): AircraftDB/.',
+      'Die Musterbasis (ICAO Doc 8643, mit EUROCONTROL und Wikidata abgeglichen) und die Leistungen (EUROCONTROL APD, SimBrief): AircraftDB/.',
+      'La base de tipos (OACI Doc 8643, cotejada con EUROCONTROL, Wikidata) y de prestaciones (EUROCONTROL APD, SimBrief): AircraftDB/.'
+    ],
+    lic: ['© OACI, © EUROCONTROL : dépôt privé seulement, jamais le site public',
+      '© ICAO, © EUROCONTROL: private repository only, never the public site',
+      '© ICAO, © EUROCONTROL: nur privates Repository, nie die öffentliche Website',
+      '© OACI, © EUROCONTROL: solo repositorio privado, nunca el sitio público'
+    ]
+  }, {
     id: 'ead',
+    group: 'proc',
+    zones: '*',
+    fetch: {
+      how: 'launcher',
+      provider: 'ead'
+    },
+    build: {
+      runtime: 'python',
+      id: 'proc_ead'
+    },
+    publish: true,
     no: null,
     status: 'candidate',
     n: ['EAD Basic (EUROCONTROL)', 'EAD Basic (EUROCONTROL)', 'EAD Basic (EUROCONTROL)', 'EAD Basic (EUROCONTROL)'],
@@ -314,6 +520,16 @@
     ]
   }, {
     id: 'xpcifp',
+    group: 'proc',
+    zones: '*',
+    fetch: {
+      how: 'pick'
+    },
+    build: {
+      runtime: 'python',
+      id: 'xplane'
+    },
+    publish: false,
     no: null,
     status: 'candidate',
     n: ['CIFP d’X-Plane, Navigraph', 'X-Plane CIFP, Navigraph', 'X-Plane-CIFP, Navigraph', 'CIFP de X-Plane, Navigraph'],
@@ -328,6 +544,16 @@
     ]
   }, {
     id: 'dfs',
+    group: 'proc',
+    zones: ['de'],
+    fetch: {
+      how: 'none'
+    },
+    build: {
+      runtime: 'none',
+      id: null
+    },
+    publish: false,
     no: null,
     status: 'abandoned',
     n: ['DFS (Allemagne, AIXM 5.1)', 'DFS (Germany, AIXM 5.1)', 'DFS (Deutschland, AIXM 5.1)', 'DFS (Alemania, AIXM 5.1)'],
@@ -343,6 +569,16 @@
     ]
   }, {
     id: 'eurocontrol',
+    group: 'proc',
+    zones: [],
+    fetch: {
+      how: 'none'
+    },
+    build: {
+      runtime: 'none',
+      id: null
+    },
+    publish: false,
     no: null,
     status: 'abandoned',
     n: ['EUROCONTROL : jeux AIXM nationaux et échantillons', 'EUROCONTROL: national AIXM sets and samples',
@@ -357,20 +593,197 @@
     ],
     lic: ['Conditions inconnues', 'Unknown terms', 'Bedingungen unbekannt', 'Condiciones desconocidas']
   }];
+  /** Issue d'EAD Basic par État (EAD_BASIC.md § 8.1, relevé des 47 autorités du 28 octobre 2026) : 'read' (une disposition connue,
+   *  `layout` ; `ocr` : des pages dessinées, lues par OCR), 'images' (cartes en image), 'labels' (étiquettes éparses), 'vfr' (VFR
+   *  seulement), 'points' (listes de points seulement), 'prose' (descriptions en texte), 'sia' (la France vient du SIA, jamais d'EAD),
+   *  'none' (rien obtenu). Seul 'read' rend la ligne « Lire un terrain » possible ; les autres la grisent avec leur raison. */
+  const EAD_STATES = {
+    UD: {
+      outcome: 'read',
+      layout: 'am-coding'
+    },
+    ED: {
+      outcome: 'read',
+      layout: 'de-route'
+    },
+    EG: {
+      outcome: 'read',
+      layout: 'uk-app',
+      ocr: true
+    },
+    BI: {
+      outcome: 'read',
+      layout: 'icao-tab'
+    },
+    EY: {
+      outcome: 'read',
+      layout: 'icao-tab'
+    },
+    LI: {
+      outcome: 'read',
+      layout: 'icao-tab'
+    },
+    LD: {
+      outcome: 'read',
+      layout: 'icao-tab'
+    },
+    LA: {
+      outcome: 'read',
+      layout: 'icao-tab'
+    },
+    RP: {
+      outcome: 'read',
+      layout: 'icao-tab'
+    },
+    EI: {
+      outcome: 'read',
+      layout: 'ei-coding'
+    },
+    LO: {
+      outcome: 'read',
+      layout: 'at-coding'
+    },
+    LZ: {
+      outcome: 'read',
+      layout: 'at-coding'
+    },
+    LU: {
+      outcome: 'read',
+      layout: 'de-route'
+    },
+    LP: {
+      outcome: 'read',
+      layout: 'de-route'
+    },
+    EP: {
+      outcome: 'read',
+      layout: 'de-route'
+    },
+    EB: {
+      outcome: 'read',
+      layout: 'be-coding',
+      ocr: true
+    },
+    UG: {
+      outcome: 'read',
+      layout: 'ge-coding',
+      ocr: true
+    },
+    LQ: {
+      outcome: 'images'
+    },
+    LG: {
+      outcome: 'images'
+    },
+    UB: {
+      outcome: 'labels'
+    },
+    EK: {
+      outcome: 'labels'
+    },
+    EE: {
+      outcome: 'labels'
+    },
+    XX: {
+      outcome: 'labels'
+    },
+    LH: {
+      outcome: 'labels'
+    },
+    LJ: {
+      outcome: 'labels'
+    },
+    EH: {
+      outcome: 'labels'
+    },
+    ES: {
+      outcome: 'labels'
+    },
+    EV: {
+      outcome: 'labels'
+    },
+    LY: {
+      outcome: 'labels'
+    },
+    UK: {
+      outcome: 'labels'
+    },
+    LK: {
+      outcome: 'vfr'
+    },
+    LM: {
+      outcome: 'vfr'
+    },
+    LR: {
+      outcome: 'points'
+    },
+    EF: {
+      outcome: 'points'
+    },
+    EN: {
+      outcome: 'prose'
+    },
+    OJ: {
+      outcome: 'prose'
+    },
+    LE: {
+      outcome: 'prose'
+    },
+    LC: {
+      outcome: 'prose'
+    },
+    LW: {
+      outcome: 'prose'
+    },
+    LS: {
+      outcome: 'prose'
+    },
+    BG: {
+      outcome: 'prose'
+    },
+    LF: {
+      outcome: 'sia'
+    },
+    BK: {
+      outcome: 'none'
+    },
+    LB: {
+      outcome: 'none'
+    },
+    LT: {
+      outcome: 'none'
+    },
+    UA: {
+      outcome: 'none'
+    },
+    UC: {
+      outcome: 'none'
+    }
+  };
+  const GROUPS = ['base', 'proc', 'aircraft', 'weather'];
   const ORDER = ['used', 'candidate', 'abandoned'];
   const byId = id => SOURCES.find(s => s.id === id) || null;
   /** Adresse d'une source pour un cycle (« 2610 », date ou rien : le cycle en vigueur). */
-  const urlOf = (s, cycle) => typeof s.url === 'function' ? s.url(cycle || cycleOf().id) : s.url;
-  window.AeroSources = {
+  const urlOf = (s, cycle) => typeof s.url === 'function' ? s.url(cycle || A.cycleOf().id) : s.url;
+  const G = typeof window !== 'undefined' ? window : self;
+  G.AeroCatalogue = {
     SOURCES,
     ORDER,
-    cycleOf,
-    cycleDate,
+    GROUPS,
+    EAD_STATES,
+    byId,
+    urlOf,
     eaipBase,
     cifpName,
     cifpUrl,
     siaPage,
-    byId,
-    urlOf
+    siaFileInfo,
+    cifpFileInfo
+  };
+  // l'écran « Sources » (sources.js) lit AeroSources, avec les fonctions de cycle : jusqu'à son retrait (lot D1 du module Données)
+  G.AeroSources = {
+    ...G.AeroCatalogue,
+    cycleOf: A.cycleOf,
+    cycleDate: A.cycleDate
   };
 })();

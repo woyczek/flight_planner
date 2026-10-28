@@ -179,9 +179,9 @@ the suite root) and has no listing.
 
 | Call | Answer |
 |---|---|
-| `publication()` | what is published, **without loading the data** (the reader's listing, the manifest, `proc/<cycle>/index.json`, `sia/vfr/index.json`, the `AircraftDB/` listing only): `{ base: { zone: { cycles: { date: { parserVersion, at, by } }, inForce } }, proc: { cycles: { date: { aerodromes, bySource } }, inForce }, vfr: { cycle, at, count }, aircraft: { at, types } }`. `at` and `by` come from the zone's `meta.json` (`builtAt`, `builtBy`, written by the builders, § 5 septies); until the builders write them, `at` is `meta.json`'s `updated_at` and `by` is null. The weather is the frame's (`ctx.weather`); the NAT tracks join after lot D9 |
+| `publication()` | what is published, **without loading the data** (the reader's listing, the manifest, the `meta.json` of each cycle of a zone, `proc/<cycle>/index.json`, `sia/vfr/index.json`, the `AircraftDB/` listing and `aircraft_db.json` only): `{ base: { zone: { cycles: { date: { parserVersion, at, by, format } }, inForce } }, proc: { cycles: { date: { aerodromes, byStatus } }, inForce }, vfr: { cycle, at, count } \| null, aircraft: { at, types, files } \| null }`; a zone still in the whole format (`format: 'whole'`) is listed, never read (its file is the whole zone). `at` and `by` come from the zone's `meta.json` (`builtAt`, `builtBy`, written by the builders, § 5 septies); until the builders write them, `at` is `meta.json`'s `updated_at` and `by` is null. The weather is the frame's (`ctx.weather`); the NAT tracks join after lot D9 |
 | `zones()` | every zone the suite knows (`AERODB_ZONES`), published or not: `{ id, names: [fr, en, de, es], frames, published }`, for « Ajouter un pays » |
-| `sources()` | the catalogue (§ 5 sexies, `catalogue.js`): the sources with their group, the zones they feed, how they are fetched and built, whether they are published, the link of a cycle, the licence and status; the EAD Basic outcome per State (`eadStates`); the file-name readers `siaFileInfo`, `cifpFileInfo` |
+| `sources()` | the catalogue (§ 5 sexies, `catalogue.js`, loaded with `airac.js` at the first call): `{ SOURCES, ORDER, GROUPS, EAD_STATES, byId, urlOf, eaipBase, cifpName, cifpUrl, siaPage, siaFileInfo, cifpFileInfo, airac }` — the sources with their group, the zones they feed, how they are fetched and built, whether they are published, the link of a cycle, the licence and status; the EAD Basic outcome per State; the file-name readers; `airac`: `AeroAirac` |
 
 The module never reads `sia/base/`, `proc/` or `AircraftDB/` itself, never loads aerodb's files: these three calls are its
 only way in.
@@ -462,18 +462,20 @@ différents AIP ou sources qu'on utilise ou utiliserait. »). Its measures stay 
   beside it. The rows whose address depends on the AIRAC cycle (SIA product page, VAC, eAIP, CIFP) are built for the cycle in force, which
   the screen writes at the top with the next one. **No fetch, no parser, no publication, no data adapter, no GitHub transport**: the page
   policy needs no host for it (a link is navigation, not `connect-src`). Texts in four languages in the screen; the rows' texts in the data.
-- **At lot D1 of the Données module** (`modules/data/`, which replaces this screen): `sources_data.js` becomes
-  **`catalogue.js`**, kept by aerodb and served by `aerodb.sources()` (a module never loads aerodb's files), its schema
-  extended to `{ id, group: base | proc | aircraft | weather, zones (fed), fetch: { how: launcher | pick | none, provider,
+- **The catalogue** (`catalogue.js`, was `sources_data.js`; aerodb's lot D1, 28 Oct 2026): kept by aerodb and served by
+  `aerodb.sources()` (a module never loads aerodb's files), the screen reading it as `window.AeroSources` until it goes; its
+  schema extended to `{ id, group: base | proc | aircraft | weather, zones (fed), fetch: { how: launcher | pick | none, provider,
   glob, name }, build: { runtime: worker | python, id }, publish (bool), cycled, url(cycle), lic[4], status }`, with
   `eadStates` (the outcome per State of `EAD_BASIC.md` § 8.1, which greys « Mise en page inconnue pour cet État ») and the
   file-name readers `siaFileInfo` / `cifpFileInfo` (the cycle read from the name of a picked file) back; the cycle helpers
-  move to `airac.js`. The screen `#sources`, its declaration and its Administration button go in the same lot.
-- **The list** (`sources_data.js`, `window.AeroSources`, data only): `{ id, no, status, cycled, n[4], url (string or function of the cycle),
+  are in `airac.js`. Twenty sources: the laboratory's sixteen, the aircraft types (group « Appareils »), EAD Basic, the X-Plane
+  CIFP / Navigraph fallback, DFS and EUROCONTROL. The screen `#sources`, its declaration and its Administration button go
+  with the Données module's lot D1.
+- **The list** (`catalogue.js`, data only): `{ id, no, status, cycled, n[4], url (string or function of the cycle),
   gives[4], lic[4], how[4]? }` for the 16 sources of the laboratory (table 1.2 of `docs/technique/V3_DONNEES_REGENERATION.md`, X-Plane and
   the aircraft types excepted), EAD Basic, the X-Plane CIFP / Navigraph fallback and the national AIPs of `AIP_OPEN_DATA_INVENTORY.md`
   (DFS and EUROCONTROL's AIXM sets, set aside). Cycle helpers: `cycleOf(date)` (rank in the year of the effective date: 2610 = 1 Oct 2026),
-  `cycleDate`, `eaipBase`, `cifpName`, `cifpUrl`, `siaPage`; `urlOf(source, cycle)`.
+  `cycleDate` (in `airac.js`), `eaipBase`, `cifpName`, `cifpUrl`, `siaPage`; `urlOf(source, cycle)`.
 - **Stream readers kept for the Data module** (lot D5 of `V3_DONNEES_REGENERATION.md`, the base built where the data arrives), not loaded by
   any screen today:
   - `xml_stream.js` (`AeroXmlStream`, was `lab_xml.js`): `create('sia' | 'aixm')` → `{ push(text), end(), stats() }`; a depth machine on

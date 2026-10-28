@@ -187,7 +187,7 @@ than `COMPAT` would be ignored; this one is not.
 What aerodb gives the module that regenerates the published data (its SPEC and INTEGRATION § 2, written with the settings
 session, which keeps the module's files):
 
-- **Reading** (lot D1): `aerodb.publication()` (what is published, per zone and cycle, without loading the data),
+- **Reading** (lot D1, delivered 28 Oct 2026, bench K21): `aerodb.publication()` (what is published, per zone and cycle, without loading the data),
   `aerodb.zones()` (every known zone, published or not), `aerodb.sources()` (the catalogue: groups, zones fed, fetch and
   build modes, links by cycle, licences, statuses, EAD outcome per State, file-name readers). SPEC § 5. The module reads
   nothing else of aerodb and never `sia/base/`, `proc/` or `AircraftDB/` itself.
@@ -205,7 +205,7 @@ session, which keeps the module's files):
 
 ### Sources screen (`#sources`)
 
-A frame screen drawn by aerodb (`frame/aerodb/sources.js` and its data `sources_data.js`), not a module: nothing to mount, nothing to
+A frame screen drawn by aerodb (`frame/aerodb/sources.js`, with `airac.js` and the catalogue `catalogue.js`), not a module: nothing to mount, nothing to
 call. The frame declares it in `APP.screens` (`frame/app.js`: Full level, its two scripts, no data adapter, no GitHub transport) and the
 Administration card of Settings links to it. It shows links only (`frame/aerodb/SPEC.md` § 5 sexies): no fetch, so no host in the page
 policy. It replaced the data laboratory (`#datalab`) on 28 October 2026; the laboratory's stream readers (`xml_stream.js`, `zip_stream.js`)

@@ -758,7 +758,7 @@ A service screen is not a module. It is a screen of the frame, opened over the c
 roadmap, whose drawing belongs to a service. The frame knows only its declaration, and its code names no service.
 
 ```js
-screens: [{ id: 'sources', scripts: ['aerodb/sources_data.js?v=0', 'aerodb/sources.js?v=0'], level: 3 }]
+screens: [{ id: 'sources', scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js?v=0', 'aerodb/sources.js?v=0'], level: 3 }]
 ```
 
 - `scripts` (relative to `frame/`) load in order the first time the screen opens. The script registers itself:

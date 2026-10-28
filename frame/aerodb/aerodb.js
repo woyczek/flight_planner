@@ -982,6 +982,92 @@
         const cycle = await procCycle();
         return cycle ? valueOf(await read(`proc/${cycle}/index.json`)) || null : null;
       },
+      // ---- pour le module Données (lot D1, SPEC § 5 « For the Données module ») : ce qui est publié, les zones, le catalogue
+      /** Ce qui est publié, SANS charger la base : la liste du lecteur, le manifeste, le meta.json de chaque cycle d'une zone,
+       *  proc/<cycle>/index.json, sia/vfr/index.json et la liste d'AircraftDB/ seulement. { base: { zone: { cycles: { date: {
+       *  parserVersion, at, by, format } }, inForce } }, proc: { cycles: { date: { aerodromes, byStatus } }, inForce }, vfr: { cycle,
+       *  at, count } | null, aircraft: { at, types, files } | null }. at / by : builtAt / builtBy du meta.json écrit par les
+       *  constructeurs ; avant eux, at = updated_at du meta.json et by = null. Rien n'est gardé en mémoire de zone. */
+      async publication() {
+        const l = await published(),
+          base = {};
+        for (const [id, z] of Object.entries(l.zones || {})) {
+          const cycles = {};
+          await Promise.all(z.cycles.map(async c => {
+            const split = z.split.has(c),
+              v = split ? valueOf(await read(`${PUB}${id}/${c}/meta.json`)) : null; // l'ancien format entier n'est pas lu (toute la zone)
+            cycles[c] = {
+              parserVersion: v?.parserVersion ?? null,
+              at: v?.builtAt ?? v?.data?.builtAt ?? v?.updated_at ?? null,
+              by: v?.builtBy ?? v?.data?.builtBy ?? null,
+              format: split ? 'split' : 'whole'
+            };
+          }));
+          base[id] = {
+            cycles: Object.fromEntries(Object.keys(cycles).sort().map(k => [k, cycles[k]])),
+            inForce: pickCycle(z.cycles)
+          };
+        }
+        // procédures : les cycles de la liste du lecteur, sinon les cycles AIRAC récents dont l'index se lit
+        const listed = reader.list ? await reader.list('proc/').catch(() => null) : null,
+          dates = Array.isArray(listed) ? [...new Set(listed.map(x => /^proc\/(\d{4}-\d{2}-\d{2})\/index\.json$/.exec(x)).filter(
+            Boolean).map(m => m[1]))] :
+          airacCycles(6, now()),
+          procCycles = {};
+        await Promise.all(dates.map(async c => {
+          const ix = valueOf(await read(`proc/${c}/index.json`));
+          if (!ix) return;
+          const byStatus = {};
+          for (const e of Object.values(ix.aerodromes || {})) byStatus[e?.status || 'official'] = (byStatus[e?.status ||
+            'official'] || 0) + 1;
+          procCycles[c] = {
+            aerodromes: Object.keys(ix.aerodromes || {}).length,
+            byStatus
+          };
+        }));
+        const vi = valueOf(await read('sia/vfr/index.json')),
+          air = reader.list ? await reader.list('AircraftDB/').catch(() => null) : null,
+          db = Array.isArray(air) && air.includes('AircraftDB/aircraft_db.json') ? valueOf(await read(
+            'AircraftDB/aircraft_db.json')) : null;
+        return {
+          base,
+          proc: {
+            cycles: Object.fromEntries(Object.keys(procCycles).sort().map(k => [k, procCycles[k]])),
+            inForce: pickCycle(Object.keys(procCycles).sort())
+          },
+          vfr: vi ? {
+            cycle: vi.cycle || vi.source?.cycle || null,
+            at: vi.generatedAt || vi.updated_at || null,
+            count: Array.isArray(vi.aerodromes) ? vi.aerodromes.length : Object.keys(vi.aerodromes || {}).length
+          } : null,
+          aircraft: Array.isArray(air) && air.length ? {
+            at: db?.updated_at || db?.generated || null,
+            types: db ? Object.keys(db.types || db).filter(k => !/^(schema|updated_at|generated|source)$/.test(k)).length : null,
+            files: air.filter(x => /\.(json|js)$/.test(x)).length
+          } : null
+        };
+      },
+      /** Toutes les zones connues de la suite (AERODB_ZONES), publiées ou non : [{ id, names: [fr, en, de, es], frames, published }],
+       *  dans l'ordre de leur nom français (« Ajouter un pays » du module Données). */
+      async zones() {
+        const l = await published();
+        return Object.entries(zones).map(([id, z]) => ({
+          id,
+          names: z.n || [id, id, id, id],
+          frames: z.b || [],
+          published: !!(l.zones && l.zones[id])
+        })).sort((a, b) => a.names[0].localeCompare(b.names[0], 'fr'));
+      },
+      /** Le catalogue des sources (catalogue.js, chargé à la première demande avec airac.js) : AeroCatalogue, et le cycle AIRAC
+       *  (AeroAirac) sous `airac`. */
+      async sources() {
+        await loadOwn('airac.js', 'AeroAirac');
+        await loadOwn('catalogue.js', 'AeroCatalogue');
+        return {
+          ...window.AeroCatalogue,
+          airac: window.AeroAirac
+        };
+      },
       /** { sid, star } d'un OFP SimBrief (json=v2), au schéma commun, statut « ofp » ; chacun null sans point marqué. Rien
        *  n'est écrit : c'est la procédure du vol courant. */
       async procedureFromOfp(ofp) {

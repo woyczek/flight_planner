@@ -208,7 +208,7 @@
     // (jamais le jeton) ; le script s'enregistre lui-même : window.SogScreens[id] = { screen(view, ctx) }
     screens: [{
       id: 'sources', // les sources des données aéronautiques (aerodb) : des liens, rien n'est lu ni écrit
-      scripts: ['aerodb/sources_data.js?v=0', 'aerodb/sources.js?v=0'],
+      scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js?v=0', 'aerodb/sources.js?v=0'],
       level: 3
     }]
   };

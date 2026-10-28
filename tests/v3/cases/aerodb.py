@@ -55,6 +55,28 @@ def _bench(c, page, var):
     return r, [x for x in (r['rows'] or []) if x.startswith('FAIL')][:3]
 
 
+@case('K21', 'Cycles, catalogue and the Données module\'s calls (lot D1)', 'K', tags=('aerodb',), phone=False,
+      rule='frame/aerodb/SPEC § 4 (cycle names: one airac.js, the Python aligned), § 5 (publication, zones, sources), § 5 sexies (catalogue.js)')
+def k21(c):
+    r, bad = _bench(c, 'catalogue.html', '__catBench')
+    c.ok(r['fail'] == 0 and r['pass'] >= 20, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}",
+         'airac.js, the catalogue\'s schema and links, the file-name readers, the EAD outcomes, and publication() / zones() / sources() on a reader in memory')
+    # one calculation: the Python tools follow the same 28-day suite from AIRAC 2401 = 2024-01-25 as airac.js
+    import datetime
+    import importlib
+    import sys
+    tools = str(ROOT / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    E = importlib.import_module('proc_ead')
+    dates = ['2024-01-25', '2025-12-31', '2026-10-26', '2026-10-29', '2026-12-31', '2027-01-21', '2027-06-30']
+    js = c.js('(ds) => ds.map(d => AeroAirac.cycleOf(d).date)', dates)
+    ref = datetime.date(2024, 1, 25)
+    py = [(ref + datetime.timedelta(days=28 * ((datetime.date.fromisoformat(d) - ref).days // 28))).isoformat() for d in dates]
+    c.eq(js, py, 'airac.js and the Python calculation give the same cycle for every date', what='cycles by date')
+    c.eq(E.lib_cycle('.'), c.js('AeroAirac.cycleOf(Date.now()).date'), 'proc_ead.lib_cycle (the EAD tools) gives the cycle in force of airac.js', what='cycle in force')
+
+
 @case('K8', 'XML stream reader: golden test against the V2 readers', 'K', tags=('aerodb',), phone=False,
       rule='frame/aerodb/SPEC 5 sexies (xml_stream.js, a brick kept for the Data module); DECISIONS 28 Oct 2026')
 def k6(c):
@@ -70,7 +92,7 @@ def k7(c):
     c.ok(r['fail'] == 0 and r['pass'] >= 7, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}",
          'central directory from the end, an entry byte for byte, the streamed chain gives the counts of the V2 chain')
     import re
-    for f in ('frame/aerodb/sources.js', 'frame/aerodb/sources_data.js'):
+    for f in ('frame/aerodb/sources.js', 'frame/aerodb/catalogue.js', 'frame/aerodb/airac.js'):
         t = re.sub(r'(?m)^\s*//.*$|/\*.*?\*/', '', (ROOT / f).read_text(encoding='utf-8'), flags=re.S)      # the code, without its comments
         c.ok(not re.search(r'\bfetch\s*\(|XMLHttpRequest|importScripts|new\s+Worker', t), f, f'{f} fetches nothing (links only)')
         c.ok(not re.search(r'ghp_[A-Za-z0-9]{20,}|github_pat_|woyczek|@gmail\.|C:\\Users', t), f, f'{f}: no token, no personal address')

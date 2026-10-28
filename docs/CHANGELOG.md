@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb, lot D1 for the Données module** (`frame/aerodb/airac.js`, `catalogue.js` (was `sources_data.js`), `aerodb.js`,
+  `frame/app.js` (the Sources screen's scripts); SPEC § 5 and § 5 sexies, INTEGRATION, DECISIONS; bench `test/catalogue.html`, test K21) —
+  one calculation of the AIRAC cycle; the catalogue with each source's group, zones, fetch, build and publication, the EAD Basic
+  outcome of the 47 States and the file-name readers; `publication()` (what is published, without loading the data), `zones()` (every
+  known zone) and `sources()` (the catalogue) for the module.
+
 ## [6.0.0-alpha.2] — 2026-10-28
 
 Second alpha of the V3 **Pilot application**, five days after the first. The phone screen follows the iVAC target

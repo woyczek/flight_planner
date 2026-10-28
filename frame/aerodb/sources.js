@@ -2,7 +2,7 @@
   'use strict';
   // V3 aerodb — écran « Sources » (écran de service du cadre, #sources, niveau Complet : frame/app.js APP.screens, bouton de la
   // carte Administration des réglages ; frame/aerodb/SPEC.md § 5 sexies). Une ligne par source de données aéronautiques que la
-  // suite utilise, envisage ou a écartée (sources_data.js) : son lien, ce qu'elle donne, sa licence, son statut, le cycle AIRAC
+  // suite utilise, envisage ou a écartée (catalogue.js, avec airac.js) : son lien, ce qu'elle donne, sa licence, son statut, le cycle AIRAC
   // en vigueur pour celles qui en dépendent. Un simple lien qui s'ouvre dans un nouvel onglet : aucune récupération, aucun
   // analyseur, aucune publication, aucun fetch (la politique de contenu n'a besoin d'aucun hôte pour cet écran). Il a remplacé le
   // laboratoire des données le 28 octobre 2026 (décision de l'utilisateur).
