@@ -98,8 +98,9 @@ def i4(c):
         p = subprocess.run([sys.executable, str(tmp / 'tools/build_docs_bundle.py')], capture_output=True, text=True, cwd=str(tmp))
         if p.returncode != 0:
             raise Fail(f'build_docs_bundle.py failed: {p.stderr.strip()[-200:]}', 'the bundle builds')
-        built = (tmp / 'apps/aide/docs_bundle.js').read_bytes()
-        have = (c.root / 'apps/aide/docs_bundle.js').read_bytes()
+        # line endings normalised: a Windows checkout (core.autocrlf, text=auto) writes CRLF where the builder writes LF
+        built = (tmp / 'apps/aide/docs_bundle.js').read_bytes().replace(b'\r\n', b'\n')
+        have = (c.root / 'apps/aide/docs_bundle.js').read_bytes().replace(b'\r\n', b'\n')
         c.ok(built == have, f'apps/aide/docs_bundle.js differs from a fresh build ({len(have)} bytes against {len(built)})', 'a byte-identical bundle')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
