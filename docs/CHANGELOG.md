@@ -16,6 +16,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   reading, the button says "Reading the SIA eAIP…" (France) or "Reading EAD Basic…"; a State without published procedure
   tables is told so (and that Little Navmap has a database on this workstation, when it has); the old "layout unknown" refusal
   is gone.
+- **aerodb: coverage of the procedures — `coverage(icao)`, `coverageByState()`, `AeroCatalogue.COVERAGE`**
+  (`frame/aerodb/aerodb.js`, `catalogue.js`; SPEC § 5 and § 6 invariant 4, INTEGRATION « Coverage of the procedures », DECISIONS, V3_SPECIFICATION § 10.22; tests K1, K21) — what the
+  Map's « Procédures » layer and the Données module's State list need: per aerodrome, green (procedures held: published, hand reading, X-Plane fallback, with the source, `outdated`
+  and the counts), orange (readable on demand: SIA eAIP for France, EAD Basic, a Little Navmap database on the workstation) or red (nothing, with the reason: images, labels, points,
+  prose, VFR only, none, unknown State), and `here` (this device can start the reading); per State, the same without held aerodromes, with a four-language label. One in-memory table
+  built once from the procedure indexes (the base is never loaded), dropped and announced by `on('change')` as `{ coverage: true }` after an on-demand reading, a `refresh()` or a
+  changed index.
+
 - **aerodb: « Lire les procédures de LFPO » works for France — the on-demand reading is dispatched by State**
   (`frame/aerodb/aerodb.js` `fetchProcedures`, `tools/regen_jobs.py` verb `proc/eaip-fetch`, `tools/proc_eaip.py` `read_aerodrome`
   / `eaip_url`, `tools/launch.py` `/__setup/status › lnm`, `frame/store/transport_launcher.js`; SPEC § 5 quinquies, INTEGRATION,

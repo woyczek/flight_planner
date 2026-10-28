@@ -11,7 +11,7 @@
   //     X-Plane / Navigraph), cycled (adresse du cycle AIRAC), n [fr, en, de, es], url (chaîne, ou fonction du cycle), gives [4],
   //     lic [4] (d'après LICENSE.md), how [4]? (le geste pour l'obtenir) }.
   // Les cycles sont ceux d'airac.js (AeroAirac) : une adresse se construit pour une date d'effet « AAAA-MM-JJ » ou un « AANN ».
-  // API : AeroCatalogue.{ SOURCES, ORDER, GROUPS, EAD_STATES, byId, urlOf, eaipBase, cifpName, cifpUrl, siaPage, siaFileInfo,
+  // API : AeroCatalogue.{ SOURCES, ORDER, GROUPS, EAD_STATES, COVERAGE, byId, urlOf, eaipBase, cifpName, cifpUrl, siaPage, siaFileInfo,
   //   cifpFileInfo } ; AeroSources : le même objet avec cycleOf / cycleDate (écran « Sources », jusqu'à son retrait).
   const A = (typeof window !== 'undefined' ? window : self).AeroAirac;
   if (!A) throw new Error('catalogue.js: airac.js must be loaded first');
@@ -760,6 +760,38 @@
       outcome: 'none'
     }
   };
+  /** Libellés courts de la carte de couverture des procédures (SPEC § 5 et § 6, V3 § 10.22), pour une légende ou une
+   *  infobulle de la Carte et du module Données : une entrée par raison de aerodb.coverage(icao) / coverageByState(), chacune
+   *  [fr, en, de, es]. C'est la même exception que `n`, `gives` et `lic` à l'invariant 4 de la SPEC (aerodb sans texte d'interface) :
+   *  des textes du catalogue, dans les quatre langues, servis avec lui. Français : espace fine insécable (U+202F) avant : ; ! ? et
+   *  dans « ». */
+  const COVERAGE = {
+    held: ['Procédures détenues', 'Procedures held', 'Verfahren vorhanden', 'Procedimientos disponibles'],
+    sia: ['Lisible à la demande (eAIP du SIA)', 'Readable on demand (SIA eAIP)', 'Auf Anfrage lesbar (eAIP des SIA)',
+      'Legible bajo demanda (eAIP del SIA)'
+    ],
+    ead: ['Lisible à la demande (EAD Basic)', 'Readable on demand (EAD Basic)', 'Auf Anfrage lesbar (EAD Basic)',
+      'Legible bajo demanda (EAD Basic)'
+    ],
+    lnm: ['Lisible par Little Navmap (base du poste)', 'Readable by Little Navmap (workstation database)',
+      'Von Little Navmap lesbar (Datenbank des Rechners)', 'Legible por Little Navmap (base del equipo)'
+    ],
+    images: ['Tables publiées en images', 'Tables published as images', 'Tabellen als Bilder veröffentlicht',
+      'Tablas publicadas como imágenes'
+    ],
+    labels: ['Étiquettes seules, sans table', 'Labels only, no table', 'Nur Beschriftungen, keine Tabelle',
+      'Solo etiquetas, sin tabla'
+    ],
+    points: ['Points publiés, sans table', 'Points published, no table', 'Punkte veröffentlicht, keine Tabelle',
+      'Puntos publicados, sin tabla'
+    ],
+    prose: ['Procédures décrites en texte', 'Procedures described in text', 'Verfahren als Text beschrieben',
+      'Procedimientos descritos en texto'
+    ],
+    vfr: ['Terrains VFR seulement', 'VFR aerodromes only', 'Nur VFR-Flugplätze', 'Solo aeródromos VFR'],
+    none: ['Aucune procédure publiée', 'No procedure published', 'Keine Verfahren veröffentlicht', 'Ningún procedimiento publicado'],
+    unknown: ['État non relevé', 'State not surveyed', 'Staat nicht erfasst', 'Estado no relevado']
+  };
   const GROUPS = ['base', 'proc', 'aircraft', 'weather'];
   const ORDER = ['used', 'candidate', 'abandoned'];
   const byId = id => SOURCES.find(s => s.id === id) || null;
@@ -771,6 +803,7 @@
     ORDER,
     GROUPS,
     EAD_STATES,
+    COVERAGE,
     byId,
     urlOf,
     eaipBase,

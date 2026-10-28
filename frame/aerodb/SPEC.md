@@ -150,7 +150,7 @@ the suite root) and has no listing.
 | `status()` | `{ published: { zone: cycle } \| null, source: 'list' \| 'index' \| 'none', loaded: { zone: cycle }, missing: [zones], cycle }` (a zone read in the whole format shows "(whole)") |
 | `state()` | `{ state, asked, zones?, loading? }` without reading anything: `loading` (the list of published zones or a zone is being read; `loading`: the zones), `ready`, `noaccess` (nothing to read the base with on this device: `create({ access })` says so), `offline`, `unpublished` (the access works, nothing published), `idle` (never asked). A module words the three that mean a missing base differently: loading, access not set, not published. `on('state', fn)` follows it; `refresh()` reads the list again (access changed, network back); an empty list is also read again after 30 s, at the next question |
 | `ready(q)` | zones loaded for the area of `q` |
-| `on('change', fn)` | `fn({ zone, cycle } \| { changed } \| { aircraft })`; returns the unsubscribe function |
+| `on('change', fn)` | `fn({ zone, cycle } \| { changed } \| { aircraft } \| { procedures } \| { refreshed } \| { coverage: true })`; returns the unsubscribe function; `coverage: true` (alone, or with `procedures` after an on-demand reading, or with `refreshed`) says the procedure index may have changed: coverage answers already obtained are to be asked again |
 | `airspaces(q)` | airspaces touching the area; `q.types` keeps some types |
 | `aerodromes(q)` | aerodromes of the area, or the one of `q.icao` (from the light index when published); `q.lite`: the area's aerodromes with an ICAO code from the light index (code, name, position, elevation, runway axis, magnetic variation) |
 | `navaids(q)`, `points(q)`, `vrp(q)` | points of the area |
@@ -162,6 +162,8 @@ the suite root) and has no listing.
 | `natTracks()` | NAT tracks of the day with their points placed: `[{ id, points: [{ id, lat, lon }], west, east (levels), from, to, by }]`; a named point through `coords`, "61/20" or "6130/20" as degrees north and west; an unknown name is left out |
 | `vfrRoutes(icao)` | VFR reporting points, sequences and instructions of an aerodrome extracted from its VAC charts (§ 5 quater), or null |
 | `procedures(icao, q)`, `procedureIndex()`, `procedureFromOfp(ofp)`, `rememberOfp(ofp)` | SID / STAR / approaches at the common schema (§ 5 quinquies) |
+| `coverage(icao)` | what this device can give for the procedures of an aerodrome, **without loading the base** (§ 5 quinquies, « Coverage », V3 § 10.22): `null` for a malformed code (not four characters `A-Z 0-9`), else `{ level, reason, state, here }`. `green` / `held`: procedures held, with `source` (`published` > `manual` > `local`, the best held), `outdated` (true only when the one holding is a hand reading of a past cycle) and `counts { SID, STAR, APP }`; `orange`: readable on demand, `reason` `sia` (State `LF`), `ead` (`EAD_STATES` outcome `read`) or `lnm` (the workstation has a Little Navmap database), in that order of precedence; `red`: `reason` = the `EAD_STATES` outcome (`images`, `labels`, `points`, `prose`, `vfr`, `none`) or `unknown` (State absent from `EAD_STATES`, or an unexpected outcome). `state`: the two-letter prefix; `here`: this device can start the reading (a launcher with `job`, not paired). Closed list of reasons: `held`, `sia`, `ead`, `lnm`, `images`, `labels`, `points`, `prose`, `vfr`, `none`, `unknown`. One in-memory table built once from `procedureIndex()` and `EAD_STATES`, then a map lookup per call |
+| `coverageByState()` | `{ [prefix]: { level, reason, label: [fr, en, de, es] } }` for every `EAD_STATES` prefix (France included): the same rules as `coverage()` without held aerodromes (readable on demand or not; a Little Navmap database makes orange every State without `sia` or `ead`); `label` is `AeroCatalogue.COVERAGE[reason]` |
 | `vfrIndex()` | the aerodromes of the VFR compilation with their counts, or null before any import |
 | `cities(q)` | towns of the area, or by `q.prefix` (most populated first), `q.n` at most |
 | `find(text, n)` | ranked places: `{ label, lat, lon, name, kind, code }` |
@@ -181,7 +183,7 @@ the suite root) and has no listing.
 |---|---|
 | `publication()` | what is published, **without loading the data** (the reader's listing, the manifest, the `meta.json` of each cycle of a zone, `proc/<cycle>/index.json`, `sia/vfr/index.json`, the `AircraftDB/` listing and `aircraft_db.json` only): `{ base: { zone: { cycles: { date: { parserVersion, at, by, format } }, inForce } }, proc: { cycles: { date: { aerodromes, byStatus } }, inForce }, vfr: { cycle, at, count } \| null, aircraft: { at, types, files } \| null }`; a zone still in the whole format (`format: 'whole'`) is listed, never read (its file is the whole zone). `at` and `by` come from the zone's `meta.json` (`builtAt`, `builtBy`, written by the builders, § 5 septies); until the builders write them, `at` is `meta.json`'s `updated_at` and `by` is null. The weather is the frame's (`ctx.weather`); the NAT tracks join after lot D9 |
 | `zones()` | every zone the suite knows (`AERODB_ZONES`), published or not: `{ id, names: [fr, en, de, es], frames, published }`, for « Ajouter un pays » |
-| `sources()` | the catalogue (§ 5 sexies, `catalogue.js`, loaded with `airac.js` at the first call): `{ SOURCES, ORDER, GROUPS, EAD_STATES, byId, urlOf, eaipBase, cifpName, cifpUrl, siaPage, siaFileInfo, cifpFileInfo, airac }` — the sources with their group, the zones they feed, how they are fetched and built, whether they are published, the link of a cycle, the licence and status; the EAD Basic outcome per State; the file-name readers; `airac`: `AeroAirac` |
+| `sources()` | the catalogue (§ 5 sexies, `catalogue.js`, loaded with `airac.js` at the first call): `{ SOURCES, ORDER, GROUPS, EAD_STATES, COVERAGE, byId, urlOf, eaipBase, cifpName, cifpUrl, siaPage, siaFileInfo, cifpFileInfo, airac }` — the sources with their group, the zones they feed, how they are fetched and built, whether they are published, the link of a cycle, the licence and status; the EAD Basic outcome per State; the legend labels of the coverage reasons (`COVERAGE`, four languages); the file-name readers; `airac`: `AeroAirac` |
 
 The module never reads `sia/base/`, `proc/` or `AircraftDB/` itself, never loads aerodb's files: these three calls are its
 only way in.
@@ -561,9 +563,11 @@ Agreed with the ergonomics session on 28 Oct 2026 (the Données module's INTEGRA
    the `.lnmperf` files of the folder set by the user. Keeping and releasing only fill and empty the device's cache.
 2. A module never names a zone or a file; aerodb chooses them.
 3. A question over the whole world returns exactly the published base (same counts as the workstation's base).
-4. No interface text: labels, translations and formatting belong to the modules and the frame. Two exceptions: the
+4. No interface text: labels, translations and formatting belong to the modules and the frame. Three exceptions: the
    Settings card of the `.lnmperf` folder (§ 5 ter), in four languages, so that the Settings screen does not carry the
-   synchronisation's states; and the Sources screen (§ 5 sexies), a service screen of the frame.
+   synchronisation's states; the Sources screen (§ 5 sexies), a service screen of the frame; and the catalogue's own texts
+   (`n`, `gives`, `lic`, and `COVERAGE`, the short labels of the coverage reasons for a map legend, § 5), four languages,
+   served with the catalogue. `coverage()` itself answers codes (`level`, `reason`), never a sentence.
 5. ICAO and EUROCONTROL data are never part of the public website.
 6. `proc/local/` (procedures converted from X-Plane's files) never leaves the workstation: never sent by the store, never
    committed to the data repository, never part of a publication or of the public website.

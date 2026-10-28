@@ -101,6 +101,24 @@
       check('EAD Basic outcome of the 47 States: 17 read with a layout, France from the SIA', Object.keys(st).length === 47 && read
         .length === 17 && read.every(x => st[x].layout) &&
         st.LF.outcome === 'sia' && st.EB.ocr && st.LQ.outcome === 'images', [Object.keys(st).length, read.length]);
+      // les libellés de la carte de couverture (§ 10.22) : onze raisons, quatre langues, typographie française
+      const CV = K.COVERAGE,
+        cvKeys = ['held', 'sia', 'ead', 'lnm', 'images', 'labels', 'points', 'prose', 'vfr', 'none', 'unknown'];
+      check('COVERAGE: the 11 reasons, each with four non-empty strings [fr, en, de, es], and the catalogue serves it', J(Object.keys(
+        CV).sort()) === J([...cvKeys].sort()) && Object.values(CV).every(v => Array.isArray(v) && v.length === 4 && v.every(t =>
+        typeof t === 'string' && t.trim())) && AeroSources.COVERAGE === CV, Object.keys(CV));
+      check(
+        'COVERAGE: every reason aerodb can answer for a State is there (the EAD outcomes but « read » and « sia », plus held, sia, ead, lnm, unknown)',
+        ['images', 'labels', 'points', 'prose', 'vfr', 'none'].every(o => Object.values(K.EAD_STATES).some(x => x.outcome === o) &&
+          CV[o]),
+        0);
+      check(
+        'COVERAGE: French has no plain space before : ; ! ? » nor after «, a narrow no-break space (U+202F) instead where one is needed',
+        Object.values(CV).every(v => !/ [:;!?»]|« /.test(v[0]) && !/[:;!?»]/.test(v[0].replace(/\u202f[:;!?»]|«\u202f/g, ''))), Object
+        .values(CV).map(v => v[0]).filter(t => / [:;!?»]|« /.test(t)));
+      check('COVERAGE: the four languages differ (no French text left in en / de / es for the readable-on-demand lines)', ['sia', 'ead',
+        'lnm'
+      ].every(k => new Set(CV[k]).size === 4), CV.sia);
       check('the Sources screen still finds its object (AeroSources with the cycle helpers)', AeroSources.SOURCES === K.SOURCES &&
         AeroSources.cycleOf('2026-10-26').id === '2610',
         0);

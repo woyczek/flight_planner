@@ -1398,3 +1398,23 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   `proc_eaip.main()` unchanged, `lnm_db_kinds()`), K21 (the Python address equals `eaipBase()`).
 - **Not done / to say**: the SIA site was not contacted (fakes only); the first real run of « Lire les procédures de LFPO » is the user's. The `trk` question stays open for a later
   step if the SIA ever prints true courses.
+
+## 28 October 2026 (late evening) — coverage of the procedures: `coverage(icao)`, `coverageByState()`, `AeroCatalogue.COVERAGE` (V3 § 10.22)
+
+- **Asked** (the user, 28 Oct evening: "une carte des ADs connus, et/ou des zones vertes, orange, rouges"; contract promised to the BUGS SOG session, which codes the Map's
+  « Procédures » layer against it): aerodb says, per aerodrome and per State, what this device can give for the procedures — held (green), readable on demand (orange), nothing (red).
+- **Done** (`aerodb.js`, `catalogue.js`; bench K1 63 checks, K21 28):
+  - `coverage(icao)`: one table built once from `procedureIndex()` and `EAD_STATES` (shared build promise for the first concurrent calls), then a map lookup. The base is never loaded.
+    Green carries `source` (published > manual > local: `procedureIndex` already keeps one entry per aerodrome, the best source first), `outdated` (hand reading of a past cycle only),
+    `counts`. Orange: `sia` if `LF`, else `ead` if the outcome is `read`, else `lnm` when `launcher.info().lnm` is not empty. Red: the EAD outcome (`images`, `labels`, `points`, `prose`,
+    `vfr`, `none`), `unknown` for a State absent from `EAD_STATES`. `here` = a launcher with `job`, not paired (the test of `fetchProcedures`), read at each call.
+  - `coverageByState()`: the same rules per prefix without held aerodromes (`LF` included), each with its four-language label.
+  - **Invalidation**: the table is dropped and `{ coverage: true }` emitted (a) after a successful `fetchProcedures` (the existing `emit({ procedures })` gains `coverage: true`),
+    (b) in `refresh()` (the existing `{ refreshed: true }` gains `coverage: true`), (c) by a new `reader.watch('proc/')`: a changed `proc/<cycle>/index.json`, `proc/manual/index.json` or
+    `proc/local/index.json` (revision changed, or never read by aerodb; the echo of aerodb's own read does not count, as for `AircraftDB/`). An in-flight build is not stored if the
+    table was dropped meanwhile.
+  - `AeroCatalogue.COVERAGE`: eleven short labels × four languages (French with the narrow no-break space), served by `sources()`. SPEC § 6 invariant 4 names it, with `n` / `gives` /
+    `lic`, as the catalogue's own texts: `coverage()` answers codes, never a sentence.
+- **Choices to review**: an index entry whose counts are all zero is not « held » (it would colour a pin green with nothing behind it); the catalogue failing to load does not cache
+  the table (every State then reads `unknown` for that call only); `outdated` is computed by `procedureIndex` at build time, so a cycle change while a page stays open is seen at the next
+  invalidation, not at midnight.

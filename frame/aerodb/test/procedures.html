@@ -735,6 +735,354 @@
       const ead = await okDb.fetchProcedures('EGLL');
       check('fetchProcedures(): a State readable in EAD Basic (EG) still asks ead-fetch', ead.ok === true && ead.source === 'ead' &&
         calls.length === 1 && calls[0].body.verb === 'ead-fetch', [ead, calls.map(x => x.body)]);
+      // ------------------------------------------------------------------ coverage(icao), coverageByState() (§ 10.22)
+      // un lecteur en mémoire à révisions (un fichier changé change de révision), qui compte ses lectures et garde les observateurs
+      const cf = new Map(),
+        ver = new Map(),
+        cReads = [],
+        cWatch = [],
+        cput = (path, v) => {
+          cf.set(path, JSON.stringify(v));
+          ver.set(path, (ver.get(path) || 0) + 1);
+        },
+        cReader = {
+          read: async path => {
+            cReads.push(path);
+            return cf.has(path) ? {
+              value: JSON.parse(cf.get(path)),
+              rev: 'r' + ver.get(path)
+            } : null;
+          },
+          list: async prefix => [...cf.keys()].filter(x => x.startsWith(prefix)),
+          watch: (prefix, fn) => cWatch.push({
+            prefix,
+            fn
+          })
+        },
+        covDb = (launcher = null, rd = cReader) => AeroDB.create({
+          reader: rd,
+          lnmperf: false,
+          launcher,
+          now: () => Date.parse('2026-10-25T12:00:00Z') // le cycle en vigueur est 2026-10-01
+        });
+      cput('proc/2026-10-01/index.json', {
+        schema: 1,
+        cycle: '2026-10-01',
+        aerodromes: {
+          LFBD: {
+            SID: 2,
+            STAR: 1,
+            APP: 3,
+            status: 'official'
+          },
+          KSEA: {
+            SID: 0,
+            STAR: 0,
+            APP: 0,
+            status: 'official'
+          }
+        }
+      });
+      cput('proc/manual/index.json', {
+        schema: 1,
+        folder: 'manual',
+        aerodromes: {
+          EGLL: {
+            SID: 0,
+            STAR: 1,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-09-03' // un cycle passé : périmé
+          },
+          EGKK: {
+            SID: 1,
+            STAR: 0,
+            APP: 1,
+            status: 'check',
+            cycle: '2026-10-01' // le cycle en vigueur : pas périmé
+          },
+          LFBD: {
+            SID: 9,
+            STAR: 9,
+            APP: 9,
+            status: 'check',
+            cycle: '2026-09-03' // déjà publié : le publié l'emporte
+          }
+        }
+      });
+      cput('proc/local/index.json', {
+        schema: 1,
+        folder: 'local',
+        aerodromes: {
+          LFMN: {
+            SID: 4,
+            STAR: 2,
+            APP: 5
+          },
+          EGKK: {
+            SID: 7,
+            STAR: 7,
+            APP: 7
+          }
+        }
+      });
+      const noLnm = fake({
+          info: () => ({
+            data: true,
+            lan: false,
+            lnm: []
+          })
+        }),
+        withLnm = fake({
+          info: () => ({
+            data: true,
+            lan: false,
+            lnm: ['navigraph']
+          })
+        }),
+        c0 = covDb(noLnm),
+        cvg = await Promise.all(['LFBD', 'EGLL', 'EGKK', 'LFMN', 'LFPO', 'EDDF', 'LQSA', 'ZZZZ', 'KSEA'].map(x => c0.coverage(x)));
+      const [cLfbd, cEgll, cEgkk, cLfmn, cLfpo, cEddf, cLqsa, cZzzz, cKsea] = cvg;
+      check('coverage(): a published aerodrome is green « held », source published, with its counts and State', cLfbd.level ===
+        'green' && cLfbd.reason === 'held' && cLfbd.source === 'published' && cLfbd.outdated === false && JSON.stringify(cLfbd
+          .counts) ===
+        '{"SID":2,"STAR":1,"APP":3}' && cLfbd.state === 'LF' && cLfbd.here === true, cLfbd);
+      check('coverage(): a hand reading of a past cycle is green, source manual, outdated; of the cycle in force, not outdated',
+        cEgll.level === 'green' && cEgll.source === 'manual' && cEgll.outdated === true && cEgll.counts.STAR === 1 && cEgkk.source ===
+        'manual' && cEgkk.outdated === false, [cEgll, cEgkk]);
+      check(
+        'coverage(): the best holding wins (published over manual over local); a local aerodrome is green, source local, not outdated',
+        cLfbd.counts.SID === 2 && cEgkk.source === 'manual' && cEgkk.counts.SID === 1 && cLfmn.level === 'green' && cLfmn.source ===
+        'local' && cLfmn.outdated ===
+        false && cLfmn.counts.APP === 5, [cLfbd, cEgkk, cLfmn]);
+      check('coverage(): an index entry without any procedure is not « held »', cKsea.level === 'red' && cKsea.reason === 'unknown' &&
+        cKsea
+        .state === 'KS', cKsea);
+      check('coverage(): LF without data is orange « sia »; a State read in EAD Basic is orange « ead »', cLfpo.level === 'orange' &&
+        cLfpo.reason === 'sia' && cLfpo.state === 'LF' && cEddf.level === 'orange' && cEddf.reason === 'ead' && cEddf.state === 'ED',
+        [
+          cLfpo, cEddf
+        ]);
+      check('coverage(): a State whose outcome is « images » is red « images »; a State missing from EAD_STATES is red « unknown »',
+        cLqsa.level === 'red' && cLqsa.reason === 'images' && cZzzz.level === 'red' && cZzzz.reason === 'unknown' && cZzzz.state ===
+        'ZZ', [cLqsa, cZzzz]);
+      const reasons = {};
+      for (const [icao, why] of [
+          ['UBBB', 'labels'],
+          ['LKPR', 'vfr'],
+          ['LROP', 'points'],
+          ['ENGM', 'prose'],
+          ['LTFM', 'none']
+        ]) reasons[why] = (await c0.coverage(icao)).reason;
+      check('coverage(): every other EAD outcome (labels, vfr, points, prose, none) is the red reason', JSON.stringify(reasons) ===
+        '{"labels":"labels","vfr":"vfr","points":"points","prose":"prose","none":"none"}', reasons);
+      const lnmDb = covDb(withLnm),
+        [lZ, lQ, lF, lD, lH] = await Promise.all(['ZZZZ', 'LQSA', 'LFPO', 'EDDF', 'LFBD'].map(x => lnmDb.coverage(x)));
+      check(
+        'coverage(): a workstation with Little Navmap databases turns a red State orange « lnm » (sia > ead > lnm kept, green untouched)',
+        lZ.level === 'orange' && lZ.reason === 'lnm' && lQ.level === 'orange' && lQ.reason === 'lnm' && lF.reason === 'sia' && lD
+        .reason ===
+        'ead' && lH.level === 'green', [lZ, lQ, lF, lD, lH]);
+      check('coverage(): lnm [] or no lnm field is not Little Navmap', cZzzz.reason === 'unknown' && (await covDb(fake({
+        info: () => ({
+          data: true,
+          lan: false
+        })
+      })).coverage('ZZZZ')).reason === 'unknown', cZzzz);
+      const bad = await Promise.all([null, undefined, '', 'LFP', 'LFPOX', 'LF-O', 'ÉGLL', 12, {}].map(x => c0.coverage(x))),
+        spaced = await c0.coverage(' lfbd ');
+      check('coverage(): a malformed code gives null; the code is trimmed and upper-cased', bad.every(x => x === null) && spaced
+        ?.level === 'green' && spaced.counts.APP === 3, [bad, spaced]);
+      // here : cet appareil peut-il lancer la lecture ? (lanceur avec job, non appairé) ; l'orange reste orange sans cela
+      const hereOf = async l => (await covDb(l).coverage('LFPO'));
+      const hNone = await hereOf(null),
+        hLan = await hereOf(fake({
+          info: () => ({
+            data: true,
+            lan: true
+          })
+        })),
+        hNoJob = await hereOf({
+          request: async () => null,
+          info: () => ({
+            data: true,
+            lan: false
+          })
+        }),
+        hNoInfo = await hereOf(fake({
+          info: () => null
+        })),
+        hOk = await hereOf(fake());
+      check('coverage(): « here » is true only with a launcher that has job and is not paired; the orange stays orange without it',
+        hNone.here === false && hLan.here === false && hNoJob.here === false && hNoInfo.here === false && hOk.here === true && [hNone,
+          hLan, hNoJob, hNoInfo, hOk
+        ].every(x => x.level === 'orange' && x.reason === 'sia'), [hNone, hLan, hNoJob, hNoInfo, hOk]);
+      check('coverage(): a launcher paired by lan keeps the green and the orange, here false', (await covDb(fake({
+        info: () => ({
+          data: true,
+          lan: true
+        })
+      })).coverage('LFBD')).here === false, 0);
+      // la table est bâtie une fois : 300 appels (simultanés puis suivants) ne lisent pas plus qu'un procedureIndex()
+      const base = cReads.length;
+      await covDb(noLnm).procedureIndex();
+      const oneIndex = cReads.length - base,
+        c1 = covDb(noLnm),
+        mark = cReads.length;
+      await Promise.all(Array.from({
+        length: 300
+      }, (_, i) => c1.coverage(['LFBD', 'EGLL', 'LFPO', 'ZZZZ'][i % 4])));
+      const afterFirst = cReads.length - mark;
+      for (let i = 0; i < 300; i++) await c1.coverage('LFBD');
+      check('coverage(): the table is built once for 300 simultaneous calls and 300 more (as many reads as one procedureIndex())',
+        oneIndex > 0 && afterFirst === oneIndex && cReads.length - mark === oneIndex, [oneIndex, afterFirst, cReads.length - mark]);
+      check('coverage(): the base is never loaded (no sia/base file read)', !cReads.some(x => x.startsWith('sia/base/')), cReads.filter(
+        x => x.startsWith('sia/base/')));
+      // un État de EAD_STATES à l'issue inattendue (« sia » ailleurs qu'en France) : 'unknown', jamais une raison inventée
+      const KS = (await c0.sources()).EAD_STATES;
+      KS.ZQ = {
+        outcome: 'sia'
+      };
+      const odd = await covDb(noLnm).coverage('ZQAA'),
+        oddState = (await covDb(noLnm).coverageByState()).ZQ;
+      delete KS.ZQ;
+      check('coverage(): an unexpected outcome (« sia » for a State other than LF) is red « unknown »', odd.level === 'red' && odd
+        .reason === 'unknown' && oddState.reason === 'unknown', [odd, oddState]);
+      // invalidation : fetchProcedures réussie, refresh(), observateur de proc/
+      cput('proc/manual/index.json', { // l'état d'avant la lecture : EGLL n'y est pas
+        schema: 1,
+        folder: 'manual',
+        aerodromes: {
+          EGKK: {
+            SID: 1,
+            STAR: 0,
+            APP: 1,
+            status: 'check',
+            cycle: '2026-10-01'
+          }
+        }
+      });
+      cf.delete('proc/manual/EGLL.json');
+      const inv = covDb(fake()),
+        wp = cWatch.filter(x => x.prefix === 'proc/').pop(),
+        evs = [],
+        off = inv.on('change', e => evs.push(e)),
+        before2 = await inv.coverage('EGLL');
+      cput('proc/manual/EGLL.json', installed);
+      jobAnswer.r = () => {
+        cput('proc/manual/index.json', {
+          schema: 1,
+          folder: 'manual',
+          aerodromes: {
+            EGLL: {
+              SID: 0,
+              STAR: 1,
+              APP: 0,
+              status: 'check',
+              cycle: '2026-10-01'
+            },
+            EGKK: {
+              SID: 1,
+              STAR: 0,
+              APP: 1,
+              status: 'check',
+              cycle: '2026-10-01'
+            }
+          }
+        });
+        return {
+          ok: true,
+          state: 'done',
+          result: {
+            ok: true,
+            icao: 'EGLL',
+            procedures: 1,
+            warnings: [],
+            commit: null,
+            source: 'ead'
+          }
+        };
+      };
+      const before3 = await inv.coverage('EGLL'); // la table d'avant, gardée
+      const got2 = await inv.fetchProcedures('EGLL'),
+        after2 = await inv.coverage('EGLL');
+      check('coverage(): a successful fetchProcedures() announces { coverage: true } and the next coverage() sees the new file',
+        before2.level === 'orange' && before2.reason === 'ead' && before3.level === 'orange' && got2.ok === true && evs.some(e => e
+          .coverage === true && e.procedures === 'EGLL') && after2.level === 'green' && after2.source === 'manual' && after2
+        .outdated ===
+        false, [before2, before3, got2.ok, evs, after2]);
+      evs.length = 0;
+      cput('proc/manual/index.json', {
+        schema: 1,
+        folder: 'manual',
+        aerodromes: {
+          EGKK: {
+            SID: 1,
+            STAR: 0,
+            APP: 1,
+            status: 'check',
+            cycle: '2026-10-01'
+          },
+          EGSS: {
+            SID: 3,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01'
+          }
+        }
+      });
+      const stale = await inv.coverage('EGSS');
+      inv.refresh();
+      const fresh = await inv.coverage('EGSS');
+      check('coverage(): refresh() announces { refreshed, coverage } and drops the table', stale.level === 'orange' && evs.some(e => e
+        .refreshed === true && e.coverage === true) && fresh.level === 'green' && fresh.counts.SID === 3, [stale, evs, fresh]);
+      // l'observateur du dossier proc/ : un index dont la révision a changé invalide, l'écho d'une lecture d'aerodb ne compte pas
+      evs.length = 0;
+      await wp.fn(['proc/manual/index.json', 'proc/manual/EGLL.json']);
+      const echo = evs.length;
+      cput('proc/manual/index.json', {
+        schema: 1,
+        folder: 'manual',
+        aerodromes: {
+          EGSS: {
+            SID: 3,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01'
+          },
+          EGBB: {
+            SID: 0,
+            STAR: 2,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01'
+          }
+        }
+      });
+      const stale2 = await inv.coverage('EGBB');
+      await wp.fn(['proc/manual/index.json']);
+      const fresh2 = await inv.coverage('EGBB'),
+        gone = await inv.coverage('EGKK');
+      check('coverage(): the proc/ watcher ignores an unchanged file and a non-index path, and drops the table for a changed index',
+        echo === 0 && stale2.level === 'orange' && evs.filter(e => e.coverage === true).length === 1 && fresh2.level === 'green' &&
+        fresh2.counts.STAR === 2 && gone.source === 'local', [echo, stale2, evs, fresh2, gone]);
+      off();
+      // coverageByState : les mêmes règles sans terrain détenu
+      const cs = await c0.coverageByState(),
+        csL = await lnmDb.coverageByState(),
+        cat = (await c0.sources()).COVERAGE;
+      check(
+        'coverageByState(): LF is orange « sia » with a label of four strings, ED orange « ead », LQ red « images »; every EAD_STATES prefix',
+        cs.LF.level === 'orange' && cs.LF.reason === 'sia' && cs.LF.label.length === 4 && cs.LF.label.every(t => typeof t ===
+          'string' &&
+          t) && JSON.stringify(cs.LF.label) === JSON.stringify(cat.sia) && cs.ED.reason === 'ead' && cs.LQ.level === 'red' && cs.LQ
+        .reason === 'images' && JSON.stringify(cs.LQ.label) === JSON.stringify(cat.images) && Object.keys(cs).length === Object.keys((
+          await c0.sources()).EAD_STATES).length && Object.values(cs).every(x => ['orange', 'red'].includes(x.level)), [cs.LF, cs.LQ]);
+      check('coverageByState(): Little Navmap on the workstation makes every State without sia or ead orange « lnm »', csL.LF.reason ===
+        'sia' && csL.ED.reason === 'ead' && csL.LQ.level === 'orange' && csL.LQ.reason === 'lnm' && csL.BK.reason === 'lnm' && Object
+        .values(csL).every(x => x.level === 'orange'), [csL.LQ, csL.BK]);
     } catch (e) {
       check('no exception', false, String(e && e.stack || e));
     }

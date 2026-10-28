@@ -225,6 +225,40 @@ than `COMPAT` would be ignored; this one is not.
   A record with `local: true` comes from the workstation's X-Plane: label it « X-Plane, local » (four languages), never
   copy it into the flight's files or a shared document; keep its identifier only.
 
+### Coverage of the procedures (§ 10.22 of the specification) — what aerodb gives the Map and the Données module
+
+The Map's « Procédures » layer colours aerodrome pins by what this device can give; the Données module shows the same three colours per State.
+Neither reads an index or the catalogue: they ask aerodb.
+
+- **`coverage(icao)`** → `Promise<object | null>`, **without loading the base**. `null` for a malformed code (not four characters `A-Z 0-9` after trim and
+  upper-casing). Otherwise `{ level, reason, state, here }`:
+
+  | `level` | `reason` | Meaning | Extra fields |
+  |---|---|---|---|
+  | `green` | `held` | procedures held: the published cycle, `proc/manual/` or `proc/local/` | `source` (`published` > `manual` > `local`, the best held), `outdated` (true only when the one holding is a hand reading of a past cycle), `counts { SID, STAR, APP }` |
+  | `orange` | `sia` | readable on demand: State `LF`, the SIA eAIP | |
+  | `orange` | `ead` | readable on demand: the State's `EAD_STATES` outcome is `read` (EAD Basic) | |
+  | `orange` | `lnm` | readable by Little Navmap: the workstation has a database (`launcher.info().lnm` is not empty); only for a State without `sia` / `ead` | |
+  | `red` | `images`, `labels`, `points`, `prose`, `vfr`, `none` | nothing to read: the State's `EAD_STATES` outcome says why | |
+  | `red` | `unknown` | State absent from `EAD_STATES` (or an unexpected outcome) | |
+
+  `state` is the two-letter prefix. `here` is true when this device can start the reading (a launcher with `job`, not paired): **orange stays orange where `here`
+  is false** (the reading is then made on the workstation); the Map words « lire sur le poste » from it, and offers the gesture (`fetchProcedures`) where it is true.
+  The closed list of reasons: `held`, `sia`, `ead`, `lnm`, `images`, `labels`, `points`, `prose`, `vfr`, `none`, `unknown`.
+- **`coverageByState()`** → `{ [prefix]: { level, reason, label: [fr, en, de, es] } }` for every `EAD_STATES` prefix (France included): the same rules **without
+  held aerodromes** — a State is readable on demand or not (a Little Navmap database counts as orange for every State without `sia` / `ead`). `label` is
+  `AeroCatalogue.COVERAGE[reason]`.
+- **Labels**: `AeroCatalogue.COVERAGE[reason]` → `[fr, en, de, es]` (served by `sources()`), short, for a legend line or a tooltip. A module that words a reason
+  differently (a longer sentence) keys on `reason`, never on the label.
+- **Cost and cache**: the first `coverage()` builds, once, an in-memory table from `procedureIndex()` (the published cycle index, `proc/manual/index.json` and
+  `proc/local/index.json`, already merged with their `manual` / `outdated` / `local` flags) and `EAD_STATES`; concurrent first calls share the one build; every
+  other call is a map lookup (hundreds of pins cost nothing). `here` and the Little Navmap hint are read at each call, not cached. An index entry that counts
+  no procedure is not « held ».
+- **Staying current**: `aerodb.on('change', fn)` receives `{ coverage: true }` when the index may have changed (after a successful `fetchProcedures`, which
+  also carries `procedures: icao`; on `refresh()`, which also carries `refreshed`; when a procedure index changes in the data layer: synchronisation, another
+  tab). aerodb has already dropped its table: **ask again, never keep an answer past that event** — the Map redraws its pins, the Données module its State
+  list. `coverageByState()` has no cache to refresh (47 States) and changes only with the workstation's Little Navmap hint.
+
 ### The Données module (`modules/data/`, Full level) — contracts of 28 Oct 2026
 
 What aerodb gives the module that regenerates the published data (its SPEC and INTEGRATION § 2, written with the settings

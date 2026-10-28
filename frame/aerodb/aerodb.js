@@ -18,7 +18,7 @@
   //   declaration() → préfixes lus et écrits par aerodb (à donner à FrameData.adapter) }.
   // Service : status(), state() (loading, ready, noaccess, offline, unpublished, idle : sans lire), refresh(), ready(q),
   //   on('change' | 'state', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
-  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), procedures(oaci, q), procedureIndex(), procedureFromOfp(ofp), rememberOfp(ofp), cities(q),
+  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), procedures(oaci, q), procedureIndex(), coverage(oaci), coverageByState(), procedureFromOfp(ofp), rememberOfp(ofp), cities(q),
   //   find(texte, n), coords(ident),
   //   coordsAll(ident), aircraft() → registre des aéronefs (types : frame/aerodb/aircraft.js ; fiches, flotte, référence,
   //   recherche unique : registry.js ; logique des fiches : sheets.js, AeroDBSheets), stats(),
@@ -869,6 +869,61 @@
       }
     };
 
+    // ---- carte de couverture des procédures (§ 10.22) : coverage(icao), coverageByState()
+    let covP = null; // promesse de la table { held: Map OACI → { source, outdated, counts }, ead: EAD_STATES } ; null : à bâtir
+    // issues d'EAD_STATES qui disent POURQUOI rien n'est lisible (toute autre valeur, 'sia' d'un État autre que LF comprise, est
+    // inattendue : 'unknown', jamais une raison inventée)
+    const COV_WHY = new Set(['images', 'labels', 'points', 'prose', 'vfr', 'none']);
+    /** Les index dont la table est tirée ont peut-être changé : la table est jetée, rebâtie à la prochaine question. */
+    const dropCoverage = () => {
+      covP = null;
+    };
+    /** Cet appareil peut-il lancer la lecture ? Un lanceur avec `job`, non appairé (comme fetchProcedures). Lu à chaque appel. */
+    const canRead = () => typeof launcher?.job === 'function' && !!launcher.info?.() && !launcher.info().lan;
+    /** Le poste a-t-il une base de Little Navmap ? (noms seuls dans /__setup/status › lnm.) Lu à chaque appel. */
+    const hasLnm = () => {
+      const l = launcher?.info?.()?.lnm;
+      return Array.isArray(l) && l.length > 0;
+    };
+    /** Table des terrains détenus, bâtie UNE fois depuis procedureIndex() (cycle publié + proc/manual/ + proc/local/, déjà fusionnés)
+     *  et EAD_STATES, jamais depuis la base ; des appels simultanés partagent la même promesse. Un terrain dont l'index ne porte
+     *  aucune procédure n'est pas « détenu ». */
+    function coverageTable() {
+      if (covP) return covP;
+      const p = (async () => {
+        const [ix, src] = await Promise.all([api.procedureIndex().catch(() => null), api.sources().catch(() => null)]),
+          held = new Map();
+        for (const [k, e] of Object.entries(ix?.aerodromes || {})) {
+          const counts = {
+            SID: +e?.SID || 0,
+            STAR: +e?.STAR || 0,
+            APP: +e?.APP || 0
+          };
+          if (!e || counts.SID + counts.STAR + counts.APP === 0) continue;
+          held.set(k.toUpperCase(), {
+            source: e.local ? 'local' : e.manual ? 'manual' : 'published',
+            outdated: !!(e.manual && !e.local && e.outdated),
+            counts
+          });
+        }
+        // catalogue illisible : la table sert cette fois mais n'est pas gardée (redemandée au prochain appel)
+        if (!src?.EAD_STATES && covP === p) covP = null;
+        return {
+          held,
+          ead: src?.EAD_STATES || {}
+        };
+      })();
+      return covP = p;
+    }
+    /** Ce qu'un État offre à la demande, hors terrain détenu : [niveau, raison]. */
+    function stateCoverage(prefix, ead, lnm) {
+      if (prefix === 'LF') return ['orange', 'sia']; // la France : l'eAIP du SIA, quoi qu'en dise EAD_STATES
+      const out = ead[prefix]?.outcome;
+      if (out === 'read') return ['orange', 'ead'];
+      if (lnm) return ['orange', 'lnm'];
+      return ['red', COV_WHY.has(out) ? out : 'unknown'];
+    }
+
     const EMPTY_RETRY = 30e3;
     const api = {
       /** État de la base (sans rien lire), voir baseState : { state, asked, zones, loading }. */
@@ -880,9 +935,11 @@
         listing = false;
         emptyAt = 0;
         missing.clear();
+        dropCoverage();
         emitState();
         emit({
-          refreshed: true
+          refreshed: true,
+          coverage: true
         });
       },
       /** État : zones publiées et leur cycle (null : inconnues), source de la liste (list, index, none), zones ouvertes et
@@ -1193,8 +1250,10 @@
           }
           if ((await Promise.resolve(reader.status?.()).catch(() => null))?.transport === 'local') await Promise.resolve(reader
             .sync?.()).catch(() => null);
+          dropCoverage(); // le terrain lu est désormais détenu (proc/manual/index.json)
           emit({
-            procedures: k
+            procedures: k,
+            coverage: true
           });
           return {
             ok: true,
@@ -1211,6 +1270,62 @@
         } finally {
           eadBusy.delete(k);
         }
+      },
+      /** Couverture des procédures d'un terrain (§ 10.22) : de quoi colorer une épingle de la Carte, sans charger la base. Une table
+       *  des terrains détenus est bâtie une fois (procedureIndex + EAD_STATES), puis chaque appel est une recherche. null pour un
+       *  code mal formé (quatre caractères A-Z 0-9). Sinon { level, reason, state, here } :
+       *  · 'green' / 'held' : procédures détenues — + source ('published' > 'manual' > 'local', la meilleure détenue), outdated
+       *    (vrai si la seule détention est une lecture à la main d'un cycle passé), counts { SID, STAR, APP } ;
+       *  · 'orange' : lisibles à la demande — reason 'sia' (LF), 'ead' (État lisible dans EAD Basic) ou 'lnm' (le poste a une base de
+       *    Little Navmap : lanceur.info().lnm non vide), dans cet ordre de préférence ;
+       *  · 'red' : rien — reason = issue d'EAD_STATES ('images', 'labels', 'points', 'prose', 'vfr', 'none'), 'unknown' pour un
+       *    État absent d'EAD_STATES (ou à l'issue inattendue).
+       *  state : les deux premières lettres ; here : vrai si CET appareil peut lancer la lecture (lanceur avec job, non appairé) —
+       *  l'orange reste orange quand here est faux (la lecture se fera sur le poste). Le changement des index est annoncé par
+       *  on('change', fn) avec { coverage: true } : les réponses déjà obtenues sont alors à redemander. */
+      async coverage(icao) {
+        const k = String(icao ?? '').trim().toUpperCase();
+        if (!/^[A-Z0-9]{4}$/.test(k)) return null;
+        const t = await coverageTable(),
+          state = k.slice(0, 2),
+          here = canRead(),
+          h = t.held.get(k);
+        if (h) return {
+          level: 'green',
+          reason: 'held',
+          state,
+          here,
+          source: h.source,
+          outdated: h.outdated,
+          counts: {
+            ...h.counts
+          }
+        };
+        const [level, reason] = stateCoverage(state, t.ead, hasLnm());
+        return {
+          level,
+          reason,
+          state,
+          here
+        };
+      },
+      /** Couverture par État, pour le module Données (§ 10.22) : { [préfixe]: { level, reason, label: [fr, en, de, es] } } pour chaque
+       *  préfixe d'EAD_STATES (LF compris), mêmes règles que coverage() SANS terrain détenu (un État lisible à la demande ou non ;
+       *  une base de Little Navmap sur le poste rend orange ('lnm') tout État sans sia ni ead). label : AeroCatalogue.COVERAGE[reason]. */
+      async coverageByState() {
+        const src = await api.sources().catch(() => null),
+          ead = src?.EAD_STATES || {},
+          lnm = hasLnm(),
+          out = {};
+        for (const prefix of new Set([...Object.keys(ead), 'LF'])) {
+          const [level, reason] = stateCoverage(prefix, ead, lnm);
+          out[prefix] = {
+            level,
+            reason,
+            label: [...(src?.COVERAGE?.[reason] || [reason, reason, reason, reason])]
+          };
+        }
+        return out;
       },
       // ---- pour le module Données (lot D1, SPEC § 5 « For the Données module ») : ce qui est publié, les zones, le catalogue
       /** Ce qui est publié, SANS charger la base : la liste du lecteur, le manifeste, le meta.json de chaque cycle d'une zone,
@@ -1539,6 +1654,19 @@
       }
       if (out.length) emit({
         changed: out
+      });
+    });
+    // index des procédures changés (cycle publié, proc/manual/, proc/local/ : synchronisation, autre onglet, lecture à la demande) :
+    // la table de couverture est jetée. Comme pour la base, seul compte un index dont la révision a changé ou que rien n'avait lu
+    // (l'écho d'une lecture d'aerodb lui-même ne compte pas).
+    reader.watch?.('proc/', async paths => {
+      let hit = false;
+      for (const p of paths || [])
+        if (/^proc\/(?:manual|local|\d{4}-\d{2}-\d{2})\/index\.json$/.test(p) && (!revs.has(p) || await changedRev(p))) hit = true;
+      if (!hit) return;
+      dropCoverage();
+      emit({
+        coverage: true
       });
     });
     // fiches, flotte, référence changées (synchronisation, autre onglet, écriture) : registre relu à la prochaine demande
