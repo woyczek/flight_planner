@@ -614,3 +614,18 @@ redesigned for touch at that point.
          module brought forward), `proc/manual/` code; fuel — the two rows of step Vol, the arrival row of step Départ, the
          quote with constraints, `route.procedures` v2 (INTEGRATION § 3); maps — the traces with constraints and the
          profile steps; help ×4 and tests per lot. The Map and Fuel lots start after the aerodb lot publishes its API.
+       **Refinements (ergonomics session, 28 Oct evening, after the Map session's reading)**: the Map never writes
+       `route.procedures` (its aerodrome card shows the choice and a "Changer" button to `#fuel?focus=arr`); aerodb adds
+       `runways(icao)` (threshold, elevation, QFU, displaced threshold), `arc { centre, radius }` on RF legs when the source
+       gives it, `phase` ∈ main | trans | missed on every leg, and states per source what it provides; a leg without a
+       position (VA, CA, VM, FM) is drawn as a 2 NM stroke along its course then dashes to the next point, never an invented
+       point; constraints keep aerodb's form (`alt { type, ft, ft2 }`, `kt`) and the AIP notation on the map (underlined =
+       at or above, overlined = at or below, both = at, "5000–7000" = between, "≤ 220 kt"); when the SID's last point (or its
+       transition's) is a route point, the leg aerodrome → that point is drawn by the SID alone, else the SID to its end
+       then a dashed direct to the first en-route point, symmetric at the arrival; **one expanded path** "route +
+       procedures" (`frame/lib/current_flight.js` `expandedPath(flight, procs)`, points tagged route | sid | star | app |
+       missed) is the single basis of the profile, the NM marks, the cursor, `etaOf` / `plannedPositionAt` and Fuel's
+       quote (`quote.legs` covers every point); Fuel computes and writes `profile.path [{ nm, ft }]`, the planned
+       vertical path under the constraints, and the Map draws it (its own computation only as a fallback); a record with
+       the old `route.procedures { sid, star }` is migrated to v2 by Fuel at read, the Map reads v2 only; constraints and
+       speeds are labelled in a close view only (300 px per degree), reserved after the route's labels.
