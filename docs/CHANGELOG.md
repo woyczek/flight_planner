@@ -12,6 +12,23 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+## [6.0.0-alpha.2] — 2026-10-28
+
+Second alpha of the V3 **Pilot application**, five days after the first. The phone screen follows the iVAC target
+(bottom bar Prepare · Map · Report · Flights · Weather, gear with a badge, status block at the top of Settings, fixed
+map screens with overlay buttons, full screen, a three-position sheet, landscape as a rail and a column). The **Map
+module was recoded from its specification** (files by concern, derived times from the quote's leg times, Edit mode
+merging into the route, airspaces at a point read from the source, VFR points and aerodromes pinned). One **weather
+layer** in the frame (cache, counted quota) read by Fuel and the Map; the **Atmosphere** module (cut along the flight,
+world synoptic from NOAA GFS published by the site). **Settings** grouped by level, keys kept across a Safari
+relaunch, Administration behind one button, **Aqua** design for computers only. **Procedures** (SID / STAR /
+approach) through one aerodb API: SimBrief OFP, SIA eAIP, FAA CIFP, EAD Basic read by hand per aerodrome (coding
+tables of 17 States, OCR, manual readings kept and marked outdated; non-operational data). A **non-regression suite**
+(140 cases) gates every lot. The data laboratory was measured and removed; a **Data module** is specified. Alpha: data
+formats and screens may still change; Atmosphere is being recoded for the next alpha.
+
+### V3
+
 - **aerodb: hand-read procedures kept, marked outdated** (`frame/aerodb/SPEC.md` § 1 and § 5 quinquies, `INTEGRATION.md`, DECISIONS;
   documentation only) — the user's amendment: EAD Basic, manual and OCR readings live in `proc/manual/<ICAO>.json`, outside the cycles,
   read whatever their age and marked `outdated` once their cycle is not in force, never purged by themselves; compiling the raw sources and

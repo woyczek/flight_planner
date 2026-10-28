@@ -5,6 +5,49 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 6.0.0-alpha.2 — 28 October 2026
+
+Second alpha of the **Pilot application** (V3), five days after the first: the phone screen, the recoded Map, one
+weather layer, Settings by level, Aqua on a computer, procedures from four sources, a test suite as the gate.
+
+### Summary
+
+- **Phone first, the iVAC way**: bottom bar Prepare · Map · Report · Flights · Weather; the gear carries the badge and
+  Settings opens on a status block; map screens are header · map · sheet · bar with round buttons over the map, full
+  screen, a sheet with three positions, landscape as a left rail and a right column.
+- **Map recoded from its specification**: eighteen files by concern, the same addresses and gestures; times and the
+  planned position derived from the quote's leg times; the route edited on the map merges into the record; airspaces at
+  a point read from the published limits, highest first, "Also here" for the services; VFR points and aerodromes pinned.
+- **One weather layer** in the frame: a cache per model, cell and day, Open-Meteo called only for what is missing, the
+  quota counted and shown; Fuel and the Map read it; the Atmosphere module draws the cut along the flight and the world
+  synoptic published by the site from NOAA GFS every six hours.
+- **Settings by level**: seven flat cards at Discovery, seven folded groups above, administration behind one button,
+  keys kept across a Safari relaunch, a card reachable by its address at any level.
+- **Aqua on a computer**: textures on the frame's chrome only, one panel per module, nothing on a phone.
+- **Procedures through aerodb**: SimBrief OFP (private, secondary), SIA eAIP (pypdf on the workstation), FAA CIFP, EAD
+  Basic read by hand, one aerodrome per gesture (coding tables of 17 States, OCR of drawn pages, manual readings kept
+  out of the cycles and marked outdated); every EAD file says "non-operational".
+- **Test suite** `tests/v3/`: 140 cases, journeys, selection by touched files, replay of a failure; green on Windows.
+
+### Actions to take
+
+1. **Workstation**: pull `v3`, restart the launcher (new routes: `regen/state`, EAD tools), reload `/frame/`. Settings ›
+   Maintenance › rebuild the aeronautical base once (parser 17: VFR reporting points deduplicated at the source) and
+   synchronise.
+2. **Data repository**: the removed laboratory published trial blocks on the main branch; purge them once
+   (`frame/aerodb/INTEGRATION.md`, "purge") before pilots clone again.
+3. **Computer**: Settings › Design › Aqua if wanted (never offered on a phone).
+4. **Procedures abroad**: `python tools/proc_ead.py --fetch <ICAO>` by hand, one aerodrome at a time, then
+   `tools/proc_manual.py`; `pypdf` and the OCR packages are optional prerequisites of the workstation builders.
+5. **Tests**: `pip install playwright`; your Chrome is found by itself; `python tests/v3/run.py --changed` before any lot.
+
+### Notes
+
+- Alpha: `current_flight.json` (`quote.legs`, `planned_at`, no `progress.eta`), `proc/manual/`, `cache/weather/` may
+  still change. Atmosphere is being recoded on the weather layer for the next alpha; the Data module follows.
+- EAD Basic is a demonstration tool: its data are not operational and are for simulation only (`EAD_BASIC.md` § 1).
+- The detailed history of this alpha is kept on `v3-avant-squash-2026-10-28`; `v3` holds one commit per block.
+
 ## 6.0.0-alpha.1 — 23 October 2026
 
 First alpha of the **Pilot application** (V3). It lives next to the V2 suite: same site (`/v3/frame/`), same
