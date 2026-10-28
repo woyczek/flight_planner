@@ -277,3 +277,11 @@ pastes that report; the session decides from it whether this document holds codi
 this part holds **no table of legs in the SIA's form**. The word "Coding" appears on pages 40 and 41 only (with SID, STAR, RNAV, RNP, Approach); pages 26–30 and 11–13 mention approaches and
 procedures (the textual AD 2.22 "flight procedures" section). The scan now also prints the few lines with a coding word on those two pages, which decides whether they describe a coding
 table, name the document where the coded data is published, or only state a rule. Charts (SID / STAR / IAC drawings) are a separate document type, *Charts*.
+
+## 6 octies. The UK document does hold coding tables (28 October 2026)
+
+The scan's coding lines on pages 40 and 41 of `EG_AD_2_EGLL_en.pdf`: **"STANDARD INSTRUMENT ARRIVAL CODING TABLES"** (the STARs, e.g. OTMET 1H, ROXOG 1H, ALESO 1H, TANET 1Z, SIRIC 1H…),
+**"RNAV HOLD CODING TABLES"** (BIG, BNN, BRASO, FITBO, HON, LAM, LOGAN…) and **"INSTRUMENT APPROACH PROCEDURE CODING TABLES - RNP RWY 09L/R and 27L/R"**. So EGLL's AD 2 carries
+STAR and RNP coding tables, but **not under the SIA's header words** (no "Path Terminator"): its layout is its own. No SID table was seen (the SIDs are in the charts). The layout is now read page by page:
+`python tools/proc_eaip.py --scan-pdf FILE --page 40` prints that page's text rows (numbered, 160 characters, 90 rows), the very rows the analysers would read; the owner pastes pages 40 and 41 here (a UK AIP
+excerpt in the session only, never in the repository). The UK layout parser, a second entry of the layout registry (§ 3), is then written on them.

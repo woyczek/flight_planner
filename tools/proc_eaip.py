@@ -91,6 +91,22 @@ def context_lines(pages, wanted, rx=r'coding|ARINC|path\s*terminator|fly[- ]?(?:
     return out
 
 
+def format_rows(rows, limit=90):
+    """Lignes d'une page numérotées, 160 caractères au plus chacune, `limit` lignes au plus : pour voir la disposition d'une table."""
+    return [f'{i:3d} | {re.sub(chr(32) + "+", chr(32), r)[:160]}' for i, r in enumerate(rows[:limit], 1)] + ([f'... ({len(rows) - limit} ligne(s) de plus)'] if len(rows) > limit else [])
+
+
+def show_page(path, n, report=print):
+    """Affiche les lignes de texte de la page n (à partir de 1) d'un PDF, comme le lecteur les voit (même ordre que les analyseurs)."""
+    reader = pdf_reader(path)
+    if not 1 <= n <= len(reader.pages):
+        raise SystemExit(f'page {n} hors du document ({len(reader.pages)} page(s))')
+    rows = rows_from_pdf(path, n - 1, reader)
+    report(f'Page {n}: {len(rows)} ligne(s)')
+    for line in format_rows(rows):
+        report(line)
+
+
 def scan_pdf(path, report=print):
     """Repère dans un PDF d'AIP (une partie AD 2 entière) les pages à tableau de tronçons (« Path Terminator »…) : titres et mots-clés seulement."""
     if not Path(path).is_file():
@@ -428,6 +444,7 @@ def main(argv=None):
     ap.add_argument('--all', action='store_true', help='tous les terrains du menu de l\'eAIP (une page de 0,7 Mo chacun)')
     ap.add_argument('--delay', type=float, default=0.0, help='pause entre deux terrains, en secondes')
     ap.add_argument('--scan-pdf', default=None, help='repère les pages à tableau de tronçons d\'un PDF AD 2 déjà téléchargé (titres et mots-clés seulement)')
+    ap.add_argument('--page', type=int, default=None, help='avec --scan-pdf : affiche les lignes de cette page (à partir de 1) au lieu du repérage')
     ap.add_argument('--eaip', default=None, help='adresse du dossier AIRAC de l\'eAIP (…/FRANCE/AIRAC-AAAA-MM-JJ)')
     ap.add_argument('--out', default='data/proc')
     ap.add_argument('--cache', default=None, help='dossier des PDF téléchargés (gardés, pour ne pas recharger)')
@@ -435,7 +452,10 @@ def main(argv=None):
     ap.add_argument('--rows-dir', default=None, help='écrit les lignes de chaque PDF lu (fixtures de test)')
     a = ap.parse_args(argv)
     if a.scan_pdf:
-        scan_pdf(a.scan_pdf)
+        if a.page:
+            show_page(a.scan_pdf, a.page)
+        else:
+            scan_pdf(a.scan_pdf)
         return
     if not a.eaip:
         raise SystemExit('--eaip est requis (adresse du dossier AIRAC de l\'eAIP), ou --scan-pdf FICHIER')
