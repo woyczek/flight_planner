@@ -1413,3 +1413,17 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   `resize`, `orientationchange` and a change of pointer, one write when it changes, `frame-desk { desk }`. Checked in
   Playwright: 1280 with a mouse → set from the first paint; 375 and 900×600 (`f-land`) → removed, event; back to 1280 →
   set; a touch device at 1280 → never.
+- **28 Oct 2026 — Weather layer: the run of the data, the precision of a cell** (fuel's return after switching to
+  `ctx.weather`, through the coordinator):
+  - **The run shown was not the data's**: for Météo-France the layer read the metadata of AROME HD (run every 3 h,
+    surface fields only: 03:00Z), while the winds aloft and the short name "ARPEGE" are ARPEGE's (06:00Z), which fuel
+    read. A "seamless" model has no metadata: the layer now reads those of the model that carries its pressure levels —
+    `meteofrance_arpege_europe`, `dwd_icon`, `ncep_gfs025` (GFS: the 0.25° grid of the levels; it read `ncep_gfs013`).
+    The run kept on the device now says which metadata it came from, and an hour read for another model is not served
+    again. A cell kept with the old run is read once more (the run changed): one request per flight, once.
+  - Consequence, written: a new AROME run (every 3 h) does not refresh a cell before the next ARPEGE run or its 6 h; the
+    surface fields of a grid may lag AROME by up to 3 h. Acceptable while the readers are fuel's winds aloft.
+  - **The cell's centre** (LFRS read at 47.150 instead of 47.157: about 1 kt and 5 kg on a quote) is the contract: written
+    in INTEGRATION § 14.2 ("Expected precision").
+  - Bench 73 / 73 (three checks added: the metadata of ARPEGE Europe and of GFS 0.25°, an hour kept for another model
+    ignored).

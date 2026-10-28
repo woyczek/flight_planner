@@ -238,6 +238,11 @@
     ck('aloft : poids 5 × 42 / 10 = 21', near(a1.weight, 21), a1.weight);
     ck('aloft : modèle du point du milieu (Météo-France)', a1.model.id === 'meteofrance_seamless' && a1.model.short === 'ARPEGE');
     ck('aloft : run lu dans les métadonnées', a1.run === RUN, a1.run);
+    ck('run : Météo-France lu sur ARPEGE Europe (le modèle des niveaux de pression, le nom court affiché)', S.net.calls.some(u => u
+      .includes(
+        '/data/meteofrance_arpege_europe/static/meta.json')) && !S.net.calls.some(u => u.includes('arome')), S.net.calls.filter(u => u
+      .includes(
+        'meta.json')).join(' '));
     ck('aloft : un profil par lieu, dans l\'ordre, 14 niveaux', a1.profiles.length === 5 && a1.profiles.every(p => p.levels.length ===
       14) && a1.profiles[0].lat === 47.05 && a1.profiles[4].lat === 43.45, JSON.stringify(a1.profiles.map(p => [p.lat, p.levels
       .length
@@ -511,6 +516,16 @@
     }], when);
     ck('GFS : cases de 0,25°, modèle gfs_seamless', ag.model.id === 'gfs_seamless' && /latitude=40\.125,41\.125&longitude=-60\.125,-58\.875/
       .test(S.net.forecasts()[0]), S.net.forecasts()[0]);
+    ck('run : GFS lu sur ncep_gfs025', S.net.calls.some(u => u.includes('/data/ncep_gfs025/static/meta.json')));
+    // une heure de run gardée pour un autre modèle de métadonnées (avant le 28 oct. : AROME HD) n'est pas resservie
+    S = mk();
+    await S.data.put('cache/weather/meteofrance_seamless/meta.json', {
+      at: clock.t,
+      meta: 'meteofrance_arome_france_hd',
+      run: RUN - 3 * 3600
+    });
+    ck('run : heure gardée pour un autre modèle ignorée, relue', (await S.w.run('meteofrance_seamless')) === RUN && S.net.calls.length ===
+      1);
   } catch (e) {
     ck('exception', false, e.stack || e.message);
   }

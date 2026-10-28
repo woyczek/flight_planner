@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Weather layer: the run shown is the data's** (`frame/lib/weather_store.js`; INTEGRATION § 14, DECISIONS; bench 73/73):
+  for Météo-France the layer read AROME HD's run (03:00Z) while the winds aloft are ARPEGE's (06:00Z); it now reads the
+  metadata of the model that carries the pressure levels (ARPEGE Europe, ICON, GFS 0.25°). The expected precision of a
+  cell (its centre, up to 0.05° from the point) is written.
 - **Frame: `html.f-desk`** (`frame/app.js`, `frame/index.html`; INTEGRATION § 9.1, SPEC, DECISIONS): the frame marks a
   computer (wider than 760 px, a precise hovering pointer, not a phone in landscape) from the first paint, for the designs
   kept for computers (Aqua); `frame-desk` says when it changes.

@@ -50,14 +50,15 @@ const MINUTE_CAP = QUOTA.minute * (1 - QUOTA.margin),
   MAX_SAMPLES = 24, // lieux d'une route (fuel en lit 24 au plus)
   MAX_PLACES = 400; // lieux d'une grille (Atmosphère) : au-delà, la demande est refusée, jamais coupée en silence
 
-/** Modèles : nom, nom court, taille de case (degrés), modèle dont on lit l'heure du run (un modèle « seamless » n'a pas
- *  de métadonnées : celles du modèle qui porte les premières heures). */
+/** Modèles : nom, nom court, taille de case (degrés), modèle dont on lit l'heure du run. Un modèle « seamless » n'a pas de
+ *  métadonnées : on lit celles du modèle qui porte ses niveaux de pression, celui que le nom court annonce (ARPEGE Europe,
+ *  et non AROME HD, relancé toutes les 3 h et sans niveaux de pression ; GFS 0,25°, la grille des niveaux de pression). */
 const MODELS = {
   meteofrance_seamless: {
     name: 'Météo-France AROME / ARPEGE',
     short: 'ARPEGE',
     cell: 0.1,
-    meta: 'meteofrance_arome_france_hd'
+    meta: 'meteofrance_arpege_europe'
   },
   icon_seamless: {
     name: 'DWD ICON',
@@ -69,7 +70,7 @@ const MODELS = {
     name: 'NOAA GFS',
     short: 'GFS',
     cell: 0.25,
-    meta: 'ncep_gfs013'
+    meta: 'ncep_gfs025'
   }
 };
 const infoOf = id => ({
@@ -266,7 +267,7 @@ export function weatherStore({
       m = runs.get(k);
     if (m && now() - m.at < META_TTL) return m.run;
     const file = `${PREFIX}${model}/meta.json`,
-      c = await data.get(file).catch(() => null);
+      c = await data.get(file).then(x => x?.meta === k ? x : null, () => null); // l'heure d'un autre modèle : ignorée
     if (c && now() - c.at < META_TTL) {
       runs.set(k, c);
       return c.run;
@@ -275,6 +276,7 @@ export function weatherStore({
       const j = await (await call(`https://api.open-meteo.com/data/${k}/static/meta.json`)).json(),
         v = {
           at: now(),
+          meta: k,
           run: Number.isFinite(+j?.last_run_initialisation_time) ? +j.last_run_initialisation_time : null
         };
       runs.set(k, v);

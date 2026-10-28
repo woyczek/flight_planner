@@ -846,7 +846,7 @@ def a20(c):
 
 
 @case('A25', 'Weather layer bench', 'A', tags=('weather',), designs=('standard',), screens=False, night=False,
-      rule='frame/INTEGRATION 14; the bench reported 70/70')
+      rule='frame/INTEGRATION 14; the bench reported 73/73')
 def a25(c):
     c.page.goto(f'{c.base}/frame/lib/test/weather_store.html', wait_until='load')
     try:

@@ -781,7 +781,7 @@ fuel's own request stay (dated debt, SPEC § 4).
 | `metar(ids, opts)`, `taf(ids, opts)` | `{ items: { ICAO: aviationweather.gov's JSON form }, source: 'launcher' \| 'direct' \| 'cache', noTaf, offline }`; kept 30 min per aerodrome. With a launcher: aviationweather.gov, by 40. Without: metar.vatsim.net (raw, decoded by `frame/lib/metar.js`) and avwx.rest with the device's weather key (added by the frame's `net`, never seen by a module); no key → `noTaf: true` |
 | `world(k, { alt })` | the published synoptic world forecast (Atmosphere): without `k`, its index (or null); with `k`, step `k` (or its pressure-level file with `alt`). Read from the same origin (`<suite root>/weather/world/`), kept in `cache/weather/world/`; the index is fresh for 6 h, retried at most every 10 min |
 | `modelFor(lat, lon)` | `{ id, name, short }`: Météo-France (lat 38–55, lon −10…16), else ICON (lat 30–72, lon −30…45), else GFS |
-| `run(model)` | the model's last run (Unix seconds) or null; read from Open-Meteo's static metadata, kept 10 min, not counted |
+| `run(model)` | the model's last run (Unix seconds) or null; read from Open-Meteo's static metadata, kept 10 min, not counted. A "seamless" model has no metadata of its own: the run is the one of the model that carries its pressure levels and gives its short name — `meteofrance_arpege_europe` for Météo-France ("ARPEGE"; not AROME HD, run every 3 h, surface only), `dwd_icon` for ICON, `ncep_gfs025` for GFS. The run shown with `aloft` is therefore the one of the winds and temperatures aloft |
 | `spentToday()` | the weighted calls of the UTC day on this device |
 
 `opts` of `aloft` and `grid`: `model` (an Open-Meteo `models` id, to force one), `cacheOnly` (nothing is asked: null when
@@ -796,6 +796,10 @@ Errors carry a mark, for the module to say why in its own words: `offline`, `unr
 - `cache/weather/<model>/<cell>/<UTC day>.json`, policy `cache`: never synchronised, never in a device backup
   (`FrameData.dump` / `load` leave `cache/weather/` aside, the ledger included).
 - A cell is a square at the model's resolution, 0.1° at least (GFS 0.25°), named by its centre (`47.15_-1.65`).
+- **Expected precision**: Open-Meteo is asked at the centre of the cell, not at the point itself, so that every reader
+  shares the same answer. A point moves by up to half a cell: 0.05° (about 3 NM in latitude, less in longitude) at 0.1°,
+  0.125° with GFS. LFRS (47.157° N) is read at 47.150°. On a route quote this gives about 1 kt of wind and a few kg of
+  fuel against a request at the exact points (fuel, 28 Oct 2026): the contract, not a fault.
   Longitudes are wrapped by `frame/lib/geo.js`: a point at 179.96° E and one at 180.04° W share a cell.
 - A file holds the hours of one UTC day, variable by variable, for one run: `{ schema: 1, model, cell, size, lat, lon,
   elevation, day, times, vars, refused, run, at }`. Variables asked later are merged into it; a new run replaces it whole.
