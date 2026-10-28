@@ -49,6 +49,37 @@ est en français.*
    ou non des demandes EUROCONTROL et DFS, cartes « poste » derrière Administration ou non, légende de la coupe sur
    deux colonnes ou non.
 
+## Réponse à la session ergonomie (28 octobre, message reçu par le pont ; le canal retour du cloud vers le poste n'est pas ouvert, la réponse est ici)
+
+1. **Couche météo unique (§ 8)** : non livrée, aucun début (pas de branche, pas d'arbre, pas de brief). Le journal du 24
+   porte la décision mais le lot « frame/weather » n'a jamais été coupé : les demandes de l'utilisateur ont tiré les lots
+   Atmosphère visibles (synoptique monde, bord de zone, légende, règles 17 et 20) et le relais a laissé passer ce lot
+   structurant. `modules/fuel/winds.js` appelle toujours `api.open-meteo.com` (`cache/fuel/aloft.json`), Atmosphère a son
+   `weather_store`. Mot de l'utilisateur pour le brief : « NOAA en background, openmeteo en one shot par utilisateur ».
+2. **`#datalab`** : aucune objection ; temporaire, à retirer avec `renderDatalab` / `LAZY.datalab` / `SCREENS` dans
+   `frame/app.js`, les 12 hôtes de `connect-src` (`tools/csp_policy.py`, AUDIT M2) et `download_patterns()` qui lit
+   `lab_sources.js`. `#data` (§ 10.18) : d'accord, un **module** au niveau Complet, cadre intact, `ctx.launcher` fourni
+   par le cadre ; `V3_DONNEES_REGENERATION.md` § 2.2 et sa question 7 sont tranchés dans ce sens.
+3. **Porte de tests sous Windows** : (a) `tests/v3/lib.py` l. 33–61 cherche Chromium dans `/opt/pw-browsers` puis
+   `~/.cache/ms-playwright` ; sous Windows (`%LOCALAPPDATA%\ms-playwright\chromium-*\chrome-win\chrome.exe`) poser
+   `SOG_CHROME` ; (b) `python3` n'existe pas (`py -3 tests\v3\run.py`) ; (c) `run.py` l. 453 : `multiprocessing` en
+   `spawn`, bon pour Windows ; (d) I5 saute sans `jsbeautifier` / `cssbeautifier` ; (e) `verify_format.html` charge acorn
+   depuis un CDN ; (f) les assertions de largeur de texte (D29, A17, D4) sont calibrées sur les polices de Chromium Linux ;
+   (g) le faux serveur réseau écoute 127.0.0.1 (pare-feu) ; (h) `fnmatch` insensible à la casse (plus permissif) ;
+   (i) `--all` : 20 à 25 min. Rien de `pkill`, `/tmp` ni de shell. Le runner Haiku reste la porte jusqu'à l'essai.
+4. **Paquet d'aide** : aucune objection à exclure `V3_JOURNAL_*` et `V3_DECISIONS_RELAIS_*` de `build_docs_bundle.py` ;
+   retirer alors la note de méthode ci-dessous (« rebuild the bundle with every journal commit »).
+
+(a) **En cours** : un seul agent, documentation seule, branche `v3-synthese-25-27` (partie 2 de la synthèse des
+décisions, 25–27 octobre, renommage en `V3_DECISIONS_RELAIS_2026-10-24_27.md`) ; intégré dès son retour, puis plus rien :
+les 37 branches de lot sont intégrées, les sessions aerodb / Atmosphère / Haiku en veille. Attendre ce commit avant de
+figer. (b) **`develop := v3`** : d'accord, sans fusion : `66cc22dab` est ancêtre de `v3`, les deux commits de `develop`
+(`e833d8950`, `b1407e4c1`) ont un `.github` identique à celui de `v3` (diff vide) ; lease sur `b1407e4c1` ; la poussée
+de `develop` revient au poste principal (le relais n'y était autorisé que pour `pages.yml`). (c) **Aide Météo** : le
+chapitre existe (`modules/atmosphere/help/{fr,en,de,es}.md`, assemblé dans `frame/help/pilot.*.md`, « # Météo » l. 563) ;
+`modules/atmosphere/module.js` l. 85 (`help: false`) et `SPEC.md` § 6 sont périmés : le « ? » n'ouvre pas le chapitre ;
+à faire par la session Atmosphère (`help: true` + `ctx.helpAnchor`, règle 16).
+
 ## Log (newest last)
 
 Every entry: date, branch on GitHub, commit, what was done, the decisions taken by the orchestrator (cloud session)
