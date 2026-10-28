@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Map studio, Flight maps, vertical profile: "800 ASFC" read as 0 ft** (`shared/carto/aero_symbols.js`,
+  `shared/carto/vertical_profile.js`, `shared/carto/vprof_editor.js`) — the limit reader tested "SFC" before the number,
+  and "ASFC" contains "SFC": an R area "800 ASFC – 1800 ASFC" became surface to surface (zero thickness in the cut, from
+  the surface to the ceiling in the filters). New `SiaAero.limitRead(text, top)` → `{ ft, rel, unl, ok }`, the reading
+  of the V3 map: the number first, FL × 100, metres, `rel` for ASFC / AGL / AAL / SFC / GND (never with AMSL / MSL), `unl`
+  for UNL or 66,000 ft and more, `ok` false when empty or unreadable; `limitFt` and the "relative to the ground" tests of
+  the vertical profile and its editor use it. The area is now drawn from 800 to 1,800 ft above the ground.
+
 - **Map studio and Flight maps: every town name twice on an OpenFreeMap or VersaTiles background**
   (`apps/cpco/map_parser.html`, `apps/planner/map_planner.html` rebuilt) — with "Town labels" ticked, the studio wrote its
   own names over the place names of the vector background. The background's place layers (`place`, `place_labels`) are
