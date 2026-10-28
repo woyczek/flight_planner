@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: Armenian coding tables (`am-coding`) and a prompt for a local session** (`tools/proc_eaip.py`, K13, `frame/aerodb/LOCAL_SESSION_PROMPT.md`) — a new layout whose cells are split over several lines is read by order and count of values,
+  checked against the printed courses and distances; a table whose counts or geometry disagree is rejected. `--fetch` also reads SID/STAR/IAP charts for States without coding tables.
+
 - **aerodb: EAD Basic per-State survey and on-demand per-aerodrome fetch** (`tools/proc_ead.py --survey / --fetch`, `classify_pdf` in `tools/proc_eaip.py`, K12, `frame/aerodb/EAD_BASIC.md` § 6 terdecies) — one command
   counts, for every authority, the coding / departure / arrival / approach charts and classifies one sample (text, vector, image); another downloads and reads one aerodrome's coding tables, reporting unknown layouts instead of guessing.
 
