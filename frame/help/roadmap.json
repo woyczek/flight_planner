@@ -764,11 +764,11 @@
           "es": "Pantalla «Datos»: obtener, compilar, publicar, limpiar las fuentes sin la V2 (módulo en el nivel Completo)"
         },
         {
-          "state": "doing",
-          "fr": "Réglages : fichier découpé par sujet (livré) ; cartes groupées sous sept titres au-delà de Découverte, cartes d'administration derrière Administration",
-          "en": "Settings: file split by concern (delivered); cards grouped under seven headings above Discovery, administration cards behind Administration",
-          "de": "Einstellungen: Datei je Thema aufgeteilt (geliefert); Karten über Entdeckung unter sieben Titeln gruppiert, Verwaltungskarten hinter Verwaltung",
-          "es": "Ajustes: archivo dividido por tema (entregado); tarjetas agrupadas bajo siete títulos por encima de Descubrimiento, tarjetas de administración tras Administración"
+          "state": "done",
+          "fr": "Réglages : fichier découpé par sujet ; Découverte en sept cartes à plat, Courant et Complet en sept groupes repliés ; cartes d'administration derrière Administration ; une carte atteinte par son adresse s'affiche à tout niveau",
+          "en": "Settings: file split by concern; Discovery as seven flat cards, Current and Full as seven folded groups; administration cards behind Administration; a card reached by its address shows at any level",
+          "de": "Einstellungen: Datei je Thema aufgeteilt; Entdeckung mit sieben flachen Karten, Üblich und Vollständig mit sieben eingeklappten Gruppen; Verwaltungskarten hinter Verwaltung; eine über ihre Adresse erreichte Karte erscheint auf jeder Stufe",
+          "es": "Ajustes: archivo dividido por tema; Descubrimiento con siete tarjetas planas, Habitual y Completo con siete grupos plegados; tarjetas de administración tras Administración; una tarjeta alcanzada por su dirección se muestra en cualquier nivel"
         }
       ]
     },
@@ -914,11 +914,11 @@
           "es": "Tonos, fuente, reglas repetidas a promover en tokens (elección del usuario)"
         },
         {
-          "state": "doing",
-          "fr": "Aqua en V3, réservé à l'ordinateur : textures sur l'habillage du cadre seulement, règles communes promues en jetons d'abord, panneaux jamais précachés",
-          "en": "Aqua in V3, computer only: textures on the frame's chrome only, shared rules promoted to tokens first, panels never precached",
-          "de": "Aqua in V3, nur am Computer: Texturen nur auf dem Rahmen, gemeinsame Regeln zuerst als Tokens, Panels nie vorab zwischengespeichert",
-          "es": "Aqua en V3, solo en ordenador: texturas solo en el marco, reglas comunes promovidas a tokens primero, paneles nunca precacheados"
+          "state": "done",
+          "fr": "Aqua en V3, réservé à l'ordinateur (livré) : textures sur l'habillage du cadre seulement, règles communes promues en jetons d'abord, un panneau par module jamais précaché ; sur téléphone le choix reste mémorisé et Standard est posé, dit dans Réglages",
+          "en": "Aqua in V3, computer only (delivered): textures on the frame's chrome only, shared rules promoted to tokens first, one panel per module never precached; on a phone the choice stays and Standard is applied, said in Settings",
+          "de": "Aqua in V3, nur am Computer (geliefert): Texturen nur auf dem Rahmen, gemeinsame Regeln zuerst als Tokens, ein Panel je Modul nie vorab zwischengespeichert; am Telefon bleibt die Wahl und Standard wird gesetzt, in den Einstellungen gesagt",
+          "es": "Aqua en V3, solo en ordenador (entregado): texturas solo en el marco, reglas comunes promovidas a tokens primero, un panel por módulo nunca precacheado; en el teléfono la elección se conserva y se aplica Standard, dicho en Ajustes"
         }
       ]
     },
