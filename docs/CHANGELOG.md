@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: format check of the coding pages, UK coding tables, geometry check** (`tools/proc_eaip.py` `detect_layout` /
+  `verify_page` / `fingerprint` / `--check` / `--page` / `parse_uk_app` / `records_uk_app` / `check_geometry` / `build_pdf_dir` /
+  `--pdf-dir`, `tools/proc_ead.py` `--aip-type` / `--docs`; SPEC `formats`, `frame/aerodb/EAD_BASIC.md` § 6 septies to 6 undecies,
+  DECISIONS; tests K3, K6, K10) — a coding page is read only if its layout is recognised and at least 85 % of its leg rows are read; the
+  aerodrome file lists the verdict of each page and `--check` runs it alone before a publication. The UK's coding tables are separate
+  *Charts* documents fetched by exact name; its RNP approach tables (text layer) are read into approaches, each table checked by
+  recomputing the true course and distance from its own co-ordinates (an incoherent table is not kept); a page drawn as vector
+  outlines (the UK STAR tables) is reported as unreadable, never guessed. Each PDF is read by pypdf under a time limit.
 - **aerodb: EAD Basic probe and library, rounds 2 to 5** (`tools/proc_ead.py`, `tools/proc_eaip.py --scan-pdf`; `frame/aerodb/EAD_BASIC.md`
   § 6 bis to 6 sexies, DECISIONS; tests K3, K6) — from the owner's runs on the real screen: page-state tokens blanked in the report; the
   AIP Library's data table read from the JSF partial answer (the announced count, every list sent with its default, the State's change

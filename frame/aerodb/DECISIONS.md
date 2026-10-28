@@ -896,11 +896,11 @@ export of cycle 2026-10-01 (`export_xml_bd_sia_2026-10-01-v02.zip`, 5,838,952 by
 
 ## 27 October 2026 — data laboratory, pass 2: a direct link per source, publication by size, a ten-line summary, EAD Basic (aerodb, relay of the cloud)
 
-Words of the user, 27 Oct, after running pass 1 on his iPhone: « Un certain nombre de fichiers json récupérés mais téléchargés en pdf (impossible de sauvegarder un json
+Words of the user, 27 Oct, after running pass 1 on their iPhone: « Un certain nombre de fichiers json récupérés mais téléchargés en pdf (impossible de sauvegarder un json
 depuis safari). Prochaine passe du labo : lien direct sans Copy/paste en cas d'échec. » Then, added to the same lot: « Pas vu de test eurocontrol ead dans le labo. » and
 « Ajouter un lien direct vers le labo depuis la page admin ; pour tester via github. » (the last one is the Administration card: `frame/settings/DECISIONS.md` of the same day).
 Facts measured on the phone (`V3_APP_DONNEES.md` § "P0 results"): nine sources of fifteen are blocked by CORS from the page; the user copied addresses by hand; Safari shows a JSON
-instead of saving it (he ended with Share › Save, as a PDF); parsing holds (0.4 s); the 5.3 and 10 MB publications are missing from his report.
+instead of saving it (they ended with Share › Save, as a PDF); parsing holds (0.4 s); the 5.3 and 10 MB publications are missing from their report.
 
 - **The link** (`lab.js`, `lab_sources.js` `linkSet`): each line has an `<a href target=_blank rel=noopener>` "Open / Download" (44 px) to the real address; never an address to
   copy. For the four lines whose address follows the AIRAC cycle (`cycled`: SIA product page, VAC, eAIP, CIFP) the link is the cycle in force, plus the next cycle's when it is
@@ -1106,3 +1106,20 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   `EAD_BASIC.md` § 6 sexies. The probe's first shape is now the one that worked; `proc_eaip.py --scan-pdf` added to look for coding tables inside a downloaded AD 2 part (titles and keywords only).
 - **Word of the user**: « arrête de créer des branches à répétition, et tu peux supprimer les anciennes ». From now on one branch, `v3-aerodb-proc-15` (all unintegrated work is on it); the
   old `v3-aerodb-proc*` branches that were fully integrated or contained in it were deleted (eleven went; `-12`, `-13`, `-14`, ancestors of `-15`, could not be deleted from the session: the push was cut).
+
+## 28 October 2026 — pages 40–41 of the UK document, and the format check
+
+- **Read** (the owner uploaded `EG_AD_2_EGLL_en.pdf` to the session; kept out of the repository): pages 40–41 are the index of the AD 2.24 charts. The UK's **coding tables are separate *Charts* documents**
+  (STAR 7-13 to 7-17, RNAV holds 7-18 and 7-19, RNP approaches 8-13); no SID table (the SIDs are charts only, "RNAV substitution only"). The probe gained `--aip-type Charts` and `--docs` (exact names, one
+  download each).
+- **Word of the user**: « les formats peuvent changer. Il faudra prévoir une vérification du format des pages par script. » Built: `detect_layout`, `verify_page` (85 % of the leg rows read), header `fingerprint` with the
+  known ones, `formats` in the aerodrome file, `--check` (exit 1, writes nothing) to run before each publication. A refused page is never read. A layout enters the registry with its detector, its
+  fingerprints and its fixtures, and cannot be published without them.
+
+## 28 October 2026 — the UK coding documents: one readable, five drawn
+
+- **Read** (uploaded by the owner, kept out of the repository): `8-13` (RNP approaches) has a text layer: parsed (`uk-app`), 4 procedures, geometry coherent. `7-13` to `7-17` (STAR coding tables) are **drawn as vector
+  outlines** (about 40,000 path operations, 4 text operations): no script reads them without OCR; the geometry check is the safeguard for any reading of them.
+- **Built**: `parse_uk_app`, `records_uk_app` (status `check`, source `ead-basic/UK/<file>`), `check_geometry` (true course and distance recomputed from the co-ordinates, tolerance 0.25° / 0.2 NM; an incoherent table is not kept),
+  layout `uk-app` with its fingerprint, `build_pdf_dir` and `--pdf-dir` / `--cycle` / `--check`; case K10 on an **invented** page of the same layout (no UK AIP text in the repository).
+- **Open question to the owner**: OCR (a new optional dependency, needs their word and an amendment of CLAUDE.md), a one-off transcription kept privately, or leaving the UK STARs out. See `EAD_BASIC.md` § 6 undecies.

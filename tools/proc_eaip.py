@@ -12,7 +12,9 @@ constructeur de poste (jamais du lanceur ni de la page) : python -m pip install 
 Les procédures conventionnelles (ILS, VOR) n'ont pas de table de codage : hors de ce constructeur.
 """
 import argparse
+import hashlib
 import json
+import math
 import re
 import sys
 import time
@@ -67,6 +69,68 @@ def rows_from_pdf(path, page=0, reader=None):
     return [' '.join(' '.join(t for _, _, t in sorted(r)).split()) for _, r in rows]
 
 
+PDF_TIMEOUT = 60  # secondes au plus par document lu par pypdf (pdf_pages)
+
+
+class PdfTimeout(Exception):
+    """Lecture d'un PDF abandonnée : délai dépassé, processus de lecture tombé ou document illisible."""
+
+
+def _read_pages(path, which, conn):
+    """Processus de lecture (pdf_pages) : lit les pages demandées et renvoie (nature, nombre de pages, lignes ou message)."""
+    try:
+        reader = pdf_reader(path)
+        n = len(reader.pages)
+        out = []
+        for i in (range(n) if which is None else [i for i in which if 0 <= i < n]):
+            try:
+                out.append(rows_from_pdf(path, i, reader))
+            except Exception as e:                   # une page illisible n'arrête pas la lecture
+                out.append([f'(page illisible: {type(e).__name__})'])
+        conn.send(('ok', n, out))
+    except SystemExit as e:
+        conn.send(('exit', 0, str(e)))
+    except Exception as e:
+        conn.send(('err', 0, f'{type(e).__name__}: {e}'))
+    finally:
+        conn.close()
+
+
+def pdf_pages(path, which=None, timeout=None):
+    """(nombre de pages, [lignes de chaque page demandée]) d'un PDF, lu par pypdf dans un PROCESSUS SÉPARÉ, au plus `timeout` s
+    (PDF_TIMEOUT par défaut) : un PDF piégé ou démesuré ne bloque pas l'outil, il lève PdfTimeout et le processus est arrêté.
+    `which` : numéros de page à partir de 0 (None : toutes). pypdf manque : SystemExit, comme pdf_reader. Bibliothèque standard."""
+    import multiprocessing as mp
+    timeout = PDF_TIMEOUT if timeout is None else timeout
+    a, b = mp.Pipe(duplex=False)
+    proc = mp.Process(target=_read_pages, args=(str(path), which, b), daemon=True)
+    proc.start()
+    b.close()
+    try:
+        if not a.poll(timeout):
+            raise PdfTimeout(f'{Path(path).name}: lecture abandonnée après {timeout} s')
+        try:
+            kind, n, val = a.recv()
+        except EOFError:
+            raise PdfTimeout(f'{Path(path).name}: le processus de lecture s\'est arrêté sans réponse') from None
+    finally:
+        if proc.is_alive():
+            proc.terminate()
+        proc.join(5)
+        a.close()
+    if kind == 'exit':
+        raise SystemExit(val)
+    if kind == 'err':
+        raise PdfTimeout(f'{Path(path).name}: {val}')
+    return n, val
+
+
+def first_page_rows(path):
+    """Lignes de la première page d'un PDF, lue sous délai (pdf_pages)."""
+    _, pages = pdf_pages(path, [0])
+    return pages[0] if pages else []
+
+
 # ---------------------------------------------------------------------------------------------------------- repérage dans un PDF
 SCAN_KEYS = [('Path Terminator', r'path\s*terminator'), ('Fly Over', r'fly\s*over'), ('Coding', r'coding'), ('Waypoint Identification', r'waypoint\s*identification'),
              ('SID', r'\bSID\b'), ('STAR', r'\bSTAR\b'), ('RNAV', r'\bRNAV\b'), ('RNP', r'\bRNP\b'), ('Approach', r'instrument\s+approach|\bIAC\b|\bILS\b')]
@@ -83,18 +147,39 @@ def scan_rows(pages):
     return out
 
 
+def context_lines(pages, wanted, rx=r'coding|ARINC|path\s*terminator|fly[- ]?(?:by|over)|leg\s+type|waypoint\s+list|tabular', limit=6):
+    """Pour les pages demandées (numéros à partir de 1), les lignes — au plus `limit`, 140 caractères — qui portent un mot du codage : de quoi savoir de quoi parle la page."""
+    out = {}
+    for n in wanted:
+        out[n] = [re.sub(r'\s+', ' ', r)[:140] for r in pages[n - 1] if re.search(rx, r, re.I)][:limit]
+    return out
+
+
+def format_rows(rows, limit=90):
+    """Lignes d'une page numérotées, 160 caractères au plus chacune, `limit` lignes au plus : pour voir la disposition d'une table."""
+    return [f'{i:3d} | {re.sub(chr(32) + "+", chr(32), r)[:160]}' for i, r in enumerate(rows[:limit], 1)] + ([f'... ({len(rows) - limit} ligne(s) de plus)'] if len(rows) > limit else [])
+
+
+def show_page(path, n, report=print):
+    """Affiche les lignes de texte de la page n (à partir de 1) d'un PDF, comme le lecteur les voit (même ordre que les analyseurs)."""
+    total, pages = pdf_pages(path, [n - 1])
+    if not 1 <= n <= total:
+        raise SystemExit(f'page {n} hors du document ({total} page(s))')
+    rows = pages[0]
+    report(f'Page {n}: {len(rows)} ligne(s)')
+    for line in format_rows(rows):
+        report(line)
+
+
 def scan_pdf(path, report=print):
     """Repère dans un PDF d'AIP (une partie AD 2 entière) les pages à tableau de tronçons (« Path Terminator »…) : titres et mots-clés seulement."""
     if not Path(path).is_file():
         near = sorted(str(f) for f in Path(path).parent.glob('*.pdf*')) if Path(path).parent.is_dir() else []
         raise SystemExit(f'fichier introuvable: {path}' + (f'. PDF présents dans {Path(path).parent}: ' + ', '.join(near) if near else ''))
-    reader = pdf_reader(path)
-    pages = []
-    for i in range(len(reader.pages)):
-        try:
-            pages.append(rows_from_pdf(path, i, reader))
-        except Exception as e:                       # une page illisible n'arrête pas le repérage
-            pages.append([f'(page illisible: {type(e).__name__})'])
+    try:
+        _, pages = pdf_pages(path)                   # une page illisible n'arrête pas le repérage (pdf_pages la marque)
+    except PdfTimeout as e:
+        raise SystemExit(f'lecture impossible: {e}') from None
     info = scan_rows(pages)
     report(f'{len(info)} page(s). Pages portant chaque mot-clé:')
     for k, _ in SCAN_KEYS:
@@ -104,6 +189,10 @@ def scan_pdf(path, report=print):
     report(f'Pages à tableau de tronçons probable ({len(tab)}):')
     for n, t, ks in tab[:80]:
         report(f'  p{n} | {t} | {", ".join(ks)}')
+    report('Lignes à mot de codage des pages ci-dessus (au plus 6 par page, 140 caractères):')
+    for n, lines in context_lines(pages, [n for n, _, _ in tab[:20]]).items():
+        for ln in lines:
+            report(f'  p{n} | {ln}')
     report('Titres des pages SID / STAR / approche (aperçu):')
     for n, t, ks in [x for x in info if {'SID', 'STAR', 'Approach'} & set(x[2])][:150]:
         report(f'  p{n} | {t}')
@@ -272,6 +361,220 @@ def parse_code_table(rows):
             'amdt': page_date(rows)}
 
 
+# ---------------------------------------------------------------------------------------------------------- vérification du format des pages
+# Un format de page change sans prévenir (une colonne ajoutée, un en-tête reformulé, une page tournée) : avant de lire une page, on vérifie par script
+# qu'elle a la disposition que l'analyseur connaît, et après l'avoir lue, que l'analyseur en a bien tiré tout ce qu'elle porte. Une page qui échoue
+# n'est PAS lue (rien de deviné), elle est signalée ; l'empreinte de son en-tête dit si l'en-tête a changé depuis les pages vues.
+HEADER_WORDS = r'path|terminator|waypoint|identification|leg sequence|altitude|direction|distance|turn|fly|accuracy|nav spec|vertical|speed|ias'
+
+
+def _is_leg_row(row):
+    t = row.split()
+    k = next((i for i, w in enumerate(t[:6]) if w in PATH_TERMINATORS and i + 1 < len(t)), None)
+    return k is not None and len(t) - k >= 9
+
+
+def detect_layout(rows):
+    """Nom de la disposition connue d'une page « CODE », ou None. 'sia-code' : table ARINC du SIA (en-tête « Path Terminator » ou « Leg sequence » et « Waypoint »)."""
+    text = ' '.join(rows)
+    low = text.lower()
+    if ('path' in low and 'terminator' in low or 'leg sequence' in low) and 'waypoint' in low and ('fly' in low or 'altitude' in low):      # mots répartis sur plusieurs lignes selon la page
+        return 'sia-code'
+    if 'instrument approach procedure coding tables' in low and 'designator' in low and 'sequence' in low and 'co-ordinates' in low:
+        return 'uk-app'
+    return None
+
+
+def fingerprint(rows):
+    """Empreinte de l'en-tête d'une page : les mots des lignes d'en-tête (sans les valeurs), triés ; deux pages de même disposition ont la même."""
+    words = sorted({w.lower() for r in rows if re.search(HEADER_WORDS, r, re.I) and not _is_leg_row(r) for w in re.findall(r'[A-Za-z]{3,}', r)})
+    return hashlib.sha1(' '.join(words).encode()).hexdigest()[:10]
+
+
+# empreintes des en-têtes vus (cycle AIRAC 2026-10-01, pages de LFBD et de LFAV) ; une autre est signalée « en-tête inconnu », pas bloquante
+KNOWN_FINGERPRINTS = {'sia-code': {'4d7d8e47d5', '96546cf4c0', 'de5a236c1c'}, 'uk-app': {'fc0e4cc8ff'}}
+
+
+def verify_page(rows, table=None):
+    """(ok, problèmes, empreinte, disposition) d'une page : disposition reconnue ; si la page a été lue (`table`), au moins 85 % de ses lignes de tronçon
+    ont été lues, des groupes et un type (SID / STAR / APP) ont été trouvés."""
+    layout = detect_layout(rows)
+    fp = fingerprint(rows)
+    problems = []
+    if not layout:
+        return False, ['disposition non reconnue (en-tête de la table absent ou reformulé)'], fp, None
+    if fp not in KNOWN_FINGERPRINTS.get(layout, set()):
+        problems.append(f'info: en-tête inconnu (empreinte {fp}): format changé depuis les pages vues ?')
+    ok = True
+    if table is not None:
+        want = sum(1 for r in rows if _is_leg_row(r))
+        got = sum(len(g['legs']) for g in table['groups'])
+        if not table['kind']:
+            ok = False
+            problems.append('titre de la page non reconnu (SID / STAR / RNP)')
+        if not table['groups']:
+            ok = False
+            problems.append('aucun groupe de tronçons lu')
+        if want and got < 0.85 * want:
+            ok = False
+            problems.append(f'{got} tronçon(s) lu(s) sur {want} lignes de tronçon: moins de 85 %')
+    return ok, problems, fp, layout
+
+
+# ---------------------------------------------------------------------------------------------------------- Royaume-Uni (UK AIP, via EAD Basic)
+# AD 2.<OACI>-8-13 « Instrument Approach Procedure Coding Tables » : texte lisible. Une ligne de tronçon « R09L 001 IF ABAVI - - - 3000 - IF / 10NM » est encadrée
+# de la latitude (ligne avant, avec le cap magnétique « 088° ») et de la longitude (ligne après, avec le cap vrai « (089.46°) »).
+# AD 2.<OACI>-7-13 à -7-17 (tables de codage des STAR) : texte DESSINÉ EN VECTEURS, sans couche de texte : illisible pour pypdf, voir EAD_BASIC.md § 6 undecies.
+UK_LEG = re.compile(r'^([A-Z]\d{2}[LRC]?)\s+(\d{3})\s+([A-Z]{2})\s+(\S+)\s*(.*)$')
+UK_LAT = re.compile(r'(\d{6}(?:\.\d+)?)([NS])\b')
+UK_LON = re.compile(r'(\d{7}(?:\.\d+)?)([EW])\b')
+
+
+def uk_dms(text, lon=False):
+    """« 512834.45N » / « 0004505.67W » (ddmmss.ss, dddmmss.ss) en degrés décimaux, ou None."""
+    m = (UK_LON if lon else UK_LAT).search(text)
+    if not m:
+        return None
+    v, h = m.group(1), m.group(2)
+    d = 3 if lon else 2
+    val = int(v[:d]) + int(v[d:d + 2]) / 60 + float(v[d + 2:]) / 3600
+    return round(-val if h in 'SW' else val, 6)
+
+
+def uk_constraint(tok):
+    """Contrainte d'altitude d'une cellule « Level Constraint » : « 3000 » / « FL270 » à l'altitude, « +… » au moins, « -… » au plus ; None sans valeur."""
+    m = re.fullmatch(r'([+-]?)(FL(\d{2,3})|\d{3,5})', tok or '')
+    if not m:
+        return None
+    ft = int(m.group(3)) * 100 if m.group(3) else int(m.group(2))
+    return {'type': {'+': 'min', '-': 'max', '': 'at'}[m.group(1)], 'ft': ft}
+
+
+def parse_uk_app(rows):
+    """Page « Instrument Approach Procedure Coding Tables » du Royaume-Uni → { kind: 'APP', tables: [{ title, runways, name, transition, legs }], warnings }.
+    Chaque tronçon : { id, leg, over, alt, kt, lat, lon, crs (magnétique), true, remark }."""
+    warnings, tables, cur = [], [], None
+    for i, r in enumerate(rows):
+        m = re.match(r'^[A-Za-z ]+?\s+(RNP|RNAV|ILS|LOC|VOR|NDB)\b.*?Instrument Approach Procedure(?: via (\S+))?', r)
+        if m and 'Coding Tables' not in r:
+            rwm = re.search(r'\bRWY\s*(\d{2}[LRC]?)', r)
+            name = re.sub(r'\s+-\s+Instrument Approach Procedure.*', '', r)
+            name = re.sub(r'^.*? (RNP|RNAV|ILS|LOC|VOR|NDB)\b', r'\1', name).strip()
+            cur = {'title': r, 'name': name, 'runways': [rwm.group(1)] if rwm else [], 'transition': m.group(2), 'legs': []}
+            tables.append(cur)
+            continue
+        lg = UK_LEG.match(r)
+        if not (lg and cur is not None):
+            continue
+        rest = lg.group(5).split()
+        before = rows[i - 1] if i else ''
+        after = rows[i + 1] if i + 1 < len(rows) else ''
+        lat, lon = uk_dms(before), uk_dms(after, True)
+        mag = re.search(r'(\d{3})°', before)
+        true = re.search(r'\((\d{3}(?:\.\d+)?)°\)', after)
+        name = lg.group(4)
+        k = 0
+        over = rest[0] == 'Y' if rest else False
+        level = next((uk_constraint(t) for t in rest[:6] if uk_constraint(t)), None)
+        speed = next((int(t.lstrip('+-')) for t in rest[:6] if re.fullmatch(r'[+-]\d{3}', t)), None)
+        if name == '-' or lat is None or lon is None:
+            warnings.append(f'{lg.group(1)} {lg.group(2)} {lg.group(3)}: pas de point ({name}) ou coordonnées absentes: tronçon sans point laissé de côté')
+            continue
+        cur['legs'].append({'id': name, 'leg': lg.group(3), 'over': over or None, 'alt': level, 'kt': speed, 'lat': lat, 'lon': lon,
+                            'crs': int(mag.group(1)) if mag else None, 'true': float(true.group(1)) if true else None, 'seq': int(lg.group(2)),
+                            'remark': ' '.join(rest[3:])[:40]})
+    return {'kind': 'APP', 'tables': [t for t in tables if t['legs']], 'warnings': warnings}
+
+
+def bearing_nm(a, b):
+    """(cap vrai en degrés, distance en NM) du grand cercle de a à b, points (lat, lon) en degrés décimaux."""
+    la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))
+    y = math.sin(lo2 - lo1) * math.cos(la2)
+    x = math.cos(la1) * math.sin(la2) - math.sin(la1) * math.cos(la2) * math.cos(lo2 - lo1)
+    h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    return (math.degrees(math.atan2(y, x)) + 360) % 360, 2 * 3440.065 * math.asin(math.sqrt(h))
+
+
+def check_geometry(legs, tol_deg=0.25, tol_nm=0.2):
+    """Contrôle de cohérence d'une table lue (par texte, par OCR ou à la main) : pour chaque tronçon TF, le cap vrai (et la distance, si elle est imprimée) recalculés
+    d'après les coordonnées des deux points doivent être ceux de la page. Rend la liste des écarts ; vide = la table est cohérente."""
+    bad = []
+    for a, b in zip(legs, legs[1:]):
+        if b.get('leg') != 'TF' or b.get('true') is None or None in (a.get('lat'), b.get('lat')):
+            continue
+        brg, nm = bearing_nm((a['lat'], a['lon']), (b['lat'], b['lon']))
+        d = abs((brg - b['true'] + 180) % 360 - 180)
+        if d > tol_deg:
+            bad.append(f'{a["id"]} → {b["id"]}: cap calculé {brg:.1f}° pour {b["true"]}° imprimé')
+        if b.get('nm') is not None and abs(nm - b['nm']) > tol_nm:
+            bad.append(f'{a["id"]} → {b["id"]}: distance calculée {nm:.2f} NM pour {b["nm"]} imprimés')
+    return bad
+
+
+def records_uk_app(icao, parsed, source, cycle, at=None):
+    """Procédures du schéma commun d'une page UK « Instrument Approach Procedure Coding Tables » ; statut « check », source ead-basic/UK."""
+    out, warnings = [], list(parsed['warnings'])
+    for t in parsed['tables']:
+        bad = check_geometry(t['legs'])
+        if bad:
+            warnings.append(f'{t["title"][:60]}: incohérence caps/coordonnées, table NON retenue: ' + '; '.join(bad))
+            continue
+        pts, missed = [], False
+        for lg in t['legs']:
+            p = {'seq': len(pts) + 1, 'id': lg['id'], 'lat': lg['lat'], 'lon': lg['lon'], 'alt': lg['alt'], 'leg': lg['leg']}
+            if lg['kt']:
+                p['kt'] = lg['kt']
+            if lg['crs'] is not None:
+                p['crs'] = lg['crs']
+            if lg['over']:
+                p['over'] = True
+            if missed:
+                p['phase'] = 'missed'
+            if re.fullmatch(r'RW\d{2}[LRC]?', lg['id']) or 'MAPt' in lg['remark']:
+                missed = True
+            pts.append(p)
+        name = t['name']
+        rw = f'RW{t["runways"][0]}' if len(t['runways']) == 1 else 'RWALL'
+        norm = lambda v: re.sub(r'[\s-]+', '', (v or '').upper())
+        out.append({'id': '.'.join([icao, 'APP', norm(name), rw] + ([norm(t['transition'])] if t['transition'] else [])), 'icao': icao, 'kind': 'APP', 'name': name,
+                    'runways': t['runways'], 'transition': t['transition'], 'points': pts,
+                    'source': {'kind': 'ead-basic', 'ref': f'ead-basic/UK/{source}', 'cycle': cycle, 'at': at}, 'status': 'check'})
+    return out, warnings
+
+
+def build_pdf_dir(icao, pdfs, rows_of, cycle):
+    """Fichier d'un terrain d'après des PDF d'AIP déjà téléchargés à la main ou par la sonde EAD (dossier de PDF) : chaque PDF passe par la détection de disposition ;
+    une disposition connue est lue, une inconnue est signalée (rien de deviné) ; le Royaume-Uni « uk-app » est de plus contrôlé par la géométrie (caps et coordonnées).
+    `pdfs` : noms ; `rows_of(nom)` : lignes de la première page."""
+    procs, warnings, formats = [], [], []
+    for f in sorted(pdfs):
+        try:
+            rows = rows_of(f)
+        except PdfTimeout as e:                      # lecture abandonnée (délai, document illisible) : le fichier est signalé, l'outil continue
+            formats.append({'file': f, 'layout': None, 'fingerprint': None, 'ok': False, 'problems': [str(e)]})
+            warnings.append(f'{f}: page NON lue, {e}')
+            continue
+        layout = detect_layout(rows)
+        fp = fingerprint(rows)
+        if layout == 'uk-app':
+            parsed = parse_uk_app(rows)
+            recs, w = records_uk_app(icao, parsed, f, cycle, page_date(rows))
+            ok = bool(recs) and len(recs) == len(parsed['tables'])
+            problems = [x for x in w if 'NON retenue' in x] + ([] if recs else ['aucune table lue'])
+            if fp not in KNOWN_FINGERPRINTS['uk-app']:
+                problems.append(f'info: en-tête inconnu (empreinte {fp}): format changé depuis les pages vues ?')
+            formats.append({'file': f, 'layout': layout, 'fingerprint': fp, 'ok': ok, 'problems': problems})
+            procs += recs
+            warnings += [f'{f}: {x}' for x in w]
+        else:
+            n = len(rows)
+            formats.append({'file': f, 'layout': layout, 'fingerprint': fp, 'ok': False,
+                            'problems': ['disposition non reconnue' + (' (très peu de texte: tableau dessiné en vecteurs ou image ? ' + str(n) + ' ligne(s))' if n < 8 else '')]})
+            warnings.append(f'{f}: page NON lue, disposition non reconnue' + (' (texte absent: tables dessinées sans couche de texte)' if n < 8 else ''))
+    return {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'procedures': procs, 'formats': formats,
+            'warnings': warnings, 'notice': 'Source : AIP du Royaume-Uni (CAA) via EAD Basic ; à vérifier, pour la simulation seulement, jamais pour la navigation.'}
+
+
 # ---------------------------------------------------------------------------------------------------------- schéma commun
 def _id_of(icao, kind, name, runways, trans):
     norm = lambda v: re.sub(r'[\s-]+', '', (v or '').upper())
@@ -342,14 +645,22 @@ def vac_url(base_url, icao):
 def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=None):
     """Fichier d'un terrain : { procedures, charts, warnings }. `files` : noms des PDF de Cartes/<OACI>/ ; `rows_of(nom)` : lignes
     d'un PDF ; `resolve(id)` : (lat, lon) d'un point en route, ou None."""
-    coords, warnings, procs, used = {}, [], [], []
+    coords, warnings, procs, used, formats = {}, [], [], [], []
     for f in sorted(files):
         if re.search(r'_DATA_0\d\.pdf$', f):
             coords.update(parse_data01(rows_of(f)))
     for f in sorted(files):
         if not CODE_PAGE.match(f) or 'FASDB' in f:
             continue
-        table = parse_code_table(rows_of(f))
+        rows = rows_of(f)
+        table = parse_code_table(rows) if detect_layout(rows) else None
+        ok, problems, fp, layout = verify_page(rows, table)
+        formats.append({'file': f, 'layout': layout, 'fingerprint': fp, 'ok': ok, 'problems': problems})
+        if not ok:
+            warnings.append(f'{f}: page NON lue, format à vérifier: ' + '; '.join(p for p in problems if not p.startswith('info:')))
+            continue
+        if any(p.startswith('info:') for p in problems):
+            warnings.append(f'{f}: ' + next(p for p in problems if p.startswith('info:')))
         if not table['kind']:
             warnings.append(f'{f}: titre non reconnu')
             continue
@@ -364,7 +675,7 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
     charts = [{'path': f'Cartes/{icao}/{f}', 'kind': chart_kind(f)} for f in sorted(files)]
     return {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
             'procedures': procs, 'charts': {'base': base_url.rstrip('/') + '/html/eAIP/', 'items': charts, 'vac': vac},
-            'pages': used, 'warnings': warnings}
+            'pages': used, 'formats': formats, 'warnings': warnings}
 
 
 def index_of(files_by_icao, cycle):
@@ -416,14 +727,35 @@ def main(argv=None):
     ap.add_argument('--all', action='store_true', help='tous les terrains du menu de l\'eAIP (une page de 0,7 Mo chacun)')
     ap.add_argument('--delay', type=float, default=0.0, help='pause entre deux terrains, en secondes')
     ap.add_argument('--scan-pdf', default=None, help='repère les pages à tableau de tronçons d\'un PDF AD 2 déjà téléchargé (titres et mots-clés seulement)')
+    ap.add_argument('--pdf-dir', default=None, help='dossier de PDF d\'AIP déjà téléchargés (sonde EAD) : écrit proc/<cycle>/<OACI>.json (avec --cycle et un code OACI)')
+    ap.add_argument('--cycle', default=None, help='cycle AIRAC AAAA-MM-JJ (avec --pdf-dir)')
+    ap.add_argument('--check', action='store_true', help='vérifie seulement le format des pages (rien n\'est écrit) ; code de sortie 1 si une page n\'est pas lisible')
+    ap.add_argument('--page', type=int, default=None, help='avec --scan-pdf : affiche les lignes de cette page (à partir de 1) au lieu du repérage')
     ap.add_argument('--eaip', default=None, help='adresse du dossier AIRAC de l\'eAIP (…/FRANCE/AIRAC-AAAA-MM-JJ)')
     ap.add_argument('--out', default='data/proc')
     ap.add_argument('--cache', default=None, help='dossier des PDF téléchargés (gardés, pour ne pas recharger)')
     ap.add_argument('--base-dir', default=None, help='dossier de la base SIA du cycle (navaids.json, points.json)')
     ap.add_argument('--rows-dir', default=None, help='écrit les lignes de chaque PDF lu (fixtures de test)')
     a = ap.parse_args(argv)
+    if a.pdf_dir:
+        if len(a.icao) != 1 or not a.cycle:
+            raise SystemExit('--pdf-dir demande UN code OACI et --cycle AAAA-MM-JJ')
+        names = sorted(f.name for f in Path(a.pdf_dir).glob('*.pdf'))
+        doc = build_pdf_dir(a.icao[0].upper(), names, lambda n: first_page_rows(Path(a.pdf_dir) / n), a.cycle)
+        for fm in doc['formats']:
+            print(f'  {"OK " if fm["ok"] else "NON"} {fm["file"]} | {fm["layout"]} | {fm["fingerprint"]}' + ''.join(f' | {x}' for x in fm['problems']), file=sys.stderr)
+        print(f'{len(doc["procedures"])} procédure(s) ; {len(doc["warnings"])} avertissement(s)', file=sys.stderr)
+        if a.check:
+            raise SystemExit(1 if any(not f['ok'] for f in doc['formats']) else 0)
+        out = Path(a.out) / a.cycle
+        out.mkdir(parents=True, exist_ok=True)
+        (out / f'{a.icao[0].upper()}.json').write_text(json.dumps(doc, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
+        return
     if a.scan_pdf:
-        scan_pdf(a.scan_pdf)
+        if a.page:
+            show_page(a.scan_pdf, a.page)
+        else:
+            scan_pdf(a.scan_pdf)
         return
     if not a.eaip:
         raise SystemExit('--eaip est requis (adresse du dossier AIRAC de l\'eAIP), ou --scan-pdf FICHIER')
@@ -433,7 +765,7 @@ def main(argv=None):
     cycle = m.group(1)
     cache = Path(a.cache or '.proc_cache') / cycle
     cache.mkdir(parents=True, exist_ok=True)
-    resolve, docs = base_resolver(a.base_dir), {}
+    resolve, docs, bad_pages = base_resolver(a.base_dir), {}, []
     codes = [i.upper() for i in a.icao]
     if a.all:
         codes = icao_list(fetch(f'{a.eaip}/html/eAIP/FR-menu-fr-FR.html').decode('utf-8', 'replace'))
@@ -452,7 +784,11 @@ def main(argv=None):
             p = cache / name
             if not p.exists():
                 p.write_bytes(fetch(f'{a.eaip}/html/eAIP/Cartes/{icao}/{name}'))
-            rows = rows_from_pdf(p)
+            try:
+                rows = first_page_rows(p)
+            except PdfTimeout as e:                       # document non lu : signalé, la page est vide pour le constructeur
+                print(f'{icao}: {e}', file=sys.stderr)
+                rows = []
             if a.rows_dir:
                 Path(a.rows_dir).mkdir(parents=True, exist_ok=True)
                 (Path(a.rows_dir) / (p.stem + '.rows.txt')).write_text('\n'.join(rows) + '\n', encoding='utf-8')
@@ -465,6 +801,14 @@ def main(argv=None):
         docs[icao] = build_aerodrome(icao, files, rows_of, a.eaip, cycle, resolve, vac)
         d = docs[icao]
         print(f'{icao}: {len(d["procedures"])} procédure(s), {len(d["warnings"])} avertissement(s)', file=sys.stderr)
+        for fm in d['formats']:
+            print(f'  {"OK " if fm["ok"] else "NON"} {fm["file"]} | {fm["layout"]} | {fm["fingerprint"]}' + ''.join(f' | {x}' for x in fm['problems']), file=sys.stderr)
+        bad_pages += [f'{icao}/{fm["file"]}' for fm in d['formats'] if not fm['ok']]
+    if a.check:                                           # vérification seulement : rien n'est écrit ; sortie 1 si une page n'est pas lisible
+        print(f'{len(bad_pages)} page(s) à format non reconnu ou mal lu' + (': ' + ', '.join(bad_pages) if bad_pages else ''), file=sys.stderr)
+        raise SystemExit(1 if bad_pages else 0)
+    if bad_pages:
+        print(f'ATTENTION: {len(bad_pages)} page(s) NON lues (format à vérifier): ' + ', '.join(bad_pages), file=sys.stderr)
     out = Path(a.out) / cycle
     out.mkdir(parents=True, exist_ok=True)
     for icao, d in docs.items():

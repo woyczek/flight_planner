@@ -15,6 +15,8 @@ Rules covered
 
 Cases: K1, K5, K8, K9 (and K2 K3 K4 K6 below).  The OFP of the bench is built from SimBrief's documented fields (no real OFP in the repository yet).
 """
+import re
+
 from lib import ROOT, Fail, case
 
 
@@ -159,6 +161,27 @@ def k3(c):
          ['LFAV', 'LFBD'], 'airfields of the eAIP menu, once each, sorted', what='icao_list')
     sc = P.scan_rows([['AIP', 'AD 2 EGLL 1-1 SID', 'EG SID DEPARTURE', 'blah'], ['Procedure Path Terminator Waypoint Fly Over', 'AD 2.EGLL coding table SID RNAV'], ['nothing here']])
     c.eq([(n, ks) for n, _, ks in sc], [(1, ['SID']), (2, ['Path Terminator', 'Fly Over', 'Coding', 'SID', 'RNAV']), (3, [])], 'page scan: keywords per page, no content copied', what='scan_rows')
+    cl = P.context_lines([['x'], ['Intro', 'The coding of the SID is by ARINC 424', 'Fly-by turns', 'plain']], [2])
+    c.eq(cl, {2: ['The coding of the SID is by ARINC 424', 'Fly-by turns']}, 'context lines: only those with a coding word', what='context_lines')
+    c.eq(P.format_rows(['a  b', 'c'], limit=1), ['  1 | a b', '... (1 ligne(s) de plus)'], 'page rows numbered, long pages cut', what='format_rows')
+    # vérification du format des pages (user, 28 Oct : « il faudra prévoir une vérification du format des pages par script »)
+    for name in ('AD_2_LFBD_DATA_SID_RWY23_RNAV_CODE_01', 'AD_2_LFBD_DATA_STAR_RWY_ALL_RNAV_CODE_01', 'AD_2_LFBD_DATA_RWY23_RNP_CODE', 'AD_2_LFAV_DATA_RWY11_RNP_CODE', 'AD_2_LFAV_DATA_RWY29_RNP_CODE'):
+        rws = rows(name)
+        ok, pb, fp, lay = P.verify_page(rws, P.parse_code_table(rws))
+        c.ok(ok and lay == 'sia-code' and not pb, f'{name}: {ok} {lay} {fp} {pb}', 'every known page: recognised layout, known header fingerprint, all leg rows read')
+    base = rows('AD_2_LFAV_DATA_RWY29_RNP_CODE')
+    renamed = [r.replace('Terminator', 'Termination') for r in base]
+    ok, pb, fp, lay = P.verify_page(renamed, P.parse_code_table(renamed))
+    c.ok(ok and any(x.startswith('info: en-tête inconnu') for x in pb), f'{ok} {pb}', 'a reworded header is reported as unknown but does not block the page when the legs are still all read')
+    widened = [re.sub(r'^((?:INA \S+ )?(?:IF|TF|DF|CF) \S+) ', r'\1 NEW ', r) for r in base]
+    ok, pb, fp, lay = P.verify_page(widened, P.parse_code_table(widened))
+    c.ok(not ok and any('moins de 85' in x for x in pb), f'{ok} {pb}', 'a column added to the table: the page is refused (less than 85 % of the leg rows read), nothing is guessed')
+    nohead = [r for r in base if not re.search(r'Terminator|Leg sequence|Path|Waypoint', r)]
+    c.ok(P.verify_page(nohead)[0] is False and P.detect_layout(nohead) is None, 'a page with no header was accepted', 'a page without its header is refused')
+    doc2 = P.build_aerodrome('LFAV', ['AD_2_LFAV_DATA_RWY29_RNP_CODE.pdf', 'AD_2_LFAV_DATA_01.pdf'], lambda n: widened if 'RNP_CODE' in n else rows(n.replace('.pdf', '')),
+                             'https://example.org/AIRAC-2026-10-01', '2026-10-01')
+    c.ok(doc2['procedures'] == [] and doc2['formats'][0]['ok'] is False and any('NON lue' in w for w in doc2['warnings']), f"{doc2['formats']} {doc2['warnings']}",
+         'in the aerodrome file a refused page gives no procedure, a "formats" entry with ok false and a "page NON lue" warning')
     idx = P.index_of({'LFBD': doc}, '2026-10-01')
     c.eq((idx['aerodromes']['LFBD']['SID'], idx['aerodromes']['LFBD']['STAR'], idx['aerodromes']['LFBD']['APP']), (4, 6, 4), 'counts per kind', what='index')
 
@@ -346,8 +369,88 @@ def k5(c):
             rep = (Path(td) / 'report.txt').read_text(encoding='utf-8')
             pdfs = list((Path(td) / 'cache').glob('*.pdf'))
             c.ok('| PDF' in rep and len(pdfs) == 1 and pdfs[0].read_bytes().startswith(b'%PDF-'), rep, 'with --download, exactly one PDF, in cache/')
+        with tempfile.TemporaryDirectory() as td:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                E.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td, name='EG_AD_2_EGLL_6-1_en.pdf', docs=['EG_AD_2_EGLL_6-1_en.pdf', 'EG_AD_2_EGLL_7-1_en.pdf'])
+            names = sorted(p.name for p in (Path(td) / 'cache').glob('*.pdf'))
+            c.eq(names, ['EG_AD_2_EGLL_6-1_en.pdf', 'EG_AD_2_EGLL_7-1_en.pdf'], 'with --docs, one PDF per exact name asked, named after it (no doubled extension)', what='docs')
     finally:
         srv.shutdown()
         os.environ.clear()
         os.environ.update(env)
         importlib.reload(E)
+
+
+# ------------------------------------------------------------------------------------------------ UK coding tables, geometry check (static)
+def _uk_page(P, points, corrupt=False):
+    """Lignes d'une page « Instrument Approach Procedure Coding Tables » INVENTÉE (points fictifs) à la disposition du Royaume-Uni : latitude et cap magnétique avant la ligne de
+    tronçon, longitude et cap vrai après ; les caps sont calculés d'après les coordonnées, sauf `corrupt` qui en falsifie un."""
+    def dms(v, lon):
+        a = abs(v)
+        d = int(a)
+        m = int((a - d) * 60)
+        sec = round(((a - d) * 60 - m) * 60, 2)
+        return f'{d:0{3 if lon else 2}d}{m:02d}{sec:05.2f}' + (('E' if v >= 0 else 'W') if lon else ('N' if v >= 0 else 'S'))
+    rows = ['UNITED KINGDOM AIP AD 2.EGXX-8-13', '1 Jan 2026', 'Instrument Approach Procedure Coding Tables', 'London Test RNP RWY 09L - Instrument Approach Procedure via ' + points[0][0],
+            'Path Course/', 'Waypoint Fly- Turn Level Speed', 'Designator Sequence Term- Track', 'Number Name over Direction Constraint Constraint Co-ordinates Remarks and Distance to MAPt', 'inator °M (°T)']
+    for i, (name, lat, lon) in enumerate(points):
+        if i == 0:
+            rows += [dms(lat, False), f'R09L 001 IF {name} - - - 3000 - IF / 10NM', dms(lon, True)]
+            continue
+        brg, _ = P.bearing_nm((points[i - 1][1], points[i - 1][2]), (lat, lon))
+        shown = brg + (5 if corrupt and i == 2 else 0)
+        rows += [f'{round(brg):03d}° {dms(lat, False)}', f'R09L {i + 1:03d} TF {name} {"Y" if i == len(points) - 1 else "-"} - - - {"MAPt" if i == len(points) - 1 else "-"}', f'({shown:06.2f}°) {dms(lon, True)}']
+    rows += ['CHANGE (1/26): TEST.', 'CIVIL AVIATION AUTHORITY AMDT 1/2026']
+    return rows
+
+
+@case('K10', 'UK coding tables: parser and geometry check', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: tables read from text are checked against their own coordinates')
+def k10(c):
+    import importlib
+    import sys
+    tools = str(c.root / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    P = importlib.import_module('proc_eaip')
+    # each PDF is read by pypdf in a separate process under a time limit (security review of 28 Oct 2026): a damaged or trapped
+    # file fails cleanly, a reading past the limit is given up, and a folder build reports the file instead of stopping
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory() as td:
+        bad = Path(td) / 'bad.pdf'
+        bad.write_bytes(b'%PDF-1.7 not really a pdf')
+        caught = []
+        for kw in ({}, {'timeout': 0}):
+            try:
+                P.pdf_pages(bad, **kw)
+                caught.append('read')
+            except P.PdfTimeout as e:
+                caught.append(str(e))
+            except SystemExit as e:                           # pypdf absent: the clear message of the optional dependency
+                caught.append('pypdf: ' + str(e))
+        c.ok(all(x != 'read' for x in caught) and ('après 0 s' in caught[1] or caught[1].startswith('pypdf')), f'{caught}',
+             'a damaged PDF and a reading past the limit fail cleanly (PdfTimeout), never block the tool')
+        d = P.build_pdf_dir('EGXX', ['bad.pdf'], lambda n: P.first_page_rows(bad), '2026-10-01')
+        c.ok(d['formats'][0]['ok'] is False and d['procedures'] == [] and any('NON lue' in w for w in d['warnings']), f"{d['formats']}",
+             'a folder build reports the unreadable file and goes on')
+    pts = [('TESTA', 51.4762, -0.7516), ('TESTB', 51.4767, -0.6711), ('RW09L', 51.4775, -0.4850)]      # points fictifs (essai du parseur, pas des données d'AIP)
+    rows = _uk_page(P, pts)
+    c.eq(P.detect_layout(rows), 'uk-app', 'layout recognised from its header words', what='detect_layout')
+    parsed = P.parse_uk_app(rows)
+    t = parsed['tables'][0]
+    c.eq((t['name'], t['runways'], t['transition'], [lg['id'] for lg in t['legs']]), ('RNP RWY 09L', ['09L'], 'TESTA', ['TESTA', 'TESTB', 'RW09L']), 'title, runway, "via" transition, legs in order', what='parse_uk_app')
+    c.ok(abs(t['legs'][1]['lat'] - 51.4767) < 1e-4 and abs(t['legs'][1]['lon'] + 0.6711) < 1e-4, f"{t['legs'][1]}", 'latitude read above the leg line, longitude below it')
+    c.eq((t['legs'][0]['alt'], t['legs'][2]['over']), ({'type': 'at', 'ft': 3000}, True), 'level constraint and fly-over', what='cells')
+    c.eq(P.check_geometry(t['legs']), [], 'a coherent table has no geometry gap', what='check_geometry')
+    recs, w = P.records_uk_app('EGXX', parsed, 'x.pdf', '2026-10-01', '2026-01-01')
+    c.eq((recs[0]['id'], recs[0]['status'], recs[0]['source']['kind'], recs[0]['points'][2]['id']), ('EGXX.APP.RNPRWY09L.RW09L.TESTA', 'check', 'ead-basic', 'RW09L'), 'common schema, status check, source ead-basic', what='records_uk_app')
+    bad = _uk_page(P, pts, corrupt=True)
+    pb = P.parse_uk_app(bad)
+    gap = P.check_geometry(pb['tables'][0]['legs'])
+    c.ok(gap and 'cap calculé' in gap[0], f'{gap}', 'a printed true course 5 degrees off the coordinates is caught')
+    recs2, w2 = P.records_uk_app('EGXX', pb, 'x.pdf', '2026-10-01')
+    c.ok(recs2 == [] and any('NON retenue' in x for x in w2), f'{recs2} {w2}', 'an incoherent table is not kept: nothing is written from it')
+    doc = P.build_pdf_dir('EGXX', ['a_8-13.pdf', 'b_7-13.pdf'], lambda n: rows if n.startswith('a') else ['UNITED KINGDOM AIP AD 2.EGXX-7-13', '25 Dec 2025', 'CIVIL AVIATION AUTHORITY'], '2026-10-01')
+    byf = {f['file']: f for f in doc['formats']}
+    c.ok(byf['a_8-13.pdf']['ok'] and not byf['b_7-13.pdf']['ok'] and any('vecteurs' in p for p in byf['b_7-13.pdf']['problems']) and len(doc['procedures']) == 1, f"{doc['formats']}",
+         'a page with almost no text is reported as probably drawn in vectors, never guessed; the readable one is read')

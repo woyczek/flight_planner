@@ -364,7 +364,9 @@ both ways.
   point, because the published file had none: en-route fixes "REF ENR 4.x" of the eAIP pages). A published point may carry
   `lat: null`; a module draws only points with a position (see the request in `modules/maps/INTEGRATION.md`).
 - **Published aerodrome file, extra keys**: `charts` { `base`, `items` [ { `path`, `kind` } ], `vac` }, `pages` (source pages
-  read), `warnings` (rows not read, fixes without position).
+  read), `formats` [ { `file`, `layout`, `fingerprint`, `ok`, `problems` } ] (the format check of each coding page: a page whose layout is not recognised, or
+  of which less than 85 % of the leg rows were read, is **not read** and has `ok: false`; `tools/proc_eaip.py --check` runs it alone), `warnings` (rows not read, fixes
+  without position, pages not read).
   - **For the frame's PDF reader** (links to the VAC charts and the eAIP pages): the address of a chart is `charts.base` +
     `items[].path` (the eAIP's `Cartes/<ICAO>/AD_2_<ICAO>_…pdf`, one per SID, STAR, IAC, ADC, parking and ground chart, data
     page…), `kind` being `ADC`, `APDC`, `GMC`, `SID`, `STAR`, `IAC`, `DATA`, `MIA`, `MVA`, `AOC`, `ARC`, `PATC`, `TEXT` or `OTHER`; the

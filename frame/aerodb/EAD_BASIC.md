@@ -122,10 +122,10 @@ the usual synchronisation (it never logs in anywhere).
 2. **Layouts**: no State's AD 2 coding table has been seen yet (§ 2). The registry needs one real page per layout, so the job starts with
    the owner's **one State** and grows State by State.
 3. **The AIP Library screens**: written against real pages. Two ways, to be chosen by the owner: (a) the owner downloads the § 4 pages once by
-   hand (fastest for the first parser), then the click replaces him; (b) the session writes a read-only **probe** (`tools/proc_ead.py --probe`:
+   hand (fastest for the first parser), then the click replaces them; (b) the session writes a read-only **probe** (`tools/proc_ead.py --probe`:
    asks for the password at the prompt, never stores it, logs in, opens the AIP Library, saves the **page structure only** (HTML with form
    state, cookies and the user name removed, no PDF) and a list of States and file names) which the owner runs once and whose sanitised output
-   he sends back, so that the session can write the search and download calls without ever holding a credential. The session never logs in.
+   they send back, so that the session can write the search and download calls without ever holding a credential. The session never logs in.
 4. **Where the click runs**: a workstation with the launcher (and `pypdf`). A phone cannot run it, but receives the result.
 
 **Draft of the question to EUROCONTROL (English):**
@@ -270,6 +270,82 @@ by page, **titles and keywords only** (Path Terminator, Fly Over, Coding, Waypoi
 pastes that report; the session decides from it whether this document holds coding tables (then the layout parser follows, on text rows of one page) or only charts (then the *Charts* type is searched).
 
 **Branches** (owner's request, 28 October): all further work on this topic goes onto **one branch**, `v3-aerodb-proc-15`; the older ones are deleted when GitHub lets the session do it.
+
+## 6 septies. First scan of the EGLL document (28 October 2026)
+
+`--scan-pdf` on the downloaded `EG_AD_2_EGLL_en.pdf` (41 pages, UNITED KINGDOM AIP, AD 2.EGLL-1 to -41): **no page has "Path Terminator", "Fly Over" or "Waypoint Identification"** (0 each), so
+this part holds **no table of legs in the SIA's form**. The word "Coding" appears on pages 40 and 41 only (with SID, STAR, RNAV, RNP, Approach); pages 26–30 and 11–13 mention approaches and
+procedures (the textual AD 2.22 "flight procedures" section). The scan now also prints the few lines with a coding word on those two pages, which decides whether they describe a coding
+table, name the document where the coded data is published, or only state a rule. Charts (SID / STAR / IAC drawings) are a separate document type, *Charts*.
+
+## 6 octies. The UK document does hold coding tables (28 October 2026)
+
+The scan's coding lines on pages 40 and 41 of `EG_AD_2_EGLL_en.pdf`: **"STANDARD INSTRUMENT ARRIVAL CODING TABLES"** (the STARs, e.g. OTMET 1H, ROXOG 1H, ALESO 1H, TANET 1Z, SIRIC 1H…),
+**"RNAV HOLD CODING TABLES"** (BIG, BNN, BRASO, FITBO, HON, LAM, LOGAN…) and **"INSTRUMENT APPROACH PROCEDURE CODING TABLES - RNP RWY 09L/R and 27L/R"**. So EGLL's AD 2 carries
+STAR and RNP coding tables, but **not under the SIA's header words** (no "Path Terminator"): its layout is its own. No SID table was seen (the SIDs are in the charts). The layout is now read page by page:
+`python tools/proc_eaip.py --scan-pdf FILE --page 40` prints that page's text rows (numbered, 160 characters, 90 rows), the very rows the analysers would read; the owner pastes pages 40 and 41 here (a UK AIP
+excerpt in the session only, never in the repository). The UK layout parser, a second entry of the layout registry (§ 3), is then written on them.
+
+## 6 nonies. Pages 40–41 of the UK document, read (28 October 2026): the coding tables are separate *Charts* documents
+
+The owner put `EG_AD_2_EGLL_en.pdf` in the session; pages 40 and 41 are **the index of the charts of AD 2.24** (a list of chart titles with their numbers), not tables. It tells where
+the coding tables are — **each one is a document of its own**, of type *Charts*, numbered `AD 2.EGLL-<section>-<n>`:
+
+| Number | Title (as listed) |
+|---|---|
+| 7-13 to 7-17 | STANDARD INSTRUMENT ARRIVAL CODING TABLES (OTMET 1H, ROXOG 1H, ALESO 1H, LAM 1X · TANET 1Z, OCK 1Z, NUGRA 2H, LAM 1Z · HON 2H, BARMI 1H, LOGAN 2H, TOBID 1X · HAZEL 1H, BIG 1Z, LAM 1Y, FITBO 2H · SIRIC 1H, SIRIC 1Z) |
+| 7-18, 7-19 | RNAV HOLD CODING TABLES |
+| 8-13 | INSTRUMENT APPROACH PROCEDURE CODING TABLES - RNP RWY 09L/R and 27L/R |
+| 6-1 to 6-6 | the SIDs: charts only ("RNAV SUBSTITUTION ONLY"), **no SID coding table** |
+
+By the library's naming, these are `EG_AD_2_EGLL_7-13_en.pdf` … `EG_AD_2_EGLL_8-13_en.pdf`. The probe reaches them with the AIP type *Charts*:
+
+```
+python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL --aip-type Charts --docs EG_AD_2_EGLL_7-13_en.pdf,EG_AD_2_EGLL_7-14_en.pdf,EG_AD_2_EGLL_7-15_en.pdf,EG_AD_2_EGLL_7-16_en.pdf,EG_AD_2_EGLL_7-17_en.pdf,EG_AD_2_EGLL_8-13_en.pdf
+```
+
+(`--docs` searches each exact name and downloads its row's document into `ead_probe/cache/`, named after it; nothing else is downloaded.) Then `python tools/proc_eaip.py --scan-pdf ead_probe/cache/EG_AD_2_EGLL_7-13_en.pdf` and
+`--scan-pdf … --page 1` show what those pages look like, and the UK layout (a second entry of the registry, § 3) is written on that evidence.
+
+## 6 decies. Checking the format of the pages by script (the owner's request, 28 October 2026)
+
+« On voit les limites de ces parsers : les formats peuvent changer. Il faudra prévoir une vérification du format des pages par script. » Done for the SIA's layout, and the frame every future layout enters:
+
+- **Before reading** a page, `detect_layout` names its layout (`sia-code` today) from its header words, wherever they fall on the page; no known layout → the page is **not read** (never guessed) and reported.
+- **After reading** it, `verify_page` checks that the parser took what the page carries: at least **85 % of the leg rows** were read, groups and a kind (SID / STAR / APP) were found. A column added, a header reworded to the point of
+  breaking the cells, a page turned the other way: refused and listed (`page NON lue, format à vérifier`) instead of giving wrong legs.
+- **Header fingerprint** (`fingerprint`): the words of the header lines, hashed. The three fingerprints of the pages seen (LFBD SID / STAR, LFBD RNP, LFAV RNP) are known; a different one is reported as *info: en-tête inconnu*
+  (not blocking when every leg was still read): the early sign that a format moved.
+- **Each aerodrome file** now carries `formats`: [{ file, layout, fingerprint, ok, problems }] next to `pages`; the builder prints a line per page and a summary of the refused ones.
+- **`--check`** runs the whole reading without writing anything and exits with 1 if a page is refused: to run **before each publication** (every AIRAC cycle), since the eAIP changes under it.
+- Tests (K3): the five real pages pass; a reworded header is *info* only; a widened table is refused; a page without a header is refused; an aerodrome file with a refused page has no procedure and says so.
+Not caught by design: text lost from a page (the parser cannot know what is missing); the guard catches a layout that moved, not a page that was cut.
+
+## 6 undecies. The five coding documents uploaded by the owner (28 October 2026)
+
+The owner uploaded `EG_AD_2_EGLL_7-13` … `7-17` (STAR coding tables) and `8-13` (RNP approach coding tables) to the session; they stay out of the repository.
+
+**8-13 — readable, and read.** It has a real text layer (243 text operations). Layout of the UK coding table: designator, sequence number, path terminator, waypoint name, fly-over, turn direction, level
+constraint, speed constraint, co-ordinates, remarks (and distance to the MAPt), course/track °M (°T); a leg's **latitude and magnetic course are on the line before it, its longitude and true course on the line after**.
+The new reader (`parse_uk_app`, layout `uk-app`) takes the four RNP approaches (09L via ABAVI, 09R via BENPA, 27L via NEKSA, 27R via IVLAR): IF, FAF, MAPt (`RW…`) and the `CA` leg (course to altitude, no fix: left out, reported).
+
+**7-13 … 7-17 — not readable by a script.** They are one page each whose table is **drawn as vector outlines**: about 40,000 path operations and **4 text operations** (only the header and the
+footer); no text layer, no image. `pypdf` returns three lines. The page is plainly legible to a human (and to a model reading the picture): designator, sequence, path terminator, waypoint, co-ordinates, fly-over,
+course °M (°T), magnetic variation, distance, turn direction, level, speed, navigation performance (RNAV1 / RNAV5). The probe's page check reports it as *very little text: drawn in vectors or an image?*.
+
+**The geometry check** (`check_geometry`), the answer to "formats change, check by script" for any table, whoever read it: for each TF leg the **true course and the distance recomputed from the two fixes' co-ordinates must equal
+what the page prints** (tolerance 0.25° and 0.2 NM). Tried on the first STAR table (OTMET 1H, read from the picture): six legs, courses within 0.1° and distances within 0.05 NM of the printed values. An error in a digit of
+a co-ordinate, whether made by OCR, by a person or by a model, moves a course or a distance and is caught; a table that fails is **not kept**.
+
+**What to do about 7-13 … 7-17** (three ways, the owner chooses):
+1. **OCR on the workstation** (optional dependency, like pypdf): reads any page drawn as outlines or images, fully automatic and one click, the geometry check catching the misreadings. It is a *new* dependency beyond
+   `pypdf` (CLAUDE.md allows only `pypdf`): needs the owner's word and an amendment. Candidates: Tesseract (a program to install) or a pure-pip engine.
+2. **One-off transcription** of EGLL's seventeen STARs from the pictures by the session, every table passing the geometry check, kept as a *manual interpretation* file in the private data repository with the hash of the page it
+   came from (when the page changes, the file is flagged obsolete, as the VAC interpretations are). No dependency, but not automatic: redone by hand at each amendment of those pages.
+3. **Leave the UK STARs out**: for a flight the STAR of the SimBrief OFP already gives its fixes (lot 1), and 8-13's RNP approaches are read.
+
+`python tools/proc_eaip.py EGLL --pdf-dir <folder of the downloaded PDFs> --cycle 2026-10-01 [--check]` reads every PDF of a folder: a known layout is read, an unknown or text-less one is reported (`NON`), never guessed;
+`--check` writes nothing and exits 1 if a page is refused. (Tested here on 8-13 and 7-13 together: 4 procedures read, 7-13 reported.)
 
 ## 7. Probe run by the user on the workstation (28 October 2026, United Kingdom / EGLL)
 
