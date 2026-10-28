@@ -1229,3 +1229,19 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Done**: first real end-to-end `--fetch` with OCR on three aerodromes (local outputs only): EGLL 4 approaches (`uk-app`) + 18 STAR by OCR (`uk-star`), gate clean, the two RNAV holding documents reported unread (out of scope); LOWG 4 procedures (`at-coding`, text); EBBE 3 of 6 tables before the fix, 5 of 6 after.
 - **Decision**: a `be-coding` SID/STAR table whose middle legs print no course is kept with a warning when all its points come from its own list, the first leg is IF or CF and every leg is IF/TF/CF/DF; the printed courses still pass the gate; approaches keep the strict rule. The sixth EBBE table prints a course 1.2° off its own co-ordinates at every resolution: an AIP printing inconsistency, rejected by design (no tolerance widening, no consensus trick).
 - **Honest status of the wrappers**: each layout is verified on one real sample per State (17 States) and an invented K page, not on every aerodrome; an unknown shape is reported, never guessed. Known limits: single-letter cells (fly-over, turn) are lost by the OCR; `--fetch` reads only the first results page (15 rows per search).
+
+## 28 October 2026 — hand-read files kept and marked outdated (the user's amendment)
+
+- **Word of the user**, relayed word for word: « les données coûtent cher à être générées. je préfère les marquer en « outdated » sur une page
+  de maintenance. Stockées dans le git privé, ça reste user side, c'est autorisé, du moins les données json compilées. on doit pouvoir bien
+  séparer la compilation des données brutes, et l'utilisation des données compilées. »
+- **Replaces** the fallback of the same day (an aerodrome missing from the cycle in force read from the previous kept cycle, `stale`, one
+  cycle at most, the Purger keeping that cycle).
+- **Decided** (the simplest of the two places the ergonomics session offered): `proc/manual/<ICAO>.json` (and its `index.json`), outside the
+  cycle folders, each procedure with its cycle of origin (`source.cycle`) and source; read whatever its age, `outdated: true` once its cycle is
+  not the one in force; never purged by the module, listed « périmé » with « Relire »; at equal status a procedure that is not outdated wins.
+  Keeping the cycle of origin indefinitely was the other way: it would have kept whole cycle folders for a few files and made the Purger's rule
+  depend on what each one holds.
+- **The principle** at the head of the SPEC: compiling the raw sources (builders, workstation) is strictly apart from using the compiled data
+  (reader, devices); the compiled JSON live in the private data repository, on the user's side.
+- **To code** (next aerodb lot after D1): `tools/proc_manual.py` installs into `proc/manual/`; the reader merges it and marks `outdated`.

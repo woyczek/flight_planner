@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: hand-read procedures kept, marked outdated** (`frame/aerodb/SPEC.md` § 1 and § 5 quinquies, `INTEGRATION.md`, DECISIONS;
+  documentation only) — the user's amendment: EAD Basic, manual and OCR readings live in `proc/manual/<ICAO>.json`, outside the cycles,
+  read whatever their age and marked `outdated` once their cycle is not in force, never purged by themselves; compiling the raw sources and
+  using the compiled data stay strictly apart, the compiled JSON in the private data repository.
 - **aerodb: contracts with the Données module** (`frame/aerodb/SPEC.md` § 4, § 5, § 5 quinquies to 5 septies, § 6,
   `INTEGRATION.md`, DECISIONS; documentation only) — cycles stored as effective dates and shown as AIRAC ids through one
   `airac.js`, three cycles kept; `publication()`, `zones()` and `sources()` for the module (lot D1); the catalogue kept by

@@ -18,6 +18,12 @@ with their performance. aerodb answers those questions from the bases **publishe
 workstation with the launcher. It never reads the source files (AIXM, XML_SIA, openAIP…), never builds, never writes.
 A module asks for an area or an identifier, never for a zone or a file.
 
+**Principle (the user, 28 Oct 2026): compiling and using are two separate things.** The **compilation** of the raw sources
+(the builders and the tools of the workstation, § 5 septies, on the owner's order) is strictly apart from the **use** of the
+compiled data (this reader, on every device). The compiled JSON files live in the airline's **private** data repository,
+on the user's side: they are allowed there, they cost much to generate, so they are kept and marked outdated rather than
+removed (§ 5 quinquies); the raw sources never are.
+
 ## 2. What it reads
 
 - **SIA base, split format (preferred)**: one file per zone, cycle and kind,
@@ -357,11 +363,18 @@ both ways.
     `cycle`, `at`, `how?` (`ocr` | `hand`: a table read from a drawn page, `tools/proc_ocr.py` or by hand, installed by
     `tools/proc_manual.py`) }; a file read through EAD Basic also carries `notice` (not operational, `EAD_BASIC.md` § 1);
   - `status`: `official` | `check` ("to be checked") | `ofp` ("seen in an OFP", not authoritative).
-- **An aerodrome missing from the cycle in force** (contract of 28 Oct 2026, the Données module): files of status
-  `check` (EAD Basic, manual, OCR) are made for one cycle and are not rebuilt by the cycle's builders. When the cycle in
-  force has no file for an aerodrome, aerodb reads that aerodrome's file of the **previous kept cycle**, its procedures
-  marked `stale: true` (a module says « cycle précédent »); only `check` and `official` files are read this way, never
-  across more than one cycle. The Données module's Purger keeps a cycle as long as it serves so.
+- **Hand-read files are kept, outside the cycles** (the user's amendment, 28 Oct 2026: « les données coûtent cher à être
+  générées. je préfère les marquer en « outdated » »). The files of the sources that the cycle's builders do not rebuild —
+  EAD Basic, manual and OCR readings, status `check` — live in **`proc/manual/<ICAO>.json`** and `proc/manual/index.json`,
+  outside the cycle folders; each procedure keeps the cycle of the page it was read from (`source.cycle`). They are
+  installed there by `tools/proc_manual.py` (its target moves from `proc/<cycle>/` to `proc/manual/` in the next lot of
+  aerodb; the merge and `--replace` rules stay).
+  - **Read whatever their age**: `procedures(icao)` merges `proc/<cycle in force>/<ICAO>.json`, `proc/manual/<ICAO>.json`
+    and `proc-seen/<ICAO>.json`; a procedure from `proc/manual/` whose `source.cycle` is not the cycle in force is served as
+    it is, marked **`outdated: true`** (a module shows it « périmé »). At equal status, a procedure that is not outdated wins.
+  - **Never removed by itself**: the Données module's Purger never touches `proc/manual/`; the module lists the outdated
+    aerodromes « périmé » with a button « Relire » (one aerodrome per gesture, EAD Basic's rule); only the owner's
+    explicit removal takes one away.
 - **Merge** (`procedures`): records of the same kind, name and transition with compatible runways (one of the two lists empty,
   or a common runway) are one procedure; the geometry and status are those of the best source (`official` > `check` > `ofp`),
   `sources` lists every source with its status, best first.

@@ -197,8 +197,10 @@ session, which keeps the module's files):
   them (SPEC § 5 septies). A lot « complete readers » comes first.
 - **Procedures**: EAD Basic reads one aerodrome per gesture (*Charts* documents `AD_2_<ICAO>_…`, first page of results only,
   15 rows); its output is installed by `tools/proc_manual.py`, which refuses another source's file without `--replace`:
-  the module asks « remplacer ou fusionner » then. An aerodrome missing from the cycle in force is read from the previous
-  kept cycle (`stale: true`); the Purger keeps that cycle (SPEC § 5 quinquies). Grey reasons that come from aerodb's side:
+  the module asks « remplacer ou fusionner » then. Hand-read files (EAD Basic, manual, OCR) live in `proc/manual/<ICAO>.json`,
+  outside the cycles: read whatever their age, marked `outdated: true` once their cycle is no longer in force, never purged
+  by the module, which lists them « périmé » with « Relire » (SPEC § 5 quinquies). Compiling (workstation) and using
+  (devices) stay apart; the compiled JSON live in the private data repository (SPEC § 1). Grey reasons that come from aerodb's side:
   « pypdf manque », « OCR manque » (drawn pages: UK STARs, Belgium, Georgia), « Mise en page inconnue pour cet État ».
 
 ### Sources screen (`#sources`)
