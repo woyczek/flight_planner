@@ -359,19 +359,6 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
 .f-level input {
   margin-top: 3px
 }
-/* titre du module dans l'en-tête du téléphone (app.js, paintName) : la grande ligne de titre de la page n'est plus que pour les
-   lecteurs d'écran (le h1 reste dans l'arbre) */
-html.f-titled .f-module>h1 {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0
-}
 /* aide (frame/help/help.js) : panneau replié en tête d'un module, écran #help ; tableaux en listes sur téléphone */
 .f-help>summary>span {
   flex: 1;

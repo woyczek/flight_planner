@@ -866,6 +866,12 @@
     }
   }
   phoneQ.addEventListener('change', () => paintName());
+  // filet : un navigateur qui n'émettrait pas « change » sur la requête quand la fenêtre change de taille ou tourne ;
+  // paintName n'écrit et n'émet « frame-titled » que si la valeur change
+  addEventListener('resize', () => paintName(), {
+    passive: true
+  });
+  addEventListener('orientationchange', () => paintName());
   /** Vue fixe (meta.fixed d'un module) : <html class="f-fixed"> donne à la vue toute la hauteur entre l'en-tête et la barre du
    *  bas (ou le bas de la fenêtre), sans défilement de la page (frame.css) ; jamais sous un écran du cadre ouvert par-dessus
    *  (il défile comme une page). id : le module affiché ('' : aucun). Écrit seulement si cela change. */

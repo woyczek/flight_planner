@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the module's title across a resize** (`frame/app.js`, `frame/frame.css`; INTEGRATION § 6, SPEC § 4,
+  DECISIONS): the header's title and `frame-titled` are also recomputed on `resize` and `orientationchange`; the rule
+  that hid the modules' `h1` is removed, the modules now hide it themselves.
 - **Tests V3 under Windows: the runner's own static server** (`tests/v3/static_server.py`, `run.py`, `lib.py`, README,
   PLAN): `python -m http.server` lost module loads at random (HTTP/1.0, one connection per file: a run left 13,375
   ports in TIME_WAIT and Windows ran out of them; a listen queue of 5); the new server speaks HTTP/1.1 with keep-alive,

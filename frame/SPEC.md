@@ -819,8 +819,6 @@ Usage levels, a language choice, designs taken from V2, the backend transports.
 **Debts, dated**:
 - 28 Oct 2026: Settings' `setup()` and `aerodb/lnmperf.js` call the launcher with `fetch` (the data laboratory, removed the same day, did too). They move
   onto `ctx.launcher` in the frame lot after the weather layer (INTEGRATION § 7).
-- 28 Oct 2026: the frame still hides `.f-module > h1` under `html.f-titled` until the modules use `ctx.titled`
-  (INTEGRATION § 6).
 - 28 Oct 2026: the frame still reads flightlog's `pending.json` (schema 2) until flightlog publishes its
   `status.json` (INTEGRATION § 10.0).
 - 28 Oct 2026: fuel's own request for the winds aloft (`aloftFetch`, `cache/fuel/aloft.json`) and Atmosphere's store

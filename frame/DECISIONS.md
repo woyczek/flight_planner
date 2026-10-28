@@ -1384,3 +1384,12 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     the day's stop and the minute's wait, the sliding 24 h, pruning once a day, METAR / TAF with and without a launcher,
     the world index and steps, offline, GFS cells); case A25 of `tests/v3` (the bench, area A). `tests/v3/run.py` could
     not run here: Playwright is not installed (the user's decision).
+- **28 Oct 2026 — `ctx.titled` across a resize; the `h1` rule removed** (report of Features SOG, through the
+  coordinator):
+  - Reported: from 375 to 1280 px without a reload, `html.f-titled` stayed and no `frame-titled` was sent. Not reproduced
+    here: Playwright (with and without touch) and Chrome's device emulation (mobile or not) both see the media query's
+    `change`, the class removed and the event `{ fuel, false }`. A safety net is added all the same: `resize` and
+    `orientationchange` call the same drawing, which writes and sends the event only when the value changes.
+  - The CSS rule that hid `.f-module > h1` under `html.f-titled` is removed: fuel, report, flightlog and website give their
+    `h1` the class `f-sr` themselves (website keeps a visible `h1`: the frame does not title it). Dated debt closed
+    (SPEC § 4).

@@ -112,9 +112,9 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - **The title** (`ctx.titled`): on a phone the header shows a module's `meta.title` in place of the application's name;
   `ctx.titled` is then true. Your page's big title line is then for screen readers only: give your `h1` the class `f-sr`
   (`frame/design/primitives.css`) while `ctx.titled` is true, and follow `frame-titled` on `window` (`{ module, titled }`,
-  dispatched when it changes, for instance when the window crosses 760 px). Until every module does so, the frame still
-  hides `.f-module > h1` itself under `html.f-titled` (debt: the rule goes once fuel, report, flightlog and website use
-  `ctx.titled`).
+  dispatched when it changes, for instance when the window crosses 760 px). The frame no longer hides a
+  module's `h1` itself (the rule went on 28 Oct 2026, once fuel, report, flightlog and website used `ctx.titled`): a module
+  whose title is in the header and which does not hide its `h1` shows it twice.
 - **The airline's settings** (`ctx.airline`) are read in the background at start: a module mounted before they
   arrive sees an empty object. Read `ctx.airline` when you draw, not once at `mount`, and redraw on `frame-airline`
   (on `window`) if what you show depends on it.
