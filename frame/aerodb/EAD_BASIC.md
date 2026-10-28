@@ -212,3 +212,23 @@ the loop over the lists reused the variable holding `--name`, so the filter sile
 ```
 python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL --name EG_AD_2_EGLL --download
 ```
+
+## 6 quater. The probe, fourth round (28 October 2026): the third run's report
+
+**Read in the owner's report** (EAD Basic account, United Kingdom): the AIP Library is `…/restricted/user/aip/aip_overview.faces`; its form `mainForm` has the lists
+`selectAuthorityCode` (47 States by ICAO prefix; **EG = United Kingdom**), `selectAuthorityType` (Civil), `selectLanguage` (EN), `selectAipType` (AIP, AMDT, SUP, AIC, Charts),
+`selectAipPart` (GEN, ENR, AD), the box `enableAdvancedSearch_input` and the buttons `querySearch` and `reset`. The plain search (State + AD) answered 56,682 bytes and
+**65 table rows**. The advanced-search box **opened by partial request** and revealed, found by label: `effectiveDate_input`, **`documentName`**, `documentHeader`.
+
+**What failed**: every search by Document Name (`EG_AD_2_EGLL`, `AD_2_EGLL`, the eight exact names) answered 200 with **0 rows and no pager**, while the same name typed in the
+browser gives one row. The probe's request differs from the browser's in a way it could not name: it printed neither the answer nor what it had sent.
+
+**Fourth round** (read-only as before): for the plain search and for every name search that finds nothing, the report now prints the **answer's anatomy** (size, each
+updated component with its size, errors, redirection, messages shown, or its first 160 characters) and the **names of the parameters sent**; a **control** (search with
+no name, after the box was opened) tells whether opening the box itself broke the form; and the probe tries **four request shapes** in turn — execute and render `@all`
+(the previous one), execute `@form`, execute the fields + button and render only the component(s) that carry the rows (identified in the plain search), and the whole form
+— keeps the first that returns rows and uses it for the prefix test and the exact-name enumeration.
+
+**If it still finds nothing — the most reliable help** is the browser's own request, once, for the same search: in the browser's developer tools (F12), tab *Network*, keep
+the log, fill *Advanced Search / Document Name* with `EG_AD_2_EGLL`, press *Search*, click the `aip_overview.faces` request (method POST) and copy its **Form Data** (the
+list of `name: value`), **replacing the value of `javax.faces.ViewState` by `x`**; no cookie, no header, no password is needed. That list is what the probe must reproduce.

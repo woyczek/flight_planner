@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: EAD Basic probe, fourth round** (`tools/proc_ead.py`, K6, `frame/aerodb/EAD_BASIC.md` § 6 quater) — the report prints the anatomy of each answer and the names of the
+  parameters sent, runs a control search and tries four request shapes for the name search (the previous one found nothing on the real screen), keeping the first that returns rows.
 - **aerodb: EAD Basic probe, third round** (`tools/proc_ead.py`, K6, `frame/aerodb/EAD_BASIC.md` § 6 ter) — advanced search opened by partial request, "Document Name" found by its label,
   prefix `EG_AD_2_EGLL` searched ("contains" or "starts with" learned, exact-name enumeration as a fallback, no page walking), rows with their ▶ button, `tables.html`
   for the exact table, one PDF through the button. Fixes a variable that shadowed `--name`.

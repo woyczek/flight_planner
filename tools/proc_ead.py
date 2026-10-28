@@ -140,6 +140,20 @@ def pager_text(body):
     return [text_of(m) for m in re.findall(r'(?is)ui-paginator-current[^>]*>(.*?)</span>', body)][:2]
 
 
+def describe(body):
+    """Résumé d'une réponse JSF partielle : taille, composants mis à jour (id et taille), erreurs, redirection, messages affichés."""
+    ups = [(m.group(1), len(m.group(2))) for m in re.finditer(r'(?s)<update id="([^"]*)">\s*<!\[CDATA\[(.*?)\]\]>\s*</update>', body)]
+    err = [text_of(m)[:160] for m in re.findall(r'(?is)<error>(.*?)</error>', body)]
+    red = re.findall(r'<redirect url="([^"]*)"', body)
+    msg = [text_of(m)[:160] for m in re.findall(r'(?is)ui-messages?-(?:error|warn|info|fatal)[^>]*>(.*?)</(?:div|ul|span|li)>', body)][:4]
+    return f'{len(body)} octets | mises à jour: ' + ', '.join(f'{i[-45:]}({n})' for i, n in ups[:12]) + (f' | erreurs: {err}' if err else '') + (f' | redirection: {red}' if red else '') + (f' | messages: {msg}' if msg else '') + (' | début: ' + text_of(body)[:160] if not ups else '')
+
+
+def sent_summary(d):
+    """Noms des paramètres envoyés, avec la valeur des courts hors jetons d'état : pour comparer avec la requête du navigateur."""
+    return {k: ('<état>' if re.search(r'ViewState|jid|token|nonce', k, re.I) else (v if len(str(v)) <= 40 else '<long>')) for k, v in sorted(d.items())}
+
+
 def view_state(body):
     m = re.search(r'ViewState[^>]*>\s*<!\[CDATA\[([^\]]+)', body)
     return m.group(1) if m else None
@@ -284,12 +298,15 @@ def probe(user, password, state, icao, out, name=None, download=False):
         return finish(out, rep, s)
     src = btn['id'] or btn['name']
 
-    def ajax(extra, tag, source, event=None, execute='@all'):
+    sent = {}
+
+    def ajax(extra, tag, source, event=None, execute='@all', render='@all'):
         d = dict(data)
         d.update(extra)
-        d.update({'javax.faces.partial.ajax': 'true', 'javax.faces.source': source, 'javax.faces.partial.execute': execute, 'javax.faces.partial.render': '@all'})
+        d.update({'javax.faces.partial.ajax': 'true', 'javax.faces.source': source, 'javax.faces.partial.execute': execute, 'javax.faces.partial.render': render})
         if event:
             d['javax.faces.partial.event'] = event
+        sent['last'] = d
         code, _, body = s.call(action, d, hdr)
         keep(tag, body)
         vs = view_state(body)
@@ -299,13 +316,17 @@ def probe(user, password, state, icao, out, name=None, download=False):
 
     last = {'body': ''}
 
-    def search(extra, tag):
-        code, body = ajax({**extra, src: src}, tag, src)
+    def search(extra, tag, execute='@all', render='@all'):
+        code, body = ajax({**extra, src: src}, tag, src, execute=execute, render=render)
         if rows_of(body):
             last['body'] = body                           # la dernière réponse qui portait des lignes
         return code, body, rows_of(body)
     code, body, rows = search({}, 'recherche_ajax')
     say('6. recherche (État + partie AD):', code, len(body), 'octets |', len(rows), 'ligne(s) |', 'paginateur:', pager_text(body) or 'aucun')
+    say('   réponse:', describe(body))
+    say('   paramètres envoyés:', sent_summary(sent['last']))
+    result_ids = [m.group(1) for m in re.finditer(r'(?s)<update id="([^"]*)">\s*<!\[CDATA\[(.*?)\]\]>', body) if '<tr' in m.group(2) and 'ViewState' not in m.group(1) and 'ViewRoot' not in m.group(1)]
+    say('   composant(s) portant les lignes:', result_ids or 'aucun identifié')
     hit = lambda r: icao.upper() in ' '.join(r['cells'] + [h for _, h in r['links']]).upper()
     if name:
         if adv:
@@ -324,11 +345,28 @@ def probe(user, password, state, icao, out, name=None, download=False):
             field = next((k for k in form['fields'] if re.search(r'document.?name', k, re.I)), None)
             say('   case recherche avancée: aucune dans le formulaire')
         say('   champ « Document Name »:', field or 'INTROUVABLE')
+        code, cbody, crows = search({}, 'recherche_apres_bascule')
+        say('   contrôle: la recherche sans nom, après la bascule, rend', len(crows), 'ligne(s) |', describe(cbody)[:300])
         if field:
+            variants = [('tout (execute et render @all)', '@all', '@all'), ('formulaire (execute @form, render @all)', '@form', '@all'),
+                        ('ciblée (execute champs + bouton, render composants des lignes)', f'{src} {field} {adv}', ' '.join(result_ids) or '@all'),
+                        ('ciblée, tout le formulaire', 'mainForm', 'mainForm')]
+            use = {'v': variants[0]}
+
             def by_name(text, tag):
-                code, body, rs = search({field: text}, tag)
+                code, body, rs = search({field: text}, tag, use['v'][1], use['v'][2])
                 say(f'   nom « {text} »:', code, len(rs), 'ligne(s) |', 'paginateur:', pager_text(body) or 'aucun')
+                if not rs:
+                    say('      réponse:', describe(body)[:400])
                 return rs
+            for v in variants:
+                use['v'] = v
+                code, vbody, vrs = search({field: name}, 'variante', v[1], v[2])
+                say('   variante', v[0], '->', len(vrs), 'ligne(s)')
+                if len(vrs) or v is variants[-1]:
+                    say('   paramètres envoyés (variante):', sent_summary(sent['last']))
+                    if len(vrs):
+                        break
             rows = by_name(name, 'recherche_nom')
             tail = name.split('_', 1)[1] if '_' in name else name
             contains = by_name(tail, 'recherche_nom_contient') if tail != name else []

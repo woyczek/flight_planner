@@ -1044,3 +1044,11 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Done**: advanced box toggled by partial request, fields found by label, renewed ViewState, contains/prefix test, enumeration fallback, rows with their
   ▶ button, `tables.html`, download through the button. Defect found by the test and fixed: a loop variable shadowed the `--name` argument (also in round two).
 - **Still unknown until the owner's next run**: the real shapes of the toggle response and of the ▶ button (the test uses hand-built screens).
+
+## 28 October 2026 — probe, fourth round (searches by name found nothing)
+
+- **From the owner's run** (relayed in the session): login, library, lists, advanced box (fields found by label: `documentName`, `effectiveDate_input`, `documentHeader`) all
+  worked; plain search 65 rows; **every search by name: 200, 0 rows, no pager**, enumeration included; no download possible.
+- **Cause not known** (answer not printed). Hypotheses: the request shape (`execute=@all` with a filter), the fields added by the box (empty date field), the renewed
+  page state. **Done**: answer anatomy and sent parameter names printed, a control search, four request shapes tried in turn, the first that works kept; and a request to
+  the owner for the browser's own Form Data if this fails too. Test K6: the fake now refuses the `@all` shape for a name, so the test proves the probe switches shape.
