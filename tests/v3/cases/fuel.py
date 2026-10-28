@@ -517,7 +517,7 @@ def f14(c):
     for k in ('eaip', 'ead'):
         c.ok(bool(tx(F, k, c.lang, after='procReadingSrc').strip()), 'missing', f'the reading in progress names its source ({k})')
     # comptes d'une lecture réussie (aerodb stats) : jamais « 0 procédures » seul
-    for k in ('procFetchedPages', 'procRejected', 'procDropped'):
+    for k in ('procFetchedPages', 'procRejected', 'procDropped', 'procUnnamed'):
         c.ok('{' in tx(F, k, c.lang), 'missing', f'the success notification wording {k} exists in the language of the run')
 
 

@@ -4,6 +4,9 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — a procedure without a name** (Simplification): a record read with `name: null` (id `….STAR.NONAME.…`) is
+  labelled by its kind, « STAR sans nom » / « SID sans nom » / « Approche sans nom » ×4 (`TX.procUnnamed`), never « NONAME »
+  taken from the id.
 - **29 Oct 2026 — the reading's counts in the success notification** (aerodb 636a020f4, `stats`; Simplification): « {n} procédures
   lues sur {p} pages », then « {r} pages non lues (motif le plus fréquent : …) » when `rejected` > 0 and « {d} procédures écartées
   par le contrôle de géométrie » when `dropped` > 0; `n` is the answer's `procedures.length` (right on the first reading). The

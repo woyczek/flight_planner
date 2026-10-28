@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a procedure read without a name says "STAR without a name"** (`modules/fuel/module.js`, DECISIONS) — no longer
+  "NONAME".
 - **Fuel: "Read the procedures" gives its counts** (`modules/fuel/module.js`, SPEC, DECISIONS; case F14) — e.g. "78
   procedures read from 18 pages", with the pages not read and their most frequent reason, and the procedures dropped by
   the geometry check.

@@ -241,6 +241,8 @@ const TX = {
   procApp: ['Approche', 'Approach', 'Anflug', 'Aproximación'],
   procAppTrans: ['Transition d’approche', 'Approach transition', 'Anflugübergang', 'Transición de aproximación'],
   procNone: ['aucune', 'none', 'keine', 'ninguna'],
+  // procédure lue sans nom (identifiant « ….STAR.NONAME.… ») : sa sorte, jamais le mot de l'identifiant
+  procUnnamed: ['{k} sans nom', '{k} without a name', '{k} ohne Namen', '{k} sin nombre'],
   procXplane: ['X-Plane, local', 'X-Plane, local', 'X-Plane, lokal', 'X-Plane, local'],
   procOutdated: ['périmé', 'outdated', 'veraltet', 'caducado'],
   procNoData: ['aucune procédure publiée', 'no published procedure', 'kein veröffentlichtes Verfahren', 'ningún procedimiento publicado'],
@@ -1392,7 +1394,16 @@ function normProcedures(f) {
  *  transition (cinquième champ) quand l'identifiant la porte. */
 const nameOfId = (id, key) => {
   const p = String(id || '').split('.');
-  return (key === 'trans' || key === 'appTrans') && p[4] && p[4] !== 'NONE' ? p[4] : p[2] || String(id);
+  if ((key === 'trans' || key === 'appTrans') && p[4] && p[4] !== 'NONE') return p[4];
+  // sans nom dans la source : « STAR sans nom » (la sorte, deuxième champ), pas « NONAME »
+  if (p[2] === 'NONAME') return tt(TX.procUnnamed, {
+    k: tt({
+      SID: TX.procSid,
+      STAR: TX.procStar,
+      APP: TX.procApp
+    } [p[1]] || TX.procStar)
+  });
+  return p[2] || String(id);
 };
 /** Piste sans « RW » (« RW23 » → « 23 »), pour comparer. */
 const rwKey = x => String(x ?? '').trim().toUpperCase().replace(/^RW/, '');
