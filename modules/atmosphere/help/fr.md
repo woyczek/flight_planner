@@ -61,4 +61,6 @@ dessiné ; un toucher sur la légende, la pastille ou Échap la ferme.
 
 - La prévision vient d'Open-Meteo (Météo-France AROME et ARPEGE sur la France, ICON en Europe, GFS ailleurs) ; le
   synoptique mondial vient de GFS (NOAA), toutes les 3 heures jusqu'à 72 heures.
-- Ce qui est chargé reste sur l'appareil et sert hors ligne ; la Carte en reprend la coupe météo.
+- Ce qui est chargé reste sur l'appareil et sert hors ligne, dans la réserve météo partagée par Carburant, la Carte et
+  Météo ; la Carte en reprend la coupe météo. Les appels du jour à Open-Meteo sont comptés dans le bloc d'état des
+  Réglages.

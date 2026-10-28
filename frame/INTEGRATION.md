@@ -921,7 +921,9 @@ fuel's own request stay (dated debt, SPEC § 4).
 
 `opts` of `aloft` and `grid`: `model` (an Open-Meteo `models` id, to force one), `cacheOnly` (nothing is asked: null when
 something is missing — draw at once from the device, then ask), `stale()` (true when the answer is no longer wanted: a
-wait for the minute limit stops), `onWait(seconds)` (said to the pilot while waiting); `grid` also takes `days`.
+wait for the minute limit stops), `onWait(seconds)` (said to the pilot while waiting); `grid` also takes `days` and
+`from` (ms, the first day when it is past — a flight dated before today, read from its departure's day, 92 days back
+at most; Atmosphere, 30 Oct 2026). Without `from` the days start today, as before.
 
 Errors carry a mark, for the module to say why in its own words: `offline`, `unreachable`, `status` (HTTP), `quota`
 (the day's limit is reached), `stale`, `tooMany`, `incomplete`.

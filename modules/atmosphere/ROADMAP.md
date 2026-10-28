@@ -44,6 +44,10 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
    flight's grid; routes across the date line; the flight date slider (0 to +72 h, nothing asked).
 8. The weather map as a library (`lib/weather_map.js`, INTEGRATION § 6): this module draws through it, the maps
    module's Météo chip will call `attach(map, …)`; bench `test/weather_map.html` (14 checks, no Open-Meteo call).
+9. Landscape column, bare head, chips in the grip row, legend, zoom of the cut, help anchors (rules 7, 13, 14, 16, 20).
+10. **Recode** (28 October 2026, user's decision): lot 0, the SPEC as final state and sixteen open points (DECISIONS);
+    lot 1, the module from a blank file on the frame's weather layer (`ctx.weather`), cut by concern into files of 60 KB
+    at most; parity measured against the former version.
 
 ## Not checked yet
 
@@ -60,11 +64,10 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
    `frame/weather` (a relay or the publication's host). Next free data, each a decision (host in `meta.net` and the
    CSP): satellite clouds (NASA GIBS) and radar (RainViewer), both with CORS; GFS upper levels (FL100…FL390 winds and
    temperatures) to give the world view the map's altitudes; a longer slider (GFS goes to +384 h).
-3. **Landscape** (later lot): map left, narrow block right, buttons as a rail on the right edge — for the ergonomics
-   session.
-4. **`frame/weather`** (frame lot, `V3_SPECIFICATION.md` § 8): move `weather_store.js` there unchanged, expose it as
-   `ctx.weather`, show the tally in Settings › Diagnostics; then Fuel reads its winds aloft through it
-   (`cache/fuel/aloft.json` retired), so the quota is paid once.
+3. *(Landscape: done, rule 7.)*
+4. **After the frame's weather layer** (done by the frame, lot 26; the module's former `weather_store.js` removed in
+   lot 1): state the cost of a load before "Load" once the
+   layer gives an estimate (asked, DECISIONS of 28 October); the lot 0 open points the ergonomics session settles.
 5. Times of passage with the wind. (The help chapter is written: `help/<lang>.md`, "Météo".)
 6. Ideas not done: skew-T with parcel and CAPE, clear-air turbulence (shear), departure time as an animation, PNG
    export of the briefing.
