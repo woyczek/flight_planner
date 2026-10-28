@@ -48,7 +48,8 @@ Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur l
   3. pages modifiées rechargées, sans erreur JavaScript ;
   4. entrée au CHANGELOG, en anglais, rubrique « Unreleased » ;
   5. aucune marque de conflit : `git grep -l -E "^(<<<<<<<|>>>>>>>) "` vide ;
-  6. **V3 : la suite de non-régression comme porte** (`tests/v3/`, décision de l'utilisateur du 24 octobre 2026) :
+  6. **V3 : le contrôle de non-régression** (`tests/v3/`, décision de l'utilisateur du 24 octobre 2026 ; on dit « le contrôle
+     est vert / rouge », jamais « la porte ») :
      avant de dire qu'un lot est bon, `python3 tests/v3/run.py --changed` (les zones et les parcours des fichiers
      touchés) ; **un test échoué se rejoue deux fois** : seul, tel qu'il a échoué (`--failed <id>` : même design,
      largeur, langue) pour confirmer le correctif, puis dans son périmètre complet (`--failed-scope` : ses zones, ses
