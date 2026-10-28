@@ -288,7 +288,15 @@
       error: ['Données : erreur de synchronisation{e}', 'Data: synchronisation error{e}', 'Daten: Synchronisationsfehler{e}',
         'Datos: error de sincronización{e}'
       ],
-      position: ['Position : {s}', 'Position: {s}', 'Position: {s}', 'Posición: {s}']
+      position: ['Position : {s}', 'Position: {s}', 'Position: {s}', 'Posición: {s}'],
+      // couche météo (ctx.weather) : appels pondérés à Open-Meteo du jour UTC, sur cet appareil
+      weather: ['Météo : {n} appels aujourd’hui', 'Weather: {n} calls today', 'Wetter: {n} Abrufe heute',
+        'Meteorología: {n} llamadas hoy'
+      ],
+      weatherOne: ['Météo : 1 appel aujourd’hui', 'Weather: 1 call today', 'Wetter: 1 Abruf heute', 'Meteorología: 1 llamada hoy'],
+      weatherSub: ['Prévisions Open-Meteo, limite {max} par jour', 'Open-Meteo forecasts, limit {max} a day',
+        'Open-Meteo-Vorhersagen, Grenze {max} pro Tag', 'Previsiones Open-Meteo, límite {max} al día'
+      ]
     },
     // plein écran d'un module fixe (bouton de la couche de superposition : il montre « quitter » une fois en plein écran)
     full: {
@@ -1041,6 +1049,53 @@
     HANDOFF = 'pilot/handoff.json';
   // lecture du cache de flightlog (jamais synchronisé) et passage à report (pilot/handoff.json, même politique « cache »
   // que l'écriture de flightlog) ; le cadre n'écrit rien d'autre
+  // ---------------------------------------------------------------- couche météo (ctx.weather, INTEGRATION § 14)
+  // une seule réserve et un seul décompte des appels à Open-Meteo pour tous les modules (frame/lib/weather_store.js) :
+  // cache/weather/, politique cache (jamais synchronisée, hors des sauvegardes) ; le store est chargé à la première lecture
+  const WEATHER_LEDGER = 'cache/weather/ledger.json';
+  const weatherData = FD.adapter({
+    id: 'frame-weather',
+    writes: [{
+      prefix: 'cache/weather/',
+      policy: 'cache'
+    }]
+  });
+  let weatherP = null,
+    weatherSpent = []; // décompte : [[instant ms, poids]] (24 h glissantes), relu quand il change
+  const weatherStore = () => weatherP ||= import(new URL('frame/lib/weather_store.js?v=0', ROOT).href).then(m => m.weatherStore({
+    data: weatherData,
+    net,
+    root: ROOT
+  }), e => {
+    weatherP = null;
+    throw e;
+  });
+  const weatherCall = name => (...a) => weatherStore().then(w => w[name](...a));
+  /** ctx.weather : vents et températures en altitude d'une route (aloft), grille de prévisions (grid), METAR et TAF,
+   *  synoptique monde publié (world), modèle d'un lieu, appels du jour ; tout est asynchrone (INTEGRATION § 14). */
+  const weather = Object.freeze({
+    aloft: weatherCall('aloft'),
+    grid: weatherCall('grid'),
+    metar: weatherCall('metar'),
+    taf: weatherCall('taf'),
+    world: weatherCall('world'),
+    run: weatherCall('run'),
+    spentToday: weatherCall('spentToday'),
+    modelFor: weatherCall('modelFor')
+  });
+  /** Appels pondérés du jour UTC (ligne « Météo » du bloc d'état), au moment du dessin. */
+  const weatherToday = () => {
+    const start = Date.parse(new Date().toISOString().slice(0, 10));
+    return Math.round(weatherSpent.filter(([t]) => t >= start).reduce((s, [, w]) => s + w, 0));
+  };
+  async function readWeather() {
+    const e = (await infoData.get(WEATHER_LEDGER).catch(() => null))?.entries,
+      v = Array.isArray(e) ? e.filter(x => Array.isArray(x) && Number.isFinite(x[0]) && Number.isFinite(x[1])) : [];
+    if (JSON.stringify(v) === JSON.stringify(weatherSpent)) return;
+    weatherSpent = v;
+    paintStatus();
+  }
+
   const infoData = FD.adapter({
     id: 'frame-info',
     reads: [{
@@ -1216,6 +1271,16 @@
         s: syncState(s)[1]
       }),
       go: 'card:access'
+    });
+    const calls = weatherToday();
+    if (calls > 0) items.push({
+      k: 'weather',
+      text: calls === 1 ? t(T.info.weatherOne) : t(T.info.weather, {
+        n: calls.toLocaleString(lang())
+      }),
+      sub: t(T.info.weatherSub, {
+        max: (10000).toLocaleString(lang())
+      })
     });
     if (!net.online()) items.push({
       k: 'offline',
@@ -2164,6 +2229,7 @@
       ask,
       askText,
       net,
+      weather,
       get identity() {
         return identity;
       },
@@ -2945,7 +3011,9 @@
     infoData.watch('cache/', paths => {
       if (paths.some(p => /^cache\/[\w-]+\/status\.json$/.test(p))) readModuleLines();
       if (paths.includes(PENDING_REPORTS)) readPending();
+      if (paths.includes(WEATHER_LEDGER)) readWeather();
     });
+    readWeather();
     readModuleLines();
     readPending();
     window.addEventListener('online', async () => {

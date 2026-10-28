@@ -1157,13 +1157,17 @@
   // clés de l'appareil (jeton GitHub, clé météo) : un document « cache » comme l'identité, mais jamais dans une
   // sauvegarde ni reprise d'une sauvegarde, et gardé par un remplacement
   const KEYS = 'device/keys.json';
+  // réserve météo de l'appareil (frame/lib/weather_store.js) : une réserve relisible à sa source, propre à cet appareil
+  // (son décompte des appels compris), jamais dans une sauvegarde ni reprise d'une sauvegarde
+  const WEATHER = 'cache/weather/';
+  const saved = path => path !== KEYS && !path.startsWith(WEATHER);
   /** Sauvegarde des données de l'appareil en un fichier JSON : { name, text, counts }. Copies (docs), écritures en attente,
    *  conflits ; les bases de référence (relisibles à leur source) seulement avec { references: true } ; ni jeton ni
    *  clé (device/keys.json laissé de côté), ni l'état du transport (meta, propre à l'appareil). */
   async function dump({
     references = false
   } = {}) {
-    const docs = (await idb('docs', 'getAll')).filter(d => d.path !== KEYS && (references || d.policy !== 'reference')),
+    const docs = (await idb('docs', 'getAll')).filter(d => saved(d.path) && (references || d.policy !== 'reference')),
       pending = await idb('pending', 'getAll'),
       conflicts = await idb('conflicts', 'getAll'),
       at = new Date().toISOString();
@@ -1206,8 +1210,9 @@
       conflicts: 0,
       device: 0
     };
-    let docs = src.docs.filter(d => d && typeof d.path === 'string' && typeof d.text === 'string' && d.path !== KEYS),
-      pend = (src.pending || []).filter(p => p && typeof p.path === 'string' && (typeof p.text === 'string' || p.text === null)),
+    let docs = src.docs.filter(d => d && typeof d.path === 'string' && typeof d.text === 'string' && saved(d.path)),
+      pend = (src.pending || []).filter(p => p && typeof p.path === 'string' && (typeof p.text === 'string' || p.text === null) &&
+        saved(p.path)),
       confl = (src.conflicts || []).filter(c => c && typeof c.path === 'string');
     const paths = [];
     if (mode !== 'replace') {
@@ -1218,9 +1223,10 @@
       r.device = n - docs.length - pend.length;
     }
     if (mode === 'replace') {
-      const keys = await idb('docs', 'get', KEYS); // les clés de cet appareil ne sont pas dans une sauvegarde : gardées
+      // les clés et la réserve météo de cet appareil ne sont pas dans une sauvegarde : gardées
+      const own = (await idb('docs', 'getAll')).filter(d => !saved(d.path));
       for (const s of ['docs', 'pending', 'conflicts']) await idb(s, 'clear');
-      if (keys) await idb('docs', 'put', keys);
+      for (const d of own) await idb('docs', 'put', d);
       for (const d of docs) await idb('docs', 'put', d);
       for (const p of pend) await idb('pending', 'put', p);
       for (const {

@@ -23,7 +23,7 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
   detalle: el vuelo en curso (toque para ir al Mapa), los informes por escribir de sus vuelos pasados (toque para abrir el
   informe ya rellenado), el trigrama que falta (toque para definirlo), el estado de los datos (última sincronización,
   escrituras pendientes, vía de intercambio usada), la base aeronáutica mientras no esté lista, el lanzador, «Sin conexión»
-  cuando no hay red y, en un teléfono, la fuente de la posición durante un vuelo. En un teléfono, la cabecera se reduce al
+  cuando no hay red, el número de llamadas meteorológicas del día (previsiones Open-Meteo, 10 000 permitidas al día) y, en un teléfono, la fuente de la posición durante un vuelo. En un teléfono, la cabecera se reduce al
   nombre, el botón ? y el botón ⚙.
 - **Pantalla completa.** En el mapa (las herramientas de vista fija), un botón redondo al final de la columna de botones
   sobre el mapa oculta la cabecera y la barra inferior para dejar todo el sitio al mapa; el mismo botón o Esc los devuelven.

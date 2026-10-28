@@ -29,7 +29,8 @@ The frame never mounts two modules in the view; a navigation that arrives during
 on a module whose `mount()` may still be awaiting, and what that `mount()` does after its awaits is not shown (the last address wins).
 
 - The frame loads it on demand and gives it `ctx` (frame/SPEC.md § 3.2): `data`, `aerodb`, `t`, `lang`, `notify`,
-  `ask`, `askText`, `net`, `identity`, `helpAnchor`; a fixed module (§ 9.2) also gets `overlay` (§ 9.3).
+  `ask`, `askText`, `net`, `weather` (§ 14), `identity`, `helpAnchor`; a fixed module (§ 9.2) also gets `overlay`
+  (§ 9.3).
 - Its verb in the application's rail (and in its group's popover, § 9.1) is set in `frame/app.js` (`APP.modules`): one short verb, seven
   modules at most. Its place in the phone's bottom bar is set in `APP.tabs` (§ 9); a module never writes either.
 - `meta.help` (true by default): the frame draws the folded "How to use" panel at the top of the module as soon as
@@ -733,4 +734,62 @@ screens: [{ id: 'sources', scripts: ['aerodb/sources_data.js?v=0', 'aerodb/sourc
 - Today one: aerodb's Sources screen (`#sources`, Full level, reached from the Administration card; `frame/aerodb/SPEC.md`
   § 5 sexies): links only, no data adapter, no GitHub transport. It replaced the data laboratory (`#datalab`) on 28 October 2026.
 - A module still never calls `fetch`; see the debt in § 7 (`ctx.launcher`).
+
+## 14. The weather layer (`ctx.weather`, `frame/lib/weather_store.js`)
+
+One weather store for the device, shared by every module: one cache, one count of the calls to Open-Meteo, one choice of
+model by region. A module never calls Open-Meteo, aviationweather.gov, metar.vatsim.net or avwx.rest itself any more: it
+asks `ctx.weather`, which answers from the cache first and calls out only for what is missing.
+
+Readers (later lots, not this one): fuel's `winds.js` / `aloftFetch` → `ctx.weather.aloft` (Features SOG); Atmosphere,
+rewritten on `ctx.weather.grid` and `ctx.weather.world`. Until they switch, `modules/atmosphere/weather_store.js` and
+fuel's own request stay (dated debt, SPEC § 4).
+
+### 14.1 The calls (all asynchronous; the store loads at the first one)
+
+| Call | Gives |
+| --- | --- |
+| `aloft(samples, when, opts)` | winds and temperatures by pressure level at the points of a route: `{ model: { id, name, short }, run, time, profiles: [{ lat, lon, time, levels: [{ hPa, ft, tC, dir, kt }] }], weight, requests, cells }`, one profile per point in order (the shape fuel's `winds.profiles` gave). `samples`: `[{ lat, lon }]`, 24 at most (fuel's `samples(points, 50, 24)`); `when`: seconds, ms, ISO text or Date (the profile is at the nearest hour); the model is the one of the middle point |
+| `grid(places, when, vars, opts)` | hourly forecasts of a set of places (Atmosphere's grid): `{ locs, model, run, weight, requests, cells }`, `locs` in Open-Meteo's shape (`{ latitude, longitude, elevation, hourly: { time, <var>: [...] } }`, one per place, at its cell's centre). More than 400 places: refused (error with `tooMany`), never cut silently |
+| `metar(ids, opts)`, `taf(ids, opts)` | `{ items: { ICAO: aviationweather.gov's JSON form }, source: 'launcher' \| 'direct' \| 'cache', noTaf, offline }`; kept 30 min per aerodrome. With a launcher: aviationweather.gov, by 40. Without: metar.vatsim.net (raw, decoded by `frame/lib/metar.js`) and avwx.rest with the device's weather key (added by the frame's `net`, never seen by a module); no key → `noTaf: true` |
+| `world(k, { alt })` | the published synoptic world forecast (Atmosphere): without `k`, its index (or null); with `k`, step `k` (or its pressure-level file with `alt`). Read from the same origin (`<suite root>/weather/world/`), kept in `cache/weather/world/`; the index is fresh for 6 h, retried at most every 10 min |
+| `modelFor(lat, lon)` | `{ id, name, short }`: Météo-France (lat 38–55, lon −10…16), else ICON (lat 30–72, lon −30…45), else GFS |
+| `run(model)` | the model's last run (Unix seconds) or null; read from Open-Meteo's static metadata, kept 10 min, not counted |
+| `spentToday()` | the weighted calls of the UTC day on this device |
+
+`opts` of `aloft` and `grid`: `model` (an Open-Meteo `models` id, to force one), `cacheOnly` (nothing is asked: null when
+something is missing — draw at once from the device, then ask), `stale()` (true when the answer is no longer wanted: a
+wait for the minute limit stops), `onWait(seconds)` (said to the pilot while waiting); `grid` also takes `days`.
+
+Errors carry a mark, for the module to say why in its own words: `offline`, `unreachable`, `status` (HTTP), `quota`
+(the day's limit is reached), `stale`, `tooMany`, `incomplete`.
+
+### 14.2 The cache
+
+- `cache/weather/<model>/<cell>/<UTC day>.json`, policy `cache`: never synchronised, never in a device backup
+  (`FrameData.dump` / `load` leave `cache/weather/` aside, the ledger included).
+- A cell is a square at the model's resolution, 0.1° at least (GFS 0.25°), named by its centre (`47.15_-1.65`).
+  Longitudes are wrapped by `frame/lib/geo.js`: a point at 179.96° E and one at 180.04° W share a cell.
+- A file holds the hours of one UTC day, variable by variable, for one run: `{ schema: 1, model, cell, size, lat, lon,
+  elevation, day, times, vars, refused, run, at }`. Variables asked later are merged into it; a new run replaces it whole.
+- Fresh for 6 h when the run is known and unchanged; 30 min when it is not known.
+- Past days are removed once a day (mark `cache/weather/pruned.json`), METAR and TAF older than a day too.
+- A variable a model refuses (400; cloud cover by level, optional surface fields) is asked again without it, and noted
+  `refused` for that day and cell: never asked again.
+
+### 14.3 The calls to Open-Meteo
+
+- Only what is missing is asked: the cells, the days and the variables absent from the cache. Cells missing the same days
+  and the same variables go in one request (`start_date`, `end_date`, one `latitude` / `longitude` list).
+- Two readings of the same cells at the same time wait for each other: one request.
+- Nothing is ever asked outside the flight's grid (the points a module gives); the world map is the published file.
+- **Quota.** `cache/weather/ledger.json`: `[time ms, weight]` over a sliding 24 h, at Open-Meteo's weight (one place with
+  up to 10 variables = one call, pro rata beyond: 9 places × 42 variables = 37.8). The store waits before 540 a minute and
+  stops before 9,000 a day (Open-Meteo's 600 and 10,000 less a 10 % margin; error `quota`).
+- The day's total is a line of the Status block: "Weather: n calls today" (shown when n > 0).
+
+### 14.4 What does not change
+
+- Without a trigram nothing changes: the cache is local to the device anyway, nothing of it is ever pushed or exchanged.
+- `ctx.net` stays for every other call; the weather hosts stay reachable through it for the modules not yet switched.
 

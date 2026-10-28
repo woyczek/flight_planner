@@ -20,7 +20,8 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
   conflicts, a synchronisation error, offline. Settings open on the "Status" block, which gives the detail: the flight in
   progress (touch to go to the Map), the reports still to write for your past flights (touch to open the report,
   pre-filled), the missing trigram (touch to set it), the state of the data (last synchronisation, pending writes, the
-  exchange in use), the aeronautical database while it is not ready, the launcher, "Offline" when there is no network and,
+  exchange in use), the aeronautical database while it is not ready, the launcher, "Offline" when there is no network, the number of weather calls of the day (Open-Meteo forecasts,
+  10,000 allowed a day) and,
   on a phone, the source of the position during a flight. On a phone the header is reduced to the name, the ? button and the
   ⚙ button.
 - **Full screen.** On the map (the fixed-view tools), a round button at the bottom of the column of buttons over the map hides

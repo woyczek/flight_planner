@@ -24,6 +24,8 @@ RULES = [
     ('modules/*/help/**', HELP, 'manuals of a module'),
     ('frame/lib/sheet.js', SHEET, 'sheet primitive: the two fixed modules'),
     ('frame/design/primitives.css', SHEET, 'sheet and overlay primitives'),
+    ('frame/lib/test/weather_store.html', ['A25', 'I'], 'weather layer bench'),
+    ('frame/lib/weather_store.js', ['A25', 'A8', 'E', 'F', 'I'], 'weather layer: its bench, the Status line, its readers'),
     ('frame/lib/test/**', ['C', 'I'], 'sheet bench'),
     ('frame/app.js', FRAME_ALL, 'the frame reaches every screen'),
     ('frame/frame.css', FRAME_ALL, 'the frame reaches every screen'),

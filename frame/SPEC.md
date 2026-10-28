@@ -224,7 +224,9 @@ used alone:
 
 - `dump({ references })` returns `{ name, text, counts }`: one JSON file (`sog-frame-export/1`) with the copies,
   the pending writes and the conflicts. Reference bases only with `references: true` (they can be read again from
-  their source). Never a token or an access setting (they are not in this database), never the transport state.
+  their source). Never a token or an access setting (they are not in this database), never the transport state, never
+  the weather cache (`cache/weather/`, its ledger included: it can be read again, and its count belongs to this device;
+  `load` drops it from a backup and `replace` keeps this device's).
 - `load(file | text | object, { mode })`:
   - `merge` (default): nothing of this device is lost. A file absent here, or newer in the backup (`updated_at`),
     becomes a pending write (a device cache file or a reference copy is written directly). A pending write here
@@ -309,7 +311,9 @@ used alone:
     "on this device, nothing to synchronise", "synchronising…", "n conflict(s) to review", the error), under it "Transport:
     this device / launcher / GitHub" (touch → the Synchronisation card, else Usages; `#conflicts` when there are
     conflicts); **"Launcher: <host> · <state>"** on a launcher (touch → the Access card); **"Offline: working on this
-    device's copy"** when `ctx.net.online()` is false; and, **on a phone only**, **"Position: <source>"** while a flight is
+    device's copy"** when `ctx.net.online()` is false; **"Weather: n calls today"** when the weather layer has called
+    Open-Meteo today (weighted calls of the UTC day, read from `cache/weather/ledger.json`; under it the limit, 10,000 a
+    day; INTEGRATION § 14); and, **on a phone only**, **"Position: <source>"** while a flight is
     started (touch toggles the device's GPS like the header's badge on a screen). The "Help for this screen" line no longer
     exists: the "?" of the header is that. The block follows the state while it is on screen. Four languages.
   - There is **no "i" button and no pop-up** any more.
@@ -479,6 +483,7 @@ used alone:
 | `net.fetch(url, init)`, `net.online()` | outgoing calls through the frame, never an exception: offline or on a network failure, an immediate 503 marked `x-sog-offline`; same origin: direct; SimBrief, IVAO, VATSIM, aviationweather.gov (METAR / TAF): relayed by the launcher when the page is served by one (`POST /__setup/net`), otherwise direct for the sites that allow it (SimBrief, IVAO; aviationweather.gov sends no CORS header, so without a launcher it gets the 503); the airline's website (`airline.site`, https): the same, GET only (any other method: 503); any other site: 503 marked `x-sog-unreachable` |
 | `identity` | read only: the identity record of the device (`trigram`, `ivao`, `vatsim`, `simbrief`), an empty object when there is none |
 | `airline` | read only: `{ name, site, pages: { recordFlight, log, fleet } }` from `airline/settings.json` of the data repository (a document, pulled ahead and followed with `watch`; text fields only), an empty object when there is none; no address is written in the code |
+| `weather` | the device's weather layer (INTEGRATION § 14): `aloft`, `grid`, `metar`, `taf`, `world`, `modelFor`, `run`, `spentToday`, all asynchronous; one cache `cache/weather/`, one count of the calls to Open-Meteo |
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
 | `live` | the actual position during a started flight (on a device of the local network, the computer's simulator, never the device's GPS): `{ status ('off', 'waiting', 'tracking'), source ('xplane', 'lnm', 'gps', 'ivao', 'vatsim', ''), last ({ at, lat, lon, altFt, gsKt, trackDeg, source }), gps, enable(), disable() }` (below) |
 | `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |
@@ -729,6 +734,7 @@ touch only the element they are given.
 | `frame/lib/icons.js` | design | frame, any module | the line icon set (V2's 53 icons plus `menu` and `wand-sparkles`), `svg(name)` |
 | `frame/lib/markdown.js` | help | the frame's help screen | the Markdown rendering of the help, copied as it is from V2 (`apps/aide/markdown.js`); a classic script loaded with the frame |
 | `frame/lib/metar.js` | fuel | fuel | the raw METAR decoder to the JSON form of aviationweather.gov, and the conversion of avwx's METAR / TAF to that form (weather without a launcher) |
+| `frame/lib/weather_store.js` | frame | the frame (`ctx.weather`); fuel and atmosphere through it | the weather layer: one cache by model, cell and UTC day, Open-Meteo only for what is missing, the weighted count and its limits, METAR / TAF, the published world forecast (INTEGRATION § 14); bench `frame/lib/test/weather_store.html` |
 | `frame/lib/route_text.js` | fuel | fuel, maps | the route text, pure: `tokenize`, `textFromTokens` (normalised "DEP PT1 UN869 PT2/F280 … ARR"), `textFromPoints` (the text rebuilt from edited points, airways kept between two unchanged neighbouring points), `icaoCoord` |
 | `frame/lib/geo.js` | maps, atmosphere (its own copy until its next lot) | maps, fuel (`winds.js`), atmosphere | longitudes around the date line, pure: `wrapLon(lon)` ([-180, 180[), `nearLon(lon, ref)` (the copy within 180° of `ref`), `unwrapLons(points)` (a route on continuous longitudes: `{ lat, lon }` or `[lon, lat]`, the same object back for a point already continuous). A module unrolls its route first, wraps what it sends to a service or a cache, compares modulo 360. Bench `frame/lib/test/geo.html`. Contract: INTEGRATION § 12 |
 | `frame/lib/sheet.js` | frame | maps, atmosphere (any fixed module) | the three-position sheet under a map (collapsed / default / expanded): `createSheet({ root, panel, head, grip, pos, ignore, labels, locked, onChange, onSettle })` → `{ pos, set(pos, instant), settle(), stop() }`. The header line is the drag handle (pointer capture, live follow by one CSS variable written once per move, a 200 ms glide to the nearest position, flick above 0.8 px/ms to the next one, a tap collapses or restores and never expands; **while the sheet moves a module redraws nothing and `onSettle` is called once, when the size has stopped**: V3 spec § 7.1 rule 19), the keyboard and the ARIA of the grip are done; heights are the frame tokens `--f-sheet-*` read from the root, the look is `.f-sheet*` in `primitives.css`. **Under `html.f-land` (landscape on a phone) the sheet is a column at the right of the map**, as high as the view, two positions (`default` 40 % of the root's width, 280 px at least; `expanded` 60 %; tokens `--f-sheet-side`, `-side-min`, `-side-max`), no collapsed position, a tap toggles the two, a horizontal drag is accepted; `onChange` / `onSettle` give the same names, `frame-orientation` makes it re-place itself. It writes no text (the caller passes `labels`) and keeps no state (the caller keeps the position). Contract: INTEGRATION § 11 |
@@ -817,3 +823,6 @@ Usage levels, a language choice, designs taken from V2, the backend transports.
   (INTEGRATION § 6).
 - 28 Oct 2026: the frame still reads flightlog's `pending.json` (schema 2) until flightlog publishes its
   `status.json` (INTEGRATION § 10.0).
+- 28 Oct 2026: fuel's own request for the winds aloft (`aloftFetch`, `cache/fuel/aloft.json`) and Atmosphere's store
+  (`modules/atmosphere/weather_store.js`) stay until their readers' lots move them onto `ctx.weather` (INTEGRATION § 14);
+  their calls are not in the weather line's count until then.

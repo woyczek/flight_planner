@@ -1,0 +1,530 @@
+<!doctype html>
+<!-- Banc de la couche météo (frame/lib/weather_store.js, frame/INTEGRATION.md § 14) : cases et modèles, la réserve d'abord
+     et Open-Meteo pour le manquant seulement (cases, jours, variables), demandes groupées, lectures simultanées attendues
+     au lieu de doublées, durée de vie selon le run, décompte pondéré (attente à la minute, arrêt au jour), jours passés
+     effacés une fois par jour, forme d'aloft (celle que fuel lisait), METAR / TAF gardés 30 min (lanceur, sinon direct),
+     synoptique monde gardé 6 h, hors ligne. Réseau simulé et réserve en mémoire : aucun appel réel.
+     window.__weatherBench = { done, pass, fail, rows } pour un pilote (Playwright). Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>weather_store — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">weather_store.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import * as W from '../weather_store.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  window.__weatherBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  const near = (a, b, e = 1e-6) => Math.abs(a - b) <= e;
+
+  // ---------------------------------------------------------------- doublures : réserve en mémoire, horloge, réseau
+  function memData() {
+    const m = new Map();
+    return {
+      m,
+      get: async p => m.has(p) ? JSON.parse(m.get(p).text) : null,
+      put: async (p, v) => void m.set(p, {
+        text: JSON.stringify(v),
+        at: clock.t
+      }),
+      remove: async p => void m.delete(p),
+      cached: async prefix => [...m].filter(([p]) => p.startsWith(prefix)).map(([path, d]) => ({
+        path,
+        at: d.at
+      }))
+    };
+  }
+  const clock = {
+    t: Date.parse('2026-10-28T09:00:00Z')
+  };
+  const RUN = Date.parse('2026-10-28T06:00:00Z') / 1000;
+  const json = (v, status = 200) => new Response(JSON.stringify(v), {
+    status,
+    headers: {
+      'content-type': 'application/json'
+    }
+  });
+  const marked = h => new Response(null, {
+    status: 503,
+    headers: {
+      [h]: '1'
+    }
+  });
+  /** Open-Meteo simulé : une valeur par variable, lieu et heure (lisible : température = latitude, vent = longitude…). */
+  function fakeForecast(u, refuse = []) {
+    const q = u.searchParams,
+      lats = q.get('latitude').split(',').map(Number),
+      lons = q.get('longitude').split(',').map(Number),
+      vars = q.get('hourly').split(','),
+      from = Date.parse(q.get('start_date')),
+      to = Date.parse(q.get('end_date'));
+    if (vars.some(v => refuse.includes(v))) return json({
+      error: true,
+      reason: `Cannot initialize ${refuse[0]}`
+    }, 400);
+    const time = [];
+    for (let t = from; t < to + 864e5; t += 36e5) time.push(t / 1000);
+    const locs = lats.map((la, i) => {
+      const hourly = {
+        time
+      };
+      for (const v of vars) hourly[v] = time.map((t, k) => /^temperature/.test(v) ? la : /^wind_speed/.test(v) ? lons[i] + k :
+        /^wind_direction/.test(v) ? 270 : 1);
+      return {
+        latitude: la,
+        longitude: lons[i],
+        elevation: 12,
+        hourly
+      };
+    });
+    return json(locs.length === 1 ? locs[0] : locs);
+  }
+
+  function fakeNet(opts = {}) {
+    const calls = [];
+    return {
+      calls,
+      opts,
+      forecasts: () => calls.filter(u => u.includes('/v1/forecast')),
+      async fetch(url) {
+        const u = new URL(url);
+        calls.push(u.href);
+        if (opts.offline) return marked('x-sog-offline');
+        if (u.hostname === 'api.open-meteo.com' && u.pathname.endsWith('/meta.json')) return opts.noMeta ? marked('x-sog-unreachable') :
+          json({
+            last_run_initialisation_time: opts.run ?? RUN
+          });
+        if (u.hostname === 'api.open-meteo.com') return fakeForecast(u, opts.refuse || []);
+        if (u.hostname === 'aviationweather.gov') {
+          if (!opts.launcher) return marked('x-sog-unreachable');
+          const ids = u.searchParams.get('ids').split(',');
+          return json(ids.map(id => /metar/.test(u.pathname) ? {
+            icaoId: id,
+            rawOb: `METAR ${id} 280900Z 27010KT CAVOK 12/08 Q1015`
+          } : {
+            icaoId: id,
+            rawTAF: `TAF ${id} 280800Z 2809/2909 27010KT CAVOK`
+          }));
+        }
+        if (u.hostname === 'metar.vatsim.net') return new Response(u.searchParams.get('id').split(',').map(id =>
+          `${id} 280900Z 27010KT CAVOK 12/08 Q1015`).join('\n'));
+        if (u.hostname === 'avwx.rest') return opts.avwxKey ? json({
+          raw: `TAF ${u.pathname.split('/').pop()} 280800Z 2809/2909 27010KT CAVOK`,
+          station: u.pathname.split('/').pop(),
+          forecast: []
+        }) : marked('x-sog-unreachable');
+        if (u.pathname.endsWith('/weather/world/index.json')) return opts.world ? json(opts.world) : json({}, 404);
+        if (u.pathname.includes('/weather/world/')) return json({
+          vars: {
+            p: [1013]
+          },
+          file: u.pathname.split('/').pop()
+        });
+        return marked('x-sog-unreachable');
+      }
+    };
+  }
+  const mk = (netOpts = {}, extra = {}) => {
+    const data = memData(),
+      net = fakeNet(netOpts),
+      spend = [];
+    const w = W.weatherStore({
+      data,
+      net,
+      root: 'https://example.test/v3/',
+      now: () => clock.t,
+      onSpend: n => spend.push(n),
+      ...extra
+    });
+    return {
+      w,
+      data,
+      net,
+      spend
+    };
+  };
+
+  try {
+    // ---------------------------------------------------------------- fonctions pures
+    ck('cellOf 0,1° : centre et nom', JSON.stringify(W.cellOf(47.123, -1.611, 0.1)) === JSON.stringify({
+      id: '47.15_-1.65',
+      lat: 47.15,
+      lon: -1.65
+    }), JSON.stringify(W.cellOf(47.123, -1.611, 0.1)));
+    ck('cellOf 0,25° (GFS)', W.cellOf(10.3, 20.1, 0.25).id === '10.375_20.125', W.cellOf(10.3, 20.1, 0.25).id);
+    ck('cellOf ligne de changement de date : 179,96 et -180,04 dans la même case', W.cellOf(0, 179.96, 0.1).id === W.cellOf(0, -180.04,
+      0.1).id, `${W.cellOf(0, 179.96, 0.1).id} / ${W.cellOf(0, -180.04, 0.1).id}`);
+    ck('cellOf longitude 190 → case de -170', W.cellOf(0, 190.02, 0.1).id === '0.05_-169.95', W.cellOf(0, 190.02, 0.1).id);
+    ck('cellOf case du bord : centre 179,95 (jamais 180,05)', W.cellOf(0, 179.99, 0.1).lon === 179.95, W.cellOf(0, 179.99, 0.1).lon);
+    ck('cellOf pôle borné', Number.isFinite(W.cellOf(90, 0, 0.1).lat) && W.cellOf(90, 0, 0.1).lat < 90);
+    ck('cellOf limite flottante : 47,3 reste dans la case 47,3–47,4', W.cellOf(47.3, 0, 0.1).lat === 47.35, W.cellOf(47.3, 0, 0.1)
+      .lat);
+    ck('cellSize : plancher 0,1°, GFS 0,25°, inconnu 0,1°', W.cellSize('meteofrance_seamless') === 0.1 && W.cellSize('gfs_seamless') ===
+      0.25 && W.cellSize('x') === 0.1);
+    ck('modelFor France → Météo-France', W.modelFor(47.2, -1.6).id === 'meteofrance_seamless');
+    ck('modelFor Norvège → ICON', W.modelFor(65, 10).id === 'icon_seamless');
+    ck('modelFor Atlantique ouest → GFS', W.modelFor(40, -60).id === 'gfs_seamless');
+    ck('modelFor longitude 370 lue comme 10 (France)', W.modelFor(47, 370).id === 'meteofrance_seamless');
+    ck('modelFor : id, name, short', ['id', 'name', 'short'].every(k => typeof W.modelFor(47, 2)[k] === 'string'));
+    ck('callWeight : 1 lieu × 10 variables = 1', W.callWeight(1, 10) === 1);
+    ck('callWeight : 1 lieu × 3 variables = 1', W.callWeight(1, 3) === 1);
+    ck('callWeight : 5 lieux × 42 variables = 21', near(W.callWeight(5, 42), 21));
+    ck('aloftVars : 14 niveaux × 3 = 42', W.aloftVars().length === 42 && W.aloftVars().includes('wind_direction_850hPa'));
+    ck('paFt(1013,25) = 0, paFt(500) ≈ 18 289 ft', near(W.paFt(1013.25), 0, 1e-6) && Math.abs(W.paFt(500) - 18289) < 5, W.paFt(500));
+    ck('QUOTA : 600 / min, 10 000 / jour, marge 10 %', W.QUOTA.minute === 600 && W.QUOTA.day === 10000 && W.QUOTA.margin === 0.1);
+    const prof = W.profilesAt([{
+      latitude: 47,
+      longitude: -1,
+      hourly: {
+        time: [0, 3600, 7200],
+        temperature_850hPa: [1, 2, 3],
+        wind_speed_850hPa: [10, 20, 30],
+        wind_direction_850hPa: [90, 180, 270]
+      }
+    }], 3500);
+    ck('profilesAt : heure la plus proche, niveaux sans valeur écartés', prof[0].time === 3600 && prof[0].levels.length === 1 && prof[0]
+      .levels[0].kt === 20 && prof[0].levels[0].hPa === 850, JSON.stringify(prof));
+
+    // ---------------------------------------------------------------- aloft : la réserve d'abord
+    const route = [{
+      lat: 47.07,
+      lon: -1.6
+    }, {
+      lat: 46,
+      lon: 0.5
+    }, {
+      lat: 45,
+      lon: 2.5
+    }, {
+      lat: 44,
+      lon: 4
+    }, {
+      lat: 43.44,
+      lon: 5.22
+    }];
+    let S = mk();
+    const when = Date.parse('2026-10-28T14:00:00Z');
+    const a1 = await S.w.aloft(route, when);
+    ck('aloft : un appel pour toute la route (5 cases, 42 variables)', S.net.forecasts().length === 1 && a1.requests === 1, S.net
+      .forecasts().length);
+    ck('aloft : poids 5 × 42 / 10 = 21', near(a1.weight, 21), a1.weight);
+    ck('aloft : modèle du point du milieu (Météo-France)', a1.model.id === 'meteofrance_seamless' && a1.model.short === 'ARPEGE');
+    ck('aloft : run lu dans les métadonnées', a1.run === RUN, a1.run);
+    ck('aloft : un profil par lieu, dans l\'ordre, 14 niveaux', a1.profiles.length === 5 && a1.profiles.every(p => p.levels.length ===
+      14) && a1.profiles[0].lat === 47.05 && a1.profiles[4].lat === 43.45, JSON.stringify(a1.profiles.map(p => [p.lat, p.levels
+      .length
+    ])));
+    ck('aloft : profil à l\'heure demandée (14 Z)', a1.time === when / 1000, a1.time);
+    ck('aloft : forme de fuel (hPa, ft, tC, dir, kt)', ['hPa', 'ft', 'tC', 'dir', 'kt'].every(k => k in a1.profiles[0].levels[0]));
+    ck('aloft : deux jours demandés (aujourd\'hui, demain), dates UTC', /start_date=2026-10-28&end_date=2026-10-29/.test(S.net
+      .forecasts()[0]), S.net.forecasts()[0]);
+    ck('aloft : points de la grille du vol seulement (centres des cases)', /latitude=47\.050,46\.050,45\.050,44\.050,43\.450/.test(S
+      .net.forecasts()[0]), S.net.forecasts()[0]);
+    ck('aloft : modèle passé à Open-Meteo, nœuds, temps Unix', /models=meteofrance_seamless/.test(S.net.forecasts()[0]) &&
+      /wind_speed_unit=kn/.test(S.net.forecasts()[0]) && /timeformat=unixtime/.test(S.net.forecasts()[0]));
+    ck('réserve : un fichier par case et jour UTC', [...S.data.m.keys()].filter(k =>
+      /^cache\/weather\/meteofrance_seamless\/[-\d.]+_[-\d.]+\/2026-10-2[89]\.json$/
+      .test(k)).length === 10, [...S.data.m.keys()].join(' '));
+    const f0 = await S.data.get('cache/weather/meteofrance_seamless/47.05_-1.55/2026-10-28.json');
+    ck('fichier : schéma, case, jour, 24 heures, run, variables', f0?.schema === 1 && f0.cell === '47.05_-1.55' && f0.day ===
+      '2026-10-28' && f0.times.length === 24 && f0.run === RUN && Object.keys(f0.vars).length === 42, JSON.stringify(f0)?.slice(0,
+        200));
+    ck('décompte : écrit, onSpend avec le total du jour', (await S.w.spentToday()) === 21 && S.spend.at(-1) === 21, S.spend);
+
+    const a2 = await S.w.aloft(route, when);
+    ck('relecture : aucun appel, poids 0, mêmes profils', S.net.forecasts().length === 1 && a2.weight === 0 && JSON.stringify(a2
+      .profiles) === JSON.stringify(a1.profiles));
+    const a3 = await S.w.aloft([...route, {
+      lat: 42,
+      lon: 6
+    }], when);
+    ck('un lieu de plus : seule sa case est demandée', S.net.forecasts().length === 2 && /latitude=42\.050&longitude=6\.050/.test(S.net
+      .forecasts()[1]) && near(a3.weight, 4.2), `${S.net.forecasts()[1]} · ${a3.weight}`);
+    const a4 = await S.w.aloft(route, Date.parse('2026-10-30T10:00:00Z'));
+    ck('un jour de plus : seuls les jours manquants', S.net.forecasts().length === 3 && /start_date=2026-10-30&end_date=2026-10-30/
+      .test(S.net.forecasts()[2]) && a4.profiles[0].time === Date.parse('2026-10-30T10:00:00Z') / 1000, S.net.forecasts()[2]);
+    const c1 = await S.w.aloft(route, when, {
+      cacheOnly: true
+    });
+    ck('cacheOnly : tout est là → rendu sans appel', c1 && S.net.forecasts().length === 3);
+    const c2 = await S.w.aloft([{
+      lat: 30,
+      lon: 30
+    }], when, {
+      cacheOnly: true
+    });
+    ck('cacheOnly : il manque → null, aucun appel', c2 === null && S.net.forecasts().length === 3);
+
+    // grid : variables manquantes seulement
+    const g1 = await S.w.grid([{
+      lat: 47.07,
+      lon: -1.6
+    }], when, ['temperature_850hPa', 'cloud_cover_low'], {
+      model: 'meteofrance_seamless'
+    });
+    ck('grid : la variable gardée n\'est pas redemandée', /hourly=cloud_cover_low&/.test(S.net.forecasts().at(-1)) && g1.locs[0].hourly
+      .temperature_850hPa?.length === 48 && g1.locs[0].hourly.cloud_cover_low?.length === 48, S.net.forecasts().at(-1));
+    ck('grid : forme d\'Open-Meteo (latitude, longitude, elevation, hourly.time)', g1.locs[0].latitude === 47.05 && g1.locs[0].elevation ===
+      12 && g1.locs[0].hourly.time.length === 48);
+    ck('grid : variables fusionnées au même fichier', Object.keys((await S.data.get(
+      'cache/weather/meteofrance_seamless/47.05_-1.55/2026-10-28.json')).vars).length === 43);
+    let tooMany = null;
+    try {
+      await S.w.grid(Array.from({
+        length: 401
+      }, (_, i) => ({
+        lat: 40 + i / 100,
+        lon: 0
+      })), when, ['temperature_2m']);
+    } catch (e) {
+      tooMany = e;
+    }
+    ck('grid : plus de 400 lieux refusé (tooMany), rien demandé', tooMany?.tooMany === true && S.net.forecasts().length === 4);
+
+    // ---------------------------------------------------------------- lectures simultanées
+    S = mk();
+    const [p1, p2] = await Promise.all([S.w.aloft(route, when), S.w.aloft(route, when)]);
+    ck('deux lectures simultanées : une seule demande', S.net.forecasts().length === 1 && p1.profiles.length === 5 && JSON.stringify(p1
+      .profiles) === JSON.stringify(p2.profiles), S.net.forecasts().length);
+
+    // ---------------------------------------------------------------- run et durée de vie
+    clock.t += 60 * 60e3; // une heure plus tard, même run : gardé
+    await S.w.aloft(route, when);
+    ck('même run, 1 h après : gardé', S.net.forecasts().length === 1);
+    clock.t += 11 * 60e3; // métadonnées relues (10 min), nouveau run : fichiers remplacés
+    S.net.opts.run = RUN + 6 * 3600;
+    await S.w.aloft(route, when);
+    const fNew = await S.data.get('cache/weather/meteofrance_seamless/47.05_-1.55/2026-10-28.json');
+    ck('nouveau run : redemandé, fichier remplacé entier', S.net.forecasts().length === 2 && fNew.run === RUN + 6 * 3600);
+    clock.t += 6 * 36e5 + 60e3; // plus de 6 h : même run, mais trop vieux
+    await S.w.aloft(route, when);
+    ck('même run, plus de 6 h : redemandé', S.net.forecasts().length === 3);
+    // run inconnu : 30 min
+    S = mk({
+      noMeta: true
+    });
+    await S.w.aloft(route, when);
+    clock.t += 20 * 60e3;
+    await S.w.aloft(route, when);
+    ck('run inconnu : gardé 20 min', S.net.forecasts().length === 1);
+    clock.t += 11 * 60e3;
+    await S.w.aloft(route, when);
+    ck('run inconnu : redemandé après 30 min', S.net.forecasts().length === 2);
+
+    // ---------------------------------------------------------------- variable refusée
+    S = mk({
+      refuse: ['cloud_cover_700hPa']
+    });
+    const gr = await S.w.grid([{
+      lat: 47,
+      lon: 2
+    }], when, ['temperature_2m', 'cloud_cover_700hPa']);
+    ck('variable refusée (400) : redemandé sans elle, notée absente', gr.locs[0].hourly.temperature_2m && !gr.locs[0].hourly
+      .cloud_cover_700hPa && S.net.forecasts().length === 2);
+    await S.w.grid([{
+      lat: 47,
+      lon: 2
+    }], when, ['temperature_2m', 'cloud_cover_700hPa']);
+    ck('variable refusée : jamais redemandée ensuite', S.net.forecasts().length === 2);
+
+    // ---------------------------------------------------------------- décompte
+    S = mk();
+    const t0 = clock.t;
+    await S.data.put('cache/weather/ledger.json', {
+      entries: [
+        [t0 - 25 * 36e5, 5000],
+        [t0 - 3600e3, 8990]
+      ]
+    });
+    let quota = null;
+    try {
+      await S.w.aloft(route, when);
+    } catch (e) {
+      quota = e;
+    }
+    ck('jour : arrêt avant la limite (9 000 avec la marge), rien demandé', quota?.quota === true && S.net.forecasts().length === 0,
+      quota?.message);
+    ck('décompte : 24 h glissantes (l\'entrée de 25 h ignorée)', (await S.w.spent()) === 8990, await S.w.spent());
+    await S.data.put('cache/weather/ledger.json', {
+      entries: Array.from({
+        length: 54
+      }, (_, i) => [t0 - 30e3 + i, 10])
+    });
+    const waits = [];
+    let stale = null;
+    try {
+      await S.w.aloft(route, when, {
+        onWait: s => waits.push(s),
+        stale: () => waits.length > 0
+      });
+    } catch (e) {
+      stale = e;
+    }
+    ck('minute : attente annoncée (secondes) avant 540 par minute, lecture abandonnée si plus voulue', waits.length === 1 && waits[0] >
+      0 && waits[0] <= 60 && stale?.stale === true && S.net.forecasts().length === 0, `${waits} ${stale?.message}`);
+    await S.data.put('cache/weather/ledger.json', {
+      entries: [
+        [Date.parse('2026-10-27T23:00:00Z'), 7],
+        [clock.t - 1000, 3]
+      ]
+    });
+    ck('spentToday : jour UTC seulement', (await S.w.spentToday()) === (Date.parse(new Date(clock.t).toISOString().slice(0, 10)) <=
+      Date.parse('2026-10-27T23:00:00Z') ? 10 : 3), await S.w.spentToday());
+
+    // ---------------------------------------------------------------- jours passés
+    S = mk();
+    clock.t = Date.parse('2026-10-28T09:00:00Z');
+    await S.w.aloft(route, when);
+    await S.data.put('cache/weather/metar/LFRS.json', {
+      at: clock.t,
+      data: {}
+    });
+    clock.t = Date.parse('2026-10-30T07:00:00Z');
+    const nPruned = await S.w.prune();
+    ck('prune : jours passés effacés (28 et 29), METAR de plus d\'un jour aussi', nPruned === 11 && ![...S.data.m.keys()].some(k =>
+      /2026-10-2[89]/.test(k) || /metar/.test(k)), `${nPruned} · ${[...S.data.m.keys()].join(' ')}`);
+    ck('prune : repère du jour, une fois par jour', (await S.w.prune()) === 0 && (await S.data.get('cache/weather/pruned.json'))
+      ?.day === '2026-10-30');
+    clock.t = Date.parse('2026-10-28T09:00:00Z');
+
+    // ---------------------------------------------------------------- METAR / TAF
+    S = mk({
+      launcher: true
+    });
+    const m1 = await S.w.metar(['lfrs', 'LFML', 'bad!']);
+    ck('metar (lanceur) : aviationweather.gov, une demande, terrains valides seulement', m1.source === 'launcher' && Object.keys(m1.items)
+      .sort().join() === 'LFML,LFRS' && S.net.calls.filter(u => u.includes('aviationweather')).length === 1, JSON.stringify(m1));
+    await S.w.metar(['LFRS']);
+    ck('metar : gardé 30 min (aucun appel)', S.net.calls.filter(u => u.includes('aviationweather')).length === 1);
+    clock.t += 31 * 60e3;
+    await S.w.metar(['LFRS']);
+    ck('metar : relu après 30 min', S.net.calls.filter(u => u.includes('aviationweather')).length === 2);
+    clock.t = Date.parse('2026-10-28T09:00:00Z');
+    S = mk();
+    const m2 = await S.w.metar(['LFRS']);
+    ck('metar sans lanceur : metar.vatsim.net, décodé', m2.source === 'direct' && m2.items.LFRS?.icaoId === 'LFRS' && S.net.calls.some(
+      u => u.includes('metar.vatsim.net')), JSON.stringify(m2));
+    const t1 = await S.w.taf(['LFRS']);
+    ck('taf sans lanceur ni clé : noTaf, rien gardé', t1.noTaf === true && !Object.keys(t1.items).length, JSON.stringify(t1));
+    S = mk({
+      avwxKey: true
+    });
+    const t2 = await S.w.taf(['LFRS']);
+    ck('taf avec la clé de l\'appareil : avwx.rest', t2.source === 'direct' && !!t2.items.LFRS, JSON.stringify(t2).slice(0, 160));
+
+    // ---------------------------------------------------------------- synoptique monde
+    const built = Math.floor(clock.t / 1000) - 3600,
+      WORLD = {
+        schema: 1,
+        model: 'gfs',
+        run: built - 3600,
+        built,
+        step: 3,
+        lats: [0, 1],
+        lons: [0, 1],
+        times: [built, built + 10800],
+        files: ['s0.json', 's1.json'],
+        altFiles: ['a0.json', 'a1.json']
+      };
+    S = mk({
+      world: WORLD
+    });
+    const i1 = await S.w.world();
+    ck('world : index lu sur la même origine (<racine>/weather/world/)', i1?.built === built && S.net.calls.some(u => u ===
+      'https://example.test/v3/weather/world/index.json'));
+    const s1 = await S.w.world(1);
+    const s1b = await S.w.world(1, {
+      alt: true
+    });
+    ck('world : échéance et fichier des niveaux, gardés dans cache/weather/world/', s1?.file === 's1.json' && s1b?.file === 'a1.json' &&
+      S.data.m.has('cache/weather/world/s1.json'));
+    ck('world : aucun appel à Open-Meteo', !S.net.calls.some(u => u.includes('open-meteo')));
+    const S2 = {
+      ...mk(),
+    };
+    for (const [k, v] of S.data.m) S2.data.m.set(k, v);
+    const i2 = await W.weatherStore({
+      data: S2.data,
+      net: S2.net,
+      root: 'https://example.test/v3/',
+      now: () => clock.t
+    }).world(0);
+    ck('world : index de l\'appareil de moins de 6 h, rien relu', i2?.file === 's0.json' && !S2.net.calls.some(u => u.includes(
+      'index.json')), S2.net.calls.join(' '));
+
+    // ---------------------------------------------------------------- hors ligne
+    S = mk();
+    await S.w.aloft(route, when);
+    S.net.opts.offline = true;
+    clock.t += 7 * 36e5;
+    let off = null;
+    try {
+      await S.w.aloft(route, when);
+    } catch (e) {
+      off = e;
+    }
+    ck('hors ligne, réserve périmée : erreur marquée offline', off?.offline === true, off?.message);
+    const offC = await S.w.aloft(route, when, {
+      cacheOnly: true
+    });
+    ck('hors ligne : cacheOnly rend null (périmé), sans appel réseau ajouté', offC === null);
+    const mo = await S.w.metar(['LFRS']);
+    ck('metar hors ligne : offline, sans erreur', mo.offline === true);
+    clock.t = Date.parse('2026-10-28T09:00:00Z');
+
+    // ---------------------------------------------------------------- GFS loin de l'Europe
+    S = mk();
+    const ag = await S.w.aloft([{
+      lat: 40.1,
+      lon: -60.1
+    }, {
+      lat: 41,
+      lon: -59
+    }], when);
+    ck('GFS : cases de 0,25°, modèle gfs_seamless', ag.model.id === 'gfs_seamless' && /latitude=40\.125,41\.125&longitude=-60\.125,-58\.875/
+      .test(S.net.forecasts()[0]), S.net.forecasts()[0]);
+  } catch (e) {
+    ck('exception', false, e.stack || e.message);
+  }
+  const pass = rows.filter(r => r.startsWith('PASS')).length,
+    fail = rows.length - pass;
+  Object.assign(window.__weatherBench, {
+    done: true,
+    pass,
+    fail
+  });
+  const s = document.createElement('p');
+  s.className = fail ? 'FAIL' : 'PASS';
+  s.textContent = `${pass} / ${rows.length}`;
+  out.append(s);
+</script>
+</body>
+</html>

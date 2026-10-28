@@ -22,7 +22,9 @@ Rules covered
     only, one line per source with a real link (44 px, a new tab), its status, its licence and the cycle in force; the screen
     fetches nothing (A20).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20.
+  * the weather layer (frame/lib/weather_store.js, INTEGRATION 14): its bench passes (A25).
+
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25.
 """
 import json
 import re
@@ -841,3 +843,16 @@ def a20(c):
     sw, iw = hscroll(c)
     c.le(sw, iw, 'no horizontal scroll', what='page width')
     c.shot(f'A20_{c.design}_{c.width}_{c.lang}.png')
+
+
+@case('A25', 'Weather layer bench', 'A', tags=('weather',), designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 14; the bench reported 70/70')
+def a25(c):
+    c.page.goto(f'{c.base}/frame/lib/test/weather_store.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__weatherBench && window.__weatherBench.done', timeout=60000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__weatherBench.done)', 'a finished bench', 'frame/lib/test/weather_store.html') from None
+    r = c.js('({ pass: window.__weatherBench.pass, fail: window.__weatherBench.fail, rows: window.__weatherBench.rows })')
+    bad = [x for x in (r['rows'] or []) if str(x).startswith('FAIL')][:3]
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}", 'every assertion of the bench passes')

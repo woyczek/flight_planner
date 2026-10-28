@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: one weather layer** (`frame/lib/weather_store.js`, `ctx.weather`; `frame/app.js`, `frame/store/frame_data.js`;
+  INTEGRATION § 14, SPEC, DECISIONS; bench `frame/lib/test/weather_store.html`, case A25):
+  - one cache for the device (`cache/weather/<model>/<cell>/<UTC day>.json`, never synchronised, out of backups);
+  - Open-Meteo is called only for the missing cells, days and variables, in as few requests as possible;
+  - a weighted count over 24 h waits before Open-Meteo's minute limit and stops before its day limit, with a margin;
+  - the winds aloft of a route, a forecast grid, METAR and TAF, the published world forecast;
+  - a new Status line, "Weather: n calls today".
 - **Data sources screen in place of the data laboratory** (`frame/aerodb/sources.js`, `sources_data.js`, `xml_stream.js`, `zip_stream.js`;
   `frame/app.js`, `frame/settings/admin_links.js`, `frame/store/transport_github.js`, `tools/csp_policy.py`, `tools/build_pages.py`,
   `tools/launch.py`; SPEC, INTEGRATION, DECISIONS, frame SPEC and INTEGRATION, Settings help ×4, tests A20, K8, K9) — the user's decision:

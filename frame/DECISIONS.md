@@ -1355,3 +1355,32 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
       lot 21 bench 12 / 12. My older application bench stops at the phone's menu button, which the relay replaced with
       the tab bar: a stale bench, not a regression.
   - `tests/v3/run.py` could not run here: Playwright is not installed (the user's decision, coordinator).
+- **28 Oct 2026 — Lot 26, one weather layer** (`frame/lib/weather_store.js`, `ctx.weather`; brief of the coordinator,
+  V3_SPECIFICATION § 8 and § 9.8):
+  - **Written anew** from the specification. Atmosphere's store (`modules/atmosphere/weather_store.js`) was the reference
+    of behaviour, not code kept: same cache layout (`cache/weather/<model>/<cell>/<UTC day>.json`), same weights, same
+    lifetimes. Its readers switch in their own lots (fuel by Features SOG, Atmosphere rewritten).
+  - **The choice of the model by region** moves into the store (`modelFor`, fuel's three boxes, longitudes wrapped by
+    `geo.js`). The model of a route is the one of its middle point, as fuel did.
+  - **One planning at a time, the requests together**: the missing cells, days and variables are computed under a lock
+    and marked in flight, so that two readings of the same cells make one request; the requests themselves run in
+    parallel.
+  - **Quota with a 10 % margin** (540 a minute, 9,000 a day): the count is this device's alone; other devices behind the
+    same address count too at Open-Meteo, which the margin covers in the usual case.
+  - **The Status line reads the ledger, not the store**: the frame does not load the store to draw the line; it reads
+    `cache/weather/ledger.json` when it changes (`watch`) and counts the UTC day at drawing time, so that the number is
+    right after midnight without a timer. The line shows only when the day has calls, so that an unused device keeps an
+    empty Status block.
+  - **Out of backups**: `dump` / `load` leave `cache/weather/` aside; `load(replace)` keeps this device's weather cache
+    and ledger like its keys.
+  - **Measure** (real Open-Meteo, LFRS → LFML, fuel's samples: 9 points, 42 variables, model Météo-France):
+    - first load: before 1 request, 37.8 weighted calls, 26.4 KB transferred; after 1 request (and the run's metadata,
+      not counted), 37.8, 25.8 KB. Same cost: the cells of a first flight are all new.
+    - second load of the same flight: before 37.8 and 26.4 KB again (fuel's own cache keeps one route); after 0 and 0.
+    - a second flight from the same field (LFRS → LFBD, 4 points): before 16.8, 12.4 KB; after 12.6, 9.4 KB (the LFRS
+      cell is shared).
+  - **Tests**: bench `frame/lib/test/weather_store.html`, 70 / 70 (cells and the date line, models, weights, aloft's
+    shape, missing cells / days / variables only, grouping, concurrent readings, run and lifetimes, refused variable,
+    the day's stop and the minute's wait, the sliding 24 h, pruning once a day, METAR / TAF with and without a launcher,
+    the world index and steps, offline, GFS cells); case A25 of `tests/v3` (the bench, area A). `tests/v3/run.py` could
+    not run here: Playwright is not installed (the user's decision).
