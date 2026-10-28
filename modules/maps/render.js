@@ -55,7 +55,10 @@
         fg: v('--sog-fg', '#17202a'),
         muted: v('--sog-muted', '#5b6670'),
         grid: v('--sog-chart-grid', '#d9dee4'),
-        accent: v('--sog-accent', '#1d6fd8')
+        accent: v('--sog-accent', '#1d6fd8'),
+        ok: v('--sog-ok', '#1e7d32'),
+        warn: v('--sog-warn', '#9a5b00'),
+        err: v('--sog-err', '#b3261e')
       },
       rgb = rgbOf(t.bg) || [255, 255, 255];
     t.dark = (.2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2]) / 255 < .45;
@@ -546,7 +549,37 @@
     return hits;
   }
 
-  function drawPoints(ctx, data, toC, W, H, scale, b, pl, profile) {
+  /** Couche « Procédures » : les terrains visibles prennent la couleur de leur niveau de couverture (cov(icao) → 'green' |
+   *  'orange' | 'red', ou rien tant que la réponse n'est pas là : symbole d'origine) ; ok / warn / err du design, le fond
+   *  clair du symbole étant la même teinte éclaircie vers le fond du dessin. Les terrains hors cadre ne sont pas demandés. */
+  function coverPins(ads, toC, W, H, detailed, cov) {
+    const t = T || tokens(),
+      bg = rgbOf(t.bg) || [255, 255, 255],
+      paint = {};
+    for (const [lv, k] of [
+        ['green', 'ok'],
+        ['orange', 'warn'],
+        ['red', 'err']
+      ]) {
+      const m = rgbOf(t[k]) || [128, 128, 128];
+      paint[lv] = {
+        main: t[k],
+        pale: `rgb(${m.map((x, i) => Math.round(x * .25 + bg[i] * .75)).join(',')})`
+      };
+    }
+    return ads.map(a => {
+      if (!a.icao || !(detailed || a.public || a.state)) return a;
+      const p = toC(a.lat, a.lon);
+      if (p.x < -30 || p.y < -30 || p.x > W + 30 || p.y > H + 30) return a;
+      const c = paint[cov(a.icao)];
+      return c ? {
+        ...a,
+        cov: c
+      } : a;
+    });
+  }
+
+  function drawPoints(ctx, data, toC, W, H, scale, b, pl, profile, cov) {
     const ad = on(profile, 'aerodromes'),
       nv = on(profile, 'navaids'),
       ob = on(profile, 'obstacles');
@@ -567,7 +600,7 @@
     const pxDeg = toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x,
       ads = ad ? (data.aerodromes || []).filter(adOk) : [];
     const got = A().drawPoints(ctx, {
-      aerodromes: ads,
+      aerodromes: cov ? coverPins(ads, toC, W, H, pxDeg >= 180, cov) : ads,
       navaids: nv ? (data.navaids || []).filter(navOk) : [],
       obstacles: []
     }, toC, {
@@ -1685,6 +1718,7 @@
     detail = 0,
     hideVrp = null, // identifiants de VRP que l'écran dessine lui-même (terrain survolé ou épinglé) : pas deux fois
     lines = null, // suites de points que la route trace (null : toute la route), voir drawRoute
+    cov = null, // couche « Procédures » : cov(icao) → niveau de couverture ('green' | 'orange' | 'red') ou rien, voir coverPins
     reserve = null // reserve(placeur) : l'écran réserve ses libellés (procédures choisies) juste après ceux de la route
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
@@ -1736,7 +1770,7 @@
         ...profile.elements,
         navaids: true
       }
-    } : profile);
+    } : profile, cov);
     drawFixes(ctx, fixes, toC, W, H, scale, pl);
     // axes de ravitaillement et tracks NAT (mode CAM, cartes de mission qui les demandent)
     if (on(profile, 'aarTracks')) drawAar(ctx, data.aar, toC, scale, bbox, pl);

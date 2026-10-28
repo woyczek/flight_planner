@@ -47,6 +47,10 @@ import {
   draw as drawProcs,
   routeLines
 } from './procs.js';
+import {
+  covSync,
+  covFlush
+} from './coverage.js';
 
 // ---------------------------------------------------------------- un dessin par tour d'animation
 let frame = 0;
@@ -291,7 +295,9 @@ function draw() {
     zoomOn = k => MapsRender.visibleAt(S.profile, k, zv),
     // procédures choisies (SID, STAR, approche) : mise en page à l'écran ; leurs libellés se réservent dans le placeur de la
     // carte, après ceux de la route
-    procs = mission ? null : procLayout(ctx, toC, pxDeg);
+    procs = mission ? null : procLayout(ctx, toC, pxDeg),
+    // couche « Procédures » : le niveau de couverture des terrains visibles (null : couche cachée ou absente)
+    cov = mission ? null : covSync();
   if (S.tuneEl) got('tune')?.markTune(zReal, zv, (shown.n + shown.s) / 2, W, H);
   // nos villes dessinées à ce zoom : les noms de lieux du fond s'effacent (sinon « Mérignac » en double)
   baseNames(!!S.profile?.cities && !!S.data?.data?.cities?.length && ['citiesBig', 'citiesMid', 'citiesSmall'].some(zoomOn));
@@ -321,12 +327,14 @@ function draw() {
     detail: mission ? 0 : detailShift(),
     hideVrp: mission ? null : vfrVrpIds(),
     lines: mission ? null : routeLines(),
+    cov,
     reserve: procs ? pl => procs.reserve(pl) : null,
     mission: mission && S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones
     } : null
   }) || {};
+  covFlush(); // les terrains demandés pendant ce dessin partent ensemble ; redessin une fois à l'arrivée du lot
   S.awHits = got0.airways || [];
   stat(got0.zoom);
   S.zoneHits = got0.zoneLabels || [];

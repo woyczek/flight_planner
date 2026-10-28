@@ -82,6 +82,9 @@ import {
 import {
   weatherEvents
 } from './weather.js';
+import {
+  covClear
+} from './coverage.js';
 
 export const meta = {
   id: 'maps',
@@ -109,7 +112,8 @@ export const meta = {
   }],
   // gardés à l'installation (hors ligne dès la première visite)
   files: ['state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'data.js?v=0', 'layers.js?v=0',
-    'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'tips.js?v=0', 'lv.js?v=0', 'vfr.js?v=0', 'flight_time.js?v=0',
+    'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'coverage.js?v=0', 'tips.js?v=0', 'lv.js?v=0', 'vfr.js?v=0',
+    'flight_time.js?v=0',
     'mission_view.js?v=0',
     'weather.js?v=0',
     'render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
@@ -297,6 +301,8 @@ export async function mount(el, ctx) {
   if (!ctx.query?.mission) S.stops.push(...watchFlight());
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', e => {
     if (!S || (e?.aircraft && !e.zone && !e.changed)) return; // la base appareils ne touche pas la carte
+    if (e?.coverage || e?.refreshed) covClear(); // couverture des procédures : redemandée au prochain dessin
+    if (e?.coverage && !e.refreshed && !e.zone && !e.changed) return schedule(); // ni zone ni fichier d'espaces : rien à relire
     S.data = null;
     if (e?.refreshed) { // la base a été relue (Paramètres) : les procédures du vol aussi
       S.procsKey = null;

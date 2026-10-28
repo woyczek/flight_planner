@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: "Aerodrome procedures" layer — the aerodrome pins coloured by what the device holds of their procedures**
+  (`modules/maps/coverage.js`, `render.js`, `draw.js`, `layers.js`, `sheet_view.js`, `vfr.js`, `texts.js`, `lib/aero_symbols.js`,
+  help ×4; V3_SPECIFICATION § 10.22) — green (held), orange (readable on demand), red (nothing readable), from
+  `aerodb.coverage(icao)`; a box in Layers (off by default, not offered without `coverage`), one legend row per level in the "i"
+  panel while the layer is shown, a coverage line (pin, level, reason from `AeroCatalogue.COVERAGE`, outdated, SID / STAR / APP
+  counts) on the pinned aerodrome's card. Only the aerodromes in the frame are asked, in one batch per drawing, cached and asked
+  again on an aerodb `coverage` / `refreshed` change. The layer lights up by itself while the flight has a side without chosen
+  procedure whose aerodrome is not green (and goes out when both sides are chosen or green); touching its box wins until the page
+  is reloaded; the kept state of the box is never written by the automatic lighting. Cases D45 to D50.
+
 - **« Météo », one word for the weather module** (`frame/app.js`, help of fuel and the map, roadmap; DECISIONS): the computer's
   rail said « Atmosphère » while the phone's bar said « Météo »; now « Météo » / Weather / Wetter / Meteo everywhere (rail,
   bar, popover, header title, help). The address stays `#atmosphere`.

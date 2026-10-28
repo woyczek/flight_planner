@@ -197,6 +197,7 @@ export const TX = {
     nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT'],
     wind: ['Vents en altitude', 'Winds aloft', 'Höhenwinde', 'Vientos en altura'],
     contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel'],
+    cov: ['Procédures des terrains', 'Aerodrome procedures', 'Verfahren der Flugplätze', 'Procedimientos de los aeródromos'],
     zoneLabels: ['Noms des espaces', 'Airspace names', 'Namen der Lufträume', 'Nombres de los espacios'],
     awLabels: ['Noms des voies', 'Airway names', 'Namen der Flugwege', 'Nombres de las aerovías']
   },
@@ -304,6 +305,29 @@ export const TX = {
   adProcChange: ['Changer', 'Change', 'Ändern', 'Cambiar'],
   adProcChangeTip: ['Changer la piste et les procédures dans Carburant', 'Change the runway and procedures in Fuel',
     'Piste und Verfahren im Kraftstoff ändern', 'Cambiar la pista y los procedimientos en Combustible'
+  ],
+  // couche « Procédures » (V3_SPECIFICATION § 10.22) : légende (une ligne par niveau), ligne de la carte du terrain (le niveau, puis la
+  // raison d'AeroCatalogue.COVERAGE quand le catalogue du cadre la donne, « périmé », et les procédures détenues)
+  lgCov: {
+    green: ['Terrain dont les procédures sont détenues', 'Aerodrome whose procedures are held',
+      'Flugplatz, dessen Verfahren vorliegen', 'Aeródromo cuyos procedimientos se tienen'
+    ],
+    orange: ['Terrain dont les procédures se lisent à la demande', 'Aerodrome whose procedures are read on demand',
+      'Flugplatz, dessen Verfahren auf Anfrage gelesen werden', 'Aeródromo cuyos procedimientos se leen a petición'
+    ],
+    red: ['Terrain sans procédure lisible', 'Aerodrome with no readable procedure', 'Flugplatz ohne lesbares Verfahren',
+      'Aeródromo sin procedimiento legible'
+    ]
+  },
+  covLevel: {
+    green: ['Procédures : détenues', 'Procedures: held', 'Verfahren: vorhanden', 'Procedimientos: disponibles'],
+    orange: ['Procédures : lisibles à la demande', 'Procedures: readable on demand', 'Verfahren: auf Anfrage lesbar',
+      'Procedimientos: legibles a petición'
+    ],
+    red: ['Procédures : aucune', 'Procedures: none', 'Verfahren: keine', 'Procedimientos: ninguno']
+  },
+  covCounts: ['SID {s} · STAR {t} · APP {a}', 'SID {s} · STAR {t} · APP {a}', 'SID {s} · STAR {t} · APP {a}',
+    'SID {s} · STAR {t} · APP {a}'
   ],
   wxTitle: ['Coupe météo', 'Weather cross-section', 'Wetterschnitt', 'Corte meteorológico'],
   wxLabel: ['Coupe météo le long de la route', 'Weather cross-section along the route', 'Wetterschnitt entlang der Route',

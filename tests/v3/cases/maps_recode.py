@@ -684,3 +684,276 @@ def d44(c):
       g.route.procedures.arr.star = 'LFML.STAR.YY.RW31.NONE'; const proc = T.sameRoute(f, g); g.route.procedures = f.route.procedures;
       g.profile = { ...g.profile, path: [{ nm: 0, ft: 0 }, { nm: 9, ft: 9 }] }; return [same, proc, T.sameRoute(f, g)] }""", f)
     c.eq(r, [True, False, False], 'a changed choice or profile.path is a new route; the same record is not', what='sameRoute')
+
+
+# ------------------------------------------------------------------------------------------------------ D45-D50
+# The "Procédures" layer (V3 § 10.22): the pins coloured by what the device can give, a legend, a line on the aerodrome card, an
+# automatic lighting.  aerodb is the real service with a fake coverage() injected before the module mounts (a setter on window.AeroDB
+# wraps create()): coverage(icao) answers from window.__cov.levels, calls are kept in batches (one
+# batch = one tick), on('change') listeners are kept so that a case can fire the event.
+_COV_LEVELS = {'LFRS': 'green', 'LFML': 'green', 'LFAB': 'orange', 'LFAC': 'red', 'LFAD': 'green'}
+_COV_ROW = {
+    'green': {'reason': 'held', 'source': 'published', 'outdated': False, 'counts': {'SID': 3, 'STAR': 2, 'APP': 5}},
+    'orange': {'reason': 'sia'},
+    'red': {'reason': 'none'}}
+_COV_TEXTS = {'held': ['tenues ici', 'held here', 'hier gehalten', 'tenidas aquí'],
+              'sia': ['lisibles au SIA', 'readable at the SIA', 'beim SIA lesbar', 'legibles en el SIA'],
+              'none': ['rien nulle part', 'nothing anywhere', 'nirgends etwas', 'nada en ninguna parte']}
+
+
+def _fake_cov(levels=None, texts=True, missing=False):
+    """Init script: patches the service the moment AeroDB.create builds it, before any module mounts.  `missing`: no coverage() at all."""
+    cfg = json.dumps({'levels': levels or _COV_LEVELS, 'rows': _COV_ROW, 'texts': _COV_TEXTS if texts else None, 'missing': missing})
+    return """(() => { const cfg = %s; let ab;
+  const patch = (A) => {
+  window.__cov = { calls: [], batches: [], fns: [], levels: cfg.levels, outdated: {}, open: null };
+  if (cfg.missing) { A.coverage = undefined; return A }
+  A.coverage = async (icao) => { const C = window.__cov; C.calls.push(icao);
+    if (!C.open) { C.open = []; C.batches.push(C.open); setTimeout(() => { C.open = null }, 0) }
+    C.open.push(icao);
+    if (!/^[A-Z0-9]{4}$/.test(icao)) return null;
+    const lv = C.levels[icao] || 'red';
+    return { level: lv, state: icao.slice(0, 2), here: true, ...cfg.rows[lv], ...(C.outdated[icao] ? { outdated: true } : {}) } };
+  if (cfg.texts) { const s = A.sources; A.sources = async () => ({ ...(s ? await s.call(A) : {}), COVERAGE: cfg.texts }) }
+  else A.sources = async () => ({});
+  const on = A.on; A.on = function (ev, fn) { if (ev === 'change') window.__cov.fns.push(fn); return on.call(A, ev, fn) };
+  return A };
+  Object.defineProperty(window, 'AeroDB', { configurable: true, get() { return ab },
+    set(v) { ab = v; if (v && v.create && !v.__cov) { const o = v.create; v.__cov = 1; v.create = function (...a) { return patch(o.apply(this, a)) } } } }) })()""" % cfg
+
+
+_COV_SPY = """() => { const S = window.SiaAero; if (!S.__spy) { const o = S.drawPoints; window.__ads = [];
+  S.drawPoints = function (ctx, data, ...r) { if (r[1] && r[1].aerodromes) window.__ads = (data.aerodromes || []).map(a => [a.icao, a.cov ? a.cov.main : null]);
+    return o.apply(this, [ctx, data, ...r]) };
+  S.__spy = 1 } return true }"""
+_COV_IMPORT = """async () => { window.__mp = await import('/modules/maps/state.js'); window.__cv = await import('/modules/maps/coverage.js');
+  window.__dr = await import('/modules/maps/draw.js'); return true }"""
+_COV_ADS = [{'icao': 'LFAB', 'name': 'AB TEST', 'lat': 47.30, 'lon': -1.75, 'elev': 50, 'hardLen': 3000, 'public': True},
+            {'icao': 'LFAC', 'name': 'AC TEST', 'lat': 46.98, 'lon': -1.70, 'elev': 50, 'hardLen': 3000, 'public': True},
+            {'icao': 'LFAD', 'name': 'AD TEST', 'lat': 47.28, 'lon': -1.25, 'elev': 50, 'hardLen': 3000, 'public': True}]
+_COV_CELLS = {'46': [[-3, 0]], '47': [[-3, 0]]}
+_COV_PIN = """async (a) => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: a[0], name: a[0] + ' TEST', lat: a[1], lon: a[2] }) }"""
+_COV_BOX = "() => { const i = window.__mp.S.layersEl.querySelector('input[data-layer=cov]'); return i ? i.checked : null }"
+
+
+def _cov_open(c, f=None, levels=None, texts=True, missing=False, layers=None):
+    """The Map in VFR mode over LFRS with three aerodromes off the route; fake coverage; waits for the first drawing."""
+    c.page.add_init_script(_fake_cov(levels, texts, missing))
+    ui = {'preset': 'vfr', 'layers': layers or {}}
+    c.open('maps?view=-1.8,46.95,-1.1,47.35', docs=fdocs(f or flight()) + [['cache/maps/ui.json', ui, 'cache']], flight=False, airfields=True,
+           aero_extra={'aerodromes': _COV_ADS, 'cells': _COV_CELLS}, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_COV_IMPORT)
+    c.js(_COV_SPY)
+    c.until("() => window.__mp.S && window.__mp.S.adHits && window.__mp.S.adHits.some(h => h.a.icao === 'LFAB')", timeout=12000,
+            what='the aerodromes are drawn')
+    _redraw(c)         # the spy sees a drawing of its own
+
+
+def _redraw(c):
+    c.js("() => window.__dr.schedule()")
+    c.wait(500)
+
+
+def _ads(c):
+    """{ icao: colour of the symbol } as handed to the symbol drawing at the last drawing."""
+    return {a[0]: a[1] for a in c.js("() => window.__ads")}
+
+
+def _level_of(rgb):
+    r, g, b = rgb
+    return 'green' if g > r and g > b else ('orange' if g > b + 30 else 'red')
+
+
+def _write_flight(c, procedures, k):
+    """The current flight written again with `procedures` (what Fuel does); k orders the writes."""
+    f = c.doc(PATH)
+    f['route']['procedures'] = procedures
+    f['updated_at'] = f'2099-01-01T00:00:{k:02d}Z'
+    c.js("""(a) => window.FrameData.adapter({ id: 't-cov', reads: ['pilot/'], writes: ['pilot/'] }).put(a[0], a[1])""", [PATH, f])
+
+
+def _shown(c):
+    return c.js("() => window.__cv.covShown()")
+
+
+def _layers_toggle(c):
+    c.tap('[data-mp="layers"]')
+    c.wait(300)
+
+
+@case('D45', 'Procedures layer: off by default, the pins take the colour of their level, requests grouped', 'D', tags=('maps',), screens=False,
+      designs=('standard',), langs4=True,
+      rule='V3 § 10.22, maps SPEC § 6.7: layer "Procédures" off by default; on: green / orange / red pins, only the visible aerodromes asked, one batch per drawing, cached')
+def d45(c):
+    _cov_open(c)
+    _redraw(c)
+    c.eq(c.js(_COV_BOX), False, 'the box of the layer is there and unchecked', what='box before')
+    c.eq(_shown(c), False, 'the layer is off by default', what='shown')
+    c.ok(_ads(c) and all(v is None for v in _ads(c).values()), f'{_ads(c)}', 'off: the pins keep their own colours')
+    asked = set(c.js("() => window.__cov.calls"))
+    c.ok(asked <= {'LFRS', 'LFML'}, f'{sorted(asked)}', 'off: only the departure and the arrival are asked (for the automatic lighting)')
+    _layers_toggle(c)
+    c.until("window.__t.shown(document.querySelector('input[data-layer]'))", what='the Layers content')
+    name = tx(M, 'cov', c.lang, after='layerNames: {')
+    labels = [norm(t) for t in c.js("[...document.querySelectorAll('.mp-layers label')].map(l => l.textContent)")]
+    c.ok(name in labels, f'{name!r} in {labels}', 'the layer is named in the language of the run')
+    c.js("() => window.__mp.S.layersEl.querySelector('input[data-layer=cov]').click()")
+    c.until("() => ['LFAB', 'LFAC', 'LFAD'].every(i => window.__cov.calls.includes(i))", timeout=6000, what='the visible aerodromes are asked')
+    c.wait(600)
+    calls = c.js("() => window.__cov.calls")
+    c.eq(len(calls), len(set(calls)), 'each aerodrome is asked once', what='calls')
+    batch = c.js("() => window.__cov.batches.find(b => b.includes('LFAB'))")
+    c.ok({'LFAB', 'LFAC', 'LFAD'} <= set(batch), f'{batch}', 'the aerodromes of one image are asked in the same batch')
+    ads = _ads(c)
+    tok = {k: c.var(f'--sog-{n}') for k, n in (('green', 'ok'), ('orange', 'warn'), ('red', 'err'))}
+    c.eq([ads.get('LFAD'), ads.get('LFAB'), ads.get('LFAC')], [tok['green'], tok['orange'], tok['red']],
+         'green, orange and red of the design for the three levels', what='colours handed to the symbols')
+    # the pixels: the centre of each symbol (a runway symbol filled with its colour)
+    px = c.js("""() => { const S = window.__mp.S, k = S.canvas.width / S.canvas.clientWidth, g = S.canvas.getContext('2d'), out = {};
+      for (const h of S.adHits) { if (!['LFAB', 'LFAC', 'LFAD'].includes(h.a.icao)) continue;
+        const d = g.getImageData(Math.round(h.x * k), Math.round(h.y * k), 1, 1).data; out[h.a.icao] = [d[0], d[1], d[2]] } return out }""")
+    c.eq({k: _level_of(v) for k, v in px.items()}, {'LFAD': 'green', 'LFAB': 'orange', 'LFAC': 'red'},
+         'the drawn symbols are green, orange and red', what=f'pixels {px}')
+    c.eq(c.doc('cache/maps/ui.json')['layers'].get('vfr', {}).get('cov'), True, 'the box is kept on the device like the others', what='ui.json')
+    c.js("() => window.__mp.S.layersEl.querySelector('input[data-layer=cov]').click()")      # unchecked: the usual pins again
+    c.wait(500)
+    c.ok(all(v is None for v in _ads(c).values()), f'{_ads(c)}', 'unchecked: the pins are the usual ones')
+
+
+@case('D46', 'Procedures layer: lit by itself while a side has no chosen procedure and its aerodrome is not green', 'D', tags=('maps',),
+      screens=False, designs=('standard',),
+      rule='V3 § 10.22 (ergonomics session, 28 Oct): a side without a chosen procedure (arr {}) whose aerodrome is orange or red lights the layer; chosen, null ("none"), or green: not')
+def d46(c):
+    _cov_open(c, levels={**_COV_LEVELS, 'LFML': 'orange'})
+    c.until("() => window.__cv.covShown()", timeout=8000, what='the layer is lit: nothing chosen, the arrival is orange')
+    _redraw(c)
+    c.ok(_ads(c).get('LFAB') == c.var('--sog-warn'), f'{_ads(c)}', 'lit: the pins are coloured')
+    c.eq(c.js(_COV_BOX), True, 'the box shows the layer as shown', what='box')
+    c.eq(c.doc('cache/maps/ui.json')['layers'], {}, 'the automatic lighting writes nothing on the device', what='ui.json')
+    # both sides chosen: the layer goes out
+    _write_flight(c, {'dep': {'rwy': '03'}, 'arr': {'rwy': '31'}, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 10)
+    c.until("() => !window.__cv.covShown()", timeout=8000, what='the layer goes out when both sides are chosen')
+    c.eq(c.js(_COV_BOX), False, 'the box follows', what='box')
+    c.eq(c.doc('cache/maps/ui.json')['layers'], {}, 'still nothing written', what='ui.json')
+    # an arrival not chosen yet (arr {}): lit again
+    _write_flight(c, {'dep': {'rwy': '03'}, 'arr': {}, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 11)
+    c.until("() => window.__cv.covShown()", timeout=8000, what='lit again: the arrival has no choice')
+    # "none" (null) is a choice
+    _write_flight(c, {'dep': {'rwy': '03'}, 'arr': None, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 12)
+    c.until("() => !window.__cv.covShown()", timeout=8000, what='arr null is a choice: no lighting')
+    # a departure not chosen whose aerodrome is green: nothing to look for; the arrival is chosen
+    _write_flight(c, {'dep': {}, 'arr': {'rwy': '31'}, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 13)
+    c.wait(900)
+    c.eq(_shown(c), False, 'a green departure (LFRS) without choice does not light the layer', what='shown, green side')
+    # the arrival turns green (the base changed): off, even with arr {}
+    _write_flight(c, {'dep': {'rwy': '03'}, 'arr': {}, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 14)
+    c.until("() => window.__cv.covShown()", timeout=8000, what='lit again')
+    c.js("() => { window.__cov.levels.LFML = 'green'; window.__cov.fns.forEach(f => f({ coverage: true })) }")
+    c.until("() => !window.__cv.covShown()", timeout=8000, what='the arrival is green after the change: the layer goes out')
+
+
+@case('D47', 'Procedures layer: the box touched wins over the automatic lighting', 'D', tags=('maps',), screens=False, designs=('standard',),
+      rule='V3 § 10.22 (ergonomics session, 28 Oct): once the user touches the box, the automatic lighting no longer applies until the page is reloaded; the kept state of the box is never written by it')
+def d47(c):
+    _cov_open(c, levels={**_COV_LEVELS, 'LFML': 'orange'})
+    c.until("() => window.__cv.covShown()", timeout=8000, what='lit by itself')
+    _layers_toggle(c)
+    c.until("window.__t.shown(document.querySelector('input[data-layer]'))", what='the Layers content')
+    c.eq(c.js(_COV_BOX), True, 'the box shows what is shown', what='box')
+    c.js("() => window.__mp.S.layersEl.querySelector('input[data-layer=cov]').click()")        # the user switches it off
+    c.until("() => !window.__cv.covShown()", timeout=4000, what='off by the user')
+    _write_flight(c, {'dep': {}, 'arr': {}, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 20)
+    c.wait(1200)
+    c.eq(_shown(c), False, 'the user\'s choice wins: still off with a side to look for', what='shown after the user switched it off')
+    c.eq(c.doc('cache/maps/ui.json')['layers'].get('vfr', {}).get('cov'), None, 'what is kept is the default (off), not the automatic state',
+         what='ui.json')
+    c.js("() => window.__mp.S.layersEl.querySelector('input[data-layer=cov]').click()")        # on by the user
+    c.until("() => window.__cv.covShown()", timeout=4000, what='on by the user')
+    _write_flight(c, {'dep': {'rwy': '03'}, 'arr': {'rwy': '31'}, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 21)
+    c.wait(1200)
+    c.eq(_shown(c), True, 'on by the user: stays on although both sides are chosen', what='shown after the user switched it on')
+    c.eq(c.doc('cache/maps/ui.json')['layers'].get('vfr', {}).get('cov'), True, 'the user\'s box is kept', what='ui.json')
+
+
+@case('D48', 'Procedures layer: a legend line per level; the aerodrome card says the level and why', 'D', tags=('maps',), screens=False,
+      designs=('standard',), langs4=True,
+      rule='V3 § 10.22: one legend line per level, only while the layer is shown; the pinned aerodrome\'s card: pin, level, reason (AeroCatalogue.COVERAGE), outdated, SID / STAR / APP counts')
+def d48(c):
+    _cov_open(c)
+    c.js("() => { window.__cov.outdated.LFAD = true }")
+    lang = ['fr', 'en', 'de', 'es'].index(c.lang)
+    legend_off = "() => document.querySelector('.mp-legend').hidden"
+    c.until("() => !document.querySelector('[data-legend]').disabled", timeout=8000, what='the legend chip is on')
+    c.tap('[data-legend]')
+    c.until("() => !document.querySelector('.mp-legend').hidden", what='the legend is open')
+    green = norm(tx(M, 'green', c.lang, after='lgCov: {'))
+    c.ok(green not in norm(c.text('.mp-legend')), norm(c.text('.mp-legend')), 'layer off: no line of the layer in the legend')
+    c.tap('[data-legend]')
+    c.until(legend_off, what='the legend is closed')
+    # the layer on through its box: the three lines
+    _layers_toggle(c)
+    c.until("window.__t.shown(document.querySelector('input[data-layer]'))", what='the Layers content')
+    c.js("() => window.__mp.S.layersEl.querySelector('input[data-layer=cov]').click()")
+    c.until("() => window.__cv.covShown()", what='on')
+    _layers_toggle(c)
+    c.until("() => !document.querySelector('[data-legend]').disabled", what='the profile and its legend chip are back')
+    c.tap('[data-legend]')
+    c.until("() => !document.querySelector('.mp-legend').hidden", what='the legend is open')
+    want = [norm(tx(M, k, c.lang, after='lgCov: {')) for k in ('green', 'orange', 'red')]
+    got = [norm(t) for t in c.js("() => [...document.querySelectorAll('.mp-legend li')].map(l => l.textContent)")]
+    c.ok(all(w in got for w in want), f'{got}', 'one legend line per level, in the language of the run')
+    sw = c.js("() => [...document.querySelectorAll('.mp-legend .mp-lg-pin')].map(e => e.style.getPropertyValue('--c'))")
+    c.eq(sw, ['var(--sog-ok)', 'var(--sog-warn)', 'var(--sog-err)'], 'the swatches carry the three colours of the design', what='swatches')
+    # the card of a pinned aerodrome
+    c.js(_COV_PIN, ['LFAD', 47.28, -1.25])
+    c.until("(w) => ((document.querySelector('.mp-ad-cov') || {}).textContent || '').includes(w)", _COV_TEXTS['held'][lang], timeout=8000,
+            what='the coverage line, with the reason from the frame catalogue')
+    t = norm(c.text('.mp-ad-cov'))
+    for part in (norm(tx(M, 'green', c.lang, after='covLevel: {')), _COV_TEXTS['held'][lang], norm(row(c, 'procOutdated')), 'SID 3 · STAR 2 · APP 5'):
+        c.ok(part in t, t, f'the card says "{part}"')
+    c.eq(c.attr('.mp-ad-cov', 'data-level'), 'green', 'the line carries its level', what='data-level')
+    c.eq(c.js("() => document.querySelector('.mp-ad-cov .mp-cov-dot').style.background"), 'var(--sog-ok)', 'the pin of the line is green', what='dot')
+    c.js(_COV_PIN, ['LFAB', 47.30, -1.75])
+    c.until("() => /SIA|sia/.test((document.querySelector('.mp-ad-cov') || {}).textContent || '')", timeout=8000, what='the card of an orange aerodrome')
+    t = norm(c.text('.mp-ad-cov'))
+    c.ok(norm(tx(M, 'orange', c.lang, after='covLevel: {')) in t and _COV_TEXTS['sia'][lang] in t and 'SID' not in t, t,
+         'orange: the level and the reason, no counts')
+
+
+@case('D49', 'Procedures layer: no reason text without the catalogue; the cache is emptied on a coverage change', 'D', tags=('maps',), screens=False,
+      designs=('standard',),
+      rule='V3 § 10.22: without AeroCatalogue.COVERAGE the card line shows the level only; aerodb.on("change") with coverage or refreshed asks again and redraws')
+def d49(c):
+    _cov_open(c, texts=False, layers={'vfr': {'cov': True}})
+    c.until("() => (window.__ads || []).some(a => a[0] === 'LFAB' && a[1])", timeout=8000, what='the layer is on (kept box)')
+    c.js(_COV_PIN, ['LFAB', 47.30, -1.75])
+    c.until("() => !!document.querySelector('.mp-ad-cov')", timeout=8000, what='the card line')
+    c.wait(500)
+    c.eq(norm(c.text('.mp-ad-cov')), norm(tx(M, 'orange', c.lang, after='covLevel: {')), 'without the catalogue: the level only', what='line text')
+    # a change of coverage: asked again, and the colour follows
+    n = c.js("() => window.__cov.calls.length")
+    c.js("() => { window.__cov.levels.LFAB = 'green'; window.__cov.fns.forEach(f => f({ coverage: true })) }")
+    c.until("() => (window.__ads || []).some(a => a[0] === 'LFAB' && a[1] === getComputedStyle(document.documentElement).getPropertyValue('--sog-ok').trim())",
+            timeout=8000, what='LFAB turns green after the change')
+    m = c.js("() => window.__cov.calls.length")
+    c.ok(m > n, f'{n} -> {m}', 'the aerodromes are asked again after the change')
+    # the aircraft database changing touches neither the map nor the cache
+    c.js("() => window.__cov.fns.forEach(f => f({ aircraft: true }))")
+    c.wait(700)
+    c.eq(c.js("() => window.__cov.calls.length"), m, 'an aircraft change asks nothing', what='calls')
+
+
+@case('D50', 'Procedures layer: not offered without aerodb.coverage', 'D', tags=('maps',), screens=False, designs=('standard',),
+      rule='V3 § 10.22: if aerodb.coverage does not exist the layer is not proposed in Layers, nothing else changes')
+def d50(c):
+    _cov_open(c, missing=True, layers={'vfr': {'cov': True}})
+    _layers_toggle(c)
+    c.until("window.__t.shown(document.querySelector('input[data-layer]'))", what='the Layers content')
+    c.eq(c.js(_COV_BOX), None, 'no box for the layer', what='box')
+    c.eq(_shown(c), False, 'a kept "on" does nothing without coverage()', what='shown')
+    _redraw(c)
+    c.ok(_ads(c) and all(v is None for v in _ads(c).values()), f'{_ads(c)}', 'the pins keep their own colours')
+    c.js(_COV_PIN, ['LFAB', 47.30, -1.75])
+    c.wait(800)
+    c.eq(c.count('.mp-ad-cov'), 0, 'no coverage line on the aerodrome card', what='line')

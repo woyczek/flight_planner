@@ -1511,3 +1511,31 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     lot's; until it writes `profile.path` the profile draws its fallback, and a quote without `origin` gives times by the quote's
     total over the flown path.
 
+## The aerodrome procedures layer (28 Oct 2026, V3_SPECIFICATION § 10.22)
+
+SPEC § 6.11, INTEGRATION § 3 ter. Choices of the session, with their reasons:
+- **No event between modules** (decision of the ergonomics session, 28 Oct, replacing a first brief with `fuel-procedures` and
+  `fuel-procedures-ask`): the map lights the layer by itself from what it already reads, the choice of procedures
+  (`proceduresOf(flight)`) and the coverage of the two aerodromes. A contract between two modules would have been one more thing
+  to keep in step; the rule is the map's, readable in one function (`covAuto`). "Nothing chosen" is `{}` and absent fields; `null` is
+  "none", a choice, so it does not light.
+- **The user's touch wins, for the page's life.** The stored state of the box stays "off" by default and the automatic state is laid
+  over it, never written. Once the user touches the box, only the box decides until reload (not stored, not per mode), so the
+  automatic lighting cannot fight a gesture. "Reset all" is not a touch: it restores the defaults, and the automatic lighting, if it
+  was not switched off by a touch, stays on.
+- **The box displays what is shown.** A box unticked while the layer is lit by itself would be a lie; ticked, it can be unticked, which
+  is the touch above. The stored value is not changed by displaying it.
+- **The pins are recoloured, not ringed.** The symbols already carry the aerodrome's class in their shape and fill (open to public
+  traffic, restricted, State in red); a halo or ring would add a mark to every aerodrome and fight the labels. The colour replaces
+  the blue (or the State red, while the layer is on: the level is the question then). Colours are the design's `--sog-ok` /
+  `--sog-warn` / `--sog-err`, which the drawing context already keeps readable at night. The copy of `aero_symbols.js` diverges by
+  two lines (`ad.cov`), noted where it diverges. Colour alone does not carry the meaning: the legend and the card say it in words.
+- **Requests: visible aerodromes only, one batch per drawing, stale while refreshing.** `coverage` is cheap, but a world map has
+  thousands of aerodromes in the data area; only those inside the frame (and drawn: public, or the close view) are asked. When
+  aerodb says the coverage changed, the old answers stay on screen until the new ones arrive (no blinking, no flash of the usual
+  colours), and a late batch from before the change is dropped.
+- **The card line is always there** when `aerodb.coverage` exists, whether or not the layer is shown: the card is a detail view,
+  and "why is this one orange" is asked there.
+- **Not on mission maps** (their Layers content is the selector only), and not without a flight for the automatic lighting.
+- **A new file, `coverage.js`**: `render.js` is already past the 60 KB of SPEC § 1; it only takes the drawing of the colour
+  (`coverPins`, `cov` in `MapsRender.draw`); the requests, the rule, the legend rows and the card line are in `coverage.js`.

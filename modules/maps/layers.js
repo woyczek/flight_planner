@@ -36,6 +36,11 @@ import {
 import {
   styleFor
 } from './screen.js';
+import {
+  covAvail,
+  covShown,
+  covTouch
+} from './coverage.js';
 
 // ---------------------------------------------------------------- modes
 /** Modes de carte : [clé, icône, classe du choix] (SPEC § 6.1). */
@@ -218,7 +223,7 @@ const AS_GROUPS = {
 };
 /** Cases du contenu Couches, dans l'ordre de la SPEC § 6.7 (« Autour de la route seulement » en dernier). */
 const LAYER_KEYS = ['asTma', 'asDrp', 'asFir', 'asOther', 'zoneLabels', 'awLow', 'awHigh', 'awLabels', 'navaids', 'fixes', 'vrp',
-  'obstacles', 'mora', 'cities', 'graticule', 'altn', 'aar', 'nat', 'wind', 'contours', 'corridor'
+  'obstacles', 'mora', 'cities', 'graticule', 'altn', 'aar', 'nat', 'wind', 'contours', 'cov', 'corridor'
 ];
 /** Couche du contenu Couches qui commande chaque ligne de la page de réglage (une famille d'espaces : une seule case). */
 export const LAYER_OF = {
@@ -275,6 +280,8 @@ export function layerDefaults(B) {
     aar: B.id === 'v3-cam',
     nat: B.id === 'v3-cam',
     wind: true,
+    // couche « Procédures » (couverture des terrains) : éteinte d'origine, allumée d'elle-même par la Carte (coverage.js)
+    cov: false,
     // courbes de niveau : modes à densité VFR (VFR, Topo), de près
     contours: !!MapsRender.elementOf(B, 'vfrDensity'),
     zoneLabels: E('zoneLabelsShow'),
@@ -349,6 +356,10 @@ export function setLayer(key, value, keep = false) {
     if (!Object.keys(own).length) delete all[S.preset];
   }
   saveUi();
+  if (key === 'cov') { // la couche n'entre pas dans le profil d'affichage : ni données relues ni profil refait
+    schedule();
+    return got('tune')?.tuneVis();
+  }
   reprofile();
   got('tune')?.tuneVis();
 }
@@ -373,7 +384,7 @@ export function layersHtml(ctx) {
 <div class="mp-layer-set"${mission ? ' hidden' : ''}>
 <label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-4" max="4" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
 <span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span>
-${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
+${LAYER_KEYS.filter(k => k !== 'cov' || covAvail()).map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
 <button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div>
 <div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
 <select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div></div>`;
@@ -395,7 +406,7 @@ export function fillLayers() {
       if (out && out.textContent !== t) out.textContent = t;
       continue;
     }
-    const v = !!L[c.dataset.layer];
+    const v = c.dataset.layer === 'cov' ? covShown() : !!L[c.dataset.layer]; // la case de la couche dit ce qui est montré
     if (c.checked !== v) c.checked = v;
   }
 }
@@ -416,7 +427,10 @@ export function toggleLayers(open = S.dpanel !== 'layers') {
 export function layersEvents() {
   S.layersEl.addEventListener('change', e => {
     const c = e.target.closest('input[data-layer]');
-    if (c && c.type !== 'range') setLayer(c.dataset.layer, c.checked);
+    if (c && c.type !== 'range') {
+      if (c.dataset.layer === 'cov') covTouch(); // son choix l'emporte sur l'allumage automatique, pour la vie de la page
+      setLayer(c.dataset.layer, c.checked);
+    }
   });
   S.layersEl.addEventListener('input', e => {
     const c = e.target.closest('input[type="range"][data-layer]');

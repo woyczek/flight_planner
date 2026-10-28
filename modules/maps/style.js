@@ -152,6 +152,11 @@ export const STYLE = `
 [data-module="maps"] .mp-lg-tick::after{content:'';position:absolute;left:12px;top:2px;height:8px;border-left:2px solid var(--c)}
 [data-module="maps"] .mp-lg-cons::after{content:'';position:absolute;left:5px;right:5px;top:6px;border-top:2px solid var(--c)}
 [data-module="maps"] .mp-lg-cons::before{content:'';position:absolute;left:10px;top:1px;border:3px solid transparent;border-bottom:4px solid var(--c);border-top:0}
+[data-module="maps"] .mp-ad-cov{margin:0 0 6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 6px}
+/* le niveau en gras sans être un titre : les titres de la carte du terrain (b) restent ceux de ses blocs */
+[data-module="maps"] .mp-ad-cov .mp-cov-lv{font-weight:700}
+[data-module="maps"] .mp-cov-dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;flex:none;background:var(--sog-muted)}
+[data-module="maps"] .mp-lg-pin::after{content:'';position:absolute;left:8px;top:1px;width:10px;height:10px;border-radius:50%;background:var(--c)}
 [data-module="maps"] .mp-ad-proc{margin:0 0 6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 6px}
 [data-module="maps"] .mp-lg-tri::after{content:'';position:absolute;left:8px;top:1px;border:5px solid transparent;border-bottom:9px solid var(--c);border-top:0}
 [data-module="maps"] .mp-chips .mp-chip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}

@@ -169,7 +169,8 @@ does not give it:
   view; nothing to open for NAT.
 - `state()` and `on('state')` (`loading`, `noaccess`, `unpublished`, `offline`: SPEC § 4), `status().cycle` (a mission
   map's cycle).
-- `on('change')`: read again for a zone or a changed file; an `aircraft` change is ignored.
+- `on('change')`: read again for a zone or a changed file; an `aircraft` change is ignored. An event with `coverage` or
+  `refreshed` also asks the coverage again (§ 3 ter).
 
 ## 3 bis. Procedures
 
@@ -190,6 +191,24 @@ old `{ sid, star }` record; a side whose aerodrome is not the route's is read as
   "Change" button, `data-go="fuel?focus=dep"` or `fuel?focus=arr`; fuel's step focuses the row.
 - **Source states** shown in the label: `status` `xplane` → "X-Plane, local", `lnm` → "Little Navmap, local", `outdated` →
   "outdated"; the other statuses add nothing.
+
+## 3 ter. Coverage of the procedures (V3_SPECIFICATION § 10.22)
+
+For the "Aerodrome procedures" layer (SPEC § 6.11), the map asks aerodb:
+- **`coverage(icao)`** → `Promise<{ level: 'green' | 'orange' | 'red', reason, state, here, … } | null>`; `null` for a code that is not
+  four characters `[A-Z0-9]`. Reasons (closed list): green `held` (+ `source` `published` | `manual` | `local`, `outdated`, `counts
+  { SID, STAR, APP }`); orange `sia`, `ead`, `lnm`; red `images`, `labels`, `points`, `prose`, `vfr`, `none`, `unknown`. `state` is the
+  two-letter ICAO prefix, `here` is true when this device can start the reading. Cheap after the first call (an in-memory table);
+  the map keeps its own cache per code in `S.cov` and asks **only the aerodromes drawn in the frame**, in one batch per drawing
+  (plus the departure and the arrival of the flight, for the automatic lighting). Without the function the layer is not offered
+  and nothing else changes.
+- **`sources()`** → `AeroCatalogue.COVERAGE[reason] = [fr, en, de, es]` (the frame's catalogue): the texts of the reasons on the
+  aerodrome card, used as they are; without them the card shows the level alone (text of the map, four languages).
+- **`on('change')`** with `coverage` or `refreshed`: the answers are asked again (SPEC § 6.11).
+
+**Between modules**: nothing. The automatic lighting reads what the map already has (the current flight's `route.procedures`
+through `proceduresOf`, and the coverage of its two aerodromes); Fuel emits no event for it (decision of the ergonomics session,
+28 Oct 2026, replacing a first design with `fuel-procedures` events).
 
 ## 4. What it reads from fuel
 

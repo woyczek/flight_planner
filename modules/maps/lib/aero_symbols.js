@@ -797,8 +797,9 @@
   // hydrobase ; ouvert à la CAP (plein, 4 repères), agréé / restreint (clair, sans repère), État (rouge).
   function drawAerodrome(ctx, ad, p, s, labelFont) {
     if (labelFont && labelFont.labelOnly) return aerodromeLabel(ctx, ad, p, s, labelFont);
-    const main = ad.state ? C.red : C.blue,
-      pale = ad.state ? C.redPale : C.bluePale,
+    // V3 maps (divergence de la copie du studio) : ad.cov { main, pale } — couche « Procédures », couleur du niveau de couverture
+    const main = ad.cov?.main || (ad.state ? C.red : C.blue),
+      pale = ad.cov?.pale || (ad.state ? C.redPale : C.bluePale),
       open = ad.public && !ad.state;
     const rot = (ad.bearing || 0) * Math.PI / 180;
     ctx.save();
@@ -872,7 +873,7 @@
 
   /** Étiquette d'un aérodrome (code OACI, nom, altitude, fréquence) près de son symbole. */
   function aerodromeLabel(ctx, ad, p, s, labelFont) {
-    const main = ad.state ? C.red : C.blue;
+    const main = ad.cov?.main || (ad.state ? C.red : C.blue);
     const label = ad.icao || (labelFont && labelFont.full ? ad.name : '');
     if (labelFont && label) {
       ctx.save();

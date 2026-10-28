@@ -17,7 +17,7 @@ The Pilot application's map, fast on a phone:
 
 | File | Role |
 |---|---|
-| `module.js` and the files it imports | the screen (§ 4–14), split by concern (INTEGRATION § 1): `state.js`, `texts.js`, `style.js`, `screen.js`, `draw.js`, `data.js`, `layers.js`, `sheet_view.js`, `profile_view.js`, `procs.js`, `tips.js`, `lv.js`, `vfr.js`, `flight_time.js`, `mission_view.js`, `weather.js`; on demand (`meta.lazy`) `edit.js` (§ 12) and `tune.js` (§ 14); no file above 60 KB |
+| `module.js` and the files it imports | the screen (§ 4–14), split by concern (INTEGRATION § 1): `state.js`, `texts.js`, `style.js`, `screen.js`, `draw.js`, `data.js`, `layers.js`, `sheet_view.js`, `profile_view.js`, `procs.js`, `coverage.js`, `tips.js`, `lv.js`, `vfr.js`, `flight_time.js`, `mission_view.js`, `weather.js`; on demand (`meta.lazy`) `edit.js` (§ 12) and `tune.js` (§ 14); no file above 60 KB |
 | `render.js` (`window.MapsRender`) | the rendering core (§ 3), no interface text |
 | `profile.js` (`window.MapsProfile`) | the vertical profile (§ 8) |
 | `mission.js` (`window.MapsMission`) | a mission's maps (§ 15) |
@@ -342,7 +342,8 @@ Opened in the sheet by the Layers button (`openData('layers', …)`, § 7.4), no
 2. **the layer boxes**, a grid of two columns on a phone: airspace families (TMA / CTR: TMA, CTR, CTA, TMZ, RMZ; D / R /
    P: R, D, P, TRA, TSA, CBA, PJE, TRVL, TRPVL, ZIT; FIR: FIR, UIR, UTA, LTA, OCA, FRA; others: every other type present),
    airspace names, lower and upper airways, airway names, beacons, airway points, VRP, obstacles, MORA, towns, graticule,
-   alternate, AAR, NAT, winds aloft, contour lines, and "Around the route only"; "Reset all";
+   alternate, AAR, NAT, winds aloft, contour lines, aerodrome procedures (§ 6.11; only when aerodb can say the coverage), and
+   "Around the route only"; "Reset all";
 3. **the flight selector**, last (rarely used): a `select` "Planned flight" with every mission of the repository, and for a
    mission with two maps or more a second `select` with its maps (description, else file name); choosing changes the
    address (`#maps?mission=<ID>&map=<file>`), the frame mounts the module again. On a mission map the content holds only
@@ -381,6 +382,41 @@ tile and interval, projected at each drawing; tile zoom from the view (8 to 12, 
 tiles). Interval 500 ft (100 m when the pilot's `displayAlt` is metres), every fifth an index contour, thicker and
 numbered. Drawn on the canvas under the aeronautical layer, in VFR and Topo, within the `contours` range and with the
 "Contour lines" layer. Loaded on demand (`meta.lazy`).
+
+### 6.11 The aerodrome procedures layer (`coverage.js`; V3_SPECIFICATION § 10.22)
+
+A layer "Aerodrome procedures" colours the aerodrome pins by what the device can give of their procedures, as `aerodb.coverage(icao)`
+says (`{ level: 'green' | 'orange' | 'red', reason, state, here, … }`, `null` for a malformed code; green carries `source`,
+`outdated`, `counts { SID, STAR, APP }`). It is not part of the display profile (no element, no data re-read): a box of the
+Layers content like the others, **off by default**, kept per mode on the device like the others, and **offered only when
+`aerodb.coverage` exists** (else no box, nothing else changes). Never on a mission map.
+- **The pins**: the aerodrome symbols already drawn (`SiaAero.drawAerodrome`, which takes `ad.cov { main, pale }`) are drawn in
+  the design's `--sog-ok` / `--sog-warn` / `--sog-err` (green, orange, red; the drawing context's contrast rule keeps them
+  readable by day and night; the pale fill is the colour mixed 25 % into the drawing's background) and their code label too. An
+  aerodrome whose answer has not come yet, or whose code is malformed, keeps its usual colours. Only the aerodromes drawn inside
+  the frame are asked.
+- **Requests**: `covLevel(icao)` returns the cached level or nothing and queues the code; at the end of the drawing the queue
+  leaves as one batch (`Promise.all` of `aerodb.coverage`), the answers are kept in `S.cov.cache` (one per code, for the page's life)
+  and the map is drawn once more when the batch arrives. `aerodb.on('change')` with `coverage` or `refreshed` asks again every code
+  known (one batch, the old answers staying in place until the new ones arrive, so the layer does not blink); an answer of a batch
+  that left before the change is dropped.
+- **Automatic lighting** (decision of the ergonomics session, 28 Oct 2026; no event between modules): the layer is shown when its box
+  is ticked **or**, until the user touches the box, when the current flight has a side with no chosen procedure whose aerodrome is
+  not green. Read with `proceduresOf(flight)`: the departure side counts when `dep` is not `null` and has neither `sid` nor
+  `rwy`; the arrival side when `arr` is not `null` and has no `star`, no `app` and no `rwy` (`null` = "none", a choice). The aerodrome
+  is `route.dep` / `route.arr` (else the first / last point); its level is asked even while the layer is off. An aerodrome
+  whose level is unknown yet, or whose code is malformed, does not light the layer. The layer goes out by itself when both sides
+  are chosen or their aerodromes green. The kept state of the box (`cache/maps/ui.json`) is never written by the automatic
+  lighting: it stays off by default and the automatic state is laid over it. The box *displays* what is shown (ticked while lit by
+  itself). **Touching the box** (the user's gesture on it; "Reset all" is not one) sets `S.cov.touched`: from then on only the box
+  decides, for the life of the page (until reload). Without a current flight or without `aerodb.coverage`, no automatic lighting.
+- **Legend**: while the layer is shown, the "i" panel of the profile gets three rows after the profile's own (pin in the level's
+  colour, then "Aerodrome whose procedures are held" / "… are read on demand" / "Aerodrome with no readable procedure");
+  the chip is enabled by them even if the profile has no other row.
+- **The pinned aerodrome's card** (§ 16), always when `aerodb.coverage` exists (the card is already a detail view), after the
+  runway / procedure rows: a pin in the level's colour, the level in bold ("Procedures: held" / "readable on demand" / "none"),
+  then " · the reason" (`AeroCatalogue.COVERAGE[reason]`, four languages, read from `aerodb.sources()`; absent: the level alone),
+  " · outdated" and, for green, " · SID n · STAR n · APP n". The card is made again when the answer, or the texts, arrive.
 
 ## 7. The sheet
 
@@ -433,7 +469,7 @@ to its size. A new content replaces the open one; opening the airspaces list rel
   on it or Escape. Its rows are the series actually drawn, each with its symbol and name in four languages, produced by
   the drawing code: for the profile `geo.drawn` of `vertical_profile.js` (planned path, TOC / TOD, relief or MORA, the
   airspace types crossed with their colours, route points) plus what the sheet adds (NM marks, airway points); for the cut
-  atmosphere's `sectionLegend()` (§ 9). One column; the expanded sheet shows it whole, the default sheet scrolls it.
+  atmosphere's `sectionLegend()` (§ 9); the aerodrome procedures layer adds one row per level while it is shown (§ 6.11). One column; the expanded sheet shows it whole, the default sheet scrolls it.
 
 ### 7.4 Contents API
 
@@ -772,6 +808,8 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
   small dots), the others short dashes between their known points; never a line to the aerodrome's centre; an arrow at the
   end of a route only when `direction: 'forward'`; each point ringed and named with its short code; "VAC, to be checked" in
   italics under the aerodrome; the aerodrome's reference point not drawn.
+- **Coverage line** (§ 6.11): when `aerodb.coverage` exists, the content opens with a line saying what the device holds of the aerodrome's
+  procedures (pin, level, reason, outdated, counts), after the runway and procedure rows of the flight.
 - **VFR mode**: departure and arrival (four-letter codes) are shown anyway, drawing only.
 
 ## 17. Designs, day and night

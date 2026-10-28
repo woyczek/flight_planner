@@ -47,6 +47,9 @@ import {
   redrawWeather,
   legendRows as weatherRows
 } from './weather.js';
+import {
+  covRows
+} from './coverage.js';
 
 /** Positions de la feuille, dans l'ordre de la primitive. */
 const SHEET_POS = ['collapsed', 'default', 'expanded'];
@@ -101,8 +104,9 @@ function onSheetSettled() {
 function legendRows(view) {
   if (view === 'weather') return weatherRows();
   const sw = (k, c = '') => `<i class="mp-lg-sw mp-lg-${k}" style="--c:${c}"></i>`,
-    d = S.geo?.drawn;
-  if (!d) return [];
+    d = S.geo?.drawn,
+    cov = covRows(sw); // couche « Procédures » : une ligne par niveau, seulement quand elle est montrée
+  if (!d) return cov;
   const rows = [];
   if (d.plan) rows.push([sw('line', '#6a1b9a'), esc(tt(TX.lgPlan))]);
   if (d.tocTod) rows.push([sw('diamond', '#6a1b9a'), esc(tt(TX.lgToc))]);
@@ -113,7 +117,7 @@ function legendRows(view) {
   if ((S.marks || []).length) rows.push([sw('tick', '#8e24aa'), esc(tt(TX.lgNm))]);
   if (S.lgFixes) rows.push([sw('tri', S.theme?.fg || '#17202a'), esc(tt(TX.lgFixes))]);
   if (S.lgCons) rows.push([sw('cons', '#7c3aed'), esc(tt(TX.lgCons))]);
-  return rows;
+  return rows.concat(cov);
 }
 /** Puce « i » et panneau de légende : la puce est toujours là, désactivée tant que le dessin n'a pas de légende ; le panneau
  *  couvre le dessin ; écrits seulement s'ils changent. */

@@ -674,8 +674,9 @@ redesigned for touch at that point.
        gets their rows. Lots: survey session (reader, tests on a synthetic database), aerodb (status `lnm`, labels,
        catalogue, licence rows), position check in `tools/sim_position.py`.
    22. **Coverage map of the procedures** (user, 28 Oct evening: "il faut, du coup, une carte des ADs connus, et/ou des
-       zones vertes, orange, rouges"): planned, ergonomics session. On the Map, a layer "Procédures" (off by default,
-       on when a procedure row is open in Fuel) colours the aerodrome pins by what the device can give: **green** =
+       zones vertes, orange, rouges"): ergonomics session; the Map's side is built (maps SPEC § 6.11). On the Map, a layer
+       "Procédures" (off by default; lit by itself while the current flight has a side with no chosen procedure whose aerodrome
+       is not green, until the user touches its box; no event between modules) colours the aerodrome pins by what the device can give: **green** =
        procedures held (official or check, from the published cycle, `proc/manual/` or `proc/local/`), **orange** =
        readable on demand (France by the SIA, a State with EAD coding tables, an aerodrome in Little Navmap's local
        database), **red** = nothing (image-only or prose States, nothing local); one legend line through the "i" chip;

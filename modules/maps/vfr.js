@@ -28,6 +28,9 @@ import {
   cardHtml
 } from './procs.js';
 import {
+  covCard
+} from './coverage.js';
+import {
   hideTips,
   followTip,
   hoverHtml,
@@ -316,6 +319,10 @@ function pinView(icao) {
   });
 }
 
+/** Contenu du terrain épinglé refait (une réponse arrivée : couverture des procédures, textes de ses raisons). */
+export function refreshAdCard() {
+  if (S?.vfrPin && S.vfrCard) pinView(S.vfrPin);
+}
 /** Terrain relâché (la surbrillance s'arrête) ; le bloc de données n'est pas touché. */
 export function releaseAd() {
   if (!S.vfrPin) return;
@@ -384,7 +391,7 @@ function showAdCard(icao) {
     }
   }
   // piste et procédures choisies dans Carburant pour ce terrain (départ ou arrivée du vol), avec « Changer » ; la Carte ne les écrit jamais
-  body = cardHtml(icao) + body;
+  body = cardHtml(icao) + covCard(icao) + body;
   openData('ad', `ad:${icao}`, title, () => body, label);
 }
 /** VRP de la base que la surbrillance dessine (terrains montrés) : la couche des VRP ne les redessine pas. */
