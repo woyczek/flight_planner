@@ -359,6 +359,16 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
 .f-level input {
   margin-top: 3px
 }
+/* groupes de cartes des réglages (plus de sept cartes) : un titre repliable de la taille d'un titre de carte, pastille
+   d'attention à droite */
+.f-group>summary {
+  font-weight: 600;
+  font-size: 1.1em
+}
+.f-group>summary>span {
+  flex: 1;
+  min-width: 0
+}
 /* aide (frame/help/help.js) : panneau replié en tête d'un module, écran #help ; tableaux en listes sur téléphone */
 .f-help>summary>span {
   flex: 1;

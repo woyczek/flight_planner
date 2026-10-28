@@ -137,14 +137,15 @@
 
   /** Carte Administration (niveau Complet) : UN BOUTON par page d'administrateur (SogAdminLinks), sa phrase dessous ; un
    *  bouton qui porte un volet (edge, cfg) le déplie sous sa ligne. Bancs actifs seulement sur un poste avec lanceur
-   *  (sinon un bouton grisé), pages V2 montrées seulement avec un lanceur. panels : { cfg (HTML du volet, vide sans
-   *  accès à exporter), edge (le filet est affiché) }. */
+   *  (sinon un bouton grisé), pages V2 et volets du lanceur montrés seulement avec un lanceur. panels : { edge (le filet
+   *  est affiché), cfg (HTML du volet, vide sans accès à exporter), remote (dépôt distant de data/, vide si data/ n'est pas
+   *  un dépôt git), keys (clés d'API de la compagnie) } ; une ligne dont le volet est vide n'est pas montrée. */
   function adminCard(t, L, panels) {
     const links = window.SogAdminLinks || [];
     if (!links.length) return '';
     /** Panneau replié d'une ligne d'administration (edge : bord de publication, cfg : configuration). */
-    const panel = x => x.panel === 'edge' ? `<div class="f-adminpanel" data-adminpanel="edge" hidden><label class="f-check"><input type="checkbox" data-edge ${panels.edge ? 'checked' : ''}>${esc(t(T.edgeShow))}</label>
-      <p class="f-muted">${esc(t(T.edgeHint))}</p><p class="f-msg" data-msg></p></div>` : `<div class="f-adminpanel" data-adminpanel="cfg" hidden>${panels.cfg}</div>`;
+    const panel = x => `<div class="f-adminpanel" data-adminpanel="${esc(x.panel)}" hidden>${x.panel === 'edge' ? `<label class="f-check"><input type="checkbox" data-edge ${panels.edge ? 'checked' : ''}>${esc(t(T.edgeShow))}</label>
+      <p class="f-muted">${esc(t(T.edgeHint))}</p><p class="f-msg" data-msg></p>` : panels[x.panel] || ''}</div>`;
     /** Ligne de la liste d'administration : titre, lien, bouton de copie et panneau éventuel. */
     const row = x => {
       const label = esc(t(x.title)),
@@ -160,7 +161,7 @@
         <span class="f-row"><button type="button" data-act="adminCopy" data-text="${esc(abs)}">${esc(t(T.copyLink))}</button></span>` : '';
       return `<li data-admin="${esc(x.id)}">${btn}<span class="f-muted">${esc(t(x.text))}${x.where === 'bench' ? ` — ${esc(t(T.launcherOnly))}` : ''}</span>${under}${x.panel ? panel(x) : ''}</li>`;
     };
-    const shown = links.filter(x => (x.where !== 'v2' || L) && (x.panel !== 'cfg' || panels.cfg));
+    const shown = links.filter(x => (!['v2', 'launcher'].includes(x.where) || L) && (!x.panel || x.panel === 'edge' || panels[x.panel]));
     return `<div class="f-card" data-card="admin"><h2>${esc(t(T.admin))}</h2><p class="f-muted">${esc(t(T.adminHint))}</p>
       <ul class="f-admin">${shown.map(row).join('')}</ul></div>`;
   }

@@ -408,3 +408,24 @@ rule 18); only the lab entry has it. The lab screen starts with a "Settings › 
   `render()` builds one `env` (view, context, identity, preferences, launcher state…) and passes it to all. Parity
   checked by a snapshot of the screen before and after (launcher / no launcher × fr / en × levels 2 / 3: cards, texts,
   buttons, fields, links): no difference; no JS error at levels 1 to 3.
+- **28 Oct 2026 — Seven cards, then groups; the launcher's administration behind Administration** (ergonomics session,
+  answers 2 and 4; question 6 of the relay closed):
+  - Discovery shows seven cards at most, flat, in the order of the path (Identity, Access, Synchronisation, Usages,
+    Level, Design, About); Backup, Offline data, Weather key, Little Navmap sheets and Computer access start at
+    Everyday. Everyday and Full: seven folded groups (Identity, Access, Data, Device, Display, Administration, Help),
+    open only when they carry an attention (warning, error, target of an amber status line), with the amber dot on
+    their title. Cards of circumstance (V2 found, configuration received, joining resume) come first at every level,
+    outside the count. My first reading ("more than seven visible cards → groups, at every level") was corrected: the
+    "Simple" level of the rule is Discovery.
+  - The launcher's cards that are the administrator's — remote repository of `data/`, the airline's API keys (IVAO) —
+    became two panels of the Administration card (`admin_links.js`: `where: 'launcher'`), so they are seen at the Full
+    level only. What a pilot uses on the workstation stays in place and at its level (Computer access, Little Navmap
+    sheets, the clone / take-over door of `data/` in Access), drawn only when the launcher answers.
+  - A line of the status block, the Administration card's "Diagnostics" and the `?offline` / `?import` entries open the
+    group of their card first: the frame's `goStatus` (frame/app.js) is left as it is, settings listens in the capture
+    phase.
+  - `groups.js` is a part of its own (settings.js would have gone over 60 KB).
+  - Same lot, review of the Computer access card (points 2 and 3, the ergonomics session's go): pairing date in UTC
+    (`c.time.fmtDateZ`), "Device "…" forgotten." for one device, a failed Forget keeps the state shown and says the
+    launcher does not answer, "Open them too" names an address still closed. Point 1 (`lan_open(every)` touching the
+    pairing code) is the frame's (`tools/launch.py`).

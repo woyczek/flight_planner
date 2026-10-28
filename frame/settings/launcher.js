@@ -19,9 +19,6 @@
   } = window.SogSettingsKit;
   // textes de ce fichier, ajoutés aux textes communs des Réglages (window.SogSettingsT)
   Object.assign(T, {
-    remote: ['Dépôt distant de data/', 'Remote repository of data/', 'Entferntes Repository von data/',
-      'Repositorio remoto de data/'
-    ],
     remoteNow: ['Actuel : {u} (branche {b})', 'Current: {u} (branch {b})', 'Aktuell: {u} (Zweig {b})', 'Actual: {u} (rama {b})'],
     remoteNowBare: ['Actuel : {u}', 'Current: {u}', 'Aktuell: {u}', 'Actual: {u}'],
     remoteNone: ['Aucun dépôt distant : rien ne part ailleurs que ce poste.',
@@ -106,13 +103,7 @@
       'Dieser Rechner nutzt seinen Starter: hier ist kein Token einzustellen.',
       'Este puesto pasa por su lanzador: no hay token que configurar aquí.'
     ],
-    // clés du lanceur
-    keys: ['Clés du lanceur', 'Launcher keys', 'Schlüssel des Starters', 'Claves del lanzador'],
-    keysHint: ['Gardées par le lanceur de ce poste (dossier secrets/), jamais par le navigateur ni dans les données.',
-      'Kept by this workstation’s launcher (secrets/ folder), never by the browser nor in the data.',
-      'Vom Starter dieses Rechners verwahrt (Ordner secrets/), nie im Browser oder in den Daten.',
-      'Guardadas por el lanzador de este puesto (carpeta secrets/), nunca por el navegador ni en los datos.'
-    ],
+    // clés d'API de la compagnie (volet de la carte Administration ; titre et phrase dans admin_links.js)
     ivaoKey: ['Clé de l’API IVAO', 'IVAO API key', 'IVAO-API-Schlüssel', 'Clave de la API IVAO'],
     // accès des appareils du réseau local (carte écrite par la session du cadre, lot 18)
     lan: ['Accès du poste', 'Computer access', 'Zugang des Rechners', 'Acceso del equipo'],
@@ -139,6 +130,14 @@
       '¿Olvidar todos los dispositivos vinculados? Cada uno tendrá que introducir un código nuevo.'
     ],
     lanForgotten: ['Appareils oubliés.', 'Devices forgotten.', 'Geräte vergessen.', 'Dispositivos olvidados.'],
+    lanForgottenOne: ['Appareil « {d} » oublié.', 'Device “{d}” forgotten.', 'Gerät „{d}“ vergessen.',
+      'Dispositivo «{d}» olvidado.'
+    ],
+    lanStillClosed: ['Adresses restées fermées : {u} (indisponibles sur ce poste, la fenêtre du lanceur dit pourquoi).',
+      'Addresses still closed: {u} (unavailable on this computer; the launcher’s window says why).',
+      'Weiterhin geschlossene Adressen: {u} (auf diesem Rechner nicht verfügbar; das Fenster des Starters nennt den Grund).',
+      'Direcciones aún cerradas: {u} (no disponibles en este equipo; la ventana del lanzador dice por qué).'
+    ],
     lanState: ['État', 'State', 'Zustand', 'Estado'],
     lanOn: ['ouvert jusqu’à la fermeture du lanceur', 'open until the launcher closes', 'geöffnet bis zum Schließen des Starters',
       'abierto hasta que se cierre el lanzador'
@@ -250,7 +249,8 @@
     Object.keys(dryCache).forEach(k => delete dryCache[k]);
     return remoteNow = await setup('sync-remote');
   }
-  /** Carte Accès d'un poste servi par le lanceur : dépôt distant de data/, ou la porte (clone / reprise). */
+  /** Carte Accès d'un poste servi par le lanceur : la phrase « pas de jeton ici » et, tant que data/ n'est pas un dépôt
+   *  git, la porte (clone / reprise) ; le dépôt distant est un volet de la carte Administration (remoteHtml). */
   function accessHtml(env) {
     const {
       t,
@@ -258,19 +258,33 @@
       gitState,
       fld
     } = env;
-    return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p>${gitState === 'repo' ? `<h3>${esc(t(T.remote))}</h3><p>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
-        ${fld('remote', T.remoteUrl, remote.url || remote.default || '')}<p class="f-msg" data-msg></p>
-        <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div><p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p>` : gitDoor(gitState, t, fld, remote)}</div>`;
+    return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p>${gitState === 'repo' ? '' : gitDoor(gitState, t, fld, remote)}</div>`;
   }
-  /** Carte des clés d'API de la compagnie, gardées par le lanceur (IVAO). */
+  /** Volet « Dépôt distant de data/ » de la carte Administration (data/ en dépôt git seulement) ; '' sinon. */
+  function remoteHtml(env) {
+    const {
+      t,
+      remote,
+      gitState,
+      fld
+    } = env;
+    if (gitState !== 'repo' || !remote) return '';
+    return `<div data-card="remote"><p data-remote-now>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
+        ${fld('remote', T.remoteUrl, remote.url || remote.default || '')}<p class="f-msg" data-msg></p>
+        <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div><p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p></div>`;
+  }
+  /** Volet « Clés d'API de la compagnie » de la carte Administration : la clé IVAO, gardée par le lanceur. */
   function keysHtml(env) {
     const {
       t,
       fld
     } = env;
-    return `<div class="f-card" data-card="keys"><h2>${esc(t(T.keys))}</h2><p class="f-muted">${esc(t(T.keysHint))}</p>
-      <p>${esc(t(T.pair, { k: t(T.ivaoKey) }))} <b data-key>…</b></p>${fld('ivaoKey', T.keyNew, '', { type: 'password' })}<p class="f-msg" data-msg></p>
+    return `<div data-card="keys"><p>${esc(t(T.pair, { k: t(T.ivaoKey) }))} <b data-key>…</b></p>${fld('ivaoKey', T.keyNew, '', { type: 'password' })}<p class="f-msg" data-msg></p>
       <div class="f-row"><button type="button" class="primary" data-act="keySave">${esc(t(T.save))}</button><button type="button" data-act="keyTest">${esc(t(T.test))}</button><button type="button" data-act="keyErase">${esc(t(T.erase))}</button></div></div>`;
+  }
+  /** Adresses privées de ce poste encore fermées au réseau local (état du lanceur : available moins celles des urls). */
+  function closedIps(s) {
+    return (s?.available || []).filter(ip => !(s.urls || []).some(u => u.includes(`//${ip}:`)));
   }
   /** Carte « Accès du poste » (le poste qui sert la page seulement : c.lan() nul ailleurs) ; '' sans elle. */
   function lanHtml(env) {
@@ -319,12 +333,12 @@
       if (!s) return void(box.innerHTML = `<p class="f-msg" data-kind="err">${esc(t(T.lanFail))}</p>`);
       const url = s.urls?.[0] || '',
         row = (label, v) => `<dt>${esc(t(label))}</dt><dd>${v}</dd>`,
-        closedIps = (s.available || []).filter(ip => !(s.urls || []).some(u => u.includes(`//${ip}:`))),
+        closed = closedIps(s),
         code = s.closed ? `<span class="f-msg" data-kind="err">${esc(t(T.lanClosed))}</span>` : s.code ? esc(t(T.lanCodeLeft, {
           c: s.code,
           m: min
         })).replace(esc(s.code), `<b class="f-num">${esc(s.code)}</b>`) : esc(t(T.lanNoCode)),
-        devs = (s.paired || []).map(d => `<div class="f-row"><span>${esc(d.label)} — ${esc(d.at ? new Date(d.at).toLocaleDateString() : '?')}</span><button type="button" data-forget="${esc(d.id)}" data-label="${esc(d.label)}">${esc(t(T.lanForgetOne))}</button></div>`).join('');
+        devs = (s.paired || []).map(d => `<div class="f-row"><span>${esc(d.label)} — ${esc(d.at ? c.time?.fmtDateZ(d.at) || d.at : '?')}</span><button type="button" data-forget="${esc(d.id)}" data-label="${esc(d.label)}">${esc(t(T.lanForgetOne))}</button></div>`).join('');
       let qr = '';
       if (s.on && url && window.SogQR) try {
         qr = `<figure class="f-qr"><div>${SogQR.svg(url, { ecl: 'M', scale: 4 })}</div><figcaption class="f-muted">${esc(t(T.lanQr))}</figcaption></figure>`;
@@ -332,7 +346,7 @@
         qr = ''; // adresse trop longue pour un code QR : elle reste écrite
       }
       box.innerHTML = `<dl class="f-dl">${row(T.lanState, esc(t(s.on ? T.lanOn : T.lanOff)))}${s.on ? row(T.lanUrl, `<b>${esc(url)}</b>`) +
-        (s.urls.length > 1 ? row(T.lanOther, esc(s.urls.slice(1).join(', '))) : '') + row(T.lanCode, code) : ''}${row(T.lanDevices, esc(String(s.devices ?? 0)))}</dl>${devs}${qr}${s.on ? `<p class="f-muted">${esc(t(T.lanCodeHint))}</p>` : ''}${s.on && closedIps.length ? `<p class="f-muted">${esc(t(T.lanOtherClosed, { u: closedIps.join(', ') }))}</p><div class="f-row"><button type="button" data-act="lanAll">${esc(t(T.lanOpenAll))}</button></div>` : ''}`;
+        (s.urls.length > 1 ? row(T.lanOther, esc(s.urls.slice(1).join(', '))) : '') + row(T.lanCode, code) : ''}${row(T.lanDevices, esc(String(s.devices ?? 0)))}</dl>${devs}${qr}${s.on ? `<p class="f-muted">${esc(t(T.lanCodeHint))}</p>` : ''}${s.on && closed.length ? `<p class="f-muted">${esc(t(T.lanOtherClosed, { u: closed.join(', ') }))}</p><div class="f-row"><button type="button" data-act="lanAll">${esc(t(T.lanOpenAll))}</button></div>` : ''}`;
     };
     if (lanApi) {
       const el = card('lan'),
@@ -343,7 +357,7 @@
         };
       tick();
     }
-    if (L) launcherKey().then(k => {
+    if (L && view.querySelector('[data-key]')) launcherKey().then(k => { // volet des clés : niveau Complet seulement
       const b = view.querySelector('[data-key]');
       if (b) b.textContent = !k?.set ? t(T.keyMissing) : t(k.env ? T.keyEnv : T.keySet, {
         h: k.hint || '••••'
@@ -389,9 +403,17 @@
         }))) return;
       fg.disabled = true;
       const s = await c.lan().forget(fg.dataset.forget).catch(() => null);
+      // sans réponse : l'état affiché reste (la relève suivante le redira), le refus est dit dans la carte
+      if (!s) {
+        fg.disabled = false;
+        env.say('lan', t(T.lanFail));
+        return true;
+      }
       env.lanKey = '';
       env.paintLan(s);
-      if (s) c.notify(t(T.lanForgotten), 'ok');
+      c.notify(t(T.lanForgottenOne, {
+        d: fg.dataset.label
+      }), 'ok');
       return true;
     }
     return false;
@@ -417,7 +439,11 @@
           s = act === 'lanForget' ? await api.forget() : act === 'lanCode' ? await api.newCode() : act === 'lanAll' ? await api
           .openAll() :
           before.on ? await api.close() : await api.open();
-        say('lan', !before.on && act === 'lanToggle' && !s.on ? t(T.lanNone) : '', 'warn');
+        // « Les ouvrir aussi » : une adresse qui reste fermée (port pris…) est dite, le lanceur en donne la raison
+        const still = act === 'lanAll' ? closedIps(s) : [];
+        say('lan', !before.on && act === 'lanToggle' && !s.on ? t(T.lanNone) : still.length ? t(T.lanStillClosed, {
+          u: still.join(', ')
+        }) : '', 'warn');
         b.disabled = false; // avant le dessin : paintLan décide ensuite de « Oublier » (aucun appareil → grisé)
         env.lanKey = '';
         env.paintLan(s);
@@ -445,9 +471,9 @@
       return again();
     }
     if (act === 'remoteCheck' || act === 'remoteSave') {
-      const url = val('remote', card('access')),
+      const url = val('remote', card('remote')),
         save = act === 'remoteSave';
-      say('access', t(!save ? T.remoteChecking : needsConfirm(url, 'remote') ? T.confirmWait : T.remoteSaving), 'warn');
+      say('remote', t(!save ? T.remoteChecking : needsConfirm(url, 'remote') ? T.confirmWait : T.remoteSaving), 'warn');
       const r = await setup('sync-remote', {
         url,
         ...(save ? {
@@ -456,10 +482,10 @@
       });
       const ck = r?.check || {},
         text = [r?.saved?.message, confirmOpen(r?.saved) ? t(T.confirmOpen) : '', ck.message].filter(Boolean).join(' — ') || '?';
-      say('access', text, r?.saved && !r.saved.ok ? 'err' : ck.ok ? 'ok' : 'warn');
+      say('remote', text, r?.saved && !r.saved.ok ? 'err' : ck.ok ? 'ok' : 'warn');
       // enregistré : la ligne « Actuel » suit, le compte rendu de la vérification reste affiché
       if (save && r?.saved?.ok) {
-        const now = card('access').querySelector('h3 + p');
+        const now = card('remote').querySelector('[data-remote-now]');
         if (now) now.textContent = t(T.remoteNowBare, {
           u: url
         });
@@ -511,6 +537,7 @@
     ],
     readRemote,
     accessHtml,
+    remoteHtml,
     keysHtml,
     lanHtml,
     live,

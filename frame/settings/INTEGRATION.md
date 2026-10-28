@@ -12,7 +12,8 @@ in [SPEC.md](SPEC.md).
   parts: `settings/kit.js` (`SogSettingsKit`, shared helpers, and `SogSettingsT`, the texts each part adds to),
   `settings/launcher.js` (the launcher's cards: workstation access, keys, local network, data/ remote),
   `settings/access.js` (access and transport without a launcher, synchronisation), `settings/diagnostic.js` (about and
-  diagnostics), `settings/admin.js` (Administration card, publication edge, pilot configuration) — each fills
+  diagnostics), `settings/admin.js` (Administration card, publication edge, pilot configuration), `settings/groups.js`
+  (the arrangement of the screen: flat at Discovery, groups above, SPEC § 1) — each fills
   `SogSettingsParts.<name>` — and last `settings/settings.js` (`SogSettings`, the screen and the cards shared by every
   context). `lib/clipboard.js` (fuel's module, `copyText`) is imported by `kit.js` when something is copied.
   Start-up, the menu and the first module never wait for them. The service worker keeps them all with the frame's files

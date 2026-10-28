@@ -183,6 +183,7 @@
       e.preventDefault(); // bouton de la carte Administration : le diagnostic replié de la carte À propos, ouvert
       const d = view.querySelector('[data-diagbox]');
       if (d) d.open = true;
+      d?.closest('details.f-group')?.setAttribute('open', ''); // son groupe (Aide) ouvert aussi
       return d?.scrollIntoView({
         block: 'start'
       });

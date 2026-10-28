@@ -241,8 +241,13 @@ def a8(c):
         c.ok(r['h'] >= 43.5, f'row "{r["text"][:40]}" is {r["h"]:.1f} px high', 'at least 44 px')
     who = next(r for r in rows if r['k'] == 'who')
     c.eq(norm(who['text']).startswith(norm(tx(FRAME, 'who', c.lang, after='info: {'))), True, 'the trigram line is worded in the language of the run', what=f'row {who["text"]!r}')
-    # last action: the data line leads to the card that holds the answer (Usages here: no exchange, no pending write), under the header
+    # last action: the data line leads to the card that holds the answer (Usages here: no exchange, no pending write), under the header;
+    # at the Everyday level that card sits in the folded "Data" group, which the line opens first (SPEC § 1)
+    c.eq(c.js("!!document.querySelector('[data-card=\"status\"]').closest('details')"), False, 'the status block is outside the groups', what='status in a group')
+    # the Data group may be open by itself (attention: no bases in the suite): folded here so that the tap has to open it
+    c.js("document.querySelector('[data-card=\"usages\"]').closest('details.f-group').open = false")
     c.tap('[data-card="status"] li[data-k="data"] [data-go]')
+    c.until("document.querySelector('[data-card=\"usages\"]').closest('details.f-group').open", what='the data line opens the group of its card')
     c.until("(() => { const r = document.querySelector('[data-card=\"usages\"]').getBoundingClientRect(); return r.top >= 0 && r.top < window.innerHeight / 2 })()", what='the data line brings the Usages card to the top of the screen')
     c.eq(c.hash(), '#settings', 'a line that leads to a card keeps the address', what='hash')
     c.tap('[data-card="status"] li[data-k="who"] [data-go]')
@@ -331,21 +336,46 @@ def a12(c):
     c.eq(c.count('#fView > .f-screen [data-card="status"]'), 1, 'the Status block opens the screen', what='status blocks')
     c.eq(c.count('[data-card="admin"]'), 0, 'rule 18: the Administration card is for the Full level only', what='Administration cards at the Everyday level')
     c.eq(c.count('[data-admin], [data-adminpanel], a[href="#maps?tune=1"]'), 0, 'rule 18: nothing of the administrator\'s on the ordinary cards', what='administrator controls at the Everyday level')
+    # SPEC § 1 at the Everyday level: the cards under seven titles at most, in the order of the path, the status block outside
+    groups = c.js("[...document.querySelectorAll('#fView > .f-screen > details.f-group')].map(g => g.dataset.group)")
+    order = ['identity', 'access', 'data', 'device', 'display', 'admin', 'help']
+    c.ok(1 <= len(groups) <= 7, f'groups {groups}', 'between one and seven groups')
+    c.eq(groups, [g for g in order if g in groups], 'the groups follow the order of the path', what='group order')
+    c.eq(c.js("[...document.querySelectorAll('#fView > .f-screen > [data-card]')].map(k => k.dataset.card)"), ['status'], 'only the status block is outside the groups (no card of circumstance here)', what='cards outside groups')
+    c.ok(c.js("[...document.querySelectorAll('details.f-group')].every(g => g.open === !g.querySelector(':scope > summary > .f-status-dot').hidden)"),
+         'a group is open exactly when its title carries the attention dot', 'folded unless it needs attention')
+    c.eq(c.js("document.querySelector('[data-card=\"identity\"]').closest('details.f-group').dataset.group"), 'identity', 'Identity is in its group', what='identity group')
+    sw, iw = hscroll(c)
+    c.le(sw, iw, 'no horizontal scroll on a phone with the groups', what='page width, Everyday')
     c.tap('#fDevice')                                  # the control that opened the screen closes it
     c.until("location.hash === '#fuel'", what='the gear again returns to the previous module (#fuel)')
     c.tap('#fDevice')
     c.until("location.hash === '#settings'", what='settings reopen')
     c.key('Escape')
     c.until("location.hash === '#fuel'", what='Escape returns to the previous module (#fuel)')
+    # SPEC § 1 at the Discovery level: no groups, seven cards at most, flat, in the order of the path
+    c.open('settings', docs=[['device/level.json', {'level': 1}, 'cache']])
+    c.until("!!document.querySelector('[data-card=\"identity\"]')", what='settings drawn at the Discovery level')
+    # opened directly (no module mounted) the screen is drawn in #fView itself: the root is the Identity card's parent
+    flat = c.js("[...document.querySelector('[data-card=\"identity\"]').parentElement.children].filter(k => k.dataset.card && k.dataset.card !== 'status').map(k => k.dataset.card)")
+    c.eq(c.count('details.f-group'), 0, 'no groups at the Discovery level', what='groups at Discovery')
+    c.ok(len([k for k in flat if not c.js("(k) => document.querySelector('[data-card=\"' + k + '\"]').hidden", k)]) <= 7, f'cards {flat}', 'seven visible cards at most at Discovery')
+    c.eq([k for k in flat if k in ('backup', 'offline', 'wx', 'lan', 'lnmperf', 'admin')], [], 'backup, offline data, weather key, computer access, Little Navmap start at Everyday', what='cards above Discovery')
+    c.eq([k for k in flat if k in ('identity', 'access', 'usages', 'level', 'design', 'about')], ['identity', 'access', 'usages', 'level', 'design', 'about'], 'the Discovery cards in the order of the path', what='Discovery order')
     # rule 18 at the Full level: one card, one button per administrator page; the airline's thresholds file already holds a mode
     profiles = {'schema': 1, 'updated_at': '2026-10-23T18:00:00Z', 'by': 'maps', 'profiles': {'vfr': {'elements': {'zoom': {'vrp': [9.25, 24]}}}}}
     c.open('settings', docs=[['device/level.json', {'level': 3}, 'cache'], ['airline/map_profiles.json', profiles, 'document']])
     c.until("!!document.querySelector('[data-card=\"admin\"]')", what='the Administration card is drawn at the Full level')
     c.eq(c.count('[data-card="admin"]'), 1, 'one Administration card', what='cards')
+    c.eq(c.js("document.querySelector('[data-card=\"admin\"]').closest('details.f-group')?.dataset.group"), 'admin', 'the card sits in the Administration group', what='admin group')
+    if not c.js("document.querySelector('[data-group=\"admin\"]').open"):
+        c.tap('[data-group="admin"] > summary')
+    c.until("document.querySelector('[data-group=\"admin\"]').open", what='the Administration group opens on its title')
     ids = c.js("[...document.querySelectorAll('[data-card=\"admin\"] li[data-admin]')].map(li => li.dataset.admin)")
     for k in ADMIN_FR:
         c.ok(k in ids, f'entries {ids}', f'an entry "{k}"')
-    c.ok(not any(k in ids for k in ('maintenance', 'firstLaunch', 'mapStudio', 'cfg')), f'entries {ids}', 'no V2 page without a launcher, no export without an access to export')
+    c.ok(not any(k in ids for k in ('maintenance', 'firstLaunch', 'mapStudio', 'cfg', 'remote', 'keys')), f'entries {ids}',
+         'no V2 page nor launcher setting without a launcher, no export without an access to export')
     for k, label in ADMIN_FR.items():
         btn = c.js("(k) => { const e = document.querySelector('[data-card=\"admin\"] li[data-admin=\"' + k + '\"]').firstElementChild; "
                    "return { tag: e.tagName, cls: e.className, text: e.textContent.trim(), h: e.getBoundingClientRect().height } }", k)
@@ -655,6 +685,8 @@ def a19(c):
 
     def settings(page):
         page.goto(f'{c.base}/frame/index.html#settings', wait_until='load')
+        page.wait_for_selector('[data-card="access"] [data-f="repo"]', state='attached')
+        page.evaluate("document.querySelectorAll('details.f-group').forEach(d => d.open = true)")   # cards in folded groups (SPEC 1)
         page.wait_for_selector('[data-card="access"] [data-f="repo"]')
         page.wait_for_selector('[data-card="wx"]')
         page.wait_for_timeout(600)               # the device files are read: the cards are drawn from them
@@ -796,6 +828,8 @@ def a20(c):
     # Full level: the button of the Administration card (a real link, its absolute address, "Copy the link"), then the screen
     c.open('settings', docs=LEVEL3)
     c.until("!!document.querySelector('[data-card=\"admin\"] li[data-admin=\"sources\"]')", what='the Administration card lists the Sources')
+    if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
+        c.tap('[data-group="admin"] > summary')     # Settings: the card sits in a folded group (SPEC 1)
     c.eq(c.count('[data-admin="datalab"], a[href="#datalab"]'), 0, 'the laboratory is gone', what='laboratory button')
     btn = c.js("(() => { const e = document.querySelector('[data-admin=\"sources\"]').firstElementChild; return { tag: e.tagName, cls: e.className, href: e.getAttribute('href'), text: e.textContent.trim(), h: e.getBoundingClientRect().height } })()")
     c.ok(btn['tag'] == 'A' and 'f-btn' in btn['cls'] and btn['href'] == '#sources', f'{btn}', 'a frame button to #sources')

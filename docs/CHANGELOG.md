@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: seven cards at Discovery, folded groups above; the launcher's administration behind Administration**
+  (`frame/settings/groups.js` new, `settings.js`, `launcher.js`, `admin.js`, `admin_links.js`, `diagnostic.js`,
+  `frame/frame.css`, `frame/app.js` `LAZY.settings`, `frame/sw.js`; SPEC § 1, § 3, § 6, INTEGRATION § 1, DECISIONS,
+  Settings help ×4; tests A8, A12, and A19, A20, D16, J5 open the group of the card they touch): Discovery shows Identity, Access, Synchronisation, Usages, Level, Design and About,
+  flat; Everyday and Full show seven folded groups (Identity, Access, Data, Device, Display, Administration, Help), the one
+  that needs attention open with an amber dot; a status line opens the group of its card. The remote repository of
+  `data/` and the IVAO key are panels of the Administration card. Computer access: pairing date in UTC, clearer messages
+  when forgetting a device or opening the other addresses. The Design card says when the design chosen is for the
+  computer only (Aqua, once its lot 1b is in).
 - **Fuel: times over the points derived, not written** (`modules/fuel/module.js`; INTEGRATION, SPEC, DECISIONS) — the
   Map computes the ETAs and the planned position from the quote's legs; fuel keeps only the fuel and distance remaining
   and the phase of a started flight.

@@ -28,7 +28,23 @@ diagnostic, admin); the split is a matter of size, not of behaviour, and a regen
 - A wrong value is said inside its card, never in a native dialog; questions use the frame's `ask`.
 - Texts are `[fr, en, de, es]` rows through the frame's `t` (French typography included); the status block's texts are the
   frame's.
-- Seven cards at most on screen, not counting the status block; the diagnostics are a folded block at the bottom.
+- **Seven cards at most, then groups** (ergonomics session, 28 Oct 2026; `frame/settings/groups.js`):
+  - **Discovery** (level 1): no groups; seven cards at most, flat, in the order of the path: Identity, Access,
+    Synchronisation (when shown), Usages, Level, Design, About. Backup, Offline data, Weather key, Little Navmap sheets
+    and Computer access are not drawn at this level (they start at Everyday).
+  - **Everyday and Full**: the cards under seven titles at most, in the order of the path (what is set once comes
+    first): **Identity** (Identity), **Access** (Access, Synchronisation), **Data** (Usages, Offline data, Little Navmap
+    sheets), **Device** (Backup, Weather key, Computer access), **Display** (Level, Design), **Administration** (Full
+    only), **Help** (About). Each title is a fold (`details.f-group[data-group]`), closed by default, except a group that
+    carries an attention: a warning or an error in one of its cards, or the card an amber line of the status block leads
+    to; it is open and its title carries the amber dot. A group opened or closed by hand stays so when the screen is
+    drawn again (for the page's life). A group with no card is not drawn.
+  - At every level, the status block and the **cards of circumstance** (V2 settings found, configuration received,
+    joining resume) come first, outside groups and outside the count; they go once dealt with.
+  - A line of the status block that leads to a card opens that card's group first (listened to in the capture phase,
+    before the frame brings the card under the header); so do "Diagnostics" of the Administration card, the
+    `#settings?offline=1` and `#settings?import=1` entries.
+- The diagnostics are a folded block of the About card.
 - **Nothing of the administrator's on the ordinary cards** (rule 18 of `docs/technique/V3_SPECIFICATION.md` § 7.1): every
   administrator page is one button of the Administration card (§ 3.11), Full level only.
 
@@ -62,7 +78,9 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
 3b. **Design**: one thumbnail per set of the frame (`designs()`: id, label in four languages, textured), each a small
    block carrying that design and the current tone (`[data-design][data-tone]`, the frame's tokens), the current one
    outlined; the tone Automatic (as the system), Day, Night. One tap calls `saveDesign({ design, tone })`: the frame
-   applies it and keeps `device/design.json`; settings never writes it.
+   applies it and keeps `device/design.json`; settings never writes it. When the design applied is not the one chosen
+   (`design()` → `{ design, tone, applied }`, `applied !== design`: Aqua is for the computer only and `designs()` leaves it
+   out elsewhere), one line under the hint says so: "Aqua is for the computer only; here: Standard" (×4, `[data-design-applied]`); the screen is drawn again on the frame's `frame-desk` event while the Design card is on screen. The thumbnails keep `[data-design-pick="<id>"]` (Aqua's tests H5, H6).
 4. **Usages**: one sentence first — "Alone on this device: nothing is exchanged" when no exchange is ticked (it is a
    state, not a box), otherwise how data are exchanged: through this workstation's launcher (`data/` folder, git or
    not), through the GitHub repository, or "no way to exchange here: set the access below". Then three boxes:
@@ -74,7 +92,9 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    file…" asks, saying that this device's copies, pending writes and conflicts will be erased, then loads in `replace`
    mode. A file that is not a device backup is refused with a notification; the result says added, updated, kept
    and conflicts.
-6. **Data access** (always): on a launcher, one sentence (no token here), then the **remote repository of `data/`**
+6. **Data access** (always): on a launcher, one sentence (no token here); the **remote repository of `data/`** is a panel
+   of the Administration card (Full level, rule of 28 Oct 2026: what is the administrator's goes behind Administration),
+   `[data-card="remote"]` inside `[data-adminpanel="remote"]`, shown when `data/` is a git repository
    (`GET /__setup/sync-remote`: `repo`, `remote`, `url`, `branch`, `default`): the current address and branch (a
    branch that is not a branch name is left out), or "no remote repository: nothing leaves this workstation"; an
    address field (current address, else the configuration's default), "Check" (`POST { url }`: does it answer) and
@@ -97,7 +117,7 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    empty or invalid address announces nothing); while waiting, the card says to answer it, maybe behind other windows; after a refusal, the launcher's own
    message (already open / refused / closed / impossible), plus "look for it behind the other windows" when one was
    already open (`confirm: 'open'`, or the message). A link to the help section "A git repository for data/" stays. On the Usages card, "Several users" ticked with no remote shows a warning pointing to
-   this card, and the state sentence says "a git repository with no remote: nothing goes elsewhere". Without an exchange, a hint says the access then only reads the aeronautical and aircraft bases published in
+   Administration › "Remote repository of data/" (Full level), and the state sentence says "a git repository with no remote: nothing goes elsewhere". Without an exchange, a hint says the access then only reads the aeronautical and aircraft bases published in
    the data repository, nothing is sent (the frame's local transport with the GitHub repository as reference source). Otherwise repository, branch and
    token; the token field is always empty, its placeholder says a token is saved, an empty field keeps it. Hint, by the
    repository's owner (§ 5): a **classic** token with the `repo` box for a user's repository, a **fine-grained** token
@@ -123,7 +143,8 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    password field emptied on save, "Test" (`test('LFPG')`: the launcher's or provider's status and message), "Erase"
    (asks), a link to the provider's sign-up page; on a launcher, a sentence says it is not needed (the launcher
    provides the TAF).
-9. **Launcher keys** (page served by a launcher only): the IVAO API key's state (`GET /__setup/secrets`: saved with
+9. **Airline API keys** (page served by a launcher only): a panel of the Administration card (Full level, rule of
+   28 Oct 2026), `[data-card="keys"]` inside `[data-adminpanel="keys"]`, its title and sentence in `admin_links.js`; the IVAO API key's state (`GET /__setup/secrets`: saved with
    its last characters, given by the launcher's environment, or missing), a new key (empty: unchanged), "Save",
    "Test" (`/__setup/secrets/test?service=ivao`), "Erase" (asks). The key goes to the launcher's `secrets/` folder,
    never to the browser nor to the data.
@@ -138,7 +159,9 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
      while open: the address to open on the device (the main one, the others below), its QR code (`SogQR.svg`), the
      6-digit pairing code with the minutes it has left, or "no code in progress", or "pairing closed"; "New code"
      (works once, 10 minutes; reopens pairing closed after 30 wrong codes in an hour); the paired devices, each with
-     "Forget" (asks); the computer's other private addresses (VPN, virtual machines), closed, with "Open them too".
+     its pairing date (`c.time.fmtDateZ`, UTC) and "Forget" (asks; "Device "…" forgotten."; without an answer the state
+     shown stays and the card says the launcher does not answer); the computer's other private addresses (VPN, virtual
+     machines), closed, with "Open them too" (an address still closed afterwards is named in the card).
    - A warning "trusted network only" (http, unencrypted).
    - "Open to devices of the local network" / "Close access", and "Forget the devices" (asks; disabled with none
      paired). A computer with no private address says there is nothing to open.
@@ -153,7 +176,8 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    with its sentence under it, 44 px high: "Map threshold tuning" (`#maps?tune=1`), "Flight zone limit" (folds a panel open under
    its button: a box "Show the edge line of the flight zone limit", saved at once, for the airline, as the key `edge` of
    `airline/map_profiles.json`; shown by default; the contract is `INTEGRATION.md` § 4), "Export a configuration for a pilot"
-   (folds the export of § 5 open; absent when the device has no repository to export), then the roadmap, the diagnostics
+   (folds the export of § 5 open; absent when the device has no repository to export), on a launcher "Remote repository
+   of data/" and "Airline API keys (IVAO)" (panels, § 3 items 6 and 9), then the roadmap, the diagnostics
    and the benches and V2 pages of § 6. The export used to be a fold of the Access card; the import ("Join the airline…",
    "Import a configuration…") stays there, it is the pilot's.
 
@@ -215,12 +239,15 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
 
 - **A declared list**, depending on no module: `{ id, href | act | panel, primary, where, title, text }`, texts in four
   languages. **Every entry is drawn as one button** (rule 18): `href` a link styled as a button, `act` an action of the card,
-  `panel` a button that folds open the panel of its line (`edge`, `cfg`, written by `settings.js`), `primary` the accent
+  `panel` a button that folds open the panel of its line (`edge`, `cfg`, `remote`, `keys`, written by the settings files;
+  a line whose panel is empty is not drawn), `primary` the accent
   colour of the administrator's own pages. `where`: `app` (everywhere), `bench` (a bench or demonstration page served by the launcher: a link only on a
   workstation with a launcher, otherwise a greyed button; its sentence ends with "workstation with launcher
-  only"), `v2` (a V2 page of the workstation: shown only when a launcher serves the page).
+  only"), `v2` (a V2 page of the workstation: shown only when a launcher serves the page), `launcher` (a setting of
+  this computer's launcher: shown only when a launcher serves the page).
 - **Today**: "Map threshold tuning" `#maps?tune=1` (read only on a phone), "Flight zone limit" (`panel: edge`), "Export a
-  configuration for a pilot" (`panel: cfg`), "Data sources" `#sources` (aerodb's Sources screen, links only; `copyLink`: under its link the absolute address of the screen built from `location`, and "Copy the link"; it replaced the data laboratory `#datalab` on 28 Oct 2026), roadmap `#roadmap`, diagnostics (`act:
+  configuration for a pilot" (`panel: cfg`), "Remote repository of data/" (`panel: remote`, `where: launcher`), "Airline
+  API keys (IVAO)" (`panel: keys`, `where: launcher`), "Data sources" `#sources` (aerodb's Sources screen, links only; `copyLink`: under its link the absolute address of the screen built from `location`, and "Copy the link"; it replaced the data laboratory `#datalab` on 28 Oct 2026), roadmap `#roadmap`, diagnostics (`act:
   diagOpen`: opens the folded diagnostics of the About card and scrolls to it); benches `labs/design_primitives.html`,
   `frame/aerodb/bench.html`, `frame/aerodb/offline_bench.html`, `frame/store/test/`, `modules/maps/test/render.html`;
   V2 pages `apps/settings/maintenance.html`, `apps/settings/premier_lancement.html`, `apps/cpco/map_parser.html`.

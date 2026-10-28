@@ -424,6 +424,8 @@ def j5(c):
     c.step(P, 4, 'design from Réglages, without reload')
     c.page.evaluate('window.__noReload = 1')
     before = design_probe(c)
+    if c.count('[data-group="display"]') and not c.js("document.querySelector('[data-group=\"display\"]').open"):
+        c.tap('[data-group="display"] > summary')     # Settings: the card sits in a folded group (SPEC 1)
     c.tap('[data-design-pick="metro"]')
     c.until("document.documentElement.dataset.design === 'metro'", what='the frame applies the design chosen')
     c.wait(500)

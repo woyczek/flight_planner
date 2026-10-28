@@ -626,6 +626,15 @@ pre-filled report), the missing trigram (to “Identity”), the aeronautical da
 access”), the state of the data and the exchange in use (to “Synchronisation”, or the conflicts), the launcher, “Offline” and,
 on a phone, the position during a flight.
 
+**The groups.** At the Discovery level, the screen shows seven cards at most, one under the other: Identity, Data
+access, Synchronisation (when it is used), Usages, Level, Design and About. The backup, the offline data, the weather
+key, the Little Navmap sheets and the computer access come at the Everyday level. At the Everyday and Full levels, the
+cards are arranged under seven titles, in the order things are set: Identity, Access, Data, Device, Display,
+Administration (Full level) and Help. Each title is folded; touch it to open it. A group that needs attention (a warning,
+an error, or the card an amber status line leads to) opens by itself, with an amber dot; a line of the “Status” block
+opens the group of its card. A group opened by hand stays open while the page is open. The cards of circumstance (V2
+settings found, configuration received, joining resume) come first, at every level, and go once dealt with.
+
 **Your identity.** In “Identity”, type your trigram and your IVAO VID, VATSIM CID and SimBrief IDs, then “Save”. The
 tools use them to prefill; with several users, the trigram is needed.
 
@@ -633,7 +642,8 @@ tools use them to prefill; with several users, the trigram is needed.
 “Menu:” line says which tools it shows; a hidden tool stays reachable by its address.
 
 **The design.** “Design” shows one thumbnail per look — Standard, Cabinet, Rugged — and the tone: Automatic (as the
-system), Day or Night. One tap applies it at once, on this device only.
+system), Day or Night. One tap applies it at once, on this device only. A design reserved for the computer does not
+apply on a phone: the card says which one is shown instead.
 
 **The usages.** The sentence at the top of “Usages” says how data are exchanged. With no box ticked you are “Alone on
 this device”: nothing goes elsewhere. Tick “Alone, on several devices” or “Several users (git data repository)” to
@@ -641,8 +651,9 @@ exchange. On a workstation served by the launcher, the app already reads and wri
 with no box ticked; an exchange usage also shares it through git.
 
 **Data access.** On a phone or on the website, set in “Data access” the repository (account/repository), the branch and
-your personal token, then “Test” and “Save”. On a workstation served by the launcher there is no token: the card
-shows the remote repository of `data/` (see “A git repository for data/”).
+your personal token, then “Test” and “Save”. On a workstation served by the launcher there is no token; while `data/` is
+not a git repository, the card opens the door to fetch or take it over; its remote repository is set in the
+“Administration” card (see “A git repository for data/”).
 
 **No access and no launcher, no bases.** A device with no access set and no launcher — the website opened on a phone
 for the first time, for instance — has neither the aeronautical base (airspaces, airfields, beacons) nor the aircraft
@@ -679,10 +690,11 @@ kept in the sheet; the synchronisation button says so. A file is never deleted: 
 the `_removed` subfolder. "Synchronise now" runs a pass at once, "Stop" cuts the link. Sheets missing a value that
 Little Navmap requires are listed and not written. On a phone, Fuel downloads the sheet as a .lnmperf file.
 
-## Launcher keys
+## The airline's API keys
 
-On a workstation served by the launcher, “Launcher keys” sets the IVAO API key: it stays in the launcher’s `secrets/`
-folder, never in the browser nor in the data. “Test” checks that IVAO answers; “Erase” removes it.
+On a workstation served by the launcher, at the Full level, the “Airline API keys (IVAO)” button of the “Administration”
+card unfolds the setting of the IVAO API key: it stays in the launcher’s `secrets/` folder, never in the browser nor in
+the data. “Test” checks that IVAO answers; “Erase” removes it.
 
 ## The tablet next to the simulator
 
@@ -702,14 +714,15 @@ You fly on the computer (X-Plane) and want the map on a tablet or a phone: on th
 - On the tablet, the application does not work offline and does not use its GPS: the browser grants them only over
   https. The position comes from the computer's simulator.
 - A code works only once and lasts 10 minutes: “New code” gives another. 5 wrong codes from one device: a
-  one-minute wait; 30 in an hour: pairing closes until the next “New code”. “Forget”, next to a device, removes
-  that one only.
-- Only the computer's main address is opened; the others (VPN, virtual machines) only through “Open them too”.
+  one-minute wait; 30 in an hour: pairing closes until the next “New code”. “Forget”, next to a device (with its pairing
+  date, in UTC), removes that one only.
+- Only the computer's main address is opened; the others (VPN, virtual machines) only through “Open them too”. An
+  address that cannot open is named in the card; the launcher's window says why.
 
 ## A git repository for data/
 
-On a workstation served by the launcher, “Data access” shows the remote repository of `data/`: its address and its
-branch. To set or change it, type the address (`git@host:account/repo.git` or `https://…`, with no password or token
+On a workstation served by the launcher, at the Full level, the “Remote repository of data/” button of the
+“Administration” card shows the remote repository of `data/`: its address and its branch. To set or change it, type the address (`git@host:account/repo.git` or `https://…`, with no password or token
 in it): “Check” says whether the repository answers, “Save” sets it. Towards another address than the configured one, a Yes / No window opens on the computer, not in the page: the card says so before the click; answer it (it may be behind other windows), then come back. Refused, closed or already open: the card gives the reason and `data/` stays as it is. This is on purpose: a malicious page must not be able to send your data elsewhere. Nothing blocks: a repository that does not answer is
 only reported.
 
@@ -717,7 +730,7 @@ only reported.
   an `https://…` address.
 - **Several users through git** need this remote repository: without it, the “Several users” box leads nowhere, and
   the “Usages” card says so.
-- **data/ missing or without git**: the card opens a door. `data/` is a folder ignored by the code repository; it
+- **data/ missing or without git**: the “Data access” card opens a door, at every level. `data/` is a folder ignored by the code repository; it
   becomes its own git repository, linked to the data repository (not a submodule). Type the address of the data
   repository, and if needed a username and a password or token (never kept by the page; “Remember” hands them to Git on
   this computer). Without `data/`, “Fetch the data” clones it; with a `data/` without git (example data or archive),
@@ -756,7 +769,8 @@ administration and test pages, **one button per page**, each with a sentence; at
 nothing of the administrator's is on the other cards. In the app: the “Map threshold tuning” button (`#maps?tune=1`, read only on a phone; it opens the tuning page: for each map element and each mode, the zooms where it appears, saved for the airline, `airline/map_profiles.json`; a mode you never saved takes the thresholds of a tuned mode, and the page says so; the map's “Complexity” slider only shifts the zoom), back by the back arrow; the “Flight zone limit” button, which unfolds a box
 “Show the edge line of the flight zone limit” (saved at once for the airline, with the thresholds, in `airline/map_profiles.json`,
 key `edge`; the edge line is shown until you set it); the “Export a configuration for a pilot” button (see “Configuring a pilot”);
-the roadmap (`#roadmap`) and the diagnostics of the “About” card.
+on a workstation served by the launcher, the “Remote repository of data/” and “Airline API keys (IVAO)” buttons, which
+unfold their setting (see “A git repository for data/” and “The airline's API keys”); the roadmap (`#roadmap`) and the diagnostics of the “About” card.
 
 <a id="settings-sources"></a>**Data sources.** The “Data sources” button (`#sources`, Full level) lists the sources of aeronautical data the suite uses, considers or has set aside: for each, what it gives, its licence, its status and a link that opens in a new tab; for those that change with each AIRAC cycle (SIA, VAC, eAIP, CIFP), the link is the one of the cycle in force, written at the top of the screen. The screen downloads nothing. Under the button of the Administration card, the absolute address of the screen, to open or bookmark (“Copy the link”). It replaces the data laboratory, removed on 28 October 2026.
 
@@ -786,4 +800,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 753e5523b719 -->
+<!-- fr: d98a12536cd0 -->

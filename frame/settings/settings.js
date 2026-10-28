@@ -140,6 +140,10 @@
     },
     textured: ['texturé', 'textured', 'texturiert', 'texturizado'],
     sample: ['Carte d’exemple', 'Sample card', 'Beispielkarte', 'Tarjeta de ejemplo'],
+    // design choisi qui ne s'applique pas ici (Aqua : ordinateur seulement) : ce que l'appareil montre à la place
+    designDesk: ['{d} est réservé à l’ordinateur ; ici : {a}', '{d} is for the computer only; here: {a}',
+      '{d} ist dem Computer vorbehalten; hier: {a}', '{d} está reservado al ordenador; aquí: {a}'
+    ],
     // usages
     usages: ['Usages', 'Usages', 'Nutzungen', 'Usos'],
     aloneLauncher: ['Ce poste lit et écrit le dossier data/ du lanceur ; cochez un usage d’échange pour le partager par git.',
@@ -261,10 +265,11 @@
       'Configuración ilegible: no se cambia nada.'
     ],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
-    needRemote: ['À plusieurs par git, il faut un dépôt distant pour data/ : réglez-le dans « Accès aux données » ci-dessous.',
-      'Several users through git need a remote repository for data/: set it in “Data access” below.',
-      'Mehrere Nutzer über git brauchen ein entferntes Repository für data/: unter „Datenzugang“ unten einstellen.',
-      'Varios usuarios por git necesitan un repositorio remoto para data/: configúrelo en «Acceso a los datos» abajo.'
+    needRemote: [
+      'À plusieurs par git, il faut un dépôt distant pour data/ : l’administrateur le règle dans Administration › « Dépôt distant de data/ » (niveau Complet).',
+      'Several users through git need a remote repository for data/: the administrator sets it in Administration › “Remote repository of data/” (Full level).',
+      'Mehrere Nutzer über git brauchen ein entferntes Repository für data/: der Administrator stellt es unter Verwaltung › „Entferntes Repository von data/“ ein (Stufe Vollständig).',
+      'Varios usuarios por git necesitan un repositorio remoto para data/: el administrador lo configura en Administración › «Repositorio remoto de data/» (nivel Completo).'
     ],
     noBases: [
       'Aucune base sur cet appareil : ni accès au dépôt des données réglé, ni lanceur. Réglez l’accès ci-dessus, ou publiez les bases depuis un poste avec lanceur (V2 : Paramètres › Maintenance › Données aéronautiques et Types d’aéronefs).',
@@ -416,6 +421,7 @@
     } : null;
   }
 
+  const DESK = new WeakSet(); // vues qui écoutent déjà « frame-desk »
   /** Dessine l'écran des réglages dans view ; c : contexte du cadre (voir l'en-tête). */
   async function render(view, c) {
     const {
@@ -514,7 +520,13 @@
     if (sets.length) {
       const cur = c.design?.() || {},
         night = cur.tone === 'night' || (cur.tone !== 'day' && matchMedia('(prefers-color-scheme: dark)').matches);
-      cards.push(`<div class="f-card" data-card="design"><h2>${esc(t(T.design))}</h2><p class="f-muted">${esc(t(T.designHint))}</p>
+      /** Nom d'un design (son libellé s'il est dans la liste de cet appareil, sinon son identifiant). */
+      const nameOf = id => {
+        const d = sets.find(x => x.id === id);
+        return d ? t(d.label) : String(id || '').replace(/^./, ch => ch.toUpperCase());
+      };
+      const desk = cur.applied && cur.design && cur.applied !== cur.design ? `<p class="f-muted" data-design-applied>${esc(t(T.designDesk, { d: nameOf(cur.design), a: nameOf(cur.applied) }))}</p>` : '';
+      cards.push(`<div class="f-card" data-card="design"><h2>${esc(t(T.design))}</h2><p class="f-muted">${esc(t(T.designHint))}</p>${desk}
         <div class="f-designs">${sets.map(d => `<button type="button" class="f-design" data-design-pick="${esc(d.id)}" aria-pressed="${cur.design === d.id}">
           <span class="f-design-thumb" data-design="${esc(d.id)}" data-tone="${night ? 'night' : 'day'}"><span class="f-design-bar"></span><span class="f-design-card">${esc(t(T.sample))}<span class="f-design-chip"></span></span></span>
           <span class="f-design-name">${esc(t(d.label))}${d.textured ? ` <span class="f-muted">· ${esc(t(T.textured))}</span>` : ''}</span></button>`).join('')}</div>
@@ -524,7 +536,9 @@
     const chk = (k, row, dis) => `<label class="f-check"><input type="checkbox" data-u="${k}" ${us[k] ? 'checked' : ''} ${dis ? 'disabled' : ''}>${esc(t(row))}</label>`;
     cards.push(`<div class="f-card" data-card="usages"><h2>${esc(t(T.usages))}</h2><p><b>${esc(how)}</b></p><p class="f-muted">${esc(t(T.usagesHint))}</p>
       ${chk('devices', T.devices)}${chk('users', T.users)}${chk('backend', T.backend, true)}${us.users && L?.data && !remote?.url ? `<p class="f-warn">${esc(t(T.needRemote))}</p>` : ''}</div>`);
-    if (!exchange) cards.push(`<div class="f-card" data-card="backup"><h2>${esc(t(T.backup))}</h2><p class="f-muted">${esc(t(T.backupHint))}</p>
+    // à Découverte : sept cartes au plus (SPEC § 1) — sauvegarde, données hors ligne, clé météo, accès du poste et
+    // Little Navmap à partir du niveau Courant
+    if (!exchange && lvl > 1) cards.push(`<div class="f-card" data-card="backup"><h2>${esc(t(T.backup))}</h2><p class="f-muted">${esc(t(T.backupHint))}</p>
       <div class="f-row"><button type="button" class="primary" data-act="export">${esc(t(T.export))}</button><button type="button" data-act="import">${esc(t(T.import))}</button><button type="button" data-act="replace">${esc(t(T.replace))}</button><input type="file" accept="application/json,.json" data-file hidden></div></div>`);
     // carte Accès toujours : sur un lanceur, le dépôt distant de data/ ; sinon dépôt GitHub et jeton (sans échange coché :
     // lecture des bases seulement)
@@ -560,26 +574,31 @@
     // synchronisation : montrée si un échange est coché ou tant que des écritures attendent (access.js)
     cards.push(P.access.syncHtml(env));
     // données hors ligne
-    cards.push(`<div class="f-card" data-card="offline"><h2>${esc(t(T.offlineData))}</h2><dl class="f-dl" data-offline><dt>${esc(t(T.zones))}</dt><dd>…</dd><dt>${esc(t(T.storage))}</dt><dd>…</dd></dl>
+    if (lvl > 1) cards.push(`<div class="f-card" data-card="offline"><h2>${esc(t(T.offlineData))}</h2><dl class="f-dl" data-offline><dt>${esc(t(T.zones))}</dt><dd>…</dd><dt>${esc(t(T.storage))}</dt><dd>…</dd></dl>
       <div data-zones></div>${!L?.data && !gh ? `<p class="f-warn">${esc(t(T.noBases))}</p>` : ''}<p class="f-muted">${esc(t(T.zoneHint))}</p></div>`);
     // clé météo de l'appareil, avec ou sans lanceur (le cadre la garde hors de device/ et de toute sauvegarde)
     const wk = c.weatherKey;
-    if (wk) cards.push(`<div class="f-card" data-card="wx"><h2>${esc(t(T.wx))}</h2><p class="f-muted">${esc(t(T.wxHint))}</p>
+    if (wk && lvl > 1) cards.push(`<div class="f-card" data-card="wx"><h2>${esc(t(T.wx))}</h2><p class="f-muted">${esc(t(T.wxHint))}</p>
       ${L ? `<p class="f-muted">${esc(t(T.wxLauncher))}</p>` : ''}<p><b>${esc(t(wk.has() ? T.wxSet : T.wxNone))}</b></p>
       ${fld('wxKey', T.wxKey, '', { type: 'password', ph: wk.has() ? t(T.wxKeySet) : '' })}<p class="f-msg" data-msg></p>
       <div class="f-row"><button type="button" class="primary" data-act="wxSave">${esc(t(T.save))}</button><button type="button" data-act="wxTest" ${wk.has() ? '' : 'disabled'}>${esc(t(T.test))}</button><button type="button" data-act="wxErase" ${wk.has() ? '' : 'disabled'}>${esc(t(T.erase))}</button></div>
       <p><a href="https://account.avwx.rest/" target="_blank" rel="noopener">${esc(t(T.wxSignup))}</a></p></div>`);
-    // clés, si un lanceur sert la page
-    if (L) cards.push(P.launcher.keysHtml(env));
+    // clés d'API de la compagnie et dépôt distant de data/ (lanceur) : volets de la carte Administration (admin.js)
     // accès des appareils du réseau local : sur le poste qui sert la page seulement (c.lan() nul ailleurs, même sur un
     // appareil appairé) ; état dessiné et relu toutes les 5 s par paintLan
-    const lanCard = P.launcher.lanHtml(env);
+    const lanCard = lvl > 1 ? P.launcher.lanHtml(env) : '';
     if (lanCard) cards.push(lanCard);
     // fiches Little Navmap (.lnmperf), si un lanceur sert la page : carte écrite par aerodb (frame/aerodb/lnmperf.js)
-    if (L && c.aerodb()?.lnmperf) cards.push('<div class="f-card" data-card="lnmperf" hidden></div>');
+    if (L && lvl > 1 && c.aerodb()?.lnmperf) cards.push('<div class="f-card" data-card="lnmperf" hidden></div>');
     const help = await c.helpPanel?.().catch(() => null);
-    view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${cards.join('')}
-      ${P.diagnostic.aboutHtml(env)}${lvl === 3 ? P.admin.adminCard(t, L, { cfg: cfgOut, edge: edgeShow }) : ''}`;
+    const adminHtml = lvl === 3 ? P.admin.adminCard(t, L, {
+      cfg: cfgOut,
+      edge: edgeShow,
+      remote: L ? P.launcher.remoteHtml(env) : '',
+      keys: L ? P.launcher.keysHtml(env) : ''
+    }) : '';
+    view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${P.groups.arrange([...cards, P.diagnostic.aboutHtml(env), adminHtml], t, lvl)}`;
+    P.groups.wireGroups(view);
     if (help)(view.querySelector('[data-card="status"]') || view.querySelector('h1 + p'))?.after(help); // sous le bloc d'état
 
     /** Carte de l'écran par son nom (data-card). */
@@ -604,6 +623,15 @@
     };
     /** Redessine tout l'écran. */
     const again = () => render(view, c);
+    P.groups.markAttention(view);
+    // ordinateur ↔ téléphone (« frame-desk » du cadre) : la liste des designs et la ligne « réservé à l'ordinateur » suivent,
+    // si l'écran est toujours là (une écoute par vue)
+    if (!DESK.has(view)) {
+      DESK.add(view);
+      addEventListener('frame-desk', () => {
+        if (view.querySelector('[data-card="design"]')) render(view, c);
+      });
+    }
     Object.assign(env, {
       card,
       val,
@@ -627,7 +655,7 @@
         }) : ''
       }) : t(T.zonesNone);
       const est = await navigator.storage?.estimate?.().catch(() => null);
-      dl.innerHTML = `<dt>${esc(t(T.zones))}</dt><dd>${esc(zones)}</dd><dt>${esc(t(T.storage))}</dt><dd>${esc(est ? t(T.storageState, { u: bytes(est.usage, t), q: bytes(est.quota, t) }) : t(T.unknown))}</dd>`;
+      if (dl) dl.innerHTML = `<dt>${esc(t(T.zones))}</dt><dd>${esc(zones)}</dd><dt>${esc(t(T.storage))}</dt><dd>${esc(est ? t(T.storageState, { u: bytes(est.usage, t), q: bytes(est.quota, t) }) : t(T.unknown))}</dd>`;
       paintZones();
       await P.diagnostic.live(env, est); // diagnostic du cadre, lisible et à copier
     })();
@@ -794,6 +822,7 @@
     // #settings?offline=1 (fin de l'assistant) : la carte Données hors ligne à portée
     if (q.get('offline')) {
       dropConfigHash();
+      card('offline')?.closest('details.f-group')?.setAttribute('open', ''); // son groupe ouvert d'abord
       setTimeout(() => card('offline')?.scrollIntoView({
         block: 'start'
       }), 0);
@@ -802,6 +831,7 @@
     if (q.get('import')) {
       dropConfigHash(); // une fois : le dessin suivant (après le choix du fichier) reste en tête
       const b = view.querySelector('[data-act="cfgImport"]');
+      b?.closest('details.f-group')?.setAttribute('open', ''); // son groupe (Accès) ouvert d'abord
       setTimeout(() => {
         b?.scrollIntoView({
           block: 'center'

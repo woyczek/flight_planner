@@ -628,6 +628,16 @@ orange : de l'attention). Une ligne par chose, touchez-la pour agir : le vol en 
 pas prête (vers « Accès aux données »), l'état des données et le moyen d'échange (vers « Synchronisation », ou les conflits),
 le lanceur, « Hors ligne » et, sur un téléphone, la position pendant un vol.
 
+**Les groupes.** Au niveau Découverte, l'écran montre sept cartes au plus, l'une sous l'autre : Identité, Accès aux
+données, Synchronisation (quand elle sert), Usages, Niveau, Design et À propos. La sauvegarde, les données hors ligne, la
+clé météo, les fiches Little Navmap et l'accès du poste arrivent au niveau Courant. Aux niveaux Courant et Complet, les
+cartes sont rangées sous sept titres, dans l'ordre où l'on règle les choses : Identité, Accès, Données, Appareil,
+Affichage, Administration (niveau Complet) et Aide. Chaque titre est replié ; touchez-le pour l'ouvrir. Un groupe qui
+demande de l'attention (un avertissement, une erreur, ou la carte visée par une ligne orange de l'état) s'ouvre seul,
+avec une pastille orange ; une ligne du bloc « État » ouvre le groupe de sa carte. Un groupe ouvert à la main le reste
+tant que la page est ouverte. Les cartes de circonstance (réglages de la V2 trouvés, configuration reçue, reprise de
+l'adhésion) viennent en tête, à tous les niveaux, et disparaissent une fois traitées.
+
 **Votre identité.** Dans « Identité », tapez votre trigramme et vos identifiants VID IVAO, CID VATSIM et SimBrief, puis
 « Enregistrer ». Les outils s'en servent pour préremplir ; à plusieurs, le trigramme est nécessaire.
 
@@ -635,7 +645,8 @@ le lanceur, « Hors ligne » et, sur un téléphone, la position pendant un vol.
 choix, la ligne « Menu : » dit quels outils il montre ; un outil caché reste joignable par son adresse.
 
 **Le design.** « Design » montre une vignette par habillage — Standard, Cabinet, Durci — et le ton : Automatique
-(comme le système), Jour ou Nuit. Un toucher l'applique aussitôt, sur cet appareil seulement.
+(comme le système), Jour ou Nuit. Un toucher l'applique aussitôt, sur cet appareil seulement. Un design réservé à
+l'ordinateur ne s'applique pas sur un téléphone : la carte dit lequel est montré à la place.
 
 **Les usages.** La phrase en tête de « Usages » dit comment les données sont échangées. Sans case cochée, vous êtes
 « Seul sur cet appareil » : rien ne part ailleurs. Cochez « Seul, sur plusieurs appareils » ou « À plusieurs (dépôt git
@@ -643,8 +654,9 @@ des données) » pour échanger. Sur un poste servi par le lanceur, l'appli lit 
 du lanceur, même sans case cochée ; un usage d'échange le partage en plus par git.
 
 **L'accès aux données.** Sur un téléphone ou sur le site, réglez dans « Accès aux données » le dépôt (compte/dépôt), la
-branche et votre jeton personnel, puis « Tester » et « Enregistrer ». Sur un poste servi par le lanceur, pas de jeton : la
-carte montre le dépôt distant de `data/` (voir « Un dépôt git pour data/ »).
+branche et votre jeton personnel, puis « Tester » et « Enregistrer ». Sur un poste servi par le lanceur, pas de jeton ;
+tant que `data/` n'est pas un dépôt git, la carte ouvre la porte pour le récupérer ou le reprendre ; son dépôt distant se
+règle dans la carte « Administration » (voir « Un dépôt git pour data/ »).
 
 **Sans accès ni lanceur, pas de bases.** Un appareil sans accès réglé et sans lanceur — le site ouvert sur un téléphone
 pour la première fois, par exemple — n'a ni base aéronautique (espaces, terrains, balises) ni base des appareils :
@@ -685,11 +697,11 @@ signale. Un fichier n'est jamais effacé : celui d'une fiche retirée est rangé
 valeur demandée par Little Navmap sont listées et ne sont pas écrites. Sur un téléphone, Carburant télécharge la fiche
 en .lnmperf.
 
-## Les clés du lanceur
+## Les clés d'API de la compagnie
 
-Sur un poste servi par le lanceur, « Clés du lanceur » règle la clé de l'API IVAO : elle reste dans le dossier
-`secrets/` du lanceur, jamais dans le navigateur ni dans les données. « Tester » vérifie qu'IVAO répond ;
-« Effacer » la retire.
+Sur un poste servi par le lanceur, au niveau Complet, le bouton « Clés d'API de la compagnie (IVAO) » de la carte
+« Administration » déplie le réglage de la clé de l'API IVAO : elle reste dans le dossier `secrets/` du lanceur, jamais
+dans le navigateur ni dans les données. « Tester » vérifie qu'IVAO répond ; « Effacer » la retire.
 
 ## La tablette à côté du simulateur
 
@@ -712,14 +724,14 @@ lanceur, « Accès du poste » ouvre l'appli Pilote aux appareils du même rése
   https. La position vient du simulateur du poste.
 - Un code sert une seule fois et dure 10 minutes : « Nouveau code » en donne un autre. 5 codes faux d'un même
   appareil : une minute d'attente ; 30 en une heure : l'appairage se ferme jusqu'au prochain « Nouveau code ».
-  « Oublier », à côté d'un appareil, retire celui-là seulement.
+  « Oublier », à côté d'un appareil (avec sa date d'appairage, en UTC), retire celui-là seulement.
 - Seule l'adresse principale du poste est ouverte ; les autres (VPN, machines virtuelles) seulement par « Les ouvrir
-  aussi ».
+  aussi ». Une adresse qui ne peut pas s'ouvrir est nommée dans la carte ; la fenêtre du lanceur dit pourquoi.
 
 ## Un dépôt git pour data/
 
-Sur un poste servi par le lanceur, « Accès aux données » montre le dépôt distant de `data/` : son adresse et sa
-branche. Pour le régler ou en changer, tapez l'adresse (`git@hôte:compte/dépôt.git` ou `https://…`, sans mot de passe
+Sur un poste servi par le lanceur, au niveau Complet, le bouton « Dépôt distant de data/ » de la carte
+« Administration » montre le dépôt distant de `data/` : son adresse et sa branche. Pour le régler ou en changer, tapez l'adresse (`git@hôte:compte/dépôt.git` ou `https://…`, sans mot de passe
 ni jeton dedans) : « Vérifier » dit si le dépôt répond, « Enregistrer » le règle. Vers une autre adresse que celle de la configuration, une fenêtre Oui / Non s'ouvre sur l'ordinateur, pas dans la page : la carte le dit avant le clic ; répondez-lui (elle peut être derrière les autres fenêtres), puis revenez. Refusée, fermée ou déjà ouverte : la carte en donne la raison et `data/` reste tel quel. C'est voulu : une page piégée ne doit pas pouvoir envoyer vos données ailleurs. Rien ne bloque : un dépôt qui ne répond pas est
 seulement signalé.
 
@@ -727,7 +739,7 @@ seulement signalé.
   pour une adresse `https://…`.
 - **À plusieurs par git**, ce dépôt distant est nécessaire : sans lui, la case « À plusieurs » ne mène nulle part, et
   la carte « Usages » le rappelle.
-- **data/ absent ou sans git** : la carte ouvre une porte. `data/` est un dossier ignoré par le dépôt du code ; il
+- **data/ absent ou sans git** : la carte « Accès aux données » ouvre une porte, à tous les niveaux. `data/` est un dossier ignoré par le dépôt du code ; il
   devient son propre dépôt git, relié au dépôt des données (pas un sous-module). Tapez l'adresse du dépôt des données,
   et au besoin un identifiant et un mot de passe ou jeton (jamais gardés par la page ; « Se souvenir » les confie à Git
   sur cet ordinateur). Sans `data/`, « Récupérer les données » le clone ; avec un `data/` sans git (données d'exemple
@@ -768,7 +780,9 @@ poste avec le lanceur.
 n'apparaît pas, et rien de l'administrateur n'est sur les autres cartes. Dans l'appli : le bouton « Réglage des seuils de la carte » (`#maps?tune=1`, en lecture seule sur un téléphone ; il ouvre la page de réglage : pour chaque élément de la carte et chaque mode, les zooms où il apparaît, enregistrés pour la compagnie, `airline/map_profiles.json` ; un mode que vous n'avez jamais enregistré reprend les seuils d'un mode réglé, la page le dit ; le curseur « Complexité » de la carte ne fait que décaler le zoom), retour par la flèche de retour ; le bouton « Limite de la zone du vol »,
 qui déplie une case « Afficher le filet de la limite de la zone du vol » (enregistrée aussitôt pour la compagnie, avec les seuils, dans
 `airline/map_profiles.json`, clé `edge` ; le filet est affiché tant que vous n'avez rien réglé) ; le bouton « Exporter une
-configuration pour un pilote » (voir « Configurer un pilote ») ; la feuille de route (`#roadmap`) et le diagnostic de la carte « À propos ».
+configuration pour un pilote » (voir « Configurer un pilote ») ; sur un poste servi par le lanceur, les boutons
+« Dépôt distant de data/ » et « Clés d'API de la compagnie (IVAO) », qui déplient leur réglage (voir « Un dépôt git pour
+data/ » et « Les clés d'API de la compagnie ») ; la feuille de route (`#roadmap`) et le diagnostic de la carte « À propos ».
 
 <a id="settings-sources"></a>**Sources des données.** Le bouton « Sources des données » (`#sources`, niveau Complet) liste les sources des données aéronautiques que la suite utilise, envisage ou a écartées : pour chacune, ce qu'elle donne, sa licence, son statut et un lien qui s'ouvre dans un nouvel onglet ; pour celles qui changent à chaque cycle AIRAC (SIA, VAC, eAIP, CIFP), le lien est celui du cycle en vigueur, écrit en haut de l'écran. L'écran ne télécharge rien. Sous le bouton de la carte Administration, l'adresse absolue de l'écran, à ouvrir ou à mettre en favori (« Copier le lien »). Il remplace le laboratoire des données, retiré le 28 octobre 2026.
 
