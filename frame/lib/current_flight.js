@@ -9,8 +9,10 @@
 //     champs fields de mine (un champ absent de mine n'est pas touché ; null efface) et, dans progress, les clés
 //     progressKeys de mine.progress ; progress: null de mine n'efface que ces clés-là (la position réelle du cadre,
 //     progress.actual, reste ; progress devient null s'il ne reste rien) ; schema, by et updated_at posés.
-//   isStarted(f), refTime(f), legTimes(f), etaOf(f, now), plannedPositionAt(f, now), TAXI_MIN : le vol dans le temps,
-//     dérivé de started.at / planned_at, quote et profile (voir plus bas ; modules/maps/SPEC.md § 13).
+//   isStarted(f), refTime(f), legTimes(f, { path }), etaOf(f, now, { path }), plannedPositionAt(f, now, { path }), TAXI_MIN :
+//     le vol dans le temps, dérivé de started.at / planned_at, quote et profile (voir plus bas ; modules/maps/SPEC.md § 13).
+//   proceduresOf(f), loadProcedures(aerodb, f), expandedPath(f, procs), flownPath(path) : la route et ses procédures choisies
+//     (SID, STAR, approche : V3_SPECIFICATION § 10.20), un seul chemin pour le profil, les marques, les heures et le devis.
 
 import {
   unwrapLons,
@@ -57,7 +59,7 @@ export function merge(stored, mine, {
 // Dérivées, jamais lues dans progress (modules/maps/SPEC.md § 13) : tous les lecteurs (la Carte, le bloc d'état du
 // cadre, Vols) en tirent les mêmes valeurs. Heure de référence : started.at d'un vol démarré, sinon planned_at, sinon
 // aucune. Temps : le roulage (quote.taxiMin, 10 min sans lui), puis quote.legs [{ id, min }] (minutes depuis le lâcher des
-// freins à chaque point) ; sans quote.legs, la montée à profile.climbKt jusqu'à tocNm, la descente à descentKt depuis
+// freins à chaque point, origin du point de flownPath) ; sans quote.legs, la montée à profile.climbKt jusqu'à tocNm, la descente à descentKt depuis
 // todNm et la croisière au temps qui reste de quote.minutes ; sans devis, rien.
 
 /** Minutes de roulage quand le devis ne les donne pas. */
@@ -106,25 +108,30 @@ export const refTime = f => isStarted(f) ? msOf(f.started.at) : msOf(f?.planned_
 
 /** Horaire du vol : { pts (points lus, longitudes continues), cum (NM depuis le départ à chaque point), min (minutes depuis
  *  le lâcher des freins à chaque point), taxi (min), total (min), tocNm, todNm, D (NM) } ; null sans deux points ou sans
- *  devis. */
-export function legTimes(f) {
+ *  devis. opts.path : le chemin volé (flownPath d'expandedPath, procédures comprises) au lieu de route.points. */
+export function legTimes(f, opts = {}) {
   // longitudes continues (frame/lib/geo.js) : une route qui passe 180° va de 177° à 195°
-  const pts = unwrapLons((f?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)).map(p => ({
+  const pts = unwrapLons((opts.path || f?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)).map(p => ({
     id: String(p.id || ''),
     lat: +p.lat,
-    lon: +p.lon
+    lon: +p.lon,
+    nm: num(p.nm)
   })));
   const q = f?.quote;
   if (pts.length < 2 || !q) return null;
-  const cum = [0];
-  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + gcNm(pts[i - 1], pts[i]));
+  // les distances du chemin (flownPath, une seule mesure pour tous) ; sinon le grand cercle point à point
+  const cum = opts.path && pts.every(p => p.nm != null) ? pts.map(p => p.nm) : [0];
+  for (let i = cum.length; i < pts.length; i++) cum.push(cum[i - 1] + gcNm(pts[i - 1], pts[i]));
+  for (const p of pts) delete p.nm;
   const D = cum.at(-1),
     taxi = num(q.taxiMin) != null && q.taxiMin >= 0 ? q.taxiMin : TAXI_MIN,
     P = f.profile || {},
     tocNm = Math.max(0, +P.tocNm || 0),
     todNm = Math.max(0, +P.todNm || 0);
   let min = null;
-  const legs = Array.isArray(q.legs) ? q.legs : null;
+  // quote.legs [{ id, min, origin }] suit flownPath ; sur route.points (sans path), seuls les points de la route comptent (un
+  // leg sans origin, écrit avant les procédures, en est un)
+  const legs = Array.isArray(q.legs) ? opts.path ? q.legs : q.legs.filter(l => !l?.origin || l.origin === 'route') : null;
   if (legs?.length) {
     // les minutes du devis, point par point (par son rang, sinon par son nom) ; un point sans minute n'en a pas
     min = pts.map((p, i) => {
@@ -168,9 +175,9 @@ export function legTimes(f) {
 
 /** Heures estimées de passage : [{ id, at (ISO UTC) }], la première au décollage (référence + roulage) ; null sans heure
  *  de référence ni horaire, et pour un vol non démarré dont l'arrivée est passée. */
-export function etaOf(f, now = Date.now()) {
+export function etaOf(f, now = Date.now(), opts = {}) {
   const t0 = refTime(f),
-    T = t0 == null ? null : legTimes(f);
+    T = t0 == null ? null : legTimes(f, opts);
   if (!T) return null;
   const out = T.pts.map((p, i) => ({
     id: p.id,
@@ -183,9 +190,9 @@ export function etaOf(f, now = Date.now()) {
  *  'descent', 'arrived') }, interpolée sur l'horaire le long du grand cercle de chaque tronçon ; au terrain de départ
  *  pendant le roulage. null sans heure de référence ni horaire, avant la mise en route, et, comme etaOf, pour un vol non
  *  démarré dont l'arrivée est passée. */
-export function plannedPositionAt(f, now = Date.now()) {
+export function plannedPositionAt(f, now = Date.now(), opts = {}) {
   const t0 = refTime(f),
-    T = t0 == null ? null : legTimes(f);
+    T = t0 == null ? null : legTimes(f, opts);
   if (!T || now < t0) return null;
   const t = (now - t0) / 60e3 - T.taxi,
     n = T.pts.length;
@@ -216,4 +223,258 @@ export function plannedPositionAt(f, now = Date.now()) {
   while (i < n - 2 && t >= T.min[i + 1]) i++;
   const span = T.min[i + 1] - T.min[i];
   return at(i, span > 0 ? Math.min(1, Math.max(0, (t - T.min[i]) / span)) : 0);
+}
+
+// ---------------------------------------------------------------- la route et ses procédures choisies (§ 10.20)
+// route.procedures v2 = { dep: { rwy, sid, trans }, arr: { rwy, star, trans, app, appTrans }, by, at } : identifiants du schéma
+// commun d'aerodb (§ 5 quinquies) ; null = « aucune » (choix du pilote), absent = pas encore choisi. Écrit par fuel seul ; les
+// lecteurs vérifient l'aérodrome de chaque côté. Un seul chemin « route + procédures » sert au profil, aux marques, au
+// curseur, aux heures et au devis : expandedPath, et flownPath (avec nm) pour les distances.
+
+/** Aérodrome d'un identifiant de procédure (« LFBD.SID.ROYAN6P.RW23.NONE » → « LFBD »). */
+const icaoOfId = id => typeof id === 'string' ? id.split('.')[0].trim().toUpperCase() : '';
+/** Identifiant d'une entrée de l'ancien schéma { sid, star } (objet OFP ou texte) ; null gardé, sinon undefined. */
+const idOf = x => x === null ? null : typeof x === 'string' ? x : x && typeof x === 'object' && typeof x.id === 'string' ? x.id :
+  undefined;
+
+/** Vue v2 des procédures du vol : { dep, arr, by, at } ; dep / arr valent null pour « aucune », sinon un objet dont les champs
+ *  absents ne sont pas choisis. Un côté dont un identifiant nomme un autre aérodrome que route.dep / route.arr (la route a
+ *  changé depuis) est rendu vide, {} : pas choisi, l'OFP peut le reproposer (fuel le retire à sa prochaine écriture). Un
+ *  ancien { sid, star } (OFP) donne les identifiants de ses enregistrements, et la piste seulement quand l'enregistrement
+ *  n'en a qu'une. */
+export function proceduresOf(f) {
+  const r = f?.route || {},
+    pr = r.procedures && typeof r.procedures === 'object' ? r.procedures : null,
+    depIcao = String(r.dep || r.points?.[0]?.id || '').trim().toUpperCase(),
+    arrIcao = String(r.arr || r.points?.at?.(-1)?.id || '').trim().toUpperCase();
+  if (!pr) return {
+    dep: {},
+    arr: {},
+    by: null,
+    at: null
+  };
+  let dep, arr;
+  if ('dep' in pr || 'arr' in pr) {
+    dep = pr.dep === null ? null : {
+      ...(pr.dep || {})
+    };
+    arr = pr.arr === null ? null : {
+      ...(pr.arr || {})
+    };
+  } else {
+    dep = {};
+    arr = {};
+    const v1 = (o, k, rec) => {
+      const id = idOf(rec);
+      if (id === undefined) return;
+      o[k] = id;
+      if (Array.isArray(rec?.runways) && rec.runways.length === 1) o.rwy = String(rec.runways[0]);
+    };
+    if ('sid' in pr) v1(dep, 'sid', pr.sid);
+    if ('star' in pr) v1(arr, 'star', pr.star);
+  }
+  const check = (o, icao, keys) => !o || !icao || keys.every(k => typeof o[k] !== 'string' || icaoOfId(o[k]) === icao) ? o : {};
+  return {
+    dep: check(dep, depIcao, ['sid', 'trans']),
+    arr: check(arr, arrIcao, ['star', 'trans', 'app', 'appTrans']),
+    by: pr.by ?? null,
+    at: pr.at ?? null
+  };
+}
+
+/** Procédures du vol résolues par aerodb : { sid, sidTrans, star, starTrans, app, appTrans, depRwy, arrRwy } — chaque
+ *  identifiant par aerodb.procedure(id) (null s'il est introuvable ou pas choisi), les pistes choisies par
+ *  aerodb.runways(icao) (seuil, élévation, QFU ; approx quand elles sont déduites). Un seul code pour fuel et la Carte. */
+export async function loadProcedures(aerodb, f) {
+  const v = proceduresOf(f),
+    d = v.dep || {},
+    a = v.arr || {},
+    r = f?.route || {},
+    get = id => typeof id === 'string' && id && aerodb?.procedure ? Promise.resolve().then(() => aerodb.procedure(id)).catch(() =>
+      null) : null,
+    rwKey = x => String(x ?? '').trim().toUpperCase().replace(/^RW/, ''),
+    rw = async (icao, id) => {
+      if (!id || !icao || !aerodb?.runways) return null;
+      const list = await Promise.resolve().then(() => aerodb.runways(String(icao).toUpperCase())).catch(() => []);
+      return (list || []).find(x => rwKey(x?.id) === rwKey(id)) || null;
+    };
+  const [sid, sidTrans, star, starTrans, app, appTrans, depRwy, arrRwy] = await Promise.all([get(d.sid), get(d.trans), get(a.star), get(
+    a.trans), get(a.app), get(a.appTrans), rw(r.dep || r.points?.[0]?.id, d.rwy), rw(r.arr || r.points?.at?.(-1)?.id, a.rwy)]);
+  return {
+    sid: sid || null,
+    sidTrans: sidTrans || null,
+    star: star || null,
+    starTrans: starTrans || null,
+    app: app || null,
+    appTrans: appTrans || null,
+    depRwy,
+    arrRwy
+  };
+}
+
+/** Champs d'un point de procédure repris dans le chemin, tels qu'aerodb les donne (alt { type: 'at' | 'min' | 'max' |
+ *  'between', ft, ft2? }, kt = vitesse indiquée maximale, forme du tronçon ; nm devient legNm). */
+const LEG_KEYS = ['alt', 'kt', 'leg', 'crs', 'nm', 'arc', 'turn', 'over', 'vpa', 'rnp'];
+/** Coordonnée lue, ou null (un tronçon sans point : VA, CA, VM, FM). */
+const coord = v => v === null || v === undefined || v === '' || !Number.isFinite(+v) ? null : +v;
+/** Point du chemin d'après un point de procédure (sa phase, sinon celle de l'enregistrement ; missed → origin 'missed'). */
+function procPoint(p, origin, phase) {
+  const o = {
+    id: String(p?.id ?? ''),
+    lat: coord(p?.lat),
+    lon: coord(p?.lon),
+    origin,
+    phase: p?.phase || phase
+  };
+  for (const k of LEG_KEYS)
+    if (p?.[k] !== undefined && p[k] !== null) o[`p_${k}`] = p[k];
+  if (o.phase === 'missed') o.origin = 'missed';
+  return o;
+}
+/** Même point : même nom et positions proches (moins de 3 NM), ou sans nom à moins de 0,3 NM. */
+const samePoint = (a, b) => {
+  if (!a || !b || a.lat === null || b.lat === null || a.lon === null || b.lon === null) return false;
+  const d = gcNm(a, b);
+  return a.id && b.id && a.id.toUpperCase() === b.id.toUpperCase() ? d < 3 : d < .3;
+};
+/** Points de plusieurs procédures bout à bout ; le point partagé par deux d'entre elles (fin de transition, début de
+ *  procédure) une seule fois, avec les contraintes de la seconde. */
+function chainOf(parts) {
+  const out = [];
+  for (const [rec, origin, phase] of parts)
+    for (const p of rec?.points || []) {
+      const q = procPoint(p, origin, phase),
+        last = out.at(-1);
+      if (last && last.origin !== 'missed' && q.origin !== 'missed' && samePoint(last, q)) {
+        out[out.length - 1] = {
+          ...last,
+          ...q
+        };
+        continue;
+      }
+      out.push(q);
+    }
+  return out;
+}
+/** Seuil d'une piste choisie en point de chemin (« RW23 », rwy: true), ou null. */
+const thresholdPoint = (rw, origin) => rw && coord(rw.lat) !== null && coord(rw.lon) !== null ? {
+  id: `RW${String(rw.id).replace(/^RW/i, '')}`,
+  lat: +rw.lat,
+  lon: +rw.lon,
+  origin,
+  phase: 'main',
+  rwy: true,
+  ...(coord(rw.elev) !== null ? {
+    elev: +rw.elev
+  } : {}),
+  ...(rw.approx ? {
+    approx: true
+  } : {})
+} : null;
+/** Les champs p_* d'un point de procédure, rendus sous leur nom (le point de la route garde les siens : alt_ft, wind, via…). */
+// la longueur publiée du tronçon devient legNm : nm est la distance cumulée de flownPath
+const legFields = p => Object.fromEntries(Object.entries(p).filter(([k]) => k.startsWith('p_')).map(([k, v]) => [k === 'p_nm' ? 'legNm' :
+  k.slice(2), v
+]));
+const bare = p => Object.fromEntries(Object.entries(p).filter(([k]) => !k.startsWith('p_')));
+const finish = p => ({
+  ...bare(p),
+  ...legFields(p)
+});
+
+/** Chemin « route + procédures » dans l'ordre de vol (V3_SPECIFICATION § 10.20) : [{ id, lat, lon, origin ('route' | 'sid' |
+ *  'star' | 'app' | 'missed'), phase ('main' | 'trans' | 'missed'), alt?, kt?, leg?, crs?, legNm?, arc?, turn?, over?, rwy?,
+ *  elev? }] ; les points de la route gardent tous leurs champs (alt_ft, wind, via, awy…). Départ : le terrain, le seuil de la
+ *  piste choisie s'il est connu, la SID puis sa transition ; la route reprend au PREMIER point de cette chaîne qui est aussi
+ *  un de ses points (une route d'OFP porte déjà ses points de SID : ils ne sont pas doublés, et le point commun prend les
+ *  contraintes de la procédure), sinon après la chaîne entière, à route[1]. Arrivée, symétrique : transition de STAR, STAR,
+ *  transition d'approche, approche jusqu'au seuil ; la route s'arrête au premier point de cette chaîne qu'elle contient,
+ *  sinon à son avant-dernier point ; le terrain ferme le chemin. Un tronçon sans point (lat / lon null) reste dans le tableau
+ *  pour le dessin ; l'approche interrompue vient à la fin (origin 'missed'), jamais volée. Longitudes dans [-180, 180[.
+ *  procs : loadProcedures ; un enregistrement d'un autre aérodrome est ignoré. */
+export function expandedPath(f, procs = {}) {
+  const R = (f?.route?.points || []).filter(p => coord(p?.lat) !== null && coord(p?.lon) !== null).map(p => ({
+      ...p,
+      id: String(p.id ?? ''),
+      lat: +p.lat,
+      lon: wrapLon(+p.lon),
+      origin: 'route',
+      phase: 'main'
+    })),
+    n = R.length;
+  if (n < 2) return R;
+  const P = procs || {},
+    ofIcao = (rec, icao) => rec && (!rec.icao || String(rec.icao).toUpperCase() === icao) ? rec : null,
+    depIcao = String(f.route?.dep || R[0].id).toUpperCase(),
+    arrIcao = String(f.route?.arr || R[n - 1].id).toUpperCase(),
+    depChain = chainOf([
+      [ofIcao(P.sid, depIcao), 'sid', 'main'],
+      [ofIcao(P.sidTrans, depIcao), 'sid', 'trans']
+    ]).filter(p => p.origin !== 'missed'),
+    arrAll = chainOf([
+      [ofIcao(P.starTrans, arrIcao), 'star', 'trans'],
+      [ofIcao(P.star, arrIcao), 'star', 'main'],
+      [ofIcao(P.appTrans, arrIcao), 'app', 'trans'],
+      [ofIcao(P.app, arrIcao), 'app', 'main']
+    ]),
+    missed = arrAll.filter(p => p.origin === 'missed'),
+    arrChain = arrAll.filter(p => p.origin !== 'missed'),
+    th0 = depChain.length ? thresholdPoint(P.depRwy, 'sid') : null,
+    th1 = arrChain.length ? thresholdPoint(P.arrRwy, arrChain.at(-1).origin) : null;
+  if (th0 && !samePoint(th0, depChain[0])) depChain.unshift(th0);
+  if (th1 && !samePoint(th1, arrChain.at(-1))) arrChain.push(th1);
+  // raccords : où la route reprend après la SID, où elle s'arrête avant la STAR ; jamais un tronçon deux fois
+  const routeIndex = (p, from, to) => {
+    for (let j = from; j <= to; j++)
+      if (samePoint(R[j], p)) return j;
+    return -1;
+  };
+  let start = 1,
+    head = depChain;
+  for (let i = 0; i < depChain.length; i++) {
+    const j = routeIndex(depChain[i], 1, n - 2);
+    if (j > 0) {
+      start = j;
+      head = depChain.slice(0, i);
+      R[j] = {
+        ...R[j],
+        ...legFields(depChain[i])
+      };
+      break;
+    }
+  }
+  let end = n - 2,
+    tail = arrChain;
+  for (let i = 0; i < arrChain.length; i++) {
+    const j = routeIndex(arrChain[i], start, n - 2);
+    if (j > 0) {
+      end = j;
+      tail = arrChain.slice(i + 1);
+      R[j] = {
+        ...R[j],
+        ...legFields(arrChain[i])
+      };
+      break;
+    }
+  }
+  const out = [R[0], ...head.map(finish), ...R.slice(start, end + 1), ...tail.map(finish), R[n - 1], ...missed.map(finish)].map(p =>
+    p.lon === null ? p : {
+      ...p,
+      lon: wrapLon(p.lon)
+    });
+  // un même point deux fois de suite (le terrain et un seuil confondus…) : une fois
+  return out.filter((p, i) => !i || p.origin === 'missed' || !samePoint(p, out[i - 1]) || p.id !== out[i - 1].id);
+}
+
+/** Points volés du chemin, avec leur position, et nm : distance cumulée depuis le départ (grand cercle point à point ; un arc
+ *  RF compté par sa corde) — la seule mesure des distances, pour le profil (profile.path), les marques, les heures
+ *  (legTimes / etaOf / plannedPositionAt { path }) et quote.legs. Ni l'approche interrompue ni les tronçons sans point. */
+export function flownPath(path) {
+  const pts = (path || []).filter(p => p && p.origin !== 'missed' && coord(p.lat) !== null && coord(p.lon) !== null),
+    out = [];
+  for (const p of pts) out.push({
+    ...p,
+    nm: out.length ? out.at(-1).nm + gcNm(out.at(-1), p) : 0
+  });
+  return out;
 }

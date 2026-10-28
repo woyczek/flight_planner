@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Flight path with the chosen procedures** (`frame/lib/current_flight.js`; bench `frame/lib/test/current_flight.html`) —
+  `proceduresOf(flight)` gives the v2 view of `route.procedures` (`{ dep: { rwy, sid, trans }, arr: { rwy, star, trans, app,
+  appTrans } }`; an old `{ sid, star }` migrated, a side naming another aerodrome returned empty), `loadProcedures(aerodb,
+  flight)` resolves the ids and the chosen runways, `expandedPath(flight, procs)` lays route and procedures end to end (joined
+  on the first common point, never a leg twice, legs without a fix kept for drawing, missed approach last) and `flownPath(path)`
+  gives the flown points with their cumulative distance `nm`, the single measure for the profile, the map marks, the times and
+  the quote; `legTimes`, `etaOf` and `plannedPositionAt` take `{ path }`, and without it read only the `quote.legs` of route
+  points.
+
 - **Performance sheets: airframe and propulsion come from the ICAO catalogue** (`frame/aerodb/sheets.js`, `modules/fuel/`; SPEC, DECISIONS, F10) —
   the "engine type" of a sheet (a ChatGPT guess that made a helicopter a turboprop) is replaced by two lists, airframe (aeroplane,
   helicopter, gyroplane, glider, balloon, airship) and propulsion (piston, turboprop, turboshaft, jet, electric, none, other),

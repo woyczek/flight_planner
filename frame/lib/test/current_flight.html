@@ -31,7 +31,11 @@
     legTimes,
     etaOf,
     plannedPositionAt,
-    TAXI_MIN
+    TAXI_MIN,
+    proceduresOf,
+    loadProcedures,
+    expandedPath,
+    flownPath
   } from '../current_flight.js?v=0';
   const rows = [],
     out = document.getElementById('out');
@@ -321,6 +325,312 @@
   ck('date : position à mi-temps au-delà de 180° rendue dans [-180, 180[', dp && dp.lon >= -
     180 && dp.lon < 180 && (dp.lon > 175 || dp
       .lon < -170), JSON.stringify(dp));
+
+  // ---- route et procédures choisies (V3_SPECIFICATION § 10.20)
+  const RT = {
+    dep: 'LFBD',
+    arr: 'LFPO',
+    points: [{
+      id: 'LFBD',
+      lat: 44.83,
+      lon: -0.72,
+      alt_ft: 0
+    }, {
+      id: 'AAA',
+      lat: 45.3,
+      lon: -0.5,
+      alt_ft: 9000,
+      wind: '270/20',
+      via: 'UN1'
+    }, {
+      id: 'BBB',
+      lat: 46.5,
+      lon: 0.5,
+      alt_ft: 25000
+    }, {
+      id: 'CCC',
+      lat: 48.2,
+      lon: 2.0,
+      alt_ft: 9000
+    }, {
+      id: 'LFPO',
+      lat: 48.72,
+      lon: 2.38,
+      alt_ft: 0
+    }]
+  };
+  const fl = procedures => ({
+    route: {
+      ...RT,
+      procedures
+    }
+  });
+  ck('proceduresOf : rien → côtés vides', JSON.stringify(proceduresOf(fl())) === '{"dep":{},"arr":{},"by":null,"at":null}');
+  const pv2 = proceduresOf(fl({
+    dep: {
+      rwy: '23',
+      sid: 'LFBD.SID.S1.RW23.NONE'
+    },
+    arr: null,
+    by: 'fuel'
+  }));
+  ck('proceduresOf : v2 lu, « aucune » gardée (null)', pv2.dep.sid === 'LFBD.SID.S1.RW23.NONE' && pv2.arr === null && pv2.by === 'fuel');
+  const pst = proceduresOf(fl({
+    dep: {
+      sid: 'LFBO.SID.X.RW32.NONE'
+    },
+    arr: {
+      star: 'LFPO.STAR.Y.RW24.NONE'
+    }
+  }));
+  ck('proceduresOf : côté d’un autre aérodrome → {} (pas choisi)', JSON.stringify(pst.dep) === '{}' && pst.arr.star ===
+    'LFPO.STAR.Y.RW24.NONE');
+  const pv1 = proceduresOf(fl({
+    sid: {
+      id: 'LFBD.SID.S1.RW23.NONE',
+      runways: ['23']
+    },
+    star: {
+      id: 'LFPO.STAR.Y.ALL.NONE',
+      runways: ['24', '25']
+    }
+  }));
+  ck('proceduresOf : v1 → v2, piste seulement si une seule', pv1.dep.sid === 'LFBD.SID.S1.RW23.NONE' && pv1.dep.rwy === '23' && pv1.arr
+    .star ===
+    'LFPO.STAR.Y.ALL.NONE' && !('rwy' in pv1.arr));
+
+  const SID = {
+    id: 'LFBD.SID.S1.RW23.NONE',
+    icao: 'LFBD',
+    kind: 'SID',
+    points: [{
+      seq: 1,
+      id: null,
+      lat: null,
+      lon: null,
+      leg: 'VA',
+      crs: 230,
+      alt: {
+        type: 'min',
+        ft: 1500
+      },
+      phase: 'main'
+    }, {
+      seq: 2,
+      id: 'S01',
+      lat: 44.95,
+      lon: -0.70,
+      alt: {
+        type: 'min',
+        ft: 3000
+      },
+      kt: 220,
+      phase: 'main'
+    }, {
+      seq: 3,
+      id: 'AAA',
+      lat: 45.3,
+      lon: -0.5,
+      alt: {
+        type: 'at',
+        ft: 6000
+      },
+      nm: 21,
+      phase: 'main'
+    }]
+  };
+  const STAR = {
+    id: 'LFPO.STAR.Y.RW24.NONE',
+    icao: 'LFPO',
+    kind: 'STAR',
+    points: [{
+      seq: 1,
+      id: 'CCC',
+      lat: 48.2,
+      lon: 2.0,
+      alt: {
+        type: 'between',
+        ft: 7000,
+        ft2: 9000
+      },
+      phase: 'main'
+    }, {
+      seq: 2,
+      id: 'S02',
+      lat: 48.5,
+      lon: 2.2,
+      alt: {
+        type: 'max',
+        ft: 5000
+      },
+      kt: 220,
+      phase: 'main'
+    }]
+  };
+  const APP = {
+    id: 'LFPO.APP.I24.RW24.NONE',
+    icao: 'LFPO',
+    kind: 'APP',
+    points: [{
+      seq: 1,
+      id: 'S02',
+      lat: 48.5,
+      lon: 2.2,
+      alt: {
+        type: 'at',
+        ft: 4000
+      },
+      phase: 'main'
+    }, {
+      seq: 2,
+      id: 'FAF',
+      lat: 48.65,
+      lon: 2.3,
+      alt: {
+        type: 'at',
+        ft: 2000
+      },
+      phase: 'main'
+    }, {
+      seq: 3,
+      id: 'MAP1',
+      lat: 48.8,
+      lon: 2.5,
+      alt: {
+        type: 'min',
+        ft: 3000
+      },
+      phase: 'missed'
+    }]
+  };
+  const fakeDb = {
+    procedure: id => ({
+      [SID.id]: SID,
+      [STAR.id]: STAR,
+      [APP.id]: APP
+    })[id] || null,
+    runways: icao => icao === 'LFBD' ? [{
+      id: '23',
+      lat: 44.84,
+      lon: -0.71,
+      elev: 160,
+      qfu: 230
+    }] : [{
+      id: '24',
+      lat: 48.71,
+      lon: 2.37,
+      elev: 290
+    }]
+  };
+  const FV = fl({
+    dep: {
+      rwy: '23',
+      sid: SID.id
+    },
+    arr: {
+      rwy: '24',
+      star: STAR.id,
+      app: APP.id
+    }
+  });
+  const LP = await loadProcedures(fakeDb, FV);
+  ck('loadProcedures : enregistrements et pistes', LP.sid === SID && LP.star === STAR && LP.app === APP && LP.depRwy?.id === '23' && LP
+    .arrRwy?.id ===
+    '24' && LP.sidTrans === null);
+  const XP = expandedPath(FV, LP),
+    ids = XP.map(p => p.id || '·').join(' ');
+  ck('expandedPath : raccords sur le premier point commun, aucun point deux fois', ids ===
+    'LFBD RW23 · S01 AAA BBB CCC S02 FAF RW24 LFPO MAP1', ids);
+  ck('expandedPath : étiquettes', XP.map(p => p.origin[0]).join('') === 'rsssrrraaarm', XP.map(p => p.origin).join(','));
+  const aaa = XP.find(p => p.id === 'AAA'),
+    s02 = XP.find(p => p.id === 'S02');
+  ck('expandedPath : le point commun garde ses champs de route et prend la contrainte', aaa.origin === 'route' && aaa.alt_ft === 9000 && aaa
+    .wind ===
+    '270/20' && aaa.alt?.type === 'at' && aaa.alt.ft === 6000 && aaa.legNm === 21 && !('nm' in aaa));
+  ck('expandedPath : STAR puis approche, point partagé une fois avec la contrainte de l’approche', s02.origin === 'app' && s02.alt.ft ===
+    4000 &&
+    s02.kt === 220, JSON.stringify(s02));
+  ck('expandedPath : tronçon sans point gardé, sans position', XP[2].lat === null && XP[2].leg === 'VA' && XP[2].alt.ft === 1500);
+  const FP = flownPath(XP);
+  ck('flownPath : ni tronçon sans point ni approche interrompue', FP.map(p => p.id).join(' ') ===
+    'LFBD RW23 S01 AAA BBB CCC S02 FAF RW24 LFPO');
+  ck('flownPath : nm cumulés croissants depuis 0', FP[0].nm === 0 && FP.every((p, i) => !i || p.nm > FP[i - 1].nm), FP.map(p => p.nm
+      .toFixed(1))
+    .join(' '));
+  const XN = expandedPath(fl({}), {});
+  ck('expandedPath : sans procédure = la route', XN.map(p => p.id).join(' ') === 'LFBD AAA BBB CCC LFPO' && XN.every(p => p.origin ===
+    'route'));
+  const XO = expandedPath(fl({}), {
+    sid: {
+      ...SID,
+      icao: 'LFBO'
+    }
+  });
+  ck('expandedPath : procédure d’un autre aérodrome ignorée', XO.length === 5);
+  const SIDX = {
+      ...SID,
+      points: [{
+        seq: 1,
+        id: 'S09',
+        lat: 45.0,
+        lon: -0.9,
+        phase: 'main'
+      }]
+    },
+    XD = expandedPath(fl({}), {
+      sid: SIDX
+    });
+  ck('expandedPath : sans point commun, la route reprend à route[1] après la SID', XD.map(p => p.id).join(' ') ===
+    'LFBD S09 AAA BBB CCC LFPO');
+  const XW = expandedPath({
+    route: {
+      points: [{
+        id: 'A',
+        lat: 0,
+        lon: 179
+      }, {
+        id: 'B',
+        lat: 0,
+        lon: 181
+      }]
+    }
+  }, {});
+  ck('expandedPath : longitudes dans [-180, 180[', XW[1].lon === -179);
+  // horaire sur le chemin : quote.legs suit flownPath ; sans path, seuls les legs de la route
+  const legs = FP.map((p, i) => ({
+    id: p.id,
+    min: i * 5,
+    origin: p.origin
+  }));
+  const FQ = {
+    ...FV,
+    planned_at: '2030-01-01T10:00:00Z',
+    quote: {
+      minutes: 45,
+      taxiMin: 0,
+      legs
+    }
+  };
+  const TP = legTimes(FQ, {
+      path: FP
+    }),
+    TR = legTimes(FQ);
+  ck('legTimes { path } : distances de flownPath et minutes du devis', TP && TP.pts.length === 10 && TP.cum[3] === FP[3].nm && TP.min[9] ===
+    45);
+  ck('legTimes sans path : les legs origin route seulement, dans l’ordre', TR && TR.pts.length === 5 && TR.min.join(',') ===
+    '0,15,20,25,45', TR?.min
+    .join(','));
+  const FQ0 = {
+    ...FQ,
+    quote: {
+      ...FQ.quote,
+      legs: RT.points.map((p, i) => ({
+        id: p.id,
+        min: i * 10
+      }))
+    }
+  };
+  ck('legTimes : un leg sans origin compte pour la route', legTimes(FQ0)?.min.join(',') === '0,10,20,30,40');
 
   window.__cfBench = {
     done: true,
