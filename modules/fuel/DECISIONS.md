@@ -4,6 +4,33 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **28 Oct 2026 — runway, SID, STAR and approach in the preparation (§ 10.20)** (the user's decision relayed by the ergonomics
+  session; lot `v3-fuel-proc`, with `frame/lib/current_flight.js` of the Map's owner and aerodb's `procedures` / `runways`):
+  - `route.procedures` is v2 (`{ dep: { rwy, sid, trans }, arr: { rwy, star, trans, app, appTrans }, by, at }`, identifiers,
+    `null` = none, absent = not chosen); fuel is the only writer and reads it through `proceduresOf`. Nothing is written at
+    mount: fuel's next ordinary write (`saveFlight`) puts v2 and drops a side whose aerodrome changed.
+  - Rows in the step Flight (departure: runway · SID · transition; arrival: runway · STAR · transition · approach · approach
+    transition), selects filled by aerodb and filtered by the runway; the X-Plane local record last, the outdated one marked;
+    "aucune" for SID, STAR and approach (transitions only have "—"). No data: one reading button per aerodrome, refusal shown.
+  - "Load my OFP" **replaces** the pilot's choice by the OFP's SID and STAR (a side the OFP has no procedure for is kept) and
+    says what changed, one line per side. The whole side is replaced (the approach and transitions of the previous choice go).
+  - **The quote runs on the flown path** when procedures are chosen and read: distance = the last `nm`; `quote.legs` one per
+    flown point with its `origin`; `quote.distanceNm` (new) = the length the quote ran on; `profile.path` = the planned
+    vertical path with the constraints applied where tighter. **The constraints do not go through the level-step machinery**
+    (`levels.js` / `alt_ft` steps model cruise levels reached by a climb or descent of the aircraft; a STAR's restrictions are
+    inside the descent, so feeding them as steps would invent level flights at 3 000 ft): fuel and time count the procedures'
+    distance, the constraints are drawn in `profile.path` only. To revisit if the Map's profile needs them in the figures.
+  - **After the start**: arrival row always editable, departure row until the end of the SID (last `'sid'` point of the path,
+    position = `progress.actual` if younger than two minutes, else `plannedPositionAt`); a change rewrites
+    `route.procedures`, `quote.legs`, `profile.path`, the progress length and `quote.legsAt` only. To keep the figures still,
+    the quote's distance is held (`quoteNm`: seeded from the stored `quote.distanceNm` at mount, kept while the route's points
+    and distance do not change) — so a change of level or wind after the start still redoes the figures, as before. Nothing is
+    made newly editable after the start. **What is editable after the start today and was left as it is**: every field of the
+    Plan (aerodromes — another departure ends the flight, another arrival marks a diversion —, level, date, aircraft, route
+    text and points, Auto, wind, ISA, settings); only the quote settings and the stored figures follow. The spec's `quote.at`
+    does not exist in the code (no `at` in `quote`), so there is nothing to keep still there.
+  - `#fuel?focus=arr` (the Map's "Change"): step Flight before the start, step Departure after, first select focused (same
+    mechanism as `focus=route`).
 - **28 Oct 2026 — airframe and propulsion replace engineType** (the user's decision; lot `v3-fuel-sheets`, with aerodb's
   `sheets.js`, see its DECISIONS of the same day):
   - The sheet's `engineType` (jet | turboprop | piston | auto) is replaced by `airframe` (aeroplane, helicopter,

@@ -271,7 +271,35 @@ mount. Inside a mount, the two buttons switch as before.
   map": `#fuel?with=maps` from 980 px (the frame's dual view), else `#maps?from=fuel`; hidden while the map is beside fuel
   (`ctx.layout.with === 'maps'`, followed through the frame's `frame-layout` event). Arriving with
   `ctx.query.focus === 'route'` (the Map's "Edit the route", `#fuel?from=maps&focus=route`) opens step 2 with the
-  route field focused. The blocks below keep their former description:
+  route field focused; `ctx.query.focus === 'arr'` (the Map's "Change" on the arrival, `#fuel?focus=arr`) opens the step that
+  holds the arrival row — **1 Flight** before the start, **5 Departure** after — and focuses its first select. The blocks below
+  keep their former description:
+  0. **Runway, SID, STAR and approach** (28 Oct 2026, V3_SPECIFICATION § 10.20), in step 1 after the aerodromes: two short rows,
+     "Departure: runway · SID · transition" and "Arrival: runway · STAR · transition · approach" (+ the approach transition
+     select, only when the chosen approach has transitions). Each is a `select` filled by `aerodb.runways(icao)` and
+     `aerodb.procedures(icao, { kind, runway })`: choosing a runway filters the lists. Options: empty = not chosen ("—"),
+     "aucune" (writes `null`; SID, STAR and approach), then the procedures by name; a record with `status: 'xplane'` (local)
+     comes last, worded "X-Plane, local"; an `outdated` one says "périmé"; a name that comes back (one record per runway)
+     carries its runways. A change rewrites `route.procedures` v2 (`by: 'fuel'`, `at`) and drops what depended on it (another
+     runway removes the SID / STAR / approach that does not serve it; another procedure removes its transition). An aerodrome
+     without data: the row says "aucune procédure publiée" and offers one button, "Lire les procédures de LFXX"
+     (`aerodb.fetchProcedures(icao, { onProgress, signal })`, one aerodrome per gesture, nothing fetched silently); a refusal
+     shows its reason in a floating notification (`ctx.notify`), and without a launcher (or on a device paired with the
+     workstation) the reason says the reading is done on the workstation and proposes the SimBrief OFP as the per-flight
+     source. "Load my OFP" replaces the choice by the OFP's SID and STAR (one notification line per side).
+     **The quote runs on the procedures path** (before the start): when procedures are chosen and read (`CF.loadProcedures`),
+     the distance is the last point's `nm` of `CF.flownPath(CF.expandedPath(flight, procs))` (never recomputed here), the
+     level steps are the route points' `alt_ft` at their `nm`, `quote.legs` has one `{ id, min, origin }` per flown point and
+     `profile.path` is the planned vertical path (`progress.js` `verticalPath`). The procedures' altitude constraints reach
+     `profile.path` only, not the quote's level steps (the step machinery models cruise levels, not a descent through
+     restrictions): fuel and time count the distance. Without procedures: the route's points, legs with origin `'route'`.
+     **After "Start the flight"** the Departure step carries a "Procedures" card: the arrival row stays editable at any time,
+     the departure row while the flight has not passed the end of the SID (the last point of origin `'sid'`; position =
+     `progress.actual` when less than two minutes old, else `plannedPositionAt` on the path; read-only afterwards). A change
+     rewrites `route.procedures`, `quote.legs`, `profile.path`, the progress length and `quote.legsAt`; the block, trip, minutes
+     and the rest of the quote do not change (the quote keeps `quote.distanceNm` while the route is unchanged) and no new
+     quote is made. Nothing else is made editable by this lot after the start (the former behaviour is untouched, see
+     DECISIONS 28 Oct 2026).
   1. **Aircraft** (since 23 Oct 2026, aerodb's registry): one line — the chosen aircraft (name, registration,
      callsign, type) with its origin, and a search button that unfolds one field and its results from
      `aircraft().search(text)` (sheets → fleet → reference → types → free code, each with its origin; an aircraft shows

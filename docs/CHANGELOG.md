@@ -12,6 +12,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: runway, SID, STAR and approach chosen in the preparation, the quote on their path, the arrival changed in flight**
+  (`modules/fuel/module.js`, `progress.js`, `INTEGRATION.md` § 3, `SPEC.md`, `DECISIONS.md`; help ×4; cases F11–F19) —
+  V3_SPECIFICATION § 10.20. Step Flight gets two short rows ("Departure: runway · SID · transition", "Arrival: runway · STAR ·
+  transition · approach"), selects filled by aerodb and filtered by the runway (the X-Plane local record last, "outdated" marked,
+  "aucune" writes `null`); an aerodrome without data offers "Read the procedures of LFXX" and shows the reason of a refusal in
+  a floating notification. `route.procedures` is v2 (identifiers; fuel the only writer, readers through `proceduresOf`; an old
+  `{ sid, star }` is migrated by fuel's next write, nothing at mount). "Load my OFP" replaces the choice by the OFP's SID and STAR
+  and says what changed, one line per side. Before the start the quote runs on the flown path (`quote.legs` one per point with
+  its origin, `quote.distanceNm`, `profile.path` with the constraints applied); after "Start the flight" the Departure step keeps
+  the arrival row editable (the departure row until the end of the SID) and a change rewrites only the legs, `profile.path`, the
+  length and `quote.legsAt`, never the block fuel. `#fuel?focus=arr` (the Map's "Change") opens the step with the arrival row.
+
 - **Settings: EAD Basic credentials in the launcher's keys panel** (`frame/settings/launcher.js`, `tools/launch.py`, help ×4)
   — under the IVAO key, a block for the EAD Basic user name and password (given once to the launcher, kept in
   `secrets/ead.json`, never read back by the page, which only shows « saved on <date> » or « missing »), with the notice

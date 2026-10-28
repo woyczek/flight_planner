@@ -486,7 +486,7 @@ class Ctx(Asserts):
 
     # -- navigation and seeding
     def open(self, target='fuel', flight=False, started=False, trigram='ABC', pending=0, wait=True, steps=False, aero=False,
-             tone=None, airfields=False, flights=0, reports=0, forecast=False, docs=(), airspaces=(), airways=(), aero_extra=None):
+             tone=None, airfields=False, flights=0, reports=0, forecast=False, docs=(), airspaces=(), airways=(), aero_extra=None, identity=None):
         """Seeds the cache, then loads `frame/index.html#<target>` and waits for the screen.  `target` is the part after
         '#', e.g. 'maps', 'help?m=maps', 'settings'.  Always seeded: the design and tone of the run (device/design.json,
         which the frame applies over the localStorage mirror; `tone` overrides the run's) and a trigram (`trigram=''`: none,
@@ -496,10 +496,10 @@ class Ctx(Asserts):
         a report (seed_flights); `forecast`: a synthetic forecast of the seeded flight in the weather store (seed_forecast);
         `docs`: more documents [[path, value, policy], ...]; `airspaces`: more airspaces for the published base (implies `aero`);
         `airways`: airway segments for the published base (implies `aero`; `synthetic_airways()`); `aero_extra`: more of the published base
-        (implies `aero`; see aero_docs, D27's LFQN)."""
+        (implies `aero`; see aero_docs, D27's LFQN); `identity`: more keys of the device identity (e.g. `{'simbrief': '12345'}`)."""
         docs = [['device/design.json', {'design': self.design, 'tone': tone or self.tone}, 'cache']] + [list(d) for d in docs]
         if trigram:
-            docs.append(['device/identity.json', {'trigram': trigram}, 'cache'])
+            docs.append(['device/identity.json', {'trigram': trigram, **(identity or {})}, 'cache'])
         if flight:
             docs += flight_docs(started, trigram or 'ABC', steps)
         if aero or airfields or airspaces or airways or aero_extra:

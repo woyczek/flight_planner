@@ -74,6 +74,8 @@ l'indicatif choisis suivent le vol jusqu'au compte rendu. La ligne « Croisière
 
 À côté de la date, l'horloge « +30 » pose le vol dans 30 min (arrondi aux 5 min ; chaque appui ajoute 30 min) et « Maint. » revient à l'heure courante : la météo des terrains (le TAF s'il couvre cette heure) et les vents en altitude sont relus aussitôt.
 
+**Piste, SID, STAR et approche.** Sous les terrains, deux lignes courtes : « Départ : piste · SID · transition » et « Arrivée : piste · STAR · transition · approche » (la transition d'approche n'apparaît que si l'approche choisie en a). Chaque liste vient d'aerodb : choisir une piste ne garde que les procédures qui la desservent. Le premier choix, « — », veut dire « pas choisi » ; « aucune » est un vrai choix (un départ direct, sans SID). Une procédure du repli X-Plane du poste passe en dernier, marquée « X-Plane, local » ; une procédure lue à la main dont le cycle est passé est marquée « périmé ». Sur un terrain sans procédure publiée, la ligne le dit (« aucune procédure publiée ») et propose « Lire les procédures de LFXX » : un terrain par geste, jamais en silence. Sans lanceur, ou sur un appareil appairé au poste, la lecture se fait sur le poste — le message le dit — et l'OFP SimBrief reste la source du vol. Une fois la SID et la STAR choisies, le devis court sur le chemin « route + procédures » (la distance de la SID et de la STAR comprise) et la Carte les trace avec leurs altitudes et leurs vitesses ; leurs contraintes d'altitude n'entrent pas dans les paliers du devis, elles se lisent sur le profil vertical. « Dernier OFP SimBrief » remplace la SID et la STAR choisies par celles de l'OFP et dit ce qui change, une ligne par côté (« Arrivée : STAR ABC1A → ABC2B »).
+
 <a id="fuel-step-2"></a>**2 Route.** Tapez la route dans le champ « Route » (Entrée la valide),
 toujours visible : les points, les voies aériennes et les niveaux, comme dans un plan de vol (« LFBO TOU UN460
 NTS/F280 LFRN »). Vous pouvez aussi y coller un plan de vol OACI ou la liste d'un OFP. Quand vous quittez le champ, la
@@ -176,6 +178,8 @@ mise en route du compte rendu. Sur un téléphone il ouvre la Carte, sur un gran
 droite.
 Changer le terrain de départ ensuite, c'est préparer un autre vol : l'heure de départ est effacée. Changer l'arrivée
 après le départ est un déroutement : l'heure est gardée et le déroutement noté.
+
+Une fois le vol démarré, ce pas porte une carte « Procédures » : la ligne Arrivée reste modifiable à tout moment (approche, STAR, piste d'arrivée) et la ligne Départ tant que la SID n'est pas passée (d'après la position réelle si elle date de moins de deux minutes, sinon la position prévue ; passée, la ligne reste affichée en lecture seule). Un changement ne refait pas le devis : le carburant bloc, le délestage et les réserves restent ceux du départ ; seuls les points horaires, le profil vertical et la distance restante suivent le nouveau chemin. Le bouton « Changer » de la Carte ouvre Carburant sur la ligne Arrivée (`#fuel?focus=arr`) : le pas Vol avant le départ, le pas Départ après.
 
 Une fois le vol démarré, le résultat en bas d'écran dit « Vol démarré à 11:14Z (13:14) · depuis 1 h 10 ». Les heures sont en UTC (« Z ») ;
 l'heure de l'appareil s'ajoute entre parenthèses au départ, au décollage et à l'arrivée prévus. Un vol démarré se

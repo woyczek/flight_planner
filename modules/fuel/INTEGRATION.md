@@ -141,10 +141,22 @@ report and maps never write nor erase it.
   of climb (`tocNm`) and from the top of descent to arrival (`todNm`) — the quote's own climb and descent, so the four
   values close the profile at the level. The "top of descent" shown in fuel's result is the gradient rule (level ÷
   gradient + buffer), not `todNm`. Maps draws the vertical profile from it and computes its own when it is missing.
-- `route.procedures` (fuel's, optional): `{ sid, star }` of the last SimBrief OFP loaded, each a procedure of the common schema
-  (`frame/aerodb/SPEC.md` § 5 quinquies: `icao`, `kind`, `name`, `runways`, `points` [{ id, lat, lon, planned… }], `status:
-  'ofp'`) or null; set by "Load my OFP" through `aerodb.rememberOfp`. A reader checks `procedure.icao` against `route.dep` /
-  `route.arr`: a route edited by hand since leaves it stale.
+  **`profile.path`** (28 Oct 2026, § 10.20): with procedures chosen and read, `[{ nm, ft }]`, the planned vertical path along the
+  flown path (`nm` = the cumulative distance of `flownPath`, the only measure): the quote's climb, cruise (and level steps) and
+  descent, then each procedure point's altitude constraint (`at` → ft, `max` → at most, `min` → at least, `between` → within) where
+  it is tighter, linear between points, the runway thresholds at their elevation (0 ft without it); absent without procedures.
+- `route.procedures` (fuel's, optional, **v2** since 28 Oct 2026, V3_SPECIFICATION § 10.20): the runway, SID, STAR and approach
+  chosen in the preparation, as identifiers of the common schema of aerodb (`frame/aerodb/SPEC.md` § 5 quinquies):
+  `{ dep: { rwy, sid, trans }, arr: { rwy, star, trans, app, appTrans }, by: 'fuel', at }`. `rwy` is a runway number (`"03"`,
+  `"13R"`), the others are procedure identifiers (`LFRS.SID.NTS1A.RW03.NONE`; `trans` / `appTrans` the identifier of the
+  transition record); `null` = « aucune », the pilot's own choice; a field absent = not chosen; `at` is the ISO time of the
+  choice (`merge` sets `updated_at` on the record). **Fuel is the only writer** (rows of the step Flight, the arrival row of
+  the step Departure, "Load my OFP"); the Map and every reader read it **only through `proceduresOf(flight)`**
+  (`frame/lib/current_flight.js`), which returns the v2 view, migrates the old `{ sid, star }` (objects of the last OFP) and
+  returns `{}` (not chosen) for a side whose aerodrome no longer matches `route.dep` / `route.arr`. Migration: nothing is
+  written at mount; the v2 shape is written with fuel's next ordinary write, which also drops such a side. "Load my OFP"
+  replaces the pilot's choice by the OFP's SID and STAR (the records `aerodb.rememberOfp` keeps, runway only when the record
+  has a single one) and says what changed, one line per side.
 - `route.points[].wind` (fuel's, lot F): `{ dirDeg, kt, tempC, levelFt, at }` — the forecast wind and temperature
   at the level flown at that point (the plan's, or the step's), from Open-Meteo (`at`: the forecast hour, ISO). Maps
   draws the arrows from it. Absent without a forecast for this route; rewritten whenever the route, the level or
@@ -166,12 +178,17 @@ report and maps never write nor erase it.
   longer written: `planned_at` above; `mid`,
   the former intermediate aerodrome, is no longer written nor read: the corridor's aerodromes replace it); `windSource`: `{ kind: 'weather', ids: ['LFBO (TAF)', …] }` when the wind came from it, else
   null.
-- `quote` (fuel's): `{ block, trip, unit ('kg' | 'lb', the sheet's), minutes, levelFt, approx, taxiMin, legs }` — the quote's
+- `quote` (fuel's): `{ block, trip, unit ('kg' | 'lb', the sheet's), minutes, levelFt, approx, taxiMin, distanceNm, legs, legsAt? }` — the quote's
   block fuel and trip, rounded, rewritten with every quote that changes them (null without a quote with fuel); Report
-  fills "fuel at start" with `block`. **`legs`** (28 Oct 2026, for the recoded Map): `[{ id, min }]`, one per route
-  point in order, `min` = minutes from brake release (taxi apart: the quote settings' `taxiMin`) to that point, to a tenth
+  fills "fuel at start" with `block`. **`legs`** (28 Oct 2026, for the recoded Map): `[{ id, min, origin }]`, one per point of
+  the flown path in order — `flownPath(expandedPath(flight, procs))` when procedures are chosen (§ 10.20), the route's own points
+  otherwise —, `origin` = `'route'` | `'sid'` | `'star'` | `'app'` (a leg written before the procedures has none: read as
+  `'route'`), `min` = minutes from brake release (taxi apart: the quote settings' `taxiMin`) to that point, to a tenth
   — the quote's own timetable (climb, cruise by leg with its wind, descent; `progress.js` `plan` / `etas`), the departure
-  at 0; `null` without a route of two points or more. **`taxiMin`** (28 Oct 2026): the taxi minutes the quote counts
+  at 0; `null` without a route of two points or more. **`distanceNm`** (28 Oct 2026): the length the quote ran on, to a tenth
+  — the last point's `nm` of the flown path, the route's distance without procedures; it does not change when procedures
+  change after the start. **`legsAt`** (ISO, only after the start): when `legs` (and `profile.path`) were last rewritten.
+  A reader gives `legTimes` / `etaOf` / `plannedPositionAt` the same `{ path }` as the one the legs follow. **`taxiMin`** (28 Oct 2026): the taxi minutes the quote counts
   (the quote settings' `taxiMin`), written beside `legs`: the frame's helpers (`etaOf`, `plannedPositionAt`) add it to
   `started.at` / `planned_at` before `legs` (fallback 10 min without it).
 - `progress` (fuel's, lot H): `{ at, fuelRemainingKg, remainingNm, phase ('taxi' | 'climb' | 'cruise' | 'descent' |

@@ -77,6 +77,8 @@ Next to the date, the “+30” clock sets the flight 30 min from now (rounded t
 goes back to the current time: the aerodrome weather (the TAF if it covers that time) and the winds aloft are read again
 at once.
 
+**Runway, SID, STAR and approach.** Under the aerodromes, two short rows: "Departure: runway · SID · transition" and "Arrival: runway · STAR · transition · approach" (the approach transition appears only when the chosen approach has one). Every list comes from aerodb: choosing a runway keeps only the procedures that serve it. The first choice, "—", means "not chosen"; "none" is a real choice (a direct departure, no SID). A procedure of the workstation's X-Plane fallback comes last, marked "X-Plane, local"; a hand-read procedure whose cycle has passed is marked "outdated". For an aerodrome with no published procedure the row says so ("no published procedure") and offers "Read the procedures of LFXX": one aerodrome per gesture, never silently. Without a launcher, or on a device paired with the workstation, the reading is done on the workstation — the message says so — and the SimBrief OFP stays the source of the flight. Once the SID and STAR are chosen, the quote runs on the "route + procedures" path (the distance of the SID and STAR included) and the Map draws them with their altitudes and speeds; their altitude constraints do not enter the quote's level steps, they are read on the vertical profile. "Last SimBrief OFP" replaces the chosen SID and STAR with those of the OFP and says what changes, one line per side ("Arrival: STAR ABC1A → ABC2B").
+
 <a id="fuel-step-2"></a>**2 Route.** Type the route in the “Route” field (Enter confirms it), always visible: the points, the airways and the
 levels, as in a flight plan (“LFBO TOU UN460 NTS/F280 LFRN”). You can also paste an ICAO flight plan or the list of an
 OFP there. When you leave the field, the route is tidied up: in capitals on one line, without DCT or speed-level groups,
@@ -177,6 +179,8 @@ large screen it stays here with the Map on the right. Changing the departure air
 flight: the departure time is cleared. Changing the arrival after departure is a diversion: the time is kept and the
 diversion recorded.
 
+Once the flight has started, this step carries a "Procedures" card: the Arrival row stays editable at any time (approach, STAR, arrival runway) and the Departure row while the SID is not passed (judged on the real position when it is less than two minutes old, otherwise on the planned position; once passed, the row stays shown, read-only). A change does not redo the quote: the block fuel, the trip fuel and the reserves stay those of the departure; only the times at the points, the vertical profile and the remaining distance follow the new path. The Map's "Change" button opens Fuel on the Arrival row (`#fuel?focus=arr`): the Flight step before the start, the Departure step after.
+
 Once the flight has started, the result at the bottom of the screen says “Flight started at 11:14Z (13:14) · for 1 h 10”. Times are UTC (“Z”);
 the device's time is added in brackets at the departure, the planned take-off and the planned arrival. A
 started flight ends with the writing of its report: when it is saved, Fuel goes back to preparation and My flights
@@ -228,7 +232,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 319b95a5fcff -->
+<!-- fr: 03cf001e7ea7 -->
 
 <!-- chapter: maps -->
 # Map

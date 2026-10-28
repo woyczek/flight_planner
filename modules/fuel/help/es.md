@@ -31,6 +31,8 @@ Junto a la fecha, el reloj «+30» pone el vuelo dentro de 30 min (redondeado a 
 «Ahora» vuelve a la hora actual: la meteorología de los aeródromos (el TAF si cubre esa hora) y los vientos en altura se
 vuelven a leer en el acto.
 
+**Pista, SID, STAR y aproximación.** Bajo los aeródromos, dos líneas cortas: «Salida: pista · SID · transición» y «Llegada: pista · STAR · transición · aproximación» (la transición de aproximación solo aparece si la aproximación elegida la tiene). Cada lista viene de aerodb: al elegir una pista solo quedan los procedimientos que la sirven. La primera opción, «—», significa «no elegido»; «ninguna» es una elección real (una salida directa, sin SID). Un procedimiento del respaldo X-Plane del puesto va el último, marcado «X-Plane, local»; uno leído a mano cuyo ciclo ha pasado se marca «caducado». En un aeródromo sin procedimiento publicado, la línea lo dice («ningún procedimiento publicado») y ofrece «Leer los procedimientos de LFXX»: un aeródromo por gesto, nunca en silencio. Sin lanzador, o en un dispositivo emparejado con el puesto, la lectura se hace en el puesto —el mensaje lo dice— y el OFP de SimBrief sigue siendo la fuente del vuelo. Una vez elegidas la SID y la STAR, el cálculo corre sobre el camino «ruta + procedimientos» (con la distancia de la SID y la STAR) y el Mapa los traza con sus altitudes y velocidades; sus restricciones de altitud no entran en los escalones del cálculo, se leen en el perfil vertical. «Último OFP de SimBrief» sustituye la SID y la STAR elegidas por las del OFP y dice qué cambia, una línea por lado («Llegada: STAR ABC1A → ABC2B»).
+
 <a id="fuel-step-2"></a>**2 Ruta.** Escriba la ruta en el campo «Ruta» (Intro la valida), siempre visible: los puntos, las aerovías y los
 niveles, como en un plan de vuelo («LFBO TOU UN460 NTS/F280 LFRN»). También puede pegar ahí un plan de vuelo OACI o la
 lista de un OFP. Al salir del campo, la ruta se pone en limpio: en mayúsculas en una línea, sin DCT ni grupos
@@ -135,6 +137,8 @@ marcha del informe. En un teléfono abre el Mapa, en una pantalla grande se qued
 después el aeródromo de salida es preparar otro vuelo: la hora de salida se borra. Cambiar la llegada después de la
 salida es un desvío: la hora se conserva y el desvío queda anotado.
 
+Una vez iniciado el vuelo, este paso lleva una tarjeta «Procedimientos»: la línea de Llegada sigue siendo modificable en todo momento (aproximación, STAR, pista de llegada) y la de Salida mientras la SID no esté volada (según la posición real si tiene menos de dos minutos, si no según la prevista; una vez volada, la línea sigue visible, solo de lectura). Un cambio no rehace el cálculo: el combustible de bloque, el de trayecto y las reservas siguen siendo los de la salida; solo las horas en los puntos, el perfil vertical y la distancia restante siguen el nuevo camino. El botón «Cambiar» del Mapa abre Combustible en la línea de Llegada (`#fuel?focus=arr`): el paso Vuelo antes del arranque, el paso Salida después.
+
 Una vez iniciado el vuelo, el resultado al pie de la pantalla dice «Vuelo iniciado a las 11:14Z (13:14) · desde hace 1 h 10». Las horas están en UTC
 («Z»); la hora del dispositivo se añade entre paréntesis en la salida, el despegue y la llegada previstos. Un
 vuelo iniciado termina al escribir su informe: al guardarlo, Combustible vuelve a la preparación y Mis vuelos quita «en
@@ -187,4 +191,4 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: 319b95a5fcff -->
+<!-- fr: 03cf001e7ea7 -->

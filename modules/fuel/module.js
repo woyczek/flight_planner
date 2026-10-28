@@ -232,6 +232,82 @@ const TX = {
     'OFP {dep} → {arr} übernommen ({n} Punkte).',
     'OFP {dep} → {arr} cargado ({n} puntos).'
   ],
+  // piste, SID, STAR et approche choisies dans la préparation (V3_SPECIFICATION § 10.20)
+  procTitle: ['Procédures', 'Procedures', 'Verfahren', 'Procedimientos'],
+  procRwy: ['Piste', 'Runway', 'Piste', 'Pista'],
+  procSid: ['SID', 'SID', 'SID', 'SID'],
+  procStar: ['STAR', 'STAR', 'STAR', 'STAR'],
+  procTrans: ['Transition', 'Transition', 'Übergang', 'Transición'],
+  procApp: ['Approche', 'Approach', 'Anflug', 'Aproximación'],
+  procAppTrans: ['Transition d’approche', 'Approach transition', 'Anflugübergang', 'Transición de aproximación'],
+  procNone: ['aucune', 'none', 'keine', 'ninguna'],
+  procXplane: ['X-Plane, local', 'X-Plane, local', 'X-Plane, lokal', 'X-Plane, local'],
+  procOutdated: ['périmé', 'outdated', 'veraltet', 'caducado'],
+  procNoData: ['aucune procédure publiée', 'no published procedure', 'kein veröffentlichtes Verfahren', 'ningún procedimiento publicado'],
+  procRead: ['Lire les procédures de {icao}', 'Read the procedures of {icao}', 'Verfahren von {icao} lesen',
+    'Leer los procedimientos de {icao}'
+  ],
+  procReading: ['Lecture de {icao}…', 'Reading {icao}…', '{icao} wird gelesen…', 'Leyendo {icao}…'],
+  procFetched: ['{icao} : {n} procédures lues.', '{icao}: {n} procedures read.', '{icao}: {n} Verfahren gelesen.',
+    '{icao}: {n} procedimientos leídos.'
+  ],
+  procPassed: ['La SID est passée : le départ n’est plus modifiable.', 'The SID is behind you: the departure can no longer be changed.',
+    'Die SID ist beflogen: der Abflug lässt sich nicht mehr ändern.', 'La SID ya está volada: la salida ya no se puede cambiar.'
+  ],
+  procKinds: {
+    rwy: ['piste', 'runway', 'Piste', 'pista'],
+    sid: ['SID', 'SID', 'SID', 'SID'],
+    trans: ['transition', 'transition', 'Übergang', 'transición'],
+    star: ['STAR', 'STAR', 'STAR', 'STAR'],
+    app: ['approche', 'approach', 'Anflug', 'aproximación'],
+    appTrans: ['transition d’approche', 'approach transition', 'Anflugübergang', 'transición de aproximación']
+  },
+  procChange: ['{side} : {parts}', '{side}: {parts}', '{side}: {parts}', '{side}: {parts}'],
+  procReasons: {
+    'bad-icao': ['Code OACI invalide : {icao}.', 'Invalid ICAO code: {icao}.', 'Ungültiger ICAO-Code: {icao}.',
+      'Código OACI no válido: {icao}.'
+    ],
+    'no-launcher': [
+      'La lecture se fait sur le poste de travail (pas de lanceur ici). Pour ce vol, chargez votre OFP SimBrief : il apporte la SID et la STAR.',
+      'Reading is done on the workstation (no launcher here). For this flight, load your SimBrief OFP: it brings the SID and the STAR.',
+      'Das Lesen geschieht am Arbeitsplatz (hier kein Launcher). Laden Sie für diesen Flug Ihren SimBrief-OFP: er liefert SID und STAR.',
+      'La lectura se hace en el puesto de trabajo (aquí no hay lanzador). Para este vuelo, cargue su OFP de SimBrief: aporta la SID y la STAR.'
+    ],
+    paired: [
+      'Cet appareil est appairé au poste : la lecture de {icao} se fait sur le poste. Pour ce vol, votre OFP SimBrief apporte la SID et la STAR.',
+      'This device is paired with the workstation: {icao} is read on the workstation. For this flight, your SimBrief OFP brings the SID and the STAR.',
+      'Dieses Gerät ist mit dem Arbeitsplatz gekoppelt: {icao} wird dort gelesen. Für diesen Flug liefert Ihr SimBrief-OFP SID und STAR.',
+      'Este dispositivo está emparejado con el puesto: {icao} se lee en el puesto. Para este vuelo, su OFP de SimBrief aporta la SID y la STAR.'
+    ],
+    'unknown-layout': ['Lecture impossible pour l’État de {icao} : sa mise en page n’est pas connue.',
+      'Cannot read {icao}: the layout of its State is not known.',
+      '{icao} lässt sich nicht lesen: das Layout seines Staates ist unbekannt.',
+      'No se puede leer {icao}: se desconoce el formato de su Estado.'
+    ],
+    'no-credentials': ['Les identifiants EAD Basic manquent sur le poste : à régler dans Réglages › Clés du lanceur.',
+      'The EAD Basic credentials are missing on the workstation: set them in Settings › Launcher keys.',
+      'Die EAD-Basic-Zugangsdaten fehlen am Arbeitsplatz: unter Einstellungen › Launcher-Schlüssel eintragen.',
+      'Faltan las credenciales de EAD Basic en el puesto: configúrelas en Ajustes › Claves del lanzador.'
+    ],
+    busy: ['Une lecture de {icao} est déjà en cours.', 'A reading of {icao} is already running.', 'Das Lesen von {icao} läuft bereits.',
+      'Ya hay una lectura de {icao} en curso.'
+    ],
+    cancelled: ['Lecture de {icao} annulée.', 'Reading of {icao} cancelled.', 'Lesen von {icao} abgebrochen.',
+      'Lectura de {icao} cancelada.'
+    ],
+    failed: ['La lecture de {icao} a échoué.{m}', 'Reading {icao} failed.{m}', 'Das Lesen von {icao} ist fehlgeschlagen.{m}',
+      'La lectura de {icao} ha fallado.{m}'
+    ],
+    unavailable: [
+      'La lecture à la demande n’est pas encore disponible. Pour ce vol, chargez votre OFP SimBrief : il apporte la SID et la STAR.',
+      'Reading on demand is not available yet. For this flight, load your SimBrief OFP: it brings the SID and the STAR.',
+      'Das Lesen auf Anfrage ist noch nicht verfügbar. Laden Sie für diesen Flug Ihren SimBrief-OFP: er liefert SID und STAR.',
+      'La lectura a demanda aún no está disponible. Para este vuelo, cargue su OFP de SimBrief: aporta la SID y la STAR.'
+    ],
+    other: ['Lecture de {icao} refusée ({r}).', 'Reading {icao} refused ({r}).', 'Lesen von {icao} abgelehnt ({r}).',
+      'Lectura de {icao} rechazada ({r}).'
+    ]
+  },
   offline: ['Hors ligne : rien n’a été demandé.', 'Offline: nothing was requested.', 'Offline: nichts wurde angefragt.',
     'Sin conexión: no se pidió nada.'
   ],
@@ -1114,6 +1190,7 @@ function saveFlight() {
   s.flightTimer = setTimeout(async () => {
     const path = `pilot/${s.ctx.identity.trigram || 'ANON'}/current_flight.json`,
       cur = (await s.ctx.data.get(path)) || {};
+    normProcedures(s.flight); // route.procedures au schéma v2 (un ancien { sid, star } migré, un côté d'un autre terrain retiré)
     s.flight = CF.merge(cur, s.flight, {
       fields: CF.FUEL_FIELDS,
       progressKeys: CF.FUEL_PROGRESS,
@@ -1132,6 +1209,453 @@ function saveSettings() {
     schema: 1,
     updated_at: new Date().toISOString()
   }), 800);
+}
+
+// ---------------------------------------------------------------- procédures choisies et chemin du devis (§ 10.20)
+// route.procedures v2 = { dep: { rwy, sid, trans }, arr: { rwy, star, trans, app, appTrans }, by: 'fuel', at } : identifiants du
+// schéma d'aerodb, null = « aucune » (choix du pilote), champ absent = pas choisi. Fuel est seul à l'écrire ; il ne la lit que
+// par CF.proceduresOf. Avant le départ, le devis court sur le chemin « route + procédures » (CF.expandedPath, CF.flownPath) ;
+// après, un changement de procédure ne réécrit que les legs, le chemin vertical et la longueur (rewriteLegs).
+
+/** Champs de chaque côté de route.procedures. */
+const PROC_FIELDS = {
+  dep: ['rwy', 'sid', 'trans'],
+  arr: ['rwy', 'star', 'trans', 'app', 'appTrans']
+};
+/** Vrai si un côté de la vue des procédures porte un choix (une piste, une procédure, ou « aucune »). */
+const sideChosen = o => !!o && Object.values(o).some(v => v === null || typeof v === 'string' && v !== '');
+/** Un côté sans champ vide : { rwy: '23', sid: null } ; undefined retiré. */
+const cleanSide = o => Object.fromEntries(Object.entries(o || {}).filter(([, v]) => v !== undefined && v !== ''));
+/** Clé des entrées de la lecture des procédures : les choix et les terrains (une autre clé, le chemin est relu). */
+const procsKey = (f = S.flight) => JSON.stringify([CF.proceduresOf(f).dep, CF.proceduresOf(f).arr, f.route?.dep || '', f.route?.arr || '']);
+
+/** Chemin volé du vol (CF.flownPath d'expandedPath) : null sans procédure choisie, sans route de deux points, avec une
+ *  distance saisie à la main, ou tant que les procédures choisies ne sont pas lues par aerodb (ensureProcs). */
+function fpNow() {
+  const f = S.flight,
+    r = f.route || {},
+    v = CF.proceduresOf(f);
+  if (r.manual || (r.points || []).length < 2 || !sideChosen(v.dep) && !sideChosen(v.arr) || S.procs?.key !== procsKey(f)) return null;
+  const fp = CF.flownPath(CF.expandedPath(f, S.procs.procs || {}));
+  return fp.length >= 2 ? fp : null;
+}
+/** Vrai si des procédures sont choisies mais pas encore lues : le devis attend (aucune écriture d'un devis passager). */
+function procsPending() {
+  const v = CF.proceduresOf(S.flight);
+  return (sideChosen(v.dep) || sideChosen(v.arr)) && S.procs?.key !== procsKey();
+}
+/** Lit les procédures choisies par aerodb (CF.loadProcedures : enregistrements et pistes) quand les choix ou les terrains ont
+ *  changé, puis redessine ; sans procédure choisie, rien à lire. Une lecture à la fois par clé. */
+function ensureProcs() {
+  const key = procsKey(),
+    v = CF.proceduresOf(S.flight),
+    s = S;
+  if (S.procs?.key === key) return;
+  if (!sideChosen(v.dep) && !sideChosen(v.arr)) {
+    S.procs = {
+      key,
+      procs: null
+    };
+    return;
+  }
+  if (S.procsBusy === key) return;
+  S.procsBusy = key;
+  Promise.resolve().then(() => CF.loadProcedures(s.ctx.aerodb, s.flight)).catch(() => ({})).then(procs => {
+    if (gone(s)) return;
+    if (s.procsBusy === key) s.procsBusy = null;
+    s.procs = {
+      key,
+      procs: procs || {}
+    };
+    refresh();
+  });
+}
+/** Signature de la route (points, distance, saisie à la main) : ce qui, changé après le départ, refait tout le devis. */
+const routeSig = () => {
+  const r = S.flight.route || {};
+  return JSON.stringify([(r.points || []).map(p => [p.id, p.lat, p.lon]), r.distanceNm, !!r.manual]);
+};
+/** Distance (NM) sur laquelle court le devis. Avant le départ, celle du chemin (ou de la route) ; après, celle de l'ouverture du vol
+ *  (quote.distanceNm) tant que la route ne change pas : un changement de procédure ne bouge ni le carburant ni le temps du
+ *  devis (V3_SPECIFICATION § 10.20), seulement les legs, le chemin vertical et la longueur de progression. */
+function quoteNm(cur) {
+  const f = S.flight;
+  if (!f.started?.at) {
+    S.froze = undefined;
+    return cur;
+  }
+  if (procsPending()) return cur; // les procédures choisies ne sont pas lues : pas de longueur à garder (rien n'est écrit non plus)
+  const sig = routeSig();
+  if (S.froze === undefined) S.froze = {
+    sig,
+    nm: +f.quote?.distanceNm > 0 ? +f.quote.distanceNm : cur
+  };
+  else if (S.froze === false || S.froze.sig !== sig) S.froze = {
+    sig,
+    nm: cur
+  };
+  return S.froze.nm;
+}
+/** Paliers du devis sur le chemin volé : le niveau (alt_ft) des points de la route à leur distance cumulée du chemin, ramenée à
+ *  la distance du devis. Les contraintes des procédures n'y entrent pas (voir DECISIONS, 28 oct. 2026). */
+function pathSteps(fp, distanceNm) {
+  const k = fp.at(-1).nm > 0 ? distanceNm / fp.at(-1).nm : 1,
+    out = fp.slice(1, -1).filter(p => p.origin === 'route' && p.alt_ft > 0).map(p => ({
+      nm: p.nm * k,
+      ft: +p.alt_ft
+    }));
+  return out.length ? out : null;
+}
+/** Points suivis par l'horaire et la progression : le chemin volé quand les procédures sont lues, sinon les points de la route ;
+ *  nm : sa longueur (celle de la route sans chemin). */
+function progPath() {
+  const fp = fpNow();
+  return {
+    pts: fp || S.flight.route?.points || [],
+    nm: fp ? fp.at(-1).nm : +S.flight.route?.distanceNm || 0
+  };
+}
+/** Procédures de l'enregistrement mises au schéma v2 avant d'écrire : un ancien { sid, star } devient dep / arr, un côté dont le
+ *  terrain a changé (CF.proceduresOf le rend vide) est retiré. Rien n'est réécrit quand l'enregistrement est déjà v2 et à jour ;
+ *  jamais appelée au montage : la migration part avec la prochaine écriture ordinaire. */
+function normProcedures(f) {
+  const pr = f?.route?.procedures;
+  if (!pr || typeof pr !== 'object') return;
+  const v = CF.proceduresOf(f),
+    dep = v.dep === null ? null : cleanSide(v.dep),
+    arr = v.arr === null ? null : cleanSide(v.arr);
+  if (('dep' in pr || 'arr' in pr) && JSON.stringify([dep, arr]) === JSON.stringify([pr.dep ?? null, pr.arr ?? null].map(x => x === null ?
+      null :
+      cleanSide(x)))) return;
+  if (!sideChosen(dep) && !sideChosen(arr) && dep !== null && arr !== null) delete f.route.procedures;
+  else f.route.procedures = {
+    dep: dep ?? null,
+    arr: arr ?? null,
+    by: 'fuel',
+    at: pr.at || new Date().toISOString()
+  };
+}
+
+// ---------------------------------------------------------------- lignes « Départ » et « Arrivée » : piste, SID, STAR, approche
+/** Nom d'une procédure d'après son identifiant (« LFBD.SID.ROYAN6P.RW23.NONE » → « ROYAN6P ») ; pour une transition, la
+ *  transition (cinquième champ) quand l'identifiant la porte. */
+const nameOfId = (id, key) => {
+  const p = String(id || '').split('.');
+  return (key === 'trans' || key === 'appTrans') && p[4] && p[4] !== 'NONE' ? p[4] : p[2] || String(id);
+};
+/** Piste sans « RW » (« RW23 » → « 23 »), pour comparer. */
+const rwKey = x => String(x ?? '').trim().toUpperCase().replace(/^RW/, '');
+/** Réponse d'aerodb gardée pour le montage (clé : appel + paramètres) ; vidée après une lecture à la demande. */
+function procMemo(key, make) {
+  S.procCache ||= new Map();
+  if (!S.procCache.has(key)) S.procCache.set(key, Promise.resolve().then(make).then(v => v || [], () => []));
+  return S.procCache.get(key);
+}
+/** Pistes d'un terrain (aerodb.runways) ; [] sans donnée. */
+const runwaysOf = icao => procMemo(`rwy|${icao}`, () => S.ctx.aerodb?.runways?.(icao));
+/** Procédures d'un terrain d'une sorte (SID, STAR, APP), filtrées par la piste choisie (aerodb.procedures(icao, { kind, runway })). */
+const procsOf = (icao, kind, runway) => procMemo(`${icao}|${kind}|${rwKey(runway)}`, () => S.ctx.aerodb?.procedures?.(icao, runway ? {
+  kind,
+  runway: rwKey(runway)
+} : {
+  kind
+}));
+
+/** Ce qu'une ligne montre pour un côté : { icao, rwys, lists: { SID | STAR | APP: [enregistrements] }, nodata } ; null sans terrain
+ *  de quatre caractères. Les listes suivent la piste choisie ; nodata : aucun enregistrement ni piste, quelle que soit la piste. */
+async function sideModel(side) {
+  const r = S.flight.route || {},
+    icao = String((side === 'dep' ? r.dep : r.arr) || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{4}$/.test(icao)) return null;
+  const o = CF.proceduresOf(S.flight)[side] || {},
+    kinds = side === 'dep' ? ['SID'] : ['STAR', 'APP'],
+    [rwys, ...all] = await Promise.all([runwaysOf(icao), ...kinds.map(k => procsOf(icao, k, ''))]),
+    lists = o.rwy ? await Promise.all(kinds.map(k => procsOf(icao, k, o.rwy))) : all;
+  return {
+    icao,
+    rwys,
+    lists: Object.fromEntries(kinds.map((k, i) => [k, lists[i]])),
+    nodata: !rwys.length && all.every(l => !l.length)
+  };
+}
+/** Libellé d'un enregistrement dans une liste : son nom, la piste quand le nom revient (une fiche par piste), « X-Plane, local »
+ *  pour le repli du poste, « périmé » pour une lecture à la main dont le cycle est passé. */
+function procLabel(rec, dup) {
+  return [rec.name || nameOfId(rec.id), dup && (rec.runways || []).length ? rec.runways.join('/') : '',
+    rec.status === 'xplane' || rec.local ? tt(TX.procXplane) : '', rec.outdated ? tt(TX.procOutdated) : ''
+  ].filter(Boolean).join(' · ');
+}
+/** Options d'une liste : vide (pas choisi, « — »), « aucune » (null) si none, puis les enregistrements par nom, ceux du repli
+ *  X-Plane en dernier ; le choix gardé hors liste (autre piste, OFP) reste proposé. cur : undefined, null ou un identifiant. */
+function procOptions(recs, cur, key, none = true) {
+  const opt = (v, l, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}>${esc(l)}</option>`,
+    x = r => r.status === 'xplane' || r.local ? 1 : 0,
+    list = [...new Map(recs.map(r => [r.id, r])).values()].sort((a, b) => x(a) - x(b) || String(a.name).localeCompare(String(b.name)) ||
+      String(
+        a.transition || '').localeCompare(String(b.transition || ''))),
+    names = list.map(r => r.name),
+    html = [opt('', '—', cur === undefined), none ? opt('__none', tt(TX.procNone), cur === null) : ''];
+  for (const r of list) html.push(opt(r.id, key === 'trans' || key === 'appTrans' ? r.transition || r.name : procLabel(r, names.filter(n =>
+      n === r.name)
+    .length > 1), r.id === cur));
+  if (typeof cur === 'string' && cur && !list.some(r => r.id === cur)) html.push(opt(cur, nameOfId(cur, key), true));
+  return html.join('');
+}
+/** Une liste déroulante de la ligne : data-k = p-<côté>-<champ>. */
+const procSelect = (side, key, label, options) => `<label class="f-field">${esc(tt(label))}<select data-k="p-${side}-${key}">${options}</select></label>`;
+
+/** Ligne HTML d'un côté. Départ : piste · SID · transition ; Arrivée : piste · STAR · transition · approche (· transition d'approche
+ *  quand l'approche choisie en a). Sans donnée : « aucune procédure publiée » et le bouton de lecture à la demande. */
+function procRowHtml(side, m, edit) {
+  const head = `<b class="fu-prochead">${esc(tt(TX[side]))}</b>`;
+  if (!m) return '';
+  if (m.nodata) {
+    const busy = S.procFetch?.icao === m.icao;
+    return `<div class="fu-proc" data-proc="${side}">${head}<span class="f-muted">${esc(tt(TX.procNoData))}</span>${edit ? `<button type="button" data-do="procfetch" data-icao="${esc(m.icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? tt(TX.procReading, { icao: m.icao }) : tt(TX.procRead, { icao: m.icao }))}</button>` : ''}</div>`;
+  }
+  const o = CF.proceduresOf(S.flight)[side] || {};
+  if (!edit) { // plus modifiable (la SID est passée) : le choix, en lecture seule
+    const said = PROC_FIELDS[side].filter(key => o[key] !== undefined).map(key => procValueText(o[key], key)).join(' · ');
+    return `<div class="fu-proc" data-proc="${side}">${head}<span class="f-muted">${esc(said || '—')}</span></div>`;
+  }
+  const sel = (key, label, recs, none = true) => procSelect(side, key, label, procOptions(recs, o[key], key, none)),
+    main = recs => recs.filter(r => !r.transition),
+    // les transitions de la procédure choisie : mêmes sorte et nom, avec une transition
+    transOf = (recs, id) => {
+      const name = id ? recs.find(r => r.id === id)?.name ?? nameOfId(id) : null;
+      return name ? recs.filter(r => r.name === name && r.transition) : [];
+    },
+    rwys = [...new Map(m.rwys.map(r => [r.id, r])).values()],
+    rwyOpts = `<option value=""${o.rwy ? '' : ' selected'}>—</option>${rwys.map(r => `<option value="${esc(r.id)}"${rwKey(r.id) === rwKey(o.rwy) ? ' selected' : ''}>${esc(r.id)}</option>`).join('')}${o.rwy && !rwys.some(r => rwKey(r.id) === rwKey(o.rwy)) ? `<option value="${esc(o.rwy)}" selected>${esc(o.rwy)}</option>` : ''}`;
+  let body = procSelect(side, 'rwy', TX.procRwy, rwyOpts);
+  if (side === 'dep') {
+    body += sel('sid', TX.procSid, main(m.lists.SID));
+    const t = transOf(m.lists.SID, o.sid);
+    if (t.length) body += sel('trans', TX.procTrans, t, false);
+  } else {
+    body += sel('star', TX.procStar, main(m.lists.STAR));
+    const t = transOf(m.lists.STAR, o.star);
+    if (t.length) body += sel('trans', TX.procTrans, t, false);
+    // l'approche : celles sans transition, et, pour une approche que l'eAIP ne donne que par transition, chacune de ses fiches
+    const apps = m.lists.APP,
+      named = new Set(main(apps).map(r => r.name));
+    body += sel('app', TX.procApp, [...main(apps), ...apps.filter(r => r.transition && !named.has(r.name))]);
+    const at = transOf(apps, o.app);
+    if (at.length) body += sel('appTrans', TX.procAppTrans, at, false);
+  }
+  return `<div class="fu-proc" data-proc="${side}">${head}${body}</div>`;
+}
+/** La SID est-elle passée ? Position : progress.actual s'il a moins de deux minutes (et date du vol), sinon la position prévue
+ *  (CF.plannedPositionAt sur le chemin) ; fin de la SID : le dernier point d'origine « sid » du chemin (le départ même sans SID).
+ *  Passée quand la position, en NM du départ, la dépasse ; faux sans chemin ni position. */
+function depPassed() {
+  const f = S.flight,
+    fp = f.started?.at ? fpNow() : null;
+  if (!fp) return false;
+  let end = 0;
+  for (const p of fp)
+    if (p.origin === 'sid') end = p.nm;
+  const a = f.progress?.actual,
+    fresh = a && Number.isFinite(+a.lat) && Number.isFinite(+a.lon) && Date.now() - Date.parse(a.at) < 120000 && Date.parse(a.at) >= Date
+    .parse(f.started.at),
+    nm = fresh ? PG.nmAlong(fp, a) : CF.plannedPositionAt(f, Date.now(), {
+      path: fp
+    })?.nmFromDep;
+  return Number.isFinite(nm) && nm > end + 1e-6;
+}
+/** Clé de ce que montrent les lignes : choix, terrains, vol démarré, départ passé ; changée, refresh les redessine. */
+const rowsKey = () => JSON.stringify([procsKey(), !!S.flight.started?.at, depPassed()]);
+/** Dessine les lignes de procédures : à Vol avant le départ, à Départ une fois le vol démarré (l'arrivée toujours modifiable, le
+ *  départ tant que la SID n'est pas passée). Asynchrone (aerodb) ; la dernière demande seule est dessinée, le champ au clavier gardé. */
+async function renderProcRows() {
+  const s = S;
+  if (!S?.body || S.view !== 'plan') return;
+  const seq = S.procSeq = (S.procSeq || 0) + 1,
+    started = !!S.flight.started?.at,
+    vol = S.body.querySelector('[data-procbox="vol"]'),
+    start = S.body.querySelector('[data-procbox="start"]'),
+    box = started ? start : vol,
+    other = started ? vol : start;
+  S.body.querySelector('[data-block="procs"]')?.classList.toggle('fu-hide', !started);
+  if (other) other.innerHTML = '';
+  S.rowsKey = rowsKey();
+  if (!box) return;
+  const passed = depPassed(),
+    [dep, arr] = await Promise.all([sideModel('dep'), sideModel('arr')]);
+  if (gone(s) || seq !== S.procSeq || !S.body) return;
+  // les enregistrements montrés, retrouvés par leur identifiant quand une piste choisie en retire (procChosen)
+  S.procRecs = new Map([dep, arr].filter(Boolean).flatMap(m => Object.values(m.lists).flat()).map(r => [r.id, r]));
+  const k = box.contains(document.activeElement) ? document.activeElement.dataset?.k : null;
+  box.innerHTML = (started && passed && dep ? `<p class="f-muted fu-procpassed">${esc(tt(TX.procPassed))}</p>` : '') + procRowHtml('dep', dep, !started || !passed) + procRowHtml('arr', arr,
+    true);
+  if (k) box.querySelector(`[data-k="${k}"]`)?.focus();
+  focusArr();
+}
+/** « Changer » de la Carte (#fuel?focus=arr) : le premier champ de la ligne Arrivée, dès qu'elle est dessinée. */
+function focusArr() {
+  if (!S?.focusArr || S.body?.inert) return;
+  const row = S.body.querySelector('[data-proc="arr"]'),
+    el = row?.querySelector('select,button:not([disabled])');
+  if (!el) return;
+  S.focusArr = false;
+  el.scrollIntoView?.({
+    block: 'center'
+  });
+  el.focus();
+}
+/** Choix du pilote dans une liste (data-k = p-<côté>-<champ>) : route.procedures réécrite (by 'fuel', at), les champs qui en
+ *  dépendent retirés (une autre piste retire la SID, la STAR ou l'approche qu'elle ne dessert pas ; une autre procédure retire sa
+ *  transition), vol écrit et devis refait (avant le départ) ou legs, chemin vertical et longueur seuls (après). */
+function procChosen(k, raw) {
+  const [, side, field] = k.split('-'),
+    f = S.flight,
+    r = f.route ||= emptyFlight().route,
+    v = CF.proceduresOf(f),
+    cur = {
+      dep: {
+        ...(v.dep || {})
+      },
+      arr: {
+        ...(v.arr || {})
+      }
+    },
+    o = cur[side],
+    val = raw === '' ? undefined : raw === '__none' ? null : raw;
+  if (!PROC_FIELDS[side]?.includes(field)) return;
+  if (val === undefined) delete o[field];
+  else o[field] = val;
+  if (field === 'rwy' && val) { // les procédures choisies qui ne desservent pas cette piste sont retirées, avec leur transition
+    const serves = id => {
+      const rec = S.procRecs?.get(id);
+      return !rec || !(rec.runways || []).length || rec.runways.map(rwKey).includes(rwKey(val));
+    };
+    for (const [main, tr] of side === 'dep' ? [
+        ['sid', 'trans']
+      ] : [
+        ['star', 'trans'],
+        ['app', 'appTrans']
+      ])
+      if (typeof o[main] === 'string' && !serves(o[main])) {
+        delete o[main];
+        delete o[tr];
+      }
+  }
+  if (field === 'sid' || field === 'star') delete o.trans;
+  if (field === 'app') delete o.appTrans;
+  // l'autre côté reste tel quel : un « aucune » posé sur tout le côté (null) n'est pas changé en « pas choisi »
+  const keep = x => x === null ? null : cleanSide(x);
+  r.procedures = {
+    dep: side === 'dep' ? cleanSide(cur.dep) : keep(v.dep),
+    arr: side === 'arr' ? cleanSide(cur.arr) : keep(v.arr),
+    by: 'fuel',
+    at: new Date().toISOString()
+  };
+  saveFlight();
+  refresh();
+}
+/** « Lire les procédures de LFXX » : aerodb.fetchProcedures (un terrain par geste, rien en silence) ; un refus montre sa raison dans
+ *  une notification flottante (sans lanceur : la lecture se fait sur le poste, l'OFP SimBrief reste la source du vol). */
+async function fetchProcs(icao, btn) {
+  const s = S;
+  if (S.procFetch) return;
+  const ctl = new AbortController();
+  S.procFetch = {
+    icao,
+    ctl
+  };
+  const label = (n = '') => {
+    if (btn.isConnected) btn.textContent = tt(TX.procReading, {
+      icao
+    }) + n;
+  };
+  if (btn.isConnected) {
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+  }
+  label();
+  let res;
+  try {
+    res = S.ctx.aerodb?.fetchProcedures ? await S.ctx.aerodb.fetchProcedures(icao, {
+      onProgress: p => !gone(s) && label(p && p.total ? ` ${p.done || 0}/${p.total}` : ''),
+      signal: ctl.signal
+    }) : {
+      ok: false,
+      reason: 'unavailable'
+    };
+  } catch {
+    res = {
+      ok: false,
+      reason: 'failed'
+    };
+  }
+  if (gone(s)) return;
+  S.procFetch = null;
+  if (res?.ok) {
+    S.ctx.notify(tt(TX.procFetched, {
+      icao,
+      n: Array.isArray(res.procedures) ? res.procedures.length : +res.procedures || 0
+    }), 'ok');
+    S.procCache = null;
+    S.procs = null;
+    refresh();
+  } else {
+    const row = TX.procReasons[res?.reason] || TX.procReasons.other;
+    S.ctx.notify(tt(row, {
+      icao,
+      r: res?.reason || '?',
+      m: res?.message ? ` (${res.message})` : '' // la cause donnée par le lanceur (refus de connexion, rien de lu…)
+    }), 'warn');
+  }
+  S.rowsKey = null;
+  renderProcRows();
+}
+/** Libellé d'une valeur de route.procedures dans une notification : « — » (pas choisi), « aucune », la piste, ou le nom. */
+const procValueText = (v, key) => v === undefined ? '—' : v === null ? tt(TX.procNone) : key === 'rwy' ? String(v) : nameOfId(v, key);
+/** Ce que « Charger mon OFP » change aux choix du pilote, une ligne par côté : « Arrivée : STAR ABC1A → ABC2B ». before : la vue des
+ *  procédures d'avant l'OFP, { dep, arr, depIcao, arrIcao } (un côté d'un autre terrain n'est pas comparé). */
+function procChangeLines(before, next) {
+  const r = S.flight.route || {},
+    lines = [];
+  for (const side of ['dep', 'arr']) {
+    const same = side === 'dep' ? before.depIcao === r.dep : before.arrIcao === r.arr,
+      a = same ? before[side] || {} : {},
+      b = next[side] || {},
+      parts = PROC_FIELDS[side].filter(key => a[key] !== b[key]).map(key => `${tt(TX.procKinds[key])} ${procValueText(a[key], key)} → ${procValueText(b[key], key)}`);
+    if (parts.length) lines.push(tt(TX.procChange, {
+      side: tt(TX[side]),
+      parts: parts.join(' · ')
+    }));
+  }
+  return lines;
+}
+/** Les SID et STAR de l'OFP (les enregistrements qu'aerodb en a gardés) deviennent le choix du vol, à la place de celui du pilote :
+ *  identifiants, la piste seulement quand l'enregistrement n'en a qu'une ; un côté sans procédure dans l'OFP reste comme il est.
+ *  Une ligne de notification par côté changé. */
+function applyOfpProcedures(pr, before) {
+  const mk = (rec, key) => rec && typeof rec.id === 'string' ? {
+      ...(Array.isArray(rec.runways) && rec.runways.length === 1 ? {
+        rwy: String(rec.runways[0])
+      } : {}),
+      [key]: rec.id
+    } : null,
+    cur = CF.proceduresOf(S.flight),
+    fromOfp = {
+      dep: mk(pr?.sid, 'sid'),
+      arr: mk(pr?.star, 'star')
+    },
+    next = {
+      dep: fromOfp.dep || cur.dep,
+      arr: fromOfp.arr || cur.arr
+    };
+  if (!fromOfp.dep && !fromOfp.arr) return; // l'OFP n'apporte ni SID ni STAR : le choix du pilote reste tel quel
+  const r = S.flight.route ||= emptyFlight().route;
+  r.procedures = {
+    dep: cleanSide(next.dep),
+    arr: cleanSide(next.arr),
+    by: 'fuel',
+    at: new Date().toISOString()
+  };
+  for (const line of procChangeLines(before, next)) S.ctx.notify(line, 'ok');
 }
 
 // ---------------------------------------------------------------- calcul du devis et de la décision
@@ -1189,7 +1713,8 @@ function compute() {
     o.manual = S.manual;
   }
   const goal = perf ? L.goalNow(S.settings.goal || 'prof', o.profileIas) : null,
-    distanceNm = +f.route?.distanceNm || 0,
+    fp = fpNow(), // chemin « route + procédures » quand des procédures sont choisies et lues
+    distanceNm = quoteNm(fp ? fp.at(-1).nm : +f.route?.distanceNm || 0),
     qIn = {
       sheet,
       source,
@@ -1203,7 +1728,7 @@ function compute() {
       reserveMin: +S.settings.reserveMin,
       contingencyPct: +S.settings.contingencyPct,
       climbLaw: perf ? L.tripLaw(perf, goal, o) : null,
-      steps: routeSteps(f.route, distanceNm)
+      steps: fp ? pathSteps(fp, distanceNm) : routeSteps(f.route, distanceNm)
     },
     q = distanceNm > 0 ? M.quote(qIn) : null,
     D = perf && q ? L.requoteSeries(L.decisionSeries(perf, {
@@ -1230,7 +1755,8 @@ function compute() {
     D,
     G,
     goal,
-    levelFt
+    levelFt,
+    nm: distanceNm // la distance du devis (quote.distanceNm)
   };
 }
 
@@ -1385,6 +1911,11 @@ const STYLE = `
   [data-module="fuel"] .fu-steps,[data-module="fuel"] .fu-next{display:none}
   [data-module="fuel"] .fu-step[hidden]{display:block}
 }
+[data-module="fuel"] .fu-proc{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 8px;margin-top:8px} /* piste · SID · transition, ou piste · STAR · transition · approche */
+[data-module="fuel"] .fu-proc>.fu-prochead{flex:0 0 100%}
+[data-module="fuel"] .fu-proc>.f-field{flex:1 1 7.5em;min-width:0}
+[data-module="fuel"] .fu-proc select{width:100%;min-width:0}
+[data-module="fuel"] .fu-proc>button{min-height:44px}
 [data-module="fuel"] .fu-rrow{display:flex;gap:8px;align-items:flex-end} /* champ de la route + « Auto » : le champ prend la place restante */
 [data-module="fuel"] .fu-rrow>.f-field{flex:1 1 0;min-width:0}
 [data-module="fuel"] .fu-rrow>button{flex:none;min-width:56px;min-height:44px;margin-bottom:2px}
@@ -1447,6 +1978,7 @@ function renderPlanBody() {
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
       <div class="f-grid fu-ads">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
+      <div class="fu-procbox" data-procbox="vol"></div>
       <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(isoToWhen(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
@@ -1497,6 +2029,7 @@ function renderPlanBody() {
       <div class="f-row" data-startrow></div>
       <p class="fu-startnote" data-startnote aria-live="polite"></p>
       <p class="f-muted">${esc(tt(TX.startHint))}</p></div>
+    <div class="f-card fu-hide" data-block="procs"><h2>${esc(tt(TX.procTitle))}</h2><div class="fu-procbox" data-procbox="start"></div></div>
     <div class="f-card fu-hide" data-progcard><h2>${esc(tt(TX.progTitle))}</h2><div data-prog></div><p class="f-muted">${esc(tt(TX.progHint))}</p></div>`, true)}
   <div class="f-bar fu-result" data-block="result" aria-live="polite"></div>`;
   for (const d of S.body.querySelectorAll('details[data-fold]')) {
@@ -1524,6 +2057,7 @@ function renderPlanBody() {
   renderPts();
   renderRinfo();
   S.body.onclick = e => onPlanClick(e);
+  S.rowsKey = null; // le corps est neuf : refresh dessine les lignes de procédures
   refresh();
   renderWx();
   renderAloft();
@@ -1541,6 +2075,7 @@ function onPlanInput(e) {
     f = S.flight;
   if (!k) return;
   if (e.type === 'input' && e.target.tagName === 'SELECT') return;
+  if (k.startsWith('p-') && !S.flightPending) return procChosen(k, v); // piste, SID, STAR, approche (§ 10.20)
   // vol courant pas encore lu : l'écran est inerte (refresh), un champ changé quand même (saisie programmée, remplissage
   // automatique) n'écrit pas dans le vol d'attente — completeMount le remplace par le vol lu, et le niveau, le départ ou
   // l'appareil tapés là disparaîtraient en laissant un devis « 0 ft » ; le dernier état lu gagne, les champs sont redessinés
@@ -1721,6 +2256,8 @@ function onPlanClick(e) {
   const st = e.target.closest('[data-step]');
   if (st) return goStep(+st.dataset.step);
   if (e.target.closest('[data-do="showmap"]')) return showMap();
+  const pf = e.target.closest('[data-do="procfetch"]');
+  if (pf) return fetchProcs(pf.dataset.icao, pf);
   if (e.target.closest('[data-do="start"]')) return startFlight();
   if (e.target.closest('[data-do="cancelstart"]')) return cancelStart();
   const iu = e.target.closest('[data-do="isause"]');
@@ -2825,7 +3362,7 @@ function progressCalc(C = S.C) {
   if (!P) return null;
   const start = Date.parse(st.at),
     state = PG.at(P, (Date.now() - start) / 60000),
-    pts = S.flight.route.points;
+    pts = progPath().pts;
   return {
     P,
     st: state,
@@ -2837,7 +3374,10 @@ function progressCalc(C = S.C) {
  *  sans route. */
 function progressPlan(C) {
   const f = S.flight,
-    pts = f.route?.points || [];
+    {
+      pts,
+      nm
+    } = progPath(); // le chemin volé quand des procédures sont choisies (sa longueur), sinon la route
   if (!C?.q?.hasFuel || pts.length < 2) return null;
   // vent de chaque tronçon : moyenne vectorielle des vents prévus à ses deux bouts (prévision en altitude), sinon celui du devis
   const vec = w => [w.kt * Math.sin(w.dirDeg * Math.PI / 180), w.kt * Math.cos(w.dirDeg * Math.PI / 180)],
@@ -2854,7 +3394,7 @@ function progressPlan(C) {
     });
   return PG.plan({
     points: pts,
-    distanceNm: +f.route.distanceNm || 0,
+    distanceNm: nm,
     taxiMin: +S.settings.taxiMin || 0,
     q: C.q,
     legWinds,
@@ -2911,7 +3451,7 @@ function renderProgress(C) {
   const c = progressCalc(C);
   card.classList.toggle('fu-hide', !c);
   if (!c) return;
-  const pts = S.flight.route.points,
+  const pts = progPath().pts,
     unit = C.sheet?.unit || 'kg',
     rem = fuelTxt(Math.max(0, C.q.block - c.st.fuelUsed), unit),
     line = c.st.phase === 'arrived' ? tt(TX.progArrived, {
@@ -2964,8 +3504,10 @@ function adoptForeignFlight() {
   const r = S.flight.route ||= emptyFlight().route;
   routeDerived(r);
   if (S.aloft) aloftApply(); // vents en altitude aux nouveaux points (relus si la route a changé : scheduleWx)
+  S.froze = false; // une route changée ailleurs refait le devis de la longueur qu'elle a maintenant
+  ensureProcs();
   const C = S.C = compute();
-  S.flight.profile = verticalProfile(C.q);
+  S.flight.profile = profileOf(C);
   if (S.view === 'plan' && S.body) {
     const ta = S.body.querySelector('[data-k="rtext"]');
     if (ta && document.activeElement !== ta) ta.value = r.text || '';
@@ -3153,9 +3695,14 @@ async function loadSimbrief() {
   });
   if (gone(s)) return;
   S.ofp = ofp;
+  const before = { // les choix d'avant l'OFP, pour dire ce qu'il change
+    ...CF.proceduresOf(S.flight),
+    depIcao: S.flight.route?.dep,
+    arrIcao: S.flight.route?.arr
+  };
   applyOfp(ofp);
   // SID et STAR déposées dans l'OFP : au schéma commun d'aerodb (gardées sur l'appareil et synchronisées si le lecteur
-  // écrit), et dans le vol courant pour que la Carte les trace ; un OFP à la fois, aucun autre appel à SimBrief
+  // écrit), puis leurs identifiants dans le vol courant (route.procedures v2) ; un OFP à la fois, aucun autre appel à SimBrief
   let pr = null;
   try {
     pr = (await s.ctx.aerodb?.rememberOfp?.(ofp)) || (await s.ctx.aerodb?.procedureFromOfp?.(ofp));
@@ -3163,14 +3710,9 @@ async function loadSimbrief() {
     /* sans procédures : la route de l'OFP reste telle quelle */
   }
   if (gone(s) || S.ofp !== ofp) return;
-  S.flight.route = {
-    ...S.flight.route,
-    procedures: pr && (pr.sid || pr.star) ? {
-      sid: pr.sid,
-      star: pr.star
-    } : null
-  };
+  applyOfpProcedures(pr, before); // v2 : les identifiants de la SID et de la STAR, à la place du choix du pilote
   saveFlight();
+  refresh();
 }
 /** Reprend un OFP SimBrief dans le vol courant (route « ID lat lon », départ, arrivée, dégagement, niveau, vent moyen,
  *  écart ISA, appareil s'il a une fiche du même type ou de la même immatriculation). */
@@ -3254,24 +3796,54 @@ function verticalProfile(q) {
     todNm: r(q.descent?.nm, .1)
   };
 }
-/** Écrit le profil du devis dans le vol courant quand il change (maps le lit pour le profil vertical). */
-function shareProfile(q) {
-  const p = verticalProfile(q),
-    sum = quoteSummary(q);
-  if (JSON.stringify(p) === JSON.stringify(S.flight.profile ?? null) && JSON.stringify(sum) === JSON.stringify(S.flight.quote ?? null))
-    return;
-  S.flight.profile = p;
-  S.flight.quote = sum;
+/** Profil du devis (verticalProfile) et, quand des procédures sont choisies et lues, profile.path : le chemin vertical prévu le long
+ *  du chemin volé, [{ nm, ft }] (PG.verticalPath : montée, croisière, descente, puis les contraintes d'altitude des procédures). */
+function profileOf(C) {
+  const p = verticalProfile(C.q),
+    fp = p ? fpNow() : null;
+  if (p && fp) {
+    const path = PG.verticalPath(fp, C.q);
+    if (path.length) p.path = path;
+  }
+  return p;
+}
+/** Le devis comparé : sans legsAt (l'heure d'une réécriture), les legs sans origin lus comme « route » et, d'un devis écrit avant
+ *  quote.distanceNm, sans elle — un enregistrement d'avant ne se réécrit pas pour si peu. */
+const quoteCmp = (x, lenient) => x == null ? null : JSON.stringify({
+  ...x,
+  legsAt: undefined,
+  distanceNm: lenient ? undefined : x.distanceNm,
+  legs: Array.isArray(x.legs) ? x.legs.map(l => ({
+    ...l,
+    origin: l.origin || 'route'
+  })) : x.legs
+});
+/** Écrit le profil et le devis dans le vol courant quand ils changent (maps le lit pour le profil vertical). Après le départ, un
+ *  devis qui change ne le fait que par ses legs et le chemin vertical quand seules les procédures changent (quoteNm garde la
+ *  distance du devis) : quote.legsAt dit alors quand ils ont été réécrits. Rien n'est écrit tant que les procédures choisies ne
+ *  sont pas lues (un devis passager sur la route seule). */
+function shareProfile(C) {
+  if (procsPending()) return;
+  const p = profileOf(C),
+    sum = quoteSummary(C.q),
+    cur = S.flight,
+    lenient = cur.quote != null && cur.quote.distanceNm == null;
+  if (JSON.stringify(p) === JSON.stringify(cur.profile ?? null) && quoteCmp(sum, lenient) === quoteCmp(cur.quote ?? null, lenient)) return;
+  if (sum && cur.started?.at) sum.legsAt = new Date().toISOString();
+  cur.profile = p;
+  cur.quote = sum;
   saveFlight();
 }
 /** Résumé du devis pour le compte rendu et la Carte (current_flight.quote) : carburant bloc et délestage arrondis,
- *  dans l'unité de la fiche, temps de vol (min), niveau, et legs : à chaque point de la route, les minutes cumulées
+ *  dans l'unité de la fiche, temps de vol (min), niveau, distanceNm (celle du devis : le chemin des procédures quand il y en a un),
+ *  et legs : à chaque point du chemin volé (ceux de la route sans procédure choisie), les minutes cumulées
  *  depuis le lâcher des freins (roulage à part : settings.taxiMin), tirées de l'horaire prévu du devis (montée,
- *  croisière par tronçon avec son vent, descente), et taxiMin, ce roulage ; null sans devis chiffré. */
+ *  croisière par tronçon avec son vent, descente), avec l'origine du point (route, sid, star, app), et taxiMin, ce roulage ;
+ *  null sans devis chiffré. */
 function quoteSummary(q) {
   if (!q?.hasFuel) return null;
   const P = progressPlan(S.C),
-    pts = S.flight.route?.points || [],
+    pts = progPath().pts,
     taxi = +S.settings.taxiMin || 0;
   return {
     block: Math.round(q.block),
@@ -3281,9 +3853,11 @@ function quoteSummary(q) {
     levelFt: q.levelFt || null,
     approx: !!q.approx,
     taxiMin: taxi, // roulage compté par le devis : legs part du lâcher des freins, après lui
+    distanceNm: Math.round((S.C?.nm || 0) * 10) / 10,
     legs: P ? PG.etas(P, 0).map(e => ({
       id: pts[e.i]?.id || '',
-      min: Math.max(0, Math.round((e.at / 60000 - taxi) * 10) / 10)
+      min: Math.max(0, Math.round((e.at / 60000 - taxi) * 10) / 10),
+      origin: pts[e.i]?.origin || 'route'
     })) : null
   };
 }
@@ -3325,6 +3899,7 @@ function refresh() {
     return;
   }
   S.body.querySelector('[data-block="result"]')?.removeAttribute('data-loading');
+  ensureProcs(); // les procédures choisies, lues par aerodb une fois par clé : le devis court ensuite sur leur chemin
   const C = S.C = compute(),
     {
       q,
@@ -3334,7 +3909,8 @@ function refresh() {
     } = C,
     $ = s => S.body.querySelector(s),
     unit = sheet?.unit || 'kg';
-  shareProfile(q);
+  shareProfile(C);
+  if (S.rowsKey !== rowsKey()) renderProcRows(); // choix, vol démarré, SID passée : les lignes de procédures sont redessinées
   openInLinks(C);
   acSelected();
   renderSummary(C);
@@ -3920,7 +4496,9 @@ export async function mount(el, ctx) {
   for (const path of OLD_WEATHER) ctx.data.remove?.(path)?.catch?.(() => {});
   // pas de la préparation : celui gardé, ou Route quand la Carte envoie « Modifier la route » (#fuel?focus=route)
   S.focusRoute = ctx.query?.focus === 'route';
-  S.step = S.focusRoute ? 1 : Math.max(0, Math.min(4, +S.ui.step || 0));
+  // ou le pas qui porte la ligne Arrivée (Vol avant le départ, Départ après) quand la Carte envoie « Changer » (#fuel?focus=arr)
+  S.focusArr = ctx.query?.focus === 'arr';
+  S.step = S.focusRoute ? 1 : S.focusArr ? (kept.started?.at ? 4 : 0) : Math.max(0, Math.min(4, +S.ui.step || 0));
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
     <div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>
     <div data-body></div>`;
@@ -3998,7 +4576,7 @@ export async function mount(el, ctx) {
   S.stops.push(() => clearInterval(tick));
   // toujours le Plan à l'ouverture : on vient ici pour le plan de vol ou le devis, rarement pour une fiche d'appareil ;
   // les Fiches s'ouvrent par leur onglet ou par l'adresse #fuel?view=sheets (le dernier écran n'est plus gardé)
-  show(!S.focusRoute && ctx.query?.view === 'sheets' ? 'sheets' : 'plan');
+  show(!S.focusRoute && !S.focusArr && ctx.query?.view === 'sheets' ? 'sheets' : 'plan');
   if (!S.flightPending) flightReady();
   completeMount(self); // pas attendu : le cadre a son écran tout de suite
 }
@@ -4020,6 +4598,7 @@ function flightReady() {
     ta?.focus();
     ta?.setSelectionRange?.(ta.value.length, ta.value.length);
   }
+  focusArr();
   if (!S.refsPending) resumeFlight();
 }
 /** Vol modifié ailleurs pendant l'absence de fuel : repris (devis refait) ; sinon la route relue. */
@@ -4077,6 +4656,7 @@ export function unmount() {
   } catch {
     /* déjà arrêté */
   }
+  S.procFetch?.ctl.abort(); // une lecture de procédures en cours est abandonnée
   clearTimeout(S.routeTimer);
   clearTimeout(S.roTimer);
   clearTimeout(S.wxTimer);

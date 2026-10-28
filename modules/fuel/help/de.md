@@ -32,6 +32,8 @@ Neben dem Datum legt die Uhr „+30“ den Flug 30 Min. in die Zukunft (auf 5 Mi
 hinzu), und „Jetzt“ kehrt zur aktuellen Uhrzeit zurück: Flugplatzwetter (die TAF, wenn sie diese Uhrzeit abdeckt) und
 Höhenwinde werden sofort neu gelesen.
 
+**Piste, SID, STAR und Anflug.** Unter den Flugplätzen stehen zwei kurze Zeilen: „Abflug: Piste · SID · Übergang“ und „Ankunft: Piste · STAR · Übergang · Anflug“ (der Anflugübergang erscheint nur, wenn der gewählte Anflug einen hat). Jede Liste kommt aus aerodb: Wer eine Piste wählt, behält nur die Verfahren, die sie bedienen. Die erste Wahl „—“ heißt „nicht gewählt“; „keine“ ist eine echte Wahl (ein direkter Abflug ohne SID). Ein Verfahren aus dem X-Plane-Ersatz des Arbeitsplatzes steht zuletzt, markiert „X-Plane, lokal“; ein von Hand gelesenes Verfahren, dessen Zyklus abgelaufen ist, trägt „veraltet“. Für einen Flugplatz ohne veröffentlichtes Verfahren sagt die Zeile das („kein veröffentlichtes Verfahren“) und bietet „Verfahren von LFXX lesen“ an: ein Flugplatz pro Geste, nie im Stillen. Ohne Launcher oder auf einem mit dem Arbeitsplatz gekoppelten Gerät geschieht das Lesen am Arbeitsplatz — die Meldung sagt es — und der SimBrief-OFP bleibt die Quelle des Flugs. Sind SID und STAR gewählt, läuft die Berechnung auf dem Weg „Route + Verfahren“ (mit der Strecke von SID und STAR), und die Karte zeichnet sie mit ihren Höhen und Geschwindigkeiten; ihre Höhenbeschränkungen gehen nicht in die Stufen der Berechnung ein, sie stehen im Höhenprofil. „Letzter SimBrief-OFP“ ersetzt die gewählten SID und STAR durch die des OFP und sagt, was sich ändert, eine Zeile pro Seite („Ankunft: STAR ABC1A → ABC2B“).
+
 <a id="fuel-step-2"></a>**2 Route.** Tippen Sie die Route in das stets sichtbare Feld „Route“ (die Eingabetaste bestätigt sie): die Punkte, die
 Luftstraßen und die Flugflächen, wie in einem Flugplan („LFBO TOU UN460 NTS/F280 LFRN“). Sie können dort auch einen
 ICAO-Flugplan oder die Liste eines OFP einfügen. Wenn Sie das Feld verlassen, wird die Route bereinigt: in
@@ -140,6 +142,8 @@ großen Bildschirm bleibt es hier mit der Karte rechts. Den Abflugplatz danach z
 vorzubereiten: Die Abflugzeit wird gelöscht. Die Ankunft nach dem Abflug zu ändern ist eine Umleitung: Die Zeit bleibt
 erhalten, und die Umleitung wird vermerkt.
 
+Sobald der Flug gestartet ist, enthält dieser Schritt eine Karte „Verfahren“: Die Ankunftszeile bleibt jederzeit änderbar (Anflug, STAR, Landepiste), die Abflugzeile, solange die SID nicht beflogen ist (beurteilt nach der echten Position, wenn sie jünger als zwei Minuten ist, sonst nach der geplanten; danach bleibt die Zeile schreibgeschützt sichtbar). Eine Änderung rechnet die Berechnung nicht neu: Block-, Strecken- und Reservekraftstoff bleiben die des Abflugs; nur die Zeiten an den Punkten, das Höhenprofil und die Reststrecke folgen dem neuen Weg. Die Schaltfläche „Ändern“ der Karte öffnet Kraftstoff bei der Ankunftszeile (`#fuel?focus=arr`): vor dem Start den Schritt Flug, danach den Schritt Abflug.
+
 Sobald der Flug gestartet ist, zeigt das Ergebnis unten im Bildschirm „Flug gestartet um 11:14Z (13:14) · seit 1 h 10“. Die Zeiten sind UTC („Z“);
 die Uhrzeit des Geräts steht in Klammern bei Abflug, geplantem Start und geplanter Ankunft. Ein
 gestarteter Flug endet mit dem Schreiben seines Berichts: Beim Speichern kehrt Kraftstoff zur Vorbereitung zurück, und
@@ -197,4 +201,4 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: 319b95a5fcff -->
+<!-- fr: 03cf001e7ea7 -->

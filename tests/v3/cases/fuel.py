@@ -10,12 +10,18 @@ Rules covered
   * a mount whose address changed while it was still reading writes nothing, and the view follows the address (F7);
   * the "Auto" button writes the airways between the route's points at the planned level (F8);
   * the sheets bench passes: airframe and propulsion deduced from the ICAO catalogue, migration of engineType, missing fields
-    named by family (F10).
+    named by family (F10);
+  * runway, SID, STAR and approach are chosen in the preparation (V3 spec 10.20): two rows filled by aerodb and filtered by the runway
+    (F11), "aucune" writes null (F12), X-Plane local last and outdated marked (F13), an aerodrome without data offers the reading and
+    shows the refusal (F14), the quote runs on the procedures path with legs and profile.path (F15), after the start only legs, the
+    vertical path and the length are rewritten (F16), the Map's `focus=arr` (F17), the v1 record migrated at the next write (F18), "Load my OFP" replaces the choice and says what changed (F19).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
-from lib import Fail, Skip, case, norm, synthetic_airways, tx
+import json
+
+from lib import ROOT, Fail, Skip, case, flight_docs, norm, synthetic_airways, tx
 
 F = 'modules/fuel/module.js'
 FUEL = '[data-module="fuel"]'
@@ -309,3 +315,307 @@ def f10(c):
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/fuel/test/sheets.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
+
+
+# ---------------------------------------------------------------------------------------------------------------- F11 - F18
+# Runway, SID, STAR and approach chosen in the preparation (V3_SPECIFICATION 10.20; modules/fuel/SPEC.md section 9).  Seeded procedures
+# (aerodb SPEC 5 quinquies): LFRS has two SIDs (one per runway) and a SID transition; LFML two STARs (one per runway), a STAR transition,
+# an approach, a hand-read STAR of an old cycle (outdated) and an X-Plane local STAR; LFQQ has nothing.
+PROC_CYCLE = '2026-10-01'
+
+
+def proc_docs(cycle=PROC_CYCLE):
+    """The `proc/` documents of the aerodromes LFRS and LFML (published file, hand-read file, X-Plane local file)."""
+    def pt(seq, id_, lat, lon, alt=None, **kw):
+        return {'seq': seq, 'id': id_, 'lat': lat, 'lon': lon, 'alt': alt, 'phase': kw.pop('phase', 'main'), **kw}
+
+    def rec(icao, kind, name, rws, points, transition=None, status='official', kind_src='eaip', src_cycle=cycle):
+        rw = rws[0] if len(rws) == 1 else 'ALL'
+        return {'id': f'{icao}.{kind}.{name}.RW{rw}.{transition or "NONE"}', 'icao': icao, 'kind': kind, 'name': name, 'runways': rws,
+                'transition': transition, 'points': points, 'status': status,
+                'source': {'kind': kind_src, 'ref': 'test', 'cycle': src_cycle, 'at': '2026-10-01'}}
+
+    def file(icao, procs, runways=None, cy=cycle):
+        return {'schema': 1, 'icao': icao, 'cycle': cy, 'updated_at': '2026-10-01T00:00:00Z', 'procedures': procs,
+                **({'runways': runways} if runways else {})}
+    lfrs = [
+        rec('LFRS', 'SID', 'NTS1A', ['03'], [pt(1, 'RW03', 47.138, -1.62), pt(2, 'NT101', 47.0, -1.5, {'type': 'min', 'ft': 3000}),
+                                             pt(3, 'NT102', 46.8, -1.35, {'type': 'at', 'ft': 5000}, kt=250)]),
+        rec('LFRS', 'SID', 'NTS2B', ['21'], [pt(1, 'RW21', 47.17, -1.595), pt(2, 'NT201', 47.3, -1.4, {'type': 'max', 'ft': 4000}),
+                                             pt(3, 'NT202', 47.0, -1.1, {'type': 'between', 'ft': 6000, 'ft2': 9000})]),
+        rec('LFRS', 'SID', 'NTS1A', [], [pt(1, 'NT102', 46.8, -1.35, phase='trans'), pt(2, 'LUGEN', 46.5833, -1.2, phase='trans')],
+            transition='LUGEN'),
+    ]
+    lfml = [
+        rec('LFML', 'STAR', 'MEN1A', ['13R'], [pt(1, 'MEN01', 44.2, 3.6, {'type': 'between', 'ft': 8000, 'ft2': 10000}),
+                                               pt(2, 'MEN02', 43.8, 4.5, {'type': 'max', 'ft': 5000}, kt=220),
+                                               pt(3, 'MEN03', 43.55, 4.95, {'type': 'at', 'ft': 3000})]),
+        rec('LFML', 'STAR', 'MEN2B', ['31L'], [pt(1, 'MEN11', 44.0, 3.9, {'type': 'min', 'ft': 7000}),
+                                               pt(2, 'MEN12', 43.6, 5.6, {'type': 'at', 'ft': 4000})]),
+        rec('LFML', 'STAR', 'MEN1A', [], [pt(1, 'NEPIX', 44.9, 2.4, phase='trans'), pt(2, 'MEN01', 44.2, 3.6, phase='trans')], transition='NEPIX'),
+        rec('LFML', 'APP', 'I13R', ['13R'], [pt(1, 'FAF13', 43.5, 5.0, {'type': 'at', 'ft': 2500}, kt=180), pt(2, 'RW13R', 43.445, 5.19),
+                                             pt(3, 'MAP13', 43.38, 5.3, phase='missed')]),
+    ]
+    rw_lfrs = [{'id': '03', 'lat': 47.138, 'lon': -1.62, 'elev': 90, 'qfu': 30}, {'id': '21', 'lat': 47.17, 'lon': -1.595, 'elev': 60, 'qfu': 210}]
+    rw_lfml = [{'id': '13R', 'lat': 43.445, 'lon': 5.19, 'elev': 30, 'qfu': 130}, {'id': '31L', 'lat': 43.41, 'lon': 5.24, 'elev': 20, 'qfu': 310}]
+    old = rec('LFML', 'STAR', 'MAN1A', ['13R'], [pt(1, 'MAN01', 44.0, 3.8)], status='check', kind_src='manual', src_cycle='2025-01-01')
+    xpl = rec('LFML', 'STAR', 'XPL1A', ['13R'], [pt(1, 'XPL01', 44.0, 3.7)], status='official', kind_src='cifp')
+    return [[f'proc/{cycle}/LFRS.json', file('LFRS', lfrs, rw_lfrs), 'reference'], [f'proc/{cycle}/LFML.json', file('LFML', lfml, rw_lfml), 'reference'],
+            ['proc/manual/LFML.json', file('LFML', [old], cy='2025-01-01'), 'reference'], ['proc/local/LFML.json', file('LFML', [xpl]), 'reference']]
+
+
+def proc_flight(procs=None, started=False, actual=None):
+    """The planned flight of lib.FLIGHT with `route.procedures` = procs (any shape: v1 or v2); `actual`: a position (lat, lon) the frame wrote
+    just now (progress.actual)."""
+    docs = flight_docs(started)
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            if procs is not None:
+                d[1]['route']['procedures'] = procs
+            if actual:
+                at = (d[1].get('started') or {}).get('at') or d[1]['updated_at']
+                d[1]['progress'] = {'actual': {'at': at, 'lat': actual[0], 'lon': actual[1], 'source': 'gps'}}
+    return docs
+
+
+def open_proc(c, target='fuel', procs=None, started=False, actual=None):
+    """Opens fuel on the planned flight with the seeded procedures; the published base knows the route's points."""
+    c.open(target, docs=proc_docs() + proc_flight(procs, started, actual), airfields=True)
+
+
+def sel_opts(c, k):
+    """[(value, label)] of the select data-k=`k`, or None when there is none."""
+    return c.js("""(k) => { const s = document.querySelector('[data-module=fuel] select[data-k="' + k + '"]');
+        return s ? [...s.options].map(o => [o.value, o.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()]) : null }""", k)
+
+
+def wait_rows(c, side='arr'):
+    c.until("(s) => !!document.querySelector('[data-module=fuel] [data-proc=\"' + s + '\"]')", side, timeout=15000, what=f'the {side} procedure row is drawn')
+    c.settle()
+
+
+def cf_doc(c, pred, what, timeout=8000):
+    return c.until_doc('pilot/ABC/current_flight.json', pred, what, timeout=timeout)
+
+
+def procs_of(d, side):
+    return (((d.get('route') or {}).get('procedures')) or {}).get(side)
+
+
+V2_PROCS = {'dep': {'rwy': '03', 'sid': 'LFRS.SID.NTS1A.RW03.NONE'}, 'arr': {'rwy': '13R', 'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'app': 'LFML.APP.I13R.RW13R.NONE'},
+            'by': 'fuel', 'at': '2026-10-28T09:00:00Z'}
+
+
+@case('F11', 'Departure and arrival rows: runway, SID, STAR, approach', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.20 / fuel SPEC 9: two short rows after the aerodromes, each a select filled by aerodb; a runway filters the lists')
+def f11(c):
+    open_proc(c)
+    wait_rows(c, 'dep')
+    wait_rows(c, 'arr')
+    heads = c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc] .fu-prochead')].map(e => e.textContent.trim())")
+    c.eq(heads, [row(c, 'dep'), row(c, 'arr')], 'the rows are headed Departure and Arrival in the language of the run', what='row heads')
+    c.eq(c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc=dep] select')].map(s => s.dataset.k)"), ['p-dep-rwy', 'p-dep-sid'],
+         'Departure: runway, SID (the transition select comes with a SID that has transitions)', what='departure selects')
+    c.eq(c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc=arr] select')].map(s => s.dataset.k)"), ['p-arr-rwy', 'p-arr-star', 'p-arr-app'],
+         'Arrival: runway, STAR, approach', what='arrival selects')
+    c.eq([v for v, _ in sel_opts(c, 'p-dep-rwy')], ['', '03', '21'], 'the runways of aerodb (empty = not chosen)', what='departure runways')
+    stars = sel_opts(c, 'p-arr-star')
+    c.eq([lab for _, lab in stars][:2], ['—', norm(row(c, 'procNone'))], 'empty "—" first, then "aucune"', what='first STAR options')
+    names = [lab.split(' ·')[0] for v, lab in stars if v not in ('', '__none')]
+    c.ok('MEN1A' in names and 'MEN2B' in names, f'STAR options {stars}', 'without a runway both STARs are offered')
+    # a runway filters the lists (aerodb.procedures(icao, { kind, runway }))
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '13R')
+    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]'); return !!s && ![...s.options].some(o => /MEN2B/.test(o.textContent)) })()",
+            what='the STAR list follows the runway 13R')
+    c.ok(any('MEN1A' in lab for _, lab in sel_opts(c, 'p-arr-star')), f"STAR options {sel_opts(c, 'p-arr-star')}", 'MEN1A (13R) stays')
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '13R', 'the runway is written in route.procedures')
+    c.eq(d['route']['procedures']['by'], 'fuel', 'by is fuel', what='procedures.by')
+    c.ok(c.js("(t) => !isNaN(Date.parse(t))", d['route']['procedures'].get('at')), f"at {d['route']['procedures'].get('at')!r}", 'at is an ISO date')
+    # a STAR with a transition offers the transition select; an approach without one does not
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN1A.RW13R.NONE')
+    c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-trans\"]')", what='the transition select appears with a STAR that has transitions')
+    c.eq([lab for _, lab in sel_opts(c, 'p-arr-trans')], ['—', 'NEPIX'], 'the transitions of the chosen STAR', what='transition options')
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFML.APP.I13R.RW13R.NONE')
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the approach is written')
+    c.eq(d['route']['procedures']['arr'], {'rwy': '13R', 'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'app': 'LFML.APP.I13R.RW13R.NONE'},
+         'identifiers of the aerodb schema', what='route.procedures.arr')
+    c.eq(sel_opts(c, 'p-arr-appTrans'), None, 'no approach transition select when the approach has none', what='approach transition select')
+
+
+@case('F12', 'Procedures: "aucune" writes null, absent is not chosen', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      rule='V3 spec 10.20: null = none (the pilot\'s choice), a field absent = not chosen')
+def f12(c):
+    open_proc(c, procs=V2_PROCS)
+    wait_rows(c)
+    c.eq(c.js("document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]').value"), 'LFML.STAR.MEN1A.RW13R.NONE', 'the chosen STAR is selected', what='STAR select')
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', '__none')
+    d = cf_doc(c, lambda d: 'star' in (procs_of(d, 'arr') or {}) and procs_of(d, 'arr')['star'] is None, '"aucune" writes star: null')
+    c.eq(procs_of(d, 'arr').get('app'), 'LFML.APP.I13R.RW13R.NONE', 'the approach is not touched', what='approach')
+    c.eq(c.js("document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]').value"), '__none', 'the select shows "aucune"', what='STAR select')
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', '')
+    d = cf_doc(c, lambda d: 'star' not in (procs_of(d, 'arr') or {'star': 1}), 'the empty option removes the field')
+    c.ok('star' not in procs_of(d, 'arr'), f"arr {procs_of(d, 'arr')}", 'a STAR not chosen is absent, not null')
+
+
+@case('F13', 'Procedures list: X-Plane local last, outdated marked', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.20: an xplane record comes last with "X-Plane, local"; an outdated one says "périmé"')
+def f13(c):
+    open_proc(c)
+    wait_rows(c)
+    opts = [lab for v, lab in sel_opts(c, 'p-arr-star') if v not in ('', '__none')]
+    c.eq(opts[-1], f"XPL1A · {norm(row(c, 'procXplane'))}", 'the X-Plane local STAR is the last, with its mention', what='last STAR option')
+    old = next((lab for lab in opts if lab.startswith('MAN1A')), None)
+    c.eq(old, f"MAN1A · {norm(row(c, 'procOutdated'))}", 'the hand-read STAR of an old cycle says it is outdated', what='outdated STAR option')
+    c.ok(opts.index(old) < len(opts) - 1, f'order {opts}', 'the outdated one is before the X-Plane one')
+
+
+@case('F14', 'Aerodrome without data: reading offered, refusal shown', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.20: "aucune procédure publiée" and one button; fetchProcedures refused with a reason, shown in a floating notification, never silent')
+def f14(c):
+    open_proc(c)
+    wait_rows(c)
+    c.page.fill(f'{FUEL} input[data-k="dep"]', 'LFQQ')
+    c.until("!!document.querySelector('[data-module=fuel] [data-proc=dep] [data-do=procfetch]')", what='the departure row offers the reading')
+    txt = norm(c.text(f'{FUEL} [data-proc="dep"]') or '')
+    c.ok(norm(row(c, 'procNoData')) in txt, f'row {txt!r}', '"aucune procédure publiée" in the language of the run')
+    c.eq(norm(c.text(f'{FUEL} [data-do="procfetch"]') or ''), norm(row(c, 'procRead').replace('{icao}', 'LFQQ')), 'the button names the aerodrome', what='button')
+    c.ge(round(c.box(f'{FUEL} [data-do="procfetch"]')['h']), 44, 'a 44 px target', what='button height')
+    c.tap(f'{FUEL} [data-do="procfetch"]')
+    want = norm(tx(F, "no-launcher'", c.lang, after='procReasons'))
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=6000,
+            what='the refusal reason (no launcher serves the test page: aerodb answers "no-launcher") is shown in a notification')
+    c.until("!!document.querySelector('[data-module=fuel] [data-do=procfetch]:not([disabled])')", what='the button is available again after a refusal')
+
+
+@case('F15', 'Quote on the procedures path: legs with origins, profile.path', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='V3 spec 10.20: the quote runs on flownPath(expandedPath); quote.legs = one entry per point with its origin; profile.path [{ nm, ft }]')
+def f15(c):
+    open_proc(c, procs=V2_PROCS)
+    wait_quote(c)
+    d = cf_doc(c, lambda d: len(((d.get('quote') or {}).get('legs')) or []) > 4 and bool((d.get('profile') or {}).get('path')),
+               'the quote writes legs on the path and profile.path', timeout=15000)
+    legs, q, path = d['quote']['legs'], d['quote'], d['profile']['path']
+    ids = [x['id'] for x in legs]
+    c.eq(ids[0], 'LFRS', 'the path starts at the departure aerodrome', what='first leg')
+    c.eq(ids[-1], 'LFML', 'and ends at the arrival aerodrome', what='last leg')
+    c.eq(legs[0]['origin'], 'route', 'the aerodrome is a route point', what='first origin')
+    origins = [x['origin'] for x in legs]
+    c.ok('sid' in origins and 'star' in origins and 'app' in origins, f'origins {origins}', 'the SID, the STAR and the approach points are in the legs')
+    c.ok(origins.index('sid') < origins.index('route', 1) < origins.index('star') < origins.index('app'), f'origins {origins}',
+         'in flight order: route, SID, route, STAR, approach')
+    c.ok('RW03' in ids and 'RW13R' in ids, f'ids {ids}', 'the chosen runway thresholds are points of the path')
+    mins = [x['min'] for x in legs]
+    c.ok(all(b >= a for a, b in zip(mins, mins[1:])) and mins[0] == 0, f'minutes {mins}', 'minutes from brake release grow along the path')
+    c.ok(all(b['nm'] >= a['nm'] for a, b in zip(path, path[1:])) and path[0]['nm'] == 0, f'path {path[:4]}', 'profile.path is [{ nm, ft }] by growing distance from 0')
+    c.eq(round(path[-1]['nm'], 1), q['distanceNm'], 'the vertical path ends at the quote\'s distance (the last point\'s nm)', what='path end', tol=0.11)
+    c.ok(any(p['ft'] == 5000 for p in path), f'path {path}', 'the "at 5000 ft" constraint of the SID is on the path')
+    c.ok(any(p['ft'] <= 3000 for p in path[len(path) // 2:]), f'path {path}', 'the arrival is brought down by the STAR\'s constraints')
+    # the same flight without procedures: legs of the route only, no profile.path
+    open_proc(c)
+    wait_quote(c)
+    d2 = cf_doc(c, lambda d: len(((d.get('quote') or {}).get('legs')) or []) == 4, 'the quote of the plain route has 4 legs')
+    c.eq([x['origin'] for x in d2['quote']['legs']], ['route'] * 4, 'legs of a route without procedures all say "route"', what='origins')
+    c.eq((d2.get('profile') or {}).get('path'), None, 'and no profile.path', what='profile.path')
+    c.ok(q['distanceNm'] > d2['quote']['distanceNm'], f"{q['distanceNm']} vs {d2['quote']['distanceNm']}", 'the quote counts the distance flown on the procedures')
+
+
+@case('F16', 'After the start: arrival editable, only legs and the vertical path are rewritten', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='V3 spec 10.20 second refinement: legs, profile.path, length and legsAt change; block, trip and minutes do not; no new quote')
+def f16(c):
+    open_proc(c, procs=V2_PROCS, started=True)
+    d = cf_doc(c, lambda d: len(((d.get('quote') or {}).get('legs')) or []) > 4 and bool((d.get('profile') or {}).get('path')),
+               'a quote with legs on the path', timeout=15000)
+    c.tap(f'{FUEL} .fu-steps button[data-step="4"]')
+    c.until("!!document.querySelector('[data-module=fuel] [data-block=procs]:not(.fu-hide) [data-proc=arr] select')", timeout=10000,
+            what='after the start the Departure step carries the arrival row')
+    c.eq(c.count(f'{FUEL} [data-procbox="vol"] select'), 0, 'the step Vol no longer carries the rows', what='rows in the Vol step')
+    c.ok(c.count(f'{FUEL} [data-proc="dep"] select') >= 1, 'no departure select', 'the departure row is editable while the SID is not passed')
+    before, bpath = d['quote'], d['profile']['path']
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', '__none')
+    d2 = cf_doc(c, lambda d: len(((d.get('quote') or {}).get('legs')) or []) != len(before['legs']), 'the legs follow the new choice (no STAR)', timeout=10000)
+    q = d2['quote']
+    for k in ('block', 'trip', 'minutes', 'levelFt', 'unit', 'taxiMin', 'distanceNm'):
+        c.eq(q.get(k), before.get(k), 'the fuel figures do not move after the start', what=f'quote.{k}')
+    c.ok(q.get('legsAt') and c.js("(t) => !isNaN(Date.parse(t))", q['legsAt']), f"legsAt {q.get('legsAt')!r}", 'quote.legsAt dates the rewrite')
+    c.ok('star' not in [x['origin'] for x in q['legs']], f"origins {[x['origin'] for x in q['legs']]}", 'the legs no longer carry the STAR')
+    c.ok(d2['profile']['path'] != bpath, 'profile.path unchanged', 'the vertical path is rewritten')
+    c.eq(procs_of(d2, 'arr').get('star'), None, 'route.procedures records the change', what='arr.star')
+    c.eq(d2['route']['procedures']['by'], 'fuel', 'by is fuel', what='procedures.by')
+    # the departure stays editable while the SID is not passed: a fresh position beyond its end freezes the row, the arrival stays open
+    open_proc(c, procs=V2_PROCS, started=True, actual=(44.9, 2.4))
+    c.tap(f'{FUEL} .fu-steps button[data-step="4"]')
+    c.until("!!document.querySelector('[data-module=fuel] [data-block=procs]:not(.fu-hide) [data-proc=arr] select')", timeout=15000, what='the arrival row is drawn')
+    c.wait(500)
+    c.eq(c.count(f'{FUEL} [data-proc="dep"] select'), 0, 'the SID is passed (position at NEPIX): the departure row is no longer editable', what='departure selects')
+    c.ok(norm(row(c, 'procPassed')) in norm(c.text(f'{FUEL} [data-procbox="start"]') or ''), 'no sentence', 'and says why')
+    c.ok(c.count(f'{FUEL} [data-proc="arr"] select') >= 1, 'no arrival select', 'the arrival stays editable')
+
+
+@case('F17', '#fuel?focus=arr focuses the arrival row', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='V3 spec 10.20: the Map\'s "Changer" opens the step with the arrival row (Vol before the start, Départ after) and focuses its first select')
+def f17(c):
+    open_proc(c, target='fuel?focus=arr', procs=V2_PROCS)
+    c.until("document.activeElement && document.activeElement.dataset && document.activeElement.dataset.k === 'p-arr-rwy'", timeout=15000,
+            what='the first select of the arrival row has the focus')
+    c.ok(c.shown('[data-module="fuel"] [data-procbox="vol"]'), 'row hidden', 'the step Vol is the one shown')
+    open_proc(c, target='fuel?focus=arr', procs=V2_PROCS, started=True)
+    c.until("document.activeElement && document.activeElement.dataset && document.activeElement.dataset.k === 'p-arr-rwy'", timeout=15000,
+            what='after the start the Departure step is opened and its arrival row focused')
+    c.ok(c.shown('[data-module="fuel"] [data-procbox="start"]'), 'row hidden', 'the Departure step is the one shown')
+
+
+@case('F18', 'route.procedures v1 is read, not rewritten at mount; v2 at the next write', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='V3 spec 10.20: migration by proceduresOf; nothing written at mount; the next ordinary write puts v2 and drops a side whose aerodrome changed')
+def f18(c):
+    v1 = {'sid': {'id': 'LFRS.SID.NTS1A.RW03.NONE', 'icao': 'LFRS', 'kind': 'SID', 'name': 'NTS1A', 'runways': ['03'], 'points': [], 'status': 'ofp'},
+          'star': {'id': 'LFXX.STAR.ZZZ1A.RWALL.NONE', 'icao': 'LFXX', 'kind': 'STAR', 'name': 'ZZZ1A', 'runways': [], 'points': [], 'status': 'ofp'}}
+    # no aircraft, no profile, no points and a typed distance: no quote, no route to read and no forecast to apply, so nothing at mount has a reason to write the flight
+    docs = proc_docs() + flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route']['procedures'] = v1
+            d[1].pop('aircraft', None)
+            d[1].pop('profile', None)
+            d[1]['route'].pop('text', None)
+            d[1]['route']['manual'] = True                       # a distance typed by hand: the route is not read again at mount
+            d[1]['route'].pop('points', None)                    # and no points: no winds aloft to fetch and write at mount
+    c.open('fuel', docs=docs, airfields=True)
+    wait_rows(c, 'dep')
+    c.wait(1500)
+    c.eq(c.doc('pilot/ABC/current_flight.json')['route']['procedures'], v1, 'a v1 record is left as it is at mount', what='route.procedures after mount')
+    c.eq(c.js("document.querySelector('[data-module=fuel] select[data-k=\"p-dep-sid\"]').value"), 'LFRS.SID.NTS1A.RW03.NONE',
+         'the SID of the v1 record is shown (proceduresOf)', what='SID select')
+    c.eq(c.js("document.querySelector('[data-module=fuel] select[data-k=\"p-dep-rwy\"]').value"), '03', 'and its single runway', what='runway select')
+    c.eq(c.js("document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]').value"), '',
+         'a STAR of another aerodrome than the route\'s arrival is not chosen', what='STAR select')
+    c.page.fill(f'{FUEL} input[data-k="fl"]', '250')                 # an ordinary write
+    d = cf_doc(c, lambda d: (d.get('level') or {}).get('ft') == 25000 and 'dep' in ((d.get('route') or {}).get('procedures') or {}),
+               'the next write migrates route.procedures to v2')
+    p = d['route']['procedures']
+    c.eq(p['dep'], {'rwy': '03', 'sid': 'LFRS.SID.NTS1A.RW03.NONE'}, 'v2 departure: identifiers and the single runway', what='dep')
+    c.eq(p['arr'], {}, 'the side of another aerodrome is dropped', what='arr')
+    c.eq(p['by'], 'fuel', 'by is fuel', what='by')
+
+
+@case('F19', 'Load my OFP: its SID and STAR replace the choice and the change is said', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.20: "Load my OFP" writes the OFP\'s SID / STAR identifiers (v2) over the pilot\'s choice and notifies one line per side')
+def f19(c):
+    ofp = json.loads((ROOT / 'frame/aerodb/test/fixtures/ofp_lfrs_lfml.json').read_text(encoding='utf-8'))
+    procs = {'dep': {'sid': 'LFRS.SID.NTS1A.RW03.NONE'}, 'arr': {'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'app': 'LFML.APP.I13R.RW13R.NONE'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'}
+    c.open('fuel', docs=proc_docs() + proc_flight(procs), airfields=True, identity={'simbrief': '123456'})
+    wait_rows(c)
+    c.page.route('**/www.simbrief.com/**', lambda r: r.fulfill(status=200, content_type='application/json', headers={'Access-Control-Allow-Origin': '*'}, body=json.dumps(ofp)))
+    c.tap(f'{FUEL} .fu-steps button[data-step="1"]')
+    c.tap(f'{FUEL} [data-do="simbrief"]')
+    d = cf_doc(c, lambda d: str((procs_of(d, 'arr') or {}).get('star', '')).startswith('LFML.STAR.LERG1R'), 'the OFP\'s STAR is written', timeout=15000)
+    p = d['route']['procedures']
+    c.eq(p['by'], 'fuel', 'by is fuel', what='procedures.by')
+    c.ok(str(p['dep'].get('sid', '')).startswith('LFRS.SID.LUGE4N'), f"dep {p['dep']}", 'the OFP\'s SID replaces the pilot\'s')
+    c.eq((p['dep'].get('rwy'), p['arr'].get('rwy')), ('03', '13L'), 'the runways of the OFP (one runway per record)', what='runways')
+    c.ok('app' not in p['arr'], f"arr {p['arr']}", 'the pilot\'s approach is replaced with the rest of the side')
+    notes = [norm(n) for n in c.note_log()]
+    kinds = lambda k: norm(tx(F, k, c.lang, after='procKinds: {'))
+    star_line = norm(row(c, 'procChange').replace('{side}', row(c, 'arr')).replace('{parts}', f"{kinds('rwy')} — → 13L · {kinds('star')} MEN1A → LERG1R · {kinds('app')} I13R → —"))
+    sid_line = norm(row(c, 'procChange').replace('{side}', row(c, 'dep')).replace('{parts}', f"{kinds('rwy')} — → 03 · {kinds('sid')} NTS1A → LUGE4N"))
+    c.ok(star_line in notes, f'notifications {notes}', f'one line for the arrival: {star_line}')
+    c.ok(sid_line in notes, f'notifications {notes}', f'one line for the departure: {sid_line}')

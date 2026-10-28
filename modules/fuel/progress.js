@@ -11,6 +11,8 @@
 //   etas(P, startMs) → [{ i, at (ms) }] : heure prévue de passage à chaque point (le départ : après le roulage).
 //   at(P, elapsedMin) → { nmFromDep, remainingNm, fuelUsed, phase ('taxi' | 'climb' | 'cruise' | 'descent' | 'arrived') }.
 //   position(points, cum, nm) → { lat, lon, legIndex } : le point de la route à nm NM du départ.
+//   verticalPath(path, q) → [{ nm, ft }] : le chemin vertical prévu le long de flownPath (profile.path), contraintes de procédure comprises.
+//   nmAlong(path, pos) → NM : la distance du départ du point du chemin le plus proche d'une position (le départ est-il passé ?).
 
 const R = Math.PI / 180;
 /** Distance orthodromique (NM). */
@@ -154,4 +156,145 @@ export function position(points, cum, nm) {
     lon: +pts.at(-1).lon,
     legIndex: pts.length - 2
   };
+}
+
+// ---------------------------------------------------------------- chemin vertical prévu et position sur le chemin (§ 10.20)
+// Calcul pur sur flownPath (frame/lib/current_flight.js) : ses points portent nm (distance cumulée depuis le départ, la seule
+// mesure des distances) et, pour ceux d'une procédure, alt { type: 'at' | 'min' | 'max' | 'between', ft, ft2? }.
+
+/** Altitude d'un point du chemin après sa contrainte de procédure (ft) : at → ft ; max → au plus ft ; min → au moins ft ;
+ *  between → dans l'intervalle ; le seuil d'une piste (rwy) vaut son altitude quand elle est connue ; sans contrainte, base. */
+function constrained(p, base) {
+  if (p.rwy && Number.isFinite(+p.elev)) return +p.elev;
+  const a = p.alt;
+  if (!a || !Number.isFinite(+a.ft)) return base;
+  const ft = +a.ft;
+  if (a.type === 'at') return ft;
+  if (a.type === 'max') return Math.min(base, ft);
+  if (a.type === 'min') return Math.max(base, ft);
+  if (a.type === 'between' && Number.isFinite(+a.ft2)) return Math.min(Math.max(base, Math.min(ft, +a.ft2)), Math.max(ft, +a.ft2));
+  return base;
+}
+
+/** Chemin vertical prévu [{ nm, ft }] le long de flownPath : la montée, la croisière (et ses paliers) et la descente du devis q
+ *  comme le modèle les compte, puis la contrainte d'altitude de chaque point appliquée là où elle est plus serrée (at → ft,
+ *  max → au plus, min → au moins, between → dans l'intervalle), linéaire par morceaux entre les points. Le départ et l'arrivée
+ *  sont à l'altitude du seuil de piste choisie quand elle est connue, sinon à 0 ft. nm arrondi au dixième, ft à la dizaine ;
+ *  [] sans devis chiffré ni chemin de deux points. */
+export function verticalPath(path, q) {
+  const pts = (path || []).filter(p => Number.isFinite(+p?.nm));
+  if (pts.length < 2 || !q || !(q.levelFt > 0)) return [];
+  const D = +pts.at(-1).nm,
+    th = pts.filter(p => p.rwy && Number.isFinite(+p.elev)),
+    depFt = th.length && th[0].origin === 'sid' ? +th[0].elev : 0,
+    arrFt = th.length && th.at(-1).origin !== 'sid' ? +th.at(-1).elev : 0,
+    levels = q.steps?.levels?.length ? q.steps.levels : [{
+      nm: 0,
+      ft: q.levelFt
+    }],
+    climbNm = Math.max(0, +q.climb?.nm || 0),
+    descNm = Math.max(0, +q.descent?.nm || 0),
+    k = climbNm + descNm > D && climbNm + descNm > 0 ? D / (climbNm + descNm) : 1,
+    toc = climbNm * k,
+    tod = D - descNm * k,
+    first = levels[0].ft,
+    last = levels.at(-1).ft,
+    upGrad = climbNm > 0 ? first / climbNm : 300, // ft par NM de la montée du modèle, pour les changements de niveau
+    dnGrad = descNm > 0 ? last / descNm : 300;
+  // points de rupture de la base : le sol, le sommet de montée, chaque changement de niveau (rampe à la pente de la montée ou
+  // de la descente), le sommet de descente, le sol
+  const base = [{
+    nm: 0,
+    ft: depFt
+  }, {
+    nm: toc,
+    ft: first
+  }];
+  for (let i = 1; i < levels.length; i++) {
+    const a = levels[i - 1].ft,
+      b = levels[i].ft,
+      len = Math.abs(b - a) / (b > a ? upGrad : dnGrad),
+      nm = Math.min(Math.max(+levels[i].nm, toc), tod);
+    base.push({
+      nm,
+      ft: a
+    }, {
+      nm: Math.min(nm + len, tod),
+      ft: b
+    });
+  }
+  base.push({
+    nm: tod,
+    ft: last
+  }, {
+    nm: D,
+    ft: arrFt
+  });
+  const baseAt = nm => {
+    for (let i = 1; i < base.length; i++)
+      if (nm <= base[i].nm + 1e-9) {
+        const a = base[i - 1],
+          b = base[i];
+        return b.nm > a.nm ? a.ft + (b.ft - a.ft) * (nm - a.nm) / (b.nm - a.nm) : b.ft;
+      }
+    return base.at(-1).ft;
+  };
+  // les ruptures de la base et chaque point du chemin, dans l'ordre ; la contrainte d'un point prend le dessus quand elle est plus
+  // serrée. Une fois passé le sommet de montée, dès qu'une contrainte fait descendre le chemin sous la base, la descente est
+  // commencée : le chemin ne remonte plus vers la croisière de la base (la base et sa descente n'y suivent que s'ils sont plus bas).
+  const at = new Map(); // nm (au dixième) → { base, p }
+  for (const b of base) at.set(Math.round(b.nm * 10) / 10, {
+    p: null
+  });
+  for (const p of pts) at.set(Math.round(+p.nm * 10) / 10, {
+    p
+  });
+  const out = [];
+  let descending = false,
+    prev = depFt;
+  for (const nm of [...at.keys()].sort((a, b) => a - b)) {
+    const p = at.get(nm).p,
+      b = baseAt(nm),
+      ref = descending ? Math.min(b, prev) : b,
+      v = p ? constrained(p, ref) : ref;
+    if (!descending && p && nm >= toc && v < b - 100) descending = true;
+    prev = v;
+    out.push({
+      nm,
+      ft: Math.round(v / 10) * 10
+    });
+  }
+  return out;
+}
+
+/** Distance du départ (NM, sur le chemin) du point du chemin le plus proche de la position pos { lat, lon } : projection sur le
+ *  tronçon le plus proche (plan local, assez exact sur un tronçon) ; null sans chemin de deux points ni position. */
+export function nmAlong(path, pos) {
+  const pts = (path || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon) && Number.isFinite(+p?.nm));
+  if (pts.length < 2 || !Number.isFinite(+pos?.lat) || !Number.isFinite(+pos?.lon)) return null;
+  const kx = Math.cos(+pos.lat * R);
+  let best = null;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1],
+      b = pts[i],
+      lon = x => {
+        let d = +x - +pos.lon; // longitude relative à la position, dans [-180, 180[ (une route qui passe 180°)
+        d -= 360 * Math.round(d / 360);
+        return d * kx;
+      },
+      ax = lon(a.lon),
+      ay = +a.lat - +pos.lat,
+      bx = lon(b.lon),
+      by = +b.lat - +pos.lat,
+      dx = bx - ax,
+      dy = by - ay,
+      len2 = dx * dx + dy * dy,
+      t = len2 > 0 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2)) : 0,
+      d2 = (ax + dx * t) ** 2 + (ay + dy * t) ** 2;
+    if (!best || d2 < best.d2) best = {
+      d2,
+      nm: +a.nm + (+b.nm - +a.nm) * t
+    };
+  }
+  return best.nm;
 }
