@@ -427,6 +427,7 @@
   const DESK = new WeakSet(); // vues qui écoutent déjà « frame-desk »
   /** Dessine l'écran des réglages dans view ; c : contexte du cadre (voir l'en-tête). */
   async function render(view, c) {
+    window.SogSettingsKit.bind(c.launcherRequest); // les routes du lanceur passent par le client du cadre
     const {
       t,
       FD

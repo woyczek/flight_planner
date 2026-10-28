@@ -28,6 +28,7 @@ import version_stamps  # empreintes ?v=… posées au moment de servir (pages, s
 import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Navmap) pour le cadre V3
 import lan_access  # appareils du réseau local (tablette, téléphone) appairés par un code : état, essais, appareils
 import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
+import regen_jobs  # travaux longs du module Données (régénération) : un à la fois, état, annulation ; état du poste
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.path.join(ROOT, 'data')
@@ -648,6 +649,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         self._purge = Setup.purge and re.search(r'(\.html|/)$', self.path.split('?')[0]) is not None
         if self.path.split('?')[0] in LNMPERF_ROUTES:
             return self._lnmperf(b'')
+        if self.path.split('?')[0] in ('/__setup/regen/state', '/__setup/regen/job'):
+            # module Données (frame/INTEGRATION.md § 15) : état du poste, travail en cours ou id — ce poste seulement
+            if not self._allowed() or self._lan():
+                return self._json({'error': 'refusé'}, 403)
+            if self.path.split('?')[0].endswith('/state'):
+                return self._json(regen_jobs.state(DATA, SECRETS, *regen_git()))
+            jid = (urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get('id') or [''])[0][:40]
+            v = regen().view(jid or None)
+            return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
         if self.path.split('?')[0] == '/__setup/status':
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
@@ -1015,6 +1025,17 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             return self._json(site_allow(str(a.get('url') or '')) if path.endswith('allow') else site_remove(str(a.get('url') or '')))
+        if path in ('/__setup/regen/job', '/__setup/regen/job/cancel'):
+            # travaux du module Données : jeu et verbe d'une liste fixe, arguments contrôlés (tools/regen_jobs.py)
+            if self._lan():
+                return self._json({'error': 'refusé'}, 403)
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+            a = a if isinstance(a, dict) else {}
+            v = regen().cancel(str(a.get('id') or '')[:40]) if path.endswith('/cancel') else regen().start(a.get('set'), a.get('verb'), a.get('args'))
+            return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
         if path == '/__setup/aero-fetch':
             # données aéronautiques d'autres pays (tools/aero_fetch.py) : téléchargées dans data/sia/<source>/
             try:
@@ -2737,6 +2758,21 @@ def aircraft_start(codes, quick=False):
 
 
 AERO_LOCK = threading.Lock()  # un téléchargement de données aéronautiques à la fois (tools/aero_fetch.py)
+REGEN = None  # travaux du module Données (tools/regen_jobs.py) : créés au premier appel (DATA est réglé au démarrage)
+
+
+def regen_git():
+    """git durci et son environnement pour l'état du poste ; (None, dict) sans git."""
+    return (data_sync.git_cmd, data_sync.git_env) if data_sync.git_exe() else (None, dict)
+
+
+def regen():
+    """Les travaux du module Données de ce lanceur (un à la fois)."""
+    global REGEN
+    if REGEN is None:
+        g, env = regen_git()
+        REGEN = regen_jobs.Jobs(regen_jobs.REGISTRY, {'data': DATA, 'secrets': SECRETS, 'git_cmd': g, 'git_env': env})
+    return REGEN
 _loaded = {}  # module → date du fichier au chargement
 
 

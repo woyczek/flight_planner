@@ -1,0 +1,301 @@
+<!doctype html>
+<!-- Banc de la publication sans lanceur (transport GitHub, publish ; frame/INTEGRATION.md § 15.2) : un commit par groupe
+     dans l'ordre, blobs un à un (texte et binaire), avancement par fichier, suppression d'un fichier présent et d'un absent,
+     conflit rendu sans écraser puis reprise au groupe suivant (from), hors ligne, annulation. API GitHub simulée dans la
+     page (fetch remplacé) : aucun appel réel. window.__publishBench = { done, pass, fail, rows }. Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>publish — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">transport_github.js publish — bench</h1>
+<pre id="out"></pre>
+<script>
+  // API GitHub simulée : refs, commits, arbres (base_tree, sha: null), blobs (utf-8, base64), contents (présence)
+  window.GH = (() => {
+    let n = 0;
+    const blobs = new Map(),
+      trees = new Map(),
+      commits = new Map(),
+      st = {
+        head: null,
+        offline: false,
+        race: false,
+        calls: []
+      };
+    const id = p => `${p}${(++n).toString(16).padStart(6, '0')}`;
+    const mkTree = m => {
+      const s = id('t');
+      trees.set(s, new Map(m));
+      return s;
+    };
+    const mkCommit = (tree, parents, message) => {
+      const s = id('c');
+      commits.set(s, {
+        tree,
+        parents,
+        message
+      });
+      return s;
+    };
+    const blob = text => {
+      const s = id('b');
+      blobs.set(s, text);
+      return s;
+    };
+    st.head = mkCommit(mkTree([
+      ['sia/base/old.json', blob('old')],
+      ['keep.txt', blob('keep')]
+    ]), [], 'initial');
+    const res = (v, status = 200) => new Response(JSON.stringify(v), {
+      status,
+      headers: {
+        'content-type': 'application/json'
+      }
+    });
+    st.files = (c = st.head) => Object.fromEntries([...trees.get(commits.get(c).tree)].map(([p, b]) => [p, blobs.get(b)]));
+    st.log = () => {
+      const out = [];
+      for (let c = st.head; c && commits.get(c).parents.length; c = commits.get(c).parents[0]) out.unshift(commits.get(c).message);
+      return out;
+    };
+    window.fetch = async (url, init = {}) => {
+      const u = new URL(url),
+        m = init.method || 'GET',
+        path = u.pathname.replace(/^\/repos\/o\/r\//, ''),
+        body = init.body ? JSON.parse(init.body) : null;
+      st.calls.push(`${m} ${path.split('/').slice(0, 2).join('/')}`);
+      if (st.offline) throw new TypeError('Failed to fetch');
+      if (m === 'GET' && path === 'git/ref/heads/main') return res({
+        object: {
+          sha: st.head
+        }
+      });
+      if (m === 'GET' && path.startsWith('git/commits/')) return res({
+        tree: {
+          sha: commits.get(path.slice(12)).tree
+        }
+      });
+      if (m === 'POST' && path === 'git/blobs') return res({
+        sha: blob(body.encoding === 'base64' ? `b64:${body.content}` : body.content)
+      }, 201);
+      if (m === 'POST' && path === 'git/trees') {
+        const t = new Map(trees.get(body.base_tree) || []);
+        for (const e of body.tree) {
+          if (e.sha === null) {
+            if (!t.has(e.path)) return res({
+              message: `path ${e.path} not in base tree`
+            }, 422);
+            t.delete(e.path);
+          } else t.set(e.path, e.sha);
+        }
+        return res({
+          sha: mkTree(t)
+        }, 201);
+      }
+      if (m === 'POST' && path === 'git/commits') return res({
+        sha: mkCommit(body.tree, body.parents, body.message)
+      }, 201);
+      if (m === 'PATCH' && path === 'git/refs/heads/main') {
+        if (st.race) { // un autre appareil a poussé entre-temps
+          st.race = false;
+          st.head = mkCommit(commits.get(st.head).tree, [st.head], 'someone else');
+        }
+        if (commits.get(body.sha).parents[0] !== st.head && !body.force) return res({
+          message: 'Update is not a fast forward'
+        }, 422);
+        st.head = body.sha;
+        return res({
+          object: {
+            sha: st.head
+          }
+        });
+      }
+      if (m === 'GET' && path.startsWith('contents/')) {
+        const p = decodeURIComponent(path.slice(9)),
+          c = u.searchParams.get('ref') || st.head;
+        return trees.get(commits.get(c).tree).has(p) ? res({
+          path: p
+        }) : res({
+          message: 'Not Found'
+        }, 404);
+      }
+      return res({
+        message: 'Not Found'
+      }, 404);
+    };
+    return st;
+  })();
+</script>
+<script src="../frame_data.js?v=0"></script>
+<script src="../transport_github.js?v=0"></script>
+<script type="module">
+  const rows = [],
+    out = document.getElementById('out');
+  window.__publishBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  const tr = () => FrameData.github({
+    repo: 'o/r',
+    token: 't',
+    api: 'https://api.github.test'
+  });
+  try {
+    const prog = [];
+    const r1 = await tr().publish([{
+      name: 'fr',
+      files: [{
+        path: 'sia/base/fr/a.json',
+        text: '{"a":1}'
+      }, {
+        path: 'sia/base/fr/b.json',
+        text: 'é'
+      }],
+      removed: ['sia/base/old.json'],
+      message: 'Base fr'
+    }, {
+      name: 'gb',
+      files: [{
+        path: 'sia/base/gb/a.bin',
+        blob: new Blob([new Uint8Array([1, 2, 3])])
+      }],
+      message: 'Base gb'
+    }], {
+      onProgress: p => prog.push(`${p.group}:${p.files}/${p.total}:${p.bytes}`)
+    });
+    const f1 = GH.files();
+    ck('deux groupes → deux commits, dans l\'ordre', r1.ok && r1.groups.length === 2 && GH.log().join('|') === 'Base fr|Base gb',
+      `${JSON.stringify(r1)} ${GH.log()}`);
+    ck('fichiers texte écrits tels quels (UTF-8)', f1['sia/base/fr/a.json'] === '{"a":1}' && f1['sia/base/fr/b.json'] === 'é');
+    ck('fichier binaire envoyé en base64', f1['sia/base/gb/a.bin'] === 'b64:AQID', f1['sia/base/gb/a.bin']);
+    ck('suppression d\'un fichier présent, le reste gardé', !('sia/base/old.json' in f1) && f1['keep.txt'] === 'keep');
+    ck('avancement par fichier et par groupe, octets comptés', prog.join() === 'fr:1/2:7,fr:2/2:9,gb:1/1:3', prog.join());
+    ck('résultat par groupe : commit, fichiers, suppressions, octets', r1.groups[0].files === 2 && r1.groups[0].removed === 1 && r1
+      .groups[0].bytes === 9 && /^c/.test(r1.groups[1].commit), JSON.stringify(r1.groups));
+
+    const r2 = await tr().publish([{
+      name: 'x',
+      files: [{
+        path: 'proc/x.json',
+        text: '1'
+      }],
+      removed: ['proc/absent.json', 'keep.txt']
+    }]);
+    ck('suppression d\'un fichier absent : écartée, le commit passe', r2.ok && r2.groups[0].removed === 1 && !('keep.txt' in GH
+      .files()) && GH.files()['proc/x.json'] === '1', JSON.stringify(r2));
+
+    GH.race = true;
+    const r3 = await tr().publish([{
+      name: 'one',
+      files: [{
+        path: 'proc/one.json',
+        text: '1'
+      }]
+    }, {
+      name: 'two',
+      files: [{
+        path: 'proc/two.json',
+        text: '2'
+      }]
+    }]);
+    ck('conflit (la branche a bougé) : rendu sans écraser, au groupe en échec', r3.ok === false && r3.conflict === true && r3.at === 0 &&
+      !('proc/one.json' in GH.files()) && GH.log().at(-1) === 'someone else', JSON.stringify(r3));
+    const r4 = await tr().publish([{
+      name: 'one',
+      files: [{
+        path: 'proc/one.json',
+        text: '1'
+      }]
+    }, {
+      name: 'two',
+      files: [{
+        path: 'proc/two.json',
+        text: '2'
+      }]
+    }], {
+      from: 0
+    });
+    ck('nouvel essai : sur la nouvelle tête, le travail de l\'autre gardé', r4.ok && GH.files()['proc/two.json'] === '2' && GH.log()
+      .includes('someone else'));
+    const r5 = await tr().publish([{
+      name: 'skip',
+      files: [{
+        path: 'proc/skip.json',
+        text: 's'
+      }]
+    }, {
+      name: 'rest',
+      files: [{
+        path: 'proc/rest.json',
+        text: 'r'
+      }]
+    }], {
+      from: 1
+    });
+    ck('reprise from : les groupes faits sautés', r5.ok && r5.groups.length === 1 && r5.groups[0].name === 'rest' && !('proc/skip.json' in
+      GH.files()));
+
+    GH.offline = true;
+    const r6 = await tr().publish([{
+      name: 'off',
+      files: [{
+        path: 'proc/off.json',
+        text: 'o'
+      }]
+    }]);
+    GH.offline = false;
+    ck('hors ligne : { ok: false, offline, at }', r6.ok === false && r6.offline === true && r6.at === 0, JSON.stringify(r6));
+    const ac = new AbortController();
+    ac.abort();
+    const before = GH.calls.length,
+      r7 = await tr().publish([{
+        name: 'c',
+        files: [{
+          path: 'proc/c.json',
+          text: 'c'
+        }]
+      }], {
+        signal: ac.signal
+      });
+    ck('annulé avant le premier blob : rien d\'envoyé', r7.cancelled === true && GH.calls.length === before);
+  } catch (e) {
+    ck('exception', false, e.stack || e.message);
+  }
+  const pass = rows.filter(r => r.startsWith('PASS')).length,
+    fail = rows.length - pass;
+  Object.assign(window.__publishBench, {
+    done: true,
+    pass,
+    fail
+  });
+  const s = document.createElement('p');
+  s.className = fail ? 'FAIL' : 'PASS';
+  s.textContent = `${pass} / ${rows.length}`;
+  out.append(s);
+</script>
+</body>
+</html>

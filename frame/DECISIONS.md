@@ -1461,3 +1461,34 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     names the file and offers "Reload" (×4, the language of the device or of the browser), no JavaScript error.
   - Checked: each of the three files lost once → the frame starts, the module mounted, no error; lost for good → the
     card, no module, no error. Case A28 (A26 and A27 were taken by the Settings session).
+- **28 Oct 2026 — Lot D0: the frame's services for the Data module** (contracts agreed with the coordinator the same day,
+  `modules/data/INTEGRATION.md` § 1):
+  - **`ctx.launcher`, declared** (`meta.launcher { routes, read }`, as `reads` / `writes`): least privilege, anything else
+    refused without a call (403, `refused`). Null without a launcher, on a paired device (`lan`) and without a declaration;
+    no `available()`: the null says it, and the survey is done before the first mount. `call` / `job` / `resume` / `read`,
+    never an exception. The job protocol is fixed (start, `?id=` about once a second, `/cancel`, `GET` without id for the
+    running one); unmount stops following only (the job goes on, `resume` finds it). 404 → « unknown route » (a launcher
+    older than the module).
+  - **One client** (`frame/lib/launcher.js`) for the frame too: Settings' `setup()` (`kit.js`, bound at the first drawing),
+    aerodb's `.lnmperf` sheets (`AeroDB.create({ launcher })`; aerodb's benches keep their direct call when no launcher is
+    given), the simulator's position, the local network's access. The debt of 28 Oct (« three pieces call the launcher
+    with fetch ») is closed; only the network relay keeps its `fetch` (its answer is the relayed site's).
+  - **The jobs' base in the launcher** (`tools/regen_jobs.py`): one job at a time, a fixed list of (set, verb) with
+    their argument checks, cancel, the last job readable, an exception ending the job and not the launcher; 410 for an
+    unknown job (404 means an unknown route for `ctx.launcher`). `regen/state` and one verb, `state/scan`; the builders'
+    verbs in D2.
+  - **`ctx.publish`, not `github()`**: the token and the full transport stay in the frame (the debt written this morning
+    on the token's reach). One commit per group (a zone), in order, each on the head read just before, blobs one by one;
+    a conflict is returned and resumed with `from` (aerodb's point: 20–60 MB in hundreds of files, never one giant
+    commit). The `reference` copies of the published paths are dropped after each group. GitHub's limits written
+    (INTEGRATION § 15.2).
+  - **The end-of-cycle line** is computed at drawing time from `aerodb.publication()`, so it is right on the day the cycle
+    changes without a timer; absent until aerodb delivers the call (never a guessed line). Amber; `#data` only on a
+    workstation with a launcher at the Full level, once the module exists.
+  - **The « Données » verb** waits for `modules/data/module.js` (a verb without a module would lead nowhere). Workers: no
+    change, `worker-src 'self' blob:` was already in the policy.
+  - **Tests**: bench `frame/lib/test/launcher.html` 32 / 32 (case A29), bench `frame/store/test/publish.html` 12 / 12
+    (A30), A31 (the end-of-cycle line ×4, `publication()` simulated), I8 (the jobs' base, a static case). Against the
+    real launcher: a `state/scan` job followed to its end by the client, an unknown operation refused (400), a call
+    without the frame's header refused (403); Settings at the Full level reach `lan`, `lnmperf-folder`, `secrets`,
+    `sync-remote` through the client, no JavaScript error.

@@ -64,6 +64,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - `net`: only when a library you use calls a public host by itself (map tiles): list the hosts (`host` or
   `host/path`), https only. Your own calls still go through `ctx.net`. The page's security policy lets these hosts
   in; any other direct call is blocked.
+- `launcher`: `{ routes, read }`, the launcher's routes and the prefixes of `data/` the module may use (§ 15.1).
+- `publish`: the prefixes of the data repository the module may publish generated files to (§ 15.2).
 
 ## 3. Declaring what the module reads and writes
 
@@ -200,9 +202,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   - So `unmount()` must work at any point of `mount()`: stop timers and watches you have started, and set a flag.
   - After each `await` of `mount()`, stop if that flag is set (or `el.isConnected` is false), and write nothing more.
   - The frame itself writes nothing for a mount it has given up.
-- **Debt (noted 28 Oct 2026)**: three pieces still call the launcher with `fetch`: Settings' `setup()`,
-  `frame/aerodb/lnmperf.js` (the data laboratory, the third, was removed on 28 Oct). They move onto a frame service `ctx.launcher` in the frame lot that
-  follows the weather layer. No new piece calls the launcher directly.
+- No call to the launcher with `fetch`: declare `meta.launcher` and use `ctx.launcher` (§ 15.1). The debt noted on
+  28 Oct 2026 (Settings' `setup()`, `frame/aerodb/lnmperf.js`) was closed the same day by lot D0.
 
 ## 8. Trying a module
 
@@ -834,4 +835,104 @@ Errors carry a mark, for the module to say why in its own words: `offline`, `unr
 
 - Without a trigram nothing changes: the cache is local to the device anyway, nothing of it is ever pushed or exchanged.
 - `ctx.net` stays for every other call; the weather hosts stay reachable through it for the modules not yet switched.
+
+## 15. The workstation's launcher, publication, end of cycle (lot D0, 28 Oct 2026)
+
+Services for the **Data** module (`modules/data/`), open to any module that declares them. The frame keeps the launcher,
+the token and the repository; a module gets capabilities, never the transport.
+
+### 15.1 `ctx.launcher` — the launcher of this workstation
+
+Declared in `meta`, like `reads` / `writes`:
+
+```js
+launcher: { routes: ['regen/', 'vfr-import'], read: ['sia/', 'proc/', 'local/'] }
+```
+
+- `routes`: the launcher's routes the module may call (`/__setup/<route>`); a route ending in `/` covers what is under it.
+  `read`: the prefixes of `data/` it may read as a stream.
+- `ctx.launcher` is **null** when no launcher serves the page, on a paired device of the local network (`lan`: every
+  `/__setup/regen/*` route is refused there) and without a declaration. Test it before drawing a launcher button.
+- Anything not declared is refused at once, without a call: `{ ok: false, status: 403, refused: true, route }`. A route or a
+  path that would leave its place (`..`, an absolute path, an encoded or backslashed one) is refused the same way.
+- Nothing throws. The calls:
+
+| Call | Gives |
+| --- | --- |
+| `info()` | `{ host, data, dataGit, lan }` (a copy of the frame's survey) |
+| `call(route, body?)` | GET without a body, POST with one (JSON). The route's JSON, or `{ ok: false, offline \| status, message, route }`; a 404 says `message: 'unknown route'` (a launcher older than the module: « relancez-le à jour ») |
+| `job(route, body, { onProgress, signal })` | starts a long job and follows it to its end: `{ ok, state, result, … }` |
+| `resume(route, { onProgress, signal })` | follows the job running on that route (a reloaded page), or gives the last one's end; null without a job |
+| `read(path, { signal, onBytes })` | `{ ok, stream (ReadableStream), size }` of `data/<path>`, same origin; `onBytes(n)` as it reads |
+
+**The job protocol is fixed**: `POST <route>` with the body → `{ job: id }`; `GET <route>?id=…` about once a second →
+`{ id, state: 'running' | 'done' | 'error' | 'cancelled', step, done, total, unit, log (200 lines), result }`;
+`POST <route>/cancel { id }` when `signal` aborts (→ `{ ok: false, cancelled: true }`); `GET <route>` without id → `{ job }`,
+the running or the last one. **At unmount** the frame stops following (→ `{ ok: false, detached: true }`): the job goes on
+in the launcher; `resume` finds it again.
+
+**The launcher's side** (`tools/launch.py`, `tools/regen_jobs.py`; this workstation only, refused to a paired device):
+
+- `GET /__setup/regen/state`: for this workstation, the local outputs (`sia/base/`, `proc/`, `sia/vfr/`, `AircraftDB/`,
+  `sia/mora.csv`: files, bytes, newest, cycle folders), `local/` (never published), the source caches under `sia/<source>/`,
+  the commits not pushed that touch the outputs, `pypdf` importable, free space, EAD credentials present (yes / no, never
+  a value).
+- `POST /__setup/regen/job { set, verb, args }`, `GET …/job[?id=]`, `POST …/job/cancel { id }`: one job at a time in a thread;
+  `set` and `verb` from a fixed list (`regen_jobs.REGISTRY`), each with its check of `args`; nothing from the page is a path,
+  an address or a command. 400: unknown operation or bad arguments; 409: a job is running; 410: no such job. Lot D0 has one
+  verb, `state/scan` (the state as a job, with its progress); the builders' verbs come with them (lot D2).
+- The frame itself uses the same client for its own calls (Settings' `setup()`, aerodb's `.lnmperf` sheets, the
+  simulator's position, the local network's access): no piece of the frame calls the launcher with `fetch` any more,
+  except the network relay (`/__setup/net`, whose answer is the relayed site's, not JSON).
+
+### 15.2 `ctx.publish` — generated files to the data repository, without a launcher
+
+For outputs too big for the data layer's batch (records, 5,000 changes, a copy kept on the device): 20–60 MB, hundreds of
+files. Declared in `meta`:
+
+```js
+publish: ['sia/base/', 'proc/', 'sia/vfr/', 'AircraftDB/', 'sia/mora.csv']
+```
+
+```js
+const r = await ctx.publish([
+  { name: 'fr', files: [{ path: 'sia/base/fr/2026-10-29/airports.json', text }], removed: [...], message: 'Base fr 2611' },
+  { name: 'gb', files: [{ path: 'sia/base/gb/2026-10-29/x.bin', blob }] } ], { onProgress, signal, from: 0 });
+```
+
+- **One commit per group, in order** (a zone, a cycle of `proc/`…), each on the head read just before; files sent one by
+  one as blobs (text in UTF-8, a `Blob` in base64); the branch advanced **without force**.
+- `onProgress({ group, index, groups, files, total, bytes })` after each file.
+- Result: `{ ok: true, groups: [{ name, commit, files, removed, bytes }] }`, or `{ ok: false, at, group, groups (those
+  done), conflict | offline | cancelled | tooBig | status, message }`. **A conflict** (someone pushed meanwhile) **is
+  returned, never overwritten**: call again with `from: at` (the groups done are not redone). A removal of a file absent
+  from the repository is dropped, not refused.
+- Refused before any call, with `refused`: `'declaration'` (no `meta.publish`), `'path'` (a path outside it, with `path`),
+  `'trigram'` (none on the device), `'access'` (no GitHub access on this device). The commit message ends with the
+  trigram.
+- After each group, the device's `reference` copies of its paths are dropped: the next read takes the published ones.
+- **GitHub's limits**: a blob is 100 MB at most (larger: `tooBig`, nothing sent for that group); a tree read is
+  truncated beyond about 7 MB (`ctx.publish` never reads the whole tree: it builds on `base_tree`); the API counts its
+  calls (one per file, plus four per group): split by zone, not by file.
+- The token never leaves the frame's transport; a module never gets `github()`.
+- With a launcher, publish through its route (`regen/publish`, lot D2: git on the workstation), not `ctx.publish`.
+
+### 15.3 The end-of-cycle line of the Status block
+
+The frame computes it at drawing time, on every device, from `aerodb.publication()` (`{ base: { <zone>: { cycles } },
+proc: { cycles } }`, cycles as start dates `YYYY-MM-DD`; to be delivered by aerodb):
+
+- the newest published cycle of the base (or of `proc/`) is older than the AIRAC cycle in force: « Base aéronautique :
+  cycle 2610 terminé, en attente de publication » (×4);
+- or the cycle in force ends within 3 days and nothing is published for the next one: « … : le cycle 2611 se termine le
+  25/11, rien de publié pour 2612 ».
+- Amber (attention). It leads to `#data` only on a workstation with a launcher, at the Full level, once the Data module
+  exists; elsewhere nothing to press. Without `aerodb.publication()`, no line (never a guessed one).
+- The Data module's own lines (a job running, publications to send) go through its `cache/data/status.json` (§ 10.0).
+
+### 15.4 Workers
+
+The page's policy allows Workers from the suite's own files (`worker-src 'self' blob:`, `tools/csp_policy.py`, the same in
+the launcher's and the built pages' policy). A module's Worker script is listed in its `meta.files` (kept offline like the
+rest). No outside host is added for it.
 

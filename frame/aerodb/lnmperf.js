@@ -148,6 +148,7 @@
   function create({
     reader,
     aircraft,
+    launcher = null, // client du lanceur donné par le cadre (frame/INTEGRATION.md § 15) ; sans lui : fetch (bancs)
     launcherRoot = new URL('../../', document.currentScript?.src || location.href).href
   } = {}) {
     let state = {
@@ -187,6 +188,15 @@
       json,
       text
     } = {}) {
+      if (launcher) {
+        const x = await launcher.request(path, {
+          method,
+          json,
+          text
+        });
+        if (!x || x.status === 403 || x.status === 404 && path.endsWith('lnmperf-folder')) return null;
+        return x;
+      }
       let r;
       try {
         r = await fetch(new URL(path, launcherRoot), {

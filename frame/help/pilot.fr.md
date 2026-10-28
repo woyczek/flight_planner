@@ -24,7 +24,8 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
   ouvrir le compte rendu prérempli), le trigramme manquant (touchez pour le régler), l'état des données (dernière
   synchronisation, écritures en attente, moyen d'échange utilisé), la base aéronautique tant qu'elle n'est pas prête, le
   lanceur, « Hors ligne » quand il n'y a pas de réseau, le nombre d'appels météo du jour (prévisions
-  Open-Meteo, 10 000 permis par jour), et, sur un téléphone, la source de la position pendant un vol. Sur
+  Open-Meteo, 10 000 permis par jour), la fin de cycle AIRAC quand la base aéronautique ou les procédures publiées sont
+  en retard sur le cycle en vigueur, et, sur un téléphone, la source de la position pendant un vol. Sur
   un téléphone, l'en-tête se réduit au nom, au bouton ? et au bouton ⚙.
 - **Plein écran.** Sur la carte (outils à vue fixe), un bouton rond en bas de la colonne de boutons, sur la carte, masque
   l'en-tête et la barre du bas pour laisser toute la place à la carte ; le même bouton ou Échap reviennent.

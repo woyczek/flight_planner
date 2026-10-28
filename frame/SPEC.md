@@ -323,7 +323,9 @@ with a "Reload" button (×4), never a blank page and never a JavaScript error. T
     conflicts); **"Launcher: <host> · <state>"** on a launcher (touch → the Access card); **"Offline: working on this
     device's copy"** when `ctx.net.online()` is false; **"Weather: n calls today"** when the weather layer has called
     Open-Meteo today (weighted calls of the UTC day, read from `cache/weather/ledger.json`; under it the limit, 10,000 a
-    day; INTEGRATION § 14); and, **on a phone only**, **"Position: <source>"** while a flight is
+    day; INTEGRATION § 14); **"Aeronautical database: cycle 2610 ended, waiting for publication"** (and the same for the
+    procedures, or "cycle 2611 ends on 25/11, nothing published for 2612" in its last 3 days), amber, from
+    `aerodb.publication()` (INTEGRATION § 15.3; no line without that call); and, **on a phone only**, **"Position: <source>"** while a flight is
     started (touch toggles the device's GPS like the header's badge on a screen). The "Help for this screen" line no longer
     exists: the "?" of the header is that. The block follows the state while it is on screen. Four languages.
   - There is **no "i" button and no pop-up** any more.
@@ -493,6 +495,8 @@ with a "Reload" button (×4), never a blank page and never a JavaScript error. T
 | `net.fetch(url, init)`, `net.online()` | outgoing calls through the frame, never an exception: offline or on a network failure, an immediate 503 marked `x-sog-offline`; same origin: direct; SimBrief, IVAO, VATSIM, aviationweather.gov (METAR / TAF): relayed by the launcher when the page is served by one (`POST /__setup/net`), otherwise direct for the sites that allow it (SimBrief, IVAO; aviationweather.gov sends no CORS header, so without a launcher it gets the 503); the airline's website (`airline.site`, https): the same, GET only (any other method: 503); any other site: 503 marked `x-sog-unreachable` |
 | `identity` | read only: the identity record of the device (`trigram`, `ivao`, `vatsim`, `simbrief`), an empty object when there is none |
 | `airline` | read only: `{ name, site, pages: { recordFlight, log, fleet } }` from `airline/settings.json` of the data repository (a document, pulled ahead and followed with `watch`; text fields only), an empty object when there is none; no address is written in the code |
+| `launcher` | the workstation's launcher, reduced to what `meta.launcher` declares (`{ routes, read }`): `info`, `call`, `job`, `resume`, `read`; null without a launcher, on a paired device and without a declaration (INTEGRATION § 15.1) |
+| `publish(groups, opts)` | generated files committed to the data repository through the device's GitHub access, one commit per group, paths under `meta.publish`, a conflict returned (INTEGRATION § 15.2) |
 | `weather` | the device's weather layer (INTEGRATION § 14): `aloft`, `grid`, `metar`, `taf`, `world`, `modelFor`, `run`, `spentToday`, all asynchronous; one cache `cache/weather/`, one count of the calls to Open-Meteo |
 | `level` | read only (getter): the device's usage level, 1–3; what a screen offers, not a right (INTEGRATION § 6) |
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
@@ -745,6 +749,7 @@ touch only the element they are given.
 | `frame/lib/icons.js` | design | frame, any module | the line icon set (V2's 53 icons plus `menu` and `wand-sparkles`), `svg(name)` |
 | `frame/lib/markdown.js` | help | the frame's help screen | the Markdown rendering of the help, copied as it is from V2 (`apps/aide/markdown.js`); a classic script loaded with the frame |
 | `frame/lib/metar.js` | fuel | fuel | the raw METAR decoder to the JSON form of aviationweather.gov, and the conversion of avwx's METAR / TAF to that form (weather without a launcher) |
+| `frame/lib/launcher.js` | frame | the frame (Settings, aerodb's `.lnmperf`, the simulator, the local network), any module through `ctx.launcher` | the one client of the launcher's routes: `launcherClient({ root, info })` → `{ request, forModule(decl, { life }) }`; the fixed job protocol; `routeOf`, `dataPathOf` (INTEGRATION § 15.1); bench `frame/lib/test/launcher.html` |
 | `frame/lib/weather_store.js` | frame | the frame (`ctx.weather`); fuel and atmosphere through it | the weather layer: one cache by model, cell and UTC day, Open-Meteo only for what is missing, the weighted count and its limits, METAR / TAF, the published world forecast (INTEGRATION § 14); bench `frame/lib/test/weather_store.html` |
 | `frame/lib/routing.js` | frame (moved from `modules/maps/lib/` on 28 Oct 2026) | fuel (Auto button), maps | airway path finding on the published base, pure: `airwayGraph`, `shortest`, `leg`, `expand`, `route(aerodb, a, b, opts)`, `tokensOf` / `textOf`, `nm`, `RoutingError`, `DEFAULTS` (V2's rules: a segment open within 100 ft of its limits, both ways, 8 nearest nodes within 60 NM, direct when the detour is over 40 %; no SID / STAR, no one-way, not across the date line); bench `frame/lib/test/routing.html` |
 | `frame/lib/route_text.js` | fuel | fuel, maps | the route text, pure: `tokenize`, `textFromTokens` (normalised "DEP PT1 UN869 PT2/F280 … ARR"), `textFromPoints` (the text rebuilt from edited points, airways kept between two unchanged neighbouring points), `icaoCoord` |
@@ -831,8 +836,6 @@ launcher can serve that device over the local network, so the device works as th
 Usage levels, a language choice, designs taken from V2, the backend transports.
 
 **Debts, dated**:
-- 28 Oct 2026: Settings' `setup()` and `aerodb/lnmperf.js` call the launcher with `fetch` (the data laboratory, removed the same day, did too). They move
-  onto `ctx.launcher` in the frame lot after the weather layer (INTEGRATION § 7).
 - 28 Oct 2026: the frame still reads flightlog's `pending.json` (schema 2) until flightlog publishes its
   `status.json` (INTEGRATION § 10.0).
 - 28 Oct 2026: fuel's own request for the winds aloft (`aloftFetch`, `cache/fuel/aloft.json`) and Atmosphere's store

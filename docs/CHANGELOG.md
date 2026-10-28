@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame, lot D0: services for the Data module** (`frame/lib/launcher.js`, `frame/app.js`,
+  `frame/store/transport_github.js`, `tools/regen_jobs.py`, `tools/launch.py`, Settings' `kit.js`, aerodb's `lnmperf.js`;
+  INTEGRATION § 15, SPEC, DECISIONS; benches A29, A30, cases A31, I8):
+  - `ctx.launcher`: the workstation's launcher for a module, limited to the routes and paths its `meta.launcher` declares,
+    with a fixed protocol for long jobs (progress, cancel, resume after a reload);
+  - `ctx.publish`: generated files committed to the data repository without a launcher, one commit per zone, a conflict
+    returned and resumed, the token never given to a module;
+  - the launcher's jobs base (`/__setup/regen/state`, `/__setup/regen/job`): one job at a time from a fixed list;
+  - an end-of-cycle line in the Status block when the published base or procedures are behind the AIRAC cycle;
+  - Settings and aerodb's `.lnmperf` sheets now reach the launcher through the frame's one client.
 - **aerodb, lot D1 for the Données module** (`frame/aerodb/airac.js`, `catalogue.js` (was `sources_data.js`), `aerodb.js`,
   `frame/app.js` (the Sources screen's scripts); SPEC § 5 and § 5 sexies, INTEGRATION, DECISIONS; bench `test/catalogue.html`, test K21) —
   one calculation of the AIRAC cycle; the catalogue with each source's group, zones, fetch, build and publication, the EAD Basic

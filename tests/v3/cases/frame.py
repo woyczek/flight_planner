@@ -23,9 +23,10 @@ Rules covered
     fetches nothing (A20).
 
   * the weather layer (frame/lib/weather_store.js, INTEGRATION 14): its bench passes (A25);
-  * a store script lost on the way: asked again once, the frame starts; lost for good, the page says why with a Reload button (A28).
+  * a store script lost on the way: asked again once, the frame starts; lost for good, the page says why with a Reload button (A28);
+  * the frame's launcher and publication services: their benches pass (A29, A30); the end-of-cycle line of the Status block, ×4 (A31).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28.
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28 A29 A30 A31.
 """
 import json
 import re
@@ -958,3 +959,50 @@ def a28(c):
         c.eq(errs, [], 'no JavaScript error, the store missing', what='page errors')
     finally:
         ctx.close()
+
+
+def _bench(c, page, var):
+    c.page.goto(f'{c.base}/{page}', wait_until='load')
+    try:
+        c.page.wait_for_function(f'window.{var} && window.{var}.done', timeout=60000)
+    except Exception:
+        raise Fail(f'the bench never reported done (window.{var}.done)', 'a finished bench', page) from None
+    r = c.js(f'({{ pass: window.{var}.pass, fail: window.{var}.fail, rows: window.{var}.rows }})')
+    bad = [x for x in (r['rows'] or []) if str(x).startswith('FAIL')][:3]
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}", 'every assertion of the bench passes')
+
+
+@case('A29', 'Launcher client bench', 'A', tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 15.1; the bench reported 32/32')
+def a29(c):
+    _bench(c, 'frame/lib/test/launcher.html', '__launcherBench')
+
+
+@case('A30', 'Publication bench', 'A', tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 15.2; the bench reported 12/12')
+def a30(c):
+    _bench(c, 'frame/store/test/publish.html', '__publishBench')
+
+
+@case('A31', 'End-of-cycle line', 'A', langs4=True, designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 15.3; modules/data/SPEC 6.3: the base published for an older cycle than the one in force is said in the Status block, amber, on every device')
+def a31(c):
+    # aerodb.publication() (INTEGRATION 15.3, to be delivered by aerodb): simulated, the base published for the previous cycle
+    c.page.add_init_script("""(() => {
+      let real;
+      Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set(v) {
+        const create = v.create;
+        v.create = (...a) => { const o = create(...a);
+          return new Proxy(o, { get: (t, k) => k === 'publication' ? async () => {
+            const [cur, prev] = v.airacCycles(2);
+            return { base: { fr: { cycles: [prev] } }, proc: { cycles: [cur] } } } : t[k] }) };
+        real = v } }) })()""")
+    c.open('settings')
+    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"cycle-base\"]')", what='the end-of-cycle line of the base')
+    name = c.js("(() => { const d = AeroDB.airacCycles(2)[1], t = Date.parse(d + 'T00:00:00Z'), y = new Date(t).getUTCFullYear(), R = Date.UTC(2024, 0, 25), C = 28 * 864e5, f = R + Math.ceil((Date.UTC(y, 0, 1) - R) / C) * C; return String(y).slice(2) + String(Math.round((t - f) / C) + 1).padStart(2, '0') })()")
+    want = tx('frame/app.js', 'cycleOld', c.lang).replace('{s}', tx('frame/app.js', 'cycleBase', c.lang)).replace('{c}', name)
+    c.eq(norm(c.text('[data-card="status"] li[data-k="cycle-base"] .f-status-txt span')), norm(want), 'worded in the language of the run, the AIRAC name of the published cycle', what='base line')
+    c.ok(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"cycle-base\"] .f-status-dot').hasAttribute('data-attn')"), 'no amber dot', 'an amber dot (attention)')
+    soon = c.js("Date.parse(new Date(Date.parse(AeroDB.airacCycles(1)[0] + 'T00:00:00Z') + 28 * 864e5).toISOString().slice(0, 10) + 'T00:00:00Z') - Date.now() <= 3 * 864e5")
+    c.eq(c.count('[data-card="status"] li[data-k="cycle-proc"]'), 1 if soon else 0, 'procedures published for the cycle in force: a line only in the last 3 days of the cycle', what='proc lines')
+    c.eq(c.count('[data-card="status"] li[data-k="cycle-base"] [data-go]'), 0, 'no launcher here: nothing to press', what='links on the line')

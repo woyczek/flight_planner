@@ -193,6 +193,9 @@
     zones = window.AERODB_ZONES || {},
     now = () => Date.now(),
     lnmperf: lnmAuto = true, // fiches .lnmperf suivies d'elles-mêmes sur un poste au dossier réglé (les essais l'éteignent)
+    // lanceur du poste, donné par le cadre (frame/INTEGRATION.md § 15) : { request(route, opts) → { status, body } | null,
+    // info() → relevé | null } ; sans lui (bancs d'aerodb), lnmperf.js appelle le lanceur lui-même
+    launcher = null,
     access = () =>
     true // l'appareil a-t-il de quoi lire la base (lanceur, dépôt réglé) ? Sans cela, « non réglé » et non « non publiée »
   } = {}) {
@@ -651,6 +654,7 @@
     const lnmperf = () => lnmP ||= loadOwn('lnmperf.js', 'AeroDBLnmperf').then(() => window.AeroDBLnmperf.create({
       reader,
       aircraft,
+      launcher,
       launcherRoot: new URL('../../', HERE).href
     }));
 
@@ -1338,7 +1342,7 @@
     // suivi des .lnmperf : seulement quand un lanceur sert la page (il lui faut /__setup/lnmperf) ; ailleurs (téléphone,
     // site), lnmperf.js n'est pas chargé
     if (lnmAuto && typeof reader.put === 'function') setTimeout(async () => {
-      const here = await Promise.resolve(window.FrameData?.launcher?.detect?.()).catch(() => null);
+      const here = launcher ? launcher.info() : await Promise.resolve(window.FrameData?.launcher?.detect?.()).catch(() => null);
       if (here) lnmperf().then(c => c.start()).catch(() => {});
     }, 1500);
     return api;

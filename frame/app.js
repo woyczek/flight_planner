@@ -366,6 +366,16 @@
       weather: ['Météo : {n} appels aujourd’hui', 'Weather: {n} calls today', 'Wetter: {n} Abrufe heute',
         'Meteorología: {n} llamadas hoy'
       ],
+      // fin de cycle AIRAC de ce qui est publié (INTEGRATION § 15.3) : {s} la base ou les procédures, {c} cycle, {d} date
+      cycleOld: ['{s} : cycle {c} terminé, en attente de publication', '{s}: cycle {c} ended, waiting for publication',
+        '{s}: Zyklus {c} beendet, Veröffentlichung ausstehend', '{s}: ciclo {c} terminado, pendiente de publicación'
+      ],
+      cycleEnds: ['{s} : le cycle {c} se termine le {d}, rien de publié pour {n}',
+        '{s}: cycle {c} ends on {d}, nothing published for {n}',
+        '{s}: Zyklus {c} endet am {d}, nichts für {n} veröffentlicht', '{s}: el ciclo {c} termina el {d}, nada publicado para {n}'
+      ],
+      cycleBase: ['Base aéronautique', 'Aeronautical database', 'Luftfahrtdatenbank', 'Base aeronáutica'],
+      cycleProc: ['Procédures', 'Procedures', 'Verfahren', 'Procedimientos'],
       weatherOne: ['Météo : 1 appel aujourd’hui', 'Weather: 1 call today', 'Wetter: 1 Abruf heute', 'Meteorología: 1 llamada hoy'],
       weatherSub: ['Prévisions Open-Meteo, limite {max} par jour', 'Open-Meteo forecasts, limit {max} a day',
         'Open-Meteo-Vorhersagen, Grenze {max} pro Tag', 'Previsiones Open-Meteo, límite {max} al día'
@@ -556,6 +566,25 @@
     }
   };
   let launcherHere = null; // { data, dataGit } si la page est servie par un lanceur (relevé au démarrage)
+  // client du lanceur (frame/lib/launcher.js, INTEGRATION § 15) : chargé au démarrage ; le cadre s'en sert pour lui-même
+  // (Réglages, fiches .lnmperf d'aerodb : toutes ses routes), un module par ctx.launcher (ce que son meta.launcher déclare)
+  let LC = null,
+    lcFor = null,
+    lcClient = null;
+  /** Client du lanceur qui sert la page (refait si la détection change) ; null sans lanceur. */
+  const launcherClient = () => {
+    if (!LC || !launcherHere) return null;
+    if (lcFor !== launcherHere) {
+      lcFor = launcherHere;
+      lcClient = LC.launcherClient({
+        root: ROOT,
+        info: launcherHere
+      });
+    }
+    return lcClient;
+  };
+  /** Appel du cadre à une route du lanceur : { status, body } ou null (ni lanceur ni réponse) ; jamais d'exception. */
+  const launcherRequest = (route, opts) => launcherClient()?.request(route, opts) ?? Promise.resolve(null);
   let airlineP = Promise.resolve(); // première lecture de la compagnie, en cours au démarrage
   /** Hôte du site de la compagnie (ctx.airline.site, en https) : relayé ou appelé en lecture seule (GET) ; '' sinon. */
   const siteHost = () => {
@@ -595,6 +624,7 @@
       try {
         if (u.origin === location.origin) return await fetch(u, init);
         if (launcherHere && (RELAY.includes(u.hostname) || site)) {
+          // le relais rend la réponse du site telle quelle (pas du JSON du lanceur) : le seul appel direct du cadre au lanceur
           const r = await fetch(new URL('__setup/net', ROOT), {
             method: 'POST',
             cache: 'no-store',
@@ -1347,6 +1377,7 @@
       go: 'card:identity',
       attn: true
     });
+    items.push(...cycleItems()); // fin de cycle AIRAC de ce qui est publié (base, proc/)
     // la base aéronautique : trois états distincts, jamais « non publiée » pendant qu'elle charge ni sans accès
     if (baseState) items.push({
       k: 'base',
@@ -2001,6 +2032,7 @@
       const tb = tabOf(id);
       if (tb) lastInTab[tb.id] = id; // le toucher de l'onglet y reviendra
     }
+    current?.life?.abort();
     if (current?.mod?.unmount) try {
       current.mod.unmount();
     } catch (e) {
@@ -2033,9 +2065,11 @@
       el.dataset.module = entry.id;
       el.dataset.landmark = entry.id;
       view.append(el);
+      const life = new AbortController(); // démontage : suivis de travaux du lanceur arrêtés (ctx.launcher)
       current = {
         id: entry.id,
-        mod
+        mod,
+        life
       };
       moduleFixed[entry.id] = meta.fixed === true;
       if (Array.isArray(meta.title)) moduleTitle[entry.id] = meta.title;
@@ -2045,7 +2079,7 @@
         id: entry.id,
         hash: location.hash
       };
-      await mod.mount(el, ctxFor(entry, meta, h.query, el));
+      await mod.mount(el, ctxFor(entry, meta, h.query, el, false, life.signal));
       if (tok !== navSeq) return; // la navigation suivante a démonté ce module et vidé la vue
       moduleHelp(entry, meta, el, view);
       // vue double : volet demandé par l'adresse (#fuel?with=maps) ou gardé pour ce module (device/layout.json)
@@ -2078,6 +2112,7 @@
   /** Démonte le volet (changement de module, fermeture, écran devenu étroit). */
   function closePane() {
     if (!pane) return;
+    pane.life?.abort();
     try {
       pane.mod.unmount?.();
     } catch (e) {
@@ -2126,7 +2161,8 @@
     pane = {
       id: p.id,
       mod: null,
-      el
+      el,
+      life: new AbortController()
     };
     $('fView').classList.add('f-split');
     $('fView').append(el);
@@ -2138,7 +2174,7 @@
       if (mod.meta?.fixed === true) sec.dataset.fixed = ''; // module de vue fixe : le cadre lui donne la hauteur du volet (--f-pane-h)
       await mod.mount(sec, ctxFor(p, mod.meta || {}, Object.freeze({
         pane: '1'
-      }), sec, true));
+      }), sec, true, pane.life.signal));
     } catch (e) {
       notify(t(T.loadErr, {
         m: p.id,
@@ -2313,9 +2349,114 @@
     if (b.title !== title) b.title = title;
   }
 
+  // ---------------------------------------------------------------- publication sans lanceur (ctx.publish, INTEGRATION § 15.2)
+  const publishReaders = {}; // adaptateur de chaque module qui publie : copies « reference » écartées après un commit
+  /** Fichiers générés publiés dans le dépôt des données par l'accès GitHub de l'appareil, un commit par groupe
+   *  [{ name, files: [{ path, text | blob }], removed: [path], message }] ; chemins sous meta.publish seulement, trigramme et
+   *  accès requis ; jamais d'exception ; ensuite, les copies « reference » des chemins publiés sont écartées (relues). */
+  async function publishFor(id, meta, groups, {
+    onProgress,
+    signal,
+    from = 0
+  } = {}) {
+    const allowed = [].concat(meta.publish || []).filter(x => typeof x === 'string' && x),
+      list = [].concat(groups || []),
+      paths = g => [...[].concat(g?.files || []).map(f => f?.path), ...[].concat(g?.removed || [])],
+      ok = x => !!LC?.dataPathOf(x) && allowed.some(a => x === a || a.endsWith('/') && x.startsWith(a)),
+      refused = (why, message, extra = {}) => ({
+        ok: false,
+        refused: why,
+        message,
+        groups: [],
+        ...extra
+      });
+    if (!allowed.length) return refused('declaration', 'publish not declared (meta.publish)');
+    const bad = list.flatMap(paths).find(x => !ok(x));
+    if (bad !== undefined) return refused('path', 'path not declared', {
+      path: String(bad)
+    });
+    if (!identity.trigram) return refused('trigram', 'no trigram on this device');
+    const cfg = FD.github?.config?.();
+    let tr = null;
+    try {
+      tr = cfg ? FD.github(cfg) : null;
+    } catch {
+      tr = null;
+    }
+    if (!tr?.publish) return refused('access', 'no GitHub access on this device');
+    const r = await tr.publish(list.map(g => ({
+      ...g,
+      message: `${g.message || `Publication ${g.name || ''}`.trim()} (${identity.trigram})`
+    })), {
+      onProgress,
+      signal,
+      from
+    });
+    const ev = publishReaders[id] ||= FD.adapter({
+      id: `frame-publish-${id}`,
+      reads: allowed.map(prefix => ({
+        prefix,
+        policy: 'reference'
+      }))
+    });
+    for (const g of list.slice(from | 0, (from | 0) + (r.groups?.length || 0)))
+      for (const x of paths(g)) await ev.evict(x).catch(() => 0);
+    return r;
+  }
+
+  // ---------------------------------------------------------------- fin de cycle AIRAC (bloc d'état, INTEGRATION § 15.3)
+  let publication = null; // aerodb.publication() : { base: { <zone>: { cycles } }, proc: { cycles } } ; null sans l'API
+  /** Relit ce qui est publié (aerodb) ; redessine le bloc d'état si cela change. */
+  async function readPublication() {
+    if (typeof aerodb?.publication !== 'function') return;
+    const p = await aerodb.publication().catch(() => null);
+    if (JSON.stringify(p) === JSON.stringify(publication)) return;
+    publication = p;
+    paintStatus();
+  }
+  /** Nom AIRAC (« 2611 ») d'un cycle donné par sa date de début (« 2026-10-29 ») : rang du cycle dans son année. */
+  function airacName(d) {
+    const at = Date.parse(`${d}T00:00:00Z`),
+      y = new Date(at).getUTCFullYear(),
+      REF = Date.UTC(2024, 0, 25), // AIRAC 2401
+      CYCLE = 28 * 864e5,
+      first = REF + Math.ceil((Date.UTC(y, 0, 1) - REF) / CYCLE) * CYCLE;
+    return `${String(y).slice(2)}${String(Math.round((at - first) / CYCLE) + 1).padStart(2, '0')}`;
+  }
+  /** Lignes de fin de cycle (SPEC du module Données § 6.3) : la base ou proc/ publiés pour un cycle plus ancien que celui en
+   *  vigueur, ou le cycle qui se termine dans 3 jours sans rien de publié pour le suivant ; calculées au moment du dessin. */
+  function cycleItems() {
+    if (!publication || !window.AeroDB?.airacCycles) return [];
+    const cur = AeroDB.airacCycles(1)[0],
+      next = new Date(Date.parse(`${cur}T00:00:00Z`) + 28 * 864e5).toISOString().slice(0, 10),
+      soon = Date.parse(`${next}T00:00:00Z`) - Date.now() <= 3 * 864e5,
+      go = launcherHere && !launcherHere.lan && level >= 3 && APP.modules.some(m => m.id === 'data') ? '#data' : '',
+      newest = list => [].concat(list || []).filter(c => /^\d{4}-\d{2}-\d{2}$/.test(c)).sort().at(-1) || '',
+      sets = [
+        ['base', T.info.cycleBase, newest(Object.values(publication.base || {}).flatMap(z => z?.cycles || []))],
+        ['proc', T.info.cycleProc, newest(publication.proc?.cycles)]
+      ];
+    return sets.filter(([, , c]) => c && (c < cur || soon && c < next)).map(([k, s, c]) => ({
+      k: `cycle-${k}`,
+      text: c < cur ? t(T.info.cycleOld, {
+        s: t(s),
+        c: airacName(c)
+      }) : t(T.info.cycleEnds, {
+        s: t(s),
+        c: airacName(cur),
+        d: infoDate(new Date(Date.parse(`${next}T00:00:00Z`) - 864e5).toISOString().slice(0, 10)),
+        n: airacName(next)
+      }),
+      go,
+      attn: true
+    }));
+  }
+
   /** Contexte d'un module : son adaptateur de données (ses préfixes déclarés), aerodb, textes, notifications, questions,
    *  appels sortants, identité et compagnie en lecture seule, suite de l'adresse (query). */
-  function ctxFor(entry, meta, query = Object.freeze({}), root = null, inPane = false) {
+  function ctxFor(entry, meta, query = Object.freeze({}), root = null, inPane = false, life = null) {
+    let lcOf = null,
+      lcMod = null;
     return {
       app: APP.id,
       data: FD.adapter({
@@ -2331,6 +2472,20 @@
       askText,
       net,
       weather,
+      // le lanceur du poste (INTEGRATION § 15.1) : ce que meta.launcher déclare ({ routes, read }) ; null sans lanceur, sur un
+      // appareil appairé du réseau local (ses routes y sont refusées) ou sans déclaration
+      get launcher() {
+        const c = meta.launcher && !launcherHere?.lan ? launcherClient() : null;
+        if (c && lcOf !== c) {
+          lcOf = c;
+          lcMod = c.forModule(meta.launcher, {
+            life
+          });
+        }
+        return c ? lcMod : null;
+      },
+      // publication de fichiers générés par l'accès GitHub de l'appareil (INTEGRATION § 15.2) : chemins de meta.publish
+      publish: (groups, opts) => publishFor(entry.id, meta, groups, opts),
       get identity() {
         return identity;
       },
@@ -2459,6 +2614,7 @@
       identity: () => identity,
       usages: () => usages,
       launcher: () => launcherHere,
+      launcherRequest, // routes du lanceur (kit.js, setup) : par le client du cadre (INTEGRATION § 15)
       transport: () => configured,
       aerodb: () => aerodb,
       syncNow,
@@ -2781,13 +2937,8 @@
     clearTimeout(simTimer);
     if (!live.active || !launcherHere) return;
     try {
-      const r = await fetch(new URL('__setup/sim/position', ROOT), {
-        cache: 'no-store',
-        headers: {
-          'X-SOG-Setup': '1'
-        }
-      });
-      const p = r.status === 200 ? await r.json() : null;
+      const r = await launcherRequest('sim/position'),
+        p = r?.status === 200 ? r.body : null;
       if (live.active && (p?.source === 'xplane' || p?.source === 'lnm')) {
         simAt = Date.now();
         onFix(p.source, {
@@ -2946,19 +3097,11 @@
   /** Accès des appareils du réseau local, réglé depuis ce poste (GET / POST /__setup/lan du lanceur) : { on, urls,
    *  code, devices, host }. */
   async function lanCall(body) {
-    const r = await fetch(new URL('__setup/lan', ROOT), {
-      method: body ? 'POST' : 'GET',
-      cache: 'no-store',
-      headers: {
-        'X-SOG-Setup': '1',
-        ...(body ? {
-          'Content-Type': 'application/json'
-        } : {})
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-    if (!r.ok) throw new Error(`lan ${r.status}`);
-    return r.json();
+    const r = await launcherRequest('lan', body ? {
+      json: body
+    } : {});
+    if (!r || r.status >= 400) throw new Error(`lan ${r ? r.status : 'offline'}`);
+    return r.body;
   }
   /** Pastille de l'en-tête pendant un vol : la source (X-Plane, Little Navmap, GPS, IVAO, VATSIM, — en attente) ;
    *  bascule du GPS de l'appareil. */
@@ -3086,6 +3229,7 @@
       if (s.conflicts) location.hash = '#conflicts';
       else syncNow();
     };
+    LC = await import(new URL('frame/lib/launcher.js?v=0', ROOT).href).catch(e => (console.warn('launcher', e), null));
     launcherHere = await FD.launcher.detect();
     await timeP; // les heures du cadre (synchronisation, pastilles) en UTC dès leur premier dessin
     await loadDevice();
@@ -3101,10 +3245,17 @@
       // préfixes d'aerodb (base SIA, types, registre des aéronefs : fiches, flotte, référence) donnés par aerodb lui-même
       aerodb = window.AeroDB ? AeroDB.create({
         reader: FD.adapter(AeroDB.declaration()),
-        access: () => dataAccess().set
+        access: () => dataAccess().set,
+        // le lanceur du poste (fiches .lnmperf) : par le client du cadre, jamais par un fetch d'aerodb
+        launcher: {
+          request: launcherRequest,
+          info: () => launcherHere
+        }
       }) : null;
       aerodb?.on('state', syncBase);
       aerodb?.on('change', syncBase);
+      aerodb?.on('change', readPublication);
+      readPublication();
     } catch (e) {
       console.error(e);
     }

@@ -166,3 +166,72 @@ def i7(c):
     nxt = re.search(r'^## ', rest, re.M)
     block = rest[:nxt.start()] if nxt else rest
     c.ok(re.search(r'^### V3\s*$', block, re.M) is not None, 'the Unreleased section has no "### V3" heading', 'a "### V3" heading under Unreleased')
+
+
+@case('I8', 'Launcher jobs (regen)', 'I', static=True,
+      rule='frame/INTEGRATION 15.1: one job at a time from a fixed list, arguments checked, cancel, the last job readable; the state of the workstation never shows a secret')
+def i8(c):
+    import sys
+    import tempfile
+    import threading
+    import time
+    sys.path.insert(0, str(c.root / 'tools'))
+    import regen_jobs as R
+    tmp = Path(tempfile.mkdtemp(prefix='sog-regen-'))
+    try:
+        data, sec = tmp / 'data', tmp / 'secrets'
+        for p, t in {'sia/base/fr/2026-10-01/airports.json': '[]', 'sia/base/fr/2026-10-29/airports.json': '[1]', 'proc/2026-10-29/LFRS.json': '{}',
+                     'sia/openaip/fr.json': 'x' * 10, 'local/xp.json': '{}'}.items():
+            (data / p).parent.mkdir(parents=True, exist_ok=True)
+            (data / p).write_text(t, encoding='utf-8')
+        sec.mkdir()
+        (sec / 'ead.json').write_text('{"user": "u", "password": "p"}', encoding='utf-8')
+        st = R.state(str(data), str(sec))
+        base = st['outputs']['sia/base/']
+        c.eq((base['files'], base['cycles']), (2, ['2026-10-01', '2026-10-29']), 'files and cycles of the base', what='sia/base/')
+        c.eq(st['outputs']['sia/vfr/'], None, 'an absent output is null', what='sia/vfr/')
+        c.eq(sorted(st['caches']), ['openaip'], 'source caches under sia/, outputs excluded', what='caches')
+        c.eq(st['caches']['openaip']['bytes'], 10, 'cache size', what='openaip bytes')
+        c.eq(st['ead'], True, 'EAD credentials present', what='ead')
+        c.ok('password' not in str(st) and '"p"' not in str(st), str(st)[:300], 'no secret value in the state')
+        gate = threading.Event()
+
+        def slow(job, args, ctx):
+            for i in range(50):
+                if job.cancelled():
+                    return None
+                job.step(f'part {i}', i, 50, 'parts')
+                job.log(f'line {i}')
+                gate.wait(0.02)
+            return {'n': args['n']}
+        J = R.Jobs({('t', 'slow'): (slow, lambda a: {'n': int(a['n'])} if isinstance(a.get('n'), int) else None),
+                    ('t', 'boom'): (lambda job, a, ctx: 1 / 0, lambda a: {})})
+        c.eq(J.start('x', 'rm', {})['status'], 400, 'an operation outside the list is refused', what='unknown operation')
+        c.eq(J.start('t', 'slow', {'n': '1; rm'})['status'], 400, 'arguments are checked', what='bad arguments')
+        a = J.start('t', 'slow', {'n': 3})
+        c.ok(a['ok'] and a['job'], str(a), 'a job starts')
+        c.eq(J.start('t', 'slow', {'n': 4})['status'], 409, 'one job at a time', what='second job')
+        c.eq(J.cancel(a['job'])['ok'], True, 'cancel is accepted', what='cancel')
+        for _ in range(100):
+            if J.view(a['job'])['state'] != 'running':
+                break
+            time.sleep(0.02)
+        c.eq(J.view(a['job'])['state'], 'cancelled', 'the job stops on cancel', what='state after cancel')
+        b = J.start('t', 'slow', {'n': 5})
+        for _ in range(300):
+            if J.view(b['job'])['state'] != 'running':
+                break
+            time.sleep(0.02)
+        v = J.view(b['job'])
+        c.eq((v['state'], v['result'], v['done'], v['total'], v['unit']), ('done', {'n': 5}, 49, 50, 'parts'), 'done, result and progress', what='finished job')
+        c.eq(J.view()['job']['id'], b['job'], 'without id: the last job (a reloaded page finds it)', what='last job')
+        c.eq(J.view('nope')['status'], 410, 'an unknown id', what='unknown id')
+        e = J.start('t', 'boom', {})
+        for _ in range(100):
+            if J.view(e['job'])['state'] != 'running':
+                break
+            time.sleep(0.02)
+        c.eq(J.view(e['job'])['state'], 'error', 'an exception ends the job in error, the launcher goes on', what='failing job')
+        c.ok(('state', 'scan') in R.REGISTRY, str(list(R.REGISTRY)), 'the D0 list holds state/scan')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)

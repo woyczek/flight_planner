@@ -1,0 +1,323 @@
+<!doctype html>
+<!-- Banc du client du lanceur (frame/lib/launcher.js, frame/INTEGRATION.md § 15.1) : routes et chemins normalisés, appels du
+     cadre (en-tête, méthode, corps, jamais d'exception), ctx.launcher d'un module (déclaration : routes et préfixes de
+     lecture, refus sans appel), protocole des travaux (avancement, fin, erreur, annulation, démontage, reprise), lecture
+     en flux de data/. Lanceur simulé (fetch donné au client) : aucun appel réel.
+     window.__launcherBench = { done, pass, fail, rows } pour un pilote (Playwright). Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>launcher — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">launcher.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    launcherClient,
+    routeOf,
+    dataPathOf
+  } from '../launcher.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  window.__launcherBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  const ROOT = 'http://launcher.test/';
+  const json = (v, status = 200) => new Response(JSON.stringify(v), {
+    status,
+    headers: {
+      'content-type': 'application/json'
+    }
+  });
+  /** Lanceur simulé : routes du test, journal des appels, un travail dont l'état avance à chaque lecture. */
+  function fake(opts = {}) {
+    const calls = [],
+      jobs = new Map();
+    let n = 0;
+    return {
+      calls,
+      jobs,
+      async fetch(url, init = {}) {
+        const u = new URL(url),
+          method = init.method || 'GET',
+          route = u.pathname.replace(/^\/__setup\//, '');
+        calls.push({
+          method,
+          route,
+          query: u.search,
+          headers: init.headers || {},
+          body: init.body
+        });
+        if (opts.offline) throw new TypeError('Failed to fetch');
+        if (u.pathname.startsWith('/data/')) {
+          const p = decodeURIComponent(u.pathname.slice(6));
+          if (p === 'sia/eaip/x.bin') return new Response(new Uint8Array(3000), {
+            headers: {
+              'Content-Length': '3000'
+            }
+          });
+          return new Response('nope', {
+            status: 404
+          });
+        }
+        if (route === 'echo') return json({
+          ok: true,
+          method,
+          body: init.body ? JSON.parse(init.body) : null
+        });
+        if (route === 'array') return json([1, 2]);
+        if (route === 'boom') return json({
+          message: 'kaput'
+        }, 500);
+        if (route === 'regen/job' && method === 'POST') {
+          const b = JSON.parse(init.body || '{}');
+          if (opts.busy) return json({
+            ok: false,
+            message: 'a job is already running'
+          }, 409);
+          const id = `j${++n}`;
+          jobs.set(id, {
+            id,
+            state: 'running',
+            done: 0,
+            total: 3,
+            step: '',
+            fail: b.verb === 'fail',
+            cancelled: false
+          });
+          return json({
+            ok: true,
+            job: id
+          });
+        }
+        if (route === 'regen/job/cancel') {
+          const j = jobs.get(JSON.parse(init.body).id);
+          if (j) j.cancelled = true;
+          return json({
+            ok: !!j
+          });
+        }
+        if (route === 'regen/job') {
+          const id = u.searchParams.get('id');
+          if (!id) {
+            const last = [...jobs.values()].at(-1);
+            return json({
+              job: last ? {
+                ...last
+              } : null
+            });
+          }
+          const j = jobs.get(id);
+          if (!j) return json({
+            ok: false,
+            message: 'no such job'
+          }, 410);
+          if (j.state === 'running') {
+            j.done++;
+            j.step = `step ${j.done}`;
+            if (j.cancelled) j.state = 'cancelled';
+            else if (j.done >= j.total) {
+              j.state = j.fail ? 'error' : 'done';
+              j.result = j.fail ? {
+                message: 'builder failed'
+              } : {
+                files: 7
+              };
+            }
+          }
+          return json({
+            ...j
+          });
+        }
+        return json({
+          error: 'not found'
+        }, 404);
+      }
+    };
+  }
+  const mk = (o = {}) => {
+    const f = fake(o);
+    return {
+      f,
+      c: launcherClient({
+        root: ROOT,
+        info: {
+          host: 'pc',
+          data: true,
+          dataGit: true,
+          lan: false
+        },
+        fetch: f.fetch,
+        poll: 5
+      })
+    };
+  };
+  const DECL = {
+    routes: ['regen/', 'echo', 'array', 'boom', 'missing'],
+    read: ['sia/', 'proc/']
+  };
+
+  try {
+    // ---------------------------------------------------------------- routes et chemins
+    ck('routeOf : préfixe /__setup/ et requête retirés', routeOf('/__setup/regen/job?id=1') === 'regen/job');
+    ck('routeOf : « .. », caractères hors liste refusés', routeOf('regen/../secrets') === '' && routeOf('a b') === '' && routeOf(
+      'x:y') === '' && routeOf('') === '');
+    ck('dataPathOf : chemin relatif gardé', dataPathOf('sia/base/fr/2026-10-01/x.json') === 'sia/base/fr/2026-10-01/x.json');
+    ck('dataPathOf : absolu, « .. », « . », vide, encodé, antislash, deux-points refusés', ['/sia/x', 'sia/../x', 'sia/./x',
+      'sia//x', 'sia/%2e%2e/x', 'sia\\x', 'C:x', ''
+    ].every(p => dataPathOf(p) === ''));
+
+    // ---------------------------------------------------------------- appels du cadre
+    let S = mk();
+    const r1 = await S.c.request('echo', {
+      json: {
+        a: 1
+      }
+    });
+    const c1 = S.f.calls.at(-1);
+    ck('request : POST avec corps JSON, en-tête X-SOG-Setup', r1.status === 200 && r1.body.method === 'POST' && r1.body.body.a === 1 &&
+      c1.headers['X-SOG-Setup'] === '1' && c1.headers['Content-Type'] === 'application/json', JSON.stringify(c1));
+    const r2 = await S.c.request('echo');
+    ck('request : GET sans corps', r2.body.method === 'GET' && r2.body.body === null);
+    ck('request : statut et corps d\'un refus rendus', (await S.c.request('boom')).status === 500);
+    ck('request : route invalide → null, sans appel', (await S.c.request('../x')) === null && S.f.calls.length === 3);
+    ck('request : réseau coupé → null, jamais d\'exception', (await mk({
+      offline: true
+    }).c.request('echo')) === null);
+
+    // ---------------------------------------------------------------- ctx.launcher : déclaration
+    const M = S.c.forModule(DECL);
+    const n0 = S.f.calls.length;
+    const ref = await M.call('secrets');
+    ck('call : route non déclarée refusée (403), sans appel', ref.ok === false && ref.status === 403 && ref.refused && ref.route ===
+      'secrets' && S.f.calls.length === n0, JSON.stringify(ref));
+    ck('call : préfixe « regen/ » ne couvre pas « regenx »', (await M.call('regenx')).refused === true);
+    ck('call : route exacte déclarée acceptée', (await M.call('echo')).method === 'GET');
+    ck('call : corps → POST', (await M.call('echo', {
+      x: 1
+    })).method === 'POST');
+    ck('call : réponse en tableau → { ok, value }', JSON.stringify(await M.call('array')) === '{"ok":true,"value":[1,2]}');
+    const e5 = await M.call('boom');
+    ck('call : erreur du lanceur → { ok: false, status, message, route }', e5.ok === false && e5.status === 500 && e5.message ===
+      'kaput' && e5.route === 'boom', JSON.stringify(e5));
+    const e4 = await M.call('missing');
+    ck('call : route inconnue du lanceur (404) → « unknown route » (lanceur à mettre à jour)', e4.status === 404 && e4.message ===
+      'unknown route', JSON.stringify(e4));
+    const off = await mk({
+      offline: true
+    }).c.forModule(DECL).call('echo');
+    ck('call : hors ligne → { ok: false, offline }', off.ok === false && off.offline === true);
+    ck('info : une copie du relevé', M.info().host === 'pc' && M.info() !== M.info());
+
+    // ---------------------------------------------------------------- travaux
+    const prog = [];
+    const j1 = await M.job('regen/job', {
+      set: 'state',
+      verb: 'scan'
+    }, {
+      onProgress: s => prog.push(s.done)
+    });
+    ck('job : avancement à chaque lecture, fin « done », résultat', j1.ok === true && j1.state === 'done' && j1.result?.files === 7 &&
+      prog.join() === '1,2,3', `${JSON.stringify(j1)} ${prog}`);
+    const j2 = await M.job('regen/job', {
+      set: 'x',
+      verb: 'fail'
+    });
+    ck('job : fin en erreur → ok: false, state error', j2.ok === false && j2.state === 'error' && j2.result?.message === 'builder failed');
+    const ac = new AbortController();
+    setTimeout(() => ac.abort(), 1);
+    const j3 = await M.job('regen/job', {
+      set: 'x',
+      verb: 'long'
+    }, {
+      signal: ac.signal
+    });
+    ck('job : annulation (signal) → POST …/cancel, { cancelled }', j3.cancelled === true && S.f.calls.some(c => c.route ===
+      'regen/job/cancel'), JSON.stringify(j3));
+    S = mk();
+    const life = new AbortController(),
+      Ml = S.c.forModule(DECL, {
+        life: life.signal
+      });
+    setTimeout(() => life.abort(), 1);
+    const j4 = await Ml.job('regen/job', {
+      set: 'x',
+      verb: 'long'
+    });
+    ck('job : démontage du module → suivi arrêté (detached), travail laissé au lanceur', j4.detached === true && !S.f.calls.some(c => c
+      .route === 'regen/job/cancel') && S.f.jobs.get(j4.job)?.state === 'running', JSON.stringify(j4));
+    const r4 = await S.c.forModule(DECL).resume('regen/job');
+    ck('resume : le travail en cours retrouvé et suivi jusqu\'à sa fin', r4?.ok === true && r4.job === j4.job && r4.state === 'done',
+      JSON.stringify(r4));
+    ck('resume : travail fini → son état, sans suivi', (await S.c.forModule(DECL).resume('regen/job'))?.state === 'done');
+    ck('resume : aucun travail → null', (await mk().c.forModule(DECL).resume('regen/job')) === null);
+    const busy = await mk({
+      busy: true
+    }).c.forModule(DECL).job('regen/job', {});
+    ck('job : un travail déjà en cours (409) → refus rendu', busy.ok === false && busy.status === 409);
+    ck('job : route non déclarée refusée', (await M.job('secrets', {})).refused === true);
+
+    // ---------------------------------------------------------------- lecture de data/
+    let bytes = 0;
+    const rd = await M.read('sia/eaip/x.bin', {
+      onBytes: n => bytes = n
+    });
+    let got = 0;
+    if (rd.ok)
+      for (const rdr = rd.stream.getReader();;) {
+        const {
+          done,
+          value
+        } = await rdr.read();
+        if (done) break;
+        got += value.length;
+      }
+    ck('read : flux, taille, onBytes au fil de la lecture', rd.ok && rd.size === 3000 && got === 3000 && bytes === 3000,
+      `${JSON.stringify(rd)} ${got} ${bytes}`);
+    ck('read : chemin non déclaré refusé, sans appel', (await M.read('secrets/x.json')).refused === true);
+    ck('read : remontée refusée', (await M.read('sia/../secrets/x')).refused === true);
+    ck('read : absent → { ok: false, status: 404 }', (await M.read('proc/x.json')).status === 404);
+    const M3 = S.c.forModule(DECL);
+    ck('read : chemin encodé dans l\'adresse (espaces)', (await M3.read('sia/a b.json')).status === 404 && S.f.calls.at(-1).route
+      .endsWith('/data/sia/a%20b.json'), S.f.calls.at(-1).route);
+  } catch (e) {
+    ck('exception', false, e.stack || e.message);
+  }
+  const pass = rows.filter(r => r.startsWith('PASS')).length,
+    fail = rows.length - pass;
+  Object.assign(window.__launcherBench, {
+    done: true,
+    pass,
+    fail
+  });
+  const s = document.createElement('p');
+  s.className = fail ? 'FAIL' : 'PASS';
+  s.textContent = `${pass} / ${rows.length}`;
+  out.append(s);
+</script>
+</body>
+</html>
