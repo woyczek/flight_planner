@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data sources screen in place of the data laboratory** (`frame/aerodb/sources.js`, `sources_data.js`, `xml_stream.js`, `zip_stream.js`;
+  `frame/app.js`, `frame/settings/admin_links.js`, `frame/store/transport_github.js`, `tools/csp_policy.py`, `tools/build_pages.py`,
+  `tools/launch.py`; SPEC, INTEGRATION, DECISIONS, frame SPEC and INTEGRATION, Settings help ×4, tests A20, K8, K9) — the user's decision:
+  the laboratory (`#datalab`) is removed with its probes, parsing modes, trial publications, page-policy hosts and launcher patterns; a
+  « Sources » screen (Full level, Administration card) lists the sources used, considered or set aside, each with what it gives, its
+  licence and a plain link (the cycle in force for the dated ones), downloading nothing; the streaming XML and ZIP readers are kept,
+  renamed, with a bench each, for the future Data module.
 - **Built pages and the laboratory's end date** (`tools/build_pages.py`; DECISIONS, test K9) — a page built without launcher freezes
   its policy in a meta tag (Pages site, iOS app) until it is built again: the build names `LAB_UNTIL` while the lab's hosts are in
   it, and once the date is passed with the laboratory still in the code it warns (GitHub Actions annotation) without refusing; K9

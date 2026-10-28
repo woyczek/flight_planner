@@ -173,7 +173,7 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   - After each `await` of `mount()`, stop if that flag is set (or `el.isConnected` is false), and write nothing more.
   - The frame itself writes nothing for a mount it has given up.
 - **Debt (noted 28 Oct 2026)**: three pieces still call the launcher with `fetch`: Settings' `setup()`,
-  `frame/aerodb/lnmperf.js` and the data laboratory. They move onto a frame service `ctx.launcher` in the frame lot that
+  `frame/aerodb/lnmperf.js` (the data laboratory, the third, was removed on 28 Oct). They move onto a frame service `ctx.launcher` in the frame lot that
   follows the weather layer. No new piece calls the launcher directly.
 
 ## 8. Trying a module
@@ -719,8 +719,7 @@ A service screen is not a module. It is a screen of the frame, opened over the c
 roadmap, whose drawing belongs to a service. The frame knows only its declaration, and its code names no service.
 
 ```js
-screens: [{ id: 'datalab', scripts: ['aerodb/lab.js?v=0'], level: 3,
-  reads: [{ prefix: 'sia/base/', policy: 'reference' }], writes: [{ prefix: 'cache/lab/', policy: 'cache' }], github: 'scratch' }]
+screens: [{ id: 'sources', scripts: ['aerodb/sources_data.js?v=0', 'aerodb/sources.js?v=0'], level: 3 }]
 ```
 
 - `scripts` (relative to `frame/`) load in order the first time the screen opens. The script registers itself:
@@ -728,15 +727,10 @@ screens: [{ id: 'datalab', scripts: ['aerodb/lab.js?v=0'], level: 3,
 - `level`: below it, the frame shows "This screen is not offered at this usage level" and loads nothing more.
 - `reads` / `writes` declare the screen's data adapter, as a module's `meta`.
 - `github: true` gives `github()` (the device's GitHub transport: `head` / `tree` / `commit`, **the token never leaves the
-  transport**, or null) and `githubInfo()` (`{ repo, branch }` or null). `github: 'scratch'` gives instead the **reduced
-  transport of a disposable branch** `lab/<trigram>` (`FrameData.github.scratch`: `head`, `create`, `tree`, `baseTree`,
-  `commit` under `lab/` on that branch only, `deleteBranch`; never the main branch; null without access or trigram) and
-  `githubInfo()` with `lab` (the branch name). Without `github`, neither exists.
+  transport**, or null) and `githubInfo()` (`{ repo, branch }` or null). Without it, neither exists.
 - The context: `{ t, lang, notify, ask, data, aerodb, level(), launcher() }` and the GitHub pair above.
 - One navigation at a time: a screen left while its scripts load draws nothing.
-- Today one, **temporary**: aerodb's data laboratory (`#datalab`, Full level, reached from the Administration card;
-  `frame/aerodb/SPEC.md` § 5 sexies), removed when the Data screen is delivered.
-  - Its publishing test writes blocks through `github()`, declared `'scratch'` since 28 October 2026: on `lab/<trigram>`
-    only, deleted by its "Clean", one block at a time, 10 MB per session (aerodb SPEC § 5 sexies).
+- Today one: aerodb's Sources screen (`#sources`, Full level, reached from the Administration card; `frame/aerodb/SPEC.md`
+  § 5 sexies): links only, no data adapter, no GitHub transport. It replaced the data laboratory (`#datalab`) on 28 October 2026.
 - A module still never calls `fetch`; see the debt in § 7 (`ctx.launcher`).
 

@@ -32,7 +32,7 @@ RULES = [
     ('frame/design/**', ['A', 'H', 'I', 'B2', 'B9'], 'designs and chrome (button look)'),
     ('frame/settings/**', ['A8', 'A12', 'A19', 'A20', 'D5', 'I'], 'settings screen, its Status block and the keys of the device; aerodb warning on maps'),
     ('frame/store/**', ['A12', 'A15', 'A19', 'I'], 'data layer: settings, access states, keys of the device'),
-    ('frame/aerodb/**', ['A12', 'A20', 'A21', 'A22', 'A23', 'A24', 'D5', 'K', 'I'], 'settings screen; aerodb warning on maps; the aerodb benches; the data laboratory screen'),
+    ('frame/aerodb/**', ['A12', 'A20', 'D5', 'K', 'I'], 'settings screen; aerodb warning on maps; the aerodb benches; the Sources screen'),
     ('tests/v3/cases/aerodb.py', ['K'], 'the aerodb cases'),
     ('modules/maps/lib/map_base.js', ['D', 'E', 'B', 'I'], 'shared map base: both map modules'),
     ('modules/maps/lib/routing.js', ['F', 'I'], 'airway path finding: fuel\'s Auto button (maps does not use it yet)'),

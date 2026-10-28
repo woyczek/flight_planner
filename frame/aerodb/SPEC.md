@@ -404,70 +404,38 @@ both ways.
 - **Test**: `frame/aerodb/test/procedures.html` (18 checks), cases K4 (FAA CIFP reader, fixture `test/fixtures/cifp/KSEA_subset.arinc`: the real records of KSEA BANGR9, HAWKZ8 and I16C with the positions they use), K1 (API), K2 (tables read from `test/fixtures/eaip/*.rows.txt`,
   lines of text kept from the SIA's pages) and K3 (aerodrome file) of `tests/v3/`.
 
-## 5 sexies. Data laboratory (`lab*.js`, screen `#datalab`) — **temporary**
+## 5 sexies. Sources screen (`sources.js`, `#sources`) and the stream readers kept for the Data module
 
-Lot P0 of `docs/technique/V3_APP_DONNEES.md`: an administration screen of the frame, drawn by aerodb, that **measures on the owner's phone** (Safari, the
-home-screen app served by GitHub Pages) whether the aeronautical base can be fetched, parsed, compiled and published from a phone. Not a feature for pilots:
-Full level, reached by the "Data laboratory" button of the Administration card (`frame/settings/admin_links.js`); below Full the address shows a message and no
-source. It **builds nothing into the base, writes nothing to the modules**; the only writes are `cache/lab/report.json` (policy `cache`, never synchronised)
-and the trial files `lab/essai-*` the owner publishes by a button, on the disposable branch `lab/<trigram>` of the data
-repository, never on its main branch. It goes when the measures are taken (the measures stay in `DECISIONS.md`).
+The data laboratory (`#datalab`, 26-28 October 2026: probes of the sources, the SIA zip parsed in three modes, trial publications) was
+**removed on 28 October 2026** (user: « oui pour le retrait. Du moins, la transformation du lab en « sources » avec les liens vers les
+différents AIP ou sources qu'on utilise ou utiliserait. »). Its measures stay in `docs/technique/V3_APP_DONNEES.md` (P0); what it was is in
+`DECISIONS.md` (26 to 28 Oct 2026).
 
-- **Sources** (`lab_sources.js`, `AeroLabSources`): one row per source of the table 1.2 of `docs/technique/V3_DONNEES_REGENERATION.md`, 15 of 17 (X-Plane and
-  the aircraft types stay on the workstation), plus EAD Basic (no. 18, pass 2): `{ id, no, n[4], url (string or function of the AIRAC cycle), chain, accept, size, cap, lic, human[4], name,
-  downloads }`. `cycleOf(date)` (rank in the year of the effective date: 2610 = 1 Oct 2026, 2611 = 29 Oct), `eaipBase`, `cifpName` (`CIFP_<yymmdd>`, the
-  effective date), `siaPage`, `siaFileInfo` / `cifpFileInfo` (the cycle read from a file name, any case, a copy suffix "(1)" accepted). `localStorage['sogLab:urls']`
-  replaces an address (tests; only on a page served from localhost / 127.0.0.1, only by an https string, or http to the machine itself; ignored on the published site). The hosts must be in the page policy (`tools/csp_policy.py`, K9).
-- **Per row (pass 2, 27 Oct)**: a real link `<a href target=_blank rel=noopener>` "Open / Download" to the row's address (`linkSet`: the cycle in force, plus the next
-  cycle's when the list asks for it or its last test answered; "blocked by CORS" does not say the file exists), and a folded `details` "How to save it on iPhone"
-  (long press › Download Linked File › Files › Downloads › From a file; a page row says what to download there: `get`; a JSON row says Safari's display is not the
-  file). The last test drives the row (`lastDiag`, kept in the report and reloaded): after "blocked by CORS" the help is unfolded and the order is link, "From a file"
-  (primary), test; otherwise the test is first. A JSON read that worked offers "Save the result" (`navigator.share({ files })`) when `navigator.canShare` says so.
-  **EAD Basic** (no. 18, after NATS): the public login page (`url`, HTML chain), `login` = the AJAX form's address called by "Test the login call (empty)" with the POST
-  `j_username=&j_password=` and nothing else (no header, `credentials: omit`; only the boolean `loggedIn` of the answer is shown), and "From a file" taking a PDF (magic
-  bytes, "not readable without pypdf") or a ZIP; no credential anywhere in the page, the code or the report.
-- **Per row**: "Test the address" (`AeroLabMeasure.probe`: `fetch` with a timeout and a read cap, diagnosis `cors` / `csp` / `offline` / `unreachable` / `timeout`,
-  then the row's chain on the whole body) and "From a file" (a picker; "From Downloads" with a launcher, by `GET /__setup/downloads?glob=…`; the file's read time
-  as a stream and as an `ArrayBuffer`). Chains: `sia` (the three modes), `cifp` (stream `FAACIFP18`, count the 132-column records, read the PA airport records),
-  `json`, `html`, `zip`, `bin` (magic bytes; "PDF not readable in the page without pypdf").
-- **The three modes of the SIA zip** (separately timed, run in the order c, b, a so a crash keeps what was measured): **a** main thread as V2 (`ZipStore.read`,
-  `SiaBase.parseXmlSia*`, `DOMParser`, `parseAixm*`, `SiaAero.parseAixm`, `SiaBase.splitZones`, a JSON per kind); **b** a Worker without `DOMParser` (`zip_store.js`
-  loaded unchanged with `self.window = self`, entry inflated whole, then the tag reader); **c** a Worker, everything streamed (`lab_zip.js`: central directory
-  from the end of the `File`, entry as `File.slice().stream()` through `DecompressionStream`, decoded in streaming mode, read by the tag reader). Per mode: time
-  per step, heap where the browser exposes it (`performance.memory` on the main thread; a Worker has none; `measureUserAgentSpecificMemory` only when cross-origin
-  isolated), output sizes, counts per kind compared with the other modes and with the published `fr` base (`aeroindex.json` rows), the `sogLab:run-started` trace
-  that detects a killed tab.
-- **The tag reader** (`lab_xml.js`, `AeroLabXml`): `create('sia' | 'aixm')` → `{ push(text), end(), stats() }`; a depth machine on tags (comments, `<?…?>`,
-  CDATA skipped; not a conformant parser), blocks held only while open, so the memory is the largest block. Kinds read whole, with the page readers' rules:
-  XML_SIA `Espace` / `Partie` / VFR `NavFix`; AIXM `Ahp`, `Vor` / `Dme` / `Tcn` / `Ndb` / `Ils`, `Dpn`, `Obs`, `Ase` + `Abd` (arcs counted, not built); the other
-  records are counted per name. Golden test K8: the same results as the page's readers at every chunk size.
-- **Trial publication** (pass 2: one button per size; **disposable branch since 28 Oct 2026**): the screen receives the frame's **reduced
-  transport** `FrameData.github.scratch('lab/<trigram>')` (`frame/store/transport_github.js`): `branch`, `base`, `head()` (null: no branch), `create()` (the
-  branch made on the head of the main branch), `tree(commit)`, `baseTree()` (the main branch's files, read only), `commit(changes, message, parent)` (paths under
-  `lab/` only, refused otherwise, on the disposable branch only) and `deleteBranch()`; never the generic transport, never a write on the main branch, never the
-  token. The prefix and the branch are enforced by the frame, not by the lab. Four buttons "Publish 0.5 MB" / "2 MB" / "5.3 MB" / "10 MB", each asks (the
-  question names the repository, the branch and the main branch it never writes), then writes ONE filler block `lab/essai-<date>-bloc-<n>k.json` of its size on
-  `lab/<trigram>` (created at the first block from the head of the main branch), time, API error and **where it was written** (repository, branch, commit, "main
-  not touched") in the report. **One block at a time**: while a block has no answer, the four buttons are greyed with the reason (Clean stays possible).
-  **10 MB per session**: the bytes sent are counted at sending in `sessionStorage['sogLab:sentBytes']` (a tab or a home-screen app session; the page's own count
-  when storage is closed); a size that would pass 10 MB is greyed with the reason. The promise is raced against a delay (120 s;
-  `localStorage['sogLab:pubTimeoutMs']` shortens it for tests): no answer → an entry "NO ANSWER … no answer after 120 s", and if the request answers later, a
-  second entry "(late answer)"; a launch guard also notes a killed tab. "Clean" lists the trial files of the branch (those it has more than the main branch),
-  **deletes the branch** (no commit) and lists them (screen and report); it also counts, read only, the `lab/essai-*` files still on the main branch (published
-  before 28 Oct 2026) and points to the purge procedure of `INTEGRATION.md`. **At the next opening**, a branch left behind (tab closed before Clean) is deleted
-  and said (screen and report). Greyed with its reason without repository and token, without trigram (the branch carries it), and when offline. The blobs of a
-  deleted branch are no longer reachable; GitHub collects them; they never enter the main branch's history, so a pilot's clone never carries them.
-  **Size limits** (GitHub documentation, read on 27 Oct 2026): the frame transport writes by the git data API with the tree entry's `content` inline in UTF-8 (no
-  Base64: the body is the file's size); the documentation gives **no maximum request size** for create-blob / create-tree. What it does state: reading a blob is
-  supported up to 100 MB; a recursive tree read stops at 100,000 entries or 7 MB (`truncated`); the contents API (not used) takes the file in Base64 (+33 %) with no
-  maximum written and reads 1 MB with all features, 1-100 MB as raw / object only; a push is blocked above 100 MiB per file (warning at 50 MiB), a browser upload at 25 MiB.
-  The 5.3 and 10 MB buttons measure what is real from the phone.
-- **Report** (`lab_report.js`): opens with a summary of ten lines at most (`summary(entries, total)`: parsing times of modes c, b, a and whether the counts agree;
-  publication: sizes passed / failed / not tried; sources tested of the table, allowed / blocked by CORS / unreachable by name, other answers; files imported; the EAD
-  Basic line "login page …, login call …, files imported n"), then the GitHub limits, then the detail. English text, dated, a device block (user agent, app mode, cores, declared memory, heap API, screen, online) and one entry per run;
-  "Copy the report" (clipboard, else shown selected); kept in `cache/lab/report.json`, reloaded at opening.
-- Invariants 1 and 4 of § 6 are untouched in spirit: the lab writes no base file; its texts (four languages) are a third exception after the `.lnmperf` card,
-  for a screen that goes with the lab. Tests: K8, K9 (`frame/aerodb/test/lab.html`), A20 to A24 (`tests/v3/PLAN.md`).
+- **Sources screen** (`sources.js`, `window.SogScreens.sources`; service screen of the frame, `APP.screens` of `frame/app.js`, Full level,
+  "Data sources" button of the Administration card, address `#sources`): one row per source of aeronautical data the suite **uses**,
+  **considers** or has **set aside**, grouped in that order: its name, its status, what it gives, its licence (after `LICENSE.md`), how to
+  get it when a gesture is needed, and **a plain link** (`<a target=_blank rel="noopener noreferrer">`, 44 px) with its address written
+  beside it. The rows whose address depends on the AIRAC cycle (SIA product page, VAC, eAIP, CIFP) are built for the cycle in force, which
+  the screen writes at the top with the next one. **No fetch, no parser, no publication, no data adapter, no GitHub transport**: the page
+  policy needs no host for it (a link is navigation, not `connect-src`). Texts in four languages in the screen; the rows' texts in the data.
+- **The list** (`sources_data.js`, `window.AeroSources`, data only): `{ id, no, status, cycled, n[4], url (string or function of the cycle),
+  gives[4], lic[4], how[4]? }` for the 16 sources of the laboratory (table 1.2 of `docs/technique/V3_DONNEES_REGENERATION.md`, X-Plane and
+  the aircraft types excepted), EAD Basic, the X-Plane CIFP / Navigraph fallback and the national AIPs of `AIP_OPEN_DATA_INVENTORY.md`
+  (DFS and EUROCONTROL's AIXM sets, set aside). Cycle helpers: `cycleOf(date)` (rank in the year of the effective date: 2610 = 1 Oct 2026),
+  `cycleDate`, `eaipBase`, `cifpName`, `cifpUrl`, `siaPage`; `urlOf(source, cycle)`.
+- **Stream readers kept for the Data module** (lot D5 of `V3_DONNEES_REGENERATION.md`, the base built where the data arrives), not loaded by
+  any screen today:
+  - `xml_stream.js` (`AeroXmlStream`, was `lab_xml.js`): `create('sia' | 'aixm')` → `{ push(text), end(), stats() }`; a depth machine on
+    tags (comments, `<?…?>`, CDATA skipped; not a conformant parser), blocks held only while open, so the memory is the largest block.
+    Kinds read whole, with the page readers' rules: XML_SIA `Espace` / `Partie` / VFR `NavFix`; AIXM `Ahp`, `Vor` / `Dme` / `Tcn` / `Ndb` /
+    `Ils`, `Dpn`, `Obs`, `Ase` + `Abd` (arcs counted, not built); the other records counted per name. `sniff(bytes)` reads the encoding of
+    the prologue, `pump(byteStream, reader, { encoding, onBytes, signal })` feeds a reader from a stream. Works in a Worker (no DOM).
+    Bench `test/xml_stream.html` (K8): the same results as the V2 readers on the synthetic fixture at every chunk size.
+  - `zip_stream.js` (`AeroZipStream`, was `lab_zip.js`): `entries(blob)` (central directory read from the end of the file), `stream(blob,
+    entry)` (a `ReadableStream` of the inflated bytes, `DecompressionStream('deflate-raw')`), `supported()`; never the archive nor an entry
+    in memory; no ZIP64. Bench `test/zip_stream.html` (K9): an entry byte for byte, and the streamed chain giving the V2 chain's counts.
+  - Fixtures: `test/fixtures/stream/` (synthetic, `test/fixtures/SOURCES.md`).
+- Invariant 4 of § 6: the screen's texts (four languages) are an exception, like the `.lnmperf` card. Tests: A20 (the screen), K8, K9.
 
 ## 6. Invariants
 
@@ -477,9 +445,9 @@ repository, never on its main branch. It goes when the measures are taken (the m
    device's cache.
 2. A module never names a zone or a file; aerodb chooses them.
 3. A question over the whole world returns exactly the published base (same counts as the workstation's base).
-4. No interface text: labels, translations and formatting belong to the modules and the frame. One exception: the
+4. No interface text: labels, translations and formatting belong to the modules and the frame. Two exceptions: the
    Settings card of the `.lnmperf` folder (§ 5 ter), in four languages, so that the Settings screen does not carry the
-   synchronisation's states.
+   synchronisation's states; and the Sources screen (§ 5 sexies), a service screen of the frame.
 5. ICAO and EUROCONTROL data are never part of the public website.
 
 ## 7. Out of scope (later lots)

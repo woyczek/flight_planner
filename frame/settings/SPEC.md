@@ -215,7 +215,7 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   workstation with a launcher, otherwise a greyed button; its sentence ends with "workstation with launcher
   only"), `v2` (a V2 page of the workstation: shown only when a launcher serves the page).
 - **Today**: "Map threshold tuning" `#maps?tune=1` (read only on a phone), "Flight zone limit" (`panel: edge`), "Export a
-  configuration for a pilot" (`panel: cfg`), "Data laboratory" `#datalab` (aerodb's temporary measuring screen; `copyLink`: under its link the absolute address of the screen built from `location`, and "Copy the link"), roadmap `#roadmap`, diagnostics (`act:
+  configuration for a pilot" (`panel: cfg`), "Data sources" `#sources` (aerodb's Sources screen, links only; `copyLink`: under its link the absolute address of the screen built from `location`, and "Copy the link"; it replaced the data laboratory `#datalab` on 28 Oct 2026), roadmap `#roadmap`, diagnostics (`act:
   diagOpen`: opens the folded diagnostics of the About card and scrolls to it); benches `labs/design_primitives.html`,
   `frame/aerodb/bench.html`, `frame/aerodb/offline_bench.html`, `frame/store/test/`, `modules/maps/test/render.html`;
   V2 pages `apps/settings/maintenance.html`, `apps/settings/premier_lancement.html`, `apps/cpco/map_parser.html`.

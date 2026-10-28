@@ -49,16 +49,16 @@
       'Un archivo y un enlace que configuran la app de un piloto: la aerolínea, el repositorio de datos, su trigrama y cómo crear el token. Nunca un token ni un secreto.'
     ]
   }, {
-    id: 'datalab',
-    href: '#datalab',
+    id: 'sources',
+    href: '#sources',
     copyLink: true, // sous le lien, l'adresse absolue publiée (depuis location) et « Copier le lien » : à ouvrir sur le téléphone
     where: 'app',
-    title: ['Laboratoire données', 'Data laboratory', 'Daten-Labor', 'Laboratorio de datos'],
+    title: ['Sources des données', 'Data sources', 'Datenquellen', 'Fuentes de datos'],
     text: [
-      'Temporaire : mesure sur cet appareil si la base aéronautique peut être récupérée, analysée, compilée et publiée depuis un téléphone (adresses des sources, ZIP du SIA en trois modes, publication d’un essai) ; le rapport se copie.',
-      'Temporary: measures on this device whether the aeronautical base can be fetched, parsed, compiled and published from a phone (source addresses, the SIA ZIP in three modes, a trial publication); the report can be copied.',
-      'Temporär: misst auf diesem Gerät, ob die Luftfahrtbasis von einem Telefon aus geholt, analysiert, kompiliert und veröffentlicht werden kann (Quelladressen, SIA-ZIP in drei Modi, Testveröffentlichung); der Bericht ist kopierbar.',
-      'Temporal: mide en este dispositivo si la base aeronáutica puede obtenerse, analizarse, compilarse y publicarse desde un teléfono (direcciones de las fuentes, ZIP del SIA en tres modos, publicación de prueba); el informe se copia.'
+      'Les sources des données aéronautiques que la suite utilise, envisage ou a écartées : un lien par source, ce qu’elle donne, sa licence, le cycle AIRAC en vigueur.',
+      'The sources of aeronautical data the suite uses, considers or has set aside: one link per source, what it gives, its licence, the AIRAC cycle in force.',
+      'Die Quellen der Luftfahrtdaten, die die Suite nutzt, erwägt oder zurückgestellt hat: ein Link pro Quelle, was sie liefert, ihre Lizenz, der gültige AIRAC-Zyklus.',
+      'Las fuentes de datos aeronáuticos que la suite utiliza, considera o ha descartado: un enlace por fuente, lo que da, su licencia, el ciclo AIRAC vigente.'
     ]
   }, {
     id: 'roadmap',

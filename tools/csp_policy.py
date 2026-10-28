@@ -5,7 +5,6 @@ injecté ne peut plus envoyer les données ailleurs par requête. Scripts : ceux
 pdf.js et acorn épinglés. Images, liens et navigation : non restreints (tuiles, liens d'aide) — fuite résiduelle
 documentée (docs/technique/AUDIT_SECURITE_2026-10-07.md, M2 ; APPLI_AUTONOME_SECURITE.md, S1).
 """
-import datetime
 import os
 import re
 import urllib.parse
@@ -25,29 +24,6 @@ CONNECT = [
     # base mondiale des aérodromes (sources.airports) et purge de son cache
     'https://cdn.jsdelivr.net', 'https://purge.jsdelivr.net',
 ]
-# Laboratoire des données (frame/aerodb/lab_sources.js, écran #datalab, TEMPORAIRE, 26 octobre 2026) : les hôtes des sources du
-# tableau 1.2 de docs/technique/V3_DONNEES_REGENERATION.md, pour que « Tester l'adresse » mesure le serveur (CORS) et non la
-# politique de la page. Une décision de sécurité par hôte (AUDIT_SECURITE_2026-10-07.md, M2 et relecture du 28 octobre) : ils
-# valent pour toutes les pages, donc ils partent avec le laboratoire, à la livraison de l'écran Données
-# (docs/technique/V3_APP_DONNEES.md), et AU PLUS TARD le LAB_UNTIL : passé cette date, value() ne les met plus (le laboratoire
-# dit alors « bloqué par la page » ; K9 le vérifie). Repousser la date est une décision écrite, pas un oubli.
-LAB_UNTIL = datetime.date(2026, 12, 31)
-LAB_CONNECT = [
-    'https://www.sia.aviation-civile.gouv.fr', 'https://download.geonames.org', 'https://www.dircam.dsae.defense.gouv.fr',
-    'https://www.aidu.mod.uk', 'https://www.navcanada.ca', 'https://s3.openaip.net', 'https://aip.enaire.es',
-    # ArcGIS Online est multi-locataire (n'importe qui y crée un service et reçoit des données par POST) : le chemin exact du
-    # service mesuré seulement (FAA ADDS, Special_Use_Airspace), jamais l'hôte entier
-    'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Special_Use_Airspace/FeatureServer/0/query',
-    'https://nats-uk.ead-it.com', 'https://nms.aim.faa.gov', 'https://aeronav.faa.gov', 'https://nomads.ncep.noaa.gov',
-    # passe 2 (27 octobre 2026) : EAD Basic (EUROCONTROL), page de connexion et formulaire AJAX appelé à vide par « Tester la connexion »
-    # (aucun identifiant n'y part d'une page : frame/aerodb/SPEC.md § 5 sexies)
-    'https://www.ead.eurocontrol.int',
-]
-
-
-def lab_hosts(today=None):
-    """Les hôtes du laboratoire tant que LAB_UNTIL n'est pas passé ; [] ensuite."""
-    return list(LAB_CONNECT) if (today or datetime.date.today()) <= LAB_UNTIL else []
 SCRIPTS = ['https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/', 'https://cdnjs.cloudflare.com/ajax/libs/acorn/']
 ORIGIN_RE = re.compile(r'^(?:https://[a-z0-9-]+(?:\.[a-z0-9-]+)+(?::\d{1,5})?|http://(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?)$')
 
@@ -116,6 +92,6 @@ def module_hosts(root):
 def value(extra=(), meta=False):
     """Valeur de la politique : connect-src (liste fixe, puis extra : configuration, sites autorisés) ; meta : sans
     frame-ancestors (ignoré dans une balise meta ; le site sans lanceur n'a pas d'en-tête pour l'imposer)."""
-    connect = ' '.join(dict.fromkeys(["'self'", *CONNECT, *lab_hosts(), *extra]))
+    connect = ' '.join(dict.fromkeys(["'self'", *CONNECT, *extra]))
     return (f"connect-src {connect}; worker-src 'self' blob:; script-src 'self' 'unsafe-inline' {' '.join(SCRIPTS)}; "
             "object-src 'none'; base-uri 'self'; form-action 'self'" + ('' if meta else "; frame-ancestors 'self'"))

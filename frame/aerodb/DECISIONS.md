@@ -1039,3 +1039,30 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   temporary folder (`main(out, only=…)`, no LFS image needed) and reads its meta: the eight hosts brought by the lab alone (the five
   others are also V2 source addresses of `config/repository_tree`) are there before the date and gone after it (date moved back in the
   test), with the warning.
+
+## 28 October 2026 — the data laboratory removed, the Sources screen in its place (user's decision)
+
+- **User** (relayed by the cloud session, word for word): « oui pour le retrait. Du moins, la transformation du lab en « sources » avec les liens
+  vers les différents AIP ou sources qu'on utilise ou utiliserait. » The P0 measures had answered the question (compiling on a phone is easy,
+  fetching from a web page is the obstacle: `docs/technique/V3_APP_DONNEES.md`).
+- **Removed**: the screen `#datalab` (`lab.js`, `lab_run.js`, `lab_worker.js`, `lab_measure.js`, `lab_report.js`, `lab.css`, `test/lab.html`),
+  its declaration in `frame/app.js` (the frame's `renderScreen` keeps its plain `github: true` and nothing else), the reduced transport
+  `FrameData.github.scratch` (`frame/store/transport_github.js` back to its state before 28 Oct), the laboratory's hosts and their end date in
+  `tools/csp_policy.py` (`LAB_CONNECT`, `LAB_UNTIL`, `lab_hosts()`) and the build's notice in `tools/build_pages.py`, the laboratory's download
+  patterns in `tools/launch.py` (`download_patterns()` back to `shared/aero_zones.js` alone), the Administration button, tests A21 to A24 and
+  the old K8 / K9, the manual paragraphs (four languages). The purge procedure of the trial blocks stays in `INTEGRATION.md` (they are still
+  in the data repository's history). A device keeps `cache/lab/report.json` (cache policy, never synchronised) until its cache is cleared:
+  harmless, nothing reads it.
+- **Kept, renamed**: `lab_xml.js` → `xml_stream.js` (`AeroXmlStream`) and `lab_zip.js` → `zip_stream.js` (`AeroZipStream`), code unchanged,
+  for the Data module (D5); their benches `test/xml_stream.html` (K8: the golden test against the V2 readers, 46 checks, from the
+  laboratory's bench) and `test/zip_stream.html` (K9: entries, an entry byte for byte, the streamed chain giving the V2 chain's counts, 7
+  checks); fixtures moved to `test/fixtures/stream/`. The worker modes went with the laboratory (a harness around these two readers).
+- **Added**: the Sources screen (`sources.js`, `#sources`, Full level, "Data sources" in the Administration card) and its data
+  (`sources_data.js`, the laboratory's table without its probing fields): 19 rows — 15 used (the laboratory's 16 minus EAD Basic), 2
+  candidates (EAD Basic, the X-Plane CIFP / Navigraph fallback), 2 set aside (DFS: licence needed, request abandoned; EUROCONTROL's AIXM sets:
+  unknown terms, old samples). The two screen and data files are named apart (`sources.js` the screen, `sources_data.js` the data), the request
+  having named both `sources.js`. Links to a human page rather than a raw file where the file was a query (FAA ADDS: the open-data hub instead of
+  the ArcGIS query) or a folder (GeoNames dump, Terrain Tiles registry, NOMADS, openAIP); the dated sources link to the cycle in force.
+- **Bench** (`tests/v3`, Playwright): A20 passes in its runs (1280 fr, 390 × 4 languages, the five designs, night): the level gate, the
+  button and its absolute address, one line per source with its status, licence and https link (44 px, new tab), the cycle in force in the eAIP
+  and CIFP links, no external request; K8 and K9 pass.

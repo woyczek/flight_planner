@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aerodb — ZIP stream reader</title>
+<!-- Banc de la lecture d'un ZIP en flux (frame/aerodb/zip_stream.js, brique du futur module Données) : répertoire central lu
+     sur la fin du fichier, entrée rendue octet pour octet, et la chaîne en flux (ZIP → lecteur XML) qui donne les mêmes comptes que
+     la chaîne de V2 (ZipStore.read, texte entier, parseXmlSia*, SiaAero.parseAixm) sur la fixture synthétique.
+     Fixtures (fixtures/stream/) : synthétiques, de la forme des vrais fichiers du SIA du 2026-10-01 (XML_SIA en ISO-8859-1, AIXM 4.5
+     en UTF-8), aucune donnée du SIA (fixtures/SOURCES.md). Résultat : window.__zipBench = { done, pass, fail, rows }. -->
+<style>
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px
+  }
+  li.ok::marker {
+    content: '✓ '
+  }
+  li.ko::marker {
+    content: '✗ '
+  }
+</style></head>
+<body>
+<h1>aerodb — ZIP stream reader</h1>
+<p id="state">running…</p>
+<ol id="out"></ol>
+<script src="../../../shared/zip_store.js?v=0"></script>
+<script src="../../../shared/carto/aero_symbols.js?v=0"></script>
+<script>
+  // sia_base.js prend window.RepositoryKit.esc en tête de fichier (shared/kit.js, qui ajoute d'autres scripts) : une doublure d'une ligne
+  window.RepositoryKit = {
+    esc: s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`)
+  };
+</script>
+<script src="../../../shared/sia_base.js?v=0"></script>
+<script src="../xml_stream.js?v=0"></script>
+<script src="../zip_stream.js?v=0"></script>
+<script>
+  (async () => {
+    const results = [],
+      check = (name, ok, detail) => results.push({
+        name,
+        ok: !!ok,
+        detail: ok ? '' : JSON.stringify(detail)
+      });
+    const J = JSON.stringify;
+    try {
+      const fetchBytes = async p => new Uint8Array(await (await fetch(p)).arrayBuffer());
+      const siaBytes = await fetchBytes('fixtures/stream/XML_SIA_sample.xml'),
+        aixmBytes = await fetchBytes('fixtures/stream/AIXM4.5_sample.xml');
+      const zip = new File([await ZipStore.build([{
+        name: 'XML_SIA_2026-10-01.xml',
+        data: siaBytes
+      }, {
+        name: 'AIXM4.5_all_FR_OM_2026-10-01.xml',
+        data: aixmBytes
+      }, {
+        name: 'Lisez_moi.txt',
+        data: 'hello'
+      }], {
+        compress: true
+      })], 'export_xml_bd_SIA_2026-10-01-v02.zip');
+      check('DecompressionStream is available', AeroZipStream.supported(), 0);
+      const ents = await AeroZipStream.entries(zip);
+      check('the central directory is read from the end of the file', ents.length === 3 && ents.find(e => e.name ===
+        'XML_SIA_2026-10-01.xml').size === siaBytes.length && ents.some(e => e.method === 8), ents);
+      const back = new Uint8Array(await new Response(await AeroZipStream.stream(zip, ents.find(e => /AIXM/.test(e.name)))).arrayBuffer());
+      check('an entry comes back byte for byte', back.length === aixmBytes.length && back.every((v, k) => v === aixmBytes[k]), back.length);
+      // la chaîne de V2 (archive en mémoire, texte entier, lecteurs de la page) et la chaîne en flux : mêmes comptes
+      const v2 = await ZipStore.read(zip),
+        text = async (re, enc) => new TextDecoder(enc).decode(await v2.find(e => re.test(e.name)).bytes()),
+        siaText = await text(/XML_SIA/, 'iso-8859-1'),
+        aixmText = await text(/AIXM/, 'utf-8'),
+        refA = SiaBase.parseXmlSiaAirspaces(siaText),
+        refV = SiaBase.parseXmlSiaVfrPoints(siaText),
+        refAero = SiaAero.parseAixm(aixmText),
+        refObs = SiaBase.parseAixmObstacles(aixmText);
+      const streamed = async (re, kind) => {
+        const r = AeroXmlStream.create(kind),
+          info = await AeroXmlStream.pump(await AeroZipStream.stream(zip, ents.find(e => re.test(e.name))), r);
+        return {
+          info,
+          out: r.end()
+        };
+      };
+      const s1 = await streamed(/XML_SIA/, 'sia'),
+        s2 = await streamed(/AIXM/, 'aixm');
+      check('streamed XML_SIA: the same airspaces and VFR points as V2', J(s1.out.airspaces) === J(refA) && J(s1.out.vrp) === J(refV) && s1.info.encoding === 'iso-8859-1',
+        [s1.out.airspaces.length, refA.length, s1.out.vrp.length, refV.length]);
+      check('streamed AIXM: the same aerodromes, navaids, points, obstacles and obstacle cells as V2', s2.out.aerodromes.length === refAero.aerodromes.length &&
+        s2.out.navaids.length === refAero.navaids.length && s2.out.points === refAero.points.length && s2.out.obstacles === refAero.obstacles.length &&
+        J(s2.out.obstacleCells) === J(refObs), [s2.out.aerodromes.length, refAero.aerodromes.length, s2.out.navaids.length, refAero.navaids.length]);
+      check('the fixture has the real shape (enough of each kind for the counts to mean something)', refA.length >= 20 && refV.length >= 10 &&
+        refAero.aerodromes.length >= 10 && refAero.navaids.length >= 10, [refA.length, refV.length, refAero.aerodromes.length]);
+      let bad = '';
+      try {
+        await AeroZipStream.entries(new Blob(['not a zip at all']));
+      } catch (e) {
+        bad = String(e.message || e);
+      }
+      check('a file that is not a ZIP is said so', /end of archive not found/.test(bad), bad);
+    } catch (e) {
+      check('no exception', false, String(e && e.stack || e));
+    }
+    const pass = results.filter(r => r.ok).length;
+    document.getElementById('state').textContent = `${pass} passed, ${results.length - pass} failed`;
+    document.getElementById('out').innerHTML = results.map(r => `<li class="${r.ok ? 'ok' : 'ko'}">${r.name.replace(/</g, '&lt;')}${r.ok ? '' : ' — ' + r.detail.replace(/</g, '&lt;').slice(0, 400)}</li>`).join('');
+    window.__zipBench = {
+      done: true,
+      pass,
+      fail: results.length - pass,
+      rows: results.map(r => `${r.ok ? 'PASS' : 'FAIL'} ${r.name}${r.ok ? '' : ' — ' + r.detail}`)
+    };
+  })();
+</script>
+</body></html>

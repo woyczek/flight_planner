@@ -1,9 +1,10 @@
 (() => {
   'use strict';
-  // V3 aerodb — laboratoire des données (TEMPORAIRE, SPEC § « Laboratoire ») : lecteur XML par balises, en flux, SANS
-  // DOMParser (absent d'un Worker), pour mesurer ce que la base SIA coûte à un téléphone. Ce n'est PAS un analyseur XML
+  // V3 aerodb — lecteur XML par balises, en flux, SANS DOMParser (absent d'un Worker) : brique gardée du laboratoire des
+  // données (mesures P0 de docs/technique/V3_APP_DONNEES.md, 26-28 octobre 2026) pour le futur module Données (D5), qui
+  // construira la base sur le téléphone ; frame/aerodb/SPEC.md § 5 sexies. Banc : test/xml_stream.html. Ce n'est PAS un analyseur XML
   // complet : une machine d'états qui suit la profondeur des balises (commentaires, instructions, CDATA sautés), compte
-  // les éléments au niveau des enregistrements et ne fait lire en entier que les blocs utiles à la mesure, avec les
+  // les éléments au niveau des enregistrements et ne fait lire en entier que les blocs utiles, avec les
   // mêmes règles que les lecteurs de la page :
   //   · XML_SIA (shared/sia_base.js parseXmlSiaAirspaces, parseXmlSiaVfrPoints) : <Espace> de <EspaceS>, <Partie> de
   //     <PartieS> (contours « lat,lon »), <NavFix> de type VFR de <NavFixS> ; les autres enregistrements sont comptés ;
@@ -12,8 +13,8 @@
   //     (espaces : sommets et cercles, SANS développer les arcs) ; les autres enregistrements sont comptés.
   // Le texte arrive par tranches (push) : un bloc coupé entre deux tranches est gardé jusqu'à sa fermeture, la mémoire
   // retenue est celle du plus grand bloc, pas celle du fichier.
-  // API : AeroLabXml.create(kind) → { push(texte), end() → résultat, stats() } ; kind : 'sia' (XML_SIA) ou 'aixm' ;
-  //   AeroLabXml.sniff(octets) → encodage déclaré ; AeroLabXml.pump(flux d'octets, lecteur, { encoding, onBytes, signal }).
+  // API : AeroXmlStream.create(kind) → { push(texte), end() → résultat, stats() } ; kind : 'sia' (XML_SIA) ou 'aixm' ;
+  //   AeroXmlStream.sniff(octets) → encodage déclaré ; AeroXmlStream.pump(flux d'octets, lecteur, { encoding, onBytes, signal }).
   const tag = (b, t) => {
     const i = b.indexOf(`<${t}>`);
     if (i < 0) return '';
@@ -504,6 +505,6 @@
     dms,
     aixmDms
   };
-  if (typeof window !== 'undefined') window.AeroLabXml = api;
-  else self.AeroLabXml = api;
+  if (typeof window !== 'undefined') window.AeroXmlStream = api;
+  else self.AeroXmlStream = api;
 })();

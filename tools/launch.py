@@ -1251,16 +1251,13 @@ _patterns = []
 
 def download_patterns():
     """Motifs de fichiers que la page peut demander à Téléchargements : ceux des sources déclarées dans
-    shared/aero_zones.js (« downloads: 'EG_*_DS_*_XML.zip' ») et, pour le laboratoire des données (écran #datalab, V3), dans
-    frame/aerodb/lab_sources.js (ZIP du SIA, CIFP, NATS), lus une fois."""
+    shared/aero_zones.js (« downloads: 'EG_*_DS_*_XML.zip' »), lus une fois."""
     if not _patterns:
-        found = []
-        for rel in (('shared', 'aero_zones.js'), ('frame', 'aerodb', 'lab_sources.js')):
-            try:
-                with open(os.path.join(ROOT, *rel), encoding='utf-8') as f:
-                    found += re.findall(r"\bdownloads:\s*'([A-Za-z0-9_*.\-]{3,80})'", f.read())
-            except OSError:
-                pass
+        try:
+            with open(os.path.join(ROOT, 'shared', 'aero_zones.js'), encoding='utf-8') as f:
+                found = re.findall(r"\bdownloads:\s*'([A-Za-z0-9_*.\-]{3,80})'", f.read())
+        except OSError:
+            found = []
         _patterns.append({x for x in found if '*' in x and x.strip('*.') and not re.fullmatch(r'[*.]+', x)})
     return _patterns[0]
 

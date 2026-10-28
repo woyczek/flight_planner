@@ -8,15 +8,14 @@ Rules covered
   * K5 the base keeps one entry per VFR reporting point: the SIA's (prefixed id, description, 6 decimals), not the bare
     openAIP twin merged on top of it (shared/aero_sources.js `merge`; the SIA parser reads each point once).
 
-  * K8 the data laboratory (frame/aerodb/lab_*.js, temporary): the table of sources (valid addresses, cycle derived for the eAIP and the CIFP on
-    the known cycle 2610), the streaming XML reader against the page's readers on the same fixture at every chunk size (golden test),
-    the zip read as a stream, the three modes against each other (also in a real Worker), the report's format;
-  * K9 the laboratory's repository rules: its hosts are in the page policy (connect-src), the launcher takes its three download
-    patterns from its table, no token or personal address in its files.
+  * K8 the XML stream reader (frame/aerodb/xml_stream.js, a brick kept from the data laboratory for the Data module): the same
+    results as the page's readers on the same synthetic fixture at every chunk size, and through pump() on a byte stream (golden);
+  * K9 the ZIP stream reader (zip_stream.js): central directory from the end of the file, an entry byte for byte, and the streamed
+    chain (ZIP → XML reader) giving the counts of the V2 chain; the Sources screen fetches nothing; the laboratory is gone.
 
 Cases: K1, K5, K8, K9 (and K2 K3 K4 K6 below).  The OFP of the bench is built from SimBrief's documented fields (no real OFP in the repository yet).
 """
-from lib import Fail, case
+from lib import ROOT, Fail, case
 
 
 @case('K1', 'Procedures API bench', 'K', tags=('aerodb',), phone=False, rule='frame/aerodb/SPEC 5 quinquies; DECISIONS 25 Oct 2026')
@@ -44,88 +43,37 @@ def k5(c):
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}", 'every assertion of the bench passes')
 
 
-@case('K8', 'Data laboratory: sources, streaming XML reader (golden), three modes, report', 'K', tags=('aerodb',), phone=False,
-      rule='frame/aerodb/SPEC "Laboratory"; DECISIONS 26 Oct 2026 (laboratory P0)')
-def k6(c):
-    c.page.goto(f'{c.base}/frame/aerodb/test/lab.html', wait_until='load')
+def _bench(c, page, var):
+    c.page.goto(f'{c.base}/frame/aerodb/test/{page}', wait_until='load')
     try:
-        c.page.wait_for_function('window.__labBench && window.__labBench.done', timeout=60000)
+        c.page.wait_for_function(f'window.{var} && window.{var}.done', timeout=60000)
     except Exception:
-        raise Fail('the bench never reported done (window.__labBench.done)', 'a finished bench', 'frame/aerodb/test/lab.html') from None
-    r = c.js('({ pass: window.__labBench.pass, fail: window.__labBench.fail, rows: window.__labBench.rows })')
-    bad = [x for x in (r['rows'] or []) if x.startswith('FAIL')][:3]
-    c.ok(r['fail'] == 0 and r['pass'] > 40, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}", 'every assertion of the bench passes (at least 40)')
+        raise Fail(f'the bench never reported done (window.{var}.done)', 'a finished bench', f'frame/aerodb/test/{page}') from None
+    r = c.js(f'({{ pass: window.{var}.pass, fail: window.{var}.fail, rows: window.{var}.rows }})')
+    return r, [x for x in (r['rows'] or []) if x.startswith('FAIL')][:3]
 
 
-@case('K9', 'Data laboratory: hosts in the page policy, launcher patterns, no secret', 'K', static=True,
-      rule='tools/csp_policy.py (a decision per host, AUDIT_SECURITE M2); tools/launch.py download_patterns; CLAUDE.md (no token, no personal address)')
+@case('K8', 'XML stream reader: golden test against the V2 readers', 'K', tags=('aerodb',), phone=False,
+      rule='frame/aerodb/SPEC 5 sexies (xml_stream.js, a brick kept for the Data module); DECISIONS 28 Oct 2026')
+def k6(c):
+    r, bad = _bench(c, 'xml_stream.html', '__xmlBench')
+    c.ok(r['fail'] == 0 and r['pass'] > 40, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}",
+         'the same airspaces, VFR points, aerodromes, navaids, points and obstacles as the V2 readers, at every chunk size (at least 40 checks)')
+
+
+@case('K9', 'ZIP stream reader: entries, bytes, and the same counts as the V2 chain', 'K', tags=('aerodb',), phone=False,
+      rule='frame/aerodb/SPEC 5 sexies (zip_stream.js, a brick kept for the Data module); no fetch in the Sources screen')
 def k7(c):
+    r, bad = _bench(c, 'zip_stream.html', '__zipBench')
+    c.ok(r['fail'] == 0 and r['pass'] >= 7, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}",
+         'central directory from the end, an entry byte for byte, the streamed chain gives the counts of the V2 chain')
     import re
-    import sys
-    tools = str(c.root / 'tools')
-    if tools not in sys.path:
-        sys.path.insert(0, tools)
-    import csp_policy
-    src = (c.root / 'frame/aerodb/lab_sources.js').read_text(encoding='utf-8')
-    hosts = sorted(set(re.findall(r'https://([a-z0-9.-]+)', src)))
-    policy = csp_policy.value()
-    connect = policy.split('connect-src ')[1].split(';')[0].split()
-    missing = [h for h in hosts if not any(x == f'https://{h}' or x.startswith(f'https://{h}/') for x in connect)]
-    c.eq(missing, [], 'every host of the laboratory\'s table is in connect-src, so that the test measures the server and not the page policy', what='hosts missing from connect-src')
-    c.ok(len(hosts) >= 11, f'{hosts}', 'the table has at least the 11 hosts of the 15 sources')
-    # security review of 28 Oct 2026: ArcGIS Online is multi-tenant, only the measured service's path; the lab's hosts end at LAB_UNTIL
-    import datetime
-    c.ok('https://services6.arcgis.com' not in connect and any(x.startswith('https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/') for x in connect), f'{connect}',
-         'services6.arcgis.com only by the path of the measured service, never the whole host')
-    c.eq(csp_policy.lab_hosts(csp_policy.LAB_UNTIL + datetime.timedelta(days=1)), [], "past LAB_UNTIL the policy no longer carries the laboratory's hosts", what='lab hosts after the end date')
-    # a built page freezes its policy in a meta tag (site without launcher, the iOS app): the build carries the lab's hosts
-    # until LAB_UNTIL and says so; built past the date, the page no longer has them and the build warns
-    import contextlib
-    import importlib
-    import io
-    import os
-    import tempfile
-    build = importlib.import_module('build_pages')
-
-    def built_policy():
-        with tempfile.TemporaryDirectory() as td, contextlib.redirect_stdout(io.StringIO()) as said:
-            build.main(td, only={'frame/index.html', 'config/repository_tree'})
-            page = open(os.path.join(td, 'frame', 'index.html'), encoding='utf-8').read()
-        m = re.search(r'<meta http-equiv="Content-Security-Policy" content="([^"]*)">', page)
-        return (m.group(1) if m else ''), said.getvalue()
-    pol, said = built_policy()
-    # the lab's own hosts: those that neither the configuration's addresses (V2 sources) nor the modules' meta.net bring in as well
-    others = set(csp_policy.config_sites((c.root / 'config/repository_tree').read_text(encoding='utf-8'))) | set(csp_policy.module_hosts(str(c.root)))
-    lab = [h for h in csp_policy.LAB_CONNECT if h not in others]
-    c.ok(pol and all(h in pol for h in lab) and str(csp_policy.LAB_UNTIL) in said, said[:300] + ' | ' + pol[:200],
-         "a page built before LAB_UNTIL carries the lab's hosts in its meta policy, and the build names the end date")
-    keep = csp_policy.LAB_UNTIL
-    try:
-        csp_policy.LAB_UNTIL = datetime.date.today() - datetime.timedelta(days=1)
-        pol, said = built_policy()
-    finally:
-        csp_policy.LAB_UNTIL = keep
-    c.ok(pol and not any(h in pol for h in lab) and '::warning::' in said, said[:300] + ' | ' + pol[:200],
-         "built past LAB_UNTIL, the page has none of the lab's hosts and the build warns while the laboratory is still there")
-    c.ok(datetime.date.today() <= csp_policy.LAB_UNTIL, f'LAB_UNTIL {csp_policy.LAB_UNTIL}', "the laboratory's end date is not passed (remove the lab, or move the date by a written decision)")
-    import importlib
-    launch = importlib.import_module('launch')
-    pats = launch.download_patterns()
-    for want in ('export_xml_bd_sia_*.zip', 'CIFP_*.zip', 'EG_*_DS_*_XML.zip'):
-        c.ok(want in pats, f'{sorted(pats)}', f'the launcher offers the pick-up of "{want}" in Downloads (read from the laboratory table)')
-    app = (c.root / 'frame/app.js').read_text(encoding='utf-8')
-    tg = (c.root / 'frame/store/transport_github.js').read_text(encoding='utf-8')
-    c.ok('FD.github.scratch(labBranch())' in app and not re.search(r'github: \(\) => FD\.github\.config\(\) \? FD\.github\(\)', app), 'frame/app.js',
-         'the laboratory receives the reduced transport of its disposable branch, never the generic one (audit of 28 Oct 2026)')
-    c.ok('function scratch(' in tg and 'is outside lab/' in tg and 'never the main branch' in tg, 'frame/store/transport_github.js',
-         'the frame enforces the branch and the lab/ prefix')
-    files = [p for p in (c.root / 'frame/aerodb').glob('lab*') if p.is_file()] + [p for p in (c.root / 'frame/aerodb/test').glob('lab*') if p.is_file()]
-    c.ok(len(files) >= 9, f'{[p.name for p in files]}', 'the laboratory files exist')
-    for p in files:
-        t = p.read_text(encoding='utf-8', errors='replace')
-        c.ok(not re.search(r'ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|gh[ousr]_[A-Za-z0-9]{30,}', t), p.name, 'no token')
-        c.ok(not re.search(r'woyczek|@gmail\.|/home/user|C:\\Users', t), p.name, 'no personal address or path')
-        c.ok('?v=' not in re.sub(r'\?v=0', '', t), p.name, 'references stay at ?v=0')
+    for f in ('frame/aerodb/sources.js', 'frame/aerodb/sources_data.js'):
+        t = re.sub(r'(?m)^\s*//.*$|/\*.*?\*/', '', (ROOT / f).read_text(encoding='utf-8'), flags=re.S)      # the code, without its comments
+        c.ok(not re.search(r'\bfetch\s*\(|XMLHttpRequest|importScripts|new\s+Worker', t), f, f'{f} fetches nothing (links only)')
+        c.ok(not re.search(r'ghp_[A-Za-z0-9]{20,}|github_pat_|woyczek|@gmail\.|C:\\Users', t), f, f'{f}: no token, no personal address')
+    gone = [p for p in ('frame/aerodb/lab.js', 'frame/aerodb/lab_measure.js', 'frame/aerodb/lab_sources.js', 'frame/aerodb/test/lab.html') if (ROOT / p).exists()]
+    c.eq(gone, [], 'the data laboratory is removed (user, 28 Oct 2026)', what='laboratory files left')
 
 
 # ------------------------------------------------------------------------------------------------ eAIP tables (static)

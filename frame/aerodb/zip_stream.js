@@ -1,13 +1,14 @@
 (() => {
   'use strict';
-  // V3 aerodb — laboratoire des données (TEMPORAIRE) : lecture d'un ZIP EN FLUX, sans jamais garder l'archive ni une
+  // V3 aerodb — lecture d'un ZIP EN FLUX (brique gardée du laboratoire des données pour le futur module Données, D5 ;
+  // frame/aerodb/SPEC.md § 5 sexies ; banc : test/zip_stream.html), sans jamais garder l'archive ni une
   // entrée en mémoire. ZipStore.read (shared/zip_store.js) tient l'archive entière dans un Uint8Array puis inflate
   // chaque entrée dans un seul tampon ; ici le répertoire central est lu sur la FIN du fichier (File.slice), et une entrée
   // est un ReadableStream d'octets décompressés (File.slice().stream() → DecompressionStream « deflate-raw »).
   // Fonctionne dans un Worker (aucune référence à window, Blob.slice partout). Pas de ZIP64 (comme ZipStore).
-  // API : AeroLabZip.entries(blob) → [{ name, size, compressedSize, method, local }] ;
-  //       AeroLabZip.stream(blob, entry) → Promise<ReadableStream<Uint8Array>> ;
-  //       AeroLabZip.supported() → vrai si DecompressionStream existe.
+  // API : AeroZipStream.entries(blob) → [{ name, size, compressedSize, method, local }] ;
+  //       AeroZipStream.stream(blob, entry) → Promise<ReadableStream<Uint8Array>> ;
+  //       AeroZipStream.supported() → vrai si DecompressionStream existe.
   const G = typeof window !== 'undefined' ? window : self;
   async function entries(blob) {
     const tail = Math.min(blob.size, 65557),
@@ -57,7 +58,7 @@
     if (!supported()) throw new Error('DecompressionStream not available');
     return raw.pipeThrough(new G.DecompressionStream('deflate-raw'));
   }
-  G.AeroLabZip = {
+  G.AeroZipStream = {
     entries,
     stream,
     supported

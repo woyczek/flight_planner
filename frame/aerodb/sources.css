@@ -1,0 +1,39 @@
+/* V3 aerodb — écran « Sources » (#sources) : mise en page seulement, aux jetons du cadre. */
+[data-screen="sources"] .src-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0
+}
+[data-screen="sources"] .src-row {
+  padding: 10px 0;
+  border-top: 1px solid var(--sog-border)
+}
+[data-screen="sources"] .src-row h3 {
+  margin: 0 0 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline
+}
+[data-screen="sources"] .src-row p {
+  margin: 4px 0
+}
+[data-screen="sources"] .src-status {
+  font: 600 var(--sog-size-xs)/1.4 var(--sog-font);
+  padding: 1px 8px;
+  border: 1px solid currentColor;
+  border-radius: var(--sog-radius-pill, 999px)
+}
+[data-screen="sources"] .src-status[data-status="used"] {
+  color: var(--sog-ok)
+}
+[data-screen="sources"] .src-status[data-status="candidate"] {
+  color: var(--sog-accent)
+}
+[data-screen="sources"] .src-status[data-status="abandoned"] {
+  color: var(--sog-muted)
+}
+[data-screen="sources"] .src-url {
+  overflow-wrap: anywhere;
+  font: var(--sog-size-xs)/1.35 var(--sog-font-mono)
+}

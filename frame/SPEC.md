@@ -168,10 +168,6 @@ The transports:
   - `commit` makes one tree on the parent's tree (content for written files, `sha: null` for removed ones; a removal
     of a file absent from the tree is skipped), one commit, then a non-forced ref update.
   - A truncated tree is an error.
-  - `FrameData.github.scratch('lab/<name>')` is the **reduced transport of the data laboratory** (`frame/aerodb/SPEC.md`
-    § 5 sexies): a disposable branch only (created from the head of the main branch, deleted by the lab's "Clean"),
-    commits under `lab/` only, the main branch read only; no generic `commit`, no token. Branch names with a slash are
-    sent segment by segment in the ref URLs.
 - **`launcher`** (`frame/store/transport_launcher.js`, workstation): the `data/` folder of the workstation is the
   repository, served by `tools/launch.py`. Every route requires the `X-SOG-Setup` header.
   - `GET /__setup/changes?since=<head>`: the head (a hash of the tree), and the tree `{ path: git blob sha }` when the
@@ -384,9 +380,9 @@ used alone:
   time is added in brackets only next to the departure, the planned arrival and the engine start.
 - The frame has three screens of its own: `#help` (`frame/help/SPEC.md`; the header's ? opens it at the current
   module's chapter), `#conflicts` and `#settings` (`#device`, its former name, opens it too;
-  `frame/settings/SPEC.md`); and one temporary administration screen drawn by a service, `#datalab` (aerodb's data laboratory,
-  Full level, `frame/aerodb/SPEC.md` § 5 sexies): in `ROUTES` and `SCREENS`, loaded on demand like Settings (`LAZY.datalab`),
-  given a data adapter and the device's GitHub transport (never the token) by `renderDatalab`.
+  `frame/settings/SPEC.md`); and the service screens declared in `APP.screens` (INTEGRATION § 13), drawn by a service and
+  loaded on demand: today `#sources` (aerodb's data sources, Full level, links only, `frame/aerodb/SPEC.md` § 5 sexies), which
+  replaced the data laboratory `#datalab` on 28 Oct 2026.
 - **Start**: the frame mounts the first module as soon as the shell, the device's settings and the transport are
   there. It never waits for a first synchronisation or for the airline's settings.
   - Over a repository's first pass, reading the airline's settings costs the whole ref → commit → tree chain (2.8 s
@@ -815,7 +811,7 @@ launcher can serve that device over the local network, so the device works as th
 Usage levels, a language choice, designs taken from V2, the backend transports.
 
 **Debts, dated**:
-- 28 Oct 2026: Settings' `setup()`, `aerodb/lnmperf.js` and the data laboratory call the launcher with `fetch`. They move
+- 28 Oct 2026: Settings' `setup()` and `aerodb/lnmperf.js` call the launcher with `fetch` (the data laboratory, removed the same day, did too). They move
   onto `ctx.launcher` in the frame lot after the weather layer (INTEGRATION § 7).
 - 28 Oct 2026: the frame still hides `.f-module > h1` under `html.f-titled` until the modules use `ctx.titled`
   (INTEGRATION § 6).

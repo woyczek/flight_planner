@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aerodb — XML stream reader</title>
+<!-- Banc du lecteur XML en flux (frame/aerodb/xml_stream.js, brique du futur module Données) : test doré contre les lecteurs de V2
+     (shared/sia_base.js parseXmlSia*, parseAixm*, SiaAero.parseAixm) : mêmes résultats sur la même fixture, quelle que soit la
+     taille des tranches, et par pump() sur un flux d'octets.
+     Fixtures (fixtures/stream/) : synthétiques, de la forme des vrais fichiers du SIA du 2026-10-01 (XML_SIA en ISO-8859-1, AIXM 4.5
+     en UTF-8), aucune donnée du SIA (fixtures/SOURCES.md). Résultat : window.__xmlBench = { done, pass, fail, rows }. -->
+<style>
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px
+  }
+  li.ok::marker {
+    content: '✓ '
+  }
+  li.ko::marker {
+    content: '✗ '
+  }
+</style></head>
+<body>
+<h1>aerodb — XML stream reader</h1>
+<p id="state">running…</p>
+<ol id="out"></ol>
+<script src="../../../shared/zip_store.js?v=0"></script>
+<script src="../../../shared/carto/aero_symbols.js?v=0"></script>
+<script>
+  // sia_base.js prend window.RepositoryKit.esc en tête de fichier (shared/kit.js, qui ajoute d'autres scripts) : une doublure d'une ligne
+  window.RepositoryKit = {
+    esc: s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`)
+  };
+</script>
+<script src="../../../shared/sia_base.js?v=0"></script>
+<script src="../xml_stream.js?v=0"></script>
+<script>
+  (async () => {
+    const results = [],
+      check = (name, ok, detail) => results.push({
+        name,
+        ok: !!ok,
+        detail: ok ? '' : JSON.stringify(detail)
+      });
+    const J = JSON.stringify;
+    try {
+      // ------------------------------------------------------------------ la fixture
+      const fetchBytes = async p => new Uint8Array(await (await fetch(p)).arrayBuffer());
+      const siaBytes = await fetchBytes('fixtures/stream/XML_SIA_sample.xml'),
+        aixmBytes = await fetchBytes('fixtures/stream/AIXM4.5_sample.xml');
+      const siaText = new TextDecoder('iso-8859-1').decode(siaBytes),
+        aixmText = new TextDecoder('utf-8').decode(aixmBytes);
+      check('the encodings are read from the prologue', AeroXmlStream.sniff(siaBytes) === 'iso-8859-1' && AeroXmlStream.sniff(aixmBytes) ===
+        'utf-8', [AeroXmlStream.sniff(siaBytes), AeroXmlStream.sniff(aixmBytes)]);
+      const feed = (kind, text, size) => {
+        const r = AeroXmlStream.create(kind);
+        for (let i = 0; i < text.length; i += size) r.push(text.slice(i, i + size));
+        return r;
+      };
+      // test doré XML_SIA : mêmes espaces (type, nom, clé, anneaux) et mêmes points VFR que parseXmlSia*, à toute taille de tranche
+      const refA = SiaBase.parseXmlSiaAirspaces(siaText),
+        refV = SiaBase.parseXmlSiaVfrPoints(siaText);
+      check('fixture XML_SIA is of the real shape (spaces with rings, VFR points, accents)', refA.length >= 20 && refV.length >= 10 &&
+        refA.some(x => x.rings.length > 1) && /é/.test(siaText), [refA.length, refV.length]);
+      for (const size of [1, 7, 64, 1000, siaText.length]) {
+        const r = feed('sia', siaText, size),
+          out = r.end();
+        check(`XML_SIA, chunks of ${size}: the same airspaces as parseXmlSiaAirspaces`, J(out.airspaces) === J(refA), [out.airspaces.length, refA.length]);
+        check(`XML_SIA, chunks of ${size}: the same VFR points as parseXmlSiaVfrPoints`, J(out.vrp) === J(refV), [out.vrp.length, refV.length]);
+      }
+      const o = feed('sia', siaText, 500).end();
+      const naive = n => (siaText.match(new RegExp(`<${n}\\s`, 'g')) || []).length;
+      check('XML_SIA: the other records are counted, per kind', o.counts.Ad === 5 && o.counts.Route === 4 && o.counts.Obstacle === 8 &&
+        o.counts.Espace === naive('Espace') - o.counts.Partie && o.counts.NavFix === 20, o.counts);
+      check('XML_SIA: the machine holds the largest block, not the file', feed('sia', siaText, 4096).stats().peakChars < siaText
+        .length / 4, feed('sia', siaText, 4096).stats());
+      // AIXM 4.5
+      const doc = new DOMParser().parseFromString(aixmText, 'application/xml'),
+        refAir = SiaBase.parseAixmAirspaces(doc),
+        refObs = SiaBase.parseAixmObstacles(aixmText),
+        refAero = SiaAero.parseAixm(aixmText);
+      check('fixture AIXM is of the real shape (aerodromes, navaids, points, obstacles, spaces)', refAero.aerodromes.length >= 10 &&
+        refAero.navaids.length >= 10 && refAir.length >= 5 && Object.keys(refObs).length >= 3, [refAero.aerodromes.length, refAero
+          .navaids.length, refAir.length
+        ]);
+      for (const size of [1, 13, 100, 1000, aixmText.length]) {
+        const out = feed('aixm', aixmText, size).end();
+        const aer = J(out.aerodromes.map(x => [x.id, x.icao, x.name, +x.lat.toFixed(6), +x.lon.toFixed(6), x.elev, x.magVar])) === J(
+          refAero.aerodromes.map(x => [x.id, x.icao, x.name, +x.lat.toFixed(6), +x.lon.toFixed(6), x.elev, x.magVar]));
+        check(`AIXM, chunks of ${size}: the same aerodromes as SiaAero.parseAixm`, aer, [out.aerodromes.length, refAero.aerodromes.length]);
+        const kinds = l => l.reduce((m, n) => (m[n.kind] = (m[n.kind] || 0) + 1, m), {});
+        check(`AIXM, chunks of ${size}: the same navaids (kinds, merged DME / TACAN)`, J(kinds(out.navaids)) === J(kinds(refAero.navaids)) && out.navaids.length === refAero.navaids.length &&
+          out.navaids.filter(n => n.dme).length === refAero.navaids.filter(n => n.dme).length && out.navaids.filter(n => n.tacan)
+          .length === refAero.navaids.filter(n => n.tacan).length,
+          [J(kinds(out.navaids)), J(kinds(refAero.navaids))]);
+        check(`AIXM, chunks of ${size}: the same points, obstacles and obstacle cells`, out.points === refAero.points.length && out.obstacles === refAero.obstacles.length && J(out.obstacleCells) ===
+          J(refObs), [out.points, refAero.points.length, out.obstacles, refAero.obstacles.length, J(out.obstacleCells), J(refObs)]);
+        check(`AIXM, chunks of ${size}: the same airspaces as parseAixmAirspaces (type, name, key, parts)`, J(out.airspaces.map(x => [x.type, x.name, x.key, x.parts])) === J(refAir.map(x => [x.type, x.name, x.key, x
+          .rings.length
+        ])), [J(out.airspaces.map(x => [x.type, x.name, x.key, x.parts])), J(refAir.map(x => [x.type, x.name, x.key, x.rings
+          .length
+        ]))]);
+        check(`AIXM, chunks of ${size}: the same number of outline points, arcs included`, out.airspaces.reduce((n, x) => n + x.points, 0) === refAir.reduce((n, x) => n + x.rings.reduce((m, r) => m + r
+          .length, 0), 0), [out.airspaces.reduce((n, x) => n + x.points, 0), refAir.reduce((n, x) => n + x.rings.reduce((m, r) =>
+          m + r.length, 0), 0)]);
+      }
+      const oa = feed('aixm', aixmText, 700).end();
+      check('AIXM: the other records are counted', oa.counts.Rwy === 6 && oa.counts.Org === 1 && oa.counts.Ils === 2, oa.counts);
+      // le test que l'on veut : les cas limites du lecteur (commentaire, CDATA, auto-fermante, balise coupée en deux tranches)
+      const odd =
+        '<?xml version="1.0" encoding="UTF-8"?><AIXM-Snapshot><!-- <Ahp> faux --><Ahp><AhpUid mid="1"><codeId>ZZZZ</codeId></AhpUid><txtName><![CDATA[ a > b <c> ]]></txtName><codeIcao>ZZZZ</codeIcao><geoLat>450000N</geoLat><geoLong>0010000E</geoLong></Ahp><Dpn/><Dpn><DpnUid mid="2"><codeId>P</codeId></DpnUid></Dpn></AIXM-Snapshot>';
+      for (const size of [1, 3, 11, odd.length]) {
+        const out = feed('aixm', odd, size).end();
+        check(`reader edge cases (comment, CDATA, self-closing tag), chunks of ${size}`, out.aerodromes.length === 1 && out.aerodromes[0].icao === 'ZZZZ' && out.counts.Ahp === 1 && out.counts.Dpn ===
+          2, [out.aerodromes.length, out.counts]);
+      }
+      // pump : un flux d'octets coupé en tranches, l'encodage lu dans le prologue, le même résultat que le texte entier
+      const chunked = bytes => new ReadableStream({
+        start(ctl) {
+          for (let k = 0; k < bytes.length; k += 4093) ctl.enqueue(bytes.slice(k, k + 4093));
+          ctl.close();
+        }
+      });
+      const rs = AeroXmlStream.create('sia'),
+        ps = await AeroXmlStream.pump(chunked(siaBytes), rs);
+      check('pump: bytes in chunks, encoding from the prologue, the same airspaces and VFR points', ps.encoding === 'iso-8859-1' && ps.bytes === siaBytes.length &&
+        J((x => [x.airspaces, x.vrp])(rs.end())) === J([refA, refV]), ps);
+    } catch (e) {
+      check('no exception', false, String(e && e.stack || e));
+    }
+    const pass = results.filter(r => r.ok).length;
+    document.getElementById('state').textContent = `${pass} passed, ${results.length - pass} failed`;
+    document.getElementById('out').innerHTML = results.map(r => `<li class="${r.ok ? 'ok' : 'ko'}">${r.name.replace(/</g, '&lt;')}${r.ok ? '' : ' — ' + r.detail.replace(/</g, '&lt;').slice(0, 400)}</li>`).join('');
+    window.__xmlBench = {
+      done: true,
+      pass,
+      fail: results.length - pass,
+      rows: results.map(r => `${r.ok ? 'PASS' : 'FAIL'} ${r.name}${r.ok ? '' : ' — ' + r.detail}`)
+    };
+  })();
+</script>
+</body></html>

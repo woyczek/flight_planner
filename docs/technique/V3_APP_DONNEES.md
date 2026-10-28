@@ -353,5 +353,8 @@ patterns) is retired and replaced by a plain **« Sources » screen**: one row p
 `lab_sources.js` plus EAD Basic and the free national AIPs of `AIP_OPEN_DATA_INVENTORY.md`), with its link, what it
 gives, its licence and its status (used in the base / candidate / abandoned), no fetch, no parser, no publication; the
 streaming XML reader and the worker modes are kept for the workstation builder (lot D5). Lot for the local sessions
-(frame + aerodb), dispatched by the ergonomics session.
+(frame + aerodb), dispatched by the ergonomics session. **Done on 28 Oct** (aerodb): the screen `#sources` (`frame/aerodb/sources.js`,
+`sources_data.js`); the bricks kept are `frame/aerodb/xml_stream.js` (was `lab_xml.js`) and `zip_stream.js` (was `lab_zip.js`), each with
+its bench (K8, K9); the worker modes (`lab_run.js`, `lab_worker.js`) went with the laboratory: they were a measuring harness around these two
+readers, rebuilt in a few lines when the Data module needs a Worker.
 

@@ -182,17 +182,13 @@ Until then: a phone keeps reading the base it has, which is valid (`COMPAT` 14 t
 reporting points", planner and CPCO map pages). The V3 pages do not read `parserVersion` and show nothing. A base of a parser older
 than `COMPAT` would be ignored; this one is not.
 
-### Data laboratory (`#datalab`, temporary)
+### Sources screen (`#sources`)
 
-A frame screen drawn by aerodb (`frame/aerodb/lab.js`), not a module: nothing to mount, nothing to call. The frame (`frame/app.js` `renderDatalab`) loads it on
-demand and gives it `{ t, lang, notify, ask, data, aerodb, level, launcher, github, githubInfo }`, where `data` reads `sia/base/` (to compare with the published
-base) and writes `cache/lab/` (policy `cache`), `github()` is the reduced transport of the disposable branch `lab/<trigram>`
-(`FrameData.github.scratch`: `head`, `create`, `tree`, `baseTree`, `commit` under `lab/` on that branch, `deleteBranch`; the token stays inside; never the
-main branch) or null without access or trigram, and
-`launcher()` is the survey of the launcher or null (it enables "From Downloads", the existing `GET /__setup/downloads`). The lab's declared download patterns are
-read by `tools/launch.py` `download_patterns()` from `frame/aerodb/lab_sources.js` (`downloads: '…'`); the hosts of its table are in `tools/csp_policy.py` (`LAB_CONNECT`, until `LAB_UNTIL`, 31 Dec 2026; ArcGIS by the
-measured service's path only). A
-module never reaches it. `frame/aerodb/SPEC.md` § 5 sexies says what it measures.
+A frame screen drawn by aerodb (`frame/aerodb/sources.js` and its data `sources_data.js`), not a module: nothing to mount, nothing to
+call. The frame declares it in `APP.screens` (`frame/app.js`: Full level, its two scripts, no data adapter, no GitHub transport) and the
+Administration card of Settings links to it. It shows links only (`frame/aerodb/SPEC.md` § 5 sexies): no fetch, so no host in the page
+policy. It replaced the data laboratory (`#datalab`) on 28 October 2026; the laboratory's stream readers (`xml_stream.js`, `zip_stream.js`)
+stay as bricks for the Data module.
 
 #### Purging the trial blocks published on the main branch (before 28 Oct 2026) — on a workstation, not run by the app
 
@@ -221,7 +217,8 @@ downloads them. Removing them means rewriting that history, which only the owner
    check the size again. GitHub reclaims the unreachable objects on its own schedule; nothing secret is in those blobs (filler
    only), so no support request is needed.
 
-Since 28 October 2026 the trials go to the disposable branch `lab/<trigram>` only (SPEC § 5 sexies): nothing more to purge.
+From 28 October 2026 the trials went to a disposable branch `lab/<trigram>` (deleted by "Clean"), and the laboratory itself was
+removed the same day: nothing more is written there. A `lab/<trigram>` branch left on GitHub can simply be deleted.
 
 ## 5. Costs to know (measured, see DECISIONS.md)
 
