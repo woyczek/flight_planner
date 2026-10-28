@@ -210,8 +210,9 @@ recalculer », with the publication and the purge added.
 ### 6.2 State of a row (computed, never typed)
 
 Fields: `cycle` (of the thing), `fetched { at, bytes, files }`, `built { at, parserVersion, inputs (fingerprint), counts }`,
-`published { cycle, at, parserVersion, by }` (read through `aerodb.publication()`, INTEGRATION § 2; `by`, the trigram of the
-build, from the zone's `meta.json` once the builders write it), `unpushed` (built or committed, not on the
+`published { cycle, at, parserVersion, by, format }` (read through `aerodb.publication()`, INTEGRATION § 2; `by`, the trigram
+of the build, from the zone's `meta.json` once the builders write it; `format: 'whole'` for a zone still in the old whole
+format, listed, never read: its row says « format ancien » and Construire rewrites it), `unpushed` (built or committed, not on the
 remote). One pill, by priority, the others in the detail:
 
 1. **« Cycle dépassé »** — the published cycle is older than the cycle in force (amber; red past its end + 7 days).

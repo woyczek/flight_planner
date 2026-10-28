@@ -58,3 +58,6 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   launcher's operations are verbs of `regen/job` from a fixed registry (the EAD line is `proc/ead-fetch`, delivered);
   without a launcher, `ctx.publish` one commit per zone or per cycle of `proc/`, a conflict returned and resumed, never
   `github()`; the end-of-cycle line is the frame's on every device; the rail's verb comes with `module.js`.
+- **28 Oct 2026 — aerodb's D1 as delivered** (d4cec61b9): `publication().proc` gives `byStatus` (not `bySource`); a zone in the
+  whole format is listed `format: 'whole'`, never read (« format ancien », Construire rewrites it); `aircraft` also gives
+  `files`; `vfr` and `aircraft` are null without a publication; `sources()` returns the catalogue's object as delivered.
