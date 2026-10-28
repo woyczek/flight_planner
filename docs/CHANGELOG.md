@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: `settings.js` split into five parts, no change of behaviour** (`frame/settings/kit.js`, `launcher.js`,
+  `access.js`, `diagnostic.js`, `admin.js`, `settings.js`; `frame/app.js` `LAZY.settings`, `frame/sw.js` `SHELL`;
+  INTEGRATION § 1, SPEC, DECISIONS): files of at most 60 KB by concern; the screen is identical (snapshot compared in
+  eight contexts).
 - **Weather layer: the run shown is the data's** (`frame/lib/weather_store.js`; INTEGRATION § 14, DECISIONS; bench 73/73):
   for Météo-France the layer read AROME HD's run (03:00Z) while the winds aloft are ARPEGE's (06:00Z); it now reads the
   metadata of the model that carries the pressure levels (ARPEGE Europe, ICON, GFS 0.25°). The expected precision of a

@@ -7,6 +7,8 @@ module, because it sets the transport and the device token, which modules never 
 
 **As a prompt**: give this document, `frame/SPEC.md` and `frame/INTEGRATION.md`, and ask for one classic script
 `frame/settings/settings.js` defining `window.SogSettings.render(view, context)`. Every rule below is a requirement.
+The repository splits that script into parts of at most 60 KB loaded before it (INTEGRATION § 1: kit, launcher, access,
+diagnostic, admin); the split is a matter of size, not of behaviour, and a regenerated single script is valid.
 
 ## 1. Screen
 

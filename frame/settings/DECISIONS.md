@@ -399,3 +399,12 @@ rule 18); only the lab entry has it. The lab screen starts with a "Settings › 
   of the narrowest reach the repository allows (§ 3.6, § 5). SPEC § 4 invariant 1 rewritten accordingly; § 3.6 gives the
   token advice decided on 23 October (classic `repo` for a user's repository, fine-grained for an organisation's, one
   year); INTEGRATION § 1 lists the scripts loaded on demand.
+- **28 Oct 2026 — `settings.js` split into parts** (ergonomics session's answer 5, a lot of its own, no change of
+  behaviour): 122 KB became `settings.js` (57 KB: `render()`, identity, usages, offline data, export / import, joining)
+  and five parts loaded before it, each under 60 KB and by concern: `kit.js` (helpers and the shared text table),
+  `launcher.js` (launcher cards), `access.js` (access and transport without a launcher, synchronisation),
+  `diagnostic.js` (about, diagnostics), `admin.js` (Administration, publication edge, pilot configuration). Each part
+  exposes `acts` (the button actions it answers), `run(env, act, button, event)`, its HTML builders and `live(env)`;
+  `render()` builds one `env` (view, context, identity, preferences, launcher state…) and passes it to all. Parity
+  checked by a snapshot of the screen before and after (launcher / no launcher × fr / en × levels 2 / 3: cards, texts,
+  buttons, fields, links): no difference; no JS error at levels 1 to 3.

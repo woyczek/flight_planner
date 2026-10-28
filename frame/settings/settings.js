@@ -24,13 +24,28 @@
   //     tête, « Appliquer » écrit identité, usages et accès (testé avant), puis synchronise et propose Données hors ligne.
   //   · Bloc « État » en première carte (règle 14 de V3_SPECIFICATION.md § 7.1 : les lignes de l'ancien pop-up « i »), dessiné par
   //     le cadre qui en a l'état (ctx.status.html()), posé ici, puis rendu vivant par le cadre (ctx.status.bind) ;
+  // Fichiers de l'écran (INTEGRATION.md § 1, chargés avant celui-ci) : kit.js (aides et textes communs), launcher.js
+  // (cartes du lanceur), access.js (accès et transport), diagnostic.js, admin.js (carte Administration) — chacun
+  // s'inscrit dans window.SogSettingsParts ; ce fichier dessine l'écran, les cartes de l'appareil, et distribue les actions.
   // Contexte donné par frame/app.js : { t, notify, ask, FD, own (device/, politique cache), reload, identity(), usages(),
   // launcher(), transport(), aerodb(), syncNow, status { html, bind }, … }.
-  const ROOT = new URL('../../', document.currentScript.src).href; // racine de la suite (routes /__setup du lanceur)
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
-  const now = () => new Date().toISOString();
+  const {
+    ROOT,
+    esc,
+    now,
+    T,
+    setup,
+    copy,
+    sameRepo,
+    confirmOpen,
+    AIRLINE,
+    airlineDoc,
+    howtoHtml
+  } = window.SogSettingsKit;
+  const P = window.SogSettingsParts || {}; // cartes du lanceur, accès et transport, diagnostic, administration
 
-  const T = {
+  // textes de l'écran et de ses cartes de l'appareil (les autres fichiers ajoutent les leurs)
+  Object.assign(T, {
     title: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
     intro: ['Réglages de cet appareil, gardés ici seulement : ils décident comment les données sont échangées.',
       'Settings of this device, kept here only: they decide how data are exchanged.',
@@ -146,7 +161,8 @@
     users: ['À plusieurs (dépôt git des données)', 'Several users (git data repository)', 'Mehrere Nutzer (Git-Datenrepository)',
       'Varios usuarios (repositorio git de datos)'
     ],
-    backend: ['Serveur (web service, site) — à venir', 'Server (web service, website) — to come', 'Server (Webdienst, Website) — folgt',
+    backend: ['Serveur (web service, site) — à venir', 'Server (web service, website) — to come',
+      'Server (Webdienst, Website) — folgt',
       'Servidor (servicio web, sitio) — próximamente'
     ],
     viaLauncher: ['Échange par le lanceur de ce poste (dossier data/{g}).',
@@ -206,8 +222,6 @@
     badFile: ['Ce fichier n’est pas une sauvegarde d’appareil SOG.', 'This file is not a SOG device backup.',
       'Diese Datei ist keine SOG-Gerätesicherung.', 'Este fichero no es una copia de dispositivo SOG.'
     ],
-    // accès
-    access: ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'],
     // configuration d'un pilote (frame/settings/config.js)
     joinResume: ['Un assistant est en cours (pas {n} sur {m}) : reprenez-le là où vous en étiez.',
       'An assistant is in progress (step {n} of {m}): resume it where you left it.',
@@ -216,73 +230,20 @@
     ],
     joinGo: ['Reprendre', 'Resume', 'Fortsetzen', 'Retomar'],
     cfgJoin: ['Rejoindre la compagnie…', 'Join the airline…', 'Der Fluggesellschaft beitreten…', 'Unirse a la aerolínea…'],
-    cfgImport: ['Importer une configuration…', 'Import a configuration…', 'Konfiguration importieren…', 'Importar una configuración…'],
+    cfgImport: ['Importer une configuration…', 'Import a configuration…', 'Konfiguration importieren…',
+      'Importar una configuración…'
+    ],
     cfgImportHint: [
       'Votre compagnie vous a envoyé une configuration (fichier sog-config ou lien) ? Elle règle cet appareil en quelques gestes.',
       'Did your airline send you a configuration (sog-config file or link)? It sets up this device in a few steps.',
       'Hat Ihnen Ihre Fluggesellschaft eine Konfiguration geschickt (sog-config-Datei oder Link)? Sie richtet dieses Gerät in wenigen Schritten ein.',
       '¿Su aerolínea le envió una configuración (archivo sog-config o enlace)? Configura este dispositivo en pocos pasos.'
     ],
-    // gestes de l'administrateur, dans l'ordre
-    cfgSteps: ['Vos gestes', 'Your steps', 'Ihre Schritte', 'Sus pasos'],
-    cfgInvite: ['Invitez le nom {h} du pilote sur le dépôt avec le droit Write : {u}',
-      'Invite the pilot’s {h} name to the repository with the Write role: {u}',
-      'Laden Sie den {h}-Namen des Piloten mit der Rolle Write in das Repository ein: {u}',
-      'Invite el nombre de {h} del piloto al repositorio con el rol Write: {u}'
-    ],
-    cfgInviteGl: ['Ajoutez le nom {h} du pilote au projet avec le rôle Developer : {u}',
-      'Add the pilot’s {h} name to the project with the Developer role: {u}',
-      'Fügen Sie den {h}-Namen des Piloten dem Projekt mit der Rolle Developer hinzu: {u}',
-      'Añada el nombre de {h} del piloto al proyecto con el rol Developer: {u}'
-    ],
-    cfgInviteOther: ['Donnez au pilote un accès en écriture au dépôt.', 'Give the pilot write access to the repository.',
-      'Geben Sie dem Piloten Schreibzugriff auf das Repository.', 'Dé al piloto acceso de escritura al repositorio.'
-    ],
-    cfgStepExport: ['Exportez sa configuration : son trigramme, l’adresse de l’appli, « Créer le fichier et le lien ».',
-      'Export their configuration: their trigram, the app’s address, “Create the file and the link”.',
-      'Exportieren Sie seine Konfiguration: sein Kürzel, die Adresse der App, „Datei und Link erstellen“.',
-      'Exporte su configuración: su trigrama, la dirección de la aplicación, «Crear el archivo y el enlace».'
-    ],
-    cfgStepSend: [
-      'Envoyez-lui le lien ou le fichier, ou montrez-lui le code QR : il le scanne avec l’appareil photo de son téléphone, et l’assistant « Rejoindre la compagnie » le guide.',
-      'Send them the link or the file, or show them the QR code: they scan it with their phone’s camera, and the “Join the airline” assistant guides them.',
-      'Senden Sie ihm den Link oder die Datei, oder zeigen Sie ihm den QR-Code: Er scannt ihn mit der Kamera seines Telefons, und der Assistent „Der Fluggesellschaft beitreten“ führt ihn.',
-      'Envíele el enlace o el archivo, o muéstrele el código QR: lo escanea con la cámara de su teléfono, y el asistente «Unirse a la aerolínea» le guía.'
-    ],
-    cfgQr: ['À scanner avec le téléphone du pilote', 'To scan with the pilot’s phone', 'Mit dem Telefon des Piloten scannen',
-      'Para escanear con el teléfono del piloto'
-    ],
-    cfgPilot: ['Trigramme du pilote', 'Pilot’s trigram', 'Kürzel des Piloten', 'Trigrama del piloto'],
-    cfgApp: ['Adresse de l’appli publiée (pour le lien)', 'Address of the published app (for the link)',
-      'Adresse der veröffentlichten App (für den Link)',
-      'Dirección de la aplicación publicada (para el enlace)'
-    ],
-    cfgMake: ['Créer le fichier et le lien', 'Create the file and the link', 'Datei und Link erstellen',
-      'Crear el archivo y el enlace'
-    ],
-    cfgLink: ['Lien d’import (un toucher sur le téléphone du pilote)', 'Import link (one tap on the pilot’s phone)',
-      'Import-Link (ein Tippen auf dem Telefon des Piloten)', 'Enlace de importación (un toque en el teléfono del piloto)'
-    ],
-    cfgCopy: ['Copier le lien', 'Copy the link', 'Link kopieren', 'Copiar el enlace'],
-    cfgCopied: ['Lien copié.', 'Link copied.', 'Link kopiert.', 'Enlace copiado.'],
     // presse-papiers indisponible (appareil appairé en http) : le texte est montré sélectionné
     copyShown: ['Copie impossible ici : le texte est sélectionné, copiez-le vous-même.',
       'Cannot copy here: the text is selected, copy it yourself.',
       'Kopieren hier nicht möglich: Der Text ist markiert, kopieren Sie ihn selbst.',
       'No se puede copiar aquí: el texto está seleccionado, cópielo usted mismo.'
-    ],
-    cfgMade: ['{f} enregistré : envoyez-le au pilote, ou le lien ci-dessous.', '{f} saved: send it to the pilot, or the link below.',
-      '{f} gespeichert: Senden Sie sie dem Piloten, oder den Link unten.', '{f} guardado: envíelo al piloto, o el enlace de abajo.'
-    ],
-    cfgLocal: ['Cette adresse ne s’ouvre que sur ce poste : donnez celle de l’appli publiée pour un téléphone.',
-      'This address only opens on this workstation: give the published app’s address for a phone.',
-      'Diese Adresse öffnet sich nur auf diesem Rechner: Geben Sie für ein Telefon die Adresse der veröffentlichten App an.',
-      'Esta dirección solo se abre en este puesto: indique la de la aplicación publicada para un teléfono.'
-    ],
-    cfgNoRepo: ['Aucun dépôt des données à transmettre : le fichier ne réglera que la compagnie et l’identité.',
-      'No data repository to pass on: the file will only set the airline and the identity.',
-      'Kein Datenrepository weiterzugeben: Die Datei richtet nur die Fluggesellschaft und die Identität ein.',
-      'Ningún repositorio de datos que transmitir: el archivo solo configurará la aerolínea y la identidad.'
     ],
     cfgTitle: ['Configuration reçue', 'Configuration received', 'Erhaltene Konfiguration', 'Configuración recibida'],
     cfgBadSchema: ['Ce fichier n’est pas une configuration SOG (schéma « {s} ») : rien n’est changé.',
@@ -300,110 +261,10 @@
       'Configuración ilegible: no se cambia nada.'
     ],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
-    remote: ['Dépôt distant de data/', 'Remote repository of data/', 'Entferntes Repository von data/', 'Repositorio remoto de data/'],
-    remoteNow: ['Actuel : {u} (branche {b})', 'Current: {u} (branch {b})', 'Aktuell: {u} (Zweig {b})', 'Actual: {u} (rama {b})'],
-    remoteNowBare: ['Actuel : {u}', 'Current: {u}', 'Aktuell: {u}', 'Actual: {u}'],
-    remoteNone: ['Aucun dépôt distant : rien ne part ailleurs que ce poste.', 'No remote repository: nothing leaves this workstation.',
-      'Kein entferntes Repository: nichts verlässt diesen Rechner.', 'Ningún repositorio remoto: nada sale de este puesto.'
-    ],
-    remoteUrl: ['Adresse du dépôt (git@hôte:compte/dépôt.git ou https://…)',
-      'Repository address (git@host:account/repo.git or https://…)',
-      'Repository-Adresse (git@host:konto/repo.git oder https://…)',
-      'Dirección del repositorio (git@host:cuenta/repo.git o https://…)'
-    ],
-    remoteCheck: ['Vérifier', 'Check', 'Prüfen', 'Comprobar'],
-    remoteSaving: [
-      'Enregistrement, puis vérification… Autre dépôt que l’actuel : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
-      'Saving, then checking… Another repository than the current one: confirm in the window the launcher opens on the computer.',
-      'Speichern, dann prüfen… Anderes Repository als das aktuelle: im Fenster bestätigen, das der Starter auf dem Computer öffnet.',
-      'Guardando y comprobando… Otro repositorio distinto del actual: confirme en la ventana que el lanzador abre en el equipo.'
-    ],
-    remoteChecking: ['Vérification…', 'Checking…', 'Prüfen…', 'Comprobando…'],
-    gitWhy: [
-      'data/ est un dossier ignoré par le dépôt du code : il devient son propre dépôt git, relié au dépôt des données (pas un sous-module).',
-      'data/ is a folder ignored by the code repository: it becomes its own git repository, linked to the data repository (not a submodule).',
-      'data/ ist ein vom Code-Repository ignorierter Ordner: Er wird ein eigenes Git-Repository, verbunden mit dem Datenrepository (kein Submodul).',
-      'data/ es una carpeta ignorada por el repositorio del código: se convierte en su propio repositorio git, enlazado al repositorio de datos (no un submódulo).'
-    ],
-    stateAbsent: ['Pas encore de données sur ce poste (data/ absent).', 'No data on this workstation yet (data/ missing).',
-      'Noch keine Daten auf diesem Rechner (data/ fehlt).', 'Aún no hay datos en este puesto (data/ ausente).'
-    ],
-    statePlain: ['data/ est là, mais n’est pas un dépôt git (données d’exemple ou archive) : rien ne part ailleurs que ce poste.',
-      'data/ is here, but is not a git repository (example data or archive): nothing leaves this workstation.',
-      'data/ ist da, aber kein Git-Repository (Beispieldaten oder Archiv): nichts verlässt diesen Rechner.',
-      'data/ está aquí, pero no es un repositorio git (datos de ejemplo o archivo): nada sale de este puesto.'
-    ],
-    gitUser: ['Identifiant (facultatif)', 'Username (optional)', 'Benutzername (optional)', 'Usuario (opcional)'],
-    gitSecret: ['Mot de passe ou jeton (facultatif, jamais gardé par la page)', 'Password or token (optional, never kept by the page)',
-      'Passwort oder Token (optional, nie von der Seite gespeichert)', 'Contraseña o token (opcional, nunca guardado por la página)'
-    ],
-    gitRemember: ['Se souvenir de ces identifiants dans Git, sur cet ordinateur', 'Remember these credentials in Git, on this computer',
-      'Diese Zugangsdaten in Git auf diesem Computer merken', 'Recordar estas credenciales en Git, en este equipo'
-    ],
-    gitCredHint: ['Sans identifiant, ceux que Git connaît déjà sur cet ordinateur servent (clé SSH, identifiants enregistrés).',
-      'Without a username, those Git already knows on this computer are used (SSH key, stored credentials).',
-      'Ohne Benutzernamen werden die verwendet, die Git auf diesem Computer schon kennt (SSH-Schlüssel, gespeicherte Zugangsdaten).',
-      'Sin usuario, se usan las que Git ya conoce en este equipo (clave SSH, credenciales guardadas).'
-    ],
-    clone: ['Récupérer les données', 'Fetch the data', 'Daten holen', 'Recuperar los datos'],
-    adopt: ['Reprendre data/ dans ce dépôt', 'Take data/ into this repository', 'data/ in dieses Repository übernehmen',
-      'Retomar data/ en este repositorio'
-    ],
-    launcherOld: ['Le lanceur de ce poste ne connaît pas encore cette opération : relancez-le à jour (lancer.cmd), puis réessayez.',
-      'This workstation’s launcher does not know this operation yet: restart it up to date (lancer.cmd), then try again.',
-      'Der Starter dieses Rechners kennt diesen Vorgang noch nicht: aktualisiert neu starten (lancer.cmd), dann erneut versuchen.',
-      'El lanzador de este puesto aún no conoce esta operación: reinícielo actualizado (lancer.cmd) y vuelva a intentarlo.'
-    ],
-    confirmHint: ['Une fenêtre Oui / Non s’ouvrira sur ce poste (pas dans cette page) : répondez-lui avant de revenir ici.',
-      'A Yes / No window will open on this workstation (not in this page): answer it before coming back here.',
-      'Ein Ja-/Nein-Fenster öffnet sich auf diesem Rechner (nicht auf dieser Seite): Beantworten Sie es, bevor Sie hierher zurückkehren.',
-      'Se abrirá una ventana Sí / No en este puesto (no en esta página): respóndala antes de volver aquí.'
-    ],
-    confirmWait: ['Répondez à la fenêtre Oui / Non ouverte sur ce poste (elle peut être derrière les autres fenêtres)…',
-      'Answer the Yes / No window open on this workstation (it may be behind other windows)…',
-      'Beantworten Sie das auf diesem Rechner geöffnete Ja-/Nein-Fenster (es kann hinter anderen Fenstern liegen)…',
-      'Responda a la ventana Sí / No abierta en este puesto (puede estar detrás de otras ventanas)…'
-    ],
-    confirmOpen: ['Cherchez-la derrière les autres fenêtres (barre des tâches), répondez, puis réessayez.',
-      'Look for it behind the other windows (taskbar), answer it, then try again.',
-      'Suchen Sie es hinter den anderen Fenstern (Taskleiste), beantworten Sie es, dann erneut versuchen.',
-      'Búsquela detrás de las otras ventanas (barra de tareas), respóndala y vuelva a intentarlo.'
-    ],
-    gitWorking: ['En cours… (quelques secondes à quelques minutes ; rien ne bloque)',
-      'Working… (a few seconds to a few minutes; nothing blocks)',
-      'Läuft… (einige Sekunden bis einige Minuten; nichts blockiert)', 'En curso… (de unos segundos a unos minutos; nada bloquea)'
-    ],
-    noGitAnchor: ['un-dépôt-git-pour-data', 'a-git-repository-for-data', 'ein-git-repository-für-data', 'un-repositorio-git-para-data'],
-    helpLink: ['Ouvrir l’aide', 'Open the help', 'Hilfe öffnen', 'Abrir la ayuda'],
     needRemote: ['À plusieurs par git, il faut un dépôt distant pour data/ : réglez-le dans « Accès aux données » ci-dessous.',
       'Several users through git need a remote repository for data/: set it in “Data access” below.',
       'Mehrere Nutzer über git brauchen ein entferntes Repository für data/: unter „Datenzugang“ unten einstellen.',
       'Varios usuarios por git necesitan un repositorio remoto para data/: configúrelo en «Acceso a los datos» abajo.'
-    ],
-    accessLauncher: ['Ce poste passe par son lanceur : pas de jeton à régler ici.',
-      'This workstation goes through its launcher: no token to set here.',
-      'Dieser Rechner nutzt seinen Starter: hier ist kein Token einzustellen.',
-      'Este puesto pasa por su lanzador: no hay token que configurar aquí.'
-    ],
-    repo: ['Dépôt (compte/dépôt)', 'Repository (account/repository)', 'Repository (Konto/Repository)',
-      'Repositorio (cuenta/repositorio)'
-    ],
-    branch: ['Branche', 'Branch', 'Zweig', 'Rama'],
-    token: ['Jeton personnel', 'Personal token', 'Persönliches Token', 'Token personal'],
-    tokenSet: ['jeton enregistré — vide : inchangé', 'token saved — empty: unchanged', 'Token gespeichert — leer: unverändert',
-      'token guardado — vacío: sin cambios'
-    ],
-    tokenHint: [
-      'Jeton personnel GitHub : « classique » avec la case « repo » pour le dépôt d’un utilisateur, à grain fin (ce seul dépôt, « Contents » en lecture et écriture) pour celui d’une organisation ; un an au plus. Gardé sur cet appareil seulement, jamais réaffiché ; ne le collez dans aucun message.',
-      'GitHub personal token: “classic” with the “repo” box for a user’s repository, fine-grained (this repository only, “Contents” read and write) for an organisation’s; one year at most. Kept on this device only, never shown again; never paste it in a message.',
-      'Persönliches GitHub-Token: „klassisch“ mit dem Kästchen „repo“ für das Repository eines Benutzers, feingranular (nur dieses Repository, „Contents“ lesen und schreiben) für das einer Organisation; höchstens ein Jahr. Nur auf diesem Gerät gespeichert, nie wieder angezeigt; in keine Nachricht einfügen.',
-      'Token personal de GitHub: «clásico» con la casilla «repo» para el repositorio de un usuario, de grano fino (solo este repositorio, «Contents» lectura y escritura) para el de una organización; un año como máximo. Guardado solo en este dispositivo, nunca se vuelve a mostrar; no lo pegue en ningún mensaje.'
-    ],
-    accessRead: [
-      'Sans échange coché, l’accès ne sert qu’à lire les bases aéronautiques et des appareils publiées dans le dépôt des données : rien n’est envoyé.',
-      'With no exchange ticked, the access only reads the aeronautical and aircraft bases published in the data repository: nothing is sent.',
-      'Ohne angekreuzten Austausch dient der Zugang nur zum Lesen der im Datenrepository veröffentlichten Luftfahrt- und Flugzeugdaten: Es wird nichts gesendet.',
-      'Sin intercambio marcado, el acceso solo sirve para leer las bases aeronáuticas y de aeronaves publicadas en el repositorio de datos: no se envía nada.'
     ],
     noBases: [
       'Aucune base sur cet appareil : ni accès au dépôt des données réglé, ni lanceur. Réglez l’accès ci-dessus, ou publiez les bases depuis un poste avec lanceur (V2 : Paramètres › Maintenance › Données aéronautiques et Types d’aéronefs).',
@@ -412,47 +273,9 @@
       'Ninguna base en este dispositivo: ni acceso al repositorio de datos configurado, ni lanzador. Configure el acceso arriba, o publique las bases desde un puesto con lanzador (V2: Ajustes › Mantenimiento › Datos aeronáuticos y Tipos de aeronave).'
     ],
     test: ['Tester', 'Test', 'Testen', 'Probar'],
-    testOk: ['Dépôt joignable, branche {b} trouvée.', 'Repository reachable, branch {b} found.',
-      'Repository erreichbar, Zweig {b} gefunden.',
-      'Repositorio accesible, rama {b} encontrada.'
-    ],
     testOffline: ['Hors ligne : impossible de tester maintenant.', 'Offline: cannot test now.', 'Offline: jetzt kein Test möglich.',
       'Sin conexión: imposible probar ahora.'
     ],
-    needRepo: ['Dépôt et jeton nécessaires.', 'Repository and token needed.', 'Repository und Token nötig.',
-      'Repositorio y token necesarios.'
-    ],
-    cut: ['Couper l’accès', 'Cut access', 'Zugang trennen', 'Cortar el acceso'],
-    cutAsk: [
-      'Couper l’accès ? Le jeton est effacé de cet appareil ; vos écritures en attente restent ici et partiront quand l’accès sera de nouveau réglé. Téléphone perdu ou volé : supprimez aussi le jeton sur github.com.',
-      'Cut access? The token is erased from this device; your pending writes stay here and will leave once access is set again. Lost or stolen phone: also delete the token on github.com.',
-      'Zugang trennen? Das Token wird von diesem Gerät gelöscht; ausstehende Änderungen bleiben hier und gehen hinaus, sobald der Zugang wieder eingestellt ist. Telefon verloren oder gestohlen: das Token auch auf github.com löschen.',
-      '¿Cortar el acceso? El token se borra de este dispositivo; sus escrituras pendientes se quedan aquí y saldrán cuando el acceso vuelva a configurarse. Teléfono perdido o robado: borre también el token en github.com.'
-    ],
-    cutDone: ['Accès coupé : jeton effacé de cet appareil.', 'Access cut: token erased from this device.',
-      'Zugang getrennt: Token von diesem Gerät gelöscht.', 'Acceso cortado: token borrado de este dispositivo.'
-    ],
-    // synchronisation
-    sync: ['Synchronisation', 'Synchronisation', 'Synchronisation', 'Sincronización'],
-    syncHint: [
-      'Automatique au démarrage, toutes les 10 minutes en ligne et au retour du réseau ; vos écritures partent ensemble, en un envoi.',
-      'Automatic at start, every 10 minutes online and when the network comes back; your writes leave together, in one sending.',
-      'Automatisch beim Start, alle 10 Minuten online und bei Rückkehr des Netzes; Ihre Änderungen gehen zusammen, in einem Versand.',
-      'Automática al inicio, cada 10 minutos en línea y al volver la red; sus escrituras salen juntas, en un envío.'
-    ],
-    last: ['Dernière réussie', 'Last success', 'Zuletzt erfolgreich', 'Última correcta'],
-    never: ['jamais', 'never', 'nie', 'nunca'],
-    pending: ['En attente', 'Pending', 'Ausstehend', 'Pendiente'],
-    // écritures en attente (FD.status().queue) : chemin, module, heure, ✕ pour une suppression
-    queue: ['Écritures en attente', 'Pending writes', 'Ausstehende Änderungen', 'Escrituras pendientes'],
-    queueDel: ['suppression', 'deletion', 'Löschung', 'eliminación'],
-    queueMore: ['… et {n} de plus', '… and {n} more', '… und {n} weitere', '… y {n} más'],
-    lastError: ['Dernière erreur', 'Last error', 'Letzter Fehler', 'Último error'],
-    network: ['Réseau', 'Network', 'Netz', 'Red'],
-    online: ['en ligne', 'online', 'online', 'en línea'],
-    offline: ['hors ligne', 'offline', 'offline', 'sin conexión'],
-    syncNow: ['Synchroniser maintenant', 'Synchronise now', 'Jetzt synchronisieren', 'Sincronizar ahora'],
-    conflicts: ['Voir les conflits ({n})', 'See the conflicts ({n})', 'Konflikte ansehen ({n})', 'Ver los conflictos ({n})'],
     // données hors ligne
     offlineData: ['Données hors ligne', 'Offline data', 'Offline-Daten', 'Datos sin conexión'],
     zones: ['Bases aéronautiques', 'Aeronautical bases', 'Luftfahrtdaten', 'Bases aeronáuticas'],
@@ -496,8 +319,6 @@
     storage: ['Stockage du navigateur', 'Browser storage', 'Browser-Speicher', 'Almacenamiento del navegador'],
     storageState: ['{u} utilisé(s) sur {q}', '{u} used of {q}', '{u} von {q} belegt', '{u} usado(s) de {q}'],
     unknown: ['inconnu', 'unknown', 'unbekannt', 'desconocido'],
-    // clés du lanceur
-    keys: ['Clés du lanceur', 'Launcher keys', 'Schlüssel des Starters', 'Claves del lanzador'],
     // clé météo de l'appareil (TAF par avwx.rest sans lanceur ; frame lot 12 : weatherKey du contexte)
     wx: ['Clé météo (TAF, avwx.rest)', 'Weather key (TAF, avwx.rest)', 'Wetterschlüssel (TAF, avwx.rest)',
       'Clave meteorológica (TAF, avwx.rest)'
@@ -547,198 +368,8 @@
       'Den Wetterschlüssel von diesem Gerät löschen?',
       '¿Borrar la clave meteorológica de este dispositivo?'
     ],
-    keysHint: ['Gardées par le lanceur de ce poste (dossier secrets/), jamais par le navigateur ni dans les données.',
-      'Kept by this workstation’s launcher (secrets/ folder), never by the browser nor in the data.',
-      'Vom Starter dieses Rechners verwahrt (Ordner secrets/), nie im Browser oder in den Daten.',
-      'Guardadas por el lanzador de este puesto (carpeta secrets/), nunca por el navegador ni en los datos.'
-    ],
-    ivaoKey: ['Clé de l’API IVAO', 'IVAO API key', 'IVAO-API-Schlüssel', 'Clave de la API IVAO'],
-    // accès des appareils du réseau local (carte écrite par la session du cadre, lot 18)
-    lan: ['Accès du poste', 'Computer access', 'Zugang des Rechners', 'Acceso del equipo'],
-    lanHint: [
-      'Ouvrez l’appli Pilote sur une tablette ou un téléphone du même réseau local : il voit les données de ce poste et la position du simulateur. L’accès se ferme avec le lanceur.',
-      'Open the Pilot application on a tablet or a phone of the same local network: it sees this computer’s data and the simulator’s position. Access closes with the launcher.',
-      'Öffnen Sie die Pilot-App auf einem Tablet oder Telefon im selben lokalen Netz: Es sieht die Daten dieses Rechners und die Position des Simulators. Der Zugang schließt sich mit dem Starter.',
-      'Abra la aplicación Piloto en una tableta o un teléfono de la misma red local: ve los datos de este equipo y la posición del simulador. El acceso se cierra con el lanzador.'
-    ],
-    lanWarn: [
-      'Réseau local en http, sans chiffrement : à n’ouvrir que sur un réseau de confiance (à la maison), jamais sur un wifi public ou d’hôtel.',
-      'Local network over http, unencrypted: open it only on a trusted network (at home), never on public or hotel wifi.',
-      'Lokales Netz über http, unverschlüsselt: nur in einem vertrauenswürdigen Netz (zu Hause) öffnen, nie in einem öffentlichen oder Hotel-WLAN.',
-      'Red local en http, sin cifrado: ábrala solo en una red de confianza (en casa), nunca en una wifi pública o de hotel.'
-    ],
-    lanOpen: ['Ouvrir aux appareils du réseau local', 'Open to devices of the local network', 'Für Geräte im lokalen Netz öffnen',
-      'Abrir a los dispositivos de la red local'
-    ],
-    lanClose: ['Fermer l’accès', 'Close access', 'Zugang schließen', 'Cerrar el acceso'],
-    lanForget: ['Oublier les appareils', 'Forget the devices', 'Geräte vergessen', 'Olvidar los dispositivos'],
-    lanForgetAsk: ['Oublier tous les appareils appairés ? Chacun devra saisir un nouveau code.',
-      'Forget all paired devices? Each will have to enter a new code.',
-      'Alle gekoppelten Geräte vergessen? Jedes muss einen neuen Code eingeben.',
-      '¿Olvidar todos los dispositivos vinculados? Cada uno tendrá que introducir un código nuevo.'
-    ],
-    lanForgotten: ['Appareils oubliés.', 'Devices forgotten.', 'Geräte vergessen.', 'Dispositivos olvidados.'],
-    lanState: ['État', 'State', 'Zustand', 'Estado'],
-    lanOn: ['ouvert jusqu’à la fermeture du lanceur', 'open until the launcher closes', 'geöffnet bis zum Schließen des Starters',
-      'abierto hasta que se cierre el lanzador'
-    ],
-    lanOff: ['fermé : seul ce poste ouvre l’appli', 'closed: only this computer opens the application',
-      'geschlossen: nur dieser Rechner öffnet die App', 'cerrado: solo este equipo abre la aplicación'
-    ],
-    lanUrl: ['Adresse à ouvrir sur l’appareil', 'Address to open on the device', 'Auf dem Gerät zu öffnende Adresse',
-      'Dirección que abrir en el dispositivo'
-    ],
-    lanOther: ['Autres adresses de ce poste', 'Other addresses of this computer', 'Weitere Adressen dieses Rechners',
-      'Otras direcciones de este equipo'
-    ],
-    lanQr: ['À scanner avec l’appareil photo de la tablette ou du téléphone', 'To scan with the tablet’s or the phone’s camera',
-      'Mit der Kamera des Tablets oder Telefons scannen', 'Para escanear con la cámara de la tableta o del teléfono'
-    ],
-    lanCode: ['Code d’appairage', 'Pairing code', 'Kopplungscode', 'Código de vinculación'],
-    lanCodeHint: [
-      'Un code sert une seule fois et dure 10 minutes. 5 essais par minute et par appareil ; après 30 codes faux en une heure, l’appairage se ferme jusqu’au prochain « Nouveau code ».',
-      'A code works only once and lasts 10 minutes. 5 tries a minute per device; after 30 wrong codes in an hour, pairing closes until the next “New code”.',
-      'Ein Code gilt nur einmal und 10 Minuten. 5 Versuche pro Minute und Gerät; nach 30 falschen Codes in einer Stunde schließt sich die Kopplung bis zum nächsten „Neuer Code“.',
-      'Un código sirve una sola vez y dura 10 minutos. 5 intentos por minuto y dispositivo; tras 30 códigos erróneos en una hora, la vinculación se cierra hasta el siguiente «Código nuevo».'
-    ],
-    lanCodeLeft: ['{c} — encore {m} min', '{c} — {m} min left', '{c} — noch {m} min', '{c} — quedan {m} min'],
-    lanNoCode: ['aucun code en cours : « Nouveau code » pour appairer un appareil', 'no code in progress: “New code” to pair a device',
-      'kein gültiger Code: „Neuer Code“, um ein Gerät zu koppeln',
-      'ningún código en curso: «Código nuevo» para vincular un dispositivo'
-    ],
-    lanClosed: ['appairage fermé après trop de codes faux : « Nouveau code » le rouvre',
-      'pairing closed after too many wrong codes: “New code” reopens it',
-      'Kopplung nach zu vielen falschen Codes geschlossen: „Neuer Code“ öffnet sie wieder',
-      'vinculación cerrada tras demasiados códigos erróneos: «Código nuevo» la vuelve a abrir'
-    ],
-    lanNewCode: ['Nouveau code', 'New code', 'Neuer Code', 'Código nuevo'],
-    lanOtherClosed: ['Autres adresses de ce poste (VPN, machines virtuelles…), fermées : {u}',
-      'Other addresses of this computer (VPN, virtual machines…), closed: {u}',
-      'Weitere Adressen dieses Rechners (VPN, virtuelle Maschinen…), geschlossen: {u}',
-      'Otras direcciones de este equipo (VPN, máquinas virtuales…), cerradas: {u}'
-    ],
-    lanOpenAll: ['Les ouvrir aussi', 'Open them too', 'Auch öffnen', 'Abrirlas también'],
-    lanForgetOne: ['Oublier', 'Forget', 'Vergessen', 'Olvidar'],
-    lanForgetOneAsk: ['Oublier l’appareil « {d} » ? Il devra saisir un nouveau code.',
-      'Forget the device “{d}”? It will have to enter a new code.',
-      'Das Gerät „{d}“ vergessen? Es muss einen neuen Code eingeben.',
-      '¿Olvidar el dispositivo «{d}»? Tendrá que introducir un código nuevo.'
-    ],
-    lanDevices: ['Appareils appairés', 'Paired devices', 'Gekoppelte Geräte', 'Dispositivos vinculados'],
-    lanOpened: ['Accès ouvert. Windows peut demander d’autoriser Python : acceptez pour les réseaux privés seulement.',
-      'Access open. Windows may ask to allow Python: accept for private networks only.',
-      'Zugang geöffnet. Windows fragt eventuell, ob Python erlaubt werden soll: nur für private Netzwerke zulassen.',
-      'Acceso abierto. Windows puede pedir que autorice Python: acéptelo solo para redes privadas.'
-    ],
-    lanNone: ['Aucune adresse de réseau local sur ce poste (10.x, 172.16-31.x ou 192.168.x) : rien à ouvrir.',
-      'No local-network address on this computer (10.x, 172.16-31.x or 192.168.x): nothing to open.',
-      'Keine Adresse eines lokalen Netzes auf diesem Rechner (10.x, 172.16-31.x oder 192.168.x): nichts zu öffnen.',
-      'Ninguna dirección de red local en este equipo (10.x, 172.16-31.x o 192.168.x): nada que abrir.'
-    ],
-    lanFail: ['Le lanceur ne répond pas : redémarrez-le à jour.', 'The launcher does not answer: restart it up to date.',
-      'Der Starter antwortet nicht: aktualisiert neu starten.', 'El lanzador no responde: reinícielo actualizado.'
-    ],
-    keySet: ['enregistrée ({h})', 'saved ({h})', 'gespeichert ({h})', 'guardada ({h})'],
-    keyEnv: ['donnée par l’environnement du lanceur ({h})', 'given by the launcher’s environment ({h})',
-      'aus der Umgebung des Starters ({h})', 'dada por el entorno del lanzador ({h})'
-    ],
-    keyMissing: ['absente', 'missing', 'fehlt', 'ausente'],
-    keyNew: ['Nouvelle clé (vide : inchangée)', 'New key (empty: unchanged)', 'Neuer Schlüssel (leer: unverändert)',
-      'Nueva clave (vacío: sin cambios)'
-    ],
     erase: ['Effacer', 'Erase', 'Löschen', 'Borrar'],
-    eraseAsk: ['Effacer la clé IVAO du lanceur ?', 'Erase the IVAO key from the launcher?', 'Den IVAO-Schlüssel vom Starter löschen?',
-      '¿Borrar la clave IVAO del lanzador?'
-    ],
-    keyOk: ['Clé valide : l’API IVAO répond.', 'Key valid: the IVAO API answers.', 'Schlüssel gültig: die IVAO-API antwortet.',
-      'Clave válida: la API IVAO responde.'
-    ],
-    keyBad: ['Clé IVAO : {e}', 'IVAO key: {e}', 'IVAO-Schlüssel: {e}', 'Clave IVAO: {e}'],
-    // diagnostic
-    about: ['À propos', 'About', 'Über', 'Acerca de'],
-    aboutHelp: ['Aide : le manuel de l’appli', 'Help: the app’s manual', 'Hilfe: das Handbuch der App',
-      'Ayuda: el manual de la aplicación'
-    ],
-    aboutRoadmap: ['Feuille de route : ce qui est livré, en cours, prévu', 'Roadmap: what is delivered, in progress, planned',
-      'Fahrplan: was geliefert, in Arbeit, geplant ist', 'Hoja de ruta: lo entregado, en curso, previsto'
-    ],
-    diag: ['Diagnostic', 'Diagnostics', 'Diagnose', 'Diagnóstico'],
-    // carte Administration (niveau Complet)
-    admin: ['Administration', 'Administration', 'Verwaltung', 'Administración'],
-    adminHint: ['Les pages d’administration et d’essai, réunies ici.', 'The administration and test pages, gathered here.',
-      'Die Verwaltungs- und Testseiten, hier gesammelt.', 'Las páginas de administración y de prueba, reunidas aquí.'
-    ],
-    edgeShow: ['Afficher le filet de la limite de la zone du vol', 'Show the edge line of the flight zone limit',
-      'Linie der Flugzonengrenze anzeigen', 'Mostrar la línea del límite de la zona del vuelo'
-    ],
-    edgeHint: [
-      'Pour toute la compagnie. La carte lit cette option avec les seuils (airline/map_profiles.json, clé edge) ; sans réglage, le filet est affiché.',
-      'For the whole airline. The map reads this option with the thresholds (airline/map_profiles.json, key edge); with no setting the edge line is shown.',
-      'Für die ganze Fluggesellschaft. Die Karte liest diese Option mit den Schwellen (airline/map_profiles.json, Schlüssel edge); ohne Einstellung wird die Linie angezeigt.',
-      'Para toda la aerolínea. El mapa lee esta opción con los umbrales (airline/map_profiles.json, clave edge); sin ajuste, la línea se muestra.'
-    ],
-    launcherOnly: ['poste avec lanceur seulement', 'workstation with launcher only', 'nur Rechner mit Starter',
-      'solo puesto con lanzador'
-    ],
-    diagHint: ['« Copier » met tout dans le presse-papiers : collez-le dans votre message pour signaler un problème.',
-      '“Copy” puts everything on the clipboard: paste it in your message to report a problem.',
-      '„Kopieren“ legt alles in die Zwischenablage: Fügen Sie es in Ihre Nachricht ein, um ein Problem zu melden.',
-      '«Copiar» lo pone todo en el portapapeles: péguelo en su mensaje para señalar un problema.'
-    ],
-    // lignes du diagnostic (valeurs brutes)
-    dg: {
-      transport: ['Transport', 'Transport', 'Transport', 'Transporte'],
-      online: ['En ligne', 'Online', 'Online', 'En línea'],
-      lastSync: ['Dernière synchro réussie', 'Last successful sync', 'Letzte erfolgreiche Synchronisation',
-        'Última sincronización correcta'
-      ],
-      pending: ['Écritures en attente', 'Pending writes', 'Ausstehende Änderungen', 'Escrituras pendientes'],
-      pageSecure: ['Page : contexte sûr', 'Page: secure context', 'Seite: sicherer Kontext', 'Página: contexto seguro'],
-      pageOffline: ['Hors ligne', 'Offline use', 'Offline-Betrieb', 'Uso sin conexión'],
-      lanHost: ['Lanceur', 'Launcher', 'Starter', 'Lanzador'],
-      lastError: ['Dernière erreur', 'Last error', 'Letzter Fehler', 'Último error'],
-      treeHead: ['Arbre du dépôt : tête', 'Repository tree: head', 'Repository-Baum: Kopf', 'Árbol del repositorio: cabeza'],
-      treeAt: ['Arbre du dépôt : lu le', 'Repository tree: read at', 'Repository-Baum: gelesen am', 'Árbol del repositorio: leído el'],
-      treeFiles: ['Arbre du dépôt : fichiers', 'Repository tree: files', 'Repository-Baum: Dateien', 'Árbol del repositorio: ficheros'],
-      treeChecked: ['Arbre du dépôt : vérifié', 'Repository tree: checked', 'Repository-Baum: geprüft',
-        'Árbol del repositorio: comprobado'
-      ],
-      refKnown: ['Références connues', 'Known references', 'Bekannte Referenzen', 'Referencias conocidas'],
-      refSia: ['Références SIA', 'SIA references', 'SIA-Referenzen', 'Referencias SIA'],
-      refAircraft: ['Références appareils', 'Aircraft references', 'Flugzeugreferenzen', 'Referencias de aeronaves'],
-      refCached: ['Références en cache', 'Cached references', 'Referenzen im Cache', 'Referencias en caché'],
-      lastReadError: ['Dernière erreur de lecture', 'Last read error', 'Letzter Lesefehler', 'Último error de lectura'],
-      aeroSource: ['Base aéro : source', 'Aero base: source', 'Luftfahrtbasis: Quelle', 'Base aeronáutica: fuente'],
-      aeroZones: ['Base aéro : zones publiées', 'Aero base: published zones', 'Luftfahrtbasis: veröffentlichte Zonen',
-        'Base aeronáutica: zonas publicadas'
-      ],
-      aeroLoaded: ['Base aéro : zones ouvertes', 'Aero base: open zones', 'Luftfahrtbasis: geöffnete Zonen',
-        'Base aeronáutica: zonas abiertas'
-      ],
-      aeroMissing: ['Base aéro : zones manquantes', 'Aero base: missing zones', 'Luftfahrtbasis: fehlende Zonen',
-        'Base aeronáutica: zonas ausentes'
-      ],
-      aeroError: ['Base aéro : erreur', 'Aero base: error', 'Luftfahrtbasis: Fehler', 'Base aeronáutica: error']
-    },
-    yes: ['oui', 'yes', 'ja', 'sí'],
-    no: ['non', 'no', 'nein', 'no'],
-    offActive: ['actif', 'active', 'aktiv', 'activo'],
-    offWaiting: ['pas encore actif', 'not yet active', 'noch nicht aktiv', 'aún no activo'],
-    offNone: ['impossible : page en http hors de ce poste (il faut https ou le poste lui-même)',
-      'impossible: page over http outside this computer (https or the computer itself is needed)',
-      'nicht möglich: Seite über http außerhalb dieses Rechners (https oder der Rechner selbst nötig)',
-      'imposible: página en http fuera de este equipo (se necesita https o el propio equipo)'
-    ],
-    viaLan: ['{h}, par le réseau local', '{h}, through the local network', '{h}, über das lokale Netz', '{h}, por la red local'],
-    viaHere: ['{h}, ce poste', '{h}, this computer', '{h}, dieser Rechner', '{h}, este equipo'],
-    copy: ['Copier', 'Copy', 'Kopieren', 'Copiar'],
-    copied: ['Diagnostic copié.', 'Diagnostics copied.', 'Diagnose kopiert.', 'Diagnóstico copiado.'],
-    copyLink: ['Copier le lien', 'Copy the link', 'Link kopieren', 'Copiar el enlace'],
-    linkCopied: ['Lien copié.', 'Link copied.', 'Link kopiert.', 'Enlace copiado.'],
-    linkOpen: ['Adresse à ouvrir ou à mettre en favori sur le téléphone :', 'Address to open or bookmark on the phone:',
-      'Adresse zum Öffnen oder als Lesezeichen auf dem Telefon:', 'Dirección para abrir o guardar como favorito en el teléfono:'
-    ]
-  };
+  });
 
   /** Taille lisible (Ko, Mo, Go). */
   // unités de taille, par langue (octet, kilo, méga, giga)
@@ -799,10 +430,10 @@
       prefs = (await c.own.get('device/settings.json')) || {},
       v2 = !prefs.v2 ? v2Settings() : null,
       st = await FD.status(),
-      remote = remoteNow = L ? (Object.keys(dryCache).forEach(k => delete dryCache[k]), await setup('sync-remote')) :
-      null, // dépôt distant de data/ (lanceur)
+      remote = L ? await P.launcher.readRemote() : null, // dépôt distant de data/ (lanceur)
       // état de data/ : absent, plain (dossier sans git), repo ; champ state du lanceur, sinon déduit
       gitState = !L ? '' : remote?.state || (!L.data ? 'absent' : remote?.repo ? 'repo' : 'plain');
+    /** Champ libellé (data-f = k) ; o : type, ph (exemple affiché), cap (majuscules), mode (clavier). */
     const fld = (k, row, v, o = {}) => `<label class="f-field">${esc(t(row))}<input data-f="${k}" type="${o.type || 'text'}" value="${esc(v || '')}" autocomplete="off" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.cap ? 'autocapitalize="characters"' : 'autocapitalize="off"'} spellcheck="false"></label>`;
     const how = !exchange ? t(L?.data ? T.aloneLauncher : T.alone) : L?.data ? t(T.viaLauncher, {
       g: t(!L.dataGit ? T.viaLauncherNoGit : remote && !remote.url ? T.viaLauncherNoRemote : T.viaLauncherGit)
@@ -813,7 +444,7 @@
     // dessiné par le cadre qui en a l'état, posé ici en première carte
     const cards = [c.status?.html() || ''];
     // carte Administration (niveau Complet) : le filet de la limite de la zone du vol, option enregistrée avec les seuils
-    const edgeShow = (c.level?.() || 2) === 3 ? await readEdge(c) : true;
+    const edgeShow = (c.level?.() || 2) === 3 ? await P.admin.readEdge(c) : true;
     // configuration d'un pilote : le lien #settings?config=… ou un fichier lancent l'assistant « Rejoindre la compagnie »
     // (frame/settings/join.js), que #settings?join=1 affiche à la place des cartes
     const q = new URLSearchParams(location.hash.split('?')[1] || '');
@@ -897,44 +528,37 @@
       <div class="f-row"><button type="button" class="primary" data-act="export">${esc(t(T.export))}</button><button type="button" data-act="import">${esc(t(T.import))}</button><button type="button" data-act="replace">${esc(t(T.replace))}</button><input type="file" accept="application/json,.json" data-file hidden></div></div>`);
     // carte Accès toujours : sur un lanceur, le dépôt distant de data/ ; sinon dépôt GitHub et jeton (sans échange coché :
     // lecture des bases seulement)
-    cards.push(L ? `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p>${gitState === 'repo' ? `<h3>${esc(t(T.remote))}</h3><p>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
-        ${fld('remote', T.remoteUrl, remote.url || remote.default || '')}<p class="f-msg" data-msg></p>
-        <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div><p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p>` : gitDoor(gitState, t, fld, remote)}</div>` :
-      `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2>${exchange ? '' : `<p class="f-muted">${esc(t(T.accessRead))}</p>`}
-        ${fld('repo', T.repo, gh?.repo, { ph: 'compte/flight_planner_data' })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
-        <p class="f-muted">${esc(t(T.tokenHint))}</p><p class="f-msg" data-msg></p>
-        <div class="f-row"><button type="button" class="primary" data-act="access">${esc(t(T.save))}</button><button type="button" data-act="test">${esc(t(T.test))}</button>${gh ? `<button type="button" data-act="cut">${esc(t(T.cut))}</button>` : ''}</div></div>`);
+    // contexte des fichiers de l'écran (cartes du lanceur, accès et transport, diagnostic, administration) : les mêmes noms
+    // que dans ce dessin ; card, val, say et again s'y ajoutent une fois la page posée
+    const env = {
+      view,
+      c,
+      t,
+      FD,
+      L,
+      id,
+      us,
+      gh,
+      prefs,
+      exchange,
+      remote,
+      gitState,
+      st,
+      mods,
+      fld,
+      lvl,
+      diagJson: '{}'
+    };
+    // carte Accès toujours : sur un lanceur, le dépôt distant de data/ (launcher.js) ; sinon dépôt GitHub et jeton (access.js)
+    cards.push(L ? P.launcher.accessHtml(env) : P.access.accessHtml(env));
     // configuration d'un pilote, dans la carte Accès : importer (toujours, en tête), exporter (poste ou accès GitHub réglé)
-    const src = L ? (remote?.url ? window.SogConfig?.parseRepo(remote.url) : null) : gh ? {
-      host: gh.api ? new URL(gh.api).host : 'github.com',
-      repo: gh.repo
-    } : null;
-    const xsrc = src ? {
-      ...src,
-      branch: L ? (/^[\w./-]+$/.test(remote?.branch || '') ? remote.branch : 'main') : gh.branch || 'main',
-      ...(!L && gh?.api ? {
-        api: gh.api
-      } : {})
-    } : null;
     const cfgIn = window.SogConfig ? `<p class="f-muted">${esc(t(T.cfgImportHint))}</p><div class="f-row"><button type="button" data-act="cfgJoin">${esc(t(T.cfgJoin))}</button><button type="button" data-act="cfgImport">${esc(t(T.cfgImport))}</button><input type="file" accept="application/json,.json" data-cfgfile hidden></div>` : '';
-    const xk = xsrc ? SogConfig.kind(xsrc) : 'other',
-      xhost = xk === 'github' && !xsrc?.api ? 'GitHub' : xsrc?.host || '',
-      xinv = !xsrc ? '' : xk === 'github' ? `https://github.com/${xsrc.repo}/settings/access` : xk === 'gitlab' ? `${SogConfig.webUrl(xsrc)}/-/project_members` : '',
-      xa = u => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`,
-      xfill = (row, v) => esc(t(row)).replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m);
-    const cfgSteps = `<h3>${esc(t(T.cfgSteps))}</h3><ol class="f-join-steps"><li>${xinv ? xfill(xk === 'github' ? T.cfgInvite : T.cfgInviteGl, { h: esc(xhost), u: xa(xinv) }) : esc(t(T.cfgInviteOther))}</li><li>${esc(t(T.cfgStepExport))}</li><li>${esc(t(T.cfgStepSend))}</li></ol>`;
-    const cfgOut = window.SogConfig && (L || gh) ? `<div class="f-cfgx" data-cfgx>${cfgSteps}
-      ${xsrc ? '' : `<p class="f-warn">${esc(t(T.cfgNoRepo))}</p>`}${fld('cfgPilot', T.cfgPilot, '', { cap: true, ph: 'ABC' })}${fld('cfgApp', T.cfgApp, appUrl(), { ph: 'https://…/v3/frame/' })}
-      <div class="f-row"><button type="button" class="primary" data-act="cfgMake">${esc(t(T.cfgMake))}</button></div><p class="f-msg" data-xmsg></p>
-      <div data-cfgout hidden><label class="f-field">${esc(t(T.cfgLink))}<textarea data-cfglink rows="3" readonly spellcheck="false"></textarea></label><div class="f-row"><button type="button" data-act="cfgCopy">${esc(t(T.cfgCopy))}</button></div><figure class="f-qr" data-cfgqr hidden><div></div><figcaption class="f-muted">${esc(t(T.cfgQr))}</figcaption></figure></div></div>` : '';
+    const cfgOut = P.admin.cfgPanel(env); // volet d'export de la carte Administration ; env.xsrc : le dépôt à exporter
     // l'import reste dans la carte Accès (affaire du pilote) ; l'export est une page de l'administrateur : carte Administration
     const ai = cards.findIndex(x => x.startsWith('<div class="f-card" data-card="access">'));
     if (ai >= 0) cards[ai] = cards[ai].replace(/^(<div class="f-card" data-card="access"><h2>[^<]*<\/h2>)/, `$1${cfgIn}`);
-    // synchronisation : montrée si un échange est coché ou tant que des écritures attendent (suit l'état)
-    {
-      cards.push(`<div class="f-card" data-card="sync"${exchange || st.pending ? '' : ' hidden'}><h2>${esc(t(T.sync))}</h2><dl class="f-dl" data-sync></dl><div data-queue></div><p class="f-muted">${esc(t(T.syncHint))}</p>
-        <div class="f-row"><button type="button" class="primary" data-act="sync">${esc(t(T.syncNow))}</button>${st.conflicts ? `<a href="#conflicts">${esc(t(T.conflicts, { n: st.conflicts }))}</a>` : ''}</div></div>`);
-    }
+    // synchronisation : montrée si un échange est coché ou tant que des écritures attendent (access.js)
+    cards.push(P.access.syncHtml(env));
     // données hors ligne
     cards.push(`<div class="f-card" data-card="offline"><h2>${esc(t(T.offlineData))}</h2><dl class="f-dl" data-offline><dt>${esc(t(T.zones))}</dt><dd>…</dd><dt>${esc(t(T.storage))}</dt><dd>…</dd></dl>
       <div data-zones></div>${!L?.data && !gh ? `<p class="f-warn">${esc(t(T.noBases))}</p>` : ''}<p class="f-muted">${esc(t(T.zoneHint))}</p></div>`);
@@ -946,24 +570,19 @@
       <div class="f-row"><button type="button" class="primary" data-act="wxSave">${esc(t(T.save))}</button><button type="button" data-act="wxTest" ${wk.has() ? '' : 'disabled'}>${esc(t(T.test))}</button><button type="button" data-act="wxErase" ${wk.has() ? '' : 'disabled'}>${esc(t(T.erase))}</button></div>
       <p><a href="https://account.avwx.rest/" target="_blank" rel="noopener">${esc(t(T.wxSignup))}</a></p></div>`);
     // clés, si un lanceur sert la page
-    if (L) cards.push(`<div class="f-card" data-card="keys"><h2>${esc(t(T.keys))}</h2><p class="f-muted">${esc(t(T.keysHint))}</p>
-      <p>${esc(t(T.pair, { k: t(T.ivaoKey) }))} <b data-key>…</b></p>${fld('ivaoKey', T.keyNew, '', { type: 'password' })}<p class="f-msg" data-msg></p>
-      <div class="f-row"><button type="button" class="primary" data-act="keySave">${esc(t(T.save))}</button><button type="button" data-act="keyTest">${esc(t(T.test))}</button><button type="button" data-act="keyErase">${esc(t(T.erase))}</button></div></div>`);
+    if (L) cards.push(P.launcher.keysHtml(env));
     // accès des appareils du réseau local : sur le poste qui sert la page seulement (c.lan() nul ailleurs, même sur un
     // appareil appairé) ; état dessiné et relu toutes les 5 s par paintLan
-    const lanApi = c.lan?.() || null;
-    if (lanApi) cards.push(`<div class="f-card" data-card="lan"><h2>${esc(t(T.lan))}</h2><p class="f-muted">${esc(t(T.lanHint))}</p>
-      <div data-lanstate><p class="f-muted">…</p></div><p class="f-msg" data-kind="warn">${esc(t(T.lanWarn))}</p><p class="f-msg" data-msg></p>
-      <div class="f-row"><button type="button" class="primary" data-act="lanToggle">${esc(t(T.lanOpen))}</button><button type="button" data-act="lanCode" hidden>${esc(t(T.lanNewCode))}</button><button type="button" data-act="lanForget" disabled>${esc(t(T.lanForget))}</button></div></div>`);
+    const lanCard = P.launcher.lanHtml(env);
+    if (lanCard) cards.push(lanCard);
     // fiches Little Navmap (.lnmperf), si un lanceur sert la page : carte écrite par aerodb (frame/aerodb/lnmperf.js)
     if (L && c.aerodb()?.lnmperf) cards.push('<div class="f-card" data-card="lnmperf" hidden></div>');
     const help = await c.helpPanel?.().catch(() => null);
-    let diagJson = '{}'; // diagnostic complet (bouton « Copier »)
     view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${cards.join('')}
-      <div class="f-card" data-card="about"><h2>${esc(t(T.about))}</h2><p><a href="#help?m=settings">${esc(t(T.aboutHelp))}</a></p><p><a href="#roadmap">${esc(t(T.aboutRoadmap))}</a></p>
-      <details data-diagbox><summary>${esc(t(T.diag))}</summary><dl class="f-dl" data-diag></dl><p class="f-muted">${esc(t(T.diagHint))}</p><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>${lvl === 3 ? adminCard(t, L, { cfg: cfgOut, edge: edgeShow }) : ''}`;
+      ${P.diagnostic.aboutHtml(env)}${lvl === 3 ? P.admin.adminCard(t, L, { cfg: cfgOut, edge: edgeShow }) : ''}`;
     if (help)(view.querySelector('[data-card="status"]') || view.querySelector('h1 + p'))?.after(help); // sous le bloc d'état
 
+    /** Carte de l'écran par son nom (data-card). */
     const card = k => view.querySelector(`[data-card="${k}"]`);
     c.status?.bind(card('status')); // vivant : redessiné par le cadre quand l'état change, ses lignes mènent où elles disent
     if (card('lnmperf')) c.aerodb().lnmperf().then(x => x.card(card('lnmperf'), {
@@ -973,6 +592,7 @@
       const k = card('lnmperf');
       if (k?.firstChild) k.hidden = false;
     }).catch(() => {});
+    /** Valeur saisie d'un champ (data-f), sans espaces autour. */
     const val = (k, root = view) => root.querySelector(`[data-f="${k}"]`)?.value.trim() ?? '';
     /** Message dans la carte (kind : ok, warn, err) ; vide l'efface. */
     const say = (k, text, kind = 'err') => {
@@ -982,32 +602,17 @@
         m.dataset.kind = kind;
       }
     };
+    /** Redessine tout l'écran. */
     const again = () => render(view, c);
+    Object.assign(env, {
+      card,
+      val,
+      say,
+      again
+    });
 
     // état vivant : synchronisation, données hors ligne, clés, diagnostic
-    const paintSync = s => {
-      const dl = view.querySelector('[data-sync]');
-      if (!dl) return;
-      dl.innerHTML = [
-        [T.last, s.lastSync ? c.time.fmtDateZ(s.lastSync) : t(T.never)],
-        [T.pending, String(s.pending || 0)],
-        [T.network, t(s.online === false ? T.offline : T.online)],
-        ...(s.lastError ? [
-          [T.lastError, s.lastError]
-        ] : [])
-      ].map(([k, v]) => `<dt>${esc(t(k))}</dt><dd>${esc(v)}</dd>`).join('');
-      // les écritures en attente, les plus récentes d'abord (20 au plus) : chemin, module, heure ; ✕ : suppression ; heures
-      // de l'appli en UTC avec Z (frame/lib/time.js) : l'heure seule le jour même (UTC), sinon la date et l'heure
-      const box = view.querySelector('[data-queue]'),
-        q = s.queue || [],
-        day = new Date().toISOString().slice(0, 10),
-        when = at => String(at || '').slice(0, 10) === day ? c.time.fmtZ(at) : c.time.fmtDateZ(at),
-        modName = id => t(mods.find(m => m.id === id)?.label || [id || '?']);
-      if (box) box.closest('[data-card]').hidden = !exchange && !q.length;
-      if (box) box.innerHTML = !q.length ? '' : `<h3>${esc(t(T.queue))}</h3><ul class="f-queue">${q.slice(0, 20).map(x => `<li>${x.deletion ? `<span aria-label="${esc(t(T.queueDel))}" title="${esc(t(T.queueDel))}">✕</span> ` : ''}<code>${esc(x.path)}</code> <span class="f-muted">${esc([modName(x.module), when(x.at)].filter(Boolean).join(' · '))}</span></li>`).join('')}${q.length > 20 ? `<li class="f-muted">${esc(t(T.queueMore, { n: q.length - 20 }))}</li>` : ''}</ul>`;
-    };
-    paintSync(st);
-    const off = FD.onStatus(s => view.isConnected ? paintSync(s) : off?.());
+    P.access.live(env); // synchronisation et écritures en attente, vivantes
     (async () => {
       const dl = view.querySelector('[data-offline]'),
         a = c.aerodb(),
@@ -1024,29 +629,7 @@
       const est = await navigator.storage?.estimate?.().catch(() => null);
       dl.innerHTML = `<dt>${esc(t(T.zones))}</dt><dd>${esc(zones)}</dd><dt>${esc(t(T.storage))}</dt><dd>${esc(est ? t(T.storageState, { u: bytes(est.usage, t), q: bytes(est.quota, t) }) : t(T.unknown))}</dd>`;
       paintZones();
-      const dg = c.diagnostic ? await c.diagnostic().catch(e => ({
-        error: e?.message || String(e)
-      })) : {};
-      diagJson = JSON.stringify({
-        at: now(),
-        app: 'pilot',
-        ...dg,
-        usages: c.usages(),
-        launcher: c.launcher(),
-        github: gh ? {
-          repo: gh.repo,
-          branch: gh.branch
-        } : null,
-        storage: est ? {
-          usage: est.usage,
-          quota: est.quota,
-          persisted: await navigator.storage?.persisted?.().catch(() => null) ??
-            null // le navigateur a-t-il promis de ne pas effacer
-        } : null,
-        online: navigator.onLine,
-        agent: navigator.userAgent
-      }, null, 1);
-      paintDiag(view.querySelector('[data-diag]'), dg, t);
+      await P.diagnostic.live(env, est); // diagnostic du cadre, lisible et à copier
     })();
     /** Zones publiées et base des appareils, avec leur état sur cet appareil (aerodb.offline) ; garder / libérer. */
     async function paintZones() {
@@ -1056,6 +639,7 @@
       const can = off.supported?.() || {},
         zs = (await off.zones().catch(() => null)) || [],
         ac = await off.aircraft?.().catch(() => null);
+      /** Libellé de l'état d'une zone hors ligne. */
       const st = z => t(T.zoneState[z.state] || T.zoneState.unknown);
       box.innerHTML = zs.map(z => `<div class="f-zone" data-zone="${esc(z.id)}"><div><b>${esc(t(z.names))}</b><br><span class="f-muted" data-zline>${esc(t(T.zoneLine, { s: st(z), c: z.cycle || '?', k: z.cachedKb ?? '?', p: z.publishedKb ?? '?' }))}</span></div>
         <div class="f-row">${z.state !== 'complete' ? `<button type="button" data-keep="${esc(z.id)}">${esc(t(T.keep))}</button>` : ''}${can.evict && z.cachedKb ? `<button type="button" data-release="${esc(z.id)}">${esc(t(T.release))}</button>` : ''}</div></div>`).join('') +
@@ -1093,123 +677,16 @@
         paintZones();
       };
     }
-    // accès du réseau local : état, adresse et son code QR, code d'appairage, appareils ; redessiné seulement s'il change
-    let lanKey = '';
-    const paintLan = s => {
-      const k = card('lan');
-      if (!k) return;
-      // les minutes restantes du code, pas ses secondes : la carte n'est redessinée qu'au changement
-      const min = s?.code ? Math.max(1, Math.ceil(s.expires / 60)) : 0,
-        key = JSON.stringify(s && {
-          ...s,
-          expires: min
-        });
-      if (key === lanKey) return;
-      lanKey = key;
-      const btn = k.querySelector('[data-act="lanToggle"]'),
-        nc = k.querySelector('[data-act="lanCode"]');
-      btn.textContent = t(s?.on ? T.lanClose : T.lanOpen);
-      btn.classList.toggle('primary', !s?.on);
-      if (nc.hidden === !!s?.on) nc.hidden = !s?.on;
-      nc.classList.toggle('primary', !!s?.on && !s.code);
-      k.querySelector('[data-act="lanForget"]').disabled = !s?.devices;
-      const box = k.querySelector('[data-lanstate]');
-      if (!s) return void(box.innerHTML = `<p class="f-msg" data-kind="err">${esc(t(T.lanFail))}</p>`);
-      const url = s.urls?.[0] || '',
-        row = (label, v) => `<dt>${esc(t(label))}</dt><dd>${v}</dd>`,
-        closedIps = (s.available || []).filter(ip => !(s.urls || []).some(u => u.includes(`//${ip}:`))),
-        code = s.closed ? `<span class="f-msg" data-kind="err">${esc(t(T.lanClosed))}</span>` : s.code ? esc(t(T.lanCodeLeft, {
-          c: s.code,
-          m: min
-        })).replace(esc(s.code), `<b class="f-num">${esc(s.code)}</b>`) : esc(t(T.lanNoCode)),
-        devs = (s.paired || []).map(d => `<div class="f-row"><span>${esc(d.label)} — ${esc(d.at ? new Date(d.at).toLocaleDateString() : '?')}</span><button type="button" data-forget="${esc(d.id)}" data-label="${esc(d.label)}">${esc(t(T.lanForgetOne))}</button></div>`).join('');
-      let qr = '';
-      if (s.on && url && window.SogQR) try {
-        qr = `<figure class="f-qr"><div>${SogQR.svg(url, { ecl: 'M', scale: 4 })}</div><figcaption class="f-muted">${esc(t(T.lanQr))}</figcaption></figure>`;
-      } catch {
-        qr = ''; // adresse trop longue pour un code QR : elle reste écrite
-      }
-      box.innerHTML = `<dl class="f-dl">${row(T.lanState, esc(t(s.on ? T.lanOn : T.lanOff)))}${s.on ? row(T.lanUrl, `<b>${esc(url)}</b>`) +
-        (s.urls.length > 1 ? row(T.lanOther, esc(s.urls.slice(1).join(', '))) : '') + row(T.lanCode, code) : ''}${row(T.lanDevices, esc(String(s.devices ?? 0)))}</dl>${devs}${qr}${s.on ? `<p class="f-muted">${esc(t(T.lanCodeHint))}</p>` : ''}${s.on && closedIps.length ? `<p class="f-muted">${esc(t(T.lanOtherClosed, { u: closedIps.join(', ') }))}</p><div class="f-row"><button type="button" data-act="lanAll">${esc(t(T.lanOpenAll))}</button></div>` : ''}`;
-    };
-    if (lanApi) {
-      const el = card('lan'),
-        tick = async () => {
-          if (!el.isConnected) return; // écran quitté ou redessiné : la relève s'arrête
-          paintLan(await lanApi.state().catch(() => null));
-          setTimeout(tick, 5e3); // un nouveau code (trop d'essais faux) ou un appareil appairé apparaissent seuls
-        };
-      tick();
-    }
-    if (L) launcherKey().then(k => {
-      const b = view.querySelector('[data-key]');
-      if (b) b.textContent = !k?.set ? t(T.keyMissing) : t(k.env ? T.keyEnv : T.keySet, {
-        h: k.hint || '••••'
-      });
-    });
+    P.launcher.live(env); // accès du poste (relève toutes les 5 s), clé IVAO, fenêtre Oui / Non annoncée
 
     // actions
     view.onclick = async e => {
-      const fg = e.target.closest('[data-forget]');
-      if (fg && c.lan?.()) {
-        // un appareil appairé oublié : il devra saisir un nouveau code
-        if (!await c.ask(t(T.lanForgetOneAsk, {
-            d: fg.dataset.label
-          }))) return;
-        fg.disabled = true;
-        const s = await c.lan().forget(fg.dataset.forget).catch(() => null);
-        lanKey = '';
-        paintLan(s);
-        if (s) c.notify(t(T.lanForgotten), 'ok');
-        return;
-      }
+      if (await P.launcher.onClick(env, e)) return; // un appareil appairé oublié
       const b = e.target.closest('[data-act]');
       if (!b) return;
       const act = b.dataset.act;
-      if (act === 'lanToggle' || act === 'lanForget' || act === 'lanCode' || act === 'lanAll') {
-        const api = c.lan?.();
-        if (!api) return;
-        if (act === 'lanForget' && !await c.ask(t(T.lanForgetAsk))) return;
-        b.disabled = true;
-        try {
-          const before = await api.state(),
-            s = act === 'lanForget' ? await api.forget() : act === 'lanCode' ? await api.newCode() : act === 'lanAll' ? await api
-            .openAll() :
-            before.on ? await api.close() : await api.open();
-          say('lan', !before.on && act === 'lanToggle' && !s.on ? t(T.lanNone) : '', 'warn');
-          b.disabled = false; // avant le dessin : paintLan décide ensuite de « Oublier » (aucun appareil → grisé)
-          lanKey = '';
-          paintLan(s);
-          if (act === 'lanForget') c.notify(t(T.lanForgotten), 'ok');
-          else if (s.on && !before.on) c.notify(t(T.lanOpened), 'info');
-        } catch {
-          b.disabled = false;
-          say('lan', t(T.lanFail));
-        }
-        return;
-      }
-      if (act === 'adminCopy') {
-        const how = await copy(b.dataset.text || '', {
-          near: b.closest('.f-row')
-        });
-        return c.notify(t(how === 'shown' ? T.copyShown : T.linkCopied), how === 'shown' ? 'warn' : 'ok');
-      }
-      if (act === 'adminPanel') {
-        // bouton de la carte Administration : déplie (ou replie) le volet de sa ligne
-        const p = view.querySelector(`[data-adminpanel="${CSS.escape(b.dataset.panel)}"]`);
-        if (!p) return;
-        p.hidden = !p.hidden;
-        b.setAttribute('aria-expanded', String(!p.hidden));
-        return;
-      }
-      if (act === 'diagOpen') {
-        e.preventDefault(); // bouton de la carte Administration : le diagnostic replié de la carte À propos, ouvert
-        const d = view.querySelector('[data-diagbox]');
-        if (d) d.open = true;
-        return d?.scrollIntoView({
-          block: 'start'
-        });
-      }
+      for (const part of [P.launcher, P.access, P.diagnostic, P.admin])
+        if (part.acts.includes(act)) return part.run(env, act, b, e);
       if (act === 'v2take') {
         const d = v2Settings();
         if (d) {
@@ -1266,108 +743,6 @@
         f.dataset.mode = act === 'replace' ? 'replace' : 'merge';
         return f.click();
       }
-      if (act === 'access' || act === 'test') {
-        const r = card('access'),
-          cfg = {
-            repo: val('repo', r),
-            branch: val('branch', r) || 'main',
-            token: val('token', r) || gh?.token || '',
-            ...(gh?.api ? {
-              api: gh.api
-            } : {})
-          };
-        if (!cfg.repo || !cfg.token) return say('access', t(T.needRepo));
-        if (act === 'test') {
-          say('access', '…', 'ok');
-          try {
-            await FD.github(cfg).head();
-            return say('access', t(T.testOk, {
-              b: cfg.branch
-            }), 'ok');
-          } catch (err) {
-            return say('access', err?.offline ? t(T.testOffline) : err?.message || String(err), err?.offline ? 'warn' : 'err');
-          }
-        }
-        FD.github.save(cfg);
-        await c.reload();
-        c.notify(t(T.saved), 'ok');
-        return again();
-      }
-      if (act === 'cut') {
-        if (!await c.ask(t(T.cutAsk))) return;
-        await c.cutAccess();
-        c.notify(t(T.cutDone), 'ok');
-        return again();
-      }
-      if (act === 'sync') return c.syncNow();
-      if (act === 'keySave' || act === 'keyErase') {
-        const k = val('ivaoKey', card('keys'));
-        if (act === 'keySave' && !k) return say('keys', '');
-        if (act === 'keyErase' && !await c.ask(t(T.eraseAsk))) return;
-        const r = await setup('secrets', {
-          scope: 'app',
-          service: 'ivao',
-          values: {
-            apiKey: act === 'keyErase' ? '' : k
-          }
-        });
-        if (!r?.ok) return say('keys', r?.message || '?');
-        c.notify(t(T.saved), 'ok');
-        return again();
-      }
-      if (act === 'remoteCheck' || act === 'remoteSave') {
-        const url = val('remote', card('access')),
-          save = act === 'remoteSave';
-        say('access', t(!save ? T.remoteChecking : needsConfirm(url, 'remote') ? T.confirmWait : T.remoteSaving), 'warn');
-        const r = await setup('sync-remote', {
-          url,
-          ...(save ? {
-            save: true
-          } : {})
-        });
-        const ck = r?.check || {},
-          text = [r?.saved?.message, confirmOpen(r?.saved) ? t(T.confirmOpen) : '', ck.message].filter(Boolean).join(' — ') || '?';
-        say('access', text, r?.saved && !r.saved.ok ? 'err' : ck.ok ? 'ok' : 'warn');
-        // enregistré : la ligne « Actuel » suit, le compte rendu de la vérification reste affiché
-        if (save && r?.saved?.ok) {
-          const now = card('access').querySelector('h3 + p');
-          if (now) now.textContent = t(T.remoteNowBare, {
-            u: url
-          });
-          c.notify(t(T.saved), 'ok');
-        }
-        return;
-      }
-      if (act === 'gitClone' || act === 'gitAdopt') {
-        const r0 = card('access'),
-          body = {
-            url: val('gitUrl', r0),
-            user: val('gitUser', r0),
-            secret: r0.querySelector('[data-f="gitSecret"]')?.value || '',
-            remember: !!r0.querySelector('[data-f="gitRemember"]')?.checked,
-            // auteur du commit de reprise (« Reprise du poste <TRI> ») : le trigramme de l'appareil s'il est réglé
-            ...(c.identity().trigram ? {
-              author: c.identity().trigram
-            } : {})
-          };
-        // le secret n'est gardé nulle part dans la page : champ vidé avant l'appel
-        const sec = r0.querySelector('[data-f="gitSecret"]');
-        if (sec) sec.value = '';
-        r0.querySelectorAll('button').forEach(x => x.disabled = true);
-        say('access', t(act === 'gitAdopt' && needsConfirm(body.url, 'adopt') ? T.confirmWait : T.gitWorking), 'warn');
-        const r = await setup(act === 'gitClone' ? 'clone' : 'adopt', body);
-        r0.querySelectorAll('button').forEach(x => x.disabled = false);
-        say('access', [r?.message || t(T.launcherOld), confirmOpen(r) ? t(T.confirmOpen) : ''].filter(Boolean).join(' '), r?.ok ?
-          'ok' : 'err');
-        if (r?.ok) {
-          await c.redetect?.();
-          c.notify(r.message || t(T.saved), 'ok');
-          // carte redessinée depuis le nouvel état, le compte rendu du lanceur y reste lisible
-          await again();
-          return say('access', r.message || t(T.saved), 'ok');
-        }
-        return;
-      }
       if (act === 'wxSave') {
         const f = card('wx').querySelector('[data-f="wxKey"]'),
           k = f?.value.trim() || '';
@@ -1400,18 +775,6 @@
         c.notify(t(T.saved), 'ok');
         return again();
       }
-      if (act === 'keyTest') {
-        const r = await setup('secrets/test?service=ivao');
-        return say('keys', r?.ok ? t(T.keyOk) : t(T.keyBad, {
-          e: r?.error || '?'
-        }), r?.ok ? 'ok' : 'err');
-      }
-      if (act === 'copy') {
-        const how = await copy(diagJson, {
-          near: b.closest('.f-row')
-        });
-        c.notify(t(how === 'shown' ? T.copyShown : T.copied), how === 'shown' ? 'warn' : 'ok');
-      }
       // ---- configuration d'un pilote
       if (act === 'cfgImport') return view.querySelector('[data-cfgfile]')?.click();
       if (act === 'cfgCancel') {
@@ -1421,14 +784,6 @@
       if (act === 'cfgJoin') {
         location.hash = '#settings?join=1';
         return;
-      }
-      if (act === 'cfgMake') return makeConfig(c, view, xsrc);
-      if (act === 'cfgCopy') {
-        const box = view.querySelector('[data-cfglink]'),
-          how = await copy(box?.value || '', {
-            box
-          });
-        return c.notify(t(how === 'shown' ? T.copyShown : T.cfgCopied), how === 'shown' ? 'warn' : 'ok');
       }
     };
     view.querySelector('[data-cfgfile]')?.addEventListener('change', async e => {
@@ -1443,7 +798,7 @@
         block: 'start'
       }), 0);
     }
-    // #settings?import=1    // #settings?import=1 (carte d'accueil) : le bouton d'import à portée
+    // #settings?import=1 (carte d'accueil) : le bouton d'import à portée
     if (q.get('import')) {
       dropConfigHash(); // une fois : le dessin suivant (après le choix du fichier) reste en tête
       const b = view.querySelector('[data-act="cfgImport"]');
@@ -1454,29 +809,6 @@
         b?.focus();
       }, 0);
     }
-    // indication « fenêtre Oui / Non sur ce poste » sous le bouton, selon l'adresse saisie
-    // (le lanceur répond à POST /__setup/adopt { url, dry: true } sans rien faire : needsConfirm ; sans réponse, comparaison
-    // locale ; adresse vide ou invalide : rien d'annoncé)
-    let hintTimer = 0;
-    const hint = () => {
-      clearTimeout(hintTimer);
-      hintTimer = setTimeout(async () => {
-        const h = view.querySelector('[data-confirm-hint]'),
-          f = view.querySelector('[data-f="remote"], [data-f="gitUrl"]');
-        if (!h || !f) return;
-        const url = f.value.trim();
-        if (url && !(url in dryCache)) {
-          const r = await setup('adopt', {
-            url,
-            dry: true
-          });
-          dryCache[url] = typeof r?.needsConfirm === 'boolean' ? r.needsConfirm : r && !r.ok ? 'invalid' : null;
-        }
-        h.hidden = !url || dryCache[url] === 'invalid' || !needsConfirm(url, f.dataset.f === 'remote' ? 'remote' : 'adopt');
-      }, 250);
-    };
-    view.querySelector('[data-f="remote"], [data-f="gitUrl"]')?.addEventListener('input', hint);
-    hint();
     view.querySelectorAll('[data-design-pick]').forEach(b => b.addEventListener('click', async () => {
       await c.saveDesign({
         ...(c.design?.() || {}),
@@ -1513,101 +845,13 @@
       await c.reload();
       again();
     }));
-    // filet de la limite de la zone du vol (carte Administration) : enregistré aussitôt, pour la compagnie
-    view.querySelector('[data-edge]')?.addEventListener('change', async e => {
-      const box = e.target;
-      box.disabled = true;
-      try {
-        await writeEdge(c, box.checked);
-        say('admin', '');
-        c.notify(t(T.saved), 'ok');
-      } catch (err) {
-        box.checked = !box.checked;
-        say('admin', err?.message || String(err));
-      }
-      box.disabled = false;
-    });
+    P.admin.live(env); // filet de la limite de la zone du vol, enregistré aussitôt
     view.querySelector('[data-file]')?.addEventListener('change', async e => {
       const f = e.target.files?.[0];
       e.target.value = '';
       if (f) await importDevice(c, f, e.target.dataset.mode);
       again();
     });
-  }
-
-  // profils d'affichage de la compagnie (écrits par la page des seuils du module Carte) : la clé « edge » y est la seule que
-  // cette carte écrit (frame/settings/INTEGRATION.md § 4) ; le reste du fichier est repris tel quel
-  const PROFILES = 'airline/map_profiles.json';
-  let profiles = null;
-  const profilesOf = c => profiles ||= c.FD.adapter({
-    id: 'settings-admin',
-    reads: [PROFILES],
-    writes: [{
-      prefix: PROFILES,
-      merge: 'record'
-    }]
-  });
-  /** Le filet de la limite de la zone du vol est-il affiché pour la compagnie ? (edge.show ; affiché par défaut) */
-  async function readEdge(c) {
-    const f = await profilesOf(c).get(PROFILES, {
-      wait: true
-    }).catch(() => null);
-    return f?.edge?.show !== false;
-  }
-  /** Enregistre edge.show dans airline/map_profiles.json sans toucher au reste du fichier (seuils, profils). */
-  async function writeEdge(c, show) {
-    const data = profilesOf(c),
-      cur = (await data.get(PROFILES, {
-        wait: true
-      }).catch(() => null)) || {};
-    await data.put(PROFILES, {
-      schema: 1,
-      ...cur,
-      edge: {
-        ...(cur.edge && typeof cur.edge === 'object' ? cur.edge : {}),
-        show
-      },
-      by: 'settings',
-      updated_at: now()
-    });
-  }
-
-  /** Carte Administration (niveau Complet) : UN BOUTON par page d'administrateur (SogAdminLinks), sa phrase dessous ; un
-   *  bouton qui porte un volet (edge, cfg) le déplie sous sa ligne. Bancs actifs seulement sur un poste avec lanceur
-   *  (sinon un bouton grisé), pages V2 montrées seulement avec un lanceur. panels : { cfg (HTML du volet, vide sans
-   *  accès à exporter), edge (le filet est affiché) }. */
-  function adminCard(t, L, panels) {
-    const links = window.SogAdminLinks || [];
-    if (!links.length) return '';
-    const panel = x => x.panel === 'edge' ? `<div class="f-adminpanel" data-adminpanel="edge" hidden><label class="f-check"><input type="checkbox" data-edge ${panels.edge ? 'checked' : ''}>${esc(t(T.edgeShow))}</label>
-      <p class="f-muted">${esc(t(T.edgeHint))}</p><p class="f-msg" data-msg></p></div>` : `<div class="f-adminpanel" data-adminpanel="cfg" hidden>${panels.cfg}</div>`;
-    const row = x => {
-      const label = esc(t(x.title)),
-        out = x.href && !x.href.startsWith('#'),
-        cls = `f-btn${x.primary ? ' primary' : ''}`;
-      const btn = x.panel ? `<button type="button" class="${cls}" data-act="adminPanel" data-panel="${esc(x.panel)}" aria-expanded="false">${label}</button>` : x.act ?
-        `<button type="button" class="${cls}" data-act="${esc(x.act)}">${label}</button>` : x.where === 'bench' && !L ? `<button type="button" class="${cls}" disabled>${label}</button>` :
-        `<a class="${cls}" href="${esc(out ? new URL(x.href, ROOT).href : x.href)}"${out ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
-      // `copyLink` : sous le lien, l'adresse absolue de la page, construite depuis location (publiée sur GitHub Pages ou locale), à
-      // ouvrir ou à mettre en favori sur le téléphone, copiable par un appui
-      const abs = x.copyLink && x.href ? new URL(x.href, location.href).href : '',
-        under = abs ? `<span class="f-muted f-admin-url">${esc(t(T.linkOpen))} <code data-adminurl>${esc(abs)}</code></span>
-        <span class="f-row"><button type="button" data-act="adminCopy" data-text="${esc(abs)}">${esc(t(T.copyLink))}</button></span>` : '';
-      return `<li data-admin="${esc(x.id)}">${btn}<span class="f-muted">${esc(t(x.text))}${x.where === 'bench' ? ` — ${esc(t(T.launcherOnly))}` : ''}</span>${under}${x.panel ? panel(x) : ''}</li>`;
-    };
-    const shown = links.filter(x => (x.where !== 'v2' || L) && (x.panel !== 'cfg' || panels.cfg));
-    return `<div class="f-card" data-card="admin"><h2>${esc(t(T.admin))}</h2><p class="f-muted">${esc(t(T.adminHint))}</p>
-      <ul class="f-admin">${shown.map(row).join('')}</ul></div>`;
-  }
-
-  /** Copie vers le presse-papiers, aussi hors contexte sûr (appareil appairé en http) : frame/lib/clipboard.js (module,
-   *  chargé à la demande) — 'clipboard', 'exec' ou 'shown' (texte montré sélectionné dans box, ou après near). */
-  async function copy(text, o = {}) {
-    try {
-      return await (await import(new URL('frame/lib/clipboard.js', ROOT).href)).copyText(text, o);
-    } catch {
-      return 'shown';
-    }
   }
 
   // ---- configuration d'un pilote (frame/settings/config.js)
@@ -1633,14 +877,6 @@
     i.onchange = () => i.files?.[0] && joinFromFile(c, i.files[0], view);
     i.click();
   }
-  const AIRLINE = 'airline/settings.json';
-  let airlineA = null;
-  /** Document de la compagnie (airline/settings.json du dépôt des données) : lecture, et écriture par l'import. */
-  const airlineDoc = FD => airlineA ||= FD.adapter({
-    id: 'frame-settings-airline',
-    reads: ['airline/'],
-    writes: [AIRLINE]
-  });
   /** Message d'une configuration refusée (validate). */
   const cfgError = (r, t) => r.error === 'schema' ? t(T.cfgBadSchema, {
     s: r.schema
@@ -1651,187 +887,6 @@
   const dropConfigHash = () => {
     if (/[?&](config|import|offline)=/.test(location.hash)) history.replaceState(null, '', `${location.pathname}${location.search}#settings`);
   };
-  const LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/;
-  /** Adresse de l'appli pour le lien : celle-ci si elle est publiée (https, pas locale), sinon la dernière donnée ici. */
-  function appUrl() {
-    if (location.protocol === 'https:' && !LOCAL.test(location.hostname)) return `${location.origin}${location.pathname}`;
-    try {
-      return localStorage.getItem('sogFrame:appUrl') || '';
-    } catch {
-      return '';
-    }
-  }
-  /** Mode d'emploi reçu → HTML en texte seul : une ligne par paragraphe, adresses https en liens. */
-  const howtoHtml = text => String(text).split(/\n+/).filter(Boolean).map(l => `<p>${esc(l).replace(/https:\/\/(?:[^\s<&]|&#38;)+[^\s<&.,;:)]/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`)}</p>`).join('');
-  /** « Créer le fichier et le lien » : sog-config-<TRI>.json téléchargé, lien #settings?config=… affiché à copier. */
-  async function makeConfig(c, view, src) {
-    const t = c.t,
-      box = view.querySelector('[data-cfgx]'),
-      msg = (text, kind = 'err') => {
-        const m = box.querySelector('[data-xmsg]');
-        m.textContent = text;
-        m.dataset.kind = kind;
-      };
-    const tri = box.querySelector('[data-f="cfgPilot"]').value.trim().toUpperCase(),
-      app = box.querySelector('[data-f="cfgApp"]').value.trim();
-    if (!/^[A-Z0-9]{2,5}$/.test(tri)) return msg(t(T.badTrigram));
-    let base = null;
-    try {
-      base = app ? new URL(app) : null;
-    } catch {
-      base = null;
-    }
-    if (base && !/^https?:$/.test(base.protocol)) base = null;
-    if (src && SogConfig.kind(src) === 'github' && !src.ownerType) src = {
-      ...src,
-      ownerType: await SogConfig.ownerType(src) || undefined
-    };
-    const airline = await airlineDoc(c.FD).get(AIRLINE, {
-      wait: true
-    }).catch(() => null);
-    const cfg = SogConfig.build({
-      airline,
-      data: src,
-      trigram: tri,
-      by: c.identity().trigram || ''
-    });
-    const name = `sog-config-${tri}.json`,
-      a = Object.assign(document.createElement('a'), {
-        href: URL.createObjectURL(new Blob([JSON.stringify(cfg, null, 1)], {
-          type: 'application/json'
-        })),
-        download: name
-      });
-    document.body.append(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1e4);
-    const out = box.querySelector('[data-cfgout]');
-    if (base) {
-      base.hash = '';
-      try {
-        if (base.href !== `${location.origin}${location.pathname}`) localStorage.setItem('sogFrame:appUrl', base.href);
-      } catch {
-        /* stockage indisponible */
-      }
-      const short = {
-          ...cfg
-        },
-        qr = out.querySelector('[data-cfgqr]');
-      delete short.howto; // refait du modèle à l'import (SogConfig.validate)
-      const link = `${base.href}#settings?config=${await SogConfig.pack(short)}`;
-      out.querySelector('[data-cfglink]').value = link;
-      out.hidden = false;
-      if (qr && window.SogQR) {
-        try {
-          qr.querySelector('div').innerHTML = SogQR.svg(link, {
-            ecl: 'M',
-            scale: 3
-          });
-          qr.hidden = false;
-        } catch {
-          qr.hidden = true; // lien trop long pour un code QR : le lien et le fichier restent
-        }
-      }
-    } else out.hidden = true;
-    msg([t(T.cfgMade, {
-        f: name
-      }), base && LOCAL.test(base.hostname) ? t(T.cfgLocal) : ''].filter(Boolean).join(' '), base && LOCAL.test(base.hostname) ?
-      'warn' : 'ok');
-  }
-
-  /** Adresse de dépôt comparable (sans .git ni barre finale, hôte en minuscules). */
-  const sameRepo = (a, b) => {
-    const n = u => String(u || '').trim().replace(/\/+$/, '').replace(/\.git$/, '').replace(/^(\w+:\/\/[^/]+)/, h => h.toLowerCase());
-    return !!a && !!b && n(a) === n(b);
-  };
-  /** L'opération ouvrira-t-elle la fenêtre Oui / Non du lanceur ? Réponse du lanceur pour cette adresse (POST adopt dry,
-   *  needsConfirm : autre dépôt que celui de la configuration), sinon comparaison locale ; enregistrement d'un dépôt
-   *  distant : jamais pour l'adresse actuelle. */
-  let remoteNow = null; // dernier GET /__setup/sync-remote (render)
-  const dryCache = {}; // adresse → needsConfirm du lanceur (POST adopt dry), 'invalid', ou null sans réponse
-  function needsConfirm(url, kind) {
-    const r = remoteNow || {},
-      dry = dryCache[String(url || '').trim()];
-    // dépôt distant : l'adresse actuelle ne demande jamais la fenêtre ; sinon, comme une reprise (autre que la configuration)
-    if (kind === 'remote' && sameRepo(url, r.url)) return false;
-    if (typeof dry === 'boolean') return dry;
-    return !sameRepo(url, r.default);
-  }
-  /** Refus du lanceur parce qu'une fenêtre est déjà ouverte (champ confirm, sinon le texte du message) ? */
-  const confirmOpen = r => !!r && !r.ok && (r.confirm === 'open' || /déjà ouverte|already open/i.test(r.message || ''));
-  /** Lignes lisibles du diagnostic du cadre (libellés traduits, valeurs brutes) ; absent : « — ». */
-  function paintDiag(dl, d, t) {
-    if (!dl) return;
-    const raw = v => v == null || v === '' ? '—' : Array.isArray(v) ? (v.length ? v.join(', ') : '—') : typeof v === 'object' ? JSON
-      .stringify(v) : String(v);
-    const tr = d.tree || {},
-      pg = d.page || {},
-      rf = d.references || {},
-      ae = d.aerodb || {};
-    const rows = [
-      ['transport', d.transport],
-      ['online', d.online],
-      ['lastSync', d.lastSync],
-      ['pending', d.pending],
-      ['pageSecure', pg.secure == null ? null : t(pg.secure ? T.yes : T.no)],
-      ['pageOffline', !pg.offline ? null : t(pg.offline === 'active' ? T.offActive : /^unavailable/.test(pg.offline) ? T.offNone : T
-        .offWaiting)],
-      ['lanHost', pg.launcher ? t(pg.launcher.lan ? T.viaLan : T.viaHere, {
-        h: pg.launcher.host || '?'
-      }) : null],
-      ['lastError', d.lastError || d.error],
-      ['treeHead', tr.head],
-      ['treeAt', tr.at],
-      ['treeFiles', tr.files],
-      ['treeChecked', tr.checked],
-      ['refKnown', rf.known],
-      ['refSia', rf.sia],
-      ['refAircraft', rf.aircraft],
-      ['refCached', rf.cached],
-      ['lastReadError', d.lastReadError],
-      ['aeroSource', ae.source],
-      ['aeroZones', ae.zones],
-      ['aeroLoaded', ae.loaded],
-      ['aeroMissing', ae.missing],
-      ['aeroError', ae.error]
-    ];
-    dl.innerHTML = rows.map(([k, v]) => `<dt>${esc(t(T.dg[k]))}</dt><dd>${esc(raw(v))}</dd>`).join('');
-  }
-  /** Porte de la carte Accès quand data/ n'est pas un dépôt git (lanceur) : absent → récupérer les données (clone) ;
-   *  plain → reprendre data/ dans un dépôt (adopt) ; identifiant et secret facultatifs, jamais gardés par la page. */
-  function gitDoor(state, t, fld, remote) {
-    return `<p class="f-warn">${esc(t(state === 'absent' ? T.stateAbsent : T.statePlain))}</p><p class="f-muted">${esc(t(T.gitWhy))}</p>
-      ${fld('gitUrl', T.remoteUrl, remote?.default || '')}${fld('gitUser', T.gitUser, '')}${fld('gitSecret', T.gitSecret, '', { type: 'password' })}
-      <label class="f-check"><input type="checkbox" data-f="gitRemember">${esc(t(T.gitRemember))}</label><p class="f-muted">${esc(t(T.gitCredHint))}</p><p class="f-msg" data-msg></p>
-      <div class="f-row"><button type="button" class="primary" data-act="${state === 'absent' ? 'gitClone' : 'gitAdopt'}">${esc(t(state === 'absent' ? T.clone : T.adopt))}</button></div>${state === 'absent' ? '' : `<p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p>`}
-      <p><a href="#help?a=${encodeURIComponent(t(T.noGitAnchor))}">${esc(t(T.helpLink))}</a></p>`;
-  }
-  /** Appel d'une route du lanceur (/__setup/<route>) ; GET sans corps, POST avec ; null en cas d'échec. */
-  async function setup(route, body) {
-    try {
-      const r = await fetch(new URL(`__setup/${route}`, ROOT), {
-        method: body ? 'POST' : 'GET',
-        cache: 'no-store',
-        headers: {
-          'X-SOG-Setup': '1',
-          ...(body ? {
-            'Content-Type': 'application/json'
-          } : {})
-        },
-        ...(body ? {
-          body: JSON.stringify(body)
-        } : {})
-      });
-      return await r.json();
-    } catch {
-      return null;
-    }
-  }
-  /** État de la clé IVAO du lanceur : { set, hint, env } ; null sans réponse. */
-  async function launcherKey() {
-    return (await setup('secrets'))?.app?.ivao?.apiKey || null;
-  }
 
   /** Exporte la sauvegarde de cet appareil en un fichier (FrameData.dump : copies, écritures en attente, conflits ; jamais
    *  de jeton ; bases de référence exclues). */
