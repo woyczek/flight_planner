@@ -2,6 +2,9 @@
 
 Memory of the V3 flightlog module: every choice, dated, with its reason. Chat history is never needed.
 
+- **28 Oct 2026 — the `h1` follows `ctx.titled`** (frame lot 25, INTEGRATION § 6): while the phone's header carries
+  the module's title (`ctx.titled`), the module's `h1` gets `f-sr` (screen readers only), toggled again on every
+  `frame-titled` event; the listener goes at unmount. Checked on 8804 at 375 px.
 - **28 Oct 2026 — status lines published for the frame** (frame lot 25, INTEGRATION § 10.0; Simplification): the module
   writes `cache/flightlog/status.json` = `{ schema: 1, lines: [{ text ×4, go: '#report?from=flightlog', news: true,
   handoff: { to: 'report', family, values } }] }` instead of `pending.json`: the frame shows ready lines and writes the

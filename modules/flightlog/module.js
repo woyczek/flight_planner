@@ -425,6 +425,11 @@ export async function mount(el, ctx) {
   };
   S.kept = !!keptFilters(); // filtres d'une visite précédente : dits par une puce qui les retire
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
+  // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
+  // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
+  S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);
+  S.srTitle();
+  window.addEventListener('frame-titled', S.srTitle);
   S.body = el.querySelector('[data-body]');
   // « ? » de l'en-tête : le chapitre au paragraphe de ce qui est affiché (un vol déplié, le vol en cours, sinon la liste)
   ctx.helpAnchor?.(() => S?.open ? 'flightlog-detail' : S?.started ? 'flightlog-current' : 'flightlog-list');
@@ -439,6 +444,7 @@ export async function mount(el, ctx) {
 
 export function unmount() {
   if (!S) return;
+  window.removeEventListener('frame-titled', S.srTitle);
   for (const f of S.stops || []) f?.();
   S.body = null;
   S = null;
