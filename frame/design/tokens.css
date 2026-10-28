@@ -390,6 +390,49 @@
   --sog-radius-s: 4px
 }
 
+/* ---- aqua : ordinateur seulement (html.f-desk ; ailleurs le cadre pose standard, frame/app.js), jour. Métal brossé, verre,
+   boutons gel du bureau des années 2000 : ici les couleurs, la police (Lucida Grande, à défaut Segoe UI) et les rayons ; la
+   matière (dégradés gel, verre, textures, panneaux par module) est dans design/aqua.css. Bleu gel 5,3 : 1 avec le blanc
+   dessus ; encre 14,3 : 1 sur la surface ; nuit : encre sombre sur le bleu 6,3 : 1, texte 11,4 : 1. */
+[data-design="aqua"] {
+  color-scheme: light;
+  --sog-bg: #e4ebf2;
+  --sog-surface: #f6f9fc;
+  --sog-surface-2: #fff;
+  --sog-fg: #1c2733;
+  --sog-muted: #4f5d6b;
+  --sog-border: #b8c3ce;
+  --sog-accent: #1a6acb;
+  --sog-accent-ink: #fff;
+  --sog-link: #1559b0;
+  --sog-focus: #2f86ee;
+  --sog-ok: #1e7d32;
+  --sog-warn: #985a00;
+  --sog-err: #bf2419;
+  --sog-on-status: #fff;
+  --sog-module: var(--sog-accent);
+  --sog-module-ink: var(--sog-accent-ink);
+  --sog-module-text: var(--sog-link);
+  --sog-shadow: 0 14px 34px #28466e40;
+  --sog-shadow-up: 0 -4px 14px #28466e2e;
+  --sog-veil: #1c273399;
+  --sog-chart-1: #1a6acb;
+  --sog-chart-2: #8a3fc0;
+  --sog-chart-3: #1e7d32;
+  --sog-chart-4: #c25e00;
+  --sog-chart-5: #c62828;
+  --sog-chart-6: #5f7182;
+  --sog-chart-grid: #d3dce5;
+  --sog-chart-bg: #fbfdff;
+  --sog-font: 15px/1.45 "Lucida Grande", "Lucida Sans Unicode", "Segoe UI", system-ui, sans-serif;
+  --sog-font-title: "Lucida Grande", "Lucida Sans Unicode", "Segoe UI", system-ui, sans-serif;
+  --sog-title-case: none;
+  --sog-title-spacing: normal;
+  --sog-title-weight: 700;
+  --sog-radius: 8px;
+  --sog-radius-s: 5px
+}
+
 /* ---- couleur repère du module affiché : le cadre pose data-landmark (id du module ou de l'écran du cadre) sur <html>,
    sur le volet de chaque module et sur son lien du menu (pas data-module : les modules s'en servent dans leurs propres
    sélecteurs, qui déborderaient sur la page) ; ailleurs que dans metro, swiss, cupertino et material, --sog-module reste l'accent */
@@ -729,6 +772,44 @@
     --sog-radius: 12px;
     --sog-radius-s: 4px
   }
+  [data-design="aqua"][data-tone="night"] {
+    color-scheme: dark;
+    --sog-bg: #161c23;
+    --sog-surface: #26303b;
+    --sog-surface-2: #141a21;
+    --sog-fg: #e6edf5;
+    --sog-muted: #aebccb;
+    --sog-border: #46525f;
+    --sog-accent: #4a97f2;
+    --sog-accent-ink: #08121e;
+    --sog-link: #8cc0ff;
+    --sog-focus: #5aa2ff;
+    --sog-ok: #6ccf7a;
+    --sog-warn: #e0a33b;
+    --sog-err: #ff8a80;
+    --sog-on-status: #121519;
+    --sog-module: var(--sog-accent);
+    --sog-module-ink: var(--sog-accent-ink);
+    --sog-module-text: var(--sog-link);
+    --sog-shadow: 0 14px 34px #000a;
+    --sog-shadow-up: 0 -4px 14px #0008;
+    --sog-veil: #000a;
+    --sog-chart-1: #5aa2ff;
+    --sog-chart-2: #ce93d8;
+    --sog-chart-3: #6ccf7a;
+    --sog-chart-4: #ffb74d;
+    --sog-chart-5: #ff8a80;
+    --sog-chart-6: #b0bec5;
+    --sog-chart-grid: #3a4652;
+    --sog-chart-bg: #1e262f;
+    --sog-font: 15px/1.45 "Lucida Grande", "Lucida Sans Unicode", "Segoe UI", system-ui, sans-serif;
+    --sog-font-title: "Lucida Grande", "Lucida Sans Unicode", "Segoe UI", system-ui, sans-serif;
+    --sog-title-case: none;
+    --sog-title-spacing: normal;
+    --sog-title-weight: 700;
+    --sog-radius: 8px;
+    --sog-radius-s: 5px
+  }
 }
 @media screen and (prefers-color-scheme: dark) {
   :root:not([data-tone="day"]) {
@@ -1032,5 +1113,43 @@
     --sog-gap-l: 24px;
     --sog-radius: 12px;
     --sog-radius-s: 4px
+  }
+  :root[data-design="aqua"]:not([data-tone="day"]) {
+    color-scheme: dark;
+    --sog-bg: #161c23;
+    --sog-surface: #26303b;
+    --sog-surface-2: #141a21;
+    --sog-fg: #e6edf5;
+    --sog-muted: #aebccb;
+    --sog-border: #46525f;
+    --sog-accent: #4a97f2;
+    --sog-accent-ink: #08121e;
+    --sog-link: #8cc0ff;
+    --sog-focus: #5aa2ff;
+    --sog-ok: #6ccf7a;
+    --sog-warn: #e0a33b;
+    --sog-err: #ff8a80;
+    --sog-on-status: #121519;
+    --sog-module: var(--sog-accent);
+    --sog-module-ink: var(--sog-accent-ink);
+    --sog-module-text: var(--sog-link);
+    --sog-shadow: 0 14px 34px #000a;
+    --sog-shadow-up: 0 -4px 14px #0008;
+    --sog-veil: #000a;
+    --sog-chart-1: #5aa2ff;
+    --sog-chart-2: #ce93d8;
+    --sog-chart-3: #6ccf7a;
+    --sog-chart-4: #ffb74d;
+    --sog-chart-5: #ff8a80;
+    --sog-chart-6: #b0bec5;
+    --sog-chart-grid: #3a4652;
+    --sog-chart-bg: #1e262f;
+    --sog-font: 15px/1.45 "Lucida Grande", "Lucida Sans Unicode", "Segoe UI", system-ui, sans-serif;
+    --sog-font-title: "Lucida Grande", "Lucida Sans Unicode", "Segoe UI", system-ui, sans-serif;
+    --sog-title-case: none;
+    --sog-title-spacing: normal;
+    --sog-title-weight: 700;
+    --sog-radius: 8px;
+    --sog-radius-s: 5px
   }
 }

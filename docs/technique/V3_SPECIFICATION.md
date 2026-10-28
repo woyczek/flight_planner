@@ -503,7 +503,10 @@ redesigned for touch at that point.
    layer — to settle when the user has access to the site.
 2. Which V2 pages stay reachable from the Pilot application during the transition (the full suite on the launcher).
 3. **Designs (user, 23 Oct 2026): four designs are retained for V3 — `metro`, `swiss`, `cupertino` and `material` (Material 3);**
-   `cabinet` goes, `field` may stay. Nothing skeuomorphic on a phone. Mock-ups on branch `v3-metro`
+   `cabinet` goes, `field` may stay. Nothing skeuomorphic on a phone. **Amended 28 Oct 2026 (user): `aqua` is retained
+   too, for computers only** (`html.f-desk`; not offered and not drawn on a phone or a tablet; textures on the frame's
+   chrome, objects inside the modules later; frame/design/SPEC.md § 3). Point 2 below reads: the landmark is used by
+   metro and aqua (aqua: one background panel per module). Mock-ups on branch `v3-metro`
    (`frame/design/demo_metro.html`, `frame/design/DECISIONS.md`). Points for the ergonomics session to decide:
    1. the page title written by the frame (the verb as `h1`), the modules dropping their own;
    2. `data-landmark` and `--sog-module*` (one landmark colour per module) in the integration contract, visible in

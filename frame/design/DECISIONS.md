@@ -380,3 +380,27 @@ The design agent's memory: every choice, dated, with its reason. Newest last. Pr
   - No `url()` in a token: Chrome resolves a relative address in a custom property against the sheet that uses it
     (measured: declared in `a/decl.css` as `b/t.webp`, used in `a/b/use.css`, fetched `a/b/b/t.webp`), Firefox against the
     sheet that declares it. Textures stay in the design's own sheet, on elements no other design styles.
+
+- **28 Oct 2026 — Aqua, a design for computers** (user: "une version skeuomorphe (aqua), pour la version ordinateur
+  uniquement"; plan challenged by the ergonomics session, five conditions accepted):
+  - User's choices: Aqua is retained beside metro, swiss, cupertino and material; textures on the frame's chrome only for now
+    (objects in the modules: later); "computer" excludes phones and tablets; nothing skeuomorphic on a phone, not even a flat
+    Aqua.
+  - Ergonomics' conditions: (1) no fifth copy of the mock-ups' rules: the skin tokens first (lot 1a), `aqua.css` holds tokens
+    and textures only; (2) "computer" decided once by the frame (`html.f-desk`, frame lot `e610e4c1f`), never by a media
+    query of the design; (3) no silent fallback: the saved choice stays `aqua`, `design().applied` says what is drawn, and
+    the Design card says it (settings session's line); (4) images never in the shell nor precached, zero byte more on a phone;
+    (5) branch `v3-aqua`, reviewed before it reaches `v3`.
+  - Tokens (`tokens.css`, three blocks like the others): ink `#1c2733` on surface `#f6f9fc` 14.3 : 1, muted 6.4, link 6.4, ok
+    4.9, warn 5.2, err 5.7; white on the accent `#1a6acb` 5.3. Night: text 11.4, muted 6.9, link 7.1, dark ink on the accent
+    `#4a97f2` 6.3. Lucida Grande, Aqua's own face, with Segoe UI behind it; radius 8; the sticky bar square
+    (`--sog-bar-radius: 0`: bars stay square in the textured designs).
+  - Textures by pseudo-elements: the header is a stacking context (z-index 5), so its `::before` at `z-index: -1` lies
+    between its background and its buttons; the rail is not, so its background is made transparent (`--sog-nav-bg`) and its
+    `::before` carries colour and metal. The panel is `body::before`, fixed under the header, `z-index: -2`.
+  - Panels: V2's Aqua panels (`shared/deco/aqua/clair/` by day, `panels/` at night), landscape, copied under the module's
+    name (`frame/design/aqua/day|night/<module>.webp`), 7 × 2 = 876 KB in all, one fetched per module shown. The URL is in a
+    property declared and read in `aqua.css` (`--aq-panel`), so it resolves the same everywhere.
+  - Tests: H5 (computer: Aqua offered and applied, metal fetched, header name ≥ 4.5 day and night, page text over the panel ≥
+    4.5 at the worst pixel, the text made transparent and its boxes shot), H6 (phone: not offered, `standard` applied, the
+    choice kept, no request under `frame/design/aqua/` within 6 s).

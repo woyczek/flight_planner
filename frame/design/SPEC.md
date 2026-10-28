@@ -14,6 +14,8 @@ Module side: [INTEGRATION.md](INTEGRATION.md).
 | `frame/design/swiss.css` | the rules of the `swiss` design that tokens cannot carry (mock-up, pending decision), all behind `[data-design="swiss"]` |
 | `frame/design/cupertino.css` | the rules of the `cupertino` design that tokens cannot carry (mock-up, pending decision), all behind `[data-design="cupertino"]` |
 | `frame/design/material.css` | the rules of the `material` design that tokens cannot carry (mock-up, pending decision), all behind `[data-design="material"]` |
+| `frame/design/aqua.css` | the matter of the `aqua` design (computers only): its skin tokens (gel buttons, glass cards, sunk fields, brushed header and rail) and its textures, all behind `html.f-desk[data-design="aqua"]`; no rule on a selector another design styles |
+| `frame/design/aqua/` | Aqua's images: `brushed.webp` (header and rail), `day/<module>.webp` and `night/<module>.webp` (one panel per module); fetched only on a computer in Aqua, kept offline once seen; sources in [aqua/CREDITS.md](aqua/CREDITS.md) |
 | `frame/design/demo_metro.html` | the mock-up page of the four designs (`?design=metro` by default, `swiss`, `cupertino`, `material`): scenes (phone and screen, day and night) of the real frame markup and primitives; the file kept its name, the link is known |
 | `frame/frame.css` | the application's chrome (header, rail, bottom tab bar, view, notes, dialogs); imports the two files above, so a page that loads `frame.css` has everything |
 | `frame/lib/icons.js` | the line icon set (ES module, owner: design) |
@@ -93,6 +95,29 @@ what depends on the device stays in `@media`: the bottom tab bar (the rail on a 
   app bar on the page surface; the bottom bar is a Material navigation bar (64 px, a 64 × 32 pill behind the active icon) and the rail on a screen a navigation rail (88 px column, icon above the label, a 56 × 32 indicator); the
   landmark colour tints the active indicator only. Night: `#1c1b1f` page, `#26242b` cards, `#312f38` fields, primary lightened.
   Frame rules and open points: [DECISIONS.md](DECISIONS.md).
+- **`aqua`** (**retained by the user**, 28 Oct 2026; **computers only**): the Aqua desktop of the early 2000s. Brushed light
+  metal for the header and the rail, white glass cards (94 % opaque, light rim, soft drop shadow), gel buttons (a light gel;
+  the primary button, the selected tab or step and the rail's current verb in the accent's blue gel, white text 5.3 : 1),
+  sunk fields, fine horizontal stripes on the page, Lucida Grande (Segoe UI where it is missing), radius 8 (bars square).
+  **One panel per module** behind the view (`data-landmark`): a desk scene set at the right, faded towards the left where the
+  text sits, at 50 % (night 60 %); fuel = gear, maps = navigation, report = operations, flightlog = aircraft, website = awards,
+  atmosphere = time, settings (and the frame's screens) = radio. Night: dark brushed metal, dark glass, the accent lightened
+  with a dark ink (6.3 : 1).
+  - **Computers only.** The frame marks a computer with `html.f-desk` (wider than 760 px, a precise hovering pointer, not a
+    phone in landscape; frame INTEGRATION § 9.1). `aqua.css` only acts under `html.f-desk`. Elsewhere Aqua is **neither offered
+    nor drawn**: `designs()` leaves it out, and a device whose saved choice is `aqua` keeps that choice but the frame applies
+    `standard` (`design().applied`), at first paint too (`index.html`). A tablet with a mouse or a trackpad passes for a
+    computer, and that is accepted (no device sniffing).
+  - **Tokens only on shared selectors**: everything Aqua changes on a button, a card, a field, the bar, the header or the rail
+    goes through the skin tokens (§ 2); its own rules only touch elements no other design styles (the header's and rail's
+    `::before`, `body`, `body::before`).
+  - **Weight**: `aqua.css` is in the shell (small); the images never are. Only the current module's panel is fetched (about
+    60 KB), and only on a computer in Aqua; the service worker keeps it once seen. On a phone: not one byte of Aqua's images
+    (test H6).
+  - Measured (test H5): header name over the header, and page text (outside the cards) over the panel, worst pixel: 12.1
+    (fuel, day), 14.1 (fuel, night), 5.0 (settings, day, muted text), 8.0 (settings, night).
+  - Open: objects inside the modules (V2's notebooks, register sheet) — "to see later" (user), they are part of the interest of
+    a skeuomorphic design; the dual view shows the main module's panel only.
 - **Bottom tab bar** (phone, `frame/frame.css`; the frame draws the markup, `APP.tabs`, frame SPEC § 3.1). Markup:
   `nav.f-tabbar > ul > li > a[data-tab][data-landmark]` holding `span.f-tab-ico` (the line icon and the filled one, the
   stylesheet shows one) and `span.f-tab-lbl`; the selected tab has `aria-current="page"`. Default (`standard`, `cabinet`,
@@ -127,7 +152,9 @@ what depends on the device stays in `@media`: the bottom tab bar (the rail on a 
   - The frame applies it at once, writing an attribute only when it changes, mirrors it in `localStorage`
     (`sogFrame:design`), and sets the system bar colour (`theme-color`) from `--sog-surface`.
   - An inline line at the top of `frame/index.html` reads the mirror and sets the attributes before the first paint.
-  - The settings screen's context gets `designs()` (id, labels in four languages, textured) and `design()`.
+  - The settings screen's context gets `designs()` (id, labels in four languages, textured, `desktop` for a design kept for
+    computers; on another device those are left out) and `design()` (`{ design, tone, applied }`: `design` is the saved
+    choice, `applied` the one on `<html>`; they differ when the choice is a computer's design on another device).
 
 ## 4. Primitives
 

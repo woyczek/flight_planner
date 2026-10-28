@@ -9,7 +9,7 @@
 try {
   const d = JSON.parse(localStorage.getItem('sogFrame:design') || '{}'),
     h = document.documentElement;
-  if (/^(standard|cabinet|field|metro|swiss|cupertino|material)$/.test(d.design)) h.dataset.design = d.design;
+  if (/^(standard|cabinet|field|metro|swiss|cupertino|material|aqua)$/.test(d.design)) h.dataset.design = d.design;
   if (/^(day|night)$/.test(d.tone)) h.dataset.tone = d.tone
 } catch (e) {}
 // paysage sur un téléphone (même règle que landNow() de frame/app.js, qui la tient ensuite à jour) : la mise en page du rail et de la
@@ -19,6 +19,9 @@ try {
     .add('f-land')
   // ordinateur (frame/app.js, paintDesk) : le design d'un ordinateur (Aqua) juste dès le premier affichage
   else if (innerWidth > 760 && matchMedia('(pointer: fine) and (hover: hover)').matches) document.documentElement.classList.add('f-desk')
+  // design réservé à l'ordinateur (Aqua) ailleurs : standard (frame/app.js, applyDesign)
+  if (document.documentElement.dataset.design === 'aqua' && !document.documentElement.classList.contains('f-desk')) delete document
+    .documentElement.dataset.design
 } catch (e) {}
 // module de l'adresse : la couleur repère des designs metro, swiss, cupertino et material dès le premier affichage (frame/app.js, paintModule)
 {

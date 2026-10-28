@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Design: Aqua, for computers** (`frame/design/tokens.css`, `aqua.css`, `aqua/`; `frame/app.js`, `frame/index.html`,
+  `frame/sw.js`; design SPEC § 1–3, DECISIONS, V3_SPECIFICATION § 10.3; tests H5, H6): brushed metal header and rail, glass
+  cards, gel buttons, striped page and one desk panel per module, day and night. Offered and drawn on a computer only
+  (`html.f-desk`); on a phone or a tablet a saved Aqua stays saved and the frame draws Standard; Aqua's images are never
+  fetched there.
 - **Design: skin tokens** (`frame/design/primitives.css`, `frame/frame.css`; design SPEC § 2, DECISIONS): buttons, the
   primary button, fields, cards, the sticky bar, the header and the rail read optional `--sog-btn-*`, `--sog-card-*`,
   `--sog-field-shadow`, `--sog-bar-bg`, `--sog-bar-radius`, `--sog-head-*`, `--sog-nav-*` tokens, falling back to today's

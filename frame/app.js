@@ -826,6 +826,13 @@
       id: 'material',
       label: ['Material', 'Material', 'Material', 'Material'],
       textured: false
+    }, {
+      // ordinateur seulement (desktop : html.f-desk) : métal brossé, verre, boutons gel (frame/design/aqua.css) ; ailleurs, le
+      // choix reste mémorisé et le cadre pose standard
+      id: 'aqua',
+      label: ['Aqua', 'Aqua', 'Aqua', 'Aqua'],
+      textured: true,
+      desktop: true
     }],
     TONES = ['auto', 'day', 'night'],
     DESIGN_MIRROR = 'sogFrame:design';
@@ -838,11 +845,15 @@
     design: DESIGNS.some(d => d.id === v?.design) ? v.design : 'standard',
     tone: TONES.includes(v?.tone) ? v.tone : 'auto'
   });
+  /** Design réellement posé : celui du choix, sauf un design d'ordinateur (desktop) hors html.f-desk → standard. */
+  const appliedDesign = () => DESIGNS.find(d => d.id === design.design)?.desktop && !document.documentElement.classList.contains(
+    'f-desk') ? 'standard' : design.design;
   /** Pose design et ton sur <html> (seulement s'ils changent), garde le miroir et la couleur de la barre du système. */
   function applyDesign(v) {
     design = designFrom(v);
-    const h = document.documentElement;
-    if (h.dataset.design !== design.design) h.dataset.design = design.design;
+    const h = document.documentElement,
+      shown = appliedDesign();
+    if (h.dataset.design !== shown) h.dataset.design = shown;
     if (design.tone === 'auto') {
       if (h.hasAttribute('data-tone')) h.removeAttribute('data-tone');
     } else if (h.dataset.tone !== design.tone) h.dataset.tone = design.tone;
@@ -854,6 +865,8 @@
     }
     paintBar();
   }
+  // l'appareil devient ou cesse d'être un ordinateur (fenêtre, pointeur) : le design posé suit (Aqua ↔ standard)
+  window.addEventListener('frame-desk', () => applyDesign(design));
   /** Couleur de la barre du système : celle de l'en-tête, qui suit le design, le ton et (metro) le module affiché. */
   function paintBar() {
     const meta = document.querySelector('meta[name="theme-color"]'),
@@ -2478,9 +2491,12 @@
         };
       },
       // carte Design : jeux proposés, choix actuel, enregistrement (device/design.json, appliqué aussitôt)
-      designs: () => DESIGNS,
+      // carte Design : hors ordinateur, pas de design d'ordinateur (desktop) ; applied = design posé (standard quand le choix
+      // mémorisé est un design d'ordinateur et que l'appareil n'en est pas un)
+      designs: () => DESIGNS.filter(d => !d.desktop || document.documentElement.classList.contains('f-desk')),
       design: () => ({
-        ...design
+        ...design,
+        applied: appliedDesign()
       }),
       async saveDesign(v) {
         const d = designFrom(v);

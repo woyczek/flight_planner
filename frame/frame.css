@@ -1,6 +1,6 @@
 /* V3 frame — mise en page de l'appli : en-tête (nom, bouton de synchronisation, aide, réglages), colonne des verbes (à gauche
    sur écran) ou barre d'onglets du bas (téléphone), vue du module, notes et fenêtres du cadre. Les jetons
-   (couleurs, polices, rayons, densité ; designs standard, cabinet, field, metro, swiss, cupertino, material ; jour / nuit) et les primitives données aux
+   (couleurs, polices, rayons, densité ; designs standard, cabinet, field, metro, swiss, cupertino, material, aqua ; jour / nuit) et les primitives données aux
    modules viennent de frame/design/ (importés ici : une page qui charge frame.css a tout). */
 @import url("design/tokens.css");
 @import url("design/primitives.css");
@@ -8,6 +8,7 @@
 @import url("design/swiss.css");
 @import url("design/cupertino.css");
 @import url("design/material.css");
+@import url("design/aqua.css");
 /* Mesures du cadre, données aux modules (frame/INTEGRATION.md § 9.2) : un module ne recopie jamais ces nombres.
    --f-head-h : l'en-tête, une seule ligne (6 + 44 + 6 + filet de 1 px), à tout état et toute largeur.
    --f-vh : la hauteur de la fenêtre (dvh quand le navigateur le sait : la barre d'adresse d'un téléphone n'y compte pas).
