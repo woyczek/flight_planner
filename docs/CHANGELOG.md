@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: EAD Basic probe and library, rounds 2 to 5** (`tools/proc_ead.py`, `tools/proc_eaip.py --scan-pdf`; `frame/aerodb/EAD_BASIC.md`
+  § 6 bis to 6 sexies, DECISIONS; tests K3, K6) — from the owner's runs on the real screen: page-state tokens blanked in the report; the
+  AIP Library's data table read from the JSF partial answer (the announced count, every list sent with its default, the State's change
+  event replayed); the advanced search opened and "Document Name" found by its label, the prefix `EG_AD_2_EGLL` searched (exact-name
+  enumeration as a fallback, never walking the pages), four request shapes tried and the one that works kept first; one document
+  downloaded through its ▶ button into the local cache only (`--name`, `--download`, `--docs`); `--scan-pdf` reports page by page the
+  titles and keywords of a downloaded PDF to find coding tables, copying no content.
 - **Frame: a store script lost at start no longer breaks the page** (`frame/app.js`; SPEC § 3, DECISIONS; test A28): the
   frame asks a missing store file again once and starts; if it is still missing, the page says which file and offers
   "Reload" instead of a blank page and a JavaScript error ("reading 'detect'").

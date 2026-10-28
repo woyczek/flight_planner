@@ -165,6 +165,112 @@ tested only against a local copy built from the public login page (case K6). The
 **What the session does with it**: the search and download calls of the one-click job (§ 5, step 2), against the real shapes; then the layout of
 EGLL's coding tables once the owner has downloaded that aerodrome's pages by hand (§ 4) or the job fetches them.
 
+## 6 bis. The probe, second round (28 October 2026)
+
+First real run by the owner (United Kingdom / EGLL): login, home page, AIP Library (`aip_overview.faces`, form `mainForm`) and its lists were read; the
+partial search answered (56 kB) but the result table was not analysed, and the report printed `ViewState` values. Changes:
+
+- the sanitising also blanks `ViewState` in printed dictionaries and any `number:number` page-state token, and the report masks state fields;
+- **the result table is read**: the partial JSF answer's `<update>` fragments are split and every table row (`<tr data-ri>` with its cells) is listed
+  with its direct links and the PrimeFaces command-link sources (`PrimeFaces.ab({s:"…"})`) — the shape of the table is assumed from PrimeFaces,
+  not seen: the saved sanitised answer `03_recherche_ajax.html` is the fallback;
+- `--name EGLL` fills the document-name filter (advanced search) when the form has one and ticks the advanced-search box, reporting what it found;
+- `--download` downloads **one** document of the aerodrome (a direct link) into `ead_probe/cache/` — local cache, never committed (`ead_probe/` is
+  ignored) — and reports its size and whether it is a PDF; a command link (no direct address) is reported with its source id for the next round.
+
+```
+python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL --name EGLL --download
+```
+
+Send back the same way (`report.txt`, read first). Tested on a hand-built partial answer and a local fake (case K6): it checks the probe's logic, not
+EAD's real screens, which is what this round settles.
+
+## 6 ter. The probe, third round (28 October 2026): the real screen, as described by the owner
+
+What the owner's two captures showed (relayed): the search *United Kingdom / AD* returns **1,155 documents on 16 pages** (PrimeFaces datatable, no
+"show all", and the page numbers move while navigating: **the probe never walks the pages**). The *Advanced Search* box
+(`mainForm:enableAdvancedSearch_input`) opens three fields: *Effective Date* (`dd/MM/yyyy`), **Document Name** and *Document Heading*. With Document
+Name = `EG_AD_2_EGLF_8-1_en.pdf`, a single row: "AD 2 EGLF 8 INSTRUMENT APPROACH CHART ILS/DME RWY 06 - ICAO", effective 2026-01-22, eAIP column empty,
+AIRAC = NON-AIRAC, and one ▶ button per row (the download). File names follow `<prefix>_AD_2_<ICAO>_<section>-<n>_en.pdf` (6-x SID, 7-x STAR
+presumed, 8-x IAC, 2-x aerodrome charts, 4-x zones, 5-x MSA).
+
+What the probe now does with `--name EG_AD_2_EGLL`:
+
+1. ticks Advanced Search through a JSF partial request (event `valueChange`, then `change`) and reads the fields that appear by their **labels**
+   (not by guessed ids): Document Name is the field labelled so;
+2. searches that name, then the same without its two-letter prefix (`AD_2_EGLL`): it **says whether the field means "contains" or "starts with"**;
+3. if the prefix finds nothing, it **enumerates exact names** `EG_AD_2_EGLL_<s>-<n>_en.pdf` (s 1 to 8, n 1 to 9, stopping at the first empty one in each
+   section: at most about 8 + the number found requests);
+4. lists the rows (date, name, eAIP, AIRAC, title, the ▶ button's id and name) and the pager text, and writes the `<table>` of the results, sanitised,
+   to `ead_probe/tables.html` (what to paste if the session asks for the exact HTML);
+5. with `--download`, presses the ▶ button of the first EGLL row (a classic form submit carrying that button, as a PrimeFaces download button does) and keeps
+   **one** PDF in `ead_probe/cache/` if the answer starts with `%PDF-`; otherwise it reports the beginning of the answer (sanitised).
+
+The page state (`ViewState`) is renewed from each answer, as JSF requires. A defect found by the test of this round, present since the second round:
+the loop over the lists reused the variable holding `--name`, so the filter silently took the name of the last list; fixed.
+
+```
+python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL --name EG_AD_2_EGLL --download
+```
+
+## 6 quater. The probe, fourth round (28 October 2026): the third run's report
+
+**Read in the owner's report** (EAD Basic account, United Kingdom): the AIP Library is `…/restricted/user/aip/aip_overview.faces`; its form `mainForm` has the lists
+`selectAuthorityCode` (47 States by ICAO prefix; **EG = United Kingdom**), `selectAuthorityType` (Civil), `selectLanguage` (EN), `selectAipType` (AIP, AMDT, SUP, AIC, Charts),
+`selectAipPart` (GEN, ENR, AD), the box `enableAdvancedSearch_input` and the buttons `querySearch` and `reset`. The plain search (State + AD) answered 56,682 bytes and
+**65 table rows**. The advanced-search box **opened by partial request** and revealed, found by label: `effectiveDate_input`, **`documentName`**, `documentHeader`.
+
+**What failed**: every search by Document Name (`EG_AD_2_EGLL`, `AD_2_EGLL`, the eight exact names) answered 200 with **0 rows and no pager**, while the same name typed in the
+browser gives one row. The probe's request differs from the browser's in a way it could not name: it printed neither the answer nor what it had sent.
+
+**Fourth round** (read-only as before): for the plain search and for every name search that finds nothing, the report now prints the **answer's anatomy** (size, each
+updated component with its size, errors, redirection, messages shown, or its first 160 characters) and the **names of the parameters sent**; a **control** (search with
+no name, after the box was opened) tells whether opening the box itself broke the form; and the probe tries **four request shapes** in turn — execute and render `@all`
+(the previous one), execute `@form`, execute the fields + button and render only the component(s) that carry the rows (identified in the plain search), and the whole form
+— keeps the first that returns rows and uses it for the prefix test and the exact-name enumeration.
+
+**If it still finds nothing — the most reliable help** is the browser's own request, once, for the same search: in the browser's developer tools (F12), tab *Network*, keep
+the log, fill *Advanced Search / Document Name* with `EG_AD_2_EGLL`, press *Search*, click the `aip_overview.faces` request (method POST) and copy its **Form Data** (the
+list of `name: value`), **replacing the value of `javax.faces.ViewState` by `x`**; no cookie, no header, no password is needed. That list is what the probe must reproduce.
+
+## 6 quinquies. The probe, fifth round (28 October 2026): what the fourth run's report proved
+
+**The "65" and "68 rows" were not results.** They were the `<tr>` of the page's own layout tables (the lists' options: "Albania (LA)", "Armenia (UD)"…, the labels
+"Effective Date", "Document Name"…). The real answer, at the end of the same report: **"Number of search results: 0 — No data found."** So no search of the previous runs
+ever ran as the browser's does, the plain one (State + AD) included; and opening the advanced box with `execute=@all` ended in the server's error page
+(`error.faces?msg=http.error.unknown`). What the report did prove: the data table is `mainForm:searchResults` (its parameter `searchResults_selection` is sent), and the
+request shape `execute=@form` is accepted (it answered a full page where `@all` answered an error).
+
+**Changes, from that evidence:**
+- **results are read only from the data table** (`<tbody id="…searchResults_data">`) and the announced count ("Number of search results: N" / "No data found.") is printed
+  with every search: a layout table can no longer pass for results, and the enumeration of exact names now runs when the count is zero;
+- **every list is sent, as the browser does**: those the probe does not choose get their default (or *Civil* for the authority type; the previous requests lacked
+  `selectAuthorityType_input`); the first request shape is now `execute=@form` (PrimeFaces' default for a command button);
+- **the State selection's own event is replayed** (`valueChange`, then `change`) before searching, since the lists are linked server-side, and its answer is described.
+
+**Still asked of the owner if this fails**: the browser's own requests, as in § 6 quater, for the three steps — choosing *United Kingdom*, ticking *Advanced Search*, then *Search*
+with a Document Name — each request's Form Data (`javax.faces.ViewState` replaced by `x`). They settle what the probe cannot guess.
+
+## 6 sexies. First success (28 October 2026): the document of EGLL, downloaded
+
+**Result of the owner's run on the fourth-round probe** (United Kingdom, EGLL): the search by Document Name `EG_AD_2_EGLL` returned **one document, "AD 2 EGLL"**, and `--download`
+fetched it: `EG_AD_2_EGLL_en.pdf`, a **PDF of 3,038,627 bytes** (the whole AD 2 part of the aerodrome in one file), kept in the owner's `ead_probe/cache/` only. Established:
+
+- **The request shape that works** is the whole form: `javax.faces.partial.execute=mainForm`, `javax.faces.partial.render=mainForm`, `javax.faces.source=mainForm:querySearch`, with every list sent
+  (authority `EG`, authority type `C`, language `EN`, AIP type `AIP`, part `AD`), `mainForm:enableAdvancedSearch_input=on` and `mainForm:documentName=<name>`. The other shapes
+  (`@all`, `@form`, targeted) found nothing or an error page. It is now the probe's first shape.
+- **Document Name is a "contains" filter** (`EG_AD_2_EGLL` and `AD_2_EGLL` both give the one row).
+- **The download is a direct link** of the row, `/fwf-eadbasic/aip/redirect?link=…`, fetched with the session (no button press needed).
+- **The AIP type matters**: with type *AIP* the aerodrome has this one document; the charts seen in the owner's captures (`EG_AD_2_EGLF_8-1_en.pdf`, "INSTRUMENT APPROACH CHART") are
+  listed under type **Charts** (not searched yet).
+- The row's "eAIP" cell carries the text "IB-903: File not found" (no eAIP link for this document): harmless.
+
+**Next** (nothing to download again): look inside the PDF for coding tables with `python tools/proc_eaip.py --scan-pdf ead_probe/cache/EG_AD_2_EGLL_en.pdf` (needs `pypdf`). It reports, page
+by page, **titles and keywords only** (Path Terminator, Fly Over, Coding, Waypoint Identification, SID, STAR, RNAV, RNP, Approach), copies no content, and lists the pages that probably carry a table of legs. The owner
+pastes that report; the session decides from it whether this document holds coding tables (then the layout parser follows, on text rows of one page) or only charts (then the *Charts* type is searched).
+
+**Branches** (owner's request, 28 October): all further work on this topic goes onto **one branch**, `v3-aerodb-proc-15`; the older ones are deleted when GitHub lets the session do it.
+
 ## 7. Probe run by the user on the workstation (28 October 2026, United Kingdom / EGLL)
 
 Login page 200; login **yes** (200, `home.faces`); home page read with its links (Pre-Flight Briefing, AIP Library,

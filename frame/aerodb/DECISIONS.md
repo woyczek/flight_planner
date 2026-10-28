@@ -1066,3 +1066,43 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Bench** (`tests/v3`, Playwright): A20 passes in its runs (1280 fr, 390 × 4 languages, the five designs, night): the level gate, the
   button and its absolute address, one line per source with its status, licence and https link (44 px, new tab), the cycle in force in the eAIP
   and CIFP links, no external request; K8 and K9 pass.
+
+## 28 October 2026 — probe, second round (result table, ViewState, one download)
+
+- **From the owner's first run** (relayed): connection OK, AIP Library and its lists read (47 authorities by ICAO prefix, types AIP / AMDT / SUP / AIC /
+  Charts, parts GEN / ENR / AD), the partial search answered, the table not analysed, `ViewState` values printed. (The login answer encoded twice, fixed by the
+  owner's local change, is already in `v3`: `login_json`.)
+- **Done**: ViewState blanked everywhere; result rows read from the JSF partial answer; `--name` and `--download` (one PDF, local cache only, direct
+  links only); case K6 extended (a defect found by it: the cache file name). Owner decisions of the day respected: EAD Basic as it is, no request to
+  EUROCONTROL, DFS dropped, national free AIPs as the other sources; the session still never logs in.
+
+## 28 October 2026 — probe, third round (real screen: advanced search, Document Name, ▶ button)
+
+- **From the owner's captures** (relayed): 1,155 documents on 16 paginated pages whose numbers move; Advanced Search opens Effective Date, Document Name,
+  Document Heading; one row per name with a ▶ download button; names `<prefix>_AD_2_<ICAO>_<section>-<n>_en.pdf`. Decision: search by Document Name with the
+  prefix `EG_AD_2_EGLL`, learn whether the field is "contains" or "starts with", enumerate exact names otherwise, never page through results.
+- **Done**: advanced box toggled by partial request, fields found by label, renewed ViewState, contains/prefix test, enumeration fallback, rows with their
+  ▶ button, `tables.html`, download through the button. Defect found by the test and fixed: a loop variable shadowed the `--name` argument (also in round two).
+- **Still unknown until the owner's next run**: the real shapes of the toggle response and of the ▶ button (the test uses hand-built screens).
+
+## 28 October 2026 — probe, fourth round (searches by name found nothing)
+
+- **From the owner's run** (relayed in the session): login, library, lists, advanced box (fields found by label: `documentName`, `effectiveDate_input`, `documentHeader`) all
+  worked; plain search 65 rows; **every search by name: 200, 0 rows, no pager**, enumeration included; no download possible.
+- **Cause not known** (answer not printed). Hypotheses: the request shape (`execute=@all` with a filter), the fields added by the box (empty date field), the renewed
+  page state. **Done**: answer anatomy and sent parameter names printed, a control search, four request shapes tried in turn, the first that works kept; and a request to
+  the owner for the browser's own Form Data if this fails too. Test K6: the fake now refuses the `@all` shape for a name, so the test proves the probe switches shape.
+
+## 28 October 2026 — probe, fifth round (the previous "rows" were layout tables)
+
+- **Evidence** (owner's run of round four): "Number of search results: 0 — No data found." under 68 "rows" that are the page's layout tables; the advanced box with
+  `execute=@all` gives the server's error page; `execute=@form` is accepted; the data table is `mainForm:searchResults`.
+- **Done**: results read from the `searchResults_data` body only, the announced count printed, all lists sent (defaults; *Civil*), `@form` first, the State's change event replayed.
+  Lesson for the probe: never count rows without naming the table they come from.
+
+## 28 October 2026 — first success of the probe, and one branch from now on
+
+- **Result**: the whole-form request shape finds `EG_AD_2_EGLL`; Document Name is "contains"; one document "AD 2 EGLL" (3.0 MB PDF) downloaded by its direct link into the owner's local cache. Details:
+  `EAD_BASIC.md` § 6 sexies. The probe's first shape is now the one that worked; `proc_eaip.py --scan-pdf` added to look for coding tables inside a downloaded AD 2 part (titles and keywords only).
+- **Word of the user**: « arrête de créer des branches à répétition, et tu peux supprimer les anciennes ». From now on one branch, `v3-aerodb-proc-15` (all unintegrated work is on it); the
+  old `v3-aerodb-proc*` branches that were fully integrated or contained in it were deleted (eleven went; `-12`, `-13`, `-14`, ancestors of `-15`, could not be deleted from the session: the push was cut).
