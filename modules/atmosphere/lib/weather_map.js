@@ -1,7 +1,7 @@
 // Carte météo du module Atmosphère, en bibliothèque (V3_SPECIFICATION § 7.1.8 ; INTEGRATION.md § 6) : la même pour
 // Atmosphère et pour la Carte. Isobares, isothermes, nuages, vents, température, courant-jet et convection, au niveau et à
-// l'heure demandés : la grille du vol (lue dans la réserve météo, jamais demandée à Open-Meteo d'ici) fondue dans le
-// synoptique monde (publication des pages), un seul calcul des deux côtés, aucune frontière visible.
+// l'heure demandés : la grille du vol (lue dans la réserve de la couche météo, jamais demandée à Open-Meteo d'ici) fondue dans le
+// synoptique monde (publication des pages), un seul calcul des deux côtés, la limite de la zone du vol en trait fin.
 //
 // Deux usages :
 //   · createWeatherMap(opts) → { draw(c, view), update(partial), info(), at(lat, lon), worldPoint(lat, lon), legend(),
@@ -11,7 +11,7 @@
 //     dessus des tuiles, sous le canevas de l'hôte, pointer-events: none ; suit move, resize et les copies du monde), ou
 //     dans target.container pour un fond uni { container, project(lat, lon) → { x, y }, size() → { W, H }, bounds() →
 //     [w, s, e, n] | null, onChange(cb) → désabonnement }.
-// opts : { ctx (data, net, t, lang), flight ({ points, levelFt } : le vol et son niveau demandé ; null : le monde seul),
+// opts : { ctx (weather — la couche météo du cadre, frame/INTEGRATION.md § 14 —, t, lang), flight ({ points, levelFt } : le vol et son niveau demandé ; null : le monde seul),
 // levelFt (l'altitude pression montrée, ft ; null : la surface), time (s), layers ({ isobar, isotherm, cloud, wind,
 // tfill, jet, conv }), gridMax (lieux de la grille du vol, 48), grid (une grille déjà lue { g, locs, levels } : l'hôte qui
 // la charge lui-même, Atmosphère ; sans elle, la réserve est lue), colors (() → { bg, fg, muted, border, dark, cloud: [r, g,
@@ -21,14 +21,10 @@
 // Les aplats (nuages, température, courant-jet, convection) viennent du synoptique des deux côtés de la grille du vol ; les
 // lignes et les barbules, de la grille du vol fondue dans le synoptique sur son quart extérieur.
 // state : 'ok' (la grille du vol est lue), 'world-only' (seul le synoptique monde), 'missing' (rien : « Charger dans
-// Météo »). Jamais d'appel à Open-Meteo : la réserve est lue sans réseau, le synoptique sur la même origine.
+// Météo »). Jamais d'appel à Open-Meteo : ctx.weather.grid en cacheOnly, le synoptique par ctx.weather.world.
 
 import * as A from '../atmo.js';
 import {
-  weatherStore
-} from '../weather_store.js';
-import {
-  worldReader,
   worldGrid,
   worldLocs,
   worldAt,
@@ -69,16 +65,6 @@ const LABEL = {
   jet: 'lyJet',
   conv: 'lyConv'
 };
-/** Réseau de la réserve pour la lecture seule : toujours « hors ligne » (l'heure du run est celle que la réserve garde). */
-const NO_NET = {
-  fetch: async () => new Response(null, {
-    status: 503,
-    headers: {
-      'x-sog-offline': '1'
-    }
-  })
-};
-
 /** Ce que la grille du vol demande à la réserve — lieux (A.grid), niveaux, variables, modèle : le même calcul pour celui
  *  qui la charge (Atmosphère, « Charger ») et pour celui qui la lit (cette bibliothèque) : ils trouvent les mêmes cases.
  *  points : la route (déroulée ici) ; levelFt : le niveau demandé du vol. */
@@ -259,14 +245,9 @@ export function createWeatherMap({
       minimumFractionDigits: d
     }),
     fmtLvl = ft => ft == null ? '—' : formatLevel(Math.max(0, Math.round(ft / 100) * 100)),
-    store = weatherStore({
-      data: ctx.data,
-      net: NO_NET
-    }),
-    reader = worldReader({
-      data: ctx.data,
-      net: ctx.net
-    }),
+    // la couche météo du cadre (frame/INTEGRATION.md § 14) : la réserve de l'appareil seulement (cacheOnly) pour la grille
+    // du vol, la publication de la même origine pour le synoptique ; jamais Open-Meteo d'ici
+    weather = ctx.weather,
     o = {
       flight,
       levelFt,
@@ -345,7 +326,7 @@ export function createWeatherMap({
     if (key === gridKey) return;
     gridKey = key;
     gridReading = true;
-    store.forecast(req.g.places, req.vars, {
+    weather.grid(req.g.places, o.time, req.vars, {
       model: req.model.id,
       days,
       cacheOnly: true
@@ -375,7 +356,7 @@ export function createWeatherMap({
     world = null;
     worldReading = true;
     worldAsked = Date.now();
-    reader.index().then(w => {
+    weather.world().then(w => {
       if (!alive) return;
       worldReading = false;
       world = w;
@@ -394,8 +375,12 @@ export function createWeatherMap({
     // un fichier qui n'est pas venu (réseau coupé, publication en cours) est redemandé après 30 s, pas à chaque image
     if (!wasked.has(key) && !(wfailed.get(key) > Date.now() - 30e3)) {
       wasked.add(key);
-      reader.step(w, k, alt).then(sd => {
+      weather.world(k, {
+        alt
+      }).then(sd => {
         wasked.delete(key);
+        // l'échéance de cet index (la couche a pu en lire un plus récent entre-temps)
+        if (sd && sd.time !== w.times[k]) sd = null;
         if (!sd) wfailed.set(key, Date.now());
         if (!alive || world !== w || !sd) return;
         wsteps.set(key, sd);

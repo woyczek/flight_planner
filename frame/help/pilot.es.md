@@ -635,9 +635,11 @@ un toque en la leyenda, en la pastilla o Escape la cierra.
 
 - La previsión viene de Open-Meteo (Météo-France AROME y ARPEGE sobre Francia, ICON en Europa, GFS en otros lugares);
   el sinóptico mundial viene de GFS (NOAA), cada 3 horas hasta 72 horas.
-- Lo cargado se queda en el aparato y sirve sin conexión; el Mapa reutiliza su corte meteorológico.
+- Lo cargado se queda en el aparato y sirve sin conexión, en la reserva meteorológica que comparten Combustible, el
+  Mapa y Meteo; el Mapa reutiliza su corte meteorológico. Las llamadas del día a Open-Meteo se cuentan en el bloque
+  de estado de Ajustes.
 
-<!-- fr: f08415c8bd41 -->
+<!-- fr: a1a82a5bd497 -->
 
 <!-- chapter: settings -->
 # Ajustes

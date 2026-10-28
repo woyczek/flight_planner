@@ -38,7 +38,7 @@ import {
 } from '../lib/weather_map.js?v=0';
 import {
   weatherStore
-} from '../weather_store.js?v=0';
+} from '../../../frame/lib/weather_store.js?v=0';
 import * as Demo from '../demo.js?v=0';
 
 const out = document.getElementById('out'),
@@ -127,9 +127,13 @@ const net = {
   }
 };
 const TXT = row => row[1];
+// la couche météo du cadre (ctx.weather, frame/INTEGRATION.md § 14) sur cette réserve en mémoire : le synoptique à l'adresse de
+// la publication (net, journal « asked »), Open-Meteo répondu par la démonstration (fakeOM, défini plus bas)
+const root = new URL('../../../', location.href).href;
 const ctx = {
   data,
   net,
+  weather: null,
   t: (row, v = {}) => String(TXT(row)).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? ''),
   lang: () => 'en'
 };
@@ -165,6 +169,14 @@ const fakeOM = {
     return new Response(JSON.stringify(o.length === 1 ? o[0] : o));
   }
 };
+
+ctx.weather = weatherStore({
+  data,
+  root,
+  net: {
+    fetch: (url, o) => String(url).includes('/weather/world/') ? net.fetch(url, o) : fakeOM.fetch(url, o)
+  }
+});
 
 const canvas = document.createElement('canvas');
 canvas.width = 320;
@@ -202,13 +214,9 @@ wm.update({
 });
 check('flight not in the cache: still world-only, the grid box known', wm.state === 'world-only' && !!wm.info().gridBox);
 const req = gridRequest(flight.points, flight.levelFt, 48);
-await weatherStore({
-  data,
-  net: fakeOM
-}).forecast(req.g.places, req.vars, {
+await ctx.weather.grid(req.g.places, t0 + 3600, req.vars, {
   model: req.model.id,
-  days: daysFor(t0 + 3600),
-  cacheOnly: false
+  days: daysFor(t0 + 3600)
 });
 wm.reload();
 await until(() => wm.state === 'ok');

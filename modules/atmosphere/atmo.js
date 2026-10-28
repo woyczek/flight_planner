@@ -9,9 +9,12 @@ import {
   paFt,
   hPaOf,
   isaC,
-  modelFor,
   samples
 } from '../fuel/winds.js';
+// le modèle par région : celui de la couche météo du cadre (frame/INTEGRATION.md § 14), pour trouver les mêmes cases
+import {
+  modelFor
+} from '../../frame/lib/weather_store.js';
 import {
   wrapLon,
   nearLon,

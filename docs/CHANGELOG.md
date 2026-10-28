@@ -243,6 +243,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   airspace reading and the strip stay exact. The window is kept while the page lives and reset when the route changes; it is never stored.
   The weather cut zooms too (see the next two entries). D21 pinch / scale / cursor / button, D22 sheet drag, D23 kept and reset, D24 screen gestures.
 
+- **Atmosphere recoded from a blank file on the frame's weather layer** (`modules/atmosphere/module.js` rewritten, `style.js`, `fmt.js`,
+  `flight.js`, `wx.js`, `screen_map.js`, `screen_cut.js`, `screen_details.js`, `screen_flight.js`, `screen_layers.js` new; `lib/weather_map.js`,
+  `world.js`, `atmo.js`, `texts.js`, `help/*.md`, `frame/help/pilot.*.md`, the two benches; atmosphere INTEGRATION § 1–3, 5, 6, DECISIONS) — lot 1 of
+  the recode decided on 28 Oct: the same screen (meta, address, sheet, contents, gestures, help anchors), cut by concern into files of 60 KB
+  at most, Details, Flight and settings and Layers loaded at their first opening, every function commented. The module and the weather map
+  read `ctx.weather` only (`grid`, `metar`, `taf`, `world`, `run`, `spentToday`): no call to Open-Meteo, aviationweather.gov, metar.vatsim.net
+  or avwx.rest of their own, no write in `cache/weather/`, no tally; the quota sentences follow the layer (540 / min, 9,000 / day). The cost of
+  a load is no longer stated before "Load" (the layer has no estimate yet: asked). `modules/atmosphere/weather_store.js` and its bench are
+  removed (the Map's cut reads `ctx.weather` since its recode; `tests/v3/lib.py` seeds through `frame/lib/weather_store.js`). Escape on the legend is consumed (`preventDefault`): it no longer also leaves
+  the full screen (case E11). Zone E and J1 pass; parity with the former version measured (390 and
+  1280 px, five designs, day and night).
 - **Atmosphere: specification rewritten as the final state, before the recode** (`modules/atmosphere/SPEC.md`, DECISIONS) — the work of
   24–27 October is a completed proof of concept and the module is recoded from its specs (user's decision of 28 Oct). Lot 0: the SPEC
   describes the screen, the sheet, the flight, the weather map, the world synoptic and the sources as they must be, with V3_SPECIFICATION

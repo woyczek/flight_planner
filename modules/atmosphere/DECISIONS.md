@@ -2,6 +2,51 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 28 October 2026 (evening) — recode from the specs, lot 1: the module from a blank file, on `ctx.weather`
+
+- **Start**: the frame's weather layer is published (`frame/INTEGRATION.md` § 14, lot 26, `v3` 43b8b5282); the ergonomics
+  session opened lot 1 on it (relayed). The module is written again from a blank file, with the SPEC of lot 0 as its
+  reference, the same `meta` (fixed, level 1, `help: true`, `helpAnchor`), the same address, the same sheet and contents,
+  the same DOM names (`data-at`, `at-*` classes: the suite's selectors); the former `module.js` is replaced in the same
+  commit.
+- **Cut by concern, every file under 60 KB** (open point 13 as proposed): `module.js` (35 KB: meta, state, skeleton,
+  buttons, sheet and head, the contents' switch, load), `style.js`, `fmt.js`, `flight.js`, `wx.js`, `screen_map.js`,
+  `screen_cut.js`, and three contents loaded at their first opening (`screen_details.js`, `screen_flight.js`,
+  `screen_layers.js`; fetched 1.5 s after the screen is drawn so that they work offline, drawn on arrival only if they
+  are the content shown). Every function commented. The choices of "Flight and settings" live in the state (`S.opts`):
+  the form shows and writes them, it no longer is the state.
+- **`ctx.weather` only** (`wx.js`): `grid` for the route's columns, the map's grid and a touched point (cache only at
+  opening, every day the slider can reach on "Load"), `metar` / `taf`, `run`, `spentToday`; the weather map
+  (`lib/weather_map.js`) reads `grid` (cache only) and `world`; `world.js` keeps its pure functions only; `atmo.js`
+  takes `modelFor` from `frame/lib/weather_store.js` (the same cells as the layer). No `ctx.net`, no write in
+  `cache/weather/`, no tally in the module; `meta.reads` / `writes` lose `cache/weather/`.
+- **Contract gap (reported, not worked around)**: the layer has no way to price a load before asking (`cost(request)`,
+  open point 9a). The former screen said "≈ n calls" before "Load"; the recode says the day's calls only ("0 calls
+  today from this device, limit 9,000 a day") and the weight after the load. Back when the layer gives it.
+- **`weather_store.js` removed** with its bench: after the maps module's own recode (`v3` 4dd3e232, its weather cut on
+  `ctx.weather.grid`), only the suite's seeding imported it; `tests/v3/lib.py` now seeds through
+  `frame/lib/weather_store.js` (the same files, the same cells).
+- **Texts**: the quota sentences follow the layer (540 a minute, 9,000 a day, "today" instead of "over 24 h"); the
+  aerodromes' sources are the layer's (aviationweather.gov through the launcher, metar.vatsim.net and avwx.rest
+  without, "kept on the device"); the help's "Good to know" names the shared store and the day's calls in Settings (×4).
+- **Escape** (the ergonomics session's review of lot 1: "un module qui consomme Échap appelle preventDefault"): the
+  legend's Escape now calls `preventDefault()` and ignores a key already consumed, so the same key no longer also leaves
+  the full screen (`frame/INTEGRATION.md` § 9.4: the module's own first, then the frame on `window`). Case E11 (fails on
+  the former code: "the same Escape also left the full screen").
+- **Unchanged on purpose** (lot 0 points not yet settled): the four flight sources, the data choice, grid and cruise
+  speed for everyone (points 6, 7).
+- **Gate**: zone E (E1–E10) and J1 pass; the benches pass on `ctx.weather` (weather map 21 / 21; performance page
+  measured); parity measured against the former version, below.
+- **Parity, measured** (the former module served from a worktree of the previous commit, the same seeded flight and
+  forecast, the same world synoptic, tiles and outside hosts cut, French): five states (cross-section, Details, Layers,
+  Flight and settings, a sounding) × 390 × 844 and 1280 × 800 × five designs × day and night = 200 screenshots per
+  version, compared pixel by pixel (a channel off by more than 24). **Identical everywhere but one state**: Flight and
+  settings at 1280 px, 0.2 to 4 % of the pixels — its status line, whose quota sentence now follows the layer ("0 calls
+  today from this device (limit 9,000 / day, 540 / min)" instead of "≈ 0 over 24 h … 10,000 / day, 600 / min"), and in
+  some runs the tap hint still on screen in the former version (timing). Phone landscape (844 × 390, the scripted tour:
+  load, Details, a sounding, ◀ ▶, legend, Layers, Flight, slider, two map taps): identical. The one wording that
+  differs before a load: "Forecast not loaded" no longer states the load's cost (the contract gap above).
+
 ## 28 October 2026 (afternoon) — recode from the specs, lot 0: the SPEC as final state, open points
 
 - **The decision** (user, relayed by the ergonomics session, 28 Oct): the work of 24–27 October is a completed proof of
@@ -12,7 +57,7 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
   `frame/INTEGRATION.md` § 14). Freeze: no new weather function until lot 1.
 - **Channel**: cloud sessions cannot message the ergonomics session; the SHAs of this module's lots are given on GitHub,
   branch `feature/atmosphere-route` rebased on `v3` (its head is the lot to integrate), and written here. Lot "help"
-  (rule 16): `aa6e5717` on `v3` 632a0ea0. Lot 0: the head of the branch after it.
+  (rule 16): `8e64375a`, lot 0 `212b0456`, lot 1 the head of the branch, all on `v3` 28fe22ca.
 - **Lot 0**: `SPEC.md` rewritten as the final state (rules 1–21 applied, no dated amendment; the world synoptic § 5, the
   sources § 7). **Open points, with a proposal each, for the ergonomics session to settle:**
   1. *SPEC said "mock-up, level 3", "portrait only"*: contradicted by rule 14 (own tab, level 1) and rule 7 (landscape

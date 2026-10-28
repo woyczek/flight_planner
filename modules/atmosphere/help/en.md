@@ -58,6 +58,7 @@ the legend, the chip or Escape closes it.
 
 - The forecast comes from Open-Meteo (Météo-France AROME and ARPEGE over France, ICON in Europe, GFS elsewhere); the
   world synoptic comes from GFS (NOAA), every 3 hours up to 72 hours.
-- What is loaded stays on the device and works offline; the Map reuses its weather cross-section.
+- What is loaded stays on the device and works offline, in the weather store shared by Fuel, the Map and Weather; the
+  Map reuses its weather cross-section. The day's calls to Open-Meteo are counted in the status block of Settings.
 
-<!-- fr: f08415c8bd41 -->
+<!-- fr: a1a82a5bd497 -->

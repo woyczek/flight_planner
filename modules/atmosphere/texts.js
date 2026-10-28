@@ -208,22 +208,22 @@ export const TX = {
     'Open-Meteo ({m}): ruta y mapa…'
   ],
   demoComputing: ['Démonstration : calcul…', 'Demonstration: computing…', 'Vorführung: Berechnung…', 'Demostración: cálculo…'],
-  waitQuota: ['Quota minute d’Open-Meteo (600 / min) : reprise dans {s} s…',
-    'Open-Meteo minute quota (600 / min): resuming in {s} s…', 'Open-Meteo-Minutenkontingent (600 / min): weiter in {s} s…',
-    'Cuota por minuto de Open-Meteo (600 / min): se reanuda en {s} s…'
+  waitQuota: ['Limite par minute de la couche météo (540 / min) : reprise dans {s} s…',
+    'Weather layer minute limit (540 / min): resuming in {s} s…', 'Minutengrenze der Wetterschicht (540 / min): weiter in {s} s…',
+    'Límite por minuto de la capa meteorológica (540 / min): se reanuda en {s} s…'
   ],
   notLoaded: [
-    'Prévision non chargée : « Charger » lit ce qui manque à Open-Meteo ({m}, ≈ {n} appels du décompte au plus ; ≈ {d} sur 24 h depuis cet appareil, gratuit : 10 000 / jour), ou choisissez « Démonstration hors ligne ».',
-    'Forecast not loaded: "Load" reads what is missing from Open-Meteo ({m}, ≈ {n} counted calls at most; ≈ {d} over 24 h from this device, free: 10,000 / day), or choose "Offline demonstration".',
-    'Vorhersage nicht geladen: „Laden“ liest das Fehlende bei Open-Meteo ({m}, höchstens ≈ {n} gezählte Aufrufe; ≈ {d} in 24 h von diesem Gerät, kostenlos: 10 000 / Tag), oder „Offline-Vorführung“ wählen.',
-    'Previsión no cargada: «Cargar» lee lo que falta en Open-Meteo ({m}, ≈ {n} llamadas contadas como máximo; ≈ {d} en 24 h desde este dispositivo, gratis: 10 000 / día), o elija «Demostración sin conexión».'
+    'Prévision non chargée : « Charger » lit ce qui manque à Open-Meteo ({m} ; {d} appels aujourd’hui depuis cet appareil, limite 9 000 par jour), ou choisissez « Démonstration hors ligne ».',
+    'Forecast not loaded: "Load" reads what is missing from Open-Meteo ({m}; {d} calls today from this device, limit 9,000 a day), or choose "Offline demonstration".',
+    'Vorhersage nicht geladen: „Laden“ liest das Fehlende bei Open-Meteo ({m}; {d} Aufrufe heute von diesem Gerät, Grenze 9 000 pro Tag), oder „Offline-Vorführung“ wählen.',
+    'Previsión no cargada: «Cargar» lee lo que falta en Open-Meteo ({m}; {d} llamadas hoy desde este dispositivo, límite 9 000 al día), o elija «Demostración sin conexión».'
   ],
   failed: ['Échec : {m}', 'Failed: {m}', 'Fehlgeschlagen: {m}', 'Error: {m}'],
   quotaDay: [
-    'quota d’Open-Meteo presque atteint sur cet appareil (≈ {n} appels sur 24 h, 10 000 au plus) : réessayez plus tard, ou choisissez « Démonstration hors ligne »',
-    'Open-Meteo quota nearly reached on this device (≈ {n} calls over 24 h, 10,000 at most): try again later, or choose "Offline demonstration"',
-    'Open-Meteo-Kontingent auf diesem Gerät fast erreicht (≈ {n} Aufrufe in 24 h, höchstens 10 000): später erneut versuchen oder „Offline-Vorführung“ wählen',
-    'Cuota de Open-Meteo casi alcanzada en este dispositivo (≈ {n} llamadas en 24 h, 10 000 como máximo): inténtelo más tarde, o elija «Demostración sin conexión»'
+    'limite du jour de la couche météo atteinte sur cet appareil (9 000 appels par jour) : réessayez demain, ou choisissez « Démonstration hors ligne »',
+    'the weather layer’s daily limit is reached on this device (9,000 calls a day): try again tomorrow, or choose "Offline demonstration"',
+    'Tagesgrenze der Wetterschicht auf diesem Gerät erreicht (9 000 Aufrufe pro Tag): morgen erneut versuchen oder „Offline-Vorführung“ wählen',
+    'límite diario de la capa meteorológica alcanzado en este dispositivo (9 000 llamadas al día): inténtelo mañana, o elija «Demostración sin conexión»'
   ],
   quotaIp: [
     'quota gratuit d’Open-Meteo atteint pour cette adresse IP (10 000 appels / jour, 600 / min) : réessayez plus tard, ou choisissez « Démonstration hors ligne »',
@@ -251,10 +251,10 @@ export const TX = {
   stCached: ['lu dans la réserve de l’appareil (aucun appel)', 'read from the device cache (no call)',
     'aus dem Gerätespeicher gelesen (kein Aufruf)', 'leído de la reserva del dispositivo (ninguna llamada)'
   ],
-  stDay: ['≈ {n} sur 24 h depuis cet appareil (gratuit : 10 000 / jour, 600 / min)',
-    '≈ {n} over 24 h from this device (free: 10,000 / day, 600 / min)',
-    '≈ {n} in 24 h von diesem Gerät (kostenlos: 10 000 / Tag, 600 / min)',
-    '≈ {n} en 24 h desde este dispositivo (gratis: 10 000 / día, 600 / min)'
+  stDay: ['{n} appels aujourd’hui depuis cet appareil (limite 9 000 / jour, 540 / min)',
+    '{n} calls today from this device (limit 9,000 / day, 540 / min)',
+    '{n} Aufrufe heute von diesem Gerät (Grenze 9 000 / Tag, 540 / min)',
+    '{n} llamadas hoy desde este dispositivo (límite 9 000 / día, 540 / min)'
   ],
   outOfRange: ['⚠ heure hors de la prévision : l’heure la plus proche est montrée',
     '⚠ time outside the forecast: the nearest hour is shown', '⚠ Zeit außerhalb der Vorhersage: die nächste Stunde wird gezeigt',
@@ -266,9 +266,10 @@ export const TX = {
   demoMetars: ['METAR inventés (démonstration)', 'invented METARs (demonstration)', 'erfundene METARs (Vorführung)',
     'METAR inventados (demostración)'
   ],
-  metarSrc: ['METAR : metar.vatsim.net', 'METAR: metar.vatsim.net', 'METAR: metar.vatsim.net', 'METAR: metar.vatsim.net'],
+  metarSrc: ['METAR : {src}', 'METAR: {src}', 'METAR: {src}', 'METAR: {src}'],
   metarNone: ['METAR injoignables', 'METARs unreachable', 'METARs nicht erreichbar', 'METAR inaccesibles'],
-  tafSrc: ['TAF : avwx.rest', 'TAF: avwx.rest', 'TAF: avwx.rest', 'TAF: avwx.rest'],
+  tafSrc: ['TAF : {src}', 'TAF: {src}', 'TAF: {src}', 'TAF: {src}'],
+  obsCache: ['gardés sur l’appareil', 'kept on the device', 'auf dem Gerät gespeichert', 'guardados en el dispositivo'],
   tafNoKey: ['TAF : clé avwx.rest à poser dans les Réglages', 'TAF: set the avwx.rest key in Settings',
     'TAF: avwx.rest-Schlüssel in den Einstellungen setzen', 'TAF: ponga la clave avwx.rest en Ajustes'
   ],
