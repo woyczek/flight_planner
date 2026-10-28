@@ -4,6 +4,17 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **28 Oct 2026 — no runway could be chosen at LFPO (nor LFBO): fuel offers the runways its procedures name** (user's report).
+  Measured in a page with the user's files (`proc/manual/LFPO.json`, `LFBO.json`, read only): `aerodb.runways('LFPO')` and
+  `aerodb.runways('LFBO')` both answer `[]`. The files carry no `runways`, and the `RWnn` points that aerodb would deduce the
+  runways from are there (one per runway) but without position
+  (`lat: null`: « coordonnées introuvables… à résoudre à la lecture par aerodb »), and `runways()` skips a point without `lat`.
+  Fuel now offers, in this order: aerodb's runways; the union of the `runways` of the aerodrome's procedures (« 20 »,
+  « 14L »…); the two ends of the axis in the base (`aerodromes({ icao }).bearing`, true, and `magVar`, east positive, giving the
+  magnetic numbers), numbers without side. Fuel reads only. A runway chosen this way has
+  no threshold for `CF.loadProcedures` (it looks the runway up in `aerodb.runways`): the path shows no `RWnn` point until aerodb
+  gives one. Reported to AeroDB: `runways()` should answer the ids of `RWnn` points without position (`approx: true`, no
+  `lat`/`lon`), or the union of the procedures' `runways`.
 - **28 Oct 2026 — the runway, the STAR and the approach filter one another** (user's report, same session as the previous
   entry): `procChosen` now decides in both directions. A runway chosen removes the SID / STAR / approach (and its transition)
   that does not serve it — « serves » = the record names that runway, names none, or names `ALL` / `RWALL`; a bare number

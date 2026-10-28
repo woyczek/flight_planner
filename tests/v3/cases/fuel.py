@@ -19,7 +19,9 @@ Rules covered
   * an aerodrome with approaches only (no SID, no STAR, no runway record) still lists them, by runway, on both rows (F20);
   * the runway, the STAR and the approach filter one another: what no longer fits is removed with one line, a procedure serving one runway sets it (F21).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+  * an aerodrome whose files carry no runway still offers runways: those its procedures name, else the two ends of its axis in the base (F22).
+
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 import json
@@ -367,12 +369,14 @@ def proc_docs(cycle=PROC_CYCLE):
         rec('LFVA', 'APP', 'VOR09', ['09'], [pt(1, 'VA111', 45.0, 3.0, {'type': 'at', 'ft': 3000}), pt(2, 'RW09', 45.03, 3.4)]),
         rec('LFVA', 'APP', 'VOR27', ['27'], [pt(1, 'VA127', 45.05, 3.8, {'type': 'at', 'ft': 3000}), pt(2, 'RW27', 45.03, 3.45)]),
     ]
+    # LFVB (invented): one STAR that names no runway (it serves them all), no runway record; the base knows its runway axis
+    lfvb = [rec('LFVB', 'STAR', 'BET1A', [], [pt(1, 'VB101', 45.8, 3.1, {'type': 'max', 'ft': 9000}), pt(2, 'VB102', 45.6, 3.4, {'type': 'at', 'ft': 4000})])]
     rw_lfrs = [{'id': '03', 'lat': 47.138, 'lon': -1.62, 'elev': 90, 'qfu': 30}, {'id': '21', 'lat': 47.17, 'lon': -1.595, 'elev': 60, 'qfu': 210}]
     rw_lfml = [{'id': '13R', 'lat': 43.445, 'lon': 5.19, 'elev': 30, 'qfu': 130}, {'id': '31L', 'lat': 43.41, 'lon': 5.24, 'elev': 20, 'qfu': 310}]
     old = rec('LFML', 'STAR', 'MAN1A', ['13R'], [pt(1, 'MAN01', 44.0, 3.8)], status='check', kind_src='manual', src_cycle='2025-01-01')
     xpl = rec('LFML', 'STAR', 'XPL1A', ['13R'], [pt(1, 'XPL01', 44.0, 3.7)], status='official', kind_src='cifp')
     return [[f'proc/{cycle}/LFRS.json', file('LFRS', lfrs, rw_lfrs), 'reference'], [f'proc/{cycle}/LFML.json', file('LFML', lfml, rw_lfml), 'reference'],
-            [f'proc/{cycle}/LFVA.json', file('LFVA', lfva), 'reference'],
+            [f'proc/{cycle}/LFVA.json', file('LFVA', lfva), 'reference'], [f'proc/{cycle}/LFVB.json', file('LFVB', lfvb), 'reference'],
             ['proc/manual/LFML.json', file('LFML', [old], cy='2025-01-01'), 'reference'], ['proc/local/LFML.json', file('LFML', [xpl]), 'reference']]
 
 
@@ -390,9 +394,9 @@ def proc_flight(procs=None, started=False, actual=None):
     return docs
 
 
-def open_proc(c, target='fuel', procs=None, started=False, actual=None):
-    """Opens fuel on the planned flight with the seeded procedures; the published base knows the route's points."""
-    c.open(target, docs=proc_docs() + proc_flight(procs, started, actual), airfields=True)
+def open_proc(c, target='fuel', procs=None, started=False, actual=None, aero_extra=None):
+    """Opens fuel on the planned flight with the seeded procedures; the published base knows the route's points (and `aero_extra`)."""
+    c.open(target, docs=proc_docs() + proc_flight(procs, started, actual), airfields=True, aero_extra=aero_extra)
 
 
 def sel_opts(c, k):
@@ -705,3 +709,29 @@ def f21(c):
     c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN2B.RW31L.NONE')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFML.STAR.MEN2B.RW31L.NONE', 'the other STAR is written')
     c.eq(procs_of(d, 'arr'), {'rwy': '31L', 'star': 'LFML.STAR.MEN2B.RW31L.NONE'}, 'another STAR drops the transition and sets its single runway', what='route.procedures.arr')
+
+
+@case('F22', 'No runway record: the runways are those of the procedures, else the two ends of the axis', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      rule='V3 spec 10.20: aerodb.runways may answer []; fuel still offers the runways the procedures name, then the axis of the base (it reads, never writes)')
+def f22(c):
+    base = {'aerodromes': [{'icao': 'LFVB', 'name': 'LFVB TEST', 'lat': 45.5, 'lon': 3.5, 'elev': 400, 'bearing': 95.0, 'magVar': 2.0}]}
+    open_proc(c, aero_extra=base)
+    wait_rows(c, 'arr')
+    # LFVA: no runway in its file; its approaches name 09 and 27
+    set_icao(c, 'arr', 'LFVA')
+    c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-rwy\"] option')].some(o => o.value === '09')", what='the runways of LFVA are offered')
+    c.eq([v for v, _ in sel_opts(c, 'p-arr-rwy')], ['', '09', '27'], 'the runways named by the procedures (the file has no runway record)', what='LFVA runways')
+    set_icao(c, 'dep', 'LFVA')
+    c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-dep-rwy\"] option')].some(o => o.value === '09')", what='the departure runways of LFVA are offered')
+    c.eq([v for v, _ in sel_opts(c, 'p-dep-rwy')], ['', '09', '27'], 'and on the departure row, although LFVA has no SID', what='LFVA departure runways')
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '27')
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '27', 'a runway of that list is written')
+    c.eq(procs_of(d, 'arr'), {'rwy': '27'}, 'it is the pilot\'s choice', what='route.procedures.arr')
+    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"]'); return !!s && [...s.options].length === 3 })()", what='the approach list follows 27')
+    c.eq([lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')], ['VOR27'], 'runway 27: its single approach', what='approaches')
+    # LFVB: the only procedure names no runway; the base gives the axis (95 true, 2 E: 09 and 27)
+    set_icao(c, 'arr', 'LFVB')
+    c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /BET1A/.test(o.textContent))", what='the row of LFVB is drawn')
+    c.eq([v for v, _ in sel_opts(c, 'p-arr-rwy')], ['', '09', '27'], 'the two ends of the runway axis of the base', what='LFVB runways')
+    stars = sel_opts(c, 'p-arr-star')
+    c.ok(any('BET1A' in lab for _, lab in stars), f'STAR options {stars}', 'a STAR serving every runway is listed')

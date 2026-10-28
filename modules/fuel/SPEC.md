@@ -280,7 +280,10 @@ mount. Inside a mount, the two buttons switch as before.
      one `aerodb.procedures(icao)` (all kinds; fuel sorts them): without a runway chosen a list shows ALL the procedures of the
      aerodrome, grouped by runway (`<optgroup>`; the approach list does not wait for a STAR), choosing a runway keeps the
      procedures that serve it; an aerodrome is « without data » only when it has no procedure of any kind and no runway; the
-     lists are read again when aerodb announces new procedures. Options: empty = not chosen ("—"),
+     lists are read again when aerodb announces new procedures. The runways offered are those of `aerodb.runways(icao)`; when it
+     answers `[]` (files without runway records and `RWnn` points without position), those the aerodrome's procedures name (the
+     union of their `runways`, `ALL` / empty excluded), and failing that the two ends of the runway axis in the base
+     (`aerodromes({ icao })`: `bearing`, `magVar` → magnetic numbers without side, « 24 » and « 06 »); fuel only reads. Options: empty = not chosen ("—"),
      "aucune" (writes `null`; SID, STAR and approach), then the procedures by name; a record with `status: 'xplane'` (local)
      comes last, worded "X-Plane, local"; an `outdated` one says "périmé"; a name that comes back (one record per runway)
      carries its runways. A change rewrites `route.procedures` v2 (`by: 'fuel'`, `at`) and drops what depended on it. The lists filter one

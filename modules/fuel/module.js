@@ -1388,23 +1388,41 @@ const servesAll = rec => !(rec.runways || []).length || rec.runways.some(x => rw
 /** La fiche dessert-elle la piste ? Vrai sans piste choisie ou quand la fiche les dessert toutes. */
 const servesRwy = (rec, rwy) => !rwKey(rwy) || servesAll(rec) || rec.runways.some(x => sameRwy(x, rwy));
 
+/** Pistes à proposer pour un terrain : celles d'aerodb (known : fiches de pistes, ou déduites des points RWnn des procédures) ;
+ *  sinon celles que nomment ses procédures (l'union de leurs pistes, « 20 », « 14L » ; une fiche qui les dessert toutes n'en nomme
+ *  pas) ; sinon les deux sens de l'axe de la piste principale du terrain dans la base (aerodromes({ icao }) : bearing, route vraie,
+ *  et magVar, Est positive ; numéros magnétiques sans côté, « 24 » et « 06 »). Fuel lit, il n'écrit rien : [{ id }]. */
+async function runwayChoices(icao, known, all) {
+  if (known.length) return known;
+  const named = [...new Set(all.flatMap(r => servesAll(r) ? [] : r.runways.map(rwKey)))].sort(rwOrder);
+  if (named.length) return named.map(id => ({
+    id
+  }));
+  const ad = (await procMemo(`ad|${icao}`, () => S.ctx.aerodb?.aerodromes?.({
+    icao
+  })))[0];
+  if (!Number.isFinite(+ad?.bearing)) return [];
+  return [0, 180].map(a => ({
+    id: String(Math.round(((+ad.bearing + a - (+ad.magVar || 0)) % 360 + 360) % 360 / 10) % 36 || 36).padStart(2, '0')
+  })).sort((a, b) => rwOrder(a.id, b.id));
+}
 /** Ce qu'une ligne montre pour un côté : { icao, rwys, all, lists: { SID | STAR | APP: [enregistrements] }, nodata } ; null sans
  *  terrain de quatre caractères. Toutes les fiches du terrain sont lues en une fois (all) ; les listes en gardent les sortes du
- *  côté et, une piste choisie, celles qui la desservent (sans piste choisie : toutes). nodata : ni fiche (de n'importe quelle
- *  sorte) ni piste. */
+ *  côté et, une piste choisie, celles qui la desservent (sans piste choisie : toutes). rwys : runwayChoices. nodata : ni fiche (de
+ *  n'importe quelle sorte) ni piste d'aerodb. */
 async function sideModel(side) {
   const r = S.flight.route || {},
     icao = String((side === 'dep' ? r.dep : r.arr) || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{4}$/.test(icao)) return null;
   const o = CF.proceduresOf(S.flight)[side] || {},
     kinds = side === 'dep' ? ['SID'] : ['STAR', 'APP'],
-    [rwys, all] = await Promise.all([runwaysOf(icao), procsOf(icao)]);
+    [known, all] = await Promise.all([runwaysOf(icao), procsOf(icao)]);
   return {
     icao,
-    rwys,
+    rwys: await runwayChoices(icao, known, all),
     all,
     lists: Object.fromEntries(kinds.map(k => [k, all.filter(p => p.kind === k && servesRwy(p, o.rwy))])),
-    nodata: !rwys.length && !all.length
+    nodata: !known.length && !all.length
   };
 }
 /** Libellé d'un enregistrement dans une liste : son nom, la piste quand le nom revient (une fiche par piste), « X-Plane, local »

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a runway can be chosen at LFPO and LFBO — the runways are those of the procedures when aerodb has none**
+  (`modules/fuel/module.js` `runwayChoices`, SPEC, DECISIONS; help ×4; case F22) — `aerodb.runways()` answers `[]` for files whose
+  `RWnn` points have no position; the select now offers the runways the procedures name, then the two ends of the runway axis of the base.
+
 - **Fuel: the runway, the STAR and the approach filter one another** (`modules/fuel/module.js` `procChosen`, SPEC, DECISIONS; help ×4;
   case F21) — a runway keeps the procedures that serve it (those with no runway named or `ALL` serve all); the choice that no longer
   fits goes back to « not chosen » with one floating line saying which; a SID, STAR or approach chosen first that serves one runway
