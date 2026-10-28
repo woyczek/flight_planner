@@ -25,6 +25,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   without the launcher; its requests to the frame (`ctx.launcher`, the launcher's routes, publishing without a launcher,
   the end-of-cycle line) and to aerodb (the published state, the builders); lots D0–D10; it replaces the Sources screen at
   D1 (test zone L). No code.
+- **aerodb: Belgian coding tables, SID variant and the real `--fetch` run** (`tools/proc_eaip.py` `parse_be_coding`, K14, `frame/aerodb/EAD_BASIC.md` § 7.1) — a SID/STAR table whose middle legs print no course is kept with the warning "course not printed: geometry not checkable" only when every point is resolved from its list, the first leg is IF/CF and every leg is IF/TF/CF/DF; identifiers printed in two lists with different co-ordinates reject their tables; approaches keep the strict rule. Real on-demand run on three aerodromes: EGLL 4 approaches + 18 STAR by OCR, LOWG 4, EBBE 5 of 6 (the sixth prints a course 1.2° off its own co-ordinates: rejected by design).
 - **aerodb: EAD Basic used as its terms allow** (`tools/proc_eaip.py` `ead_notice`, `tools/proc_ead.py`, `tools/proc_ocr.py`,
   `tools/proc_manual.py`; `LICENSE.md` § 5, `frame/aerodb/EAD_BASIC.md` § 1 and § 8.1, DECISIONS; test K12) — the user's decisions: simulation
   use, data not operational (a mention in every file read through EAD Basic), the survey by hand, one aerodrome per `--fetch` on an explicit

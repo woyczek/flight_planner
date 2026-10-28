@@ -842,22 +842,41 @@ def be_coords(rows):
     return out
 
 
+BE_SIDTITLE = re.compile(r'\b(SID|STAR)\s+([A-Z]{2}\s?\d{2}[A-Z])\b')
+BE_SIMPLE_LEGS = {'IF', 'TF', 'CF', 'DF'}
+
+
 def parse_be_coding(rows):
-    """Page « <TYPE> ARINC CODING » de la Belgique (carte IAC dont le codage est dessiné en vecteurs : lue par OCR) → { kind: 'APP', tables: [{ title, kind, name, runways, transition,
-    legs }], warnings }. Une table commence à chaque « WAYPOINTS COORDINATES » : la liste des points (« BE123: 50°44.12' N 004°21.34'E - IAF »), puis les tronçons, un par ligne :
-    « 003 TF BE123 FAF 12.3 @ 3000 -3.00% » (séquence, type, point, rôle, cap vrai, contrainte d'altitude, vitesse « 210Kts », angle vertical). Ni distance ni cap magnétique ne sont
-    imprimés : la porte géométrique ne vérifie que le cap vrai. Les coordonnées viennent de la liste de la table ; un point absent de la liste, ou un TF sans cap vrai, fait rejeter
-    la table (« NON retenue »), rien n'est complété. Le titre (« EBBE RNP RWY 09R COORDINATES AND CODING ») nomme la première table ; une table sans titre est nommée d'après
-    son point de piste (RWnn). Survol : colonne non lue, `over` None."""
+    """Page « <TYPE> ARINC CODING » de la Belgique (carte IAC ou SID dont le codage est dessiné en vecteurs : lue par OCR) → { kind, tables: [{ title, kind, name, runways, transition,
+    legs }], warnings }. Une table commence à chaque « WAYPOINTS COORDINATES » : la liste des points (« BE123: 50°44.12' N 004°21.34'E - IAF », degrés et minutes décimales), puis
+    les tronçons, un par ligne : « 003 TF BE123 FAF 12.3 @ 3000 -3.00% » (séquence, type, point, rôle, cap vrai, contrainte d'altitude, vitesse « 210Kts », angle vertical). Ni distance
+    ni cap magnétique ne sont imprimés : la porte géométrique ne vérifie que le cap vrai des TF. Les coordonnées viennent de la liste de la table ; un identifiant présent dans
+    plusieurs listes de la page doit y avoir les mêmes coordonnées, sinon les tables concernées sont rejetées (lectures concurrentes : jamais de choix entre deux valeurs).
+    Approche (« EBBE RNP RWY 09R COORDINATES AND CODING ») : premier tronçon IF, chaque TF porte son cap vrai, sinon la table est rejetée (« NON retenue »). Une table sans titre
+    est nommée d'après son point de piste (RWnn).
+    SID / STAR (« SID BE 04F (RNAV1) COORDINATES AND CODING ») : la page n'imprime le cap vrai que de certains TF (et celui d'un CF, qui n'est pas contrôlable : aucun point avant lui). RÈGLE :
+    la table est gardée, avec l'avertissement « cap non imprimé : géométrie non contrôlable » (nombre de tronçons concernés), SEULEMENT si tous ses points sont résolus par la liste, si son
+    premier tronçon est IF ou CF, si tous ses tronçons sont IF, TF, CF ou DF (une chaîne de points nommés, sans arc, attente ni tronçon sans point) et si les caps imprimés passent la
+    porte ; sinon elle est rejetée. Le sens de virage et le survol (cellules d'une lettre) ne sont pas lus par OCR : `turn` et `over` valent None."""
     warnings, tables = [], []
     starts = [i for i, r in enumerate(rows) if re.search(r'(?i)waypoints\s+coordinates', r)]
-    titles = [(i, m) for i, r in enumerate(rows) for m in [BE_TITLE.search(r)] if m and re.search(r'(?i)coordinates\s+and\s+coding', r)]
-    word = titles[0][1].group(1) if titles else 'RNP'
+    titles = []                                  # (ligne, type, nom, pistes)
+    for i, r in enumerate(rows):
+        if not re.search(r'(?i)coordinates\s+and\s+coding', r):
+            continue
+        m, sm = BE_TITLE.search(r), BE_SIDTITLE.search(r)
+        if sm:
+            titles.append((i, sm.group(1), re.sub(r'\s+', ' ', sm.group(2)), []))
+        elif m:
+            titles.append((i, 'APP', f'{m.group(1)} RWY {m.group(2)}', [m.group(2)]))
+    word = next((m.group(1) for r in rows for m in [BE_TITLE.search(r)] if m), 'RNP')
+    lists = [be_coords(rows[s:(starts[n + 1] if n + 1 < len(starts) else len(rows))]) for n, s in enumerate(starts)]
+    clash = {k for a in lists for k, v in a.items() for b in lists if k in b and b[k] != v}      # même identifiant, deux coordonnées différentes dans la page
     for n, s in enumerate(starts):
         end = starts[n + 1] if n + 1 < len(starts) else len(rows)
         block = rows[s:end]
-        coords = be_coords(block)
-        legs, bad, missed = [], [], False
+        coords = lists[n]
+        legs, bad = [], []
         for r in block:
             if re.match(r'(?i)^missed approach', r.strip()):
                 continue
@@ -868,7 +887,7 @@ def parse_be_coding(rows):
             tt, ident, rest = (g[1], g[2], g[3]) if len(g) == 4 else (g[0], g[1], g[2])
             toks = rest.split()
             role = toks[0] if toks else ''
-            true = next((float(t) for t in toks if re.fullmatch(r'\d{3}\.\d', t)), None)
+            true = next((float(t) for t in toks if re.fullmatch(r'\d{3}\.\d', t)), None) if tt == 'TF' else None
             alt = None
             for k, t in enumerate(toks):
                 if re.fullmatch(r'\d{3,5}/\d{3,5}', t):
@@ -884,24 +903,33 @@ def parse_be_coding(rows):
             c = coords.get(ident)
             if c is None:
                 bad.append(f'{ident}: absent de la liste des coordonnées')
-            elif tt == 'TF' and true is None:
-                bad.append(f'{ident}: tronçon TF sans cap vrai')
+            elif ident in clash:
+                bad.append(f'{ident}: coordonnées différentes dans deux listes de la page')
             legs.append({'id': ident, 'leg': tt, 'over': None, 'alt': alt, 'kt': int(kt.group(1)) if kt else None, 'lat': c[0] if c else None, 'lon': c[1] if c else None,
                          'crs': None, 'true': true, 'nm': None, 'turn': None, 'seq': len(legs) + 1, 'remark': 'MAPt' if 'MAPT' in role.upper() else ''})
+        near = [t for t in titles if (starts[n - 1] if n else -1) < t[0] < s]
         rw = next((lg['id'] for lg in legs if re.fullmatch(r'RW\d{2}[LRC]?', lg['id'])), None)
-        near = [t for t in titles if starts[n - 1] < t[0] < s] if n else [t for t in titles if t[0] < s]
         if near:
-            name, runways = f'{near[-1][1].group(1)} RWY {near[-1][1].group(2)}', [near[-1][1].group(2)]
+            kind, name, runways = near[-1][1], near[-1][2], near[-1][3]
         elif rw:
-            name, runways = f'{word} RWY {rw[2:]}', [rw[2:]]
+            kind, name, runways = 'APP', f'{word} RWY {rw[2:]}', [rw[2:]]
         else:
-            name, runways = f'{word} RWY ?', []
+            kind, name, runways = 'APP', f'{word} RWY ?', []
         label = f'{name} (table {n + 1})'
-        if bad or len(legs) < 2 or legs[0]['leg'] != 'IF':
-            warnings.append(f'{label}: {len(legs)} tronçon(s) lu(s)' + (f' ({"; ".join(bad[:3])})' if bad else ', premier tronçon IF attendu') + ', table NON retenue')
+        first = {'APP': ('IF',)}.get(kind, ('IF', 'CF'))
+        unchecked = 0
+        if kind == 'APP':
+            bad += [f'{lg["id"]}: tronçon TF sans cap vrai' for lg in legs if lg['leg'] == 'TF' and lg['true'] is None and lg['lat'] is not None]
+        else:
+            bad += [f'{lg["id"]}: tronçon {lg["leg"]} hors de IF / TF / CF / DF' for lg in legs if lg['leg'] not in BE_SIMPLE_LEGS]
+            unchecked = sum(1 for lg in legs if lg['leg'] != 'IF' and lg['true'] is None)
+        if bad or len(legs) < 2 or legs[0]['leg'] not in first:
+            warnings.append(f'{label}: {len(legs)} tronçon(s) lu(s)' + (f' ({"; ".join(bad[:3])})' if bad else f', premier tronçon {"/".join(first)} attendu') + ', table NON retenue')
             continue
-        tables.append({'title': label, 'kind': 'APP', 'name': name, 'runways': runways, 'transition': None, 'legs': legs})
-    return {'kind': 'APP', 'tables': tables, 'warnings': warnings}
+        if unchecked:
+            warnings.append(f'{label}: cap non imprimé : géométrie non contrôlable ({unchecked} tronçon(s) sur {len(legs)})')
+        tables.append({'title': label, 'kind': kind, 'name': name, 'runways': runways, 'transition': None, 'legs': legs})
+    return {'kind': tables[0]['kind'] if tables else 'APP', 'tables': tables, 'warnings': warnings}
 
 
 GE_LEG = re.compile(r'^(IF|TF|CF|DF|RF|CA|FA|CD|CI|CR)\s+(\S+)\s+(.*)$')

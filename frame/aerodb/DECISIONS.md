@@ -1223,3 +1223,9 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   8. ready: D1 (`publication()`, `zones()`, `sources()`, `airac.js`, `catalogue.js`) is a short aerodb lot; D5 waits for the complete
      readers, the pieces' and the manifest's formats; D10 has its tools (`proc_ead --fetch`, `proc_ocr`, `proc_manual`).
 - **Next**: the settings session aligns `modules/data/` (§ 2 written together, the file stays with that session); then aerodb's lot D1.
+## 28 Oct 2026 — the real `--fetch` run, Belgian SID tables (session aerodb procedures, worktree E:\DEFA-v3-aerodb-ocr)
+
+- **Word of the user**: « j'ai besoin de savoir si tous les wrappers pour tous les pays sont bons. OCR doit pouvoir fonctionner sur un terrain donné ».
+- **Done**: first real end-to-end `--fetch` with OCR on three aerodromes (local outputs only): EGLL 4 approaches (`uk-app`) + 18 STAR by OCR (`uk-star`), gate clean, the two RNAV holding documents reported unread (out of scope); LOWG 4 procedures (`at-coding`, text); EBBE 3 of 6 tables before the fix, 5 of 6 after.
+- **Decision**: a `be-coding` SID/STAR table whose middle legs print no course is kept with a warning when all its points come from its own list, the first leg is IF or CF and every leg is IF/TF/CF/DF; the printed courses still pass the gate; approaches keep the strict rule. The sixth EBBE table prints a course 1.2° off its own co-ordinates at every resolution: an AIP printing inconsistency, rejected by design (no tolerance widening, no consensus trick).
+- **Honest status of the wrappers**: each layout is verified on one real sample per State (17 States) and an invented K page, not on every aerodrome; an unknown shape is reported, never guessed. Known limits: single-letter cells (fly-over, turn) are lost by the OCR; `--fetch` reads only the first results page (15 rows per search).

@@ -993,6 +993,32 @@ def k14(c):
     d3 = O.document_from_rows('EBXX', 'be.pdf', [r for r in be if not r.startswith('RW22R:')], '2026-10-01')
     c.ok(d3['procedures'] == [] and any('NON retenue' in x for x in d3['warnings']), str(d3['warnings']), 'a point missing from the list: the table is dropped, never completed')
 
+    # variante SID : le cap vrai n'est imprimé que pour certains TF (et le CF) ; table gardée avec l'avertissement si tout est résolu et simple, rejetée sinon
+    sp = [('BE408', 50.77, 4.78), ('BE409', 50.80, 4.81), ('BE600', 50.69, 4.89), ('BE900', 50.66, 4.95)]       # points fictifs
+
+    def sid(bump=0.0, hold=False, clash=False):
+        """Page be-coding SID INVENTÉE, deux tables : cap vrai absent des TF du milieu, présent sur le dernier ; `bump` le falsifie, `hold` met une attente (HM), `clash` donne à BE600 deux
+        coordonnées différentes dans les deux listes."""
+        rows = ['AIP XXXX AD 2.MIL-EBXX-SID.07', 'MIPS SID (RNAV1) ARINC CODING']
+        for t, label in enumerate(('04F', '22F')):
+            rows += [f'SID BE {label} (RNAV1) COORDINATES AND CODING (PAGE 1-8):', 'WAYPOINTS COORDINATES:']
+            for n, la, lo in sp:
+                rows.append(f"{n}: {dm(la + (0.05 if clash and t and n == 'BE600' else 0), False)} {dm(lo, True)}")
+            rows += ['Path Role of the Turn Altitude Speed Vertical Path', 'Seq Number WP Name Fly-Over Course (T°)', 'Terminator FIX Direction Constraint Constraint Angle']
+            brg, nm = P.bearing_nm((sp[2][1], sp[2][2]), (sp[3][1], sp[3][2]))
+            rows += ['010 CF BE408 Other 038.8 MAX 1000', '020 TF BE409 Other', '030 ' + ('HM' if hold else 'TF') + ' BE600 Other @ 3000', f'040 TF BE900 Other {brg + bump:05.1f} 4000/3000']
+        return rows + ['CHANGES: TEST']
+    sd = O.document_from_rows('EBXX', 'sid.pdf', sid(), '2026-10-01')
+    c.eq((P.detect_layout(sid()), len(sd['procedures']), sd['formats'][0]['ok'], M.verify(sd), sd['procedures'][0]['kind'], sd['procedures'][0]['name'], all(p['lat'] is not None for p in sd['procedures'][0]['points'])),
+         ('be-coding', 2, True, [], 'SID', 'BE 04F', True), 'SID variant: two tables kept (points resolved, only IF/TF/CF/DF, printed course passes the gate), kind SID, name from the title', what='document_from_rows')
+    c.ok(sum('cap non imprimé : géométrie non contrôlable' in x for x in sd['warnings']) == 2, str(sd['warnings']), 'each kept SID table carries the warning "cap non imprimé : géométrie non contrôlable"')
+    sb = O.document_from_rows('EBXX', 'sid.pdf', sid(bump=5.0), '2026-10-01')
+    c.ok(sb['procedures'] == [] and any('NON retenue' in x for x in sb['warnings']), str(sb['warnings']), 'SID variant: the one printed course that exists is checked, 5 degrees off drops the table')
+    sh = O.document_from_rows('EBXX', 'sid.pdf', sid(hold=True), '2026-10-01')
+    c.ok(sh['procedures'] == [] and any('hors de IF' in x for x in sh['warnings']), str(sh['warnings']), 'SID variant: a leg other than IF/TF/CF/DF (a hold) drops the table: a polyline would be wrong')
+    sc = O.document_from_rows('EBXX', 'sid.pdf', sid(clash=True), '2026-10-01')
+    c.ok(sc['procedures'] == [] and any('deux listes' in x for x in sc['warnings']), str(sc['warnings']), 'the same point with two different co-ordinates in two lists of the page: both tables are dropped (no choice between concurrent readings)')
+
 
 # ------------------------------------------------------------------------------------------------ UK STAR coding tables read by OCR (static)
 def _dms_compact(v, lon, hemi_first):
