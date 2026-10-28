@@ -40,6 +40,8 @@ def pdf_reader(path):
     except ImportError:
         raise SystemExit('pypdf manque : python -m pip install pypdf (dépendance facultative des constructeurs de poste, '
                          'voir tools/proc_eaip.py ; ni le lanceur ni la page n\'en ont besoin).')
+    import logging
+    logging.getLogger('pypdf').setLevel(logging.ERROR)    # l'avertissement « fontTools is required » (polices Type1) se répète à chaque page et n'apprend rien
     return PdfReader(str(path))
 
 
@@ -69,48 +71,52 @@ def rows_from_pdf(path, page=0, reader=None):
     return [' '.join(' '.join(t for _, _, t in sorted(r)).split()) for _, r in rows]
 
 
-PDF_TIMEOUT = 60  # secondes au plus par document lu par pypdf (pdf_pages)
+PDF_TIMEOUT = 60  # secondes au plus par document lu par pypdf (pdf_pages, pdf_kind)
 
 
 class PdfTimeout(Exception):
     """Lecture d'un PDF abandonnée : délai dépassé, processus de lecture tombé ou document illisible."""
 
 
-def _read_pages(path, which, conn):
-    """Processus de lecture (pdf_pages) : lit les pages demandées et renvoie (nature, nombre de pages, lignes ou message)."""
+def _pages_of(path, which):
+    """(nombre de pages, lignes des pages demandées) : le travail de pdf_pages, fait dans le processus de lecture."""
+    reader = pdf_reader(path)
+    n = len(reader.pages)
+    out = []
+    for i in (range(n) if which is None else [i for i in which if 0 <= i < n]):
+        try:
+            out.append(rows_from_pdf(path, i, reader))
+        except Exception as e:                       # une page illisible n'arrête pas la lecture
+            out.append([f'(page illisible: {type(e).__name__})'])
+    return n, out
+
+
+def _child(task, args, conn):
+    """Processus de lecture : fait `task` (une fonction de ce module) et renvoie (nature, résultat ou message)."""
     try:
-        reader = pdf_reader(path)
-        n = len(reader.pages)
-        out = []
-        for i in (range(n) if which is None else [i for i in which if 0 <= i < n]):
-            try:
-                out.append(rows_from_pdf(path, i, reader))
-            except Exception as e:                   # une page illisible n'arrête pas la lecture
-                out.append([f'(page illisible: {type(e).__name__})'])
-        conn.send(('ok', n, out))
+        conn.send(('ok', globals()[task](*args)))
     except SystemExit as e:
-        conn.send(('exit', 0, str(e)))
+        conn.send(('exit', str(e)))
     except Exception as e:
-        conn.send(('err', 0, f'{type(e).__name__}: {e}'))
+        conn.send(('err', f'{type(e).__name__}: {e}'))
     finally:
         conn.close()
 
 
-def pdf_pages(path, which=None, timeout=None):
-    """(nombre de pages, [lignes de chaque page demandée]) d'un PDF, lu par pypdf dans un PROCESSUS SÉPARÉ, au plus `timeout` s
-    (PDF_TIMEOUT par défaut) : un PDF piégé ou démesuré ne bloque pas l'outil, il lève PdfTimeout et le processus est arrêté.
-    `which` : numéros de page à partir de 0 (None : toutes). pypdf manque : SystemExit, comme pdf_reader. Bibliothèque standard."""
+def limited(task, path, *args, timeout=None):
+    """Fait `task(path, *args)` (lecture pypdf) dans un PROCESSUS SÉPARÉ, au plus `timeout` s (PDF_TIMEOUT par défaut) : un PDF piégé
+    ou démesuré ne bloque pas l'outil, il lève PdfTimeout et le processus est arrêté ; pypdf manque : SystemExit. Bibliothèque standard."""
     import multiprocessing as mp
     timeout = PDF_TIMEOUT if timeout is None else timeout
     a, b = mp.Pipe(duplex=False)
-    proc = mp.Process(target=_read_pages, args=(str(path), which, b), daemon=True)
+    proc = mp.Process(target=_child, args=(task, (str(path), *args), b), daemon=True)
     proc.start()
     b.close()
     try:
         if not a.poll(timeout):
             raise PdfTimeout(f'{Path(path).name}: lecture abandonnée après {timeout} s')
         try:
-            kind, n, val = a.recv()
+            kind, val = a.recv()
         except EOFError:
             raise PdfTimeout(f'{Path(path).name}: le processus de lecture s\'est arrêté sans réponse') from None
     finally:
@@ -122,13 +128,43 @@ def pdf_pages(path, which=None, timeout=None):
         raise SystemExit(val)
     if kind == 'err':
         raise PdfTimeout(f'{Path(path).name}: {val}')
-    return n, val
+    return val
+
+
+def pdf_pages(path, which=None, timeout=None):
+    """(nombre de pages, [lignes de chaque page demandée]) d'un PDF, lu sous délai (limited). `which` : numéros à partir de 0 (None : toutes)."""
+    return tuple(limited('_pages_of', path, which, timeout=timeout))
 
 
 def first_page_rows(path):
     """Lignes de la première page d'un PDF, lue sous délai (pdf_pages)."""
     _, pages = pdf_pages(path, [0])
     return pages[0] if pages else []
+
+
+def pdf_kind(path, timeout=None):
+    """classify_pdf sous délai (limited)."""
+    return limited('classify_pdf', path, timeout=timeout)
+
+
+def classify_pdf(path):
+    """Nature d'un PDF d'AIP d'après sa première page : 'text' (couche de texte lisible), 'vector' (texte dessiné en tracés : aucune couche de texte), 'image', 'sparse' (presque rien) ;
+    avec le nombre de pages, de lignes de texte, d'opérations de tracé, la disposition reconnue et l'empreinte d'en-tête. Sert au relevé des États (tools/proc_ead.py --survey)."""
+    reader = pdf_reader(path)
+    page = reader.pages[0]
+    try:                                                     # AVANT la lecture du texte : elle transforme le flux de la page en cache
+        cs = page.get_contents()
+        data = cs.get_data() if cs is not None else b''
+        paths = len(re.findall(rb'(?<=\s)(?:re|l|c|m)(?=\s)', data))
+    except Exception:
+        paths = 0
+    try:
+        images = len(page.images)
+    except Exception:
+        images = 0
+    rows = rows_from_pdf(path, 0, pdf_reader(path))
+    kind = 'text' if len(rows) >= 15 else 'vector' if paths > 2000 else 'image' if images else 'sparse'
+    return {'pages': len(reader.pages), 'text_rows': len(rows), 'path_ops': paths, 'images': images, 'kind': kind, 'layout': detect_layout(rows), 'fingerprint': fingerprint(rows)}
 
 
 # ---------------------------------------------------------------------------------------------------------- repérage dans un PDF
@@ -378,6 +414,8 @@ def detect_layout(rows):
     """Nom de la disposition connue d'une page « CODE », ou None. 'sia-code' : table ARINC du SIA (en-tête « Path Terminator » ou « Leg sequence » et « Waypoint »)."""
     text = ' '.join(rows)
     low = text.lower()
+    if 'coding table of' in low and 'designator' in low and 'route' in low and 'terminator' in low and 'coordinates' in low:       # Arménie : tables par procédure, cellules éclatées
+        return 'am-coding'
     if ('path' in low and 'terminator' in low or 'leg sequence' in low) and 'waypoint' in low and ('fly' in low or 'altitude' in low):      # mots répartis sur plusieurs lignes selon la page
         return 'sia-code'
     if 'instrument approach procedure coding tables' in low and 'designator' in low and 'sequence' in low and 'co-ordinates' in low:
@@ -392,7 +430,7 @@ def fingerprint(rows):
 
 
 # empreintes des en-têtes vus (cycle AIRAC 2026-10-01, pages de LFBD et de LFAV) ; une autre est signalée « en-tête inconnu », pas bloquante
-KNOWN_FINGERPRINTS = {'sia-code': {'4d7d8e47d5', '96546cf4c0', 'de5a236c1c'}, 'uk-app': {'fc0e4cc8ff'}}
+KNOWN_FINGERPRINTS = {'sia-code': {'4d7d8e47d5', '96546cf4c0', 'de5a236c1c'}, 'uk-app': {'fc0e4cc8ff'}, 'am-coding': set()}
 
 
 def verify_page(rows, table=None):
@@ -486,6 +524,86 @@ def parse_uk_app(rows):
     return {'kind': 'APP', 'tables': [t for t in tables if t['legs']], 'warnings': warnings}
 
 
+AM_TERMINATORS = {'IF', 'TF', 'CF', 'DF', 'RF', 'AF', 'FA', 'FC', 'FD', 'FM', 'HA', 'HF', 'HM', 'PI', 'CA', 'CD', 'CI', 'CR', 'VA', 'VD', 'VI', 'VM', 'VR'}
+AM_ROLES = {'IAF', 'FAF', 'FAP', 'MAPT', 'MAHF', 'IF'}
+AM_HEADER = {w.lower() for w in 'Waypoint Course/ Constraints Navigation Path DIST Turn Fly Over Coordinates Track Terminator NM Direction Specification Remarks Identifier Mag(True) Level IAS'.split()}
+AM_LAT = re.compile(r'([NS])(\d{2}) (\d{2}) (\d{2}(?:\.\d+)?)')
+AM_LON = re.compile(r'([EW])(\d{3}) (\d{2}) (\d{2}(?:\.\d+)?)')
+AM_CRS = re.compile(r'(\d{3})°\s*\(T(\d{3}(?:\.\d+)?)°?\)')
+
+
+def _am_deg(m):
+    v = int(m.group(2)) + int(m.group(3)) / 60 + float(m.group(4)) / 3600
+    return round(-v if m.group(1) in 'SW' else v, 6)
+
+
+def parse_am_coding(rows):
+    """Page de tables de codage « RNAV STAR / SID CODING TABLE OF <nom> » (Arménie, vue le 28 octobre 2026) → { tables: [{ title, kind, name, runways, legs }], warnings }.
+    Les cellules d'un tronçon sont éclatées sur plusieurs lignes dans un ordre qui varie d'une table à l'autre : on ne s'appuie donc pas sur les lignes mais sur l'ordre des
+    valeurs : les n coordonnées, les caps (« 347° (T354.3°) ») et les distances viennent dans l'ordre des tronçons ; si leur nombre ne colle pas avec celui des
+    terminaisons de chemin (IF, TF…), la table est rejetée et signalée, jamais complétée."""
+    warnings, tables, rw = [], [], []
+    blocks, cur = [], None
+    for r in rows:
+        m = re.match(r'(?i)^(?:RNAV\s+)?(STAR|SID)\s+CODING TABLE OF\s+(.+?)\s*$', r.replace('RNAV STAR', 'STAR').replace('RNAV SID', 'SID'))
+        if re.match(r'(?i)^standard (arrival|departure)', r):
+            rw = re.findall(r'\bRWY\s*(\d{2}[LRC]?)', r)
+        if m:
+            cur = {'title': r, 'kind': m.group(1).upper(), 'name': m.group(2), 'runways': list(rw), 'lines': []}
+            blocks.append(cur)
+        elif cur is not None:
+            if r.startswith('Designator Route') or r.startswith('____') or r.startswith('©'):
+                cur = None
+            elif not all(w.lower() in AM_HEADER for w in r.split()):
+                cur['lines'].append(r)
+    for b in blocks:
+        text = ' '.join(b['lines'])
+        lats = [_am_deg(m) for m in AM_LAT.finditer(text)]
+        lons = [_am_deg(m) for m in AM_LON.finditer(text)]
+        text = AM_LON.sub(' ', AM_LAT.sub(' ', text))
+        crs = [(int(m.group(1)), float(m.group(2))) for m in AM_CRS.finditer(text)]
+        text = AM_CRS.sub(' ', text)
+        dists = [float(x) for x in re.findall(r'(?<!\S)(\d{1,3}\.\d)(?!\S)', text)]
+        text = re.sub(r'(?<!\S)\d{1,3}\.\d(?!\S)', ' ', text)
+        toks = text.split()
+        idx = [i for i, t in enumerate(toks) if t in AM_TERMINATORS and (i == 0 or toks[i - 1].upper() not in ('IAF', 'FAF'))]
+        legs = []
+        segs = [toks[i + 1:(idx[k + 1] if k + 1 < len(idx) else len(toks))] for k, i in enumerate(idx)]
+        for k in range(1, len(segs)):
+            # l'identifiant du point peut précéder le terminateur (« IAF AMGIK … » puis « TF N 18.0 … ») : il est alors en queue du tronçon précédent
+            if segs[k][:1] in (['N'], ['Y']):
+                j = next((n for n in range(len(segs[k - 1]) - 1, -1, -1) if segs[k - 1][n].upper() in AM_ROLES - {'IF'}), None)
+                if j is not None and j + 1 < len(segs[k - 1]):
+                    segs[k] = [segs[k - 1][j + 1]] + segs[k]
+                    segs[k - 1] = segs[k - 1][:j]
+        for k, i in enumerate(idx):
+            seg = segs[k]
+            while seg and seg[0].upper() in AM_ROLES - {'IF'}:
+                seg = seg[1:]
+            if not seg:
+                continue
+            leg = {'id': seg[0], 'leg': toks[i], 'over': (seg[1:2] == ['Y']) or None, 'alt': None, 'kt': None, 'crs': None, 'true': None, 'nm': None,
+                   'turn': next((t for t in seg[1:3] if t in ('L', 'R')), None)}
+            for t in seg[1:]:
+                m = re.fullmatch(r'(FL(\d{2,3})|A(\d{3,5}))([+-]?)', t)
+                if m and leg['alt'] is None:
+                    leg['alt'] = {'type': {'+': 'min', '-': 'max', '': 'at'}[m.group(4)], 'ft': int(m.group(2)) * 100 if m.group(2) else int(m.group(3))}
+                m = re.fullmatch(r'K(\d{3})([+-]?)', t)
+                if m and leg['kt'] is None:
+                    leg['kt'] = int(m.group(1))
+            legs.append(leg)
+        tf = [lg for lg in legs if lg['leg'] == 'TF']
+        if not legs or len(lats) != len(legs) or len(lons) != len(legs) or len(crs) != len(tf) or (dists and len(dists) != len(tf)):
+            warnings.append(f'{b["name"]}: {len(legs)} tronçon(s), {len(lats)}/{len(lons)} coordonnée(s), {len(crs)} cap(s), {len(dists)} distance(s): comptes incohérents, table NON retenue')
+            continue
+        for n, lg in enumerate(legs):
+            lg['lat'], lg['lon'], lg['seq'], lg['remark'] = lats[n], lons[n], n + 1, ''
+        for lg, c, d in zip(tf, crs, dists or [None] * len(tf)):
+            lg['crs'], lg['true'], lg['nm'] = c[0], c[1], d
+        tables.append({'title': b['title'], 'kind': b['kind'], 'name': b['name'], 'runways': b['runways'], 'transition': None, 'legs': legs})
+    return {'kind': 'MIXED', 'tables': tables, 'warnings': warnings}
+
+
 def bearing_nm(a, b):
     """(cap vrai en degrés, distance en NM) du grand cercle de a à b, points (lat, lon) en degrés décimaux."""
     la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))
@@ -511,7 +629,7 @@ def check_geometry(legs, tol_deg=0.25, tol_nm=0.2):
     return bad
 
 
-def records_uk_app(icao, parsed, source, cycle, at=None):
+def records_uk_app(icao, parsed, source, cycle, at=None, state='UK'):
     """Procédures du schéma commun d'une page UK « Instrument Approach Procedure Coding Tables » ; statut « check », source ead-basic/UK."""
     out, warnings = [], list(parsed['warnings'])
     for t in parsed['tables']:
@@ -526,6 +644,10 @@ def records_uk_app(icao, parsed, source, cycle, at=None):
                 p['kt'] = lg['kt']
             if lg['crs'] is not None:
                 p['crs'] = lg['crs']
+            if lg.get('nm') is not None:
+                p['nm'] = lg['nm']
+            if lg.get('turn'):
+                p['turn'] = lg['turn']
             if lg['over']:
                 p['over'] = True
             if missed:
@@ -536,9 +658,10 @@ def records_uk_app(icao, parsed, source, cycle, at=None):
         name = t['name']
         rw = f'RW{t["runways"][0]}' if len(t['runways']) == 1 else 'RWALL'
         norm = lambda v: re.sub(r'[\s-]+', '', (v or '').upper())
-        out.append({'id': '.'.join([icao, 'APP', norm(name), rw] + ([norm(t['transition'])] if t['transition'] else [])), 'icao': icao, 'kind': 'APP', 'name': name,
+        kind = t.get('kind', 'APP')
+        out.append({'id': '.'.join([icao, kind, norm(name), rw] + ([norm(t['transition'])] if t['transition'] else [])), 'icao': icao, 'kind': kind, 'name': name,
                     'runways': t['runways'], 'transition': t['transition'], 'points': pts,
-                    'source': {'kind': 'ead-basic', 'ref': f'ead-basic/UK/{source}', 'cycle': cycle, 'at': at}, 'status': 'check'})
+                    'source': {'kind': 'ead-basic', 'ref': f'ead-basic/{state}/{source}', 'cycle': cycle, 'at': at}, 'status': 'check'})
     return out, warnings
 
 
@@ -556,12 +679,12 @@ def build_pdf_dir(icao, pdfs, rows_of, cycle):
             continue
         layout = detect_layout(rows)
         fp = fingerprint(rows)
-        if layout == 'uk-app':
-            parsed = parse_uk_app(rows)
-            recs, w = records_uk_app(icao, parsed, f, cycle, page_date(rows))
-            ok = bool(recs) and len(recs) == len(parsed['tables'])
+        if layout in ('uk-app', 'am-coding'):
+            parsed = parse_uk_app(rows) if layout == 'uk-app' else parse_am_coding(rows)
+            recs, w = records_uk_app(icao, parsed, f, cycle, page_date(rows), icao[:2])
+            ok = bool(recs) and len(recs) == len(parsed['tables']) and not any('NON retenue' in x for x in w)
             problems = [x for x in w if 'NON retenue' in x] + ([] if recs else ['aucune table lue'])
-            if fp not in KNOWN_FINGERPRINTS['uk-app']:
+            if fp not in KNOWN_FINGERPRINTS[layout]:
                 problems.append(f'info: en-tête inconnu (empreinte {fp}): format changé depuis les pages vues ?')
             formats.append({'file': f, 'layout': layout, 'fingerprint': fp, 'ok': ok, 'problems': problems})
             procs += recs
@@ -572,7 +695,7 @@ def build_pdf_dir(icao, pdfs, rows_of, cycle):
                             'problems': ['disposition non reconnue' + (' (très peu de texte: tableau dessiné en vecteurs ou image ? ' + str(n) + ' ligne(s))' if n < 8 else '')]})
             warnings.append(f'{f}: page NON lue, disposition non reconnue' + (' (texte absent: tables dessinées sans couche de texte)' if n < 8 else ''))
     return {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'procedures': procs, 'formats': formats,
-            'warnings': warnings, 'notice': 'Source : AIP du Royaume-Uni (CAA) via EAD Basic ; à vérifier, pour la simulation seulement, jamais pour la navigation.'}
+            'warnings': warnings, 'notice': f'Source : AIP de l\'État ({icao[:2]}) via EAD Basic ; à vérifier, pour la simulation seulement, jamais pour la navigation.'}
 
 
 # ---------------------------------------------------------------------------------------------------------- schéma commun

@@ -381,6 +381,166 @@ def k5(c):
         importlib.reload(E)
 
 
+# ------------------------------------------------------------------------------------------------ EAD Basic library: survey and per-aerodrome fetch (static)
+@case('K12', 'EAD Basic library, survey and fetch', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: per-State survey and on-demand per-aerodrome fetch, never guessing a format')
+def k12(c):
+    import importlib
+    import http.server
+    import os
+    import sys
+    import tempfile
+    import threading
+    import urllib.parse
+    import json
+    from pathlib import Path
+    tools = str(c.root / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    docs = {'EG': ['EG_AD_2_EGLL_7-13_en.pdf', 'EG_AD_2_EGLL_5-1_en.pdf'], 'EB': []}
+    heads = {'CODING': 'Instrument Approach Procedure Coding Tables', 'DEPARTURE': 'Standard Departure Chart', 'ARRIVAL': 'Standard Arrival Chart', 'APPROACH': 'Approach Chart'}
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+        def _send(self, body, ctype='text/html'):
+            b = body if isinstance(body, bytes) else body.encode()
+            self.send_response(200)
+            self.send_header('Content-Type', ctype)
+            self.send_header('Content-Length', str(len(b)))
+            self.end_headers()
+            self.wfile.write(b)
+        def do_GET(self):
+            if self.path.startswith('/cms-eadbasic/opencms/en/login/ead-basic/'):
+                self._send('<form id="ajaxLoginForm"></form>')
+            elif self.path.startswith('/fwf-eadbasic/public/static/home.faces'):
+                self._send('<a href="/fwf-eadbasic/secure/aip.faces">AIP Library</a>')
+            elif self.path.startswith('/fwf-eadbasic/secure/aip.faces'):
+                self._send('<form id="mainForm" action="/fwf-eadbasic/secure/aip.faces" method="post"><input type="hidden" name="javax.faces.ViewState" value="' + 'A' * 50 + '"/>'
+                           '<select name="mainForm:AuthorityCode"><option value="1">Belgium (EB)</option><option value="2">United Kingdom (EG)</option></select>'
+                           '<select name="mainForm:AipPart"><option value="a">AD</option><option value="e">ENR</option></select>'
+                           '<select name="mainForm:AipType"><option value="p">AIP</option><option value="c">Charts</option></select>'
+                           '<input type="checkbox" id="mainForm:enableAdvancedSearch_input" name="mainForm:enableAdvancedSearch_input"/>'
+                           '<button id="mainForm:search" name="mainForm:search" type="submit">Search</button></form>')
+            elif self.path.startswith('/doc/'):
+                self._send('%PDF-1.4 hand-built, not a readable document', 'application/pdf')
+            else:
+                self.send_error(404)
+        def do_POST(self):
+            q = urllib.parse.parse_qs(self.rfile.read(int(self.headers.get('Content-Length') or 0)).decode())
+            if self.path.endswith('ajax_security_check.jspx'):
+                self._send('{"loggedIn": true}', 'application/json')
+                return
+            head = '<?xml version="1.0"?><partial-response><changes>'
+            tail = '<update id="j_id1:javax.faces.ViewState:0"><![CDATA[1:2]]></update></changes></partial-response>'
+            if q.get('javax.faces.source') == ['mainForm:enableAdvancedSearch']:
+                self._send(head + '<update id="mainForm:adv"><![CDATA[<label for="mainForm:docName">Document Name</label><input id="mainForm:docName" name="mainForm:docName" type="text"/>'
+                           '<label for="mainForm:docHead">Document Heading</label><input id="mainForm:docHead" name="mainForm:docHead" type="text"/>]]></update>' + tail, 'text/xml')
+                return
+            if q.get('javax.faces.source') == ['mainForm:AuthorityCode']:
+                self._send(head + tail, 'text/xml')
+                return
+            state = 'EG' if q.get('mainForm:AuthorityCode') == ['2'] else 'EB'
+            name, hd = (q.get('mainForm:docName') or [''])[0], (q.get('mainForm:docHead') or [''])[0]
+            pick = docs[state] if (q.get('mainForm:AipType') == ['c']) else []
+            pick = [d for d in pick if name in d]
+            if hd:
+                pick = [d for d in pick if (hd == 'CODING') == ('7-13' in d) and hd in heads and (hd == 'CODING' or 'Chart' in heads[hd] and False)]
+            rows = ''.join('<tr data-ri="%d"><td>2026-01-22</td><td><a href="/doc/%s">%s</a></td><td>%s</td></tr>' % (i, d, d, heads['CODING'] if '7-13' in d else 'Other') for i, d in enumerate(pick))
+            self._send(head + '<update id="mainForm:results"><![CDATA[<table><tbody id="mainForm:searchResults_data">' + rows + '</tbody></table><div>Number of search results: %d</div>]]></update>' % len(pick) + tail, 'text/xml')
+
+    srv = http.server.HTTPServer(('127.0.0.1', 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    env = dict(os.environ)
+    try:
+        os.environ['EAD_PROBE_HOST'] = f'http://127.0.0.1:{srv.server_port}'
+        E = importlib.import_module('proc_ead')
+        importlib.reload(E)
+        lines = []
+        r_, n_, m_ = E.result_info('<partial-response><changes><update id="a"><![CDATA[<table><tbody id="x:searchResults_data"><tr><td>No data found.</td></tr></tbody></table>]]></update>'
+                                   '<update id="b"><![CDATA[<table><tbody id="y:searchResults_data"><tr><td>EB_AD_2_EBBE_1_en.pdf</td></tr></tbody></table><div>Number of search results: 1</div>]]></update></changes></partial-response>')
+        c.eq((len(r_), n_), (1, 1), 'the empty-table message row is not a result', what='result_info')
+        # security review of 28 Oct 2026: at least one second between two requests, ICAO codes checked before they name a file
+        c.eq((E.EadLibrary('bob', 'secret', delay=0).delay, E.EadLibrary('bob', 'secret', delay=3).delay), (1.0, 3.0), 'the delay never goes under 1 s', what='delay floor')
+        bad_codes = []
+        for code in ('../x', 'EG LL', 'EGLLX', ''):
+            try:
+                E.icao_code(code)
+            except SystemExit:
+                bad_codes.append(code)
+        c.eq((bad_codes, E.icao_code(' egll ')), (['../x', 'EG LL', 'EGLLX', ''], 'EGLL'), 'an ICAO code is 4 letters or digits, never a path', what='icao_code')
+        E.MIN_DELAY = 0.0                                                     # the fake answers at once: no pause in the test (the module's value is 1 s)
+        lib = E.EadLibrary('bob', 'secret', lambda *x: lines.append(' '.join(str(i) for i in x)))
+        c.ok(lib.open(), '\n'.join(lines), 'the library opens (login, AIP Library link, advanced search, name and heading fields)')
+        c.ok(lib.authority('EG') and not lib.authority('ZZ'), 'authority', 'a State is chosen by its ICAO prefix; an unknown one is refused')
+        with tempfile.TemporaryDirectory() as td:
+            res = E.survey(lib, ['EG', 'EB', 'ZZ'], td, lambda *x: None)
+            by = {r['state']: r for r in res}
+            c.ok(by['EG']['CODING'] == 1 and by['EB']['CODING'] == 0 and 'error' in by['ZZ'], json.dumps(res)[:300], 'survey: counts per State, an absent State reported as such')
+            c.ok((Path(td) / 'survey.txt').read_text(encoding='utf-8').count('\n') == 3, 'survey.txt', 'survey.txt has one line per State')
+            doc = by['EG'].get('document') or {}
+            c.ok(doc.get('name') == 'EG_AD_2_EGLL_7-13_en.pdf' and ('kind' in doc or 'error' in doc), str(doc), 'one coding document is downloaded and classified (or its failure reported)')
+        with tempfile.TemporaryDirectory() as td:                             # survey.json / survey.txt are written sanitised, like the report
+            real = E.survey_state
+            E.survey_state = lambda lib_, st, cache, say: {'state': st, 'document': {'name': 'bob secret', 'kind': 'text'}}
+            try:
+                E.survey(lib, ['EG'], td, lambda *x: None)
+            finally:
+                E.survey_state = real
+            both = (Path(td) / 'survey.json').read_text(encoding='utf-8') + (Path(td) / 'survey.txt').read_text(encoding='utf-8')
+            c.ok('secret' not in both.replace('<secret>', '') and 'bob' not in both, both[:200], 'the survey files carry neither the user name nor the password')
+        with tempfile.TemporaryDirectory() as td:
+            out = E.fetch_ad(lib, 'EGLL', td, lambda *x: None)
+            f = json.loads((Path(td) / 'EGLL.json').read_text(encoding='utf-8'))
+            c.ok(f['procedures'] == [] and f['formats'] and not f['formats'][0]['ok'] and f['documents'], json.dumps(f)[:300], 'fetch: an unreadable document yields no procedure, a format problem, and the list of documents; nothing is guessed')
+            c.ok((Path(td) / 'cache' / 'EGLL' / 'EG_AD_2_EGLL_7-13_en.pdf').is_file(), 'cache', 'the document is kept in the local cache')
+    finally:
+        srv.shutdown()
+        os.environ.clear()
+        os.environ.update(env)
+        importlib.reload(importlib.import_module('proc_ead'))
+
+
+# ------------------------------------------------------------------------------------------------ coding tables with split cells (static)
+@case('K13', 'Coding tables with split cells (one table per procedure)', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: one layout per State, values read by order, counts checked, geometry gate')
+def k13(c):
+    import sys
+    tools = str(c.root / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    import proc_eaip as P
+
+    def dms(v, lon=False):
+        a = abs(v)
+        d, m = int(a), int((a - int(a)) * 60)
+        sec = round((a - d - m / 60) * 3600, 1)
+        return f"{('E' if v >= 0 else 'W') if lon else ('N' if v >= 0 else 'S')}{d:0{3 if lon else 2}d} {m:02d} {sec:04.1f}"
+
+    A, B, C2 = (40.5, 44.0), (40.9, 44.3), (41.2, 44.9)       # invented points
+    b1, n1 = P.bearing_nm(A, B)
+    b2, n2 = P.bearing_nm(A, C2)
+    head = ['Designator Route Remarks', 'Waypoint Course/ Constraints Navigation', 'Path DIST Turn', 'Fly Coordinates Track', 'Terminator Identifier NM Direction Level IAS Specification Remarks', 'Mag(True)', 'Over']
+    rows = ['AIP Republic of Nowhere XXXX AD 2.2-1', 'Standard Arrival Route — Instrument STAR RNAV1 (GNSS) RWY20'] \
+        + ['RNAV STAR CODING TABLE OF AAA 1J'] + head[1:] \
+        + [dms(*A[:1]) + ' ' + dms(A[1], True), 'IF AAA N', 'FL130+ K210- RNAV1', dms(B[0]) + ' ' + dms(B[1], True), 'TF BBB N A11500+ RNAV1', f'{round(b1) - 7:03d}° (T{b1:05.1f}°) {n1:.1f}'] \
+        + ['Designator Route Remarks', 'RNAV STAR CODING TABLE OF CCC 1J'] + head[1:] \
+        + [dms(A[0]), 'IF AAA N FL160+ K210- RNAV1', dms(A[1], True), 'IAF DDD ' + dms(C2[0]) + ' ' + dms(C2[1], True) + f' {round(b2) - 7:03d}°(T{b2:05.1f})', f'TF N {n2:.1f} A11500+ RNAV1'] \
+        + ['Designator Route Remarks', 'RNAV STAR CODING TABLE OF EEE 1J'] + head[1:] \
+        + [dms(A[0]) + ' ' + dms(A[1], True), 'IF AAA N', dms(B[0]) + ' ' + dms(B[1], True), 'TF BBB N', f'{round(b1) - 7:03d}° (T{(b1 + 5) % 360:05.1f}°) {n1:.1f}', '_____']
+    c.eq(P.detect_layout(rows), 'am-coding', 'the page is recognised (before the generic coding-table layout)', what='detect_layout')
+    r = P.parse_am_coding(rows)
+    names = [t['name'] for t in r['tables']]
+    c.eq((names, len(r['warnings'])), (['AAA 1J', 'CCC 1J', 'EEE 1J'], 0), 'three tables read by order of values, whatever the cell order', what='tables')
+    t0, t1 = r['tables'][0], r['tables'][1]
+    c.eq(([lg['id'] for lg in t0['legs']], t0['legs'][0]['alt'], t0['legs'][0]['kt'], t0['legs'][1]['alt']), (['AAA', 'BBB'], {'type': 'min', 'ft': 13000}, 210, {'type': 'min', 'ft': 11500}),
+         'fixes, level constraint (FL130+ minimum) and speed (K210- maximum IAS)', what='constraints')
+    c.eq(([lg['id'] for lg in t1['legs']], t1['runways']), (['AAA', 'DDD'], ['20']), 'the fix printed before its path terminator (IAF DDD ... TF N) is attached to the right leg; the runway comes from the page title', what='id before terminator')
+    recs, w = P.records_uk_app('XXXX', r, 'f.pdf', '2026-10-01', None, 'XX')
+    c.eq((len(recs), sum('NON retenue' in x for x in w)), (2, 1), 'the geometry gate keeps the two consistent tables and rejects the one whose printed course is 5° off', what='geometry gate')
+    c.ok(recs[0]['source']['ref'] == 'ead-basic/XX/f.pdf' and recs[0]['kind'] == 'STAR' and recs[0]['status'] == 'check', str(recs[0]['source']), 'source and status are those of a State read through EAD, to be checked')
+    bad = [x for x in rows if 'TF BBB N A11500+' not in x]
+    c.ok(any('NON retenue' in x for x in P.parse_am_coding(bad)['warnings']), 'counts', 'a table whose counts disagree (course missing) is rejected and reported, never completed')
+
+
 # ------------------------------------------------------------------------------------------------ UK coding tables, geometry check (static)
 def _uk_page(P, points, corrupt=False):
     """Lignes d'une page « Instrument Approach Procedure Coding Tables » INVENTÉE (points fictifs) à la disposition du Royaume-Uni : latitude et cap magnétique avant la ligne de

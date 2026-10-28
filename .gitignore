@@ -52,3 +52,7 @@ tools/report-vfr/*.json
 tools/report-vfr/reviews/*.png
 # sonde EAD Basic (tools/proc_ead.py --probe) : pages reçues et compte rendu, gardés sur le poste, jamais dans le dépôt public
 ead_probe/
+ead_survey/
+ead_udsg/
+ead_fetch/
+proc_work/

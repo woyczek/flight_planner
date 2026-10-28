@@ -1135,3 +1135,23 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   official file of another source became a single manual STAR); it now refuses another source's (or official) file without `--replace`, and
   merges by procedure id keeping the best status with it, as the CIFP builder never overwrites another source's file. K11 covers both.
 - **Not in the public repository**: the file holds UK AIP data; the session sent it to the owner for the private data repository. The tool and its test (invented points) are in the repository.
+
+## 28 Oct 2026 — automation per aerodrome and per State
+
+- **Word of the user**: « comment automatiser la récupération de ces données, AD par AD (à la demande). En outre, on doit faire l'exercice pour chaque pays de l'EAD. »
+- **Decision**: `--fetch <ICAO>` (one aerodrome, on demand) and `--survey` (one line per State, one classified sample) in `tools/proc_ead.py`; a State is parsed only after its layout is seen in the survey; unknown or
+  vector layouts are reported, never guessed. Test K12 (hand-built fake library). The launcher button comes next.
+
+## 28 October 2026 — integration of the cloud session's EAD lot (branch `v3-aerodb-proc-15`), with the review's fixes
+
+- Reviewed by the aerodb session and the security session; integrated as four commits by subject on `v3-aerodb-ead` (probe and library;
+  coding pages, format check, UK tables and geometry; manual interpretations; per-State survey and fetch), rebased on v3 with its K8 / K9
+  (the stream readers). `frame/aerodb/LOCAL_SESSION_PROMPT.md` stays on the cloud branch (a session brief, not a document of the module).
+- **Fixes made at integration**: `tools/proc_manual.py` never overwrites another source's file (refused without `--replace`, merged by id
+  keeping the best status with it; K11); `EadLibrary` never waits less than 1 s between requests (`MIN_DELAY`; K12); `survey.json` and
+  `survey.txt` go through `sanitize` with the user name and password (K12); `--icao`, `--fetch` and the manual file name are checked
+  against `^[A-Z0-9]{4}$` before they name a file (K12); every document is read by pypdf in a separate process, `PDF_TIMEOUT` = 60 s,
+  a document past the limit or unreadable reported as not read without stopping the tool (`proc_eaip.limited`, `pdf_pages`, `pdf_kind`;
+  K10); "his" → "their" in this file and in `EAD_BASIC.md`.
+- **Open, for the user**: the terms of EAD Basic on automated access (`--survey all` stays a one-off run by hand, never scheduled), and a line
+  "EAD Basic → the States' AIPs" in `LICENSE.md` § 5 for the UK and Armenian data kept in the private data repository; OCR.

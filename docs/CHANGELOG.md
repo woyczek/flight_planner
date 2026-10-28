@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: EAD Basic per-State survey, on-demand fetch of one aerodrome, Armenian coding tables** (`tools/proc_ead.py --survey /
+  --fetch`, `tools/proc_eaip.py` `classify_pdf` / `am-coding`; `frame/aerodb/EAD_BASIC.md` § 6 terdecies, DECISIONS; tests K12, K13,
+  `.gitignore`) — one command counts, for every authority, the coding / departure / arrival / approach charts and classifies one
+  sample (text, vector, image); another downloads and reads one aerodrome's coding tables (or its SID / STAR / IAP charts when the State
+  publishes none), reporting unknown layouts instead of guessing; the Armenian layout (cells split over several lines) is read by
+  order and count of values and checked against the printed courses and distances. Security review: at least one second between two
+  requests, the survey files written sanitised, ICAO codes checked before they name a file, each PDF read under a time limit.
 - **aerodb: manual interpretations installed through a geometry gate** (`tools/proc_manual.py`; SPEC § 5 quinquies `trk`, `nav`,
   `source.how`; `frame/aerodb/EAD_BASIC.md` § 6 duodecies, DECISIONS; test K11) — a procedure read by hand (or by a model) from a page whose
   text is drawn as outlines is installed only if the printed course and distance of each TF leg agree with its positions, with status
