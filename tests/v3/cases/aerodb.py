@@ -402,3 +402,57 @@ def k5(c):
         os.environ.clear()
         os.environ.update(env)
         importlib.reload(E)
+
+
+# ------------------------------------------------------------------------------------------------ UK coding tables, geometry check (static)
+def _uk_page(P, points, corrupt=False):
+    """Lignes d'une page « Instrument Approach Procedure Coding Tables » INVENTÉE (points fictifs) à la disposition du Royaume-Uni : latitude et cap magnétique avant la ligne de
+    tronçon, longitude et cap vrai après ; les caps sont calculés d'après les coordonnées, sauf `corrupt` qui en falsifie un."""
+    def dms(v, lon):
+        a = abs(v)
+        d = int(a)
+        m = int((a - d) * 60)
+        sec = round(((a - d) * 60 - m) * 60, 2)
+        return f'{d:0{3 if lon else 2}d}{m:02d}{sec:05.2f}' + (('E' if v >= 0 else 'W') if lon else ('N' if v >= 0 else 'S'))
+    rows = ['UNITED KINGDOM AIP AD 2.EGXX-8-13', '1 Jan 2026', 'Instrument Approach Procedure Coding Tables', 'London Test RNP RWY 09L - Instrument Approach Procedure via ' + points[0][0],
+            'Path Course/', 'Waypoint Fly- Turn Level Speed', 'Designator Sequence Term- Track', 'Number Name over Direction Constraint Constraint Co-ordinates Remarks and Distance to MAPt', 'inator °M (°T)']
+    for i, (name, lat, lon) in enumerate(points):
+        if i == 0:
+            rows += [dms(lat, False), f'R09L 001 IF {name} - - - 3000 - IF / 10NM', dms(lon, True)]
+            continue
+        brg, _ = P.bearing_nm((points[i - 1][1], points[i - 1][2]), (lat, lon))
+        shown = brg + (5 if corrupt and i == 2 else 0)
+        rows += [f'{round(brg):03d}° {dms(lat, False)}', f'R09L {i + 1:03d} TF {name} {"Y" if i == len(points) - 1 else "-"} - - - {"MAPt" if i == len(points) - 1 else "-"}', f'({shown:06.2f}°) {dms(lon, True)}']
+    rows += ['CHANGE (1/26): TEST.', 'CIVIL AVIATION AUTHORITY AMDT 1/2026']
+    return rows
+
+
+@case('K10', 'UK coding tables: parser and geometry check', 'K', static=True, rule='aerodb DECISIONS 28 Oct 2026: tables read from text are checked against their own coordinates')
+def k10(c):
+    import importlib
+    import sys
+    tools = str(c.root / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    P = importlib.import_module('proc_eaip')
+    pts = [('TESTA', 51.4762, -0.7516), ('TESTB', 51.4767, -0.6711), ('RW09L', 51.4775, -0.4850)]      # points fictifs (essai du parseur, pas des données d'AIP)
+    rows = _uk_page(P, pts)
+    c.eq(P.detect_layout(rows), 'uk-app', 'layout recognised from its header words', what='detect_layout')
+    parsed = P.parse_uk_app(rows)
+    t = parsed['tables'][0]
+    c.eq((t['name'], t['runways'], t['transition'], [lg['id'] for lg in t['legs']]), ('RNP RWY 09L', ['09L'], 'TESTA', ['TESTA', 'TESTB', 'RW09L']), 'title, runway, "via" transition, legs in order', what='parse_uk_app')
+    c.ok(abs(t['legs'][1]['lat'] - 51.4767) < 1e-4 and abs(t['legs'][1]['lon'] + 0.6711) < 1e-4, f"{t['legs'][1]}", 'latitude read above the leg line, longitude below it')
+    c.eq((t['legs'][0]['alt'], t['legs'][2]['over']), ({'type': 'at', 'ft': 3000}, True), 'level constraint and fly-over', what='cells')
+    c.eq(P.check_geometry(t['legs']), [], 'a coherent table has no geometry gap', what='check_geometry')
+    recs, w = P.records_uk_app('EGXX', parsed, 'x.pdf', '2026-10-01', '2026-01-01')
+    c.eq((recs[0]['id'], recs[0]['status'], recs[0]['source']['kind'], recs[0]['points'][2]['id']), ('EGXX.APP.RNPRWY09L.RW09L.TESTA', 'check', 'ead-basic', 'RW09L'), 'common schema, status check, source ead-basic', what='records_uk_app')
+    bad = _uk_page(P, pts, corrupt=True)
+    pb = P.parse_uk_app(bad)
+    gap = P.check_geometry(pb['tables'][0]['legs'])
+    c.ok(gap and 'cap calculé' in gap[0], f'{gap}', 'a printed true course 5 degrees off the coordinates is caught')
+    recs2, w2 = P.records_uk_app('EGXX', pb, 'x.pdf', '2026-10-01')
+    c.ok(recs2 == [] and any('NON retenue' in x for x in w2), f'{recs2} {w2}', 'an incoherent table is not kept: nothing is written from it')
+    doc = P.build_pdf_dir('EGXX', ['a_8-13.pdf', 'b_7-13.pdf'], lambda n: rows if n.startswith('a') else ['UNITED KINGDOM AIP AD 2.EGXX-7-13', '25 Dec 2025', 'CIVIL AVIATION AUTHORITY'], '2026-10-01')
+    byf = {f['file']: f for f in doc['formats']}
+    c.ok(byf['a_8-13.pdf']['ok'] and not byf['b_7-13.pdf']['ok'] and any('vecteurs' in p for p in byf['b_7-13.pdf']['problems']) and len(doc['procedures']) == 1, f"{doc['formats']}",
+         'a page with almost no text is reported as probably drawn in vectors, never guessed; the readable one is read')

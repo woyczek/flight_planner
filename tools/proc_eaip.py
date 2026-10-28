@@ -14,6 +14,7 @@ Les procédures conventionnelles (ILS, VOR) n'ont pas de table de codage : hors 
 import argparse
 import hashlib
 import json
+import math
 import re
 import sys
 import time
@@ -320,6 +321,8 @@ def detect_layout(rows):
     low = text.lower()
     if ('path' in low and 'terminator' in low or 'leg sequence' in low) and 'waypoint' in low and ('fly' in low or 'altitude' in low):      # mots répartis sur plusieurs lignes selon la page
         return 'sia-code'
+    if 'instrument approach procedure coding tables' in low and 'designator' in low and 'sequence' in low and 'co-ordinates' in low:
+        return 'uk-app'
     return None
 
 
@@ -330,7 +333,7 @@ def fingerprint(rows):
 
 
 # empreintes des en-têtes vus (cycle AIRAC 2026-10-01, pages de LFBD et de LFAV) ; une autre est signalée « en-tête inconnu », pas bloquante
-KNOWN_FINGERPRINTS = {'sia-code': {'4d7d8e47d5', '96546cf4c0', 'de5a236c1c'}}
+KNOWN_FINGERPRINTS = {'sia-code': {'4d7d8e47d5', '96546cf4c0', 'de5a236c1c'}, 'uk-app': {'fc0e4cc8ff'}}
 
 
 def verify_page(rows, table=None):
@@ -357,6 +360,155 @@ def verify_page(rows, table=None):
             ok = False
             problems.append(f'{got} tronçon(s) lu(s) sur {want} lignes de tronçon: moins de 85 %')
     return ok, problems, fp, layout
+
+
+# ---------------------------------------------------------------------------------------------------------- Royaume-Uni (UK AIP, via EAD Basic)
+# AD 2.<OACI>-8-13 « Instrument Approach Procedure Coding Tables » : texte lisible. Une ligne de tronçon « R09L 001 IF ABAVI - - - 3000 - IF / 10NM » est encadrée
+# de la latitude (ligne avant, avec le cap magnétique « 088° ») et de la longitude (ligne après, avec le cap vrai « (089.46°) »).
+# AD 2.<OACI>-7-13 à -7-17 (tables de codage des STAR) : texte DESSINÉ EN VECTEURS, sans couche de texte : illisible pour pypdf, voir EAD_BASIC.md § 6 undecies.
+UK_LEG = re.compile(r'^([A-Z]\d{2}[LRC]?)\s+(\d{3})\s+([A-Z]{2})\s+(\S+)\s*(.*)$')
+UK_LAT = re.compile(r'(\d{6}(?:\.\d+)?)([NS])\b')
+UK_LON = re.compile(r'(\d{7}(?:\.\d+)?)([EW])\b')
+
+
+def uk_dms(text, lon=False):
+    """« 512834.45N » / « 0004505.67W » (ddmmss.ss, dddmmss.ss) en degrés décimaux, ou None."""
+    m = (UK_LON if lon else UK_LAT).search(text)
+    if not m:
+        return None
+    v, h = m.group(1), m.group(2)
+    d = 3 if lon else 2
+    val = int(v[:d]) + int(v[d:d + 2]) / 60 + float(v[d + 2:]) / 3600
+    return round(-val if h in 'SW' else val, 6)
+
+
+def uk_constraint(tok):
+    """Contrainte d'altitude d'une cellule « Level Constraint » : « 3000 » / « FL270 » à l'altitude, « +… » au moins, « -… » au plus ; None sans valeur."""
+    m = re.fullmatch(r'([+-]?)(FL(\d{2,3})|\d{3,5})', tok or '')
+    if not m:
+        return None
+    ft = int(m.group(3)) * 100 if m.group(3) else int(m.group(2))
+    return {'type': {'+': 'min', '-': 'max', '': 'at'}[m.group(1)], 'ft': ft}
+
+
+def parse_uk_app(rows):
+    """Page « Instrument Approach Procedure Coding Tables » du Royaume-Uni → { kind: 'APP', tables: [{ title, runways, name, transition, legs }], warnings }.
+    Chaque tronçon : { id, leg, over, alt, kt, lat, lon, crs (magnétique), true, remark }."""
+    warnings, tables, cur = [], [], None
+    for i, r in enumerate(rows):
+        m = re.match(r'^[A-Za-z ]+?\s+(RNP|RNAV|ILS|LOC|VOR|NDB)\b.*?Instrument Approach Procedure(?: via (\S+))?', r)
+        if m and 'Coding Tables' not in r:
+            rwm = re.search(r'\bRWY\s*(\d{2}[LRC]?)', r)
+            name = re.sub(r'\s+-\s+Instrument Approach Procedure.*', '', r)
+            name = re.sub(r'^.*? (RNP|RNAV|ILS|LOC|VOR|NDB)\b', r'\1', name).strip()
+            cur = {'title': r, 'name': name, 'runways': [rwm.group(1)] if rwm else [], 'transition': m.group(2), 'legs': []}
+            tables.append(cur)
+            continue
+        lg = UK_LEG.match(r)
+        if not (lg and cur is not None):
+            continue
+        rest = lg.group(5).split()
+        before = rows[i - 1] if i else ''
+        after = rows[i + 1] if i + 1 < len(rows) else ''
+        lat, lon = uk_dms(before), uk_dms(after, True)
+        mag = re.search(r'(\d{3})°', before)
+        true = re.search(r'\((\d{3}(?:\.\d+)?)°\)', after)
+        name = lg.group(4)
+        k = 0
+        over = rest[0] == 'Y' if rest else False
+        level = next((uk_constraint(t) for t in rest[:6] if uk_constraint(t)), None)
+        speed = next((int(t.lstrip('+-')) for t in rest[:6] if re.fullmatch(r'[+-]\d{3}', t)), None)
+        if name == '-' or lat is None or lon is None:
+            warnings.append(f'{lg.group(1)} {lg.group(2)} {lg.group(3)}: pas de point ({name}) ou coordonnées absentes: tronçon sans point laissé de côté')
+            continue
+        cur['legs'].append({'id': name, 'leg': lg.group(3), 'over': over or None, 'alt': level, 'kt': speed, 'lat': lat, 'lon': lon,
+                            'crs': int(mag.group(1)) if mag else None, 'true': float(true.group(1)) if true else None, 'seq': int(lg.group(2)),
+                            'remark': ' '.join(rest[3:])[:40]})
+    return {'kind': 'APP', 'tables': [t for t in tables if t['legs']], 'warnings': warnings}
+
+
+def bearing_nm(a, b):
+    """(cap vrai en degrés, distance en NM) du grand cercle de a à b, points (lat, lon) en degrés décimaux."""
+    la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))
+    y = math.sin(lo2 - lo1) * math.cos(la2)
+    x = math.cos(la1) * math.sin(la2) - math.sin(la1) * math.cos(la2) * math.cos(lo2 - lo1)
+    h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    return (math.degrees(math.atan2(y, x)) + 360) % 360, 2 * 3440.065 * math.asin(math.sqrt(h))
+
+
+def check_geometry(legs, tol_deg=0.25, tol_nm=0.2):
+    """Contrôle de cohérence d'une table lue (par texte, par OCR ou à la main) : pour chaque tronçon TF, le cap vrai (et la distance, si elle est imprimée) recalculés
+    d'après les coordonnées des deux points doivent être ceux de la page. Rend la liste des écarts ; vide = la table est cohérente."""
+    bad = []
+    for a, b in zip(legs, legs[1:]):
+        if b.get('leg') != 'TF' or b.get('true') is None or None in (a.get('lat'), b.get('lat')):
+            continue
+        brg, nm = bearing_nm((a['lat'], a['lon']), (b['lat'], b['lon']))
+        d = abs((brg - b['true'] + 180) % 360 - 180)
+        if d > tol_deg:
+            bad.append(f'{a["id"]} → {b["id"]}: cap calculé {brg:.1f}° pour {b["true"]}° imprimé')
+        if b.get('nm') is not None and abs(nm - b['nm']) > tol_nm:
+            bad.append(f'{a["id"]} → {b["id"]}: distance calculée {nm:.2f} NM pour {b["nm"]} imprimés')
+    return bad
+
+
+def records_uk_app(icao, parsed, source, cycle, at=None):
+    """Procédures du schéma commun d'une page UK « Instrument Approach Procedure Coding Tables » ; statut « check », source ead-basic/UK."""
+    out, warnings = [], list(parsed['warnings'])
+    for t in parsed['tables']:
+        bad = check_geometry(t['legs'])
+        if bad:
+            warnings.append(f'{t["title"][:60]}: incohérence caps/coordonnées, table NON retenue: ' + '; '.join(bad))
+            continue
+        pts, missed = [], False
+        for lg in t['legs']:
+            p = {'seq': len(pts) + 1, 'id': lg['id'], 'lat': lg['lat'], 'lon': lg['lon'], 'alt': lg['alt'], 'leg': lg['leg']}
+            if lg['kt']:
+                p['kt'] = lg['kt']
+            if lg['crs'] is not None:
+                p['crs'] = lg['crs']
+            if lg['over']:
+                p['over'] = True
+            if missed:
+                p['phase'] = 'missed'
+            if re.fullmatch(r'RW\d{2}[LRC]?', lg['id']) or 'MAPt' in lg['remark']:
+                missed = True
+            pts.append(p)
+        name = t['name']
+        rw = f'RW{t["runways"][0]}' if len(t['runways']) == 1 else 'RWALL'
+        norm = lambda v: re.sub(r'[\s-]+', '', (v or '').upper())
+        out.append({'id': '.'.join([icao, 'APP', norm(name), rw] + ([norm(t['transition'])] if t['transition'] else [])), 'icao': icao, 'kind': 'APP', 'name': name,
+                    'runways': t['runways'], 'transition': t['transition'], 'points': pts,
+                    'source': {'kind': 'ead-basic', 'ref': f'ead-basic/UK/{source}', 'cycle': cycle, 'at': at}, 'status': 'check'})
+    return out, warnings
+
+
+def build_pdf_dir(icao, pdfs, rows_of, cycle):
+    """Fichier d'un terrain d'après des PDF d'AIP déjà téléchargés à la main ou par la sonde EAD (dossier de PDF) : chaque PDF passe par la détection de disposition ;
+    une disposition connue est lue, une inconnue est signalée (rien de deviné) ; le Royaume-Uni « uk-app » est de plus contrôlé par la géométrie (caps et coordonnées).
+    `pdfs` : noms ; `rows_of(nom)` : lignes de la première page."""
+    procs, warnings, formats = [], [], []
+    for f in sorted(pdfs):
+        rows = rows_of(f)
+        layout = detect_layout(rows)
+        fp = fingerprint(rows)
+        if layout == 'uk-app':
+            parsed = parse_uk_app(rows)
+            recs, w = records_uk_app(icao, parsed, f, cycle, page_date(rows))
+            ok = bool(recs) and len(recs) == len(parsed['tables'])
+            problems = [x for x in w if 'NON retenue' in x] + ([] if recs else ['aucune table lue'])
+            if fp not in KNOWN_FINGERPRINTS['uk-app']:
+                problems.append(f'info: en-tête inconnu (empreinte {fp}): format changé depuis les pages vues ?')
+            formats.append({'file': f, 'layout': layout, 'fingerprint': fp, 'ok': ok, 'problems': problems})
+            procs += recs
+            warnings += [f'{f}: {x}' for x in w]
+        else:
+            n = len(rows)
+            formats.append({'file': f, 'layout': layout, 'fingerprint': fp, 'ok': False,
+                            'problems': ['disposition non reconnue' + (' (très peu de texte: tableau dessiné en vecteurs ou image ? ' + str(n) + ' ligne(s))' if n < 8 else '')]})
+            warnings.append(f'{f}: page NON lue, disposition non reconnue' + (' (texte absent: tables dessinées sans couche de texte)' if n < 8 else ''))
+    return {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'procedures': procs, 'formats': formats,
+            'warnings': warnings, 'notice': 'Source : AIP du Royaume-Uni (CAA) via EAD Basic ; à vérifier, pour la simulation seulement, jamais pour la navigation.'}
 
 
 # ---------------------------------------------------------------------------------------------------------- schéma commun
@@ -511,6 +663,8 @@ def main(argv=None):
     ap.add_argument('--all', action='store_true', help='tous les terrains du menu de l\'eAIP (une page de 0,7 Mo chacun)')
     ap.add_argument('--delay', type=float, default=0.0, help='pause entre deux terrains, en secondes')
     ap.add_argument('--scan-pdf', default=None, help='repère les pages à tableau de tronçons d\'un PDF AD 2 déjà téléchargé (titres et mots-clés seulement)')
+    ap.add_argument('--pdf-dir', default=None, help='dossier de PDF d\'AIP déjà téléchargés (sonde EAD) : écrit proc/<cycle>/<OACI>.json (avec --cycle et un code OACI)')
+    ap.add_argument('--cycle', default=None, help='cycle AIRAC AAAA-MM-JJ (avec --pdf-dir)')
     ap.add_argument('--check', action='store_true', help='vérifie seulement le format des pages (rien n\'est écrit) ; code de sortie 1 si une page n\'est pas lisible')
     ap.add_argument('--page', type=int, default=None, help='avec --scan-pdf : affiche les lignes de cette page (à partir de 1) au lieu du repérage')
     ap.add_argument('--eaip', default=None, help='adresse du dossier AIRAC de l\'eAIP (…/FRANCE/AIRAC-AAAA-MM-JJ)')
@@ -519,6 +673,20 @@ def main(argv=None):
     ap.add_argument('--base-dir', default=None, help='dossier de la base SIA du cycle (navaids.json, points.json)')
     ap.add_argument('--rows-dir', default=None, help='écrit les lignes de chaque PDF lu (fixtures de test)')
     a = ap.parse_args(argv)
+    if a.pdf_dir:
+        if len(a.icao) != 1 or not a.cycle:
+            raise SystemExit('--pdf-dir demande UN code OACI et --cycle AAAA-MM-JJ')
+        names = sorted(f.name for f in Path(a.pdf_dir).glob('*.pdf'))
+        doc = build_pdf_dir(a.icao[0].upper(), names, lambda n: rows_from_pdf(Path(a.pdf_dir) / n, 0), a.cycle)
+        for fm in doc['formats']:
+            print(f'  {"OK " if fm["ok"] else "NON"} {fm["file"]} | {fm["layout"]} | {fm["fingerprint"]}' + ''.join(f' | {x}' for x in fm['problems']), file=sys.stderr)
+        print(f'{len(doc["procedures"])} procédure(s) ; {len(doc["warnings"])} avertissement(s)', file=sys.stderr)
+        if a.check:
+            raise SystemExit(1 if any(not f['ok'] for f in doc['formats']) else 0)
+        out = Path(a.out) / a.cycle
+        out.mkdir(parents=True, exist_ok=True)
+        (out / f'{a.icao[0].upper()}.json').write_text(json.dumps(doc, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
+        return
     if a.scan_pdf:
         if a.page:
             show_page(a.scan_pdf, a.page)

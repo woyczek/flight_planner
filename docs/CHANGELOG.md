@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: UK RNP approach tables read, geometry check of any table, folder of PDFs** (`tools/proc_eaip.py` `parse_uk_app` / `records_uk_app` / `check_geometry` / `build_pdf_dir` / `--pdf-dir`, K10,
+  `frame/aerodb/EAD_BASIC.md` § 6 undecies) — the UK "Instrument Approach Procedure Coding Tables" page (text layer) is read into approaches, each table verified by recomputing the true course and distance from
+  its own co-ordinates (an incoherent table is not kept); a page drawn as vector outlines (the UK STAR coding tables) is reported as unreadable instead of guessed.
 - **aerodb: format check of the coding pages, UK coding tables located** (`tools/proc_eaip.py` `detect_layout` / `verify_page` / `fingerprint` / `--check`, `tools/proc_ead.py` `--aip-type` / `--docs`, K3 K6,
   `frame/aerodb/EAD_BASIC.md` § 6 nonies and decies, SPEC `formats`) — a page is read only if its layout is recognised and at least 85 % of its leg rows are read; the aerodrome file lists the verdict of each page and
   `--check` runs it alone before a publication. The UK document's pages 40–41 turned out to be the charts index: its coding tables (STAR, RNAV holds, RNP approaches) are separate *Charts* documents the probe can now fetch by exact name.

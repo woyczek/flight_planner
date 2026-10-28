@@ -320,3 +320,29 @@ python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL --aip-type
 - **`--check`** runs the whole reading without writing anything and exits with 1 if a page is refused: to run **before each publication** (every AIRAC cycle), since the eAIP changes under it.
 - Tests (K3): the five real pages pass; a reworded header is *info* only; a widened table is refused; a page without a header is refused; an aerodrome file with a refused page has no procedure and says so.
 Not caught by design: text lost from a page (the parser cannot know what is missing); the guard catches a layout that moved, not a page that was cut.
+
+## 6 undecies. The five coding documents uploaded by the owner (28 October 2026)
+
+The owner uploaded `EG_AD_2_EGLL_7-13` … `7-17` (STAR coding tables) and `8-13` (RNP approach coding tables) to the session; they stay out of the repository.
+
+**8-13 — readable, and read.** It has a real text layer (243 text operations). Layout of the UK coding table: designator, sequence number, path terminator, waypoint name, fly-over, turn direction, level
+constraint, speed constraint, co-ordinates, remarks (and distance to the MAPt), course/track °M (°T); a leg's **latitude and magnetic course are on the line before it, its longitude and true course on the line after**.
+The new reader (`parse_uk_app`, layout `uk-app`) takes the four RNP approaches (09L via ABAVI, 09R via BENPA, 27L via NEKSA, 27R via IVLAR): IF, FAF, MAPt (`RW…`) and the `CA` leg (course to altitude, no fix: left out, reported).
+
+**7-13 … 7-17 — not readable by a script.** They are one page each whose table is **drawn as vector outlines**: about 40,000 path operations and **4 text operations** (only the header and the
+footer); no text layer, no image. `pypdf` returns three lines. The page is plainly legible to a human (and to a model reading the picture): designator, sequence, path terminator, waypoint, co-ordinates, fly-over,
+course °M (°T), magnetic variation, distance, turn direction, level, speed, navigation performance (RNAV1 / RNAV5). The probe's page check reports it as *very little text: drawn in vectors or an image?*.
+
+**The geometry check** (`check_geometry`), the answer to "formats change, check by script" for any table, whoever read it: for each TF leg the **true course and the distance recomputed from the two fixes' co-ordinates must equal
+what the page prints** (tolerance 0.25° and 0.2 NM). Tried on the first STAR table (OTMET 1H, read from the picture): six legs, courses within 0.1° and distances within 0.05 NM of the printed values. An error in a digit of
+a co-ordinate, whether made by OCR, by a person or by a model, moves a course or a distance and is caught; a table that fails is **not kept**.
+
+**What to do about 7-13 … 7-17** (three ways, the owner chooses):
+1. **OCR on the workstation** (optional dependency, like pypdf): reads any page drawn as outlines or images, fully automatic and one click, the geometry check catching the misreadings. It is a *new* dependency beyond
+   `pypdf` (CLAUDE.md allows only `pypdf`): needs the owner's word and an amendment. Candidates: Tesseract (a program to install) or a pure-pip engine.
+2. **One-off transcription** of EGLL's seventeen STARs from the pictures by the session, every table passing the geometry check, kept as a *manual interpretation* file in the private data repository with the hash of the page it
+   came from (when the page changes, the file is flagged obsolete, as the VAC interpretations are). No dependency, but not automatic: redone by hand at each amendment of those pages.
+3. **Leave the UK STARs out**: for a flight the STAR of the SimBrief OFP already gives its fixes (lot 1), and 8-13's RNP approaches are read.
+
+`python tools/proc_eaip.py EGLL --pdf-dir <folder of the downloaded PDFs> --cycle 2026-10-01 [--check]` reads every PDF of a folder: a known layout is read, an unknown or text-less one is reported (`NON`), never guessed;
+`--check` writes nothing and exits 1 if a page is refused. (Tested here on 8-13 and 7-13 together: 4 procedures read, 7-13 reported.)

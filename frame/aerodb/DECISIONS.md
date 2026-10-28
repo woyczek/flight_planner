@@ -1075,3 +1075,11 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Word of the user**: « les formats peuvent changer. Il faudra prévoir une vérification du format des pages par script. » Built: `detect_layout`, `verify_page` (85 % of the leg rows read), header `fingerprint` with the
   known ones, `formats` in the aerodrome file, `--check` (exit 1, writes nothing) to run before each publication. A refused page is never read. A layout enters the registry with its detector, its
   fingerprints and its fixtures, and cannot be published without them.
+
+## 28 October 2026 — the UK coding documents: one readable, five drawn
+
+- **Read** (uploaded by the owner, kept out of the repository): `8-13` (RNP approaches) has a text layer: parsed (`uk-app`), 4 procedures, geometry coherent. `7-13` to `7-17` (STAR coding tables) are **drawn as vector
+  outlines** (about 40,000 path operations, 4 text operations): no script reads them without OCR; the geometry check is the safeguard for any reading of them.
+- **Built**: `parse_uk_app`, `records_uk_app` (status `check`, source `ead-basic/UK/<file>`), `check_geometry` (true course and distance recomputed from the co-ordinates, tolerance 0.25° / 0.2 NM; an incoherent table is not kept),
+  layout `uk-app` with its fingerprint, `build_pdf_dir` and `--pdf-dir` / `--cycle` / `--check`; case K10 on an **invented** page of the same layout (no UK AIP text in the repository).
+- **Open question to the owner**: OCR (a new optional dependency, needs his word and an amendment of CLAUDE.md), a one-off transcription kept privately, or leaving the UK STARs out. See `EAD_BASIC.md` § 6 undecies.
