@@ -644,6 +644,26 @@ streamed.
 Follow-up: none of these points is a direct remote attack; the most urgent are 1 (exfiltration host) and 2b
 (irreversible growth of the data repository).
 
+**Fixes checked (`origin/v3` 0345a5688; commits 7cb8303ef and 0345a5688).**
+- **1 — checked.** The laboratory hosts are in `LAB_CONNECT`, added by `lab_hosts()` only until `LAB_UNTIL`
+  (31 December 2026). ArcGIS is reduced to the exact query path of the measured service. *Remains:* the site without the
+  launcher writes its policy into a `meta` tag when the pages are built (`tools/build_pages.py`), so the published pages
+  keep the hosts until they are rebuilt after that date; rebuild them, or have K9 check the built pages too.
+- **2b — checked.** Trial blocks go to the throwaway branch `lab/<trigram>`, created from the head of the main branch
+  and deleted by « Clean »; one block at a time, 10 MB per session. *Remains:* the blocks already published on the main
+  branch are still in its history; the purge is documented (`frame/aerodb/INTEGRATION.md`) but not run.
+- **3 — checked, with a reservation.** Only the `datalab` screen declares `github: 'scratch'`, and the frame hands it
+  `FrameData.github.scratch('lab/<trigram>')`. That transport refuses any path outside `lab/`, has no generic commit and
+  never touches the main branch; the laboratory scripts do not call `FrameData` themselves. *Reservation:* it is a
+  boundary of the API, not an isolation. `window.FrameData.github` (the whole transport) and `github.config()` (with the
+  token) stay global to the page, so any script of the same origin can still reach them. A real barrier would need the
+  token outside the page's reach (modules in a sandboxed frame or worker, or no getter returning the token).
+- **4 — checked.** The encoded forms of each secret are replaced (`quote`, `quote_plus`, `html.escape`); a redirect that
+  leaves `HOST` is refused (`StayOnHost`); `ead_probe/` is ignored at any level of the repository.
+- **6 — checked.** `frame/aerodb/test/fixtures/SOURCES.md` gives each file's origin. The eAIP extracts are covered by
+  the SIA's open licence, with the attribution it asks for. `lab/AIXM4.5_sample.xml` is synthetic (fictitious
+  aerodromes and navaids; only the header copies the export's shape), which corrects the review above.
+
 ## Appendix A — Hosts contacted
 
 | Host | From | What goes out |
