@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: `html.f-desk`** (`frame/app.js`, `frame/index.html`; INTEGRATION § 9.1, SPEC, DECISIONS): the frame marks a
+  computer (wider than 760 px, a precise hovering pointer, not a phone in landscape) from the first paint, for the designs
+  kept for computers (Aqua); `frame-desk` says when it changes.
 - **Fuel reads the shared weather layer** (`modules/fuel/module.js`, `winds.js`; SPEC, INTEGRATION, DECISIONS) — the
   winds aloft and the aerodromes' METAR / TAF come from the frame's weather store: one cache and one count of calls for
   the whole app; fuel no longer calls any weather service itself.

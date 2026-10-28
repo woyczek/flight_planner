@@ -293,6 +293,10 @@ used alone:
     is 0; the view takes the rest of the width. The designs' bar rules apply to the rail at any width (they no longer wait for
     760 px: the bar is displayed only on a phone and in landscape). The safe areas of the device (notch, home indicator) are
     left free on every side.
+  - **A computer** (28 Oct 2026, for the Aqua design, `frame/INTEGRATION.md` § 9.1): `<html class="f-desk">` is set by the
+    frame when the window is wider than 760 px with a precise, hovering pointer (`(pointer: fine) and (hover: hover)`) and
+    not `f-land`; before the first paint by `index.html`, then on `resize`, `orientationchange` and a change of pointer, one
+    write when the value changes; `frame-desk` fired after. Designs only: no layout of the frame depends on it.
 - **The status block and the badge of the ⚙** (rule 14, 24 Oct 2026, 22:15, which replaces the header's "i" button and its
   pop-up, themselves a replacement of the Préparer status line). The state of the application is read in two places only:
   - **The badge on the ⚙ of the header** (`#fDevice`; `data-badge`, `data-attn`): **green** (`--sog-ok`) when something is

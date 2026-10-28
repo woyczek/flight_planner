@@ -1407,3 +1407,9 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
       `preventDefault`, so the same key also leaves full screen: one line for its next lot.
   - **Tests**: new case B11 (a module's `document` listener takes Escape: full screen and the Settings screen stay; the next
     Escape closes them and is marked taken); A7, A14, B5, B7, B8 and B11 pass.
+- **28 Oct 2026 — `html.f-desk`, a computer** (for the Aqua design, condition of the coordinator): the frame decides
+  whether the device is a computer, as it decides `f-land`; the design session does not touch that logic. Rule: wider
+  than 760 px, `(pointer: fine) and (hover: hover)`, not `f-land`. Set before the first paint in `index.html`, then on
+  `resize`, `orientationchange` and a change of pointer, one write when it changes, `frame-desk { desk }`. Checked in
+  Playwright: 1280 with a mouse → set from the first paint; 375 and 900×600 (`f-land`) → removed, event; back to 1280 →
+  set; a touch device at 1280 → never.

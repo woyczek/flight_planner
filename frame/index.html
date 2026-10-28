@@ -17,6 +17,8 @@ try {
 try {
   if (innerWidth > innerHeight && innerWidth < 1024 && !/^portrait/.test(screen.orientation?.type || '')) document.documentElement.classList
     .add('f-land')
+  // ordinateur (frame/app.js, paintDesk) : le design d'un ordinateur (Aqua) juste dès le premier affichage
+  else if (innerWidth > 760 && matchMedia('(pointer: fine) and (hover: hover)').matches) document.documentElement.classList.add('f-desk')
 } catch (e) {}
 // module de l'adresse : la couleur repère des designs metro, swiss, cupertino et material dès le premier affichage (frame/app.js, paintModule)
 {

@@ -260,6 +260,11 @@ stays supported by the code but no tab uses it today.
   icon, the caret at the left). The header stays (57 px); `--f-tab-space` is `0` and the view takes `100vw − --f-rail-w` at
   the right of the rail; the 210 px rail of a screen is not shown. The device's safe areas (notch at the left or right,
   home indicator) are left free. A module does nothing for it: it never reads the class, it measures its box.
+- **A computer (`html.f-desk`)** (28 Oct 2026): the window is wider than 760 px, the pointer is precise and hovers (a mouse,
+  a touchpad: `(pointer: fine) and (hover: hover)`), and it is not a phone in landscape (`f-land`). Set before the first
+  paint (`index.html`), then on `resize`, `orientationchange` and when the pointer changes (a mouse plugged into a
+  tablet), one write when the value changes; `frame-desk` is fired on `window` after, `detail: { desk }`. It is for the
+  designs and the frame's dress only (a design kept for computers, Aqua); a module never reads it either.
 
 ### 9.2 `meta.fixed`: the fixed, full-height view
 

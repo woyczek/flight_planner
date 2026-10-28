@@ -42,9 +42,33 @@
       }
     }));
   }
-  paintLand();
-  window.addEventListener('resize', paintLand);
-  window.addEventListener('orientationchange', paintLand);
+  // ordinateur (frame/INTEGRATION.md § 9.1) : <html class="f-desk"> quand la fenêtre dépasse 760 px, que le pointeur est précis
+  // et survole (souris, pavé tactile) et que ce n'est pas un paysage de téléphone (f-land) ; un design qui ne vaut que sur un
+  // ordinateur (Aqua) s'y accroche. Même règle dans index.html avant le premier affichage ; recalculée sur resize,
+  // orientationchange et au changement du pointeur (une tablette à laquelle on branche une souris), en une seule écriture
+  // quand la valeur change ; « frame-desk » (detail: { desk }) le dit ensuite.
+  const fineQ = matchMedia('(pointer: fine) and (hover: hover)'),
+    deskNow = () => innerWidth > 760 && fineQ.matches && !landNow();
+
+  function paintDesk() {
+    const h = document.documentElement,
+      on = deskNow();
+    if (h.classList.contains('f-desk') === on) return;
+    h.classList.toggle('f-desk', on);
+    window.dispatchEvent(new CustomEvent('frame-desk', {
+      detail: {
+        desk: on
+      }
+    }));
+  }
+  const paintForm = () => {
+    paintLand();
+    paintDesk();
+  };
+  paintForm();
+  window.addEventListener('resize', paintForm);
+  window.addEventListener('orientationchange', paintForm);
+  fineQ.addEventListener('change', paintDesk);
   // heures de l'appli : UTC suffixée Z (frame/lib/time.js) ; module chargé en même temps que le reste du démarrage
   let TZ = null;
   const timeP = import(new URL('lib/time.js?v=0', document.currentScript.src).href).then(m => TZ = m).catch(e => console
