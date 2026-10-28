@@ -340,6 +340,11 @@ least likely.
   - `set NoDefaultCurrentDirectoryInExePath=1` at the top of `lancer.cmd`;
   - `git` resolved once by `shutil.which` after removing the root from the `PATH`, then called by its absolute
     path.
+- **Same rule for every program a workstation tool starts** (review of 28 October, on-demand reading chain): under
+  Windows `shutil.which` searches the current folder before the `PATH` unless `NoDefaultCurrentDirectoryInExePath` is set.
+  `tools/proc_ocr.py` looks up `tesseract` that way: a `tesseract.exe` left in the current folder (archive, data folder)
+  would be run. Any new tool that starts a program sets `os.environ['NoDefaultCurrentDirectoryInExePath'] = '1'` (as
+  `tools/data_sync.py` does) and calls it by the absolute path found.
 
 ### <a id="m4"></a>M4 — Third-party code
 
@@ -663,6 +668,55 @@ Follow-up: none of these points is a direct remote attack; the most urgent are 1
 - **6 — checked.** `frame/aerodb/test/fixtures/SOURCES.md` gives each file's origin. The eAIP extracts are covered by
   the SIA's open licence, with the attribution it asks for. `lab/AIXM4.5_sample.xml` is synthetic (fictitious
   aerodromes and navaids; only the header copies the export's shape), which corrects the review above.
+
+## <a id="review-regen"></a>Review of 28 October, evening (V3, `origin/v3` cf7574973): on-demand reading chain
+
+Read-only review of four pieces of the data module and the launcher. Classification: **blocking**, **to fix**,
+**acceptable**. No credential was handled during the review.
+
+| # | Subject | Verdict |
+|---|---|---|
+| 1 | `tools/proc_ocr.py` (OCR of drawn pages: pypdfium2, Tesseract or rapidocr) | to fix |
+| 2 | `tools/regen_jobs.py` (verbs `proc/ead-fetch`, `proc/eaip-fetch`) | to fix |
+| 3 | `frame/settings` launcher keys, EAD service (ffb026685) | acceptable |
+| 4 | `/__setup/status`: kinds of the Little Navmap databases (82eeef3b5) | acceptable |
+
+**1. `tools/proc_ocr.py` — to fix.**
+- `tesseract` is found by `shutil.which` without `NoDefaultCurrentDirectoryInExePath`: the current folder comes first
+  under Windows ([M5](#m5), extended).
+- Acceptable: engines imported on demand, no model committed; only `<out>/<ICAO>.ocr.json` is written, the ICAO code
+  checked (`^[A-Z0-9]{4}$`); rendering and OCR run in a separate process under `OCR_TIMEOUT` (600 s,
+  `proc_eaip.limited`).
+- Notes: the display mode (a file without `--icao`) renders and reads outside `limited`, so without a time limit;
+  `--dpi` has no ceiling, and a large page at a high resolution exhausts memory, which a time limit does not bound
+  (cap it, e.g. 600).
+
+**2. `tools/regen_jobs.py` — to fix.**
+- `Jobs._run` logs `error: {e}` and returns `str(e)` to the page without `sanitize`; only `say()` of `_ead_fetch`
+  cleans. An exception carrying an address with a session id, or the user name, would reach the job's log served by
+  `/__setup/regen/job`. Both outputs go through `proc_ead.sanitize` with the job's credentials.
+- Acceptable:
+  - verbs from a fixed list, ICAO code checked;
+  - credentials read from `secrets/ead.json` (ignored by Git) or `EAD_USER` / `EAD_PASSWORD`, never returned:
+    `state()` only says present or not;
+  - cache under `data/local/`, outside the code repository and excluded from synchronisation (`data_sync.py`
+    `:(exclude)local/**`, data template `local/`);
+  - `_ead_commit`: `git add` and `git commit -- <paths>` on `proc/manual/<ICAO>.json` and `index.json` only, no push;
+  - eAIP address computed in Python from a checked AIRAC date, fixed SIA host: no request forgery;
+  - routes refused to devices of the local network, POST under `_allowed`.
+- Note: « never in bulk » only holds through « one job at a time »: a page script could chain aerodromes one after the
+  other. A minimum delay between two `ead-fetch`, enforced by the launcher, makes the rule real, which matters while
+  EAD Basic's terms on automated access are not settled (`frame/aerodb/EAD_BASIC.md`).
+
+**3. Launcher keys, EAD service — acceptable.** `secrets_view` sends only `{ set, at }` for `ead`, no hint; the fields are
+emptied after sending; nothing comes back to the page. Note: the personal EAD Basic password is now kept in clear in
+`secrets/ead.json`, where `EAD_BASIC.md` said « never kept »: align the document, and say that `secrets/` must not sit in a
+synchronised folder (Synology, OneDrive).
+
+**4. `/__setup/status`, Little Navmap databases — acceptable.** Kinds only (« navigraph », « userdata »), filtered by a
+pattern, never a path or a content. Note: `status` is also open to paired devices of the local network; they receive
+these kinds, the computer name and `root` (the absolute path of the installation), which is of no use to a device:
+remove `root` from the answer on the local network.
 
 ## Appendix A — Hosts contacted
 
