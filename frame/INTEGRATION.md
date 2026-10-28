@@ -29,7 +29,7 @@ The frame never mounts two modules in the view; a navigation that arrives during
 on a module whose `mount()` may still be awaiting, and what that `mount()` does after its awaits is not shown (the last address wins).
 
 - The frame loads it on demand and gives it `ctx` (frame/SPEC.md § 3.2): `data`, `aerodb`, `t`, `lang`, `notify`,
-  `ask`, `askText`, `net`, `weather` (§ 14), `identity`, `helpAnchor`; a fixed module (§ 9.2) also gets `overlay`
+  `ask`, `askText`, `net`, `weather` (§ 14), `identity`, `level`, `helpAnchor`; a fixed module (§ 9.2) also gets `overlay`
   (§ 9.3).
 - Its verb in the application's rail (and in its group's popover, § 9.1) is set in `frame/app.js` (`APP.modules`): one short verb, seven
   modules at most. Its place in the phone's bottom bar is set in `APP.tabs` (§ 9); a module never writes either.
@@ -165,8 +165,19 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
     table by site is in SPEC § 3.2);
   - the airline's website (`ctx.airline.site`, https) is read the same way, GET only: never send anything to it
     (any other method gets a 503); without a launcher, a direct read works only if the site allows it (CORS);
+  - one path of a shared host is called directly, https and GET only: the Terrarium elevation tiles
+    (`s3.amazonaws.com/elevation-tiles-prod/`, the Map's relief and contours); the rest of that host gets the 503;
   - any other outside site gets a 503 carrying `x-sog-unreachable`.
   Never call `fetch` directly. Only string bodies are relayed.
+- `ctx.level` (read, 28 Oct 2026): the device's usage level, 1 Everyday, 2 Advanced, 3 Full (a getter: the value of the
+  moment, after a change in Settings too). It shapes what a screen offers (the Map keeps "Save for the airline" for the
+  Full level); it is not a right: what the data repository refuses stays refused whatever the level.
+- **The flight in time** (`frame/lib/current_flight.js`, 28 Oct 2026, with the recoded Map): `etaOf(flight, now)` →
+  `[{ id, at }]` and `plannedPositionAt(flight, now)` → `{ lat, lon, legIndex, nmFromDep, phase }`, derived from
+  `started.at` / `planned_at`, `quote.taxiMin` and `quote.legs` (else the profile and `quote.minutes`); with
+  `isStarted`, `refTime`, `legTimes`, `TAXI_MIN`. Every reader (the Map, Flights, a status line) uses them: never
+  recompute an ETA, never read one from `progress`. Rules in `modules/maps/SPEC.md` § 13; bench
+  `frame/lib/test/current_flight.html`.
 - Offline is normal. The application starts offline once visited, and your module's files (entry point and
   `meta.files`) are kept from the first visit: draw from `ctx.data` first, and treat a 503 from `ctx.net` as "not now", not as an error.
 - `ctx.notify(text, kind)`, `ctx.ask(text)`, `ctx.askText(text, { value })`: the frame's notifications and question

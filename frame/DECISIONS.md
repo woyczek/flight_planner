@@ -1439,3 +1439,14 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   (no Clear-Site-Data, no CSP, no nosniff; the script fetched by `fetch` answers 200 `text/javascript`), and succeeds in
   Playwright's Chromium, with the launcher's purge page included. The built-in browser does not register service workers
   for these pages: the frame works without one (no offline copy there), nothing to change.
+- **28 Oct 2026 — The recoded Map's touches to the frame, reviewed** (BUGS SOG, `c6d69d031`, integrated by the
+  coordinator):
+  - **`DIRECT_PATHS`** (the Terrarium elevation tiles, `s3.amazonaws.com/elevation-tiles-prod/`): agreed, one path and not
+    the host. Narrowed further: https and GET only, like the airline's site. The URL's path is normalised before the test
+    (`..` and `%2e%2e` resolved by `URL`), so the prefix cannot be walked out of.
+  - **`ctx.level`**: agreed, a getter. Written as what a screen offers, never a right: the data repository decides what is
+    written.
+  - **`frame/lib/current_flight.js`**: the corrections of the review are in (longitudes by `geo.js`, the same rule as
+    `etaOf` for a past unstarted flight, numbers read as numbers, positions along the great circle). Its row in SPEC § 3
+    and a paragraph in INTEGRATION § 6.
+  - **`frame/lib/routing.js`** (moved from the Map): its row in SPEC § 3.

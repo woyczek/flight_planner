@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the recoded Map's touches, reviewed** (`frame/app.js`; INTEGRATION § 6, SPEC § 3, DECISIONS): the elevation
+  tiles' direct path is limited to https and GET; `ctx.level`, the flight-in-time helpers of `frame/lib/current_flight.js`
+  and `frame/lib/routing.js` are documented.
 - **Map recoded from its specification (lot 1)** (`modules/maps/`: `module.js` split into `state.js`, `texts.js`, `style.js`,
   `screen.js`, `draw.js`, `data.js`, `layers.js`, `sheet_view.js`, `profile_view.js`, `tips.js`, `lv.js`, `vfr.js`,
   `flight_time.js`, `mission_view.js`, `weather.js`, and `edit.js`, `tune.js` loaded on demand; `frame/lib/current_flight.js`,

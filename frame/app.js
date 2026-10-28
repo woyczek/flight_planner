@@ -472,7 +472,7 @@
     ],
     DIRECT = ['www.simbrief.com', 'api.ivao.aero', 'metar.vatsim.net', 'avwx.rest', 'api.open-meteo.com', 'data.vatsim.net'],
     // tuiles d'altitude Terrarium (relief du profil et courbes de niveau de la Carte, modules/maps/SPEC.md § 2.1) : appelées
-    // directement, ce chemin seulement de l'hôte (s3.amazonaws.com en sert bien d'autres)
+    // directement, ce chemin seulement de l'hôte (s3.amazonaws.com en sert bien d'autres), en https et en lecture (GET)
     DIRECT_PATHS = [
       ['s3.amazonaws.com', '/elevation-tiles-prod/']
     ];
@@ -574,7 +574,8 @@
             headers
           });
         }
-        if (DIRECT.includes(u.hostname) || site || DIRECT_PATHS.some(([h, p]) => u.hostname === h && u.pathname.startsWith(p)))
+        if (DIRECT.includes(u.hostname) || site || u.protocol === 'https:' && String(init.method || 'GET').toUpperCase() === 'GET' &&
+          DIRECT_PATHS.some(([h, p]) => u.hostname === h && u.pathname.startsWith(p)))
           return await fetch(u,
             init);
         return unreachable();
