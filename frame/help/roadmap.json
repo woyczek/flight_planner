@@ -564,7 +564,7 @@
           "es": "Trazados de los procedimientos elegidos con altitudes y velocidades, un solo camino ruta + procedimientos, perfil con restricciones"
         },
         {
-          "state": "planned",
+          "state": "done",
           "fr": "Carte de couverture des procédures : terrains verts (procédures connues), orange (lisibles à la demande), rouges (rien)",
           "en": "Coverage map of the procedures: green aerodromes (procedures held), orange (readable on demand), red (nothing)",
           "de": "Abdeckungskarte der Verfahren: grüne Plätze (Verfahren vorhanden), orange (auf Abruf lesbar), rot (nichts)",
@@ -923,7 +923,7 @@
           "es": "Procedimientos desde Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) como respaldo local, nunca publicados; posición MSFS por Little Navmap"
         },
         {
-          "state": "planned",
+          "state": "done",
           "fr": "Lecture à la demande par État : la France par l'eAIP du SIA sans identifiants, les États à tables par EAD, sinon Little Navmap",
           "en": "On-demand reading by State: France through the SIA eAIP without credentials, States with tables through EAD, else Little Navmap",
           "de": "Lesen auf Abruf je Staat: Frankreich über das eAIP des SIA ohne Zugangsdaten, Staaten mit Tabellen über EAD, sonst Little Navmap",

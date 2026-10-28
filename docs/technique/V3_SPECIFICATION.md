@@ -682,7 +682,8 @@ redesigned for touch at that point.
        database), **red** = nothing (image-only or prose States, nothing local); one legend line through the "i" chip;
        aerodb gives `coverage(icao)` → green | orange | red with its reason, and `coverageByState()` for the Data
        module, which shows the same three colours per State in its Procédures group (the EAD table § 8.1 as data). No
-       new screen: the Map and the Data module carry it. Lots after the economy mode: aerodb (coverage API), maps
-       (layer and pins), data module (State list).
-       **aerodb status (28 Oct, late)**: `coverage(icao)`, `coverageByState()` and `AeroCatalogue.COVERAGE` (the legend labels) are done in aerodb
-       (frame/aerodb/SPEC.md § 5, INTEGRATION « Coverage of the procedures »); the Map's layer and the Data module's list are still to code.
+       new screen: the Map and the Data module carry it. Lots: aerodb (coverage API), maps (layer and pins), data module
+       (State list).
+       **Status (28 Oct, late)**: aerodb done (`coverage(icao)`, `coverageByState()`, `AeroCatalogue.COVERAGE`:
+       frame/aerodb/SPEC.md § 5, INTEGRATION « Coverage of the procedures »); the Map's layer done (maps SPEC § 6.11,
+       `modules/maps/coverage.js`, cases D45 to D50); the Data module's State list still to code (with the module).
