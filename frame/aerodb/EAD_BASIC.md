@@ -164,3 +164,23 @@ tested only against a local copy built from the public login page (case K6). The
 
 **What the session does with it**: the search and download calls of the one-click job (§ 5, step 2), against the real shapes; then the layout of
 EGLL's coding tables once the owner has downloaded that aerodrome's pages by hand (§ 4) or the job fetches them.
+
+## 6 bis. The probe, second round (28 October 2026)
+
+First real run by the owner (United Kingdom / EGLL): login, home page, AIP Library (`aip_overview.faces`, form `mainForm`) and its lists were read; the
+partial search answered (56 kB) but the result table was not analysed, and the report printed `ViewState` values. Changes:
+
+- the sanitising also blanks `ViewState` in printed dictionaries and any `number:number` page-state token, and the report masks state fields;
+- **the result table is read**: the partial JSF answer's `<update>` fragments are split and every table row (`<tr data-ri>` with its cells) is listed
+  with its direct links and the PrimeFaces command-link sources (`PrimeFaces.ab({s:"…"})`) — the shape of the table is assumed from PrimeFaces,
+  not seen: the saved sanitised answer `03_recherche_ajax.html` is the fallback;
+- `--name EGLL` fills the document-name filter (advanced search) when the form has one and ticks the advanced-search box, reporting what it found;
+- `--download` downloads **one** document of the aerodrome (a direct link) into `ead_probe/cache/` — local cache, never committed (`ead_probe/` is
+  ignored) — and reports its size and whether it is a PDF; a command link (no direct address) is reported with its source id for the next round.
+
+```
+python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL --name EGLL --download
+```
+
+Send back the same way (`report.txt`, read first). Tested on a hand-built partial answer and a local fake (case K6): it checks the probe's logic, not
+EAD's real screens, which is what this round settles.

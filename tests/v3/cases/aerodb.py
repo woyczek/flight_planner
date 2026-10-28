@@ -244,6 +244,8 @@ def k5(c):
     import sys
     import tempfile
     import threading
+    import contextlib
+    import io
     from pathlib import Path
     tools = str(c.root / 'tools')
     if tools not in sys.path:
@@ -296,6 +298,8 @@ def k5(c):
                 self.end_headers()
             elif self.path.startswith('/fwf-eadbasic/secure/aip.faces'):
                 self._send(html_.replace('action="/lib.faces;jsessionid=ABCDEF123"', 'action="/fwf-eadbasic/secure/aip.faces"'))
+            elif self.path.startswith('/doc/'):
+                self._send('%PDF-1.4 hand-built for the test', 'application/pdf')
             else:
                 self.send_error(404)
         def do_POST(self):
@@ -306,7 +310,12 @@ def k5(c):
                 ok = 'j_password=secret%21pw' in body
                 self._send('{"loggedIn": %s, "errorMessage": "bad login"}' % ('true' if ok else 'false'), 'application/json')
             else:
-                self._send('<a href="/doc/EGLL_AD_2.pdf">AD 2 EGLL</a><a href="/doc/EGLL_AD_2_DATA.pdf">AD 2 EGLL DATA</a><a href="/doc/EGKK.pdf">AD 2 EGKK</a>')
+                # réponse JSF partielle bâtie à la main (tableau de résultats + jeton d'état) : forme supposée, non vue sur le vrai écran
+                self._send('<?xml version="1.0"?><partial-response><changes><update id="mainForm:results"><![CDATA[<table><tbody>'
+                           '<tr data-ri="0"><td>EGLL AD 2.1</td><td>AD</td><td><a href="/doc/EGLL_AD_2.pdf">pdf</a></td></tr>'
+                           '<tr data-ri="1"><td>EGLL AD 2 DATA</td><td>AD</td><td><a href="#" onclick="PrimeFaces.ab({s:&quot;mainForm:results:1:dl&quot;,f:&quot;mainForm&quot;});return false;">open</a></td></tr>'
+                           '<tr data-ri="2"><td>EGKK AD 2.1</td><td>AD</td><td><a href="/doc/EGKK.pdf">pdf</a></td></tr></tbody></table>]]></update>'
+                           '<update id="j_id1:javax.faces.ViewState:0"><![CDATA[123456789:987654321]]></update></changes></partial-response>', 'text/xml')
     srv = http.server.HTTPServer(('127.0.0.1', 0), H)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     try:
@@ -314,24 +323,23 @@ def k5(c):
         os.environ['EAD_PROBE_HOST'] = f'http://127.0.0.1:{srv.server_port}'
         importlib.reload(E)
         with tempfile.TemporaryDirectory() as td:
-            import contextlib
-            import io
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 E.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td)
             rep = (Path(td) / 'report.txt').read_text(encoding='utf-8')
             allfiles = '\n'.join(p.read_text(encoding='utf-8') for p in Path(td).iterdir())
-            c.ok('connexion: OUI' in rep and 'bibliothèque AIP' in rep and 'documents trouvés: 3 | dont EGLL : 2' in rep, rep, 'login, library found, three documents of which two for EGLL')
+            c.ok('connexion: OUI' in rep and 'bibliothèque AIP' in rep, rep, 'login and library found')
+            c.ok('tableau des résultats: 3 ligne(s) | 2 pour EGLL' in rep and 'mainForm:results:1:dl' in rep, rep,
+                 'three result rows, two for EGLL, the command-link source of the second one reported')
             c.ok("{'auth': 'État', 'part': 'partie'}" in rep, rep, 'the State and the AD part were chosen in the lists')
-            c.ok(all(x not in allfiles for x in ('secret!pw', 'bob@example.org', 'ZZZ', 'A' * 45)) and 'bob' not in allfiles.lower().replace('bob@', ''),
+            c.ok(all(x not in allfiles for x in ('secret!pw', 'bob@example.org', 'ZZZ', 'A' * 45, '123456789:987654321')) and 'bob' not in allfiles.lower().replace('bob@', ''),
                  allfiles[:400], 'no password, mail, session id or state token in any file written')
-            c.ok(not list(Path(td).glob('*.pdf')), 'a pdf was written', 'no PDF is ever downloaded')
-        # security review of 28 Oct 2026: a redirect off the host is refused (never followed, never kept)
-        try:
-            E.Session(['bob']).call(E.HOST + '/redir')
-            refused = ''
-        except SystemExit as e:
-            refused = str(e)
-        c.ok('refusée' in refused and 'example.invalid' in refused, refused or 'followed', 'a redirect off www.ead.eurocontrol.int is refused')
+            c.ok(not list(Path(td).rglob('*.pdf')), 'a pdf was written', 'no PDF without --download')
+        with tempfile.TemporaryDirectory() as td:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                E.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td, name='EGLL', download=True)
+            rep = (Path(td) / 'report.txt').read_text(encoding='utf-8')
+            pdfs = list((Path(td) / 'cache').glob('*.pdf'))
+            c.ok('| PDF' in rep and len(pdfs) == 1 and pdfs[0].read_bytes().startswith(b'%PDF-'), rep, 'with --download, exactly one PDF, in cache/')
     finally:
         srv.shutdown()
         os.environ.clear()

@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: EAD Basic probe, second round** (`tools/proc_ead.py`, `tests/v3/cases/aerodb.py` K6, `frame/aerodb/EAD_BASIC.md` § 6 bis) — page-state tokens blanked
+  in the report, the result table of the AIP Library read from the JSF partial answer, `--name` (document-name filter) and `--download` (one document into the
+  local cache).
 - **EAD probe: the login answer encoded twice** (`tools/proc_ead.py`; DECISIONS, test K6) — the login form's answer, met as a JSON
   string holding the object during the owner's run, is read again (`login_json`); another JSON value is named as unexpected, a
   non-JSON answer shows its beginning in the report (sanitised like every line). Taken from the uncommitted change of the run.

@@ -1026,3 +1026,12 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   None for a non-JSON body; `login_result` then says "réponse non JSON: " with the first 200 characters (the report's lines all go
   through `sanitize`, and `finish` refuses to write a report holding a secret); `probe` reads the redirect through it. K6 checks the
   three answers.
+
+## 28 October 2026 — probe, second round (result table, ViewState, one download)
+
+- **From the owner's first run** (relayed): connection OK, AIP Library and its lists read (47 authorities by ICAO prefix, types AIP / AMDT / SUP / AIC /
+  Charts, parts GEN / ENR / AD), the partial search answered, the table not analysed, `ViewState` values printed. (The login answer encoded twice, fixed by the
+  owner's local change, is already in `v3`: `login_json`.)
+- **Done**: ViewState blanked everywhere; result rows read from the JSF partial answer; `--name` and `--download` (one PDF, local cache only, direct
+  links only); case K6 extended (a defect found by it: the cache file name). Owner decisions of the day respected: EAD Basic as it is, no request to
+  EUROCONTROL, DFS dropped, national free AIPs as the other sources; the session still never logs in.

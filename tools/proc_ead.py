@@ -1,10 +1,10 @@
 """Sonde EAD Basic : explore la bibliothèque AIP avec VOTRE compte, en lecture seule, et écrit un compte rendu à me renvoyer.
 
-  python tools/proc_ead.py --probe [--user NOM] [--state "United Kingdom"] [--icao EGLL] [--out ead_probe]
+  python tools/proc_ead.py --probe [--user NOM] [--state "United Kingdom"] [--icao EGLL] [--name EGLL] [--download] [--out ead_probe]
 
 Ce que la sonde fait : se connecte (formulaire AJAX de la page de connexion publique), parcourt les pages jusqu'à la bibliothèque AIP, lit son
 formulaire (listes déroulantes, boutons), tente une recherche (État choisi, partie AD, type AIP, langue EN) et liste les documents trouvés.
-Ce qu'elle ne fait pas : télécharger un PDF, écrire quoi que ce soit hors du dossier --out, garder le mot de passe (demandé à l'invite, ou
+Ce qu'elle ne fait pas : télécharger un PDF (sauf --download : un seul, dans ead_probe/cache/), écrire quoi que ce soit hors du dossier --out, garder le mot de passe (demandé à l'invite, ou
 variable EAD_PASSWORD), le montrer, ou l'envoyer ailleurs qu'à www.ead.eurocontrol.int. Le compte rendu (report.txt) est nettoyé : ni mot de passe, ni nom
 d'utilisateur, ni cookie, ni jeton d'état de page, ni adresse de courriel. Relisez-le avant de me le transmettre.
 Écrite sans avoir vu l'écran connecté : si une étape échoue, le compte rendu dit laquelle et garde la page reçue (nettoyée) pour la suite.
@@ -44,6 +44,8 @@ def sanitize(text, secrets=()):
     for s in sorted(forms, key=len, reverse=True):
         out = re.sub(re.escape(s), '<secret>', out, flags=re.I)
     out = re.sub(r'(javax\.faces\.ViewState[^>]{0,80}?value=")[^"]*', r'\1<viewstate>', out)
+    out = re.sub(r"(ViewState'?\"?\s*[:=]\s*['\"])[^'\"]*", r'\1<viewstate>', out)          # forme « ViewState': '…' » d'un dictionnaire imprimé
+    out = re.sub(r'-?\d{6,}:-?\d{6,}', '<viewstate>', out)                                        # jeton d'état de page JSF (nombre:nombre)
     out = re.sub(r'(<update id="[^"]*ViewState[^"]*"><!\[CDATA\[)[^\]]*', r'\1<viewstate>', out)
     out = re.sub(r'(?i)(;jsessionid=|jsessionid=)[A-Za-z0-9._-]+', r'\1<session>', out)
     out = re.sub(r'[\w.+-]+@[\w-]+(?:\.[\w-]+)+', '<mail>', out)
@@ -74,10 +76,12 @@ def parse_forms(markup):
         attrs, body = fm.group(1), fm.group(2)
         get = lambda a, s: (re.search(a + r'\s*=\s*"([^"]*)"', s, re.I) or [None, ''])[1]
         f = {'id': get('id', attrs), 'action': html.unescape(get('action', attrs)), 'method': (get('method', attrs) or 'get').lower(),
-             'fields': {}, 'selects': {}, 'buttons': []}
+             'fields': {}, 'selects': {}, 'buttons': [], 'checkboxes': []}
         for im in re.finditer(r'(?is)<input\b([^>]*)>', body):
             a = im.group(1)
             name, typ, val = get('name', a), (get('type', a) or 'text').lower(), html.unescape(get('value', a))
+            if typ == 'checkbox' and name:
+                f['checkboxes'].append(name)
             if typ in ('submit', 'button'):
                 f['buttons'].append({'id': get('id', a), 'name': name, 'value': val, 'label': val})
             elif name and typ not in ('checkbox', 'radio', 'password') or (name and 'checked' in a.lower()):
@@ -91,6 +95,26 @@ def parse_forms(markup):
             f['selects'][name] = opts
         forms.append(f)
     return forms
+
+
+def partial_updates(body):
+    """Fragments HTML d'une réponse JSF partielle (<update id=…><![CDATA[…]]></update>) : [(id, html)] ; une page ordinaire : [('page', html)]."""
+    ups = [(m.group(1), m.group(2)) for m in re.finditer(r'(?s)<update id="([^"]*)">\s*<!\[CDATA\[(.*?)\]\]>\s*</update>', body)]
+    return ups or [('page', body)]
+
+
+def parse_rows(markup):
+    """Lignes de tableau (<tr> avec cellules <td>) d'un fragment : [{ ri, cells [texte], links [(texte, adresse)], actions [identifiants PrimeFaces d'un lien de commande] }]."""
+    rows = []
+    for tm in re.finditer(r'(?is)<tr\b([^>]*)>(.*?)</tr>', markup):
+        body = tm.group(2)
+        if not re.search(r'(?i)<td\b', body):
+            continue
+        cells = [text_of(c.group(1)) for c in re.finditer(r'(?is)<td\b[^>]*>(.*?)</td>', body)]
+        ri = (re.search(r'data-ri="([^"]*)"', tm.group(1)) or [None, ''])[1]
+        acts = [html.unescape(m.group(1)) for m in re.finditer(r'PrimeFaces\.ab\(\{[^}]*?s:\\?"([^"\\]+)', html.unescape(body))]
+        rows.append({'ri': ri, 'cells': cells, 'links': parse_links(body), 'actions': acts})
+    return rows
 
 
 def pick(options, wanted):
@@ -141,7 +165,7 @@ class Session:
         self.secrets = secrets
         self.n = 0
 
-    def call(self, url, data=None, headers=None, timeout=60):
+    def call(self, url, data=None, headers=None, timeout=60, raw=False):
         if not url.startswith(HOST + '/'):
             raise SystemExit('adresse hors de www.ead.eurocontrol.int refusée: ' + sanitize(url, self.secrets))
         h = {'User-Agent': UA, 'Accept-Language': 'en'}
@@ -149,14 +173,16 @@ class Session:
         req = urllib.request.Request(url, data=urllib.parse.urlencode(data).encode() if data is not None else None, headers=h)
         try:
             with self.op.open(req, timeout=timeout) as r:
-                return r.status, r.geturl(), r.read().decode('utf-8', 'replace')
+                b = r.read()
+                return r.status, r.geturl(), b if raw else b.decode('utf-8', 'replace')
         except urllib.error.HTTPError as e:
-            return e.code, url, e.read().decode('utf-8', 'replace')
+            b = e.read()
+            return e.code, url, b if raw else b.decode('utf-8', 'replace')
         except OffHost as e:
             raise SystemExit('redirection hors de www.ead.eurocontrol.int refusée: ' + sanitize(str(e), self.secrets)) from None
 
 
-def probe(user, password, state, icao, out):
+def probe(user, password, state, icao, out, name=None, download=False):
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     s = Session([user, password])
@@ -196,7 +222,8 @@ def probe(user, password, state, icao, out):
     forms = parse_forms(body)
     for f in forms:
         say('   formulaire', f['id'], f['method'], f['action'][:100])
-        say('     champs:', {k: (v[:30] if len(v) < 40 else '<long>') for k, v in f['fields'].items()})
+        say('     champs:', {k: ('<état>' if re.search(r'ViewState|jid|token|nonce', k, re.I) else (v[:30] if len(v) < 40 else '<long>')) for k, v in f['fields'].items()})
+        say('     cases à cocher:', f['checkboxes'])
         for name, opts in f['selects'].items():
             say(f'     liste {name}: {len(opts)} options:', '; '.join(f'{v}={l}'[:60] for v, l in opts[:400]))
         for b in f['buttons']:
@@ -219,8 +246,17 @@ def probe(user, password, state, icao, out):
                     data[name] = v
                     break
     say('5. choix faits dans les listes:', chosen or 'aucun (voir les options ci-dessus)')
+    if name:
+        fld = [k for k in form['fields'] if re.search(r'document.?name|heading|title', k, re.I) and not re.search(r'ViewState', k)]
+        for k in fld[:1]:
+            data[k] = name
+        for k in form['checkboxes']:
+            if re.search(r'advanced', k, re.I):
+                data[k] = 'on'
+        say('   filtre par nom de document:', name, '-> champ', fld[:1] or 'AUCUN champ reconnu', '| case recherche avancée:', [k for k in form['checkboxes'] if re.search(r'advanced', k, re.I)] or 'aucune')
     btn = next((b for b in form['buttons'] if re.search(r'search|suche|recherche', b['label'] + b['value'] + b['id'], re.I)), form['buttons'][0] if form['buttons'] else None)
     results = []
+    b_ajax = b2 = ''
     action = urllib.parse.urljoin(url, form['action'] or url)
     if btn:
         ajax = dict(data)
@@ -228,6 +264,7 @@ def probe(user, password, state, icao, out):
                      'javax.faces.partial.render': '@all', (btn['id'] or btn['name']): (btn['id'] or btn['name'])})
         code, u2, b2 = s.call(action, ajax, {'Faces-Request': 'partial/ajax', 'X-Requested-With': 'XMLHttpRequest', 'Referer': url})
         keep('recherche_ajax', b2)
+        b_ajax = b2
         say('6. recherche (requête partielle JSF):', code, len(b2), 'octets')
         results = parse_links(b2)
         if not results:
@@ -240,9 +277,27 @@ def probe(user, password, state, icao, out):
     else:
         say('6. aucun bouton de recherche reconnu')
     docs = [(l, h) for l, h in results if re.search(r'\.pdf|download|document|aip', h, re.I)]
-    say('7. documents trouvés:', len(docs), '| dont', icao, ':', sum(1 for l, h in docs if icao.upper() in (l + h).upper()))
-    for label, href in docs[:120]:
-        say('     ', label[:80], '->', href[:140])
+    rows = [r for _, frag in partial_updates(b_ajax if btn else '') for r in parse_rows(frag)] or [r for _, frag in partial_updates(b2 if btn else '') for r in parse_rows(frag)]
+    hit = lambda r: icao.upper() in ' '.join(r['cells'] + [h for _, h in r['links']]).upper()
+    say('7. tableau des résultats:', len(rows), 'ligne(s) |', sum(1 for r in rows if hit(r)), 'pour', icao, '| documents (liens):', len(docs))
+    for r in rows[:200]:
+        say('     ', f"[{r['ri']}]", ' | '.join(c[:60] for c in r['cells']), '| liens:', [(l[:40], h[:100]) for l, h in r['links']][:3],
+            '| commandes:', r['actions'][:2])
+    for label, href in docs[:60]:
+        say('     lien', label[:80], '->', href[:140])
+    if download:
+        target = next(((l, h) for r in rows if hit(r) for l, h in r['links'] if h), None) or next(((l, h) for l, h in docs if icao.upper() in (l + h).upper()), None)
+        if not target:
+            say('8. téléchargement: aucun lien direct pour', icao, '(un lien de commande JSF demandera un appel de plus: voir la colonne « commandes »)')
+        else:
+            code, u3, raw = s.call(urllib.parse.urljoin(url, target[1]), headers={'Referer': url}, raw=True)
+            ok_pdf = raw[:5] == b'%PDF-'
+            say('8. téléchargement de', target[0][:60], ':', code, len(raw), 'octets', '| PDF' if ok_pdf else '| PAS un PDF')
+            if ok_pdf:
+                cache = out / 'cache'
+                cache.mkdir(exist_ok=True)
+                (cache / ((re.sub(r'[^A-Za-z0-9._-]+', '_', target[0])[:80] or 'page') + '.pdf')).write_bytes(raw)
+                say('   gardé dans', 'ead_probe/cache/ (cache local: ne va jamais dans le dépôt)')
     return finish(out, rep, s)
 
 
@@ -262,12 +317,14 @@ def main(argv=None):
     ap.add_argument('--state', default='United Kingdom')
     ap.add_argument('--icao', default='EGLL')
     ap.add_argument('--out', default='ead_probe')
+    ap.add_argument('--name', default=None, help='filtre « nom de document » (recherche avancée), ex. EGLL')
+    ap.add_argument('--download', action='store_true', help='télécharge UN document du terrain dans ead_probe/cache/ (cache local)')
     a = ap.parse_args(argv)
     if not a.probe:
         raise SystemExit('rien à faire: ajouter --probe')
     user = a.user or input('EAD Basic, nom d\'utilisateur: ').strip()
     password = os.environ.get('EAD_PASSWORD') or getpass.getpass('EAD Basic, mot de passe (non gardé): ')
-    probe(user, password, a.state, a.icao, a.out)
+    probe(user, password, a.state, a.icao, a.out, a.name, a.download)
 
 
 if __name__ == '__main__':
