@@ -441,7 +441,7 @@ def probe(user, password, state, icao, out, name=None, download=False):
         if raw[:5] == b'%PDF-':
             cache = out / 'cache'
             cache.mkdir(exist_ok=True)
-            (cache / ((re.sub(r'[^A-Za-z0-9._-]+', '_', label)[:80] or 'page') + '.pdf')).write_bytes(raw)
+            (cache / ((re.sub(r'[^A-Za-z0-9._-]+', '_', label)[:80] or 'page').removesuffix('.pdf') + '.pdf')).write_bytes(raw)
             say('   gardé dans', 'ead_probe/cache/ (cache local: ne va jamais dans le dépôt)')
     return finish(out, rep, s)
 

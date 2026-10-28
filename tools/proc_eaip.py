@@ -85,6 +85,9 @@ def scan_rows(pages):
 
 def scan_pdf(path, report=print):
     """Repère dans un PDF d'AIP (une partie AD 2 entière) les pages à tableau de tronçons (« Path Terminator »…) : titres et mots-clés seulement."""
+    if not Path(path).is_file():
+        near = sorted(str(f) for f in Path(path).parent.glob('*.pdf*')) if Path(path).parent.is_dir() else []
+        raise SystemExit(f'fichier introuvable: {path}' + (f'. PDF présents dans {Path(path).parent}: ' + ', '.join(near) if near else ''))
     reader = pdf_reader(path)
     pages = []
     for i in range(len(reader.pages)):

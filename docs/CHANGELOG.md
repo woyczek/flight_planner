@@ -13,7 +13,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ### V3
 
 - **aerodb: EAD Basic probe finds and downloads the AD 2 document of EGLL; page scan of a downloaded PDF** (`tools/proc_ead.py`, `tools/proc_eaip.py --scan-pdf`, K3 K6, `frame/aerodb/EAD_BASIC.md` § 6 sexies) —
-  the request shape that works on the real screen (whole form) is the probe's first; `--scan-pdf` reports, page by page, titles and keywords of a PDF to find coding tables, copying no content.
+  the request shape that works on the real screen (whole form) is the probe's first; `--scan-pdf` reports, page by page, titles and keywords of a PDF to find coding tables, copying no content; the cache file no longer gets a doubled `.pdf.pdf`, and `--scan-pdf` names the PDFs present when the path is wrong.
 - **aerodb: EAD Basic probe, fifth round** (`tools/proc_ead.py`, K6, `frame/aerodb/EAD_BASIC.md` § 6 quinquies) — results are read only from the data table with the announced count (the earlier
   "rows" were layout tables), every list is sent with its default, the request shape is `@form`, and the State's change event is replayed before searching.
 - **aerodb: EAD Basic probe, fourth round** (`tools/proc_ead.py`, K6, `frame/aerodb/EAD_BASIC.md` § 6 quater) — the report prints the anatomy of each answer and the names of the
