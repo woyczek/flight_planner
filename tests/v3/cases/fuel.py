@@ -8,9 +8,11 @@ Rules covered
   * the wording "Devis" is not both the tab and a step of the same view (F5; step 4 is now "Résultat");
   * the flight date is one value: the field writes `planned_at` of the current flight (F6);
   * a mount whose address changed while it was still reading writes nothing, and the view follows the address (F7);
-  * the "Auto" button writes the airways between the route's points at the planned level (F8).
+  * the "Auto" button writes the airways between the route's points at the planned level (F8);
+  * the sheets bench passes: airframe and propulsion deduced from the ICAO catalogue, migration of engineType, missing fields
+    named by family (F10).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 from lib import Fail, Skip, case, norm, synthetic_airways, tx
@@ -296,3 +298,14 @@ def f9(c):
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
 
+
+@case('F10', 'Sheets bench', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      rule='frame/aerodb/sheets.js: airframe and propulsion come from the ICAO catalogue (DECISIONS 28 Oct 2026), the sheets list names the missing families; the bench passes')
+def f10(c):
+    c.page.goto(f'{c.base}/modules/fuel/test/sheets.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/fuel/test/sheets.html') from None
+    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')

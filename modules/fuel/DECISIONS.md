@@ -4,6 +4,31 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **28 Oct 2026 — airframe and propulsion replace engineType** (the user's decision; lot `v3-fuel-sheets`, with aerodb's
+  `sheets.js`, see its DECISIONS of the same day):
+  - The sheet's `engineType` (jet | turboprop | piston | auto) is replaced by `airframe` (aeroplane, helicopter,
+    gyroplane, glider, balloon, airship) and `propulsion` (piston, turboprop, turboshaft, jet, electric, none, other). A
+    ChatGPT guess of `engineType` had made an EC45 a turboprop; the ICAO base knows better.
+  - Both are deduced from the ICAO catalogue (`catalogFacts`), the sheet's own value winning when the user set one. What
+    the catalogue gives is never counted empty and never asked of ChatGPT; a ChatGPT reply loses those keys. **Pressurised**
+    follows the same rule, but no catalogue carries a boolean `pressurized` today: the hook is there, nothing is deduced.
+  - **The RPM fields stay counted and asked** (user's decision). Example given: the Caravelle III has 7,950 rpm max
+    continuous, 7,800 climb, 7,750 cruise, 5,000–5,780 transient only, 2,800–3,250 ground idle, 4,600 approach — a sheet
+    with a single "nominal" number would lose all of that, so the nominal RPM per phase and the engine map are still
+    requested.
+  - **The sheets list names what is missing by family** instead of a count: "To complete: rpm, speeds, cruise, taxi,
+    runway" (rpm, speeds, cruise, rates, fuel flows, taxi, runway, fuel, aircraft, other; the same set of empty paths as
+    before, minus the deduced ones). "complete" is unchanged.
+  - `performance_model.js` reads `propulsion` first (jet → jet, turboprop and turboshaft → turboprop, piston and electric
+    → piston; none and other fall through), then the legacy `engineType` (old sheets not re-read by aerodb), then the base
+    and the cruise TAS. The note asking to set the engine type now names "Propulsion".
+  - The prompt (`docs/technique/PROMPT_PROFIL_PERFORMANCES.md`): schema keys `airframe` and `propulsion`; rule 7 became a
+    selection rule (what carries the aircraft, what drives it, turboprop vs turboshaft, none, other, copy the known
+    powerplant). **The V2 planner's copy is frozen**: `tools/build_perf_prompt.py` no longer writes
+    `apps/planner/perf_prompt.js` (V2 lives on `v2-maintenance`).
+  - Benches: `sheets.html` (new checks, stub catalogue; its V2 reference file now carries `propulsion` and the pounds of
+    the `.lnmperf` export — both deliberate V3 differences; the bench had two stale checks since the kg → lb fix), the
+    other two use `propulsion`, `quote.html` keeps a legacy `engineType` check. Case F10 runs the sheets bench.
 - **28 Oct 2026 — ETA and planned position no longer written** (the recoded Map, 4dd3e232b, derives them; Simplification):
   `updateProgress` writes `{ at, fuelRemainingKg, remainingNm, phase }` for a started flight only; `plannedPos` and `eta`
   are set `undefined` in the next write so that `merge` removes what an earlier version left (JSON drops them), and the

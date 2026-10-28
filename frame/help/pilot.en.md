@@ -191,7 +191,8 @@ it.
 
 The “Sheets” tab gathers the airline's sheets, shared with all its devices. They are sorted by category
 (helicopters, turboprops, jets, piston engines, others); each type the airline uses (fleet, reference) that has no
-sheet yet is listed too, “performance to fill in”, with “Create the sheet”.
+sheet yet is listed too, “performance to fill in”, with “Create the sheet”. Each sheet says what it is missing, by family
+(“To complete: rpm, speeds, cruise, taxi, runway”), or “complete” when nothing is missing.
 
 - **Import**: a file (performance CSV, JSON, Little Navmap `.lnmperf`, SimBrief OFP) or pasted text (the same, or
   ChatGPT's answer). A sheet drawn from an OFP is calibrated on its real times and fuel burn.
@@ -203,7 +204,9 @@ sheet yet is listed too, “performance to fill in”, with “Create the sheet�
 - **ChatGPT**: “Copy the ChatGPT request” prepares the question for the type (or for the empty fields only); paste it
   into ChatGPT, then its answer as it is in the area provided, and “Read”.
 - **Editing, exporting**: the editor shows the fields by group. On a computer screen the power / fuel-flow table is
-  edited row by row; on a phone it is read only. `.lnmperf` and JSON exports; deletion after confirmation.
+  edited row by row; on a phone it is read only. `.lnmperf` and JSON exports; deletion after confirmation. The airframe (aeroplane, helicopter, glider…) and the propulsion
+  (piston, turboprop, turboshaft, jet…) come from the type's ICAO base: leave “auto” unless the base is wrong or does not know
+  the type; they are then neither counted as missing nor asked of ChatGPT.
 
 ## Settings and units
 
@@ -225,7 +228,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: f2764e9c409c -->
+<!-- fr: 319b95a5fcff -->
 
 <!-- chapter: maps -->
 # Map

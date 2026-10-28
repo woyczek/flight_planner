@@ -90,6 +90,12 @@
   const PROFILE_FIELDS = [
     ["Identité et format", "Nom", "name", "text"],
     ["Identité et format", "Type / ICAO", "icao", "text"],
+    ["Identité et format", "Cellule (auto : base OACI)", "airframe", "select:aeroplane,helicopter,gyroplane,glider,balloon,airship",
+      false
+    ],
+    ["Identité et format", "Propulsion (auto : base OACI)", "propulsion", "select:piston,turboprop,turboshaft,jet,electric,none,other",
+      false
+    ],
     ["Identité et format", "Immatriculation", "registration", "text", false],
     ["Identité et format", "Indicatif", "callsign", "text", false],
     ["Identité et format", "Description", "description", "textarea"],
@@ -117,7 +123,6 @@
     ["Croisière", "TAS (kt)", "cruise.tasKt", "number"],
     ["Croisière", "Plafond max (ft)", "cruise.ceilingFt", "number", false],
     ["Croisière", "Altitude de référence (ft)", "cruise.refAltFt", "number", false],
-    ["Croisière", "Motorisation (auto : base OACI)", "engineType", "select:auto,jet,turboprop,piston", false],
     ["Croisière", "Altitude de rétablissement (ft)", "engineCriticalAltFt", "number", false],
     ["Croisière", "Cabine pressurisée", "pressurized", "bool", false],
     ["Descente", "Badin / IAS (kt)", "descent.iasKt", "number", false],
@@ -254,6 +259,56 @@
   function isBlankValue(v) {
     return v === null || v === undefined || (typeof v === "string" && v.trim() === "") || (Array.isArray(v) && !v.length)
   }
+  // valeurs fermées des deux champs de fiche « cellule » (ce qui porte l'appareil) et « propulsion » (ce qui le fait avancer)
+  const AIRFRAMES = ["aeroplane", "helicopter", "gyroplane", "glider", "balloon", "airship"],
+    PROPULSIONS = ["piston", "turboprop", "turboshaft", "jet", "electric", "none", "other"];
+  /** Cellule, propulsion et pressurisation d'un code que la base OACI donne, seulement ceux qu'elle donne (clé absente
+   *  sinon). Cellule : dirigeable et ballon selon la fiche, puis lettre 1 de la description OACI (H hélicoptère, G
+   *  gyroplane, L / A / S avion ; T, convertible, ou inconnu : rien). Propulsion : ballon et planeur (GLID, BALL) sans
+   *  moteur, sinon lettre 3 (J réacteur, P pistons, E électrique, T turbine : turbomoteur d'un hélicoptère, sinon
+   *  turbopropulseur ; R fusée ou inconnu : rien). Pressurisation : seulement si la fiche du type porte un booléen
+   *  « pressurized » (aucune base n'en porte aujourd'hui, l'accroche est prête). */
+  function factsOfCode(code) {
+    const out = {};
+    if (!code) return out;
+    const c = ENV.catalog()?.classify?.(code) || {},
+      is = k => code === k || c.code === k;
+    if (is("GLID")) return {
+      airframe: "glider",
+      propulsion: "none"
+    };
+    if (is("BALL")) return {
+      airframe: "balloon",
+      propulsion: "none"
+    };
+    if (c.kind === "airship" || c.kind === "balloon") out.airframe = c.kind;
+    else if (c.family === "H") out.airframe = "helicopter";
+    else if (c.family === "G") out.airframe = "gyroplane";
+    else if (c.family === "L" || c.family === "A" || c.family === "S") out.airframe = "aeroplane";
+    if (out.airframe === "balloon") out.propulsion = "none";
+    else if (c.power === "J") out.propulsion = "jet";
+    else if (c.power === "P") out.propulsion = "piston";
+    else if (c.power === "E") out.propulsion = "electric";
+    else if (c.power === "T") out.propulsion = out.airframe === "helicopter" ? "turboshaft" : "turboprop";
+    if (typeof c.rec?.pressurized === "boolean") out.pressurized = c.rec.pressurized;
+    return out
+  }
+  /** Ce que la base OACI donne de l'appareil d'une fiche : { airframe?, propulsion?, pressurized? }, chaque clé seulement
+   *  si la base la donne (code = icao, sinon type, sinon id de la fiche). */
+  function catalogFacts(p) {
+    return factsOfCode(aKey(p?.icao || p?.type || p?.id))
+  }
+  /** Valeurs en vigueur de la cellule, de la propulsion et de la pressurisation : celle que la fiche porte si l'utilisateur
+   *  l'a fixée, sinon celle de la base OACI ; une clé n'est là que si l'une des deux la donne. code : code OACI à
+   *  consulter à la place de celui de la fiche. */
+  function effectiveFacts(p, code) {
+    const out = factsOfCode(code ? aKey(code) : aKey(p?.icao || p?.type || p?.id));
+    for (const k of ["airframe", "propulsion", "pressurized"]) {
+      const v = p?.[k];
+      if (k === "pressurized" ? typeof v === "boolean" : !isBlankValue(v) && v !== "auto") out[k] = v
+    }
+    return out
+  }
   /** Phase de vol (taxi, climb, cruise…) reconnue dans un texte libre (commentaire de ligne RPM) ; « » sinon. */
   function inferredCurvePhase(text) {
     let x = String(text || "").toLowerCase();
@@ -276,6 +331,19 @@
       ...x,
       _rowId: x._rowId || crypto.randomUUID()
     }));
+    // « auto » n'est plus une valeur : la case vide veut dire « selon la base OACI »
+    for (const k of ["airframe", "propulsion"])
+      if (p[k] === "auto") delete p[k];
+    // ancien champ engineType (jet, turboprop, piston ou auto) : retiré ; sa valeur n'est gardée, en propulsion, que si la
+    // fiche n'en dit rien et que la base OACI non plus (turbopropulseur d'un hélicoptère : turbomoteur)
+    if ("engineType" in p) {
+      const old = p.engineType;
+      delete p.engineType;
+      if (["jet", "turboprop", "piston"].includes(old) && isBlankValue(p.propulsion)) {
+        const facts = catalogFacts(p);
+        if (!facts.propulsion) p.propulsion = old === "turboprop" && (p.airframe || facts.airframe) === "helicopter" ? "turboshaft" : old
+      }
+    }
     return p;
   }
   /** Profils d'un CSV « PERFORMANCES_INTERPOLEES » (colonnes Aircraft, ICAO…, carburant en lb). Lève une erreur si les colonnes requises manquent. */
@@ -1375,11 +1443,35 @@
     }
     return out
   }
-  /** Champs vides d'une fiche (chemins du schéma), plus « rpmFuelCurve » quand elle n'a aucune ligne de cartographie. */
+  /** Champs vides d'une fiche (chemins du schéma), plus « rpmFuelCurve » quand elle n'a aucune ligne de cartographie ;
+   *  sans ceux que la base OACI donne (cellule, propulsion, pressurisation), jamais demandés à ChatGPT. */
   function sheetMissingPaths(p) {
-    const paths = gptSchemaPaths().filter(k => isBlankValue(pathGet(p, k)));
+    const facts = catalogFacts(p),
+      paths = gptSchemaPaths().filter(k => !(k in facts) && isBlankValue(pathGet(p, k)));
     if (!(p.rpmFuelCurve || []).some(r => r.rpm !== null && r.rpm !== "" && Number.isFinite(+r.rpm))) paths.push("rpmFuelCurve");
     return paths
+  }
+  // familles de champs manquants, dans l'ordre où la liste des fiches les nomme
+  const MISSING_FAMILIES = ["rpm", "speeds", "cruise", "rates", "flows", "taxi", "runway", "fuel", "aircraft", "other"];
+  /** Famille d'un chemin de champ : rpm (régimes et cartographie), speeds (IAS, TAS), cruise (plafond, altitude de
+   *  référence, débit de croisière), rates (varios), flows (débits de montée, descente, dégagement), taxi, runway, fuel,
+   *  aircraft (cellule, propulsion, pressurisation, altitude de rétablissement), other. */
+  function sheetMissingFamily(path) {
+    if (/rpm/i.test(path)) return "rpm";
+    if (/(iasKt|tasKt)$/.test(path)) return "speeds";
+    if (/^cruise\.(ceilingFt|refAltFt|fuelFlowPerHour)$/.test(path)) return "cruise";
+    if (/rateFpm$/.test(path)) return "rates";
+    if (/^taxi\.|^taxiFuel$/.test(path)) return "taxi";
+    if (/fuelFlowPerHour$/.test(path)) return "flows";
+    if (/^(minRunwayLengthFt|runwayType)$/.test(path)) return "runway";
+    if (/^(usableFuel|reserveFuel|extraFuel|contingencyPercent|jetFuel)$/.test(path)) return "fuel";
+    if (/^(airframe|propulsion|pressurized|engineCriticalAltFt)$/.test(path)) return "aircraft";
+    return "other"
+  }
+  /** Familles des champs manquants (chemins de sheetMissingPaths), une fois chacune, dans l'ordre de MISSING_FAMILIES. */
+  function sheetMissingFamilies(paths) {
+    const seen = new Set((paths || []).map(sheetMissingFamily));
+    return MISSING_FAMILIES.filter(f => seen.has(f))
   }
   /** Modèle de réponse d'une fiche : son id, ses champs vides seulement (valeurs du schéma : null, ou choix proposés),
    *  estimated, sources, notes. */
@@ -1425,7 +1517,9 @@
     ]) : "";
     if (kind) out.push(`${c.engines || "?"} ${kt(kind)}${what}`);
     if (sb?.engines) out.push(`SimBrief — ${sb.engines}`);
-    if (p?.engineType && p.engineType !== "auto") out.push(`engineType = ${p.engineType}`);
+    const eff = effectiveFacts(p, code);
+    if (eff.airframe) out.push(`airframe = ${eff.airframe}`);
+    if (eff.propulsion) out.push(`propulsion = ${eff.propulsion}`);
     return out.join(" ; ") || kt(["inconnue", "unknown", "unbekannt", "desconocida"])
   }
   /** Ce que la suite sait déjà du type, une ligne par source (EUROCONTROL APD, SimBrief, Airframe DB, profil actuel) ;
@@ -1522,6 +1616,27 @@
     return out
   }
 
+  /** Cellule ou propulsion écrite librement par ChatGPT ramenée à la liste fermée du champ (turbofan, turbojet → jet ;
+   *  …shaft → turboshaft ; …prop → turboprop ; reciprocating → piston ; heli… → helicopter ; autogyro, gyro… → gyroplane ;
+   *  sailplane → glider ; blimp → airship ; airplane → aeroplane) ; '' si rien ne convient. */
+  function gptEnum(path, v) {
+    const s = String(v ?? "").trim().toLowerCase(),
+      rules = path === "airframe" ? [
+        [/^heli/, "helicopter"],
+        [/gyro/, "gyroplane"],
+        [/sailplane|glider/, "glider"],
+        [/blimp|dirigible|airship/, "airship"],
+        [/^air-?plane|^aeroplane/, "aeroplane"]
+      ] : [
+        [/turbofan|turbojet|^jet/, "jet"],
+        [/shaft$/, "turboshaft"],
+        [/prop$/, "turboprop"],
+        [/reciprocat|piston/, "piston"],
+        [/electric/, "electric"]
+      ];
+    return (path === "airframe" ? AIRFRAMES : PROPULSIONS).includes(s) ? s : rules.find(([re]) => re.test(s))?.[1] || ""
+  }
+
   function parseGptReply(text, code) {
     const S = ENV.prompt().schema || {},
       warnings = [],
@@ -1601,7 +1716,8 @@
           return undefined
         }
         if (type.startsWith("select:")) {
-          const x = type.slice(7).split(",").find(o => o.toLowerCase() === String(v).trim().toLowerCase());
+          const want = path === "airframe" || path === "propulsion" ? gptEnum(path, v) : String(v).trim().toLowerCase(),
+            x = type.slice(7).split(",").find(o => o.toLowerCase() === want);
           if (!x) dropped.push(`${path} (${v})`);
           return x
         }
@@ -1651,6 +1767,8 @@
     }
     // type de la réponse (icao, sinon type) : il prime sur l'appareil choisi (repli seulement si la réponse n'en donne pas)
     const replyCode = aKey(out.icao || obj.type || "") || null;
+    // ce que la base OACI donne de l'appareil (cellule, propulsion, pressurisation) prime sur la réponse
+    for (const k of Object.keys(factsOfCode(replyCode || aKey(code)))) delete out[k];
     // cartographie moteur, lue comme l'éditeur ; lignes estimées notées dans leur commentaire
     const est = (Array.isArray(obj.estimated) ? obj.estimated : []).map(String),
       estRows = new Set(est.map(x => x.match(/^rpmFuelCurve\[(\d+)\]/)?.[1]).filter(Boolean).map(Number)),
@@ -1785,6 +1903,9 @@
     gptJsonNormalize,
     gptNumberText,
     sheetMissingPaths,
+    sheetMissingFamilies,
+    catalogFacts,
+    effectiveFacts,
     sheetMissingModel,
     gptSchemaPaths
   };

@@ -155,7 +155,8 @@ Flugfläche, Steig- und Sinkprofil — wird geteilt: Karte und Bericht haben ihn
 Die Registerkarte „Datenblätter“ versammelt die Datenblätter der Fluggesellschaft, geteilt mit all ihren Geräten. Sie
 sind nach Kategorie geordnet (Hubschrauber, Turboprops, Strahlflugzeuge, Kolbenmotoren, andere); jeder Typ, den die
 Fluggesellschaft nutzt (Flotte, Referenz) und der noch kein Datenblatt hat, steht ebenfalls dort, „Leistungen
-einzutragen“, mit „Datenblatt anlegen“.
+einzutragen“, mit „Datenblatt anlegen“. Jedes Datenblatt sagt, was fehlt, nach Familien („Zu ergänzen: Drehzahlen,
+Geschwindigkeiten, Reiseflug, Rollen, Piste“), oder „vollständig“, wenn nichts fehlt.
 
 - **Importieren**: eine Datei (Leistungs-CSV, JSON, `.lnmperf` von Little Navmap, SimBrief-OFP) oder eingefügter Text
   (dasselbe oder die Antwort von ChatGPT). Ein aus einem OFP gewonnenes Datenblatt wird an dessen echten Zeiten und
@@ -170,7 +171,9 @@ einzutragen“, mit „Datenblatt anlegen“.
   sie in ChatGPT ein, dann dessen Antwort unverändert in das vorgesehene Feld, und „Lesen“.
 - **Bearbeiten, exportieren**: Der Editor zeigt die Felder nach Gruppen. Auf einem Computerbildschirm wird die Tabelle
   Leistung / Durchfluss Zeile für Zeile bearbeitet; auf einem Telefon ist sie nur lesbar. Exporte `.lnmperf` und JSON;
-  Löschen nach Bestätigung.
+  Löschen nach Bestätigung. Zelle (Flugzeug, Hubschrauber, Segelflugzeug …) und Antrieb (Kolbenmotor, Turboprop,
+  Wellenturbine, Strahltriebwerk …) kommen aus der ICAO-Basis des Typs: „auto“ lassen, außer die Basis irrt sich oder kennt den
+  Typ nicht; sie werden dann weder als fehlend gezählt noch bei ChatGPT erfragt.
 
 ## Einstellungen und Einheiten
 
@@ -194,4 +197,4 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: f2764e9c409c -->
+<!-- fr: 319b95a5fcff -->

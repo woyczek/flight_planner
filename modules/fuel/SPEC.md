@@ -26,7 +26,11 @@ folded.
   lb, the unit of every fuel quantity of the sheet), `cruise` { `tasKt`, `fuelFlowPerHour`, `rpmNominal`, `refAltFt`,
   `ceilingFt` }, `climb` and `descent` { `iasKt`, `tasKt`, `rateFpm`, `fuelFlowPerHour`, `rpmNominal` }, `taxi`
   { `fuelFlowPerHour` }, `reserveFuelFlowPerHour`, `tod` { `gradientFtPerNm` (300), `bufferNm` (5) }, `rpmFuelCurve`
-  [{ `rpm`, `altFt`, `fuelFlowMin`, `fuelFlowPerHour`, `fuelFlowMax` }], `engineType`, `typicalWindKt`.
+  [{ `rpm`, `altFt`, `fuelFlowMin`, `fuelFlowPerHour`, `fuelFlowMax` }], `airframe` (aeroplane, helicopter, gyroplane, glider, balloon, airship), `propulsion` (piston, turboprop,
+  turboshaft, jet, electric, none, other), `typicalWindKt`. These two fields replace `engineType` (28 Oct
+  2026): empty means "as the ICAO base says" (`AeroDBSheets.catalogFacts`), the model reads `propulsion` first
+  (turboshaft counts as turboprop, electric as piston), then the legacy `engineType` of an old sheet, then the base and
+  the cruise TAS.
 - **Flight**: distance (NM), level (ft; a level pinned on the chart wins over the plan's), true track, wind (direction
   and speed, or speed only, or nothing), taxi time, reserve time (min), contingency (% of the trip), take-off mass
   (sheet unit, optional), ISA deviation (°C).
@@ -366,13 +370,15 @@ mount. Inside a mount, the two buttons switch as before.
     level in metres next to the FL in the sticky result when the unit is not ft.
   - The Sheets screen shows and edits the sheets' own fields (kt, ft, NM, fuel unit of the sheet): it is not affected.
 - **Sheets**: the list, sorted like V2's by category (helicopters, turboprops, jets, piston engines, others: aerodb
-  `classify`), then by name: each sheet (name, type, unit, origin, empty fields, date; "Use" sets it for the flight,
+  `classify`), then by name: each sheet (name, type, unit, origin, what is missing named by family — "To complete: rpm, speeds, cruise…", or
+  "complete" —, date; "Use" sets it for the flight,
   "Edit"), then the airline's types without a sheet (aerodb `fleetTypes()`: fleet and reference, aliases resolved;
   a type is covered when a sheet's ICAO code, type or id resolves to it), "Company type (n aircraft): performance to
   fill in", with "Create the sheet" (the "new sheet" flow without asking the code, named after the model);
   import of files (CSV, JSON, `.lnmperf`, SimBrief OFP) or of a pasted text (the same, or a ChatGPT answer); a new
   sheet from an ICAO code (SimBrief type data when aerodb has them); a sheet from the last OFP (calibrated on its
-  navlog). The editor: the fields by group (labels in the four languages), the RPM table (edited row by row on a
+  navlog). The editor: the fields by group (labels in the four languages; airframe and propulsion are lists whose empty
+  choice reads "auto · <what the ICAO base says>"), the RPM table (edited row by row on a
   computer screen, wider than 760 px: RPM, altitude, minimum, nominal and maximum flow, rows added or removed; read only
   on a phone), completion from
   EUROCONTROL or from another sheet, the ChatGPT request (whole sheet or empty fields, copied) and its answer pasted,

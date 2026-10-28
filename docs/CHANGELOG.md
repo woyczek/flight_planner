@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Performance sheets: airframe and propulsion come from the ICAO catalogue** (`frame/aerodb/sheets.js`, `modules/fuel/`; SPEC, DECISIONS, F10) —
+  the "engine type" of a sheet (a ChatGPT guess that made a helicopter a turboprop) is replaced by two lists, airframe (aeroplane,
+  helicopter, gyroplane, glider, balloon, airship) and propulsion (piston, turboprop, turboshaft, jet, electric, none, other),
+  which the ICAO catalogue fills in by itself ("auto · helicopter" in the form); you only choose when the catalogue is silent or
+  wrong. They are no longer counted as empty nor asked of ChatGPT, whose prompt got the new keys. Old sheets are converted when read.
+  The sheets list now says what is missing by family ("To complete: rpm, speeds, cruise, taxi, runway") instead of a count.
+
 - **Fuel: the review of a re-imported sheet wraps its texts** (`modules/fuel/module.js`) — a long value (the description written by
   ChatGPT) stayed on one line in the "before / after" table and pushed it into a sideways scroll; numbers stay right-aligned on
   one line, texts wrap in their column.

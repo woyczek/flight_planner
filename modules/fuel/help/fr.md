@@ -143,7 +143,9 @@ descente — est partagé : Carte et Compte rendu l'ont déjà.
 
 L'onglet « Fiches » rassemble les fiches de la compagnie, partagées avec tous ses appareils. Elles sont rangées par
 catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons, autres) ; chaque type utilisé par la compagnie (flotte,
-référence) qui n'a pas encore de fiche y figure aussi, « performances à renseigner », avec « Créer la fiche ».
+référence) qui n'a pas encore de fiche y figure aussi, « performances à renseigner », avec « Créer la fiche ». Chaque
+fiche dit ce qui lui manque, par famille (« À compléter : régimes, vitesses, croisière, roulage, piste ») ; « complète » quand
+rien ne manque.
 
 - **Importer** : un fichier (CSV de performances, JSON, `.lnmperf` de Little Navmap, OFP SimBrief) ou un texte collé
   (les mêmes, ou la réponse de ChatGPT). Une fiche tirée d'un OFP est calibrée sur ses temps et sa consommation réels.
@@ -156,7 +158,9 @@ référence) qui n'a pas encore de fiche y figure aussi, « performances à rens
   ChatGPT, puis sa réponse telle quelle dans la zone prévue, et « Lire ».
 - **Modifier, exporter** : l'éditeur montre les champs par groupe. Sur un écran d'ordinateur, la table régime / débit
   se modifie ligne à ligne ; sur un téléphone elle est en lecture. Exports `.lnmperf` et JSON ; suppression après
-  confirmation.
+  confirmation. La cellule (avion, hélicoptère, planeur…) et la propulsion (pistons, turbopropulseur, turbomoteur,
+  réacteur…) viennent de la base OACI du type : laissez « auto », sauf si la base se trompe ou ne connaît pas le type ;
+  elles ne sont alors ni comptées comme manquantes ni demandées à ChatGPT.
 
 ## Réglages et unités
 

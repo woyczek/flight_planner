@@ -237,6 +237,21 @@ All the aircraft data in one place, read from every source and written in one pl
 - **Sheets logic** (`AeroDBSheets`, taken over from fuel): reading CSV, JSON, `.lnmperf`, OFP and ChatGPT replies;
   merge with choices; `.lnmperf` writing; EUROCONTROL and SimBrief completions. aerodb configures it with the types,
   the sheets and the fleet (`fleetTypes()`, for the ChatGPT prompt). Registration and callsign are editable fields.
+- **Airframe and propulsion** (sheet fields `airframe`, `propulsion`, which replace `engineType`; 28 Oct 2026):
+  - `catalogFacts(sheet)` gives `{ airframe?, propulsion?, pressurized? }` from the ICAO base, each key only when the base
+    gives it (code = `icao`, else `type`, else `id`). Airframe: airship or balloon by the type's record, else the first letter
+    of the Doc 8643 description (H helicopter, G gyroplane, L / A / S aeroplane; T tiltrotor and unknown: none). Propulsion:
+    `GLID` and `BALL` (and balloons) `none`; else the third letter (J jet, P piston, E electric, T turbine: turboshaft for a
+    helicopter, turboprop otherwise; R and unknown: none). `pressurized` only from a boolean `pressurized` of the record
+    (no base carries one today).
+  - The value in force (`effectiveFacts`) is the sheet's own when the user set one, else the base's. What the base gives
+    is never counted as empty (`sheetMissingPaths`) nor asked to ChatGPT, and `parseGptReply` drops it from a reply (the
+    base wins); free words are mapped to the closed lists (turbofan → jet, …shaft → turboshaft, reciprocating → piston,
+    heli… → helicopter, sailplane → glider…) or dropped with a warning.
+  - `normalize` migrates at reading: `engineType` is removed; its jet / turboprop / piston value becomes `propulsion` only
+    when the sheet has none and the base gives none (turboprop → turboshaft for a helicopter); `auto` just goes.
+  - `sheetMissingFamilies(paths)` names what is missing by family, in the order rpm, speeds, cruise, rates, flows, taxi,
+    runway, fuel, aircraft, other (the sheets list of Fuel prints them).
 - **Prefixes** (`AeroDB.declaration()`, given by the frame to `FrameData.adapter`):
   - reads: `sia/base/`, `AircraftDB/` and `references/` as "reference"; `airline/`, `planner/` and `aircraft/` as
     documents;

@@ -1282,3 +1282,32 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Bench**: K1 (`procedures.html`, 28 checks: the manual folder and `outdated`, phases, the leg without a fix, `procedure(id)` with an OFP record,
   `runways`, the index, `fetchProcedures`), K4 (CIFP: the VA leg kept, phases, the runway record, an RF arc built from the fixture), K11
   (`proc/manual/`, never a cycle folder).
+
+
+## 28 October 2026 — airframe and propulsion replace engineType in the sheets (the user's decision, fuel's lot `v3-fuel-sheets`)
+
+- **Schema**: `engineType` (jet | turboprop | piston | auto) is replaced by `airframe` (aeroplane, helicopter, gyroplane,
+  glider, balloon, airship) and `propulsion` (piston, turboprop, turboshaft, jet, electric, none, other). `sheets.js` stays
+  owned by aerodb; fuel edited it through its API, as agreed.
+- **Deduced from the ICAO catalogue**: `catalogFacts(sheet)` (pure, exported) gives `{ airframe?, propulsion?, pressurized? }`,
+  each key only when the catalogue gives it. Code = `icao`, else `type`, else `id` (`aKey`). `GLID` → glider + none, `BALL` →
+  balloon + none. Airframe: `kind` airship or balloon, else letter 1 of the description (H helicopter, G gyroplane, L / A /
+  S aeroplane; T tiltrotor or unknown: not deduced). Propulsion: balloon none, else letter 3 (J jet, P piston, E electric,
+  T turboshaft for a helicopter and turboprop otherwise; R or empty: not deduced). **`pressurized`**: only when the record
+  carries a boolean `pressurized`; **no catalogue does today**, the hook is kept and nothing is deduced. `effectiveFacts`
+  is the value in force: the sheet's own when the user set one, else the catalogue's.
+- **Never empty, never asked**: `sheetMissingPaths` drops the keys of `catalogFacts`; `parseGptReply` deletes them from the
+  returned profile (the catalogue wins over ChatGPT). Free words are mapped (turbofan, turbojet → jet; …shaft → turboshaft;
+  …prop → turboprop; reciprocating → piston; heli… → helicopter; autogyro, gyro… → gyroplane; sailplane → glider; blimp →
+  airship; airplane → aeroplane); anything else is dropped with the existing "values discarded" warning. `gptEngines` prints
+  `airframe = …` and `propulsion = …` from the values in force.
+- **Migration at reading** (`normalize`): `engineType` is deleted; a jet / turboprop / piston value becomes `propulsion` only
+  when the sheet has none and the catalogue gives none (turboprop → turboshaft when the airframe, stored or deduced, is a
+  helicopter). `auto` (and `airframe` / `propulsion` set to `auto`) is simply dropped. An EC45 sheet with a ChatGPT-guessed
+  `engineType: turboprop` ends with nothing stored: the catalogue says helicopter + turboshaft.
+- **RPM fields stay counted and asked** (the user): taxi / climb / cruise / descent `rpmNominal` and `rpmFuelCurve`.
+- **`sheetMissingFamilies(paths)`** (pure, exported): rpm, speeds, cruise, rates, flows, taxi, runway, fuel, aircraft, other,
+  in that order; Fuel prints their names in its sheets list.
+- **Form**: two `select:` rows after "Type / ICAO" in "Identité et format", `lnm` flag false like `engineType`.
+- **Prompt**: `PROMPT_PROFIL_PERFORMANCES.md` gets the two keys; the V2 planner keeps its own `perf_prompt.js` (not built on
+  this line, V2 being maintained on `v2-maintenance`).

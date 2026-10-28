@@ -564,8 +564,22 @@ const TX = {
     'Datenblätter der gemeinsamen Datenbank; jede Änderung wird vor dem Schreiben gezeigt.',
     'Fichas de la base compartida; cada cambio se muestra antes de escribirse.'
   ],
-  missing: ['{n} champ(s) vide(s)', '{n} empty field(s)', '{n} leere(s) Feld(er)', '{n} campo(s) vacío(s)'],
+  missing: ['À compléter : {list}', 'To complete: {list}', 'Zu ergänzen: {list}', 'Por completar: {list}'],
+  // familles de champs vides nommées par la liste des fiches (F.sheetMissingFamilies), dans l'ordre de la liste
+  missingFamily: {
+    rpm: ['régimes', 'rpm', 'Drehzahlen', 'regímenes'],
+    speeds: ['vitesses', 'speeds', 'Geschwindigkeiten', 'velocidades'],
+    cruise: ['croisière', 'cruise', 'Reiseflug', 'crucero'],
+    rates: ['varios', 'rates', 'Steigraten', 'velocidades verticales'],
+    flows: ['débits', 'fuel flows', 'Verbräuche', 'consumos'],
+    taxi: ['roulage', 'taxi', 'Rollen', 'rodaje'],
+    runway: ['piste', 'runway', 'Piste', 'pista'],
+    fuel: ['carburant', 'fuel', 'Kraftstoff', 'combustible'],
+    aircraft: ['appareil', 'aircraft', 'Luftfahrzeug', 'aeronave'],
+    other: ['divers', 'other', 'Sonstiges', 'otros']
+  },
   complete: ['complète', 'complete', 'vollständig', 'completa'],
+  auto: ['auto', 'auto', 'auto', 'auto'],
   updated: ['mise à jour {d}', 'updated {d}', 'aktualisiert {d}', 'actualizada {d}'],
   useSheet: ['Utiliser', 'Use', 'Verwenden', 'Usar'],
   edit: ['Modifier', 'Edit', 'Bearbeiten', 'Editar'],
@@ -671,8 +685,11 @@ const FIELD_TX = {
   'Altitude de référence (ft)': ['Altitude de référence (ft)', 'Reference altitude (ft)', 'Referenzhöhe (ft)',
     'Altitud de referencia (ft)'
   ],
-  'Motorisation (auto : base OACI)': ['Motorisation (auto : base OACI)', 'Engines (auto: ICAO base)', 'Antrieb (auto: ICAO-Basis)',
-    'Motorización (auto: base OACI)'
+  'Cellule (auto : base OACI)': ['Cellule (auto : base OACI)', 'Airframe (auto: ICAO base)', 'Zelle (auto: ICAO-Basis)',
+    'Célula (auto: base OACI)'
+  ],
+  'Propulsion (auto : base OACI)': ['Propulsion (auto : base OACI)', 'Propulsion (auto: ICAO base)', 'Antrieb (auto: ICAO-Basis)',
+    'Propulsión (auto: base OACI)'
   ],
   'Altitude de rétablissement (ft)': ['Altitude de rétablissement (ft)', 'Critical altitude (ft)', 'Volldruckhöhe (ft)',
     'Altitud crítica (ft)'
@@ -685,6 +702,22 @@ const FIELD_TX = {
   'Base / provenance': ['Base / provenance', 'Basis / origin', 'Grundlage / Herkunft', 'Base / procedencia']
 };
 
+// libellés des valeurs des champs à liste (cellule, propulsion) ; les autres listes (type de piste) gardent leur code
+const OPTION_TX = {
+  aeroplane: ['avion', 'aeroplane', 'Flugzeug', 'avión'],
+  helicopter: ['hélicoptère', 'helicopter', 'Hubschrauber', 'helicóptero'],
+  gyroplane: ['gyroplane', 'gyroplane', 'Tragschrauber', 'autogiro'],
+  glider: ['planeur', 'glider', 'Segelflugzeug', 'planeador'],
+  balloon: ['ballon', 'balloon', 'Ballon', 'globo'],
+  airship: ['dirigeable', 'airship', 'Luftschiff', 'dirigible'],
+  piston: ['moteur à pistons', 'piston engine', 'Kolbenmotor', 'motor de pistón'],
+  turboprop: ['turbopropulseur', 'turboprop', 'Turboprop', 'turbohélice'],
+  turboshaft: ['turbomoteur', 'turboshaft', 'Wellenturbine', 'turboeje'],
+  jet: ['réacteur', 'jet', 'Strahltriebwerk', 'reactor'],
+  electric: ['électrique', 'electric', 'elektrisch', 'eléctrico'],
+  none: ['aucune (sans moteur)', 'none (unpowered)', 'keine (ohne Antrieb)', 'ninguna (sin motor)'],
+  other: ['autre', 'other', 'andere', 'otra']
+};
 // champs de fiche hors du formulaire de la V2
 const PATH_TX = {
   reserveFuelFlowPerHour: ['Réserve · débit', 'Reserve · fuel flow', 'Reserve · Verbrauch', 'Reserva · consumo'],
@@ -3385,10 +3418,10 @@ function renderSheets() {
         <div class="f-muted">${esc(tt(TX.coType, { n: r.todo.registrations.length }))}</div></div>
         <div class="f-row"><button type="button" data-do="newfor">${esc(tt(TX.createSheet))}</button></div></div>`;
       const p = F.normalize(structuredClone(r.sheet)),
-        miss = F.sheetMissingPaths(p).length,
+        miss = F.sheetMissingFamilies(F.sheetMissingPaths(p)).map(f => tt(TX.missingFamily[f])),
         when = F.profileWhen(p);
       return `<div class="f-item" data-id="${esc(p.id)}"><div><b>${esc(p.name || p.id)}</b> <span class="f-muted">${esc(p.icao || '')} · ${esc(p.unit)}</span>
-        <div class="f-muted">${esc(F.profileSourceText(p))} · ${esc(miss ? tt(TX.missing, { n: miss }) : tt(TX.complete))}${when ? ` · ${esc(tt(TX.updated, { d: new Date(when).toLocaleDateString(lang) }))}` : ''}</div></div>
+        <div class="f-muted">${esc(F.profileSourceText(p))} · ${esc(miss.length ? tt(TX.missing, { list: miss.join(', ') }) : tt(TX.complete))}${when ? ` · ${esc(tt(TX.updated, { d: new Date(when).toLocaleDateString(lang) }))}` : ''}</div></div>
         <div class="f-row"><button type="button" data-do="use">${esc(tt(TX.useSheet))}</button><button type="button" data-do="edit">${esc(tt(TX.edit))}</button></div></div>`;
     }).join('')}`).join('') || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}</div>`;
   S.body.onclick = e => onSheetsClick(e);
@@ -3685,12 +3718,18 @@ function renderEditor(id, draft = null) {
   const p = S.edit = draft || F.normalize(structuredClone(raw)),
     rpmCell = (i, k, v) => `<td class="f-num"><input data-rpm="${i}" data-rk="${k}" inputmode="decimal" value="${esc(v ?? '')}" style="width:7em" aria-label="${esc(k)}"></td>`,
     groups = [...new Set(F.PROFILE_FIELDS.map(f => f[0]))],
+    facts = F.catalogFacts(p), // ce que la base OACI donne de la cellule et de la propulsion
     fuelUnit = path => F.FUEL_PATHS.has(path) ? ` (${p.unit}${path.endsWith('fuelFlowPerHour') ? '/h' : ''})` : '',
     input = ([, , path, type]) => {
       const v = F.pathGet(p, path),
         lab = esc(fieldLabel(path) + fuelUnit(path));
       if (type === 'bool') return `<label class="f-check"><input type="checkbox" data-path="${path}" data-type="bool"${v ? ' checked' : ''}>${lab}</label>`;
-      if (type.startsWith('select:')) return `<label class="f-field">${lab}<select data-path="${path}" data-type="text"><option value=""></option>${type.slice(7).split(',').map(o => `<option${String(v ?? '') === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
+      if (type.startsWith('select:')) {
+        // cellule et propulsion : libellés traduits, case vide = « auto · valeur de la base OACI » quand elle la donne
+        const deduced = facts[path],
+          none = deduced ? `${tt(TX.auto)} · ${tt(OPTION_TX[deduced])}` : '';
+        return `<label class="f-field">${lab}<select data-path="${path}" data-type="text"><option value="">${esc(none)}</option>${type.slice(7).split(',').map(o => `<option value="${esc(o)}"${String(v ?? '') === o ? ' selected' : ''}>${esc(OPTION_TX[o] ? tt(OPTION_TX[o]) : o)}</option>`).join('')}</select></label>`;
+      }
       if (type === 'textarea') return `<label class="f-field">${lab}<textarea rows="2" data-path="${path}" data-type="text">${esc(v ?? '')}</textarea></label>`;
       return `<label class="f-field">${lab}<input data-path="${path}" data-type="${type}" value="${esc(v ?? '')}"${type === 'number' ? ' inputmode="decimal"' : ''}></label>`;
     },
