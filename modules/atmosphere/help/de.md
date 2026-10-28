@@ -5,36 +5,46 @@ Schnitt der Route, der Schnitt eines Punkts, zur Abflugzeit oder später.
 
 ## So geht's
 
-**Der Flug.** Wetter zeigt immer den in Kraftstoff vorbereiteten Flug (Route, Höhe, Flugdatum). Ohne geplanten Flug
+<a id="atmosphere-flight"></a>**Der Flug.** Wetter zeigt immer den in Kraftstoff vorbereiteten Flug (Route, Höhe, Flugdatum). Ohne geplanten Flug
 sagt die Seite es und führt zu Kraftstoff; „Beispiel ansehen" zeigt einen Vorführflug, im Griff als solcher markiert.
 
-**Die Vorhersage laden.** Die Ladeschaltfläche (der Pfeil nach unten, rechts auf der Karte) liest die Vorhersage entlang
+<a id="atmosphere-load"></a>**Die Vorhersage laden.** Die Ladeschaltfläche (der Pfeil nach unten, rechts auf der Karte) liest die Vorhersage entlang
 der Route und um sie herum. Beim Öffnen wird nichts abgefragt: die Seite zeigt, was das Gerät schon gespeichert hat.
 Außerhalb des Fluggebiets zeigt die Karte die mit der Anwendung veröffentlichte Weltsynoptik, ohne etwas abzufragen.
 
-**Die Wetterkarte.** Isobaren, Isothermen, Wolken, Wind, Jetstream und Konvektion in der mit dem Höhenchip gewählten
+<a id="atmosphere-map"></a>**Die Wetterkarte.** Isobaren, Isothermen, Wolken, Wind, Jetstream und Konvektion in der mit dem Höhenchip gewählten
 Höhe („Boden", die angeforderte Höhe, die berechnete Bahn oder eine feste Höhe). Die Ebenen-Schaltfläche (oben links)
 wählt, was gezeichnet wird. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
 
-**Das Fluggebiet und die Welt.** Eine dünne Linie umgibt das Fluggebiet: innen die für den Flug geladene feine Vorhersage
+<a id="atmosphere-zones"></a>**Das Fluggebiet und die Welt.** Eine dünne Linie umgibt das Fluggebiet: innen die für den Flug geladene feine Vorhersage
 (Météo-France AROME 1,3 km und ARPEGE 0,1° über Frankreich, ICON in Europa); außen die Weltsynoptik (NOAA GFS, mit
 einem 5°-Raster veröffentlicht). Die beiden Modelle sagen nicht ganz dasselbe: ein Sprung der Linien an der Grenzlinie
 ist normal. Das Ebenen-Feld nennt beide Modelle und ihr Raster.
 
-**Das Flugdatum.** Der Regler unter dem Griff verschiebt die Zeit von 0 bis 72 Stunden nach dem geplanten Abflug: Karte,
+<a id="atmosphere-date"></a>**Das Flugdatum.** Der Regler unter dem Griff verschiebt die Zeit von 0 bis 72 Stunden nach dem geplanten Abflug: Karte,
 Schnitt und Punktschnitte folgen.
 
-**Der Schnitt und die Punktschnitte.** Unter der Karte zeigt der Schnitt die Route von Anfang bis Ende, vom Boden bis
+<a id="atmosphere-cut"></a>**Der Schnitt und die Punktschnitte.** Unter der Karte zeigt der Schnitt die Route von Anfang bis Ende, vom Boden bis
 über die Flughöhe. Tippen Sie darauf, um den Schnitt des nächsten Punkts zu öffnen (das senkrechte Profil der
 Atmosphäre dort); ◀ und ▶ wechseln zum Nachbarschnitt, ✕ kehrt zum Schnitt zurück. Die Zeichnung passt immer in den
 Block, ihre Entfernungsachse sichtbar; vergrößern Sie den Block für mehr Einzelheiten.
 
-**Den Schnitt zoomen.** Ziehen Sie den Schnitt mit zwei Fingern auf (oder Strg + Mausrad), um nur einen Teil zu zeigen,
+<a id="atmosphere-zoom"></a>**Den Schnitt zoomen.** Ziehen Sie den Schnitt mit zwei Fingern auf (oder Strg + Mausrad), um nur einen Teil zu zeigen,
 und verschieben Sie ihn mit zwei Fingern; Entfernungen, Punkte, Winde und die Höhenskala folgen dem gezeigten Teil. Ein
 einzelner Finger behält seine Rolle (Punktschnitt öffnen, Block verschieben). „Ganzer Flug" in der Griffzeile, ein
 Doppeltipp oder ein Doppelklick kehren zur ganzen Route zurück; eine Routenänderung ebenfalls.
 
-**Die Legende.** Der Chip „i" in der Griffzeile rechts (nach ◀ und ▶) zeigt die Legende des Gezeichneten; ein Tippen auf
+<a id="atmosphere-details"></a>**Die Details.** Die Listen-Schaltfläche rechts auf der Karte zeigt im Block die Zusammenfassung
+des Flugs (Entfernung, Profil, Steigflug, mittlerer Wind und Abweichung von der Normatmosphäre im Reiseflug,
+0-°C-Isotherme), die Flugplätze (METAR und TAF) und die Tabelle entlang der berechneten Bahn; tippen Sie auf eine Zeile der
+Tabelle, um den Schnitt dieses Orts zu öffnen.
+
+<a id="atmosphere-settings"></a>**Flug und Einstellungen.** Die Flugzeug-Schaltfläche rechts auf der Karte öffnet den
+gezeigten Flug: seine Quelle (der aktuelle Flug aus Kraftstoff, das Beispiel, eine Datei `current_flight.json` oder eine
+eingegebene Route), den Abflug (UTC), die angeforderte Höhe, die Reisegeschwindigkeit, die Daten (Open-Meteo-Vorhersage
+oder Offline-Vorführung) und das Raster der Karte. Ein zweites Tippen auf die Schaltfläche kehrt zum Schnitt zurück.
+
+<a id="atmosphere-legend"></a>**Die Legende.** Der Chip „i" in der Griffzeile rechts (nach ◀ und ▶) zeigt die Legende des Gezeichneten; ein Tippen auf
 die Legende, den Chip oder Escape schließt sie.
 
 - Schnitt: berechnete Bahn (durchgezogen: Steigflug, Reiseflug, Sinkflug), geplante Höhe (gestrichelt), angeforderte
@@ -51,4 +61,4 @@ die Legende, den Chip oder Escape schließt sie.
   die Weltsynoptik kommt von GFS (NOAA), alle 3 Stunden bis 72 Stunden.
 - Das Geladene bleibt auf dem Gerät und dient offline; die Karte übernimmt seinen Wetterschnitt.
 
-<!-- fr: 0d64bc05e5c1 -->
+<!-- fr: f08415c8bd41 -->

@@ -150,4 +150,8 @@ Open-Meteo for anything outside its flight's grid, whatever the map shows.**
 
 - Times without wind; cloud cover from the model's level cloud cover, else from humidity; icing and cumulus base
   indicative only. Not an official weather briefing.
-- No help chapter yet (`meta.help: false`).
+- Help chapter `modules/atmosphere/help/<lang>.md` ("# Météo", built into `frame/help/pilot.*.md`; `meta.help: true`):
+  the frame's "?" opens it at the paragraph of the view shown (`ctx.helpAnchor`, V3_SPECIFICATION § 7.1 rule 16) —
+  `atmosphere-flight` (no flight), `atmosphere-cut` (cut or slice), `atmosphere-zoom` (zoomed cut), `atmosphere-legend`
+  (legend shown), `atmosphere-details`, `atmosphere-settings`, `atmosphere-map` (layers, a point of the map); the anchors
+  are the same in the four languages (case E10).
