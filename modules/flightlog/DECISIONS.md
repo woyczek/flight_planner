@@ -2,6 +2,15 @@
 
 Memory of the V3 flightlog module: every choice, dated, with its reason. Chat history is never needed.
 
+- **28 Oct 2026 — status lines published for the frame** (frame lot 25, INTEGRATION § 10.0; Simplification): the module
+  writes `cache/flightlog/status.json` = `{ schema: 1, lines: [{ text ×4, go: '#report?from=flightlog', news: true,
+  handoff: { to: 'report', family, values } }] }` instead of `pending.json`: the frame shows ready lines and writes the
+  hand-over as given, it no longer reads flightlog's schema. Texts: the frame's own wording ×4, the day in the
+  language's writing and the time in UTC when known (report, network session: `whenZ`); a website-log flight keeps its
+  day without conversion (the site's convention). Same selection as before (`pendingFlights`: without a report, 30
+  days, 5, newest first); `pending()` keeps its output (bench unchanged). `pending.json` is removed once by the module
+  (cache, this device), so the frame's fallback reading of it (§ 10.1, debt) has nothing left to read. Bench
+  `test/pending.html` 14 checks (5 new); journey J4 reads `status.json` and checks that `pending.json` is gone.
 - **24 Oct 2026 — the flights without a report published for the frame's "i" button** (user, 24 Oct afternoon, item
   "6 : bouton « i »": the status line gives way to an "i" button of the header whose pop-up lists "report to write" lines;
   the pending report comes from a small cache record published by flightlog — relay cloud lot): `cache/flightlog/pending.json`

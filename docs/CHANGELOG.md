@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **My flights: status lines for Settings** (`modules/flightlog/model.js`, `module.js`; INTEGRATION, SPEC, DECISIONS) —
+  the reports to write are published ready to show (four languages, times in UTC); the frame no longer reads the
+  module's own list.
 - **Fuel: minutes to each route point in the quote** (`modules/fuel/module.js`; INTEGRATION, DECISIONS) —
   `quote.legs` gives the Map the planned time from brake release to every point.
 - **Fuel: one flight date** (`modules/fuel/module.js`; INTEGRATION, DECISIONS, help ×4) — the

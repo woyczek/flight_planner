@@ -256,20 +256,21 @@ def j3(c):
     c.eq(tiles[2], '1', 'the third total counts the flight without a report', what='"sans CR" total')
     c.ok(c.shown('[data-module="flightlog"] .f-list .f-dot'), 'no warning dot on the line', 'a flight without a report carries the dot')
 
-    c.step(P, 2, 'pending.json (schema 2, handoff) published by flightlog')
-    pend = c.until_doc('cache/flightlog/pending.json', lambda d: d and len(d.get('flights') or []) == 1, what='one pending flight published', timeout=8000)
-    c.eq(pend.get('schema'), 2, 'the pending record is schema 2', what='pending.json schema')
-    fl = pend['flights'][0]
-    c.eq([fl['dep'], fl['arr'], fl['registration']], ['LFRS', 'LFML', 'F-ZBMA'], 'the pending flight is the one of the log', what='pending flight (dep, arr, registration)')
-    c.eq(fl['source'], 'website', 'its source is the website log', what='pending source')
-    c.ok(fl.get('handoff', {}).get('family') and fl['handoff'].get('values', {}).get('navigation.dep') == 'LFRS',
-         f'handoff {fl.get("handoff")}', 'a handoff with a family and the values of the flight')
+    c.step(P, 2, 'status.json (schema 1, lines ready, handoff) published by flightlog')
+    stat = c.until_doc('cache/flightlog/status.json', lambda d: d and len(d.get('lines') or []) == 1, what='one status line published', timeout=8000)
+    c.eq(stat.get('schema'), 1, 'the status record is schema 1', what='status.json schema')
+    ln = stat['lines'][0]
+    c.ok(len(ln.get('text') or []) == 4 and all('LFRS' in t and 'LFML' in t for t in ln['text']), f'text {ln.get("text")}', 'four texts naming the flight (LFRS, LFML)')
+    c.eq([ln.get('go'), ln.get('news')], ['#report?from=flightlog', True], 'the line opens the report and is news', what='status go / news')
+    c.ok((ln.get('handoff') or {}).get('to') == 'report' and ln['handoff'].get('family') and (ln['handoff'].get('values') or {}).get('aircraft.0.registration') == 'F-ZBMA',
+         f'handoff {ln.get("handoff")}', 'a handoff to report with a family and the values of the log\'s flight (F-ZBMA)')
+    c.eq(c.doc('cache/flightlog/pending.json'), None, 'pending.json is no longer written', what='pending.json')
 
     c.step(P, 3, 'gear badge green, Status row "CR à écrire"')
     c.until("document.getElementById('fDevice').hasAttribute('data-badge')", timeout=8000, what='the gear\'s badge turns green when a report is to write')
     rows = open_info(c)
-    row = next((r for r in rows if r['k'] == 'report'), None)
-    c.ok(row, f'Status rows {[r["k"] for r in rows]}', 'a row "report" (CR à écrire pour le vol du …)')
+    row = next((r for r in rows if r['k'] == 'line-flightlog'), None)       # a line of flightlog's status.json (frame § 10.0)
+    c.ok(row, f'Status rows {[r["k"] for r in rows]}', 'a row of the status lines of flightlog (CR à écrire pour le vol du …)')
     lead = norm(tx(APP, 'report', c.lang, after='info: {').split('{')[0])
     c.ok(norm(row['text']).startswith(lead) and 'LFRS' in row['text'] and 'LFML' in row['text'], f'row {row["text"]!r}', f'starts with "{lead}" and names LFRS and LFML')
 
@@ -327,13 +328,13 @@ def j3(c):
     c.skip_step('no website in the suite: the airline site address is not set (the button is disabled: '
                 f'{site["title"]!r}) and no site answers; the recording and its offline queue are not walked here')
 
-    c.step(P, 9, 'Vols shows the report, pending cleared, badge off')
+    c.step(P, 9, 'Vols shows the report, status cleared, badge off')
     c.go('flightlog')
     c.until("document.querySelectorAll('[data-module=flightlog] .f-list [data-key]').length === 1", what='the flight is still listed')
     c.until("!document.querySelector('[data-module=flightlog] .f-list .f-dot')", what='the flight no longer carries the warning dot')
     tiles = c.js("[...document.querySelectorAll('[data-module=flightlog] .f-tiles > div')].map(d => d.querySelector('b').textContent.trim())")
     c.eq(tiles[2], '0', 'no flight without a report is left', what='"sans CR" total')
-    c.until_doc('cache/flightlog/pending.json', lambda d: d is not None and (d.get('flights') or []) == [], what='an empty pending list', timeout=8000)
+    c.until_doc('cache/flightlog/status.json', lambda d: d is not None and (d.get('lines') or []) == [], what='an empty status list', timeout=8000)
     c.until("!document.getElementById('fDevice').hasAttribute('data-badge')", timeout=8000, what='the gear\'s badge goes off once nothing is left to report')
     c.eq(badge(c), 'off', 'nothing to see once the report is written', what='gear badge')
 

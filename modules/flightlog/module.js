@@ -33,7 +33,8 @@ export const meta = {
 
 const VIEW = 'cache/flightlog/view.json',
   NET = 'cache/flightlog/network.json',
-  PENDING = 'cache/flightlog/pending.json', // vols sans CR, lus par le bouton « i » du cadre
+  PENDING = 'cache/flightlog/pending.json', // ancienne liste pour le cadre (§ 10.1) : retirée, remplacée par STATUS
+  STATUS = 'cache/flightlog/status.json', // lignes d'état prêtes pour le cadre (frame/INTEGRATION.md § 10.0)
   HANDOFF = 'pilot/handoff.json';
 
 // ---------------------------------------------------------------- textes [fr, en, de, es]
@@ -207,24 +208,29 @@ async function startedFlight() {
     arr: r.arr || ''
   };
 }
-/** Publie la liste des vols sans CR (F.pending, la même fonction que le modèle) dans cache/flightlog/pending.json, lue
- *  par le cadre ; l'écriture n'a lieu que si les vols ont changé (updated_at ne compte pas). Les appels sont mis à la
- *  file : la comparaison se fait toujours avec la dernière valeur écrite. */
-function publishPending() {
+/** Publie les lignes d'état des vols sans CR (F.statusLines, sur la règle de F.pending) dans cache/flightlog/status.json,
+ *  lu et montré tel quel par le cadre (§ 10.0 : textes ×4 prêts, adresse, passage vers report) ; l'écriture n'a lieu que
+ *  si les lignes ont changé (updated_at ne compte pas). L'ancien pending.json (§ 10.1) est retiré une fois. Les appels
+ *  sont mis à la file : la comparaison se fait toujours avec la dernière valeur écrite. */
+function publishStatus() {
   const s = S,
-    flights = F.pending(s.flights || []),
-    json = JSON.stringify(flights);
+    lines = F.statusLines(s.flights || []),
+    json = JSON.stringify(lines);
   s.pubQueue = (s.pubQueue || Promise.resolve()).then(async () => {
+    if (!s.pendingGone) {
+      await s.ctx.data.remove(PENDING).catch(() => {});
+      s.pendingGone = true;
+    }
     if (s.pubJson === undefined) {
-      const had = await s.ctx.data.get(PENDING).catch(() => null);
-      s.pubJson = Array.isArray(had?.flights) ? JSON.stringify(had.flights) : null;
+      const had = await s.ctx.data.get(STATUS).catch(() => null);
+      s.pubJson = Array.isArray(had?.lines) ? JSON.stringify(had.lines) : null;
     }
     if (s.pubJson === json) return;
     s.pubJson = json;
-    await s.ctx.data.put(PENDING, {
-      schema: 2,
+    await s.ctx.data.put(STATUS, {
+      schema: 1,
       updated_at: new Date().toISOString().slice(0, 19) + 'Z',
-      flights
+      lines
     }, {
       policy: 'cache'
     });
@@ -244,12 +250,12 @@ async function load(loud = false) {
   S.flights = F.merge(...S.base, S.net || []);
   render();
   // au premier passage d'un pilote avec IVAO / VATSIM, le réseau n'est pas encore lu : la liste publiée l'attend
-  if (S.net || !(S.ctx.identity.ivao || S.ctx.identity.vatsim)) publishPending();
+  if (S.net || !(S.ctx.identity.ivao || S.ctx.identity.vatsim)) publishStatus();
   S.net = await network(loud);
   if (!S?.body) return;
   S.flights = F.merge(...S.base, S.net);
   render();
-  publishPending();
+  publishStatus();
 }
 
 // ---------------------------------------------------------------- écran

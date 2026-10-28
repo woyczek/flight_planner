@@ -3,6 +3,9 @@
 // sur le journal, qui l'emporte sur le réseau), filtre, totaux, CSV, famille proposée au CR. Repris de la V2
 // (shared/my_flights.js : keyOf, source 'cr', source 'log', collect ; apps/pilot/mes_vols.html : shown, totals,
 // exportCsv ; shared/mission_core/defa_log.js : FAMILY_RULES, familyOf). Ni page, ni stockage, ni réseau.
+import {
+  fmtDateZ
+} from '../../frame/lib/time.js';
 
 /** Texte en majuscules sans blancs de bord. */
 const up = v => String(v ?? '').trim().toUpperCase();
@@ -184,7 +187,9 @@ export function totals(list) {
  *  les vols de `flights` (fusionnés) sans CR, du plus récent au plus ancien, des `days` derniers jours (30), `max`
  *  au plus (5) ; source : website (journal du site), ivao ou vatsim ; handoff : ce que « Écrire le CR » remet à
  *  report (handoffOf), pour que le cadre le remette lui-même. today : AAAA-MM-JJ. */
-export function pending(flights, {
+/** Vols sans compte rendu de la fenêtre (days jours jusqu'à today), du plus récent, max au plus : la sélection commune
+ *  de pending et de statusLines. */
+function pendingFlights(flights, {
   today = new Date().toISOString().slice(0, 10),
   days = 30,
   max = 5
@@ -193,7 +198,18 @@ export function pending(flights, {
     days,
     noReport: true,
     today
-  }).sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`)).slice(0, max).map(f => ({
+  }).sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`)).slice(0, max);
+}
+export function pending(flights, {
+  today = new Date().toISOString().slice(0, 10),
+  days = 30,
+  max = 5
+} = {}) {
+  return pendingFlights(flights, {
+    today,
+    days,
+    max
+  }).map(f => ({
     date: f.date,
     dep: f.dep,
     arr: f.arr,
@@ -201,6 +217,38 @@ export function pending(flights, {
     source: f.source === 'log' ? 'website' : String(f.network || f.source).toLowerCase(),
     handoff: handoffOf(f)
   }));
+}
+
+/** Texte d'une ligne d'état « CR à écrire » ×4 (fr, en, de, es), la formulation du cadre (frame/app.js). */
+const STATUS_TX = ['CR à écrire pour le vol du {date} {dep}→{arr}', 'Report to write for the flight of {date} {dep}→{arr}',
+  'Bericht zu schreiben für den Flug vom {date} {dep}→{arr}', 'Informe por escribir del vuelo del {date} {dep}→{arr}'
+];
+const LANGS = ['fr', 'en', 'de', 'es'];
+/** Lignes d'état publiées pour le cadre (cache/flightlog/status.json, frame/INTEGRATION.md § 10.0) : une par vol sans
+ *  compte rendu (pending : 30 jours, 5 au plus, du plus récent), texte prêt ×4 avec le jour dans l'écriture de la langue
+ *  et l'heure en UTC quand elle est connue (« 23/10/2026 16:30Z » ; le journal du site : son jour, sans conversion),
+ *  go #report?from=flightlog, news, et le passage vers report (handoff { to, family, values }). */
+export function statusLines(flights, opts = {}) {
+  return pendingFlights(flights, opts).map(f => {
+    const p = {
+        date: f.date,
+        dep: f.dep,
+        arr: f.arr,
+        handoff: handoffOf(f)
+      },
+      m = /^(\d{4}-\d{2}-\d{2})(?: (\d{2}:\d{2})Z)?/.exec(f.whenZ || f.date || ''),
+      day = l => m ? m[2] ? fmtDateZ(`${m[1]}T${m[2]}:00Z`, l) : fmtDateZ(`${m[1]}T00:00:00Z`, l).split(' ')[0] : p.date;
+    return {
+      text: LANGS.map((l, i) => STATUS_TX[i].replace('{date}', day(l)).replace('{dep}', p.dep || '?').replace('{arr}', p.arr ||
+        '?')),
+      go: '#report?from=flightlog',
+      news: true,
+      handoff: {
+        to: 'report',
+        ...p.handoff
+      }
+    };
+  });
 }
 
 /** Minutes → « 1:35 » ; « — » sans valeur. */

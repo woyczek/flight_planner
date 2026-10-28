@@ -187,6 +187,37 @@
     noReport: true,
     today: TODAY
   }).length);
+  // lignes d'état publiées pour le cadre (status.json, frame/INTEGRATION § 10.0)
+  const netS = F.fromNetwork({
+      id: 'n1',
+      callsign: 'DRAGON30',
+      dep: 'LFRS',
+      arr: 'LFML',
+      start: '2026-10-22T16:30:00Z',
+      end: '2026-10-22T18:45:00Z'
+    }, 'IVAO'),
+    logS = F.fromLog({
+      date: '2026-10-21',
+      time: '09:10',
+      callsign: 'CTM1234',
+      registration: 'F-RAJA',
+      dep: 'LFOA',
+      arr: 'LFBO'
+    }),
+    st = F.statusLines([netS, logS], {
+      today: TODAY
+    });
+  same('status: one line per flight without a report, newest first', st.length, 2);
+  same('status: four languages, network time in UTC', st[0].text, ['CR à écrire pour le vol du 22/10/2026 16:30Z LFRS→LFML',
+    'Report to write for the flight of 22/10/2026 16:30Z LFRS→LFML', 'Bericht zu schreiben für den Flug vom 22.10.2026 16:30Z LFRS→LFML',
+    'Informe por escribir del vuelo del 22/10/2026 16:30Z LFRS→LFML'
+  ]);
+  same('status: the site log keeps its day, without conversion', st[1].text[0], 'CR à écrire pour le vol du 21/10/2026 LFOA→LFBO');
+  same('status: go, news, handoff to report', [st[0].go, st[0].news, st[0].handoff.to, st[0].handoff.values['navigation.dep']],
+    ['#report?from=flightlog', true, 'report', 'LFRS']);
+  same('status: nothing left, no line', F.statusLines([], {
+    today: TODAY
+  }), []);
   lines.push('', bad ? `<span class="ko">${bad} failure(s)</span>` : '<span class="ok">all pass</span>');
   document.getElementById('out').innerHTML = lines.join('\n');
   document.title += bad ? ' — FAIL' : ' — PASS';
