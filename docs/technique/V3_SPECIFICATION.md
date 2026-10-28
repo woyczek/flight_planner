@@ -578,3 +578,39 @@ redesigned for touch at that point.
        V3_APP_DONNEES.md`) when the user opens the project. § 10.18 is its first step on the workstation.
        **Specified** (relay of the cloud, 26 Oct): see `docs/technique/V3_APP_DONNEES.md` (project file: implications, measurements, architecture,
        questions; still no lot until the user's go).
+   20. **Runway, SID, STAR and approach chosen in the preparation; traces drawn; changed en route** (user, 28 Oct:
+       "maintenant qu'on sait lire star et sid, on choisit la rwy, la star, la sid, l'approche dans les phases de planif. on
+       affiche le tracé sid/star, avec les altitudes / vitesse. L'approche se modifie en cours de route (le départ aussi)
+       même si on a démarré le vol. trouver un mécanisme pour récupérer les infos à la demande (et les stocker !)"):
+       decided by the ergonomics session the same day, target written as rules, lots cut per owner.
+       - **One record, one writer per field.** `current_flight.json` `route.procedures` becomes `{ dep: { rwy, sid, trans },
+         arr: { rwy, star, trans, app, appTrans }, by, at }` (identifiers of the common schema of aerodb § 5 quinquies,
+         `null` for "none"); Fuel writes it; the Map reads it; an OFP prefill proposes values that the pilot keeps or changes.
+       - **Where the pilot chooses.** In Fuel's step *Vol*: after the aerodromes, two short rows "Départ : piste · SID ·
+         transition" and "Arrivée : piste · STAR · transition · approche", each a `select` filled by
+         `aerodb.procedures(icao)`; a runway filters the lists; a choice without data says "aucune procédure publiée"
+         and offers the on-demand reading (below). The quote counts the procedure's length and its constraints (climb /
+         descent steps) when known; without them, as today.
+       - **Changed en route.** Fuel's step *Départ* (and the Map's aerodrome card) keep the arrival row editable after
+         "Démarrer le vol": the approach, the STAR and the arrival runway may change at any time, the departure too while
+         the flight is not past its first fix; a change rewrites `route.procedures` with `by: 'fuel'` and a fresh
+         `updated_at`; the Map redraws, the ETA is derived again, the quote is **not** redone after the start (the remaining
+         fuel is the frame's / fuel's progress). Nothing else of the flight is editable after the start.
+       - **What the Map draws.** The chosen SID, STAR and approach as the procedure trace (today's purple line), from the
+         runway's threshold (SID) to the first en-route fix, and from the last en-route fix to the runway (STAR, approach);
+         every point of the trace with its altitude constraint ("at / min / max / between", formatted by `formatLevel`) and
+         its speed limit ("≤ 220 kt") in a close view (300 px per degree and more), in the AIP notation; transitions and the
+         missed approach dashed; the vertical profile shows the constraints as steps on the planned path (the climb and
+         descent follow them when they are tighter than the aircraft's rates). Procedures not chosen are not drawn; the
+         Layers content has no toggle for them.
+       - **On demand, and stored.** `aerodb.procedures(icao)` answers from what the device holds (published cycle,
+         `proc/manual/`, `proc-seen/`). When an aerodrome has nothing, the screen offers one gesture per aerodrome,
+         "Lire les procédures de LFXX": with a launcher, the frame runs the workstation job (`ctx.launcher.job('ead/fetch',
+         { icao })`, EAD Basic read by hand, one aerodrome per gesture, § 10.17 and `EAD_BASIC.md` § 1), the result is
+         installed under `proc/manual/` and committed to the private data repository, then synchronised to every device;
+         without a launcher, the gesture says so and proposes the OFP (SimBrief) as the per-flight source. Nothing is
+         fetched silently, nothing is read twice: an aerodrome read once is stored for everyone.
+       - **Lots** (owners): aerodb — `procedures()` serving runways and transitions, the `ead/fetch` job (D10 of the Data
+         module brought forward), `proc/manual/` code; fuel — the two rows of step Vol, the arrival row of step Départ, the
+         quote with constraints, `route.procedures` v2 (INTEGRATION § 3); maps — the traces with constraints and the
+         profile steps; help ×4 and tests per lot. The Map and Fuel lots start after the aerodb lot publishes its API.
