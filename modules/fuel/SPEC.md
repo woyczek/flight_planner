@@ -62,6 +62,18 @@ folded.
   start from the last level. A step at the same level, at 0 or beyond the arrival changes nothing; without steps the
   quote is the single-level one (bench unchanged). The screen gives the intermediate points' `alt_ft` at their
   cumulated distance (scaled to a typed distance); the level decision still varies the plan's level alone.
+- **Level decision = the quote** (23 Oct 2026): each holdable level of the decision curve (below the ceiling, not
+  extrapolated) takes the trip fuel and time of `M.quote` at that level (same climb law, cruise legs and descent),
+  with the forecast wind at that level when the real weather is on (`aloftMeanAt`), else the quote's wind. **One basis
+  for every point** (24 Oct 2026): every level, the plan's included, is a **flat flight at that level** (`steps: null`),
+  so that no point of the curve is computed differently from its neighbours (the plan's level once took the route's
+  steps and made a spike at exactly that level, with false optimums beside it). **The plan's real quote is its own
+  marker**: at the plan's level, the quote with the route's steps and the plan's wind, drawn as a diamond on each curve
+  (smaller when the route has no steps, where it coincides with the curve) and written in the legend ("Plan: FL160,
+  856 kg, 0:54"); `FuelLevels.requoteSeries(D, quoteAt, { h, quote })` (pure) rewrites the series and gives
+  `D.plan = { h, fuel, minutes, stepped }`. Least fuel and fastest are the minima of the flat series (the "Use FLxxx"
+  buttons follow them); the result bar keeps the plan's real quote. Beyond the ceiling the model's extension stays
+  (dotted).
 - **Totals**: trip = climb + cruise + steps + descent; contingency = trip × %; block = taxi + trip + contingency +
   reserve.
 - **Time and TOD**: time = climb + cruise + steps + descent minutes; TOD = last level ÷ gradient + buffer (NM).
@@ -86,21 +98,21 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
 
 ## 10. Aerodrome weather (`modules/fuel/weather.js`)
 
-- **Source**: aviationweather.gov, `api/data/metar` and `api/data/taf` (`ids=<ICAO,…>&format=json`), through
-  `ctx.net` (relayed by the launcher: the service has no CORS), 40 stations per call. **Without a launcher** (lot E,
-  23 Oct 2026; the frame answers 503 `x-sog-unreachable` for aviationweather.gov at once): the METAR from
-  `metar.vatsim.net/metar.php?id=A,B` (raw text, decoded by `frame/lib/metar.js` into the same JSON form), the TAF
-  from `avwx.rest/api/taf/<ICAO>` (decoded JSON, converted by `fromAvwxTaf`; the frame adds the device's key) — only
-  when a flight date is given (the TAF is only read then), for the departure, arrival, alternate and the stations
-  that have a METAR, twelve at most, stopping at the first 503 (no key: "TAF unavailable without a launcher or a
-  weather key", the METAR answers); the card says the source. Offline: the kept values, as before; the stations are the departure,
+- **Source** (28 Oct 2026): the frame's weather layer, `ctx.weather.metar(ids)` and `ctx.weather.taf(ids)` (frame
+  INTEGRATION § 14): aviationweather.gov relayed by the launcher, without one the METAR from metar.vatsim.net and the
+  TAF from avwx.rest with the device's key; kept 30 min per aerodrome by the layer. Fuel calls no weather host itself.
+  The TAF only when a flight date is given (the TAF is only read then), for the departure, arrival, alternate and the
+  stations that have a METAR (no key: "TAF unavailable without a launcher or a weather key", the METAR answers); the
+  card says the source. Offline: the layer's reserve (`cacheOnly`), with the time of its newest METAR; the stations are the departure,
   the aerodromes of the route's corridor, the arrival and the alternate. **Corridor** (23 Oct 2026, replaces the
-  "intermediate aerodrome" field): aerodb `aerodromes({ bbox })` of each leg's box widened by the radius of the quote
+  "intermediate aerodrome" field): aerodb `aerodromes({ bbox, lite: true })` (aerodb's light index of
+  the aerodromes — code, name, position, elevation, runway axis — when the base was published with it, else the full
+  file) of each leg's box widened by the radius of the quote
   settings (`wxRadiusNm`, default 10 NM, 0 to 50), kept within that radius of the route (projection on the nearest leg,
   local plane), departure and arrival excluded, sorted by distance along the route; recomputed when the points or the
-  radius change. A corridor aerodrome without METAR or TAF is ignored. The last answers are kept on the device (`cache/fuel/weather.json`) and shown,
-  with their time, when the network cannot be reached.
-- **Which message**: with a flight date (optional, device time) inside the TAF's validity, the TAF: its base group
+  radius change. A corridor aerodrome without METAR or TAF is ignored. Fuel keeps no copy of its own (the former
+  `cache/fuel/weather.json` is removed from the device once).
+- **Which message**: with a flight date (optional; `current_flight.planned_at`, entered in the device's time) inside the TAF's validity, the TAF: its base group
   (last group without change, BECMG or FM covering the time) and its temporary groups (TEMPO, PROB) covering it;
   otherwise the METAR.
 - **Shown per aerodrome**: flight category (LIFR: ceiling < 500 ft or visibility < 1 SM; IFR: < 1,000 ft or < 3 SM;
@@ -118,14 +130,16 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
 
 ## 11. Winds and temperatures aloft (`modules/fuel/winds.js`, lot F)
 
-- **Source**: Open-Meteo `api.open-meteo.com/v1/forecast` through `ctx.net` (relayed by the launcher or direct, no
-  key; frame 7eb6aa2c0): temperature, wind speed (kt) and direction at 14 pressure levels (1000 to 200 hPa), hourly,
-  two days, for up to 24 places in one call — the route's points plus a place about every 50 NM. Model by the route's
-  middle: `meteofrance_seamless` (AROME / ARPEGE) over France and its surroundings, `icon_seamless` elsewhere in
-  Europe, `gfs_seamless` beyond; named in the source. The run time is read from Open-Meteo's model metadata
-  (`/data/<model>/static/meta.json`, `last_run_initialisation_time`) when it answers. The hour nearest to the flight
-  date (else now) is kept. Kept on the device (`cache/fuel/aloft.json`, with the places, the hour, the run and the
-  reading time); offline, the last one. Read with the aerodromes' weather, again when the route's points or the
+- **Source** (28 Oct 2026): the frame's weather layer, `ctx.weather.aloft(samples, when)` (frame INTEGRATION § 14):
+  temperature, wind speed (kt) and direction at 14 pressure levels (1000 to 200 hPa) at up to 24 places — the route's
+  points plus a place about every 50 NM (`winds.js` `samples`) — at the hour nearest to the flight date (else now); the
+  model by the route's middle (`ctx.weather.modelFor`: `meteofrance_seamless` AROME / ARPEGE over France and its
+  surroundings, `icon_seamless` elsewhere in Europe, `gfs_seamless` beyond; `winds.js` `modelFor` delegates to it),
+  with its run time. The layer answers from its reserve (`cache/weather/`, cells of 0.1° at least, read at the cell's
+  centre) and asks Open-Meteo only for what is missing; its calls are counted for the device ("Weather: n calls
+  today" in the Status block). Offline: its reserve only (`cacheOnly`). The flight date is `current_flight.planned_at`,
+  the same value as the aerodromes' weather and the Map's ETA read. Fuel keeps no copy of its own (the former
+  `cache/fuel/aloft.json` is removed once). Read with the aerodromes' weather, again when the route's points or the
   flight hour change.
 - **At a level**: a flight level is a pressure (ISA): wind (as a vector) and temperature are interpolated in
   ln(pressure) between the two levels around it; ISA deviation = temperature − ISA temperature at that pressure
@@ -141,8 +155,12 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   reading time; step 4, under the density altitude chart, the real atmosphere at departure — temperature by pressure
   altitude against ISA (dashed), inversion layers shaded and listed, the planned level marked, and at that level the
   temperature, ISA deviation and density altitude.
-- Bench `test/winds.html` (29 checks: pressure altitudes, interpolation, samples, steps, mean wind, inversions,
-  Open-Meteo answer with one or several places, model choice, URL).
+- **Across the date line** (24 Oct 2026): `samples` interpolates the longitudes of the places on the unrolled route
+  (`frame/lib/geo.js`: UHMA 177.7° E → PAOM 165.4° W goes 177.7° → 194.6°, not back round the world) and returns the places
+  wrapped in [-180, 180[ (a longitude already inside is returned as written), so the forecast is never asked outside it
+  and a route that stays on one side is unchanged.
+- Bench `test/winds.html` (35 checks: pressure altitudes, interpolation, samples, samples across the date line, steps, mean
+  wind, inversions, the profiles' shape fuel reads (the layer's `profilesAt`), model choice).
 
 ## 12. Progress of a started flight (`modules/fuel/progress.js`, lot H)
 
@@ -158,9 +176,12 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   wind), durations scaled so the cruise keeps the quote's time —, the quote's descent; fuel burnt along it by phase.
   From it: the estimated time over each point, the planned position at a given time (leg, NM from departure), the
   distance and planned fuel remaining.
-- **Current flight**: `progress = { at, plannedPos { lat, lon, legIndex, nmFromDep }, eta [{ id, at }],
-  fuelRemainingKg, remainingNm, phase }`, written when it changes — every minute during the flight, at every quote
-  change — until the report or the cancellation; `progress.actual` (the real position) is written by the frame or maps and kept.
+- **Current flight**: `progress = { at, fuelRemainingKg, remainingNm, phase }` for a started flight, written when it
+  changes — every minute during the flight, at every quote change — until the report or the cancellation;
+  `progress.actual` (the real position) is written by the frame and kept. The ETAs and the planned position are not
+  written (28 Oct 2026): readers derive them from `quote.legs` (`frame/lib/current_flight.js` `etaOf`,
+  `plannedPositionAt`); a flight that is only dated has no `progress`. The screen keeps its own computation for the
+  card below.
 - **Shown**: the Departure step's "Planned progress" card: the line of the moment and the points with their ETA, the
   next point highlighted.
 - Bench `test/progress.html` (14 checks).
@@ -221,13 +242,21 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
 
 An ES module for the frame (`meta`, `mount(el, ctx)`, `unmount()`); it loads the pure files above once, with `import()`.
 Styles are scoped to `[data-module="fuel"]` and built on the frame's tokens and classes; no global sheet. Two screens
-inside the module, switched by two buttons at the top, the last one kept on the device (`cache/fuel/ui.json`).
+inside the module, switched by two buttons at the top: **Quote** (fr "Devis", de "Berechnung", es "Cálculo"; the Plan
+screen below; renamed on 24 Oct 2026, it was "Préparer / Plan / Planen / Preparar", a name the frame's bottom tab now
+carries) and **Sheets**. **The module always opens on the Plan screen** (24 Oct 2026): one comes
+here to change the flight plan or the fuel quote, rarely to edit an aircraft; the Sheets screen opens only by its
+button or by the address `#fuel?view=sheets` (`ctx.query.view`), and the last screen is neither kept nor read at
+mount. Inside a mount, the two buttons switch as before.
 
 - **Plan in five steps** (lot G, 23 Oct 2026, the pilot's own order: aerodromes, aircraft, level → route → weather →
   density altitude and quote → correct the route → start): a steps bar as in Report — **1 Flight** (departure,
-  arrival, alternate, flight date with its quick buttons "+30" and "Now", the one-line aircraft, level), **2 Route** (the route text, the read distance, the
+  arrival, alternate, **flight date** (24 Oct 2026: the field "Flight date" writes `current_flight.planned_at`, the one value of
+  the flight's date, with its quick buttons "+30" and "Now"; hint: the quote's weather and the Map are read at this date), the one-line aircraft — no default sheet: a flight without
+  aircraft takes the last one chosen on the device, `cache/fuel/last_aircraft.json`, shown first in the empty search
+  — level), **2 Route** (the route text, the read distance, the
   folded points, "Last SimBrief OFP", "Show the map"), **3 Weather** (wind, ISA and its METAR proposal, real weather,
-  the aerodromes of the corridor), **4 Quote** (density altitude, level decision with the climb goal, "Open in",
+  the aerodromes of the corridor), **4 Result** (fr "Résultat", de "Ergebnis", es "Resultado"; it was "Quote", the name of the first tab: renamed on 24 Oct 2026; density altitude, level decision with the climb goal, "Open in",
   details, climb instructions, settings), **5 Departure** (a one-page summary: aircraft, normalised route, level and
   steps, wind and source, block fuel; "Start the flight" writes `current_flight.started = { at, by: 'fuel' }` and
   opens the Map). One step at a time when the module is narrow (phone, dual-view pane: `@container` under 900 px; the
@@ -235,7 +264,8 @@ inside the module, switched by two buttons at the top, the last one kept on the 
   it is wide, without bar or "Next". The sticky result stays under every step; a ✓ marks a filled step (aerodromes,
   aircraft and level; route resolved or typed; weather read or wind given; fuel quoted; flight started). The step is
   kept in `cache/fuel/ui.json`. Everything recomputes live (route → weather → quote, no "redo" button). "Show the
-  map": `#fuel?with=maps` from 980 px (the frame's dual view), else `#maps?from=fuel`. Arriving with
+  map": `#fuel?with=maps` from 980 px (the frame's dual view), else `#maps?from=fuel`; hidden while the map is beside fuel
+  (`ctx.layout.with === 'maps'`, followed through the frame's `frame-layout` event). Arriving with
   `ctx.query.focus === 'route'` (the Map's "Edit the route", `#fuel?from=maps&focus=route`) opens step 2 with the
   route field focused. The blocks below keep their former description:
   1. **Aircraft** (since 23 Oct 2026, aerodb's registry): one line — the chosen aircraft (name, registration,
@@ -263,6 +293,18 @@ inside the module, switched by two buttons at the top, the last one kept on the 
      departure or the arrival (an OFP repeats its level at every point). "Last SimBrief OFP": through `ctx.net`, the SimBrief identifier
      of the identity (never typed here), the OFP kept on the device only, its route, level, average wind, ISA
      deviation and aircraft taken into the current flight.
+     **"Auto" button** (25 Oct 2026, next to the route field, 44 px, in the field's row): for each pair of consecutive named
+     points with nothing between them in the text (no airway, no procedure), the shortest path over the published base's
+     airways (`AeroDB.airways`, V2's rules ported in `frame/lib/routing.js`: a leg open at the level when floor − 100 ≤
+     level ≤ ceiling + 100 ft, direct entry and exit within 60 NM, no detour over 40 %, no leg of 40 NM or less) at the
+     planned level (the flight's, else the quote's, else 6,500 ft, said in a notification; a point's own level holds from that
+     point on). It writes `route.text` ("LFRS TSA01 UT460 TSA05 LFML": the airway's middle points are not written) and
+     `route.points` (every node, the middle ones with `awy: true`, the points reached by an airway with `via`), reads the route
+     again (`resolveRoute`) and redoes the quote; a notification gives "n airways written, d NM" or "no useful airway between X
+     and Y" (four languages), "no base" when aerodb has nothing to read. An airway's ends that aerodb does not know take the
+     position of the segment (they are in `route.points`, which the reading takes as a fallback): no "unknown points".
+     **Limits** (source: V2's `mission_routing.js`): both directions assumed open (the base carries no one-way), no fine level
+     restriction, no SID / STAR, no crossing of the date line; written once, never recomputed by a later change of level.
   3. **Level and wind**: level (FL), climb goal (§ 7), wind direction and speed (speed only or nothing: range), ISA
      deviation; IAS and rate for the manual goal. Once the weather is read, a line proposes the ISA deviation of the
      departure METAR: temperature − (15 − 1.98 × aerodrome elevation in thousands of ft), the elevation from aerodb
@@ -278,10 +320,21 @@ inside the module, switched by two buttons at the top, the last one kept on the 
      lines under it give the departure's pressure and density altitudes and the effective ceiling.
   4. **Level decision**: a drawing of the whole trip's fuel (solid) and time (dashed) by level, extrapolated beyond
      the ceiling (dotted), the levels that cannot be flown shaded, the ceiling, the least fuel (dot) and the fastest
-     (square), the plan's level (vertical line). A tap on the drawing sets the level (rounded to the series' step,
-     within the flyable levels); two buttons take the least-fuel and the fastest levels.
+     (square), the plan's level (vertical line) and the plan's real quote (diamond on each curve, with its legend
+     line). The fuel axis and its unit label are in the **displayed** fuel unit (kg or lb), not the sheet's. A tap on
+     the drawing sets the level (rounded to the series' step, within the flyable levels); two buttons take the
+     least-fuel and the fastest levels.
   5. **Result**, sticky at the bottom: block fuel (a range when the wind is unknown), trip, time, top of descent,
-     approximate source and MTOW warnings.
+     approximate source and MTOW warnings. **Phone rule: compact, about 100 px at 390 px** (it was 190): a context line
+     on **one line** (`white-space: nowrap`, ellipsis, the full text in `title`) — short form "Block · FL060→090→110→070 ·
+     wind ARPEGE FL060" (levels joined by → without spaces, "FL" written once, the wind source shortened, "unknown
+     wind" for a range), full form "Block fuel · FL060 → FL090 → FL110 → FL070 · wind: ARPEGE forecast FL060"; the big
+     figure at `--sog-h2` under 760 px (container query of the module, `--sog-h1` above); then **three tiles on one
+     row, label and value each on one line**: "Trip" (fr "Étape", de "Reise", es "Etapa"), "Time" and **"TOD" in the four
+     languages**, labels at `--sog-size-xs`, values at `--sog-h3`, the value of TOD without "before" ("28 NM"), the full
+     name in each tile's `title` ("Top of descent: 28 NM before"). Values go through `fuelTxt`, `distTxt`, `hmm`. The
+     quote details keep the full words. Module-scoped rules on `.f-bar` and `.f-tiles` (the frame's primitives are
+     unchanged).
   - Folded, under the result: **Open in ▾**, the V2 links (`frame/lib/external_links.js`, copied from
     `shared/external_links.js`): SimBrief dispatch prefilled (departure, arrival, type, route points, registration,
     callsign, alternate, level), SkyVector (`?fpl=` with the speed / level group, departure, points, arrival), Navigraph

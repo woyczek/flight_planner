@@ -1,6 +1,6 @@
 // V3 fuel — module Carburant et niveau de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ;
 // modules/fuel/SPEC.md, INTEGRATION.md). Deux écrans dans le module :
-//   · Préparer : cinq blocs visibles sur téléphone (appareil, route, niveau et vent, décision du niveau, résultat
+//   · Devis : cinq blocs visibles sur téléphone (appareil, route, niveau et vent, décision du niveau, résultat
 //     collant en bas), le reste replié (détail du devis, consignes de montée, réglages du devis) ;
 //   · Fiches : les fiches de performances (import CSV / JSON / .lnmperf / OFP, réponse ChatGPT collée, compléments
 //     EUROCONTROL, autre fiche du type, édition, export .lnmperf et JSON), chaque changement montré champ par champ et
@@ -10,10 +10,10 @@
 // module ([data-module="fuel"]) sur les jetons --sog-… du cadre ; aucune feuille globale.
 import * as XL from '../../frame/lib/external_links.js';
 import * as WX from './weather.js';
-import * as MT from '../../frame/lib/metar.js';
 import * as WD from './winds.js';
 import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
+import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
 import {
   svg
@@ -24,9 +24,15 @@ import {
 import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
+import {
+  fmtZ,
+  fmtZLocal,
+  fmtDateZ
+} from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »), l'heure locale seulement au départ et à l'arrivée
 
 export const meta = {
   id: 'fuel',
+  title: ['Carburant et niveau', 'Fuel and level', 'Kraftstoff und Flugfläche', 'Combustible y nivel'], // en-tête du téléphone (règle 16)
   apps: ['pilot'],
   level: 1,
   reads: ['pilot/', 'cache/fuel/'],
@@ -40,16 +46,18 @@ export const meta = {
   }],
   // gardés hors ligne dès la première visite (service worker du cadre)
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js',
-    '../../frame/lib/metar.js',
-    '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js',
-    '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js'
+    '../../frame/lib/weather_store.js',
+    '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/routing.js',
+    '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
+    '../../frame/lib/time.js', '../../frame/lib/geo.js'
   ]
 };
 
 const OFP_PATH = 'cache/fuel/last_ofp.json',
-  WX_PATH = 'cache/fuel/weather.json',
-  ALOFT_PATH = 'cache/fuel/aloft.json', // prévision en altitude (Open-Meteo) : profils aux lieux de la route
+  // anciennes réserves de fuel (avant la couche météo du cadre, ctx.weather) : retirées une fois de l'appareil
+  OLD_WEATHER = ['cache/fuel/weather.json', 'cache/fuel/aloft.json'],
   UI_PATH = 'cache/fuel/ui.json',
+  LAST_AC_PATH = 'cache/fuel/last_aircraft.json', // dernier appareil choisi sur cet appareil : proposé, repris d'office
   LIBS = [
     ['FlightPerfModel', 'performance_model.js'],
     ['FuelModel', 'model.js'],
@@ -59,7 +67,7 @@ const OFP_PATH = 'cache/fuel/last_ofp.json',
 
 // ---------------------------------------------------------------- textes [fr, en, de, es]
 const TX = {
-  plan: ['Préparer', 'Plan', 'Planen', 'Preparar'],
+  plan: ['Devis', 'Quote', 'Berechnung', 'Cálculo'],
   sheets: ['Fiches', 'Sheets', 'Datenblätter', 'Fichas'],
   aircraft: ['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
   acSearch: ['Fiche, immatriculation, indicatif ou type', 'Sheet, registration, callsign or type',
@@ -67,12 +75,17 @@ const TX = {
     'Ficha, matrícula, indicativo o tipo'
   ],
   acChange: ['Changer d’appareil', 'Change aircraft', 'Luftfahrzeug wechseln', 'Cambiar de aeronave'],
+  loadingRefs: ['Chargement des appareils et des fiches…', 'Loading aircraft and sheets…',
+    'Luftfahrzeuge und Datenblätter werden geladen…', 'Cargando aeronaves y fichas…'
+  ],
+  loadingFlight: ['Chargement du vol…', 'Loading the flight…', 'Flug wird geladen…', 'Cargando el vuelo…'],
   acNone: ['Aucun appareil : cherchez-le.', 'No aircraft: search for it.', 'Kein Luftfahrzeug: suchen.', 'Ninguna aeronave: búsquela.'],
   acNoRegistry: ['Base des aéronefs indisponible (aerodb).', 'Aircraft base unavailable (aerodb).',
     'Luftfahrzeugbasis nicht verfügbar (aerodb).',
     'Base de aeronaves no disponible (aerodb).'
   ],
   origins: {
+    last: ['dernier choisi', 'last chosen', 'zuletzt gewählt', 'último elegido'],
     sheet: ['ma fiche', 'my sheet', 'mein Datenblatt', 'mi ficha'],
     fleet: ['flotte de la compagnie', 'airline fleet', 'Flotte der Fluggesellschaft', 'flota de la aerolínea'],
     reference: ['appareil connu (journal)', 'known aircraft (log)', 'bekanntes Luftfahrzeug (Flugbuch)', 'aeronave conocida (diario)'],
@@ -126,12 +139,33 @@ const TX = {
     'Entfernung und Kurs: die Route lässt sich noch nicht auflösen.', 'Distancia y rumbo: la ruta aún no se resuelve.'
   ],
   rmanual: ['Saisir à la main', 'Type them by hand', 'Von Hand eingeben', 'Introducir a mano'],
+  rauto: ['Auto', 'Auto', 'Auto', 'Auto'],
+  rautoHint: ['Inscrire les voies aériennes entre les points au niveau prévu',
+    'Write the airways between the points at the planned level',
+    'Luftstraßen zwischen den Punkten auf der geplanten Flugfläche eintragen',
+    'Inscribir las aerovías entre los puntos al nivel previsto'
+  ],
+  autoOne: ['1 voie inscrite, {d}', '1 airway written, {d}', '1 Luftstraße eingetragen, {d}', '1 aerovía inscrita, {d}'],
+  autoMany: ['{n} voies inscrites, {d}', '{n} airways written, {d}', '{n} Luftstraßen eingetragen, {d}', '{n} aerovías inscritas, {d}'],
+  autoNone: ['Aucune voie utile entre {a} et {b}{more}', 'No useful airway between {a} and {b}{more}',
+    'Keine nutzbare Luftstraße zwischen {a} und {b}{more}', 'Ninguna aerovía útil entre {a} y {b}{more}'
+  ],
+  autoNoLeg: ['Aucun tronçon sans voie à compléter.', 'No leg without an airway to fill in.',
+    'Kein Abschnitt ohne Luftstraße zu ergänzen.',
+    'Ningún tramo sin aerovía por completar.'
+  ],
+  autoNoBase: ['Base aéronautique indisponible : voies non lues.', 'Aeronautical base unavailable: airways not read.',
+    'Luftfahrtdatenbank nicht verfügbar: Luftstraßen nicht gelesen.', 'Base aeronáutica no disponible: aerovías sin leer.'
+  ],
+  autoNoLevel: ['Pas de niveau prévu : voies cherchées à {l}.', 'No planned level: airways looked up at {l}.',
+    'Keine geplante Flugfläche: Luftstraßen auf {l} gesucht.', 'Sin nivel previsto: aerovías buscadas a {l}.'
+  ],
   ptsN: ['Points ({n})', 'Points ({n})', 'Punkte ({n})', 'Puntos ({n})'],
   stepNames: [
     ['Vol', 'Flight', 'Flug', 'Vuelo'],
     ['Route', 'Route', 'Route', 'Ruta'],
     ['Météo', 'Weather', 'Wetter', 'Meteorología'],
-    ['Devis', 'Quote', 'Kalkulation', 'Cálculo'],
+    ['Résultat', 'Result', 'Ergebnis', 'Resultado'],
     ['Départ', 'Departure', 'Abflug', 'Salida']
   ],
   stepsNav: ['Étapes de la préparation', 'Preparation steps', 'Schritte der Vorbereitung', 'Pasos de la preparación'],
@@ -146,6 +180,9 @@ const TX = {
   startDiff: ['À l’heure réelle : {l}.', 'For now: {l}.', 'Für jetzt: {l}.', 'Para ahora: {l}.'],
   startSame: ['À l’heure réelle : rien ne change.', 'For now: nothing changes.', 'Für jetzt: keine Änderung.',
     'Para ahora: nada cambia.'
+  ],
+  startSameEta: ['À l’heure réelle : rien ne change ; arrivée prévue {t}.', 'For now: nothing changes; planned arrival {t}.',
+    'Für jetzt: keine Änderung; geplante Ankunft {t}.', 'Para ahora: nada cambia; llegada prevista {t}.'
   ],
   startOffline: ['Hors ligne : départ avec le dernier devis.', 'Offline: started with the last quote.',
     'Offline: Start mit der letzten Kalkulation.',
@@ -226,6 +263,12 @@ const TX = {
     'Menos combustible: {fl} ({f})'
   ],
   fastest: ['Plus rapide : {fl} ({t})', 'Fastest: {fl} ({t})', 'Am schnellsten: {fl} ({t})', 'Más rápido: {fl} ({t})'],
+  planPt: ['Plan : {fl}, {f}, {t}', 'Plan: {fl}, {f}, {t}', 'Plan: {fl}, {f}, {t}', 'Plan: {fl}, {f}, {t}'],
+  planPtHint: ['Devis réel du plan (paliers de la route, vent du plan) ; les courbes sont un vol à plat à chaque niveau.',
+    'The plan\'s real quote (route steps, the plan\'s wind); the curves are a flat flight at each level.',
+    'Echter Plan-Wert (Streckenstufen, Planwind); die Kurven zeigen einen Horizontalflug auf jeder Flugfläche.',
+    'Presupuesto real del plan (escalones de la ruta, viento del plan); las curvas son un vuelo a nivel constante en cada nivel.'
+  ],
   use: ['Prendre {fl}', 'Use {fl}', '{fl} nehmen', 'Usar {fl}'],
   gap: ['Au-dessus de {fl} : {r}.', 'Above {fl}: {r}.', 'Über {fl}: {r}.', 'Por encima de {fl}: {r}.'],
   reasons: {
@@ -248,6 +291,11 @@ const TX = {
   time: ['Temps', 'Time', 'Zeit', 'Tiempo'],
   tod: ['Début de descente', 'Top of descent', 'Sinkflugbeginn', 'Inicio de descenso'],
   todVal: ['{d} avant', '{d} before', '{d} vorher', '{d} antes'],
+  // barre de résultat compacte (téléphone) : libellés courts, le texte entier va dans l'infobulle
+  blockS: ['Bloc', 'Block', 'Block', 'Bloque'],
+  tripS: ['Étape', 'Trip', 'Reise', 'Etapa'],
+  todS: ['TOD', 'TOD', 'TOD', 'TOD'],
+  windRangeS: ['vent inconnu', 'unknown wind', 'Wind unbekannt', 'viento desconocido'],
   noFuel: ['Aucun débit connu : pas de devis.', 'No fuel flow known: no quote.', 'Kein Verbrauch bekannt: keine Berechnung.',
     'Ningún consumo conocido: sin cálculo.'
   ],
@@ -273,8 +321,13 @@ const TX = {
   ],
   alt: ['Alt.', 'Alt.', 'Höhe', 'Alt.'],
   thr: ['Gaz', 'Thr.', 'Gas', 'Gases'],
-  wxDate: ['Date du vol (facultatif : TAF)', 'Flight date (optional: TAF)', 'Flugdatum (optional: TAF)',
-    'Fecha del vuelo (opcional: TAF)'
+  wxDate: ['Date du vol (heure locale de l’appareil)', 'Flight date (device’s local time)', 'Flugdatum (Ortszeit des Geräts)',
+    'Fecha del vuelo (hora local del dispositivo)'
+  ],
+  wxDateHint: ['La météo du devis (TAF, vents en altitude) et la Carte sont lues à cette date ; vide : maintenant.',
+    'The quote’s weather (TAF, winds aloft) and the Map are read at this date; empty: now.',
+    'Das Wetter der Kalkulation (TAF, Höhenwinde) und die Karte werden für dieses Datum gelesen; leer: jetzt.',
+    'La meteorología del cálculo (TAF, vientos en altura) y el mapa se leen a esta fecha; vacío: ahora.'
   ],
   when30: ['Dans 30 min (30 min de plus à chaque appui)', 'In 30 min (30 min more at each press)',
     'In 30 Min. (bei jedem Tippen 30 Min. mehr)', 'Dentro de 30 min (30 min más en cada pulsación)'
@@ -305,9 +358,9 @@ const TX = {
     'Abflug und Ankunft als ICAO-Codes, dann „Flugplatzwetter lesen“.',
     'Salida y llegada en códigos OACI, luego «Leer la meteorología de los aeródromos».'
   ],
-  wxCached: ['Hors réseau : dernières valeurs lues à {t}.', 'No network: last values read at {t}.',
-    'Kein Netz: zuletzt gelesene Werte um {t}.',
-    'Sin red: últimos valores leídos a las {t}.'
+  wxCached: ['Hors réseau : dernières valeurs lues le {t}.', 'No network: last values read on {t}.',
+    'Kein Netz: zuletzt gelesene Werte am {t}.',
+    'Sin red: últimos valores leídos el {t}.'
   ],
   aloftTitle: ['Vents et températures en altitude', 'Winds and temperatures aloft', 'Höhenwinde und -temperaturen',
     'Vientos y temperaturas en altura'
@@ -317,10 +370,10 @@ const TX = {
     'Noch keine Höhenvorhersage: „Flugplatzwetter lesen“ liest sie mit, sobald Route und Flugfläche angegeben sind.',
     'Aún no hay previsión en altura: «Leer la meteorología» también la lee, una vez dadas la ruta y el nivel.'
   ],
-  aloftAt: ['Prévision {m} pour {t} UTC{run}, lue à {r}.', '{m} forecast for {t} UTC{run}, read at {r}.',
-    '{m}-Vorhersage für {t} UTC{run}, gelesen um {r}.', 'Previsión {m} para las {t} UTC{run}, leída a las {r}.'
+  aloftAt: ['Prévision {m} pour {t}{run}, lue le {r}.', '{m} forecast for {t}{run}, read on {r}.',
+    '{m}-Vorhersage für {t}{run}, gelesen am {r}.', 'Previsión {m} para las {t}{run}, leída el {r}.'
   ],
-  aloftRun: [' (run de {r} UTC)', ' ({r} UTC run)', ' (Lauf {r} UTC)', ' (pasada de las {r} UTC)'],
+  aloftRun: [' (run de {r})', ' ({r} run)', ' (Lauf {r})', ' (pasada de las {r})'],
   aloftCols: [
     ['Point', 'Point', 'Punkt', 'Punto'],
     ['Niveau', 'Level', 'Fläche', 'Nivel'],
@@ -411,6 +464,10 @@ const TX = {
     aloft: ['vent : prévision {m} {l}', 'wind: {m} forecast {l}', 'Wind: {m}-Vorhersage {l}', 'viento: previsión {m} {l}'],
     typed: ['vent saisi', 'wind typed', 'Wind eingegeben', 'viento introducido']
   },
+  windByS: { // la même source, en court (ligne de contexte du résultat) ; « saisi » ne change pas
+    weather: ['vent {l}', 'wind {l}', 'Wind {l}', 'viento {l}'],
+    aloft: ['vent {m} {l}', 'wind {m} {l}', 'Wind {m} {l}', 'viento {m} {l}']
+  },
   wxReading: ['Lecture…', 'Reading…', 'Wird gelesen…', 'Leyendo…'],
   diverted: [' — déroutement', ' — diverted', ' — Ausweichlandung', ' — desviado'],
   cancelStart: ['Annuler le départ', 'Cancel the start', 'Start abbrechen', 'Anular la salida'],
@@ -428,18 +485,19 @@ const TX = {
     'Jetzt geplant: {d} nach dem Abflug, zwischen {a} und {b} · noch {r} · geplanter Restkraftstoff {f}.',
     'Previsto ahora: {d} desde la salida, entre {a} y {b} · faltan {r} · combustible restante previsto {f}.'
   ],
-  progTaxi: ['Prévu maintenant : roulage au départ · carburant restant prévu {f}.',
-    'Planned now: taxiing at departure · planned fuel remaining {f}.',
-    'Jetzt geplant: Rollen am Abflug · geplanter Restkraftstoff {f}.',
-    'Previsto ahora: rodaje en la salida · combustible restante previsto {f}.'
+  progTaxi: ['Prévu maintenant : roulage au départ jusqu’à {t} · carburant restant prévu {f}.',
+    'Planned now: taxiing at departure until {t} · planned fuel remaining {f}.',
+    'Jetzt geplant: Rollen am Abflug bis {t} · geplanter Restkraftstoff {f}.',
+    'Previsto ahora: rodaje en la salida hasta las {t} · combustible restante previsto {f}.'
   ],
   progArrived: ['Arrivée prévue atteinte · carburant restant prévu {f}.', 'Planned arrival reached · planned fuel remaining {f}.',
     'Geplante Ankunft erreicht · geplanter Restkraftstoff {f}.', 'Llegada prevista alcanzada · combustible restante previsto {f}.'
   ],
-  progHint: ['Calculée depuis l’heure de départ et le devis (vent compris) ; la position réelle viendra de la carte.',
-    'Worked out from the start time and the quote (wind included); the real position will come from the map.',
-    'Aus Startzeit und Kalkulation berechnet (Wind inbegriffen); die echte Position kommt von der Karte.',
-    'Calculado desde la hora de salida y el cálculo (viento incluido); la posición real vendrá del mapa.'
+  progHint: [
+    'Calculée depuis l’heure de départ et le devis (vent compris) ; la position réelle (simulateur de ce poste, GPS ou réseau) se voit sur la carte.',
+    'Worked out from the start time and the quote (wind included); the real position (this computer’s simulator, GPS or network) shows on the map.',
+    'Aus Startzeit und Kalkulation berechnet (Wind inbegriffen); die echte Position (Simulator dieses Rechners, GPS oder Netz) erscheint auf der Karte.',
+    'Calculado desde la hora de salida y el cálculo (viento incluido); la posición real (simulador de este equipo, GPS o red) se ve en el mapa.'
   ],
   da: ['Altitude-densité', 'Density altitude', 'Dichtehöhe', 'Altitud de densidad'],
   daAxisX: ['écart ISA (°C)', 'ISA deviation (°C)', 'ISA-Abweichung (°C)', 'desviación ISA (°C)'],
@@ -572,8 +630,8 @@ const TX = {
     'Pegue una ficha (JSON, CSV de rendimiento, .lnmperf) o una respuesta de ChatGPT:'
   ],
   pasted: ['texte collé', 'pasted text', 'eingefügter Text', 'texto pegado'],
-  noOfp: ['Aucun OFP sur cet appareil : reprenez-le dans Préparer.', 'No OFP on this device: load it in Plan.',
-    'Kein OFP auf diesem Gerät: unter Planen laden.', 'Ningún OFP en este dispositivo: cárguelo en Preparar.'
+  noOfp: ['Aucun OFP sur cet appareil : reprenez-le dans l\'onglet Devis.', 'No OFP on this device: load it in the Quote tab.',
+    'Kein OFP auf diesem Gerät: im Reiter Berechnung laden.', 'Ningún OFP en este dispositivo: cárguelo en la pestaña Cálculo.'
   ],
   calibrated: ['calibrée sur le navlog', 'calibrated on the navlog', 'am Navlog kalibriert', 'calibrada con el navlog']
 };
@@ -670,8 +728,9 @@ const plain = p => JSON.parse(JSON.stringify(p, (k, v) => k.startsWith('_') ? un
 /** Charge le calcul pur (scripts du dossier du module, une fois par page), tous au montage : le service worker du
  *  cadre garde le point d'entrée du module dès la première visite et les fichiers qu'il importe au premier passage. */
 async function loadLibs() {
-  for (const [glob, file] of LIBS)
-    if (!window[glob]) await import(new URL(`${file}?v=0`, import.meta.url).href);
+  // en parallèle : les bibliothèques ne se lisent les unes les autres qu'à l'appel (window.FlightPerfModel…), pas au
+  // chargement
+  await Promise.all(LIBS.filter(([glob]) => !window[glob]).map(([, file]) => import(new URL(`${file}?v=0`, import.meta.url).href)));
   // première visite : la page tourne avant que le service worker la contrôle, ces fichiers lui ont échappé ; relus une
   // fois quand il prend la main, pour que Carburant soit complet hors ligne
   const sw = navigator.serviceWorker;
@@ -694,10 +753,12 @@ function fieldLabel(path, group = false) {
 }
 
 // ---------------------------------------------------------------- unités et formats
+/** Unité de carburant affichée (réglage « Carburant »), à défaut celle de la fiche. */
+const fuelUnitOf = unit => S.settings.displayUnit || unit || 'kg';
 /** Carburant v (unité de la fiche) dans l'unité affichée, arrondi et formaté. */
 function fuelTxt(v, unit) {
   if (!Number.isFinite(v)) return '—';
-  const to = S.settings.displayUnit || unit || 'kg',
+  const to = fuelUnitOf(unit),
     x = unit && to !== unit ? window.FuelModel.convertFuel(v, unit, to) : v;
   return `${Math.round(x).toLocaleString(S.ctx.lang())} ${to}`;
 }
@@ -812,15 +873,26 @@ function bearing(a, b) {
  *  (4436N00612E, 44N006E) et « NOM lat lon » lus comme points ; un identifiant cherché dans aerodb, sinon dans known
  *  (points déjà connus du vol : un point posé à la main garde sa position), sinon signalé inconnu. Départ et arrivée
  *  ajoutés aux extrémités s'ils manquent. Les niveaux ne restent que là où ils changent, jamais au départ ni à
- *  l'arrivée. Sortie : { points, unresolved, tokens } — tokens : la suite lue ({ pt: point } | { keep: mot }) pour
- *  réécrire le texte normalisé (routeText). */
-async function routePoints(text, dep, arr, known = new Map()) {
+ *  l'arrivée. Un point écrit après une voie aérienne (« NEPIX UN460 LUGEN ») porte via: « UN460 » ; les points de la
+ *  voie entre les deux, que le texte n'écrit pas, sont repris de chain (les points déjà gardés du vol : awy: true, via:
+ *  la voie) quand ils y reliaient les mêmes deux points — c'est ce que le bouton « Auto » laisse dans route.points.
+ *  Sortie : { points, unresolved, tokens } — tokens : la suite lue ({ pt: point } | { keep: mot }) pour réécrire le texte
+ *  normalisé (routeText). */
+async function routePoints(text, dep, arr, known = new Map(), chain = []) {
   const ctx = S.ctx,
     points = [],
     unresolved = [],
     tokens = [];
-  /** Position d'un identifiant : aerodb, sinon un point déjà connu du vol ; null sinon. */
+  let via = ''; // voie aérienne lue depuis le dernier point : le point suivant y arrive par elle
+  /** Position d'un identifiant : un point arrivé par une voie garde la position de son segment (aerodb ne connaît pas
+   *  toujours les extrémités des voies, ni le bon point si le nom existe ailleurs) ; sinon aerodb, puis un point déjà
+   *  connu du vol ; null sinon. */
   const find = async id => {
+    const kv = known.get(id);
+    if (kv?.via && Number.isFinite(+kv.lat) && Number.isFinite(+kv.lon)) return {
+      lat: +kv.lat,
+      lon: +kv.lon
+    };
     const c = ctx.aerodb ? await ctx.aerodb.coords(id).catch(() => null) : null;
     if (c && Number.isFinite(+c.lat)) return {
       lat: +c.lat,
@@ -842,6 +914,19 @@ async function routePoints(text, dep, arr, known = new Map()) {
         alt_ft: alt
       } : {})
     };
+    if (via && points.length) {
+      p.via = via;
+      // points de la voie entre le précédent et celui-ci, s'ils étaient déjà gardés
+      const prev = points.at(-1),
+        i = chain.findIndex(q => q && q.id === prev.id && !q.awy);
+      let j = i + 1;
+      while (i >= 0 && chain[j]?.awy && chain[j].via === via) j++;
+      if (i >= 0 && j > i + 1 && chain[j]?.id === id && chain[j].via === via)
+        for (const q of chain.slice(i + 1, j)) points.push({
+          ...q
+        });
+    }
+    via = '';
     points.push(p);
     tokens.push({
       pt: p
@@ -857,13 +942,17 @@ async function routePoints(text, dep, arr, known = new Map()) {
       if (c) add(t.id, c, t.alt_ft);
       else {
         if (!t.airway) unresolved.push(t.id); // voie aérienne ou procédure : gardée dans le texte, sans alerte
+        if (AIRWAY_WORD.test(t.id)) via = t.id;
         tokens.push({
           keep: t.id
         });
       }
-    } else tokens.push({
-      keep: t.id
-    });
+    } else {
+      if (AIRWAY_WORD.test(t.id)) via = t.id; // voie composée (G54-R66)
+      tokens.push({
+        keep: t.id
+      });
+    }
   }
   if (dep && points[0]?.id !== dep) {
     const c = await find(dep);
@@ -898,6 +987,8 @@ async function routePoints(text, dep, arr, known = new Map()) {
     tokens
   };
 }
+/** Désignateur de voie aérienne, composé compris (UN460, G54-R66) : le mot qui précède un point y arrivant par cette voie. */
+const AIRWAY_WORD = /^[A-Z]{1,2}\d{1,4}[A-Z]?(-[A-Z]{1,2}\d{1,4}[A-Z]?)*$/;
 /** Texte normalisé de la route : « DEP PT1 UN460 PT2/F280 … ARR » — points par leur identifiant (niveau en /Fnnn là
  *  où il change), voies, procédures et mots inconnus gardés à leur place, une seule ligne (frame/lib/route_text.js). */
 const routeText = RT.textFromTokens;
@@ -923,16 +1014,49 @@ const emptyFlight = () => ({
   },
   wind: null,
   isaDev: 0,
+  planned_at: null,
   ofp: null
+});
+/** Heure de l'appareil du champ datetime-local (« 2026-10-24T14:30 ») → ISO UTC (« 2026-10-24T12:30:00Z ») ; null si
+ *  vide ou illisible. */
+const whenToIso = local => {
+  const t = Date.parse(local || '');
+  return Number.isFinite(t) ? new Date(t).toISOString().slice(0, 19) + 'Z' : null;
+};
+/** ISO UTC → heure de l'appareil du champ datetime-local ; '' si absent ou illisible. */
+const isoToWhen = iso => {
+  const t = Date.parse(iso || '');
+  return Number.isFinite(t) ? new Date(t - new Date(t).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
+};
+/** La date du vol n'a qu'une valeur : current_flight.planned_at (ISO UTC, null = maintenant) ; le champ de saisie en
+ *  montre l'heure de l'appareil (isoToWhen). Un vol écrit avant planned_at (weather.when seul, l'ancienne copie) en reçoit
+ *  un ; la copie est retirée (fuel ne l'écrit plus : une copie périmée tromperait ses lecteurs). */
+function syncPlanned(f) {
+  f.planned_at = Number.isFinite(Date.parse(f.planned_at || '')) ? f.planned_at : whenToIso(f.weather?.when);
+  if (f.weather && 'when' in f.weather) {
+    const {
+      when,
+      ...rest
+    } = f.weather;
+    f.weather = rest;
+  }
+  return f;
+}
+/** Vol courant lu (enregistrement gardé ou reçu) : les champs vides du schéma complétés, la date du vol accordée. */
+const flightOf = rec => syncPlanned({
+  ...emptyFlight(),
+  ...rec
 });
 /** Logique des fiches (lecture des formats, fusion, ChatGPT, .lnmperf) : celle d'aerodb (AeroDBSheets). */
 const SH = () => S.A?.lib || window.AeroDBSheets;
 /** Fiches du registre d'aerodb (les plus récentes d'abord) ; aucune sans aerodb. */
 async function readSheets() {
   const s = S,
-    list = S.A?.sheets ? await S.A.sheets.list().catch(() => []) : [],
-    // types de la compagnie (flotte, référence) : ceux sans fiche sont proposés « à compléter » (comme la V2)
-    co = S.A?.fleetTypes ? await S.A.fleetTypes().catch(() => []) : [];
+    // types de la compagnie (flotte, référence) : ceux sans fiche sont proposés « à compléter » (comme la V2) ; les deux
+    // lectures ensemble
+    [list, co] = await Promise.all([S.A?.sheets ? S.A.sheets.list().catch(() => []) : [], S.A?.fleetTypes ? S.A.fleetTypes()
+      .catch(() => []) : []
+    ]);
   if (gone(s)) return;
   S.sheets = list;
   S.coTypes = co;
@@ -951,6 +1075,7 @@ async function storeSheet(p, source = 'edit') {
 /** Écrit le vol courant (après un temps calme) : relu juste avant, seuls les champs de fuel remplacés (et dans progress
  *  ses seules clés : progress.actual appartient au cadre), le reste gardé tel qu'il est (frame/lib/current_flight.js). */
 function saveFlight() {
+  if (S.flightPending) return; // vol courant pas encore lu : l'écrire effacerait le vrai
   clearTimeout(S.flightTimer);
   const s = S; // gardé : l'écriture part même si le module est démonté entre-temps
   s.flightTimer = setTimeout(async () => {
@@ -977,12 +1102,11 @@ function saveSettings() {
 }
 
 // ---------------------------------------------------------------- calcul du devis et de la décision
-/** Fiche du vol (normalisée) : celle de l'appareil choisi, sinon son type seul (estimation aerodb) ; la première fiche
- *  de la liste seulement quand aucun appareil n'est choisi ; null sans rien. */
+/** Fiche du vol (normalisée) : celle de l'appareil choisi, sinon son type seul (estimation aerodb) ; null tant
+ *  qu'aucun appareil n'est choisi (plus de première fiche de la liste par défaut : le devis attend le choix). */
 function currentSheet() {
   const a = S.flight.aircraft || {},
-    chosen = !!(a.sheetId || a.type || a.registration),
-    raw = S.sheets.find(p => p.id === a.sheetId) || (chosen ? null : S.sheets[0]) || null;
+    raw = S.sheets.find(p => p.id === a.sheetId) || null;
   if (raw) return window.FuelModel.normalizeSheet(structuredClone(raw));
   if (a.type) return window.FuelModel.normalizeSheet({
     id: `TYPE_${a.type}`,
@@ -1033,7 +1157,7 @@ function compute() {
   }
   const goal = perf ? L.goalNow(S.settings.goal || 'prof', o.profileIas) : null,
     distanceNm = +f.route?.distanceNm || 0,
-    q = distanceNm > 0 ? M.quote({
+    qIn = {
       sheet,
       source,
       perf,
@@ -1047,11 +1171,23 @@ function compute() {
       contingencyPct: +S.settings.contingencyPct,
       climbLaw: perf ? L.tripLaw(perf, goal, o) : null,
       steps: routeSteps(f.route, distanceNm)
-    }) : null,
-    D = perf && q ? L.decisionSeries(perf, {
+    },
+    q = distanceNm > 0 ? M.quote(qIn) : null,
+    D = perf && q ? L.requoteSeries(L.decisionSeries(perf, {
       distanceNm,
       wc: q.windKnown ? q.wc : 0
-    }, goal, o) : null,
+    }, goal, o), h => M.quote({
+      ...qIn,
+      levelFt: h,
+      // une seule base pour tous les points de la courbe, le niveau du plan compris : vol à plat à ce niveau, avec le vent
+      // de la prévision à ce niveau quand la météo réelle le donne, sans les paliers de la route (un point calculé
+      // autrement que ses voisins fait un pic) ; le devis réel du plan est le repère à part (D.plan)
+      wind: aloftMeanAt(h) || qIn.wind,
+      steps: null
+    }), {
+      h: levelFt,
+      quote: q
+    }) : null,
     G = perf && levelFt > 0 ? L.climbGuide(perf, levelFt, goal, o) : null;
   return {
     sheet,
@@ -1087,16 +1223,19 @@ function ticks(min, max, n = 5) {
 }
 /** Courbes de la décision du niveau : carburant (trait plein) et temps (tirets) du trajet entier selon le niveau, partie
  *  extrapolée au-delà du plafond en pointillés, zone non tenable grisée, plafond, moins de carburant (rond), plus rapide
- *  (carré), niveau du plan (trait vertical). */
+ *  (carré), niveau du plan (trait vertical) et devis réel du plan (losanges, avec les paliers de la route). Axe du
+ *  carburant dans l'unité affichée. */
 function decisionSvg(C, box) {
   const {
     D,
     sheet,
     levelFt
   } = C, [W, H] = svgSize(box), pl = 48, pr = 44, pt = 24, pb = 30,
+    to = fuelUnitOf(sheet.unit),
+    cf = v => sheet.unit && to !== sheet.unit ? window.FuelModel.convertFuel(v, sheet.unit, to) : v,
     rows = D.rows.filter(r => r && Number.isFinite(r.fuel) && Number.isFinite(r.minutes)),
-    fuels = rows.map(r => r.fuel),
-    mins = rows.map(r => r.minutes),
+    fuels = [...rows.map(r => cf(r.fuel)), ...(D.plan ? [cf(D.plan.fuel)] : [])],
+    mins = [...rows.map(r => r.minutes), ...(D.plan ? [D.plan.minutes] : [])],
     fMin = Math.min(...fuels) * .97,
     fMax = Math.max(...fuels) * 1.02,
     tMin = Math.min(...mins) * .97,
@@ -1111,7 +1250,7 @@ function decisionSvg(C, box) {
       on = false;
     for (const r of D.rows) {
       const ok = r && Number.isFinite(r[k]) && !!r.extrap === ext;
-      if (ok) d += `${on ? 'L' : 'M'}${x(r.h).toFixed(1)},${y(r[k]).toFixed(1)}`;
+      if (ok) d += `${on ? 'L' : 'M'}${x(r.h).toFixed(1)},${y(k === 'fuel' ? cf(r[k]) : r[k]).toFixed(1)}`;
       on = ok;
     }
     return d;
@@ -1120,18 +1259,22 @@ function decisionSvg(C, box) {
     ft = ticks(fMin, fMax, 4),
     tm = ticks(tMin, tMax, 4),
     gap = D.gap ? `<rect x="${x(D.gap.from)}" y="${pt}" width="${Math.max(0, x(Math.min(ceil, D.xmax)) - x(D.gap.from))}" height="${H - pt - pb}" class="fu-gap"/>` : '',
-    mk = (r, cls, sq) => r ? sq ? `<rect x="${x(r.h) - 5}" y="${yt(r.minutes) - 5}" width="10" height="10" class="${cls}"/>` : `<circle cx="${x(r.h)}" cy="${yf(r.fuel)}" r="5.5" class="${cls}"/>` : '';
+    mk = (r, cls, sq) => r ? sq ? `<rect x="${x(r.h) - 5}" y="${yt(r.minutes) - 5}" width="10" height="10" class="${cls}"/>` : `<circle cx="${x(r.h)}" cy="${yf(cf(r.fuel))}" r="5.5" class="${cls}"/>` : '',
+    /** Losange du devis réel du plan, sur chacune des deux courbes ; plus petit sans paliers (il coïncide avec la courbe). */
+    dia = (cx, cy, rad) => `<path d="M${cx},${cy - rad}L${cx + rad},${cy}L${cx},${cy + rad}L${cx - rad},${cy}Z" class="fu-planpt"/>`,
+    prad = D.plan && D.plan.h <= D.xmax ? D.plan.stepped ? 6.5 : 4 : 0;
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(tt(TX.decision))}" class="fu-svg" data-chart="decision">
     ${gap}
     ${xt.map(v => `<line x1="${x(v)}" x2="${x(v)}" y1="${pt}" y2="${H - pb}" class="fu-grid"/><text x="${x(v)}" y="${H - pb + 16}" text-anchor="middle">${flTxt(v)}</text>`).join('')}
     ${ft.map(v => `<text x="${pl - 6}" y="${yf(v) + 4}" text-anchor="end" class="fu-fuel">${Math.round(v / (v >= 10000 ? 1000 : 1)).toLocaleString(S.ctx.lang())}${v >= 10000 ? 'k' : ''}</text>`).join('')}
     ${tm.map(v => `<text x="${W - pr + 6}" y="${yt(v) + 4}" class="fu-time">${hmm(v)}</text>`).join('')}
-    <text x="${pl - 6}" y="12" text-anchor="end" class="fu-fuel fu-unit">${esc(sheet.unit)}</text>
+    <text x="${pl - 6}" y="12" text-anchor="end" class="fu-fuel fu-unit">${esc(to)}</text>
     ${ceil < D.xmax ? `<line x1="${x(ceil)}" x2="${x(ceil)}" y1="${pt}" y2="${H - pb}" class="fu-ceil"/>` : ''}
     <path d="${path(yt, 'minutes', false)}" class="fu-line-t"/><path d="${path(yt, 'minutes', true)}" class="fu-line-t fu-ext"/>
     <path d="${path(yf, 'fuel', false)}" class="fu-line-f"/><path d="${path(yf, 'fuel', true)}" class="fu-line-f fu-ext"/>
     ${levelFt > 0 && levelFt <= D.xmax ? `<line x1="${x(levelFt)}" x2="${x(levelFt)}" y1="${pt}" y2="${H - pb}" class="fu-plan"/>` : ''}
     ${mk(D.best, 'fu-best')}${mk(D.fast, 'fu-fast', true)}
+    ${prad ? `${dia(x(D.plan.h), yf(cf(D.plan.fuel)), prad)}${dia(x(D.plan.h), yt(D.plan.minutes), prad)}` : ''}
     <rect x="${pl}" y="${pt}" width="${W - pl - pr}" height="${H - pt - pb}" fill="transparent" data-pick data-x0="${pl}" data-x1="${W - pr}" data-max="${D.xmax}" style="cursor:crosshair"/>
   </svg>`;
 }
@@ -1167,9 +1310,9 @@ const STYLE = `
 [data-module="fuel"] .fu-ads{grid-template-columns:repeat(3,minmax(0,8em))} /* codes OACI : 4 lettres, pas plus large */
 [data-module="fuel"] .fu-flight{display:flex;flex-wrap:wrap;align-items:flex-end} /* niveau et date à leur largeur utile ; la date passe dessous sur un téléphone */
 [data-module="fuel"] .fu-flight>.f-field:first-child{flex:0 0 8em}
-[data-module="fuel"] .fu-flight>.f-field:last-child{flex:1 1 20em;max-width:26em}
-[data-module="fuel"] .fu-when{display:flex;gap:4px;align-items:stretch}
-[data-module="fuel"] .fu-when input{flex:1;min-width:0}
+[data-module="fuel"] .fu-flight>.f-field:last-child{flex:1 1 20em;max-width:26em;min-width:0} /* min-width:0 : la date ne pousse pas la ligne au-delà de l'écran */
+[data-module="fuel"] .fu-when{display:flex;flex-wrap:wrap;gap:4px;align-items:stretch} /* champ d'abord, les deux boutons passent dessous quand la place manque */
+[data-module="fuel"] .fu-when input{flex:1 1 11em;min-width:0}
 [data-module="fuel"] .fu-when button{flex:none;min-width:44px;min-height:44px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;gap:2px}
 [data-module="fuel"] .fu-when button b{font-size:.8em}
 [data-module="fuel"] input.fu-code{text-transform:uppercase}
@@ -1208,6 +1351,9 @@ const STYLE = `
   [data-module="fuel"] .fu-steps,[data-module="fuel"] .fu-next{display:none}
   [data-module="fuel"] .fu-step[hidden]{display:block}
 }
+[data-module="fuel"] .fu-rrow{display:flex;gap:8px;align-items:flex-end} /* champ de la route + « Auto » : le champ prend la place restante */
+[data-module="fuel"] .fu-rrow>.f-field{flex:1 1 0;min-width:0}
+[data-module="fuel"] .fu-rrow>button{flex:none;min-width:56px;min-height:44px;margin-bottom:2px}
 [data-module="fuel"] .fu-rinfo{flex-wrap:wrap;gap:4px 12px;margin:4px 0}
 [data-module="fuel"] .fu-linkbtn{min-height:44px;padding:0 4px;border:0;background:none;color:var(--sog-link);text-decoration:underline;font:inherit;cursor:pointer}
 [data-module="fuel"] .fu-pt{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
@@ -1224,13 +1370,23 @@ const STYLE = `
 [data-module="fuel"] .fu-now{stroke:var(--sog-chart-2);stroke-width:1.5;stroke-dasharray:5 3}
 [data-module="fuel"] .fu-best{fill:var(--sog-chart-3)}
 [data-module="fuel"] .fu-fast{fill:var(--sog-chart-4)}
+[data-module="fuel"] .fu-planpt{fill:var(--sog-fg);stroke:var(--sog-surface);stroke-width:1.5}
+[data-module="fuel"] .fu-legend .fu-dia{display:inline-block;width:9px;height:9px;margin-right:7px;background:var(--sog-fg);transform:rotate(45deg) scale(.85)}
 [data-module="fuel"] .fu-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px}
 [data-module="fuel"] .fu-legend .f-dot{margin-right:6px}
 [data-module="fuel"] .fu-legend .fu-sq{border-radius:0}
-[data-module="fuel"] .fu-result{display:block}
+/* barre de résultat compacte (module étroit : téléphone, volet de la vue double) : le contexte sur une ligne, le chiffre,
+   puis trois tuiles sur une rangée, libellé et valeur chacun sur une ligne. Règles du module sur .f-bar et .f-tiles
+   (primitives du cadre inchangées). */
+[data-module="fuel"] .fu-result{display:block;padding:8px 12px}
+[data-module="fuel"] .fu-result .fu-ctx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--sog-size-s)}
 [data-module="fuel"] .fu-big{font-size:var(--sog-h1);font-weight:700;line-height:1.2}
-[data-module="fuel"] .fu-result .f-tiles{grid-template-columns:repeat(3,minmax(0,1fr));margin:6px 0 0}
-[data-module="fuel"] .fu-result .f-tiles b{font-size:var(--sog-h3)}
+@container (max-width: 759px){
+  [data-module="fuel"] .fu-big{font-size:var(--sog-h2)}
+}
+[data-module="fuel"] .fu-result .f-tiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:4px 0 0}
+[data-module="fuel"] .fu-result .f-tiles>*{padding:3px 8px;font-size:var(--sog-size-xs);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-module="fuel"] .fu-result .f-tiles b{font-size:var(--sog-h3);overflow:hidden;text-overflow:ellipsis}
 [data-module="fuel"] .fu-links .f-item{display:block}
 [data-module="fuel"] .fu-links small{display:block}
 [data-module="fuel"] .fu-links .fu-off{opacity:.55}
@@ -1238,14 +1394,14 @@ const STYLE = `
 [data-module="fuel"] .fu-wx{padding:8px 0;border-bottom:1px solid var(--sog-border)}
 [data-module="fuel"] .fu-wx:last-child{border-bottom:0}`;
 
-// ---------------------------------------------------------------- écran Préparer
-/** Redessine l'écran Préparer en gardant le champ en cours de frappe et le défilement (renderPlanBody fait le dessin). */
+// ---------------------------------------------------------------- écran Devis
+/** Redessine l'écran Devis en gardant le champ en cours de frappe et le défilement (renderPlanBody fait le dessin). */
 function renderPlan() {
   // champ en cours de frappe (data-k, et data-i pour les niveaux des points) : valeur, focus et sélection rendus par
   // keepScroll du cadre (frame/lib/dom.js) — un rendu ne réécrit jamais ce que l'on tape
   keepScroll(S.body, renderPlanBody);
 }
-/** Dessine l'écran Préparer (champs une fois ; résultats redessinés par refresh). */
+/** Dessine l'écran Devis (champs une fois ; résultats redessinés par refresh). */
 function renderPlanBody() {
   const f = S.flight,
     r = f.route || {},
@@ -1257,7 +1413,7 @@ function renderPlanBody() {
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
       <div class="f-grid fu-ads">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
-      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(f.weather?.when || '')}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
+      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(isoToWhen(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
       <div class="fu-hide" data-acpanel>
@@ -1268,7 +1424,7 @@ function renderPlanBody() {
       </div>
     </div>`)}
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
-      <label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false">${esc(r.text || '')}</textarea></label>
+      <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false">${esc(r.text || '')}</textarea></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
       <p class="f-warn" data-unres></p>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
       <div class="f-grid fu-g3 fu-hide" data-rmanual>${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
@@ -1276,7 +1432,7 @@ function renderPlanBody() {
       <div class="f-list fu-pts" data-pts></div>
       <div class="f-row fu-addpt"><input data-k="addpt" autocapitalize="characters" autocomplete="off" placeholder="${esc(tt(TX.addPt))}" aria-label="${esc(tt(TX.addPt))}"><button type="button" data-do="addpt" aria-label="${esc(tt(TX.add))}">${svg('plus')}</button></div>
       <p class="f-muted">${esc(tt(TX.ptsHint))}</p></details>
-      <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}<button type="button" data-do="showmap">${svg('map')} ${esc(tt(TX.showMap))}</button></div>
+      <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}<button type="button" data-do="showmap"${S.ctx.layout?.with === 'maps' ? ' class="fu-hide"' : ''}>${svg('map')} ${esc(tt(TX.showMap))}</button></div>
     </div>`)}
   ${sec(2, `<div class="f-card" data-block="level"><h2>${esc(tt(TX.stepNames[2]))}</h2>
       <div class="f-grid fu-g3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
@@ -1339,18 +1495,22 @@ function renderPlanBody() {
   renderAloft();
   windSourceLine();
   // météo lue une fois par montage quand l'appareil est en ligne et la route a ses terrains
-  if (!S.wxTried && wxIds().length && S.ctx.net?.online?.() !== false) {
+  if (!S.wxTried && wxIds().length) { // hors ligne aussi : la couche répond de sa réserve
     S.wxTried = true;
     wxFetch(false);
   }
 }
-/** Champ changé dans Préparer : vol courant ou réglages mis à jour, route relue si elle change, résultats redessinés. */
+/** Champ changé dans Devis : vol courant ou réglages mis à jour, route relue si elle change, résultats redessinés. */
 function onPlanInput(e) {
   const k = e.target.dataset?.k,
     v = e.target.value,
     f = S.flight;
   if (!k) return;
   if (e.type === 'input' && e.target.tagName === 'SELECT') return;
+  // vol courant pas encore lu : l'écran est inerte (refresh), un champ changé quand même (saisie programmée, remplissage
+  // automatique) n'écrit pas dans le vol d'attente — completeMount le remplace par le vol lu, et le niveau, le départ ou
+  // l'appareil tapés là disparaîtraient en laissant un devis « 0 ft » ; le dernier état lu gagne, les champs sont redessinés
+  if (S.flightPending) return;
   const r = f.route ||= emptyFlight().route;
   switch (k) {
     case 'acsearch':
@@ -1438,12 +1598,8 @@ function onPlanInput(e) {
       saveSettings();
       break;
     case 'wxdate':
-      f.weather = {
-        ...f.weather,
-        when: v
-      };
-      renderWx();
-      if (f.weather.real) applyRealWind();
+      setPlanned(whenToIso(v));
+      whenChanged();
       break;
     case 'wxreal':
       f.weather = {
@@ -1526,7 +1682,7 @@ function onPlanInput(e) {
   saveFlight();
   refresh();
 }
-/** Clic dans Préparer : SimBrief, niveau pris sur la courbe ou par un bouton. */
+/** Clic dans Devis : SimBrief, niveau pris sur la courbe ou par un bouton. */
 function onPlanClick(e) {
   const st = e.target.closest('[data-step]');
   if (st) return goStep(+st.dataset.step);
@@ -1535,6 +1691,7 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="cancelstart"]')) return cancelStart();
   const iu = e.target.closest('[data-do="isause"]');
   if (iu) return useIsa(iu.dataset.v != null ? +iu.dataset.v : undefined);
+  if (e.target.closest('[data-do="rauto"]')) return autoAirways();
   if (e.target.closest('[data-do="rmanual"]')) {
     S.rmanualOpen = true;
     renderRinfo();
@@ -1624,7 +1781,8 @@ async function wxCorridor() {
           dLat
         ];
       for (const ad of (await s.ctx.aerodb.aerodromes({
-          bbox
+          bbox,
+          lite: true // index léger des terrains (code, position, altitude, axe de piste) : assez pour le couloir
         }).catch(() => null)) || []) {
         const id = String(ad?.icao || '').toUpperCase();
         if (/^[A-Z]{4}$/.test(id) && Number.isFinite(+ad.lat) && Number.isFinite(+ad.lon)) seen.set(id, ad);
@@ -1658,9 +1816,10 @@ function scheduleWx() {
   if (!S.wx && !S.flight.weather?.real) return;
   S.wxTimer = setTimeout(() => wxFetch(false), 1200);
 }
-/** METAR et TAF des terrains par ctx.net (aviationweather.gov, relayé par le lanceur), gardés sur l'appareil ; hors
- *  réseau, les dernières valeurs gardées, avec leur heure. Fiche des terrains (axe de piste) par aerodb. loud : les
- *  refus sont dits. */
+/** METAR et TAF des terrains du couloir par la couche météo du cadre (ctx.weather.metar / taf : aviationweather.gov
+ *  relayé par le lanceur, sinon metar.vatsim.net et avwx.rest avec la clé de l'appareil ; gardés 30 min par terrain) ;
+ *  hors ligne, sa réserve. Les TAF seulement quand une date de vol les rend utiles (terrains avec METAR, départ,
+ *  arrivée, dégagement). Fiche des terrains (axe de piste) par aerodb. loud : les refus sont dits. */
 async function wxFetch(loud = false) {
   if (!S) return; // lecture programmée (scheduleWx) partie après le démontage
   const s = S,
@@ -1672,100 +1831,34 @@ async function wxFetch(loud = false) {
     if (loud) S.ctx.notify(tt(TX.wxNone), 'warn');
     return renderWx();
   }
-  const chunks = [];
-  for (let i = 0; i < ids.length; i += 40) chunks.push(ids.slice(i, i + 40));
-  /** Appel par le cadre : réponse, ou erreur codée (offline : hors réseau ; relay : site injoignable d'ici, sans
-   *  lanceur ou sans clé ; http : refus du service). */
-  const call = async (url, accept = 'application/json') => {
-    const res = await s.ctx.net.fetch(url, {
-      headers: {
-        accept
-      }
-    });
-    if (res.headers.get('x-sog-offline') || res.headers.get('x-sog-unreachable')) throw Object.assign(new Error('net'), {
-      code: s.ctx.net.online?.() === false || res.headers.get('x-sog-offline') ? 'offline' : 'relay'
-    });
-    if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), {
-      code: 'http'
-    });
-    return res;
-  };
-  // 1. aviationweather.gov (JSON décodé), relayé par le lanceur quand la page est servie par un
-  const viaLauncher = async () => {
-    const get = async kind => (await Promise.all(chunks.map(async c => {
-      const res = await call(`https://aviationweather.gov/api/data/${kind}?ids=${encodeURIComponent(c.join(','))}&format=json`);
-      return res.status === 204 ? [] : res.json();
-    }))).flat();
-    const [metars, tafs] = await Promise.all([get('metar'), get('taf')]);
-    return {
-      metars,
-      tafs,
-      source: 'launcher',
-      noTaf: false
-    };
-  };
-  // 2. sans lanceur : METAR bruts de metar.vatsim.net (décodés par frame/lib/metar.js), TAF d'avwx.rest avec la clé de
-  // l'appareil (ajoutée par le cadre) — seulement si une date de vol les rend utiles, terrain par terrain, douze au plus
-  const direct = async () => {
-    const metars = (await Promise.all(chunks.map(async c => MT.decodeMetars(await (await call(
-      `https://metar.vatsim.net/metar.php?id=${encodeURIComponent(c.join(','))}`, 'text/plain')).text())))).flat();
-    const tafs = [];
-    let noTaf = false;
-    if (when != null) {
-      const withMetar = new Set(metars.map(m => m.icaoId)),
-        r = s.flight.route || {},
-        want = ids.filter(id => withMetar.has(id) || [r.dep, r.arr, r.altn].includes(id)).slice(0, 12);
-      for (const id of want) {
-        try {
-          const t = MT.fromAvwxTaf(await (await call(`https://avwx.rest/api/taf/${encodeURIComponent(id)}`)).json());
-          if (t) tafs.push(t);
-        } catch (e) {
-          if (e.code === 'relay') {
-            noTaf = true; // pas de clé météo sur l'appareil : inutile d'insister
-            break;
-          }
-        }
-      }
-    }
-    return {
-      metars,
-      tafs,
-      source: 'direct',
-      noTaf
-    };
-  };
-  const kept = (await s.ctx.data.get(WX_PATH).catch(() => null)) || {
-    metar: {},
-    taf: {}
-  };
+  const W = s.ctx.weather,
+    cacheOnly = s.ctx.net?.online?.() === false;
   try {
-    let got;
-    try {
-      got = await viaLauncher();
-    } catch (e) {
-      if (e.code !== 'relay') throw e;
-      got = await direct(); // aviationweather injoignable d'ici (pas de lanceur) : sources directes
-    }
-    for (const x of got.metars || []) kept.metar[x.icaoId] = x;
-    for (const x of got.tafs || []) kept.taf[x.icaoId] = x;
-    kept.at = new Date().toISOString();
-    kept.source = got.source;
-    kept.noTaf = got.noTaf;
-    await s.ctx.data.put(WX_PATH, kept, {
-      policy: 'cache'
+    if (!W) throw Object.assign(new Error('ctx.weather'), {
+      unreachable: true
     });
+    const m = await W.metar(ids, {
+        cacheOnly
+      }),
+      r = s.flight.route || {},
+      tafIds = when == null ? [] : ids.filter(id => m.items[id] || [r.dep, r.arr, r.altn].includes(id)),
+      t = tafIds.length ? await W.taf(tafIds, {
+        cacheOnly
+      }) : null;
     if (gone(s)) return;
+    const newest = Math.max(0, ...Object.values(m.items).map(x => +x?.obsTime || 0)); // heure du plus récent METAR gardé
     S.wx = {
-      ...kept,
-      cached: false
+      metar: m.items,
+      taf: t?.items || {},
+      at: m.offline || cacheOnly ? newest ? new Date(newest * 1000).toISOString() : null : new Date().toISOString(),
+      source: m.source === 'cache' ? S.wx?.source || 'cache' : m.source,
+      noTaf: !!t?.noTaf,
+      cached: !!(m.offline || cacheOnly)
     };
   } catch (e) {
     if (gone(s)) return;
-    S.wx = kept.at ? {
-      ...kept,
-      cached: true
-    } : null;
-    if (loud) S.ctx.notify(e.code === 'offline' ? tt(TX.offline) : e.code === 'relay' ? tt(TX.wxRelay) : tt(TX.sbError, {
+    if (S.wx) S.wx.cached = true;
+    if (loud) S.ctx.notify(e.offline ? tt(TX.offline) : e.unreachable ? tt(TX.wxRelay) : tt(TX.sbError, {
       e: e.message
     }), 'warn');
   }
@@ -1788,10 +1881,10 @@ function aloftKey() {
   const pts = (S.flight.route?.points || []).filter(p => Number.isFinite(+p.lat));
   return JSON.stringify([pts.map(p => [(+p.lat).toFixed(2), (+p.lon).toFixed(2)]), Math.round((wxWhen() ?? Date.now() / 1000) / 3600)]);
 }
-/** Prévision par niveaux aux lieux de la route (points, plus un lieu tous les 50 NM environ, 24 au plus), par ctx.net
- *  (relayée par le lanceur ou directe, sans clé), modèle selon la région (WD.modelFor), heure la plus proche de la date
- *  du vol (sinon maintenant) ; heure du run lue à part si le service la donne. Gardée sur l'appareil ; hors réseau, la
- *  dernière. Puis appliquée au vol (aloftApply). */
+/** Prévision par niveaux aux lieux de la route (points, plus un lieu tous les 50 NM environ, 24 au plus) par la couche
+ *  météo du cadre (ctx.weather.aloft : modèle selon la région, heure la plus proche de la date du vol, sinon maintenant ;
+ *  sa réserve d'abord, Open-Meteo pour ce qui manque, appels comptés pour l'appareil). Hors ligne, sa réserve seulement.
+ *  Puis appliquée au vol (aloftApply). */
 async function aloftFetch(loud = false) {
   const s = S,
     pts = (S.flight.route?.points || []).filter(p => Number.isFinite(+p.lat));
@@ -1800,50 +1893,48 @@ async function aloftFetch(loud = false) {
   if (S.aloft?.key === key && !S.aloft.cached) return aloftApply();
   S.aloftState = 'loading';
   const smp = WD.samples(pts),
-    mid = smp[Math.floor(smp.length / 2)],
-    model = WD.modelFor(mid.lat, mid.lon),
-    t = wxWhen() ?? Math.round(Date.now() / 1000);
+    t = wxWhen() ?? Math.round(Date.now() / 1000),
+    W = s.ctx.weather,
+    offline = s.ctx.net?.online?.() === false,
+    ask = cacheOnly => W.aloft(smp, t, {
+      cacheOnly,
+      stale: () => gone(s)
+    });
   try {
-    const res = await s.ctx.net.fetch(WD.forecastUrl(smp, model.id), {
-      headers: {
-        accept: 'application/json'
-      }
+    if (!W) throw Object.assign(new Error('ctx.weather'), {
+      unreachable: true
     });
-    if (res.headers.get('x-sog-offline') || res.headers.get('x-sog-unreachable') || !res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), {
-      code: res.headers.get('x-sog-offline') ? 'offline' : 'http'
-    });
-    const profiles = WD.profiles(await res.json(), t);
-    let run = null;
-    try { // heure du dernier run du modèle (métadonnées d'Open-Meteo), facultative
-      const meta = await s.ctx.net.fetch(`https://api.open-meteo.com/data/${{
-        meteofrance_seamless: 'meteofrance_arpege_europe',
-        icon_seamless: 'dwd_icon',
-        gfs_seamless: 'ncep_gfs025'
-      }[model.id]}/static/meta.json`);
-      const m = meta.ok && !meta.headers.get('x-sog-unreachable') ? await meta.json() : null;
-      run = Number.isFinite(+m?.last_run_initialisation_time) ? +m.last_run_initialisation_time : null;
-    } catch {
-      /* sans heure du run */
+    let r = null,
+      cached = offline;
+    try {
+      r = await ask(offline);
+    } catch (e) {
+      if (!e.offline) throw e;
+      r = await ask(true); // le réseau est tombé en route : la réserve de la couche
+      cached = true;
     }
     if (gone(s)) return;
+    if (!r) throw Object.assign(new Error('offline'), {
+      offline: true
+    });
     S.aloftState = 'ok';
     S.aloft = {
       key,
-      model: model.name,
-      short: model.short,
-      run,
-      time: profiles[0]?.time ?? t,
+      model: r.model.name,
+      short: r.model.short,
+      run: r.run,
+      time: r.time ?? t,
       at: new Date().toISOString(),
       samples: smp,
-      profiles
+      profiles: r.profiles,
+      ...(cached ? {
+        cached: true
+      } : {})
     };
-    await s.ctx.data.put(ALOFT_PATH, S.aloft, {
-      policy: 'cache'
-    });
   } catch (e) {
     if (gone(s)) return;
     S.aloftState = 'failed'; // le vent au sol des METAR prend le relais, et c'est dit
-    if (loud && e.code !== 'offline') S.ctx.notify(tt(TX.sbError, {
+    if (loud && !e.offline && !e.stale) S.ctx.notify(tt(TX.sbError, {
       e: e.message
     }), 'warn');
     if (S.aloft) S.aloft.cached = true;
@@ -1909,29 +2000,45 @@ function renderAloft(c = aloftCalc()) {
   if (!box) return;
   const A = S.aloft;
   if (!c) return box.innerHTML = `<p class="f-muted">${esc(tt(TX.aloftNone))}</p>`;
-  const hh = sec => new Date(sec * 1000).toISOString().slice(11, 16),
+  const hh = sec => fmtZ(sec * 1000),
     pts = S.flight.route.points;
-  box.innerHTML = `<p class="f-muted">${esc(tt(TX.aloftAt, { m: A.model, t: hh(A.time), run: A.run ? tt(TX.aloftRun, { r: hh(A.run) }) : '', r: new Date(A.at).toLocaleString(S.ctx.lang(), { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) }))}</p>
+  box.innerHTML = `<p class="f-muted">${esc(tt(TX.aloftAt, { m: A.model, t: hh(A.time), run: A.run ? tt(TX.aloftRun, { r: hh(A.run) }) : '', r: fmtDateZ(A.at, S.ctx.lang()) }))}</p>
     <div class="f-scroll"><table class="f-table"><thead><tr>${TX.aloftCols.map((h, i) => `<th${i ? ' class="f-num"' : ''}>${esc(tt(h))}</th>`).join('')}</tr></thead><tbody>
     ${c.points.map((w, i) => w ? `<tr><td>${esc(pts[i].id || '')}</td><td class="f-num">${flTxt(w.levelFt)}</td><td class="f-num">${String(w.dirDeg).padStart(3, '0')}° ${esc(speedTxt(w.kt))}</td><td class="f-num">${w.tempC} °C</td><td class="f-num">${w.isaDev > 0 ? '+' : ''}${w.isaDev}</td></tr>` : '').join('')}
     </tbody></table></div>`;
 }
 /** Source du vent du devis, en court : « vent : METAR LFRS, TAF LFML », « vent : prévision ICON FL060 », « vent saisi » ;
  *  vide sans vent. */
-function windShort() {
+function windShort(short = false) {
   const f = S.flight,
-    src = f.windSource;
-  if (src?.kind === 'weather') return tt(TX.windBy.weather, {
+    src = f.windSource,
+    by = short ? {
+      ...TX.windBy,
+      ...TX.windByS
+    } : TX.windBy;
+  if (src?.kind === 'weather') return tt(by.weather, {
     l: (src.ids || []).map(x => {
       const m = /^(\S+) \((\w+)\)$/.exec(x);
       return m ? `${m[2]} ${m[1]}` : x;
     }).join(', ')
   }) + (src.aloftFailed ? ` · ${tt(TX.aloftDown)}` : '');
-  if (src?.kind === 'aloft') return tt(TX.windBy.aloft, {
+  if (src?.kind === 'aloft') return tt(by.aloft, {
     m: src.short || src.model || '',
     l: flTxt(src.levelFt)
   }) + (src.pending ? ` · ${tt(TX.aloftPending)}` : '');
-  return Number.isFinite(+f.wind?.speedKt) ? tt(TX.windBy.typed) : '';
+  return Number.isFinite(+f.wind?.speedKt) ? tt(by.typed) : '';
+}
+/** Ligne de contexte de la barre de résultat : « Bloc · FL060→090→110→070 · vent ARPEGE FL060 » (court : une ligne sur
+ *  un téléphone) ou son texte entier « Carburant bloc · FL060 → FL090 → FL110 → FL070 · vent : prévision ARPEGE FL060 »
+ *  (infobulle). Court : les niveaux sont joints par → sans espace, « FL » n'est écrit qu'une fois en tête. */
+function resultContext(q, range, short) {
+  const lv = q.steps ? q.steps.levels.map(l => l.ft) : [q.levelFt],
+    fl = lv.map((ft, i) => {
+      const t = flTxt(ft);
+      return short && i && /^FL\d+$/.test(t) ? t.slice(2) : t;
+    }).join(short ? '→' : ' → '),
+    wind = range ? tt(short ? TX.windRangeS : TX.windRange) : windShort(short);
+  return `${tt(short ? TX.blockS : TX.block)} · ${fl}${unitOf('alt') !== 'ft' ? ` (${altTxt(q.levelFt)})` : ''}${q.approx ? ` · ${tt(TX.approx)}` : ''}${wind ? ` · ${wind}` : ''}`;
 }
 /** Profil réel au départ (premier lieu de lecture) : température par altitude pression, atmosphère type en tirets,
  *  inversions surlignées, niveau planifié ; lignes de lecture (température, écart ISA et altitude-densité au niveau,
@@ -1980,22 +2087,27 @@ function realProfileHtml(box) {
  *  Puis la météo des terrains (TAF si la date tombe dans sa validité) et les vents en altitude sont relus pour cette
  *  heure, après un court temps calme (plusieurs appuis, une lecture). */
 function setWhen(plus) {
-  const f = S.flight,
-    now = Date.now(),
-    set = Date.parse(f.weather?.when || ''),
+  const now = Date.now(),
+    set = Date.parse(S.flight.planned_at || ''),
     base = Number.isFinite(set) && set > now ? set : now,
     step = 5 * 60000,
-    t = plus ? Math.ceil((base + plus * 60000) / step) * step : null,
-    d = t ? new Date(t) : null,
-    local = d ? new Date(t - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
-  f.weather = {
-    ...f.weather,
-    when: local
-  };
-  const wd = S.body.querySelector('[data-k="wxdate"]');
-  if (wd) wd.value = local;
-  renderWx();
+    t = plus ? Math.ceil((base + plus * 60000) / step) * step : null;
+  setPlanned(t ? new Date(t).toISOString().slice(0, 19) + 'Z' : null);
   saveFlight();
+  whenChanged();
+}
+/** Pose la date du vol : current_flight.planned_at (ISO UTC, null = maintenant), et le champ à l'écran (heure de
+ *  l'appareil) seulement si sa valeur change. L'écriture du vol et le calcul suivent (saveFlight, whenChanged). */
+function setPlanned(iso) {
+  const local = isoToWhen(iso);
+  S.flight.planned_at = iso;
+  const wd = S.body?.querySelector('[data-k="wxdate"]');
+  if (wd && wd.value !== local) wd.value = local;
+}
+/** La date du vol a changé : la météo des terrains (TAF si la date tombe dans sa validité) et les vents en altitude sont
+ *  relus pour cette heure après un court temps calme (plusieurs appuis ou frappes, une lecture). */
+function whenChanged() {
+  renderWx();
   clearTimeout(S.whenTimer);
   const s = S;
   S.whenTimer = setTimeout(async () => {
@@ -2023,10 +2135,10 @@ async function wxRead(btn) {
     }
   }
 }
-/** Heure visée (secondes) : la date du vol saisie (heure de l'appareil), sinon aucune (METAR). */
+/** Heure visée (secondes) : la date du vol (current_flight.planned_at), sinon aucune (METAR, prévision de maintenant). La
+ *  météo des terrains (TAF) et les vents et températures en altitude du devis sont lus à cette heure. */
 const wxWhen = () => {
-  const w = S.flight.weather?.when;
-  const t = w ? Date.parse(w) : NaN;
+  const t = Date.parse(S.flight.planned_at || '');
   return Number.isFinite(t) ? Math.round(t / 1000) : null;
 };
 /** Résumés des terrains (METAR, ou TAF si la date du vol tombe dans sa validité). */
@@ -2094,7 +2206,7 @@ function renderWx() {
     all = wxStations(),
     ends = all.filter(x => x.role !== 'mid'),
     mids = all.filter(x => x.role === 'mid');
-  box.innerHTML = (S.wx.cached ? `<p class="f-muted">${esc(tt(TX.wxCached, { t: new Date(S.wx.at).toLocaleString(S.ctx.lang()) }))}</p>` : '') +
+  box.innerHTML = (S.wx.cached ? `<p class="f-muted">${esc(tt(TX.wxCached, { t: fmtDateZ(S.wx.at, S.ctx.lang()) }))}</p>` : '') +
     (S.wx.source === 'direct' ? `<p class="f-muted">${esc(tt(TX.wxDirect))}</p>` : '') +
     (S.wx.noTaf && wxWhen() != null ? `<p class="f-warn">${esc(tt(TX.wxNoTaf))}</p>` : '') + ends.map(card).join('') +
     (mids.length > 2 ? `<details data-wxmids${S.ui.wxMidsOpen ? ' open' : ''}><summary>${esc(tt(TX.wxMids, { n: mids.length }))}</summary>${mids.map(card).join('')}</details>` : mids.map(card).join(''));
@@ -2103,6 +2215,16 @@ function renderWx() {
 }
 /** « Météo réelle » : vent moyen des terrains le long de la route (frame : moyenne des vecteurs pondérée par les
  *  segments départ → intermédiaire → arrivée), écrit dans le vol courant avec sa source. */
+/** Vent moyen le long de la route à l'altitude constante h (ft), lu dans la prévision en altitude quand la météo réelle
+ *  est retenue et que la prévision est celle de la route et de l'heure ; null sinon (la courbe de décision garde alors le
+ *  vent du devis). */
+function aloftMeanAt(h) {
+  const A = S.aloft;
+  if (!S.flight.weather?.real || S.flight.windSource?.kind !== 'aloft' || !A?.profiles?.length || A.key !== aloftKey())
+    return null;
+  return WD.meanWind(A.samples.map((smp, i) => WD.atLevel(A.profiles[i], h)), A.samples.map(x => x.nm));
+}
+
 function applyRealWind() {
   const al = aloftCalc(),
     mean = al ? WD.meanWind(al.winds, al.nms) : null;
@@ -2202,13 +2324,24 @@ async function acResults(text) {
     hits = await S.A.search(text, 30).catch(() => []);
   if (gone(s) || seq !== S.acSeq || !S.body) return;
   S.acHits = new Map(hits.map(h => [h.key, h]));
-  box.innerHTML = hits.map(h => `<button type="button" class="f-item" data-pick="${esc(h.key)}"><span>${esc(h.label)}${h.kind === 'aircraft' && h.sheetVia ? `<small class="f-muted fu-block">${esc(tt(TX.via[h.sheetVia] || TX.via.estimate))}</small>` : ''}</span><span class="f-badge">${esc([...new Set((h.sources?.length > 1 ? h.sources : [h.source]).map(x => /^fleet/.test(x) ? 'fleet' : x))].map(x => tt(TX.origins[x] || TX.origins.free)).join(' + '))}</span></button>`).join(''); // ligne fusionnée (une par immatriculation) : toutes ses origines
+  const last = !String(text || '').trim() && S.lastAc?.name ? S.lastAc : null; // recherche vide : le dernier choisi d'abord
+  box.innerHTML = (last ? `<button type="button" class="f-item" data-pick="last"><span>${esc([last.name, last.registration, last.callsign].filter(Boolean).join(' — '))}</span><span class="f-badge" data-kind="accent">${esc(tt(TX.origins.last))}</span></button>` : '') + hits.map(h => `<button type="button" class="f-item" data-pick="${esc(h.key)}"><span>${esc(h.label)}${h.kind === 'aircraft' && h.sheetVia ? `<small class="f-muted fu-block">${esc(tt(TX.via[h.sheetVia] || TX.via.estimate))}</small>` : ''}</span><span class="f-badge">${esc([...new Set((h.sources?.length > 1 ? h.sources : [h.source]).map(x => /^fleet/.test(x) ? 'fleet' : x))].map(x => tt(TX.origins[x] || TX.origins.free)).join(' + '))}</span></button>`).join(
+    ''); // ligne fusionnée (une par immatriculation) : toutes ses origines
 }
 /** Appareil retenu : le vol courant prend aircraftOf (fiche, type, immatriculation, indicatif, nom, origine). */
 function pickAircraft(key) {
-  const hit = S.acHits?.get(key);
-  if (!hit) return;
-  S.flight.aircraft = S.A.aircraftOf(hit);
+  const hit = key === 'last' ? null : S.acHits?.get(key);
+  if (!hit && !(key === 'last' && S.lastAc)) return;
+  S.flight.aircraft = hit ? S.A.aircraftOf(hit) : {
+    ...S.lastAc
+  };
+  S.lastAc = {
+    ...S.flight.aircraft
+  };
+  S.ctx.data.put(LAST_AC_PATH, {
+    aircraft: S.lastAc,
+    at: new Date().toISOString()
+  });
   S.manual = null;
   const panel = S.body.querySelector('[data-acpanel]');
   panel.classList.add('fu-hide');
@@ -2519,7 +2652,7 @@ function routeSteps(r, distanceNm) {
   return out.length ? out : null;
 }
 // ---------------------------------------------------------------- pas de la préparation
-/** Va au pas i (0 Vol, 1 Route, 2 Météo, 3 Devis, 4 Départ) : un seul pas visible sur téléphone et dans un volet ;
+/** Va au pas i (0 Vol, 1 Route, 2 Météo, 3 Résultat, 4 Départ) : un seul pas visible sur téléphone et dans un volet ;
  *  dans un module large tous le sont (CSS @container) et la barre de pas est cachée. Pas gardé sur l'appareil. */
 function goStep(i) {
   S.step = Math.max(0, Math.min(4, i));
@@ -2571,12 +2704,7 @@ async function startFlight() {
   S.startNote = tt(TX.starting);
   if (note) note.textContent = S.startNote;
   // la planification peut dater : date du vol = maintenant, météo des terrains, vents en altitude et ISA relus, devis refait
-  f.weather = {
-    ...f.weather,
-    when: ''
-  };
-  const wd = S.body.querySelector('[data-k="wxdate"]');
-  if (wd) wd.value = '';
+  setPlanned(null);
   const online = S.ctx.net?.online?.() !== false;
   if (online) await wxFetch(false);
   if (gone(s)) return;
@@ -2587,7 +2715,7 @@ async function startFlight() {
       wind: windTxt(f.wind),
       block: q?.hasFuel ? fuelTxt(q.block, unit()) : '—'
     },
-    eta = q?.minutes ? hhmmOf(new Date(Date.now() + ((+S.settings.taxiMin || 0) + q.minutes) * 60000).toISOString()) : '',
+    eta = q?.minutes ? hhmmLocal(new Date(Date.now() + ((+S.settings.taxiMin || 0) + q.minutes) * 60000).toISOString()) : '',
     diffs = [after.wind !== before.wind ? tt(TX.diffWind, {
       a: before.wind,
       b: after.wind
@@ -2599,7 +2727,9 @@ async function startFlight() {
     l: [...diffs, eta ? tt(TX.diffEta, {
       t: eta
     }) : ''].filter(Boolean).join(' · ')
-  }) : tt(TX.startSame) + (eta ? ` ${tt(TX.diffEta, { t: eta })}.` : '');
+  }) : eta ? tt(TX.startSameEta, {
+    t: eta
+  }) : tt(TX.startSame);
   if (S.body.querySelector('[data-startnote]')) S.body.querySelector('[data-startnote]').textContent = S.startNote;
   S.flight.started = {
     at: new Date().toISOString(),
@@ -2623,11 +2753,10 @@ const dur = min => {
   const m = Math.max(0, Math.round(min));
   return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
 };
-/** Heure locale « hh:mm » d'un instant ISO. */
-const hhmmOf = iso => new Date(iso).toLocaleTimeString(S.ctx.lang(), {
-  hour: '2-digit',
-  minute: '2-digit'
-});
+/** Heure UTC « 16:30Z » d'un instant ISO (frame/lib/time.js). */
+const hhmmOf = iso => fmtZ(iso);
+/** Heure UTC et heure locale de l'appareil « 16:30Z (18:30) » : seulement au départ, au décollage et à l'arrivée prévus. */
+const hhmmLocal = iso => fmtZLocal(iso);
 /** État du vol démarré, en une ligne : « Vol démarré à 13:22 · depuis 1 h 12 », « Vol terminé à 14:34 · bloc 1 h 12 »,
  *  déroutement signalé ; vide sans départ. */
 function flightState() {
@@ -2635,7 +2764,7 @@ function flightState() {
   if (!st?.at) return '';
   const div = st.diverted ? tt(TX.diverted) : '';
   return tt(TX.since, {
-    t: hhmmOf(st.at),
+    t: hhmmLocal(st.at),
     d: dur((Date.now() - Date.parse(st.at)) / 60000)
   }) + div;
 }
@@ -2646,7 +2775,7 @@ async function cancelStart() {
   if (!st?.at) return;
   const s = S;
   if (!(await S.ctx.ask(tt(TX.cancelAsk, {
-      t: hhmmOf(st.at)
+      t: hhmmLocal(st.at)
     }))) || gone(s)) return;
   S.flight.started = null;
   S.flight.progress = null;
@@ -2656,10 +2785,26 @@ async function cancelStart() {
 /** Progression prévue du vol démarré (progress.js) à l'instant (ou à l'heure d'arrêt) : { P, st, pos, etas } ; null sans
  *  départ ou sans devis. */
 function progressCalc(C = S.C) {
+  const st = S.flight.started;
+  if (!st?.at) return null;
+  const P = progressPlan(C);
+  if (!P) return null;
+  const start = Date.parse(st.at),
+    state = PG.at(P, (Date.now() - start) / 60000),
+    pts = S.flight.route.points;
+  return {
+    P,
+    st: state,
+    pos: PG.position(pts, P.cum, state.nmFromDep),
+    etas: PG.etas(P, start)
+  };
+}
+/** Horaire prévu du vol (progress.js plan) d'après le devis, les vents de la route et le roulage ; null sans devis ou
+ *  sans route. */
+function progressPlan(C) {
   const f = S.flight,
-    st = f.started,
     pts = f.route?.points || [];
-  if (!st?.at || !C?.q?.hasFuel || pts.length < 2) return null;
+  if (!C?.q?.hasFuel || pts.length < 2) return null;
   // vent de chaque tronçon : moyenne vectorielle des vents prévus à ses deux bouts (prévision en altitude), sinon celui du devis
   const vec = w => [w.kt * Math.sin(w.dirDeg * Math.PI / 180), w.kt * Math.cos(w.dirDeg * Math.PI / 180)],
     legWinds = pts.slice(1).map((p, i) => {
@@ -2672,50 +2817,33 @@ function progressCalc(C = S.C) {
         dirDeg: (Math.atan2(x, y) * 180 / Math.PI + 360) % 360,
         kt: Math.hypot(x, y)
       };
-    }),
-    P = PG.plan({
-      points: pts,
-      distanceNm: +f.route.distanceNm || 0,
-      taxiMin: +S.settings.taxiMin || 0,
-      q: C.q,
-      legWinds,
-      wind: f.wind,
-      windComponent: window.FuelModel.windComponent
     });
-  if (!P) return null;
-  const start = Date.parse(st.at),
-    now = Date.now(),
-    state = PG.at(P, (now - start) / 60000);
-  return {
-    P,
-    st: state,
-    pos: PG.position(pts, P.cum, state.nmFromDep),
-    etas: PG.etas(P, start)
-  };
+  return PG.plan({
+    points: pts,
+    distanceNm: +f.route.distanceNm || 0,
+    taxiMin: +S.settings.taxiMin || 0,
+    q: C.q,
+    legWinds,
+    wind: f.wind,
+    windComponent: window.FuelModel.windComponent
+  });
 }
 /** current_flight.progress = { at, plannedPos { lat, lon, legIndex, nmFromDep }, eta: [{ id, at }], fuelRemainingKg,
  *  remainingNm, phase } ; null sans vol démarré. Écrit quand il change (chaque minute pendant le vol). force : écrit
  *  même si seul « at » change. */
 function updateProgress(force = false) {
   const c = progressCalc(),
-    f = S.flight,
-    pts = f.route?.points || [];
+    f = S.flight;
   let next = null;
   if (c) {
     const unit = S.C?.sheet?.unit || 'kg',
       rem = Math.max(0, (S.C.q.block || 0) - c.st.fuelUsed);
     next = {
       at: new Date().toISOString(),
-      plannedPos: {
-        lat: +c.pos.lat.toFixed(4),
-        lon: +c.pos.lon.toFixed(4),
-        legIndex: c.pos.legIndex,
-        nmFromDep: Math.round(c.st.nmFromDep * 10) / 10
-      },
-      eta: c.etas.map(e => ({
-        id: pts[e.i]?.id || '',
-        at: new Date(e.at).toISOString()
-      })),
+      // heures de passage et position prévue : dérivées chez le lecteur de quote.legs (frame/lib/current_flight.js
+      // etaOf, plannedPositionAt) ; undefined efface ce qu'une version précédente avait écrit (JSON le laisse tomber)
+      plannedPos: undefined,
+      eta: undefined,
       fuelRemainingKg: Math.round(window.FuelModel.convertFuel(rem, unit, 'kg')),
       remainingNm: Math.round(c.st.remainingNm),
       phase: c.st.phase
@@ -2755,6 +2883,7 @@ function renderProgress(C) {
     line = c.st.phase === 'arrived' ? tt(TX.progArrived, {
       f: rem
     }) : c.st.phase === 'taxi' ? tt(TX.progTaxi, {
+      t: c.etas[0] ? hhmmOf(new Date(c.etas[0].at).toISOString()) : '—', // décollage prévu : fin du roulage
       f: rem
     }) : tt(TX.progNow, {
       d: distTxt(c.st.nmFromDep),
@@ -2763,7 +2892,7 @@ function renderProgress(C) {
       r: distTxt(c.st.remainingNm),
       f: rem
     });
-  box.innerHTML = `<p>${esc(line)}</p><div class="f-list">${c.etas.map(e => `<div class="f-item fu-eta${c.st.phase !== 'arrived' && e.i === c.pos.legIndex + 1 ? ' fu-next-pt' : ''}"${e.i === c.pos.legIndex + 1 && c.st.phase !== 'arrived' ? ' aria-current="step"' : ''}><span><b>${esc(pts[e.i]?.id || '')}</b></span><span class="f-num">${esc(hhmmOf(new Date(e.at).toISOString()))}</span></div>`).join('')}</div>`;
+  box.innerHTML = `<p>${esc(line)}</p><div class="f-list">${c.etas.map(e => `<div class="f-item fu-eta${c.st.phase !== 'arrived' && e.i === c.pos.legIndex + 1 ? ' fu-next-pt' : ''}"${e.i === c.pos.legIndex + 1 && c.st.phase !== 'arrived' ? ' aria-current="step"' : ''}><span><b>${esc(pts[e.i]?.id || '')}</b></span><span class="f-num">${esc((e === c.etas[0] || e === c.etas.at(-1) ? hhmmLocal : hhmmOf)(new Date(e.at).toISOString()))}</span></div>`).join('')}</div>`;
 }
 /** Récapitulatif du pas Départ : appareil, route normalisée, niveau (paliers), vent et sa source, carburant bloc. */
 function renderSummary(C) {
@@ -2788,7 +2917,6 @@ function renderSummary(C) {
   if (row) {
     const on = !!f.started?.at; // un vol démarré s'arrête par son compte rendu (report remet started à null) ou s'annule
     row.innerHTML = on ? `<button type="button" data-do="cancelstart">${esc(tt(TX.cancelStart))}</button>` : `<button type="button" class="primary" data-do="start">${esc(tt(TX.start))}</button>`;
-    row.insertAdjacentHTML('beforeend', `<span class="f-muted">${esc(flightState())}</span>`);
   }
   const sn = S.body.querySelector('[data-startnote]');
   if (sn) sn.textContent = f.started?.at && startNote?.at === f.started.at ? startNote.text : ''; // ce que la relecture au départ a changé
@@ -2797,7 +2925,7 @@ function renderSummary(C) {
 /** Vol courant écrit par un autre module (by ≠ 'fuel' : maps, route modifiée sur la carte) : ses points et son texte
  *  sont gardés tels qu'il les a écrits (ni relus ni normalisés) ; distance et route vraie redéduites des points, devis
  *  refait, profil réécrit et vol courant réécrit par fuel (by: 'fuel') — maps sait alors que TOC et TOD sont à jour.
- *  Que l'écran soit Préparer ou Fiches. */
+ *  Que l'écran soit Devis ou Fiches. */
 function adoptForeignFlight() {
   const r = S.flight.route ||= emptyFlight().route;
   routeDerived(r);
@@ -2826,7 +2954,7 @@ function resolveRoute(normalize = true) {
         points,
         unresolved,
         tokens
-      } = await routePoints(r.text, r.dep, r.arr, known);
+      } = await routePoints(r.text, r.dep, r.arr, known, r.points || []);
     if (gone(s) || seq !== S.routeSeq || !S.body) return;
     r.points = points;
     if (S.aloft) aloftApply();
@@ -2847,6 +2975,121 @@ function resolveRoute(normalize = true) {
     saveFlight();
     refresh();
   }, 500);
+}
+/** Bouton « Auto » : inscrit les voies aériennes entre les points nommés consécutifs qui n'en ont pas, au niveau prévu
+ *  (celui du vol, sinon celui du devis, sinon 6 500 ft comme la V2 — dit dans une notification). Le routage est celui de
+ *  la bibliothèque du cadre (frame/lib/routing.js : plus court chemin sur les segments de la base publiée, tronçons
+ *  ouverts au niveau, détour limité à 40 %, pas de sens unique ni de restriction fine). Écrit route.text (« PT1 UN460 PT2 »)
+ *  et route.points (les points de la voie y compris ceux que le texte n'écrit pas : distance et carte suivent la voie), puis
+ *  relit la route (resolveRoute) et refait le devis. Un point d'extrémité de voie qu'aerodb ne connaît pas garde la
+ *  position du segment : il est dans route.points, que la relecture prend en secours. */
+async function autoAirways() {
+  const s = S,
+    f = S.flight,
+    r = f.route;
+  if (S.flightPending || !r || S.autoBusy) return;
+  S.autoBusy = true;
+  const btn = S.body?.querySelector('[data-do="rauto"]');
+  if (btn) btn.disabled = true;
+  try {
+    const seq = S.routeSeq,
+      known = new Map((r.points || []).filter(p => p?.id && Number.isFinite(+p.lat)).map(p => [p.id, p])),
+      {
+        points,
+        tokens
+      } = await routePoints(r.text, r.dep, r.arr, known, r.points || []);
+    if (gone(s) || seq !== S.routeSeq) return;
+    // points écrits, dans l'ordre ; adj[i] : le point i+1 suit le point i dans le texte sans rien entre eux (ni voie, ni
+    // procédure) ; entry[i] : une voie part du point i ; exit[i] : le point i est arrivé par une voie
+    const idx = tokens.map((t, i) => t.pt ? i : -1).filter(i => i >= 0),
+      chain = idx.map(i => tokens[i].pt),
+      adj = idx.map((t, i) => idx[i + 1] === t + 1),
+      entry = idx.map(i => !!tokens[i + 1]?.keep && AIRWAY_WORD.test(tokens[i + 1].keep)),
+      free = i => !(chain[i].via || entry[i]);
+    if (chain.length < 2 || !adj.some(Boolean)) return S.ctx.notify(tt(TX.autoNoLeg), 'warn');
+    const planned = +f.level?.ft || +S.C?.q?.levelFt || 0,
+      base = planned || RG.DEFAULTS.ifrMinFt,
+      at = [];
+    let cur = base;
+    chain.forEach((p, i) => { // niveau tenu au départ de chaque tronçon (un point peut en changer)
+      if (i && p.alt_ft) cur = p.alt_ft;
+      at.push(cur);
+    });
+    let res;
+    try {
+      res = await RG.expand(S.ctx.aerodb, chain, {
+        altOf: i => at[i],
+        skip: i => !adj[i]
+      });
+    } catch (e) {
+      if (gone(s)) return;
+      if (e?.code === 'base') return S.ctx.notify(tt(TX.autoNoBase), 'warn');
+      throw e;
+    }
+    if (gone(s) || seq !== S.routeSeq) return;
+    if (!planned) S.ctx.notify(tt(TX.autoNoLevel, {
+      l: flTxt(base)
+    }), 'warn');
+    // un tronçon sans voie compte comme un échec s'il ne touche pas une voie déjà écrite (l'entrée ou la sortie directe
+    // d'une voie, que le routage a choisie, ne se retente pas sans bruit)
+    const failed = res.legs.map((l, i) => ['none', 'far', 'detour'].includes(l.status) && free(i) && free(i + 1) ? i : -1).filter(i =>
+        i >= 0),
+      noway = () => {
+        const [i] = failed;
+        S.ctx.notify(tt(TX.autoNone, {
+          a: chain[i].id,
+          b: chain[i + 1].id,
+          more: failed.length > 1 ? ` (+${failed.length - 1})` : ''
+        }), 'warn');
+      };
+    const done = res.legs.map((l, i) => l.status === 'routed' ? i : -1).filter(i => i >= 0);
+    if (!done.length) return failed.length ? noway() : S.ctx.notify(tt(TX.autoNoLeg), 'warn');
+    // texte et points réécrits : les tronçons routés reçoivent les jetons et les points de leur voie avant leur point d'arrivée
+    const dest = new Map(done.map(i => [chain[i + 1], res.legs[i]])),
+      newTokens = [],
+      newPoints = [],
+      leave = pt => { // une arrivée « DCT » ne s'écrit pas : le texte normalisé n'a pas de DCT
+        if (pt.via === 'DCT') delete pt.via;
+        return pt;
+      };
+    for (const t of tokens) {
+      const l = t.pt && dest.get(t.pt);
+      if (l) newTokens.push(...RG.tokensOf(l.points, {
+        dct: false
+      }).slice(1, -1));
+      newTokens.push(t);
+    }
+    for (const p of points) {
+      const l = dest.get(p);
+      if (l) {
+        newPoints.push(...l.points.slice(1, -1).map(leave));
+        const exit = l.points.at(-1).via;
+        if (exit && exit !== 'DCT') p.via = exit;
+        else delete p.via;
+      }
+      newPoints.push(p);
+    }
+    r.points = newPoints;
+    r.text = routeText(newTokens);
+    r.from = 'route';
+    const ta = S.body?.querySelector('[data-k="rtext"]');
+    if (ta && ta.value !== r.text) ta.value = r.text;
+    routeDerived(r);
+    renderPts();
+    saveFlight();
+    refresh();
+    resolveRoute(); // relecture (position des extrémités de voie prise dans route.points), distance, météo, devis
+    const names = new Set(done.flatMap(i => res.legs[i].routes));
+    S.ctx.notify(tt(names.size === 1 ? TX.autoOne : TX.autoMany, {
+      n: names.size,
+      d: distTxt(Math.round(res.nm))
+    }), 'ok');
+    if (failed.length) noway();
+  } finally {
+    if (!gone(s)) S.autoBusy = false;
+    const b = s.body?.querySelector('[data-do="rauto"]');
+    if (b) b.disabled = false;
+  }
 }
 /** Dernier OFP SimBrief (identifiant de l'identité) par ctx.net : gardé sur l'appareil (cache), route, niveau, vent et
  *  appareil repris dans le vol courant. */
@@ -2877,6 +3120,23 @@ async function loadSimbrief() {
   if (gone(s)) return;
   S.ofp = ofp;
   applyOfp(ofp);
+  // SID et STAR déposées dans l'OFP : au schéma commun d'aerodb (gardées sur l'appareil et synchronisées si le lecteur
+  // écrit), et dans le vol courant pour que la Carte les trace ; un OFP à la fois, aucun autre appel à SimBrief
+  let pr = null;
+  try {
+    pr = (await s.ctx.aerodb?.rememberOfp?.(ofp)) || (await s.ctx.aerodb?.procedureFromOfp?.(ofp));
+  } catch {
+    /* sans procédures : la route de l'OFP reste telle quelle */
+  }
+  if (gone(s) || S.ofp !== ofp) return;
+  S.flight.route = {
+    ...S.flight.route,
+    procedures: pr && (pr.sid || pr.star) ? {
+      sid: pr.sid,
+      star: pr.star
+    } : null
+  };
+  saveFlight();
 }
 /** Reprend un OFP SimBrief dans le vol courant (route « ID lat lon », départ, arrivée, dégagement, niveau, vent moyen,
  *  écart ISA, appareil s'il a une fiche du même type ou de la même immatriculation). */
@@ -2970,17 +3230,27 @@ function shareProfile(q) {
   S.flight.quote = sum;
   saveFlight();
 }
-/** Résumé du devis pour le compte rendu (current_flight.quote) : carburant bloc et délestage arrondis, dans l'unité de
- *  la fiche, temps de vol (min), niveau ; null sans devis chiffré. */
+/** Résumé du devis pour le compte rendu et la Carte (current_flight.quote) : carburant bloc et délestage arrondis,
+ *  dans l'unité de la fiche, temps de vol (min), niveau, et legs : à chaque point de la route, les minutes cumulées
+ *  depuis le lâcher des freins (roulage à part : settings.taxiMin), tirées de l'horaire prévu du devis (montée,
+ *  croisière par tronçon avec son vent, descente), et taxiMin, ce roulage ; null sans devis chiffré. */
 function quoteSummary(q) {
   if (!q?.hasFuel) return null;
+  const P = progressPlan(S.C),
+    pts = S.flight.route?.points || [],
+    taxi = +S.settings.taxiMin || 0;
   return {
     block: Math.round(q.block),
     trip: Math.round(q.trip),
     unit: S.C?.sheet?.unit || 'kg',
     minutes: Math.round(q.minutes),
     levelFt: q.levelFt || null,
-    approx: !!q.approx
+    approx: !!q.approx,
+    taxiMin: taxi, // roulage compté par le devis : legs part du lâcher des freins, après lui
+    legs: P ? PG.etas(P, 0).map(e => ({
+      id: pts[e.i]?.id || '',
+      min: Math.max(0, Math.round((e.at / 60000 - taxi) * 10) / 10)
+    })) : null
   };
 }
 
@@ -3008,6 +3278,19 @@ function openInLinks(C) {
 
 function refresh() {
   if (!S?.body || S.view !== 'plan') return;
+  if (S.refsPending || S.flightPending) {
+    const res = S.body.querySelector('[data-block="result"]'),
+      ac = S.body.querySelector('[data-acsel]'),
+      text = tt(S.flightPending ? TX.loadingFlight : TX.loadingRefs);
+    if (res) {
+      res.dataset.loading = '';
+      res.innerHTML = `<span class="f-muted">${esc(text)}</span>`;
+    }
+    if (ac) ac.innerHTML = `<span class="f-muted">${esc(tt(TX.loadingRefs))}</span>`;
+    S.body.inert = !!S.flightPending; // le vol pas encore lu : rien à saisir
+    return;
+  }
+  S.body.querySelector('[data-block="result"]')?.removeAttribute('data-loading');
   const C = S.C = compute(),
     {
       q,
@@ -3039,6 +3322,7 @@ function refresh() {
   else dec.innerHTML = decisionSvg(C, dec) + `<div class="fu-legend">
       <span><span class="f-dot" style="background:var(--sog-chart-3)"></span>${esc(tt(TX.leastFuel, { fl: flTxt(D.best.h), f: fuelTxt(D.best.fuel, unit) }))}</span>
       <span><span class="f-dot fu-sq" style="background:var(--sog-chart-4)"></span>${esc(tt(TX.fastest, { fl: flTxt(D.fast.h), t: hmm(D.fast.minutes) }))}</span>
+      ${D.plan ? `<span title="${esc(tt(TX.planPtHint))}"><span class="fu-dia"></span>${esc(tt(TX.planPt, { fl: flTxt(D.plan.h), f: fuelTxt(D.plan.fuel, unit), t: hmm(D.plan.minutes) }))}</span>` : ''}
     </div>
     ${D.gap ? `<p class="f-warn">${esc(tt(TX.gap, { fl: flTxt(D.gap.from), r: tt(TX.reasons[D.gap.reason] || TX.reasons.thrust) }))}</p>` : ''}
     <div class="f-row"><button type="button" data-do="level" data-ft="${D.best.h}">${esc(tt(TX.use, { fl: flTxt(D.best.h) }))}</button>${D.fast.h !== D.best.h ? `<button type="button" data-do="level" data-ft="${D.fast.h}">${esc(tt(TX.use, { fl: flTxt(D.fast.h) }))}</button>` : ''}<span class="f-muted">${esc(tt(TX.decisionHint))}</span></div>`;
@@ -3049,9 +3333,9 @@ function refresh() {
   else {
     const range = !q.windKnown && Number.isFinite(q.blockLow) && Number.isFinite(q.blockHigh) && Math.round(q.blockLow) !== Math.round(q
       .blockHigh);
-    res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted">${esc(tt(TX.block))} · ${q.steps ? q.steps.levels.map(l => flTxt(l.ft)).join(' → ') : flTxt(q.levelFt)}${unitOf('alt') !== 'ft' ? ` (${esc(altTxt(q.levelFt))})` : ''}${q.approx ? ` · ${esc(tt(TX.approx))}` : ''}${range ? ` · ${esc(tt(TX.windRange))}` : windShort() ? ` · ${esc(windShort())}` : ''}</div>
+    res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted fu-ctx" title="${esc(resultContext(q, range, false))}">${esc(resultContext(q, range, true))}</div>
       <div class="fu-big">${range ? `${esc(fuelTxt(q.blockLow, unit))} – ${esc(fuelTxt(q.blockHigh, unit))}` : esc(fuelTxt(q.block, unit))}</div>
-      <div class="f-tiles"><span class="f-muted">${esc(tt(TX.trip))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted">${esc(tt(TX.tod))}<b>${esc(tt(TX.todVal, { d: distTxt(q.todNm) }))}</b></span></div>
+      <div class="f-tiles"><span class="f-muted" title="${esc(tt(TX.trip))}">${esc(tt(TX.tripS))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted" title="${esc(tt(TX.time))}">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted" title="${esc(`${tt(TX.tod)} : ${tt(TX.todVal, { d: distTxt(q.todNm) })}`)}">${esc(tt(TX.todS))}<b>${esc(distTxt(q.todNm))}</b></span></div>
       ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}`;
   }
   // détail du devis (replié)
@@ -3081,6 +3365,7 @@ function refresh() {
 // ---------------------------------------------------------------- écran Fiches
 /** Dessine la liste des fiches et les gestes d'import. */
 function renderSheets() {
+  if (S.refsPending) return void(S.body.innerHTML = `<p class="f-muted">${esc(tt(TX.loadingRefs))}</p>`); // fiches pas encore là
   const F = SH(),
     lang = S.ctx.lang();
   S.edit = null;
@@ -3523,39 +3808,53 @@ function download(name, text, type) {
 }
 
 // ---------------------------------------------------------------- montage
-/** Passe d'un écran du module à l'autre (Préparer, Fiches). */
+/** Passe d'un écran du module à l'autre (Devis, Fiches). */
 function show(view) {
   S.view = view;
+  viewInAddress(view);
   for (const b of S.el.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', String(b.dataset.view === view));
-  S.ui.view = view;
-  S.ctx.data.put(UI_PATH, S.ui);
   view === 'sheets' ? renderSheets() : renderPlan();
 }
 
+/** Écran affiché → adresse : `?view=sheets` pour les Fiches, rien pour le Devis (les autres clés, `with`, `from`, `focus`,
+ *  restent). Pas de navigation, pas de remontage (replaceState : aucun événement), l'adresse seule change pour que le
+ *  popover du cadre marque la rangée de l'écran affiché. Rien n'est écrit si l'adresse n'est plus celle de fuel. */
+function viewInAddress(view) {
+  const [id, query = ''] = location.hash.slice(1).split('?');
+  if (id !== 'fuel') return;
+  const q = new URLSearchParams(query);
+  if (view === 'sheets') q.set('view', 'sheets');
+  else q.delete('view');
+  const rest = q.toString(),
+    hash = `#fuel${rest ? `?${rest}` : ''}`;
+  if (location.hash !== hash) history.replaceState(history.state, '', hash);
+}
+
 export async function mount(el, ctx) {
-  await loadLibs();
-  S = {
+  // jeton de ce montage : S lui-même. Un montage dont l'adresse a changé pendant ses lectures (unmount, ou un second
+  // mount qui a posé son propre S) ne doit plus rien écrire : S est un global du module, sans ce contrôle le show() du
+  // premier montage tournerait sur l'état du second (relais cloud, 24 oct. 2026, DECISIONS.md)
+  const self = S = {
     el,
     ctx,
     sheets: [],
     stops: [],
     view: 'plan'
   };
-  S.A = ctx.aerodb?.aircraft ? await ctx.aerodb.aircraft().catch(() => null) : null;
-  // logique des fiches d'aerodb : types, fiches et flotte réglés par aerodb ; ici la fiche active, la langue, les textes
-  SH()?.configure({
-    profiles: () => Object.fromEntries(S.sheets.map(p => [p.id, p])),
-    active: () => S.edit || S.C?.sheet || null,
-    lang: () => ctx.lang(),
-    t: row => ctx.t(row),
-    tf: (row, vals) => ctx.t(row, vals)
-  });
-  await readSheets();
-  const kept = (await ctx.data.get(pilotPath('current_flight.json'))) || {};
-  S.flight = {
-    ...emptyFlight(),
-    ...kept
-  };
+  // premier dessin sans attendre le réseau (audit de poids, mesure 4) : les bibliothèques et ce que l'appareil a déjà
+  // (read sans wait : la copie gardée, ou null pour un fichier jamais lu) ; le registre d'aerodb, les fiches, et le
+  // vol courant ou les réglages jamais lus arrivent ensuite (completeMount) — en attendant « chargement… », et rien
+  // n'est écrit ni calculé
+  const rd = path => Promise.resolve().then(() => ctx.data.read(path)).then(r => r?.value ?? null).catch(() => null),
+    [, kept0, fuelSettings, ofp, ui, lastAcKept] = await Promise.all([loadLibs(), rd(pilotPath('current_flight.json')),
+      rd(pilotPath('fuel.json')), rd(OFP_PATH), rd(UI_PATH), rd(LAST_AC_PATH)
+    ]);
+  if (gone(self)) return; // démonté, ou remplacé par un autre montage, pendant les lectures
+  S.refsPending = true; // registre d'aerodb et fiches pas encore là : ni devis, ni écriture du devis
+  S.flightPending = kept0 == null; // vol courant jamais lu sur cet appareil : écran en attente, aucune écriture
+  S.settingsPending = fuelSettings == null;
+  const kept = kept0 || {};
+  S.flight = flightOf(kept);
   S.settings = {
     taxiMin: 10,
     reserveMin: 30,
@@ -3565,33 +3864,35 @@ export async function mount(el, ctx) {
     displayAlt: 'ft',
     displayDist: 'NM',
     entries: {},
-    ...((await ctx.data.get(pilotPath('fuel.json'))) || {})
+    ...(fuelSettings || {})
   };
-  // un vol sans écart ISA part du dernier écart retenu (réglages du devis)
-  if (!Number.isFinite(+kept.isaDev)) S.flight.isaDev = +S.settings.isaDev || 0;
-  S.ofp = await ctx.data.get(OFP_PATH);
-  // météo : dernières valeurs gardées sur l'appareil, relues ensuite si l'appareil est en ligne
-  const wxKept = await ctx.data.get(WX_PATH).catch(() => null);
-  S.wx = wxKept?.at ? {
-    ...wxKept,
-    cached: true
-  } : null;
-  S.ui = (await ctx.data.get(UI_PATH)) || {};
-  const aloftKept = await ctx.data.get(ALOFT_PATH).catch(() => null);
-  S.aloft = aloftKept?.profiles ? {
-    ...aloftKept,
-    cached: true
-  } : null;
+  S.lastAc = lastAcKept?.aircraft || null;
+  if (!S.flightPending) flightDefaults(kept);
+  S.ofp = ofp;
+  // météo : la couche du cadre (ctx.weather) la garde ; relue au premier dessin (hors ligne : sa réserve seulement)
+  S.wx = null;
+  S.ui = ui || {};
+  delete S.ui.view; // gardé par les versions précédentes, plus lu ni écrit : l'écran s'ouvre toujours sur le Plan
+  S.aloft = null;
+  for (const path of OLD_WEATHER) ctx.data.remove?.(path)?.catch?.(() => {});
   // pas de la préparation : celui gardé, ou Route quand la Carte envoie « Modifier la route » (#fuel?focus=route)
   S.focusRoute = ctx.query?.focus === 'route';
   S.step = S.focusRoute ? 1 : Math.max(0, Math.min(4, +S.ui.step || 0));
-  el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(['Carburant et niveau', 'Fuel and level', 'Kraftstoff und Flugfläche', 'Combustible y nivel']))}</h1>
+  el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
     <div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>
     <div data-body></div>`;
+  // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
+  // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
+  S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);
+  S.srTitle();
+  window.addEventListener('frame-titled', S.srTitle);
   S.body = el.querySelector('[data-body]');
+  // « ? » de l'en-tête : le chapitre au paragraphe de l'écran (Fiches ; le pas affiché sur téléphone, où la barre des pas est
+  // visible ; le devis entier sur un module large, où les cinq pas sont les uns sous les autres)
+  ctx.helpAnchor?.(() => S?.view === 'sheets' ? 'fuel-sheets' : S?.body?.querySelector('.fu-steps')?.offsetParent ? `fuel-step-${S.step + 1}` :
+    'fuel-quote');
   el.querySelector('.f-tabs').onclick = e => e.target.dataset.view && show(e.target.dataset.view);
   // fiches changées ailleurs (synchronisation, autre onglet) ; vol courant écrit par maps
-  const self = S; // ce montage : une relecture qui revient après le démontage n'écrit rien
   S.stops.push(ctx.aerodb?.on?.('change', async e => {
     if (!e?.aircraft || gone(self) || !S.body) return;
     const A = await ctx.aerodb.aircraft().catch(() => S.A);
@@ -3614,10 +3915,16 @@ export async function mount(el, ctx) {
       // carte) est relue sans être refaite ni réécrite
       plan = x => JSON.stringify([x?.route?.points, x?.route?.distanceNm, x?.level, x?.aircraft, x?.started?.at ?? null]),
       planChanged = plan(f) !== plan(S.flight);
-    S.flight = {
-      ...emptyFlight(),
-      ...f
-    };
+    const oldPlanned = S.flight.planned_at ?? null;
+    S.flight = flightOf(f);
+    if (S.flightPending) S.flightSeen = true; // arrivé avant la fin du montage : completeMount le garde
+    if (S.flightPending || S.refsPending) return; // montage pas fini : completeMount dessine et reprend ce vol
+    if ((S.flight.planned_at ?? null) !==
+      oldPlanned) { // date du vol changée ailleurs (autre appareil) : champ, météo et vents relus
+      const wd = S.body?.querySelector('[data-k="wxdate"]');
+      if (wd && wd.value !== isoToWhen(S.flight.planned_at)) wd.value = isoToWhen(S.flight.planned_at);
+      whenChanged();
+    }
     if (keepText != null) S.flight.route = { // route en cours de frappe : la valeur du champ reste la vérité
       ...emptyFlight().route,
       ...S.flight.route,
@@ -3627,6 +3934,12 @@ export async function mount(el, ctx) {
     if (S.view === 'plan') S.body.contains(document.activeElement) ? refresh() : renderPlan();
     if (f.by && f.by !== 'fuel') adoptForeignFlight();
   }));
+  // vue double : « Afficher la carte » masqué tant que la carte est à côté (ctx.layout du cadre, suivi par frame-layout)
+  const onLayout = () => S?.body?.querySelector('[data-do="showmap"]')?.classList.toggle('fu-hide', S.ctx.layout?.with === 'maps');
+  window.addEventListener('frame-layout', onLayout);
+  S.stops.push(() => window.removeEventListener('frame-layout', onLayout));
+  const srTitle = S.srTitle;
+  S.stops.push(() => window.removeEventListener('frame-titled', srTitle));
   // dessins à la largeur de l'écran
   const ro = new ResizeObserver(() => {
     clearTimeout(S.roTimer);
@@ -3640,14 +3953,78 @@ export async function mount(el, ctx) {
     refresh();
   }, 60000);
   S.stops.push(() => clearInterval(tick));
-  show(S.focusRoute || S.ui.view !== 'sheets' ? 'plan' : 'sheets');
-  if (S.focusRoute) { // « Modifier la route » de la Carte : le champ de la route prêt à la frappe, curseur au bout
+  // toujours le Plan à l'ouverture : on vient ici pour le plan de vol ou le devis, rarement pour une fiche d'appareil ;
+  // les Fiches s'ouvrent par leur onglet ou par l'adresse #fuel?view=sheets (le dernier écran n'est plus gardé)
+  show(!S.focusRoute && ctx.query?.view === 'sheets' ? 'sheets' : 'plan');
+  if (!S.flightPending) flightReady();
+  completeMount(self); // pas attendu : le cadre a son écran tout de suite
+}
+/** Vol courant connu : un vol sans appareil reprend le dernier choisi sur cet appareil (plus de première fiche par
+ *  défaut), un vol sans écart ISA le dernier écart retenu (réglages du devis). */
+function flightDefaults(kept) {
+  const ka = S.flight.aircraft || {};
+  if (S.lastAc && !(ka.sheetId || ka.type || ka.registration)) S.flight.aircraft = {
+    ...S.lastAc
+  };
+  if (!Number.isFinite(+kept.isaDev)) S.flight.isaDev = +S.settings.isaDev || 0;
+}
+/** Vol courant connu et à l'écran : « Modifier la route » de la Carte (champ prêt à la frappe) ; la reprise attend le
+ *  registre d'aerodb (elle chiffre le devis). */
+function flightReady() {
+  S.body.inert = false;
+  if (S.focusRoute) {
     const ta = S.body.querySelector('[data-k="rtext"]');
     ta?.focus();
     ta?.setSelectionRange?.(ta.value.length, ta.value.length);
   }
-  if (S.flight.by && S.flight.by !== 'fuel') adoptForeignFlight(); // vol modifié ailleurs pendant l'absence de fuel
+  if (!S.refsPending) resumeFlight();
+}
+/** Vol modifié ailleurs pendant l'absence de fuel : repris (devis refait) ; sinon la route relue. */
+function resumeFlight() {
+  if (S.flight.by && S.flight.by !== 'fuel') adoptForeignFlight();
   else if (S.flight.route?.text || S.flight.route?.dep) S.flight.route.manual || resolveRoute();
+}
+/** Seconde moitié du montage, après le premier dessin : registre d'aerodb et fiches, puis le vol courant et les
+ *  réglages s'ils n'avaient jamais été lus sur cet appareil (attente du réseau) ; l'écran se complète sans bouger. */
+async function completeMount(self) {
+  const ctx = self.ctx,
+    // read avec wait : un fichier jamais lu attend le réseau (get rendrait null tout de suite sur un appareil neuf)
+    get = path => Promise.resolve().then(() => ctx.data.read(path, {
+      wait: true
+    })).then(r => r?.value ?? null).catch(() => null),
+    [A, kept1, fs1] = await Promise.all([ctx.aerodb?.aircraft ? ctx.aerodb.aircraft().catch(() => null) : null,
+      self.flightPending ? get(pilotPath('current_flight.json')) : null, self.settingsPending ? get(pilotPath('fuel.json')) :
+      null
+    ]);
+  if (gone(self)) return;
+  S.A = A;
+  // logique des fiches d'aerodb : types, fiches et flotte réglés par aerodb ; ici la fiche active, la langue, les textes
+  SH()?.configure({
+    profiles: () => Object.fromEntries(S.sheets.map(p => [p.id, p])),
+    active: () => S.edit || S.C?.sheet || null,
+    lang: () => ctx.lang(),
+    t: row => ctx.t(row),
+    tf: (row, vals) => ctx.t(row, vals)
+  });
+  await readSheets();
+  if (gone(self)) return;
+  if (S.settingsPending) {
+    S.settings = {
+      ...S.settings,
+      ...(fs1 || {})
+    };
+    S.settingsPending = false;
+  }
+  const wasPending = S.flightPending;
+  if (wasPending) { // le vol ne vient que maintenant (sauf s'il est déjà arrivé par le suivi du vol courant)
+    if (!S.flightSeen) S.flight = flightOf(kept1);
+    flightDefaults(kept1 || {});
+    S.flightPending = false;
+  }
+  S.refsPending = false;
+  if (S.view === 'plan') renderPlan();
+  else if (!S.edit && !S.pending) keepScroll(S.body, renderSheets);
+  wasPending ? flightReady() : resumeFlight();
 }
 
 export function unmount() {
