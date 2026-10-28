@@ -566,6 +566,84 @@ be tested on port 8000 with the usual browser (old cache) and on the 50 pages of
 | Accepted risk: no CSP | to be reviewed: the CSP serves first to close the exits (`connect-src`), without waiting for the inline scripts to be moved out (M2) |
 | New since: `secrets/` (IVAO key), `/__setup/downloads` | served or readable without restriction (E1, E2) |
 
+## <a id="review-1028"></a>Review of 28 October (V3, `origin/v3` 2665371bf)
+
+Read-only review of the work of the cloud relay session (24–27 October). Classification: **blocking**, **to fix**,
+**acceptable**. No token was handled during the review.
+
+| # | Subject | Verdict |
+|---|---|---|
+| 1 | CSP: 13 hosts of the data laboratory in `connect-src` | to fix |
+| 2a | Test hook `sogLab:urls` | acceptable |
+| 2b | Trial publication through the device's GitHub transport | to fix |
+| 2c | Files read from Downloads (`/__setup/downloads`) | acceptable (one note) |
+| 3 | `#datalab`: a frame screen drawn by a service, `fetch` exception | to fix (scope) |
+| 4 | `tools/proc_ead.py --probe` (EAD Basic login) | to fix |
+| 5 | Keys moved to `device/keys.json` (IndexedDB) | acceptable |
+| 6 | Fixtures published in the public repository | to check (licences) |
+
+**1. CSP — to fix.**
+- The 13 laboratory hosts (`tools/csp_policy.py`, `CONNECT`) are added to the policy of **every page**, not only
+  `#datalab`: `connect-src` is what limits exfiltration after an injection (`script-src` keeps `'unsafe-inline'`).
+- `https://services6.arcgis.com` is a **multi-tenant** host (ArcGIS Online): anyone can create a feature service there
+  and receive data by POST. It is an exfiltration channel. Restrict it to the path of the service actually measured
+  (`https://services6.arcgis.com/<organisation id>/`); CSP accepts a path.
+- `https://www.ead.eurocontrol.int` is a login service: only the probe's empty form test needs it; nothing in a page
+  should send credentials there (see 4).
+- Give the block an end date in the code (with the laboratory's removal) rather than « temporary » alone.
+
+**2a. `sogLab:urls` hook — acceptable.** Read only when the page itself is served from `localhost`, `127.0.0.1` or
+`[::1]`, and replacement addresses are limited to https or local http (`lab_sources.js` `isLocalPage`, `testUrl`). A
+page on GitHub Pages cannot be steered by a planted localStorage value.
+
+**2b. Trial publication — to fix.**
+- Each button writes a 0.5 to 10 MB filler block (`lab/essai-….json`) **to the real data repository**, on its working
+  branch, with the device's token; confirmation is asked (`askPub`) and « Clean » only lists and deletes `lab/essai-*`.
+- But a deletion does not remove the blob from Git history: every run adds up to about 18 MB to the data repository for
+  good (clones, phone transport, GitHub size limits).
+- Publish to a dedicated branch (`lab/…`, deleted afterwards) or a scratch repository, never the data branch.
+
+**2c. Downloads — acceptable.** `/__setup/downloads` stays restricted to the page served by the launcher (`_allowed`), and
+to the patterns declared in code (`download_patterns`: `export_xml_bd_sia_*.zip`, `EG_*_DS_*_XML.zip`, `CIFP_*.zip`), never
+« *.* », without a path. Note: the file is read whole into memory (`f.read()`); a SIA ZIP of several hundred MB should be
+streamed.
+
+**3. `#datalab` — to fix (scope).**
+- The exception is documented (`frame/INTEGRATION.md` § 13): the screen calls `fetch` itself, the token stays in the
+  transport, and the data adapter is limited (`sia/base/` read, `cache/lab/` written).
+- The `github()` transport handed to the laboratory has full write rights (`commit` on any path), whereas it only needs
+  `lab/`. Hand it a transport restricted to the `lab/` prefix, so that an error or a compromised laboratory script
+  cannot write elsewhere in the data repository.
+
+**4. `tools/proc_ead.py --probe` — to fix.**
+- Good: password through `getpass` or `EAD_PASSWORD`, never on the command line; only `www.ead.eurocontrol.int` (or
+  `http://127.0.0.1` for local tests); report and saved pages sanitised.
+- The sanitising only replaces the secret **as typed**. A password echoed URL-encoded or HTML-escaped (redirect address,
+  reflected form) stays in the saved pages: also replace `quote()`, `quote_plus()` and `html.escape()` of each secret.
+- Redirects are followed without checking the host (`call` only checks the first address). Cookies are domain-scoped,
+  but the report then records pages from another host: refuse a redirect that leaves `HOST`.
+- The output folder `ead_probe/` (default, in the current folder) is **not** in `.gitignore`: run from the repository
+  root, the saved pages can be committed. Ignore it, or default to a folder outside the repository.
+- Automated access to EAD Basic: check its terms of use before keeping the tool (personal account, no robot).
+
+**5. Keys in `device/keys.json` — acceptable.**
+- The GitHub token and the avwx key live in the frame's IndexedDB base, `cache` policy, under the `device/` prefix.
+  They are excluded from synchronisation and from backups (`frame_data.js`: `device/` filtered out of documents and
+  pending writes).
+- It does not protect against an injection in the page (same origin, readable like localStorage before). The protection
+  remains the CSP (point 1) and a fine-grained token limited to the data repository.
+
+**6. Fixtures in the public repository — to check.**
+- `ofp_lfrs_lfml.json`: route only (fixes, levels, rounded positions), no pilot, user id or key: fine.
+- `lab/XML_SIA_sample.xml`: synthetic (« TERRAIN FICTIF »): fine.
+- `cifp/KSEA_subset.arinc`: FAA CIFP, a work of the US government, public domain: fine.
+- `eaip/AD_2_LF*_DATA_*.rows.txt` and `lab/AIXM4.5_sample.xml` (« Sia-France »): extracts of the French eAIP and SIA
+  data. Check the SIA's reuse conditions before publishing them; otherwise replace them with synthetic data in the same
+  format, like `XML_SIA_sample.xml`.
+
+Follow-up: none of these points is a direct remote attack; the most urgent are 1 (exfiltration host) and 2b
+(irreversible growth of the data repository).
+
 ## Appendix A — Hosts contacted
 
 | Host | From | What goes out |
