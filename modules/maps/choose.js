@@ -201,9 +201,8 @@ export async function chooseLoad() {
       icao: C.icao
     })), Promise.resolve().then(() => A?.coords?.(C.icao)).catch(() => null)]);
   if (!S) return;
-  // jamais une fiche douteuse : ni statut doubt, ni fiche sans nom ou « NONAME » (la même règle que la liste de Carburant, sinon la
-  // Carte proposerait ce que Carburant ne montre pas)
-  C.recs = recs.filter(p => p?.id && p.status !== 'doubt' && String(p.name ?? '').trim() && !/\.NONAME\./i.test(p.id));
+  // jamais une fiche douteuse (PR.isDoubt : statut doubt, sans nom, « NONAME » ; la règle de Carburant)
+  C.recs = recs.filter(p => p?.id && !PR.isDoubt(p));
   C.byId = new Map(C.recs.map(p => [p.id, p]));
   C.known = known;
   C.ad = ad[0] || null;

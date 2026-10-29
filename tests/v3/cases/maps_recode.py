@@ -1322,14 +1322,15 @@ def d61(c):
     trail = [[47.1569, -1.6078, 400, 0], [46.9, -1.45, 12000, 1800], [46.6, -1.21, 20000, 3000]]
     f = flight(started={'at': iso(t0)},
                progress={'phase': 'cruise', 'at': iso(now()),
-                         'actual': {'lat': 46.3, 'lon': -0.9, 'altFt': 24000, 'at': iso(now() - datetime.timedelta(seconds=20)), 'trail': trail}})
+                         'actual': {'lat': 46.3, 'lon': -0.9, 'altFt': 24000, 'at': iso(now() - datetime.timedelta(seconds=20)),
+                                    'trail': trail[:2] + [[95.0, 10.0, 1000, 2000], [46.7, 200.0, 1000, 2400]] + trail[2:]}})   # two points off the Earth
     c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
     c.ready('maps', sheet=True)
     c.js("async () => { window.__mp = await import('/modules/maps/state.js'); return true }")
     c.until("() => (window.__mp.S && window.__mp.S.trail || []).length >= 4", timeout=8000, what='the track is read')
     got = c.js(_TRAIL_JS)
     c.eq([[round(q[0], 4), round(q[1], 4)] for q in got], [[q[0], q[1]] for q in trail] + [[46.3, -0.9]],
-         'the frame\u2019s track, its first point an hour old included, then the current position', what='track')
+         'the frame\u2019s track, its first point an hour old included, the points off the Earth left out, then the current position', what='track')
     c.eq(got[1][2][:16], iso(t0 + datetime.timedelta(seconds=1800))[:16], 'a point\u2019s time is started.at + s', what='time of a point')
     # a reread (the frame wrote a new position and the trail grew): the track is the frame's again, nothing doubled
     g = c.doc(PATH)
@@ -1377,3 +1378,34 @@ def d62(c):
     c.until("() => !window.__mp.S.choose && window.__mp.S.dpanel !== 'choose'", timeout=6000, what='the mode is left')
     fit = c.js("() => window.__mp.S.fit")
     c.ok(fit['w'] < -1 and fit['e'] > 5, f'{fit}', 'the flight’s frame again')
+
+
+# ------------------------------------------------------------------------------------------------------ D63
+_SRC_URL = 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_30_OCT_2025/FRANCE/AIRAC-2025-10-30/pdf/FR-AD-2.LFML-fr-FR.pdf'
+
+
+@case('D63', 'The aerodrome card links each chosen procedure to its published page ("Source")', 'D', tags=('maps',), screens=False,
+      designs=('standard',), night=False, langs4=True,
+      rule='V3 § 10.25: "Source" opens the record\u2019s source.url in a new tab (https only, rel noopener); a record without a public page has no link, its document named in the line\u2019s title')
+def d63(c):
+    lfml, lfrs = json.loads(json.dumps(_LFML_FILE)), json.loads(json.dumps(_LFRS_FILE))
+    lfml['procedures'][0]['source'] = {'kind': 'eaip', 'cycle': '2025-01-02', 'file': 'FR-AD-2.LFML-fr-FR.pdf', 'url': _SRC_URL}
+    lfml['procedures'][1]['source'] = {'kind': 'eaip', 'cycle': '2025-01-02', 'url': 'http://example.invalid/app.pdf'}   # not https: no link
+    for r in lfrs['procedures']:
+        r['source'] = {'kind': 'ead', 'cycle': '2025-01-02', 'file': 'LF_AD_2_LFRS_en.pdf'}
+    f = _proc_flight()
+    c.open('maps', docs=fdocs(f) + [['proc/manual/LFRS.json', lfrs, 'reference'], ['proc/local/LFML.json', lfml, 'reference']], flight=False,
+           airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.procs && window.__mp.S.procs.star)", timeout=12000, what='the chosen procedures are read')
+    c.js(_COV_PIN, ['LFML', 43.4367, 5.215])
+    c.until("() => !!document.querySelector('.mp-ad-proc[data-proc=arr]')", timeout=10000, what='the card of the arrival')
+    links = c.js("() => [...document.querySelectorAll('.mp-ad-proc[data-proc=arr] a.mp-ad-src')].map(a => [a.textContent, a.getAttribute('href'), a.target, a.rel])")
+    word = tx(M, 'adProcSource', c.lang)
+    c.eq(links, [[word, _SRC_URL, '_blank', 'noopener noreferrer']], 'one "Source" link, the STAR’s https page, in a new tab; none for the http page of the approach',
+         what='links')
+    c.js(_COV_PIN, ['LFRS', 47.1569, -1.6078])
+    c.until("() => !!document.querySelector('.mp-ad-proc[data-proc=dep]')", timeout=10000, what='the card of the departure')
+    c.eq(c.count('.mp-ad-proc[data-proc=dep] a.mp-ad-src'), 0, 'an EAD record has no link', what='departure links')
+    c.eq(c.attr('.mp-ad-proc[data-proc=dep]', 'title'), 'LF_AD_2_LFRS_en.pdf', 'its document is named in the line’s title', what='title')

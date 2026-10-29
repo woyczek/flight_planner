@@ -558,6 +558,35 @@ function sideText(side, kinds) {
   }
   return out.length ? out.join(' · ') : null;
 }
+/** Fiches choisies d'un côté qui ont une page (S.procs : celles que loadProcedures a lues) : [[sorte, fiche]]. */
+const sideRecs = side => {
+  const P = S.procs || {};
+  return (side === 'dep' ? [
+    ['SID', P.sid]
+  ] : [
+    ['STAR', P.star],
+    ['APP', P.app]
+  ]).filter(([, r]) => r);
+};
+/** Adresse publique de la page d'une fiche (source.url d'aerodb, V3 § 10.25) : seulement en https, sinon null. */
+const pageUrl = rec => {
+  const u = String(rec?.source?.url ?? '').trim();
+  return /^https:\/\/[^\s"'<>]+$/i.test(u) ? u : null;
+};
+/** Liens « Source » d'un côté : la page de chaque fiche choisie, dans un nouvel onglet ; « Source STAR », « Source APP » quand les
+ *  deux en ont une. '' sans page. */
+function sourceLinks(side) {
+  const got = sideRecs(side).map(([k, r]) => [k, pageUrl(r)]).filter(([, u]) => u),
+    word = tt(TX.adProcSource),
+    tip = tt(TX.adProcSourceTip);
+  return got.map(([k, u]) => ` <a class="mp-ad-src" href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(tip)}">${esc(got.length > 1 ? `${word} ${k}` : word)}</a>`).join('');
+}
+/** Infobulle d'un côté dont les fiches n'ont pas de page publique (EAD, lecture d'image, saisie) : le nom de leur document. */
+function docTitle(side) {
+  const docs = [...new Set(sideRecs(side).filter(([, r]) => !pageUrl(r)).map(([, r]) => String(r.source?.file || r.source?.ref ||
+    r.source?.name || '').trim()).filter(Boolean))];
+  return docs.length ? ` title="${esc(docs.join(' · '))}"` : '';
+}
 /** Piste et procédures choisies pour le terrain icao, pour sa carte (SPEC § 10) : une ligne par côté du vol que ce terrain est
  *  (départ, arrivée), le choix, et « Changer » vers Carburant (#fuel?focus=dep / arr) ; la Carte n'écrit jamais le choix.
  *  '' pour un terrain qui n'est ni le départ ni l'arrivée du vol. */
@@ -589,7 +618,7 @@ export function cardHtml(icao) {
   // « Choisir sur la carte » : le mode choix de ce côté, sur la famille qui manque (choose.js, sans rechargement) ; pleine largeur
   // sur un téléphone (style.js) ; « Changer » ouvre Carburant sur la ligne du côté
   return rows.map(([side, label, text]) =>
-    `<p class="mp-ad-proc" data-proc="${side}"><b>${esc(tt(label))}</b> : ${esc(text ?? tt(TX.adProcUnset))} <button type="button" class="f-btn" data-go="fuel?focus=${side}" title="${esc(tip)}" aria-label="${esc(tip)}">${esc(change)}</button><button type="button" class="f-btn primary mp-ad-choose" data-choose="${side}" data-icao="${esc(k)}" title="${esc(pickTip)}">${esc(pick)}</button></p>`
+    `<p class="mp-ad-proc" data-proc="${side}"${docTitle(side)}><b>${esc(tt(label))}</b> : ${esc(text ?? tt(TX.adProcUnset))}${sourceLinks(side)} <button type="button" class="f-btn" data-go="fuel?focus=${side}" title="${esc(tip)}" aria-label="${esc(tip)}">${esc(change)}</button><button type="button" class="f-btn primary mp-ad-choose" data-choose="${side}" data-icao="${esc(k)}" title="${esc(pickTip)}">${esc(pick)}</button></p>`
   ).join('');
 }
 

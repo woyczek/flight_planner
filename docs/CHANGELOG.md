@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: "Source" on the aerodrome card; one doubt rule** (`modules/maps/procs.js`, `choose.js`, `texts.js`; help ×4, maps
+  SPEC; noreg D63). Each chosen procedure whose record carries an `https://` `source.url` (aerodb, V3 § 10.25) gets a
+  "Source" ×4 link to its published page, in a new tab with `rel="noopener noreferrer"` ("Source STAR" / "Source APP" when
+  both have one); a record without a public page has no link, its document named in the row's tooltip. The choose mode now
+  filters with `isDoubt` from `frame/lib/procedures.js` (the rule of Fuel's lists) instead of its own copy. The flown trail read
+  from the frame is cut to `TRAIL_MAX` before it is read and drops points off the Earth (|lat| > 90, |lon| > 180; noreg D61).
+
 - **Frame: a data token never goes to a new host** (`frame/store/transport_github.js`, `frame/store/transport_gitlab.js`,
   `frame/settings/access.js`; frame DECISIONS; bench A38): the saved token is reused only for the same provider, host and
   project; pasting another address asks for its token; the GitLab transport follows no redirect and accepts only an

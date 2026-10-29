@@ -293,6 +293,11 @@ runs `chooseOpen(side, icao)`, the same code path as the address without a reloa
 view fits the procedures (`fitMap`). Leaving the mode (✕, Escape) gives back the flight and its frame (`applyFlight`, then
 `fitMap`).
 
+**"Source"** (V3 § 10.25): each chosen procedure of the side (SID; STAR and APP) whose record carries an `https://` `source.url`
+(aerodb, the SIA's eAIP page) gets a link "Source" in its row (`a.mp-ad-src`, new tab, `rel="noopener noreferrer"`; "Source STAR"
+/ "Source APP" when both have one); any other address is never a link. A record without a public page (EAD, OCR, manual) has
+none, its document's name (`source.file`, else `ref`, `name`) in the row's `title`.
+
 - **What is read**: `aerodb.procedures(icao)` (the published records; a record of status `doubt` is never asked for, hence never
   listed), `aerodb.runways(icao)`, `aerodb.aerodromes({ icao })` (the axis, when nothing else names a runway), the flight's
   `route.procedures` through `proceduresOf`. Every rule is `frame/lib/procedures.js` (`runwayChoices`, `appChoices`,

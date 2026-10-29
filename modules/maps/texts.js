@@ -313,6 +313,10 @@ export const TX = {
     '{id} (no encontrado en los datos)'
   ],
   adProcChange: ['Changer', 'Change', 'Ändern', 'Cambiar'],
+  adProcSource: ['Source', 'Source', 'Quelle', 'Fuente'],
+  adProcSourceTip: ['La page publiée de la procédure (nouvel onglet)', 'The published page of the procedure (new tab)',
+    'Die veröffentlichte Seite des Verfahrens (neuer Tab)', 'La página publicada del procedimiento (nueva pestaña)'
+  ],
   adProcChoose: ['Choisir sur la carte', 'Choose on the map', 'Auf der Karte wählen', 'Elegir en el mapa'],
   adProcChooseTip: ['Les procédures de ce côté tracées sur la carte : un toucher choisit, Carburant l’écrit',
     'The procedures of this side drawn on the map: one tap chooses, Fuel writes it',

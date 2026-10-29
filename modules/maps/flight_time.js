@@ -67,7 +67,9 @@ const posOf = p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) ? {
 const trailOf = (f, t0) => {
   const tr = f?.progress?.actual?.trail;
   if (!Array.isArray(tr) || !Number.isFinite(t0)) return [];
-  return tr.filter(q => Array.isArray(q) && Number.isFinite(+q[0]) && Number.isFinite(+q[1]) && Number.isFinite(+q[3])).map(q => ({
+  // le fichier vient du groupe : coupé à TRAIL_MAX avant d'être lu, et un point hors des bornes de la Terre n'est jamais tracé
+  return tr.slice(-TRAIL_MAX).filter(q => Array.isArray(q) && Number.isFinite(+q[0]) && Math.abs(+q[0]) <= 90 && Number.isFinite(+q[1]) &&
+    Math.abs(+q[1]) <= 180 && Number.isFinite(+q[3])).map(q => ({
     lat: +q[0],
     lon: +q[1],
     altFt: q[2] === null || q[2] === undefined ? null : +q[2],
