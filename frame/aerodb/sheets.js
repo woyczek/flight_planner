@@ -609,6 +609,11 @@
   /** Profils d'un JSON : base exportée (schema flight-performance-db/v1) ou profil unique. */
   function profilesFromJson(obj, name) {
     if (obj?.schema === "flight-performance-db/v1" && Array.isArray(obj.profiles)) return obj.profiles.map(p => normalize(p, name));
+    // la forme de la demande ChatGPT, { sheets: [fiche…] }, et un tableau de fiches : une fiche par élément (jamais un champ
+    // « sheets » posé sur une seule fiche)
+    if (Array.isArray(obj)) return obj.filter(o => o && typeof o === "object").flatMap(o => profilesFromJson(o, name));
+    if (obj && typeof obj === "object" && Array.isArray(obj.sheets) && !obj.cruise && !obj.climb && !obj.descent) return obj.sheets
+      .filter(o => o && typeof o === "object").flatMap(o => profilesFromJson(o, name));
     if (obj && typeof obj === "object" && !obj.source && !obj.lnmSource && !obj.simbrief && !obj.simbriefSnapshot) obj.source = {
       format: "JSON",
       file: name,

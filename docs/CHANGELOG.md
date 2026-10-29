@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel › Sheets: a pasted or imported `{ "sheets": [...] }` gives its sheets** (`frame/aerodb/sheets.js`, case F25) — the
+  ChatGPT reply read as JSON (paste or file) became one sheet with a field "sheets" holding the whole array, and the review
+  proposed that single field; the `sheets` envelope and a bare array now give one sheet per element, merged field by field
+  into the sheet of the same id.
+
 - **aerodb: procedures synchronised from the workstation are announced** (`frame/aerodb/aerodb.js`; SPEC, INTEGRATION, DECISIONS;
   test K1) — an aerodrome read on the workstation now shows on the other devices as soon as its file arrives: aerodb announces
   `{ procedures, coverage }` for it, and Fuel and the Map ask again instead of keeping an empty answer.

@@ -802,3 +802,23 @@ def f24(c):
     d = cf_doc(c, lambda d: len(((d.get('quote') or {}).get('legs')) or []) > 3, 'the quote runs on the procedures path', timeout=15000)
     ids = [x['id'] for x in d['quote']['legs']]
     c.eq(len(ids), len(set(ids)), 'no fix is flown twice', what=f'legs {ids}')
+
+
+_SHEETS_REPLY = {'sheets': [{'id': 'EC25', 'engineType': 'turboprop', 'pressurized': False, 'jetFuel': True, 'usableFuel': 2277,
+                             'cruise': {'tasKt': 141, 'fuelFlowPerHour': 650, 'ceilingFt': 19135, 'rpmNominal': 265},
+                             'climb': {'tasKt': 80, 'rateFpm': 1362, 'rpmNominal': 265}}]}
+
+
+@case('F25', 'A pasted { "sheets": [...] } gives its sheets, never a "sheets" field', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
+      screens=False, rule='user 29 Oct: the ChatGPT reply pasted as JSON showed one field "sheets" with the whole array in the review')
+def f25(c):
+    # une fiche EC25 déjà là (sa croisière inconnue) : la fiche collée s'y fond, champ par champ
+    old = {'id': 'EC25', 'name': 'EC25', 'icao': 'EC25', 'usableFuel': 2000, 'cruise': {'tasKt': None}}
+    c.open('fuel?view=sheets', docs=[['aircraft/sheets/EC25.json', old, 'document']])
+    c.page.click(f'{FUEL} button[data-do="paste"]')
+    c.page.fill(f'{FUEL} textarea[data-k="pastetext"]', json.dumps(_SHEETS_REPLY))
+    c.page.click(f'{FUEL} button[data-do="pasteread"]')
+    c.until(f"() => !!document.querySelector('{FUEL} [data-do=\"apply\"]')", what='the review of the pasted sheet')
+    paths = c.js(f"() => [...document.querySelectorAll('{FUEL} input[data-path]')].map(i => i.dataset.path)")
+    c.ok(not any(p == 'sheets' or p.startswith('sheets.') for p in paths), f'{paths}', 'no "sheets" field is proposed')
+    c.ok('cruise.tasKt' in paths and 'usableFuel' in paths, f'{paths}', 'the fields of the sheet inside are proposed one by one')
