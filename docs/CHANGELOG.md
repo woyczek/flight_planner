@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Synchronisation, security review** (`tools/data_sync.py`, `tools/launch.py`, `tools/regen_jobs.py`; administrator
+  manuals ×4, SYNCHRONISATION; noreg I9): a merge left pending is always cancelled and redone, never concluded (a merge
+  commit would carry files staged before the interruption, outside the pool, unchecked); files the workstation staged
+  since are unstaged first so that the cancel keeps them; git's texts lose credentials and local paths; a paired device
+  gets a generic message on a failed pass; conflicting paths follow the `data_file` rule; the aircraft base publication
+  checks for a pending merge before writing into `data/`; while a job of the Data module runs on the launcher,
+  `sia/base/` stays on the workstation whatever the page's `gesture` flag (an intention, not an authorisation).
 - **Map: the chosen runway as an arrow** (`modules/maps/procs.js`, `data.js`, `draw.js`, `layers.js`, `texts.js`; SPEC § 5, help
   ×4, case D58; V3 § 10.24, user 29 Oct: "quand on choisit une piste, un vecteur sur la carte indiquant la piste (flèche)") —
   the runway chosen in Fuel is drawn from its threshold over its length along its true bearing (the record's `true`, else

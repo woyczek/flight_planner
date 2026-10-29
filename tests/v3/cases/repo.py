@@ -393,15 +393,21 @@ def i9(c):
         r = DS.run(b, 'BBB')
         c.ok(r['ok'] and r['settled'] == 'annulée' and 'annulée' in r['message'], str(r)[:300], 'a pending merge with conflicts is cancelled, then redone')
         c.ok(not Path(b, '.git', 'MERGE_HEAD').exists(), '', 'no merge left pending')
-        # fusion laissée en attente sans conflit : conclue
+        # fusion laissée en attente sans conflit, avec un fichier hors du pool indexé avant l'interruption : annulée (jamais
+        # conclue : le commit de fusion emporterait l'index), le fichier reste sur le poste, la fusion est refaite
         sh('pull', '-q', cwd=a)
         put(a, other, {'updated_at': '2026-10-29T17:00:00Z', 'dispos': {}})
         c.ok(DS.run(a, 'AAA')['ok'], '', 'A sends another week')
         sh('fetch', '-q', cwd=b)
         sh('merge', '--no-commit', '--no-ff', 'origin/main', cwd=b)
+        put(b, 'AircraftDB/x.json', {'staged': True})
+        sh('add', 'AircraftDB/x.json', cwd=b)
         c.ok(Path(b, '.git', 'MERGE_HEAD').exists() and not DS.unmerged(b), '', 'a merge without conflict is pending')
         r = DS.update(b, 'BBB')
-        c.ok(r['ok'] and r['settled'] == 'conclue' and Path(b, *other.split('/')).is_file(), str(r)[:300], 'a pending merge without conflict is concluded')
+        c.ok(r['ok'] and r['settled'] == 'annulée' and Path(b, *other.split('/')).is_file() and 'annulée' in r['message'], str(r)[:300],
+             'a pending merge without conflict is cancelled, never concluded, then redone')
+        tracked = subprocess.run(['git', '-C', b, 'cat-file', '-e', 'HEAD:AircraftDB/x.json'], capture_output=True).returncode == 0
+        c.ok(not tracked and Path(b, 'AircraftDB', 'x.json').is_file(), f'tracked {tracked}', 'a file staged before the interruption stays on the computer, not committed')
         c.ok(not Path(b, '.git', 'MERGE_HEAD').exists(), '', 'no merge left pending')
         # sia/base : seul le geste « Synchroniser » la commite ; un passage de fond la garde sur le poste
         zone = 'sia/base/fr/2026-10-29/airports.json'
@@ -416,7 +422,31 @@ def i9(c):
         c.ok('gesture: true' in (c.root / 'shared' / 'sync.js').read_text(encoding='utf-8'), '', 'the V2 button is a gesture')
         c.ok("gesture: reason === 'manual'" in (c.root / 'frame' / 'store' / 'frame_data.js').read_text(encoding='utf-8'), '',
              "the frame's exchange is a gesture only for a manual pass")
+        # texte de git rendu à la page : ni identifiant d'adresse, ni chemin du poste ; chemins en conflit : la règle de data_file
+        t = DS.clean_text(f'fatal: unable to access https://pilot:ghp_secret@example.invalid/x.git in {b}{os.sep}.git', b)
+        c.ok('ghp_secret' not in t and 'pilot:' not in t and str(b) not in t and 'data' in t, t, 'git text cleaned of credentials and local paths')
+        c.eq([DS.data_path(b, x) for x in ('a\\b.json', 'C:x.json', '../x.json', 'con.json', 'a/./b.json', '/x.json')], [''] * 6,
+             'conflicting paths follow the data_file rule', what='refused paths')
         src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+        pub = src[src.index('def aircraft_publish'):src.index('def vfr_publish')]
+        c.ok(pub.index('merge_pending') < pub.index('copyfile'), '', 'the aircraft base checks for a pending merge before writing into data/')
+        c.ok('détail est dans sa console' in src, '', 'a paired device gets a generic message on a failed synchronisation')
+        # le drapeau gesture est une intention : un travail du module Données en cours garde sia/base quel que soit le drapeau
+        import importlib
+        L = importlib.import_module('launch')
+        kept_regen = L.REGEN
+
+        class Running:
+            def view(self, id_=None):
+                return {'job': {'id': 'x', 'set': 'base', 'verb': 'build', 'state': 'running'}}
+        try:
+            L.REGEN = None
+            c.eq((L.sync_gesture({'gesture': True}), L.sync_gesture({'gesture': 'yes'}), L.sync_gesture({})), (True, False, False),
+                 'the gesture flag counts only as true', what='sync_gesture without a job')
+            L.REGEN = Running()
+            c.eq(L.sync_gesture({'gesture': True}), False, 'a running job of the Data module keeps sia/base whatever the flag', what='sync_gesture during a job')
+        finally:
+            L.REGEN = kept_regen
         c.ge(src.count('data_sync.merge_pending(DATA)'), 3, 'the launcher\'s commits check for a pending merge first', what='merge_pending calls')
     finally:
         DS.git_cmd, DS.resolve = kept

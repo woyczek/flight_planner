@@ -947,9 +947,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 # registre rejoué partira au passage suivant)
                 registry_bridge()
                 # gesture : bouton « Synchroniser » (sia/base commitée aussi) ; sinon passage de fond (échange du cadre)
-                r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60], a.get('gesture') is True)
+                r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60], sync_gesture(a))
                 if r.get('received'):
                     registry_bridge()
+            if self._lan() and not r.get('ok'):
+                # appareil appairé du réseau local : rien du poste (sortie de git, chemins) ; le détail reste dans la console
+                say(f"  Synchronisation demandée par un appareil appairé, en échec : {r.get('message', '')}")
+                r = {**r, 'message': 'Synchronisation interrompue sur le poste du lanceur : le détail est dans sa console.'}
             sync_status_reset()  # état relu au prochain appel : le bouton reflète le passage qui vient d'avoir lieu
             if r.get('received'):
                 with INDEX_LOCK:
@@ -2641,6 +2645,9 @@ def aircraft_publish(author='', apply=False):
     if not data_sync.is_repo(DATA):
         res['message'] = 'data/ n’est pas un dépôt git : rien à publier.'
         return res
+    if data_sync.merge_pending(DATA):  # avant toute écriture dans data/ (comme l'import VFR)
+        res['message'] = data_sync.merge_pending(DATA)
+        return res
     missing = [n for n in AIRCRAFT_KEEP if n not in AIRCRAFT_JSON and not os.path.isfile(os.path.join(src, n))]
     if missing:
         res['message'] = 'Base des types absente sur ce poste (' + ', '.join(missing) + ') : la compléter d’abord.'
@@ -2689,8 +2696,6 @@ def aircraft_publish(author='', apply=False):
                 f.write(texts[n])
         else:
             shutil.copyfile(os.path.join(src, n), os.path.join(DATA, *c['path'].split('/')))
-    if data_sync.merge_pending(DATA):
-        return {**res, 'ok': False, 'message': data_sync.merge_pending(DATA)}
     env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
     who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
     data_sync.git(DATA, 'add', '-A', '--', 'AircraftDB', check=True)
@@ -2798,6 +2803,16 @@ REGEN = None  # travaux du module Données (tools/regen_jobs.py) : créés au pr
 def regen_git():
     """git durci et son environnement pour l'état du poste ; (None, dict) sans git."""
     return (data_sync.git_cmd, data_sync.git_env) if data_sync.git_exe() else (None, dict)
+
+
+def sync_gesture(a):
+    """Geste « Synchroniser » d'une demande de passage (POST /__setup/sync) : le drapeau gesture de la page est une
+    intention, pas une autorisation (un appareil appairé peut l'envoyer) ; tant qu'un travail du module Données tourne
+    sur ce lanceur (une construction de la base comprise), sia/base reste sur le poste quel que soit le drapeau."""
+    if not isinstance(a, dict) or a.get('gesture') is not True:
+        return False
+    job = ((REGEN.view() or {}).get('job') or {}) if REGEN is not None else {}
+    return job.get('state') != 'running'
 
 
 def regen():

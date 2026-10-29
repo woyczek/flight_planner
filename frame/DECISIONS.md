@@ -1597,3 +1597,8 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   — a pass of reason `manual` (the user's « Synchroniser ») sends `gesture: true` to `POST /__setup/sync`; every other
   pass (background, module, interval) does not, and the launcher then keeps `sia/base/` (the aeronautical database being
   rebuilt) on the workstation: a zone half written never leaves by itself. The build job (D5) commits its own zones.
+- **29 Oct 2026 — The gesture and the author are intentions, not authorisations** (coordinator's security review of
+  1c2506a41): the `gesture` flag of `POST /__setup/sync` comes from the page (a paired device can send it too); while a job
+  of the Data module runs on the launcher (a build of the base included), `sia/base/` stays on the workstation whatever the
+  flag (`sync_gesture`, noreg I9). Likewise the author of a commit is the trigram the page gives (`author`): it names who
+  acted, it proves nothing — the signed registry (comptes signés) is what authenticates.

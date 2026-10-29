@@ -608,7 +608,7 @@ Après une notification de conflit :
 2. reportez à la main ce qui manque dans le fichier gardé ;
 3. synchronisez de nouveau, puis supprimez la copie.
 Le registre des CR (`cr/missions.yaml`) se fusionne à la main.
-Fusion laissée en attente dans `data/` (passage interrompu, poste éteint en pleine fusion) : le passage suivant, ou la mise à jour au démarrage du lanceur, la conclut si aucun fichier n'est en conflit, sinon l'annule puis la refait ; le compte rendu le dit. Rien à faire à la main. Tant qu'elle attend, les commits du lanceur (lots de l'appli, travaux de régénération, publications) n'ont pas lieu et le disent. Message « Un rebase est en cours dans data/ » : terminez ou annulez le rebase (`git -C data rebase --abort`), puis recommencez.
+Fusion laissée en attente dans `data/` (passage interrompu, poste éteint en pleine fusion) : le passage suivant, ou la mise à jour au démarrage du lanceur, l'annule (les fichiers modifiés sur le poste restent dans le dossier) puis la refait ; le compte rendu le dit. Rien à faire à la main. Tant qu'elle attend, les commits du lanceur (lots de l'appli, travaux de régénération, publications) n'ont pas lieu et le disent. Message « Un rebase est en cours dans data/ » : terminez ou annulez le rebase (`git -C data rebase --abort`), puis recommencez.
 Détails, schémas et essais sans risque : [architecture de la synchronisation](technique/SYNCHRONISATION.md).
 
 ## Lanceur, données et sauvegardes

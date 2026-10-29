@@ -575,7 +575,7 @@ Tras una notificación de conflicto:
 2. traslade a mano lo que falte al archivo conservado;
 3. vuelva a sincronizar y después elimine la copia.
 El registro de informes (`cr/missions.yaml`) se fusiona a mano.
-Fusión pendiente en `data/` (pasada interrumpida, equipo apagado en plena fusión): la pasada siguiente, o la actualización al arrancar el lanzador, la concluye si ningún archivo está en conflicto; si no, la cancela y la rehace; el informe lo dice. Nada que hacer a mano. Mientras está pendiente, los commits del lanzador (lotes de la app, trabajos de regeneración, publicaciones) no se hacen y lo dicen. Mensaje «Hay un rebase en curso en data/»: termine o cancele el rebase (`git -C data rebase --abort`) y vuelva a empezar.
+Fusión pendiente en `data/` (pasada interrumpida, equipo apagado en plena fusión): la pasada siguiente, o la actualización al arrancar el lanzador, la cancela (los archivos modificados en el equipo se quedan en la carpeta) y la rehace; el informe lo dice. Nada que hacer a mano. Mientras está pendiente, los commits del lanzador (lotes de la app, trabajos de regeneración, publicaciones) no se hacen y lo dicen. Mensaje «Hay un rebase en curso en data/»: termine o cancele el rebase (`git -C data rebase --abort`) y vuelva a empezar.
 Detalles, esquemas y pruebas sin riesgo: [arquitectura de la sincronización](../technique/SYNCHRONISATION.md).
 
 ## Lanzador, datos y copias de seguridad
