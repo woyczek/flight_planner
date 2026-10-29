@@ -880,6 +880,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 38 | Frame R1a: the airline's relay (7ca73448c) | **blocking before any exposure** (fails open if the proxy rewrites Host), two to fix, four notes |
 | 39 | Flight plan export, X-Plane `.fms` and MSFS `.pln` (99d28acd0) | acceptable, one note |
 | 40 | R1a fix (1e573d782); `escText` (d18a739b4) | the blocking point of 38 lifted for the case described; one residual case to close before exposure |
+| 41 | Frame R1b: IVAO OpenID through the relay (a9840bd19) | acceptable, four notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1395,6 +1396,30 @@ residual case to close before any exposure.**
 - `escText` (d18a739b4): the control characters XML 1.0 forbids are removed before escaping (tab and line breaks kept);
   `escAttr` goes through it. The note of 39 is settled (detail: `\uFFFE`, `\uFFFF` and lone surrogates are also
   forbidden in XML).
+
+**40, decision on the residual case.** A port dedicated to the relay (a second listening on `127.0.0.1:<port + 1>` or
+`--relay-port`, where every request is a relay request whatever `Host` says; the proxy-header guard kept as a second
+belt; the workstation alone on its own port), in a commit of its own after R1b.
+
+**41. Frame R1b, IVAO OpenID through the relay (a9840bd19) — acceptable, four notes.**
+- Checked: the `state` (`token_urlsafe(24)`) is kept only at the relay with the PKCE verifier (`token_urlsafe(48)`),
+  bound to the device (the relay token's id, empty for the workstation) and to the return address, removed on return
+  (single use), valid ten minutes; another device or the workstation cannot finish a device's request. PKCE S256; a code
+  read in a proxy log is useless without the verifier. The `redirect_uri` is fixed (`https://<public host>/__relay/ivao/callback`
+  in relay mode) and checked again at the exchange. The client secret sits in `secrets/ivao_oauth.json` (`SECRET_FIELDS`,
+  `SECRET_BLIND`), sent as `client_secret_basic` with `add_unredirected_header`; discovery and token calls use an opener
+  without redirects and require https endpoints. The callback is a GET of the relay that changes state, but only after
+  pairing (the `Lax` cookie carried by IVAO's redirect), written in DECISIONS. Tokens leave once, through the fragment of a
+  303 (`no-store`, `Referrer-Policy: no-referrer`; a fragment never goes into a `Referer` nor to the server); the frame
+  reads it and replaces the history entry. On the page, the token is kept with the device's keys (`device/keys.json`,
+  outside backups, never synchronised, like the GitHub token), never in the shared repository; `status()` never returns it.
+- Notes: sign-out erases the token on the device only, the refresh token stays valid at IVAO (call IVAO's revocation
+  endpoint through the relay if discovery gives one, or tell the pilot to remove the application in their IVAO account);
+  on the workstation, IVAO's return (a cross-site GET) goes through `_refused()` first and is refused as « another site »
+  (fails closed: either relay-only, to write down, or a narrow exception for this path, a document GET, workstation only,
+  with a pending state); the pending requests are capped at 100 in all, so one paired device can fill them in ten minutes
+  (cap per device, e.g. 3); `refresh` renews any refresh token a paired device presents, with the relay's secret (wanted;
+  a stolen one is cut by revocation at IVAO).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case to close before any exposure; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
