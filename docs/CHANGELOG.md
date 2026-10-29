@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Now » shows the present time in the date field** (`modules/fuel/module.js`, DECISIONS; case F6) — no longer an
+  empty field drawn « dd/mm/yyyy ».
 - **Launcher: the jobs' base, alone** (`tools/regen_jobs.py`, `tools/launch.py`, `frame/lib/launcher.js`, `frame/app.js`;
   INTEGRATION § 15.1, DECISIONS; cases I8, A29): each data set brings its own verbs in `tools/regen/<set>.py`; one commit
   path for every job, signed with the trigram of the page; the last job and the gaps between readings survive a restart of

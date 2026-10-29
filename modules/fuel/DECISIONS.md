@@ -4,6 +4,9 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — the date field after « Maintenant »** (user: the field showed « dd/mm/yyyy » while « +30 » worked): planned_at
+  stays null (the flight leaves now), but the field shows the present time (`whenField`) instead of an empty `datetime-local`, which
+  the browser draws as its pattern. Case F6.
 - **29 Oct 2026 — Auto routes from the end of the chosen SID** (user: « un départ FINOT depuis LFBO, premier point GOSAD, ne sort
   pas GAI via G36 en Auto »; Simplification, BUGS SOG 1ee2673a5): `autoAirways` passes the chain of its tokens to
   `CF.routingChain(flight, procs, chain)` when the chosen procedures are read; the points it inserts (end of the SID after the

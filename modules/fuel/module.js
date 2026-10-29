@@ -1189,6 +1189,9 @@ const isoToWhen = iso => {
   const t = Date.parse(iso || '');
   return Number.isFinite(t) ? new Date(t - new Date(t).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
 };
+/** Valeur du champ de la date du vol : planned_at à l'heure de l'appareil, ou l'heure présente quand le vol part maintenant
+ *  (planned_at null) — jamais un champ vide, que le navigateur montre « jj/mm/aaaa » (bouton « Maintenant », 29/10/2026). */
+const whenField = iso => isoToWhen(iso ?? new Date().toISOString());
 /** La date du vol n'a qu'une valeur : current_flight.planned_at (ISO UTC, null = maintenant) ; le champ de saisie en
  *  montre l'heure de l'appareil (isoToWhen). Un vol écrit avant planned_at (weather.when seul, l'ancienne copie) en reçoit
  *  un ; la copie est retirée (fuel ne l'écrit plus : une copie périmée tromperait ses lecteurs). */
@@ -2200,7 +2203,7 @@ function renderPlanBody() {
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
       <div class="f-grid fu-ads">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
-      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(isoToWhen(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
+      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
       <div class="fu-hide" data-acpanel>
@@ -2904,7 +2907,7 @@ function setWhen(plus) {
 /** Pose la date du vol : current_flight.planned_at (ISO UTC, null = maintenant), et le champ à l'écran (heure de
  *  l'appareil) seulement si sa valeur change. L'écriture du vol et le calcul suivent (saveFlight, whenChanged). */
 function setPlanned(iso) {
-  const local = isoToWhen(iso);
+  const local = whenField(iso);
   S.flight.planned_at = iso;
   const wd = S.body?.querySelector('[data-k="wxdate"]');
   if (wd && wd.value !== local) wd.value = local;
@@ -4815,7 +4818,7 @@ export async function mount(el, ctx) {
     if ((S.flight.planned_at ?? null) !==
       oldPlanned) { // date du vol changée ailleurs (autre appareil) : champ, météo et vents relus
       const wd = S.body?.querySelector('[data-k="wxdate"]');
-      if (wd && wd.value !== isoToWhen(S.flight.planned_at)) wd.value = isoToWhen(S.flight.planned_at);
+      if (wd && wd.value !== whenField(S.flight.planned_at)) wd.value = whenField(S.flight.planned_at);
       whenChanged();
     }
     if (keepText != null) S.flight.route = { // route en cours de frappe : la valeur du champ reste la vérité

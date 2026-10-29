@@ -161,6 +161,9 @@ def f6(c):
     c.ok(30 <= added <= 34 and c.js("(t) => Date.parse(t) % 300000 === 0", r['planned_at']), f'{added} min added, planned_at {r["planned_at"]}', '30 minutes more, rounded up to 5 minutes')
     c.tap(f'{FUEL} [data-do="whennow"]')
     r = waited(lambda r: r.get('planned_at') is None, '"Now" empties the date')
+    # the field shows the present time, never an empty field (that the browser draws « jj/mm/aaaa »; user, 29 Oct)
+    shown = c.js(f"document.querySelector('{FUEL} [data-k=wxdate]').value")
+    c.ok(bool(shown) and c.js("(v) => Math.abs(Date.parse(v) - Date.now()) < 5 * 60000", shown), f'field {shown!r}', 'after "Now" the date field shows the present time')
     c.eq((r.get('weather') or {}).get('when'), None, 'still no weather.when copy', what='weather.when after Now')
     c.eq(c.js("(f) => import('/frame/lib/current_flight.js').then(m => m.etaOf(f))", r), None, 'an undated flight has no ETA to promise', what='etaOf after Now')
 
