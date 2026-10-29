@@ -125,7 +125,7 @@
       // (le SIA ouvre toujours la fusion), mais deux imports du même fichier ne doublent rien
       AeroSources.merge(base, oa);
       check('merging the same openAIP file twice adds nothing', base.aero.vrp.length === 7, base.aero.vrp.length);
-      check('the parser version was raised (a base of an older parser is "outdated" and must be rebuilt)', SiaBase.VERSION >= 18,
+      check('the parser version was raised (a base of an older parser is "outdated" and must be rebuilt)', SiaBase.VERSION >= 19,
         SiaBase.VERSION);
     } catch (e) {
       check('no exception', false, String(e && e.stack || e));

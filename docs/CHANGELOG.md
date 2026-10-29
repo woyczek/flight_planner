@@ -22,6 +22,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   and the launcher's commits check for a pending merge first.
 - **aerodb: `source.file`, the document a record was read from** (`tools/proc_records.py`, `tools/proc_manual.py`; SPEC, INTEGRATION, DECISIONS; V3 § 10.25; cases K11, K14, K24, K26) — every procedure read from a document carries the document's name without folder: the SIA coding page for the eAIP (the page the « Source » link
   opens, `charts.base` + `Cartes/<ICAO>/` + `source.file`), the downloaded document for EAD layouts and OCR, the input file for a hand reading installed from one. The other sources show the name only.
+- **Zone builds: sectors of one family that overlap with different floors are reported, never cut** (`shared/sia_base.js`
+  `SiaBase.sameFamilyOverlaps`, parser version 18 → 19; `frame/aerodb/SPEC.md` § 2, DECISIONS 29 Oct; case K41) — openAIP's
+  Dublin CTA 3 to 6 are discs that contain the airport; the base reproduces the source. The publication now checks each zone
+  (same source, type, class and family name, real shared surface, different floors, shared volume) and writes
+  `meta.json › overlaps` { count, airspaces, families: [{ family, type, cls, src, members, floors }] } (50 families at most) and
+  an `ovl` flag (the family name) on every airspace involved, for the Map's point sheet. Measured on the published zones: 0 to
+  23 ms, ie 3 families (Dublin CTA, Shannon CTA, Shannon CTA Cork), de 5, fr 5, in 6, iq 3, tr 2, es 1. Zones built with
+  parser 18 show as outdated until rebuilt.
 
 - **Map: the rendering parts no longer share a mutable kit, and the theme lives for one drawing** (`modules/maps/render.js`,
   `render_airspace.js`, `render_route.js`, `screen.js`; SPEC § 1; case D40; V3 § 10.29 e, reduced form) — the parts expose

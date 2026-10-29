@@ -2441,6 +2441,75 @@ def k27(c):
          '« 3000MSL » and « 24500 MSL » are feet; « 300 m AGL » stays metres; ft and FL unchanged', what='OpenAir limits')
 
 
+@case('K41', 'Same-family overlaps with different floors: reported in the zone statistics, flagged on the airspaces, never cut (Dublin CTA 3 to 6)', 'K',
+      tags=('aerodb',), phone=False,
+      rule='aerodb DECISIONS 29 Oct 2026 (same-family overlaps): the base reproduces the source; the build reports sectors of one family (type, class, name without its sector number, source) that overlap with different floors, and flags them (ovl)')
+def k41(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
+    c.page.wait_for_function('!!window.SiaBase', timeout=30000)
+    c.page.add_script_tag(url=f'{c.base}/shared/carto/aero_symbols.js')
+    c.page.wait_for_function('!!window.SiaAero && !!window.SiaAero.limitRead', timeout=30000)
+    got = c.js('''() => {
+      // carré de côté 2h centré en (la, lo), en degrés : [lat, lon] comme les anneaux de la base
+      const sq = (la, lo, h) => [[la - h, lo - h], [la - h, lo + h], [la + h, lo + h], [la + h, lo - h]];
+      const A = (name, lower, upper, rings, o = {}) => ({ type: 'CTA', cls: 'C', src: 'openaip', name, lower, upper, rings: [rings], ...o });
+      const run = list => SiaBase.sameFamilyOverlaps(list, SiaAero.limitRead);
+      const out = {};
+      // Dublin : des disques de plus en plus larges qui contiennent le terrain, planchers 1500 / 2500 / 3000
+      const dub = [A('TESTVILLE CTA 1', '1500 ft AMSL', 'FL 245', sq(53.4, -6.3, .1)), A('TESTVILLE CTA 3', '2500 ft AMSL', 'FL 245', sq(53.4, -6.3, .5)),
+        A('TESTVILLE CTA 4', '3000 ft AMSL', 'FL 245', sq(53.4, -6.3, .7))];
+      const d = run(dub);
+      out.dublin = { overlaps: d.overlaps, flags: d.airspaces.map(a => a.ovl), input: dub.some(a => 'ovl' in a) };
+      // mêmes planchers (à 20 ft près : 762 m = 2500 ft), famille différente, disjoints, frontière commune, couches l'une sur l'autre, classe, source
+      const same = run([A('SAMEVILLE CTA 1', '2500 ft AMSL', 'FL 245', sq(53.4, -6.3, .5)), A('SAMEVILLE CTA 2', '762 m AMSL', 'FL 245', sq(53.4, -6.3, .3))]);
+      const other = run([A('ONEVILLE CTA 1', '1500 ft AMSL', 'FL 245', sq(53.4, -6.3, .5)), A('TWOVILLE CTA 1', '3000 ft AMSL', 'FL 245', sq(53.4, -6.3, .3))]);
+      const far = run([A('FARVILLE CTA 1', '1500 ft AMSL', 'FL 245', sq(53.4, -6.3, .2)), A('FARVILLE CTA 2', '3000 ft AMSL', 'FL 245', sq(55, -4, .2))]);
+      const edge = run([A('EDGEVILLE CTA 1', '1500 ft AMSL', 'FL 245', [[53, -7], [53, -6], [54, -6], [54, -7]]),
+        A('EDGEVILLE CTA 2', '3000 ft AMSL', 'FL 245', [[53.0004, -6.0003], [53, -5], [54, -5], [54, -6.0003]])]); // 0,0003° de recouvrement : tracé approché
+      const layers = run([A('LAYERVILLE R A', 'SFC', '5000 ft AMSL', sq(53.4, -6.3, .5), { type: 'R' }), A('LAYERVILLE R B', '5000 ft AMSL', 'FL 245', sq(53.4, -6.3, .5), { type: 'R' })]);
+      const stack = run([A('STACKVILLE CTA 1', '1500 ft AMSL', 'FL 245', sq(53.4, -6.3, .5)), A('STACKVILLE CTA 2', '3000 ft AMSL', 'FL 245', sq(53.4, -6.3, .5))]);
+      const cls = run([A('CLASSVILLE CTA 1', '1500 ft AMSL', 'FL 245', sq(53.4, -6.3, .5)), A('CLASSVILLE CTA 2', '3000 ft AMSL', 'FL 245', sq(53.4, -6.3, .3), { cls: 'D' })]);
+      const src = run([A('SRCVILLE CTA 1', '1500 ft AMSL', 'FL 245', sq(53.4, -6.3, .5)), A('SRCVILLE CTA 2', '3000 ft AMSL', 'FL 245', sq(53.4, -6.3, .3), { src: 'xplane' })]);
+      // deux bandes qui se croisent en croix : aucun sommet de l'une dans l'autre, deux côtés qui se croisent
+      const cross = run([A('CROSSVILLE CTA 1', '1500 ft AMSL', 'FL 245', [[53.3, -6.8], [53.3, -5.8], [53.5, -5.8], [53.5, -6.8]]),
+        A('CROSSVILLE CTA 2', '3000 ft AMSL', 'FL 245', [[53.0, -6.4], [53.0, -6.2], [53.8, -6.2], [53.8, -6.4]])]);
+      const floors = run([A('NOFLOOR CTA 1', '', 'FL 245', sq(53.4, -6.3, .5)), A('NOFLOOR CTA 2', '3000 ft AMSL', 'FL 245', sq(53.4, -6.3, .3))]);
+      Object.assign(out, { same: same.overlaps, other: other.overlaps, far: far.overlaps, edge: edge.overlaps, layers: layers.overlaps, stack: stack.overlaps, cls: cls.overlaps,
+        src: src.overlaps, cross: cross.overlaps, floors: floors.overlaps });
+      // un drapeau périmé est retiré d'un espace qui n'est plus concerné ; sans lecteur de limites : rien n'est vérifié
+      const stale = run([A('FARVILLE CTA 1', '1500 ft AMSL', 'FL 245', sq(53.4, -6.3, .2), { ovl: 'FARVILLE CTA' })]);
+      out.stale = 'ovl' in stale.airspaces[0];
+      out.noReader = SiaBase.sameFamilyOverlaps(dub, null);
+      // les familles détaillées sont limitées à 50, le total est donné ; un plafond UNL va jusqu'en haut
+      const many = [];
+      for (let i = 0; i < 60; i++) many.push(A('MANYVILLE' + i + ' CTA 1', '1500 ft AMSL', 'FL 245', sq(40 + i / 10, 3, .05)), A('MANYVILLE' + i + ' CTA 2', '3000 ft AMSL', 'UNL', sq(40 + i / 10, 3, .02)));
+      const m = run(many);
+      out.many = { count: m.overlaps.count, listed: m.overlaps.families.length, airspaces: m.overlaps.airspaces };
+      // le chemin de la publication : splitZones range les espaces par zone, pose ovl et la statistique de la zone
+      const parts = SiaBase.splitZones({ airspaces: dub, aero: {}, obstacleMax: {}, moraCells: [] }, ['ie'], null, {});
+      out.split = { overlaps: parts.ie.overlaps && parts.ie.overlaps.count, flags: parts.ie.airspaces.map(a => a.ovl), version: SiaBase.VERSION };
+      return out;
+    }''')
+    D = got['dublin']
+    c.eq([D['overlaps']['count'], D['overlaps']['airspaces']], [1, 3], 'Dublin: one family, three members (the disc 3 contains the sector 1; the disc 4 contains both)', what='dublin')
+    fam = D['overlaps']['families'][0]
+    c.eq([fam['family'], fam['type'], fam['cls'], fam['src'], fam['members'], fam['floors']],
+         ['TESTVILLE CTA', 'CTA', 'C', 'openaip', ['TESTVILLE CTA 1', 'TESTVILLE CTA 3', 'TESTVILLE CTA 4'], ['1500 ft AMSL', '2500 ft AMSL', '3000 ft AMSL']],
+         'the family without its sector number; the members and their floors as written, in the same order', what='family')
+    c.eq(D['flags'], ['TESTVILLE CTA'] * 3, 'each member carries ovl = the family', what='flags')
+    c.ok(not D['input'], 'the input list was modified', 'the airspaces given are copied, never changed')
+    for k, why in (('same', 'same floors (762 m is 2500 ft)'), ('other', 'different families'), ('far', 'disjoint outlines'), ('edge', 'a shared boundary drawn 0,0003 deg apart'),
+                   ('layers', 'layers one above the other (ceiling = floor)'), ('stack', 'the same outline twice: vertical layers, not a double coverage'), ('cls', 'different classes'),
+                   ('src', 'different sources'), ('floors', 'one floor unreadable')):
+        c.eq(got[k]['count'], 0, f'not reported: {why}', what=k)
+    c.eq([got['cross']['count'], got['cross']['families'][0]['members']], [1, ['CROSSVILLE CTA 1', 'CROSSVILLE CTA 2']], 'two bands crossing (no vertex of one inside the other): reported by their edges', what='cross')
+    c.eq(got['stale'], False, 'a stale ovl is removed from an airspace that is not concerned any more', what='stale')
+    c.eq(got['noReader'], None, 'without a limit reader nothing is checked (null), the zone keeps its airspaces', what='no reader')
+    c.eq(got['many'], {'count': 60, 'listed': 50, 'airspaces': 120}, 'the detail is capped at 50 families, the total (60 families, 120 airspaces) is given', what='cap')
+    c.eq([got['split']['overlaps'], got['split']['flags']], [1, ['TESTVILLE CTA'] * 3], 'splitZones (the publication path): the zone has its statistics and the flags', what='splitZones')
+    c.ge(got['split']['version'], 19, 'the flag changes the build output: parser version 19 or more', what='SiaBase.VERSION')
+
+
 
 
 # ------------------------------------------------------------------------------------------------ Irish tables, Dublin variants (static)

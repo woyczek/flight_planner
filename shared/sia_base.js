@@ -27,9 +27,9 @@
     FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
   const COMPAT =
-    14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp ; 17 et 18 ne changent pas le format : une base 14 à 17 se lit, signalée « outdated »)
+    14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp ; 17, 18 et 19 ne changent pas le format : une base 14 à 18 se lit, signalée « outdated »)
   const VERSION =
-    18; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge) ; 18 : limites des espaces OpenAir d'X-Plane en pieds (le M de « MSL » n'est plus des mètres, AeroSources.openair : les zones construites avant sont à reconstruire)
+    19; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge) ; 18 : limites des espaces OpenAir d'X-Plane en pieds (le M de « MSL » n'est plus des mètres, AeroSources.openair : les zones construites avant sont à reconstruire) ; 19 : secteurs d'une même famille qui se recouvrent avec des planchers différents, signalés (ovl sur les espaces, overlaps dans le meta de la zone ; les zones construites avant n'ont ni l'un ni l'autre)
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
@@ -1780,6 +1780,198 @@
       dir: st.handle
     };
   }
+  // ---- secteurs d'une même famille qui se recouvrent avec des planchers différents (statistique de construction)
+  // openAIP code certains secteurs de l'AIP en disques qui contiennent l'aérodrome (Dublin CTA 3 à 6 : les secteurs annulaires
+  // de l'AIP sans leur frontière intérieure) ; la base reproduit la source et ne coupe rien. Cette vérification le SIGNALE
+  // seulement : une statistique par zone (meta.overlaps) et un drapeau sur chaque espace concerné (ovl, la famille), que la
+  // fiche de point de la Carte lit pour sa note. Des couches verticales d'une même structure peuvent aussi se recouvrir
+  // légitimement : rien n'est retiré ni modifié dans les contours.
+  /** Famille d'un espace : le nom sans son numéro ou sa lettre de secteur (« DUBLIN CTA 3 » → « DUBLIN CTA »), la même règle
+   *  que la note de la fiche de point (modules/maps/lv.js). */
+  const familyName = a => String(a.name || '').toUpperCase().replace(/(\s+(\d+[A-Z]?|[A-Z]))+$/, '').trim();
+  const OVL_TOL = .005, // degrés (≈ 0,3 NM) : un recouvrement plus mince qu'un tracé approché des frontières communes n'en est pas un
+    OVL_FLOOR_FT = 20, // deux planchers à moins de 20 ft l'un de l'autre sont le même (mètres arrondis)
+    OVL_MAX = 50; // familles détaillées dans la statistique (le total est toujours donné)
+  /** Vrai si les deux anneaux (suites de x, y à plat) se recouvrent d'une surface réelle : un sommet de l'un à plus de OVL_TOL
+   *  à l'intérieur de l'autre, ou deux côtés qui se croisent franchement (extrémités à plus de OVL_TOL de la droite de l'autre,
+   *  de part et d'autre). Deux secteurs voisins qui partagent une frontière, même un peu différente, ne se recouvrent pas ;
+   *  deux contours identiques (couches verticales) non plus. */
+  function ringsOverlap(p, q) {
+    const np = p.length / 2,
+      nq = q.length / 2;
+    /** Position de (x, y) par rapport à l'anneau r de n sommets : dedans (pair-impair) et distance à sa frontière. */
+    const probe = (x, y, r, n) => {
+      let inside = false,
+        d2 = Infinity;
+      for (let i = 0, j = n - 1; i < n; j = i++) {
+        const x0 = r[2 * j],
+          y0 = r[2 * j + 1],
+          x1 = r[2 * i],
+          y1 = r[2 * i + 1];
+        if ((y1 > y) !== (y0 > y) && x < (x0 - x1) * (y - y1) / (y0 - y1) + x1) inside = !inside;
+        const dx = x1 - x0,
+          dy = y1 - y0,
+          l2 = dx * dx + dy * dy,
+          t = l2 ? Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / l2)) : 0;
+        d2 = Math.min(d2, (x - x0 - t * dx) ** 2 + (y - y0 - t * dy) ** 2);
+      }
+      return {
+        inside,
+        d: Math.sqrt(d2)
+      };
+    };
+    for (const [a, na, b, nb] of [
+        [p, np, q, nq],
+        [q, nq, p, np]
+      ])
+      for (let i = 0; i < na; i++) {
+        const r = probe(a[2 * i], a[2 * i + 1], b, nb);
+        if (r.inside && r.d > OVL_TOL) return true;
+      }
+    /** Côté franc de (x, y) par rapport à la droite (x0, y0)-(x1, y1) de longueur len : -1, 1, ou 0 à moins de OVL_TOL. */
+    const side = (x0, y0, x1, y1, x, y, len) => {
+      const d = ((x1 - x0) * (y - y0) - (y1 - y0) * (x - x0)) / len;
+      return Math.abs(d) <= OVL_TOL ? 0 : d > 0 ? 1 : -1;
+    };
+    for (let i = 0, j = np - 1; i < np; j = i++) {
+      const ax = p[2 * j],
+        ay = p[2 * j + 1],
+        bx = p[2 * i],
+        by = p[2 * i + 1],
+        la = Math.hypot(bx - ax, by - ay);
+      if (!la) continue;
+      for (let k = 0, m = nq - 1; k < nq; m = k++) {
+        const cx = q[2 * m],
+          cy = q[2 * m + 1],
+          dx = q[2 * k],
+          dy = q[2 * k + 1],
+          lb = Math.hypot(dx - cx, dy - cy);
+        if (!lb || Math.max(ax, bx) < Math.min(cx, dx) || Math.min(ax, bx) > Math.max(cx, dx) || Math.max(ay, by) < Math.min(cy, dy) ||
+          Math.min(ay, by) > Math.max(cy, dy)) continue;
+        if (side(cx, cy, dx, dy, ax, ay, lb) * side(cx, cy, dx, dy, bx, by, lb) < 0 && side(ax, ay, bx, by, cx, cy, la) * side(ax,
+            ay, bx, by, dx, dy, la) < 0) return true;
+      }
+    }
+    return false;
+  }
+  /** Vérifie, parmi les espaces d'une zone finie, les secteurs d'une même famille (type, classe, nom sans son numéro ou sa
+   *  lettre de secteur, source) qui se recouvrent avec des planchers différents et un volume commun (le plafond de l'un
+   *  n'est pas le plancher de l'autre : des couches superposées ne sont pas signalées). read : la lecture des limites de la
+   *  base (SiaAero.limitRead : SFC = 0, FL × 100, mètres convertis ; un plancher ASFC et un plancher AMSL de même valeur sont
+   *  différents). Rend { airspaces, overlaps } : airspaces, la liste où chaque espace concerné porte ovl (le nom de sa famille ;
+   *  copie de surface, la liste donnée n'est pas modifiée ; un ovl périmé est retiré des autres) et overlaps, la statistique
+   *  { count (familles), airspaces (espaces concernés), families: [{ family, type, cls, src, members: [noms], floors: [planchers
+   *  tels qu'écrits, dans l'ordre des membres] }] } limitée à OVL_MAX familles, les plus grandes d'abord. Sans lecteur de
+   *  limites : null (rien n'est vérifié, la zone garde ses espaces). */
+  function sameFamilyOverlaps(airspaces, read) {
+    if (typeof read !== 'function') return null;
+    const groups = new Map();
+    for (const a of airspaces || []) {
+      const rings = (a.rings || []).filter(r => r?.length > 2);
+      if (!rings.length) continue;
+      const f = familyName(a),
+        k = [a.type, a.cls, f, a.src].join('|');
+      (groups.get(k) || groups.set(k, {
+        family: f,
+        type: a.type || '',
+        cls: a.cls || '',
+        src: a.src || '',
+        list: []
+      }).get(k)).list.push({
+        a,
+        rings
+      });
+    }
+    const flagged = new Map(), // espace → famille
+      families = [];
+    for (const g of groups.values()) {
+      if (g.list.length < 2) continue;
+      const items = [];
+      for (const {
+          a,
+          rings
+        }
+        of g.list) {
+        const r = read(a.lower, false),
+          u = read(a.upper, true);
+        if (r?.ok && Number.isFinite(r.ft)) items.push({ // plancher illisible : on ne dit rien
+          a,
+          rings,
+          ft: r.ft,
+          rel: !!r.rel,
+          up: u?.ok && Number.isFinite(u.ft) && !u.unl ? u.ft : Infinity // plafond illisible ou sans limite : jusqu'en haut
+        });
+      }
+      if (items.length < 2) continue;
+      // projection plane commune au groupe (degrés de longitude réduits à la latitude moyenne)
+      const kx = Math.cos(items.reduce((s, it) => s + it.rings[0][0][0], 0) / items.length * Math.PI / 180);
+      for (const it of items) {
+        let s = 90,
+          w = 180,
+          n = -90,
+          e = -180;
+        it.flat = it.rings.map(r => {
+          const f = new Float64Array(2 * r.length);
+          r.forEach(([y, x], i) => {
+            f[2 * i] = x * kx;
+            f[2 * i + 1] = y;
+            s = Math.min(s, y);
+            n = Math.max(n, y);
+            w = Math.min(w, x * kx);
+            e = Math.max(e, x * kx);
+          });
+          return f;
+        });
+        it.box = [s, w, n, e];
+      }
+      const hit = new Set();
+      for (let i = 0; i < items.length; i++)
+        for (let j = i + 1; j < items.length; j++) {
+          const A = items[i],
+            B = items[j];
+          if (A.rel === B.rel && Math.abs(A.ft - B.ft) <= OVL_FLOOR_FT) continue;
+          // couches l'une sur l'autre (le plafond de l'une est le plancher de l'autre) : pas de volume commun
+          if (A.up - B.ft <= OVL_FLOOR_FT || B.up - A.ft <= OVL_FLOOR_FT) continue;
+          if (A.box[0] > B.box[2] || B.box[0] > A.box[2] || A.box[1] > B.box[3] || B.box[1] > A.box[3]) continue;
+          if (A.flat.some(p => B.flat.some(q => ringsOverlap(p, q)))) {
+            hit.add(A);
+            hit.add(B);
+          }
+        }
+      if (!hit.size) continue;
+      const members = items.filter(it => hit.has(it));
+      for (const it of members) flagged.set(it.a, g.family);
+      families.push({
+        family: g.family,
+        type: g.type,
+        cls: g.cls,
+        src: g.src,
+        members: members.map(it => it.a.name),
+        floors: members.map(it => it.a.lower ?? '')
+      });
+    }
+    families.sort((x, y) => y.members.length - x.members.length || (x.family < y.family ? -1 : 1));
+    return {
+      airspaces: (airspaces || []).map(a => {
+        if (flagged.has(a)) return {
+          ...a,
+          ovl: flagged.get(a)
+        };
+        if (!('ovl' in a)) return a;
+        const {
+          ovl,
+          ...rest
+        } = a;
+        return rest;
+      }),
+      overlaps: {
+        count: families.length,
+        airspaces: flagged.size,
+        families: families.slice(0, OVL_MAX)
+      }
+    };
+  }
+
   /** Base découpée par zone : { zone: morceau }. Chaque élément va à la zone de son fichier (ZONE_OF), sinon à la zone
    *  qui contient sa position (X-Plane, MORA, obstacles), sinon à la zone principale (France si active) ; les autres
    *  champs (cycle, axes ENR 5.7, fichiers analysés…) vont à la zone principale. meta : report.zones de build. */
@@ -1832,10 +2024,20 @@
     (b.aarXmlExtra || []).forEach((t, i) => parts[parts[meta.aar?.[i]] ? meta.aar[i] : home].aarXmlExtra.push(t));
     if (b.natTracks) parts[parts[meta.nat] ? meta.nat : parts.nat ? 'nat' : home].natTracks = b.natTracks;
     const SPLIT = new Set(['airspaces', 'aero', 'obstacleMax', 'moraCells', 'aarXmlExtra', 'natTracks', 'cities', 'citiesCount',
-      'sources', 'cachedAt', 'parserVersion', 'outdated'
+      'sources', 'cachedAt', 'parserVersion', 'outdated', 'overlaps'
     ]);
     for (const [k, v] of Object.entries(b))
       if (!SPLIT.has(k)) parts[home][k] = v;
+    // les espaces de chaque zone sont définitifs : secteurs d'une même famille qui se recouvrent avec des planchers différents,
+    // signalés (drapeau ovl sur les espaces, statistique overlaps de la zone) et jamais corrigés ; sans lecteur de limites
+    // (SiaAero.limitRead), rien n'est vérifié et la zone n'a pas de statistique
+    for (const p of Object.values(parts)) {
+      const o = sameFamilyOverlaps(p.airspaces, window.SiaAero?.limitRead);
+      if (o) {
+        p.airspaces = o.airspaces;
+        p.overlaps = o.overlaps;
+      }
+    }
     return parts;
   }
   /** Base recollée à partir des morceaux publiés (un par zone) : la France d'abord, puis les autres zones. */
@@ -1860,6 +2062,7 @@
         moraCells,
         aarXmlExtra,
         natTracks,
+        overlaps, // statistique de la zone : se recalcule à la publication
         zone,
         cycle,
         schema,
@@ -2669,6 +2872,7 @@
     ghSync,
     publish,
     splitZones,
+    sameFamilyOverlaps,
     joinZones,
     patch,
     purge,

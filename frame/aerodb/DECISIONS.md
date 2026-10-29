@@ -1817,3 +1817,63 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
 - **The « Source » link** is for the eAIP only: `charts.base` + `Cartes/<ICAO>/` + `source.file` (INTEGRATION); the other sources show the name in a `title` (the lots of Fuel and the Map).
 - **Measure** (the page sets for LFPO, LFBO, LFPG; EIDW from its rows): every record has `source.file`, it names a page of the set (309 / 78 / 711 / 196 of 309 / 78 / 711 / 196) and agrees with `ref`; counts and doubts unchanged (309 / 1, 78 / 0, 711 / 2, 196 / 0).
   Bench: K11 (hand reading), K14 (OCR), K24 (eAIP), K26 (EAD layout).
+
+## 29 October 2026 — same-family overlaps in the build statistics (Dublin CTA 3 to 6)
+
+- **Decided** (the ergonomics session, after the user's question near Rathcoole; see « OpenAir limits », « Also seen, not ours »):
+  openAIP codes Dublin CTA 3 to 6 as discs that contain the airport (the AIP's annular sectors without their inner boundary).
+  (a) the build **reports** sectors of one family that overlap with different floors, counted per zone; (b) **nothing is cut**
+  or guessed: the base reproduces the source; (c) the Irish AIP as a source stays in the backlog (§ 10.28). The point sheet's
+  note is the Map's (BUGS SOG); this section says what it can read.
+- **Where it runs.** `SiaBase.sameFamilyOverlaps(airspaces, read)` (`shared/sia_base.js`), called by `splitZones` — the place
+  where the airspaces of each zone are final (after the merge of the sources and the distribution into zones) and before
+  `publishSplit` writes `meta.json`. Pure: it copies the airspaces it flags (`{ ...a, ovl }`), the base in memory is not touched,
+  and a stale `ovl` is removed from the others. `read` is the base's limit reader (`window.SiaAero.limitRead`, loaded by the pages
+  that publish); without it the check is skipped (`null`) and the zone has no statistics — it never says « 0 families » for
+  « not checked ».
+- **Rule.** Group by (`src`, `type`, `cls`, family), the family being the name without its trailing sector number or letters
+  (the regular expression of the point sheet's note in `modules/maps/lv.js`, so that the note and the flag agree on what a family
+  is). Inside a group only, in this order: floors differ by more than 20 ft (SFC = 0, FL × 100, m converted; ASFC and AMSL are
+  different references) → vertical extents share a volume (ceiling of one above the floor of the other by more than 20 ft; an
+  unreadable or UNL ceiling goes to the top) → bounding boxes meet → the outlines share a real surface. The last test is
+  standard and without a library: a vertex of one ring inside the other by more than 0.005° (≈ 0.3 NM), either way, or two sides
+  that cross outright (both ends of each more than 0.005° from the other's line, on both sides); in a flat projection per group.
+  So a boundary shared by two neighbouring sectors, even drawn a few hundred metres apart, and two identical outlines, are not overlaps.
+- **Output.** `meta.json` of the zone: `data.overlaps` = { `count` (families, total), `airspaces`, `families` (50 largest at
+  most): [{ `family`, `type`, `cls`, `src`, `members`, `floors` (same order) }] }; on each airspace involved, `ovl` = the family
+  name (« DUBLIN CTA »). **What the Map can read**: `a.ovl` (a non-empty string) on any airspace of `airspaces.json`; the
+  family is (`a.ovl`, `a.type`, `a.cls`, `a.src`); the other members and their floors are in the zone's `meta.overlaps`. It is
+  the source's data, not an error: the note says so.
+- **Parser version 18 → 19** (`COMPAT` stays 14): the builder's output changed (a field on the airspaces, a statistic in `meta`),
+  not the format; the zones built with 18 show as outdated and carry neither until rebuilt. Bench `vrp_sources.html` tests `VERSION >= 19`.
+- **Measure** (offline, Chromium, the published zones of cycle 2026-10-01, read only; time = the check alone):
+
+  | zone | airspaces | families | members | time |
+  |---|---|---|---|---|
+  | ie | 142 | 3 | 12 | 3 ms |
+  | de | 921 | 5 | 56 | 12–16 ms |
+  | fr | 2576 | 5 | 12 | 14–23 ms |
+  | gb | 1740 | 0 | 0 | 9 ms |
+  | es | 779 | 1 | 3 | 2 ms |
+  | in | 423 | 6 | 21 | 2 ms |
+  | iq | 68 | 3 | 18 | 1 ms |
+  | tr | 318 | 2 | 7 | 1 ms |
+  | af, be, ch, dz, id, ir, it, kh, ma, mm, nat, nl, pk, pt, sy, th, vn | — | 0 | 0 | < 5 ms |
+
+  Ireland: `DUBLIN CTA` (openAIP: CTA 1, 2, 3, 4, 5, 6 and 8, floors 1500 to 5000 ft), `SHANNON CTA` (1, 2, 3) and `SHANNON CTA CORK`
+  (1, 2): the same pattern as Dublin. Without the source in the key, gb jumps from 0 to 13 families (83 members) and Dublin gains
+  two members: the same space in two sources (AIXM and X-Plane or openAIP), not sectors of one structure. Without the vertical
+  test, fr went from 5 to 49 families, es from 1 to 5, in from 6 to 13, be, gb, ma, pt and it gained some: stacked layers (a sector
+  from the surface to 5000 ft under one from 5000 ft to FL 245). Tolerance: 0.0005° gives fr 10, gb 7, de 6 and ie 4 families
+  (neighbours drawn a little apart, `EIR16 B/C`); 0.005 and 0.02 give the same families (one member fewer in iq at 0.02).
+- **What is left, to be read as reports.** de (X-Plane: FRANKFURT, BERLIN, MUNICH, DUESSELDORF/COLOGNE-BONN, BREMEN SECTOR), in
+  and iq (X-Plane TMAs), tr (BATUMI, YEREVAN): the whole TMA outline with the lowest floor plus sectors with higher floors, the
+  Dublin pattern as the X-Plane files give it. fr: `114 A/B/C`, `163 A/B` (restricted areas), `BALE`, `LUXEUIL`, `RHONE`: floors
+  that differ over a shared surface; es `BADAJOZ, SECTOR A/B/C` (A from the surface to FL 450 over B and C). Whether these are
+  mistakes of the source or deliberate (an inner volume carved out by a lower neighbour) is not for the build to say: it reports,
+  it never removes. The rule excludes nothing more; if the Map finds the lists too long it can show the note only where the
+  point is inside one of the `members`.
+- **Bench**: K41 (invented polygons: Dublin pattern reported with its flags and floors in order; same floors, other family,
+  disjoint, shared boundary, layers, identical outlines, other class, other source, unreadable floor, none reported; two crossing
+  bands reported by their sides; stale flag removed; no reader → `null`; cap at 50 families with the total; `splitZones` carries
+  statistics and flags), K5 (`VERSION >= 19`).

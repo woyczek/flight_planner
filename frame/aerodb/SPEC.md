@@ -32,7 +32,7 @@ removed (§ 5 quinquies); the raw sources never are.
   `obstacles` (arrays), `mora` (cells [{ lat, lon, mora, moraFt, latStep, lonStep, … }]), `obstaclemax`
   ({ "lat|lon": ft }), `cities` (the zone's towns [{ name, lat, lon, population, … }]: those of its country in
   GeoNames, or, for a country without a zone, those inside its contour) and `meta` (everything else:
-  `aarXml`, `aarXmlExtra`, `natTracks`, `airac`, …). Next to them:
+  `aarXml`, `aarXmlExtra`, `natTracks`, `airac`, `overlaps` (build statistics, below), …). Next to them:
   - `aeroindex.json`, the light index of the zone's aerodromes with an ICAO code (written by the publication of the
     base, `shared/sia_base.js`, from the next publication on): `data` = { `fields`: [`icao`, `name`, `lat`, `lon`,
     `elev`, `bearing`, `magVar`], `rows`: [[…], …] } (France: 555 aerodromes, 31 KB, against 328 KB for
@@ -54,6 +54,24 @@ removed (§ 5 quinquies); the raw sources never are.
   { `cities` } for the whole world.
 - In both formats airspace rings are `[[lat, lon], …]`; points carry `lat`, `lon`, `id` (aerodromes `icao`), airways
   carry `a` and `b` ends. Zone ids are those of `AERODB_ZONES`, plus `nat` (oceanic).
+- **Same-family overlaps (build statistics, parser version 19).** An airspace record is { `src`, `type`, `cls`, `name`, `key`,
+  `lower`, `upper`, `azba`, `admin`, `act`, `info`, `rings`, and, when flagged, `ovl` }. At publication, once a zone's
+  airspaces are final (after the merge of the sources), `SiaBase.sameFamilyOverlaps` (`shared/sia_base.js`) looks for
+  sectors of one **family** that **overlap with different floors**. The family is (`src`, `type`, `cls`, the name without its
+  trailing sector number or letters: « DUBLIN CTA 3 » → « DUBLIN CTA », the rule of the point sheet's note in
+  `modules/maps/lv.js`): twins of two sources are not sectors of one structure. Two sectors count when their outlines share a
+  real surface (a vertex of one more than 0.005° ≈ 0.3 NM inside the other, or two sides crossing outright; a shared
+  boundary drawn a little differently, or the same outline twice, is not an overlap), their floors differ by more than 20 ft
+  (limits read as the base does, `SiaAero.limitRead`: SFC = 0, FL × 100, metres converted; ASFC and AMSL differ), and their
+  vertical extents share a volume (the ceiling of one is not the floor of the other: stacked layers are not reported).
+  Nothing is cut, moved or removed: the base reproduces the source. The result:
+  - on the zone's `meta` (`meta.json`, `data.overlaps`): { `count` (families), `airspaces` (airspaces involved), `families`:
+    [{ `family`, `type`, `cls`, `src`, `members` (the names of the airspaces that overlap another with a different floor),
+    `floors` (their floors as written, in the order of `members`) }] }, the 50 largest families at most (`count` is the total);
+    absent from a zone published before version 19 or without the limit reader (`SiaAero.limitRead` not loaded);
+  - on each airspace involved, **`ovl`**: the family name (« DUBLIN CTA »), a string; absent otherwise. A reader that wants
+    « sectors of one family overlap here » tests `a.ovl`; two airspaces with the same `ovl` (and the same `type`, `cls`,
+    `src`) are the family. It is data of the source, not an error of the base: the Map says so, it does not cut.
 - **Aircraft types**: `AircraftDB/aircraft_db.json` and `aircraft_perf.json`; when absent, the V2 files
   `aircraft_db.js` and `aircraft_perf.js` (`window.AIRCRAFT_DB = {…};`) read as a JSON literal — never executed.
 - **VFR reporting points of the VAC charts** (§ 5 quater): `sia/vfr/<ICAO>.json`, one file per aerodrome, and
