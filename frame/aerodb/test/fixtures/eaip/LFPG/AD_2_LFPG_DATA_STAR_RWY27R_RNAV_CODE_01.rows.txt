@@ -1,0 +1,53 @@
+AD 2 LFPG DATA STAR RWY27R RNAV CODE 01AIP
+11 JUN 2026FRANCE
+PARIS CHARLES DE GAULLE (LFPG)
+STAR RNAV RWY 27R
+STAR RNAV Réacteurs et Hélices / Turbofans and Turboprops
+RMK RWY 27R MAG VAR 2020 1,1°E REF NAVAID : -
+Procedure Path Waypoint
+Identifcation Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+HLDG
+LORNI - LORNI - ---- - - - -
+OKIPA - OKIPA - ---- - - - -
+BANOX - BANOX - ---- - - - -
+MOPAR - MOPAR - ---- - - - -
+XERAM - XERAM - ---- - - - -
+ENORI - ENORI - ---- - - - -
+LUKIP - LUKIP - ---- - - - -
+BIBAX - BIBAX - ---- - - - -
+NANOP - NANOP - ---- - - - -
+ROMGO - ROMGO - ---- - - - -
+ENORI 9W (UIR FIR)
+- IF ENORI - ---- - - 2 6 0 -
+- TF DEVIM - 255 255.6 5.9 - - FL130 250 1.0
+- TF LORNI - 254 255.5 7.3 - FL070 FL130 250 1.0
+MATIX 9W (FIR)
+- IF MATIX - ---- - - 280 -
+- TF VAKOS - 173 173.8 31.9 -- -- 1.0
+- TF ENORI - 236 237.1 10.5 -- -- 1.0
+- TF DEVIM - 255 255.6 5.9 -- FL130 250 1.0
+- TF LORNI - 254 255.5 7.3 - FL070 FL130 250 1.0
+MOPIL 9W (UIR)
+- IF MOPIL - ---- - FL260 280 -
+- TF XERAM - 182 182.7 33.1 -- -- 1.0
+- TF ENORI - 236 237.2 13.5 -- -- 1.0
+- TF DEVIM - 255 255.6 5.9 -- FL130 250 1.0
+- TF LORNI - 254 255.5 7.3 - FL070 FL130 250 1.0
+VEDUS 9W (UIR FIR FL > 105)
+- IF VEDUS - ---- - FL260 280 -
+- TF XERAM - 269 270.5 27.9 -- -- 1.0
+- TF ENORI - 236 237.2 13.5 -- -- 1.0
+- TF DEVIM - 255 255.6 5.9 -- FL130 250 1.0
+- TF LORNI - 254 255.5 7.3 - FL070 FL130 250 1.0
+ENORI 9J (UIR FIR Sur instruction / On instruction )
+- IF ENORI - ---- - - 2 6 0 -
+- TF VEBEK - 196 196.8 12.9 - FL080 FL110 250 1.0
+MATIX 9J (FIR Sur instruction / On instruction )
+- IF MATIX - ---- - - 280 -
+- TF VAKOS - 173 173.8 31.9 -- -- 1.0
+- TF VEBEK - 214 214.8 22.0 - FL080 FL110 250 1.0
+MOPIL 9J (UIR Sur instruction / On instruction )
+- IF MOPIL - ---- - FL260 280 -
+- TF XERAM - 182 182.7 33.1 -- -- 1.0
+- TF VEBEK - 216 217.5 24.8 - FL080 FL110 250 1.0
+AMDT 06/26© Service de l'Information Aéronautique, France

@@ -1,0 +1,63 @@
+AD 2 LFPG DATA STAR RWY26L RNAV CODE 03AIP
+11 JUN 2026FRANCE
+PARIS CHARLES DE GAULLE (LFPG)
+STAR RNAV RWY 26L
+STAR RNAV Réacteurs et Hélices / Turbofans and Turboprops
+RMK RWY 26L MAG VAR 2020 1,1°E REF NAVAID : -
+Procedure Path Waypoint
+Identifcation Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+RLP 9P (FIR)
+- IF RLP - - - - -- -- -
+- TF ERTIP - 291 292.3 36.6 -- -- 1.0
+- TF NANOP - 318 318.8 10.2 -- -- 1.0
+- TF FF301 - 308 309.5 8.1 -- FL150 250 1.0
+- TF URELO - 308 309.4 18.1 -- FL100 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL100 - 1.0
+DJL 9P (UIR FIR)
+- IF DJL - - - - -- -- -
+- TF FF304 - 321 322.5 25.3 -- FL280 - 1.0
+- TF TRO - 321 322.2 49.3 -- FL150 250 1.0
+- TF URELO - 331 331.9 19.6 -- FL100 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL100 - 1.0
+PIBAT 9P (FIR)
+- IF PIBAT - - - - -- -- -
+- TF AVLON - 337 338.2 48.8 -- -- 1.0
+- TF TRO - 007 008.2 41.9 -- FL150 250 1.0
+- TF URELO - 331 331.9 19.6 -- FL100 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL100 - 1.0
+MOU 9P (FIR)
+- IF MOU - - - - -- -- -
+- TF TRO - 007 008.2 93.7 -- FL150 250 1.0
+- TF URELO - 331 331.9 19.6 -- FL100 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL100 - 1.0
+TRO 9P (UIR FIR)
+- IF TRO - ---- - FL150 250 -
+- TF URELO - 331 331.9 19.6 -- FL100 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL100 - 1.0
+KEPER 9W (UIR)
+- IF KEPER - ---- - FL280 - -
+- TF LUMAN - 034 035.1 9.8 -- - 300 1.0
+- TF ROMGO - 034 035.1 30.0 -- - 300 1.0
+- TF FF501 - 061 062.4 8.5 - FL190 FL190 - 1.0
+- TF NERKI - 062 062.6 13.2 -- FL160 - 1.0
+- TF BANOX - 062 062.6 8.0 - FL140 FL150 300 1.0
+KOVAK 9W (FIR)
+- IF KOVAK - ---- - - 300 -
+- TF BENAR - 344 345.3 16.1 -- -- 1.0
+- TF ROMGO - 034 035.4 6.9 -- - 300 1.0
+- TF FF501 - 061 062.4 8.5 - -- - 1.0
+- TF NERKI - 062 062.6 13.2 -- FL160 - 1.0
+- TF BANOX - 062 062.6 8.0 - FL140 FL150 300 1.0
+SABLE 9W (FIR)
+- IF SABLE - - - - -- -- -
+- TF LUMAN - 078 078.8 27.3 -- - 300 1.0
+- TF ROMGO - 034 035.1 30.0 -- - 300 1.0
+- TF FF501 - 061 062.4 8.5 - -- - 1.0
+- TF NERKI - 062 062.6 13.2 -- FL160 - 1.0
+- TF BANOX - 062 062.6 8.0 - FL140 FL150 300 1.0
+ROMGO 9W (UIR FIR)
+- IF ROMGO - ---- - - 300 -
+- TF FF501 - 061 062.4 8.5 - FL190 FL190 - 1.0
+- TF NERKI - 062 062.6 13.2 -- FL160 - 1.0
+- TF BANOX - 062 062.6 8.0 - FL140 FL150 300 1.0
+AMDT 06/26© Service de l'Information Aéronautique, France

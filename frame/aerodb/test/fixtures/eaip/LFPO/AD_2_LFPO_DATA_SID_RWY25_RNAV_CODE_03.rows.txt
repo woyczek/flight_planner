@@ -1,0 +1,56 @@
+AIP AD 2 LFPO DATA SID RWY25 RNAV CODE 03
+FRANCE 31 OCT 24
+PARIS ORLY (LFPO)
+Réacteurs (R) et hélices (H) / Jets (R) and Propellers (H)
+OPALE - ATREX - NURMO - OKASI - PILUL - ELCOB - LGL - DIKOL - BAXIR
+RANUX - BUBLI - AGOPA - ERIXU - LATRA - OLZOM - MONOT - DORDI
+(Protégés pour / Protected for CAT A, B, C, D)
+SID RNAV RWY 25
+RMK GNSS ou/or DME/DME MAG VAR 2020 1.0°E Ref N AVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+ERIXU 2X
+- CF PO241 Yes 253 254,4 - - - - - 1,0
+- D F P O 2 4 6 Y e s ---- - - - 1,0
+- D F P O 2 7 0 - ---- - - - 1,0
+- TF PO303 - 156 157,5 4,0 - - FL 100 - 1,0
+- TF EDOXA - 156 157,5 11,8 - - - - 1,0
+- TF ERIXU - 170 170,8 12,6 - - - - 1,0
+LATRA 2X
+- CF PO241 Yes 253 254,4 - - - - - 1,0
+- D F P O 2 4 4 Y e s ---- - - - 1,0
+- D F P O 3 0 1 - ---- - F L 1 0 0 - 1,0
+- TF LALUX - 161 162,1 12,1 - - - - 1,0
+- TF LATRA - 159 160,4 12,9 - - - - 1,0
+OKASI 2X
+- CF PO241 Yes 253 254,4 - - - - - 1,0
+- D F P O 2 4 3 Y e s ---- - - - 1,0
+- D F P O 3 0 0 - ---- - F L 1 0 0 - 1,0
+- TF ODEBU - 140 140,9 16,4 - - - - 1,0
+- TF OKASI - 152 152,8 13,3 - - - - 1,0
+PILUL 2X
+- CF PO241 Yes 253 254,4 - - - - - 1,0
+- D F P O 2 4 3 Y e s ---- - - - 1,0
+- D F P O 3 0 0 - ---- - F L 1 0 0 - 1,0
+- TF PEKIM - 124 125,4 22,5 - - - - 1,0
+- TF PILUL - 141 142,2 14,6 - - - - 1,0
+AGOPA 2R
+- CF PO241 Yes 253 254,4 - - - - - 1,0
+- D F P O 2 4 6 Y e s ---- - - - 1,0
+- D F P O 2 7 1 - ---- - F L 1 0 0 - 1,0
+- TF ADADA - 180 181,0 11,2 - - - - 1,0
+- TF AGOPA - 178 178,9 12,7 - - - - 1,0
+ERIXU 2R
+- CF PO241 Yes 253 254,4 - - - - - 1,0
+- D F P O 2 4 6 Y e s ---- - - - 1,0
+- D F P O 2 7 0 - ---- - - - 1,0
+- TF PO303 - 156 157,5 4,0 - - FL 100 - 1,0
+- TF EDOXA - 156 157,5 11,8 - - - - 1,0
+- TF ERIXU - 170 170,8 12,6 - - - - 1,0
+LATRA 2R
+- CF PO241 Yes 253 254,4 - - - - - 1,0
+- D F P O 2 4 4 Y e s ---- - - - 1,0
+- D F P O 3 0 1 - ---- - F L 1 0 0 - 1,0
+- TF LALUX - 161 162,1 12,1 - - - - 1,0
+- TF LATRA - 159 160,4 12,9 - - - - 1,0
+AMDT 11/24 © SIA

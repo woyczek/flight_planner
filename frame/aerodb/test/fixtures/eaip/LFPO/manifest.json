@@ -1,0 +1,372 @@
+{
+ "icao": "LFPO",
+ "cycle": "2026-10-01",
+ "source": "SIA eAIP",
+ "generated_at": "2026-10-29T18:06:50+00:00",
+ "pages": [
+  {
+   "file": "AD_2_LFPO_DATA_01.pdf",
+   "pages": 1,
+   "rows": 68,
+   "sha256": "d1095344c5549ea892d50d343207a6b33b1c17362346d1fdac2f801f3804efe0"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_02.pdf",
+   "pages": 1,
+   "rows": 57,
+   "sha256": "b294722ab05eab95a01718f523c887da29e7ae0f199c4fbdbae4ff784a7bf3a5"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_03.pdf",
+   "pages": 1,
+   "rows": 41,
+   "sha256": "176031fe9c9384da47abbd94a5eb917f88f8e3f8cf3fb06f1e487f088461c751"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_04.pdf",
+   "pages": 1,
+   "rows": 37,
+   "sha256": "6e112cb3bed8999cee5c7682d6e01ba05e20aef09cf35417f7a4c593839e32a3"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY02_FNA_ILS_CAT1_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 16,
+   "sha256": "a077375a615f850da85de131995e62b98bcd380256c363604a248740004b593c"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY02_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 19,
+   "sha256": "c9df71166a4fb058e2850c49fc390177c730caa83e2fa0a89532c5c29cca9e8c"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY02_INA_RNAV_CODE_GNSS.pdf",
+   "pages": 1,
+   "rows": 36,
+   "sha256": "8ee830d94f737dcc67185cb53a5501770e9bced6f82b8a0ce6a95eb2f7f19a96"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY06_FNA_ILS_CAT123_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 17,
+   "sha256": "376129a5a40ec24704cd52ad33fae9f5ba07c76bba87f202dbda714d5bd58a48"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY06_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 16,
+   "sha256": "f9736b9fdc0e0baf2cabd626e458b8232df6de73a4af5992293c2e98cf345c08"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY06_INA_RNAV_CODE_GNSS.pdf",
+   "pages": 1,
+   "rows": 40,
+   "sha256": "bc38c511a24c867b5d40b4084f13e5a7bfdf4facdc102679ffc5409f65afc5b8"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY07_FNA_ILS_CAT123_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 16,
+   "sha256": "3f24b51fc36419798bddfa7c68dfc9c226f3aba4bf69fd55b4310d806d179630"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY07_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 17,
+   "sha256": "8b0d7232129dc8dca6bfb80214298e00756aa4162b345e6d752762ade4e1cbf1"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY07_INA_RNAV_CODE_GNSS.pdf",
+   "pages": 1,
+   "rows": 36,
+   "sha256": "3fce0ceb44424675f7f08f147048c9bbc3a71c2fe0fc59ded177dd61c0e136aa"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY20_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 25,
+   "sha256": "c622effe8490a6ae105ba30e8932727ce67701c2e45adb5922eaed6fa2c8793b"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY20_INA_RNAV_CODE_GNSS.pdf",
+   "pages": 1,
+   "rows": 25,
+   "sha256": "3199e1cd26620106f74d62de3bffbea677a3bec1d64017b29ca898f0532a411f"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY24_FNA_ILS_CAT123_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 15,
+   "sha256": "911fea48512b1143718fe8adc1f226d27f795496502004d7eb59c2250bda18bd"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY24_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 16,
+   "sha256": "d4d0a4bce31bee951e45c43ec607ac98c3537aac8e4038e207b9e89e30dc53c3"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY24_INA_RNAV_CODE_GNSS.pdf",
+   "pages": 1,
+   "rows": 25,
+   "sha256": "fd51b479bae2d5c37119904cd38bd170b570ee177fd0855850409564a41cbbf2"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY25_FNA_ILS_CAT123_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 17,
+   "sha256": "631e8d5ee0d2be6dfd0c7b80ccb75b1b9f8f69ce189c02a3cf6447423b02a82f"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY25_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 17,
+   "sha256": "d5f7eb653707eecbe041e834e32bc9d42d0358ef0933b9761b70d06661277c58"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_RWY25_INA_RNAV_CODE_GNSS.pdf",
+   "pages": 1,
+   "rows": 38,
+   "sha256": "50c180f9363c905ff38c91390e769cf8188bb66698f7534b213c67fc77ebb315"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY06-07_RNAV_POGO_LFPG_CODE_01.pdf",
+   "pages": 1,
+   "rows": 32,
+   "sha256": "d8ff41bd961c557bfe84802efa8cebfe53a7c953bfb8ce3a51b19457597a4ce1"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY06_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 66,
+   "sha256": "8bde41657206952a7aaa0df952b1cf2a6662f50d172d5258df0578b607199c85"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY06_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 68,
+   "sha256": "279f57b48a8b7457fe999947416055223da46d5ae438d79422843752fe1a226f"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY06_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 68,
+   "sha256": "3eac4b3a5727c0a6f156651fef99c93629fb2525f39fd2c0a0983784a962ff11"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY06_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 50,
+   "sha256": "0dd161e1b0a31289376bb3e6165a68182a0a8667712443a75baf0c2409d4c0be"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY06_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 42,
+   "sha256": "0350f51fba5cc2738ba174fea000028feea15a39a456d1406e227c0b32f01d08"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 80,
+   "sha256": "de184a736bb0c1181d2f627d8af566636dcd6db352d23017d225f57393410391"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 68,
+   "sha256": "e958a5ecb6de199e68be206b2ac9be0fcee14f96a115a0fb184f63f02073dbef"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 68,
+   "sha256": "5819da8d120a7f50f516f0f5273193224f683a666c34907bdc5b37d9b8793388"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 36,
+   "sha256": "c9d0fade5317799ee8b71ae89a88717aeb9634300ecffe224872dc4d801d0268"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 45,
+   "sha256": "942a6058789a5af1f50ac659a0032c833957c236706ddda96f9d38205ba869a9"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY20-24-25_RNAV_POGO_LFPG_CODE_01.pdf",
+   "pages": 1,
+   "rows": 53,
+   "sha256": "9ab08fd7233d2061be37fcb2b98df8bb78820362d7e115a7916e6fc5fcadf4e8"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 70,
+   "sha256": "da866a793052238f623f0fac91e385dd1773d80718ff42838d31319fabc77b15"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 68,
+   "sha256": "2c6a4b8d3367cee8b2ef16d908c59df0545f15b2ce306703330ae954ae38578b"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 69,
+   "sha256": "cd19d3dfcdb0f88028fda2c7449395a0ad564c954d18a8a9c01e1abd4013ec85"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 36,
+   "sha256": "e9ab55bb2b6a548e5aef5ec84366aad9f2872eefde6a49632e22d3e1b664993d"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 40,
+   "sha256": "aa915c7d0c2ca526189f3e15a63f4edd15bebbf5fa9ed6d984d494cd82b0943e"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY24_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 63,
+   "sha256": "7464ff2888161744b61775500916f31da2e2b6e2bd030215d0db49c36f517bca"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY24_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 65,
+   "sha256": "a4356908e9ca5fb5bdf58578b6bb42f420f4360b1d107bbb9566b720644cb557"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY24_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 53,
+   "sha256": "67ca3081377de58f9f6312618a9cfe3ecfffb4e7fed3fb82d95b827e87a5bd99"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY24_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 30,
+   "sha256": "2ba7d3098e85877fa3fa37964590664a48cc28774bfc61c978756ae1e75fc955"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY24_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 36,
+   "sha256": "2083854cef343c15bc4de53495a5489e948e2f0de9b5aff74a2df3260b86f422"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY25_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 70,
+   "sha256": "e6385801441d659d5dbebf963386acccdee2bcf6c1e2c5ddb55c1f1cdfa3d327"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY25_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 67,
+   "sha256": "1c4b17fe6ed8971f0c40c37289469fbcd7bd4b4743a2c04a777bd56bbbe03885"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY25_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 56,
+   "sha256": "b2a8e0b5efecac9986f46944ae171140914b1cf137eb846e231de70821edb0c2"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY25_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 48,
+   "sha256": "f6d06dd7929a39dd85c2acd896fc42aa63346c4dd28e785fb367f3a9bbf78131"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_SID_RWY25_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 40,
+   "sha256": "fc899d8711c9e62531fda437780be9b3d2f0862188da6d32f2561ff87597c8d6"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_STAR_RWY02_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 75,
+   "sha256": "44bfd267006fb4f19e54c9018242ed8b892e9e33e1a825e22463fc09aa8ea041"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_STAR_RWY02_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 46,
+   "sha256": "d345de8073956efb68196175da24808bfa45b892184f69e356a5daa433df97bc"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_STAR_RWY06_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 69,
+   "sha256": "0faef80d9339dd3511e149cdeea4a645b61220ca87ba4a6791639b11b655322d"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_STAR_RWY06_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 52,
+   "sha256": "87345738254fa88c7921e20015f7ab09669843d97b0788d73ca4942bd2b7fdff"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_STAR_RWY07_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 63,
+   "sha256": "9de54dc26891c982c264836dc632b8176983324a6185ff7a7df3640438c2f926"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_STAR_RWY07_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 58,
+   "sha256": "e29720ee083ec017c4ee0fd5d43bca68ba66791c29bc2e7602287bb4e24fa1af"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_STAR_RWY20_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 75,
+   "sha256": "9588a9e6c2a80efdb7bbc2c1e5948a8cc222c6d9fc9256391687d409c30de612"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_STAR_RWY20_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 46,
+   "sha256": "4ab36ce7a84fda19088edc4e7b3af625677aa9355aba5642b0d83421440fabe0"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_STAR_RWY24_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 75,
+   "sha256": "f1868f05f46b66e753572e68102575547a70b8640e3c23accd7f4d94948f9c71"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_STAR_RWY24_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 46,
+   "sha256": "632d0050583294352f8af84a6e2c3c392367c2b88a4e3e7ffb82913eef935cc3"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_STAR_RWY25_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 75,
+   "sha256": "f5ad779d6657e20e6421f1d3ca608eac7fcc4e57e12f799f2b1831a39bd3bdd1"
+  },
+  {
+   "file": "AD_2_LFPO_DATA_STAR_RWY25_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 46,
+   "sha256": "e24841b6e698bf3f9f8830be237003d75735c01d5449b22ed5c703c31ecad63f"
+  }
+ ],
+ "ad2_12": {
+  "file": "FR-AD-2.LFPO.AD-2.12.html",
+  "sha256": "8b4a5ea9a4384d84fae2773e859464c68d20eb480aa01ca0becfe9091de2b8ea"
+ }
+}

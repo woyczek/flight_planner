@@ -1,0 +1,61 @@
+AIP AD 2 LFPG DATA SID RWY09L-09R RNAV CODE 05
+FRANCE 31 OCT 2 4
+PARIS CHARLES DE GAULLE (LFPG)
+Réacteurs (R) et hélices (H) / Jets (R) and propellers (H)
+SID RNAV RWY 09L - 09R
+Protégés pour / Protected for CAT A, B, C, D
+SID RNAV RWY 09L - 09R
+RMK GNSS ou / or DME/DME MAG VAR 2020 1.1°E Ref NAVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Nav Spec
+MONOT 6K
+RWY09L - 087 088.4
+- - RNAV 1CF PG091 - - -
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- TF PG095 - 084 085.5 11.5 - - - - RNAV 1
+- TF PG103 - 177 178.4 8.8 - - - 220 RNAV 1
+- TF PG105 - 260 261.4 8.9 - - - - RNAV 1
+- TF PG107 - 255 255.8 13.1 - - - - RNAV 1
+- TF OXCEL - 208 209.5 6.5 - - - 250 RNAV 1
+- TF PG277 - 187 188.3 21.8 - - - - RNAV 1
+- TF MONOT - 160 161.2 18.2 - - - - RNAV 1
+LGL 6G
+RWY09L - 087 088.4
+CF PG091 - - - - - RNAV 1
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- DF PG093 - - - - L - - - RNAV 1
+- TF PG097 - 246 247.2 4.8 - - - - RNAV 1
+- TF PG098 - 246 247.1 7.7 - - - - RNAV 1
+-T F ELCOB - 270 271.2 44.9 - - - - RNAV 1
+- TF LGL - 241 242.4 30.9 - - - - RNAV 1
+ELCOB 6G
+RWY09L - 087 088.4
+CF PG091 - - - - - RNAV 1
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- DF PG093 - - - - L - - - RNAV 1
+- TF PG097 - 246 247.2 4.8 - - - - RNAV 1
+- TF PG098 - 246 247.1 7.7 - - - - RNAV 1
+-T F ELCOB - 270 271.2 44.9 - - - - RNAV 1
+LGL 6K
+RWY09L - 087 088.4
+CF PG091 - - - - - RNAV 1
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- DF PG093 - - - - L - - - RNAV 1
+- TF PG097 - 246 247.2 4.8 - - - - RNAV 1
+- TF PG098 - 246 247.1 7.7 - - - - RNAV 1
+-T F ELCOB - 270 271.2 44.9 - - - - RNAV 1
+- TF LGL - 241 242.4 30.9 - - - - RNAV 1
+ELCOB 6K
+RWY09L - 087 088.4
+CF PG091 - - - - - RNAV 1
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- DF PG093 - - - - L - - - RNAV 1
+- TF PG097 - 246 247.2 4.8 - - - - RNAV 1
+- TF PG098 - 246 247.1 7.7 - - - - RNAV 1
+-T F ELCOB - 270 271.2 44.9 - - - - RNAV 1
+AMDT 11 /2 4 © SIA

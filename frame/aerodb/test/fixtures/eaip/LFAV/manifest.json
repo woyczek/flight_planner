@@ -1,0 +1,21 @@
+{
+ "icao": "LFAV",
+ "cycle": "2026-10-01",
+ "source": "SIA eAIP",
+ "regenerable": false,
+ "note": "not regenerable: source PDF not cached",
+ "pages": [
+  {
+   "file": "AD_2_LFAV_DATA_01.pdf",
+   "rows": 26
+  },
+  {
+   "file": "AD_2_LFAV_DATA_RWY11_RNP_CODE.pdf",
+   "rows": 23
+  },
+  {
+   "file": "AD_2_LFAV_DATA_RWY29_RNP_CODE.pdf",
+   "rows": 27
+  }
+ ]
+}

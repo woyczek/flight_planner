@@ -1,0 +1,27 @@
+AD 2 LFBO DA T A RWY14L INA CODE GNSSAIP
+02 OCT 2025FRANCE
+TOULOUSE BLAGNAC
+PRECODING INA RNAV (GNSS) RWY 14L
+AMDT 10/25© Service de l'Information Aéronautique, France
+INA RNAV (GNSS) RWY 14L
+GNSS only - Linked to FNA RNP RWY 14L et/ and FNA ILS Z ou/ or LOC Z RWY 14L
+RMK
+Procedure developped under CDO concept MAG VAR 2025 1.7°E REF NAVAID :
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+HLDG - - ADIMO - - - - - - - - - - -
+HLDG - - FUZAP - - - - - - - - - - -
+HLDG - SURAS - ---- - - -- -
+IF ADIMO - ---- FL080 - - - -
+TF BO506 - 307 308.2 24.6 - FL080 - - - 1.0
+INA ADIMO
+TF BO509 - 306 307.9 11.7 L 4000 - - - 1.0
+TF IO14L - 204 205.8 5.1 - 3000 - 210 - 1.0
+IF AGN - ---- FL080 - - - -
+INA AGN TF BO508 - 094 096.0 10.3 - - - - - 1.0
+TF IO14L - 140 141.2 6.3 - 3000 - 210 - 1.0
+IF FUZAP - ---- FL080 - - - -
+INA FUZAP TF BO509 - 229 230.8 11.1 - 4000 - - - 1.0
+TF IO14L - 204 205.8 5.1 - 3000 - 210 - 1.0
+IF SURAS - ---- FL080 - - - -
+INA SURAS TF BO507 - 004 005.2 7.7 - - - - - 1.0
+TF IO14L - 077 078.3 5.4 - 3000 - 210 - 1.0

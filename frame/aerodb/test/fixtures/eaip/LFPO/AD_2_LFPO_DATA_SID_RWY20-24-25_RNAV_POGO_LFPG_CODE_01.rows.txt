@@ -1,0 +1,53 @@
+AIP AD 2 LFPO DATA SID RWY20-24-25 RNAV POGO LFPG CODE 01
+FRANCE 31 OCT 24
+PARIS ORLY (LFPO)
+SID RNAV POGO
+(Protégés pour / Protected for CAT A, B, C, D)
+POGO RNAV RWY 20-24-25
+RMK GNSS requis/ required MAG VAR 2020 1,0°E Ref N AVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+PG 2W
+RWY24 CF PO243 Yes 236 237,2 - - - - - 1.0
+- TF PO721 - 241 242,2 7,4 - - - - 1.0
+- TF RBT Yes 302 303,3 3,3 - - - - 1.0
+- CF TSU - 065 066,0 - R - - - 1.0
+- TF PO724 - 073 074,0 21,5 - - 5000 220 1.0
+- FM - - 073 074,0 - - - - - -
+PG 2X
+RWY25 CF PO241 Yes 253 254,4 - - - - - 1.0
+- D F P O 2 4 3 Y e s ---- - - - 1.0
+- TF PO721 - 241 242,2 7,4 - - - - 1.0
+- TF RBT Yes 302 303,3 3,3 - - - - 1.0
+- CF TSU - 065 066,0 - R - - - 1.0
+- TF PO724 - 073 074,0 21,5 - - 5000 220 1.0
+- FM - - 073 074,0 - - - - - -
+PG 2Y
+RWY20 CA - - 197 198,4 - - 700 - - 1.0
+- CF PO202 Yes 225 225,9 - - - - - 1.0
+- TF PO720 - 242 243,5 6,0 - - - - 1.0
+- TF RBT Yes 301 301,8 5,9 - - - - 1.0
+- CF TSU - 065 066,0 - R - - - 1.0
+- TF PO724 - 073 074,0 21,5 - - 5000 220 1.0
+- FM - - 073 074,0 - - - - - -
+PG 2Q
+RWY24 CF PO243 Yes 236 237,2 - - - - - 1.0
+- TF PO721 - 241 242,2 7,4 - - - - 1.0
+- TF PO722 - 288 288,6 17,4 - - - - 1.0
+- TF PO723 - 033 033,7 7,6 R - FL 070 220 1.0
+- FM - - 033 033,7 - - - - - -
+PG 2R
+RWY25 CF PO241 Yes 253 254,4 - - - - - 1.0
+- D F P O 2 4 3 Y e s ---- - - - 1.0
+- TF PO721 - 241 242,2 7,4 - - - - 1.0
+- TF PO722 - 288 288,6 17,4 - - - - 1.0
+- TF PO723 - 033 033,7 7,6 R - FL 070 220 1.0
+- FM - - 033 033,7 - - - - - -
+PG 2S
+RWY20 CA - - 197 198,4 - - 700 - - 1.0
+- CF PO202 Yes 225 225,9 - - - - - 1.0
+- TF PO720 - 242 243,5 6,0 - - - - 1.0
+- TF PO722 - 289 290,1 20,0 - - - - 1.0
+- TF PO723 - 033 033,7 7,6 R - FL070 220 1.0
+- FM - - 033 033,7 - - - - - -
+AMDT 11/24 © SIA

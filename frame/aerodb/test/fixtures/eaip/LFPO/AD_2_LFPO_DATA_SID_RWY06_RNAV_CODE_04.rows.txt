@@ -1,0 +1,50 @@
+AIP AD 2 LFPO DATA SID RWY06 RNAV CODE 04
+FRANCE 31 OCT 24
+PARIS ORLY (LFPO)
+Réacteurs (R) et hélices (H) / Jets (R) and Propellers (H)
+OPALE - ATREX - NURMO - OKASI - PILUL - ELCOB - LGL - DIKOL - BAXIR
+RANUX - BUBLI - AGOPA - ERIXU - LATRA - OLZOM - MONOT - DORDI
+(Protégés pour / Protected for CAT A, B, C, D)
+SID RNAV RWY 06
+RMK GNSS ou/or DME/DME MAG VAR 2020 1.0°E Ref N AVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+OKASI 2H
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F P O 0 8 5 - ---- - - - 1.0
+- TF OBAMO - 206 207.2 12.2 - - - - 1.0
+- TF ODEBU - 152 152.8 12.1 - - - - 1.0
+- TF OKASI - 152 152.8 13.3 - - - - 1.0
+PILUL 2H
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F P O 0 8 5 - ---- - - - 1.0
+- TF OBAMO - 206 207.2 12.2 - - - - 1.0
+- TF PEKIM - 128 129.3 17.5 - - - - 1.0
+- TF PILUL - 141 142.2 14.6 - - - - 1.0
+DORDI 2F
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F D O R D I - ---- - - - 1.0
+OLZOM 2F
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F O L Z O M - ---- - - - 1.0
+MONOT 2F
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F M O N O T - ---- - - - 1.0
+DORDI 2H
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F D O R D I - ---- - - - 1.0
+OLZOM 2H
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F O L Z O M - ---- - - - 1.0
+MONOT 2H
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F M O N O T - ---- - - - 1.0
+AMDT 11/24 © SIA

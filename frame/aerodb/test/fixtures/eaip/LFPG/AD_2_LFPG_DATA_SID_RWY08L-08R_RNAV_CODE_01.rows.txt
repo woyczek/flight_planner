@@ -1,0 +1,80 @@
+AIP AD 2 LFPG DATA SID RWY08L-08R RNAV CODE 01
+FRANCE 31 OCT 2 4
+PARIS CHARLES DE GAULLE
+Réacteurs (R) et hélices (H) / Jets (R) and propellers (H)
+SID RNAV RWY 08L - 08R
+Protégés pour / Protected for CAT A, B, C, D
+SID RNAV RWY 08L - 08R
+RMK GNSS ou / or DME/DME Ref NAVAID : BTMAG VAR 2020 1.1°E
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Nav Spec
+OPALE 6H
+RWY08L - 084 085.4
+RNAV 1CF PG081 - - - - -
+RWY08R - 081 082.4
+- TF PG084 Yes 084 085.5 4.8 - - - - RNAV 1
+- DF OPALE - -- -- - - - RNAV 1
+ATREX 6H
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG084 Yes 084 085.5 4.8 - - - - RNAV 1
+- DF ATREX - ---- - - - RNAV 1
+NURMO 6H
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG084 Yes 084 085.5 4.8 - - - - RNAV 1
+- DF NURMO - ---- - - - RNAV 1
+OPALE 6L
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG084 Yes 084 085.5 4.8 - - - - RNAV 1
+- DF OPALE - ---- - - - RNAV 1
+ATREX 6L
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG084 Yes 084 085.5 4.8 - - - - RNAV 1
+- DF ATREX - ---- - - - RNAV 1
+NURMO 6L
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG084 Yes 084 085.5 4.8 - - - - RNAV 1
+- DF NURMO - ---- - - - RNAV 1
+DIKOL 6H
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG086 Yes ---- - - - RNAV 1
+- DF NEPAR - ---- - - - RNAV 1
+- TF DIKOL - 080 080.9 19.9 - - - - RNAV 1
+RANUX 6H
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG086 Yes ---- - - - RNAV 1
+- DF NEPAR - ---- - - - RNAV 1
+- TF RANUX - 083 084.0 32.1 - - - - RNAV 1
+LANVI 6H
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes ---- - - - RNAV 1
+- DF LUPAM - ---- - - - RNAV 1
+- TF LASIV - 093 094.5 26.9 - - - - RNAV 1
+- TF LANVI - 118 118.9 71.8 - - - - RNAV 1
+BAXIR 6H
+RWY08L - 084 085.4
+- - RNAV 1CF PG081 - - -
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes ---- - - - RNAV 1
+- DF BEKOS - ---- - - - RNAV 1
+- TF BAXIR - 094 095.6 12.8 - - - - RNAV 1
+AMDT 11 /2 4 © SIA

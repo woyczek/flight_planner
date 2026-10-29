@@ -1,0 +1,19 @@
+AD 2 LFPO DATA RWY02 FNA RNP CODEAIP
+01 OCT 2026FRANCE
+PARIS ORLY
+PRECODING FNA RNP RWY 02
+AMDT 10/26© Service de l'Information Aéronautique, France
+FNA RNP RWY 02
+RMK - MAG VAR 2020 1.0°E REF NAVAID : -
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+→ HLDG MOLBA - - ---- - - -- -
+IF IPO02 -- - - - 3000 - - - -
+TF FPO02 - 017 018.3 3.5 - 3000 3000 - - 1.0
+TF RW02 Yes 017 018.3 8.4 - - - - -3.00 / 50 0.3
+→ TF PO403 Yes 017 018.4 4.1 - -- - - 1.0
+← APCH
+←
+DF PO406 -- -- R - 2000 - - 1.0
+TF MLN - 150 151.5 20.2 - - 4000 - - 1.0
+TF MOLBA - 133 133.9 13.9 - FL070 FL070 230 - 1.0
+←

@@ -1,0 +1,68 @@
+AIP AD 2 LFPO DATA SID RWY07 RNAV CODE 02
+FRANCE 31 OCT 24
+PARIS ORLY (LFPO)
+Réacteurs (R) et hélices (H) / Jets (R) and Propellers (H)
+OPALE - ATREX - NURMO - OKASI - PILUL - ELCOB - LGL - DIKOL - BAXIR
+RANUX - BUBLI - AGOPA - ERIXU - LATRA - OLZOM - MONOT - DORDI
+(Protégés pour / Protected for CAT A, B, C, D)
+SID RNAV RWY 07
+RMK GNSS ou/or DME/DME MAG VAR 2020 1.0°E Ref NAVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+BAXIR 2E
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F P O 0 8 3 Y e s ---- - - - 1,0
+- D F P O 0 8 4 - ---- - - - 1,0
+- TF BATAG - 079 079,7 15,9 - - - - 1,0
+- TF BAXIR - 094 095,4 19,8 - - - - 1,0
+BUBLI 2E
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F P O 0 8 3 Y e s ---- - - - 1,0
+- D F P O 0 8 4 - ---- - - - 1,0
+- TF BATAG - 079 079,7 15,9 - - - - 1,0
+- TF BUBLI - 094 095,4 31,0 - - - - 1,0
+DIKOL 2G
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F P O 0 8 3 Y e s ---- - - - 1,0
+- D F P O 0 8 4 - ---- - - - 1,0
+- TF BATAG - 079 079,7 15,9 - - - - 1,0
+- TF DIKOL - 053 054,5 32,8 - - - - 1,0
+RANUX 2G
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F P O 0 8 3 Y e s ---- - - - 1,0
+- D F P O 0 8 4 - ---- - - - 1,0
+- TF BATAG - 079 079,7 15,9 - - - - 1,0
+- TF RANUX - 063 063,7 43,5 - - - - 1,0
+BAXIR 2G
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F P O 0 8 3 Y e s ---- - - - 1,0
+- D F P O 0 8 4 - ---- - - - 1,0
+- TF BATAG - 079 079,7 15,9 - - - - 1,0
+- TF BAXIR - 094 095,4 19,8 - - - - 1,0
+BUBLI 2G
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F P O 0 8 3 Y e s ---- - - - 1,0
+- D F P O 0 8 4 - ---- - - - 1,0
+- TF BATAG - 079 079,7 15,9 - - - - 1,0
+- TF BUBLI - 094 095,4 31,0 - - - - 1,0
+AGOPA 2E
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F P O 0 8 5 - ---- - - - 1,0
+- TF ABORO - 229 230,4 11,0 - - - - 1,0
+- TF ADADA - 229 230,2 21,4 - - - - 1,0
+- TF AGOPA - 178 178,9 12,7 - - - - 1,0
+ERIXU 2E
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F P O 0 8 5 - ---- - - - 1,0
+- TF ABORO - 229 230,4 11,0 - - - - 1,0
+- TF EDOXA - 209 210,5 16,2 - - - - 1,0
+- TF ERIXU - 170 170,8 12,6 - - - - 1,0
+AMDT 11/24 © SIA

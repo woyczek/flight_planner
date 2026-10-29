@@ -1,0 +1,72 @@
+AIP AD 2 LFPG DATA SID RWY08L-08R RNAV CODE 03
+FRANCE 31 OCT 2 4
+PARIS CHARLES DE GAULLE
+Réacteurs (R) et hélices (H) / Jets (R) and propellers (H)
+SID RNAV RWY 08L - 08R
+Protégés pour / Protected for CAT A, B, C, D
+SID RNAV RWY 08L - 08R
+RMK GNSS ou / or DME/DME Ref NAVAID : BTMAG VAR 2020 1.1°E
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Nav Spec
+LATRA 6H
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes ---- - - - 1RNAV
+- DF PG102 - ---- - - - 1 RNAV
+- TF LAPAX - 210 210.7 15.5 - - - - RNAV 1
+- TF LALUX - 176 177.0 12.8 - - - - RNAV 1
+- TF LATRA - 159 160.4 12.9 - - - 280 RNAV 1
+OKASI 6H
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes ---- - - - 1RNAV
+- DF OSTIP - ---- - - - 1 RNAV
+- TF ODEBU - 176 177.2 12.5 - - - - RNAV 1
+- TF OKASI - 152 152.8 13.3 - - - 280 RNAV 1
+PILUL 6H
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes - --- - - - 1RNAV
+- DF CLM - ---- - - - 1 RNAV
+- TF MLN - 198 198.9 24.7 - - - - RNAV 1
+- TF PEKIM - 176 177.4 10.8 - - - - RNAV 1
+- TF PILUL - 141 142.2 14.6 - - - 280 RNAV 1
+AGOPA 6L
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes - --- - - - 1RNAV
+- DF PG101 - ---- - - - 1 RNAV
+- TF OXCEL - 234 234.7 11.3 - - - - RNAV 1
+- TF ABOBO - 210 210.9 15.4 - - - - RNAV 1
+- TF ADADA - 209 210.3 14.9 - - - - RNAV 1
+- TF AGOPA - 178 178.9 12.7 - - - 280 RNAV 1
+ERIXU 6L
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes ---- - - - 1RNAV
+- DF PG101 - ---- - - - 1 RNAV
+- TF OXCEL - 234 234.7 11.3 - - - - RNAV 1
+- TF ABOBO - 210 210.9 15.4 - - - - RNAV 1
+- TF EDOXA - 176 176.9 13.2 - - - - RNAV 1
+- TF ERIXU - 170 170.8 12.6 - - - 280 RNAV 1
+LATRA 6L
+RWY08L - 084 085.4
+- - RNAV 1CF PG081 - - -
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes ---- - - - 1RNAV
+- DF PG102 - ---- - - - 1 RNAV
+- TF LAPAX - 210 210.7 15.5 - - - - RNAV 1
+- TF LALUX - 176 177.0 12.8 - - - - RNAV 1
+- TF LATRA - 159 160.4 12.9 - - - 280 RNAV 1
+AMDT 11 /2 4 © SIA

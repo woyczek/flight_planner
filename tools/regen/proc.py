@@ -4,8 +4,8 @@ UN seul travail, deux verbes : `proc/eaip-fetch` (la France, par l'eAIP du SIA, 
 Ce qui les distingue est dans la table SOURCES (qui lit quel État, avec ou sans compte, où est le cache, comment la source est lue, ce qu'on contrôle avant d'installer) ; tout le reste est
 commun et écrit une fois : l'avancement et l'annulation, le journal sans secret, les comptes (`stats`), l'installation par proc_manual, le commit par regen_jobs.commit_outputs, le résultat.
 
-Règle des États, à UN seul endroit (SOURCES[...]['states']) : la France (« LF ») se lit par l'eAIP, jamais par EAD ; tout autre État que la page a choisi (EAD_STATES « read ») par EAD Basic.
-La page (aerodb.fetchProcedures) choisit le verbe d'après le code ; le lanceur REcontrôle ici : un code hors de la France est refusé (400) par `proc/eaip-fetch`.
+Règle des États, à UN seul endroit (SOURCES[...]['states']) : la France (« LF ») se lit par l'eAIP, jamais par EAD ; tout autre État que la page a choisi (EAD_STATES « read ») par EAD Basic ; `ead-fetch` refuse un code « LF ».
+La page (aerodb.fetchProcedures) choisit le verbe d'après le code ; le lanceur REcontrôle ici : un code hors de la France est refusé (400) par `proc/eaip-fetch`, un code français par `proc/ead-fetch`.
 Règle d'EAD Basic (frame/aerodb/EAD_BASIC.md § 1) : un terrain par geste de l'utilisateur, jamais une liste, jamais en masse (MIN_GAP : 30 s entre deux départs d'`ead-fetch`, le plus long gagne).
 Identifiants d'EAD Basic : <secrets>/ead.json { user, password }, sinon EAD_USER / EAD_PASSWORD ; jamais journalisés (sanitize), jamais rendus.
 
@@ -134,7 +134,8 @@ SOURCES = {
     },
     'ead': {
         'verb': 'ead-fetch',
-        'states': None,                # tout autre État que la page a choisi (EAD_STATES « read ») ; le lanceur ne le recontrôle pas
+        'states': None,                # tout autre État que la page a choisi (EAD_STATES « read ») ; le lanceur ne recontrôle pas EAD_STATES
+        'not_states': ('LF',),         # … sauf la France, qui n'est JAMAIS lue par EAD : ead-fetch refuse un code « LF » (la règle des États est ici, à un seul endroit)
         'account': True,               # <secrets>/ead.json ou EAD_USER / EAD_PASSWORD
         'read': _read_ead,
         'explain': None,
@@ -149,13 +150,13 @@ MIN_GAP = {('proc', 'ead-fetch'): 30}
 def check_icao(source):
     """Contrôle d'arguments d'un verbe (→ 400 si None) : { 'icao': 4 caractères [A-Z0-9] } et rien d'autre ; une liste (« LFBD,LFBO »), un joker, un champ en plus sont refusés (EAD Basic ne se
     lit pas en masse) ; et, pour une source qui n'a qu'un État (`states`), un code de cet État seulement."""
-    states = SOURCES[source]['states']
+    states, excluded = SOURCES[source]['states'], SOURCES[source].get('not_states')
 
     def check(a):
         if not isinstance(a, dict) or set(a) != {'icao'} or not isinstance(a['icao'], str):
             return None
         icao = a['icao'].strip().upper()
-        if not re.fullmatch(r'[A-Z0-9]{4}', icao) or (states and not icao.startswith(states)):
+        if not re.fullmatch(r'[A-Z0-9]{4}', icao) or (states and not icao.startswith(states)) or (excluded and icao.startswith(excluded)):
             return None
         return {'icao': icao}
     return check
@@ -238,6 +239,10 @@ def fetch(name):
                 if not todo:                               # plus aucune procédure : le fichier n'est refusé que s'il n'en reste aucune
                     job.log(env.clean(_summary(stats)))
                     return env.failed('geometry check failed: ' + '; '.join(refused[:3]), warnings, stats)
+            wrong = [d for d in todo if d.get('icao') != icao or any(p.get('icao') != icao for p in d['procedures'])]
+            if wrong:                                      # le fichier écrit doit être celui que commit_outputs valide (proc/manual/<OACI>.json) : celui du terrain demandé, et d'aucun autre
+                job.log(env.clean(_summary(stats)))
+                return env.failed(f"the file read is not {icao}'s (aerodrome {wrong[0].get('icao')!r} in the document): nothing installed", warnings, stats)
             installed = 0
             env.say(f'{icao}: installation de {sum(len(d["procedures"]) for d in todo)} procédure(s)')
             for d in todo:

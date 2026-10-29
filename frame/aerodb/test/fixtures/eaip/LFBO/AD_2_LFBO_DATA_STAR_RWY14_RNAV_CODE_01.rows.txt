@@ -1,0 +1,46 @@
+AIP AD 2 LFBO DA T A ST AR RWY14 RNAV CODE
+01
+02 OCT 2025FRANCE
+TOULOUSE BLAGNAC
+STAR RNAV RWY 14
+(Protégées pour / Protected for CA T A, B, C, D)
+STAR RNAV RWY 14
+RMK GNSS only MAG VAR 2025 1.7°E REF NAVAID :
+Procedure Path Waypoint
+Identifcation Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+HLDG
+ADIMO - ADIMO - - - - - - - - - -
+FUZAP - FUZAP - - - - - - - - - -
+SURAS - SURAS - ---- - - - -
+AFRIC 8S
+- IF AFRIC - ---- - - - -
+- TF FARCI - 220 222.0 19.1 - - - - 1.0
+- TF ADIMO - 263 264.9 29.3 - FL 080 - - 1.0
+ASPET 8S
+- IF ASPET - ---- - - - -
+- TF OGRIL - 031 32.5 20.8 - - FL 160 250 1.0
+- TF SULIT - 006 7.9 5.5 - - FL 140 - 1.0
+- TF SURAS - 330 332.0 17.6 - FL 080 - - 1.0
+LMB 8S
+- I F L M B - ---- - - - -
+- TF TADAN - 073 75.1 26.0 - - - - 1.0
+- TF SURAS - 078 79.7 22.3 - FL 080 - - 1.0
+NARAK 8S
+- IF NARAK - ---- - F L 1 5 0 - 1 . 0
+- TF FUZAP - 213 214.6 22.9 - FL 080 - - 1.0
+ORBIL 8S
+- IF ORBIL - ---- - - - -
+- TF SALSI - 326 327.8 11.2 - - - - 1.0
+- TF ADIMO - 292 294.0 21.4 - FL 080 - - 1.0
+SECHE 8S
+- IF SECHE - ---- F L 1 5 0 F L 1 9 0 - -
+- TF AGN - 153 154.8 36.5 - FL 080 FL 110 - 1.0
+- TF SURAS - 149 150.7 16.9 - FL 080 - - 1.0
+TOPTU 8S
+- IF TOPTU - ---- - - - -
+- TF LALGO - 051 53.0 24.6 - FL 200 - - 1.0
+- TF BOGRO - 052 53.3 27.2 - FL 150 FL 190 - 1.0
+- TF OGRIL - 091 92.9 21.3 - - FL 160 250 1.0
+- TF SULIT - 006 7.9 5.5 - - FL 140 - 1.0
+- TF SURAS - 330 332.0 17.6 - FL 080 - - 1.0
+AMDT 10/25© Service de l'Information Aéronautique, France

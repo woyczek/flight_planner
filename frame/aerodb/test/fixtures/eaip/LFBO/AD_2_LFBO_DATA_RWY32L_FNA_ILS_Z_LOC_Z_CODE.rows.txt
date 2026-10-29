@@ -1,0 +1,16 @@
+AIP AD 2 LFBO DATA RWY32L FNA ILS Z LOC Z CODE
+FRANCE 02 OCT 2025
+TOULOUSE BLAGNAC
+PRECODING FNA ILS Z or LOC Z RWY 32L
+AMDT 10/25© Service de l'Information Aéronautique, France
+FNA ILS Z or LOC Z RWY 32L
+RMK RNAV1 transition to ILS - GNSS only MAG VAR 2025 1.7°E REF NAVAID : -
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+H L D G - S U L I T - ---- - - -- -
+IF IO32L - - - - - 3000 - 210 - -
+See chart FNA ILS Z or LOC Z RWY 32L
+- TOU Yes - - - - - - - - 1.0
+APCH TF BO614 - 302 304.0 10.0 - - 4000 - - 1.0
+TF BO616 - 249 251.0 10.1 - 5000 - - - 1.0
+TF BO618 - 165 166.4 13.9 - - - - - 1.0
+TF SULIT Yes 117 118.5 13.8 - - - - - 1.0

@@ -56,6 +56,7 @@ RULES = [
     ('tools/proc_records.py', ['K', 'I'], 'lines to records, the common pass of every reader, and its aerodb cases'),
     ('tools/proc_pdf.py', ['K', 'I'], 'PDF reading shared by the readers and its aerodb cases'),
     ('tools/proc_geometry.py', ['K', 'I'], 'the geometry check and the doubt policy and their aerodb cases'),
+    ('tools/make_eaip_fixtures.py', ['K', 'I'], 'the page sets of the French aerodromes and their regeneration tool'),
     ('tools/proc_ocr.py', ['K', 'I'], 'the OCR reader of drawn pages and its aerodb cases'),
     ('tools/ead_probe.py', ['K', 'I'], 'the EAD Basic probe and its aerodb case'),
     ('tools/proc_cifp.py', ['K', 'I'], 'the FAA CIFP procedures builder and its aerodb case'),

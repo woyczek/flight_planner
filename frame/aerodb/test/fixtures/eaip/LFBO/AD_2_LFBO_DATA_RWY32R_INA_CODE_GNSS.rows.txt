@@ -1,0 +1,34 @@
+AD 2 LFBO DA T A RWY32R INA CODE GNSSAIP
+01 OCT 2026FRANCE
+TOULOUSE BLAGNAC
+PRECODING INA RNAV (GNSS) RWY 32R
+AMDT 10/26© Service de l'Information Aéronautique, France
+INA RNAV(GNSS) RWY 32 R
+GNSS only - Linked to FNA RNP RWY 32R and FNA ILS Z or LOC Z RWY 32R
+RMK MAG VAR 2025 1.7°E REF NAVAID :
+Procedure developped under CDO concept
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (m) Navigation Accuracy (NM)
+HLDG - ADIMO - ---- - - -- -
+HLDG - FUZAP - ---- - - -- -
+HLDG - SULIT - ---- - - -- -
+IF ADIMO - ---- FL080 - - - -
+TF BO606 - 266 267.5 7.9 - - - 230 - 1.0
+INA ADIMO
+TF BO603 - 266 267.4 5.0 - 4000 - - - 1.0
+TF IO32R - 251 253.1 3.5 - 3000 - 210 - 1.0
+IF AGENO - ---- FL080 - - - -
+INA AGENO TF BO602 - 121 123.0 10.4 L - - - - 1.0
+TF IO32R - 031 032.9 5.0 - 3000 - 210 - 1.0
+IF FUZAP - ---- FL080 - - - -
+TF BO608 - 188 189.8 9.4 - - - - - 1.0
+TF BO607 - 140 142.0 7.7 - FL080 - - - 1.0
+INA FUZAP TF BO605 140 142.0 8.1 - 5000 - - - 1.0
+TF BO604 - 185 186.9 4.0 - - - 230 - 1.0
+TF BO603 - 185 186.9 4.3 - 4000 - - - 1.0
+TF IO32R - 251 253.1 3.5 - 3000 - 210 - 1.0
+IF OGRIL - ---- FL080 - - - -
+INA OGRIL TF BO602 - 058 059.4 12.1 - - - - - 1.0
+TF IO32R - 031 032.9 5.0 - 3000 - 210 - 1.0
+IF SULIT - ---- FL080 - - - -
+INA SULIT TF BO602 - 084 085.9 9.7 - - - - - 1.0
+TF IO32R - 031 032.9 5.0 - 3000 - 210 - 1.0

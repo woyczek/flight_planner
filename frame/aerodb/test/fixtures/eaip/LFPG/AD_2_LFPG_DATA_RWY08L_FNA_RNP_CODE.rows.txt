@@ -1,0 +1,15 @@
+AD 2 LFPG DATA RWY08L FNA RNP CODEAIP
+11 JUN 2026FRANCE
+PARIS CHARLES DE GAULLE
+PRECODING FNA RNP RWY 08L
+AMDT 06/26© Service de l'Information Aéronautique, France
+FNA RNP RWY08L
+RMK - MAG VAR 2020 1,1°E REF NAVAID : -
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+IF PG410 -- - - - 5000 - - - -
+TF FG08L - 84 085.0 3.5 - 5000 5000 - - 1.0
+TF RW08L Yes 84 085.0 14.5 - - - - -3,0°/57 0.3
+APCH
+CA - - 84 085.3 -- 1000 -- - 1.0
+DF PG416 - --- - - -- - 1.0
+→ TF PG417 - 90 090.8 16.1 - 5000 5000 - - 1.0

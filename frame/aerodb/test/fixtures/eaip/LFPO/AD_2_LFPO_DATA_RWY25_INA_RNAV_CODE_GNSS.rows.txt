@@ -1,0 +1,38 @@
+AIP AD 2 LFPO DATA RWY25 INA RNAV CODE
+GNSS
+27 NOV 2025FRANCE
+PARIS ORLY
+PRECODING INA RNAV VEBEK 1W / MOLBA 1W (GNSS) RWY 25
+PRECODING INA RNAV ODILO 1W (GNSS) RWY 25
+AMDT 12/25© Service de l'Information Aéronautique, France
+INA RNAV RWY25
+RMK - MAG VAR 2020 1.0°E REF NAVAID : BT
+V er ti ca l ang l e (°) / TCH (ft) Navigation Accuracy (NM)
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt)
+HLDG - LORNI - - - - - - - - - -
+HLDG - MOLBA - - - - - - - - - -
+HLDG - ODILO - - - - - - - - - -
+IF VEBEK - - - - - FL110 FL110 250 - -
+TF CTL - 207 207.9 8.9 - - - - - 1.0
+INA TF VALPO - 224 224.9 25.6 - - - - - 1.0
+VEBEK 1W FM VALPO - 224 - - - - - - - 1.0
+DF MEDWY - - - - - - - - - 1.0
+TF VEKUH - 298 298.9 3.5 - 3000 -- - 1.0
+IF MOLBA - - - - - FL100 FL100 250 - -
+TF MLN - 313 314.1 13.9 - - - - - 1.0
+TF PO610 - 004 005.5 8.0 - - - - - 1.0
+INA
+FM PO610 - 035 - - - - - - - 1.0
+MOLBA 1W
+DF EMMAQ - - - - - - - - - 1.0
+TF MEDWY - 359 360.0 4.2 - - - - - 1.0
+TF VEKUH - 298 298.9 3.5 - 3000 -- - 1.0
+IF ODILO - - - - - FL110 FL110 280 - -
+TF VASOL - 033 34.1 22.0 - FL110 FL110 - - 1.0
+TF PO615 - 083 84.1 19.7 - FL110 FL110 - - 1.0
+INA
+FM PO615 - 083 - - - - - - - 1.0
+ODILO 1W
+DF EMMAQ - - - - - - - - - 1.0
+TF MEDWY - 359 360.0 4.2 - - - - - 1.0
+TF VEKUH - 298 298.9 3.5 - 3000 -- - 1.0

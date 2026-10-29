@@ -1,0 +1,72 @@
+AD 2 LFPG DATA SID RWY27L-27R RNAV CODE 01AIP
+01 OCT 2026FRANCE
+PARIS CHARLES DE GAULLE SID RNAV RWY 27L - 27R
+Réacteurs (R) et hélices (H) / Turbofans (R) and turboprops (H)
+RMK MAG VAR 2020 1.1°E Ref NAVAID : BT
+SID RNAV RWY 27L - 27R
+(Protégés pour / Protected for CAT A, B, C, D)
+Procedure Identification Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+OPALE 7A
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG276 Y 327 328.1 7.2 - - - - 1.0
+- DF BOV - - - - - - - - 1.0
+- TF OPALE - 338 339.5 29.7 - - - - 1.0
+ATREX 7A
+RWY27L - 264 265.3
+CF - 1.0 PG270 - - - -
+RWY27R - 261 262.5
+- TF PG276 Y 327 328.1 7.2 - - - - 1.0
+- DF ATREX - - - - - - - - 1.0
+NURMO 7A
+RWY27L - 264 265.3
+CF PG270 - - - -- 1.0
+RWY27R - 261 262.5
+- TF PG276 Y 327 328.1 7.2 - - - - 1.0
+- DF NURMO - - - - - - - - 1.0
+OPALE 7D
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG276 Y 327 328.1 7.2 - - - - 1.0
+- DF BOV - - - - - - - - 1.0
+- TF OPALE - 338 339.5 29.7 - - - - 1.0
+ATREX 7D
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG276 Y 327 328.1 7.2 - - - - 1.0
+- DF ATREX - - - - - - - - 1.0
+NURMO 7D
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG276 Y 327 328.1 7.2 - - - - 1.0
+- DF NURMO - - - - - - - - 1.0
+DIKOL 7A
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG274 Y 327 328.1 5.6 - - - - 1.0
+- DF PG278 - - - - - - - - 1.0
+- TF NEPAR - 089 090.3 34.7 - - - - 1.0
+- TF DIKOL - 080 080.9 19.9 - - - - 1.0
+RANUX 7A
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG274 Y 327 328.1 5.6 - - - - 1.0
+- DF PG278 - - - - - - - - 1.0
+- TF NEPAR - 089 090.3 34.7 - - - - 1.0
+- TF RANUX - 083 084.0 32.1 - - - - 1.0
+LANVI 7A
+RWY27L - 264 265.3
+- 1.0CF PG270 - - - -
+RWY27R - 261 262.5
+- TF PG274 Y 327 328.1 5.6 - - - - 1.0
+- DF PG278 - - - - - - - - 1.0
+- TF LUPAM - 104 104.7 35.9 - - - - 1.0
+- TF LASIV - 093 094.5 26.9 - - - - 1.0
+- TF LANVI - 118 118.9 71.8 - - - - 1.0
+AMDT 10/26© Service de l'Information Aéronautique, France

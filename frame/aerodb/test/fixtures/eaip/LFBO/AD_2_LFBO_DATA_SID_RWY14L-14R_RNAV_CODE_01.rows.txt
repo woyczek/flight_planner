@@ -1,0 +1,70 @@
+AIP AD 2 LFBO DA T A SID RWY14L-14R RNAV
+CODE 01
+02 OCT 2025FRANCE
+TOULOUSE BLAGNAC
+SID RNAV RWY 14L / 14R
+(Protégés pour / Protected for CA T A, B, C, D)
+SID RNAV RWY 14L/14R
+RMK GNSS only REF NAVAID :MAG VAR 2025 1.7°E
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+AMOLO 7A
+RWY14R 141 142.9
+CA - - - - 1000 - - 1.0
+RWY14L 141 142.9
+- DF BO140 Yes ---- - - - 1 . 0
+- CA - - 141 142.9 - - 4000 - - 1.0
+- DF BO143 - - - - L - - - 1.0
+- TF BO145 - 035 036.5 11.9 - - - - 1.0
+- TF MEDAP - 060 061.5 7.6 - - - - 1.0
+- TF AMOLO - 101 102.9 24.8 - FL 200 - - 1.0
+FINOT 7A
+RWY14R 141 142.9
+CA - - - - 1000 - - 1.0
+RWY14L 141 142.9
+- DF BO140 Yes ---- - - - 1 . 0
+- CA - - 141 142.9 - - 4000 - - 1.0
+- DF BO143 - - - - L - - - 1.0
+- TF FINOT - 085 086.7 14.2 - - - - 1.0
+GAUDE 7A
+RWY14R 141 142.9
+CA - - - - 1000 - - 1.0
+RWY14L 141 142.9
+- DF BO142 Y e s ---- - - - 1 . 0
+- TF BO144 - 225 227.0 18.0 - - - - 1.0
+- TF BO852 - 271 272.4 10.8 - - - - 1.0
+- TF GAUDE - 214 215.8 22.8 - FL 200 - - 1.0
+LMB 7A
+RWY14R 141 142.9
+CA - - - - 1000 - - 1.0
+RWY14L 141 142.9
+- DF BO142 Y e s ---- - - - 1 . 0
+- TF BO144 - 225 227.0 18.0 - - - - 1.0
+- TF BO852 - 271 272.4 10.8 - - - - 1.0
+- TF TALOL - 271 272.5 16.7 - - - - 1.0
+- TF LMB - 288 289.3 26.7 - - - - 1.0
+MEN 7A
+RWY14R 141 142.9
+-- 1000 - -1 . 0CA - -
+RWY14L 141 142.9
+- DF BO140 Yes ---- - - - 1 . 0
+- CA - - 141 142.9 - - 4000 - - 1.0
+- DF BO143 - - - - L - - - 1.0
+- TF BO145 - 035 036.5 11.9 - - - - 1.0
+- TF MEDAP - 060 061.5 7.6 - - - - 1.0
+- TF MEN - 048 049.6 64.2 - - - - 1.0
+MORIL 7A
+RWY14R 141 142.9
+CA - - - - 1000 - - 1.0
+RWY14L 141 142.9
+- DF BO140 Yes ---- - - - 1 . 0
+- TF GALDO - 141 142.9 23.7 - - - - 1.0
+- TF MORIL - 112 113.4 29.0 - - - - 1.0
+RIBOU 7A
+RWY14R 141 142.9
+CA - -- -- 1000 - 1.0
+RWY14L 141 142.9
+- DF BO140 Yes ---- - - - 1 . 0
+- TF GALDO - 141 142.9 23.7 - - - - 1.0
+- TF RIBOU - 142 143.2 13.4 - FL 120 - - 1.0
+AMDT 10/25© Service de l'Information Aéronautique, France

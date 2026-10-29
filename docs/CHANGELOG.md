@@ -26,6 +26,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Map: the drawing order is one list of layers** (`modules/maps/render.js` `draw`; SPEC § 3; V3 § 10.29 d) — each layer
   `{ id, reserve(), paint(ctx) }`, every reservation in the label placer first, then every painting, in the list's order; the
   same order as before, nothing changes on screen.
+- **aerodb: one page set per French aerodrome, regenerable by a tool** (`tools/make_eaip_fixtures.py`, `frame/aerodb/test/fixtures/eaip/<ICAO>/`, `SOURCES.md`; `tools/regen/proc.py`; V3 § 10.29 (e); cases K24, K25, K33, K34, K22) — the loose `.rows.txt` of the SIA eAIP become a set per aerodrome (LFPO, LFBO, LFPG whole: 171 pages, 346 KB of text;
+  LFBD and LFAV as they were) with the AD 2.12 extract and a manifest (cycle, pages, rows, hash of each PDF); `make_eaip_fixtures.py LFPO --cache <PDF> [--check|--fetch|--adopt]` rebuilds or verifies them. K24 and K25 assert on whole aerodromes (and find a real row that cannot be read in LFPO STAR RWY07). Also from the
+  security review of the reading job: a document of another aerodrome than the requested one is never installed, and `ead-fetch` refuses a French code.
 
 - **aerodb: one reading job, `tools/regen/proc.py`** (`tools/regen_jobs.py`; SPEC, DECISIONS; V3 § 10.29 (d); cases K22, K23, I8) — `proc/ead-fetch` and `proc/eaip-fetch` were two copies of one job; they are now ONE function driven by a source table (which
   State each source reads — France by the SIA eAIP, no account; any other State by EAD Basic, with the account — where its cache is, how it is read, what is checked before installing), loaded by the frame's base (`load_verbs()`). The commit is the base's

@@ -1,0 +1,25 @@
+AIP AD 2 LFPO DATA RWY20 INA RNAV CODE
+GNSS
+10 JUL 2025FRANCE
+PARIS ORLY
+PRECODING INA RNAV VEBEK 1W / MOLBA 1W (GNSS) RWY 20
+PRECODING INA RNAV ODILO 1W (GNSS) RWY 20
+AMDT 07/25© Service de l'Information Aéronautique, France
+INA RNAV RWY 20
+RMK - MAG VAR 2020 1.0°E REF NAVAID : BT
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+HLDG - LORNI ----- - - -- -
+HLDG - MOLBA ----- - - -- -
+HLDG - ODILO ----- - - -- -
+IF VEBEK ----- F L 1 1 0 F L 1 1 0 2 5 0 - -
+INA TF CTL - 207 207.9 8.9 - - - - - 1.0
+VEBEK 1W TF VALPO - 224 224.9 25.6 - - - - - 1.0
+F M-- 2 2 4 --- - - -- 1.0
+IF MOLBA ----- F L 1 0 0 F L 1 0 0 2 5 0 - -
+INA TF MLN - 313 314.1 13.9 - - - - - 1.0
+MOLBA 1W TF PO610 - 004 005.5 8.0 - - - - - 1.0
+FM - - 035 --- - - -- 1.0
+IF ODILO ----- F L 1 1 0 F L 1 1 0 2 8 0 - -
+INA TF VASOL - 033 34.1 22.0 - FL 110 FL 110 - - 1.0
+ODILO 1W TF PO615 - 083 84.1 19.7 - FL 110 FL 110 - - 1.0
+F M-- 0 8 3 --- - - -- 1.0

@@ -159,6 +159,20 @@ def _gaps_of(proc):
     return G.check_legs(G.legs_of(proc['points']))['gaps']
 
 
+def _eaip_rows(fx, name):
+    """Les lignes d'une page d'un jeu de pages d'un terrain (frame/aerodb/test/fixtures/eaip/<OACI>/<nom>.rows.txt, regénérable par tools/make_eaip_fixtures.py) : `name` est celui du PDF, avec ou
+    sans .pdf / .rows.txt."""
+    stem = name.replace('.rows.txt', '').replace('.pdf', '')
+    return (fx / stem.split('_')[2] / f'{stem}.rows.txt').read_text(encoding='utf-8').splitlines()
+
+
+def _eaip_names(c, icao, pattern='*'):
+    """Les noms (sans extension) des pages d'un jeu : tous ceux du manifeste, ou seulement ceux qui répondent au motif."""
+    import fnmatch
+    d = c.root / 'frame/aerodb/test/fixtures/eaip' / icao
+    return sorted(f.name[:-len('.rows.txt')] for f in d.glob('*.rows.txt') if fnmatch.fnmatch(f.name[:-len('.rows.txt')], pattern))
+
+
 def _eaip(c):
     import importlib
     import sys
@@ -168,8 +182,8 @@ def _eaip(c):
     mod = _proc()
     fx = c.root / 'frame/aerodb/test/fixtures/eaip'
 
-    def rows(name):
-        return (fx / f'{name}.rows.txt').read_text(encoding='utf-8').splitlines()
+    def rows(name):                                   # the rows of a page of a set: AD_2_<ICAO>_… lives in eaip/<ICAO>/
+        return _eaip_rows(fx, name)
     return mod, fx, rows
 
 
@@ -212,7 +226,7 @@ def k2(c):
 @case('K3', 'eAIP aerodrome file', 'K', static=True, rule='aerodb SPEC 5 quinquies: proc/<cycle>/<ICAO>.json at the common schema, status check')
 def k3(c):
     P, fx, rows = _eaip(c)
-    names = [f.name.replace('.rows.txt', '.pdf') for f in fx.glob('*.rows.txt')]
+    names = [n + '.pdf' for n in _eaip_names(c, 'LFBD')]
     files = [n for n in names if '_LFBD_' in n] + ['AD_2_LFBD_SID_RWY23_RNAV.pdf', 'AD_2_LFBD_IAC_RWY23_FNA_ILS_LOC.pdf']
     known = {'ROYAN': (45.665, -1.04), 'CNA': (45.0, 1.0)}      # points fictifs ; ROYAN à 34,1 NM de BD927 comme la page l'imprime (le contrôle de géométrie est fait par le constructeur)
     doc = P.build_aerodrome('LFBD', files, lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-01', '2026-10-01', known.get)
@@ -1493,6 +1507,8 @@ def k22(c):
     refused = [{'icao': 'LFBD,LFBO'}, {'icao': 'LFBD', 'all': True}, {}, {'icao': 'LFB'}, {'icao': 'LFBDX'}, {'icao': 12}, {'icao': 'LF*D'}, {'icao': 'LF BD'}, {'icao': ['LFBD']}, None, 'LFBD']
     c.eq([a for a in refused if ck(a) is not None], [], 'a list, a wildcard, an extra key or a bad length is refused (→ 400)', what='args')
     c.eq(RJ.Jobs(RJ.REGISTRY).start('proc', 'ead-fetch', {'icao': 'LFBD,LFBO'}).get('status'), 400, 'the launcher answers 400 to a list', what='start')
+    c.eq((ck({'icao': 'LFBD'}), ck({'icao': 'lfpg'}), ck({'icao': 'LIRF'}), RJ.Jobs(RJ.REGISTRY).start('proc', 'ead-fetch', {'icao': 'LFBD'}).get('status')), (None, None, {'icao': 'LIRF'}, 400),
+         'France is never read through EAD: ead-fetch refuses a code « LF » (the State rule is the source table of tools/regen/proc.py)', what='LF excluded')
 
     pos = [('TESTA', 51.00, -1.00), ('TESTB', 51.10, -0.50), ('TESTC', 51.20, -0.10)]               # fictitious points: a tool test, not AIP data
     pts = []
@@ -1637,6 +1653,19 @@ def k22(c):
             seen['doc'] = bad
             r = run(ctx)
             c.ok(r['ok'] is False and 'geometry check failed' in r['message'], str(r), 'a table that fails the geometry check is not installed')
+            # the file written must be the one commit_outputs validates: a document of another aerodrome (or a procedure of another) is refused before anything is installed
+            index_before = (data / 'proc' / 'manual' / 'index.json').read_bytes()
+            other = doc_of()
+            other['icao'] = 'EGYY'
+            seen['doc'] = other
+            r = run(ctx)
+            c.ok(r['ok'] is False and 'is not EGXX' in r['message'] and not (data / 'proc' / 'manual' / 'EGYY.json').exists() and (data / 'proc' / 'manual' / 'index.json').read_bytes() == index_before, str(r)[:300],
+                 'a document whose aerodrome is not the requested one is refused, nothing installed')
+            other = doc_of()
+            other['procedures'][0]['icao'] = 'EGYY'
+            seen['doc'] = other
+            r = run(ctx)
+            c.ok(r['ok'] is False and 'is not EGXX' in r['message'] and (data / 'proc' / 'manual' / 'index.json').read_bytes() == index_before, str(r)[:300], 'and so is a procedure of another aerodrome in the right document')
             seen['doc'] = {**doc_of(), 'procedures': []}
             r = run(ctx)
             c.ok(r['ok'] is False and r['reason'] == 'failed' and 'no procedure' in r['message'], str(r), 'nothing read is failed, not an empty file installed')
@@ -1790,7 +1819,7 @@ def k23(c):
     c.ok(raises(P.eaip_url, '2026-13-01') and raises(P.eaip_url, 'x') and raises(P.eaip_url, '../etc'), 'bad cycles', 'a cycle that is not a date is refused (nothing is a free address)')
 
     def pdfs_of(icao='LFBD'):
-        return [f.name.replace('.rows.txt', '.pdf') for f in fx.glob('*.rows.txt') if f'_{icao}_' in f.name]
+        return [n + '.pdf' for n in _eaip_names(c, icao)]
 
     def page_of(names):
         return ''.join(f'<a href="../Cartes/{n[5:9]}/{n}">{n}</a>' for n in names)
@@ -1826,7 +1855,7 @@ def k23(c):
         return b'%PDF fake ' + url.rsplit('/', 1)[-1].encode()
 
     def fake_rows(path):
-        return (fx / f'{Path(path).stem}.rows.txt').read_text(encoding='utf-8').splitlines()
+        return _eaip_rows(fx, Path(path).stem)
 
     def run(ctx, icao='LFBD', job=None):
         return RJ.REGISTRY[('proc', 'eaip-fetch')][0](job or RJ.Job('proc', 'eaip-fetch', {'icao': icao}, author='TST'), {'icao': icao}, ctx)
@@ -2016,14 +2045,16 @@ def k24(c):
     T = lambda stem: P.parse_code_table(rows(stem))
     legs = lambda g: [(l['leg'], l['id']) for l in g['legs']]
     # 1. every fixture of the two aerodromes: layout recognised, header known, at least 85 % of the leg rows read, each row counted once
-    names = sorted(f.name.replace('.rows.txt', '') for f in fx.glob('*.rows.txt') if ('_LFBO_' in f.name or '_LFPO_' in f.name) and 'CODE' in f.name)
+    names = sorted(_eaip_names(c, 'LFBO', '*CODE*') + _eaip_names(c, 'LFPO', '*CODE*'))
     bad = []
     for n in names:
         t = T(n)
         ok, pb, fp, lay = P.verify_page(rows(n), t)
         if not (ok and lay == 'sia-code' and not pb and t['read'] == t['rows']):
             bad.append((n, ok, pb, t['read'], t['rows']))
-    c.eq(bad, [], 'every LFBO / LFPO page is read, header known, all its leg rows read', what=f'{len(names)} pages')
+    # the whole sets (V3 § 10.29 (e)): one real row of LFPO STAR RWY07 (page 2, « TF SOTIP 033 034,0 5,2 FL120 250 1,0 », 7 cells instead of 10) cannot be placed and is left out, never guessed:
+    # that is the only page of the two aerodromes with a row lost, and its procedure (CAD 9E) is kept as a doubt (unread)
+    c.eq([b[0] for b in bad], ['AD_2_LFPO_DATA_STAR_RWY07_RNAV_CODE_02'], 'every LFBO / LFPO page is read, header known, all its leg rows read, but the one known page with a row lost', what=f'{len(names)} pages')
     # 2. spelled characters and glued cells are put back, values untouched
     c.eq(P.norm_tokens('- D F P O 2 0 4 Y e s ---- - - - 1,0'), ['-', 'DF', 'PO204', 'Yes', '----', '-', '-', '-', '1.0'], 'spelled terminator, point, Yes and a decimal comma', what='norm_tokens')
     c.eq(P.norm_tokens('IF VEBEK ----- F L 1 1 0 F L 1 1 0 2 5 0 - -'), ['IF', 'VEBEK', '-----', 'FL110', 'FL110', '250', '-', '-'], 'spelled flight levels and a speed', what='norm_tokens')
@@ -2039,7 +2070,8 @@ def k24(c):
     c.ok(P._leg(['TF', 'SOTIP', '033', '034.0', '5.2', 'FL120', '250', '1.0'], False, warns.append) is None and warns, str(warns), 'a row short of three cells stays ambiguous: not read, reported')
     # 3. Toulouse departures: the runway headers give per-runway starts, one procedure per runway
     sid = T('AD_2_LFBO_DATA_SID_RWY14L-14R_RNAV_CODE_01')
-    c.eq(sorted((g['label'], g['runway']) for g in sid['groups']), sorted((n, r) for n in ('AMOLO 7A', 'MEN 7A', 'MORIL 7A') for r in ('14L', '14R')), 'three departures x two runways', what='LFBO SID 14')
+    c.eq(sorted((g['label'], g['runway']) for g in sid['groups']), sorted((n, r) for n in ('AMOLO 7A', 'FINOT 7A', 'GAUDE 7A', 'LMB 7A', 'MEN 7A', 'MORIL 7A', 'RIBOU 7A') for r in ('14L', '14R')),
+         'the seven departures of the whole page x two runways', what='LFBO SID 14')
     amolo = {g['runway']: g for g in sid['groups'] if g['label'] == 'AMOLO 7A'}
     c.eq(legs(amolo['14R']), [('CA', None), ('DF', 'BO140'), ('CA', None), ('DF', 'BO143'), ('TF', 'BO145'), ('TF', 'MEDAP'), ('TF', 'AMOLO')], 'RWY14R: its CA, then the common route', what='AMOLO 7A')
     c.eq(legs(amolo['14L']), legs(amolo['14R'])[1:], 'RWY14L (the last header): the common route only', what='AMOLO 7A')
@@ -2067,10 +2099,10 @@ def k24(c):
     c.ok(not ok and any('moins de 85' in x for x in pb), f'{ok} {pb}', 'a column added to a Toulouse STAR page: refused')
     # 5. STAR
     star = T('AD_2_LFBO_DATA_STAR_RWY14_RNAV_CODE_01')
-    c.eq([(g['label'], g['legs'][0]['leg'], g['legs'][0]['id']) for g in star['groups']], [('AFRIC 8S', 'IF', 'AFRIC'), ('LMB 8S', 'IF', 'LMB'), ('NARAK 8S', 'IF', 'NARAK')], 'STAR of Toulouse: spelled « I F L M B » read as IF LMB', what='LFBO STAR 14')
-    c.eq(star['groups'][2]['legs'][0]['alt'], {'type': 'max', 'ft': 15000}, 'FL150 in the MAX column', what='NARAK 8S')
+    c.eq([(g['label'], g['legs'][0]['leg'], g['legs'][0]['id']) for g in star['groups']], [(f'{n} 8S', 'IF', n) for n in ('AFRIC', 'ASPET', 'LMB', 'NARAK', 'ORBIL', 'SECHE', 'TOPTU')], 'STAR of Toulouse (the seven of the whole page): spelled « I F L M B » read as IF LMB', what='LFBO STAR 14')
+    c.eq(next(g for g in star['groups'] if g['label'] == 'NARAK 8S')['legs'][0]['alt'], {'type': 'max', 'ft': 15000}, 'FL150 in the MAX column', what='NARAK 8S')
     pstar = T('AD_2_LFPO_DATA_STAR_RWY02_RNAV_CODE_01')
-    c.eq([g['label'] for g in pstar['groups']], ['MATIX 9E', 'EPL 9E'], 'Orly STAR: « (FIR) » / « (UIR) » are not part of the name, one procedure each (they were one long procedure)', what='LFPO STAR')
+    c.eq([g['label'] for g in pstar['groups']], ['MATIX 9E', 'MOPIL 9E', 'RENSA 9E', 'EPL 9E', 'RLP 9E', 'DJL 9E', 'KUTAN 9E', 'TUTAX 9E', 'ARDOL 9E', 'PIBAT 9E', 'MOU 9E'], 'Orly STAR (the whole page): « (FIR) » / « (UIR) » are not part of the name, one procedure each (they were one long procedure)', what='LFPO STAR')
     c.eq(pstar['groups'][0]['legs'][1]['nm'], 43.6, 'decimal comma read', what='GITAN')
     # 6. Orly departures
     s20 = T('AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE_01')
@@ -2142,7 +2174,7 @@ def k24(c):
     c.eq(d2.get('runways'), [{'id': '20', 'lat': 48.733333, 'lon': 2.383333, 'elev': None, 'qfu': 200, 'displaced': None, 'length': None, 'width': None, 'source': 'eaip'}],
          'a positioned threshold gives a runway record in the format of the CIFP ones; a « REF » row gives none', what='runways')
     # 11. AD 2.12 « Runway physical characteristics »: the only page that positions the thresholds (the DATA pages say « REF AD 2 LFPO.12 + THR 02 »)
-    page = lambda ic: (fx / f'FR-AD-2.{ic}.AD-2.12.html').read_text(encoding='utf-8')
+    page = lambda ic: (fx / ic / f'FR-AD-2.{ic}.AD-2.12.html').read_text(encoding='utf-8')
     w12 = []
     lfpo = P.ad212_runways(page('LFPO'), 'LFPO', w12)
     by = {r['id']: r for r in lfpo}
@@ -2240,8 +2272,8 @@ def k25(c):
     T = lambda n: P.parse_code_table(rows(stem(n)))
     legs = lambda g: [(l['leg'], l['id']) for l in g['legs']]
     ids = lambda g: [l['id'] for l in g['legs']]
-    names = sorted(f.name.replace('.rows.txt', '') for f in fx.glob('AD_2_LFPG_*.rows.txt') if 'CODE' in f.name)
-    c.eq(len(names), 10, 'ten trimmed LFPG pages as fixtures', what='fixtures')
+    names = sorted(_eaip_names(c, 'LFPG', '*CODE*'))
+    c.eq(len(names), 85, 'the 85 coding pages of Paris-CDG (cycle 2026-10-29), whole', what='fixtures')
     # 1. every LFPG page: layout recognised, header known, enough leg rows read
     bad = []
     for n in names:
@@ -2252,9 +2284,10 @@ def k25(c):
     c.eq(bad, [], 'every LFPG page is read with a known header (the SID 08 / 09 pages with the « Nav Spec » column and the empty procedure column, the INA pages, the FNA pages)', what='verify_page')
     # 2. the rejected SID page: runway headers « RWY09L - 087 088.4 », a « Nav Spec » column that the extractor moved, a first leg scrambled
     sid = T('SID_RWY09L-09R_RNAV_CODE_01')
-    c.eq((sid['rows'], sid['read']), (20, 20), 'SID 09L-09R: every leg row read (it read 0 of 35 before)', what='SID 09 rows')
+    c.eq((sid['rows'], sid['read']), (35, 35), 'SID 09L-09R: every leg row of the whole page read (it read 0 of 35 before)', what='SID 09 rows')
     by = {(g['label'], g['runway']): g for g in sid['groups']}
-    c.eq(sorted(by), sorted((n, r) for n in ('OPALE 6G', 'ATREX 6G', 'NURMO 6G', 'OPALE 6K', 'ATREX 6K', 'NURMO 6K') for r in ('09L', '09R')), 'six departures x two runways', what='SID 09 groups')
+    c.eq(sorted(by), sorted((n, r) for n in ('OPALE 6G', 'ATREX 6G', 'NURMO 6G', 'OPALE 6K', 'ATREX 6K', 'NURMO 6K', 'DIKOL 6G', 'LANVI 6G', 'RANUX 6G') for r in ('09L', '09R')),
+         'the nine departures of the whole page x two runways', what='SID 09 groups')
     c.eq((legs(by[('OPALE 6G', '09L')]), legs(by[('OPALE 6G', '09R')])), ([('CF', 'PG091'), ('TF', 'PG092'), ('DF', 'PG099'), ('TF', 'OPALE')], [('TF', 'PG092'), ('DF', 'PG099'), ('TF', 'OPALE')]),
          '09L starts at its CF, 09R at the common route', what='OPALE 6G')
     leg = by[('OPALE 6G', '09L')]['legs']
@@ -2265,10 +2298,10 @@ def k25(c):
     c.eq(P.norm_tokens('-T F FF501 - 061 062.4 8.5 - FL150 FL150 - 1.0')[:3], ['-', 'TF', 'FF501'], 'the empty procedure cell glued to the terminator (-T F)', what='norm_tokens')
     # 3. STAR titles with parentheses (the cause of the glued STARs): every title cuts a group, no point is repeated, the arrows and conditions of use are not part of the name
     star = T('STAR_RWY27L_RNAV_CODE_01')
-    c.eq([g['label'] for g in star['groups']], ['ENORI 9W', 'MATIX 9W', 'MOPIL 9W', 'VEDUS 9W', 'ENORI 9J', 'MATIX 9J', 'MOPIL 9J'], 'RWY27L STARs: each title « ENORI 9W (UIR FIR) », « VEDUS 9W (UIR FIR FL > 105) », « ENORI 9J (… Sur instruction / On instruction ) » is a group', what='titles')
+    c.eq([g['label'] for g in star['groups']], ['ENORI 9W', 'MATIX 9W', 'MOPIL 9W', 'VEDUS 9W', 'ENORI 9J', 'MATIX 9J', 'MOPIL 9J', 'VEDUS 9J'], 'RWY27L STARs: each title « ENORI 9W (UIR FIR) », « VEDUS 9W (UIR FIR FL > 105) », « ENORI 9J (… Sur instruction / On instruction ) » is a group', what='titles')
     c.eq(ids(star['groups'][3]), ['VEDUS', 'XERAM', 'ENORI', 'DEVIM', 'LORNI'], 'VEDUS 9W: its own five points, not glued to the next titles', what='VEDUS 9W')
     s8 = T('STAR_RWY08L_RNAV_CODE_01')
-    c.eq([g['label'] for g in s8['groups']], ['ENORI 9E', 'MATIX 9E', 'MOPIL 9E', 'VEDUS 9E', 'MATIX 9H'], 'RWY08L: five STARs, VEDUS XERAM ENORI DEVIM LORNI once', what='08L titles')
+    c.eq([g['label'] for g in s8['groups']], ['ENORI 9E', 'MATIX 9E', 'MOPIL 9E', 'VEDUS 9E', 'MATIX 9H', 'MOPIL 9H'], 'RWY08L: six STARs, VEDUS XERAM ENORI DEVIM LORNI once', what='08L titles')
     c.ok(all(len(set(ids(g))) == len(ids(g)) and g['legs'][0]['leg'] == 'IF' and g['legs'][0]['id'] == g['label'].split()[0] for g in star['groups'] + s8['groups']), 'ids',
          'each STAR starts at its IF, named after it, with no point repeated')
     # 4. point merge: the sequencing arcs BIBA1-5 and LUKI1-5 are not route legs
@@ -2333,7 +2366,7 @@ def k25(c):
          'a nameless record is KEPT, status doubt, code name, and said in the warnings (not installed as sure, not purged)')
     d3 = P.build_aerodrome('LFPG', [stem('STAR_RWY08L_RNAV_CODE_01') + '.pdf'], lambda n: dup, 'https://example.org/AIRAC-2026-10-29', '2026-10-29')
     rp = [p for p in d3['procedures'] if p['status'] == 'doubt']
-    c.ok(len(rp) == 1 and rp[0]['name'] == 'MOPIL 9E' and rp[0]['doubt'] == 'repeat' and len(d3['procedures']) == 5 and any('À VÉRIFIER' in w and 'XERAM' in w for w in d3['warnings']), str([(p['id'], p.get('doubt')) for p in rp]),
+    c.ok(len(rp) == 1 and rp[0]['name'] == 'MOPIL 9E' and rp[0]['doubt'] == 'repeat' and len(d3['procedures']) == 6 and any('À VÉRIFIER' in w and 'XERAM' in w for w in d3['warnings']), str([(p['id'], p.get('doubt')) for p in rp]),
          'a repeated point: the procedure is kept with status doubt (code repeat) and the point named in the warnings')
     st = P.stats_of(d3['formats'], len(d3['procedures']), [x['reason'] for x in d3.get('dropped', [])], G.doubt_codes(rp))
     c.eq((st['dropped'], st['doubt'], st['reasons']), (0, 1, [['repeat', 1]]), 'stats: nothing removed, one in doubt; the reason is counted', what='stats')
@@ -2702,3 +2735,72 @@ def k32(c):
     c.ok('.proc_cache/' in (c.root / '.gitignore').read_text(encoding='utf-8').split(), '.gitignore', 'the default cache folder of the command line is ignored by Git')
     dc = S.default_cache()
     c.ok(Path(dc) == c.root / 'data' / 'local' / 'eaip' if (c.root / 'data').is_dir() else dc == '.proc_cache', dc, 'without --cache: data/local/eaip when the data folder exists, else .proc_cache')
+
+
+def _eaip_cache(cycle):
+    """Le dossier des PDF d'un cycle sur ce poste (le cache du lanceur, <dépôt>/data/local/eaip/<cycle> ; ou, pour un essai, celui que donne la variable EAIP_FIXTURE_CACHE, qui contient un dossier par cycle) ; None s'il n'y est pas.
+    Le cache n'est pas dans le dépôt de code : le cas qui s'en sert est alors sauté, et dit pourquoi."""
+    import os
+    from pathlib import Path
+    for base in (os.environ.get('EAIP_FIXTURE_CACHE'), str(ROOT / 'data' / 'local' / 'eaip')):
+        if base and (Path(base) / cycle).is_dir():
+            return Path(base) / cycle
+    return None
+
+
+@case('K33', 'eAIP page sets: one set per French aerodrome, with its manifest', 'K', static=True,
+      rule='V3 § 10.29 (e): frame/aerodb/test/fixtures/eaip/<ICAO>/ holds the rows of every page used, the AD 2.12 extract and a manifest that matches the files')
+def k33(c):
+    import json
+    import re
+    fx = c.root / 'frame/aerodb/test/fixtures/eaip'
+    sets = sorted(d.name for d in fx.iterdir() if d.is_dir())
+    c.eq(sets, ['LFAV', 'LFBD', 'LFBO', 'LFPG', 'LFPO'], 'five sets, French aerodromes only (the foreign layouts stay on invented pages)', what='sets')
+    stray = [f.name for f in fx.iterdir() if f.is_file()]
+    c.eq(stray, [], 'no loose rows file beside the sets', what='loose files')
+    sizes = {}
+    for icao in sets:
+        d = fx / icao
+        m = json.loads((d / 'manifest.json').read_text(encoding='utf-8'))
+        files = sorted(f.name for f in d.glob('*.rows.txt'))
+        c.eq((m['icao'], m['source'], bool(re.fullmatch(r'\d{4}-\d{2}-\d{2}', m['cycle']))), (icao, 'SIA eAIP', True), f'{icao}: manifest icao, source and cycle', what=f'{icao} manifest')
+        c.eq([e['file'][:-4] + '.rows.txt' for e in m['pages']], files, f'{icao}: the manifest lists exactly the rows files of the set', what=f'{icao} pages')
+        c.eq([e['rows'] for e in m['pages']], [len((d / f).read_text(encoding='utf-8').splitlines()) for f in files], f'{icao}: the row counts of the manifest are the files\'', what=f'{icao} rows')
+        if m.get('regenerable') is False:
+            c.ok(m.get('note') == 'not regenerable: source PDF not cached' and not any('sha256' in e for e in m['pages']), str(m)[:200], f'{icao}: a set whose PDF are not cached says so and carries no hash')
+        else:
+            c.ok(all(re.fullmatch(r'[0-9a-f]{64}', e['sha256']) and e['pages'] >= 1 for e in m['pages']) and m.get('generated_at'), str(m['pages'][:1]), f'{icao}: every page has the hash of its PDF, its page count, and the set its date')
+        if icao in ('LFBO', 'LFPO', 'LFPG'):
+            c.ok((d / f'FR-AD-2.{icao}.AD-2.12.html').is_file() and m.get('ad2_12', {}).get('file') == f'FR-AD-2.{icao}.AD-2.12.html', icao, f'{icao}: the AD 2.12 extract is in the set and in the manifest')
+        sizes[icao] = sum(f.stat().st_size for f in d.iterdir())
+    c.le(sum(sizes.values()), 1_500_000, 'the whole sets stay small (rows text, no PDF)', what=str(sizes))
+
+
+@case('K34', 'eAIP page sets: regenerated from the cached PDF, the set is the same (tools/make_eaip_fixtures.py --check)', 'K', static=True,
+      rule='V3 § 10.29 (e): a set can be rebuilt by the tool from the PDF of the cache; skipped, with the reason, where the cache is not on the workstation')
+def k34(c):
+    import importlib
+    import json
+    import sys
+    tools = str(c.root / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    M = importlib.import_module('make_eaip_fixtures')
+    d = c.root / 'frame/aerodb/test/fixtures/eaip/LFBO'
+    cycle = json.loads((d / 'manifest.json').read_text(encoding='utf-8'))['cycle']
+    cache = _eaip_cache(cycle)
+    if cache is None:
+        c.skip(f'the cached PDF of LFBO ({cycle}) are not on this workstation (data/local/eaip/{cycle}, or EAIP_FIXTURE_CACHE): the set is not compared; the tool\'s --check does it where the cache is')
+    c.eq(M.check('LFBO', cache, d), [], 'the LFBO set is exactly what the cached PDF give (same rows, same hash)', what='check')
+    # the tool sees a difference: a changed row, a missing page
+    import shutil
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory() as td:
+        copy = Path(td) / 'LFBO'
+        shutil.copytree(d, copy)
+        first = sorted(copy.glob('*.rows.txt'))[0]
+        first.write_text(first.read_text(encoding='utf-8') + 'an extra row\n', encoding='utf-8')
+        (sorted(copy.glob('*.rows.txt'))[-1]).unlink()
+        diffs = M.check('LFBO', cache, copy)
+        c.ok(len(diffs) == 2 and all('lignes du jeu' in x for x in diffs), str(diffs), 'a changed rows file and a missing one are both reported')

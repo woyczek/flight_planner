@@ -1,0 +1,55 @@
+AIP AD 2 LFPG DATA SID RWY08L-08R RNAV CODE 05
+FRANCE 31 OCT 2 4
+PARIS CHARLES DE GAULLE
+Réacteurs (R) et hélices (H) / Jets (R) and propellers (H)
+SID RNAV RWY 08L - 08R
+Protégés pour / Protected for CAT A, B, C, D
+SID RNAV RWY 08L - 08R
+RMK GNSS ou / or DME/DME Ref NAVAID : BTMAG VAR 2020 1.1°E
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Nav Spec
+MONOT 6L
+RWY08L - 084 085.4
+CF PG081 - - - RNAV 1--
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- TF PG085 - 097 098.5 9.5 - - - - RNAV 1
+- TF PG103 - 177 178.4 5.0 - - - 220 RNAV 1
+- TF PG105 - 260 261.4 8.9 - - - - RNAV 1
+- TF PG107 - 255 255.8 13.1 - - - - RNAV 1
+- TF OXCEL - 208 209.5 6.5 - - - 250 RNAV 1
+- TF PG277 - 187 188.3 21.8 - - - - RNAV 1
+- TF MONOT - 160 161.2 18.2 - - - - RNAV 1
+LGL 6H
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes -- -- - - - 1RNAV
+- DF KELUD - - - - R - - - RNAV 1
+- TF LGL - 269 270.2 73.9 - - - - RNAV 1
+ELCOB 6H
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes ---- - - - 1RNAV
+- DF KELUD - - - - R - - - RNAV 1
+-T F ELCOB - 286 287.0 48.5 - - - - RNAV 1
+LGL 6L
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes ---- - - - 1RNAV
+- DF KELUD - - - - R - - - RNAV 1
+- TF LGL - 269 270.2 73.9 - - - - RNAV 1
+ELCOB 6L
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes -- -- - - - 1RNAV
+- DF KELUD - - - - R - - - RNAV 1
+-T F ELCOB - 286 287.0 48.5 - - - - RNAV 1
+AMDT 11 /2 4 © SIA

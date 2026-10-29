@@ -521,6 +521,7 @@ both ways.
   | `ead_probe.py` | 282 | the read-only probe of EAD Basic (`python tools/ead_probe.py`) | `probe`, `main` |
   | `proc_ocr.py` | 311 | OCR of drawn pages → rows → the common layouts → records | `rows_from_pdf_ocr`, `document_from_rows`, `read_document` |
   | `proc_manual.py` | 163 | install of hand and OCR readings (refusal per procedure) | `screen`, `verify`, `install` |
+  | `make_eaip_fixtures.py` | 196 | rebuilds and checks the test page sets of a French aerodrome (`frame/aerodb/test/fixtures/eaip/<ICAO>/`: rows of every data and coding page, AD 2.12 extract, manifest) from the cached PDF; `--check`, `--fetch`, `--adopt` | `build`, `check`, `section_212`, `main` |
   | `tools/regen/proc.py` | 267 | the launcher's reading job (loaded by `regen_jobs.load_verbs()`): ONE job, two verbs, a **source table** `SOURCES` (`eaip` ← the State `LF`, no account, cache `data/local/eaip/<cycle>/`, no hand screen; `ead` ← any other State the page chose, with the account, cache `data/local/ead/`, `proc_manual.screen`) and the shared rest (progress, cancel, log without secret, `stats`, install by `proc_manual`, commit, result); `MIN_GAP` 30 s for `ead-fetch` | `VERBS`, `MIN_GAP`, `SOURCES`, `fetch`, `check_icao` |
   | `proc_cifp.py` | 313 | the FAA CIFP and X-Plane navigation data | `build` |
 

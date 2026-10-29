@@ -1,0 +1,49 @@
+AD 2 LFPG DATA STAR RWY26L RNAV CODE 05AIP
+11 JUN 2026FRANCE
+PARIS CHARLES DE GAULLE (LFPG)
+STAR RNAV RWY 26L
+STAR RNAV Réacteurs et Hélices / Turbofans and Turboprops
+RMK RWY 26L MAG VAR 2020 1,1°E REF NAVAID : -
+Procedure Path Waypoint
+Identifcation Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+BIBAX 9V (Utilisable uniquement sur instruction du contrôle pour les réacteurs et les hélices / Use on ATC instruction only for jets and propellers )
+- IF BIBAX - ---- - FL240 250 -
+- TF BIBA1 - 178 179.1 12.3 -- -- 1.0
+- TF BIBA2 - 233 233.7 7.0 -- -- 1.0
+- TF BIBA3 - 218 219.2 10.0 -- -- 1.0
+- TF BIBA4 - 204 204.7 10.0 -- -- 1.0
+- TF BIBA5 - 189 190.3 10.0 L -- - 1.0
+- TF KOLIV - 092 093.0 40.0 -- FL130 250 1.0
+- TF MOPAR - 093 093.8 7.4 - FL110 FL120 250 1.0
+LUKIP 9V (Utilisable uniquement sur instruction du contrôle pour les réacteurs et les hélices / Use on ATC instruction only for jets and propellers )
+- IF LUKIP - ---- - FL240 250 -
+- TF LUKI1 - 068 069.0 8.1 -- -- 1.0
+- TF LUKI2 - 009 010.3 7.0 -- -- 1.0
+- TF LUKI3 - 024 024.7 8.8 -- -- 1.0
+- TF LUKI4 - 038 039.2 8.8 -- -- 1.0
+- TF LUKI5 - 053 053.6 8.7 R -- - 1.0
+- TF KOLIV - 150 150.9 35.0 -- FL130 250 1.0
+- TF MOPAR - 093 093.8 7.4 - FL110 FL120 250 1.0
+BIBAX 9W (Réacteurs uniquement / Jets only )
+- IF BIBAX - ---- - FL240 300 -
+- TF KOLIV - 153 154.1 50.5 -- FL130 300 1.0
+- TF MOPAR - 093 093.8 7.4 - FL110 FL120 300 1.0
+LUKIP 9W (Réacteurs uniquement / Jets only )
+- IF LUKIP - ---- - FL240 300 -
+- TF KOLIV - 090 090.9 42.2 -- FL130 300 1.0
+- TF MOPAR - 093 093.8 7.4 - FL110 FL120 300 1.0
+BIBAX 9P (Hélices uniquement / Propellers only )
+- IF BIBAX - ---- - FL240 250 -
+- TF MOBRO - 146 147.0 43.0 - FL070 FL070 250 1.0
+LUKIP 9P (Hélices uniquement / Propellers only )
+- IF LUKIP - ---- - FL240 250 -
+- TF MOBRO - 078 078.7 44.3 - FL070 FL070 250 1.0
+BIBAX 9X (Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- IF BIBAX - ---- - - 300 -
+- TF KOLIV - 153 154.1 50.5 -- FL170 - 1.0
+- TF MOPAR - 093 093.8 7.4 - FL150 FL160 300 1.0
+LUKIP 9X (Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- IF LUKIP - ---- - - 300 -
+- TF KOLIV - 090 090.9 42.2 -- FL170 - 1.0
+- TF MOPAR - 093 093.8 7.4 - FL150 FL160 300 1.0
+AMDT 06/26© Service de l'Information Aéronautique, France

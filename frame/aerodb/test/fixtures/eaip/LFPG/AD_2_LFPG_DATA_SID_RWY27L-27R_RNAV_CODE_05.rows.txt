@@ -1,0 +1,97 @@
+AD 2 LFPG DATA SID RWY27L-27R RNAV CODE 05AIP
+01 OCT 2026FRANCE
+PARIS CHARLES DE GAULLE SID RNAV RWY 27L - 27R
+RMK Réacteurs (R) et hélices (H) / Turbofans (R) and turboprops (H) MAG VAR 2020 1.1°E Ref NAVAID : BT
+SID RNAV RWY 27L - 27R
+Procedure Identification Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+(Protégés pour / Protected for CAT A, B, C, D)
+MONOT 7D
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG273 - 273 274.0 - - - - - 1.0
+- TF PG275 - 190 190.7 9.1 - - - 220 1.0
+- TF OXCEL - 120 121.2 19.1 - - - - 1.0
+- TF MONOT - 175 176.0 38.9 - - - - 1.0
+DORDI 7Z
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG290 Y 327 327.9 3.8 - - - - 1.0
+-C F AMJUS - 271 272.0 - - - - - 1.0
+- TF PG275 - 190 190.8 12.3 - - - 220 1.0
+- TF OXCEL - 120 121.2 19.1 - - - - 1.0
+- TF DORDI - 151 152.2 34.6 - - - - 1.0
+OLZOM 7Z
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG290 Y 327 327.9 3.8 - - - - 1.0
+-C F AMJUS - 271 272.0 - - - - - 1.0
+- TF PG275 - 190 190.8 12.3 - - - 220 1.0
+- TF OXCEL - 120 121.2 19.1 - - - - 1.0
+- TF OLZOM - 187 188.3 34.9 - - - - 1.0
+MONOT 7Z
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG290 Y 327 327.9 3.8 - - - - 1.0
+-C F AMJUS - 271 272.0 - - - - - 1.0
+- TF PG275 - 190 190.8 12.3 - - - 220 1.0
+- TF OXCEL - 120 121.2 19.1 - - - - 1.0
+- TF PG277 - 187 188.3 21.8 - - - - 1.0
+- TF MONOT - 160 161.2 18.2 - - - - 1.0
+LGL 7A
+RWY27L - 264 265.3
+CF PG271 - - - -- 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG280 Y 273 274.0 -- - - - 1.0
+- DF PG284 - - - - - - - - 1.0
+- TF ELCOB - 262 263.2 16.2 - - - - 1.0
+- TF LESGA - 241 242.5 18.6 - - - - 1.0
+- TF LGL - 241 241.8 12.4 - - - - 1.0
+ELCOB 7A
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG280 Y 273 274.0 -- - - - 1.0
+- DF PG284 - - - - - - - - 1.0
+- TF ELCOB - 262 263.2 16.2 - - - - 1.0
+LGL 7D
+RWY27L - 264 265.3
+CF PG271 - - - -- 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG280 Y 273 274.0 -- - - - 1.0
+- DF PG284 - - - - - - - - 1.0
+- TF ELCOB - 262 263.2 16.2 - - - - 1.0
+- TF LESGA - 241 242.5 18.6 - - - - 1.0
+- TF LGL - 241 241.8 12.4 - - - - 1.0
+ELCOB 7D
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG280 Y 273 274.0 -- - - - 1.0
+- DF PG284 - - - - - - - - 1.0
+- TF ELCOB - 262 263.2 16.2 - - - - 1.0
+LGL 7Z
+RWY27L - 264 265.3
+CF PG270 - - - -- 1.0
+RWY27R - 261 262.5
+- TF PG290 Y 327 327.9 3.8 - - - - 1.0
+-C F AMJUS - 271 272.2 - - - - - 1.0
+- TF ELCOB - 262 263.2 32.4 - - - - 1.0
+- TF LESGA - 241 242.5 18.6 - - - - 1.0
+- TF LGL - 241 241.8 12.4 - - - - 1.0
+ELCOB 7Z
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG290 Y 327 327.9 3.8 - - - - 1.0
+-C F AMJUS - 271 272.2 - - - - - 1.0
+- TF ELCOB - 262 263.2 32.4 - - - - 1.0
+AMDT 10/26© Service de l'Information Aéronautique, France

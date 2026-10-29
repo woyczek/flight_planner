@@ -1,0 +1,83 @@
+AD 2 LFPG DATA SID RWY27L-27R RNAV CODE 04AIP
+01 OCT 2026FRANCE
+PARIS CHARLES DE GAULLE SID RNAV RWY 27L - 27R
+RMK MAG VAR 2020 1.1°E Ref NAVAID : BT
+Réacteurs (R) et hélices (H) / Turbofans (R) and turboprops (H)
+Procedure Identification Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+SID RNAV RWY 27L - 27R
+LATRA 7Z (Protégés pour / Protected for CAT A, B, C, D)
+RWY27L - 264 265.3
+CF PG270 - - - -- 1.0
+RWY27R - 261 262.5
+- TF PG290 Y 327 327.9 3.8 - - - - 1.0
+-C F AMJUS - 271 272.0 -- - - - 1.0
+- TF DEROL - 170 171.4 25.2 -- -- 1.0
+- TF LALUX - 154 154.7 26.1 -- -- 1.0
+- TF LATRA - 159 160.4 12.9 - - - 280 1.0
+OKASI 7Z
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG290 Y 327 327.9 3.8 - - - - 1.0
+-C F AMJUS - 271 272.0 -- - - - 1.0
+- TF PG289 - 159 160.3 17.7 - - - - 1.0
+- TF DOPAP - 156 157.4 7.4 -- -- 1.0
+- TF ODEBU - 149 149.9 29.4 -- -- 1.0
+- TF OKASI - 152 152.8 13.3 - - - 280 1.0
+PILUL 7Z
+RWY27L - 264 265.3
+- - 1.0CF PG270 - - -
+RWY27R - 261 262.5
+- TF PG290 Y 327 327.9 3.8 - - - - 1.0
+-C F AMJUS - 271 272.0 -- - - - 1.0
+- TF PG289 - 159 160.3 17.7 - - - - 1.0
+- TF OXCEL - 122 123.3 9.7 - - - - 1.0
+- TF PEKIM - 146 147.3 32.3 - - - - 1.0
+- TF PILUL - 141 142.2 14.6 - - - 280 1.0
+DORDI 7A
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG273 - 273 274.0 - - - - - 1.0
+- TF PG275 - 190 190.7 9.1 - - - 220 1.0
+- TF OXCEL - 120 121.2 19.1 - - - - 1.0
+- TF DORDI - 151 152.2 34.6 - - - - 1.0
+OLZOM 7A
+RWY27L - 264 265.3
+CF PG271 - - - -- 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG273 - 273 274.0 - - - - - 1.0
+- TF PG275 - 190 190.7 9.1 - - - 220 1.0
+- TF OXCEL - 120 121.2 19.1 - - - - 1.0
+- TF OLZOM - 187 188.3 34.9 - - - - 1.0
+MONOT 7A
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG273 - 273 274.0 - - - - - 1.0
+- TF PG275 - 190 190.7 9.1 - - - 220 1.0
+- TF OXCEL - 120 121.2 19.1 - - - - 1.0
+- TF PG277 - 187 188.3 21.8 - - - - 1.0
+- TF MONOT - 160 161.2 18.2 - - - - 1.0
+DORDI 7D
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG273 - 273 274.0 - - - - - 1.0
+- TF PG275 - 190 190.7 9.1 - - - 220 1.0
+- TF OXCEL - 120 121.2 19.1 - - - - 1.0
+- TF DORDI - 151 152.2 34.6 - - - - 1.0
+OLZOM 7D
+RWY27L - 264 265.3
+-- 1.0CF PG271 - - -
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG273 - 273 274.0 - - - - - 1.0
+- TF PG275 - 190 190.7 9.1 - - - 220 1.0
+- TF OXCEL - 120 121.2 19.1 - - - - 1.0
+- TF OLZOM - 187 188.3 34.9 - - - - 1.0
+AMDT 10/26© Service de l'Information Aéronautique, France

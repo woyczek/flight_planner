@@ -138,7 +138,7 @@ the measurements of § 5.
 **The PDF rows (eAIP, VAC)**
 
 - The builders read the text of PDF pages with **pypdf**, placing fragments by their text matrix (`rows_from_pdf`), and
-  reconstruct rows; their tests are the text rows kept as fixtures (`frame/aerodb/test/fixtures/eaip/*.rows.txt`, cases K2,
+  reconstruct rows; their tests are the text rows kept as fixtures (`frame/aerodb/test/fixtures/eaip/<ICAO>/*.rows.txt`, regenerable by `tools/make_eaip_fixtures.py`, cases K2,
   K3). pdf.js (already a pinned script source of the CSP, used for the DIRCAM PDF) returns text items with transforms.
   Options: (a) **port `rows_from_pdf` to pdf.js** and compare, on the same real PDFs, the rows with pypdf's — the measure is
   the share of equal rows, and the warnings it adds (M6); (b) **renounce on the phone**: the rows show their published state
