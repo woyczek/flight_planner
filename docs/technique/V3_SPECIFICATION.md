@@ -789,6 +789,11 @@ redesigned for touch at that point.
        for a code without a match); **progressive completion** on the three fields from two characters, by code or by
        name, through `aerodb.find`, aerodromes only, at most seven suggestions, keyboard ↑ ↓ Entrée Échap and touch, a
        list laid over the page (never the native `datalist`), closed on blur. Lot: fuel (cases F), help ×4.
+       **The field is a search, not the code (ergonomics session, 30 Oct night; delivered 26d47f149)**: no
+       `maxlength`; while typing, `route.dep` / `arr` / `altn` only takes a four-character code known to aerodb or a
+       suggestion chosen in the list, and emptying the field to search writes nothing; on leaving the field: empty →
+       the aerodrome is removed, an unknown code that proposed nothing → written (an aerodrome typed on purpose, off the
+       base), any other text (a name, "orly" that proposed) → back to the recorded code. The name line reads the field.
    28. **Backlog of 29 Oct (planned, deliberately not specified yet)** — the user's requests of the morning, kept as one
        line each until the challenge pass of 29 Oct 17:00 decides what is built and in which order; a request is specified
        only when its lot starts, never before (the challenge found the specification running ahead of the code).

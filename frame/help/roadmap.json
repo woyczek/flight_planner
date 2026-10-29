@@ -918,11 +918,11 @@
           "es": "Claves guardadas como la identidad (sin pérdida al relanzar Safari), tarjeta Administración con un botón por página, bloque de estado primero"
         },
         {
-          "state": "doing",
-          "fr": "Appli « Maintenance » (module Données) : couverture, jeux de données, récupérer, construire, publier, purger, sans la V2 ; depuis Réglages › Administration de Pilote",
-          "en": "\"Maintenance\" application (Data module): coverage, datasets, fetch, build, publish, purge, without V2; from Pilot's Réglages › Administration",
-          "de": "Anwendung „Wartung“ (Datenmodul): Abdeckung, Datensätze, Abrufen, Bauen, Veröffentlichen, Bereinigen, ohne V2; aus Einstellungen › Verwaltung von Pilot",
-          "es": "Aplicación «Mantenimiento» (módulo Datos): cobertura, conjuntos de datos, obtener, construir, publicar, purgar, sin la V2; desde Ajustes › Administración de Piloto"
+          "state": "done",
+          "fr": "Appli « Maintenance » (module Données) : couverture, jeux de données, Télécharger · Construire · Publier · Purger livrés ; depuis Réglages › Administration de Pilote, la page V2 reste en lien",
+          "en": "\"Maintenance\" application (Data module): coverage, datasets, Fetch · Build · Publish · Purge delivered; from Pilot's Settings › Administration, the V2 page stays as a link",
+          "de": "Anwendung „Wartung“ (Datenmodul): Abdeckung, Datensätze, Holen · Bauen · Veröffentlichen · Bereinigen geliefert; aus Einstellungen › Verwaltung von Pilot, die V2-Seite bleibt als Link",
+          "es": "Aplicación «Mantenimiento» (módulo Datos): cobertura, conjuntos de datos, Descargar · Construir · Publicar · Purgar entregados; desde Ajustes › Administración de Piloto, la página V2 queda como enlace"
         },
         {
           "state": "done",
@@ -1042,11 +1042,11 @@
           "es": "Pantalla «Fuentes» tras Administración: una línea por fuente usada, candidata o descartada, con enlace, licencia y estado, sin descarga; sustituida por el módulo Datos en su primer lote"
         },
         {
-          "state": "doing",
-          "fr": "Module « Données » : spécification écrite (Couverture, Jeux de données, Télécharger · Construire · Publier · Purger) ; services du cadre en cours (accès au lanceur déclaré, tâches, publication sans lanceur, fin de cycle), puis l'état publié et le catalogue d'aerodb",
-          "en": "\"Data\" module: specification written (Coverage, Data sets, Fetch · Build · Publish · Purge); frame services in progress (declared launcher access, jobs, publication without launcher, end of cycle), then aerodb's published state and catalogue",
-          "de": "Modul „Daten“: Spezifikation geschrieben (Abdeckung, Datensätze, Holen · Bauen · Veröffentlichen · Bereinigen); Dienste des Rahmens in Arbeit (deklarierter Launcher-Zugang, Aufgaben, Veröffentlichung ohne Launcher, Zyklusende), dann veröffentlichter Zustand und Katalog von aerodb",
-          "es": "Módulo «Datos»: especificación escrita (Cobertura, Conjuntos de datos, Descargar · Construir · Publicar · Purgar); servicios del marco en curso (acceso al lanzador declarado, tareas, publicación sin lanzador, fin de ciclo), luego el estado publicado y el catálogo de aerodb"
+          "state": "done",
+          "fr": "Module « Données » : spécification, services du cadre (accès au lanceur déclaré, tâches, une opération à la fois retrouvée à l'ouverture), état publié et catalogue d'aerodb livrés",
+          "en": "\"Data\" module: specification, frame services (declared launcher access, jobs, one operation at a time found again on opening), aerodb's published state and catalogue delivered",
+          "de": "Modul „Daten“: Spezifikation, Dienste des Rahmens (deklarierter Launcher-Zugang, Aufgaben, ein Vorgang zugleich, beim Öffnen wiedergefunden), veröffentlichter Zustand und Katalog von aerodb geliefert",
+          "es": "Módulo «Datos»: especificación, servicios del marco (acceso al lanzador declarado, tareas, una operación a la vez recuperada al abrir), estado publicado y catálogo de aerodb entregados"
         },
         {
           "state": "planned",
