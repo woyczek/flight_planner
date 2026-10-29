@@ -860,6 +860,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 18 | AeroDB D5: base built on the workstation by a headless browser (8755aad9c) | acceptable; one design point settled, four notes |
 | 19 | Data module « Construire » panel (8990b3ab7) | acceptable, one note |
 | 20 | Map: choosing a procedure on the map (5b713f77e) | acceptable, one note for Fuel |
+| 21 | Fuel layout (918ce4010), Atmosphere layers panel (d36f4be70) | acceptable |
+| 22 | AeroDB: `source.url` of the eAIP records (d88463e51) | acceptable, one point to fix |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1094,7 +1096,21 @@ the address can be edited by the user or set by any link, and it does not carry 
 runway (`^\d{2}[LRC]?$`) that `runwayChoices` proposes, or an id present among the records of the flight's aerodrome for
 that side (the flight may have changed aerodrome meanwhile); otherwise ignore it and write nothing, never the raw string.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 20 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
+**21. Fuel layout (918ce4010) and Atmosphere layers panel (d36f4be70) — acceptable.** Layout and focus only: no write,
+no network, no address read. Atmosphere's panel is rewritten only when its lines change; labels and the map's note are
+escaped, the keys and swatches come from the weather map library's constants.
+
+**22. AeroDB, `source.url` (d88463e51) — acceptable, one point to fix.** The address is built by `aerodb.js` at reading
+(`withSourceUrl`): `charts.base` of the aerodrome's file + `Cartes/<ICAO>/` + the page's name, only for an `eaip` source;
+from the record, only the name counts (`source.file`, else `source.ref`), which must match `^[A-Za-z0-9._ -]+\.pdf$` and is
+encoded; no address comes from a free field of a record. *To fix*: the base is checked as `https://` only, any host.
+`charts.base` is written from the SIA's fixed host by the launcher's job, but the command line (`proc_sia.py --eaip`) writes
+the base it is given, and the aerodrome's file sits in the synchronised data repository, editable by any member of the
+group: a « Source » link could lead to another site behind a trusted label (no injection: https, encoded name,
+`rel=noopener` on the pages). Admit only bases under the SIA's host (the same constant as `proc_sia.eaip_url`), otherwise
+no link. Note: the ICAO key is inserted as is in the path; check `^[A-Z0-9]{4}$` or encode it.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 22 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
