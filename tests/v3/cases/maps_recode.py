@@ -493,6 +493,30 @@ def d40(c):
     c.ok(r['same'], 'the boxes moved when the route was added', 'the same place with or without the route (no jump)')
 
 
+
+_AW_NAMES_JS = r"""(on) => {
+  const R = window.MapsRender, W = 600, H = 400, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const raw = cv.getContext('2d'), log = [];
+  const ctx = new Proxy(raw, { get(o, p) { if (p === 'fillText') return (s, x, y) => { log.push(String(s)); return o.fillText(s, x, y) };
+    const v = o[p]; return typeof v === 'function' ? v.bind(o) : v }, set(o, p, v) { o[p] = v; return true } });
+  const A = { id: 'XOBL', lat: 44.80, lon: -0.22 }, B = { id: 'XVEL', lat: 44.98, lon: 0.16 },
+    aw = [{ route: 'X10', a: A, b: B, lower: 6500, upper: 19500, nm: 22 }], fit = R.bboxOf([A, B], 10), { toC, shown } = R.mercator(fit, W, H, 12),
+    profile = R.routeProfile(9000);
+  profile.elements = { ...(profile.elements || {}), awLabels: on };
+  R.draw(ctx, { toC, W, H, scale: 1, bbox: shown, profile, data: { airways: aw }, route: [], marks: [] });
+  return log;
+}"""
+
+
+@case('D51', 'Layers: the "Airway names" box shows and hides the airway names', 'D', tags=('maps',), screens=False, designs=('standard',),
+      night=False, rule='user 29 Oct: "la coche « nom des voies » est inop dans la liste des couches de la carte"')
+def d51(c):
+    c.page.goto(f'{c.base}/modules/maps/test/render.html', wait_until='load')
+    c.until("() => window.MapsRender && document.getElementById('out') && document.getElementById('out').textContent.length > 20", what='the render bench is drawn')
+    shown, hidden = c.js(_AW_NAMES_JS, True), c.js(_AW_NAMES_JS, False)
+    c.ok('X10' in shown, f'{shown}', 'box ticked: the airway name is written')
+    c.ok('X10' not in hidden and '22' not in hidden, f'{hidden}', 'box unticked: neither the name nor the segment length is written')
+
 # ------------------------------------------------------------------------------------------------------ D41-D44
 # The chosen runway, SID, STAR and approach (V3_SPECIFICATION § 10.20, maps SPEC § 5): route.procedures v2 written by fuel, the records
 # read by aerodb (proc/manual/ for LFRS, read at a past cycle so the SID is "outdated"; proc/local/ for LFML, the X-Plane fallback).
