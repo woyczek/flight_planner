@@ -116,14 +116,15 @@ function legendRows(view) {
     ] : []).concat(covRows(sw));
   if (!d) return cov;
   const rows = [];
-  if (d.plan) rows.push([sw('line', '#6a1b9a'), esc(tt(TX.lgPlan))]);
-  if (d.tocTod) rows.push([sw('diamond', '#6a1b9a'), esc(tt(TX.lgToc))]);
-  if (d.terrain) rows.push([sw('relief', '#b08a5a'), esc(tt(TX.lgTerrain))]);
-  if (d.mora) rows.push([sw('dash', '#8b2d18'), esc(tt(TX.lgMora))]);
+  const P = MapsRender.palette(!!S.theme?.dark); // la palette de la Carte (§ 10.29 f)
+  if (d.plan) rows.push([sw('line', P.plan), esc(tt(TX.lgPlan))]);
+  if (d.tocTod) rows.push([sw('diamond', P.plan), esc(tt(TX.lgToc))]);
+  if (d.terrain) rows.push([sw('relief', P.terrain), esc(tt(TX.lgTerrain))]);
+  if (d.mora) rows.push([sw('dash', P.mora), esc(tt(TX.lgMora))]);
   for (const [type, col] of d.zones) rows.push([sw('band', col), `<b>${esc(type)}</b> ${esc(tt(TX.lgZone))}`]);
-  if (d.marks) rows.push([sw('vdash', '#17202a'), esc(tt(TX.lgPoints))]);
-  if ((S.marks || []).length) rows.push([sw('tick', '#8e24aa'), esc(tt(TX.lgNm))]);
-  if (S.lgFixes) rows.push([sw('tri', S.theme?.fg || '#17202a'), esc(tt(TX.lgFixes))]);
+  if (d.marks) rows.push([sw('vdash', S.theme?.fg), esc(tt(TX.lgPoints))]);
+  if ((S.marks || []).length) rows.push([sw('tick', P.nm), esc(tt(TX.lgNm))]);
+  if (S.lgFixes) rows.push([sw('tri', S.theme?.fg), esc(tt(TX.lgFixes))]);
   if (S.lgCons) rows.push([sw('cons', colOf('app')), esc(tt(TX.lgCons))]);
   return rows.concat(cov);
 }

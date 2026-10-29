@@ -20,7 +20,8 @@
     rad,
     trackOf,
     withAlpha,
-    wrapLon
+    wrapLon,
+    pal
   } = R.kit;
 
   // ---------------------------------------------------------------- choix des espaces le long de la route
@@ -212,7 +213,7 @@
       if (!inBox(t, g.a.lat, g.a.lon) && !inBox(t, g.b.lat, g.b.lon)) continue;
       const P = toC(g.a.lat, g.a.lon),
         Q = toC(g.b.lat, g.b.lon),
-        col = high ? '#6a3fa0' : '#1f6fb2',
+        col = high ? pal().airwayHigh : pal().airwayLow,
         len = Math.hypot(Q.x - P.x, Q.y - P.y);
       ctx.strokeStyle = col;
       ctx.globalAlpha = .75;
@@ -298,7 +299,7 @@
         ctx.fillText(g.route, 0, 0);
         if (lvl && tier !== 'far') {
           ctx.font = `700 ${f * .85}px Arial,sans-serif`;
-          ctx.fillStyle = '#c62828';
+          ctx.fillStyle = pal().airwayLevel;
           ctx.fillText(lvl, 0, f * 1.35);
         }
         if (el(profile, 'awLabels') !== false && Number.isFinite(+g.nm)) {
@@ -357,7 +358,7 @@
    *  IP → CP et nom de l'axe ; axes lourds : leurs deux branches fléchées. */
   function drawAar(ctx, tracks, toC, scale, b, pl) {
     if (!tracks?.length) return;
-    const col = '#00695c',
+    const col = pal().aar,
       t = {
         s: b.s - 1,
         n: b.n + 1,
@@ -406,7 +407,7 @@
    *  point. */
   function drawNat(ctx, tracks, toC, scale, b, pl) {
     if (!tracks?.length) return;
-    const col = '#37474f',
+    const col = pal().nat,
       f = 10 * scale;
     ctx.save();
     ctx.lineJoin = 'round';

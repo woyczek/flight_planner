@@ -147,6 +147,49 @@
     });
   }
 
+  // ---------------------------------------------------------------- palette de la Carte (§ 10.29 f)
+  /** Couleurs cartographiques de la Carte, de jour et de nuit : la route, les voies, les procédures, le profil, la position, les
+   *  vents, les zones de mission… Lues par le rendu, l'écran (procs.js, la légende, la position, les barbules) : aucune ailleurs.
+   *  Les couleurs « de papier » (fond, encre, gris) restent les jetons du design (tokens, themed). */
+  const PALETTE = {
+    day: {
+      route: '#8e24aa',
+      nm: '#8e24aa',
+      plan: '#6a1b9a',
+      airwayLow: '#1f6fb2',
+      airwayHigh: '#6a3fa0',
+      airwayLevel: '#c62828',
+      aar: '#00695c',
+      nat: '#37474f',
+      obstacleLabel: '#1565c0',
+      vrpHeli: '#2e7d32',
+      vfr: '#00897b',
+      altn: '#6b7280',
+      altnText: '#4b5563',
+      terrain: '#b08a5a',
+      mora: '#8b2d18',
+      sid: '#1b8a3a',
+      star: '#d95500',
+      app: '#0a86c4',
+      actual: '#c62828',
+      wind: '#1a237e',
+      missionSearch: ['#d0106a', 'rgba(208,16,106,.10)'],
+      missionExclusion: ['#c62828', 'rgba(198,40,40,.09)'],
+      missionZone: ['#6a1b9a', 'rgba(106,27,154,.08)']
+    }
+  };
+  PALETTE.night = {
+    ...PALETTE.day,
+    sid: '#5cd27a',
+    star: '#ff9a4d',
+    app: '#5cc4f5',
+    wind: '#b3c7ff'
+  };
+  Object.freeze(PALETTE.day);
+  Object.freeze(PALETTE.night);
+  /** Palette du jour ou de la nuit (dark : les jetons du design le disent). */
+  const palette = dark => dark ? PALETTE.night : PALETTE.day;
+
   // ---------------------------------------------------------------- profil d'affichage
   /** Réglages par défaut d'un élément (ceux du profil « IFR simplifié » du studio). */
   const DEFAULTS = {
@@ -188,7 +231,7 @@
     graticuleColor: '#365a6c',
     mora: false,
     moraFont: '12',
-    moraColor: '#8b2d18',
+    moraColor: PALETTE.day.mora,
     moraOpacity: '90',
     moraSpacing: '70',
     vrpPoints: false,
@@ -505,7 +548,7 @@
     });
     if (pxDeg < 300) return;
     const f = Math.max(9, +el(profile, 'pointFont') * PT * scale * .85),
-      col = '#1565c0';
+      col = palette((T || tokens()).dark).obstacleLabel;
     for (const {
         o,
         p
@@ -612,7 +655,7 @@
     }
     return kept;
   }
-  const VRP_HELI = '#2e7d32';
+  const VRP_HELI = PALETTE.day.vrpHeli;
 
   function drawVrp(ctx, data, toC, W, H, scale, b, pl, profile) {
     const vrp = on(profile, 'vrpPoints') && data.vrp?.length,
@@ -731,9 +774,9 @@
     }
   }
   const ZONE_STYLE = {
-    search: ['#d0106a', 'rgba(208,16,106,.10)'],
-    exclusion: ['#c62828', 'rgba(198,40,40,.09)'],
-    mission: ['#6a1b9a', 'rgba(106,27,154,.08)']
+    search: PALETTE.day.missionSearch,
+    exclusion: PALETTE.day.missionExclusion,
+    mission: PALETTE.day.missionZone
   };
   /** Zones de la mission : fond, hachures à 45°, liseré blanc et tireté de la couleur de la zone, nom au-dessus. */
   function drawMissionZones(ctx, zones, toC, scale, pl, profile) {
@@ -1066,7 +1109,9 @@
     wrapLon,
     paper,
     /** Jetons du design en cours (ceux du dessin, sinon ceux de la page). */
-    theme: () => T || tokens()
+    theme: () => T || tokens(),
+    /** Palette du dessin en cours. */
+    pal: () => palette((T || tokens()).dark)
   };
 
   function draw(ctx, {
@@ -1300,6 +1345,8 @@
     themed,
     withAlpha,
     contrast: (a, b) => contrast(rgbOf(a) || [0, 0, 0], rgbOf(b) || [0, 0, 0]),
+    /** Palette de la Carte, de jour ou de nuit (§ 10.29 f). */
+    palette,
     /** Aides du noyau et dessins des parties (render_airspace.js, render_route.js) : interne au rendu. */
     kit: K
   };

@@ -25,13 +25,11 @@ import {
 /** Teintes des procédures, de jour puis de nuit (utilisateur, 29 octobre : « des couleurs de contraste autres que violet (vert ?
  *  orange ? bleu ?) ») : SID en vert, STAR en orange, approche (et son approche interrompue) en bleu ciel — ni le violet de la
  *  route et des voies hautes, ni le bleu foncé des voies basses. */
-const PROC_COL = {
-  sid: ['#1b8a3a', '#5cd27a'],
-  star: ['#d95500', '#ff9a4d'],
-  app: ['#0a86c4', '#5cc4f5']
+export const colOf = origin => {
+  const P = MapsRender.palette(!!S?.theme?.dark),
+    k = origin === 'missed' ? 'app' : origin;
+  return P[k === 'sid' || k === 'star' || k === 'app' ? k : 'app'];
 };
-/** Teinte d'une procédure d'après l'origine de son point ('sid' | 'star' | 'app' | 'missed'). */
-export const colOf = origin => (PROC_COL[origin === 'missed' ? 'app' : origin] || PROC_COL.app)[S?.theme?.dark ? 1 : 0];
 /** Sans seuils (page d'essai) : les contraintes et les noms des points s'écrivent à partir de 300 px par degré. */
 const NEAR_PX = 300;
 /** Longueur du trait d'un tronçon sans point, le long de sa route (NM). */

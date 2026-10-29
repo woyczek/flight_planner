@@ -338,7 +338,7 @@ function drawBarb(ctx, c, w, col, lw = 1.8) {
 }
 /** Barbules de la route, sur un liseré du fond de 5 px ; rend les cadres touchés pour l'infobulle : [{ x, y, w }]. */
 export function drawWinds(ctx, toC) {
-  const col = S.theme?.dark ? '#b3c7ff' : '#1a237e',
+  const col = MapsRender.palette(!!S.theme?.dark).wind,
     hits = [];
   for (const w of windPoints()) {
     const c = toC(w.lat, w.lon);

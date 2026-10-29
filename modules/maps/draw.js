@@ -241,7 +241,7 @@ function drawAltn(ctx, toC, altn, on) {
     a = toC(route[route.length - 1].lat, route[route.length - 1].lon),
     b = toC(altn.lat, altn.lon);
   ctx.save();
-  ctx.strokeStyle = '#6b7280';
+  ctx.strokeStyle = MapsRender.palette(!!S.theme.dark).altn;
   ctx.lineWidth = 2;
   if (!on) {
     ctx.setLineDash([6, 5]);
@@ -262,7 +262,7 @@ function drawAltn(ctx, toC, altn, on) {
   ctx.strokeStyle = S.theme.bg;
   ctx.lineWidth = 3;
   ctx.strokeText(altn.id, b.x + 8, b.y);
-  ctx.fillStyle = '#4b5563';
+  ctx.fillStyle = MapsRender.palette(!!S.theme.dark).altnText;
   ctx.fillText(altn.id, b.x + 8, b.y);
   ctx.restore();
 }
@@ -377,7 +377,7 @@ function stat(z) {
  *  TOD au nord-est, sinon au sud-est, au nord-ouest, au sud-ouest : là où il ne couvre pas un libellé de la route (taken). */
 function drawPlanOnMap(ctx, toC, taken = []) {
   const pr = S.prof,
-    col = '#6a1b9a';
+    col = MapsRender.palette(!!S.theme.dark).plan;
   if (!pr) return;
   ctx.save();
   ctx.font = '700 11px Arial,sans-serif';

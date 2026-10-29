@@ -277,7 +277,7 @@ function trackAt(nm) {
 export function drawProgress(ctx, toC) {
   const st = progressState(),
     acc = S.theme.accent,
-    real = st.stale ? S.theme.muted : '#c62828',
+    real = st.stale ? S.theme.muted : MapsRender.palette(!!S.theme.dark).actual,
     ref = S.route.points[0]?.lon ?? 0;
   if (S.trail?.length > 1) {
     ctx.save();
@@ -329,7 +329,7 @@ export function drawProgressProfile(ctx) {
   if (st.pa && k && +st.actual.altFt > 0) {
     ctx.beginPath();
     ctx.arc(MapsProfile.xOf(g, st.pa.nm * k), y(+st.actual.altFt), 6, 0, Math.PI * 2);
-    ctx.fillStyle = st.stale ? S.theme.muted : '#c62828';
+    ctx.fillStyle = st.stale ? S.theme.muted : MapsRender.palette(!!S.theme.dark).actual;
     ctx.fill();
   }
   ctx.restore();

@@ -9,7 +9,8 @@
   const {
     halo,
     paper,
-    theme
+    theme,
+    pal
   } = R.kit;
 
   /** Branches de la route (paires d'identifiants consécutifs, dans les deux sens) : le cartouche d'une voie qui en suit une est
@@ -108,7 +109,7 @@
   /** Route : trait violet, points, marques de distance (NM), libellés réservés (routeLabels). */
   function drawRoute(ctx, route, toC, scale, labels = [], {
     marks: mk = [],
-    color = '#8e24aa',
+    color = pal().route,
     lines = null
   } = {}) {
     const pts = (route || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));

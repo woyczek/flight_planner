@@ -102,6 +102,10 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   6. graticule and MORA (the highest MORA of 2, 4… degree groups when a degree is narrower than 70 px);
   7. the route on top: line, points, NM marks and their labels;
   8. over the route's line, the boxed names of the airways that route legs follow (§ 3, airways).
+  **Colours** (V3 § 10.29 f): every cartographic colour of the map (route, NM marks, plan, airways and their level, AAR, NAT, the
+  procedures SID / STAR / approach, terrain, MORA, alternate, actual position, winds, VFR, mission zones) comes from one palette,
+  `MapsRender.palette(dark)`, day and night, read by the renderer and the screen (procedures, legend, position, barbs); the
+  "paper" colours stay the design tokens (`tokens`, `themed`).
   In the code (V3 § 10.29 d) this order is **one list of layers** in `draw()`, each `{ id, reserve(), paint(ctx) }`: every
   reservation first, in the order of the list (`routeLabels`, `screenLabels`, `missionPoints`, `cities`), then every painting:
   `zoneShapes`, `airways`, `points` (aerodromes, navaids, airway fixes), `aar`, `nat`, `airwayLabels`, `vrp`, `zoneLabels`,

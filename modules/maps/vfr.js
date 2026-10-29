@@ -42,7 +42,8 @@ import {
 // (séquences en texte, consignes des VAC repliées par page), jusqu'à ✕, Échap ou un autre terrain ; en mode VFR, départ et
 // arrivée épinglés d'office (dessin seul). Données : aerodb.vfrRoutes (sia/vfr/<OACI>.json), candidats tirés des VAC,
 // toujours en tirets et marqués « à vérifier », jamais un itinéraire publié ni un sens de parcours.
-const VFR_COL = '#00897b'; // séquences et tracés tirés des VAC (les points de report : MapsRender.vrpColor)
+// séquences et tracés tirés des VAC (les points de report : MapsRender.vrpColor), couleur de la palette de la Carte
+const vfrCol = () => MapsRender.palette(!!S.theme?.dark).vfr;
 /** Terrain dessiné sous (x, y), à 22 px près (une cible de doigt) ; null sinon. */
 export function adAt(x, y) {
   let best = null,
@@ -427,7 +428,7 @@ export function drawVfr(ctx, toC) {
       // points de la compilation ; le terrain lui-même (son code, « AD ») n'est jamais relié : une intégration non
       // numérisée n'est pas remplacée par une droite vers son centre
       const at = new Map(v.points.filter(p => p.role !== 'aerodrome_reference_point' && p.code !== 'AD').map(p => [p.code, p]));
-      ctx.strokeStyle = VFR_COL;
+      ctx.strokeStyle = vfrCol();
       ctx.lineWidth = 1.6;
       for (const r of v.routes) {
         // tracé de l'analyse (tirets longs), sinon tirets courts entre les points de report connus
@@ -462,7 +463,7 @@ export function drawVfr(ctx, toC) {
       }
       ctx.setLineDash([]);
       // sommets de tracé de l'analyse : ni points de report, ni noms
-      ctx.fillStyle = VFR_COL;
+      ctx.fillStyle = vfrCol();
       for (const p of v.points.filter(p => p.role === 'intermediate_waypoint')) {
         const q = toC(+p.lat, +p.lon);
         ctx.beginPath();
@@ -505,7 +506,7 @@ export function drawVfr(ctx, toC) {
       ctx.strokeStyle = S.theme.bg;
       ctx.lineWidth = 3;
       ctx.strokeText(t, q.x + 10, q.y + 14);
-      ctx.fillStyle = VFR_COL;
+      ctx.fillStyle = vfrCol();
       ctx.fillText(t, q.x + 10, q.y + 14);
     }
   }

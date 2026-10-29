@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: one palette, day and night** (`modules/maps/render.js` `MapsRender.palette`, read by `render_route.js`,
+  `render_airspace.js`, `procs.js`, `sheet_view.js`, `flight_time.js`, `tips.js`, `vfr.js`, `draw.js`; SPEC § 3; V3 § 10.29 f)
+  — the map's cartographic colours were written in a dozen places; they are now one palette read by the renderer and by the
+  legend, so a swatch is always the colour of what it names. Same colours as before.
+
 - **Map: the drawing order is one list of layers** (`modules/maps/render.js` `draw`; SPEC § 3; V3 § 10.29 d) — each layer
   `{ id, reserve(), paint(ctx) }`, every reservation in the label placer first, then every painting, in the list's order; the
   same order as before, nothing changes on screen.
