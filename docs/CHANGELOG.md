@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: a job's headless page claims its token once** (`tools/regen_jobs.py`, `tools/launch.py`; frame
+  INTEGRATION § 15.1, DECISIONS; noreg I8): `POST /__setup/regen/job/claim` hands the running job's token, and what its
+  verb offered, once — the base build of D5 needs no exception to the same-origin check.
 - **Weather (Atmosphere): choosing the layers no longer hides the cut, one tap is one toggle** (`modules/atmosphere/module.js`,
   `texts.js`; help ×4, SPEC; noreg E12). The Layers content took the bottom block in place of the cut (user: "choisir les
   éléments météo masque le profil vertical"), and its whole HTML was rewritten at each box and on every status update, so a

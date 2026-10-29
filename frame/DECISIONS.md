@@ -1663,3 +1663,9 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     users » use) and in the help ×4; the track never goes to an outside service without an explicit gesture.
   - A track is carried on only for the same start: `actual.trailFrom = started.at`, compared exactly (ISO texts of one
     instant in `Z` and in `+02:00` do not compare as strings).
+- **29 Oct 2026 — A job's headless page claims its token once** (coordinator's security review of D5, way B): no
+  exception to the same-origin check — a document navigation from `file://` to the launcher cannot be told from any
+  website's. The browser opens the launcher's http address with `#job=<id>` (Sec-Fetch-Site `none`, already admitted);
+  the page claims the token by `POST /__setup/regen/job/claim { job }`, once, after the verb's `job.offer(payload)`
+  (what the page must also receive: zones, cycle, inputs), on the workstation only; a second claim, another job, nothing
+  offered: 409. Noreg I8.

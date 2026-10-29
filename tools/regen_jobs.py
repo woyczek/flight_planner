@@ -137,10 +137,21 @@ class Job:
         self.data = {'id': self.id, 'set': set_, 'verb': verb, 'args': args, 'author': author, 'state': 'running', 'step': '',
                      'done': 0, 'total': 0, 'unit': '', 'log': [], 'result': None, 'started': int(time.time()), 'ended': None}
         self._cancel = threading.Event()
-        # jeton du travail : le verbe le passe à sa page sans fenêtre dans le fragment de l'adresse (…#job=<id>&t=<jeton>),
-        # jamais dans view(), le fichier du dernier travail ni un journal
+        # jeton du travail : sa page sans fenêtre le réclame une seule fois (claim, après offer du verbe) ; jamais dans
+        # view(), le fichier du dernier travail, un journal, une ligne de commande ni une adresse
         self.token = token_urlsafe(32)
         self._inbox, self._given, self._cv = {}, set(), threading.Condition()
+        self._offer, self._claimed = None, False
+
+    def offer(self, payload=None):
+        """Le verbe ouvre la réclamation du jeton par sa page sans fenêtre (POST /__setup/regen/job/claim), avec ce qu'elle
+        doit recevoir en plus (zones, cycle, entrées… : un objet JSON, sans les clés ok, job, token) ; une seule réclamation
+        ensuite."""
+        payload = dict(payload or {})
+        if {'ok', 'job', 'token', 'status'} & set(payload):
+            raise ValueError('offer: reserved key')
+        json.dumps(payload)  # lisible en JSON, sinon ValueError / TypeError ici, pas à la réclamation
+        self._offer = payload
 
     def put(self, zone, files):
         """Sortie d'une zone remise par la route (déjà contrôlée) : { nom: texte } ; une zone se rend une fois par travail
@@ -314,6 +325,18 @@ class Jobs:
             return {'ok': False, 'status': 410, 'message': 'no such job'}
         j._cancel.set()
         return {'ok': True, 'job': j.id}
+
+    def claim(self, id_):
+        """Le jeton du travail en cours et ce que son verbe a offert, remis UNE fois : 409 si ce n'est pas le travail qui
+        tourne, si son verbe n'a rien offert (job.offer) ou si le jeton a déjà été réclamé."""
+        with self.lock:
+            j = self.cur
+            if not j or j.id != str(id_ or '') or j.data['state'] != 'running':
+                return {'ok': False, 'status': 409, 'message': 'not the running job'}
+            if j._offer is None or j._claimed:
+                return {'ok': False, 'status': 409, 'message': 'nothing to claim (not offered, or already claimed)'}
+            j._claimed = True
+            return {**j._offer, 'ok': True, 'job': j.id, 'token': j.token}
 
     def put(self, id_, token, zone, files):
         """Sortie d'une zone rendue par la page sans fenêtre du travail en cours : 409 (pas celui qui tourne), 403 (jeton

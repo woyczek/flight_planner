@@ -244,6 +244,18 @@ def i8(c):
         JB = R.Jobs({('base', 'build'): (build, lambda a: {'zones': ['fr', 'ie']})}, {})
         bj = JB.start('base', 'build', {})
         tok = JB.cur.token
+        # réclamation du jeton par la page sans fenêtre : après l'offre du verbe, une seule fois
+        c.eq(JB.claim(bj['job'])['status'], 409, 'nothing to claim before the verb offers it', what='claim before offer')
+        JB.cur.offer({'zones': ['fr', 'ie'], 'cycle': '2026-10-29'})
+        cl = JB.claim(bj['job'])
+        c.eq((cl.get('ok'), cl.get('token') == tok, cl.get('zones'), cl.get('cycle')), (True, True, ['fr', 'ie'], '2026-10-29'),
+             'the token and what the verb offered, once', what='claim')
+        c.eq([JB.claim(bj['job'])['status'], JB.claim('nope')['status']], [409, 409], 'a second claim, another job: refused', what='claim again')
+        try:
+            JB.cur.offer({'token': 'x'})
+            c.ok(False, '', 'an offer cannot override the token')
+        except ValueError:
+            pass
         c.eq([JB.put('nope', tok, 'fr', {'a.json': '{}'})['status'], JB.put(bj['job'], 'wrong', 'fr', {'a.json': '{}'})['status'],
               JB.put(bj['job'], tok, 'gb', {'a.json': '{}'})['status'], JB.put(bj['job'], tok, 'fr', {'../a.json': '{}'})['status'],
               JB.put(bj['job'], tok, 'fr', {'a.json': 'x' * (R.PUT_MAX + 1)})['status']], [409, 403, 400, 400, 413],

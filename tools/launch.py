@@ -1161,6 +1161,19 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             a.get('set'), a.get('verb'), a.get('args'), a.get('author') or '')
         return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
 
+    @route('POST', '/__setup/regen/job/claim', public='poste')
+    def _post_regen_job_claim(self, path, body):
+        # jeton du travail en cours remis UNE fois à sa page sans fenêtre (ouverte sur l'adresse http du lanceur avec #job=<id>,
+        # sans jeton : Sec-Fetch-Site none), après job.offer() du verbe ; ce poste seulement, rien d'autre ouvert
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        v = regen().claim((a if isinstance(a, dict) else {}).get('job'))
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
     @route('POST', '/__setup/regen/job/put', public='poste')
     def _post_regen_job_put(self, path, body):
         # sortie d'une zone rendue par la page sans fenêtre du travail en cours (construction de la base, D5) : jeton du
