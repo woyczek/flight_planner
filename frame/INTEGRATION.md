@@ -188,6 +188,10 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   `isStarted`, `refTime`, `legTimes`, `TAXI_MIN`. Every reader (the Map, Flights, a status line) uses them: never
   recompute an ETA, never read one from `progress`. Rules in `modules/maps/SPEC.md` § 13; bench
   `frame/lib/test/current_flight.html`.
+- **The procedure rules** (`frame/lib/procedures.js`, 29 Oct 2026, § 10.29 c): pure functions on aerodb's procedure records, shared by
+  Fuel's lists and the Map's choose mode — `servesRwy`, `sameRwy`, `nameOf`, `conflictsOf` and `orderProcedures` (the ⚠ marks and the
+  order of the lists, as data), `transitionsOf`, `appChoices`, `runwayChoices`; no state, no text. Bench `frame/lib/test/procedures.html`
+  (F32). `conflictsOf` and `orderProcedures` are still re-exported by `flight_path.js` (hence `current_flight.js`) during the transition.
 - Offline is normal. The application starts offline once visited, and your module's files (entry point and
   `meta.files`) are kept from the first visit: draw from `ctx.data` first, and treat a 503 from `ctx.net` as "not now", not as an error.
 - `ctx.notify(text, kind)`, `ctx.ask(text)`, `ctx.askText(text, { value })`: the frame's notifications and question

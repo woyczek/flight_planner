@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel and the Map: the rules of the procedures are one pure module, `frame/lib/procedures.js`** (refactoring 29 Oct c; `modules/fuel/module.js`,
+  `frame/lib/flight_path.js` re-exporting `conflictsOf` / `orderProcedures`; bench `frame/lib/test/procedures.html`, case F32; no visible
+  change) — runway matching, names, conflicts, order, transitions, the approaches listed once and the runways offered, with no state and no text.
 - **Synchronisation, security review** (`tools/data_sync.py`, `tools/launch.py`, `tools/regen_jobs.py`; administrator
   manuals ×4, SYNCHRONISATION; noreg I9): a merge left pending is always cancelled and redone, never concluded (a merge
   commit would carry files staged before the interruption, outside the pool, unchecked); files the workstation staged

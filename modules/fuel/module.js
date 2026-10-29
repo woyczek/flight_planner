@@ -15,6 +15,7 @@ import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
+import * as PR from '../../frame/lib/procedures.js';
 import {
   svg
 } from '../../frame/lib/icons.js';
@@ -48,7 +49,7 @@ export const meta = {
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js',
     '../../frame/lib/weather_store.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
-    '../../frame/lib/flight_path.js', '../../frame/lib/routing.js',
+    '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/time.js', '../../frame/lib/geo.js'
   ]
@@ -1309,20 +1310,6 @@ function procsPending() {
   const v = CF.proceduresOf(S.flight);
   return (sideChosen(v.dep) || sideChosen(v.arr)) && S.procs?.key !== procsKey();
 }
-/** Procédures lues du vol sans doublon : une transition identique à sa procédure (un ancien choix, ou venu d'ailleurs) est ignorée,
- *  la chaîne de ses points serait volée deux fois. */
-function dedupProcs(p) {
-  const out = {
-    ...p
-  };
-  for (const [main, tr] of [
-      ['sid', 'sidTrans'],
-      ['star', 'starTrans'],
-      ['app', 'appTrans']
-    ])
-    if (out[main] && out[tr] && out[main].id === out[tr].id) out[tr] = null;
-  return out;
-}
 /** Lit les procédures choisies par aerodb (CF.loadProcedures : enregistrements et pistes) quand les choix ou les terrains ont
  *  changé, puis redessine ; sans procédure choisie, rien à lire. Une lecture à la fois par clé. */
 function ensureProcs() {
@@ -1344,7 +1331,7 @@ function ensureProcs() {
     if (s.procsBusy === key) s.procsBusy = null;
     s.procs = {
       key,
-      procs: dedupProcs(procs || {})
+      procs: procs || {}
     };
     refresh();
   });
@@ -1426,6 +1413,8 @@ const nameOfId = (id, key) => {
   const p = String(id || '').split('.');
   if ((key === 'trans' || key === 'appTrans') && p[4] && p[4] !== 'NONE') return p[4];
   // sans nom dans la source : « STAR sans nom » (la sorte, deuxième champ), pas « NONAME »
+  const n = PR.nameOf(null, id);
+  if (n) return n;
   if (p[2] === 'NONAME') return tt(TX.procUnnamed, {
     k: tt({
       SID: TX.procSid,
@@ -1435,8 +1424,6 @@ const nameOfId = (id, key) => {
   });
   return p[2] || String(id);
 };
-/** Piste sans « RW » (« RW23 » → « 23 »), pour comparer. */
-const rwKey = x => String(x ?? '').trim().toUpperCase().replace(/^RW/, '');
 /** État des procédures d'un terrain (un seul objet par OACI, dans S.ads) : recs, ses fiches montrées au dernier dessin (par
  *  identifiant : conflits, ordre, ⌛ des notifications) ; stats, les comptes de sa dernière lecture à la demande (fiches douteuses). */
 function adOf(icao) {
@@ -1476,38 +1463,14 @@ const askAero = make => Promise.resolve().then(make).then(v => v || [], () => []
 const runwaysOf = icao => askAero(() => S.ctx.aerodb?.runways?.(icao));
 /** Toutes les procédures d'un terrain, de toutes sortes (aerodb.procedures(icao)) : la ligne les trie elle-même par sorte et par piste. */
 const procsOf = icao => askAero(() => S.ctx.aerodb?.procedures?.(icao));
-/** Même piste : « 24 » et « RW24 » se valent ; un numéro sans côté (« 14 ») vaut ses pistes parallèles (« 14L », « 14R »). */
-const sameRwy = (a, b) => {
-  const x = rwKey(a),
-    y = rwKey(b);
-  return !!x && !!y && (x === y || /^\d\d$/.test(x) && y.startsWith(x) || /^\d\d$/.test(y) && x.startsWith(y));
-};
-/** Une fiche qui dessert toutes les pistes : aucune piste nommée, ou « ALL » / « RWALL ». */
-const servesAll = rec => !(rec.runways || []).length || rec.runways.some(x => rwKey(x) === 'ALL');
-/** La fiche dessert-elle la piste ? Vrai sans piste choisie ou quand la fiche les dessert toutes. */
-const servesRwy = (rec, rwy) => !rwKey(rwy) || servesAll(rec) || rec.runways.some(x => sameRwy(x, rwy));
-
-/** Pistes à proposer pour un terrain : celles d'aerodb (known : fiches de pistes, ou déduites des points RWnn des procédures) ;
- *  sinon celles que nomment ses procédures (l'union de leurs pistes, « 20 », « 14L » ; une fiche qui les dessert toutes n'en nomme
- *  pas) ; sinon les deux sens de l'axe de la piste principale du terrain dans la base (aerodromes({ icao }) : bearing, route vraie,
- *  et magVar, Est positive ; numéros magnétiques sans côté, « 24 » et « 06 »). Fuel lit, il n'écrit rien : [{ id }]. Les pistes sans
- *  position d'aerodb que seules les fiches non lues nomment sont écartées. */
-async function runwayChoices(icao, known, all) {
-  const named = [...new Set(all.flatMap(r => servesAll(r) ? [] : r.runways.map(rwKey)))].sort(rwOrder),
-    // une piste d'aerodb sans position n'est déduite que des noms des fiches : si seules des fiches non lues (sans nom, douteuses) la
-    // nomment, elle n'est pas proposée
-    ok = known.filter(r => r.lat != null && Number.isFinite(+r.lat) || named.some(n => sameRwy(n, r.id)));
-  if (ok.length) return ok;
-  if (named.length) return named.map(id => ({
-    id
-  }));
-  const ad = (await askAero(() => S.ctx.aerodb?.aerodromes?.({
+/** Pistes à proposer pour un terrain (PR.runwayChoices, règle pure) : l'enregistrement du terrain dans la base (aerodromes({ icao }), axe
+ *  de piste) n'est demandé à aerodb que si ni ses pistes ni les noms des fiches n'en donnent. */
+async function runwayChoicesOf(icao, known, all) {
+  const first = PR.runwayChoices(known, all, null);
+  if (first.length) return first;
+  return PR.runwayChoices(known, all, (await askAero(() => S.ctx.aerodb?.aerodromes?.({
     icao
-  })))[0];
-  if (!Number.isFinite(+ad?.bearing)) return [];
-  return [0, 180].map(a => ({
-    id: String(Math.round(((+ad.bearing + a - (+ad.magVar || 0)) % 360 + 360) % 360 / 10) % 36 || 36).padStart(2, '0')
-  })).sort((a, b) => rwOrder(a.id, b.id));
+  })))[0]);
 }
 /** Date de la dernière lecture des procédures d'un terrain (aerodb coverage(icao).read_at), « lu le 28/10 18:01Z », ⌛ quand ce qu'il
  *  détient est une lecture d'un cycle passé (coverage().outdated) ; puis le bouton « Relire » (data-do procfetch, comme « Lire les
@@ -1537,7 +1500,7 @@ async function sideModel(side) {
   return {
     icao,
     cov, // couverture du terrain : read_at (date de la dernière lecture), outdated
-    rwys: await runwayChoices(icao, known, all),
+    rwys: await runwayChoicesOf(icao, known, all),
     all,
     // procédures non lues (§ 10.26) : les fiches douteuses du terrain, jamais dans les listes. aerodb ne rend plus celles de statut
     // doubt (procedures() les écarte, sans `{ doubt: true }` demandé ici) : on compte celles qu'il a dites à la dernière lecture de cette
@@ -1561,7 +1524,7 @@ const procUnreadHtml = m => m.unread > 0 ? `<span class="f-muted fu-procunread">
  *  cycle est passé. ⚠ (conflit) est ajouté par l'appelant, après ⌛. */
 function procLabel(rec) {
   const name = rec.name || nameOfId(rec.id),
-    one = servesAll(rec) ? [] : [...new Set(rec.runways.map(rwKey))];
+    one = PR.servesAll(rec) ? [] : [...new Set(rec.runways.map(PR.rwNum))];
   return [name, one.length === 1 && !name.toUpperCase().includes(one[0]) ? one[0] : '', rec.status === 'xplane' || rec.local ? tt(TX
     .procXplane) : ''].filter(Boolean).join(' · ') + (rec.outdated ? PROC_OLD : '');
 }
@@ -1569,7 +1532,7 @@ function procLabel(rec) {
  *  CF.conflictsOf (frame/lib/current_flight.js, une seule pour Carburant et la Carte, § 10.23) : des données ; ici leurs textes. key :
  *  sid, star, app, trans ou appTrans. */
 function conflictsOf(key, rec, o) {
-  return CF.conflictsOf(key, rec, o, procRecsNow()).map(c => c.kind === 'rwy' ? tt(TX.procConflictRwy, {
+  return PR.conflictsOf(key, rec, o, procRecsNow()).map(c => c.kind === 'rwy' ? tt(TX.procConflictRwy, {
     rwy: c.rwy
   }) : tt(TX.procConflictStarApp, {
     app: c.app || nameOfId(c.appId)
@@ -1581,10 +1544,6 @@ const procNameOf = (id, key, o) => nameOfId(id, key) + (procRecsNow().get(id)?.o
     procRecsNow()
     ?.get(id), o).length ?
   PROC_CONFLICT : '');
-/** Ordre des pistes : par numéro, puis par côté (« 02 », « 06 », « 14L », « 14R »). */
-const rwOrder = (a, b) => String(a).localeCompare(String(b), undefined, {
-  numeric: true
-});
 /** Options d'une liste PLATE : vide (pas choisi, « — »), « aucune » (null) si none, puis les enregistrements dans l'ordre de
  *  CF.orderProcedures (les compatibles avec le choix d'abord, puis les ⚠ ; dans chaque groupe le repli X-Plane en dernier, puis par
  *  piste, par nom, par transition ; jamais de groupe) ; le choix gardé hors liste (autre piste, OFP) reste proposé. cur :
@@ -1597,7 +1556,7 @@ function procOptions(recs, cur, key, none = true, o = {}) {
         cls = [rec?.outdated ? 'outdated' : '', rec && conflictsOf(key, rec, o).length ? 'conflict' : ''].filter(Boolean).join(' ');
       return `<option value="${esc(v)}"${on ? ' selected' : ''}${cls ? ` class="${cls}" title="${esc(why.join(' · '))}"` : ''}>${esc(l)}</option>`;
     },
-    list = CF.orderProcedures([...new Map(recs.map(r => [r.id, r])).values()], key, o, procRecsNow()),
+    list = PR.orderProcedures([...new Map(recs.map(r => [r.id, r])).values()], key, o, procRecsNow()),
     html = [opt('', '—', cur === undefined), none ? opt('__none', tt(TX.procNone), cur === null) : ''],
     sub = key === 'trans' || key === 'appTrans',
     mark = r => conflictsOf(key, r, o).length ? PROC_CONFLICT : '';
@@ -1631,33 +1590,22 @@ function procRowHtml(side, m, edit) {
   }
   const sel = (key, label, recs, none = true) => procSelect(side, key, label, procOptions(recs, o[key], key, none, o)),
     main = recs => recs.filter(r => !r.transition),
-    // les transitions de la procédure choisie : mêmes sorte et nom, avec une transition
-    transOf = (recs, id) => {
-      const name = id ? recs.find(r => r.id === id)?.name ?? nameOfId(id) : null;
-      return name ? recs.filter(r => r.name === name && r.transition) : [];
-    },
-    rwys = CF.orderProcedures([...new Map(m.rwys.map(r => [r.id, r])).values()], 'rwy', o, procRecsNow()),
-    rwyOpts = `<option value=""${o.rwy ? '' : ' selected'}>—</option>${rwys.map(r => `<option value="${esc(r.id)}"${rwKey(r.id) === rwKey(o.rwy) ? ' selected' : ''}>${esc(r.id)}</option>`).join('')}${o.rwy && !rwys.some(r => rwKey(r.id) === rwKey(o.rwy)) ? `<option value="${esc(o.rwy)}" selected>${esc(o.rwy)}</option>` : ''}`;
+    rwys = PR.orderProcedures([...new Map(m.rwys.map(r => [r.id, r])).values()], 'rwy', o, procRecsNow()),
+    rwyOpts = `<option value=""${o.rwy ? '' : ' selected'}>—</option>${rwys.map(r => `<option value="${esc(r.id)}"${PR.rwNum(r.id) === PR.rwNum(o.rwy) ? ' selected' : ''}>${esc(r.id)}</option>`).join('')}${o.rwy && !rwys.some(r => PR.rwNum(r.id) === PR.rwNum(o.rwy)) ? `<option value="${esc(o.rwy)}" selected>${esc(o.rwy)}</option>` : ''}`;
   let body = procSelect(side, 'rwy', TX.procRwy, rwyOpts);
   if (side === 'dep') {
     body += sel('sid', TX.procSid, main(m.lists.SID));
-    const t = transOf(m.lists.SID, o.sid);
+    const t = PR.transitionsOf(m.lists.SID, o.sid); // les transitions de la SID choisie
     if (t.length) body += sel('trans', TX.procTrans, t, false);
   } else {
     body += sel('star', TX.procStar, main(m.lists.STAR));
-    const t = transOf(m.lists.STAR, o.star);
+    const t = PR.transitionsOf(m.lists.STAR, o.star);
     if (t.length) body += sel('trans', TX.procTrans, t, false);
-    // l'approche : celles sans transition et, pour une approche que l'eAIP ne donne que par point d'entrée (une fiche par entrée), la
-    // fiche qui mène à la piste ; les fiches qui en alimentent une autre (leur dernier point est le premier de l'autre) sont ses
-    // transitions
-    const apps = m.lists.APP,
-      named = new Set(main(apps).map(r => r.name)),
-      entry = apps.filter(r => r.transition && !named.has(r.name)),
-      feeds = (a, b) => a !== b && a.name === b.name && !!a.points?.at(-1)?.id && a.points.at(-1).id === b.points?.[0]?.id,
-      finals = entry.filter(r => !entry.some(x => feeds(r, x))),
-      chosen = entry.find(r => r.id === o.app);
-    body += sel('app', TX.procApp, [...main(apps), ...(finals.length ? finals : entry)]);
-    const at = chosen ? entry.filter(r => feeds(r, chosen)) : transOf(apps, o.app).filter(r => r.id !== o.app);
+    // l'approche, listée une fois (une approche que l'eAIP donne par point d'entrée n'a que sa fiche finale), et ses transitions
+    // (PR.appChoices : règle pure partagée avec la Carte)
+    const ac = PR.appChoices(m.lists.APP);
+    body += sel('app', TX.procApp, ac.list);
+    const at = ac.transitionsOf(o.app);
     if (at.length) body += sel('appTrans', TX.procAppTrans, at, false);
   }
   return `<div class="fu-proc" data-proc="${side}">${head2}${body}${procUnreadHtml(m)}</div>`;
@@ -1752,7 +1700,7 @@ function procChosen(k, raw) {
   // une procédure choisie avant la piste, qui n'en dessert qu'une, pose cette piste
   if (['sid', 'star', 'app'].includes(field) && typeof val === 'string' && !o.rwy) {
     const rec = procRecsNow().get(val),
-      only = rec && !servesAll(rec) ? [...new Set(rec.runways.map(rwKey))] : [];
+      only = rec && !PR.servesAll(rec) ? [...new Set(rec.runways.map(PR.rwNum))] : [];
     if (only.length === 1) o.rwy = only[0];
   }
   if (field === 'sid' || field === 'star') delete o.trans;

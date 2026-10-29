@@ -1,0 +1,271 @@
+<!doctype html>
+<!-- Banc des règles des procédures (frame/lib/procedures.js, V3_SPECIFICATION § 10.29 c) : pistes (servesRwy, sameRwy), noms (nameOf),
+     conflits et ordre des listes (conflictsOf, orderProcedures), transitions (transitionsOf, appChoices), pistes proposées
+     (runwayChoices). Fonctions pures, données inventées ; page nue, aucun module du cadre ; window.__bench = { done, pass, fail, rows }
+     pour un pilote (Playwright). Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>procedures — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">procedures.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    rwNum,
+    sameRwy,
+    servesAll,
+    servesRwy,
+    nameOf,
+    conflictsOf,
+    orderProcedures,
+    transitionsOf,
+    appChoices,
+    runwayChoices
+  } from '../procedures.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  const Pr = (id, kind, name, runways, extra = {}) => ({
+    id,
+    kind,
+    name,
+    runways,
+    ...extra
+  });
+
+  // pistes
+  ck('rwNum : sans RW, sans espaces, en majuscules', rwNum(' rw05r ') === '05R' && rwNum(null) === '' && rwNum('23') === '23');
+  ck('sameRwy : 24 et RW24 se valent, pas 24 et 25', sameRwy('24', 'RW24') && !sameRwy('24', '25') && !sameRwy('', '24'));
+  ck('sameRwy : « 14 » vaut 14L et 14R, 14L ne vaut pas 14R', sameRwy('14', '14L') && sameRwy('14R', '14') && !sameRwy('14L', '14R'));
+  ck('servesAll : aucune piste nommée, ALL et RWALL', servesAll(Pr('a', 'SID', 'A', [])) && servesAll(Pr('a', 'SID', 'A', ['ALL'])) &&
+    servesAll(Pr('a', 'SID', 'A', ['RWALL'])) &&
+    !servesAll(Pr('a', 'SID', 'A', ['07'])));
+  ck('servesRwy : sans piste donnée, vrai ; fiche à une piste ; fiche à toutes ; numéro sans côté', servesRwy(Pr('a', 'SID', 'A', ['07']),
+      '') &&
+    servesRwy(Pr('a', 'SID', 'A', ['07']), 'RW07') && !servesRwy(Pr('a', 'SID', 'A', ['07']), '25') && servesRwy(Pr('a', 'SID', 'A', [
+      'ALL'
+    ]), '25') &&
+    servesRwy(Pr('a', 'SID', 'A', ['14L', '14R']), '14') && !servesRwy(Pr('a', 'SID', 'A', ['14L']), '14R'));
+
+  // noms
+  ck('nameOf : le nom de la fiche, sinon le troisième champ de l’identifiant', nameOf(Pr('X.SID.ROYAN6P.RW23.NONE', 'SID', 'AB1', []),
+      'X.SID.ROYAN6P.RW23.NONE') === 'AB1' &&
+    nameOf(null, 'X.SID.ROYAN6P.RW23.NONE') === 'ROYAN6P' && nameOf({
+      name: ' '
+    }, 'X.STAR.TOTO1.RW02.NONE') === 'TOTO1');
+  ck('nameOf : sans nom ou NONAME, null', nameOf(null, 'X.STAR.NONAME.RW20.NONE') === null && nameOf({
+    name: null
+  }, 'X.STAR.NONAME.RW20.NONE') === null && nameOf(null, null) === null && nameOf({
+    name: 'noname'
+  }) === null);
+
+  // conflits et ordre (V3_SPECIFICATION § 10.23)
+  const s07 = Pr('S.SID.A.RW07', 'SID', 'A1', ['07']),
+    s25 = Pr('S.SID.B.RW25', 'SID', 'B1', ['25']),
+    sAll = Pr('S.SID.C.RWALL', 'SID', 'C1', []),
+    st07 = Pr('S.STAR.D.RW07', 'STAR', 'D1', ['07']),
+    st25 = Pr('S.STAR.E.RW25', 'STAR', 'E1', ['25']),
+    ap07 = Pr('S.APP.F.RW07', 'APP', 'ILS 07', ['07']),
+    byId = new Map([s07, s25, sAll, st07, st25, ap07].map(r => [r.id, r])),
+    kinds = (key, rec, ch) => conflictsOf(key, rec, ch, byId).map(c => c.kind).join();
+
+  ck('conflictsOf : sans choix, aucun conflit', kinds('sid', s07, {}) === '' && kinds('app', ap07, undefined) === '');
+  ck('conflictsOf : une SID qui ne dessert pas la piste choisie', kinds('sid', s07, {
+    rwy: '25'
+  }) === 'rwy' && conflictsOf('sid', s07, {
+    rwy: 'RW25'
+  }, byId)[0].rwy === 'RW25');
+  ck('conflictsOf : la piste choisie, « ALL » ou aucune piste nommée, un numéro sans côté', kinds('sid', sAll, {
+    rwy: '25'
+  }) === '' && kinds('sid', s25, {
+    rwy: '25'
+  }) === '' && kinds('sid', Pr('x', 'SID', 'X', ['14L']), {
+    rwy: '14'
+  }) === '' && kinds('sid', Pr('x', 'SID', 'X', ['ALL']), {
+    rwy: '25'
+  }) === '');
+  ck('conflictsOf : une STAR qui ne dessert pas la piste, une approche aussi', kinds('star', st07, {
+    rwy: '25'
+  }) === 'rwy' && kinds('app', ap07, {
+    rwy: '25'
+  }) === 'rwy');
+  ck('conflictsOf : sans piste, une STAR qui ne dessert aucune piste de l’approche choisie', conflictsOf('star', st25, {
+    app: ap07.id
+  }, byId).map(c => `${c.kind}:${c.app}`).join() === 'starApp:ILS 07' && kinds('star', st07, {
+    app: ap07.id
+  }) === '');
+  ck('conflictsOf : avec une piste choisie, la STAR n’est jugée que sur la piste ; une transition n’a pas de conflit', kinds('star', st25, {
+    rwy: '25',
+    app: ap07.id
+  }) === '' && kinds('appTrans', Pr('t', 'APP', 'T', ['25'], {
+    transition: 'T'
+  }), {
+    rwy: '07'
+  }) === '');
+  ck('conflictsOf : les fiches par objet ou par fonction', conflictsOf('star', st25, {
+    app: ap07.id
+  }, {
+    [ap07.id]: ap07
+  }).length === 1 && conflictsOf('star', st25, {
+    app: ap07.id
+  }, id => byId.get(id)).length === 1);
+  const names = l => l.map(r => r.name).join(' ');
+  ck('orderProcedures : les compatibles d’abord, puis les ⚠', names(orderProcedures([s25, s07, sAll], 'sid', {
+    rwy: '07'
+  }, byId)) === 'C1 A1 B1', names(orderProcedures([s25, s07, sAll], 'sid', {
+    rwy: '07'
+  }, byId)));
+  const li = [Pr('1', 'STAR', 'Z', ['07']), Pr('2', 'STAR', 'B', ['07']), Pr('3', 'STAR', 'A', ['02']), Pr('4', 'STAR', 'Q', [], {
+      status: 'xplane'
+    }), Pr('5', 'STAR', 'M', []), Pr('6', 'STAR', 'B', ['07'], {
+      transition: 'T1'
+    }), Pr('7', 'STAR', 'B', ['07'], {
+      transition: 'T0'
+    })],
+    o1 = orderProcedures(li, 'star', {}, byId);
+  ck('orderProcedures : piste (toutes d’abord), nom, transition, le repli X-Plane en dernier', o1.map(r => r.id).join('') === '5' + '3' +
+    '2' + '7' + '6' + '1' + '4',
+    o1.map(r => r.id).join(''));
+  ck('orderProcedures : nouveau tableau, la liste reçue intacte', li.map(r => r.id).join('') === '1234567' && o1 !== li);
+  const o2 = orderProcedures([Pr('1', 'STAR', 'Z', ['02']), Pr('2', 'STAR', 'Y', ['07']), Pr('3', 'STAR', 'X', ['25']), Pr('4', 'STAR', 'W',
+    ['02'], {
+      status: 'xplane'
+    })], 'star', {
+    rwy: '07'
+  }, byId);
+  ck('orderProcedures : le groupe compatible garde son repli X-Plane en dernier, le groupe ⚠ après', o2.map(r => r.id).join('') === '2134',
+    o2.map(r => r.id).join(''));
+  ck('orderProcedures : les pistes de la SID choisie d’abord', orderProcedures(['25', '07', '14L', '02'], 'rwy', {
+    sid: s07.id
+  }, byId).join(' ') === '07 02 14L 25');
+  ck('orderProcedures : les pistes de l’approche choisie d’abord (objets { id }), ordre naturel sinon', orderProcedures([{
+    id: '25'
+  }, {
+    id: '07'
+  }, {
+    id: '02'
+  }], 'rwy', {
+    app: ap07.id
+  }, byId).map(r => r.id).join(' ') === '07 02 25' && orderProcedures(['25', '07'], 'rwy', {}, byId).join(' ') === '07 25');
+  ck('orderProcedures : une fiche qui dessert toutes les pistes ne change pas l’ordre des pistes', orderProcedures(['25', '02'], 'rwy', {
+    sid: sAll.id
+  }, byId).join(' ') === '02 25');
+
+  // transitions d'une SID ou d'une STAR
+  const sid1 = Pr('Z.SID.ABC1.RW07.NONE', 'SID', 'ABC1', ['07']),
+    tr1 = Pr('Z.SID.ABC1.RWALL.XYZ', 'SID', 'ABC1', [], {
+      transition: 'XYZ'
+    }),
+    tr2 = Pr('Z.SID.ABC1.RWALL.UVW', 'SID', 'ABC1', [], {
+      transition: 'UVW'
+    }),
+    other = Pr('Z.SID.DEF2.RW07.NONE', 'SID', 'DEF2', ['07']),
+    otherTr = Pr('Z.SID.DEF2.RWALL.QRS', 'SID', 'DEF2', [], {
+      transition: 'QRS'
+    });
+  ck('transitionsOf : mêmes sorte et nom, avec une transition', transitionsOf([sid1, tr1, other, otherTr, tr2], sid1.id).map(r => r
+    .transition).join() === 'XYZ,UVW');
+  ck('transitionsOf : sans choix ou sans nom, rien ; nom pris de l’identifiant si la fiche manque', transitionsOf([sid1, tr1], null)
+    .length === 0 &&
+    transitionsOf([sid1, tr1], 'Z.SID.NONAME.RW07.NONE').length === 0 && transitionsOf([tr1], 'Z.SID.ABC1.RW07.NONE').length === 1);
+
+  // approches : une approche donnée par ses entrées est listée une fois, ses transitions sont les fiches qui y mènent
+  const fx = (id, lat) => ({
+      id,
+      lat,
+      lon: 3
+    }),
+    main = Pr('Z.APP.ILS07.RW07.NONE', 'APP', 'ILS07', ['07'], {
+      points: [fx('F1', 45), fx('RW07', 45.1)]
+    }),
+    mainTr = Pr('Z.APP.ILS07.RW07.T1', 'APP', 'ILS07', ['07'], {
+      transition: 'T1',
+      points: [fx('T1', 44.5), fx('F1', 45)]
+    }),
+    rnpFinal = Pr('Z.APP.RNP25.RW25.E2', 'APP', 'RNP25', ['25'], {
+      transition: 'E2',
+      points: [fx('E2', 46), fx('RW25', 46.1)]
+    }),
+    rnpFeed = Pr('Z.APP.RNP25.RW25.E1', 'APP', 'RNP25', ['25'], {
+      transition: 'E1',
+      points: [fx('E1', 47), fx('E2', 46)]
+    }),
+    ac = appChoices([rnpFeed, main, rnpFinal, mainTr]);
+  ck('appChoices : l’approche à fiche principale et celle donnée par ses entrées, listées une fois', ac.list.map(r => r.id).join() ===
+    `${main.id},${rnpFinal.id}`, ac.list.map(r => r.id).join());
+  ck('appChoices : les transitions de l’approche donnée par ses entrées sont les fiches qui mènent à la fiche finale', ac.transitionsOf(
+    rnpFinal.id).map(r => r.id).join() === rnpFeed.id);
+  ck('appChoices : celles d’une approche à fiche principale sont ses transitions, jamais elle-même', ac.transitionsOf(main.id).map(r => r
+      .id).join() === mainTr.id &&
+    ac.transitionsOf(null).length === 0);
+  ck('appChoices : sans fiche finale reconnue (boucle), toutes les fiches d’entrée', appChoices([Pr('a', 'APP', 'R', ['07'], {
+    transition: 'A',
+    points: [fx('P', 1), fx('Q', 1)]
+  }), Pr('b', 'APP', 'R', ['07'], {
+    transition: 'B',
+    points: [fx('Q', 1), fx('P', 1)]
+  })]).list.length === 2 && appChoices([]).list.length === 0);
+
+  // pistes à proposer, par ses trois sources
+  const rw = (...ids) => ids.map(id => ({
+    id,
+    lat: 45,
+    lon: 3
+  }));
+  ck('runwayChoices : 1. celles d’aerodb, quand elles ont une position', runwayChoices(rw('07', '25'), [s07], null).map(r => r.id)
+    .join() === '07,25');
+  ck('runwayChoices : une piste d’aerodb sans position que seules des fiches absentes nomment est écartée', runwayChoices([{
+    id: '14',
+    lat: null
+  }, {
+    id: '07',
+    lat: null
+  }], [s07], null).map(r => r.id).join() === '07');
+  ck('runwayChoices : 2. sinon celles que nomment les fiches (union triée, ALL écarté)', runwayChoices([], [s25, s07, sAll, Pr('x', 'STAR',
+    'X', ['14L', '14R'])], null).map(r => r.id).join() === '07,14L,14R,25');
+  ck('runwayChoices : 3. sinon les deux sens de l’axe de la base (route vraie − déclinaison Est)', runwayChoices([], [sAll], {
+    bearing: 241.85,
+    magVar: 1.8
+  }).map(r => r.id).join() === '06,24' && runwayChoices([], [], {
+    bearing: 322.9,
+    magVar: 1.7
+  }).map(r => r.id).join() === '14,32');
+  ck('runwayChoices : rien de rien, rien', runwayChoices([], [], null).length === 0 && runwayChoices(null, null, {}).length === 0);
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

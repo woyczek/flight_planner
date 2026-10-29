@@ -28,7 +28,7 @@ Rules covered
   * an approach given only by its entries lists the final record once, its transitions are the records that lead to it, and a transition equal to
     the approach is ignored (F24).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F25 F26 F27 F28 F29.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F25 F26 F27 F28 F29 F30 F31 F32.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 import json
@@ -1061,3 +1061,15 @@ def f31(c):
     cf_doc(c, lambda d: 'rwy' not in (procs_of(d, 'arr') or {'rwy': 1}), 'the runway is cleared')
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]'); return !!s && s.value === '' })()", what='the runway select is back to not chosen')
     c.eq([v for v, _ in sel_opts(c, 'p-arr-rwy')], ['', '25', '07'], 'the runway of the chosen approach comes first', what='runways')
+
+
+@case('F32', 'Procedures rules bench', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='frame/lib/procedures.js (V3 spec 10.29 c): the rules shared by Fuel and the Map are pure and their bench passes')
+def f32(c):
+    c.page.goto(f'{c.base}/frame/lib/test/procedures.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'frame/lib/test/procedures.html') from None
+    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')

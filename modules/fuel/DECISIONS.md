@@ -4,6 +4,19 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — refactoring (c): the rules of the procedures in `frame/lib/procedures.js`** (V3_SPECIFICATION § 10.29 c; no visible
+  change). Pure ES module, no state, no text, no DOM: `rwNum`, `sameRwy`, `servesAll`, `servesRwy` (they were in `module.js`, `rwNum` also in
+  the flight library), `nameOf(rec, id)` (the record's name, else the id's third field; null for none or `NONAME` — Fuel adds its
+  « STAR sans nom »), `conflictsOf` and `orderProcedures` (moved from `flight_path.js`, which re-exports them during the transition, and so
+  does `current_flight.js`), `transitionsOf(recs, id)` (SID and STAR), `appChoices(apps)` → `{ list, transitionsOf(id) }` (the approach
+  given by its entries listed once, its transitions the records that lead to its final record: the logic of `procRowHtml`),
+  `runwayChoices(known, all, ad)` (the three sources; `ad`, the aerodrome's base record, is passed in: Fuel asks aerodb for it only when
+  the first two sources give nothing, `runwayChoicesOf`). Fuel's local copies and its `dedupProcs` are gone (`CF.loadProcedures` applies
+  `dedupProcs` since § 10.29 a). `frame/sw.js` and the `meta.files` of fuel, maps and report list the new file. Bench
+  `frame/lib/test/procedures.html` (32 checks: the ones that were in `current_flight.html` moved, plus the new functions), noreg case F32.
+- **29 Oct 2026 — the reasons of doubtful records are codes** (aerodb 72ca8b2fa): `TX.procWhy` gets the six codes ×4 (`geometry`,
+  `unresolved`, `name`, `repeat`, `zigzag`, `unread`), so a reading's notification never shows a bare code; the French phrases of
+  the pages not read stay until aerodb gives their codes, then the table holds codes only (refactoring (d), V3 § 10.29).
 - **29 Oct 2026 — the procedure rows no longer wait for the aircraft registry** (user: « vue Carburant + Carte : très long à charger
   (10 s ?) avant de faire apparaître les procédures »). Measured in the test environment on the user's real files (LFPO 309, EIDW
   196 records): rows at 0.3–0.5 s, one render, departure and arrival read in parallel, rowsKey 0.2 ms — but drawn only after
