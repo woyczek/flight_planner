@@ -182,6 +182,8 @@ large screen it stays here with the Map on the right. Changing the departure air
 flight: the departure time is cleared. Changing the arrival after departure is a diversion: the time is kept and the
 diversion recorded.
 
+Flight plan for the simulator: under the summary, three buttons — ".fms (XP 11/12)", ".fms (XP 10)" and ".pln (MSFS)" — download the route and the chosen procedures (runway, SID, STAR, approach and their transitions) for X-Plane or Microsoft Flight Simulator, in a file named "LFPO-EIDW_2026-10-30.fms". The route needs at least two placed points. Then copy the file into X-Plane's "Output/FMS plans" folder (sending it directly will come with the launcher).
+
 Once the flight has started, this step carries a "Procedures" card: nothing is locked: the Departure and Arrival sides stay editable at any time (another departure is a new departure). A change does not redo the quote: the block fuel, the trip fuel and the reserves stay those of the departure; only the times at the points, the vertical profile and the remaining distance follow the new path. The Map's "Change" button opens Fuel on the Arrival row (`#fuel?focus=arr`): the Route step before the start, the Departure step after.
 
 Once the flight has started, the result at the bottom of the screen says “Flight started at 11:14Z (13:14) · for 1 h 10”. Times are UTC (“Z”);
@@ -235,7 +237,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 6005106ddbb3 -->
+<!-- fr: 7acfebc2c57f -->
 
 <!-- chapter: maps -->
 # Map

@@ -20,6 +20,7 @@ How the frame mounts the fuel module and what the module reads and writes. The r
 | `modules/fuel/test/sheets.html` | bench: sheets functions against the V2 functions on the same inputs (`sheets_v2.json`) |
 | `modules/fuel/test/vertical.html` | bench: `verticalPath` (`progress.js`) — the planned vertical path: no fold, no jump, constraints held, never climbing in the descent; case F23 |
 | `modules/fuel/module.js` | the module mounted by the frame: `meta`, `mount(el, ctx)`, `unmount()`; screens Plan (tab "Quote") and Sheets (SPEC § 9) |
+| `frame/lib/fms.js` | shared pure code (owner frame, read by fuel): the flight plan written as X-Plane `.fms` (version 3 and 1100) and MSFS `.pln` (2020, 2024) from the flight and its expanded path (`toFmsV3`, `toFms1100`, `toPln`, `fileName`, `exportOf`); bench `frame/lib/test/fms.html` (F60); fuel's `meta.files` lists it |
 | `modules/fuel/procedures.js`, `procedures_texts.js` | the « Procédures » card of the preparation, mounted by `module.js` through `createProcedures(host)` (the choices, their display, the reading on demand, the OFP's lines); no access to the screen's state (SPEC § 9 block 0) |
 | `modules/fuel/adnames.js` | the aerodrome's name under its code (step Flight, step Departure) and the progressive completion of the three code fields (`createAdNames(host)`; `aerodb.coords`, `aerodb.find`; V3 § 10.27) |
 

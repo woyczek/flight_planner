@@ -32,6 +32,8 @@ RULES = [
     ('frame/lib/procedures.js', ['F', 'D', 'I'], "procedure rules shared by fuel's lists and the Map's choose mode"),
     ('frame/lib/test/procedures.html', ['F', 'I'], 'procedure rules bench (F32)'),
     ('frame/lib/test/time.html', ['F', 'I'], 'time formats bench (F39)'),
+    ('frame/lib/fms.js', ['F', 'I'], "flight plan writers for the simulators (X-Plane .fms, MSFS .pln): fuel's export buttons"),
+    ('frame/lib/test/fms.html', ['F', 'I'], 'flight plan writers bench (F60)'),
     ('frame/lib/test/launcher.html', ['A29', 'I'], 'launcher client bench'),
     ('frame/store/test/publish.html', ['A30', 'I'], 'publication bench'),
     ('frame/store/test/revalidate.html', ['A33', 'I'], 'revalidate bench'),

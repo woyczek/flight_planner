@@ -274,7 +274,9 @@ mount. Inside a mount, the two buttons switch as before.
   the aerodromes of the corridor), **4 Result** (fr "Résultat", de "Ergebnis", es "Resultado"; it was "Quote", the name of the first tab: renamed on 24 Oct 2026; density altitude, level decision with the climb goal, "Open in",
   details, climb instructions, settings), **5 Departure** (a one-page summary: aircraft, normalised route, level and
   steps, wind and source, block fuel; "Start the flight" writes `current_flight.started = { at, by: 'fuel' }` and
-  opens the Map). One step at a time when the module is narrow (phone, dual-view pane: `@container` under 900 px; the
+  opens the Map; then a card « Flight plan for the simulator » with three buttons — « .fms (XP 11/12) », « .fms (XP 10) »,
+  « .pln (MSFS) » — that download the route and the chosen procedures (`frame/lib/fms.js`, V3 § 10.28; 44 px, disabled under two
+  placed points, named `LFRS-LFML_<day>.<ext>`; cases F60, F61; the direct send into X-Plane's `Output/FMS plans` is a later launcher verb)). One step at a time when the module is narrow (phone, dual-view pane: `@container` under 900 px; the
   bar shows the numbers, the current step with its name; "Next" under each step); all five one under the other when
   it is wide, without bar or "Next". The sticky result stays under every step; a ✓ marks a filled step (aerodromes,
   aircraft and level; route resolved or typed; weather read or wind given; fuel quoted; flight started). The step is

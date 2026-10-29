@@ -196,6 +196,8 @@ großen Bildschirm bleibt es hier mit der Karte rechts. Den Abflugplatz danach z
 vorzubereiten: Die Abflugzeit wird gelöscht. Die Ankunft nach dem Abflug zu ändern ist eine Umleitung: Die Zeit bleibt
 erhalten, und die Umleitung wird vermerkt.
 
+Flugplan für den Simulator: Unter der Zusammenfassung laden drei Schaltflächen — „.fms (XP 11/12)“, „.fms (XP 10)“ und „.pln (MSFS)“ — die Route und die gewählten Verfahren (Piste, SID, STAR, Anflug und ihre Übergänge) für X-Plane oder Microsoft Flight Simulator herunter, in einer Datei namens „LFPO-EIDW_2026-10-30.fms“. Die Route braucht mindestens zwei gesetzte Punkte. Kopieren Sie die Datei dann in den Ordner „Output/FMS plans“ von X-Plane (das direkte Senden kommt mit dem Launcher).
+
 Sobald der Flug gestartet ist, enthält dieser Schritt eine Karte „Verfahren“: Nichts ist gesperrt: Abflug- und Ankunftsseite bleiben jederzeit änderbar (ein anderer Abflug ist ein neuer Abflug). Eine Änderung rechnet die Berechnung nicht neu: Block-, Strecken- und Reservekraftstoff bleiben die des Abflugs; nur die Zeiten an den Punkten, das Höhenprofil und die Reststrecke folgen dem neuen Weg. Die Schaltfläche „Ändern“ der Karte öffnet Kraftstoff bei der Ankunftszeile (`#fuel?focus=arr`): vor dem Start den Schritt Route, danach den Schritt Abflug.
 
 Sobald der Flug gestartet ist, zeigt das Ergebnis unten im Bildschirm „Flug gestartet um 11:14Z (13:14) · seit 1 h 10“. Die Zeiten sind UTC („Z“);
@@ -255,7 +257,7 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: 6005106ddbb3 -->
+<!-- fr: 7acfebc2c57f -->
 
 <!-- chapter: maps -->
 # Karte

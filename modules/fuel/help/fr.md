@@ -131,6 +131,8 @@ droite.
 Changer le terrain de départ ensuite, c'est préparer un autre vol : l'heure de départ est effacée. Changer l'arrivée
 après le départ est un déroutement : l'heure est gardée et le déroutement noté.
 
+Plan de vol pour le simulateur : sous le récapitulatif, trois boutons — « .fms (XP 11/12) », « .fms (XP 10) » et « .pln (MSFS) » — téléchargent la route et les procédures choisies (piste, SID, STAR, approche et leurs transitions) pour X-Plane ou Microsoft Flight Simulator, dans un fichier nommé « LFPO-EIDW_2026-10-30.fms ». Il faut une route d'au moins deux points placés. Copiez ensuite le fichier dans le dossier « Output/FMS plans » de X-Plane (l'envoi direct viendra avec le lanceur).
+
 Une fois le vol démarré, ce pas porte une carte « Procédures » : rien n'est verrouillé : les côtés Départ et Arrivée restent modifiables à tout moment (un autre départ est un nouveau départ). Un changement ne refait pas le devis : le carburant bloc, le délestage et les réserves restent ceux du départ ; seuls les points horaires, le profil vertical et la distance restante suivent le nouveau chemin. Le bouton « Changer » de la Carte ouvre Carburant sur la ligne Arrivée (`#fuel?focus=arr`) : le pas Route avant le départ, le pas Départ après.
 
 Une fois le vol démarré, le résultat en bas d'écran dit « Vol démarré à 11:14Z (13:14) · depuis 1 h 10 ». Les heures sont en UTC (« Z ») ;

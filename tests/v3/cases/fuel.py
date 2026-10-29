@@ -36,6 +36,8 @@ Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F2
 computes an estimated quote with no sheet and no network.
 """
 import json
+import re
+from pathlib import Path
 
 from lib import ROOT, Fail, Skip, case, flight_docs, norm, synthetic_airways, tx
 from fixtures.procedures import proc_docs      # the invented procedures the cases seed (V3 spec 10.29 i)
@@ -1446,3 +1448,48 @@ def f48(c):
     c.until("document.querySelector('[data-module=fuel] input[data-k=arr]').value === 'LFZO'", what='leaving without a choice brings the field back to the code')
     c.settle()
     c.eq(cf_doc(c, lambda d: True, 'the flight')['route'].get('arr'), 'LFZO', 'and the route still holds it', what='route.arr after blur')
+
+
+# ---------------------------------------------------------------------------------------------------------------- F60 - F61 (flight plan export)
+@case('F60', 'Flight plan writers bench (X-Plane .fms v3 and 1100, MSFS .pln)', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='frame/lib/fms.js (V3 spec 10.28): the writers are pure and their bench passes on the invented flight')
+def f60(c):
+    c.page.goto(f'{c.base}/frame/lib/test/fms.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'frame/lib/test/fms.html') from None
+    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows.filter(x => !x.ok) })')
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
+
+
+@case('F61', 'Flight plan export: three 44 px buttons at the Departure step, disabled without a route, each downloads its file', 'F', tags=('fuel',),
+      designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.28 (user, 29 Oct): export .fms (X-Plane, two formats) and .pln (MSFS) from Fuel; download in the browser; named LFRS-LFML_<day>.<ext>')
+def f61(c):
+    sel = f'{FUEL} [data-block="fms"] button[data-fms]'
+    # no flight: the buttons exist and are disabled, with the reason in the title
+    c.open('fuel')
+    c.settle()
+    c.eq(c.count(sel), 3, 'three export buttons', what='buttons without a flight')
+    st = c.js(f"[...document.querySelectorAll('{sel}')].map(b => ({{ d: b.disabled, t: b.title }}))")
+    c.ok(all(s['d'] and s['t'] for s in st), str(st), 'all disabled, with the reason as title, without a route')
+    # a planned flight: enabled, 44 px targets, one download each
+    c.open('fuel', flight=True)
+    wait_quote(c)
+    c.tap(f'{FUEL} [data-step="4"]')
+    c.until(f"document.querySelectorAll('{sel}').length === 3 && [...document.querySelectorAll('{sel}')].every(b => !b.disabled)", what='the buttons are enabled with a route')
+    c.eq(norm(c.text(f'{FUEL} [data-block="fms"] h2') or ''), norm(row(c, 'fmsTitle')), 'the card is titled in the language of the run', what='card title')
+    for b in c.js(f"[...document.querySelectorAll('{sel}')].map(b => ({{ k: b.dataset.fms, w: b.getBoundingClientRect().width, h: b.getBoundingClientRect().height, t: b.textContent.trim() }}))"):
+        c.ok(b['h'] >= 44 and b['w'] >= 44, f"{b['k']} is {b['w']:.0f} x {b['h']:.0f}", 'every button is a 44 px target')
+    for k, ext, head in (('xp11', 'fms', 'I\r\n1100 Version'), ('xp10', 'fms', 'I\r\n3 version'), ('pln', 'pln', '<?xml')):
+        with c.page.expect_download(timeout=10000) as di:
+            c.tap(f'{FUEL} [data-block="fms"] button[data-fms="{k}"]')
+        d = di.value
+        c.ok(re.fullmatch(rf'LFRS-LFML_\d{{4}}-\d{{2}}-\d{{2}}\.{ext}', d.suggested_filename or ''), d.suggested_filename, f'the file is named LFRS-LFML_<day>.{ext}')
+        text = Path(d.path()).read_bytes().decode('utf-8')
+        c.ok(text.startswith(head), text[:60], f'the {k} file starts with {head!r}')
+        if k == 'xp11':
+            c.ok('ADEP LFRS' in text and 'ADES LFML' in text and 'NUMENR 4' in text, text[:200], 'the 1100 file names both aerodromes and counts the four route points')
+        if k == 'pln':
+            c.ok('<DepartureID>LFRS</DepartureID>' in text and text.count('<ATCWaypoint ') == 4, text[:200], 'the .pln has the four waypoints')

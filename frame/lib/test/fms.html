@@ -1,0 +1,386 @@
+<!doctype html>
+<!-- Banc des écrivains de plans de vol pour les simulateurs (frame/lib/fms.js, V3_SPECIFICATION § 10.28) : X-Plane .fms version 3 et
+     1100, MSFS .pln (2020 et 2024), nom du fichier, cycle AIRAC. Fonctions pures sur un vol INVENTÉ (terrains LFXA et EIXB, points
+     ZZ…, procédures inventées : aucune donnée d'AIP) ; page nue ; window.__bench = { done, pass, fail, rows } pour un pilote
+     (Playwright). Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>fms — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">fms.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    toFmsV3,
+    toFms1100,
+    toPln,
+    fileName,
+    exportOf,
+    airacOf,
+    lla,
+    EOL
+  } from '../fms.js?v=0';
+  import {
+    expandedPath
+  } from '../flight_path.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + String(detail).slice(0, 300)}`;
+    out.append(l);
+  };
+  const lines = t => t.split(EOL).filter((x, i, a) => i < a.length - 1 || x);
+
+  // le vol inventé : LFXA → EIXB, une voie aérienne (UZ99) entre ZZBBB et ZZCCC, un VOR, un NDB, un point écrit en coordonnées
+  const flight = {
+    planned_at: '2026-10-30T09:00:00Z',
+    level: {
+      ft: 35000
+    },
+    route: {
+      dep: 'LFXA',
+      arr: 'EIXB',
+      points: [{
+        id: 'LFXA',
+        lat: 48.723,
+        lon: 2.379
+      }, {
+        id: 'ZZAAA',
+        lat: 49.2,
+        lon: 1.5
+      }, {
+        id: 'ZZBBB',
+        lat: 50.1,
+        lon: 0.4
+      }, {
+        id: 'ZZMID',
+        lat: 50.6,
+        lon: -0.9,
+        via: 'UZ99',
+        awy: true
+      }, {
+        id: 'ZZCCC',
+        lat: 51.2,
+        lon: -2.1,
+        via: 'UZ99',
+        alt_ft: 37000
+      }, {
+        id: 'ZZV',
+        lat: 52,
+        lon: -3.5
+      }, {
+        id: 'NDX',
+        lat: 52.6,
+        lon: -4.6
+      }, {
+        id: '5230N',
+        lat: 53,
+        lon: -5.3
+      }, {
+        id: 'EIXB',
+        lat: 53.4213,
+        lon: -6.2701
+      }],
+      procedures: {
+        dep: {
+          rwy: '07',
+          sid: 'LFXA.SID.ALPHA1A.RW07.NONE',
+          trans: 'LFXA.SID.ALPHA1A.RW07.ZZAAA'
+        },
+        arr: {
+          rwy: '25L',
+          star: 'EIXB.STAR.BRAVO2B.RW25L.ZZV',
+          trans: 'EIXB.STAR.BRAVO2B.RW25L.ZZV',
+          app: 'EIXB.APP.ILSZ25L.RW25L.NONE',
+          appTrans: null
+        }
+      }
+    }
+  };
+  const rec = (id, kind, name, points, extra = {}) => ({
+    id,
+    kind,
+    name,
+    icao: id.split('.')[0],
+    points,
+    source: {
+      kind: 'test',
+      cycle: '2610'
+    },
+    ...extra
+  });
+  const procs = {
+    sid: rec('LFXA.SID.ALPHA1A.RW07.NONE', 'SID', 'ALPHA1A', [{
+      id: 'DB101',
+      lat: 48.75,
+      lon: 2.6
+    }, {
+      id: 'ZZAAA',
+      lat: 49.2,
+      lon: 1.5
+    }]),
+    sidTrans: rec('LFXA.SID.ALPHA1A.RW07.ZZAAA', 'SID', 'ALPHA1A', [{
+      id: 'ZZAAA',
+      lat: 49.2,
+      lon: 1.5
+    }], {
+      transition: 'ZZAAA'
+    }),
+    star: rec('EIXB.STAR.BRAVO2B.RW25L.ZZV', 'STAR', 'BRAVO2B', [{
+      id: '5230N',
+      lat: 53,
+      lon: -5.3
+    }, {
+      id: 'ST201',
+      lat: 53.1,
+      lon: -5.6
+    }], {
+      transition: 'ZZV'
+    }),
+    starTrans: null,
+    app: rec('EIXB.APP.ILSZ25L.RW25L.NONE', 'APP', 'ILS Z RWY 25L', [{
+      id: 'AP301',
+      lat: 53.3,
+      lon: -6
+    }, {
+      id: 'AP302',
+      lat: 53.4,
+      lon: -6.2,
+      phase: 'main'
+    }]),
+    appTrans: null,
+    depRwy: {
+      id: '07',
+      lat: 48.72,
+      lon: 2.36,
+      elev: 291
+    },
+    arrRwy: {
+      id: '25L',
+      lat: 53.42,
+      lon: -6.25,
+      elev: 242
+    }
+  };
+  const path = expandedPath(flight, procs);
+  const opts = {
+    procs,
+    kinds: {
+      ZZV: 'vor',
+      NDX: 'ndb'
+    },
+    names: {
+      LFXA: 'Test A & <Co>',
+      EIXB: 'Test B'
+    },
+    now: new Date('2026-11-02T10:00:00Z')
+  };
+  ck('le chemin inventé porte la SID, la route et la STAR', path.some(p => p.origin === 'sid') && path.some(p => p.origin === 'route') &&
+    path.some(
+      p => p.origin === 'star') && path.some(p => p.origin === 'app'), path.map(p => p.id + ':' + p.origin).join(' '));
+
+  // ---------------------------------------------------------------- version 3
+  const v3 = toFmsV3(flight, path, opts),
+    L3 = lines(v3);
+  ck('v3 : en-tête I / 3 version / 1, puis le nombre de points moins un', L3[0] === 'I' && L3[1] === '3 version' && L3[2] === '1' && +L3[
+      3] === L3
+    .length - 5, L3.slice(0, 5).join('|'));
+  ck('v3 : fins de ligne CR LF et saut final', v3.includes('\r\n') && v3.endsWith('\r\n') && !/[^\r]\n/.test(v3));
+  ck('v3 : chaque ligne « type identifiant altitude lat lon », six décimales avec un point', L3.slice(4).every(l =>
+    /^(1|2|3|11|28) \S+ -?\d+\.\d{6} -?\d+\.\d{6} -?\d+\.\d{6}$/.test(l)), L3.slice(4).find(l => !
+    /^(1|2|3|11|28) \S+ -?\d+\.\d{6} -?\d+\.\d{6} -?\d+\.\d{6}$/
+    .test(l)));
+  ck('v3 : le départ est un terrain (type 1, altitude 0), l’arrivée aussi', L3[4].startsWith('1 LFXA 0.000000 48.723000 2.379000') && L3.at(
+      -1)
+    .startsWith('1 EIXB 0.000000 53.421300 -6.270100'), L3[4] + ' / ' + L3.at(-1));
+  ck('v3 : les points des procédures y sont (le format n’a pas de champ pour elles), pas le seuil de piste', /11 DB101 /.test(v3) &&
+    /11 ST201 /
+    .test(v3) && !/RW07|RW25L/.test(v3));
+  ck('v3 : VOR (3), NDB (2), point de position (28), point (11) ; niveau du vol en route, niveau d’un palier sur son point et après lui',
+    /\n3 ZZV 37000\.000000 /
+    .test(v3) && /\n2 NDX 37000\.000000 /.test(v3) && /\n28 5230N 37000\.000000 /.test(v3) && /\n11 ZZBBB 35000\.000000 /.test(v3) &&
+    /\n11 ZZCCC 37000\.000000 /
+    .test(v3), v3);
+
+  // ---------------------------------------------------------------- 1100
+  const x = toFms1100(flight, path, opts),
+    L = lines(x),
+    ne = L.findIndex(l => l.startsWith('NUMENR ')),
+    rowsX = L.slice(ne + 1);
+  ck('1100 : I, 1100 Version, CYCLE d’après les fiches', L[0] === 'I' && L[1] === '1100 Version' && L[2] === 'CYCLE 2610', L.slice(0, 3)
+    .join('|'));
+  ck('1100 : en-tête ADEP / DEPRWY / SID / SIDTRANS / ADES / DESRWY / STAR / STARTRANS / APP dans l’ordre, noms sans espace ni point',
+    L.slice(3, ne).join('|') ===
+    'ADEP LFXA|DEPRWY RW07|SID ALPHA1A|SIDTRANS ZZAAA|ADES EIXB|DESRWY RW25L|STAR BRAVO2B|STARTRANS ZZV|APP ILSZRWY25L', L.slice(3,
+      ne).join('|'));
+  ck('1100 : NUMENR est le nombre de lignes qui suivent', +L[ne].split(' ')[1] === rowsX.length && rowsX.length === 9, `${L[ne]} / ${rowsX.length}`);
+  ck('1100 : une ligne par point de la route seulement (aucun point de procédure)', !/DB101|ST201|AP30/.test(x) && rowsX.every(l =>
+    /^(1|2|3|11|28) \S+ \S+ -?\d+\.\d{6} -?\d+\.\d{6} -?\d+\.\d{6}$/.test(l)));
+  ck('1100 : ADEP et ADES sur le premier et le dernier point', /^1 LFXA ADEP 0\.000000 48\.723000 2\.379000$/.test(rowsX[0]) &&
+    /^1 EIXB ADES 0\.000000 53\.421300 -6\.270100$/
+    .test(rowsX.at(-1)), rowsX[0] + ' / ' + rowsX.at(-1));
+  ck('1100 : la voie aérienne dans via sur les points qu’elle dessert, DRCT sinon', /^11 ZZMID UZ99 /.test(rowsX.find(l => l.includes(
+      ' ZZMID '))) &&
+    /^11 ZZCCC UZ99 37000/.test(rowsX.find(l => l.includes(' ZZCCC '))) && /^11 ZZBBB DRCT /.test(rowsX.find(l => l.includes(
+      ' ZZBBB '))) &&
+    /^3 ZZV DRCT /.test(rowsX.find(l => l.includes(' ZZV '))), rowsX.join('|'));
+  const bare = toFms1100({
+    ...flight,
+    route: {
+      ...flight.route,
+      procedures: undefined
+    }
+  }, expandedPath({
+    ...flight,
+    route: {
+      ...flight.route,
+      procedures: undefined
+    }
+  }, {}), {
+    now: new Date('2026-10-30T10:00:00Z')
+  });
+  ck('1100 : sans procédure choisie, aucune ligne de procédure ni de piste ; le cycle vient de la date', !/^(DEPRWY|SID|STAR|APP|DESRWY)/m
+    .test(bare) && /^ADEP LFXA\r\nADES EIXB\r\nNUMENR 9/m
+    .test(bare) && /CYCLE 2611/.test(bare), bare.slice(0, 120));
+  const ids = toFms1100({
+    ...flight
+  }, path, {});
+  ck('1100 : sans fiches, les noms viennent des identifiants du vol',
+    /SID ALPHA1A\r\nSIDTRANS ZZAAA\r\nADES EIXB\r\nDESRWY RW25L\r\nSTAR BRAVO2B\r\nSTARTRANS ZZV\r\nAPP ILSZ25L\r\n/.test(ids), ids.slice(
+      0, 260));
+
+  // ---------------------------------------------------------------- PLN
+  ck('lla : le format DMS de MSFS, altitude avec signe et deux décimales', lla(48.723, 2.379, 291) ===
+    'N48° 43\' 22.80",E2° 22\' 44.40",+000291.00', lla(48.723, 2.379, 291));
+  ck('lla : hémisphères S et W, altitude négative, minute jamais 60', lla(-33.9, -151.2, -5) ===
+    'S33° 54\' 0.00",W151° 12\' 0.00",-000005.00' &&
+    lla(10.99999999, 0, 0).startsWith('N11° 0\' 0.00"'), lla(-33.9, -151.2, -5) + ' ' + lla(10.99999999, 0, 0));
+  const pln = toPln(flight, path, {
+      ...opts,
+      version: 2020
+    }),
+    pln24 = toPln(flight, path, {
+      ...opts,
+      version: 2024
+    });
+  const doc = t => new DOMParser().parseFromString(t, 'application/xml'),
+    d = doc(pln),
+    d24 = doc(pln24);
+  ck('pln : XML bien formé, déclaration, racine AceXML, Descr', !d.querySelector('parsererror') && pln.startsWith(
+      '<?xml version="1.0" encoding="UTF-8"?>') && d.documentElement
+    .nodeName === 'SimBase.Document' && d.documentElement.getAttribute('Type') === 'AceXML' && d.documentElement.getAttribute(
+      'version') === '1,0' && d.documentElement
+    .firstElementChild.textContent === 'AceXML Document', d.querySelector('parsererror')?.textContent);
+  const fp = d.querySelector('FlightPlan\\.FlightPlan'),
+    tx = k => fp.querySelector(`:scope > ${k}`)?.textContent;
+  ck('pln : Title, FPType, RouteType HighAlt, CruisingAlt, départ et arrivée', tx('Title') === 'LFXA to EIXB' && tx('FPType') === 'IFR' &&
+    tx('RouteType') ===
+    'HighAlt' && tx('CruisingAlt') === '35000.000' && tx('DepartureID') === 'LFXA' && tx('DestinationID') === 'EIXB' && tx('Descr') ===
+    'LFXA, EIXB');
+  ck('pln : DepartureLLA exact (altitude de la piste), DestinationLLA', tx('DepartureLLA') ===
+    'N48° 43\' 22.80",E2° 22\' 44.40",+000291.00' && /^N53° 25' 16\.68",W6° 16' 12\.36",\+000242\.00$/
+    .test(tx('DestinationLLA')), tx('DepartureLLA') + ' / ' + tx('DestinationLLA'));
+  ck('pln : les noms des terrains sont échappés puis relus à l’identique', tx('DepartureName') === 'Test A & <Co>' && tx(
+      'DestinationName') === 'Test B' && pln
+    .includes('Test A &amp; &lt;Co&gt;'));
+  const wps = [...fp.querySelectorAll(':scope > ATCWaypoint')];
+  ck('pln : un ATCWaypoint par point de la route, dans l’ordre', wps.map(w => w.getAttribute('id')).join() ===
+    'LFXA,ZZAAA,ZZBBB,ZZMID,ZZCCC,ZZV,NDX,5230N,EIXB', wps.map(w => w.getAttribute(
+      'id')).join());
+  const wt = id => wps.find(w => w.getAttribute('id') === id),
+    g = (w, k) => w.querySelector(`:scope > ${k}`)?.textContent;
+  ck('pln : types Airport / Intersection / VOR / NDB / User ; pas d’ICAO sur un point de position', g(wt('LFXA'), 'ATCWaypointType') ===
+    'Airport' && g(wt('ZZAAA'),
+      'ATCWaypointType') === 'Intersection' && g(wt('ZZV'), 'ATCWaypointType') === 'VOR' && g(wt('NDX'), 'ATCWaypointType') === 'NDB' &&
+    g(wt('5230N'), 'ATCWaypointType') ===
+    'User' && !wt('5230N').querySelector('ICAO') && wt('ZZV').querySelector('ICAO > ICAOIdent').textContent === 'ZZV');
+  ck('pln : l’airway sur les points qui y sont arrivés, pas ailleurs', g(wt('ZZMID'), 'ATCAirway') === 'UZ99' && g(wt('ZZCCC'),
+    'ATCAirway') === 'UZ99' && !wt(
+    'ZZBBB').querySelector('ATCAirway') && !wt('LFXA').querySelector('ATCAirway'));
+  ck('pln : position en DMS sur chaque waypoint', wps.every(w => /^[NS]\d+° \d+' \d+\.\d{2}",[EW]\d+° \d+' \d+\.\d{2}",[+-]\d{6}\.\d{2}$/
+    .test(g(w, 'WorldPosition'))));
+  ck('pln : procédures sur les terrains (piste 7 sans côté, SID ; STAR, ILS, suffixe Z, piste 25 gauche)', g(wt('LFXA'), 'DepartureFP') ===
+    'ALPHA1A' && g(wt('LFXA'),
+      'RunwayNumberFP') === '7' && g(wt('LFXA'), 'RunwayDesignatorFP') === 'NONE' && g(wt('EIXB'), 'ArrivalFP') === 'BRAVO2B' && g(wt(
+      'EIXB'), 'ApproachTypeFP') === 'ILS' && g(
+      wt('EIXB'), 'SuffixFP') === 'Z' && g(wt('EIXB'), 'RunwayNumberFP') === '25' && g(wt('EIXB'), 'RunwayDesignatorFP') === 'LEFT');
+  ck('pln : 2020 et 2024 ne diffèrent que par AppVersion', d.querySelector('AppVersionMajor').textContent === '11' && d24.querySelector(
+      'AppVersionMajor').textContent ===
+    '12' && !d24.querySelector('parsererror') && pln.replace(/<AppVersionMajor>\d+</, '<AppVersionMajor>12<') === pln24);
+  const low = toPln({
+    ...flight,
+    level: {
+      ft: 9000
+    }
+  }, path, opts);
+  ck('pln : LowAlt sous FL180', doc(low).querySelector('RouteType').textContent === 'LowAlt');
+
+  // ---------------------------------------------------------------- nom du fichier, cycle, cas limites
+  ck('fileName : départ-arrivée_jour.ext, jour de planned_at', fileName(flight, 'fms') === 'LFXA-EIXB_2026-10-30.fms' && fileName(flight,
+      'PLN') ===
+    'LFXA-EIXB_2026-10-30.pln');
+  const f2 = {
+    route: {
+      dep: 'lf/xa',
+      arr: 'EI XB ?',
+      points: []
+    }
+  };
+  ck('fileName : sans planned_at le jour de opts.now ; caractères sûrs seulement', fileName(f2, 'fms', {
+    now: new Date('2026-11-02T23:30:00Z')
+  }) === 'LFXA-EIXB_2026-11-02.fms', fileName(f2, 'fms', {
+    now: new Date('2026-11-02T23:30:00Z')
+  }));
+  ck('fileName : sans route, un nom quand même', /^FLIGHTPLAN_\d{4}-\d{2}-\d{2}\.pln$/.test(fileName({}, 'pln')));
+  ck('airacOf : 2601 le 22/01/2026, 2513 la veille, 2610 le 01/10/2026, 2611 le 29/10, 2501 le 23/01/2025', airacOf(new Date(
+      '2026-01-22T00:00:00Z')) === '2601' &&
+    airacOf(new Date('2026-01-21T00:00:00Z')) === '2513' && airacOf(new Date('2026-10-01T00:00:00Z')) === '2610' && airacOf(new Date(
+      '2026-10-29T00:00:00Z')) ===
+    '2611' && airacOf(new Date('2025-01-23T00:00:00Z')) === '2501', [airacOf(new Date('2026-01-22T00:00:00Z')), airacOf(new Date(
+      '2026-01-21T00:00:00Z')), airacOf(new Date(
+      '2026-10-01T00:00:00Z'))].join());
+  ck('exportOf : le nom, le texte et le type de chaque format', exportOf('fms1100', flight, path, opts).name.endsWith('.fms') && exportOf(
+      'fmsv3', flight, path, opts).text ===
+    v3 && exportOf('pln2024', flight, path, opts).text === pln24 && exportOf('pln2020', flight, path, opts).type === 'application/xml');
+  let thrown = null;
+  try {
+    for (const f of [toFmsV3, toFms1100, toPln]) f({}, [], {}), f(flight, [], {}), f(null, null);
+  } catch (e) {
+    thrown = e;
+  }
+  ck('un vol ou un chemin vide ne fait pas échouer les écrivains', !thrown, thrown);
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

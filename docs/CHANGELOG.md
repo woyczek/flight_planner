@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the flight plan for the simulators** (`frame/lib/fms.js`, `frame/lib/test/fms.html`, `modules/fuel/module.js`; SPEC, DECISIONS,
+  help ×4; noreg F60, F61) — step Departure downloads the route and the chosen procedures as X-Plane `.fms` (11/12 and 10) or MSFS `.pln`.
 - **Launcher: the airline's relay, devices and codes (R1a)** (`tools/launch.py`, `tools/relay_access.py`,
   `frame/settings/relay_devices.js`, `frame/app.js`; frame SPEC § 3.11, INTEGRATION, DECISIONS, Settings help ×4; noreg
   I10, I13, A40): `launch.py --relay <host>` serves the Pilot application to paired devices behind a reverse proxy (https

@@ -212,6 +212,10 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   `isStarted`, `refTime`, `legTimes`, `TAXI_MIN`. Every reader (the Map, Flights, a status line) uses them: never
   recompute an ETA, never read one from `progress`. Rules in `modules/maps/SPEC.md` § 13; bench
   `frame/lib/test/current_flight.html`.
+- **The flight plan for the simulators** (`frame/lib/fms.js`, 29 Oct 2026, § 10.28): pure writers `toFmsV3` / `toFms1100` (X-Plane `.fms`),
+  `toPln` (MSFS 2020 / 2024), `fileName`, `exportOf(kind, flight, path, opts)` → `{ name, text, type }`, `airacOf`, `lla`; input: the
+  current flight, `expandedPath(flight, procs)` and `opts { procs, names, kinds, now }`; no DOM, no network. Fuel's step Departure
+  offers the three downloads; the direct send into X-Plane's `Output/FMS plans/` will be a launcher verb. Bench `frame/lib/test/fms.html` (F60).
 - **The procedure rules** (`frame/lib/procedures.js`, 29 Oct 2026, § 10.29 c): pure functions on aerodb's procedure records, shared by
   Fuel's lists and the Map's choose mode — `servesRwy`, `sameRwy`, `nameOf`, `conflictsOf` and `orderProcedures` (the ⚠ marks and the
   order of the lists, as data), `transitionsOf`, `appChoices`, `runwayChoices`; no state, no text. Bench `frame/lib/test/procedures.html`

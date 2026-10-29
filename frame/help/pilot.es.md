@@ -187,6 +187,8 @@ marcha del informe. En un teléfono abre el Mapa, en una pantalla grande se qued
 después el aeródromo de salida es preparar otro vuelo: la hora de salida se borra. Cambiar la llegada después de la
 salida es un desvío: la hora se conserva y el desvío queda anotado.
 
+Plan de vuelo para el simulador: bajo el resumen, tres botones — «.fms (XP 11/12)», «.fms (XP 10)» y «.pln (MSFS)» — descargan la ruta y los procedimientos elegidos (pista, SID, STAR, aproximación y sus transiciones) para X-Plane o Microsoft Flight Simulator, en un archivo llamado «LFPO-EIDW_2026-10-30.fms». La ruta necesita al menos dos puntos situados. Después copie el archivo en la carpeta «Output/FMS plans» de X-Plane (el envío directo llegará con el lanzador).
+
 Una vez iniciado el vuelo, este paso lleva una tarjeta «Procedimientos»: nada está bloqueado: los lados Salida y Llegada siguen modificables en todo momento (otra salida es una salida nueva). Un cambio no rehace el cálculo: el combustible de bloque, el de trayecto y las reservas siguen siendo los de la salida; solo las horas en los puntos, el perfil vertical y la distancia restante siguen el nuevo camino. El botón «Cambiar» del Mapa abre Combustible en la línea de Llegada (`#fuel?focus=arr`): el paso Ruta antes del arranque, el paso Salida después.
 
 Una vez iniciado el vuelo, el resultado al pie de la pantalla dice «Vuelo iniciado a las 11:14Z (13:14) · desde hace 1 h 10». Las horas están en UTC
@@ -241,7 +243,7 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: 6005106ddbb3 -->
+<!-- fr: 7acfebc2c57f -->
 
 <!-- chapter: maps -->
 # Mapa

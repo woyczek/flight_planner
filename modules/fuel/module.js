@@ -15,6 +15,7 @@ import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
+import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plane (.fms) et MSFS (.pln), V3 § 10.28
 import {
   createProcedures,
   sideChosen,
@@ -59,7 +60,7 @@ export const meta = {
     'procedures_texts.js', 'adnames.js',
     '../../frame/lib/weather_store.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
-    '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js',
+    '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/time.js', '../../frame/lib/geo.js'
   ]
@@ -343,6 +344,25 @@ const TX = {
     'Flight dated {d}, in the past: weather and NOTAMs no longer apply.',
     'Flug datiert auf {d}, in der Vergangenheit: Wetter und NOTAM gelten nicht mehr.',
     'Vuelo fechado el {d}, en el pasado: la meteorología y los NOTAM ya no valen.'
+  ],
+  // export du plan de vol vers les simulateurs (V3 § 10.28) : trois boutons à l'étape Départ
+  fmsTitle: ['Plan de vol pour le simulateur', 'Flight plan for the simulator', 'Flugplan für den Simulator',
+    'Plan de vuelo para el simulador'
+  ],
+  fmsHint: ['La route et les procédures choisies, écrites pour X-Plane ou Microsoft Flight Simulator ; le fichier est téléchargé.',
+    'The route and the chosen procedures, written for X-Plane or Microsoft Flight Simulator; the file is downloaded.',
+    'Die Route und die gewählten Verfahren, geschrieben für X-Plane oder Microsoft Flight Simulator; die Datei wird heruntergeladen.',
+    'La ruta y los procedimientos elegidos, escritos para X-Plane o Microsoft Flight Simulator; se descarga el archivo.'
+  ],
+  fmsXp11: ['.fms (XP 11/12)', '.fms (XP 11/12)', '.fms (XP 11/12)', '.fms (XP 11/12)'],
+  fmsXp10: ['.fms (XP 10)', '.fms (XP 10)', '.fms (XP 10)', '.fms (XP 10)'],
+  fmsPln: ['.pln (MSFS)', '.pln (MSFS)', '.pln (MSFS)', '.pln (MSFS)'],
+  fmsNeed: ['Il faut une route d’au moins deux points placés.', 'The route needs at least two placed points.',
+    'Die Route braucht mindestens zwei gesetzte Punkte.', 'La ruta necesita al menos dos puntos situados.'
+  ],
+  fmsFailed: ['Le plan de vol n’a pas pu être écrit.', 'The flight plan could not be written.',
+    'Der Flugplan konnte nicht geschrieben werden.',
+    'No se pudo escribir el plan de vuelo.'
   ],
   wxDateHint: ['La météo du devis (TAF, vents en altitude) et la Carte sont lues à cette date ; vide : maintenant.',
     'The quote’s weather (TAF, winds aloft) and the Map are read at this date; empty: now.',
@@ -1671,7 +1691,8 @@ function renderPlanBody() {
       <p class="fu-startnote" data-startnote aria-live="polite"></p>
       <p class="f-muted">${esc(tt(TX.startHint))}</p></div>
     <div class="f-card fu-hide" data-block="procs"><h2>${esc(tt(TX.procTitle))}</h2><div class="fu-procbox" data-procbox="start"></div></div>
-    <div class="f-card fu-hide" data-progcard><h2>${esc(tt(TX.progTitle))}</h2><div data-prog></div><p class="f-muted">${esc(tt(TX.progHint))}</p></div>`, true)}
+    <div class="f-card fu-hide" data-progcard><h2>${esc(tt(TX.progTitle))}</h2><div data-prog></div><p class="f-muted">${esc(tt(TX.progHint))}</p></div>
+    <div class="f-card" data-block="fms"><h2>${esc(tt(TX.fmsTitle))}</h2><p class="f-muted">${esc(tt(TX.fmsHint))}</p><div class="f-row">${[['xp11', TX.fmsXp11], ['xp10', TX.fmsXp10], ['pln', TX.fmsPln]].map(([k, t]) => `<button type="button" data-do="fms" data-fms="${k}" disabled>${esc(tt(t))}</button>`).join('')}</div></div>`, true)}
   <div class="f-bar fu-result" data-block="result" aria-live="polite"></div>`;
   for (const d of S.body.querySelectorAll('details[data-fold]')) {
     d.open = !!S.ui.open?.[d.dataset.fold];
@@ -1960,6 +1981,8 @@ function onPlanClick(e) {
     location.hash = `#maps?choose=${om.dataset.side}&icao=${encodeURIComponent(om.dataset.icao)}`;
     return;
   }
+  const fm = e.target.closest('[data-do="fms"]');
+  if (fm) return fm.disabled ? undefined : exportFms(fm.dataset.fms);
   if (e.target.closest('[data-do="start"]')) return startFlight();
   if (e.target.closest('[data-do="cancelstart"]')) return cancelStart();
   const iu = e.target.closest('[data-do="isause"]');
@@ -3676,6 +3699,7 @@ function refresh() {
   shareProfile(C);
   S.P.sync(); // choix, terrains, vol démarré : la carte des procédures est redessinée (sur place quand seules les listes changent)
   openInLinks(C);
+  fmsState();
   acSelected();
   renderSummary(C);
   updateProgress();
@@ -4186,6 +4210,66 @@ async function applyReview() {
   if (S.queue?.length) return proposeIncoming(S.queue);
   return S.edit && S.sheets.some(x => x.id === S.edit.id) ? renderEditor(S.edit.id) : renderSheets();
 }
+// ---------------------------------------------------------------- plan de vol pour les simulateurs (V3 § 10.28)
+/** Nombre de points de la route qui ont une position : l'export en demande deux. */
+const placedPoints = () => (S.flight?.route?.points || []).filter(p => p && p.lat !== null && p.lat !== '' && p.lon !== null && p.lon !==
+  '' && Number
+  .isFinite(+p.lat) && Number.isFinite(+p.lon)).length;
+/** Boutons d'export : actifs avec une route d'au moins deux points placés, sinon grisés avec la raison en infobulle. */
+function fmsState() {
+  const ok = placedPoints() >= 2;
+  for (const b of S.body?.querySelectorAll('[data-fms]') || []) {
+    b.disabled = !ok;
+    b.title = ok ? '' : tt(TX.fmsNeed);
+  }
+}
+/** Natures et noms que la route ne porte pas, lus dans aerodb (au mieux, sans bloquer l'export) : { names: { LFPO: 'Paris-Orly' },
+ *  kinds: { RGS: 'vor' } } — le nom des deux terrains, la nature (VOR, NDB) des points de trois ou quatre lettres. */
+async function fmsLookups(f) {
+  const names = {},
+    kinds = {},
+    pts = (f.route?.points || []).map(p => String(p?.id || '').toUpperCase()),
+    ends = new Set([f.route?.dep, f.route?.arr, pts[0], pts.at(-1)].map(x => String(x || '').toUpperCase()).filter(Boolean)),
+    find = S.ctx.aerodb?.find ? id => Promise.resolve(S.ctx.aerodb.find(id, 6)).catch(() => []) : () => Promise.resolve([]);
+  await Promise.all([...new Set(pts.filter(Boolean))].map(async id => {
+    const hit = ((await find(id)) || []).filter(h => String(h?.code || '').toUpperCase() === id);
+    if (ends.has(id)) {
+      const ad = hit.find(h => h.kind === 'aerodrome');
+      if (ad?.name) names[id] = ad.name;
+    } else if (id.length <= 4) {
+      const nav = hit.find(h => h.kind === 'navaid');
+      if (nav) kinds[id] = /^NDB/i.test(nav.name) ? 'ndb' : 'vor';
+    }
+  }));
+  return {
+    names,
+    kinds
+  };
+}
+/** Écrit le plan de vol dans le format demandé (xp11 : .fms 1100, xp10 : .fms version 3, pln : MSFS) d'après la route et les
+ *  procédures choisies (CF.expandedPath, lues par aerodb si elles ne le sont pas encore), et le propose au téléchargement. */
+async function exportFms(which) {
+  const s = S,
+    f = s.flight;
+  if (placedPoints() < 2) return;
+  try {
+    const procs = s.procs?.key === procsKey(f) ? s.procs.procs || {} : await CF.loadProcedures(s.ctx.aerodb, f).catch(() => ({})),
+      look = await fmsLookups(f);
+    if (gone(s)) return;
+    const file = FMS.exportOf({
+      xp11: 'fms1100',
+      xp10: 'fmsv3',
+      pln: 'pln2020'
+    } [which] || 'fms1100', f, CF.expandedPath(f, procs || {}), {
+      procs: procs || {},
+      ...look
+    });
+    download(file.name, file.text, `${file.type};charset=utf-8`);
+  } catch (e) {
+    if (!gone(s)) s.ctx.notify(tt(TX.fmsFailed), 'warn');
+  }
+}
+
 /** Propose au pilote un fichier créé ici (export). */
 function download(name, text, type) {
   const a = document.createElement('a');

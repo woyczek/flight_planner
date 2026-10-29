@@ -4,6 +4,54 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — flight plan export to the simulators, first step: the download** (V3 § 10.28, user: « Prévoir un export .fms à
+  minima (deux formats pour xplane), voire le pousser direct dans le dossier ad hoc sur X-Plane. Prévoir un export msfs2024/2020 »).
+  Pure writers in `frame/lib/fms.js` (`toFmsV3`, `toFms1100`, `toPln`, `fileName`, `exportOf`, `airacOf`, `lla`; bench
+  `frame/lib/test/fms.html`, case F60); in step 5 Departure a card « Plan de vol pour le simulateur » with three text buttons
+  (« .fms (XP 11/12) », « .fms (XP 10) », « .pln (MSFS) », 44 px, disabled with the reason as title when the route has fewer than two
+  placed points) that download the file by a Blob and a temporary `<a download>`, named `LFRS-LFML_2026-10-30.fms` (case F61). The
+  card sits in step 5, not in the sticky result (which must stay under 120 px, F2) and not near the Vol / Départ aerodrome lines
+  another session is editing. **Sending the file straight into X-Plane's `Output/FMS plans/` is not in this lot**: it will be a
+  verb of the launcher (workstation only); the download is the first step and the only one that works in a browser. What the
+  files contain and what was a choice:
+  - **Path.** Fuel gives the writers `CF.expandedPath(flight, procs)` (route + chosen procedures, read by `CF.loadProcedures`
+    when not yet read) and `{ procs, names, kinds }`. `.fms` version 3 has no field for procedures, so it gets the whole flown path
+    (SID and STAR points included, no runway threshold, no missed approach). `.fms` 1100 and `.pln` get the route's points only
+    (`origin === 'route'`) plus the procedures by name: X-Plane and MSFS expand them themselves; writing both would draw them twice.
+  - **Altitude.** Airports 0 (or the elevation when the path carries one); a route point the planned level, or its own `alt_ft`
+    step, which then holds for the following points; a procedure point (version 3 only) its constraint when it has one, else 0.
+  - **Point types.** Departure and arrival are airports (type 1); otherwise the point's `kind` / `type`, then `opts.kinds[id]`
+    (Fuel asks `aerodb.find` for ids of at most four letters: a navaid whose name starts « NDB » is 2, any other navaid 3), then
+    28 for an id that is a written coordinate (`4830N`, `N48E002`…), else 11. **Not sure**: the route points do not carry their kind,
+    so a VOR or an NDB that aerodb does not find is written as a fix (11), which X-Plane resolves by identifier and position.
+  - **`.fms` version 3.** `I`, `3 version`, `1`, count minus one, then `type ident alt lat lon`; altitude and coordinates with six
+    decimals and a dot, as X-Plane writes them. Line ends are **CR LF** in every file (X-Plane and MSFS read both; Windows is where
+    these files live).
+  - **`.fms` 1100.** Header `I`, `1100 Version`, `CYCLE`, then `ADEP`, `DEPRWY RWnn`, `SID`, `SIDTRANS`, `ADES`, `DESRWY`, `STAR`,
+    `STARTRANS`, `APP`, `APPTRANS`, each line omitted when it has no value; `NUMENR n` counts every following line, the ADEP and ADES
+    lines included (as X-Plane writes it); lines `type ident via alt lat lon`, `via` = `ADEP`, `ADES`, the airway that reaches the
+    point, else `DRCT`. **Cycle**: the AIRAC ident (`2611`: year, then the cycle's number in the year, counted from the cycle that
+    starts in the first 28 days of January) of the chosen records' `source.cycle` (either `2610` or a date), else of the flight's day
+    (`airacOf`: 2601 starts 22 Jan 2026). **Not sure**: names are `nameOf(record)` without spaces or dots, so an approach named
+    « ILS Z RWY 25L » is written `ILSZRWY25L`, whereas X-Plane's own navdata calls it `I25L`; X-Plane may not match it, and the
+    runway and the transition are what it reliably reads. A transition is the record's `transition`, else the fifth field of its
+    identifier; `NONE` and `ALL` are not written.
+  - **`.pln`** (AceXML). Document, `Descr`, `FlightPlan.FlightPlan` with Title « DEP to ARR », `FPType` IFR, `RouteType` HighAlt
+    above 18 000 ft else LowAlt, `CruisingAlt` (`35000.000`), `DepartureID` / `DepartureLLA`, `DestinationID` / `DestinationLLA`,
+    `Descr`, `DepartureName` / `DestinationName` (only when aerodb knows the name), `AppVersion`, then one `ATCWaypoint` per route
+    point: type Airport / Intersection / VOR / NDB / User, `WorldPosition`, `ATCAirway` on a point reached by an airway, `ICAO`
+    with `ICAOIdent` (none for a User point). On the airports: `RunwayNumberFP` (`7`, no leading zero) and `RunwayDesignatorFP`
+    (`LEFT` `RIGHT` `CENTER` `NONE`), `DepartureFP` (SID) / `ArrivalFP` (STAR) / `ApproachTypeFP` (ILS, LOCALIZER, RNAV, GPS, VOR,
+    NDB, from the approach's name: « ILS Z RWY 25L », or CIFP's « I25L ») / `SuffixFP` (the letter of « ILS Z »). DMS format
+    `N48° 43' 22.80",E2° 22' 44.40",+000291.00`, seconds rounded once so that a minute is never 60, no zero padding of degrees,
+    minutes or seconds, altitude on nine characters. XML special characters escaped in texts (`& < >`) and attributes (and quotes).
+  - **2020 and 2024 differ only by `AppVersion`**: 2020 writes `11` / `282174`, 2024 writes `12` / `282174`. **Not sure**: the real
+    build numbers and whether 2024 changed anything else in the document; MSFS does not check them on reading as far as we know, and
+    reads a 2020 file. The Fuel button writes the 2020 variant (`pln2020`), which both versions open; `exportOf('pln2024', …)` is
+    there for the day it matters. **Not sure either**: whether MSFS wants the SID's transition (it has no field here, only
+    `DepartureFP`), the padding of minutes and seconds in the DMS strings, and the order of the airport's children (the usual order
+    is followed; the reader should ignore it).
+  - Checked by the bench on an invented flight (LFXA to EIXB, invented procedures and fixes: no AIP data), not in a simulator.
 - **29 Oct 2026 — the Map's proposal waits for the complete screen** (noreg red on efbb97f49, F41: « Aucune » said but not written):
   since the rows are drawn during `refsPending` (636a05179), a proposal could be applied while the aircraft registry was still
   loading and its deferred write was lost; `applyProposal` now waits for `!host.pending()` (the next render applies it). F41 also
