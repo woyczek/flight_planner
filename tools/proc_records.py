@@ -148,6 +148,8 @@ def _points(icao, legs, coords, warnings, missed_after=None):
         warnings.append('point de piste (RWnn) absent de la table: approche interrompue repérée après le tronçon qui porte l\'angle vertical')
     for leg in legs:
         c = coords.get(leg['id']) if leg['id'] else None        # un tronçon sans point (CA, FM…) : id, lat et lon null, jamais un point inventé
+        if c is None and leg.get('pos'):
+            c = leg['pos']                                      # le FAF d'une approche ILS porte sa position (pages DATA), il n'a pas de nom dans les listes
         if leg['id'] and not c and leg['id'] not in missing:
             missing.append(leg['id'])
         p = {'seq': len(pts) + 1, 'id': leg['id'], 'lat': c[0] if c else None, 'lon': c[1] if c else None,
@@ -171,12 +173,16 @@ def _points(icao, legs, coords, warnings, missed_after=None):
     return pts
 
 
-def with_threshold(legs, runways, coords, warnings):
+def with_threshold(legs, runways, coords, warnings, ils=None):
     """Page ILS : la table code le point initial (IF), puis « See chart » (le dernier tronçon, l'alignement sur le radioalignement de piste, n'est PAS codé), puis l'approche interrompue (premier
     tronçon marqué `gap`). Insère entre les deux le seuil de la piste, { id: 'RWnn', leg: 'CF', synthetic: 'threshold' } : une approche ILS devient IF (/FAF) → seuil → interrompue, tracée droit.
     Le seuil vient de `coords` (page AD 2.12, voir build_aerodrome) ; sans position, ou si la page ne nomme pas une seule piste, rien n'est inséré (avertissement). Une approche sans point initial lu
     (la page commence par l'approche interrompue) reçoit quand même le seuil, en tête, avec un avertissement. Le premier tronçon interrompu garde son drapeau `gap` (le contrôle de géométrie
-    ne le compare pas au seuil)."""
+    ne le compare pas au seuil).
+    Le FAF (V3 § 10.20, affinement) : si `ils` = { faf: { piste : (lat, lon) } des pages DATA, true: { piste : cap vrai } de la page AD 2.12 } est donné, le point d'approche finale de la piste est inséré
+    entre le point initial et le seuil, { id: 'FAF' + piste, leg: 'CF', alt: None, synthetic: 'faf' } (les pages DATA ne donnent ni nom ni altitude) : IF → FAF → seuil → interrompue. Seulement s'il est
+    BIEN sur la finale : plus près du seuil que le point initial, et le relèvement FAF → seuil à 10° au plus du cap vrai de la piste ; sinon, ou sans FAF dans les pages, rien n'est inséré
+    (avertissement) et la procédure reste IF → seuil."""
     if len(runways) != 1:
         warnings.append('page ILS: la page ne nomme pas une seule piste, seuil non ajouté')
         return legs
@@ -190,10 +196,38 @@ def with_threshold(legs, runways, coords, warnings):
     at = next((k for k, l in enumerate(legs) if l.get('gap')), len(legs))
     if not any(l['id'] for l in legs[:at]):
         warnings.append(f'page ILS: aucun point initial lu avant « See chart » (IF absent), la procédure commence au seuil {rw}')
-    return legs[:at] + [{'id': rw, 'leg': 'CF', 'alt': None, 'over': None, 'synthetic': 'threshold'}] + legs[at:]
+    faf = _faf_leg(legs[:at], runways[0], pos, coords, ils, warnings)
+    return legs[:at] + ([faf] if faf else []) + [{'id': rw, 'leg': 'CF', 'alt': None, 'over': None, 'synthetic': 'threshold'}] + legs[at:]
 
 
-def records(icao, table, coords, source, cycle):
+FAF_AXIS = 10        # degrés : le relèvement FAF → seuil s'écarte au plus ainsi du cap vrai de la piste
+
+
+def _faf_leg(before, runway, threshold, coords, ils, warnings):
+    """Le tronçon du FAF d'une piste ILS (voir with_threshold), ou None (avertissement) : sans `ils`, rien n'est dit ni inséré."""
+    if ils is None:
+        return None
+    pos = (ils.get('faf') or {}).get(runway)
+    if not pos:
+        warnings.append(f'page ILS: FAF LOC RWY {runway} absent des pages DATA, la procédure va du point initial au seuil')
+        return None
+    named = [l for l in before if l['id']]
+    first = coords.get(named[-1]['id']) if named else None
+    true = (ils.get('true') or {}).get(runway)
+    if not first or first[0] is None or true is None:
+        why = 'aucun point initial dans la table' if not named else 'position du point initial inconnue' if not first or first[0] is None else 'cap de la piste inconnu'
+        warnings.append(f'page ILS: FAF LOC RWY {runway} non vérifiable ({why}), non ajouté')
+        return None
+    d_if = G.bearing_nm(first, threshold)[1]
+    brg, d = G.bearing_nm(pos, threshold)
+    off = abs((brg - true + 180) % 360 - 180)
+    if not (d < d_if and off <= FAF_AXIS):
+        warnings.append(f'page ILS: FAF LOC RWY {runway} à {d:.1f} NM du seuil (point initial à {d_if:.1f} NM), relèvement {brg:.0f}° pour une piste à {true:.0f}° : pas sur la finale, non ajouté')
+        return None
+    return {'id': f'FAF{runway}', 'leg': 'CF', 'alt': None, 'over': None, 'synthetic': 'faf', 'pos': pos}
+
+
+def records(icao, table, coords, source, cycle, ils=None):
     """Procédures du schéma commun d'une table lue (parse_code_table), statut « check »."""
     out, warnings = [], list(table['warnings'])
     src = {'kind': 'eaip', 'ref': source, 'cycle': cycle, 'at': table.get('amdt')}
@@ -215,7 +249,7 @@ def records(icao, table, coords, source, cycle):
                                                                                   g['legs'][-1]['id'] == l['id'])] if final else [])
             trans = g['label'][4:] if g else None
             if final and final.get('gap') is not None:          # page ILS : l'alignement sur la piste n'est pas codé, le seuil est ajouté
-                legs = with_threshold(legs, table['runways'], coords, warnings)
+                legs = with_threshold(legs, table['runways'], coords, warnings, ils)
             out.append({'id': _id_of(icao, 'APP', name, table['runways'], trans), 'icao': icao, 'kind': 'APP', 'name': name,
                         'runways': table['runways'], 'transition': trans,
                         'points': _points(icao, legs, coords, warnings, missed_after=True), 'source': src, 'status': 'check'})

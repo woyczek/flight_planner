@@ -1746,3 +1746,19 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
   New K33 (the five sets, their manifests agree with the files, size ≤ 1.5 MB, no loose file) and K34 (`make_eaip_fixtures.check` on LFBO against the cached PDF; **skipped with the reason** where `data/local/eaip/<cycle>` or `EAIP_FIXTURE_CACHE` is not there — the cache is not in the repository).
 - **Security review of `tools/regen/proc.py`** (« relecture de sécurité de proc.py »): (1) before `proc_manual.install`, the job refuses (failed, « the file read is not <ICAO>'s … », nothing installed) a document whose `icao`, or whose procedures' `icao`, differs from the code of its arguments — the file written is the one `commit_outputs` validates
   (`proc/manual/<ICAO>.json`); (2) the table has `not_states: ('LF',)` for EAD: `check_icao('ead')` refuses a French code (France is never read through EAD; the State rule stays in the table). K22 checks both.
+
+## 29 October 2026 — ILS final approach fix: IF → FAF → threshold → missed (§ 10.20 refinement)
+
+- **Decided by the ergonomics session**: an ILS of the SIA eAIP codes only the IF then « See chart »; the DATA pages print the FAF of each runway (« FAF LOC RWY 06  48°37'50.4'' N 002°03'57.2'' E »). The ILS now draws IF → FAF → threshold → missed.
+- **Rule** (`proc_sia.parse_faf`, `proc_records.with_threshold` / `_faf_leg`): the FAF LOC positions are read from every `DATA_0n` page of the aerodrome (the « FAF VOR » rows of the VOR approaches are not used); the point `{ id: 'FAF' + runway, leg: 'CF', alt: null, synthetic: 'faf' }` carries its position (`pos`, since no list
+  names it) and is inserted between the initial fix and the threshold **only if it lies on the final**: the initial fix is positioned, the FAF is nearer to the threshold than the initial fix, and the bearing FAF → threshold is within 10° of the runway's true bearing (AD 2.12). Otherwise, or with no FAF row, the procedure stays IF → threshold and a
+  warning says why. The pages print neither a name nor an altitude (the name `FAFnn` and `alt: null` are ours; the FPOnn points of the RNP pages are the same places under another name, not used here).
+- **One more reading, needed by the check**: `parse_data01` now reads an ILS initial fix printed as `IG08L ( IF ILS/LOC RWY 08L )  48°58'16.5'' N …` (Paris-CDG), which it ignored: those IF points had no position from the page.
+- **Measure** (the page sets and AD 2.12 extracts, the SIA base of the workstation for the en-route fixes): 16 of the 17 ILS get their FAF, the exception being LFPO RWY 07, which has no IF row in its table (« aucun point initial dans la table »). Without the base, LFPO RWY 07 and 25 lack a positioned initial fix and keep IF → threshold (warning).
+  | aerodrome | ILS | with FAF | FAF → threshold (NM) | initial fix → threshold (NM) | bearing off the runway (°) |
+  |---|---|---|---|---|---|
+  | LFPO | 5 | 4 (3 without the base) | 8.3 to 11.5 | 11.8 to 15.0 | 0.1 to 0.3 |
+  | LFBO | 4 | 4 | 7.7 | 11.3 | 0.0 to 0.2 |
+  | LFPG | 8 | 8 | 11.2 to 14.4 | 13.8 to 17.4 | 0.2 to 0.3 |
+  The FAF is 8 to 14 NM from the threshold, not 4 to 6. Procedure counts and doubts are identical to before (LFPO 309 / 1, LFBO 78 / 0, LFPG 711 / 2, or 6 with the base).
+- **Bench**: K24 (LFPO ILS 06 with its FAF, LFBO 14L with and without DATA 03, a FAF behind the IF or off the axis refused) and K25 (LFPG ILS 26L, IG26L positioned from the DATA page); K1 to K34 green.

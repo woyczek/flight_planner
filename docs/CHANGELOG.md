@@ -21,6 +21,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Weather: the map and Atmosphere again read the same forecast** (`modules/atmosphere/weather_store.js`,
   `modules/maps/weather.js`; frame DECISIONS): since 28 Oct the two weather stores used two different model runs for the
   same cache and each discarded the other's data — the map showed no weather and the cut stopped part-way (LFPO → EIDW).
+- **aerodb: the ILS of the SIA eAIP goes through its final approach fix** (`tools/proc_sia.py` `parse_faf`, `tools/proc_records.py`; SPEC § 5 quinquies, INTEGRATION; V3 § 10.20; cases K24, K25) — the DATA pages print « FAF LOC RWY nn »: an ILS is now IF → FAF → threshold → missed
+  (`{ id: 'FAFnn', leg: 'CF', alt: null, synthetic: 'faf' }`), the FAF inserted only when it lies on the final (nearer than the initial fix, within 10° of the runway bearing), else a warning and the former IF → threshold. 16 of the 17 ILS of Orly, Toulouse and Paris-CDG get theirs
+  (8 to 14 NM from the threshold). The ILS initial fix printed as « IG08L ( IF ILS/LOC RWY 08L ) … » is read too.
+
 - **Fuel: the reasons of a procedure reading are translated by aerodb's catalogue** (`modules/fuel/module.js`, DECISIONS) —
   never a code or a French console phrase in another language; a failure always shows what the workstation saw.
 - **Map: one element for the airway names** (`modules/maps/render.js`, `render_airspace.js`; case D51; V3 § 10.29 g) — the

@@ -2219,10 +2219,14 @@ def k24(c):
     # 13. the ILS final: IF -> threshold (straight, synthetic) -> missed approach; the leg that « See chart » hides is not coded
     ils = next(p for p in d06['procedures'] if 'ILS' in p['name'])
     c.eq([(q['id'], q['leg'], q.get('phase'), q.get('synthetic'), q.get('gap')) for q in ils['points']],
-         [('IPO06', 'IF', None, None, None), ('RW06', 'CF', None, 'threshold', None), ('PO412', 'TF', 'missed', None, True), ('MLN', 'TF', 'missed', None, None), ('MOLBA', 'TF', 'missed', None, None)],
-         'LFPO ILS 06: IPO06 (IF), RW06 (synthetic threshold), then PO412, MLN, MOLBA as the missed approach, `gap` kept on the first missed leg', what='ILS 06 points')
-    c.eq(({k: ils['points'][1][k] for k in ('lat', 'lon', 'alt')}, ils['points'][0]['lat']), ({'lat': 48.721247, 'lon': 2.320514, 'alt': None}, 48.602972),
+         [('IPO06', 'IF', None, None, None), ('FAF06', 'CF', None, 'faf', None), ('RW06', 'CF', None, 'threshold', None), ('PO412', 'TF', 'missed', None, True), ('MLN', 'TF', 'missed', None, None), ('MOLBA', 'TF', 'missed', None, None)],
+         'LFPO ILS 06: IPO06 (IF), FAF06 (the FAF LOC of the DATA page, synthetic), RW06 (synthetic threshold), then PO412, MLN, MOLBA as the missed approach, `gap` kept on the first missed leg', what='ILS 06 points')
+    c.eq(({k: ils['points'][2][k] for k in ('lat', 'lon', 'alt')}, ils['points'][0]['lat']), ({'lat': 48.721247, 'lon': 2.320514, 'alt': None}, 48.602972),
          'the threshold carries its position; the IF its own', what='ILS 06 positions')
+    faf = ils['points'][1]
+    to_thr, brg = P.bearing_nm((faf['lat'], faf['lon']), (48.721247, 2.320514))[1], P.bearing_nm((faf['lat'], faf['lon']), (48.721247, 2.320514))[0]
+    c.ok((faf['lat'], faf['lon'], faf['alt']) == (48.630667, 2.065889, None) and 5 < to_thr < 12 and abs((brg - by['06']['true'] + 180) % 360 - 180) < 1, f'{faf} {to_thr:.1f} NM {brg:.1f}°',
+         "the FAF is the position of « FAF LOC RWY 06 » on the DATA page (no altitude printed), 11.5 NM from the threshold, on the runway's bearing")
     c.eq(_gaps_of(ils), [], 'the geometry check does not compare the first missed leg with the threshold', what='gaps ILS 06')
     f25 = ['AD_2_LFPO_DATA_02.pdf', 'AD_2_LFPO_DATA_RWY25_FNA_ILS_CAT123_LOC_CODE.pdf', 'AD_2_LFPO_DATA_RWY07_FNA_ILS_CAT123_LOC_CODE.pdf']
     d25 = P.build_aerodrome('LFPO', f25, rows_pdf, 'https://example.org' + base, '2026-10-01', None, None, page('LFPO'))
@@ -2241,7 +2245,20 @@ def k24(c):
     c.ok(any('position du seuil RW06 inconnue' in x for x in dn['warnings']) and 'runways' not in dn, str(dn['warnings'][-3:]), 'a warning says why; no `runways` in the file')
     dl = P.build_aerodrome('LFBO', ['AD_2_LFBO_DATA_RWY14L_FNA_ILS_Z_LOC_Z_CODE.pdf'], rows_pdf, 'https://example.org' + base, '2026-10-01', None, None, page('LFBO'))
     c.eq([(q['id'], q.get('synthetic')) for q in dl['procedures'][0]['points']][:3], [('IO14L', None), ('RW14L', 'threshold'), ('BO512', None)],
-         'LFBO ILS 14L: IO14L, RW14L (the THR: no displaced threshold), BO512', what='LFBO ILS 14L')
+         'LFBO ILS 14L without its DATA page: IO14L, RW14L (the THR: no displaced threshold), BO512, no FAF', what='LFBO ILS 14L')
+    c.ok(any('FAF LOC RWY 14L absent' in x for x in dl['warnings']), str(dl['warnings'][-2:]), 'and the missing FAF is said')
+    df = P.build_aerodrome('LFBO', ['AD_2_LFBO_DATA_03.pdf', 'AD_2_LFBO_DATA_RWY14L_FNA_ILS_Z_LOC_Z_CODE.pdf'], rows_pdf, 'https://example.org' + base, '2026-10-01', None, None, page('LFBO'))
+    il = next(p for p in df['procedures'] if p['runways'] == ['14L'])
+    ft = next(q for q in il['points'] if q.get('synthetic') == 'faf')
+    c.eq(([(q['id'], q.get('synthetic')) for q in il['points']][:4], (ft['lat'], ft['lon'], ft['alt'], ft['leg'])), ([('IO14L', None), ('FAF14L', 'faf'), ('RW14L', 'threshold'), ('BO512', None)], (43.740028, 1.250417, None, 'CF')),
+         'LFBO ILS 14L with DATA 03: IO14L, FAF14L (« FAF LOC RWY 14L », no altitude), RW14L, BO512', what='LFBO ILS 14L FAF')
+    # the FAF is inserted only when it lies on the final: closer to the threshold than the IF, within 10° of the runway's bearing
+    legs0 = [{'id': 'IO14L', 'leg': 'IF', 'alt': None, 'over': None}, {'id': 'BO512', 'leg': 'TF', 'alt': None, 'over': None, 'gap': True}]
+    cs = {'RW14L': (43.7, 1.3), 'IO14L': (43.8, 1.1)}
+    for pos, why in (((43.85, 1.0), 'farther from the threshold than the IF'), ((43.55, 1.5), 'off the axis of the runway')):
+        w = []
+        out = P.with_threshold(legs0, ['14L'], cs, w, {'faf': {'14L': pos}, 'true': {'14L': P.bearing_nm((43.8, 1.1), (43.7, 1.3))[0]}})
+        c.ok([x['id'] for x in out] == ['IO14L', 'RW14L', 'BO512'] and any('pas sur la finale' in x for x in w), f'{out} {w}', f'a FAF {why} is not inserted, and said')
     # 14. the report of a reading
     st = P.stats_of([{'ok': True, 'problems': []}, {'ok': False, 'problems': ['info: x', '3 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}, {'ok': False, 'problems': ['disposition non reconnue (x)']},
                      {'ok': False, 'problems': ['2 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}], 12, ['name'], ['geometry', 'repeat'])
@@ -2339,6 +2356,18 @@ def k25(c):
          'FNA RNP 27R: « PG65 0 », « 26 4 265. 7 » and the like put back (PG650, course 264)', what='FNA 27R')
     c.eq(sorted(p['id'] for p in doc['procedures'] if p['kind'] == 'APP' and '26L' in p['id']), ['LFPG.APP.ILSCATIORCATIIANDCATIIIORLOCRWY26L.RW26L', 'LFPG.APP.RNPRWY26L.RW26L'], 'FNA 26L ILS and RNP read', what='FNA 26L')
     c.eq(P.norm_tokens('IF IG26 L - --- - 400 0 - -- 1.0', split=True)[1:3], ['IG26L', '-'], 'an identifier split before its L (IG26 L)', what='unsplit')
+    # the ILS of RWY 26L with its FAF (V3 § 10.20): the whole sets of the DATA pages and of AD 2.12 give IF -> FAF -> threshold -> missed
+    ds = P.build_aerodrome('LFPG', ['AD_2_LFPG_DATA_05.pdf', 'AD_2_LFPG_DATA_RWY26L_FNA_ILS_CAT123_LOC_CODE.pdf'], lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-29', '2026-10-29',
+                           None, None, (fx / 'LFPG' / 'FR-AD-2.LFPG.AD-2.12.html').read_text(encoding='utf-8'))
+    il = next(p for p in ds['procedures'] if p['runways'] == ['26L'])
+    pts = [(q['id'], q.get('synthetic')) for q in il['points']]
+    faf = il['points'][1]
+    thr = il['points'][2]
+    brg = P.bearing_nm((faf['lat'], faf['lon']), (thr['lat'], thr['lon']))
+    true = next(r['true'] for r in ds['runways'] if r['id'] == '26L')
+    c.eq((pts[:3], faf['leg'], faf['alt'], il['points'][0]['lat'] is not None), ([('IG26L', None), ('FAF26L', 'faf'), ('RW26L', 'threshold')], 'CF', None, True),
+         'LFPG ILS 26L: IG26L (its position read from « IG26L ( IF ILS/LOC RWY 26L ) … » on the DATA page), FAF26L, RW26L', what='LFPG ILS 26L')
+    c.ok(10 < brg[1] < 13 and abs((brg[0] - true + 180) % 360 - 180) < 1 and not any('FAF' in x for x in ds['warnings']), f'{brg} {true}', 'the FAF is 11.4 NM from the threshold, on the runway bearing, and nothing is said')
     # 6. the guardrails on records: a doubt, never a purge
     mk = lambda i, pts, kind='STAR': {'id': i, 'kind': kind, 'name': None, 'runways': ['27L'], 'points': [{'id': a, 'lat': b, 'lon': d, 'leg': l} for a, b, d, l in pts]}
     nameless = mk('LFPG.STAR.NONAME.RW27L', [('A', 49.0, 1.0, 'IF'), ('B', 49.0, 0.5, 'TF'), ('C', 49.0, 0.0, 'TF')])
