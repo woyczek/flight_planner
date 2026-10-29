@@ -1674,3 +1674,8 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   aborted signal was refused (403) and « Arrêter » cancelled nothing on the launcher (aerodb's EAD / eAIP reads too).
   The cancel is part of the jobs' protocol: `<route>/cancel` of a declared route is allowed (`allowed()` in
   `frame/lib/launcher.js`), nothing else under it (bench A29).
+- **29 Oct 2026 — A module's « Publier » is the user's gesture** (Sécurisation/Réglages asked, coordinator approved):
+  `data.sync({ gesture: true })` runs a `manual` pass (the header button's) and hands back the launcher's report
+  (`result.exchange`: numbers and the cleaned message, never paths nor git output), so that a module never posts
+  `/__setup/sync` nor writes an author (§ 15); `data.sync.gesture === true` tells a module the frame takes the gesture.
+  The launcher still decides (`sync_gesture`: a build under way keeps `sia/base`).

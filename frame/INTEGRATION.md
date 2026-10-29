@@ -111,6 +111,14 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   follows is untouched; `errors`: `[{ path, message }]` of files the repository refused to give). For the freshness of a
   few known files (a `proc/` index after another device installed procedures), not to sweep a prefix: that is the
   background pass.
+- `await data.sync({ gesture: true })` (29 Oct 2026): **the user's gesture** in the module (« Publier ») — a pass of
+  reason `manual`, under the same lock as the header's button, the author added by the frame; with a launcher, the
+  aeronautical base (`sia/base/`) leaves too (frame/SPEC, the synchronisation's gesture rule; still kept while a build
+  runs). Only on a user's click; `data.sync()` without it is a background pass of the module. The result carries the
+  launcher's report, `exchange: { ok, committed, held, received, pushed, conflicts, refused, settled, message }` (numbers
+  and its cleaned message: no path, no git output; absent without a launcher). A module checks the capacity with
+  `data.sync.gesture === true` (an older frame: keep the button grey, never fall back to a pass without the gesture); it
+  never posts `/__setup/sync` itself.
 - Always design for the cached value first: the network may never come.
 
 ## 5. Writing

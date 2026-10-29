@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: a module can publish on the user's gesture** (`frame/store/frame_data.js`; INTEGRATION § 4, DECISIONS; noreg
+  A37): `data.sync({ gesture: true })` is the header button's pass and returns the launcher's report (sent, kept,
+  received, conflicts, merge settled) — for « Publier » of the Données module.
 - **Frame: « Stop » cancels a launcher job again** (`frame/lib/launcher.js`; INTEGRATION § 15.1, DECISIONS; bench A29):
   declaring a job's route also allows its cancel, which the client sends when the user stops a job.
 - **Launcher: a job's headless page claims its token once** (`tools/regen_jobs.py`, `tools/launch.py`; frame

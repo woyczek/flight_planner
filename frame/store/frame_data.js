@@ -916,9 +916,21 @@
   async function exchange(T, result, reason) {
     if (!T.exchange) return;
     try {
-      await T.exchange({
+      const r = await T.exchange({
         gesture: reason === 'manual'
       });
+      // compte rendu du lanceur (tools/data_sync.run) : des nombres et son message, ni chemins ni sortie de git
+      if (r && typeof r === 'object') result.exchange = {
+        ok: r.ok === true,
+        committed: +r.committed || 0,
+        held: +r.held || 0,
+        received: +r.received || 0,
+        pushed: r.pushed === true,
+        conflicts: Array.isArray(r.conflicts) ? r.conflicts.length : +r.conflicts || 0,
+        refused: Array.isArray(r.refused) ? r.refused.length : +r.refused || 0,
+        settled: typeof r.settled === 'string' ? r.settled : '',
+        message: String(r.message || '').slice(0, 300)
+      };
     } catch (e) {
       result.warning = e?.offline ? 'exchange offline' : e?.message || String(e);
     }
@@ -1476,8 +1488,12 @@
       watch,
       status,
       onStatus,
-      sync: () => sync({
-        reason: 'module'
+      // { gesture: true } : le geste de l'utilisateur dans le module (« Publier ») — un passage 'manual', comme le bouton de
+      // l'en-tête (sia/base part aussi) ; sinon un passage de fond du module. Le compte rendu de l'échange : result.exchange
+      sync: Object.assign((o = {}) => sync({
+        reason: o?.gesture === true ? 'manual' : 'module'
+      }), {
+        gesture: true // le module sait que le cadre prend le geste (sinon « Publier » reste gris, jamais de repli sans geste)
       })
     };
   }

@@ -1115,3 +1115,17 @@ def a35(c):
     c.ok("TR.next(prev?.trailFrom && prev.trailFrom === cur.started.at ? prev.trail : []" in src and 'trailFrom: cur.started.at' in src, '',
          'the frame carries on only a track of the same start (trailFrom, exactly)')
 
+
+@case('A37', "A module publishes on the user’s gesture", 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 4 (29 Oct): data.sync({ gesture: true }) is a manual pass; data.sync.gesture tells the capacity; the launcher’s report without paths')
+def a37(c):
+    c.open('fuel', wait=False)
+    c.until("!!window.FrameData", timeout=15000, what='the data layer')
+    c.eq(c.js("() => FrameData.adapter({ id: 'x', writes: ['pilot/'] }).sync.gesture"), True, 'the capacity is announced on the function', what='sync.gesture')
+    r = c.js("() => FrameData.adapter({ id: 'x', writes: ['pilot/'] }).sync({ gesture: true }).then(r => ({ ok: !!r, ex: 'exchange' in r }))")
+    c.eq(r, {'ok': True, 'ex': False}, 'a gesture pass runs; without a launcher, no report of an exchange', what='gesture pass without a launcher')
+    src = (ROOT / 'frame' / 'store' / 'frame_data.js').read_text(encoding='utf-8')
+    c.ok("reason: o?.gesture === true ? 'manual' : 'module'" in src, '', 'only gesture === true makes a manual pass')
+    c.ok('conflicts: Array.isArray(r.conflicts) ? r.conflicts.length' in src and 'message: String(r.message ||' in src, '',
+         'the report keeps numbers and the message, never the conflicting paths')
+
