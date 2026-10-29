@@ -835,3 +835,13 @@ redesigned for touch at that point.
          carrying `doubt` (cases K); fuel — the line and its link (with the "Relire" commit), then the assisted reading
          (after the choose-mode lots, cases F); maps — never draw `doubt`, the reason in the aerodrome card (choose-mode
          lot, case D). Help ×4 per lot.
+   27. **The aerodrome's name wherever its code is, and progressive completion** (user, 29 Oct: "ajouter le nom (et
+       détails) de l'AD. par ex : « Départ LFPO Paris-Orly ». Idem sur l'onglet « départ », rappeler le nom complet de
+       l'AD. sur l'onglet 1, dès qu'on a choisi un AD, afficher dans un champ de texte fixe (pour ne pas resize tout le
+       temps) le nom de l'AD pour vérif. J'aimerai aussi une complétion progressive"): Fuel, decided by the ergonomics
+       session. The procedure rows are titled "Départ LFPO Paris-Orly" (the city when the name lacks it, the elevation),
+       at steps Route and Départ; step Départ names both aerodromes in full; at step Vol, under the three code fields,
+       one fixed read-only line per field ("LFPO — Paris-Orly", reserved height so nothing moves, ellipsis, "inconnu"
+       for a code without a match); **progressive completion** on the three fields from two characters, by code or by
+       name, through `aerodb.find`, aerodromes only, at most seven suggestions, keyboard ↑ ↓ Entrée Échap and touch, a
+       list laid over the page (never the native `datalist`), closed on blur. Lot: fuel (cases F), help ×4.
