@@ -1251,3 +1251,20 @@ def f42(c):
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the approach is written')
     c.settle()
     c.eq(c.count(f'{slot} a'), 1, 'a record without source.url gets no link', what='links after the approach')
+
+
+@case('F43', 'A flight dated in the past says so, without blocking', 'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.28 (user, 29 Oct): « Vol daté du 26/10, dans le passé : météo et NOTAM ne valent plus », on the Flight step and on the plan; never blocking')
+def f43(c):
+    c.open('fuel', flight=True)
+    wait_quote(c)
+    local = c.js("() => { const d = new Date(Date.now() - 50 * 3600e3); d.setSeconds(0, 0); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16) }")
+    c.page.fill(f'{FUEL} [data-k="wxdate"]', local)
+    c.page.locator(f'{FUEL} [data-k="wxdate"]').blur()
+    want = norm(row(c, 'pastDate').split('{d}')[0])
+    c.until("(w) => { const p = document.querySelector('[data-module=fuel] [data-pastdate]'); return !!p && !p.hidden && p.textContent.replace(/[\s\u00a0\u202f]+/g, ' ').trim().startsWith(w) }",
+            want, timeout=6000, what='the Flight step says the date is in the past')
+    c.ok(norm(c.text(f'{FUEL} [data-block="result"] .fu-pastdate') or '').startswith(want), 'no line', 'and the plan says it too')
+    c.ok(c.js("!document.querySelector('[data-module=fuel] [data-block=result] .fu-big').closest('[inert]')"), 'blocked', 'nothing is blocked: the quote stays')
+    c.tap(f'{FUEL} [data-do="whennow"]')
+    c.until("document.querySelector('[data-module=fuel] [data-pastdate]').hidden", what='"Now" removes the warning')

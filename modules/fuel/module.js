@@ -33,7 +33,8 @@ import {
 import {
   fmtZ,
   fmtZLocal,
-  fmtDateZ
+  fmtDateZ,
+  fmtDayZ
 } from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »), l'heure locale seulement au départ et à l'arrivée
 
 export const meta = {
@@ -333,6 +334,12 @@ const TX = {
   thr: ['Gaz', 'Thr.', 'Gas', 'Gases'],
   wxDate: ['Date du vol (heure locale de l’appareil)', 'Flight date (device’s local time)', 'Flugdatum (Ortszeit des Geräts)',
     'Fecha del vuelo (hora local del dispositivo)'
+  ],
+  // date du vol passée (V3 § 10.28) : un avertissement, jamais un blocage
+  pastDate: ['Vol daté du {d}, dans le passé : météo et NOTAM ne valent plus.',
+    'Flight dated {d}, in the past: weather and NOTAMs no longer apply.',
+    'Flug datiert auf {d}, in der Vergangenheit: Wetter und NOTAM gelten nicht mehr.',
+    'Vuelo fechado el {d}, en el pasado: la meteorología y los NOTAM ya no valen.'
   ],
   wxDateHint: ['La météo du devis (TAF, vents en altitude) et la Carte sont lues à cette date ; vide : maintenant.',
     'The quote’s weather (TAF, winds aloft) and the Map are read at this date; empty: now.',
@@ -1071,6 +1078,15 @@ const isoToWhen = iso => {
   const t = Date.parse(iso || '');
   return Number.isFinite(t) ? new Date(t - new Date(t).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
 };
+/** Avertissement d'un vol pas démarré daté dans le passé (planned_at plus d'une minute avant maintenant) : « Vol daté du 26/10 14:00Z,
+ *  dans le passé : météo et NOTAM ne valent plus. » ; '' sinon. Jamais bloquant (V3 § 10.28). */
+function pastDateText() {
+  const f = S?.flight,
+    t = Date.parse(f?.planned_at || '');
+  return !f?.started?.at && Number.isFinite(t) && t < Date.now() - 60000 ? tt(TX.pastDate, {
+    d: fmtDayZ(f.planned_at)
+  }) : '';
+}
 /** Valeur du champ de la date du vol : planned_at à l'heure de l'appareil, ou l'heure présente quand le vol part maintenant
  *  (planned_at null) — jamais un champ vide, que le navigateur montre « jj/mm/aaaa » (bouton « Maintenant », 29/10/2026). */
 const whenField = iso => isoToWhen(iso ?? new Date().toISOString());
@@ -1592,6 +1608,7 @@ function renderPlanBody() {
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
       <div class="f-grid fu-ads">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
       <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
+      <p class="f-warn" data-pastdate hidden></p>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
       <div class="fu-hide" data-acpanel>
@@ -3608,6 +3625,13 @@ function refresh() {
     </div>
     ${D.gap ? `<p class="f-warn">${esc(tt(TX.gap, { fl: flTxt(D.gap.from), r: tt(TX.reasons[D.gap.reason] || TX.reasons.thrust) }))}</p>` : ''}
     <div class="f-row"><button type="button" data-do="level" data-ft="${D.best.h}">${esc(tt(TX.use, { fl: flTxt(D.best.h) }))}</button>${D.fast.h !== D.best.h ? `<button type="button" data-do="level" data-ft="${D.fast.h}">${esc(tt(TX.use, { fl: flTxt(D.fast.h) }))}</button>` : ''}<span class="f-muted">${esc(tt(TX.decisionHint))}</span></div>`;
+  // date du vol passée : la ligne de l'étape Vol et celle du résultat (le plan), jamais bloquantes
+  const past = pastDateText(),
+    pd = $('[data-pastdate]');
+  if (pd) {
+    pd.textContent = past;
+    pd.hidden = !past;
+  }
   // résultat collant
   const res = $('[data-block="result"]');
   if (!q) res.innerHTML = `<span class="f-muted">${esc(tt(sheet ? TX.noDistance : TX.noSheet))}</span>`;
@@ -3618,7 +3642,7 @@ function refresh() {
     res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted fu-ctx" title="${esc(resultContext(q, range, false))}">${esc(resultContext(q, range, true))}</div>
       <div class="fu-big">${range ? `${esc(fuelTxt(q.blockLow, unit))} – ${esc(fuelTxt(q.blockHigh, unit))}` : esc(fuelTxt(q.block, unit))}</div>
       <div class="f-tiles"><span class="f-muted" title="${esc(tt(TX.trip))}">${esc(tt(TX.tripS))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted" title="${esc(tt(TX.time))}">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted" title="${esc(`${tt(TX.tod)} : ${tt(TX.todVal, { d: distTxt(q.todNm) })}`)}">${esc(tt(TX.todS))}<b>${esc(distTxt(q.todNm))}</b></span></div>
-      ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}`;
+      ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}${past ? `<div class="f-warn fu-pastdate">${esc(past)}</div>` : ''}`;
   }
   // détail du devis (replié)
   const det = $('[data-details]');

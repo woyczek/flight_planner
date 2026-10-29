@@ -4,6 +4,9 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — a flight dated in the past says so** (user, V3 § 10.28): a flight not started whose `planned_at` is more than a
+  minute behind now shows « Vol daté du 26/10 14:00Z, dans le passé : météo et NOTAM ne valent plus. » under the level and the
+  date (step Vol) and on the plan (the sticky result), as `f-warn` lines; never blocking (the quote and every gesture stay). Case F43.
 - **29 Oct 2026 — « Source »** (V3 § 10.25; aerodb d88463e51 sets `source.url` on every eAIP record it serves): `sourceHtml` fills
   the slot of the secondary line with one link per chosen SID / STAR / approach that has an `https://` `source.url` (new tab,
   no opener, the page's name in the title, the kind added when there are two); `sourceTitle` puts the document of a record without

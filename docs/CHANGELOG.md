@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a flight dated in the past says so** (`modules/fuel/module.js`, SPEC, DECISIONS; case F43) — weather and NOTAMs no longer
+  apply; nothing is blocked.
 - **Fuel: « Source » opens the coded page of the chosen procedure** (`modules/fuel/procedures.js`; SPEC, DECISIONS; help ×4;
   case F42) — the SIA's public page, in a new tab.
 - **Map: the flown trail comes from the frame; "Choose on the map" on the aerodrome card** (`modules/maps/flight_time.js`,
