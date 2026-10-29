@@ -877,6 +877,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 35 | Data module « Télécharger » and « Purger » (0d2f031d3) | acceptable, one note |
 | 36 | Frame G2 fix (efbb97f49) | acceptable; the point of 34 is settled |
 | 37 | Fuel: an aerodrome field is a search (26d47f149), proposal after the flight is read (fe3d33c5c) | acceptable |
+| 38 | Frame R1a: the airline's relay (7ca73448c) | **blocking before any exposure** (fails open if the proxy rewrites Host), two to fix, four notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1321,7 +1322,43 @@ aerodrome, or a four-character code when no suggestion exists, an aerodrome unkn
 other text is put back to the saved value. Names are shown through `textContent` and escaped in the list. Nothing is
 written at mounting; writes go through `saveFlight` (`FUEL_FIELDS`). The map's proposal waits for the flight to be read.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30 and 35 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32); the sharing of the track and of the position is the user's decision.
+**38. Frame R1a, the airline's relay (7ca73448c) — blocking before any exposure, two points to fix, four notes.** Nothing
+is exposed today.
+- **Blocking before exposure — the relay fails open if the proxy does not keep `Host`.** `_relay()` recognises a relay
+  request only by `Host` equal to the public host. If the NAS's reverse proxy rewrites `Host` to `127.0.0.1:<port>` (a
+  common setting, or a forgotten « keep the host »), a request from the Internet arrives on 127.0.0.1 with a local
+  `Host`: `_relay()` is false, so `_relay_gate` does nothing, `_local_host()` is true and `_same_origin()` too (a client
+  without `Sec-Fetch-Site`, with `X-SOG-Setup`): the request is treated as the **workstation** (secrets, GitLab token
+  creation, clone, adopt, relay pairing codes…). Fix (fail closed): in relay mode, any request from 127.0.0.1 or ::1
+  that carries a proxy header (`X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host`, `Forwarded`, `X-Real-IP`)
+  with a `Host` other than the public host gets 403 (the workstation's browser never sends them); a case for a proxy
+  that rewrites `Host`; the installation guide says « keep the Host header », checked at start-up.
+- *To fix:* `safe_next` takes a value decoded from the form: `/<TAB>/attacker.example` passes (starts with `/`, not
+  `//`) and the browser removes the tab in `Location`, giving `//attacker.example`, an open redirect right after pairing
+  (refuse any blank or control character; the same rule for the local-network pairing); `POST /__relay/pair` does not
+  require the same origin, so a third-party site can submit a code of its own in the pilot's browser (login CSRF: the
+  pilot's device bound to the attacker's trigram): require `Sec-Fetch-Site: same-origin` or the public host's `Origin`.
+- Checked: listening on 127.0.0.1 only, `--lan` refused with `--relay`, the local network's opening answers 409, the
+  public host validated; `X-Forwarded-Proto: https` required; pairing required for everything but `/__relay/pair`; GET,
+  HEAD, POST only; `/__setup/` limited to `relay=True` routes (status, changes, batch, sync, net), « relay implies lan »
+  asserted; `X-Forwarded-For` read only in relay mode, its last address. Codes: `secrets.randbelow` over 8 digits,
+  `compare_digest`, single use, 10 minutes; 5 wrong per address give a minute's wait, 30 wrong per hour (any address)
+  close pairing: at most 30 tries an hour over 10^8 codes. Tokens: `token_urlsafe(32)`, only the SHA-256 kept in
+  `tools/.relay.json` (hidden, never served); cookie `Path=/; HttpOnly; Secure; SameSite=Strict`, no `Domain`, one year,
+  expiry checked, revocation by device or by pilot. The author of `batch` and `sync` comes from the token, never the
+  page; a failure gives a generic message. `net`: `NET_HOSTS` only, never the airline's site. Served files: `secrets/`,
+  `data/local/`, `.git` and hidden files refused. The pairing page has no script (`default-src 'none'`,
+  `frame-ancestors 'none'`, `X-Frame-Options: DENY`, no-store, no-referrer), escaped. The « Relay devices » screen:
+  workstation only, never a fingerprint, the code shown once then cleared, everything escaped.
+- Notes: `batch` stays open to the whole of `data/` (but `local/`), like a local-network device or a GitLab Developer
+  token: a stolen relay token can rewrite other pilots' files under its own trigram (bind the relay to the pilot's
+  prefixes one day); `net` adds the airline's IVAO key for `api.ivao.aero`, so every paired device (or stolen token) uses
+  it (to write in DECISIONS, with revocation as the answer); the global cap of 30 wrong codes an hour lets a stranger keep
+  pairing closed (a new code reopens it), and `state['fails']` grows without bound with rotating addresses (purge entries
+  older than an hour); `SameSite=Strict` means a pilot opening the relay from a link arrives without the cookie (the
+  pairing page; a reload works): `Lax` would do, since POST routes already require the same origin and `X-SOG-Setup`.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 blocking before any exposure); the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
