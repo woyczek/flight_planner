@@ -303,6 +303,14 @@ export async function mount(el, ctx) {
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', e => {
     if (!S || (e?.aircraft && !e.zone && !e.changed)) return; // la base appareils ne touche pas la carte
     if (e?.coverage || e?.refreshed) covClear(); // couverture des procédures : redemandée au prochain dessin
+    // procédures d'un terrain relues (« Lire » / « Relire » de Carburant : { procedures: OACI }) : celles du vol aussi, quand
+    // c'est son départ ou son arrivée
+    const r = S.route?.flight?.route,
+      k = String(e?.procedures || '').toUpperCase();
+    if (k && r && [r.dep, r.arr].some(x => String(x || '').toUpperCase() === k)) {
+      S.procsKey = null;
+      loadProcs();
+    }
     if (e?.coverage && !e.refreshed && !e.zone && !e.changed) return schedule(); // ni zone ni fichier d'espaces : rien à relire
     S.data = null;
     if (e?.refreshed) { // la base a été relue (Paramètres) : les procédures du vol aussi

@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the flight's procedures are read again after "Read" / "Read again" in Fuel** (`modules/maps/module.js`, case D52) — aerodb
+  says `{ procedures: ICAO, coverage: true }` after reading an aerodrome, and the map only cleared its coverage: it kept drawing
+  the old records (it read them again on a refresh of the base only). It now reads them again when that aerodrome is the
+  flight's departure or arrival.
+
 - **Map › Layers: the "Airway names" box works** (`modules/maps/render_airspace.js`, case D51) — it only switched the segment's
   length and tracks, while the name box obeyed another element of the display profile that Layers never set: unticking it
   left every name on the map. It now shows and hides the airway's box, with its length and tracks. Its label is the same in Layers and on the thresholds page: "Airway names (length, tracks)" ×4.

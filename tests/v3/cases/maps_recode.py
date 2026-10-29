@@ -597,6 +597,27 @@ def _open_proc(c, f, view='maps?view=-1.8,46.95,-1.1,47.35', extra=()):
             timeout=10000, what='the path holds the chosen SID')
 
 
+_PROC_HOOK = """(() => { let ab; const patch = (A) => { window.__pc = { fns: [], n: 0 };
+  const p = A.procedure; A.procedure = function (...a) { window.__pc.n++; return p.apply(this, a) };
+  const on = A.on; A.on = function (ev, fn) { if (ev === 'change') window.__pc.fns.push(fn); return on.call(A, ev, fn) }; return A };
+  Object.defineProperty(window, 'AeroDB', { configurable: true, get() { return ab },
+    set(v) { ab = v; if (v && v.create && !v.__pc) { const o = v.create; v.__pc = 1; v.create = function (...a) { return patch(o.apply(this, a)) } } } }) })()"""
+_PROC_FIRE = """(e) => { const before = window.__pc.n, procs = window.__mp.S.procs; window.__pc.fns.forEach(f => f(e));
+  return new Promise(r => setTimeout(() => r({ asked: window.__pc.n - before, same: window.__mp.S.procs === procs }), 600)) }"""
+
+
+@case('D52', 'After "Read" / "Read again" in Fuel the map reads the flight’s procedures again', 'D', tags=('maps',), screens=False,
+      designs=('standard',), night=False, rule='inventory 29 Oct: { procedures: ICAO, coverage: true } left the map on the old records (it reread on refreshed only)')
+def d52(c):
+    c.page.add_init_script(_PROC_HOOK)
+    _open_proc(c, _proc_flight())
+    other = c.js(_PROC_FIRE, {'procedures': 'EGLL', 'coverage': True})
+    c.eq(other['asked'], 0, 'an aerodrome that is not the departure or the arrival: nothing is read again', what='procedure() calls')
+    mine = c.js(_PROC_FIRE, {'procedures': 'LFML', 'coverage': True})
+    c.ge(mine['asked'], 1, 'the arrival read again: its records are asked again', what='procedure() calls')
+    c.ok(not mine['same'], 'S.procs kept', 'and the path is rebuilt from the new records')
+
+
 @case('D41', 'The chosen SID, STAR and approach are drawn from the runway', 'D', tags=('maps',), screens=False, designs=('standard',), langs4=True,
       rule='V3 § 10.20, maps SPEC § 5: path from the threshold; transition and missed approach dashed; a leg without a fix = 2 NM stroke then dashes; RF = arc; join on a common point or dashed direct; unchosen procedures never drawn')
 def d41(c):
