@@ -762,7 +762,8 @@
   };
   /** Libellés courts de la carte de couverture des procédures (SPEC § 5 et § 6, V3 § 10.22), pour une légende ou une
    *  infobulle de la Carte et du module Données : une entrée par raison de aerodb.coverage(icao) / coverageByState(), chacune
-   *  [fr, en, de, es]. C'est la même exception que `n`, `gives` et `lic` à l'invariant 4 de la SPEC (aerodb sans texte d'interface) :
+   *  [fr, en, de, es]. `lnm` est gardée pour plus tard mais aerodb ne la produit plus (pas de lecteur de Little Navmap, V3 § 10.29).
+   *  C'est la même exception que `n`, `gives` et `lic` à l'invariant 4 de la SPEC (aerodb sans texte d'interface) :
    *  des textes du catalogue, dans les quatre langues, servis avec lui. Français : espace fine insécable (U+202F) avant : ; ! ? et
    *  dans « ». */
   const COVERAGE = {

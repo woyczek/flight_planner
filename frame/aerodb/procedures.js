@@ -143,6 +143,60 @@
     };
   }
 
+  /** Distance orthodromique en milles marins (haversine) : de quoi trouver le point le plus proche d'un seuil. */
+  const gcNm = (a, b) => {
+    const r = Math.PI / 180,
+      h = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
+    return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
+  };
+  const placedPt = p => p && num(p.lat) !== null && num(p.lon) !== null;
+
+  /** Une approche dont l'approche interrompue n'est pas marquée (§ 10.29, h) : au moins deux points, aucun de phase `missed`. */
+  const lacksMissed = rec => rec?.kind === 'APP' && Array.isArray(rec.points) && rec.points.length > 1 && !rec.points.some(p => p
+    ?.phase === 'missed');
+
+  /** Seuils d'atterrissage des pistes que nomme l'approche, tirés de la table des pistes d'aerodb (`runways(icao)`) : le seuil
+   *  décalé (`dthr`) quand il y en a un, sinon lat / lon ; une piste sans position est ignorée. [] sans piste nommée ni position. */
+  function landingRefs(rec, runways) {
+    // « 16B » : les deux parallèles
+    const want = new Set((rec?.runways || []).map(runwayOf).filter(Boolean).flatMap(n => /B$/.test(n) ? [n.replace(/B$/, 'L'), n.replace(
+      /B$/, 'R')] : [n]));
+    return arr(runways).filter(r => r && want.has(runwayOf(r.id))).map(r => placedPt(r.dthr) ? r.dthr : r).filter(placedPt).map(r => ({
+      lat: +r.lat,
+      lon: +r.lon
+    }));
+  }
+
+  /** Approche interrompue devinée (§ 10.29, h) : une approche finale ne s'éloigne jamais de la piste avant le point d'approche
+   *  interrompue. Les points de l'approche après celui le plus proche d'un des seuils `refs` ([{ lat, lon }]) passent en phase
+   *  `missed`, et la fiche porte `guessed: ['missed']` (clé optionnelle : ce que le lecteur a déduit au lieu de le lire). La fiche
+   *  est rendue telle quelle (même objet) quand elle marque déjà sa phase, quand ce point est le dernier, sans seuil ou sans point
+   *  placé. Copie : la fiche reçue n'est pas modifiée. */
+  function markMissed(rec, refs) {
+    if (!lacksMissed(rec) || !arr(refs).length) return rec;
+    let best = -1,
+      dBest = Infinity;
+    rec.points.forEach((p, i) => {
+      if (!placedPt(p)) return;
+      for (const ref of refs) {
+        const d = gcNm(ref, {
+          lat: +p.lat,
+          lon: +p.lon
+        });
+        if (d < dBest)[best, dBest] = [i, d];
+      }
+    });
+    if (best < 0 || best === rec.points.length - 1) return rec;
+    return {
+      ...rec,
+      points: rec.points.map((p, i) => i > best ? {
+        ...p,
+        phase: 'missed'
+      } : p),
+      guessed: [...new Set([...arr(rec.guessed), 'missed'])]
+    };
+  }
+
   /** Filtre d'une liste par { kind, runway, name, transition, doubt }. Une procédure de statut `doubt` (lecture douteuse) n'est rendue
    *  que si `q.doubt === true` ; fusionnée avec une autre lecture de la même procédure, c'est l'autre qui la représente (merge). */
   function filter(list, q = {}) {
@@ -181,6 +235,9 @@
     fromOfp,
     merge,
     withPhases,
+    lacksMissed,
+    landingRefs,
+    markMissed,
     filter,
     mergeSeen
   };

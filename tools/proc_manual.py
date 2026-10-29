@@ -14,6 +14,7 @@ Bibliothèque standard seulement ; ne lit aucune page.
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -105,7 +106,11 @@ def install(doc, out, replace=False, replace_source=None):
             n[p['kind']] += 1
     best = min((p.get('status') for p in full['procedures'] if p.get('status') != 'doubt'), key=lambda s: RANK.get(s, 9), default='check')
     cycles = sorted({(p.get('source') or {}).get('cycle') for p in full['procedures']} - {None})
-    idx['aerodromes'][doc['icao']] = {**n, 'status': best, 'cycle': cycles[-1] if cycles else doc['cycle']}
+    # `updated_at` : la date de cette lecture, celle du fichier (à défaut, celle déjà posée dans l'entrée, sinon maintenant en UTC à la seconde :
+    # relire un fichier sans date ne change pas l'index, donc ne fait pas un commit de plus) — aerodb en tire `coverage().read_at`
+    idx['aerodromes'][doc['icao']] = {**n, 'status': best, 'cycle': cycles[-1] if cycles else doc['cycle'],
+                                      'updated_at': full.get('updated_at') or (idx['aerodromes'].get(doc['icao']) or {}).get('updated_at')
+                                      or datetime.now(timezone.utc).isoformat(timespec='seconds')}
     idx_path.write_text(json.dumps(idx, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
 
 

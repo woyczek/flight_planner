@@ -1088,16 +1088,17 @@
       const lnmDb = covDb(withLnm),
         [lZ, lQ, lF, lD, lH] = await Promise.all(['ZZZZ', 'LQSA', 'LFPO', 'EDDF', 'LFBD'].map(x => lnmDb.coverage(x)));
       check(
-        'coverage(): a workstation with Little Navmap databases turns a red State orange « lnm » (sia > ead > lnm kept, green untouched)',
-        lZ.level === 'orange' && lZ.reason === 'lnm' && lQ.level === 'orange' && lQ.reason === 'lnm' && lF.reason === 'sia' && lD
+        'coverage(): Little Navmap databases on the workstation change nothing (no reader yet, § 10.29): a red State stays red, sia and ead stay orange, green untouched, no answer is ever « lnm »',
+        lZ.level === 'red' && lZ.reason === 'unknown' && lQ.level === 'red' && lQ.reason === 'images' && lF.reason === 'sia' && lD
         .reason ===
-        'ead' && lH.level === 'green', [lZ, lQ, lF, lD, lH]);
-      check('coverage(): lnm [] or no lnm field is not Little Navmap', cZzzz.reason === 'unknown' && (await covDb(fake({
-        info: () => ({
-          data: true,
-          lan: false
-        })
-      })).coverage('ZZZZ')).reason === 'unknown', cZzzz);
+        'ead' && lH.level === 'green' && JSON.stringify([lZ, lQ]) === JSON.stringify([cZzzz, cLqsa]), [lZ, lQ, lF, lD, lH]);
+      check('coverage(): lnm [] or no lnm field is the same answer as with a database', cZzzz.reason === 'unknown' && (await covDb(
+        fake({
+          info: () => ({
+            data: true,
+            lan: false
+          })
+        })).coverage('ZZZZ')).reason === 'unknown', cZzzz);
       const bad = await Promise.all([null, undefined, '', 'LFP', 'LFPOX', 'LF-O', 'ÉGLL', 12, {}].map(x => c0.coverage(x))),
         spaced = await c0.coverage(' lfbd ');
       check('coverage(): a malformed code gives null; the code is trimmed and upper-cased', bad.every(x => x === null) && spaced
@@ -1316,9 +1317,262 @@
           t) && JSON.stringify(cs.LF.label) === JSON.stringify(cat.sia) && cs.ED.reason === 'ead' && cs.LQ.level === 'red' && cs.LQ
         .reason === 'images' && JSON.stringify(cs.LQ.label) === JSON.stringify(cat.images) && Object.keys(cs).length === Object.keys((
           await c0.sources()).EAD_STATES).length && Object.values(cs).every(x => ['orange', 'red'].includes(x.level)), [cs.LF, cs.LQ]);
-      check('coverageByState(): Little Navmap on the workstation makes every State without sia or ead orange « lnm »', csL.LF.reason ===
-        'sia' && csL.ED.reason === 'ead' && csL.LQ.level === 'orange' && csL.LQ.reason === 'lnm' && csL.BK.reason === 'lnm' && Object
-        .values(csL).every(x => x.level === 'orange'), [csL.LQ, csL.BK]);
+      check(
+        'coverageByState(): Little Navmap on the workstation changes nothing (same answer as without; no State is ever orange « lnm »)',
+        JSON.stringify(csL) === JSON.stringify(cs) && csL.LQ.level === 'red' && csL.LQ.reason === 'images' && !Object.values(csL)
+        .some(x => x
+          .reason === 'lnm'), [csL.LQ, csL.BK]);
+      check('COVERAGE keeps the key « lnm » for later, but no coverage answer carries it', Array.isArray((await c0.sources()).COVERAGE
+          .lnm) &&
+        !JSON.stringify([cvg, lZ, lQ, cs, csL]).includes('"lnm"'), cvg.map(x => x.reason));
+      // ------------------------------------------------------------------ § 10.29 : mémo des fiches, approche interrompue devinée, read_at
+      // LFMM : un fichier lu à la main (proc/manual/) avec ses pistes (27 : seuil décalé `dthr` ; 09 : lat / lon) et cinq approches
+      const mp = (id, lat, lon, extra = {}) => pt(id, lat, lon, extra),
+        mapp = (name, rw, points) => man(`LFMM.APP.${name}.RW${rw}`, 'APP', name, '2026-10-01', points, {
+          icao: 'LFMM',
+          runways: [rw]
+        }),
+        lfmm = at => ({
+          schema: 1,
+          icao: 'LFMM',
+          cycle: '2026-10-01',
+          updated_at: at,
+          runways: [{
+            id: '27',
+            lat: 45.0,
+            lon: 2.0,
+            dthr: {
+              lat: 45.0,
+              lon: 2.12,
+              elev: 400
+            },
+            elev: 390,
+            qfu: 270,
+            displaced: 400,
+            length: 2400,
+            width: 45,
+            source: 'eaip'
+          }, {
+            id: '09',
+            lat: 45.2,
+            lon: 3.0,
+            dthr: null,
+            elev: 350,
+            qfu: 90,
+            displaced: 0,
+            length: 2000,
+            width: 45,
+            source: 'eaip'
+          }],
+          procedures: [
+            // 27 : aucune approche interrompue marquée ; le point le plus proche du seuil décalé est P3 (celui de lat / lon serait P2)
+            mapp('R27', '27', [mp('P1', 45.0, 1.0), mp('P2', 45.0, 1.92), mp('P3', 45.0, 2.12), mp('P4', 45.05, 2.4), mp('P5', 45.1,
+              2.6)]),
+            // 09 : sans seuil décalé, le seuil de lat / lon ; le point le plus proche est Q2
+            mapp('R09', '09', [mp('Q1', 45.2, 2.0), mp('Q2', 45.2, 2.95), mp('Q3', 45.2, 3.2), mp('Q4', 45.3, 3.3)]),
+            // 09 encore, mais l'approche interrompue est marquée : rien à deviner, rien à toucher
+            mapp('R09M', '09', [mp('M1', 45.2, 2.0), mp('M2', 45.2, 2.95), mp('M3', 45.2, 3.2, {
+              phase: 'missed'
+            })]),
+            // 18 : se termine à son seuil (point RW18, le dernier) : rien après lui, rien à marquer
+            mapp('R18', '18', [mp('N1', 46.0, 3.0), mp('N2', 45.95, 3.0), mp('RW18', 45.9, 3.0)]),
+            man('LFMM.STAR.S1A.RWALL', 'STAR', 'S1A', '2026-10-01', [mp('S1', 46, 1), mp('S2', 45.5, 1.5)])
+          ]
+        });
+      cput('proc/manual/LFMM.json', lfmm('2026-10-28T10:00:00+00:00'));
+      const ix0 = JSON.parse(cf.get('proc/manual/index.json')),
+        lx0 = JSON.parse(cf.get('proc/local/index.json'));
+      cput('proc/manual/index.json', {
+        ...ix0,
+        aerodromes: {
+          ...ix0.aerodromes,
+          LFBD: {
+            ...ix0.aerodromes.LFBD,
+            updated_at: '2026-10-27T09:15:00+00:00' // un terrain publié relu à la main : la date vient de proc/manual/
+          },
+          LFMM: {
+            SID: 0,
+            STAR: 1,
+            APP: 4,
+            status: 'check',
+            cycle: '2026-10-01',
+            updated_at: '2026-10-28T10:00:00+00:00'
+          },
+          LFMO: {
+            SID: 1,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01' // une entrée d'avant la date : pas de read_at
+          },
+          LFMP: {
+            SID: 1,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01',
+            updated_at: '2026-10-26T08:00:00Z'
+          }
+        }
+      });
+      cput('proc/local/index.json', {
+        ...lx0,
+        aerodromes: {
+          ...lx0.aerodromes,
+          LFMM: {
+            SID: 1,
+            STAR: 0,
+            APP: 0,
+            updated_at: '2026-10-29T08:30:00Z' // plus récent que proc/manual/ : c'est la plus récente des deux qui compte
+          },
+          LFMP: {
+            SID: 2,
+            STAR: 0,
+            APP: 0,
+            updated_at: '2026-10-20T08:00:00Z' // plus ancien : la date de proc/manual/ reste
+          }
+        }
+      });
+      // (g) 300 appels, une fusion
+      const mm = covDb(noLnm),
+        wpm = cWatch.filter(x => x.prefix === 'proc/').pop(),
+        s0 = mm.procedureStats(),
+        r0 = cReads.length,
+        first = await mm.procedures('LFMM'),
+        oneRead = cReads.length - r0;
+      const s1 = mm.procedureStats();
+      for (let i = 0; i < 300; i++) await mm.procedures('LFMM');
+      const s2 = mm.procedureStats(),
+        calls300 = cReads.length - r0 - oneRead,
+        togetherDb = covDb(noLnm),
+        sT = togetherDb.procedureStats();
+      await Promise.all(Array.from({
+        length: 300
+      }, () => togetherDb.procedures('LFMM')));
+      check(
+        'procedures(): 300 calls after the first cost no merge (three file reads per call, proc/manual/, proc-seen/ and proc/local/; the list is built once per revision)',
+        s1.merges - s0.merges === 1 && s2.merges === s1.merges && s2.hits - s1.hits === 300 && calls300 === 300 * 3 && oneRead >= 3 &&
+        first.length === 5 && s2.memo === 1, [s0, s1, s2, oneRead, calls300]);
+      check('procedures(): 300 simultaneous calls share one merge', togetherDb.procedureStats().merges - sT.merges === 1, [sT,
+        togetherDb
+        .procedureStats()
+      ]);
+      const sB = mm.procedureStats();
+      const pById = await mm.procedure('LFMM.APP.R27.RW27'),
+        pMissing = await mm.procedure('LFMM.APP.NONE.RW27'),
+        rwM = await mm.runways('LFMM'),
+        sA = mm.procedureStats();
+      check('procedure(id) and runways(icao) read the memo: no merge, one hit each', sA.merges === sB.merges && sA.hits - sB.hits ===
+        3 &&
+        pById?.id === 'LFMM.APP.R27.RW27' && pMissing === null && rwM.map(r => r.id).join() === '09,18,27', [sB, sA, rwM.map(r => r
+          .id)]);
+      check(
+        'runways(icao) from the memo: the file\'s runways complete, the one named by a record\'s RW point derived (approx), elevation kept',
+        rwM.find(r => r.id === '27').approx === false && rwM.find(r => r.id === '27').dthr.lon === 2.12 && rwM.find(r => r.id ===
+          '18')
+        .approx === true && rwM.find(r => r.id === '18').lat === 45.9, rwM);
+      rwM[0].lat = 99;
+      first[0].name = 'CHANGED';
+      check('what the memo returns are copies: a caller changing a record or a runway does not change the next answer', (await mm
+        .runways(
+          'LFMM')).find(r => r.id === '09').lat === 45.2 && (await mm.procedures('LFMM')).every(p => p.name !== 'CHANGED'), null);
+      // une révision changée donne la nouvelle liste (une fusion de plus)
+      const withNew = JSON.parse(cf.get('proc/manual/LFMM.json'));
+      withNew.procedures.push(man('LFMM.STAR.S2A.RWALL', 'STAR', 'S2A', '2026-10-01', [mp('S3', 46, 1.2), mp('S4', 45.5, 1.7)]));
+      cput('proc/manual/LFMM.json', withNew);
+      const sC = mm.procedureStats(),
+        changed = await mm.procedures('LFMM'),
+        sD = mm.procedureStats();
+      check('a changed file revision gives the new list (one more merge, then the memo again)', changed.length === 6 && changed.some(
+          p => p
+          .name === 'S2A') && sD.merges - sC.merges === 1 && (await mm.procedures('LFMM')).length === 6 && mm.procedureStats()
+        .merges === sD
+        .merges, [sC, sD, changed.length]);
+      // les voies d'invalidation : l'observateur de proc/ (écho ignoré, révision changée jetée), refresh()
+      const echo2 = mm.procedureStats().memo;
+      await wpm.fn(['proc/manual/LFMM.json']);
+      const afterEcho = mm.procedureStats().memo;
+      cput('proc/manual/LFMM.json', lfmm('2026-10-28T11:00:00+00:00'));
+      await wpm.fn(['proc/manual/LFMM.json']);
+      const afterChange = mm.procedureStats().memo;
+      await mm.procedures('LFMM');
+      mm.refresh();
+      const afterRefresh = mm.procedureStats().memo;
+      const sE = mm.procedureStats();
+      await mm.procedures('LFMM');
+      check('the memo entry is dropped by the proc/ watcher (a changed revision, not an echo) and by refresh()', echo2 === 1 &&
+        afterEcho === 1 &&
+        afterChange === 0 && afterRefresh === 0 && mm.procedureStats().merges - sE.merges === 1, [echo2, afterEcho, afterChange,
+          afterRefresh
+        ]);
+      // (h) l'approche interrompue devinée par le lecteur
+      cput('proc/manual/LFMM.json', lfmm('2026-10-28T10:00:00+00:00')); // l'état d'origine
+      const g0 = mm.procedureStats().guessed.missed,
+        gl = await mm.procedures('LFMM', {
+          kind: 'APP'
+        }),
+        g = n => gl.find(p => p.name === n),
+        phases = n => g(n).points.map(p => p.phase).join();
+      check(
+        'an approach with no missed phase: marked after the point nearest the threshold (the displaced one, not the runway\'s lat/lon), guessed set',
+        phases('R27') === 'main,main,main,missed,missed' && JSON.stringify(g('R27').guessed) === '["missed"]', g('R27'));
+      check('without a displaced threshold the runway\'s lat / lon is the reference', phases('R09') === 'main,main,missed,missed' &&
+        JSON.stringify(g('R09').guessed) === '["missed"]', g('R09'));
+      check('an approach that already has a missed phase is untouched (no guessed); one ending at its threshold too', phases('R09M') ===
+        'main,main,missed' && g('R09M').guessed === undefined && phases('R18') === 'main,main,main' && g('R18').guessed === undefined,
+        [
+          g('R09M'), g('R18')
+        ]);
+      check('the counter counts the guesses made when the list is built (once per revision, not per call)', mm.procedureStats().guessed
+        .missed - g0 === 2 && (await mm.procedures('LFMM')).length === 5 && mm.procedureStats().guessed.missed - g0 === 2, [g0, mm
+          .procedureStats()
+        ]);
+      check('procedure(id) serves the same guessed record; the reader\'s copy is not modified (no guessed, no added phase in the file)',
+        (await mm.procedure('LFMM.APP.R27.RW27')).guessed?.[0] === 'missed' && !JSON.stringify(JSON.parse(cf.get(
+          'proc/manual/LFMM.json')))
+        .includes('guessed') && JSON.parse(cf.get('proc/manual/LFMM.json')).procedures[0].points.every(p => !p.phase), null);
+      check('an SID or a STAR is never given a missed approach', (await mm.procedures('LFMM', {
+        kind: 'STAR'
+      })).every(p => !p.guessed && p.points.every(q => q.phase === 'main')), null);
+      // sans piste placée ni terrain connu : rien n'est deviné, et la liste n'est pas gardée (une base peut arriver)
+      cput('proc/manual/LFMX.json', {
+        schema: 1,
+        icao: 'LFMX',
+        cycle: '2026-10-01',
+        procedures: [man('LFMX.APP.RNAV.RWALL', 'APP', 'RNAV', '2026-10-01', [mp('X1', 45, 1), mp('X2', 45, 1.5), mp('X3', 45,
+          2)], {
+          icao: 'LFMX'
+        })]
+      });
+      const sX = mm.procedureStats();
+      const x1 = await mm.procedures('LFMX'),
+        x2 = await mm.procedures('LFMX');
+      check('an approach with no runway position and no known aerodrome is left as read, and not kept in the memo', x1[0].guessed ===
+        undefined &&
+        x1[0].points.every(p => p.phase === 'main') && x2.length === 1 && mm.procedureStats().merges - sX.merges === 2, [x1, mm
+          .procedureStats()
+        ]);
+      // (j) read_at et source.read_at
+      const cov = async x => (await covDb(noLnm).coverage(x)),
+        [vMm, vMo, vMp, vBd, vEgll, vLfpo] = await Promise.all(['LFMM', 'LFMO', 'LFMP', 'LFBD', 'EGLL', 'LFPO'].map(cov));
+      check('coverage().read_at: the most recent of the proc/manual/ and proc/local/ entries, ISO 8601 UTC to the second', vMm
+        .read_at ===
+        '2026-10-29T08:30:00Z' && vMp.read_at === '2026-10-26T08:00:00Z', [vMm, vMp]);
+      check(
+        'coverage().read_at: a published aerodrome read again by hand carries the date of that reading; an entry without updated_at, an orange and a published-only aerodrome are null',
+        vBd.source === 'published' && vBd.read_at === '2026-10-27T09:15:00Z' && vMo.level === 'green' && vMo.read_at === null &&
+        vEgll.read_at === null && vLfpo.level === 'orange' && vLfpo.read_at === null && cLfmn.read_at === null, [vBd, vMo, vEgll,
+          vLfpo
+        ]);
+      const mrec = (await mm.procedures('LFMM'))[0],
+        fpx = (await db.procedures('LFPX'))[0],
+        fpub = (await db.procedures('LFBD')).find(p => p.kind === 'SID');
+      check(
+        'source.read_at: a record served from proc/manual/ carries the file\'s updated_at (also in sources); absent from a published one and from a file without the date',
+        mrec.source.read_at === '2026-10-28T10:00:00Z' && mrec.sources[0].read_at === '2026-10-28T10:00:00Z' && fpx.source.read_at ===
+        '2026-10-28T10:00:00Z' && fpub.source.read_at === undefined && fpub.sources.every(x => x.read_at === undefined) && zz.every(
+          p => p
+          .source.read_at === undefined), [mrec.source, fpx.source, fpub.source]);
     } catch (e) {
       check('no exception', false, String(e && e.stack || e));
     }

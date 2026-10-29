@@ -1552,3 +1552,28 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   `skip`); the `NIGHT` / `(R)` / `(H)` altitude variants of the INA pages (printed as separate lines of altitudes with `(1)` notes; the reader takes the cells it can place and ignores the notes); `TF PG275 …` and its like. The `point_merge` arc is a
   memory of the system, not a drawing: the points BIBA1 … BIBA5 are positioned by the DATA page, the module may draw the arc from them.
 - **Bench**: K25 (ten trimmed LFPG pages as fixtures: SID 09L-09R, SID 26 with the ambiguous row, SID 27 with ADAD A, STAR 27L ×2 with the point merge, STAR 08L, INA 08L, FNA 26L ILS / RNP, FNA 27R RNP; synthetic records for the guards); K1, K22, K23, K24 adjusted for `doubt`.
+
+## 29 October 2026 — § 10.29, aerodb in the browser (memo, missed approach in the reader, no orange without a reader, `read_at`)
+
+The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Python tools). Four parts, four commits; the files are `frame/aerodb/aerodb.js`, `procedures.js`, bench K1 (`test/procedures.html`) and, for (j), one line of `tools/proc_manual.py` with its check in K11.
+
+- **(g) One merge per revision of the files.** `procedures(k)` rebuilt the merged list at every call, and `procedure(id)` and `runways(icao)` each called it again (and `runways()` read the files a second time): the Map and Fuel asked
+  several times per redraw. The merged + phased + placed list (before the query filter) is now kept per aerodrome in a memo, keyed by the revisions the reader gives for `proc/<cycle>/<K>.json`, `proc/manual/<K>.json`, `proc-seen/<K>.json` and
+  `proc/local/<K>.json`, plus the cycle in force (`outdated` depends on it) and the date of a fresh job file. The files are still read at every call (the frame's reader keeps them; it is where the revision comes from); what is saved is the
+  merge, the phases, the placement of the en-route points and the runway table, all done once per revision. `procedure()` and `runways()` read the same entry. The entry goes with the existing invalidation paths (the `proc/` and
+  `proc-seen/` watcher, a successful `fetchProcedures`, `refresh()`), and with `rememberOfp` (its own write). **Two cases are not kept**: a file read without a revision (nothing says it changed) and a list that waits for the base (a point with
+  no position yet, an approach with neither threshold nor aerodrome) — the base can arrive at any time, and keeping that list would freeze the gap; a counter of base changes (`zone` loaded or released, `changed`) also makes every entry
+  to be rebuilt, because the positions and the elevation come from it. Callers get copies of the records and of the runways. `procedureStats()` gives `{ memo, merges, hits, guessed }` for the bench and for a diagnosis. Bench: 300 calls cost
+  one merge (three file reads per call, no more), 300 simultaneous calls share one, a changed revision gives the new list, `procedure()` and `runways()` hit the memo, the watcher drops it for a changed revision and not for an echo.
+- **(h) The missed approach is guessed by the reader, and counted.** `frame/lib/current_flight.js` `withMissed` marked `missed` the points after the one nearest to the threshold of an approach that had no `missed` point (LFPO RNP 20, 28 Oct):
+  a rule about the data, kept in the consumer, so that every other consumer (the Map's choose mode, Fuel's profile) had to know it. It moves to the reader's common post-read pass, after the phases and the placement: for an `APP` without a `missed`
+  point, the points after the one nearest to the landing threshold of its runway (the `dthr` of `runways(icao)` when it has one, else `lat` / `lon`, else the position of the aerodrome; the nearest of the runways the record names when it names
+  several) are marked `missed`, unless that point is the last. **Counted, never silent**: the record gets `guessed: ['missed']` (new optional key, in the SPEC) and `procedureStats().guessed.missed` counts the guesses made at the build of a list.
+  The consumer's copy is left to the maps lot, which removes it: its `withMissed` is a no-op on a record the reader has already marked (it returns as soon as a point has phase `missed`). One difference from the consumer's rule: the reader does not
+  know the runway chosen for the flight, so it uses the runways the approach names, which is what the approach serves anyway.
+- **(i) No orange without a reader.** `coverage()` and `coverageByState()` no longer give the orange `lnm` (the workstation has a Little Navmap database): Little Navmap has no reader yet (V3 § 10.21), so that orange promised a button which
+  does nothing (the challenge of 29 Oct). The key stays in `AeroCatalogue.COVERAGE`, never produced, for the day a reader exists. The `lnm` hint of `fetchProcedures` in `no-tables` stays: it is a hint in a sentence, not a colour.
+- **(j) The date of the reading.** `coverage(icao).read_at` (ISO 8601 UTC to the second, or `null`) comes from `updated_at` of the aerodrome's entry in `proc/manual/index.json` and `proc/local/index.json` (the most recent), even when the published cycle
+  provides the counts; `tools/proc_manual.py` `install()` writes it (the file's own date, else the one already in the entry, else now): a date taken at each install would make a new commit for a reading that did not change. Every record
+  served from `proc/manual/` carries `source.read_at`, the file's `updated_at`. Fuel and the Map use it for « lu le … » with « Relire »; `null` gives the button alone. **Not done here, by decision**: `manualFresh` and `revs` stay until the frame
+  delivers `FD.revalidate(paths)`; the memo's signature takes the fresh job file into account meanwhile.

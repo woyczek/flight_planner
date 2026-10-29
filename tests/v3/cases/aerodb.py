@@ -851,8 +851,16 @@ def k11(c):
         M.install(man, td, replace=True)
         got = {p['id']: p['status'] for p in json.loads(f.read_text())['procedures']}
         idx2 = json.loads((Path(td) / 'manual' / 'index.json').read_text())['aerodromes']['EGYY']
-        c.eq((got, idx2), ({'EGYY.SID.A': 'official', 'EGYY.STAR.TEST1A.RWALL': 'official', 'EGYY.STAR.TEST2A.RWALL': 'check'}, {'SID': 1, 'STAR': 2, 'APP': 0, 'status': 'official', 'cycle': '2026-10-01'}),
+        c.eq((got, {k: v for k, v in idx2.items() if k != 'updated_at'}), ({'EGYY.SID.A': 'official', 'EGYY.STAR.TEST1A.RWALL': 'official', 'EGYY.STAR.TEST2A.RWALL': 'check'}, {'SID': 1, 'STAR': 2, 'APP': 0, 'status': 'official', 'cycle': '2026-10-01'}),
              'with --replace: merged by id, the official procedure kept over the manual one, the new one added, the index counted on the whole', what='merge')
+        # the date of the reading (§ 10.29, j): the index entry carries the file's updated_at, else now in UTC to the second; aerodb serves it as coverage().read_at
+        import re
+        c.ok(re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\+00:00|Z)', idx['aerodromes']['EGXX'].get('updated_at', '')) is not None and 'updated_at' not in idx['aerodromes']['KSEA'],
+             json.dumps(idx['aerodromes']), 'install writes updated_at (now, UTC, seconds) into the aerodrome index entry when the file has none; the other entries are left as they were')
+        dated = json.loads(json.dumps(doc).replace('EGXX', 'EGWW'))
+        dated['updated_at'] = '2026-10-28T10:00:00+00:00'
+        M.install(dated, td)
+        c.eq(json.loads((Path(td) / 'manual' / 'index.json').read_text())['aerodromes']['EGWW']['updated_at'], '2026-10-28T10:00:00+00:00', 'the index entry updated_at is the own one of the file when it has one', what='updated_at file')
         c.eq((sorted(idx['aerodromes']), idx['aerodromes']['EGXX']['STAR'], (Path(td) / 'manual' / 'EGXX.json').exists()), (['EGXX', 'KSEA'], 1, True), 'installed, the index keeps the other aerodromes', what='install')
     # a file without any procedure is refused (never installed as « 0 procédure(s) cohérentes »): its warnings are printed, and the sibling OCR file is pointed at
     import contextlib

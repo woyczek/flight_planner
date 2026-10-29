@@ -29,6 +29,20 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `weather_store.js`, case E10; user, 29 Oct: "pas de météo avant H+56" on a flight of 26 Oct) — the forecast was read from
   today only, so the hours between a past departure and today stayed empty and the nearest hour was shown; the days from the
   departure (up to 92 days back, which Open-Meteo serves) are now read too.
+- **aerodb: the date of the last reading** (`frame/aerodb/aerodb.js`, `tools/proc_manual.py`, K1, K11; V3 § 10.29) — `coverage(icao).read_at` (ISO 8601 UTC, or `null`) is the
+  most recent `updated_at` of the aerodrome's entries in `proc/manual/index.json` and `proc/local/index.json`, which `proc_manual.install()` now writes; every record served from
+  `proc/manual/` carries `source.read_at`. Fuel and the Map show « lu le … » with « Relire », or the button alone when it is `null`.
+
+- **aerodb: no orange without a reader** (`frame/aerodb/aerodb.js`, K1; V3 § 10.29) — `coverage()` and `coverageByState()` no longer give the orange `lnm` (Little Navmap has no
+  reader yet); the key stays in `AeroCatalogue.COVERAGE`, never produced. The `lnm` hint of `fetchProcedures` (`no-tables`) stays.
+
+- **aerodb: the missed approach is guessed by the reader and counted** (`frame/aerodb/procedures.js`, `aerodb.js`, K1; V3 § 10.29) — an approach with no point of phase `missed`
+  gets it after the point nearest to the landing threshold of its runway (`dthr`, else `lat` / `lon`, else the aerodrome), unless that point is the last; the record carries
+  `guessed: ['missed']` and `procedureStats().guessed.missed` counts them. The consumer's `withMissed` in `frame/lib/current_flight.js` becomes a no-op on these records (the maps lot removes it).
+
+- **aerodb: `procedures()` memoised per aerodrome and per revision of its files** (`frame/aerodb/aerodb.js`, K1; V3 § 10.29) — the merged, phased and placed list is built once per
+  revision of `proc/<cycle>/`, `proc/manual/`, `proc-seen/` and `proc/local/` files (300 calls cost one merge); `procedure(id)` and `runways(icao)` read the same entry; the watcher,
+  a successful `fetchProcedures`, `refresh()` and `rememberOfp` drop it; new `procedureStats()` (`memo`, `merges`, `hits`, `guessed`).
 
 - **Map: the aircraft arrow points at the position with its tip** (`modules/maps/flight_time.js`, case D55; user, 29 Oct) — the
   planned and the X-Plane (red) arrows were centred on the position; their tip is now on it, the body behind.
