@@ -583,6 +583,13 @@
           "en": "\"Choose\" mode: dimmed base map, every procedure of the aerodrome drawn with its name, choice handed back to Fuel",
           "de": "„Auswahl“-Modus: abgedunkelte Grundkarte, alle Verfahren des Platzes mit Namen gezeichnet, Wahl an Kraftstoff zurückgegeben",
           "es": "Modo «elección»: mapa base atenuado, todos los procedimientos del aeródromo trazados con su nombre, elección devuelta a Combustible"
+        },
+        {
+          "state": "planned",
+          "fr": "Piste choisie tracée en flèche dans le sens d'utilisation, avec ses aides (ILS, DME)",
+          "en": "Chosen runway drawn as an arrow in the direction of use, with its aids (ILS, DME)",
+          "de": "Gewählte Piste als Pfeil in Nutzungsrichtung gezeichnet, mit ihren Hilfen (ILS, DME)",
+          "es": "Pista elegida trazada como flecha en el sentido de uso, con sus ayudas (ILS, DME)"
         }
       ]
     },

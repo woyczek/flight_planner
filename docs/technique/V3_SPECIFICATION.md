@@ -746,3 +746,23 @@ redesigned for touch at that point.
        - **Lots** (after the economy mode): fuel — markers and flat lists, conflict kept and notified, the two buttons,
          reading the proposal from the address (tests F); maps — the choose mode, dimming, cartouches, list, proposal
          address (tests D); aerodb — nothing new (`procedures()` already serves runways and transitions). Help ×4 per lot.
+   24. **The chosen runway drawn as an arrow, with its aids** (user, 29 Oct, screenshot of Fuel beside the Map with runway
+       24 chosen at LFPO and nothing drawn: "quand on choisit une piste, un vecteur sur la carte indiquant la piste
+       (direction matérialisée par une flèche). Ça permet aux feignants de voir dans quel sens prendre la piste et
+       planifier son vol (notamment par la récupération des ILS / DME et autres aides s'il y en a)"): decided by the
+       ergonomics session, planned after the economy mode.
+       - **What is drawn.** When `route.procedures` names a runway (departure or arrival), the Map draws it as one arrow:
+         from the threshold (`runways(icao)`, the landing threshold, § 10.20) along the true QFU over the runway's length,
+         head at the far end for a departure, at the threshold for an arrival (the direction of use), the runway's name at
+         the threshold; the procedure's hue, one stroke wider than the procedure trace; visible from the aerodrome view in
+         (about 60 px per NM), never at the route scale. Without a runway chosen: nothing, as today.
+       - **Its aids.** aerodb adds `aids` to each runway of `runways(icao)`: the navaids that serve it, from the navaid base
+         (a localizer or ILS whose name carries the runway or whose course is within 3° of the QFU and whose position is
+         within 3 NM of the threshold; the DME and glide path attached to it), each `{ kind, ident, freq, course }`. The Map
+         labels the arrow with them once ("ILS OLN 110.3 · DME"), the Fuel row shows the same short text under the runway
+         `select` ("ILS OLN 110.3"), nothing when none.
+       - **In the choose mode (§ 10.23)**, the runway step draws every runway of the aerodrome as an arrow in the direction
+         of use, the retained one bold, its aids labelled; the other steps keep only the retained runway's arrow.
+       - **Lots** (after the economy mode): aerodb — `aids` per runway (cases K); maps — the arrow and its label, in the
+         chosen-procedure trace and in the choose mode (cases D); fuel — the aids line under the runway select (case F).
+         Help ×4 per lot.
