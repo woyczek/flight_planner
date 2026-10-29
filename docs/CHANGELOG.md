@@ -87,6 +87,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 - **Fuel: "Auto" starts from the end of the chosen SID and ends at the start of the arrival** (`modules/fuel/module.js`,
   DECISIONS; case F28) — e.g. LFBO FINOT G36 GOSAD, which it could not find from the aerodrome.
+- **aerodb: "Read the procedures" for Dublin (EIDW) and the other Irish aerodromes** (`tools/proc_eaip.py`, `tools/proc_ead.py`, `tools/regen_jobs.py`; `frame/aerodb/EAD_BASIC.md` § 10, DECISIONS 29 Oct; cases K26, K19, K22, K12) — the reading ran
+  3.5 minutes and ended « no procedure could be read » (31 documents, every one "layout not recognised"): Dublin prints `Term` / `Mag track` and its columns in another order than the page seen on 28 October (name, position, terminator, tracks,
+  distance), the departures start with a point-less `RWY28 - CA` leg, the text layer spaces digits and cuts names, STAR pages come backwards, RNP rows are cut over three lines. One tolerant row reader now takes both column orders; on the 31 documents:
+  43 pages read, **196 procedures (115 SID, 43 STAR, 38 approaches)**, 659 legs through the geometry check with none rejected; VOR approaches (fix tables) and missed-approach tables alone stay unread, said. The job now gives real progress
+  (searches, documents downloaded / read / analysed, i of n) and its counts (`stats`) and a message that says what was seen even when nothing could be read (« 31 document(s), 0 of 31 page(s) read (…) »).
+
 - **Flight path: `routingChain(flight, procs, points)` for the airway routing** (`frame/lib/current_flight.js`; bench
   `frame/lib/test/current_flight.html`) — the points between which the routing looks for airways, with the chosen SID's end
   (its transition included) inserted after the departure and the start of the chosen arrival (STAR transition, else STAR,

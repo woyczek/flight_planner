@@ -1590,3 +1590,36 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
   boundary); the base reproduces the source. The ergonomics session decided: a build statistic for same-family overlaps with different floors,
   a note on the point sheet (BUGS SOG), the AIP of Ireland as a source in the backlog (§ 10.28).
 - **Bench**: K27.
+
+## 29 October 2026 (late) — Dublin (EIDW): the second layout of the Irish tables, and a job that says what it does
+
+- **Reported** (the user, « Lire les procédures » for EIDW on the workstation): 3.5 minutes, then `no procedure could be read for this aerodrome`; `CODING: 0 document(s)`, 31 charts downloaded (SID 12, STAR 4, IAP 22 of which 15 listed), every one « disposition
+  non reconnue »; nothing in Fuel during or after (« aucun log »). Offline with the 31 downloaded PDF: **0 page recognised, 0 procedure**.
+- **Causes**: (1) `detect_layout` wanted `terminator` and `magnetic track`; Dublin prints `Term` and `Mag track` (and `performance descriptor`, `W PT`). (2) `parse_ei_coding` expected the terminator before the name; Dublin prints name, co-ordinates, terminator,
+  true / mag track, distance. (3) the first leg of a departure has no point (`RWY28 - CA`). (4) the text layer: spaced digits, names cut in two, STAR pages in reverse order, `RNP / row / APCH` over three lines. (5) the pagination of the IAP search (below, not changed).
+- **Decisions**
+  1. **One tolerant row reader, two column orders, told apart by the line** (`_ei_cells`): order A (28 October) and order B (Dublin) cannot both read the same line (the terminator is before the name or after the co-ordinates); if they do, or if the end of the line reads in
+     both orders (distance and track swapped), the line is ambiguous and **its block is not read** (« NON retenue », with the line). The header only gives the hemispheres and the presence of the VPA column; the `detect_layout` rule also needs a co-ordinate row.
+  2. **Limits**: upper = maximum, lower = minimum, equal = at (as before). Signs are checked against their column and a contrary sign rejects the block; a level that is not a usual step (a multiple of 50 ft / 5 FL) is not read: the digits of a spaced level
+     could swallow those of the speed. `A 4000 / -` is therefore **at or below 4000 ft**, `- / A750 +` at or above 750 ft. The meaning of `A` (altitude, not flight level) is taken from the print, the direction from the column.
+  3. **A name cut in two is joined only when confirmed** by the same co-ordinates carrying the whole name elsewhere in the aerodrome's pages (`DW0 24` ← `DW024`; `DW024` and `ATGOW` are the same point in two editions: both admitted). A split name alone keeps rejecting the
+     block, as on 28 October (K19 keeps both cases: confirmed and not).
+  4. **The CA leg without a point** is a leg with `id: null` (like the SIA's CA / VA legs), the runway course and the altitude; `records_uk_app` no longer reports it as « co-ordinates to resolve » and no longer fails on an id `None`. `RWYnn` must be the title's runway.
+  5. **A page given backwards is read from the end** when a leg row precedes the first title in text order and the reverse order does not.
+  6. **Missed approach tables alone are not procedures** (said in a warning, the page stays « read »). **Incomplete rows** (speed cell lost at the end of the line) are read without speed and said. Everything else that does not parse rejects its block.
+  7. **Names**: SID / STAR by their coded designator (as on 28 October); approaches by their title without the aerodrome. `vpa` (negative) is kept for the RNP pages.
+  8. **Fixtures are synthetic** (`frame/aerodb/test/fixtures/ead/EI_SYNTH_*.rows.txt`): the repository is public and `SOURCES.md` / `EAD_BASIC.md` § 4 keep the pages of a State other than France out of it. They reproduce the layout and the faults of the real pages with invented
+     points; the real pages were used for the measure only (outside the repository). To use real rows instead, the owner has to accept the Irish AIP's terms (§ 4).
+  9. **The EAD job gives the page numbers and the counts** (`regen_jobs._ead_fetch`, `proc_ead.fetch_ad(…, step=)`): `job.step(text, done, total, unit)` for the 4 searches, the documents downloaded (i of n), read (i of n, 1 to 2 s each) and analysed (the type of a PDF
+     is read once per document, no longer once per page entry: 45 reads for these 31 documents before), so `onProgress` has numbers; **`stats` on every outcome** that got as far as the pages (nothing read, geometry check failed, another source's file) — `pages / read / rejected /
+     procedures / dropped / doubt / reasons`, the same keys as a success — and the job log ends with the summary line in every case. The failure `message` says what was seen: `no procedure could be read for this aerodrome: 31 document(s), 0 of 31 page(s) read (mise en page
+     non reconnue ×31)` (the launcher's messages are English and shown as they come; the reasons are the tool's French phrases). `aerodb.fetchProcedures` already passed `stats`, `warnings`, `message` and `done` / `total` through on failure (bench `procedures.html`); no change there.
+     **Fuel's failure branch shows the message only, not `stats`** (a point for the Fuel session).
+- **Result, offline** (the 31 PDF): **43 pages read of 45 entries** (the 2 others are the VOR approaches), **196 procedures** (115 SID, 43 STAR, 38 APP), 999 legs, 659 TF legs through the geometry check with **no table rejected**, `proc_manual.verify` clean, 4 rows without speed,
+  4 missed-approach tables left out. Details and the table: `EAD_BASIC.md` § 10.
+- **Stays unread, and why**: the VOR approach pages (`Fix Coordinates` tables of fixes with bearings and distances from a navaid, not legs); the ILS / LOC final and the missed approach as separate tables (not assembled with the initial segments: the `ILS … via` procedures end at
+  the IF/FAF segment); the holding tables; the SBAS FAS data blocks; the chart pages (page 1 of each document: drawings).
+- **Pagination** (not changed, cannot be tested without EAD): see `EAD_BASIC.md` § 10. The IAP search stops at 15 of 22 documents; the second page is asked with PrimeFaces parameter names that were never seen on the real screen. The log of the job holds the one diagnostic
+  line (what was sent, what came back).
+- **Bench**: K26 (three synthetic pages: layout, both blocks of the SID page, the reversed STAR page, the RNP page, the chain, five rejections, the orphan rows, the geometry), K19 (a confirmed and an unconfirmed split name), K22 (progress numbers, stats and message on
+  a failure, summary in the log), K12 (steps of `fetch_ad`). `python tests/v3/run.py --grep K`: 25 cases, all green.

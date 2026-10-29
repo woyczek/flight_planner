@@ -910,8 +910,9 @@ def detect_layout(rows):
     if 'coding table of' in low and 'designator' in low and 'route' in low and 'terminator' in low and 'coordinates' in low:       # Arménie : tables par procédure, cellules éclatées
         return 'am-coding'
     words = set(re.findall(r'[a-z]+', low))
-    if {'path', 'terminator', 'latitude', 'longitude', 'wpt', 'name', 'upper', 'lower', 'speed', 'limit'} <= words and 'true track' in low and 'magnetic track' in low \
-            and re.search(r'fly\s*-\s*by', low):      # Irlande : tableau sur une ligne avec coordonnées
+    if {'path', 'latitude', 'longitude', 'name', 'upper', 'lower', 'speed', 'limit', 'true', 'track'} <= words and ('wpt' in words or 'w pt' in low) and ({'terminator', 'term', 'descriptor'} & words) \
+            and ({'mag', 'magnetic'} & words) and re.search(r'fly\s*-\s*by', low) \
+            and re.search(r'\d(?:\s?\d){5}(?:\s*\.\s*\d+)?\s*[NS]?\s*/\s*\d(?:\s?\d){6}', text):      # Irlande : tableau sur une ligne avec coordonnées (« Mag track » à Dublin, « Magnetic track » ailleurs ; « Term » ou « Terminator »)
         return 'ei-coding'
     if ('serial number' in low or 'serial no' in low or 'recommended coding tables' in low or 'tabular description' in low or {'magnetic', 'variation'} <= words) \
             and 'path' in words and ('descriptor' in words or 'terminator' in words) and {'waypoint', 'fly', 'course', 'navigation', 'specification'} <= words:
@@ -1769,11 +1770,28 @@ def _tab_start(line):
 
 
 # ---------------------------------------------------------------------------------------------------------- « ei-coding » : table de codage irlandaise sur une ligne
-EI_TITLE = re.compile(r'^(\S+)\s+CAT\s+[A-D](?:\s*/\s*[A-D])*\s+(.+)$')
 EI_SHORT = re.compile(r'^[A-Z]{2,6} ?\d[A-Z]$')
-EI_ROW = re.compile(r'^(R(?:NAV|NP)\s*(?:\d+(?:\.\d+)?|APCH|AR)?)\s+([A-Z]{2})\s+([A-Z0-9]{2,7})\s+(\d(?:\s?\d){5}(?:\.\d+)?)\s*([NS])?\s*/\s*(\d(?:\s?\d){6}(?:\.\d+)?)\s*([EW])?\s+(.*)$')
-EI_LIM = r'(?:-|FL ?\d{2,3}|\d{3,5})'
-EI_CELLS = re.compile(r'^(Fly ?- ?By|Fly ?- ?Over|-)\s+(\d{1,3}(?:\.\d+)?|-)\s+(?:(\d{3}(?:\.\d+)?)\s*/\s*(\d{3}(?:\.\d+)?)|-(?:\s*/\s*-)?)\s+(?:(' + EI_LIM + r')\s*/\s*(' + EI_LIM + r')|-)\s+(\d{2,3}|-)(?:\s+(.*))?$', re.I)
+EI_CAT = re.compile(r'^(.+?)\s*CAT\s+[A-D](?:\s*/\s*[A-D])*\s+(.+)$')                       # « ABIDO1B CAT A/B SID RWY28L », « KERAV 1T INITIAL APPROACH CAT A/B/C/D ILS RWY16 »
+EI_SHORT_TITLE = re.compile(r'^[A-Z]{3,6} ?\d[A-Z]\s+(?:STAR|SID)\s+RWY\b')                 # « NIMAT 4L STAR RWY 28L/R » (sans CAT), suivi du désignateur court
+EI_APP_TITLE = re.compile(r'^(?=.*\bRWY ?\d{2})(?=.*\b(?:RNP|ILS|VOR|LOC|APP|APPROACH)\b)[^/]{6,90}$')       # « Dublin RNP RWY 28L via DUB », « KERAV 1T RWY16 VOR » : suivi d'un en-tête
+EI_NAV = r'R(?:NAV|NP)\s*(?:\d+(?:\.\d+)?|APCH|AR)?'
+EI_NAME = r'[A-Z0-9]{2,7}(?: [A-Z0-9]{1,4})?'          # un nom que la couche de texte a coupé (« DW0 24 ») : admis seulement s'il est confirmé (parse_ei_coding)
+EI_COORD = r'(?P<la>\d(?:\s?\d){5}(?:\.\d+)?)\s*(?P<lah>[NS])?\s*/\s*(?P<lo>\d(?:\s?\d){6}(?:\.\d+)?)\s*(?P<loh>[EW])?'
+EI_ROW_A = re.compile(r'^(?P<nav>' + EI_NAV + r')\s+(?P<term>[A-Z]{2})\s+(?P<name>' + EI_NAME + r')\s+' + EI_COORD + r'\s+(?P<rest>.*)$')           # 28 octobre : nav, TERMINAISON, nom, lat / lon, …
+EI_ROW_B = re.compile(r'^(?P<nav>' + EI_NAV + r')\s+(?P<name>' + EI_NAME + r'|-)\s+(?:' + EI_COORD + r'|-)\s+(?P<term>[A-Z]{2})\s+(?P<rest>.*)$')        # Dublin : nav, nom, lat / lon (ou « - »), TERMINAISON, …
+EI_NUM = r'\d(?:\s?\d){2,3}'                                                                 # 750, 3000, « 4 000 », « 30 00 », « 600 0 » (3 ou 4 chiffres : 5 avalerait les chiffres de la vitesse)
+EI_LIMV = r'(?:(?:[+-]\s?)?(?:A\s?' + EI_NUM + r'|FL\s?\d(?:\s?\d){1,2})|\+\s?' + EI_NUM + r'|' + EI_NUM + r')(?:\s?\+)?'       # « A 4000 », « +A3000 », « -FL100 », « A750 + », « FL 19 0 », « 6000 »
+EI_FLY = r'(?i:(?P<over>Fly ?- ?Over)|Fly ?- ?By|-)'
+EI_TRK = r'(?:(?P<true>\d(?:\s?\d){2}(?:\.\d+)?)\s*/\s*(?P<mag>\d(?:\s?\d){2})|-(?:\s*/\s*-)?)'     # cap vrai / cap magnétique (chiffres parfois séparés), ou « - »
+EI_DIST = r'(?P<nm>\d(?:\s?\d){0,2}(?:\.\d+)?|-)'                                           # « 9.7 », « 31.5 », « 1 0.6 » (chiffres séparés)
+EI_LIMS = r'(?:(?P<up>' + EI_LIMV + r'|-)\s*/\s*(?P<lw>' + EI_LIMV + r'|-)|-)'               # limite supérieure / limite inférieure
+EI_END = r'\s+' + EI_LIMS + r'(?:\s+(?P<spd>\d(?:\s?\d){1,2}|-)|(?=\s+Turn\b|$))'          # la vitesse manque quand le texte a perdu le dernier tiret avant « Turn L » ou la fin de ligne
+EI_VPA = r'(?:\s+(?:(?P<vpa>\d+(?:\.\d+)?)\s*/\s*(?P<tch>\d+|-)|-)(?=\s|$))?'                 # angle vertical / hauteur de franchissement (pages RNP et ILS)
+EI_REM = r'(?:\s+(?P<rem>.*))?$'
+EI_TAILS = {(order, vpa): re.compile('^' + EI_FLY + r'\s+' + (EI_DIST + r'\s+' + EI_TRK if order == 'A' else EI_TRK + r'\s+' + EI_DIST) + EI_END + (EI_VPA if vpa else '') + EI_REM)
+            for order in 'AB' for vpa in (True, False)}
+EI_STOP = re.compile(r'^(?:Hold(?:ing)? Identification|Descent Angle|Fix Coordinates|SBAS FAS|AIRAC Amdt)', re.I)
+EI_KINDS = (('STAR', r'\bSTAR\b'), ('SID', r'\bSID\b'), ('APP', r'\b(?:APP|APPROACH|IAP|IAC)\b'))
 
 
 def _ei_deg(digits, hemi, lon):
@@ -1784,55 +1802,199 @@ def _ei_deg(digits, hemi, lon):
     return round(-v if hemi in ('S', 'W') else v, 6)
 
 
-def parse_ei_coding(rows):
-    """Table de codage de l'Irlande (vue le 28 octobre 2026) : un tronçon par ligne avec les coordonnées « RNAV 1 TF GIVOL 520440.4 / 0082549.6 Fly - By 29.5 311.6 / 315 - / 6000 - - »
-    → { kind: 'MIXED', tables: [{ title, kind, name, runways, transition, legs }], warnings }. Bloc : « ELTIG1R CAT A/B/C/D STAR RWY16 » (type et piste), « ELTI1R » (désignateur court), un
-    en-tête sur 3 lignes (hémisphères dans « Latitude (N), Longitude (W) »), puis les lignes. Les groupes de chiffres éclatés d'une coordonnée sont rejoints. Cap vrai / magnétique, distance et
-    coordonnées sont lus (cap et distance sont ensuite contrôlés par check_geometry) ; limite supérieure = maximum, inférieure = minimum, égales = à l'altitude. Une ligne illisible rejette le bloc."""
-    warnings, tables, blocks, cur = [], [], [], None
-    for i, r in enumerate(' '.join(re.sub('[' + DASHES + ']', '-', x).replace('T F', 'TF').split()) for x in rows):
-        m = EI_TITLE.match(r)
-        if m and not r.startswith(('RNAV', 'RNP')) and i + 1 < len(rows) and EI_SHORT.match(rows[i + 1].strip()):
-            cur = {'title': r, 'name': rows[i + 1].strip(), 'head': [], 'rows': [], 'open': True}
+def _ei_is_row(line):
+    """Vrai si la ligne commence par une spécification de navigation (RNAV 1, RNAV1, RNP APCH…) et porte au moins quatre mots : une ligne de tronçon."""
+    return bool(re.match(r'^R(?:NAV|NP)(?![A-Z])', line)) and len(line.split()) >= 4
+
+
+def _ei_runways(text):
+    """Pistes d'un titre : « RWY28L », « RWY 10 L », « RWY 28L/R » (28L et 28R)."""
+    out = []
+    for m in re.finditer(r'\bRWY\s?(\d{2})\s?([LRC])?((?:\s?/\s?[LRC])*)\b', text.upper()):
+        out += [m.group(1) + s for s in [m.group(2) or ''] + re.findall(r'[LRC]', m.group(3))]
+    return list(dict.fromkeys(out))
+
+
+def _ei_title(lines, i):
+    """Titre de bloc à la ligne i : { title, name, kinds, runways } ou None. Trois formes : « ABIDO1B CAT A/B SID RWY28L » puis le désignateur court (le nom est ce désignateur) ;
+    « NIMAT 4L STAR RWY 28L/R » (sans CAT) puis le désignateur court ; un titre d'approche suivi d'un en-tête (« KERAV 1T INITIAL APPROACH CAT A/B/C/D ILS RWY16 », « Dublin RNP RWY 28L via DUB »,
+    « KERAV 1T RWY16 VOR »), dont le nom est le titre sans « CAT … » ni nom de terrain. Une approche interrompue seule (« MISSED APP ») a le type 'MISSED' : elle n'est pas une procédure."""
+    r = lines[i]
+    if _ei_is_row(r) or len(r) > 140:
+        return None
+    nxt = lines[i + 1] if i + 1 < len(lines) else ''
+    kinds_of = lambda t: [k for k, rx in EI_KINDS if re.search(rx, t.upper())]
+    cat = EI_CAT.match(r)
+    if (cat or EI_SHORT_TITLE.match(r)) and EI_SHORT.match(nxt):                        # départ ou arrivée : titre, puis désignateur court
+        return {'title': r, 'name': nxt, 'kinds': kinds_of(r), 'runways': _ei_runways(r)}
+    if (cat or EI_APP_TITLE.match(r)) and not EI_SHORT.match(nxt) and any(re.search(r'Latitude|WPT|Nav\.', x) for x in lines[i + 1:i + 6]):
+        name = re.sub(r'\s+', ' ', re.sub(r'\s*CAT\s+[A-D](?:\s*/\s*[A-D])*', ' ', r)).strip()
+        name = re.sub(r'^[A-Z][a-z]+ (?=[A-Z])', '', name)                              # « Dublin RNP RWY 28L via DUB » → « RNP RWY 28L via DUB »
+        return {'title': r, 'name': name, 'kinds': ['MISSED'] if 'MISSED APP' in r.upper() else ['APP'], 'runways': _ei_runways(r)}
+    return None
+
+
+def _ei_lines(rows):
+    """Lignes d'une page irlandaise remises d'aplomb : tirets et « T F » normalisés, chiffres décimaux recollés (« 3 . 7 », « 0054744. 1 »), « R NAV » rejoint, trio « RNP / ligne / APCH » (la
+    spécification de navigation coupée au-dessus et au-dessous de la ligne) rejoint en une ligne. Le texte de la page peut aussi venir À L'ENVERS (pages de STAR de Dublin : les lignes de chaque
+    bloc d'abord, puis son en-tête, son désignateur court et son titre) : si une ligne de tronçon précède le premier titre, l'ordre de toute la page est inversé."""
+    out = [' '.join(re.sub('[' + DASHES + ']', '-', x).replace('T F', 'TF').split()) for x in rows]
+    out = [re.sub(r'(?<=\d)\s*\.\s*(?=\d)', '.', re.sub(r'^R NAV\b', 'RNAV', x)) for x in out]
+    merged, i = [], 0
+    while i < len(out):
+        if out[i] == 'RNP' and i + 2 < len(out) and out[i + 2] in ('APCH', 'AR'):
+            merged.append(f'RNP {out[i + 2]} {out[i + 1]}')
+            i += 3
+        else:
+            merged.append(out[i])
+            i += 1
+    titled = lambda ls: next((k for k in range(len(ls)) if _ei_title(ls, k)), None)
+    first_row = lambda ls: next((k for k, x in enumerate(ls) if _ei_is_row(x)), None)
+    straight = lambda ls: titled(ls) is not None and (first_row(ls) is None or titled(ls) < first_row(ls))
+    return merged[::-1] if not straight(merged) and straight(merged[::-1]) else merged
+
+
+def _ei_cells(line, vpa):
+    """Une ligne de tronçon → dict des cellules (texte brut), ou (None, motif). Deux ordres de colonnes, reconnus à la ligne elle-même : A (28 octobre) « RNAV 1 TF GIVOL lat / lon Fly - By distance
+    cap / cap magnétique limites vitesse remarques » ; B (Dublin, 29 octobre) « RNAV1 GIVOL lat / lon TF Fly - By cap / cap magnétique distance limites vitesse [angle / hauteur] remarques »,
+    la première ligne d'un départ sans point (« RNAV1 RWY28 - CA … ») ayant « - » pour coordonnées. La terminaison est avant le nom (A) ou après les coordonnées (B) : une ligne que les deux
+    motifs liraient est ambiguë, de même qu'une ligne dont la fin se lirait de deux façons (distance et cap permutés) : elle n'est pas lue."""
+    a, b = EI_ROW_A.match(line), EI_ROW_B.match(line)
+    a = a if a and a.group('term') in PATH_TERMINATORS else None
+    b = b if b and b.group('term') in PATH_TERMINATORS else None
+    if a and b:
+        return None, 'ligne ambiguë (deux ordres de colonnes lisibles)'
+    head = a or b
+    if not head:
+        return None, 'ligne illisible'
+    reads = [t.groupdict() for t in (EI_TAILS[(o, vpa)].match(head.group('rest').strip()) for o in ('A', 'B')) if t]
+    if not reads:
+        return None, 'cellules illisibles'
+    if any(r != reads[0] for r in reads):
+        return None, 'cellules ambiguës (distance et cap lisibles dans les deux ordres)'
+    return {**head.groupdict(), **reads[0]}, None
+
+
+def _ei_limit(cell, column):
+    """Une limite « A 4000 », « +A3000 », « -FL100 », « A750 + », « FL080 », « 6000 » → ('FL100' | '4000', ou None si « - » ou absente). Le signe (+ à partir de, - jusqu'à) doit être celui de la
+    colonne (limite supérieure : -, inférieure : +) ; un signe contraire lève ValueError (ligne non lue)."""
+    s = re.sub(r'\s', '', cell or '-')
+    if s == '-':
+        return None
+    sign = '+' if '+' in s else '-' if s.startswith('-') else ''
+    if sign and sign != ('-' if column == 'up' else '+'):
+        raise ValueError(f'signe {sign} dans la colonne {"supérieure" if column == "up" else "inférieure"}')
+    s = s.replace('+', '').replace('-', '')
+    v = re.sub(r'^A', '', s)
+    if not (v.startswith('FL') and int(v[2:]) % 5 == 0 or v.isdigit() and int(v) % 50 == 0):      # 750, 3000, FL190 : une valeur qui n'est pas un palier courant est un chiffre avalé ou perdu, pas lue
+        raise ValueError(f'limite invraisemblable: {cell.strip()}')
+    return v
+
+
+def ei_names(rows):
+    """{ (lat, lon): {noms} } des lignes de tronçon d'une page irlandaise dont le nom n'est PAS coupé : de quoi confirmer un nom que la couche de texte a coupé (« DW0 24 » = DW024 si les
+    mêmes coordonnées portent ailleurs « DW024 »). Les pages du terrain se confirment entre elles ; un point renommé d'un cycle à l'autre (DW024 devenu ATGOW) a les deux noms."""
+    out = {}
+    for line in _ei_lines(rows):
+        if _ei_is_row(line):
+            c = _ei_cells(line, False)[0] or _ei_cells(line, True)[0]
+            if c and c.get('la') and ' ' not in c['name']:
+                out.setdefault((_ei_deg(c['la'], 'N', False), _ei_deg(c['lo'], 'E', True)), set()).add(c['name'])
+    return out
+
+
+def parse_ei_coding(rows, known=None):
+    """Tables de codage de l'Irlande (vues le 28 octobre 2026, puis à Dublin le 29) : un tronçon par ligne, avec ses coordonnées → { kind: 'MIXED', tables: [{ title, kind, name, runways,
+    transition, legs }], warnings }. Deux ordres de colonnes (voir _ei_cells) ; blocs « ABIDO1B CAT A/B SID RWY28L » + désignateur court, « NIMAT 4L STAR RWY 28L/R » (page à l'envers), titres
+    d'approche (voir _ei_title) ; un en-tête sur 2 ou 3 lignes (hémisphères dans « Latitude (N), Longitude (W) », colonne « VPA » pour les pages RNP et ILS). Les groupes de chiffres éclatés
+    d'une coordonnée ou d'un cap sont rejoints (un cap vrai / magnétique, une distance et des coordonnées sont ensuite contrôlés par check_geometry). Limite supérieure = maximum, inférieure =
+    minimum, égales = à l'altitude (« A750 + » : au moins 750 ft). La première ligne d'un départ « RWY28 - CA » est un tronçon sans point : id None, cap de la piste, altitude. « Turn L / R » (ou « L »,
+    « R » seul) des remarques = virage vers ce tronçon. Un nom coupé (« DW0 24 ») n'est lu que si les mêmes coordonnées portent ailleurs, non coupé, le même nom (`known` : { (lat, lon): nom } des
+    autres pages ; la page elle-même sert aussi) ; sinon, comme toute ligne illisible, ambiguë ou contraire à elle-même (signe d'une limite, piste du CA différente du titre), elle rejette le
+    bloc (« NON retenue »). Une ligne de tronçon hors de tout bloc titré, ou un bloc d'approche interrompue seul (qui ne forme pas une procédure), est signalé."""
+    warnings, tables, blocks, cur, orphans = [], [], [], None, 0
+    lines = _ei_lines(rows)
+    twins = {k: set(v) for k, v in (known or {}).items()}
+    for k, v in ei_names(rows).items():
+        twins.setdefault(k, set()).update(v)
+    for i, r in enumerate(lines):
+        t = _ei_title(lines, i)
+        if t:
+            cur = {**t, 'head': [], 'rows': [], 'open': True}
             blocks.append(cur)
-        elif cur is not None and cur['open'] and not EI_SHORT.match(r):
-            if re.match(r'^R(?:NAV|NP)\b', r):
+        elif _ei_is_row(r):
+            if cur is not None and cur['open']:
                 cur['rows'].append(r)
-            elif cur['rows']:
-                cur['open'] = False
             else:
-                cur['head'].append(r)
+                orphans += 1
+        elif EI_STOP.match(r):
+            if cur is not None:
+                cur['open'] = False
+        elif cur is not None and cur['open'] and not cur['rows'] and not EI_SHORT.match(r):
+            cur['head'].append(r)
+    if orphans:
+        warnings.append(f'{orphans} ligne(s) de tronçon hors d\'un bloc titré, NON retenue(s)')
     for b in blocks:
         head = ' '.join(b['head'])
         hs = re.search(r'Latitude \(([NS])\)', head)
         hw = re.search(r'Longitude \(([EW])\)', head)
-        kinds = [k for k, rx in (('STAR', r'\bSTAR\b'), ('SID', r'\bSID\b'), ('APP', r'\b(?:APP|APPROACH|IAP|IAC)\b')) if re.search(rx, b['title'].upper())]
-        rw = list(dict.fromkeys(re.findall(r'\bRWY ?(\d{2}[LRC]?)\b', b['title'].upper())))
-        legs, bad = [], []
+        vpa = bool(re.search(r'\bVPA\b', head))
+        legs, bad, partial = [], [], []
+        if b['kinds'] == ['MISSED']:
+            warnings.append(f'{b["title"][:60]}: approche interrompue seule, non lue (elle n\'est pas rattachée à une approche)')
+            continue
         for n, line in enumerate(b['rows']):
-            m = EI_ROW.match(line)
-            c = EI_CELLS.match(m.group(8).strip()) if m else None
+            c, why = _ei_cells(line, vpa)
             if not c:
-                bad.append(f'ligne illisible ({line[:40]})')
+                bad.append(f'{why} ({line[:40]})')
                 continue
-            lat = _ei_deg(m.group(4), m.group(5) or (hs.group(1) if hs else 'N'), False)
-            lon = _ei_deg(m.group(6), m.group(7) or (hw.group(1) if hw else 'E'), True)
-            up, lo = c.group(5), c.group(6)                                                  # « limite supérieure / limite inférieure »
-            fl = lambda v: None if v is None or v == '-' else re.sub(r'\s', '', v).upper()
-            nm = None if c.group(2) == '-' else float(c.group(2))
-            if m.group(2) == 'TF' and n and (nm is None or c.group(3) is None):
-                bad.append(f'{m.group(3)}: tronçon TF sans distance ou sans cap')
-            legs.append({'id': m.group(3), 'leg': m.group(2), 'over': True if re.search('over', c.group(1), re.I) else None, 'alt': alt_constraint(fl(lo), fl(up)),
-                         'kt': None if c.group(7) == '-' else int(c.group(7)), 'lat': lat, 'lon': lon, 'crs': round(float(c.group(4))) if c.group(4) else None,
-                         'true': float(c.group(3)) if c.group(3) else None, 'nm': nm, 'turn': None, 'seq': n + 1, 'remark': (c.group(8) or '').strip('- ')[:40], 'nav': m.group(1)})
-        if len(kinds) != 1:
+            try:
+                name = c['name']
+                fixless = c['la'] is None
+                if name == '-' and not fixless:
+                    raise ValueError('coordonnées sans nom')
+                if ' ' in name:
+                    if name.replace(' ', '') not in twins.get((_ei_deg(c['la'], 'N', False), _ei_deg(c['lo'], 'E', True)), ()):
+                        raise ValueError(f'nom coupé non confirmé: {name}')
+                    name = name.replace(' ', '')
+                rw = re.fullmatch(r'RWY(\d{2})', name)
+                if fixless and c['term'] not in FIXLESS:
+                    raise ValueError(f'{name}: tronçon {c["term"]} sans coordonnées')
+                if fixless and rw and rw.group(1) not in {x[:2] for x in b['runways']}:
+                    raise ValueError(f'{name}: piste différente de celle du titre')
+                if not fixless:
+                    if not (hs or c['lah']) or not (hw or c['loh']):
+                        raise ValueError('hémisphères non lus')
+                    lat = _ei_deg(c['la'], c['lah'] or hs.group(1), False)
+                    lon = _ei_deg(c['lo'], c['loh'] or hw.group(1), True)
+                else:
+                    lat = lon = None
+                up, lw = _ei_limit(c['up'], 'up'), _ei_limit(c['lw'], 'lw')
+                nm = None if c['nm'] in (None, '-') else float(re.sub(r'\s', '', c['nm']))
+                true = float(re.sub(r'\s', '', c['true'])) if c['true'] else None
+                crs = round(float(re.sub(r'\s', '', c['mag']))) if c['mag'] else None
+                rem = (c['rem'] or '').strip('- ')[:40]
+                turn = re.search(r'\bTurn\s*([LR])\b', rem)
+                turn = turn.group(1) if turn else rem if rem in ('L', 'R') else None
+                if c['term'] == 'TF' and n and (nm is None or true is None):
+                    raise ValueError(f'{name}: tronçon TF sans distance ou sans cap')
+                if c['spd'] is None:
+                    partial.append(name if not fixless else c['term'])
+                legs.append({'id': None if fixless else name, 'leg': c['term'], 'over': True if c['over'] else None, 'alt': alt_constraint(lw, up),
+                             'kt': None if c['spd'] in (None, '-') else int(re.sub(r'\s', '', c['spd'])), 'lat': lat, 'lon': lon, 'crs': crs, 'true': true, 'nm': nm,
+                             'turn': turn, 'seq': n + 1, 'remark': rem, 'nav': c['nav'], **({'vpa': -abs(float(c['vpa']))} if c.get('vpa') else {})})
+            except ValueError as e:
+                bad.append(f'{e} ({line[:40]})')
+        if len(b['kinds']) != 1:
             bad.append('type de procédure introuvable ou ambigu')
         if not b['rows']:
             bad.append('aucune ligne de tronçon')
         if bad:
             warnings.append(f'{b["name"]}: {len(legs)}/{len(b["rows"])} tronçon(s) lu(s) ({"; ".join(bad[:3])}), table NON retenue')
             continue
-        tables.append({'title': b['title'], 'kind': kinds[0], 'name': b['name'], 'runways': rw, 'transition': None, 'legs': legs})
+        if partial:
+            warnings.append(f'{b["name"]}: colonne de vitesse absente de la ligne de {", ".join(partial)} (cellule perdue par le texte de la page), vitesse non lue')
+        tables.append({'title': b['title'], 'kind': b['kinds'][0], 'name': b['name'], 'runways': b['runways'], 'transition': None, 'legs': legs})
     return {'kind': 'MIXED', 'tables': tables, 'warnings': warnings}
 
 
@@ -1886,6 +2048,8 @@ def records_uk_app(icao, parsed, source, cycle, at=None, state='UK'):
         pts, missed = [], False
         for lg in t['legs']:
             p = {'seq': len(pts) + 1, 'id': lg['id'], 'lat': lg['lat'], 'lon': lg['lon'], 'alt': lg['alt'], 'leg': lg['leg']}
+            if lg.get('vpa') is not None:
+                p['vpa'] = lg['vpa']
             if lg['kt']:
                 p['kt'] = lg['kt']
             if lg['crs'] is not None:
@@ -1900,10 +2064,10 @@ def records_uk_app(icao, parsed, source, cycle, at=None, state='UK'):
                 p['over'] = True
             if missed:
                 p['phase'] = 'missed'
-            if re.fullmatch(r'RW\d{2}[LRC]?', lg['id']) or 'MAPt' in lg['remark']:
+            if re.fullmatch(r'RW\d{2}[LRC]?', lg['id'] or '') or 'MAPt' in lg['remark']:
                 missed = True
             pts.append(p)
-        if any(p['lat'] is None for p in pts):
+        if any(p['lat'] is None and p['id'] is not None for p in pts):             # un tronçon sans point (CA, VA… : id None) n'a rien à résoudre
             warnings.append(f'{t["title"][:60]}: coordonnées absentes de la page, à résoudre par aerodb (base des points)')
         name = t['name']
         rw = f'RW{t["runways"][0]}' if len(t['runways']) == 1 else 'RWALL'
@@ -1978,11 +2142,14 @@ def build_pdf_dir(icao, pdfs, rows_of, cycle):
         pages_of[f] = [list(got)] if got and isinstance(got[0], str) else [list(x) for x in got]
         if not pages_of[f]:
             pages_of[f] = [[]]
-    coords = {}
+    coords, ei_known = {}, {}
     for f in sorted(pdfs):
         for rows in pages_of[f]:
             for k, v in waypoint_coords(rows).items():
                 coords.setdefault(k, v)
+            if detect_layout(rows) == 'ei-coding':        # les noms coupés par la couche de texte se confirment d'une page à l'autre du terrain (mêmes coordonnées, même nom entier)
+                for k, v in ei_names(rows).items():
+                    ei_known.setdefault(k, set()).update(v)
     for f in sorted(pdfs):
         known = 0
         last_kind = None                      # type de procédure lu à la page précédente du document (le mot STAR / SID n'est parfois imprimé qu'à la première page)
@@ -1992,7 +2159,7 @@ def build_pdf_dir(icao, pdfs, rows_of, cycle):
                 continue
             known += 1
             fp = fingerprint(rows)
-            parsed = PARSERS[layout](rows, kind_hint=last_kind) if layout == 'icao-tab' else PARSERS[layout](rows)
+            parsed = PARSERS[layout](rows, kind_hint=last_kind) if layout == 'icao-tab' else PARSERS[layout](rows, known=ei_known) if layout == 'ei-coding' else PARSERS[layout](rows)
             kinds_read = {t.get('kind') for t in parsed['tables']}
             if len(kinds_read) == 1 and None not in kinds_read:
                 last_kind = kinds_read.pop()

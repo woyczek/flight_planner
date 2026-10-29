@@ -762,19 +762,24 @@ def survey(lib, states, out, say=print):
     return res
 
 
-def fetch_ad(lib, icao, out, say=print, manual_dir=None):
+def fetch_ad(lib, icao, out, say=print, manual_dir=None, step=None):
     """Récupère les documents de procédures d'UN terrain, à la demande : cartes (Charts) dont le titre dit CODING / DEPARTURE / ARRIVAL / APPROACH et nom contenant AD_2_<OACI>_ ;
     télécharge et lit les tables de codage (textes lisibles ; disposition inconnue ou dessinée en vecteurs signalée, jamais devinée ; un fichier d'interprétation manuelle
-    <manual_dir>/<OACI>.json est ajouté s'il est là) ; écrit <out>/<OACI>.json (format publié) et la liste de tous les documents trouvés (adresses de cartes pour le lecteur PDF)."""
+    <manual_dir>/<OACI>.json est ajouté s'il est là) ; écrit <out>/<OACI>.json (format publié) et la liste de tous les documents trouvés (adresses de cartes pour le lecteur PDF).
+    `step(texte, fait, total, unité)` : l'avancement chiffré (le lanceur le donne au travail, d'où la page lit « 12/31 ») — les 4 recherches, les documents téléchargés, lus puis analysés
+    (une lecture de PDF dure de 1 à 2 s : sans ces nombres, les trois minutes d'un terrain à 31 documents se passent sans rien montrer) ; `fait` est le nombre de pas déjà terminés quand le texte
+    annonce le suivant."""
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import proc_eaip
+    step = step or (lambda *a: None)
     icao = icao_code(icao)
     if not lib.authority(icao[:2]):
         raise SystemExit(f'autorité {icao[:2]} non proposée par la bibliothèque')
     lib.choose('part', 'AD')
     found = {}
     lib.choose('type', 'Charts')
-    for k, kw in SURVEY_KEYS.items():
+    for i, (k, kw) in enumerate(SURVEY_KEYS.items()):
+        step(f'{icao}: recherche des documents {k}', i, len(SURVEY_KEYS), 'recherches')
         r = lib.search(name=f'AD_2_{icao}_', heading=kw, all_pages=True)
         say(f'{icao}: {k}: {r["count"]} document(s)' + (f' en {r["pages"]} pages' if r['pages'] > 1 else '')
             + (f' (ATTENTION : {r["warning"] or str(len(r["rows"])) + " seulement lus"})' if r['count'] > len(r['rows']) else ''))
@@ -786,19 +791,32 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None):
     pdfs = []
     # sans document « CODING » (ex. Arménie, Albanie), on télécharge les cartes SID / STAR / IAP : seules celles dont la disposition est connue seront lues, les autres signalées
     only_coding = any('CODING' in d['kinds'] for d in found.values())
-    for name, d in sorted(found.items()):
-        if 'CODING' in d['kinds'] or not only_coding:
-            raw = lib.fetch(d['row'])
-            say(f'  {name}: téléchargé' if raw else f'  {name}: téléchargement impossible')
-            if raw:
-                (cache / name).write_bytes(raw)
-                pdfs.append(name)
-    doc = proc_eaip.build_pdf_dir(icao, pdfs, lambda n: safe_pages(cache / n), lib_cycle(out)) if pdfs else \
+    wanted = [(name, d) for name, d in sorted(found.items()) if 'CODING' in d['kinds'] or not only_coding]
+    for i, (name, d) in enumerate(wanted):
+        step(f'{icao}: téléchargement de {name}', i, len(wanted), 'documents')
+        raw = lib.fetch(d['row'])
+        say(f'  {name}: téléchargé' if raw else f'  {name}: téléchargement impossible')
+        if raw:
+            (cache / name).write_bytes(raw)
+            pdfs.append(name)
+    read = []
+
+    def rows_of(name):
+        step(f'{icao}: lecture de {name}', len(read), len(pdfs), 'documents')
+        read.append(name)
+        return safe_pages(cache / name)
+    doc = proc_eaip.build_pdf_dir(icao, pdfs, rows_of, lib_cycle(out)) if pdfs else \
         {'schema': 1, 'icao': icao, 'cycle': lib_cycle(out), 'procedures': [], 'formats': [], 'warnings': ['aucun document de tables de codage trouvé']}
+    kinds = {}                                       # le type d'un PDF se lit UNE fois par document (une lecture dans un processus à part), pas une fois par page
+    n_files = len({f['file'] for f in doc['formats']})
     for fm in doc['formats']:
-        k = classify_name(cache / fm['file'])
+        if fm['file'] not in kinds:
+            step(f'{icao}: analyse de {fm["file"]}', len(kinds), n_files, 'documents')
+            kinds[fm['file']] = classify_name(cache / fm['file'])
+        k = kinds[fm['file']]
         fm['pdf'] = k
         say(f'  {"OK " if fm["ok"] else "NON"} {fm["file"]} | {k.get("kind")} | {fm["layout"]} ' + ''.join(f'| {x}' for x in fm['problems']))
+    step(f'{icao}: documents analysés', n_files, n_files, 'documents')
     ocr = ocr_pass(doc, pdfs, cache, icao, out, say)
     mf = Path(manual_dir) / f'{icao}.json' if manual_dir else None
     if mf and mf.is_file():

@@ -328,6 +328,14 @@ def _summary(stats):
             f'{"; " + str(stats["dropped"]) + " retirée(s)" if stats.get("dropped") else ""}{" (motifs : " + why + ")" if why else ""}')
 
 
+def _nothing_read(formats, stats):
+    """Message de l'échec « rien de lu » : combien de documents et de pages ont été vus, combien lus, et les motifs les plus fréquents des autres (« 31 document(s), 0 of 31 page(s) read
+    (mise en page non reconnue ×31) ») ; Fuel l'affiche tel quel après la raison, c'est tout ce que l'utilisateur voit d'une lecture qui n'a rien donné."""
+    docs = len({f.get('file') for f in formats if f.get('file')})
+    why = '; '.join(f'{t} ×{n}' for t, n in stats.get('reasons', [])[:2])
+    return f'no procedure could be read for this aerodrome: {docs} document(s), {stats.get("read", 0)} of {stats.get("pages", 0)} page(s) read' + (f' ({why})' if why else '')
+
+
 def _ead_fetch(job, args, ctx):
     """Verbe proc/ead-fetch : lit dans EAD Basic les procédures d'UN terrain, les installe sous data/proc/manual/ et les valide dans
     le dépôt des données (aerodb.fetchProcedures, § 10.20). Règle d'EAD Basic (frame/aerodb/EAD_BASIC.md § 1) : un terrain par geste de
@@ -362,16 +370,22 @@ def _ead_fetch(job, args, ctx):
         if job.cancelled():
             raise _Cancelled()
 
-    def failed(message, warnings=()):
-        return {'ok': False, 'reason': 'failed', 'message': clean(message), 'warnings': [clean(w) for w in warnings][:50]}
+    def step(text, done, total, unit):
+        job.step(proc_ead.sanitize(str(text), [user, password]), done, total, unit)      # le nombre de documents faits sur le total : la page le montre (aerodb.fetchProcedures → onProgress)
+        if job.cancelled():
+            raise _Cancelled()
+
+    def failed(message, warnings=(), stats=None):
+        return {'ok': False, 'reason': 'failed', 'message': clean(message), 'warnings': [clean(w) for w in warnings][:50], **({'stats': stats} if stats else {})}
     out = os.path.join(data, 'local', 'ead')
     t0 = time.time()
+    formats, stats = [], None                             # les comptes de ce qui a été vu, rendus aussi quand la lecture échoue (aerodb les passe : { ok: false, reason: 'failed', message, stats })
     try:
         os.makedirs(out, exist_ok=True)
         lib = proc_ead.EadLibrary(user, password, say, delay=1.0)
         if not lib.open():
             return failed('login refused')
-        doc = proc_ead.fetch_ad(lib, icao, out, say)
+        doc = proc_ead.fetch_ad(lib, icao, out, say, step=step)
         ocr = None
         ocr_path = os.path.join(out, f'{icao}.ocr.json')
         if os.path.isfile(ocr_path) and os.stat(ocr_path).st_mtime >= t0 - 1:   # écrit par CE travail (un reste d'une lecture ancienne est ignoré)
@@ -381,26 +395,30 @@ def _ead_fetch(job, args, ctx):
             raise _Cancelled()
         todo = [d for d in (doc, ocr) if d and d.get('procedures')]
         warnings = [w for d in (doc, ocr) if d for w in d.get('warnings', [])]
+        formats = [f for d in (doc, ocr) if d for f in d.get('formats', [])]
+        stats = proc_eaip.stats_of(formats, 0)            # sans procédure installée ; remplacé par le compte final en cas de succès
         if not todo:
-            return failed('no procedure could be read for this aerodrome', warnings)
+            job.log(clean(_summary(stats)))
+            return failed(_nothing_read(formats, stats), warnings, stats)
         for d in todo:                                    # ce que fait proc_manual.main() avant d'installer
             problems = proc_manual.verify(d)
             if problems:
-                return failed('geometry check failed: ' + '; '.join(problems[:3]), warnings)
+                job.log(clean(_summary(stats)))
+                return failed('geometry check failed: ' + '; '.join(problems[:3]), warnings, stats)
         installed = 0
-        formats = [f for d in (doc, ocr) if d for f in d.get('formats', [])]
+        say(f'{icao}: installation de {sum(len(d["procedures"]) for d in todo)} procédure(s)')
         for d in todo:
             try:
                 proc_manual.install(d, os.path.join(data, 'proc'), replace=False)
                 installed += len(d['procedures'])
             except SystemExit as e:                       # procédures d'une autre source dans le fichier du terrain : rien n'est écrit
                 if not installed:
-                    return failed(e, warnings)
+                    return failed(e, warnings, stats)
                 warnings.append(str(e))                   # le premier document est déjà installé : le second est signalé
     except _Cancelled:
         return {'ok': False, 'reason': 'cancelled'}
     except (SystemExit, Exception) as e:
-        return failed(e)
+        return failed(e, stats=stats)
     commit = _ead_commit(data, icao, ctx.get('git_cmd'), ctx.get('git_env', dict), warnings)
     stats = proc_eaip.stats_of(formats, installed)       # pages = documents lus (une entrée par page de tableau vue) ; pas de contrôle de géométrie par procédure ici : dropped 0
     job.log(clean(_summary(stats)))

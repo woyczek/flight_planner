@@ -1,0 +1,37 @@
+EIXX AD 2.24-26.2 AIP IRELAND
+11 AUG 2026
+Testville RNP RWY 28L via LUMEX
+Nav. WPT Latitude (N) / Path Fly - By True track / Distance Upper limit / Speed limit VPA (°) /
+Remarks
+Spec. Name Longitude (W) Term Fly - Over Mag track (NM) Lower limit (ft) (kts) TCH (ft)
+RNP
+LUMEX 532956.4 / 0061825.2 IF - - - A3000 / A3000 - - -
+APCH
+RNP
+DX017 533039.6 / 0055537.2 TF Fly-By 086.8 / 090 13.6 - 210 - -
+APCH
+RNP
+PAMIL 532410.8 / 0055645.6 TF Fly-By 186.0 / 189 6.5 - / +A3000 210 - Turn R
+APCH
+RNP
+MAXON 532432.4 / 0060318.0 TF Fly-By 275.3 / 278 3.9 - - - Turn R
+APCH
+RNP
+RW28L 532512.0 / 0061500.0 TF Fly-Over 275.5 / 278 7.0 - - 3 / 54 -
+APCH
+RNP
+GANOR 532606.0 / 0063133.6 TF Fly-By 275.3 / 278 9.9 -A3000 / - 200 - -
+APCH
+RNP
+DX034 533036.0 / 0063343.2 TF Fly-By 344.1 / 347 4.7 -A3000 / - 200 - Turn R
+APCH
+RNP
+LUMEX 532956.4 / 0061825.2 TF Fly-By 094.0 / 097 9.1 A3000 / A3000 200 - Turn R
+APCH
+Testville ILS RWY 28L MISSED APP
+Nav. WPT Latitude (N)/ Path Fly - By True track / Distance Upper limit / Speed Limit VPA (°) /
+Remarks
+Spec. Name Longitude (W) Term . Fly - over Mag . track (NM) Lower limit Limit (kts) TCH (ft)
+RNAV 1 GANOR 532606.0 / 0063133.6 IF Fly - By - - - A 3000 / - 200 - -
+RNAV 1 DX034 533036.0 / 0063343.2 TF Fly - By 344.1 / 347 4.7 - A 3000 / - 200 - R
+AIRAC Amdt 008/2026 TEST AUTHORITY

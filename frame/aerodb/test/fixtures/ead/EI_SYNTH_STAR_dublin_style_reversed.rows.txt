@@ -1,0 +1,26 @@
+AUTHORITY
+AIRAC Amdt 004/2026 TEST
+IRELAND
+ZORBA 530829.3 / 0054822.5 342.4 344 220 +A5000 -FL140 1 L
+Maximum Minimum Maximum
+Hold Identification – EIXX AD 2.24-22.1
+RNAV 1 WEXAD 532248.0 / 0053936.0 TF Fly-By 329.2 / 332 5.6 FL070 / FL070 220 -
+RNAV 1 DX705 531800.0 / 0053448.0 TF Fly-By 334.5 / 337 6.7 - / +A3000 220 Turn L
+RNAV 1 KIPLO 531200.0 / 0053000.0 IF - - - -FL170 / +FL150 - -
+Speed limit (kts) Remarks
+Spec. Name Longitude (W) Term Fly-Over Mag track (°) (NM) Lower limit (ft)
+Nav. WPT Latitude (N) / Path Fly-By True track / Distance Upper limit /
+KIPL4L
+KIPLO 4L STAR RWY 28L/R
+RNAV 1 FANTO 532002.4 / 0054930.0 TF Fly-By 250.5 / 254 11.3 - / +A3000 220 -
+RNAV 1 DX814 532349.2 / 0053140.8 TF Fly-By 159.6 / 163 11.2 FL080 / FL080 220 Turn R
+RNAV 1 HEBRO 533419.2 / 0053813.2 TF Fly-By 126.6 / 130 5.7 FL080 / FL080 220 Turn L
+RNAV 1 QUILO 533744.4 / 0054557.6 TF Fly-By 182.4 / 185 20.2 FL080 / FL080 220 Turn R
+RNAV 1 ZORBA 535754.0 / 0054431.2 IF - - - - FL240 / - - -
+Speed limit (kts) Remarks
+Spec. Name Longitude (W) Term Fly-Over Mag track (°) (NM) Lower limit (ft)
+Nav. WPT Latitude (N) / Path Fly-By True track / Distance Upper limit /
+ZORB4L
+ZORBA 4L STAR RWY 28L/R
+16 MAY 2026
+EIXX AD 2.24-22.2 AIP

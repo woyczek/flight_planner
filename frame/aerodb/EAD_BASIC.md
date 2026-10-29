@@ -528,3 +528,61 @@ Owner decisions still open:
 - installing the UK and Austrian OCR files in `data/proc` and committing `data/proc` in the data repository;
 - the Settings › Maintenance button (not done);
 - unsigned altitudes in `de-route` tables typed "min" when the header says Minimum altitude (session choice, to confirm).
+
+## 10. Ireland, Dublin (EIDW): the second layout of `ei-coding` (29 October 2026)
+
+**Reported** (the user, on the workstation): « Lire les procédures » for EIDW (Dublin; `EAD_STATES` EI, outcome `read`) ran 3.5 minutes and ended `{ ok: false, reason: 'failed', message: 'no procedure could be read for this aerodrome' }`:
+`CODING: 0 document(s)`, 31 chart documents downloaded (SID 12, STAR 4, IAP 22 of which 15 listed), every one « disposition non reconnue ». Nothing was shown in Fuel during the reading or after it.
+
+**Cause 1 — the layout was not recognised.** `detect_layout` asked for the words `terminator` and the phrase `magnetic track`; Dublin prints `Term` and `Mag track` (the initial-approach pages print `performance descriptor` and no terminator at all, and one
+page splits `WPT` in `W PT`). The rule now asks for the stable words (path, latitude, longitude, name, upper, lower, speed, limit, true, track), one of `wpt` / `w pt`, one of `terminator` / `term` / `descriptor`, `mag` or `magnetic`, a `Fly - By`,
+**and at least one co-ordinate row** (`DDMMSS.s / DDDMMSS.s`, digits possibly spaced): the header alone is no longer enough.
+
+**Cause 2 — the columns are not in the order of the 28 October page.** Two orders are read now, told apart **by the line itself** (a row that both patterns could read is ambiguous and is not read):
+
+| | order A (28 October) | order B (Dublin, 29 October) |
+|---|---|---|
+| row | `RNAV 1 TF GIVOL lat / lon Fly - By 29.5 311.6 / 315 - / 6000 - -` | `RNAV1 DW682 530541.9 / 0061715.9 TF Fly - By 200.2 / 203 11.2 - - Turn R` |
+| cells | nav spec, **terminator**, name, lat / lon, fly-by, **distance**, true / mag track, limits, speed, remarks | nav spec, name, lat / lon, **terminator**, fly-by, true / mag track, **distance**, limits, speed, [VPA / TCH], remarks |
+| seen on | the page of 28 October; the *initial approach* pages with a `Navigational Path` header (`KERAV 1T INITIAL APPROACH CAT A/B/C/D ILS RWY16`) | SID, STAR, RNP and ILS pages of Dublin |
+
+Other things the Dublin pages do, each handled:
+
+- **First leg of a departure without a point**: `RNAV1 RWY28 - CA - 275.2 / 278 - - / A750 + - -` (some pages: `RNAV 1 - - CA - 275.3 / 277 - - / + A750`). It becomes a **CA leg with `id: null`**, the runway course (`crs` 278, `true` 275.2) and the altitude
+  (`A750 +` = at or above 750 ft: `min`). `RWYnn` must be the runway of the block title, else the block is not read. No « co-ordinates to resolve » warning for a point-less leg.
+- **Limits**: columns `Upper limit / Lower limit` read as everywhere (**upper = maximum, lower = minimum, equal = at**): `A 4000 / -` = at or below 4000 ft, `- / A750 +` = at or above 750 ft, `FL080 / FL080` = at FL080, `-FL170 / +FL150` = between. The printed sign
+  must be the column's (`-` upper, `+` lower), possibly apart from the level (`- FL240 / -`, `+ A3000`); a contrary sign rejects the block. Levels are `A 4 000` / `A 30 00` / `FL 19 0` (digits spaced by the text layer), `A750+`, `+A3000`, `FL90`. A level that is
+  not a usual step (a multiple of 50 ft, of 5 FL) is a digit lost or swallowed: the row is not read.
+- **Turn**: `Turn L`, `Turn R`, `Turn R , VOR`, `Turn R, IAF`, and a lone `L` / `R` (ILS and RNP pages) → `turn`, the direction of the turn onto that leg (as in the SIA tables).
+- **Digits spaced by the text layer**: `52284 3 . 7` (lat), `007232 8 . 6` (lon), `15 7` (magnetic track), `092. 6`, `1 0.6` (distance), `2 2 0` (speed) are joined (on the digit counts: 6 + decimals, 7 + decimals, 3, 3).
+- **Names cut in two** (`DW0 24`, `OLONO 1B`): a **point** name is joined only if the **same co-ordinates** carry the whole name elsewhere in the aerodrome's pages (`DW024` appears whole in the 2020 pages; the 2022 pages call the same point `ATGOW`: both
+  names are admitted); otherwise the block is rejected (« nom coupé non confirmé »). Block titles and short designators are read as they come (`OLONO 1B`, `OLON 1B`, `BAMLI 1NCAT A/B`).
+- **STAR pages whose text comes backwards**: the text layer gives the lines of each block, then its header, its short designator (`NIMA4L`) and its title (`NIMAT 4L STAR RWY 28L/R`), the whole page being in reverse reading order. A page where a leg row precedes the first
+  title is read from the end. `RWY 28L/R` gives two runways.
+- **RNP pages**: the navigation specification is cut around the row (`RNP` / `DUB 532957.8 / … IF …` / `APCH`): the three lines are joined; a VPA / TCH column (`3 / 54`: `vpa` −3.0). The missed approach after the runway point `RWnn` is marked `phase: 'missed'`
+  (existing rule of `records_uk_app`).
+- **Incomplete rows**: `… 3.8 - / A950` (three RNP blocks of RWY 34) and `… 23.5 - FL230 / - Turn R` (a SID) lack their last cells (the text layer lost them): read with no speed, said in a warning. Anything else that does not parse rejects the block.
+- **Skipped on purpose**: a *missed approach table alone* (`Dublin ILS RWY 28L MISSED APP`, 4 of them): it is not a procedure (the ILS final and the interruption are not coded together), said in a warning; the holding tables (`Hold Identification`); the
+  `Descent Angle … Fix Coordinates` tables of the ILS / LOC / VOR pages and the `SBAS FAS Data Block` pages (no legs).
+- **Naming**: a SID / STAR is named by its **coded designator** (`ABID1B`, `NIMA4L`: the line under the title), as before; an approach by its title without the aerodrome (`RNP RWY 28L via DUB`, `KERAV 1T INITIAL APPROACH ILS RWY16`). The `ILS … via <fix>` pages
+  and the `INITIAL APPROACH` pages code the initial and intermediate segments only: those are the legs read.
+
+**Measured on the 31 documents of the user's run** (offline, `build_pdf_dir` on the text of the downloaded PDF; the old code: 0 page recognised, 0 procedure):
+
+| | |
+|---|---|
+| documents / pages | 31 / 80 |
+| pages recognised and read | **43** (`ei-coding`; before: 0) ; 2 documents (the two VOR approaches, `Fix Coordinates` tables) stay « mise en page non reconnue » |
+| pages not recognised, not tables of legs | 31 chart pages (page 1), 4 `SBAS FAS Data Block` pages, the 2 VOR pages |
+| procedures read | **196**: 115 SID, 43 STAR, 38 APP (RNP and initial approaches); 0 nameless, 0 in doubt, 0 removed |
+| leg rows / legs kept | 1 012 / 999 (the other 13 are the rows of the 4 missed-approach tables left out) |
+| geometry check (`check_geometry`: true track and distance against the printed co-ordinates) | 659 TF legs checked, **0 table rejected** ; `proc_manual.verify` finds nothing |
+| rows read without speed | 4 (NEVRI of NEVR1N; DW033 in the three RWY 34 RNP blocks) |
+
+**Fixtures**: three **synthetic** pages in `frame/aerodb/test/fixtures/ead/` (invented points and positions computed to agree, the layout and the text-layer faults of the real pages reproduced: SID with two blocks, STAR in reverse order, RNP with the missed approach
+table alone). The real rows are not committed (§ 4: a State's AIP does not go into the public repository). Bench: K26 (new), K19 (adjusted), K22, K12.
+
+**Pagination of the survey** (`EadLibrary.search(all_pages=True)`, written on 28 October, untested without EAD): the IAP search found 22 documents and read 15. The code asks for the second page with the PrimeFaces data-table parameters (`mainForm:searchResults`,
+`…_pagination=true`, `…_first=15`, `…_rows=15`, `…_skipChildren`, `…_encodeFeature`, `execute` and `render` on the table, no `javax.faces.partial.event`); the names were not seen on the real screen. When the answer to page 2 is an error or has no result table, it stops
+with `« 15 ligne(s) lue(s) sur 22 : la page 2 a répondu par une erreur ou sans tableau de résultats »` and goes on with what it has. The first paging request logs once what was sent and the anatomy of the answer (`pagination (noms de paramètres non vus…`): that
+line is in the job log. Not changed. The numbering of the documents read (AD 2.24-10 … 42) lacks 24-31 and 24-34: charts of the missing seven could be among them.

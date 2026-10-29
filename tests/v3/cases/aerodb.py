@@ -563,10 +563,14 @@ def k12(c):
             O = importlib.import_module('proc_ocr')
             real_backend, said = O.backend, []
             O.backend = lambda: None                      # sans moteur d'OCR : le message d'installation, et on continue
+            steps = []
             try:
-                out = E.fetch_ad(lib, 'EGLL', td, said.append)
+                out = E.fetch_ad(lib, 'EGLL', td, said.append, step=lambda *a: steps.append(a))
             finally:
                 O.backend = real_backend
+            got = [(x[1:]) for x in steps]
+            c.ok(got[:4] == [(0, 4, 'recherches'), (1, 4, 'recherches'), (2, 4, 'recherches'), (3, 4, 'recherches')] and (0, 1, 'documents') in got and sum(x[3] == 'documents' for x in steps) >= 3,
+                 str(steps), 'fetch: the steps carry numbers (4 searches, then the documents downloaded, read and analysed, i of n) for the progress bar')
             c.ok(any('OCR absent' in x and 'rapidocr-onnxruntime' in x for x in said) and not (Path(td) / 'EGLL.ocr.json').exists(), '\n'.join(said),
                  'fetch: an unreadable (vector or image) document with no OCR engine prints the install message and goes on; no .ocr.json is written')
             f = json.loads((Path(td) / 'EGLL.json').read_text(encoding='utf-8'))
@@ -962,7 +966,7 @@ def k19(c):
     if tools not in sys.path:
         sys.path.insert(0, tools)
     P = importlib.import_module('proc_eaip')
-    pts = [('FIXAA', 51.80, -7.80), ('FIXBB', 52.05, -8.40), ('FIXCC', 52.00, -8.60), ('FIXDD', 51.90, -8.50)]          # invented points (west longitudes)
+    pts_all = [('FIXAA', 51.80, -7.80), ('FIXBB', 52.05, -8.40), ('FIXCC', 52.00, -8.60), ('FIXDD', 51.90, -8.50)]          # invented points (west longitudes)
 
     def dd(v, lon):
         a = abs(v)
@@ -970,15 +974,17 @@ def k19(c):
         s = round((a - d - m / 60) * 3600, 1)
         return f'{d:0{3 if lon else 2}d}{m:02d}{s:04.1f}'
 
-    def block(name, short, bump=0.0, spaced=False, mangle=False):
-        """Lines of one block: title, short designator, header over 3 lines, then one row per leg; `bump` falsifies a true track, `spaced` splits a co-ordinate, `mangle` splits a name."""
+    def block(name, short, bump=0.0, spaced=False, mangle=False, lone=False):
+        """Lines of one block: title, short designator, header over 3 lines, then one row per leg; `bump` falsifies a true track, `spaced` splits a co-ordinate, `mangle` splits a name (the same
+        co-ordinates carry the whole name in the other blocks: confirmed), `lone` gives the last point positions found nowhere else, with a split name (not confirmed)."""
+        pts = pts_all[:3] + [('FIXEE', 51.95, -8.45)] if lone else pts_all
         rows = [f'{name} CAT A/B/C/D STAR RWY16', short, 'Navigation Path Fly - By or Distance True track / Upper limit / Speed Limit', 'Remarks',
                 'Performance Terminator WPT Name Latitude (N), Longitude (W) Fly-Over (NM) Magnetic track Lower limit (kts)']
         for i, (n, la, lo) in enumerate(pts):
             lon = dd(lo, True)
             if spaced and i == 0:
                 lon = lon[:3] + ' ' + lon[3:]
-            if mangle and i == 3:
+            if (mangle or lone) and i == 3:
                 n = n[:2] + ' ' + n[2:]
             if i == 0:
                 rows.append(f'RNAV 1 IF {n} {dd(la, False)} / {lon} - - - - / FL080 - -')
@@ -988,12 +994,13 @@ def k19(c):
             lim = {1: '- / 6000', 2: '-', 3: '3000 / 3000'}[i]
             rows.append(f'RNAV 1 TF {n} {dd(la, False)} / {lon} Fly - By {nm:.1f} {brg + (bump if i == 2 else 0):.1f} / {round(brg + 4):03d} {lim} {spd} -')
         return rows
-    page = ['EIXX AD 2.24-14.2 AIP IRELAND', '11 OCT 2018'] + block('ABCDE1R', 'ABCD1R', spaced=True) + block('FGHIJ1R', 'FGHI1R', bump=5.0) + block('KLMNO1R', 'KLMN1R', mangle=True) + ['Hold Identification - EIXX AD 2.24-14']
+    page = ['EIXX AD 2.24-14.2 AIP IRELAND', '11 OCT 2018'] + block('ABCDE1R', 'ABCD1R', spaced=True) + block('FGHIJ1R', 'FGHI1R', bump=5.0) + block('KLMNO1R', 'KLMN1R', mangle=True) + block('PQRST1R', 'PQRS1R', lone=True) + ['Hold Identification - EIXX AD 2.24-14']
     c.eq(P.detect_layout(page), 'ei-coding', 'the page is recognised before the generic coding-table layout', what='detect_layout')
     r = P.parse_ei_coding(page)
-    c.eq(([t['name'] for t in r['tables']], [t['kind'] for t in r['tables']], [t['runways'] for t in r['tables']]), (['ABCD1R', 'FGHI1R'], ['STAR', 'STAR'], [['16'], ['16']]),
-         'short designators, kind and runway from the title; the block with a split name is rejected', what='tables')
-    c.eq(sum('NON retenue' in x for x in r['warnings']), 1, 'the unreadable row is reported', what='rejected block')
+    c.eq(([t['name'] for t in r['tables']], [t['kind'] for t in r['tables']], [t['runways'] for t in r['tables']]), (['ABCD1R', 'FGHI1R', 'KLMN1R'], ['STAR', 'STAR', 'STAR'], [['16'], ['16'], ['16']]),
+         'short designators, kind and runway from the title; a split name is read when the same co-ordinates carry the whole name elsewhere on the page, the block with a split name found nowhere else is rejected', what='tables')
+    c.eq(sum('NON retenue' in x for x in r['warnings']), 1, 'the unconfirmed split name is reported', what='rejected block')
+    c.eq([lg['id'] for lg in r['tables'][2]['legs']][3], 'FIXDD', 'a split name confirmed by its twin is put back whole', what='confirmed name')
     t0 = r['tables'][0]
     c.eq([lg['id'] for lg in t0['legs']], ['FIXAA', 'FIXBB', 'FIXCC', 'FIXDD'], 'one leg per row', what='legs')
     c.eq((t0['legs'][0]['alt'], t0['legs'][1]['alt'], t0['legs'][2]['alt'], t0['legs'][3]['alt']),
@@ -1002,8 +1009,8 @@ def k19(c):
     c.ok(abs(t0['legs'][0]['lon'] + 7.8) < 0.0002 and abs(t0['legs'][0]['lat'] - 51.8) < 0.0002, (t0['legs'][0]['lat'], t0['legs'][0]['lon']), '(51.8, -7.8)', 'a co-ordinate split in digit groups is joined; west longitude negative')
     c.eq(P.check_geometry(t0['legs']), [], 'courses and distances agree with the printed positions', what='geometry')
     recs, w = P.records_uk_app('EIXX', r, 'f.pdf', '2026-10-01', None, 'EI')
-    c.eq((len(recs), sum('NON retenue' in x and 'incoh' in x for x in w), recs[0]['kind'], recs[0]['status']), (1, 1, 'STAR', 'check'),
-         'the geometry check keeps the consistent table and rejects the one whose true track is 5 degrees off', what='geometry check')
+    c.eq((len(recs), sum('NON retenue' in x and 'incoh' in x for x in w), recs[0]['kind'], recs[0]['status']), (2, 1, 'STAR', 'check'),
+         'the geometry check keeps the consistent tables and rejects the one whose true track is 5 degrees off', what='geometry check')
 
 
 # ------------------------------------------------------------------------------------------------ OCR of drawn pages (static)
@@ -1479,8 +1486,10 @@ def k22(c):
         def open(self):
             return self.ok
 
-    def fake_fetch(lib, icao, out, say=print):
+    def fake_fetch(lib, icao, out, say=print, step=None):
         say(f'{icao}: connecté en tant que {USER} avec le mot de passe {PASS}')               # a leak, to see it cleaned
+        if step:
+            step(f'{icao}: lecture de EI_AD_2_{icao}_24-3.pdf {PASS}', 3, 31, 'documents')       # the numbers of the reading: 3 documents read out of 31
         say(f'GET http://x/?j_username={USER}&j_password=' + EAD.urllib.parse.quote(PASS))
         Path(out).mkdir(parents=True, exist_ok=True)
         d = seen['doc'] if 'doc' in seen else doc_of(icao)
@@ -1514,6 +1523,9 @@ def k22(c):
                  'success: ok, the aerodrome, one procedure installed, no OCR, the warnings of the reading')
             c.ok(r['stats']['procedures'] == 1 and r['stats']['dropped'] == 0 and set(r['stats']) == {'pages', 'read', 'rejected', 'procedures', 'dropped', 'doubt', 'reasons'} and r['file']['icao'] == 'EGXX'
                  and len(r['file']['procedures']) == 1, str(r)[:300], 'the result carries the same stats keys as the eAIP job and the installed file as written')
+            v = job.view()
+            c.eq((v['done'], v['total'], v['unit']), (3, 31, 'documents'), 'the job carries the numbers of the fetch steps (3 documents of 31): onProgress shows « 3/31 »', what='progress numbers')
+
             inst = json.loads((data / 'proc' / 'manual' / 'EGXX.json').read_text())
             idx = json.loads((data / 'proc' / 'manual' / 'index.json').read_text())
             c.ok(len(inst['procedures']) == 1 and sorted(idx['aerodromes']) == ['EGXX', 'KSEA'] and idx['aerodromes']['EGXX']['STAR'] == 1, str(idx),
@@ -1567,6 +1579,22 @@ def k22(c):
             seen['doc'] = {**doc_of(), 'procedures': []}
             r = run(ctx)
             c.ok(r['ok'] is False and r['reason'] == 'failed' and 'no procedure' in r['message'], str(r), 'nothing read is failed, not an empty file installed')
+            # EIDW, 29 Oct 2026: 31 documents downloaded, none with a known layout: the failure says what was seen, the stats are given, the log has the summary
+            unknown = [{'file': f'EI_AD_2_EGXX_24-{i}.pdf', 'pages': 3, 'layout': None, 'fingerprint': None, 'ok': False, 'problems': ['disposition non reconnue']} for i in range(31)]
+            seen['doc'] = {**doc_of(), 'procedures': [], 'formats': unknown}
+            job = RJ.Job('proc', 'ead-fetch', {'icao': 'EGXX'})
+            r = run(ctx, job=job)
+            c.eq((r['ok'], r['reason'], r['stats']), (False, 'failed', {'pages': 31, 'read': 0, 'rejected': 31, 'procedures': 0, 'dropped': 0, 'doubt': 0, 'reasons': [['mise en page non reconnue', 31]]}),
+                 'a failure carries stats: 31 pages seen, none read, the reason counted', what='failure stats')
+            c.eq(r['message'], 'no procedure could be read for this aerodrome: 31 document(s), 0 of 31 page(s) read (mise en page non reconnue ×31)',
+                 'the message says how many documents and pages were seen, how many were read, and why not', what='failure message')
+            c.ok(any('0 procédure(s) installée(s)' in x and '31 non lue(s)' in x for x in job.view()['log']), str(job.view()['log'][-2:]), 'the job log ends with the summary, failure or not')
+            bad = doc_of()
+            bad['procedures'][0]['points'][2]['nm'] += 2.0
+            bad['formats'] = unknown[:2]
+            seen['doc'] = bad
+            r = run(ctx)
+            c.ok(r['ok'] is False and 'geometry check failed' in r['message'] and r['stats']['pages'] == 2 and r['stats']['procedures'] == 0, str(r)[:300], 'a geometry failure carries the stats too')
             seen.pop('doc')
 
         # an OCR document written by THIS run is installed too (a stale one is ignored)
@@ -1601,7 +1629,7 @@ def k22(c):
             # through Jobs: a second start while one runs is 409; the cancel is seen between two messages
             gate = threading.Event()
 
-            def slow_fetch(lib, icao, out, say=print):
+            def slow_fetch(lib, icao, out, say=print, step=None):
                 gate.set()
                 for _ in range(300):
                     say('waiting')
@@ -2264,3 +2292,94 @@ def k27(c):
     got = c.js('(t) => window.AeroSources.openair(t, "xplane").map(z => [z.name, z.lower, z.upper])', txt)
     c.eq(got, [['DUBLIN CTA', '3000 ft AMSL', '24500 ft AMSL'], ['TEST CTR', 'SFC', '300 m ASFC'], ['TEST TMA', '1500 ft AMSL', 'FL 95']],
          '« 3000MSL » and « 24500 MSL » are feet; « 300 m AGL » stays metres; ft and FL unchanged', what='OpenAir limits')
+
+
+
+
+# ------------------------------------------------------------------------------------------------ Irish tables, Dublin variants (static)
+@case('K26', 'Irish coding tables, Dublin variants: column order B, reversed STAR pages, RNP pages, point-less CA leg', 'K', static=True,
+      rule='aerodb DECISIONS 29 Oct 2026 (EIDW): one tolerant row reader that picks the column order from the line itself; a row that stays ambiguous, unconfirmed or contradicting itself rejects its block, never guessed')
+def k26(c):
+    import importlib
+    import sys
+    tools = str(c.root / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    P = importlib.import_module('proc_eaip')
+    M = importlib.import_module('proc_manual')
+    fx = c.root / 'frame/aerodb/test/fixtures/ead'
+
+    def page(name):
+        return (fx / f'EI_SYNTH_{name}.rows.txt').read_text(encoding='utf-8').splitlines()
+    sid, star, app = page('SID_dublin_style'), page('STAR_dublin_style_reversed'), page('RNP_dublin_style')
+    c.eq([P.detect_layout(x) for x in (sid, star, app)], ['ei-coding'] * 3, 'the three pages (« Mag track », « Term », text in reverse order, RNP / APCH on three lines) are recognised', what='detect_layout')
+    c.eq(P.detect_layout([x for x in sid if 'CAT A/B' not in x and 'RNAV1' not in x]), None, 'the header words alone (no co-ordinate row) are not enough', what='no rows')
+    # departures: two blocks, the two header layouts, glitches of the text layer
+    r = P.parse_ei_coding(sid)
+    c.eq(([t['name'] for t in r['tables']], [t['kind'] for t in r['tables']], [t['runways'] for t in r['tables']], r['warnings']), (['RUBE1B', 'MAVI 1B'], ['SID', 'SID'], [['28L'], ['28L']], []),
+         'two SID blocks: coded designator (also with a space), kind and runway from the title, nothing reported', what='SID tables')
+    a, b = r['tables'][0]['legs'], r['tables'][1]['legs']
+    c.eq([(x['id'], x['leg']) for x in a], [(None, 'CA'), ('DX080', 'DF'), ('DX682', 'TF'), ('KELOT', 'TF'), ('DX024', 'TF'), ('RUBEN', 'TF')], 'legs in order; the RWY28 line is a CA leg without a point', what='RUBE1B legs')
+    c.eq((a[0]['crs'], a[0]['true'], a[0]['alt'], a[0]['lat']), (278, 275.2, {'type': 'min', 'ft': 750}, None), 'CA: the runway course (magnetic and true), at or above 750 ft (« A750 + »), no position', what='CA')
+    c.eq([x['turn'] for x in a], [None, 'L', 'R', 'L', None, 'R'], 'turns from the remarks', what='turns')
+    c.eq((a[5]['alt'], a[2]['alt']), ({'type': 'max', 'ft': 4000}, None), '« A 4000 / - » : upper limit = at or below 4000 ft', what='limits')
+    c.ok(abs(a[3]['lat'] - 52.9490) < 0.0004 and a[3]['crs'] == 158 and a[4]['true'] == 20.0 and b[2]['nm'] == 11.8, str([a[3]['lat'], a[3]['crs'], a[4]['true'], b[2]['nm']]),
+         'digits cut by the text layer are joined: « 52565 6 . 4 », « 15 8 », « 020. 0 », « 1 1.8 »')
+    c.eq(([x['id'] for x in b], b[1]['turn'], b[0]['alt']), ([None, 'DX110', 'DX024', 'MAVIS'], 'R', {'type': 'min', 'ft': 750}),
+         '« DX0 24 » is put back whole (same position as DX024 above); « Turn R , VOR » is a right turn; « A750+ » joined', what='MAVI 1B')
+    c.eq([P.check_geometry(t['legs']) for t in r['tables']], [[], []], 'true tracks and distances agree with the printed positions', what='geometry')
+    # arrivals: the text layer gives the page backwards
+    s = P.parse_ei_coding(star)
+    c.eq(([t['name'] for t in s['tables']], [t['kind'] for t in s['tables']], [t['runways'] for t in s['tables']], s['warnings']),
+         (['ZORB4L', 'KIPL4L'], ['STAR', 'STAR'], [['28L', '28R'], ['28L', '28R']], []), 'STAR page in reverse order: both blocks, « RWY 28L/R » gives two runways, the holding lines are not legs', what='STAR tables')
+    z, k = s['tables'][0]['legs'], s['tables'][1]['legs']
+    c.eq([x['id'] for x in z], ['ZORBA', 'QUILO', 'HEBRO', 'DX814', 'FANTO'], 'legs back in flying order (the IF first)', what='order')
+    c.eq(([x['alt'] for x in z][:2], z[4]['alt'], z[1]['kt'], z[1]['turn']), ([{'type': 'max', 'ft': 24000}, {'type': 'at', 'ft': 8000}], {'type': 'min', 'ft': 3000}, 220, 'R'),
+         '« - FL240 / - » (sign apart) is at or below FL240; « FL080 / FL080 » at; « - / +A3000 » at or above', what='STAR limits')
+    c.eq(k[0]['alt'], {'type': 'between', 'ft': 15000, 'ft2': 17000}, '« -FL170 / +FL150 » is between FL150 and FL170', what='between')
+    c.eq([P.check_geometry(t['legs']) for t in s['tables']], [[], []], 'geometry', what='STAR geometry')
+    # RNP approaches: the navigation specification cut over three lines, the vertical angle column, the missed approach after the runway point
+    p = P.parse_ei_coding(app)
+    c.eq(([t['name'] for t in p['tables']], [t['kind'] for t in p['tables']], [t['runways'] for t in p['tables']]), (['RNP RWY 28L via LUMEX'], ['APP'], [['28L']]),
+         'RNP block: the aerodrome word of the title is dropped; the missed-approach table alone is not made a procedure', what='APP tables')
+    c.ok(sum('MISSED APP' in x and 'non lue' in x for x in p['warnings']) == 1 and not any('NON retenue' in x for x in p['warnings']), str(p['warnings']),
+         'the missed approach table alone is said, without failing the page')
+    g = p['tables'][0]['legs']
+    c.eq((g[0]['nav'], g[4]['id'], g[4].get('vpa'), g[4]['over'], g[5]['alt'], g[7]['alt']), ('RNP APCH', 'RW28L', -3.0, True, {'type': 'max', 'ft': 3000}, {'type': 'at', 'ft': 3000}),
+         '« RNP / line / APCH » joined; « 3 / 54 » is a 3 degree descent; fly-over; « -A3000 / - » at or below 3000', what='RNP legs')
+    # the whole chain: three documents, every page read, the records and the check of proc_manual
+    pages = {'a.pdf': [sid], 'b.pdf': [star], 'c.pdf': [app]}
+    d = P.build_pdf_dir('EIXX', sorted(pages), lambda n: pages[n], '2026-10-29')
+    kinds = {}
+    for x in d['procedures']:
+        kinds[x['kind']] = kinds.get(x['kind'], 0) + 1
+    c.eq(([f['ok'] for f in d['formats']], kinds, M.verify(d)), ([True, True, True], {'SID': 2, 'STAR': 2, 'APP': 1}, []),
+         'build_pdf_dir: 3 pages read, 2 SID + 2 STAR + 1 APP, proc_manual.verify finds nothing', what='chain')
+    c.eq([x['id'] for x in d['procedures']], ['EIXX.SID.RUBE1B.RW28L', 'EIXX.SID.MAVI1B.RW28L', 'EIXX.STAR.ZORB4L.RWALL', 'EIXX.STAR.KIPL4L.RWALL', 'EIXX.APP.RNPRWY28LVIALUMEX.RW28L'],
+         'identifiers', what='ids')
+    ca = d['procedures'][0]['points'][0]
+    c.eq((ca['id'], ca['lat'], ca['leg'], ca['crs']), (None, None, 'CA', 278), 'the CA leg is kept as a point-less leg (id null)', what='CA record')
+    c.ok(not any('coordonnées absentes' in w for w in d['warnings']), str(d['warnings']), 'a point-less leg is not reported as « co-ordinates to resolve »')
+    c.eq([pt.get('phase') for pt in d['procedures'][4]['points']], [None, None, None, None, None, 'missed', 'missed', 'missed'], 'the approach becomes « missed » after the runway point', what='missed phase')
+
+    # rejections: nothing is guessed
+    def mutate(rows, old, new):
+        out = [x.replace(old, new) for x in rows]
+        c.ok(out != rows, old, 'the mutation changed the page')
+        return out
+    cases = [
+        ('a split name found nowhere else', mutate(sid, 'RNAV1 MAVIS ', 'RNAV1 MAV IS '), 'nom coupé non confirmé', ['RUBE1B']),
+        ('a sign against its column (« + » on an upper limit)', mutate(sid, ' A 4000 / - - Turn R', ' +A 4000 / - - Turn R'), 'signe + dans la colonne supérieure', ['MAVI 1B']),
+        ('a TF leg without distance', mutate(sid, '11.2 - - Turn R', '- - - Turn R'), 'sans distance', ['MAVI 1B']),
+        ('a CA leg on another runway than the title\'s', mutate(sid, 'RUBEN1B CAT A/B SID RWY28L', 'RUBEN1B CAT A/B SID RWY10L'), 'piste différente', ['MAVI 1B']),
+        ('a limit that is not a usual level (a digit swallowed)', mutate(sid, ' A 4000 / - - Turn R', ' A 4002 / - - Turn R'), 'limite invraisemblable', ['MAVI 1B'])]
+    for label, rows, why, left in cases:
+        q = P.parse_ei_coding(rows)
+        bad = [x for x in q['warnings'] if 'NON retenue' in x]
+        c.ok(len(bad) >= 1 and why in ' '.join(bad) and [t['name'] for t in q['tables']] == left, f'{bad} {[t["name"] for t in q["tables"]]}',
+             f'{label}: the block is rejected with its reason, the other block is read')
+    orphan = P.parse_ei_coding([x for x in sid if not x.startswith('RUBEN1B')])
+    c.ok(any('hors d\'un bloc titré' in x and 'NON retenue' in x for x in orphan['warnings']), str(orphan['warnings']), 'leg rows with no title above them are reported, not dropped silently')
+    bumped = P.parse_ei_coding(mutate(sid, '200.3 / 203', '205.3 / 203'))
+    recs, w = P.records_uk_app('EIXX', bumped, 'f.pdf', '2026-10-29', None, 'EI')
+    c.eq((len(recs), sum('incoh' in x and 'NON retenue' in x for x in w)), (1, 1), 'a true track 5 degrees off is caught by the geometry check', what='geometry check')
