@@ -4,6 +4,14 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — the card beside the Map, the failure's counts, the phone's picker** (Simplification, user on a phone: « le choix
+  d'une procédure réaffiche immédiatement le popdown »): the three-column grid starts at 480 px of container (the dual view at 1280
+  gives about 515 px) and falls back to one column (`fu-one`, `fitGrid`, refitted by a ResizeObserver) whenever it would overflow —
+  never cut wins; a failed reading shows the translated counts alone when `stats` has pages, the launcher's English message only
+  without them; on a coarse pointer the card never gives the focus back to a select after a change (a rebuilt box or a replaced
+  region), since the native picker reopens on focus — on a computer the select that had it keeps it. Cases F34 (no overflow beside
+  the Map), F35 (focus by pointer kind), F38 (no English message with counts), F40 (touch: no list focused after a choice; fails
+  without the change).
 - **29 Oct 2026 — refactoring (h) and (i): one time format, pure benches, fixtures in one place, waits on a state** (V3_SPECIFICATION § 10.29 h, i).
   (h) `fmtDayZ(iso)` in `frame/lib/time.js` (« 29/10 16:53Z », UTC, the same in every language) is the only writer of the « lu le … » date; the
   hand-made format of the card is gone (`frame/lib/test/time.html`, case F39). (i) The vertical path has its bench,

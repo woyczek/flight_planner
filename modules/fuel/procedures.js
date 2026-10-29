@@ -64,8 +64,9 @@ let reading = null;
 let live = null;
 
 /** Feuille de style de la carte (ajoutée à celle de module.js) : une grille fixe, la même des deux côtés (sous-grille de la boîte),
- *  piste · procédure · transition ; une seule colonne dans un conteneur de moins de 600 px. Une liste est au moins aussi large que
- *  son libellé le plus long (colonnes minmax(max-content, 1fr)) : aucun libellé n'est coupé. */
+ *  piste · procédure · transition, dès 480 px de conteneur (la vue double à 1280 en a environ 515) ; une seule colonne en dessous, ou
+ *  quand la grille déborderait (fu-one, posé par fitGrid : « jamais coupé » prime). Une liste est au moins aussi large que son libellé
+ *  le plus long (colonnes minmax(max-content, 1fr)) : aucun libellé n'est coupé. */
 export const PROC_STYLE = `
 [data-module="fuel"] .fu-procbox{display:grid;grid-template-columns:minmax(0,1fr);column-gap:8px;row-gap:4px}
 [data-module="fuel"] .fu-proc{display:grid;grid-column:1/-1;grid-template-columns:subgrid;row-gap:2px;align-items:end;margin-top:10px}
@@ -78,13 +79,13 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-proc select{width:100%;min-width:0}
 [data-module="fuel"] .fu-proc option.outdated{color:var(--sog-muted)}
 [data-module="fuel"] .fu-proc option.conflict{color:var(--sog-warn,#c2410c)}
-@container (min-width: 600px){
-  [data-module="fuel"] .fu-procbox{grid-template-columns:6em minmax(max-content,1fr) minmax(max-content,1fr)}
-  [data-module="fuel"] .fu-pf-rwy{grid-column:1;grid-row:3}
-  [data-module="fuel"] .fu-pf-main{grid-column:2;grid-row:3}
-  [data-module="fuel"] .fu-pf-trans{grid-column:3;grid-row:3}
-  [data-module="fuel"] .fu-pf-app{grid-column:2;grid-row:4}
-  [data-module="fuel"] .fu-pf-apptrans{grid-column:3;grid-row:4}
+@container (min-width: 480px){
+  [data-module="fuel"] .fu-procbox:not(.fu-one){grid-template-columns:6em minmax(max-content,1fr) minmax(max-content,1fr)}
+  [data-module="fuel"] .fu-procbox:not(.fu-one) .fu-pf-rwy{grid-column:1;grid-row:3}
+  [data-module="fuel"] .fu-procbox:not(.fu-one) .fu-pf-main{grid-column:2;grid-row:3}
+  [data-module="fuel"] .fu-procbox:not(.fu-one) .fu-pf-trans{grid-column:3;grid-row:3}
+  [data-module="fuel"] .fu-procbox:not(.fu-one) .fu-pf-app{grid-column:2;grid-row:4}
+  [data-module="fuel"] .fu-procbox:not(.fu-one) .fu-pf-apptrans{grid-column:3;grid-row:4}
 }
 `;
 
@@ -318,6 +319,27 @@ export function createProcedures(host) {
   }
 
   // ------------------------------------------------------------ dessin sur place
+  /** Pointeur grossier (écran tactile) : après un changement, le focus n'est jamais rendu à une liste — le sélecteur natif se
+   *  rouvrirait aussitôt (utilisateur, 29/10 : « le choix d'une procédure réaffiche immédiatement le popdown »). */
+  const coarse = () => !!window.matchMedia?.('(pointer: coarse)').matches;
+  /** Trois colonnes seulement si rien n'y déborde : sinon une seule (fu-one) ; refait quand la largeur de la boîte change. */
+  const fitted = new WeakSet();
+
+  function fitGrid(box) {
+    box.classList.remove('fu-one');
+    if (box.scrollWidth > box.clientWidth + 1) box.classList.add('fu-one');
+    if (fitted.has(box) || typeof ResizeObserver !== 'function') return;
+    fitted.add(box);
+    let w = box.clientWidth;
+    const ro = new ResizeObserver(() => {
+      if (!box.isConnected) return ro.disconnect();
+      if (box.clientWidth !== w) {
+        w = box.clientWidth;
+        fitGrid(box);
+      }
+    });
+    ro.observe(box);
+  }
   /** Pose un texte HTML dans un élément seulement s'il a changé ; le focus qui était dans l'élément (un bouton de la ligne) est rendu à
    *  son équivalent. */
   function setHtml(el, html) {
@@ -326,7 +348,7 @@ export function createProcedures(host) {
       sel = had ? (had.dataset?.k ? `[data-k="${had.dataset.k}"]` : had.dataset?.do ? `[data-do="${had.dataset.do}"]` : '') : '';
     el.innerHTML = html;
     painted.set(el, html);
-    if (sel) el.querySelector(sel)?.focus();
+    if (sel && !(coarse() && el.tagName === 'SELECT')) el.querySelector(sel)?.focus();
   }
   /** Squelette d'un côté : titre, ligne discrète et une étiquette avec sa liste par champ (vides : patchSide les remplit). */
   const skeleton = (side, m, fields) => `<div class="fu-proc" data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title"></div><div class="fu-procmeta f-muted" data-r="meta"></div>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}</div>`;
@@ -355,9 +377,10 @@ export function createProcedures(host) {
       box.innerHTML = sides.filter(Boolean).map(s => skeleton(s.side, s.m, s.fields)).join('');
       box.dataset.struct = struct;
       for (const s of sides.filter(Boolean)) patchSide(box.querySelector(`[data-proc="${s.side}"]`), s.side, s.m, s.fields);
-      if (k) box.querySelector(`[data-k="${k}"]`)?.focus();
+      if (k && !coarse()) box.querySelector(`[data-k="${k}"]`)?.focus(); // ordinateur : la liste qui l'avait le retrouve
     } else
       for (const s of sides.filter(Boolean)) patchSide(box.querySelector(`[data-proc="${s.side}"]`), s.side, s.m, s.fields);
+    fitGrid(box);
   }
   /** Clé de ce que montrent les lignes : choix, terrains, vol démarré ; changée, sync redessine. */
   const rowsKey = () => JSON.stringify([host.key(), !!host.flight().started?.at]);
@@ -543,7 +566,7 @@ export function createProcedures(host) {
       say(row, {
         icao,
         r: res?.reason || '?',
-        m: res?.message ? ` (${res.message})` : '', // la cause donnée par le lanceur
+        m: res?.message && !(st && +st.pages > 0) ? ` (${res.message})` : '', // la cause du poste, seulement sans comptes traduits
         c: st && +st.pages > 0 ? ctx.t(+st.read > 1 ? TX.procCountRead : TX
           .procCountRead1, { // les comptes de la lecture, après la raison
             read: +st.read || 0,

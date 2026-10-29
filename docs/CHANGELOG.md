@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: on a phone, choosing a procedure no longer reopens the list; the « Procédures » grid also beside the Map** (`modules/fuel/procedures.js`,
+  DECISIONS; cases F34, F35, F38, F40) — and a failed reading says its counts once, translated.
 - **Map: choosing on the map, simplified** (`modules/maps/choose.js`; V3 § 10.23, § 10.24; maps SPEC § 5.1, help ×4, noreg D60):
   `#maps?choose=dep|arr&icao=LFXX` (read and removed at mount by `ctx.consume`) opens the Map on the aerodrome's published
   procedures, the base map and the Map's own layers dimmed (`mp-choosing`, the new `dim` option of `MapsRender.draw`), **one

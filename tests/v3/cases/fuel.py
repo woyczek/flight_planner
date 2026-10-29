@@ -1045,6 +1045,12 @@ def f34(c):
          '"Relire" is a text button of the line, outside the grid', what='Relire in the line')
     c.eq(c.count(f'{FUEL} [data-proc] .fu-procmeta [data-source-slot]'), 2, 'each line ends with the slot of the later "Source" link', what='source slots')
     c.eq(narrow_selects(c), [], 'at 1280, beside the map, no select is narrower than its longest option', what='narrow selects at 1280')
+    # beside the map (about 515 px): the three columns from 480 px, unless they would overflow (then one column: never cut)
+    fit = c.js("(() => { const b = document.querySelector('[data-module=fuel] .fu-procbox'); return { one: b.classList.contains('fu-one'), over: b.scrollWidth > b.clientWidth + 1, w: b.clientWidth } })()")
+    c.ok(not fit['over'], f'{fit}', 'beside the map the card never overflows its width')
+    if not fit['one']:
+        g0 = select_geometry(c)
+        c.ok(g0['p-dep-rwy']['y'] == g0['p-dep-sid']['y'] and g0['p-dep-rwy']['x'] < g0['p-dep-sid']['x'], f'{g0}', 'beside the map the runway and the SID are on one line (the grid)')
     c.page.set_viewport_size({'width': 1920, 'height': 1080})            # a module of 600 px and more: the three columns
     c.settle()
     wait_rows(c, 'arr')
@@ -1102,7 +1108,10 @@ def f35(c):
     c.js("() => { document.querySelector('[data-module=fuel] select[data-k=\"p-dep-sid\"]').focus() }")
     c.js("""() => { const s = document.querySelector('[data-module=fuel] select[data-k="p-dep-sid"]'); s.value = ''; s.dispatchEvent(new Event('change', { bubbles: true })) }""")
     c.until("!document.querySelector('[data-module=fuel] select[data-k=\"p-dep-trans\"]')", what='the transition list of the removed SID disappears')
-    c.eq(c.js("() => document.activeElement && document.activeElement.dataset.k || ''"), 'p-dep-sid', 'a change of structure still keeps the focus on its select', what='activeElement')
+    # on a computer the select keeps it; on a touch screen (the phone runs) no list gets it back: the native picker would reopen (F40)
+    coarse = c.js("() => !!window.matchMedia('(pointer: coarse)').matches")
+    c.eq(c.js("() => document.activeElement && document.activeElement.dataset.k || ''"), '' if coarse else 'p-dep-sid',
+         'a change of structure keeps the focus on its select on a computer, and gives it to no list on a touch screen', what='activeElement')
 
 
 @case('F36', 'A series of choices is written once, 400 ms after the last one', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
@@ -1160,9 +1169,28 @@ def f38(c):
     note = next(norm(n) for n in c.note_log() if want in norm(n))
     reason = norm(tx(PT, "none-read'", c.lang, after='procReasons').split('{m}')[0].replace('{icao}', 'LFML'))
     c.ok(note.startswith(reason) and note.index(want) > len(reason) - 1, f'{note!r}', f'the counts come after the reason ({reason!r})')
+    c.ok('no procedure could be read' not in note, f'{note!r}', 'with counts, the launcher\'s English message is not repeated')
 
 
 @case('F39', 'Time bench: fmtDayZ and the other Z formats', 'F', tags=('fuel',), designs=('standard',), screens=False,
       rule='V3 spec 10.29 h: frame/lib/time.js gives "29/10 16:53Z" (UTC, day and month), the one writer of that format; its pure bench passes')
 def f39(c):
     run_bench(c, 'frame/lib/test/time.html')
+
+
+
+@case('F40', 'Phone: choosing a procedure never gives the focus back to a list (the native picker would reopen)', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
+      screens=False, rule='user 29 Oct on a phone: « le choix d\'une procédure réaffiche immédiatement le popdown »; on a coarse pointer, never refocus a select after a change')
+def f40(c):
+    # a touch screen: (pointer: coarse)
+    c.page.add_init_script("""(() => { const mm = window.matchMedia.bind(window); window.matchMedia = q => /pointer:\\s*coarse/.test(q) ? { matches: true, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} } : mm(q) })()""")
+    open_proc(c)
+    wait_rows(c, 'dep')
+    # NTS1A has a transition: choosing it adds the transition list, so the card's structure is redrawn
+    # the finger opens the list (it has the focus), then picks: the change comes while the select holds the focus
+    c.js("""() => { const s = document.querySelector('[data-module=fuel] select[data-k="p-dep-sid"]'); s.focus(); s.value = 'LFRS.SID.NTS1A.RW03.NONE';
+        s.dispatchEvent(new Event('change', { bubbles: true })) }""")
+    c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-dep-trans\"]')", what='the transition list appears')
+    c.settle()
+    tag = c.js("(() => { const a = document.activeElement; return a && a.closest('[data-proc]') ? a.tagName + ':' + (a.dataset.k || '') : '' })()")
+    c.eq(tag, '', 'no list of the card holds the focus after the choice (it would reopen on a phone)', what='focused element')
