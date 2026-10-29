@@ -71,6 +71,7 @@
       gives: L4('espaces (R, D, P, TRA, TSA…), balises, points, routes', 'airspace (R, D, P, TRA, TSA…), navaids, points, routes',
         'Lufträume, Funkfeuer, Punkte, Strecken', 'espacios, radioayudas, puntos, rutas'),
       licence: 'ENAIRE (usage personnel)',
+      personal: 'licence', // licence d'usage personnel : la case dit qu'elle ne vaut que pour un dépôt à soi
       age: 'file'
     },
     faa: {
@@ -114,6 +115,7 @@
         'Registro gratuito en el sitio de NATS, luego descargar el «UK ICAO AIP Dataset» (AIXM 5.1) y depositarlo en data/sia/zones/gb/. A repetir en cada ciclo AIRAC.'
       ),
       licence: 'NATS (usage personnel)',
+      personal: 'licence', // licence d'usage personnel : la case dit qu'elle ne vaut que pour un dépôt à soi
       age: 'file'
     },
     // ENR 5.2 de la MILAIP britannique (adresse fixe, texte) : téléchargé et lu par le lanceur (tools/aero_fetch.py
@@ -210,6 +212,7 @@
         'Choose the X-Plane installation folder once (button below). Navigraph data in “Custom Data”: personal licence, never copied.'
       ),
       licence: 'GPL (Laminar) / Navigraph (personnel)',
+      personal: 'xplane', // données du simulateur (et Navigraph) : la case dit qu'elle ne vaut que pour un dépôt à soi
       age: 'xplane'
     },
     mora: {

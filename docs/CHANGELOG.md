@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aeronautical data: personal-licence sources say who may tick them** (`shared/aero_zones.js` `personal`,
+  `shared/maintenance_page.js`; `modules/data/SPEC.md` invariant 1, DECISIONS): in Settings › Maintenance (V2) ›
+  Aeronautical data, the box of the X-Plane source (and of ENAIRE and NATS, personal-use licences) carries the line « À cocher
+  seulement si le dépôt de données n'est utilisé que par vous » ×4; the box stays, nothing is blocked (user, 29 Oct).
 - **The base's parser version goes to 18** (`shared/sia_base.js`) — the zones built before the fix of X-Plane's airspace limits
   are now shown as outdated, so the maintenance page offers to rebuild them.
 - **Map: the airspaces at a point say when sectors of one family overlap** (`modules/maps/lv.js`, `texts.js`, case D56) — when

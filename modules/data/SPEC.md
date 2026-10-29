@@ -22,8 +22,11 @@ for `modules/data/module.js` and its files. Every rule below is a requirement.
 - **The data are common, the coverage is personal** (user, 28 Oct): every zone published in the data repository can be put
   in a workstation's coverage; what one administrator publishes is everyone's data; the screen shows, for each data set,
   the gap between this workstation and the published repository.
-- **Nothing from X-Plane or Navigraph is ever published** (user, 28 Oct): they are a local fallback only, compiled on the
-  workstation for its own use and never pushed (§ 4.4).
+- **Personal-licence data enter the published base only on an explicit declaration** (user, 28 Oct, amended 29 Oct):
+  X-Plane, Navigraph, Little Navmap data (and the sources under a personal-use licence: ENAIRE, NATS) are a local fallback by
+  default; they enter the base published in the **private** data repository only when the owner ticks their source, with
+  the line « À cocher seulement si le dépôt de données n'est utilisé que par vous (données X-Plane, usage personnel) » ×4
+  beside the box. Never by default; no blocking and no record of the declaration beyond the box (§ 4.4).
 - **Who may publish is decided by the repository**: the git credentials of the workstation, or the device's GitHub token
   without a launcher (user: « droits du poste »). The screen adds no right of its own; `ctx.level` shapes what is offered,
   it is not a right.
@@ -164,8 +167,10 @@ never part of « Purger » nor of « Tout mettre à jour ». A file built by a c
 | Météo | Météo mondiale (GFS) | status only: the cycle of the last run from the site | built and published with the site; no button |
 | Météo | Pistes NAT du jour | status only: the time of the message from the site | read on the site (user, 28 Oct), not in the base: no rebuild for them |
 
-**X-Plane / Navigraph** inputs never enter a published file: a published zone's build drops them; a workstation may build
-them for itself (« local, jamais publié »), into its local cache only, read by its own devices through the launcher.
+**X-Plane / Navigraph / Little Navmap** inputs (and the sources under a personal-use licence) enter a published file only
+when the owner has ticked their source for the zone, beside the line « À cocher seulement si le dépôt de données n'est
+utilisé que par vous (données X-Plane, usage personnel) » ×4; unticked (the default), a published zone's build drops them,
+and a workstation may still build them for itself (« local, jamais publié »), into its local cache only.
 
 ### 4.5 Order and dependencies
 
@@ -301,7 +306,9 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
 
 ## 10. Invariants
 
-1. Nothing from X-Plane or Navigraph in a published file.
+1. Nothing from X-Plane, Navigraph or Little Navmap (nor from a personal-use licence) in a published file **by default**: only
+   on the owner's explicit declaration, the ticked source with its line « À cocher seulement si le dépôt de données n'est
+   utilisé que par vous » (user, 29 Oct 2026); published to the private repository only.
 2. No publication and no purge without its plan and one answer.
 3. The cycle in force is never removed; three cycles kept for what a cycle's builder makes; a procedure read by hand,
    EAD or OCR (`proc/manual/`) is never removed by the module's own operations (it turns « Périmé »): only by the owner's

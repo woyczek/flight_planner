@@ -61,3 +61,10 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **28 Oct 2026 — aerodb's D1 as delivered** (d4cec61b9): `publication().proc` gives `byStatus` (not `bySource`); a zone in the
   whole format is listed `format: 'whole'`, never read (« format ancien », Construire rewrites it); `aircraft` also gives
   `files`; `vfr` and `aircraft` are null without a publication; `sources()` returns the catalogue's object as delivered.
+- **29 Oct 2026 — Personal-licence data: the box stays, with a declaration** (user: « on garde la coche, et un disclaimer :
+  "cocher la case si le dépôt n'est utilisé que par vous" ou approchant »): X-Plane, Navigraph, Little Navmap data and the
+  personal-use sources (ENAIRE, NATS) may enter the base published in the private repository when the owner ticks their
+  source, beside the line « À cocher seulement si le dépôt de données n'est utilisé que par vous (données X-Plane, usage
+  personnel) » ×4; never by default, nothing blocked, nothing recorded beyond the box. Amends the rule of 28 Oct (invariant 1).
+  The line is already in the V2 maintenance page (`shared/maintenance_page.js`, sources flagged `personal` in
+  `shared/aero_zones.js`).
