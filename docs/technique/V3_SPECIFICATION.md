@@ -695,9 +695,12 @@ redesigned for touch at that point.
        de carte moins visible, toutes les procédures visibles, avec leur nom"): decided by the ergonomics session.
        - **Two markers, one meaning each, everywhere** (Fuel's lists and notifications, the Map's labels, aerodrome card
          and legend, later the Data module): **⌛ grey** = outdated (read under an earlier cycle: to read again), **⚠
-         orange** = in conflict with the current choice (a SID or approach that does not serve the chosen runway, a STAR
-         whose end has no common point with the chosen approach or its transition, a transition that does not start on
-         the chosen STAR's end). Never the word. In a native `select` the symbol carries the meaning and the colour only
+         orange** = in conflict with the current choice **on the runway only**: a SID, STAR or approach that does not
+         serve the chosen runway (or, without a runway, a STAR that serves none of the chosen approach's runways).
+         Point continuity between the STAR and the approach is never a conflict (decided 29 Oct after Fuel's reading:
+         on real data the STARs end on a holding or on radar vectors, LFPO's STAR 20 ends at ODILO while the RNP 20
+         starts at PO421 or IPO20, so a continuity ⚠ would mark nearly every STAR); the Map joins them with a dashed
+         direct (§ 10.20), which says it. Never the word. In a native `select` the symbol carries the meaning and the colour only
          accompanies it (option colour is ignored by phones' native pickers), with the reason as the option's `title`.
        - **Conflict is marked, not forbidden.** A conflicting procedure stays selectable; choosing it keeps the choice,
          notifies "RNP RWY 07 ne dessert pas la piste 02" ×4 once, and the Map joins it with a dashed direct (§ 10.20).
