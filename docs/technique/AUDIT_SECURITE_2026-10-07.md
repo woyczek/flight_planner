@@ -866,6 +866,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 24 | Frame: claim, `/cancel`, sync on gesture, named applications, frozen references (56ab4fd94, f70eba426, a215d47bd, e3870b354, 802e6856f) | acceptable, two notes |
 | 25 | AeroDB path B (2dbfea12a) and `source.url` host check (97bf5577f) | acceptable; points of 18 and 22 settled |
 | 26 | Fuel « Sur la carte » and the map's proposal (d4f683475) | acceptable; note of 20 settled |
+| 27 | Frame G1: GitLab transport (a0f3854d9) | **blocking** (token reused for a new host), one to fix, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1172,7 +1173,29 @@ the right kind (SID, STAR or APP; a transition must carry one) and not doubtful 
 through `choose()` (the lists' path, `saveFlight` bounded to `FUEL_FIELDS`); the report through `notify()`. The button's
 ICAO is escaped and encoded in the Map's address (which checks it again); the `procfetch` selector uses `CSS.escape`.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26); the sharing of the track and of the position is the user's decision.
+**27. Frame G1, GitLab transport (a0f3854d9) — blocking, one point to fix, one note.**
+- **Blocking — the saved token leaves for a new host.** The access card keeps the stored token when the token field is
+  left empty (`token: val('token', r) || gh?.token`), even when the pasted address names another project, another
+  instance or another provider; the field even shows « token set » as a placeholder, which invites leaving it empty. A
+  malicious invitation link (`https://gitlab.attacker.example/x/y`), pasted and saved, sends the GitLab token, or a
+  GitHub token, in `PRIVATE-TOKEN` to that host. Keep the old token only when the provider, the API's origin and the
+  project are those of the previous setting; otherwise require a new token and say « new host: <host> — paste the token
+  for this host ». The check belongs to the saving (`clean`), not only to the card.
+- *To fix — redirects followed with the token.* `call()` fetches with the default `redirect: 'follow'`; on a redirect to
+  another origin, Fetch removes `Authorization` but not a custom header such as `PRIVATE-TOKEN`: a 30x towards a host that
+  accepts CORS would receive the token. Use `redirect: 'error'`. The pagination's « next » link is already bound to the
+  instance's API.
+- Note — https not enforced by the transport: `clean` infers https only from a pasted `https://` address; a setting
+  `{ provider: 'gitlab', api: 'http://…' }` (an imported `keys.json`, a future invitation link) goes through as is, and
+  `FD.gitlab()` does not check `api`. Require `^https://[^/\s]+/api/v4$` in the transport and ignore any other `api` in
+  `clean`.
+- Acceptable: the token only in the `PRIVATE-TOKEN` header (never in an address, the console or an error message, which
+  repeats the server's message only, 300 signs); an atomic commit on the head read just before (conflict otherwise);
+  the author under the common trigram rule; publishing bounded upstream by the frame (`meta.publish` and `dataPathOf`,
+  for both transports), module writes by their declarations; `secrets/gitlab.json` in `SECRET_FIELDS` and
+  `SECRET_BLIND` (never a character to the page).
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24 and 27 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26; 27 blocking until fixed); the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
