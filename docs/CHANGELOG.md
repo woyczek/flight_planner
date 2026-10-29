@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the reasons of a procedure reading are translated by aerodb's catalogue** (`modules/fuel/module.js`, DECISIONS) —
+  never a code or a French console phrase in another language; a failure always shows what the workstation saw.
 - **Map: one element for the airway names** (`modules/maps/render.js`, `render_airspace.js`; case D51; V3 § 10.29 g) — the
   display profile's `airwayLabels` and the Layers box's `awLabels` were combined; `awLabels` alone remains, and a profile of
   the studio or of an airline that still carries `airwayLabels` is read as `awLabels` (`MapsRender.migrated`).

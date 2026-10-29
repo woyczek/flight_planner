@@ -4,6 +4,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — the reading's reasons come from aerodb's catalogue** (aerodb bf540e3c2, V3 § 10.29 c): `stats.reasons` carries
+  codes only (7 for pages, 6 for doubtful records); their labels ×4 are `AeroCatalogue.READ_REASONS`, read through
+  `aerodb.sources()` when a reading ends. `TX.procWhy` (the tool's French phrases) is removed; an unknown code is shown as is. A
+  failure always shows the launcher's message after the reason, « aucune procédure lue » included (it says the documents and
+  pages seen).
 - **29 Oct 2026 — refactoring (a) and (b) of V3 § 10.29: aerodb is the only cache, one state per aerodrome**: `procMemo` and
   `S.procCache` removed — every draw asks aerodb (`procedures(icao)`, `runways(icao)`, `aerodromes`, `coverage`), which memoises
   per revision since cdbeb5c29; the « empty list after a reading » class of bugs had its cause there. `S.procRecs` and

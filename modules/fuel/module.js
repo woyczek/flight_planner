@@ -291,19 +291,6 @@ const TX = {
   procDropped: [' {d} procédures écartées par le contrôle de géométrie.', ' {d} procedures dropped by the geometry check.',
     ' {d} Verfahren von der Geometrieprüfung verworfen.', ' {d} procedimientos descartados por el control de geometría.'
   ],
-  // motifs de rejet de l'outil du poste (texte français stable, frame/aerodb/INTEGRATION.md) ; un motif inconnu est montré tel quel
-  procWhy: {
-    'lignes de tronçon illisibles (moins de 85 % lues)': ['lignes de tronçon illisibles (moins de 85 % lues)',
-      'unreadable leg lines (less than 85 % read)', 'unlesbare Abschnittszeilen (unter 85 % gelesen)',
-      'líneas de tramo ilegibles (menos del 85 % leídas)'
-    ],
-    'mise en page non reconnue': ['mise en page non reconnue', 'layout not recognised', 'Layout nicht erkannt', 'formato no reconocido'],
-    'titre de la page non reconnu': ['titre de la page non reconnu', 'page title not recognised', 'Seitentitel nicht erkannt',
-      'título de página no reconocido'
-    ],
-    'aucun tronçon lisible': ['aucun tronçon lisible', 'no readable leg', 'kein lesbarer Abschnitt', 'ningún tramo legible'],
-    'géométrie incohérente': ['géométrie incohérente', 'inconsistent geometry', 'inkonsistente Geometrie', 'geometría incoherente']
-  },
   procFetched: ['{icao} : {n} procédures lues.', '{icao}: {n} procedures read.', '{icao}: {n} Verfahren gelesen.',
     '{icao}: {n} procedimientos leídos.'
   ],
@@ -367,8 +354,8 @@ const TX = {
       'La lectura de {icao} ha fallado{m}.{wn}'
     ],
     // le travail a tourné sans rien lire (« no procedure could be read for this aerodrome »)
-    'none-read': ['{icao} : aucune procédure lue.{wn}', '{icao}: no procedure read.{wn}', '{icao}: kein Verfahren gelesen.{wn}',
-      '{icao}: ningún procedimiento leído.{wn}'
+    'none-read': ['{icao} : aucune procédure lue{m}.{wn}', '{icao}: no procedure read{m}.{wn}', '{icao}: kein Verfahren gelesen{m}.{wn}',
+      '{icao}: ningún procedimiento leído{m}.{wn}'
     ],
     unavailable: [
       'La lecture à la demande n’est pas encore disponible. Pour ce vol, chargez votre OFP SimBrief : il apporte la SID et la STAR.',
@@ -1838,6 +1825,9 @@ async function fetchProcs(icao) {
     };
   }
   procReadingNow = null;
+  // libellés des motifs de lecture (codes d'aerodb, AeroCatalogue.READ_REASONS[code] = [fr, en, de, es]) ; un code inconnu tel quel
+  const cat = await Promise.resolve().then(() => ctx.aerodb?.sources?.()).catch(() => null),
+    why = code => cat?.READ_REASONS?.[code] ? ctx.t(cat.READ_REASONS[code]) : String(code || '?');
   const wn = Array.isArray(res?.warnings) && res.warnings.length ? ctx.t(TX.procWarnings, {
     n: res.warnings.length
   }) : '';
@@ -1850,7 +1840,7 @@ async function fetchProcs(icao) {
       p: +st?.pages || 0,
       rej: +st?.rejected > 0 ? ctx.t(TX.procRejected, {
         r: +st.rejected,
-        why: TX.procWhy[st.reasons?.[0]?.[0]] ? ctx.t(TX.procWhy[st.reasons[0][0]]) : String(st.reasons?.[0]?.[0] || '?')
+        why: why(st.reasons?.[0]?.[0])
       }) : '',
       drop: +st?.dropped > 0 ? ctx.t(TX.procDropped, {
         d: +st.dropped
@@ -1862,7 +1852,7 @@ async function fetchProcs(icao) {
     say(row, {
       icao,
       r: res?.reason || '?',
-      m: res?.message && !none ? ` (${res.message})` : '', // la cause donnée par le lanceur (refus de connexion…)
+      m: res?.message ? ` (${res.message})` : '', // la cause et les comptes donnés par le lanceur (« 31 document(s), 0 of 31 page(s) read »)
       wn,
       w: Math.max(1, Math.ceil(+res?.wait || 30)), // too-soon : secondes avant la lecture suivante (EAD Basic, 30 s entre deux)
       l: res?.reason === 'no-tables' && res.lnm ? ctx.t(TX.procLnm) : '' // indice : les bases de Little Navmap du poste (§ 10.21)
