@@ -41,6 +41,14 @@ progress per zone, « Arrêter », a job found again at the opening (running, en
 counts and its reason (`no-browser`, `xplane-in-page`, `partial`, `failed`, `cancelled`), the journal; cases L6–L10 on a fake
 launcher. Next: Télécharger, Publier, Purger as their verbs exist; the X-Plane build in the page.
 
+**Publier of the base** (29 Oct night): the panel `[data-publish]` after the build — what will leave (`sync-status`:
+files changed, commits to send, a merge waiting, the last pass), one question « Publier n fichiers et m commits ? », then
+the frame's gesture sync `ctx.data.sync({ gesture: true })` (INTEGRATION § 1.3) and its report (sent, received, kept on the
+workstation during a build, conflicts, refused); grey with its reason (no launcher, a build, another operation, the frame
+without the gesture, nothing to publish, offline); cases L11–L12 on a fake launcher and a fake frame sync. Next:
+Télécharger and Purger on aerodb's `base/fetch` and `base/purge` (contract agreed 29 Oct: a dry purge for the plan, no
+commit by either).
+
 Existing guards kept green throughout: K1–K9, A12, A15, A19, A20, I4, I6, I7.
 
 ## Answers of the ergonomics session (28 October 2026), applied to SPEC and INTEGRATION

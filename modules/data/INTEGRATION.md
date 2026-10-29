@@ -54,6 +54,18 @@ publish: ['sia/base/', 'proc/', 'sia/vfr/', 'AircraftDB/', 'sia/mora.csv']
 - Refusals before any call: `trigram` → « Votre trigramme n'est pas réglé », `access` → « Accès au dépôt non réglé »,
   `tooBig` (a blob over 100 MB) → the data set's row in error, nothing sent for that group.
 - With a launcher the module publishes through the launcher's route (§ 1.2), never `ctx.publish`.
+- **« Publier » of the base is the frame's gesture sync** (29 Oct 2026, V3 Frame): `ctx.data.sync({ gesture: true })`, a
+  pass of reason `manual` under the same lock as the header's Synchroniser button, the author added by the frame; only
+  `gesture === true` counts (any other call keeps the reason `module`, which leaves `sia/base/` on the workstation). The
+  function carries `ctx.data.sync.gesture === true` when the frame supports it; without it « Publier » stays grey, never a
+  pass without the gesture. The result carries `exchange: { committed, held, received, pushed, conflicts (number), refused
+  (number), settled, message }` (data_sync's report: no path, no git output; absent for a transport without exchange).
+  The gesture is sent **only on the user's click** (after the one question); during a build of the base the launcher keeps
+  `sia/base/` even so (`sync_gesture`), and `exchange.held` says how many files stayed. The count before the question comes
+  from `GET sync-status` (`changes`, `ahead`, `merging`), declared in `meta.launcher.routes`: a workstation route, never
+  reached from a paired device (there `ctx.launcher` is null and « Publier » is grey). The module never POSTs
+  `/__setup/sync` itself. Télécharger and Purger commit nothing (raw sources are never published; ergonomics session,
+  29 Oct); whether the raw sources still tracked in the data repository leave git's tracking is the user's question.
 
 ### 1.4 The end-of-cycle line of the Status block
 

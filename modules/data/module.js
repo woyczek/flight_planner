@@ -1,7 +1,8 @@
 // V3 data — « Données » de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/data/SPEC.md, INTEGRATION.md).
-// Un écran de lecture, et une première action : « Construire » la base aéronautique sur le lanceur du poste (panneau en tête du
-// groupe Base aéronautique, journal au pied de l'écran). En tête, le cycle AIRAC en vigueur et le lanceur ; la
-// couverture (les zones de ce poste, puis les États par couleur) ; quatre groupes de jeux de données (base aéronautique,
+// Un écran de lecture, et deux actions : « Construire » la base aéronautique sur le lanceur du poste, puis « Publier » ce qui a été
+// construit vers le dépôt des données (deux panneaux en tête du groupe Base aéronautique, journal au pied de l'écran). En tête,
+// le cycle AIRAC en vigueur et le lanceur ; la couverture (les zones de ce poste, puis les États par couleur) ; quatre groupes de
+// jeux de données (base aéronautique,
 // procédures, appareils, météo), une ligne par jeu avec son cycle, son âge, sa taille et un état calculé, le détail sous un toucher.
 // Tout vient des trois appels d'aerodb (publication, zones, sources) et de coverageByState : le module ne lit aucun fichier de
 // données et n'appelle aucun réseau. Calcul pur dans model.js, textes dans texts.js.
@@ -23,7 +24,9 @@ export const meta = {
   level: 3,
   // la construction de la base est un travail du lanceur (regen/job) ; aucune lecture de data/ par le lanceur
   launcher: {
-    routes: ['regen/job', 'regen/job/cancel'], // le suivi annule par POST regen/job/cancel : « regen/job » seul ne le couvre pas
+    // le suivi annule par POST regen/job/cancel : « regen/job » seul ne le couvre pas ; sync-status : l'état de data/ avant la
+    // question de « Publier » (GET, jamais de POST /__setup/sync : la publication passe par ctx.data.sync)
+    routes: ['regen/job', 'regen/job/cancel', 'sync-status'],
     read: []
   },
   files: ['model.js', 'texts.js', '../../frame/lib/dom.js', '../../frame/lib/time.js'],
@@ -37,6 +40,7 @@ export const meta = {
 const COVERAGE = 'cache/data/coverage.json'; // { zones: [id], updated_at } : la couverture de ce poste (SPEC § 3.2)
 const JOURNAL = 'cache/data/journal.json'; // { ops: [opération], updated_at } : les 50 dernières opérations de ce poste (SPEC § 7)
 const ROUTE = 'regen/job'; // le travail du lanceur : construction de la base (verbe D5 d'aerodb)
+const STATUS_ROUTE = 'sync-status?fresh=1'; // l'état de data/ (fichiers modifiés, commits à envoyer, fusion) ; relevé refait
 const LANGS = ['fr', 'en', 'de', 'es'];
 // couleur d'un État → data-kind du point du cadre (.f-dot) ; statut d'une source du catalogue → data-kind du badge (.f-badge)
 const LEVEL_KIND = {
@@ -78,6 +82,13 @@ const STYLE = `
 [data-module="data"] .d-zl{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 [data-module="data"] .d-zl li{display:flex;gap:8px;align-items:baseline;overflow-wrap:anywhere}
 [data-module="data"] .d-zl .f-dot{flex:none}
+[data-module="data"] [data-publish] h2{margin:8px 0 4px}
+[data-module="data"] [data-publish] p{margin:2px 0}
+[data-module="data"] [data-publish] [data-verb]{min-height:var(--sog-touch);min-width:44px;margin-top:6px}
+[data-module="data"] [data-publish] [data-reason]{margin:6px 0 0}
+[data-module="data"] [data-publish] [data-publishing]{margin-top:10px;display:grid;gap:6px}
+[data-module="data"] [data-publish] [data-publish-result]{margin-top:10px;display:grid;gap:4px}
+[data-module="data"] [data-publish] [data-publish-message]{overflow-wrap:anywhere}
 [data-module="data"] .d-journal{margin-top:var(--sog-gap-s)}
 [data-module="data"] .d-journal summary{min-height:var(--sog-touch);display:flex;align-items:center}
 [data-module="data"] .d-ops{list-style:none;margin:0;padding:0;display:grid;gap:4px}
@@ -109,14 +120,28 @@ async function ask(name) {
     return null;
   }
 }
+/** L'état de data/ pour « Publier » (GET sync-status, relevé refait) : la réponse du lanceur, ou null sans lanceur, sans réponse
+ *  ou sur un refus. Ne lève jamais. */
+async function readStatus() {
+  const L = S?.ctx.launcher;
+  if (!L) return null;
+  try {
+    const r = await L.call(STATUS_ROUTE);
+    return r && typeof r === 'object' && r.ok !== false ? r : null;
+  } catch {
+    return null;
+  }
+}
 /** Lit ce que l'écran montre : le catalogue, ce qui est publié, les zones, la couverture par État, la couverture du poste ; puis
  *  dessine, et à la première ouverture écrit la couverture. */
 async function load() {
   const me = S,
-    [cat, pub, zones, byState, stored] = await Promise.all([ask('sources'), ask('publication'), ask('zones'), ask('coverageByState'),
-      S.ctx.data.get(COVERAGE).catch(() => null)
+    [cat, pub, zones, byState, stored, status] = await Promise.all([ask('sources'), ask('publication'), ask('zones'), ask(
+        'coverageByState'),
+      S.ctx.data.get(COVERAGE).catch(() => null), readStatus()
     ]);
   if (S !== me) return; // démonté, ou remplacé, pendant la lecture
+  S.pub.status = status;
   const list = Array.isArray(zones) ? zones : null,
     cov = M.coverageIds(stored, list, pub);
   S.d = {
@@ -287,7 +312,7 @@ function groupsHtml() {
   return `${pub ? '' : `<p class="f-warn" data-error="publication">${esc(tt(TX.pubError))}</p>`}${groups.map(g => {
     const open = g.id in S.manual ? S.manual[g.id] : g.attention;
     return `<details class="f-group" data-group="${g.id}"${open ? ' open' : ''}><summary><span>${esc(tt(TX.groups[g.id]))}</span><i class="f-status-dot" data-attn${g.attention ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i></summary>
-      ${g.id === 'base' ? buildHtml() : ''}
+      ${g.id === 'base' ? buildHtml() + publishHtml() : ''}
       ${g.rows.map(rowHtml).join('') || (g.more.length ? '' : `<p class="f-muted">${esc(tt(TX.groupEmpty))}</p>`)}
       ${g.more.length ? `<details class="d-more" data-more><summary>${esc(tt(TX.moreSets, { n: g.more.length }))}</summary>${g.more.map(rowHtml).join('')}</details>` : ''}</details>`;
   }).join('')}`;
@@ -313,7 +338,7 @@ function buildZones() {
 function buildGate(ticked) {
   return M.buildState({
     launcher: !!S.ctx.launcher,
-    busy: !!S.run || !!S.other,
+    busy: !!S.run || !!S.other || !!S.pub.phase, // une publication tourne : une autre opération à la fois
     zones: ticked.length,
     offline: navigator.onLine === false
   });
@@ -446,6 +471,7 @@ function buildHtml() {
 }
 /** Redessine le panneau seul (une marche s'y met à jour chaque seconde) ; la case ou le bouton qui avait le focus le garde. */
 function renderBuild() {
+  renderPublish(); // le bouton « Publier » suit la construction (et l'inverse) : un seul point de redessin pour les deux panneaux
   const box = S?.body?.querySelector('[data-build]');
   if (!box || !S.d) return;
   const a = box.contains(document.activeElement) ? document.activeElement : null,
@@ -467,7 +493,8 @@ function openBase() {
 }
 /** La ligne d'une opération du journal : heure UTC, verbe, zones, résultat. */
 function opHtml(e) {
-  const zs = (e.zones || []).map(z => M.zoneName(S.d?.zones, z, li())).join(', ');
+  const zs = e.verb === 'publish' ? count('file', M.num(e.committed) ?? 0) : (e.zones || []).map(z => M.zoneName(S.d?.zones, z, li())).join(
+    ', ');
   return `<li data-op data-result="${esc(e.result)}" data-op-verb="${esc(e.verb)}"><time datetime="${esc(e.at)}">${esc(fmtDateZ(e.at, lang()))}</time> · ${esc(tt(TX.opVerb[e.verb] || [e.verb, e.verb, e.verb, e.verb]))} · ${esc(zs)} · ${esc(tt(TX.opResult[e.result] || [e.result, e.result, e.result, e.result]))}</li>`;
 }
 /** Le journal, replié, au pied de l'écran : les opérations les plus récentes d'abord. */
@@ -479,6 +506,187 @@ function journalHtml() {
 function renderJournal() {
   const el = S?.body?.querySelector('[data-journal]');
   if (el && S.d) keepScroll(S.body, () => el.outerHTML = journalHtml());
+}
+
+// ---------------------------------------------------------------- publier la base
+/** Le cadre sait-il publier ? Seul `ctx.data.sync.gesture === true` le dit : sans lui, jamais de passage sans geste. */
+function canGesture() {
+  return typeof S.ctx.data?.sync === 'function' && S.ctx.data.sync.gesture === true;
+}
+/** L'état du bouton « Publier » : { disabled, reason } d'après le lanceur, la construction, le cadre, l'état de data/ et le réseau. */
+function publishGate() {
+  return M.publishState({
+    launcher: !!S.ctx.launcher,
+    publishing: !!S.pub.phase,
+    building: !!S.run,
+    other: !!S.other,
+    gesture: canGesture(),
+    nothing: M.publishCounts(S.pub.status).nothing,
+    offline: navigator.onLine === false
+  });
+}
+/** Le texte d'une raison de bouton gris de « Publier » : les siennes (TX.pubReason), à défaut celles de « Construire ». */
+function publishReason(key) {
+  return tt(TX.pubReason[key] || TX.greyReason[key]);
+}
+/** « 3 fichiers modifiés · 2 commits à envoyer » : ce que data/ porte à envoyer. */
+function publishCountsText(n, m) {
+  return `${tt(TX.pubFiles[n === 1 ? 0 : 1], { n })} · ${tt(TX.pubCommits[m === 1 ? 0 : 1], { n: m })}`;
+}
+/** Les lignes d'état du panneau : fichiers et commits (ou « rien à publier » par la raison du bouton, une fois), la fusion en
+ *  attente, le dernier passage ; une ligne d'erreur si sync-status n'a pas répondu. */
+function publishStateHtml() {
+  if (!S.ctx.launcher) return '';
+  const c = M.publishCounts(S.pub.status);
+  if (!c.known) return `<p class="f-warn" data-publish-state="unread">${esc(tt(TX.pubUnread))}</p>`;
+  const last = c.last ? tt(c.last.pushed ? TX.pubLastSent : TX.pubLastKept, {
+    d: fmtDateZ(c.last.at, lang())
+  }) : '';
+  return `${c.nothing ? '' : `<p data-publish-state="changes">${esc(publishCountsText(c.changes, c.ahead))}</p>`}
+    ${c.merging ? `<p class="f-warn" data-publish-merge>${esc(tt(TX.pubMerge))}</p>` : ''}
+    ${last ? `<p class="f-muted" data-publish-last>${esc(last)}</p>` : ''}`;
+}
+/** La fin de la dernière publication : les lignes du résumé (la première dit ce qui est parti), puis ce qui est resté sur le poste,
+ *  les conflits, les refus ; pour un échec, la phrase et ce que dit le lanceur (texte, jamais du HTML). [{ key, text }]. */
+function publishLines(o) {
+  const lines = [];
+  if (o.kind === 'failed') lines.push({
+    key: 'failed',
+    text: tt(TX.pubFailed)
+  });
+  else if (o.kind === 'no-exchange') lines.push({
+    key: 'no-exchange',
+    text: tt(TX.pubNoExchange)
+  });
+  else lines.push({
+    key: o.kind,
+    text: tt(o.kind === 'done' ? TX.pubDone : TX.pubLocal, {
+      c: o.committed,
+      r: o.received
+    })
+  });
+  if (o.held > 0) lines.push({
+    key: 'held',
+    text: tt(TX.pubHeld[o.held === 1 ? 0 : 1], {
+      n: o.held
+    })
+  });
+  if (o.conflicts > 0) lines.push({
+    key: 'conflicts',
+    text: tt(TX.pubConflicts[o.conflicts === 1 ? 0 : 1], {
+      n: o.conflicts
+    })
+  });
+  if (o.refused > 0) lines.push({
+    key: 'refused',
+    text: tt(TX.pubRefused[o.refused === 1 ? 0 : 1], {
+      n: o.refused
+    })
+  });
+  return lines;
+}
+/** La fin de la dernière publication dans le panneau, ou la phrase d'un état illisible. */
+function publishResultHtml() {
+  const r = S.pub.result;
+  if (!r) return '';
+  if (r.unread) return `<div data-publish-result data-result="unread"><p class="f-warn">${esc(tt(TX.pubUnread))}</p></div>`;
+  const o = r.out;
+  return `<div data-publish-result data-result="${o.kind}">${publishLines(o).map((l, i) => `<p data-line="${l.key}"${i === 0 && o.kind !== 'done' ? ' class="f-warn"' : ''}>${i === 0 ? `<b>${esc(l.text)}</b>` : esc(l.text)}</p>`).join('')}
+    ${o.kind === 'failed' && o.message ? `<p class="f-muted" data-publish-message>${esc(tt(TX.pubLauncherSays, { m: o.message }))}</p>` : ''}</div>`;
+}
+/** La marche : la barre indéterminée et son texte, tant que le lanceur publie. */
+function publishingHtml() {
+  return `<div data-publishing><span>${esc(tt(TX.pubRunning))}</span><div class="d-bar" role="progressbar" data-indeterminate><i></i></div></div>`;
+}
+/** L'intérieur du panneau : l'état de data/, le bouton et sa raison (une fois), la marche ou la fin. */
+function publishInner() {
+  const gate = publishGate(),
+    why = gate.reason ? publishReason(gate.reason) : '';
+  return `<h2>${esc(tt(TX.publishTitle))}</h2>
+    ${publishStateHtml()}
+    <p><button type="button" data-verb="publish"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.publish))}</button></p>
+    ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
+    ${S.pub.phase === 'running' ? publishingHtml() : publishResultHtml()}`;
+}
+/** Le panneau « Publier la base » (après « Construire », dans le groupe Base aéronautique). */
+function publishHtml() {
+  return `<section class="f-card" data-publish>${publishInner()}</section>`;
+}
+/** Redessine le panneau seul ; le bouton qui avait le focus le garde (s'il est encore actif). */
+function renderPublish() {
+  const box = S?.body?.querySelector('[data-publish]');
+  if (!box || !S.d) return;
+  const focus = box.contains(document.activeElement) && document.activeElement.dataset.verb === 'publish';
+  keepScroll(S.body, () => {
+    box.innerHTML = publishInner();
+    const b = focus && box.querySelector('[data-verb="publish"]');
+    if (b && !b.disabled) b.focus({
+      preventScroll: true
+    });
+  });
+}
+/** Fin d'une publication : le résultat dans le panneau, une notification avec les comptes, le journal, puis la relecture de l'état
+ *  de data/ et de ce qui est publié (le chemin de lecture de l'ouverture). */
+async function endPublish(me, out) {
+  const lines = publishLines(out),
+    level = out.kind === 'failed' ? 'err' : out.kind === 'done' && !out.held && !out.conflicts && !out.refused ? 'ok' : 'warn';
+  S.pub.phase = null;
+  S.pub.result = {
+    out
+  };
+  renderBuild();
+  S.ctx.notify(lines.map(l => l.text).join(' · '), level);
+  journalWrite(M.publishEntry(Date.now(), out));
+  await load();
+}
+/** « Publier » : l'état de data/ est relu, une seule question (les fichiers et les commits), puis le passage du cadre avec le geste
+ *  (ctx.data.sync({ gesture: true })) — jamais sans la question, jamais pendant une construction. Rien ne part si le bouton est gris. */
+async function startPublish() {
+  const me = S;
+  if (publishGate().disabled) return;
+  S.pub.phase = 'asking'; // les deux boutons sont gris dès le toucher : une opération à la fois
+  S.pub.result = null;
+  renderBuild();
+  const status = await readStatus();
+  if (S !== me) return;
+  S.pub.status = status;
+  const c = M.publishCounts(status);
+  if (!c.known) { // le lanceur ne répond pas : on le dit, on ne pose pas de question
+    S.pub.phase = null;
+    S.pub.result = {
+      unread: true
+    };
+    renderBuild();
+    S.ctx.notify(tt(TX.pubUnread), 'err');
+    return;
+  }
+  const yes = c.nothing ? false : await S.ctx.ask(tt(TX.pubAsk, {
+    f: count('file', c.changes),
+    c: count('commit', c.ahead)
+  }), {
+    ok: tt(TX.publish)
+  });
+  if (S !== me) return;
+  if (!yes) { // refus (ou plus rien à envoyer entre-temps) : rien n'est fait
+    S.pub.phase = null;
+    renderBuild();
+    return;
+  }
+  S.pub.phase = 'running';
+  renderBuild();
+  let r;
+  try {
+    r = await S.ctx.data.sync({
+      gesture: true
+    });
+  } catch (e) {
+    r = {
+      ok: false,
+      error: e?.message || ''
+    };
+  }
+  if (S !== me) return;
+  await endPublish(me, M.publishOutcome(r));
 }
 
 // ---------------------------------------------------------------- la marche
@@ -673,6 +881,7 @@ function onClick(e) {
   const v = e.target.closest?.('button[data-verb]');
   if (!v || v.disabled) return;
   if (v.dataset.verb === 'build') startBuild();
+  else if (v.dataset.verb === 'publish') startPublish();
   else if (v.dataset.verb === 'stop') S.run?.ctrl.abort();
 }
 /** Une case du panneau « Construire » (zone ou source sous licence personnelle) change : le choix est retenu, le panneau redessiné
@@ -716,6 +925,11 @@ export async function mount(el, ctx) {
     ids: [], // les zones de la construction en cours ou de la dernière
     result: null, // la fin de la dernière : { out } ou { refused }
     other: null, // la vue d'une autre opération du lanceur, tant qu'elle tourne
+    pub: {
+      status: null,
+      phase: null,
+      result: null
+    }, // « Publier » : sync-status lu, 'asking' | 'running' | null, la fin { out } ou { unread }
     journal: [],
     journalOpen: false,
     timer: 0

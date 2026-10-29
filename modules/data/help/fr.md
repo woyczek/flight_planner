@@ -1,6 +1,6 @@
 # Données
 
-Ce que la compagnie publie pour l'appli — la base aéronautique, les procédures, les appareils, la météo — et l'état de chaque jeu de données. Cet écran se lit, et une seule action y est offerte : Construire la base aéronautique ; il ne télécharge ni ne publie rien.
+Ce que la compagnie publie pour l'appli — la base aéronautique, les procédures, les appareils, la météo — et l'état de chaque jeu de données. Cet écran se lit, et deux actions y sont offertes : Construire la base aéronautique, puis la Publier ; il ne télécharge rien.
 
 ## Comment s'en servir
 
@@ -29,6 +29,10 @@ Ce que la compagnie publie pour l'appli — la base aéronautique, les procédur
 <a id="data-build-run"></a>**Pendant la construction.** Une barre, « n zones sur m », l'étape et le temps écoulé ; une ligne par zone dit en attente, construction (n / m sources), construite, échec avec son motif, ou annulée. « Arrêter » demande l'arrêt : la zone en cours se termine, les zones déjà construites sont gardées. Vous pouvez quitter l'écran : la construction continue sur le lanceur et se retrouve à la réouverture. Si le lanceur s'est arrêté en route, l'écran dit « Construction interrompue » avec le dernier état de chaque zone : relancez, en décochant les zones déjà faites si vous voulez.
 
 <a id="data-build-end"></a>**À la fin.** Une notification donne les comptes (« Base construite : 3 zones ; 1 en échec (gb) ») et le résumé reste dans le panneau avec ce qu'il y a à faire : zone en échec (le motif est écrit sur sa ligne : navigateur sans fenêtre, délai dépassé, sortie invalide, écriture impossible…), construction arrêtée, aucun navigateur trouvé (« Ni Edge ni Chrome n'ont été trouvés sur ce poste : installez l'un des deux. »). Les états des lignes sont relus ensuite.
+
+<a id="data-publish"></a>**Publier la base.** Sous « Construire », le panneau « Publier la base » envoie vers le dépôt des données ce qui a été construit sur ce poste. Il dit d'abord où en est le poste : « 3 fichiers modifiés · 2 commits à envoyer », la date du dernier passage et, s'il y en a une, la fusion qui attend dans data/ (la publication la conclut d'abord). Touchez « Publier » : une seule question rappelle les fichiers et les commits, puis le passage se fait ; une barre sans fin montre qu'il travaille. Pendant ce temps « Construire » est grisé, et « Publier » l'est pendant une construction : une opération à la fois.
+
+<a id="data-publish-end"></a>**À la fin de la publication.** Une notification donne les comptes et le résultat reste dans le panneau : ce qui a été envoyé (fichiers commités, fichiers reçus) ; les fichiers de la base gardés sur le poste parce qu'une construction était en cours ; les conflits (le plus récent est gardé, voir Réglages › Conflits) ; les fichiers refusés parce qu'ils n'ont pas le format d'un fichier de données. Un échec le dit en une phrase, avec ce que répond le lanceur : rien n'est perdu, les fichiers restent sur le poste. Le bouton est grisé avec sa raison écrite dessous : « Il faut le lanceur du poste », « Une construction est en cours : publiez quand elle est finie », « Rien à publier », « Le cadre ne sait pas encore publier la base : mettez l'appli à jour », « Hors ligne ».
 
 <a id="data-journal"></a>**Le journal.** Au pied de l'écran, les 50 dernières opérations de cet appareil : heure UTC, verbe, zones, résultat.
 

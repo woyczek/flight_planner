@@ -639,7 +639,7 @@ the legend, the chip or Escape closes it.
 <!-- chapter: data -->
 # Data
 
-What the airline publishes for the app — the aeronautical base, the procedures, the aircraft, the weather — and the state of each data set. This screen is for reading, and offers a single action: Build the aeronautical base; it downloads and publishes nothing.
+What the airline publishes for the app — the aeronautical base, the procedures, the aircraft, the weather — and the state of each data set. This screen is for reading, and offers two actions: Build the aeronautical base, then Publish it; it downloads nothing.
 
 ## How to use it
 
@@ -669,6 +669,10 @@ What the airline publishes for the app — the aeronautical base, the procedures
 
 <a id="data-build-end"></a>**At the end.** A notification gives the counts ("Base built: 3 zones; 1 failed (gb)") and the summary stays in the panel with what to do: a failed zone (the reason is written on its line: windowless browser, time limit, invalid output, could not write…), a stopped build, no browser found ("Neither Edge nor Chrome was found on this workstation: install one of them."). The state of the lines is read again afterwards.
 
+<a id="data-publish"></a>**Publish the base.** Under "Build", the "Publish the base" panel sends what was built on this workstation to the data repository. It first says where the workstation stands: "3 files changed · 2 commits to send", the date of the last pass and, if there is one, the merge waiting in data/ (publishing concludes it first). Tap "Publish": one question recalls the files and the commits, then the pass runs; an endless bar shows that it is working. Meanwhile "Build" is grey, and "Publish" is grey during a build: one operation at a time.
+
+<a id="data-publish-end"></a>**At the end of the publication.** A notification gives the counts and the result stays in the panel: what was sent (files committed, files received); the files of the base kept on the workstation because a build was under way; the conflicts (the most recent is kept, see Settings › Conflicts); the files refused because they are not in the format of a data file. A failure says so in one sentence, with what the launcher answers: nothing is lost, the files stay on the workstation. The button is grey with its reason written below: "The workstation launcher is needed", "A build is running: publish when it is finished", "Nothing to publish", "The frame cannot publish the base yet: update the app", "Offline".
+
 <a id="data-journal"></a>**The journal.** At the foot of the screen, the last 50 operations of this device: UTC time, verb, zones, result.
 
 ## Special cases
@@ -676,7 +680,7 @@ What the airline publishes for the app — the aeronautical base, the procedures
 - **Without a launcher**: the screen reads the same way; it shows what is published.
 - **A read that fails**: the section says so in one line, the rest of the screen is drawn.
 
-<!-- fr: 9746437814d3 -->
+<!-- fr: 3fb8c32d95cd -->
 
 <!-- chapter: settings -->
 # Settings

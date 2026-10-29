@@ -292,6 +292,9 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
 | « Aucun fichier trouvé dans Téléchargements » | SIA, NATS, CIFP picked up; « Choisir le fichier… » beside it |
 | « Une autre opération est en cours » / « hors ligne » / « disque plein » | any |
 | « Ne nourrit aucune zone de la couverture » | a base source whose zones were removed |
+| « Une construction est en cours : publiez quand elle est finie » | Publier of the base during a build (the launcher would keep `sia/base/` anyway) |
+| « Le cadre ne sait pas encore publier la base : mettez l'appli à jour » | Publier when `ctx.data.sync.gesture` is not `true` (never a pass without the gesture) |
+| « Rien à publier » | Publier when the workstation has no file changed and no commit to send (`sync-status`) |
 | « OCR manque » | Construire of a State whose pages are drawn (UK STARs, Belgium, Georgia), the EAD line and « Relire » |
 | « Pas d'identifiants EAD » / « Mise en page inconnue pour cet État » | the EAD line (the outcome per State from the catalogue's `eadStates`) |
 

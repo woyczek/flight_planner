@@ -90,6 +90,10 @@ export const TX = {
     type: [
       ['type', 'type', 'Muster', 'tipo'],
       ['types', 'types', 'Muster', 'tipos']
+    ],
+    commit: [
+      ['commit', 'commit', 'Commit', 'commit'],
+      ['commits', 'commits', 'Commits', 'commits']
     ]
   },
   // l'étiquette d'état d'une ligne (SPEC § 6.2)
@@ -280,11 +284,108 @@ export const TX = {
       'Der Starter konnte den Aufbau nicht starten.', 'El lanzador no pudo iniciar la construcción.'
     ]
   },
+  // publier la base : le panneau, la question, la fin
+  publishTitle: ['Publier la base', 'Publish the base', 'Basis veröffentlichen', 'Publicar la base'],
+  publish: ['Publier', 'Publish', 'Veröffentlichen', 'Publicar'],
+  // l’état du poste : singulier, pluriel
+  pubFiles: [
+    ['{n} fichier modifié', '{n} file changed', '{n} Datei geändert', '{n} archivo modificado'],
+    ['{n} fichiers modifiés', '{n} files changed', '{n} Dateien geändert', '{n} archivos modificados']
+  ],
+  pubCommits: [
+    ['{n} commit à envoyer', '{n} commit to send', '{n} Commit zu senden', '{n} commit por enviar'],
+    ['{n} commits à envoyer', '{n} commits to send', '{n} Commits zu senden', '{n} commits por enviar']
+  ],
+  pubMerge: ['Une fusion attend dans data/ : la publication la conclut d’abord',
+    'A merge is waiting in data/: publishing concludes it first',
+    'In data/ wartet eine Zusammenführung: die Veröffentlichung schließt sie zuerst ab',
+    'Una fusión espera en data/: la publicación la concluye primero'
+  ],
+  pubLastSent: ['Dernière publication : {d}', 'Last publication: {d}', 'Letzte Veröffentlichung: {d}', 'Última publicación: {d}'],
+  pubLastKept: ['Dernier passage : {d} (rien n’a été envoyé)', 'Last pass: {d} (nothing was sent)',
+    'Letzter Durchlauf: {d} (nichts wurde gesendet)', 'Último paso: {d} (no se envió nada)'
+  ],
+  pubUnread: ['L’état des fichiers du poste n’a pas pu être lu : le lanceur ne répond pas.',
+    'The state of this workstation’s files could not be read: the launcher does not answer.',
+    'Der Stand der Dateien dieses Rechners konnte nicht gelesen werden: der Starter antwortet nicht.',
+    'No se pudo leer el estado de los archivos de este equipo: el lanzador no responde.'
+  ],
+  // les raisons du bouton gris propres à « Publier » (les autres : greyReason)
+  pubReason: {
+    publishing: ['Une publication est en cours', 'A publication is running', 'Eine Veröffentlichung läuft',
+      'Hay una publicación en curso'
+    ],
+    building: ['Une construction est en cours : publiez quand elle est finie', 'A build is running: publish when it is finished',
+      'Ein Aufbau läuft: veröffentlichen Sie, wenn er fertig ist', 'Hay una construcción en curso: publique cuando termine'
+    ],
+    'no-gesture': ['Le cadre ne sait pas encore publier la base : mettez l’appli à jour',
+      'The frame cannot publish the base yet: update the app',
+      'Der Rahmen kann die Basis noch nicht veröffentlichen: aktualisieren Sie die App',
+      'El marco aún no sabe publicar la base: actualice la aplicación'
+    ],
+    nothing: ['Rien à publier', 'Nothing to publish', 'Nichts zu veröffentlichen', 'Nada que publicar']
+  },
+  pubAsk: ['Publier {f} et {c} vers le dépôt des données ?', 'Publish {f} and {c} to the data repository?',
+    '{f} und {c} an das Datenrepository veröffentlichen?', '¿Publicar {f} y {c} en el repositorio de datos?'
+  ],
+  pubRunning: ['Publication en cours…', 'Publishing…', 'Veröffentlichung läuft…', 'Publicando…'],
+  // la fin : une ligne par fait, la première est aussi le début de la notification
+  pubDone: ['Envoyé. Fichiers commités : {c} ; fichiers reçus : {r}', 'Sent. Files committed: {c}; files received: {r}',
+    'Gesendet. Eingecheckte Dateien: {c}; empfangene Dateien: {r}', 'Enviado. Archivos con commit: {c}; archivos recibidos: {r}'
+  ],
+  pubLocal: ['Enregistré sur le poste, rien n’a été envoyé. Fichiers commités : {c} ; fichiers reçus : {r}',
+    'Saved on this workstation, nothing was sent. Files committed: {c}; files received: {r}',
+    'Auf dem Rechner gespeichert, nichts wurde gesendet. Eingecheckte Dateien: {c}; empfangene Dateien: {r}',
+    'Guardado en el equipo, no se envió nada. Archivos con commit: {c}; archivos recibidos: {r}'
+  ],
+  pubNoExchange: ['Aucun échange avec le dépôt n’a eu lieu : le trigramme de cet appareil est-il réglé ?',
+    'No exchange with the repository took place: is this device’s trigram set?',
+    'Es fand kein Austausch mit dem Repository statt: ist das Kürzel dieses Geräts eingestellt?',
+    'No hubo intercambio con el repositorio: ¿está configurado el trigrama de este dispositivo?'
+  ],
+  pubHeld: [
+    ['{n} fichier de la base gardé sur le poste (construction en cours)', '{n} base file kept on this workstation (build under way)',
+      '{n} Datei der Basis auf dem Rechner behalten (Aufbau läuft)',
+      '{n} archivo de la base conservado en el equipo (construcción en curso)'
+    ],
+    ['{n} fichiers de la base gardés sur le poste (construction en cours)', '{n} base files kept on this workstation (build under way)',
+      '{n} Dateien der Basis auf dem Rechner behalten (Aufbau läuft)',
+      '{n} archivos de la base conservados en el equipo (construcción en curso)'
+    ]
+  ],
+  pubConflicts: [
+    ['{n} conflit : voir Réglages › Conflits', '{n} conflict: see Settings › Conflicts',
+      '{n} Konflikt: siehe Einstellungen › Konflikte',
+      '{n} conflicto: véase Ajustes › Conflictos'
+    ],
+    ['{n} conflits : voir Réglages › Conflits', '{n} conflicts: see Settings › Conflicts',
+      '{n} Konflikte: siehe Einstellungen › Konflikte',
+      '{n} conflictos: véase Ajustes › Conflictos'
+    ]
+  ],
+  pubRefused: [
+    ['{n} fichier refusé : il n’a pas le format d’un fichier de données', '{n} file refused: it is not in the format of a data file',
+      '{n} Datei abgelehnt: sie hat nicht das Format einer Datendatei',
+      '{n} archivo rechazado: no tiene el formato de un archivo de datos'
+    ],
+    ['{n} fichiers refusés : ils n’ont pas le format d’un fichier de données',
+      '{n} files refused: they are not in the format of a data file',
+      '{n} Dateien abgelehnt: sie haben nicht das Format einer Datendatei',
+      '{n} archivos rechazados: no tienen el formato de un archivo de datos'
+    ]
+  ],
+  pubFailed: ['La publication a échoué : rien n’est perdu, les fichiers restent sur le poste. Corrigez la cause puis relancez.',
+    'The publication failed: nothing is lost, the files stay on this workstation. Fix the cause, then start again.',
+    'Die Veröffentlichung ist fehlgeschlagen: nichts geht verloren, die Dateien bleiben auf dem Rechner. Beheben Sie die Ursache und starten Sie neu.',
+    'La publicación falló: no se pierde nada, los archivos siguen en el equipo. Corrija la causa y vuelva a empezar.'
+  ],
+  pubLauncherSays: ['Le lanceur dit : {m}', 'The launcher says: {m}', 'Der Starter meldet: {m}', 'El lanzador dice: {m}'],
   // le journal des opérations
   journal: ['Journal', 'Journal', 'Protokoll', 'Diario'],
   journalEmpty: ['Aucune opération pour le moment.', 'No operation yet.', 'Noch kein Vorgang.', 'Ninguna operación por ahora.'],
   opVerb: {
-    build: ['Construire', 'Build', 'Aufbauen', 'Construir']
+    build: ['Construire', 'Build', 'Aufbauen', 'Construir'],
+    publish: ['Publier', 'Publish', 'Veröffentlichen', 'Publicar']
   },
   opResult: {
     done: ['terminée', 'done', 'abgeschlossen', 'terminada'],

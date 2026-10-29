@@ -106,3 +106,10 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   frame's `under()` does not cover a route's children without a trailing `/` (aerodb's own declaration has the same gap,
   told to the frame). After « Arrêter » the frame answers `cancelled` at once; the module asks `resume` for the job's real
   end.
+- **29 Oct 2026 — Publier is the frame's gesture sync, never a POST of the module** (ergonomics session, V3 Frame): since
+  1c2506a41 `sia/base/` leaves the workstation only on a user's gesture; the module asks the frame for a pass of reason
+  `manual` (`ctx.data.sync({ gesture: true })`, same lock and queue as the header's button, the author added by the frame)
+  instead of calling `/__setup/sync`, which would bypass the frame's queue and make the module write the author. The frame
+  marks the capability (`ctx.data.sync.gesture === true`); without it the button stays grey. The count before the one
+  question comes from `sync-status` (workstation route). Télécharger and Purger commit nothing; the raw sources still
+  tracked by git (openAIP) are the user's question of 30 Oct.

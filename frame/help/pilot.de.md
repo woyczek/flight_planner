@@ -684,7 +684,7 @@ die Legende, den Chip oder Escape schließt sie.
 <!-- chapter: data -->
 # Daten
 
-Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank, die Verfahren, die Luftfahrzeuge, das Wetter — und der Stand jedes Datensatzes. Dieser Bildschirm dient dem Lesen und bietet eine einzige Aktion: die Luftfahrtdatenbank aufbauen; er lädt nichts herunter und veröffentlicht nichts.
+Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank, die Verfahren, die Luftfahrzeuge, das Wetter — und der Stand jedes Datensatzes. Dieser Bildschirm dient dem Lesen und bietet zwei Aktionen: die Luftfahrtdatenbank aufbauen, dann veröffentlichen; er lädt nichts herunter.
 
 ## So geht's
 
@@ -714,6 +714,10 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 
 <a id="data-build-end"></a>**Am Ende.** Eine Benachrichtigung nennt die Zahlen („Basis erstellt: 3 Zonen; 1 fehlgeschlagen (gb)“), und die Zusammenfassung bleibt im Feld stehen, mit dem, was zu tun ist: eine fehlgeschlagene Zone (der Grund steht in ihrer Zeile: Browser ohne Fenster, Zeitlimit, ungültige Ausgabe, Schreiben nicht möglich…), ein angehaltener Aufbau, kein Browser gefunden („Auf diesem Rechner wurden weder Edge noch Chrome gefunden: installieren Sie einen der beiden.“). Danach wird der Stand der Zeilen neu gelesen.
 
+<a id="data-publish"></a>**Basis veröffentlichen.** Unter „Aufbauen“ sendet das Feld „Basis veröffentlichen“ das, was auf diesem Rechner erstellt wurde, an das Datenrepository. Es sagt zuerst, wo der Rechner steht: „3 Dateien geändert · 2 Commits zu senden“, das Datum des letzten Durchlaufs und, falls vorhanden, die in data/ wartende Zusammenführung (die Veröffentlichung schließt sie zuerst ab). Tippen Sie auf „Veröffentlichen“: eine einzige Frage nennt die Dateien und die Commits, dann läuft der Durchlauf; ein endloser Balken zeigt, dass er arbeitet. Währenddessen ist „Aufbauen“ ausgegraut, und „Veröffentlichen“ ist es während eines Aufbaus: ein Vorgang nach dem anderen.
+
+<a id="data-publish-end"></a>**Am Ende der Veröffentlichung.** Eine Benachrichtigung nennt die Zahlen, und das Ergebnis bleibt im Feld: was gesendet wurde (eingecheckte Dateien, empfangene Dateien); die Dateien der Basis, die auf dem Rechner bleiben, weil ein Aufbau lief; die Konflikte (die neueste Fassung bleibt, siehe Einstellungen › Konflikte); die abgelehnten Dateien, weil sie nicht das Format einer Datendatei haben. Ein Fehler wird in einem Satz gesagt, mit der Antwort des Starters: nichts geht verloren, die Dateien bleiben auf dem Rechner. Die Schaltfläche ist ausgegraut, ihr Grund steht darunter: „Der Starter des Rechners wird benötigt“, „Ein Aufbau läuft: veröffentlichen Sie, wenn er fertig ist“, „Nichts zu veröffentlichen“, „Der Rahmen kann die Basis noch nicht veröffentlichen: aktualisieren Sie die App“, „Offline“.
+
 <a id="data-journal"></a>**Das Protokoll.** Am Ende des Bildschirms die letzten 50 Vorgänge dieses Geräts: UTC-Zeit, Verb, Zonen, Ergebnis.
 
 ## Sonderfälle
@@ -721,7 +725,7 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 - **Ohne Starter**: Der Bildschirm wird genauso gelesen; er zeigt, was veröffentlicht ist.
 - **Ein Lesevorgang schlägt fehl**: Der Abschnitt sagt es in einer Zeile, der Rest des Bildschirms wird gezeichnet.
 
-<!-- fr: 9746437814d3 -->
+<!-- fr: 3fb8c32d95cd -->
 
 <!-- chapter: settings -->
 # Einstellungen

@@ -19,9 +19,15 @@ Rules covered
   * L7 Construire against a FAKE launcher (the technique of frame A32: c.context.route answers /__setup/*): the body sent, the zone lines that follow,
     the end summary, one notification, the journal; the personal sources and the X-Plane hint;
   * L8 the other ends: no launcher (grey with its reason), a 409, a refusal that says what to do, Arrêter, an interrupted job found at mount,
-    a job found running at mount followed to its end.
+    a job found running at mount followed to its end;
+  * L9 Arrêter posts the cancel and ends on the real end of the job; L10 the builds found again at mount (see below);
+  * L11 model.js, the pure functions of Publier (button state by priority, the counts of sync-status, the end of a publication read from
+    the frame's result, the journal entry), on fixtures;
+  * L12 Publier against a fake launcher (sync-status) and a FAKE `ctx.data.sync` carrying `.gesture` (an init script wraps FrameData.adapter,
+    as the aerodb stub wraps AeroDB.create): the state line, the one question, the call with { gesture: true } exactly once, the result lines,
+    the notification, the journal; nothing without the gesture, with nothing to publish, during a build; the launcher's message escaped.
 
-Cases: L1 .. L8.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
+Cases: L1 .. L12.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
 """
 import datetime
 import json
@@ -333,7 +339,10 @@ def l2(c):
     c.eq(g['weather']['states'], {}, 'the weather rows have no state', what='weather states')
     c.eq(c.text('[data-set="ukmil"] .f-badge[data-pill]'), tx(TX, 'parser', lang, after='state: {'), 'the pill is worded in the language of the run', what='ukmil pill')
     # no action button anywhere, no horizontal scroll, 44 px on the summaries
-    c.eq([m['verbs'], m['buttons']], [['build:off'], 1], 'the only verb is Construire, grey (no launcher in the suite): no Télécharger / Publier / Purger / Mettre à jour', what='verbs / buttons')
+    c.eq([m['verbs'], m['buttons']], [['build:off', 'publish:off'], 2], 'the only verbs are Construire and Publier, both grey (no launcher in the suite): no Télécharger / Purger / Mettre à jour', what='verbs / buttons')
+    c.eq([c.attr('[data-publish] [data-reason]', 'data-reason'), norm(c.text('[data-publish] [data-reason]'))], ['no-launcher', norm(_trow('no-launcher', lang, 'greyReason: {'))],
+         'Publier is grey for the same reason, written once', what='publish reason')
+    c.eq(c.count('[data-group=base] > [data-build] + [data-publish]'), 1, 'the Publier panel follows the Construire panel', what='panel order')
     # the build panel at the top of the base group: every zone of the coverage ticked, the personal sources unticked, the reason written once
     panel = c.js("""() => { const b = document.querySelector('[data-group=base] > [data-build]'); return b && {
       zones: [...b.querySelectorAll('[data-build-zone]')].map(i => [i.dataset.buildZone, i.checked]),
@@ -403,7 +412,7 @@ def l3(c):
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the module is mounted by the link (at 390 as at 1280)')
     c.eq(c.hash(), '#data', 'the address', what='hash')
     c.eq(c.count('#fMenu a[data-id="data"]'), 0, 'still not in the rail once mounted', what='rail entries')
-    c.eq(c.count('[data-verb]'), 1, 'only Construire, grey without a launcher', what='[data-verb]')
+    c.eq(c.count('[data-verb]'), 2, 'only Construire and Publier, grey without a launcher', what='[data-verb]')
     c.ok(c.text('[data-cycle-now]'), 'no cycle', 'the head shows the cycle in force')
     c.check_errors()
 
@@ -420,7 +429,7 @@ def l4(c):
     c.eq(c.count('details.f-group'), 4, 'the four groups are still drawn (names and links)', what='groups')
     c.eq(c.count('[data-set][data-state]'), 0, 'no state is invented without a publication', what='states')
     c.eq(c.doc('cache/data/coverage.json'), None, 'a degraded read writes no coverage', what='coverage.json')
-    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['build:off'], 'only Construire, grey', what='[data-verb]')
+    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['build:off', 'publish:off'], 'only Construire and Publier, grey', what='[data-verb]')
     c.check_errors()
 
 
@@ -528,8 +537,9 @@ STATUS = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True
 UNIT_ZONE = {'fr': ('zone', 'zones'), 'en': ('zone', 'zones'), 'de': ('Zone', 'Zonen'), 'es': ('zona', 'zonas')}
 
 
-def _trow(key, lang, after=None):
-    """One translation of a row of modules/data/texts.js, the key quoted or not (`'no-launcher': [...]`, `busy: [...]`); `after`: a text to find first."""
+def _trow(key, lang, after=None, row=0):
+    """One translation of a row of modules/data/texts.js, the key quoted or not (`'no-launcher': [...]`, `busy: [...]`); `after`: a text to find first;
+    `row`: the rank of the row in an array of rows (`pubFiles: [[singular], [plural]]`: 0, 1)."""
     from lib import LANGS, _STR, _unesc
     src = (ROOT / TX).read_text(encoding='utf-8')
     start = src.index(after) if after else 0
@@ -537,11 +547,11 @@ def _trow(key, lang, after=None):
     if not m:
         raise RuntimeError(f'row {key!r} not found after {after!r}')
     out, i = [], m.end()
-    while len(out) < 4:
+    while len(out) < 4 * (row + 1):
         g = _STR.search(src, i)
         out.append(_unesc(next(x for x in g.groups() if x is not None)))
         i = g.end()
-    return out[LANGS.index(lang)]
+    return out[4 * row + LANGS.index(lang)]
 
 
 def _zones_text(lang, n):
@@ -559,12 +569,14 @@ def _zs(state, done=0, total=0, **extra):
     return {'state': state, 'done': done, 'total': total, **extra}
 
 
-def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None):
+def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None):
     """A FAKE launcher (the technique of frame A32: c.context.route answers /__setup/*; never a real one).  `views`: what GET regen/job?id= answers one
     after the other (the last one stays); `last`: what GET regen/job (no id) answers at first (the running or the last job); `start`: (status, body) of the
     POST that starts a job; `cancel_view`: what the job becomes once POST regen/job/cancel was received; `busy_view`: the running job a refused start
-    (409) leaves in place.  The dict it returns records `posts` and `cancels` and can be changed between steps."""
-    st = {'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start}
+    (409) leaves in place; `sync`: what GET sync-status answers (`{'changes', 'ahead', 'merging', 'last'}`, or `(status, body)`).  The dict it returns records
+    `posts`, `cancels` and `syncs` (the reads of sync-status) and can be changed between steps."""
+    st = {'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start, 'syncs': 0,
+          'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}}
 
     def handler(route):
         req = route.request
@@ -572,6 +584,13 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
         code, body = 200, {}
         if u.path.endswith('/__setup/status'):
             body = STATUS
+        elif u.path.endswith('/__setup/sync-status'):
+            st['syncs'] += 1
+            body = st['sync']
+            if isinstance(body, tuple):
+                code, body = body
+            else:
+                body = {'repo': True, 'branch': 'main', 'behind': 0, **body}
         elif u.path.endswith('/__setup/regen/job/cancel'):
             st['cancels'].append(json.loads(req.post_data or '{}'))
             st['cancelled'] = True
@@ -668,7 +687,7 @@ def l7(c):
     c.eq(post.get('author'), 'ABC', 'the frame adds the trigram itself', what='author')
     c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason')], [True, 'busy'], 'while it runs: grey, « Une autre opération est en cours »', what='running reason')
     c.eq(c.js("[...document.querySelectorAll('[data-build] input[type=checkbox]')].every(i => i.disabled)"), True, 'the choices are frozen while it runs', what='frozen checkboxes')
-    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb).sort()"), ['build', 'stop'], 'the build and stop verbs only', what='verbs')
+    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb).sort()"), ['build', 'publish', 'stop'], 'the build, publish (grey, a build is running) and stop verbs only', what='verbs')
     c.eq(c.js("[...document.querySelectorAll('[data-zone-state]')].map(l => [l.dataset.zoneState, l.dataset.state])"), [['fr', 'waiting'], ['gb', 'waiting']], 'a line per zone, waiting before the first view', what='zone lines')
     c.until("document.querySelector('[data-zone-state=fr]').dataset.state === 'building'", timeout=8000, what='fr is building')
     fr_name = c.text('[data-zone-state=fr] b')
@@ -868,4 +887,271 @@ def l10(c):
     c.eq([norm(c.text('[data-build-result]')), len(_notes_with(c, want))], [norm(want), 1], 'the verb\'s reason is said at the end', what='xplane-in-page')
     doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and len(d.get('ops', [])) >= 5), what='five operations in the journal')
     c.eq([[o['result'], o.get('reason')] for o in doc['ops'][-2:]], [['failed', 'no-browser'], ['failed', 'xplane-in-page']], 'both are failures with their reason', what='journal')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L11, L12
+_L11_JS = r"""async () => {
+  const M = await import('/modules/data/model.js');
+  const out = {};
+  const ok = { launcher: true, publishing: false, building: false, other: false, gesture: true, nothing: false, offline: false };
+  const st = o => { const g = M.publishState({ ...ok, ...o }); return [g.disabled, g.reason] };
+  out.state = [st({}), st({ launcher: false }), st({ publishing: true }), st({ building: true }), st({ other: true }), st({ gesture: false }), st({ nothing: true }), st({ offline: true })];
+  // the first reason of the order wins: launcher > publishing > building > other > gesture > nothing > offline
+  out.order = [st({ launcher: false, publishing: true, building: true, gesture: false, nothing: true, offline: true }), st({ publishing: true, building: true }),
+    st({ building: true, other: true, gesture: false }), st({ other: true, gesture: false }), st({ gesture: false, nothing: true, offline: true }), st({ nothing: true, offline: true })];
+  const cnt = o => { const c = M.publishCounts(o); return [c.known, c.changes, c.ahead, c.merging, c.nothing, c.last] };
+  out.counts = [cnt({ repo: true, changes: 3, ahead: 2, merging: false, last: { at: '2026-10-29T09:30:00Z', pushed: true } }), cnt({ repo: true, changes: 0, ahead: 0 }),
+    cnt({ repo: true, changes: 0, ahead: 0, merging: true }), cnt({ repo: true, changes: 0, ahead: 4 }), cnt({ repo: true, changes: '3', ahead: null, last: { at: '', pushed: 1 } }),
+    cnt(null), cnt({ ok: false, status: 403 }), cnt({ repo: false }), cnt({ repo: true, changes: 1, last: { at: '2026-10-29T10:00:00Z', pushed: false } })];
+  const x = (c, h, r, p, k, f, extra = {}) => ({ ok: true, exchange: { committed: c, held: h, received: r, pushed: p, conflicts: k, refused: f, message: 'm', ...extra } });
+  const oc = r => { const o = M.publishOutcome(r); return [o.kind, o.committed, o.held, o.received, o.conflicts, o.refused, o.message] };
+  out.outcome = [oc(x(3, 0, 1, true, 0, 0)), oc(x(1, 2, 0, true, 3, 1)), oc(x(0, 0, 0, false, 0, 0)), oc({ ok: true }), oc({ ok: false, error: 'frame says', exchange: { message: 'launcher says' } }),
+    oc({ ok: false, error: 'frame says' }), oc(null), oc({ ok: true, exchange: { ok: false, message: 'refused' } }), oc(x('3', null, NaN, true, '1', undefined)), oc({ ok: true, warning: 'w', exchange: { pushed: true } })];
+  const ent = M.publishEntry(Date.UTC(2026, 9, 29, 10, 0, 0), M.publishOutcome(x(3, 2, 1, true, 1, 0)));
+  out.entry = ent;
+  out.entryFailed = M.publishEntry(0, M.publishOutcome({ ok: false })).result;
+  out.add = M.journalAdd([], ent).length + ':' + M.journalAdd([ent], ent).length;   // no job id: two publications are two entries
+  out.num = [M.num(3), M.num('3'), M.num(NaN), M.num(null)];
+  return out;
+}"""
+
+
+@case('L11', 'Données: Publier, the pure functions on fixtures', 'L', tags=('data',), phone=False,
+      rule='modules/data/SPEC 3 (one operation at a time), 6.5 (one grey reason); INTEGRATION 1.3 (the gesture sync, sync-status)')
+def l11(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    r = c.js(_L11_JS)
+    c.eq(r['state'], [[False, None], [True, 'no-launcher'], [True, 'publishing'], [True, 'building'], [True, 'busy'], [True, 'no-gesture'], [True, 'nothing'], [True, 'offline']],
+         'the grey reasons of Publier, each alone: no launcher, publishing, build running, another operation, frame without the gesture, nothing to publish, offline', what='publishState')
+    c.eq(r['order'], [[True, 'no-launcher'], [True, 'publishing'], [True, 'building'], [True, 'busy'], [True, 'no-gesture'], [True, 'nothing']],
+         'one reason, the first of the order launcher > publishing > build > other > gesture > nothing > offline', what='publishState order')
+    c.eq(r['counts'], [[True, 3, 2, False, False, {'at': '2026-10-29T09:30:00Z', 'pushed': True}], [True, 0, 0, False, True, None], [True, 0, 0, True, False, None],
+                       [True, 0, 4, False, False, None], [True, 0, 0, False, True, None], [False, None, None, False, False, None], [False, None, None, False, False, None],
+                       [False, None, None, False, False, None], [True, 1, 0, False, False, {'at': '2026-10-29T10:00:00Z', 'pushed': False}]],
+         'sync-status: the counts, « nothing » only when read and 0 / 0 without a pending merge; an unreadable answer (null, refusal, no repository) is never « nothing »; last needs its date', what='publishCounts')
+    c.eq(r['outcome'], [['done', 3, 0, 1, 0, 0, 'm'], ['done', 1, 2, 0, 3, 1, 'm'], ['local', 0, 0, 0, 0, 0, 'm'], ['no-exchange', 0, 0, 0, 0, 0, ''],
+                        ['failed', 0, 0, 0, 0, 0, 'launcher says'], ['failed', 0, 0, 0, 0, 0, 'frame says'], ['failed', 0, 0, 0, 0, 0, ''], ['failed', 0, 0, 0, 0, 0, 'refused'],
+                        ['done', 0, 0, 0, 0, 0, 'm'], ['done', 0, 0, 0, 0, 0, 'w']],
+         'the end of a publication: pushed is « done », not pushed « local », no exchange « no-exchange », ok false a failure (the launcher\'s message before the frame\'s); every count is a number (a string or NaN becomes 0)', what='publishOutcome')
+    c.eq(r['entry'], {'at': '2026-10-29T10:00:00.000Z', 'set': 'base', 'verb': 'publish', 'result': 'done', 'committed': 3, 'received': 1, 'held': 2, 'conflicts': 1},
+         'the journal entry: UTC time, set, verb, result, committed, received, held, conflicts', what='publishEntry')
+    c.eq([r['entryFailed'], r['add']], ['failed', '1:2'], 'a failure is journaled as failed; two publications without a job id are two entries', what='publishEntry failed / journalAdd')
+    c.eq(r['num'], [3, None, None, None], 'num() keeps numbers only', what='num')
+    c.check_errors()
+
+
+# the fake frame sync: wraps FrameData.adapter the moment frame_data.js assigns window.FrameData (as _stub wraps AeroDB.create); its config comes from
+# sessionStorage `__fakeSync` (set before each load: { gesture, result, delay }), none: the real adapter (no gesture property)
+_SYNC_JS = """(() => { let cfg = null; try { cfg = JSON.parse(sessionStorage.getItem('__fakeSync') || 'null') } catch {}
+  window.__sync = { calls: [] }; if (!cfg) return; let fd;
+  const patch = F => { const a = F.adapter; F.adapter = function (...x) { const d = a.apply(this, x);
+    const f = async o => { window.__sync.calls.push(o === undefined ? null : o); if (cfg.delay) await new Promise(r => setTimeout(r, cfg.delay)); return JSON.parse(JSON.stringify(cfg.result)) };
+    if (cfg.gesture) f.gesture = true; d.sync = f; return d }; return F };
+  Object.defineProperty(window, 'FrameData', { configurable: true, get() { return fd }, set(v) { fd = v && v.adapter && !v.__fake ? (v.__fake = 1, patch(v)) : v } }) })()"""
+
+FILES = {'fr': ('fichier', 'fichiers'), 'en': ('file', 'files'), 'de': ('Datei', 'Dateien'), 'es': ('archivo', 'archivos')}
+COMMITS = {'fr': ('commit', 'commits'), 'en': ('commit', 'commits'), 'de': ('Commit', 'Commits'), 'es': ('commit', 'commits')}
+
+
+def _sync_cfg(c, gesture=True, result=None, delay=0):
+    """Sets what the fake frame sync does at the next load (the init script reads sessionStorage)."""
+    res = result if result is not None else {'ok': True, 'exchange': {'committed': 3, 'held': 0, 'received': 1, 'pushed': True, 'conflicts': 0, 'refused': 0}}
+    c.page.evaluate("v => sessionStorage.setItem('__fakeSync', v)", json.dumps({'gesture': gesture, 'result': res, 'delay': delay}))
+
+
+def _pub_ok(c, what):
+    """No horizontal scroll, nothing beyond the right edge, 44 px on the Publier button."""
+    m = c.js("""() => { const b = document.querySelector('[data-publish]'); return { sw: document.documentElement.scrollWidth, iw: window.innerWidth,
+      over: [...b.querySelectorAll('*')].filter(e => e.getBoundingClientRect().width && e.getBoundingClientRect().right > window.innerWidth + 1).slice(0, 3).map(e => e.tagName + '.' + e.className),
+      hs: [...b.querySelectorAll('button')].map(e => Math.round(e.getBoundingClientRect().height)) } }""")
+    c.le(m['sw'], m['iw'], f'{what}: no horizontal scroll', what='scrollWidth')
+    c.ok(not m['over'], m['over'], f'{what}: nothing beyond the right edge')
+    c.ge(min(m['hs']), 44, f'{what}: the button is 44 px', what='touch height')
+
+
+def _pub_open(c, st_sync, gesture=True, result=None, delay=0, launcher=None):
+    """Opens the screen with the fake launcher (sync-status: `st_sync`) and the fake frame sync; returns the launcher's record."""
+    if launcher is None:                       # the first opening: the fake launcher and the init scripts are installed once
+        c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+        _sync_cfg(c, gesture, result, delay)
+        st = _launcher(c, sync=st_sync)
+        c.page.add_init_script(_SYNC_JS)
+        _open(c, _fixture()[0])
+        return st
+    _sync_cfg(c, gesture, result, delay)       # the next ones: the same page, another configuration at the next load
+    launcher['sync'] = st_sync
+    c.open('data', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the head of the Données screen is drawn')
+    c.settle()
+    return launcher
+
+
+def _publish_state(c):
+    """What the Publier panel shows: the button, the reason, the lines."""
+    return c.js("""() => { const b = document.querySelector('[data-publish]'); const t = e => e ? e.textContent.replace(/\\s+/g, ' ').trim() : null;
+      return { disabled: b.querySelector('[data-verb=publish]').disabled, reason: b.querySelector('[data-reason]')?.dataset.reason || null, reasonText: t(b.querySelector('[data-reason]')),
+        reasons: b.querySelectorAll('[data-reason]').length, state: t(b.querySelector('[data-publish-state]')), merge: t(b.querySelector('[data-publish-merge]')), last: t(b.querySelector('[data-publish-last]')),
+        running: !!b.querySelector('[data-publishing]'), result: b.querySelector('[data-publish-result]')?.dataset.result || null,
+        lines: [...b.querySelectorAll('[data-publish-result] [data-line]')].map(p => [p.dataset.line, t(p)]), message: t(b.querySelector('[data-publish-message]')),
+        buildDisabled: document.querySelector('[data-verb=build]').disabled, buildReason: document.querySelector('[data-build] [data-reason]')?.dataset.reason || null,
+        first: b === document.querySelector('[data-build]').nextElementSibling } }""")
+
+
+def _ask_text(c):
+    """The question of the frame's window: { text, ok, no } (the texts of the two buttons)."""
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='the question is asked')
+    return c.js("""() => ({ text: document.querySelector('.f-modal p').textContent.replace(/\\s+/g, ' ').trim(), ok: document.querySelector('.f-modal [data-ok]').textContent.trim(),
+      no: !!document.querySelector('.f-modal [data-no]') })""")
+
+
+@case('L12', 'Données: Publier against a fake launcher and a fake frame sync (state, one question, the gesture, result, notification, journal, grey reasons)', 'L',
+      tags=('data',), langs4=True, designs=('standard',),
+      rule='modules/data/SPEC 3 (plan before change, one question, notify at the end only, one operation at a time), 6.5; INTEGRATION 1.3 (ctx.data.sync({ gesture: true }), sync-status)')
+def l12(c):
+    lang = c.lang
+    fl, cm = FILES[lang], COMMITS[lang]
+    pub = norm(_trow('publish', lang))
+    last_iso = '2026-10-29T09:30:00Z'
+    # ---- A: 3 files, 2 commits; the state line, the question, a refusal, then the gesture
+    st = _pub_open(c, {'changes': 3, 'ahead': 2, 'merging': False, 'last': {'at': last_iso, 'pushed': True}}, delay=700)
+    s = _publish_state(c)
+    c.ok(s['first'], s, 'the Publier panel follows the Construire panel')
+    want = f"{_trow('pubFiles', lang, row=1).replace('{n}', '3')} · {_trow('pubCommits', lang, row=1).replace('{n}', '2')}"
+    c.eq([s['state'], s['disabled'], s['reasons']], [norm(want), False, 0], 'n files changed · m commits to send; the button is live; no reason', what='state line')
+    c.ok(s['last'].startswith(norm(_trow('pubLastSent', lang).split('{d}')[0])) and '09:30Z' in s['last'] and s['last'].count('2026') == 1, s['last'], 'the last publication, UTC time with Z')
+    c.eq(c.count('[data-publish-merge]'), 0, 'no merge pending: no merge line', what='merge line')
+    c.eq(norm(c.text('[data-publish] [data-verb=publish]')), pub, 'the button is worded in the language of the run', what='button label')
+    _pub_ok(c, 'before')
+    c.tap('[data-publish] [data-verb=publish]')
+    q = _ask_text(c)
+    ask = _trow('pubAsk', lang).replace('{f}', f'3 {fl[1]}').replace('{c}', f'2 {cm[1]}')
+    c.eq([norm(q['text']), norm(q['ok']), q['no']], [norm(ask), pub, True], 'ONE question with both counts, one-word confirmation, and a way out', what='question')
+    c.eq(len(c.js('window.__sync.calls')), 0, 'nothing is sent before the answer', what='sync calls')
+    s = _publish_state(c)
+    c.eq([s['disabled'], s['buildDisabled']], [True, True], 'both buttons are grey while the question is open', what='buttons')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the window closes')
+    c.wait(300)
+    s = _publish_state(c)
+    c.eq([len(c.js('window.__sync.calls')), s['result'], s['disabled'], s['buildDisabled'], len(_notes_with(c, _trow('pubDone', lang).split('{c}')[0]))], [0, None, False, False, 0],
+         'No: nothing is called, nothing is said, both buttons are live again', what='refusal')
+    # Yes: the gesture, once; running line while it works, Construire grey; then the result
+    c.tap('[data-publish] [data-verb=publish]')
+    _ask_text(c)
+    st['sync'] = {'repo': True, 'branch': 'main', 'behind': 0, 'changes': 0, 'ahead': 0, 'merging': False, 'last': {'at': '2026-10-29T10:00:00Z', 'pushed': True}}   # what the re-read after the push finds
+    syncs, pubs = st['syncs'], c.js('window.__stub.calls.publication')
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-publish] [data-publishing]')", timeout=6000, what='the running line is drawn')
+    s = _publish_state(c)
+    c.eq([s['disabled'], s['reason'], norm(s['reasonText']), s['buildDisabled'], s['buildReason']],
+         [True, 'publishing', norm(_trow('publishing', lang, 'pubReason: {')), True, 'busy'], 'while it works: Publier grey (a publication is running), Construire grey (another operation is running)', what='running state')
+    c.eq(c.count('[data-publishing] [role=progressbar][data-indeterminate]'), 1, 'an indeterminate bar', what='bar')
+    c.eq(c.js('window.__sync.calls'), [{'gesture': True}], 'ctx.data.sync called once, with { gesture: true }', what='sync calls')
+    c.eq(_notes_with(c, _trow('pubDone', lang).split('{c}')[0]), [], 'no notification on the way', what='notifications before the end')
+    _pub_ok(c, 'running')
+    c.until("!!document.querySelector('[data-publish-result]')", timeout=8000, what='the result is drawn')
+    done = _trow('pubDone', lang).replace('{c}', '3').replace('{r}', '1')
+    s = _publish_state(c)
+    c.eq([s['result'], s['lines']], ['done', [['done', norm(done)]]], 'the result: sent, 3 files committed, 1 received, nothing else', what='result')
+    c.eq(len(c.js('window.__sync.calls')), 1, 'still one call', what='sync calls')
+    c.eq(len(_notes_with(c, done)), 1, 'ONE notification, with the counts', what='notifications')
+    c.until(f"window.__stub.calls.publication > {pubs}", what='publication() is read again (the rows follow)')
+    c.ok(st['syncs'] > syncs, st['syncs'], 'sync-status is read again')
+    c.until("document.querySelector('[data-publish] [data-reason]')?.dataset.reason === 'nothing'", what='the re-read finds nothing left to publish')
+    s = _publish_state(c)
+    c.eq([s['disabled'], norm(s['reasonText']), s['reasons'], s['state'], s['result'], s['buildDisabled']], [True, norm(_trow('nothing', lang, 'pubReason: {')), 1, None, 'done', False],
+         'nothing left: Publier grey with « Rien à publier » written once (no second line), the result stays, Construire is live', what='after')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and d.get('ops')), what='the journal is written')
+    e = doc['ops'][-1]
+    c.eq([e['set'], e['verb'], e['result'], e['committed'], e['received'], e['held'], e['conflicts']], ['base', 'publish', 'done', 3, 1, 0, 0], 'the journal entry', what='journal entry')
+    c.ok(re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z', e['at']), e['at'], 'UTC ISO time')
+    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.dataset.result, o.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.ok(len(ops) == 1 and ops[0][0] == 'publish' and re.search(r'\d{2}:\d{2}Z', ops[0][2]) and f'3 {fl[1]}' in ops[0][2], ops, 'the journal line says the verb, the time and the files')
+    _pub_ok(c, 'after')
+
+    # ---- B: held, a conflict, a refused file; the counts are re-read before the question
+    res = {'ok': True, 'exchange': {'committed': 1, 'held': 2, 'received': 0, 'pushed': True, 'conflicts': 1, 'refused': 1, 'message': ''}}
+    st = _pub_open(c, {'changes': 3, 'ahead': 2, 'merging': False, 'last': None}, result=res, launcher=st)
+    c.eq(c.count('[data-publish-last]'), 0, 'no last pass known: no line', what='last line')
+    st['sync'] = {'repo': True, 'branch': 'main', 'behind': 0, 'changes': 1, 'ahead': 1, 'merging': False, 'last': None}   # changed since the screen was drawn
+    c.tap('[data-publish] [data-verb=publish]')
+    q = _ask_text(c)
+    c.eq(norm(q['text']), norm(_trow('pubAsk', lang).replace('{f}', f'1 {fl[0]}').replace('{c}', f'1 {cm[0]}')), 'the question uses the counts read at the tap (singular forms)', what='question')
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-publish-result]')", timeout=8000, what='the result is drawn')
+    s = _publish_state(c)
+    lines = [['done', norm(_trow('pubDone', lang).replace('{c}', '1').replace('{r}', '0'))], ['held', norm(_trow('pubHeld', lang, row=1).replace('{n}', '2'))],
+             ['conflicts', norm(_trow('pubConflicts', lang, row=0).replace('{n}', '1'))], ['refused', norm(_trow('pubRefused', lang, row=0).replace('{n}', '1'))]]
+    c.eq(s['lines'], lines, 'the result: what was sent, the files of the base kept on the workstation, the conflict (see Settings), the refused file', what='result lines')
+    c.eq(len(_notes_with(c, lines[0][1])), 1, 'ONE notification, which carries the counts of every line', what='notifications')
+    note = _notes_with(c, lines[0][1])[0]
+    c.ok(all(l[1] in norm(note) for l in lines), note, 'the notification says the four facts')
+    c.eq(c.js('window.__sync.calls'), [{'gesture': True}], 'one call', what='sync calls')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and any(o.get('verb') == 'publish' for o in d.get('ops', []))), what='the journal entry')
+    e = [o for o in doc['ops'] if o['verb'] == 'publish'][-1]
+    c.eq([e['committed'], e['held'], e['received'], e['conflicts']], [1, 2, 0, 1], 'the journal keeps the counts', what='journal entry')
+    _pub_ok(c, 'held')
+
+    # ---- C: a failure; the launcher's message is text, never HTML
+    msg = '<b id="boom">boom</b> & "no"'
+    res = {'ok': False, 'error': 'frame says', 'exchange': {'committed': 0, 'held': 0, 'received': 0, 'pushed': False, 'conflicts': 0, 'refused': 0, 'message': msg}}
+    st = _pub_open(c, {'changes': 3, 'ahead': 2, 'merging': False, 'last': None}, result=res, launcher=st)
+    c.tap('[data-publish] [data-verb=publish]')
+    _ask_text(c)
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-publish-result]')", timeout=8000, what='the failure is drawn')
+    s = _publish_state(c)
+    c.eq([s['result'], s['lines'], s['message']], ['failed', [['failed', norm(_trow('pubFailed', lang))]], norm(_trow('pubLauncherSays', lang).replace('{m}', msg))],
+         'a failure: the sentence (nothing is lost) and what the launcher says, as text', what='failure')
+    c.eq(c.count('[data-publish-message] b, #boom'), 0, 'the launcher\'s message is escaped: no element comes out of it', what='escaped')
+    c.eq(len(_notes_with(c, _trow('pubFailed', lang))), 1, 'one notification', what='notifications')
+    c.eq(s['disabled'], False, 'the button is live again: nothing was lost, the user may try again', what='button')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and any(o.get('verb') == 'publish' and o.get('result') == 'failed' for o in d.get('ops', []))), what='the failure is journaled')
+    c.eq([[o['result'], o['committed']] for o in doc['ops'] if o['verb'] == 'publish'][-1], ['failed', 0], 'the journal says failed', what='journal entry')
+    _pub_ok(c, 'failed')
+
+    # ---- D: a merge waits (nothing else to send): the line says Publier concludes it first, the button is live
+    st = _pub_open(c, {'changes': 0, 'ahead': 0, 'merging': True, 'last': {'at': last_iso, 'pushed': False}}, launcher=st)
+    s = _publish_state(c)
+    c.eq([s['merge'], s['disabled'], s['reasons']], [norm(_trow('pubMerge', lang)), False, 0], 'a pending merge: its line, and the button stays live', what='merge')
+    c.ok(s['last'].startswith(norm(_trow('pubLastKept', lang).split('{d}')[0])), s['last'], 'a last pass that sent nothing says so')
+    _pub_ok(c, 'merge')
+
+    # ---- E: nothing to publish: grey with the reason, once, and no state line; a frame without the gesture: grey, nothing called
+    st = _pub_open(c, {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}, launcher=st)
+    s = _publish_state(c)
+    c.eq([s['disabled'], s['reason'], s['reasonText'], s['reasons'], s['state']], [True, 'nothing', norm(_trow('nothing', lang, 'pubReason: {')), 1, None], 'nothing to publish: grey, « Rien à publier » once', what='nothing')
+    st = _pub_open(c, {'changes': 3, 'ahead': 2, 'merging': False, 'last': None}, gesture=False, launcher=st)
+    s = _publish_state(c)
+    c.eq([s['disabled'], s['reason'], s['reasonText'], s['reasons']], [True, 'no-gesture', norm(_trow('no-gesture', lang, 'pubReason: {')), 1],
+         'a frame without ctx.data.sync.gesture: grey with its reason, never a pass without the gesture', what='no gesture')
+    c.eq(len(c.js('window.__sync.calls')), 0, 'nothing is called', what='sync calls')
+    # the real adapter (no fake at all): the same, whatever sync() does
+    c.page.evaluate("sessionStorage.removeItem('__fakeSync')")
+    c.page.reload(wait_until='load')
+    _head(c)
+    s = _publish_state(c)
+    c.eq([s['disabled'], s['reason']], [True, 'no-gesture'], 'the real frame adapter today (sync() without the property): grey too', what='real adapter')
+
+    # ---- F: sync-status does not answer: said, no question, nothing called
+    st = _pub_open(c, (500, {'error': 'boom'}), launcher=st)
+    s = _publish_state(c)
+    c.eq([s['disabled'], norm(s['state'])], [False, norm(_trow('pubUnread', lang))], 'an unreadable state is said on the panel (never « rien à publier »)', what='unread state')
+    c.tap('[data-publish] [data-verb=publish]')
+    c.until("!!document.querySelector('[data-publish-result][data-result=unread]')", timeout=6000, what='the failed read is said')
+    c.eq([c.count('.f-modal'), len(c.js('window.__sync.calls')), len(_notes_with(c, _trow('pubUnread', lang)))], [0, 0, 1], 'no question, nothing called, one notification', what='unread')
+
+    # ---- G: a build is running: Publier is grey with its reason (and Construire grey while it runs)
+    v1 = _view(step='Zone fr', done=0, zones={'fr': _zs('building', 1, 4), 'gb': _zs('waiting')})
+    st['views'], st['i'] = [v1], 0
+    st = _pub_open(c, {'changes': 3, 'ahead': 2, 'merging': False, 'last': None}, launcher=st)
+    c.eq(_publish_state(c)['disabled'], False, 'before the build: live', what='before')
+    c.tap('[data-verb=build]')
+    c.until("!!document.querySelector('[data-build] [data-running]')", timeout=8000, what='the build runs')
+    c.until("document.querySelector('[data-publish] [data-reason]')?.dataset.reason === 'building'", what='Publier says a build is running')
+    s = _publish_state(c)
+    c.eq([s['disabled'], norm(s['reasonText']), s['reasons']], [True, norm(_trow('building', lang, 'pubReason: {')), 1], 'a build is running: Publier grey, « publiez quand elle est finie »', what='build running')
+    c.eq(len(c.js('window.__sync.calls')), 0, 'nothing is called', what='sync calls')
+    _pub_ok(c, 'build running')
     c.check_errors()
