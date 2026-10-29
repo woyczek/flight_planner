@@ -681,6 +681,25 @@ def d55(c):
         c.ok(r['far'] > 15, f'{r["far"]:.1f} px', 'the body lies behind the tip')
 
 
+_FAM_JS = """async () => { const L = await import('/modules/maps/lv.js');
+  const cta = (n, lo) => ({ type: 'CTA', name: `DUBLIN ${n}`, cls: 'C', lower: lo, upper: 'FL245' });
+  const dub = L.levelsHtml([cta(3, '1500 FT'), cta(4, '2500 FT'), cta(5, '3500 FT'), cta(6, '5500 FT')], 360, 220),
+    mix = L.levelsHtml([cta(3, '1500 FT'), { type: 'TMA', name: 'SHANNON 1', cls: 'C', lower: '5500 FT', upper: 'FL245' }], 360, 220),
+    same = L.levelsHtml([cta(3, '1500 FT'), cta(4, '1500 FT')], 360, 220);
+  const has = h => h.includes('mp-lv-fam');
+  return { dub: has(dub), mix: has(mix), same: has(same) } }"""
+
+
+@case('D56', 'Airspaces at a point: overlapping sectors of one family with different floors are said to be the source’s data', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='ergonomics 29 Oct (Dublin: openAIP codes CTA 3 to 6 without their inner hole): a discreet note, no cutting on the map')
+def d56(c):
+    _open_proc(c, _proc_flight())
+    r = c.js(_FAM_JS)
+    c.ok(r['dub'], f'{r}', 'DUBLIN 3 to 6 (one family, one class, four floors): the note is written under the list')
+    c.ok(not r['mix'] and not r['same'], f'{r}', 'two families, or one family with one floor: no note')
+
+
 @case('D41', 'The chosen SID, STAR and approach are drawn from the runway', 'D', tags=('maps',), screens=False, designs=('standard',), langs4=True,
       rule='V3 § 10.20, maps SPEC § 5: path from the threshold; transition and missed approach dashed; a leg without a fix = 2 NM stroke then dashes; RF = arc; join on a common point or dashed direct; unchosen procedures never drawn')
 def d41(c):

@@ -179,6 +179,7 @@ export const STYLE = `
 [data-module="maps"] .mp-dbody p{margin:2px 0}
 [data-module="maps"] .mp-lv-body{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 12px}
 [data-module="maps"] .mp-lv-also{margin:8px 0 0}
+[data-module="maps"] .mp-lv-fam{margin:6px 0 0;font-size:12px}
 [data-module="maps"] .mp-lv-also>p{margin:0;overflow-wrap:anywhere}
 [data-module="maps"] .mp-lv{flex:none;position:sticky;top:0;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
 [data-module="maps"] .mp-lv-list{flex:1 1 calc(2.5em + 9ch);min-width:0;margin:0;padding:0;list-style:none;column-width:19em;column-gap:16px;font-size:.95em;line-height:1.25}

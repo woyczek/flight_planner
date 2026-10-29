@@ -487,6 +487,10 @@ export const TX = {
   vfrPart: ['(certaines peuvent n\'être qu\'une partie d\'un itinéraire)', '(some may be only part of a route)',
     '(manche sind möglicherweise nur ein Teil einer Route)', '(algunas pueden ser solo una parte de un itinerario)'
   ],
+  levelsFamily: ['Secteurs d’une même famille qui se recouvrent : donnée de la source',
+    'Overlapping sectors of one family: as given by the source',
+    'Sich überlappende Sektoren einer Familie: Angabe der Quelle', 'Sectores de una misma familia que se solapan: dato de la fuente'
+  ],
   levelsTitle: ['{n} espaces sur ce point', '{n} airspaces at this point', '{n} Lufträume an diesem Punkt',
     '{n} espacios en este punto'
   ],

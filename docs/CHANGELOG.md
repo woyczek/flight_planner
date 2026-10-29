@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the airspaces at a point say when sectors of one family overlap** (`modules/maps/lv.js`, `texts.js`, case D56) — when
+  airspaces of one name family, one type and one class overlap there with different floors (Dublin: openAIP codes CTA 3 to 6
+  without their inner hole), a discreet note ×4 under the list: "Overlapping sectors of one family: as given by the source";
+  the map cuts nothing.
+
 - **Atmosphere: the cut follows Fuel's vertical path, and its times the ground speed** (`modules/atmosphere/atmo.js`
   `trajectory`, `section.js`; case E11; user, 29 Oct: "la coupe météo ignore les altitudes imposées … 30 kt de face = 30 kt de
   vitesse sol en moins") — the cut drew its own climb and descent at default rates and timed the flight at true airspeed;
