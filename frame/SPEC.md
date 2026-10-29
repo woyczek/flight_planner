@@ -878,14 +878,17 @@ launcher can serve that device over the local network, so the device works as th
 
 The launcher can serve the Pilot application to the pilots' devices through the airline's relay: on the NAS (Container
 Manager), behind its reverse proxy (https, Let's Encrypt), the launcher listening on 127.0.0.1 only (`launch.py --relay
-<public host>`). **Coded and tested on the workstation only: no exposure before the full security review and the user's
+<public host> [--relay-port <port>]`). **Coded and tested on the workstation only: no exposure before the full security review and the user's
 explicit go** (R3).
 
-- A request is the relay's when it comes from 127.0.0.1 (the proxy) with the public host as `Host`; it must say
-  `X-Forwarded-Proto: https`; the client's address is the last of `X-Forwarded-For`, read from 127.0.0.1 only: **the
+- **The relay has its own port**: `--relay` opens a second listener on 127.0.0.1 (`--relay-port`, by default the
+  interface's port + 1; the launcher refuses to start when it equals the interface's port, is out of range or is busy);
+  every request that arrives there is the relay's, whatever its `Host` and headers, and the
+  workstation's interface stays alone on its own port. **The proxy targets the relay port and keeps the `Host`
+  header.** A relay request must say `X-Forwarded-Proto: https`; the client's address is the last of `X-Forwarded-For`, read from 127.0.0.1 only: **the
   proxy must append the client's address to `X-Forwarded-For` or overwrite the header** (the NAS's reverse proxy and
   nginx's `$proxy_add_x_forwarded_for` append), so that an address forged by the client at its head is never the one
-  read. A request of the workstation itself (`Host 127.0.0.1:port`) is not the relay's.
+  read (without the header, all clients share the proxy's address, and the attempt limits with it).
 - The relay and the local network never go together: `--relay` with `--lan` stops the launcher at start, and the
   workstation cannot open the local network while relaying (409). The pairing page is never framed (`X-Frame-Options:
   DENY`, CSP `default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'`), without
@@ -898,10 +901,11 @@ explicit go** (R3).
   pilot's browser with its own code. 5 wrong codes from an address: one minute (attempts older than an hour forgotten);
   30 in an hour: pairing closed until the next code. The return after pairing is a path of this server (no `//`, `\`,
   space or control character, no `/__`).
-- **The proxy must keep the `Host` header** (the public host). Fail closed: in relay mode, a request from 127.0.0.1
-  that carries a proxy header (`X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host`, `Forwarded`, `X-Real-IP`)
-  with another `Host` is refused (403), never taken for the workstation's. At start, the launcher asks
-  `https://<public host>/__relay/whoami` through the proxy and says in its console whether it came back as the relay.
+- Belt and braces: in relay mode, a request on the interface's port from 127.0.0.1 that carries a proxy header
+  (`X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host`, `Forwarded`, `X-Real-IP`) is refused (403), never taken
+  for the workstation's (a proxy aimed at the wrong port). At start, the launcher asks
+  `https://<public host>/__relay/whoami` through the proxy and says in its console whether it came back by the relay
+  port.
 - A paired device reaches the pages and the data files, and only the `/__setup/` routes declared `relay=True` (status,
   changes, batch, sync, net), with GET / HEAD / POST; everything else is « réservé au poste ». The author of a batch or a
   sync is the device's trigram, never the page's; `net` stays on its whitelist (SimBrief, IVAO, VATSIM, METAR,

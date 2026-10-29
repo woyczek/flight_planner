@@ -695,7 +695,7 @@ def i12(c):
 
 
 @case('I13', 'Relay mode of the launcher (R1a)', 'I', static=True,
-      rule='frame R1a (29 Oct): behind the reverse proxy on 127.0.0.1, https only, a paired device only, the relay routes only, the author from the device token, codes issued on the workstation, revocable; never with the local network; the pairing page never framed, same origin only; a proxy rewriting Host refused (fail closed)')
+      rule='frame R1a (29 Oct): behind the reverse proxy on 127.0.0.1, https only, a paired device only, the relay routes only, the author from the device token, codes issued on the workstation, revocable; never with the local network; the pairing page never framed, same origin only; a dedicated port for the relay (everything on it is the relay), a proxy request on the interface port refused')
 def i13(c):
     sys.path.insert(0, str(c.root / 'tests' / 'v3'))
     import importlib

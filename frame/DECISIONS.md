@@ -1786,13 +1786,19 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     POST needs the same origin (login CSRF). Decided by the coordinator: cookie `SameSite=Lax` (a pilot following a link
     arrives paired; writes already need the same origin and `X-SOG-Setup`); attempts older than an hour forgotten
     (rotating IPv6 addresses). Debt: bound a device's writes to its pilot's prefixes one day.
+  - Second review (1e573d782): a proxy that rewrites `Host` and adds no proxy header could not be told from the
+    workstation. Decided (way a): a dedicated relay port (`--relay-port`, default interface + 1) on 127.0.0.1, where
+    every request is the relay's; `_relay()` is « arrived by the relay port », never deduced from `Host`; the proxy
+    header guard stays on the interface's port as a belt. I13: on the relay port, without a header and with the
+    workstation's `Host`, a request is the relay's (403 without https, 401 unpaired), never the workstation's; a relay
+    port equal to the interface's stops the launcher at start.
   - Lax checked: a GET navigation from another site carries the cookie, so no GET open to the relay may change a state.
     They are `status` and `changes` (read the data's head and tree; `changes` keeps a two-second memo of the tree),
     the pages and the data files (read; the pool's indexes rebuilt before being served are derived), `/__relay/pair`
     (the form) and `/__relay/whoami`; `net` is POST only. The only write is the device's « last used » mark, at most once
     an hour. The fail-closed refusal runs first, before the other guards (pages, data files and `/__setup/` alike).
-  - Tested on the workstation only: a real launcher `--relay` and requests shaped like the proxy's (noreg I13, 27 checks:
-    https only, Host, Host rewritten by the proxy, start check, pairing page headers, pairing from another site or
+  - Tested on the workstation only: a real launcher `--relay` and requests shaped like the proxy's (noreg I13, 30 checks:
+    https only, dedicated relay port, proxy request on the interface's port, start check, pairing page headers, pairing from another site or
     without origin, return path, no local network, pairing, single use, attempt limit, forged X-Forwarded-For,
     workstation routes refused, whitelist, PUT, author from the token, revocation), the screen against a simulated
     context (A40). Nothing exposed.

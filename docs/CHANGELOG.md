@@ -31,7 +31,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   I10, I13, A40): `launch.py --relay <host>` serves the Pilot application to paired devices behind a reverse proxy (https
   only), the Pilot app's routes only, writes signed with the device's trigram; the administrator issues pairing codes and
   revokes devices in Maintenance › Relay devices. Never with the local network (`--lan` refused); the pairing page is
-  never framed. Security review: fail closed when the proxy rewrites `Host`, start check of the public host, pairing
+  never framed. Security review: the relay on its own port (`--relay-port`, everything there is the relay's; the proxy
+  targets it and keeps `Host`), a proxy request on the interface's port refused, start check of the public host, pairing
   from the same origin only, no space or control character in the return path, cookie `SameSite=Lax`. Tested on the
   workstation only, not exposed.
 - **Fuel: the aerodrome fields search by full name** (`modules/fuel/module.js`, `adnames.js`, DECISIONS; help ×4; case F48) — only a

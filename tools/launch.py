@@ -304,10 +304,10 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         return getattr(self.server, 'lan', False)
 
     def _relay(self):
-        """Requête du relais de la compagnie (--relay <hôte>) : reçue sur 127.0.0.1 (le proxy inverse du NAS, https), avec
-        l'en-tête Host de l'hôte public. Une requête du poste lui-même (Host 127.0.0.1:port) n'en est pas une."""
-        return bool(RELAY['host']) and not self._lan() and self.client_address[0] in ('127.0.0.1', '::1') and (
-            self.headers.get('Host') or '').lower() == RELAY['host']
+        """Requête du relais de la compagnie (--relay <hôte>) : arrivée par le port du relais (127.0.0.1, visé par le
+        proxy inverse du NAS seulement), quels que soient Host et les en-têtes ; jamais déduite de Host : un proxy qui
+        réécrirait Host sans en-tête de mandataire serait indiscernable du poste sur le port de l'interface."""
+        return bool(RELAY['host']) and getattr(self.server, 'relay', False)
 
     def _client_ip(self):
         """Adresse du client : en relais, la dernière de X-Forwarded-For (posée par le proxy, seul à joindre 127.0.0.1) ;
@@ -1835,13 +1835,15 @@ def ivao_oauth_refresh(refresh_token):
 # relais de la compagnie (R1a, --relay <hôte public>) : l'hôte que le proxy inverse du NAS transmet (en-tête Host) ; vide :
 # pas de relais
 RELAY = {'host': ''}
-# en-têtes posés par un mandataire : de 127.0.0.1 sans l'hôte public, la requête est refusée en relais (_relay_gate)
+# port du relais (--relay-port, sinon celui de l'interface + 1) : toute requête qui y arrive est du relais ; le proxy le vise
+RELAY['port'] = 0
+# en-têtes posés par un mandataire : sur le port de l'interface en relais, la requête est refusée (_relay_gate, ceinture)
 PROXY_HEADERS = ('X-Forwarded-For', 'X-Forwarded-Proto', 'X-Forwarded-Host', 'Forwarded', 'X-Real-IP')
 
 
 def relay_probe():
-    """Au démarrage en relais : une requête sur l'hôte public, par le proxy, doit revenir ici comme relais
-    (/__relay/whoami) ; le résultat est dit dans la console (le proxy qui réécrit Host est refusé : 403)."""
+    """Au démarrage en relais : une requête sur l'hôte public, par le proxy, doit revenir ici par le port du relais
+    (/__relay/whoami) ; le résultat est dit dans la console (le proxy qui vise le port de l'interface est refusé : 403)."""
     url = f'https://{RELAY["host"]}/__relay/whoami'
     try:
         with GITLAB_OPENER.open(urllib.request.Request(url, headers={'Accept': 'application/json'}), timeout=10) as r:
@@ -1850,7 +1852,7 @@ def relay_probe():
             f'  ATTENTION relais : {url} ne répond pas comme ce relais.')
     except urllib.error.HTTPError as e:
         say(f'  ATTENTION relais : {url} répond {e.code}' + ('' if e.code != 403 else
-                                                               ' — le proxy doit garder l’en-tête Host (relais fermé).'))
+                                                               f' — le proxy doit viser le port du relais ({RELAY["port"]}) et garder l’en-tête Host.'))
     except (OSError, ValueError) as e:
         say(f'  Relais : vérification impossible ({type(e).__name__}) — l’hôte public doit mener à ce poste.')
 RELAY_TEXT = {
@@ -3672,6 +3674,8 @@ def main():
     ap.add_argument('--relay', metavar='HÔTE', default='',
                     help='relais de la compagnie (R1a) derrière un proxy inverse https sur ce poste : nom public transmis par le '
                          'proxy (en-tête Host) ; jamais exposé sans le proxy, jamais sans revue de sécurité')
+    ap.add_argument('--relay-port', type=int, default=0, metavar='PORT',
+                    help='port du relais sur 127.0.0.1, que vise le proxy (défaut : celui de l’interface + 1)')
     ap.add_argument('--lan', action='store_true',
                     help='ouvrir aussi aux appareils du réseau local (adresses privées, code d’appairage ; jusqu’à la fermeture)')
     a = ap.parse_args()
@@ -3731,12 +3735,22 @@ def main():
     if a.lan:
         lan_open()
     if a.relay:  # --lan avec --relay : refusé plus haut
-        if re.fullmatch(r'[A-Za-z0-9.-]+(?::\d+)?', a.relay):
-            RELAY['host'] = a.relay.lower()
-            say(f'  Relais de la compagnie : hôte public {RELAY["host"]}, derrière le proxy inverse (https) de ce poste.')
-            threading.Thread(target=relay_probe, daemon=True).start()
-        else:
-            say('  Relais : hôte invalide, relais coupé.')
+        rport = a.relay_port or port + 1
+        # refus au démarrage : hôte invalide, port du relais égal à celui de l'interface (celui du réseau local aussi, fermé
+        # en relais), hors limites ou occupé — jamais un relais à moitié ouvert
+        if not re.fullmatch(r'[A-Za-z0-9.-]+(?::\d+)?', a.relay):
+            say('  Relais : hôte invalide, lanceur arrêté.')
+            return 2
+        if rport == port or not 0 < rport < 65536 or not free(rport):
+            say(f'  Relais : port {rport} refusé (celui de l’interface, hors limites ou occupé), lanceur arrêté.')
+            return 2
+        # écoute à part, 127.0.0.1 seulement : tout ce qui y arrive est du relais ; l'interface du poste reste sur son port
+        rsrv = Server(('127.0.0.1', rport), handler)
+        rsrv.relay = True
+        threading.Thread(target=rsrv.serve_forever, daemon=True).start()
+        RELAY.update(host=a.relay.lower(), port=rport)
+        say(f'  Relais de la compagnie : hôte public {RELAY["host"]}, sur 127.0.0.1:{rport} que vise le proxy inverse (https).')
+        threading.Thread(target=relay_probe, daemon=True).start()
     say('')
     say('3. Navigateur')
     say(f'  {url}')
