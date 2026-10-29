@@ -872,6 +872,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 30 | AeroDB: the points of 28 in `aero_fetch` (38a9d39b7) | acceptable; points of 28 settled, one note |
 | 31 | Fuel: « Source » link (c540c3efd), past-date warning (9d9d2f686) | acceptable |
 | 32 | Frame: GitLab fix (02a096440), Maintenance level and `_run` state (9d64081c9); Map « Source » link and track (f7bad9970) | acceptable; **the blocking point of 27 is lifted**; one note |
+| 33 | Fuel: aerodrome names and completion (842ac149b) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1261,6 +1262,12 @@ the line's `title` as a DOM property. The past-date warning is text only (`textC
   `https://gitlab.com@attacker.example/api/v4` and the message shows « gitlab.com@attacker.example », misleading to the
   eye; `fetch()` refuses an address carrying credentials, so nothing leaves, but the user may believe they paste a token
   « for gitlab.com ». Refuse `@` (anything outside `[A-Za-z0-9.-]` and `:port`) in the host.
+
+**33. Fuel, aerodrome names and completion (842ac149b) — acceptable.** The fixed line shows the name through
+`textContent`; the suggestion list escapes the code and the name; ids and ARIA attributes are indexes or keys of the code.
+Only places of kind `aerodrome` whose code passes `CODE` are kept, without duplicates, seven at most; an older request is
+dropped. Choosing writes only the code into the field, then raises `input`: the same path as typing (the flight written by
+`module.js`, bounded to `FUEL_FIELDS`); the name is never written.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30 and 32 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32; the blocking point of 27 lifted in 32); the sharing of the track and of the position is the user's decision.
 
