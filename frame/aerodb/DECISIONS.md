@@ -390,6 +390,11 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.
 - Nothing planned: requests from the modules (maps next).
+- **30 Oct 2026 — improvement pending (security review of 38a9d39b7): no redirect off the starting host.** `urllib` follows a
+  redirect to any host and from https to http, so the checks on an address read from a page (NAV CANADA on its own host, ENAIRE
+  under its own folder) hold for the first request only. One shared opener (a `HTTPRedirectHandler` that refuses a redirect leaving
+  the starting host or https), used by `tools/aero_fetch.py`, `tools/proc_sia.py` and `tools/proc_ead.py`, would close the rule
+  for every source at once; with a K case on a fake redirect. Not done yet.
 - **23 Oct 2026 — VFR reporting points of the VAC charts (user's compilation, plan validated by the ergonomics
   session).**
   - **A kind of its own, `sia/vfr/`, not an enrichment of `vrp`**: the published base and machine-extracted
