@@ -577,6 +577,8 @@ _FLOWN_JS = """() => { const S = window.__mp.S; return S.route.flown.map(p => [p
 _LAYOUT_JS = """() => { const ctx = document.createElement('canvas').getContext('2d'),
   L = window.__pr.layout(ctx, (lat, lon) => ({ x: (lon + 2) * 400, y: (48 - lat) * 400 }), 400);
   return L && { segs: L.segs.map(s => [!!s.dash, !!s.arc]), names: L.names.map(n => n.text), dots: L.dots.length,
+                legs: L.segs.map(s => ({ dash: !!s.dash, arc: !!s.arc, o: s.o, a: s.a.src ? s.a.src.id || '' : '·', b: s.b.src ? s.b.src.id || '' : '·',
+                  ph: s.b.src ? s.b.src.phase || '' : '' })),
                 kinds: L.segs.map(s => s.o), hues: L.segs.map(s => window.__pr.colOf(s.o)),
                 legend: ['sid', 'star', 'app', 'missed'].map(o => window.__pr.colOf(o)),
                 lines: window.__pr.routeLines().map(r => r.length) } }"""
@@ -712,11 +714,22 @@ def d41(c):
     c.eq([x[0] for x in fl], [p[0] for p in _FLOWN], 'the flown points: no leg without a fix, no missed approach', what='the flown points')
     c.ok(abs(fl[-1][1] - _FLOWN_NM) < .5, f'{fl[-1][1]:.1f} NM against {_FLOWN_NM:.1f}', 'nm is the cumulative great-circle distance of the flown points')
     lay = c.js(_LAYOUT_JS)
-    # th→stub, stub→XS01 (dashes), XS01→XS02 (the RF arc), XS02→XS03 (transition), XS03→LUGEN (transition), NEPIX→XT01 (direct), STAR, STAR, approach,
-    # RW31→stub (missed), stub→XM01
-    c.eq([s[0] for s in lay['segs']], [False, True, False, True, True, True, False, False, False, True, True],
-         'dashes: the stub is solid, then dashed to the next fix; transition, direct and missed approach dashed', what='segments dashed')
-    c.eq([i for i, s in enumerate(lay['segs']) if s[1]], [2], 'only the RF leg is drawn as an arc', what='arc segments')
+    # assertions of meaning (V3 § 10.29 h), not the exact list of segments: a leg more or less breaks none of them
+    legs = lay['legs']
+    by = lambda a, b: next((g for g in legs if g['a'] == a and g['b'] == b), None)
+    stub = next((i for i, g in enumerate(legs) if g['a'] == 'RW03'), None)
+    c.ok(stub is not None and not legs[stub]['dash'] and legs[stub + 1]['dash'], f'{legs[stub:stub + 2] if stub is not None else legs}',
+         'a leg without a fix (VA after the threshold): a solid stroke along its course, then dashes to the next fix')
+    rf = [g for g in legs if g['arc']]
+    c.ok(len(rf) == 1 and rf[0]['b'] == 'XS02', f'{rf}', 'the RF leg (to XS02) is drawn as an arc, and only it')
+    tr = [g for g in legs if g['ph'] == 'trans' or (g['o'] == 'sid' and g['b'] == 'LUGEN')]
+    c.ok(tr and all(g['dash'] for g in tr), f'{tr}', 'the transition of the SID is dashed, up to the route')
+    d = by('NEPIX', 'XT01')
+    c.ok(d and d['dash'], f'{d}', 'the STAR joins the route by a dashed direct from NEPIX (no common point)')
+    main = [g for g in legs if g['o'] in ('star', 'app') and g['a'] != 'NEPIX' and g['ph'] != 'missed']
+    c.ok(main and not any(g['dash'] for g in main), f'{main}', 'the STAR and the approach themselves are solid')
+    mi = [g for g in legs if g['o'] == 'missed']
+    c.ok(mi and all(g['dash'] for g in mi), f'{mi}', 'the missed approach is dashed')
     c.eq(lay['lines'], [2], 'the route draws only LUGEN → NEPIX (the SID and the STAR draw the rest of the way)', what='route polylines')
     # user 29 Oct: "des couleurs de contraste autres que violet (vert ? orange ? bleu ?)"
     sid, star, app, missed = lay['legend']
