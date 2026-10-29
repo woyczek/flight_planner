@@ -1,4 +1,4 @@
-"""Area L - the Données module, first lot: a read-only screen (modules/data/SPEC.md sections 3, 6.2, 9; INTEGRATION.md section 2).
+"""Area L - the Données module: a read-only screen and its first action, Construire (modules/data/SPEC.md sections 3, 5.4, 6.2, 6.5, 9; INTEGRATION.md section 2).
 
 Rules covered
   * L1 model.js, the pure functions, on fixtures (no page of the module, no aerodb): the AIRAC cycle written YYNN and its dates, the
@@ -8,18 +8,27 @@ Rules covered
   * L2 the screen, with aerodb STUBBED (publication / zones / coverageByState answer fixtures, sources() is the real catalogue plus
     a parser constant; nothing is read from the data repository, nothing is fetched): the head with the cycle in force, the four
     groups in order and folded as they should be, seven rows at most visible, the states of the rows, the coverage written once,
-    no horizontal scroll, 44 px summaries, NO action button anywhere (`[data-verb]`), the four languages;
+    no horizontal scroll, 44 px summaries, the only action is Construire (grey without a launcher, with its reason); no Télécharger / Publier /
+    Purger / Mettre à jour button anywhere, the four languages;
   * L3 the module is never in Pilot's rail (it belongs to the Maintenance application); Settings > Administration has the line
     « Maintenance » at the Full level only, a real link to #data that mounts the module, including on a phone;
   * L4 an aerodb call that fails is said in one line and throws nothing;
-  * L5 the fallbacks (no State names, no `held`, no parser constant) and the States list redrawn on aerodb { coverage: true }, unsubscribed at unmount.
+  * L5 the fallbacks (no State names, no `held`, no parser constant) and the States list redrawn on aerodb { coverage: true }, unsubscribed at unmount;
+  * L6 model.js, the pure functions of Construire (personal sources, grey reason, a zone's phrase, the bar, the end of a job, the refusal,
+    the journal trimmed to 50), on fixtures;
+  * L7 Construire against a FAKE launcher (the technique of frame A32: c.context.route answers /__setup/*): the body sent, the zone lines that follow,
+    the end summary, one notification, the journal; the personal sources and the X-Plane hint;
+  * L8 the other ends: no launcher (grey with its reason), a 409, a refusal that says what to do, Arrêter, an interrupted job found at mount,
+    a job found running at mount followed to its end.
 
-Cases: L1 L2 L3 L4 L5.  The suite never reads a real data repository and never reaches the network.
+Cases: L1 .. L8.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
 """
 import datetime
 import json
+import re
+import urllib.parse
 
-from lib import Fail, case, norm, tx
+from lib import ROOT, Fail, case, norm, tx
 
 TX = 'modules/data/texts.js'
 LEVEL3 = [['device/level.json', {'level': 3}, 'cache']]
@@ -119,6 +128,7 @@ _L1_JS = r"""async () => {
   const g2 = M.buildGroups(cat, { airac: A, pub, ids: ['fr'], now });
   out.groupsOk = g2.map(x => ({ id: x.id, rows: x.rows.length, attention: x.attention }));
   out.dates = [M.dateText('2026-10-01', 'fr'), M.dateText('2026-10-01', 'de'), M.dateText('x', 'fr'), M.addDays('2026-10-29', -1), M.daysBetween('2026-11-10', '2026-11-26')];
+  out.personal = M.PERSONAL;
   return out;
 }"""
 
@@ -174,7 +184,30 @@ def l1(c):
     c.eq([g['base']['attention'], g['aircraft']['attention'], g['weather']['used']], [True, True, 0], 'a group needs attention when a used row is not up to date', what='attention')
     c.eq([x['attention'] for x in r['groupsOk'] if x['id'] in ('proc', 'weather')], [False, False], 'nothing to see: folded', what='groups up to date')
     c.eq(r['dates'], ['01/10/2026', '01.10.2026', '', '2026-10-28', 16], 'dates written like the rest of the app', what='dates')
+    c.eq(r['personal'], _aero_personal(), 'the personal-licence table of model.js (id, kind, zones fed) is what shared/aero_zones.js says (personal:, COMMON, EXTRA): the two cannot drift', what='PERSONAL against aero_zones.js')
     c.check_errors()
+
+
+def _aero_personal():
+    """{ id: { kind, zones } } of the sources shared/aero_zones.js marks `personal:`: the kind is the field's value; the zones are '*' for a
+    source of COMMON, else the zones of EXTRA / OWN that list it (read from the file with regular expressions; the module never loads it)."""
+    src = (ROOT / 'shared' / 'aero_zones.js').read_text(encoding='utf-8')
+    block = src[src.index('const SOURCES = {'):src.index('const COMMON')]
+    kinds, cur = {}, None
+    for line in block.splitlines():
+        m = re.match(r'^    ([a-z0-9_]+): \{\s*$', line)
+        if m:
+            cur = m.group(1)
+        m = re.search(r"personal:\s*'(\w+)'", line)
+        if m and cur:
+            kinds[cur] = m.group(1)
+    common = re.findall(r"'([a-z0-9_]+)'", re.search(r'const COMMON = \[([^\]]*)\]', src).group(1))
+    lists = {}
+    for name in ('OWN', 'EXTRA'):
+        body = re.search(r'const %s = \{(.*?)\n  \};' % name, src, re.S).group(1)
+        for zone, items in re.findall(r"^    ([a-z0-9_]+):\s*\[([^\]]*)\]", body, re.M):
+            lists[zone] = re.findall(r"'([a-z0-9_]+)'", items)
+    return {sid: {'kind': kind, 'zones': '*' if sid in common else sorted(z for z, l in lists.items() if sid in l)} for sid, kind in kinds.items()}
 
 
 # ------------------------------------------------------------------------------------------------------ L2
@@ -212,7 +245,7 @@ def _stub(cfg):
     are read from window.__stub (a case may change them); window.__stub.fns holds the 'change' listeners (the frame's and the module's)."""
     return """(() => { const cfg = %s; cfg.fns = new Set(); window.__stub = cfg; let ab;
   const patch = (A) => {
-    const ok = (name, key) => async () => { if (window.__stub.fail.includes(name)) throw new Error('stub: ' + name); return window.__stub[key] };
+    const ok = (name, key) => async () => { const k = window.__stub.calls = window.__stub.calls || {}; k[name] = (k[name] || 0) + 1; if (window.__stub.fail.includes(name)) throw new Error('stub: ' + name); return window.__stub[key] };
     A.publication = ok('publication', 'publication'); A.zones = ok('zones', 'zones'); A.coverageByState = ok('coverageByState', 'states');
     const s = A.sources; A.sources = async () => { const r = await s.call(A); if (cfg.pv) return { ...r, PARSER_VERSION: cfg.pv }; const { PARSER_VERSION, ...rest } = r; return rest };  // pv null: the catalogue without its constant (aerodb has carried one since 567b94440)
     const on = A.on; A.on = function (ev, fn) { const un = on.call(A, ev, fn); if (ev === 'change') window.__stub.fns.add(fn); return () => { window.__stub.fns.delete(fn); un() } };
@@ -238,7 +271,7 @@ _ROWS_JS = r"""() => {
     more: (m => m ? { text: m.querySelector(':scope > summary').textContent.trim(), rows: [...m.querySelectorAll('[data-set]')].map(r => r.dataset.set + ':' + r.dataset.status), open: m.open } : null)(g.querySelector(':scope > [data-more]')),
     pills: [...g.querySelectorAll('details[data-set] > summary')].filter(s => s.offsetParent).map(s => s.getBoundingClientRect().height)
   }));
-  return { groups, verbs: document.querySelectorAll('[data-verb]').length, buttons: root.querySelectorAll('button').length,
+  return { groups, verbs: [...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : '')), buttons: root.querySelectorAll('button').length,
     sw: document.documentElement.scrollWidth, iw: window.innerWidth,
     over: [...root.querySelectorAll('*')].filter(e => e.getBoundingClientRect().width && (e.getBoundingClientRect().right > window.innerWidth + 1) && !e.closest('[hidden]')).slice(0, 3).map(e => e.tagName + '.' + e.className) };
 }"""
@@ -300,7 +333,25 @@ def l2(c):
     c.eq(g['weather']['states'], {}, 'the weather rows have no state', what='weather states')
     c.eq(c.text('[data-set="ukmil"] .f-badge[data-pill]'), tx(TX, 'parser', lang, after='state: {'), 'the pill is worded in the language of the run', what='ukmil pill')
     # no action button anywhere, no horizontal scroll, 44 px on the summaries
-    c.eq([m['verbs'], m['buttons']], [0, 0], 'no [data-verb] and no button in the module (read only, lot 1)', what='verbs / buttons')
+    c.eq([m['verbs'], m['buttons']], [['build:off'], 1], 'the only verb is Construire, grey (no launcher in the suite): no Télécharger / Publier / Purger / Mettre à jour', what='verbs / buttons')
+    # the build panel at the top of the base group: every zone of the coverage ticked, the personal sources unticked, the reason written once
+    panel = c.js("""() => { const b = document.querySelector('[data-group=base] > [data-build]'); return b && {
+      zones: [...b.querySelectorAll('[data-build-zone]')].map(i => [i.dataset.buildZone, i.checked]),
+      personal: [...b.querySelectorAll('[data-personal]')].map(i => [i.dataset.personal, i.checked]),
+      lines: [...b.querySelectorAll('[data-personal-line]')].map(p => p.textContent.trim()),
+      reasons: [...b.querySelectorAll('[data-reason]')].map(p => [p.dataset.reason, p.textContent.trim()]),
+      labels: [...b.querySelectorAll('label.d-opt')].map(l => Math.round(l.getBoundingClientRect().height)),
+      btn: Math.round(b.querySelector('[data-verb=build]').getBoundingClientRect().height), first: b === document.querySelector('[data-group=base]').children[1],
+      journal: (j => j && { open: j.open, h: Math.round(j.querySelector('summary').getBoundingClientRect().height), last: j === document.querySelector('[data-module=data] [data-body]').lastElementChild })(document.querySelector('[data-journal]')) } }""")
+    c.ok(panel and panel['first'], panel, 'the build panel is the first thing in the content of the base group')
+    c.eq(panel['zones'], [[z, True] for z in ('ca', 'es', 'fr', 'gb', 'us')], 'the zones of the coverage, all ticked by default', what='build zones')
+    c.eq(panel['personal'], [['enaire', False], ['nats', False], ['xplane', False]], 'the three personal-licence sources, UNticked, as every zone ticked feeds them', what='personal sources')
+    c.eq([norm(x) for x in panel['lines']], [norm(tx(TX, 'licence', lang, after='personalLine: {'))] * 2 + [norm(tx(TX, 'xplane', lang, after='personalLine: {'))],
+         'the personal-use line, the X-Plane variant for X-Plane', what='personal lines')
+    c.eq([[r[0], norm(r[1])] for r in panel['reasons']], [['no-launcher', norm(_trow('no-launcher', lang, 'greyReason: {'))]], 'the grey button says why, once', what='reason')
+    c.ge(min(panel['labels'] + [panel['btn']]), 44, 'every checkbox line and the button are 44 px', what='touch height')
+    c.eq([panel['journal']['open'], panel['journal']['last']], [False, True], 'the journal is the foot of the screen, folded', what='journal')
+    c.ge(panel['journal']['h'], 44, 'its summary is a 44 px target', what='journal summary')
     c.le(m['sw'], m['iw'], 'no horizontal scroll', what='scrollWidth')
     c.ok(not m['over'], m['over'], 'no element beyond the right edge of the window')
     for x in m['groups']:
@@ -352,7 +403,7 @@ def l3(c):
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the module is mounted by the link (at 390 as at 1280)')
     c.eq(c.hash(), '#data', 'the address', what='hash')
     c.eq(c.count('#fMenu a[data-id="data"]'), 0, 'still not in the rail once mounted', what='rail entries')
-    c.eq(c.count('[data-verb]'), 0, 'no action button', what='[data-verb]')
+    c.eq(c.count('[data-verb]'), 1, 'only Construire, grey without a launcher', what='[data-verb]')
     c.ok(c.text('[data-cycle-now]'), 'no cycle', 'the head shows the cycle in force')
     c.check_errors()
 
@@ -369,7 +420,7 @@ def l4(c):
     c.eq(c.count('details.f-group'), 4, 'the four groups are still drawn (names and links)', what='groups')
     c.eq(c.count('[data-set][data-state]'), 0, 'no state is invented without a publication', what='states')
     c.eq(c.doc('cache/data/coverage.json'), None, 'a degraded read writes no coverage', what='coverage.json')
-    c.eq(c.count('[data-verb]'), 0, 'no action button', what='[data-verb]')
+    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['build:off'], 'only Construire, grey', what='[data-verb]')
     c.check_errors()
 
 
@@ -395,4 +446,426 @@ def l5(c):
     before = c.js('window.__stub.fns.size')
     c.go('flightlog')
     c.until('window.__stub.fns.size < %d' % before, timeout=4000, what='the module unsubscribes at unmount')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L6
+_L6_JS = r"""async () => {
+  const M = await import('/modules/data/model.js');
+  const out = {};
+  out.personal = [[], ['fr'], ['es'], ['gb'], ['es', 'gb', 'fr']].map(z => M.personalSources(z).map(p => p.id + ':' + p.kind));
+  out.gate = [{ launcher: false, busy: true, zones: 0, offline: true }, { launcher: true, busy: true, zones: 0 }, { launcher: true, busy: false, zones: 2, offline: true },
+    { launcher: true, zones: 0 }, { launcher: true, zones: 2 }].map(M.buildState);
+  out.phrase = [undefined, { state: 'building', done: 2, total: 5 }, { state: 'building' }, { state: 'built' }, { state: 'failed', error: 'timeout' },
+    { state: 'failed', error: 'zzz' }, { state: 'cancelled' }, { state: 'weird' }].map(z => { const p = M.zonePhrase(z); return [p.state, p.key, p.n, p.m, p.code] });
+  out.rows = M.zoneRows({ zones: { fr: { state: 'built' }, us: { state: 'building', done: 1, total: 3 } } }, ['fr', 'gb']).map(r => [r.zone, r.key]);
+  out.progress = [M.progress({ done: 2, total: 5 }, ['a']), M.progress(null, ['a', 'b']), M.progress({ done: 9, total: 5 }, []), M.progress(null, [])];
+  out.clock = [0, 59, 125, -3, 3600].map(M.clock);
+  out.isBuild = [{ zones: {} }, { set: 'base', verb: 'build' }, { state: 'done' }, null, { zones: [] }].map(M.isBuildView);
+  const z = s => ({ state: s }), zf = e => ({ state: 'failed', error: e });
+  const o = f => { const r = M.outcome(f); return [r.kind, r.built, r.failed] };
+  out.outcome = [
+    { state: 'done', zones: { fr: z('built'), gb: z('built') }, result: { built: ['fr', 'gb'], failed: [] } },
+    { state: 'done', result: { built: ['fr'], failed: [{ zone: 'gb', error: 'timeout' }], reason: 'partial' } },
+    { state: 'error', result: { built: [], failed: [{ zone: 'fr', error: 'invalid-output' }], reason: 'failed' } },
+    { state: 'cancelled', zones: { fr: z('built'), gb: z('cancelled') } },
+    { state: 'interrupted', zones: { fr: z('built'), gb: z('building') } },
+    { state: 'error', result: { ok: false, reason: 'no-browser' } },
+    { state: 'error', result: { ok: false, reason: 'xplane-in-page' } },
+    { state: 'done', zones: { fr: z('built'), gb: zf('timeout') } },
+    { state: 'done', zones: { fr: zf('x') } },
+    { state: 'done', result: { reason: 'cancelled', built: ['fr'] } }].map(o);
+  out.result = ['done', 'partial', 'failed', 'cancelled', 'interrupted', 'no-browser', 'xplane-in-page'].map(M.journalResult);
+  out.refusal = [{ status: 409 }, { status: 429, reason: 'too-soon', wait: 12.2 }, { status: 429 }, { status: 404, message: 'unknown route' }, { status: 400 },
+    { status: 403, refused: true }, { ok: false, offline: true }, { status: 500 }, null].map(r => { const f = M.refusal(r); return [f.key, f.wait] });
+  const at = Date.parse('2026-10-29T10:00:00Z');
+  out.entry = M.journalEntry({ at, zones: ['fr', 'gb'], seconds: 12.4, out: { kind: 'partial', built: ['fr'], failed: [{ zone: 'gb' }] }, job: 'j1' });
+  out.entryNoBrowser = M.journalEntry({ at, zones: ['fr'], seconds: null, out: { kind: 'no-browser', built: [], failed: [] } });
+  const list = Array.from({ length: 50 }, (_, i) => ({ at: new Date(at + i * 1000).toISOString(), verb: 'build', job: 'k' + i }));
+  const more = M.journalAdd(list, out.entry);
+  out.trim = [more.length, more[0].job, more[49].job, M.journalAdd(more, out.entry) === more, M.journalAdd([], { ...out.entryNoBrowser }).length];
+  out.list = [M.journalList([list[0], { verb: 'x' }, null, 'x']).length, M.journalList({ ops: [list[1]] }).length, M.journalList('x').length, M.journalList(null).length];
+  return out;
+}"""
+
+
+@case('L6', 'Données: Construire, the pure functions on fixtures', 'L', tags=('data',), phone=False,
+      rule='modules/data/SPEC 5.4, 6.5 (one grey reason), 3 (journal of 50); launcher job protocol (frame/INTEGRATION 15.1)')
+def l6(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    r = c.js(_L6_JS)
+    c.eq(r['personal'], [[], ['xplane:xplane'], ['enaire:licence', 'xplane:xplane'], ['nats:licence', 'xplane:xplane'], ['enaire:licence', 'nats:licence', 'xplane:xplane']],
+         'a personal source is offered only when it feeds a ticked zone (X-Plane feeds every zone, none ticked: nothing)', what='personalSources')
+    c.eq([[g['disabled'], g['reason']] for g in r['gate']],
+         [[True, 'no-launcher'], [True, 'busy'], [True, 'offline'], [True, 'no-zone'], [False, None]], 'one reason, in the order: launcher, busy, offline, no zone', what='buildState')
+    c.eq(r['phrase'], [['waiting', 'waiting', None, None, None], ['building', 'buildingN', 2, 5, None], ['building', 'building', None, None, None], ['built', 'built', None, None, None],
+                       ['failed', 'failed', None, None, 'timeout'], ['failed', 'failed', None, None, 'unknown'], ['cancelled', 'cancelled', None, None, None], ['waiting', 'waiting', None, None, None]],
+         'the phrase of a zone: n / m sources only when both are known, the error code kept or « unknown », an unknown state waits', what='zonePhrase')
+    c.eq(r['rows'], [['fr', 'built'], ['gb', 'waiting'], ['us', 'buildingN']], 'the requested zones in order (the one the job does not know yet waits), then the ones the job adds', what='zoneRows')
+    c.eq(r['progress'], [{'done': 2, 'total': 5, 'pct': 40}, {'done': 0, 'total': 2, 'pct': 0}, {'done': 5, 'total': 5, 'pct': 100}, {'done': 0, 'total': 0, 'pct': None}],
+         'the bar: done / total of the view, else 0 over the zones asked; never above the total; no total, no percentage', what='progress')
+    c.eq(r['clock'], ['0:00', '0:59', '2:05', '0:00', '60:00'], 'elapsed time as minutes:seconds', what='clock')
+    c.eq(r['isBuild'], [True, True, False, False, False], 'a view is a base build when it carries its zones (or says set and verb)', what='isBuildView')
+    c.eq(r['outcome'], [['done', ['fr', 'gb'], []], ['partial', ['fr'], [{'zone': 'gb', 'error': 'timeout'}]], ['failed', [], [{'zone': 'fr', 'error': 'invalid-output'}]],
+                        ['cancelled', ['fr'], []], ['interrupted', ['fr'], []], ['no-browser', [], []], ['xplane-in-page', [], []],
+                        ['partial', ['fr'], [{'zone': 'gb', 'error': 'timeout'}]], ['failed', [], [{'zone': 'fr', 'error': 'x'}]], ['cancelled', ['fr'], []]],
+         'the end of a job: the launcher\'s reason wins, else the zones decide (some built and some failed: partial; none built: failed)', what='outcome')
+    c.eq(r['result'], ['done', 'partial', 'failed', 'cancelled', 'interrupted', 'failed', 'failed'], 'the journal result: no-browser and xplane-in-page are failures', what='journalResult')
+    c.eq(r['refusal'], [['busy', None], ['tooSoon', 13], ['failed', None], ['unknown-route', None], ['bad-args', None], ['refused', None], ['offline', None], ['failed', None], ['failed', None]],
+         'a refusal: 409 busy, 429 too-soon with the wait rounded up, 404 unknown route, 400, 403 refused, no answer offline', what='refusal')
+    e = r['entry']
+    c.eq(e, {'at': '2026-10-29T10:00:00.000Z', 'set': 'base', 'verb': 'build', 'zones': ['fr', 'gb'], 'seconds': 12, 'result': 'partial', 'built': ['fr'],
+             'failed': [{'zone': 'gb', 'error': None}], 'job': 'j1'}, 'a journal entry: UTC ISO time, set, verb, zones, seconds, result, built, failed (and the job)', what='journalEntry')
+    c.eq([r['entryNoBrowser']['result'], r['entryNoBrowser']['reason'], r['entryNoBrowser']['seconds'], 'job' in r['entryNoBrowser']], ['failed', 'no-browser', None, False], 'no-browser: a failure with its reason, no job id', what='journalEntry no-browser')
+    c.eq(r['trim'], [50, 'k1', 'j1', True, 1], 'the journal keeps the last 50 (the oldest leaves), the same job is never added twice', what='journalAdd')
+    c.eq(r['list'], [1, 1, 0, 0], 'a journal file is read as an array or { ops }, unreadable entries dropped', what='journalList')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L7, L8, L9, L10
+STATUS = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
+          'relaxNav': False, 'host': 'TEST', 'lan': False}
+UNIT_ZONE = {'fr': ('zone', 'zones'), 'en': ('zone', 'zones'), 'de': ('Zone', 'Zonen'), 'es': ('zona', 'zonas')}
+
+
+def _trow(key, lang, after=None):
+    """One translation of a row of modules/data/texts.js, the key quoted or not (`'no-launcher': [...]`, `busy: [...]`); `after`: a text to find first."""
+    from lib import LANGS, _STR, _unesc
+    src = (ROOT / TX).read_text(encoding='utf-8')
+    start = src.index(after) if after else 0
+    m = re.compile(r"""(?<![\w-])['"]?""" + re.escape(key) + r"""['"]?\s*:\s*\[""").search(src, start)
+    if not m:
+        raise RuntimeError(f'row {key!r} not found after {after!r}')
+    out, i = [], m.end()
+    while len(out) < 4:
+        g = _STR.search(src, i)
+        out.append(_unesc(next(x for x in g.groups() if x is not None)))
+        i = g.end()
+    return out[LANGS.index(lang)]
+
+
+def _zones_text(lang, n):
+    """« 1 zone », « 3 zones » as the screen counts them."""
+    return f'{n} {UNIT_ZONE[lang][0 if n == 1 else 1]}'
+
+
+def _view(state='running', step='', done=0, total=2, zones=None, result=None, jid='j1', unit='zones'):
+    """The job's view as the launcher gives it (frame/INTEGRATION 15.1; aerodb's D5 verb)."""
+    return {'id': jid, 'state': state, 'step': step, 'done': done, 'total': total, 'unit': unit, 'log': [], 'result': result, 'zones': zones if zones is not None else {}}
+
+
+def _zs(state, done=0, total=0, **extra):
+    """A zone's entry of the job's view."""
+    return {'state': state, 'done': done, 'total': total, **extra}
+
+
+def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None):
+    """A FAKE launcher (the technique of frame A32: c.context.route answers /__setup/*; never a real one).  `views`: what GET regen/job?id= answers one
+    after the other (the last one stays); `last`: what GET regen/job (no id) answers at first (the running or the last job); `start`: (status, body) of the
+    POST that starts a job; `cancel_view`: what the job becomes once POST regen/job/cancel was received; `busy_view`: the running job a refused start
+    (409) leaves in place.  The dict it returns records `posts` and `cancels` and can be changed between steps."""
+    st = {'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start}
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        code, body = 200, {}
+        if u.path.endswith('/__setup/status'):
+            body = STATUS
+        elif u.path.endswith('/__setup/regen/job/cancel'):
+            st['cancels'].append(json.loads(req.post_data or '{}'))
+            st['cancelled'] = True
+            body = {'ok': True}
+            if cancel_view:
+                st['current'] = cancel_view
+        elif u.path.endswith('/__setup/regen/job'):
+            if req.method == 'POST':
+                st['posts'].append(json.loads(req.post_data or '{}'))
+                code, body = st['start']
+                if code == 409 and busy_view:
+                    st['current'] = busy_view
+            elif 'id=' in u.query:
+                if st['cancelled'] and cancel_view:
+                    body = cancel_view
+                else:
+                    body = st['views'][min(st['i'], len(st['views']) - 1)]
+                    st['i'] += 1
+                st['current'] = body
+            else:
+                body = {'job': st['current']}
+        route.fulfill(status=code, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), handler)
+    return st
+
+
+def _untick(c, *zones):
+    """Unticks zones of the build panel (a tap on the checkbox)."""
+    for z in zones:
+        c.tap(f'[data-build-zone="{z}"]')
+    c.wait(150)
+
+
+def _notes_with(c, text):
+    """The notifications since the page opened that say `text` (the log keeps them after they fade)."""
+    return [n for n in c.note_log() if norm(text) in norm(n)]
+
+
+def _screen_ok(c, what):
+    """No horizontal scroll, no element beyond the right edge, 44 px on the build panel's buttons and checkbox lines."""
+    m = c.js("""() => { const b = document.querySelector('[data-build]'); return { sw: document.documentElement.scrollWidth, iw: window.innerWidth,
+      over: [...b.querySelectorAll('*')].filter(e => e.getBoundingClientRect().width && e.getBoundingClientRect().right > window.innerWidth + 1).slice(0, 3).map(e => e.tagName + '.' + e.className),
+      hs: [...b.querySelectorAll('button, label.d-opt')].map(e => Math.round(e.getBoundingClientRect().height)) } }""")
+    c.le(m['sw'], m['iw'], f'{what}: no horizontal scroll', what='scrollWidth')
+    c.ok(not m['over'], m['over'], f'{what}: nothing beyond the right edge')
+    c.ge(min(m['hs']), 44, f'{what}: buttons and checkbox lines are 44 px', what='touch height')
+
+
+def _head(c):
+    """Waits for the head of the Données screen after a reload."""
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the head of the Données screen is drawn')
+    c.settle()
+
+
+@case('L7', 'Données: Construire against a fake launcher (body, zone lines, summary, one notification, journal, personal sources)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), rule='modules/data/SPEC 3 (one op, notify at the end only), 5.4, 6.5; launcher job protocol (frame/INTEGRATION 15.1)')
+def l7(c):
+    lang = c.lang
+    v1 = _view(step='Zone fr', done=0, zones={'fr': _zs('building', 1, 4), 'gb': _zs('waiting')})
+    v2 = _view(step='Zone gb', done=1, zones={'fr': _zs('built', 4, 4, commit='abc1234', seconds=9), 'gb': _zs('building', 2, 5)})
+    v3 = _view('done', step='Terminé', done=2, zones={'fr': _zs('built', 4, 4, commit='abc1234'), 'gb': _zs('failed', 5, 5, error='invalid-output')},
+               result={'built': ['fr'], 'failed': [{'zone': 'gb', 'error': 'invalid-output'}], 'commits': [{'zone': 'fr', 'commit': 'abc1234'}], 'reason': 'partial'})
+    st = _launcher(c, [v1, v2, v2, v2, v3])
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    # a launcher is there: the button is live, no reason under the panel
+    c.eq(c.attr('[data-runner]', 'data-runner'), 'launcher', 'the fake launcher is detected', what='runner')
+    c.eq(c.js("document.querySelector('[data-verb=build]').disabled"), False, 'Construire is enabled with a launcher, zones ticked, nothing running', what='build disabled')
+    c.eq(c.count('[data-build] [data-reason]'), 0, 'no reason when the button is live', what='reason')
+    c.eq(norm(c.text('[data-verb=build]')), norm(_trow('build', lang)), 'worded in the language of the run', what='build label')
+    # no zone: grey with its reason; ca, es, us unticked: fr and gb remain, ENAIRE is not offered any more
+    _untick(c, 'ca', 'es', 'us', 'fr', 'gb')
+    c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason'), norm(c.text('[data-build] [data-reason]'))],
+         [True, 'no-zone', norm(_trow('no-zone', lang, 'greyReason: {'))], 'no zone ticked: grey, « Cochez au moins une zone » written once', what='no zone')
+    c.eq(c.count('[data-personal]'), 0, 'no zone, no personal source to offer', what='personal sources')
+    c.tap('[data-build-zone="fr"]')
+    c.tap('[data-build-zone="gb"]')
+    c.eq(c.js("[...document.querySelectorAll('[data-personal]')].map(i => [i.dataset.personal, i.checked])"), [['nats', False], ['xplane', False]],
+         'France and the UK feed NATS and X-Plane (not ENAIRE): offered, unticked', what='personal sources')
+    # X-Plane ticked: the hint under its checkbox, before the start; unticked again: gone
+    c.tap('[data-personal="xplane"]')
+    c.eq(norm(c.text('[data-personal-row="xplane"] [data-xplane-hint]')), norm(_trow('xplaneHint', lang)), 'the build in the page is not possible yet: said before the start', what='X-Plane hint')
+    c.tap('[data-personal="xplane"]')
+    c.eq(c.count('[data-xplane-hint]'), 0, 'unticked: no hint', what='X-Plane hint')
+    _screen_ok(c, 'before the start')
+    before = c.js('window.__stub.calls.publication')
+    # start
+    c.tap('[data-verb=build]')
+    c.until("!!document.querySelector('[data-build] [data-running]')", what='the running bar is drawn')
+    c.eq(len(st['posts']), 1, 'one start', what='posts')
+    post = st['posts'][0]
+    c.eq({k: post[k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'build', 'args': {'zones': ['fr', 'gb'], 'personal': []}},
+         'the body: set / verb / the ticked zones, personal EMPTY by default', what='body')
+    c.eq(post.get('author'), 'ABC', 'the frame adds the trigram itself', what='author')
+    c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason')], [True, 'busy'], 'while it runs: grey, « Une autre opération est en cours »', what='running reason')
+    c.eq(c.js("[...document.querySelectorAll('[data-build] input[type=checkbox]')].every(i => i.disabled)"), True, 'the choices are frozen while it runs', what='frozen checkboxes')
+    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb).sort()"), ['build', 'stop'], 'the build and stop verbs only', what='verbs')
+    c.eq(c.js("[...document.querySelectorAll('[data-zone-state]')].map(l => [l.dataset.zoneState, l.dataset.state])"), [['fr', 'waiting'], ['gb', 'waiting']], 'a line per zone, waiting before the first view', what='zone lines')
+    c.until("document.querySelector('[data-zone-state=fr]').dataset.state === 'building'", timeout=8000, what='fr is building')
+    fr_name = c.text('[data-zone-state=fr] b')
+    c.eq(norm(c.text('[data-zone-state=fr]')), norm(f"{fr_name} : {_trow('buildingN', lang, 'zoneState: {').replace('{n}', '1').replace('{m}', '4')}"), 'construction (1 / 4 sources)', what='fr line')
+    c.eq(norm(c.text('[data-running] [data-count]')), norm(_trow('runCount', lang).replace('{n}', _zones_text(lang, 0)).replace('{m}', '2')), 'the head count « 0 zones sur 2 »', what='count')
+    c.eq(c.text('[data-running] [data-step]'), 'Zone fr', 'the step text of the job', what='step')
+    c.ok(norm(_trow('elapsed', lang).replace('{t}', '0:0')) .split('0:0')[0].strip() in norm(c.text('[data-elapsed]')), c.text('[data-elapsed]'), 'the elapsed time is written')
+    c.eq(c.count('[data-running] [data-verb=stop]'), 1, 'Arrêter is there', what='stop')
+    c.until("document.querySelector('[data-zone-state=fr]').dataset.state === 'built' && document.querySelector('[data-zone-state=gb]').dataset.state === 'building'", timeout=8000, what='fr built, gb building')
+    gb_name = c.text('[data-zone-state=gb] b')
+    c.eq(norm(c.text('[data-zone-state=gb]')), norm(f"{gb_name} : {_trow('buildingN', lang, 'zoneState: {').replace('{n}', '2').replace('{m}', '5')}"), 'construction (2 / 5 sources)', what='gb line')
+    c.eq(norm(c.text('[data-zone-state=fr]')), norm(f"{fr_name} : {_trow('built', lang, 'zoneState: {')}"), 'construite', what='fr built line')
+    c.eq(c.attr('[data-running] [role=progressbar]', 'aria-valuenow'), '1', 'the bar follows done / total (1 of 2 zones)', what='bar')
+    c.eq(norm(c.text('[data-running] [data-count]')), norm(_trow('runCount', lang).replace('{n}', _zones_text(lang, 1)).replace('{m}', '2')), '« 1 zone sur 2 »', what='count')
+    c.eq(_notes_with(c, 'Base'), [], 'no notification at the start nor on the way', what='notifications before the end')
+    _screen_ok(c, 'running')
+    # the end: partial; the summary stays in the panel, one notification with the counts
+    c.until("!!document.querySelector('[data-build-result]')", timeout=10000, what='the end of the build')
+    want = _trow('sumPartial', lang).replace('{built}', _zones_text(lang, 1)).replace('{failed}', '1').replace('{zones}', 'gb')
+    c.eq([c.attr('[data-build-result]', 'data-result'), norm(c.text('[data-build-result] b'))], ['partial', norm(want)], 'the summary: 1 zone built, 1 failed (gb)', what='summary')
+    c.eq(norm(c.text('[data-build-result] [data-advice]')), norm(_trow('partial', lang, 'advice: {')), 'what to do', what='advice')
+    c.eq(norm(c.text('[data-build-result] [data-zone-state=gb]')), norm(f"{gb_name} : {_trow('failed', lang, 'zoneState: {').replace('{r}', _trow('invalid-output', lang, 'zoneError: {'))}"),
+         'the failed zone says why, in words', what='gb failed line')
+    c.eq(c.count('[data-running]'), 0, 'the bar is gone', what='running')
+    c.eq(c.js("document.querySelector('[data-verb=build]').disabled"), False, 'the button is live again', what='build disabled')
+    c.eq(len(_notes_with(c, want)), 1, 'ONE notification, with the counts', what='notifications')
+    c.until(f"window.__stub.calls.publication > {before}", what='publication() is read again (the rows change)')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and d.get('ops')), what='the journal is written')
+    e = doc['ops'][0]
+    c.eq([e['set'], e['verb'], e['zones'], e['result'], e['built'], e['failed']], ['base', 'build', ['fr', 'gb'], 'partial', ['fr'], [{'zone': 'gb', 'error': 'invalid-output'}]],
+         'the journal entry: set, verb, zones, result, built, failed', what='journal entry')
+    c.ok(re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z', e['at']) and isinstance(e['seconds'], int), e, 'UTC ISO time and whole seconds')
+    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.result, o.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.eq(len(ops), 1, 'one entry in the journal fold', what='journal entries')
+    c.ok(re.search(r'\d{2}:\d{2}Z', ops[0][1]) and norm(_trow('build', lang, 'opVerb: {')) in norm(ops[0][1]) and norm(_trow('partial', lang, 'opResult: {')) in norm(ops[0][1]), ops[0], 'time with Z, the verb, the result')
+    _screen_ok(c, 'at the end')
+    # a second run with personal sources ticked: the ids follow, a clean end
+    st['views'] = [_view('done', step='Terminé', done=2, zones={'fr': _zs('built', 4, 4), 'gb': _zs('built', 5, 5)}, result={'built': ['fr', 'gb'], 'failed': [], 'commits': []}, jid='j2')]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j2'})
+    c.tap('[data-personal="nats"]')
+    c.tap('[data-personal="xplane"]')
+    c.tap('[data-verb=build]')
+    c.until('document.querySelector("[data-build-result][data-result=done]")', timeout=10000, what='the second build ends')
+    c.eq(st['posts'][1]['args'], {'zones': ['fr', 'gb'], 'personal': ['nats', 'xplane']}, 'ticking personal sources adds their ids', what='second body')
+    want = _trow('sumDone', lang).replace('{built}', _zones_text(lang, 2))
+    c.eq(norm(c.text('[data-build-result] b')), norm(want), 'a clean end: « Base construite : 2 zones »', what='summary')
+    c.eq(len(_notes_with(c, want)), 1, 'its own notification', what='notifications')
+    c.eq(c.count('[data-journal] [data-op]'), 2, 'two entries in the journal', what='journal entries')
+    _screen_ok(c, 'after the second run')
+    c.check_errors()
+
+
+@case('L8', 'Données: no launcher, a refused start (429, 404, 409) says what to do', 'L', tags=('data',), designs=('standard',),
+      rule='modules/data/SPEC 6.5 (the grey reasons), 3 (one operation at a time); launcher refusals (frame/INTEGRATION 15.1)')
+def l8(c):
+    # without a launcher the button is grey and says so; nothing is called
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason'), norm(c.text('[data-build] [data-reason]'))],
+         [True, 'no-launcher', norm(_trow('no-launcher', 'fr', 'greyReason: {'))], 'no launcher: grey, « Il faut le lanceur du poste »', what='no launcher')
+    c.eq(c.count('[data-running], [data-build-result]'), 0, 'nothing starts', what='running / result')
+    # a fake launcher refuses in three ways
+    busy = _view('running', step='Analyse', done=1, total=3, unit='files', zones=None)
+    busy.pop('zones')
+    busy_done = dict(busy, state='done', done=3, id='o1')
+    busy['id'] = 'o1'
+    st = _launcher(c, [busy, busy, busy_done], start=(429, {'reason': 'too-soon', 'wait': 12}), busy_view=busy)
+    c.page.reload(wait_until='load')
+    _head(c)
+    for start, key, want in [((429, {'reason': 'too-soon', 'wait': 12}), 'tooSoon', _trow('tooSoon', 'fr', 'refused: {').replace('{n}', '12')),
+                             ((404, {}), 'unknown-route', _trow('unknown-route', 'fr', 'refused: {')),
+                             ((400, {'message': 'bad'}), 'bad-args', _trow('bad-args', 'fr', 'refused: {'))]:
+        st['start'] = start
+        c.tap('[data-verb=build]')
+        c.until(f"!!document.querySelector('[data-build-result][data-refusal={key}]')", timeout=6000, what=f'the refusal {key} is said')
+        c.eq(norm(c.text('[data-build-result]')), norm(want), f'{key}: the sentence says what to do', what=key)
+        c.eq(len(_notes_with(c, want)), 1, f'{key}: one notification', what='notifications')
+        c.eq(c.js("document.querySelector('[data-verb=build]').disabled"), False, f'{key}: nothing runs, the button stays live', what='build disabled')
+        c.eq(c.count('[data-build] [data-running]'), 0, f'{key}: no bar', what='running')
+    # 409: another operation runs: said, the button stays grey until it ends
+    st['start'] = (409, {'message': 'busy'})
+    c.tap('[data-verb=build]')
+    c.until("!!document.querySelector('[data-build-result][data-refusal=busy]')", timeout=6000, what='the 409 is said')
+    want = _trow('busy', 'fr', 'refused: {')
+    c.eq(norm(c.text('[data-build-result]')), norm(want), '« Une autre opération est en cours »', what='409 text')
+    c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason'), norm(c.text('[data-build] [data-reason]'))],
+         [True, 'busy', norm(want)], 'the button is grey with the same reason, written once', what='409 reason')
+    c.until("!!document.querySelector('[data-other]') && document.querySelector('[data-other]').textContent.includes('Analyse')", timeout=6000, what='the running operation is followed')
+    c.until("!document.querySelector('[data-other]') && !document.querySelector('[data-verb=build]').disabled", timeout=10000, what='the button is live again when that operation ends')
+    c.eq(c.count('[data-build] [data-running]'), 0, 'it was not a build of the base: no bar, no summary of it', what='running')
+    c.check_errors()
+
+
+@case('L9', 'Données: Arrêter posts the cancel and ends on the real end of the job', 'L', tags=('data',), designs=('standard',),
+      rule='modules/data/SPEC 3 (Arrêter), 5.4; launcher job protocol (POST regen/job/cancel)')
+def l9(c):
+    v1 = _view(step='Zone fr', done=0, zones={'fr': _zs('building', 1, 4), 'gb': _zs('waiting')})
+    stopped = _view('cancelled', step='Arrêté', done=1, zones={'fr': _zs('built', 4, 4, commit='abc1234'), 'gb': _zs('cancelled')},
+                    result={'built': ['fr'], 'failed': [], 'commits': [{'zone': 'fr', 'commit': 'abc1234'}], 'reason': 'cancelled'})
+    st = _launcher(c, [v1], cancel_view=stopped)
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    _untick(c, 'ca', 'es', 'us')
+    c.tap('[data-verb=build]')
+    c.until("document.querySelector('[data-zone-state=fr]')?.dataset.state === 'building'", timeout=8000, what='fr is building')
+    c.ge(c.js("Math.round(document.querySelector('[data-verb=stop]').getBoundingClientRect().height)"), 44, 'Arrêter is a 44 px target', what='stop height')
+    c.tap('[data-verb=stop]')
+    for _ in range(40):
+        if st['cancels']:
+            break
+        c.wait(100)
+    c.eq(st['cancels'], [{'id': 'j1'}], 'Arrêter posts /__setup/regen/job/cancel with the job id', what='cancel')
+    c.until("!!document.querySelector('[data-build-result][data-result=cancelled]')", timeout=10000, what='the cancelled end is shown')
+    lang = c.lang
+    want = _trow('sumCancelled', lang).replace('{n}', '1')
+    c.eq(norm(c.text('[data-build-result] b')), norm(want), 'Construction arrêtée, 1 zone already built', what='summary')
+    c.eq(c.js("[...document.querySelectorAll('[data-build-result] [data-zone-state]')].map(l => [l.dataset.zoneState, l.dataset.state])"), [['fr', 'built'], ['gb', 'cancelled']],
+         'the zones\' last states', what='zone lines')
+    c.eq(len(_notes_with(c, want)), 1, 'one notification', what='notifications')
+    c.eq(c.js("document.querySelector('[data-verb=build]').disabled"), False, 'the button is live again', what='build disabled')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and d.get('ops')), what='the journal is written')
+    c.eq([doc['ops'][0]['result'], doc['ops'][0]['built']], ['cancelled', ['fr']], 'the journal says cancelled', what='journal')
+    c.check_errors()
+
+
+@case('L10', 'Données: at mount, an interrupted, a finished or a running build is found again; no-browser and X-Plane say what to do', 'L', tags=('data',),
+      designs=('standard',), rule='modules/data/SPEC 5.4 (the page follows, the job goes on), 6.5; ctx.launcher.resume (frame/INTEGRATION 15.1)')
+def l10(c):
+    lang = c.lang
+    interrupted = _view('interrupted', step='Zone gb', done=1, total=3, jid='j0',
+                        zones={'fr': _zs('built', 3, 3, commit='abc'), 'gb': _zs('building', 1, 4), 'es': _zs('waiting')})
+    st = _launcher(c, [interrupted], last=interrupted)
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    c.until("!!document.querySelector('[data-build-result]')", timeout=6000, what='the interrupted job is shown at mount')
+    c.eq([c.attr('[data-build-result]', 'data-result'), norm(c.text('[data-build-result] b'))], ['interrupted', norm(_trow('sumInterrupted', lang))],
+         '« Construction interrompue (le lanceur s\'est arrêté) »', what='interrupted line')
+    c.eq(c.js("[...document.querySelectorAll('[data-build-result] [data-zone-state]')].map(l => [l.dataset.zoneState, l.dataset.state])"), [['fr', 'built'], ['gb', 'building'], ['es', 'waiting']],
+         'the zones\' last states', what='zone lines')
+    c.eq([c.count('[data-running]'), c.js("document.querySelector('[data-verb=build]').disabled"), len(_notes_with(c, _trow('sumInterrupted', lang)))], [0, False, 0],
+         'nothing runs, the button is live, no notification for what ended before', what='state')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and d.get('ops')), what='the interrupted job is in the journal')
+    c.eq([[o['result'], o['job']] for o in doc['ops']], [['interrupted', 'j0']], 'journal: interrupted, once', what='journal')
+    _screen_ok(c, 'interrupted')
+    # a reload finds the same job: no second entry
+    c.page.reload(wait_until='load')
+    _head(c)
+    c.until("!!document.querySelector('[data-build-result]')", timeout=6000, what='shown again after a reload')
+    c.wait(300)
+    c.eq(len(c.doc('cache/data/journal.json')['ops']), 1, 'the same job is never journaled twice', what='journal')
+    # a job finished earlier (partial): its summary line, no notification
+    st['current'] = _view('done', done=2, jid='j2', zones={'fr': _zs('built', 3, 3), 'gb': _zs('failed', 2, 4, error='timeout')},
+                          result={'built': ['fr'], 'failed': [{'zone': 'gb', 'error': 'timeout'}], 'commits': [], 'reason': 'partial'})
+    c.page.reload(wait_until='load')
+    _head(c)
+    c.until("document.querySelector('[data-build-result]')?.dataset.result === 'partial'", timeout=6000, what='the last job\'s summary is shown')
+    want = _trow('sumPartial', lang).replace('{built}', _zones_text(lang, 1)).replace('{failed}', '1').replace('{zones}', 'gb')
+    c.eq([norm(c.text('[data-build-result] b')), len(_notes_with(c, want))], [norm(want), 0], 'its summary line, no notification', what='partial summary')
+    c.eq(norm(c.text('[data-build-result] [data-zone-state=gb]')), norm(f"{c.text('[data-build-result] [data-zone-state=gb] b')} : {_trow('failed', lang, 'zoneState: {').replace('{r}', _trow('timeout', lang, 'zoneError: {'))}"),
+         'the failed zone with its reason', what='gb line')
+    # a build found RUNNING is followed to its end: one notification then
+    run = _view(step='Zone fr', done=0, jid='j3', zones={'fr': _zs('building', 1, 4), 'gb': _zs('waiting')})
+    end = _view('done', done=2, jid='j3', zones={'fr': _zs('built', 4, 4), 'gb': _zs('built', 5, 5)}, result={'built': ['fr', 'gb'], 'failed': [], 'commits': []})
+    st['current'] = run
+    st['views'] = [run, run, end]
+    st['i'] = 0
+    c.page.reload(wait_until='load')
+    _head(c)
+    c.until("!!document.querySelector('[data-build] [data-running]')", timeout=8000, what='the running build is followed')
+    c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason'), c.count('[data-verb=stop]')], [True, 'busy', 1], 'grey with the reason, Arrêter offered', what='running state')
+    c.eq(c.js("document.querySelector('[data-group=base]').open"), True, 'the base group is open to show it', what='group open')
+    c.until("!!document.querySelector('[data-build-result][data-result=done]')", timeout=10000, what='the followed build ends')
+    want = _trow('sumDone', lang).replace('{built}', _zones_text(lang, 2))
+    c.eq(len(_notes_with(c, want)), 1, 'followed to its end: one notification', what='notifications')
+    # no browser on the workstation: the sentence, a failure in the journal
+    st['views'] = [_view('error', jid='j4', zones={}, result={'ok': False, 'reason': 'no-browser'})]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j4'})
+    st['current'] = None
+    c.page.reload(wait_until='load')
+    _head(c)
+    c.tap('[data-verb=build]')
+    c.until("!!document.querySelector('[data-build-result][data-result=no-browser]')", timeout=8000, what='no-browser is said')
+    want = _trow('sumNoBrowser', lang)
+    c.eq([norm(c.text('[data-build-result]')), len(_notes_with(c, want))], [norm(want), 1], 'Ni Edge ni Chrome…: the sentence, one notification', what='no-browser')
+    # X-Plane ticked: the hint before the start, the id sent, the reason said at the end
+    st['views'] = [_view('error', jid='j5', zones={}, result={'ok': False, 'reason': 'xplane-in-page'})]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j5'})
+    c.tap('[data-personal="xplane"]')
+    c.eq(c.count('[data-xplane-hint]'), 1, 'the hint is shown before the start', what='hint')
+    c.tap('[data-verb=build]')
+    c.until("!!document.querySelector('[data-build-result][data-result=xplane-in-page]')", timeout=8000, what='xplane-in-page is said')
+    c.eq(st['posts'][-1]['args']['personal'], ['xplane'], 'it is sent when asked', what='body')
+    want = _trow('sumXplane', lang)
+    c.eq([norm(c.text('[data-build-result]')), len(_notes_with(c, want))], [norm(want), 1], 'the verb\'s reason is said at the end', what='xplane-in-page')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and len(d.get('ops', [])) >= 5), what='five operations in the journal')
+    c.eq([[o['result'], o.get('reason')] for o in doc['ops'][-2:]], [['failed', 'no-browser'], ['failed', 'xplane-in-page']], 'both are failures with their reason', what='journal')
     c.check_errors()

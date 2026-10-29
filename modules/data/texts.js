@@ -126,5 +126,171 @@ export const TX = {
   zoneParser: ['parseur {p}', 'parser {p}', 'Parser {p}', 'analizador {p}'],
   zoneWhole: ['format ancien', 'old format', 'altes Format', 'formato antiguo'],
   zoneMissing: ['non publiée', 'not published', 'nicht veröffentlicht', 'no publicada'],
-  procByStatus: ['Terrains par statut', 'Aerodromes by status', 'Flugplätze nach Status', 'Aeródromos por estado']
+  procByStatus: ['Terrains par statut', 'Aerodromes by status', 'Flugplätze nach Status', 'Aeródromos por estado'],
+  // construire la base (lot D5) : le panneau, la marche, la fin
+  buildTitle: ['Construire la base', 'Build the base', 'Basis aufbauen', 'Construir la base'],
+  buildZones: ['Zones à construire', 'Zones to build', 'Zu erstellende Zonen', 'Zonas por construir'],
+  personalTitle: ['Sources sous licence personnelle', 'Personal-licence sources', 'Quellen mit persönlicher Lizenz',
+    'Fuentes con licencia personal'
+  ],
+  personalName: {
+    enaire: ['ENAIRE (AIP Espagne)', 'ENAIRE (Spain AIP)', 'ENAIRE (AIP Spanien)', 'ENAIRE (AIP España)'],
+    nats: ['NATS (AIP Royaume-Uni)', 'NATS (UK AIP)', 'NATS (AIP Vereinigtes Königreich)', 'NATS (AIP Reino Unido)'],
+    xplane: ['X-Plane (données du simulateur)', 'X-Plane (simulator data)', 'X-Plane (Simulatordaten)', 'X-Plane (datos del simulador)']
+  },
+  // la ligne sous chaque source ; texte de shared/maintenance_page.js (data-personal), à garder identique
+  personalLine: {
+    licence: [
+      'À cocher seulement si le dépôt de données n’est utilisé que par vous (licence d’usage personnel).',
+      'Tick only if the data repository is used by you alone (personal-use licence).',
+      'Nur ankreuzen, wenn das Datenrepository nur von Ihnen genutzt wird (Lizenz zur persönlichen Nutzung).',
+      'Marque solo si el repositorio de datos lo usa únicamente usted (licencia de uso personal).'
+    ],
+    xplane: [
+      'À cocher seulement si le dépôt de données n’est utilisé que par vous (données X-Plane, usage personnel).',
+      'Tick only if the data repository is used by you alone (X-Plane data, personal use).',
+      'Nur ankreuzen, wenn das Datenrepository nur von Ihnen genutzt wird (X-Plane-Daten, persönliche Nutzung).',
+      'Marque solo si el repositorio de datos lo usa únicamente usted (datos de X-Plane, uso personal).'
+    ]
+  },
+  xplaneHint: ['X-Plane coché : la construction se fait dans la page, pas encore possible ici',
+    'X-Plane ticked: the build runs in the page, not yet possible here',
+    'X-Plane angekreuzt: der Aufbau läuft in der Seite, hier noch nicht möglich',
+    'X-Plane marcado: la construcción se hace en la página, todavía no es posible aquí'
+  ],
+  build: ['Construire', 'Build', 'Aufbauen', 'Construir'],
+  stop: ['Arrêter', 'Stop', 'Anhalten', 'Detener'],
+  stopping: ['Arrêt en cours…', 'Stopping…', 'Wird angehalten…', 'Deteniendo…'],
+  // raisons du bouton gris, écrites une fois sous le panneau
+  greyReason: {
+    'no-launcher': ['Il faut le lanceur du poste', 'The workstation launcher is needed', 'Der Starter des Rechners wird benötigt',
+      'Hace falta el lanzador del equipo'
+    ],
+    busy: ['Une autre opération est en cours', 'Another operation is running', 'Ein anderer Vorgang läuft',
+      'Hay otra operación en curso'
+    ],
+    'no-zone': ['Cochez au moins une zone', 'Tick at least one zone', 'Mindestens eine Zone ankreuzen', 'Marque al menos una zona'],
+    offline: ['Hors ligne', 'Offline', 'Offline', 'Sin conexión']
+  },
+  // la marche : « 2 zones sur 5 », l’étape, le temps écoulé, une ligne par zone
+  runCount: ['{n} sur {m}', '{n} of {m}', '{n} von {m}', '{n} de {m}'],
+  elapsed: ['écoulé : {t}', 'elapsed: {t}', 'vergangen: {t}', 'transcurrido: {t}'],
+  otherRunning: ['Une autre opération est en cours : {s}', 'Another operation is running: {s}', 'Ein anderer Vorgang läuft: {s}',
+    'Hay otra operación en curso: {s}'
+  ],
+  zoneState: {
+    waiting: ['en attente', 'waiting', 'wartet', 'en espera'],
+    building: ['construction', 'building', 'wird erstellt', 'construcción'],
+    buildingN: ['construction ({n} / {m} sources)', 'building ({n} / {m} sources)', 'wird erstellt ({n} / {m} Quellen)',
+      'construcción ({n} / {m} fuentes)'
+    ],
+    built: ['construite', 'built', 'erstellt', 'construida'],
+    failed: ['échec : {r}', 'failed: {r}', 'fehlgeschlagen: {r}', 'fallo: {r}'],
+    cancelled: ['annulée', 'cancelled', 'abgebrochen', 'cancelada']
+  },
+  // le motif d’un échec de zone (les codes du lanceur)
+  zoneError: {
+    'browser-failed': ['le navigateur sans fenêtre n’a pas démarré', 'the windowless browser did not start',
+      'der Browser ohne Fenster ist nicht gestartet', 'el navegador sin ventana no arrancó'
+    ],
+    'browser-exited': ['le navigateur sans fenêtre s’est arrêté', 'the windowless browser stopped',
+      'der Browser ohne Fenster wurde beendet', 'el navegador sin ventana se detuvo'
+    ],
+    timeout: ['délai dépassé', 'time limit exceeded', 'Zeitlimit überschritten', 'tiempo agotado'],
+    'page-error': ['erreur dans la page de construction', 'error in the build page', 'Fehler in der Aufbauseite',
+      'error en la página de construcción'
+    ],
+    'invalid-output': ['sortie invalide, rien n’a été écrit', 'invalid output, nothing was written',
+      'ungültige Ausgabe, nichts wurde geschrieben', 'salida no válida, no se escribió nada'
+    ],
+    'write-failed': ['écriture impossible (disque plein ?)', 'could not write (disk full?)',
+      'Schreiben nicht möglich (Datenträger voll?)', 'no se pudo escribir (¿disco lleno?)'
+    ],
+    cancelled: ['arrêtée', 'stopped', 'angehalten', 'detenida'],
+    unknown: ['cause inconnue', 'unknown cause', 'unbekannte Ursache', 'causa desconocida']
+  },
+  // la fin : la ligne de résumé (aussi le texte de la notification) et ce qu’il y a à faire
+  sumDone: ['Base construite : {built}', 'Base built: {built}', 'Basis erstellt: {built}', 'Base construida: {built}'],
+  sumPartial: ['Base construite : {built} ; {failed} en échec ({zones})', 'Base built: {built}; {failed} failed ({zones})',
+    'Basis erstellt: {built}; {failed} fehlgeschlagen ({zones})', 'Base construida: {built}; {failed} con fallo ({zones})'
+  ],
+  sumFailed: ['Base non construite : {failed} en échec ({zones})', 'Base not built: {failed} failed ({zones})',
+    'Basis nicht erstellt: {failed} fehlgeschlagen ({zones})', 'Base no construida: {failed} con fallo ({zones})'
+  ],
+  sumCancelled: ['Construction arrêtée ; zones déjà construites : {n}', 'Build stopped; zones already built: {n}',
+    'Aufbau angehalten; bereits erstellte Zonen: {n}', 'Construcción detenida; zonas ya construidas: {n}'
+  ],
+  sumInterrupted: ['Construction interrompue (le lanceur s’est arrêté)', 'Build interrupted (the launcher stopped)',
+    'Aufbau unterbrochen (der Starter wurde beendet)', 'Construcción interrumpida (el lanzador se detuvo)'
+  ],
+  sumNoBrowser: ['Ni Edge ni Chrome n’ont été trouvés sur ce poste : installez l’un des deux.',
+    'Neither Edge nor Chrome was found on this workstation: install one of them.',
+    'Auf diesem Rechner wurden weder Edge noch Chrome gefunden: installieren Sie einen der beiden.',
+    'No se encontró Edge ni Chrome en este equipo: instale uno de los dos.'
+  ],
+  sumXplane: ['La construction avec X-Plane se fait dans la page, pas encore possible ici : décochez X-Plane et relancez.',
+    'A build with X-Plane runs in the page, not yet possible here: untick X-Plane and start again.',
+    'Ein Aufbau mit X-Plane läuft in der Seite, hier noch nicht möglich: X-Plane abwählen und neu starten.',
+    'Una construcción con X-Plane se hace en la página, todavía no es posible aquí: desmarque X-Plane y vuelva a empezar.'
+  ],
+  advice: {
+    partial: [
+      'Les zones construites sont gardées ; décochez-les et relancez pour retenter les autres (le motif est écrit à chaque ligne).',
+      'The zones built are kept; untick them and start again to retry the others (the reason is written on each line).',
+      'Die erstellten Zonen bleiben erhalten; wählen Sie sie ab und starten Sie neu, um die übrigen zu wiederholen (der Grund steht in jeder Zeile).',
+      'Las zonas construidas se conservan; desmárquelas y vuelva a empezar para reintentar las demás (el motivo está en cada línea).'
+    ],
+    failed: ['Aucune zone n’a été construite : lisez le motif de chaque ligne, puis relancez.',
+      'No zone was built: read the reason on each line, then start again.',
+      'Keine Zone wurde erstellt: Lesen Sie den Grund in jeder Zeile und starten Sie neu.',
+      'No se construyó ninguna zona: lea el motivo de cada línea y vuelva a empezar.'
+    ],
+    cancelled: ['Les zones déjà construites sont gardées ; relancez pour construire les autres.',
+      'The zones already built are kept; start again to build the others.',
+      'Bereits erstellte Zonen bleiben erhalten; starten Sie neu, um die übrigen zu erstellen.',
+      'Las zonas ya construidas se conservan; vuelva a empezar para construir las demás.'
+    ],
+    interrupted: ['Relancez la construction : les zones déjà construites sont gardées, vous pouvez les décocher.',
+      'Start the build again: the zones already built are kept, you can untick them.',
+      'Starten Sie den Aufbau neu: bereits erstellte Zonen bleiben erhalten, Sie können sie abwählen.',
+      'Vuelva a lanzar la construcción: las zonas ya construidas se conservan, puede desmarcarlas.'
+    ]
+  },
+  // un départ refusé par le lanceur
+  refused: {
+    busy: ['Une autre opération est en cours', 'Another operation is running', 'Ein anderer Vorgang läuft',
+      'Hay otra operación en curso'
+    ],
+    tooSoon: ['Réessayez dans {n} s', 'Try again in {n} s', 'Versuchen Sie es in {n} s erneut', 'Vuelva a intentarlo en {n} s'],
+    'unknown-route': ['Le lanceur de ce poste ne connaît pas encore cette opération : relancez-le à jour.',
+      'This workstation’s launcher does not know this operation yet: restart it up to date.',
+      'Der Starter dieses Rechners kennt diesen Vorgang noch nicht: starten Sie ihn aktualisiert neu.',
+      'El lanzador de este equipo aún no conoce esta operación: reinícielo actualizado.'
+    ],
+    'bad-args': ['Le lanceur a refusé la demande (arguments invalides).', 'The launcher refused the request (invalid arguments).',
+      'Der Starter hat die Anfrage abgelehnt (ungültige Argumente).', 'El lanzador rechazó la solicitud (argumentos no válidos).'
+    ],
+    offline: ['Le lanceur ne répond pas : vérifiez qu’il est lancé.', 'The launcher does not answer: check that it is running.',
+      'Der Starter antwortet nicht: prüfen Sie, ob er läuft.', 'El lanzador no responde: compruebe que está en marcha.'
+    ],
+    refused: ['Le lanceur n’accepte pas cette opération.', 'The launcher does not accept this operation.',
+      'Der Starter akzeptiert diesen Vorgang nicht.', 'El lanzador no acepta esta operación.'
+    ],
+    failed: ['Le lanceur n’a pas pu démarrer la construction.', 'The launcher could not start the build.',
+      'Der Starter konnte den Aufbau nicht starten.', 'El lanzador no pudo iniciar la construcción.'
+    ]
+  },
+  // le journal des opérations
+  journal: ['Journal', 'Journal', 'Protokoll', 'Diario'],
+  journalEmpty: ['Aucune opération pour le moment.', 'No operation yet.', 'Noch kein Vorgang.', 'Ninguna operación por ahora.'],
+  opVerb: {
+    build: ['Construire', 'Build', 'Aufbauen', 'Construir']
+  },
+  opResult: {
+    done: ['terminée', 'done', 'abgeschlossen', 'terminada'],
+    partial: ['partielle', 'partial', 'teilweise', 'parcial'],
+    failed: ['échec', 'failed', 'fehlgeschlagen', 'fallo'],
+    cancelled: ['arrêtée', 'stopped', 'angehalten', 'detenida'],
+    interrupted: ['interrompue', 'interrupted', 'unterbrochen', 'interrumpida']
+  }
 };

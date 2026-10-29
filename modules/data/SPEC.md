@@ -302,14 +302,18 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
   is fetched and built, links by cycle, licences, statuses, `eadStates`, the file-name readers); never `sia/base/`, `proc/`
   or `AircraftDB/` directly, never aerodb's files; the workstation's state through `ctx.launcher` (INTEGRATION § 1).
 - **Writes through `ctx.data`** (policy `cache`, never synchronised, never in a backup): `cache/data/coverage.json`
-  (`{ zones: [id], updated_at }`) and `cache/data/journal.json` (the last 50 operations). Nothing else.
+  (`{ zones: [id], updated_at }`) and `cache/data/journal.json` (`{ ops: [{ at, set, verb, zones, seconds, result, built,
+  failed, job, reason? }], updated_at }`, the last 50 operations, newest first; a job found already ended at the opening is
+  written once, by its id). Nothing else.
 - **The outputs** (`sia/base/`, `proc/`, `sia/vfr/`, `AircraftDB/`, `sia/mora.csv`) are never written through `ctx.data`
   (its batch is for records, not for 20–60 MB of generated files): on a workstation the launcher writes and commits them;
   without a launcher `ctx.publish` commits them, one commit per zone or per cycle of `proc/` (INTEGRATION § 1.3).
 - `meta`: `{ id: 'data', apps: ['pilot'], level: 3, title, reads: ['cache/data/'], writes: [{ prefix: 'cache/data/', policy:
   'cache' }], launcher: { routes: ['regen/'], read: ['sia/', 'proc/', 'local/', 'AircraftDB/'] }, publish: ['sia/base/',
   'proc/', 'sia/vfr/', 'AircraftDB/', 'sia/mora.csv'], files: [… the Worker script included] }` (`frame/INTEGRATION.md`
-  § 15).
+  § 15). **Until the other verbs exist** the declaration stays the narrowest: `launcher: { routes: ['regen/job',
+  'regen/job/cancel'], read: [] }` (« regen/job » alone does not cover the cancel, frame `under()`: a route ending without
+  `/` covers only itself).
 
 ## 8. Without the launcher
 

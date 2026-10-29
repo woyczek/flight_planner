@@ -1,5 +1,6 @@
 // V3 data — « Données » de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/data/SPEC.md, INTEGRATION.md).
-// Premier lot : un écran en lecture seule, sans aucun bouton d'action. En tête, le cycle AIRAC en vigueur et le lanceur ; la
+// Un écran de lecture, et une première action : « Construire » la base aéronautique sur le lanceur du poste (panneau en tête du
+// groupe Base aéronautique, journal au pied de l'écran). En tête, le cycle AIRAC en vigueur et le lanceur ; la
 // couverture (les zones de ce poste, puis les États par couleur) ; quatre groupes de jeux de données (base aéronautique,
 // procédures, appareils, météo), une ligne par jeu avec son cycle, son âge, sa taille et un état calculé, le détail sous un toucher.
 // Tout vient des trois appels d'aerodb (publication, zones, sources) et de coverageByState : le module ne lit aucun fichier de
@@ -20,9 +21,9 @@ export const meta = {
   title: TX.title, // en-tête du téléphone (règle 16)
   apps: ['pilot'],
   level: 3,
-  // déclaration vide : aucune route, aucun préfixe ; seulement ctx.launcher.info(), pour dire si ce poste a un lanceur
+  // la construction de la base est un travail du lanceur (regen/job) ; aucune lecture de data/ par le lanceur
   launcher: {
-    routes: [],
+    routes: ['regen/job', 'regen/job/cancel'], // le suivi annule par POST regen/job/cancel : « regen/job » seul ne le couvre pas
     read: []
   },
   files: ['model.js', 'texts.js', '../../frame/lib/dom.js', '../../frame/lib/time.js'],
@@ -34,6 +35,8 @@ export const meta = {
 };
 
 const COVERAGE = 'cache/data/coverage.json'; // { zones: [id], updated_at } : la couverture de ce poste (SPEC § 3.2)
+const JOURNAL = 'cache/data/journal.json'; // { ops: [opération], updated_at } : les 50 dernières opérations de ce poste (SPEC § 7)
+const ROUTE = 'regen/job'; // le travail du lanceur : construction de la base (verbe D5 d'aerodb)
 const LANGS = ['fr', 'en', 'de', 'es'];
 // couleur d'un État → data-kind du point du cadre (.f-dot) ; statut d'une source du catalogue → data-kind du badge (.f-badge)
 const LEVEL_KIND = {
@@ -59,6 +62,26 @@ const STYLE = `
 [data-module="data"] details.d-more{margin-top:8px}
 [data-module="data"] .f-group>.f-card{margin-top:var(--sog-gap-s)}
 [data-module="data"] [data-data-head] p{margin:2px 0}
+[data-module="data"] [data-build] h2,[data-module="data"] [data-build] h3{margin:8px 0 4px}
+[data-module="data"] .d-opts{display:flex;flex-wrap:wrap;gap:0 16px}
+[data-module="data"] .d-opt{display:flex;gap:8px;align-items:center;min-height:var(--sog-touch);overflow-wrap:anywhere}
+[data-module="data"] .d-opt input{flex:none;width:20px;height:20px;margin:0}
+[data-module="data"] .d-pers p{margin:0 0 4px 28px}
+[data-module="data"] [data-build] [data-verb]{min-height:var(--sog-touch);min-width:44px}
+[data-module="data"] [data-build] [data-reason]{margin:6px 0 0}
+[data-module="data"] .d-run{margin-top:10px;display:grid;gap:6px}
+[data-module="data"] .d-runhead{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+[data-module="data"] .d-bar{height:10px;border:1px solid var(--sog-border);background:var(--sog-surface);overflow:hidden}
+[data-module="data"] .d-bar>i{display:block;height:100%;background:var(--sog-accent);transition:width .3s}
+[data-module="data"] .d-bar[data-indeterminate]>i{width:30%;animation:d-slide 1.2s linear infinite}
+@keyframes d-slide{from{margin-left:-30%}to{margin-left:100%}}
+[data-module="data"] .d-zl{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+[data-module="data"] .d-zl li{display:flex;gap:8px;align-items:baseline;overflow-wrap:anywhere}
+[data-module="data"] .d-zl .f-dot{flex:none}
+[data-module="data"] .d-journal{margin-top:var(--sog-gap-s)}
+[data-module="data"] .d-journal summary{min-height:var(--sog-touch);display:flex;align-items:center}
+[data-module="data"] .d-ops{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+[data-module="data"] .d-ops li{overflow-wrap:anywhere}
 `;
 
 let S = null;
@@ -103,6 +126,8 @@ async function load() {
     byState,
     cov
   };
+  // les zones à construire : toutes celles de la couverture à la première lecture (choix de l'utilisateur gardés ensuite)
+  S.ticked ||= new Set(cov.ids);
   render();
   // première ouverture : toutes les zones publiées sont cochées et la couverture est écrite une fois (SPEC § 3.2) ; rien n'est
   // écrit d'une lecture dégradée (zones() en panne) ni d'un dépôt qui ne publie encore aucune zone
@@ -262,6 +287,7 @@ function groupsHtml() {
   return `${pub ? '' : `<p class="f-warn" data-error="publication">${esc(tt(TX.pubError))}</p>`}${groups.map(g => {
     const open = g.id in S.manual ? S.manual[g.id] : g.attention;
     return `<details class="f-group" data-group="${g.id}"${open ? ' open' : ''}><summary><span>${esc(tt(TX.groups[g.id]))}</span><i class="f-status-dot" data-attn${g.attention ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i></summary>
+      ${g.id === 'base' ? buildHtml() : ''}
       ${g.rows.map(rowHtml).join('') || (g.more.length ? '' : `<p class="f-muted">${esc(tt(TX.groupEmpty))}</p>`)}
       ${g.more.length ? `<details class="d-more" data-more><summary>${esc(tt(TX.moreSets, { n: g.more.length }))}</summary>${g.more.map(rowHtml).join('')}</details>` : ''}</details>`;
   }).join('')}`;
@@ -271,7 +297,354 @@ function renderBody() {
   S.now = Date.now();
   S.airac = S.d.cat?.airac || null;
   S.cycleId = S.airac ? S.airac.cycleOf(S.now).id : undefined;
-  S.body.innerHTML = `${headHtml()}${coverageHtml()}${groupsHtml()}`;
+  S.body.innerHTML = `${headHtml()}${coverageHtml()}${groupsHtml()}${journalHtml()}`;
+}
+
+// ---------------------------------------------------------------- construire la base
+/** Les zones de la couverture dans l'ordre de zones() et, parmi elles, les cochées. */
+function buildZones() {
+  const ids = M.orderZones(S.d.cov.ids, S.d.zones);
+  return {
+    ids,
+    ticked: ids.filter(z => S.ticked?.has(z))
+  };
+}
+/** L'état du bouton « Construire » : sans lanceur, travail en cours (le nôtre ou un autre), hors ligne, aucune zone cochée. */
+function buildGate(ticked) {
+  return M.buildState({
+    launcher: !!S.ctx.launcher,
+    busy: !!S.run || !!S.other,
+    zones: ticked.length,
+    offline: navigator.onLine === false
+  });
+}
+/** Le nom d'une source sous licence personnelle : celui du catalogue d'aerodb, à défaut un texte du module. */
+function personalName(id) {
+  const src = S.d.cat?.byId ? S.d.cat.byId(id) : S.d.cat?.SOURCES?.find(s => s.id === id);
+  return src?.n?.[li()] || tt(TX.personalName[id]);
+}
+/** Les sources sous licence personnelle cochées ET proposées (celles d'une zone décochée ne partent pas). */
+function personalPicked(ticked) {
+  return M.personalSources(ticked).filter(p => S.personal.has(p.id)).map(p => p.id);
+}
+/** Une case à cocher avec son libellé (44 px de haut) ; attr : l'attribut data- qui la repère. */
+function optHtml(attr, id, label, checked, disabled) {
+  return `<label class="d-opt"><input type="checkbox" ${attr}="${esc(id)}"${checked ? ' checked' : ''}${disabled ? ' disabled' : ''}><span>${esc(label)}</span></label>`;
+}
+/** La ligne d'une zone dans la marche : point de couleur, nom, phrase (le motif d'un échec écrit en toutes lettres). */
+function zoneLineHtml(r) {
+  const word = r.key === 'failed' ? tt(TX.zoneState.failed, {
+      r: tt(TX.zoneError[r.code])
+    }) : r.key === 'buildingN' ? tt(TX.zoneState.buildingN, {
+      n: r.n,
+      m: r.m
+    }) : tt(TX.zoneState[r.key]),
+    k = {
+      built: 'ok',
+      failed: 'err',
+      building: 'accent',
+      cancelled: 'warn'
+    } [r.state];
+  return `<li data-zone-state="${esc(r.zone)}" data-state="${r.state}"><i class="f-dot"${kind(k)} aria-hidden="true"></i><span><b>${esc(M.zoneName(S.d.zones, r.zone, li()))}</b> : ${esc(word)}</span></li>`;
+}
+/** La marche : barre, « n zones sur m », étape, temps écoulé, « Arrêter », une ligne par zone. */
+function runningHtml() {
+  const run = S.run,
+    p = M.progress(S.view, S.ids),
+    stopping = run.phase === 'stopping';
+  return `<div class="d-run" data-running data-phase="${run.phase}">
+    <div class="d-runhead"><b data-count>${esc(tt(TX.runCount, { n: count('zone', p.done), m: p.total }))}</b>
+      <span data-step>${esc(stopping ? tt(TX.stopping) : S.view?.step || '')}</span>
+      <span class="f-muted" data-elapsed>${esc(tt(TX.elapsed, { t: M.clock((Date.now() - run.t0) / 1e3) }))}</span></div>
+    <div class="d-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}"${S.view && p.pct !== null ? '' : ' data-indeterminate'}><i style="width:${p.pct ?? 0}%"></i></div>
+    <ul class="d-zl">${M.zoneRows(S.view, S.ids).map(zoneLineHtml).join('')}</ul>
+    <p><button type="button" data-verb="stop"${stopping ? ' disabled' : ''}>${esc(tt(TX.stop))}</button></p></div>`;
+}
+/** Le résumé de fin (aussi le texte de la notification) : { text, advice, level } d'après la fin calculée par M.outcome. */
+function summary(out) {
+  const z = out.failed.map(f => f.zone).join(', '),
+    v = {
+      built: count('zone', out.built.length),
+      failed: out.failed.length,
+      zones: z,
+      n: out.built.length
+    };
+  return {
+    done: {
+      text: tt(TX.sumDone, v),
+      level: 'ok'
+    },
+    partial: {
+      text: tt(TX.sumPartial, v),
+      advice: TX.advice.partial,
+      level: 'warn'
+    },
+    failed: {
+      text: tt(TX.sumFailed, v),
+      advice: TX.advice.failed,
+      level: 'err'
+    },
+    cancelled: {
+      text: tt(TX.sumCancelled, v),
+      advice: TX.advice.cancelled,
+      level: 'warn'
+    },
+    interrupted: {
+      text: tt(TX.sumInterrupted),
+      advice: TX.advice.interrupted,
+      level: 'warn'
+    },
+    'no-browser': {
+      text: tt(TX.sumNoBrowser),
+      level: 'err'
+    },
+    'xplane-in-page': {
+      text: tt(TX.sumXplane),
+      level: 'err'
+    }
+  } [out.kind];
+}
+/** La fin de la dernière construction : la phrase de résumé, ce qu'il y a à faire, puis les lignes des zones (leurs derniers
+ *  états, avec le motif des échecs) ; ou la phrase d'un départ refusé. */
+function resultHtml() {
+  const r = S.result;
+  if (!r) return '';
+  if (r.refused) return `<div data-build-result data-result="refused" data-refusal="${r.refused.key}"><p class="f-warn">${esc(tt(TX.refused[r.refused.key], { n: r.refused.wait }))}</p></div>`;
+  const sm = summary(r.out),
+    rows = S.view?.zones && !['no-browser', 'xplane-in-page'].includes(r.out.kind) ? M.zoneRows(S.view, S.ids) :
+  []; // rien n'a tourné : pas de lignes « en attente »
+  return `<div data-build-result data-result="${r.out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>
+    ${sm.advice ? `<p class="f-muted" data-advice>${esc(tt(sm.advice))}</p>` : ''}
+    ${rows.length ? `<ul class="d-zl">${rows.map(zoneLineHtml).join('')}</ul>` : ''}</div>`;
+}
+/** L'intérieur du panneau : les zones, les sources sous licence personnelle, le bouton et sa raison, la marche ou la fin. */
+function buildInner() {
+  const {
+    ids,
+    ticked
+  } = buildZones(),
+    gate = buildGate(ticked),
+    busy = !!S.run,
+    pers = M.personalSources(ticked),
+    xplaneOn = pers.some(p => p.id === 'xplane' && S.personal.has('xplane')),
+    why = gate.reason ? tt(TX.greyReason[gate.reason]) : '';
+  return `<h2>${esc(tt(TX.buildTitle))}</h2>
+    <h3>${esc(tt(TX.buildZones))}</h3>
+    <div class="d-opts" data-build-zones>${ids.map(z => optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)).join('')}</div>
+    ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>${pers.map(p => `<div class="d-pers" data-personal-row="${p.id}">
+      ${optHtml('data-personal', p.id, personalName(p.id), S.personal.has(p.id), busy)}
+      <p class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</p>
+      ${p.id === 'xplane' && xplaneOn ? `<p class="f-warn" data-xplane-hint>${esc(tt(TX.xplaneHint))}</p>` : ''}</div>`).join('')}</div>` : ''}
+    <p><button type="button" class="primary" data-verb="build"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.build))}</button></p>
+    ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
+    ${S.other && !S.run ? `<p class="f-muted" data-other>${esc(tt(TX.otherRunning, { s: S.other.step || '…' }))}</p>` : ''}
+    ${S.run ? runningHtml() : resultHtml()}`;
+}
+/** Le panneau « Construire la base » (en tête du groupe Base aéronautique). */
+function buildHtml() {
+  return `<section class="f-card" data-build>${buildInner()}</section>`;
+}
+/** Redessine le panneau seul (une marche s'y met à jour chaque seconde) ; la case ou le bouton qui avait le focus le garde. */
+function renderBuild() {
+  const box = S?.body?.querySelector('[data-build]');
+  if (!box || !S.d) return;
+  const a = box.contains(document.activeElement) ? document.activeElement : null,
+    sel = a ? a.dataset.buildZone ? `[data-build-zone="${CSS.escape(a.dataset.buildZone)}"]` : a.dataset.personal ? `[data-personal="${CSS.escape(a.dataset.personal)}"]` : a
+    .dataset.verb ? `[data-verb="${CSS.escape(a.dataset.verb)}"]` : '' : '';
+  keepScroll(S.body, () => {
+    box.innerHTML = buildInner();
+    const el = sel && box.querySelector(sel);
+    if (el && !el.disabled) el.focus({
+      preventScroll: true
+    });
+  });
+}
+/** Ouvre le groupe Base aéronautique (une marche ou un résultat s'y montre) sans attendre un toucher. */
+function openBase() {
+  S.manual.base = true;
+  const g = S.body?.querySelector('details.f-group[data-group="base"]');
+  if (g) g.open = true;
+}
+/** La ligne d'une opération du journal : heure UTC, verbe, zones, résultat. */
+function opHtml(e) {
+  const zs = (e.zones || []).map(z => M.zoneName(S.d?.zones, z, li())).join(', ');
+  return `<li data-op data-result="${esc(e.result)}" data-op-verb="${esc(e.verb)}"><time datetime="${esc(e.at)}">${esc(fmtDateZ(e.at, lang()))}</time> · ${esc(tt(TX.opVerb[e.verb] || [e.verb, e.verb, e.verb, e.verb]))} · ${esc(zs)} · ${esc(tt(TX.opResult[e.result] || [e.result, e.result, e.result, e.result]))}</li>`;
+}
+/** Le journal, replié, au pied de l'écran : les opérations les plus récentes d'abord. */
+function journalHtml() {
+  return `<details class="f-card d-journal" data-journal${S.journalOpen ? ' open' : ''}><summary>${esc(tt(TX.journal))}</summary>
+    ${S.journal.length ? `<ul class="d-ops">${[...S.journal].reverse().map(opHtml).join('')}</ul>` : `<p class="f-muted">${esc(tt(TX.journalEmpty))}</p>`}</details>`;
+}
+/** Redessine le journal seul. */
+function renderJournal() {
+  const el = S?.body?.querySelector('[data-journal]');
+  if (el && S.d) keepScroll(S.body, () => el.outerHTML = journalHtml());
+}
+
+// ---------------------------------------------------------------- la marche
+/** Une seconde de plus : met à jour le seul temps écoulé de la marche. */
+function tick() {
+  const run = S?.run,
+    el = S?.body?.querySelector('[data-build] [data-elapsed]');
+  if (run && el) el.textContent = tt(TX.elapsed, {
+    t: M.clock((Date.now() - run.t0) / 1e3)
+  });
+}
+/** Arrête le minuteur du temps écoulé. */
+function stopTimer() {
+  clearInterval(S?.timer);
+  if (S) S.timer = 0;
+}
+/** Commence une marche (la nôtre ou une construction trouvée en route) : ids, minuteur, groupe ouvert. */
+function beginRun(ids, ctrl) {
+  S.run = {
+    phase: 'running',
+    t0: Date.now(),
+    ctrl
+  };
+  S.ids = ids;
+  S.view = null;
+  S.result = null;
+  stopTimer();
+  S.timer = setInterval(tick, 1000);
+  openBase();
+}
+/** Une vue du travail arrive : elle remplace la précédente et le panneau se redessine. Une construction trouvée en route
+ *  (resume) est adoptée à sa première vue ; le travail d'une autre opération n'est que signalé. */
+function onView(me, v, ctrl) {
+  if (S !== me || !v) return;
+  if (!M.isBuildView(v)) {
+    S.other = v;
+    return renderBuild();
+  }
+  if (!S.run) beginRun(Object.keys(v.zones || {}), ctrl);
+  S.view = v;
+  if (S.ids.length === 0) S.ids = Object.keys(v.zones || {});
+  renderBuild();
+}
+/** Écrit l'opération au journal (cache/data/journal.json, les 50 dernières) et redessine le journal. */
+function journalWrite(entry) {
+  const list = M.journalAdd(S.journal, entry);
+  if (list === S.journal) return;
+  S.journal = list;
+  S.ctx.data.put(JOURNAL, {
+    ops: list,
+    updated_at: new Date().toISOString()
+  }).catch(() => {});
+  renderJournal();
+}
+/** Fin d'une construction : le résumé dans le panneau, une notification (si on l'a suivie jusqu'au bout), le journal, puis la
+ *  relecture de ce qui est publié. `live` : la fin s'est produite sous nos yeux (sinon c'est celle d'un travail déjà fini). */
+async function endRun(me, final, live) {
+  if (!S.ids.length) S.ids = Object.keys(final.zones || {});
+  const out = M.outcome(final),
+    run = S.run,
+    seconds = run ? (Date.now() - run.t0) / 1e3 : null;
+  stopTimer();
+  S.run = null;
+  S.other = null;
+  S.view = final;
+  S.result = {
+    out
+  };
+  renderBuild();
+  if (live) {
+    const sm = summary(out);
+    S.ctx.notify(sm.text, sm.level);
+  }
+  journalWrite(M.journalEntry({
+    at: Date.now(),
+    zones: S.ids,
+    seconds,
+    out,
+    job: final.job || final.id
+  }));
+  if (live) await load(); // les états des lignes ont changé : même chemin de lecture que l'ouverture
+}
+/** Un départ refusé (409 : une autre opération ; 429 : trop tôt ; 404 : lanceur ancien…) : la phrase, une notification. Après un
+ *  409 on suit l'opération qui tourne, pour que le bouton redevienne actif à sa fin. */
+function refused(me, r) {
+  const f = M.refusal(r);
+  stopTimer();
+  S.run = null;
+  S.result = {
+    refused: f
+  };
+  if (f.key === 'busy') S.other = S.other || {}; // une opération tourne : le bouton reste gris pendant qu'on la rejoint
+  renderBuild();
+  S.ctx.notify(tt(TX.refused[f.key], {
+    n: f.wait
+  }), 'err');
+  if (f.key === 'busy') follow();
+}
+/** Termine d'après ce que rend ctx.launcher.job ou .resume : une fin (état connu), un arrêt demandé (on attend la vraie fin du
+ *  travail), un suivi détaché (démontage : rien), ou un refus. */
+async function settle(me, r, live = true) {
+  if (S !== me || !r || r.detached) return;
+  if (r.cancelled && !r.state) {
+    // « Arrêter » : le cadre a envoyé l'annulation et rend la main ; la construction finit sa zone en cours, on suit sa vraie fin
+    if (S.run) {
+      S.run.phase = 'stopping';
+      renderBuild();
+    }
+    const e = await S.ctx.launcher.resume(ROUTE, {
+      onProgress: v => onView(me, v)
+    });
+    if (S !== me) return;
+    return endRun(me, e?.state && e.state !== 'running' ? e : {
+      state: 'cancelled',
+      zones: S.view?.zones,
+      job: r.job
+    }, live);
+  }
+  if (r.state && r.state !== 'running') {
+    if (M.isBuildView(r)) return endRun(me, r, live);
+    S.other = null; // la fin d'une autre opération : le bouton redevient actif
+    return renderBuild();
+  }
+  if (r.aborted) return;
+  return refused(me, r);
+}
+/** Suit la construction que le lanceur fait tourner (page rechargée, ou départ refusé pour cause d'opération en cours) ; si la
+ *  dernière s'est terminée, en dit la fin. Ne bloque pas le montage. */
+async function follow() {
+  const me = S,
+    L = S.ctx.launcher;
+  if (!L) return;
+  const ctrl = new AbortController();
+  const r = await L.resume(ROUTE, {
+    onProgress: v => onView(me, v, ctrl),
+    signal: ctrl.signal
+  });
+  if (S !== me || !r) return;
+  if (r.ok === false && !r.state && !r.cancelled) return; // pas de réponse : l'écran reste tel quel
+  S.other = null;
+  return settle(me, r, !!S.run);
+}
+/** « Construire » : les zones cochées et les sources personnelles cochées vont au lanceur (regen/job) ; la marche se suit par
+ *  ses vues. Rien ne part si le bouton est gris. */
+async function startBuild() {
+  const me = S,
+    {
+      ticked
+    } = buildZones();
+  if (buildGate(ticked).disabled) return;
+  const ctrl = new AbortController(),
+    personal = personalPicked(ticked);
+  beginRun(ticked, ctrl);
+  renderBuild();
+  const r = await S.ctx.launcher.job(ROUTE, {
+    set: 'base',
+    verb: 'build',
+    args: {
+      zones: ticked,
+      personal
+    }
+  }, {
+    onProgress: v => onView(me, v, ctrl),
+    signal: ctrl.signal
+  });
+  await settle(me, r, true);
 }
 
 // ---------------------------------------------------------------- gestes
@@ -297,11 +670,28 @@ function onAerodbChange(e) {
 function onClick(e) {
   const g = e.target.closest?.('details.f-group > summary')?.parentElement;
   if (g) S.focus = g.dataset.group;
+  const v = e.target.closest?.('button[data-verb]');
+  if (!v || v.disabled) return;
+  if (v.dataset.verb === 'build') startBuild();
+  else if (v.dataset.verb === 'stop') S.run?.ctrl.abort();
+}
+/** Une case du panneau « Construire » (zone ou source sous licence personnelle) change : le choix est retenu, le panneau redessiné
+ *  (les sources proposées suivent les zones cochées). */
+function onChange(e) {
+  const t = e.target;
+  if (!(t instanceof HTMLInputElement) || S.run) return;
+  const set = t.dataset.buildZone ? S.ticked : t.dataset.personal ? S.personal : null,
+    id = t.dataset.buildZone || t.dataset.personal;
+  if (!set) return;
+  if (t.checked) set.add(id);
+  else set.delete(id);
+  renderBuild();
 }
 /** Retient les groupes ouverts ou fermés à la main, d'un dessin à l'autre. */
 function onToggle(e) {
   const g = e.target;
   if (g instanceof HTMLDetailsElement && g.matches('details.f-group') && g.isConnected) S.manual[g.dataset.group] = g.open;
+  else if (g instanceof HTMLDetailsElement && g.matches('details.d-journal') && g.isConnected) S.journalOpen = g.open;
 }
 /** Identifiant du groupe dont l'aide s'ouvre : le dernier touché s'il est encore ouvert, sinon le premier ouvert ; '' sans. */
 function helpGroup() {
@@ -318,7 +708,17 @@ export async function mount(el, ctx) {
     manual: {},
     focus: null,
     stops: [],
-    again: 0
+    again: 0,
+    ticked: null, // zones cochées pour la construction (toutes à la première lecture)
+    personal: new Set(), // sources sous licence personnelle cochées (aucune par défaut)
+    run: null, // la construction suivie : { phase: 'running' | 'stopping', t0, ctrl }
+    view: null, // la dernière vue du travail du lanceur
+    ids: [], // les zones de la construction en cours ou de la dernière
+    result: null, // la fin de la dernière : { out } ou { refused }
+    other: null, // la vue d'une autre opération du lanceur, tant qu'elle tourne
+    journal: [],
+    journalOpen: false,
+    timer: 0
   };
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
   // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
@@ -330,17 +730,27 @@ export async function mount(el, ctx) {
   // « ? » de l'en-tête : le chapitre au paragraphe du groupe ouvert, sinon à celui du cycle
   ctx.helpAnchor?.(() => helpGroup() ? `data-group-${helpGroup()}` : 'data-cycle');
   S.body.addEventListener('click', onClick);
+  S.body.addEventListener('change', onChange);
+  S.onNet = () => renderBuild(); // « hors ligne » : la raison du bouton suit le réseau
+  window.addEventListener('online', S.onNet);
+  window.addEventListener('offline', S.onNet);
   S.body.addEventListener('toggle', onToggle, true);
   // la couverture par État dépend de la table de couverture d'aerodb : redemandée quand il annonce { coverage: true }
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', onAerodbChange));
+  S.journal = M.journalList(await ctx.data.get(JOURNAL).catch(() => null));
   await load();
+  follow(); // une construction en cours sur le lanceur (page rechargée) se suit ; la dernière terminée dit sa fin
 }
 
-/** Démonte : retire l'écouteur du titre et l'abonnement à aerodb ; une lecture encore en cours ne dessine plus rien. */
+/** Démonte : retire les écouteurs et l'abonnement à aerodb, arrête le minuteur ; une lecture encore en cours ne dessine plus rien.
+ *  Le suivi du travail est arrêté par le cadre, sans l'annuler (il continue sur le lanceur). */
 export function unmount() {
   if (!S) return;
   window.removeEventListener('frame-titled', S.srTitle);
+  window.removeEventListener('online', S.onNet);
+  window.removeEventListener('offline', S.onNet);
   clearTimeout(S.again);
+  stopTimer(); // le suivi s'arrête de lui-même au démontage (le cadre) : le travail, lui, continue sur le lanceur
   for (const f of S.stops) f?.();
   S.body = null;
   S = null;

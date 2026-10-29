@@ -33,6 +33,14 @@ the « n autres jeux » folds), cases L1–L3; **D1b** the coverage's « Modifie
 launcher's `regen/state`, the Sources screen removed. aerodb adds for D1a `coverageByState()`'s `held` and `names` and
 `AeroCatalogue.PARSER_VERSION` (its lot of 29 Oct night); the screen reads them when present.
 
+**Construire of the base** (the ergonomics session's « D3 / D4 », first verb, 29 Oct night): in the Base aéronautique
+group, a panel `[data-build]` — the coverage's zones ticked, the personal-licence sources (`enaire`, `nats`, `xplane`, keys of
+`shared/aero_zones.js`, a table in `model.js` checked against that file by L1) unticked with their line, « Construire » grey
+with its reason (no launcher, another operation, offline, no zone) — wired to aerodb's verb `base/build` (8755aad9c), the
+progress per zone, « Arrêter », a job found again at the opening (running, ended, interrupted), the end said with its
+counts and its reason (`no-browser`, `xplane-in-page`, `partial`, `failed`, `cancelled`), the journal; cases L6–L10 on a fake
+launcher. Next: Télécharger, Publier, Purger as their verbs exist; the X-Plane build in the page.
+
 Existing guards kept green throughout: K1–K9, A12, A15, A19, A20, I4, I6, I7.
 
 ## Answers of the ergonomics session (28 October 2026), applied to SPEC and INTEGRATION

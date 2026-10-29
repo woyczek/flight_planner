@@ -97,3 +97,12 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   entry of Pilot's `APP.modules` with `rail: false`, reached by `#data`, where the Administration line leads. Replaces « the
   7th place of the rail » of the same day (the entry « Données » in the rail, read-only on a phone): the read-only phone
   access stays.
+- **29 Oct 2026 — Construire, the first verb** (ergonomics session: « l'appli de construction utilisable demain »): wired to
+  aerodb's `regen/job { set: 'base', verb: 'build', args: { zones, personal } }` (D5, one headless instance for all zones,
+  each zone committed as it comes out). `personal` carries the ids of `shared/aero_zones.js` SOURCES (not the catalogue's,
+  whose `xpcifp` is the procedures' source); the module keeps a three-line table, tested against that file, instead of
+  loading it. A ticked X-Plane is said before the start (« la construction se fait dans la page, pas encore possible ici »)
+  and the verb's `xplane-in-page` at the end. `meta.launcher.routes` declares `regen/job/cancel` beside `regen/job`: the
+  frame's `under()` does not cover a route's children without a trailing `/` (aerodb's own declaration has the same gap,
+  told to the frame). After « Arrêter » the frame answers `cancelled` at once; the module asks `resume` for the job's real
+  end.

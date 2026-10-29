@@ -323,3 +323,171 @@ export function stateLines(byState, li, order = []) {
     items: l.items.sort((x, y) => x.name.localeCompare(y.name, ['fr', 'en', 'de', 'es'][li] || 'fr'))
   }));
 }
+
+// ---------------------------------------------------------------- construire la base (lot D5)
+/** Sources de la base sous licence d'usage personnel, par identifiant de shared/aero_zones.js (SOURCES : le champ `personal`) ;
+ *  `zones` : les zones qu'elles nourrissent ('*' : toutes). Ce module ne charge pas shared/aero_zones.js : le cas L1 compare
+ *  cette table au fichier (aero_zones.js : `personal:`, COMMON, EXTRA) pour que les deux ne s'écartent pas. Les identifiants
+ *  sont ceux que le lanceur attend dans args.personal. */
+export const PERSONAL = {
+  enaire: {
+    kind: 'licence',
+    zones: ['es']
+  },
+  nats: {
+    kind: 'licence',
+    zones: ['gb']
+  },
+  xplane: {
+    kind: 'xplane',
+    zones: '*'
+  }
+};
+/** Dernières opérations gardées dans cache/data/journal.json. */
+export const JOURNAL_MAX = 50;
+const ZONE_STATES = ['waiting', 'building', 'built', 'failed', 'cancelled'];
+const ERROR_CODES = ['browser-failed', 'browser-exited', 'timeout', 'page-error', 'invalid-output', 'write-failed', 'cancelled'];
+/** Un nombre fini, sinon null. */
+const num = v => Number.isFinite(v) ? v : null;
+
+/** Les sources sous licence personnelle à proposer pour ces zones cochées : celles qui nourrissent au moins l'une d'elles,
+ *  dans l'ordre de PERSONAL ; [{ id, kind ('licence' | 'xplane') }]. */
+export function personalSources(zoneIds) {
+  return Object.entries(PERSONAL).filter(([, p]) => p.zones === '*' ? zoneIds.length > 0 : p.zones.some(z => zoneIds.includes(z)))
+    .map(([id, p]) => ({
+      id,
+      kind: p.kind
+    }));
+}
+/** L'état du bouton « Construire » : { disabled, reason } ; reason : 'no-launcher' | 'busy' | 'no-zone' | 'offline' | null.
+ *  `s` : { launcher (le poste en a un), busy (une opération tourne, la nôtre ou une autre), zones (nombre de zones cochées),
+ *  offline }. Une seule raison, la première de cet ordre. */
+export function buildState(s) {
+  const reason = !s.launcher ? 'no-launcher' : s.busy ? 'busy' : s.offline ? 'offline' : !(s.zones > 0) ? 'no-zone' : null;
+  return {
+    disabled: !!reason,
+    reason
+  };
+}
+/** Ce que dit la ligne d'une zone d'après son état dans la vue du travail : { state, key, n, m, code } ; key : la phrase
+ *  (waiting, building, buildingN avec n / m sources, built, failed avec le code d'erreur, cancelled). */
+export function zonePhrase(z) {
+  const state = ZONE_STATES.includes(z?.state) ? z.state : 'waiting',
+    n = num(z?.done),
+    m = num(z?.total);
+  return {
+    state,
+    key: state === 'building' && n !== null && m !== null ? 'buildingN' : state,
+    n,
+    m,
+    code: state === 'failed' ? ERROR_CODES.includes(z?.error) ? z.error : 'unknown' : null
+  };
+}
+/** Les lignes de zones à montrer : les zones demandées dans leur ordre (celles que la vue ne connaît pas encore : en attente),
+ *  puis celles que la vue ajoute ; [{ zone, ...zonePhrase }]. */
+export function zoneRows(view, ids) {
+  const zs = view?.zones && typeof view.zones === 'object' ? view.zones : {};
+  return [...ids, ...Object.keys(zs).filter(z => !ids.includes(z))].map(zone => ({
+    zone,
+    ...zonePhrase(zs[zone])
+  }));
+}
+/** La barre : { done, total, pct } ; done / total de la vue (en zones), à défaut 0 sur le nombre de zones demandées ; pct 0 à 100,
+ *  null sans total. */
+export function progress(view, ids) {
+  const total = num(view?.total) > 0 ? num(view.total) : ids.length,
+    done = Math.min(num(view?.done) ?? 0, total);
+  return {
+    done,
+    total,
+    pct: total > 0 ? Math.round(100 * done / total) : null
+  };
+}
+/** « 2:05 » : un nombre de secondes en minutes et secondes. */
+export function clock(sec) {
+  const s = Math.max(0, Math.round(sec || 0));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+/** La vue d'un travail est-elle celle d'une construction de la base ? (elle porte les zones, ou dit son jeu et son verbe). */
+export function isBuildView(v) {
+  return !!v && (v.set === 'base' && v.verb === 'build' || !!v.zones && typeof v.zones === 'object' && !Array.isArray(v.zones));
+}
+/** La fin d'un travail de construction, d'après sa dernière vue : { kind, built: [zone], failed: [{ zone, error }] } ; kind :
+ *  'done' | 'partial' | 'failed' | 'cancelled' | 'interrupted' | 'no-browser' | 'xplane-in-page'. Le résultat du lanceur
+ *  (result.built, result.failed, result.reason) l'emporte, à défaut l'état des zones. */
+export function outcome(final) {
+  const r = final?.result && typeof final.result === 'object' ? final.result : {},
+    zs = final?.zones && typeof final.zones === 'object' ? final.zones : {};
+  const built = Array.isArray(r.built) ? r.built.filter(z => typeof z === 'string') : Object.keys(zs).filter(z => zs[z]?.state === 'built'),
+    failed = Array.isArray(r.failed) ? r.failed.filter(f => f && f.zone).map(f => ({
+      zone: f.zone,
+      error: f.error
+    })) : Object.keys(zs).filter(z => zs[z]?.state === 'failed').map(z => ({
+      zone: z,
+      error: zs[z].error
+    }));
+  let kind;
+  if (final?.state === 'interrupted') kind = 'interrupted';
+  else if (final?.state === 'cancelled') kind = 'cancelled';
+  else if (r.reason === 'no-browser' || r.reason === 'xplane-in-page') kind = r.reason;
+  else if (r.reason === 'cancelled') kind = 'cancelled';
+  else if (r.reason === 'partial' || r.reason === 'failed') kind = r.reason;
+  else if (final?.state === 'error' || r.ok === false) kind = 'failed';
+  else kind = failed.length ? built.length ? 'partial' : 'failed' : 'done';
+  return {
+    kind,
+    built,
+    failed
+  };
+}
+/** Le résultat d'une opération pour le journal : 'done' | 'partial' | 'failed' | 'cancelled' | 'interrupted'. */
+export const journalResult = kind => ['done', 'partial', 'cancelled', 'interrupted'].includes(kind) ? kind : 'failed';
+/** Le refus d'un départ (la forme d'un refus de ctx.launcher) en { key, wait } ; key : busy | tooSoon | unknown-route | bad-args |
+ *  offline | refused | failed. */
+export function refusal(r) {
+  const key = r?.status === 409 ? 'busy' : r?.status === 429 && r.reason === 'too-soon' ? 'tooSoon' : r?.status === 404 ? 'unknown-route' :
+    r?.status === 400 ? 'bad-args' : r?.refused ? 'refused' : r?.offline ? 'offline' : 'failed';
+  return {
+    key,
+    wait: key === 'tooSoon' ? Math.max(1, Math.ceil(num(r.wait) ?? 1)) : null
+  };
+}
+/** Une entrée du journal : { at (UTC ISO), set, verb, zones, seconds, result, built, failed, job? }. `at` : instant en ms. */
+export function journalEntry({
+  at,
+  zones,
+  seconds,
+  out,
+  job
+}) {
+  return {
+    at: new Date(at).toISOString(),
+    set: 'base',
+    verb: 'build',
+    zones: [...zones],
+    seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
+    result: journalResult(out.kind),
+    ...(out.kind === 'no-browser' || out.kind === 'xplane-in-page' ? {
+      reason: out.kind
+    } : {}),
+    built: [...out.built],
+    failed: out.failed.map(f => ({
+      zone: f.zone,
+      error: f.error ?? null
+    })),
+    ...(job ? {
+      job: String(job)
+    } : {})
+  };
+}
+/** Les opérations lues du fichier journal (un tableau, ou { ops }) : les entrées lisibles seulement, de la plus ancienne à la plus
+ *  récente. */
+export function journalList(doc) {
+  const list = Array.isArray(doc) ? doc : Array.isArray(doc?.ops) ? doc.ops : [];
+  return list.filter(e => e && typeof e === 'object' && typeof e.at === 'string' && typeof e.verb === 'string');
+}
+/** Le journal avec une opération de plus, à la fin, borné aux `max` dernières ; inchangé si le travail (job) y est déjà. */
+export function journalAdd(list, entry, max = JOURNAL_MAX) {
+  if (entry.job && list.some(e => e.job === entry.job)) return list;
+  return [...list, entry].slice(-max);
+}
