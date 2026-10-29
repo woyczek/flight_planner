@@ -63,8 +63,8 @@ const LIBS = [
   ['SiaAero', 'lib/aero_symbols.js'],
   ['SiaProfile', 'lib/vertical_profile.js'],
   ['MapsRender', 'render.js'],
-  ['MapsRender.kit.drawAirways', 'render_airspace.js'], // les parties du rendu, après son noyau (SPEC § 1)
-  ['MapsRender.kit.drawRoute', 'render_route.js'],
+  ['MapsRender.parts.airspace', 'render_airspace.js'], // les parties du rendu, après son noyau (SPEC § 1)
+  ['MapsRender.parts.route', 'render_route.js'],
   ['MapsProfile', 'profile.js'],
   ['MapsMission', 'mission.js'],
   ['MapsContours', 'contours.js'],

@@ -491,6 +491,9 @@ def d40(c):
     c.ok(all(n['off'] < 1 for n in r['on']), f'distances to their segments {[(n["s"], round(n["off"], 1)) for n in r["on"]]}', 'every box sits on its own segment (never beside it)')
     c.ok(all(n['i'] > r['lastRoute'] for n in x10), f'route line stroked at call {r["lastRoute"]}, X10 names at {[n["i"] for n in x10]}', 'the boxes on the route are painted after the route line')
     c.ok(r['same'], 'the boxes moved when the route was added', 'the same place with or without the route (no jump)')
+    # § 10.29 e: the parts draw from their frozen namespaces, the kit is frozen, nothing is stored in it
+    fr = c.js("() => [Object.isFrozen(MapsRender.kit), Object.isFrozen(MapsRender.parts.airspace), Object.isFrozen(MapsRender.parts.route), 'drawAirways' in MapsRender.kit]")
+    c.eq(fr, [True, True, True, False], 'kit and parts are frozen; the parts store nothing in the kit', what='frozen')
 
 
 

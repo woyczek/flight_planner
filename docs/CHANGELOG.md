@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the rendering parts no longer share a mutable kit, and the theme lives for one drawing** (`modules/maps/render.js`,
+  `render_airspace.js`, `render_route.js`, `screen.js`; SPEC § 1; case D40; V3 § 10.29 e, reduced form) — the parts expose
+  their drawing as frozen namespaces (`MapsRender.parts.airspace`, `.route`) instead of storing it in `MapsRender.kit`, now
+  frozen; `draw()` hands them a frozen `env = { theme, placer, pal }` and resets its theme when it returns, so nothing
+  lingers from one drawing to the next. Nothing changes on screen.
+
 - **Weather: the map and Atmosphere again read the same forecast** (`modules/atmosphere/weather_store.js`,
   `modules/maps/weather.js`; frame DECISIONS): since 28 Oct the two weather stores used two different model runs for the
   same cache and each discarded the other's data — the map showed no weather and the cut stopped part-way (LFPO → EIDW).

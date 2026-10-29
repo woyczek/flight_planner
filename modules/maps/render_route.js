@@ -5,12 +5,9 @@
   // les aides du noyau dans window.MapsRender.kit et y range ses dessins (draw() les appelle par K). Le code est celui de
   // render.js, déplacé tel quel.
   const R = window.MapsRender;
-  if (!R?.kit || R.kit.drawRoute) return;
+  if (!R?.kit || R.parts?.route) return;
   const {
-    halo,
-    paper,
-    theme,
-    pal
+    halo
   } = R.kit;
 
   /** Branches de la route (paires d'identifiants consécutifs, dans les deux sens) : le cartouche d'une voie qui en suit une est
@@ -26,7 +23,7 @@
   };
   /** Libellés de la route (points : identifiant et niveau ; marques NM) réservés dans le placeur avant tout le reste :
    *  [{ text, x, y, size, align }] ; les extrémités sont toujours écrites. */
-  function routeLabels(route, toC, scale, pl, mk = [], level = null) {
+  function routeLabels(route, toC, scale, pl, mk = [], level = null, env) {
     const pts = (route || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon)),
       f0 = 12 * scale,
       out = [];
@@ -79,7 +76,7 @@
             y: y + fe * .6,
             size: fe,
             align,
-            color: theme().accent
+            color: env.theme.accent
           });
           break;
         }
@@ -109,9 +106,10 @@
   /** Route : trait violet, points, marques de distance (NM), libellés réservés (routeLabels). */
   function drawRoute(ctx, route, toC, scale, labels = [], {
     marks: mk = [],
-    color = pal().route,
+    color = null,
     lines = null
-  } = {}) {
+  } = {}, env) {
+    color ||= env.pal.route;
     const pts = (route || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
     if (pts.length < 2) return;
     ctx.save();
@@ -130,7 +128,7 @@
       }
     };
     // liseré du fond (détache la route des voies et des limites qu'elle croise), puis le trait : le plus épais de la carte
-    ctx.strokeStyle = paper();
+    ctx.strokeStyle = env.theme.bg;
     ctx.lineWidth = Math.max(5, 7.5 * scale);
     line();
     ctx.strokeStyle = color;
@@ -150,7 +148,7 @@
         end = i === 0 || i === pts.length - 1;
       ctx.beginPath();
       ctx.arc(q.x, q.y, (end ? 6 : 4.5) * scale, 0, Math.PI * 2);
-      ctx.fillStyle = paper();
+      ctx.fillStyle = env.theme.bg;
       ctx.fill();
       ctx.strokeStyle = color;
       ctx.lineWidth = Math.max(1.5, (end ? 2.5 : 2) * scale);
@@ -160,9 +158,13 @@
     ctx.restore();
   }
 
-  Object.assign(R.kit, {
-    routeLegs,
-    routeLabels,
-    drawRoute
+  // son espace de noms, gelé (§ 10.29 e) : le noyau l'appelle par MapsRender.parts.route
+  Object.defineProperty(R.parts, 'route', {
+    value: Object.freeze({
+      routeLegs,
+      routeLabels,
+      drawRoute
+    }),
+    enumerable: true
   });
 })();

@@ -1109,7 +1109,8 @@
    *  aerodromes, navaids, obstacles, airways, moraCells } ; bbox : emprise affichée { w, s, e, n }. */
   // ---------------------------------------------------------------- aides partagées avec les parties du rendu
   // render_airspace.js (espaces, voies, AAR, NAT) et render_route.js (libellés et tracé de la route), scripts classiques
-  // chargés après celui-ci, y lisent ces aides et y rangent leurs dessins ; draw() les appelle par K.
+  // chargés après celui-ci, y lisent ces aides ; leurs dessins sont dans leurs espaces de noms gelés, MapsRender.parts.airspace
+  // et MapsRender.parts.route, que draw() appelle avec env = { theme, placer, pal } (§ 10.29 e).
   const K = {
     A,
     PT,
@@ -1124,14 +1125,21 @@
     trackOf,
     withAlpha,
     wrapLon,
-    paper,
-    /** Jetons du design en cours (ceux du dessin, sinon ceux de la page). */
-    theme: () => T || tokens(),
-    /** Palette du dessin en cours. */
-    pal: () => palette((T || tokens()).dark)
   };
+  // gelé (§ 10.29 e) : les parties y lisent des aides, n'y rangent rien ; leurs dessins sont dans MapsRender.parts
+  Object.freeze(K);
 
-  function draw(ctx, {
+  /** Surcouche complète (drawFrame) ; le thème du dessin (T) est remis à null en sortie, même sur une erreur : rien ne reste
+   *  d'un dessin à l'autre (§ 10.29 e). */
+  function draw(ctx, opts = {}) {
+    try {
+      return drawFrame(ctx, opts);
+    } finally {
+      T = null;
+    }
+  }
+
+  function drawFrame(ctx, {
     toC,
     W,
     H,
@@ -1158,8 +1166,17 @@
     top = null
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
+    // le thème ne vit que le temps du dessin (§ 10.29 e) : posé ici, remis à null en sortie (draw) ; les parties le reçoivent
+    // dans env, gelé, avec le placeur et la palette
     T = theme || tokens();
     const pl = A().placer(),
+      env = Object.freeze({
+        theme: T,
+        placer: pl,
+        pal: palette(T.dark)
+      }),
+      PA = window.MapsRender.parts.airspace,
+      PR = window.MapsRender.parts.route,
       c = {
         lat: (bbox.n + bbox.s) / 2,
         lon: (bbox.e + bbox.w) / 2
@@ -1184,17 +1201,17 @@
       zoneLabels = [];
     const layers = [{
       id: 'routeLabels',
-      reserve: () => labels = K.routeLabels(route, toC, scale, pl, mk, level)
+      reserve: () => labels = PR.routeLabels(route, toC, scale, pl, mk, level, env)
     }, {
       id: 'screenLabels', // l'écran réserve ses libellés (procédures choisies) juste après ceux de la route
       reserve: () => reserve && reserve(pl)
     }, {
       id: 'zoneShapes',
-      paint: c => K.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes')
+      paint: c => PA.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes')
     }, {
       id: 'airways',
-      paint: c => ends = K.drawAirways(c, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier, K.routeLegs(legs ||
-        route))
+      paint: c => ends = PA.drawAirways(c, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier, PR.routeLegs(legs ||
+        route), env)
     }, {
       id: 'points',
       paint: c => {
@@ -1232,10 +1249,10 @@
     }, {
       // axes de ravitaillement et tracks NAT (mode CAM, cartes de mission qui les demandent)
       id: 'aar',
-      paint: c => on(profile, 'aarTracks') && K.drawAar(c, data.aar, toC, scale, bbox, pl)
+      paint: c => on(profile, 'aarTracks') && PA.drawAar(c, data.aar, toC, scale, bbox, pl, env)
     }, {
       id: 'nat',
-      paint: c => on(profile, 'natTracks') && K.drawNat(c, data.nat, toC, scale, bbox, pl)
+      paint: c => on(profile, 'natTracks') && PA.drawNat(c, data.nat, toC, scale, bbox, pl, env)
     }, {
       id: 'airwayNames', // étiquettes des voies posées après leurs points
       paint: () => {
@@ -1249,7 +1266,7 @@
       } : shown, toC, W, H, scale, bbox, pl, profile)
     }, {
       id: 'zoneLabels',
-      paint: c => zoneLabels = K.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels')
+      paint: c => zoneLabels = PA.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels')
     }, {
       id: 'gridMora',
       paint: c => drawGridMora(c, shown.moraCells, toC, bbox, W, H, scale, pl, profile)
@@ -1266,10 +1283,10 @@
       paint: c => drawCities(c, towns, profile, scale, W, H)
     }, {
       id: 'route',
-      paint: c => K.drawRoute(c, route, toC, scale, labels, {
+      paint: c => PR.drawRoute(c, route, toC, scale, labels, {
         marks: mk,
         lines
-      })
+      }, env)
     }, {
       id: 'screenTraces', // l'écran peint ses tracés au niveau de la route (procédures choisies)
       paint: c => overRoute && overRoute(c)
@@ -1367,7 +1384,9 @@
     contrast: (a, b) => contrast(rgbOf(a) || [0, 0, 0], rgbOf(b) || [0, 0, 0]),
     /** Palette de la Carte, de jour ou de nuit (§ 10.29 f). */
     palette,
-    /** Aides du noyau et dessins des parties (render_airspace.js, render_route.js) : interne au rendu. */
-    kit: K
+    /** Aides du noyau, gelées, que lisent les parties : interne au rendu. */
+    kit: K,
+    /** Espaces de noms gelés des parties (airspace : render_airspace.js ; route : render_route.js), posés à leur chargement. */
+    parts: {}
   };
 })();

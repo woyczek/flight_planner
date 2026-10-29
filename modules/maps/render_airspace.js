@@ -6,7 +6,7 @@
   // window.MapsRender.kit, y range ses dessins (draw() les appelle par K) et ses fonctions publiques dans
   // window.MapsRender. Le code est celui de render.js, déplacé tel quel.
   const R = window.MapsRender;
-  if (!R?.kit || R.kit.drawAirways) return;
+  if (!R?.kit || R.parts?.airspace) return;
   const {
     A,
     PT,
@@ -16,12 +16,10 @@
     halo,
     inBox,
     on,
-    paper,
     rad,
     trackOf,
     withAlpha,
-    wrapLon,
-    pal
+    wrapLon
   } = R.kit;
 
   // ---------------------------------------------------------------- choix des espaces le long de la route
@@ -185,7 +183,7 @@
   /** Voies aériennes : basses (trait bleu) et hautes (tireté violet), selon le profil ; étiquettes comme les cartes en
    *  route : nom de la voie dans un cartouche couché le long du tronçon, niveau minimal dessous (F195) ; de près, la
    *  distance du tronçon (NM) et les routes vraies à chaque bout. Rend les bouts des tronçons dessinés (leurs points). */
-  function drawAirways(ctx, airways, toC, scale, b, pl, profile, tier = 'near', onRoute = new Set()) {
+  function drawAirways(ctx, airways, toC, scale, b, pl, profile, tier = 'near', onRoute = new Set(), env) {
     const lo = on(profile, 'airwaysLow'),
       hi = on(profile, 'airwaysHigh'),
       ends = new Map();
@@ -213,7 +211,7 @@
       if (!inBox(t, g.a.lat, g.a.lon) && !inBox(t, g.b.lat, g.b.lon)) continue;
       const P = toC(g.a.lat, g.a.lon),
         Q = toC(g.b.lat, g.b.lon),
-        col = high ? pal().airwayHigh : pal().airwayLow,
+        col = high ? env.pal.airwayHigh : env.pal.airwayLow,
         len = Math.hypot(Q.x - P.x, Q.y - P.y);
       ctx.strokeStyle = col;
       ctx.globalAlpha = .75;
@@ -287,7 +285,7 @@
         ctx.translate(x, y);
         ctx.rotate(ang);
         if (along) { // la route interrompue : un liseré du fond autour du cartouche
-          ctx.fillStyle = paper();
+          ctx.fillStyle = env.theme.bg;
           ctx.fillRect(-w / 2 - 2 * scale, -f * .7 - 2 * scale, w + 4 * scale, f * 1.4 + 4 * scale);
         }
         ctx.fillStyle = col;
@@ -295,11 +293,11 @@
         ctx.font = `700 ${f}px Arial,sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = paper();
+        ctx.fillStyle = env.theme.bg;
         ctx.fillText(g.route, 0, 0);
         if (lvl && tier !== 'far') {
           ctx.font = `700 ${f * .85}px Arial,sans-serif`;
-          ctx.fillStyle = pal().airwayLevel;
+          ctx.fillStyle = env.pal.airwayLevel;
           ctx.fillText(lvl, 0, f * 1.35);
         }
         if (el(profile, 'awLabels') !== false && Number.isFinite(+g.nm)) {
@@ -356,9 +354,9 @@
   }
   /** Axes de ravitaillement en vol (aerodb.aarTracks) : hippodrome vert sombre légèrement teinté, branche aller fléchée
    *  IP → CP et nom de l'axe ; axes lourds : leurs deux branches fléchées. */
-  function drawAar(ctx, tracks, toC, scale, b, pl) {
+  function drawAar(ctx, tracks, toC, scale, b, pl, env) {
     if (!tracks?.length) return;
-    const col = pal().aar,
+    const col = env.pal.aar,
       t = {
         s: b.s - 1,
         n: b.n + 1,
@@ -405,9 +403,9 @@
   }
   /** Tracks NAT du jour (aerodb.natTracks) : tireté ardoise par les points de la track, « NAT A FL350–400 » au premier
    *  point. */
-  function drawNat(ctx, tracks, toC, scale, b, pl) {
+  function drawNat(ctx, tracks, toC, scale, b, pl, env) {
     if (!tracks?.length) return;
-    const col = pal().nat,
+    const col = env.pal.nat,
       f = 10 * scale;
     ctx.save();
     ctx.lineJoin = 'round';
@@ -536,11 +534,15 @@
   /** Espaces à dessiner au point (lat, lon) : `airspacesAround(...).shown`. */
   const airspacesAt = (list, lat, lon) => airspacesAround(list, lat, lon).shown;
 
-  Object.assign(R.kit, {
-    drawZones,
-    drawAirways,
-    drawAar,
-    drawNat
+  // son espace de noms, gelé (§ 10.29 e) : le noyau l'appelle par MapsRender.parts.airspace ; rien n'est rangé dans le kit
+  Object.defineProperty(R.parts, 'airspace', {
+    value: Object.freeze({
+      drawZones,
+      drawAirways,
+      drawAar,
+      drawNat
+    }),
+    enumerable: true
   });
   Object.assign(R, {
     selectAirspaces,
