@@ -859,6 +859,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 17 | Flown track at ~100 m, `trailFrom`, privacy sentence (127e0b721) | acceptable, one note |
 | 18 | AeroDB D5: base built on the workstation by a headless browser (8755aad9c) | acceptable; one design point settled, four notes |
 | 19 | Data module « Construire » panel (8990b3ab7) | acceptable, one note |
+| 20 | Map: choosing a procedure on the map (5b713f77e) | acceptable, one note for Fuel |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1081,7 +1082,19 @@ Note: `base.check` still admits `parallel: true`; the page does not send it, but
 it at the launcher if it only serves the measurements. Decision: `parallel: true` is refused by the launcher (with
 AeroDB's path B commit); the option stays for the benches only.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 19 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
+**20. Map, choosing on the map (5b713f77e) — acceptable, one note for Fuel.** The request is taken from the address
+once (`ctx.consume`): `choose` is `dep` or `arr`, `icao` matches `^[A-Z0-9]{4}$`, otherwise nothing happens; a mission or
+tuning map ignores it. Names in the list and on the labels (procedure, transition, runway, reasons) are escaped; the
+only unescaped values are the family and the hue, both from the code; the chip selector uses `CSS.escape`. Doubtful
+records, records without a name and `NONAME` ones are never shown (Fuel's rule). A choice replaces the address with
+`#fuel?focus=<side>&<family>=<id>`, side and family from the code, the value through `encodeURIComponent`. The Map
+writes nothing to the flight in this mode; its route editor (`edit.js`) merges only `route` and `level`, with a route
+object that has no `procedures` key, so `route.procedures` is kept. Note (for the Fuel commit that will read the key):
+the address can be edited by the user or set by any link, and it does not carry the aerodrome; accept only `none`, a
+runway (`^\d{2}[LRC]?$`) that `runwayChoices` proposes, or an id present among the records of the flight's aerodrome for
+that side (the flight may have changed aerodrome meanwhile); otherwise ignore it and write nothing, never the raw string.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 20 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
