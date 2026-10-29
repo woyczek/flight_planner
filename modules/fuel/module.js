@@ -3849,10 +3849,23 @@ async function autoAirways() {
       if (i && p.alt_ft) cur = p.alt_ft;
       at.push(cur);
     });
+    // chaque tronçon routé à l'altitude du profil en son milieu (montée, paliers, descente), pas au niveau de croisière partout :
+    // un tronçon de montée ouvre les voies basses, un tronçon en croisière au FL260 ne les prend pas (utilisateur, 29 octobre :
+    // LFPO → EIDW, « la T421 était à préférer à la J150 ») ; la chaîne élargie des points de procédure, ramenée sur le chemin volé
+    const fp = fpNow(),
+      cum = chain.reduce((a, p, i) => (a.push(i ? a[i - 1] + gcNm(chain[i - 1], p) : 0), a), []),
+      toF = CF.routeNmToFlown(f, fp, chain),
+      legAlt = i => {
+        const a = CF.altitudeAt(f, toF((cum[i] + (cum[i + 1] ?? cum[i])) / 2), {
+          cruiseFt: at[i],
+          flown: fp
+        });
+        return a == null ? at[i] : Math.max(0, Math.round(a / 100) * 100);
+      };
     let res;
     try {
       res = await RG.expand(S.ctx.aerodb, chain, {
-        altOf: i => at[i],
+        altOf: legAlt,
         skip: i => !adj[i]
       });
     } catch (e) {

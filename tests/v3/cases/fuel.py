@@ -971,3 +971,29 @@ def f29(c):
     lv = {p['id']: p['wind']['levelFt'] for p in d['route']['points'] if p.get('wind')}
     c.ok(lv.get('LUGEN', 27000) < 27000, f'{lv}', 'LUGEN, in the climb (before the top of climb at 62 NM), takes its wind below the cruise level')
     c.ok(max(lv.values()) <= 27000, f'{lv}', 'no wind above the cruise level')
+
+
+def _climb_airway():
+    """A low airway LZ1 (6 500 - 19 500 ft) from LFRS to LUGEN (38 NM, inside the climb: the top of climb is at 62 NM), on the line."""
+    import math
+    fix = {'TSB0': (47.1569, -1.6078), 'TSB1': (46.87, -1.404), 'LUGEN': (46.5833, -1.2)}
+
+    def gc(a, b):
+        r = math.pi / 180
+        h = math.sin((b[0] - a[0]) * r / 2) ** 2 + math.cos(a[0] * r) * math.cos(b[0] * r) * math.sin((b[1] - a[1]) * r / 2) ** 2
+        return round(2 * 3440.065 * math.asin(math.sqrt(h)), 1)
+    return [{'route': 'LZ1', 'a': {'id': a, 'lat': fix[a][0], 'lon': fix[a][1]}, 'b': {'id': b, 'lat': fix[b][0], 'lon': fix[b][1]},
+             'lower': 6500, 'upper': 19500, 'nm': gc(fix[a], fix[b])} for a, b in [('TSB0', 'TSB1'), ('TSB1', 'LUGEN')]]
+
+
+@case('F30', 'Auto: a leg in the climb is routed at the altitude of the profile, not at the cruise level', 'F', tags=('fuel', 'maps'),
+      designs=('standard',), screens=False, rule='user 29 Oct (LFPO → EIDW): the legs of the climb and the descent were routed at FL260, those of the cruise as low')
+def f30(c):
+    c.open('fuel', flight=True, airfields=True, airways=_climb_airway())
+    wait_quote(c)
+    c.tap(f'{FUEL} .fu-steps button[data-step="1"]')
+    rt = f'{FUEL} [data-k="rtext"]'
+    c.until(f"window.__t.shown(document.querySelector('{FUEL} [data-do=rauto]'))", what='the Route step shows the Auto button')
+    c.tap(f'{FUEL} [data-do="rauto"]')
+    c.until(f"document.querySelector('{FUEL} [data-k=rtext]').value.includes('LZ1')", timeout=6000,
+            what='LFRS → LUGEN (38 NM, in the climb to FL270) takes the low airway LZ1, open at the altitude of the climb')

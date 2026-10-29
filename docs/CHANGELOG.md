@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel › Auto: each leg is routed at the altitude of the profile** (`modules/fuel/module.js` `autoAirways`, case F30; user,
+  29 Oct, LFPO → EIDW at FL260: "la T421 était à préférer à la J150") — every leg was routed at the cruise level (or the step
+  written at its first point), so a leg of the climb could not take a low airway and a leg flown at FL260 could; each leg is
+  now routed at the planned altitude at its middle (`altitudeAt` on the chain widened with the procedures' points, brought
+  onto the flown path).
+
 - **Frame: `revalidate(paths)` in the data layer** (`frame/store/frame_data.js`, `frame/app.js`; INTEGRATION § 4, § 15.2,
   SPEC, DECISIONS; bench A33): a module (and aerodb) can check a few known files against the repository at once, without
   waiting for the background sync — changed copies are read again and announced, vanished references dropped, the
