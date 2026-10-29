@@ -858,6 +858,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 16 | `FD.list` by key range, IndexedDB v2, parsed references shared (cf52ad2a2) | acceptable; shared values are mutable |
 | 17 | Flown track at ~100 m, `trailFrom`, privacy sentence (127e0b721) | acceptable, one note |
 | 18 | AeroDB D5: base built on the workstation by a headless browser (8755aad9c) | acceptable; one design point settled, four notes |
+| 19 | Data module « Construire » panel (8990b3ab7) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1067,7 +1068,19 @@ before, so the repository's history keeps exact positions at each synchronisatio
 - Follow-up: the claim route (V3 Frame) and the start by `http` address with the checks of `headless.js` (AeroDB) are to
   be reviewed when pushed.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 18 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
+**19. Data module, « Construire » (8990b3ab7) — acceptable, one note.** The page sends only
+`ctx.launcher.job('regen/job', { args: { zones, personal } })`: the ticked zones of the coverage and the ticked personal
+sources (none by default); no path, no address, no `parallel`. The declaration lists `regen/job` and `regen/job/cancel`
+only; « Arrêter » calls the latter; the resumption reads the job's view (no token in it). The launcher checks again
+(`base.check`). What comes from the job's view is escaped (zone ids, in attributes and names) or goes through closed
+sets (zone states and error codes through `zonePhrase`, `outcome().kind`, `refusal().key`, `journalResult`; numbers
+through `num()`); a zone's free message is never shown; the focus selectors use `CSS.escape`. Writes: only
+`cache/data/journal.json` (the last 50 operations) and `coverage.json`, policy `cache`; the journal read back is escaped.
+Note: `base.check` still admits `parallel: true`; the page does not send it, but any script of the page could (bounded by
+`can_start`: cores − 1 and free memory). Write it in DECISIONS as an internal mode reachable through the API, or refuse
+it at the launcher if it only serves the measurements.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 19 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
