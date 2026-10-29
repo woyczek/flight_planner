@@ -1503,7 +1503,7 @@ def k22(c):
             r = run(ctx, job=job)
             c.ok(r.get('ok') is True and r['icao'] == 'EGXX' and r['procedures'] == 1 and r['ocr'] is False and r['warnings'] == ['page 3 NON retenue'], str(r),
                  'success: ok, the aerodrome, one procedure installed, no OCR, the warnings of the reading')
-            c.ok(r['stats']['procedures'] == 1 and r['stats']['dropped'] == 0 and set(r['stats']) == {'pages', 'read', 'rejected', 'procedures', 'dropped', 'reasons'} and r['file']['icao'] == 'EGXX'
+            c.ok(r['stats']['procedures'] == 1 and r['stats']['dropped'] == 0 and set(r['stats']) == {'pages', 'read', 'rejected', 'procedures', 'dropped', 'doubt', 'reasons'} and r['file']['icao'] == 'EGXX'
                  and len(r['file']['procedures']) == 1, str(r)[:300], 'the result carries the same stats keys as the eAIP job and the installed file as written')
             inst = json.loads((data / 'proc' / 'manual' / 'EGXX.json').read_text())
             idx = json.loads((data / 'proc' / 'manual' / 'index.json').read_text())
@@ -1775,7 +1775,7 @@ def k23(c):
             c.ok(job.view()['step'] and job.view()['log'] and job.view()['total'] >= 1, str(job.view()['step']), 'the job reports its steps and keeps a log')
 
             # the report of the reading (counts, not a bare « 0 procedures ») and the installed file as written, for the page
-            c.eq(r['stats'], {'pages': 3, 'read': 3, 'rejected': 0, 'procedures': 14, 'dropped': 0, 'reasons': []}, 'stats: coding pages found / read / rejected, procedures, dropped, reasons', what='stats')
+            c.eq(r['stats'], {'pages': 3, 'read': 3, 'rejected': 0, 'procedures': 14, 'dropped': 0, 'doubt': 0, 'reasons': []}, 'stats: coding pages found / read / rejected, procedures, dropped, doubt, reasons', what='stats')
             c.eq(r['file'], json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text(encoding='utf-8')), 'the result carries the installed file, read back from the disk (the same JSON)', what='file')
             c.ok(any('14 procédure' in x and '3 page' in x for x in job.view()['log']), str(job.view()['log'])[-300:], 'the job log says the same counts')
             # a former reading of the same source under an identifier the reader no longer produces does not stay beside the new one
@@ -1800,8 +1800,13 @@ def k23(c):
             (base / 'points.json').write_text(json.dumps({'data': [{'id': 'ROYAN', 'lat': 10.0, 'lon': 10.0}, {'id': 'CNA', 'lat': 45.0, 'lon': 1.0}]}))
             (data / 'proc' / 'manual' / 'LFBD.json').unlink()
             r3 = run(ctx)
-            c.ok(r3['ok'] and r3['procedures'] < 14 and any('NON retenue' in w for w in r3['warnings']), str(r3)[:300],
-                 'a wrong position from the base of the workstation fails the geometry check: that procedure is not installed, the others are, a warning says which')
+            inst3 = json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text(encoding='utf-8'))['procedures']
+            bad3 = [p for p in inst3 if p['status'] == 'doubt']
+            c.ok(r3['ok'] and r3['procedures'] == 14 and bad3 and r3['stats']['doubt'] == len(bad3) and r3['stats']['dropped'] == 0
+                 and all(p['doubt'].startswith('géométrie incohérente') for p in bad3) and any('À VÉRIFIER' in w for w in r3['warnings']), str(r3)[:300],
+                 'a wrong position from the base of the workstation fails the geometry check: that procedure is KEPT with status doubt and its reason, counted in stats.doubt, a warning says which')
+            idx3 = json.loads((data / 'proc' / 'manual' / 'index.json').read_text(encoding='utf-8'))['aerodromes']['LFBD']
+            c.ok(idx3['SID'] + idx3['STAR'] + idx3['APP'] == 14 - len(bad3), str(idx3), 'the doubt records are not counted in the index of the aerodromes')
 
         # another source's file is never overwritten; git absent keeps ok with a warning
         with tempfile.TemporaryDirectory() as td:
@@ -2109,9 +2114,9 @@ def k24(c):
          'LFBO ILS 14L: IO14L, RW14L (the THR: no displaced threshold), BO512', what='LFBO ILS 14L')
     # 14. the report of a reading
     st = P.stats_of([{'ok': True, 'problems': []}, {'ok': False, 'problems': ['info: x', '3 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}, {'ok': False, 'problems': ['disposition non reconnue (x)']},
-                     {'ok': False, 'problems': ['2 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}], 12, ['géométrie incohérente'])
-    c.eq(st, {'pages': 4, 'read': 1, 'rejected': 3, 'procedures': 12, 'dropped': 1, 'reasons': [['lignes de tronçon illisibles (moins de 85 % lues)', 2], ['géométrie incohérente', 1], ['mise en page non reconnue', 1]]},
-         'pages found / read / rejected, procedures, dropped, the three most frequent reasons', what='stats_of')
+                     {'ok': False, 'problems': ['2 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}], 12, ['bloc sans titre qui répète une procédure nommée'], ['géométrie incohérente', 'sans nom'])
+    c.eq(st, {'pages': 4, 'read': 1, 'rejected': 3, 'procedures': 12, 'dropped': 1, 'doubt': 2, 'reasons': [['lignes de tronçon illisibles (moins de 85 % lues)', 2], ['bloc sans titre qui répète une procédure nommée', 1], ['géométrie incohérente', 1]]},
+         'pages found / read / rejected, procedures, dropped (really removed), doubt (kept, to check), the three most frequent reasons', what='stats_of')
     # 15. Orly STAR RWY20 (the user's page 11/24): five STARs, each with its IF; an arrow glyph leading a row (« → TF DIBES ») is no cell;
     # the HOLDING block is no procedure
     star = T('AD_2_LFPO_DATA_STAR_RWY20_RNAV_CODE_02')
@@ -2127,3 +2132,114 @@ def k24(c):
     d7 = P.build_aerodrome('LFPO', pages, lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-01', '2026-10-01')
     c.ok(not [p['id'] for p in d7['procedures'] if '.NONAME.' in p['id']] and any('bloc sans titre identique' in w for w in d7['warnings']),
          [p['id'] for p in d7['procedures'] if 'MONOT' in p['id'] or 'NONAME' in p['id']], 'the untitled repeat of MONOT 2G is removed and reported')
+
+
+@case('K25', 'eAIP real layouts of LFPG: point merge, guardrails', 'K', static=True,
+      rule='aerodb DECISIONS 29 Oct 2026 (Paris-CDG, cycle 2026-10-29): every page read, STAR titles with parentheses, point merge arcs kept out of the route, a doubtful reading is kept with status doubt and its reason, never installed as sure')
+def k25(c):
+    P, fx, rows = _eaip(c)
+    stem = lambda n: 'AD_2_LFPG_DATA_' + n
+    T = lambda n: P.parse_code_table(rows(stem(n)))
+    legs = lambda g: [(l['leg'], l['id']) for l in g['legs']]
+    ids = lambda g: [l['id'] for l in g['legs']]
+    names = sorted(f.name.replace('.rows.txt', '') for f in fx.glob('AD_2_LFPG_*.rows.txt') if 'CODE' in f.name)
+    c.eq(len(names), 10, 'ten trimmed LFPG pages as fixtures', what='fixtures')
+    # 1. every LFPG page: layout recognised, header known, enough leg rows read
+    bad = []
+    for n in names:
+        t = P.parse_code_table(rows(n))
+        ok, pb, fp, lay = P.verify_page(rows(n), t)
+        if not (ok and lay == 'sia-code' and not pb):
+            bad.append((n, ok, pb))
+    c.eq(bad, [], 'every LFPG page is read with a known header (the SID 08 / 09 pages with the « Nav Spec » column and the empty procedure column, the INA pages, the FNA pages)', what='verify_page')
+    # 2. the rejected SID page: runway headers « RWY09L - 087 088.4 », a « Nav Spec » column that the extractor moved, a first leg scrambled
+    sid = T('SID_RWY09L-09R_RNAV_CODE_01')
+    c.eq((sid['rows'], sid['read']), (20, 20), 'SID 09L-09R: every leg row read (it read 0 of 35 before)', what='SID 09 rows')
+    by = {(g['label'], g['runway']): g for g in sid['groups']}
+    c.eq(sorted(by), sorted((n, r) for n in ('OPALE 6G', 'ATREX 6G', 'NURMO 6G', 'OPALE 6K', 'ATREX 6K', 'NURMO 6K') for r in ('09L', '09R')), 'six departures x two runways', what='SID 09 groups')
+    c.eq((legs(by[('OPALE 6G', '09L')]), legs(by[('OPALE 6G', '09R')])), ([('CF', 'PG091'), ('TF', 'PG092'), ('DF', 'PG099'), ('TF', 'OPALE')], [('TF', 'PG092'), ('DF', 'PG099'), ('TF', 'OPALE')]),
+         '09L starts at its CF, 09R at the common route', what='OPALE 6G')
+    leg = by[('OPALE 6G', '09L')]['legs']
+    c.eq((leg[1]['crs'], leg[1]['nm'], leg[1]['over'], leg[2]['turn'], leg[3]['crs'], leg[3]['nm'], leg[3]['rnp']), (84, 2.1, True, 'L', 323, 50.0, 1.0), 'values, fly-over, turn; « RNAV 1 » read as 1 NM', what='OPALE 6G cells')
+    c.eq(ids(by[('NURMO 6G', '09L')]), ['PG091', 'PG092', 'NURMO'], 'the rows whose « RNAV 1 » was scattered by the extractor (CF - RNAV 1 PG091, DF NURMO … 1 RNAV) are read', what='NURMO 6G')
+    c.eq(P.norm_tokens('RNAV 1CF PG081 - - - - -'), ['CF', 'PG081', '-', '-', '-', '-', '-', 'RNAV', '1'], 'the Nav Spec word glued to the next terminator goes to the end of the row', what='norm_tokens')
+    c.eq(P.norm_tokens('- DF OSTIP - ---- - - - 1 RNAV')[-2:], ['RNAV', '1'], 'a Nav Spec split as « 1 RNAV » too', what='norm_tokens')
+    c.eq(P.norm_tokens('-T F FF501 - 061 062.4 8.5 - FL150 FL150 - 1.0')[:3], ['-', 'TF', 'FF501'], 'the empty procedure cell glued to the terminator (-T F)', what='norm_tokens')
+    # 3. STAR titles with parentheses (the cause of the glued STARs): every title cuts a group, no point is repeated, the arrows and conditions of use are not part of the name
+    star = T('STAR_RWY27L_RNAV_CODE_01')
+    c.eq([g['label'] for g in star['groups']], ['ENORI 9W', 'MATIX 9W', 'MOPIL 9W', 'VEDUS 9W', 'ENORI 9J', 'MATIX 9J', 'MOPIL 9J'], 'RWY27L STARs: each title « ENORI 9W (UIR FIR) », « VEDUS 9W (UIR FIR FL > 105) », « ENORI 9J (… Sur instruction / On instruction ) » is a group', what='titles')
+    c.eq(ids(star['groups'][3]), ['VEDUS', 'XERAM', 'ENORI', 'DEVIM', 'LORNI'], 'VEDUS 9W: its own five points, not glued to the next titles', what='VEDUS 9W')
+    s8 = T('STAR_RWY08L_RNAV_CODE_01')
+    c.eq([g['label'] for g in s8['groups']], ['ENORI 9E', 'MATIX 9E', 'MOPIL 9E', 'VEDUS 9E', 'MATIX 9H'], 'RWY08L: five STARs, VEDUS XERAM ENORI DEVIM LORNI once', what='08L titles')
+    c.ok(all(len(set(ids(g))) == len(ids(g)) and g['legs'][0]['leg'] == 'IF' and g['legs'][0]['id'] == g['label'].split()[0] for g in star['groups'] + s8['groups']), 'ids',
+         'each STAR starts at its IF, named after it, with no point repeated')
+    # 4. point merge: the sequencing arcs BIBA1-5 and LUKI1-5 are not route legs
+    pm = T('STAR_RWY27L_RNAV_CODE_05')
+    c.eq(pm['point_merge'], [{'name': 'BIBAX', 'merge': 'KOLIV', 'arc': ['BIBA1', 'BIBA2', 'BIBA3', 'BIBA4', 'BIBA5']}, {'name': 'LUKIP', 'merge': 'KOLIV', 'arc': ['LUKI1', 'LUKI2', 'LUKI3', 'LUKI4', 'LUKI5']}],
+         'the two arcs are recognised (the entry fix, the merge point and the ordered arc points)', what='point_merge')
+    v9 = {g['label']: g for g in pm['groups']}
+    c.eq(legs(v9['BIBAX 9V']), [('IF', 'BIBAX'), ('DF', 'KOLIV'), ('TF', 'MOPAR')], 'BIBAX 9V: entry fix, then the merge point (the TF whose course and distance start at BIBA5 becomes a DF), then MOPAR', what='BIBAX 9V')
+    c.eq((v9['BIBAX 9V']['legs'][1]['crs'], v9['BIBAX 9V']['legs'][1]['nm']), (None, None), 'no course and distance kept on the merge leg', what='DF KOLIV')
+    c.eq((ids(v9['BIBAX 9W']), v9['BIBAX 9W']['legs'][1]['leg'], v9['BIBAX 9W']['legs'][1]['nm']), (ids(v9['BIBAX 9V']), 'TF', 50.5), 'the direct variant (jets only) goes BIBAX KOLIV MOPAR by a real TF of 50.5 NM', what='BIBAX 9W')
+    c.ok(not [i for g in pm['groups'] for i in ids(g) if i and (i.startswith('BIBA') and i != 'BIBAX' or i.startswith('LUKI') and i != 'LUKIP')], 'ids', 'no arc point is left in any STAR')
+    c.ok(any('point merge' in w for w in pm['warnings']), str(pm['warnings'][:2]), 'the page says what it did with the arcs')
+    # 5. the aerodrome file: point_merge per aerodrome (the runways that use it), nothing nameless or repeated installed as sure, the doubt kept
+    files = [stem(n) + '.pdf' for n in ('STAR_RWY27L_RNAV_CODE_01', 'STAR_RWY27L_RNAV_CODE_05', 'STAR_RWY08L_RNAV_CODE_01', 'SID_RWY09L-09R_RNAV_CODE_01', 'SID_RWY26L-26R_RNAV_CODE_04', 'SID_RWY27L-27R_RNAV_CODE_02',
+                                        'RWY08L_INA_RNAV_CODE_01', 'RWY27R_FNA_RNP_CODE', 'RWY26L_FNA_ILS_CAT123_LOC_CODE', 'RWY26L_FNA_RNP_CODE')]
+    doc = P.build_aerodrome('LFPG', files, lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-29', '2026-10-29')
+    c.eq((len(doc['formats']), sum(f['ok'] for f in doc['formats'])), (10, 10), 'the ten pages are read (23 of the 85 real pages were rejected)', what='formats')
+    pms = {m['name']: m for m in doc['point_merge']}
+    c.eq((sorted(pms), pms['BIBAX']['merge'], pms['BIBAX']['arc'][0], pms['BIBAX']['runways'], pms['BIBAX']['source']), (['BIBAX', 'LUKIP'], 'KOLIV', 'BIBA1', ['27L'], {'file': stem('STAR_RWY27L_RNAV_CODE_05') + '.pdf'}),
+         'point_merge of the file: name, merge point, arc, the runways that use it, the page', what='doc.point_merge')
+    procs = {p['id']: p for p in doc['procedures']}
+    c.ok(not [i for i, p in procs.items() if '.NONAME.' in i and p['status'] != 'doubt'] and not [i for i, p in procs.items() if p['status'] != 'doubt' and P.repeated_points(p)], 'ids',
+         'no nameless record and no record that repeats a point is installed as sure')
+    c.eq(sorted(p['name'] for p in doc['procedures'] if p['kind'] == 'STAR' and p['runways'] == ['27L'] and 'BIBAX' in p['name']), ['BIBAX 9P', 'BIBAX 9V', 'BIBAX 9W', 'BIBAX 9X'], 'RWY27L BIBAX STARs, each named', what='27L names')
+    c.ok(procs['LFPG.SID.AGOPA7A.RW27L']['points'][4]['id'] == 'ADADA', str([q['id'] for q in procs['LFPG.SID.AGOPA7A.RW27L']['points']]), 'a point name split by the page (« ADAD A ») is put back (ADADA is in the DATA page)')
+    ol = procs['LFPG.SID.OLZOM7B.RW26L']
+    c.ok(ol['status'] == 'doubt' and ol['doubt'] == '1 ligne(s) de la table non lue(s)' and procs['LFPG.SID.DORDI7B.RW26L']['status'] == 'check', f"{ol['status']} {ol.get('doubt')}",
+         'OLZOM 7B: one ambiguous leg row (TF PG275, a cell short) is left out and the procedure is KEPT with status doubt and its reason; DORDI 7B, whole, stays check')
+    ina = [p for p in doc['procedures'] if p['kind'] == 'APP' and 'INA' in p['id']]
+    c.eq(([p['transition'] for p in ina], all(p['points'][0]['leg'] == 'IF' for p in ina)), (['LORNI 1E', 'LORNI 1X', 'OKIPA 1E', 'OKIPA 1X', 'OKIPA 1N', 'OKIPA 1R', 'BANOX 1E', 'MOPAR 1E'], True),
+         'INA 08L: the initial fixes whose cells the page scrambled (« --LORNIIF », « IF OKIPA - - 1,0- - - 300 - ») still open their transition: no group glued to the previous one', what='INA 08L')
+    c.eq(sum('contraintes' in w for w in doc['warnings']) >= 2, True, 'and the scrambled constraints are said not to be read', what='bare IF warnings')
+    r27 = next(p for p in doc['procedures'] if 'RNPRWY27R' in p['id'])
+    c.eq([(q['id'], q.get('crs'), q.get('nm')) for q in r27['points']][:4], [('PG650', None, None), ('FG27R', 264, 3.6), ('RW27R', 264, 14.3), (None, 264, None)],
+         'FNA RNP 27R: « PG65 0 », « 26 4 265. 7 » and the like put back (PG650, course 264)', what='FNA 27R')
+    c.eq(sorted(p['id'] for p in doc['procedures'] if p['kind'] == 'APP' and '26L' in p['id']), ['LFPG.APP.ILSCATIORCATIIANDCATIIIORLOCRWY26L.RW26L', 'LFPG.APP.RNPRWY26L.RW26L'], 'FNA 26L ILS and RNP read', what='FNA 26L')
+    c.eq(P.norm_tokens('IF IG26 L - --- - 400 0 - -- 1.0', split=True)[1:3], ['IG26L', '-'], 'an identifier split before its L (IG26 L)', what='unsplit')
+    # 6. the guardrails on records: a doubt, never a purge
+    mk = lambda i, pts, kind='STAR': {'id': i, 'kind': kind, 'name': None, 'runways': ['27L'], 'points': [{'id': a, 'lat': b, 'lon': d, 'leg': l} for a, b, d, l in pts]}
+    nameless = mk('LFPG.STAR.NONAME.RW27L', [('A', 49.0, 1.0, 'IF'), ('B', 49.0, 0.5, 'TF'), ('C', 49.0, 0.0, 'TF')])
+    c.eq(P.doubts_of(nameless), ['sans nom'], 'a nameless record', what='sans nom')
+    rep = mk('LFPG.STAR.X1A.RW27L', [('BIBAX', 49.0, 1.0, 'IF'), ('KOLIV', 49.0, 0.5, 'TF'), ('MOPAR', 49.0, 0.0, 'TF'), ('KOLIV', 49.0, 0.5, 'TF')])
+    c.eq(P.doubts_of(rep)[0], 'point répété hors attente: KOLIV', 'a point seen twice outside a holding', what='repeated')
+    hold = mk('LFPG.STAR.X2A.RW27L', [('A', 49.0, 1.0, 'IF'), ('B', 49.0, 0.5, 'TF'), ('B', 49.0, 0.5, 'FM'), ('C', 49.0, 0.0, 'TF'), ('B', 49.0, 0.5, 'HM')])
+    c.eq(P.doubts_of(hold), [], 'a manual-termination leg on the same fix and a holding are not repeats', what='holding')
+    zig = mk('LFPG.STAR.X3A.RW27L', [('A', 49.0, 0.0, 'IF'), ('B', 49.0, 1.0, 'TF'), ('C', 49.0, 0.0, 'TF'), ('D', 49.0, 1.0, 'TF'), ('E', 49.0, 0.2, 'TF')])
+    z = P.zigzag_ratio(zig)
+    c.ok(z and z > 3 and P.doubts_of(zig) == [f'zigzag: {z:.1f} × le trajet direct'.replace('.', ',')], f'{z} {P.doubts_of(zig)}', 'a zigzag: the path is more than three times the direct distance')
+    straight = mk('LFPG.STAR.X4A.RW27L', [('A', 49.0, 1.0, 'IF'), ('B', 49.0, 0.5, 'TF'), ('C', 49.0, 0.0, 'TF')])
+    c.eq((P.zigzag_ratio(straight) < 1.01, P.doubts_of(straight), P.zigzag_ratio(mk('x', [('A', 49.0, 1.0, 'IF'), ('B', None, None, 'TF'), ('C', 49.0, 0.0, 'TF')]))), (True, [], None),
+         'a straight route is fine; fewer than three positioned points: not measured', what='zigzag')
+    # the same through the whole chain: a page whose first block has lost its title, and a page that repeats a point; both kept as doubt, counted
+    r08 = rows(stem('STAR_RWY08L_RNAV_CODE_01'))
+    notitle = [x for x in r08 if not x.startswith('ENORI 9E')]
+    dup = list(r08)
+    k = max(i for i, x in enumerate(dup) if x.startswith('- TF LORNI') and i < 40)
+    dup.insert(k + 1, '- TF XERAM - 269 270.5 27.9 -- -- 1.0')
+    d2 = P.build_aerodrome('LFPG', [stem('STAR_RWY08L_RNAV_CODE_01') + '.pdf'], lambda n: notitle, 'https://example.org/AIRAC-2026-10-29', '2026-10-29')
+    nn = [p for p in d2['procedures'] if '.NONAME.' in p['id']]
+    c.ok(len(nn) == 1 and nn[0]['status'] == 'doubt' and nn[0]['doubt'] == 'sans nom' and any('À VÉRIFIER' in w and 'NONAME' in w for w in d2['warnings']), str([(p['id'], p['status']) for p in nn]),
+         'a nameless record is KEPT, status doubt, reason « sans nom », and said in the warnings (not installed as sure, not purged)')
+    d3 = P.build_aerodrome('LFPG', [stem('STAR_RWY08L_RNAV_CODE_01') + '.pdf'], lambda n: dup, 'https://example.org/AIRAC-2026-10-29', '2026-10-29')
+    rp = [p for p in d3['procedures'] if p['status'] == 'doubt']
+    c.ok(len(rp) == 1 and rp[0]['name'] == 'MOPIL 9E' and rp[0]['doubt'] == 'point répété hors attente: XERAM' and len(d3['procedures']) == 5, str([(p['id'], p.get('doubt')) for p in rp]),
+         'a repeated point: the procedure is kept with status doubt and the point named')
+    st = P.stats_of(d3['formats'], len(d3['procedures']), [x['reason'] for x in d3.get('dropped', [])], [P.doubt_key(p['doubt']) for p in rp])
+    c.eq((st['dropped'], st['doubt'], st['reasons']), (0, 1, [['point répété hors attente', 1]]), 'stats: nothing removed, one in doubt; the reason is counted', what='stats')
+    d7 = P.build_aerodrome('LFPO', ['AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_04.pdf', 'AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_05.pdf'], lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-01', '2026-10-01')
+    c.ok(len(d7['dropped']) == 1 and d7['dropped'][0]['reason'] == 'bloc sans titre qui répète une procédure nommée' and not [p for p in d7['procedures'] if '.NONAME.' in p['id']], str(d7.get('dropped')),
+         'the untitled repeat of a named procedure is REALLY removed and counted as dropped (the only removal)')
+    geo = {'id': 'LFPG.SID.G1A.RW27L', 'kind': 'SID', 'status': 'check', 'points': [{'id': 'A', 'lat': 49.0, 'lon': 1.0, 'leg': 'IF'}, {'id': 'B', 'lat': 49.0, 'lon': 0.0, 'leg': 'TF', 'crs': 90, 'nm': 5.0}]}
+    c.ok(P.mark_geometry(geo) and geo['status'] == 'doubt' and geo['doubt'].startswith('géométrie incohérente: A → B'), str(geo), 'the geometry check marks a procedure whose printed course and distance contradict the positions: doubt, not removed')

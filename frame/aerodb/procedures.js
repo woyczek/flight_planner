@@ -5,12 +5,14 @@
   'use strict';
   if (window.AeroDBProcedures) return;
   /** Précédence des statuts : officiel > à vérifier > vu dans un OFP (source secondaire, jamais prioritaire) > repli X-Plane
-   *  (proc/local/, le poste seulement). */
+   *  (proc/local/, le poste seulement) > lecture douteuse (`doubt` : sans nom, point répété, zigzag, ligne non lue… ; la raison est
+   *  dans `doubt`) : jamais devant une autre lecture, et servie seulement sur demande (`{ doubt: true }`). */
   const RANK = {
       official: 0,
       check: 1,
       ofp: 2,
-      xplane: 3
+      xplane: 3,
+      doubt: 4
     },
     KINDS = ['SID', 'STAR', 'APP'],
     // SimBrief écrit {} (objet vide) pour un champ absent : seule une chaîne ou un nombre compte
@@ -141,12 +143,14 @@
     };
   }
 
-  /** Filtre d'une liste par { kind, runway, name, transition }. */
+  /** Filtre d'une liste par { kind, runway, name, transition, doubt }. Une procédure de statut `doubt` (lecture douteuse) n'est rendue
+   *  que si `q.doubt === true` ; fusionnée avec une autre lecture de la même procédure, c'est l'autre qui la représente (merge). */
   function filter(list, q = {}) {
     const rw = runwayOf(q.runway),
       nm = norm(q.name),
       tr = norm(q.transition);
-    return list.filter(p => (!q.kind || p.kind === String(q.kind).toUpperCase()) && (!rw || !(p.runways || []).length || p.runways
+    return list.filter(p => (q.doubt === true || p.status !== 'doubt') && (!q.kind || p.kind === String(q.kind).toUpperCase()) && (!rw ||
+        !(p.runways || []).length || p.runways
         .includes(rw)) &&
       (!nm || norm(p.name) === nm) && (!tr || norm(p.transition) === tr));
   }

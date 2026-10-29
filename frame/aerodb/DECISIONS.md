@@ -1508,3 +1508,47 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   duplicates merged into their named procedure). The constraints are read where the table prints them (FL260 and 280 kt at SOMED for
   NIMER 9W, at the IF for AMB 9W).
 - **Bench**: K24 (the real page STAR RWY20 _02, the arrow, the untitled repeat of SID RWY07 _04 / _05).
+
+## 29 October 2026 (night) — Paris-CDG (LFPG, cycle 2026-10-29): the SIA's third family of layouts, point merge, and doubt instead of a bad install
+
+- **Reported** (the user, LFPG installed from the eAIP): `LFPG.STAR.NONAME.RW27L` with 30 points (several STARs glued, the sequencing arcs BIBA1-5 / LUKI1-5 read as a
+  route, drawn as a zigzag); the STARs of 08L / 08R / 09L / 09R repeating VEDUS XERAM ENORI DEVIM LORNI three times, those of 26L / 26R / 27R reduced to VEDUS XERAM VEBEK;
+  `LFPG.SID.NONAME.RWALL`; 23 of 85 coding pages `ok: false` (« en-tête inconnu », fingerprints 2a61bb49b1, 98fd783174, 1f4d62dd72, f1aa6bb8c7, a43004fbdd, b3f1a81baf).
+  Offline with the 90 cached PDF of the cycle: 62 pages read, 23 rejected, 296 procedures (84 SID, 200 STAR, 12 APP), **9 nameless**.
+- **Causes, by layout** (each page of LFPG; the same extractor, a different print):
+  1. **STAR pages (the glue)** — titles are `ENORI 9W (UIR FIR)`, `VEDUS 9W (UIR FIR FL > 105)`, `ENORI 9J (UIR FIR Sur instruction / On instruction )`, `BIBAX 9V (Utilisable uniquement sur instruction … )`. The reader knew
+     only `(FIR)`, `(UIR)`, `(FIR UIR)` after the name: any other parenthesis was not a title, so the next block's legs were appended to the previous one (a title never cut, hence « several STARs in one
+     procedure », and the nameless record when a block began a page). The title is now the name and designator, whatever follows between parentheses (airspace of the entry point, conditions of use); the arrow
+     glyph that leads some titles (`→ KOVAK 9X (…)`) is ignored as for the rows.
+  2. **SID 08 / 09 and POGO 26** (fingerprint 2a61bb49b1, 0 to 8 rows of 40 read) — the table has a **« Nav Spec » last column** (`RNAV 1`, two words) instead of the accuracy in NM, a first column « Procedure Identification » that
+     prints a dash on every leg row, runway headers with that dash (`RWY09L - 087 088.4`, which the header pattern did not accept, so the per-runway starts were never recognised, on 26 / 27 too), and the extractor
+     **moves the « RNAV 1 » text** when the cell wraps over two lines (`RNAV 1CF PG081 …`, `CF - RNAV 1 PG091 - - - -`, `… 1 RNAV`, `1RNAV`). The word is taken out where it stands and put back at the end of the row (the other cells
+     keep their order); the dash before the point of a scrambled first leg is dropped; `RNAV 1` is read as an accuracy of 1 NM. A row that lost up to four empty cells is rebuilt if ONE layout fits (it was three).
+  3. **INA pages** (1f4d62dd72, 98fd783174, 71818f794d) — a title followed by the aerodrome name (`INA RNAV RWY 27L PARIS CHARLES DE GAULLE`) was not a title (« titre de la page non reconnu »); and the **initial-fix rows**
+     come out scrambled (`--LORNIIF -- - -300 1,0`, `IF OKIPA - - 1,0- - - 300 -`, `---- 3 0 0 1,0IF LORNI - -`): not readable as cells, so the group they open was glued to the previous one. The point (the word IF and the
+     identifier) is certain, the altitudes and speed are not: the leg is kept as `IF <point>` without constraints, said in a warning, and the next group starts there.
+  4. **FNA pages 26L / 26R / 27R** (a43004fbdd, f1aa6bb8c7, b3f1a81baf) — identifiers and numbers **spaced** by the extractor: `IG26 L`, `PG65 0`, `26 4 265. 7`, `400 0`. On approach pages only: an identifier (two letters and two digits, or `RWnn`)
+     followed by a lone `L` / `R` / `C` / digit and then the fly-over cell is one word; two digits then a digit (a magnetic course is three digits), `265.` then a digit, three digits then `0` (an altitude of four digits) are joined.
+  5. **Small things on pages that were « ok »**: `-T F FF501` (the empty cell glued to the terminator) lost its leg silently, **in LFPO too** (ten Orly SIDs ELCOB 2x were missing their last leg); `ADAD A`, `EDOX A` for ADADA, EDOXA (a four-letter
+     identifier, a lone letter, then the fly-over cell: joined, and both are in the DATA pages).
+- **Point merge** (what the tables give and what is kept). The tables print **nothing** about the system: no title, no column, no remark; only the points' names. LFPG's STAR `BIBAX 9V` is `IF BIBAX`, `TF BIBA1 … BIBA5` (the last with a turn
+  direction), `TF KOLIV` (course 092, 40 NM: from BIBA5), `TF MOPAR`; `BIBAX 9W` is the direct `IF BIBAX`, `TF KOLIV` (153°, 50.5 NM), `TF MOPAR`. Rule (strict, `_arc_of`): after the IF, at least three consecutive TF whose ids are the first
+  letters of the entry fix and 1, 2, 3 …, followed by a leg to a point. Those legs leave the procedure and go to the aerodrome file: `point_merge: [{ name: 'BIBAX' (the entry fix; no system name is printed), merge: 'KOLIV', arc: ['BIBA1' … 'BIBA5'],
+  runways: [the runways of the pages that print it], source: { file } }]`. The leg to the merge point, whose printed course and distance start at BIBA5, becomes a **`DF`** without `crs` / `nm` (a TF would be compared to the straight line
+  BIBAX → KOLIV and fail): the STAR ends at its entry fix, then the merge point. LFPG: two systems (BIBAX and LUKIP) on one merge point (KOLIV), on the eight runways. Not stored: the arc's turn direction, the speeds on the arc.
+- **Guards, and what the user's rule changed** (V3 § 10.26: a doubtful reading is kept and marked, never purged). After the records are built, `build_aerodrome` gives **`status: 'doubt'` and `doubt: <reason>`** to: a nameless record (after the removal of
+  the untitled repeats, which stays the only real removal); one that passes twice through a point **outside a holding** (consecutive legs on a fix, `HA` / `HF` / `HM` / `PI` and the missed approach against the approach do not count); a **zigzag** (path longer than 3 × the
+  distance from the first to the last named point, both positioned, three positioned points at least, the missed approach not counted: measured on the real procedures, 1 to 2.5); a record from which a **leg row was left out** (the page rows that stay
+  ambiguous, e.g. `TF PG275 - 190 190.7 4.2 - 220 1.0`, one cell short with 220 which fits several columns; before, such a row was only counted and the record installed incomplete as if sure). The geometry check (`gaps_of`) — the launcher's
+  job runs it after the en-route points are placed — marks the same way (`mark_geometry`) instead of dropping. Not done: « a leg longer than the page's footprint » (the page extent is not read; nothing cheap measures it).
+  `stats` gets `doubt`; `dropped` is now only the really removed; `reasons` counts both. The index (`proc/manual/index.json`) does not count the `doubt` records; `proc_manual` ranks them last and refreshes them with the source.
+- **Reader** (`procedures.js`, `aerodb.js`): `RANK.doubt = 4` (after `xplane`); `procedures(icao, q)` and `procedure(id, q)` leave out `doubt` records unless `q.doubt === true`; merged with another reading of the same procedure, the other one represents it.
+  Bench K1 (three checks).
+- **Result, offline** (the 90 PDF of 2026-10-29; the SIA base is not on this workstation, so the en-route fixes are unpositioned and the geometry and zigzag guards see only what the DATA pages place): **LFPG 85 / 85 pages read** (62 before),
+  **711 procedures** (308 SID, 316 STAR, 87 APP: 71 INA, 8 ILS, 8 RNP) against 296, **0 nameless**, 0 removed, **2 in doubt** (OLZOM 7B 26L and 26R: the row above). STARs per runway: 38 on 08L / 08R / 09L / 09R, 41 on 26L / 26R / 27L / 27R, each starting at its IF
+  and named after it; RWY27L has BIBAX 9P / 9V / 9W / 9X and LUKIP 9P / 9V / 9W / 9X. The SIDs of 26 and 27 are now per runway (`RW26L`, `RW26R`, … instead of `RWALL`: the runway headers are recognised). **LFPO**: the same 309 identifiers
+  (180 SID, 96 STAR, 33 APP), ten SIDs complete (ELCOB 2x), one STAR (`CAD 9E` RW07) now `doubt`: its `TF SOTIP` row was unreadable and the record had only ODILO. **LFBO**: the same 78, no change.
+- **Stays unread or approximate, and why**: the constraints of the scrambled initial fixes (`IF` rows of the INA pages: altitude and speed absent, said); the INA transitions that the page labels in an order the reader cannot match to the groups (as before:
+  `skip`); the `NIGHT` / `(R)` / `(H)` altitude variants of the INA pages (printed as separate lines of altitudes with `(1)` notes; the reader takes the cells it can place and ignores the notes); `TF PG275 …` and its like. The `point_merge` arc is a
+  memory of the system, not a drawing: the points BIBA1 … BIBA5 are positioned by the DATA page, the module may draw the arc from them.
+- **Bench**: K25 (ten trimmed LFPG pages as fixtures: SID 09L-09R, SID 26 with the ambiguous row, SID 27 with ADAD A, STAR 27L ×2 with the point merge, STAR 08L, INA 08L, FNA 26L ILS / RNP, FNA 27R RNP; synthetic records for the guards); K1, K22, K23, K24 adjusted for `doubt`.

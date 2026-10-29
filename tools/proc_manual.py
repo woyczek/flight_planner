@@ -29,8 +29,8 @@ def verify(doc):
     if len(ids) != len(set(ids)):
         problems.append('identifiants de procédure en double')
     for p in doc.get('procedures', []):
-        if p.get('status') != 'check' or p.get('kind') not in ('SID', 'STAR', 'APP') or not p.get('points'):
-            problems.append(f'{p.get("id")}: statut « check », type SID / STAR / APP et des points requis')
+        if p.get('status') not in ('check', 'doubt') or p.get('kind') not in ('SID', 'STAR', 'APP') or not p.get('points'):
+            problems.append(f'{p.get("id")}: statut « check » (ou « doubt »), type SID / STAR / APP et des points requis')
             continue
         legs = [{'id': q['id'], 'leg': q.get('leg'), 'lat': q.get('lat'), 'lon': q.get('lon'), 'true': q.get('trk'), 'nm': q.get('nm')} for q in p['points']]
         bad = check_geometry(legs)
@@ -52,7 +52,7 @@ def empty_refusal(doc, path, out):
     return '\n'.join(lines)
 
 
-RANK = {'official': 0, 'check': 1, 'ofp': 2}      # meilleur statut d'abord
+RANK = {'official': 0, 'check': 1, 'ofp': 2, 'doubt': 4}      # meilleur statut d'abord ; « doubt » (lecture douteuse, SPEC § 5 quinquies) le dernier, jamais devant une autre lecture
 
 
 def foreign(doc, old):
@@ -85,7 +85,7 @@ def install(doc, out, replace=False, replace_source=None):
         p['source'] = {**(p.get('source') or {}), 'cycle': (p.get('source') or {}).get('cycle') or doc['cycle']}
     old = json.loads(path.read_text(encoding='utf-8')) if path.exists() else None
     if old and replace_source:
-        old = {**old, 'procedures': [p for p in old.get('procedures', []) if not (p.get('status') == 'check' and (p.get('source') or {}).get('kind') == replace_source)]}
+        old = {**old, 'procedures': [p for p in old.get('procedures', []) if not (p.get('status') in ('check', 'doubt') and (p.get('source') or {}).get('kind') == replace_source)]}
     other = foreign(doc, old)
     if other and not replace:
         raise SystemExit(f'{doc["icao"]}: le fichier du terrain (proc/manual) porte déjà {len(other)} procédure(s) d\'une autre source ou officielles '
@@ -101,9 +101,9 @@ def install(doc, out, replace=False, replace_source=None):
     idx = json.loads(idx_path.read_text(encoding='utf-8')) if idx_path.exists() else {'schema': 1, 'folder': 'manual', 'aerodromes': {}}
     n = {'SID': 0, 'STAR': 0, 'APP': 0}
     for p in full['procedures']:
-        if p.get('kind') in n:
+        if p.get('kind') in n and p.get('status') != 'doubt':       # les lectures douteuses ne comptent pas : le lecteur ne les sert que sur demande
             n[p['kind']] += 1
-    best = min((p.get('status') for p in full['procedures']), key=lambda s: RANK.get(s, 9), default='check')
+    best = min((p.get('status') for p in full['procedures'] if p.get('status') != 'doubt'), key=lambda s: RANK.get(s, 9), default='check')
     cycles = sorted({(p.get('source') or {}).get('cycle') for p in full['procedures']} - {None})
     idx['aerodromes'][doc['icao']] = {**n, 'status': best, 'cycle': cycles[-1] if cycles else doc['cycle']}
     idx_path.write_text(json.dumps(idx, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')

@@ -1068,7 +1068,9 @@
       },
       /** Procédures (SID, STAR, approches) d'un terrain, au schéma commun (SPEC § 5 quinquies) : le fichier publié du cycle
        *  (proc/<cycle>/<OACI>.json) et ce qui a été vu dans les OFP de l'utilisateur (proc-seen/<OACI>.json, source
-       *  secondaire), fusionnés ; q : { kind, runway, name, transition }. [] sans donnée. */
+       *  secondaire), fusionnés ; q : { kind, runway, name, transition, doubt }. [] sans donnée. Les lectures de statut `doubt` (sans nom,
+       *  point répété hors attente, zigzag, ligne de table non lue, géométrie incohérente ; la raison est dans `doubt`) ne sont rendues que
+       *  si q.doubt === true (les modules les demandent pour les montrer « à vérifier ») ; elles ne passent jamais devant une autre lecture. */
       async procedures(icao, q = {}) {
         const k = String(icao || '').toUpperCase();
         if (!/^[A-Z0-9]{3,4}$/.test(k)) return [];
@@ -1079,16 +1081,20 @@
       },
       /** Une procédure par son identifiant (OACI.TYPE.NOM.PISTE[.TRANSITION]) : la fiche fusionnée qui le porte, sinon la fiche
        *  de la source qui le porte (publiée, proc/manual/ ou proc-seen/ : une procédure d'OFP, statut ofp, se retrouve ainsi) ;
-       *  null sinon. Carburant y retrouve le choix gardé dans route.procedures (§ 10.20). */
-      async procedure(id) {
+       *  null sinon. Carburant y retrouve le choix gardé dans route.procedures (§ 10.20). Une lecture de statut `doubt` n'est rendue que
+       *  si q.doubt === true. */
+      async procedure(id, q = {}) {
         const s = String(id || '').trim().toUpperCase(),
           k = s.split('.')[0];
         if (!/^[A-Z0-9]{3,4}$/.test(k)) return null;
-        const merged = (await api.procedures(k)).find(p => p.id === s);
+        const merged = (await api.procedures(k, {
+          doubt: q.doubt === true
+        })).find(p => p.id === s);
         if (merged) return merged;
         const P = await procLib(),
           lists = await procLists(k),
-          raw = [...lists.pub, ...lists.manual, ...lists.seen, ...lists.local].find(p => p && p.id === s);
+          raw = [...lists.pub, ...lists.manual, ...lists.seen, ...lists.local].find(p => p && p.id === s && (q.doubt === true || p
+            .status !== 'doubt'));
         return raw ? placeProc(k, P.withPhases({
           ...raw,
           sources: [{

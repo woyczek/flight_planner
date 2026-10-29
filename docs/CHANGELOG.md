@@ -35,6 +35,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   orange, the approach and its missed approach sky blue (day and night shades), their constraints and point names in the same
   hue; the chosen procedures are now painted at the route's level, before the boxes of the airways their legs follow, which
   were hidden under an approach's trace.
+- **aerodb: Paris-CDG (LFPG) read whole, point merge kept apart, a doubtful reading kept with status `doubt`** (`tools/proc_eaip.py`, `tools/proc_manual.py`, `tools/regen_jobs.py`, `frame/aerodb/procedures.js`,
+  `aerodb.js`; SPEC, INTEGRATION, DECISIONS; tests K25, K1, K22-K24) — the SIA's cycle 2026-10-29 prints three more layouts: STAR titles with a parenthesis
+  of conditions (the cause of the glued STARs and the nameless one), SIDs with a « Nav Spec » column and scrambled cells, INA / FNA pages with spaced words. Offline: 85 of 85 pages read (62 before), 711 procedures (296),
+  0 nameless; the sequencing arcs BIBA1-5 / LUKI1-5 leave the routes and go to `point_merge` of the aerodrome file. A nameless record, a point repeated outside a holding, a zigzag, a record with an unreadable leg row or a failed
+  geometry check is kept with `status: 'doubt'` and a `doubt` reason (counted in `stats.doubt`), served only to `procedures(icao, { doubt: true })`; Orly's ELCOB SIDs gain their last leg, one Orly STAR is now flagged.
 
 - **Fuel: the Departure and Arrival procedure rows are in step 2 Route, not in step 1 Flight** (`modules/fuel/module.js`, SPEC,
   INTEGRATION, DECISIONS; help ×4; cases F11-F26) — user: « star et sid sont “route”, pas “vol” »; a card at the end of the Route step before

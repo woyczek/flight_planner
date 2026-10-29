@@ -323,7 +323,8 @@ def _summary(stats):
     """Ligne de journal d'un compte rendu `stats` : « 18 procédure(s) sur 22 page(s) de codage ; 4 non lue(s) ; 2 procédure(s) écartée(s) (motifs : …) »."""
     why = '; '.join(f'{t} ×{n}' for t, n in stats.get('reasons', []))
     return (f'{stats.get("procedures", 0)} procédure(s) installée(s) ; {stats.get("read", 0)} page(s) lue(s) sur {stats.get("pages", 0)}, {stats.get("rejected", 0)} non lue(s)'
-            f'{"; " + str(stats["dropped"]) + " procédure(s) écartée(s) par le contrôle de géométrie" if stats.get("dropped") else ""}{" (motifs : " + why + ")" if why else ""}')
+            f'{"; " + str(stats["doubt"]) + " à vérifier (statut doubt, gardées dans le fichier)" if stats.get("doubt") else ""}'
+            f'{"; " + str(stats["dropped"]) + " retirée(s)" if stats.get("dropped") else ""}{" (motifs : " + why + ")" if why else ""}')
 
 
 def _ead_fetch(job, args, ctx):
@@ -469,19 +470,16 @@ def _eaip_fetch(job, args, ctx):
         if job.cancelled():
             raise _Cancelled()
         warnings = list(doc.get('warnings', []))
-        kept, dropped = [], []
-        for p in doc.get('procedures', []):             # géométrie : proc_eaip.gaps_of (cap magnétique et distance imprimés)
-            gaps = proc_eaip.gaps_of(p)
-            if gaps:
-                warnings.append(f'{p.get("id")}: NON retenue, géométrie incohérente: ' + '; '.join(gaps[:2]))
-                dropped.append('géométrie incohérente')
-            else:
-                kept.append(p)
-        stats = proc_eaip.stats_of(doc.get('formats', []), len({p.get('id') for p in kept}), dropped)
+        kept = doc.get('procedures', [])
+        for p in kept:                                  # géométrie : proc_eaip.mark_geometry (cap magnétique et distance imprimés) ; une procédure qui échoue reste dans le fichier, statut « doubt »
+            if proc_eaip.mark_geometry(p):
+                warnings.append(f'{p.get("id")}: À VÉRIFIER, {p["doubt"]}')
+        dropped = [d.get('reason') or 'autre' for d in doc.pop('dropped', [])]       # vraiment retirées (build_aerodrome) : un bloc sans titre qui répète une procédure nommée
+        doubt = [proc_eaip.doubt_key(p.get('doubt')) for p in kept if p.get('status') == 'doubt']
+        stats = proc_eaip.stats_of(doc.get('formats', []), len({p.get('id') for p in kept}), dropped, doubt)
         job.log(clean(_summary(stats)))
         if not kept:
-            return {**failed('no procedure could be read for this aerodrome' + (' (geometry check failed)' if doc.get('procedures') else ''), warnings), 'stats': stats}
-        doc['procedures'] = kept
+            return {**failed('no procedure could be read for this aerodrome', warnings), 'stats': stats}
         doc['warnings'] = warnings
         try:      # une relecture REMPLACE la lecture précédente de la même source (eaip) : ses identifiants d'avant (autre nom, autre règle de lecture) ne restent pas
             proc_manual.install(doc, os.path.join(data, 'proc'), replace=False, replace_source='eaip')

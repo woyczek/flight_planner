@@ -1,0 +1,30 @@
+AD 2 LFPG DATA SID RWY26L-26R RNAV CODE 04AIP
+01 OCT 2026FRANCE
+PARIS CHARLES DE GAULLE
+Réacteurs (R) et hélices (H) / Turbofans (R) and turboprops (H)
+SID RNAV RWY 26L - 26R
+(Protégés pour / Protected for CAT A, B, C, D)
+AMDT 10/26© Service de l'Information Aéronautique, France
+SID RNAV RWY 26L - 26R
+RMK MAG VAR 2020 1.1°E Ref NAVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+DORDI 7B
+RWY26L - 267 268.4
+CF PG263 - - - - - 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG268 - 264 265.2 13.8 - - - - 1.0
+- TF PG275 - 190 190.7 4.2 - - - 220 1.0
+- TF OXCEL - 120 121.2 19.1 - - - - 1.0
+- TF DORDI - 151 152.2 34.6 - - - - 1.0
+OLZOM 7B
+RWY26L - 267 268.4
+CF PG263 - - - -- 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG268 - 264 265.2 13.8 - - - - 1.0
+- TF PG275 - 190 190.7 4.2 - 220 1.0
+- TF OXCEL - 120 121.2 19.1 - - - - 1.0
+- TF OLZOM - 187 188.3 34.9 - - - - 1.0
+- TF ELCOB - 279 279.7 26.9 - - - - 1.0
