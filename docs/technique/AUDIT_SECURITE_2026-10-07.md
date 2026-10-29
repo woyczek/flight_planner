@@ -873,6 +873,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 31 | Fuel: « Source » link (c540c3efd), past-date warning (9d9d2f686) | acceptable |
 | 32 | Frame: GitLab fix (02a096440), Maintenance level and `_run` state (9d64081c9); Map « Source » link and track (f7bad9970) | acceptable; **the blocking point of 27 is lifted**; one note |
 | 33 | Fuel: aerodrome names and completion (842ac149b) | acceptable |
+| 34 | Frame G2: « Pilots' tokens » (241eec6c0) | acceptable, one point to fix, two notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1269,7 +1270,28 @@ Only places of kind `aerodrome` whose code passes `CODE` are kept, without dupli
 dropped. Choosing writes only the code into the field, then raises `input`: the same path as typing (the flight written by
 `module.js`, bounded to `FUEL_FIELDS`); the name is never written.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30 and 32 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32; the blocking point of 27 lifted in 32); the sharing of the track and of the position is the user's decision.
+**34. Frame G2, « Pilots' tokens » (241eec6c0) — acceptable, one point to fix, two notes.**
+- *To fix — the administrator's token follows redirects.* `gitlab_call` puts `PRIVATE-TOKEN` in the headers of a
+  `urllib.request.Request`; `HTTPRedirectHandler.redirect_request` copies those headers (except content headers) into the
+  redirected request, to any host, plain http included. A 30x from the instance, or from whatever stands before it, would
+  send the project **owner's** token elsewhere. Use `req.add_unredirected_header('PRIVATE-TOKEN', tok)` (never copied on a
+  redirect) or an opener without redirects; it is the launcher's counterpart of the transport's `redirect: 'error'`.
+- Checked: `GET /__setup/gitlab/tokens` behind `_allowed()` and `_lan()`, the two POST routes behind `do_POST`'s
+  `_allowed()` and `_lan()`, all `poste`; `secrets/gitlab.json` requires an https instance, a project and a token; the
+  token is never returned (the list gives id, name, scopes, level, states and dates), messages go through `clean_text`
+  then the token is replaced by « … »; no request logging, `Cache-Control: no-store`, `SECRET_BLIND`. Creation: trigram
+  `^[A-Z0-9]{2,5}$`, 1 to 365 days, access level 30 (Developer), named after the trigram, the value returned once and
+  never written by the launcher. Revocation: an integer id of the configured project only. The page escapes everything,
+  stores nothing (no `data.put`, no `localStorage`), copies on a gesture, and shows a message only without a launcher or
+  on a paired device. The screen declares its two launcher routes (`launcher.routes`), served by the modules' client,
+  `null` away from the workstation. `transport_github.js` now refuses a host with `@` or any character outside
+  `[A-Za-z0-9.-]` (and `:port`): the note of 32 is settled.
+- Notes: the `api` scope is broad (with Developer, a pilot's token may also start pipelines, create branches, issues,
+  merge requests): disable CI/CD and unused features on the data project, so that a stolen pilot token cannot run code
+  on a runner; `revoke` accepts any token id of the project (bind it to names matching the trigram rule), and the new
+  token's value stays in the page until the next drawing (clear it when the screen is left).
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30 and 34 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34; the blocking point of 27 lifted in 32); the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
