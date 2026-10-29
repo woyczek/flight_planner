@@ -1623,3 +1623,10 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
   line (what was sent, what came back).
 - **Bench**: K26 (three synthetic pages: layout, both blocks of the SID page, the reversed STAR page, the RNP page, the chain, five rejections, the orphan rows, the geometry), K19 (a confirmed and an unconfirmed split name), K22 (progress numbers, stats and message on
   a failure, summary in the log), K12 (steps of `fetch_ad`). `python tests/v3/run.py --grep K`: 25 cases, all green.
+
+## 29 October 2026 — parser version 18: the zones built with X-Plane's airspaces show as outdated
+
+- **Seen** (the Réglages session, after ef49b73c3): nothing told the user which zones to rebuild — `shared/sia_base.js` `VERSION` had not moved,
+  so the published files kept their `parserVersion` and the V2 maintenance page marked nothing.
+- **Done**: `VERSION` 17 → 18 (the builder's result changed: X-Plane's OpenAir limits in feet); `COMPAT` stays 14 (the format is unchanged: a
+  base 14 to 17 is read, marked `outdated`). The Données module will show « Parseur ancien » from `publication().parserVersion` later.

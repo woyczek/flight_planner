@@ -27,9 +27,9 @@
     FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
   const COMPAT =
-    14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp ; 17 ne change pas le format : une base 14 à 16 se lit, signalée « outdated »)
+    14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp ; 17 et 18 ne changent pas le format : une base 14 à 17 se lit, signalée « outdated »)
   const VERSION =
-    17; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge)
+    18; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge) ; 18 : limites des espaces OpenAir d'X-Plane en pieds (le M de « MSL » n'est plus des mètres, AeroSources.openair : les zones construites avant sont à reconstruire)
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;

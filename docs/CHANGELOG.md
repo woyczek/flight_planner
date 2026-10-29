@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **The base's parser version goes to 18** (`shared/sia_base.js`) — the zones built before the fix of X-Plane's airspace limits
+  are now shown as outdated, so the maintenance page offers to rebuild them.
 - **Map: the airspaces at a point say when sectors of one family overlap** (`modules/maps/lv.js`, `texts.js`, case D56) — when
   airspaces of one name family, one type and one class overlap there with different floors (Dublin: openAIP codes CTA 3 to 6
   without their inner hole), a discreet note ×4 under the list: "Overlapping sectors of one family: as given by the source";
