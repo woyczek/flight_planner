@@ -1805,7 +1805,7 @@ def k22(c):
          'a second ead-fetch within 30 s is refused too-soon, with the seconds left')
     quick.last[('proc', 'ead-fetch')] -= 31
     c.ok(quick.start('proc', 'ead-fetch', {}).get('ok'), quick.last, 'after 30 s a new reading starts')
-    c.eq(RJ.MIN_GAP, {('proc', 'ead-fetch'): 30}, 'only EAD Basic has a minimal gap (the eAIP of the SIA is free)', what='MIN_GAP')
+    c.eq({k: v for k, v in RJ.MIN_GAP.items() if k[0] == 'proc'}, {('proc', 'ead-fetch'): 30}, 'among the procedure readings only EAD Basic has a minimal gap (the eAIP of the SIA is free; base/fetch has its own, K53)', what='MIN_GAP')
 
 
 # ------------------------------------------------------------------------------------------------ the launcher's eAIP job (static)

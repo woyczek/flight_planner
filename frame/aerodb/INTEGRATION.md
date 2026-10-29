@@ -341,6 +341,38 @@ const r = await ctx.launcher.job('regen/job', { set: 'base', verb: 'build', args
   8 s, then 0.45 s per zone for the write and the git commit), 1.3 GB private at most; the page's own build of the same zones in one page: 6 s, without the
   commits (DECISIONS 30 Oct 2026).
 
+### Fetching and purging the raw sources on the workstation: the jobs `base/fetch` and `base/purge` (30 Oct 2026)
+
+The raw sources (openAIP, FAA, ENAIRE, UK Mil, NAV CANADA, NAT files in `data/sia/…`) **leave the data repository**: the template `.gitignore` ignores
+`sia/openaip/`, `sia/zones/`, `sia/aixm5/`, `sia/geojson/`, `sia/miam-*.xml`, the aircraft HTTP cache and `**/__pycache__/` (DECISIONS 30 Oct 2026). The
+Données module fetches and purges them per zone through two more verbs of the set `base` (`tools/regen/base_sources.py`, SPEC § 5 septies « The jobs
+`base/fetch` and `base/purge` »). Neither commits anything.
+
+```js
+const r = await ctx.launcher.job('regen/job', { set: 'base', verb: 'fetch', args: { zones: ['gb', 'es', 'ca'], personal: ['enaire'] } },
+  { onProgress: j => draw(j.zones, j.step, j.done, j.total), signal });
+// j.zones = { gb: { state: 'waiting'|'fetching'|'done'|'failed'|'cancelled', done, total, error?, sources: { openaip: { state: 'downloaded'|'unchanged'|'failed'|'skipped'|'manual', files?, bytes?, error?, status? }, … } }, … }
+// r.result = { ok, fetched: ['gb'], unchanged: [], failed: [{ zone, source, error, status? }], manual: [{ zone, source, url?, name: [fr, en, de, es] }], outside_sync, warnings: [{ code: 'outside-sync', count }], reason? }
+const p = await ctx.launcher.job('regen/job', { set: 'base', verb: 'purge', args: { zones: ['gb'], what: ['sources', 'caches'], dry: true } }, { onProgress });
+// j.zones = { gb: { state: 'waiting'|'purging'|'done'|'failed', files, bytes, error? } };  p.result = { ok, removed: { gb: { files, bytes } }, warnings: [{ code, count? }], reason? }
+```
+
+- **`base/fetch`**: for each zone, the sources of the catalogue whose `kind` is `download` are fetched by `tools/aero_fetch.py` (nothing copied) where it writes
+  today: `openaip` (the zone's country, layer by layer), `faa` and `faaclass` (`us`), `enaire` (`es`, **only if `'enaire'` is in `personal`**: else the
+  source is `skipped` with `error: 'personal'`), `ukmil` (`gb`), `navcan` (`ca`), `nat` (`nat`). A `manual` or `pdf` source (`sia`, `nats`, `dircam`) is never
+  downloaded: `state: 'manual'`, and the result lists it in `manual` with its `https` address (when the catalogue has one) and its four names, for the
+  screen to say what to do by hand. `local` (X-Plane) and `computed` (MORA) sources are not this job's and appear nowhere. A source that fails does not stop the others
+  (`error`: `network`, `http` with `status`, `parse`); the zone is `failed` when one of its sources failed. A country with no openAIP export is `failed`,
+  `http`, `404`. The cancel is looked at between two files.
+- **`outside_sync`**: the number of files **tracked by git** in `data/` that the job modified (a rewritten file, a previous ENAIRE amendment removed): they
+  now differ from the repository and will not follow the synchronisation. The screen says it (`warnings: [{ code: 'outside-sync', count }]`).
+- **`base/purge`**: removes a zone's raw sources under `data/sia/` (what the catalogue's `fileSource` attributes to the zone, and for France the root AIXM,
+  `XML_SIA`, `sia-airspaces` and `miam-*.xml` files) and its caches under `data/local/` (France: `local/eaip/`). **Never** `sia/base/`, `proc/`, **a file tracked
+  by git** (kept, counted: `warnings: [{ code: 'kept-tracked', count }]`: it would leave the repository for every workstation), a link or a path that leaves
+  `data/sia` and `data/local` (`unsafe-path`). Purging `fr` adds `{ code: 'shared-fr' }`: France's FIR outlines, read in `XML_SIA`, serve the build of every zone.
+  `dry: true` gives the same view and result and removes nothing. `what` is `['sources']`, `['caches']` or both (the default).
+- **Refusals**: 400 (unknown zone or source, extra key, `dry` not a boolean), 409 (a job is running), 429 for `base/fetch` (30 s between two starts).
+
 ### Sources screen (`#sources`)
 
 A frame screen drawn by aerodb (`frame/aerodb/sources.js`, with `airac.js` and the catalogue `catalogue.js`), not a module: nothing to mount, nothing to

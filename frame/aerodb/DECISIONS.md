@@ -2108,3 +2108,33 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
 - **Done** (`tools/regen/base.py`): `--disable-crash-reporter` in the closed option list; `remove_tree` holds the deletion for done only when the
   folder stays absent at two checks 0.5 s apart (up to 15 s). K49: 6 runs in 6 clean; K42–K51 green. `purge_stale` still clears, an hour later,
   a profile a killed launcher left behind.
+
+
+## 30 October 2026 — the raw sources leave the data repository: `base/fetch` and `base/purge`
+
+- **Decided** (user): the raw sources (`sia/openaip/`, `sia/zones/`, `sia/aixm5/`, `sia/geojson/`, `sia/miam-*.xml`, the aircraft HTTP cache) are no longer
+  published. They are fetched on a workstation when needed and purged when not; only the built base (`sia/base/`), `proc/` and the aircraft database go through the
+  data repository. The template `.gitignore` (`tools/data_template/.gitignore`) says it, with `**/__pycache__/`; the existing lines (AIXM, `XML_SIA`,
+  `sia-airspaces`, `_archives/`) stay. The user's own `data/` is not touched by this change: the files already tracked stay tracked until they are removed from the index.
+- **Two verbs in a file of their own** (`tools/regen/base_sources.py`, set `base`, next to `base/build` of `base.py` which is another lot's): `base/fetch` and `base/purge`
+  (SPEC § 5 septies, INTEGRATION). Contract agreed with the Données module, which codes its panels against it.
+- **No commit.** Fetching writes untracked, ignored files; there is nothing to commit and a commit would put raw sources back in the repository. The job does not call
+  `commit_outputs` (whose outputs list does not even contain `sia/openaip/`).
+- **Tracked files** are the exception to every rule. A file that `git ls-files` reports in `data/` is **never removed by `base/purge`** (it would leave the repository for every
+  workstation; kept and counted, `kept-tracked`), and a file **modified by `base/fetch`** that git tracks is **counted** (`outside_sync`, warning `outside-sync`): it now differs from
+  the repository, outside the synchronisation, until the owner decides (commit it or remove it from the index). git failing means « unknown », not « untracked »: a purge then
+  fails for the zone and removes nothing.
+- **A mirror in Python of `shared/aero_zones.js`** rather than a browser or a second source of truth: the launcher needs only the sources' kinds, personal flags, links, names and
+  the file → zone rule. Case K52 compares it with the page's file (every source, every zone's list, `fileSource` on sample paths, the folders aero_fetch writes), so the two cannot drift
+  silently. `local` (X-Plane) and `computed` (MORA) sources are not left to the fetch job at all (no line in the view or the result); `manual` and `pdf` ones are reported as `manual`
+  with their `https` address and four names for the screen to word.
+- **`aero_fetch` reused, not copied**: its functions are called per layer for `openaip` and `faa` (so a cancel falls between two files), whole for `enaire`, `ukmil`, `navcan`, `nat`. Its
+  messages are texts, sorted into codes by `classify()` (`HTTP n` → `http` + status; unexpected forms → `parse`; the rest → `network`); `aero_fetch.py` itself is unchanged and the
+  old route `POST /__setup/aero-fetch` keeps working. ENAIRE (personal licence) is fetched only when the owner declared it (`personal`), as the build does for the published files.
+- **A country without an openAIP export** (every layer 403 / 404) is a failure `http` 404, and so are the zones without a two-letter code (`cyn`, `kas`, `sol`): the screen can say
+  « no export » instead of a silent empty line.
+- **Purging France is shared** (`shared-fr`): the FIR outlines read in `XML_SIA` are used to build every zone, so the screen warns before and after. `miam-*.xml` at the root go with
+  France although `fileSource` knows only `miam-enr-5-7-tracks.xml`.
+- **Confinement**: purge walks only the root of `sia/`, `openaip/`, `aixm5/`, `geojson/` and `zones/<zone>/` (and `local/eaip/` for caches), follows no link or junction, and
+  re-checks each file resolves under the real `data/sia` or `data/local` before removing it. `sia/base/` and `proc/` are never walked.
+- **Bench**: K52 to K56 (`tests/v3/cases/base_sources.py`); no test downloads anything.

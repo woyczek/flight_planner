@@ -716,6 +716,41 @@ entry) are the same.
   link), a dead proxy with `<-loopback>;<launcher address>` bypassed, hosts not resolved, WebRTC limited to the proxy
   (`--force-webrtc-ip-handling-policy=disable_non_proxied_udp`); a time limit; the process tree killed with `taskkill` found by `GetSystemDirectoryW`.
 
+### The jobs `base/fetch` and `base/purge` — raw sources of a zone (30 Oct 2026)
+
+Two more verbs of the set `base` (`tools/regen/base_sources.py`, loaded by `regen_jobs.load_verbs`; the file is separate from `base.py`, which builds). The
+raw sources are no longer published: `tools/data_template/.gitignore` ignores `sia/openaip/`, `sia/zones/`, `sia/aixm5/`, `sia/geojson/`, `sia/miam-*.xml`,
+`AircraftDB/aircraft_http_cache.json` and `**/__pycache__/`; the built base (`sia/base/`), `proc/` and the aircraft database stay tracked.
+
+- **The mirror.** The launcher has no browser for this, so it keeps a Python mirror of `shared/aero_zones.js`: `SOURCES` (`kind`, `personal`, `link`, the four
+  `label`s, and for a download its aero_fetch `provider` and `args`), `sources_of(zone)` (`OWN` for `nat`; else the country's `EXTRA` then `COMMON`) and
+  `file_source(rel)` (file → `{ zone, source }`). Case K52 reads the page's file in a browser and compares everything, zone by zone and on sample paths: changing
+  one side without the other fails it. Zones are validated against `shared/carto/aero_zones_geo.js` (1 to 60, no duplicate, as `base/build`).
+- **`base/fetch`**, args `{ zones, personal? }` (nothing else: 400; `personal` ids must be sources of the catalogue). Per zone, in the catalogue's order: `download`
+  sources are fetched by the functions of `tools/aero_fetch.py` (`openaip` one layer at a time, `faa` one layer at a time, `enaire`, `ukmil`, `navcan`, `nat`), which
+  write exactly where they write today (`data/sia/openaip/`, `geojson/`, `aixm5/`, `zones/gb/`, `zones/ca/`, `zones/nat/`; `If-Modified-Since`, identical content never
+  rewritten); a source with a `personal` flag (ENAIRE) is `skipped` / `personal` unless declared; `manual` and `pdf` sources are `manual` / `manual`; `local` and
+  `computed` sources (X-Plane, MORA) are left out. **No commit.** The head of the view: `step` « N zones sur M », `done` / `total` in zones, `unit: 'zones'`,
+  `zones: { <zone>: { state: 'waiting' | 'fetching' | 'done' | 'failed' | 'cancelled', done, total, error?, sources: { <source>: { state: 'downloaded' | 'unchanged' |
+  'failed' | 'skipped' | 'manual', files?, bytes?, error?, status? } } } }`; per zone `done` / `total` count the downloadable sources tried / to try (a skipped one is not
+  counted); the `manual` and `skipped` entries are there from the start. `downloaded`: at least one file written; `unchanged`: 304 or identical bytes; `failed`: with
+  `error` `network`, `http` (+ `status`), `parse` (a page or a PDF of an unexpected form); `files` / `bytes` still say what was obtained. A country without an openAIP export
+  (four layers answering 403 or 404, or a zone id that is not a two-letter code: `cyn`, `kas`, `sol`) is `failed`, `http`, `404`.
+  The messages of `aero_fetch` are texts: `classify()` sorts them (`HTTP n` → `http` + `status`; « illisible », « aucune zone… », a JSON error → `parse`; the rest → `network`).
+- **Result** of `base/fetch`: `{ ok, fetched: [zones where a file was written or removed], unchanged: [zones tried with no failure and no change], failed: [{ zone, source, error, status? }],
+  manual: [{ zone, source, url?, name: [4] }] (`url` only when the catalogue's link is `https`), outside_sync: n, warnings: [{ code: 'outside-sync', count: n }], reason? }`;
+  `reason` `'partial'` (some failed, some did not), `'failed'` (all), `'cancelled'`, `'nothing-to-fetch'` (no source to try: `ok` is false). `outside_sync` counts the files **tracked by
+  git** (`git ls-files` in `data/`, the verdict of `--error-unmatch`, a hundred paths per call) that the job wrote over or removed (ENAIRE's previous amendment); 0 gives no warning.
+- **`base/purge`**, args `{ zones, what?: ['sources', 'caches'], dry?: true }` (nothing else: 400). For each zone: the files `file_source` attributes to it (plus the root `miam-*.xml` for
+  `fr`) in the root of `data/sia/`, `openaip/`, `aixm5/`, `geojson/` and `zones/<zone>/` (the whole tree), and the caches (`fr`: `data/local/eaip/`). `sia/base/` and `proc/` are never walked.
+  A file **tracked by git** is kept and counted (`kept-tracked`); a link, a junction or any path that does not resolve under the real `data/sia` or `data/local` is not followed or removed
+  (`unsafe-path`); if git cannot say what is tracked the zone fails (`git`) and nothing in it is removed. The folders the purge empties (`zones/<zone>/`, `local/eaip/`) are removed.
+  View: `zones: { <zone>: { state: 'waiting' | 'purging' | 'done' | 'failed', files, bytes, error? } }`, `step` « N zones sur M »; `error`: `git`, `remove-failed`, `cancelled`.
+  Result: `{ ok, removed: { <zone>: { files, bytes } }, warnings: [{ code: 'kept-tracked' | 'unsafe-path', count } | { code: 'shared-fr' }], reason? }`, `reason` `'partial'`, `'failed'`, `'cancelled'`.
+  `dry: true`: the same view and result, nothing removed. Purging the sources of `fr` adds `shared-fr`: France's FIR outlines, read in `XML_SIA`, serve the build of every zone.
+- **Tests**: K52 (mirror), K53 (arguments, registration, `MIN_GAP`, error codes), K54 (`base/fetch` on a fake network, a temporary git repository), K55 (`base/purge` on a temporary tree),
+  K56 (the template `.gitignore` through `git check-ignore`). No test downloads anything: `aero_fetch.get` and the provider functions are replaced.
+
 ## 6. Invariants
 
 1. aerodb's reader never writes the base. The builders (`frame/aerodb/build/` and the tools `tools/proc_*.py`) produce the

@@ -75,6 +75,7 @@ memory, `frame/aerodb/test/catalogue.html`), **K8** (the XML stream reader's ben
 same results as the V2 readers on the synthetic fixture at every chunk size, and through `pump()`) and **K9** (the ZIP stream reader's bench
 `frame/aerodb/test/zip_stream.html`: entries, an entry byte for byte, the streamed chain giving the V2 chain's counts; the Sources screen fetches nothing;
 the laboratory's files are gone). The data laboratory (A21 to A24, its K8 and K9) was removed on 28 Oct 2026.
+Area K also has `tests/v3/cases/base_sources.py` (30 Oct 2026, the raw sources of a zone on the workstation): **K52** the Python mirror of `shared/aero_zones.js` against the page (sources, zone lists, `fileSource`), **K53** arguments, registration, minimal gap and the error codes, **K54** `base/fetch` on a fake network (no real download), **K55** `base/purge` on a temporary data tree in a temporary git repository, **K56** the data template `.gitignore` through `git check-ignore`.
 
 Area L (the Données module, `tests/v3/cases/data.py`; not to be confused with section L below, which is a list of bugs): **L1** the pure
 model (`modules/data/model.js`) on fixtures against the real `airac.js` — YYNN names and dates, the state of a row by priority (stale cycle amber
