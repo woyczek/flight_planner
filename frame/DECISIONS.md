@@ -1620,3 +1620,13 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     zone of its arguments, bounded names and size; it writes nothing, the verb does (`job.take`, then `commit_outputs`).
     While a Data job runs, a synchronisation keeps `sia/base/` on the workstation whatever the gesture (decided the same
     day): a build and a pass never cross.
+- **29 Oct 2026 — A build of the base is seen by its files' time** (coordinator's security review of 2bf0021be):
+  - The guard of the gesture saw only the launcher's jobs, but today the base is built by the V2 page, which writes
+    `sia/base/` through its allowed folder (File System Access), not through the launcher: a `building` flag on the
+    write batches, proposed, would have stayed blind too. `data_sync.building(data)`: an uncommitted `sia/base/` file
+    written less than 10 min ago (`BUILD_GAP`) means a build is under way, whoever writes; `sync_gesture` reads it with
+    the running job.
+  - Limit: a build paused more than 10 min between two zones is no longer seen; the half-written zone would leave on the
+    « Synchroniser » gesture. When D5 moves the build to the launcher, the running-job check covers it whole.
+  - With it: a pending merge that git refuses to cancel (a file brought by the merge, changed since) names the files to
+    set aside; `clean_text` also replaces the real path of `data/` (a junction in the workspaces).

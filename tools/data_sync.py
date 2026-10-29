@@ -34,6 +34,7 @@ INDEXES = [':(glob)**/_index.json']
 # (mise à jour au démarrage du lanceur, échange périodique du cadre) les laisse sur le poste : une zone de la base à
 # moitié écrite par une reconstruction ne part jamais d'elle-même (le travail de construction, D5, commite la sienne)
 GESTURE_ONLY = ['sia/base/']
+BUILD_GAP = 600  # s : une écriture de sia/base plus récente dit qu'une construction est en cours (building)
 TIMEOUT = 120
 
 try:
@@ -153,8 +154,9 @@ def clean_text(text, data=''):
     s = re.sub(r'://[^/@\s]+@', '://', str(text or ''))
     for base, name in ((data, 'data'), (ROOT, 'suite')):  # data/ d'abord : il est souvent sous la suite
         if base:
-            full = os.path.abspath(base)
-            for b in sorted({full, full.replace('\\', '/')}, key=len, reverse=True):
+            # chemin donné et chemin réel (data/ atteint par une jonction dans les espaces de travail), « \\ » et « / »
+            full = {os.path.abspath(base), os.path.realpath(base)}
+            for b in sorted(full | {f.replace('\\', '/') for f in full}, key=len, reverse=True):
                 s = re.sub(re.escape(b), name, s, flags=re.I)
     return s
 
@@ -591,6 +593,11 @@ def settle(data):
         git(data, 'reset', '-q', '--', *own, env=dict(git_env(), GIT_LITERAL_PATHSPECS='1'), check=True)
     code, out = git(data, 'merge', '--abort')
     if code:
+        # git refuse : un fichier apporté par la fusion a été modifié depuis dans le dossier ; la page dit lequel mettre de côté
+        touched = sorted(set(_files(data, 'diff', '--name-only', '-z')) & set(_files(data, 'diff', '--cached', '--name-only', '-z', 'HEAD')))
+        if touched:
+            raise RuntimeError('Fusion en attente dans data/ impossible à annuler : fichier(s) modifiés depuis la fusion — '
+                               + ', '.join(touched[:20]) + ' ; à copier ailleurs (puis à retirer de data/), puis relancer.')
         raise RuntimeError('Fusion en attente dans data/ impossible à annuler : ' + out[-300:])
     return 'annulée'
 
@@ -613,6 +620,20 @@ def _why(e, data=''):
 
 def _settled_note(how):
     return ' Fusion laissée en attente par un passage précédent : annulée, puis refaite.' if how == 'annulée' else ''
+
+
+def building(data, gap=BUILD_GAP):
+    """Vrai si un fichier de sia/base modifié sur ce poste, pas encore commité, l'a été il y a moins de gap secondes : une
+    construction de la base écrit là (page V2 par son dossier autorisé, travail du lanceur), zone par zone ; vue par
+    l'heure des fichiers, quel que soit l'écrivain."""
+    now = time.time()
+    for p in pool_changes(data, [g.rstrip('/') for g in GESTURE_ONLY]):
+        try:
+            if now - os.path.getmtime(os.path.join(data, *p.split('/'))) < gap:
+                return True
+        except OSError:
+            continue
+    return False
 
 
 def _commit_local(data, who, env, res, label, gesture=False):

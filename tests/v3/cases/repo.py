@@ -457,14 +457,40 @@ def i9(c):
         class Running:
             def view(self, id_=None):
                 return {'job': {'id': 'x', 'set': 'base', 'verb': 'build', 'state': 'running'}}
+        import time
+        kept_data = L.DATA
         try:
-            L.REGEN = None
+            L.REGEN, L.DATA = None, b
             c.eq((L.sync_gesture({'gesture': True}), L.sync_gesture({'gesture': 'yes'}), L.sync_gesture({})), (True, False, False),
                  'the gesture flag counts only as true', what='sync_gesture without a job')
             L.REGEN = Running()
             c.eq(L.sync_gesture({'gesture': True}), False, 'a running job of the Data module keeps sia/base whatever the flag', what='sync_gesture during a job')
+            # construction par la page V2 (dossier autorisé, sans le lanceur) : vue par l'heure des fichiers de sia/base
+            L.REGEN = None
+            zone2 = 'sia/base/ie/2026-10-29/airports.json'
+            put(b, zone2, [2])
+            c.eq(L.sync_gesture({'gesture': True}), False, 'a sia/base file written less than 10 min ago keeps sia/base', what='sync_gesture during a build')
+            old = time.time() - 700
+            os.utime(Path(b, *zone2.split('/')), (old, old))
+            c.eq(L.sync_gesture({'gesture': True}), True, 'an older write is no build any more', what='sync_gesture after a build')
         finally:
-            L.REGEN = kept_regen
+            L.REGEN, L.DATA = kept_regen, kept_data
+        # chemin réel de data/ (jonction des espaces de travail) retiré des textes de git
+        j = tmp / 'J'
+        if os.name == 'nt' and subprocess.run(['cmd', '/c', 'mklink', '/J', str(j), str(b)], capture_output=True).returncode == 0:
+            t = DS.clean_text(f'error in {os.path.realpath(j)}{os.sep}x.json', str(j))
+            c.ok(os.path.realpath(j) not in t, t, 'the real path behind a junction is cleaned too')
+            os.rmdir(j)
+        # fusion impossible à annuler (fichier apporté par la fusion, modifié depuis) : la page dit lequel mettre de côté
+        sh('pull', '-q', cwd=a)
+        put(a, other, {'updated_at': '2026-10-29T18:00:00Z', 'dispos': {'mar': 1}})
+        c.ok(DS.run(a, 'AAA')['ok'], '', 'A sends a last change')
+        sh('fetch', '-q', cwd=b)
+        sh('merge', '--no-commit', '--no-ff', 'origin/main', cwd=b)
+        put(b, other, {'updated_at': '2026-10-29T18:30:00Z', 'dispos': {'mer': 1}})
+        r = DS.run(b, 'BBB')
+        c.ok(not r['ok'] and other in r['message'] and 'copier ailleurs' in r['message'], r['message'][:300],
+             'a merge that cannot be cancelled names the file to set aside')
         c.ge(src.count('data_sync.merge_pending(DATA)'), 3, 'the launcher\'s commits check for a pending merge first', what='merge_pending calls')
     finally:
         DS.git_cmd, DS.resolve = kept

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Synchronisation: a build of the base under way keeps it, even on the button** (`tools/data_sync.py`,
+  `tools/launch.py`; SYNCHRONISATION, frame DECISIONS; noreg I9): an uncommitted `sia/base/` file written less than
+  10 min ago means a build (the V2 page writes through its allowed folder, unseen by the launcher); a pending merge that
+  cannot be cancelled names the files to set aside; git's texts also lose the real path of `data/` behind a junction.
 - **Map, Coverage layer: an aerodrome partly read** (`modules/maps/coverage.js`, `texts.js`; help ×4, maps SPEC § 6.7; noreg
   D59): an orange aerodrome of reason `partial` (V3 § 10.26: procedures held, part of them not read) no longer reads as
   "readable on demand": its card says "Procedures: partly held", the reason, "n pages not read" and "n records to check"

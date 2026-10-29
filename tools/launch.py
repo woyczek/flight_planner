@@ -2941,12 +2941,14 @@ def regen_git():
 
 def sync_gesture(a):
     """Geste « Synchroniser » d'une demande de passage (POST /__setup/sync) : le drapeau gesture de la page est une
-    intention, pas une autorisation (un appareil appairé peut l'envoyer) ; tant qu'un travail du module Données tourne
-    sur ce lanceur (une construction de la base comprise), sia/base reste sur le poste quel que soit le drapeau."""
+    intention, pas une autorisation (un appareil appairé peut l'envoyer) ; tant qu'une construction de la base est en
+    cours, sia/base reste sur le poste quel que soit le drapeau : un travail du module Données tourne sur ce lanceur, ou
+    un fichier de sia/base non commité a été écrit il y a moins de 10 min (data_sync.building : la page V2 écrit la base
+    par son dossier autorisé, sans passer par le lanceur)."""
     if not isinstance(a, dict) or a.get('gesture') is not True:
         return False
     job = ((REGEN.view() or {}).get('job') or {}) if REGEN is not None else {}
-    return job.get('state') != 'running'
+    return job.get('state') != 'running' and not data_sync.building(DATA)
 
 
 def regen():

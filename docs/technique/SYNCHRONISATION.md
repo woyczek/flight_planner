@@ -67,7 +67,10 @@ flowchart LR
 `sia/base/` is committed only by the **« Synchroniser » button** (`run(gesture=True)`: the V2 button, and a frame pass
 of reason `manual`) and by the build job itself (D5, `commit_outputs`); a background pass — the update at start, the
 frame's periodic exchange — leaves it on the workstation and says so (« n fichier(s) de sia/base gardés sur ce
-poste »), so that a zone half written by a rebuild never leaves by itself (29 Oct 2026, noreg I9).
+poste »), so that a zone half written by a rebuild never leaves by itself (29 Oct 2026, noreg I9). The gesture is an
+intention, not an authorisation: while a build is under way, `sia/base/` stays even on the button — a job of the Data
+module running on the launcher, or an uncommitted `sia/base/` file written less than 10 min ago (`data_sync.building`:
+the V2 page writes the base through its allowed folder, not through the launcher).
 
 ## 4. Reading: signed copies
 
