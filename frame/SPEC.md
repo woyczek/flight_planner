@@ -874,6 +874,35 @@ launcher can serve that device over the local network, so the device works as th
   forget() }`, each resolving to the `GET /__setup/lan` state. The card "Computer access" (code, addresses, QR code
   through `SogQR`, open / close, forget) belongs to `frame/settings/`.
 
+### 3.11 The airline's relay (`tools/relay_access.py`, `tools/launch.py --relay`; lot R1a, 29 Oct 2026)
+
+The launcher can serve the Pilot application to the pilots' devices through the airline's relay: on the NAS (Container
+Manager), behind its reverse proxy (https, Let's Encrypt), the launcher listening on 127.0.0.1 only (`launch.py --relay
+<public host>`). **Coded and tested on the workstation only: no exposure before the full security review and the user's
+explicit go** (R3).
+
+- A request is the relay's when it comes from 127.0.0.1 (the proxy) with the public host as `Host`; it must say
+  `X-Forwarded-Proto: https`; the client's address is the last of `X-Forwarded-For`, read from 127.0.0.1 only: **the
+  proxy must append the client's address to `X-Forwarded-For` or overwrite the header** (the NAS's reverse proxy and
+  nginx's `$proxy_add_x_forwarded_for` append), so that an address forged by the client at its head is never the one
+  read. A request of the workstation itself (`Host 127.0.0.1:port`) is not the relay's.
+- The relay and the local network never go together: `--relay` with `--lan` stops the launcher at start, and the
+  workstation cannot open the local network while relaying (409). The pairing page is never framed (`X-Frame-Options:
+  DENY`, CSP `default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'`), without
+  script.
+- A device pairs once with an 8-digit code the administrator asks for, on the workstation, for the pilot's trigram
+  (one use, 10 minutes): Maintenance › « Appareils du relais » (`#relay-devices`). It gets a long token (cookie
+  `sog_relay`, HttpOnly, Secure, SameSite=Strict, one year), of which only the hash is kept (`tools/.relay.json`), with
+  the trigram; revocable by device or by pilot. 5 wrong codes from an address: one minute; 30 in an hour: pairing closed
+  until the next code.
+- A paired device reaches the pages and the data files, and only the `/__setup/` routes declared `relay=True` (status,
+  changes, batch, sync, net), with GET / HEAD / POST; everything else is « réservé au poste ». The author of a batch or a
+  sync is the device's trigram, never the page's; `net` stays on its whitelist (SimBrief, IVAO, VATSIM, METAR,
+  Open-Meteo), without the airline's site (no host chosen by the page). A failed synchronisation gives the device a
+  generic message (the detail in the console).
+- To come: the invitations by link (R2), the OpenID exchange of IVAO through the relay (R1b), the deployment and the
+  security review (R3).
+
 ## 4. To come in the frame
 
 Usage levels, a language choice, designs taken from V2, the backend transports.

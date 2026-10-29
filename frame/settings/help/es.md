@@ -185,6 +185,10 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
 
 ## Conviene saber
 
+- **Dispositivos del relé**: cuando el lanzador funciona como relé de la aerolínea (detrás del proxy inverso del NAS,
+  en https), un piloto vincula cada dispositivo una vez con un código de 8 cifras que el administrador pide en
+  Maintenance › «Dispositivos del relé» para su trigrama (una vez, 10 minutos); sus escrituras llevan ese trigrama. Un
+  dispositivo perdido, o todos los de un piloto que se va, se revocan allí.
 - **Tokens de los pilotos (GitLab)**: en la aplicación Maintenance, en el equipo del lanzador, «Tokens de los pilotos»
   crea un token de acceso de proyecto por piloto (con su trigrama, rol Developer, un año como máximo), lo muestra una sola
   vez y lo revoca. El lanzador usa allí el token del administrador (secrets/gitlab.json), que nunca muestra. Configure la

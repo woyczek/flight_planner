@@ -176,6 +176,10 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
 
 ## Good to know
 
+- **Relay devices**: when the launcher runs as the airline's relay (behind the NAS's reverse proxy, in https), a pilot
+  pairs each device once with an 8-digit code the administrator asks for in Maintenance › « Relay devices » for their
+  trigram (once, 10 minutes); their writes are signed with that trigram. A lost device, or all those of a pilot who
+  leaves, are revoked there.
 - **Pilots' tokens (GitLab)**: in the Maintenance application, on the launcher's computer, « Pilots' tokens » creates
   one project access token per pilot (named after the trigram, Developer role, one year at most), shows it once only, and
   revokes it. The launcher uses the administrator's token there (secrets/gitlab.json), which it never shows. Set the

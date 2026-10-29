@@ -263,6 +263,14 @@
       icon: 'shield',
       level: 3,
       launcher: true
+    }, {
+      // appareils des pilotes par le relais de la compagnie (R1a) : codes d'appairage, révocation
+      id: 'relay',
+      href: '#relay-devices',
+      label: ['Appareils du relais', 'Relay devices', 'Geräte des Relais', 'Dispositivos del relé'],
+      icon: 'globe',
+      level: 3,
+      launcher: true
     }],
     tabs: [{
       id: 'data',
@@ -287,6 +295,13 @@
       level: 3,
       launcher: {
         routes: ['gitlab/tokens', 'gitlab/tokens/revoke']
+      }
+    }, {
+      id: 'relay-devices',
+      scripts: ['settings/relay_devices.js?v=0'],
+      level: 3,
+      launcher: {
+        routes: ['relay', 'relay/devices', 'relay/devices/revoke']
       }
     }]
   };

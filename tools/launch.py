@@ -26,6 +26,7 @@ import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Main
 from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
 import version_stamps  # empreintes ?v=… posées au moment de servir (pages, scripts, feuilles des designs)
 import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Navmap) pour le cadre V3
+import relay_access  # appareils des pilotes par le relais de la compagnie (R1a) : codes, jetons, révocation
 import lan_access  # appareils du réseau local (tablette, téléphone) appairés par un code : état, essais, appareils
 import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
 import regen_jobs  # travaux longs du module Données (régénération) : un à la fois, état, annulation ; état du poste
@@ -259,21 +260,23 @@ def hidden(parts):
 # ---- interface de la page de premier lancement (/__setup/…) : seulement depuis la page servie ici (adresse
 # 127.0.0.1:<port> exigée, en-tête X-SOG-Setup : une autre page web ne peut pas l'envoyer sans pré-vérification CORS,
 # à laquelle ce serveur ne répond pas)
-# routes /__setup/ du lanceur : (méthode, chemin) → (gestionnaire, public) ; public 'lan' : ouverte aussi à un appareil appairé
-# du réseau local (tools/lan_access.py la lit ici) ; 'poste' (par défaut) : ce poste seulement. Une route nouvelle se déclare
+# routes /__setup/ du lanceur : (méthode, chemin) → (gestionnaire, public, relay) ; public 'lan' : ouverte aussi à un appareil
+# appairé du réseau local (tools/lan_access.py la lit ici) ; 'poste' (par défaut) : ce poste seulement ; relay : ouverte aussi à
+# un appareil d'un pilote par le relais de la compagnie (--relay, tools/relay_access.py ; R1a). Une route nouvelle se déclare
 # là où elle est écrite (@route), jamais dans une liste à part.
 ROUTES = {}
 ROUTE_PATHS = set()
 
 
-def route(method, *paths, public='poste'):
-    """Inscrit une méthode du serveur pour ces chemins ; public : 'lan' ou 'poste'."""
+def route(method, *paths, public='poste', relay=False):
+    """Inscrit une méthode du serveur pour ces chemins ; public : 'lan' ou 'poste' ; relay : ouverte au relais."""
     assert public in ('lan', 'poste'), public
+    assert not relay or public == 'lan', 'une route du relais est aussi une route du réseau local'
 
     def deco(fn):
         for p in paths:
             assert (method, p) not in ROUTES, (method, p)
-            ROUTES[(method, p)] = (fn.__name__, public)
+            ROUTES[(method, p)] = (fn.__name__, public, bool(relay))
             ROUTE_PATHS.add(p)
         return fn
     return deco
@@ -290,6 +293,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def _local_host(self):
         """En-tête Host de cette machine : une page d'un autre site qui ferait pointer son nom vers 127.0.0.1
         (« DNS rebinding ») envoie son propre nom et se voit refuser tout le dossier, données comprises."""
+        if self._relay():  # relais : l'hôte public déclaré (--relay), venu du proxy inverse sur 127.0.0.1
+            return True
         if self._lan():  # serveur du réseau local : l'adresse privée exacte de ce poste (jamais un nom de domaine)
             return self.headers.get('Host') in LAN['hosts']
         return self.headers.get('Host') in (f'127.0.0.1:{self.port}', f'localhost:{self.port}', f'[::1]:{self.port}')
@@ -297,6 +302,110 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def _lan(self):
         """Requête reçue par un serveur du réseau local (« Ouvrir aux appareils du réseau local »)."""
         return getattr(self.server, 'lan', False)
+
+    def _relay(self):
+        """Requête du relais de la compagnie (--relay <hôte>) : reçue sur 127.0.0.1 (le proxy inverse du NAS, https), avec
+        l'en-tête Host de l'hôte public. Une requête du poste lui-même (Host 127.0.0.1:port) n'en est pas une."""
+        return bool(RELAY['host']) and not self._lan() and self.client_address[0] in ('127.0.0.1', '::1') and (
+            self.headers.get('Host') or '').lower() == RELAY['host']
+
+    def _client_ip(self):
+        """Adresse du client : en relais, la dernière de X-Forwarded-For (posée par le proxy, seul à joindre 127.0.0.1) ;
+        sinon celle de la connexion."""
+        if self._relay():
+            xs = [x.strip() for x in (self.headers.get('X-Forwarded-For') or '').split(',') if x.strip()]
+            if xs:
+                return xs[-1][:64]
+        return self.client_address[0]
+
+    def _relay_gate(self):
+        """Appareil d'un pilote par le relais : https vu par le proxy exigé, appareil appairé exigé pour tout (page
+        d'appairage pour une page demandée, 401 sinon), puis seulement les routes /__setup/ ouvertes au relais (relay=True)
+        et GET / HEAD / POST. Vrai si la requête a reçu sa réponse ici."""
+        self.relay_device = None
+        if not self._relay():
+            return False
+        if (self.headers.get('X-Forwarded-Proto') or '').lower() != 'https':
+            self._json({'error': 'https seulement'}, 403)
+            return True
+        path = self.path.split('?', 1)[0].split('#', 1)[0]
+        if path == '/__relay/pair':
+            self._relay_pair()
+            return True
+        jar = http.cookies.SimpleCookie()
+        try:
+            jar.load(self.headers.get('Cookie') or '')
+        except http.cookies.CookieError:
+            pass
+        dev = relay_access.paired(jar[relay_access.COOKIE].value if relay_access.COOKIE in jar else '')
+        if not dev:
+            if self.command == 'GET' and 'text/html' in (self.headers.get('Accept') or '') and not path.startswith('/__setup/'):
+                self._relay_page(safe_next(self.path), 401)
+            else:
+                self._json({'error': 'appareil non appairé'}, 401)
+            return True
+        if self.command not in ('GET', 'HEAD', 'POST'):
+            self._json({'error': 'méthode refusée'}, 405)
+            return True
+        if path.startswith('/__setup/') and not ROUTES.get((self.command, path), ('', 'poste', False))[2]:
+            self._json({'error': 'réservé au poste'}, 403)
+            return True
+        self.relay_device = dev
+        return False
+
+    def _relay_page(self, nxt, code=200, msg=''):
+        """Page d'appairage du relais (sans script : formulaire envoyé à /__relay/pair), dans la langue du navigateur."""
+        lg = self._lan_lang()
+        tx = {k: v[lg] for k, v in RELAY_TEXT.items()}
+        e = lambda s: str(s).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+        body = (f'<!doctype html><html lang="{lg}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+                f'<title>{e(tx["title"])}</title><body style="font:17px system-ui,sans-serif;margin:0;padding:24px 16px;max-width:30em">'
+                f'<h1 style="font-size:1.3em">{e(tx["title"])}</h1><p>{e(tx["intro"])}</p>'
+                + (f'<p role="alert" style="color:#b00020"><b>{e(msg)}</b></p>' if msg else '')
+                + f'<form method="post" action="/__relay/pair"><input type="hidden" name="next" value="{e(nxt)}">'
+                f'<label>{e(tx["code"])}<br><input name="code" inputmode="numeric" pattern="[0-9]{{8}}" maxlength="8" '
+                f'autocomplete="one-time-code" required autofocus style="font-size:1.6em;letter-spacing:.2em;width:8em;margin:8px 0"></label><br>'
+                f'<button type="submit" style="font-size:1.1em;padding:8px 20px">{e(tx["pair"])}</button></form>'
+                f'<p style="color:#666;font-size:.9em">{e(tx["note"])}</p></body></html>').encode('utf-8')
+        self.send_response(code)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        # page publique du relais : jamais dans un cadre (code saisi sous une page piégée), ni script, ni formulaire ailleurs
+        self._strict_csp = "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
+        self.send_header('Referrer-Policy', 'no-referrer')
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _relay_pair(self):
+        """/__relay/pair : GET la page ; POST le code saisi — bon : jeton en cookie (HttpOnly, Secure, SameSite=Strict),
+        retour à la page demandée ; faux ou trop d'essais : la page avec le motif."""
+        tx = {k: v[self._lan_lang()] for k, v in RELAY_TEXT.items()}
+        if self.command != 'POST':
+            return self._relay_page('/frame/')
+        try:
+            size = min(int(self.headers.get('Content-Length') or 0), 2048)
+        except ValueError:
+            size = 0
+        form = urllib.parse.parse_qs(self.rfile.read(size).decode('utf-8', 'replace') if size > 0 else '')
+        nxt = safe_next((form.get('next') or ['/frame/'])[0])
+        res, val, tri = relay_access.attempt(self._client_ip(), (form.get('code') or [''])[0], self.headers.get('User-Agent') or '')
+        if res == 'ok':
+            self.send_response(303)
+            self.send_header('Set-Cookie', f'{relay_access.COOKIE}={val}; Path=/; Max-Age={relay_access.MAX_AGE}; HttpOnly; Secure; SameSite=Strict')
+            self.send_header('Location', nxt)
+            self.send_header('Content-Length', '0')
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            say(f'  Relais : appareil appairé pour {tri}.')
+            return None
+        if res == 'wait':
+            return self._relay_page(nxt, 429, tx['wait'].format(s=val))
+        if res == 'closed':
+            say('  Relais : trop de codes faux en une heure, appairage fermé (un nouveau code sur le poste le rouvre).')
+            return self._relay_page(nxt, 403, tx['closed'])
+        if res == 'expired':
+            return self._relay_page(nxt, 401, tx['expired'])
+        return self._relay_page(nxt, 401, tx['bad'])
 
     def _lan_gate(self):
         """Appareil du réseau local : adresse privée et hôte exact exigés, appairage (cookie) exigé pour tout — page
@@ -568,21 +677,24 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             self.send_header('Clear-Site-Data', '"cache"')
             Setup.purge = False
         self.send_header('X-Content-Type-Options', 'nosniff')
+        # page servie avec sa propre politique (appairage du relais) : jamais encadrée, jamais en cache ; une seule
+        # requête (pop : la connexion gardée ouverte sert la suivante avec les en-têtes communs)
+        strict = self.__dict__.pop('_strict_csp', '')
         # rien d'ici n'est utilisable par une autre origine : ni encadré (« Synchroniser » cliqué à l'insu du pilote),
         # ni chargé comme script ou image par un autre site (en plus du contrôle Sec-Fetch-Site)
-        self.send_header('X-Frame-Options', 'SAMEORIGIN')
+        self.send_header('X-Frame-Options', 'DENY' if strict else 'SAMEORIGIN')
         self.send_header('Cross-Origin-Resource-Policy', 'same-origin')
         # requête illisible (TLS sur le port HTTP, version inconnue) : send_error passe par ici avant que path existe
         raw = getattr(self, 'path', '') or ''
         path = raw.split('?', 1)[0].lower()
         sandbox = path.startswith('/data/') and path.endswith(SANDBOXED)
-        self.send_header('Content-Security-Policy', ("sandbox; " if sandbox else '') + csp_policy())
+        self.send_header('Content-Security-Policy', strict or ("sandbox; " if sandbox else '') + csp_policy())
         # fichier versionné par son empreinte (?v=…, tools/bump_versions.py : elle change avec le contenu) : gardé tel
         # quel, sans revalidation — une quarantaine d'allers-retours de moins par page, qui retardaient la fin de
         # l'analyse et laissaient voir la page à moitié construite ; le reste (pages, données) : revalidé à chaque fois,
         # jamais de script périmé (ni de type) en cache
         versioned = re.search(r'[?&]v=[0-9a-f]{6,}', raw)
-        self.send_header('Cache-Control', 'public, max-age=31536000, immutable' if versioned else 'no-cache')
+        self.send_header('Cache-Control', 'no-store' if strict else 'public, max-age=31536000, immutable' if versioned else 'no-cache')
         super().end_headers()
 
     def guess_type(self, path):
@@ -616,7 +728,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
 
     def do_HEAD(self):
         """HEAD : mêmes refus que GET."""
-        if self._lan_gate():
+        if self._lan_gate() or self._relay_gate():
             return None
         why = self._refused()
         if why:
@@ -654,7 +766,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         """GET : refus (chemins cachés, autre site, scripts de données hors format), index du pool refaits avant d'être
         servis, routes /__setup/, sinon fichier statique."""
-        if self._lan_gate():
+        if self._lan_gate() or self._relay_gate():
             return None
         why = self._refused()
         if why:
@@ -683,7 +795,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         """POST /__setup/… (page servie ici seulement) : synchronisation, secrets, imports, jeu d'essai, clone et dépôt
         des données."""
-        if self._lan_gate():
+        if self._lan_gate() or self._relay_gate():
             return None
         path = self.path.split('?')[0]
         if not path.startswith('/__setup/') or not self._allowed():
@@ -720,7 +832,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         v = regen().view(jid or None)
         return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
 
-    @route('GET', '/__setup/status', public='lan')
+    @route('GET', '/__setup/status', public='lan', relay=True)
     def _get_status(self, path):
         # détection du lanceur (frame/store/transport_launcher.js) : la même forme partout, rien de propre au poste ;
         # un appareil appairé du réseau local la lit aussi (lnm : [] pour lui, les bases de Little Navmap sont du poste)
@@ -746,7 +858,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._json({'error': 'refusé'}, 403)
         return self._json(lan_state())
 
-    @route('GET', '/__setup/changes', public='lan')
+    @route('GET', '/__setup/changes', public='lan', relay=True)
     def _get_changes(self, path):
         # V3 frame : tête de data/ et, si elle a changé depuis since, son arbre (transport « lanceur »)
         if not self._allowed():
@@ -832,6 +944,33 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if not self._allowed():
             return self._json({'error': 'refusé'}, 403)
         return self._json(vatsim_bookings())
+
+    @route('GET', '/__setup/relay', public='poste')
+    def _get_relay(self, path):
+        # relais de la compagnie (R1a) : en marche ou non, l'hôte public, les appareils (trigramme, appareil, dates ; jamais
+        # une empreinte) et les codes en cours (sans leur valeur) — ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({'on': bool(RELAY['host']), 'host': RELAY['host'], 'devices': relay_access.listing(),
+                           'pending': relay_access.pending()})
+
+    @route('POST', '/__setup/relay/devices', '/__setup/relay/devices/revoke', public='poste')
+    def _post_relay_devices(self, path, body):
+        # un code d'appairage pour un pilote (8 chiffres, 10 minutes, une fois), ou la révocation d'un appareil ou d'un pilote
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        a = a if isinstance(a, dict) else {}
+        if path.endswith('/revoke'):
+            n = relay_access.forget(device_id=str(a.get('id') or '') or None, trigram=str(a.get('trigram') or '') or None)
+            return self._json({'ok': True, 'removed': n})
+        code = relay_access.new_code(a.get('trigram'))
+        if not code:
+            return self._json({'ok': False, 'message': 'trigramme attendu (2 à 5 lettres ou chiffres)'}, 400)
+        return self._json({'ok': True, 'code': code, 'trigram': str(a.get('trigram')).upper(), 'expires_in': relay_access.CODE_TTL})
 
     @route('GET', '/__setup/gitlab/tokens', public='poste')
     def _get_gitlab_tokens(self, path):
@@ -1020,14 +1159,14 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             r['saved'] = saved
         return self._json(r)
 
-    @route('POST', '/__setup/net', public='lan')
+    @route('POST', '/__setup/net', public='lan', relay=True)
     def _post_net(self, path, body):
         # V3 frame : appel sortant d'un module relayé (SimBrief, IVAO, VATSIM)
         try:
             a = json.loads(body or b'{}')
         except ValueError:
             return self._json({'error': 'JSON invalide'}, 400)
-        code, hdrs, out = frame_net(a if isinstance(a, dict) else {})
+        code, hdrs, out = frame_net(a if isinstance(a, dict) else {}, site_ok=not self._relay())
         self.send_response(code)
         for k, v in hdrs.items():
             self.send_header(k, v)
@@ -1038,17 +1177,20 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(out)
         return None
 
-    @route('POST', '/__setup/batch', public='lan')
+    @route('POST', '/__setup/batch', public='lan', relay=True)
     def _post_batch(self, path, body):
         # V3 frame : lot d'écritures de la couche de données, en une fois (frame/store/transport_launcher.js)
         try:
             a = json.loads(body or b'{}')
         except ValueError:
             return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
-        r, code = frame_batch(a if isinstance(a, dict) else {})
+        a = a if isinstance(a, dict) else {}
+        if self._relay() and getattr(self, 'relay_device', None):
+            a['author'] = self.relay_device['trigram']  # relais : l'auteur est celui du jeton de l'appareil, jamais de la page
+        r, code = frame_batch(a)
         return self._json(r, code)
 
-    @route('POST', '/__setup/sync', public='lan')
+    @route('POST', '/__setup/sync', public='lan', relay=True)
     def _post_sync(self, path, body):
         # un passage de synchronisation (commit au nom du trigramme, fusion fiche par fiche, envoi), un à la fois
         try:
@@ -1060,11 +1202,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             # registre rejoué partira au passage suivant)
             registry_bridge()
             # gesture : bouton « Synchroniser » (sia/base commitée aussi) ; sinon passage de fond (échange du cadre)
+            if self._relay() and getattr(self, 'relay_device', None) and isinstance(a, dict):
+                a['author'] = self.relay_device['trigram']  # relais : l'auteur du jeton de l'appareil
             r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60], sync_gesture(a))
             if r.get('received'):
                 registry_bridge()
-        if self._lan() and not r.get('ok'):
-            # appareil appairé du réseau local : rien du poste (sortie de git, chemins) ; le détail reste dans la console
+        if (self._lan() or self._relay()) and not r.get('ok'):
+            # appareil appairé du réseau local ou du relais : rien du poste (sortie de git, chemins) ; le détail reste dans la console
             say(f"  Synchronisation demandée par un appareil appairé, en échec : {r.get('message', '')}")
             r = {**r, 'message': 'Synchronisation interrompue sur le poste du lanceur : le détail est dans sa console.'}
         sync_status_reset()  # état relu au prochain appel : le bouton reflète le passage qui vient d'avoir lieu
@@ -1091,6 +1235,9 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             a = json.loads(body or b'{}')
         except ValueError:
             a = {}
+        if a.get('open') is True and RELAY['host']:
+            # relais de la compagnie : le poste n'écoute que sur 127.0.0.1, jamais aussi sur le réseau local
+            return self._json({'error': 'relais : réseau local fermé'}, 409)
         if a.get('forget') is True:
             lan_access.forget()
         elif isinstance(a.get('forget'), str):
@@ -1509,6 +1656,34 @@ LAN_MAX_BODY = 16 * 1024 * 1024  # corps d'un POST venu du réseau local (un lot
 _tree_memo = {'at': 0.0, 'v': None}  # dernier arbre de data/ calculé (servi de nouveau à un appareil, 2 s au plus)
 LAN_LOCK = threading.Lock()
 NB = '\u202f'  # espace fine insécable avant : ; ! ? en français
+# relais de la compagnie (R1a, --relay <hôte public>) : l'hôte que le proxy inverse du NAS transmet (en-tête Host) ; vide :
+# pas de relais
+RELAY = {'host': ''}
+RELAY_TEXT = {
+    'title': {'fr': 'Appairer cet appareil', 'en': 'Pair this device', 'de': 'Dieses Gerät koppeln', 'es': 'Vincular este dispositivo'},
+    'intro': {'fr': 'L’appli Pilote de la compagnie, par son relais. Saisissez le code à 8 chiffres que l’administrateur vous a donné'
+                    + NB + ': une seule fois pour cet appareil.',
+              'en': 'The airline’s Pilot application, through its relay. Enter the 8-digit code the administrator gave you: only once for this device.',
+              'de': 'Die Pilot-App der Fluggesellschaft über ihr Relais. Geben Sie den 8-stelligen Code ein, den Ihnen der Administrator gegeben hat: nur einmal für dieses Gerät.',
+              'es': 'La aplicación Piloto de la aerolínea, por su relé. Introduzca el código de 8 cifras que le dio el administrador: una sola vez para este dispositivo.'},
+    'code': {'fr': 'Code d’appairage', 'en': 'Pairing code', 'de': 'Kopplungscode', 'es': 'Código de vinculación'},
+    'pair': {'fr': 'Appairer', 'en': 'Pair', 'de': 'Koppeln', 'es': 'Vincular'},
+    'bad': {'fr': 'Code incorrect.', 'en': 'Wrong code.', 'de': 'Falscher Code.', 'es': 'Código incorrecto.'},
+    'expired': {'fr': 'Pas de code en cours (un code sert une fois et dure 10 minutes)' + NB + ': demandez-en un à l’administrateur.',
+                'en': 'No code in progress (a code works once and lasts 10 minutes): ask the administrator for one.',
+                'de': 'Kein Code aktiv (ein Code gilt einmal und 10 Minuten): Bitten Sie den Administrator um einen.',
+                'es': 'Ningún código en curso (un código sirve una vez y dura 10 minutos): pida uno al administrador.'},
+    'wait': {'fr': 'Trop d’essais' + NB + ': réessayez dans {s} s.', 'en': 'Too many tries: try again in {s} s.',
+             'de': 'Zu viele Versuche: in {s} s erneut versuchen.', 'es': 'Demasiados intentos: vuelva a intentarlo en {s} s.'},
+    'closed': {'fr': 'Appairage fermé après trop de codes faux' + NB + ': demandez un nouveau code à l’administrateur.',
+               'en': 'Pairing closed after too many wrong codes: ask the administrator for a new code.',
+               'de': 'Kopplung nach zu vielen falschen Codes geschlossen: Bitten Sie den Administrator um einen neuen Code.',
+               'es': 'Vinculación cerrada tras demasiados códigos erróneos: pida un código nuevo al administrador.'},
+    'note': {'fr': 'Cet appareil reçoit un jeton gardé par le navigateur, révocable par l’administrateur ; vos écritures sont signées de votre trigramme.',
+             'en': 'This device gets a token kept by the browser, revocable by the administrator; your writes are signed with your trigram.',
+             'de': 'Dieses Gerät erhält ein vom Browser verwahrtes Token, das der Administrator widerrufen kann; Ihre Änderungen tragen Ihr Kürzel.',
+             'es': 'Este dispositivo recibe un token guardado por el navegador, revocable por el administrador; sus escrituras llevan su trigrama.'},
+}
 LAN_TEXT = {
     'title': {'fr': 'Appairer cet appareil', 'en': 'Pair this device', 'de': 'Dieses Gerät koppeln', 'es': 'Vincular este dispositivo'},
     'intro': {'fr': 'L’appli Pilote du poste « {host} », sur le réseau local. Saisissez le code à 6 chiffres affiché sur le poste '
@@ -2227,12 +2402,13 @@ class _RelayRedirect(urllib.request.HTTPRedirectHandler):
 NET_OPENER = urllib.request.build_opener(_RelayRedirect(), _RelayHTTPSHandler(context=ssl.create_default_context()))
 
 
-def frame_net(a):
-    """Relais d'un appel { url, method, accept, contentType, body } : (statut, en-têtes, corps)."""
+def frame_net(a, site_ok=True):
+    """Relais d'un appel { url, method, accept, contentType, body } : (statut, en-têtes, corps). site_ok faux (relais de la
+    compagnie) : la liste blanche NET_HOSTS seule, jamais le site de la compagnie (aucun hôte choisi par la page)."""
     url = str(a.get('url') or '')
     u = urllib.parse.urlparse(url)
-    site = u.scheme == 'https' and bool(u.hostname) and u.hostname not in NET_HOSTS and u.hostname == airline_host()
-    if u.scheme != 'https' or not relay_host(u.hostname):
+    site = site_ok and u.scheme == 'https' and bool(u.hostname) and u.hostname not in NET_HOSTS and u.hostname == airline_host()
+    if u.scheme != 'https' or not (u.hostname in NET_HOSTS or site):
         return 403, {'Content-Type': 'application/json'}, json.dumps({'error': 'site non relayé'}).encode()
     method = str(a.get('method') or 'GET').upper()
     if method not in (('GET',) if site else ('GET', 'POST')):
@@ -3294,9 +3470,14 @@ def main():
     ap.add_argument('--no-browser', action='store_true')
     ap.add_argument('--no-data', action='store_true')
     ap.add_argument('--data', help='autre dossier de données servi sous /data/ (essais sur une copie, ex. synchronisation)')
+    ap.add_argument('--relay', metavar='HÔTE', default='',
+                    help='relais de la compagnie (R1a) derrière un proxy inverse https sur ce poste : nom public transmis par le '
+                         'proxy (en-tête Host) ; jamais exposé sans le proxy, jamais sans revue de sécurité')
     ap.add_argument('--lan', action='store_true',
                     help='ouvrir aussi aux appareils du réseau local (adresses privées, code d’appairage ; jusqu’à la fermeture)')
     a = ap.parse_args()
+    if a.relay and a.lan:
+        ap.error('--lan et --relay ne vont pas ensemble : le relais n’écoute que sur 127.0.0.1')
     global DATA
     if a.data:  # autre dossier de données (copie d'essai) : servi sous /data/, ni clone ni mise à jour au démarrage
         DATA = os.path.abspath(a.data)
@@ -3350,6 +3531,12 @@ def main():
     say(f'  Suite servie sur http://127.0.0.1:{port}/')
     if a.lan:
         lan_open()
+    if a.relay:  # --lan avec --relay : refusé plus haut
+        if re.fullmatch(r'[A-Za-z0-9.-]+(?::\d+)?', a.relay):
+            RELAY['host'] = a.relay.lower()
+            say(f'  Relais de la compagnie : hôte public {RELAY["host"]}, derrière le proxy inverse (https) de ce poste.')
+        else:
+            say('  Relais : hôte invalide, relais coupé.')
     say('')
     say('3. Navigateur')
     say(f'  {url}')

@@ -1163,3 +1163,9 @@ def a38(c):
       rule='frame G2 (29 Oct): Maintenance › Pilots’ tokens: without a launcher, without a secret, list, a token shown once, revoke after the question')
 def a39(c):
     _bench(c, 'frame/settings/test/pilot_tokens.html', '__tokensBench')
+
+
+@case('A40', 'Relay devices screen bench', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame R1a (29 Oct): Maintenance › Relay devices: without a launcher, relay off or on, a code shown once and wiped when the screen is left, revoke a device or a pilot after the question')
+def a40(c):
+    _bench(c, 'frame/settings/test/relay_devices.html', '__relayBench')

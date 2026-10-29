@@ -186,6 +186,10 @@ cartographique (`apps/cpco/map_parser.html`).
 
 ## Bon à savoir
 
+- **Appareils du relais** : quand le lanceur tourne en relais de la compagnie (derrière le proxy inverse du NAS, en
+  https), un pilote appaire chaque appareil une fois avec un code à 8 chiffres que l'administrateur demande dans
+  Maintenance › « Appareils du relais » pour son trigramme (une fois, 10 minutes) ; ses écritures sont signées de ce
+  trigramme. Un appareil perdu, ou tous ceux d'un pilote qui part, s'y révoquent.
 - **Jetons des pilotes (GitLab)** : dans l'application Maintenance, sur le poste du lanceur, « Jetons des pilotes »
   crée un jeton d'accès de projet par pilote (à son trigramme, rôle Developer, un an au plus), le montre une seule fois,
   et le révoque. Le lanceur s'y sert du jeton de l'administrateur (secrets/gitlab.json), qu'il ne montre jamais. Réglez

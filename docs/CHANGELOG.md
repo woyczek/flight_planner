@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: the airline's relay, devices and codes (R1a)** (`tools/launch.py`, `tools/relay_access.py`,
+  `frame/settings/relay_devices.js`, `frame/app.js`; frame SPEC § 3.11, INTEGRATION, DECISIONS, Settings help ×4; noreg
+  I10, I13, A40): `launch.py --relay <host>` serves the Pilot application to paired devices behind a reverse proxy (https
+  only), the Pilot app's routes only, writes signed with the device's trigram; the administrator issues pairing codes and
+  revokes devices in Maintenance › Relay devices. Never with the local network (`--lan` refused); the pairing page is
+  never framed. Tested on the workstation only, not exposed.
 - **Fuel: the aerodrome fields search by full name** (`modules/fuel/module.js`, `adnames.js`, DECISIONS; help ×4; case F48) — only a
   chosen or typed code reaches the route; leaving without a choice goes back to the saved aerodrome.
 - **Maintenance › Pilots' tokens, security review** (`tools/launch.py`, `frame/settings/pilot_tokens.js`; frame

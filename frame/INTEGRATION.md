@@ -995,6 +995,8 @@ in the launcher; `resume` finds it again.
   /__setup/workstation`, workstation only) also carries `lnm`: the sorted list of Little Navmap database kinds present on the workstation (the
   `little_navmap_<kind>.sqlite` files of its `little_navmap_db` folder; names only, `[]` when absent); `FrameData.launcher.detect()` hands it on in
   `info()`, aerodb uses it as a hint when a State has no coding tables.
+- **The relay's routes** (29 Oct 2026, R1a): `@route(…, public='lan', relay=True)` opens a route to a pilot's device
+  through the airline's relay too (frame SPEC § 3.11); today status, changes, batch, sync, net (noreg I10, I13).
 - **The route table** (29 Oct 2026, lot 3c-2): every `/__setup/` route of `tools/launch.py` is a method of the server
   declared where it is written, `@route(method, path…, public='lan' | 'poste')`, gathered in one table `ROUTES` (method,
   path) → (handler, public); `do_GET` / `do_POST` dispatch by it. `public='lan'`: also open to a paired device of the local

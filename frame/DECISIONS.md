@@ -1765,3 +1765,22 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   the new token's value is wiped as soon as the screen is left (another address, the page closed), not only at the next
   drawing; the screen tells the administrator to turn off CI/CD and the unused features of the data project (scope
   `api` + Developer could start pipelines, merge requests or issues with a stolen token).
+- **29 Oct 2026 — R1a: the launcher as the airline's relay** (coordinator approved the split R1a / R1b; the user chose
+  GitLab for the data, the relay stays for IVAO's OpenID and the whitelisted network calls):
+  - `--relay <public host>`: on 127.0.0.1 behind the NAS's reverse proxy; a relay request is told by its `Host` and its
+    origin (127.0.0.1), must be https for the proxy, its client address from `X-Forwarded-For` (the proxy is the only one
+    that can reach 127.0.0.1).
+  - Devices: an 8-digit code per pilot's trigram, issued on the workstation, one use, 10 minutes; a long token kept by
+    hash, revocable by device or pilot, one year; attempt limits as for the local network but per relay address.
+  - A third public in the route table, `relay=True` (a relay route is always a local network route too): status, changes,
+    batch, sync, net. The author comes from the device token; `net` loses the airline's site in relay (`frame_net(site_ok=False)`).
+  - The workstation's screen: Maintenance › « Appareils du relais » (codes, list, revoke), a service screen like the
+    pilots' tokens.
+  - Hardening asked by the security review before the push: no local network in relay mode (`--lan` refused with
+    `--relay`, `/__setup/lan` open refused: 409); the pairing page never framed, without script (X-Frame-Options DENY,
+    CSP `default-src 'none'`); the proxy must append or overwrite `X-Forwarded-For` (the last address is read; a forged
+    head does not lift an attempt wait).
+  - Tested on the workstation only: a real launcher `--relay` and requests shaped like the proxy's (noreg I13, 21 checks:
+    https only, Host, pairing page headers, no local network, pairing, single use, attempt limit, forged X-Forwarded-For,
+    workstation routes refused, whitelist, PUT, author from the token, revocation), the screen against a simulated
+    context (A40). Nothing exposed.

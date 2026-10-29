@@ -548,11 +548,14 @@ def i10(c):
     sys.path.insert(0, str(c.root / 'tools'))
     L = importlib.import_module('launch')
     lan = sorted(k for k, v in L.ROUTES.items() if v[1] == 'lan')
+    c.eq(sorted(k for k, v in L.ROUTES.items() if v[2]), sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('POST', '/__setup/batch'),
+                                                            ('POST', '/__setup/sync'), ('POST', '/__setup/net')]),
+         'the routes open to the relay: status, changes, batch, sync, net', what='relay routes')
     c.eq(lan, sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('GET', '/__setup/sim/position'),
                       ('GET', '/__setup/lnmperf'), ('GET', '/__setup/lnmperf-folder'), ('POST', '/__setup/batch'),
                       ('POST', '/__setup/sync'), ('POST', '/__setup/net')]),
          'the routes open to a paired device are the Pilot app\'s, unchanged', what='lan routes')
-    missing = [f'{m} {p} -> {fn}' for (m, p), (fn, _) in L.ROUTES.items() if not callable(getattr(L.Setup, fn, None))]
+    missing = [f'{m} {p} -> {v[0]}' for (m, p), v in L.ROUTES.items() if not callable(getattr(L.Setup, v[0], None))]
     c.eq(missing, [], 'each route names a method of the server', what='routes without handler')
     src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
     body = src[src.index('    def do_GET('):src.index('    # ---------------------------------------------------------------- routes /__setup/')]
@@ -687,3 +690,12 @@ def i12(c):
     finally:
         L.SECRETS, L.GITLAB_OPEN = kept
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I13', 'Relay mode of the launcher (R1a)', 'I', static=True,
+      rule='frame R1a (29 Oct): behind the reverse proxy on 127.0.0.1, https only, a paired device only, the relay routes only, the author from the device token, codes issued on the workstation, revocable; never with the local network; the pairing page never framed')
+def i13(c):
+    sys.path.insert(0, str(c.root / 'tests' / 'v3'))
+    import importlib
+    T = importlib.import_module('relay_trial')
+    T.run(lambda name, ok, info='': c.ok(ok, str(info), name), str(c.root))

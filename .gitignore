@@ -34,6 +34,8 @@ tools/.regen_last.json
 tools/.regen_last.json.tmp
 tools/.sim.json
 tools/.lan.json
+tools/.relay.json
+tools/.relay.json.tmp
 tools/.lan.json.tmp
 
 # Commit courant pour le pied de page (tools/write_build.sh, crochets git)
