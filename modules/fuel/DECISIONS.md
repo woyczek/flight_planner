@@ -4,6 +4,12 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — Auto routes from the end of the chosen SID** (user: « un départ FINOT depuis LFBO, premier point GOSAD, ne sort
+  pas GAI via G36 en Auto »; Simplification, BUGS SOG 1ee2673a5): `autoAirways` passes the chain of its tokens to
+  `CF.routingChain(flight, procs, chain)` when the chosen procedures are read; the points it inserts (end of the SID after the
+  departure, start of the arrival before the arrival) become tokens and points, so they are written in `route.text`
+  (« LFBO FINOT G36 GOSAD … »; expandedPath joins the SID on FINOT), and the leg between the aerodrome and such a point is never
+  routed (the procedure covers it). Without procedures read, as before. Case F28 (invented airway from the seeded SID's end).
 - **29 Oct 2026 — « Relire » on a row that has procedures** (user: « il manque un bouton “rafraîchir” les procédures (avec une date
   pour le dernier fichier) »; Simplification, § 10.20): the reading on demand existed only without data, so LFPO could not be read
   again after aerodb's fixes. `procFileHtml`: the date from `coverage(icao).read_at` (aerodb's lot of 17:00; null → the button

@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: "Auto" starts from the end of the chosen SID and ends at the start of the arrival** (`modules/fuel/module.js`,
+  DECISIONS; case F28) — e.g. LFBO FINOT G36 GOSAD, which it could not find from the aerodrome.
 - **Flight path: `routingChain(flight, procs, points)` for the airway routing** (`frame/lib/current_flight.js`; bench
   `frame/lib/test/current_flight.html`) — the points between which the routing looks for airways, with the chosen SID's end
   (its transition included) inserted after the departure and the start of the chosen arrival (STAR transition, else STAR,

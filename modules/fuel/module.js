@@ -3797,11 +3797,35 @@ async function autoAirways() {
         tokens
       } = await routePoints(r.text, r.dep, r.arr, known, r.points || []);
     if (gone(s) || seq !== S.routeSeq) return;
+    // procédures choisies et lues : la fin de la SID après le départ et le début de l'arrivée avant l'arrivée entrent dans la chaîne
+    // (CF.routingChain, quand la route ne les a pas), pour que le routage parte de la sortie de la SID (LFBO FINOT G36 GOSAD) ; ces
+    // points sont écrits dans le texte, le tronçon terrain ↔ point de procédure n'est jamais routé (la procédure le couvre)
+    const procPts = new Set(),
+      procs = S.procs?.key === procsKey(f) ? S.procs.procs : null;
+    if (procs) {
+      const ext = CF.routingChain(f, procs, tokens.filter(t => t.pt).map(t => t.pt));
+      for (let k = 1; k < ext.length; k++) {
+        if (!ext[k].inserted) continue;
+        const prev = ext[k - 1],
+          p = {
+            id: ext[k].id,
+            lat: ext[k].lat,
+            lon: ext[k].lon
+          };
+        tokens.splice(tokens.findIndex(t => t.pt === prev) + 1, 0, {
+          pt: p
+        });
+        points.splice(points.indexOf(prev) + 1, 0, p);
+        procPts.add(p);
+        ext[k] = p;
+      }
+    }
     // points écrits, dans l'ordre ; adj[i] : le point i+1 suit le point i dans le texte sans rien entre eux (ni voie, ni
     // procédure) ; entry[i] : une voie part du point i ; exit[i] : le point i est arrivé par une voie
     const idx = tokens.map((t, i) => t.pt ? i : -1).filter(i => i >= 0),
       chain = idx.map(i => tokens[i].pt),
-      adj = idx.map((t, i) => idx[i + 1] === t + 1),
+      last = chain.length - 1,
+      adj = idx.map((t, i) => idx[i + 1] === t + 1 && !(i === 0 && procPts.has(chain[1])) && !(i === last - 1 && procPts.has(chain[i]))),
       entry = idx.map(i => !!tokens[i + 1]?.keep && AIRWAY_WORD.test(tokens[i + 1].keep)),
       free = i => !(chain[i].via || entry[i]);
     if (chain.length < 2 || !adj.some(Boolean)) return S.ctx.notify(tt(TX.autoNoLeg), 'warn');

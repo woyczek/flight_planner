@@ -306,6 +306,32 @@ def f8(c):
     c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS LFML', 'no airway serves FL100: the text is unchanged', what='route text at FL100')
 
 
+@case('F28', 'Auto routes from the end of the chosen SID', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='user, 29 Oct: « un départ FINOT depuis LFBO, premier point GOSAD, ne sort pas GAI via G36 en Auto »; Auto routes on CF.routingChain (the end of the SID after the departure)')
+def f28(c):
+    # invented airway G36 from the end of the seeded SID NTS1A (NT102) to NEPIX; the route LFRS NEPIX LFML does not name NT102
+    fix = {'NT102': (46.8, -1.35), 'G3601': (45.9, 0.6), 'NEPIX': (44.9, 2.4)}
+
+    def seg(a, b):
+        import math
+        r = math.pi / 180
+        h = math.sin((fix[b][0] - fix[a][0]) * r / 2) ** 2 + math.cos(fix[a][0] * r) * math.cos(fix[b][0] * r) * math.sin((fix[b][1] - fix[a][1]) * r / 2) ** 2
+        return {'route': 'G36', 'a': {'id': a, 'lat': fix[a][0], 'lon': fix[a][1]}, 'b': {'id': b, 'lat': fix[b][0], 'lon': fix[b][1]},
+                'lower': 0, 'upper': 46000, 'nm': round(2 * 3440.065 * math.asin(math.sqrt(h)), 1)}
+    procs = {'dep': {'rwy': '03', 'sid': 'LFRS.SID.NTS1A.RW03.NONE'}, 'arr': {}, 'by': 'fuel', 'at': '2026-10-29T08:00:00Z'}
+    c.open('fuel', docs=proc_docs() + proc_flight(procs), airfields=True, airways=[seg('NT102', 'G3601'), seg('G3601', 'NEPIX')])
+    to_step(c, 1)
+    wait_rows(c, 'dep')
+    rt = f'{FUEL} [data-k="rtext"]'
+    c.page.fill(rt, 'LFRS NEPIX LFML')
+    c.page.locator(rt).blur()
+    c.until(f"/\\(3\\)/.test(document.querySelector('{FUEL} [data-ptsn]').textContent)", timeout=6000, what='the route resolves to three points')
+    c.tap(f'{FUEL} [data-do="rauto"]')
+    c.until(f"document.querySelector('{FUEL} [data-k=rtext]').value.includes('G36')", timeout=8000, what='Auto writes the airway that leaves the SID')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS NT102 G36 NEPIX LFML',
+         'the end of the SID is written after the departure and the airway starts there; LFRS - NT102 is the SID, never routed', what='route text')
+
+
 @case('F9', 'Routing bench', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False, rule='frame/lib/routing.js: the bench passes (41 checks)')
 def f9(c):
     c.page.goto(f'{c.base}/frame/lib/test/routing.html', wait_until='load')
