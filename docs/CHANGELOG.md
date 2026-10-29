@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Maintenance › Pilots' tokens, security review** (`tools/launch.py`, `frame/settings/pilot_tokens.js`; frame
+  DECISIONS; noreg I12, A39): the administrator's token never follows a redirect; only a pilot's token can be revoked;
+  a new token's value is wiped when the screen is left; the screen advises turning off CI/CD on the data project.
 - **Data: "Télécharger" and "Purger" next to "Construire"** (`modules/data/module.js`, `model.js`, `texts.js`; help ×4; noreg L14, L15).
   The Aeronautical base panel (now "Télécharger, construire, purger" ×4) holds the three launcher verbs on one choice of zones, in
   this order: **Télécharger** (`base/fetch`, `args { zones, personal }`: ENAIRE only when ticked) follows the job with one line per

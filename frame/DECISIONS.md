@@ -1757,3 +1757,11 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - With G2, a consolidation (coordinator): a pasted address whose host holds « @ » or any character outside
     `[A-Za-z0-9.-]` (plus `:port`) is refused at once (empty repository, « Dépôt et jeton nécessaires ») — never a
     misleading host shown (`https://gitlab.com@attacker/x/y`). Bench A38.
+- **29 Oct 2026 — G2, security review (before the real trial)**: the launcher put the owner's token in `headers=` of a
+  urllib Request, which `HTTPRedirectHandler` copies to any host, even http, on a 30x. Now the token is added with
+  `add_unredirected_header` and the launcher's GitLab opener follows no redirect (a 30x is an error) — the launcher's
+  side of the transport's `redirect: 'error'` (noreg I12 against a local 302 to another host). With it: the launcher
+  revokes only a pilot's token (a name that is a trigram), never another token of the project, whatever the page asks;
+  the new token's value is wiped as soon as the screen is left (another address, the page closed), not only at the next
+  drawing; the screen tells the administrator to turn off CI/CD and the unused features of the data project (scope
+  `api` + Developer could start pipelines, merge requests or issues with a stolen token).

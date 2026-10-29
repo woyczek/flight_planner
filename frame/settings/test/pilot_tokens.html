@@ -120,6 +120,10 @@
       ck('création : le jeton montré une fois, la liste le porte', view.querySelector('[data-token-value]')?.textContent ===
         'glpat-ONCE' && view.querySelectorAll(
           '[data-token]').length === 1 && calls.some(c => c[0] === 'gitlab/tokens' && c[1]?.trigram === 'ABC' && c[1]?.days === 365));
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+      await tick();
+      ck('quitter l\u2019écran (autre adresse) efface la valeur du jeton', !view.querySelector('[data-token-value]') && !view.innerHTML
+        .includes('glpat-ONCE'));
       S.screen(view, ctx());
       await tick();
       ck('un nouveau dessin efface la valeur du jeton', !view.querySelector('[data-token-value]') && !view.innerHTML.includes(

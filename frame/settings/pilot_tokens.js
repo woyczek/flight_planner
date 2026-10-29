@@ -67,10 +67,10 @@
       'Lanzador o GitLab inaccesible.'
     ],
     branch: [
-      'Les jetons ont le rôle Developer : réglez la branche des données pour qu’il puisse y pousser (GitLab › Settings › Repository › Protected branches : « Allowed to push and merge » à « Developers + Maintainers »).',
-      'The tokens have the Developer role: set the data branch so that it may push there (GitLab › Settings › Repository › Protected branches: “Allowed to push and merge” to “Developers + Maintainers”).',
-      'Die Token haben die Rolle Developer: Stellen Sie den Datenzweig so ein, dass sie dorthin pushen dürfen (GitLab › Settings › Repository › Protected branches: „Allowed to push and merge“ auf „Developers + Maintainers“).',
-      'Los tokens tienen el rol Developer: configure la rama de datos para que puedan enviar a ella (GitLab › Settings › Repository › Protected branches: «Allowed to push and merge» a «Developers + Maintainers»).'
+      'Les jetons ont le rôle Developer : réglez la branche des données pour qu’il puisse y pousser (GitLab › Settings › Repository › Protected branches : « Allowed to push and merge » à « Developers + Maintainers »). Désactivez aussi sur ce projet ce qui ne sert pas aux données — CI/CD, merge requests, tickets, wiki (Settings › General › Visibility, project features, permissions) : un jeton volé ne pourrait rien y lancer.',
+      'The tokens have the Developer role: set the data branch so that it may push there (GitLab › Settings › Repository › Protected branches: “Allowed to push and merge” to “Developers + Maintainers”). Also turn off on this project what the data do not use — CI/CD, merge requests, issues, wiki (Settings › General › Visibility, project features, permissions): a stolen token could start nothing there.',
+      'Die Token haben die Rolle Developer: Stellen Sie den Datenzweig so ein, dass sie dorthin pushen dürfen (GitLab › Settings › Repository › Protected branches: „Allowed to push and merge“ auf „Developers + Maintainers“). Schalten Sie in diesem Projekt auch ab, was die Daten nicht brauchen — CI/CD, Merge Requests, Issues, Wiki (Settings › General › Visibility, project features, permissions): Ein gestohlenes Token könnte dort nichts starten.',
+      'Los tokens tienen el rol Developer: configure la rama de datos para que puedan enviar a ella (GitLab › Settings › Repository › Protected branches: «Allowed to push and merge» a «Developers + Maintainers»). Desactive también en este proyecto lo que los datos no usan — CI/CD, merge requests, incidencias, wiki (Settings › General › Visibility, project features, permissions): un token robado no podría lanzar nada allí.'
     ]
   };
 
@@ -108,6 +108,16 @@
         <p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-act="make">${esc(t(T.make))}</button></div>
         <p class="f-muted">${esc(t(T.branch))}</p>`;
       // la valeur du jeton ne vit que dans ce dessin : rien n'est gardé, un nouveau dessin l'efface
+      // quitter l'écran (autre adresse, page fermée) efface la valeur du nouveau jeton, pas seulement le prochain dessin
+      if (fresh) {
+        const wipe = () => {
+          body.querySelector('[data-tokens-new]')?.remove();
+          window.removeEventListener('hashchange', wipe);
+          window.removeEventListener('pagehide', wipe);
+        };
+        window.addEventListener('hashchange', wipe);
+        window.addEventListener('pagehide', wipe);
+      }
       body.onclick = async e => {
         const b = e.target.closest('[data-act]');
         if (!b) return;

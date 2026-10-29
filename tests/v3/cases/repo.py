@@ -618,7 +618,7 @@ def i12(c):
             return False
 
     def fake(req, timeout=0):
-        calls.append((req.get_method(), req.full_url, req.headers.get('Private-token'), json.loads(req.data) if req.data else None))
+        calls.append((req.get_method(), req.full_url, req.get_header('Private-token'), json.loads(req.data) if req.data else None))
         if req.get_method() == 'POST':
             return Resp(201, json.dumps({'id': 7, 'name': 'ABC', 'expires_at': '2027-10-29', 'token': 'glpat-PILOT'}).encode())
         if req.get_method() == 'DELETE':
@@ -641,6 +641,47 @@ def i12(c):
               L.gitlab_token_revoke({'id': 'x'}).get('status')], [400, 400, 400], 'refused: a bad trigram, over 365 days, an id that is not a number', what='checks')
         rv = L.gitlab_token_revoke({'id': 7})
         c.ok(rv['ok'] is False and 'glpat-ADMIN-SECRET' not in json.dumps(rv), json.dumps(rv), 'a refusal never shows the administrator’s token')
+        # un jeton qui n'est pas celui d'un pilote (nom hors trigramme) : jamais révoqué ici
+        L.GITLAB_OPEN = lambda req, timeout=0: Resp(200, json.dumps({'id': 9, 'name': 'owner-bot'}).encode())
+        c.eq(L.gitlab_token_revoke({'id': 9}).get('status'), 403, 'only a pilot token is revoked', what='revoke another token')
+        # le vrai ouvreur du lanceur : une redirection n'est jamais suivie, le jeton n'arrive jamais à un autre hôte
+        import http.server
+        import threading
+        got = []
+
+        class Other(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                got.append(self.headers.get('PRIVATE-TOKEN'))
+                self.send_response(200)
+                self.end_headers()
+
+            def log_message(self, *a):
+                pass
+
+        other = http.server.HTTPServer(('127.0.0.1', 0), Other)
+
+        class Hop(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(302)
+                self.send_header('Location', f'http://127.0.0.1:{other.server_port}/steal')
+                self.end_headers()
+
+            def log_message(self, *a):
+                pass
+
+        hop = http.server.HTTPServer(('127.0.0.1', 0), Hop)
+        for s_ in (other, hop):
+            threading.Thread(target=s_.serve_forever, daemon=True).start()
+        try:
+            try:
+                L.GITLAB_OPENER.open(L._gitlab_request(f'http://127.0.0.1:{hop.server_port}/x', 'GET', None, 'glpat-ADMIN-SECRET'), timeout=5)
+                followed = True
+            except urllib.error.HTTPError as e:
+                followed = e.code != 302
+            c.ok(not followed and got == [], str(got), 'a 302 to another host is an error, the token never reaches it')
+        finally:
+            hop.shutdown()
+            other.shutdown()
         src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
         c.ok("@route('GET', '/__setup/gitlab/tokens', public='poste')" in src and "'/__setup/gitlab/tokens/revoke', public='poste'" in src, '', 'workstation-only routes')
     finally:

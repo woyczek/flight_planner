@@ -1775,7 +1775,24 @@ GITLAB_TIMEOUT = 20
 GITLAB_LEVEL = 30  # Developer : écrit la branche si elle l'admet (Protected branches : « Developers + Maintainers »), jamais
 #                    les réglages du projet ; un jeton Maintainer pourrait les changer par l'API
 GITLAB_SCOPES = ['api']  # l'API REST (arbre, blobs, commits) : write_repository ne vaut que pour git en HTTP
-GITLAB_OPEN = urllib.request.urlopen  # remplacé par les essais (aucun appel réel)
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Jamais une redirection suivie avec le jeton de l'administrateur : un 30x est une erreur (le pendant, côté lanceur, du
+    redirect: 'error' du transport GitLab du navigateur ; HTTPRedirectHandler recopierait l'en-tête vers n'importe quel hôte)."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+GITLAB_OPENER = urllib.request.build_opener(_NoRedirect)
+GITLAB_OPEN = GITLAB_OPENER.open  # remplacé par les essais (aucun appel réel)
+
+
+def _gitlab_request(url, method, body, tok):
+    """Requête de l'API GitLab : le jeton en en-tête jamais recopié par une redirection (add_unredirected_header)."""
+    req = urllib.request.Request(url, method=method, data=json.dumps(body).encode() if body is not None else None,
+                                 headers={'Content-Type': 'application/json'} if body is not None else {})
+    req.add_unredirected_header('PRIVATE-TOKEN', tok)
+    return req
 
 
 def gitlab_cfg():
@@ -1795,9 +1812,7 @@ def gitlab_call(method, path, body=None):
     if not cfg:
         return 409, {'message': 'no GitLab secret on this workstation (secrets/gitlab.json: https instance, project, token)'}
     api, proj, tok = cfg
-    req = urllib.request.Request(f'{api}/projects/{proj}{path}', method=method,
-                                 data=json.dumps(body).encode() if body is not None else None,
-                                 headers={'PRIVATE-TOKEN': tok, **({'Content-Type': 'application/json'} if body is not None else {})})
+    req = _gitlab_request(f'{api}/projects/{proj}{path}', method, body, tok)
     try:
         with GITLAB_OPEN(req, timeout=GITLAB_TIMEOUT) as r:
             raw = r.read()
@@ -1845,11 +1860,17 @@ def gitlab_token_create(a):
 
 
 def gitlab_token_revoke(a):
-    """{ id } → jeton révoqué ; { ok }."""
+    """{ id } → jeton révoqué ; { ok }. Seulement un jeton de pilote (nom = un trigramme) : jamais un autre jeton du projet
+    (celui de l'administrateur, d'un service), quelle que soit la page qui le demande."""
     try:
         tid = int(a.get('id'))
     except (TypeError, ValueError):
         return {'ok': False, 'status': 400, 'message': 'id expected'}
+    code, j = gitlab_call('GET', f'/access_tokens/{tid}')
+    if code != 200 or not isinstance(j, dict):
+        return {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab') if isinstance(j, dict) else 'GitLab'}
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', str(j.get('name') or '')):
+        return {'ok': False, 'status': 403, 'message': 'only a pilot token (named after a trigram) is revoked here'}
     code, j = gitlab_call('DELETE', f'/access_tokens/{tid}')
     return {'ok': True} if code in (200, 204) else {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab')}
 
