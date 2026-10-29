@@ -96,8 +96,11 @@
         return j.head;
       },
       ...(o.exchange ? {
-        exchange: () => call('__setup/sync', {
-          author: o.author?.() || ''
+        exchange: (opts = {}) => call('__setup/sync', {
+          author: o.author?.() || '',
+          ...(opts.gesture ? {
+            gesture: true
+          } : {})
         })
       } : {})
     };

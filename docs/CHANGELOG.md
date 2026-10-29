@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Synchronisation: the aeronautical database leaves by the user's gesture only** (`tools/data_sync.py`,
+  `tools/launch.py`, `shared/sync.js`, `frame/store/transport_launcher.js`, `frame/store/frame_data.js`; administrator
+  manuals ×4, SYNCHRONISATION; noreg I9): `sia/base/` is committed by the « Synchroniser » button (and by the build job
+  itself), never by a background pass (update at start, the frame's periodic exchange), which keeps it on the computer
+  and says so — a zone half written by a rebuild no longer leaves by itself.
 - **Fuel: the procedure rows appear without waiting for the aircraft registry** (`modules/fuel/module.js`, DECISIONS; case F33).
 - **Synchronisation: a git warning no longer stops the merge** (`tools/data_sync.py`, `tools/launch.py`,
   `tools/regen_jobs.py`; administrator manuals ×4, SYNCHRONISATION; noreg I9): `git()` mixed git's warnings (« LF will

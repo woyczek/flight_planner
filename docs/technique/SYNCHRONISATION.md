@@ -62,6 +62,12 @@ flowchart LR
 | `cr/` (reports) | display preferences (theme, language, blocks…): specific to each browser |
 | `atc/` (the week's ATC sessions) | ODV planning settings (`odvPlanning:v1`, see the technical debt) |
 | `airline/` (settings shared with the V3 app: map profiles written by the studio, airline settings and fleet) | |
+| `sia/base/` (the aeronautical database, by zone) — **committed by the user's gesture only** (below) | |
+
+`sia/base/` is committed only by the **« Synchroniser » button** (`run(gesture=True)`: the V2 button, and a frame pass
+of reason `manual`) and by the build job itself (D5, `commit_outputs`); a background pass — the update at start, the
+frame's periodic exchange — leaves it on the workstation and says so (« n fichier(s) de sia/base gardés sur ce
+poste »), so that a zone half written by a rebuild never leaves by itself (29 Oct 2026, noreg I9).
 
 ## 4. Reading: signed copies
 

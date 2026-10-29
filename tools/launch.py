@@ -946,7 +946,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 # pont du registre avant (le registre rejoué part dans ce passage) et après (comptes rendus reçus : le
                 # registre rejoué partira au passage suivant)
                 registry_bridge()
-                r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60])
+                # gesture : bouton « Synchroniser » (sia/base commitée aussi) ; sinon passage de fond (échange du cadre)
+                r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60], a.get('gesture') is True)
                 if r.get('received'):
                     registry_bridge()
             sync_status_reset()  # état relu au prochain appel : le bouton reflète le passage qui vient d'avoir lieu

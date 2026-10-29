@@ -30,6 +30,10 @@ EXCLUDE = [':(exclude,glob)**/_index.json', ':(exclude,glob)**/_conflits/**', ':
 # index des dossiers : régénérés par le lanceur (et par l'appli en mode GitHub, depuis l'arbre), jamais suivis par git ;
 # une copie suivie dans le dépôt (écrite par une version précédente de l'appli) est retirée du suivi, jamais fusionnée
 INDEXES = [':(glob)**/_index.json']
+# chemins du pool que seul un geste de l'utilisateur commite (« Synchroniser » : run(gesture=True)) ; un passage de fond
+# (mise à jour au démarrage du lanceur, échange périodique du cadre) les laisse sur le poste : une zone de la base à
+# moitié écrite par une reconstruction ne part jamais d'elle-même (le travail de construction, D5, commite la sienne)
+GESTURE_ONLY = ['sia/base/']
 TIMEOUT = 120
 
 try:
@@ -497,9 +501,13 @@ def untrack_indexes(data, who, env):
 
 
 def refused_note(res):
-    """Fichiers .js refusés à l'envoi (format des données, tools/data_guard.py), pour le compte rendu."""
+    """Fichiers .js refusés à l'envoi (format des données, tools/data_guard.py), et fichiers gardés sur le poste faute de
+    geste (GESTURE_ONLY), pour le compte rendu."""
     r = res.get('refused') or []
-    return f" {len(r)} fichier(s) .js refusé(s), pas au format des données : {', '.join(x['path'] for x in r)}." if r else ''
+    note = f" {len(r)} fichier(s) .js refusé(s), pas au format des données : {', '.join(x['path'] for x in r)}." if r else ''
+    if res.get('held'):
+        note += f" {res['held']} fichier(s) de sia/base gardés sur ce poste : « Synchroniser » les envoie."
+    return note
 
 
 def _identity(author, name=''):
@@ -548,10 +556,15 @@ def _settled_note(how):
             'annulée': ' Fusion laissée en attente par un passage précédent : annulée, puis refaite.'}.get(how, '')
 
 
-def _commit_local(data, who, env, res, label):
+def _commit_local(data, who, env, res, label, gesture=False):
     """Fichiers du pool modifiés sur ce poste : un commit « <label> : n fichier(s) » (res['committed']) ; .js hors du format
-    des fichiers de données jamais commités (res['refused'])."""
+    des fichiers de données jamais commités (res['refused']) ; sans geste de l'utilisateur, les chemins GESTURE_ONLY
+    restent sur le poste (res['held'] : leur nombre)."""
     changes = pool_changes(data)
+    if not gesture:
+        held = [c for c in changes if any(c.startswith(g) for g in GESTURE_ONLY)]
+        changes = [c for c in changes if c not in held]
+        res['held'] = len(held)
     # .js hors du format des fichiers de données (tools/data_guard.py) : jamais commités, jamais envoyés — un script
     # glissé dans data/ (page piégée, dossier autorisé) ne se propage pas aux autres postes
     for p in [c for c in changes if c.lower().endswith('.js') and os.path.isfile(os.path.join(data, *c.split('/')))]:
@@ -628,8 +641,9 @@ def ensure_excludes(data):
         return []
 
 
-def run(data, author, name=''):
-    """Un passage de synchronisation ; rend le compte rendu (ok, committed, received, pushed, conflicts, message)."""
+def run(data, author, name='', gesture=False):
+    """Un passage de synchronisation ; rend le compte rendu (ok, committed, received, pushed, conflicts, message). gesture :
+    l'utilisateur l'a demandé (bouton « Synchroniser ») — seul ce passage commite aussi les chemins GESTURE_ONLY."""
     res = {'ok': False, 'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'author': author, 'committed': 0,
            'received': 0, 'pushed': False, 'conflicts': [], 'refused': []}
     if not is_repo(data):
@@ -646,7 +660,7 @@ def run(data, author, name=''):
         # 0. fusion laissée en attente par un passage interrompu : conclue ou annulée
         res['settled'] = settle(data, who, env)
         # 1. modifications de ce poste
-        _commit_local(data, who, env, res, f'Synchronisation {author}')
+        _commit_local(data, who, env, res, f'Synchronisation {author}', gesture)
         # index suivis sur ce poste (reçus d'une version précédente, puis refaits par le lanceur) : retirés du suivi
         # d'abord, sinon la fusion refuserait d'écraser la copie refaite
         res['untracked'] = untrack_indexes(data, who, env)

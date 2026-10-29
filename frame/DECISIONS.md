@@ -1593,3 +1593,7 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - Checked: LFPO → EIDW loaded in Atmosphere (real network), every cell of the route filled up to 55° N, the files carry
     ARPEGE's run, the map then draws its weather from the cache (it drew nothing before).
   - Lesson: while two stores share a cache, one rule for the run; it ends when Atmosphere reads `ctx.weather`.
+- **29 Oct 2026 — The launcher's exchange carries the gesture** (coordinator's decision, data_sync): `T.exchange({ gesture })`
+  — a pass of reason `manual` (the user's « Synchroniser ») sends `gesture: true` to `POST /__setup/sync`; every other
+  pass (background, module, interval) does not, and the launcher then keeps `sia/base/` (the aeronautical database being
+  rebuilt) on the workstation: a zone half written never leaves by itself. The build job (D5) commits its own zones.

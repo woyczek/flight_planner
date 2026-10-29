@@ -320,7 +320,7 @@ def i8(c):
 
 
 @case('I9', 'Data sync: git warnings, pending merge', 'I', static=True,
-      rule="tools/data_sync.py: a git warning is never read as a path; a failed pass never leaves a merge pending; a pending merge is concluded or cancelled, never left to the user; a launcher commit checks it first")
+      rule="tools/data_sync.py: a git warning is never read as a path; a failed pass never leaves a merge pending; a pending merge is concluded or cancelled, never left to the user; a launcher commit checks it first; sia/base is committed by the user's gesture only")
 def i9(c):
     import json
     sys.path.insert(0, str(c.root / 'tools'))
@@ -403,6 +403,19 @@ def i9(c):
         r = DS.update(b, 'BBB')
         c.ok(r['ok'] and r['settled'] == 'conclue' and Path(b, *other.split('/')).is_file(), str(r)[:300], 'a pending merge without conflict is concluded')
         c.ok(not Path(b, '.git', 'MERGE_HEAD').exists(), '', 'no merge left pending')
+        # sia/base : seul le geste « Synchroniser » la commite ; un passage de fond la garde sur le poste
+        zone = 'sia/base/fr/2026-10-29/airports.json'
+        put(b, zone, [1])
+        r = DS.update(b, 'BBB')
+        c.ok(r['ok'] and r['held'] == 1 and zone in DS.pool_changes(b), str(r)[:300], 'the update at start keeps sia/base on the computer')
+        r = DS.run(b, 'BBB')
+        c.ok(r['ok'] and r['held'] == 1 and zone in DS.pool_changes(b) and 'sia/base' in r['message'], str(r)[:300],
+             'a background pass keeps sia/base on the computer and says so')
+        r = DS.run(b, 'BBB', gesture=True)
+        c.ok(r['ok'] and r['committed'] == 1 and not DS.pool_changes(b), str(r)[:300], 'the "Synchronise" gesture sends sia/base')
+        c.ok('gesture: true' in (c.root / 'shared' / 'sync.js').read_text(encoding='utf-8'), '', 'the V2 button is a gesture')
+        c.ok("gesture: reason === 'manual'" in (c.root / 'frame' / 'store' / 'frame_data.js').read_text(encoding='utf-8'), '',
+             "the frame's exchange is a gesture only for a manual pass")
         src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
         c.ge(src.count('data_sync.merge_pending(DATA)'), 3, 'the launcher\'s commits check for a pending merge first', what='merge_pending calls')
     finally:

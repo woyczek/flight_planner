@@ -239,7 +239,8 @@
       const r = await api('/__setup/sync', {
         method: 'POST',
         body: JSON.stringify({
-          author
+          author,
+          gesture: true // bouton « Synchroniser » : la base aéronautique (sia/base) part aussi (tools/data_sync.py)
         })
       });
       if (!r) notify(t(['Synchronisation impossible : lanceur injoignable.', 'Synchronisation impossible: launcher unreachable.',

@@ -722,7 +722,7 @@
       // sans trigramme, rien ne part : ni lot (ses écritures attendent sur l'appareil), ni échange au nom de personne
       const who = !!cfg.identity.trigram;
       // transport qui échange lui-même avec un dépôt distant (lanceur : passage git du poste) : avant, pour recevoir
-      if (reason !== 'write' && who) await exchange(T, result);
+      if (reason !== 'write' && who) await exchange(T, result, reason);
       // premier passage avec un dépôt après un usage sans échange : les copies écrites ici sont reprises
       const mode = await getMeta('mode');
       if (mode?.kind === 'local' || (!mode && !(await getMeta('remote')))) await adoptLocal(T, (await treeNow(T)).tree, result);
@@ -747,7 +747,7 @@
           result.pushed = pend.length;
           result.ok = true;
           // puis après, pour envoyer le lot (ce qu'il a reçu en plus est tiré au passage suivant)
-          if (reason !== 'write' && who) await exchange(T, result);
+          if (reason !== 'write' && who) await exchange(T, result, reason);
           return done(result);
         } catch (e) {
           // écriture refusée pour de bon (chemin ou type interdit) : sortie de la file vers les conflits, le reste repart
@@ -851,11 +851,15 @@
       result.pulled.push(d.path);
     }
   }
-  /** Échange propre au transport (T.exchange) ; un échec ne bloque pas le passage local, il est rapporté (warning). */
-  async function exchange(T, result) {
+  /** Échange propre au transport (T.exchange) ; un échec ne bloque pas le passage local, il est rapporté (warning). Passage
+   *  « manual » (bouton de l'utilisateur) : un geste, le lanceur commite aussi la base aéronautique (sia/base) ; un passage de
+   *  fond la laisse sur le poste. */
+  async function exchange(T, result, reason) {
     if (!T.exchange) return;
     try {
-      await T.exchange();
+      await T.exchange({
+        gesture: reason === 'manual'
+      });
     } catch (e) {
       result.warning = e?.offline ? 'exchange offline' : e?.message || String(e);
     }
