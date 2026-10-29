@@ -771,6 +771,22 @@ only.
 Follow-up: the four fixes (delays never lowered and verbs not overwritten, common trigram rule, literal pathspecs, `try`
 per path) and the note on the author are with V3 Frame.
 
+**Fixes checked (frame batch 3b, 824acfa38).**
+- `load_verbs`: a verb already defined (by the core or another set) makes the file refused and said; a delay is never
+  lowered (the longest wins). Checked.
+- `commit_outputs`: trigram on the common rule `^[A-Z0-9]{2,5}$`; `*`, `?`, `[`, `]` and `\` refused (after `\` is
+  brought back to `/`); `GIT_LITERAL_PATHSPECS=1` in the environment of git. Checked.
+- `FD.revalidate`: one `try` per path, a storage error recorded in `errors`. Checked.
+- The note on the author (an attribution) is in `frame/DECISIONS.md`. Checked.
+- New in 3b, acceptable:
+  - `ctx.consume(keys)`: only the requested keys of the module's own query are returned; `with`, `from` and `pane` stay
+    with the frame; the address is rewritten by one `history.replaceState` only when it is the main module's (never in a
+    pane), from `URLSearchParams` (values re-encoded): no injection into the address, no remount;
+  - single refusal shape (`frame/lib/launcher.js`): of an error body, only `message`, `reason` (40 signs) and `wait` are
+    passed on; a route outside the declaration is refused without a call;
+  - aerodb declares its launcher routes (`declaration().launcher.routes = ['regen/job']`) instead of `frame/app.js`; the
+    frame gives no launcher client on a paired device of the local network.
+
 ## Appendix A — Hosts contacted
 
 | Host | From | What goes out |
