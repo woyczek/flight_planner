@@ -15,6 +15,7 @@
  * (dossiers mémorisés) ; window.Airac (cycles). Valeurs MORA calculées, non certifiées.
  */
 (() => {
+  'use strict'; // références partagées gelées par le cadre (802e6856f) : une mutation échoue avec une erreur, jamais en silence
   const DB = 'sia-map-parser',
     STORE = 'cache',
     KEY = 'base',
@@ -1401,8 +1402,8 @@
       timings = [];
     const AS = await needAero(),
       Z = await needZones(),
-      // réglages des zones : ceux de ce navigateur, sauf donnés (la construction d'UNE zone sur le poste, buildZone, lit
-      // seulement cette zone, sans toucher aux réglages de l'utilisateur)
+      // réglages des zones : ceux de ce navigateur, sauf donnés (la construction sur le poste, buildZones, lit
+      // seulement les zones demandées, sans toucher aux réglages de l'utilisateur)
       zs = settings || Z?.settings(),
       // zones actives et sources cochées (Paramètres › Maintenance › Données aéronautiques) ; sans zones : tout est lu
       wanted = rel => !Z || Z.fileWanted(rel, zs),
@@ -1561,7 +1562,7 @@
     // (les autres sources découpent et nomment les mêmes espaces autrement)
     const bySource = {};
     // priorityRings : contours des FIR françaises lus à part (frenchFirRings) quand le SIA n'est pas lu dans cette construction
-    // (la zone construite seule, buildZone) : la règle est la même, un seul calcul
+    // (zones construites sans la France, buildZones) : la règle est la même, un seul calcul
     const cover = [...frenchFirRings(base.airspaces), ...(priorityRings || [])];
     /** Vrai si le centre du cadre du premier anneau de l'espace a tombe dans une FIR française du SIA (cover). */
     const inFrance = a => {
@@ -2292,58 +2293,6 @@
       cycle
     };
   }
-  /** Construit UNE zone, sans toucher aux réglages de l'utilisateur ni à la base mémorisée (la construction de la zone sur le
-   *  poste, un processus par zone : tools/regen/base.py, frame/aerodb/build/headless.html). Le même calcul que la construction
-   *  de toutes les zones d'un coup (build, puis splitZones et zoneBodies), limité à la zone : seuls ses fichiers sont lus
-   *  (réglages { on: { zone }, src }), les sources sous licence d'usage personnel et X-Plane décochées sauf celles de
-   *  `personal` (déclaration du propriétaire), puis découpé comme si `zones` (les zones construites ensemble) l'étaient toutes.
-   *  priorityRings : contours des FIR françaises (priorityRingsFromXmlSia) quand la zone n'est pas la France. cycle : celui
-   *  de la construction (le même pour toutes les zones). Rend { base, report, cycle, texts: { "<sorte>.json": texte,
-   *  "manifest.json": entrée du manifeste, "cities_major.json": grandes villes }, textes prêts à écrire (updated_at = at). */
-  async function buildZone(files, {
-    zone,
-    zones = [],
-    cycle = '',
-    at = new Date().toISOString(),
-    personal = [],
-    extra = {},
-    priorityRings = null,
-    folderName = 'Dossier SIA',
-    progress,
-    signal
-  }) {
-    const Z = await needZones();
-    if (!Z) throw new Error('Zones de données absentes (aero_zones.js)');
-    const settings = zoneSettings(Z, zone, personal),
-      // la zone principale est toujours la France (éléments sans zone, axes ENR 5.7, fichiers analysés : à elle, jamais à la zone
-      // construite seule) ; elle est donc toujours du découpage, la France d'abord puis les autres par ordre alphabétique (même
-      // départage des éléments qui touchent la marge de deux zones, quel que soit l'ordre dans lequel on les a demandées)
-      together = splitOrder([zone, ...zones]);
-    const r = await build(files, {
-      folderName,
-      progress,
-      signal,
-      extra,
-      settings,
-      priorityRings
-    });
-    if (cycle && r.base.airac && r.base.airac !== cycle) throw new Error(`Cycle ${r.base.airac} des fichiers du SIA, ${cycle} demandé`);
-    cycle ||= r.base.airac;
-    if (!cycle) throw new Error('Cycle inconnu : aucun fichier du SIA daté pour cette zone');
-    const part = splitZones(r.base, together, Z, r.report.zones, 'fr')[zone];
-    // les cases d'obstacles viennent des fichiers de CETTE zone seule : toutes restent dans sa sortie, même celles que la construction de
-    // toutes les zones d'un coup rangeait dans la zone voisine (dont les fichiers ne sont pas lus ici) ; l'union des zones est la même
-    part.obstacleMax = {
-      ...r.base.obstacleMax
-    };
-    const texts = zoneTexts(zone, part, citiesByZone(r.base.cities, together, Z)[zone], r.base, cycle, at);
-    return {
-      base: r.base,
-      report: r.report,
-      cycle,
-      texts
-    };
-  }
   /** Écrit name dans le dossier d (handle) si son contenu (hors updated_at) change ; rend la taille écrite (0 : inchangé). */
   async function writeIfChanged(d, name, body, at) {
     const old = await fileText(d, name);
@@ -2476,7 +2425,7 @@
   }
   /** Corps (avant sérialisation, sans updated_at) des fichiers d'UNE zone du format découpé : { sorte: { schema, zone, cycle,
    *  kind, parserVersion, data } } ; p : le morceau de la zone (splitZones), cities : ses villes (citiesByZone). Un seul
-   *  calcul pour la publication par le navigateur (publishSplit) et pour la construction sur le poste (buildZone). */
+   *  calcul pour la publication par le navigateur (publishSplit) et pour la construction sur le poste (buildZones). */
   function zoneBodies(z, p, {
     cycle,
     cities
@@ -3043,7 +2992,6 @@
     ghSync,
     publish,
     splitZones,
-    buildZone,
     buildZones,
     zoneSettings,
     zoneBodies,

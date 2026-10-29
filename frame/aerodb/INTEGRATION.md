@@ -333,10 +333,13 @@ const r = await ctx.launcher.job('regen/job', { set: 'base', verb: 'build', args
 - **Refusals**: 400 (unknown zone, extra field), 409 (a job is running), and `ok: false` with `reason` `'no-browser'` / `'no-input'` /
   `'xplane-in-page'` (a build that needs the X-Plane folder, which only the page holds: it stays in the page) at once.
 - `args.personal` is a **list of source ids** (`'enaire'`, `'nats'`…) the owner declared for a published build (the line « À cocher seulement si le
-  dépôt de données n'est utilisé que par vous »); absent or `[]`, nothing personal is published. `args.parallel` is internal, not for the screen.
-- **Cost, measured on 30 Oct 2026** (24 cores, ten zones `fr gb es de it be ch ie nl nat`): 10 to 11 s through the launcher with one instance (the first
-  zone out after 6 s, then 0.45 s per zone for the write and the git commit), 1.3 GB private at most; the page's own build of the same zones in one page:
-  6 s, without the commits. One instance per zone: 12 to 17 s, 3.6 GB (DECISIONS 30 Oct 2026).
+  dépôt de données n'est utilisé que par vous »); absent or `[]`, nothing personal is published. Nothing else is an argument: there is no mode in the API.
+- **How the page is started (route B)**: the verb offers `{ zones, cycle, personal, inputs }` to the job (`job.offer`), starts the browser on
+  `<launcher>/frame/aerodb/build/headless.html#job=<id>` and nothing else (no token, no parameter on the command line); the page makes one
+  `POST regen/job/claim` and gets the offer and the token, checks them, and reads. The module has nothing to do with it.
+- **Cost, measured on 30 Oct 2026** (24 cores, ten zones `fr gb es de it be ch ie nl nat`): 10 to 12 s through the launcher (the first zone out after 6 to
+  8 s, then 0.45 s per zone for the write and the git commit), 1.3 GB private at most; the page's own build of the same zones in one page: 6 s, without the
+  commits (DECISIONS 30 Oct 2026).
 
 ### Sources screen (`#sources`)
 

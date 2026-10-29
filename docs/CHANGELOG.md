@@ -131,15 +131,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   threshold for an arrival, its number at the threshold, in its side's hue, from the aerodrome view (threshold "Chosen runway
   (arrow)" on the thresholds page). The aids (ILS, DME) come later.
 - **Données: the aeronautical base built on the launcher, in one headless browser** (lot D5; `tools/regen/base.py` — job `base/build`, args `{ zones,
-  personal? }`; `frame/aerodb/build/headless.html` + `headless.js`; `shared/sia_base.js` `buildZones` / `buildZone` and the pieces `publishSplit` now shares;
-  cases K42–K50; SPEC § 5 septies, INTEGRATION, DECISIONS 30 Oct) — the page's own builders run in Edge or Chrome without a window, **one instance for all the
+  personal? }`; `frame/aerodb/build/headless.html` + `headless.js`; `shared/sia_base.js` `buildZones` and the pieces `publishSplit` now shares; cases
+  K42–K51; SPEC § 5 septies, INTEGRATION, DECISIONS 30 Oct) — the page's own builders run in Edge or Chrome without a window, **one instance for all the
   requested zones** (output identical to the page's, byte for byte), each zone written under `sia/base/<zone>/<cycle>/` through the launcher's path rule
-  and committed alone as soon as it is handed back by `POST /__setup/regen/job/put` (a failed zone publishes nothing and stops no other); per-zone instances
-  stay an internal option (`args.parallel`). Zones as a dict at the root of the job view (`state`, `done`, `total`, `error`), result `built` / `failed` /
-  `commits` / `reason`; no browser: `no-browser`; `xplane` in `personal`: `xplane-in-page`. Ten zones: 10 to 11 s, 1.3 GB. Security: browser by absolute
-  path only, temporary profile deleted, nothing reachable beyond the launcher's address, **the token never on a command line** (the browser opens a
-  `start.html` of its profile, deleted once the page has started), time limit and cancel kill the process tree. Needs one exception in the launcher's
-  same-origin check (K50, listed as a known failure). The V2 page and the Worker path are unchanged (same files byte for byte).
+  and committed alone as soon as it is handed back by `POST /__setup/regen/job/put` (a failed zone publishes nothing and stops no other). **Route B**: the
+  verb offers `{ zones, cycle, personal, inputs }` (`job.offer`) and starts the browser on the launcher's page with `#job=<id>` only; the page makes one
+  `POST /__setup/regen/job/claim` for the offer and the token, **checks it before reading anything**, and reads (no token, no parameter on any command line,
+  no bootstrap file, no exception in the launcher's same-origin check). Zones as a dict at the root of the job view (`state`, `done`, `total`, `error`), result
+  `built` / `failed` / `commits` / `reason`; no browser: `no-browser`; `xplane` in `personal`: `xplane-in-page`. Ten zones: 10 to 12 s, 1.3 GB. Security: browser by
+  absolute path only (`taskkill` through `GetSystemDirectoryW`), temporary profile deleted (leftovers purged at load), WebRTC limited, nothing reachable beyond the
+  launcher's address, time limit and cancel kill the process tree. `aerodb` also declares `regen/job/cancel` (cancelling an EAD or eAIP reading was refused).
+  The V2 page and the Worker path are unchanged (same files byte for byte).
 
 - **Map: a flight write that lands during the mount is no longer missed** (`modules/maps/data.js` `watchFlight`; journey J2,
   step 3, seen once in two) — the map read the flight, then subscribed to its changes after other waits; a write between the

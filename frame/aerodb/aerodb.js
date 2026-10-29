@@ -2134,7 +2134,7 @@
     // routes du lanceur appelées par aerodb (frame/INTEGRATION.md § 15.1) : le travail des lectures de procédures ; le cadre
     // en fait le travail donné à create({ launcher }) (les fiches .lnmperf passent par le client du cadre lui-même)
     launcher: {
-      routes: ['regen/job']
+      routes: ['regen/job', 'regen/job/cancel']
     }
   });
 

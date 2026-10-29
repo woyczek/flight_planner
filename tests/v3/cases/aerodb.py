@@ -2943,8 +2943,8 @@ def k34(c):
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------
-# K42 à K50 — lot D5 : la base aéronautique construite sur le poste, un processus par zone (tools/regen/base.py, frame/aerodb/build/headless.html).
-# Jamais de vrai navigateur sauf K49 (facultatif) ; K50 lance le vrai lanceur : tests/v3/fixtures/d5_fake_browser.py joue le navigateur (chemin absolu donné par le crochet ctx['browser']).
+# K42 à K51 — lot D5 : la base aéronautique construite sur le poste, un processus par zone (tools/regen/base.py, frame/aerodb/build/headless.html).
+# Jamais de vrai navigateur sauf K49 (facultatif) ; K50 lance le vrai lanceur, K51 la vraie page : tests/v3/fixtures/d5_fake_browser.py joue le navigateur (chemin absolu donné par le crochet ctx['browser']).
 class _D5Mod:
     """Le module tools/regen/base.py tel que le lanceur le charge (regen_jobs.load_verbs) : lecture ET écriture des noms du module (les essais remplacent
     une fonction, la mémoire libre ou la recherche du navigateur)."""
@@ -3093,10 +3093,30 @@ def k42(c):
     c.ok(args[-1] == 'http://127.0.0.1:5555/p#x=1' and '--no-sandbox' not in args and not any('--remote-debugging' in a for a in args), str(args), 'the address is last; no --no-sandbox, no debugging port')
 
 
+def _d5_offer_shim(RJ):
+    """Cette base n'a peut-être pas encore le code du cadre pour le claim (Job.offer, POST regen/job/claim) : l'essai joue alors le contrat — offer(payload) refuse un
+    objet qui porte ok, job, token ou status ; claim(job) rend { …payload, ok, job, token } UNE fois, 409 sinon (pas le travail en cours, rien d'offert, déjà
+    réclamé). Avec le code du cadre (Job.offer), rien n'est remplacé et c'est le sien qui répond."""
+    if not hasattr(RJ.Job, 'offer'):
+        def offer(self, payload):
+            if not isinstance(payload, dict) or {'ok', 'job', 'token', 'status'} & set(payload):
+                raise ValueError('bad payload')
+            self._offered, self._claimed = dict(payload), False
+        RJ.Job.offer = offer
+    if not hasattr(RJ.Jobs, 'claim'):
+        def claim(self, id_):
+            j = self.cur
+            if not j or j.id != str(id_ or '') or j.data['state'] != 'running' or getattr(j, '_offered', None) is None or j._claimed:
+                return {'ok': False, 'status': 409, 'message': 'refused'}
+            j._claimed = True
+            return {**j._offered, 'ok': True, 'job': j.id, 'token': j.token}
+        RJ.Jobs.claim = claim
+
+
 class _D5Launcher:
-    """Le gestionnaire de la route du lanceur POST /__setup/regen/job/put, tel que tools/launch.py le fait (en-tête X-SOG-Setup, taille, JSON, puis
-    regen_jobs.Jobs.put : le travail, le jeton, la zone, les noms), sur un port de 127.0.0.1 : le faux navigateur y remet ses zones. C'est le VRAI
-    Jobs.put de la base ; rien d'autre n'est servi (le faux navigateur ne charge aucune page)."""
+    """Le gestionnaire des routes du lanceur POST /__setup/regen/job/claim et /__setup/regen/job/put, tel que tools/launch.py les fait (en-tête X-SOG-Setup,
+    JSON, puis regen_jobs.Jobs.claim / Jobs.put : le travail, le jeton, la zone, les noms), sur un port de 127.0.0.1 : le faux navigateur y réclame son
+    offre et y remet ses zones. Rien d'autre n'est servi (le faux navigateur ne charge aucune page)."""
 
     def __init__(self, jobs):
         import http.server
@@ -3110,7 +3130,7 @@ class _D5Launcher:
 
             def do_POST(self):
                 body = self.rfile.read(int(self.headers.get('Content-Length') or 0))
-                if self.path != '/__setup/regen/job/put' or self.headers.get('X-SOG-Setup') != '1':
+                if self.path not in ('/__setup/regen/job/put', '/__setup/regen/job/claim') or self.headers.get('X-SOG-Setup') != '1':
                     code, out = 403, {'ok': False}
                 else:
                     try:
@@ -3118,9 +3138,9 @@ class _D5Launcher:
                     except ValueError:
                         a = {}
                     a = a if isinstance(a, dict) else {}
-                    out = jobs.put(a.get('job'), a.get('token'), a.get('zone'), a.get('files'))
+                    out = jobs.claim(a.get('job')) if self.path.endswith('/claim') else jobs.put(a.get('job'), a.get('token'), a.get('zone'), a.get('files'))
                     code = out.get('status', 200) if out.get('ok') is False else 200
-                outer.seen.append(code)
+                outer.seen.append((self.path.rsplit('/', 1)[1], code))
                 data = json.dumps(out).encode()
                 self.send_response(code)
                 self.send_header('Content-Length', str(len(data)))
@@ -3139,10 +3159,11 @@ class _D5Launcher:
 
 
 class _D5Run:
-    """Un travail base/build lancé par le VRAI regen_jobs.Jobs (job.token, job.put, job.take de la base) avec le faux navigateur et le gestionnaire de
-    route ci-dessus. view(): le travail tel que la page le lit."""
+    """Un travail base/build lancé par le VRAI regen_jobs.Jobs (job.token, job.offer, job.put, job.take) avec le faux navigateur et le gestionnaire de routes
+    ci-dessus. view(): le travail tel que la page le lit."""
 
     def __init__(self, RJ, data, fake, args, author='TST', **ctx_extra):
+        _d5_offer_shim(RJ)
         self.ctx = _d5_ctx(data, fake, **ctx_extra)
         self.jobs = RJ.Jobs(RJ.REGISTRY, self.ctx)
         self.launcher = _D5Launcher(self.jobs)
@@ -3166,47 +3187,56 @@ class _D5Run:
 
 
 @case('K43', 'Build job: arguments checked against the zone list, the verb loaded by the launcher', 'K', static=True,
-      rule='frame/INTEGRATION 15.1: nothing from the page is a path, an address or a command; unknown zone refused (400); the zones are where the route looks (args.zones)')
+      rule='frame/INTEGRATION 15.1: nothing from the page is a path, an address or a command; unknown zone refused (400); the zones are where the route looks (args.zones); no mode of the API but the list of zones and the personal sources')
 def k43(c):
     RJ, B, fn, check = _d5_modules()
     ids = B.zone_ids()
     c.ok({'fr', 'gb', 'nat', 'es', 'us'} <= set(ids) and len(ids) > 100, str(len(ids)), 'the zone list is read from shared/carto/aero_zones_geo.js (fr, gb, nat, es, us among them)')
-    c.eq(check({'zones': ['fr', 'GB ']}), {'zones': ['fr', 'gb'], 'personal': [], 'parallel': False}, 'zones are trimmed and lower-cased, personal is a list of source ids (none by default), no parallel instances by default', what='normalised')
-    c.eq(check({'zones': ['ie'], 'personal': ['xplane', 'enaire', 'xplane'], 'parallel': True}), {'zones': ['ie'], 'personal': ['enaire', 'xplane'], 'parallel': True},
-         'personal-licence sources: sorted, no duplicate; parallel is the internal one-instance-per-zone mode', what='personal and parallel')
+    c.eq(check({'zones': ['fr', 'GB ']}), {'zones': ['fr', 'gb'], 'personal': []}, 'zones are trimmed and lower-cased, personal is a list of source ids (none by default)', what='normalised')
+    c.eq(check({'zones': ['ie'], 'personal': ['xplane', 'enaire', 'xplane']}), {'zones': ['ie'], 'personal': ['enaire', 'xplane']}, 'personal-licence sources: sorted, no duplicate', what='personal')
     bad = [{'zones': ['zz']}, {'zones': []}, {'zones': ['fr', 'fr']}, {'zones': 'fr'}, {'zones': ['fr', 'gb'], 'x': 1}, {}, None, 'fr', {'zones': ['fr/../x']}, {'zones': ['fr,gb']},
            {'zones': [7]}, {'zones': ['fr'], 'personal': 'x'}, {'zones': ['fr'], 'personal': ['../x']}, {'zones': ['fr'], 'personal': ['ab'] * 11}, {'zones': ids[:61]}, {'zones': ['*']},
-           {'zones': ['fr'], 'parallel': 'yes'}, {'zone': 'fr'}]
-    c.eq([a for a in bad if check(a) is not None], [], 'an unknown zone, a list, a path, a duplicate, an extra key or too many are refused', what='refused')
+           {'zones': ['fr'], 'parallel': True}, {'zones': ['fr'], 'parallel': False}, {'zone': 'fr'}]
+    c.eq([a for a in bad if check(a) is not None], [], 'an unknown zone, a list, a path, a duplicate, an extra key (parallel included: not a mode of the API) or too many are refused', what='refused')
     c.eq(RJ.Jobs(RJ.REGISTRY).start('base', 'build', {'zones': ['zz']}).get('status'), 400, 'the launcher answers 400 to an unknown zone', what='start')
+    c.eq(RJ.Jobs(RJ.REGISTRY).start('base', 'build', {'zones': ['fr'], 'parallel': True}).get('status'), 400, 'and to a `parallel` key (any page script could send it)', what='start parallel')
     c.ok(('base', 'build') in RJ.REGISTRY and RJ.MIN_GAP.get(('base', 'build')) is None, str(list(RJ.REGISTRY)), 'the launcher registers base/build, with no minimal gap between two starts')
     src = (c.root / 'tools' / 'regen' / 'base.py').read_text(encoding='utf-8')
     import re
-    c.ok(not re.search(r'http\.server|ThreadingHTTPServer|ZoneInbox|class Transport|socket\.', src), 'a server or the interim shim is still in base.py', 'no second server, no shim: the frame\'s route, Job.token / put / take')
+    c.ok(not re.search(r'http\.server|ThreadingHTTPServer|ZoneInbox|class Transport|socket\.|parallel|start\.html', src.split('"""', 2)[2]), 'a server, the shim, a parallel mode or the start file is still in base.py',
+         "no second server, no shim, no per-zone mode, no bootstrap file: the frame's route (Job.offer / claim / put / take)")
+    # aerodb's declaration: the reading job AND its cancel are routes aerodb may call (the frame's under() covers children only for a prefix ending with « / »)
+    decl = (c.root / 'frame' / 'aerodb' / 'aerodb.js').read_text(encoding='utf-8')
+    m = re.search(r"launcher:\s*\{\s*routes:\s*\[([^\]]*)\]", decl)
+    c.ok(m and "'regen/job'" in m.group(1) and "'regen/job/cancel'" in m.group(1), m.group(1) if m else 'no declaration', "aerodb declares regen/job and regen/job/cancel: cancelling an EAD or eAIP reading reaches the route")
 
 
-@case('K44', 'Build job: the frame\'s route and the real Job.take / put, the token only in the page\'s fragment', 'K', static=True,
-      rule='frame/INTEGRATION 15.1: 409 not the running job, 403 wrong token, 400 zone outside args.zones or a bad name, 413 over PUT_MAX; the verb receives the zone by job.take and writes it')
+@case('K44', 'Build job: the frame\'s claim and put routes with the real Job, the page\'s address carries the job only', 'K', static=True,
+      rule='frame/INTEGRATION 15.1: one claim per job (409 after), 409 / 403 / 400 / 413 for the put; the browser gets `#job=<id>` and nothing else; the verb receives the zone by job.take and writes it')
 def k44(c):
     import http.client
     import json
     import tempfile
+    import time
     RJ, B, fn, check = _d5_modules()
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data, fake = _d5_scene(td)
-        _d5_modes(fake, {'be': 'hang'})                                                  # the job stays running while we knock at the route
-        run = _D5Run(RJ, data, fake, {'zones': ['be', 'ie']})
-        import time
+        _d5_modes(fake, {'be': 'hang'})                                                  # the job stays running while we knock at the routes
+        run = _D5Run(RJ, data, fake, {'zones': ['be', 'ie'], 'personal': ['enaire']})
         end = time.time() + 20
-        while time.time() < end and not (run.job and (run.job.data.get('zones') or {}).get('be', {}).get('state') == 'building'):
+        while time.time() < end and not _d5_lines(fake, 'claim.json'):
             time.sleep(0.05)
-        end = time.time() + 20
-        while time.time() < end and not _d5_lines(fake, 'urls.txt'):
-            time.sleep(0.05)
-        job, put = run.job, run.jobs.put
+        job, put, claim = run.job, run.jobs.put, run.jobs.claim
         files = {'mora.json': '{}'}
         c.eq(run.start.get('ok'), True, 'the job starts through the launcher', what='start')
-        c.eq(put('other', job.token, 'be', files).get('status'), 409, 'not the running job: 409', what='job')
+        offer = json.loads(_d5_lines(fake, 'claim.json')[0])
+        c.eq((offer['ok'], offer['job'], offer['token'] == job.token, offer['zones'], offer['cycle'], offer['personal']), (True, job.id, True, ['be', 'ie'], '2026-10-01', ['enaire']),
+             'the claim gives what the verb offered (job.offer) and the job\'s token', what='claim')
+        c.eq(sorted(offer['inputs']), sorted(B.list_inputs(str(data))), 'and the inputs the page may read (the page decides which it wants)', what='inputs')
+        c.eq(sorted(set(offer) - {'ok', 'job', 'token'}), ['cycle', 'inputs', 'personal', 'zones'], 'nothing else is offered', what='keys')
+        c.eq(claim(job.id).get('status'), 409, 'a second claim: 409 (the page claimed once)', what='claim twice')
+        c.eq(claim('other').get('status'), 409, 'a claim for another job: 409', what='claim other')
+        c.eq(put('other', job.token, 'be', files).get('status'), 409, 'put, not the running job: 409', what='job')
         c.eq([put(job.id, t, 'be', files).get('status') for t in ('', 'x' * len(job.token), job.token[:-1], None)], [403] * 4, 'a missing, wrong or truncated token: 403', what='token')
         c.eq(put(job.id, job.token, 'fr', files).get('status'), 400, "a zone outside the job's args.zones: 400", what='zone')
         c.eq([put(job.id, job.token, 'be', f).get('status') for f in ({'../x.json': '{}'}, {'A.json': '{}'}, {'x.txt': '{}'}, {'x.json': 5}, {})], [400] * 5, 'a bad file name, a value that is not text, no file: 400', what='names')
@@ -3217,70 +3247,73 @@ def k44(c):
             RJ.PUT_MAX = old
         c.ok(job.take('be', 0.05) is None, 'a refused put left something', 'a refused put hands nothing to the verb')
         c.eq(job.token in json.dumps(job.view()), False, 'the token is in the view', what='view')
-        # through the HTTP route as the browser calls it (the launcher-like handler): the same answers
+        # through the HTTP routes as the browser calls them: the same answers
         h = http.client.HTTPConnection(run.launcher.origin.split('//')[1], timeout=10)
         h.request('POST', '/__setup/regen/job/put', json.dumps({'job': job.id, 'token': 'nope', 'zone': 'be', 'files': files}), {'X-SOG-Setup': '1'})
-        c.eq(h.getresponse().status, 403, 'the route answers the refusals of Jobs.put', what='route')
-        urls = [l.split(' ', 1)[1] for l in _d5_lines(fake, 'urls.txt')]
-        c.ok(urls and '#' in urls[0] and job.token in urls[0].split('#', 1)[1], str(urls), "the page's address carries the job's token in its fragment")
+        c.eq(h.getresponse().status, 403, 'the put route answers the refusals of Jobs.put', what='route')
+        argv = json.loads(_d5_lines(fake, 'argv.txt')[0])
+        c.eq(argv[-1], f'{run.launcher.origin}/frame/aerodb/build/headless.html#job={job.id}', "the browser's last argument is the launcher's page with the job id and nothing else", what='address')
+        c.ok(job.token not in ' '.join(argv) and 'cycle' not in argv[-1] and 'zones' not in argv[-1], ' '.join(argv)[:300], 'no token, zone, cycle or file in the command line')
         run.cancel()
         view = run.wait()
         c.eq(view['state'], 'cancelled', 'the job ends cancelled', what='state')
 
 
-@case('K45', 'Build job scheduler: one instance by default; per zone (internal mode) at most cores - 1, bounded by free memory', 'K', static=True,
-      rule='DECISIONS 30 Oct: one instance builds every zone; args.parallel keeps the scheduler: (cores - 1, at least 1) instances at once, ~500 MB each')
+@case('K45', 'Build job: one instance; leftovers of an interrupted build purged at load; taskkill found in the system folder', 'K', static=True,
+      rule='D5 security: only sog-base-* folders older than a build can last, never a link; the process tree is killed with the system folder\'s taskkill, not %SystemRoot%')
 def k45(c):
+    import os
     import tempfile
-    import threading
     import time
+    from pathlib import Path
     RJ, B, fn, check = _d5_modules()
-    old = (1, 99)
-    c.eq([B.can_start(4, None, [old] * n, 1) for n in range(5)], [True, True, True, False, False], 'cores 4: three at most', what='cores - 1')
-    c.eq([B.can_start(1, None, [old] * n, 1) for n in range(3)], [True, False, False], 'one core: one at a time (never zero)', what='1 core')
-    c.eq([B.can_start(2, 10**12, [old] * n, 1) for n in range(3)], [True, False, False], 'two cores: one at a time', what='2 cores')
-    c.eq(B.can_start(8, 10, [], 10**9), True, 'the first instance always starts, whatever the free memory', what='first')
-    c.eq(B.can_start(8, 1000, [(600, 99)], 600), True, 'an instance that has had time to grow is already in the free memory', what='grown')
-    c.eq(B.can_start(8, 1000, [(600, 1)], 600), False, 'one that has just started still has its memory to take: reserved', what='young')
-    c.eq(B.can_start(8, 1300, [(600, 1)], 600), True, 'enough for both', what='enough')
-    c.eq(B.can_start(8, None, [old] * 3, 10**9), True, 'free memory unknown: only the cores', what='unknown')
-    c.ge(B.need_of(44 * 2**20), 1.1 * 2**30, "the French SIA's 44 MB AIXM counts for about 1.2 GB (measured: 1.2 GB private)", what='need of fr')
-    c.eq(B.need_of(0), B.PER_INSTANCE, 'a small zone counts 500 MB', what='need of a small zone')
-    c.ok(B.free_memory() is None or B.free_memory() > 0, str(B.free_memory()), 'free memory is read with the standard library (GlobalMemoryStatusEx / /proc/meminfo)')
-
-    zones = ['ie', 'be', 'ch', 'gb', 'nl']
-
-    def run(parallel, **extra):
-        """Les cinq zones, chacune remise après 0,6 s ; rend (résultat, plus grand nombre de zones « en construction » vues en même temps, le travail)."""
-        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
-            data, fake = _d5_scene(td)
-            _d5_modes(fake, {z: 'slow' for z in zones})
-            holder = {}
-            building = lambda: sum(1 for z in ((holder['r'].job.data.get('zones') or {}).values() if holder.get('r') and holder['r'].job else []) if z['state'] == 'building')
-            holder['r'] = r = _D5Run(RJ, data, fake, {'zones': zones, 'parallel': parallel}, **{k: (v(building) if callable(v) else v) for k, v in extra.items()})
-            seen, stop = [0], threading.Event()
-
-            def watch():
-                while not stop.is_set():
-                    seen[0] = max(seen[0], building())
-                    time.sleep(0.01)
-            threading.Thread(target=watch, daemon=True).start()
-            view = r.wait()
-            stop.set()
-            return view['result'], seen[0], r
-    res, peak, r = run(False)
-    c.eq((res['ok'], sorted(res['built']), res['instances']), (True, sorted(zones), 1), 'by default one instance builds the five zones', what='one instance')
-    res, peak, r = run(True, cores=3)
-    c.eq((res['ok'], sorted(res['built']), res['instances']), (True, sorted(zones), 2), 'parallel with cores = 3: five zones built, never more than two instances', what='cores bound')
-    saved = B.GROWTH
-    B.GROWTH = 0.3
-    try:
-        res, peak, r = run(True, cores=24, per_instance=100, free_memory=lambda building: (lambda: 250 - 100 * building()))
-        c.eq((res['ok'], res['instances']), (True, 2), 'memory for two instances: five zones built, two at a time', what='memory bound')
-        res, peak, r = run(True, cores=24, per_instance=100, free_memory=lambda building: (lambda: 50))
-        c.eq((res['ok'], res['instances']), (True, 1), 'memory for none: the first still starts, the others wait for it: one at a time, all built', what='no memory')
-    finally:
-        B.GROWTH = saved
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, fake = _d5_scene(td)
+        view = _D5Run(RJ, data, fake, {'zones': ['ie', 'be', 'ch']}).wait()
+        c.eq((view['result']['ok'], view['result']['instances'], sorted(view['result']['built'])), (True, 1, ['be', 'ch', 'ie']), 'one instance builds the three zones', what='one instance')
+        c.eq(len(_d5_lines(fake, 'pids.txt')), 2, 'one browser (and its child) was started', what='browsers')
+    # leftovers
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        old, young, other, afile = root / 'sog-base-old', root / 'sog-base-young', root / 'keep-me', root / 'sog-base-afile'
+        for d in (old, young, other):
+            (d / 'sub').mkdir(parents=True)
+            (d / 'sub' / 'x.txt').write_text('x', encoding='utf-8')
+        afile.write_text('x', encoding='utf-8')
+        long_ago = time.time() - 7200
+        for d in (old, other, afile):
+            os.utime(d, (long_ago, long_ago))
+        target = root / 'target-of-the-link'
+        target.mkdir()
+        (target / 'precious.txt').write_text('x', encoding='utf-8')
+        link = root / 'sog-base-link'
+        linked = False
+        try:
+            os.symlink(target, link, target_is_directory=True)
+            os.utime(link, (long_ago, long_ago), follow_symlinks=False)
+            linked = True
+        except (OSError, NotImplementedError):
+            pass
+        gone = B.purge_stale(str(root))
+        c.eq(gone, ['sog-base-old'], 'only the old folder with the prefix is removed', what='purged')
+        c.ok(not old.exists() and young.exists() and other.exists() and afile.exists(), str(sorted(p.name for p in root.iterdir())), 'a recent profile (a build may be running), another name and a file are left alone')
+        if linked:
+            c.ok(link.exists() and (target / 'precious.txt').exists(), str(sorted(p.name for p in root.iterdir())), 'a link is never followed nor removed: its target is intact')
+    c.ok(B.STALE >= 2 * B.ZONE_TIMEOUT, f'{B.STALE} {B.ZONE_TIMEOUT}', 'a leftover is older than twice the time limit of a build: never the profile of a running job')
+    # taskkill
+    if os.name == 'nt':
+        sysdir = B.system_directory()
+        c.ok(os.path.isfile(os.path.join(sysdir, 'taskkill.exe')) and os.path.isabs(sysdir), sysdir, 'the system folder comes from GetSystemDirectoryW and holds taskkill.exe')
+        saved = os.environ.get('SystemRoot')
+        try:
+            os.environ['SystemRoot'] = r'C:\evil'
+            c.eq(B.system_directory(), sysdir, 'and does not follow %SystemRoot%', what='SystemRoot')
+        finally:
+            if saved is not None:
+                os.environ['SystemRoot'] = saved
+    src = (c.root / 'tools' / 'regen' / 'base.py').read_text(encoding='utf-8')
+    c.ok('SystemRoot' not in src.split('"""', 2)[2], 'SystemRoot appears in base.py', 'base.py does not read %SystemRoot%')
+    c.ok('purge_stale()' in src, 'no call at load', 'the purge is run when the launcher loads the verbs')
 
 
 @case('K46', 'Build job: one commit per zone as it comes out, a failed zone publishes nothing and stops no other', 'K', static=True,
@@ -3372,27 +3405,27 @@ def k47(c):
 
     def gone(fake):
         return [int(p.split()[1]) for p in _d5_lines(fake, 'pids.txt')], [p.split(' ', 1)[1] for p in _d5_lines(fake, 'profiles.txt')]
-    # cancel while three instances (internal per-zone mode) hang
+    # cancel while the instance hangs
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data, fake = _d5_scene(td)
         before = _d5_git(data, 'rev-list', '--count', 'HEAD').strip()
         _d5_modes(fake, {'de': 'hang', 'gb': 'hang', 'ie': 'hang', 'nl': 'hang'})
-        run = _D5Run(RJ, data, fake, {'zones': ['de', 'gb', 'ie', 'nl'], 'parallel': True}, cores=4)
+        run = _D5Run(RJ, data, fake, {'zones': ['de', 'gb', 'ie', 'nl']})
         end = time.time() + 30
-        while time.time() < end and sum(1 for z in (run.job.data.get('zones') or {}).values() if z['state'] == 'building') < 3:
+        while time.time() < end and not (_d5_lines(fake, 'pids.txt') and len(_d5_lines(fake, 'pids.txt')) >= 2):
             time.sleep(0.05)
-        time.sleep(0.5)                                                       # the browsers have started, the children beat
+        time.sleep(0.5)                                                       # the browser has started, its child beats
         pids, profiles = gone(fake)
-        c.ok(len(pids) >= 6 and all(Path(p).exists() for p in profiles) and all(_d5_alive(p) for p in pids), f'{pids} {profiles}', 'before the cancel: three browsers and their children run, their profiles exist')
+        c.ok(len(pids) >= 2 and all(Path(p).exists() for p in profiles) and all(_d5_alive(p) for p in pids), f'{pids} {profiles}', 'before the cancel: the browser and its child run, the profile exists')
         run.cancel()
         view = run.wait(60)
         pids, profiles = gone(fake)
-        c.eq((view['state'], view['result'].get('reason'), sorted({z['state'] for z in view['zones'].values()})), ('cancelled', 'cancelled', ['cancelled']), 'the job and all its zones are said cancelled (the fourth, waiting for a core, too)', what='states')
-        c.ok(not any(_d5_alive(p) for p in pids), f'alive: {[p for p in pids if _d5_alive(p)]}', 'every browser process and every child is killed')
+        c.eq((view['state'], view['result'].get('reason'), sorted({z['state'] for z in view['zones'].values()})), ('cancelled', 'cancelled', ['cancelled']), 'the job and all its zones are said cancelled', what='states')
+        c.ok(not any(_d5_alive(p) for p in pids), f'alive: {[p for p in pids if _d5_alive(p)]}', 'the browser process and its child are killed')
         beat = {p.name: p.read_text() for p in fake.glob('heartbeat_*.txt')}
         time.sleep(0.5)
-        c.eq({p.name: p.read_text() for p in fake.glob('heartbeat_*.txt')}, beat, 'the children no longer beat', what='heartbeats')
-        c.ok(not any(Path(p).exists() for p in profiles), str([p for p in profiles if Path(p).exists()]), 'the temporary profiles are deleted on cancel')
+        c.eq({p.name: p.read_text() for p in fake.glob('heartbeat_*.txt')}, beat, 'the child no longer beats', what='heartbeats')
+        c.ok(not any(Path(p).exists() for p in profiles), str([p for p in profiles if Path(p).exists()]), 'the temporary profile is deleted on cancel')
         c.eq(_d5_git(data, 'rev-list', '--count', 'HEAD').strip(), before, 'nothing was committed', what='commits')
         c.ok(not (data / 'sia' / 'base').exists(), 'sia/base exists', 'nothing was written')
     # time limit (one instance for every zone)
@@ -3423,24 +3456,21 @@ def k47(c):
         bad.write_text('this is not an executable', encoding='utf-8')
         view = _D5Run(RJ, data, fake, {'zones': ['ie']}, browser=str(bad)).wait()
         c.eq((view['zones']['ie']['state'], view['zones']['ie'].get('error')), ('failed', 'browser-failed'), 'a file that cannot be started fails the zone with its code', what='cannot start')
-        c.ok(not any(p.is_dir() and p.name.startswith('sog-base-') and (time.time() - p.stat().st_mtime) < 120 for p in Path(tempfile.gettempdir()).glob('sog-base-*')),
-             str([p.name for p in Path(tempfile.gettempdir()).glob('sog-base-*')][:3]), 'no temporary profile left in the temp folder by these runs')
 
 
-@case('K48', 'Build job: refusals, and the token never on a command line, in the console, in a log or in a file after the start', 'K', static=True,
-      rule="D5 security: the browser gets the file:// address of start.html only (the token is in the file, deleted once the page says started); every write goes through the launcher's path rule")
+@case('K48', 'Build job: refusals, and the token and the parameters nowhere but in the claim answer', 'K', static=True,
+      rule="D5 security (route B): the browser gets the launcher's page with `#job=<id>` only; one claim returns the offer and the token; every write goes through the launcher's path rule")
 def k48(c):
     import json
     import os
     import sys
     import tempfile
     import threading
-    import time
     import types
-    import urllib.parse
     from pathlib import Path
     RJ, B, fn, check = _d5_modules()
     a = check({'zones': ['ie']})
+    _d5_offer_shim(RJ)
     # refusals: nothing started, nothing written
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data, fake = _d5_scene(td)
@@ -3474,57 +3504,39 @@ def k48(c):
                 del main.Setup
             else:
                 main.Setup = had
-    # start.html: the only thing the browser is given; the token is in it until the page says « started »
+        # a launcher without job.offer (older than the frame's claim): refused, said
+        class NoOffer:
+            id, author, token = 'x', 'TST', 't'
+            data = {}
+        res = fn(NoOffer(), a, _d5_ctx(data, fake, origin='http://127.0.0.1:1'))
+        c.eq((res['ok'], res['reason'], 'job.offer' in res['message']), (False, 'failed', True), 'a launcher without job.offer is refused, the reason said', what='no offer')
+    # the offer: refused keys (the frame's job.offer), the claim, the address
+    bad = RJ.Job('base', 'build', a, author='TST')
+    refused = 0
+    for key in ('ok', 'job', 'token', 'status'):
+        try:
+            bad.offer({'zones': ['ie'], key: 1})
+        except ValueError:
+            refused += 1
+    c.eq(refused, 4, 'an offer that carries ok, job, token or status is refused (it would overwrite the claim answer)', what='offer keys')
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data, fake = _d5_scene(td)
-        _d5_modes(fake, {'ie': 'hang'})
+        _d5_modes(fake, {'be': 'twice'})
         run = _D5Run(RJ, data, fake, {'zones': ['ie', 'be'], 'personal': ['enaire']})
-        end = time.time() + 20
-        while time.time() < end and (run.job.data.get('zones') or {}).get('ie', {}).get('total') != 2:
-            time.sleep(0.05)
-        token = run.job.token
+        view = run.wait()
+        token = _d5_lines(fake, 'token.txt')[0]
         argv = json.loads(_d5_lines(fake, 'argv.txt')[0])
-        profile = _d5_lines(fake, 'profiles.txt')[0].split(' ', 1)[1]
-        c.ok(token not in ' '.join(argv) and 'headless.html' not in ' '.join(argv) and argv[-1].startswith('file:///') and argv[-1].endswith('/start.html'), ' '.join(argv)[:300],
-             'the browser command line carries no token and no launcher address: only the file:// address of start.html')
-        c.eq(_d5_lines(fake, 'start.txt'), ['True'], 'start.html existed when the browser started', what='start.html at start')
-        c.ok(Path(profile).is_dir() and not (Path(profile) / 'start.html').exists(), profile, 'once the page said « started » the job deleted start.html at once (the profile stays until the end)')
-        url = _d5_lines(fake, 'urls.txt')[0].split(' ', 1)[1]
-        head, frag = url.split('#', 1)
-        f = dict(urllib.parse.parse_qsl(frag))
-        c.ok(token not in head and '?' not in head and head.startswith(run.launcher.origin + '/frame/aerodb/build/headless.html'), head,
-             "the page is on the launcher's own address; the token is not in the part the server sees (no query)")
-        c.eq((f['zones'], f['cycle'], f['personal'], f['t'] == token, 'zone' in f), ('be,ie', '2026-10-01', 'enaire', True, False), 'the fragment: the zones in the splitting order, the cycle, the declared sources, the token; no zone (one instance)', what='fragment')
-        c.eq(sorted(f['in'].split('|')), sorted(B.list_inputs(str(data))), 'and the inputs the page may read (the page decides which it wants)', what='inputs')
-        run.cancel()
-        view = run.wait(60)
+        c.ok(token not in ' '.join(argv) and argv[-1].endswith('/frame/aerodb/build/headless.html#job=' + run.job.id) and '?' not in argv[-1], ' '.join(argv)[:300],
+             "the browser command line: the launcher's page and the job id, no token, no zone, no query")
+        c.ok(not any(f.name == 'start.html' for f in Path(td).rglob('*')) and 'start.html' not in ' '.join(argv), 'a start file exists', 'no start.html, no bootstrap file')
+        c.eq([x for x in run.launcher.seen if x[0] == 'claim'], [('claim', 200), ('claim', 409)], 'the page claimed; a second claim was refused (409)', what='claims')
+        c.ok(any('second claim 409' in l for l in _d5_lines(fake, 'events.log')), str(_d5_lines(fake, 'events.log')), 'the browser saw the 409')
+        c.eq(sorted(json.loads(_d5_lines(fake, 'claim.json')[0])['zones']), ['be', 'ie'], 'the claim answer holds the offer', what='offer')
         c.ok(token not in json.dumps(view), 'the token is in the view', 'no log line, step, zone entry or result holds the token')
-        c.ok(not Path(profile).exists(), profile, 'the profile is deleted at the end')
-        # the flags still allow the local file and the launcher's address only
-        args = B.browser_args(profile, '127.0.0.1:8000', argv[-1])
-        c.ok('--proxy-bypass-list=<-loopback>;127.0.0.1:8000' in args and '--proxy-server=127.0.0.1:9' in args, str(args), 'proxy flags: dead proxy, only the launcher address bypassed (a file:// page is not proxied)')
-    # start.html: a profile outside the user's temporary folder is refused; the file is private where the system allows
-    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
-        outside = c.root / 'tests' / 'v3' / '_d5_outside'
-        outside.mkdir(exist_ok=True)
-        try:
-            raised = False
-            try:
-                B.write_start_page(str(outside), 'http://127.0.0.1:1/x#t=SECRET')
-            except ValueError:
-                raised = True
-            c.ok(raised and not (outside / 'start.html').exists(), str(list(outside.iterdir())), 'a profile that is not under the temporary folder is refused, nothing written')
-        finally:
-            outside.rmdir() if not any(outside.iterdir()) else None
-        prof = tempfile.mkdtemp(prefix='sog-base-')
-        try:
-            uri = B.write_start_page(prof, 'http://127.0.0.1:1/frame/x#t=SE</script>CRET')
-            text = (Path(prof) / 'start.html').read_text(encoding='utf-8')
-            c.ok(uri.startswith('file:///') and 'SE<\\/script>CRET' in text and '</script>CRET' not in text, text, 'the address is a JSON string in the script, a closing tag cannot end it')
-            if os.name != 'nt':
-                c.eq(oct((Path(prof) / 'start.html').stat().st_mode & 0o777), '0o600', 'the file is private to its owner', what='mode')
-        finally:
-            B.remove_tree(prof)
+        c.ok(not Path(_d5_lines(fake, 'profiles.txt')[0].split(' ', 1)[1]).exists(), 'the profile exists', 'the profile is deleted at the end')
+        args = B.browser_args('C:/p', '127.0.0.1:8000', argv[-1])
+        c.ok('--proxy-bypass-list=<-loopback>;127.0.0.1:8000' in args and '--proxy-server=127.0.0.1:9' in args and '--force-webrtc-ip-handling-policy=disable_non_proxied_udp' in args, str(args),
+             'proxy flags: dead proxy, only the launcher address bypassed; WebRTC limited to the proxy')
     # every write goes through the launcher's path rule and stays under sia/base/<zone>/
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data, fake = _d5_scene(td)
@@ -3539,19 +3551,67 @@ def k48(c):
         c.ok(B.target_of(str(data), 'sia/base/ie/2026-10-01/mora.json', 'ie').replace('\\', '/').endswith('/sia/base/ie/2026-10-01/mora.json'), '', 'and the normal path is accepted')
 
 
+def _d5_site(RJ, data, jobs_holder, root, claim_override=None, log=None):
+    """Le lanceur, pour les essais avec un vrai navigateur : le code de la page (le dépôt), les entrées de l'essai, et les routes claim / put (le VRAI Jobs si
+    jobs_holder en a un). Rend (serveur, origine). claim_override : une fonction qui répond au claim à la place du travail (un claim hostile)."""
+    import http.server
+    import json
+    import threading
+    import urllib.parse
+
+    class Site(http.server.BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def _send(self, code, body=b'', ctype='application/octet-stream'):
+            self.send_response(code)
+            self.send_header('Content-Type', ctype)
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self):
+            rel = urllib.parse.unquote(urllib.parse.urlsplit(self.path).path).lstrip('/')
+            if log is not None:
+                log.append(rel)
+            if rel.startswith('data/sia/'):
+                full = data / 'sia' / rel[len('data/sia/'):]
+            elif rel.startswith(('frame/aerodb/build/', 'shared/')):
+                full = root / rel
+            else:
+                return self._send(404)
+            full = full.resolve()
+            if not full.is_file() or not (str(full).startswith(str(data.resolve())) or str(full).startswith(str(root.resolve()))):
+                return self._send(404)
+            self._send(200, full.read_bytes(), 'text/html; charset=utf-8' if rel.endswith('.html') else 'text/javascript; charset=utf-8' if rel.endswith('.js') else 'application/octet-stream')
+
+        def do_POST(self):
+            a = json.loads(self.rfile.read(int(self.headers['Content-Length'])) or b'{}')
+            jobs = jobs_holder.get('jobs')
+            if self.path.endswith('/claim'):
+                out = claim_override(a) if claim_override else jobs.claim(a.get('job'))
+            else:
+                out = jobs.put(a.get('job'), a.get('token'), a.get('zone'), a.get('files')) if jobs else {'ok': True}
+            self._send(out.get('status', 200) if out.get('ok') is False else 200, json.dumps(out).encode(), 'application/json')
+    srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Site)
+    srv.daemon_threads = True
+    srv.handle_error = lambda *x: None
+    threading.Thread(target=srv.serve_forever, kwargs={'poll_interval': 0.1}, daemon=True).start()
+    return srv, f'http://127.0.0.1:{srv.server_address[1]}'
+
+
 @case('K49', 'Build job on a real headless browser: one instance, a tiny invented zone, served like the launcher serves it', 'K', static=True,
       rule='D5: the same builders as the page (SiaBase.buildZones = build + splitZones + zoneBodies), run without a window in Edge or Chrome; skipped where no browser is installed')
 def k49(c):
-    import http.server
     import json
     import os
     import tempfile
-    import threading
-    import urllib.parse
+    import time
     from pathlib import Path
     RJ, B, fn, check = _d5_modules()
     if not B.find_browser({}):
         c.skip('no Edge or Chrome at a known location on this workstation: the real-browser run is not made (the job answers no-browser there)')
+    _d5_offer_shim(RJ)
     apt = {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [-8.0, 53.0]},
                                                        'properties': {'_id': 'k49a', 'name': 'TESTFIELD', 'icaoCode': 'EITS', 'type': 2, 'trafficType': [0], 'country': 'IE',
                                                                       'elevation': {'value': 55, 'unit': 0}}}]}
@@ -3565,48 +3625,12 @@ def k49(c):
         (data / 'sia' / 'openaip' / 'ie_asp.geojson').write_text(json.dumps(asp), encoding='utf-8')
         ctx = {'data': str(data), 'secrets': str(Path(td) / 's'), 'git_cmd': None, 'git_env': dict, 'zone_timeout': 120}
         jobs = RJ.Jobs(RJ.REGISTRY, ctx)
-        root = c.root
-
-        class Site(http.server.BaseHTTPRequestHandler):
-            """Le lanceur, pour cet essai : le code de la page (le dépôt), les entrées de l'essai, et la route de sortie (Jobs.put)."""
-
-            def log_message(self, *a):
-                pass
-
-            def _send(self, code, body=b'', ctype='application/octet-stream'):
-                self.send_response(code)
-                self.send_header('Content-Type', ctype)
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-
-            def do_GET(self):
-                rel = urllib.parse.unquote(urllib.parse.urlsplit(self.path).path).lstrip('/')
-                if rel.startswith('data/sia/'):
-                    full = data / 'sia' / rel[len('data/sia/'):]
-                elif rel.startswith(('frame/aerodb/build/', 'shared/')):
-                    full = root / rel
-                else:
-                    return self._send(404)
-                full = full.resolve()
-                if not full.is_file() or not (str(full).startswith(str(data.resolve())) or str(full).startswith(str(root.resolve()))):
-                    return self._send(404)
-                self._send(200, full.read_bytes(), 'text/html; charset=utf-8' if rel.endswith('.html') else 'text/javascript; charset=utf-8' if rel.endswith('.js') else 'application/octet-stream')
-
-            def do_POST(self):
-                a = json.loads(self.rfile.read(int(self.headers['Content-Length'])) or b'{}')
-                out = jobs.put(a.get('job'), a.get('token'), a.get('zone'), a.get('files'))
-                self._send(out.get('status', 200) if out.get('ok') is False else 200, json.dumps(out).encode(), 'application/json')
-        srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Site)
-        srv.daemon_threads = True
-        srv.handle_error = lambda *x: None
-        threading.Thread(target=srv.serve_forever, kwargs={'poll_interval': 0.1}, daemon=True).start()
-        ctx['origin'] = f'http://127.0.0.1:{srv.server_address[1]}'
+        srv, ctx['origin'] = _d5_site(RJ, data, {'jobs': jobs}, c.root)
+        before = sorted(p.name for p in Path(tempfile.gettempdir()).glob('sog-base-*'))
+        t0 = time.time()
         try:
-            r = jobs.start('base', 'build', {'zones': ['ie']}, 'TST')
-            import time
-            end = time.time() + 150
-            while jobs.cur.data['state'] == 'running' and time.time() < end:
+            jobs.start('base', 'build', {'zones': ['ie']}, 'TST')
+            while jobs.cur.data['state'] == 'running' and time.time() < t0 + 150:
                 time.sleep(0.1)
         finally:
             srv.shutdown()
@@ -3623,23 +3647,27 @@ def k49(c):
         idx = json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))
         c.eq((idx['zones']['ie']['prefixes'], idx['zones']['ie']['cycle']), (['EI'], res['cycle']), "the zone's entry of the manifest", what='manifest')
         c.ok(z['commit'] is None and 'not a git repository' in (z['warning'] or ''), str(z), 'without a repository the files are written and the reason is said (no commit)')
-        c.ok(not [p for p in Path(tempfile.gettempdir()).glob('sog-base-*') if p.is_dir() and (os.path.getmtime(p) > end - 160)], 'a profile is left', 'the temporary profile is deleted')
+        c.eq(sorted(p.name for p in Path(tempfile.gettempdir()).glob('sog-base-*')), before, 'the temporary profile of the job is deleted: the temp folder holds what it held before', what='profile')
 
 
-@case('K50', 'The launcher serves the build page to the browser the job starts (cross-site navigation from start.html)', 'K', static=True,
-      rule="D5: the browser opens file:///…/start.html, which goes to the launcher's page; the launcher's same-origin check (Sec-Fetch-Site) must let that ONE navigation through")
+@case('K50', 'The real launcher serves the build page to the browser the job starts, and the claim works', 'K', static=True,
+      rule="D5 route B: the browser navigates to the launcher's page itself (Sec-Fetch-Site: none, already accepted); a navigation from another site stays refused; the page claims its offer once")
 def k50(c):
     import http.client
+    import json
     import socket
     import subprocess
     import sys
     import tempfile
     import time
     from pathlib import Path
+    RJ, B, fn, check = _d5_modules()
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data = Path(td) / 'data'
-        data.mkdir()
+        (data / 'sia' / 'openaip').mkdir(parents=True)
         (data / 'data_tree.js').write_text('window.DATA_TREE = {};\n', encoding='utf-8')
+        (data / 'sia' / 'openaip' / 'ie_apt.geojson').write_text(json.dumps({'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [-8.0, 53.0]},
+                                                                  'properties': {'_id': 'k50a', 'name': 'TESTFIELD', 'icaoCode': 'EITS', 'type': 2, 'trafficType': [0], 'country': 'IE'}}]}), encoding='utf-8')
         s = socket.socket()
         s.bind(('127.0.0.1', 0))
         port = s.getsockname()[1]
@@ -3648,22 +3676,42 @@ def k50(c):
         p = subprocess.Popen([sys.executable, str(c.root / 'tools' / 'launch.py'), '--port', str(port), '--no-browser', '--data', str(data)], stdout=log, stderr=subprocess.STDOUT,
                              stdin=subprocess.DEVNULL, cwd=td)
         try:
-            def get(path, **headers):
-                h = http.client.HTTPConnection('127.0.0.1', port, timeout=10)
-                h.request('GET', path, headers=headers)
+            def call(method, path, body=None, **headers):
+                h = http.client.HTTPConnection('127.0.0.1', port, timeout=30)
+                h.request(method, path, body=json.dumps(body) if body is not None else None, headers=headers)
                 r = h.getresponse()
-                r.read()
-                return r.status
+                raw = r.read()
+                return r.status, raw
             for _ in range(60):
                 try:
-                    if get('/', **{'Sec-Fetch-Site': 'same-origin'}) in (200, 302, 404):
+                    if call('GET', '/', **{'Sec-Fetch-Site': 'same-origin'})[0] in (200, 302, 404):
                         break
                 except OSError:
                     time.sleep(0.5)
-            nav = {'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document'}
-            c.eq(get('/shared/sia_base.js', **{'Sec-Fetch-Site': 'same-origin'}), 200, 'a script of the page, same origin: served', what='script')
-            c.eq(get('/shared/sia_base.js', **nav), 403, 'a script asked from another site: refused (the rule stays)', what='cross-site script')
-            c.eq(get('/frame/aerodb/build/headless.html', **nav), 200, 'the build page opened by navigation from a local file: served', what='build page')
+            page = '/frame/aerodb/build/headless.html'
+            c.eq(call('GET', page, **{'Sec-Fetch-Site': 'none', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document'})[0], 200, 'the build page opened by the browser itself (Sec-Fetch-Site: none): served', what='build page')
+            c.eq(call('GET', page, **{'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document'})[0], 403, 'the same navigation from another site: refused (no exception in the launcher)', what='cross-site')
+            c.eq(call('GET', '/shared/sia_base.js', **{'Sec-Fetch-Site': 'same-origin'})[0], 200, 'a script of the page, same origin: served', what='script')
+            # the job end to end, with the real browser and the real claim, when this launcher has the frame's route
+            has_claim = (c.root / 'tools' / 'regen_jobs.py').read_text(encoding='utf-8').find('def offer') >= 0
+            if not has_claim:
+                print('NOTE K50: this base has no Job.offer / POST regen/job/claim (the frame\'s route): the end-to-end run with the real browser is made once the work is rebased on it')
+                return
+            if not B.find_browser({}):
+                print('NOTE K50: no Edge or Chrome on this workstation: the end-to-end run is not made')
+                return
+            hdr = {'X-SOG-Setup': '1', 'Content-Type': 'application/json', 'Sec-Fetch-Site': 'same-origin'}
+            st, raw = call('POST', '/__setup/regen/job', {'set': 'base', 'verb': 'build', 'args': {'zones': ['ie']}, 'author': 'TST'}, **hdr)
+            job = json.loads(raw)['job']
+            end = time.time() + 150
+            while time.time() < end:
+                v = json.loads(call('GET', f'/__setup/regen/job?id={job}', **hdr)[1])
+                if v.get('state') != 'running':
+                    break
+                time.sleep(0.5)
+            c.eq((v.get('state'), (v.get('result') or {}).get('built')), ('done', ['ie']), 'the real launcher, the real browser and the real claim build the invented zone', what='end to end')
+            c.ok((data / 'sia' / 'base' / 'ie').is_dir(), 'no output', 'the zone was written under data/sia/base/ie/')
+            c.ok(json.loads(call('POST', '/__setup/regen/job/claim', {'job': job}, **hdr)[1]).get('ok') is not True, 'a claim after the end succeeded', 'a claim after the job is refused')
         finally:
             p.terminate()
             try:
@@ -3671,3 +3719,45 @@ def k50(c):
             except subprocess.TimeoutExpired:
                 p.kill()
             log.close()
+
+
+@case('K51', 'The build page checks the claim answer before it reads anything', 'K', static=True,
+      rule='D5 route B: the job equals the address\'s, the cycle is a date, the zones known, the sources identifiers, the file names relative without .. : else page-error and no read')
+def k51(c):
+    import json
+    import subprocess
+    import tempfile
+    import threading
+    import time
+    from pathlib import Path
+    RJ, B, fn, check = _d5_modules()
+    cmd = B.find_browser({})
+    if not cmd:
+        c.skip('no Edge or Chrome at a known location on this workstation: the page is not run')
+    good = {'ok': True, 'job': 'job123', 'token': 'T' * 43, 'zones': ['ie'], 'cycle': '2026-10-01', 'personal': [], 'inputs': ['openaip/ie_apt.geojson']}
+    hostile = {'other job': {**good, 'job': 'other'}, 'cycle': {**good, 'cycle': '2026-10-01/../x'}, 'unknown zone': {**good, 'zones': ['zz']}, 'zone as a path': {**good, 'zones': ['../ie']},
+               'source': {**good, 'personal': ['../x']}, 'dotdot': {**good, 'inputs': ['openaip/../../notes.txt']}, 'absolute': {**good, 'inputs': ['/etc/passwd']},
+               'backslash': {**good, 'inputs': ['openaip\\ie_apt.geojson']}, 'drive': {**good, 'inputs': ['C:/x.xml']}, 'empty component': {**good, 'inputs': ['openaip//x.json']},
+               'token': {**good, 'token': 'short'}, 'no zone': {**good, 'zones': []}}
+    out = {}
+    for name, answer in hostile.items():
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = Path(td) / 'data'
+            (data / 'sia' / 'openaip').mkdir(parents=True)
+            (data / 'sia' / 'openaip' / 'ie_apt.geojson').write_text('{}', encoding='utf-8')
+            seen = []
+            srv, origin = _d5_site(RJ, data, {}, c.root, claim_override=lambda a, ans=answer: ans, log=seen)
+            prof = tempfile.mkdtemp(prefix='sog-base-')
+            p = subprocess.Popen(cmd + B.browser_args(prof, origin.split('//')[1], f'{origin}/frame/aerodb/build/headless.html#job=job123'), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace')
+            lines = []
+            threading.Thread(target=lambda: [lines.append(B._sogb(l)) for l in p.stderr], daemon=True).start()
+            end = time.time() + 40
+            while time.time() < end and not any(o and 'error' in o for o in lines):
+                time.sleep(0.1)
+            B.kill_tree(p)
+            B.remove_tree(prof)
+            srv.shutdown()
+            srv.server_close()
+            out[name] = ([o['error'] for o in lines if o and 'error' in o][:1], [x for x in seen if x.startswith('data/')], any(o and o.get('started') for o in lines))
+    c.eq({k: (bool(v[0]), v[1], v[2]) for k, v in out.items()}, {k: (True, [], False) for k in hostile}, 'every hostile claim answer: an error said, no data file read, never « started »', what='hostile')

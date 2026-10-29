@@ -659,61 +659,62 @@ Agreed with the ergonomics session on 28 Oct 2026 (the Données module's INTEGRA
   `data` (`updated_at` excluded, a fixed order).
 - `parserVersion` and `COMPAT` stay aerodb's; the module only compares numbers. **`AeroCatalogue.PARSER_VERSION`** (served by `sources()`) is the version of the format that the builders write, the `VERSION` of `shared/sia_base.js` (19 on 29 Oct 2026, after the same-family overlap check): it must follow it (case K21 reads both files and compares); the module shows it beside a zone's `parserVersion` to say « à reconstruire ».
 
-### The job `base/build` — as built (30 Oct 2026, D5)
+### The job `base/build` — as built (30 Oct 2026, D5, route B)
 
 The first delivery of the lot is **not** the two-stage plan above. It runs the **existing JavaScript builders** (`shared/sia_base.js`
 and its readers) on the workstation in **one window-less browser** (Edge, else Chrome) that builds **all the requested zones in
 one go** with the page's own functions, orchestrated by the launcher (`tools/regen/base.py`). Nothing is ported to Python, no
-Node. One instance per zone stays an internal option (`args.parallel`). The two-stage plan stays the direction for the sources
-that leave `sia_base.js`; the files written (kind files, manifest entry) are the same.
+Node. The two-stage plan stays the direction for the sources that leave `sia_base.js`; the files written (kind files, manifest
+entry) are the same.
 
-- **Verb** `base/build`, args `{ zones: [ids], personal?: [source ids], parallel?: false }` — ids from
-  `shared/carto/aero_zones_geo.js` (1 to 60, no duplicate); `personal`: the personal-licence sources of the catalogue the owner
-  ticked for a published build (absent or `[]` = none: `enaire`, `nats`, `xplane` are dropped, SPEC of the module § 10.1).
-  `'xplane'` in `personal` is accepted by the check but **refused by the job** at once, `reason: 'xplane-in-page'`: the X-Plane
-  folder is a handle held by the page, so that build stays in the page. Nothing else is accepted (400).
-- **The page**: `frame/aerodb/build/headless.html` + `headless.js`, the same scripts as the V2 page (`aero_symbols.js`, `airac.js`,
-  `sia_base.js`, then `aero_sources.js`, `aero_zones.js`, the outlines), no interface but a status line. It loads **everything from
-  the launcher's own address** (one origin): its scripts, the inputs by GET `/data/sia/<name>`, and it hands **each zone back as soon as
-  it is ready** by POST `/__setup/regen/job/put { job, token, zone, files: { "airspaces.json": "<text>", … } }` (the frame's route:
-  `regen_jobs.Jobs.put`; it writes nothing). Parameters in the **fragment** of its address: `job`, `t` (= `job.token`), `zones` (the
-  zones in the splitting order), `cycle`, `personal`, `in` (the files of `data/sia/`), and `zone` only in the per-zone mode.
-  Progress and failures leave through the console (lines `SOGB {json}`: `started`, `sources`, `n` / `m`, `frac`, `error`, never an
-  address or the token), which the launcher reads.
-- **`SiaBase.buildZones(files, { zones, cycle, personal, extra, priorityRings, onZone })`** is the one source of truth: `build`
-  (with `settings` = the requested zones, personal sources off) → `splitZones` → `zoneBodies` + `zoneEntry` (the functions `publishSplit`
-  uses, factored out of it) → `onZone(zone, texts)`. The output of each zone is **the page's, byte for byte** (`updated_at` aside;
-  golden test 122 of 122 files, ten zones). Two rules keep a zone independent of how it was asked for: the **main zone is always
-  `fr`** (items with no zone, ENR 5.7 axes, files analysed go to France, even when France is not built), and the zones are split in a
-  fixed order (France first, then alphabetical); France's FIR outlines come from `priorityRingsFromXmlSia` when `fr` is not built.
-  `SiaBase.buildZone` (one zone, for the per-zone mode) shares the same pieces.
-- **Files written** per zone, **through the launcher's path rule** (`data_sync.data_path`, then a check that the real path stays
-  under `sia/base/<zone>/`): `sia/base/<zone>/<cycle>/{airspaces, aerodromes, navaids, points, vrp, airways, obstacles, aeroindex, mora,
-  obstaclemax, cities, meta}.json` (the 12 kinds, `schema` 2), the zone's entry in `sia/base/index.json` (written compact, as the page
-  writes it; the other zones kept) and `sia/base/cities_major.json` (when it changes). A file unchanged (`updated_at` excepted) is
-  not rewritten. Older cycles and the old whole-format files are **not** removed (Purger's job).
-- **The cycle** of the job: the newest date among the SIA files of `data/sia/` (the rule of `build`), else the AIRAC cycle in force;
-  the same for every zone of the job (the page refuses a mismatch).
-- **The head** (`GET regen/job?id=`), at the root of the job view: `zones: { <zone>: { state: 'waiting' | 'building' | 'built' |
-  'failed' | 'cancelled', done, total, error, message?, commit?, warning?, files?, seconds? } }` — `done` / `total` = sources read / to read
-  (the same for every zone of one instance), `error` = a code — plus `step` (« 4 zones sur 10 »), `done` / `total` in `zones`.
-- **The end**: `result = { ok, cycle, built: [zones], failed: [{ zone, error }], commits: [{ zone, commit }], zones, instances, seconds,
-  reason? }`; `ok` only if every zone is built; `reason` `'partial'`, `'failed'` (all) or `'cancelled'`.
-- **Refusals of the job** (`ok: false`, at once): `'no-browser'` (no Edge or Chrome at a known absolute location; the page says it, nothing
-  is built by the launcher), `'no-input'` (nothing in `data/sia/`), `'xplane-in-page'`, `'failed'` (the launcher's address is unknown). A zone's
-  `error`: `'browser-failed'` (does not start, or the page never said `started` within 45 s), `'browser-exited'`, `'timeout'` (15 min),
-  `'page-error'` (with the page's message), `'invalid-output'` (names, JSON, header or type refused: nothing written), `'write-failed'`,
-  `'cancelled'`.
-- **Each zone is written and committed alone**, in the order the page hands it back (`regen_jobs.commit_outputs`: the zone's 12 files, the
-  manifest, `cities_major.json` when it changed; author = the page's trigram); a zone that fails (the page says so, the output is invalid) writes
-  and commits nothing and **stops no other**; if the browser itself goes, the zones not yet received fail with `browser-exited`.
-- **The token is never on a command line, in the console, in a log or in a file after the start**: the browser is given only the `file://`
-  address of a `start.html` written in its temporary profile (owner-only), whose script goes to the launcher's page (token in the
-  fragment); the job deletes `start.html` as soon as the page says `started`, and the whole profile at the end. For the browser to be
-  served that page, the launcher's same-origin check must let one navigation through (case K50, DECISIONS 30 Oct).
-- **What differs from the whole build in the per-zone mode** (`parallel: true`): the cross-zone near-duplicates the whole build removes are
-  kept, the obstacle cells the French AIXM puts in a neighbour's squares stay in `fr` (DECISIONS 30 Oct 2026). The default mode has none of
-  these differences.
+- **Verb** `base/build`, args `{ zones: [ids], personal?: [source ids] }` — ids from `shared/carto/aero_zones_geo.js` (1 to 60, no
+  duplicate); `personal`: the personal-licence sources of the catalogue the owner ticked for a published build (absent or `[]` = none:
+  `enaire`, `nats`, `xplane` are dropped, SPEC of the module § 10.1). `'xplane'` in `personal` is accepted by the check but **refused by
+  the job** at once, `reason: 'xplane-in-page'`: the X-Plane folder is a handle held by the page, so that build stays in the page.
+  Nothing else is accepted (400): there is **no mode in the API** (a page script could send it).
+- **How the page learns what to do (route B).** Before it starts the browser the verb **offers** the parameters to the job:
+  `job.offer({ zones, cycle, personal, inputs })` (zones in the splitting order, the cycle, the declared sources, the files of
+  `data/sia/`). The browser is started on the launcher's own address and **nothing else**:
+  `<launcher>/frame/aerodb/build/headless.html#job=<id>` — no token, no parameter, no bootstrap file, nothing on the command line.
+  The page reads its fragment and clears it (`history.replaceState`), then makes **one** `POST /__setup/regen/job/claim { job }` (same
+  origin, header `X-SOG-Setup: 1`), which answers `{ …offer, ok: true, job, token }`; the claim itself marks the job as started, a
+  second claim is refused (409), as is a claim for another job or when nothing was offered.
+- **The page validates before it reads anything** (`headless.js`): the claimed job equals the address's; the token has the expected shape;
+  the cycle is `^\d{4}-\d{2}-\d{2}$`; each zone matches `^[a-z0-9_-]{1,32}$` **and is in the zone list**; each source `^[a-z0-9]{2,12}$`; each file name is relative
+  with no `..`, no empty component, no leading `/`, no `\`, no `:` (the rule of `list_inputs`). Any failure: the page says `page-error` on the console and
+  reads nothing (case K51, twelve hostile answers, on a real browser).
+- **Then** it loads everything from the launcher's own address (one origin): its scripts, the inputs by GET `/data/sia/<name>`, and it hands **each
+  zone back as soon as it is ready** by `POST /__setup/regen/job/put { job, token, zone, files: { "airspaces.json": "<text>", … } }` (the frame's
+  route: `regen_jobs.Jobs.put`; it writes nothing). Progress and failures leave through the console (lines `SOGB {json}`: `started`, `sources`, `n` /
+  `m`, `frac`, `error`, never an address or the token), which the launcher reads.
+- **`SiaBase.buildZones(files, { zones, cycle, personal, extra, priorityRings, onZone })`** is the one source of truth: `build` (with `settings` = the
+  requested zones, personal sources off) → `splitZones` → `zoneBodies` + `zoneEntry` (the functions `publishSplit` uses, factored out of it) →
+  `onZone(zone, texts)`. The output of each zone is **the page's, byte for byte** (`updated_at` aside; golden test 122 of 122 files, ten zones). Two rules
+  keep a zone independent of how it was asked for: the **main zone is always `fr`** (items with no zone, ENR 5.7 axes, files analysed go to France, even when
+  France is not built), and the zones are split in a fixed order (France first, then alphabetical); France's FIR outlines come from
+  `priorityRingsFromXmlSia` when `fr` is not built.
+- **Files written** per zone, **through the launcher's path rule** (`data_sync.data_path`, then a check that the real path stays under
+  `sia/base/<zone>/`): `sia/base/<zone>/<cycle>/{airspaces, aerodromes, navaids, points, vrp, airways, obstacles, aeroindex, mora, obstaclemax, cities,
+  meta}.json` (the 12 kinds, `schema` 2), the zone's entry in `sia/base/index.json` (written compact, as the page writes it; the other zones kept) and
+  `sia/base/cities_major.json` (when it changes). A file unchanged (`updated_at` excepted) is not rewritten. Older cycles and the old whole-format files are
+  **not** removed (Purger's job).
+- **The cycle** of the job: the newest date among the SIA files of `data/sia/` (the rule of `build`), else the AIRAC cycle in force.
+- **The head** (`GET regen/job?id=`), at the root of the job view: `zones: { <zone>: { state: 'waiting' | 'building' | 'built' | 'failed' | 'cancelled',
+  done, total, error, message?, commit?, warning?, files?, seconds? } }` — `done` / `total` = sources read / to read (the same for every zone of the
+  instance), `error` = a code — plus `step` (« 4 zones sur 10 »), `done` / `total` in `zones`.
+- **The end**: `result = { ok, cycle, built: [zones], failed: [{ zone, error }], commits: [{ zone, commit }], zones, instances, seconds, reason? }`; `ok` only
+  if every zone is built; `reason` `'partial'`, `'failed'` (all) or `'cancelled'`.
+- **Refusals of the job** (`ok: false`, at once): `'no-browser'` (no Edge or Chrome at a known absolute location; the page says it, nothing is built by the
+  launcher), `'no-input'` (nothing in `data/sia/`), `'xplane-in-page'`, `'failed'` (the launcher's address is unknown, or the launcher has no `job.offer`). A
+  zone's `error`: `'browser-failed'` (does not start, or the page never said `started` within 45 s), `'browser-exited'`, `'timeout'` (15 min), `'page-error'`
+  (with the page's message), `'invalid-output'` (names, JSON, header or type refused: nothing written), `'write-failed'`, `'cancelled'`.
+- **Each zone is written and committed alone**, in the order the page hands it back (`regen_jobs.commit_outputs`: the zone's 12 files, the manifest,
+  `cities_major.json` when it changed; author = the page's trigram); a zone that fails (the page says so, the output is invalid) writes and commits nothing
+  and **stops no other**; if the browser itself goes, the zones not yet received fail with `browser-exited`.
+- **The browser** (security): found by absolute path only; options `--headless=new`, a `mkdtemp` profile deleted after (even on failure or cancel; the
+  leftovers of an interrupted launcher, `sog-base-*` folders of the temp folder older than an hour, are purged when the verbs are loaded, never following a
+  link), a dead proxy with `<-loopback>;<launcher address>` bypassed, hosts not resolved, WebRTC limited to the proxy
+  (`--force-webrtc-ip-handling-policy=disable_non_proxied_udp`); a time limit; the process tree killed with `taskkill` found by `GetSystemDirectoryW`.
 
 ## 6. Invariants
 

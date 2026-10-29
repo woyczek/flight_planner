@@ -2003,6 +2003,8 @@ compared token for token (identical but for white space).
 
 ## 30 October 2026 — D5 revised: one headless instance builds all the zones; the frame's route; the token off the command line
 
+*The start (start.html, the launcher exception) and the per-zone option of this section are superseded by « route B » below; the measures stand.*
+
 **Decision** (ergonomics session, on the measure above): **one** window-less instance builds **all** the requested zones with the page's own functions
 (`SiaBase.buildZones`: the V2 `build`, then `splitZones`, `zoneBodies`, `zoneEntry`), off the page's thread, and hands each zone back as soon as it is ready; the
 job writes and commits it alone. **One instance per zone stays as an internal option** (`args.parallel`, false by default, not on the screen); its scheduler
@@ -2063,3 +2065,37 @@ code), the result `built`, `failed: [{ zone, error }]`, `commits: [{ zone, commi
   the host of `proc_sia.eaip_url`, no `..`), and the ICAO key inserted in the path must match `^[A-Z0-9]{4}$` — the aerodrome file is in the
   synchronised repository, editable by any member of the group, so another host would make a phishing link under a trusted label. Bench K1:
   another host, a look-alike host, a dot-dot path and plain http give no link.
+
+## 30 October 2026 — D5, route B: the browser is started on the launcher's page, the page claims its parameters; no exception, no bootstrap file, no per-zone mode
+
+**Why the start changed.** The previous start (a `start.html` of the temporary profile whose script goes to the launcher with the token in the fragment) needed the
+launcher to let a navigation from a `file://` page through its same-origin check. That navigation (`Sec-Fetch-Site: cross-site`) is **indistinguishable from a hostile
+site's**: any exception for it opens the page to every site. No exception is made.
+
+**Route B.** The browser is started on `<launcher>/frame/aerodb/build/headless.html#job=<id>` — a navigation started by the browser itself, `Sec-Fetch-Site: none`, which
+the launcher already accepts. Nothing secret or variable is in the address or on the command line: before the start the verb **offers** `{ zones, cycle, personal, inputs }`
+to the job (`job.offer`; any JSON object without the keys `ok`, `job`, `token`, `status`), and the page makes **one** `POST /__setup/regen/job/claim { job }` (same origin,
+`X-SOG-Setup: 1`) that answers `{ …offer, ok: true, job, token }`; the claim marks the job as started, a second claim, a claim for another job, or with nothing
+offered, is refused (409). `start.html`, its writing, its deletion and the fragment parameters are gone.
+
+**The page validates the answer before it reads anything**: the job equals the address's, the cycle is a date, every zone matches the zone pattern and is in the list
+of zones, every source is an identifier, every file name is relative without `..`, empty component, leading `/`, `\` or `:`; else it says `page-error` and reads
+nothing. K51 runs the real page in a real browser against twelve hostile answers (another job, a path as a cycle, an unknown zone, a zone as a path, a source as a
+path, `..`, an absolute path, a backslash, a drive, an empty component, a short token, no zone): each one an error and not one file read.
+
+**The per-zone mode is gone, and not as an option.** With one claim per job, ten instances cannot each learn their zone; and a mode that any page script could ask
+for (`args.parallel`) was refused by the security review. The scheduler (`can_start`, `need_of`, the memory read) went with it; it stays in the history (8755aad9c)
+with the numbers of the section above, and the case that would justify it (a heavy source — X-Plane world data, FAA class airspaces — read for minutes) is
+unchanged: it would come back with a job that can hand each instance its zone, as a measuring bench first.
+
+**Defence in depth** (same review): `--force-webrtc-ip-handling-policy=disable_non_proxied_udp` in the closed option list; `taskkill.exe` is found in the system folder
+given by `GetSystemDirectoryW`, not by `%SystemRoot%`; the `sog-base-*` folders of the temp folder older than an hour (twice the time limit of a build) are purged when
+the verbs are loaded, only that prefix, only folders, a link is never followed (K45).
+
+**`aerodb`'s declaration** now lists `regen/job/cancel` next to `regen/job`: the frame covers the sub-routes of a route only when it ends with `/`, so cancelling an EAD or an eAIP reading
+was refused (403). K43 reads the declaration.
+
+**Tests.** The suite runs the verb with the real `Job` (token, take, put) and a launcher-like handler for the two routes; on a base that does not yet carry the frame's
+`Job.offer` / `Jobs.claim`, the cases install the documented contract (`_d5_offer_shim`) and use the frame's own as soon as it is there. K50 starts the real launcher: the
+page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where the frame's route exists, the job is run end to end with the real browser and the real claim
+(that part is made once the work is rebased on the frame's route; the case says so).

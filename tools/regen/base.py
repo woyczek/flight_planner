@@ -1,39 +1,36 @@
 """La base aéronautique construite sur le poste, SANS FENÊTRE (jeu « base » du lanceur ; lot D5, DECISIONS de frame/aerodb du 30 octobre 2026 ;
 frame/aerodb/INTEGRATION.md « Building on the workstation ») — chargé par regen_jobs.load_verbs(). Bibliothèque standard seulement.
 
-Verbe `base/build`, arguments `{ zones: [identifiants], personal?: [sources], parallel?: faux }`. Les constructeurs sont ceux de la page
-(shared/sia_base.js, aero_sources.js, aero_zones.js) : ils tournent dans le navigateur du poste (Edge, sinon Chrome) sans fenêtre
-(frame/aerodb/build/headless.html). Rien n'est porté en Python ; ce module orchestre :
+Verbe `base/build`, arguments `{ zones: [identifiants], personal?: [sources] }`. Les constructeurs sont ceux de la page (shared/sia_base.js,
+aero_sources.js, aero_zones.js) : ils tournent dans le navigateur du poste (Edge, sinon Chrome) sans fenêtre (frame/aerodb/build/headless.html).
+Rien n'est porté en Python ; ce module orchestre :
   * le navigateur est cherché par CHEMIN ABSOLU seulement (find_browser) ; introuvable → { ok: False, reason: 'no-browser' } ;
-  * PAR DÉFAUT UNE SEULE INSTANCE construit toutes les zones demandées avec les fonctions de la page (SiaBase.buildZones : la sortie est celle de la
-    page, octet pour octet) et remet chaque zone dès qu'elle est prête ; le travail commite chaque zone SEULE à mesure (commit_outputs) ;
-  * `parallel` (mode interne, pas dans l'interface) : une instance par zone, au plus (cœurs − 1, au moins 1) à la fois, bornées par la mémoire libre
-    (≈ 500 Mo par instance, davantage pour une grosse entrée : can_start()) ; les plus lourdes d'abord (mesures : DECISIONS du 30 octobre) ;
-  * chaque instance : profil temporaire (supprimé ensuite, même en échec ou annulation), pas de réseau hors de l'adresse du lanceur (proxy mort +
-    « <-loopback>;adresse »), délai limité, processus tué avec ses enfants ;
+  * UNE SEULE INSTANCE construit toutes les zones demandées avec les fonctions de la page (SiaBase.buildZones : la sortie est celle de la page,
+    octet pour octet) et remet chaque zone dès qu'elle est prête ; le travail commite chaque zone SEULE à mesure (commit_outputs) ;
+  * l'instance : profil temporaire (supprimé ensuite, même en échec ou annulation ; les restes d'un lanceur arrêté sont purgés au chargement),
+    pas de réseau hors de l'adresse du lanceur (proxy mort + « <-loopback>;adresse », WebRTC limité), délai limité, processus tué avec ses enfants ;
   * la sortie d'une zone (13 fichiers JSON) est contrôlée, écrite sous data/sia/base/<zone>/<cycle>/ par la règle de chemin du lanceur, puis VALIDÉE
     SEULE par regen_jobs.commit_outputs : une zone en échec ne publie rien et n'arrête pas les autres.
 
-Transport (décision du cadre, 30 octobre) : UNE seule adresse, celle du LANCEUR ; pas de second serveur. La page charge ses scripts (/frame/…,
-/shared/…) et ses entrées (/data/sia/…) du lanceur et remet chaque zone par POST /__setup/regen/job/put { job, token, zone, files } (regen_jobs.Jobs.put :
-409 pas le travail en cours, 403 jeton faux, 400 zone hors de args.zones ou nom refusé, 413 plus de 64 Mo ; la route n'écrit rien) ; le verbe la reçoit par
-job.take(zone, timeout). Le jeton (job.token) n'est JAMAIS dans une ligne de commande : le navigateur reçoit l'adresse fichier d'un start.html écrit dans le
-profil temporaire (write_start_page), dont le script mène à la page du lanceur (jeton dans le FRAGMENT) ; start.html est supprimé dès que la page dit
-« started » (ligne de console `SOGB`), le profil entier à la fin. L'adresse du lanceur : launcher_origin().
+Transport (route B, 30 octobre) : UNE seule adresse, celle du LANCEUR. AVANT de lancer le navigateur, le verbe dépose ce que la page doit savoir par
+job.offer({ zones, cycle, personal, inputs }) ; le navigateur reçoit l'adresse du lanceur et RIEN D'AUTRE (`…/frame/aerodb/build/headless.html#job=<id>` :
+ni jeton, ni paramètre, ni fichier de départ). La page fait UN seul POST /__setup/regen/job/claim { job } (même origine) qui lui rend l'offre et le jeton
+(job.token) — le claim vaut « démarré » —, puis charge ses scripts (/frame/…, /shared/…) et ses entrées (/data/sia/…) du lanceur, et remet chaque zone
+par POST /__setup/regen/job/put { job, token, zone, files } (regen_jobs.Jobs.put : 409 / 403 / 400 / 413, la route n'écrit rien) ; le verbe la reçoit par
+job.take(zone, timeout). L'adresse du lanceur : launcher_origin().
 
 État lisible par la page (GET regen/job?id=) : job.data['zones'] = { zone: { state ('waiting' | 'building' | 'built' | 'failed' | 'cancelled'), done, total
 (sources lues / à lire), error (code), message?, commit?, warning?, files?, seconds? } }, step « N zones sur M », done / total en zones.
 Résultat : { ok, cycle, built: [zones], failed: [{ zone, error }], commits: [{ zone, commit }], zones, instances, seconds, reason? } ; reason : 'partial', 'failed',
 'cancelled' ; refus du travail (ok: False) : 'no-browser', 'no-input', 'xplane-in-page' ('xplane' dans personal : le dossier d'X-Plane est une poignée gardée
-par la page, ce travail reste dans la page), 'failed' (adresse du lanceur inconnue). Codes d'une zone : 'browser-failed', 'browser-exited', 'timeout',
-'page-error', 'invalid-output', 'write-failed', 'cancelled'.
+par la page, ce travail reste dans la page), 'failed' (adresse du lanceur inconnue, ou lanceur sans job.offer). Codes d'une zone : 'browser-failed', 'browser-exited',
+'timeout', 'page-error', 'invalid-output', 'write-failed', 'cancelled'.
 Crochets des essais (ctx, jamais posés par le lanceur) : 'browser' (chemin absolu, ou liste de chemins absolus : un faux navigateur et son script), 'origin',
-'cores', 'free_memory' (octets ou fonction), 'zone_timeout', 'start_timeout' (secondes), 'per_instance' (octets), 'debug'.
+'zone_timeout', 'start_timeout' (secondes), 'debug'.
 """
 import ctypes
 import json
 import os
-import pathlib
 import re
 import shutil
 import signal
@@ -66,10 +63,9 @@ SAFE_NAME = re.compile(r'^[\w .()+-]{1,150}$')          # nom de fichier d'entr�
 INPUT_EXT = re.compile(r'\.(xml|geojson|json|txt|air)$', re.I)
 SUB_DIRS = ('openaip', 'aixm5', 'geojson')               # sous-dossiers des sources dans data/sia/ (sia_base.js : SOURCE_DIRS) ; zones/<zone>/ en plus
 
-PER_INSTANCE = 500 * 1024 * 1024  # mémoire comptée par instance (au moins)
-GROWTH = 15                       # secondes pendant lesquelles une instance qui vient de partir est comptée en entier (sa mémoire n'est pas encore prise)
-ZONE_TIMEOUT = 900                # secondes par instance
-START_TIMEOUT = 45                # secondes pour que la page dise « started » (sinon : refusée par le lanceur, introuvable…)
+ZONE_TIMEOUT = 900                # secondes pour toute la construction
+START_TIMEOUT = 45                # secondes pour que la page dise « started » (son claim : sinon page introuvable, offre refusée…)
+STALE = 3600                      # secondes : un profil sog-base-* plus vieux que cela est un reste (un travail dure 15 minutes au plus)
 LINE_MAX = 4000
 MIN_GAP = {}                      # pas de délai minimal entre deux départs
 
@@ -132,9 +128,17 @@ def browser_args(profile, netloc, url):
     return ['--headless=new', f'--user-data-dir={profile}', '--no-first-run', '--no-default-browser-check', '--disable-extensions',
             '--disable-sync', '--disable-background-networking', '--disable-component-update', '--disable-default-apps',
             '--metrics-recording-only', '--mute-audio', '--disable-gpu', '--disable-breakpad', '--no-pings',
-            '--proxy-server=127.0.0.1:9', f'--proxy-bypass-list=<-loopback>;{netloc}',
+            '--proxy-server=127.0.0.1:9', f'--proxy-bypass-list=<-loopback>;{netloc}', '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
             '--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1',
             '--enable-logging=stderr', '--v=0', url]
+
+
+def system_directory():
+    """Le dossier système de Windows (GetSystemDirectoryW) : taskkill.exe y est cherché, pas par une variable d'environnement (elle se change)."""
+    buf = ctypes.create_unicode_buffer(260)
+    if not ctypes.windll.kernel32.GetSystemDirectoryW(buf, 260):
+        raise OSError('GetSystemDirectoryW failed')
+    return buf.value
 
 
 def kill_tree(proc):
@@ -145,7 +149,7 @@ def kill_tree(proc):
     try:
         if proc.poll() is None:
             if sys.platform.startswith('win'):
-                tk = os.path.join(os.environ.get('SystemRoot', r'C:\Windows'), 'System32', 'taskkill.exe')
+                tk = os.path.join(system_directory(), 'taskkill.exe')
                 subprocess.run([tk, '/PID', str(proc.pid), '/T', '/F'], capture_output=True, timeout=30)
             else:
                 os.killpg(proc.pid, signal.SIGKILL)
@@ -162,8 +166,8 @@ def kill_tree(proc):
 
 
 def remove_tree(path):
-    """Supprime le profil temporaire (Windows garde un instant les fichiers d'un processus qui vient de finir : quelques essais)."""
-    for _ in range(20):
+    """Supprime le profil temporaire (Windows garde un instant les fichiers d'un processus qui vient de finir : jusqu'à 15 s d'essais)."""
+    for _ in range(60):
         shutil.rmtree(path, ignore_errors=True)
         if not os.path.exists(path):
             return True
@@ -172,47 +176,27 @@ def remove_tree(path):
 
 
 # ----------------------------------------------------------------------------------------------------------------------- mémoire et cœurs
-def free_memory():
-    """Mémoire physique disponible, en octets (Windows : GlobalMemoryStatusEx ; Linux : MemAvailable de /proc/meminfo) ; None si inconnue."""
+def purge_stale(folder=None, older=STALE, now=None):
+    """Supprime les restes d'un lanceur arrêté en pleine construction : les dossiers `sog-base-*` du dossier temporaire, plus vieux que `older` secondes
+    (donc jamais le profil d'un travail en cours). Seulement ce préfixe, seulement des dossiers : un lien (ou une jonction) n'est jamais suivi ni supprimé.
+    Rend la liste des noms supprimés. Ne lève jamais."""
+    folder, now, gone = folder or tempfile.gettempdir(), now or time.time(), []
     try:
-        if sys.platform.startswith('win'):
-            class Status(ctypes.Structure):
-                _fields_ = [('dwLength', ctypes.c_ulong), ('dwMemoryLoad', ctypes.c_ulong), ('ullTotalPhys', ctypes.c_ulonglong),
-                            ('ullAvailPhys', ctypes.c_ulonglong), ('ullTotalPageFile', ctypes.c_ulonglong),
-                            ('ullAvailPageFile', ctypes.c_ulonglong), ('ullTotalVirtual', ctypes.c_ulonglong),
-                            ('ullAvailVirtual', ctypes.c_ulonglong), ('ullAvailExtendedVirtual', ctypes.c_ulonglong)]
-            st = Status()
-            st.dwLength = ctypes.sizeof(Status)
-            return int(st.ullAvailPhys) if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(st)) else None
-        with open('/proc/meminfo', encoding='ascii') as f:
-            for line in f:
-                if line.startswith('MemAvailable:'):
-                    return int(line.split()[1]) * 1024
-    except (OSError, ValueError, AttributeError):
+        with os.scandir(folder) as it:
+            for e in it:
+                try:
+                    link = e.is_symlink() or (hasattr(os.path, 'isjunction') and os.path.isjunction(e.path))
+                    if not e.name.startswith('sog-base-') or link or not e.is_dir(follow_symlinks=False) or now - e.stat(follow_symlinks=False).st_mtime < older:
+                        continue
+                    if remove_tree(e.path):
+                        gone.append(e.name)
+                except OSError:
+                    continue
+    except OSError:
         pass
-    return None
+    return gone
 
 
-def can_start(cores, free, running, need):
-    """Peut-on lancer une instance de plus ? running : [(mémoire comptée, âge en secondes)] des instances en cours ; need : la mémoire comptée de
-    la suivante. Au plus (cœurs − 1, au moins 1) en même temps ; la mémoire libre doit porter la suivante en plus de ce que les instances
-    encore en croissance (moins de GROWTH secondes) n'ont pas encore prise ; la première part toujours. free inconnue (None) : seulement les cœurs."""
-    if not running:
-        return True
-    if len(running) >= max(1, int(cores) - 1):
-        return False
-    if free is None:
-        return True
-    return free - sum(n for n, age in running if age < GROWTH) >= need
-
-
-def need_of(largest):
-    """Mémoire comptée pour une zone dont la plus grosse entrée pèse `largest` octets : PER_INSTANCE (≈ 500 Mo, la mesure donne 400 à 450 Mo
-    pour une zone d'openAIP) plus 15 fois la plus grosse entrée (le SIA français : 44 Mo d'AIXM, 1,2 Go mesurés)."""
-    return PER_INSTANCE + 15 * int(largest)
-
-
-# ----------------------------------------------------------------------------------------------------------------------- l'adresse du lanceur
 def launcher_origin(ctx):
     """L'adresse du lanceur (http://127.0.0.1:<port>), la SEULE que la page de construction charge : ses scripts (/frame/…, /shared/…), les entrées
     (/data/sia/…) et la route de sortie POST /__setup/regen/job/put (regen_jobs.Jobs.put, qui contrôle le travail, le jeton, la zone, les noms et la
@@ -242,10 +226,9 @@ _IDS = []
 
 
 def check(a):
-    """Contrôle des arguments (→ 400 si None) : { zones: [identifiants de la liste des zones, 1 à 60, sans doublon], personal?: [sources],
-    parallel?: vrai/faux } et rien d'autre. Aucun chemin, aucune adresse, aucune commande ne vient de la page. `parallel` (faux par défaut,
-    mode interne, pas dans l'interface) : une instance du navigateur par zone au lieu d'une seule pour toutes (DECISIONS du 30 octobre)."""
-    if not isinstance(a, dict) or not set(a) <= {'zones', 'personal', 'parallel'} or not isinstance(a.get('zones'), list):
+    """Contrôle des arguments (→ 400 si None) : { zones: [identifiants de la liste des zones, 1 à 60, sans doublon], personal?: [sources] } et rien d'autre. Aucun chemin,
+    aucune adresse, aucune commande ne vient de la page."""
+    if not isinstance(a, dict) or not set(a) <= {'zones', 'personal'} or not isinstance(a.get('zones'), list):
         return None
     zones = [z.strip().lower() if isinstance(z, str) else z for z in a['zones']]
     if not _IDS:
@@ -255,9 +238,7 @@ def check(a):
     personal = a.get('personal', [])
     if not isinstance(personal, list) or len(personal) > 10 or any(not isinstance(p, str) or not re.fullmatch(r'[a-z0-9]{2,12}', p) for p in personal):
         return None
-    if not isinstance(a.get('parallel', False), bool):
-        return None
-    return {'zones': zones, 'personal': sorted(set(personal)), 'parallel': a.get('parallel', False)}
+    return {'zones': zones, 'personal': sorted(set(personal))}
 
 
 def list_inputs(data):
@@ -301,20 +282,6 @@ def cycle_of(inputs, today=None):
     return (ref + timedelta(days=28 * ((d - ref).days // 28))).isoformat()
 
 
-def own_inputs(zone, inputs):
-    """Les entrées qui sont probablement celles de la zone (d'après leurs noms : openaip/<zone>_…, zones/<zone>/…, le SIA à la racine pour la
-    France, ENAIRE pour l'Espagne, la FAA pour les États-Unis) : un ORDRE de départ et une estimation de mémoire seulement, jamais une règle de
-    lecture (la page décide seule, par AeroZones.fileWanted)."""
-    out = []
-    for rel in inputs:
-        base = rel.rsplit('/', 1)[-1].lower()
-        if (base.startswith(zone + '_') or rel.startswith(f'zones/{zone}/') or (zone == 'fr' and '/' not in rel and rel != 'mora.csv')
-                or (zone == 'es' and rel.startswith('aixm5/LE_')) or (zone == 'us' and rel.startswith('geojson/faa_'))):
-            out.append(rel)
-    return out
-
-
-# ----------------------------------------------------------------------------------------------------------------------- le rendu d'une zone
 def _without_date(obj):
     return {k: v for k, v in obj.items() if k != 'updated_at'} if isinstance(obj, dict) else obj
 
@@ -428,23 +395,6 @@ def _sogb(line):
     return obj if isinstance(obj, dict) else None
 
 
-def write_start_page(profile, url):
-    """Écrit start.html dans le profil temporaire (créé par tempfile.mkdtemp : dossier du seul utilisateur, sous son dossier temporaire ; le fichier,
-    en lecture et écriture pour lui seul là où le système le permet) : un script qui mène à la page de construction. C'est son adresse FICHIER
-    que le navigateur reçoit en argument, jamais celle qui porte le jeton (la ligne de commande se lit depuis les autres comptes). Rend l'adresse
-    fichier ; lève ValueError si le profil n'est pas sous le dossier temporaire de l'utilisateur."""
-    root = os.path.normcase(os.path.realpath(tempfile.gettempdir()))
-    if not os.path.normcase(os.path.realpath(profile)).startswith(root + os.sep):
-        raise ValueError('the temporary profile is not under the temporary folder of the user')
-    path = os.path.join(profile, 'start.html')
-    page = ('<!doctype html><meta charset="utf-8"><title>Construction de la base aéronautique</title>'
-            '<script>location.replace(' + json.dumps(url).replace('</', '<\\/') + ')</script>')
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    with os.fdopen(fd, 'w', encoding='utf-8') as f:
-        f.write(page)
-    return pathlib.Path(path).as_uri()
-
-
 def build(job, args, ctx):
     t0 = time.time()
     cmd = find_browser(ctx)
@@ -453,118 +403,91 @@ def build(job, args, ctx):
     if 'xplane' in (args.get('personal') or []):
         return {'ok': False, 'reason': 'xplane-in-page', 'message': 'the X-Plane folder is a handle held by the page: that build stays in the page'}
     data = ctx['data']
-    parallel = bool(args.get('parallel'))
     zones = ['fr'] * ('fr' in args['zones']) + sorted(z for z in args['zones'] if z != 'fr')    # l'ordre du découpage : la France, puis l'alphabet
     personal = list(args.get('personal') or [])
     inputs = list_inputs(data)
     if not inputs:
         return {'ok': False, 'reason': 'no-input', 'message': 'no input file in data/sia/'}
     cycle = cycle_of(inputs)
-    sizes = {}
-    for rel, p in inputs.items():
-        try:
-            sizes[rel] = os.path.getsize(p)
-        except OSError:
-            sizes[rel] = 0
-    own = {z: own_inputs(z, inputs) for z in zones}
-    weight = {z: sum(sizes[r] for r in own[z]) for z in zones}
-    # les lots : une instance qui construit toutes les zones (par défaut), ou une instance par zone, les plus lourdes d'abord (parallel)
-    batches = [[z] for z in sorted(zones, key=lambda z: (-weight[z], zones.index(z)))] if parallel else [list(zones)]
-    per = ctx.get('per_instance')      # crochet d'essai : la même mémoire comptée pour toutes
-    needs = [per or need_of(max([sizes[r] for z in b for r in own[z]] or [0])) for b in batches]
     origin = launcher_origin(ctx)
     if not origin:
         return {'ok': False, 'reason': 'failed', 'message': 'the launcher address is unknown: the build page cannot be loaded'}
+    if not hasattr(job, 'offer'):
+        return {'ok': False, 'reason': 'failed', 'message': 'this launcher has no job.offer: the build page cannot be given its parameters'}
+    # ce que la page doit savoir, déposé AVANT de lancer le navigateur : elle le réclame (POST regen/job/claim) ; l'adresse du navigateur n'en porte rien
+    job.offer({'zones': zones, 'cycle': cycle, 'personal': personal, 'inputs': sorted(inputs)})
     netloc = urllib.parse.urlsplit(origin).netloc
-    cores = ctx.get('cores') or os.cpu_count() or 1
     timeout = ctx.get('zone_timeout', ZONE_TIMEOUT)
-    free_of = ctx.get('free_memory', free_memory)
 
-    lock = threading.Lock()        # l'état partagé (liste des zones)
-    commit_lock = threading.Lock()  # une écriture suivie de son commit à la fois (index.json, git)
+    lock = threading.Lock()        # l'état partagé (le journal lit job.view() pendant que les fils écrivent)
     st = {z: {'state': 'waiting', 'done': 0, 'total': 0} for z in zones}
-    peak = [0]
-    started = {}     # lot → heure de départ de l'instance en cours
 
     def publish_progress():
         done = sum(1 for s in st.values() if s['state'] in ('built', 'failed', 'cancelled'))
-        busy = [z for z in zones if st[z]['state'] == 'building']
-        job.data['zones'] = {z: dict(st[z]) for z in zones}     # une copie : la page lit job.view() pendant que les fils écrivent
-        job.step(f'{done} zones sur {len(zones)}' + (f' (en construction : {", ".join(busy)})' if parallel and busy else ''), done, len(zones), 'zones')
+        job.data['zones'] = {z: dict(st[z]) for z in zones}     # une copie
+        job.step(f'{done} zones sur {len(zones)}', done, len(zones), 'zones')
 
     def update(zone, **kw):
         with lock:
             st[zone].update(kw)
             publish_progress()
 
-    def url_of(batch):
-        """L'adresse de la page de construction, avec le jeton dans son fragment ; elle n'est écrite que dans start.html du profil."""
-        q = {'job': job.id, 't': job.token, 'zones': ','.join(zones), 'cycle': cycle, 'personal': ','.join(personal), 'in': '|'.join(sorted(inputs))}
-        if parallel:
-            q['zone'] = batch[0]
-        return f'{origin}/{PAGE}#' + urllib.parse.urlencode(q, quote_via=urllib.parse.quote, safe=',')
-
     def finish(zone, got, z0):
-        """La zone est là : contrôle, écriture, commit (une zone à la fois pour index.json et git)."""
+        """La zone est là : contrôle, écriture, commit (une zone à la fois)."""
         try:
             texts, entry = validate(zone, cycle, got)
         except ValueError as e:
             return update(zone, state='failed', error='invalid-output', message=str(e)[:200], seconds=round(time.time() - z0, 1))
         try:
-            with commit_lock:
-                paths, written = install(data, zone, cycle, texts, entry)
-                done = regen_jobs.commit_outputs(ctx, job.author, paths, f':card_file_box: Base aéronautique {zone} {cycle} construite sur le poste')
+            paths, written = install(data, zone, cycle, texts, entry)
+            done = regen_jobs.commit_outputs(ctx, job.author, paths, f':card_file_box: Base aéronautique {zone} {cycle} construite sur le poste')
         except (OSError, ValueError) as e:
             return update(zone, state='failed', error='write-failed', message=str(e)[:200], seconds=round(time.time() - z0, 1))
         job.log(f'{zone}: construite, {written} fichier(s) écrit(s), commit {(done.get("commit") or "aucun")[:10]}')
         update(zone, state='built', commit=done.get('commit'), warning=done.get('warning'), files=written, seconds=round(time.time() - z0, 1))
 
-    def run_batch(batch):
-        z0 = time.time()
-        profile = tempfile.mkdtemp(prefix='sog-base-')
-        proc, errs, fatal, up = None, {}, [], threading.Event()
+    z0 = time.time()
+    profile = tempfile.mkdtemp(prefix='sog-base-')
+    proc, errs, fatal, up = None, {}, [], threading.Event()
+    with lock:
+        publish_progress()    # la liste, toutes les zones « en attente »
+    try:
         try:
-            try:
-                start = write_start_page(profile, url_of(batch))
-                flags = {'creationflags': 0x08000000} if sys.platform.startswith('win') else {'start_new_session': True}
-                proc = subprocess.Popen(cmd + browser_args(profile, netloc, start), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                                        stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace', **flags)
-            except (OSError, ValueError) as e:
-                for z in batch:
-                    update(z, state='failed', error='browser-failed', message=str(e)[:200])
-                return
-
+            flags = {'creationflags': 0x08000000} if sys.platform.startswith('win') else {'start_new_session': True}
+            proc = subprocess.Popen(cmd + browser_args(profile, netloc, f'{origin}/{PAGE}#job={job.id}'), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace', **flags)
+        except (OSError, ValueError) as e:
+            for z in zones:
+                update(z, state='failed', error='browser-failed', message=str(e)[:200])
+            proc = None
+        if proc:
             def read():
                 for line in proc.stderr:
                     o = _sogb(line)
                     if not o and ctx.get('debug') and 'CONSOLE' in line:   # essais : les autres messages de la console de la page (sans fragment d'adresse)
                         job.log(f'console: {line.split("#")[0].strip()[:260]}')
-                    if not o or o.get('zone') not in (*batch, '*'):
+                    if not o or o.get('zone') not in (*zones, '*'):
                         continue
                     if o.get('started'):
                         up.set()
-                        try:
-                            os.remove(os.path.join(profile, 'start.html'))     # le fichier qui portait le jeton n'a plus d'utilité
-                        except OSError:
-                            pass
                     elif 'error' in o:
                         if o['zone'] == '*':
                             fatal.append(str(o['error'])[:300])
                         else:
                             errs[o['zone']] = str(o['error'])[:300]
                     elif isinstance(o.get('sources'), int):
-                        for z in batch:
+                        for z in zones:
                             if st[z]['state'] == 'building':
                                 update(z, total=o['sources'])
                     elif isinstance(o.get('n'), int):
-                        for z in batch:
+                        for z in zones:
                             if st[z]['state'] == 'building':
                                 update(z, done=o['n'])
             threading.Thread(target=read, daemon=True).start()
-            for z in batch:
+            for z in zones:
                 update(z, state='building')
-            job.log(f'{" ".join(batch)}: construction lancée')
-            remaining, end = list(batch), z0 + timeout
+            job.log(f'{" ".join(zones)}: construction lancée')
+            remaining, end = list(zones), z0 + timeout
             while remaining:
                 zone = remaining[0]
                 got = job.take(zone, 0.3)
@@ -581,9 +504,9 @@ def build(job, args, ctx):
                     elif time.time() > end:
                         why = 'timeout'
                     elif not up.is_set() and time.time() > z0 + ctx.get('start_timeout', START_TIMEOUT):
-                        why, fatal = 'browser-failed', ['the build page did not start (not loaded from the launcher?)']
+                        why, fatal = 'browser-failed', ['the build page did not start (not loaded from the launcher, or the offer was refused)']
                     elif proc.poll() is not None:
-                        got = job.take(zone, 1.0)         # le rendu a pu arriver juste avant la sortie
+                        got = job.take(zone, 1.0)         # la remise a pu arriver juste avant la sortie
                         if got is None:
                             why = 'browser-exited'
                     if got is None:
@@ -596,44 +519,15 @@ def build(job, args, ctx):
                 if not remaining:                         # la dernière zone est là : le navigateur n'a plus rien à faire
                     kill_tree(proc)
                 finish(zone, got, z0)
-        finally:
-            kill_tree(proc)
-            remove_tree(profile)
-
-    pending = list(range(len(batches)))
-    threads = {}
-    with lock:
-        publish_progress()    # la liste, toutes les zones « en attente »
-    try:
-        while pending or threads:
-            for k in [k for k, t in threads.items() if not t.is_alive()]:
-                del threads[k]
-            if job.cancelled():
-                for k in pending:
-                    for z in batches[k]:
-                        st[z]['state'] = 'cancelled'
-                pending.clear()
-                with lock:
-                    publish_progress()
-            else:
-                while pending and can_start(cores, free_of() if callable(free_of) else free_of,
-                                            [(needs[k], time.time() - started[k]) for k, t in threads.items() if t.is_alive()], needs[pending[0]]):
-                    k = pending.pop(0)
-                    started[k] = time.time()
-                    threads[k] = threading.Thread(target=run_batch, args=(batches[k],), daemon=True)
-                    threads[k].start()
-                    peak[0] = max(peak[0], sum(1 for t in threads.values() if t.is_alive()))
-                    time.sleep(0.5)                       # le départ suivant voit la mémoire que celui-ci a déjà prise
-            time.sleep(0.2)
-        for t in threads.values():
-            t.join()
     finally:
+        kill_tree(proc)
+        remove_tree(profile)
         job.data['zones'] = {z: dict(st[z]) for z in zones}
     built = [z for z in zones if st[z]['state'] == 'built']
     failed = [{'zone': z, 'error': st[z].get('error') or st[z]['state']} for z in zones if st[z]['state'] == 'failed']
     res = {'ok': len(built) == len(zones), 'cycle': cycle, 'built': built, 'failed': failed,
            'commits': [{'zone': z, 'commit': st[z].get('commit')} for z in built], 'zones': {z: dict(st[z]) for z in zones},
-           'instances': peak[0], 'seconds': round(time.time() - t0, 1)}
+           'instances': 1, 'seconds': round(time.time() - t0, 1)}
     if job.cancelled():
         res['reason'] = 'cancelled'
     elif not res['ok']:
@@ -642,3 +536,4 @@ def build(job, args, ctx):
 
 
 VERBS = {('base', 'build'): (build, check)}
+purge_stale()    # au chargement par le lanceur : les restes d'une construction interrompue (profils temporaires de plus d'une heure)
