@@ -135,7 +135,9 @@
   // gardé sur l'appareil (plus tard : le rôle du registre). L'application liste ses modules (ordre, sept au plus) : un
   // module ne sait pas où il est rangé. links : entrées du rail qui ne sont pas des modules (un écran du cadre « #… » ou
   // une page de la suite), au niveau level ; launcher : montrée seulement sur le poste qui a un lanceur. Une application
-  // s'ouvre partout : ce qui demande le lanceur se masque là où il est (le module Données se lit sans lui).
+  // s'ouvre partout : ce qui demande le lanceur se masque là où il est (le module Données se lit sans lui). level : le
+  // plancher du niveau d'usage de l'application (Maintenance : Complet, quel que soit le niveau choisi pour Pilote) ;
+  // welcome : false, pas de carte d'accueil des tutoriels de Pilote.
   const APPS = {};
   APPS.pilot = {
     id: 'pilot',
@@ -227,6 +229,8 @@
   APPS.maintenance = {
     id: 'maintenance',
     name: ['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento'],
+    level: 3,
+    welcome: false,
     modules: [{
       id: 'data',
       label: ['Données', 'Data', 'Daten', 'Datos'],
@@ -846,7 +850,8 @@
     });
     paintWho();
     usages = (await own.get('device/usages.json')) || {};
-    level = levelFrom((await own.get('device/level.json'))?.level);
+    // niveau choisi sur l'appareil (pour Pilote), jamais sous le plancher de l'application (Maintenance : Complet)
+    level = Math.max(levelFrom((await own.get('device/level.json'))?.level), APP.level || 1);
     applyDesign(await own.get('device/design.json'));
     liveGps = (await own.get('device/live.json'))?.gps === true;
     liveWatch();
@@ -1843,7 +1848,9 @@
       if (!el.isConnected) return;
       if (meta.help !== false) SogHelp.panel(entry.id, helpCtx()).then(p => p && el.isConnected && view.insertBefore(p, el))
         .catch(e => console.warn('help', e));
-      SogHelp.welcome?.(helpCtx()).then(w => w && el.isConnected && view.prepend(w)).catch(e => console.warn('help', e));
+      // carte d'accueil des tutoriels : celle de Pilote, pas d'une autre application (APP.welcome: false)
+      if (APP.welcome !== false) SogHelp.welcome?.(helpCtx()).then(w => w && el.isConnected && view.prepend(w)).catch(e => console
+        .warn('help', e));
     }).catch(e => console.warn('help', e));
   }
   /** Fichiers de l'aide dans la langue de l'appli (manuel, tutoriels), gardés dès l'installation. */

@@ -237,6 +237,16 @@ def i8(c):
             time.sleep(0.02)
         c.eq(J.view(e['job'])['state'], 'error', 'an exception ends the job in error, the launcher goes on', what='failing job')
         c.ok(('state', 'scan') in R.REGISTRY, str(list(R.REGISTRY)), 'the D0 list holds state/scan')
+        # une BaseException (arrêt du fil) : le travail finit en erreur, jamais « running » pour toujours
+        def killed(job, args, ctx):
+            raise KeyboardInterrupt
+        JK = R.Jobs({('t', 'killed'): (killed, lambda a: {})}, {})
+        jk = JK.start('t', 'killed', {})
+        for _ in range(200):
+            if JK.view(jk['job'])['state'] != 'running':
+                break
+            time.sleep(0.02)
+        c.eq((JK.view(jk['job'])['state'], bool(JK.view(jk['job'])['ended'])), ('error', True), 'a BaseException ends the job in error', what='killed job')
         # page sans fenêtre d'un travail : sortie d'une zone rendue par POST /__setup/regen/job/put (Jobs.put), reçue par job.take
         def build(job, args, ctx):
             got = job.take('fr', timeout=10)

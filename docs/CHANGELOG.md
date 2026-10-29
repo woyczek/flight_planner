@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: Maintenance at its own level, without Pilot's welcome** (`frame/app.js`; frame DECISIONS; noreg A36): the
+  Maintenance application runs at the Complet level whatever the level chosen for Pilot, and no longer shows Pilot's
+  first-visit tutorials.
+- **Launcher: a job stopped by a fatal interruption ends in error** (`tools/regen_jobs.py`; frame DECISIONS; noreg I8): never
+  « running » for ever; the decisions also say that no guard rests on the application chosen by the address.
 - **Fuel: a flight dated in the past says so** (`modules/fuel/module.js`, SPEC, DECISIONS; case F43) — weather and NOTAMs no longer
   apply; nothing is blocked.
 - **Fuel: « Source » opens the coded page of the chosen procedure** (`modules/fuel/procedures.js`; SPEC, DECISIONS; help ×4;

@@ -308,6 +308,9 @@ class Jobs:
             job.data['ended'] = int(time.time())
         finally:
             job.drop()  # sorties de zones non reprises : oubliées avec le travail, quoi qu'il arrive (même une BaseException)
+            if job.data['state'] == 'running':  # BaseException (arrêt du fil) : jamais un travail qui « tourne » pour toujours
+                job.data['state'] = 'error'
+                job.data['ended'] = job.data['ended'] or int(time.time())
         with self.lock:
             self._save()
 

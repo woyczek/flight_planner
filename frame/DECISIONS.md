@@ -1720,3 +1720,18 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     never a character (noreg I11); G2 (« Jetons des pilotes ») will use it.
   - Tested against a GitLab simulated in the page (bench A38, 21 checks); the real gitlab.com only by hand, on the
     coordinator's and the user's go.
+- **29 Oct 2026 — Security review of 56ab4fd94 … 802e6856f** (coordinator, acceptable; three notes):
+  - **No guard ever rests on `?app=`**: the application of a page is a presentation (rail, bar, name), chosen by anyone who
+    edits the address; the protections stay in the launcher's routes (`ROUTES` and their public, the same-origin check)
+    and in the modules (a module checks what it is allowed to do, whatever the application around it).
+  - The frozen `reference` values throw on mutation only in strict code: the frame's scripts that read them
+    (`frame/aerodb/aerodb.js`, `registry.js`, `sheets.js`, `aircraft.js`) and every module (ES modules) are strict
+    already; `frame/aerodb/zones.js` (generated data) and `shared/sia_base.js` (V2) read none. A new classic script that
+    reads references starts with `'use strict'`.
+  - A job's thread stopped by a `BaseException` no longer leaves the job « running » for ever: its `finally` sets
+    `error` and `ended` (noreg I8).
+- **29 Oct 2026 — An application's level floor and welcome** (seen by Sécurisation/Réglages in `?app=maintenance#data`):
+  at the device's default level, Maintenance's rail was empty (Données is level 3) while `#data` mounted it, and Pilot's
+  welcome card (« Join the airline · Prepare a flight · Write a report ») showed. An application declares its floor
+  (`level`: Maintenance runs at Complet whatever the level chosen for Pilot) and whether it shows Pilot's welcome
+  (`welcome: false`; Maintenance's own help line later). Noreg A36.
