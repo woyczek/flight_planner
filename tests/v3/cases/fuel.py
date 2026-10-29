@@ -28,7 +28,11 @@ Rules covered
   * an approach given only by its entries lists the final record once, its transitions are the records that lead to it, and a transition equal to
     the approach is ignored (F24).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F25 F26 F27 F28 F29 F30 F31 F32 F33 F34 F35 F36 F37 F38 F39.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+  * the aerodrome's name where its code is, and progressive completion (V3 spec 10.27): one fixed name line under each code field, « inconnu » for a code
+    that matches nothing (F44); from two characters seven suggestions at most, ↑ ↓ Enter Esc, tap, closed on blur, the pick written like a typing (F45); no
+    overflow and 44 px targets at 390 px (F46); the summary of the step Departure names both aerodromes (F47).
+
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F25 F26 F27 F28 F29 F30 F31 F32 F33 F34 F35 F36 F37 F38 F39 F40 F41 F42 F43 F44 F45 F46 F47.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 import json
@@ -1268,3 +1272,151 @@ def f43(c):
     c.ok(c.js("!document.querySelector('[data-module=fuel] [data-block=result] .fu-big').closest('[inert]')"), 'blocked', 'nothing is blocked: the quote stays')
     c.tap(f'{FUEL} [data-do="whennow"]')
     c.until("document.querySelector('[data-module=fuel] [data-pastdate]').hidden", what='"Now" removes the warning')
+
+
+# ---------------------------------------------------------------------------------------------- F44-F47: the aerodrome's name and the completion
+# invented aerodromes (no AIP data): nine "Quarry Field" sharing the code prefix LFQ, and two with a name worth typing
+NAMES_BASE = ([{'icao': f'LFQ{i}', 'name': f'Quarry Field {i}', 'lat': 44.0 + i / 10, 'lon': 2.0, 'elev': 100} for i in range(1, 10)]
+              + [{'icao': 'LFZO', 'name': 'Zorly-Ville', 'lat': 45.0, 'lon': 3.0, 'elev': 90},
+                 {'icao': 'LFZT', 'name': 'Toulzone Test Aerodrome With A Very Long Name Indeed', 'lat': 45.5, 'lon': 3.2, 'elev': 80}])
+AD = 'modules/fuel/adnames.js'
+
+
+def open_names(c, **kw):
+    """The planned flight (dep LFRS, arr LFML, altn LFMT) on the step Flight, with the invented aerodromes in the published base."""
+    c.open('fuel', flight=True, airfields=True, aero_extra={'aerodromes': NAMES_BASE}, **kw)
+    wait_quote(c)
+    to_step(c, 0)
+    c.until("[...document.querySelectorAll('[data-module=fuel] .fu-adname')].every(e => e.textContent.trim())", timeout=8000, what='the three name lines are filled')
+
+
+def ad_lines(c):
+    """The text and the height of the three name lines of the step Flight."""
+    return c.js("[...document.querySelectorAll('[data-module=fuel] .fu-adname')].map(e => [e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(), Math.round(e.getBoundingClientRect().height * 10) / 10])")
+
+
+def type_in(c, k, text):
+    """Empties the field `k` then types `text` key by key, as a pilot does (the field keeps the focus)."""
+    sel = f'{FUEL} input[data-k="{k}"]'
+    c.page.fill(sel, '')
+    c.page.locator(sel).click()
+    c.page.keyboard.type(text)
+
+
+def sug(c):
+    """The list of proposed aerodromes: { shown, items: [text] }."""
+    return c.js("""(() => { const b = document.querySelector('[data-module=fuel] [data-adsug]');
+        return { shown: !!b && !b.hidden && b.getBoundingClientRect().height > 0,
+                 items: [...b.querySelectorAll('[role=option]')].map(o => o.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()) } })()""")
+
+
+OPTS = "document.querySelectorAll('[data-module=fuel] [data-adsug] [role=option]').length"
+
+
+@case('F44', 'Step Flight: one fixed name line under each aerodrome field, "inconnu" for a code that matches nothing, same height always', 'F', tags=('fuel', 'aerodb', 'layout'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.27: « LFPO — Paris-Orly » once the code resolves; « inconnu » for four characters that resolve to nothing; empty under four; height reserved, ellipsis')
+def f44(c):
+    open_names(c)
+    full = ad_lines(c)
+    c.eq([t for t, _ in full], ['LFRS — LFRS TEST', 'LFML — LFML TEST', 'LFMT — LFMT TEST'], 'each field shows its aerodrome\'s name (the base names the seeded ones "<code> TEST")', what='name lines')
+    h = {hh for _, hh in full}
+    c.ok(len(h) == 1 and next(iter(h)) > 10, f'{full}', 'the three lines share one height')
+    # fewer than four characters: empty, same height; four that match nothing: « inconnu »
+    c.page.fill(f'{FUEL} input[data-k="dep"]', 'LF')
+    c.until("document.querySelector('[data-module=fuel] .fu-adname').textContent === ''", what='under four characters the line is empty')
+    c.eq(ad_lines(c)[0][1], full[0][1], 'the empty line keeps its height', what='height when empty')
+    c.page.fill(f'{FUEL} input[data-k="dep"]', 'LFXX')
+    c.until("document.querySelector('[data-module=fuel] .fu-adname').textContent.trim() !== ''", what='four unknown characters get a line')
+    c.eq(norm(ad_lines(c)[0][0]), norm(tx(AD, 'unknown', c.lang)), 'an unknown code says « inconnu »', what='unknown line')
+    c.eq(ad_lines(c)[0][1], full[0][1], 'the line keeps its height', what='height when unknown')
+    # a name too long for the column: one line, ellipsis, same height, the whole name in the title
+    c.page.fill(f'{FUEL} input[data-k="dep"]', 'LFZT')
+    c.until("document.querySelector('[data-module=fuel] .fu-adname').textContent.includes('Toulzone')", what='the long name arrives')
+    cut = c.js("(() => { const e = document.querySelector('[data-module=fuel] .fu-adname'); return { cut: e.scrollWidth > e.clientWidth, h: Math.round(e.getBoundingClientRect().height * 10) / 10, title: e.title, ell: getComputedStyle(e).textOverflow } })()")
+    c.ok(cut['cut'] and cut['ell'] == 'ellipsis' and cut['h'] == full[0][1] and 'Very Long Name' in cut['title'], f'{cut}', 'a long name is cut with an ellipsis on one line, the full name in the title')
+
+
+@case('F45', 'Completion: from two characters, by code or name, seven at most, keyboard and tap, closed on blur', 'F', tags=('fuel', 'aerodb', 'layout'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.27: aerodb.find, aerodromes only, 7 suggestions « LFPO Paris-Orly »; ↑ ↓ Enter Esc; tap; the list closes on blur; the pick writes the code like a typing')
+def f45(c):
+    open_names(c)
+    type_in(c, 'dep', 'L')
+    c.quiet(OPTS)
+    c.ok(not sug(c)['shown'], 'one character', 'one character proposes nothing')
+    type_in(c, 'dep', 'LFQ')
+    c.until(OPTS + ' > 0', what='three characters propose aerodromes')
+    s = sug(c)
+    c.ok(s['shown'] and len(s['items']) == 7, f'{s}', 'nine aerodromes match LFQ: seven are proposed, not more')
+    c.eq(s['items'][0], 'LFQ1 Quarry Field 1', 'each proposal reads « code name »', what='first proposal')
+    top = c.js("document.querySelector('[data-module=fuel] .fu-flight').getBoundingClientRect().top")
+    box = c.js("(() => { const r = document.querySelector('[data-module=fuel] [data-adsug]').getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth } })()")
+    c.ok(box['l'] >= 0 and box['r'] <= box['w'] + 0.5, f'{box}', 'the list stays inside the screen')
+    c.ok(c.js("[...document.querySelectorAll('[data-module=fuel] [data-adsug] [role=option]')].every(o => o.getBoundingClientRect().height >= 43.5)"), 'small target', 'every proposal is a 44 px target')
+    c.eq(c.js("document.querySelector('[data-module=fuel] .fu-flight').getBoundingClientRect().top"), top, 'the list is laid over the page: nothing moves', what='layout while open')
+    c.ok(c.js("document.activeElement === document.querySelector('[data-module=fuel] input[data-k=dep]')"), 'focus moved', 'the field keeps the focus while the list is open')
+    # keyboard: down, down, up, down: the second proposal; Enter picks it
+    for k in ('ArrowDown', 'ArrowDown', 'ArrowUp', 'ArrowDown'):
+        c.key(k)
+    c.eq(c.js("document.querySelector('[data-module=fuel] [data-adsug] [aria-selected=true]')?.dataset.code"), 'LFQ2', '↓ ↓ ↑ ↓ lands on the second proposal', what='active proposal')
+    c.key('Enter')
+    c.eq(c.js("document.querySelector('[data-module=fuel] input[data-k=dep]').value"), 'LFQ2', 'Enter writes the code in the field', what='field value')
+    c.ok(not sug(c)['shown'], 'still open', 'picking closes the list')
+    cf_doc(c, lambda d: d['route'].get('dep') == 'LFQ2' and str(d['route'].get('text', '')).startswith('LFQ2'), 'the pick goes the way of a typing: the flight and its route text carry LFQ2')
+    c.until("document.querySelector('[data-module=fuel] .fu-adname').textContent.includes('Quarry Field 2')", what='the name line follows the pick')
+    # by name, then Escape closes
+    type_in(c, 'arr', 'zorl')
+    c.until(OPTS + ' > 0', what='a name prefix proposes the aerodrome')
+    c.eq(sug(c)['items'], ['LFZO Zorly-Ville'], 'a name proposes its aerodrome', what='by name')
+    c.key('Escape')
+    c.ok(not sug(c)['shown'], 'still open', 'Escape closes the list')
+    # tap (click on a screen): the list closes on blur, but a tap on a proposal still registers
+    type_in(c, 'altn', 'LFQ')
+    c.until(OPTS + ' > 0', what='the alternate field proposes too')
+    c.tap(f'{FUEL} [data-adsug] [data-code="LFQ5"]')
+    c.until("document.querySelector('[data-module=fuel] input[data-k=altn]').value === 'LFQ5'", what='a tap on a proposal picks it')
+    cf_doc(c, lambda d: d['route'].get('altn') == 'LFQ5', 'the alternate is written')
+    # blur closes the list
+    type_in(c, 'altn', 'LFQ')
+    c.until(OPTS + ' > 0', what='the list opens again')
+    c.page.locator(f'{FUEL} input[data-k="altn"]').blur()
+    c.until("document.querySelector('[data-module=fuel] [data-adsug]').hidden", what='the list closes when the field loses the focus')
+    # a full code typed by hand: no list in the way, the focus stays, the name shows
+    type_in(c, 'arr', 'LFZO')
+    c.until("document.querySelector('[data-module=fuel] .fu-adname[data-adline=arr]').textContent.includes('Zorly')", what='a code typed in full shows its name')
+    c.quiet(OPTS)
+    c.ok(not sug(c)['shown'] and c.js("document.activeElement === document.querySelector('[data-module=fuel] input[data-k=arr]')"), 'in the way', 'a complete code leaves no list and keeps the focus')
+
+
+@case('F46', 'Completion at 390 px: no horizontal overflow, 44 px targets, the list over the page', 'F', tags=('fuel', 'layout'),
+      designs=('standard',), screens=False, rule='V3 spec 10.27: touch targets 44 px, no overflow at 390 px')
+def f46(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    open_names(c)
+    type_in(c, 'altn', 'LFQ')
+    c.until(OPTS + ' === 7', what='seven proposals under the third field')
+    r = c.js("""(() => { const iw = innerWidth, b = document.querySelector('[data-module=fuel] [data-adsug]').getBoundingClientRect();
+        return { sw: document.documentElement.scrollWidth, iw, l: b.left, r: b.right,
+                 wide: [...document.querySelectorAll('[data-module=fuel] [data-adsug] *')].filter(e => e.getBoundingClientRect().right > iw + 0.5).length } })()""")
+    c.ok(r['sw'] <= r['iw'] and r['l'] >= 0 and r['r'] <= r['iw'] + 0.5 and r['wide'] == 0, f'{r}', 'at 390 px the list and the page do not overflow')
+    c.ok(c.js("[...document.querySelectorAll('[data-module=fuel] [data-adsug] [role=option]')].every(o => o.getBoundingClientRect().height >= 43.5)"), 'small', '44 px targets')
+    c.tap(f'{FUEL} [data-adsug] [data-code="LFQ7"]')
+    c.until("document.querySelector('[data-module=fuel] input[data-k=altn]').value === 'LFQ7'", what='the tap picks')
+
+
+@case('F47', 'Step Departure: the summary names both aerodromes in full, before and after the start', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, langs4=True, rule='V3 spec 10.27: the step Départ recalls the full name of the departure and arrival aerodromes')
+def f47(c):
+    named = "[...document.querySelectorAll('[data-module=fuel] [data-sum] [data-adtext]')].filter(e => e.textContent.trim()).length === 2"
+    dds = "[...document.querySelectorAll('[data-module=fuel] [data-sum] dd')].filter(d => d.querySelector('[data-adtext]')).map(d => d.textContent)"
+    c.open('fuel', flight=True, airfields=True)
+    wait_quote(c)
+    to_step(c, 4)
+    c.until(named, what='the summary names both aerodromes')
+    c.eq([norm(e) for e in c.js(dds)], [norm('LFRS LFRS TEST'), norm('LFML LFML TEST')], 'the summary: code and name for the departure and for the arrival', what='summary before the start')
+    c.open('fuel', docs=proc_flight(None, True), airfields=True)
+    wait_quote(c)
+    to_step(c, 4)
+    c.until(named, what='after the start the summary still names them')
+    c.eq(c.count(f'{FUEL} [data-block="summary"] [data-do="cancelstart"]'), 1, 'the flight is started', what='started')

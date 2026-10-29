@@ -21,6 +21,7 @@ How the frame mounts the fuel module and what the module reads and writes. The r
 | `modules/fuel/test/vertical.html` | bench: `verticalPath` (`progress.js`) — the planned vertical path: no fold, no jump, constraints held, never climbing in the descent; case F23 |
 | `modules/fuel/module.js` | the module mounted by the frame: `meta`, `mount(el, ctx)`, `unmount()`; screens Plan (tab "Quote") and Sheets (SPEC § 9) |
 | `modules/fuel/procedures.js`, `procedures_texts.js` | the « Procédures » card of the preparation, mounted by `module.js` through `createProcedures(host)` (the choices, their display, the reading on demand, the OFP's lines); no access to the screen's state (SPEC § 9 block 0) |
+| `modules/fuel/adnames.js` | the aerodrome's name under its code (step Flight, step Departure) and the progressive completion of the three code fields (`createAdNames(host)`; `aerodb.coords`, `aerodb.find`; V3 § 10.27) |
 
 Load `performance_model.js`, then `model.js`, `levels.js`, `perf_prompt.js`. None touches the page, the network or the
 storage. The sheets logic is aerodb's (`(await ctx.aerodb.aircraft()).lib`, AeroDBSheets): aerodb configures it with

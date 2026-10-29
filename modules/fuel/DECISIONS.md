@@ -4,6 +4,18 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — the aerodrome's name where its code is, and progressive completion** (user, V3 § 10.27; decided by the ergonomics
+  session): new file `modules/fuel/adnames.js` (`createAdNames(host)`, like the procedures block: ctx, body, flight, gone) so that
+  `module.js` only gets the markup and four calls. The name is `aerodb.coords(code).name`, the very source of the procedures card's title, kept per
+  code until aerodb's next `change` (answers, unknown ones included, so a refresh never asks again); a line keeps its text while the answer for the
+  same code is awaited and is emptied for another code, so it never shows a stale name. The completion uses `aerodb.find(q, 40)` filtered to
+  aerodromes with a four-character code, seven at most (`find` ranks code, names starting, towns, then the rest: forty are asked so that seven aerodromes remain
+  when towns and points come first). The list is one `[data-adsug]` of the fields' container (`position:absolute`, the container is `relative`),
+  placed under the field's label from `offsetTop`; `pointerdown` and `mousedown` are cancelled on it so the field keeps the focus and
+  the click registers (no timer); `focusout` closes it. A pick sets the value and dispatches `input`, with a flag so that this event does not
+  reopen the list. The fields stay at `maxlength=4`: a typed name is its first four letters (« orly », « toul »); lifting the
+  limit would write a name into `route.dep` and the route text. The three columns are 12 em wide (were 8) so the names read. Step 5:
+  Departure and Arrival rows in the summary plus the names beside the first and last time of the list. Cases F44-F47.
 - **29 Oct 2026 — a flight dated in the past says so** (user, V3 § 10.28): a flight not started whose `planned_at` is more than a
   minute behind now shows « Vol daté du 26/10 14:00Z, dans le passé : météo et NOTAM ne valent plus. » under the level and the
   date (step Vol) and on the plan (the sticky result), as `f-warn` lines; never blocking (the quote and every gesture stay). Case F43.

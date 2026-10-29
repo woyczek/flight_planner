@@ -253,6 +253,16 @@ here to change the flight plan or the fuel quote, rarely to edit an aircraft; th
 button or by the address `#fuel?view=sheets` (`ctx.query.view`), and the last screen is neither kept nor read at
 mount. Inside a mount, the two buttons switch as before.
 
+- **The aerodrome's name where its code is, and progressive completion** (29 Oct 2026, V3 § 10.27; `modules/fuel/adnames.js`). At step 1, under each
+  of the departure, arrival and alternate fields, one read-only line (`.fu-adname`, height reserved even when empty, one line with an ellipsis,
+  the full text in its `title`) shows `LFPO — Paris-Orly` from `aerodb.coords` (the same source as the procedures card's title), `unknown`
+  (x4) when four characters resolve to nothing, nothing under four. From two characters, by code or by name (the field takes four
+  characters, so a name is typed by its first four letters), `aerodb.find` gives at most **seven** aerodromes with a four-character code,
+  listed as `LFPO Paris-Orly` in one list laid over the page (absolute, in the fields' container: nothing moves; never the native `datalist`);
+  ↑ ↓ move, Enter picks, Esc closes, a tap picks (44 px targets); it closes when the field loses the focus (a press on a proposal does not
+  take the focus, so the click still lands); a full code that is the only proposal opens nothing. A pick writes the code and fires the
+  field's `input` event: the same write, route and weather path as a typing. Step 5's summary adds a Departure and an Arrival row
+  (`LFRS` and its name), and the planned times list names the first and last point when they are those aerodromes.
 - **Plan in five steps** (lot G, 23 Oct 2026, the pilot's own order: aerodromes, aircraft, level → route → weather →
   density altitude and quote → correct the route → start): a steps bar as in Report — **1 Flight** (departure,
   arrival, alternate, **flight date** (24 Oct 2026: the field "Flight date" writes `current_flight.planned_at`, the one value of

@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the aerodrome's name under its code, and progressive completion** (`modules/fuel/adnames.js`, `module.js`; SPEC, DECISIONS, help x4;
+  cases F44-F47) — a fixed line « LFPO — Paris-Orly » under the departure, arrival and alternate, seven suggestions at most from two
+  characters (↑ ↓ Enter Esc, touch), the names in step 5's summary.
 - **Map: "Source" on the aerodrome card; one doubt rule** (`modules/maps/procs.js`, `choose.js`, `texts.js`; help ×4, maps
   SPEC; noreg D63). Each chosen procedure whose record carries an `https://` `source.url` (aerodb, V3 § 10.25) gets a
   "Source" ×4 link to its published page, in a new tab with `rel="noopener noreferrer"` ("Source STAR" / "Source APP" when

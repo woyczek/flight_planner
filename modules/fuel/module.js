@@ -22,6 +22,9 @@ import {
   PROC_STYLE
 } from './procedures.js'; // la carte « Procédures » (choix, lecture, OFP) : voir l'interface en tête de ce fichier
 import {
+  createAdNames
+} from './adnames.js'; // le nom du terrain sous son code et la complétion des champs de l'étape Vol (§ 10.27)
+import {
   svg
 } from '../../frame/lib/icons.js';
 import {
@@ -53,7 +56,7 @@ export const meta = {
   }],
   // gardés hors ligne dès la première visite (service worker du cadre)
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
-    'procedures_texts.js',
+    'procedures_texts.js', 'adnames.js',
     '../../frame/lib/weather_store.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js',
@@ -1500,7 +1503,15 @@ function climbSvg(G, box) {
 const STYLE = `
 [data-module="fuel"] .fu-g3{--f-min:96px}
 [data-module="fuel"] .f-table .fu-txt{white-space:normal;overflow-wrap:anywhere;min-width:9em} /* aperçu d'un réimport : un texte revient à la ligne */
-[data-module="fuel"] .fu-ads{grid-template-columns:repeat(3,minmax(0,8em))} /* codes OACI : 4 lettres, pas plus large */
+[data-module="fuel"] .fu-ads{grid-template-columns:repeat(3,minmax(0,12em));position:relative} /* trois terrains ; position:relative : la liste de propositions s'y pose */
+[data-module="fuel"] .fu-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
+[data-module="fuel"] .fu-adname[data-state="unknown"]{font-style:italic}
+[data-module="fuel"] .fu-sug{position:absolute;left:0;right:0;max-width:26em;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius);box-shadow:var(--sog-shadow)} /* par-dessus la page, jamais dans la mise en page */
+[data-module="fuel"] .fu-sug[hidden]{display:none}
+[data-module="fuel"] .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border-width:0 0 1px;border-radius:0;background:transparent}
+[data-module="fuel"] .fu-sugitem:last-child{border-bottom-width:0}
+[data-module="fuel"] .fu-sugitem[aria-selected="true"]{background:var(--sog-surface-2);box-shadow:inset 3px 0 0 var(--sog-accent)}
+[data-module="fuel"] .fu-sugitem span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-module="fuel"] .fu-flight{display:flex;flex-wrap:wrap;align-items:flex-end} /* niveau et date à leur largeur utile ; la date passe dessous sur un téléphone */
 [data-module="fuel"] .fu-flight>.f-field:first-child{flex:0 0 8em}
 [data-module="fuel"] .fu-flight>.f-field:last-child{flex:1 1 20em;max-width:26em;min-width:0} /* min-width:0 : la date ne pousse pas la ligne au-delà de l'écran */
@@ -1606,7 +1617,7 @@ function renderPlanBody() {
   S.body.innerHTML = `
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
-      <div class="f-grid fu-ads">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
+      <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" maxlength="4" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
       <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <p class="f-warn" data-pastdate hidden></p>
       <div data-block="aircraft">
@@ -1675,6 +1686,7 @@ function renderPlanBody() {
   }
   S.body.oninput = S.body.onchange = e => onPlanInput(e);
   S.body.onkeydown = e => {
+    if (S.AD.onKey(e)) return; // liste de terrains ouverte : ↑ ↓ Entrée Échap sont à elle
     if (e.key !== 'Enter') return;
     if (e.target.dataset?.k === 'addpt') {
       e.preventDefault();
@@ -1686,7 +1698,8 @@ function renderPlanBody() {
   };
   renderPts();
   renderRinfo();
-  S.body.onclick = e => onPlanClick(e);
+  S.body.onclick = e => S.AD.onClick(e) || onPlanClick(e);
+  S.AD.paint();
   S.P.reset(); // le corps est neuf : refresh dessine la carte des procédures
   refresh();
   renderWx();
@@ -1737,6 +1750,7 @@ function onPlanInput(e) {
         resolveRoute();
         scheduleWx();
       }
+      S.AD.onInput(e); // la ligne du nom et la liste des terrains proposés
       break;
     }
     case 'rtext':
@@ -3100,6 +3114,7 @@ function renderProgress(C) {
   card.classList.toggle('fu-hide', !c);
   if (!c) return;
   const pts = progPath().pts,
+    f0 = S.flight,
     unit = C.sheet?.unit || 'kg',
     rem = fuelTxt(Math.max(0, C.q.block - c.st.fuelUsed), unit),
     line = c.st.phase === 'arrived' ? tt(TX.progArrived, {
@@ -3114,7 +3129,12 @@ function renderProgress(C) {
       r: distTxt(c.st.remainingNm),
       f: rem
     });
-  box.innerHTML = `<p>${esc(line)}</p><div class="f-list">${c.etas.map(e => `<div class="f-item fu-eta${c.st.phase !== 'arrived' && e.i === c.pos.legIndex + 1 ? ' fu-next-pt' : ''}"${e.i === c.pos.legIndex + 1 && c.st.phase !== 'arrived' ? ' aria-current="step"' : ''}><span><b>${esc(pts[e.i]?.id || '')}</b></span><span class="f-num">${esc((e === c.etas[0] || e === c.etas.at(-1) ? hhmmLocal : hhmmOf)(new Date(e.at).toISOString()))}</span></div>`).join('')}</div>`;
+  box.innerHTML = `<p>${esc(line)}</p><div class="f-list">${c.etas.map(e => `<div class="f-item fu-eta${c.st.phase !== 'arrived' && e.i === c.pos.legIndex + 1 ? ' fu-next-pt' : ''}"${e.i === c.pos.legIndex + 1 && c.st.phase !== 'arrived' ? ' aria-current="step"' : ''}><span><b>${esc(pts[e.i]?.id || '')}</b>${[f0.route?.dep, f0.route?.arr].includes(pts[e.i]?.id) && pts[e.i]?.id ? ` <small class="f-muted" data-adtext data-code="${esc(pts[e.i].id)}"></small>` : ''}</span><span class="f-num">${esc((e === c.etas[0] || e === c.etas.at(-1) ? hhmmLocal : hhmmOf)(new Date(e.at).toISOString()))}</span></div>`).join('')}</div>`;
+}
+/** Un terrain du récapitulatif : son code puis son nom (rempli par S.AD.paint, d'après aerodb) ; `none` sans code. */
+function adSum(code, none) {
+  const c = String(code || '').trim().toUpperCase();
+  return c ? `<b>${esc(c)}</b> <span data-adtext data-code="${esc(c)}"></span>` : esc(none);
 }
 /** Récapitulatif du pas Départ : appareil, route normalisée, niveau (paliers), vent et sa source, carburant bloc. */
 function renderSummary(C) {
@@ -3131,6 +3151,8 @@ function renderSummary(C) {
     block = q?.hasFuel ? q.windKnown || !Number.isFinite(q.blockLow) ? fuelTxt(q.block, unit) : `${fuelTxt(q.blockLow, unit)} – ${fuelTxt(q.blockHigh, unit)}` : none;
   box.innerHTML = `<dl class="f-dl">
     <dt>${esc(tt(TX.sumAircraft))}</dt><dd>${esc([a.name || a.type, a.registration, a.callsign].filter(Boolean).join(' · ') || none)}</dd>
+    <dt>${esc(tt(TX.dep))}</dt><dd>${adSum(r.dep, none)}</dd>
+    <dt>${esc(tt(TX.arr))}</dt><dd>${adSum(r.arr, none)}</dd>
     <dt>${esc(tt(TX.sumRoute))}</dt><dd><code class="fu-sumroute">${esc(r.text || [r.dep, r.arr].filter(Boolean).join(' ') || none)}</code></dd>
     <dt>${esc(tt(TX.sumLevel))}</dt><dd>${esc(lvl)}</dd>
     <dt>${esc(tt(TX.sumWind))}</dt><dd>${esc(wind)}${windShort() ? ` <span class="f-muted">(${esc(windShort())})</span>` : ''}</dd>
@@ -3143,6 +3165,7 @@ function renderSummary(C) {
   const sn = S.body.querySelector('[data-startnote]');
   if (sn) sn.textContent = f.started?.at && startNote?.at === f.started.at ? startNote.text : ''; // ce que la relecture au départ a changé
   renderProgress(C);
+  S.AD.paint(); // les noms des terrains du récapitulatif et des horaires
 }
 /** Vol courant écrit par un autre module (by ≠ 'fuel' : maps, route modifiée sur la carte) : ses points et son texte
  *  sont gardés tels qu'il les a écrits (ni relus ni normalisés) ; distance et route vraie redéduites des points, devis
@@ -4173,6 +4196,14 @@ export async function mount(el, ctx) {
     },
     refresh: () => S === self && refresh()
   });
+  // les noms de terrain et la complétion des champs de l'étape Vol (modules/fuel/adnames.js)
+  S.AD = createAdNames({
+    ctx,
+    body: () => S === self ? self.body : null,
+    flight: () => self.flight,
+    gone: () => gone(self)
+  });
+  S.stops.push(S.AD.stop);
   // premier dessin sans attendre le réseau (audit de poids, mesure 4) : les bibliothèques et ce que l'appareil a déjà
   // (read sans wait : la copie gardée, ou null pour un fichier jamais lu) ; le registre d'aerodb, les fiches, et le
   // vol courant ou les réglages jamais lus arrivent ensuite (completeMount) — en attendant « chargement… », et rien
@@ -4229,6 +4260,10 @@ export async function mount(el, ctx) {
   S.srTitle();
   window.addEventListener('frame-titled', S.srTitle);
   S.body = el.querySelector('[data-body]');
+  // liste des terrains proposés (étape Vol) : fermée quand le champ perd le focus ; un appui sur une proposition ne prend pas le focus
+  // du champ (sinon le flou la fermerait avant le clic). Posés une fois : l'écran Devis est redessiné, pas son conteneur.
+  S.body.addEventListener('focusout', e => S?.AD?.onFocusOut(e));
+  for (const type of ['pointerdown', 'mousedown']) S.body.addEventListener(type, e => S?.AD?.onPointerDown(e));
   // « ? » de l'en-tête : le chapitre au paragraphe de l'écran (Fiches ; le pas affiché sur téléphone, où la barre des pas est
   // visible ; le devis entier sur un module large, où les cinq pas sont les uns sous les autres)
   ctx.helpAnchor?.(() => S?.view === 'sheets' ? 'fuel-sheets' : S?.body?.querySelector('.fu-steps')?.offsetParent ? `fuel-step-${S.step + 1}` :
