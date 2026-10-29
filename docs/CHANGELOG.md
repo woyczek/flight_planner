@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: detection and the workstation's settings apart** (`tools/launch.py`, `shared/app_framework.js`,
+  `shared/file_access.js`, `shared/maintenance_page.js`, `shared/sog_registry.js`, `apps/settings/premier_lancement.html`;
+  frame SPEC, DECISIONS): `/__setup/status` only says that a launcher serves the page (the same everywhere);
+  the workstation's own settings move to `/__setup/workstation`, never given to a paired device.
 - **Flight path: `expandedPath` marks every junction, the map only draws** (`frame/lib/flight_path.js`, `modules/maps/procs.js`;
   bench; V3 § 10.29 c) — the point after a junction carries `join`: `'common'` (the procedure meets the route on a shared point;
   `joinPhase`, the phase of the leg that leads there), `'direct'` (no shared point: a dashed direct) or `'gap'` (a leg whose

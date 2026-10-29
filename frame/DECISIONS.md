@@ -1567,3 +1567,14 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - **The author given by the page is an attribution, not a proof of identity**: the launcher takes the trigram the page
     sends. Acceptable while the page is trusted (the workstation's own page; a paired device of the local network cannot
     start a job). A relay open to the Internet (§ 10.28) will need a proof: the user's key of the signed registry.
+- **29 Oct 2026 — Lot (3c-1): `/__setup/status` is the detection only** (challenge § 10.29):
+  - `/__setup/status` gives `{ server, data, dataGit, host, lan, lnm }`, the same shape everywhere (`lnm: []` for a paired
+    device), nothing of the workstation; its special LAN filter is gone with it.
+  - `/__setup/workstation` (workstation only, refused to a paired device) gives the rest: `root`, `git`, `dataRepo`,
+    `lfs`, `csp`, `relaxNav` (and `data`, `dataGit`, `host`). The V2 pages that read them follow: the first launch (`lfs`),
+    Settings › Installation and Maintenance (`relaxNav`), the page frame (`relaxNav` badge), `file_access.js` (`root`), the
+    signed registry (`csp`). Maintenance's « is a launcher here » probe keeps `status` (it only needs a 200).
+  - Checked: the two routes' keys on the real launcher; first launch, Installation and Maintenance reloaded with no
+    JavaScript error, calling `workstation`.
+  - The route table with each route's public (lan | poste) is lot (3c-2): a mechanical rewrite of about 42 routes, kept apart
+    so that this change stays small.

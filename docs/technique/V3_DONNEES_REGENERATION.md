@@ -275,7 +275,8 @@ Every route is the workstation's own: header `X-SOG-Setup: 1`, local host, same 
 
 | Route | What it does | Used by V2 | In the Data screen |
 |---|---|---|---|
-| `GET /__setup/status` | `{ server, git, data, dataGit, dataRepo, host, lan }` | everywhere | launcher and repository state; `FrameData.launcher.detect()` |
+| `GET /__setup/status` | `{ server, data, dataGit, host, lan, lnm }` (detection only, since 29 Oct 2026) | everywhere | `FrameData.launcher.detect()` |
+| `GET /__setup/workstation` | `{ server, root, git, data, dataGit, dataRepo, lfs, csp, relaxNav, host }` (workstation only) | first launch, Settings, page frame, signed registry | the workstation's settings |
 | `GET /__setup/sia-zip[?info]` | newest `export_xml_bd_SIA_*.zip` of Downloads (info, or the file) | Maintenance › SIA | fetch, row 1 |
 | `GET /__setup/downloads?glob=&info\|name=` | newest file of a declared pattern in Downloads | NATS | fetch, row 10 |
 | `POST /__setup/aero-fetch { provider, args }` | downloads one provider into `data/sia/…` (`openaip`, `faa`, `enaire`, `ukmil`, `navcan`, `nat`), under `AERO_LOCK`; **synchronous, no progress** | zone panels | fetch, rows 5–9, 12 — behind the job runner |

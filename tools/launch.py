@@ -659,18 +659,20 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             v = regen().view(jid or None)
             return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
         if self.path.split('?')[0] == '/__setup/status':
+            # détection du lanceur (frame/store/transport_launcher.js) : la même forme partout, rien de propre au poste ;
+            # un appareil appairé du réseau local la lit aussi (lnm : [] pour lui, les bases de Little Navmap sont du poste)
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
-            git = data_sync.git_exe()
-            if self._lan():
-                # appareil appairé du réseau local : ce que lit la détection du cadre (transport_launcher.js) et rien du poste
-                # (ni chemin d'installation, ni dépôt distant, ni réglages, ni bases de Little Navmap)
-                return self._json({'server': True, 'data': has_data(), 'dataGit': os.path.isdir(os.path.join(DATA, '.git')),
-                                   'host': socket.gethostname(), 'lan': True, 'lnm': []})
-            return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
+            return self._json({'server': True, 'data': has_data(), 'dataGit': os.path.isdir(os.path.join(DATA, '.git')),
+                               'host': socket.gethostname(), 'lan': self._lan(), 'lnm': [] if self._lan() else lnm_db_kinds()})
+        if self.path.split('?')[0] == '/__setup/workstation':
+            # réglages du poste pour ses propres pages (V2 : premier lancement, Paramètres, cadre de page) : chemin
+            # d'installation, git, dépôt distant de data/, Git LFS, politique, navigation détendue — ce poste seulement
+            if not self._allowed() or self._lan():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json({'server': True, 'root': ROOT, 'git': bool(data_sync.git_exe()), 'data': has_data(),
                                'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
-                               'csp': True, 'relaxNav': RELAX['nav'], 'host': socket.gethostname(), 'lan': False,
-                               'lnm': lnm_db_kinds()})
+                               'csp': True, 'relaxNav': RELAX['nav'], 'host': socket.gethostname()})
         if self.path.split('?')[0] == '/__setup/lan':
             # accès des appareils du réseau local (Réglages du poste) : état, adresses, code — ce poste seulement
             if not self._allowed() or self._lan():

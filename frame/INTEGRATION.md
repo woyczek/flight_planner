@@ -949,7 +949,8 @@ in the launcher; `resume` finds it again.
   four-character code, nothing else) reads one aerodrome in EAD Basic and installs it under `proc/manual/`; `proc/eaip-fetch` (same args, the code must
   start with `LF`) does the same from the SIA eAIP of the cycle in force, without credentials, the address being computed by the launcher (aerodb's
   `fetchProcedures` picks the verb by the aerodrome's State; the frame gives aerodb `launcher.job`, built on this client with `regen/job` declared).
-  `GET /__setup/status` also carries `lnm`: the sorted list of Little Navmap database kinds present on the workstation (the
+  `GET /__setup/status` (the detection only, the same shape everywhere; the workstation's own settings are `GET
+  /__setup/workstation`, workstation only) also carries `lnm`: the sorted list of Little Navmap database kinds present on the workstation (the
   `little_navmap_<kind>.sqlite` files of its `little_navmap_db` folder; names only, `[]` when absent); `FrameData.launcher.detect()` hands it on in
   `info()`, aerodb uses it as a hint when a State has no coding tables.
 - The frame itself uses the same client for its own calls (Settings' `setup()`, aerodb's `.lnmperf` sheets, the

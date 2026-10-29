@@ -823,8 +823,12 @@ launcher can serve that device over the local network, so the device works as th
   address really reached must be public, checked before TLS and at every hop (a name that points to 192.168.x or
   127.0.0.1 is refused, 403). A redirect is followed only to such a host over https, and the IVAO key never follows
   to another host; otherwise the redirect is given back to the page as it is.
-- **`GET /__setup/status`** also gives `host` (the computer's name) and `lan` (the request came from the local
-  network). `FrameData.launcher.detect()` returns `{ data, dataGit, host, lan }`.
+- **`GET /__setup/status`** is the detection only, the same shape everywhere (29 Oct 2026): `{ server, data, dataGit, host
+  (the computer's name), lan (the request came from the local network), lnm (Little Navmap database kinds; [] for a paired
+  device) }`. `FrameData.launcher.detect()` returns it. The workstation's own settings (installation path, git, the data
+  repository's address, Git LFS, the policy, the relaxed navigation) are **`GET /__setup/workstation`**, refused to a paired
+  device; the V2 pages read it (first launch, Settings › Installation and Maintenance, the page frame, the signed
+  registry).
 - **The page on the device** is not a secure context (http, not localhost), so:
   - there is **no service worker**, so no offline use. The application works without it, and the Diagnostic says so
     (`page: { secure, offline, launcher }`);

@@ -1006,7 +1006,7 @@
   }
 
   // ---- débrayage de l'ouverture depuis un autre site ou une extension (lanceur : POST /__setup/relax ; état dans
-  // /__setup/status) : activé après confirmation dans la fenêtre du lanceur, jusqu'à sa fermeture
+  // /__setup/workstation) : activé après confirmation dans la fenêtre du lanceur, jusqu’à sa fermeture
   async function relaxRow(host) {
     const state = host.querySelector('#mtRelaxState'),
       btn = host.querySelector('#mtRelax');
@@ -1021,7 +1021,7 @@
         on
       })
     }).then(r => r.json()).catch(() => null);
-    const st = await fetch('/__setup/status', {
+    const st = await fetch('/__setup/workstation', {
       headers: {
         'X-SOG-Setup': '1'
       },
