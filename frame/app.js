@@ -161,6 +161,14 @@
       id: 'atmosphere',
       label: ['Météo', 'Weather', 'Wetter', 'Meteo'],
       icon: 'layers'
+    }, {
+      // données publiées par la compagnie (modules/data/) : le cœur de la future application « Maintenance » (décision de
+      // l'utilisateur, 29 oct 2026), pas une place du rail de Pilote ; inscrit ici pour que #data se monte (la ligne
+      // « Maintenance » de Réglages › Administration y mène) en attendant les applications nommées (?app=maintenance)
+      id: 'data',
+      label: ['Données', 'Data', 'Daten', 'Datos'],
+      icon: 'database',
+      rail: false // ni dans le rail ni dans la colonne de gauche, jamais module par défaut ; joignable par son adresse
     }],
     // barre d'onglets du téléphone (760 px et moins), cinq au plus (V3_SPECIFICATION.md § 7.1 règle 14) : un onglet = un groupe
     // de modules (modules : l'onglet reste choisi tant que l'un d'eux est affiché ; le toucher ouvre le dernier montré du groupe
@@ -1808,8 +1816,9 @@
   let menuKey = '',
     menuActive = '',
     menuScreen = '';
-  /** Modules du menu au niveau de l'appareil (meta.level ≤ niveau) ; un module au niveau encore inconnu est montré. */
-  const visibleModules = () => APP.modules.filter(m => (moduleLevel[m.id] ?? 1) <= level);
+  /** Modules du menu au niveau de l'appareil (meta.level ≤ niveau) ; un module au niveau encore inconnu est montré ; une
+   *  entrée rail: false n'y est jamais (joignable par son adresse seulement). */
+  const visibleModules = () => APP.modules.filter(m => m.rail !== false && (moduleLevel[m.id] ?? 1) <= level);
   /** Niveau (meta.level) et vue fixe (meta.fixed) déclarés par chaque module, puis menu et barre redessinés ; module
    *  illisible : niveau 1. */
   async function readLevels() {

@@ -73,3 +73,27 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   file after file, `DOMParser` unavailable in a Worker), so V2's page stays as it is, obsolete. In this module (D5) the
   build runs on the launcher, one process per zone (cores minus one), progress per zone, each zone published as soon as it
   is built (SPEC § 5.4, INTEGRATION § 2.3).
+- **29 Oct 2026 — First screen read-only, without any verb** (ergonomics session, for the group tests of 30 Oct): the
+  module is mounted at level 3 with what aerodb already gives (`publication()`, `zones()`, `sources()`,
+  `coverageByState()`): the cycle in force, the coverage with the States in three colours and their reason, the four groups,
+  each row's cycle (`YYNN`), age, counts and state (« Cycle dépassé », « Parseur ancien », « Absent du dépôt », « À jour »;
+  « Périmé » when the data carry it). No button of Télécharger, Construire, Publier, Purger, not even grey: they come with
+  their lots (D2 onwards), together with the grey reasons of SPEC § 6.5. The size of a row is its counts (zones,
+  aerodromes, files, types) until the launcher's state gives bytes.
+- **29 Oct 2026 — « Données » in the rail, read-only on a phone** (ergonomics session): the label stays (the rail's places
+  are nouns, the short verb is for buttons), the 7th and last place of the rail; no tab in the phone's bar, the module is
+  reached there by `#data` and a line of Settings › Administration, read-only (useful to see the coverage on the road).
+  Replaces « a phone never mounts this module » (SPEC § 6.3).
+- **29 Oct 2026 — D5's runtime: the workstation's browser without a window** (ergonomics session, on aerodb's note): the
+  existing JavaScript builders run in Edge (else Chrome) without a window, one instance per zone, orchestrated by
+  `tools/regen/base.py`; the build in the page is the fallback without such a browser. Rejected: a Python port of the
+  builders (two implementations to keep in step) and an engine downloaded by the launcher. Closes the open point of the
+  entry « The build runs on the launcher, in parallel by zone ».
+- **29 Oct 2026 — The Maintenance application, not Pilot's rail** (user: « Pour éteindre la V2, il faut les paramétrages
+  admin aéronautique sur la V3. Ce n'est pas dans l'appli Pilote, ou alors à très très haut niveau. C'est une appli
+  Maintenance. »; relayed by the ergonomics session): the module is the heart of a fourth application, « Maintenance »
+  (Données, administration settings, help), on the workstation with a launcher, opened by `/frame/?app=maintenance` and by
+  the line « Maintenance » of Pilot's Settings › Administration (Full). Until the frame's named applications exist: an
+  entry of Pilot's `APP.modules` with `rail: false`, reached by `#data`, where the Administration line leads. Replaces « the
+  7th place of the rail » of the same day (the entry « Données » in the rail, read-only on a phone): the read-only phone
+  access stays.

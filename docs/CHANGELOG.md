@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: a read-only « Données » screen** (`modules/data/` `module.js`, `model.js`, `texts.js`, `help/`; `frame/app.js` registry; SPEC § 3, § 6.2,
+  § 9; cases L1–L5; V3 data regeneration, first lot) — Full level (level 3); not a place of Pilot's rail: the heart of the future « Maintenance » application (user, 29 Oct), reached by
+  `#data` and by the line « Maintenance » of Settings › Administration (read only on a phone). It shows the AIRAC cycle in force and the next one, the workstation's coverage by zone (written once to
+  `cache/data/coverage.json`) and the States grouped green / orange / red (seven lines, the rest folded), then the four groups — aeronautical
+  base, procedures, aircraft, weather — one row per data set with its cycle, age, counts and a computed state (cycle gone by, old parser, absent,
+  over 28 days, up to date), the link, licence and published zones under a tap. Everything comes from aerodb's `publication()`, `zones()`,
+  `sources()` and `coverageByState()`; no action button, no launcher job, no network. The model (`model.js`) is pure and tested on fixtures.
 - **Frame: the flown track** (`frame/lib/trail.js`, `frame/app.js`, `frame/sw.js`; frame INTEGRATION § 6, DECISIONS;
   noreg A35): the current flight's `progress.actual.trail` keeps where the aircraft went since the start — one point per
   NM or per minute, turns kept, 500 points at most — written with the position, reset at a new start or when the flight

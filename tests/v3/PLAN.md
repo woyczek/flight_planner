@@ -76,6 +76,16 @@ same results as the V2 readers on the synthetic fixture at every chunk size, and
 `frame/aerodb/test/zip_stream.html`: entries, an entry byte for byte, the streamed chain giving the V2 chain's counts; the Sources screen fetches nothing;
 the laboratory's files are gone). The data laboratory (A21 to A24, its K8 and K9) was removed on 28 Oct 2026.
 
+Area L (the Données module, `tests/v3/cases/data.py`; not to be confused with section L below, which is a list of bugs): **L1** the pure
+model (`modules/data/model.js`) on fixtures against the real `airac.js` — YYNN names and dates, the state of a row by priority (stale cycle amber
+then red a week after its last day, parser with and without `PARSER_VERSION`, absent, aircraft over 28 days, outdated), a base row aggregated from
+two zones, the States grouped green / orange / red and cut at seven, the groups cut at seven rows; **L2** (×4 langs) the screen at 390 and 1280 at
+the Full level with aerodb stubbed (`publication`, `zones`, `coverageByState` answer fixtures; `sources()` is the real catalogue plus a parser
+constant): head and cycle, four groups in order and folded by attention, at most seven rows and seven State lines visible, row states, the
+coverage written once, 44 px summaries, no horizontal scroll, no `[data-verb]`; **L3** (×4 langs) the module is in the rail at the Full level
+only and Settings > Administration leads to it, also on a phone; **L4** a failing aerodb call is said in one line. Chosen by `modules/data/**`,
+`frame/app.js` and `frame/lib/*.js` (`domains.py`).
+
 ## B. Overlay layer and full screen (`frame/INTEGRATION.md` § 9.3, § 9.4)
 
 | Id | Case | Expected | Rule |

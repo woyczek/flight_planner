@@ -13,7 +13,7 @@ d4cec61b9). The module's D1 starts on the ergonomics session's go.
 | Lot | Owner | Scope | Tests | Changes from the inventory's plan |
 |---|---|---|---|---|
 | **D0** Frame services — **delivered** (bd4cc5109, `frame/INTEGRATION.md` § 15) | frame | `ctx.launcher` by `meta.launcher` (Settings' `setup()` and aerodb's calls moved onto the same client), the job runner and `regen/state`, the verbs `state/scan` and `proc/ead-fetch`, `ctx.publish` by `meta.publish`, the end-of-cycle line, Workers allowed; the rail's verb comes with `module.js` | frame zone A | new: the module needed the frame first |
-| **D1** Read-only module | data, aerodb | `modules/data/` mounted at level 3: head (cycle in force, runner), coverage (`cache/data/coverage.json`, every published zone ticked at the first opening), the four groups, rows with cycle, state and gap computed from aerodb's `publication()`, `zones()` and `sources()` (INTEGRATION § 2.1; delivered by
+| **D1** Read-only module (the ergonomics session's « D2 »; **first part delivered**: the screen without any verb, 29 Oct — see below) | data, aerodb | `modules/data/` mounted at level 3: head (cycle in force, runner), coverage (`cache/data/coverage.json`, every published zone ticked at the first opening), the four groups, rows with cycle, state and gap computed from aerodb's `publication()`, `zones()` and `sources()` (INTEGRATION § 2.1; delivered by
 aerodb, d4cec61b9) and, with a launcher, `GET /__setup/regen/state`; every verb grey with its reason; help ×4; **the Sources screen replaced**: `sources_data.js` becomes the module's catalogue (rows = link, licence, status, state; considered and set-aside sources in each group's fold), the screen `#sources`, its `APP.screens` entry and the Administration card's button removed | L1 states, gaps and cycle arithmetic as pure functions on fixtures (static); L2 the screen at 390 and 1280, no horizontal scroll, 44 px, seven rows per group, grey reasons ×4 | was a frame screen `#data`; now a module, which also replaces the Sources screen |
 | **D2** Jobs and Télécharger | frame (launcher), data | the `download` verbs of `regen/job` (the runner is D0's), the journal, « Arrêter »; Télécharger for openAIP, ENAIRE, FAA ADDS, UK Mil, NAV CANADA, the pick-ups of SIA and NATS | K: the runner in `--essai` mode (fake server, a job, cancel, lock); L3 a row runs, progress, stop, journal, with a fake launcher | NAT removed (read on the site, D9) |
 | **D3** Télécharger the procedure sources | frame (launcher) | `eaip` and `cifp` providers (address and file name from the cycle; « rien à télécharger encore ») | K: derivation against the verified 2610 values, a fake HTTP server | unchanged |
@@ -26,6 +26,12 @@ aerodb, d4cec61b9) and, with a launcher, `GET /__setup/regen/state`; every verb 
 | **D10** « Lire un terrain depuis EAD » | frame (launcher), aerodb, settings, data | the EAD line (SPEC § 4.3): one ICAO code, the launcher's login with the credentials of the Keys panel, *Charts* documents to `data/local/`, coding tables read with the known layouts (pypdf, OCR), installed by
 `tools/proc_manual.py` into `proc/manual/<ICAO>.json` (« remplacer ou fusionner » asked when another source has the
 aerodrome); « Périmé » and « Relire » for an aerodrome whose cycle of origin has passed, « Retirer » on the owner's order; the EAD entry of the Keys panel (Settings) | K: the layout registry on the pages the owner provides (kept out of the public repository); L: the line greyed without credentials | new (ergonomics session, 28 Oct); its parser waits for real pages (`EAD_BASIC.md` § 2) |
+
+**D1 in two parts** (ergonomics session, 29 Oct, night before the group tests): **D1a** the screen read-only and *without any
+verb button* (head, coverage with the States' list, four groups, rows with cycle, age, counts and state, catalogue rows of
+the « n autres jeux » folds), cases L1–L3; **D1b** the coverage's « Modifier », the verbs grey with their reasons, the
+launcher's `regen/state`, the Sources screen removed. aerodb adds for D1a `coverageByState()`'s `held` and `names` and
+`AeroCatalogue.PARSER_VERSION` (its lot of 29 Oct night); the screen reads them when present.
 
 Existing guards kept green throughout: K1–K9, A12, A15, A19, A20, I4, I6, I7.
 

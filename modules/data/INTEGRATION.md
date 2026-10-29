@@ -65,7 +65,12 @@ line. The module's own lines (a job running, « n publications à envoyer ») go
 
 ### 1.5 The module's place
 
-- The verb « Données » of the Pilot rail, level 3, is added **with `module.js`** (lot D1), the sixth at the Full level.
+- **Not a place of Pilot's rail** (user, 29 Oct: the data module is the « Maintenance » application — Données,
+  administration settings, help — on the workstation with a launcher, opened by `/frame/?app=maintenance`). Until the frame's
+  named applications exist (V3 Frame), the module is an entry of Pilot's `APP.modules` marked `rail: false` (never in the
+  rail, the left column or the phone's bar, never the default module), so that `#data` mounts it; `meta.level: 3`. The line
+  « Maintenance » of Settings › Administration (`frame/settings/admin_links.js`, entry `data`, Full level, with its link to
+  copy) leads there, read-only on a phone (SPEC § 6.3).
 - **Workers**: allowed by the page policy (`worker-src 'self' blob:`); the module's Worker script is listed in `meta.files`.
   No outside host: the module calls none.
 
@@ -75,16 +80,17 @@ Written with aerodb (its review of 28 Oct 2026, validated by the ergonomics sess
 `frame/aerodb/SPEC.md` § 4, § 5, § 5 quinquies to septies and `frame/aerodb/INTEGRATION.md` (« The Données module »). What the
 module relies on:
 
-### 2.1 Three calls, and nothing else (lot D1)
+### 2.1 Four calls, and nothing else (lot D1)
 
 | Call | What the module uses |
 |---|---|
 | `aerodb.publication()` | what is published, **without loading the data**: `{ base: { zone: { cycles: { date: { parserVersion, at, by, format } }, inForce } }, proc: { cycles: { date: { aerodromes, byStatus } }, inForce }, vfr: { cycle, at, count } \| null, aircraft: { at, types, files } \| null }`. A zone still in the whole format is listed with `format: 'whole'`, never read (the module shows it « format ancien » and offers Construire). `by` (the trigram of the build) is null and `at` is `meta.json`'s `updated_at` until the builders write `builtAt` / `builtBy` (D5). `vfr` and `aircraft` are null when nothing is published (the row shows « absent du dépôt »). The world weather is the frame's (`ctx.weather`), the NAT tracks join after D9 |
+| `aerodb.coverageByState()` | the States of the procedures (V3 § 10.22), for the coverage's list: `{ [prefix]: { level: 'green' \| 'orange' \| 'red', reason, label: [fr, en, de, es], names?: [fr, en, de, es], held?: n } }`; `names` and `held` (green when `held > 0`) added by aerodb on 29 Oct, the screen falls back on the prefix and on orange / red without them |
 | `aerodb.zones()` | every zone the suite knows, published or not: `{ id, names: [fr, en, de, es], frames, published }`, for the coverage and « Ajouter un pays » |
 | `aerodb.sources()` | the **catalogue** (`frame/aerodb/catalogue.js`, kept by aerodb, loaded with `airac.js` at the first call): `{ SOURCES, ORDER, GROUPS, EAD_STATES, byId, urlOf, eaipBase, cifpName, cifpUrl, siaPage, siaFileInfo, cifpFileInfo, airac }` — per source its group (`base` \| `proc` \| `aircraft` \| `weather`), the zones it feeds, how it is fetched and built, whether it is published, the link of a cycle, licence and status; `EAD_STATES`, the EAD outcome per State (greys « Mise en page inconnue pour cet État »); the file-name readers; `airac` (`AeroAirac`) |
 
-The module never reads `sia/base/`, `proc/` or `AircraftDB/`, never loads aerodb's files: these three calls are its only
-way in.
+The module never reads `sia/base/`, `proc/` or `AircraftDB/`, never loads aerodb's files: these four calls are its only
+way in. « Parseur ancien » compares with `AeroCatalogue.PARSER_VERSION` (from `sources()`; absent: no such state).
 
 ### 2.2 Cycles
 
@@ -107,9 +113,10 @@ Stored and exchanged as effective dates `YYYY-MM-DD` in every answer; shown as `
   launcher starts one process per zone, at most `max(1, cores − 1)` at once, each running its zone's pieces and its
   assembler; the job state carries `zones: { <zone>: { state: 'waiting|building|built|failed', done, total, error } }`; a
   built zone is written and committed alone at once (one commit per zone), the others go on. The Worker assembler serves
-  only the no-launcher path (one zone at a time). The runtime of a zone's process (Python port of the builders, proved by
-  the same golden test, or the JavaScript builders under an engine the launcher installs) is settled with aerodb at D5's
-  start; the rule holds either way.
+  only the no-launcher path (one zone at a time). A zone's process is the workstation's browser without a window (Edge,
+  else Chrome) running aerodb's JavaScript builders, one instance per zone, orchestrated by `tools/regen/base.py`; the
+  build in the page is the fallback when no such browser is found (settled 29 Oct: no Python port — two implementations to
+  keep —, no engine downloaded; the detail in `frame/aerodb/`).
 - Before D5, an aerodb lot « complete readers » (the stream readers keep every field and the arcs), proved by a golden test
   against V2's `SiaBase` on the fixtures.
 - aerodb's invariant 1 is amended: the reader never writes the base; the builders produce on the owner's order from this

@@ -79,6 +79,20 @@
       'La clave IVAO y las credenciales de EAD Basic, guardadas por el lanzador de este equipo (carpeta secrets/), nunca por el navegador ni en los datos.'
     ]
   }, {
+    id: 'data',
+    href: '#data',
+    // l'application Maintenance (décision de l'utilisateur, 29 oct 2026 : les réglages d'administration des données hors de
+    // Pilote) ; en attendant les applications nommées du cadre (?app=maintenance), la ligne ouvre son module Données (#data)
+    copyLink: true, // l'adresse à copier : à ouvrir sur un téléphone, en lecture seule
+    where: 'app',
+    title: ['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento'],
+    text: [
+      'Les données de la compagnie : la couverture par pays et par État, et l’état de chaque jeu de données (cycle, âge, parseur) ; sur un téléphone, en lecture seule.',
+      'The airline’s data: the coverage by country and by State, and the state of each data set (cycle, age, parser); read only on a phone.',
+      'Die Daten der Fluggesellschaft: die Abdeckung nach Land und Staat und der Zustand jedes Datensatzes (Zyklus, Alter, Parser); auf einem Telefon nur lesbar.',
+      'Los datos de la aerolínea: la cobertura por país y por Estado, y el estado de cada conjunto de datos (ciclo, antigüedad, analizador); solo lectura en un teléfono.'
+    ]
+  }, {
     id: 'sources',
     href: '#sources',
     copyLink: true, // sous le lien, l'adresse absolue publiée (depuis location) et « Copier le lien » : à ouvrir sur le téléphone

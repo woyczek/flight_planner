@@ -18,7 +18,11 @@ for `modules/data/module.js` and its files. Every rule below is a requirement.
   device and never builds. The compiled JSON files live in the airline's **private data repository**, on the user's side:
   that is admitted (the raw sources are never published, only what is compiled from them, under the licences of § 10).
 - **One module** (`modules/data/`, `meta.level: 3`, Full), not a screen of the frame (ergonomics session, 28 Oct 2026). The
-  frame is unchanged except for the services the module asks for (INTEGRATION § 1). Its verb in the rail: « Données ».
+  frame is unchanged except for the services the module asks for (INTEGRATION § 1). **It is the heart of the « Maintenance »
+  application, not a place of Pilot's rail** (user, 29 Oct: « pour éteindre la V2, il faut les paramétrages admin
+  aéronautique sur la V3 […] c'est une appli Maintenance »): Données, administration settings and help, on the workstation
+  with a launcher, opened by `/frame/?app=maintenance` and by the line « Maintenance » of Pilot's Settings › Administration
+  (Full); until the frame's named applications exist, the module is reached by `#data`, where that line leads.
 - **The data are common, the coverage is personal** (user, 28 Oct): every zone published in the data repository can be put
   in a workstation's coverage; what one administrator publishes is everyone's data; the screen shows, for each data set,
   the gap between this workstation and the published repository.
@@ -66,6 +70,10 @@ A non-fixed module (it scrolls like a page), `meta.title` « Données ». From t
    `cache/data/coverage.json` (§ 7). A zone ticked here and published by nobody is built and published by this workstation.
    **At the first opening every published zone is ticked** (the screen shows what the airline publishes; unticking is the
    rare gesture); nothing is taken over from V2.
+   Under it, **the States of the procedures** (V3 § 10.22), from `aerodb.coverageByState()`: one line per colour and reason,
+   green (procedures held, with the number of aerodromes), then orange (readable on demand: the SIA's eAIP, EAD Basic),
+   then red (nothing readable: tables in images, prose…), each line its reason's label and the States' names; seven lines at
+   most, the others under « n autres »; a legend sentence. The colour is never alone: the reason's words carry it.
 3. **« Tout mettre à jour »**: the main gesture, one primary button at the top (§ 5.3), with the count of data sets it will
    touch; the four verbs stay on each row.
 4. **The groups**, in this order: Base aéronautique, Procédures, Appareils, Météo. Each group is a fold (`details`), open
@@ -208,7 +216,10 @@ file after file). The rule:
   launcher runs it and the page only follows.
 - **One process per zone**, as many at once as the workstation's cores minus one (at least one); the other zones wait
   their turn. A zone's process runs its sources' pieces then its assembler (INTEGRATION § 2.3); zones share nothing
-  but France's outlines, read-only.
+  but France's outlines, read-only. **A zone's process is the workstation's own browser without a window** (Edge, else
+  Chrome) running the existing JavaScript builders, one instance per zone, orchestrated by `tools/regen/base.py`; without
+  such a browser, the build falls back to the page; no Python port, no engine downloaded (ergonomics session on aerodb's
+  note, 29 Oct; the detail is aerodb's).
 - **Progress per zone**: each zone's line says « en attente », « construction (n / m sources) », « construite », or its
   failure; the head shows the count (« 4 zones sur 11 »). Following stops when the page closes, the job goes on and is
   found again (`ctx.launcher.resume`).
@@ -242,7 +253,8 @@ remote). One pill, by priority, the others in the detail:
 
 1. **« Cycle dépassé »** — the published cycle is older than the cycle in force (amber; red past its end + 7 days).
 2. **« Nouveau cycle »** — the next cycle's source is available and not built.
-3. **« Parseur ancien »** — published `parserVersion` below the builders' current one.
+3. **« Parseur ancien »** — published `parserVersion` below the builders' current one (`AeroCatalogue.PARSER_VERSION`, equal to
+   V2's `SiaBase` version until the builders of D5; read, never written in the module).
 4. **« Source plus récente »** — downloaded after the last build, or the inputs' fingerprint changed.
 5. **« Non publié »** — built here, not on the repository.
 6. **« Périmé »** — a procedure read by hand, EAD or OCR whose cycle is no longer in force (amber, with « Relire »): still
@@ -257,8 +269,9 @@ When the published base or `proc/` is older than the cycle in force, or the cycl
 published for the next: **on every device**, an amber line of the Status block, drawn by the frame (« Base aéronautique :
 cycle 2610 terminé, en attente de publication », or « … : le cycle 2611 se termine le 25/11, rien de publié pour 2612 »;
 INTEGRATION § 1.4): nothing to press on a phone; **on a workstation** with a launcher at the Full level it leads to
-`#data`, whose head shows « Reconstruire pour le cycle 2611 », which is « Tout mettre à jour ». A phone never mounts this
-module.
+`#data`, whose head shows « Reconstruire pour le cycle 2611 », which is « Tout mettre à jour ». On a phone the module
+opens **read-only** (no verb), by its address `#data` or the line « Maintenance » of Settings › Administration (ergonomics
+session, 29 Oct: useful to see the coverage on the road); it has no tab in the phone's bar.
 
 ### 6.4 The gap between the workstation and the repository
 
@@ -284,7 +297,7 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
 
 ## 7. Reads and writes
 
-- **Reads**: aerodb's three calls only (INTEGRATION § 2) — `publication()` (what is published, without loading the data),
+- **Reads**: aerodb's four calls only (INTEGRATION § 2) — `coverageByState()` (the States' list of § 3.2), `publication()` (what is published, without loading the data),
   `zones()` (every known zone, for « Ajouter un pays »), `sources()` (the **catalogue**: groups, zones fed, how each source
   is fetched and built, links by cycle, licences, statuses, `eadStates`, the file-name readers); never `sia/base/`, `proc/`
   or `AircraftDB/` directly, never aerodb's files; the workstation's state through `ctx.launcher` (INTEGRATION § 1).
@@ -316,7 +329,7 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
 - Coverage `[data-coverage]`, its checkboxes `[data-zone="<id>"]`.
 - « Tout mettre à jour » `[data-verb="all"]`.
 - Group `details[data-group="base|proc|aircraft|weather"]`; its overflow fold `[data-more]`.
-- Row `[data-set="<id>"]` with `data-state` (`stale-cycle`, `new-cycle`, `parser`, `source-newer`, `unpushed`, `outdated`, `ok`),
+- Row `[data-set="<id>"]` with `data-state` (`absent` « Absent du dépôt », `stale-cycle`, `new-cycle`, `parser`, `source-newer`, `unpushed`, `outdated`, `stale-age` « Plus de 28 jours » for a set without a cycle, `ok`),
   `data-cycle`, gap `[data-gap]`, reason `[data-reason]`; buttons `[data-verb="download|build|publish|purge|update"]`
   (`disabled` when grey); running bar `[data-running]`, « Arrêter » `[data-verb="stop"]`.
 - EAD line `[data-set="ead"]`, field `[data-f="icao"]`, button `[data-verb="ead"]`.
