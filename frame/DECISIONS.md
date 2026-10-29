@@ -1679,3 +1679,18 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   (`result.exchange`: numbers and the cleaned message, never paths nor git output), so that a module never posts
   `/__setup/sync` nor writes an author (§ 15); `data.sync.gesture === true` tells a module the frame takes the gesture.
   The launcher still decides (`sync_gesture`: a build under way keeps `sia/base`).
+- **29 Oct 2026 — Applications: named sets of modules, chosen by the address** (user's decision, V3 § 2; the
+  coordinator agreed the mechanism):
+  - `APPS = { pilot, maintenance }`, the same shape each (`modules`, `tabs`, `screens`, `links`, `name`, `launcher`);
+    `APP` is the page's, from `?app=` (in the page's query, never in the fragment, which routes the modules; unknown or
+    absent: `pilot`; `Object.hasOwn`, so `?app=__proto__` is Pilot). Nothing kept on the device.
+  - The application lists its modules, not the module its application: order and the limit of seven in one place, a
+    module may serve in two applications without knowing it, INTEGRATION unchanged for modules.
+  - `links`: entries of the rail that are not modules (a frame screen `#…` or a page of the suite, same tab), with a level;
+    Maintenance's: Administration (`#settings?card=admin`), Aide, the V2 maintenance page.
+  - Maintenance opens everywhere, read only without a launcher (first proposed guarded by it: dropped the same evening,
+    since the Données module reads without a launcher and its Administration line is meant for a phone); a link needing
+    the launcher says so (`launcher: true`: the V2 page). Level Complet like the Données module.
+  - The transitional entry `{ id: 'data', rail: false }` of Pilot (Sécurisation/Réglages, waiting for this lot) and its
+    filter go; Réglages › Administration's line « Maintenance » opens `frame/?app=maintenance#data` in the same tab
+    (`same: true` of an admin link); the L cases open Données in Maintenance (`c.open(…, app=)`).

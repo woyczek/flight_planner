@@ -486,7 +486,8 @@ class Ctx(Asserts):
 
     # -- navigation and seeding
     def open(self, target='fuel', flight=False, started=False, trigram='ABC', pending=0, wait=True, steps=False, aero=False,
-             tone=None, airfields=False, flights=0, reports=0, forecast=False, docs=(), airspaces=(), airways=(), aero_extra=None, identity=None):
+             tone=None, airfields=False, flights=0, reports=0, forecast=False, docs=(), airspaces=(), airways=(), aero_extra=None, identity=None,
+             app=None):
         """Seeds the cache, then loads `frame/index.html#<target>` and waits for the screen.  `target` is the part after
         '#', e.g. 'maps', 'help?m=maps', 'settings'.  Always seeded: the design and tone of the run (device/design.json,
         which the frame applies over the localStorage mirror; `tone` overrides the run's) and a trigram (`trigram=''`: none,
@@ -496,7 +497,8 @@ class Ctx(Asserts):
         a report (seed_flights); `forecast`: a synthetic forecast of the seeded flight in the weather store (seed_forecast);
         `docs`: more documents [[path, value, policy], ...]; `airspaces`: more airspaces for the published base (implies `aero`);
         `airways`: airway segments for the published base (implies `aero`; `synthetic_airways()`); `aero_extra`: more of the published base
-        (implies `aero`; see aero_docs, D27's LFQN); `identity`: more keys of the device identity (e.g. `{'simbrief': '12345'}`)."""
+        (implies `aero`; see aero_docs, D27's LFQN); `identity`: more keys of the device identity (e.g. `{'simbrief': '12345'}`);
+        `app`: the application of the frame (`?app=maintenance`; none: Pilot)."""
         docs = [['device/design.json', {'design': self.design, 'tone': tone or self.tone}, 'cache']] + [list(d) for d in docs]
         if trigram:
             docs.append(['device/identity.json', {'trigram': trigram, **(identity or {})}, 'cache'])
@@ -511,7 +513,7 @@ class Ctx(Asserts):
         _seed(self.page, self.base, docs)
         if forecast:
             seed_forecast(self.page, self.base)
-        self.page.goto(f'{self.base}/frame/index.html#{target}', wait_until='load')
+        self.page.goto(f'{self.base}/frame/index.html{"?app=" + app if app else ""}#{target}', wait_until='load')
         if wait:
             self.ready(target, sheet=flight)
 

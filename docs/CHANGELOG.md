@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: applications** (`frame/app.js`, `frame/settings/admin_links.js`, `frame/settings/admin.js`; frame SPEC § 3.1,
+  INTEGRATION, DECISIONS; noreg A36): one frame, named sets of modules chosen by the address — Pilot (default) and
+  Maintenance (`/frame/?app=maintenance`: Données, Administration, Aide, and the V2 maintenance page with a launcher; read
+  only elsewhere); Pilot's Réglages › Administration opens Maintenance, and Pilot no longer carries Données.
 - **Frame: a module can publish on the user's gesture** (`frame/store/frame_data.js`; INTEGRATION § 4, DECISIONS; noreg
   A37): `data.sync({ gesture: true })` is the header button's pass and returns the launcher's report (sent, kept,
   received, conflicts, merge settled) — for « Publier » of the Données module.

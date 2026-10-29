@@ -1128,4 +1128,23 @@ def a37(c):
     c.ok("reason: o?.gesture === true ? 'manual' : 'module'" in src, '', 'only gesture === true makes a manual pass')
     c.ok('conflicts: Array.isArray(r.conflicts) ? r.conflicts.length' in src and 'message: String(r.message ||' in src, '',
          'the report keeps numbers and the message, never the conflicting paths')
+@case('A36', 'Applications', 'A', designs=('standard',), night=False,
+      rule='frame SPEC 3.1 (29 Oct): an application is a named set of modules of the same frame, chosen by ?app= (pilot by default); Maintenance opens everywhere, read only without a launcher')
+def a36(c):
+    rail = "() => [...document.querySelectorAll('#fMenu a')].map(a => a.dataset.id || a.dataset.link)"
+    tabs = "() => [...document.querySelectorAll('#fTabs a')].map(a => a.dataset.tab)"
+    c.open('fuel', docs=LEVEL3)
+    c.ok('data' not in c.js(rail), str(c.js(rail)), 'Pilot has no Données in its rail')
+    c.page.goto(f'{c.base}/frame/index.html#data', wait_until='load')
+    c.until("!!document.querySelector('[data-module=fuel]')", timeout=15000, what='#data in Pilot: its first module')
+    c.eq(c.count('[data-module=data]'), 0, 'Pilot does not mount Données', what='Données in Pilot')
+    c.page.goto(f'{c.base}/frame/index.html?app=maintenance#data', wait_until='load')
+    c.until("!!document.querySelector('[data-module=data]')", timeout=15000, what='Maintenance mounts Données, without a launcher too')
+    c.eq(c.js(rail), ['data', 'admin', 'help'], 'Maintenance without a launcher: Données, Administration, Aide (no V2 page)', what='rail')
+    c.eq(c.js(tabs), ['data', 'admin', 'help'], 'the phone bar of Maintenance', what='tabs')
+    c.eq(c.count('[data-verb]'), 0, 'read only without a launcher', what='[data-verb]')
+    c.ok(c.js('document.title').split(' — ')[0] in ('Maintenance', 'Wartung', 'Mantenimiento'), c.js('document.title'), 'the page is named after the application')
+    c.page.goto(f'{c.base}/frame/index.html?app=__proto__#fuel', wait_until='load')
+    c.until("!!document.querySelector('[data-module=fuel]')", timeout=15000, what='an unknown application: Pilot')
+    c.ok('fuel' in c.js(rail) and 'data' not in c.js(rail), str(c.js(rail)), 'an unknown app is Pilot')
 

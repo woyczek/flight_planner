@@ -153,10 +153,10 @@
         cls = `f-btn${x.primary ? ' primary' : ''}`;
       const btn = x.panel ? `<button type="button" class="${cls}" data-act="adminPanel" data-panel="${esc(x.panel)}" aria-expanded="false">${label}</button>` : x.act ?
         `<button type="button" class="${cls}" data-act="${esc(x.act)}">${label}</button>` : x.where === 'bench' && !L ? `<button type="button" class="${cls}" disabled>${label}</button>` :
-        `<a class="${cls}" href="${esc(out ? new URL(x.href, ROOT).href : x.href)}"${out ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
+        `<a class="${cls}" href="${esc(out ? new URL(x.href, ROOT).href : x.href)}"${out && !x.same ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
       // `copyLink` : sous le lien, l'adresse absolue de la page, construite depuis location (publiée sur GitHub Pages ou locale), à
       // ouvrir ou à mettre en favori sur le téléphone, copiable par un appui
-      const abs = x.copyLink && x.href ? new URL(x.href, location.href).href : '',
+      const abs = x.copyLink && x.href ? new URL(x.href, x.href.startsWith('#') ? location.href : ROOT).href : '',
         under = abs ? `<span class="f-muted f-admin-url">${esc(t(T.linkOpen))} <code data-adminurl>${esc(abs)}</code></span>
         <span class="f-row"><button type="button" data-act="adminCopy" data-text="${esc(abs)}">${esc(t(T.copyLink))}</button></span>` : '';
       return `<li data-admin="${esc(x.id)}">${btn}<span class="f-muted">${esc(t(x.text))}${x.where === 'bench' ? ` — ${esc(t(T.launcherOnly))}` : ''}</span>${under}${x.panel ? panel(x) : ''}</li>`;

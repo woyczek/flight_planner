@@ -31,7 +31,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - The frame loads it on demand and gives it `ctx` (frame/SPEC.md § 3.2): `data`, `aerodb`, `t`, `lang`, `notify`,
   `ask`, `askText`, `net`, `weather` (§ 14), `identity`, `level`, `helpAnchor`; a fixed module (§ 9.2) also gets `overlay`
   (§ 9.3).
-- Its verb in the application's rail (and in its group's popover, § 9.1) is set in `frame/app.js` (`APP.modules`): one short verb, seven
+- Its verb in the application's rail (and in its group's popover, § 9.1) is set in `frame/app.js` (`APPS.<application>.modules`,
+  `APP` being the application of the page, `?app=`; frame SPEC § 3.1): one short verb, seven
   modules at most. Its place in the phone's bottom bar is set in `APP.tabs` (§ 9); a module never writes either.
 - `meta.help` (true by default): the frame draws the folded "How to use" panel at the top of the module as soon as
   the module's chapter (`modules/<id>/help/<lang>.md`) is in the application's manual; `false` hides it. The card has a

@@ -2,7 +2,7 @@
 
 Sources :
   · frame/help/intro.<langue>.md : ce qu'est l'application, premier démarrage, synchronisation, réglages ;
-  · modules/<id>/help/<langue>.md : le chapitre de chaque module, dans l'ordre du menu (APP.modules de frame/app.js) ;
+  · modules/<id>/help/<langue>.md : le chapitre de chaque module, dans l'ordre des menus (APPS.<application>.modules de frame/app.js) ;
   · puis les chapitres des écrans du cadre (FRAME_CHAPTERS : frame/settings/help/<langue>.md, Réglages).
 Règles :
   · un module qui a un dossier help/ doit avoir ses quatre langues, un titre « # … » en tête et au moins une section
@@ -45,12 +45,13 @@ def rel(path):
 
 
 def module_order():
-    """Identifiants des modules de l'application, dans l'ordre du menu (bloc APP.modules de frame/app.js)."""
+    """Identifiants des modules des applications, dans l'ordre de leurs menus (blocs APPS.<application>.modules de
+    frame/app.js : Pilote, puis Maintenance ; un module de deux applications une fois) : un seul manuel pour toutes."""
     app = read(os.path.join(ROOT, 'frame', 'app.js'))
-    m = re.search(r'modules:\s*\[(.*?)\n\s*\}\]', app, re.S)
-    if not m:
+    blocks = re.findall(r'\bmodules:\s*\[\s*\{(.*?)\n\s*\}\]', app, re.S)
+    if not blocks:
         sys.exit('frame/app.js : APP.modules introuvable')
-    return re.findall(r"\bid:\s*'([\w-]+)'", m.group(1))
+    return list(dict.fromkeys(i for b in blocks for i in re.findall(r"\bid:\s*'([\w-]+)'", b)))
 
 
 def fingerprint(text):

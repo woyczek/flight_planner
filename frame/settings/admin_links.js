@@ -3,7 +3,8 @@
   // V3 — pages d'administration (carte « Administration » des réglages, niveau Complet ; frame/settings/SPEC.md § 6) :
   // une liste déclarée, sans dépendance à aucun module ; la carte montre UN BOUTON par entrée (règle 18 de
   // docs/technique/V3_SPECIFICATION.md § 7.1), rien de l'administrateur n'est sur les autres cartes. Chaque entrée :
-  // { id, href (adresse de l'appli « #… », ou chemin relatif à la racine de la suite), act (action de la carte, au lieu
+  // { id, href (adresse de l'appli « #… », ou chemin relatif à la racine de la suite ; same : ouvert dans le même onglet,
+  // pour une autre application du cadre « frame/?app=… »), act (action de la carte, au lieu
   // d'une adresse), panel (le bouton déplie un volet de la carte, écrit par settings.js : edge, cfg, remote, keys), primary
   // (bouton d'une page de réglage de l'administrateur), where (app : partout ; bench : un banc ou une démonstration, bouton
   // actif seulement sur un poste avec lanceur ; v2 : page V2 du poste, montrée seulement si un lanceur sert la page ;
@@ -80,9 +81,10 @@
     ]
   }, {
     id: 'data',
-    href: '#data',
+    href: 'frame/?app=maintenance#data',
+    same: true, // une autre application du même cadre : dans le même onglet
     // l'application Maintenance (décision de l'utilisateur, 29 oct 2026 : les réglages d'administration des données hors de
-    // Pilote) ; en attendant les applications nommées du cadre (?app=maintenance), la ligne ouvre son module Données (#data)
+    // Pilote) : la ligne l'ouvre sur son module Données
     copyLink: true, // l'adresse à copier : à ouvrir sur un téléphone, en lecture seule
     where: 'app',
     title: ['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento'],

@@ -261,7 +261,21 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
 
 ### 3.1 Navigation
 
-- An application (today: Pilot) lists its modules, one short **verb** each, seven at most.
+- An application lists its modules, one short **verb** each, seven at most. **Applications** (29 Oct 2026,
+  `V3_SPECIFICATION.md` § 2): named sets of modules of the same frame (`APPS` in `frame/app.js`: rail, bottom bar,
+  service screens, name), chosen by the address of the page — `/frame/?app=maintenance`; no `app` or an unknown one:
+  `pilot`; nothing is kept on the device (later: the role in the registry). The application lists its modules (order,
+  seven at most); a module never knows where it is shelved.
+  - **Pilot**: Carburant, Carte, Compte rendu, Mes vols, Site, Météo (as before); no Données in its rail.
+  - **Maintenance**: Données (`modules/data`), then links of the rail that are not modules (`APP.links`): Administration
+    (the settings opened on their Administration card, `#settings?card=admin`), Aide (`#help`), « Page de maintenance
+    (V2) » (`apps/settings/maintenance.html`, until D3–D5 cover it); on the phone, three tabs: Données, Administration,
+    Aide. Level Complet. It **opens everywhere**: without a launcher, or from a paired device of the local network, it is
+    read only — what needs the launcher hides where it is (the Données module reads without it, Administration's launcher
+    panels, the V2 page's link: `launcher: true` on a link).
+  - From Pilot, the end-of-cycle line of the Status block opens `?app=maintenance#data` (same tab); Réglages ›
+    Administration offers a line « Maintenance » (level Complet, with a launcher).
+  - The header shows the application's name; the page's title is « <name> — SOG ».
 - On a screen (wider than 760 px), the verbs sit in a column on the left (the **rail**): every module that has a screen,
   the current one marked. On a phone (760 px or narrower) there is **no menu button and no drawer**: a **bottom tab
   bar** replaces them (below).

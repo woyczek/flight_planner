@@ -262,7 +262,7 @@ def _stub(cfg):
 
 def _open(c, cfg, target='data'):
     c.page.add_init_script(_stub(cfg))
-    c.open(target, docs=LEVEL3, wait=False)
+    c.open(target, docs=LEVEL3, wait=False, app='maintenance')  # le module Données est dans l'application Maintenance
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the head of the Données screen is drawn')
     c.settle()
 
@@ -385,8 +385,8 @@ def _open_and_state(c, rid):
 
 
 # ------------------------------------------------------------------------------------------------------ L3
-@case('L3', 'Données: not in the rail; Settings > Administration « Maintenance » leads to it', 'L', tags=('data',), langs4=True,
-      designs=('standard',), rule='user, 29 Oct: the data module is the Maintenance application, not a place of Pilot\'s rail; the Administration line (read only on a phone)')
+@case('L3', 'Données: in the Maintenance application, not in Pilot; Settings > Administration « Maintenance » leads to it', 'L', tags=('data',), langs4=True,
+      designs=('standard',), rule='user, 29 Oct: the data module is the Maintenance application (?app=maintenance), not a place of Pilot\'s rail; the Administration line (read only on a phone)')
 def l3(c):
     cfg, _ = _fixture()
     c.page.add_init_script(_stub(cfg))
@@ -396,7 +396,7 @@ def l3(c):
         c.open('settings', docs=[['device/level.json', {'level': lv}, 'cache']])
         c.until("!!document.querySelector('[data-card=\"status\"]')", what='the settings are drawn')
         c.eq(c.count('#fMenu a[data-id="data"]'), 0, f'level {lv}: no Données entry in the rail', what='rail entries')
-        c.eq(c.count('[data-admin="data"], a[href="#data"]'), 0, f'level {lv}: no link to #data in Settings', what='Settings links')
+        c.eq(c.count('[data-admin="data"], a[href*="app=maintenance"]'), 0, f'level {lv}: no link to Maintenance in Settings', what='Settings links')
     # the Full level: still not in the rail nor the phone's bar, the line « Maintenance » in the Administration card
     c.open('settings', docs=LEVEL3)
     c.until("!!document.querySelector('[data-card=\"admin\"] li[data-admin=\"data\"]')", what='the Administration card lists the Maintenance line')
@@ -405,7 +405,8 @@ def l3(c):
     if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
         c.tap('[data-group="admin"] > summary')
     btn = c.js("(() => { const e = document.querySelector('[data-admin=\"data\"]').firstElementChild; return { tag: e.tagName, href: e.getAttribute('href'), h: e.getBoundingClientRect().height, text: e.textContent } })()")
-    c.ok(btn['tag'] == 'A' and btn['href'] == '#data', btn, 'a real link to #data')
+    c.ok(btn['tag'] == 'A' and btn['href'].endswith('/frame/?app=maintenance#data'), btn, 'a real link to the Maintenance application, on Données')
+    c.eq(c.js("document.querySelector('[data-admin=\"data\"] > a').getAttribute('target')"), None, 'opened in the same tab', what='target')
     c.eq(norm(btn['text']), norm(title()), 'the line is worded « Maintenance » in the language of the run', what='link text')
     c.ge(btn['h'], 43.5, 'touch target of the frame', what='link height')
     c.tap('[data-admin="data"] > a')
@@ -413,6 +414,9 @@ def l3(c):
     c.eq(c.hash(), '#data', 'the address', what='hash')
     c.eq(c.count('#fMenu a[data-id="data"]'), 0, 'still not in the rail once mounted', what='rail entries')
     c.eq(c.count('[data-verb]'), 2, 'only Construire and Publier, grey without a launcher', what='[data-verb]')
+    c.eq((c.js('location.search'), c.hash()), ('?app=maintenance', '#data'), 'the address: the Maintenance application, on Données', what='address')
+    c.eq(c.count('#fMenu a[data-id="data"]'), 1, 'in the rail of Maintenance', what='rail entries')
+    c.eq(c.count('[data-verb]'), 1, 'only Construire, grey without a launcher', what='[data-verb]')
     c.ok(c.text('[data-cycle-now]'), 'no cycle', 'the head shows the cycle in force')
     c.check_errors()
 
@@ -438,6 +442,7 @@ def l4(c):
       tags=('data',), phone=False, rule='modules/data/SPEC 3 (the States list), 6.2 (no constant: never "old parser"); aerodb change signal { coverage: true }')
 def l5(c):
     cfg, _ = _fixture(pv=None, shape=False)
+    c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")  # le module d'exemple : un autre module de Maintenance où aller
     _open(c, cfg)
     lines = c.js("[...document.querySelectorAll('[data-coverage] ul[data-states] > li')].map(li => [li.dataset.reason, li.textContent.replace(/\\s+/g, ' ').trim()])")
     c.ok(lines and 'EG, LF' in lines[0][1], lines[:1], 'without names the line shows the prefixes (EG, LF), without (n aerodromes)')
@@ -453,7 +458,7 @@ def l5(c):
     c.ok(c.js("document.querySelector('[data-coverage] [data-more]').open"), 'folded again', 'the fold the reader opened stays open')
     # the module gives its listener back when it is left
     before = c.js('window.__stub.fns.size')
-    c.go('flightlog')
+    c.go('hello')  # Maintenance n'a que Données : le module d'exemple (poste de développement) pour le quitter
     c.until('window.__stub.fns.size < %d' % before, timeout=4000, what='the module unsubscribes at unmount')
     c.check_errors()
 

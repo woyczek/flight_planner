@@ -128,8 +128,15 @@
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 
-  // ---------------------------------------------------------------- l'application
-  const APP = {
+  // ---------------------------------------------------------------- les applications
+  // une application = un jeu de modules nommé du même cadre (son rail, sa barre d'onglets, ses écrans, son nom), choisie
+  // par l'adresse de la page : /frame/?app=maintenance ; sans app ou inconnue : pilot (V3_SPECIFICATION § 2) ; rien n'est
+  // gardé sur l'appareil (plus tard : le rôle du registre). L'application liste ses modules (ordre, sept au plus) : un
+  // module ne sait pas où il est rangé. links : entrées du rail qui ne sont pas des modules (un écran du cadre « #… » ou
+  // une page de la suite), au niveau level ; launcher : montrée seulement sur le poste qui a un lanceur. Une application
+  // s'ouvre partout : ce qui demande le lanceur se masque là où il est (le module Données se lit sans lui).
+  const APPS = {};
+  APPS.pilot = {
     id: 'pilot',
     name: ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
     // un module = un verbe ; sept au plus
@@ -161,14 +168,6 @@
       id: 'atmosphere',
       label: ['Météo', 'Weather', 'Wetter', 'Meteo'],
       icon: 'layers'
-    }, {
-      // données publiées par la compagnie (modules/data/) : le cœur de la future application « Maintenance » (décision de
-      // l'utilisateur, 29 oct 2026), pas une place du rail de Pilote ; inscrit ici pour que #data se monte (la ligne
-      // « Maintenance » de Réglages › Administration y mène) en attendant les applications nommées (?app=maintenance)
-      id: 'data',
-      label: ['Données', 'Data', 'Daten', 'Datos'],
-      icon: 'database',
-      rail: false // ni dans le rail ni dans la colonne de gauche, jamais module par défaut ; joignable par son adresse
     }],
     // barre d'onglets du téléphone (760 px et moins), cinq au plus (V3_SPECIFICATION.md § 7.1 règle 14) : un onglet = un groupe
     // de modules (modules : l'onglet reste choisi tant que l'un d'eux est affiché ; le toucher ouvre le dernier montré du groupe
@@ -218,8 +217,62 @@
       id: 'sources', // les sources des données aéronautiques (aerodb) : des liens, rien n'est lu ni écrit
       scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js?v=0', 'aerodb/sources.js?v=0'],
       level: 3
-    }]
+    }],
+    links: []
   };
+  // Maintenance (V3_SPECIFICATION § 2) : les données de la compagnie (module Données), l'administration (les réglages ouverts
+  // sur leur carte Administration), l'aide, et la page V2 de maintenance tant que D3–D5 ne la couvrent pas (avec un lanceur
+  // seulement) ; niveau Complet ; sans lanceur, ou depuis un appareil appairé, en lecture seule
+  APPS.maintenance = {
+    id: 'maintenance',
+    name: ['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento'],
+    modules: [{
+      id: 'data',
+      label: ['Données', 'Data', 'Daten', 'Datos'],
+      icon: 'database'
+    }],
+    links: [{
+      id: 'admin',
+      href: '#settings?card=admin',
+      label: ['Administration', 'Administration', 'Verwaltung', 'Administración'],
+      icon: 'settings',
+      level: 3
+    }, {
+      id: 'help',
+      href: '#help',
+      label: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
+      icon: 'help',
+      level: 3
+    }, {
+      id: 'v2',
+      href: '../apps/settings/maintenance.html',
+      label: ['Page de maintenance (V2)', 'Maintenance page (V2)', 'Wartungsseite (V2)', 'Página de mantenimiento (V2)'],
+      icon: 'wrench',
+      level: 3,
+      launcher: true
+    }],
+    tabs: [{
+      id: 'data',
+      label: ['Données', 'Data', 'Daten', 'Datos'],
+      icon: 'database',
+      modules: ['data']
+    }, {
+      id: 'admin',
+      label: ['Administration', 'Administration', 'Verwaltung', 'Administración'],
+      icon: 'settings',
+      screen: 'settings?card=admin'
+    }, {
+      id: 'help',
+      label: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
+      icon: 'help',
+      screen: 'help'
+    }],
+    screens: []
+  };
+  const APP = (() => {
+    const id = new URLSearchParams(location.search).get('app') || '';
+    return Object.hasOwn(APPS, id) ? APPS[id] : APPS.pilot;
+  })();
   // module d'exemple pour les développeurs (modules/hello/, frame/INTEGRATION.md) : absent de l'appli ; il rejoint le
   // menu (et la mise en cache) seulement sur un poste de développement, localStorage « sogFrame:dev » = 1
   try {
@@ -1597,6 +1650,7 @@
         to = '#report?from=flightlog';
       } else to = '#flightlog';
     }
+    if (to.startsWith('?')) return void location.assign(new URL(to, location.href).href); // une autre application du cadre
     // même adresse : rien ne change, sauf pour un CR (report reprend le passage à son montage, donc il est monté de nouveau)
     if (location.hash === to) return go.startsWith('report:') ? route() : undefined;
     if (isModule(to.slice(1).split('?')[0]) && !to.includes('from=')) viaMenu = true;
@@ -1826,9 +1880,8 @@
   let menuKey = '',
     menuActive = '',
     menuScreen = '';
-  /** Modules du menu au niveau de l'appareil (meta.level ≤ niveau) ; un module au niveau encore inconnu est montré ; une
-   *  entrée rail: false n'y est jamais (joignable par son adresse seulement). */
-  const visibleModules = () => APP.modules.filter(m => m.rail !== false && (moduleLevel[m.id] ?? 1) <= level);
+  /** Modules du menu au niveau de l'appareil (meta.level ≤ niveau) ; un module au niveau encore inconnu est montré. */
+  const visibleModules = () => APP.modules.filter(m => (moduleLevel[m.id] ?? 1) <= level);
   /** Niveau (meta.level) et vue fixe (meta.fixed) déclarés par chaque module, puis menu et barre redessinés ; module
    *  illisible : niveau 1. */
   async function readLevels() {
@@ -1854,10 +1907,13 @@
     renderTabs(tabFor(active, screen));
     const ul = $('fMenu'),
       list = visibleModules(),
-      key = list.map(m => m.id).join(',');
+      links = (APP.links || []).filter(l => (l.level ?? 1) <= level && (!l.launcher || (launcherHere && !launcherHere.lan))),
+      key = lang() + list.map(m => m.id).join(',') + '|' + links.map(l => l.id).join(',');
     if (key !== menuKey || !ul.children.length) {
       menuKey = key;
-      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}" data-landmark="${esc(m.id)}">${icon(m.icon)}${esc(t(m.label))}</a></li>`).join('');
+      // liens de l'application (écran du cadre « #… » ou page de la suite, dans le même onglet) après ses modules
+      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}" data-landmark="${esc(m.id)}">${icon(m.icon)}${esc(t(m.label))}</a></li>`).join('') +
+        links.map(l => `<li><a href="${esc(l.href.startsWith('#') ? l.href : new URL(l.href, location.href).href)}" data-link="${esc(l.id)}" data-landmark="settings">${icon(l.icon)}${esc(t(l.label))}</a></li>`).join('');
     }
     for (const a of ul.querySelectorAll('a')) {
       const on = a.dataset.id === active;
@@ -2454,7 +2510,9 @@
     const cur = AeroDB.airacCycles(1)[0],
       next = new Date(Date.parse(`${cur}T00:00:00Z`) + 28 * 864e5).toISOString().slice(0, 10),
       soon = Date.parse(`${next}T00:00:00Z`) - Date.now() <= 3 * 864e5,
-      go = launcherHere && !launcherHere.lan && level >= 3 && APP.modules.some(m => m.id === 'data') ? '#data' : '',
+      // le module Données est dans l'application Maintenance : depuis une autre, la ligne y mène (même onglet)
+      go = launcherHere && !launcherHere.lan && level >= 3 ? APP.modules.some(m => m.id === 'data') ? '#data' : '?app=maintenance#data' :
+      '',
       // cycles publiés : un objet { 'AAAA-MM-JJ': {...} } (aerodb, frame/aerodb/SPEC.md « For the Données module ») ou une liste
       dates = x => Array.isArray(x) ? x : x && typeof x === 'object' ? Object.keys(x) : [],
       newest = list => list.filter(c => /^\d{4}-\d{2}-\d{2}$/.test(c)).sort().at(-1) || '',
