@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Flight path: the guess of an unmarked missed approach left the helper** (`frame/lib/current_flight.js`; V3 § 10.29 h) — aerodb's
+  reader now marks it at the source and counts the records it guessed (`guessed: ['missed']`); `expandedPath` no longer guesses.
+
 - **Flight path: `loadProcedures` returns the records without duplicates** (`frame/lib/current_flight.js` `dedupProcs`; bench; V3
   § 10.29 a) — a transition equal to its procedure is dropped there, so Fuel and the Map see the same records (Fuel had its own
   copy).
