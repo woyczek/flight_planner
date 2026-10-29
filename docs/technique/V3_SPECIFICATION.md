@@ -748,7 +748,8 @@ redesigned for touch at that point.
          the chosen one bold, runway chips ≤ 7, "Aucune" first then seven rows and scroll, return by
          `location.replace('#fuel?focus=<side>&<key>=<id|none>')`, never a doubtful or nameless record; ✕ and
          Escape in the sheet also leave the mode); Fuel's markers, flat lists, secondary line and key consumption
-         (3c98b564b, aa74300b4); still to come: the "Sur la carte" button (Fuel).
+         (3c98b564b, aa74300b4); the "Sur la carte" button and the proposal applied with the address rule (d4f683475).
+         **§ 10.23 is delivered in full.**
    24. **The chosen runway drawn as an arrow** (user, 29 Oct: "un vecteur sur la carte indiquant la piste (direction
        matérialisée par une flèche)"): when `route.procedures` names a runway, the Map draws it from the landing
        threshold (`runways(icao)`) along the true QFU over the runway's length, head in the direction of use (far end

@@ -412,7 +412,7 @@
           "es": "Pista, SID, STAR y aproximación elegidas en la preparación, modificables en ruta; procedimientos leídos bajo demanda"
         },
         {
-          "state": "planned",
+          "state": "done",
           "fr": "Listes de procédures : périmée ⌛ et en conflit ⚠ marquées, jamais cachées ; listes plates ; bouton « Sur la carte »",
           "en": "Procedure lists: outdated ⌛ and conflicting ⚠ marked, never hidden; flat lists; \"On the map\" button",
           "de": "Verfahrenslisten: veraltet ⌛ und im Konflikt ⚠ markiert, nie verborgen; flache Listen; Schaltfläche „Auf der Karte“",
