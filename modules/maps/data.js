@@ -225,7 +225,7 @@ export async function applyFlight(live = false) {
  *  dernière écriture, s'il est plus récent que la version montrée ; seule la progression a changé : rien n'est relu. */
 export function watchFlight() {
   let live = 0;
-  return [S.ctx.data.watch(flightPath(), () => {
+  const check = (ms = 300) => {
     clearTimeout(live);
     live = setTimeout(async () => {
       const f = await S?.ctx.data.get(flightPath()).catch(() => null);
@@ -233,8 +233,13 @@ export function watchFlight() {
       performance.mark('maps:live');
       if (sameRoute(f, S.route.flight)) return progressOnly(f);
       await applyFlight(true);
-    }, 300);
-  }), () => clearTimeout(live)];
+    }, ms);
+  };
+  const stop = S.ctx.data.watch(flightPath(), () => check());
+  // une écriture arrivée entre la lecture du montage et cet abonnement (Carburant écrit started.at puis ouvre la Carte) n'a pas
+  // d'événement : relue une fois, tout de suite (J2, étape 3 : « Carte says something at mount », une fois sur deux)
+  check(0);
+  return [stop, () => clearTimeout(live)];
 }
 
 // ---------------------------------------------------------------- réglages

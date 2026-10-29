@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: a flight write that lands during the mount is no longer missed** (`modules/maps/data.js` `watchFlight`; journey J2,
+  step 3, seen once in two) — the map read the flight, then subscribed to its changes after other waits; a write between the
+  two (Fuel writes `started.at`, then opens the map) had no event, so the map stayed on a flight not started and said nothing
+  ("no actual position"); right after subscribing it now reads the flight once more.
+
 - **Map: the profile shows only the airspaces the flight enters, one envelope per family** (`modules/maps/profile.js`,
   `profile_view.js`, `lib/vertical_profile.js`; help ×4, case D57; user, 29 Oct, LFPO → EIDW at FL280: "toujours la pollution
   par les CTA") — an airspace is drawn only where the planned vertical path enters it (within 500 ft); overlapping sectors of
