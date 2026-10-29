@@ -21,11 +21,13 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import proc_eaip  # noqa: E402
+import proc_layouts as L  # noqa: E402
 import proc_manual  # noqa: E402
+import proc_pdf  # noqa: E402
+import proc_records  # noqa: E402
+from proc_pdf import OCR_TIMEOUT  # noqa: E402
 
 
-OCR_TIMEOUT = 600  # secondes au plus par document lu par OCR (rendu et moteur, plusieurs pages et résolutions) : proc_eaip.limited
 MAX_DPI = 600      # résolution de rendu au plus (une page A4 à 600 dpi pèse déjà 35 millions de pixels) : au-delà, refus
 
 
@@ -170,104 +172,6 @@ def rows_from_words(words, tol=None):
     return [' '.join(' '.join(w['text'].split()) for w in sorted(r['words'], key=lambda w: w['x0'])) for r in rows]
 
 
-def normalize_uk_app(rows):
-    """Lignes OCR d'une page « uk-app » remises dans la forme que lit parse_uk_app (celle de pypdf). L'OCR ne rend pas la page comme le texte : les tirets des cellules vides
-    sont perdus, le « Y » de survol aussi parfois, le numéro de séquence peut manquer, et la latitude et le cap magnétique sont sur la ligne du tronçon (pypdf les met sur la ligne
-    d'avant). Chaque ligne de tronçon devient donc « cap° latitude » (ligne d'avant) puis « désignateur séquence type point survol - - altitude - remarque » ; un numéro absent
-    est celui du tronçon précédent plus 1. Les autres lignes (en-têtes, longitude, cap vrai) sont gardées ; un « o » pris pour un zéro dans « RWY o9L » est corrigé."""
-    leg = re.compile(r'^([A-Z]\d{2}[LRC]?)\s+(?:(\d{3})\s+)?([A-Z]{2})\s+(\S+)\s*(.*)$')
-    out, last = [], {}
-    for r in rows:
-        r = re.sub(r'\bRWY\s*[oO](\d)', r'RWY 0\1', r)
-        m = leg.match(r)
-        if not m or m.group(3) not in proc_eaip.PATH_TERMINATORS:
-            out.append(r)
-            continue
-        des, tc, name = m.group(1), m.group(3), m.group(4)
-        seq = int(m.group(2)) if m.group(2) else last.get(des, 0) + 1
-        last[des] = seq
-        rest = m.group(5)
-        lat = proc_eaip.UK_LAT.search(rest)
-        crs = re.search(r'(\d{3})\s*[°º]', rest)
-        before = ' '.join(x for x in (crs.group(0) if crs else '', lat.group(0) if lat else '') if x)
-        for cut in (lat, crs):
-            if cut:
-                rest = rest.replace(cut.group(0), ' ', 1)
-        toks = rest.split()
-        over = bool(toks) and toks[0] == 'Y'
-        if over:
-            toks = toks[1:]
-        toks = [t for t in toks if t != '-']
-        k = next((i for i, t in enumerate(toks) if proc_eaip.uk_constraint(t)), None)
-        level = toks.pop(k) if k is not None else '-'
-        if before:
-            out.append(before)
-        out.append(' '.join([des, f'{seq:03d}', tc, name, 'Y' if over else '-', '-', '-', level, '-'] + toks))
-    return out
-
-
-_COORD_CELL = re.compile(r'^(?:[NSEW][\dOoIl]{6,7}(?:\.[\dOoIl]+)?|[\dOoIl]{6,7}(?:\.[\dOoIl]+)?[NSEW])$')
-
-
-def fix_numeric_cells(rows):
-    """Coordonnées dont l'OCR a pris un chiffre pour une lettre (« o » ou « O » pour 0, « I » ou « l » pour 1) : corrigées, et seulement dans les cellules qui ont la forme d'une
-    coordonnée (hémisphère devant ou derrière, 6 ou 7 chiffres) ; rien d'autre n'est touché."""
-    def fix(tok):
-        if not _COORD_CELL.match(tok):
-            return tok
-        h = tok[0] if tok[0] in 'NSEW' else ''
-        t = tok[len(h):]
-        t2 = t[:-1] if t[-1:] in ('N', 'S', 'E', 'W') else t
-        tail = t[len(t2):]
-        return h + t2.translate(str.maketrans('OoIl', '0011')) + tail
-    return [' '.join(fix(t) for t in r.split()) for r in rows]
-
-
-def normalize_uk_star(rows):
-    """Lignes OCR d'une page « uk-star » (tables de codage des STAR du Royaume-Uni) remises dans la forme que lit parse_uk_star : coordonnées corrigées (fix_numeric_cells), numéro
-    de séquence manquant d'une ligne de tronçon rétabli (celui du tronçon précédent du même désignateur plus 1). L'OCR garde ici les trois lignes par tronçon (latitude, tronçon,
-    longitude) : rien d'autre à réordonner."""
-    leg = re.compile(r'^([A-Z]{3,5}\d[A-Z])\s+(?:(\d{3})\s+)?([A-Z]{2})\s+(\S.*)$')
-    out, last = [], {}
-    for r in fix_numeric_cells(rows):
-        m = leg.match(r)
-        if m and m.group(3) in proc_eaip.PATH_TERMINATORS:
-            seq = int(m.group(2)) if m.group(2) else last.get(m.group(1), 0) + 1
-            last[m.group(1)] = seq
-            r = f'{m.group(1)} {seq:03d} {m.group(3)} {m.group(4)}'
-        out.append(r)
-    return out
-
-
-def normalize_at_coding(rows):
-    """Lignes OCR d'une page « at-coding » (tables de codage des transitions RNAV d'Autriche) : coordonnées corrigées (fix_numeric_cells) ; la forme à trois lignes par tronçon
-    est déjà celle que lit parse_at_coding."""
-    return fix_numeric_cells(rows)
-
-
-def normalize_be_coding(rows):
-    """Lignes OCR d'une page « be-coding » (carte IAC belge, codage ARINC) : les identifiants « BE123 » et « RW22R » dont l'OCR a pris un chiffre pour une lettre (« O » pour 0, « I » ou
-    « l » pour 1) sont corrigés, dans la liste des coordonnées comme sur les lignes de tronçon ; rien d'autre n'est touché."""
-    def fix(tok):
-        m = re.fullmatch(r'(BE|RW)([\dOIl]{2,3})([LRC]?)(:?)(.*)', tok)
-        if not m or not re.search(r'\d', m.group(2)) and m.group(1) == 'BE':
-            return tok
-        return m.group(1) + m.group(2).translate(str.maketrans('OIl', '011')) + m.group(3) + m.group(4) + m.group(5)
-    return [' '.join(fix(t) for t in r.split()) for r in rows]
-
-
-def normalize_ge_coding(rows):
-    """Lignes OCR d'une page « ge-coding » (Géorgie) : les secondes d'arc rendues « '' » ou « ” » (au lieu de « " ») sont ramenées à « " » pour que les coordonnées se lisent."""
-    return [re.sub(r"(?<=\d)\s*(?:''|[”″’]{1,2})\s*(?=[NSEW]\b)", '"', r) for r in rows]
-
-
-# normalisation propre à chaque disposition lue par OCR (celles qui n'y figurent pas sont lues telles quelles)
-NORMALIZERS = {'uk-app': normalize_uk_app, 'uk-star': normalize_uk_star, 'at-coding': normalize_at_coding, 'be-coding': normalize_be_coding, 'ge-coding': normalize_ge_coding}
-
-# dispositions lisibles par OCR : celles dont chaque tronçon porte ou retrouve ses coordonnées dans la page (le contrôle de géométrie les contrôle toutes)
-OCR_LAYOUTS = {'uk-app', 'uk-star', 'am-coding', 'at-coding', 'ei-coding', 'be-coding', 'ge-coding'}
-
-
 def rows_from_pdf_ocr(path, page=0, dpi=300, engine=None):
     """Lignes de texte d'une page de PDF sans couche de texte : rendu, OCR, regroupement."""
     return rows_from_words(ocr_words(render_page(path, page, dpi), engine))
@@ -278,16 +182,16 @@ def document_from_rows(icao, file, rows, cycle, state=None):
     (proc_geometry, tolérance du cap vrai : une table incohérente est GARDÉE, sa procédure au statut « doubt » et au code « geometry » ; seule une table dont les comptes ne tiennent
     pas est écartée, signalée « NON retenue ») ; disposition inconnue → rien de deviné. Le document n'est qu'un candidat : proc_manual le contrôle et l'installe."""
     state = state or icao[:2]
-    layout = proc_eaip.detect_layout(rows)
-    fp = proc_eaip.fingerprint(rows)
+    layout = L.detect_layout(rows)
+    fp = L.fingerprint(rows)
     procs, warnings, problems = [], [], []
-    if layout in OCR_LAYOUTS:
-        parsed = proc_eaip.PARSERS[layout](NORMALIZERS.get(layout, lambda r: r)(rows))
+    if layout in L.OCR_LAYOUTS:
+        parsed = L.read_page(layout, L.NORMALIZERS.get(layout, lambda r: r)(rows))
         warnings += [f'{file}: {x}' for x in parsed['warnings']]
         problems += [x for x in parsed['warnings'] if 'NON retenue' in x]
-        at = proc_eaip.page_date(rows)
+        at = L.page_date(rows)
         for t in parsed['tables']:
-            recs, w = proc_eaip.records_uk_app(icao, {'tables': [t], 'warnings': []}, file, cycle, at, state)
+            recs, w = proc_records.records_uk_app(icao, {'tables': [t], 'warnings': []}, file, cycle, at, state)
             warnings += [f'{file}: {x}' for x in w]
             problems += [x for x in w if 'NON retenue' in x]
             for rec in recs:
@@ -329,7 +233,7 @@ def read_document(path, icao, cycle, file=None, pages=None, dpis=(300, 500, 200)
     (au moins une table retenue, aucune rejetée) ; la meilleure lecture est gardée (le plus de procédures retenues). Une page de disposition inconnue n'est lue qu'une fois.
     Les pages sont fusionnées : procédures (sans doublon d'identifiant), formats (avec leur numéro de page), avertissements."""
     file = file or Path(path).name
-    merged = {'schema': 1, 'icao': icao, 'cycle': cycle, 'procedures': [], 'formats': [], 'warnings': [], 'notice': proc_eaip.ead_notice(icao)}
+    merged = {'schema': 1, 'icao': icao, 'cycle': cycle, 'procedures': [], 'formats': [], 'warnings': [], 'notice': proc_records.ead_notice(icao)}
     have = set()
     for n in (range(page_count(path)) if pages is None else pages):
         best = None
@@ -380,10 +284,10 @@ def main(argv=None):
     if not (a.icao or a.cycle or a.out):
         # affichage des lignes : lui aussi dans un processus séparé, au plus OCR_TIMEOUT s (un PDF piégé ou démesuré ne bloque pas l'outil)
         try:
-            rows = proc_eaip.limited('rows_from_pdf_ocr', a.file, a.page or 0, a.dpi or 300, a.engine, module='proc_ocr', timeout=OCR_TIMEOUT)
-        except proc_eaip.PdfTimeout as e:
+            rows = proc_pdf.limited('rows_from_pdf_ocr', a.file, a.page or 0, a.dpi or 300, a.engine, module='proc_ocr', timeout=OCR_TIMEOUT)
+        except proc_pdf.PdfTimeout as e:
             raise SystemExit(f'lecture impossible: {e}') from None
-        print('\n'.join(proc_eaip.format_rows(rows)))
+        print('\n'.join(proc_pdf.format_rows(rows)))
         return
     if not (a.icao and a.cycle and a.out):
         ap.error('--icao, --cycle et --out vont ensemble')
@@ -392,9 +296,9 @@ def main(argv=None):
         ap.error('--icao : 4 lettres ou chiffres')
     # rendu et OCR dans un processus séparé, au plus OCR_TIMEOUT s (un PDF piégé ou démesuré ne bloque pas l'outil)
     try:
-        doc = proc_eaip.limited('read_document', a.file, a.icao, a.cycle, module='proc_ocr', timeout=OCR_TIMEOUT,
+        doc = proc_pdf.limited('read_document', a.file, a.icao, a.cycle, module='proc_ocr', timeout=OCR_TIMEOUT,
                                 pages=None if a.page is None else [a.page], dpis=(a.dpi,) if a.dpi else (300, 500, 200), engine=a.engine)
-    except proc_eaip.PdfTimeout as e:
+    except proc_pdf.PdfTimeout as e:
         raise SystemExit(f'lecture impossible: {e}') from None
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)

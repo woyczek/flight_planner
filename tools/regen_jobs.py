@@ -410,8 +410,8 @@ def _ead_fetch(job, args, ctx):
     if tools not in sys.path:
         sys.path.insert(0, tools)
     import proc_ead
-    import proc_eaip
     import proc_manual
+    import proc_records
 
     def clean(text, n=300):
         return proc_ead.sanitize(str(text), [user, password])[:n]
@@ -450,7 +450,7 @@ def _ead_fetch(job, args, ctx):
         warnings = [w for d in (doc, ocr) if d for w in d.get('warnings', [])]
         formats = [f for d in (doc, ocr) if d for f in d.get('formats', [])]
         G = _geometry()
-        stats = proc_eaip.stats_of(formats, 0, doubt=G.doubt_codes(p for d in todo for p in d['procedures']))      # sans procédure installée ; remplacé par le compte final en cas de succès
+        stats = proc_records.stats_of(formats, 0, doubt=G.doubt_codes(p for d in todo for p in d['procedures']))      # sans procédure installée ; remplacé par le compte final en cas de succès
         if not todo:
             job.log(clean(_summary(stats)))
             return failed(_nothing_read(formats, stats), warnings, stats)
@@ -464,7 +464,7 @@ def _ead_fetch(job, args, ctx):
             refused += bad
         warnings += [f'REFUSÉE: {x}' for x in refused]
         todo = [d for d in todo if d['procedures']]
-        stats = proc_eaip.stats_of(formats, 0, doubt=G.doubt_codes(p for d in todo for p in d['procedures']))
+        stats = proc_records.stats_of(formats, 0, doubt=G.doubt_codes(p for d in todo for p in d['procedures']))
         if not todo:                                      # plus aucune procédure : le fichier n'est refusé que s'il n'en reste aucune
             job.log(clean(_summary(stats)))
             return failed('geometry check failed: ' + '; '.join(refused[:3]), warnings, stats)
@@ -483,7 +483,7 @@ def _ead_fetch(job, args, ctx):
     except (SystemExit, Exception) as e:
         return failed(e, stats=stats)
     commit = _ead_commit(data, icao, ctx.get('git_cmd'), ctx.get('git_env', dict), warnings)
-    stats = proc_eaip.stats_of(formats, installed, doubt=G.doubt_codes(p for d in todo for p in d['procedures']))       # pages = documents lus (une entrée par page de tableau vue) ; dropped 0 : une procédure à vérifier est gardée
+    stats = proc_records.stats_of(formats, installed, doubt=G.doubt_codes(p for d in todo for p in d['procedures']))       # pages = documents lus (une entrée par page de tableau vue) ; dropped 0 : une procédure à vérifier est gardée
     job.log(clean(_summary(stats)))
     return {'ok': True, 'icao': icao, 'procedures': installed, 'warnings': [clean(w) for w in warnings][:50], 'commit': commit,
             'ocr': bool(ocr and ocr.get('procedures')), 'source': 'ead', 'stats': stats, 'file': _installed_file(data, icao)}
@@ -500,7 +500,7 @@ def _eaip_fetch(job, args, ctx):
     """Verbe proc/eaip-fetch : lit dans l'eAIP du SIA (France) les procédures d'UN terrain (tables de codage ARINC des pages AD 2), les
     installe sous data/proc/manual/ et les valide dans le dépôt des données (aerodb.fetchProcedures, § 10.20) ; le pendant d'ead-fetch pour
     un État dont l'AIP est publiée sans compte. Aucun identifiant ; AUCUNE adresse ne vient de la page : le dossier AIRAC est calculé ici
-    (cycle en vigueur d'après le calendrier de 28 jours, proc_eaip.eaip_url). Étapes : proc_eaip.read_aerodrome (page AD 2, pages DATA et CODE,
+    (cycle en vigueur d'après le calendrier de 28 jours, proc_sia.eaip_url). Étapes : proc_sia.read_aerodrome (page AD 2, pages DATA et CODE,
     cache data/local/eaip/<cycle>/ jamais publié ; les points en route sont placés d'après la base SIA du poste, data/sia/base/fr/<cycle>/, si
     elle y est, sinon à la lecture par aerodb), contrôle de géométrie par procédure (proc_geometry.review, fait par le constructeur : une procédure qui échoue est installée
     au statut « doubt » avec son code, signalée, jamais retirée), proc_manual.install (sans --replace : un fichier du terrain qui porte des procédures d'une autre source n'est
@@ -514,10 +514,11 @@ def _eaip_fetch(job, args, ctx):
     if tools not in sys.path:
         sys.path.insert(0, tools)
     import proc_ead
-    import proc_eaip
     import proc_manual
+    import proc_records
+    import proc_sia
     cycle = proc_ead.lib_cycle(data)                    # cycle en vigueur (la date du dossier AIRAC de l'eAIP)
-    eaip = proc_eaip.eaip_url(cycle)
+    eaip = proc_sia.eaip_url(cycle)
 
     def clean(text, n=300):
         return str(text)[:n]
@@ -541,11 +542,11 @@ def _eaip_fetch(job, args, ctx):
     try:
         os.makedirs(cache, exist_ok=True)
         try:
-            resolve = proc_eaip.base_resolver(base) if os.path.isdir(base) else None
+            resolve = proc_sia.base_resolver(base) if os.path.isdir(base) else None
         except (OSError, ValueError, AttributeError, TypeError):    # base illisible : les points en route sont placés à la lecture
             resolve = None
         say(f'{icao}: eAIP du SIA, cycle {cycle}')
-        doc = proc_eaip.read_aerodrome(eaip, icao, cache, resolve, say, step=step)
+        doc = proc_sia.read_aerodrome(eaip, icao, cache, resolve, say, step=step)
         if doc is None:
             return {'ok': False, 'reason': 'no-tables'}
         if job.cancelled():
@@ -554,7 +555,7 @@ def _eaip_fetch(job, args, ctx):
         kept = doc.get('procedures', [])
         dropped = [d.get('reason') or 'autre' for d in doc.pop('dropped', [])]       # vraiment retirées (build_aerodrome) : un bloc sans titre qui répète une procédure nommée
         doubt = _geometry().doubt_codes(kept)             # un code par procédure à vérifier (le constructeur a fait le contrôle, proc_geometry.review)
-        stats = proc_eaip.stats_of(doc.get('formats', []), len({p.get('id') for p in kept}), dropped, doubt)
+        stats = proc_records.stats_of(doc.get('formats', []), len({p.get('id') for p in kept}), dropped, doubt)
         job.log(clean(_summary(stats)))
         if not kept:
             return {**failed('no procedure could be read for this aerodrome', warnings), 'stats': stats}

@@ -75,10 +75,10 @@ def k21(c):
     py = [(ref + datetime.timedelta(days=28 * ((datetime.date.fromisoformat(d) - ref).days // 28))).isoformat() for d in dates]
     c.eq(js, py, 'airac.js and the Python calculation give the same cycle for every date', what='cycles by date')
     c.eq(E.lib_cycle('.'), c.js('AeroAirac.cycleOf(Date.now()).date'), 'proc_ead.lib_cycle (the EAD tools) gives the cycle in force of airac.js', what='cycle in force')
-    P = importlib.import_module('proc_eaip')
+    P = importlib.import_module('proc_sia')
     cycles = ['2026-10-01', '2026-10-29', '2027-01-21']
     c.eq([P.eaip_url(d) for d in cycles], c.js('(ds) => ds.map(d => AeroCatalogue.eaipBase(d))', cycles),
-         'proc_eaip.eaip_url (the launcher job) writes the same eAIP folder address as catalogue.js eaipBase()', what='eAIP folder address')
+         'proc_sia.eaip_url (the launcher job) writes the same eAIP folder address as catalogue.js eaipBase()', what='eAIP folder address')
 
 
 @case('K8', 'XML stream reader: golden test against the V2 readers', 'K', tags=('aerodb',), phone=False,
@@ -105,8 +105,25 @@ def k7(c):
 
 
 # ------------------------------------------------------------------------------------------------ eAIP tables (static)
-# tools/proc_eaip.py on lines of text read once from the SIA's PDF pages (AIRAC 2026-10-01) and kept in
+# tools/proc_sia.py, proc_layouts.py, proc_records.py on lines of text read once from the SIA's PDF pages (AIRAC 2026-10-01) and kept in
 # frame/aerodb/test/fixtures/eaip/: no pypdf, no network.
+def _proc():
+    """Les lecteurs de procédures de tools/ (proc_geometry, proc_layouts, proc_pdf, proc_records, proc_sia) en UN espace de noms, pour les cas qui lisent des pages inventées : les noms sont ceux
+    des modules (V3 § 10.29 (b) a coupé l'ancien proc_eaip.py). Un cas qui REMPLACE un nom (fetch, first_page_rows…) le fait sur le module qui l'appelle (proc_sia), pas ici."""
+    import importlib
+    import sys
+    import types
+    tools = str(ROOT / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    ns = types.SimpleNamespace()
+    for name in ('proc_geometry', 'proc_layouts', 'proc_pdf', 'proc_records', 'proc_sia'):
+        for k, v in vars(importlib.import_module(name)).items():
+            if not k.startswith('__') and not hasattr(ns, k):
+                setattr(ns, k, v)
+    return ns
+
+
 def _geometry():
     import importlib
     import sys
@@ -133,7 +150,7 @@ def _eaip(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    mod = importlib.import_module('proc_eaip')
+    mod = _proc()
     fx = c.root / 'frame/aerodb/test/fixtures/eaip'
 
     def rows(name):
@@ -322,6 +339,7 @@ def k5(c):
              '<button id="f:go" name="f:go" type="submit">Search</button></form>')
     # the HTML above is hand-built to test the reading helpers; it says nothing about the real EAD Basic screens
     E = importlib.import_module('proc_ead')
+    EP = importlib.import_module('ead_probe')           # the probe (V3 § 10.29 (b)): it reads the site address and the session from proc_ead, reloaded below with EAD_PROBE_HOST
     f = E.parse_forms(html_)[0]
     c.eq((f['id'], sorted(f['selects']), f['buttons'][0]['id'], E.pick(f['selects']['auth'], 'United Kingdom')), ('f', ['auth', 'part'], 'f:go', '2'),
          'form, lists, button and the option picked by label', what='parse_forms')
@@ -411,7 +429,7 @@ def k5(c):
         importlib.reload(E)
         with tempfile.TemporaryDirectory() as td:
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-                E.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td, name='EG_AD_2_EGLL')
+                EP.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td, name='EG_AD_2_EGLL')
             rep = (Path(td) / 'report.txt').read_text(encoding='utf-8')
             allfiles = '\n'.join(p.read_text(encoding='utf-8') for p in Path(td).iterdir())
             c.ok('connexion: OUI' in rep and 'bibliothèque AIP' in rep, rep, 'login and library found')
@@ -428,13 +446,13 @@ def k5(c):
             c.ok(not list(Path(td).rglob('*.pdf')), 'a pdf was written', 'no PDF without --download')
         with tempfile.TemporaryDirectory() as td:
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-                E.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td, name='EG_AD_2_EGLL', download=True)
+                EP.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td, name='EG_AD_2_EGLL', download=True)
             rep = (Path(td) / 'report.txt').read_text(encoding='utf-8')
             pdfs = list((Path(td) / 'cache').glob('*.pdf'))
             c.ok('| PDF' in rep and len(pdfs) == 1 and pdfs[0].read_bytes().startswith(b'%PDF-'), rep, 'with --download, exactly one PDF, in cache/')
         with tempfile.TemporaryDirectory() as td:
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-                E.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td, name='EG_AD_2_EGLL_6-1_en.pdf', docs=['EG_AD_2_EGLL_6-1_en.pdf', 'EG_AD_2_EGLL_7-1_en.pdf'])
+                EP.probe('bob', 'secret!pw', 'United Kingdom', 'EGLL', td, name='EG_AD_2_EGLL_6-1_en.pdf', docs=['EG_AD_2_EGLL_6-1_en.pdf', 'EG_AD_2_EGLL_7-1_en.pdf'])
             names = sorted(p.name for p in (Path(td) / 'cache').glob('*.pdf'))
             c.eq(names, ['EG_AD_2_EGLL_6-1_en.pdf', 'EG_AD_2_EGLL_7-1_en.pdf'], 'with --docs, one PDF per exact name asked, named after it (no doubled extension)', what='docs')
     finally:
@@ -638,7 +656,7 @@ def k15(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    import proc_eaip as P
+    P = _proc()
 
     rows = ['AD 2 EDXX 3-1-2 TESTBUCH', '01 JAN 2026 AIP TESTLAND', 'TESTBURG AIRPORT STANDARD INSTRUMENT ARRIVAL ROUTES', 'RWY 09/27 (STAR)', 'General Remarks',
             '1 NOT TO BE USED DURING TESTS.',
@@ -711,7 +729,7 @@ def k13(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    import proc_eaip as P
+    P = _proc()
 
     def dms(v, lon=False):
         a = abs(v)
@@ -776,7 +794,7 @@ def k10(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    P = importlib.import_module('proc_eaip')
+    P = _proc()
     # each PDF is read by pypdf in a separate process under a time limit (security review of 28 Oct 2026): a damaged or trapped
     # file fails cleanly, a reading past the limit is given up, and a folder build reports the file instead of stopping
     import tempfile
@@ -832,7 +850,7 @@ def k11(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    P = importlib.import_module('proc_eaip')
+    P = _proc()
     M = importlib.import_module('proc_manual')
     pos = [('TESTA', 51.00, -1.00), ('TESTB', 51.10, -0.50), ('TESTC', 51.20, -0.10)]                 # points fictifs : essai de l'outil, pas des données d'AIP
     pts = []
@@ -924,7 +942,7 @@ def k18(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    P = importlib.import_module('proc_eaip')
+    P = _proc()
     A, B, C2 = (60.00, -20.00), (60.10, -19.70), (60.30, -19.60)          # invented points: only used to print consistent courses and distances
     b1, n1 = P.bearing_nm(A, B)
     b2, n2 = P.bearing_nm(B, C2)
@@ -987,7 +1005,7 @@ def k19(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    P = importlib.import_module('proc_eaip')
+    P = _proc()
     pts_all = [('FIXAA', 51.80, -7.80), ('FIXBB', 52.05, -8.40), ('FIXCC', 52.00, -8.60), ('FIXDD', 51.90, -8.50)]          # invented points (west longitudes)
 
     def dd(v, lon):
@@ -1045,7 +1063,7 @@ def k14(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    P = importlib.import_module('proc_eaip')
+    P = _proc()
     M = importlib.import_module('proc_manual')
     O = importlib.import_module('proc_ocr')
     # security review of 28 Oct 2026: the current directory is never searched for tesseract, the resolution is capped
@@ -1211,7 +1229,7 @@ def k16(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    P = importlib.import_module('proc_eaip')
+    P = _proc()
     O = importlib.import_module('proc_ocr')
     M = importlib.import_module('proc_manual')
     pts = [('ALFAB', 51.30, -0.60), ('BRAVO', 51.35, -0.40), ('CHARL', 51.42, -0.25), ('DELTA', 51.50, -0.20)]          # points fictifs
@@ -1274,7 +1292,7 @@ def k17(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    P = importlib.import_module('proc_eaip')
+    P = _proc()
     O = importlib.import_module('proc_ocr')
     M = importlib.import_module('proc_manual')
     pts = [('ALFAB', 47.30, 14.60), ('WG101', 47.35, 14.80), ('WG102', 47.42, 14.95), ('RONOT', 47.50, 15.10)]          # points fictifs
@@ -1378,7 +1396,7 @@ def k20(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    import proc_eaip as P
+    P = _proc()
 
     pts = {'AAAAA': (47.20, 13.10), 'BBBBB': (47.35, 13.40), 'CCC': (47.50, 13.55), 'DDD': (47.60, 13.00), 'EEE': (47.80, 13.20)}      # points fictifs
 
@@ -1449,7 +1467,7 @@ def k22(c):
         sys.path.insert(0, tools)
     RJ = importlib.import_module('regen_jobs')
     EAD = importlib.import_module('proc_ead')
-    P = importlib.import_module('proc_eaip')
+    P = _proc()
     DS = importlib.import_module('data_sync')
     USER, PASS = 'k22-user-zq', 'K22-s3cr3t-pw!'
     # args check: one aerodrome, nothing else
@@ -1729,7 +1747,7 @@ def k23(c):
     if tools not in sys.path:
         sys.path.insert(0, tools)
     RJ = importlib.import_module('regen_jobs')
-    P = importlib.import_module('proc_eaip')
+    P = importlib.import_module('proc_sia')
     EAD = importlib.import_module('proc_ead')
     DS = importlib.import_module('data_sync')
     fx = c.root / 'frame/aerodb/test/fixtures/eaip'
@@ -1928,20 +1946,20 @@ def k23(c):
                  str(v['state']) + str(v['result'])[:200], 'Jobs marks the cancelled job cancelled, with the reason cancelled in its result')
             P.fetch = fake_fetch
 
-        # the command line of proc_eaip works through the same per-aerodrome body (main -> read_aerodrome)
+        # the command line of proc_sia works through the same per-aerodrome body (main -> read_aerodrome)
         state['names'] = pdfs_of()
         with tempfile.TemporaryDirectory() as td:
             err = io.StringIO()
             with contextlib.redirect_stderr(err):
                 P.main(['LFBD', '--eaip', P.eaip_url('2026-10-01'), '--out', str(Path(td) / 'proc'), '--cache', str(Path(td) / 'cache')])
             out = json.loads((Path(td) / 'proc' / '2026-10-01' / 'LFBD.json').read_text(encoding='utf-8'))
-            c.ok(len(out['procedures']) == 14 and 'LFBD: 14 procédure(s)' in err.getvalue(), err.getvalue()[:200], 'proc_eaip.main() still writes the cycle folder and reports on stderr')
+            c.ok(len(out['procedures']) == 14 and 'LFBD: 14 procédure(s)' in err.getvalue(), err.getvalue()[:200], 'proc_sia.main() still writes the cycle folder and reports on stderr')
             state['names'] = ['AD_2_LFXX_ADC.pdf']
             err = io.StringIO()
             with contextlib.redirect_stderr(err):
                 P.main(['LFXX', '--eaip', P.eaip_url('2026-10-01'), '--out', str(Path(td) / 'proc2'), '--cache', str(Path(td) / 'cache')])
             c.ok('LFXX: aucune table de codage' in err.getvalue() and not (Path(td) / 'proc2' / '2026-10-01' / 'LFXX.json').exists(), err.getvalue()[:200],
-                 'proc_eaip.main() still skips an aerodrome with no coding table')
+                 'proc_sia.main() still skips an aerodrome with no coding table')
     finally:
         P.fetch, P.first_page_rows, P.url_exists = saved
 
@@ -2332,7 +2350,7 @@ def k26(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    P = importlib.import_module('proc_eaip')
+    P = _proc()
     M = importlib.import_module('proc_manual')
     fx = c.root / 'frame/aerodb/test/fixtures/ead'
 
@@ -2481,3 +2499,24 @@ def k28(c):
         except SystemExit as e:
             code = e.code
         c.eq(code, 1, 'a file whose every procedure is refused is refused (exit 1)', what='none left')
+
+
+@case('K29', 'proc_layouts: the page layouts are one ordered list, the readers derive from it', 'K', static=True,
+      rule='V3 § 10.29 (b): detection order matters (uk-star before uk-app, at/be-coding before sia-code, icao-tab before de-route); each layout carries its fingerprints, OCR normaliser, OCR flag and tolerance')
+def k29(c):
+    import importlib
+    G = _geometry()
+    L = importlib.import_module('proc_layouts')
+    names = [e.name for e in L.LAYOUTS]
+    c.ok(isinstance(L.LAYOUTS, list) and len(names) == len(set(names)), str(names), 'LAYOUTS is a list, one entry per layout')
+    pos = {n: i for i, n in enumerate(names)}
+    c.ok(pos['uk-star'] < pos['uk-app'] and pos['at-coding'] < pos['sia-code'] and pos['be-coding'] < pos['sia-code'] and pos['icao-tab'] < pos['de-route'], str(names), 'the detection order that matters is kept')
+    c.ok(all(callable(e.detect) and e.tolerances in G.TOLERANCES and (e.read is None) == (e.name == 'sia-code') for e in L.LAYOUTS), str(names),
+         'every entry detects, names a tolerance of proc_geometry, and only sia-code has no parser here (proc_sia reads it)')
+    c.eq((sorted(L.PARSERS), sorted(L.OCR_LAYOUTS), sorted(L.NORMALIZERS), sorted(k for k, v in L.KNOWN_FINGERPRINTS.items() if v)),
+         (['am-coding', 'at-coding', 'be-coding', 'de-route', 'ei-coding', 'ge-coding', 'icao-tab', 'uk-app', 'uk-star'],
+          ['am-coding', 'at-coding', 'be-coding', 'ei-coding', 'ge-coding', 'uk-app', 'uk-star'], ['at-coding', 'be-coding', 'ge-coding', 'uk-app', 'uk-star'], ['sia-code', 'uk-app']),
+         'PARSERS, OCR_LAYOUTS, NORMALIZERS and KNOWN_FINGERPRINTS are derived from the list', what='derived tables')
+    c.eq(([e.name for e in L.LAYOUTS if e.kind_hint], [e.name for e in L.LAYOUTS if e.known_names], L.BY_NAME['de-route'].tolerances, L.BY_NAME['uk-app'].tolerances),
+         (['icao-tab'], ['ei-coding'], 'magnetic', 'true'), 'what a reader takes from the other pages, and the tolerance of what it prints', what='entry fields')
+    c.eq((L.detect_layout(['nothing', 'to see']), L.detect_layout(['Path Terminator', 'Waypoint', 'Fly over'])), (None, 'sia-code'), 'a page nobody recognises is None; the SIA header is sia-code', what='detect_layout')

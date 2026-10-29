@@ -148,7 +148,7 @@ L.on(s => …); await L.sync();       // state; a pass now
   arrival. `aerodb.procedureIndex()` says which aerodromes have some. A published point without position is placed by
   `procedures()` from the SIA base; a point still without `lat` is skipped by the drawing.
 - **Publishing the procedures of the eAIP** (workstation, by the owner of the data repository, once per AIRAC cycle):
-  `pip install pypdf`, then, from a clone of the suite, `python tools/proc_eaip.py --all --delay 0.3 --eaip
+  `pip install pypdf`, then, from a clone of the suite, `python tools/proc_sia.py --all --delay 0.3 --eaip
   https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_<DD>_<MON>_<YYYY>/FRANCE/AIRAC-<YYYY-MM-DD> --out <clone of the data
   repository>/proc [--base-dir <clone>/sia/base/fr/<cycle>]`, read the `warnings` in each `<ICAO>.json`, then commit and push the
   data repository (the frame synchronises it like the SIA base). `--all` takes the 141 aerodromes of the eAIP menu (about 0.7 MB of

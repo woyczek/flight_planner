@@ -1665,3 +1665,27 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
 - **Removed** from `proc_eaip.py`: `check_geometry`, `gaps_of`, `mark_geometry`, `doubts_of`, `doubt_key`, `repeated_points`, `zigzag_ratio`, `HOLD_LEGS`, `ZIGZAG_MAX`; `bearing_nm` moved to `proc_geometry` and is re-exported by
   `proc_eaip` (the cases and the invented pages use `P.bearing_nm`). No other session's code called them (`grep` over the repository). **Bench**: K1 to K28; K28 is new (tolerance table, basis, uncheckable, unresolved, review, screen).
 - **Measure** (cached pages, offline, same reading before and after): LFPO 309 procedures (1 doubt, `unread`), LFBO 78 (0), LFPG 711 (2 `unread`; with the SIA base of the workstation 6 `geometry`, identical), EIDW 196 (0): same identifiers, same doubts.
+
+## 29 October 2026 — § 10.29 (b): `proc_eaip.py` split into five modules, no logic changed
+
+- **Why**: `tools/proc_eaip.py` (2 718 lines) held four trades (the SIA eAIP, the foreign layouts, PDF reading, lines → records) and everyone imported it: `proc_ocr` and `proc_manual` pulled the whole eAIP reader for a regex and a notice.
+- **Cut** (the modules in `SPEC.md` § 5 quinquies, « Module map of the builders »): `proc_layouts.py` (the layouts and their parsers), `proc_pdf.py` (PDF reading shared), `proc_records.py` (records and the whole-aerodrome pass),
+  `proc_sia.py` (the SIA eAIP, the runway table, HTTP, the command line), `tools/ead_probe.py` (the probe, out of `proc_ead.py`). `proc_eaip.py` is **removed**, not kept as a shim: nothing outside `tools/proc_*` and the K cases imported it
+  (grep over the repository: `regen_jobs.py` is ours and was switched; `frame/aerodb/catalogue.js` only carries the builder's name, now `proc_sia`). The command line moves with it: `python tools/proc_sia.py …` (same options).
+- **The layouts are an ordered list** (constraint 1 of the survey session): `LAYOUTS = [Layout(name, detect, read, fingerprints, ocr_normaliser, ocr_readable, tolerances, kind_hint, known_names), …]`. `detect_layout` iterates it; the old
+  cascade of `if` is the order of the list (uk-star, at-coding, be-coding, ge-coding, am-coding, ei-coding, icao-tab, de-route, sia-code, uk-app), each condition copied as it was. `PARSERS`, `OCR_LAYOUTS`, `NORMALIZERS` and
+  `KNOWN_FINGERPRINTS` are derived from it; the OCR normalisers moved from `proc_ocr` to `proc_layouts` (they are about a layout, not about OCR). `read_page(name, rows, kind_hint, known)` calls the right parser (the type carried from
+  page to page for `icao-tab`, the confirmed names for `ei-coding`): `build_pdf_dir` and `proc_ocr` no longer know which. `sia-code` has `read=None`: `proc_sia.parse_code_table` reads it (a table with groups, another contract).
+  `tolerances` (`true` / `magnetic`, keys of `proc_geometry.TOLERANCES`) **describes** what the layout prints and is checked by K29; the geometry still chooses per leg by what the leg prints (as since (a)), so no result moves.
+- **The common pass already receives all pages of all documents** (constraint 2) in `build_pdf_dir`: the coordinate lists of every PDF complete the points before the geometry is judged, the type read on a page is carried to the next page of
+  the document, the split names are confirmed from page to page. What is **not** in the common pass yet, and was left alone to keep the logic: the SIA reader (`build_aerodrome`) works page by page and its own points come from the DATA pages
+  and the base; the Belgian block with a point missing from the list is still refused by its parser (`NON retenue`), not marked `unresolved` after resolution (§ (a)). `positions=REQUIRED` of `proc_geometry` is ready for it.
+- **`proc_pdf` imports `proc_layouts`** (`classify_pdf` recognises a layout, `waypoint_coords` reads the Belgian list): the shared module is above the layouts, never the other way. `limited` defaults to its own module. `OCR_TIMEOUT` moved
+  there from `proc_ocr` (`proc_ead` reads it from `proc_pdf`).
+- **The probe**: `ead_probe.py` keeps `probe`, `finish`, `pager_text`, `sent_summary` and its command line (`--user --state --icao --name --aip-type --docs --download --out`); it reads the site address, the session and the form readers
+  from `proc_ead` **by attribute** (`E.HOST`, `E.Session`…), so that K6, which reloads `proc_ead` with `EAD_PROBE_HOST`, still reaches its local server. `proc_ead.py --probe` is gone: `python tools/ead_probe.py`.
+- **Measure** (the same cached pages, offline, before = the commit of (a)): LFPO, LFBO, LFPG (with and without the SIA base) and EIDW, the **whole documents** (procedures with every field, formats, warnings, charts, runways; only `updated_at`
+  left out) are byte-identical, and so is the summary (counts, doubt by code). **Bench**: K1 to K29 (K29 is new: the list, its order, the derived tables); the cases read the modules through one namespace (`_proc()`), the ones that replace a
+  name (`fetch`, `first_page_rows`, `url_exists`) do it on `proc_sia`, and K6 calls `ead_probe.probe`.
+- **Point schema**: written once in `SPEC.md` § 5 quinquies (every key, its type, its meaning, which source fills it), replacing the descriptions scattered through the section. One correction on the way: the true course is `trk` on a point
+  (`true` is the key of the layouts' legs only).

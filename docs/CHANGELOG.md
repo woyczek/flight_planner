@@ -20,6 +20,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Launcher jobs: security review** (`tools/regen_jobs.py`, `frame/store/frame_data.js`; DECISIONS; I8): a set can no
   longer overwrite another's verb nor shorten a gap; trigrams of 2 to 5 signs are accepted as authors; commit paths are
   literal (no pattern); `revalidate` keeps an error of the device's storage in its result instead of throwing.
+- **aerodb: `proc_eaip.py` split, no logic changed** (`tools/proc_layouts.py`, `proc_pdf.py`, `proc_records.py`, `proc_sia.py`, `ead_probe.py`; `proc_ocr.py`, `proc_ead.py`, `proc_manual.py`, `regen_jobs.py`; SPEC § 5 quinquies,
+  DECISIONS; V3 § 10.29 (b); cases K1 to K29) — the 2 718-line eAIP reader becomes the SIA reader (`proc_sia`), the foreign layouts as **one ordered list** (`proc_layouts.LAYOUTS`: detection, parser, fingerprints, OCR normaliser,
+  OCR flag, tolerance), the PDF reading shared by every reader (`proc_pdf`) and lines → records with the whole-aerodrome pass (`proc_records`); the EAD probe leaves `proc_ead.py` (`tools/ead_probe.py`). `proc_ocr` and
+  `proc_manual` no longer import the eAIP reader. The command line is `python tools/proc_sia.py` (same options). The readings of LFPO, LFBO, LFPG and EIDW are byte-identical. The point schema is written once in the SPEC.
+
 - **Map: the coverage layer is named "Coverage" and lit by its box only** (`modules/maps/coverage.js`, `layers.js`, `texts.js`;
   SPEC § 6.11, INTEGRATION, help ×4, case D46; V3 § 10.29 h) — the automatic lighting (a side without a chosen procedure whose
   aerodrome is not green) is gone, with the "box touched" state; the layer "Aerodrome procedures" is now "Coverage" ×4.

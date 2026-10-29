@@ -22,7 +22,7 @@ never saw a credential. Facts are marked **read** (public page opened today) or 
   functionalities of the EAD operational system (EAD Pro). This tool is not connected to the EAD operational database and does not display the
   latest available information for a specific service. Consequently, the information displayed shall not be used for operational purposes. »
   **The user's decision**: a **simulation** use is admitted; the data are **not operational**, and every procedure file read through EAD Basic
-  carries that mention (`notice`, written by `proc_eaip.ead_notice()`, as the CIFP files carry the FAA's); the access is **manual**:
+  carries that mention (`notice`, written by `proc_records.ead_notice()`, as the CIFP files carry the FAA's); the access is **manual**:
   - the **survey** (the list of documents per State, one sample each, `--survey`) is admitted, run by hand, at least one second between requests;
   - an **aerodrome is read one at a time, on an explicit gesture of the user**: `--fetch <ICAO>` typed by hand today (it refuses a list), a
     gesture in the screens later — **in Fuel** (« Lire les procédures de LFXX », when an aerodrome has none; § 10.20 of the
@@ -59,7 +59,7 @@ What to look for on a first real page (the checklist that decides everything):
    (the SIA's "REF ENR 4.4" case, solved by `AeroDB.coords`).
 5. **Amendment date** of the page (the SIA's pages date from 2022 to 2024 inside a 2026 cycle).
 
-## 3. What `tools/proc_eaip.py` would become (not written before a real page)
+## 3. What `tools/proc_sia.py` would become (not written before a real page)
 
 The SIA code is split in two parts that already have the right seam: *rows of text from a PDF* (`rows_from_pdf`) and *table parsers*
 (`parse_code_table`, `parse_data01`) producing an intermediate table `{ kind, runways, title, groups: [{ label, legs }] }` that
@@ -272,7 +272,7 @@ fetched it: `EG_AD_2_EGLL_en.pdf`, a **PDF of 3,038,627 bytes** (the whole AD 2 
   listed under type **Charts** (not searched yet).
 - The row's "eAIP" cell carries the text "IB-903: File not found" (no eAIP link for this document): harmless.
 
-**Next** (nothing to download again): look inside the PDF for coding tables with `python tools/proc_eaip.py --scan-pdf ead_probe/cache/EG_AD_2_EGLL_en.pdf` (needs `pypdf`). It reports, page
+**Next** (nothing to download again): look inside the PDF for coding tables with `python tools/proc_sia.py --scan-pdf ead_probe/cache/EG_AD_2_EGLL_en.pdf` (needs `pypdf`). It reports, page
 by page, **titles and keywords only** (Path Terminator, Fly Over, Coding, Waypoint Identification, SID, STAR, RNAV, RNP, Approach), copies no content, and lists the pages that probably carry a table of legs. The owner
 pastes that report; the session decides from it whether this document holds coding tables (then the layout parser follows, on text rows of one page) or only charts (then the *Charts* type is searched).
 
@@ -290,7 +290,7 @@ table, name the document where the coded data is published, or only state a rule
 The scan's coding lines on pages 40 and 41 of `EG_AD_2_EGLL_en.pdf`: **"STANDARD INSTRUMENT ARRIVAL CODING TABLES"** (the STARs, e.g. OTMET 1H, ROXOG 1H, ALESO 1H, TANET 1Z, SIRIC 1H…),
 **"RNAV HOLD CODING TABLES"** (BIG, BNN, BRASO, FITBO, HON, LAM, LOGAN…) and **"INSTRUMENT APPROACH PROCEDURE CODING TABLES - RNP RWY 09L/R and 27L/R"**. So EGLL's AD 2 carries
 STAR and RNP coding tables, but **not under the SIA's header words** (no "Path Terminator"): its layout is its own. No SID table was seen (the SIDs are in the charts). The layout is now read page by page:
-`python tools/proc_eaip.py --scan-pdf FILE --page 40` prints that page's text rows (numbered, 160 characters, 90 rows), the very rows the analysers would read; the owner pastes pages 40 and 41 here (a UK AIP
+`python tools/proc_sia.py --scan-pdf FILE --page 40` prints that page's text rows (numbered, 160 characters, 90 rows), the very rows the analysers would read; the owner pastes pages 40 and 41 here (a UK AIP
 excerpt in the session only, never in the repository). The UK layout parser, a second entry of the layout registry (§ 3), is then written on them.
 
 ## 6 nonies. Pages 40–41 of the UK document, read (28 October 2026): the coding tables are separate *Charts* documents
@@ -311,7 +311,7 @@ By the library's naming, these are `EG_AD_2_EGLL_7-13_en.pdf` … `EG_AD_2_EGLL_
 python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL --aip-type Charts --docs EG_AD_2_EGLL_7-13_en.pdf,EG_AD_2_EGLL_7-14_en.pdf,EG_AD_2_EGLL_7-15_en.pdf,EG_AD_2_EGLL_7-16_en.pdf,EG_AD_2_EGLL_7-17_en.pdf,EG_AD_2_EGLL_8-13_en.pdf
 ```
 
-(`--docs` searches each exact name and downloads its row's document into `ead_probe/cache/`, named after it; nothing else is downloaded.) Then `python tools/proc_eaip.py --scan-pdf ead_probe/cache/EG_AD_2_EGLL_7-13_en.pdf` and
+(`--docs` searches each exact name and downloads its row's document into `ead_probe/cache/`, named after it; nothing else is downloaded.) Then `python tools/proc_sia.py --scan-pdf ead_probe/cache/EG_AD_2_EGLL_7-13_en.pdf` and
 `--scan-pdf … --page 1` show what those pages look like, and the UK layout (a second entry of the registry, § 3) is written on that evidence.
 
 ## 6 decies. Checking the format of the pages by script (the owner's request, 28 October 2026)
@@ -351,7 +351,7 @@ a co-ordinate, whether made by OCR, by a person or by a model, moves a course or
    came from (when the page changes, the file is flagged obsolete, as the VAC interpretations are). No dependency, but not automatic: redone by hand at each amendment of those pages.
 3. **Leave the UK STARs out**: for a flight the STAR of the SimBrief OFP already gives its fixes (lot 1), and 8-13's RNP approaches are read.
 
-`python tools/proc_eaip.py EGLL --pdf-dir <folder of the downloaded PDFs> --cycle 2026-10-01 [--check]` reads every PDF of a folder: a known layout is read, an unknown or text-less one is reported (`NON`), never guessed;
+`python tools/proc_sia.py EGLL --pdf-dir <folder of the downloaded PDFs> --cycle 2026-10-01 [--check]` reads every PDF of a folder: a known layout is read, an unknown or text-less one is reported (`NON`), never guessed;
 `--check` writes nothing and exits 1 if a page is refused. (Tested here on 8-13 and 7-13 together: 4 procedures read, 7-13 reported.)
 
 ## 6 duodecies. The UK STARs of EGLL, read from the page images (28 October 2026)
@@ -415,7 +415,7 @@ then the layout registry on it.
 
 Some EAD Basic AIP pages are drawn as vector outlines or images: they have no text layer and `pypdf` returns nothing. Owner decision of 28 October 2026, "OCR inclus": OCR becomes an optional dependency of the workstation builders only (never the launcher, never a page), like `pypdf`, with a clear message when it is missing.
 
-`tools/proc_ocr.py` does three things. `render_page` rasterises a page with `pypdfium2` (300 dpi by default). `ocr_words` reads the image with one of two backends, detected at run time: `tesseract` (the program on `PATH`, word boxes from its TSV output) or `rapidocr-onnxruntime` (`python -m pip install rapidocr-onnxruntime`; it gives line boxes, each kept as one "word"). `rows_from_words` groups the words into text rows by vertical centre and sorts them by x, producing the same kind of rows as `proc_eaip.rows_from_pdf`, so the layout detection and the parsers are shared. `--deps` tells which backends are present.
+`tools/proc_ocr.py` does three things. `render_page` rasterises a page with `pypdfium2` (300 dpi by default). `ocr_words` reads the image with one of two backends, detected at run time: `tesseract` (the program on `PATH`, word boxes from its TSV output) or `rapidocr-onnxruntime` (`python -m pip install rapidocr-onnxruntime`; it gives line boxes, each kept as one "word"). `rows_from_words` groups the words into text rows by vertical centre and sorts them by x, producing the same kind of rows as `proc_pdf.rows_from_pdf`, so the layout detection and the parsers are shared. `--deps` tells which backends are present.
 
 Both engines are supported; since 28 October 2026 `pypdfium2` and `rapidocr-onnxruntime` are installed in the workstation Python (`tools/proc_ocr.py --deps` reports both present, Tesseract absent).
 
@@ -451,7 +451,7 @@ Survey of all 47 authorities run by the owner (one sample per State, delay 1 s).
 | Charts only, no table in the sample | UB, EK, EE, XX, BG, LH, LJ, EH, ES, EV, LY, UK, LK, LM, LR, EF (16) | XX: files named EK_, label recorded; LK: VFR chart, 686,000 path operations (pypdf stream limit raised); LM: VFR strings; LR: aeronautical data tabulation, waypoint list only; EF: omnidirectional departures and obstacles only |
 | Image only | LQ, LG (2) | not readable |
 | Prose route descriptions, no table, no co-ordinates | EN, OJ, LE (bilingual), LC, LW, LS, BG Greenland (7) | not parsed by design: nothing the geometry check can check |
-| Outdated edition | LF (1) | EAD sample is a 2015 SIA "PRECODING" edition (older `sia-code`, "Leg sequence / P/T / ID" header, chart text in a /MTnn glyph font): not parsed; France comes from the SIA's own eAIP through `tools/proc_eaip.py` |
+| Outdated edition | LF (1) | EAD sample is a 2015 SIA "PRECODING" edition (older `sia-code`, "Leg sequence / P/T / ID" header, chart text in a /MTnn glyph font): not parsed; France comes from the SIA's own eAIP through `tools/proc_sia.py` |
 | Nothing obtained | BK (no files), LB and LT (no coding / SID / STAR headings, IAP charts only), UA and UC (download failed: rows without a direct link) (5) | |
 
 ### 8.1 One State per line, and what follows (ergonomics session's decision, 28 Oct 2026)
@@ -499,7 +499,7 @@ Survey of all 47 authorities run by the owner (one sample per State, delay 1 s).
 | LW | prose | route descriptions in text, no co-ordinates |
 | LS | prose | route descriptions in text, no co-ordinates |
 | BG | prose | route descriptions in text, no co-ordinates |
-| LF | from the SIA | France comes from the SIA's own eAIP (`tools/proc_eaip.py`), never from EAD (EAD's sample is a 2015 edition) |
+| LF | from the SIA | France comes from the SIA's own eAIP (`tools/proc_sia.py`), never from EAD (EAD's sample is a 2015 edition) |
 | BK | nothing | no file, or no coding / SID / STAR document, or a failed download |
 | LB | nothing | no file, or no coding / SID / STAR document, or a failed download |
 | LT | nothing | no file, or no coding / SID / STAR document, or a failed download |
@@ -509,7 +509,7 @@ Survey of all 47 authorities run by the owner (one sample per State, delay 1 s).
 - **A State without coding tables**: the per-flight source stays the SimBrief OFP (status `ofp`, `proc-seen/`). An aerodrome of such a State is
   read only on demand, by the owner's manual gesture, through the geometry check, status `check`.
 - **No model reads chart drawings or prose** without an explicit request for that aerodrome.
-- **France comes from the SIA** (`tools/proc_eaip.py`), never from EAD.
+- **France comes from the SIA** (`tools/proc_sia.py`), never from EAD.
 - **Reserve**: one sample per State only; another form of the same State's pages is caught by the format check (`formats`, `ok: false`), never
   guessed.
 

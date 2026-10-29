@@ -606,7 +606,7 @@ redesigned for touch at that point.
          model in `model.js` is a later lot if the user wants it.
          **On-demand reading by State (user, 28 Oct evening, "bug sur les AD français, pourtant prioritaires")**: the
          gesture "Lire les procédures de LFXX" dispatches by the aerodrome's State: France (LF) reads the SIA eAIP coding
-         tables (`tools/proc_eaip.py`, free, no credentials, AIRAC folder derived from the cycle in force), the States with
+         tables (`tools/proc_sia.py`, free, no credentials, AIRAC folder derived from the cycle in force), the States with
          EAD coding tables read EAD Basic, a State without tables answers "aucune table publiée pour cet État" and offers
          Little Navmap when present; never "mise en page inconnue" for France. Lot: aerodb (`regen_jobs` verb
          `proc/eaip-fetch`, `fetchProcedures` dispatch), fuel (texts ×4).

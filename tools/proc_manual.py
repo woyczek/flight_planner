@@ -110,7 +110,7 @@ def install(doc, out, replace=False, replace_source=None):
                          '(le meilleur statut gardé)')
     full = merge(old, doc)
     if not full.get('notice') and any((p.get('source') or {}).get('kind') == 'ead-basic' for p in full['procedures']):
-        from proc_eaip import ead_notice                       # un fichier qui porte des procédures d'EAD Basic dit qu'elles sont non opérationnelles
+        from proc_records import ead_notice                       # un fichier qui porte des procédures d'EAD Basic dit qu'elles sont non opérationnelles
         full['notice'] = ead_notice(full['icao'])
     out.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(full, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
