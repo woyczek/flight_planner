@@ -195,7 +195,7 @@
   const DEFAULTS = {
     airwaysLow: false,
     airwaysHigh: false,
-    airwayLabels: true,
+    awLabels: true,
     zoneAbbrev: true,
     zoneLabelsShow: true,
     zoneOpacity: '25',
@@ -279,6 +279,23 @@
     };
   }
   /** Valeur d'un élément du profil (défaut si absent). */
+  /** Un seul élément pour les noms des voies (§ 10.29 g) : awLabels ; un profil du studio ou d'une compagnie qui porte encore
+   *  airwayLabels (l'ancien interrupteur du profil d'affichage) est lu comme awLabels quand celui-ci est absent. */
+  const migrated = p => {
+    const E = p?.elements;
+    if (!E || !('airwayLabels' in E)) return p;
+    const {
+      airwayLabels,
+      ...rest
+    } = E;
+    return {
+      ...p,
+      elements: 'awLabels' in rest ? rest : {
+        ...rest,
+        awLabels: airwayLabels
+      }
+    };
+  };
   const el = (p, id) => {
     const v = p?.elements?.[id];
     return v === undefined || v === '' ? DEFAULTS[id] : v;
@@ -1153,6 +1170,7 @@
       zs = zoomOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x) + detailZoom(detail),
       zv = mission ? zs : effectiveZoom(zs, W, H),
       tier = tierOf(pxOfZoom(zv));
+    profile = migrated(profile); // l'ancien airwayLabels lu comme awLabels (§ 10.29 g)
     if (!mission) profile = atZoom(profile, zv);
     const shown = mission ? data : byZoom(data, profile, zv, tier);
     // les couches de la carte dans l'ordre de dessin de la SPEC § 3 (§ 10.29 d) : chacune { id, reserve(), paint(ctx) } ; toutes
@@ -1219,7 +1237,7 @@
       id: 'nat',
       paint: c => on(profile, 'natTracks') && K.drawNat(c, data.nat, toC, scale, bbox, pl)
     }, {
-      id: 'airwayLabels', // étiquettes des voies posées après leurs points
+      id: 'airwayNames', // étiquettes des voies posées après leurs points
       paint: () => {
         for (const f of ends.later || []) f();
       }
@@ -1337,7 +1355,9 @@
     atZoom,
     byZoom,
     /** Valeur d'un élément d'un profil d'affichage (défaut du studio si absent). */
-    elementOf: el,
+    elementOf: (p, id) => el(migrated(p), id),
+    /** Profil d'affichage dont l'ancien airwayLabels est rendu en awLabels (§ 10.29 g). */
+    migrated,
     deg3,
     tierOf,
     trackOf,

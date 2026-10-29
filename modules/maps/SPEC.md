@@ -108,7 +108,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   "paper" colours stay the design tokens (`tokens`, `themed`).
   In the code (V3 § 10.29 d) this order is **one list of layers** in `draw()`, each `{ id, reserve(), paint(ctx) }`: every
   reservation first, in the order of the list (`routeLabels`, `screenLabels`, `missionPoints`, `cities`), then every painting:
-  `zoneShapes`, `airways`, `points` (aerodromes, navaids, airway fixes), `aar`, `nat`, `airwayLabels`, `vrp`, `zoneLabels`,
+  `zoneShapes`, `airways`, `points` (aerodromes, navaids, airway fixes), `aar`, `nat`, `airwayNames`, `vrp`, `zoneLabels`,
   `gridMora`, `missionZones`, `missionPoints`, `cities`, `route`, `screenTraces` (the screen's `overRoute`: the chosen
   procedures), `airwayOver` (the boxes over the path), `screenTop` (the screen's `top`: the procedures' labels, last).
   It returns the frames it drew for the tooltips and the gestures: `airways [{ x, y, r, g }]`, `labels`, `barbs`,

@@ -193,9 +193,9 @@
     ends.hits = []; // cartouches posés (centre, rayon, tronçon) : infobulle des voies
     ends.over = []; // cartouches des voies que suit la route : peints après le trait de la route, par-dessus
     if (!(lo || hi) || !airways?.length) return ends;
-    // la case « Noms des voies » des Couches (élément awLabels) commande le cartouche du nom, et avec lui la distance et les
-    // routes du tronçon ; airwayLabels est l'interrupteur du profil d'affichage
-    const lab = el(profile, 'airwayLabels') !== false && el(profile, 'awLabels') !== false,
+    // un seul élément (§ 10.29 g) : la case « Noms des voies » des Couches (awLabels) commande le cartouche du nom, et avec lui
+    // la distance et les routes du tronçon
+    const lab = el(profile, 'awLabels') !== false,
       t = {
         s: b.s - .3,
         n: b.n + .3,

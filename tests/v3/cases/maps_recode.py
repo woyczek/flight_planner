@@ -516,6 +516,9 @@ def d51(c):
     shown, hidden = c.js(_AW_NAMES_JS, True), c.js(_AW_NAMES_JS, False)
     c.ok('X10' in shown, f'{shown}', 'box ticked: the airway name is written')
     c.ok('X10' not in hidden and '22' not in hidden, f'{hidden}', 'box unticked: neither the name nor the segment length is written')
+    # § 10.29 g: one element; a profile that still carries the former airwayLabels is read as awLabels
+    mig = c.js("() => [MapsRender.elementOf({ elements: { airwayLabels: false } }, 'awLabels'), MapsRender.elementOf({ elements: { airwayLabels: false, awLabels: true } }, 'awLabels'), 'airwayLabels' in (MapsRender.migrated({ elements: { airwayLabels: true } }).elements)]")
+    c.eq(mig, [False, True, False], 'the former airwayLabels is migrated to awLabels (awLabels wins when both are there)', what='migration')
 
 # ------------------------------------------------------------------------------------------------------ D41-D44
 # The chosen runway, SID, STAR and approach (V3_SPECIFICATION § 10.20, maps SPEC § 5): route.procedures v2 written by fuel, the records

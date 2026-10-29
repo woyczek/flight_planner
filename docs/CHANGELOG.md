@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: one element for the airway names** (`modules/maps/render.js`, `render_airspace.js`; case D51; V3 § 10.29 g) — the
+  display profile's `airwayLabels` and the Layers box's `awLabels` were combined; `awLabels` alone remains, and a profile of
+  the studio or of an airline that still carries `airwayLabels` is read as `awLabels` (`MapsRender.migrated`).
+
 - **Map: one palette, day and night** (`modules/maps/render.js` `MapsRender.palette`, read by `render_route.js`,
   `render_airspace.js`, `procs.js`, `sheet_view.js`, `flight_time.js`, `tips.js`, `vfr.js`, `draw.js`; SPEC § 3; V3 § 10.29 f)
   — the map's cartographic colours were written in a dozen places; they are now one palette read by the renderer and by the
