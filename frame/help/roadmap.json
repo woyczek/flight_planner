@@ -426,7 +426,7 @@
           "es": "Listas de procedimientos: caducado ⌛ y en conflicto ⚠ marcados, nunca ocultos; listas planas; botón «En el mapa»"
         },
         {
-          "state": "planned",
+          "state": "done",
           "fr": "Lien « Source » sur chaque procédure : la page codée du SIA",
           "en": "\"Source\" link on each procedure: the SIA's coded page",
           "de": "Link „Quelle“ bei jedem Verfahren: die kodierte Seite des SIA",
@@ -468,7 +468,7 @@
           "es": "Exportación del plan de vuelo a X-Plane (.fms, dos formatos, envío directo a la carpeta FMS plans por el lanzador) y MSFS 2020 / 2024 (.pln)"
         },
         {
-          "state": "planned",
+          "state": "done",
           "fr": "Avertissement quand la date du vol est dans le passé",
           "en": "Warning when the flight date is in the past",
           "de": "Warnung, wenn das Flugdatum in der Vergangenheit liegt",
