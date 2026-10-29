@@ -641,7 +641,7 @@
           "es": "Mapa de cobertura de los procedimientos: aeródromos verdes (procedimientos disponibles), naranja (legibles bajo demanda), rojos (nada)"
         },
         {
-          "state": "planned",
+          "state": "done",
           "fr": "Mode « choix » : fond de carte grisé, une famille à la fois, une teinte par procédure, un toucher = choisi",
           "en": "\"Choose\" mode: dimmed base map, one family at a time, one hue per procedure, one tap = chosen",
           "de": "„Auswahl“-Modus: abgedunkelte Grundkarte, eine Familie je Durchgang, eine Farbe je Verfahren, ein Tipp = gewählt",

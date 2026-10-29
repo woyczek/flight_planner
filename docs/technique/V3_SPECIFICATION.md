@@ -742,8 +742,13 @@ redesigned for touch at that point.
          INTEGRATION when the frame delivers it, else `history.replaceState`), writes, says what changed and shows the
          next family's "Sur la carte". No "Valider", no steps, no accumulation: one trip per choice, each trip short.
          Outside the mode the chosen procedures keep their family hue (SID green, STAR orange, approach sky blue).
-       - **Lots, after the refactoring of § 10.29**: fuel (markers and lists are delivered; the secondary line, the
-         button, the key consumption), maps (the mode, cases D).
+       - **Delivered (29 Oct night)**: the Map's choose mode (5b713f77e: `#maps?choose=dep|arr&icao=` read by
+         `ctx.consume`, one family per opening — the first not chosen —, eight hues `MapsRender.palette().procHues`,
+         one cartouche per exit / entry point, transitions of the highlighted one only, every runway as an arrow with
+         the chosen one bold, runway chips ≤ 7, "Aucune" first then seven rows and scroll, return by
+         `location.replace('#fuel?focus=<side>&<key>=<id|none>')`, never a doubtful or nameless record; ✕ and
+         Escape in the sheet also leave the mode); Fuel's markers, flat lists, secondary line and key consumption
+         (3c98b564b, aa74300b4); still to come: the "Sur la carte" button (Fuel).
    24. **The chosen runway drawn as an arrow** (user, 29 Oct: "un vecteur sur la carte indiquant la piste (direction
        matérialisée par une flèche)"): when `route.procedures` names a runway, the Map draws it from the landing
        threshold (`runways(icao)`) along the true QFU over the runway's length, head in the direction of use (far end
