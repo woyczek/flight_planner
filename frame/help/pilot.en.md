@@ -834,8 +834,9 @@ tested; “Test” says what is wrong: invitation not accepted yet, token copied
 on the contents. A classic token opens all the repositories of the account: for a user's repository, a GitHub account
 dedicated to flying is advised. A file in another format is refused with a message. The airline is written to the
 repository only if it has none yet. On a workstation whose data/ already follows this repository, the assistant skips
-the account and the token. Without a launcher, the app only reaches a GitHub repository: for a framagit or GitLab
-repository, set the access on a workstation with the launcher.
+the account and the token. Without a launcher, the app reaches a GitHub repository or a project on a GitLab instance
+(gitlab.com, framagit…): paste the project's address (https://gitlab.com/group/project) and the project access token the
+administrator gave you; the token is sent to that instance only.
 
 ## Administration
 
@@ -860,14 +861,15 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
 
 ## Good to know
 
-- **The token**: a fine-grained token from github.com, on the data repository only, “Contents” read and write, 90 days
-  at most. It is never shown again; never paste it in a message.
+- **The token**: on github.com, a fine-grained token, on the data repository only, “Contents” read and write, 90 days
+  at most; on GitLab, a project access token (one per pilot, named after the trigram), created by the administrator. It
+  is never shown again; never paste it in a message.
 - **Your settings stay after the browser is closed**: the identity, the token and the weather key are kept in the same place
   on the device, never synchronised nor in a backup. If Safari made you lose them anyway (it clears the storage of a site
   that is little used), add the app to the Home Screen: it is better kept there. The diagnostics (“Copy”) say whether the
   browser promised not to clear (`storage.persisted`).
 - **Cut access**: erases the token from this device; your pending writes stay and will leave once access is set again.
-  Lost or stolen phone: also delete the token on github.com.
+  Lost or stolen phone: also delete the token at the host (github.com, gitlab.com…).
 - **V2 settings**: if this browser was already used for V2, the “V2 settings found” card offers once to take over your
   identity and your access.
 - **About**: links to this help and to the roadmap (what is delivered, in progress, planned), then the

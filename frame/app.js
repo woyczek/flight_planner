@@ -28,6 +28,7 @@
   const STORE = [
       ['store/frame_data.js', () => window.FrameData],
       ['store/transport_github.js', () => window.FrameData?.github],
+      ['store/transport_gitlab.js', () => window.FrameData?.gitlab],
       ['store/transport_launcher.js', () => window.FrameData?.launcher]
     ],
     lost = STORE.filter(([, has]) => !has()).map(([p]) => p);
@@ -1704,7 +1705,11 @@
       author: () => identity.trigram || ''
     });
     if (!exchange && !usages.backend) return FD.transports.local();
-    if (FD.github.config()) return FD.github();
+    // dépôt de l'appareil (GitHub, ou une instance GitLab : son transport y signe les commits du trigramme)
+    if (FD.github.config()) return FD.github({
+      ...FD.github.config(),
+      author: () => identity.trigram
+    });
     return {
       ...FD.transports.local(),
       missing: true

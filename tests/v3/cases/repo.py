@@ -555,3 +555,27 @@ def i10(c):
          what='frame routes unknown to the launcher')
     c.ok(L.data_repo_url.__doc__ and 'jeton' in src[src.index('def data_repo_url'):src.index('def run(')], '', 'the data repository address never carries credentials')
 
+
+
+@case('I11', 'GitLab secret of the launcher', 'I', static=True,
+      rule='frame G1 (29 Oct): secrets/gitlab.json (instance, project, token) is registered like ead: the page gets « set » and the date, never a character')
+def i11(c):
+    import importlib
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-secrets-'))
+    kept = L.SECRETS
+    try:
+        L.SECRETS = str(tmp)
+        (tmp / 'gitlab.json').write_text(json.dumps({'instance': 'https://gitlab.example', 'project': 'grp/data', 'token': 'glpat-SECRETVALUE1234',
+                                                     'savedAt': {'token': '2026-10-29T22:00:00Z'}}), encoding='utf-8')
+        v = L.secrets_view()['app']['gitlab']
+        c.eq(sorted(v), ['instance', 'project', 'token'], 'the three fields of the service', what='fields')
+        c.eq(v['token'], {'set': True, 'at': '2026-10-29T22:00:00Z'}, 'the token: set and when, nothing else', what='token view')
+        text = json.dumps(L.secrets_view())
+        c.ok('SECRETVALUE' not in text and '1234' not in text and 'grp/data' not in text and 'gitlab.example' not in text, text[:300],
+             'not one character of the secret reaches the page')
+    finally:
+        L.SECRETS = kept
+        shutil.rmtree(tmp, ignore_errors=True)

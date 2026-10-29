@@ -168,6 +168,22 @@ The transports:
   - `commit` makes one tree on the parent's tree (content for written files, `sha: null` for removed ones; a removal
     of a file absent from the tree is skipped), one commit, then a non-forced ref update.
   - A truncated tree is an error.
+- **`gitlab`** (`frame/store/transport_gitlab.js`, 29 Oct 2026): the data repository on a GitLab instance (gitlab.com,
+  framagit…) through its REST API v4, with a project access token (one per pilot, named after the trigram, created by
+  the administrator, revocable, with an expiry). The device's setting is GitHub's (`device/keys.json`, `FD.github`): a
+  pasted project address (`https://<host>/<group>/<project>`) gives `provider: 'gitlab'` and `api: https://<host>/api/v4`,
+  and `FD.github(cfg)` hands over to `FD.gitlab(cfg)`. The token goes in the `PRIVATE-TOKEN` header only, to that
+  instance only (a `next` link to another host is never followed).
+  - `head`: `GET …/repository/branches/<branch>`.
+  - `tree`: `GET …/repository/tree?recursive=true`, 100 per page, keyset pagination (`Link: rel="next"`), kept per head;
+    revisions are git blob shas, as GitHub's.
+  - `read`: `GET …/repository/blobs/<sha>/raw`.
+  - `commit`: one atomic `POST …/repository/commits` with `create` / `update` / `delete` actions (from the known tree; a
+    deletion of an absent file is skipped), `author_name` = the device's trigram; the head read just before must be the
+    parent, otherwise `err.conflict`; a commit that landed on a moved branch (`parent_ids[0]` ≠ parent) says
+    `err.conflict` too (the layer pulls, its merge finds its own changes there).
+  - `publish` (§ 15.2 of INTEGRATION): one commit per group, base64 for binaries.
+  - Bench `frame/store/test/gitlab.html` (noreg A38), against a GitLab API simulated in the page; never the real one.
 - **`launcher`** (`frame/store/transport_launcher.js`, workstation): the `data/` folder of the workstation is the
   repository, served by `tools/launch.py`. Every route requires the `X-SOG-Setup` header.
   - `GET /__setup/changes?since=<head>`: the head (a hash of the tree), and the tree `{ path: git blob sha }` when the

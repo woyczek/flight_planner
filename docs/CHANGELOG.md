@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the data repository on GitLab** (`frame/store/transport_gitlab.js`, `frame/store/transport_github.js`,
+  `frame/settings/access.js`, `frame/app.js`, `tools/launch.py`; frame SPEC, DECISIONS, Settings help ×4; noreg A38, I11):
+  paste a GitLab project's address (gitlab.com, framagit…) and the project access token the administrator gave you —
+  the app reads and writes the data there as it does on GitHub; the launcher keeps a GitLab secret without ever showing
+  it.
 - **Fuel: « On the map » next to each side of the procedures** (`modules/fuel/procedures.js`, `module.js`; SPEC, DECISIONS, frame
   INTEGRATION § 6.1; help ×4; case F41) — opens the Map's choice mode, and the choice made there comes back into Fuel, said.
 - **Frame data layer, security review** (`frame/store/frame_data.js`, `tools/regen_jobs.py`; INTEGRATION § 4,

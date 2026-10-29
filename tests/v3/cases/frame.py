@@ -1148,3 +1148,8 @@ def a36(c):
     c.until("!!document.querySelector('[data-module=fuel]')", timeout=15000, what='an unknown application: Pilot')
     c.ok('fuel' in c.js(rail) and 'data' not in c.js(rail), str(c.js(rail)), 'an unknown app is Pilot')
 
+
+@case('A38', 'GitLab transport bench', 'A', tags=('data',), designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 4 (29 Oct): the data repository on a GitLab instance, same form as GitHub; the bench reported all pass')
+def a38(c):
+    _bench(c, 'frame/store/test/gitlab.html', '__gitlabBench')

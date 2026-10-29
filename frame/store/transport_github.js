@@ -20,14 +20,31 @@
   const LEGACY = 'githubData:frame'; // ancien rangement (localStorage), repris une fois par le cadre
   let held = null, // réglage { repo, branch, token, api } en mémoire ; null s'il n'y en a pas
     sink = null; // fonction du cadre qui le garde dans device/keys.json
-  const clean = c => ({
-    repo: String(c.repo || '').trim().replace(/^https:\/\/github\.com\//, '').replace(/\.git$/, ''),
-    branch: String(c.branch || 'main').trim() || 'main',
-    token: String(c.token || '').trim(),
-    ...(c.api ? {
-      api: c.api
-    } : {})
-  });
+  /** Réglage nettoyé. Une adresse collée dit l'hébergeur : https://github.com/compte/dépôt → GitHub ; toute autre adresse
+   *  https://hôte/groupe/projet → une instance GitLab (gitlab.com, framagit…), api https://hôte/api/v4 (transport_gitlab.js,
+   *  29 oct. 2026) ; provider 'gitlab' donné tel quel aussi. */
+  const clean = c => {
+    let repo = String(c.repo || '').trim().replace(/\.git$/, '').replace(/\/+$/, ''),
+      api = c.api || '',
+      provider = c.provider === 'gitlab' ? 'gitlab' : 'github';
+    const u = /^https:\/\/([^/\s]+)\/(.+)$/.exec(repo);
+    if (u) {
+      provider = u[1].toLowerCase() === 'github.com' ? 'github' : 'gitlab';
+      if (provider === 'gitlab' && !api) api = `https://${u[1]}/api/v4`;
+      repo = u[2];
+    }
+    return {
+      repo,
+      branch: String(c.branch || 'main').trim() || 'main',
+      token: String(c.token || '').trim(),
+      ...(provider === 'gitlab' ? {
+        provider
+      } : {}),
+      ...(api ? {
+        api
+      } : {})
+    };
+  };
   /** Réglage gardé { repo, branch, token, api } ; null s'il n'y en a pas. */
   const config = () => held?.repo && held.token ? {
     ...held
@@ -58,6 +75,11 @@
 
   function github(c = config()) {
     if (!c?.repo || !c.token) throw new Error('github transport: repository and token required');
+    // réglage d'une instance GitLab : son transport (même forme)
+    if (c.provider === 'gitlab') {
+      if (!FD.gitlab) throw new Error('gitlab transport not loaded');
+      return FD.gitlab(c);
+    }
     const api = (c.api || 'https://api.github.com').replace(/\/$/, ''),
       branch = c.branch || 'main',
       repo = `${api}/repos/${c.repo}`;
@@ -330,6 +352,7 @@
   github.save = save;
   github.clear = clear;
   github.hold = hold;
+  github.clean = clean; // réglage tel que la carte d'accès le donne (adresse collée) → réglage du transport
   github.legacy = legacy;
   github.persist = fn => {
     sink = fn;

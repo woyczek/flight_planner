@@ -158,8 +158,9 @@ fois le jeton testé ; « Tester » dit ce qui ne va pas : invitation pas encore
 sans droit sur le contenu. Un jeton classique ouvre tous les dépôts du compte : pour le dépôt d'un utilisateur, un
 compte GitHub dédié au vol est conseillé. Un fichier d'un autre format est refusé avec un message. La compagnie n'est
 écrite dans le dépôt que s'il n'en a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'assistant saute le compte
-et le jeton. Sans lanceur, l'appli ne joint qu'un dépôt GitHub : pour un dépôt framagit ou GitLab, faites l'accès sur un
-poste avec le lanceur.
+et le jeton. Sans lanceur, l'appli joint un dépôt GitHub ou un projet sur une instance GitLab (gitlab.com, framagit…) :
+collez l'adresse du projet (https://gitlab.com/groupe/projet) et le jeton d'accès de projet que l'administrateur vous a
+donné ; le jeton n'est envoyé qu'à cette instance.
 
 ## Administration
 
@@ -185,14 +186,15 @@ cartographique (`apps/cpco/map_parser.html`).
 
 ## Bon à savoir
 
-- **Le jeton** : un jeton à grain fin de github.com, sur le seul dépôt des données, « Contents » en lecture et
-  écriture, 90 jours au plus. Il n'est jamais réaffiché ; ne le collez dans aucun message.
+- **Le jeton** : sur github.com, un jeton à grain fin, sur le seul dépôt des données, « Contents » en lecture et
+  écriture, 90 jours au plus ; sur GitLab, un jeton d'accès de projet (un par pilote, à son trigramme), créé par
+  l'administrateur. Il n'est jamais réaffiché ; ne le collez dans aucun message.
 - **Vos réglages restent après la fermeture du navigateur** : l'identité, le jeton et la clé météo sont rangés au même
   endroit de l'appareil, jamais synchronisés ni dans une sauvegarde. Si Safari vous les a quand même fait perdre (il
   efface le stockage d'un site peu visité), ajoutez l'appli à l'écran d'accueil : elle y est mieux gardée. Le diagnostic
   (« Copier ») dit si le navigateur a promis de ne pas effacer (`storage.persisted`).
 - **Couper l'accès** : efface le jeton de cet appareil ; vos écritures en attente restent et partiront quand l'accès
-  sera de nouveau réglé. Téléphone perdu ou volé : supprimez aussi le jeton sur github.com.
+  sera de nouveau réglé. Téléphone perdu ou volé : supprimez aussi le jeton chez l'hébergeur (github.com, gitlab.com…).
 - **Réglages de la V2** : si ce navigateur a déjà servi à la V2, la carte « Réglages de la V2 trouvés » propose une fois
   de reprendre votre identité et votre accès.
 - **À propos** : liens vers cette aide et la feuille de route (ce qui est livré, en cours, prévu), puis le

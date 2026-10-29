@@ -1702,3 +1702,21 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - `job.drop()` in a `finally` of the job's thread: a `BaseException` no longer skips it.
   - `progress.actual` (`lat`, `lon`) stays exact: only the track is rounded (about 100 m); the user's question of tomorrow
     is about both (keep them shared, or on the device only).
+- **29 Oct 2026 — G1: the data repository on GitLab** (the user chose GitLab after the feasibility note; coordinator's
+  order: G1 then G2):
+  - `frame/store/transport_gitlab.js`, the same form as the GitHub transport, behind the same device setting: a pasted
+    project address says the host (`github.com` → GitHub, any other https host → a GitLab instance and its `/api/v4`).
+    No new setting, no change for the 15 places of the frame that call `FD.github`.
+  - Project access tokens, one per pilot: the onboarding is « the administrator creates, the pilot pastes »; the token
+    goes to the pasted instance only (header `PRIVATE-TOKEN`, never in an address, a message or the console; a
+    pagination link to another host is not followed). A malicious join link could name another host: the access card
+    shows the address it will use, and a token is pasted by hand — said in the security review's scope.
+  - The commit is atomic (`POST /repository/commits`); concurrency is checked on the head just before, and after, the
+    commit (GitLab has no « advance only from this parent » for a branch): a commit that landed on a moved branch is
+    reported as a conflict, the layer pulls and its merge finds its own changes there.
+  - The tree comes page by page (100), kept per head; bounding it to the declared prefixes is left for when a
+    measurement asks for it.
+  - The launcher registers `secrets/gitlab.json` (instance, project, token) like `ead`: the page gets « set » and the date,
+    never a character (noreg I11); G2 (« Jetons des pilotes ») will use it.
+  - Tested against a GitLab simulated in the page (bench A38, 21 checks); the real gitlab.com only by hand, on the
+    coordinator's and the user's go.

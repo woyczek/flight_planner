@@ -1635,7 +1635,12 @@ _ivao = {'at': 0.0, 'areas': None}
 #   secrets/<service>.json            clés de la suite (IVAO : apiKey, savedAt ; EAD Basic : user, password, savedAt) — Paramètres › Installation › Clés et services externes
 #   secrets/users/<TRI>.json          identifiants d'un utilisateur ({ ivao: { clientId, clientSecret } }) — Mon profil
 # Champs admis par service et portée ; écrits par POST /__setup/secrets, jamais relus par la page (indicateurs seuls).
-SECRET_FIELDS = {'app': {'ivao': {'apiKey': True}, 'ead': {'user': True, 'password': True}}, 'user': {'ivao': {'clientId': False, 'clientSecret': True}}}
+# gitlab : instance, projet et jeton d'accès du dépôt des données sur GitLab (secrets/gitlab.json, posé à la main sur le poste
+# de l'administrateur ; G2, la page « Jetons des pilotes », s'en servira) — comme ead, jamais un caractère vers la page
+SECRET_FIELDS = {'app': {'ivao': {'apiKey': True}, 'ead': {'user': True, 'password': True},
+                         'gitlab': {'instance': True, 'project': True, 'token': True}},
+                 'user': {'ivao': {'clientId': False, 'clientSecret': True}}}
+SECRET_BLIND = ('ead', 'gitlab')  # services dont la page ne reçoit que « réglé » et la date, jamais un caractère
 SECRETS = os.path.join(ROOT, 'secrets')
 
 
@@ -1727,7 +1732,7 @@ def secrets_view(tri=''):
     for service, fields in SECRET_FIELDS['app'].items():
         cur = _read_json(_secret_file('app', service=service))
         saved = cur.get('savedAt') if isinstance(cur.get('savedAt'), dict) else {}
-        if service == 'ead':  # identifiants EAD Basic : jamais le moindre caractère vers la page (réglé ou non, et quand)
+        if service in SECRET_BLIND:  # EAD Basic, GitLab : jamais le moindre caractère vers la page (réglé ou non, et quand)
             out['app'][service] = {k: {'set': bool(cur.get(k)), 'at': str(saved.get(k) or '') if cur.get(k) else ''} for k in fields}
             continue
         out['app'][service] = {k: {**_hint(cur.get(k)), 'at': str(saved.get(k) or '') if cur.get(k) else ''} for k in fields}

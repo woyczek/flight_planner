@@ -157,8 +157,9 @@ probado el token; «Probar» dice qué falla: invitación aún no aceptada, toke
 sobre el contenido. Un token clásico abre todos los repositorios de la cuenta: para el repositorio de un usuario, se
 aconseja una cuenta de GitHub dedicada al vuelo. Un archivo de otro formato se rechaza con un mensaje. La aerolínea solo
 se escribe en el repositorio si aún no tiene una. En un puesto cuyo data/ ya sigue este repositorio, el asistente se
-salta la cuenta y el token. Sin lanzador, la aplicación solo llega a un repositorio de GitHub: para un repositorio de
-framagit o GitLab, configure el acceso en un puesto con el lanzador.
+salta la cuenta y el token. Sin lanzador, la aplicación llega a un repositorio de GitHub o a un proyecto en una
+instancia GitLab (gitlab.com, framagit…): pegue la dirección del proyecto (https://gitlab.com/grupo/proyecto) y el token
+de acceso de proyecto que le dio el administrador; el token solo se envía a esa instancia.
 
 ## Administración
 
@@ -184,14 +185,15 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
 
 ## Conviene saber
 
-- **El token**: un token de grano fino de github.com, solo sobre el repositorio de datos, «Contents» lectura y
-  escritura, 90 días como máximo. Nunca se vuelve a mostrar; no lo pegue en ningún mensaje.
+- **El token**: en github.com, un token de grano fino, solo sobre el repositorio de datos, «Contents» lectura y
+  escritura, 90 días como máximo; en GitLab, un token de acceso de proyecto (uno por piloto, con su trigrama), creado por
+  el administrador. Nunca se vuelve a mostrar; no lo pegue en ningún mensaje.
 - **Sus ajustes se quedan al cerrar el navegador**: la identidad, el token y la clave meteorológica se guardan en el mismo
   sitio del dispositivo, nunca sincronizados ni en una copia. Si Safari se los hizo perder igualmente (borra el almacenamiento
   de un sitio poco visitado), añada la aplicación a la pantalla de inicio: allí está mejor guardada. El diagnóstico
   («Copiar») dice si el navegador prometió no borrar (`storage.persisted`).
 - **Cortar el acceso**: borra el token de este dispositivo; sus escrituras pendientes se quedan y saldrán cuando el
-  acceso vuelva a configurarse. Teléfono perdido o robado: borre también el token en github.com.
+  acceso vuelva a configurarse. Teléfono perdido o robado: borre también el token en el alojamiento (github.com, gitlab.com…).
 - **Ajustes de la V2**: si este navegador ya se usó para la V2, la tarjeta «Ajustes de la V2 encontrados» propone una
   vez retomar su identidad y su acceso.
 - **Acerca de**: enlaces a esta ayuda y a la hoja de ruta (lo entregado, en curso, previsto), luego el
