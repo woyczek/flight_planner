@@ -171,6 +171,9 @@
       sid: '#1b8a3a',
       star: '#d95500',
       app: '#0a86c4',
+      // mode « choisir sur la carte » (V3 § 10.23) : huit teintes, reprises en cycle, une par procédure (ligne de la liste, cartouche et
+      // tracé la même) ; toutes lisibles sur le fond du jour sans que le dessin ait à les foncer
+      procHues: ['#c2185b', '#1565c0', '#d84315', '#00796b', '#827717', '#2e7d32', '#7b1fa2', '#795548'],
       actual: '#c62828',
       wind: '#1a237e',
       missionSearch: ['#d0106a', 'rgba(208,16,106,.10)'],
@@ -183,6 +186,7 @@
     sid: '#5cd27a',
     star: '#ff9a4d',
     app: '#5cc4f5',
+    procHues: ['#f48fb1', '#64b5f6', '#ff8a65', '#4db6ac', '#dce775', '#81c784', '#ce93d8', '#bcaaa4'],
     wind: '#b3c7ff'
   };
   Object.freeze(PALETTE.day);
@@ -1163,7 +1167,10 @@
     // overRoute(ctx) : l'écran peint ses tracés au niveau de la route (procédures choisies), avant ces cartouches
     overRoute = null,
     // top(ctx) : ce que l'écran peint en dernier, par-dessus tout (les noms et contraintes des procédures : jamais couverts)
-    top = null
+    top = null,
+    // dim (0 à 1) : la part dont les couches de la Carte, de la route comprise, sont éteintes avant ce que l'écran peint au niveau de
+    // la route (mode « choisir sur la carte », V3 § 10.23) ; 0 : aucune
+    dim = 0
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
     // le thème ne vit que le temps du dessin (§ 10.29 e) : posé ici, remis à null en sortie (draw) ; les parties le reçoivent
@@ -1287,6 +1294,19 @@
         marks: mk,
         lines
       }, env)
+    }, {
+      // couches de la Carte éteintes : la part dim de ce qui est déjà peint s'efface (destination-out), le fond MapLibre l'est par la
+      // classe de la boîte ; ce que l'écran peint ensuite est entier
+      id: 'dim',
+      paint: c => {
+        if (!(dim > 0)) return;
+        c.save();
+        c.globalCompositeOperation = 'destination-out';
+        c.globalAlpha = Math.min(1, dim);
+        c.fillStyle = '#000';
+        c.fillRect(0, 0, W, H);
+        c.restore();
+      }
     }, {
       id: 'screenTraces', // l'écran peint ses tracés au niveau de la route (procédures choisies)
       paint: c => overRoute && overRoute(c)

@@ -205,9 +205,11 @@ export function buildOverlay(ctx, modesHtml) {
 export function syncButtons() {
   if (!S?.routeBtn) return;
   const on = !!S.boxOn,
-    flight = on && !onMission(),
+    pick = !!S.choose, // mode « choisir sur la carte » : seul Recentrer reste (Couches, mode, Édition, Suivre : hors sujet)
+    flight = on && !onMission() && !pick,
     edit = flight && S.edit.on;
   show(S.fitBtn, on);
+  show(S.layersBtn, !pick);
   show(S.routeBtn, flight && !edit);
   show(S.modeBtn, flight && !edit);
   show(S.editBtn, flight);
@@ -332,6 +334,7 @@ export function header() {
 export function helpAnchor() {
   if (!S) return null;
   if (S.edit.on) return 'maps-edit';
+  if (S.choose) return 'maps-choose';
   const k = S.dpanel;
   if (k === 'layers') return 'maps-layers';
   if (k === 'weather') return 'maps-weather';

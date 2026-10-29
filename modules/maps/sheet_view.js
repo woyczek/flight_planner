@@ -54,6 +54,10 @@ import {
 import {
   covRows
 } from './coverage.js';
+import {
+  chooseExit,
+  chooseRender
+} from './choose.js';
 
 /** Positions de la feuille, dans l'ordre de la primitive. */
 const SHEET_POS = ['collapsed', 'default', 'expanded'];
@@ -224,12 +228,14 @@ export function endData(kind = null) {
 }
 /** Fermeture voulue (✕, Échap) : le contenu quel qu'il soit ; la coupe ferme sur le profil (et le choix suit). */
 export function closeData() {
+  if (S.dpanel === 'choose') return chooseExit(); // ✕ ou Échap : le mode choix se retire, la carte reprend le vol
   if (S.dpanel === 'ad' || S.vfrPin) return unpinAd();
   if (S.dpanel === 'weather') keep.view = 'profile';
   endData();
 }
 /** Dessin de la feuille redessiné sans relecture (taille, curseur, design) : la coupe si elle est montrée. */
 export function redrawSheet() {
+  if (S?.dpanel === 'choose') chooseRender(); // les teintes suivent le jour ou la nuit
   if (S?.dpanel === 'weather') redrawWeather();
 }
 /** Le vol a changé ou la feuille revient : la coupe suit le choix « Profil · Météo » (jamais rejoué sur une feuille repliée). */

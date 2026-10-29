@@ -85,6 +85,12 @@ import {
 import {
   covClear
 } from './coverage.js';
+import {
+  chooseAsk,
+  chooseLoad,
+  chooseStart,
+  chooseEvents
+} from './choose.js';
 
 export const meta = {
   id: 'maps',
@@ -112,7 +118,8 @@ export const meta = {
   }],
   // gardés à l'installation (hors ligne dès la première visite)
   files: ['state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'data.js?v=0', 'layers.js?v=0',
-    'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'coverage.js?v=0', 'tips.js?v=0', 'lv.js?v=0', 'vfr.js?v=0',
+    'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'choose.js?v=0', 'coverage.js?v=0', 'tips.js?v=0', 'lv.js?v=0',
+    'vfr.js?v=0',
     'flight_time.js?v=0',
     'mission_view.js?v=0',
     'weather.js?v=0',
@@ -172,7 +179,10 @@ export async function mount(el, ctx) {
     },
     map: null,
     plain: false,
-    noted: {}
+    noted: {},
+    // le mode « choisir sur la carte » (#maps?choose=dep|arr&icao=LFXX, V3 § 10.23) : la demande est lue et retirée de l'adresse
+    // tout de suite ; null hors du mode
+    choose: chooseAsk(ctx)
   });
   el.innerHTML = skeleton(ctx);
   const q = s => el.querySelector(s),
@@ -223,7 +233,7 @@ export async function mount(el, ctx) {
     toggleModes(false);
     if (m !== S.preset) setPreset(m);
   });
-  S.stops.push(missionEvents(), ...profileEvents(), ...weatherEvents());
+  S.stops.push(missionEvents(), ...profileEvents(), ...weatherEvents(), chooseEvents());
   layersEvents();
   sheetEvents();
   // fond uni (sans MapLibre) : la boîte reçoit le survol et le toucher
@@ -290,6 +300,11 @@ export async function mount(el, ctx) {
     fillPick();
   }
   if (!S) return;
+  // mode « choisir sur la carte » : les procédures du terrain sont lues avant le fond, qui part de la vue qu'elles donnent (S.fit)
+  if (S.choose) {
+    await chooseLoad();
+    if (!S) return;
+  }
   // fond à tuiles si possible, sinon fond uni
   const tiles = S.route.points.length || S.mission ? await startTiles() : false;
   if (!S) return;
@@ -300,6 +315,7 @@ export async function mount(el, ctx) {
     T?.tuneSetup(el.querySelector('.mp-tune'));
   }
   status();
+  if (S.choose) chooseStart();
   schedule();
   if (!ctx.query?.mission) S.stops.push(...watchFlight());
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', e => {

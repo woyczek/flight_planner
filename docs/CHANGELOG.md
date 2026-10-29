@@ -12,6 +12,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: choosing on the map, simplified** (`modules/maps/choose.js`; V3 § 10.23, § 10.24; maps SPEC § 5.1, help ×4, noreg D60):
+  `#maps?choose=dep|arr&icao=LFXX` (read and removed at mount by `ctx.consume`) opens the Map on the aerodrome's published
+  procedures, the base map and the Map's own layers dimmed (`mp-choosing`, the new `dim` option of `MapsRender.draw`), **one
+  family per opening** — the first the flight has not chosen yet: departure runway, SID, transition; arrival runway, STAR,
+  approach, transitions. Each procedure has one hue of eight (`MapsRender.palette().procHues`, cycled), the same on its row, its
+  label and its trace; one label per exit (SID) or entry point (STAR, approach) stacks the names; the transitions are drawn
+  only for the highlighted procedure; the runway family draws every runway as an arrow (`arrowOf`, shared with the chosen
+  runway's), the chosen one bold. The sheet lists the family ("Aucune" first, seven rows then scrolling, ⌛ and ⚠ from
+  `frame/lib/procedures.js`, runway chips as a filter); **one tap on a row, a label or a trace** replaces the address by
+  `#fuel?focus=<side>&<key>=<id>` (`none` for "Aucune"); the Map writes nothing to the flight. Doubt records and records without a name are never listed (as in Fuel).
+  Fuel's side (the button, the key's consumption) is its own lot.
+
 - **Data: « Construire » the aeronautical base on the launcher** (`modules/data/` `module.js`, `model.js`, `texts.js`, `help/` x4; SPEC § 3, § 5.4, § 6.5; cases L1, L6–L10; V3 data regeneration, D5 front end) — first action of the module, in the Aeronautical base group: a build panel with a checkbox per zone of the coverage (all ticked) and, only when a ticked zone feeds them, the personal-licence sources (ENAIRE, NATS, X-Plane: unticked by default, each with its « only if the data repository is used by you alone » line; a hint when X-Plane is ticked, the build in the page not being possible yet). « Construire » starts `regen/job { set: 'base', verb: 'build', args: { zones, personal } }` through `ctx.launcher.job`; the bar, « n zones sur m », the step, the elapsed time and one line per zone (waiting, building n / m sources, built, failed with the reason of its code, cancelled) follow the job's view; « Arrêter » cancels; at mount `resume` follows a running build, or says « Construction interrompue » (state `interrupted`) or the summary of the last one. One notification with the counts at the end only, the summary and what to do in the panel (partial, failed, cancelled, `no-browser`, `xplane-in-page`), the rows re-read; the grey button says why once (no launcher, another operation running, no zone, offline), the refusals (409, 429 too-soon, 404 unknown route, 400) are worded. The last 50 operations go to `cache/data/journal.json` and to a journal fold at the foot. `meta.launcher` declares `regen/job` and `regen/job/cancel` (a declaration of `regen/job` alone does not cover the cancel call the job client makes). Tests against a fake launcher; the personal-licence table of `model.js` is checked against `shared/aero_zones.js`.
 - **Frame: the flown track, privacy** (`frame/lib/trail.js`, `frame/app.js`; frame INTEGRATION § 6, DECISIONS, help ×4;
   noreg A35): points to about 100 m; the track is carried on only for the same start (`trailFrom`); the Status block and

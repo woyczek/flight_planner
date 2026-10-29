@@ -316,6 +316,44 @@ export const TX = {
   adProcChangeTip: ['Changer la piste et les procédures dans Carburant', 'Change the runway and procedures in Fuel',
     'Piste und Verfahren im Kraftstoff ändern', 'Cambiar la pista y los procedimientos en Combustible'
   ],
+  // mode « choisir sur la carte » (V3_SPECIFICATION § 10.23, choose.js) : le titre de la famille montrée (une par ouverture), la
+  // consigne, « Aucune », les puces de piste, les lignes, les marques ⚠ en infobulle, les cas vides
+  chTitle: {
+    rwy: ['Piste · {icao}', 'Runway · {icao}', 'Piste · {icao}', 'Pista · {icao}'],
+    sid: ['SID · {icao}', 'SID · {icao}', 'SID · {icao}', 'SID · {icao}'],
+    star: ['STAR · {icao}', 'STAR · {icao}', 'STAR · {icao}', 'STAR · {icao}'],
+    app: ['Approche · {icao}', 'Approach · {icao}', 'Anflug · {icao}', 'Aproximación · {icao}'],
+    trans: ['Transition de {p} · {icao}', 'Transition of {p} · {icao}', 'Übergang von {p} · {icao}', 'Transición de {p} · {icao}'],
+    appTrans: ['Transition d’approche de {p} · {icao}', 'Approach transition of {p} · {icao}', 'Anflugübergang von {p} · {icao}',
+      'Transición de aproximación de {p} · {icao}'
+    ]
+  },
+  chHint: ['Touchez un tracé, un cartouche ou une ligne pour choisir.', 'Tap a trace, a label or a row to choose.',
+    'Spur, Beschriftung oder Zeile antippen, um zu wählen.', 'Toque un trazado, una etiqueta o una línea para elegir.'
+  ],
+  chNone: ['Aucune', 'None', 'Keine', 'Ninguna'],
+  chRwy: ['Piste {r}', 'Runway {r}', 'Piste {r}', 'Pista {r}'],
+  chChips: ['Filtrer par piste', 'Filter by runway', 'Nach Piste filtern', 'Filtrar por pista'],
+  chChipTip: ['Seulement ce qui dessert la piste {r}', 'Only what serves runway {r}', 'Nur was Piste {r} bedient',
+    'Solo lo que sirve a la pista {r}'
+  ],
+  chEmpty: ['Rien de publié à choisir pour {icao}.', 'Nothing published to choose for {icao}.',
+    'Für {icao} ist nichts zur Auswahl veröffentlicht.', 'No hay nada publicado para elegir en {icao}.'
+  ],
+  chEmptyChip: ['Aucune ne dessert la piste {r}.', 'None serves runway {r}.', 'Keine bedient Piste {r}.',
+    'Ninguna sirve a la pista {r}.'
+  ],
+  chConflictRwy: ['Ne dessert pas la piste {rwy}', 'Does not serve runway {rwy}', 'Bedient Piste {rwy} nicht',
+    'No sirve a la pista {rwy}'
+  ],
+  chConflictStarApp: ['Ne dessert aucune piste de {app}', 'Serves no runway of {app}', 'Bedient keine Piste von {app}',
+    'No sirve a ninguna pista de {app}'
+  ],
+  chNoData: ['Ni piste ni procédure connue pour {icao} : la carte reste telle quelle.',
+    'No runway or procedure known for {icao}: the map stays as it is.',
+    'Keine Piste und kein Verfahren für {icao} bekannt: die Karte bleibt unverändert.',
+    'Ninguna pista ni procedimiento conocidos para {icao}: el mapa queda como está.'
+  ],
   // couche « Procédures » (V3_SPECIFICATION § 10.22) : légende (une ligne par niveau), ligne de la carte du terrain (le niveau, puis la
   // raison d'AeroCatalogue.COVERAGE quand le catalogue du cadre la donne, « périmé », et les procédures détenues)
   lgCov: {

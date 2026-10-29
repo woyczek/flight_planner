@@ -36,6 +36,10 @@ import {
   closeLv
 } from './lv.js';
 import {
+  chooseTap,
+  chooseHover
+} from './choose.js';
+import {
   adAt,
   adHover,
   pinAd,
@@ -173,6 +177,7 @@ export function llAt(x, y) {
 /** Survol de la carte en (x, y) : un terrain (aperçu de ses points de report), sinon l'infobulle de ce qui est dessous,
  *  sinon rien (l'infobulle reste 5 s). */
 export function hoverMap(x, y) {
+  if (S.choose) return chooseHover(x, y); // mode choix : seul ce qu'on peut choisir réagit
   const t = tipAt(x, y),
     ad = t || onMission() ? null : adAt(x, y);
   previewAd(ad?.icao || null);
@@ -204,6 +209,7 @@ export function mapTip(lat, lon, x, y) {
  *  point ouverte qui se ferme, l'infobulle de ce qui est dessous, le curseur sur la route, les espaces du point (SPEC § 11,
  *  § 16). */
 export function tapAt(x, y, lat, lon) {
+  if (S.choose) return chooseTap(x, y); // mode choix : un toucher sur un tracé ou un cartouche choisit, ailleurs rien
   lon = outLon(lon); // la vue peut être sur une autre copie du monde : le test des espaces se fait dans [-180, 180[
   if (!S.modeOpts.hidden) return toggleModes(false);
   closeLv();

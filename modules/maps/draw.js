@@ -55,6 +55,10 @@ import {
   covSync,
   covFlush
 } from './coverage.js';
+import {
+  chooseLayout,
+  DIM
+} from './choose.js';
 
 // ---------------------------------------------------------------- un dessin par tour d'animation
 let frame = 0;
@@ -300,10 +304,13 @@ function draw() {
     zoomOn = k => MapsRender.visibleAt(S.profile, k, zv),
     // procédures choisies (SID, STAR, approche) : mise en page à l'écran ; leurs libellés se réservent dans le placeur de la
     // carte, après ceux de la route
-    procs = mission ? null : procLayout(ctx, toC, pxDeg, zoomOn),
-    rwys = mission ? [] : runwayArrows(toC, pxDeg, zoomOn),
+    // mode « choisir sur la carte » (V3 § 10.23) : les procédures du terrain à choisir, tracées par choose.js à la place de celles du vol,
+    // sur les couches de la Carte éteintes ; null hors du mode
+    pick = mission ? null : chooseLayout(ctx, toC, W, H),
+    procs = mission || pick ? null : procLayout(ctx, toC, pxDeg, zoomOn),
+    rwys = mission || pick ? [] : runwayArrows(toC, pxDeg, zoomOn),
     // couche « Procédures » : le niveau de couverture des terrains visibles (null : couche cachée ou absente)
-    cov = mission ? null : covSync();
+    cov = mission || pick ? null : covSync();
   if (S.tuneEl) got('tune')?.markTune(zReal, zv, (shown.n + shown.s) / 2, W, H);
   // nos villes dessinées à ce zoom : les noms de lieux du fond s'effacent (sinon « Mérignac » en double)
   baseNames(!!S.profile?.cities && !!S.data?.data?.cities?.length && ['citiesBig', 'citiesMid', 'citiesSmall'].some(zoomOn));
@@ -332,15 +339,16 @@ function draw() {
     level,
     detail: mission ? 0 : detailShift(),
     hideVrp: mission ? null : vfrVrpIds(),
-    lines: mission ? null : routeLines(),
+    lines: mission || pick ? null : routeLines(),
     cov,
-    reserve: procs ? pl => procs.reserve(pl) : null,
-    legs: mission ? null : S.route?.path || null,
-    overRoute: procs || rwys.length ? c => {
+    reserve: pick ? pl => pick.reserve(pl) : procs ? pl => procs.reserve(pl) : null,
+    legs: mission || pick ? null : S.route?.path || null,
+    dim: pick ? DIM : 0,
+    overRoute: pick ? c => pick.paint(c) : procs || rwys.length ? c => {
       if (procs) drawProcs(c, procs);
       drawRunways(c, rwys); // la piste choisie en flèche, par-dessus le tracé de sa procédure
     } : null,
-    top: procs ? c => drawProcLabels(c, procs) : null,
+    top: pick ? c => pick.top(c) : procs ? c => drawProcLabels(c, procs) : null,
     mission: mission && S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones
@@ -353,12 +361,13 @@ function draw() {
   S.adHits = got0.aerodromes || [];
   S.navHits = got0.navaids || [];
   S.vrpHits = got0.vrps || [];
-  if (altn) drawAltn(ctx, toC, altn, true);
-  drawPlanOnMap(ctx, toC, [...(got0.routeLabels || []), ...(procs?.labels || []).map(l => l
+  // mode choix : rien par-dessus les procédures à choisir (ni dégagement, ni TOC / TOD, ni points de report, ni vents, ni position)
+  if (altn && !pick) drawAltn(ctx, toC, altn, true);
+  if (!pick) drawPlanOnMap(ctx, toC, [...(got0.routeLabels || []), ...(procs?.labels || []).map(l => l
     .r)]); // TOC / TOD : ni sur la route ni sur une procédure
-  if (!mission) drawVfr(ctx, toC);
-  S.windHits = !mission && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
-  if (!mission && isStarted(S.route.flight)) drawProgress(ctx, toC);
+  if (!mission && !pick) drawVfr(ctx, toC);
+  S.windHits = !mission && !pick && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
+  if (!mission && !pick && isStarted(S.route.flight)) drawProgress(ctx, toC);
   S.toC = toC;
   if (S.edit.on) got('edit')?.drawEdit(ctx, toC);
   if (S.data && !S.drawn) {

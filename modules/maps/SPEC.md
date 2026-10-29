@@ -17,7 +17,7 @@ The Pilot application's map, fast on a phone:
 
 | File | Role |
 |---|---|
-| `module.js` and the files it imports | the screen (§ 4–14), split by concern (INTEGRATION § 1): `state.js`, `texts.js`, `style.js`, `screen.js`, `draw.js`, `data.js`, `layers.js`, `sheet_view.js`, `profile_view.js`, `procs.js`, `coverage.js`, `tips.js`, `lv.js`, `vfr.js`, `flight_time.js`, `mission_view.js`, `weather.js`; on demand (`meta.lazy`) `edit.js` (§ 12) and `tune.js` (§ 14); no file above 60 KB |
+| `module.js` and the files it imports | the screen (§ 4–14), split by concern (INTEGRATION § 1): `state.js`, `texts.js`, `style.js`, `screen.js`, `draw.js`, `data.js`, `layers.js`, `sheet_view.js`, `profile_view.js`, `procs.js`, `choose.js`, `coverage.js`, `tips.js`, `lv.js`, `vfr.js`, `flight_time.js`, `mission_view.js`, `weather.js`; on demand (`meta.lazy`) `edit.js` (§ 12) and `tune.js` (§ 14); no file above 60 KB |
 | `render.js` (`window.MapsRender`) | the rendering core (§ 3), no interface text: design tokens, display profile, geometry, background, aerodromes and navaids, obstacles, fixes, VRP, cities, mission, grid and MORA, zoom logic, `draw()` |
 | `render_airspace.js`, `render_route.js` | its two parts, classic scripts loaded after it (split on 29 Oct 2026 to stay under 60 KB): airspaces (choice along the route, shapes and labels), airways, AAR and NAT, the airspaces and airways at a point; the route's labels and trace. They read the core's helpers in `MapsRender.kit` (frozen) and expose their drawing as frozen namespaces, `MapsRender.parts.airspace` and `.route`, which `draw()` calls with a frozen `env = { theme, placer, pal }`; the theme lives for the drawing only (V3 § 10.29 e); the public functions stay on `MapsRender` |
 | `profile.js` (`window.MapsProfile`) | the vertical profile (§ 8) |
@@ -109,7 +109,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   In the code (V3 § 10.29 d) this order is **one list of layers** in `draw()`, each `{ id, reserve(), paint(ctx) }`: every
   reservation first, in the order of the list (`routeLabels`, `screenLabels`, `missionPoints`, `cities`), then every painting:
   `zoneShapes`, `airways`, `points` (aerodromes, navaids, airway fixes), `aar`, `nat`, `airwayNames`, `vrp`, `zoneLabels`,
-  `gridMora`, `missionZones`, `missionPoints`, `cities`, `route`, `screenTraces` (the screen's `overRoute`: the chosen
+  `gridMora`, `missionZones`, `missionPoints`, `cities`, `route`, `dim` (the choose mode: `dim` option, 0 to 1, the share by which what is
+  already painted fades), `screenTraces` (the screen's `overRoute`: the chosen
   procedures), `airwayOver` (the boxes over the path), `screenTop` (the screen's `top`: the procedures' labels, last).
   It returns the frames it drew for the tooltips and the gestures: `airways [{ x, y, r, g }]`, `labels`, `barbs`,
   `navaids [{ n, x, y, merged }]`, `aerodromes [{ a, x, y }]`, `vrps`, `tocTod`, and `zoom { shifted, effective, tier,
@@ -278,6 +279,42 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   The aerodrome's card (§ 16) shows the choice with a "Change" button to `#fuel?focus=arr` (`dep` for the departure).
 - **The common cursor** on the map: a blue ring (`--sog-accent`); a tap within 32 px of the route sets it to the nearest
   profile sample (§ 8.4).
+
+### 5.1 Choosing on the map (`choose.js`; V3_SPECIFICATION § 10.23)
+
+Fuel's "Sur la carte" button opens `#maps?choose=dep|arr&icao=LFXX`. The Map reads the request at mount with `ctx.consume('choose',
+'icao')` (the address becomes `#maps`) and, with a flight and an aerodrome, shows the **choose mode** (`S.choose`): nothing else
+of the Map is offered (the buttons but "Recentre" are hidden, the sheet's content is the list), a mission map or the tuning page never
+enters it.
+
+- **What is read**: `aerodb.procedures(icao)` (the published records; a record of status `doubt` is never asked for, hence never
+  listed), `aerodb.runways(icao)`, `aerodb.aerodromes({ icao })` (the axis, when nothing else names a runway), the flight's
+  `route.procedures` through `proceduresOf`. Every rule is `frame/lib/procedures.js` (`runwayChoices`, `appChoices`,
+  `transitionsOf`, `orderProcedures`, `conflictsOf`, `servesRwy`, `nameOf`): the mode only displays; a record without a name (empty name
+  or `NONAME` in its id) is not listed either, the rule of Fuel's lists (a choice made on the Map is always one Fuel shows).
+- **One family per opening**, the first the flight has not chosen yet (absent = not chosen; `null` = "Aucune" = chosen) that has
+  something to offer, in the order of the side: departure `rwy`, `sid`, `trans`; arrival `rwy`, `star`, `app`, `trans` (the STAR's),
+  `appTrans`. Everything chosen: the first family with something to offer, from the start. The keys are those of
+  `route.procedures` v2.
+- **View**: `S.fit` (`viewOf`) is the box of the family's points and the aerodrome (3 NM margin); the base map's box takes the class
+  `mp-choosing` (opacity), and `MapsRender.draw({ dim })` fades every Map layer, the route's included, by `DIM` (.6) before the
+  screen paints its own (the `dim` layer, between `route` and `screenTraces`); the flight's own procedures, runway arrows,
+  VFR points, winds, TOC / TOD and position are not drawn.
+- **Hues**: one per procedure, `MapsRender.palette(dark).procHues` (eight, cycled by the procedure's rank in the family's list,
+  stable under the runway filter), the same on the row, the label and the trace. ⌛ (grey, symbol only) = read under an earlier cycle;
+  ⚠ (orange) = `conflictsOf`, the reason in the row's `title`.
+- **Map**: a trace per procedure (a SID starts at its runway's threshold); **one label per exit point (SID) or entry point (STAR,
+  approach)** stacking the names that meet there, reserved in the placer and kept inside the map; the **transitions only for the
+  highlighted procedure** (a row, a label or a trace under the pointer or focused), dashed in its hue; in a transition family the
+  procedure whose transition is chosen is a thin grey line. In the runway family every runway is an arrow (`arrowOf`,
+  `drawRunways`), the chosen one bold.
+- **Sheet** (`openData('choose', …)`): the title ("STAR · LFPO"), the hint (expanded sheet only), the runway chips (at most 7, a
+  filter by `servesRwy`, none for the runways or the transitions, none with one runway), then the list: **"Aucune" first**, **seven
+  rows visible**, the rest scrolls; ✕ and Escape leave the mode (the Map takes the whole flight back).
+- **One tap chooses**: a tap on a row, a label or a trace (the nearest within 14 px) does `location.replace('#fuel?focus=<side>&
+  <key>=<id>')` (`none` for "Aucune", the runway without "RW"); the Map writes nothing to the flight. "Cancel" is the frame's
+  "← Fuel". Fuel consumes the key (`ctx.consume`), writes and says what changed.
+- Texts `TX.ch*` (×4); help anchor `maps-choose`; cases D60.
 
 ## 6. Map contents
 
@@ -841,7 +878,7 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 ## 18. Addresses and DOM contract
 
 **Addresses** (`ctx.query`): `#maps` (the current flight); `#maps?mission=<ID>&map=<file>` (§ 15); `#maps?tune=1`
-(§ 14); `#maps?view=<west>,<south>,<east>,<north>` (the initial camera, degrees; tests and links). The dual view
+(§ 14); `#maps?choose=dep|arr&icao=<ICAO>` (§ 5.1, consumed at mount); `#maps?view=<west>,<south>,<east>,<north>` (the initial camera, degrees; tests and links). The dual view
 (`?with=fuel`) is the frame's. Links out: `#fuel?from=maps&focus=route`, `#atmosphere`, `#settings`.
 
 **DOM contract** (read by the tests and the frame; class and attribute names are part of the module's interface):
@@ -857,6 +894,7 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 | weather cut | body `data-axis="1"`, `data-window`, `data-top` (ft), `data-strips` |
 | strip, notes | `.mp-strip`, `.mp-notes` (not shown at the default position) |
 | airspaces | `.mp-lv` (content), `.mp-lv-col` (graph column), `.mp-lv-list`, `.mp-lv-n`, `.mp-lv-name`, `.mp-lv-lim`, `.mp-lv-unk` (unreadable ceiling), `details.mp-lv-also` |
+| choose mode | `.mp-box.mp-choosing` (the base map dimmed); body `.mp-dbody[data-kind=choose]` > `.mp-ch[data-family]` > `.mp-ch-chips` (`.mp-ch-chip[data-rwy]`, `aria-pressed`) and `.mp-ch-list` of `.mp-ch-row[data-id]` (`data-id=none` first; `data-hl`; `--c` the hue) |
 | tooltip | `.mp-tip.mp-hover`, its "Aussi ici" line `.mp-also` |
 | Layers | `.mp-layers` (the content, kept by the module), the complexity block `.mp-l-detail` (value `[data-detail-v]`), help `#mp-detail-help`, boxes `[data-layer=<key>]`, "Around the route only" `.mp-l-main`, the selectors `select.mp-pick` and `select.mp-mappick` (last) |
 | VFR, point card | `.mp-vfr-pts` (points list); the chosen runway and procedures of the flight's aerodrome `.mp-ad-proc[data-proc=dep\|arr]` with its `[data-go="fuel?focus=dep\|arr"]` button; the route point's card `.mp-tip.mp-pcard` (`role="dialog"`) |

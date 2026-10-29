@@ -134,7 +134,7 @@ export function routeLines() {
 }
 /** Une chose à écrire près de q, dans un rectangle de la taille w × h : le premier des quatre coins qui ne recouvre rien de
  *  déjà placé (pl.take), sinon null ; force : posé au premier coin quoi qu'il arrive. */
-function place(pl, q, w, h, force) {
+export function place(pl, q, w, h, force) {
   const spots = [
     [7, -h - 3],
     [7, 4],
@@ -159,7 +159,7 @@ function place(pl, q, w, h, force) {
     y1: q.y + dy + h
   };
 }
-const LINE_H = 16;
+export const LINE_H = 16;
 /** Largeur d'une ligne de morceaux (la police du libellé étant posée). */
 const widthOf = (ctx, line) => line.parts.reduce((w, c) => {
   ctx.font = `${c.b ? 700 : 600} 11px Arial,sans-serif`;
@@ -343,7 +343,7 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
 }
 
 /** Écrit des lignes de morceaux dans le rectangle r : liseré du fond, puis le texte, souligné ou surligné (SPEC § 5). */
-function drawLines(ctx, lines, r, col) {
+export function drawLines(ctx, lines, r, col) {
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   ctx.lineJoin = 'round';
@@ -639,28 +639,33 @@ export function runwayArrows(toC, pxDeg, zoomOn = null) {
       ['arr', P.arrRwy, r.arr || r.points?.at?.(-1)?.id]
     ]) {
     if (!rw || !v?.[side]?.rwy || rwNo(rw.id) !== rwNo(v[side].rwy)) continue;
-    const list = S.rwys?.[side] || [],
-      // le seuil d'atterrissage (décalé : dthr) à l'arrivée, le seuil de la piste au départ
-      th = side === 'arr' && rw.dthr && num(rw.dthr.lat) && num(rw.dthr.lon) ? rw.dthr : rw;
-    if (!num(th.lat) || !num(th.lon)) continue;
-    const brg = runwayBearing(rw, list, magVarOf(icao));
-    if (brg === null) continue;
-    const o = list.find(x => rwNo(x?.id) === oppositeId(rw.id)),
-      lenNm = num(rw.length) && +rw.length > 0 ? +rw.length / 1852 : o && num(o.lat) ? gcNmPlain(th, o) : 1,
-      end = ahead({
-        lat: +th.lat,
-        lon: +th.lon
-      }, brg, lenNm);
-    out.push({
-      side,
-      a: toC(+th.lat, +th.lon),
-      b: toC(end.lat, nearLon(end.lon, +th.lon)),
-      tip: side === 'dep' ? 'b' : 'a',
-      name: rwNo(rw.id),
-      col: colOf(side === 'dep' ? 'sid' : P.app ? 'app' : 'star')
-    });
+    const a = arrowOf(toC, side, rw, S.rwys?.[side] || [], magVarOf(icao), colOf(side === 'dep' ? 'sid' : P.app ? 'app' : 'star'));
+    if (a) out.push(a);
   }
   return out;
+}
+/** Flèche d'une piste rw (fiche d'aerodb) du côté side, parmi les pistes list du terrain : { side, a, b, tip, name, col } (le seuil
+ *  d'atterrissage, décalé, à l'arrivée ; le seuil de la piste au départ ; longueur de la fiche, sinon jusqu'au seuil opposé, sinon
+ *  1 NM) ; null sans position ni relèvement. Partagée avec le mode « choisir sur la carte » (choose.js), qui les dessine toutes. */
+export function arrowOf(toC, side, rw, list, magVar, col) {
+  const th = side === 'arr' && rw.dthr && num(rw.dthr.lat) && num(rw.dthr.lon) ? rw.dthr : rw;
+  if (!num(th.lat) || !num(th.lon)) return null;
+  const brg = runwayBearing(rw, list, magVar);
+  if (brg === null) return null;
+  const o = list.find(x => rwNo(x?.id) === oppositeId(rw.id)),
+    lenNm = num(rw.length) && +rw.length > 0 ? +rw.length / 1852 : o && num(o.lat) ? gcNmPlain(th, o) : 1,
+    end = ahead({
+      lat: +th.lat,
+      lon: +th.lon
+    }, brg, lenNm);
+  return {
+    side,
+    a: toC(+th.lat, +th.lon),
+    b: toC(end.lat, nearLon(end.lon, +th.lon)),
+    tip: side === 'dep' ? 'b' : 'a',
+    name: rwNo(rw.id),
+    col
+  };
 }
 /** Distance (NM) entre deux points proches (plan local). */
 const gcNmPlain = (a, b) => Math.hypot((+b.lat - +a.lat) * 60, (((+b.lon - +a.lon) + 540) % 360 - 180) * 60 * Math.cos(+a.lat * RAD));
@@ -688,8 +693,8 @@ export function drawRunways(ctx, arrows) {
         y: t.y - uy * h
       };
     for (const [col, lw] of [
-        [S.theme.bg, 8],
-        [w.col, 4.5]
+        [S.theme.bg, (w.lw || 4.5) + 3.5],
+        [w.col, w.lw || 4.5]
       ]) {
       ctx.strokeStyle = col;
       ctx.lineWidth = lw;

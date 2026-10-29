@@ -178,8 +178,10 @@ export function flownProfilePoints(flown, f) {
   };
   return pts;
 }
-/** Emprise donnée par l'adresse (#maps?view=ouest,sud,est,nord), sinon null. */
+/** Emprise imposée : celle des procédures du mode « choisir sur la carte », sinon celle de l'adresse (#maps?view=ouest,sud,est,nord),
+ *  sinon null. */
 export const viewOf = () => {
+  if (S.choose?.fit) return S.choose.fit;
   const v = String(S.ctx.query?.view || '').split(',').map(Number);
   return v.length === 4 && v.every(Number.isFinite) ? {
     w: v[0],

@@ -1179,3 +1179,130 @@ def d50(c):
     c.js(_COV_PIN, ['LFAB', 47.30, -1.75])
     c.wait(800)
     c.eq(c.count('.mp-ad-cov'), 0, 'no coverage line on the aerodrome card', what='line')
+
+
+# ------------------------------------------------------------------------------------------------------ D60
+# The choose mode (V3 § 10.23, maps SPEC § 5.1): #maps?choose=arr&icao=LFML.  LFML holds nine STARs (S1A and S2A enter at the same fix
+# ENT1, S9A serves 13 only, the odd ones serve 31 and the even ones serve both, S4A is read under an earlier cycle), a STAR the reading
+# doubted (DOUBTX: status doubt), one without a name (NONAME), two approaches and two runways.
+_CH_RWY = [{'id': '31', 'lat': 43.44, 'lon': 5.20, 'elev': 21, 'qfu': 310, 'displaced': 0, 'length': 3000},
+           {'id': '13', 'lat': 43.4367, 'lon': 5.215, 'elev': 21, 'qfu': 130, 'displaced': 0, 'length': 3000}]
+
+
+def _ch_star(n, rwys, status='check', cycle=None, entry=None, name=None):
+    lat, lon = 43.9 + .05 * n, 4.2 + .1 * n
+    p = _proc('LFML', 'STAR', name or f'S{n}A', rwys[0], [_pp(1, entry or f'EN{n:02d}', lat, lon), _pp(2, f'MD{n:02d}', 43.6, 4.9)],
+              status=status, cycle=cycle or AERO_CYCLE)
+    p['runways'] = rwys
+    return p
+
+
+_CH_PROCS = [_ch_star(1, ['31'], entry='ENT1'), _ch_star(2, ['31', '13'], entry='ENT1'), _ch_star(3, ['31']),
+             _ch_star(4, ['31', '13'], cycle='2025-01-02'), _ch_star(5, ['31']), _ch_star(6, ['31', '13']), _ch_star(7, ['31']),
+             _ch_star(8, ['31', '13']), _ch_star(9, ['13']), _ch_star(10, ['31'], status='doubt', name='DOUBTX'),
+             _ch_star(11, ['31'], name='NONAME'),
+             _proc('LFML', 'APP', 'I31', '31', [_pp(1, 'XF01', 43.52, 4.95), _pp(2, 'RW31', 43.44, 5.20)], cycle=AERO_CYCLE),
+             _proc('LFML', 'APP', 'I13', '13', [_pp(1, 'XF13', 43.35, 5.45), _pp(2, 'RW13', 43.4367, 5.215)], cycle=AERO_CYCLE)]
+_CH_FILE = {'schema': 1, 'icao': 'LFML', 'cycle': AERO_CYCLE, 'updated_at': '2025-01-02T00:00:00Z', 'procedures': _CH_PROCS, 'runways': _CH_RWY}
+_CH_STAR1 = 'LFML.STAR.S1A.RW31.NONE'
+# the address the Map asks for is caught as it changes (Fuel consumes its keys at mount: the address read afterwards says nothing), and the
+# data adapter's two writers (put, remove) are counted: the Map writes nothing
+_CH_HASH = """() => { window.__hc = []; window.__wr = []; window.addEventListener('hashchange', e => window.__hc.push(e.newURL));
+  const d = window.__mp.S.ctx.data; for (const k of ['put', 'remove']) { const o = d[k]; d[k] = (...a) => { window.__wr.push([k, a[0]]); return o.apply(d, a) } }
+  return true }"""
+_CH_ROWS = """() => { const l = document.querySelector('.mp-ch-list'), lr = l.getBoundingClientRect();
+  return { rows: [...l.querySelectorAll('.mp-ch-row')].map(b => ({ id: b.dataset.id, text: b.textContent.trim(), c: b.style.getPropertyValue('--c'),
+      seen: b.getBoundingClientRect().bottom <= lr.bottom + 1 && b.getBoundingClientRect().top >= lr.top - 1 })),
+    scrolls: l.scrollHeight > l.clientHeight + 1, chips: [...document.querySelectorAll('.mp-ch-chip')].map(b => [b.dataset.rwy, b.getAttribute('aria-pressed')]),
+    title: document.querySelector('.mp-dtitle').textContent.trim(), hash: location.hash } }"""
+_CH_LAYOUT = """async (id) => { const C = await import('/modules/maps/choose.js'), S = window.__mp.S, cv = document.createElement('canvas').getContext('2d'),
+  L = C.chooseLayout(cv, S.toC), pal = MapsRender.palette(!!S.theme.dark).procHues;
+  const t = L.traces.find(x => x.it && x.it.id === id), mid = t ? { x: (t.pts[0].x + t.pts[1].x) / 2, y: (t.pts[0].y + t.pts[1].y) / 2 } : { x: -50, y: -50 };
+  return { family: S.choose.family, n: L.traces.length, groups: L.groups.map(g => g.rows.map(r => r.id)), hues: S.choose.items.map(i => pal[i.hi % pal.length]),
+    dashed: L.traces.filter(t => t.dash).length, arrows: L.arrows.map(a => [a.name, a.lw]), at: C.chooseAt(mid.x, mid.y), nothing: C.chooseAt(-50, -50) } }"""
+
+
+def _ch_open(c, cur, side='arr', icao='LFML'):
+    f = flight()
+    f['route']['procedures'] = {'dep': cur if side == 'dep' else {}, 'arr': cur if side == 'arr' else {}, 'by': 'fuel', 'at': '2026-10-29T10:00:00Z'}
+    docs = [['proc/manual/LFML.json', _CH_FILE, 'reference'], ['proc/manual/LFRS.json', _LFRS_FILE, 'reference']]
+    c.open(f'maps?choose={side}&icao={icao}', docs=fdocs(f) + docs, flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.choose && window.__mp.S.choose.ready && window.__mp.S.toC)", timeout=12000, what='the choose mode is ready')
+    return f
+
+
+@case('D60', 'Choosing on the Map: one family, one hue per procedure, a tap goes back to Fuel with the key', 'D', tags=('maps',), screens=False,
+      designs=('standard',), night=False, langs4=True,
+      rule='V3 § 10.23: #maps?choose=arr&icao=LFXX consumed; one family at a time; "Aucune" first, 7 rows then scroll; runway chips filter; a tap leads to #fuel?focus=arr&star=ID (none for "Aucune"); the Map writes nothing to the flight; doubt records never listed')
+def d60(c):
+    _ch_open(c, {'rwy': '31'})
+    r = c.js(_CH_ROWS)
+    c.eq(r['hash'], '#maps', 'the request is consumed: choose and icao are gone from the address', what='address')
+    c.eq(r['title'], tx(M, 'star', c.lang, after='chTitle: {').replace('{icao}', 'LFML'), 'the runway is chosen: the family shown is the STAR', what='title')
+    rows = r['rows']
+    c.eq(rows[0]['id'], 'none', 'the first row is "Aucune"', what='first row')
+    c.eq(norm(rows[0]['text']), norm(tx(M, 'chNone', c.lang)), 'written in the language of the run', what='Aucune text')
+    names = [norm(x['text']) for x in rows[1:]]
+    c.eq(len(names), 9, 'the nine published STARs are listed', what=f'rows {names}')
+    c.ok(not any('DOUBTX' in n for n in names), f'{names}', 'the record the reading doubted is never listed')
+    c.ok(not any('NONAME' in n or 'EN11' in n for n in names), f'{names}', 'a record without a name is never listed (as in Fuel)')
+    c.ok(any('S4A' in n and '⌛' in n for n in names), f'{names}', 'a STAR read under an earlier cycle ends with the hourglass')
+    seen = sum(1 for x in rows if x['seen'])
+    c.ok(seen <= 7 and r['scrolls'], f'{seen} rows seen of {len(rows)}', 'at most 7 rows visible, then the list scrolls')
+    L = c.js(_CH_LAYOUT, 'LFML.STAR.S3A.RW31.NONE')
+    hues = [x['c'] for x in rows[1:]]
+    c.eq(hues, L['hues'], 'the hue of a row is the hue the trace is drawn in', what='hues')
+    c.eq(len(set(hues[:8])), 8, 'eight distinct hues', what=f'hues {hues}')
+    c.eq(hues[8], hues[0], 'the ninth procedure takes the first hue again', what='ninth hue')
+    c.eq(L['n'], 9, 'one trace per procedure', what='traces')
+    c.ok(any(len(g) == 2 for g in L['groups']) and len(L['groups']) == 8, f"{L['groups']}", 'one label per entry point: S1A and S2A, which enter at ENT1, share one')
+    c.eq(L['at'], 'LFML.STAR.S3A.RW31.NONE', 'a tap on a trace finds its procedure', what='hit on the S3A trace')
+    c.eq(L['nothing'], None, 'a tap on nothing finds nothing', what='hit on nothing')
+    # the runway chips filter the family
+    c.eq(sorted(x[0] for x in r['chips']), ['13', '31'], 'two runways, two chips', what='chips')
+    c.tap('.mp-ch-chip[data-rwy="13"]')
+    c.until("() => document.querySelectorAll('.mp-ch-row').length < 10", what='the list is filtered')
+    r2 = c.js(_CH_ROWS)
+    left = [norm(x['text']) for x in r2['rows'][1:]]
+    c.eq(sorted(re.match(r'S\dA', n).group(0) for n in left), ['S2A', 'S4A', 'S6A', 'S8A', 'S9A'],
+         'only the STARs that serve runway 13 are left', what=f'rows {left}')
+    c.eq(r2['rows'][0]['id'], 'none', '"Aucune" stays first', what='Aucune after the filter')
+    c.tap('.mp-ch-chip[data-rwy="13"]')
+    c.until("() => document.querySelectorAll('.mp-ch-row').length === 10", what='the filter is released')
+    # a tap on a row leads back to Fuel with the key (the address the Map asks for, caught as it changes), the Map writes nothing
+    c.js(_CH_HASH)
+    c.tap(f'.mp-ch-row[data-id="{_CH_STAR1}"]')
+    c.until("() => (window.__hc || []).length > 0", what='the address changed')
+    hc = c.js('window.__hc')
+    c.ok(hc[0].endswith(f'#fuel?focus=arr&star={_CH_STAR1}'), f'{hc}', 'a tap on a row asks for #fuel?focus=arr&star=<id>')
+    c.eq(c.js('window.__wr'), [], 'the Map wrote nothing (no put, no remove on its data adapter): the flight is left as Fuel wrote it', what='writes')
+    # "Aucune"
+    _ch_open(c, {'rwy': '31'})
+    c.js(_CH_HASH)
+    c.tap('.mp-ch-row[data-id="none"]')
+    c.until("() => (window.__hc || []).length > 0", what='the address changed')
+    hc = c.js('window.__hc')
+    c.ok(hc[0].endswith('#fuel?focus=arr&star=none'), f'{hc}', '"Aucune" asks for none')
+    c.eq(c.js('window.__wr'), [], 'nothing written either', what='writes')
+    # the next families: the STAR chosen, the approach; nothing chosen, the runway (every runway an arrow)
+    _ch_open(c, {'rwy': '31', 'star': _CH_STAR1})
+    c.eq(c.js(_CH_ROWS)['title'], tx(M, 'app', c.lang, after='chTitle: {').replace('{icao}', 'LFML'), 'STAR chosen: the approach comes next', what='title')
+    _ch_open(c, {})
+    L = c.js(_CH_LAYOUT, '')
+    c.eq(L['family'], 'rwy', 'nothing chosen: the runway comes first', what='S.choose.family')
+    c.eq(sorted(a[0] for a in L['arrows']), ['13', '31'], 'every runway is an arrow', what='arrows')
+    # the departure: the SID after the runway, then its transition; the transitions are drawn for the highlighted SID only
+    _ch_open(c, {'rwy': '03'}, 'dep', 'LFRS')
+    r = c.js(_CH_ROWS)
+    c.eq(r['title'], tx(M, 'sid', c.lang, after='chTitle: {').replace('{icao}', 'LFRS'), 'departure, runway chosen: the SID comes next', what='title')
+    c.eq(sorted(re.match(r'\w+', norm(x['text'])).group(0) for x in r['rows'][1:]), ['XX1A', 'ZZ9Z'], 'both SIDs listed (the transition is not one of them)', what='rows')
+    sid = 'LFRS.SID.XX1A.RW03.NONE'
+    c.eq(c.js(_CH_LAYOUT, sid)['dashed'], 0, 'no transition drawn while nothing is highlighted', what='dashed traces')
+    c.js("async (id) => { (await import('/modules/maps/choose.js')).setHl(id) }", sid)
+    c.eq(c.js(_CH_LAYOUT, sid)['dashed'], 1, 'the highlighted SID shows its transition, dashed', what='dashed traces')
+    _ch_open(c, {'rwy': '03', 'sid': sid}, 'dep', 'LFRS')
+    r = c.js(_CH_ROWS)
+    c.eq(r['title'], tx(M, 'trans', c.lang, after='chTitle: {').replace('{p}', 'XX1A').replace('{icao}', 'LFRS'), 'SID chosen: its transition comes next', what='title')
+    c.eq(len(r['rows']), 2, '"Aucune" and the one transition', what='rows')
