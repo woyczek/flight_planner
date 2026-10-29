@@ -718,6 +718,59 @@ pattern, never a path or a content. Note: `status` is also open to paired device
 these kinds, the computer name and `root` (the absolute path of the installation), which is of no use to a device:
 remove `root` from the answer on the local network.
 
+## <a id="review-1029"></a>Review of 29 October (V3, launcher batch 3a d6f31448a, frame 2c87a031b)
+
+Read-only review. Classification: **blocking**, **to fix**, **acceptable**. No blocking point.
+
+| # | Subject | Verdict |
+|---|---|---|
+| 1 | Loading of the verb files `tools/regen/<set>.py` (`load_verbs`) | acceptable, one fix |
+| 2 | `commit_outputs(ctx, author, paths, message)`, the single commit of outputs in `data/` | to fix |
+| 3 | `tools/.regen_last.json` (last job, last starts) | acceptable |
+| 4 | `FD.revalidate(paths)` (frame data layer) | acceptable, two notes |
+
+**1. `load_verbs` — acceptable, one fix.**
+- Every `tools/regen/<set>.py` (except `_…`) is **executed** when the launcher creates the jobs: it is code of the suite,
+  with the same trust as `tools/launch.py`. Only whoever writes to `tools/` of the code repository can add one; no path
+  of the page or of the local network writes there (`frame_batch` is bound to `data/`, which is outside `tools/`).
+- A file that fails is named in the console and left aside; the launcher goes on. `VERBS` is checked before it is merged.
+- *To fix*: a set could overwrite an existing verb (`REGISTRY.update`) and above all lower a delay (`MIN_GAP.update`).
+  The minimum delay of `proc/ead-fetch` matters for EAD Basic's terms: a delay is never lowered (keep the maximum), a
+  verb already defined by another file is refused and said in the console.
+
+**2. `commit_outputs` — to fix.**
+- Good: `\` brought back to `/`; `..`, a leading `/` and `:` (pathspec magic) refused; only paths under `OUTPUTS`;
+  `git add`, then `git commit -- <paths>` (never the index or another path); no push; git errors cleaned
+  (`clean_error`).
+- *To fix*:
+  - the author must match `^[A-Z]{3}$` while the rest of the suite admits `^[A-Z0-9]{2,5}$` (`users.js`,
+    `secrets_view`, the frame's flight path): a trigram of 2, 4 or 5 signs, or with a digit, silently never commits;
+    use the common rule;
+  - the paths reach git as **pathspecs**, that is patterns (`*`, `?`, `[`): nothing can leave the outputs, but
+    `proc/*` would commit the whole of `proc/` at once. Set `GIT_LITERAL_PATHSPECS=1` in the environment of these
+    commands (or refuse those signs), so that a commit only carries the named files.
+- Note: the author is given by the page. It is an attribution, not a proof of identity (any script of the page can give
+  any trigram); acceptable while the page is trusted, written in `frame/DECISIONS.md`.
+
+**3. `tools/.regen_last.json` — acceptable.** Ignored by Git (the file and its `.tmp`), written atomically. It holds the
+last job (set, verb, arguments — an ICAO code —, author, log and result, already cleaned by `clean_error` and `say()`)
+and the times of the last starts: no credential. It reaches the page only through `/__setup/regen/job`, workstation
+only.
+
+**4. `FD.revalidate` — acceptable, two notes.**
+- Only the keys of the repository's tree are read (`src.read(path, rev)` with the tree's revision): an absent or
+  invented path is not read; a `reference` copy gone from the repository is removed, a `record` copy is kept; a pending
+  write and the `cache` policy are never touched; offline, nothing is touched and the caller sets its copies aside.
+- Notes:
+  - like `get` and `read`, the adapter's `revalidate` is not bound to the module's declared `reads`: any module can
+    revalidate any path of the repository (the existing reading model, not a regression); an unknown path revalidated is
+    stored as `reference` by default, which can fill IndexedDB;
+  - « never throws » only holds for the head and the tree: the `idb()` calls of the loop are not protected, so an
+    IndexedDB error (quota) would throw. A `try` around each path, recorded in `errors`, keeps the promise.
+
+Follow-up: the four fixes (delays never lowered and verbs not overwritten, common trigram rule, literal pathspecs, `try`
+per path) and the note on the author are with V3 Frame.
+
 ## Appendix A — Hosts contacted
 
 | Host | From | What goes out |
