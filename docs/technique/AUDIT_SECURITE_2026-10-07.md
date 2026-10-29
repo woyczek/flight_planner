@@ -878,6 +878,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 36 | Frame G2 fix (efbb97f49) | acceptable; the point of 34 is settled |
 | 37 | Fuel: an aerodrome field is a search (26d47f149), proposal after the flight is read (fe3d33c5c) | acceptable |
 | 38 | Frame R1a: the airline's relay (7ca73448c) | **blocking before any exposure** (fails open if the proxy rewrites Host), two to fix, four notes |
+| 39 | Flight plan export, X-Plane `.fms` and MSFS `.pln` (99d28acd0) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1357,6 +1358,21 @@ is exposed today.
   pairing closed (a new code reopens it), and `state['fails']` grows without bound with rotating addresses (purge entries
   older than an hour); `SameSite=Strict` means a pilot opening the relay from a link arrives without the cookie (the
   pairing page; a reload works): `Lax` would do, since POST routes already require the same origin and `X-SOG-Setup`.
+
+**38, decisions on the notes (Simplification interface et ergonomie).** 1: a debt written in DECISIONS (bind the relay to
+the pilot's prefixes later); 2: the shared IVAO key written in DECISIONS, with revocation as the answer; 3: entries of
+`state['fails']` older than an hour purged in the fix; 4: `SameSite=Lax` kept for usability (POST routes already require
+the same origin and `X-SOG-Setup`; no GET route of the relay may change state).
+
+**39. Flight plan export (99d28acd0) — acceptable, one note.** `fileName` keeps only `[A-Z0-9]` of the departure and
+arrival codes (else `FLIGHTPLAN`), an ISO date and an `[a-z0-9]` extension: no path, no separator. In the `.pln`, every
+value goes through `tag()` (text escaped) and the waypoint `id` through `escAttr`; route type and headers are constants,
+positions formatted numbers; names, idents, airways, SID, STAR and approaches from aerodb or the OFP are all escaped. In
+the `.fms`, idents go through `ident()`, which removes every blank (line breaks included): no line can be injected;
+altitudes and positions are numbers. `frame/lib/fms.js` is pure (no DOM, network or storage). The download happens only on
+a click (Blob, object URL, `<a download>`, revoked after a second); a service worker never intercepts a `blob:` address.
+Note: `escText` keeps the control characters that XML 1.0 forbids; a damaged name would give a `.pln` MSFS refuses
+(robustness, not a vulnerability): remove them in `escText`.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 blocking before any exposure); the sharing of the track and of the position is the user's decision.
 
