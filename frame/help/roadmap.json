@@ -265,6 +265,13 @@
           "en": "Applications = named module sets of the same frame (pilot, maintenance; then cpco, client), chosen by the address then by the role",
           "de": "Anwendungen = benannte Modulsätze desselben Rahmens (pilot, maintenance; dann cpco, client), gewählt über die Adresse, dann über die Rolle",
           "es": "Aplicaciones = conjuntos de módulos con nombre del mismo marco (pilot, maintenance; luego cpco, client), elegidos por la dirección y luego por el rol"
+        },
+        {
+          "state": "planned",
+          "fr": "IVAO sur le téléphone : connexion du pilote par le relais (OpenID), son propre jeton sur son appareil, tracker lu en direct",
+          "en": "IVAO on the phone: pilot login through the relay (OpenID), their own token on their device, tracker read directly",
+          "de": "IVAO auf dem Telefon: Anmeldung des Piloten über das Relais (OpenID), eigenes Token auf dem Gerät, Tracker direkt gelesen",
+          "es": "IVAO en el teléfono: inicio de sesión del piloto por el relé (OpenID), su propio token en su dispositivo, tracker leído directamente"
         }
       ]
     },

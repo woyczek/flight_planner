@@ -799,6 +799,14 @@ redesigned for touch at that point.
        - **Runway in use, or probable**: from the departure and arrival METAR at preparation time.
        - **Active VATSIM / IVAO controllers on the Map**: both networks publish them (VATSIM data v3 with the launcher's
          relay, IVAO Whazzup directly); one hue per network, dark green and brown, under the airspaces' weight.
+       - **IVAO on the phone through the relay** (user, 30 Oct night: "Qu'on ne puisse pas récupérer un tracker IVAO
+         sur téléphone est gênant. Avec l'appli ça marcherait mieux ?"; checked in IVAO's API spec the same night): a
+         native app changes nothing, the consumer key cannot live on a device; IVAO's tracker accepts either the
+         consumer key or an OpenID user token (scope `tracker`), and the code exchange needs a client secret, so the
+         relay (§ 10.28, R1) does the OpenID exchange with the suite's IVAO client and hands the pilot their own token;
+         the phone then reads the tracker directly (CORS ok); the public whazzup feed stays for live positions. With
+         GitLab for the data, this and the VATSIM allow-list are what the relay is for. Lot: frame (relay R1 + IVAO
+         login), report (last flight with the user's token), after G2.
        - **Flight plan export to the simulators** (user, 29 Oct night: "Prévoir un export .fms à minima (deux formats
          pour xplane), voire le pousser direct dans le dossier ad hoc sur X-Plane. Prévoir un export msfs2024/2020"):
          from Fuel, the expanded path (route + procedures, § 10.20) written as X-Plane `.fms` in both formats (version 3
