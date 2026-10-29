@@ -163,7 +163,7 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
     `at` is old as old (show its age), never as current.
   - A new field may be added; none of these changes meaning or unit without a dated note here.
 - `ctx.query`: what follows `?` in the address, as an object (`#report?from=flightlog` → `{ from: 'flightlog' }`).
-  Another module or page opens yours with it.
+  Another module or page opens yours with it; take a request with `ctx.consume` (§ 6.1).
 - `ctx.net.fetch(url, init)` for any outgoing call (SimBrief, IVAO, VATSIM, the DEFA website). It never throws:
   - offline, it answers at once with a 503 carrying `x-sog-offline`;
   - with a launcher, SimBrief, IVAO, VATSIM and aviationweather.gov (METAR) are relayed by it, keys and CORS
@@ -197,6 +197,33 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   what you show; do not assume who changed it.
 - `data.onStatus(s => …)`: synchronisation state, for a module that shows it (the frame's own control usually does).
 - Conflicts are handled by the frame: the loser is kept and the frame signals it. A module does not ask the user.
+
+### 6.1 Addresses between modules (`ctx.query`, `ctx.consume`)
+
+Modules ask each other things only through the address (no event between modules): the asking one sets `location.hash`
+(`location.replace` when the request must not stay in the history), the frame mounts the named module with `ctx.query`.
+
+- **`ctx.consume(...keys)`** (29 Oct 2026) gives the values of those keys from `ctx.query` and removes them from the address in
+  one write (`history.replaceState`: no `hashchange`, the module is not mounted again). A consumed request is therefore
+  replayed neither by a reload nor by Back. `with`, `from` and `pane` belong to the frame and are never removed; in a pane
+  the address is not the module's own: nothing is rewritten. Consume a request as soon as you have applied it; a key you
+  only read for drawing (`view`) stays.
+- **The keys in use** (one row per key; a new key is added here by the module that reads it, in the same commit):
+
+| Address | Who sets it | Who reads it | Rule |
+| --- | --- | --- | --- |
+| `#<module>?with=<module>` | the frame (dual view) | the frame | the pane beside; kept in `device/layout.json` |
+| `#<module>?from=<module>` | the asking module | the frame | the header's « ← <module> »; never consumed by a module |
+| `#help?m=<module>&a=<anchor>` | the frame (« ? ») | the help screen | the chapter and the paragraph |
+| `#fuel?view=sheets` | the frame (popover) | fuel | a view, not a request: not consumed |
+| `#fuel?focus=route\|dep\|arr` | the map (« Modifier la route », « Changer ») | fuel | the step or the field to show; consumed |
+| `#maps?choose=arr\|dep&icao=<OACI>` | fuel (« Sur la carte ») | the map | the choice mode (§ 10.23 of the coordination); consumed |
+| `#fuel?focus=arr&star=<id>&app=<id>&trans=<id>` | the map (« Valider », `location.replace`) | fuel | the proposal; consumed |
+| `#report?from=flightlog\|fuel\|maps` | flightlog, fuel, the map, the Status block | the frame, report | with `pilot/handoff.json` (the hand-over) |
+| `#maps?mission=<id>&map=<file>` | flightlog, links | the map | a mission's map |
+| `#maps?tune=1` | Settings › Administration | the map | the tuning page |
+| `#settings?join=…`, `?config=…`, `?card=…`, `?import=…`, `?offline=…` | invitations, links, the frame | Settings | Settings' own keys |
+| `#hello?note=…` | a link (example) | the example module | shows `ctx.consume` |
 
 ## 7. What a module must not do
 
@@ -868,10 +895,19 @@ launcher: { routes: ['regen/', 'vfr-import'], read: ['sia/', 'proc/', 'local/'] 
 | Call | Gives |
 | --- | --- |
 | `info()` | `{ host, data, dataGit, lan }` (a copy of the frame's survey) |
-| `call(route, body?)` | GET without a body, POST with one (JSON). The route's JSON, or `{ ok: false, offline \| status, message, route }`; a 404 says `message: 'unknown route'` (a launcher older than the module: « relancez-le à jour ») |
+| `call(route, body?)` | GET without a body, POST with one (JSON). The route's JSON, or a refusal (below); a 404 says `message: 'unknown route'` (a launcher older than the module: « relancez-le à jour ») |
 | `job(route, body, { onProgress, signal })` | starts a long job and follows it to its end: `{ ok, state, result, … }` |
 | `resume(route, { onProgress, signal })` | follows the job running on that route (a reloaded page), or gives the last one's end; null without a job |
 | `read(path, { signal, onBytes })` | `{ ok, stream (ReadableStream), size }` of `data/<path>`, same origin; `onBytes(n)` as it reads |
+
+**A refusal has one shape**: `{ ok: false, status, route, message, reason?, wait? }`. `status` is the launcher's HTTP status
+(403 for a route or a path not declared, then also `refused: true`, without any call); `reason` (a short code, 40
+characters at most) and `wait` (seconds) come only from a launcher that gives them (429 `'too-soon'`: wait before starting
+that verb again); nothing else of the launcher's answer is handed on. Without an answer: `{ ok: false, offline: true,
+route }` (or `aborted: true` when your `signal` stopped it).
+
+**aerodb declares its routes too**: `AeroDB.declaration().launcher = { routes: ['regen/job'] }`, next to its reads; the frame
+builds aerodb's job from it, as it builds `ctx.launcher` from a module's `meta.launcher`.
 
 **The job protocol is fixed**: `POST <route>` with the body → `{ job: id }`; `GET <route>?id=…` about once a second →
 `{ id, state: 'running' | 'done' | 'error' | 'cancelled', step, done, total, unit, log (200 lines), result }`;
@@ -889,13 +925,15 @@ in the launcher; `resume` finds it again.
   the workstation, cleaning, gaps, the commit); each set's verbs live in `tools/regen/<set>.py`, owned by its agent (`proc.py`:
   AeroDB), which exports `VERBS = { (set, verb): (fn, check) }` and, if it wants, `MIN_GAP = { (set, verb): seconds }`. The
   launcher loads them (`regen_jobs.load_verbs()`, files in name order, `_…` skipped) when it first needs the jobs; a failing
-  file is left aside and named in the launcher's window, the launcher goes on. A verb is `fn(job, args, ctx)`: `job.step(text,
+  file is left aside and named in the launcher's window, the launcher goes on. A verb already defined (by the base or another
+  set) is never overwritten: the second file is refused; a set never lowers a gap (the longest `MIN_GAP` wins). A verb is `fn(job, args, ctx)`: `job.step(text,
   done, total, unit)`, `job.log(line)` (both cleaned of secrets by the base, whatever the verb writes), `job.cancelled()`,
-  `job.author` (the trigram of the page, `^[A-Z]{3}$`, '' without it); `ctx = { data, secrets, git_cmd, git_env }`.
+  `job.author` (the trigram of the page, the common rule `^[A-Z0-9]{2,5}$`, '' without it); `ctx = { data, secrets, git_cmd,
+  git_env }`.
 - **One commit for every verb**: `regen_jobs.commit_outputs(ctx, author, paths, message)` → `{ commit: SHA | None, warning }`:
   `git add` and `git commit -- <paths>` of those paths only (relative to `data/`, under the outputs `sia/base/`, `proc/`,
-  `sia/vfr/`, `AircraftDB/`, `sia/mora.csv`; any other refused), the page's trigram as author (no trigram: no commit; never a
-  workstation author), no push. Nothing changed, no repository, git failing: `commit: None` and the reason.
+  `sia/vfr/`, `AircraftDB/`, `sia/mora.csv`; any other refused, as `..`, `:`, `*`, `?`, `[`; git reads them as literal paths,
+  `GIT_LITERAL_PATHSPECS=1`), the page's trigram as author (no trigram: no commit; never a workstation author), no push. Nothing changed, no repository, git failing: `commit: None` and the reason.
 - **The author**: the frame adds the device's trigram to the body of a job's start (`author`, from `ctx.launcher.job` and
   aerodb's job alike); a module never writes it.
 - **Kept across a restart** (`tools/.regen_last.json`, never in the repository): the last job and the last start of each

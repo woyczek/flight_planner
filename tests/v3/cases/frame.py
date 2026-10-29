@@ -28,7 +28,7 @@ Rules covered
 
   * the launcher's keys panel gives the EAD Basic user name and password once, and never reads them back (A32).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28 A29 A30 A31 A32 A33.
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28 A29 A30 A31 A32 A33 A34.
 """
 import json
 import re
@@ -1072,3 +1072,17 @@ def a32(c):
       rule='frame/INTEGRATION 4 (data.revalidate); the bench reported 14/14')
 def a33(c):
     _bench(c, 'frame/store/test/revalidate.html', '__revalidateBench')
+
+
+@case('A34', 'An address request consumed once', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 6.1 (ctx.consume): the keys a module takes leave the address in one write, the frame keys stay, a reload does not replay them')
+def a34(c):
+    c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")  # le module d'exemple (modules/hello) s'en sert
+    c.open('hello?note=bonjour%20%3Cb%3E&from=fuel', wait=False)
+    c.until("!!document.querySelector('[data-module=hello] [data-asked]')", timeout=15000, what='the example module took the request')
+    c.ok('bonjour <b>' in c.text('[data-module=hello] [data-asked]'), c.text('[data-module=hello] [data-asked]'), 'the value given to the module, shown as text')
+    c.eq(c.js('location.hash'), '#hello?from=fuel', 'the consumed key leaves the address, the frame key (from) stays', what='address')
+    c.page.reload(wait_until='load')
+    c.until("!!document.querySelector('[data-module=hello]')", timeout=15000, what='the module after a reload')
+    c.wait(800)
+    c.eq(c.count('[data-module=hello] [data-asked]'), 0, 'a reload does not replay the request', what='request after reload')

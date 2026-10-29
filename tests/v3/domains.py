@@ -33,6 +33,7 @@ RULES = [
     ('frame/store/test/publish.html', ['A30', 'I'], 'publication bench'),
     ('frame/store/test/revalidate.html', ['A33', 'I'], 'revalidate bench'),
     ('frame/lib/test/**', ['C', 'I'], 'sheet bench'),
+    ('modules/hello/**', ['A34', 'I'], 'the example module (ctx.consume)'),
     ('frame/app.js', FRAME_ALL, 'the frame reaches every screen'),
     ('frame/frame.css', FRAME_ALL, 'the frame reaches every screen'),
     ('frame/index.html', FRAME_ALL, 'the frame reaches every screen'),

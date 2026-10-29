@@ -505,6 +505,7 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
 | `publish(groups, opts)` | generated files committed to the data repository through the device's GitHub access, one commit per group, paths under `meta.publish`, a conflict returned (INTEGRATION § 15.2) |
 | `weather` | the device's weather layer (INTEGRATION § 14): `aloft`, `grid`, `metar`, `taf`, `world`, `modelFor`, `run`, `spentToday`, all asynchronous; one cache `cache/weather/`, one count of the calls to Open-Meteo |
 | `level` | read only (getter): the device's usage level, 1–3; what a screen offers, not a right (INTEGRATION § 6) |
+| `consume(...keys)` | the values of those keys of `query`, removed from the address in one write (no new mount); the frame's keys (`with`, `from`, `pane`) stay (INTEGRATION § 6.1) |
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
 | `live` | the actual position during a started flight (on a device of the local network, the computer's simulator, never the device's GPS): `{ status ('off', 'waiting', 'tracking'), source ('xplane', 'lnm', 'gps', 'ivao', 'vatsim', ''), last ({ at, lat, lon, altFt, gsKt, trackDeg, source }), gps, enable(), disable() }` (below) |
 | `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |

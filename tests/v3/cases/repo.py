@@ -258,10 +258,13 @@ def i8(c):
         (folder / 'demo.py').write_text("VERBS = {('demo', 'noop'): (lambda job, a, ctx: {'ok': 1}, lambda a: {})}\n"
                                         "MIN_GAP = {('demo', 'noop'): 60}\n", encoding='utf-8')
         (folder / 'broken.py').write_text('raise RuntimeError("boom")\n', encoding='utf-8')
+        (folder / 'demo2.py').write_text("VERBS = {('demo', 'noop'): (lambda job, a, ctx: {'ok': 2}, lambda a: {})}\n"
+                                         "MIN_GAP = {('demo', 'noop'): 10}\n", encoding='utf-8')
         (folder / '_private.py').write_text('raise RuntimeError("never loaded")\n', encoding='utf-8')
         errs = R.load_verbs(str(folder))
         c.ok(('demo', 'noop') in R.REGISTRY and R.MIN_GAP.get(('demo', 'noop')) == 60, str(list(R.REGISTRY)), 'a set file adds its verbs and its gaps')
-        c.eq([n for n, _ in errs], ['broken.py'], 'a failing set file is left aside, named; « _… » files are not loaded', what='load errors')
+        c.eq([n for n, _ in errs], ['broken.py', 'demo2.py'], 'a failing set file is left aside, named; a verb already defined is refused, never overwritten; « _… » files are not loaded', what='load errors')
+        c.eq(R.MIN_GAP.get(('demo', 'noop')), 60, 'a set file never lowers a gap', what='gap after a second file')
 
         # l'état gardé : un travail qui courait devient « interrupted » ; le délai vaut par-delà un redémarrage ; l'auteur
         store = str(tmp / 'last.json')
@@ -296,12 +299,13 @@ def i8(c):
             ctx = {'data': str(repo), 'git_cmd': lambda *a: [git, *a], 'git_env': dict}
             c.ok('refused path' in R.commit_outputs(ctx, 'ABC', ['other.txt'], 'm')['warning'], 'other.txt committed', 'a path outside the outputs is refused')
             c.ok('refused path' in R.commit_outputs(ctx, 'ABC', ['proc/../other.txt'], 'm')['warning'], '.. accepted', 'a path that climbs out is refused')
+            c.ok('refused path' in R.commit_outputs(ctx, 'ABC', ['proc/*'], 'm')['warning'], 'a pattern accepted', 'a pathspec pattern is refused (literal paths only)')
             c.ok('no trigram' in R.commit_outputs(ctx, '', ['proc/manual/LFRS.json'], 'm')['warning'], 'committed without author', 'no trigram, no commit')
-            res = R.commit_outputs(ctx, 'ABC', ['proc/manual/LFRS.json'], ':card_file_box: test')
+            res = R.commit_outputs(ctx, 'AB12', ['proc/manual/LFRS.json'], ':card_file_box: test')
             who = run('log', '-1', '--format=%an %ae %s').stdout.strip()
             files = run('show', '--name-only', '--format=', 'HEAD').stdout.split()
-            c.ok(res['commit'] and who == 'ABC abc@defa.local :card_file_box: test' and files == ['proc/manual/LFRS.json'],
-                 f'{res} | {who} | {files}', 'one commit, the page trigram as author, only the given path')
+            c.ok(res['commit'] and who == 'AB12 ab12@defa.local :card_file_box: test' and files == ['proc/manual/LFRS.json'],
+                 f'{res} | {who} | {files}', 'one commit, the page trigram as author (the common rule: 2 to 5 signs), only the given path')
             c.eq(R.commit_outputs(ctx, 'ABC', ['proc/manual/LFRS.json'], 'm')['commit'], None, 'nothing changed: no commit', what='second commit')
         else:
             pass  # git absent de ce poste : commit_outputs n'est pas essayé ici (le reste du cas l'est)

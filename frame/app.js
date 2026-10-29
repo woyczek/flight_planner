@@ -2459,6 +2459,30 @@
     }));
   }
 
+  // ---------------------------------------------------------------- clés d'adresse consommées (ctx.consume, INTEGRATION § 6.1)
+  const FRAME_KEYS = new Set(['with', 'from', 'pane']); // clés du cadre (vue double, retour, volet) : jamais retirées par un module
+  /** Valeurs des clés demandées (celles de query) ; elles sont retirées de l'adresse du module principal, si elle est la sienne,
+   *  par un seul history.replaceState (pas de hashchange : le module n'est pas remonté) ; une requête consommée ne se rejoue
+   *  donc ni au rechargement ni au retour. */
+  function consumeQuery(id, query, keys, inPane) {
+    const ks = keys.filter(k => typeof k === 'string' && k && !FRAME_KEYS.has(k)),
+      got = {};
+    for (const k of ks)
+      if (Object.prototype.hasOwnProperty.call(query, k)) got[k] = query[k];
+    if (inPane || !Object.keys(got).length) return got;
+    const m = /^#([\w-]+)\?(.*)$/.exec(location.hash);
+    if (!m || m[1] !== id) return got;
+    const q = new URLSearchParams(m[2]);
+    for (const k of ks) q.delete(k);
+    const s = q.toString(),
+      hash = `#${id}${s ? `?${s}` : ''}`;
+    if (location.hash !== hash) {
+      history.replaceState(history.state, '', hash);
+      if (lastScreen?.id === id) lastScreen.hash = hash;
+    }
+    return got;
+  }
+
   /** Contexte d'un module : son adaptateur de données (ses préfixes déclarés), aerodb, textes, notifications, questions,
    *  appels sortants, identité et compagnie en lecture seule, suite de l'adresse (query). */
   function ctxFor(entry, meta, query = Object.freeze({}), root = null, inPane = false, life = null) {
@@ -2509,6 +2533,10 @@
         return level;
       },
       query,
+      // ctx.consume(clés) : les valeurs de ces clés de ctx.query, retirées de l'adresse en une seule écriture (replaceState, sans
+      // remonter le module) ; with, from et pane restent au cadre ; dans un volet, l'adresse n'est pas la sienne : rien
+      // n'est réécrit (INTEGRATION § 6.1)
+      consume: (...keys) => consumeQuery(entry.id, query, keys.flat(), inPane),
       // l'onglet de la barre du bas qui groupe ce module (id de APP.tabs), null s'il n'en a pas
       tab: tabOf(entry.id)?.id || null,
       // module fixe seulement : la couche de superposition de sa carte (colonnes gauche et droite, boutons ronds ; le bouton
@@ -3258,10 +3286,10 @@
         launcher: {
           request: launcherRequest,
           info: () => launcherHere,
-          // travail long du lanceur (fetchProcedures : regen/job, verbe proc/ead-fetch) : par le client du cadre, route
-          // déclarée à la volée ; null sans lanceur (INTEGRATION § 15.1)
-          job: (route, body, opts) => (launcherHere?.lan ? null : launcherClient()?.forModule({
-            routes: ['regen/job']
+          // travail long du lanceur (fetchProcedures : regen/job) : par le client du cadre, routes de la déclaration d'aerodb
+          // (AeroDB.declaration().launcher) ; null sans lanceur ou sur un appareil appairé (INTEGRATION § 15.1)
+          job: (route, body, opts) => (launcherHere?.lan ? null : launcherClient()?.forModule(AeroDB.declaration().launcher || {
+            routes: []
           }, {
             author: () => identity.trigram || ''
           }).job(route, body, opts)) ?? Promise.resolve(null)

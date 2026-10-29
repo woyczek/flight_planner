@@ -1545,3 +1545,25 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     paths and `..` refused, no trigram no commit, one commit with the page's author and only its path, nothing changed no
     commit), A29 extended (the trigram added to a job's start, none without it). Against the real launcher: a
     `state/scan` started with `author: 'ABC'` keeps it, the state file is written and ignored by git.
+- **29 Oct 2026 — Lot (3b): the client and the addresses** (challenge § 10.29):
+  - **One refusal shape** written in INTEGRATION § 15.1: `{ ok: false, status, route, message, reason?, wait? }`; A29
+    checks it field by field (a 429 hands on `reason` and `wait` and nothing else of the body, a refusal without reason
+    has neither).
+  - **aerodb declares its launcher routes** (`declaration().launcher`, one line in `frame/aerodb/aerodb.js`, told to
+    AeroDB) instead of `app.js` writing them for it.
+  - **`ctx.consume(...keys)`** and the table of the address keys (INTEGRATION § 6.1): a request taken leaves the address
+    in one `replaceState` (no new mount), so a reload or Back never replays it; the frame's keys stay. The example module
+    (`modules/hello`) shows it; case A34 (taken once, escaped, `from` kept, not replayed after a reload). Each module that
+    reads a key adds its row to the table in the same commit; fuel and the map may move to `ctx.consume` in their next lots
+    (they rewrite the address by hand today).
+- **29 Oct 2026 — Security review of (3a) and `revalidate`** (no blocker; four corrections, in (3b)):
+  - `load_verbs`: a verb already defined is refused, never overwritten; a set never lowers a gap (the longest wins: EAD
+    Basic's 30 s are part of its conditions).
+  - The trigram follows the common rule `^[A-Z0-9]{2,5}$` (users.js, `secrets_view`, `flightPath`), not `^[A-Z]{3}$`, which
+    silently dropped a trigram of 2, 4 or 5 signs.
+  - `commit_outputs` gives git literal paths (`GIT_LITERAL_PATHSPECS=1`) and refuses `*`, `?`, `[`: « proc/* » would have
+    committed all of `proc/`.
+  - `revalidate`: one `try` per path (the device's storage may fail too), the error kept in `errors`: it never throws.
+  - **The author given by the page is an attribution, not a proof of identity**: the launcher takes the trigram the page
+    sends. Acceptable while the page is trusted (the workstation's own page; a paired device of the local network cannot
+    start a job). A relay open to the Internet (§ 10.28) will need a proof: the user's key of the signed registry.

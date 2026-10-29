@@ -46,7 +46,8 @@
     l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
     out.append(l);
   };
-  const ROOT = 'http://launcher.test/';
+  const ROOT = 'http://launcher.test/',
+    J = v => JSON.stringify(v);
   const json = (v, status = 200) => new Response(JSON.stringify(v), {
     status,
     headers: {
@@ -90,6 +91,16 @@
           body: init.body ? JSON.parse(init.body) : null
         });
         if (route === 'array') return json([1, 2]);
+        if (route === 'slow') return json({
+          ok: false,
+          message: 'too soon: wait 12 s',
+          reason: 'too-soon',
+          wait: 12,
+          secret: 'never handed on',
+          detail: {
+            x: 1
+          }
+        }, 429);
         if (route === 'boom') return json({
           message: 'kaput'
         }, 500);
@@ -178,7 +189,7 @@
     };
   };
   const DECL = {
-    routes: ['regen/', 'echo', 'array', 'boom', 'missing'],
+    routes: ['regen/', 'echo', 'array', 'boom', 'missing', 'slow'],
     read: ['sia/', 'proc/']
   };
 
@@ -232,6 +243,11 @@
       offline: true
     }).c.forModule(DECL).call('echo');
     ck('call : hors ligne → { ok: false, offline }', off.ok === false && off.offline === true);
+    const r429 = await M.call('slow');
+    ck('refus motivé (429) : { ok: false, status, route, message, reason, wait }, rien d\'autre du corps', J(Object.keys(r429).sort()) ===
+      J(['message', 'ok', 'reason', 'route', 'status', 'wait']) && r429.reason === 'too-soon' && r429.wait === 12 && r429.status === 429,
+      J(r429));
+    ck('refus sans motif : ni reason ni wait', !('reason' in e5) && !('wait' in e5), J(e5));
     ck('info : une copie du relevé', M.info().host === 'pc' && M.info() !== M.info());
 
     // ---------------------------------------------------------------- travaux

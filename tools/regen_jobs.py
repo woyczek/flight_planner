@@ -31,6 +31,7 @@ CACHE_ROOT = 'sia/'
 NOT_CACHES = {'base', 'vfr'}  # sous sia/ : des sorties, pas des caches de sources
 CYCLE = re.compile(r'^\d{4}(-\d{2}-\d{2})?$')
 LOG_MAX = 200
+TRIGRAM = re.compile(r'[A-Z0-9]{2,5}')  # règle commune du trigramme (users.js, secrets_view, flightPath) : 2 à 5 signes
 
 
 def _walk(root, cancelled=None):
@@ -223,7 +224,7 @@ class Jobs:
 
     def start(self, set_, verb, args, author=''):
         key = (str(set_ or ''), str(verb or ''))
-        author = author if isinstance(author, str) and re.fullmatch(r'[A-Z]{3}', author) else ''
+        author = author if isinstance(author, str) and TRIGRAM.fullmatch(author) else ''
         if key not in self.registry:
             return {'ok': False, 'status': 400, 'message': f'unknown operation {key[0]}/{key[1]}'}
         fn, check = self.registry[key]
@@ -584,15 +585,15 @@ def commit_outputs(ctx, author, paths, message):
     pas de trigramme, chemin refusé, rien de changé ou git en échec → commit None et la raison."""
     data, git_cmd, git_env = ctx.get('data'), ctx.get('git_cmd'), ctx.get('git_env', dict)
     paths = [str(p).replace('\\', '/') for p in paths or []]
-    bad = [p for p in paths if not p or p.startswith('/') or '..' in p.split('/') or ':' in p
+    bad = [p for p in paths if not p or p.startswith('/') or '..' in p.split('/') or re.search(r'[:*?\[\]\\]', p)
            or not any(p == o or (o.endswith('/') and p.startswith(o)) for o in OUTPUTS)]
     if bad or not paths:
         return {'commit': None, 'warning': f'refused path: {bad[0] if bad else "(none)"}'}
-    if not (isinstance(author, str) and re.fullmatch(r'[A-Z]{3}', author)):
+    if not (isinstance(author, str) and TRIGRAM.fullmatch(author)):
         return {'commit': None, 'warning': 'no trigram: nothing committed'}
     if not git_cmd or not data or not os.path.isdir(os.path.join(data, '.git')):
         return {'commit': None, 'warning': "data/ is not a git repository: nothing committed"}
-    env = dict(git_env())
+    env = dict(git_env(), GIT_LITERAL_PATHSPECS='1')  # chaque chemin est un nom de fichier, jamais un motif
 
     def run(*args):
         return subprocess.run(git_cmd('-C', data, *args), capture_output=True, text=True, encoding='utf-8', errors='replace',
@@ -633,8 +634,15 @@ def load_verbs(folder=None):
             for k, v in verbs.items():
                 if not (isinstance(k, tuple) and len(k) == 2 and isinstance(v, tuple) and len(v) == 2 and callable(v[0]) and callable(v[1])):
                     raise ValueError(f'bad VERBS entry {k!r}')
+            # un verbe déjà défini (par le socle ou un autre jeu) n'est jamais écrasé : ce fichier est refusé, et dit
+            taken = [k for k in verbs if k in REGISTRY]
+            if taken:
+                raise ValueError(f'verb already defined: {taken[0][0]}/{taken[0][1]}')
             REGISTRY.update(verbs)
-            MIN_GAP.update({k: float(v) for k, v in gaps.items() if isinstance(k, tuple) and isinstance(v, (int, float))})
+            # un délai n'est jamais abaissé par un jeu (celui d'EAD Basic fait partie de ses conditions) : le plus long gagne
+            for k, v in gaps.items():
+                if isinstance(k, tuple) and isinstance(v, (int, float)):
+                    MIN_GAP[k] = max(float(v), float(MIN_GAP.get(k, 0)))
         except Exception as e:  # un jeu en échec ne fait pas tomber le lanceur
             errors.append((n, str(e)[:200]))
     return errors

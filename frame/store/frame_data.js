@@ -1197,25 +1197,25 @@
       };
     }
     for (const path of list) {
-      const pol = policyOf(path),
-        doc = await idb('docs', 'get', path);
-      if (pol === 'cache' || isCache(path) || await idb('pending', 'get', path)) {
-        out.unchanged.push(path);
-        continue;
-      }
-      const rev = tree[path];
-      if (!rev) {
-        if (doc && (doc.policy || pol) === 'reference') {
-          await idb('docs', 'delete', path);
-          out.changed.push(path);
-        } else out.unchanged.push(path);
-        continue;
-      }
-      if (doc?.rev === rev) {
-        out.unchanged.push(path);
-        continue;
-      }
       try {
+        const pol = policyOf(path),
+          doc = await idb('docs', 'get', path);
+        if (pol === 'cache' || isCache(path) || await idb('pending', 'get', path)) {
+          out.unchanged.push(path);
+          continue;
+        }
+        const rev = tree[path];
+        if (!rev) {
+          if (doc && (doc.policy || pol) === 'reference') {
+            await idb('docs', 'delete', path);
+            out.changed.push(path);
+          } else out.unchanged.push(path);
+          continue;
+        }
+        if (doc?.rev === rev) {
+          out.unchanged.push(path);
+          continue;
+        }
         const text = await src.read(path, rev);
         await idb('docs', 'put', {
           ...(doc || {}),
@@ -1232,7 +1232,8 @@
           out.offline = true;
           break;
         }
-        out.unchanged.push(path); // lecture refusée (droits, fichier trop gros) : la copie gardée reste, l'erreur est dite
+        // lecture refusée (droits, taille) ou stockage de l'appareil en échec : la copie gardée reste, l'erreur est dite
+        out.unchanged.push(path);
         (out.errors ||= []).push({
           path,
           message: e?.message || String(e)

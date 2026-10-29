@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: requests between modules taken once** (`frame/app.js`, `modules/hello/module.js`, `frame/lib/launcher.js`,
+  `frame/aerodb/aerodb.js`; INTEGRATION § 6.1 and § 15.1, SPEC, DECISIONS; cases A29, A34): `ctx.consume(keys)` takes a
+  request carried by the address and removes it, so a reload or Back no longer replays it; the address keys used between
+  modules are listed in one table; the launcher's refusals have one written shape; aerodb declares the launcher routes it
+  calls.
+- **Launcher jobs: security review** (`tools/regen_jobs.py`, `frame/store/frame_data.js`; DECISIONS; I8): a set can no
+  longer overwrite another's verb nor shorten a gap; trigrams of 2 to 5 signs are accepted as authors; commit paths are
+  literal (no pattern); `revalidate` keeps an error of the device's storage in its result instead of throwing.
 - **Map: the coverage layer is named "Coverage" and lit by its box only** (`modules/maps/coverage.js`, `layers.js`, `texts.js`;
   SPEC § 6.11, INTEGRATION, help ×4, case D46; V3 § 10.29 h) — the automatic lighting (a side without a chosen procedure whose
   aerodrome is not green) is gone, with the "box touched" state; the layer "Aerodrome procedures" is now "Coverage" ×4.
