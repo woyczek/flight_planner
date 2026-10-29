@@ -78,11 +78,11 @@ line. The module's own lines (a job running, « n publications à envoyer ») go
 ### 1.5 The module's place
 
 - **Not a place of Pilot's rail** (user, 29 Oct: the data module is the « Maintenance » application — Données,
-  administration settings, help — on the workstation with a launcher, opened by `/frame/?app=maintenance`). Until the frame's
-  named applications exist (V3 Frame), the module is an entry of Pilot's `APP.modules` marked `rail: false` (never in the
-  rail, the left column or the phone's bar, never the default module), so that `#data` mounts it; `meta.level: 3`. The line
-  « Maintenance » of Settings › Administration (`frame/settings/admin_links.js`, entry `data`, Full level, with its link to
-  copy) leads there, read-only on a phone (SPEC § 6.3).
+  administration settings, help — opened by `/frame/?app=maintenance`, without a gate: read-only wherever there is no
+  launcher). Since V3 Frame's `APPS` (e3870b354) the module is a place of the Maintenance application's rail (Données ·
+  Administration · Aide · the V2 link), no longer an entry of Pilot's `APP.modules`; `meta.level: 3`. The line
+  « Maintenance » of Pilot's Settings › Administration (`frame/settings/admin_links.js`, entry `data`, Full level, with its
+  link to copy) opens `frame/?app=maintenance#data` in the same tab, read-only on a phone (SPEC § 6.3).
 - **Workers**: allowed by the page policy (`worker-src 'self' blob:`); the module's Worker script is listed in `meta.files`.
   No outside host: the module calls none.
 

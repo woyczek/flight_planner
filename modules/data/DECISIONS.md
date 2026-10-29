@@ -113,3 +113,7 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   marks the capability (`ctx.data.sync.gesture === true`); without it the button stays grey. The count before the one
   question comes from `sync-status` (workstation route). Télécharger and Purger commit nothing; the raw sources still
   tracked by git (openAIP) are the user's question of 30 Oct.
+- **30 Oct 2026 (night) — After the frame's lot**: declaring `regen/job` now declares its cancel (f70eba426): the module
+  drops `regen/job/cancel` from `meta.launcher.routes` (the « Construire » entry above described the gap); the provisional
+  `rail: false` entry of Pilot is gone, the module lives in the Maintenance application (`APPS`, e3870b354); « Publier »
+  checked on the real frame (`ctx.data.sync.gesture === true`, a215d47bd: L12 sees the button live with the real adapter).

@@ -544,8 +544,8 @@ export function publishOutcome(r) {
       committed: num(x?.committed) ?? 0,
       held: num(x?.held) ?? 0,
       received: num(x?.received) ?? 0,
-      conflicts: num(x?.conflicts) ?? 0,
-      refused: num(x?.refused) ?? 0,
+      conflicts: Array.isArray(x?.conflicts) ? x.conflicts.length : num(x?.conflicts) ?? 0, // le cadre rend un nombre, le lanceur une liste
+      refused: Array.isArray(x?.refused) ? x.refused.length : num(x?.refused) ?? 0,
       message: String(x?.message || r?.error || r?.warning || '')
     };
   const failed = !r || r.ok === false || x?.ok === false;

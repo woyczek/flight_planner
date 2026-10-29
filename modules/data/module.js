@@ -24,9 +24,9 @@ export const meta = {
   level: 3,
   // la construction de la base est un travail du lanceur (regen/job) ; aucune lecture de data/ par le lanceur
   launcher: {
-    // le suivi annule par POST regen/job/cancel : « regen/job » seul ne le couvre pas ; sync-status : l'état de data/ avant la
+    // regen/job couvre aussi son annulation regen/job/cancel (cadre, f70eba426) ; sync-status : l'état de data/ avant la
     // question de « Publier » (GET, jamais de POST /__setup/sync : la publication passe par ctx.data.sync)
-    routes: ['regen/job', 'regen/job/cancel', 'sync-status'],
+    routes: ['regen/job', 'sync-status'],
     read: []
   },
   files: ['model.js', 'texts.js', '../../frame/lib/dom.js', '../../frame/lib/time.js'],

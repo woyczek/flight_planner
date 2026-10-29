@@ -315,8 +315,8 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
   'cache' }], launcher: { routes: ['regen/'], read: ['sia/', 'proc/', 'local/', 'AircraftDB/'] }, publish: ['sia/base/',
   'proc/', 'sia/vfr/', 'AircraftDB/', 'sia/mora.csv'], files: [… the Worker script included] }` (`frame/INTEGRATION.md`
   § 15). **Until the other verbs exist** the declaration stays the narrowest: `launcher: { routes: ['regen/job',
-  'regen/job/cancel'], read: [] }` (« regen/job » alone does not cover the cancel, frame `under()`: a route ending without
-  `/` covers only itself).
+  'sync-status'], read: [] }` (declaring a job's route declares its cancel, frame f70eba426; `sync-status` for the count
+  before « Publier »).
 
 ## 8. Without the launcher
 

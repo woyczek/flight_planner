@@ -411,12 +411,9 @@ def l3(c):
     c.ge(btn['h'], 43.5, 'touch target of the frame', what='link height')
     c.tap('[data-admin="data"] > a')
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the module is mounted by the link (at 390 as at 1280)')
-    c.eq(c.hash(), '#data', 'the address', what='hash')
-    c.eq(c.count('#fMenu a[data-id="data"]'), 0, 'still not in the rail once mounted', what='rail entries')
-    c.eq(c.count('[data-verb]'), 2, 'only Construire and Publier, grey without a launcher', what='[data-verb]')
     c.eq((c.js('location.search'), c.hash()), ('?app=maintenance', '#data'), 'the address: the Maintenance application, on Données', what='address')
     c.eq(c.count('#fMenu a[data-id="data"]'), 1, 'in the rail of Maintenance', what='rail entries')
-    c.eq(c.count('[data-verb]'), 1, 'only Construire, grey without a launcher', what='[data-verb]')
+    c.eq(c.count('[data-verb]'), 2, 'only Construire and Publier, grey without a launcher', what='[data-verb]')
     c.ok(c.text('[data-cycle-now]'), 'no cycle', 'the head shows the cycle in force')
     c.check_errors()
 
@@ -986,7 +983,7 @@ def _pub_open(c, st_sync, gesture=True, result=None, delay=0, launcher=None):
         return st
     _sync_cfg(c, gesture, result, delay)       # the next ones: the same page, another configuration at the next load
     launcher['sync'] = st_sync
-    c.open('data', docs=LEVEL3, wait=False)
+    c.open('data', docs=LEVEL3, wait=False, app='maintenance')  # le module Données est dans l'application Maintenance
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the head of the Données screen is drawn')
     c.settle()
     return launcher
@@ -1132,12 +1129,12 @@ def l12(c):
     c.eq([s['disabled'], s['reason'], s['reasonText'], s['reasons']], [True, 'no-gesture', norm(_trow('no-gesture', lang, 'pubReason: {')), 1],
          'a frame without ctx.data.sync.gesture: grey with its reason, never a pass without the gesture', what='no gesture')
     c.eq(len(c.js('window.__sync.calls')), 0, 'nothing is called', what='sync calls')
-    # the real adapter (no fake at all): the same, whatever sync() does
+    # the real adapter (no fake at all): the frame carries the gesture since a215d47bd, so Publier is live (3 files, 2 commits)
     c.page.evaluate("sessionStorage.removeItem('__fakeSync')")
     c.page.reload(wait_until='load')
     _head(c)
     s = _publish_state(c)
-    c.eq([s['disabled'], s['reason']], [True, 'no-gesture'], 'the real frame adapter today (sync() without the property): grey too', what='real adapter')
+    c.eq([s['disabled'], s['reason']], [False, None], 'the real frame (ctx.data.sync.gesture === true since a215d47bd): Publier is live', what='real adapter')
 
     # ---- F: sync-status does not answer: said, no question, nothing called
     st = _pub_open(c, (500, {'error': 'boom'}), launcher=st)
