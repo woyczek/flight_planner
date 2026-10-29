@@ -124,6 +124,21 @@ def _proc():
     return ns
 
 
+def _regen():
+    """Le socle des travaux du lanceur (tools/regen_jobs.py) avec les verbes des jeux chargés (tools/regen/*.py : proc.py, la lecture des procédures), comme le lanceur au premier appel."""
+    import importlib
+    import sys
+    tools = str(ROOT / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    RJ = importlib.import_module('regen_jobs')
+    if ('proc', 'ead-fetch') not in RJ.REGISTRY:
+        failed = RJ.load_verbs()
+        if failed:
+            raise Fail(f'load_verbs: {failed}')
+    return RJ
+
+
 def _geometry():
     import importlib
     import sys
@@ -1467,7 +1482,7 @@ def k22(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    RJ = importlib.import_module('regen_jobs')
+    RJ = _regen()
     EAD = importlib.import_module('proc_ead')
     P = _proc()
     DS = importlib.import_module('data_sync')
@@ -1518,7 +1533,7 @@ def k22(c):
         return {'data': str(data), 'secrets': str(secrets), 'git_cmd': DS.git_cmd, 'git_env': DS.git_env}
 
     def run(ctx, icao='EGXX', job=None):
-        return RJ._ead_fetch(job or RJ.Job('proc', 'ead-fetch', {'icao': icao}), {'icao': icao}, ctx)
+        return RJ.REGISTRY[('proc', 'ead-fetch')][0](job or RJ.Job('proc', 'ead-fetch', {'icao': icao}, author='TST'), {'icao': icao}, ctx)
 
     saved = (EAD.EadLibrary, EAD.fetch_ad, dict(os.environ))
     for k in ('EAD_USER', 'EAD_PASSWORD'):
@@ -1563,7 +1578,7 @@ def k22(c):
             data, secrets = scene(td)
             ctx = ctx_of(data, secrets)
             before = git(data, 'rev-parse', 'HEAD').strip()
-            job = RJ.Job('proc', 'ead-fetch', {'icao': 'EGXX'})
+            job = RJ.Job('proc', 'ead-fetch', {'icao': 'EGXX'}, author='TST')
             r = run(ctx, job=job)
             c.ok(r.get('ok') is True and r['icao'] == 'EGXX' and r['procedures'] == 1 and r['ocr'] is False and r['warnings'] == ['page 3 NON retenue'], str(r),
                  'success: ok, the aerodrome, one procedure installed, no OCR, the warnings of the reading')
@@ -1597,7 +1612,7 @@ def k22(c):
                  str(job.view()['log'][:3]), 'neither the user name nor the password (nor its encoded form) appears in the log, the result, a written file or the commit')
             # a second run of the same file: nothing changed, no empty commit, a warning
             r2 = run(ctx)
-            c.ok(r2['ok'] and r2['commit'] is None and git(data, 'rev-parse', 'HEAD').strip() == head and any('aucun commit' in w for w in r2['warnings']), str(r2),
+            c.ok(r2['ok'] and r2['commit'] is None and git(data, 'rev-parse', 'HEAD').strip() == head and any('no commit' in w for w in r2['warnings']), str(r2),
                  'the same reading again: installed, no empty commit, a warning instead')
 
         # git absent keeps ok, with commit None and a warning; a foreign file, a login refusal, a failing geometry, nothing read
@@ -1628,7 +1643,7 @@ def k22(c):
             # EIDW, 29 Oct 2026: 31 documents downloaded, none with a known layout: the failure says what was seen, the stats are given, the log has the summary
             unknown = [{'file': f'EI_AD_2_EGXX_24-{i}.pdf', 'pages': 3, 'layout': None, 'fingerprint': None, 'ok': False, 'problems': ['disposition non reconnue']} for i in range(31)]
             seen['doc'] = {**doc_of(), 'procedures': [], 'formats': unknown}
-            job = RJ.Job('proc', 'ead-fetch', {'icao': 'EGXX'})
+            job = RJ.Job('proc', 'ead-fetch', {'icao': 'EGXX'}, author='TST')
             r = run(ctx, job=job)
             c.eq((r['ok'], r['reason'], r['stats']), (False, 'failed', {'pages': 31, 'read': 0, 'rejected': 31, 'procedures': 0, 'dropped': 0, 'doubt': 0, 'reasons': [['layout', 31]]}),
                  'a failure carries stats: 31 pages seen, none read, the reason counted', what='failure stats')
@@ -1667,7 +1682,7 @@ def k22(c):
             data, secrets = scene(td)
             ctx = ctx_of(data, secrets)
             head = git(data, 'rev-parse', 'HEAD').strip()
-            job = RJ.Job('proc', 'ead-fetch', {'icao': 'EGXX'})
+            job = RJ.Job('proc', 'ead-fetch', {'icao': 'EGXX'}, author='TST')
             job._cancel.set()
             r = run(ctx, job=job)
             c.ok(r == {'ok': False, 'reason': 'cancelled'} and not (data / 'proc' / 'manual' / 'EGXX.json').exists() and git(data, 'rev-parse', 'HEAD').strip() == head,
@@ -1748,7 +1763,7 @@ def k23(c):
     tools = str(c.root / 'tools')
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    RJ = importlib.import_module('regen_jobs')
+    RJ = _regen()
     P = importlib.import_module('proc_sia')
     EAD = importlib.import_module('proc_ead')
     DS = importlib.import_module('data_sync')
@@ -1814,7 +1829,7 @@ def k23(c):
         return (fx / f'{Path(path).stem}.rows.txt').read_text(encoding='utf-8').splitlines()
 
     def run(ctx, icao='LFBD', job=None):
-        return RJ._eaip_fetch(job or RJ.Job('proc', 'eaip-fetch', {'icao': icao}), {'icao': icao}, ctx)
+        return RJ.REGISTRY[('proc', 'eaip-fetch')][0](job or RJ.Job('proc', 'eaip-fetch', {'icao': icao}, author='TST'), {'icao': icao}, ctx)
 
     saved = (P.fetch, P.first_page_rows, P.url_exists)
     P.fetch, P.first_page_rows, P.url_exists = fake_fetch, fake_rows, lambda url, timeout=30: False
@@ -1835,7 +1850,7 @@ def k23(c):
             state['names'] = pdfs_of()
             asked.clear()
             before = git(data, 'rev-parse', 'HEAD').strip()
-            job = RJ.Job('proc', 'eaip-fetch', {'icao': 'LFBD'})
+            job = RJ.Job('proc', 'eaip-fetch', {'icao': 'LFBD'}, author='TST')
             r = run(ctx, job=job)
             c.ok(r.get('ok') is True and r['icao'] == 'LFBD' and r['procedures'] == 14 and r['source'] == 'eaip' and r['cycle'] == cycle, str(r)[:300],
                  'success: ok, the aerodrome, its 14 procedures, source eaip, the cycle in force')
@@ -1923,7 +1938,7 @@ def k23(c):
             data = scene(td)
             ctx = ctx_of(data)
             head = git(data, 'rev-parse', 'HEAD').strip()
-            job = RJ.Job('proc', 'eaip-fetch', {'icao': 'LFBD'})
+            job = RJ.Job('proc', 'eaip-fetch', {'icao': 'LFBD'}, author='TST')
             job._cancel.set()
             r = run(ctx, job=job)
             c.ok(r == {'ok': False, 'reason': 'cancelled'} and not (data / 'proc' / 'manual' / 'LFBD.json').exists() and git(data, 'rev-parse', 'HEAD').strip() == head, str(r),

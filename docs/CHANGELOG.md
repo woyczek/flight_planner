@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: one reading job, `tools/regen/proc.py`** (`tools/regen_jobs.py`; SPEC, DECISIONS; V3 § 10.29 (d); cases K22, K23, I8) — `proc/ead-fetch` and `proc/eaip-fetch` were two copies of one job; they are now ONE function driven by a source table (which
+  State each source reads — France by the SIA eAIP, no account; any other State by EAD Basic, with the account — where its cache is, how it is read, what is checked before installing), loaded by the frame's base (`load_verbs()`). The commit is the base's
+  `commit_outputs`, signed by the page's trigram (nothing is committed without one). `regen_jobs.py` goes from 656 to 373 lines. The results are unchanged.
+
 - **Launcher: detection and the workstation's settings apart** (`tools/launch.py`, `shared/app_framework.js`,
   `shared/file_access.js`, `shared/maintenance_page.js`, `shared/sog_registry.js`, `apps/settings/premier_lancement.html`;
   frame SPEC, DECISIONS): `/__setup/status` only says that a launcher serves the page (the same everywhere);

@@ -28,7 +28,7 @@ never saw a credential. Facts are marked **read** (public page opened today) or 
     gesture in the screens later — **in Fuel** (« Lire les procédures de LFXX », when an aerodrome has none; § 10.20 of the
     specification), then **in the Données module** (its EAD line, « Relire » for an outdated one) — through
     `aerodb.fetchProcedures(icao)`, never in Settings › Maintenance (amended 28 Oct 2026, the ergonomics session). **Wired on 28 Oct 2026**: the gesture
-    goes through the launcher job `proc/ead-fetch` (`tools/regen_jobs.py`, one four-character code, nothing else accepted); the account is read on the
+    goes through the launcher job `proc/ead-fetch` (`tools/regen/proc.py`, one four-character code, nothing else accepted); the account is read on the
     workstation only, from `secrets/ead.json` (`{ "user", "password" }`) or `EAD_USER` / `EAD_PASSWORD`, never shown, never logged (every message is
     cleaned of both values) and never sent to a page; the request spacing is the library's one second;
   - **never scheduled, never in bulk**.

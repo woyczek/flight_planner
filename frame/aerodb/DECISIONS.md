@@ -1712,3 +1712,21 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
   `<repository>/data/local/eaip` when the data folder exists, else `.proc_cache/`, now in `.gitignore`; (3) the ICAO codes of the command line, and `read_aerodrome`, are checked with `^[A-Z0-9]{4}$` and refused with a clear message. K32 covers them
   (`../../x.pdf`, `a/b.pdf`, `..\x.pdf` never written or asked, a bad ICAO refused, the EAD names refused).
 - **Not in this commit** (as decided): `coverage(icao)` reason `partial`; Fuel and the Map translating (see INTEGRATION). `frame/aerodb/aerodb.js` needed no change: `fetchProcedures` passes `stats` through as the job gave it, now with codes.
+
+## 29 October 2026 — § 10.29 (d): one reading job, `tools/regen/proc.py`, driven by a source table
+
+- **Why**: the frame's base (`regen_jobs.py`, `load_verbs()`, `commit_outputs`, `job.author`, d6f31448a) wants each set's verbs in `tools/regen/<set>.py`. `_ead_fetch` and `_eaip_fetch` were two copies of one job (about 240 lines each of the same steps),
+  and the « LF » rule lived in `_eaip_args` while the page chose the verb from `EAD_STATES`.
+- **The module**: `tools/regen/proc.py` exports `VERBS = { ('proc','ead-fetch'): (fn, check), ('proc','eaip-fetch'): (fn, check) }` and `MIN_GAP = { ('proc','ead-fetch'): 30 }` (the 30 s of EAD Basic's conditions; the base keeps the longest gap).
+  It holds `SOURCES`, the table of what differs — the States it reads (`eaip`: `('LF',)`, never EAD; `ead`: any other State the page chose, EAD_STATES « read »; the launcher re-checks the code against the verb as before: `proc/eaip-fetch` refuses a code outside France, `ead-fetch`
+  accepts any four-character code), whether it needs the account, how it is read (`_read_eaip`: `proc_sia.read_aerodrome`, cache `data/local/eaip/<cycle>/`, the SIA base for the en-route points, the HTTP errors said in clear; `_read_ead`: login, `proc_ead.fetch_ad`, the OCR document written by THIS job),
+  whether the hand screen applies (`proc_manual.screen`: EAD only, the SIA tables are judged by `proc_geometry` while they are read), whether a re-reading replaces the former one (`replace_source`) and which « nothing read » message is given — and ONE function `fetch(source)` for the rest: progress and cancel (`_Cancelled`, a
+  `BaseException` so that the `except Exception` of the PDF and OCR readers do not swallow it), the log without secret, `stats`, install by `proc_manual`, the commit, the result. Adding a State family is one entry and one `read`.
+- **The commit is the base's**: `regen_jobs.commit_outputs(ctx, job.author, ['proc/manual/<ICAO>.json', 'proc/manual/index.json'], message)`; the author is the page's trigram, not the workstation's `POSTE`; without a trigram, or without a repository, nothing is committed (`commit: null`, and the reason in `warnings` as `git: …`). The two commit messages are unchanged.
+  The local `_ead_commit` is gone.
+- **Left in `regen_jobs.py`** (373 lines, from 656): the base (`state`, `Job`, `Jobs`, `clean_error`, `commit_outputs`, `load_verbs`, `state/scan`) and `_ead_credentials`, which `clean_error` needs to strip the account from any job's text. Gone: `_Cancelled`, `_ead_args`, `_ead_commit`, `_installed_file`, `_geometry`, `_summary`,
+  `_nothing_read`, `_ead_fetch`, `_eaip_args`, `_eaip_fetch`, our two REGISTRY entries and our MIN_GAP entry (both moved to `proc.py`).
+- **Measure** (offline, the two jobs end to end with the library faked as K22 / K23 do: EIDW through `ead-fetch`, LFPG through `eaip-fetch`, no repository): the result dicts are identical to the former ones — procedures, stats, warnings, file, steps — except the text of the git warning (now the base's:
+  `git: data/ is not a git repository: nothing committed`). Two small differences, accepted: the eAIP job now writes the « installation de N procédure(s) » log line the EAD job always wrote, and the `stats.procedures` of an eAIP install that is refused is 0 (nothing installed) instead of the number read.
+  One thing NOT done on purpose: `proc_ead.sanitize` is applied only when there is an account (it took the name of a PDF for a token).
+- **Bench**: K22 and K23 call the verbs through `regen_jobs.load_verbs()` (`_regen()`), jobs have an author (`TST`), the « nothing changed » warning is the base's (`no commit`); I8 (the base) and K1 to K32 green.

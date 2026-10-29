@@ -21,7 +21,6 @@ import subprocess
 import sys
 import threading
 import time
-import urllib.error
 import uuid
 
 # sorties publiées (chemins de data/) et sorties locales jamais publiées ; caches des sources : data/sia/<source>/
@@ -151,9 +150,9 @@ class Job:
         return {**self.data, 'log': list(self.data['log'])}
 
 
-# délai minimal entre deux départs d'un même verbe, en secondes : EAD Basic se lit terrain par terrain, sur un geste, jamais en
-# masse (EAD_BASIC.md § 1) ; un travail à la fois ne suffit pas à le garantir, ce délai rend la règle réelle
-MIN_GAP = {('proc', 'ead-fetch'): 30}
+# délai minimal entre deux départs d'un même verbe, en secondes : chaque jeu exporte le sien (tools/regen/<jeu>.py, MIN_GAP ; load_verbs les réunit ici) ; celui d'EAD Basic
+# (30 s, tools/regen/proc.py) fait partie de ses conditions : un terrain par geste, jamais en masse (EAD_BASIC.md § 1)
+MIN_GAP = {}
 
 
 def clean_error(text, ctx=None):
@@ -282,20 +281,6 @@ def _scan(job, args, ctx):
                  step=lambda t, d, n: job.step(t, d, n, 'parts'), cancelled=job.cancelled)
 
 
-class _Cancelled(BaseException):
-    """Annulation demandée, levée par say() de _ead_fetch. BaseException : les « except Exception » de proc_ead (lecture de PDF,
-    OCR) ne l'avalent pas ; _ead_fetch l'attrape toujours."""
-
-
-def _ead_args(a):
-    """Contrôle des arguments de proc/ead-fetch : { 'icao': 4 caractères [A-Z0-9] } et rien d'autre ; None sinon (→ 400).
-    Une liste (« LFBD,LFBO »), un joker, un champ en plus : refusés, EAD Basic ne se lit pas en masse."""
-    if not isinstance(a, dict) or set(a) != {'icao'} or not isinstance(a['icao'], str):
-        return None
-    icao = a['icao'].strip().upper()
-    return {'icao': icao} if re.fullmatch(r'[A-Z0-9]{4}', icao) else None
-
-
 def _ead_credentials(secrets):
     """(identifiant, mot de passe) d'EAD Basic : <secrets>/ead.json { user, password }, sinon les variables EAD_USER et
     EAD_PASSWORD ; ('', '') sans rien. Les valeurs ne sont ni journalisées ni rendues."""
@@ -311,273 +296,6 @@ def _ead_credentials(secrets):
     return os.environ.get('EAD_USER', '').strip(), os.environ.get('EAD_PASSWORD', '')
 
 
-def _ead_commit(data, icao, git_cmd, git_env, warnings, source='ead'):
-    """Valide dans data/ les deux fichiers installés et eux seuls : `git add` puis `git commit -m … -- <chemins>` (la forme
-    avec chemins vaut --only : le commit est fait de HEAD + ces fichiers tels qu'ils sont sur le disque, jamais de l'index ni
-    d'un autre chemin ; ce que l'utilisateur a mis en attente ou modifié ailleurs dans data/ reste où il est). Pas de push.
-    `source` ('ead' | 'eaip') ne change que le message. Rend le SHA du commit, ou None (avertissement ajouté à `warnings` : pas de dépôt,
-    git en échec, rien à valider)."""
-    if not git_cmd or not os.path.isdir(os.path.join(data, '.git')):
-        warnings.append("git: data/ n'est pas un dépôt, rien n'est validé")
-        return None
-    paths = [f'proc/manual/{icao}.json', 'proc/manual/index.json']
-    env = dict(git_env())
-
-    def run(*args):
-        return subprocess.run(git_cmd('-C', data, *args), capture_output=True, text=True, encoding='utf-8', errors='replace',
-                              timeout=60, env=env)
-    try:
-        who = []
-        if not run('config', 'user.name').stdout.strip() or not run('config', 'user.email').stdout.strip():
-            who = ['-c', 'user.name=POSTE', '-c', 'user.email=poste@defa.local']   # comme les autres validations du lanceur
-        a = run('add', '--', *paths)
-        if a.returncode != 0:
-            warnings.append('git add: ' + (a.stderr or a.stdout).strip()[:200])
-            return None
-        if run('diff', '--cached', '--quiet', '--', *paths).returncode == 0:
-            warnings.append('git: rien de changé dans les fichiers installés, aucun commit')
-            return None
-        message = (f":card_file_box: Procédures {icao} lues dans l'eAIP du SIA (à la demande)" if source == 'eaip' else
-                   f':card_file_box: Procédures {icao} lues dans EAD Basic (à la demande, non opérationnelles)')
-        c = run(*who, 'commit', '-m', message, '--', *paths)
-        if c.returncode != 0:
-            warnings.append('git commit: ' + (c.stderr or c.stdout).strip()[:200])
-            return None
-        h = run('rev-parse', 'HEAD')
-        sha = h.stdout.strip()
-        return sha if h.returncode == 0 and re.fullmatch(r'[0-9a-f]{40}', sha) else None
-    except (OSError, subprocess.TimeoutExpired) as e:
-        warnings.append(f'git: {str(e)[:200]}')
-        return None
-
-
-def _installed_file(data, icao):
-    """Le fichier du terrain tel que proc_manual.install vient de l'écrire (data/proc/manual/<OACI>.json), relu sur le disque ; None s'il ne se lit pas. Rendu dans le résultat du
-    travail (`file`) : aerodb le sert tout de suite, sans attendre que sa copie de lecture rattrape (la première lecture répondait « 0 procédures »)."""
-    try:
-        with open(os.path.join(data, 'proc', 'manual', f'{icao}.json'), encoding='utf-8') as f:
-            doc = json.load(f)
-        return doc if isinstance(doc, dict) and isinstance(doc.get('procedures'), list) else None
-    except (OSError, ValueError):
-        return None
-
-
-def _geometry():
-    """Le module tools/proc_geometry.py (le contrôle de géométrie et ses codes de doute), importé à la demande comme les autres outils de lecture."""
-    tools = os.path.dirname(os.path.abspath(__file__))
-    if tools not in sys.path:
-        sys.path.insert(0, tools)
-    import proc_geometry
-    return proc_geometry
-
-
-def _summary(stats):
-    """Ligne de journal d'un compte rendu `stats` : « 18 procédure(s) sur 22 page(s) de codage ; 4 non lue(s) ; 2 procédure(s) écartée(s) (motifs : …) ». Les motifs des procédures à
-    vérifier sont des codes dans `stats` (proc_geometry), dits ici en texte : la console seule porte des phrases."""
-    why = '; '.join(f'{_geometry().phrase(t)} ×{n}' for t, n in stats.get('reasons', []))
-    return (f'{stats.get("procedures", 0)} procédure(s) installée(s) ; {stats.get("read", 0)} page(s) lue(s) sur {stats.get("pages", 0)}, {stats.get("rejected", 0)} non lue(s)'
-            f'{"; " + str(stats["doubt"]) + " à vérifier (statut doubt, gardées dans le fichier)" if stats.get("doubt") else ""}'
-            f'{"; " + str(stats["dropped"]) + " retirée(s)" if stats.get("dropped") else ""}{" (motifs : " + why + ")" if why else ""}')
-
-
-def _nothing_read(formats, stats):
-    """Message de l'échec « rien de lu » : combien de documents et de pages ont été vus, combien lus, et les motifs les plus fréquents des autres (« 31 document(s), 0 of 31 page(s) read
-    (mise en page non reconnue ×31) ») ; Fuel l'affiche tel quel après la raison, c'est tout ce que l'utilisateur voit d'une lecture qui n'a rien donné."""
-    docs = len({f.get('file') for f in formats if f.get('file')})
-    why = '; '.join(f'{_geometry().phrase(t)} ×{n}' for t, n in stats.get('reasons', [])[:2])
-    return f'no procedure could be read for this aerodrome: {docs} document(s), {stats.get("read", 0)} of {stats.get("pages", 0)} page(s) read' + (f' ({why})' if why else '')
-
-
-def _ead_fetch(job, args, ctx):
-    """Verbe proc/ead-fetch : lit dans EAD Basic les procédures d'UN terrain, les installe sous data/proc/manual/ et les valide dans
-    le dépôt des données (aerodb.fetchProcedures, § 10.20). Règle d'EAD Basic (frame/aerodb/EAD_BASIC.md § 1) : un terrain par geste de
-    l'utilisateur, jamais une liste, jamais en masse, jamais planifié — le contrôle d'arguments n'admet qu'un code OACI.
-    Identifiants : <secrets>/ead.json { user, password }, sinon EAD_USER / EAD_PASSWORD ; jamais journalisés (say() nettoie), jamais rendus.
-    Étapes : connexion à la bibliothèque, proc_ead.fetch_ad (cache local data/local/ead/, jamais publié), contrôle de géométrie de
-    proc_manual.screen (caps et distances refaits : une lecture à la main qui échoue n'est pas installée, elle seule ; une procédure que le lecteur a marquée « doubt » est
-    installée comme telle, voir proc_geometry), proc_manual.install (sans --replace : un
-    fichier du terrain qui porte des procédures d'une autre source n'est jamais écrasé), puis commit de proc/manual/<OACI>.json et
-    proc/manual/index.json SEULS (_ead_commit), sans push. L'annulation est regardée à chaque message et avant d'installer ; une fois les
-    fichiers écrits, le travail va jusqu'au commit (sinon data/ resterait sali).
-    Rend { ok: True, icao, procedures, warnings, commit (SHA | None), ocr, source: 'ead' } ou { ok: False, reason: 'no-credentials' | 'cancelled' |
-    'failed', message? }."""
-    icao = args['icao']
-    data = ctx['data']
-    user, password = _ead_credentials(ctx['secrets'])
-    if not user or not password:
-        return {'ok': False, 'reason': 'no-credentials'}
-    tools = os.path.dirname(os.path.abspath(__file__))
-    if tools not in sys.path:
-        sys.path.insert(0, tools)
-    import proc_ead
-    import proc_manual
-    import proc_records
-
-    def clean(text, n=300):
-        return proc_ead.sanitize(str(text), [user, password])[:n]
-
-    def say(*parts):
-        text = proc_ead.sanitize(' '.join(map(str, parts)), [user, password])
-        job.log(text)
-        job.step(text[:200])
-        if job.cancelled():
-            raise _Cancelled()
-
-    def step(text, done, total, unit):
-        job.step(proc_ead.sanitize(str(text), [user, password]), done, total, unit)      # le nombre de documents faits sur le total : la page le montre (aerodb.fetchProcedures → onProgress)
-        if job.cancelled():
-            raise _Cancelled()
-
-    def failed(message, warnings=(), stats=None):
-        return {'ok': False, 'reason': 'failed', 'message': clean(message), 'warnings': [clean(w) for w in warnings][:50], **({'stats': stats} if stats else {})}
-    out = os.path.join(data, 'local', 'ead')
-    t0 = time.time()
-    formats, stats = [], None                             # les comptes de ce qui a été vu, rendus aussi quand la lecture échoue (aerodb les passe : { ok: false, reason: 'failed', message, stats })
-    try:
-        os.makedirs(out, exist_ok=True)
-        lib = proc_ead.EadLibrary(user, password, say, delay=1.0)
-        if not lib.open():
-            return failed('login refused')
-        doc = proc_ead.fetch_ad(lib, icao, out, say, step=step)
-        ocr = None
-        ocr_path = os.path.join(out, f'{icao}.ocr.json')
-        if os.path.isfile(ocr_path) and os.stat(ocr_path).st_mtime >= t0 - 1:   # écrit par CE travail (un reste d'une lecture ancienne est ignoré)
-            with open(ocr_path, encoding='utf-8') as f:
-                ocr = json.load(f)
-        if job.cancelled():
-            raise _Cancelled()
-        todo = [d for d in (doc, ocr) if d and d.get('procedures')]
-        warnings = [w for d in (doc, ocr) if d for w in d.get('warnings', [])]
-        formats = [f for d in (doc, ocr) if d for f in d.get('formats', [])]
-        G = _geometry()
-        stats = proc_records.stats_of(formats, 0, doubt=G.doubt_codes(p for d in todo for p in d['procedures']))      # sans procédure installée ; remplacé par le compte final en cas de succès
-        if not todo:
-            job.log(clean(_summary(stats)))
-            return failed(_nothing_read(formats, stats), warnings, stats)
-        refused = []
-        for k, d in enumerate(todo):                      # ce que fait proc_manual.main() avant d'installer : le fichier, puis chaque procédure (une lecture à la main qui échoue est refusée seule)
-            problems = proc_manual.file_problems(d)
-            if problems:
-                job.log(clean(_summary(stats)))
-                return failed('interpretation file refused: ' + '; '.join(problems[:3]), warnings, stats)
-            todo[k], bad = proc_manual.screen(d)
-            refused += bad
-        warnings += [f'REFUSÉE: {x}' for x in refused]
-        todo = [d for d in todo if d['procedures']]
-        stats = proc_records.stats_of(formats, 0, doubt=G.doubt_codes(p for d in todo for p in d['procedures']))
-        if not todo:                                      # plus aucune procédure : le fichier n'est refusé que s'il n'en reste aucune
-            job.log(clean(_summary(stats)))
-            return failed('geometry check failed: ' + '; '.join(refused[:3]), warnings, stats)
-        installed = 0
-        say(f'{icao}: installation de {sum(len(d["procedures"]) for d in todo)} procédure(s)')
-        for d in todo:
-            try:
-                proc_manual.install(d, os.path.join(data, 'proc'), replace=False)
-                installed += len(d['procedures'])
-            except SystemExit as e:                       # procédures d'une autre source dans le fichier du terrain : rien n'est écrit
-                if not installed:
-                    return failed(e, warnings, stats)
-                warnings.append(str(e))                   # le premier document est déjà installé : le second est signalé
-    except _Cancelled:
-        return {'ok': False, 'reason': 'cancelled'}
-    except (SystemExit, Exception) as e:
-        return failed(e, stats=stats)
-    commit = _ead_commit(data, icao, ctx.get('git_cmd'), ctx.get('git_env', dict), warnings)
-    stats = proc_records.stats_of(formats, installed, doubt=G.doubt_codes(p for d in todo for p in d['procedures']))       # pages = documents lus (une entrée par page de tableau vue) ; dropped 0 : une procédure à vérifier est gardée
-    job.log(clean(_summary(stats)))
-    return {'ok': True, 'icao': icao, 'procedures': installed, 'warnings': [clean(w) for w in warnings][:50], 'commit': commit,
-            'ocr': bool(ocr and ocr.get('procedures')), 'source': 'ead', 'stats': stats, 'file': _installed_file(data, icao)}
-
-
-def _eaip_args(a):
-    """Contrôle des arguments de proc/eaip-fetch : ceux d'ead-fetch (un code OACI et rien d'autre) et un code de la France (« LF… »),
-    seule à avoir son eAIP lu ainsi ; None sinon (→ 400)."""
-    r = _ead_args(a)
-    return r if r and r['icao'].startswith('LF') else None
-
-
-def _eaip_fetch(job, args, ctx):
-    """Verbe proc/eaip-fetch : lit dans l'eAIP du SIA (France) les procédures d'UN terrain (tables de codage ARINC des pages AD 2), les
-    installe sous data/proc/manual/ et les valide dans le dépôt des données (aerodb.fetchProcedures, § 10.20) ; le pendant d'ead-fetch pour
-    un État dont l'AIP est publiée sans compte. Aucun identifiant ; AUCUNE adresse ne vient de la page : le dossier AIRAC est calculé ici
-    (cycle en vigueur d'après le calendrier de 28 jours, proc_sia.eaip_url). Étapes : proc_sia.read_aerodrome (page AD 2, pages DATA et CODE,
-    cache data/local/eaip/<cycle>/ jamais publié ; les points en route sont placés d'après la base SIA du poste, data/sia/base/fr/<cycle>/, si
-    elle y est, sinon à la lecture par aerodb), contrôle de géométrie par procédure (proc_geometry.review, fait par le constructeur : une procédure qui échoue est installée
-    au statut « doubt » avec son code, signalée, jamais retirée), proc_manual.install (sans --replace : un fichier du terrain qui porte des procédures d'une autre source n'est
-    jamais écrasé), puis commit de proc/manual/<OACI>.json et proc/manual/index.json SEULS (_ead_commit), sans push. Le contrôle de
-    proc_manual.screen n'est PAS appliqué : les tables du SIA impriment le cap magnétique, que proc_geometry contrôle à sa tolérance large pendant la lecture. L'annulation est regardée à chaque message et avant d'installer.
-    Rend { ok: True, icao, procedures, warnings, commit (SHA | None), source: 'eaip', cycle } ou { ok: False, reason: 'no-tables' (la page du
-    terrain ne cite aucune table de codage) | 'cancelled' | 'failed', message? }."""
-    icao = args['icao']
-    data = ctx['data']
-    tools = os.path.dirname(os.path.abspath(__file__))
-    if tools not in sys.path:
-        sys.path.insert(0, tools)
-    import proc_ead
-    import proc_manual
-    import proc_records
-    import proc_sia
-    cycle = proc_ead.lib_cycle(data)                    # cycle en vigueur (la date du dossier AIRAC de l'eAIP)
-    eaip = proc_sia.eaip_url(cycle)
-
-    def clean(text, n=300):
-        return str(text)[:n]
-
-    def say(*parts):
-        text = ' '.join(map(str, parts))
-        job.log(text)
-        job.step(text[:200])
-        if job.cancelled():
-            raise _Cancelled()
-
-    def step(text, done, total):
-        job.step(text, done, total, 'pages')
-        if job.cancelled():
-            raise _Cancelled()
-
-    def failed(message, warnings=()):
-        return {'ok': False, 'reason': 'failed', 'message': clean(message), 'warnings': [clean(w) for w in warnings][:50]}
-    cache = os.path.join(data, 'local', 'eaip', cycle)
-    base = os.path.join(data, 'sia', 'base', 'fr', cycle)
-    try:
-        os.makedirs(cache, exist_ok=True)
-        try:
-            resolve = proc_sia.base_resolver(base) if os.path.isdir(base) else None
-        except (OSError, ValueError, AttributeError, TypeError):    # base illisible : les points en route sont placés à la lecture
-            resolve = None
-        say(f'{icao}: eAIP du SIA, cycle {cycle}')
-        doc = proc_sia.read_aerodrome(eaip, icao, cache, resolve, say, step=step)
-        if doc is None:
-            return {'ok': False, 'reason': 'no-tables'}
-        if job.cancelled():
-            raise _Cancelled()
-        warnings = list(doc.get('warnings', []))
-        kept = doc.get('procedures', [])
-        dropped = [d.get('reason') or 'name' for d in doc.pop('dropped', [])]       # vraiment retirées (build_aerodrome) : un bloc sans titre qui répète une procédure nommée
-        doubt = _geometry().doubt_codes(kept)             # un code par procédure à vérifier (le constructeur a fait le contrôle, proc_geometry.review)
-        stats = proc_records.stats_of(doc.get('formats', []), len({p.get('id') for p in kept}), dropped, doubt)
-        job.log(clean(_summary(stats)))
-        if not kept:
-            return {**failed('no procedure could be read for this aerodrome', warnings), 'stats': stats}
-        doc['warnings'] = warnings
-        try:      # une relecture REMPLACE la lecture précédente de la même source (eaip) : ses identifiants d'avant (autre nom, autre règle de lecture) ne restent pas
-            proc_manual.install(doc, os.path.join(data, 'proc'), replace=False, replace_source='eaip')
-        except SystemExit as e:                         # procédures d'une autre source dans le fichier du terrain : rien n'est écrit
-            return {**failed(e, warnings), 'stats': stats}
-    except _Cancelled:
-        return {'ok': False, 'reason': 'cancelled'}
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            return failed(f'eAIP page not found (HTTP 404): the AIRAC folder of cycle {cycle} is not published yet on the SIA site, or {icao} has no AD 2 page in it')
-        return failed(f'SIA site answered HTTP {e.code}')
-    except (OSError, SystemExit, Exception) as e:       # réseau (URLError, délai), pypdf manquant (SystemExit), PDF illisible…
-        return failed(e)
-    commit = _ead_commit(data, icao, ctx.get('git_cmd'), ctx.get('git_env', dict), warnings, source='eaip')
-    return {'ok': True, 'icao': icao, 'procedures': len({p.get('id') for p in kept}), 'warnings': [clean(w) for w in warnings][:50], 'commit': commit,
-            'source': 'eaip', 'cycle': cycle, 'stats': stats, 'file': _installed_file(data, icao)}
-
-
-# verbes du lot D0 ; les constructeurs (D2) ajoutent les leurs ici, chacun avec son contrôle d'arguments
 def commit_outputs(ctx, author, paths, message):
     """Le seul commit des sorties dans data/, pour tous les verbes : `git add` puis `git commit -m … -- <chemins>` (avec chemins :
     HEAD plus ces fichiers tels qu'ils sont sur le disque, jamais l'index ni un autre chemin ; ce que l'utilisateur a mis en
@@ -651,6 +369,4 @@ def load_verbs(folder=None):
 
 REGISTRY = {
     ('state', 'scan'): (_scan, lambda a: {} if not a else None),
-    ('proc', 'ead-fetch'): (_ead_fetch, _ead_args),
-    ('proc', 'eaip-fetch'): (_eaip_fetch, _eaip_args),
 }

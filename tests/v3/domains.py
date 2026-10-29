@@ -61,6 +61,7 @@ RULES = [
     ('tools/proc_cifp.py', ['K', 'I'], 'the FAA CIFP procedures builder and its aerodb case'),
     ('tools/proc_ead.py', ['K', 'I'], 'the EAD Basic library (survey, fetch) and its aerodb case'),
     ('tools/proc_manual.py', ['K', 'I'], 'the manual interpretations installer and its aerodb case'),
+    ('tools/regen/proc.py', ['K', 'I8', 'I'], "the launcher's reading job for the procedures (one job, a source table) and its aerodb cases"),
     ('tools/regen_jobs.py', ['I8', 'I'], "the launcher's jobs base (Data module)"),
     ('tools/launch.py', ['I8', 'A12', 'A29', 'I'], 'the launcher: its routes, Settings, the client of the frame'),
     ('tools/**', ['I'], 'tooling'),
