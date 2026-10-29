@@ -8,7 +8,8 @@ import {
   got,
   onMission,
   level,
-  tileLoader
+  tileLoader,
+  keptRoute
 } from './state.js';
 import {
   nearLon
@@ -286,7 +287,8 @@ function draw() {
     land: t.bg,
     border: t.grid
   });
-  const route = S.route.points,
+  // la route que le chemin garde (une STAR raccordée sur un de ses points court-circuite les suivants)
+  const route = mission ? S.route.points : keptRoute(S.route.points),
     altn = mission || L.altn ? S.route.altn : null;
   if (altn) drawAltn(ctx, toC, altn, false);
   // zoom réel, décalé par le curseur de Complexité, corrigé par la taille du cadre : le zoom effectif comparé aux seuils (§ 6.6)

@@ -10,7 +10,8 @@ import {
   got,
   onMission,
   outLon,
-  level
+  level,
+  keptRoute
 } from './state.js';
 import {
   unwrapLons
@@ -225,7 +226,7 @@ export function tapAt(x, y, lat, lon) {
 const WIND_STEP_NM = 50;
 /** Vents à dessiner : ceux des points (route.points[].wind), plus des interpolés composante par composante tous les 50 NM. */
 function windPoints() {
-  const pts = unwrapLons((S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon))),
+  const pts = unwrapLons(keptRoute(S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon))),
     ok = w => w && Number.isFinite(+w.dirDeg) && Number.isFinite(+w.kt),
     out = [];
   if (!pts.some(p => ok(p.wind))) return out;

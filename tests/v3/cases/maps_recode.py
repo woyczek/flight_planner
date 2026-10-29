@@ -639,6 +639,27 @@ def d53(c):
     c.ok(all(r and not r[1] and r[2] == 2 for r in rows), f'{rows}', 'both thresholds are rows of the tuning page, with their two sliders and no layer box')
 
 
+_KEPT_JS = """async () => { const M = await import('/modules/maps/state.js'), S = M.S, keep = S.route.path;
+  const A = { id: 'XA', lat: 46.0, lon: 0.0 }, B = { id: 'AMB', lat: 46.5, lon: 0.5 }, C = { id: 'PIWIZ', lat: 47.0, lon: 1.0 },
+    D = { id: 'TSU', lat: 48.5, lon: 2.2 }, E = { id: 'LFPO', lat: 48.72, lon: 2.38 };
+  S.route.path = [{ ...A, origin: 'route' }, { ...B, origin: 'route' }, { id: 'STX', lat: 47.5, lon: 1.5, origin: 'star' }, { ...E, origin: 'route' }];
+  const withStar = M.keptRoute([A, B, C, D, E]).map(p => p.id);
+  S.route.path = [A, B, C, D, E].map(p => ({ ...p, origin: 'route' }));
+  const without = M.keptRoute([A, B, C, D, E]).map(p => p.id);
+  S.route.path = keep;
+  return { withStar, without } }"""
+
+
+@case('D54', 'A STAR joined on a route point: the route points it bypasses are neither drawn nor given winds', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False,
+      rule='user 29 Oct: "les points de la route sont toujours présents, avec les flèches de vent, bien que la star se connecte à l’un des points de la route"')
+def d54(c):
+    _open_proc(c, _proc_flight())
+    r = c.js(_KEPT_JS)
+    c.eq(r['withStar'], ['XA', 'AMB', 'LFPO'], 'the STAR joins on AMB: PIWIZ and TSU are left out of the drawn route (marks, names, winds)', what='kept route')
+    c.eq(r['without'], ['XA', 'AMB', 'PIWIZ', 'TSU', 'LFPO'], 'without a procedure every route point is kept', what='kept route without procedures')
+
+
 @case('D41', 'The chosen SID, STAR and approach are drawn from the runway', 'D', tags=('maps',), screens=False, designs=('standard',), langs4=True,
       rule='V3 § 10.20, maps SPEC § 5: path from the threshold; transition and missed approach dashed; a leg without a fix = 2 NM stroke then dashes; RF = arc; join on a common point or dashed direct; unchosen procedures never drawn')
 def d41(c):

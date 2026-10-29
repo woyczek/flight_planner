@@ -52,6 +52,16 @@ export const tileLoader = ctx => async url => {
  *  S.route par data.js : longitudes continues, nm = distance cumulée) ; sans eux, les points de la route. La seule base des
  *  distances du profil, des marques NM, du curseur et des heures. */
 export const flownPts = () => S?.route?.flown?.length > 1 ? S.route.flown : S?.route?.points || [];
+/** Points de la route que le chemin garde : sans eux, ceux qu'une SID ou une STAR remplace (après la jonction de la STAR sur un
+ *  point de la route, ni marque, ni nom, ni barbule pour les points qu'elle court-circuite) ; sans procédure, tous. pts : des
+ *  points de la route (S.route.points ou route.points du vol), comparés par nom et position. */
+export function keptRoute(pts) {
+  const path = S?.route?.path;
+  if (!path?.length || path.every(p => p.origin === 'route')) return pts || [];
+  const kept = path.filter(p => p.origin === 'route');
+  return (pts || []).filter(p => kept.some(k => String(k.id ?? '') === String(p?.id ?? '') && Math.abs(+k.lat - +p.lat) < 1e-6 &&
+    Math.abs(((+k.lon - +p.lon) % 360 + 540) % 360 - 180) < 1e-6));
+}
 /** Vrai si le montage est sur une carte de mission (#maps?mission=…). */
 export const onMission = () => !!S?.ctx.query?.mission;
 

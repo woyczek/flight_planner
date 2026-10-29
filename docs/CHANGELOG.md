@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the route points a STAR (or a SID) bypasses are no longer drawn, nor given winds** (`modules/maps/state.js` `keptRoute`,
+  `draw.js`, `tips.js`, case D54; user, 29 Oct: "les points de la route sont toujours présents, avec les flèches de vent, bien
+  que la star se connecte à l'un des points de la route") — the path already dropped them, but the marks, names and wind
+  barbs were still drawn from every point of the route; they now follow the route points the path keeps.
+
 - **Map: procedure names at every scale, their fixes and constraints from the regional view, both on the thresholds page**
   (`modules/maps/procs.js`, `layers.js`, `tune.js`, `draw.js`, `render.js`, `texts.js`; SPEC § 5, help ×4, case D53; user, 29 Oct:
   "ils disparaissent trop tôt en zoom arrière (c'est une info hyper importante)" and "le nom de l'approche ne semble pas
