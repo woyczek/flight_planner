@@ -4,6 +4,12 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — the procedure rows no longer wait for the aircraft registry** (user: « vue Carburant + Carte : très long à charger
+  (10 s ?) avant de faire apparaître les procédures »). Measured in the test environment on the user's real files (LFPO 309, EIDW
+  196 records): rows at 0.3–0.5 s, one render, departure and arrival read in parallel, rowsKey 0.2 ms — but drawn only after
+  `refsPending` (aerodb.aircraft() then the sheets), which the rows never need; on the workstation the real registry through the
+  launcher can take seconds. `refresh()` now draws the rows while `refsPending` (not while `flightPending`: the flight is not read
+  yet). Case F33 holds aircraft() back 6 s and expects the rows within 4 s (it fails without the change).
 - **29 Oct 2026 — the reading's reasons come from aerodb's catalogue** (aerodb bf540e3c2, V3 § 10.29 c): `stats.reasons` carries
   codes only (7 for pages, 6 for doubtful records); their labels ×4 are `AeroCatalogue.READ_REASONS`, read through
   `aerodb.sources()` when a reading ends. `TX.procWhy` (the tool's French phrases) is removed; an unknown code is shown as is. A

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the procedure rows appear without waiting for the aircraft registry** (`modules/fuel/module.js`, DECISIONS; case F33).
 - **Synchronisation: a git warning no longer stops the merge** (`tools/data_sync.py`, `tools/launch.py`,
   `tools/regen_jobs.py`; administrator manuals ×4, SYNCHRONISATION; noreg I9): `git()` mixed git's warnings (« LF will
   be replaced by CRLF ») into its output, so a warning line was taken for a conflicting file, `open()` failed, the

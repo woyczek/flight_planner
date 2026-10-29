@@ -1712,7 +1712,7 @@ async function renderProcRows() {
 }
 /** « Changer » de la Carte (#fuel?focus=arr) : le premier champ de la ligne Arrivée, dès qu'elle est dessinée. */
 function focusArr() {
-  if (!S?.focusArr || S.body?.inert) return;
+  if (!S?.focusArr || S.body?.inert || S.refsPending) return; // pas avant l'écran complet : renderPlan le refait à refsReady
   const row = S.body.querySelector('[data-proc="arr"]'),
     el = row?.querySelector('select') || row?.querySelector('button:not([disabled])'); // la liste d'abord, pas « Relire »
   if (!el) return;
@@ -4216,6 +4216,9 @@ function refresh() {
     }
     if (ac) ac.innerHTML = `<span class="f-muted">${esc(tt(TX.loadingRefs))}</span>`;
     S.body.inert = !!S.flightPending; // le vol pas encore lu : rien à saisir
+    // les lignes de procédures ne dépendent que des terrains du vol et d'aerodb : dessinées sans attendre le registre des aéronefs
+    // ni les fiches (refsPending ; utilisateur, 29/10 : « très long à charger avant de faire apparaître les procédures »)
+    if (!S.flightPending && S.rowsKey !== rowsKey()) renderProcRows();
     return;
   }
   S.body.querySelector('[data-block="result"]')?.removeAttribute('data-loading');

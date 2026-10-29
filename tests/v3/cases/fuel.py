@@ -335,6 +335,21 @@ def f28(c):
          'the end of the SID is written after the departure and the airway starts there; LFRS - NT102 is the SID, never routed', what='route text')
 
 
+@case('F33', 'Procedure rows drawn before the aircraft registry is read', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      rule='user 29 Oct: « très long à charger avant de faire apparaître les procédures »; the rows depend on the aerodromes and aerodb only, never on refsPending')
+def f33(c):
+    # aerodb.aircraft() held back 6 s (the real registry, served by the launcher, can take seconds): the rows must not wait for it
+    c.page.add_init_script("""(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+        real = v && { ...v, create: (...a) => { const db = v.create(...a), ac = db?.aircraft?.bind(db);
+          if (ac) try { db.aircraft = () => new Promise(r => setTimeout(r, 6000)).then(ac) } catch (e) {}
+          return db } } } }) })()""")
+    open_proc(c)
+    c.until("!!document.querySelector('[data-module=fuel] [data-proc=arr] select[data-k=\"p-arr-star\"]')", timeout=4000,
+            what='the arrival row is drawn within 4 s although the aircraft registry takes 6 s')
+    c.ok(c.js("!!document.querySelector('[data-module=fuel] [data-block=result][data-loading]')"), 'the result is already computed',
+         'the quote still waits for the registry (the rows did not wait for it)')
+
+
 @case('F9', 'Routing bench', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False, rule='frame/lib/routing.js: the bench passes (41 checks)')
 def f9(c):
     c.page.goto(f'{c.base}/frame/lib/test/routing.html', wait_until='load')
