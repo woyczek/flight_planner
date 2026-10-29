@@ -878,7 +878,9 @@ def d43(c):
     c.eq(c.doc(PATH)['route']['procedures'], _CHOSEN, 'route.procedures untouched', what='route.procedures')
     c.tap('.mp-ad-proc[data-proc=arr] [data-go]')
     c.until("location.hash.startsWith('#fuel')", what='Fuel opens')
-    c.eq(c.hash(), '#fuel?focus=arr', 'the address of the arrival row', what='hash')
+    # Fuel takes the request once (ctx.consume('focus'), frame/INTEGRATION 6.1) and the frame removes it from the address: a reload or Back does not replay it
+    c.until("document.activeElement && document.activeElement.dataset && document.activeElement.dataset.k === 'p-arr-rwy'", timeout=15000, what="Fuel's arrival row has the focus")
+    c.eq(c.hash(), '#fuel', 'the request is consumed: the address is back to Fuel alone', what='hash')
 
 
 @case('D44', 'Without records the path is the route; the live view sees the choice', 'D', tags=('maps',), screens=False, designs=('standard',),
