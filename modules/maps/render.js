@@ -1091,7 +1091,9 @@
     // suivent par-dessus leur trait ; sans lui, la route
     legs = null,
     // overRoute(ctx) : l'écran peint ses tracés au niveau de la route (procédures choisies), avant ces cartouches
-    overRoute = null
+    overRoute = null,
+    // top(ctx) : ce que l'écran peint en dernier, par-dessus tout (les noms et contraintes des procédures : jamais couverts)
+    top = null
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
     T = theme || tokens();
@@ -1165,6 +1167,7 @@
     // cartouches des voies que suit le chemin (route et procédures) : par-dessus son trait (le mode Édition de l'écran dessine
     // ensuite ses poignées)
     for (const f of ends.over || []) f();
+    if (top) top(ctx);
     // cadres posés, pour les infobulles et les libellés ajoutés par l'écran (TOC, TOD) : cartouches des voies, libellés
     // d'espaces, libellés de la route
     return {

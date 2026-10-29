@@ -45,6 +45,7 @@ import {
 import {
   layout as procLayout,
   draw as drawProcs,
+  drawLabels as drawProcLabels,
   routeLines
 } from './procs.js';
 import {
@@ -295,7 +296,7 @@ function draw() {
     zoomOn = k => MapsRender.visibleAt(S.profile, k, zv),
     // procédures choisies (SID, STAR, approche) : mise en page à l'écran ; leurs libellés se réservent dans le placeur de la
     // carte, après ceux de la route
-    procs = mission ? null : procLayout(ctx, toC, pxDeg),
+    procs = mission ? null : procLayout(ctx, toC, pxDeg, zoomOn),
     // couche « Procédures » : le niveau de couverture des terrains visibles (null : couche cachée ou absente)
     cov = mission ? null : covSync();
   if (S.tuneEl) got('tune')?.markTune(zReal, zv, (shown.n + shown.s) / 2, W, H);
@@ -331,6 +332,7 @@ function draw() {
     reserve: procs ? pl => procs.reserve(pl) : null,
     legs: mission ? null : S.route?.path || null,
     overRoute: procs ? c => drawProcs(c, procs) : null,
+    top: procs ? c => drawProcLabels(c, procs) : null,
     mission: mission && S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones

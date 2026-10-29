@@ -122,7 +122,11 @@ const ZOOM_IFR = {
     aar: [0, 24],
     nat: [0, 24],
     wind: [0, 24],
-    contours: [9, 24]
+    contours: [9, 24],
+    // procédures choisies (utilisateur, 29 octobre : « ils disparaissent trop tôt en zoom arrière, c'est une info hyper
+    // importante ») : leurs noms à toutes les échelles, leurs points et contraintes dès la vue régionale (≈ 110 px par degré)
+    procNames: [0, 24],
+    procCons: [6.25, 24]
   },
   ZOOM_VFR = {
     ...ZOOM_IFR,

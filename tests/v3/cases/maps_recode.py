@@ -618,6 +618,27 @@ def d52(c):
     c.ok(not mine['same'], 'S.procs kept', 'and the path is rebuilt from the new records')
 
 
+_ZOOM_LAYOUT_JS = """(px) => { const S = window.__mp.S, R = window.MapsRender, ctx = document.createElement('canvas').getContext('2d'),
+  z = R.zoomOf(px), L = window.__pr.layout(ctx, (lat, lon) => ({ x: (lon + 2) * px, y: (48 - lat) * px }), px, k => R.visibleAt(S.profile, k, z));
+  return L && { names: L.names.map(n => n.text), near: L.near, pts: L.pts.length } }"""
+
+
+@case('D53', 'Procedure names at every scale, their fixes and constraints from the regional view, both on the thresholds page', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='user 29 Oct: "ils disparaissent trop tôt en zoom arrière (c’est une info hyper importante)"; "le nom de l’approche ne semble pas s’afficher"')
+def d53(c):
+    _open_proc(c, _proc_flight())
+    far, mid = c.js(_ZOOM_LAYOUT_JS, 20), c.js(_ZOOM_LAYOUT_JS, 150)
+    c.eq(len(far['names']), 3, 'far out (20 px per degree): the SID, STAR and approach names are still written', what=f'names {far["names"]}')
+    c.ok(any(n.startswith('APP ') for n in far['names']), f'{far["names"]}', 'the approach is named (one fix off its threshold is enough)')
+    c.ok(not far['near'], 'near', 'far out: no fixes and constraints')
+    c.ok(mid['near'], 'not near', 'at 150 px per degree (the regional view, well below the former 300): fixes and constraints are written')
+    c.page.goto(f'{c.base}/frame/index.html#maps?tune=1', wait_until='load')
+    c.until("!!document.querySelector('.mp-tune [data-row=\"procCons\"]')", timeout=8000, what='the tuning page')
+    rows = c.js("() => ['procNames', 'procCons'].map(k => { const r = document.querySelector(`.mp-tune [data-row=${k}]`); return r && [r.textContent.trim().slice(0, 40), !!r.querySelector('input[data-vis]'), r.querySelectorAll('input[type=range]').length] })")
+    c.ok(all(r and not r[1] and r[2] == 2 for r in rows), f'{rows}', 'both thresholds are rows of the tuning page, with their two sliders and no layer box')
+
+
 @case('D41', 'The chosen SID, STAR and approach are drawn from the runway', 'D', tags=('maps',), screens=False, designs=('standard',), langs4=True,
       rule='V3 § 10.20, maps SPEC § 5: path from the threshold; transition and missed approach dashed; a leg without a fix = 2 NM stroke then dashes; RF = arc; join on a common point or dashed direct; unchosen procedures never drawn')
 def d41(c):

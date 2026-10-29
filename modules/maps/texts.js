@@ -221,6 +221,10 @@ export const TX = {
     awLabels: ['Noms des voies (distance, routes)', 'Airway names (length, tracks)', 'Namen der Flugwege (Länge, Kurse)',
       'Nombres de las aerovías (distancia, rumbos)'
     ],
+    procNames: ['Noms des procédures', 'Procedure names', 'Namen der Verfahren', 'Nombres de los procedimientos'],
+    procCons: ['Points et contraintes des procédures', 'Procedure fixes and constraints', 'Punkte und Beschränkungen der Verfahren',
+      'Puntos y restricciones de los procedimientos'
+    ],
     navaids: ['Balises', 'Beacons', 'Funkfeuer', 'Radioayudas'],
     fixes: ['Points des voies', 'Airway points', 'Flugwegpunkte', 'Puntos de aerovía'],
     vrp: ['Points de report VFR', 'VFR reporting points', 'VFR-Meldepunkte', 'Puntos de notificación VFR'],

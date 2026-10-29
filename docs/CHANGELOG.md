@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: procedure names at every scale, their fixes and constraints from the regional view, both on the thresholds page**
+  (`modules/maps/procs.js`, `layers.js`, `tune.js`, `draw.js`, `render.js`, `texts.js`; SPEC § 5, help ×4, case D53; user, 29 Oct:
+  "ils disparaissent trop tôt en zoom arrière (c'est une info hyper importante)" and "le nom de l'approche ne semble pas
+  s'afficher") — the fixed 300 px per degree became two thresholds of `#maps?tune=1`, "Procedure names" (every scale) and
+  "Procedure fixes and constraints" (from about 110 px per degree); the names are anchored at the middle of the procedure's
+  longest leg, with a fallback when an approach has a single fix off its threshold, and every procedure label is painted
+  last, so an airway box near the aerodrome no longer hides the approach's name.
+
 - **Fuel: "Auto" starts from the end of the chosen SID and ends at the start of the arrival** (`modules/fuel/module.js`,
   DECISIONS; case F28) — e.g. LFBO FINOT G36 GOSAD, which it could not find from the aerodrome.
 - **Flight path: `routingChain(flight, procs, points)` for the airway routing** (`frame/lib/current_flight.js`; bench

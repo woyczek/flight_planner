@@ -32,7 +32,7 @@ const PROC_COL = {
 };
 /** Teinte d'une procédure d'après l'origine de son point ('sid' | 'star' | 'app' | 'missed'). */
 export const colOf = origin => (PROC_COL[origin === 'missed' ? 'app' : origin] || PROC_COL.app)[S?.theme?.dark ? 1 : 0];
-/** Vue rapprochée : les contraintes et les noms des points s'écrivent à partir de 300 px par degré. */
+/** Sans seuils (page d'essai) : les contraintes et les noms des points s'écrivent à partir de 300 px par degré. */
 const NEAR_PX = 300;
 /** Longueur du trait d'un tronçon sans point, le long de sa route (NM). */
 const STUB_NM = 2;
@@ -178,10 +178,12 @@ const widthOf = (ctx, line) => line.parts.reduce((w, c) => {
  *  names (libellés « SID NOM » à placer), pts (points à écrire), reserve(pl), labels } ; null sans procédure dessinée. Les
  *  libellés se réservent dans le placeur de la carte (reserve), après ceux de la route : un libellé qui n'a pas de place n'est
  *  pas écrit (le nom d'une procédure l'est toujours). */
-export function layout(ctx, toC, pxDeg) {
+export function layout(ctx, toC, pxDeg, zoomOn = null) {
   const path = S.route?.path;
   if (!path?.length || path.every(p => p.origin === 'route')) return null;
-  const near = pxDeg >= NEAR_PX,
+  // seuils de la page des seuils (procNames, procCons : layers.js) ; sans eux, 300 px par degré
+  const near = zoomOn ? zoomOn('procCons') : pxDeg >= NEAR_PX,
+    showNames = zoomOn ? zoomOn('procNames') : true,
     pos = p => num(p.lat) && num(p.lon),
     at = p => ({
       ...toC(+p.lat, +p.lon),
@@ -279,10 +281,29 @@ export function layout(ctx, toC, pxDeg) {
       ['star', 'STAR', P.star || P.starTrans, f.arr?.star || f.arr?.trans],
       ['app', 'APP', P.app || P.appTrans, f.arr?.app || f.arr?.appTrans]
     ]) {
-    const own = path.filter(p => p.origin === origin && pos(p) && !isRwy(p));
+    if (!showNames) break;
+    // ses points hors seuil, sinon (une approche donnée par son entrée : un ou deux points) tous ses points placés ; le nom au
+    // milieu de son plus long tronçon, jamais perdu
+    let own = path.filter(p => p.origin === origin && pos(p) && !isRwy(p));
+    if (own.length < 2) own = path.filter(p => (p.origin === origin || (origin === 'app' && p.origin === 'missed')) && pos(p));
     if (!own.length) continue;
+    let q = at(own[0]),
+      best = -1;
+    for (let i = 1; i < own.length; i++) {
+      const a = at(own[i - 1]),
+        b = at(own[i]),
+        d = Math.hypot(b.x - a.x, b.y - a.y);
+      if (d > best) {
+        best = d;
+        q = {
+          x: (a.x + b.x) / 2,
+          y: (a.y + b.y) / 2,
+          src: own[i]
+        };
+      }
+    }
     names.push({
-      q: at(own[Math.floor(own.length / 2)]),
+      q,
       text: procLabel(kind, rec, id),
       old: !!rec?.outdated,
       origin
@@ -420,6 +441,12 @@ export function draw(ctx, L) {
     ctx.strokeStyle = colOf(q.src?.origin);
     ctx.stroke();
   }
+  ctx.restore();
+}
+/** Libellés de la mise en page L (noms des procédures, puis points et contraintes) : peints en dernier, par-dessus les traits
+ *  et les cartouches des voies, pour qu'aucun ne soit couvert. */
+export function drawLabels(ctx, L) {
+  ctx.save();
   for (const l of L.labels) drawLines(ctx, l.lines, l.r, l.col);
   ctx.restore();
 }
