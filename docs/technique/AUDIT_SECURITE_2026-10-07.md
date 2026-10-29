@@ -865,6 +865,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 23 | Data module « Publier » (3355c5e24) | acceptable, one note on the result's shape |
 | 24 | Frame: claim, `/cancel`, sync on gesture, named applications, frozen references (56ab4fd94, f70eba426, a215d47bd, e3870b354, 802e6856f) | acceptable, two notes |
 | 25 | AeroDB path B (2dbfea12a) and `source.url` host check (97bf5577f) | acceptable; points of 18 and 22 settled |
+| 26 | Fuel « Sur la carte » and the map's proposal (d4f683475) | acceptable; note of 20 settled |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1161,7 +1162,17 @@ conflict » when there are some. Return counts, or count lists in `publishOutcom
 - `source.url`: the base must be under `https://www.sia.aviation-civile.gouv.fr/` (no `..`), the ICAO key
   `^[A-Z0-9]{4}$`, the name a simple PDF name; otherwise no link.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25); the sharing of the track and of the position is the user's decision.
+**26. Fuel, « Sur la carte » (d4f683475) — acceptable; the note of 20 is settled.** The proposal is taken from the
+address once (`ctx.consume` of `focus` and the six keys); `focus` must be `dep` or `arr`. It is applied only once the
+flight is read and the records of the flight's own aerodrome for that side are loaded (a flight that changed aerodrome
+receives nothing). `admit()`: `none` gives « None » (the runway stays unchanged); a runway must match `^\d{2}[LRC]?$`
+and be one of the proposed runways, and the list's value is written; a procedure must be a record of that aerodrome, of
+the right kind (SID, STAR or APP; a transition must carry one) and not doubtful (`isDoubt`, now shared in
+`frame/lib/procedures.js`), and its `id` is written; anything else writes nothing, the raw string never. The write goes
+through `choose()` (the lists' path, `saveFlight` bounded to `FUEL_FIELDS`); the report through `notify()`. The button's
+ICAO is escaped and encoded in the Map's address (which checks it again); the `procfetch` selector uses `CSS.escape`.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26); the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
