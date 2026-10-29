@@ -1888,3 +1888,164 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
   (a name is data, kept in the catalogue like `n` of the sources; « Serbie et Monténégro » for LY, « Groenland » for BG, `XX` — the EAD authority whose files are named `EK_` — is named as such, not guessed). The answer now depends on the table, so it must be asked again after `{ coverage: true }`.
 - **`AeroCatalogue.PARSER_VERSION` = 19** (18 when written, raised with the overlap check of the same night), the `VERSION` of `shared/sia_base.js`, with a comment that it must follow it; K21 reads both files and compares them (a bump in `sia_base.js` without the catalogue fails the case).
 - **Bench**: K1 (`procedures.html`: partial with the counts, zeros and no counts green, a copy; `coverageByState` `held` per State and `names`), K21 (`catalogue.html`: 12 reasons, `names` ×4 for every prefix, typography; `PARSER_VERSION` vs `sia_base.js`), K11 (`proc_manual.install` writes `pages_unread` and `doubt`).
+
+
+## 30 October 2026 — D5: the base built on the launcher, one headless browser per zone
+
+*First delivery. Revised the same day: one instance for all the zones by default, the frame's route, the token off the command line — see the section « D5 revised » below.*
+
+**Decision** (ergonomics session, 29–30 Oct; Données SPEC § 5.4): the aeronautical base is built **on the launcher, one process
+per zone**, by running the **existing** JavaScript builders in the workstation's browser without a window (Edge, else
+Chrome), orchestrated by `tools/regen/base.py` (set `base`, verb `build`, args `{ zones }`). No port to Python, no Node.
+Contract: SPEC § 5 septies, INTEGRATION « Building on the workstation ». The page path of the module is unchanged
+(`'no-browser'` → the module builds in the page).
+
+**What was written.** `tools/regen/base.py` (verb, scheduler, browser, transport, validation, commit), `frame/aerodb/build/headless.html` +
+`headless.js` (the build page), and in `shared/sia_base.js` a per-zone entry that **shares** the V2 code instead of copying it:
+`buildZone` (build with the zone alone → `splitZones` → `zoneBodies` + `zoneEntry`), `zoneSettings`, `citiesByZone`, `majorCities`,
+`frenchFirRings` / `priorityRingsFromXmlSia`; `publishSplit` now calls the same `zoneBodies` / `zoneEntry` / `citiesByZone`;
+`build` takes `settings` and `priorityRings`; `splitZones` takes `mainZone`; `esc` is read at the call (the page has no kit).
+**The V2 page and the Worker path are unchanged in behaviour**: the same ten zones published by the new `sia_base.js` and by
+the old one (`git show HEAD:shared/sia_base.js`) give 133 files, identical but for `cachedAt` / `updated_at`.
+
+**Measure** (this workstation: 24 cores, 63 GB, 24 GB free; Edge; the real `data/sia` copied, 10 zones `fr gb es de it be ch ie nl nat`,
+default settings, no X-Plane; Windows working set / private bytes of the whole browser process tree, sampled twice a second):
+
+| Run | Wall time | Instances | Peak memory (sum of the trees) |
+|---|---|---|---|
+| **Job, 10 zones in parallel** | **12.0 s** (10.5 s first run) | 10 | 6.1 GB working set, **3.6 GB private** |
+| Job, one instance at a time (`cores: 2`) | 28.0 s | 1 | 1.5 GB WS, 1.2 GB private (fr) |
+| **The page's own build, ten zones in one page** (`build` + `publish`, golden) | **6.3 s** (3.5 s `build`) | 1 | 1.7 GB WS, 1.3 GB private |
+
+| Zone | Alone (s) | In parallel (s) | Peak per instance, private (MB) | Peak, working set (MB) | Output (MB) |
+|---|---|---|---|---|---|
+| fr | 5.9 | 10.6 | 1183 | 1533 | 6.7 |
+| gb | 1.9 | 3.4 | 407 | 745 | 0.9 |
+| es | 2.0 | 5.1 | 436 | 795 | 0.7 |
+| de | 4.0 | 7.3 | 448 | 812 | 0.9 |
+| it | 2.0 | 5.8 | 450 | 810 | 1.5 |
+| be | 2.9 | 6.1 | 448 | 847 | 0.4 |
+| ch | 2.1 | 6.7 | 412 | 760 | 0.3 |
+| ie | 2.0 | 7.2 | 430 | 761 | 0.2 |
+| nl | 2.1 | 5.2 | 447 | 839 | 0.3 |
+| nat | 2.0 | 5.2 | 367 | 698 | 0.0 |
+
+- **Parallel is 2.3× faster than one process at a time, but 1.9× slower than the page building all ten zones in one go**: on this data
+  set (about 150 MB of inputs) the whole build takes 3.5 s on the main thread, and each process pays about 2 s of browser start,
+  scripts and the 70 000 cities before it reads its own files. The one-process-per-zone design pays when zones are heavy
+  (X-Plane world data, FAA class airspaces) or when the page must stay free; **it does not pay on a refresh of the current
+  zones**. Reported, not hidden: the decision was taken before the measure.
+- Memory: **≈ 420 MB per instance for an openAIP zone, 1.2 GB for France** (44 MB of AIXM read as text and DOM). The scheduler counts
+  `500 MB + 15 × the largest input` per zone (`need_of`), reserves it for 15 s after the start (the instance has not taken it yet), and
+  starts the heavy zones first. The 500 MB of the brief is right for a small zone and too low for `fr`.
+- **Largest output**: `fr`, **6.7 MB** of JSON in 12 files (+ 0.43 MB `cities_major.json`), **7.9 MB** as the body of the put request; the
+  largest file is `fr/airspaces.json`, 2.8 MB. The 64 MB limit planned for the launcher's route is 8× the largest zone of the
+  published set; `us` (FAA classes) was not measured (no data here): 64 MB is a sound limit, the job-scoped server uses it too.
+
+**Golden test.** The ten zones built the page's way (`SiaBase.build` for all ten, then `SiaBase.publish` into a folder in memory,
+the V2 path) against the job's output, `updated_at` aside: **102 of 122 files identical**. The 20 others, all explained, none a
+loss of data:
+- `fr/meta.json`: `xmlInventoryData` lists the files read — France's only, in the zone built alone.
+- **Near-duplicates between zones are kept.** `AeroSources.merge` removes an airspace of the same type and name or the same shape, a navaid /
+  point / VFR point at the same place and identifier, that an earlier source already gave (France's SIA first, then the files in name order). A zone
+  built alone cannot see the others: `be` +3 airspaces (TMA LILLE 2 and 9, LUXEMBOURG TMA 4), `ch` +7 airspaces +1 aerodrome +3 navaids +6 VFR points
+  (Geneva, Basle), `de` +3 (BALE-MULHOUSE), `es` +5 navaids, `gb` +1 navaid, `ie` +1 airspace, `it` +2 airspaces +2 navaids, `nl` +1; `ch/aeroindex` and `index.json` follow.
+  The spec shares France's **outlines** only (§ 5.4); the exact dedupe would need France's other data (a two-phase build: `fr` first, the
+  others reading its output) and cannot be exact between two zones that are not France anyway (file order). **Decision needed**: accept the
+  duplicates (the reader that joins zones can drop them), or build `fr` first and give the others its kind files.
+- `obstaclemax.json` of `be`, `ch`, `de`, `es`: the cells the French AIXM computes in a neighbour's degree squares (8 in all) stay in `fr`; the
+  whole build moved them to the neighbour. The union is the same (`joinZones` merges); nothing is lost.
+Everything else (airspaces, aerodromes, navaids, points, VFR points, airways, MORA cells, cities, meta of every other zone) has the same content.
+
+**Transport — decision and what replaces it.** The browser loads **exactly one origin** and the job needs three things from it: the build page
+and its scripts, the zone's inputs, and a way to hand the output back. The launcher has none of the last (no `regen/put`; `tools/launch.py` is the frame's file). So:
+- **Now**: a **job-scoped server** in `base.py` (`Transport`): 127.0.0.1, ephemeral port, stopped at the end of the job; serves **only** the
+  nine code files of the page (`CODE_FILES`) and the inputs the job listed (`/data/sia/<name>`, whitelist by exact name, no traversal, no folder, no link);
+  one POST `/__setup/regen/job/put` with `X-SOG-Setup: 1`, the token in the body, `Origin` and `Host` checked, size limit from `Content-Length`
+  before reading (413), 409 not the running job / 403 bad token (`hmac.compare_digest`) / 400 zone not in the job or file name outside
+  `^[a-z0-9_.-]{1,64}\.json$`. The token is in the **fragment** of the page address, never in a query or a log.
+- **The frame session's decision** (30 Oct): a **launcher route** `/__setup/regen/job/put` with the job's `token`, `job.take(zone, timeout)` and
+  `job.put(zone, files)` (the contract above, mirrored here by `ZoneInbox` and `Transport.accept`). The switch is **one function and one address**:
+  `inbox_of(job, zones)` returns the frame's `job.token/take/put` when the `Job` has them and `Transport` is not started; the page is then given
+  `ctx['origin']` (the launcher's address). The page code, the paths (`/frame/…`, `/shared/…`, `/data/sia/…`) and the POST body do not change.
+  **To do on the frame's side**: the three `Job` members, the route, and serving the nine code files and `data/sia/` to the build page (the launcher already
+  serves the tree with its policy); `inputs` stay a list the job builds (the page receives it in the fragment).
+
+**Security, one by one** (the analysis session reviews before integration):
+1. **Executable by absolute path only** (`browser_candidates`, `find_browser`): Program Files, Program Files (x86), `%LOCALAPPDATA%` (per-user Chrome; the
+   variable must itself be absolute), the usual absolute paths on macOS and Linux. **Never** `shutil.which`, never a bare name, never the current folder
+   (K42 plants a fake `msedge.exe` in PATH and in the current folder and checks it is not chosen); the file must exist and be a file, not a link.
+2. **Closed option list** (`browser_args`, K42): `--headless=new`, `--user-data-dir=<mkdtemp>`, `--no-first-run --no-default-browser-check --disable-extensions
+   --disable-sync --disable-background-networking --disable-component-update --disable-default-apps --metrics-recording-only --mute-audio --disable-gpu
+   --disable-breakpad --no-pings`; no `--no-sandbox`, no debugging port; the console goes to stderr (`--enable-logging=stderr --v=0`), which is the progress channel.
+3. **Temporary profile** created per instance and **deleted after, whatever happens** (`finally`: kill, then `remove_tree` with retries); K46/K47 check none is left.
+4. **No network beyond the job's one address**: `--proxy-server=127.0.0.1:9 --proxy-bypass-list=<-loopback>;127.0.0.1:<port>` and
+   `--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1`. **Measured, and the reason for `<-loopback>`**: with the bypass list alone, Chrome keeps its
+   implicit bypass of loopback and the page could reach any other local port (the launcher's, a database's); with `<-loopback>` the other ports, `localhost`, `[::1]` and every outside
+   host fail (tested on Edge with two local servers).
+5. **One origin, token in the fragment**: the fragment is never sent in a request, so the token is not in the server's view, in a log or in a referrer; `headless.js` also
+   removes it from the address (`history.replaceState`). It is in the browser's command line (visible to a process of the same user, who could write `data/` anyway) and
+   never in `view()`, `.regen_last.json`, the journal or a result (K46).
+6. **A time limit per zone** (15 min, `ZONE_TIMEOUT`) and the cancel: the process tree is killed (`taskkill /PID /T /F` by number with an argument list, `shell` never; the
+   process group elsewhere), then the profile deleted. K47: two hanging instances, cancelled — browsers and children dead (a child that beats a file stops beating), profiles gone,
+   nothing written or committed.
+7. **Nothing from the page is a path, an address or a command**: the zones are checked against the list of `aero_zones_geo.js`; the job lists the inputs itself (no link, safe
+   names, `sia/` root, three source folders and `zones/<zone>/`); the zone, the cycle and the 13 or 14 file names of the output are validated (`validate`) before any write; a rendered
+   file of another zone, a missing file, a wrong header or type refuses the whole zone (K46).
+8. **The job log is the base's** (`job.log`, `job.step` cleaned by `clean_error`); `base.py` logs the zone, the counts and the commit, never an address or a token.
+9. **Personal sources off by default** (`zoneSettings`): `enaire`, `nats` and X-Plane are dropped unless the owner's declaration comes in `args.personal` (invariant 1).
+
+**Open points.** (1) The launcher route and `Job.token/take/put` (frame session). (2) Near-duplicates between zones: accept, or two-phase (above). (3) The data set here is
+small, so parallel does not beat the page; measure again with X-Plane and the FAA classes before advertising speed. (4) The page cannot read the X-Plane folder (a handle kept in the
+page's own browser): a local-only build with X-Plane stays in the page. (5) `fr/meta.xmlInventoryData` and the obstacle cells in neighbours (above). (6) Old whole-format files
+(`sia/base/<zone>/<cycle>.json`, `cities.json`) are neither written nor removed here. (7) The acorn check of `tools/verify_format.html` needs the network; here the formatted blocks were
+compared token for token (identical but for white space).
+
+## 30 October 2026 — D5 revised: one headless instance builds all the zones; the frame's route; the token off the command line
+
+**Decision** (ergonomics session, on the measure above): **one** window-less instance builds **all** the requested zones with the page's own functions
+(`SiaBase.buildZones`: the V2 `build`, then `splitZones`, `zoneBodies`, `zoneEntry`), off the page's thread, and hands each zone back as soon as it is ready; the
+job writes and commits it alone. **One instance per zone stays as an internal option** (`args.parallel`, false by default, not on the screen); its scheduler
+(`can_start`, `need_of`) is kept because it costs nothing to keep. The sections above describe the first delivery (per-zone instances by default); where
+they differ, this section holds.
+
+**Numbers, same data and machine.** Ten zones `fr gb es de it be ch ie nl nat`, through the real launcher:
+
+| Mode | Wall (the job's `seconds`) | Memory | Output against the page's |
+|---|---|---|---|
+| **One instance, all zones (default)** | **10.4 – 12.2 s** (22 s once, the machine busy with other sessions): the first zone out at 6 to 8 s, then about 0.45 s per zone (write and git commit, serial) | **1.3 GB private**, 1.7 GB working set | **identical, 122 of 122 files** (`updated_at` aside) |
+| One instance per zone (`parallel`) | 12.0 s with the job called directly, 17.4 s through the launcher (ten commits compete) | 3.6 GB private, 6.1 GB working set | 98 of 122 |
+| The page's own build (`build` + `publish`, no commits) | 6.3 s | 1.3 GB private | (the reference) |
+
+Per-zone instances cost about 2 s of start per instance (browser, scripts, the 70,000 cities) and lose the cross-zone duplicate removal. What would
+justify them: a **heavy source** that one instance would read for minutes — X-Plane world data, the FAA class airspaces (`faaclass`) — spread over several
+cores while the page stays free, and enough memory for 420 MB to 1.2 GB per instance. Measure again with such a source before turning them on.
+
+**The frame's route replaces the interim server.** The job-scoped server (`Transport`) and the shim (`ZoneInbox`) are **gone**: `regen_jobs.Job` has `token`,
+`put` and `take`, `Jobs.put` and POST `/__setup/regen/job/put` do the checks (409 / 403 / 400 / 413, 64 MB), the page loads everything from the launcher's
+address (`ctx['origin']`, or the running launcher's port) and the verb waits with `job.take(zone, timeout)`. The proxy flags bypass that address only. The largest output
+is `fr`, 6.7 MB of JSON (7.9 MB as a request body, 8 times under the 64 MB).
+
+**The token never on a command line** (security review). The browser's command line can be read from other accounts, so it carries only
+`file:///…/<temporary profile>/start.html`; that file (created with owner-only rights in a `mkdtemp` folder, checked to be under the user's temporary
+folder) holds a script that goes to `<launcher>/frame/aerodb/build/headless.html#job=…&t=<token>&…`. The page reads its fragment and clears it
+(`history.replaceState`), says `started` on the console, and the job **deletes `start.html` at once** (the profile at the end). The console lines `SOGB` carry
+the zone, counts and messages, never the address; nothing else of the browser's console is read (and a debugging line is cut before the `#`). K48 checks
+the argv, that the file is gone after the start, and the view, the journal and the result.
+
+**What the launcher must allow (frame session; open).** A navigation from a `file://` page to the launcher is `Sec-Fetch-Site: cross-site`, which
+`_same_origin()` of `tools/launch.py` refuses (measured: the page never loads; the job fails after 45 s with `browser-failed`). The smallest exception, tested on a copy of the
+launcher in memory:
+```python
+return self.headers.get('Sec-Fetch-Site') in (None, 'same-origin', 'none') or (
+    self.headers.get('Sec-Fetch-Mode') == 'navigate' and self.headers.get('Sec-Fetch-Dest') == 'document'
+    and self.path.split('?', 1)[0].split('#', 1)[0] == '/frame/aerodb/build/headless.html')
+```
+Only that document, only as a navigation; every script, data file and route stays same-origin only. A web page that sends the user's browser there starts a build
+that cannot hand anything back (it has no token). Case **K50** starts the real launcher and asks for exactly this; it is listed in `known_failures.py` until the
+exception is in, then the line goes. With it, the end-to-end run through the launcher gives the numbers above.
+
+**Writes** go through the launcher's path rule (`data_sync.data_path`: no `..`, `:`, device name, link out of `data/`) and a check that the real path stays under
+`data/sia/base/<zone>/` (`target_of`, K48). **Shape for the module**: `zones` a dict by zone at the root of the job view (`state`, `done`, `total`, `error`
+code), the result `built`, `failed: [{ zone, error }]`, `commits: [{ zone, commit }]`, `reason`; `args.personal` a list of source ids; no browser: `reason: 'no-browser'`;
+`'xplane'` in `personal`: `reason: 'xplane-in-page'`, for the job (the X-Plane folder is a handle held by the page).

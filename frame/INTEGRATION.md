@@ -965,6 +965,7 @@ in the launcher; `resume` finds it again.
   `args.zone` / `args.zones` or a name outside `[a-z0-9_.-]{1,64}.json`, 413 over 64 MB in all (`regen_jobs.PUT_MAX`).
   The route writes nothing: the verb receives the texts by `job.take(zone, timeout)` (`None` on timeout or cancel), writes
   them itself and commits by `commit_outputs`.
+  The verb `base/build` (lot D5, `tools/regen/base.py`; args `{ zones, personal? }`, `zones` as a dict at the root of the view, SPEC and INTEGRATION of `frame/aerodb/`) is the first user.
 - `POST /__setup/regen/job { set, verb, args, author }`, `GET …/job[?id=]`, `POST …/job/cancel { id }`: one job at a time in a thread;
   `set` and `verb` from a fixed list (`regen_jobs.REGISTRY`), each with its check of `args`; nothing from the page is a path,
   an address or a command. 400: unknown operation or bad arguments; 409: a job is running; 410: no such job; 429 `{ reason:

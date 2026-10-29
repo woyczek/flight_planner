@@ -1362,6 +1362,17 @@
     appAssetWhy = `${appUrl('shared/carto/' + name)} : ${[...new Set(why)].join(' ; ')}`;
     return null;
   }
+  /** Contours (premier anneau) des FIR françaises du SIA parmi des espaces : la France y a la priorité (une construction qui
+   *  lit d'autres sources écarte leurs espaces dont le centre y tombe). */
+  const FR_FIR = /^(PARIS|REIMS|BREST|BORDEAUX|MARSEILLE|CAYENNE)$/i;
+  const frenchFirRings = airspaces => (airspaces || []).filter(a => a.type === 'FIR' && a.src === 'sia' && FR_FIR.test(a.name)).map(a =>
+    a.rings[0]).filter(Boolean);
+  /** Contours prioritaires (FIR françaises) d'un export XML_SIA (texte) : ce que build en retient quand il le lit lui-même. */
+  function priorityRingsFromXmlSia(text) {
+    const list = parseXmlSiaAirspaces(text);
+    for (const a of list) a.src ||= a.azba ? 'dircam' : 'sia';
+    return frenchFirRings(list);
+  }
   const AIRAC_NAME = /^(?:AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)(\d{4}-\d{2}-\d{2})\.xml$/i;
   // zone d'origine de chaque élément de la base (espace, aérodrome, point…), d'après le fichier lu : notée par build, lue
   // par la publication par zone (splitZones) ; rien n'est ajouté à la base mémorisée
@@ -1382,13 +1393,17 @@
     folderName = 'Dossier SIA',
     progress = () => {},
     signal,
-    extra = {}
+    extra = {},
+    settings = null,
+    priorityRings = null
   } = {}) {
     const t0 = performance.now(),
       timings = [];
     const AS = await needAero(),
       Z = await needZones(),
-      zs = Z?.settings(),
+      // réglages des zones : ceux de ce navigateur, sauf donnés (la construction d'UNE zone sur le poste, buildZone, lit
+      // seulement cette zone, sans toucher aux réglages de l'utilisateur)
+      zs = settings || Z?.settings(),
       // zones actives et sources cochées (Paramètres › Maintenance › Données aéronautiques) ; sans zones : tout est lu
       wanted = rel => !Z || Z.fileWanted(rel, zs),
       xpZones = Z ? Object.keys(zs.on).filter(id => Z.isOn(id, zs) && Z.srcOn(id, 'xplane', zs)) : null;
@@ -1545,9 +1560,9 @@
     // FIR françaises (contours XML_SIA), le SIA seul : un espace d'une autre source dont le centre y tombe est écarté
     // (les autres sources découpent et nomment les mêmes espaces autrement)
     const bySource = {};
-    const FR_FIR = /^(PARIS|REIMS|BREST|BORDEAUX|MARSEILLE|CAYENNE)$/i,
-      cover = base.airspaces.filter(a => a.type === 'FIR' && a.src === 'sia' && FR_FIR.test(a.name)).map(a => a.rings[0]).filter(
-        Boolean);
+    // priorityRings : contours des FIR françaises lus à part (frenchFirRings) quand le SIA n'est pas lu dans cette construction
+    // (la zone construite seule, buildZone) : la règle est la même, un seul calcul
+    const cover = [...frenchFirRings(base.airspaces), ...(priorityRings || [])];
     /** Vrai si le centre du cadre du premier anneau de l'espace a tombe dans une FIR française du SIA (cover). */
     const inFrance = a => {
       let la0 = 90,
@@ -1974,9 +1989,10 @@
 
   /** Base découpée par zone : { zone: morceau }. Chaque élément va à la zone de son fichier (ZONE_OF), sinon à la zone
    *  qui contient sa position (X-Plane, MORA, obstacles), sinon à la zone principale (France si active) ; les autres
-   *  champs (cycle, axes ENR 5.7, fichiers analysés…) vont à la zone principale. meta : report.zones de build. */
-  function splitZones(b, zones, Z, meta = {}) {
-    const home = zones.includes('fr') ? 'fr' : zones[0],
+   *  champs (cycle, axes ENR 5.7, fichiers analysés…) vont à la zone principale. meta : report.zones de build. mainZone :
+   *  la zone principale si ce n'est pas la France (ou la première). */
+  function splitZones(b, zones, Z, meta = {}, mainZone = null) {
+    const home = mainZone || (zones.includes('fr') ? 'fr' : zones[0]),
       parts = Object.fromEntries(zones.map(z => [z, {
         airspaces: [],
         aero: {},
@@ -2198,6 +2214,136 @@
   // d'une zone publiée sont retirés.
   const SPLIT_KINDS = ['aerodromes', 'navaids', 'points', 'vrp', 'airways', 'obstacles'],
     MAJOR_POP = 100000; // habitants : seuil de l'index des grandes villes
+  /** Réglages (forme de AeroZones.settings) d'une construction de zones données : elles seules actives, leurs sources sous licence
+   *  d'usage personnel et X-Plane décochées sauf celles de `personal` (déclaration du propriétaire, SPEC du module Données § 10.1). */
+  const zoneSettings = (Z, zones, personal = []) => {
+    const list = [].concat(zones),
+      off = Object.fromEntries(Object.entries(Z.SOURCES).filter(([id, s]) => s.personal && !personal.includes(id)).map(([id]) => [id,
+        false
+      ]));
+    return {
+      on: Object.fromEntries(list.map(z => [z, true])),
+      src: Object.fromEntries(list.map(z => [z, {
+        ...off
+      }]))
+    };
+  };
+  /** Zones dans l'ordre du découpage : la France d'abord (zone principale, jamais absente du découpage), puis les autres par ordre
+   *  alphabétique ; l'ordre départage les éléments qui touchent la marge de deux zones, quel que soit l'ordre demandé. */
+  const splitOrder = zones => ['fr', ...[...new Set(zones)].filter(z => z !== 'fr').sort()];
+  /** Textes prêts à écrire d'une zone : ses 12 fichiers (updated_at = at), son entrée du manifeste et les grandes villes. */
+  function zoneTexts(zone, part, cities, base, cycle, at) {
+    const bodies = zoneBodies(zone, part, {
+        cycle,
+        cities
+      }),
+      texts = {},
+      sizes = {};
+    for (const [kind, body] of Object.entries(bodies)) sizes[kind] = (texts[`${kind}.json`] = JSON.stringify({
+      ...body,
+      updated_at: at
+    })).length;
+    texts['manifest.json'] = JSON.stringify(zoneEntry(cycle, part, sizes));
+    texts['cities_major.json'] = JSON.stringify({
+      ...majorCities(base.cities),
+      updated_at: at
+    });
+    return texts;
+  }
+  /** Construit PLUSIEURS zones d'un coup, comme la page V2 (build de toutes, puis splitZones et zoneBodies / zoneEntry, les mêmes
+   *  fonctions que publishSplit) sans toucher aux réglages de l'utilisateur ni à la base mémorisée : la sortie de chaque zone est
+   *  celle de la page, octet pour octet (updated_at mis à part). onZone(zone, textes) est appelée pour chaque zone dans l'ordre du
+   *  découpage, dès que son texte est prêt (le lanceur la remet zone après zone : tools/regen/base.py, frame/aerodb/build/headless.js).
+   *  La zone principale est la France même si elle n'est pas construite (priorityRings : ses contours, priorityRingsFromXmlSia).
+   *  Rend { base, report, cycle }. */
+  async function buildZones(files, {
+    zones,
+    cycle = '',
+    at = new Date().toISOString(),
+    personal = [],
+    extra = {},
+    priorityRings = null,
+    folderName = 'Dossier SIA',
+    progress,
+    signal,
+    onZone
+  }) {
+    const Z = await needZones();
+    if (!Z) throw new Error('Zones de données absentes (aero_zones.js)');
+    const together = splitOrder(zones),
+      r = await build(files, {
+        folderName,
+        progress,
+        signal,
+        extra,
+        settings: zoneSettings(Z, together.filter(z => zones.includes(z)), personal),
+        priorityRings
+      });
+    if (cycle && r.base.airac && r.base.airac !== cycle) throw new Error(`Cycle ${r.base.airac} des fichiers du SIA, ${cycle} demandé`);
+    cycle ||= r.base.airac;
+    if (!cycle) throw new Error('Cycle inconnu : aucun fichier du SIA daté');
+    const parts = splitZones(r.base, together, Z, r.report.zones, 'fr'),
+      cities = citiesByZone(r.base.cities, together, Z);
+    for (const zone of together.filter(z => zones.includes(z))) await onZone(zone, zoneTexts(zone, parts[zone], cities[zone], r.base,
+      cycle, at));
+    return {
+      base: r.base,
+      report: r.report,
+      cycle
+    };
+  }
+  /** Construit UNE zone, sans toucher aux réglages de l'utilisateur ni à la base mémorisée (la construction de la zone sur le
+   *  poste, un processus par zone : tools/regen/base.py, frame/aerodb/build/headless.html). Le même calcul que la construction
+   *  de toutes les zones d'un coup (build, puis splitZones et zoneBodies), limité à la zone : seuls ses fichiers sont lus
+   *  (réglages { on: { zone }, src }), les sources sous licence d'usage personnel et X-Plane décochées sauf celles de
+   *  `personal` (déclaration du propriétaire), puis découpé comme si `zones` (les zones construites ensemble) l'étaient toutes.
+   *  priorityRings : contours des FIR françaises (priorityRingsFromXmlSia) quand la zone n'est pas la France. cycle : celui
+   *  de la construction (le même pour toutes les zones). Rend { base, report, cycle, texts: { "<sorte>.json": texte,
+   *  "manifest.json": entrée du manifeste, "cities_major.json": grandes villes }, textes prêts à écrire (updated_at = at). */
+  async function buildZone(files, {
+    zone,
+    zones = [],
+    cycle = '',
+    at = new Date().toISOString(),
+    personal = [],
+    extra = {},
+    priorityRings = null,
+    folderName = 'Dossier SIA',
+    progress,
+    signal
+  }) {
+    const Z = await needZones();
+    if (!Z) throw new Error('Zones de données absentes (aero_zones.js)');
+    const settings = zoneSettings(Z, zone, personal),
+      // la zone principale est toujours la France (éléments sans zone, axes ENR 5.7, fichiers analysés : à elle, jamais à la zone
+      // construite seule) ; elle est donc toujours du découpage, la France d'abord puis les autres par ordre alphabétique (même
+      // départage des éléments qui touchent la marge de deux zones, quel que soit l'ordre dans lequel on les a demandées)
+      together = splitOrder([zone, ...zones]);
+    const r = await build(files, {
+      folderName,
+      progress,
+      signal,
+      extra,
+      settings,
+      priorityRings
+    });
+    if (cycle && r.base.airac && r.base.airac !== cycle) throw new Error(`Cycle ${r.base.airac} des fichiers du SIA, ${cycle} demandé`);
+    cycle ||= r.base.airac;
+    if (!cycle) throw new Error('Cycle inconnu : aucun fichier du SIA daté pour cette zone');
+    const part = splitZones(r.base, together, Z, r.report.zones, 'fr')[zone];
+    // les cases d'obstacles viennent des fichiers de CETTE zone seule : toutes restent dans sa sortie, même celles que la construction de
+    // toutes les zones d'un coup rangeait dans la zone voisine (dont les fichiers ne sont pas lus ici) ; l'union des zones est la même
+    part.obstacleMax = {
+      ...r.base.obstacleMax
+    };
+    const texts = zoneTexts(zone, part, citiesByZone(r.base.cities, together, Z)[zone], r.base, cycle, at);
+    return {
+      base: r.base,
+      report: r.report,
+      cycle,
+      texts
+    };
+  }
   /** Écrit name dans le dossier d (handle) si son contenu (hors updated_at) change ; rend la taille écrite (0 : inchangé). */
   async function writeIfChanged(d, name, body, at) {
     const old = await fileText(d, name);
@@ -2316,6 +2462,74 @@
     }
     return out;
   }
+  /** Villes rangées par zone : dans la zone de leur pays (GeoNames) quand ce pays a une zone, publiée ici ou non ; sinon (pays
+   *  sans zone : outre-mer, micro-États ; ville sans pays, base d'avant cette règle) dans la zone dont le contour la contient.
+   *  zones : les zones publiées ensemble ; { zone: [ville…] } (une ville dont la zone n'est pas publiée est écartée). */
+  function citiesByZone(villes, zones, Z) {
+    const locate = zoneLocator(zones, Z),
+      byZone = Object.fromEntries(zones.map(z => [z, []]));
+    for (const c of villes || []) {
+      const z = c.cc && Z?.ringsOf?.(c.cc)?.length ? c.cc : locate(+c.lat, +c.lon);
+      if (byZone[z]) byZone[z].push(plainCity(c));
+    }
+    return byZone;
+  }
+  /** Corps (avant sérialisation, sans updated_at) des fichiers d'UNE zone du format découpé : { sorte: { schema, zone, cycle,
+   *  kind, parserVersion, data } } ; p : le morceau de la zone (splitZones), cities : ses villes (citiesByZone). Un seul
+   *  calcul pour la publication par le navigateur (publishSplit) et pour la construction sur le poste (buildZone). */
+  function zoneBodies(z, p, {
+    cycle,
+    cities
+  }) {
+    const {
+      airspaces,
+      aero = {},
+      moraCells,
+      obstacleMax,
+      ...rest
+    } = p,
+    other = Object.fromEntries(Object.entries(aero).filter(([k]) => !SPLIT_KINDS.includes(k))),
+      files = {
+        airspaces: airspaces || [],
+        ...Object.fromEntries(SPLIT_KINDS.map(k => [k, aero[k] || []])),
+        aeroindex: aeroIndex(aero.aerodromes),
+        mora: moraCells || [],
+        obstaclemax: obstacleMax || {},
+        cities: cities || [],
+        meta: {
+          ...rest,
+          ...(Object.keys(other).length ? {
+            aero: other
+          } : {})
+        }
+      };
+    return Object.fromEntries(Object.entries(files).map(([kind, data]) => [kind, {
+      schema: 2,
+      zone: z,
+      cycle,
+      kind,
+      parserVersion: VERSION,
+      data
+    }]));
+  }
+  /** Entrée de la zone dans le manifeste (index.json) : cycle, préfixes OACI des aérodromes, tailles (Ko) de ses fichiers,
+   *  cases couvertes ; sizes : { sorte: octets }. */
+  function zoneEntry(cycle, p, sizes) {
+    return {
+      cycle,
+      prefixes: [...new Set(((p.aero || {}).aerodromes || []).map(a => String(a.icao || '').slice(0, 2).toUpperCase()).filter(x =>
+        /^[A-Z]{2}$/.test(x)))].sort(),
+      kb: Object.fromEntries(Object.entries(sizes).map(([k, n]) => [k, Math.ceil(n / 1024)])),
+      cells: coverage(p)
+    };
+  }
+  /** Grandes villes du monde (index de recherche hors emprise), corps de cities_major.json. */
+  const majorCities = villes => ({
+    schema: 2,
+    kind: 'cities_major',
+    minPopulation: MAJOR_POP,
+    data: (villes || []).filter(c => (+c.population || 0) >= MAJOR_POP).map(plainCity)
+  });
   async function publishSplit(d, parts, {
     cycle,
     at,
@@ -2328,8 +2542,7 @@
         unchanged: 0,
         mb: 0
       },
-      locate = zoneLocator(zones, Z),
-      byZone = Object.fromEntries(zones.map(z => [z, []])),
+      byZone = citiesByZone(villes, zones, Z),
       count = n => {
         if (n) {
           res.files++;
@@ -2337,12 +2550,6 @@
         } else res.unchanged++;
         return n;
       };
-    // ville rangée dans la zone de son pays (GeoNames) quand ce pays a une zone, publiée ici ou non ; sinon (pays sans
-    // zone : outre-mer, micro-États ; ville sans pays, base d'avant cette règle) dans la zone dont le contour la contient
-    for (const c of villes || []) {
-      const z = c.cc && Z?.ringsOf?.(c.cc)?.length ? c.cc : locate(+c.lat, +c.lon);
-      if (byZone[z]) byZone[z].push(plainCity(c));
-    }
     const manifest = {};
     for (const [z, p] of Object.entries(parts)) {
       const zd = await d.getDirectoryHandle(z, {
@@ -2351,57 +2558,20 @@
         cd = await zd.getDirectoryHandle(cycle, {
           create: true
         }),
-        {
-          airspaces,
-          aero = {},
-          moraCells,
-          obstacleMax,
-          ...rest
-        } = p,
-        other = Object.fromEntries(Object.entries(aero).filter(([k]) => !SPLIT_KINDS.includes(k))),
-        files = {
-          airspaces: airspaces || [],
-          ...Object.fromEntries(SPLIT_KINDS.map(k => [k, aero[k] || []])),
-          aeroindex: aeroIndex(aero.aerodromes),
-          mora: moraCells || [],
-          obstaclemax: obstacleMax || {},
-          cities: byZone[z] || [],
-          meta: {
-            ...rest,
-            ...(Object.keys(other).length ? {
-              aero: other
-            } : {})
-          }
-        },
+        bodies = zoneBodies(z, p, {
+          cycle,
+          cities: byZone[z]
+        }),
         sizes = {};
-      for (const [kind, data] of Object.entries(files)) sizes[kind] = count(await writeIfChanged(cd, `${kind}.json`, {
-        schema: 2,
-        zone: z,
-        cycle,
-        kind,
-        parserVersion: VERSION,
-        data
-      }, at)) || (await fileText(cd, `${kind}.json`) || '').length;
+      for (const [kind, body] of Object.entries(bodies)) sizes[kind] = count(await writeIfChanged(cd, `${kind}.json`, body, at)) || (
+        await fileText(cd, `${kind}.json`) || '').length;
       for await (const h of zd.values())
       if (h.kind === 'directory' && /^\d{4}-\d{2}-\d{2}$/.test(h.name) && h.name !== cycle) await zd.removeEntry(h.name, {
         recursive: true
       }).catch(() => {});
-      manifest[z] = {
-        cycle,
-        prefixes: [...new Set((aero.aerodromes || []).map(a => String(a.icao || '').slice(0, 2).toUpperCase()).filter(x =>
-          /^[A-Z]{2}$/
-          .test(x)))].sort(),
-        kb: Object.fromEntries(Object.entries(sizes).map(([k, n]) => [k, Math.ceil(n / 1024)])),
-        cells: coverage(p)
-      };
+      manifest[z] = zoneEntry(cycle, p, sizes);
     }
-    const major = (villes || []).filter(c => (+c.population || 0) >= MAJOR_POP).map(plainCity);
-    count(await writeIfChanged(d, 'cities_major.json', {
-      schema: 2,
-      kind: 'cities_major',
-      minPopulation: MAJOR_POP,
-      data: major
-    }, at));
+    count(await writeIfChanged(d, 'cities_major.json', majorCities(villes), at));
     // manifeste : zones de ce poste remplacées, celles des autres postes gardées
     let prev = {};
     try {
@@ -2513,7 +2683,8 @@
 
   // ===================================================================== bloc d'interface commun
   const L = row => row[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || row[0];
-  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
+  const esc = (...a) => window.RepositoryKit.esc(...
+    a); // échappement HTML commun (shared/kit.js), lu à l'appel : la construction sans fenêtre (frame/aerodb/build) n'a pas de kit
   const T = {
     folder: ['Dossier SIA', 'SIA folder', 'SIA-Ordner', 'Carpeta SIA'],
     // mode GitHub (appli sans lanceur) : ni dossier SIA ni relecture
@@ -2872,6 +3043,15 @@
     ghSync,
     publish,
     splitZones,
+    buildZone,
+    buildZones,
+    zoneSettings,
+    zoneBodies,
+    zoneEntry,
+    citiesByZone,
+    majorCities,
+    frenchFirRings,
+    priorityRingsFromXmlSia,
     sameFamilyOverlaps,
     joinZones,
     patch,

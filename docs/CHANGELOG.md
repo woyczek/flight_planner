@@ -87,6 +87,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   threshold to opposite threshold, else QFU + the aerodrome's variation), the tip at the end for a departure and at the
   threshold for an arrival, its number at the threshold, in its side's hue, from the aerodrome view (threshold "Chosen runway
   (arrow)" on the thresholds page). The aids (ILS, DME) come later.
+- **Données: the aeronautical base built on the launcher, in one headless browser** (lot D5; `tools/regen/base.py` — job `base/build`, args `{ zones,
+  personal? }`; `frame/aerodb/build/headless.html` + `headless.js`; `shared/sia_base.js` `buildZones` / `buildZone` and the pieces `publishSplit` now shares;
+  cases K42–K50; SPEC § 5 septies, INTEGRATION, DECISIONS 30 Oct) — the page's own builders run in Edge or Chrome without a window, **one instance for all the
+  requested zones** (output identical to the page's, byte for byte), each zone written under `sia/base/<zone>/<cycle>/` through the launcher's path rule
+  and committed alone as soon as it is handed back by `POST /__setup/regen/job/put` (a failed zone publishes nothing and stops no other); per-zone instances
+  stay an internal option (`args.parallel`). Zones as a dict at the root of the job view (`state`, `done`, `total`, `error`), result `built` / `failed` /
+  `commits` / `reason`; no browser: `no-browser`; `xplane` in `personal`: `xplane-in-page`. Ten zones: 10 to 11 s, 1.3 GB. Security: browser by absolute
+  path only, temporary profile deleted, nothing reachable beyond the launcher's address, **the token never on a command line** (the browser opens a
+  `start.html` of its profile, deleted once the page has started), time limit and cancel kill the process tree. Needs one exception in the launcher's
+  same-origin check (K50, listed as a known failure). The V2 page and the Worker path are unchanged (same files byte for byte).
 
 - **Map: a flight write that lands during the mount is no longer missed** (`modules/maps/data.js` `watchFlight`; journey J2,
   step 3, seen once in two) — the map read the flight, then subscribed to its changes after other waits; a write between the

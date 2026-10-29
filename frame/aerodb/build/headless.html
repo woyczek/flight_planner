@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<title>Construction de la base aéronautique d'une zone (sans fenêtre)</title>
+<!-- Page de construction d'UNE zone de la base aéronautique, lancée SANS FENÊTRE par le lanceur (tools/regen/base.py, verbe
+     base/build ; DECISIONS de frame/aerodb, 30 octobre 2026, lot D5). Aucune interface : une ligne d'état. Elle charge les
+     mêmes constructeurs que la page V2 (shared/sia_base.js et ses lecteurs), lit les fichiers de la zone sur l'adresse du
+     lanceur (data/sia/…), et rend ses fichiers par POST /__setup/regen/job/put. Paramètres dans le FRAGMENT de l'adresse
+     (jamais envoyé au serveur) : voir headless.js. -->
+</head>
+<body>
+<p id="etat" role="status"></p>
+<script src="../../../shared/carto/aero_symbols.js?v=0"></script>
+<script src="../../../shared/airac.js?v=0"></script>
+<script src="../../../shared/sia_base.js?v=0"></script>
+<script src="headless.js?v=0"></script>
+</body></html>

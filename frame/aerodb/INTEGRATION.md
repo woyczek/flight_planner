@@ -299,8 +299,9 @@ session, which keeps the module's files):
   nothing else of aerodb and never `sia/base/`, `proc/` or `AircraftDB/` itself.
 - **Cycles**: dates `YYYY-MM-DD` in every answer, the AIRAC id `YYNN` only on screen, converted by `frame/aerodb/airac.js`
   (SPEC § 4). Three cycles kept for the base and `proc/`.
-- **Building** (lot D5): two stages, pieces per source (`worker` or `python`) and an assembler per zone; nothing written by
-  them (SPEC § 5 septies). A lot « complete readers » comes first.
+- **Building** (lot D5): with a launcher, the job `base/build` runs the existing builders in one window-less browser for all the requested
+  zones and commits each zone alone (below; SPEC § 5 septies); the two-stage plan (pieces per source and an assembler per zone, nothing
+  written by them) stays the direction for the sources that leave `sia_base.js`.
 - **Procedures**: EAD Basic reads one aerodrome per gesture (*Charts* documents `AD_2_<ICAO>_…`, first page of results only,
   15 rows); its output is installed by `tools/proc_manual.py`, which refuses another source's file without `--replace`:
   the module asks « remplacer ou fusionner » then. Hand-read files (EAD Basic, manual, OCR) live in `proc/manual/<ICAO>.json`,
@@ -308,6 +309,34 @@ session, which keeps the module's files):
   by the module, which lists them « périmé » with « Relire » (SPEC § 5 quinquies). Compiling (workstation) and using
   (devices) stay apart; the compiled JSON live in the private data repository (SPEC § 1). Grey reasons that come from aerodb's side:
   « pypdf manque », « OCR manque » (drawn pages: UK STARs, Belgium, Georgia), « Mise en page inconnue pour cet État ».
+
+### Building on the workstation: the job `base/build` (lot D5, 30 Oct 2026)
+
+What the Données module calls to build the base **with a launcher**; the page's own build does not exist as a fallback in this lot: without a browser the
+job answers `reason: 'no-browser'` and the screen says it. Full contract: SPEC § 5 septies, « The job `base/build` ».
+
+```js
+const r = await ctx.launcher.job('regen/job', { set: 'base', verb: 'build', args: { zones: ['fr', 'gb', 'es'], personal: [] } },
+  { onProgress: j => draw(j.zones, j.step, j.done, j.total), signal });   // after a reload: ctx.launcher.resume('regen/job', …)
+// j.zones  = { fr: { state: 'waiting'|'building'|'built'|'failed'|'cancelled', done, total, error, commit?, warning?, files?, seconds? }, … }
+// r.result = { ok, cycle, built: ['fr', …], failed: [{ zone, error }], commits: [{ zone, commit }], instances, seconds, reason? }
+```
+
+- **One window-less browser builds every requested zone** with the page's own functions (output identical to the page's, byte for byte), and hands
+  each zone back as soon as it is ready; the job writes and **commits it alone** (the page's trigram as author, no push) while the next ones come; the
+  module lets `aerodb` read the new files and sends the commits with « Synchroniser ». A zone that fails publishes nothing; the others go on. The job
+  goes on if the page closes (`resume`).
+- **Per-zone line**: `state` `'waiting'` (« en attente »), `'building'` with `done` / `total` (« construction (n / m sources) »), `'built'`
+  (« construite »), `'failed'` with `error` (a code: `browser-failed`, `browser-exited`, `timeout`, `page-error`, `invalid-output`, `write-failed`;
+  `message` has the detail), `'cancelled'`. The head: `step` « N zones sur M », `done` / `total` in zones. The journal also gets `gb: construite, 13
+  fichier(s) écrit(s), commit …`.
+- **Refusals**: 400 (unknown zone, extra field), 409 (a job is running), and `ok: false` with `reason` `'no-browser'` / `'no-input'` /
+  `'xplane-in-page'` (a build that needs the X-Plane folder, which only the page holds: it stays in the page) at once.
+- `args.personal` is a **list of source ids** (`'enaire'`, `'nats'`…) the owner declared for a published build (the line « À cocher seulement si le
+  dépôt de données n'est utilisé que par vous »); absent or `[]`, nothing personal is published. `args.parallel` is internal, not for the screen.
+- **Cost, measured on 30 Oct 2026** (24 cores, ten zones `fr gb es de it be ch ie nl nat`): 10 to 11 s through the launcher with one instance (the first
+  zone out after 6 s, then 0.45 s per zone for the write and the git commit), 1.3 GB private at most; the page's own build of the same zones in one page:
+  6 s, without the commits. One instance per zone: 12 to 17 s, 3.6 GB (DECISIONS 30 Oct 2026).
 
 ### Sources screen (`#sources`)
 
