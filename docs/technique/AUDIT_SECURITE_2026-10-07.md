@@ -879,6 +879,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 37 | Fuel: an aerodrome field is a search (26d47f149), proposal after the flight is read (fe3d33c5c) | acceptable |
 | 38 | Frame R1a: the airline's relay (7ca73448c) | **blocking before any exposure** (fails open if the proxy rewrites Host), two to fix, four notes |
 | 39 | Flight plan export, X-Plane `.fms` and MSFS `.pln` (99d28acd0) | acceptable, one note |
+| 40 | R1a fix (1e573d782); `escText` (d18a739b4) | the blocking point of 38 lifted for the case described; one residual case to close before exposure |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1374,7 +1375,28 @@ a click (Blob, object URL, `<a download>`, revoked after a second); a service wo
 Note: `escText` keeps the control characters that XML 1.0 forbids; a damaged name would give a `.pln` MSFS refuses
 (robustness, not a vulnerability): remove them in `escText`.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 blocking before any exposure); the sharing of the track and of the position is the user's decision.
+**40. R1a fix (1e573d782) and `escText` (d18a739b4) — the blocking point of 38 is lifted for the case described; one
+residual case to close before any exposure.**
+- Checked: in relay mode `_relay_gate` runs first in `do_GET`, `do_HEAD` and `do_POST`, before pages, files and
+  `/__setup/`; a request from 127.0.0.1 or ::1 carrying a proxy header (`X-Forwarded-For`, `-Proto`, `-Host`,
+  `Forwarded`, `X-Real-IP`) without the public host gets 403. At start-up `relay_probe` asks
+  `https://<public host>/__relay/whoami` through the opener without redirects and says the result in the console.
+  `safe_next` is `re.fullmatch(r'/[^\s\x00-\x1f\x7f\\]*')` without `//` or `/__`, the same for the local network and
+  the relay: the open redirect is closed. `POST /__relay/pair` requires `Sec-Fetch-Site: same-origin`, else
+  `Origin` equal to the public host: the login CSRF is closed. `SameSite=Lax`, with the relay's GET routes listed in
+  DECISIONS (the only write on a GET: « last use », once an hour). Failures older than an hour are forgotten; the
+  prefixes' debt is written.
+- *Residual, to close before exposure:* a proxy that rewrites `Host` **and** adds no proxy header is indistinguishable
+  from the workstation, so such a request would still be treated as the workstation; the probe sees it (`whoami` answers
+  404 as a file) but only warns. Preferred: a port dedicated to the relay (every request on it is a relay request,
+  whatever `Host` says; the workstation's interface keeps its own port), which removes the whole class; otherwise, a
+  probe that did not answer `{ relay: true }` closes the relay for good, and the guide also says « the proxy must add
+  `X-Forwarded-For` ».
+- `escText` (d18a739b4): the control characters XML 1.0 forbids are removed before escaping (tab and line breaks kept);
+  `escAttr` goes through it. The note of 39 is settled (detail: `\uFFFE`, `\uFFFF` and lone surrogates are also
+  forbidden in XML).
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case to close before any exposure; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
