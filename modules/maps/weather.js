@@ -19,6 +19,9 @@ import {
   isStarted
 } from '../../frame/lib/current_flight.js';
 import {
+  routeMidpoint
+} from '../../frame/lib/flight_path.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -76,7 +79,8 @@ async function loadWeather(key) {
       key,
       state: 'none'
     };
-    const mid = pts[Math.floor(pts.length / 2)],
+    // le point qui choisit le modèle : le même qu'Atmosphère (flight_path.js routeMidpoint, mi-longueur de la route)
+    const mid = routeMidpoint(pts),
       places = Sx.sectionPlaces(pts),
       dep = depTime(f),
       r = await S.ctx.weather.grid(places, dep, Sx.sectionVars(levelFt, pts), {

@@ -17,6 +17,9 @@
 import * as A from './atmo.js';
 import * as Demo from './demo.js';
 import {
+  routeMidpoint
+} from '../../frame/lib/flight_path.js';
+import {
   weatherStore,
   callWeight
 } from './weather_store.js';
@@ -95,7 +98,8 @@ export const meta = {
   files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'world.js?v=0', 'lib/weather_map.js?v=0', 'section.js?v=0',
     'texts.js?v=0',
     '../maps/lib/map_base.js?v=0', '../maps/lib/axis_window.js?v=0',
-    '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0',
+    '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/flight_path.js?v=0',
+    '../../frame/lib/flight_time.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0',
     '../maps/render.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/metar.js?v=0', '../../frame/lib/icons.js?v=0'
   ],
@@ -1973,8 +1977,9 @@ ${T('outOfRange')}` : s);
       $f('cruiseKt').value = S.cruiseKt;
       if (f.when && !$f('dep').dataset.touched) setDep(Date.parse(f.when) / 1000);
       S.depTime = depValue() + S.shiftH * 3600;
-      const mid = f.points[Math.floor(f.points.length / 2)];
-      S.model = A.modelFor(mid.lat, A.wrapLon(mid.lon));
+      // le point qui choisit le modèle : le même que la Carte (frame/lib/flight_path.js routeMidpoint, mi-longueur de la route)
+      const mid = routeMidpoint(f.points);
+      S.model = A.modelFor(mid.lat, mid.lon);
       S.run = null;
       flightSum();
       syncWeather();

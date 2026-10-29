@@ -3,7 +3,7 @@
 // long de ce chemin, et les conflits et l'ordre des listes de procédures. Sorti de current_flight.js le 29 octobre 2026
 // (V3_SPECIFICATION § 10.29 b), qui le ré-exporte pendant la transition. Calcul pur.
 // API : proceduresOf, loadProcedures, dedupProcs, expandedPath, flownPath, routingChain, routeNmToFlown, altitudeAt,
-//   conflictsOf, orderProcedures.
+//   conflictsOf, orderProcedures, routeMidpoint (le point qui choisit le modèle météo).
 
 import {
   wrapLon
@@ -522,4 +522,32 @@ export function orderProcedures(list, key, choice, byId) {
   return arr.sort((a, b) => bad(a) - bad(b) || xp(a) - xp(b) || rwCompare(rw(a), rw(b)) || String(a?.name ?? '').localeCompare(String(b
       ?.name ?? '')) ||
     String(a?.transition ?? '').localeCompare(String(b?.transition ?? '')));
+}
+
+// ---------------------------------------------------------------- le point qui choisit le modèle météo
+/** Point à mi-longueur d'une route (grand cercle point à point ; interpolé dans son tronçon, longitude dans [-180, 180[) : le
+ *  seul point où la Carte et Atmosphère demandent au cadre son modèle (ctx.weather.modelFor), pour qu'ils prennent le même au
+ *  bord des boîtes des modèles ; null sans deux points placés. */
+export function routeMidpoint(points) {
+  const pts = (points || []).filter(p => coord(p?.lat) !== null && coord(p?.lon) !== null).map(p => ({
+    lat: +p.lat,
+    lon: +p.lon
+  }));
+  if (pts.length < 2) return pts.length ? {
+    lat: pts[0].lat,
+    lon: wrapLon(pts[0].lon)
+  } : null;
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + gcNm(pts[i - 1], pts[i]));
+  const half = cum.at(-1) / 2;
+  let i = 1;
+  while (i < pts.length - 1 && cum[i] < half) i++;
+  const a = pts[i - 1],
+    b = pts[i],
+    k = cum[i] > cum[i - 1] ? (half - cum[i - 1]) / (cum[i] - cum[i - 1]) : 0,
+    dl = ((b.lon - a.lon + 540) % 360) - 180; // le plus court autour de la ligne de changement de date
+  return {
+    lat: a.lat + (b.lat - a.lat) * k,
+    lon: wrapLon(a.lon + dl * k)
+  };
 }

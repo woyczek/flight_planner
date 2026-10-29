@@ -40,7 +40,8 @@
     altitudeAt,
     routeNmToFlown,
     conflictsOf,
-    orderProcedures
+    orderProcedures,
+    routeMidpoint
   } from '../current_flight.js?v=0';
   const rows = [],
     out = document.getElementById('out');
@@ -931,6 +932,29 @@
       star: SG
     });
   ck('expandedPath : un tronçon dont le prédécesseur n’est pas codé porte join gap', XG.find(p => p.id === 'S02')?.join === 'gap');
+
+  // le point qui choisit le modèle météo, le même pour la Carte et Atmosphère : à mi-longueur de la route
+  const MP = routeMidpoint([{
+    lat: 0,
+    lon: 0
+  }, {
+    lat: 0,
+    lon: 1
+  }, {
+    lat: 0,
+    lon: 9
+  }]);
+  ck('routeMidpoint : à mi-longueur (5° sur 9), pas au point du milieu par son rang', Math.abs(MP.lat) < 1e-9 && Math.abs(MP.lon - 4.5) <
+    .01, JSON.stringify(MP));
+  const MD = routeMidpoint([{
+    lat: 0,
+    lon: 179
+  }, {
+    lat: 0,
+    lon: -179
+  }]);
+  ck('routeMidpoint : à travers la ligne de changement de date, dans [-180, 180[', MD.lon === -180 || Math.abs(Math.abs(MD.lon) - 180) <
+    1e-6, JSON.stringify(MD));
 
   window.__cfBench = {
     done: true,

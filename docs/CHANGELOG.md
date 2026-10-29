@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map and Atmosphere: one point chooses the weather model** (`frame/lib/flight_path.js` `routeMidpoint`,
+  `modules/maps/weather.js`, `modules/atmosphere/module.js`; bench) — the map took the middle point of its list by rank,
+  Atmosphere the middle point of its own: near the edge of a model's box they could choose different models; both now ask
+  the frame's `modelFor` at the same point, half the length of the route.
+
 - **Synchronisation: the aeronautical database leaves by the user's gesture only** (`tools/data_sync.py`,
   `tools/launch.py`, `shared/sync.js`, `frame/store/transport_launcher.js`, `frame/store/frame_data.js`; administrator
   manuals ×4, SYNCHRONISATION; noreg I9): `sia/base/` is committed by the « Synchroniser » button (and by the build job
