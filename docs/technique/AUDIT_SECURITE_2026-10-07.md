@@ -868,6 +868,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 26 | Fuel « Sur la carte » and the map's proposal (d4f683475) | acceptable; note of 20 settled |
 | 27 | Frame G1: GitLab transport (a0f3854d9) | **blocking** (token reused for a new host), one to fix, one note |
 | 28 | AeroDB `base/fetch` and `base/purge` (ac84d562e); Data module corrections (6330c5133) | acceptable, two older points to fix, one note |
+| 29 | Map: track from `progress.actual.trail`, « Choisir sur la carte » button (a158edbe5) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1216,7 +1217,15 @@ fix, one note.**
 - 6330c5133: `addZone` accepts only a zone known to `zones()` and not covered yet, outside a running build, and writes
   `cache/data/coverage.json` (local); the selector's options are escaped; the publish question goes through `ctx.ask`.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27 and 28 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26; 27 blocking until fixed); the sharing of the track and of the position is the user's decision.
+**29. Map, track and « Choisir sur la carte » (a158edbe5) — acceptable, one note.** The track read from the flight (the
+group's data) keeps only arrays whose latitude, longitude and seconds are finite numbers, converted to numbers; times are
+computed from `started.at`, nothing from the previous flight, only newer positions are added; it is drawn on the canvas,
+never put in HTML; the result is capped (`TRAIL_MAX + 400`). The airport card's button goes through `askOf`, the same rule
+as the address (`dep` / `arr`, `^[A-Z0-9]{4}$`), with an escaped ICAO and a side from the code; refused on a mission map.
+Note (with BUGS SOG): the filter walks the whole received track before capping it; cut first (`slice(-TRAIL_MAX)`) and
+check the bounds (|lat| ≤ 90, |lon| ≤ 180).
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24 and 27 to 29 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26; 27 blocking until fixed); the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
