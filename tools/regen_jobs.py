@@ -121,14 +121,15 @@ def state(data, secrets, git_cmd=None, git_env=dict, step=None, cancelled=None):
 class Job:
     """Un travail : son état lisible par la page, ses aides (étape, journal) et l'annulation demandée."""
 
-    def __init__(self, set_, verb, args):
+    def __init__(self, set_, verb, args, clean=str):
+        self.clean = clean  # nettoyage des secrets (clean_error) : toute ligne et toute étape passent par lui
         self.id = uuid.uuid4().hex[:12]
         self.data = {'id': self.id, 'set': set_, 'verb': verb, 'args': args, 'state': 'running', 'step': '', 'done': 0,
                      'total': 0, 'unit': '', 'log': [], 'result': None, 'started': int(time.time()), 'ended': None}
         self._cancel = threading.Event()
 
     def step(self, text, done=None, total=None, unit=None):
-        self.data['step'] = str(text)[:200]
+        self.data['step'] = self.clean(str(text))[:200]
         if done is not None:
             self.data['done'] = done
         if total is not None:
@@ -138,7 +139,7 @@ class Job:
 
     def log(self, line):
         lg = self.data['log']
-        lg.append(str(line)[:500])
+        lg.append(self.clean(str(line))[:500])  # un verbe ne peut pas y laisser un identifiant, même par mégarde
         del lg[:-LOG_MAX]
 
     def cancelled(self):
@@ -200,7 +201,7 @@ class Jobs:
                 wait = max(1, int(gap - (now - self.last[key]) + 0.999))
                 return {'ok': False, 'status': 429, 'reason': 'too-soon', 'wait': wait, 'message': f'too soon: wait {wait} s'}
             self.last[key] = now
-            job = self.cur = Job(*key, a)
+            job = self.cur = Job(*key, a, clean=lambda t: clean_error(t, self.ctx))
         threading.Thread(target=self._run, args=(job, fn, a), daemon=True).start()
         return {'ok': True, 'job': job.id}
 

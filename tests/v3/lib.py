@@ -960,7 +960,21 @@ def synthetic_airways():
             + [seg('UL9', 'TSA10', 'TSA12', 6500, 19500), seg('UL9', 'TSA12', 'TSA11', 6500, 19500)])
 
 
-def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=(), airways=(), extra=None):
+def _aero_cycle(today=None):
+    """Cycle de la base semée : le cycle AIRAC en vigueur (début « AAAA-MM-JJ », 28 jours depuis l'AIRAC 2401 du 25 janvier
+    2024), ou le suivant dans les 3 derniers jours du cycle (publié en avance, comme le ferait le poste) ; ainsi la ligne de fin de
+    cycle du bloc d'état (frame/INTEGRATION.md § 15.3) ne s'allume pas d'elle-même au fil du calendrier."""
+    ref = datetime.date(2024, 1, 25)
+    today = today or datetime.datetime.now(datetime.timezone.utc).date()
+    cur = ref + datetime.timedelta(days=(today - ref).days // 28 * 28)
+    nxt = cur + datetime.timedelta(days=28)
+    return (nxt if (nxt - today).days <= 3 else cur).isoformat()
+
+
+AERO_CYCLE = _aero_cycle()
+
+
+def aero_docs(cycle=AERO_CYCLE, airfields=False, airspaces_extra=(), airways=(), extra=None):
     """`extra`: { kind: rows } more rows for the aerodromes / vrp kinds of the base (they come after the route's own), and `cells`: more cells of the index { 'lat': [[lon0, lon1]] }."""
     extra = extra or {}
     def ring(lat0, lat1, lon0, lon1):
@@ -976,7 +990,7 @@ def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=(), airways=(
 
     def kind(k, data):
         return [f'sia/base/fr/{cycle}/{k}.json', {'schema': 2, 'zone': 'fr', 'cycle': cycle, 'kind': k, 'parserVersion': 1,
-                                                  'data': data, 'updated_at': '2026-10-15T00:00:00Z'}, 'reference']
+                                                  'data': data, 'updated_at': f'{cycle}T00:00:00Z'}, 'reference']
     docs = [['sia/base/index.json', {'zones': {'fr': {'cycle': cycle, 'prefixes': ['LF'], 'kb': {}, 'cells': cells}}}, 'reference'],
             kind('meta', {}), kind('airspaces', airspaces)]
     if airways:           # a case's own airway segments (F8: synthetic_airways())

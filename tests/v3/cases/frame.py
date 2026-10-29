@@ -989,25 +989,26 @@ def a30(c):
 @case('A31', 'End-of-cycle line', 'A', langs4=True, designs=('standard',), screens=False, night=False,
       rule='frame/INTEGRATION 15.3; modules/data/SPEC 6.3: the base published for an older cycle than the one in force is said in the Status block, amber, on every device')
 def a31(c):
-    # aerodb.publication() (INTEGRATION 15.3, to be delivered by aerodb): simulated, the base published for the previous cycle
-    c.page.add_init_script("""(() => {
-      let real;
-      Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set(v) {
-        const create = v.create;
-        v.create = (...a) => { const o = create(...a);
-          return new Proxy(o, { get: (t, k) => k === 'publication' ? async () => {
-            const [cur, prev] = v.airacCycles(2);
-            return { base: { fr: { cycles: [prev] } }, proc: { cycles: [cur] } } } : t[k] }) };
-        real = v } }) })()""")
-    c.open('settings')
-    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"cycle-base\"]')", what='the end-of-cycle line of the base')
-    name = c.js("(() => { const d = AeroDB.airacCycles(2)[1], t = Date.parse(d + 'T00:00:00Z'), y = new Date(t).getUTCFullYear(), R = Date.UTC(2024, 0, 25), C = 28 * 864e5, f = R + Math.ceil((Date.UTC(y, 0, 1) - R) / C) * C; return String(y).slice(2) + String(Math.round((t - f) / C) + 1).padStart(2, '0') })()")
+    # the real aerodb.publication() (cycles as an object { date: {...} }) on a base seeded for the previous AIRAC cycle
+    import datetime
+    from lib import aero_docs
+    ref = datetime.date(2024, 1, 25)
+    today = datetime.datetime.now(datetime.timezone.utc).date()
+    cur = ref + datetime.timedelta(days=(today - ref).days // 28 * 28)
+    prev = cur - datetime.timedelta(days=28)
+    first = ref + datetime.timedelta(days=-(-(datetime.date(prev.year, 1, 1) - ref).days // 28) * 28)
+    name = f'{prev.year % 100:02d}{(prev - first).days // 28 + 1:02d}'
+    c.open('settings', docs=aero_docs(cycle=prev.isoformat()))
+    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"cycle-base\"]')", timeout=15000, what='the end-of-cycle line of the base')
     want = tx('frame/app.js', 'cycleOld', c.lang).replace('{s}', tx('frame/app.js', 'cycleBase', c.lang)).replace('{c}', name)
     c.eq(norm(c.text('[data-card="status"] li[data-k="cycle-base"] .f-status-txt span')), norm(want), 'worded in the language of the run, the AIRAC name of the published cycle', what='base line')
     c.ok(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"cycle-base\"] .f-status-dot').hasAttribute('data-attn')"), 'no amber dot', 'an amber dot (attention)')
-    soon = c.js("Date.parse(new Date(Date.parse(AeroDB.airacCycles(1)[0] + 'T00:00:00Z') + 28 * 864e5).toISOString().slice(0, 10) + 'T00:00:00Z') - Date.now() <= 3 * 864e5")
-    c.eq(c.count('[data-card="status"] li[data-k="cycle-proc"]'), 1 if soon else 0, 'procedures published for the cycle in force: a line only in the last 3 days of the cycle', what='proc lines')
+    c.eq(c.count('[data-card="status"] li[data-k="cycle-proc"]'), 0, 'no procedures index published: no procedures line', what='proc lines')
     c.eq(c.count('[data-card="status"] li[data-k="cycle-base"] [data-go]'), 0, 'no launcher here: nothing to press', what='links on the line')
+    # the base of the cycle in force (the suite's own seed, lib.AERO_CYCLE): no line
+    c.open('settings', aero=True)
+    c.wait(1500)
+    c.eq(c.count('[data-card="status"] li[data-k^="cycle-"]'), 0, 'a base of the cycle in force: no end-of-cycle line', what='cycle lines')
 
 
 @case('A32', 'EAD Basic credentials in the launcher keys panel', 'A', designs=('standard',), screens=False, night=False,

@@ -233,5 +233,21 @@ def i8(c):
             time.sleep(0.02)
         c.eq(J.view(e['job'])['state'], 'error', 'an exception ends the job in error, the launcher goes on', what='failing job')
         c.ok(('state', 'scan') in R.REGISTRY, str(list(R.REGISTRY)), 'the D0 list holds state/scan')
+
+        def leaky(job, args, ctx):
+            job.step('login as eaduser with s3cretPW')
+            job.log('session https://u:p@ead.example/x?jsessionid=ABC123 user eaduser pw s3cretPW')
+            return {}
+        (sec / 'ead.json').write_text('{"user": "eaduser", "password": "s3cretPW"}', encoding='utf-8')
+        K = R.Jobs({('t', 'leak'): (leaky, lambda a: {})}, {'secrets': str(sec)})
+        k = K.start('t', 'leak', {})
+        for _ in range(100):
+            if K.view(k['job'])['state'] != 'running':
+                break
+            time.sleep(0.02)
+        v = K.view(k['job'])
+        seen = v['step'] + ' ' + ' '.join(v['log'])
+        c.ok('s3cretPW' not in seen and 'eaduser' not in seen and 'ABC123' not in seen and 'u:p@' not in seen, seen,
+             'a verb cannot leave a credential in the journal or the step (Job.log, Job.step cleaned)')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

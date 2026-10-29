@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: three bugs** (`frame/app.js`, `tools/regen_jobs.py`, `tests/v3/lib.py`; SPEC § 3, INTEGRATION § 15.3,
+  DECISIONS; cases A31, I8, J2):
+  - on a device alone, a write waiting an instant in the queue no longer turns the ⚙ amber (journey J2's intermittent
+    failure);
+  - the end-of-cycle line reads the real form of aerodb's publication (it never showed);
+  - the launcher jobs' journal and steps are cleaned of secrets whatever a job writes;
+  - the suite's seeded aeronautical base follows the AIRAC calendar.
 - **Fuel and Map: the winds aloft along the route are taken at the altitude of the profile** (`frame/lib/current_flight.js`
   `altitudeAt`, `routeNmToFlown`, `modules/fuel/module.js` `aloftCalc`; bench, case F29; user, 29 Oct: "à LFPO on n'est pas
   encore au FL260, à BAGIT on n'y est plus") — every point's wind and temperature were read at the cruise level (steps

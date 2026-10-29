@@ -17,7 +17,7 @@ import json
 import math
 import re
 
-from lib import FLIGHT, ROOT, STUB_STYLE, Fail, Skip, case, norm, tx
+from lib import AERO_CYCLE, FLIGHT, ROOT, STUB_STYLE, Fail, Skip, case, norm, tx
 
 M = 'modules/maps/texts.js'
 TRI = 'ABC'
@@ -305,7 +305,7 @@ def d33(c):
     c.ok(b[0] <= want[0] + .01 and b[2] >= want[2] - .01 and b[1] <= want[1] + .01 and b[3] >= want[3] - .01, f'view {b}', f'contains resolved_bbox {want}')
     fill = max((want[2] - want[0]) / (b[2] - b[0]), (want[3] - want[1]) / (b[3] - b[1]))
     c.ge(round(fill, 2), .9, 'resolved_bbox fills the view in one dimension', what='fill ratio')
-    c.ok(norm(row(c, 'cycleDiff').replace('{a}', '2026-09-11').replace('{b}', '2026-10-15')) in norm(c.text('.mp-notes') or ''), f'notes {c.text(".mp-notes")!r}', 'the notes say the cycle differs')
+    c.ok(norm(row(c, 'cycleDiff').replace('{a}', '2026-09-11').replace('{b}', AERO_CYCLE)) in norm(c.text('.mp-notes') or ''), f'notes {c.text(".mp-notes")!r}', 'the notes say the cycle differs')
     # the second map: its type's built-in profile, said in the notes
     c.open('maps?mission=ESSAI1&map=carte_cible.png', aero=True)
     c.until(f"(document.querySelector('.mp-notes')?.textContent || '').length > 0", timeout=8000, what='notes of the second map')

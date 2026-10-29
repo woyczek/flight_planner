@@ -928,8 +928,9 @@ const r = await ctx.publish([
 
 ### 15.3 The end-of-cycle line of the Status block
 
-The frame computes it at drawing time, on every device, from `aerodb.publication()` (`{ base: { <zone>: { cycles } },
-proc: { cycles } }`, cycles as start dates `YYYY-MM-DD`; to be delivered by aerodb):
+The frame computes it at drawing time, on every device, from `aerodb.publication()` (`{ base: { <zone>: { cycles,
+inForce } }, proc: { cycles, inForce }, … }`; `cycles` is an object keyed by start dates `YYYY-MM-DD`, its contract in
+`frame/aerodb/SPEC.md` « For the Données module »; a list of dates is accepted too):
 
 - the newest published cycle of the base (or of `proc/`) is older than the AIRAC cycle in force: « Base aéronautique :
   cycle 2610 terminé, en attente de publication » (×4);

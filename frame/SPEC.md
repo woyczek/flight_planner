@@ -253,6 +253,11 @@ used alone:
 cache), then puts itself back in the page and starts from scratch. Still missing: the view shows a card naming the file
 with a "Reload" button (×4), never a blank page and never a JavaScript error. Test A28.
 
+**The local transport never asks for attention** (29 Oct 2026): on a device alone (`transport: 'local'`), nothing is ever
+"to send": a write waiting in the queue is drained at once into the device's copy. The data state is "on this device"
+whatever the queue holds for that instant, so neither the badge of the ⚙ nor the Status block turns amber for it (it did,
+for about 25 ms after each write of fuel: journey J2's intermittent failure).
+
 ### 3.1 Navigation
 
 - An application (today: Pilot) lists its modules, one short **verb** each, seven at most.

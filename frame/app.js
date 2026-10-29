@@ -1648,7 +1648,9 @@
     if (s.conflicts) return ['conflicts', t(T.sync.conflicts, {
       n: s.conflicts
     })];
-    if (s.transport === 'local' && !s.pending) return ['local', t(T.sync.local)];
+    // transport local (cet appareil seul) : rien n'est jamais « à envoyer » ; une écriture en attente y est vidée aussitôt dans
+    // la copie (FD.sync local) et ne demande pas l'attention, même l'instant où elle attend (SPEC § 3)
+    if (s.transport === 'local') return ['local', t(T.sync.local)];
     if (!s.online || s.lastError === 'offline') return ['offline', s.pending ? `${t(T.sync.offline)} · ${t(T.sync.pending, { n: s.pending })}` : t(T.sync.offline)];
     if (s.lastError) return ['error', t(T.sync.error)];
     if (s.pending) return ['pending', t(T.sync.pending, {
@@ -2431,10 +2433,12 @@
       next = new Date(Date.parse(`${cur}T00:00:00Z`) + 28 * 864e5).toISOString().slice(0, 10),
       soon = Date.parse(`${next}T00:00:00Z`) - Date.now() <= 3 * 864e5,
       go = launcherHere && !launcherHere.lan && level >= 3 && APP.modules.some(m => m.id === 'data') ? '#data' : '',
-      newest = list => [].concat(list || []).filter(c => /^\d{4}-\d{2}-\d{2}$/.test(c)).sort().at(-1) || '',
+      // cycles publiés : un objet { 'AAAA-MM-JJ': {...} } (aerodb, frame/aerodb/SPEC.md « For the Données module ») ou une liste
+      dates = x => Array.isArray(x) ? x : x && typeof x === 'object' ? Object.keys(x) : [],
+      newest = list => list.filter(c => /^\d{4}-\d{2}-\d{2}$/.test(c)).sort().at(-1) || '',
       sets = [
-        ['base', T.info.cycleBase, newest(Object.values(publication.base || {}).flatMap(z => z?.cycles || []))],
-        ['proc', T.info.cycleProc, newest(publication.proc?.cycles)]
+        ['base', T.info.cycleBase, newest(Object.values(publication.base || {}).flatMap(z => dates(z?.cycles)))],
+        ['proc', T.info.cycleProc, newest(dates(publication.proc?.cycles))]
       ];
     return sets.filter(([, , c]) => c && (c < cur || soon && c < next)).map(([k, s, c]) => ({
       k: `cycle-${k}`,

@@ -1506,3 +1506,17 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     the map's chapters name it so) and the roadmap. The id and the address stay `atmosphere`. « Atmosphère réelle au
     départ » (a card of fuel) and the German help's « Atmosphäre entlang des Flugs » name the physical atmosphere, not the
     module: kept. Translation fingerprints of fuel's and the map's help updated (they were in step before).
+- **29 Oct 2026 — Three bugs** (lot (1) of the challenge, § 10.29):
+  - **J2's amber flash**: on the local transport a write of fuel stayed « pending » about 25 ms before the queue was
+    drained; `syncState` called that « pending », a state of attention, and the ⚙ turned amber for that instant (seen 1
+    time in 6 at the start of J2). Rule written in SPEC § 3: the local transport is « on this device » whatever its queue
+    holds; it never asks for attention.
+  - **The end-of-cycle line never showed**: aerodb's `publication()` (lot D1) gives `cycles` as an object keyed by dates,
+    the line read a list. It reads both now. A31 runs on the real `publication()` (a base seeded for the previous cycle,
+    then the suite's own base: no line), not on a simulated one.
+  - **The suite's seeded base followed no calendar**: `lib.aero_docs()` seeded the cycle `2026-10-15`, in force until
+    28 Oct; since the 29th every case seeding a base would have shown the end-of-cycle line. The seed now takes the AIRAC
+    cycle in force (or the next one in its last 3 days, published ahead as a workstation would), `lib.AERO_CYCLE`; the
+    map's case that printed the date reads it there.
+  - **`Job.log` and `Job.step` are cleaned** of secrets (`clean_error` with the context's EAD credentials), whatever the
+    verb writes: no verb can put a credential in the journal by mistake (I8 checks it).
