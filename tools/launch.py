@@ -68,6 +68,8 @@ def data_repo_url():
     l'utilisateur la donne au premier lancement)."""
     m = re.search(r'dataRepo\s*:\s*\{\s*url\s*:\s*"([^"]*)"', config_text())
     url = m.group(1).strip() if m else ''
+    # jamais d'identifiant dans l'adresse (« https://compte:jeton@hôte ») : il finirait affiché, journalisé, dans data/.git/config
+    url = re.sub(r'^(https?://)[^/@\s]*:[^/@\s]*@', r'\1', url, flags=re.I)
     return url if not url or url.endswith('.git') else url + '.git'
 
 
@@ -256,6 +258,26 @@ def hidden(parts):
 # ---- interface de la page de premier lancement (/__setup/…) : seulement depuis la page servie ici (adresse
 # 127.0.0.1:<port> exigée, en-tête X-SOG-Setup : une autre page web ne peut pas l'envoyer sans pré-vérification CORS,
 # à laquelle ce serveur ne répond pas)
+# routes /__setup/ du lanceur : (méthode, chemin) → (gestionnaire, public) ; public 'lan' : ouverte aussi à un appareil appairé
+# du réseau local (tools/lan_access.py la lit ici) ; 'poste' (par défaut) : ce poste seulement. Une route nouvelle se déclare
+# là où elle est écrite (@route), jamais dans une liste à part.
+ROUTES = {}
+ROUTE_PATHS = set()
+
+
+def route(method, *paths, public='poste'):
+    """Inscrit une méthode du serveur pour ces chemins ; public : 'lan' ou 'poste'."""
+    assert public in ('lan', 'poste'), public
+
+    def deco(fn):
+        for p in paths:
+            assert (method, p) not in ROUTES, (method, p)
+            ROUTES[(method, p)] = (fn.__name__, public)
+            ROUTE_PATHS.add(p)
+        return fn
+    return deco
+
+
 class Setup(http.server.SimpleHTTPRequestHandler):
     port = 0
     MAX_UPLOAD = 512 * 1024 * 1024  # archive des données ou journal : 512 Mo au plus
@@ -301,7 +323,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             else:
                 self._json({'error': 'appareil non appairé'}, 401)
             return True
-        if path.startswith('/__setup/') and not lan_access.allowed_route(self.command, path):
+        # route /__setup/ ouverte à un appareil appairé : public 'lan' dans la table ROUTES (déclarée par @route) ; PUT : jamais
+        if path.startswith('/__setup/') and ROUTES.get((self.command, path), ('', 'poste'))[1] != 'lan':
             self._json({'error': 'réservé au poste'}, 403)
             return True
         return False
@@ -647,212 +670,11 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             with INDEX_LOCK:
                 index_users()
         self._purge = Setup.purge and re.search(r'(\.html|/)$', self.path.split('?')[0]) is not None
-        if self.path.split('?')[0] in LNMPERF_ROUTES:
-            return self._lnmperf(b'')
-        if self.path.split('?')[0] in ('/__setup/regen/state', '/__setup/regen/job'):
-            # module Données (frame/INTEGRATION.md § 15) : état du poste, travail en cours ou id — ce poste seulement
-            if not self._allowed() or self._lan():
-                return self._json({'error': 'refusé'}, 403)
-            if self.path.split('?')[0].endswith('/state'):
-                return self._json(regen_jobs.state(DATA, SECRETS, *regen_git()))
-            jid = (urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get('id') or [''])[0][:40]
-            v = regen().view(jid or None)
-            return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
-        if self.path.split('?')[0] == '/__setup/status':
-            # détection du lanceur (frame/store/transport_launcher.js) : la même forme partout, rien de propre au poste ;
-            # un appareil appairé du réseau local la lit aussi (lnm : [] pour lui, les bases de Little Navmap sont du poste)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json({'server': True, 'data': has_data(), 'dataGit': os.path.isdir(os.path.join(DATA, '.git')),
-                               'host': socket.gethostname(), 'lan': self._lan(), 'lnm': [] if self._lan() else lnm_db_kinds()})
-        if self.path.split('?')[0] == '/__setup/workstation':
-            # réglages du poste pour ses propres pages (V2 : premier lancement, Paramètres, cadre de page) : chemin
-            # d'installation, git, dépôt distant de data/, Git LFS, politique, navigation détendue — ce poste seulement
-            if not self._allowed() or self._lan():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json({'server': True, 'root': ROOT, 'git': bool(data_sync.git_exe()), 'data': has_data(),
-                               'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
-                               'csp': True, 'relaxNav': RELAX['nav'], 'host': socket.gethostname()})
-        if self.path.split('?')[0] == '/__setup/lan':
-            # accès des appareils du réseau local (Réglages du poste) : état, adresses, code — ce poste seulement
-            if not self._allowed() or self._lan():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json(lan_state())
-        if self.path.split('?')[0] == '/__setup/changes':
-            # V3 frame : tête de data/ et, si elle a changé depuis since, son arbre (transport « lanceur »)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            since = (urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('since') or [''])[0]
-            with FRAME_LOCK:
-                # appareil du réseau local : l'arbre calculé il y a moins de 2 s sert de nouveau (un lot l'efface)
-                fresh = self._lan() and _tree_memo['v'] and time.monotonic() - _tree_memo['at'] < 2
-                if fresh:
-                    head, tree = _tree_memo['v']
-                else:
-                    head, tree = frame_tree()
-                    _tree_memo.update(at=time.monotonic(), v=(head, tree))
-            return self._json({'head': head, 'same': True} if since == head else {'head': head, 'tree': tree})
-        if self.path.split('?')[0] == '/__setup/mission-folders':
-            # dossiers de missions présents (data/missions/<famille>/<id>) : le registre repris par le navigateur au
-            # premier démarrage écarte les missions dont le dossier n'existe plus (registre périmé)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            root, out = os.path.join(DATA, 'missions'), []
-            try:
-                for fam in sorted(os.listdir(root)):
-                    if os.path.isdir(os.path.join(root, fam)) and not fam.startswith('.'):
-                        out += [f'{fam}/{m}' for m in sorted(os.listdir(os.path.join(root, fam)))
-                                if os.path.isdir(os.path.join(root, fam, m)) and not m.startswith('.')]
-            except OSError:
-                pass
-            return self._json({'folders': out})
-        if self.path.split('?')[0] == '/__setup/data-list':
-            # fichiers d'un dossier de données de la liste DATA_LISTS (demandes d'accès des postes, comptes signés) :
-            # noms seulement, le contenu se lit comme tout fichier de data/
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            return self._json(data_list(q.get('dir', [''])[0]))
-        if self.path.split('?')[0] == '/__setup/registre-historique':
-            # versions du registre signé des utilisateurs dans l'historique git des données (comptes signés : poste
-            # resté hors ligne, refondation) ; contenus seulement, rien n'est vérifié ici (les pages vérifient)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json(registry_history())
-        if self.path.split('?')[0] == '/__setup/sites':
-            # sites que les pages peuvent contacter (connect-src) : liste fixe, configuration, sites autorisés ici
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json(sites_view())
-        if self.path.split('?')[0] == '/__setup/sync-remote':
-            # dépôt git de synchronisation de data/ : adresse actuelle (ou celle du clone par défaut)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            # state : 'absent' (rien : clone), 'plain' (des fichiers sans dépôt : reprise, POST /__setup/adopt), 'repo'
-            return self._json({**data_sync.remote_info(DATA), 'default': data_repo_url(), 'state': data_sync.data_state(DATA)})
-        if self.path.split('?')[0] == '/__setup/sync-status':
-            # synchronisation git du pool (tools/data_sync.py) : état pour le bouton de l'en-tête ; ?fetch=1 : relu
-            # sur le dépôt distant (commits à recevoir)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json(sync_status(fetch='fetch=1' in self.path, fresh='fresh=1' in self.path))
-        if self.path.split('?')[0] == '/__setup/tools':
-            # outils de tools/ (sommaire tools/index.html) : nom, sorte, titre et en-tête de chaque fichier
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json({'tools': tools_inventory()})
-        if self.path.split('?')[0] == '/__setup/vatsim-bookings':
-            # réservations ATC publiques de VATSIM (Planning ODV, shared/atc_sessions.js) : l'API ne permet pas la
-            # lecture directe depuis une page (pas d'en-tête CORS) ; relayées ici
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json(vatsim_bookings())
-        if self.path.split('?')[0] == '/__setup/secrets':
-            # clés et identifiants des services externes (Paramètres : Installation pour la suite, Mon profil pour un
-            # utilisateur) : indicateurs seulement (enregistré, 4 derniers caractères), jamais les valeurs secrètes
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            return self._json(secrets_view(q.get('tri', [''])[0]))
-        if self.path.split('?')[0] == '/__setup/secrets/test':
-            # « Tester » d'une carte de Paramètres › Installation › Clés et services externes : un appel de contrôle au
-            # service avec la clé enregistrée ; { ok, count } ou { ok: false, key: missing | refused, error }
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            return self._json(secrets_test(q.get('service', [''])[0]))
-        if self.path.split('?')[0] == '/__setup/ivao-activations':
-            # zones spéciales IVAO activées (Ordres de vols, shared/odv_airspace.js) : NOTAM de la division liés à une
-            # zone et horaires publiés des zones de France ; clé d'API locale (ivao_key), jamais transmise à la page
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            return self._json(ivao_activations(q.get('from', [''])[0], q.get('to', [''])[0]))
-        if self.path.split('?')[0] == '/__setup/defa-site':
-            # état de la mise à jour de la flotte et du journal DEFA depuis le site (Paramètres › Maintenance)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json(defa_state())
-        if self.path.split('?')[0] in ('/__setup/ivao/last-flight', '/__setup/vatsim/last-flight'):
-            # dernier vol du pilote pour le CR (« Mon dernier vol IVAO / VATSIM ») : liste des vols des 7 derniers jours,
-            # ou détail d'un vol (session / connection) au format du collage du tracker ; clé IVAO jamais transmise
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            arg = lambda k: (q.get(k) or [''])[0].strip()
-            if 'ivao' in self.path.split('?')[0]:
-                return self._json(ivao_last_flight(arg('vid'), arg('session')))
-            return self._json(vatsim_last_flight(arg('cid'), arg('connection')))
-        if self.path.split('?')[0] == '/__setup/sim/position':
-            # V3 frame, position réelle : simulateur de ce poste (X-Plane 12 puis Little Navmap, boucle locale seulement,
-            # un passage par seconde au plus) ; 204 sans simulateur
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            fix = sim_position.position()
-            if fix:
-                return self._json(fix)
-            self.send_response(204)
-            self.send_header('Cache-Control', 'no-store')
-            self.end_headers()
-            return None
-        if self.path.split('?')[0] == '/__setup/ivao-bookings':
-            # réservations ATC d'IVAO (trainings, examens, réservations ; shared/atc_sessions.js) : API sous clé
-            # (ivao_key), jamais transmise à la page
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            return self._json(ivao_bookings(q.get('from', [''])[0], q.get('to', [''])[0], q.get('pre', ['LF'])[0]))
-        if self.path.split('?')[0] == '/__setup/aircraft-db':
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json({**AIRCRAFT, **aircraft_files()})
-        if self.path.split('?')[0] == '/__setup/downloads':
-            # derniers fichiers téléchargés d'une source (motif sans chemin, ex. EG_*_DS_*_XML.zip pour NATS) :
-            # ?glob=…&info → [{ name, size, mtime }] (le plus récent de chaque jeu : nom sans ses dates) ;
-            # ?glob=…&name=… → le fichier, seulement s'il suit le motif et se trouve dans Téléchargements
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query, keep_blank_values=True)  # « &info » sans valeur
-            pattern = (q.get('glob') or [''])[0]
-            if pattern not in download_patterns():  # motifs des sources déclarées seulement, jamais « *.* »
-                return self._json({'error': 'motif inconnu'}, 400)
-            latest = downloads_matching(pattern)
-            if 'info' in q:
-                return self._json({'files': [{'name': os.path.basename(p), 'size': os.path.getsize(p), 'mtime': os.path.getmtime(p)} for p in latest],
-                                   'where': [os.path.basename(d) or d for d in downloads_dirs()]})
-            name = (q.get('name') or [''])[0]
-            path = next((p for p in latest if os.path.basename(p) == name), None)
-            if not path:
-                return self._json({'error': 'fichier absent'}, 404)
-            with open(path, 'rb') as f:
-                body = f.read()
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/octet-stream')
-            self.send_header('Content-Length', str(len(body)))
-            self.send_header('Cache-Control', 'no-store')
-            self.end_headers()
-            self.wfile.write(body)
-            return None
-        if self.path.split('?')[0] == '/__setup/sia-zip':
-            # ZIP du SIA téléchargé : ?info → nom, taille, date ; sinon le fichier lui-même
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            z = sia_zip()
-            if 'info' in self.path:
-                return self._json({'found': bool(z), 'name': os.path.basename(z) if z else '', 'size': os.path.getsize(z) if z else 0,
-                                   'mtime': os.path.getmtime(z) if z else 0, 'where': [os.path.basename(d) or d for d in downloads_dirs()]})
-            if not z:
-                return self._json({'error': 'aucun ZIP du SIA'}, 404)
-            with open(z, 'rb') as f:
-                body = f.read()
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/zip')
-            self.send_header('X-File-Name', urllib.parse.quote(os.path.basename(z)))
-            self.send_header('Content-Length', str(len(body)))
-            self.send_header('Cache-Control', 'no-store')
-            self.end_headers()
-            self.wfile.write(body)
-            return None
+        if self.path.split('?')[0] in ROUTE_PATHS:  # routes /__setup/ (table ROUTES : gestionnaire, public)
+            r = ROUTES.get(('GET', self.path.split('?')[0]))
+            if r:
+                return getattr(self, r[0])(self.path.split('?')[0])
+            return self._json({'error': 'méthode refusée'}, 405)
         if self._stamped():
             return None
         return super().do_GET()
@@ -876,273 +698,569 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._lnmperf(body)
         if self.command != 'POST':
             return self._json({'error': 'méthode refusée'}, 405)
-        if path == '/__setup/perf':
-            # mesures de l'audit de performance (tools/perf_audit.html) : docs/technique/perf/runs/<nom>.json
-            name = re.sub(r'[^\w.-]+', '_', urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('name', ['audit'])[0])[:80]
-            try:
-                json.loads(body or b'null')
-            except ValueError:
-                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
-            out = os.path.join(ROOT, 'docs', 'technique', 'perf', 'runs')
-            os.makedirs(out, exist_ok=True)
-            with open(os.path.join(out, name + '.json'), 'wb') as f:
-                f.write(body)
-            return self._json({'ok': True, 'file': f'docs/technique/perf/runs/{name}.json'})
-        if path == '/__setup/sync-remote':
-            # dépôt git de synchronisation de data/ (premier lancement) : vérifié (git ls-remote), enregistré si demandé
-            # et si c'est le dépôt actuel ou celui de la configuration (autre dépôt : dans un terminal) ; jamais
-            # bloquant : le compte rendu dit seulement si le dépôt répond
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            url = str(a.get('url') or '').strip()
-            # needsConfirm : ni le dépôt actuel ni celui de la configuration — la page prévient avant « Enregistrer »
-            r = {'check': data_sync.check_remote(url),
-                 'needsConfirm': not any(data_sync.same_repo(url, u) for u in (data_sync.remote_info(DATA)['url'], data_repo_url()))}
-            if a.get('save'):
-                saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url()])
-                if saved.get('refused'):
-                    # autre dépôt : confirmé par l'utilisateur dans une fenêtre du système (ancienne et nouvelle adresse),
-                    # hors du navigateur — un script de la page ne peut ni la voir ni y répondre
-                    ok, why = confirm_remote(saved.get('current') or '', url)
-                    if ok:
-                        saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url(), url])
-                    else:
-                        saved['message'] = f'Changement de dépôt non confirmé : {why} Dépôt inchangé.'
-                r['saved'] = saved
-            return self._json(r)
-        if path == '/__setup/net':
-            # V3 frame : appel sortant d'un module relayé (SimBrief, IVAO, VATSIM)
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                return self._json({'error': 'JSON invalide'}, 400)
-            code, hdrs, out = frame_net(a if isinstance(a, dict) else {})
-            self.send_response(code)
-            for k, v in hdrs.items():
-                self.send_header(k, v)
-            self.send_header('Content-Length', str(len(out)))
-            self.send_header('Cache-Control', 'no-store')
-            self.send_header('X-SOG-Relay', '1')
-            self.end_headers()
-            self.wfile.write(out)
-            return None
-        if path == '/__setup/batch':
-            # V3 frame : lot d'écritures de la couche de données, en une fois (frame/store/transport_launcher.js)
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
-            r, code = frame_batch(a if isinstance(a, dict) else {})
-            return self._json(r, code)
-        if path == '/__setup/sync':
-            # un passage de synchronisation (commit au nom du trigramme, fusion fiche par fiche, envoi), un à la fois
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            with SYNC_LOCK:
-                # pont du registre avant (le registre rejoué part dans ce passage) et après (comptes rendus reçus : le
-                # registre rejoué partira au passage suivant)
-                registry_bridge()
-                # gesture : bouton « Synchroniser » (sia/base commitée aussi) ; sinon passage de fond (échange du cadre)
-                r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60], sync_gesture(a))
-                if r.get('received'):
-                    registry_bridge()
-            if self._lan() and not r.get('ok'):
-                # appareil appairé du réseau local : rien du poste (sortie de git, chemins) ; le détail reste dans la console
-                say(f"  Synchronisation demandée par un appareil appairé, en échec : {r.get('message', '')}")
-                r = {**r, 'message': 'Synchronisation interrompue sur le poste du lanceur : le détail est dans sa console.'}
-            sync_status_reset()  # état relu au prochain appel : le bouton reflète le passage qui vient d'avoir lieu
-            if r.get('received'):
-                with INDEX_LOCK:
-                    index_availability()
-                    index_users()
-            return self._json(r)
-        if path == '/__setup/aircraft-db':
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            return self._json({'started': aircraft_start(a.get('codes') or [], bool(a.get('quick'))), **AIRCRAFT, **aircraft_files()})
-        if path == '/__setup/lan':
-            # ouvrir ou fermer l'accès du réseau local, oublier les appareils appairés — ce poste seulement
-            if self._lan():
-                return self._json({'error': 'refusé'}, 403)
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            if a.get('forget') is True:
-                lan_access.forget()
-            elif isinstance(a.get('forget'), str):
-                lan_access.forget(a['forget'])
-            if a.get('open') is True:
-                lan_open(bool(a.get('all')))
-            elif a.get('open') is False:
-                lan_close()
-            if a.get('code') and LAN['servers']:
-                say(f'  Réseau local : nouveau code d’appairage : {lan_access.new_code()} (10 minutes)')
-            return self._json(lan_state())
-        if path == '/__setup/vfr-import':
-            # compilation VFR (vfr-compiled.json choisi sur la page) : { apply, author, compiled } ; contrôle strict,
-            # plan rendu sans rien écrire (apply faux), puis écriture de sia/vfr/, commit et synchronisation
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                return self._json({'ok': False, 'errors': ['JSON illisible.'], 'summary': {}})
-            try:
-                return self._json(vfr_publish(a.get('compiled'), str(a.get('author') or '').upper(), bool(a.get('apply'))))
-            except (OSError, RuntimeError) as e:
-                return self._json({'ok': False, 'errors': [str(e)[-600:]], 'summary': {}})
-        if path == '/__setup/aircraft-publish':
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            try:
-                return self._json(aircraft_publish(str(a.get('author') or '').upper(), bool(a.get('apply'))))
-            except (OSError, RuntimeError) as e:
-                return self._json({'ok': False, 'remove': [], 'copy': [], 'message': str(e)[-600:]})
-        if path == '/__setup/defa-site':
-            # flotte et journal DEFA depuis le site : { refresh, auto, force } (une fois par jour en auto) ou
-            # { auto_enabled } (réglage de Paramètres › Maintenance)
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            if 'auto_enabled' in a:
-                return self._json(defa_set_auto(bool(a['auto_enabled'])))
-            pages = a.get('pages') if isinstance(a.get('pages'), dict) else None
-            return self._json(defa_refresh(force=bool(a.get('force')), auto=bool(a.get('auto')), pages=pages))
-        if path == '/__setup/secrets':
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
-            return self._json(secrets_save(a))
-        if path == '/__setup/relax':
-            # débrayage de l'ouverture depuis un autre site ou une extension : activé après confirmation dans la fenêtre du
-            # lanceur, jusqu'à sa fermeture ; rétabli sans confirmation
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            return self._json(relax_set(bool(a.get('on'))))
-        if path in ('/__setup/site-allow', '/__setup/site-remove'):
-            # site ajouté à la CSP (connect-src) : confirmé dans la fenêtre du lanceur, qu'aucune page ne peut voir ni
-            # valider ; retiré : sans confirmation (la liste ne fait que rétrécir)
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            return self._json(site_allow(str(a.get('url') or '')) if path.endswith('allow') else site_remove(str(a.get('url') or '')))
-        if path in ('/__setup/regen/job', '/__setup/regen/job/cancel'):
-            # travaux du module Données : jeu et verbe d'une liste fixe, arguments contrôlés (tools/regen_jobs.py)
-            if self._lan():
-                return self._json({'error': 'refusé'}, 403)
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
-            a = a if isinstance(a, dict) else {}
-            v = regen().cancel(str(a.get('id') or '')[:40]) if path.endswith('/cancel') else regen().start(
-                a.get('set'), a.get('verb'), a.get('args'), a.get('author') or '')
-            return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
-        if path == '/__setup/aero-fetch':
-            # données aéronautiques d'autres pays (tools/aero_fetch.py) : téléchargées dans data/sia/<source>/
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            args = [str(x)[:12] for x in (a.get('args') or [])][:40]
-            with AERO_LOCK:
-                return self._json(fresh(aero_fetch).fetch(DATA, str(a.get('provider') or ''), args))
-        if path == '/__setup/jeu-essai':
-            ok, log = sample_data()
-            if ok:
-                mark_instance()  # data/ vient d'être créé : ses repères
-                with INDEX_LOCK:
-                    index_availability()
-                    index_users()
-            return self._json({'ok': ok, 'message': log})
-        if path == '/__setup/clone':
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            ok, log = clone((a.get('user') or '').strip(), a.get('secret') or '', bool(a.get('remember')), a.get('url'))
-            if ok:
-                mark_instance()
-            return self._json({'ok': ok, 'message': log})
-        if path == '/__setup/adopt':
-            # data/ déjà là sans être un dépôt (exemples, archive, données saisies) devenu un clone du dépôt des données,
-            # fiches du poste reprises par les règles de la synchronisation, rien d'envoyé (tools/data_sync.adopt) ;
-            # dépôt de la configuration admis, autre dépôt : confirmé dans la fenêtre du lanceur, comme sync-remote
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            url = str(a.get('url') or '').strip() or data_repo_url()
-            user, secret = str(a.get('user') or '').strip(), str(a.get('secret') or '')
-            if any(c in user + secret for c in '\r\n\0'):
-                return self._json({'ok': False, 'message': 'Identifiant ou mot de passe invalide (retour à la ligne).'})
-            if not data_sync.REMOTE_RE.match(url):
-                return self._json({'ok': False, 'message': data_sync.REMOTE_HELP})
-            # needsConfirm : autre dépôt que celui de la configuration ; dry : la page le demande avant le clic, rien n'est fait
-            need = not data_sync.same_repo(url, data_repo_url())
-            if a.get('dry'):
-                return self._json({'ok': True, 'dry': True, 'needsConfirm': need, 'state': data_sync.data_state(DATA)})
-            if need:
-                ok, why = confirm_adopt(url)
-                if not ok:
-                    return self._json({'ok': False, 'needsConfirm': True, 'message': f'Reprise non confirmée : {why} data/ inchangé.'})
-            git = data_sync.git_exe()
-            if git and run([git, 'lfs', 'version'], capture_output=True) == 0:
-                run([git, 'lfs', 'install'], capture_output=True)
-            extra, auth = git_auth(user, secret)
-            with SYNC_LOCK:
-                r = data_sync.adopt(DATA, url, str(a.get('author') or 'POSTE').upper(), env=dict(git_env(), **extra),
-                                    name=str(a.get('name') or '')[:60], auth=auth)
-            if r.get('ok'):
-                say(f'  Reprise de data/ dans le dépôt {url} : ' + r.get('message', ''))
-                ensure_lfs(DATA, 'data', 'Données')
-                mark_instance()
-                if a.get('remember'):
-                    remember_credentials(url, user, secret)
-                with INDEX_LOCK:
-                    index_availability()
-                    index_users()
-            sync_status_reset()
-            return self._json({**r, 'needsConfirm': need})
-        if path == '/__setup/upload':
-            kind = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('kind', [''])[0]
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.upload') as f:
-                f.write(body)
-                tmp = f.name
-            try:
-                if kind == 'data':
-                    if has_data():
-                        return self._json({'ok': False, 'message': 'Les données sont déjà là (data/data_tree.js).'})
-                    ok = extract_data(tmp, quiet=True)
-                    if ok:
-                        mark_instance()
-                    return self._json({'ok': ok, 'message': 'Données installées dans data/.' if ok else 'Ce fichier n’est pas une archive de données (data_tree.js absent).'})
-                if kind == 'log':
-                    if not has_data():
-                        return self._json({'ok': False, 'message': 'Installez d’abord les données (étape 1).'})
-                    r = subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'defa_reference.py'), tmp,
-                                        '--out=' + os.path.join(DATA, 'references', 'defa_reference.js')], cwd=ROOT,
-                                       capture_output=True, text=True, encoding='utf-8', errors='replace')
-                    return self._json({'ok': r.returncode == 0, 'message': (r.stdout + r.stderr).strip()[-1500:] or 'Référence mise à jour.'})
-                return self._json({'ok': False, 'message': 'Type de fichier inconnu.'}, 400)
-            finally:
-                try:
-                    os.remove(tmp)
-                except OSError:
-                    pass
+        r = ROUTES.get(('POST', path))  # routes /__setup/ (table ROUTES : gestionnaire, public)
+        if r:
+            return getattr(self, r[0])(path, body)
         return self._json({'error': 'inconnu'}, 404)
+
+    # ---------------------------------------------------------------- routes /__setup/ (table ROUTES)
+    @route('GET', '/__setup/lnmperf-folder', '/__setup/lnmperf', public='lan')
+    def _get_lnmperf_folder(self, path):
+        return self._lnmperf(b'')
+
+    @route('GET', '/__setup/regen/state', '/__setup/regen/job', public='poste')
+    def _get_regen_state(self, path):
+        # module Données (frame/INTEGRATION.md § 15) : état du poste, travail en cours ou id — ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        if self.path.split('?')[0].endswith('/state'):
+            return self._json(regen_jobs.state(DATA, SECRETS, *regen_git()))
+        jid = (urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get('id') or [''])[0][:40]
+        v = regen().view(jid or None)
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
+    @route('GET', '/__setup/status', public='lan')
+    def _get_status(self, path):
+        # détection du lanceur (frame/store/transport_launcher.js) : la même forme partout, rien de propre au poste ;
+        # un appareil appairé du réseau local la lit aussi (lnm : [] pour lui, les bases de Little Navmap sont du poste)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({'server': True, 'data': has_data(), 'dataGit': os.path.isdir(os.path.join(DATA, '.git')),
+                           'host': socket.gethostname(), 'lan': self._lan(), 'lnm': [] if self._lan() else lnm_db_kinds()})
+
+    @route('GET', '/__setup/workstation', public='poste')
+    def _get_workstation(self, path):
+        # réglages du poste pour ses propres pages (V2 : premier lancement, Paramètres, cadre de page) : chemin
+        # d'installation, git, dépôt distant de data/, Git LFS, politique, navigation détendue — ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({'server': True, 'root': ROOT, 'git': bool(data_sync.git_exe()), 'data': has_data(),
+                           'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
+                           'csp': True, 'relaxNav': RELAX['nav'], 'host': socket.gethostname()})
+
+    @route('GET', '/__setup/lan', public='poste')
+    def _get_lan(self, path):
+        # accès des appareils du réseau local (Réglages du poste) : état, adresses, code — ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(lan_state())
+
+    @route('GET', '/__setup/changes', public='lan')
+    def _get_changes(self, path):
+        # V3 frame : tête de data/ et, si elle a changé depuis since, son arbre (transport « lanceur »)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        since = (urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('since') or [''])[0]
+        with FRAME_LOCK:
+            # appareil du réseau local : l'arbre calculé il y a moins de 2 s sert de nouveau (un lot l'efface)
+            fresh = self._lan() and _tree_memo['v'] and time.monotonic() - _tree_memo['at'] < 2
+            if fresh:
+                head, tree = _tree_memo['v']
+            else:
+                head, tree = frame_tree()
+                _tree_memo.update(at=time.monotonic(), v=(head, tree))
+        return self._json({'head': head, 'same': True} if since == head else {'head': head, 'tree': tree})
+
+    @route('GET', '/__setup/mission-folders', public='poste')
+    def _get_mission_folders(self, path):
+        # dossiers de missions présents (data/missions/<famille>/<id>) : le registre repris par le navigateur au
+        # premier démarrage écarte les missions dont le dossier n'existe plus (registre périmé)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        root, out = os.path.join(DATA, 'missions'), []
+        try:
+            for fam in sorted(os.listdir(root)):
+                if os.path.isdir(os.path.join(root, fam)) and not fam.startswith('.'):
+                    out += [f'{fam}/{m}' for m in sorted(os.listdir(os.path.join(root, fam)))
+                            if os.path.isdir(os.path.join(root, fam, m)) and not m.startswith('.')]
+        except OSError:
+            pass
+        return self._json({'folders': out})
+
+    @route('GET', '/__setup/data-list', public='poste')
+    def _get_data_list(self, path):
+        # fichiers d'un dossier de données de la liste DATA_LISTS (demandes d'accès des postes, comptes signés) :
+        # noms seulement, le contenu se lit comme tout fichier de data/
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        return self._json(data_list(q.get('dir', [''])[0]))
+
+    @route('GET', '/__setup/registre-historique', public='poste')
+    def _get_registre_historique(self, path):
+        # versions du registre signé des utilisateurs dans l'historique git des données (comptes signés : poste
+        # resté hors ligne, refondation) ; contenus seulement, rien n'est vérifié ici (les pages vérifient)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(registry_history())
+
+    @route('GET', '/__setup/sites', public='poste')
+    def _get_sites(self, path):
+        # sites que les pages peuvent contacter (connect-src) : liste fixe, configuration, sites autorisés ici
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(sites_view())
+
+    @route('GET', '/__setup/sync-remote', public='poste')
+    def _get_sync_remote(self, path):
+        # dépôt git de synchronisation de data/ : adresse actuelle (ou celle du clone par défaut)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        # state : 'absent' (rien : clone), 'plain' (des fichiers sans dépôt : reprise, POST /__setup/adopt), 'repo'
+        return self._json({**data_sync.remote_info(DATA), 'default': data_repo_url(), 'state': data_sync.data_state(DATA)})
+
+    @route('GET', '/__setup/sync-status', public='poste')
+    def _get_sync_status(self, path):
+        # synchronisation git du pool (tools/data_sync.py) : état pour le bouton de l'en-tête ; ?fetch=1 : relu
+        # sur le dépôt distant (commits à recevoir)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(sync_status(fetch='fetch=1' in self.path, fresh='fresh=1' in self.path))
+
+    @route('GET', '/__setup/tools', public='poste')
+    def _get_tools(self, path):
+        # outils de tools/ (sommaire tools/index.html) : nom, sorte, titre et en-tête de chaque fichier
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({'tools': tools_inventory()})
+
+    @route('GET', '/__setup/vatsim-bookings', public='poste')
+    def _get_vatsim_bookings(self, path):
+        # réservations ATC publiques de VATSIM (Planning ODV, shared/atc_sessions.js) : l'API ne permet pas la
+        # lecture directe depuis une page (pas d'en-tête CORS) ; relayées ici
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(vatsim_bookings())
+
+    @route('GET', '/__setup/secrets', public='poste')
+    def _get_secrets(self, path):
+        # clés et identifiants des services externes (Paramètres : Installation pour la suite, Mon profil pour un
+        # utilisateur) : indicateurs seulement (enregistré, 4 derniers caractères), jamais les valeurs secrètes
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        return self._json(secrets_view(q.get('tri', [''])[0]))
+
+    @route('GET', '/__setup/secrets/test', public='poste')
+    def _get_secrets_test(self, path):
+        # « Tester » d'une carte de Paramètres › Installation › Clés et services externes : un appel de contrôle au
+        # service avec la clé enregistrée ; { ok, count } ou { ok: false, key: missing | refused, error }
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        return self._json(secrets_test(q.get('service', [''])[0]))
+
+    @route('GET', '/__setup/ivao-activations', public='poste')
+    def _get_ivao_activations(self, path):
+        # zones spéciales IVAO activées (Ordres de vols, shared/odv_airspace.js) : NOTAM de la division liés à une
+        # zone et horaires publiés des zones de France ; clé d'API locale (ivao_key), jamais transmise à la page
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        return self._json(ivao_activations(q.get('from', [''])[0], q.get('to', [''])[0]))
+
+    @route('GET', '/__setup/defa-site', public='poste')
+    def _get_defa_site(self, path):
+        # état de la mise à jour de la flotte et du journal DEFA depuis le site (Paramètres › Maintenance)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(defa_state())
+
+    @route('GET', '/__setup/ivao/last-flight', '/__setup/vatsim/last-flight', public='poste')
+    def _get_ivao_last_flight(self, path):
+        # dernier vol du pilote pour le CR (« Mon dernier vol IVAO / VATSIM ») : liste des vols des 7 derniers jours,
+        # ou détail d'un vol (session / connection) au format du collage du tracker ; clé IVAO jamais transmise
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        arg = lambda k: (q.get(k) or [''])[0].strip()
+        if 'ivao' in self.path.split('?')[0]:
+            return self._json(ivao_last_flight(arg('vid'), arg('session')))
+        return self._json(vatsim_last_flight(arg('cid'), arg('connection')))
+
+    @route('GET', '/__setup/sim/position', public='lan')
+    def _get_sim_position(self, path):
+        # V3 frame, position réelle : simulateur de ce poste (X-Plane 12 puis Little Navmap, boucle locale seulement,
+        # un passage par seconde au plus) ; 204 sans simulateur
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        fix = sim_position.position()
+        if fix:
+            return self._json(fix)
+        self.send_response(204)
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        return None
+
+    @route('GET', '/__setup/ivao-bookings', public='poste')
+    def _get_ivao_bookings(self, path):
+        # réservations ATC d'IVAO (trainings, examens, réservations ; shared/atc_sessions.js) : API sous clé
+        # (ivao_key), jamais transmise à la page
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        return self._json(ivao_bookings(q.get('from', [''])[0], q.get('to', [''])[0], q.get('pre', ['LF'])[0]))
+
+    @route('GET', '/__setup/aircraft-db', public='poste')
+    def _get_aircraft_db(self, path):
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({**AIRCRAFT, **aircraft_files()})
+
+    @route('GET', '/__setup/downloads', public='poste')
+    def _get_downloads(self, path):
+        # derniers fichiers téléchargés d'une source (motif sans chemin, ex. EG_*_DS_*_XML.zip pour NATS) :
+        # ?glob=…&info → [{ name, size, mtime }] (le plus récent de chaque jeu : nom sans ses dates) ;
+        # ?glob=…&name=… → le fichier, seulement s'il suit le motif et se trouve dans Téléchargements
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query, keep_blank_values=True)  # « &info » sans valeur
+        pattern = (q.get('glob') or [''])[0]
+        if pattern not in download_patterns():  # motifs des sources déclarées seulement, jamais « *.* »
+            return self._json({'error': 'motif inconnu'}, 400)
+        latest = downloads_matching(pattern)
+        if 'info' in q:
+            return self._json({'files': [{'name': os.path.basename(p), 'size': os.path.getsize(p), 'mtime': os.path.getmtime(p)} for p in latest],
+                               'where': [os.path.basename(d) or d for d in downloads_dirs()]})
+        name = (q.get('name') or [''])[0]
+        path = next((p for p in latest if os.path.basename(p) == name), None)
+        if not path:
+            return self._json({'error': 'fichier absent'}, 404)
+        with open(path, 'rb') as f:
+            body = f.read()
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/octet-stream')
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(body)
+        return None
+
+    @route('GET', '/__setup/sia-zip', public='poste')
+    def _get_sia_zip(self, path):
+        # ZIP du SIA téléchargé : ?info → nom, taille, date ; sinon le fichier lui-même
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        z = sia_zip()
+        if 'info' in self.path:
+            return self._json({'found': bool(z), 'name': os.path.basename(z) if z else '', 'size': os.path.getsize(z) if z else 0,
+                               'mtime': os.path.getmtime(z) if z else 0, 'where': [os.path.basename(d) or d for d in downloads_dirs()]})
+        if not z:
+            return self._json({'error': 'aucun ZIP du SIA'}, 404)
+        with open(z, 'rb') as f:
+            body = f.read()
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/zip')
+        self.send_header('X-File-Name', urllib.parse.quote(os.path.basename(z)))
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(body)
+        return None
+
+    @route('POST', '/__setup/perf', public='poste')
+    def _post_perf(self, path, body):
+        # mesures de l'audit de performance (tools/perf_audit.html) : docs/technique/perf/runs/<nom>.json
+        name = re.sub(r'[^\w.-]+', '_', urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('name', ['audit'])[0])[:80]
+        try:
+            json.loads(body or b'null')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        out = os.path.join(ROOT, 'docs', 'technique', 'perf', 'runs')
+        os.makedirs(out, exist_ok=True)
+        with open(os.path.join(out, name + '.json'), 'wb') as f:
+            f.write(body)
+        return self._json({'ok': True, 'file': f'docs/technique/perf/runs/{name}.json'})
+
+    @route('POST', '/__setup/sync-remote', public='poste')
+    def _post_sync_remote(self, path, body):
+        # dépôt git de synchronisation de data/ (premier lancement) : vérifié (git ls-remote), enregistré si demandé
+        # et si c'est le dépôt actuel ou celui de la configuration (autre dépôt : dans un terminal) ; jamais
+        # bloquant : le compte rendu dit seulement si le dépôt répond
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        url = str(a.get('url') or '').strip()
+        # needsConfirm : ni le dépôt actuel ni celui de la configuration — la page prévient avant « Enregistrer »
+        r = {'check': data_sync.check_remote(url),
+             'needsConfirm': not any(data_sync.same_repo(url, u) for u in (data_sync.remote_info(DATA)['url'], data_repo_url()))}
+        if a.get('save'):
+            saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url()])
+            if saved.get('refused'):
+                # autre dépôt : confirmé par l'utilisateur dans une fenêtre du système (ancienne et nouvelle adresse),
+                # hors du navigateur — un script de la page ne peut ni la voir ni y répondre
+                ok, why = confirm_remote(saved.get('current') or '', url)
+                if ok:
+                    saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url(), url])
+                else:
+                    saved['message'] = f'Changement de dépôt non confirmé : {why} Dépôt inchangé.'
+            r['saved'] = saved
+        return self._json(r)
+
+    @route('POST', '/__setup/net', public='lan')
+    def _post_net(self, path, body):
+        # V3 frame : appel sortant d'un module relayé (SimBrief, IVAO, VATSIM)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'error': 'JSON invalide'}, 400)
+        code, hdrs, out = frame_net(a if isinstance(a, dict) else {})
+        self.send_response(code)
+        for k, v in hdrs.items():
+            self.send_header(k, v)
+        self.send_header('Content-Length', str(len(out)))
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('X-SOG-Relay', '1')
+        self.end_headers()
+        self.wfile.write(out)
+        return None
+
+    @route('POST', '/__setup/batch', public='lan')
+    def _post_batch(self, path, body):
+        # V3 frame : lot d'écritures de la couche de données, en une fois (frame/store/transport_launcher.js)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        r, code = frame_batch(a if isinstance(a, dict) else {})
+        return self._json(r, code)
+
+    @route('POST', '/__setup/sync', public='lan')
+    def _post_sync(self, path, body):
+        # un passage de synchronisation (commit au nom du trigramme, fusion fiche par fiche, envoi), un à la fois
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        with SYNC_LOCK:
+            # pont du registre avant (le registre rejoué part dans ce passage) et après (comptes rendus reçus : le
+            # registre rejoué partira au passage suivant)
+            registry_bridge()
+            # gesture : bouton « Synchroniser » (sia/base commitée aussi) ; sinon passage de fond (échange du cadre)
+            r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60], sync_gesture(a))
+            if r.get('received'):
+                registry_bridge()
+        if self._lan() and not r.get('ok'):
+            # appareil appairé du réseau local : rien du poste (sortie de git, chemins) ; le détail reste dans la console
+            say(f"  Synchronisation demandée par un appareil appairé, en échec : {r.get('message', '')}")
+            r = {**r, 'message': 'Synchronisation interrompue sur le poste du lanceur : le détail est dans sa console.'}
+        sync_status_reset()  # état relu au prochain appel : le bouton reflète le passage qui vient d'avoir lieu
+        if r.get('received'):
+            with INDEX_LOCK:
+                index_availability()
+                index_users()
+        return self._json(r)
+
+    @route('POST', '/__setup/aircraft-db', public='poste')
+    def _post_aircraft_db(self, path, body):
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        return self._json({'started': aircraft_start(a.get('codes') or [], bool(a.get('quick'))), **AIRCRAFT, **aircraft_files()})
+
+    @route('POST', '/__setup/lan', public='poste')
+    def _post_lan(self, path, body):
+        # ouvrir ou fermer l'accès du réseau local, oublier les appareils appairés — ce poste seulement
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        if a.get('forget') is True:
+            lan_access.forget()
+        elif isinstance(a.get('forget'), str):
+            lan_access.forget(a['forget'])
+        if a.get('open') is True:
+            lan_open(bool(a.get('all')))
+        elif a.get('open') is False:
+            lan_close()
+        if a.get('code') and LAN['servers']:
+            say(f'  Réseau local : nouveau code d’appairage : {lan_access.new_code()} (10 minutes)')
+        return self._json(lan_state())
+
+    @route('POST', '/__setup/vfr-import', public='poste')
+    def _post_vfr_import(self, path, body):
+        # compilation VFR (vfr-compiled.json choisi sur la page) : { apply, author, compiled } ; contrôle strict,
+        # plan rendu sans rien écrire (apply faux), puis écriture de sia/vfr/, commit et synchronisation
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'errors': ['JSON illisible.'], 'summary': {}})
+        try:
+            return self._json(vfr_publish(a.get('compiled'), str(a.get('author') or '').upper(), bool(a.get('apply'))))
+        except (OSError, RuntimeError) as e:
+            return self._json({'ok': False, 'errors': [str(e)[-600:]], 'summary': {}})
+
+    @route('POST', '/__setup/aircraft-publish', public='poste')
+    def _post_aircraft_publish(self, path, body):
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        try:
+            return self._json(aircraft_publish(str(a.get('author') or '').upper(), bool(a.get('apply'))))
+        except (OSError, RuntimeError) as e:
+            return self._json({'ok': False, 'remove': [], 'copy': [], 'message': str(e)[-600:]})
+
+    @route('POST', '/__setup/defa-site', public='poste')
+    def _post_defa_site(self, path, body):
+        # flotte et journal DEFA depuis le site : { refresh, auto, force } (une fois par jour en auto) ou
+        # { auto_enabled } (réglage de Paramètres › Maintenance)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        if 'auto_enabled' in a:
+            return self._json(defa_set_auto(bool(a['auto_enabled'])))
+        pages = a.get('pages') if isinstance(a.get('pages'), dict) else None
+        return self._json(defa_refresh(force=bool(a.get('force')), auto=bool(a.get('auto')), pages=pages))
+
+    @route('POST', '/__setup/secrets', public='poste')
+    def _post_secrets(self, path, body):
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        return self._json(secrets_save(a))
+
+    @route('POST', '/__setup/relax', public='poste')
+    def _post_relax(self, path, body):
+        # débrayage de l'ouverture depuis un autre site ou une extension : activé après confirmation dans la fenêtre du
+        # lanceur, jusqu'à sa fermeture ; rétabli sans confirmation
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        return self._json(relax_set(bool(a.get('on'))))
+
+    @route('POST', '/__setup/site-allow', '/__setup/site-remove', public='poste')
+    def _post_site_allow(self, path, body):
+        # site ajouté à la CSP (connect-src) : confirmé dans la fenêtre du lanceur, qu'aucune page ne peut voir ni
+        # valider ; retiré : sans confirmation (la liste ne fait que rétrécir)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        return self._json(site_allow(str(a.get('url') or '')) if path.endswith('allow') else site_remove(str(a.get('url') or '')))
+
+    @route('POST', '/__setup/regen/job', '/__setup/regen/job/cancel', public='poste')
+    def _post_regen_job(self, path, body):
+        # travaux du module Données : jeu et verbe d'une liste fixe, arguments contrôlés (tools/regen_jobs.py)
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        a = a if isinstance(a, dict) else {}
+        v = regen().cancel(str(a.get('id') or '')[:40]) if path.endswith('/cancel') else regen().start(
+            a.get('set'), a.get('verb'), a.get('args'), a.get('author') or '')
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
+    @route('POST', '/__setup/aero-fetch', public='poste')
+    def _post_aero_fetch(self, path, body):
+        # données aéronautiques d'autres pays (tools/aero_fetch.py) : téléchargées dans data/sia/<source>/
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        args = [str(x)[:12] for x in (a.get('args') or [])][:40]
+        with AERO_LOCK:
+            return self._json(fresh(aero_fetch).fetch(DATA, str(a.get('provider') or ''), args))
+
+    @route('POST', '/__setup/jeu-essai', public='poste')
+    def _post_jeu_essai(self, path, body):
+        ok, log = sample_data()
+        if ok:
+            mark_instance()  # data/ vient d'être créé : ses repères
+            with INDEX_LOCK:
+                index_availability()
+                index_users()
+        return self._json({'ok': ok, 'message': log})
+
+    @route('POST', '/__setup/clone', public='poste')
+    def _post_clone(self, path, body):
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        ok, log = clone((a.get('user') or '').strip(), a.get('secret') or '', bool(a.get('remember')), a.get('url'))
+        if ok:
+            mark_instance()
+        return self._json({'ok': ok, 'message': log})
+
+    @route('POST', '/__setup/adopt', public='poste')
+    def _post_adopt(self, path, body):
+        # data/ déjà là sans être un dépôt (exemples, archive, données saisies) devenu un clone du dépôt des données,
+        # fiches du poste reprises par les règles de la synchronisation, rien d'envoyé (tools/data_sync.adopt) ;
+        # dépôt de la configuration admis, autre dépôt : confirmé dans la fenêtre du lanceur, comme sync-remote
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        url = str(a.get('url') or '').strip() or data_repo_url()
+        user, secret = str(a.get('user') or '').strip(), str(a.get('secret') or '')
+        if any(c in user + secret for c in '\r\n\0'):
+            return self._json({'ok': False, 'message': 'Identifiant ou mot de passe invalide (retour à la ligne).'})
+        if not data_sync.REMOTE_RE.match(url):
+            return self._json({'ok': False, 'message': data_sync.REMOTE_HELP})
+        # needsConfirm : autre dépôt que celui de la configuration ; dry : la page le demande avant le clic, rien n'est fait
+        need = not data_sync.same_repo(url, data_repo_url())
+        if a.get('dry'):
+            return self._json({'ok': True, 'dry': True, 'needsConfirm': need, 'state': data_sync.data_state(DATA)})
+        if need:
+            ok, why = confirm_adopt(url)
+            if not ok:
+                return self._json({'ok': False, 'needsConfirm': True, 'message': f'Reprise non confirmée : {why} data/ inchangé.'})
+        git = data_sync.git_exe()
+        if git and run([git, 'lfs', 'version'], capture_output=True) == 0:
+            run([git, 'lfs', 'install'], capture_output=True)
+        extra, auth = git_auth(user, secret)
+        with SYNC_LOCK:
+            r = data_sync.adopt(DATA, url, str(a.get('author') or 'POSTE').upper(), env=dict(git_env(), **extra),
+                                name=str(a.get('name') or '')[:60], auth=auth)
+        if r.get('ok'):
+            say(f'  Reprise de data/ dans le dépôt {url} : ' + r.get('message', ''))
+            ensure_lfs(DATA, 'data', 'Données')
+            mark_instance()
+            if a.get('remember'):
+                remember_credentials(url, user, secret)
+            with INDEX_LOCK:
+                index_availability()
+                index_users()
+        sync_status_reset()
+        return self._json({**r, 'needsConfirm': need})
+
+    @route('POST', '/__setup/upload', public='poste')
+    def _post_upload(self, path, body):
+        kind = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('kind', [''])[0]
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.upload') as f:
+            f.write(body)
+            tmp = f.name
+        try:
+            if kind == 'data':
+                if has_data():
+                    return self._json({'ok': False, 'message': 'Les données sont déjà là (data/data_tree.js).'})
+                ok = extract_data(tmp, quiet=True)
+                if ok:
+                    mark_instance()
+                return self._json({'ok': ok, 'message': 'Données installées dans data/.' if ok else 'Ce fichier n’est pas une archive de données (data_tree.js absent).'})
+            if kind == 'log':
+                if not has_data():
+                    return self._json({'ok': False, 'message': 'Installez d’abord les données (étape 1).'})
+                r = subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'defa_reference.py'), tmp,
+                                    '--out=' + os.path.join(DATA, 'references', 'defa_reference.js')], cwd=ROOT,
+                                   capture_output=True, text=True, encoding='utf-8', errors='replace')
+                return self._json({'ok': r.returncode == 0, 'message': (r.stdout + r.stderr).strip()[-1500:] or 'Référence mise à jour.'})
+            return self._json({'ok': False, 'message': 'Type de fichier inconnu.'}, 400)
+        finally:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
 
 
 def downloads_dirs():

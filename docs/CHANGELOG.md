@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: one table of routes** (`tools/launch.py`, `tools/lan_access.py`, `frame/sw.js`,
+  `shared/maintenance_page.js`; frame INTEGRATION, DECISIONS; noreg I10): each `/__setup/` route is declared once with
+  its public (local network or this workstation), and the local network's gate reads that table; the data repository's
+  configured address never carries credentials; Maintenance names a workstation setting to a paired device; two frame
+  libraries join the offline shell.
 - **Fuel and the Map: the rules of the procedures are one pure module, `frame/lib/procedures.js`** (refactoring 29 Oct c; `modules/fuel/module.js`,
   `frame/lib/flight_path.js` re-exporting `conflictsOf` / `orderProcedures`; bench `frame/lib/test/procedures.html`, case F32; no visible
   change) — runway matching, names, conflicts, order, transitions, the approaches listed once and the runways offered, with no state and no text.

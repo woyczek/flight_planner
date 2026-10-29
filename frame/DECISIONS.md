@@ -1602,3 +1602,13 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   of the Data module runs on the launcher (a build of the base included), `sia/base/` stays on the workstation whatever the
   flag (`sync_gesture`, noreg I9). Likewise the author of a commit is the trigram the page gives (`author`): it names who
   acted, it proves nothing — the signed registry (comptes signés) is what authenticates.
+- **29 Oct 2026 — Lot (3c-2): one table of the launcher's routes, each with its public** (challenge § 10.29):
+  - The 48 `/__setup/` routes of `tools/launch.py` were `if path == …` blocks in `do_GET` / `do_POST` and the routes open
+    to a paired device a separate list in `tools/lan_access.py`: two places to keep in step. Each block became a method of
+    the server, its body unchanged, declared by `@route(method, path…, public='lan' | 'poste')`; the table `ROUTES`
+    dispatches and the local network's gate reads it. A mechanical rewrite (`routes_table.py` in the session's scratchpad),
+    checked: the same 8 routes open to a paired device, every route answering as before (status and keys of each route,
+    before / after, on a launcher).
+  - With it: `data_repo_url()` drops a `user:token@` from the configured address; Maintenance says « réglage du poste »
+    (not « sans lanceur ») to a paired device refused `/__setup/workstation`; `lib/geo.js` and `lib/launcher.js` join the
+    frame's offline shell (`frame/sw.js`).

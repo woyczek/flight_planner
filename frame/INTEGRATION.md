@@ -957,6 +957,14 @@ in the launcher; `resume` finds it again.
   /__setup/workstation`, workstation only) also carries `lnm`: the sorted list of Little Navmap database kinds present on the workstation (the
   `little_navmap_<kind>.sqlite` files of its `little_navmap_db` folder; names only, `[]` when absent); `FrameData.launcher.detect()` hands it on in
   `info()`, aerodb uses it as a hint when a State has no coding tables.
+- **The route table** (29 Oct 2026, lot 3c-2): every `/__setup/` route of `tools/launch.py` is a method of the server
+  declared where it is written, `@route(method, path…, public='lan' | 'poste')`, gathered in one table `ROUTES` (method,
+  path) → (handler, public); `do_GET` / `do_POST` dispatch by it. `public='lan'`: also open to a paired device of the local
+  network (the Pilot app's routes: `status`, `changes`, `sim/position`, `lnmperf`, `lnmperf-folder`, `batch`, `sync`,
+  `net`); `'poste'` (the default): this workstation only. The local network's gate reads the table — there is no second
+  list any more (`tools/lan_access.py` lost its `ROUTES`). A new route is declared with its public, in one place (noreg
+  I10: the open set is the Pilot app's, each route has its handler, nothing is written outside the table, every route the
+  frame calls is in it).
 - The frame itself uses the same client for its own calls (Settings' `setup()`, aerodb's `.lnmperf` sheets, the
   simulator's position, the local network's access): no piece of the frame calls the launcher with `fetch` any more,
   except the network relay (`/__setup/net`, whose answer is the relayed site's, not JSON).

@@ -451,3 +451,29 @@ def i9(c):
     finally:
         DS.git_cmd, DS.resolve = kept
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I10', 'Launcher routes', 'I', static=True,
+      rule='frame/INTEGRATION 6.1: every /__setup/ route is declared once in the table ROUTES with its public; a paired device reaches the lan routes only')
+def i10(c):
+    import importlib
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    lan = sorted(k for k, v in L.ROUTES.items() if v[1] == 'lan')
+    c.eq(lan, sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('GET', '/__setup/sim/position'),
+                      ('GET', '/__setup/lnmperf'), ('GET', '/__setup/lnmperf-folder'), ('POST', '/__setup/batch'),
+                      ('POST', '/__setup/sync'), ('POST', '/__setup/net')]),
+         'the routes open to a paired device are the Pilot app\'s, unchanged', what='lan routes')
+    missing = [f'{m} {p} -> {fn}' for (m, p), (fn, _) in L.ROUTES.items() if not callable(getattr(L.Setup, fn, None))]
+    c.eq(missing, [], 'each route names a method of the server', what='routes without handler')
+    src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+    body = src[src.index('    def do_GET('):src.index('    # ---------------------------------------------------------------- routes /__setup/')]
+    left = re.findall(r"if (?:path|self\.path\.split\('\?'\)\[0\]) == '(/__setup/[^']+)'", body)
+    c.eq(left, [], 'no /__setup/ route written outside the table in do_GET / do_POST', what='routes outside the table')
+    used = set(re.findall(r"""['"`](?:/)?__setup/([a-z][a-z0-9/-]*)""", '\n'.join(
+        Path(f).read_text(encoding='utf-8', errors='replace') for f in glob.glob(str(c.root / 'frame' / '**' / '*.js'), recursive=True))))
+    known = {p[len('/__setup/'):] for _, p in L.ROUTES} | {'lnmperf', 'lnmperf-folder', 'upload'}
+    c.eq(sorted(u for u in used if u.rstrip('/') not in known and not u.endswith('/')), [], 'every route the frame calls is in the table',
+         what='frame routes unknown to the launcher')
+    c.ok(L.data_repo_url.__doc__ and 'jeton' in src[src.index('def data_repo_url'):src.index('def run(')], '', 'the data repository address never carries credentials')
+

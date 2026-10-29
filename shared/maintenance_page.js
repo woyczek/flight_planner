@@ -1026,7 +1026,14 @@
         'X-SOG-Setup': '1'
       },
       cache: 'no-store'
-    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    }).then(r => r.ok ? r.json() : r.status === 403 ? {
+      forbidden: true
+    } : null).catch(() => null);
+    if (st?.forbidden) { // appareil appairé du réseau local : un lanceur sert la page, mais ce réglage est celui du poste
+      state.innerHTML = pill('info', t(['réglage du poste', 'workstation setting', 'Einstellung des Rechners', 'ajuste del equipo']));
+      btn.hidden = true;
+      return;
+    }
     if (!st) {
       state.innerHTML = pill('info', t(['sans lanceur', 'without launcher', 'ohne Starter', 'sin lanzador']));
       btn.hidden = true;
