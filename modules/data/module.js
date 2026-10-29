@@ -74,7 +74,7 @@ const li = () => Math.max(0, LANGS.indexOf(lang()));
 /** « 3 zones » : le nombre et le nom de l'unité, au singulier ou au pluriel (TX.unit). */
 const count = (unit, n) => `${n} ${tt(TX.unit[unit][n === 1 ? 0 : 1])}`;
 /** Attribut data-kind d'un badge ou d'un point, absent quand il n'y a pas de couleur. */
-const kind = k => k ? ` data-kind="${k}"` : '';
+const kind = k => k ? ` data-kind="${esc(k)}"` : '';
 
 // ---------------------------------------------------------------- lecture
 /** Un appel d'aerodb qui ne lève jamais : sa réponse, ou null s'il manque, échoue ou ne répond rien. */
@@ -196,9 +196,11 @@ function metaText(r) {
 function urlOf(src) {
   return S.d.cat.urlOf ? S.d.cat.urlOf(src, S.cycleId) : typeof src.url === 'function' ? src.url(S.cycleId) : src.url;
 }
-/** Le lien « Ouvrir » (nouvel onglet, sans référent) avec son adresse écrite à côté. */
+/** Le lien « Ouvrir » (nouvel onglet, sans référent) avec son adresse écrite à côté ; une adresse qui n'est pas en https:
+ *  (javascript:, data:, http:…) n'est jamais un lien, seulement écrite. */
 function linkHtml(src) {
-  const url = urlOf(src);
+  const url = String(urlOf(src) ?? '');
+  if (!/^https:\/\/[^\s"'<>]+$/i.test(url)) return url ? `<span class="d-url f-muted">${esc(url)}</span>` : '';
   return `<a class="f-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(tt(TX.openTitle, { s: src.n[li()] }))}">${esc(tt(TX.open))}</a>
     <span class="d-url f-muted">${esc(url)}</span>`;
 }
@@ -238,7 +240,7 @@ function rowHtml(r) {
       <span class="f-badge"${kind(STATUS_KIND[r.status])}>${esc(tt(TX.statuses[r.status]))}</span></p>
       <p>${linkHtml(src)}</p><p class="f-muted">${esc(tt(TX.licenceLine, { l: src.lic[li()] }))}</p></div>`;
   const pill = r.state ? `<span class="f-badge"${kind(r.level)} data-pill>${esc(tt(TX.state[r.state]))}</span>` : '';
-  return `<details class="f-card" data-set="${esc(r.id)}" data-status="used"${r.state ? ` data-state="${r.state}"` : ''} data-cycle="${esc(r.cycle)}">
+  return `<details class="f-card" data-set="${esc(r.id)}" data-status="used"${r.state ? ` data-state="${esc(r.state)}"` : ''} data-cycle="${esc(r.cycle)}">
     <summary><span class="d-sum"><b>${name}</b><span class="f-muted">${esc(metaText(r))}</span></span>${pill}</summary>${detailHtml(r, src)}</details>`;
 }
 /** Les quatre groupes : repliés sauf ceux qui portent une ligne à regarder ; sept lignes visibles au plus, le reste (et les jeux
