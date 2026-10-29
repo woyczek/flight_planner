@@ -52,6 +52,12 @@ FAA_SIMPLIFY = {'maxAllowableOffset': 0.0005, 'geometryPrecision': 5}
 ENAIRE = 'https://aip.enaire.es/AIP/'
 ENAIRE_KINDS = ('Airspace', 'EnRoute')
 NAT_URL = 'https://nms.aim.faa.gov/datanat/nat.json'
+MAX_BYTES = 200 * 1024 * 1024  # 200 Mo au plus par réponse : au-delà, le téléchargement s'arrête (le fichier présent est gardé)
+CHUNK = 1024 * 1024
+
+
+class TooLarge(OSError):
+    """Réponse plus grande que MAX_BYTES : lecture arrêtée, rien n'est écrit (une erreur réseau pour l'appelant)."""
 
 
 def get(url, since=None):
@@ -61,7 +67,18 @@ def get(url, since=None):
         headers['If-Modified-Since'] = email.utils.formatdate(since, usegmt=True)
     try:
         with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=TIMEOUT) as r:
-            return r.read()
+            size = r.headers.get('Content-Length')
+            if size and size.isdigit() and int(size) > MAX_BYTES:
+                raise TooLarge(f'réponse de {int(size) // 1048576} Mo, plus de {MAX_BYTES // 1048576} Mo : téléchargement arrêté')
+            parts, n = [], 0
+            while True:  # lecture par morceaux : un serveur qui ne dit pas la taille (ou ment) est arrêté au plafond
+                part = r.read(CHUNK)
+                if not part:
+                    return b''.join(parts)
+                n += len(part)
+                if n > MAX_BYTES:
+                    raise TooLarge(f'réponse de plus de {MAX_BYTES // 1048576} Mo : téléchargement arrêté')
+                parts.append(part)
     except urllib.error.HTTPError as e:
         if e.code == 304:
             return None
@@ -173,26 +190,35 @@ def enaire(data):
         page = get(ENAIRE + 'DatosDigitales-en.html').decode('utf-8', 'replace')
     except OSError as e:
         return out, [f'ENAIRE : {e}']
+    from proc_pdf import safe_path
     folder = os.path.join(data, 'sia', 'aixm5')
     for kind in ENAIRE_KINDS:
-        links = re.findall(r'href="(contenido_Datasets/LE_[^"]*?_AIP_DS_FULL_' + kind + r'\.xml)"', page)
-        if not links:
+        # le nom vient de la page du serveur : motif strict, puis chemin résolu sous sia/aixm5 (jamais de « \ », « / » ni « .. »)
+        names = re.findall(r'href="contenido_Datasets/(LE_[A-Za-z0-9._-]+?_AIP_DS_FULL_' + kind + r'\.xml)"', page)
+        if not names:
             errors.append(f'ENAIRE : jeu {kind} introuvable sur la page')
             continue
-        rel = links[0]
-        name = rel.rsplit('/', 1)[-1]
-        if os.path.exists(os.path.join(folder, name)):  # amendement en vigueur déjà là : rien à télécharger
-            out.append({'name': name, 'bytes': os.path.getsize(os.path.join(folder, name)), 'unchanged': True})
+        name, pattern = names[0], re.compile(r'LE_[A-Za-z0-9._-]+_AIP_DS_FULL_' + kind + r'\.xml')
+        try:
+            path = safe_path(folder, name, pattern)
+        except ValueError as e:
+            errors.append(f'ENAIRE : {e}')
+            continue
+        if path.exists():  # amendement en vigueur déjà là : rien à télécharger
+            out.append({'name': name, 'bytes': path.stat().st_size, 'unchanged': True})
             continue
         try:
-            body = get(ENAIRE + rel)
+            body = get(ENAIRE + 'contenido_Datasets/' + urllib.parse.quote(name))
         except OSError as e:
             errors.append(f'{name} : {e}')
             continue
-        changed = write(os.path.join(folder, name), body)
-        for old in os.listdir(folder):  # amendements précédents du même jeu
-            if old != name and re.fullmatch(r'LE_.*_AIP_DS_FULL_' + kind + r'\.xml', old):
-                os.remove(os.path.join(folder, old))
+        changed = write(str(path), body)
+        for old in os.listdir(folder):  # amendements précédents du même jeu (même contrôle avant de retirer)
+            if old != name and pattern.fullmatch(old):
+                try:
+                    os.remove(safe_path(folder, old, pattern))
+                except ValueError:
+                    pass
         out.append({'name': name, 'bytes': len(body), 'unchanged': not changed})
     return out, errors
 

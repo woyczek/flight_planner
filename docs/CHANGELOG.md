@@ -55,6 +55,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   by each box; the panel is written only when its rows change and the boxes' state is set in place. Its cross ×4, Escape,
   Flight or Details close it.
 
+- **Data: what the download job takes from a server is checked** (`tools/aero_fetch.py`, `tools/navcan_dah.py`; `frame/aerodb/INTEGRATION.md`; test K57) — an
+  ENAIRE file name read from its page is written (and the previous amendment removed) only if it matches a strict pattern and stays under `sia/aixm5`; the
+  NAV CANADA guide is requested only in https on its own host; a response over 200 MB is stopped and nothing is written.
 - **Data: the raw sources of a zone, fetched and purged by the launcher; they leave the data repository** (`tools/regen/base_sources.py`, `tools/data_template/.gitignore`; frame SPEC, INTEGRATION, DECISIONS of `frame/aerodb/`; tests K52 to K56) — the jobs `base/fetch` (downloads the zone's openAIP, FAA, ENAIRE, UK Mil, NAV CANADA and NAT sources through `tools/aero_fetch.py`, no commit; manual sources are listed with their address; the tracked files it modified are counted) and `base/purge` (removes a zone's raw sources and caches; never `sia/base/`, `proc/` or a file tracked by git; dry run). The data template now ignores `sia/openaip/`, `sia/zones/`, `sia/aixm5/`, `sia/geojson/`, `sia/miam-*.xml`, the aircraft HTTP cache and `__pycache__`.
 - **aerodb: each eAIP procedure carries its « Source » link** (`frame/aerodb/aerodb.js`; SPEC, INTEGRATION, DECISIONS; test K1) —
   `source.url` is the public address of the coded page on the SIA site, so Fuel and the Map open it in one tap.

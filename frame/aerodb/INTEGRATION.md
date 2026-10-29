@@ -364,6 +364,10 @@ const p = await ctx.launcher.job('regen/job', { set: 'base', verb: 'purge', args
   screen to say what to do by hand. `local` (X-Plane) and `computed` (MORA) sources are not this job's and appear nowhere. A source that fails does not stop the others
   (`error`: `network`, `http` with `status`, `parse`); the zone is `failed` when one of its sources failed. A country with no openAIP export is `failed`,
   `http`, `404`. The cancel is looked at between two files.
+  What `aero_fetch` takes from a server is checked before use (security review, 30 Oct 2026): an ENAIRE file name read from its page must match
+  `^LE_[A-Za-z0-9._-]+_AIP_DS_FULL_(Airspace|EnRoute)\.xml$` and resolve under `sia/aixm5` (`proc_pdf.safe_path`, for the write and for the removal of the
+  previous amendment); the NAV CANADA guide address is requested only in `https` on `www.navcanada.ca`; a response over **200 MB** (announced or read) is stopped,
+  nothing is written and the present file is kept (`network`).
 - **`outside_sync`**: the number of files **tracked by git** in `data/` that the job modified (a rewritten file, a previous ENAIRE amendment removed): they
   now differ from the repository and will not follow the synchronisation. The screen says it (`warnings: [{ code: 'outside-sync', count }]`).
 - **`base/purge`**: removes a zone's raw sources under `data/sia/` (what the catalogue's `fileSource` attributes to the zone, and for France the root AIXM,

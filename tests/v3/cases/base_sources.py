@@ -9,6 +9,8 @@ Rules covered
   * K55 base/purge on a temporary data tree in a temporary git repository: the zone's sources and caches removed, tracked files kept (kept-tracked), sia/base,
     proc/ and other zones never touched, dry run, shared-fr, a path that escapes refused, git failing.
   * K56 the data repository template ignores the raw sources (git check-ignore on a temporary repository).
+  * K57 what aero_fetch takes from a server page or response: ENAIRE file names (strict pattern, resolved under sia/aixm5), the NAV CANADA address (https on its
+    own host only), the size of a response (200 MB at most, stopped cleanly).
 """
 import importlib
 import json
@@ -480,3 +482,70 @@ def k56(c):
         keep = ['sia/base/fr/2026-10-01/airspaces.json', 'sia/base/index.json', 'sia/mora.csv', 'sia/vfr/x.json', 'proc/manual/LFPO.json', 'AircraftDB/aircraft_db.js', 'AircraftDB/aircraft_perf.js']
         c.eq([p for p in ign if not ignored(p)], [], 'the raw sources, the aircraft HTTP cache and the Python caches are ignored', what='not ignored')
         c.eq([p for p in keep if ignored(p)], [], 'the built base, mora.csv, proc/ and the aircraft database stay tracked', what='ignored by mistake')
+
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+class _Resp:
+    """Une réponse HTTP d'essai pour urlopen : Content-Length annoncé (ou absent) et un corps lu par morceaux."""
+
+    def __init__(self, body, length=None):
+        self.body, self.pos, self.headers = body, 0, {'Content-Length': str(length)} if length is not None else {}
+
+    def read(self, n=-1):
+        part = self.body[self.pos:] if n < 0 else self.body[self.pos:self.pos + n]
+        self.pos += len(part)
+        return part
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        pass
+
+
+@case('K57', 'Raw sources: what aero_fetch takes from a server (ENAIRE names under sia/aixm5, NAV CANADA on its own host in https, 200 MB per response)', 'K', static=True,
+      rule='Security review of 30 Oct 2026 (aero_fetch): a name read from a page writes a file only after proc_pdf.safe_path; an address read from a page is requested only on the host of BASE in https; get() stops at MAX_BYTES')
+def k57(c):
+    RJ, BS, AF, DS = _mods()
+    import navcan_dah as NC
+    # --- ENAIRE: a name with a backslash, a dot-dot or a sub-folder is never written; a good one is, and the previous amendment goes
+    bad = [r'LE_x\..\..\evil_AIP_DS_FULL_Airspace.xml', 'LE_../../evil_AIP_DS_FULL_Airspace.xml', 'LE_a/b_AIP_DS_FULL_Airspace.xml']
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'sia' / 'aixm5').mkdir(parents=True)
+        page = ''.join(f'<a href="contenido_Datasets/{n}">x</a>' for n in bad).encode()
+        with _Net(AF, {'DatosDigitales-en.html': page, 'AIP_DS_FULL': b'<evil/>'}) as net:
+            out, err = AF.enaire(str(data))
+        c.eq((out, [u for u, _ in net.calls if 'contenido_Datasets' in u]), ([], []), 'ENAIRE: a name with a backslash, a dot-dot or a slash is not taken from the page; nothing is requested', what='bad names')
+        c.eq(sorted(p.relative_to(Path(td)).as_posix() for p in Path(td).rglob('*') if p.is_file()), [], 'nothing is written anywhere in the temporary folder', what='written')
+        c.eq(len(err), 2, 'both datasets say they are not found on the page (parse)', what='errors')
+        old = data / 'sia' / 'aixm5' / 'LE_2026_09_AIP_DS_FULL_Airspace.xml'
+        old.write_bytes(b'<old/>')
+        (data / 'sia' / 'aixm5' / 'notes.xml').write_bytes(b'<keep/>')
+        with _Net(AF, {'DatosDigitales-en.html': _page_enaire(), 'AIP_DS_FULL_Airspace': b'<a/>', 'AIP_DS_FULL_EnRoute': b'<e/>'}) as net:
+            out, err = AF.enaire(str(data))
+        c.eq((sorted(os.listdir(data / 'sia' / 'aixm5')), err), (['LE_2026_10_AIP_DS_FULL_Airspace.xml', 'LE_2026_10_AIP_DS_FULL_EnRoute.xml', 'notes.xml'], []),
+             'a good name is written under sia/aixm5, the previous amendment of the same dataset removed, another file kept', what='good name')
+        c.ok(all(u.startswith(AF.ENAIRE + 'contenido_Datasets/LE_2026_10_') for u, _ in net.calls[1:]), str(net.calls), 'the datasets are requested on the ENAIRE address only')
+    # --- NAV CANADA: only https on www.navcanada.ca
+    page = ('<a href="http://www.navcanada.ca/dah20260901.pdf"> <a href="https://evil.example/dah20261001.pdf"> <a href="https://www.navcanada.ca.evil.example/dah20261002.pdf">'
+            '<a href="//evil.example/dah20261003.pdf"> <a href="/en/dah20260801.pdf">')
+    c.eq(NC.current_url(page, '20261029'), 'https://www.navcanada.ca/en/dah20260801.pdf', 'NAV CANADA: http://, another host or a look-alike host are set aside; the relative link is resolved on BASE', what='navcan')
+    c.eq(NC.current_url('<a href="https://evil.example/dah20261001.pdf">', '20261029'), None, 'NAV CANADA: no link on its own host -> none (the page says the guide is not found)', what='navcan none')
+    c.eq(NC.current_url('<a href="https://www.navcanada.ca/a/dah20260101.pdf"><a href="https://www.navcanada.ca/a/dah20270101.pdf">', '20261029'),
+         'https://www.navcanada.ca/a/dah20260101.pdf', 'NAV CANADA: the latest edition already in force', what='navcan in force')
+    # --- get(): 200 MB at most, stopped cleanly (an OSError: the source fails as network, the present file is kept)
+    saved = (AF.urllib.request.urlopen, AF.MAX_BYTES)
+    try:
+        AF.MAX_BYTES = 1000
+        for body, length, ok in ((b'x' * 999, 999, True), (b'x' * 1000, None, True), (b'x' * 1001, None, False), (b'x' * 10, 5000, False), (b'x' * 3000, 10, False)):
+            AF.urllib.request.urlopen = lambda req, timeout=None, b=body, n=length: _Resp(b, n)
+            try:
+                got = AF.get('https://example.invalid/x')
+                res = ('ok', len(got))
+            except AF.TooLarge as e:
+                res = ('too-large', BS.classify(e)['error'])
+            c.eq(res, ('ok', len(body)) if ok else ('too-large', 'network'), f'get: {len(body)} bytes, Content-Length {length} -> {"read" if ok else "stopped (network)"}', what=f'get {len(body)}/{length}')
+    finally:
+        AF.urllib.request.urlopen, AF.MAX_BYTES = saved
+    c.eq(AF.MAX_BYTES, 200 * 1024 * 1024, 'the cap is 200 MB per response', what='MAX_BYTES')
