@@ -869,6 +869,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 27 | Frame G1: GitLab transport (a0f3854d9) | **blocking** (token reused for a new host), one to fix, one note |
 | 28 | AeroDB `base/fetch` and `base/purge` (ac84d562e); Data module corrections (6330c5133) | acceptable, two older points to fix, one note |
 | 29 | Map: track from `progress.actual.trail`, « Choisir sur la carte » button (a158edbe5) | acceptable, one note |
+| 30 | AeroDB: the points of 28 in `aero_fetch` (38a9d39b7) | acceptable; points of 28 settled, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1225,7 +1226,18 @@ as the address (`dep` / `arr`, `^[A-Z0-9]{4}$`), with an escaped ICAO and a side
 Note (with BUGS SOG): the filter walks the whole received track before capping it; cut first (`slice(-TRAIL_MAX)`) and
 check the bounds (|lat| ≤ 90, |lon| ≤ 180).
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24 and 27 to 29 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26; 27 blocking until fixed); the sharing of the track and of the position is the user's decision.
+**30. `aero_fetch` fixes (38a9d39b7) — acceptable; the points of 28 are settled; one note.** ENAIRE: the name is taken
+only under `contenido_Datasets/` with the pattern `LE_[A-Za-z0-9._-]+?_AIP_DS_FULL_<kind>.xml` (no `/`, `\` or `:`), then
+`safe_path` (pattern, path resolved under `sia/aixm5`) for the write and for each removal of an older amendment; the
+requested address is rebuilt from the name, never the page's link. NAV CANADA: `current_url` keeps an absolute link, or a
+relative one on `BASE`, only if it starts with `https://www.navcanada.ca/` (`//host`, `http://`, look-alike hosts and other
+schemes set aside). `get()`: a `Content-Length` over 200 MB is refused, then the body is read in 1 MB parts and stopped at
+the ceiling even without a declared size; `TooLarge` is an `OSError`, nothing is written. Note: `urllib` follows redirects
+to any host, plain http included; the host checks cover the page's links, not a server's redirect. Acceptable while the
+starting hosts are fixed and in https; an opener that refuses a redirect leaving the starting host would close the rule
+for every source.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 29 and 30 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30; 27 blocking until fixed); the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
