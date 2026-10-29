@@ -823,6 +823,15 @@ redesigned for touch at that point.
          launcher (a verb of a `sim` set, workstation only, name from the flight, never overwrites without saying so).
          Pure writers in `frame/lib/fms.js` with benches on the suite's test flight; lot fuel + frame after Source and
          § 10.27.
+         **Delivered 99d28acd0 (30 Oct night)**: the download in both `.fms` formats and `.pln`, pure writers
+         `toFmsV3`, `toFms1100`, `toPln`, `fileName`, `exportOf`, `airacOf` (CR LF, numbers with a point, AIRAC cycle
+         from the sheets or the date), bench `frame/lib/test/fms.html` (34 checks), card "Plan de vol pour le
+         simulateur" at step Départ with three 44 px buttons greyed under two placed points, cases F60 and F61.
+         "Envoyer à X-Plane" (launcher verb) is not delivered. Doubts recorded in Fuel's DECISIONS: MSFS 2024
+         AppVersion assumed, the 1100 approach name sanitised (ILSZRWY25L against I25L in X-Plane's navdata), the
+         download after an aerodb wait on Safari, nothing tried in a simulator yet: the user's group tests decide.
+         Security verdict: acceptable (file name reduced to the codes, `.pln` escaped, `.fms` identifiers without
+         blanks); one note, `escText` to strip the control characters XML 1.0 forbids.
        - **Warning when the flight date is in the past** (user, 29 Oct night): one line at step Vol and on the plan
          ("Vol daté du 26/10, dans le passé : météo et NOTAM ne valent plus"), never blocking; tiny lot fuel.
        - **AIP Ireland as the official source for Irish airspaces** (user, 29 Oct evening, Dublin: openAIP codes the CTA
@@ -848,7 +857,20 @@ redesigned for touch at that point.
          device tokens per user (only their fingerprint kept in tools/.relay.json; HttpOnly, Secure, SameSite=Strict
          cookie; one year), the commit author taken from the token, never from the page; the launcher listens on
          127.0.0.1 behind DSM's reverse proxy, reads X-Forwarded-* from 127.0.0.1 only, refuses anything not https as
-         seen by the proxy, limits attempts; the frame's detection says `relay: true`. R2 — invitations from the
+         seen by the proxy, limits attempts; the frame's detection says `relay: true`. **R1a delivered 7ca73448c (30 Oct
+         night, workstation only, nothing exposed)**: pairing by an eight-digit code per trigram issued on the
+         workstation (once, ten minutes, `secrets.randbelow`, `compare_digest`, five wrong codes per address = one
+         minute, thirty per hour = pairing closed until the next code), `tools/relay_access.py`, Maintenance screen
+         "Appareils du relais" (codes, list without fingerprints, revocation per device or per pilot), pairing page
+         without script and never framed, `--lan` refused with `--relay`. Security verdict (audit line 763892c80): one
+         **blocking point before any exposure** — the relay fails open when the proxy rewrites `Host` (fix: in relay
+         mode, a request from 127.0.0.1 carrying a proxy header with a `Host` other than the public host is refused
+         403 before any other guard; the install guide says "keep the Host header" and the start-up checks it); two
+         corrections (`safe_next` without blank or control character; same origin required on POST `/__relay/pair`);
+         decisions of the ergonomics session: cookie `SameSite=Lax` if no GET route of the relay changes state, wrong
+         attempts purged after one hour, the company's IVAO key shared by every paired device said in DECISIONS with
+         revocation as the answer, debt: bound the relay to the pilot's prefixes one day. R1b (IVAO OpenID through the
+         relay) follows on R1a. R2 — invitations from the
          Maintenance application: user created in the signed registry, one-time code valid 7 days, link
          `#settings?join=`, the pilot types the code once on any device and gets its device token; a list "Appareils et
          invitations" per user with revocation. R3 — deployment (Container Manager image: standard Python + git, data/

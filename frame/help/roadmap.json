@@ -260,11 +260,11 @@
           "es": "Datos en GitLab: un token de proyecto por piloto (trigrama, rol Developer, un año como máximo), creado por el administrador en Mantenimiento › Tokens de los pilotos y pegado una vez en Ajustes › Acceso"
         },
         {
-          "state": "planned",
-          "fr": "Accueil d'un pilote par un relais sur le NAS : lien d'invitation, code saisi une fois, aucun jeton git chez le pilote",
-          "en": "Pilot onboarding through a relay on the NAS: invitation link, code typed once, no git token for the pilot",
-          "de": "Aufnahme eines Piloten über ein Relais auf dem NAS: Einladungslink, Code einmal eingeben, kein Git-Token beim Piloten",
-          "es": "Alta de un piloto mediante un relé en el NAS: enlace de invitación, código tecleado una vez, ningún token git para el piloto"
+          "state": "doing",
+          "fr": "Accueil d'un pilote par un relais sur le NAS : relais et appareils appairés codés sur le poste (R1a), connexion IVAO par le relais (R1b) ; invitations et déploiement ensuite, après relecture sécurité complète, rien d'exposé avant le feu vert",
+          "en": "Pilot onboarding through a relay on the NAS: relay and paired devices coded on the workstation (R1a), IVAO login through the relay (R1b); invitations and deployment next, after a full security review, nothing exposed before the go",
+          "de": "Aufnahme eines Piloten über ein Relais auf dem NAS: Relais und gekoppelte Geräte auf dem Rechner codiert (R1a), IVAO-Anmeldung über das Relais (R1b); Einladungen und Bereitstellung danach, nach vollständiger Sicherheitsprüfung, nichts exponiert vor der Freigabe",
+          "es": "Alta de un piloto mediante un relé en el NAS: relé y dispositivos emparejados codificados en el equipo (R1a), inicio de sesión IVAO por el relé (R1b); invitaciones y despliegue después, tras una revisión de seguridad completa, nada expuesto antes del visto bueno"
         },
         {
           "state": "doing",
@@ -468,11 +468,11 @@
           "es": "Pista en uso o probable según el METAR de salida y llegada"
         },
         {
-          "state": "planned",
-          "fr": "Export du plan de vol vers X-Plane (.fms, deux formats, envoi direct dans le dossier FMS plans par le lanceur) et MSFS 2020 / 2024 (.pln)",
-          "en": "Flight plan export to X-Plane (.fms, both formats, sent directly to the FMS plans folder by the launcher) and MSFS 2020 / 2024 (.pln)",
-          "de": "Flugplanexport nach X-Plane (.fms, beide Formate, direkt in den Ordner FMS plans durch den Launcher) und MSFS 2020 / 2024 (.pln)",
-          "es": "Exportación del plan de vuelo a X-Plane (.fms, dos formatos, envío directo a la carpeta FMS plans por el lanzador) y MSFS 2020 / 2024 (.pln)"
+          "state": "done",
+          "fr": "Export du plan de vol : téléchargement en .fms X-Plane (deux formats) et .pln MSFS 2020 / 2024 depuis l'étape Départ ; l'envoi direct dans le dossier FMS plans par le lanceur viendra ensuite",
+          "en": "Flight plan export: download as X-Plane .fms (both formats) and MSFS 2020 / 2024 .pln from step Départ; the direct send to the FMS plans folder by the launcher comes next",
+          "de": "Flugplanexport: Download als X-Plane .fms (beide Formate) und MSFS 2020 / 2024 .pln aus dem Schritt Abflug; das direkte Senden in den Ordner FMS plans durch den Launcher folgt",
+          "es": "Exportación del plan de vuelo: descarga en .fms X-Plane (dos formatos) y .pln MSFS 2020 / 2024 desde el paso Salida; el envío directo a la carpeta FMS plans por el lanzador vendrá después"
         },
         {
           "state": "done",
