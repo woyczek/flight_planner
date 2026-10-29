@@ -611,6 +611,9 @@ redesigned for touch at that point.
          `proc/eaip-fetch`, `fetchProcedures` dispatch), fuel (texts ×4).
        - **What the Map draws.** The chosen SID, STAR and approach as the procedure trace (today's purple line), from the
          runway's threshold (SID) to the first en-route fix, and from the last en-route fix to the runway (STAR, approach);
+         (hues, user 29 Oct "des couleurs de contraste autres que violet (vert ? orange ? bleu ?)": SID green, STAR
+         orange, approach and missed approach sky blue, day and night shades, constraints and point names in the
+         procedure's hue; painted at the route's level so the airway cartouches the path follows stay on top);
          every point of the trace with its altitude constraint ("at / min / max / between", formatted by `formatLevel`) and
          its speed limit ("≤ 220 kt") in a close view (300 px per degree and more), in the AIP notation; transitions and the
          missed approach dashed; the vertical profile shows the constraints as steps on the planned path (the climb and
