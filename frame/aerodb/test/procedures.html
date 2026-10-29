@@ -1038,6 +1038,41 @@
             status: 'check',
             cycle: '2026-10-01' // le cycle en vigueur : pas périmé
           },
+          // lecture en partie (§ 10.26) : les comptes écrits à l'installation (pages non lues, fiches à vérifier)
+          EGPH: {
+            SID: 1,
+            STAR: 1,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01',
+            pages_unread: 2,
+            doubt: 1
+          },
+          EGPF: {
+            SID: 1,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-09-03',
+            pages_unread: 0,
+            doubt: 3
+          },
+          EGPD: {
+            SID: 1,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01',
+            pages_unread: 0,
+            doubt: 0
+          },
+          EGPE: {
+            SID: 1,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01' // installé avant les comptes : pas « partial »
+          },
           LFBD: {
             SID: 9,
             STAR: 9,
@@ -1092,6 +1127,22 @@
         cLfbd.counts.SID === 2 && cEgkk.source === 'manual' && cEgkk.counts.SID === 1 && cLfmn.level === 'green' && cLfmn.source ===
         'local' && cLfmn.outdated ===
         false && cLfmn.counts.APP === 5, [cLfbd, cEgkk, cLfmn]);
+      const [cPh, cPf, cPd, cPe] = await Promise.all(['EGPH', 'EGPF', 'EGPD', 'EGPE'].map(x => c0.coverage(x)));
+      check(
+        'coverage(): a held aerodrome with pages not read or procedures to check is orange « partial », with the fields of « held » and partial { pages, doubt }',
+        cPh.level === 'orange' && cPh.reason === 'partial' && cPh.source === 'manual' && cPh.outdated === false && JSON.stringify(cPh
+          .counts) ===
+        '{"SID":1,"STAR":1,"APP":0}' && JSON.stringify(cPh.partial) === '{"pages":2,"doubt":1}' && cPh.state === 'EG' && cPh.here ===
+        true && 'read_at' in cPh &&
+        cPf.reason === 'partial' && cPf.outdated === true && JSON.stringify(cPf.partial) === '{"pages":0,"doubt":3}', [cPh, cPf]);
+      check('coverage(): zero counts, or an entry from before the counts, is green « held », without partial', cPd.level === 'green' &&
+        cPd.reason === 'held' &&
+        !('partial' in cPd) && cPe.level === 'green' && cPe.reason === 'held' && !('partial' in cPe) && !('partial' in cLfbd), [cPd,
+          cPe
+        ]);
+      cPh.partial.pages = 99;
+      check('coverage(): the answer is a copy (partial changed by the caller does not change the next answer)', (await c0.coverage(
+        'EGPH')).partial.pages === 2, null);
       check('coverage(): an index entry without any procedure is not « held »', cKsea.level === 'red' && cKsea.reason === 'unknown' &&
         cKsea
         .state === 'KS', cKsea);
@@ -1340,11 +1391,30 @@
         cat = (await c0.sources()).COVERAGE;
       check(
         'coverageByState(): LF is orange « sia » with a label of four strings, ED orange « ead », LQ red « images »; every EAD_STATES prefix',
-        cs.LF.level === 'orange' && cs.LF.reason === 'sia' && cs.LF.label.length === 4 && cs.LF.label.every(t => typeof t ===
+        cs.LF.label.length === 4 && cs.LF.label.every(t => typeof t ===
           'string' &&
-          t) && JSON.stringify(cs.LF.label) === JSON.stringify(cat.sia) && cs.ED.reason === 'ead' && cs.LQ.level === 'red' && cs.LQ
+          t) && JSON.stringify(cs.LF.label) === JSON.stringify(cat.held) && cs.ED.reason === 'ead' && cs.LQ.level === 'red' && cs.LQ
         .reason === 'images' && JSON.stringify(cs.LQ.label) === JSON.stringify(cat.images) && Object.keys(cs).length === Object.keys((
-          await c0.sources()).EAD_STATES).length && Object.values(cs).every(x => ['orange', 'red'].includes(x.level)), [cs.LF, cs.LQ]);
+          await c0.sources()).EAD_STATES).length && Object.values(cs).every(x => ['green', 'orange', 'red'].includes(x.level) &&
+          typeof x.held === 'number'), [cs.LF, cs.LQ]);
+      // le nombre de terrains détenus par État (la table de coverage()), et le nom de l'État en quatre langues
+      const held = {};
+      for (const k of Object.keys((await c0.procedureIndex()).aerodromes))
+        if ((await c0.coverage(k)).level !== 'red') held[k.slice(0, 2)] = (held[k.slice(0, 2)] || 0) + 1;
+      const heldKeys = Object.keys(held).filter(x => cs[x]);
+      check(
+        'coverageByState(): `held` = the aerodromes held in the State (partial ones included); held > 0 → green « held » with the label of « held »; none → as before',
+        cs.LF.held >= 2 && cs.LF.level === 'green' && cs.LF.reason === 'held' && cs.EG.held === 6 && cs.EG.level === 'green' && cs.EG
+        .reason === 'held' &&
+        heldKeys.every(x => cs[x].held === held[x] && cs[x].level === 'green') && cs.ED.held === 0 && cs.ED.level === 'orange' && cs
+        .ED.reason === 'ead' && cs.LQ.held === 0 &&
+        cs.LQ.level === 'red', [cs.LF, cs.EG, held]);
+      const nm = (await c0.sources()).EAD_STATES;
+      check('coverageByState(): `names` = the State name [fr, en, de, es] of AeroCatalogue.EAD_STATES, for every prefix, a copy',
+        Object.keys(cs).every(x => Array.isArray(cs[x].names) && cs[x].names.length === 4 && cs[x].names.every(t => typeof t ===
+            'string' && t) &&
+          JSON.stringify(cs[x].names) === JSON.stringify(nm[x].names) && cs[x].names !== nm[x].names) && cs.LF.names[0] ===
+        'France' && cs.ED.names[2] === 'Deutschland', [cs.LF, cs.ED]);
       check(
         'coverageByState(): Little Navmap on the workstation changes nothing (same answer as without; no State is ever orange « lnm »)',
         JSON.stringify(csL) === JSON.stringify(cs) && csL.LQ.level === 'red' && csL.LQ.reason === 'images' && !Object.values(csL)

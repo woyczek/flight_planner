@@ -252,6 +252,7 @@ Neither reads an index or the catalogue: they ask aerodb.
   | `level` | `reason` | Meaning | Extra fields |
   |---|---|---|---|
   | `green` | `held` | procedures held: the published cycle, `proc/manual/` or `proc/local/` | `source` (`published` > `manual` > `local`, the best held), `outdated` (true only when the one holding is a hand reading of a past cycle), `counts { SID, STAR, APP }` (and `read_at`, below) |
+  | `orange` | `partial` | procedures held, **not all read** (V3 § 10.26): pages of the file not read (`formats[].ok === false`) or records of status `doubt` | the fields of `held`, plus `partial { pages, doubt }` |
   | `orange` | `sia` | readable on demand: State `LF`, the SIA eAIP | |
   | `orange` | `ead` | readable on demand: the State's `EAD_STATES` outcome is `read` (EAD Basic) | |
   | `red` | `images`, `labels`, `points`, `prose`, `vfr`, `none` | nothing to read: the State's `EAD_STATES` outcome says why | |
@@ -259,15 +260,17 @@ Neither reads an index or the catalogue: they ask aerodb.
 
   `state` is the two-letter prefix. `here` is true when this device can start the reading (a launcher with `job`, not paired): **orange stays orange where `here`
   is false** (the reading is then made on the workstation); the Map words « lire sur le poste » from it, and offers the gesture (`fetchProcedures`) where it is true.
-  The closed list of reasons: `held`, `sia`, `ead`, `images`, `labels`, `points`, `prose`, `vfr`, `none`, `unknown`. **There is no orange `lnm`** (V3 § 10.29): Little Navmap has no reader yet, so the workstation's databases
+  The closed list of reasons: `held`, `partial`, `sia`, `ead`, `images`, `labels`, `points`, `prose`, `vfr`, `none`, `unknown`. **There is no orange `lnm`** (V3 § 10.29): Little Navmap has no reader yet, so the workstation's databases
   change nothing in `coverage()` and `coverageByState()` (the key stays in `AeroCatalogue.COVERAGE` for the day a reader exists; a module never receives it). The `lnm` hint of `fetchProcedures` (`no-tables`) is not a coverage and stays.
 - **`read_at`** (every answer of `coverage()`; ISO 8601 UTC to the second, or `null`): when the aerodrome's file was last read on the workstation, from `updated_at` of the aerodrome's entry in `proc/manual/index.json` (written by
   `tools/proc_manual.py` at install) or in `proc/local/index.json`, the most recent of the two, even where the published cycle gives the counts. **Fuel and the Map**: `read_at` present → the line « lu le … » with « Relire »;
   `null` → the « Lire les procédures de LFXX » button alone, no date (an orange or red aerodrome, a published-only one, or an index entry from before the date existed). The same date is on every record served from `proc/manual/`
   as `source.read_at`; a published record has none.
-- **`coverageByState()`** → `{ [prefix]: { level, reason, label: [fr, en, de, es] } }` for every `EAD_STATES` prefix (France included): the same rules **without
-  held aerodromes** — a State is readable on demand or not (the workstation's Little Navmap databases change nothing). `label` is
-  `AeroCatalogue.COVERAGE[reason]`.
+- **`coverageByState()`** → `{ [prefix]: { level, reason, label: [fr, en, de, es], names: [fr, en, de, es], held } }` for every `EAD_STATES` prefix (France included).
+  `held` is the number of aerodromes held in the State (partial ones included): `held > 0` → `green` / `held`; none → the rules of `coverage()` **without a held
+  aerodrome** — a State is readable on demand or not (the workstation's Little Navmap databases change nothing). `label` is `AeroCatalogue.COVERAGE[reason]`,
+  `names` the State's name in the four languages (`AeroCatalogue.EAD_STATES[prefix].names`). This is the shape agreed with the Données module (29 Oct 2026); that
+  module also reads `AeroCatalogue.PARSER_VERSION` (the format version the builders write = `VERSION` of `shared/sia_base.js`) to flag a zone « à reconstruire ».
 - **Labels**: `AeroCatalogue.COVERAGE[reason]` → `[fr, en, de, es]` (served by `sources()`), short, for a legend line or a tooltip. A module that words a reason
   differently (a longer sentence) keys on `reason`, never on the label.
 - **Cost and cache**: the first `coverage()` builds, once, an in-memory table from `procedureIndex()` (the published cycle index, `proc/manual/index.json` and
@@ -279,7 +282,11 @@ Neither reads an index or the catalogue: they ask aerodb.
   tab; when one aerodrome's file arrives or changes there — a reading made on the workstation and synchronised to this device —, `procedures: icao` comes
   with it, so Fuel re-asks `procedures(icao)` instead of keeping an empty answer; more than 50 at once (a published cycle): one `{ coverage, refreshed }`).
   aerodb has already dropped its table: **ask again, never keep an answer past that event** — the Map redraws its pins, the Données module its State
-  list. `coverageByState()` has no cache to refresh (47 States) and does not change while the session runs.
+  list. `coverageByState()` is built from the same table (`held`): ask it again after `{ coverage: true }` too.
+- **`partial` for Fuel and the Map**: a partial aerodrome is **orange**, not green, though `source`, `counts`, `outdated` and `read_at` are there as for `held` —
+  the Map colours the pin orange and words `COVERAGE.partial` (plus `partial.pages` / `partial.doubt` if it wants numbers); Fuel keeps its « lu le … » line and its « N non lues » line
+  (from `stats`) and must not take `orange` for « nothing held » (test `reason`, not `level`, to decide whether the « Lire » button stands alone). The counts exist only for
+  files installed after this change (`tools/proc_manual.py`); read an aerodrome again to have them.
 
 ### The Données module (`modules/data/`, Full level) — contracts of 28 Oct 2026
 

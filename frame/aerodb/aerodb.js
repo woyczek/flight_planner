@@ -1183,10 +1183,18 @@
             APP: +e?.APP || 0
           };
           if (!e || counts.SID + counts.STAR + counts.APP === 0) continue;
+          // lecture en partie (V3 § 10.26) : pages non lues (`pages_unread`) ou procédures à vérifier (`doubt`), comptées à l'installation
+          // dans l'entrée de l'index (tools/proc_manual.py) ; une entrée sans ces comptes (fichier d'avant, cycle publié) n'est pas « partial »
+          const pages = Math.max(0, +e.pages_unread || 0),
+            doubt = Math.max(0, +e.doubt || 0);
           held.set(k.toUpperCase(), {
             source: e.local ? 'local' : e.manual ? 'manual' : 'published',
             outdated: !!(e.manual && !e.local && e.outdated),
             counts,
+            partial: pages + doubt > 0 ? {
+              pages,
+              doubt
+            } : null,
             read_at: parts.readAt.get(k.toUpperCase()) || null
           });
         }
@@ -1591,6 +1599,10 @@
        *    (vrai si la seule détention est une lecture à la main d'un cycle passé), counts { SID, STAR, APP } ;
        *  · 'orange' : lisibles à la demande — reason 'sia' (LF) ou 'ead' (État lisible dans EAD Basic). Jamais 'lnm' : Little Navmap n'a
        *    pas de lecteur (§ 10.21) ; la raison reste dans AeroCatalogue.COVERAGE pour plus tard ;
+       *  · 'orange' / 'partial' (§ 10.26) : procédures détenues dont une partie n'est pas lue — pages non lues (`formats[].ok === false`)
+       *    ou fiches de statut `doubt` — avec les mêmes champs que 'held' (source, outdated, counts, read_at) et partial { pages, doubt }.
+       *    Les comptes viennent de l'entrée de l'index (proc/manual/index.json : `pages_unread`, `doubt`, écrits à l'installation) ;
+       *    une entrée sans ces comptes n'est pas partielle ;
        *  · 'red' : rien — reason = issue d'EAD_STATES ('images', 'labels', 'points', 'prose', 'vfr', 'none'), 'unknown' pour un
        *    État absent d'EAD_STATES (ou à l'issue inattendue).
        *  read_at : date ISO 8601 UTC (à la seconde) de la dernière lecture du fichier du terrain — la plus récente des entrées de
@@ -1607,8 +1619,8 @@
           here = canRead(),
           h = t.held.get(k);
         if (h) return {
-          level: 'green',
-          reason: 'held',
+          level: h.partial ? 'orange' : 'green',
+          reason: h.partial ? 'partial' : 'held',
           state,
           here,
           source: h.source,
@@ -1616,6 +1628,11 @@
           counts: {
             ...h.counts
           },
+          ...(h.partial ? {
+            partial: {
+              ...h.partial
+            }
+          } : {}),
           read_at: h.read_at
         };
         const [level, reason] = stateCoverage(state, t.ead);
@@ -1627,19 +1644,29 @@
           read_at: null
         };
       },
-      /** Couverture par État, pour le module Données (§ 10.22) : { [préfixe]: { level, reason, label: [fr, en, de, es] } } pour chaque
-       *  préfixe d'EAD_STATES (LF compris), mêmes règles que coverage() SANS terrain détenu (un État lisible à la demande ou non ;
-       *  la base de Little Navmap du poste ne change rien). label : AeroCatalogue.COVERAGE[reason]. */
+      /** Couverture par État, pour le module Données (§ 10.22) : { [préfixe]: { level, reason, label: [fr, en, de, es], names: [fr, en,
+       *  de, es], held } } pour chaque préfixe d'EAD_STATES (LF compris). held : le nombre de terrains détenus dans l'État (la table de
+       *  coverage(), bâtie des index) ; held > 0 → 'green' / 'held' ; sinon les règles de coverage() sans terrain détenu (un État lisible
+       *  à la demande ou non ; la base de Little Navmap du poste ne change rien). label : AeroCatalogue.COVERAGE[reason] ; names :
+       *  AeroCatalogue.EAD_STATES[préfixe].names. Comme coverage(), à redemander après { coverage: true }. */
       async coverageByState() {
-        const src = await api.sources().catch(() => null),
+        const [src, t] = await Promise.all([api.sources().catch(() => null), coverageTable().catch(() => null)]),
           ead = src?.EAD_STATES || {},
+          held = {},
           out = {};
+        for (const k of t?.held.keys() || []) held[k.slice(0, 2)] = (held[k.slice(0, 2)] || 0) + 1;
         for (const prefix of new Set([...Object.keys(ead), 'LF'])) {
-          const [level, reason] = stateCoverage(prefix, ead);
+          const n = held[prefix] || 0,
+            [level, reason] = n ? ['green', 'held'] : stateCoverage(prefix, ead),
+            names = ead[prefix]?.names;
           out[prefix] = {
             level,
             reason,
-            label: [...(src?.COVERAGE?.[reason] || [reason, reason, reason, reason])]
+            label: [...(src?.COVERAGE?.[reason] || [reason, reason, reason, reason])],
+            ...(Array.isArray(names) ? {
+              names: [...names]
+            } : {}),
+            held: n
           };
         }
         return out;

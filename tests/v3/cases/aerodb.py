@@ -63,6 +63,12 @@ def k21(c):
     r, bad = _bench(c, 'catalogue.html', '__catBench')
     c.ok(r['fail'] == 0 and r['pass'] >= 20, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}",
          'airac.js, the catalogue\'s schema and links, the file-name readers, the EAD outcomes, and publication() / zones() / sources() on a reader in memory')
+    # AeroCatalogue.PARSER_VERSION follows shared/sia_base.js VERSION (the format version of the published base): both files are read here
+    base = (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8')
+    cat = (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
+    m1, m2 = re.search(r'const VERSION =\s*(\d+)', base), re.search(r'const PARSER_VERSION = (\d+)', cat)
+    c.eq((m2 and int(m2.group(1))) or None, (m1 and int(m1.group(1))) or 0, 'AeroCatalogue.PARSER_VERSION is the VERSION of shared/sia_base.js (it must follow it)', what='PARSER_VERSION')
+    c.eq(c.js('window.__parserVersion'), int(m1.group(1)), 'the catalogue serves that number', what='served PARSER_VERSION')
     # one calculation: the Python tools follow the same 28-day suite from AIRAC 2401 = 2024-01-25 as airac.js
     import datetime
     import importlib
@@ -943,7 +949,7 @@ def k11(c):
         M.install(man, td, replace=True)
         got = {p['id']: p['status'] for p in json.loads(f.read_text())['procedures']}
         idx2 = json.loads((Path(td) / 'manual' / 'index.json').read_text())['aerodromes']['EGYY']
-        c.eq((got, {k: v for k, v in idx2.items() if k != 'updated_at'}), ({'EGYY.SID.A': 'official', 'EGYY.STAR.TEST1A.RWALL': 'official', 'EGYY.STAR.TEST2A.RWALL': 'check'}, {'SID': 1, 'STAR': 2, 'APP': 0, 'status': 'official', 'cycle': '2026-10-01'}),
+        c.eq((got, {k: v for k, v in idx2.items() if k != 'updated_at'}), ({'EGYY.SID.A': 'official', 'EGYY.STAR.TEST1A.RWALL': 'official', 'EGYY.STAR.TEST2A.RWALL': 'check'}, {'SID': 1, 'STAR': 2, 'APP': 0, 'status': 'official', 'cycle': '2026-10-01', 'pages_unread': 0, 'doubt': 0}),
              'with --replace: merged by id, the official procedure kept over the manual one, the new one added, the index counted on the whole', what='merge')
         # the date of the reading (§ 10.29, j): the index entry carries the file's updated_at, else now in UTC to the second; aerodb serves it as coverage().read_at
         import re
@@ -953,6 +959,14 @@ def k11(c):
         dated['updated_at'] = '2026-10-28T10:00:00+00:00'
         M.install(dated, td)
         c.eq(json.loads((Path(td) / 'manual' / 'index.json').read_text())['aerodromes']['EGWW']['updated_at'], '2026-10-28T10:00:00+00:00', 'the index entry updated_at is the own one of the file when it has one', what='updated_at file')
+        # the counts of what is not read (§ 10.26): pages not read (formats[].ok false) and records of status doubt; aerodb's coverage() turns orange « partial » from them
+        part = json.loads(json.dumps(doc).replace('EGXX', 'EGVV'))
+        part['formats'] = [{'file': 'a.pdf', 'ok': True}, {'file': 'b.pdf', 'ok': False, 'reason': 'layout'}, {'file': 'c.pdf', 'ok': False, 'reason': 'low-read'}]
+        part['procedures'].append({**part['procedures'][0], 'id': 'EGVV.STAR.DBT1A.RWALL', 'name': 'DBT 1A', 'status': 'doubt', 'doubt': 'zigzag'})
+        M.install(part, td)
+        e = json.loads((Path(td) / 'manual' / 'index.json').read_text())['aerodromes']
+        c.eq((e['EGVV']['pages_unread'], e['EGVV']['doubt'], e['EGVV']['STAR'], e['EGXX']['pages_unread'], e['EGXX']['doubt']), (2, 1, 1, 0, 0),
+             'install writes pages_unread (formats with ok false) and doubt (records of status doubt, not counted in STAR) into the aerodrome entry', what='index counts')
         c.eq((sorted(idx['aerodromes']), idx['aerodromes']['EGXX']['STAR'], (Path(td) / 'manual' / 'EGXX.json').exists()), (['EGXX', 'KSEA'], 1, True), 'installed, the index keeps the other aerodromes', what='install')
     # a file without any procedure is refused (never installed as « 0 procédure(s) cohérentes »): its warnings are printed, and the sibling OCR file is pointed at
     import contextlib

@@ -30,6 +30,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   itself), never by a background pass (update at start, the frame's periodic exchange), which keeps it on the computer
   and says so — a zone half written by a rebuild no longer leaves by itself.
 - **Fuel: the procedure rows appear without waiting for the aircraft registry** (`modules/fuel/module.js`, DECISIONS; case F33).
+- **aerodb: coverage `partial`, States held and named, `PARSER_VERSION`** (`frame/aerodb/aerodb.js`, `catalogue.js`, `tools/proc_manual.py`; cases K1, K11, K21; SPEC § 5, INTEGRATION « Coverage »; V3 § 10.26) — `coverage(icao)`
+  answers **orange `partial`** (with `partial { pages, doubt }` and the fields of `held`) for an aerodrome held whose file has pages not read or records to check; `proc_manual.py install` writes `pages_unread` and `doubt` into the
+  aerodrome's entry of `proc/manual/index.json` (an entry without them is not partial). `coverageByState()` gives each State its `names` [fr, en, de, es] (47 States, in `AeroCatalogue.EAD_STATES`) and `held` (aerodromes
+  held; `held > 0` → green `held`). `AeroCatalogue.PARSER_VERSION` (= `VERSION` of `shared/sia_base.js`, checked by K21). `COVERAGE.partial` in the four languages.
+
 - **Synchronisation: a git warning no longer stops the merge** (`tools/data_sync.py`, `tools/launch.py`,
   `tools/regen_jobs.py`; administrator manuals ×4, SYNCHRONISATION; noreg I9): `git()` mixed git's warnings (« LF will
   be replaced by CRLF ») into its output, so a warning line was taken for a conflicting file, `open()` failed, the

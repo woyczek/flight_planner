@@ -127,7 +127,11 @@ def install(doc, out, replace=False, replace_source=None, source_file=None):
     cycles = sorted({(p.get('source') or {}).get('cycle') for p in full['procedures']} - {None})
     # `updated_at` : la date de cette lecture, celle du fichier (à défaut, celle déjà posée dans l'entrée, sinon maintenant en UTC à la seconde :
     # relire un fichier sans date ne change pas l'index, donc ne fait pas un commit de plus) — aerodb en tire `coverage().read_at`
+    # `pages_unread` (pages du fichier dont `formats[].ok` est faux) et `doubt` (fiches de statut « doubt ») : aerodb en tire
+    # `coverage().partial` (orange « partial », V3 § 10.26) sans ouvrir le fichier ; une entrée sans ces comptes (installée avant) n'est pas partielle
     idx['aerodromes'][doc['icao']] = {**n, 'status': best, 'cycle': cycles[-1] if cycles else doc['cycle'],
+                                      'pages_unread': sum(1 for f in full.get('formats') or [] if f.get('ok') is False),
+                                      'doubt': sum(1 for p in full['procedures'] if p.get('status') == 'doubt'),
                                       'updated_at': full.get('updated_at') or (idx['aerodromes'].get(doc['icao']) or {}).get('updated_at')
                                       or datetime.now(timezone.utc).isoformat(timespec='seconds')}
     idx_path.write_text(json.dumps(idx, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')

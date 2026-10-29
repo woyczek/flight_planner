@@ -11,7 +11,7 @@
   //     X-Plane / Navigraph), cycled (adresse du cycle AIRAC), n [fr, en, de, es], url (chaîne, ou fonction du cycle), gives [4],
   //     lic [4] (d'après LICENSE.md), how [4]? (le geste pour l'obtenir) }.
   // Les cycles sont ceux d'airac.js (AeroAirac) : une adresse se construit pour une date d'effet « AAAA-MM-JJ » ou un « AANN ».
-  // API : AeroCatalogue.{ SOURCES, ORDER, GROUPS, EAD_STATES, COVERAGE, READ_REASONS (codes de lecture → [fr, en, de, es]), byId, urlOf, eaipBase, cifpName, cifpUrl, siaPage, siaFileInfo,
+  // API : AeroCatalogue.{ SOURCES, ORDER, GROUPS, EAD_STATES (outcome, layout, names), COVERAGE, PARSER_VERSION, READ_REASONS (codes de lecture → [fr, en, de, es]), byId, urlOf, eaipBase, cifpName, cifpUrl, siaPage, siaFileInfo,
   //   cifpFileInfo } ; AeroSources : le même objet avec cycleOf / cycleDate (écran « Sources », jusqu'à son retrait).
   const A = (typeof window !== 'undefined' ? window : self).AeroAirac;
   if (!A) throw new Error('catalogue.js: airac.js must be loaded first');
@@ -596,173 +596,224 @@
   /** Issue d'EAD Basic par État (EAD_BASIC.md § 8.1, relevé des 47 autorités du 28 octobre 2026) : 'read' (une disposition connue,
    *  `layout` ; `ocr` : des pages dessinées, lues par OCR), 'images' (cartes en image), 'labels' (étiquettes éparses), 'vfr' (VFR
    *  seulement), 'points' (listes de points seulement), 'prose' (descriptions en texte), 'sia' (la France vient du SIA, jamais d'EAD),
-   *  'none' (rien obtenu). Seul 'read' rend la ligne « Lire un terrain » possible ; les autres la grisent avec leur raison. */
+   *  'none' (rien obtenu). Seul 'read' rend la ligne « Lire un terrain » possible ; les autres la grisent avec leur raison.
+   *  `names` : le nom de l'État [fr, en, de, es] (le module Données et aerodb.coverageByState() s'en servent ; un nom est une donnée, comme
+   *  `n` des sources). */
   const EAD_STATES = {
     UD: {
+      names: ['Arménie', 'Armenia', 'Armenien', 'Armenia'],
       outcome: 'read',
       layout: 'am-coding'
     },
     ED: {
+      names: ['Allemagne', 'Germany', 'Deutschland', 'Alemania'],
       outcome: 'read',
       layout: 'de-route'
     },
     EG: {
+      names: ['Royaume-Uni', 'United Kingdom', 'Vereinigtes Königreich', 'Reino Unido'],
       outcome: 'read',
       layout: 'uk-app',
       ocr: true
     },
     BI: {
+      names: ['Islande', 'Iceland', 'Island', 'Islandia'],
       outcome: 'read',
       layout: 'icao-tab'
     },
     EY: {
+      names: ['Lituanie', 'Lithuania', 'Litauen', 'Lituania'],
       outcome: 'read',
       layout: 'icao-tab'
     },
     LI: {
+      names: ['Italie', 'Italy', 'Italien', 'Italia'],
       outcome: 'read',
       layout: 'icao-tab'
     },
     LD: {
+      names: ['Croatie', 'Croatia', 'Kroatien', 'Croacia'],
       outcome: 'read',
       layout: 'icao-tab'
     },
     LA: {
+      names: ['Albanie', 'Albania', 'Albanien', 'Albania'],
       outcome: 'read',
       layout: 'icao-tab'
     },
     RP: {
+      names: ['Philippines', 'Philippines', 'Philippinen', 'Filipinas'],
       outcome: 'read',
       layout: 'icao-tab'
     },
     EI: {
+      names: ['Irlande', 'Ireland', 'Irland', 'Irlanda'],
       outcome: 'read',
       layout: 'ei-coding'
     },
     LO: {
+      names: ['Autriche', 'Austria', 'Österreich', 'Austria'],
       outcome: 'read',
       layout: 'at-coding'
     },
     LZ: {
+      names: ['Slovaquie', 'Slovakia', 'Slowakei', 'Eslovaquia'],
       outcome: 'read',
       layout: 'at-coding'
     },
     LU: {
+      names: ['Moldavie', 'Moldova', 'Moldau', 'Moldavia'],
       outcome: 'read',
       layout: 'de-route'
     },
     LP: {
+      names: ['Portugal', 'Portugal', 'Portugal', 'Portugal'],
       outcome: 'read',
       layout: 'de-route'
     },
     EP: {
+      names: ['Pologne', 'Poland', 'Polen', 'Polonia'],
       outcome: 'read',
       layout: 'de-route'
     },
     EB: {
+      names: ['Belgique', 'Belgium', 'Belgien', 'Bélgica'],
       outcome: 'read',
       layout: 'be-coding',
       ocr: true
     },
     UG: {
+      names: ['Géorgie', 'Georgia', 'Georgien', 'Georgia'],
       outcome: 'read',
       layout: 'ge-coding',
       ocr: true
     },
     LQ: {
+      names: ['Bosnie-Herzégovine', 'Bosnia and Herzegovina', 'Bosnien und Herzegowina', 'Bosnia y Herzegovina'],
       outcome: 'images'
     },
     LG: {
+      names: ['Grèce', 'Greece', 'Griechenland', 'Grecia'],
       outcome: 'images'
     },
     UB: {
+      names: ['Azerbaïdjan', 'Azerbaijan', 'Aserbaidschan', 'Azerbaiyán'],
       outcome: 'labels'
     },
     EK: {
+      names: ['Danemark', 'Denmark', 'Dänemark', 'Dinamarca'],
       outcome: 'labels'
     },
     EE: {
+      names: ['Estonie', 'Estonia', 'Estland', 'Estonia'],
       outcome: 'labels'
     },
     XX: {
+      names: ['Autorité XX d’EAD (fichiers EK_)', 'EAD authority XX (EK_ files)', 'EAD-Behörde XX (EK_-Dateien)',
+        'Autoridad XX de EAD (archivos EK_)'
+      ],
       outcome: 'labels'
     },
     LH: {
+      names: ['Hongrie', 'Hungary', 'Ungarn', 'Hungría'],
       outcome: 'labels'
     },
     LJ: {
+      names: ['Slovénie', 'Slovenia', 'Slowenien', 'Eslovenia'],
       outcome: 'labels'
     },
     EH: {
+      names: ['Pays-Bas', 'Netherlands', 'Niederlande', 'Países Bajos'],
       outcome: 'labels'
     },
     ES: {
+      names: ['Suède', 'Sweden', 'Schweden', 'Suecia'],
       outcome: 'labels'
     },
     EV: {
+      names: ['Lettonie', 'Latvia', 'Lettland', 'Letonia'],
       outcome: 'labels'
     },
     LY: {
+      names: ['Serbie et Monténégro', 'Serbia and Montenegro', 'Serbien und Montenegro', 'Serbia y Montenegro'],
       outcome: 'labels'
     },
     UK: {
+      names: ['Ukraine', 'Ukraine', 'Ukraine', 'Ucrania'],
       outcome: 'labels'
     },
     LK: {
+      names: ['Tchéquie', 'Czechia', 'Tschechien', 'Chequia'],
       outcome: 'vfr'
     },
     LM: {
+      names: ['Malte', 'Malta', 'Malta', 'Malta'],
       outcome: 'vfr'
     },
     LR: {
+      names: ['Roumanie', 'Romania', 'Rumänien', 'Rumanía'],
       outcome: 'points'
     },
     EF: {
+      names: ['Finlande', 'Finland', 'Finnland', 'Finlandia'],
       outcome: 'points'
     },
     EN: {
+      names: ['Norvège', 'Norway', 'Norwegen', 'Noruega'],
       outcome: 'prose'
     },
     OJ: {
+      names: ['Jordanie', 'Jordan', 'Jordanien', 'Jordania'],
       outcome: 'prose'
     },
     LE: {
+      names: ['Espagne', 'Spain', 'Spanien', 'España'],
       outcome: 'prose'
     },
     LC: {
+      names: ['Chypre', 'Cyprus', 'Zypern', 'Chipre'],
       outcome: 'prose'
     },
     LW: {
+      names: ['Macédoine du Nord', 'North Macedonia', 'Nordmazedonien', 'Macedonia del Norte'],
       outcome: 'prose'
     },
     LS: {
+      names: ['Suisse', 'Switzerland', 'Schweiz', 'Suiza'],
       outcome: 'prose'
     },
     BG: {
+      names: ['Groenland', 'Greenland', 'Grönland', 'Groenlandia'],
       outcome: 'prose'
     },
     LF: {
+      names: ['France', 'France', 'Frankreich', 'Francia'],
       outcome: 'sia'
     },
     BK: {
+      names: ['Kosovo', 'Kosovo', 'Kosovo', 'Kosovo'],
       outcome: 'none'
     },
     LB: {
+      names: ['Bulgarie', 'Bulgaria', 'Bulgarien', 'Bulgaria'],
       outcome: 'none'
     },
     LT: {
+      names: ['Turquie', 'Türkiye', 'Türkei', 'Turquía'],
       outcome: 'none'
     },
     UA: {
+      names: ['Kazakhstan', 'Kazakhstan', 'Kasachstan', 'Kazajistán'],
       outcome: 'none'
     },
     UC: {
+      names: ['Kirghizistan', 'Kyrgyzstan', 'Kirgisistan', 'Kirguistán'],
       outcome: 'none'
     }
   };
   /** Libellés courts de la carte de couverture des procédures (SPEC § 5 et § 6, V3 § 10.22), pour une légende ou une
    *  infobulle de la Carte et du module Données : une entrée par raison de aerodb.coverage(icao) / coverageByState(), chacune
-   *  [fr, en, de, es]. `lnm` est gardée pour plus tard mais aerodb ne la produit plus (pas de lecteur de Little Navmap, V3 § 10.29).
+   *  [fr, en, de, es]. `partial` : un terrain détenu dont des pages ne sont pas lues ou des procédures sont à vérifier (V3 § 10.26). `lnm` est gardée pour plus tard mais aerodb ne la produit plus (pas de lecteur de Little Navmap, V3 § 10.29).
    *  C'est la même exception que `n`, `gives` et `lic` à l'invariant 4 de la SPEC (aerodb sans texte d'interface) :
    *  des textes du catalogue, dans les quatre langues, servis avec lui. Français : espace fine insécable (U+202F) avant : ; ! ? et
    *  dans « ». */
@@ -773,6 +824,10 @@
     ],
     ead: ['Lisible à la demande (EAD Basic)', 'Readable on demand (EAD Basic)', 'Auf Anfrage lesbar (EAD Basic)',
       'Legible bajo demanda (EAD Basic)'
+    ],
+    partial: ['Lu en partie : pages non lues ou procédures à vérifier', 'Partly read: pages not read or procedures to check',
+      'Teilweise gelesen: Seiten nicht gelesen oder Verfahren zu prüfen',
+      'Leído en parte: páginas sin leer o procedimientos por revisar'
     ],
     lnm: ['Lisible par Little Navmap (base du poste)', 'Readable by Little Navmap (workstation database)',
       'Von Little Navmap lesbar (Datenbank des Rechners)', 'Legible por Little Navmap (base del equipo)'
@@ -824,6 +879,10 @@
     zigzag: ['trajet en zigzag', 'zigzag path', 'Zickzack-Verlauf', 'trayecto en zigzag'],
     unread: ['lignes de la table non lues', 'table rows not read', 'Tabellenzeilen nicht gelesen', 'filas de la tabla sin leer']
   };
+  /** Version du format de la base publiée que les constructeurs écrivent (`parserVersion` des meta.json) : la valeur de `VERSION` de
+   *  shared/sia_base.js, DOIT la suivre (le cas K21 lit les deux fichiers et compare). Le module Données la montre à côté de celle d'une zone
+   *  publiée pour dire « à reconstruire ». */
+  const PARSER_VERSION = 19;
   const GROUPS = ['base', 'proc', 'aircraft', 'weather'];
   const ORDER = ['used', 'candidate', 'abandoned'];
   const byId = id => SOURCES.find(s => s.id === id) || null;
@@ -837,6 +896,7 @@
     EAD_STATES,
     COVERAGE,
     READ_REASONS,
+    PARSER_VERSION,
     byId,
     urlOf,
     eaipBase,

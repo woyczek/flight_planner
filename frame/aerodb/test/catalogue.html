@@ -103,12 +103,12 @@
         st.LF.outcome === 'sia' && st.EB.ocr && st.LQ.outcome === 'images', [Object.keys(st).length, read.length]);
       // les libellés de la carte de couverture (§ 10.22) : onze raisons, quatre langues, typographie française
       const CV = K.COVERAGE,
-        cvKeys = ['held', 'sia', 'ead', 'lnm', 'images', 'labels', 'points', 'prose', 'vfr', 'none', 'unknown'];
-      check('COVERAGE: the 11 reasons, each with four non-empty strings [fr, en, de, es], and the catalogue serves it', J(Object.keys(
+        cvKeys = ['held', 'partial', 'sia', 'ead', 'lnm', 'images', 'labels', 'points', 'prose', 'vfr', 'none', 'unknown'];
+      check('COVERAGE: the 12 reasons, each with four non-empty strings [fr, en, de, es], and the catalogue serves it', J(Object.keys(
         CV).sort()) === J([...cvKeys].sort()) && Object.values(CV).every(v => Array.isArray(v) && v.length === 4 && v.every(t =>
         typeof t === 'string' && t.trim())) && AeroSources.COVERAGE === CV, Object.keys(CV));
       check(
-        'COVERAGE: every reason aerodb can answer for a State is there (the EAD outcomes but « read » and « sia », plus held, sia, ead, lnm, unknown)',
+        'COVERAGE: every reason aerodb can answer for a State is there (the EAD outcomes but « read » and « sia », plus held, partial, sia, ead, lnm, unknown)',
         ['images', 'labels', 'points', 'prose', 'vfr', 'none'].every(o => Object.values(K.EAD_STATES).some(x => x.outcome === o) &&
           CV[o]),
         0);
@@ -119,6 +119,21 @@
       check('COVERAGE: the four languages differ (no French text left in en / de / es for the readable-on-demand lines)', ['sia', 'ead',
         'lnm'
       ].every(k => new Set(CV[k]).size === 4), CV.sia);
+      // le nom de chaque État en quatre langues (le module Données et coverageByState() les servent), la version du format de la base
+      const nmOk = Object.entries(st).every(([k, v]) => Array.isArray(v.names) && v.names.length === 4 && v.names.every(t =>
+        typeof t === 'string' && t.trim()));
+      check(
+        'EAD_STATES: every one of the 47 prefixes has `names` [fr, en, de, es], four non-empty strings; France is France / France / Frankreich / Francia',
+        nmOk && J(st.LF.names) === J(['France', 'France', 'Frankreich', 'Francia']) && st.GE === undefined, Object.entries(st).filter(
+          ([k, v]) => !v.names).map(x => x[0]));
+      check(
+        'EAD_STATES names: French has no plain space before : ; ! ? » nor after «; no name is left in French in the English / German / Spanish slots of a State written differently',
+        Object.values(st).every(v => !/ [:;!?»]|« /.test(v.names[0])) && st.ED.names[1] === 'Germany' && st.ED.names[2] ===
+        'Deutschland' && st.ED.names[3] === 'Alemania' &&
+        st.EG.names[0] === 'Royaume-Uni' && st.EG.names[3] === 'Reino Unido', [st.ED.names, st.EG.names]);
+      check('PARSER_VERSION is a number served by the catalogue (K21 compares it with shared/sia_base.js VERSION)', Number.isInteger(K
+        .PARSER_VERSION) && AeroSources.PARSER_VERSION === K.PARSER_VERSION, K.PARSER_VERSION);
+      window.__parserVersion = K.PARSER_VERSION;
       // les raisons de lecture (§ 10.29 c) : les codes de page non lue et de procédure douteuse, chacun avec quatre libellés
       const RR = K.READ_REASONS,
         rrKeys = ['layout', 'low-read', 'title', 'no-legs', 'counts', 'vector', 'timeout', 'geometry', 'unresolved', 'name', 'repeat',
