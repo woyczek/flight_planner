@@ -265,6 +265,13 @@
           "en": "Pilot onboarding through a relay on the NAS: invitation link, code typed once, no git token for the pilot",
           "de": "Aufnahme eines Piloten über ein Relais auf dem NAS: Einladungslink, Code einmal eingeben, kein Git-Token beim Piloten",
           "es": "Alta de un piloto mediante un relé en el NAS: enlace de invitación, código tecleado una vez, ningún token git para el piloto"
+        },
+        {
+          "state": "planned",
+          "fr": "Applications = jeux de modules nommés du même cadre (pilot, maintenance ; puis cpco, client), choisis par l'adresse puis par le rôle",
+          "en": "Applications = named module sets of the same frame (pilot, maintenance; then cpco, client), chosen by the address then by the role",
+          "de": "Anwendungen = benannte Modulsätze desselben Rahmens (pilot, maintenance; dann cpco, client), gewählt über die Adresse, dann über die Rolle",
+          "es": "Aplicaciones = conjuntos de módulos con nombre del mismo marco (pilot, maintenance; luego cpco, client), elegidos por la dirección y luego por el rol"
         }
       ]
     },
@@ -891,10 +898,10 @@
         },
         {
           "state": "doing",
-          "fr": "Écran « Données » : récupérer, compiler, pousser, nettoyer les sources sans la V2 (module au niveau Complet)",
-          "en": "\"Data\" screen: fetch, compile, push, clean the sources without V2 (a module at the Full level)",
-          "de": "Bildschirm „Daten“: Quellen holen, kompilieren, pushen, bereinigen ohne V2 (Modul auf Stufe Vollständig)",
-          "es": "Pantalla «Datos»: obtener, compilar, publicar, limpiar las fuentes sin la V2 (módulo en el nivel Completo)"
+          "fr": "Appli « Maintenance » (module Données) : couverture, jeux de données, récupérer, construire, publier, purger, sans la V2 ; depuis Réglages › Administration de Pilote",
+          "en": "\"Maintenance\" application (Data module): coverage, datasets, fetch, build, publish, purge, without V2; from Pilot's Réglages › Administration",
+          "de": "Anwendung „Wartung“ (Datenmodul): Abdeckung, Datensätze, Abrufen, Bauen, Veröffentlichen, Bereinigen, ohne V2; aus Einstellungen › Verwaltung von Pilot",
+          "es": "Aplicación «Mantenimiento» (módulo Datos): cobertura, conjuntos de datos, obtener, construir, publicar, purgar, sin la V2; desde Ajustes › Administración de Piloto"
         },
         {
           "state": "done",

@@ -26,8 +26,13 @@ coherent suite.
 | **Pilot** | the pilot preparing a flight | planning tools: fuel, maps, flight level, airspaces, performance sheets, landings | fuel, maps, performance sheets, airspace, landing |
 | **CPCO** (operations centre) | the planners of the centre | mission generator, mission registry, assignment of missions (from the registry, or "free"), order schedule | generator, registry, assignment, orders |
 | **SOG client** | the member of the airline | receive missions, fly them, write reports — a report is **not** necessarily attached to a mission; availability; my flights | my missions, availability, report, my flights, fleet (read) |
+| **Maintenance** (user, 29 Oct evening: "Pour éteindre la v2, il faut les paramétrages admin aéronautique sur la v3. Ce n'est pas dans l'appli pilote ou alors à très très haut niveau. C'est une appli maintenance") | the person who holds the aeronautical data (workstation with a launcher) | zones and sources, download, build (one process per zone), publish, purge; coverage; the launcher's keys and the workstation's settings | data (the module `modules/data`), settings (administration), help |
 
-Open: which application a given person opens by default (role in the registry), and whether one person can switch
+Decided (29 Oct): an application is a **named set of modules of the same frame** (tabs, rail, help), chosen by the
+address (`/frame/?app=maintenance`, default `pilot`) and later by the role in the registry; the Pilot application
+does not carry the Données module in its rail, it offers one line "Maintenance" in Réglages › Administration
+(level Complet) that opens the Maintenance application; the V2 maintenance page goes out when Maintenance covers
+it (D2 to D5 of the Data module). Open: which application a given person opens by default (role in the registry), and whether one person can switch
 between them on the same device.
 
 ## 3. Transverse blocks (the frame)
