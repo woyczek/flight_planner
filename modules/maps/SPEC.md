@@ -237,7 +237,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   `aerodb`, without a choice or without a record the path is the route and nothing changes. **One path**: `expandedPath(flight,
   procs)` gives the points "route + procedures" in flight order (kept in the state as `S.route.path`), `flownPath(path)` the points
   flown with their cumulative NM (`S.route.flown`: the only measure of distances, for the profile, the NM marks, the cursor, the
-  times and the header's distance). Drawn over the route, thinner, violet with a background edge (`procs.js`):
+  times and the header's distance). Drawn over the route, thinner, with a background edge, one hue per kind (`procs.js` `colOf`, day / night; user, 29 Oct: "des couleurs de contraste autres que violet"): SID green, STAR orange, approach and missed approach sky blue — neither the route's and high airways' violet nor the low airways' dark blue; the constraints and point names take their procedure's hue; the airway boxes of the legs the procedures follow are painted over their trace, as for the route (`MapsRender.draw` `legs`, `overRoute`):
   - the SID from the **threshold** of the chosen runway, the STAR and the approach to the threshold; the leg between the aerodrome
     and its threshold is not drawn; **`phase` `trans` (transition) and the missed approach are dashed**;
   - a **leg without a fix** (VA, CA, VM, FM: `lat` and `lon` null) is a 2 NM stroke along its course (`crs`, taken as the true

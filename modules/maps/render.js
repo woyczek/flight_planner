@@ -1086,7 +1086,12 @@
     hideVrp = null, // identifiants de VRP que l'écran dessine lui-même (terrain survolé ou épinglé) : pas deux fois
     lines = null, // suites de points que la route trace (null : toute la route), voir drawRoute
     cov = null, // couche « Procédures » : cov(icao) → niveau de couverture ('green' | 'orange' | 'red') ou rien, voir coverPins
-    reserve = null // reserve(placeur) : l'écran réserve ses libellés (procédures choisies) juste après ceux de la route
+    reserve = null, // reserve(placeur) : l'écran réserve ses libellés (procédures choisies) juste après ceux de la route
+    // chemin volé (route et procédures, points nommés dans l'ordre) : ses tronçons portent les cartouches des voies qu'ils
+    // suivent par-dessus leur trait ; sans lui, la route
+    legs = null,
+    // overRoute(ctx) : l'écran peint ses tracés au niveau de la route (procédures choisies), avant ces cartouches
+    overRoute = null
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
     T = theme || tokens();
@@ -1108,7 +1113,7 @@
     reservePoints(pl, mission?.points, toC, scale, profile);
     const towns = cityList(shown.cities, profile, toC, bbox, scale, pl);
     K.drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes');
-    const ends = K.drawAirways(ctx, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier, K.routeLegs(route));
+    const ends = K.drawAirways(ctx, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier, K.routeLegs(legs || route));
     // points des voies dessinées (sauf de loin) : les balises avec leur symbole (ajoutées aux balises montrées), les
     // autres en triangle
     const fixes = [],
@@ -1156,7 +1161,9 @@
       marks: mk,
       lines
     });
-    // cartouches des voies que suit la route : par-dessus son trait (le mode Édition de l'écran dessine ensuite ses poignées)
+    if (overRoute) overRoute(ctx);
+    // cartouches des voies que suit le chemin (route et procédures) : par-dessus son trait (le mode Édition de l'écran dessine
+    // ensuite ses poignées)
     for (const f of ends.over || []) f();
     // cadres posés, pour les infobulles et les libellés ajoutés par l'écran (TOC, TOD) : cartouches des voies, libellés
     // d'espaces, libellés de la route

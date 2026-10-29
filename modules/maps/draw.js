@@ -329,6 +329,8 @@ function draw() {
     lines: mission ? null : routeLines(),
     cov,
     reserve: procs ? pl => procs.reserve(pl) : null,
+    legs: mission ? null : S.route?.path || null,
+    overRoute: procs ? c => drawProcs(c, procs) : null,
     mission: mission && S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones
@@ -342,7 +344,6 @@ function draw() {
   S.navHits = got0.navaids || [];
   S.vrpHits = got0.vrps || [];
   if (altn) drawAltn(ctx, toC, altn, true);
-  if (procs) drawProcs(ctx, procs);
   drawPlanOnMap(ctx, toC, [...(got0.routeLabels || []), ...(procs?.labels || []).map(l => l
     .r)]); // TOC / TOD : ni sur la route ni sur une procédure
   if (!mission) drawVfr(ctx, toC);

@@ -22,8 +22,16 @@ import {
   TX
 } from './texts.js';
 
-/** Violet des procédures (le trait de la route est violet aussi : celui-ci est plus fin, avec un liseré du fond). */
-const COL = '#7c3aed';
+/** Teintes des procédures, de jour puis de nuit (utilisateur, 29 octobre : « des couleurs de contraste autres que violet (vert ?
+ *  orange ? bleu ?) ») : SID en vert, STAR en orange, approche (et son approche interrompue) en bleu ciel — ni le violet de la
+ *  route et des voies hautes, ni le bleu foncé des voies basses. */
+const PROC_COL = {
+  sid: ['#1b8a3a', '#5cd27a'],
+  star: ['#d95500', '#ff9a4d'],
+  app: ['#0a86c4', '#5cc4f5']
+};
+/** Teinte d'une procédure d'après l'origine de son point ('sid' | 'star' | 'app' | 'missed'). */
+export const colOf = origin => (PROC_COL[origin === 'missed' ? 'app' : origin] || PROC_COL.app)[S?.theme?.dark ? 1 : 0];
 /** Vue rapprochée : les contraintes et les noms des points s'écrivent à partir de 300 px par degré. */
 const NEAR_PX = 300;
 /** Longueur du trait d'un tronçon sans point, le long de sa route (NM). */
@@ -217,7 +225,8 @@ export function layout(ctx, toC, pxDeg) {
         segs.push({
           a: cur,
           b,
-          dash: missed
+          dash: missed,
+          o: p.origin
         });
         cur = b;
         vec = true;
@@ -243,7 +252,8 @@ export function layout(ctx, toC, pxDeg) {
         const seg = {
           a: cur,
           b: q,
-          dash: vec || direct || viaTrans || p.phase === 'trans' || missed
+          dash: vec || direct || viaTrans || p.phase === 'trans' || missed,
+          o: p.origin !== 'route' ? p.origin : from?.origin
         };
         if (p.arc?.centre && num(p.arc.centre.lat) && num(p.arc.centre.lon)) {
           seg.arc = {
@@ -274,7 +284,8 @@ export function layout(ctx, toC, pxDeg) {
     names.push({
       q: at(own[Math.floor(own.length / 2)]),
       text: procLabel(kind, rec, id),
-      old: !!rec?.outdated
+      old: !!rec?.outdated,
+      origin
     });
   }
   S.lgOutdated = names.some(n => n.old); // la ligne « ⌛ » de la légende
@@ -306,7 +317,8 @@ export function layout(ctx, toC, pxDeg) {
               m: true
             }] : [])]
           }],
-          name: true
+          name: true,
+          col: colOf(n.origin)
         });
       }
       if (near)
@@ -317,7 +329,8 @@ export function layout(ctx, toC, pxDeg) {
             r = place(pl, q, w, lines.length * LINE_H, false);
           if (r) L.labels.push({
             r,
-            lines
+            lines,
+            col: colOf(q.src?.origin)
           });
         }
       ctx.restore();
@@ -327,7 +340,7 @@ export function layout(ctx, toC, pxDeg) {
 }
 
 /** Écrit des lignes de morceaux dans le rectangle r : liseré du fond, puis le texte, souligné ou surligné (SPEC § 5). */
-function drawLines(ctx, lines, r) {
+function drawLines(ctx, lines, r, col) {
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   ctx.lineJoin = 'round';
@@ -340,10 +353,10 @@ function drawLines(ctx, lines, r) {
       ctx.strokeStyle = S.theme.bg;
       ctx.lineWidth = 3;
       ctx.strokeText(c.t, x, y);
-      ctx.fillStyle = c.m ? S.theme.muted || COL : COL;
+      ctx.fillStyle = c.m ? S.theme.muted || col : col;
       ctx.fillText(c.t, x, y);
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = COL;
+      ctx.strokeStyle = col;
       if (c.u || c.o) {
         ctx.beginPath();
         if (c.u) {
@@ -360,7 +373,8 @@ function drawLines(ctx, lines, r) {
     }
   });
 }
-/** Dessine la mise en page L (layout) par-dessus la route : traits (liseré du fond puis violet), points, libellés. */
+/** Dessine la mise en page L (layout) par-dessus la route : traits (liseré du fond puis la teinte de la procédure), points,
+ *  libellés. */
 export function draw(ctx, L) {
   ctx.save();
   ctx.lineJoin = 'round';
@@ -391,9 +405,11 @@ export function draw(ctx, L) {
   ctx.lineWidth = 6;
   for (const s of L.segs) trace(s);
   ctx.globalAlpha = 1;
-  ctx.strokeStyle = COL;
   ctx.lineWidth = 3;
-  for (const s of L.segs) trace(s);
+  for (const s of L.segs) {
+    ctx.strokeStyle = colOf(s.o);
+    trace(s);
+  }
   ctx.setLineDash([]);
   for (const q of L.dots) {
     ctx.beginPath();
@@ -401,9 +417,10 @@ export function draw(ctx, L) {
     ctx.fillStyle = S.theme.bg;
     ctx.fill();
     ctx.lineWidth = 1.8;
+    ctx.strokeStyle = colOf(q.src?.origin);
     ctx.stroke();
   }
-  for (const l of L.labels) drawLines(ctx, l.lines, l.r);
+  for (const l of L.labels) drawLines(ctx, l.lines, l.r, l.col);
   ctx.restore();
 }
 
@@ -423,13 +440,15 @@ export function drawProfileCons(ctx, g) {
   ctx.beginPath();
   ctx.rect(g.padL, g.padT, g.W - g.padL - g.padR, g.H - g.padT - g.padB);
   ctx.clip();
-  ctx.strokeStyle = COL;
-  ctx.fillStyle = COL;
   ctx.lineWidth = 2;
   ctx.lineCap = 'round';
   for (const p of flown) {
     const a = p.alt;
     if (!a || !num(a.ft) || !num(p.nm)) continue;
+    // la teinte de la procédure du point (un point de la route qui porte une contrainte : celle de l'approche)
+    const col = colOf(p.origin);
+    ctx.strokeStyle = col;
+    ctx.fillStyle = col;
     const x = X(p.nm);
     if (!inX(x)) continue;
     n++;
@@ -481,10 +500,10 @@ export function drawProfileCons(ctx, g) {
         ctx.strokeStyle = S.theme.bg;
         ctx.lineJoin = 'round';
         ctx.strokeText(c.t, tx, y);
-        ctx.fillStyle = COL;
+        ctx.fillStyle = col;
         ctx.fillText(c.t, tx, y);
         ctx.lineWidth = 1.2;
-        ctx.strokeStyle = COL;
+        ctx.strokeStyle = col;
         if (c.u || c.o) {
           ctx.beginPath();
           if (c.u) {

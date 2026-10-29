@@ -553,6 +553,8 @@ _FLOWN_JS = """() => { const S = window.__mp.S; return S.route.flown.map(p => [p
 _LAYOUT_JS = """() => { const ctx = document.createElement('canvas').getContext('2d'),
   L = window.__pr.layout(ctx, (lat, lon) => ({ x: (lon + 2) * 400, y: (48 - lat) * 400 }), 400);
   return L && { segs: L.segs.map(s => [!!s.dash, !!s.arc]), names: L.names.map(n => n.text), dots: L.dots.length,
+                kinds: L.segs.map(s => s.o), hues: L.segs.map(s => window.__pr.colOf(s.o)),
+                legend: ['sid', 'star', 'app', 'missed'].map(o => window.__pr.colOf(o)),
                 lines: window.__pr.routeLines().map(r => r.length) } }"""
 
 
@@ -589,6 +591,12 @@ def d41(c):
          'dashes: the stub is solid, then dashed to the next fix; transition, direct and missed approach dashed', what='segments dashed')
     c.eq([i for i, s in enumerate(lay['segs']) if s[1]], [2], 'only the RF leg is drawn as an arc', what='arc segments')
     c.eq(lay['lines'], [2], 'the route draws only LUGEN → NEPIX (the SID and the STAR draw the rest of the way)', what='route polylines')
+    # user 29 Oct: "des couleurs de contraste autres que violet (vert ? orange ? bleu ?)"
+    sid, star, app, missed = lay['legend']
+    c.eq(len({sid, star, app}), 3, 'SID, STAR and approach each have their own hue', what=f'hues {lay["legend"]}')
+    c.eq(missed, app, 'the missed approach takes the approach hue', what='missed hue')
+    c.ok(not ({sid, star, app} & {'#7c3aed', '#8e24aa', '#6a3fa0', '#1f6fb2'}), f'{lay["legend"]}', 'none is the violet of the route and of the high airways, nor the blue of the low ones')
+    c.eq([h for k, h in zip(lay['kinds'], lay['hues']) if k == 'sid'][:1], [sid], 'a SID leg is drawn in the SID hue', what='SID leg hue')
     # une procédure périmée : le seul symbole « ⌛ », jamais le mot (29 Oct)
     want = ['SID XX1A ⌛', f'STAR XX2B · {row(c, "procX")}', f'APP I31 · {row(c, "procX")}']
     c.eq(lay['names'], want, 'labelled "SID NAME", "STAR NAME", "APP NAME", with the state of the source', what='procedure labels')
