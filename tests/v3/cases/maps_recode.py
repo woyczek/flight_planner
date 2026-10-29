@@ -660,6 +660,27 @@ def d54(c):
     c.eq(r['without'], ['XA', 'AMB', 'PIWIZ', 'TSU', 'LFPO'], 'without a procedure every route point is kept', what='kept route without procedures')
 
 
+_PLANE_JS = """async () => { await import('/modules/maps/state.js'); const F = await import('/modules/maps/flight_time.js');
+  const cv = document.createElement('canvas'); cv.width = 200; cv.height = 200; const raw = cv.getContext('2d'), pts = [];
+  const ctx = new Proxy(raw, { get(o, p) { if (p === 'moveTo' || p === 'lineTo') return (x, y) => { const m = o.getTransform();
+      pts.push([m.e + x * m.a + y * m.c, m.f + x * m.b + y * m.d]); return o[p](x, y) };
+    const v = o[p]; return typeof v === 'function' ? v.bind(o) : v }, set(o, p, v) { o[p] = v; return true } });
+  const out = [];
+  for (const hdg of [0, 90, 225]) { pts.length = 0; F.drawPlane(ctx, { x: 100, y: 100 }, hdg, '#c62828', true, 10);
+    const far = Math.max(...pts.map(p => Math.hypot(p[0] - 100, p[1] - 100)));
+    out.push({ hdg, tip: pts[0], far }) }
+  return out }"""
+
+
+@case('D55', 'The aircraft arrow: its tip is on the position', 'D', tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='user 29 Oct: "c’est la pointe de la flèche qui doit indiquer la position, pas son centre"')
+def d55(c):
+    _open_proc(c, _proc_flight())
+    for r in c.js(_PLANE_JS):
+        c.ok(abs(r['tip'][0] - 100) < .01 and abs(r['tip'][1] - 100) < .01, f'heading {r["hdg"]}: tip at {r["tip"]}', 'the tip of the arrow is the position, at any heading')
+        c.ok(r['far'] > 15, f'{r["far"]:.1f} px', 'the body lies behind the tip')
+
+
 @case('D41', 'The chosen SID, STAR and approach are drawn from the runway', 'D', tags=('maps',), screens=False, designs=('standard',), langs4=True,
       rule='V3 § 10.20, maps SPEC § 5: path from the threshold; transition and missed approach dashed; a leg without a fix = 2 NM stroke then dashes; RF = arc; join on a common point or dashed direct; unchosen procedures never drawn')
 def d41(c):

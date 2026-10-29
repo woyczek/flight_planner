@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the aircraft arrow points at the position with its tip** (`modules/maps/flight_time.js`, case D55; user, 29 Oct) — the
+  planned and the X-Plane (red) arrows were centred on the position; their tip is now on it, the body behind.
+
 - **Map: the route points a STAR (or a SID) bypasses are no longer drawn, nor given winds** (`modules/maps/state.js` `keptRoute`,
   `draw.js`, `tips.js`, case D54; user, 29 Oct: "les points de la route sont toujours présents, avec les flèches de vent, bien
   que la star se connecte à l'un des points de la route") — the path already dropped them, but the marks, names and wind

@@ -212,16 +212,17 @@ function progressHtml(st) {
     }))}</span>` : '';
   return `<p><b>${esc(parts[0] || '')}</b>${parts.length > 1 ? ` · ${esc(parts.slice(1).join(' · '))}` : ''}${stale}${src}</p>${div}`;
 }
-/** Avion vu de dessus orienté au cap (degrés vrais), plein ou creux, liseré du fond. */
-function drawPlane(ctx, c, hdg, col, filled, r = 9) {
+/** Avion vu de dessus orienté au cap (degrés vrais), plein ou creux, liseré du fond ; la POINTE de la flèche est sur la position
+ *  (utilisateur, 29 octobre : « c'est la pointe de la flèche qui doit indiquer la position, pas son centre »). */
+export function drawPlane(ctx, c, hdg, col, filled, r = 9) {
   ctx.save();
   ctx.translate(c.x, c.y);
   ctx.rotate((+hdg || 0) * Math.PI / 180);
   ctx.beginPath();
-  ctx.moveTo(0, -r);
-  ctx.lineTo(r * .75, r * .8);
-  ctx.lineTo(0, r * .35);
-  ctx.lineTo(-r * .75, r * .8);
+  ctx.moveTo(0, 0);
+  ctx.lineTo(r * .75, r * 1.8);
+  ctx.lineTo(0, r * 1.35);
+  ctx.lineTo(-r * .75, r * 1.8);
   ctx.closePath();
   ctx.lineJoin = 'round';
   ctx.lineWidth = 4;
