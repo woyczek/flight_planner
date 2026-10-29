@@ -874,6 +874,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 32 | Frame: GitLab fix (02a096440), Maintenance level and `_run` state (9d64081c9); Map « Source » link and track (f7bad9970) | acceptable; **the blocking point of 27 is lifted**; one note |
 | 33 | Fuel: aerodrome names and completion (842ac149b) | acceptable |
 | 34 | Frame G2: « Pilots' tokens » (241eec6c0) | acceptable, one point to fix, two notes |
+| 35 | Data module « Télécharger » and « Purger » (0d2f031d3) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1290,6 +1291,18 @@ dropped. Choosing writes only the code into the field, then raises `input`: the 
   merge requests): disable CI/CD and unused features on the data project, so that a stolen pilot token cannot run code
   on a runner; `revoke` accepts any token id of the project (bind it to names matching the trigram rule), and the new
   token's value stays in the page until the next drawing (clear it when the screen is left).
+
+**35. Data module, « Télécharger » and « Purger » (0d2f031d3) — acceptable, one note.** Manual sources get a link only
+when the address is `https://` (escaped, new tab, `rel="noopener noreferrer"`), otherwise the name alone; the addresses are
+the launcher's constants. Purge runs a dry pass first, then asks (counts, the shared SIA files, the tracked files kept),
+the buttons grey during the question; « no » removes nothing; the real purge covers the same zones; the launcher's rules
+of 28 apply (never `sia/base` or `proc`, tracked files kept, paths contained and checked again). No commit by fetch or
+purge; the page sends zone ids only (`regen/job` with `{ zones, personal }` or `{ zones, dry? }`), never a path; one
+operation at a time (greyed buttons, and the launcher refuses a second job). States and codes go through closed lists,
+numbers through `num()`, names are escaped; the journal (`cache/data/`) keeps zones, counts and results only. Note: the
+launcher recomputes the candidates between the dry pass and the real purge, so a file that arrived meanwhile (attributed
+to the zone, not tracked) would be removed without having been shown; a purge restricted to the dry pass's list
+(returned by the launcher, then checked again) would close that, if wanted.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30 and 34 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34; the blocking point of 27 lifted in 32); the sharing of the track and of the position is the user's decision.
 
