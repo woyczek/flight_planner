@@ -806,6 +806,20 @@ redesigned for touch at that point.
          `probe` moved to `tools/ead_probe.py`; one fixture set per aerodrome (LFBD, LFBO, LFPO, LFPG) regenerable by
          a tool; the point schema written once in the SPEC with what each source fills; `_ead_fetch` and `_eaip_fetch`
          merged into one job with a source table (the "LF" rule in one place). Cases K unchanged in meaning.
+         **Constraints from the survey session (29 Oct), kept**: the layouts are an **ordered list** (detection order
+         matters: uk-star before uk-app, at/be-coding before sia-code, icao-tab before de-route), each entry carrying its
+         fingerprints, its OCR normaliser, its "OCR-readable" flag and its geometry tolerances; the common pass works on
+         **all pages of all documents of an aerodrome** (point lists on another page or document, type carried from one
+         page to the next, geometry checked after resolution); the geometry tolerance is **per layout** (0.25° / 0.2 NM
+         for true-course tables and everything from OCR, 30° / 0.55 NM for tables without a true course, "uncheckable"
+         as a warning, not `doubt`, for the Belgian SIDs without a course); `proc_manual` keeps refusing per record,
+         never a whole file unless it has no record; a shared `proc_pdf.py` (PDF reading, shifted fonts, page
+         classification, point lists, `limited` / timeouts) so that `proc_ocr` and `proc_manual` import no reader;
+         real page fixtures for France only (LFBD, LFBO, LFPO, LFPG), the foreign layouts stay on invented pages
+         (EAD data are under conditions); reason codes: pages `layout`, `low-read`, `title`, `no-legs`, `counts`,
+         `vector`, `timeout`, records `geometry`, `unresolved`, `uncheckable`, `name`, `repeat`, `zigzag`; the single
+         job keeps the OCR pass, the EAD pagination and `sanitize` on everything logged; `proc_ead.py` keeps
+         `EadLibrary`, `survey` and `fetch`.
        - **aerodb (reader in the browser)**: `procedures(k)` memoised per (aerodrome, revision), `procedure()` and
          `runways()` read the memo; `withMissed` moved from the consumer to the reader as a counted guard;
          `coverage(icao).read_at` and `source.read_at` delivered; freshness through the frame's `FD.revalidate(paths)`
