@@ -248,6 +248,15 @@ const TX = {
   procOutdatedTitle: ['Lue sous un cycle antérieur : à relire', 'Read under an earlier cycle: to read again',
     'Unter einem früheren Zyklus gelesen: neu lesen', 'Leído en un ciclo anterior: volver a leer'
   ],
+  // procédures non lues sur la page de la source (§ 10.26) : fiches douteuses jamais montrées comme bonnes
+  procUnread1: ['{n} procédure non lue sur cette page', '{n} procedure not read on this page',
+    '{n} Verfahren auf dieser Seite nicht gelesen',
+    '{n} procedimiento sin leer en esta página'
+  ],
+  procUnread: ['{n} procédures non lues sur cette page', '{n} procedures not read on this page',
+    '{n} Verfahren auf dieser Seite nicht gelesen',
+    '{n} procedimientos sin leer en esta página'
+  ],
   procNoData: ['aucune procédure publiée', 'no published procedure', 'kein veröffentlichtes Verfahren', 'ningún procedimiento publicado'],
   procRead: ['Lire les procédures de {icao}', 'Read the procedures of {icao}', 'Verfahren von {icao} lesen',
     'Leer los procedimientos de {icao}'
@@ -1472,10 +1481,14 @@ const servesRwy = (rec, rwy) => !rwKey(rwy) || servesAll(rec) || rec.runways.som
 /** Pistes à proposer pour un terrain : celles d'aerodb (known : fiches de pistes, ou déduites des points RWnn des procédures) ;
  *  sinon celles que nomment ses procédures (l'union de leurs pistes, « 20 », « 14L » ; une fiche qui les dessert toutes n'en nomme
  *  pas) ; sinon les deux sens de l'axe de la piste principale du terrain dans la base (aerodromes({ icao }) : bearing, route vraie,
- *  et magVar, Est positive ; numéros magnétiques sans côté, « 24 » et « 06 »). Fuel lit, il n'écrit rien : [{ id }]. */
+ *  et magVar, Est positive ; numéros magnétiques sans côté, « 24 » et « 06 »). Fuel lit, il n'écrit rien : [{ id }]. Les pistes sans
+ *  position d'aerodb que seules les fiches non lues nomment sont écartées. */
 async function runwayChoices(icao, known, all) {
-  if (known.length) return known;
-  const named = [...new Set(all.flatMap(r => servesAll(r) ? [] : r.runways.map(rwKey)))].sort(rwOrder);
+  const named = [...new Set(all.flatMap(r => servesAll(r) ? [] : r.runways.map(rwKey)))].sort(rwOrder),
+    // une piste d'aerodb sans position n'est déduite que des noms des fiches : si seules des fiches non lues (sans nom, douteuses) la
+    // nomment, elle n'est pas proposée
+    ok = known.filter(r => r.lat != null && Number.isFinite(+r.lat) || named.some(n => sameRwy(n, r.id)));
+  if (ok.length) return ok;
   if (named.length) return named.map(id => ({
     id
   }));
@@ -1487,10 +1500,6 @@ async function runwayChoices(icao, known, all) {
     id: String(Math.round(((+ad.bearing + a - (+ad.magVar || 0)) % 360 + 360) % 360 / 10) % 36 || 36).padStart(2, '0')
   })).sort((a, b) => rwOrder(a.id, b.id));
 }
-/** Ce qu'une ligne montre pour un côté : { icao, rwys, all, lists: { SID | STAR | APP: [enregistrements] }, nodata } ; null sans
- *  terrain de quatre caractères. Toutes les fiches du terrain sont lues en une fois (all) ; les listes en gardent les sortes du
- *  côté, toutes les fiches, jamais coupées par la piste (une fiche qui ne la dessert pas est marquée ⚠, pas retirée). rwys :
- *  runwayChoices. nodata : ni fiche (de n'importe quelle sorte) ni piste d'aerodb. */
 /** Date de la dernière lecture des procédures d'un terrain (aerodb coverage(icao).read_at), « lu le 28/10 18:01Z », ⌛ quand ce qu'il
  *  détient est une lecture d'un cycle passé (coverage().outdated) ; puis le bouton « Relire » (data-do procfetch, comme « Lire les
  *  procédures »). Sans date (read_at null, aerodb plus ancien) : le bouton seul. */
@@ -1503,23 +1512,40 @@ function procFileHtml(m) {
     when = d ? `${two(d.getUTCDate())}/${two(d.getUTCMonth() + 1)} ${fmtZ(d)}` : '';
   return `${when ? ` <span class="f-muted fu-procfile">${esc(tt(TX.procFileAt, { d: when }) + (old ? PROC_OLD : ''))}</span>` : ''} <button type="button" class="fu-linkbtn" data-do="procfetch" data-again="1" data-icao="${esc(m.icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? procReadingNow.text : tt(TX.procReread))}</button>`;
 }
+/** Ce qu'une ligne montre pour un côté : { icao, rwys, all, lists: { SID | STAR | APP: [enregistrements] }, nodata } ; null sans
+ *  terrain de quatre caractères. Toutes les fiches du terrain sont lues en une fois (all) ; les listes en gardent les sortes du
+ *  côté, toutes les fiches, jamais coupées par la piste (une fiche qui ne la dessert pas est marquée ⚠, pas retirée). rwys :
+ *  runwayChoices. nodata : ni fiche (de n'importe quelle sorte) ni piste d'aerodb. */
 async function sideModel(side) {
   const r = S.flight.route || {},
     icao = String((side === 'dep' ? r.dep : r.arr) || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{4}$/.test(icao)) return null;
   const kinds = side === 'dep' ? ['SID'] : ['STAR', 'APP'],
-    [known, all, cov] = await Promise.all([runwaysOf(icao), procsOf(icao), Promise.resolve().then(() => S.ctx.aerodb?.coverage?.(icao))
+    [known, every, cov] = await Promise.all([runwaysOf(icao), procsOf(icao), Promise.resolve().then(() => S.ctx.aerodb?.coverage?.(icao))
       .catch(() => null)
-    ]);
+    ]),
+    all = every.filter(p => !isDoubt(p));
   return {
     icao,
     cov, // couverture du terrain : read_at (date de la dernière lecture), outdated
     rwys: await runwayChoices(icao, known, all),
     all,
+    // procédures non lues (§ 10.26) : les fiches douteuses du terrain, jamais dans les listes. aerodb ne rend plus celles de statut
+    // doubt (procedures() les écarte, sans `{ doubt: true }` demandé ici) : on compte celles qu'il a dites à la dernière lecture de cette
+    // session (stats.doubt), cov.doubt s'il le donne un jour, et les fiches sans nom qui lui échapperaient (ceinture)
+    unread: (every.length - all.length) + Math.max(+cov?.doubt || 0, +S.procStats?.[icao]?.doubt || 0),
     lists: Object.fromEntries(kinds.map(k => [k, all.filter(p => p.kind === k)])),
     nodata: !known.length && !all.length
   };
 }
+/** Fiche douteuse (§ 10.26), jamais montrée comme une bonne procédure : statut `doubt` (aerodb), ou, tant qu'aerodb ne le pose pas,
+ *  une fiche sans nom (name vide, identifiant « ….NONAME.… »). */
+const isDoubt = rec => rec?.status === 'doubt' || !String(rec?.name ?? '').trim() || /\.NONAME\./i.test(String(rec?.id ?? ''));
+/** Ligne discrète « N procédures non lues sur cette page » sous la rangée d'un côté (rien quand n = 0) ; l'emplacement
+ *  data-source-slot attend le lien « Source » (§ 10.25), pas encore posé. */
+const procUnreadHtml = m => m.unread > 0 ? `<span class="f-muted fu-procunread">${esc(tt(m.unread === 1 ? TX.procUnread1 : TX.procUnread, {
+  n: m.unread
+}))} <span data-source-slot></span></span>` : '';
 /** Libellé d'un enregistrement dans une liste : son nom, sa piste quand elle n'en dessert qu'une et que le nom ne la dit pas déjà
  *  (« MAN1A · 07 » ; « RNP RWY 02 » la porte), « X-Plane, local » pour le repli du poste, puis ⌛ pour une lecture à la main dont le
  *  cycle est passé. ⚠ (conflit) est ajouté par l'appelant, après ⌛. */
@@ -1529,49 +1555,38 @@ function procLabel(rec) {
   return [name, one.length === 1 && !name.toUpperCase().includes(one[0]) ? one[0] : '', rec.status === 'xplane' || rec.local ? tt(TX
     .procXplane) : ''].filter(Boolean).join(' · ') + (rec.outdated ? PROC_OLD : '');
 }
-/** Raisons (textes ×4) pour lesquelles une fiche est en conflit avec le choix courant o du côté ; [] sans conflit. key : sid, star,
- *  app, trans ou appTrans. Le conflit ne porte que sur la piste (§ 10.23, 29/10/2026) : une SID, une STAR ou une approche qui ne
- *  dessert pas la piste choisie ; sans piste choisie, une STAR qui ne dessert aucune piste de l'approche choisie. La continuité STAR →
- *  approche ou transition → fin de STAR n'est jamais un conflit (les STAR finissent en attente ou en guidage radar ; la Carte raccorde
- *  en tireté). */
+/** Raisons (textes ×4) pour lesquelles une fiche est en conflit avec le choix courant o du côté ; [] sans conflit. La règle est celle de
+ *  CF.conflictsOf (frame/lib/current_flight.js, une seule pour Carburant et la Carte, § 10.23) : des données ; ici leurs textes. key :
+ *  sid, star, app, trans ou appTrans. */
 function conflictsOf(key, rec, o) {
-  const out = [];
-  if (!rec) return out;
-  if (['sid', 'star', 'app'].includes(key) && !servesRwy(rec, o.rwy)) out.push(tt(TX.procConflictRwy, {
-    rwy: o.rwy
+  return CF.conflictsOf(key, rec, o, S.procRecs).map(c => c.kind === 'rwy' ? tt(TX.procConflictRwy, {
+    rwy: c.rwy
+  }) : tt(TX.procConflictStarApp, {
+    app: c.app || nameOfId(c.appId)
   }));
-  const app = typeof o.app === 'string' ? S.procRecs?.get(o.app) : null;
-  if (key === 'star' && !rwKey(o.rwy) && app && !servesAll(app) && !servesAll(rec) && !app.runways.some(x => servesRwy(rec, x))) out
-    .push(tt(TX.procConflictStarApp, {
-      app: app.name || nameOfId(app.id)
-    }));
-  return out;
 }
 /** Nom d'une procédure choisie (identifiant) pour une notification, avec ⌛ quand la fiche montrée est périmée et, si le choix o du
  *  côté est donné, ⚠ quand elle est en conflit avec lui. */
 const procNameOf = (id, key, o) => nameOfId(id, key) + (S.procRecs?.get(id)?.outdated ? PROC_OLD : '') + (o && conflictsOf(key, S.procRecs
     ?.get(id), o).length ?
   PROC_CONFLICT : '');
-/** Ordre des listes : le numéro de piste (celles qui les desservent toutes d'abord), puis le côté (« 02 », « 06 », « 14L », « 14R »). */
-const rwSortKey = rec => servesAll(rec) ? '' : rec.runways.map(rwKey).sort(rwOrder).join('/');
 /** Ordre des pistes : par numéro, puis par côté (« 02 », « 06 », « 14L », « 14R »). */
 const rwOrder = (a, b) => String(a).localeCompare(String(b), undefined, {
   numeric: true
 });
-/** Options d'une liste PLATE : vide (pas choisi, « — »), « aucune » (null) si none, puis les enregistrements par piste puis par nom, ceux
- *  du repli X-Plane en dernier (par le tri, jamais par un groupe) ; le choix gardé hors liste (autre piste, OFP) reste proposé. cur :
+/** Options d'une liste PLATE : vide (pas choisi, « — »), « aucune » (null) si none, puis les enregistrements dans l'ordre de
+ *  CF.orderProcedures (les compatibles avec le choix d'abord, puis les ⚠ ; dans chaque groupe le repli X-Plane en dernier, puis par
+ *  piste, par nom, par transition ; jamais de groupe) ; le choix gardé hors liste (autre piste, OFP) reste proposé. cur :
  *  undefined, null ou un identifiant. Une fiche périmée : ⌛ et classe outdated (gris sur l'ordinateur ; le symbole porte le sens là où
  *  un sélecteur natif ignore la couleur) ; une fiche en conflit avec le choix o du côté : ⚠ après ⌛ et classe conflict (orange) ; les
  *  deux classes et les deux raisons (infobulle) se cumulent. Une fiche en conflit reste choisissable. */
 function procOptions(recs, cur, key, none = true, o = {}) {
-  const x = r => r.status === 'xplane' || r.local ? 1 : 0,
-    opt = (v, l, on, rec) => {
+  const opt = (v, l, on, rec) => {
       const why = rec ? [rec.outdated ? tt(TX.procOutdatedTitle) : '', ...conflictsOf(key, rec, o)].filter(Boolean) : [],
         cls = [rec?.outdated ? 'outdated' : '', rec && conflictsOf(key, rec, o).length ? 'conflict' : ''].filter(Boolean).join(' ');
       return `<option value="${esc(v)}"${on ? ' selected' : ''}${cls ? ` class="${cls}" title="${esc(why.join(' · '))}"` : ''}>${esc(l)}</option>`;
     },
-    list = [...new Map(recs.map(r => [r.id, r])).values()].sort((a, b) => x(a) - x(b) || rwOrder(rwSortKey(a), rwSortKey(b)) ||
-      String(a.name).localeCompare(String(b.name)) || String(a.transition || '').localeCompare(String(b.transition || ''))),
+    list = CF.orderProcedures([...new Map(recs.map(r => [r.id, r])).values()], key, o, S.procRecs),
     html = [opt('', '—', cur === undefined), none ? opt('__none', tt(TX.procNone), cur === null) : ''],
     sub = key === 'trans' || key === 'appTrans',
     mark = r => conflictsOf(key, r, o).length ? PROC_CONFLICT : '';
@@ -1590,7 +1605,7 @@ function procRowHtml(side, m, edit) {
   if (!m) return '';
   if (m.nodata) {
     const busy = procReadingNow?.icao === m.icao;
-    return `<div class="fu-proc" data-proc="${side}">${head}<span class="f-muted">${esc(tt(TX.procNoData))}</span>${edit ? `<button type="button" data-do="procfetch" data-icao="${esc(m.icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? procReadingNow.text : tt(TX.procRead, { icao: m.icao }))}</button>` : ''}</div>`;
+    return `<div class="fu-proc" data-proc="${side}">${head}<span class="f-muted">${esc(tt(TX.procNoData))}</span>${procUnreadHtml(m)}${edit ? `<button type="button" data-do="procfetch" data-icao="${esc(m.icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? procReadingNow.text : tt(TX.procRead, { icao: m.icao }))}</button>` : ''}</div>`;
   }
   const o = {
     ...(CF.proceduresOf(S.flight)[side] || {})
@@ -1610,7 +1625,7 @@ function procRowHtml(side, m, edit) {
       const name = id ? recs.find(r => r.id === id)?.name ?? nameOfId(id) : null;
       return name ? recs.filter(r => r.name === name && r.transition) : [];
     },
-    rwys = [...new Map(m.rwys.map(r => [r.id, r])).values()],
+    rwys = CF.orderProcedures([...new Map(m.rwys.map(r => [r.id, r])).values()], 'rwy', o, S.procRecs),
     rwyOpts = `<option value=""${o.rwy ? '' : ' selected'}>—</option>${rwys.map(r => `<option value="${esc(r.id)}"${rwKey(r.id) === rwKey(o.rwy) ? ' selected' : ''}>${esc(r.id)}</option>`).join('')}${o.rwy && !rwys.some(r => rwKey(r.id) === rwKey(o.rwy)) ? `<option value="${esc(o.rwy)}" selected>${esc(o.rwy)}</option>` : ''}`;
   let body = procSelect(side, 'rwy', TX.procRwy, rwyOpts);
   if (side === 'dep') {
@@ -1634,7 +1649,7 @@ function procRowHtml(side, m, edit) {
     const at = chosen ? entry.filter(r => feeds(r, chosen)) : transOf(apps, o.app).filter(r => r.id !== o.app);
     if (at.length) body += sel('appTrans', TX.procAppTrans, at, false);
   }
-  return `<div class="fu-proc" data-proc="${side}">${head2}${body}</div>`;
+  return `<div class="fu-proc" data-proc="${side}">${head2}${body}${procUnreadHtml(m)}</div>`;
 }
 /** La SID est-elle passée ? Position : progress.actual s'il a moins de deux minutes (et date du vol), sinon la position prévue
  *  (CF.plannedPositionAt sur le chemin) ; fin de la SID : le dernier point d'origine « sid » du chemin (le départ même sans SID).
@@ -1831,6 +1846,7 @@ async function fetchProcs(icao) {
   }
   if (!S) return; // Carburant fermé : la notification a suffi ; rouvert entre-temps : ses lignes sont redessinées
   if (res?.ok) {
+    (S.procStats ||= {})[icao] = res.stats || null; // les fiches douteuses de cette lecture (stats.doubt) : comptées sous la rangée
     S.procCache = null;
     S.procs = null;
     refresh();
@@ -2160,6 +2176,7 @@ const STYLE = `
 }
 [data-module="fuel"] .fu-proc{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 8px;margin-top:8px} /* piste · SID · transition, ou piste · STAR · transition · approche */
 [data-module="fuel"] .fu-proc>.fu-prochead{flex:0 0 100%}
+[data-module="fuel"] .fu-proc>.fu-procunread{flex:0 0 100%;font-size:.85em}
 [data-module="fuel"] .fu-proc>.f-field{flex:1 1 7.5em;min-width:0}
 [data-module="fuel"] .fu-proc select{width:100%;min-width:0}
 [data-module="fuel"] .fu-proc option.outdated{color:var(--sog-muted)}

@@ -178,6 +178,8 @@ The map draws the runway, SID, STAR and approach that **fuel** recorded in `rout
 arr: { rwy, star, trans, app, appTrans }, by, at }`, identifiers of aerodb's common schema; `null` = none, absent = not chosen;
 V3_SPECIFICATION § 10.20). It reads through `proceduresOf(flight)` of `frame/lib/current_flight.js` (the v2 view, also of an
 old `{ sid, star }` record; a side whose aerodrome is not the route's is read as not chosen) and never writes the field.
+`conflictsOf(key, rec, choice, byId)` and `orderProcedures(list, key, choice, byId)` of the same file are the one rule of the ⚠ marks
+and of the order of the lists (V3_SPECIFICATION § 10.23); the choose mode calls them, as Fuel does.
 - **Asked of aerodb**: `procedure(id)` for each chosen identifier and `runways(icao)` for the chosen runways, through
   `loadProcedures(aerodb, flight)`, once per change of `route.procedures` (or of departure and arrival), without waiting; a
   `refreshed` event of aerodb reads them again. The map never calls `procedures(icao)`: nothing that is not chosen is drawn, and

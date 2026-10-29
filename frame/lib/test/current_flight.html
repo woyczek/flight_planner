@@ -38,7 +38,9 @@
     flownPath,
     routingChain,
     altitudeAt,
-    routeNmToFlown
+    routeNmToFlown,
+    conflictsOf,
+    orderProcedures
   } from '../current_flight.js?v=0';
   const rows = [],
     out = document.getElementById('out');
@@ -861,6 +863,103 @@
     fAAA = FPr.find(p => p.id === 'AAA').nm;
   ck('routeNmToFlown : un point de la route tombe sur son nm du chemin volé', Math.abs(toF(rAAA) - fAAA) < 1e-6, `${toF(rAAA)} / ${fAAA}`);
   ck('routeNmToFlown : sans chemin, l’identité', routeNmToFlown(fl({}), null)(42) === 42);
+  // conflictsOf et orderProcedures (V3_SPECIFICATION § 10.23) : données inventées, pures
+  const Pr = (id, kind, name, runways, extra = {}) => ({
+      id,
+      kind,
+      name,
+      runways,
+      ...extra
+    }),
+    s07 = Pr('S.SID.A.RW07', 'SID', 'A1', ['07']),
+    s25 = Pr('S.SID.B.RW25', 'SID', 'B1', ['25']),
+    sAll = Pr('S.SID.C.RWALL', 'SID', 'C1', []),
+    st07 = Pr('S.STAR.D.RW07', 'STAR', 'D1', ['07']),
+    st25 = Pr('S.STAR.E.RW25', 'STAR', 'E1', ['25']),
+    ap07 = Pr('S.APP.F.RW07', 'APP', 'ILS 07', ['07']),
+    byId = new Map([s07, s25, sAll, st07, st25, ap07].map(r => [r.id, r])),
+    kinds = (key, rec, ch) => conflictsOf(key, rec, ch, byId).map(c => c.kind).join();
+  ck('conflictsOf : sans choix, aucun conflit', kinds('sid', s07, {}) === '' && kinds('app', ap07, undefined) === '');
+  ck('conflictsOf : une SID qui ne dessert pas la piste choisie', kinds('sid', s07, {
+    rwy: '25'
+  }) === 'rwy' && conflictsOf('sid', s07, {
+    rwy: 'RW25'
+  }, byId)[0].rwy === 'RW25');
+  ck('conflictsOf : la piste choisie, « ALL » ou aucune piste nommée, un numéro sans côté', kinds('sid', sAll, {
+    rwy: '25'
+  }) === '' && kinds('sid', s25, {
+    rwy: '25'
+  }) === '' && kinds('sid', Pr('x', 'SID', 'X', ['14L']), {
+    rwy: '14'
+  }) === '' && kinds('sid', Pr('x', 'SID', 'X', ['ALL']), {
+    rwy: '25'
+  }) === '');
+  ck('conflictsOf : une STAR qui ne dessert pas la piste, une approche aussi', kinds('star', st07, {
+    rwy: '25'
+  }) === 'rwy' && kinds('app', ap07, {
+    rwy: '25'
+  }) === 'rwy');
+  ck('conflictsOf : sans piste, une STAR qui ne dessert aucune piste de l’approche choisie', conflictsOf('star', st25, {
+    app: ap07.id
+  }, byId).map(c => `${c.kind}:${c.app}`).join() === 'starApp:ILS 07' && kinds('star', st07, {
+    app: ap07.id
+  }) === '');
+  ck('conflictsOf : avec une piste choisie, la STAR n’est jugée que sur la piste ; une transition n’a pas de conflit', kinds('star', st25, {
+    rwy: '25',
+    app: ap07.id
+  }) === '' && kinds('appTrans', Pr('t', 'APP', 'T', ['25'], {
+    transition: 'T'
+  }), {
+    rwy: '07'
+  }) === '');
+  ck('conflictsOf : les fiches par objet ou par fonction', conflictsOf('star', st25, {
+    app: ap07.id
+  }, {
+    [ap07.id]: ap07
+  }).length === 1 && conflictsOf('star', st25, {
+    app: ap07.id
+  }, id => byId.get(id)).length === 1);
+  const names = l => l.map(r => r.name).join(' ');
+  ck('orderProcedures : les compatibles d’abord, puis les ⚠', names(orderProcedures([s25, s07, sAll], 'sid', {
+    rwy: '07'
+  }, byId)) === 'C1 A1 B1', names(orderProcedures([s25, s07, sAll], 'sid', {
+    rwy: '07'
+  }, byId)));
+  const li = [Pr('1', 'STAR', 'Z', ['07']), Pr('2', 'STAR', 'B', ['07']), Pr('3', 'STAR', 'A', ['02']), Pr('4', 'STAR', 'Q', [], {
+      status: 'xplane'
+    }), Pr('5', 'STAR', 'M', []), Pr('6', 'STAR', 'B', ['07'], {
+      transition: 'T1'
+    }), Pr('7', 'STAR', 'B', ['07'], {
+      transition: 'T0'
+    })],
+    o1 = orderProcedures(li, 'star', {}, byId);
+  ck('orderProcedures : piste (toutes d’abord), nom, transition, le repli X-Plane en dernier', o1.map(r => r.id).join('') === '5' + '3' +
+    '2' + '7' + '6' + '1' + '4',
+    o1.map(r => r.id).join(''));
+  ck('orderProcedures : nouveau tableau, la liste reçue intacte', li.map(r => r.id).join('') === '1234567' && o1 !== li);
+  const o2 = orderProcedures([Pr('1', 'STAR', 'Z', ['02']), Pr('2', 'STAR', 'Y', ['07']), Pr('3', 'STAR', 'X', ['25']), Pr('4', 'STAR', 'W',
+    ['02'], {
+      status: 'xplane'
+    })], 'star', {
+    rwy: '07'
+  }, byId);
+  ck('orderProcedures : le groupe compatible garde son repli X-Plane en dernier, le groupe ⚠ après', o2.map(r => r.id).join('') === '2134',
+    o2.map(r => r.id).join(''));
+  ck('orderProcedures : les pistes de la SID choisie d’abord', orderProcedures(['25', '07', '14L', '02'], 'rwy', {
+    sid: s07.id
+  }, byId).join(' ') === '07 02 14L 25');
+  ck('orderProcedures : les pistes de l’approche choisie d’abord (objets { id }), ordre naturel sinon', orderProcedures([{
+    id: '25'
+  }, {
+    id: '07'
+  }, {
+    id: '02'
+  }], 'rwy', {
+    app: ap07.id
+  }, byId).map(r => r.id).join(' ') === '07 02 25' && orderProcedures(['25', '07'], 'rwy', {}, byId).join(' ') === '07 25');
+  ck('orderProcedures : une fiche qui dessert toutes les pistes ne change pas l’ordre des pistes', orderProcedures(['25', '02'], 'rwy', {
+    sid: sAll.id
+  }, byId).join(' ') === '02 25');
 
   window.__cfBench = {
     done: true,

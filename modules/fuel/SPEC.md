@@ -280,8 +280,14 @@ mount. Inside a mount, the two buttons switch as before.
      "Departure: runway · SID · transition" and "Arrival: runway · STAR · transition · approach" (+ the approach transition
      select, only when the chosen approach has transitions). Each is a `select` filled by `aerodb.runways(icao)` and
      one `aerodb.procedures(icao)` (all kinds; fuel sorts them): a list shows ALL the procedures of the aerodrome (the
-     approach list does not wait for a STAR), in ONE flat list ordered by runway then name (no `<optgroup>`; the X-Plane records
-     last by the sort), whatever the runway chosen; an aerodrome is « without data » only when it has no procedure of any kind and no runway; the
+     approach list does not wait for a STAR), in ONE flat list (no `<optgroup>`) ordered by `CF.orderProcedures` (`frame/lib/current_flight.js`, shared with the
+     Map): the entries compatible with the choice first, then the ⚠ ones, in each group the X-Plane records last, then runway, name,
+     transition; the runway list opens with the runways of the SID (Departure) or the approach (Arrival) already chosen. A record with
+     `status: 'doubt'`, or without a name (`name` empty, id `….NONAME.…`) while aerodb does not set that status, is never listed
+     (V3_SPECIFICATION § 10.26, data is kept) and a muted line under the row, « N procédures non lues sur cette page » (×4, 1 and
+     many), counts the aerodrome's records so left out — the nameless ones that reach Fuel, plus `stats.doubt` of the last reading made in
+     the session and `coverage().doubt` when aerodb gives it (aerodb itself leaves `doubt` records out of `procedures()`) — with an empty
+     `data-source-slot` for the « Source » link of § 10.25; a runway that only such records name is not offered; an aerodrome is « without data » only when it has no procedure of any kind and no runway; the
      lists are read again when aerodb announces new procedures. The runways offered are those of `aerodb.runways(icao)`; when it
      answers `[]` (files without runway records and `RWnn` points without position), those the aerodrome's procedures name (the
      union of their `runways`, `ALL` / empty excluded), and failing that the two ends of the runway axis in the base

@@ -19,6 +19,22 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   departure, start of the arrival before the arrival) become tokens and points, so they are written in `route.text`
   (« LFBO FINOT G36 GOSAD … »; expandedPath joins the SID on FINOT), and the leg between the aerodrome and such a point is never
   routed (the procedure covers it). Without procedures read, as before. Case F28 (invented airway from the seeded SID's end).
+- **29 Oct 2026 — compatible first; one shared rule; the part not read** (Simplification, V3_SPECIFICATION § 10.23 and § 10.26).
+  (1) `conflictsOf(key, rec, choice, byId)` moves to `frame/lib/current_flight.js`, pure, returning data (`{ kind: 'rwy', rwy }`,
+  `{ kind: 'starApp', app, appId }`; same rule as before: the runway only, and without a runway a STAR that serves no runway of the
+  chosen approach); Fuel only turns the data into its ×4 texts (`conflictsOf` here is that wrapper). `orderProcedures(list, key,
+  choice, byId)` is next to it: compatible first then ⚠, in each group X-Plane records last, then runway (all-runway records first),
+  name, transition; for `key: 'rwy'` the runways served by the chosen SID (Departure) or approach (Arrival) lead. The Map calls the
+  same two functions in its choose mode (BUGS SOG's lot). Existing exports untouched; bench `frame/lib/test/current_flight.html`
+  (+14 checks, D38). (2) Records with `status: 'doubt'`, and until aerodb sets it records without a name (`name` empty or id
+  `….NONAME.…`), are filtered out of everything (lists, `S.procRecs`, runway names); the muted line under each side's row counts
+  them (`m.unread`) — since fe04ed8b8 aerodb keeps `doubt` records out of `procedures()` (Fuel never asks `{ doubt: true }`), so the
+  count is the nameless records that still reach Fuel, `stats.doubt` of the last reading of that aerodrome in this session
+  (`S.procStats`) and `coverage().doubt` if aerodb gives it one day: **a persistent per-aerodrome count (and pages `ok: false`) needs
+  aerodb to expose it**, reported. `data-source-slot` is the hook of § 10.25. `TX.procUnnamed` stays: a stored choice that is nameless is still named
+  « STAR sans nom » in the cell kept outside the list. (3) aerodb's `runways()` now also derives runways from every record's
+  `runways` and does not skip doubtful or nameless ones: Fuel drops a position-less runway that only unread records name
+  (`runwayChoices`) — reported to AeroDB (`runways()` should ignore `doubt` and nameless records). Cases F22, new F31.
 - **29 Oct 2026 — « Relire » on a row that has procedures** (user: « il manque un bouton “rafraîchir” les procédures (avec une date
   pour le dernier fichier) »; Simplification, § 10.20): the reading on demand existed only without data, so LFPO could not be read
   again after aerodb's fixes. `procFileHtml`: the date from `coverage(icao).read_at` (aerodb's lot of 17:00; null → the button

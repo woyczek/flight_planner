@@ -28,7 +28,7 @@ Rules covered
   * an approach given only by its entries lists the final record once, its transitions are the records that lead to it, and a transition equal to
     the approach is ignored (F24).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F25 F26.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F25 F26 F27 F28 F29.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 import json
@@ -419,13 +419,25 @@ def proc_docs(cycle=PROC_CYCLE):
         rec('LFVC', 'STAR', 'ARR1A', ['27'], [pt(1, 'IC201', 45.6, 4.7, {'type': 'max', 'ft': 9000}), pt(2, 'IC301', 45.3, 4.3)]),
         rec('LFVC', 'STAR', 'ARR2B', ['09'], [pt(1, 'IC210', 45.7, 4.8, {'type': 'max', 'ft': 9000}), pt(2, 'ID999', 45.5, 4.9)]),
     ]
+    # LFVD (invented): ORD1A (07), ORD2B (25), ILS07, ILS25, and two records never to be listed: a STAR without a name (runway 14) and one
+    # marked status 'doubt' (§ 10.26)
+    nameless = rec('LFVD', 'STAR', 'X', ['14'], [pt(1, 'ID901', 45.9, 3.9), pt(2, 'ID902', 45.8, 3.8)])
+    nameless.update(id='LFVD.STAR.NONAME.RW14.NONE', name=None)
+    lfvd = [
+        rec('LFVD', 'STAR', 'ORD1A', ['07'], [pt(1, 'ID101', 45.9, 3.1, {'type': 'max', 'ft': 9000}), pt(2, 'ID102', 45.7, 3.3)]),
+        rec('LFVD', 'STAR', 'ORD2B', ['25'], [pt(1, 'ID201', 45.9, 3.9, {'type': 'max', 'ft': 9000}), pt(2, 'ID202', 45.7, 3.7)]),
+        rec('LFVD', 'APP', 'ILS07', ['07'], [pt(1, 'ID107', 45.6, 3.4, {'type': 'at', 'ft': 3000}), pt(2, 'RW07', 45.5, 3.5)]),
+        rec('LFVD', 'APP', 'ILS25', ['25'], [pt(1, 'ID125', 45.6, 3.6, {'type': 'at', 'ft': 3000}), pt(2, 'RW25', 45.5, 3.5)]),
+        nameless,
+        rec('LFVD', 'STAR', 'GHOST1', ['07'], [pt(1, 'ID301', 45.9, 3.2), pt(2, 'ID302', 45.8, 3.3)], status='doubt'),
+    ]
     rw_lfrs = [{'id': '03', 'lat': 47.138, 'lon': -1.62, 'elev': 90, 'qfu': 30}, {'id': '21', 'lat': 47.17, 'lon': -1.595, 'elev': 60, 'qfu': 210}]
     rw_lfml = [{'id': '13R', 'lat': 43.445, 'lon': 5.19, 'elev': 30, 'qfu': 130}, {'id': '31L', 'lat': 43.41, 'lon': 5.24, 'elev': 20, 'qfu': 310}]
     old = rec('LFML', 'STAR', 'MAN1A', ['13R'], [pt(1, 'MAN01', 44.0, 3.8)], status='check', kind_src='manual', src_cycle='2025-01-01')
     xpl = rec('LFML', 'STAR', 'XPL1A', ['13R'], [pt(1, 'XPL01', 44.0, 3.7)], status='official', kind_src='cifp')
     return [[f'proc/{cycle}/LFRS.json', file('LFRS', lfrs, rw_lfrs), 'reference'], [f'proc/{cycle}/LFML.json', file('LFML', lfml, rw_lfml), 'reference'],
             [f'proc/{cycle}/LFVA.json', file('LFVA', lfva), 'reference'], [f'proc/{cycle}/LFVB.json', file('LFVB', lfvb), 'reference'],
-            [f'proc/{cycle}/LFVC.json', file('LFVC', lfvc), 'reference'],
+            [f'proc/{cycle}/LFVC.json', file('LFVC', lfvc), 'reference'], [f'proc/{cycle}/LFVD.json', file('LFVD', lfvd), 'reference'],
             ['proc/manual/LFML.json', file('LFML', [old], cy='2025-01-01'), 'reference'], ['proc/local/LFML.json', file('LFML', [xpl]), 'reference']]
 
 
@@ -814,7 +826,7 @@ def f22(c):
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '27', 'a runway of that list is written')
     c.eq(procs_of(d, 'arr'), {'rwy': '27'}, 'it is the pilot\'s choice', what='route.procedures.arr')
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"]'); return !!s && [...s.options].some(o => /⚠/.test(o.textContent)) })()", what='the approaches of the other runway are marked')
-    c.eq([lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')], ['ILS09 ⚠', 'VOR09 ⚠', 'RNP27', 'VOR27'], 'runway 27: the approaches of 09 stay in the list, marked in conflict', what='approaches')
+    c.eq([lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')], ['RNP27', 'VOR27', 'ILS09 ⚠', 'VOR09 ⚠'], 'runway 27: its approaches first, those of 09 stay in the list after them, marked in conflict', what='approaches')
     # LFVB: the only procedure names no runway; the base gives the axis (95 true, 2 E: 09 and 27)
     set_icao(c, 'arr', 'LFVB')
     c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /BET1A/.test(o.textContent))", what='the row of LFVB is drawn')
@@ -1003,3 +1015,34 @@ def f30(c):
     c.tap(f'{FUEL} [data-do="rauto"]')
     c.until(f"document.querySelector('{FUEL} [data-k=rtext]').value.includes('LZ1')", timeout=6000,
             what='LFRS → LUGEN (38 NM, in the climb to FL270) takes the low airway LZ1, open at the altitude of the climb')
+
+
+@case('F31', 'Lists: compatible first, doubtful never listed and counted, runways led by the chosen approach', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      langs4=True, rule='V3 spec 10.23 / 10.26: the entries compatible with the choice come first, then the warnings; a record without a name or with status doubt is not in the lists; a line counts the procedures not read')
+def f31(c):
+    open_proc(c)
+    wait_rows(c, 'arr')
+    set_icao(c, 'arr', 'LFVD')
+    c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /ORD1A/.test(o.textContent))", what='the row of LFVD is drawn')
+    # the nameless STAR (runway 14) and the doubtful one are in no list, and their runway is not offered
+    c.eq([lab for v, lab in sel_opts(c, 'p-arr-star') if v not in ('', '__none')], ['ORD1A · 07', 'ORD2B · 25'], 'only the two named STARs are listed (no nameless one, no doubtful one)', what='STAR options')
+    c.eq([v for v, _ in sel_opts(c, 'p-arr-rwy')], ['', '07', '25'], 'and runway 14, named by the nameless record only, is not offered', what='runways')
+    # the count of what was not read
+    # aerodb itself leaves the status doubt record out; the nameless one is Fuel's own safety belt and is counted
+    line = norm(c.text(f'{FUEL} [data-proc="arr"] .fu-procunread') or '')
+    c.eq(line, norm(row(c, 'procUnread1').replace('{n}', '1')), 'a muted line counts the record not listed that aerodb let through (singular)', what='unread line')
+    c.ok(c.count(f'{FUEL} [data-proc="arr"] .fu-procunread [data-source-slot]') == 1, 'no slot', 'with the slot the Source link of 10.25 will take')
+    c.eq(c.count(f'{FUEL} [data-proc="dep"] .fu-procunread'), 0, 'an aerodrome with nothing unread shows no line', what='departure line')
+    # compatible first: runway 25 chosen, the STAR and the approach of 25 lead, those of 07 follow marked
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '25')
+    c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /ORD1A.*⚠/.test(o.textContent))", what='the STAR of 07 is marked')
+    c.eq([lab for v, lab in sel_opts(c, 'p-arr-star') if v not in ('', '__none')], ['ORD2B · 25', 'ORD1A · 07 ⚠'], 'the compatible STAR first, the warning after', what='STAR options')
+    c.eq([lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')], ['ILS25', 'ILS07 ⚠'], 'and the approaches the same way', what='approach options')
+    # the runway list is led by the runway of the chosen approach
+    c.eq([v for v, _ in sel_opts(c, 'p-arr-rwy')], ['', '07', '25'], 'without a chosen SID or approach the runways are in natural order', what='runways')
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFVD.APP.ILS25.RW25.NONE')
+    cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFVD.APP.ILS25.RW25.NONE', 'the approach is written')
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '')
+    cf_doc(c, lambda d: 'rwy' not in (procs_of(d, 'arr') or {'rwy': 1}), 'the runway is cleared')
+    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]'); return !!s && s.value === '' })()", what='the runway select is back to not chosen')
+    c.eq([v for v, _ in sel_opts(c, 'p-arr-rwy')], ['', '25', '07'], 'the runway of the chosen approach comes first', what='runways')

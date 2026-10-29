@@ -651,3 +651,73 @@ export function altitudeAt(f, nm, opts = {}) {
   if (tod > 0 && D > 0 && nm > D - tod) ft = Math.min(ft, L * Math.max(0, D - nm) / tod);
   return ft;
 }
+
+// ---------------------------------------------------------------- conflits et ordre des listes de procédures (V3_SPECIFICATION § 10.23)
+// Une règle, deux fonctions pures (ni état du module, ni texte) : celles de Carburant (ses listes et ses notifications) et celles de la
+// Carte (le mode choix) ne divergent jamais.
+
+/** Piste sans « RW » ni espaces, en majuscules (« RW23 » → « 23 »). */
+const rwNum = x => String(x ?? '').trim().toUpperCase().replace(/^RW/, '');
+/** Même piste : « 24 » et « RW24 » se valent ; un numéro sans côté (« 14 ») vaut ses pistes parallèles (« 14L », « 14R »). */
+const sameRw = (a, b) => {
+  const x = rwNum(a),
+    y = rwNum(b);
+  return !!x && !!y && (x === y || /^\d\d$/.test(x) && y.startsWith(x) || /^\d\d$/.test(y) && x.startsWith(y));
+};
+/** Une fiche qui dessert toutes les pistes : aucune piste nommée, ou « ALL » / « RWALL ». */
+const rwAll = rec => !(rec?.runways || []).length || rec.runways.some(x => rwNum(x) === 'ALL');
+/** La fiche dessert-elle la piste ? Vrai sans piste donnée ou quand la fiche les dessert toutes. */
+const rwServes = (rec, rwy) => !rwNum(rwy) || rwAll(rec) || rec.runways.some(x => sameRw(x, rwy));
+/** Ordre naturel des pistes : par numéro, puis par côté (« 02 », « 06 », « 14L », « 14R »). */
+const rwCompare = (a, b) => String(a).localeCompare(String(b), undefined, {
+  numeric: true
+});
+/** Fiche d'un identifiant, que byId soit une Map, un objet { id: fiche } ou une fonction ; null sinon. */
+const recById = (byId, id) => typeof id !== 'string' || !id ? null : (typeof byId === 'function' ? byId(id) : byId instanceof Map ? byId
+  .get(id) :
+  byId?.[id]) || null;
+
+/** Conflits d'une fiche avec le choix courant de son côté, en données : [] sans conflit, sinon
+ *  [{ kind: 'rwy', rwy }] (une SID, une STAR ou une approche qui ne dessert pas la piste choisie) et/ou
+ *  [{ kind: 'starApp', app, appId }] (sans piste choisie, une STAR qui ne dessert aucune piste de l'approche choisie ; app : son nom).
+ *  key : 'sid' | 'star' | 'app' | 'trans' | 'appTrans' (les transitions n'ont pas de conflit) ; rec : la fiche d'aerodb ; choice : le
+ *  côté de route.procedures v2 ({ rwy, sid, star, app… }) ; byId : les fiches par identifiant (Map, objet ou fonction), pour
+ *  choice.app. La continuité des points entre STAR et approche n'est jamais un conflit (§ 10.23) : les STAR finissent en attente ou en
+ *  guidage radar, la Carte raccorde en tireté. Le texte est celui de l'appelant. */
+export function conflictsOf(key, rec, choice, byId) {
+  const out = [],
+    o = choice || {};
+  if (!rec) return out;
+  if (['sid', 'star', 'app'].includes(key) && !rwServes(rec, o.rwy)) out.push({
+    kind: 'rwy',
+    rwy: o.rwy
+  });
+  const app = recById(byId, o.app);
+  if (key === 'star' && !rwNum(o.rwy) && app && !rwAll(app) && !rwAll(rec) && !app.runways.some(x => rwServes(rec, x))) out.push({
+    kind: 'starApp',
+    app: app.name || null,
+    appId: app.id
+  });
+  return out;
+}
+
+/** Liste de procédures (ou de pistes) dans l'ordre où le pilote les cherche, nouveau tableau : d'abord ce qui est compatible avec le
+ *  choix courant, puis ce qui est en conflit (⚠, toujours choisissable) ; dans chaque groupe, le repli X-Plane local en dernier, puis
+ *  par piste (celles qui les desservent toutes d'abord), par nom, par transition. Toujours plate. key : 'rwy' pour une liste de pistes
+ *  (chaînes ou { id }) : celles que dessert la SID (côté Départ) ou l'approche (côté Arrivée) déjà choisie viennent en tête, puis les
+ *  autres par ordre naturel ; sinon 'sid' | 'star' | 'app' | 'trans' | 'appTrans' (conflictsOf). choice et byId comme conflictsOf. */
+export function orderProcedures(list, key, choice, byId) {
+  const arr = [...(list || [])];
+  if (key === 'rwy') {
+    const rec = recById(byId, choice?.sid) || recById(byId, choice?.app),
+      id = r => typeof r === 'string' ? r : r?.id,
+      first = r => rec && !rwAll(rec) && rwServes(rec, id(r)) ? 0 : 1;
+    return arr.sort((a, b) => first(a) - first(b) || rwCompare(rwNum(id(a)), rwNum(id(b))));
+  }
+  const bad = r => conflictsOf(key, r, choice, byId).length ? 1 : 0,
+    xp = r => r?.status === 'xplane' || r?.local ? 1 : 0,
+    rw = r => rwAll(r) ? '' : r.runways.map(rwNum).sort(rwCompare).join('/');
+  return arr.sort((a, b) => bad(a) - bad(b) || xp(a) - xp(b) || rwCompare(rw(a), rw(b)) || String(a?.name ?? '').localeCompare(String(b
+      ?.name ?? '')) ||
+    String(a?.transition ?? '').localeCompare(String(b?.transition ?? '')));
+}
