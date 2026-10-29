@@ -863,6 +863,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 21 | Fuel layout (918ce4010), Atmosphere layers panel (d36f4be70) | acceptable |
 | 22 | AeroDB: `source.url` of the eAIP records (d88463e51) | acceptable, one point to fix |
 | 23 | Data module « Publier » (3355c5e24) | acceptable, one note on the result's shape |
+| 24 | Frame: claim, `/cancel`, sync on gesture, named applications, frozen references (56ab4fd94, f70eba426, a215d47bd, e3870b354, 802e6856f) | acceptable, two notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1121,7 +1122,31 @@ gesture » commit): the frame's `exchange()` discards what `T.exchange` returns,
 `data_sync.run` returns `conflicts` and `refused` as lists, which `num()` turns into 0 — the report would say « no
 conflict » when there are some. Return counts, or count lists in `publishOutcome`.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 23 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
+**24. Five frame commits — acceptable, two notes.**
+- `POST /__setup/regen/job/claim` (56ab4fd94): refused to paired devices (`_lan()`, not in the `lan` table), behind
+  `_allowed()` (`Sec-Fetch-Site` same-origin, none or absent, `X-SOG-Setup`): a page of another site cannot reach it. The
+  token is given to the running job only, once, after the verb's `offer()`, then 409; the offer refuses the reserved keys
+  and must be JSON. « Before started » is not checked by the route: the rule is « once after offer », equivalent while
+  the page claims as it starts. A local program winning the claim makes the build fail visibly (see 18).
+- `<route>/cancel` (f70eba426): `allowed()` adds only `<declared route>/cancel`; `routeOf` admits
+  `^[a-z0-9][a-z0-9/_-]*$` (no dot, so no `.` or `..`) and `under` is an exact match except for a declared prefix ending
+  in `/`: no other route can be reached that way.
+- Sync on gesture (a215d47bd): `result.exchange` keeps numbers only (lists counted), a message cut to 300 signs and strict
+  booleans; `sync.gesture === true` is declared; a gesture becomes a `manual` pass (the launcher still keeps `sia/base`
+  during a build). This settles the note of 23.
+- Named applications (e3870b354): `?app=` picks an entry of an object literal through `Object.hasOwn` (prototype keys
+  name nothing), an unknown name gives `pilot`; an application only chooses lists of the code (modules, links, tabs);
+  the V2 link (`launcher: true`) is hidden without a launcher and on paired devices. « Maintenance without a guard » is
+  acceptable: a grouping of screens, not a boundary; protections stay at the launcher (`poste` routes, `_lan`) and in the
+  modules. No guard must ever rest on `?app=` (to write in DECISIONS).
+- Frozen references (802e6856f): a deep freeze at parsing, once per revision, always (not only in the noreg runs); `drop()`
+  in a `finally`. This settles 16 and the note of 15.
+- Notes: a script in sloppy mode that writes into a frozen value fails **silently** (no `TypeError`): ES modules are
+  strict, but classic scripts that read references (`aerodb.js`, `sia_base.js`) need `'use strict'` for a mutation to
+  show; in `_run`, a `BaseException` crossing the verb leaves `state` at `running` and no `ended` (the `finally` empties
+  the box only): set `error` and `ended` there when the state is still `running`.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
