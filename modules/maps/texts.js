@@ -199,7 +199,9 @@ export const TX = {
     contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel'],
     cov: ['Procédures des terrains', 'Aerodrome procedures', 'Verfahren der Flugplätze', 'Procedimientos de los aeródromos'],
     zoneLabels: ['Noms des espaces', 'Airspace names', 'Namen der Lufträume', 'Nombres de los espacios'],
-    awLabels: ['Noms des voies', 'Airway names', 'Namen der Flugwege', 'Nombres de las aerovías']
+    awLabels: ['Noms des voies (distance, routes)', 'Airway names (length, tracks)', 'Namen der Flugwege (Länge, Kurse)',
+      'Nombres de las aerovías (distancia, rumbos)'
+    ]
   },
   layersReset: ['Tout remettre', 'Reset all', 'Alles zurücksetzen', 'Restablecer todo'],
   detail: ['Complexité', 'Complexity', 'Komplexität', 'Complejidad'],
@@ -216,8 +218,8 @@ export const TX = {
     zoneLabels: ['Noms des espaces', 'Airspace names', 'Luftraumnamen', 'Nombres de espacios'],
     awLow: ['Voies basses', 'Lower airways', 'Untere Flugwege', 'Aerovías inferiores'],
     awHigh: ['Voies hautes', 'Upper airways', 'Obere Flugwege', 'Aerovías superiores'],
-    awLabels: ['Étiquettes de tronçon (distance, route)', 'Segment labels (distance, track)', 'Abschnittsbeschriftungen (Länge, Kurs)',
-      'Etiquetas de tramo (distancia, rumbo)'
+    awLabels: ['Noms des voies (distance, routes)', 'Airway names (length, tracks)', 'Namen der Flugwege (Länge, Kurse)',
+      'Nombres de las aerovías (distancia, rumbos)'
     ],
     navaids: ['Balises', 'Beacons', 'Funkfeuer', 'Radioayudas'],
     fixes: ['Points des voies', 'Airway points', 'Flugwegpunkte', 'Puntos de aerovía'],
