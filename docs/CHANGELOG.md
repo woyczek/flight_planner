@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a procedure in conflict is marked ⚠ (orange) and stays selectable; the lists are flat** (`modules/fuel/module.js`
+  `conflictsOf`, `procOptions`, `procChosen`, SPEC, DECISIONS; help ×4; cases F11, F13, F20-F22, F26) — reverses the pruning: choosing a
+  runway no longer cuts the lists nor removes a choice; ⚠ after ⌛ marks a SID, STAR or approach that does not serve the runway, a STAR that
+  joins no point of the chosen approach, a transition that does not start where the STAR ends (class `conflict`, the reason as title);
+  one notification says it when it appears. One list sorted by runway then name, no group per runway; the runway is in the label
+  only for a single-runway procedure whose name does not say it.
+
 - **Fuel: an outdated procedure shows ⌛ instead of the word "outdated"** (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4;
   case F13) — greyed on the computer, with a tooltip "Read under an earlier cycle: to read again"; and "Wait n s before the next
   reading (EAD Basic)" when EAD Basic is asked again too soon.

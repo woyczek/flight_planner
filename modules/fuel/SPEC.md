@@ -277,22 +277,26 @@ mount. Inside a mount, the two buttons switch as before.
   0. **Runway, SID, STAR and approach** (28 Oct 2026, V3_SPECIFICATION § 10.20), in step 1 after the aerodromes: two short rows,
      "Departure: runway · SID · transition" and "Arrival: runway · STAR · transition · approach" (+ the approach transition
      select, only when the chosen approach has transitions). Each is a `select` filled by `aerodb.runways(icao)` and
-     one `aerodb.procedures(icao)` (all kinds; fuel sorts them): without a runway chosen a list shows ALL the procedures of the
-     aerodrome, grouped by runway (`<optgroup>`; the approach list does not wait for a STAR), choosing a runway keeps the
-     procedures that serve it; an aerodrome is « without data » only when it has no procedure of any kind and no runway; the
+     one `aerodb.procedures(icao)` (all kinds; fuel sorts them): a list shows ALL the procedures of the aerodrome (the
+     approach list does not wait for a STAR), in ONE flat list ordered by runway then name (no `<optgroup>`; the X-Plane records
+     last by the sort), whatever the runway chosen; an aerodrome is « without data » only when it has no procedure of any kind and no runway; the
      lists are read again when aerodb announces new procedures. The runways offered are those of `aerodb.runways(icao)`; when it
      answers `[]` (files without runway records and `RWnn` points without position), those the aerodrome's procedures name (the
      union of their `runways`, `ALL` / empty excluded), and failing that the two ends of the runway axis in the base
      (`aerodromes({ icao })`: `bearing`, `magVar` → magnetic numbers without side, « 24 » and « 06 »); fuel only reads. Options: empty = not chosen ("—"),
      "aucune" (writes `null`; SID, STAR and approach), then the procedures by name; a record with `status: 'xplane'` (local)
-     comes last, worded "X-Plane, local"; an `outdated` one ends with ⌛; a name that comes back (one record per runway)
-     carries its runways. A change rewrites `route.procedures` v2 (`by: 'fuel'`, `at`) and drops what depended on it. The lists filter one
-     another: a runway keeps the procedures that serve it (a record with no runway named, or `ALL` / `RWALL`, serves them all) and
-     removes the chosen SID / STAR / approach (with its transition) that does not, back to « not chosen » (the field is absent,
-     not `null`) with ONE floating notification naming what was removed; a SID, STAR or approach chosen while no runway is,
-     and serving one runway only, sets that runway (and removes in the same way the other choice it does not serve); the STAR
-     chosen offers its transitions, the approach chosen its approach transitions, another STAR / approach / SID removes the
-     transition. An aerodrome
+     comes last, worded "X-Plane, local"; an `outdated` one ends with ⌛; the runway is in the label only when the record serves exactly
+     one and its name does not already say it (« MAN1A · 07 », « RNP RWY 02 »); the label then ends with ⌛ (outdated, grey, class
+     `outdated`) and ⚠ (in conflict with the current choice, orange, class `conflict`, the reason as `title`, both reasons joined when
+     both apply). A change rewrites `route.procedures` v2 (`by: 'fuel'`, `at`) and drops what depended on it. A conflict is marked,
+     never forbidden: ⚠ is on a SID, STAR or approach that does not serve the chosen runway (a record with no runway named, or `ALL` /
+     `RWALL`, serves them all), on a STAR whose last fix is not the first fix of the chosen approach transition (else is no point of
+     the chosen approach nor the first fix of one of its transitions), and on an approach transition that does not start at the
+     last fix of the chosen STAR (fixes compared by identifier, or within 0.5 NM; a missing point is no conflict). A conflicting
+     procedure stays selectable and the choice is kept; ONE floating notification (`⚠ RNP RWY 07 : Ne dessert pas la piste 02`) says
+     the conflict when it appears, not at every redraw; the change notifications of « Load my OFP » carry the same ⚠. A SID, STAR
+     or approach chosen while no runway is, and serving one runway only, sets that runway; the STAR chosen offers its transitions,
+     the approach chosen its approach transitions, another STAR / approach / SID removes the transition. An aerodrome
      without data: the row says "aucune procédure publiée" and offers one button, "Lire les procédures de LFXX"
      (`aerodb.fetchProcedures(icao, { onProgress, signal })`, one aerodrome per gesture, nothing fetched silently); a refusal
      shows its reason in a floating notification (`ctx.notify`), and without a launcher (or on a device paired with the

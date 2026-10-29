@@ -300,11 +300,18 @@ const TX = {
     appTrans: ['transition d’approche', 'approach transition', 'Anflugübergang', 'transición de aproximación']
   },
   procChange: ['{side} : {parts}', '{side}: {parts}', '{side}: {parts}', '{side}: {parts}'],
-  // choix retirés parce qu'une autre procédure ou une autre piste ne les dessert plus : une ligne
-  procReset: ['Retiré du choix (ne dessert pas la piste {rwy}) : {what}.',
-    'Removed from the choice (does not serve runway {rwy}): {what}.',
-    'Aus der Auswahl entfernt (bedient Piste {rwy} nicht): {what}.', 'Retirado de la selección (no sirve a la pista {rwy}): {what}.'
+  // procédure en conflit avec le choix courant (marquée ⚠ en fin de libellé, jamais refusée) : la raison, en infobulle et en notification
+  procConflictRwy: ['Ne dessert pas la piste {rwy}', 'Does not serve runway {rwy}', 'Bedient Piste {rwy} nicht',
+    'No sirve a la pista {rwy}'
   ],
+  procConflictStar: ['Ne rejoint pas l’approche choisie (aucun point commun)', 'Does not join the chosen approach (no common point)',
+    'Führt nicht auf den gewählten Anflug (kein gemeinsamer Punkt)', 'No enlaza con la aproximación elegida (sin punto común)'
+  ],
+  procConflictTrans: ['Ne part pas de la fin de la STAR choisie', 'Does not start at the end of the chosen STAR',
+    'Beginnt nicht am Ende der gewählten STAR', 'No parte del final de la STAR elegida'
+  ],
+  // une ligne quand un conflit apparaît : « ⚠ RNP RWY 07 : Ne dessert pas la piste 02 »
+  procConflictNote: ['⚠ {what}', '⚠ {what}', '⚠ {what}', '⚠ {what}'],
   procReasons: {
     'bad-icao': ['Code OACI invalide : {icao}.', 'Invalid ICAO code: {icao}.', 'Ungültiger ICAO-Code: {icao}.',
       'Código OACI no válido: {icao}.'
@@ -1400,6 +1407,8 @@ function normProcedures(f) {
  *  transition (cinquième champ) quand l'identifiant la porte. */
 /** Marque d'une procédure lue sous un cycle passé (fin de libellé, listes et notifications) : un symbole court plutôt qu'un mot. */
 const PROC_OLD = ' ⌛';
+/** Marque d'une procédure en conflit avec le choix courant, après ⌛ : orange, jamais un mot. */
+const PROC_CONFLICT = ' ⚠';
 const nameOfId = (id, key) => {
   const p = String(id || '').split('.');
   if ((key === 'trans' || key === 'appTrans') && p[4] && p[4] !== 'NONE') return p[4];
@@ -1464,63 +1473,93 @@ async function runwayChoices(icao, known, all) {
 }
 /** Ce qu'une ligne montre pour un côté : { icao, rwys, all, lists: { SID | STAR | APP: [enregistrements] }, nodata } ; null sans
  *  terrain de quatre caractères. Toutes les fiches du terrain sont lues en une fois (all) ; les listes en gardent les sortes du
- *  côté et, une piste choisie, celles qui la desservent (sans piste choisie : toutes). rwys : runwayChoices. nodata : ni fiche (de
- *  n'importe quelle sorte) ni piste d'aerodb. */
+ *  côté, toutes les fiches, jamais coupées par la piste (une fiche qui ne la dessert pas est marquée ⚠, pas retirée). rwys :
+ *  runwayChoices. nodata : ni fiche (de n'importe quelle sorte) ni piste d'aerodb. */
 async function sideModel(side) {
   const r = S.flight.route || {},
     icao = String((side === 'dep' ? r.dep : r.arr) || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{4}$/.test(icao)) return null;
-  const o = CF.proceduresOf(S.flight)[side] || {},
-    kinds = side === 'dep' ? ['SID'] : ['STAR', 'APP'],
+  const kinds = side === 'dep' ? ['SID'] : ['STAR', 'APP'],
     [known, all] = await Promise.all([runwaysOf(icao), procsOf(icao)]);
   return {
     icao,
     rwys: await runwayChoices(icao, known, all),
     all,
-    lists: Object.fromEntries(kinds.map(k => [k, all.filter(p => p.kind === k && servesRwy(p, o.rwy))])),
+    lists: Object.fromEntries(kinds.map(k => [k, all.filter(p => p.kind === k)])),
     nodata: !known.length && !all.length
   };
 }
-/** Libellé d'un enregistrement dans une liste : son nom, la piste quand le nom revient (une fiche par piste), « X-Plane, local »
- *  pour le repli du poste, « périmé » pour une lecture à la main dont le cycle est passé. */
-function procLabel(rec, dup) {
-  return [rec.name || nameOfId(rec.id), dup && (rec.runways || []).length ? rec.runways.join('/') : '',
-    rec.status === 'xplane' || rec.local ? tt(TX.procXplane) : ''
-  ].filter(Boolean).join(' · ') + (rec.outdated ? PROC_OLD : '');
+/** Libellé d'un enregistrement dans une liste : son nom, sa piste quand elle n'en dessert qu'une et que le nom ne la dit pas déjà
+ *  (« MAN1A · 07 » ; « RNP RWY 02 » la porte), « X-Plane, local » pour le repli du poste, puis ⌛ pour une lecture à la main dont le
+ *  cycle est passé. ⚠ (conflit) est ajouté par l'appelant, après ⌛. */
+function procLabel(rec) {
+  const name = rec.name || nameOfId(rec.id),
+    one = servesAll(rec) ? [] : [...new Set(rec.runways.map(rwKey))];
+  return [name, one.length === 1 && !name.toUpperCase().includes(one[0]) ? one[0] : '', rec.status === 'xplane' || rec.local ? tt(TX
+    .procXplane) : ''].filter(Boolean).join(' · ') + (rec.outdated ? PROC_OLD : '');
 }
-/** Nom d'une procédure choisie (identifiant) pour une notification, avec ⌛ quand la fiche montrée est périmée. */
-const procNameOf = (id, key) => nameOfId(id, key) + (S.procRecs?.get(id)?.outdated ? PROC_OLD : '');
-/** Piste (ou pistes, « 14L/14R ») sous laquelle une fiche est rangée dans une liste groupée ; '' pour une fiche qui les dessert toutes. */
-const rwGroupOf = rec => servesAll(rec) ? '' : rec.runways.map(rwKey).join('/');
+/** Même repère : même identifiant, ou positions à moins d'une demi-NM. */
+const sameFix = (a, b) => !!a && !!b && (!!a.id && String(a.id).toUpperCase() === String(b.id).toUpperCase() || [a.lat, a.lon, b.lat, b.lon]
+  .every(
+    v => v !== null && v !== undefined && Number.isFinite(+v)) && gcNm(a, b) < .5);
+/** Premier et dernier repères voulus d'une fiche (hors approche interrompue) ; undefined sans points. */
+const firstFix = rec => rec?.points?.find(p => p.phase !== 'missed');
+const lastFix = rec => rec?.points?.filter(p => p.phase !== 'missed').at(-1);
+/** Raisons (textes ×4) pour lesquelles une fiche est en conflit avec le choix courant o du côté ; [] sans conflit. key : sid, star,
+ *  app, trans ou appTrans. Une SID, une STAR ou une approche qui ne dessert pas la piste choisie ; une STAR dont la fin n'a aucun
+ *  point commun avec l'approche choisie ou sa transition (le premier repère de la transition, sinon un point de l'approche ou le
+ *  premier d'une de ses transitions) ; une transition d'approche qui ne part pas de la fin de la STAR choisie. Les points manquants ne
+ *  font pas de conflit (rien ne se compare). */
+function conflictsOf(key, rec, o) {
+  const out = [],
+    R = id => typeof id === 'string' ? S.procRecs?.get(id) : null;
+  if (!rec) return out;
+  if (['sid', 'star', 'app'].includes(key) && !servesRwy(rec, o.rwy)) out.push(tt(TX.procConflictRwy, {
+    rwy: o.rwy
+  }));
+  const trans = R(o.appTrans),
+    app = R(o.app),
+    end = lastFix(rec);
+  if (key === 'star' && end && (firstFix(trans) || app?.points?.length)) {
+    const sibling = x => x.kind === 'APP' && x.name === app.name && x.transition && sameFix(end, firstFix(x)),
+      ok = firstFix(trans) ? sameFix(end, firstFix(trans)) : app.points.some(p => sameFix(end, p)) || [...(S.procRecs?.values() || [])]
+      .some(sibling);
+    if (!ok) out.push(tt(TX.procConflictStar));
+  }
+  const star = R(o.star);
+  if (key === 'appTrans' && lastFix(star) && firstFix(rec) && !sameFix(lastFix(star), firstFix(rec))) out.push(tt(TX.procConflictTrans));
+  return out;
+}
+/** Nom d'une procédure choisie (identifiant) pour une notification, avec ⌛ quand la fiche montrée est périmée et, si le choix o du
+ *  côté est donné, ⚠ quand elle est en conflit avec lui. */
+const procNameOf = (id, key, o) => nameOfId(id, key) + (S.procRecs?.get(id)?.outdated ? PROC_OLD : '') + (o && conflictsOf(key, S.procRecs
+    ?.get(id), o).length ?
+  PROC_CONFLICT : '');
+/** Ordre des listes : le numéro de piste (celles qui les desservent toutes d'abord), puis le côté (« 02 », « 06 », « 14L », « 14R »). */
+const rwSortKey = rec => servesAll(rec) ? '' : rec.runways.map(rwKey).sort(rwOrder).join('/');
 /** Ordre des pistes : par numéro, puis par côté (« 02 », « 06 », « 14L », « 14R »). */
 const rwOrder = (a, b) => String(a).localeCompare(String(b), undefined, {
   numeric: true
 });
-/** Options d'une liste : vide (pas choisi, « — »), « aucune » (null) si none, puis les enregistrements par nom, ceux du repli
- *  X-Plane en dernier ; le choix gardé hors liste (autre piste, OFP) reste proposé. cur : undefined, null ou un identifiant. group :
- *  sans piste choisie, les fiches sont rangées par piste (un <optgroup> par piste, celles qui les desservent toutes d'abord, sans
- *  groupe, celles du repli X-Plane en dernier dans leur propre groupe) ; le nom d'une fiche n'y reçoit pas sa piste (le groupe la dit). */
-function procOptions(recs, cur, key, none = true, group = false) {
-  // une fiche périmée : classe outdated (gris sur l'ordinateur ; le symbole ⌛ porte le sens là où un sélecteur natif l'ignore) et infobulle
-  const opt = (v, l, on, rec) => `<option value="${esc(v)}"${on ? ' selected' : ''}${rec?.outdated ? ` class="outdated" title="${esc(tt(TX.procOutdatedTitle))}"` : ''}>${esc(l)}</option>`,
-    x = r => r.status === 'xplane' || r.local ? 1 : 0,
-    list = [...new Map(recs.map(r => [r.id, r])).values()].sort((a, b) => x(a) - x(b) || String(a.name).localeCompare(String(b.name)) ||
-      String(
-        a.transition || '').localeCompare(String(b.transition || ''))),
+/** Options d'une liste PLATE : vide (pas choisi, « — »), « aucune » (null) si none, puis les enregistrements par piste puis par nom, ceux
+ *  du repli X-Plane en dernier (par le tri, jamais par un groupe) ; le choix gardé hors liste (autre piste, OFP) reste proposé. cur :
+ *  undefined, null ou un identifiant. Une fiche périmée : ⌛ et classe outdated (gris sur l'ordinateur ; le symbole porte le sens là où
+ *  un sélecteur natif ignore la couleur) ; une fiche en conflit avec le choix o du côté : ⚠ après ⌛ et classe conflict (orange) ; les
+ *  deux classes et les deux raisons (infobulle) se cumulent. Une fiche en conflit reste choisissable. */
+function procOptions(recs, cur, key, none = true, o = {}) {
+  const x = r => r.status === 'xplane' || r.local ? 1 : 0,
+    opt = (v, l, on, rec) => {
+      const why = rec ? [rec.outdated ? tt(TX.procOutdatedTitle) : '', ...conflictsOf(key, rec, o)].filter(Boolean) : [],
+        cls = [rec?.outdated ? 'outdated' : '', rec && conflictsOf(key, rec, o).length ? 'conflict' : ''].filter(Boolean).join(' ');
+      return `<option value="${esc(v)}"${on ? ' selected' : ''}${cls ? ` class="${cls}" title="${esc(why.join(' · '))}"` : ''}>${esc(l)}</option>`;
+    },
+    list = [...new Map(recs.map(r => [r.id, r])).values()].sort((a, b) => x(a) - x(b) || rwOrder(rwSortKey(a), rwSortKey(b)) ||
+      String(a.name).localeCompare(String(b.name)) || String(a.transition || '').localeCompare(String(b.transition || ''))),
     html = [opt('', '—', cur === undefined), none ? opt('__none', tt(TX.procNone), cur === null) : ''],
     sub = key === 'trans' || key === 'appTrans',
-    XP = '\u0001x-plane',
-    // un nom qui revient dans son groupe (ou dans la liste, hors groupe) porte sa piste
-    items = pool => pool.map(r => opt(r.id, sub ? (r.transition || r.name) + (r.outdated ? PROC_OLD : '') : procLabel(r, !group && pool
-        .filter(q => q.name === r.name).length > 1),
-      r.id === cur, r)).join('');
-  if (group && !sub) {
-    const by = new Map(),
-      gx = r => x(r) ? XP : rwGroupOf(r);
-    for (const r of list) by.set(gx(r), [...(by.get(gx(r)) || []), r]);
-    for (const g of [...by.keys()].sort((a, b) => !a || b === XP ? -1 : !b || a === XP ? 1 : rwOrder(a, b)))
-      html.push(g ? `<optgroup label="${esc(g === XP ? tt(TX.procXplane) : `${tt(TX.procRwy)} ${g}`)}">${items(by.get(g))}</optgroup>` : items(by.get(g)));
-  } else html.push(items(list));
+    mark = r => conflictsOf(key, r, o).length ? PROC_CONFLICT : '';
+  for (const r of list) html.push(opt(r.id, (sub ? (r.transition || r.name) + (r.outdated ? PROC_OLD : '') : procLabel(r)) + mark(r), r
+    .id === cur, r));
   if (typeof cur === 'string' && cur && !list.some(r => r.id === cur)) html.push(opt(cur, nameOfId(cur, key), true));
   return html.join('');
 }
@@ -1541,10 +1580,10 @@ function procRowHtml(side, m, edit) {
   };
   if (o.appTrans && o.appTrans === o.app) delete o.appTrans; // un ancien choix : la transition n'est pas l'approche elle-même
   if (!edit) { // plus modifiable (la SID est passée) : le choix, en lecture seule
-    const said = PROC_FIELDS[side].filter(key => o[key] !== undefined).map(key => procValueText(o[key], key)).join(' · ');
+    const said = PROC_FIELDS[side].filter(key => o[key] !== undefined).map(key => procValueText(o[key], key, o)).join(' · ');
     return `<div class="fu-proc" data-proc="${side}">${head}<span class="f-muted">${esc(said || '—')}</span></div>`;
   }
-  const sel = (key, label, recs, none = true) => procSelect(side, key, label, procOptions(recs, o[key], key, none, !o.rwy)),
+  const sel = (key, label, recs, none = true) => procSelect(side, key, label, procOptions(recs, o[key], key, none, o)),
     main = recs => recs.filter(r => !r.transition),
     // les transitions de la procédure choisie : mêmes sorte et nom, avec une transition
     transOf = (recs, id) => {
@@ -1635,9 +1674,10 @@ function focusArr() {
   });
   el.focus();
 }
-/** Choix du pilote dans une liste (data-k = p-<côté>-<champ>) : route.procedures réécrite (by 'fuel', at), les champs qui en
- *  dépendent retirés (une autre piste retire la SID, la STAR ou l'approche qu'elle ne dessert pas ; une autre procédure retire sa
- *  transition), vol écrit et devis refait (avant le départ) ou legs, chemin vertical et longueur seuls (après). */
+/** Choix du pilote dans une liste (data-k = p-<côté>-<champ>) : route.procedures réécrite (by 'fuel', at), la transition d'une
+ *  procédure changée retirée (rien d'autre : un choix en conflit avec un autre est gardé, marqué ⚠ dans les listes, et dit UNE fois
+ *  dans une notification quand le conflit apparaît), une procédure choisie sans piste qui n'en dessert qu'une posant cette piste,
+ *  vol écrit et devis refait (avant le départ) ou legs, chemin vertical et longueur seuls (après). */
 function procChosen(k, raw) {
   const [, side, field] = k.split('-'),
     f = S.flight,
@@ -1654,41 +1694,25 @@ function procChosen(k, raw) {
     o = cur[side],
     val = raw === '' ? undefined : raw === '__none' ? null : raw;
   if (!PROC_FIELDS[side]?.includes(field)) return;
+  // les conflits d'avant le choix : ceux qui apparaissent après lui sont les seuls dits
+  const conflicts = oo => new Map((side === 'dep' ? ['sid'] : ['star', 'app', 'appTrans']).map(key => [key, typeof oo[key] === 'string' ?
+      conflictsOf(key, S.procRecs?.get(oo[key]), oo) : []
+    ]).filter(([, why]) => why.length).map(([key, why]) => [`${key}|${oo[key]}|${why.join()}`, [key, oo[key], why]])),
+    before = conflicts(o);
   if (val === undefined) delete o[field];
   else o[field] = val;
-  // les listes se filtrent l'une l'autre : une procédure choisie qui ne dessert pas la piste est retirée avec sa transition (absente,
-  // pas « aucune »), et une seule ligne le dit ; une procédure choisie avant la piste, qui n'en dessert qu'une, pose cette piste
-  const pairs = side === 'dep' ? [
-      ['sid', 'trans']
-    ] : [
-      ['star', 'trans'],
-      ['app', 'appTrans']
-    ],
-    removed = [],
-    prune = () => {
-      for (const [main, tr] of pairs) {
-        const rec = typeof o[main] === 'string' ? S.procRecs?.get(o[main]) : null;
-        if (!rec || servesRwy(rec, o.rwy)) continue;
-        removed.push(`${tt(TX.procKinds[main])} ${procNameOf(o[main], main)}`);
-        delete o[main];
-        delete o[tr];
-      }
-    };
-  if (field === 'rwy' && val) prune();
-  if (pairs.some(([main]) => main === field) && typeof val === 'string' && !o.rwy) {
+  // une procédure choisie avant la piste, qui n'en dessert qu'une, pose cette piste
+  if (['sid', 'star', 'app'].includes(field) && typeof val === 'string' && !o.rwy) {
     const rec = S.procRecs?.get(val),
       only = rec && !servesAll(rec) ? [...new Set(rec.runways.map(rwKey))] : [];
-    if (only.length === 1) {
-      o.rwy = only[0];
-      prune();
-    }
+    if (only.length === 1) o.rwy = only[0];
   }
   if (field === 'sid' || field === 'star') delete o.trans;
   if (field === 'app') delete o.appTrans;
   if (o.appTrans && o.appTrans === o.app) delete o.appTrans; // la transition d'une approche n'est pas l'approche elle-même
-  if (removed.length) S.ctx.notify(tt(TX.procReset, {
-    rwy: o.rwy,
-    what: removed.join(', ')
+  const fresh = [...conflicts(o)].filter(([id]) => !before.has(id)).map(([, [key, id, why]]) => `${procNameOf(id, key)} : ${why.join(' · ')}`);
+  if (fresh.length) S.ctx.notify(tt(TX.procConflictNote, {
+    what: fresh.join(' ; ')
   }), 'warn');
   // l'autre côté reste tel quel : un « aucune » posé sur tout le côté (null) n'est pas changé en « pas choisi »
   const keep = x => x === null ? null : cleanSide(x);
@@ -1799,7 +1823,8 @@ function onProcChange(e, s) {
   }
 }
 /** Libellé d'une valeur de route.procedures dans une notification : « — » (pas choisi), « aucune », la piste, ou le nom. */
-const procValueText = (v, key) => v === undefined ? '—' : v === null ? tt(TX.procNone) : key === 'rwy' ? String(v) : procNameOf(v, key);
+const procValueText = (v, key, o) => v === undefined ? '—' : v === null ? tt(TX.procNone) : key === 'rwy' ? String(v) : procNameOf(v, key,
+  o);
 /** Ce que « Charger mon OFP » change aux choix du pilote, une ligne par côté : « Arrivée : STAR ABC1A → ABC2B ». before : la vue des
  *  procédures d'avant l'OFP, { dep, arr, depIcao, arrIcao } (un côté d'un autre terrain n'est pas comparé). */
 function procChangeLines(before, next) {
@@ -1809,7 +1834,7 @@ function procChangeLines(before, next) {
     const same = side === 'dep' ? before.depIcao === r.dep : before.arrIcao === r.arr,
       a = same ? before[side] || {} : {},
       b = next[side] || {},
-      parts = PROC_FIELDS[side].filter(key => a[key] !== b[key]).map(key => `${tt(TX.procKinds[key])} ${procValueText(a[key], key)} → ${procValueText(b[key], key)}`);
+      parts = PROC_FIELDS[side].filter(key => a[key] !== b[key]).map(key => `${tt(TX.procKinds[key])} ${procValueText(a[key], key, a)} → ${procValueText(b[key], key, b)}`);
     if (parts.length) lines.push(tt(TX.procChange, {
       side: tt(TX[side]),
       parts: parts.join(' · ')
@@ -2105,6 +2130,7 @@ const STYLE = `
 [data-module="fuel"] .fu-proc>.f-field{flex:1 1 7.5em;min-width:0}
 [data-module="fuel"] .fu-proc select{width:100%;min-width:0}
 [data-module="fuel"] .fu-proc option.outdated{color:var(--sog-muted)}
+[data-module="fuel"] .fu-proc option.conflict{color:var(--sog-warn,#c2410c)}
 [data-module="fuel"] .fu-proc>button{min-height:44px}
 [data-module="fuel"] .fu-rrow{display:flex;gap:8px;align-items:flex-end} /* champ de la route + « Auto » : le champ prend la place restante */
 [data-module="fuel"] .fu-rrow>.f-field{flex:1 1 0;min-width:0}

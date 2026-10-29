@@ -17,7 +17,9 @@ Rules covered
     vertical path and the length are rewritten (F16), the Map's `focus=arr` (F17), the v1 record migrated at the next write (F18), "Load my OFP" replaces the choice and says what changed (F19).
 
   * an aerodrome with approaches only (no SID, no STAR, no runway record) still lists them, by runway, on both rows (F20);
-  * the runway, the STAR and the approach filter one another: what no longer fits is removed with one line, a procedure serving one runway sets it (F21).
+  * a procedure serving one runway sets it when none is chosen; a transition follows its STAR (F21);
+  * conflicts are marked, not forbidden (user, 29 Oct): ⚠ at the end of the label (after ⌛), class conflict, the reason as title, the choice kept, one
+    notification when the conflict appears; flat lists sorted by runway then name (F26).
 
   * an aerodrome whose files carry no runway still offers runways: those its procedures name, else the two ends of its axis in the base (F22).
 
@@ -26,7 +28,7 @@ Rules covered
   * an approach given only by its entries lists the final record once, its transitions are the records that lead to it, and a transition equal to
     the approach is ignored (F24).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F25 F26.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 import json
@@ -379,12 +381,22 @@ def proc_docs(cycle=PROC_CYCLE):
     ]
     # LFVB (invented): one STAR that names no runway (it serves them all), no runway record; the base knows its runway axis
     lfvb = [rec('LFVB', 'STAR', 'BET1A', [], [pt(1, 'VB101', 45.8, 3.1, {'type': 'max', 'ft': 9000}), pt(2, 'VB102', 45.6, 3.4, {'type': 'at', 'ft': 4000})])]
+    # LFVC (invented): the conflicts. ILS27 (runway 27) with a transition IC301 that starts at IC301 and joins IC127; ILS09; ARR1A (27) ends at
+    # IC301 (joins the transition), ARR2B (09) ends at ID999 (joins nothing)
+    lfvc = [
+        rec('LFVC', 'APP', 'ILS27', ['27'], [pt(1, 'IC127', 45.1, 3.8, {'type': 'at', 'ft': 3000}), pt(2, 'RW27', 45.03, 3.45)]),
+        rec('LFVC', 'APP', 'ILS27', ['27'], [pt(1, 'IC301', 45.3, 4.3, {'type': 'at', 'ft': 5000}), pt(2, 'IC127', 45.1, 3.8)], transition='IC301'),
+        rec('LFVC', 'APP', 'ILS09', ['09'], [pt(1, 'IC109', 45.0, 3.0, {'type': 'at', 'ft': 3000}), pt(2, 'RW09', 45.03, 3.4)]),
+        rec('LFVC', 'STAR', 'ARR1A', ['27'], [pt(1, 'IC201', 45.6, 4.7, {'type': 'max', 'ft': 9000}), pt(2, 'IC301', 45.3, 4.3)]),
+        rec('LFVC', 'STAR', 'ARR2B', ['09'], [pt(1, 'IC210', 45.7, 4.8, {'type': 'max', 'ft': 9000}), pt(2, 'ID999', 45.5, 4.9)]),
+    ]
     rw_lfrs = [{'id': '03', 'lat': 47.138, 'lon': -1.62, 'elev': 90, 'qfu': 30}, {'id': '21', 'lat': 47.17, 'lon': -1.595, 'elev': 60, 'qfu': 210}]
     rw_lfml = [{'id': '13R', 'lat': 43.445, 'lon': 5.19, 'elev': 30, 'qfu': 130}, {'id': '31L', 'lat': 43.41, 'lon': 5.24, 'elev': 20, 'qfu': 310}]
     old = rec('LFML', 'STAR', 'MAN1A', ['13R'], [pt(1, 'MAN01', 44.0, 3.8)], status='check', kind_src='manual', src_cycle='2025-01-01')
     xpl = rec('LFML', 'STAR', 'XPL1A', ['13R'], [pt(1, 'XPL01', 44.0, 3.7)], status='official', kind_src='cifp')
     return [[f'proc/{cycle}/LFRS.json', file('LFRS', lfrs, rw_lfrs), 'reference'], [f'proc/{cycle}/LFML.json', file('LFML', lfml, rw_lfml), 'reference'],
             [f'proc/{cycle}/LFVA.json', file('LFVA', lfva), 'reference'], [f'proc/{cycle}/LFVB.json', file('LFVB', lfvb), 'reference'],
+            [f'proc/{cycle}/LFVC.json', file('LFVC', lfvc), 'reference'],
             ['proc/manual/LFML.json', file('LFML', [old], cy='2025-01-01'), 'reference'], ['proc/local/LFML.json', file('LFML', [xpl]), 'reference']]
 
 
@@ -447,11 +459,12 @@ def f11(c):
     c.eq([lab for _, lab in stars][:2], ['—', norm(row(c, 'procNone'))], 'empty "—" first, then "aucune"', what='first STAR options')
     names = [lab.split(' ·')[0] for v, lab in stars if v not in ('', '__none')]
     c.ok('MEN1A' in names and 'MEN2B' in names, f'STAR options {stars}', 'without a runway both STARs are offered')
-    # a runway filters the lists (aerodb.procedures(icao, { kind, runway }))
+    # a runway does not cut the lists any more: the STAR that does not serve it stays selectable, marked in conflict (F25)
     c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '13R')
-    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]'); return !!s && ![...s.options].some(o => /MEN2B/.test(o.textContent)) })()",
-            what='the STAR list follows the runway 13R')
-    c.ok(any('MEN1A' in lab for _, lab in sel_opts(c, 'p-arr-star')), f"STAR options {sel_opts(c, 'p-arr-star')}", 'MEN1A (13R) stays')
+    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]'); return !!s && [...s.options].some(o => /MEN2B.*⚠/.test(o.textContent)) })()",
+            what='the STAR of the other runway is marked in conflict with the runway 13R')
+    labs = [lab for _, lab in sel_opts(c, 'p-arr-star')]
+    c.ok(any(lab.startswith('MEN1A') and '⚠' not in lab for lab in labs), f'STAR options {labs}', 'MEN1A (13R) is not marked')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '13R', 'the runway is written in route.procedures')
     c.eq(d['route']['procedures']['by'], 'fuel', 'by is fuel', what='procedures.by')
     c.ok(c.js("(t) => !isNaN(Date.parse(t))", d['route']['procedures'].get('at')), f"at {d['route']['procedures'].get('at')!r}", 'at is an ISO date')
@@ -487,9 +500,9 @@ def f13(c):
     open_proc(c)
     wait_rows(c)
     opts = [lab for v, lab in sel_opts(c, 'p-arr-star') if v not in ('', '__none')]
-    c.eq(opts[-1], f"XPL1A · {norm(row(c, 'procXplane'))}", 'the X-Plane local STAR is the last, with its mention', what='last STAR option')
+    c.eq(opts[-1], f"XPL1A · 13R · {norm(row(c, 'procXplane'))}", 'the X-Plane local STAR is the last (sorted last, no group), with its runway and its mention', what='last STAR option')
     old = next((lab for lab in opts if lab.startswith('MAN1A')), None)
-    c.eq(old, 'MAN1A ⌛', 'the hand-read STAR of an old cycle ends with the hourglass, without the word', what='outdated STAR option')
+    c.eq(old, 'MAN1A · 13R ⌛', 'the hand-read STAR of an old cycle (one runway: in the label) ends with the hourglass, without the word', what='outdated STAR option')
     o = c.js("(() => { const o = [...document.querySelectorAll('[data-module=fuel] [data-k=\"p-arr-star\"] option')].find(x => x.textContent.startsWith('MAN1A')); return o && { cls: o.className, title: o.title } })()")
     c.eq((o or {}).get('cls'), 'outdated', 'the option carries the class outdated (grey on the computer)', what='class')
     c.eq(norm((o or {}).get('title') or ''), norm(row(c, 'procOutdatedTitle')), 'and the title says it was read under an earlier cycle', what='title')
@@ -652,7 +665,7 @@ def f19(c):
     c.ok('app' not in p['arr'], f"arr {p['arr']}", 'the pilot\'s approach is replaced with the rest of the side')
     notes = [norm(n) for n in c.note_log()]
     kinds = lambda k: norm(tx(F, k, c.lang, after='procKinds: {'))
-    star_line = norm(row(c, 'procChange').replace('{side}', row(c, 'arr')).replace('{parts}', f"{kinds('rwy')} — → 13L · {kinds('star')} MEN1A → LERG1R · {kinds('app')} I13R → —"))
+    star_line = norm(row(c, 'procChange').replace('{side}', row(c, 'arr')).replace('{parts}', f"{kinds('rwy')} — → 13L · {kinds('star')} MEN1A ⚠ → LERG1R · {kinds('app')} I13R → —"))   # the replaced STAR joined no point of the pilot's approach: the change line carries the warning
     sid_line = norm(row(c, 'procChange').replace('{side}', row(c, 'dep')).replace('{parts}', f"{kinds('rwy')} — → 03 · {kinds('sid')} NTS1A → LUGE4N"))
     c.ok(star_line in notes, f'notifications {notes}', f'one line for the arrival: {star_line}')
     c.ok(sid_line in notes, f'notifications {notes}', f'one line for the departure: {sid_line}')
@@ -664,25 +677,24 @@ def set_icao(c, side, icao):
 
 
 def opt_groups(c, k):
-    """Labels of the <optgroup> of the select data-k=`k`."""
-    return c.js("""(k) => [...document.querySelectorAll('[data-module=fuel] select[data-k="' + k + '"] optgroup')].map(g => g.label.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())""", k)
+    """Number of <optgroup> in the select data-k=`k` (the lists are flat: none)."""
+    return c.js("""(k) => document.querySelectorAll('[data-module=fuel] select[data-k="' + k + '"] optgroup').length""", k)
 
 
-@case('F20', 'Aerodrome with approaches only: they are listed, by runway, on both rows', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
-      langs4=True, rule='V3 spec 10.20: without a runway chosen a row lists all the procedures of the aerodrome, one group per runway; the approaches show without a STAR')
+@case('F20', 'Aerodrome with approaches only: they are listed, in one flat list sorted by runway, on both rows', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      langs4=True, rule='V3 spec 10.20-10.23: a row lists all the procedures of the aerodrome in one flat list ordered by runway then name; the approaches show without a STAR')
 def f20(c):
     open_proc(c)
     wait_rows(c, 'arr')
     # arrival: an aerodrome with approaches only; the row is not "no published procedure", the approaches are grouped by runway
     set_icao(c, 'arr', 'LFVA')
-    c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"] optgroup')", what='the approach list of LFVA is drawn')
+    c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-app\"] option')].some(o => /LFVA/.test(o.value))", what='the approach list of LFVA is drawn')
     txt = norm(c.text(f'{FUEL} [data-proc="arr"]') or '')
     c.ok(norm(row(c, 'procNoData')) not in txt, f'row {txt!r}', 'an aerodrome with approaches only is not "no published procedure"')
     c.eq(c.count(f'{FUEL} [data-proc="arr"] [data-do="procfetch"]'), 0, 'and offers no reading', what='reading buttons')
-    rw = norm(row(c, 'procRwy'))
-    c.eq(opt_groups(c, 'p-arr-app'), [f'{rw} 09', f'{rw} 27'], 'the approaches are grouped by runway (no runway chosen)', what='approach groups')
+    c.eq(opt_groups(c, 'p-arr-app'), 0, 'the list is flat: no group per runway', what='approach groups')
     apps = [lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')]
-    c.eq(sorted(apps), ['ILS09', 'RNP27', 'VOR09', 'VOR27'], 'the approaches without transition and the one given by its entries (listed once), in the language-free names', what='approach options')
+    c.eq(apps, ['ILS09', 'VOR09', 'RNP27', 'VOR27'], 'the approaches without transition and the one given by its entries (listed once), sorted by runway then name; the name already says the runway', what='approach options')
     c.eq([v for v, _ in sel_opts(c, 'p-arr-star')], ['', '__none'], 'the STAR list is empty (— and none): the approach does not wait for a STAR', what='STAR options')
     # departure: the same aerodrome has no SID, the row still shows (runway, SID "none") and not the reading
     set_icao(c, 'dep', 'LFVA')
@@ -692,31 +704,40 @@ def f20(c):
     set_icao(c, 'arr', 'LFQQ')
     c.until("!!document.querySelector('[data-module=fuel] [data-proc=arr] [data-do=procfetch]')", what='LFQQ has nothing: the reading is offered')
     set_icao(c, 'arr', 'LFVA')
-    c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"] optgroup')", what='back on LFVA the approaches are listed again')
+    c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-app\"] option')].some(o => /LFVA/.test(o.value))", what='back on LFVA the approaches are listed again')
 
 
-@case('F21', 'The runway, the STAR and the approach filter one another', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
-      rule='V3 spec 10.20: a runway keeps the procedures that serve it; a procedure serving one runway sets it; a choice that no longer fits is removed (absent) with one notification')
+@case('F21', 'A procedure serving one runway sets it; a choice is kept when another one conflicts; a transition follows its STAR', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
+      screens=False, langs4=True,
+      rule='V3 spec 10.23: a runway chosen after a STAR and an approach that do not serve it removes nothing (route.procedures keeps them) and says the conflict once')
 def f21(c):
-    kinds = lambda k: norm(tx(F, k, c.lang, after='procKinds: {'))
-    # the approach first: it serves one runway (13R), which becomes the runway and keeps the STARs that serve it
+    # the approach first: it serves one runway (13R), which becomes the runway; the STAR of the other runway stays in the list
     open_proc(c)
     wait_rows(c, 'arr')
     c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFML.APP.I13R.RW13R.NONE')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the approach is written')
     c.eq(procs_of(d, 'arr'), {'rwy': '13R', 'app': 'LFML.APP.I13R.RW13R.NONE'}, 'the approach serves one runway: it is the runway', what='route.procedures.arr')
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]'); return !!s && s.value === '13R' })()", what='the runway select shows 13R')
-    c.ok(not any('MEN2B' in lab for _, lab in sel_opts(c, 'p-arr-star')), f"STAR options {sel_opts(c, 'p-arr-star')}", 'the STAR list follows the runway the approach set (no MEN2B, 31L)')
-    # the STAR chosen next, then another runway: both choices that do not serve it go, one line says which, absent not null
+    c.ok(any('MEN2B' in lab for _, lab in sel_opts(c, 'p-arr-star')), f"STAR options {sel_opts(c, 'p-arr-star')}", 'the STAR of 31L is still listed (marked, not removed)')
+    # the hand-read STAR of an old cycle that joins no point of the approach: ⌛ then ⚠, both classes, both reasons in the title
+    o = opt_info(c, 'p-arr-star', 'MAN1A')
+    c.eq(o['label'], 'MAN1A · 13R ⌛ ⚠', 'outdated then in conflict: the hourglass first, then the warning', what='label')
+    c.eq(sorted(o['cls'].split()), ['conflict', 'outdated'], 'both classes apply together', what='class')
+    c.eq(o['title'], norm(row(c, 'procOutdatedTitle')) + ' · ' + norm(row(c, 'procConflictStar')), 'and both reasons are joined in the title', what='title')
+    # the STAR chosen next, then another runway: both choices are kept, one line says they conflict
     c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN1A.RW13R.NONE')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFML.STAR.MEN1A.RW13R.NONE', 'the STAR is written')
+    n0 = len(c.note_log())
     c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '31L')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '31L', 'the other runway is written')
-    c.eq(procs_of(d, 'arr'), {'rwy': '31L'}, 'the STAR and the approach that do not serve 31L are removed (absent, not null)', what='route.procedures.arr')
-    want = norm(row(c, 'procReset').replace('{rwy}', '31L').replace('{what}', f"{kinds('star')} MEN1A, {kinds('app')} I13R"))
-    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=6000, what=f'one line says what was removed: {want}')
-    stars = [v for v, _ in sel_opts(c, 'p-arr-star') if v not in ('', '__none')]
-    c.eq(stars, ['LFML.STAR.MEN2B.RW31L.NONE'], 'and the STAR list is the one of 31L', what='STAR options')
+    c.eq(procs_of(d, 'arr'), {'rwy': '31L', 'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'app': 'LFML.APP.I13R.RW13R.NONE'},
+         'the STAR and the approach that do not serve 31L are kept', what='route.procedures.arr')
+    c.until("(n) => (window.__notes || []).length > n", n0, timeout=6000, what='one notification says the conflict')
+    c.wait(600)
+    notes = [norm(n) for n in c.note_log()[n0:]]
+    why = norm(row(c, 'procConflictRwy').replace('{rwy}', '31L'))
+    c.eq(len(notes), 1, 'and only one', what=f'notifications {notes}')
+    c.ok(notes[0].startswith('⚠') and 'MEN1A' in notes[0] and 'I13R' in notes[0] and why in notes[0], f'notification {notes[0]!r}', f'it names both procedures and the reason "{why}"')
     # a transition belongs to its STAR: another STAR drops it
     open_proc(c, procs={'arr': {'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'trans': 'LFML.STAR.MEN1A.RW.NEPIX'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'})
     wait_rows(c, 'arr')
@@ -741,8 +762,8 @@ def f22(c):
     c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '27')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '27', 'a runway of that list is written')
     c.eq(procs_of(d, 'arr'), {'rwy': '27'}, 'it is the pilot\'s choice', what='route.procedures.arr')
-    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"]'); return !!s && [...s.options].length === 4 })()", what='the approach list follows 27')
-    c.eq([lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')], ['RNP27', 'VOR27'], 'runway 27: its approaches', what='approaches')
+    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"]'); return !!s && [...s.options].some(o => /⚠/.test(o.textContent)) })()", what='the approaches of the other runway are marked')
+    c.eq([lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')], ['ILS09 ⚠', 'VOR09 ⚠', 'RNP27', 'VOR27'], 'runway 27: the approaches of 09 stay in the list, marked in conflict', what='approaches')
     # LFVB: the only procedure names no runway; the base gives the axis (95 true, 2 E: 09 and 27)
     set_icao(c, 'arr', 'LFVB')
     c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /BET1A/.test(o.textContent))", what='the row of LFVB is drawn')
@@ -825,3 +846,54 @@ def f25(c):
     paths = c.js(f"() => [...document.querySelectorAll('{FUEL} input[data-path]')].map(i => i.dataset.path)")
     c.ok(not any(p == 'sheets' or p.startswith('sheets.') for p in paths), f'{paths}', 'no "sheets" field is proposed')
     c.ok('cruise.tasKt' in paths and 'usableFuel' in paths, f'{paths}', 'the fields of the sheet inside are proposed one by one')
+
+
+def opt_info(c, k, start):
+    """{ label, class, title } of the first option of the select data-k=`k` whose text starts with `start`, or None."""
+    return c.js("""([k, st]) => { const o = [...document.querySelectorAll('[data-module=fuel] select[data-k="' + k + '"] option')].find(x => x.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim().startsWith(st));
+        return o && { label: o.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(), cls: o.className, title: o.title.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() } }""", [k, start])
+
+
+@case('F26', 'Conflicts are marked ⚠, not forbidden: class, title, the choice kept, one notification', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.23: ⚠ orange = in conflict with the current choice (runway, STAR end / approach transition), reason as title, still selectable, said once')
+def f26(c):
+    open_proc(c)
+    wait_rows(c, 'arr')
+    set_icao(c, 'arr', 'LFVC')
+    c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /ARR1A/.test(o.textContent))", what='the row of LFVC is drawn')
+    c.eq(opt_groups(c, 'p-arr-star'), 0, 'flat list: no group', what='STAR groups')
+    # a runway: the STAR and the approach of the other runway stay selectable, marked
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '27')
+    c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /ARR2B.*⚠/.test(o.textContent))", what='ARR2B is marked')
+    o = opt_info(c, 'p-arr-star', 'ARR2B')
+    c.eq(o['label'], 'ARR2B · 09 ⚠', 'the label ends with the warning after the runway the procedure serves', what='label')
+    c.ok('conflict' in o['cls'].split(), f"class {o['cls']!r}", 'the option carries the class conflict')
+    c.eq(o['title'], norm(row(c, 'procConflictRwy').replace('{rwy}', '27')), 'the title gives the reason', what='title')
+    c.eq(opt_info(c, 'p-arr-star', 'ARR1A')['label'], 'ARR1A · 27', 'the STAR of 27 is not marked', what='ARR1A label')
+    # choosing the conflicting STAR keeps the choice and says it once
+    n0 = len(c.note_log())
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFVC.STAR.ARR2B.RW09.NONE')
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFVC.STAR.ARR2B.RW09.NONE', 'the conflicting STAR is written')
+    c.eq(procs_of(d, 'arr'), {'rwy': '27', 'star': 'LFVC.STAR.ARR2B.RW09.NONE'}, 'the choice is kept and the runway stays', what='route.procedures.arr')
+    c.until("(n) => (window.__notes || []).length > n", n0, timeout=6000, what='a notification says the conflict')
+    c.wait(600)
+    notes = [norm(n) for n in c.note_log()[n0:]]
+    c.eq(len(notes), 1, 'one notification', what=f'notifications {notes}')
+    c.ok(notes[0].startswith('⚠') and 'ARR2B' in notes[0] and norm(row(c, 'procConflictRwy').replace('{rwy}', '27')) in notes[0], f'notification {notes[0]!r}', 'it names the STAR and the reason')
+    # the approach of 27 chosen: the STAR ARR2B now joins nothing as well (two reasons in the title), ARR1A ends where the transition starts
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFVC.APP.ILS27.RW27.NONE')
+    cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFVC.APP.ILS27.RW27.NONE', 'the approach is written')
+    c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]')", what='the approach transition select appears')
+    o = opt_info(c, 'p-arr-star', 'ARR2B')
+    c.eq(o['title'], norm(row(c, 'procConflictRwy').replace('{rwy}', '27')) + ' · ' + norm(row(c, 'procConflictStar')), 'both reasons are joined in the title', what='ARR2B title')
+    c.eq(opt_info(c, 'p-arr-star', 'ARR1A')['label'], 'ARR1A · 27', 'ARR1A ends where a transition of the approach starts: no warning', what='ARR1A label')
+    t = opt_info(c, 'p-arr-appTrans', 'IC301')
+    c.eq(t['label'], 'IC301 ⚠', 'the transition does not start at the end of the chosen STAR (ARR2B): marked', what='transition label')
+    c.eq(t['title'], norm(row(c, 'procConflictTrans')), 'with its reason', what='transition title')
+    # a STAR that agrees: no warning left on the transition, and no new notification
+    n1 = len(c.note_log())
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFVC.STAR.ARR1A.RW27.NONE')
+    cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFVC.STAR.ARR1A.RW27.NONE', 'the agreeing STAR is written')
+    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]'); return !!s && ![...s.options].some(o => /⚠/.test(o.textContent)) })()", what='the transition is no longer marked')
+    c.wait(600)
+    c.eq(len(c.note_log()) - n1, 0, 'a choice without conflict says nothing', what='notifications after ARR1A')

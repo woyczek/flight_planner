@@ -4,6 +4,23 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — conflicts marked ⚠, not forbidden; flat lists** (user, 29 Oct, capture of the approach list with no runway
+  chosen: five one-line groups « Piste 02 … Piste 20 », « on doit pouvoir choisir quand même, mais c'est affiché “conflit” avec la
+  RWY ou la STAR ; si gris est périmé, orange serait en conflit »; V3_SPECIFICATION § 10.23): this reverses the pruning of the
+  28 Oct entries (the lists cut by the runway, the choice removed when another made it incompatible). (1) The lists are never cut
+  by the runway and `procChosen` removes nothing but the transition of a changed procedure; a procedure serving a single runway
+  still sets it when none is chosen. (2) Each option is marked by `conflictsOf(key, rec, o)` against the side's current choice `o`:
+  the runway (SID, STAR, approach); a STAR whose last fix is not where the chosen approach transition starts (else no point of the
+  chosen approach, nor the first fix of one of its transitions — a STAR may end at an IAF that is the start of a transition);
+  an approach transition that does not start at the STAR's last fix. Fixes: same identifier, or within 0.5 NM; no point, no
+  conflict. The label ends with ` ⌛` then ` ⚠`, the option has `class="outdated"` and/or `class="conflict"` (`--sog-warn`) and a
+  title joining the reasons ×4. (3) ONE `ctx.notify` ×4 when a conflict appears (`conflicts` before and after the choice,
+  keyed by kind, id and reasons): « ⚠ MEN1A : Ne dessert pas la piste 31L ; I13R : … », nothing at the next redraw, nothing for a
+  choice without conflict; `TX.procReset` is gone. (4) Flat lists: no `<optgroup>`; sorted X-Plane last, then by runway (the
+  records serving all first), then name, then transition; the runway is in the label only when the record serves exactly one and
+  its name does not contain it (« MAN1A · 07 », « RNP RWY 02 »). Note: with real data nearly every STAR is marked once an approach
+  is chosen, because the eAIP STAR ends at an IAF the approach record does not start at; the mark says « no common point », it
+  does not forbid. Cases F11, F13, F20-F22, new F26.
 - **29 Oct 2026 — ⌛ instead of « périmé »; `too-soon`; synchronised procedures** (user: « plutôt que “périmé”, un symbole court,
   peut-être une couleur (gris ?) »; Simplification): an outdated procedure ends with ` ⌛` (`PROC_OLD`) in the lists, its
   transitions and the change notifications (`procNameOf`), with `class="outdated"` (`color: var(--sog-muted)`; a phone's native
