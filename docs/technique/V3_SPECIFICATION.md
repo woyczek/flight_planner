@@ -851,7 +851,9 @@ redesigned for touch at that point.
        - **maps**: `current_flight.js` kept for the record, `flight_time.js` and `flight_path.js` split out
          (re-exported during the transition); `expandedPath` marks every junction (`join: 'common' | 'direct' | 'gap'`)
          and `procs.js` only draws; one ordered list of layers in `draw()` each with `reserve(pl)` then `paint(ctx)`;
-         `draw(ctx, env)` instead of the mutable `MapsRender.kit` and the global theme; one palette of the Map, day and
+         a reduced form instead of a full `draw(ctx, env)` (decided 29 Oct evening: twenty signatures for no gain on
+         screen): per-part frozen namespaces and `kit` frozen after load, `env = { theme, placer }` frozen per draw and
+         passed to the parts, the theme alive only during `draw()`, public functions outside a draw reading `tokens()`; one palette of the Map, day and
          night, read by the rendering and the legend; one element for the airway names (profile migration); `covAuto`
          removed; D41 asserting meaning, not a list of booleans.
        - **frame**: J2 (a pending write on the local transport never asks attention), the end-of-cycle line on the real
