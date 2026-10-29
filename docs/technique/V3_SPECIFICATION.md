@@ -715,8 +715,11 @@ redesigned for touch at that point.
          step Départ after), one button "Sur la carte"
          (and "Choisir" on the Map's aerodrome card) opens the Map at `#maps?choose=dep|arr&icao=LFXX`: the view fits the
          aerodrome's procedures, the base map and every other layer are dimmed (one class on the map container), every
-         published procedure of the side is drawn with its name as a short cartouche (SID in one hue, STAR in another,
-         approaches in a third; ⌛ grey and ⚠ orange as above; transitions dashed), the current choice bold. A list (sheet
+         published procedure of the side is drawn with its name as a short cartouche, **one hue per procedure** (user, 29
+         Oct: "une carte avec une dizaine d'approches méritera plusieurs couleurs", as Navigraph does): a palette of eight
+         distinct hues, legible day and night, assigned in the list's order and cycled, the same hue on the list row's
+         chip, the cartouche and the trace (outside the mode the chosen procedures keep their family hue: SID green, STAR
+         orange, approach sky blue); ⌛ greys the trace, ⚠ stays a symbol; transitions dashed; the current choice bold. A list (sheet
          on the phone, panel on the desktop) names them in the same order as Fuel's lists, ≤ 7 rows visible then scroll;
          a tap on a trace or on a row highlights the procedure, shows its runway, length and constraints, and offers
          "Choisir"; a second tap on the choice leaves it. "Choisir" does not write: the Map returns to Fuel at
