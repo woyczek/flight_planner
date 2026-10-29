@@ -814,3 +814,24 @@ redesigned for touch at that point.
          the `/__setup/doc` route and the `docs` status (tools/launch.py, workstation only, case A), security review by the
          analysis session; fuel — the link and its three targets (case F); maps — the link in the aerodrome card (case D).
          Help ×4 per lot.
+   26. **The part not read: doubtful never shown as good, counted, assisted** (user, 29 Oct, LFPG "star sans nom 27"
+       zigzagging on the Map: "incorrect. Trouver moyen de répondre aux 15 % de procédures non parsées"; at LFPG 23 pages
+       of 85 are of an unknown layout and the reader glued several procedures and the point-merge arcs into nameless
+       records): decided by the ergonomics session on the Map session's proposal.
+       - **Never a doubtful procedure presented as good.** A record without a name, or failing the geometry check
+         (repeated point, zigzag, leg longer than the page's span), is kept in the file (data is never purged) with
+         status `doubt` and is served by `procedures()` only on request (`{ doubt: true }`): Fuel's lists and the Map's
+         traces never show it. Fuel shows one line per side "N procédures non lues sur cette page" with the "Source" link
+         (§ 10.25); the coverage (§ 10.22) turns orange with the reason `partial` when an aerodrome has pages `ok: false`
+         or `doubt` records, shown in the Map's aerodrome card and the Data module.
+       - **Fallback by source**, in the order already set: what the eAIP did not give comes from `proc/local/` (X-Plane
+         CIFP, then Little Navmap, § 10.21) when the workstation has it, the source always shown; nothing invented.
+       - **Assisted reading, on the sheets' model.** For a page `ok: false`, Fuel offers "Lire avec ChatGPT": the copied
+         request carries the page's text and aerodb's common schema with selection rules (never closed lists, except the
+         codes the schema requires); the pasted answer goes through the field-by-field preview like the sheets, then into
+         `proc/manual/` with status `check`, source `assisted`, and the geometry check. This covers a new layout without
+         waiting for a reader fix.
+       - **Lots**: aerodb — the LFPG layouts (bug, now), then `doubt` status and the `partial` reason, the `stats`
+         carrying `doubt` (cases K); fuel — the line and its link (with the "Relire" commit), then the assisted reading
+         (after the choose-mode lots, cases F); maps — never draw `doubt`, the reason in the aerodrome card (choose-mode
+         lot, case D). Help ×4 per lot.

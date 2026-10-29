@@ -403,6 +403,13 @@
           "en": "\"Source\" link on each procedure: the coded page (the launcher's local copy, else the SIA, else the EAD portal)",
           "de": "Link „Quelle“ bei jedem Verfahren: die kodierte Seite (lokale Kopie des Launchers, sonst SIA, sonst EAD-Portal)",
           "es": "Enlace «Fuente» en cada procedimiento: la página codificada (copia local del lanzador, si no el SIA, si no el portal EAD)"
+        },
+        {
+          "state": "planned",
+          "fr": "Procédures non lues : comptées par page avec leur source, jamais montrées comme bonnes ; lecture assistée par ChatGPT sur le modèle des fiches",
+          "en": "Procedures not read: counted per page with their source, never shown as good; ChatGPT-assisted reading on the sheets' model",
+          "de": "Nicht gelesene Verfahren: je Seite gezählt mit Quelle, nie als gut gezeigt; ChatGPT-gestütztes Lesen nach dem Muster der Datenblätter",
+          "es": "Procedimientos no leídos: contados por página con su fuente, nunca mostrados como buenos; lectura asistida por ChatGPT según el modelo de las fichas"
         }
       ]
     },
