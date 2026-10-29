@@ -755,15 +755,15 @@ redesigned for touch at that point.
        threshold (`runways(icao)`) along the true QFU over the runway's length, head in the direction of use (far end
        for a departure, threshold for an arrival), name at the threshold, the side's family hue, visible from the
        aerodrome view (about 60 px per NM). In the choose mode's runway family every runway is drawn so, the chosen one
-       bold. **The ILS / DME aids are deferred** (challenge: a join in aerodb for a label the approach's name already
+       bold. **Delivered** (949f7cbd7). **The ILS / DME aids are deferred** (challenge: a join in aerodb for a label the approach's name already
        gives); `runways(icao)` stays as delivered. Lot: maps (cases D), after § 10.29.
    25. **"Source": the coded page of a procedure, one tap away** (user, 29 Oct): on the secondary line of a side and in
        the Map's aerodrome card, a link "Source" opens in a new tab the public address of the record's page: eAIP =
        `charts.base + Cartes/<ICAO>/<file>`; a record of another source (EAD, OCR, manual) has no link, its document's
        name in the line's `title`. **No launcher route** (challenge: a third target and a route to audit for a page the
        SIA serves to everyone; the local copies stay where they are, `data/local/eaip/<date>/`). aerodb adds
-       `source.file` to every record read from a document. Lots: aerodb (`source.file`, cases K), fuel and maps (the
-       link), after § 10.29.
+       `source.file` to every record read from a document. **Delivered (29–30 Oct night)**: aerodb `source.file` and
+       `source.url` bounded to the SIA host (d88463e51, 97bf5577f), Fuel's link (c540c3efd), the Map's card link (f7bad9970).
    26. **The part not read: doubtful never shown as good, counted** (user, 29 Oct, LFPG "star sans nom 27"): one
        **geometry check** (`tools/proc_geometry.py`, § 10.29), one definition for every reader (eAIP, EAD, OCR, manual):
        printed course and distance against the recalculated ones with a tolerance chosen by what the source prints, a
@@ -774,6 +774,8 @@ redesigned for touch at that point.
        `low-read`, `title`, `no-legs`); **codes, never phrases**: the modules translate them (`AeroCatalogue`, like
        `COVERAGE`). The coverage turns orange with the reason `partial` when an aerodrome has such pages or records.
        Fuel shows "N non lues" on the secondary line with the "Source" link. Fallback by source stays as § 10.21.
+       **Delivered (29–30 Oct night)**: one geometry check `tools/proc_geometry.py` (72ca8b2fa), `doubt` with codes
+       (fe04ed8b8, bf540e3c2), `partial` (567b94440, e74d02ef7), Fuel's line (aa74300b4).
        **"Lire avec ChatGPT" is dropped** (challenge: a fifth write path into `proc/manual/` for a layout the reader
        should learn; a new layout is a reader fix with its fixture). Lots: aerodb (codes, `partial`, cases K), after
        § 10.29.
