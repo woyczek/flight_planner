@@ -852,6 +852,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 10 | `POST /__setup/regen/job/put` for the base builder (5e785599c) | acceptable, two notes |
 | 11 | Data synchronisation: building seen by file times, settle names files, realpath (97e052251) | acceptable |
 | 12 | Flown track `progress.actual.trail` (ff51be774) | acceptable in code; privacy decision for the user, one note |
+| 13 | Data module D2, read-only screen (1ce6fcc1b) | acceptable, two notes |
+| 14 | Fuel: procedures card refactored (3c98b564b, aa74300b4, 5dc40f465) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -979,7 +981,27 @@ names up to 20 relative paths; a paired device still gets the generic message. `
   milliseconds) can mislead it and resume the track of another flight, whose seconds count from another start. Fixed by
   the exact `trailFrom` comparison above.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10 and 12 are with V3 Frame, AeroDB and BUGS SOG; the track's sharing is the user's decision.
+**13. Data module D2 (1ce6fcc1b) — acceptable, two notes.** One declared write only: `cache/data/coverage.json`
+(policy `cache`, the workstation's copy, never the repository), written once at first opening when `zones()` answered and
+a zone is published. Everything that comes from the data is escaped (names of States and reasons, zone names, a zone's
+author, licences, source names, counts by status, addresses in `href` and in the text); the only interpolations left
+unescaped are fixed vocabulary of the code (state and level, group ids, numbers). The launcher declaration is empty;
+`ctx.launcher.info()` only picks one of two sentences. `rail: false` keeps the entry out of the menu (reachable by `#data`).
+Notes (with Settings, for D3 / D4): escape `data-state` and the level too, so that the attribute is already safe the day a
+state comes from a published file; the addresses come from the catalogue (code) today: if it becomes published data,
+accept only `https://` in `href` (`esc` does not stop `javascript:`).
+
+**14. Fuel, procedures card (3c98b564b, aa74300b4, 5dc40f465) — acceptable, one note.** Labels from the records
+(procedure names, transitions, runways) are escaped in the options' text, `value` and `title`; the reading button's text
+goes through `textContent`, the launcher's message and the change lines through `notify()`. The current flight is still
+written only by `saveFlight` (read just before, `CF.merge` bounded to `FUEL_FIELDS` and `FUEL_PROGRESS`, `progress.actual`
+and its track left to the frame); the card changes `route.procedures`, then `quote` / `profile` by computation. The
+`focus` taken from the address (`ctx.consume`) is only compared with `route` and `arr`. The fixtures are invented; the
+bench page calls neither the network nor the launcher. Note: the button is looked up with `[data-icao="${icao}"]` from the
+flight's code (synchronised by the group): a quote in it throws in the progress callback (not an injection, the display
+stops); use `CSS.escape` or check `^[A-Z0-9]{4}$` first.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12, 13 and 14 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the track's sharing is the user's decision.
 
 ## Appendix A — Hosts contacted
 
