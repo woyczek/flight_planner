@@ -34,6 +34,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 - **Fuel: the reasons of a procedure reading are translated by aerodb's catalogue** (`modules/fuel/module.js`, DECISIONS) —
   never a code or a French console phrase in another language; a failure always shows what the workstation saw.
+- **aerodb: the procedures load at once** (`frame/aerodb/aerodb.js`; bench `frame/aerodb/test/perf_procedures.html`, case K40; SPEC § 5 quinquies, DECISIONS 29 Oct 2026; V3 § 10.29 g) — Fuel and the Map took
+  250–400 ms for **every** `procedures()`, `procedure()`, `runways()` call (2.2 s + 1.3 s + 1.8 s for the mount of Fuel, the Map and a redraw on the real files): each call read the aerodrome's four files and asked
+  the frame for `list('proc/')` (which loads the whole cache), and the aerodromes whose points the base does not all give (LFPO, LFBO, LFPG) were rebuilt at each call, one base search per point. Now the merged list is
+  built **once per aerodrome**, shared by every call and every module, trusted until the `proc/` watcher, `fetchProcedures`, `refresh()` or a change of the base drops it: a warm call is 0 ms, 0 reads, 0 lists (mount
+  of Fuel 456 ms, of the Map 0.1 ms, a redraw 0.2 ms; same answers). The base is searched once per identifier (864 searches → 82 for LFPO), the cycle choice and `procedureIndex()` are kept. What is left (a
+  `FrameData.list` that loads every cached document) is the frame's.
+
 - **Map: one element for the airway names** (`modules/maps/render.js`, `render_airspace.js`; case D51; V3 § 10.29 g) — the
   display profile's `airwayLabels` and the Layers box's `awLabels` were combined; `awLabels` alone remains, and a profile of
   the studio or of an airline that still carries `airwayLabels` is read as `awLabels` (`MapsRender.migrated`).

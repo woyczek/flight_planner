@@ -1762,3 +1762,48 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
   | LFPG | 8 | 8 | 11.2 to 14.4 | 13.8 to 17.4 | 0.2 to 0.3 |
   The FAF is 8 to 14 NM from the threshold, not 4 to 6. Procedure counts and doubts are identical to before (LFPO 309 / 1, LFBO 78 / 0, LFPG 711 / 2, or 6 with the base).
 - **Bench**: K24 (LFPO ILS 06 with its FAF, LFBO 14L with and without DATA 03, a FAF behind the IF or off the axis refused) and K25 (LFPG ILS 26L, IG26L positioned from the DATA page); K1 to K34 green.
+
+## 29 October 2026 — procedures load time (« Fuel + Map: very long to load before the procedures appear »)
+
+- **Report**: Fuel and the Map, on LFBO → LFPO and LFPO → EIDW with the real files (`proc/manual/`: LFPO 309 records, LFPG 291, EIDW 196, LFBO 78), took several seconds before the procedures appeared; the Map session measured 250–325 ms for **every** `procedure()` and
+  `runways()` call, even in parallel, and the same again when the Map redid what Fuel had just done.
+- **Bench**: `frame/aerodb/test/perf_procedures.html` (case K40). A reader in memory that **counts** its `read` / `list` calls and costs what the frame's data layer costs (a real IndexedDB: two gets per read, the JSON parsed again at every read, `list()` = `getAll` of the whole cache
+  with its texts, twice), loaded with the copy of the user's files (`?data=<folder>`, not in the repository: the `fr`, `ie`, `gb` zones, the 22 other zones of the manifest as empty files) or, without it, with a synthetic aerodrome. Counters wrapped around `coordsAll` and
+  `AeroDBProcedures.merge / withPhases / markMissed` from the page: aerodb.js carries no timing code. Chromium headless, this workstation, the cache preloaded with the 22 MB of the copy.
+- **Measured before** (ms; one aerodrome at a time on a fresh instance, its zone already open):
+
+  | call | LFPO | LFBO | EIDW | LFPG |
+  |---|---|---|---|---|
+  | `procedures()` cold (reads + list + merge + placement + zones) | 573 (126 reads, 1 list, 945 `coordsAll`) | 421 (186 `coordsAll`) | 398 (1 `coordsAll`) | 380 (1440 `coordsAll`) |
+  | `procedures()` **warm** (nothing changed) | **402** | 315 | 306 | 252 |
+  | `runways()` warm | 362 | 468 | 283 | 233 |
+  | `procedure(id)` warm | 393 | 329 | 341 | 271 |
+  | `procedureIndex()` warm | 270 | 317 | 274 | 286 |
+  | ten `procedures()` in a row | 2868 (10 merges) | 3224 | 3000 | 3252 |
+
+  A warm LFPO call is: `list('proc/')` **377**, three reads 19, 945 `coordsAll` 12 (wall), merge + phases 5, `markMissed` 0. The cost is the **list**, one per call: the frame's `list(prefix)` loads every cached document with its text (22 MB here) to keep a prefix.
+  Fuel's mount (both sides + `loadProcedures`), then the Map's (`loadProcedures` + coverage), then a Fuel redraw: **2179 + 1259 + 1754 ms** (156 + 15 + 27 reads, 11 + 5 + 9 lists, 5 + 2 + 4 merges).
+- **Causes** (three, in this order):
+  1. **`procEntry` read the four files and asked `list('proc/')` at every call** (`procSource` → `procCycle` → `reader.list`, then four `read`) to compare revisions with the memo's signature. The memo saved the merge, not the I/O; with the frame's reader that I/O is the whole cost (the list above all; a read is two
+     IndexedDB gets and a JSON parse of 330 KB). `procedureIndex()` and the coverage table did the same (`indexParts`).
+  2. **The memo was not kept for LFPO, LFBO and LFPG**: a list that waits for the base (a point still without position, an approach with neither threshold nor known aerodrome) was dropped after each call, and these three aerodromes always have points the base does not give (LFPO `PO771` … `PO724`, LFPG `IG08L` …, LFBO
+     `BO142` …: terminal waypoints that the SIA's en-route files do not publish). Every call was a full rebuild, **945 `coordsAll` (LFPO) or 1440 (LFPG)**, one per point, each unfound identifier walking all 25 published zones.
+  3. **`coordsAll` once per point**, not once per identifier: 864 points without a position for 82 identifiers (LFPO).
+- **The fix** (`frame/aerodb/aerodb.js`; same answers, checked: `procedures()`, `runways()` and `procedure(id)` of the four aerodromes have the same hash before and after):
+  - **One read and one analysis per aerodrome, trusted until an invalidation** (`procEntry` / `trusted`): a call looks the memo up first and reads **nothing** (no `read`, no `list`); concurrent calls share the entry's promise; the entry is dropped by the `proc/` and `proc-seen/` watcher
+    on a changed revision (not on an echo), `fetchProcedures`, `refresh()`, `rememberOfp`, a change of the day, and by the base: `baseEpoch` (published files replaced or released: every entry that read the base) and `loadEpoch` (a zone opened: only an entry that lacked a point or a terrain).
+    What is **not** trusted for ever: an aerodrome with **no file** at all, an entry the base has not finished telling (below), and an entry on a reader without `watch`; they are believed `EMPTY_RETRY` (30 s) only.
+  - **« The base has said all »** (`baseFinal`): a point or an aerodrome the base lacks is absent for good once every published zone is open (or without file); the entry is then complete and trusted. This is what keeps LFPO, LFBO and LFPG: the first build opens the 25 zones (once), the unfound
+    points stay unplaced, the entry stays.
+  - **One lookup per identifier per build** (`lookups()`): `placeProc` takes its candidates from a map identifier → places shared by all the records of the build (945 calls → 83 for LFPO); the choice among the places (the nearest to the first placed point of the record) is unchanged.
+  - **The choice of the cycle is kept** (`cycleMemo`, one list of `proc/` shared by all aerodromes: `procList`), dropped by the same paths; `indexParts()` (behind `procedureIndex()` and the coverage table) is kept (`idxP`, dropped by `dropCoverage`) and `procedureIndex()` returns a copy.
+  - **The arrival of a file that aerodb itself is reading** (the frame announces it to the watchers during the read) is no change (`reading`): it dropped the entry being built and made Fuel and the Map re-ask (a second build and an event at each first read).
+- **Measured after** (same bench, same files): every warm call (`procedures`, `runways`, `procedure(id)`, `procedureIndex`, `coverage`) **0 ms, 0 reads, 0 lists, 0 `coordsAll`**; ten in a row and ten at once 0.3 ms, no build. Cold, zone open: LFPO 320 (83 `coordsAll`), LFBO 266, EIDW 260, LFPG 278 — what is left is the
+  `list('proc/')` of the frame (~250 ms) and the opening of the 25 zones for an unfound identifier (126 reads, 40–90 ms), once per session. Mount: **Fuel 456 ms (2 lists = 450 of them), the Map 0.1 ms, a redraw 0.2 ms**, against 2179 + 1259 + 1754. The three together: 135 reads, 2 lists, 86 `coordsAll`, 2 merges.
+- **What is left, and not aerodb's**: `FrameData.list(prefix)` loads every cached document with its text (twice, plus the pending writes) to return paths: ~200–300 ms per call on 22 MB of cache, and aerodb still needs two per session (`sia/base/` for the zones, `proc/` for the cycles). An answer from the tree or from a key-only cursor
+  (`getAllKeys`) would make them free. `FrameData.read` parses the JSON of a cached document at every call (330 KB for LFPO: ~3 ms) and an absent file (`proc/local/`, `proc-seen/`, `proc/<cycle>/` of an aerodrome the cycle does not publish) goes through `fetchOne` / `getMeta('remote')` each time: both now happen once per aerodrome, no longer per call.
+- **Not changed on purpose**: an identifier the aerodrome's zone does not know still walks all published zones (once per build, memoised per identifier); restricting it to the zones of the aerodrome's prefix would change which place is chosen when two countries share an identifier. `procedures()` still returns shallow copies (a caller that changes a point's `lat`
+  changes the memo): unchanged. `aircraft()` reads `AircraftDB/` and the registry; nothing in `frame/`, `modules/`, `shared/`, `tools/` reads `aircraft_http_cache.json` (grep).
+- **Bench** (K40, `perf_procedures.html`, synthetic: 60 procedures, half the points unplaced, two zones, IndexedDB cache): a warm call reads and lists nothing; ten calls in a row and ten at once build nothing; a cold build reads its `proc` files once and looks up each identifier once (42 `coordsAll` for 240 points); placed positions equal
+  the ones computed by the page (nearest of a duplicated identifier, a point only the second zone has); the watcher drops on a changed revision and not on an echo; `refresh()` drops; a file arriving during aerodb's read is no change; a changed published file moves the point; a terrain with no file is read again after 30 s only and when its file
+  arrives; budgets generous (ten warm calls under 200 ms, a cold build under 5 s). K1 (`procedures.html`) follows the new contract: its reader announces what it is given to the watchers, 300 calls read no file, an entry waiting for the base is kept 30 s (clock in hand).

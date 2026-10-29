@@ -1,6 +1,8 @@
 """Area K - aerodb procedures (frame/aerodb/SPEC.md section 5 quinquies; frame/aerodb/test/procedures.html).
 
 Rules covered
+  * K40 the load time of the procedures: a warm call reads nothing, builds nothing and lists nothing (the memo is trusted until a
+    watcher / refresh / fetch invalidation), a cold build looks each identifier up once, and the placed positions are the base's.
   * K1 the bench of the procedures API passes: SID and STAR read from an OFP at the common schema (id, ordered points,
     status `ofp`, planned altitude, no constraint), nothing written by a read, one file per aerodrome by `rememberOfp`,
     the same OFP again writes nothing, published and seen procedures merged with the best status winning, filters, a
@@ -13,7 +15,7 @@ Rules covered
   * K9 the ZIP stream reader (zip_stream.js): central directory from the end of the file, an entry byte for byte, and the streamed
     chain (ZIP → XML reader) giving the counts of the V2 chain; the Sources screen fetches nothing; the laboratory is gone.
 
-Cases: K1, K5, K8, K9 (and K2 K3 K4 K6 below).  The OFP of the bench is built from SimBrief's documented fields (no real OFP in the repository yet).
+Cases: K1, K5, K8, K9, K40 (and K2 K3 K4 K6 below).  The OFP of the bench is built from SimBrief's documented fields (no real OFP in the repository yet).
 """
 import re
 
@@ -79,6 +81,21 @@ def k21(c):
     cycles = ['2026-10-01', '2026-10-29', '2027-01-21']
     c.eq([P.eaip_url(d) for d in cycles], c.js('(ds) => ds.map(d => AeroCatalogue.eaipBase(d))', cycles),
          'proc_sia.eaip_url (the launcher job) writes the same eAIP folder address as catalogue.js eaipBase()', what='eAIP folder address')
+
+
+@case('K40', 'Procedures load time: one read and one analysis per aerodrome, shared by every call', 'K', tags=('aerodb',), phone=False,
+      rule='aerodb DECISIONS 29 Oct 2026 (procedures load time): the memo is trusted until an invalidation; a warm call reads and lists nothing')
+def k40(c):
+    # frame/aerodb/test/perf_procedures.html on a synthetic aerodrome (60 procedures, half of the points without a position, two zones) and
+    # a reader that counts its reads / lists and costs what the frame's data layer costs (IndexedDB, JSON parse per read, list() = getAll).
+    # The real files of the user are not in the repository: the page measures them when given ?data=<folder> (see its header); here the
+    # budgets are generous (ten warm calls under 200 ms, a cold build under 5 s) and the counts are exact.
+    r, bad = _bench(c, 'perf_procedures.html', '__perfBench')
+    c.ok(r['fail'] == 0 and r['pass'] >= 18, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}",
+         'a warm procedures() / runways() / procedure() / coverage() reads no file and lists nothing; ten calls in a row or at once build nothing; '
+         'a cold build looks each identifier up once (42 coordsAll calls for 240 points) and reads its proc files once; the placed positions are the '
+         "base's (nearest of a duplicated identifier); the watcher drops the entry on a changed revision and not on an echo; a terrain with no file "
+         'is read again after 30 s only; a changed published file rebuilds the entries that used the base')
 
 
 @case('K8', 'XML stream reader: golden test against the V2 readers', 'K', tags=('aerodb',), phone=False,

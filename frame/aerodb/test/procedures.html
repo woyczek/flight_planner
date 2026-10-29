@@ -31,7 +31,19 @@
         detail: ok ? '' : JSON.stringify(detail)
       });
     try {
-      const files = new Map(),
+      // le lecteur annonce ce qu'on y pose aux observateurs (reader.watch), comme la couche de données du cadre : aerodb ne relit plus
+      // ses fichiers à chaque appel (mémo des fiches), il compte sur ces annonces (procWatch) ; `settle()` laisse le temps de les traiter
+      const watchers = [],
+        settle = () => new Promise(r => setTimeout(r, 5));
+      class Announcing extends Map {
+        set(p, v) {
+          super.set(p, v);
+          for (const w of watchers.slice())
+            if (p.startsWith(w.prefix)) w.fn([p]);
+          return this;
+        }
+      }
+      const files = new Announcing(),
         puts = [],
         reader = {
           read: async p => files.has(p) ? {
@@ -39,6 +51,14 @@
             rev: 'r' + files.get(p).length
           } : null,
           list: async prefix => [...files.keys()].filter(p => p.startsWith(prefix)),
+          watch: (prefix, fn) => {
+            const w = {
+              prefix,
+              fn
+            };
+            watchers.push(w);
+            return () => watchers.splice(watchers.indexOf(w), 1);
+          },
           put: async (p, v) => {
             puts.push(p);
             files.set(p, JSON.stringify(v));
@@ -926,6 +946,7 @@
         'fetchProcedures(): procedures() goes on serving the fresh file while the reader has not caught up (same updated_at not reached)',
         (await okDb.procedures('LFBW')).length === 3 && (await okDb.runways('LFBW')).map(r => r.id).join() === '14,32', null);
       files.set('proc/manual/LFBW.json', JSON.stringify(mkLfbx('2026-10-28T10:00:00+00:00', [oldLfbx])));
+      await settle(); // l'observateur de proc/ voit la révision changée
       check('fetchProcedures(): once the reader holds a copy as recent, the reader\'s copy is served again (the override is dropped)',
         (await okDb.procedures('LFBW')).length === 1, null);
       jobAnswer.r = {
@@ -1457,8 +1478,8 @@
         length: 300
       }, () => togetherDb.procedures('LFMM')));
       check(
-        'procedures(): 300 calls after the first cost no merge (three file reads per call, proc/manual/, proc-seen/ and proc/local/; the list is built once per revision)',
-        s1.merges - s0.merges === 1 && s2.merges === s1.merges && s2.hits - s1.hits === 300 && calls300 === 300 * 3 && oneRead >= 3 &&
+        'procedures(): 300 calls after the first cost no merge and read no file (the first call read proc/manual/, proc-seen/ and proc/local/; the list is built once per revision)',
+        s1.merges - s0.merges === 1 && s2.merges === s1.merges && s2.hits - s1.hits === 300 && calls300 === 0 && oneRead >= 3 &&
         first.length === 5 && s2.memo === 1, [s0, s1, s2, oneRead, calls300]);
       check('procedures(): 300 simultaneous calls share one merge', togetherDb.procedureStats().merges - sT.merges === 1, [sT,
         togetherDb
@@ -1487,6 +1508,7 @@
       const withNew = JSON.parse(cf.get('proc/manual/LFMM.json'));
       withNew.procedures.push(man('LFMM.STAR.S2A.RWALL', 'STAR', 'S2A', '2026-10-01', [mp('S3', 46, 1.2), mp('S4', 45.5, 1.7)]));
       cput('proc/manual/LFMM.json', withNew);
+      await wpm.fn(['proc/manual/LFMM.json']); // le cadre annonce le fichier changé : l'entrée est jetée
       const sC = mm.procedureStats(),
         changed = await mm.procedures('LFMM'),
         sD = mm.procedureStats();
@@ -1514,6 +1536,7 @@
         ]);
       // (h) l'approche interrompue devinée par le lecteur
       cput('proc/manual/LFMM.json', lfmm('2026-10-28T10:00:00+00:00')); // l'état d'origine
+      await wpm.fn(['proc/manual/LFMM.json']);
       const g0 = mm.procedureStats().guessed.missed,
         gl = await mm.procedures('LFMM', {
           kind: 'APP'
@@ -1551,14 +1574,26 @@
           icao: 'LFMX'
         })]
       });
-      const sX = mm.procedureStats();
-      const x1 = await mm.procedures('LFMX'),
-        x2 = await mm.procedures('LFMX');
-      check('an approach with no runway position and no known aerodrome is left as read, and not kept in the memo', x1[0].guessed ===
-        undefined &&
-        x1[0].points.every(p => p.phase === 'main') && x2.length === 1 && mm.procedureStats().merges - sX.merges === 2, [x1, mm
-          .procedureStats()
-        ]);
+      await wpm.fn(['proc/manual/LFMX.json']);
+      // une horloge à la main : une entrée à qui la base n'a pas tout dit (ici, aucune zone publiée) n'est crue que 30 s
+      const clock = {
+          t: Date.parse('2026-10-25T12:00:00Z')
+        },
+        xDb = AeroDB.create({
+          reader: cReader,
+          lnmperf: false,
+          now: () => clock.t
+        }),
+        sX = xDb.procedureStats(),
+        x1 = await xDb.procedures('LFMX'),
+        x2 = await xDb.procedures('LFMX'),
+        sX2 = xDb.procedureStats();
+      clock.t += 31e3;
+      const x3 = await xDb.procedures('LFMX');
+      check('an approach with no runway position and no known aerodrome is left as read, and kept 30 s only (a base may arrive)', x1[
+          0].guessed === undefined &&
+        x1[0].points.every(p => p.phase === 'main') && x2.length === 1 && x3.length === 1 && sX2.merges - sX.merges === 1 && xDb
+        .procedureStats().merges - sX.merges === 2, [x1, xDb.procedureStats()]);
       // (j) read_at et source.read_at
       const cov = async x => (await covDb(noLnm).coverage(x)),
         [vMm, vMo, vMp, vBd, vEgll, vLfpo] = await Promise.all(['LFMM', 'LFMO', 'LFMP', 'LFBD', 'EGLL', 'LFPO'].map(cov));
