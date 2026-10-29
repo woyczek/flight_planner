@@ -788,6 +788,9 @@ redesigned for touch at that point.
        - **Runway in use, or probable**: from the departure and arrival METAR at preparation time.
        - **Active VATSIM / IVAO controllers on the Map**: both networks publish them (VATSIM data v3 with the launcher's
          relay, IVAO Whazzup directly); one hue per network, dark green and brown, under the airspaces' weight.
+       - **AIP Ireland as the official source for Irish airspaces** (user, 29 Oct evening, Dublin: openAIP codes the CTA
+         sectors 3 to 6 without their inner hole, so five sectors answer at one point): ENR 2.1 / AD 2.17 read like the
+         SIA for France; until then the build stats flag overlapping sectors of one family and the point sheet says it.
    29. **Challenge of 29 Oct: refactoring before any new feature** (user, 29 Oct: "tu challengeras toutes les décisions
        prises depuis hier, quitte à commencer par refaire du code (refactoring)"; inventory by a read-only agent on
        a29709172 plus the debts declared by the four sessions). Findings: the specification ran ahead of the code (about
