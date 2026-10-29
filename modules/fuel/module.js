@@ -1449,24 +1449,45 @@ const nameOfId = (id, key) => {
 };
 /** Piste sans « RW » (« RW23 » → « 23 »), pour comparer. */
 const rwKey = x => String(x ?? '').trim().toUpperCase().replace(/^RW/, '');
-/** Réponse d'aerodb gardée pour le montage (clé : appel + paramètres) ; vidée après une lecture à la demande ou un changement
- *  d'aerodb (onProcChange). Une réponse vide n'est pas gardée : un fichier installé après la première question (lecture à la
- *  demande, synchronisation) est vu à la question suivante. */
-function procMemo(key, make) {
-  const cache = S.procCache ||= new Map();
-  if (!cache.has(key)) {
-    const p = Promise.resolve().then(make).then(v => v || [], () => []).then(v => {
-      if (!v.length && cache.get(key) === p) cache.delete(key);
-      return v;
-    });
-    cache.set(key, p);
-  }
-  return cache.get(key);
+/** État des procédures d'un terrain (un seul objet par OACI, dans S.ads) : recs, ses fiches montrées au dernier dessin (par
+ *  identifiant : conflits, ordre, ⌛ des notifications) ; stats, les comptes de sa dernière lecture à la demande (fiches douteuses). */
+function adOf(icao) {
+  const k = String(icao || '').trim().toUpperCase(),
+    m = S.ads ||= new Map();
+  if (!m.has(k)) m.set(k, {
+    icao: k,
+    recs: new Map(),
+    stats: null
+  });
+  return m.get(k);
 }
+/** Les fiches montrées des deux terrains du vol, par identifiant (départ puis arrivée). */
+function procRecsNow() {
+  const r = S.flight?.route || {};
+  return new Map([...(S.ads?.get(String(r.dep || '').toUpperCase())?.recs || []), ...(S.ads?.get(String(r.arr || '').toUpperCase())?.recs ||
+    [])]);
+}
+/** Les procédures d'un terrain ont changé (aerodb change { procedures: OACI }, lecture faite) : ses fiches montrées sont oubliées
+ *  (les comptes de la lecture restent), les procédures lues du vol aussi quand c'est son départ ou son arrivée ; sans OACI, tous les
+ *  terrains (données publiées changées). Le dessin suivant relit aerodb. Vrai si un terrain du vol est touché. */
+function dropAd(icao) {
+  const r = S.flight?.route || {},
+    k = icao ? String(icao).toUpperCase() : null,
+    ours = [r.dep, r.arr].map(x => String(x || '').toUpperCase());
+  for (const a of S.ads?.values() || [])
+    if (!k || a.icao === k) a.recs = new Map();
+  S.rowsKey = null;
+  if (k && !ours.includes(k)) return false;
+  S.procs = null;
+  return true;
+}
+/** Une question à aerodb, posée à chaque dessin : aerodb est le seul cache (procedures(icao) mémoïsé par révision, V3 § 10.29) ;
+ *  [] sans réponse ou en cas d'erreur. */
+const askAero = make => Promise.resolve().then(make).then(v => v || [], () => []);
 /** Pistes d'un terrain (aerodb.runways) ; [] sans donnée. */
-const runwaysOf = icao => procMemo(`rwy|${icao}`, () => S.ctx.aerodb?.runways?.(icao));
+const runwaysOf = icao => askAero(() => S.ctx.aerodb?.runways?.(icao));
 /** Toutes les procédures d'un terrain, de toutes sortes (aerodb.procedures(icao)) : la ligne les trie elle-même par sorte et par piste. */
-const procsOf = icao => procMemo(`${icao}|all`, () => S.ctx.aerodb?.procedures?.(icao));
+const procsOf = icao => askAero(() => S.ctx.aerodb?.procedures?.(icao));
 /** Même piste : « 24 » et « RW24 » se valent ; un numéro sans côté (« 14 ») vaut ses pistes parallèles (« 14L », « 14R »). */
 const sameRwy = (a, b) => {
   const x = rwKey(a),
@@ -1492,7 +1513,7 @@ async function runwayChoices(icao, known, all) {
   if (named.length) return named.map(id => ({
     id
   }));
-  const ad = (await procMemo(`ad|${icao}`, () => S.ctx.aerodb?.aerodromes?.({
+  const ad = (await askAero(() => S.ctx.aerodb?.aerodromes?.({
     icao
   })))[0];
   if (!Number.isFinite(+ad?.bearing)) return [];
@@ -1533,7 +1554,8 @@ async function sideModel(side) {
     // procédures non lues (§ 10.26) : les fiches douteuses du terrain, jamais dans les listes. aerodb ne rend plus celles de statut
     // doubt (procedures() les écarte, sans `{ doubt: true }` demandé ici) : on compte celles qu'il a dites à la dernière lecture de cette
     // session (stats.doubt), cov.doubt s'il le donne un jour, et les fiches sans nom qui lui échapperaient (ceinture)
-    unread: (every.length - all.length) + Math.max(+cov?.doubt || 0, +S.procStats?.[icao]?.doubt || 0),
+    unread: (every.length - all.length) + Math.max(+cov?.doubt || 0, +S?.ads?.get(icao)?.stats?.doubt ||
+      0), // S lu après les attentes : null si Carburant a été fermé entre-temps
     lists: Object.fromEntries(kinds.map(k => [k, all.filter(p => p.kind === k)])),
     nodata: !known.length && !all.length
   };
@@ -1559,7 +1581,7 @@ function procLabel(rec) {
  *  CF.conflictsOf (frame/lib/current_flight.js, une seule pour Carburant et la Carte, § 10.23) : des données ; ici leurs textes. key :
  *  sid, star, app, trans ou appTrans. */
 function conflictsOf(key, rec, o) {
-  return CF.conflictsOf(key, rec, o, S.procRecs).map(c => c.kind === 'rwy' ? tt(TX.procConflictRwy, {
+  return CF.conflictsOf(key, rec, o, procRecsNow()).map(c => c.kind === 'rwy' ? tt(TX.procConflictRwy, {
     rwy: c.rwy
   }) : tt(TX.procConflictStarApp, {
     app: c.app || nameOfId(c.appId)
@@ -1567,7 +1589,8 @@ function conflictsOf(key, rec, o) {
 }
 /** Nom d'une procédure choisie (identifiant) pour une notification, avec ⌛ quand la fiche montrée est périmée et, si le choix o du
  *  côté est donné, ⚠ quand elle est en conflit avec lui. */
-const procNameOf = (id, key, o) => nameOfId(id, key) + (S.procRecs?.get(id)?.outdated ? PROC_OLD : '') + (o && conflictsOf(key, S.procRecs
+const procNameOf = (id, key, o) => nameOfId(id, key) + (procRecsNow().get(id)?.outdated ? PROC_OLD : '') + (o && conflictsOf(key,
+    procRecsNow()
     ?.get(id), o).length ?
   PROC_CONFLICT : '');
 /** Ordre des pistes : par numéro, puis par côté (« 02 », « 06 », « 14L », « 14R »). */
@@ -1586,7 +1609,7 @@ function procOptions(recs, cur, key, none = true, o = {}) {
         cls = [rec?.outdated ? 'outdated' : '', rec && conflictsOf(key, rec, o).length ? 'conflict' : ''].filter(Boolean).join(' ');
       return `<option value="${esc(v)}"${on ? ' selected' : ''}${cls ? ` class="${cls}" title="${esc(why.join(' · '))}"` : ''}>${esc(l)}</option>`;
     },
-    list = CF.orderProcedures([...new Map(recs.map(r => [r.id, r])).values()], key, o, S.procRecs),
+    list = CF.orderProcedures([...new Map(recs.map(r => [r.id, r])).values()], key, o, procRecsNow()),
     html = [opt('', '—', cur === undefined), none ? opt('__none', tt(TX.procNone), cur === null) : ''],
     sub = key === 'trans' || key === 'appTrans',
     mark = r => conflictsOf(key, r, o).length ? PROC_CONFLICT : '';
@@ -1625,7 +1648,7 @@ function procRowHtml(side, m, edit) {
       const name = id ? recs.find(r => r.id === id)?.name ?? nameOfId(id) : null;
       return name ? recs.filter(r => r.name === name && r.transition) : [];
     },
-    rwys = CF.orderProcedures([...new Map(m.rwys.map(r => [r.id, r])).values()], 'rwy', o, S.procRecs),
+    rwys = CF.orderProcedures([...new Map(m.rwys.map(r => [r.id, r])).values()], 'rwy', o, procRecsNow()),
     rwyOpts = `<option value=""${o.rwy ? '' : ' selected'}>—</option>${rwys.map(r => `<option value="${esc(r.id)}"${rwKey(r.id) === rwKey(o.rwy) ? ' selected' : ''}>${esc(r.id)}</option>`).join('')}${o.rwy && !rwys.some(r => rwKey(r.id) === rwKey(o.rwy)) ? `<option value="${esc(o.rwy)}" selected>${esc(o.rwy)}</option>` : ''}`;
   let body = procSelect(side, 'rwy', TX.procRwy, rwyOpts);
   if (side === 'dep') {
@@ -1692,7 +1715,7 @@ async function renderProcRows() {
     [dep, arr] = await Promise.all([sideModel('dep'), sideModel('arr')]);
   if (gone(s) || seq !== S.procSeq || !S.body) return;
   // toutes les fiches des deux terrains, retrouvées par leur identifiant quand une piste choisie en retire (procChosen)
-  S.procRecs = new Map([dep, arr].filter(Boolean).flatMap(m => m.all).map(r => [r.id, r]));
+  for (const m of [dep, arr].filter(Boolean)) adOf(m.icao).recs = new Map(m.all.map(r => [r.id, r]));
   const k = box.contains(document.activeElement) ? document.activeElement.dataset?.k : null;
   box.innerHTML = (started && passed && dep ? `<p class="f-muted fu-procpassed">${esc(tt(TX.procPassed))}</p>` : '') + procRowHtml('dep', dep, !started || !passed) + procRowHtml('arr', arr,
     true);
@@ -1733,14 +1756,14 @@ function procChosen(k, raw) {
   if (!PROC_FIELDS[side]?.includes(field)) return;
   // les conflits d'avant le choix : ceux qui apparaissent après lui sont les seuls dits
   const conflicts = oo => new Map((side === 'dep' ? ['sid'] : ['star', 'app', 'appTrans']).map(key => [key, typeof oo[key] === 'string' ?
-      conflictsOf(key, S.procRecs?.get(oo[key]), oo) : []
+      conflictsOf(key, procRecsNow().get(oo[key]), oo) : []
     ]).filter(([, why]) => why.length).map(([key, why]) => [`${key}|${oo[key]}|${why.join()}`, [key, oo[key], why]])),
     before = conflicts(o);
   if (val === undefined) delete o[field];
   else o[field] = val;
   // une procédure choisie avant la piste, qui n'en dessert qu'une, pose cette piste
   if (['sid', 'star', 'app'].includes(field) && typeof val === 'string' && !o.rwy) {
-    const rec = S.procRecs?.get(val),
+    const rec = procRecsNow().get(val),
       only = rec && !servesAll(rec) ? [...new Set(rec.runways.map(rwKey))] : [];
     if (only.length === 1) o.rwy = only[0];
   }
@@ -1846,9 +1869,8 @@ async function fetchProcs(icao) {
   }
   if (!S) return; // Carburant fermé : la notification a suffi ; rouvert entre-temps : ses lignes sont redessinées
   if (res?.ok) {
-    (S.procStats ||= {})[icao] = res.stats || null; // les fiches douteuses de cette lecture (stats.doubt) : comptées sous la rangée
-    S.procCache = null;
-    S.procs = null;
+    adOf(icao).stats = res.stats || null; // les fiches douteuses de cette lecture (stats.doubt) : comptées sous la rangée
+    dropAd(icao);
     refresh();
   }
   S.rowsKey = null;
@@ -1860,16 +1882,8 @@ async function fetchProcs(icao) {
  *  autres signaux (fiches d'aéronef, zone ouverte) ne concernent pas les lignes. */
 function onProcChange(e, s) {
   if (!e || gone(s) || !S.body || !(e.procedures || e.changed || e.refreshed)) return;
-  S.procCache = null;
-  const r = S.flight?.route || {};
-  if (e.procedures && [r.dep, r.arr].some(i => String(i || '').toUpperCase() === String(e.procedures).toUpperCase())) {
-    S.procs = null;
-    S.rowsKey = null;
-    refresh();
-  } else if (S.view === 'plan') {
-    S.rowsKey = null;
-    renderProcRows();
-  }
+  if (dropAd(e.procedures || null)) refresh(); // un terrain du vol : ses procédures lues aussi, le devis suit
+  else if (S.view === 'plan') renderProcRows();
 }
 /** Libellé d'une valeur de route.procedures dans une notification : « — » (pas choisi), « aucune », la piste, ou le nom. */
 const procValueText = (v, key, o) => v === undefined ? '—' : v === null ? tt(TX.procNone) : key === 'rwy' ? String(v) : procNameOf(v, key,

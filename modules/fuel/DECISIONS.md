@@ -4,6 +4,13 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — refactoring (a) and (b) of V3 § 10.29: aerodb is the only cache, one state per aerodrome**: `procMemo` and
+  `S.procCache` removed — every draw asks aerodb (`procedures(icao)`, `runways(icao)`, `aerodromes`, `coverage`), which memoises
+  per revision since cdbeb5c29; the « empty list after a reading » class of bugs had its cause there. `S.procRecs` and
+  `S.procStats` become `S.ads` (one object per ICAO: `recs`, the records shown at the last draw; `stats`, the counts of its last
+  reading on demand), read through `adOf` / `procRecsNow`; `dropAd(icao)` is the one function that forgets an aerodrome on
+  aerodb's `change { procedures: ICAO }` (all aerodromes on `changed` / `refreshed`) and drops the flight's read procedures when
+  it is its departure or arrival. No behaviour change.
 - **29 Oct 2026 — the reading on demand is never silent** (user, EIDW: « aucun log. est-ce que ça a marché ? » — the job ran
   3 min 30 and answered `failed`, « no procedure could be read », 31 warnings; nothing was shown): the start is said (`procStarted`),
   every end is said through the context of the mount that started it, even after an unmount (a module-level `procReadingNow`
