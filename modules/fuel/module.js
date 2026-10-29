@@ -244,7 +244,10 @@ const TX = {
   // procédure lue sans nom (identifiant « ….STAR.NONAME.… ») : sa sorte, jamais le mot de l'identifiant
   procUnnamed: ['{k} sans nom', '{k} without a name', '{k} ohne Namen', '{k} sin nombre'],
   procXplane: ['X-Plane, local', 'X-Plane, local', 'X-Plane, lokal', 'X-Plane, local'],
-  procOutdated: ['périmé', 'outdated', 'veraltet', 'caducado'],
+  // procédure lue sous un cycle passé : le seul symbole ⌛ en fin de libellé (PROC_OLD), ce texte en infobulle
+  procOutdatedTitle: ['Lue sous un cycle antérieur : à relire', 'Read under an earlier cycle: to read again',
+    'Unter einem früheren Zyklus gelesen: neu lesen', 'Leído en un ciclo anterior: volver a leer'
+  ],
   procNoData: ['aucune procédure publiée', 'no published procedure', 'kein veröffentlichtes Verfahren', 'ningún procedimiento publicado'],
   procRead: ['Lire les procédures de {icao}', 'Read the procedures of {icao}', 'Verfahren von {icao} lesen',
     'Leer los procedimientos de {icao}'
@@ -327,6 +330,9 @@ const TX = {
       'The EAD Basic credentials are missing on the workstation: set them in Settings › Launcher keys.',
       'Die EAD-Basic-Zugangsdaten fehlen am Arbeitsplatz: unter Einstellungen › Launcher-Schlüssel eintragen.',
       'Faltan las credenciales de EAD Basic en el puesto: configúrelas en Ajustes › Claves del lanzador.'
+    ],
+    'too-soon': ['Patientez {w} s avant la lecture suivante (EAD Basic).', 'Wait {w} s before the next reading (EAD Basic).',
+      'Bitte {w} s bis zum nächsten Lesen warten (EAD Basic).', 'Espere {w} s antes de la siguiente lectura (EAD Basic).'
     ],
     busy: ['Une lecture de {icao} est déjà en cours.', 'A reading of {icao} is already running.', 'Das Lesen von {icao} läuft bereits.',
       'Ya hay una lectura de {icao} en curso.'
@@ -1392,6 +1398,8 @@ function normProcedures(f) {
 // ---------------------------------------------------------------- lignes « Départ » et « Arrivée » : piste, SID, STAR, approche
 /** Nom d'une procédure d'après son identifiant (« LFBD.SID.ROYAN6P.RW23.NONE » → « ROYAN6P ») ; pour une transition, la
  *  transition (cinquième champ) quand l'identifiant la porte. */
+/** Marque d'une procédure lue sous un cycle passé (fin de libellé, listes et notifications) : un symbole court plutôt qu'un mot. */
+const PROC_OLD = ' ⌛';
 const nameOfId = (id, key) => {
   const p = String(id || '').split('.');
   if ((key === 'trans' || key === 'appTrans') && p[4] && p[4] !== 'NONE') return p[4];
@@ -1477,9 +1485,11 @@ async function sideModel(side) {
  *  pour le repli du poste, « périmé » pour une lecture à la main dont le cycle est passé. */
 function procLabel(rec, dup) {
   return [rec.name || nameOfId(rec.id), dup && (rec.runways || []).length ? rec.runways.join('/') : '',
-    rec.status === 'xplane' || rec.local ? tt(TX.procXplane) : '', rec.outdated ? tt(TX.procOutdated) : ''
-  ].filter(Boolean).join(' · ');
+    rec.status === 'xplane' || rec.local ? tt(TX.procXplane) : ''
+  ].filter(Boolean).join(' · ') + (rec.outdated ? PROC_OLD : '');
 }
+/** Nom d'une procédure choisie (identifiant) pour une notification, avec ⌛ quand la fiche montrée est périmée. */
+const procNameOf = (id, key) => nameOfId(id, key) + (S.procRecs?.get(id)?.outdated ? PROC_OLD : '');
 /** Piste (ou pistes, « 14L/14R ») sous laquelle une fiche est rangée dans une liste groupée ; '' pour une fiche qui les dessert toutes. */
 const rwGroupOf = rec => servesAll(rec) ? '' : rec.runways.map(rwKey).join('/');
 /** Ordre des pistes : par numéro, puis par côté (« 02 », « 06 », « 14L », « 14R »). */
@@ -1491,7 +1501,8 @@ const rwOrder = (a, b) => String(a).localeCompare(String(b), undefined, {
  *  sans piste choisie, les fiches sont rangées par piste (un <optgroup> par piste, celles qui les desservent toutes d'abord, sans
  *  groupe, celles du repli X-Plane en dernier dans leur propre groupe) ; le nom d'une fiche n'y reçoit pas sa piste (le groupe la dit). */
 function procOptions(recs, cur, key, none = true, group = false) {
-  const opt = (v, l, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}>${esc(l)}</option>`,
+  // une fiche périmée : classe outdated (gris sur l'ordinateur ; le symbole ⌛ porte le sens là où un sélecteur natif l'ignore) et infobulle
+  const opt = (v, l, on, rec) => `<option value="${esc(v)}"${on ? ' selected' : ''}${rec?.outdated ? ` class="outdated" title="${esc(tt(TX.procOutdatedTitle))}"` : ''}>${esc(l)}</option>`,
     x = r => r.status === 'xplane' || r.local ? 1 : 0,
     list = [...new Map(recs.map(r => [r.id, r])).values()].sort((a, b) => x(a) - x(b) || String(a.name).localeCompare(String(b.name)) ||
       String(
@@ -1500,9 +1511,9 @@ function procOptions(recs, cur, key, none = true, group = false) {
     sub = key === 'trans' || key === 'appTrans',
     XP = '\u0001x-plane',
     // un nom qui revient dans son groupe (ou dans la liste, hors groupe) porte sa piste
-    items = pool => pool.map(r => opt(r.id, sub ? r.transition || r.name : procLabel(r, !group && pool.filter(q => q.name === r.name)
-        .length > 1),
-      r.id === cur)).join('');
+    items = pool => pool.map(r => opt(r.id, sub ? (r.transition || r.name) + (r.outdated ? PROC_OLD : '') : procLabel(r, !group && pool
+        .filter(q => q.name === r.name).length > 1),
+      r.id === cur, r)).join('');
   if (group && !sub) {
     const by = new Map(),
       gx = r => x(r) ? XP : rwGroupOf(r);
@@ -1658,7 +1669,7 @@ function procChosen(k, raw) {
       for (const [main, tr] of pairs) {
         const rec = typeof o[main] === 'string' ? S.procRecs?.get(o[main]) : null;
         if (!rec || servesRwy(rec, o.rwy)) continue;
-        removed.push(`${tt(TX.procKinds[main])} ${nameOfId(o[main], main)}`);
+        removed.push(`${tt(TX.procKinds[main])} ${procNameOf(o[main], main)}`);
         delete o[main];
         delete o[tr];
       }
@@ -1763,6 +1774,7 @@ async function fetchProcs(icao, btn) {
       icao,
       r: res?.reason || '?',
       m: res?.message ? ` (${res.message})` : '', // la cause donnée par le lanceur (refus de connexion, rien de lu…)
+      w: Math.max(1, Math.ceil(+res?.wait || 30)), // too-soon : secondes avant la lecture suivante (EAD Basic, 30 s entre deux)
       l: res?.reason === 'no-tables' && res.lnm ? tt(TX.procLnm) : '' // indice : les bases de Little Navmap du poste (§ 10.21)
     }), 'warn');
   }
@@ -1787,7 +1799,7 @@ function onProcChange(e, s) {
   }
 }
 /** Libellé d'une valeur de route.procedures dans une notification : « — » (pas choisi), « aucune », la piste, ou le nom. */
-const procValueText = (v, key) => v === undefined ? '—' : v === null ? tt(TX.procNone) : key === 'rwy' ? String(v) : nameOfId(v, key);
+const procValueText = (v, key) => v === undefined ? '—' : v === null ? tt(TX.procNone) : key === 'rwy' ? String(v) : procNameOf(v, key);
 /** Ce que « Charger mon OFP » change aux choix du pilote, une ligne par côté : « Arrivée : STAR ABC1A → ABC2B ». before : la vue des
  *  procédures d'avant l'OFP, { dep, arr, depIcao, arrIcao } (un côté d'un autre terrain n'est pas comparé). */
 function procChangeLines(before, next) {
@@ -2092,6 +2104,7 @@ const STYLE = `
 [data-module="fuel"] .fu-proc>.fu-prochead{flex:0 0 100%}
 [data-module="fuel"] .fu-proc>.f-field{flex:1 1 7.5em;min-width:0}
 [data-module="fuel"] .fu-proc select{width:100%;min-width:0}
+[data-module="fuel"] .fu-proc option.outdated{color:var(--sog-muted)}
 [data-module="fuel"] .fu-proc>button{min-height:44px}
 [data-module="fuel"] .fu-rrow{display:flex;gap:8px;align-items:flex-end} /* champ de la route + « Auto » : le champ prend la place restante */
 [data-module="fuel"] .fu-rrow>.f-field{flex:1 1 0;min-width:0}

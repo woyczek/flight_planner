@@ -482,14 +482,17 @@ def f12(c):
 
 
 @case('F13', 'Procedures list: X-Plane local last, outdated marked', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
-      rule='V3 spec 10.20: an xplane record comes last with "X-Plane, local"; an outdated one says "périmé"')
+      rule='V3 spec 10.20: an xplane record comes last with "X-Plane, local"; an outdated one ends with the symbol ⌛ (user, 29 Oct: a short symbol rather than the word), class outdated and a title')
 def f13(c):
     open_proc(c)
     wait_rows(c)
     opts = [lab for v, lab in sel_opts(c, 'p-arr-star') if v not in ('', '__none')]
     c.eq(opts[-1], f"XPL1A · {norm(row(c, 'procXplane'))}", 'the X-Plane local STAR is the last, with its mention', what='last STAR option')
     old = next((lab for lab in opts if lab.startswith('MAN1A')), None)
-    c.eq(old, f"MAN1A · {norm(row(c, 'procOutdated'))}", 'the hand-read STAR of an old cycle says it is outdated', what='outdated STAR option')
+    c.eq(old, 'MAN1A ⌛', 'the hand-read STAR of an old cycle ends with the hourglass, without the word', what='outdated STAR option')
+    o = c.js("(() => { const o = [...document.querySelectorAll('[data-module=fuel] [data-k=\"p-arr-star\"] option')].find(x => x.textContent.startsWith('MAN1A')); return o && { cls: o.className, title: o.title } })()")
+    c.eq((o or {}).get('cls'), 'outdated', 'the option carries the class outdated (grey on the computer)', what='class')
+    c.eq(norm((o or {}).get('title') or ''), norm(row(c, 'procOutdatedTitle')), 'and the title says it was read under an earlier cycle', what='title')
     c.ok(opts.index(old) < len(opts) - 1, f'order {opts}', 'the outdated one is before the X-Plane one')
 
 

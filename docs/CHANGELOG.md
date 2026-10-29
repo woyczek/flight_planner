@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: an outdated procedure shows ⌛ instead of the word "outdated"** (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4;
+  case F13) — greyed on the computer, with a tooltip "Read under an earlier cycle: to read again"; and "Wait n s before the next
+  reading (EAD Basic)" when EAD Basic is asked again too soon.
 - **Map: an outdated procedure is marked "⌛", never by the word** (`modules/maps/procs.js`, `coverage.js`, `sheet_view.js`,
   `texts.js`, help ×4; decision of 29 Oct after the user's word "plutôt que « périmé », un symbole court") — the trace's label
   reads "SID NAME ⌛" (the symbol in grey), the aerodrome card shows ⌛ in place of the word (its meaning in the tooltip),

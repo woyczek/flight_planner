@@ -4,6 +4,14 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — ⌛ instead of « périmé »; `too-soon`; synchronised procedures** (user: « plutôt que “périmé”, un symbole court,
+  peut-être une couleur (gris ?) »; Simplification): an outdated procedure ends with ` ⌛` (`PROC_OLD`) in the lists, its
+  transitions and the change notifications (`procNameOf`), with `class="outdated"` (`color: var(--sog-muted)`; a phone's native
+  picker ignores it, the symbol carries the meaning) and the title ×4 « Lue sous un cycle antérieur : à relire »; `TX.procOutdated`
+  is gone. aerodb's `too-soon` refusal (f9f66de6f, `wait` in s) gets its text ×4. aerodb's `change { procedures: ICAO, coverage:
+  true }` (cce670d28, a proc/ file arrived by synchronisation) was already covered by `onProcChange` (any `procedures` key empties
+  the whole cache; the flight's aerodrome reads its procedures again): checked, no code change. Case F13 checks the symbol, the
+  class and the title.
 - **29 Oct 2026 — a procedure without a name** (Simplification): a record read with `name: null` (id `….STAR.NONAME.…`) is
   labelled by its kind, « STAR sans nom » / « SID sans nom » / « Approche sans nom » ×4 (`TX.procUnnamed`), never « NONAME »
   taken from the id.
