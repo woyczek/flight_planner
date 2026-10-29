@@ -864,6 +864,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 22 | AeroDB: `source.url` of the eAIP records (d88463e51) | acceptable, one point to fix |
 | 23 | Data module « Publier » (3355c5e24) | acceptable, one note on the result's shape |
 | 24 | Frame: claim, `/cancel`, sync on gesture, named applications, frozen references (56ab4fd94, f70eba426, a215d47bd, e3870b354, 802e6856f) | acceptable, two notes |
+| 25 | AeroDB path B (2dbfea12a) and `source.url` host check (97bf5577f) | acceptable; points of 18 and 22 settled |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1146,7 +1147,21 @@ conflict » when there are some. Return counts, or count lists in `publishOutcom
   show; in `_run`, a `BaseException` crossing the verb leaves `state` at `running` and no `ended` (the `finally` empties
   the box only): set `error` and `ended` there when the state is still `running`.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
+**25. AeroDB path B (2dbfea12a) and `source.url` (97bf5577f) — acceptable; the points of 18 and 22 are settled.**
+- The browser receives `<launcher>/frame/aerodb/build/headless.html#job=<id>` and nothing else (no token, no parameter, no
+  start file); `job.offer()` is made before the browser starts and the claim is single (24); `_same_origin()` is unchanged,
+  with no exception: a site that navigates to the build page is refused.
+- `headless.js` removes the fragment first, checks the job id before claiming, then checks the whole answer before any
+  read: same job, token shape, cycle, zones (pattern, 60 at most, known to the zone list), personal sources (pattern, 10
+  at most), inputs (5000 at most, each part under the `SAFE_NAME` rule: no `.`, `..`, `\` or `:`, 400 signs at most).
+- No token in the command line or the log; WebRTC limited to the proxy; `taskkill` found through `GetSystemDirectoryW`;
+  `parallel` refused and the per-zone mode removed; `purge_stale()` at loading removes only `sog-base-*` folders of the
+  temporary folder older than one hour, never a link or a junction; `'use strict'` at the head of `sia_base.js`
+  (`aerodb.js` already had it).
+- `source.url`: the base must be under `https://www.sia.aviation-civile.gouv.fr/` (no `..`), the ICAO key
+  `^[A-Z0-9]{4}$`, the name a simple PDF name; otherwise no link.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25); the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
