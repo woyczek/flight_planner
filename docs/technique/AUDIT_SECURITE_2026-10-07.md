@@ -850,6 +850,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 8 | Fuel: procedure rules in `frame/lib/procedures.js` (48afe2544) | acceptable |
 | 9 | Launcher: one route table with its audience `lan` / `poste` (3073048c7) | acceptable, one older point to fix |
 | 10 | `POST /__setup/regen/job/put` for the base builder (5e785599c) | acceptable, two notes |
+| 11 | Data synchronisation: building seen by file times, settle names files, realpath (97e052251) | acceptable |
+| 12 | Flown track `progress.actual.trail` (ff51be774) | acceptable in code; privacy decision for the user, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -954,7 +956,30 @@ returns `None` after its delay or on cancel. A put cannot reach any job but the 
 - `_inbox` is only emptied by `take()`: a put after a take, or zones never taken, keep up to 64 MB each in memory while the
   job stays the last one; empty it when the job ends and refuse a put of a zone already taken (with V3 Frame).
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9 and 10 are with V3 Frame, AeroDB and BUGS SOG.
+**11. Synchronisation, follow-up (97e052251) — acceptable.** `building(data)` reads the times of the uncommitted files
+of `sia/base` (10 minutes), whoever wrote them, and `sync_gesture` combines it with the launcher's job; a deleted file is
+skipped, a file time in the future keeps the base on the workstation (the safe side). A `settle()` that cannot cancel
+names up to 20 relative paths; a paired device still gets the generic message. `clean_text` also replaces the real path
+(`realpath`), both separators.
+
+**12. Flown track (ff51be774) — acceptable in code; a privacy decision for the user; one note.**
+- `frame/lib/trail.js` is a pure rule; the frame writes the track inside `progress.actual` of the current flight, which
+  goes to the data repository with it; `pilot/ANON/` stays local (`LOCAL_ONLY`).
+- **More than before:** `progress.actual` carried one point (the last position), and the repository's history only kept
+  the positions present at each synchronisation. Each version now carries the whole track of the flight: up to 500
+  points (one per NM or per minute, turns kept), latitude and longitude to 1e-5 (about 1 m), the altitude, and the
+  seconds since `started.at`, so the absolute time of each point. « Erased when the flight stops » only holds for the
+  file: the track stays in the data repository's Git history, read by the whole group.
+- Decision for tonight (V3 Frame): precision 1e-3 (about 100 m); the track resumed only when `actual.trailFrom` equals
+  `started.at` exactly; a privacy line in the help and in `frame/DECISIONS.md` (the track of the current flight is shared
+  with the group, like the position, and stays in the repository's history). The choice between keeping it shared and
+  keeping it on the pilot's workstation only (as `pilot/ANON/`, the position alone published) is put to the user on
+  30 October. In every case, no track is sent to an outside service (site, IVAO / VATSIM) without an explicit gesture.
+- Note: the resumption compared `prev.at >= cur.started.at` as strings; two ISO forms (`+02:00` against `Z`,
+  milliseconds) can mislead it and resume the track of another flight, whose seconds count from another start. Fixed by
+  the exact `trailFrom` comparison above.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10 and 12 are with V3 Frame, AeroDB and BUGS SOG; the track's sharing is the user's decision.
 
 ## Appendix A — Hosts contacted
 
