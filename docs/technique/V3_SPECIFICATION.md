@@ -717,6 +717,22 @@ redesigned for touch at that point.
          `#fuel?focus=arr&star=ID&trans=ID&app=ID` (or `focus=dep&rwy=…&sid=…`) and **Fuel writes** `route.procedures`
          (sole writer, § 10.20) and says what changed; "Annuler" returns without a proposal. The mode ends on any other
          navigation. No new module, no event between modules: the address carries the proposal.
+         **Refinements (after the Map session's reading, 29 Oct morning)**: (1) volume — LFPO holds 94 SIDs: runway
+         chips head the list ("06 · 07 · 20 · 24 · 25 · toutes", a filter, the chosen runway by default, else all, ≤ 7
+         chips), transitions are drawn only for the highlighted procedure, and one cartouche per SID exit point or STAR
+         entry point stacks the names ("MAN1A / MAN1B") instead of one cartouche per trace; (2) the choices accumulate in
+         the mode — arrival: STAR, then approach (⚠ recomputed on the STAR taken), then transition; departure: runway,
+         then SID, then transition — three step chips at the top of the sheet show the family listed, "Choisir" on a row
+         only retains it (bold), one button "Valider" returns to Fuel with the whole proposal, "Annuler" or the browser's
+         back returns without; (3) the proposal is single-use: Fuel consumes `rwy`, `sid`, `star`, `trans`, `app`,
+         `appTrans` from the address at mount or address change, writes, then rewrites the address without them
+         (replace, not push); (4) the double view (≥ 980 px, Fuel and the Map side by side): the Map pane receives the
+         `choose` request, and "Valider" sets the **main** address to `#fuel?focus=…&…`, which Fuel reads as above; the
+         frame session confirms the pane mechanism (no event between modules); (5) dimming: a class on the container dims
+         the base map, the Map's own layers (airspaces, airways, aerodromes) are dimmed in the draw loop (reduced opacity
+         outside the procedures), since they share the procedures' canvas; (6) on the phone the sheet takes about 45 % of
+         the height and the camera keeps the procedures above it; (7) a second tap on the highlighted row only deselects
+         it; "Aucune" is an explicit first row, since `null` is a choice.
        - **Lots** (after the economy mode): fuel — markers and flat lists, conflict kept and notified, the two buttons,
          reading the proposal from the address (tests F); maps — the choose mode, dimming, cartouches, list, proposal
          address (tests D); aerodb — nothing new (`procedures()` already serves runways and transitions). Help ×4 per lot.
