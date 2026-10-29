@@ -150,7 +150,7 @@ report and maps never write nor erase it.
   `{ dep: { rwy, sid, trans }, arr: { rwy, star, trans, app, appTrans }, by: 'fuel', at }`. `rwy` is a runway number (`"03"`,
   `"13R"`), the others are procedure identifiers (`LFRS.SID.NTS1A.RW03.NONE`; `trans` / `appTrans` the identifier of the
   transition record); `null` = « aucune », the pilot's own choice; a field absent = not chosen; `at` is the ISO time of the
-  choice (`merge` sets `updated_at` on the record). **Fuel is the only writer** (rows of the step Flight, the arrival row of
+  choice (`merge` sets `updated_at` on the record). **Fuel is the only writer** (rows of the step Route, the arrival row of
   the step Departure, "Load my OFP"); the Map and every reader read it **only through `proceduresOf(flight)`**
   (`frame/lib/current_flight.js`), which returns the v2 view, migrates the old `{ sid, star }` (objects of the last OFP) and
   returns `{}` (not chosen) for a side whose aerodrome no longer matches `route.dep` / `route.arr`. Migration: nothing is

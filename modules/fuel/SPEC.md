@@ -259,7 +259,8 @@ mount. Inside a mount, the two buttons switch as before.
   the flight's date, with its quick buttons "+30" and "Now"; hint: the quote's weather and the Map are read at this date), the one-line aircraft — no default sheet: a flight without
   aircraft takes the last one chosen on the device, `cache/fuel/last_aircraft.json`, shown first in the empty search
   — level), **2 Route** (the route text, the read distance, the
-  folded points, "Last SimBrief OFP", "Show the map"), **3 Weather** (wind, ISA and its METAR proposal, real weather,
+  folded points, "Last SimBrief OFP", "Show the map", then the **Procedures** card: the Departure and Arrival rows, see block 0 — a SID or
+  a STAR belongs to the route, not to the flight, 29 Oct 2026), **3 Weather** (wind, ISA and its METAR proposal, real weather,
   the aerodromes of the corridor), **4 Result** (fr "Résultat", de "Ergebnis", es "Resultado"; it was "Quote", the name of the first tab: renamed on 24 Oct 2026; density altitude, level decision with the climb goal, "Open in",
   details, climb instructions, settings), **5 Departure** (a one-page summary: aircraft, normalised route, level and
   steps, wind and source, block fuel; "Start the flight" writes `current_flight.started = { at, by: 'fuel' }` and
@@ -272,9 +273,10 @@ mount. Inside a mount, the two buttons switch as before.
   (`ctx.layout.with === 'maps'`, followed through the frame's `frame-layout` event). Arriving with
   `ctx.query.focus === 'route'` (the Map's "Edit the route", `#fuel?from=maps&focus=route`) opens step 2 with the
   route field focused; `ctx.query.focus === 'arr'` (the Map's "Change" on the arrival, `#fuel?focus=arr`) opens the step that
-  holds the arrival row — **1 Flight** before the start, **5 Departure** after — and focuses its first select. The blocks below
+  holds the arrival row — **2 Route** before the start, **5 Departure** after — and focuses its first select. The blocks below
   keep their former description:
-  0. **Runway, SID, STAR and approach** (28 Oct 2026, V3_SPECIFICATION § 10.20), in step 1 after the aerodromes: two short rows,
+  0. **Runway, SID, STAR and approach** (28 Oct 2026, V3_SPECIFICATION § 10.20), at the end of step 2 Route (a card after the route text, the points and the OFP row; moved from step 1 Flight on 29 Oct 2026: « star et sid
+     sont route, pas vol »; the box is `data-procbox="route"`, emptied once the flight has started): two short rows,
      "Departure: runway · SID · transition" and "Arrival: runway · STAR · transition · approach" (+ the approach transition
      select, only when the chosen approach has transitions). Each is a `select` filled by `aerodb.runways(icao)` and
      one `aerodb.procedures(icao)` (all kinds; fuel sorts them): a list shows ALL the procedures of the aerodrome (the

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the Departure and Arrival procedure rows are in step 2 Route, not in step 1 Flight** (`modules/fuel/module.js`, SPEC,
+  INTEGRATION, DECISIONS; help ×4; cases F11-F26) — user: « star et sid sont “route”, pas “vol” »; a card at the end of the Route step before
+  the start, still in the Departure step after; `#fuel?focus=arr` opens the Route step before the start.
+
 - **Fuel: ⚠ only for a runway conflict** (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4; F21, F26) — a STAR that does not
   join the approach is no longer marked (real STARs end in a hold or radar vectors).
 - **Fuel: a procedure in conflict is marked ⚠ (orange) and stays selectable; the lists are flat** (`modules/fuel/module.js`

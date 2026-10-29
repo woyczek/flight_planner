@@ -414,9 +414,19 @@ def proc_flight(procs=None, started=False, actual=None):
     return docs
 
 
+def to_step(c, n):
+    """Shows the step `n` (0 Flight ... 4 Departure) of the plan when it is not the one on screen (a phone shows one step at a time)."""
+    if not c.shown(f'{FUEL} section.fu-step[data-s="{n}"]'):
+        c.tap(f'{FUEL} .fu-steps button[data-step="{n}"]')
+
+
 def open_proc(c, target='fuel', procs=None, started=False, actual=None, aero_extra=None):
-    """Opens fuel on the planned flight with the seeded procedures; the published base knows the route's points (and `aero_extra`)."""
+    """Opens fuel on the planned flight with the seeded procedures; the published base knows the route's points (and `aero_extra`).  Before the
+    start the procedure rows are in the step Route (user, 29 Oct: « star et sid sont route, pas vol »): the step is shown, unless the address
+    asks for a step (focus=)."""
     c.open(target, docs=proc_docs() + proc_flight(procs, started, actual), airfields=True, aero_extra=aero_extra)
+    if not started and 'focus=' not in target:
+        to_step(c, 1)
 
 
 def sel_opts(c, k):
@@ -450,6 +460,12 @@ def f11(c):
     wait_rows(c, 'arr')
     heads = c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc] .fu-prochead')].map(e => e.textContent.trim())")
     c.eq(heads, [row(c, 'dep'), row(c, 'arr')], 'the rows are headed Departure and Arrival in the language of the run', what='row heads')
+    # the rows are in the step Route (second step, after the route text, the points and the OFP row), not in the step Flight (user, 29 Oct)
+    c.eq(c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc]')].map(r => r.closest('section.fu-step').dataset.s)"), ['1', '1'],
+         'the Departure and Arrival rows are in step 2 Route', what='steps carrying the rows')
+    c.eq(c.count(f'{FUEL} section.fu-step[data-s="0"] [data-proc]'), 0, 'and none in step 1 Flight', what='rows in the Flight step')
+    c.ok(c.js("(() => { const card = document.querySelector('[data-module=fuel] [data-procbox=route]').closest('.f-card'); const sec = card.closest('section'); const cards = [...sec.querySelectorAll(':scope > .f-card')]; return cards.at(-1) === card && cards.length === 2 && cards[0].dataset.block === 'route' })()"),
+         'card not last', 'the card is the last of the Route step, after the route and the OFP row')
     c.eq(c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc=dep] select')].map(s => s.dataset.k)"), ['p-dep-rwy', 'p-dep-sid'],
          'Departure: runway, SID (the transition select comes with a SID that has transitions)', what='departure selects')
     c.eq(c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc=arr] select')].map(s => s.dataset.k)"), ['p-arr-rwy', 'p-arr-star', 'p-arr-app'],
@@ -514,7 +530,7 @@ def f13(c):
 def f14(c):
     open_proc(c)
     wait_rows(c)
-    c.page.fill(f'{FUEL} input[data-k="dep"]', 'LFQQ')
+    set_icao(c, 'dep', 'LFQQ')
     c.until("!!document.querySelector('[data-module=fuel] [data-proc=dep] [data-do=procfetch]')", what='the departure row offers the reading')
     txt = norm(c.text(f'{FUEL} [data-proc="dep"]') or '')
     c.ok(norm(row(c, 'procNoData')) in txt, f'row {txt!r}', '"aucune procédure publiée" in the language of the run')
@@ -578,7 +594,7 @@ def f16(c):
     c.tap(f'{FUEL} .fu-steps button[data-step="4"]')
     c.until("!!document.querySelector('[data-module=fuel] [data-block=procs]:not(.fu-hide) [data-proc=arr] select')", timeout=10000,
             what='after the start the Departure step carries the arrival row')
-    c.eq(c.count(f'{FUEL} [data-procbox="vol"] select'), 0, 'the step Vol no longer carries the rows', what='rows in the Vol step')
+    c.eq(c.count(f'{FUEL} [data-procbox="route"] select'), 0, 'the step Route no longer carries the rows after the start', what='rows in the Route step')
     c.ok(c.count(f'{FUEL} [data-proc="dep"] select') >= 1, 'no departure select', 'the departure row is editable while the SID is not passed')
     before, bpath = d['quote'], d['profile']['path']
     c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', '__none')
@@ -602,16 +618,16 @@ def f16(c):
 
 
 @case('F17', '#fuel?focus=arr focuses the arrival row', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
-      rule='V3 spec 10.20: the Map\'s "Changer" opens the step with the arrival row (Vol before the start, Départ after) and focuses its first select')
+      rule='V3 spec 10.20: the Map\'s "Changer" opens the step with the arrival row (Route before the start, Départ after) and focuses its first select')
 def f17(c):
     open_proc(c, target='fuel?focus=arr', procs=V2_PROCS)
     c.until("document.activeElement && document.activeElement.dataset && document.activeElement.dataset.k === 'p-arr-rwy'", timeout=15000,
             what='the first select of the arrival row has the focus')
-    c.ok(c.shown('[data-module="fuel"] [data-procbox="vol"]'), 'row hidden', 'the step Vol is the one shown')
+    c.until("(() => { const e = document.querySelector('[data-module=fuel] [data-procbox=route]'); return !!e && e.offsetParent !== null })()", timeout=6000, what='the step Route is the one shown')
     open_proc(c, target='fuel?focus=arr', procs=V2_PROCS, started=True)
     c.until("document.activeElement && document.activeElement.dataset && document.activeElement.dataset.k === 'p-arr-rwy'", timeout=15000,
             what='after the start the Departure step is opened and its arrival row focused')
-    c.ok(c.shown('[data-module="fuel"] [data-procbox="start"]'), 'row hidden', 'the Departure step is the one shown')
+    c.until("(() => { const e = document.querySelector('[data-module=fuel] [data-procbox=start]'); return !!e && e.offsetParent !== null })()", timeout=6000, what='the Departure step is the one shown')
 
 
 @case('F18', 'route.procedures v1 is read, not rewritten at mount; v2 at the next write', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
@@ -654,6 +670,7 @@ def f19(c):
     procs = {'dep': {'sid': 'LFRS.SID.NTS1A.RW03.NONE'}, 'arr': {'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'app': 'LFML.APP.I13R.RW13R.NONE'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'}
     c.open('fuel', docs=proc_docs() + proc_flight(procs), airfields=True, identity={'simbrief': '123456'})
     wait_rows(c)
+    to_step(c, 1)
     c.page.route('**/www.simbrief.com/**', lambda r: r.fulfill(status=200, content_type='application/json', headers={'Access-Control-Allow-Origin': '*'}, body=json.dumps(ofp)))
     c.tap(f'{FUEL} .fu-steps button[data-step="1"]')
     c.tap(f'{FUEL} [data-do="simbrief"]')
@@ -672,8 +689,10 @@ def f19(c):
 
 
 def set_icao(c, side, icao):
-    """Types an aerodrome in the departure or arrival field of the route."""
+    """Types an aerodrome in the departure or arrival field (step Flight), then goes back to the step Route where the rows are."""
+    to_step(c, 0)
     c.page.fill(f'{FUEL} input[data-k="{side}"]', icao)
+    to_step(c, 1)
 
 
 def opt_groups(c, k):

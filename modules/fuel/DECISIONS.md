@@ -4,6 +4,14 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — procedure rows in step Route** (user: « star et sid sont “route”, pas “vol” »): before the start the Departure and
+  Arrival rows leave step 1 Flight (after the aerodromes) for a card « Procédures » at the end of step 2 Route, after the route
+  text, the points and the SimBrief / OFP row (`data-block="procrows"`, box `data-procbox="route"` instead of `"vol"`;
+  `renderProcRows` fills it before the start and empties it after, the card is then hidden). After « Start the flight » nothing
+  changes: the rows stay in the « Procédures » card of step 5 Departure. `#fuel?focus=arr` opens step 2 before the start and 5
+  after (it was 1). `focus=dep` is not handled by the module (only `route` and `arr`): not added. Changing an aerodrome (step 1) and
+  choosing its procedures (step 2) are now two steps, as the route already is. Cases F11 (rows in step 2, none in step 1, the card is
+  last), F14-F26 (the helper `to_step`, `set_icao` goes back to step 2).
 - **29 Oct 2026 — ⚠ for the runway only** (Simplification, § 10.23, after f3354a593 marked almost every real STAR: LFPO's STAR
   of runway 20 ends at a hold, the RNP 20 records start elsewhere): `conflictsOf` keeps the runway (a SID, STAR or approach that
   does not serve the chosen runway; with no runway chosen, a STAR serving no runway of the chosen approach, `procConflictStarApp`)

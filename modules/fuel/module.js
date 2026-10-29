@@ -1620,18 +1620,20 @@ function depPassed() {
 }
 /** Clé de ce que montrent les lignes : choix, terrains, vol démarré, départ passé ; changée, refresh les redessine. */
 const rowsKey = () => JSON.stringify([procsKey(), !!S.flight.started?.at, depPassed()]);
-/** Dessine les lignes de procédures : à Vol avant le départ, à Départ une fois le vol démarré (l'arrivée toujours modifiable, le
+/** Dessine les lignes de procédures : à Route avant le départ, à Départ une fois le vol démarré (l'arrivée toujours modifiable, le
  *  départ tant que la SID n'est pas passée). Asynchrone (aerodb) ; la dernière demande seule est dessinée, le champ au clavier gardé. */
 async function renderProcRows() {
   const s = S;
   if (!S?.body || S.view !== 'plan') return;
   const seq = S.procSeq = (S.procSeq || 0) + 1,
     started = !!S.flight.started?.at,
-    vol = S.body.querySelector('[data-procbox="vol"]'),
+    route = S.body.querySelector('[data-procbox="route"]'),
     start = S.body.querySelector('[data-procbox="start"]'),
-    box = started ? start : vol,
-    other = started ? vol : start;
+    box = started ? start : route,
+    other = started ? route : start;
   S.body.querySelector('[data-block="procs"]')?.classList.toggle('fu-hide', !started);
+  S.body.querySelector('[data-block="procrows"]')?.classList.toggle('fu-hide',
+    started); // la carte de l'étape Route n'existe qu'avant le départ
   if (other) other.innerHTML = '';
   S.rowsKey = rowsKey();
   if (!box) return;
@@ -2178,7 +2180,6 @@ function renderPlanBody() {
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
       <div class="f-grid fu-ads">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
-      <div class="fu-procbox" data-procbox="vol"></div>
       <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(isoToWhen(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
@@ -2199,7 +2200,8 @@ function renderPlanBody() {
       <div class="f-row fu-addpt"><input data-k="addpt" autocapitalize="characters" autocomplete="off" placeholder="${esc(tt(TX.addPt))}" aria-label="${esc(tt(TX.addPt))}"><button type="button" data-do="addpt" aria-label="${esc(tt(TX.add))}">${svg('plus')}</button></div>
       <p class="f-muted">${esc(tt(TX.ptsHint))}</p></details>
       <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}<button type="button" data-do="showmap"${S.ctx.layout?.with === 'maps' ? ' class="fu-hide"' : ''}>${svg('map')} ${esc(tt(TX.showMap))}</button></div>
-    </div>`)}
+    </div>
+    <div class="f-card" data-block="procrows"><h2>${esc(tt(TX.procTitle))}</h2><div class="fu-procbox" data-procbox="route"></div></div>`)}
   ${sec(2, `<div class="f-card" data-block="level"><h2>${esc(tt(TX.stepNames[2]))}</h2>
       <div class="f-grid fu-g3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
       <p class="f-muted" data-windsrc></p>
@@ -4696,9 +4698,9 @@ export async function mount(el, ctx) {
   for (const path of OLD_WEATHER) ctx.data.remove?.(path)?.catch?.(() => {});
   // pas de la préparation : celui gardé, ou Route quand la Carte envoie « Modifier la route » (#fuel?focus=route)
   S.focusRoute = ctx.query?.focus === 'route';
-  // ou le pas qui porte la ligne Arrivée (Vol avant le départ, Départ après) quand la Carte envoie « Changer » (#fuel?focus=arr)
+  // ou le pas qui porte la ligne Arrivée (Route avant le départ, Départ après) quand la Carte envoie « Changer » (#fuel?focus=arr)
   S.focusArr = ctx.query?.focus === 'arr';
-  S.step = S.focusRoute ? 1 : S.focusArr ? (kept.started?.at ? 4 : 0) : Math.max(0, Math.min(4, +S.ui.step || 0));
+  S.step = S.focusRoute ? 1 : S.focusArr ? (kept.started?.at ? 4 : 1) : Math.max(0, Math.min(4, +S.ui.step || 0));
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
     <div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>
     <div data-body></div>`;
