@@ -4,6 +4,9 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — control characters out of the .pln** (security review of 99d28acd0): `escText` of frame/lib/fms.js removes the
+  characters XML 1.0 forbids (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F) before escaping, so a damaged aerodrome or point
+  name never makes a file MSFS refuses (`escAttr` goes through it). Bench fms.html: one more check (fails without the change).
 - **29 Oct 2026 — flight plan export to the simulators, first step: the download** (V3 § 10.28, user: « Prévoir un export .fms à
   minima (deux formats pour xplane), voire le pousser direct dans le dossier ad hoc sur X-Plane. Prévoir un export msfs2024/2020 »).
   Pure writers in `frame/lib/fms.js` (`toFmsV3`, `toFms1100`, `toPln`, `fileName`, `exportOf`, `airacOf`, `lla`; bench

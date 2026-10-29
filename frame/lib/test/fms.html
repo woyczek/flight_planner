@@ -336,6 +336,18 @@
     }
   }, path, opts);
   ck('pln : LowAlt sous FL180', doc(low).querySelector('RouteType').textContent === 'LowAlt');
+  // un nom abîmé (caractères de contrôle interdits en XML 1.0) : retirés, le document reste bien formé (la tabulation est permise)
+  const bad = toPln(flight, path, {
+      ...opts,
+      names: {
+        ...opts.names,
+        LFXA: 'Ab\u0001c\u0008d\u000Be\u001Ff \u0009g'
+      }
+    }),
+    dbad = doc(bad);
+  ck('pln : caractères de contrôle retirés des noms, XML bien formé', !dbad.querySelector('parsererror') && dbad.querySelector(
+      'DepartureName').textContent === 'Abcdef \u0009g' && !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(bad), dbad.querySelector('DepartureName')
+    ?.textContent);
 
   // ---------------------------------------------------------------- nom du fichier, cycle, cas limites
   ck('fileName : départ-arrivée_jour.ext, jour de planned_at', fileName(flight, 'fms') === 'LFXA-EIXB_2026-10-30.fms' && fileName(flight,

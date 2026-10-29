@@ -33,8 +33,10 @@ const n6 = v => {
 const ident = s => String(s ?? '').trim().toUpperCase().replace(/\s+/g, '');
 /** Nom de procédure sans espaces ni points (« ILS Z RWY 23 » → « ILSZRWY23 »), en majuscules. */
 const clean = s => String(s ?? '').toUpperCase().replace(/[\s.]+/g, '');
-/** Texte XML : & < > échappés (les guillemets des coordonnées DMS s'écrivent tels quels, comme MSFS). */
-const escText = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+/** Texte XML : les caractères de contrôle interdits en XML 1.0 retirés (un nom abîmé ferait un .pln que MSFS refuse ; relecture de
+ *  sécurité de 99d28acd0), puis & < > échappés (les guillemets des coordonnées DMS s'écrivent tels quels, comme MSFS). */
+const escText = s => String(s ?? '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;');
 /** Valeur d'attribut XML : en plus, les guillemets et les apostrophes. */
 const escAttr = s => escText(s).replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
