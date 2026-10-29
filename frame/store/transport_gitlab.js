@@ -21,7 +21,9 @@
 
   function gitlab(c) {
     if (!c?.repo || !c.token) throw new Error('gitlab transport: project and token required');
-    const api = (c.api || 'https://gitlab.com/api/v4').replace(/\/$/, ''),
+    // l'api de l'instance, de la seule forme https://hôte/api/v4 : jamais un jeton vers une autre forme d'adresse
+    if (!/^https:\/\/[^/\s]+\/api\/v4$/.test(String(c.api || ''))) throw new Error('gitlab transport: api must be https://<host>/api/v4');
+    const api = c.api,
       branch = c.branch || 'main',
       project = `${api}/projects/${encodeURIComponent(c.repo)}`,
       who = () => {
@@ -41,6 +43,9 @@
         r = await fetch(url, {
           method,
           cache: 'no-store',
+          // jamais suivre une redirection : Fetch ne retire qu'Authorization d'une redirection vers une autre origine, pas
+          // PRIVATE-TOKEN
+          redirect: 'error',
           headers: {
             'PRIVATE-TOKEN': c.token,
             ...(body ? {

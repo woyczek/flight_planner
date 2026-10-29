@@ -30,9 +30,11 @@
     const u = /^https:\/\/([^/\s]+)\/(.+)$/.exec(repo);
     if (u) {
       provider = u[1].toLowerCase() === 'github.com' ? 'github' : 'gitlab';
-      if (provider === 'gitlab' && !api) api = `https://${u[1]}/api/v4`;
+      if (provider === 'gitlab') api = `https://${u[1].toLowerCase()}/api/v4`; // l'hôte collé, jamais un api d'avant
       repo = u[2];
     }
+    // GitLab : une api de la seule forme https://hôte/api/v4 (sinon ignorée : le transport refuse un réglage sans elle)
+    if (provider === 'gitlab' && !GITLAB_API.test(api)) api = '';
     return {
       repo,
       branch: String(c.branch || 'main').trim() || 'main',
@@ -45,6 +47,25 @@
       } : {})
     };
   };
+  const GITLAB_API = /^https:\/\/[^/\s]+\/api\/v4$/;
+  /** Cible d'un réglage : fournisseur, origine de l'API, projet — un jeton ne vaut que pour la sienne. */
+  const target = c => `${c?.provider === 'gitlab' ? 'gitlab' : 'github'}|${c?.provider === 'gitlab' ? String(c.api || '').toLowerCase() :
+    (c?.api || 'https://api.github.com').replace(/\/$/, '').toLowerCase()}|${String(c?.repo || '').toLowerCase()}`;
+  /** Réglage de la carte d'accès (adresse collée, jeton peut-être vide) → réglage complet : le jeton enregistré n'est repris
+   *  que si le fournisseur, l'origine de l'API et le projet sont ceux du réglage enregistré (jamais vers un nouvel hôte :
+   *  un lien d'invitation malveillant ne fait pas partir l'ancien jeton) ; sinon token vide et newTarget (l'hôte à dire). */
+  const resolve = c => {
+    const x = clean(c || {});
+    if (x.token) return x;
+    if (held?.token && target(held) === target(x)) return {
+      ...x,
+      token: held.token
+    };
+    return {
+      ...x,
+      newTarget: x.provider === 'gitlab' ? String(x.api || '').replace(/\/api\/v4$/, '').replace(/^https:\/\//, '') : 'github.com'
+    };
+  };
   /** Réglage gardé { repo, branch, token, api } ; null s'il n'y en a pas. */
   const config = () => held?.repo && held.token ? {
     ...held
@@ -53,6 +74,7 @@
     held = c && typeof c === 'object' ? clean(c) : null;
   };
   const save = c => {
+    if (!clean(c || {}).token) throw new Error('github.save: token required (resolve() first)'); // jamais un réglage sans jeton
     hold(c);
     sink?.(held ? {
       ...held
@@ -353,6 +375,7 @@
   github.clear = clear;
   github.hold = hold;
   github.clean = clean; // réglage tel que la carte d'accès le donne (adresse collée) → réglage du transport
+  github.resolve = resolve; // … avec le jeton enregistré seulement pour la même cible
   github.legacy = legacy;
   github.persist = fn => {
     sink = fn;

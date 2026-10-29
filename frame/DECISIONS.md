@@ -1735,3 +1735,10 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   welcome card (« Join the airline · Prepare a flight · Write a report ») showed. An application declares its floor
   (`level`: Maintenance runs at Complet whatever the level chosen for Pilot) and whether it shows Pilot's welcome
   (`welcome: false`; Maintenance's own help line later). Noreg A36.
+- **29 Oct 2026 — G1, security review (blocking, fixed before any real trial)**: the access card reused the saved token
+  when a new project address was pasted with the token field left empty — an old GitLab or even GitHub token would have
+  left in `PRIVATE-TOKEN` for a new host (the malicious invitation link). `FD.github.resolve(cfg)` reuses the saved token
+  only for the same target (provider, origin of the API, project), otherwise no token and « new host: <host> — paste the
+  token for it »; `save()` refuses a setting without a token (the check is in the transport, not only in the card). The
+  GitLab transport never follows a redirect (`redirect: 'error'`: Fetch drops only `Authorization` across origins, not
+  `PRIVATE-TOKEN`) and takes an `api` of the form `https://<host>/api/v4` only (`clean` drops any other). Bench A38.

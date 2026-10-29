@@ -51,6 +51,11 @@
       'Repository erreichbar, Zweig {b} gefunden.',
       'Repositorio accesible, rama {b} encontrada.'
     ],
+    newTarget: ['Nouvel hôte ou nouveau dépôt : {h} — collez le jeton pour celui-ci (l’ancien jeton n’y est jamais envoyé).',
+      'New host or new repository: {h} — paste the token for it (the previous token is never sent there).',
+      'Neuer Host oder neues Repository: {h} — fügen Sie das Token dafür ein (das bisherige Token wird nie dorthin gesendet).',
+      'Nuevo alojamiento o nuevo repositorio: {h} — pegue el token para este (el token anterior nunca se envía allí).'
+    ],
     needRepo: ['Dépôt et jeton nécessaires.', 'Repository and token needed.', 'Repository und Token nötig.',
       'Repositorio y token necesarios.'
     ],
@@ -160,17 +165,20 @@
     } = env;
     if (act === 'access' || act === 'test') {
       const r = card('access'),
-        // adresse d'un projet GitLab collée : l'instance et son api en viennent (FD.github.clean) ; jamais l'api d'un réglage
-        // GitLab précédent reprise pour une autre adresse
-        cfg = FD.github.clean({
+        // adresse d'un projet collée : l'instance et son api en viennent ; le jeton enregistré n'est repris que pour la même
+        // cible (FD.github.resolve : fournisseur, origine de l'API, projet), jamais vers un nouvel hôte
+        cfg = FD.github.resolve({
           repo: val('repo', r),
           branch: val('branch', r) || 'main',
-          token: val('token', r) || gh?.token || '',
+          token: val('token', r),
           ...(gh?.api && gh.provider !== 'gitlab' ? {
             api: gh.api
           } : {})
         });
-      if (!cfg.repo || !cfg.token) return say('access', t(T.needRepo));
+      if (!cfg.repo) return say('access', t(T.needRepo));
+      if (!cfg.token) return say('access', gh ? t(T.newTarget, {
+        h: cfg.newTarget
+      }) : t(T.needRepo));
       if (act === 'test') {
         say('access', '…', 'ok');
         try {

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: a data token never goes to a new host** (`frame/store/transport_github.js`, `frame/store/transport_gitlab.js`,
+  `frame/settings/access.js`; frame DECISIONS; bench A38): the saved token is reused only for the same provider, host and
+  project; pasting another address asks for its token; the GitLab transport follows no redirect and accepts only an
+  `https://<host>/api/v4` address.
 - **Frame: Maintenance at its own level, without Pilot's welcome** (`frame/app.js`; frame DECISIONS; noreg A36): the
   Maintenance application runs at the Complet level whatever the level chosen for Pilot, and no longer shows Pilot's
   first-visit tutorials.

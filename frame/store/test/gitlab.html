@@ -72,6 +72,7 @@
         url,
         method: init.method || 'GET',
         token: init.headers?.['PRIVATE-TOKEN'] || '',
+        redirect: init.redirect || '',
         body: init.body || ''
       });
       if (st.offline) throw new TypeError('Failed to fetch');
@@ -227,6 +228,57 @@
       ck('le jeton ne passe que par l’en-tête : jamais dans une adresse', G.st.calls.every(c => !c.url.includes('glpat')) && G.st.calls
         .every(c => c.token ===
           'glpat-test'));
+      ck('jamais une redirection suivie (redirect: error)', G.st.calls.every(c => c.redirect === 'error'));
+      // le jeton enregistré n'est repris que pour la même cible (fournisseur, origine de l'API, projet)
+      FD.github.hold({
+        repo: 'https://gitlab.example/grp/data',
+        token: 'glpat-saved'
+      });
+      const same = FD.github.resolve({
+          repo: 'https://gitlab.example/grp/data',
+          token: ''
+        }),
+        host = FD.github.resolve({
+          repo: 'https://evil.example/grp/data',
+          token: ''
+        }),
+        proj = FD.github.resolve({
+          repo: 'https://gitlab.example/grp/other',
+          token: ''
+        }),
+        gh = FD.github.resolve({
+          repo: 'grp/data',
+          token: ''
+        });
+      ck('jeton repris pour la même cible seulement', same.token === 'glpat-saved' && host.token === '' && host.newTarget ===
+        'evil.example' && proj.token ===
+        '' && gh.token === '' && gh.newTarget === 'github.com', JSON.stringify([host.newTarget, gh.newTarget]));
+      let thrown = '';
+      try {
+        FD.github.save({
+          repo: 'https://evil.example/grp/data',
+          token: ''
+        });
+      } catch (x) {
+        thrown = x.message;
+      }
+      ck('save refuse un réglage sans jeton', /token required/.test(thrown) && FD.github.config().token === 'glpat-saved');
+      FD.github.hold(null);
+      let refused = false;
+      try {
+        FD.gitlab({
+          repo: 'x/y',
+          token: 't',
+          api: 'https://gitlab.example/api/v4/../steal'
+        });
+      } catch {
+        refused = true;
+      }
+      ck('api GitLab d’une autre forme : ignorée par clean, refusée par le transport', !FD.github.clean({
+        repo: 'x/y',
+        provider: 'gitlab',
+        api: 'http://gitlab.example/api/v4'
+      }).api && refused);
       // lien « next » vers un autre hôte : jamais suivi (le jeton n'y part pas)
       G.st.evilNext = true;
       const T2 = FD.github({
