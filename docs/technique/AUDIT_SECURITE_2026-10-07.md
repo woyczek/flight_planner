@@ -854,6 +854,9 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 12 | Flown track `progress.actual.trail` (ff51be774) | acceptable in code; privacy decision for the user, one note |
 | 13 | Data module D2, read-only screen (1ce6fcc1b) | acceptable, two notes |
 | 14 | Fuel: procedures card refactored (3c98b564b, aa74300b4, 5dc40f465) | acceptable, one note |
+| 15 | Repository address without any user part in https; put once per zone (16734c42f) | acceptable, one note |
+| 16 | `FD.list` by key range, IndexedDB v2, parsed references shared (cf52ad2a2) | acceptable; shared values are mutable |
+| 17 | Flown track at ~100 m, `trailFrom`, privacy sentence (127e0b721) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1001,7 +1004,31 @@ bench page calls neither the network nor the launcher. Note: the button is looke
 flight's code (synchronised by the group): a quote in it throws in the progress callback (not an injection, the display
 stops); use `CSS.escape` or check `^[A-Z0-9]{4}$` first.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12, 13 and 14 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the track's sharing is the user's decision.
+**15. Fixes of points 9 and 10 (16734c42f) — acceptable, one note.** In https, `REMOTE_RE` admits no user part any more
+(ssh keeps `git@`); `data_repo_url` removes `[^/@\s]+@`, the token alone included; `remote_info` passes the address
+through `clean_text`. A zone is delivered once per job (`_given`, then 409), and `drop()` empties the box when the job
+ends. Note: `job.drop()` runs after `_run`'s `try / except Exception`, not in a `finally`: a `BaseException` escaping a
+verb would skip it.
+
+**16. Shared parsed references (cf52ad2a2) — acceptable; shared values are mutable.** `valueFor` gives the same parsed
+object to every reader of a `reference` (not pending), without `Object.freeze`: read-only is only a written contract
+(INTEGRATION § 4). An in-place `sort()` or `splice()`, or a computed field added to a record, by a module or by aerodb
+itself, would be seen by every other reader until the revision changes or the value is evicted. Not a security
+boundary (modules are code of the suite, same origin and trust), but a silent integrity risk; records and pending writes
+are always parsed anew, so nothing leaks into a write. Proposed: a deep freeze once at parsing (paid once per revision
+thanks to the cache, to be measured on the largest zone), or at least in the noreg runs, so that a mutation throws in
+the cases. The rest is acceptable: IndexedDB version 2 creates the `policy` index in the upgrade transaction,
+`onversionchange` closes the base (another tab does not block); `list` reads keys only (`IDBKeyRange`), never the texts;
+absent references are remembered 30 s; parsed values are capped at 48 MB, the oldest evicted.
+
+**17. Flown track, fixes (127e0b721) — acceptable, one note.** Points at 1e-3 (about 100 m), the distance threshold
+corrected for the rounding; the track resumed only when `prev.trailFrom === cur.started.at` (a rewritten `started.at`
+starts a new track: the safe side); the privacy sentence in four languages, in the information panel (several users) and
+in the help. Note for the user's choice: the current position of `progress.actual` (latitude, longitude) stays exact, as
+before, so the repository's history keeps exact positions at each synchronisation; only the track is rounded. The choice
+« shared or local » should cover both.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 17 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
