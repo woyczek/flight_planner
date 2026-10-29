@@ -296,16 +296,18 @@ class Jobs:
 
     def _run(self, job, fn, a):
         try:
-            res = fn(job, a, self.ctx)
-            job.data['state'] = 'cancelled' if job.cancelled() else 'done'
-            job.data['result'] = res
-        except Exception as e:  # le travail s'arrête, le lanceur continue : l'erreur est dite à la page, nettoyée
-            msg = clean_error(e, self.ctx)
-            job.log(f'error: {msg}')
-            job.data['state'] = 'error'
-            job.data['result'] = {'message': msg[:300]}
-        job.data['ended'] = int(time.time())
-        job.drop()  # sorties de zones non reprises : oubliées avec le travail
+            try:
+                res = fn(job, a, self.ctx)
+                job.data['state'] = 'cancelled' if job.cancelled() else 'done'
+                job.data['result'] = res
+            except Exception as e:  # le travail s'arrête, le lanceur continue : l'erreur est dite à la page, nettoyée
+                msg = clean_error(e, self.ctx)
+                job.log(f'error: {msg}')
+                job.data['state'] = 'error'
+                job.data['result'] = {'message': msg[:300]}
+            job.data['ended'] = int(time.time())
+        finally:
+            job.drop()  # sorties de zones non reprises : oubliées avec le travail, quoi qu'il arrive (même une BaseException)
         with self.lock:
             self._save()
 

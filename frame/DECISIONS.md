@@ -1694,3 +1694,11 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - The transitional entry `{ id: 'data', rail: false }` of Pilot (Sécurisation/Réglages, waiting for this lot) and its
     filter go; Réglages › Administration's line « Maintenance » opens `frame/?app=maintenance#data` in the same tab
     (`same: true` of an admin link); the L cases open Données in Maintenance (`c.open(…, app=)`).
+- **29 Oct 2026 — Security review of 16734c42f, cf52ad2a2 and 127e0b721** (coordinator):
+  - A shared `reference` value is deep-frozen when it is parsed (once per revision): a reader that sorted it or added a
+    field would have changed it for every reader until the next revision; now it throws. Measured (Chromium): a 1.2 MB
+    zone parses in 6.8 ms and freezes in 11.6 ms, a 5.6 MB one (France) 26.6 and 44.1 ms — paid once per revision.
+    The full noreg runs with it.
+  - `job.drop()` in a `finally` of the job's thread: a `BaseException` no longer skips it.
+  - `progress.actual` (`lat`, `lon`) stays exact: only the track is rounded (about 100 m); the user's question of tomorrow
+    is about both (keep them shared, or on the device only).

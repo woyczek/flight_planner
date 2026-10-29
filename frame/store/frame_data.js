@@ -419,12 +419,23 @@
   // ---------------------------------------------------------------- lecture et écriture (cache seulement)
   // valeur analysée d'une référence (base aéronautique, procédures, types : jamais écrites par un module), gardée par
   // révision : relire une zone ne relance pas JSON.parse sur ses mégaoctets ; la même valeur est rendue à chaque lecteur,
-  // en lecture seule (INTEGRATION § 4). Au plus PARSED_MAX octets de texte gardés, les plus anciennement lus partent.
+  // gelée en profondeur à l'analyse (une fois par révision) : un lecteur qui la changerait (sort, champ ajouté) lève une
+  // TypeError au lieu de changer la valeur de tous (INTEGRATION § 4). Au plus PARSED_MAX octets de texte gardés, les plus
+  // anciennement lus partent.
   const PARSED_MAX = 48e6,
     ABSENT_MS = 30e3;
   const parsed = new Map(); // chemin → { rev, value, size }
   let parsedSize = 0;
   const absent = new Map(); // chemin d'une référence absente du dépôt → heure de la lecture qui l'a dit
+  /** Gel profond d'une valeur analysée (objets et tableaux), une fois. */
+  const deepFreeze = v => {
+    if (v && typeof v === 'object' && !Object.isFrozen(v)) {
+      Object.freeze(v);
+      for (const k in v) deepFreeze(v[k]);
+    }
+    return v;
+  };
+
   function valueFor(path, e) {
     if (e.pending || !e.rev || e.policy !== 'reference') return valueOf(path, e.text);
     const m = parsed.get(path);
@@ -433,7 +444,7 @@
       parsed.set(path, m); // la plus récemment lue passe en dernier
       return m.value;
     }
-    const value = valueOf(path, e.text),
+    const value = deepFreeze(valueOf(path, e.text)),
       size = e.text?.length || 0;
     if (m) parsedSize -= m.size;
     parsed.set(path, {

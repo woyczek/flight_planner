@@ -98,8 +98,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   same as "empty". It reads keys only (29 Oct 2026: a key range on the prefix, an index of the copies' policies), never
   the files' texts: cheap, whatever the size of the cache.
 - **A `reference` file is parsed once per revision** (29 Oct 2026): `get` / `read` of the aeronautical base, procedures or
-  types give **the same value to every reader** until its revision changes — treat it as read-only (copy before changing
-  anything). A `reference` file the repository does not have is not asked again for 30 s (`read` gives null at once; a
+  types give **the same value to every reader** until its revision changes, **deep-frozen** (a `sort()` or an added field
+  throws a `TypeError`: copy before changing anything, `structuredClone(value)` or `[...list]`). A `reference` file the repository does not have is not asked again for 30 s (`read` gives null at once; a
   change announced by `watch` lifts it). Documents and the device's cache are parsed at each read, as before.
 - `await data.cached(prefix)` tells what is on the device, with no network: `[{ path, rev, bytes, at, policy }]`.
   `await data.evict(path)` drops the local copy of a `reference` file (or of a prefix ending with `/`) without

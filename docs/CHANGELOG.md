@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame data layer, security review** (`frame/store/frame_data.js`, `tools/regen_jobs.py`; INTEGRATION § 4,
+  DECISIONS): a shared reference value is deep-frozen when parsed (a reader can no longer change it for the others; about
+  44 ms once per revision for the largest zone); a job's zone outputs are dropped in a `finally`.
 - **Frame: applications** (`frame/app.js`, `frame/settings/admin_links.js`, `frame/settings/admin.js`; frame SPEC § 3.1,
   INTEGRATION, DECISIONS; noreg A36): one frame, named sets of modules chosen by the address — Pilot (default) and
   Maintenance (`/frame/?app=maintenance`: Données, Administration, Aide, and the V2 maintenance page with a launcher; read
