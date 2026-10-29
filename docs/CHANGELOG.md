@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Flight path: `routingChain(flight, procs, points)` for the airway routing** (`frame/lib/current_flight.js`; bench
+  `frame/lib/test/current_flight.html`) — the points between which the routing looks for airways, with the chosen SID's end
+  (its transition included) inserted after the departure and the start of the chosen arrival (STAR transition, else STAR,
+  else approach transition, else approach) before the arrival, when the route does not hold them yet (user, 29 Oct: a FINOT
+  departure from LFBO with a route starting at GOSAD did not get G36 from "Auto"; Fuel's button is wired to it next).
+
 - **Map: the flight's procedures are read again after "Read" / "Read again" in Fuel** (`modules/maps/module.js`, case D52) — aerodb
   says `{ procedures: ICAO, coverage: true }` after reading an aerodrome, and the map only cleared its coverage: it kept drawing
   the old records (it read them again on a refresh of the base only). It now reads them again when that aerodrome is the

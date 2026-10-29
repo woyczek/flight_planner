@@ -35,7 +35,8 @@
     proceduresOf,
     loadProcedures,
     expandedPath,
-    flownPath
+    flownPath,
+    routingChain
   } from '../current_flight.js?v=0';
   const rows = [],
     out = document.getElementById('out');
@@ -754,6 +755,49 @@
     idsT = FT.map(p => p.id).join(' ');
   ck('expandedPath : transition au-delà du point commun, aucun tronçon deux fois', idsT === 'LFBD AAA BBB CCC T1 IF1 FAF1 LFPO', idsT);
   ck('expandedPath : le point de jonction prend les contraintes de l’approche', FT.find(p => p.id === 'IF1')?.alt?.ft === 3000);
+
+  // routage des voies : la fin de la SID et le début de l'arrivée choisies (utilisateur, 29 octobre : départ FINOT de LFBO,
+  // route qui commence à GOSAD, « Auto » ne trouvait pas G36)
+  const RC = routingChain(fl({}), {
+      sid: SIDX,
+      star: STAR
+    }),
+    rcIds = RC.map(p => p.id).join(' ');
+  ck('routingChain : fin de SID insérée après le départ ; début de STAR déjà dans la route, rien', rcIds === 'LFBD S09 AAA BBB CCC LFPO' &&
+    RC[1]
+    .inserted && RC[1].origin === 'sid', rcIds);
+  const STAR2 = {
+      ...STAR,
+      points: [{
+        seq: 1,
+        id: 'S10',
+        lat: 48.0,
+        lon: 1.6
+      }, ...STAR.points]
+    },
+    RC2 = routingChain(fl({}), {
+      sid: SID,
+      star: STAR2
+    });
+  ck('routingChain : fin de SID déjà dans la route, début de STAR inséré avant l’arrivée', RC2.map(p => p.id).join(' ') ===
+    'LFBD AAA BBB CCC S10 LFPO' && RC2.at(-2).inserted && RC2.at(-2).origin === 'star', RC2.map(p => p.id).join(' '));
+  const RC3 = routingChain(fl({}), {
+    app: AP2,
+    appTrans: TR2
+  });
+  ck('routingChain : sans STAR, le début de la transition d’approche', RC3.map(p => p.id).join(' ') === 'LFBD AAA BBB CCC T1 LFPO');
+  ck('routingChain : sans procédure, les points tels quels', routingChain(fl({}), {}).map(p => p.id).join(' ') === 'LFBD AAA BBB CCC LFPO');
+  ck('routingChain : une procédure d’un autre terrain est ignorée', routingChain(fl({}), {
+    sid: {
+      ...SIDX,
+      icao: 'LFBO'
+    }
+  }).length === 5);
+  const pts2 = [RT.points[0], RT.points[2], RT.points[4]];
+  ck('routingChain : sur les points donnés (la chaîne d’« Auto »)', routingChain(fl({}), {
+      sid: SIDX
+    }, pts2).map(p => p.id).join(' ') ===
+    'LFBD S09 BBB LFPO');
 
   window.__cfBench = {
     done: true,
