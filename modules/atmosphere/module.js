@@ -179,6 +179,11 @@ const STYLE = `
 [data-module="atmosphere"] :is(button,select,input,label){touch-action:manipulation}
 [data-module="atmosphere"] canvas.at-over{position:absolute;left:0;top:0;width:var(--at-full-w,100%);height:var(--at-full-h,100%);z-index:2;pointer-events:none}
 [data-module="atmosphere"] .at-box.at-flat canvas.at-over{pointer-events:auto}
+[data-module="atmosphere"] .at-layerpop{position:absolute;z-index:5;width:min(440px,calc(100% - 64px));max-height:calc(100% - 12px - var(--at-pop-top,0px));overflow:auto;box-sizing:border-box;padding:6px 10px 8px;background:var(--sog-surface);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);box-shadow:var(--sog-shadow);overscroll-behavior:contain}
+[data-module="atmosphere"] .at-layerpop[hidden]{display:none}
+[data-module="atmosphere"] .at-layerpop-head{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:-6px;margin:-6px -10px 2px;padding:4px 4px 4px 10px;background:var(--sog-surface);border-bottom:1px solid var(--sog-border)}
+[data-module="atmosphere"] .at-layerpop-x{flex:none;width:36px;height:36px;border:0;border-radius:var(--sog-radius-s,6px);background:none;color:var(--sog-muted);font-size:16px;cursor:pointer}
+[data-module="atmosphere"] .at-layerpop-x:hover{color:var(--sog-fg);background:var(--sog-chart-grid)}
 [data-module="atmosphere"] .at-layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 16px;font-size:.92em}
 [data-module="atmosphere"] .at-layers>div{display:flex;flex-direction:column;min-width:0}
 [data-module="atmosphere"] .at-layers b{margin:2px 0}
@@ -298,8 +303,11 @@ export async function mount(el, ctx) {
     map: null,
     geo: null,
     daySpent: 0,
-    // bloc du bas : 'profile' (coupe globale), 'slice' (tranche locale), 'info' (« i »), 'settings' (« Vol »)
+    // bloc du bas : 'profile' (coupe globale), 'slice' (tranche locale), 'info' (« i »), 'settings' (« Vol ») ; les couches sont un
+    // volet sur la carte (layersOpen), jamais un contenu du bloc
     view: 'profile',
+    // volet des couches posé sur la carte (son bouton, sa croix, Échap)
+    layersOpen: false,
     // tranche locale : { kind: 'route', i, lat, lon } (un lieu de lecture) ou { kind: 'point', lat, lon, col, nm, t, offNm }
     local: null,
     xsLayers: {
@@ -403,7 +411,7 @@ export async function mount(el, ctx) {
       label: T('layers'),
       pressed: false,
       side: 'left',
-      onClick: () => show(S.view === 'layers' ? 'profile' : 'layers')
+      onClick: () => setLayers(!S.layersOpen)
     }),
     btnFlight = ov.button({
       icon: 'plane',
@@ -434,11 +442,20 @@ export async function mount(el, ctx) {
   ov.right.insertBefore(lvlChip, btnLoad.nextSibling);
   probe.style.display = 'none';
   el.append(probe);
-  // les couches de la carte et du profil : un contenu du bloc du bas (la carte reste visible), construit à son ouverture
+  // les couches de la carte et de la coupe : un volet posé sur la carte sous son bouton (défilant s'il est plus haut qu'elle), pas
+  // un contenu du bloc du bas — la coupe reste visible pendant qu'on coche, et suit chaque case (utilisateur, 29 octobre : « choisir
+  // les éléments météo masque le profil vertical »)
+  const layersPop = document.createElement('div');
+  layersPop.className = 'at-layerpop';
+  layersPop.hidden = true;
+  layersPop.innerHTML = `<div class="at-layerpop-head"><b>${esc(T('layers'))}</b><button type="button" class="at-layerpop-x" data-at="layersClose" aria-label="${esc(T('layersClose'))}" title="${esc(T('layersClose'))}">✕</button></div>`;
   const layersBox = document.createElement('div');
-  layersBox.className = 'at-layers at-pad';
+  layersBox.className = 'at-layers';
   layersBox.setAttribute('role', 'group');
   layersBox.setAttribute('aria-label', T('layers'));
+  layersPop.append(layersBox);
+  let layersHtml = ''; // ce que porte le volet, sans l'état des cases (layersCard)
+  $('box').append(layersPop);
   // le formulaire « Vol » est construit une fois et gardé (les champs gardent leur saisie d'un affichage à l'autre)
   const form = document.createElement('form');
   form.className = 'f-grid at-form at-pad';
@@ -729,9 +746,9 @@ export async function mount(el, ctx) {
   function show(view) {
     if (S.view !== view && sheet?.pos === 'collapsed') sheet.set('default', true);
     S.view = view;
+    if (S.layersOpen && view !== 'profile' && view !== 'slice') setLayers(false);
     setAttr(btnFlight, 'aria-pressed', String(view === 'settings'));
     setAttr(btnInfo, 'aria-pressed', String(view === 'info'));
-    setAttr(btnLayers, 'aria-pressed', String(view === 'layers'));
     $('dclose').hidden = view === 'profile';
     // ◀ ▶ des tranches de la route : en colonne à droite du dessin (portrait), en ligne au-dessus (paysage), comme les puces de
     // la Carte (§ 7.1.13) ; le dessin laisse la place de la colonne
@@ -755,12 +772,6 @@ export async function mount(el, ctx) {
       return;
     }
     if (v === 'wpoint') return drawWorldPoint();
-    if (v === 'layers') {
-      sheetTitle(T('layers'));
-      layersCard();
-      if (layersBox.parentNode !== dbody) dbody.replaceChildren(layersBox);
-      return;
-    }
     if (!S.traj) {
       baseTitle();
       const p = document.createElement('p');
@@ -1440,7 +1451,7 @@ export async function mount(el, ctx) {
       if (!alive) return;
       baseTitle();
       if (S.view === 'wpoint') drawData();
-      if (S.view === 'layers') layersCard();
+      if (S.layersOpen) layersCard();
       schedule();
     }
   });
@@ -1711,13 +1722,18 @@ export async function mount(el, ctx) {
     const mid = dark() ? '#383835' : '#f0efec',
       ramp = `linear-gradient(90deg,#0d366b,#6da7ec,${mid},#ec8a85,#9e2a2a)`,
       key = (style, ramped) => ramped ? `<span class="at-ramp" style="background:${style}"></span>` : `<span class="at-key" style="${style}"></span>`,
-      row = (group, k, label, k2) => `<label><input type="checkbox" data-g="${group}" data-k="${k}"${S[group][k] ? ' checked' : ''}> ${k2 || ''} ${esc(T(label))}</label>`,
+      row = (group, k, label, k2) => `<label><input type="checkbox" data-g="${group}" data-k="${k}"> ${k2 || ''} ${esc(T(label))}</label>`,
       cloud = `rgba(${cloudRgb()},.7)`,
       barbKey = '<span class="at-key" style="border:0;height:auto;text-align:center">⟋</span>';
-    const note = mapNote();
-    // les couches de la carte météo : la légende de la bibliothèque (la Carte étiquette son panneau de la même façon)
-    layersBox.innerHTML = (note ? `<p class="at-mapnote">${esc(T('mapTitle'))} · ${esc(note)}</p>` : '') + `<div><b>${esc(T('mapTitle'))}</b>` +
-      wm.legend().map(ly => `<label><input type="checkbox" data-g="mapLayers" data-k="${ly.key}"${ly.on ? ' checked' : ''}> ${ly.swatch
+    const note = mapNote(),
+      on = {
+        mapLayers: Object.fromEntries(wm.legend().map(ly => [ly.key, !!ly.on]))
+      };
+    // les couches de la carte météo : la légende de la bibliothèque (la Carte étiquette son panneau de la même façon) ; les cases
+    // sans leur état : le volet n'est réécrit que si ses lignes changent (une note, une couche de plus), jamais à chaque case ni
+    // à chaque statut (une réécriture entre l'appui et le relâché perdait le toucher : « cliquer deux fois »)
+    const html = (note ? `<p class="at-mapnote">${esc(T('mapTitle'))} · ${esc(note)}</p>` : '') + `<div><b>${esc(T('mapTitle'))}</b>` +
+      wm.legend().map(ly => `<label><input type="checkbox" data-g="mapLayers" data-k="${ly.key}"> ${ly.swatch
         .barb ? barbKey : key(ly.swatch.css, ly.swatch.ramp)} ${esc(ly.label)}</label>`).join('') +
       // les deux côtés de la limite tracée : le modèle et la maille de la zone du vol, ceux du synoptique autour
       (wm.edge ? wm.info().zones.map(z => `<p class="at-zone">${key(z.key === 'flight' ? 'border:1px solid var(--sog-fg);height:8px' :
@@ -1733,6 +1749,35 @@ export async function mount(el, ctx) {
       row('xsLayers', 'rh', 'lyRh', key('linear-gradient(90deg,transparent,rgba(42,120,214,.6))', true)) +
       row('xsLayers', 'da', 'lyDa', key(ramp, true)) +
       `</div><p>${esc(T('lgPaths'))}</p>`;
+    if (layersHtml !== html) {
+      layersHtml = html;
+      layersBox.innerHTML = html;
+    }
+    // l'état des cases, posé en place et seulement s'il change
+    for (const c of layersBox.querySelectorAll('input[data-g]')) {
+      const v = !!(c.dataset.g === 'mapLayers' ? on.mapLayers[c.dataset.k] : S[c.dataset.g]?.[c.dataset.k]);
+      if (c.checked !== v) c.checked = v;
+    }
+  }
+  /** Volet des couches ouvert ou fermé : posé sous son bouton (mesuré à l'ouverture), la coupe montrée dans le bloc du bas (un
+   *  autre contenu, Vol ou détails, lui rend la place). */
+  function setLayers(open) {
+    S.layersOpen = !!open;
+    setAttr(btnLayers, 'aria-pressed', String(S.layersOpen));
+    if (S.layersOpen) {
+      if (S.view !== 'profile' && S.view !== 'slice') show('profile');
+      const b = btnLayers.getBoundingClientRect(),
+        box = $('box').getBoundingClientRect(),
+        top = `${Math.max(4, Math.round(b.bottom - box.top + 8))}px`,
+        left = `${Math.max(4, Math.round(b.left - box.left))}px`;
+      if (layersPop.style.top !== top) {
+        layersPop.style.top = top;
+        layersPop.style.setProperty('--at-pop-top', top); // la hauteur restante sous le volet
+      }
+      if (layersPop.style.left !== left) layersPop.style.left = left;
+      layersCard();
+    }
+    if (layersPop.hidden === S.layersOpen) layersPop.hidden = !S.layersOpen;
   }
 
   // ---------------------------------------------------------------- état, chargement
@@ -1921,7 +1966,7 @@ ${T('outOfRange')}` : s);
           n: spentNow
         }) : T('stCached')) + ` · ${T('stDay', { n: Math.round(S.daySpent) })}` : '') +
       (S.outOfRange ? ` · ${T('outOfRange')}` : ''));
-    if (S.view === 'layers') layersCard();
+    if (S.layersOpen) layersCard();
     whenText();
   }
 
@@ -2060,7 +2105,7 @@ ${T('outOfRange')}` : s);
         return;
       }
       if (stale()) return;
-      if (!grid) return S.view === 'layers' && layersCard();
+      if (!grid) return S.layersOpen && layersCard();
       S.grid = {
         g: gr,
         locs: grid.locs,
@@ -2180,11 +2225,14 @@ ${T('outOfRange')}` : s);
     showLegend();
   };
   const legendKey = ev => {
-    if (ev.key === 'Escape' && S.legend) {
+    if (ev.key !== 'Escape') return;
+    if (S.layersOpen) return setLayers(false);
+    if (S.legend) {
       S.legend = false;
       showLegend();
     }
   };
+  $('layersClose').onclick = () => setLayers(false);
   document.addEventListener('keydown', legendKey);
   $('prev').onclick = () => openRouteSlice((S.local?.i ?? 0) - 1);
   $('next').onclick = () => openRouteSlice((S.local?.i ?? 0) + 1);
@@ -2259,7 +2307,7 @@ ${T('outOfRange')}` : s);
     if (c.dataset.g === 'mapLayers') {
       syncWeather();
       schedule();
-    } else if (S.view === 'profile') drawData();
+    } else if (S.view === 'profile' || S.view === 'slice') drawData(); // la coupe, visible sous le volet, suit la case
   };
   // tailles : la carte (MapLibre suit, la surcouche est redessinée) et le bloc du bas (coupe ou tranche à sa nouvelle
   // taille) ; design ou ton changés : fond et dessins repris (réaction à un événement : rien n'est réécrit hors du module)
@@ -2282,7 +2330,7 @@ ${T('outOfRange')}` : s);
     }));
     drawData();
     schedule();
-    if (S.view === 'layers') layersCard();
+    if (S.layersOpen) layersCard();
   };
   const mo = new MutationObserver(repaint);
   mo.observe(document.documentElement, {
@@ -2309,7 +2357,7 @@ ${T('outOfRange')}` : s);
         edge: d?.edge !== false && d?.edge?.show !== false
       });
       schedule();
-      if (S.view === 'layers') layersCard();
+      if (S.layersOpen) layersCard();
     };
   readEdge();
   const unwatchEdge = data.watch(PROFILES, readEdge);

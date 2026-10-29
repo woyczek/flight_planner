@@ -15,7 +15,8 @@ zona del vuelo, el mapa muestra el sinóptico mundial publicado con la aplicaci�
 
 **El mapa meteorológico.** Isobaras, isotermas, nubes, viento, corriente en chorro y convección, al nivel elegido con la
 pastilla del nivel («Suelo», el nivel solicitado, la trayectoria calculada o una altitud fija). El botón de capas (arriba
-a la izquierda) elige lo que se dibuja. Toque un punto del mapa para abrir su corte.
+a la izquierda) abre un panel sobre el mapa: elige lo que se dibuja en el mapa y en el perfil, y el corte sigue visible
+abajo, redibujado con cada casilla; la cruz o Escape lo cierra. Toque un punto del mapa para abrir su corte.
 
 **La zona del vuelo y el mundo.** Una línea fina rodea la zona del vuelo: dentro, la previsión fina cargada para el vuelo
 (Météo-France AROME 1,3 km y ARPEGE 0,1° sobre Francia, ICON en Europa); fuera, el sinóptico mundial (GFS de la NOAA,
@@ -54,4 +55,4 @@ un toque en la leyenda, en la pastilla o Escape la cierra.
   el sinóptico mundial viene de GFS (NOAA), cada 3 horas hasta 72 horas.
 - Lo cargado se queda en el aparato y sirve sin conexión; el Mapa reutiliza su corte meteorológico.
 
-<!-- fr: 3e486fd7b110 -->
+<!-- fr: acaaf2c98cee -->

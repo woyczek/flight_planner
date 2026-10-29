@@ -39,6 +39,7 @@ export const TX = {
     'Details: Übersicht, Flugplätze, Tabelle', 'Detalles: resumen, aeródromos, tabla'
   ],
   layers: ['Couches', 'Layers', 'Ebenen', 'Capas'],
+  layersClose: ['Fermer les couches', 'Close the layers', 'Ebenen schließen', 'Cerrar las capas'],
   worldTitle: ['Synoptique monde · {at} · run {run} +{h} h', 'World synoptic · {at} · run {run} +{h} h',
     'Weltsynoptik · {at} · Lauf {run} +{h} h', 'Sinóptico mundial · {at} · pasada {run} +{h} h'
   ],

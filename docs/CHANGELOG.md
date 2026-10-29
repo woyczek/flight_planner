@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Weather (Atmosphere): choosing the layers no longer hides the cut, one tap is one toggle** (`modules/atmosphere/module.js`,
+  `texts.js`; help ×4, SPEC; noreg E12). The Layers content took the bottom block in place of the cut (user: "choisir les
+  éléments météo masque le profil vertical"), and its whole HTML was rewritten at each box and on every status update, so a
+  rewrite between press and release lost the tap ("certaines coches doivent être cliquées deux fois"). The layers are now a
+  panel over the map under their button (scrolling on a phone, never over the sheet); the cut stays in view and is redrawn
+  by each box; the panel is written only when its rows change and the boxes' state is set in place. Its cross ×4, Escape,
+  Flight or Details close it.
+
 - **Fuel: on a phone, choosing a procedure no longer reopens the list; the « Procédures » grid also beside the Map** (`modules/fuel/procedures.js`,
   DECISIONS; cases F34, F35, F38, F40) — and a failed reading says its counts once, translated.
 - **Map: choosing on the map, simplified** (`modules/maps/choose.js`; V3 § 10.23, § 10.24; maps SPEC § 5.1, help ×4, noreg D60):

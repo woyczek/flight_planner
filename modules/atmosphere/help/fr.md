@@ -14,7 +14,8 @@ zone du vol, la carte montre le synoptique mondial publié avec l'application, s
 
 **La carte météo.** Isobares, isothermes, nuages, vent, courant-jet et convection, au niveau choisi par la pastille du
 niveau (« Sol », le niveau demandé, la trajectoire calculée ou une altitude fixe). Le bouton des couches (en haut à gauche)
-choisit ce qui est dessiné. Touchez un point de la carte pour ouvrir sa tranche.
+ouvre un volet posé sur la carte : il choisit ce qui est dessiné sur la carte et dans le profil, et la coupe reste visible en
+bas, redessinée à chaque case ; la croix ou Échap le ferme. Touchez un point de la carte pour ouvrir sa tranche.
 
 **La zone du vol et le monde.** Un trait fin entoure la zone du vol : dedans, la prévision fine chargée pour le vol
 (Météo-France AROME 1,3 km et ARPEGE 0,1° sur la France, ICON en Europe) ; dehors, le synoptique mondial (GFS de la

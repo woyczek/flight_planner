@@ -593,8 +593,9 @@ route and around it. Nothing is asked at opening: the page shows what the device
 area, the map shows the world synoptic published with the application, asking for nothing.
 
 **The weather map.** Isobars, isotherms, cloud, wind, jet stream and convection, at the level chosen with the level chip
-("SFC", the requested level, the computed path or a fixed altitude). The layers button (top left) chooses what is
-drawn. Touch a point of the map to open its slice.
+("SFC", the requested level, the computed path or a fixed altitude). The layers button (top left) opens a panel over
+the map: it chooses what is drawn on the map and in the profile, and the cut stays in view below, redrawn by each box; the
+cross or Escape closes it. Touch a point of the map to open its slice.
 
 **The flight area and the world.** A thin line surrounds the flight area: inside, the fine forecast loaded for the flight
 (Météo-France AROME 1.3 km and ARPEGE 0.1° over France, ICON in Europe); outside, the world synoptic (NOAA GFS,
@@ -633,7 +634,7 @@ the legend, the chip or Escape closes it.
   world synoptic comes from GFS (NOAA), every 3 hours up to 72 hours.
 - What is loaded stays on the device and works offline; the Map reuses its weather cross-section.
 
-<!-- fr: 3e486fd7b110 -->
+<!-- fr: acaaf2c98cee -->
 
 <!-- chapter: data -->
 # Data

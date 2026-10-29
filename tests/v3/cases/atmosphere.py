@@ -299,3 +299,46 @@ def e11(c):
     c.ok(abs(r['free50'] - r['at50']) > 1000, f'{r["free50"]} without the path', 'without the path the cut takes its own climb (the difference the path makes)')
     c.ok(r['toc'] is not None and r['toc'] > 75, f'{r["toc"]}', 'the top of climb is where the path reaches its highest level')
     c.ok(r['mw'] > r['m0'] * 1.05, f'{r["m0"]:.1f} min without wind, {r["mw"]:.1f} with 30 kt on the nose', 'a headwind lengthens the times (ground speed)')
+
+
+_POP = f'{ATM} .at-layerpop'
+_CUT = f"() => {{ const s = document.querySelector('{ATM} [data-at=dbody] svg'); return s ? s.outerHTML.length : 0 }}"
+
+
+@case('E12', 'Layers: a panel over the map, the cut stays in view and follows each box at once', 'E', tags=('atmosphere',), screens=False,
+      designs=('standard',), night=False,
+      rule='user 29 Oct: "choisir les éléments météo masque le profil vertical. Certaines coches doivent être cliquées deux fois" — the Layers panel sits over the map under its button, the cut stays in the sheet and is redrawn by each box, one tap = one toggle (the panel is not rewritten between press and release)')
+def e12(c):
+    c.open('atmosphere?donnees=demo', flight=True)
+    c.until(f"() => !!document.querySelector('{ATM} [data-at=dbody] svg')", timeout=12000, what='the cut is drawn (demonstration)')
+    c.wait(800)
+    c.tap(button_sel(c, 'layers'))
+    c.until(f"window.__t.shown(document.querySelector('{_POP}'))", what='the Layers panel opens')
+    c.ok(c.shown(f'{ATM} [data-at=dbody] svg'), 'the cut is no longer shown', 'the cut stays in the sheet while the panel is open')
+    pop, box, panel = c.box(_POP), c.box(f'{ATM} .at-box'), c.box(f'{ATM} .f-sheet-panel')
+    c.ok(pop['y'] >= box['y'] - 1 and pop['y'] + pop['h'] <= box['y'] + box['h'] + 1, f'panel {pop}, map {box}', 'the panel lies within the map')
+    c.ok(pop['y'] + pop['h'] <= panel['y'] + 1, f'panel bottom {pop["y"] + pop["h"]:.0f}, sheet top {panel["y"]:.0f}', 'the panel never covers the sheet')
+    c.eq(c.attr(button_sel(c, 'layers'), 'aria-pressed'), 'true', 'the Layers button is pressed', what='aria-pressed')
+    # one tap, one toggle, the cut redrawn at once, the panel's boxes kept (not rewritten)
+    c.js(f"() => document.querySelectorAll('{_POP} input[data-g]').forEach(i => {{ i.__kept = 1 }})")
+    for k in ('wind', 'iso', 'cloud'):
+        sel = f'{_POP} input[data-g=xsLayers][data-k={k}]'
+        before, cut = c.js(f"() => document.querySelector('{sel}').checked"), c.js(_CUT)
+        c.tap(f'{_POP} label:has(input[data-g=xsLayers][data-k={k}])')
+        c.until(f"(b) => document.querySelector('{sel}').checked !== b", before, timeout=3000, what=f'one tap toggles "{k}"')
+        c.wait(400)
+        c.ok(c.js(_CUT) != cut, f'cut length {cut} -> {c.js(_CUT)}', f'the cut is redrawn by "{k}", the panel still open')
+        c.ok(c.shown(_POP), 'the panel closed', 'the panel stays open')
+    c.ok(c.js(f"() => [...document.querySelectorAll('{_POP} input[data-g]')].every(i => i.__kept === 1)"), 'the boxes were rebuilt',
+         'the panel is not rewritten by a box (its boxes are the same nodes)')
+    # the cross and Escape close it; Flight closes it too
+    c.tap(f'{_POP} [data-at=layersClose]')
+    c.until(f"!window.__t.shown(document.querySelector('{_POP}'))", what='the cross closes the panel')
+    c.tap(button_sel(c, 'layers'))
+    c.until(f"window.__t.shown(document.querySelector('{_POP}'))", what='open again')
+    c.page.keyboard.press('Escape')
+    c.until(f"!window.__t.shown(document.querySelector('{_POP}'))", what='Escape closes the panel')
+    c.tap(button_sel(c, 'layers'))
+    c.until(f"window.__t.shown(document.querySelector('{_POP}'))", what='open again')
+    c.tap(button_sel(c, 'flightTitle'))
+    c.until(f"!window.__t.shown(document.querySelector('{_POP}'))", what='Flight takes the sheet and closes the panel')

@@ -639,7 +639,8 @@ Außerhalb des Fluggebiets zeigt die Karte die mit der Anwendung veröffentlicht
 
 **Die Wetterkarte.** Isobaren, Isothermen, Wolken, Wind, Jetstream und Konvektion in der mit dem Höhenchip gewählten
 Höhe („Boden", die angeforderte Höhe, die berechnete Bahn oder eine feste Höhe). Die Ebenen-Schaltfläche (oben links)
-wählt, was gezeichnet wird. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
+öffnet ein Feld über der Karte: Es wählt, was auf der Karte und im Profil gezeichnet wird, und der Schnitt bleibt unten
+sichtbar und wird bei jedem Kästchen neu gezeichnet; das Kreuz oder Esc schließt es. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
 
 **Das Fluggebiet und die Welt.** Eine dünne Linie umgibt das Fluggebiet: innen die für den Flug geladene feine Vorhersage
 (Météo-France AROME 1,3 km und ARPEGE 0,1° über Frankreich, ICON in Europa); außen die Weltsynoptik (NOAA GFS, mit
@@ -678,7 +679,7 @@ die Legende, den Chip oder Escape schließt sie.
   die Weltsynoptik kommt von GFS (NOAA), alle 3 Stunden bis 72 Stunden.
 - Das Geladene bleibt auf dem Gerät und dient offline; die Karte übernimmt seinen Wetterschnitt.
 
-<!-- fr: 3e486fd7b110 -->
+<!-- fr: acaaf2c98cee -->
 
 <!-- chapter: data -->
 # Daten
