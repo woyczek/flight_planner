@@ -4,6 +4,10 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — the Map's proposal waits for the complete screen** (noreg red on efbb97f49, F41: « Aucune » said but not written):
+  since the rows are drawn during `refsPending` (636a05179), a proposal could be applied while the aircraft registry was still
+  loading and its deferred write was lost; `applyProposal` now waits for `!host.pending()` (the next render applies it). F41 also
+  makes each trip go through the Map, as a real one does (the frame mounts Fuel again on the way back).
 - **29 Oct 2026 — the aerodrome field is a search** (Simplification, after 842ac149b): `maxlength=4` lifted; while the field has the
   focus nothing is written but a 4-character code aerodb knows (`AD.known`, written once the field still holds it) or a pick of the
   list (`isPicking`); emptying the field to search writes nothing. On leaving the field (`revertAd`): empty → the aerodrome is

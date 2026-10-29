@@ -644,9 +644,11 @@ export function createProcedures(host) {
    *  du côté (piste, procédure, transition, approche, transition d'approche), puis une ligne dit ce qui a changé ; rien tant que le vol
    *  n'est pas lu. */
   function applyProposal() {
-    if (!proposal || !host.flight() || !ads.get(String((proposal.side === 'dep' ? host.route()?.dep : host.route()?.arr) || '')
+    if (!proposal || host.pending?.() || !host.flight() || !ads.get(String((proposal.side === 'dep' ? host.route()?.dep : host.route()
+          ?.arr) || '')
         .toUpperCase())?.recs
-      ?.size) return; // le vol lu et les fiches du terrain dessinées : render la rappelle
+      ?.size) return; // le vol lu, l'écran complet (une écriture pendant le chargement du registre se perdrait) et les fiches du terrain
+    // dessinées : render la rappelle
     const {
       side,
       fields

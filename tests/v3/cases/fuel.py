@@ -1221,12 +1221,16 @@ def f41(c):
     c.eq((procs_of(d, 'arr') or {}).get('rwy'), '31L', 'as a choice made in Fuel: the STAR serving one runway sets it', what='runway')
     c.until("(w) => (window.__notes || []).some(n => n.includes('MEN2B'))", None, timeout=6000, what='a line says what changed')
     c.until("!/[?&](star|focus)=/.test(location.hash)", what='the proposal and focus keys leave the address (consumed)')
-    # « none »: the departure's SID set to « Aucune »
+    # « none »: the departure's SID set to « Aucune » — a real trip goes through the Map (Fuel is mounted again by the frame on its way back)
+    c.js("() => { location.hash = '#maps?choose=dep&icao=LFRS' }")
+    c.until("location.hash.startsWith('#maps')", what='the Map is open again')
     c.js("() => location.replace('#fuel?focus=dep&sid=none')")
     d = cf_doc(c, lambda d: 'sid' in (procs_of(d, 'dep') or {}) and (procs_of(d, 'dep') or {}).get('sid') is None, '"none" writes « Aucune » (null)', timeout=12000)
     # the address can be edited by any link: only « none », a runway offered for that aerodrome, or a record of the flight's aerodrome on
     # that side (right kind, not doubtful) is admitted; anything else is ignored and nothing is written
     before = procs_of(d, 'arr')
+    c.js("() => { location.hash = '#maps?choose=arr&icao=LFML' }")
+    c.until("location.hash.startsWith('#maps')", what='the Map is open again')
     c.js("() => location.replace('#fuel?focus=arr&star=LFRS.SID.NTS1A.RW03.NONE&rwy=99&app=%22%3E%3Cimg')")
     c.until("!/[?&](star|focus|app|rwy)=/.test(location.hash)", what='the hostile keys are consumed')
     c.settle()
