@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the procedures block has its own file, and the « Procédures » card is redone** (`modules/fuel/procedures.js`, `procedures_texts.js`,
+  `module.js`; V3 § 10.29 d, e; cases F34, F35, F36, F11–F31 updated; refactoring 29 Oct d + e) — each side is titled with the aerodrome's
+  name (« Départ LFPO Paris-Orly »), carries one muted line « lu le 29/10 16:53Z · Relire · 3 non lues », and its lists sit on one fixed grid, the
+  same on both sides (runway · procedure · transition; approach under the STAR), no label cut, one column on a phone; a runway chosen,
+  the labels no longer repeat it (« OPALE 2E »); a change of the lists updates the existing selects in place and never moves the focus.
+
 - **Data: a read-only « Données » screen** (`modules/data/` `module.js`, `model.js`, `texts.js`, `help/`; `frame/app.js` registry; SPEC § 3, § 6.2,
   § 9; cases L1–L5; V3 data regeneration, first lot) — Full level (level 3); not a place of Pilot's rail: the heart of the future « Maintenance » application (user, 29 Oct), reached by
   `#data` and by the line « Maintenance » of Settings › Administration (read only on a phone). It shows the AIRAC cycle in force and the next one, the workstation's coverage by zone (written once to

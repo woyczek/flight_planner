@@ -4,6 +4,19 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — refactoring (d) and (e): the procedures block is `modules/fuel/procedures.js`, and the card is redone** (V3_SPECIFICATION
+  § 10.29 d, e; § 10.23, § 10.27 for the title; user: « c'est moisi »). Out of `module.js` (4 900 → 4 345 lines): the whole block of the chosen
+  procedures' display, choice, on-demand reading and OFP lines, with its texts in `procedures_texts.js` (the `proc*` rows ×4; `dep` / `arr` copied,
+  `procTitle` stays on the screen). `createProcedures(host)` → `{ sync, render, reset, choose, read, onChange, focus, applyFocus, snapshot, applyOfp,
+  afterRead, stop }`; `host` gives what the block needs from the screen and nothing else (ctx, flight(), route(), body(), plan(), key() = `procsKey`,
+  gone(), save(), settled(), drop(), refresh()). The state is one object per aerodrome (`ads`), moved with it; the reading in progress (`reading`,
+  was `procReadingNow`) is module-level in `procedures.js` and its end goes to the live instance. `module.js` keeps the step flow, the quote (the
+  path of the chosen procedures: `procsKey`, `fpNow`, `ensureProcs`, `quoteNm`), the progress and the write of the flight. The stylesheet of the card
+  (`PROC_STYLE`) is exported and included in the screen's. **Rendering in place**: a redraw replaces only the options of the existing selects and the
+  text of the title and the line, each only when it changed; the box is rebuilt only when its structure changes (aerodrome, with or without data, a
+  transition list appearing or disappearing, started or not); the focus is never moved (case F35). **The new form**: title with the aerodrome's name,
+  one secondary line « lu le … · Relire · N non lues », a fixed grid identical on both sides (subgrid), no label cut, one column under 600 px,
+  no runway in a label when a runway is chosen (cases F34, F35; the single write, F36). Interface kept small: nothing of the card reads `S`.
 - **29 Oct 2026 — refactoring (c): the rules of the procedures in `frame/lib/procedures.js`** (V3_SPECIFICATION § 10.29 c; no visible
   change). Pure ES module, no state, no text, no DOM: `rwNum`, `sameRwy`, `servesAll`, `servesRwy` (they were in `module.js`, `rwNum` also in
   the flight library), `nameOf(rec, id)` (the record's name, else the id's third field; null for none or `NONAME` — Fuel adds its

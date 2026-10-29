@@ -19,6 +19,7 @@ How the frame mounts the fuel module and what the module reads and writes. The r
 | `modules/fuel/test/levels.html` | bench: level decision, curves and climb instructions against the V2 view's state |
 | `modules/fuel/test/sheets.html` | bench: sheets functions against the V2 functions on the same inputs (`sheets_v2.json`) |
 | `modules/fuel/module.js` | the module mounted by the frame: `meta`, `mount(el, ctx)`, `unmount()`; screens Plan (tab "Quote") and Sheets (SPEC § 9) |
+| `modules/fuel/procedures.js`, `procedures_texts.js` | the « Procédures » card of the preparation, mounted by `module.js` through `createProcedures(host)` (the choices, their display, the reading on demand, the OFP's lines); no access to the screen's state (SPEC § 9 block 0) |
 
 Load `performance_model.js`, then `model.js`, `levels.js`, `perf_prompt.js`. None touches the page, the network or the
 storage. The sheets logic is aerodb's (`(await ctx.aerodb.aircraft()).lib`, AeroDBSheets): aerodb configures it with

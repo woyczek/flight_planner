@@ -674,6 +674,23 @@ class Ctx(Asserts):
         except Exception:
             raise Fail(f'never true within {timeout} ms: {what or expr[:80]}', 'it becomes true') from None
 
+    def quiet(self, expr, arg=None, quiet=500, timeout=8000):
+        """Waits until the value of a JavaScript expression stops changing for `quiet` ms (it is read every 50 ms, compared as JSON)
+        and returns that value: a state to wait on instead of a fixed pause, for "nothing else happens" checks (the number of
+        notifications, a list of options).  Fail if it keeps changing for `timeout` ms."""
+        js = """([src, arg, quiet, timeout]) => new Promise((res, rej) => {
+          const read = () => { try { return JSON.stringify((new Function('arg', 'return (' + src + ')'))(arg)) } catch (e) { return 'ERR ' + e } };
+          let last = read(), since = performance.now(); const t0 = since;
+          const tick = () => { const v = read(), now = performance.now();
+            if (v !== last) { last = v; since = now }
+            if (now - since >= quiet) res(last === undefined ? null : JSON.parse(last));
+            else if (now - t0 > timeout) rej(new Error('still changing: ' + last)); else setTimeout(tick, 50) };
+          tick() })"""
+        try:
+            return self.page.evaluate(js, [expr, arg, quiet, timeout])
+        except Exception as e:
+            raise Fail(f'never quiet within {timeout} ms: {expr[:80]} ({str(e).splitlines()[0][:80]})', f'unchanged for {quiet} ms') from None
+
     def shot(self, name):
         SHOTS.mkdir(exist_ok=True)
         path = SHOTS / name

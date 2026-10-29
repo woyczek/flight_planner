@@ -28,7 +28,7 @@ Rules covered
   * an approach given only by its entries lists the final record once, its transitions are the records that lead to it, and a transition equal to
     the approach is ignored (F24).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F25 F26 F27 F28 F29 F30 F31 F32.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F25 F26 F27 F28 F29 F30 F31 F32 F33 F34 F35 F36.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 import json
@@ -36,11 +36,16 @@ import json
 from lib import ROOT, Fail, Skip, case, flight_docs, norm, synthetic_airways, tx
 
 F = 'modules/fuel/module.js'
+PT = 'modules/fuel/procedures_texts.js'      # the texts of the procedures card (moved out of module.js, V3 spec 10.29 d)
 FUEL = '[data-module="fuel"]'
 
 
 def row(c, key):
-    return tx(F, key, c.lang)
+    """A translation row of the screen (module.js) or of the procedures card (procedures_texts.js)."""
+    try:
+        return tx(F, key, c.lang)
+    except RuntimeError:
+        return tx(PT, key, c.lang)
 
 
 def wait_quote(c):
@@ -453,7 +458,9 @@ def proc_docs(cycle=PROC_CYCLE):
     return [[f'proc/{cycle}/LFRS.json', file('LFRS', lfrs, rw_lfrs), 'reference'], [f'proc/{cycle}/LFML.json', file('LFML', lfml, rw_lfml), 'reference'],
             [f'proc/{cycle}/LFVA.json', file('LFVA', lfva), 'reference'], [f'proc/{cycle}/LFVB.json', file('LFVB', lfvb), 'reference'],
             [f'proc/{cycle}/LFVC.json', file('LFVC', lfvc), 'reference'], [f'proc/{cycle}/LFVD.json', file('LFVD', lfvd), 'reference'],
-            ['proc/manual/LFML.json', file('LFML', [old], cy='2025-01-01'), 'reference'], ['proc/local/LFML.json', file('LFML', [xpl]), 'reference']]
+            ['proc/manual/LFML.json', file('LFML', [old], cy='2025-01-01'), 'reference'], ['proc/local/LFML.json', file('LFML', [xpl]), 'reference'],
+            # the index of the hand-read files: LFML was read on 29 Oct 16:53Z under an earlier cycle (coverage('LFML').read_at, outdated)
+            ['proc/manual/index.json', {'schema': 1, 'aerodromes': {'LFML': {'STAR': 1, 'cycle': '2025-01-01', 'updated_at': '2026-10-29T16:53:00Z'}}}, 'reference']]
 
 
 def proc_flight(procs=None, started=False, actual=None):
@@ -489,6 +496,11 @@ def sel_opts(c, k):
     """[(value, label)] of the select data-k=`k`, or None when there is none."""
     return c.js("""(k) => { const s = document.querySelector('[data-module=fuel] select[data-k="' + k + '"]');
         return s ? [...s.options].map(o => [o.value, o.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()]) : null }""", k)
+
+
+def title_of(label, *reasons):
+    """The title of a list option: its whole label, then its reasons (outdated, conflict), as the card writes it."""
+    return norm(' · '.join([label, *reasons]))
 
 
 def wait_rows(c, side='arr'):
@@ -577,7 +589,7 @@ def f13(c):
     c.eq(old, 'MAN1A · 13R ⌛', 'the hand-read STAR of an old cycle (one runway: in the label) ends with the hourglass, without the word', what='outdated STAR option')
     o = c.js("(() => { const o = [...document.querySelectorAll('[data-module=fuel] [data-k=\"p-arr-star\"] option')].find(x => x.textContent.startsWith('MAN1A')); return o && { cls: o.className, title: o.title } })()")
     c.eq((o or {}).get('cls'), 'outdated', 'the option carries the class outdated (grey on the computer)', what='class')
-    c.eq(norm((o or {}).get('title') or ''), norm(row(c, 'procOutdatedTitle')), 'and the title says it was read under an earlier cycle', what='title')
+    c.eq(norm((o or {}).get('title') or ''), title_of('MAN1A · 13R ⌛', row(c, 'procOutdatedTitle')), 'and the title carries the whole label, then says it was read under an earlier cycle', what='title')
     c.ok(opts.index(old) < len(opts) - 1, f'order {opts}', 'the outdated one is before the X-Plane one')
 
 
@@ -593,7 +605,7 @@ def f14(c):
     c.eq(norm(c.text(f'{FUEL} [data-do="procfetch"]') or ''), norm(row(c, 'procRead').replace('{icao}', 'LFQQ')), 'the button names the aerodrome', what='button')
     c.ge(round(c.box(f'{FUEL} [data-do="procfetch"]')['h']), 44, 'a 44 px target', what='button height')
     c.tap(f'{FUEL} [data-do="procfetch"]')
-    want = norm(tx(F, "no-launcher'", c.lang, after='procReasons'))
+    want = norm(tx(PT, "no-launcher'", c.lang, after='procReasons'))
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=6000,
             what='the refusal reason (no launcher serves the test page: aerodb answers "no-launcher") is shown in a notification')
     c.until("!!document.querySelector('[data-module=fuel] [data-do=procfetch]:not([disabled])')", what='the button is available again after a refusal')
@@ -602,14 +614,14 @@ def f14(c):
     c.ok(started in [norm(n) for n in c.note_log()], f'notifications {[norm(n) for n in c.note_log()]}', 'the start of the reading is said')
     # dispatch par État d'aerodb (82eeef3b5) : France par l'eAIP du SIA, État à tables par EAD Basic, sinon 'no-tables' ; plus de
     # « mise en page inconnue »
-    src = (ROOT / F).read_text(encoding='utf-8')
+    src = (ROOT / F).read_text(encoding='utf-8') + (ROOT / PT).read_text(encoding='utf-8')
     c.ok("'unknown-layout'" not in src, 'still there', 'the refusal "unknown layout" is gone (aerodb no longer answers it)')
-    c.ok(bool(tx(F, "no-tables'", c.lang, after='procReasons').strip()), 'missing', '"no procedure tables published for this State" is written in the language of the run')
+    c.ok(bool(tx(PT, "no-tables'", c.lang, after='procReasons').strip()), 'missing', '"no procedure tables published for this State" is written in the language of the run')
     for k in ('eaip', 'ead'):
-        c.ok(bool(tx(F, k, c.lang, after='procReadingSrc').strip()), 'missing', f'the reading in progress names its source ({k})')
+        c.ok(bool(tx(PT, k, c.lang, after='procReadingSrc').strip()), 'missing', f'the reading in progress names its source ({k})')
     # comptes d'une lecture réussie (aerodb stats) : jamais « 0 procédures » seul
     for k in ('procFetchedPages', 'procRejected', 'procDropped', 'procUnnamed'):
-        c.ok('{' in tx(F, k, c.lang), 'missing', f'the success notification wording {k} exists in the language of the run')
+        c.ok('{' in tx(PT, k, c.lang), 'missing', f'the success notification wording {k} exists in the language of the run')
 
 
 @case('F15', 'Quote on the procedures path: legs with origins, profile.path', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
@@ -654,7 +666,7 @@ def f16(c):
     c.until("!!document.querySelector('[data-module=fuel] [data-block=procs]:not(.fu-hide) [data-proc=arr] select')", timeout=10000,
             what='after the start the Departure step carries the arrival row')
     c.eq(c.count(f'{FUEL} [data-procbox="route"] select'), 0, 'the step Route no longer carries the rows after the start', what='rows in the Route step')
-    c.ok(c.count(f'{FUEL} [data-proc="dep"] select') >= 1, 'no departure select', 'the departure row is editable while the SID is not passed')
+    c.ok(c.count(f'{FUEL} [data-proc="dep"] select') >= 1, 'no departure select', 'the departure row is editable after the start')
     before, bpath = d['quote'], d['profile']['path']
     c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', '__none')
     d2 = cf_doc(c, lambda d: len(((d.get('quote') or {}).get('legs')) or []) != len(before['legs']), 'the legs follow the new choice (no STAR)', timeout=10000)
@@ -666,13 +678,13 @@ def f16(c):
     c.ok(d2['profile']['path'] != bpath, 'profile.path unchanged', 'the vertical path is rewritten')
     c.eq(procs_of(d2, 'arr').get('star'), None, 'route.procedures records the change', what='arr.star')
     c.eq(d2['route']['procedures']['by'], 'fuel', 'by is fuel', what='procedures.by')
-    # the departure stays editable while the SID is not passed: a fresh position beyond its end freezes the row, the arrival stays open
+    # nothing is locked after the start (challenge of 29 Oct, V3 spec 10.20): a fresh position beyond the end of the SID leaves both rows open
     open_proc(c, procs=V2_PROCS, started=True, actual=(44.9, 2.4))
     c.tap(f'{FUEL} .fu-steps button[data-step="4"]')
     c.until("!!document.querySelector('[data-module=fuel] [data-block=procs]:not(.fu-hide) [data-proc=arr] select')", timeout=15000, what='the arrival row is drawn')
-    c.wait(500)
-    c.eq(c.count(f'{FUEL} [data-proc="dep"] select'), 0, 'the SID is passed (position at NEPIX): the departure row is no longer editable', what='departure selects')
-    c.ok(norm(row(c, 'procPassed')) in norm(c.text(f'{FUEL} [data-procbox="start"]') or ''), 'no sentence', 'and says why')
+    wait_rows(c, 'dep')
+    c.ok(c.count(f'{FUEL} [data-proc="dep"] select') >= 2, f"{c.count(f'{FUEL} [data-proc=dep] select')} selects", 'the SID is passed (position at NEPIX) and the departure row is still editable')
+    c.eq(c.count(f'{FUEL} .fu-procpassed'), 0, 'and no sentence says the departure is locked', what='lock sentences')
     c.ok(c.count(f'{FUEL} [data-proc="arr"] select') >= 1, 'no arrival select', 'the arrival stays editable')
 
 
@@ -722,29 +734,50 @@ def f18(c):
     c.eq(p['by'], 'fuel', 'by is fuel', what='by')
 
 
-@case('F19', 'Load my OFP: its SID and STAR replace the choice and the change is said', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
-      rule='V3 spec 10.20: "Load my OFP" writes the OFP\'s SID / STAR identifiers (v2) over the pilot\'s choice and notifies one line per side')
+@case('F19', 'Load my OFP: its SID and STAR fill the sides the pilot has not chosen, and only those', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.20 (challenge of 29 Oct): "Load my OFP" proposes: it writes the OFP\'s SID / STAR identifiers (v2) on the sides not chosen yet (absent = not chosen), never over a choice, and notifies only what it filled')
 def f19(c):
     ofp = json.loads((ROOT / 'frame/aerodb/test/fixtures/ofp_lfrs_lfml.json').read_text(encoding='utf-8'))
-    procs = {'dep': {'sid': 'LFRS.SID.NTS1A.RW03.NONE'}, 'arr': {'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'app': 'LFML.APP.I13R.RW13R.NONE'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'}
-    c.open('fuel', docs=proc_docs() + proc_flight(procs), airfields=True, identity={'simbrief': '123456'})
-    wait_rows(c)
-    to_step(c, 1)
-    c.page.route('**/www.simbrief.com/**', lambda r: r.fulfill(status=200, content_type='application/json', headers={'Access-Control-Allow-Origin': '*'}, body=json.dumps(ofp)))
-    c.tap(f'{FUEL} .fu-steps button[data-step="1"]')
-    c.tap(f'{FUEL} [data-do="simbrief"]')
-    d = cf_doc(c, lambda d: str((procs_of(d, 'arr') or {}).get('star', '')).startswith('LFML.STAR.LERG1R'), 'the OFP\'s STAR is written', timeout=15000)
+    kinds = lambda k: norm(tx(PT, k, c.lang, after='procKinds: {'))
+
+    def load_ofp(procs):
+        c.open('fuel', docs=proc_docs() + proc_flight(procs), airfields=True, identity={'simbrief': '123456'})
+        wait_rows(c)
+        to_step(c, 1)
+        c.page.route('**/www.simbrief.com/**', lambda r: r.fulfill(status=200, content_type='application/json', headers={'Access-Control-Allow-Origin': '*'}, body=json.dumps(ofp)))
+        c.tap(f'{FUEL} .fu-steps button[data-step="1"]')
+        c.tap(f'{FUEL} [data-do="simbrief"]')
+    # the arrival is the pilot's (a STAR and an approach), the departure is not chosen: the OFP fills the departure only
+    mine = {'arr': {'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'app': 'LFML.APP.I13R.RW13R.NONE'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'}
+    load_ofp(mine)
+    d = cf_doc(c, lambda d: str((procs_of(d, 'dep') or {}).get('sid', '')).startswith('LFRS.SID.LUGE4N'), 'the OFP\'s SID is written on the side not chosen', timeout=15000)
     p = d['route']['procedures']
     c.eq(p['by'], 'fuel', 'by is fuel', what='procedures.by')
-    c.ok(str(p['dep'].get('sid', '')).startswith('LFRS.SID.LUGE4N'), f"dep {p['dep']}", 'the OFP\'s SID replaces the pilot\'s')
-    c.eq((p['dep'].get('rwy'), p['arr'].get('rwy')), ('03', '13L'), 'the runways of the OFP (one runway per record)', what='runways')
-    c.ok('app' not in p['arr'], f"arr {p['arr']}", 'the pilot\'s approach is replaced with the rest of the side')
+    c.eq(p['dep'].get('rwy'), '03', 'the runway of the OFP\'s SID (one runway per record)', what='departure runway')
+    c.eq(p['arr'], mine['arr'], 'the arrival the pilot chose is kept as it is (the OFP proposes, it never replaces)', what='route.procedures.arr')
+    sid_line = norm(row(c, 'procChange').replace('{side}', row(c, 'dep')).replace('{parts}', f"{kinds('rwy')} — → 03 · {kinds('sid')} — → LUGE4N"))
+    lines = c.quiet("(window.__notes || []).length")
     notes = [norm(n) for n in c.note_log()]
-    kinds = lambda k: norm(tx(F, k, c.lang, after='procKinds: {'))
-    star_line = norm(row(c, 'procChange').replace('{side}', row(c, 'arr')).replace('{parts}', f"{kinds('rwy')} — → 13L · {kinds('star')} MEN1A → LERG1R · {kinds('app')} I13R → —"))   # continuity is never a conflict (29 Oct): no ⚠ on the replaced STAR
-    sid_line = norm(row(c, 'procChange').replace('{side}', row(c, 'dep')).replace('{parts}', f"{kinds('rwy')} — → 03 · {kinds('sid')} NTS1A → LUGE4N"))
-    c.ok(star_line in notes, f'notifications {notes}', f'one line for the arrival: {star_line}')
-    c.ok(sid_line in notes, f'notifications {notes}', f'one line for the departure: {sid_line}')
+    c.ok(sid_line in notes, f'notifications {notes}', f'one line for the side it filled: {sid_line}')
+    changes = [n for n in notes if (norm(row(c, 'dep')) in n and kinds('sid') in n) or (norm(row(c, 'arr')) in n and kinds('star') in n)]
+    c.eq(len(changes), 1, 'and none for the side it left', what=f'change lines among {lines} notifications: {changes}')
+    # nothing chosen on the departure but "aucune" (null is a choice) and nothing on the arrival: the OFP fills the arrival only
+    load_ofp({'dep': None, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'})
+    d = cf_doc(c, lambda d: str((procs_of(d, 'arr') or {}).get('star', '')).startswith('LFML.STAR.LERG1R'), 'the OFP\'s STAR is written on the arrival, not chosen yet', timeout=15000)
+    p = d['route']['procedures']
+    c.eq(p['dep'], None, 'a departure set to "aucune" is a choice: the OFP leaves it', what='route.procedures.dep')
+    c.eq(p['arr'].get('rwy'), '13L', 'the arrival takes the runway of the OFP\'s STAR', what='arrival runway')
+    star_line = norm(row(c, 'procChange').replace('{side}', row(c, 'arr')).replace('{parts}', f"{kinds('rwy')} — → 13L · {kinds('star')} — → LERG1R"))
+    c.quiet("(window.__notes || []).length")
+    notes = [norm(n) for n in c.note_log()]
+    c.ok(star_line in notes, f'notifications {notes}', f'one line for the arrival it filled: {star_line}')
+    # nothing chosen on either side: both are filled, one line each
+    load_ofp(None)
+    d = cf_doc(c, lambda d: str((procs_of(d, 'arr') or {}).get('star', '')).startswith('LFML.STAR.LERG1R') and str((procs_of(d, 'dep') or {}).get('sid', '')).startswith('LFRS.SID.LUGE4N'),
+               'the OFP fills both sides', timeout=15000)
+    c.quiet("(window.__notes || []).length")
+    notes = [norm(n) for n in c.note_log()]
+    c.ok(sid_line in notes and star_line in notes, f'notifications {notes}', 'one line for each side it filled')
 
 
 def set_icao(c, side, icao):
@@ -799,10 +832,10 @@ def f21(c):
     c.ok(any('MEN2B' in lab for _, lab in sel_opts(c, 'p-arr-star')), f"STAR options {sel_opts(c, 'p-arr-star')}", 'the STAR of 31L is still listed (marked, not removed)')
     # the hand-read STAR of an old cycle on the chosen runway, joining no point of the approach: ⌛ only (continuity is never a conflict)
     o = opt_info(c, 'p-arr-star', 'MAN1A')
-    c.eq(o['label'], 'MAN1A · 13R ⌛', 'outdated, on the chosen runway: the hourglass only, no warning for a STAR that joins no point', what='label')
+    c.eq(o['label'], 'MAN1A ⌛', 'outdated, a runway is chosen: no runway in the label, the hourglass only, no warning for a STAR that joins no point', what='label')
     c.eq(o['cls'].split(), ['outdated'], 'only the class outdated', what='class')
-    c.eq(o['title'], norm(row(c, 'procOutdatedTitle')), 'and its single reason in the title', what='title')
-    # the STAR chosen next, then another runway: both choices are kept, one line says they conflict
+    c.eq(o['title'], title_of('MAN1A ⌛', row(c, 'procOutdatedTitle')), 'and its whole label then its single reason in the title', what='title')
+    # the STAR chosen next, then another runway: both choices are kept, marked ⚠ (no notification: the mark and the title are enough)
     c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN1A.RW13R.NONE')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFML.STAR.MEN1A.RW13R.NONE', 'the STAR is written')
     n0 = len(c.note_log())
@@ -810,12 +843,10 @@ def f21(c):
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '31L', 'the other runway is written')
     c.eq(procs_of(d, 'arr'), {'rwy': '31L', 'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'app': 'LFML.APP.I13R.RW13R.NONE'},
          'the STAR and the approach that do not serve 31L are kept', what='route.procedures.arr')
-    c.until("(n) => (window.__notes || []).length > n", n0, timeout=6000, what='one notification says the conflict')
-    c.wait(600)
-    notes = [norm(n) for n in c.note_log()[n0:]]
     why = norm(row(c, 'procConflictRwy').replace('{rwy}', '31L'))
-    c.eq(len(notes), 1, 'and only one', what=f'notifications {notes}')
-    c.ok(notes[0].startswith('⚠') and 'MEN1A' in notes[0] and 'I13R' in notes[0] and why in notes[0], f'notification {notes[0]!r}', f'it names both procedures and the reason "{why}"')
+    c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /MEN1A.*⚠/.test(o.textContent))", what='the STAR is marked in conflict with 31L')
+    c.eq(opt_info(c, 'p-arr-star', 'MEN1A')['title'], title_of('MEN1A ⚠', why), 'the title gives the reason', what='MEN1A title')
+    c.eq(c.quiet("(window.__notes || []).length") - n0, 0, 'no notification says the conflict', what='new notifications')
     # a transition belongs to its STAR: another STAR drops it
     open_proc(c, procs={'arr': {'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'trans': 'LFML.STAR.MEN1A.RW.NEPIX'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'})
     wait_rows(c, 'arr')
@@ -932,8 +963,8 @@ def opt_info(c, k, start):
         return o && { label: o.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(), cls: o.className, title: o.title.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() } }""", [k, start])
 
 
-@case('F26', 'Conflicts are marked ⚠, not forbidden: class, title, the choice kept, one notification', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
-      rule='V3 spec 10.23: ⚠ orange = in conflict with the chosen runway only (never the STAR / approach continuity), reason as title, still selectable, said once')
+@case('F26', 'Conflicts are marked ⚠, not forbidden: class, title, the choice kept, no notification', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.23: ⚠ orange = in conflict with the chosen runway only (never the STAR / approach continuity), reason in the title, still selectable, no notification')
 def f26(c):
     open_proc(c)
     wait_rows(c, 'arr')
@@ -944,27 +975,23 @@ def f26(c):
     c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '27')
     c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /ARR2B.*⚠/.test(o.textContent))", what='ARR2B is marked')
     o = opt_info(c, 'p-arr-star', 'ARR2B')
-    c.eq(o['label'], 'ARR2B · 09 ⚠', 'the label ends with the warning after the runway the procedure serves', what='label')
+    c.eq(o['label'], 'ARR2B ⚠', 'a runway is chosen: the label ends with the warning, without the runway the procedure serves', what='label')
     c.ok('conflict' in o['cls'].split(), f"class {o['cls']!r}", 'the option carries the class conflict')
-    c.eq(o['title'], norm(row(c, 'procConflictRwy').replace('{rwy}', '27')), 'the title gives the reason', what='title')
-    c.eq(opt_info(c, 'p-arr-star', 'ARR1A')['label'], 'ARR1A · 27', 'the STAR of 27 is not marked', what='ARR1A label')
-    # choosing the conflicting STAR keeps the choice and says it once
+    c.eq(o['title'], title_of('ARR2B ⚠', row(c, 'procConflictRwy').replace('{rwy}', '27')), 'the title gives the whole label then the reason', what='title')
+    c.eq(opt_info(c, 'p-arr-star', 'ARR1A')['label'], 'ARR1A', 'the STAR of 27 is not marked, nor suffixed', what='ARR1A label')
+    # choosing the conflicting STAR keeps the choice and says nothing
     n0 = len(c.note_log())
     c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFVC.STAR.ARR2B.RW09.NONE')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFVC.STAR.ARR2B.RW09.NONE', 'the conflicting STAR is written')
     c.eq(procs_of(d, 'arr'), {'rwy': '27', 'star': 'LFVC.STAR.ARR2B.RW09.NONE'}, 'the choice is kept and the runway stays', what='route.procedures.arr')
-    c.until("(n) => (window.__notes || []).length > n", n0, timeout=6000, what='a notification says the conflict')
-    c.wait(600)
-    notes = [norm(n) for n in c.note_log()[n0:]]
-    c.eq(len(notes), 1, 'one notification', what=f'notifications {notes}')
-    c.ok(notes[0].startswith('⚠') and 'ARR2B' in notes[0] and norm(row(c, 'procConflictRwy').replace('{rwy}', '27')) in notes[0], f'notification {notes[0]!r}', 'it names the STAR and the reason')
+    c.eq(c.quiet("(window.__notes || []).length") - n0, 0, 'a conflicting choice says nothing: the mark and the title are enough', what='new notifications')
     # the approach of 27 chosen: ARR2B keeps its single runway reason; continuity is never a conflict (ARR2B joins nothing, IC301 is not marked)
     c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFVC.APP.ILS27.RW27.NONE')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFVC.APP.ILS27.RW27.NONE', 'the approach is written')
     c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]')", what='the approach transition select appears')
     o = opt_info(c, 'p-arr-star', 'ARR2B')
-    c.eq(o['title'], norm(row(c, 'procConflictRwy').replace('{rwy}', '27')), 'the runway is the only reason, even though ARR2B joins no point of the approach', what='ARR2B title')
-    c.eq(opt_info(c, 'p-arr-star', 'ARR1A')['label'], 'ARR1A · 27', 'ARR1A is not marked', what='ARR1A label')
+    c.eq(o['title'], title_of('ARR2B ⚠', row(c, 'procConflictRwy').replace('{rwy}', '27')), 'the runway is the only reason, even though ARR2B joins no point of the approach', what='ARR2B title')
+    c.eq(opt_info(c, 'p-arr-star', 'ARR1A')['label'], 'ARR1A', 'ARR1A is not marked', what='ARR1A label')
     t = opt_info(c, 'p-arr-appTrans', 'IC301')
     c.eq(t['label'], 'IC301', 'a transition that does not start at the end of the chosen STAR is not marked', what='transition label')
     # a STAR that agrees: no warning left on the transition, and no new notification
@@ -972,12 +999,11 @@ def f26(c):
     c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFVC.STAR.ARR1A.RW27.NONE')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFVC.STAR.ARR1A.RW27.NONE', 'the agreeing STAR is written')
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]'); return !!s && ![...s.options].some(o => /⚠/.test(o.textContent)) })()", what='the transition is no longer marked')
-    c.wait(600)
-    c.eq(len(c.note_log()) - n1, 0, 'a choice without conflict says nothing', what='notifications after ARR1A')
+    c.eq(c.quiet("(window.__notes || []).length") - n1, 0, 'a choice without conflict says nothing', what='notifications after ARR1A')
 
 
 @case('F27', 'A row with procedures offers "Read again"', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
-      rule='user, 29 Oct: « il manque un bouton “rafraîchir” les procédures (avec une date pour le dernier fichier) »; V3 spec 10.20: date (coverage().read_at) then « Relire », same gesture as the reading on demand')
+      rule='user, 29 Oct: « il manque un bouton “rafraîchir” les procédures (avec une date pour le dernier fichier) »; V3 spec 10.20 / 10.23: the date (coverage().read_at) then « Relire » on the one secondary line, same gesture and same code path as the reading on demand')
 def f27(c):
     open_proc(c)
     wait_rows(c, 'arr')
@@ -985,12 +1011,10 @@ def f27(c):
     c.until("!!document.querySelector('[data-module=fuel] [data-proc=arr] [data-do=procfetch]')", what='the arrival row (it has procedures) offers the reading again')
     c.eq(norm(c.text(b) or ''), norm(row(c, 'procReread')), 'the button says "Read again" in the language of the run', what='button')
     c.ok(c.js("!!document.querySelector('[data-module=fuel] [data-proc=arr] select[data-k=\"p-arr-star\"]')"), 'no STAR list', 'the lists stay next to it')
-    # the date: aerodb's coverage().read_at when it gives it (UTC); without it, the button alone
-    at = c.js("(async () => { const v = await (window.__sogAerodb || {}).coverage?.('LFML'); return v ? v.read_at ?? null : undefined })()")
-    if at:
-        c.ok(norm(c.text(f'{FUEL} [data-proc="arr"] .fu-procfile') or '').startswith(norm(row(c, 'procFileAt').split('{d}')[0])), 'no date', 'the date of the last reading is shown before the button')
+    # the button is on the secondary line, after the date of the last reading (LFML's file was read by hand on 29 Oct 16:53Z, an earlier cycle)
+    c.eq(meta_parts(c, 'arr'), [norm(row(c, 'procFileAt').replace('{d}', '29/10 16:53Z')) + ' ⌛', norm(row(c, 'procReread'))], 'the date of the last reading comes before the button, on one line', what='arrival line')
     c.tap(b)
-    want = norm(tx(F, "no-launcher'", c.lang, after='procReasons'))
+    want = norm(tx(PT, "no-launcher'", c.lang, after='procReasons'))
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=6000,
             what='the same gesture as the reading on demand: its refusal is said (no launcher on the test page)')
 
@@ -1045,13 +1069,14 @@ def f31(c):
     # the count of what was not read
     # aerodb itself leaves the status doubt record out; the nameless one is Fuel's own safety belt and is counted
     line = norm(c.text(f'{FUEL} [data-proc="arr"] .fu-procunread') or '')
-    c.eq(line, norm(row(c, 'procUnread1').replace('{n}', '1')), 'a muted line counts the record not listed that aerodb let through (singular)', what='unread line')
-    c.ok(c.count(f'{FUEL} [data-proc="arr"] .fu-procunread [data-source-slot]') == 1, 'no slot', 'with the slot the Source link of 10.25 will take')
+    c.eq(line, norm(row(c, 'procNotRead1').replace('{n}', '1')), 'the secondary line counts the record not listed that aerodb let through, shortly (singular)', what='unread count')
+    c.ok(norm(c.attr(f'{FUEL} [data-proc="arr"] .fu-procunread', 'title')).endswith(norm(row(c, 'procUnread1').replace('{n}', '1'))), 'title missing the sentence', 'and its title says the sentence (after the catalogue label "partly read" when aerodb gives it)')
+    c.eq(c.count(f'{FUEL} [data-proc="arr"] .fu-procmeta [data-source-slot]'), 1, 'with the slot the Source link of 10.25 will take, at the end of the same line', what='source slot')
     c.eq(c.count(f'{FUEL} [data-proc="dep"] .fu-procunread'), 0, 'an aerodrome with nothing unread shows no line', what='departure line')
     # compatible first: runway 25 chosen, the STAR and the approach of 25 lead, those of 07 follow marked
     c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '25')
     c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /ORD1A.*⚠/.test(o.textContent))", what='the STAR of 07 is marked')
-    c.eq([lab for v, lab in sel_opts(c, 'p-arr-star') if v not in ('', '__none')], ['ORD2B · 25', 'ORD1A · 07 ⚠'], 'the compatible STAR first, the warning after', what='STAR options')
+    c.eq([lab for v, lab in sel_opts(c, 'p-arr-star') if v not in ('', '__none')], ['ORD2B', 'ORD1A ⚠'], 'the compatible STAR first, the warning after (a runway is chosen: no runway in the labels)', what='STAR options')
     c.eq([lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')], ['ILS25', 'ILS07 ⚠'], 'and the approaches the same way', what='approach options')
     # the runway list is led by the runway of the chosen approach
     c.eq([v for v, _ in sel_opts(c, 'p-arr-rwy')], ['', '07', '25'], 'without a chosen SID or approach the runways are in natural order', what='runways')
@@ -1073,3 +1098,128 @@ def f32(c):
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'frame/lib/test/procedures.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
+
+
+# ---------------------------------------------------------------------------------------------------------------- F34 - F36
+# The "Procédures" card redone (V3 spec 10.29 d, e, f; 10.23): a title with the aerodrome's name, ONE secondary line, a fixed grid
+# identical on both sides, lists updated in place, a series of choices written once.
+def meta_parts(c, side):
+    """The pieces of a side's single secondary line (separators and the empty Source slot left out), or None without the line."""
+    return c.js("""(s) => { const m = document.querySelector('[data-module=fuel] [data-proc="' + s + '"] .fu-procmeta');
+        return m ? [...m.children].filter(e => !e.classList.contains('fu-sep') && !e.hasAttribute('data-source-slot')).map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()) : null }""", side)
+
+
+def select_geometry(c):
+    """{ data-k: { x, y, w } } of every select of the card, in px."""
+    return c.js("""() => Object.fromEntries([...document.querySelectorAll('[data-module=fuel] [data-proc] select')].map(s => {
+        const r = s.getBoundingClientRect(); return [s.dataset.k, { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width) }] }))""")
+
+
+def narrow_selects(c):
+    """The selects of the card narrower than their longest option (text and padding; the arrow is the select's own): [{ k, need, have }]."""
+    return c.js("""() => { const cv = document.createElement('canvas').getContext('2d');
+        return [...document.querySelectorAll('[data-module=fuel] [data-proc] select')].map(s => { const cs = getComputedStyle(s); cv.font = cs.font;
+          const w = Math.max(...[...s.options].map(o => cv.measureText(o.textContent).width));
+          return { k: s.dataset.k, need: Math.ceil(w + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)), have: Math.floor(s.getBoundingClientRect().width) } }).filter(r => r.have < r.need) }""")
+
+
+@case('F34', 'Procedures card: titled with the name, one secondary line, one fixed grid on both sides, no label cut', 'F', tags=('fuel', 'aerodb', 'layout'),
+      designs=('standard',), phone=False, screens=True,
+      rule='V3 spec 10.23 / 10.27 / 10.29 d: "Départ LFPO Paris-Orly"; one muted line "lu le … · Relire · N non lues" (Relire outside the grid); runway · procedure · transition on columns identical on both sides; a select as wide as its longest label; one column under 600 px')
+def f34(c):
+    open_proc(c, procs=V2_PROCS)
+    wait_rows(c, 'dep')
+    wait_rows(c, 'arr')
+    # the title: side, code, the name aerodb gives (the seeded base names its aerodromes "<code> TEST")
+    titles = [norm(t) for t in c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc] .fu-proctitle')].map(e => e.textContent)")]
+    c.eq(titles, [norm(f"{row(c, 'dep')} LFRS LFRS TEST"), norm(f"{row(c, 'arr')} LFML LFML TEST")], 'each side is titled with its side, its code and the aerodrome\'s name', what='titles')
+    # ONE secondary line per side; the arrival's file was read by hand (seeded 29 Oct 16:53Z, an earlier cycle: ⌛), the departure's is published (no date)
+    c.eq(c.count(f'{FUEL} [data-proc] .fu-procmeta'), 2, 'one secondary line per side, not more', what='secondary lines')
+    arr = meta_parts(c, 'arr')
+    c.eq(arr, [norm(row(c, 'procFileAt').replace('{d}', '29/10 16:53Z')) + ' ⌛', norm(row(c, 'procReread'))], 'the arrival line: "lu le 29/10 16:53Z ⌛" then "Relire"', what='arrival line')
+    c.eq(meta_parts(c, 'dep'), [norm(row(c, 'procReread'))], 'the departure line: "Relire" alone (a published file has no reading date)', what='departure line')
+    c.eq(c.js("[...document.querySelectorAll('[data-module=fuel] [data-do=procfetch][data-again]')].map(b => !!b.closest('.fu-procmeta') && !b.closest('.fu-pf'))"), [True, True],
+         '"Relire" is a text button of the line, outside the grid', what='Relire in the line')
+    c.eq(c.count(f'{FUEL} [data-proc] .fu-procmeta [data-source-slot]'), 2, 'each line ends with the slot of the later "Source" link', what='source slots')
+    c.eq(narrow_selects(c), [], 'at 1280, beside the map, no select is narrower than its longest option', what='narrow selects at 1280')
+    c.page.set_viewport_size({'width': 1920, 'height': 1080})            # a module of 600 px and more: the three columns
+    c.settle()
+    wait_rows(c, 'arr')
+    # the same columns on both sides: runway, procedure, transition; the approach under the STAR
+    g = select_geometry(c)
+    for a, b, what in (('p-dep-rwy', 'p-arr-rwy', 'runway'), ('p-dep-sid', 'p-arr-star', 'procedure'), ('p-dep-trans', 'p-arr-trans', 'transition')):
+        c.eq((g[a]['x'], g[a]['w']), (g[b]['x'], g[b]['w']), f'the {what} column has the same left edge and width on both sides', what=what)
+    c.eq((g['p-arr-app']['x'], g['p-arr-app']['w']), (g['p-arr-star']['x'], g['p-arr-star']['w']), 'the approach is under the STAR, on the same column', what='approach column')
+    c.ok(g['p-arr-app']['y'] > g['p-arr-star']['y'], f"{g['p-arr-app']} below {g['p-arr-star']}", 'the approach is on the second line of the arrival')
+    c.ok(g['p-arr-rwy']['w'] < g['p-arr-star']['w'], f"{g['p-arr-rwy']['w']} vs {g['p-arr-star']['w']}", 'the runway column is narrow, the procedure column wide')
+    c.eq(narrow_selects(c), [], 'every select is at least as wide as its longest option label (none is cut)', what='narrow selects at 1920')
+    c.ok(c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc] option')].filter(o => o.value !== '' && o.value !== '__none' && !o.parentElement.dataset.k.endsWith('-rwy')).every(o => o.title.startsWith(o.textContent.trim()))"),
+         'a title lacks its label', 'the full label of an option is also its title')
+    # under 600 px a single column, every select at the full width
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    try:
+        c.settle()
+        to_step(c, 1)
+        c.until("(() => { const r = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]'); return !!r && r.getBoundingClientRect().width > 0 })()", what='the card is on screen at 390 px')
+        g = select_geometry(c)
+        c.eq(len({v['x'] for v in g.values()}), 1, 'one column: every select has the same left edge', what=f'left edges {sorted({v["x"] for v in g.values()})}')
+        c.eq(len({v['w'] for v in g.values()}), 1, 'and the same, full width', what=f'widths {sorted({v["w"] for v in g.values()})}')
+        ys = [v['y'] for v in g.values()]
+        c.ok(len(set(ys)) == len(ys), f'tops {ys}', 'and they are stacked, none beside another')
+    finally:
+        c.page.set_viewport_size({'width': 1280, 'height': 800})
+    # an aerodrome with nothing: the line says so and offers the reading; the title is the code alone when aerodb does not know the aerodrome
+    set_icao(c, 'dep', 'LFQQ')
+    c.until("!!document.querySelector('[data-module=fuel] [data-proc=dep] [data-do=procfetch]:not([data-again])')", what='the departure of LFQQ offers the reading')
+    c.eq(meta_parts(c, 'dep'), [norm(row(c, 'procNoData')), norm(row(c, 'procRead').replace('{icao}', 'LFQQ'))], 'without data the line says so and offers the reading', what='departure line')
+    c.eq(norm(c.text(f'{FUEL} [data-proc="dep"] .fu-proctitle')), norm(f"{row(c, 'dep')} LFQQ"), 'an aerodrome unknown to aerodb is titled by its code alone', what='title')
+
+
+@case('F35', 'Procedures card: when only the lists change they are updated in place, the focus stays', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      rule='V3 spec 10.29 e: the options of the existing selects are replaced, the box is never rebuilt, the focus never moves; the structure changes only with the aerodrome, the start or a transition list appearing')
+def f35(c):
+    open_proc(c, procs=V2_PROCS)
+    wait_rows(c, 'dep')
+    wait_rows(c, 'arr')
+    c.js("""() => { const q = k => document.querySelector('[data-module=fuel] select[data-k="' + k + '"]');
+        window.__keep = { sid: q('p-dep-sid'), star: q('p-arr-star'), rwy: q('p-dep-rwy'), box: q('p-dep-sid').closest('.fu-procbox'), dep: q('p-dep-sid').closest('.fu-proc') }; q('p-dep-sid').focus() }""")
+    # the departure runway changes by script (no focus move): the SID list is re-marked while the focus is in it
+    c.js("""() => { const r = window.__keep.rwy; r.value = '21'; r.dispatchEvent(new Event('change', { bubbles: true })) }""")
+    c.until("[...window.__keep.sid.options].some(o => /NTS1A.*⚠/.test(o.textContent))", what='the SID of the other runway is marked in the list the focus is in')
+    same = c.js("""() => ({ focus: document.activeElement === window.__keep.sid, sid: window.__keep.sid.isConnected, box: window.__keep.box.isConnected, dep: window.__keep.dep.isConnected,
+        star: window.__keep.star.isConnected })""")
+    c.eq(same['focus'], True, 'the focus is still on the same SID select after its options changed', what='activeElement')
+    c.ok(all(same.values()), f'{same}', 'no node of the card was replaced (box, side, selects)')
+    # another side changes while the focus is in the arrival list: the focus stays there
+    c.js("() => { document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]').focus() }")
+    c.js("""() => { const r = window.__keep.rwy; r.value = '03'; r.dispatchEvent(new Event('change', { bubbles: true })) }""")
+    c.until("![...window.__keep.sid.options].some(o => /NTS1A.*⚠/.test(o.textContent))", what='NTS1A is no longer marked, the list is back to the runway 03')
+    c.eq(c.js("() => document.activeElement === window.__keep.star"), True, 'the focus stays on the arrival STAR list while the departure lists change', what='activeElement')
+    # a change of structure (the SID removed: its transition list disappears) keeps the focus on its select by name
+    c.js("() => { document.querySelector('[data-module=fuel] select[data-k=\"p-dep-sid\"]').focus() }")
+    c.js("""() => { const s = document.querySelector('[data-module=fuel] select[data-k="p-dep-sid"]'); s.value = ''; s.dispatchEvent(new Event('change', { bubbles: true })) }""")
+    c.until("!document.querySelector('[data-module=fuel] select[data-k=\"p-dep-trans\"]')", what='the transition list of the removed SID disappears')
+    c.eq(c.js("() => document.activeElement && document.activeElement.dataset.k || ''"), 'p-dep-sid', 'a change of structure still keeps the focus on its select', what='activeElement')
+
+
+@case('F36', 'A series of choices is written once, 400 ms after the last one', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      rule='V3 spec 10.29 f: choices made in a row are written once (one deferred save, one quote); no intermediate state reaches the flight record')
+def f36(c):
+    open_proc(c)
+    wait_rows(c, 'dep')
+    wait_rows(c, 'arr')
+    # three choices in a row, then watch the flight record until it holds the last one: no state with only the first choices is ever written
+    for k, v in (('p-arr-rwy', '13R'), ('p-arr-star', 'LFML.STAR.MEN1A.RW13R.NONE'), ('p-arr-app', 'LFML.APP.I13R.RW13R.NONE')):
+        c.page.select_option(f'{FUEL} select[data-k="{k}"]', v)
+    seen = []
+    for _ in range(80):
+        arr = (((c.doc('pilot/ABC/current_flight.json') or {}).get('route') or {}).get('procedures') or {}).get('arr')
+        st = json.dumps(arr, sort_keys=True)
+        if st not in seen:
+            seen.append(st)
+        if arr and arr.get('app'):
+            break
+        c.wait(60)
+    states = [json.loads(x) for x in seen if x != 'null']
+    c.ok(bool(states) and states[-1].get('app') == 'LFML.APP.I13R.RW13R.NONE', f'states seen {seen}', 'the last choice reached the flight record')
+    c.eq(len(states), 1, 'and it arrived in one write: no intermediate state (the runway alone, the runway and the STAR) was ever written', what=f'states seen {seen}')
