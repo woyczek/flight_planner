@@ -787,6 +787,47 @@ per path) and the note on the author are with V3 Frame.
   - aerodb declares its launcher routes (`declaration().launcher.routes = ['regen/job']`) instead of `frame/app.js`; the
     frame gives no launcher client on a paired device of the local network.
 
+## <a id="review-1029-split"></a>Review of 29 October, evening (V3, AeroDB readers split, 09654dde9)
+
+Read-only review of the split of `tools/proc_eaip.py` into `proc_pdf.py`, `proc_sia.py`, `proc_layouts.py`,
+`proc_records.py` and `tools/ead_probe.py`. Classification: **blocking**, **to fix**, **acceptable**. No blocking point;
+the move kept the rules below, the point to fix and the notes already existed before the split.
+
+| # | Subject | Verdict |
+|---|---|---|
+| 1 | [M5](#m5): programs found by an absolute path, current folder excluded | acceptable (kept) |
+| 2 | Reading in a separate process under a time limit | acceptable (kept) |
+| 3 | Caches under `data/local/` only | acceptable, one note |
+| 4 | EAD credentials never as an argument or in a log; `ead_probe` inert in production | acceptable (kept) |
+| 5 | Names of the SIA PDF files written into the cache | to fix |
+
+**1. M5 — kept.** `proc_ocr.tesseract_path()` sets `NoDefaultCurrentDirectoryInExePath` before `shutil.which`; the new
+files start no program (no `subprocess`).
+
+**2. Isolation — kept.** Every PDF reading goes through `proc_pdf.limited` (`PDF_TIMEOUT` 60 s, `OCR_TIMEOUT` 600 s):
+`pdf_pages`, `pdf_some_pages`, `pdf_kind`, `first_page_rows`; `proc_sia` and `proc_records` import these functions and
+no longer open PDFs themselves; both OCR modes run under `limited`.
+
+**3. Caches — acceptable, one note.** The launcher's jobs pass `data/local/eaip/<cycle>/` and `data/local/ead/`
+(never published). Note: run by hand, `proc_sia.py` without `--cache` writes into `.proc_cache/<cycle>/` of the current
+folder, which Git does not ignore; from the root of the code repository a `git add -A` would take the PDFs. Default to
+`data/local/eaip/` or ignore `.proc_cache/`. The codes given on the command line are not checked either (they go into
+the address and into `<out>/<ICAO>.json`): reuse `^[A-Z0-9]{4}$` as `proc_ead` does. The launcher's verb checks its
+code (`_eaip_args`: a code of `_ead_args` beginning with `LF`).
+
+**4. EAD credentials, `ead_probe` — kept.** `ead_probe.py` takes only `--user` (default `EAD_USER`), the password from
+`getpass` or `EAD_PASSWORD`; its outputs go through `proc_ead.sanitize` and into `ead_probe/` (ignored by Git). Neither
+`tools/launch.py` nor `tools/regen_jobs.py` imports it: a tool run by hand, nothing in production. `_ead_fetch` keeps
+`clean()` (`sanitize` with the job's credentials) on the log and the warnings; `_eaip_fetch` handles no credential.
+
+**5. File names of the SIA cache — to fix.** `pdf_names` takes the names from the aerodrome's HTML page with
+`[^"'<>]+?\.pdf`, which admits `/`, `\` and `..`; `read_aerodrome` then writes `cache / name`. A page (or a redirect:
+`urllib` follows them to any host) carrying `Cartes/LFxx/../../../x.pdf` would write a file ending in `.pdf` outside the
+cache. The SIA host is fixed and served over HTTPS, so the risk is low, but the fix is one line: keep only
+`[A-Za-z0-9._-]+\.pdf` without `..`, or check that `(cache / name).resolve()` stays under `cache.resolve()`.
+
+Follow-up: point 5 and the two notes of point 3 are with V3 Frame.
+
 ## Appendix A — Hosts contacted
 
 | Host | From | What goes out |
