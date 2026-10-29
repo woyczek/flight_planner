@@ -870,6 +870,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 28 | AeroDB `base/fetch` and `base/purge` (ac84d562e); Data module corrections (6330c5133) | acceptable, two older points to fix, one note |
 | 29 | Map: track from `progress.actual.trail`, « Choisir sur la carte » button (a158edbe5) | acceptable, one note |
 | 30 | AeroDB: the points of 28 in `aero_fetch` (38a9d39b7) | acceptable; points of 28 settled, one note |
+| 31 | Fuel: « Source » link (c540c3efd), past-date warning (9d9d2f686) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1236,6 +1237,11 @@ the ceiling even without a declared size; `TooLarge` is an `OSError`, nothing is
 to any host, plain http included; the host checks cover the page's links, not a server's redirect. Acceptable while the
 starting hosts are fixed and in https; an opener that refuses a redirect leaving the starting host would close the rule
 for every source.
+
+**31. Fuel, « Source » link and past-date warning (c540c3efd, 9d9d2f686) — acceptable.** A link is set only when
+`source.url` starts with `https://` (aerodb already binds the host to the SIA's, 25), escaped, in a new tab with
+`rel="noopener noreferrer"`; only the chosen records of the side are looked up by id; other sources' document names go into
+the line's `title` as a DOM property. The past-date warning is text only (`textContent`, `esc`), never blocking, no write.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 29 and 30 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30; 27 blocking until fixed); the sharing of the track and of the position is the user's decision.
 
