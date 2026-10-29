@@ -1,6 +1,6 @@
 {
   "schema": "sog-roadmap/1",
-  "updated": "2026-10-28",
+  "updated": "2026-10-29",
   "owner": "ergonomics session (Simplification interface et ergonomie)",
   "note": {
     "fr": "Ce qui est « livré » doit marcher : un écart est un bug à signaler. Ce qui est « en cours », « prévu » ou « plus tard » n'est pas un bug.",
@@ -389,6 +389,13 @@
           "en": "Runway, SID, STAR and approach chosen in the preparation, changeable en route; procedures read on demand",
           "de": "Piste, SID, STAR und Anflug in der Vorbereitung gewählt, unterwegs änderbar; Verfahren auf Abruf gelesen",
           "es": "Pista, SID, STAR y aproximación elegidas en la preparación, modificables en ruta; procedimientos leídos bajo demanda"
+        },
+        {
+          "state": "planned",
+          "fr": "Listes de procédures : périmée ⌛ et en conflit ⚠ marquées, jamais cachées ; listes plates ; bouton « Sur la carte »",
+          "en": "Procedure lists: outdated ⌛ and conflicting ⚠ marked, never hidden; flat lists; \"On the map\" button",
+          "de": "Verfahrenslisten: veraltet ⌛ und im Konflikt ⚠ markiert, nie verborgen; flache Listen; Schaltfläche „Auf der Karte“",
+          "es": "Listas de procedimientos: caducado ⌛ y en conflicto ⚠ marcados, nunca ocultos; listas planas; botón «En el mapa»"
         }
       ]
     },
@@ -569,6 +576,13 @@
           "en": "Coverage map of the procedures: green aerodromes (procedures held), orange (readable on demand), red (nothing)",
           "de": "Abdeckungskarte der Verfahren: grüne Plätze (Verfahren vorhanden), orange (auf Abruf lesbar), rot (nichts)",
           "es": "Mapa de cobertura de los procedimientos: aeródromos verdes (procedimientos disponibles), naranja (legibles bajo demanda), rojos (nada)"
+        },
+        {
+          "state": "planned",
+          "fr": "Mode « choix » : fond de carte grisé, toutes les procédures du terrain tracées avec leur nom, choix renvoyé à Carburant",
+          "en": "\"Choose\" mode: dimmed base map, every procedure of the aerodrome drawn with its name, choice handed back to Fuel",
+          "de": "„Auswahl“-Modus: abgedunkelte Grundkarte, alle Verfahren des Platzes mit Namen gezeichnet, Wahl an Kraftstoff zurückgegeben",
+          "es": "Modo «elección»: mapa base atenuado, todos los procedimientos del aeródromo trazados con su nombre, elección devuelta a Combustible"
         }
       ]
     },

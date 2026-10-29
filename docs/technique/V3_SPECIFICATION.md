@@ -687,3 +687,36 @@ redesigned for touch at that point.
        **Status (28 Oct, late)**: aerodb done (`coverage(icao)`, `coverageByState()`, `AeroCatalogue.COVERAGE`:
        frame/aerodb/SPEC.md § 5, INTEGRATION « Coverage of the procedures »); the Map's layer done (maps SPEC § 6.11,
        `modules/maps/coverage.js`, cases D45 to D50); the Data module's State list still to code (with the module).
+   23. **Procedure lists: outdated and conflicting marked, never hidden; choosing on the Map** (user, 29 Oct morning,
+       two screenshots of Fuel › Vol and one of Navigraph's "Set arrival" on LFBD: "plutôt que « périmé », un symbole
+       court, peut-être une couleur (gris ?)"; "on doit pouvoir choisir quand même, mais c'est affiché « conflit » avec la
+       RWY ou la STAR"; "ça prend beaucoup de place, à raffiner"; "Je n'ai pas de vue globale de ce qui est faisable. on a
+       sans doute besoin d'un mode « grisé » pour choisir l'approche / le départ : zoom sur une portion de la carte, fond
+       de carte moins visible, toutes les procédures visibles, avec leur nom"): decided by the ergonomics session.
+       - **Two markers, one meaning each, everywhere** (Fuel's lists and notifications, the Map's labels, aerodrome card
+         and legend, later the Data module): **⌛ grey** = outdated (read under an earlier cycle: to read again), **⚠
+         orange** = in conflict with the current choice (a SID or approach that does not serve the chosen runway, a STAR
+         whose end has no common point with the chosen approach or its transition, a transition that does not start on
+         the chosen STAR's end). Never the word. In a native `select` the symbol carries the meaning and the colour only
+         accompanies it (option colour is ignored by phones' native pickers), with the reason as the option's `title`.
+       - **Conflict is marked, not forbidden.** A conflicting procedure stays selectable; choosing it keeps the choice,
+         notifies "RNP RWY 07 ne dessert pas la piste 02" ×4 once, and the Map joins it with a dashed direct (§ 10.20).
+         The lists are no longer pruned by the runway (reverses the pruning of 590e617bc); a choice that only serves one
+         runway still sets that runway when none is chosen.
+       - **Lists stay short.** No `optgroup` per runway: one flat list ordered by runway then name; the runway is in the
+         label only when the procedure serves exactly one ("MAN1A · 07"; approaches already name theirs). ⌛ then ⚠ close
+         the label, in that order. Markers go in one place per screen, not in headings.
+       - **Choosing on the Map ("mode choix")**: from the Départ and Arrivée rows of Fuel, one button "Sur la carte"
+         (and "Choisir" on the Map's aerodrome card) opens the Map at `#maps?choose=dep|arr&icao=LFXX`: the view fits the
+         aerodrome's procedures, the base map and every other layer are dimmed (one class on the map container), every
+         published procedure of the side is drawn with its name as a short cartouche (SID in one hue, STAR in another,
+         approaches in a third; ⌛ grey and ⚠ orange as above; transitions dashed), the current choice bold. A list (sheet
+         on the phone, panel on the desktop) names them in the same order as Fuel's lists, ≤ 7 rows visible then scroll;
+         a tap on a trace or on a row highlights the procedure, shows its runway, length and constraints, and offers
+         "Choisir"; a second tap on the choice leaves it. "Choisir" does not write: the Map returns to Fuel at
+         `#fuel?focus=arr&star=ID&trans=ID&app=ID` (or `focus=dep&rwy=…&sid=…`) and **Fuel writes** `route.procedures`
+         (sole writer, § 10.20) and says what changed; "Annuler" returns without a proposal. The mode ends on any other
+         navigation. No new module, no event between modules: the address carries the proposal.
+       - **Lots** (after the economy mode): fuel — markers and flat lists, conflict kept and notified, the two buttons,
+         reading the proposal from the address (tests F); maps — the choose mode, dimming, cartouches, list, proposal
+         address (tests D); aerodb — nothing new (`procedures()` already serves runways and transitions). Help ×4 per lot.
