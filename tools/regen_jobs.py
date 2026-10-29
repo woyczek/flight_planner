@@ -1,7 +1,7 @@
 """Travaux longs du lanceur pour le module Données (V3, frame/INTEGRATION.md § 15) — bibliothèque standard seulement.
 
 Socle commun à toutes les opérations de régénération (lot D0 ; les verbes des constructeurs arrivent avec eux, lot D2) :
-  * un travail à la fois, dans un fil ; état { id, set, verb, state ('running' | 'done' | 'error' | 'cancelled'), step,
+  * un travail à la fois, dans un fil ; état { id, set, verb, state ('running' | 'done' | 'error' | 'cancelled' | 'interrupted'), step,
     done, total, unit, log (200 dernières lignes), result, started, ended } ; le dernier reste lisible (page rechargée) ;
   * les verbes viennent d'une liste fixe (REGISTRY : (jeu, verbe) → fonction, contrôle des arguments) : rien de la page
     n'est un chemin, une adresse ou une commande ;
@@ -121,11 +121,12 @@ def state(data, secrets, git_cmd=None, git_env=dict, step=None, cancelled=None):
 class Job:
     """Un travail : son état lisible par la page, ses aides (étape, journal) et l'annulation demandée."""
 
-    def __init__(self, set_, verb, args, clean=str):
+    def __init__(self, set_, verb, args, clean=str, author=''):
         self.clean = clean  # nettoyage des secrets (clean_error) : toute ligne et toute étape passent par lui
+        self.author = author  # trigramme de la page qui a lancé le travail ('' sans lui) : l'auteur de commit_outputs
         self.id = uuid.uuid4().hex[:12]
-        self.data = {'id': self.id, 'set': set_, 'verb': verb, 'args': args, 'state': 'running', 'step': '', 'done': 0,
-                     'total': 0, 'unit': '', 'log': [], 'result': None, 'started': int(time.time()), 'ended': None}
+        self.data = {'id': self.id, 'set': set_, 'verb': verb, 'args': args, 'author': author, 'state': 'running', 'step': '',
+                     'done': 0, 'total': 0, 'unit': '', 'log': [], 'result': None, 'started': int(time.time()), 'ended': None}
         self._cancel = threading.Event()
 
     def step(self, text, done=None, total=None, unit=None):
@@ -177,16 +178,52 @@ class Jobs:
     """Un travail à la fois ; REGISTRY : (jeu, verbe) → (fonction(job, args, ctx) → résultat, contrôle(args) → args | None) ;
     MIN_GAP : délai minimal entre deux départs d'un verbe (refus 'too-soon', 429, avec `wait` en secondes)."""
 
-    def __init__(self, registry, ctx=None, min_gap=None):
+    def __init__(self, registry, ctx=None, min_gap=None, store=None):
         self.registry = dict(registry)
         self.ctx = ctx or {}
         self.lock = threading.Lock()
         self.cur = None
         self.min_gap = dict(MIN_GAP if min_gap is None else min_gap)
-        self.last = {}  # (jeu, verbe) → heure (time.monotonic) du dernier départ
+        self.last = {}  # (jeu, verbe) → heure (time.time) du dernier départ
+        self.store = store  # tools/.regen_last.json : le dernier travail et les derniers départs, gardés d'un lancement à l'autre
+        self.kept = None  # dernier travail d'un lancement précédent (« interrupted » s'il courait encore)
+        self._load()
 
-    def start(self, set_, verb, args):
+    def _load(self):
+        """Relit le dernier travail et les derniers départs : un travail qui courait quand le lanceur s'est arrêté devient
+        « interrupted » ; les délais (MIN_GAP) valent par-delà un redémarrage. Fichier absent ou illisible : rien."""
+        if not self.store:
+            return
+        try:
+            with open(self.store, encoding='utf-8') as f:
+                v = json.load(f)
+        except (OSError, ValueError):
+            return
+        j = v.get('job') if isinstance(v, dict) else None
+        if isinstance(j, dict) and isinstance(j.get('id'), str):
+            if j.get('state') == 'running':
+                j.update(state='interrupted', ended=j.get('ended') or int(time.time()))
+            self.kept = j
+        for k, t in (v.get('last') or {}).items() if isinstance(v, dict) else ():
+            if isinstance(k, str) and '/' in k and isinstance(t, (int, float)):
+                self.last[tuple(k.split('/', 1))] = float(t)
+
+    def _save(self):
+        """Écrit le dernier travail (sans secret : son journal est déjà nettoyé) et les derniers départs ; jamais d'erreur."""
+        if not self.store:
+            return
+        j = self.cur.view() if self.cur else self.kept
+        try:
+            tmp = self.store + '.tmp'
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump({'job': j, 'last': {f'{a}/{b}': t for (a, b), t in self.last.items()}}, f, ensure_ascii=False)
+            os.replace(tmp, self.store)
+        except (OSError, TypeError, ValueError):
+            pass
+
+    def start(self, set_, verb, args, author=''):
         key = (str(set_ or ''), str(verb or ''))
+        author = author if isinstance(author, str) and re.fullmatch(r'[A-Z]{3}', author) else ''
         if key not in self.registry:
             return {'ok': False, 'status': 400, 'message': f'unknown operation {key[0]}/{key[1]}'}
         fn, check = self.registry[key]
@@ -196,12 +233,13 @@ class Jobs:
         with self.lock:
             if self.cur and self.cur.data['state'] == 'running':
                 return {'ok': False, 'status': 409, 'message': 'a job is already running', 'job': self.cur.id}
-            gap, now = self.min_gap.get(key), time.monotonic()
+            gap, now = self.min_gap.get(key), time.time()
             if gap and key in self.last and now - self.last[key] < gap:
                 wait = max(1, int(gap - (now - self.last[key]) + 0.999))
                 return {'ok': False, 'status': 429, 'reason': 'too-soon', 'wait': wait, 'message': f'too soon: wait {wait} s'}
             self.last[key] = now
-            job = self.cur = Job(*key, a, clean=lambda t: clean_error(t, self.ctx))
+            job = self.cur = Job(*key, a, clean=lambda t: clean_error(t, self.ctx), author=author)
+            self._save()
         threading.Thread(target=self._run, args=(job, fn, a), daemon=True).start()
         return {'ok': True, 'job': job.id}
 
@@ -216,14 +254,17 @@ class Jobs:
             job.data['state'] = 'error'
             job.data['result'] = {'message': msg[:300]}
         job.data['ended'] = int(time.time())
+        with self.lock:
+            self._save()
 
     def view(self, id_=None):
         """Le travail id_ ({ ok: False, status: 410 } s'il n'est plus là) ; sans id_, le courant ou le dernier."""
         with self.lock:
             j = self.cur
+        v = j.view() if j else self.kept  # sans travail dans ce lancement : celui du précédent (« interrupted » s'il courait)
         if id_:
-            return j.view() if j and j.id == id_ else {'ok': False, 'status': 410, 'message': 'no such job'}
-        return {'job': j.view() if j else None}
+            return v if v and v.get('id') == id_ else {'ok': False, 'status': 410, 'message': 'no such job'}
+        return {'job': v}
 
     def cancel(self, id_):
         with self.lock:
@@ -518,6 +559,70 @@ def _eaip_fetch(job, args, ctx):
 
 
 # verbes du lot D0 ; les constructeurs (D2) ajoutent les leurs ici, chacun avec son contrôle d'arguments
+def commit_outputs(ctx, author, paths, message):
+    """Le seul commit des sorties dans data/, pour tous les verbes : `git add` puis `git commit -m … -- <chemins>` (avec chemins :
+    HEAD plus ces fichiers tels qu'ils sont sur le disque, jamais l'index ni un autre chemin ; ce que l'utilisateur a mis en
+    attente ailleurs reste où il est), auteur = le trigramme de la page (jamais un auteur de poste), pas de push. Chemins
+    relatifs à data/, sous les sorties (OUTPUTS) seulement. Rend { commit: SHA | None, warning: texte | None } : pas de dépôt,
+    pas de trigramme, chemin refusé, rien de changé ou git en échec → commit None et la raison."""
+    data, git_cmd, git_env = ctx.get('data'), ctx.get('git_cmd'), ctx.get('git_env', dict)
+    paths = [str(p).replace('\\', '/') for p in paths or []]
+    bad = [p for p in paths if not p or p.startswith('/') or '..' in p.split('/') or ':' in p
+           or not any(p == o or (o.endswith('/') and p.startswith(o)) for o in OUTPUTS)]
+    if bad or not paths:
+        return {'commit': None, 'warning': f'refused path: {bad[0] if bad else "(none)"}'}
+    if not (isinstance(author, str) and re.fullmatch(r'[A-Z]{3}', author)):
+        return {'commit': None, 'warning': 'no trigram: nothing committed'}
+    if not git_cmd or not data or not os.path.isdir(os.path.join(data, '.git')):
+        return {'commit': None, 'warning': "data/ is not a git repository: nothing committed"}
+    env = dict(git_env())
+
+    def run(*args):
+        return subprocess.run(git_cmd('-C', data, *args), capture_output=True, text=True, encoding='utf-8', errors='replace',
+                              timeout=60, env=env)
+    try:
+        a = run('add', '--', *paths)
+        if a.returncode != 0:
+            return {'commit': None, 'warning': clean_error('git add: ' + (a.stderr or a.stdout).strip(), ctx)[:200]}
+        if run('diff', '--cached', '--quiet', '--', *paths).returncode == 0:
+            return {'commit': None, 'warning': 'nothing changed: no commit'}
+        c = run('-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local', 'commit', '-m', str(message)[:500], '--', *paths)
+        if c.returncode != 0:
+            return {'commit': None, 'warning': clean_error('git commit: ' + (c.stderr or c.stdout).strip(), ctx)[:200]}
+        h = run('rev-parse', 'HEAD')
+        sha = h.stdout.strip()
+        return {'commit': sha if h.returncode == 0 and re.fullmatch(r'[0-9a-f]{40}', sha) else None, 'warning': None}
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return {'commit': None, 'warning': f'git: {str(e)[:200]}'}
+
+
+def load_verbs(folder=None):
+    """Les verbes des jeux : chaque tools/regen/<jeu>.py (dans l'ordre des noms, sauf « _… ») exporte VERBS = { (jeu, verbe):
+    (fonction, contrôle) } et, s'il veut, MIN_GAP = { (jeu, verbe): secondes } ; fusionnés dans REGISTRY et MIN_GAP. Appelé
+    par le lanceur à la création des travaux (pas à l'import : un jeu peut importer ce module). Un fichier en échec est
+    laissé de côté, sa raison rendue ; le lanceur continue. Rend [(fichier, message)]."""
+    folder = folder or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'regen')
+    errors = []
+    try:
+        names = sorted(n for n in os.listdir(folder) if n.endswith('.py') and not n.startswith('_'))
+    except OSError:
+        return errors
+    for n in names:
+        try:
+            spec = importlib.util.spec_from_file_location(f'regen_{n[:-3]}', os.path.join(folder, n))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            verbs, gaps = getattr(mod, 'VERBS', {}) or {}, getattr(mod, 'MIN_GAP', {}) or {}
+            for k, v in verbs.items():
+                if not (isinstance(k, tuple) and len(k) == 2 and isinstance(v, tuple) and len(v) == 2 and callable(v[0]) and callable(v[1])):
+                    raise ValueError(f'bad VERBS entry {k!r}')
+            REGISTRY.update(verbs)
+            MIN_GAP.update({k: float(v) for k, v in gaps.items() if isinstance(k, tuple) and isinstance(v, (int, float))})
+        except Exception as e:  # un jeu en échec ne fait pas tomber le lanceur
+            errors.append((n, str(e)[:200]))
+    return errors
+
+
 REGISTRY = {
     ('state', 'scan'): (_scan, lambda a: {} if not a else None),
     ('proc', 'ead-fetch'): (_ead_fetch, _ead_args),

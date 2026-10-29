@@ -2486,7 +2486,8 @@
         if (c && lcOf !== c) {
           lcOf = c;
           lcMod = c.forModule(meta.launcher, {
-            life
+            life,
+            author: () => identity.trigram || ''
           });
         }
         return c ? lcMod : null;
@@ -3261,6 +3262,8 @@
           // déclarée à la volée ; null sans lanceur (INTEGRATION § 15.1)
           job: (route, body, opts) => (launcherHere?.lan ? null : launcherClient()?.forModule({
             routes: ['regen/job']
+          }, {
+            author: () => identity.trigram || ''
           }).job(route, body, opts)) ?? Promise.resolve(null)
         }
       }) : null;

@@ -95,6 +95,7 @@
         }, 500);
         if (route === 'regen/job' && method === 'POST') {
           const b = JSON.parse(init.body || '{}');
+          opts.starts?.push(b);
           if (opts.busy) return json({
             ok: false,
             message: 'a job is already running'
@@ -280,6 +281,37 @@
     }).c.forModule(DECL).job('regen/job', {});
     ck('job : un travail déjà en cours (409) → refus rendu', busy.ok === false && busy.status === 409);
     ck('job : route non déclarée refusée', (await M.job('secrets', {})).refused === true);
+    // l'auteur : le trigramme de l'appareil ajouté au départ d'un travail (l'auteur de ses commits côté lanceur)
+    const starts = [],
+      F2 = fake({
+        starts
+      }),
+      Ma = launcherClient({
+        root: ROOT,
+        fetch: F2.fetch,
+        poll: 5
+      }).forModule(DECL, {
+        author: () => 'ABC'
+      });
+    await Ma.job('regen/job', {
+      set: 'state',
+      verb: 'scan'
+    });
+    ck('job : le trigramme de l\'appareil ajouté au départ (author)', starts[0]?.author === 'ABC' && starts[0]?.set === 'state', JSON
+      .stringify(starts));
+    const starts2 = [],
+      Mn = launcherClient({
+        root: ROOT,
+        fetch: fake({
+          starts: starts2
+        }).fetch,
+        poll: 5
+      }).forModule(DECL);
+    await Mn.job('regen/job', {
+      set: 'state',
+      verb: 'scan'
+    });
+    ck('job : sans trigramme, pas de champ author', starts2.length === 1 && !('author' in starts2[0]), JSON.stringify(starts2));
 
     // ---------------------------------------------------------------- lecture de data/
     let bytes = 0;

@@ -171,6 +171,7 @@ def i7(c):
 @case('I8', 'Launcher jobs (regen)', 'I', static=True,
       rule='frame/INTEGRATION 15.1: one job at a time from a fixed list, arguments checked, cancel, the last job readable; the state of the workstation never shows a secret')
 def i8(c):
+    import subprocess
     import sys
     import tempfile
     import threading
@@ -178,6 +179,7 @@ def i8(c):
     sys.path.insert(0, str(c.root / 'tools'))
     import regen_jobs as R
     tmp = Path(tempfile.mkdtemp(prefix='sog-regen-'))
+    kept = dict(R.REGISTRY), dict(R.MIN_GAP)  # les globales du module, partagées par les cas statiques : rendues telles quelles
     try:
         data, sec = tmp / 'data', tmp / 'secrets'
         for p, t in {'sia/base/fr/2026-10-01/airports.json': '[]', 'sia/base/fr/2026-10-29/airports.json': '[1]', 'proc/2026-10-29/LFRS.json': '{}',
@@ -249,5 +251,63 @@ def i8(c):
         seen = v['step'] + ' ' + ' '.join(v['log'])
         c.ok('s3cretPW' not in seen and 'eaduser' not in seen and 'ABC123' not in seen and 'u:p@' not in seen, seen,
              'a verb cannot leave a credential in the journal or the step (Job.log, Job.step cleaned)')
+
+        # les jeux : tools/regen/<jeu>.py exporte VERBS et MIN_GAP, fusionnés ; un fichier en échec laissé de côté
+        folder = tmp / 'regen'
+        folder.mkdir()
+        (folder / 'demo.py').write_text("VERBS = {('demo', 'noop'): (lambda job, a, ctx: {'ok': 1}, lambda a: {})}\n"
+                                        "MIN_GAP = {('demo', 'noop'): 60}\n", encoding='utf-8')
+        (folder / 'broken.py').write_text('raise RuntimeError("boom")\n', encoding='utf-8')
+        (folder / '_private.py').write_text('raise RuntimeError("never loaded")\n', encoding='utf-8')
+        errs = R.load_verbs(str(folder))
+        c.ok(('demo', 'noop') in R.REGISTRY and R.MIN_GAP.get(('demo', 'noop')) == 60, str(list(R.REGISTRY)), 'a set file adds its verbs and its gaps')
+        c.eq([n for n, _ in errs], ['broken.py'], 'a failing set file is left aside, named; « _… » files are not loaded', what='load errors')
+
+        # l'état gardé : un travail qui courait devient « interrupted » ; le délai vaut par-delà un redémarrage ; l'auteur
+        store = str(tmp / 'last.json')
+        J1 = R.Jobs(R.REGISTRY, {}, store=store)
+        a1 = J1.start('demo', 'noop', {}, 'ABC')
+        for _ in range(100):
+            if J1.view(a1['job'])['state'] != 'running':
+                break
+            time.sleep(0.02)
+        c.eq((J1.view(a1['job'])['author'], J1.view(a1['job'])['state']), ('ABC', 'done'), 'the author of the page kept with the job', what='author')
+        c.eq(R.Jobs(R.REGISTRY, {}).start('demo', 'noop', {}, 'abc; rm')['ok'], True, 'a bad author is dropped, not refused', what='bad author')
+        J2 = R.Jobs(R.REGISTRY, {}, store=store)
+        c.eq(J2.view()['job']['id'], a1['job'], 'a restarted launcher finds the last job', what='last job after restart')
+        r = J2.start('demo', 'noop', {}, 'ABC')
+        c.eq((r.get('status'), r.get('reason')), (429, 'too-soon'), 'the gap holds across a restart', what='gap after restart')
+        import json as _json
+        v = _json.loads(Path(store).read_text(encoding='utf-8'))
+        v['job']['state'] = 'running'
+        Path(store).write_text(_json.dumps(v), encoding='utf-8')
+        c.eq(R.Jobs(R.REGISTRY, {}, store=store).view()['job']['state'], 'interrupted', 'a job running when the launcher stopped is said interrupted', what='state after restart')
+
+        # commit_outputs : chemins des sorties seulement, trigramme exigé, auteur de la page, rien d'autre
+        git = shutil.which('git')
+        if git:
+            repo = tmp / 'repo'
+            (repo / 'proc' / 'manual').mkdir(parents=True)
+            run = lambda *a: subprocess.run([git, '-C', str(repo), *a], capture_output=True, text=True)
+            run('init', '-q')
+            run('-c', 'user.name=T', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'init')
+            (repo / 'proc' / 'manual' / 'LFRS.json').write_text('{}', encoding='utf-8')
+            (repo / 'other.txt').write_text('x', encoding='utf-8')
+            ctx = {'data': str(repo), 'git_cmd': lambda *a: [git, *a], 'git_env': dict}
+            c.ok('refused path' in R.commit_outputs(ctx, 'ABC', ['other.txt'], 'm')['warning'], 'other.txt committed', 'a path outside the outputs is refused')
+            c.ok('refused path' in R.commit_outputs(ctx, 'ABC', ['proc/../other.txt'], 'm')['warning'], '.. accepted', 'a path that climbs out is refused')
+            c.ok('no trigram' in R.commit_outputs(ctx, '', ['proc/manual/LFRS.json'], 'm')['warning'], 'committed without author', 'no trigram, no commit')
+            res = R.commit_outputs(ctx, 'ABC', ['proc/manual/LFRS.json'], ':card_file_box: test')
+            who = run('log', '-1', '--format=%an %ae %s').stdout.strip()
+            files = run('show', '--name-only', '--format=', 'HEAD').stdout.split()
+            c.ok(res['commit'] and who == 'ABC abc@defa.local :card_file_box: test' and files == ['proc/manual/LFRS.json'],
+                 f'{res} | {who} | {files}', 'one commit, the page trigram as author, only the given path')
+            c.eq(R.commit_outputs(ctx, 'ABC', ['proc/manual/LFRS.json'], 'm')['commit'], None, 'nothing changed: no commit', what='second commit')
+        else:
+            pass  # git absent de ce poste : commit_outputs n'est pas essayé ici (le reste du cas l'est)
     finally:
+        R.REGISTRY.clear()
+        R.REGISTRY.update(kept[0])
+        R.MIN_GAP.clear()
+        R.MIN_GAP.update(kept[1])
         shutil.rmtree(tmp, ignore_errors=True)

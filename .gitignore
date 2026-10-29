@@ -30,6 +30,8 @@ flight_performance_database_merged.fpdb.json
 tools/.assets_seen.json
 tools/.defa_site.json
 tools/.lnmperf.json
+tools/.regen_last.json
+tools/.regen_last.json.tmp
 tools/.sim.json
 tools/.lan.json
 tools/.lan.json.tmp

@@ -76,7 +76,8 @@ export function launcherClient({
 
   /** ctx.launcher d'un module : decl = meta.launcher { routes: [...], read: [...] } ; life : signal du démontage. */
   function forModule(decl = {}, {
-    life
+    life,
+    author = () => '' // trigramme de l'appareil : ajouté au départ d'un travail (l'auteur de ses commits, côté lanceur)
   } = {}) {
     const routes = [].concat(decl.routes || []),
       reads = [].concat(decl.read || []);
@@ -172,7 +173,13 @@ export function launcherClient({
     async function job(route, body, opts = {}) {
       const r = routeOf(route);
       if (!r || !under(r, routes)) return refuse(route);
-      const s = await call(r, body ?? {});
+      const who = String(author() || ''),
+        s = await call(r, body && typeof body === 'object' && !Array.isArray(body) ? {
+          ...body,
+          ...(who ? {
+            author: who
+          } : {})
+        } : body ?? {});
       if (s.ok === false) return s;
       if (!s.job) return {
         ok: false,

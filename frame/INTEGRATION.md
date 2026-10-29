@@ -885,7 +885,23 @@ in the launcher; `resume` finds it again.
   `sia/mora.csv`: files, bytes, newest, cycle folders), `local/` (never published), the source caches under `sia/<source>/`,
   the commits not pushed that touch the outputs, `pypdf` importable, free space, EAD credentials present (yes / no, never
   a value).
-- `POST /__setup/regen/job { set, verb, args }`, `GET …/job[?id=]`, `POST …/job/cancel { id }`: one job at a time in a thread;
+- **The jobs' base and the sets' verbs** (29 Oct 2026): `tools/regen_jobs.py` is the base (one job at a time, the state of
+  the workstation, cleaning, gaps, the commit); each set's verbs live in `tools/regen/<set>.py`, owned by its agent (`proc.py`:
+  AeroDB), which exports `VERBS = { (set, verb): (fn, check) }` and, if it wants, `MIN_GAP = { (set, verb): seconds }`. The
+  launcher loads them (`regen_jobs.load_verbs()`, files in name order, `_…` skipped) when it first needs the jobs; a failing
+  file is left aside and named in the launcher's window, the launcher goes on. A verb is `fn(job, args, ctx)`: `job.step(text,
+  done, total, unit)`, `job.log(line)` (both cleaned of secrets by the base, whatever the verb writes), `job.cancelled()`,
+  `job.author` (the trigram of the page, `^[A-Z]{3}$`, '' without it); `ctx = { data, secrets, git_cmd, git_env }`.
+- **One commit for every verb**: `regen_jobs.commit_outputs(ctx, author, paths, message)` → `{ commit: SHA | None, warning }`:
+  `git add` and `git commit -- <paths>` of those paths only (relative to `data/`, under the outputs `sia/base/`, `proc/`,
+  `sia/vfr/`, `AircraftDB/`, `sia/mora.csv`; any other refused), the page's trigram as author (no trigram: no commit; never a
+  workstation author), no push. Nothing changed, no repository, git failing: `commit: None` and the reason.
+- **The author**: the frame adds the device's trigram to the body of a job's start (`author`, from `ctx.launcher.job` and
+  aerodb's job alike); a module never writes it.
+- **Kept across a restart** (`tools/.regen_last.json`, never in the repository): the last job and the last start of each
+  verb. A job still running when the launcher stopped is read back as `state: 'interrupted'` (`resume` gives it, the page
+  says it); a verb's gap (`MIN_GAP`) holds across a restart.
+- `POST /__setup/regen/job { set, verb, args, author }`, `GET …/job[?id=]`, `POST …/job/cancel { id }`: one job at a time in a thread;
   `set` and `verb` from a fixed list (`regen_jobs.REGISTRY`), each with its check of `args`; nothing from the page is a path,
   an address or a command. 400: unknown operation or bad arguments; 409: a job is running; 410: no such job; 429 `{ reason:
   'too-soon', wait }`: the verb has a minimal gap between two starts (`regen_jobs.MIN_GAP`: 30 s for `proc/ead-fetch`), the client

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: the jobs' base, alone** (`tools/regen_jobs.py`, `tools/launch.py`, `frame/lib/launcher.js`, `frame/app.js`;
+  INTEGRATION § 15.1, DECISIONS; cases I8, A29): each data set brings its own verbs in `tools/regen/<set>.py`; one commit
+  path for every job, signed with the trigram of the page; the last job and the gaps between readings survive a restart of
+  the launcher (an interrupted job is said so).
 - **Aeronautical data: personal-licence sources say who may tick them** (`shared/aero_zones.js` `personal`,
   `shared/maintenance_page.js`; `modules/data/SPEC.md` invariant 1, DECISIONS): in Settings › Maintenance (V2) ›
   Aeronautical data, the box of the X-Plane source (and of ENAIRE and NATS, personal-use licences) carries the line « À cocher

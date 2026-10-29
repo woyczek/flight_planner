@@ -1531,3 +1531,17 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - **Given to**: the data layer (`FrameData.revalidate`), every adapter (`ctx.data.revalidate`, aerodb's reader), and
     `ctx.publish`, which revalidates the published paths instead of dropping their copies (evicted only when offline).
   - **Tests**: bench `frame/store/test/revalidate.html` 14 / 14 (case A33); A30 (publication) unchanged.
+- **29 Oct 2026 — Lot (3a): the jobs' base, alone** (challenge § 10.29):
+  - **One file per set** (`tools/regen/<set>.py`, its agent's), loaded by the base (`load_verbs`), never registered by
+    hand. Loaded when the launcher first needs the jobs, not at import, so a set file may import the base. AeroDB's
+    procedure verbs stay where they are until its `tools/regen/proc.py` lands (agreed with it the same day: two verbs kept,
+    `MIN_GAP` per verb, so the 30 s of EAD never fall on the eAIP).
+  - **One commit path** (`commit_outputs`): the outputs' paths only, `--` paths (HEAD plus those files, never the index),
+    the page's trigram as author, never « POSTE ». The frame adds the trigram to every job's start; a module never does.
+  - **The state kept** in `tools/.regen_last.json` (git-ignored): a job interrupted by a stop is said so after a restart,
+    and a verb's gap survives a restart (time of day, not a monotonic clock).
+  - **Tests**: I8 extended (set files loaded and a failing one left aside, `_…` skipped; author kept, a bad one dropped;
+    restart: last job found, gap held, a running job read back interrupted; `commit_outputs` on a real repository: outside
+    paths and `..` refused, no trigram no commit, one commit with the page's author and only its path, nothing changed no
+    commit), A29 extended (the trigram added to a job's start, none without it). Against the real launcher: a
+    `state/scan` started with `author: 'ABC'` keeps it, the state file is written and ignored by git.

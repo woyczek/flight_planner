@@ -1040,7 +1040,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
             a = a if isinstance(a, dict) else {}
-            v = regen().cancel(str(a.get('id') or '')[:40]) if path.endswith('/cancel') else regen().start(a.get('set'), a.get('verb'), a.get('args'))
+            v = regen().cancel(str(a.get('id') or '')[:40]) if path.endswith('/cancel') else regen().start(
+                a.get('set'), a.get('verb'), a.get('args'), a.get('author') or '')
             return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
         if path == '/__setup/aero-fetch':
             # données aéronautiques d'autres pays (tools/aero_fetch.py) : téléchargées dans data/sia/<source>/
@@ -2795,7 +2796,10 @@ def regen():
     global REGEN
     if REGEN is None:
         g, env = regen_git()
-        REGEN = regen_jobs.Jobs(regen_jobs.REGISTRY, {'data': DATA, 'secrets': SECRETS, 'git_cmd': g, 'git_env': env})
+        for name, why in regen_jobs.load_verbs():  # tools/regen/<jeu>.py : les verbes de chaque jeu
+            say(f'  Données : {name} laissé de côté ({why}).')
+        REGEN = regen_jobs.Jobs(regen_jobs.REGISTRY, {'data': DATA, 'secrets': SECRETS, 'git_cmd': g, 'git_env': env},
+                                store=os.path.join(ROOT, 'tools', '.regen_last.json'))
     return REGEN
 _loaded = {}  # module → date du fichier au chargement
 
