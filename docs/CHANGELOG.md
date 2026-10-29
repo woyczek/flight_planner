@@ -12,6 +12,19 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: "Télécharger" and "Purger" next to "Construire"** (`modules/data/module.js`, `model.js`, `texts.js`; help ×4; noreg L14, L15).
+  The Aeronautical base panel (now "Télécharger, construire, purger" ×4) holds the three launcher verbs on one choice of zones, in
+  this order: **Télécharger** (`base/fetch`, `args { zones, personal }`: ENAIRE only when ticked) follows the job with one line per
+  zone ("n / m sources") and one per source (downloaded n files, unchanged, failed with its code and HTTP status, skipped:
+  licence not declared, manual); the end says "Téléchargé : n zones changées, m inchangées ; k échecs", lists the manual sources
+  by name ×4 ("à déposer à la main", a link only for an `https://` address), warns of tracked source files changed outside the
+  synchronised data, says "Rien à télécharger pour ces zones" when nothing is downloadable, and tells "Réessayez dans n s" on a
+  429. **Purger** (`base/purge`) first runs the plan (`dry`), then asks ONE question ("Purger n fichiers (x Mo) des sources de …",
+  with the SIA sentence when France is in it and the count of files tracked by git that are kept), nothing on No, the real job on
+  Yes ("Purgé : n fichiers, x Mo", refused paths said); an empty plan says "Rien à purger" without a question. One operation at
+  a time: the four verbs share one grey reason; a download or a purge found running at mount is followed like a build. Sizes
+  are written with the language's decimal separator; the journal records `download` and `purge` (never the plan).
+
 - **Maintenance: the pilots' tokens** (`frame/settings/pilot_tokens.js`, `frame/app.js`, `tools/launch.py`; frame SPEC,
   INTEGRATION § 13, DECISIONS, Settings help ×4; noreg A39, I12): on the launcher's computer, the administrator creates
   a GitLab project access token per pilot (shown once), sees them all and revokes one — the launcher keeps the

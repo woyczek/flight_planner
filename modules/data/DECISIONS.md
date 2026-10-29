@@ -117,3 +117,8 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   drops `regen/job/cancel` from `meta.launcher.routes` (the « Construire » entry above described the gap); the provisional
   `rail: false` entry of Pilot is gone, the module lives in the Maintenance application (`APPS`, e3870b354); « Publier »
   checked on the real frame (`ctx.data.sync.gesture === true`, a215d47bd: L12 sees the button live with the real adapter).
+- **30 Oct 2026 — « Publier » means « send now »** (real trial on `ie`, ergonomics session): a zone built by `base/build` is
+  committed whole on the workstation (`commit_outputs`), so it is consistent and leaves at the next synchronisation, even a
+  background one; the gesture rule (`sync_gesture`, 1c2506a41) holds back only `sia/base/` files not committed (half written,
+  a build under way). « Publier » therefore sends what is committed right away, and says what stayed. Written in the help's
+  Publier paragraph.

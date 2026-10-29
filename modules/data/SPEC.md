@@ -87,6 +87,10 @@ A non-fixed module (it scrolls like a page), `meta.title` « Données ». From t
    of its log. The catalogue's sources that are **considered or set aside** have no verbs: they are rows of the « n autres
    jeux » fold of their group, with their link, licence and status. This replaces the Sources screen (`#sources`), which
    goes with lot D1.
+   **In the Base aéronautique group the verbs act on zones, not on rows** (29–30 Oct, lots Construire to Purger): the base
+   is built per zone from all its sources, so one panel at the top of the group carries the zones concerned (the coverage's,
+   ticked), the personal-licence sources (unticked, with their line) and **Télécharger · Construire · Purger**, then the
+   panel **Publier**; the rows below keep their cycle, state and detail, without buttons.
 6. **The EAD line** in the Procédures group (§ 4.3): an ICAO code field and « Lire un terrain ».
 7. **Journal**: a fold at the foot, the last 50 operations (time UTC with Z, data set, verb, duration, result), each
    unfolding to its log; « Copier ».

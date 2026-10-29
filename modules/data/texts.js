@@ -134,8 +134,10 @@ export const TX = {
   zoneMissing: ['non publiée', 'not published', 'nicht veröffentlicht', 'no publicada'],
   procByStatus: ['Terrains par statut', 'Aerodromes by status', 'Flugplätze nach Status', 'Aeródromos por estado'],
   // construire la base (lot D5) : le panneau, la marche, la fin
-  buildTitle: ['Construire la base', 'Build the base', 'Basis aufbauen', 'Construir la base'],
-  buildZones: ['Zones à construire', 'Zones to build', 'Zu erstellende Zonen', 'Zonas por construir'],
+  buildTitle: ['Télécharger, construire, purger', 'Download, build, purge', 'Herunterladen, aufbauen, bereinigen',
+    'Descargar, construir, purgar'
+  ],
+  buildZones: ['Zones concernées', 'Zones affected', 'Betroffene Zonen', 'Zonas afectadas'],
   personalTitle: ['Sources sous licence personnelle', 'Personal-licence sources', 'Quellen mit persönlicher Lizenz',
     'Fuentes con licencia personal'
   ],
@@ -165,6 +167,8 @@ export const TX = {
     'X-Plane marcado: la construcción se hace en la página, todavía no es posible aquí'
   ],
   build: ['Construire', 'Build', 'Aufbauen', 'Construir'],
+  download: ['Télécharger', 'Download', 'Herunterladen', 'Descargar'],
+  purge: ['Purger', 'Purge', 'Bereinigen', 'Purgar'],
   stop: ['Arrêter', 'Stop', 'Anhalten', 'Detener'],
   stopping: ['Arrêt en cours…', 'Stopping…', 'Wird angehalten…', 'Deteniendo…'],
   // raisons du bouton gris, écrites une fois sous le panneau
@@ -282,10 +286,131 @@ export const TX = {
     refused: ['Le lanceur n’accepte pas cette opération.', 'The launcher does not accept this operation.',
       'Der Starter akzeptiert diesen Vorgang nicht.', 'El lanzador no acepta esta operación.'
     ],
-    failed: ['Le lanceur n’a pas pu démarrer la construction.', 'The launcher could not start the build.',
-      'Der Starter konnte den Aufbau nicht starten.', 'El lanzador no pudo iniciar la construcción.'
+    failed: ['Le lanceur n’a pas pu démarrer l’opération.', 'The launcher could not start the operation.',
+      'Der Starter konnte den Vorgang nicht starten.', 'El lanzador no pudo iniciar la operación.'
     ]
   },
+  // télécharger les sources (base/fetch) : une ligne par zone, puis par source, la fin
+  fetchState: {
+    waiting: ['en attente', 'waiting', 'wartet', 'en espera'],
+    fetching: ['téléchargement', 'downloading', 'wird heruntergeladen', 'descarga'],
+    fetchingN: ['téléchargement ({n} / {m} sources)', 'downloading ({n} / {m} sources)', 'wird heruntergeladen ({n} / {m} Quellen)',
+      'descarga ({n} / {m} fuentes)'
+    ],
+    done: ['terminée', 'done', 'abgeschlossen', 'terminada'],
+    failed: ['échec : {r}', 'failed: {r}', 'fehlgeschlagen: {r}', 'fallo: {r}'],
+    cancelled: ['annulée', 'cancelled', 'abgebrochen', 'cancelada']
+  },
+  // la ligne d’une source dans la marche et à la fin
+  sourceState: {
+    downloaded: ['téléchargée : {n}', 'downloaded: {n}', 'heruntergeladen: {n}', 'descargada: {n}'],
+    downloadedNo: ['téléchargée', 'downloaded', 'heruntergeladen', 'descargada'],
+    unchanged: ['inchangée', 'unchanged', 'unverändert', 'sin cambios'],
+    failed: ['échec : {r}', 'failed: {r}', 'fehlgeschlagen: {r}', 'fallo: {r}'],
+    skipped: ['ignorée', 'skipped', 'übersprungen', 'omitida'],
+    skippedPersonal: ['ignorée : licence non déclarée', 'skipped: licence not declared', 'übersprungen: Lizenz nicht erklärt',
+      'omitida: licencia no declarada'
+    ],
+    manual: ['manuelle, à déposer à la main', 'manual, to be dropped in by hand', 'manuell, von Hand abzulegen',
+      'manual, para depositar a mano'
+    ]
+  },
+  // le motif d’un échec de source (les codes du lanceur)
+  fetchError: {
+    network: ['le réseau ne répond pas', 'the network does not answer', 'das Netzwerk antwortet nicht', 'la red no responde'],
+    http: ['réponse HTTP', 'HTTP answer', 'HTTP-Antwort', 'respuesta HTTP'],
+    httpN: ['HTTP {s}', 'HTTP {s}', 'HTTP {s}', 'HTTP {s}'],
+    parse: ['fichier illisible', 'unreadable file', 'Datei nicht lesbar', 'archivo ilegible'],
+    personal: ['licence non déclarée', 'licence not declared', 'Lizenz nicht erklärt', 'licencia no declarada'],
+    manual: ['source manuelle', 'manual source', 'manuelle Quelle', 'fuente manual'],
+    unknown: ['cause inconnue', 'unknown cause', 'unbekannte Ursache', 'causa desconocida']
+  },
+  // la fin d’un téléchargement : « Téléchargé : 3 zones changées, 1 inchangée ; 2 échecs » (chaque part au singulier ou au pluriel)
+  fetchSum: ['Téléchargé : {c}, {u} ; {f}', 'Downloaded: {c}, {u}; {f}', 'Heruntergeladen: {c}, {u}; {f}', 'Descargado: {c}, {u}; {f}'],
+  fetchSumStopped: ['Téléchargement arrêté : {c}, {u} ; {f}', 'Download stopped: {c}, {u}; {f}',
+    'Herunterladen angehalten: {c}, {u}; {f}', 'Descarga detenida: {c}, {u}; {f}'
+  ],
+  fetchSumInterrupted: ['Téléchargement interrompu (le lanceur s’est arrêté)', 'Download interrupted (the launcher stopped)',
+    'Herunterladen unterbrochen (der Starter wurde beendet)', 'Descarga interrumpida (el lanzador se detuvo)'
+  ],
+  fetchNothing: ['Rien à télécharger pour ces zones', 'Nothing to download for these zones',
+    'Für diese Zonen gibt es nichts herunterzuladen',
+    'Nada que descargar para estas zonas'
+  ],
+  fetchChanged: [
+    ['{n} zone changée', '{n} zone changed', '{n} Zone geändert', '{n} zona cambiada'],
+    ['{n} zones changées', '{n} zones changed', '{n} Zonen geändert', '{n} zonas cambiadas']
+  ],
+  fetchSame: [
+    ['{n} inchangée', '{n} unchanged', '{n} unverändert', '{n} sin cambios'],
+    ['{n} inchangées', '{n} unchanged', '{n} unverändert', '{n} sin cambios']
+  ],
+  fetchFails: [
+    ['{n} échec', '{n} failure', '{n} Fehler', '{n} fallo'],
+    ['{n} échecs', '{n} failures', '{n} Fehler', '{n} fallos']
+  ],
+  fetchOutside: [
+    ['{n} fichier de sources modifié, hors des données synchronisées', '{n} source file changed, outside the synchronised data',
+      '{n} Quelldatei geändert, außerhalb der synchronisierten Daten',
+      '{n} archivo de fuentes modificado, fuera de los datos sincronizados'
+    ],
+    ['{n} fichiers de sources modifiés, hors des données synchronisées', '{n} source files changed, outside the synchronised data',
+      '{n} Quelldateien geändert, außerhalb der synchronisierten Daten',
+      '{n} archivos de fuentes modificados, fuera de los datos sincronizados'
+    ]
+  ],
+  fetchManual: ['Sources manuelles, à déposer à la main :', 'Manual sources, to be dropped in by hand:',
+    'Manuelle Quellen, von Hand abzulegen:',
+    'Fuentes manuales, para depositar a mano:'
+  ],
+  // purger les sources (base/purge) : la ligne d’une zone, la question, la fin
+  purgeState: {
+    waiting: ['en attente', 'waiting', 'wartet', 'en espera'],
+    purging: ['purge', 'purging', 'wird bereinigt', 'purga'],
+    done: ['{n}, {s}', '{n}, {s}', '{n}, {s}', '{n}, {s}'],
+    failed: ['échec : {r}', 'failed: {r}', 'fehlgeschlagen: {r}', 'fallo: {r}'],
+    cancelled: ['annulée', 'cancelled', 'abgebrochen', 'cancelada']
+  },
+  purgeAsk: ['Purger {n} ({s}) des sources de {z} ?', 'Purge {n} ({s}) from the sources of {z}?',
+    '{n} ({s}) aus den Quellen von {z} bereinigen?',
+    '¿Purgar {n} ({s}) de las fuentes de {z}?'
+  ],
+  purgeShared: ['Les fichiers du SIA servent aussi les contours des autres zones à la construction.',
+    'The SIA files also serve the outlines of the other zones at build time.',
+    'Die SIA-Dateien liefern beim Aufbau auch die Umrisse der anderen Zonen.',
+    'Los archivos del SIA sirven también para los contornos de las demás zonas en la construcción.'
+  ],
+  purgeKept: [
+    ['{n} fichier suivi par git est gardé.', '{n} file tracked by git is kept.', '{n} von git verfolgte Datei bleibt erhalten.',
+      '{n} archivo seguido por git se conserva.'
+    ],
+    ['{n} fichiers suivis par git sont gardés.', '{n} files tracked by git are kept.',
+      '{n} von git verfolgte Dateien bleiben erhalten.',
+      '{n} archivos seguidos por git se conservan.'
+    ]
+  ],
+  purgeUnsafe: [
+    ['{n} chemin refusé, laissé en place.', '{n} path refused, left in place.', '{n} Pfad abgelehnt, bleibt an Ort und Stelle.',
+      '{n} ruta rechazada, dejada en su sitio.'
+    ],
+    ['{n} chemins refusés, laissés en place.', '{n} paths refused, left in place.', '{n} Pfade abgelehnt, bleiben an Ort und Stelle.',
+      '{n} rutas rechazadas, dejadas en su sitio.'
+    ]
+  ],
+  purgeNothing: ['Rien à purger', 'Nothing to purge', 'Nichts zu bereinigen', 'Nada que purgar'],
+  purgeDone: ['Purgé : {n}, {s}', 'Purged: {n}, {s}', 'Bereinigt: {n}, {s}', 'Purgado: {n}, {s}'],
+  purgePartial: ['Purge partielle : {n}, {s} (voir les zones en échec)', 'Partial purge: {n}, {s} (see the zones that failed)',
+    'Teilweise bereinigt: {n}, {s} (siehe die fehlgeschlagenen Zonen)', 'Purga parcial: {n}, {s} (véanse las zonas con fallo)'
+  ],
+  purgeFailed: ['La purge a échoué : lisez le motif de chaque zone.', 'The purge failed: read the reason on each zone.',
+    'Das Bereinigen ist fehlgeschlagen: Lesen Sie den Grund bei jeder Zone.', 'La purga falló: lea el motivo de cada zona.'
+  ],
+  purgeStopped: ['Purge arrêtée ; déjà retirés : {n}, {s}', 'Purge stopped; already removed: {n}, {s}',
+    'Bereinigen angehalten; bereits entfernt: {n}, {s}', 'Purga detenida; ya retirados: {n}, {s}'
+  ],
+  purgeInterrupted: ['Purge interrompue (le lanceur s’est arrêté)', 'Purge interrupted (the launcher stopped)',
+    'Bereinigen unterbrochen (der Starter wurde beendet)', 'Purga interrumpida (el lanzador se detuvo)'
+  ],
   // publier la base : le panneau, la question, la fin
   publishTitle: ['Publier la base', 'Publish the base', 'Basis veröffentlichen', 'Publicar la base'],
   publish: ['Publier', 'Publish', 'Veröffentlichen', 'Publicar'],
@@ -392,6 +517,8 @@ export const TX = {
   journalEmpty: ['Aucune opération pour le moment.', 'No operation yet.', 'Noch kein Vorgang.', 'Ninguna operación por ahora.'],
   opVerb: {
     build: ['Construire', 'Build', 'Aufbauen', 'Construir'],
+    download: ['Télécharger', 'Download', 'Herunterladen', 'Descargar'],
+    purge: ['Purger', 'Purge', 'Bereinigen', 'Purgar'],
     publish: ['Publier', 'Publish', 'Veröffentlichen', 'Publicar']
   },
   opResult: {
@@ -399,6 +526,7 @@ export const TX = {
     partial: ['partielle', 'partial', 'teilweise', 'parcial'],
     failed: ['échec', 'failed', 'fehlgeschlagen', 'fallo'],
     cancelled: ['arrêtée', 'stopped', 'angehalten', 'detenida'],
-    interrupted: ['interrompue', 'interrupted', 'unterbrochen', 'interrumpida']
+    interrupted: ['interrompue', 'interrupted', 'unterbrochen', 'interrumpida'],
+    nothing: ['rien à faire', 'nothing to do', 'nichts zu tun', 'nada que hacer']
   }
 };

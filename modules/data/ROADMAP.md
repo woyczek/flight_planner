@@ -49,6 +49,13 @@ without the gesture, nothing to publish, offline); cases L11–L12 on a fake lau
 Télécharger and Purger on aerodb's `base/fetch` and `base/purge` (contract agreed 29 Oct: a dry purge for the plan, no
 commit by either).
 
+**Télécharger and Purger of the base** (30 Oct night): on aerodb's `base/fetch` and `base/purge` (ac84d562e,
+`tools/regen/base_sources.py`), in the same panel as Construire (one choice of zones): the download per zone and per source
+(downloaded, unchanged, failed with its code, licence not declared, manual with an https link only), the files changed outside
+the synchronised data said; the purge first run dry, its plan in the one question (files, size, the SIA files shared by
+every zone, the tracked files kept), then the real run; one operation at a time whatever its verb, found again at the
+opening; journal; cases L14–L15. With them the Base group has its four verbs.
+
 Existing guards kept green throughout: K1–K9, A12, A15, A19, A20, I4, I6, I7.
 
 ## Answers of the ergonomics session (28 October 2026), applied to SPEC and INTEGRATION

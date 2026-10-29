@@ -345,8 +345,32 @@ export const PERSONAL = {
 };
 /** Dernières opérations gardées dans cache/data/journal.json. */
 export const JOURNAL_MAX = 50;
-const ZONE_STATES = ['waiting', 'building', 'built', 'failed', 'cancelled'];
+/** Les verbes du jeu « base » que l'écran suit, tels que le lanceur les nomme (base/build, base/fetch, base/purge). */
+export const VERBS = ['build', 'fetch', 'purge'];
+/** États d'une zone dans la vue d'un travail, par verbe. */
+const ZONE_STATES = {
+  build: ['waiting', 'building', 'built', 'failed', 'cancelled'],
+  fetch: ['waiting', 'fetching', 'done', 'failed', 'cancelled'],
+  purge: ['waiting', 'purging', 'done', 'failed', 'cancelled']
+};
+/** Le verbe en cours dans la phrase d'une zone (la clé de « n / m sources »). */
+const ZONE_RUNNING = {
+  build: 'building',
+  fetch: 'fetching',
+  purge: 'purging'
+};
 const ERROR_CODES = ['browser-failed', 'browser-exited', 'timeout', 'page-error', 'invalid-output', 'write-failed', 'cancelled'];
+/** Codes d'échec d'une source téléchargée (base/fetch). */
+const FETCH_CODES = ['network', 'http', 'parse', 'personal', 'manual'];
+/** États d'une source dans la vue d'un téléchargement. */
+const SOURCE_STATES = ['downloaded', 'unchanged', 'failed', 'skipped', 'manual'];
+/** Unités de taille par langue (base 1024). */
+const SIZE_UNITS = {
+  fr: ['o', 'Ko', 'Mo', 'Go'],
+  en: ['B', 'KB', 'MB', 'GB'],
+  de: ['B', 'KB', 'MB', 'GB'],
+  es: ['B', 'KB', 'MB', 'GB']
+};
 /** Un nombre fini, sinon null. */
 export const num = v => Number.isFinite(v) ? v : null;
 
@@ -369,28 +393,57 @@ export function buildState(s) {
     reason
   };
 }
-/** Ce que dit la ligne d'une zone d'après son état dans la vue du travail : { state, key, n, m, code } ; key : la phrase
- *  (waiting, building, buildingN avec n / m sources, built, failed avec le code d'erreur, cancelled). */
-export function zonePhrase(z) {
-  const state = ZONE_STATES.includes(z?.state) ? z.state : 'waiting',
+/** Le code d'échec d'une zone : ceux du verbe, sinon 'unknown' ; pour la purge (codes non fixés par le lanceur) le code court tel quel. */
+function zoneCode(verb, error) {
+  if (verb === 'build') return ERROR_CODES.includes(error) ? error : 'unknown';
+  if (verb === 'fetch') return FETCH_CODES.includes(error) ? error : 'unknown';
+  return typeof error === 'string' && /^[\w-]{1,40}$/.test(error) ? error : 'unknown';
+}
+/** Ce que dit la ligne d'une zone d'après son état dans la vue du travail : { state, key, n, m, code, files, bytes } ; key : la phrase
+ *  (waiting, building / fetching / purging, buildingN / fetchingN avec n / m sources, built / done, failed avec le code d'erreur,
+ *  cancelled) ; `verb` : build (par défaut), fetch ou purge ; files et bytes : ce que la purge a compté pour la zone. */
+export function zonePhrase(z, verb = 'build') {
+  const states = ZONE_STATES[verb] || ZONE_STATES.build,
+    state = states.includes(z?.state) ? z.state : 'waiting',
     n = num(z?.done),
-    m = num(z?.total);
+    m = num(z?.total),
+    run = ZONE_RUNNING[verb] || 'building';
   return {
     state,
-    key: state === 'building' && n !== null && m !== null ? 'buildingN' : state,
+    key: state === run && verb !== 'purge' && n !== null && m !== null ? `${run}N` : state,
     n,
     m,
-    code: state === 'failed' ? ERROR_CODES.includes(z?.error) ? z.error : 'unknown' : null
+    code: state === 'failed' ? zoneCode(verb, z?.error) : null,
+    files: num(z?.files),
+    bytes: num(z?.bytes)
   };
 }
 /** Les lignes de zones à montrer : les zones demandées dans leur ordre (celles que la vue ne connaît pas encore : en attente),
  *  puis celles que la vue ajoute ; [{ zone, ...zonePhrase }]. */
-export function zoneRows(view, ids) {
+export function zoneRows(view, ids, verb = 'build') {
   const zs = view?.zones && typeof view.zones === 'object' ? view.zones : {};
   return [...ids, ...Object.keys(zs).filter(z => !ids.includes(z))].map(zone => ({
     zone,
-    ...zonePhrase(zs[zone])
+    ...zonePhrase(zs[zone], verb)
   }));
+}
+/** Les sources d'une zone dans la vue d'un téléchargement : [{ id, state, files, bytes, code, status }] dans l'ordre de la vue ;
+ *  seules les sources dont l'état est connu (celles pas encore essayées n'y sont pas) ; code : le code d'échec, 'personal' pour une
+ *  source ignorée faute de licence déclarée, null sinon. */
+export function sourceRows(z) {
+  const ss = z?.sources && typeof z.sources === 'object' ? z.sources : {};
+  return Object.keys(ss).filter(id => SOURCE_STATES.includes(ss[id]?.state)).map(id => {
+    const s = ss[id],
+      failed = s.state === 'failed';
+    return {
+      id,
+      state: s.state,
+      files: num(s.files),
+      bytes: num(s.bytes),
+      code: failed ? zoneCode('fetch', s.error) : s.state === 'skipped' && s.error === 'personal' ? 'personal' : null,
+      status: failed ? num(s.status) : null
+    };
+  });
 }
 /** La barre : { done, total, pct } ; done / total de la vue (en zones), à défaut 0 sur le nombre de zones demandées ; pct 0 à 100,
  *  null sans total. */
@@ -408,9 +461,21 @@ export function clock(sec) {
   const s = Math.max(0, Math.round(sec || 0));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
-/** La vue d'un travail est-elle celle d'une construction de la base ? (elle porte les zones, ou dit son jeu et son verbe). */
+/** Le verbe du jeu « base » dont une vue est le travail : 'build' | 'fetch' | 'purge', ou null (un autre travail du lanceur). Une vue
+ *  qui dit son jeu et son verbe (le lanceur le fait) est lue d'après eux ; une vue sans verbe qui porte ses zones est une construction. */
+export function viewVerb(v) {
+  if (!v || typeof v !== 'object') return null;
+  if (v.set === 'base' && VERBS.includes(v.verb)) return v.verb;
+  const zones = !!v.zones && typeof v.zones === 'object' && !Array.isArray(v.zones);
+  return zones && !v.verb ? 'build' : null;
+}
+/** La vue d'un travail est-elle celle d'une construction de la base ? */
 export function isBuildView(v) {
-  return !!v && (v.set === 'base' && v.verb === 'build' || !!v.zones && typeof v.zones === 'object' && !Array.isArray(v.zones));
+  return viewVerb(v) === 'build';
+}
+/** La vue d'un travail est-elle un plan de purge (args.dry) ? */
+export function isDry(v) {
+  return viewVerb(v) === 'purge' && v.args?.dry === true;
 }
 /** La fin d'un travail de construction, d'après sa dernière vue : { kind, built: [zone], failed: [{ zone, error }] } ; kind :
  *  'done' | 'partial' | 'failed' | 'cancelled' | 'interrupted' | 'no-browser' | 'xplane-in-page'. Le résultat du lanceur
@@ -440,8 +505,8 @@ export function outcome(final) {
     failed
   };
 }
-/** Le résultat d'une opération pour le journal : 'done' | 'partial' | 'failed' | 'cancelled' | 'interrupted'. */
-export const journalResult = kind => ['done', 'partial', 'cancelled', 'interrupted'].includes(kind) ? kind : 'failed';
+/** Le résultat d'une opération pour le journal : 'done' | 'partial' | 'failed' | 'cancelled' | 'interrupted' | 'nothing' (rien à télécharger). */
+export const journalResult = kind => ['done', 'partial', 'cancelled', 'interrupted', 'nothing'].includes(kind) ? kind : 'failed';
 /** Le refus d'un départ (la forme d'un refus de ctx.launcher) en { key, wait } ; key : busy | tooSoon | unknown-route | bad-args |
  *  offline | refused | failed. */
 export function refusal(r) {
@@ -475,6 +540,197 @@ export function journalEntry({
       zone: f.zone,
       error: f.error ?? null
     })),
+    ...(job ? {
+      job: String(job)
+    } : {})
+  };
+}
+/** Un objet, sinon {}. */
+const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+/** Les textes d'une liste, sinon []. */
+const strs = v => Array.isArray(v) ? v.filter(x => typeof x === 'string' && x) : [];
+/** Les avertissements d'un résultat : [{ code, count }] (count : un nombre, 0 sans). */
+function warningsOf(r) {
+  return (Array.isArray(r.warnings) ? r.warnings : []).filter(w => w && typeof w.code === 'string').map(w => ({
+    code: w.code,
+    count: num(w.count) ?? 0
+  }));
+}
+/** Le total d'un avertissement d'un code donné. */
+const warned = (list, code) => list.filter(w => w.code === code).reduce((a, w) => a + w.count, 0);
+
+// ---------------------------------------------------------------- télécharger (base/fetch)
+/** La fin d'un téléchargement, d'après sa dernière vue : { kind, fetched: [zone], unchanged: [zone], failed: [{ zone, source, error,
+ *  status? }], manual: [{ zone, source, url, name }], outside, level } ; kind : 'done' | 'partial' | 'failed' | 'cancelled' |
+ *  'interrupted' | 'nothing' (rien à télécharger pour ces zones) ; outside : les fichiers suivis par git que le travail a modifiés
+ *  (result.outside_sync) ; level : 'ok' | 'warn' | 'err'. Le résultat du lanceur l'emporte, à défaut l'état des zones de la vue. */
+export function fetchOutcome(final) {
+  const r = obj(final?.result),
+    zs = obj(final?.zones),
+    keys = Object.keys(zs),
+    hasLists = ['fetched', 'unchanged', 'failed'].some(k => Array.isArray(r[k]));
+  let fetched, unchanged, failed;
+  if (hasLists) {
+    fetched = strs(r.fetched);
+    unchanged = strs(r.unchanged);
+    failed = (Array.isArray(r.failed) ? r.failed : []).filter(f => f && f.zone).map(f => ({
+      zone: f.zone,
+      source: f.source ?? null,
+      error: f.error ?? null,
+      ...(num(f.status) !== null ? {
+        status: f.status
+      } : {})
+    }));
+  } else {
+    const srcs = z => Object.entries(obj(zs[z]?.sources)).map(([id, s]) => [id, obj(s)]);
+    failed = keys.filter(z => zs[z]?.state === 'failed').map(z => {
+      const [id, s] = srcs(z).find(([, x]) => x.state === 'failed') || [null, {}];
+      return {
+        zone: z,
+        source: id,
+        error: s.error ?? zs[z].error ?? null,
+        ...(num(s.status) !== null ? {
+          status: s.status
+        } : {})
+      };
+    });
+    const done = keys.filter(z => zs[z]?.state === 'done');
+    fetched = done.filter(z => srcs(z).some(([, x]) => x.state === 'downloaded'));
+    unchanged = done.filter(z => !fetched.includes(z));
+  }
+  const manual = (Array.isArray(r.manual) ? r.manual : []).filter(m => m && m.zone && m.source).map(m => ({
+      zone: m.zone,
+      source: m.source,
+      url: typeof m.url === 'string' ? m.url : '',
+      name: Array.isArray(m.name) ? m.name.map(x => String(x ?? '')) : []
+    })),
+    warns = warningsOf(r),
+    outside = num(r.outside_sync) ?? warned(warns, 'outside-sync');
+  let kind;
+  if (final?.state === 'interrupted') kind = 'interrupted';
+  else if (final?.state === 'cancelled') kind = 'cancelled';
+  else if (r.reason === 'nothing-to-fetch') kind = 'nothing';
+  else if (r.reason === 'cancelled') kind = 'cancelled';
+  else if (r.reason === 'partial' || r.reason === 'failed') kind = r.reason;
+  else if (final?.state === 'error' || r.ok === false) kind = 'failed';
+  else kind = failed.length ? fetched.length || unchanged.length ? 'partial' : 'failed' : 'done';
+  const level = kind === 'failed' ? 'err' : kind === 'done' && outside <= 0 ? 'ok' : 'warn';
+  return {
+    kind,
+    fetched,
+    unchanged,
+    failed,
+    manual,
+    outside: Math.max(0, outside),
+    level
+  };
+}
+/** Une adresse de source manuelle est-elle un lien ? Seulement en https:// (jamais javascript:, data:, http:…). */
+export const isHttps = url => /^https:\/\/[^\s"'<>]+$/i.test(String(url ?? ''));
+/** Une entrée du journal pour un téléchargement : { at, set, verb ('download' : le verbe du lanceur est « fetch »), zones, seconds,
+ *  result, fetched, unchanged, failed, job? }. */
+export function fetchEntry({
+  at,
+  zones,
+  seconds,
+  out,
+  job
+}) {
+  return {
+    at: new Date(at).toISOString(),
+    set: 'base',
+    verb: 'download',
+    zones: [...zones],
+    seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
+    result: journalResult(out.kind),
+    fetched: [...out.fetched],
+    unchanged: [...out.unchanged],
+    failed: out.failed.map(f => ({
+      zone: f.zone,
+      source: f.source ?? null,
+      error: f.error ?? null,
+      ...(num(f.status) !== null ? {
+        status: f.status
+      } : {})
+    })),
+    ...(job ? {
+      job: String(job)
+    } : {})
+  };
+}
+
+// ---------------------------------------------------------------- purger (base/purge)
+/** Une taille en octets écrite dans la langue : « 13,8 Mo » (virgule en fr, de, es ; point en en), une décimale, base 1024 ; les octets
+ *  entiers sous 1 Ko ; vide si ce n'est pas un nombre. */
+export function fmtBytes(n, lang = 'fr') {
+  if (!Number.isFinite(n) || n < 0) return '';
+  const units = SIZE_UNITS[lang] || SIZE_UNITS.fr,
+    sep = lang === 'en' ? '.' : ',';
+  if (n < 1024) return `${Math.round(n)} ${units[0]}`;
+  let i = 1,
+    v = n / 1024;
+  while (i < units.length - 1 && Math.round(v * 10) / 10 >= 1024) { // 1023,96 Ko s'écrit 1,0 Mo, jamais « 1024,0 Ko »
+    v /= 1024;
+    i++;
+  }
+  return `${v.toFixed(1).replace('.', sep)} ${units[i]}`;
+}
+/** Le plan ou la fin d'une purge, d'après la dernière vue du travail : { kind, files, bytes, zones, removed, shared, kept, unsafe, nothing,
+ *  level } ; kind : 'done' | 'partial' | 'failed' | 'cancelled' | 'interrupted' ; files / bytes : le total de result.removed (à défaut les
+ *  zones de la vue) ; zones : celles qui ont des fichiers ; shared : l'avertissement 'shared-fr' ; kept : les fichiers suivis par git
+ *  gardés (le total des 'kept-tracked') ; unsafe : les chemins refusés ; nothing : réussi et rien à retirer ; level : 'ok' | 'warn' | 'err'. */
+export function purgeOutcome(final) {
+  const r = obj(final?.result),
+    zs = obj(final?.zones),
+    from = r.removed && typeof r.removed === 'object' ? r.removed : zs,
+    removed = {};
+  for (const [z, e] of Object.entries(obj(from))) removed[z] = {
+    files: num(e?.files) ?? 0,
+    bytes: num(e?.bytes) ?? 0
+  };
+  const warns = warningsOf(r),
+    files = Object.values(removed).reduce((a, e) => a + e.files, 0),
+    bytes = Object.values(removed).reduce((a, e) => a + e.bytes, 0),
+    kept = warned(warns, 'kept-tracked'),
+    unsafe = warned(warns, 'unsafe-path'),
+    shared = warns.some(w => w.code === 'shared-fr');
+  let kind;
+  if (final?.state === 'interrupted') kind = 'interrupted';
+  else if (final?.state === 'cancelled' || r.reason === 'cancelled') kind = 'cancelled';
+  else if (r.reason === 'partial' || r.reason === 'failed') kind = r.reason;
+  else if (final?.state === 'error' || r.ok === false) kind = 'failed';
+  else kind = 'done';
+  return {
+    kind,
+    files,
+    bytes,
+    zones: Object.keys(removed).filter(z => removed[z].files > 0),
+    removed,
+    shared,
+    kept,
+    unsafe,
+    nothing: kind === 'done' && files === 0,
+    level: kind === 'failed' ? 'err' : kind === 'done' && unsafe <= 0 ? 'ok' : 'warn'
+  };
+}
+/** Une entrée du journal pour une purge réelle (le plan n'y est jamais) : { at, set, verb: 'purge', zones, seconds, result, files, bytes,
+ *  job? }. */
+export function purgeEntry({
+  at,
+  zones,
+  seconds,
+  out,
+  job
+}) {
+  return {
+    at: new Date(at).toISOString(),
+    set: 'base',
+    verb: 'purge',
+    zones: [...zones],
+    seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
+    result: journalResult(out.kind),
+    files: out.files,
+    bytes: out.bytes,
     ...(job ? {
       job: String(job)
     } : {})

@@ -8,8 +8,8 @@ Rules covered
   * L2 the screen, with aerodb STUBBED (publication / zones / coverageByState answer fixtures, sources() is the real catalogue plus
     a parser constant; nothing is read from the data repository, nothing is fetched): the head with the cycle in force, the four
     groups in order and folded as they should be, seven rows at most visible, the states of the rows, the coverage written once,
-    no horizontal scroll, 44 px summaries, the only action is Construire (grey without a launcher, with its reason); no Télécharger / Publier /
-    Purger / Mettre à jour button anywhere, the four languages;
+    no horizontal scroll, 44 px summaries, the actions are Télécharger · Construire · Purger (one panel) and Publier (grey without a launcher,
+    with its reason); no Mettre à jour button anywhere, the four languages;
   * L3 the module is never in Pilot's rail (it belongs to the Maintenance application); Settings > Administration has the line
     « Maintenance » at the Full level only, a real link to #data that mounts the module, including on a phone;
   * L4 an aerodb call that fails is said in one line and throws nothing;
@@ -26,8 +26,15 @@ Rules covered
   * L12 Publier against a fake launcher (sync-status) and a FAKE `ctx.data.sync` carrying `.gesture` (an init script wraps FrameData.adapter,
     as the aerodb stub wraps AeroDB.create): the state line, the one question, the call with { gesture: true } exactly once, the result lines,
     the notification, the journal; nothing without the gesture, with nothing to publish, during a build; the launcher's message escaped.
+  * L14 model.js, the pure functions of Télécharger and Purger (the verb of a view, the one grey reason, sizes in the four languages, a zone's and a source's
+    phrase, the end of a download incl. manual sources / outside_sync / nothing-to-fetch, the plan and the end of a purge with shared-fr / kept-tracked, the
+    journal entries), on fixtures;
+  * L15 Télécharger and Purger against the FAKE launcher (the technique of L7): the body (verb fetch, args.personal), the lines per zone and per source, the end
+    summary, the manual sources (a link only in https), outside_sync, nothing to fetch, 429 too-soon, the journal; Purger: the plan (dry) then ONE question
+    (shared-fr, kept-tracked), No does nothing, Yes sends the real job without dry, the end sentences, one journal entry, an empty plan without a question;
+    one operation at a time (the other verbs grey while any runs); a running download found at mount is followed with its own lines.
 
-Cases: L1 .. L12.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
+Cases: L1 .. L15.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
 """
 import datetime
 import json
@@ -339,7 +346,8 @@ def l2(c):
     c.eq(g['weather']['states'], {}, 'the weather rows have no state', what='weather states')
     c.eq(c.text('[data-set="ukmil"] .f-badge[data-pill]'), tx(TX, 'parser', lang, after='state: {'), 'the pill is worded in the language of the run', what='ukmil pill')
     # no action button anywhere, no horizontal scroll, 44 px on the summaries
-    c.eq([m['verbs'], m['buttons']], [['build:off', 'publish:off'], 2], 'the only verbs are Construire and Publier, both grey (no launcher in the suite): no Télécharger / Purger / Mettre à jour', what='verbs / buttons')
+    c.eq([m['verbs'], m['buttons']], [['download:off', 'build:off', 'purge:off', 'publish:off'], 4],
+         'the verbs are Télécharger · Construire · Purger (one panel) then Publier, all grey (no launcher in the suite): no Mettre à jour', what='verbs / buttons')
     c.eq([c.attr('[data-publish] [data-reason]', 'data-reason'), norm(c.text('[data-publish] [data-reason]'))], ['no-launcher', norm(_trow('no-launcher', lang, 'greyReason: {'))],
          'Publier is grey for the same reason, written once', what='publish reason')
     c.eq(c.count('[data-group=base] > [data-build] + [data-publish]'), 1, 'the Publier panel follows the Construire panel', what='panel order')
@@ -413,7 +421,7 @@ def l3(c):
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the module is mounted by the link (at 390 as at 1280)')
     c.eq((c.js('location.search'), c.hash()), ('?app=maintenance', '#data'), 'the address: the Maintenance application, on Données', what='address')
     c.eq(c.count('#fMenu a[data-id="data"]'), 1, 'in the rail of Maintenance', what='rail entries')
-    c.eq(c.count('[data-verb]'), 2, 'only Construire and Publier, grey without a launcher', what='[data-verb]')
+    c.eq(c.count('[data-verb]'), 4, 'Télécharger, Construire, Purger and Publier, grey without a launcher', what='[data-verb]')
     c.ok(c.text('[data-cycle-now]'), 'no cycle', 'the head shows the cycle in force')
     c.check_errors()
 
@@ -430,7 +438,7 @@ def l4(c):
     c.eq(c.count('details.f-group'), 4, 'the four groups are still drawn (names and links)', what='groups')
     c.eq(c.count('[data-set][data-state]'), 0, 'no state is invented without a publication', what='states')
     c.eq(c.doc('cache/data/coverage.json'), None, 'a degraded read writes no coverage', what='coverage.json')
-    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['build:off', 'publish:off'], 'only Construire and Publier, grey', what='[data-verb]')
+    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'], 'Télécharger, Construire, Purger and Publier, grey', what='[data-verb]')
     c.check_errors()
 
 
@@ -689,7 +697,7 @@ def l7(c):
     c.eq(post.get('author'), 'ABC', 'the frame adds the trigram itself', what='author')
     c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason')], [True, 'busy'], 'while it runs: grey, « Une autre opération est en cours »', what='running reason')
     c.eq(c.js("[...document.querySelectorAll('[data-build] input[type=checkbox]')].every(i => i.disabled)"), True, 'the choices are frozen while it runs', what='frozen checkboxes')
-    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb).sort()"), ['build', 'publish', 'stop'], 'the build, publish (grey, a build is running) and stop verbs only', what='verbs')
+    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb).sort()"), ['build', 'download', 'publish', 'purge', 'stop'], 'the four verbs (grey, a build is running) and stop only', what='verbs')
     c.eq(c.js("[...document.querySelectorAll('[data-zone-state]')].map(l => [l.dataset.zoneState, l.dataset.state])"), [['fr', 'waiting'], ['gb', 'waiting']], 'a line per zone, waiting before the first view', what='zone lines')
     c.until("document.querySelector('[data-zone-state=fr]').dataset.state === 'building'", timeout=8000, what='fr is building')
     fr_name = c.text('[data-zone-state=fr] b')
@@ -1182,3 +1190,375 @@ def l13(c):
     c.eq(stored, [z], 'the coverage is written at once (cache/data/coverage.json)', what='coverage.json')
     c.check_errors()
 
+
+# ------------------------------------------------------------------------------------------------------ L14
+_L14_JS = r"""async () => {
+  const M = await import('/modules/data/model.js');
+  const out = {};
+  // which verb of the base set a view is (the launcher says it; a view without a verb that carries its zones is a build)
+  out.verbs = [{ set: 'base', verb: 'fetch', zones: {} }, { set: 'base', verb: 'purge' }, { set: 'base', verb: 'build' }, { zones: {} }, { zones: {}, verb: 'x' },
+    { set: 'other', verb: 'fetch', zones: {} }, { state: 'done' }, null, { zones: [] }].map(M.viewVerb);
+  out.isBuild = [{ set: 'base', verb: 'fetch', zones: {} }, { zones: {} }, { set: 'base', verb: 'build' }].map(M.isBuildView);
+  out.dry = [{ set: 'base', verb: 'purge', args: { dry: true }, zones: {} }, { set: 'base', verb: 'purge', args: { zones: ['fr'] } }, { set: 'base', verb: 'fetch', args: { dry: true } }, null].map(M.isDry);
+  // the one grey reason of the three verbs
+  out.gate = [{ launcher: false, busy: true, zones: 0 }, { launcher: true, busy: true, zones: 0 }, { launcher: true, zones: 0, offline: true }, { launcher: true, zones: 2, offline: true }, { launcher: true, zones: 2 }]
+    .map(s => M.buildState(s).reason);
+  // sizes
+  const B = [0, 512, 1023, 1024, 1536, 14470348, 14994636, 1048575, 2.5 * 2 ** 30, 5 * 2 ** 40, NaN, -1, null];
+  out.bytes = Object.fromEntries(['fr', 'en', 'de', 'es', 'xx'].map(l => [l, B.map(n => M.fmtBytes(n, l))]));
+  // a zone's line, per verb
+  const ph = (z, v) => { const p = M.zonePhrase(z, v); return [p.state, p.key, p.n, p.m, p.code, p.files, p.bytes] };
+  out.fetchPhrase = [undefined, { state: 'fetching', done: 1, total: 3 }, { state: 'fetching' }, { state: 'done' }, { state: 'failed', error: 'http' }, { state: 'failed', error: 'zzz' }, { state: 'built' }].map(z => ph(z, 'fetch'));
+  out.purgePhrase = [{ state: 'purging', done: 1, total: 3 }, { state: 'done', files: 3, bytes: 2048 }, { state: 'failed', error: 'perm-denied' }, { state: 'failed', error: 'Bad Code!' }, { state: 'failed' }].map(z => ph(z, 'purge'));
+  out.buildPhrase = ph({ state: 'building', done: 2, total: 5 });
+  out.rows = M.zoneRows({ zones: { fr: { state: 'done' } } }, ['gb'], 'fetch').map(r => [r.zone, r.key]);
+  out.sources = M.sourceRows({ sources: { openaip: { state: 'downloaded', files: 2, bytes: 1500 }, sia: { state: 'manual', error: 'manual' }, enaire: { state: 'skipped', error: 'personal' },
+    faa: { state: 'failed', error: 'http', status: 404 }, x: { state: 'failed', error: 'weird' }, nat: { state: 'unchanged' }, y: { state: 'pending' }, z: null } }).map(s => [s.id, s.state, s.files, s.bytes, s.code, s.status]);
+  out.sourcesNone = [M.sourceRows(undefined).length, M.sourceRows({}).length];
+  // the end of a download
+  const man = [{ zone: 'fr', source: 'sia', url: 'https://sia.example/x', name: ['a', 'b', 'c', 'd'] }, { zone: 'gb', source: 'nats', url: 'http://x', name: ['n1', 'n2', 'n3', 'n4'] }, { zone: 'gb', source: 'z' }, { source: 'nozone' }];
+  const fo = f => { const o = M.fetchOutcome(f); return [o.kind, o.fetched, o.unchanged, o.failed, o.manual.map(m => [m.zone, m.source, m.url, m.name.length]), o.outside, o.level] };
+  out.fetch = [
+    { state: 'done', result: { ok: true, fetched: ['fr'], unchanged: ['gb'], failed: [], manual: man, outside_sync: 0, warnings: [] } },
+    { state: 'done', result: { ok: true, fetched: ['fr'], unchanged: [], failed: [{ zone: 'gb', source: 'ukmil', error: 'http', status: 404 }, { zone: 'es', source: 'x', error: 'network' }], manual: [], outside_sync: 3,
+      warnings: [{ code: 'outside-sync', count: 3 }], reason: 'partial' } },
+    { state: 'done', result: { ok: true, fetched: [], unchanged: ['fr'], failed: [], manual: [], outside_sync: 2 } },
+    { state: 'error', result: { ok: false, fetched: [], unchanged: [], failed: [], manual: man, outside_sync: 0, warnings: [], reason: 'nothing-to-fetch' } },
+    { state: 'error', result: { ok: false, fetched: [], unchanged: [], failed: [{ zone: 'fr', source: 'openaip', error: 'http', status: 403 }], reason: 'failed' } },
+    { state: 'cancelled', zones: { fr: { state: 'done', sources: { openaip: { state: 'downloaded' } } }, gb: { state: 'waiting' } } },
+    { state: 'interrupted', zones: {} },
+    { state: 'done', result: { ok: true, fetched: ['fr'], reason: 'cancelled' } },
+    { state: 'done', zones: { fr: { state: 'done', sources: { openaip: { state: 'downloaded', files: 1 }, sia: { state: 'manual' } } }, gb: { state: 'done', sources: { ukmil: { state: 'unchanged' } } },
+      es: { state: 'failed', error: 'http', sources: { enaire: { state: 'skipped', error: 'personal' }, faa: { state: 'failed', error: 'http', status: 403 } } } } },
+    { state: 'done', result: { ok: true, unchanged: ['fr'], warnings: [{ code: 'outside-sync', count: 4 }] } },
+    null].map(fo);
+  out.https = ['https://a.example/x', 'http://a.example', 'javascript:alert(1)', 'data:text/html,x', 'https://a b', '', null, 'HTTPS://A.EXAMPLE'].map(M.isHttps);
+  // the plan and the end of a purge
+  const po = f => { const o = M.purgeOutcome(f); return [o.kind, o.files, o.bytes, o.zones, o.shared, o.kept, o.unsafe, o.nothing, o.level] };
+  const rem = { fr: { files: 12, bytes: 14470348 }, es: { files: 3, bytes: 524288 }, gb: { files: 0, bytes: 0 } };
+  const warn = [{ code: 'shared-fr' }, { code: 'kept-tracked', count: 2 }, { code: 'unsafe-path', count: 1 }];
+  out.purge = [
+    { state: 'done', result: { ok: true, removed: rem, warnings: warn } },
+    { state: 'done', result: { ok: true, removed: { fr: { files: 0, bytes: 0 } }, warnings: [] } },
+    { state: 'error', result: { ok: false, removed: { fr: { files: 1, bytes: 10 } }, warnings: [], reason: 'failed' } },
+    { state: 'done', result: { ok: true, removed: { fr: { files: 1, bytes: 10 } }, reason: 'partial' } },
+    { state: 'cancelled', zones: { fr: { state: 'done', files: 4, bytes: 40 }, es: { state: 'waiting' } } },
+    { state: 'interrupted', zones: {} },
+    { state: 'done', result: { ok: true, removed: { fr: { files: 2, bytes: 5 } }, warnings: [{ code: 'kept-tracked', count: 1 }, { code: 'kept-tracked', count: 2 }] } },
+    { state: 'done', result: { ok: true, removed: {}, warnings: [{ code: 'kept-tracked', count: 5 }] } }].map(po);
+  // the journal entries
+  const at = Date.parse('2026-10-29T10:00:00Z');
+  const fe = M.fetchOutcome({ state: 'done', result: { ok: true, fetched: ['fr'], unchanged: ['es'], failed: [{ zone: 'gb', source: 'ukmil', error: 'http', status: 404 }, { zone: 'us', source: 'faa', error: 'network' }], reason: 'partial' } });
+  out.fetchEntry = M.fetchEntry({ at, zones: ['fr', 'es', 'gb', 'us'], seconds: 12.6, out: fe, job: 'j9' });
+  out.fetchEntryNothing = M.fetchEntry({ at, zones: ['fr'], seconds: null, out: M.fetchOutcome({ state: 'error', result: { ok: false, reason: 'nothing-to-fetch' } }) });
+  out.purgeEntry = M.purgeEntry({ at, zones: ['es', 'fr'], seconds: 3.2, out: M.purgeOutcome({ state: 'done', result: { ok: true, removed: rem, warnings: warn } }), job: 'j8' });
+  out.result = ['nothing', 'done', 'x'].map(M.journalResult);
+  return out;
+}"""
+
+
+@case('L14', 'Données: Télécharger and Purger, the pure functions on fixtures (verb of a view, reasons, fetch end, purge plan, sizes, journal entries)', 'L',
+      tags=('data',), phone=False,
+      rule='modules/data/SPEC 5.1, 6.5 (one grey reason); tools/regen/base_sources.py (the view and the result of base/fetch and base/purge)')
+def l14(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    r = c.js(_L14_JS)
+    c.eq(r['verbs'], ['fetch', 'purge', 'build', 'build', None, None, None, None, None],
+         'a view is a fetch / purge / build when it says set base and its verb; without a verb its zones make it a build; another set, no zones: none', what='viewVerb')
+    c.eq(r['isBuild'], [False, True, True], 'a fetch view carries its zones but is no build any more', what='isBuildView')
+    c.eq(r['dry'], [True, False, False, False], 'only a purge with args.dry is a plan', what='isDry')
+    c.eq(r['gate'], ['no-launcher', 'busy', 'offline', 'offline', None], 'the one reason of the three buttons: launcher, busy, offline, no zone (the order of Construire)', what='buildState')
+    mo = ['0 o', '512 o', '1023 o', '1,0 Ko', '1,5 Ko', '13,8 Mo', '14,3 Mo', '1,0 Mo', '2,5 Go', '5120,0 Go', '', '', '']
+    gb = lambda units, sep: [x.replace(',', sep).replace(' o', ' B').replace('Ko', 'KB').replace('Mo', 'MB').replace('Go', 'GB') if units else x for x in mo]
+    c.eq(r['bytes']['fr'], mo, 'sizes in French: « 13,8 Mo », one decimal, octets whole under 1 Ko, no 1024,0, nothing for NaN, negative, null', what='fmtBytes fr')
+    c.eq(r['bytes']['en'], gb(True, '.'), 'in English the decimal point and MB', what='fmtBytes en')
+    c.eq(r['bytes']['de'], gb(True, ','), 'in German the comma and MB', what='fmtBytes de')
+    c.eq(r['bytes']['es'], gb(True, ','), 'in Spanish the comma and MB', what='fmtBytes es')
+    c.eq(r['bytes']['xx'], mo, 'an unknown language is written as French', what='fmtBytes xx')
+    c.eq(r['fetchPhrase'], [['waiting', 'waiting', None, None, None, None, None], ['fetching', 'fetchingN', 1, 3, None, None, None], ['fetching', 'fetching', None, None, None, None, None],
+                            ['done', 'done', None, None, None, None, None], ['failed', 'failed', None, None, 'http', None, None], ['failed', 'failed', None, None, 'unknown', None, None],
+                            ['waiting', 'waiting', None, None, None, None, None]],
+         'a zone of a download: n / m sources only when both are known, the code of a failure kept or « unknown », a state of another verb waits', what='zonePhrase fetch')
+    c.eq(r['purgePhrase'], [['purging', 'purging', 1, 3, None, None, None], ['done', 'done', None, None, None, 3, 2048], ['failed', 'failed', None, None, 'perm-denied', None, None],
+                            ['failed', 'failed', None, None, 'unknown', None, None], ['failed', 'failed', None, None, 'unknown', None, None]],
+         'a zone of a purge: files and bytes of the zone, never n / m sources, a short code kept as written', what='zonePhrase purge')
+    c.eq(r['buildPhrase'], ['building', 'buildingN', 2, 5, None, None, None], 'the build phrase is unchanged', what='zonePhrase build')
+    c.eq(r['rows'], [['gb', 'waiting'], ['fr', 'done']], 'the zones asked in order, then the ones the job adds', what='zoneRows fetch')
+    c.eq(r['sources'], [['openaip', 'downloaded', 2, 1500, None, None], ['sia', 'manual', None, None, None, None], ['enaire', 'skipped', None, None, 'personal', None],
+                        ['faa', 'failed', None, None, 'http', 404], ['x', 'failed', None, None, 'unknown', None], ['nat', 'unchanged', None, None, None, None]],
+         'the sources of a zone, in the view\'s order: unknown or pending ones dropped, the code of a failure (HTTP status kept), « personal » for a source skipped without its licence', what='sourceRows')
+    c.eq(r['sourcesNone'], [0, 0], 'a zone without sources has no source line', what='sourceRows none')
+    sia = ['fr', 'sia', 'https://sia.example/x', 4]
+    nats = ['gb', 'nats', 'http://x', 4]
+    z = ['gb', 'z', '', 0]
+    c.eq(r['fetch'], [
+        ['done', ['fr'], ['gb'], [], [sia, nats, z], 0, 'ok'],
+        ['partial', ['fr'], [], [{'zone': 'gb', 'source': 'ukmil', 'error': 'http', 'status': 404}, {'zone': 'es', 'source': 'x', 'error': 'network'}], [], 3, 'warn'],
+        ['done', [], ['fr'], [], [], 2, 'warn'],
+        ['nothing', [], [], [], [sia, nats, z], 0, 'warn'],
+        ['failed', [], [], [{'zone': 'fr', 'source': 'openaip', 'error': 'http', 'status': 403}], [], 0, 'err'],
+        ['cancelled', ['fr'], [], [], [], 0, 'warn'],
+        ['interrupted', [], [], [], [], 0, 'warn'],
+        ['cancelled', ['fr'], [], [], [], 0, 'warn'],
+        ['partial', ['fr'], ['gb'], [{'zone': 'es', 'source': 'faa', 'error': 'http', 'status': 403}], [], 0, 'warn'],
+        ['done', [], ['fr'], [], [], 4, 'warn'],
+        ['done', [], [], [], [], 0, 'ok']],
+         'the end of a download: the launcher\'s result wins (reason partial / failed / cancelled / nothing-to-fetch), else the view\'s zones decide; manual sources need a zone and a source; '
+         'outside_sync (or its warning) is the count of tracked files changed and turns a clean end amber; a failure with nothing fetched is red', what='fetchOutcome')
+    c.eq(r['https'], [True, False, False, False, False, False, False, True], 'a manual source is a link only in https://', what='isHttps')
+    c.eq(r['purge'], [
+        ['done', 15, 14994636, ['fr', 'es'], True, 2, 1, False, 'warn'],
+        ['done', 0, 0, [], False, 0, 0, True, 'ok'],
+        ['failed', 1, 10, ['fr'], False, 0, 0, False, 'err'],
+        ['partial', 1, 10, ['fr'], False, 0, 0, False, 'warn'],
+        ['cancelled', 4, 40, ['fr'], False, 0, 0, False, 'warn'],
+        ['interrupted', 0, 0, [], False, 0, 0, False, 'warn'],
+        ['done', 2, 5, ['fr'], False, 3, 0, False, 'ok'],
+        ['done', 0, 0, [], False, 5, 0, True, 'ok']],
+         'a purge plan or end: totals of result.removed (the view\'s zones without it), the zones that have files, shared-fr, the kept-tracked total, the refused paths (amber), nothing = nothing to remove', what='purgeOutcome')
+    c.eq(r['fetchEntry'], {'at': '2026-10-29T10:00:00.000Z', 'set': 'base', 'verb': 'download', 'zones': ['fr', 'es', 'gb', 'us'], 'seconds': 13, 'result': 'partial', 'fetched': ['fr'], 'unchanged': ['es'],
+                           'failed': [{'zone': 'gb', 'source': 'ukmil', 'error': 'http', 'status': 404}, {'zone': 'us', 'source': 'faa', 'error': 'network'}], 'job': 'j9'},
+         'the journal entry of a download: verb « download » (the launcher\'s verb is fetch), zones, result, fetched, unchanged, failed with status', what='fetchEntry')
+    c.eq([r['fetchEntryNothing']['result'], r['fetchEntryNothing']['seconds'], 'job' in r['fetchEntryNothing'], r['fetchEntryNothing']['failed']], ['nothing', None, False, []], 'nothing to fetch is journaled « nothing », no job id', what='fetchEntry nothing')
+    c.eq(r['purgeEntry'], {'at': '2026-10-29T10:00:00.000Z', 'set': 'base', 'verb': 'purge', 'zones': ['es', 'fr'], 'seconds': 3, 'result': 'done', 'files': 15, 'bytes': 14994636, 'job': 'j8'},
+         'the journal entry of a purge: zones, result, files, bytes', what='purgeEntry')
+    c.eq(r['result'], ['nothing', 'done', 'failed'], 'the journal result keeps « nothing »', what='journalResult')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L15
+def _size(n, lang):
+    """A size as the screen writes it (an independent version of model.js fmtBytes): base 1024, one decimal, comma (point in English), Mo in French else MB."""
+    units = ['o', 'Ko', 'Mo', 'Go'] if lang == 'fr' else ['B', 'KB', 'MB', 'GB']
+    if n < 1024:
+        return f'{n} {units[0]}'
+    v, i = n / 1024, 1
+    while i < 3 and round(v * 10) / 10 >= 1024:
+        v, i = v / 1024, i + 1
+    s = f'{v:.1f}'
+    return (s if lang == 'en' else s.replace('.', ',')) + ' ' + units[i]
+
+
+def _fview(zones, state='running', step='', done=0, total=2, result=None, jid='j1', verb='fetch', args=None):
+    """The view of a base fetch / purge job as the launcher gives it (tools/regen/base_sources.py): set and verb say which job it is."""
+    v = _view(state, step=step, done=done, total=total, zones=zones, result=result, jid=jid)
+    v.update({'set': 'base', 'verb': verb, 'args': args or {}})
+    return v
+
+
+def _fz(state, done=0, total=0, sources=None, **extra):
+    """A zone of a fetch / purge view, with its sources."""
+    z = _zs(state, done, total, **extra)
+    if sources is not None:
+        z['sources'] = sources
+    return z
+
+
+def _zhead(c, z):
+    """The words of a zone's line in a download without the lines of its sources (its name and its phrase)."""
+    return norm(c.js("""(z) => { const d = document.querySelector('[data-zone-state="' + z + '"] > div').cloneNode(true); d.querySelector('ul')?.remove(); return d.textContent }""", z))
+
+
+def _verbs(c):
+    """The verb buttons of the panel, in order, each with ':off' when grey."""
+    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
+
+
+def _grey(c, what):
+    """Télécharger, Construire, Purger and Publier are grey, for ONE reason written once under the panel: its key."""
+    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"),
+         ['download:off', 'build:off', 'purge:off', 'publish:off'], f'{what}: the four verbs are grey', what='verbs')
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-reason]')].map(p => p.dataset.reason)"), ['busy'], f'{what}: one reason, written once', what='reason')
+
+
+@case('L15', 'Données: Télécharger and Purger against a fake launcher (body, lines per zone and source, summary, manual sources, plan then one question, journal, grey reasons, resume)', 'L',
+      tags=('data',), langs4=True, designs=('standard',),
+      rule='modules/data/SPEC 3 (plan before change, one question, notify at the end only, one operation at a time), 5.1, 6.5; tools/regen/base_sources.py (base/fetch, base/purge)')
+def l15(c):
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    sm = lambda key, who: _trow(key, lang, f'{who}: {{')
+    files2 = f'2 {FILES[lang][1]} ({_size(1500000, lang)})'
+    man_names = {'sia': ['SIA fr', 'SIA en', 'SIA de', 'SIA es'], 'nats': ['NATS fr', 'NATS en', 'NATS de', 'NATS es'], 'z': ['Z fr', 'Z en', 'Z de', 'Z es']}
+    manual = [{'zone': 'fr', 'source': 'sia', 'url': 'https://www.sia.example/aip', 'name': man_names['sia']},
+              {'zone': 'gb', 'source': 'nats', 'url': 'http://insecure.example/nats', 'name': man_names['nats']},
+              {'zone': 'gb', 'source': 'z', 'url': 'javascript:alert(1)', 'name': man_names['z']}]
+    run1 = _fview({'fr': _fz('fetching', 1, 3, {'openaip': {'state': 'downloaded', 'files': 2, 'bytes': 1500000}, 'sia': {'state': 'manual', 'error': 'manual'}}), 'gb': _fz('waiting')}, step='Zone fr')
+    run2 = _fview({'fr': _fz('done', 3, 3, {'openaip': {'state': 'downloaded', 'files': 2, 'bytes': 1500000}, 'sia': {'state': 'manual', 'error': 'manual'}}),
+                   'gb': _fz('fetching', 1, 2, {'nats': {'state': 'skipped', 'error': 'personal'}, 'ukmil': {'state': 'failed', 'error': 'http', 'status': 404}})}, step='Zone gb', done=1)
+    result = {'ok': True, 'fetched': ['fr'], 'unchanged': [], 'failed': [{'zone': 'gb', 'source': 'ukmil', 'error': 'http', 'status': 404}], 'manual': manual,
+              'outside_sync': 3, 'warnings': [{'code': 'outside-sync', 'count': 3}], 'reason': 'partial'}
+    end = _fview({'fr': _fz('done', 3, 3, {'openaip': {'state': 'downloaded', 'files': 2, 'bytes': 1500000}, 'sia': {'state': 'manual', 'error': 'manual'}}),
+                  'gb': _fz('failed', 2, 2, {'nats': {'state': 'skipped', 'error': 'personal'}, 'ukmil': {'state': 'failed', 'error': 'http', 'status': 404}, 'nat': {'state': 'unchanged'}}, error='http')},
+                 state='done', step='Terminé', done=2, result=result)
+    st = _launcher(c, [run1, run2, run2, end])
+    cfg, _ = _fixture()
+    names = lambda *ids: ', '.join(z['names'][li] for z in cfg['zones'] if z['id'] in ids)
+    _open(c, cfg)
+    before = c.js('window.__stub.calls.publication')
+    # ---- A: the panel holds the three verbs, in this order, under one choice of zones; no zone: all grey, one reason
+    c.eq(_verbs(c), ['download', 'build', 'purge'], 'Télécharger · Construire · Purger, in this order, in the one panel', what='verbs')
+    c.eq([norm(c.text(f'[data-build] [data-verb={v}]')) for v in ('download', 'build', 'purge')], [norm(_trow(v, lang)) for v in ('download', 'build', 'purge')], 'worded in the language of the run', what='labels')
+    c.eq(norm(c.text('[data-build] h2')), norm(_trow('buildTitle', lang)), 'the panel title covers the three verbs', what='title')
+    _untick(c, 'ca', 'es', 'us', 'fr', 'gb')
+    c.eq([_verbs(c), c.attr('[data-build] [data-reason]', 'data-reason'), norm(c.text('[data-build] [data-reason]')), c.count('[data-build] [data-reason]')],
+         [['download:off', 'build:off', 'purge:off'], 'no-zone', norm(_trow('no-zone', lang, 'greyReason: {')), 1], 'no zone ticked: the three are grey, one reason', what='no zone')
+    c.tap('[data-build-zone="fr"]')
+    c.tap('[data-build-zone="gb"]')
+    c.eq(_verbs(c), ['download', 'build', 'purge'], 'live with a launcher and zones ticked', what='verbs')
+    _screen_ok(c, 'before the download')
+    # ---- B: Télécharger: the body, the lines per zone and per source, the end
+    c.tap('[data-verb=download]')
+    c.until("!!document.querySelector('[data-build] [data-running][data-op=fetch]')", what='the running bar is drawn')
+    c.eq(len(st['posts']), 1, 'one start', what='posts')
+    c.eq({k: st['posts'][0][k] for k in ('set', 'verb', 'args', 'author')}, {'set': 'base', 'verb': 'fetch', 'args': {'zones': ['fr', 'gb'], 'personal': []}, 'author': 'ABC'},
+         'the body: verb fetch, the ticked zones, personal EMPTY by default', what='body')
+    _grey(c, 'while it runs')
+    c.eq(c.js("[...document.querySelectorAll('[data-build] input[type=checkbox]')].every(i => i.disabled)"), True, 'the choices are frozen while it runs', what='frozen checkboxes')
+    c.eq(c.js("[...document.querySelectorAll('[data-zone-state]')].map(l => [l.dataset.zoneState, l.dataset.state])"), [['fr', 'waiting'], ['gb', 'waiting']], 'a line per zone, waiting before the first view', what='zone lines')
+    c.until("document.querySelector('[data-zone-state=fr]').dataset.state === 'fetching'", timeout=8000, what='fr is downloading')
+    fr_name = c.text('[data-zone-state=fr] > div > b')
+    c.eq(_zhead(c, 'fr'), norm(f"{fr_name} : {sm('fetchingN', 'fetchState').replace('{n}', '1').replace('{m}', '3')}"), 'the zone: downloading (1 / 3 sources)', what='fr line')
+    s_open = c.text('[data-zone-state=fr] [data-source=openaip] b')
+    c.eq(norm(c.text('[data-zone-state=fr] [data-source=openaip]')), norm(f"{s_open} : {sm('downloaded', 'sourceState').replace('{n}', files2)}"), 'a source: downloaded, 2 files and their size', what='source downloaded')
+    c.eq([c.attr('[data-zone-state=fr] [data-source=openaip]', 'data-state'), c.attr('[data-zone-state=fr] [data-source=sia]', 'data-state')], ['downloaded', 'manual'], 'the state of each source', what='source states')
+    c.eq(norm(c.text('[data-zone-state=fr] [data-source=sia]')), norm(f"{c.text('[data-zone-state=fr] [data-source=sia] b')} : {sm('manual', 'sourceState')}"), 'a manual source says so', what='source manual')
+    c.eq(norm(c.text('[data-running] [data-count]')), norm(_trow('runCount', lang).replace('{n}', _zones_text(lang, 0)).replace('{m}', '2')), 'the count « 0 zones sur 2 »', what='count')
+    c.until("document.querySelector('[data-zone-state=fr]').dataset.state === 'done' && document.querySelector('[data-zone-state=gb]').dataset.state === 'fetching'", timeout=8000, what='fr done, gb downloading')
+    gb_name = c.text('[data-zone-state=gb] > div > b')
+    c.eq(_zhead(c, 'gb'), norm(f"{gb_name} : {sm('fetchingN', 'fetchState').replace('{n}', '1').replace('{m}', '2')}"), 'gb: downloading (1 / 2 sources)', what='gb line')
+    c.eq(norm(c.text('[data-zone-state=gb] [data-source=nats]')), norm(f"{c.text('[data-zone-state=gb] [data-source=nats] b')} : {sm('skippedPersonal', 'sourceState')}"), 'a source skipped: licence not declared', what='source skipped')
+    http404 = sm('failed', 'sourceState').replace('{r}', sm('httpN', 'fetchError').replace('{s}', '404'))
+    c.eq(norm(c.text('[data-zone-state=gb] [data-source=ukmil]')), norm(f"{c.text('[data-zone-state=gb] [data-source=ukmil] b')} : {http404}"), 'a source failed: its code and HTTP status', what='source failed')
+    c.eq(_notes_with(c, _trow('fetchSum', lang).split('{c}')[0]), [], 'no notification at the start nor on the way', what='notifications before the end')
+    _screen_ok(c, 'running')
+    c.until("!!document.querySelector('[data-build-result][data-op=fetch]')", timeout=10000, what='the end of the download')
+    want = _trow('fetchSum', lang).replace('{c}', _trow('fetchChanged', lang, row=0).replace('{n}', '1')).replace('{u}', _trow('fetchSame', lang, row=1).replace('{n}', '0')).replace('{f}', _trow('fetchFails', lang, row=0).replace('{n}', '1'))
+    c.eq([c.attr('[data-build-result]', 'data-result'), norm(c.text('[data-build-result] b'))], ['partial', norm(want)], 'the summary: 1 zone changed, 0 unchanged, 1 failure', what='summary')
+    outside = _trow('fetchOutside', lang, row=1).replace('{n}', '3')
+    c.eq(norm(c.text('[data-build-result] [data-outside]')), norm(outside), 'files outside the synchronised data: said (3)', what='outside')
+    c.eq(norm(c.text('[data-build-result] [data-manual-hint]')), norm(_trow('fetchManual', lang)), '« à déposer à la main »', what='manual hint')
+    items = c.js("[...document.querySelectorAll('[data-build-result] [data-manual-list] li')].map(li => [li.dataset.manual, li.textContent.replace(/\\s+/g, ' ').trim(), li.querySelector('a')?.getAttribute('href') || null, li.querySelector('a')?.rel || null])")
+    c.eq(items, [['fr:sia', norm(f"{fr_name} : {man_names['sia'][li]}"), 'https://www.sia.example/aip', 'noopener noreferrer'],
+                 ['gb:nats', norm(f"{gb_name} : {man_names['nats'][li]}"), None, None], ['gb:z', norm(f"{gb_name} : {man_names['z'][li]}"), None, None]],
+         'the manual sources by name in the language: a link only for the https:// address, the http:// and javascript: ones are names alone', what='manual sources')
+    c.eq(_zhead(c, 'gb'), norm(f"{gb_name} : {sm('failed', 'fetchState').replace('{r}', sm('http', 'fetchError'))}"), 'the failed zone says why', what='gb failed line')
+    c.eq(norm(c.text('[data-build-result] [data-zone-state=gb] [data-source=ukmil]')), norm(f"{c.text('[data-build-result] [data-zone-state=gb] [data-source=ukmil] b')} : {http404}"), 'its failed source keeps code and status', what='gb source')
+    c.eq(c.count('[data-running]'), 0, 'the bar is gone', what='running')
+    c.eq(_verbs(c), ['download', 'build', 'purge'], 'the buttons are live again', what='verbs')
+    note = _notes_with(c, want)
+    c.eq(len(note), 1, 'ONE notification, with the counts', what='notifications')
+    c.ok(norm(outside) in norm(note[0]), note, 'the notification says the files outside the synchronised data too')
+    c.until(f"window.__stub.calls.publication > {before}", what='publication() is read again (the rows change)')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and d.get('ops')), what='the journal is written')
+    e = doc['ops'][-1]
+    c.eq([e['set'], e['verb'], e['zones'], e['result'], e['fetched'], e['unchanged'], e['failed']],
+         ['base', 'download', ['fr', 'gb'], 'partial', ['fr'], [], [{'zone': 'gb', 'source': 'ukmil', 'error': 'http', 'status': 404}]], 'the journal entry of the download', what='journal entry')
+    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.dataset.result, o.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.ok(len(ops) == 1 and ops[0][0] == 'download' and norm(_trow('download', lang, 'opVerb: {')) in norm(ops[0][2]), ops, 'the journal line says the verb')
+    _screen_ok(c, 'at the end of the download')
+    # ---- C: ENAIRE only when ticked; nothing to fetch says so
+    st['views'] = [_fview({}, state='error', jid='j2', done=0, total=0, result={'ok': False, 'fetched': [], 'unchanged': [], 'failed': [], 'manual': [], 'outside_sync': 0, 'warnings': [], 'reason': 'nothing-to-fetch'})]
+    st['i'], st['start'] = 0, (200, {'job': 'j2'})
+    c.tap('[data-build-zone="es"]')
+    c.tap('[data-personal="enaire"]')
+    c.tap('[data-verb=download]')
+    c.until("!!document.querySelector('[data-build-result][data-result=nothing]')", timeout=10000, what='nothing to download is said')
+    c.eq(st['posts'][1]['args'], {'zones': ['es', 'fr', 'gb'], 'personal': ['enaire']}, 'ENAIRE goes in args.personal when ticked', what='second body')
+    nothing = _trow('fetchNothing', lang)
+    c.eq([norm(c.text('[data-build-result]')), c.count('[data-build-result] [data-zone-state]'), len(_notes_with(c, nothing))], [norm(nothing), 0, 1], '« Rien à télécharger pour ces zones »: the sentence alone, one notification', what='nothing to fetch')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and len(d.get('ops', [])) >= 2), what='the second entry')
+    c.eq([doc['ops'][-1]['verb'], doc['ops'][-1]['result']], ['download', 'nothing'], 'journaled as « nothing »', what='journal')
+    # ---- D: a refusal 429 says when to try again
+    st['start'] = (429, {'reason': 'too-soon', 'wait': 12})
+    c.tap('[data-verb=download]')
+    c.until("!!document.querySelector('[data-build-result][data-refusal=tooSoon]')", timeout=6000, what='the 429 is said')
+    want429 = _trow('tooSoon', lang, 'refused: {').replace('{n}', '12')
+    c.eq([norm(c.text('[data-build-result]')), len(_notes_with(c, want429)), _verbs(c)], [norm(want429), 1, ['download', 'build', 'purge']], '429 too-soon: « Réessayez dans 12 s », one notification, the buttons live', what='429')
+    # ---- E: Purger: the plan first, then ONE question; No does nothing
+    _untick(c, 'gb')
+    rem = {'fr': {'files': 12, 'bytes': 14470348}, 'es': {'files': 3, 'bytes': 524288}}
+    warn = [{'code': 'shared-fr'}, {'code': 'kept-tracked', 'count': 2}, {'code': 'unsafe-path', 'count': 1}]
+    dry_zones = {'es': {'state': 'done', 'files': 3, 'bytes': 524288}, 'fr': {'state': 'done', 'files': 12, 'bytes': 14470348}}
+    dry_done = _fview(dry_zones, state='done', step='Plan', done=2, verb='purge', args={'zones': ['es', 'fr'], 'dry': True}, jid='d1', result={'ok': True, 'removed': rem, 'warnings': warn})
+    ask = ' '.join([_trow('purgeAsk', lang).replace('{n}', f'15 {FILES[lang][1]}').replace('{s}', _size(14994636, lang)).replace('{z}', names('es', 'fr')),
+                    _trow('purgeShared', lang), _trow('purgeKept', lang, row=1).replace('{n}', '2')])
+    st['views'], st['i'], st['start'] = [dry_done], 0, (200, {'job': 'p1'})
+    posts = len(st['posts'])
+    c.tap('[data-verb=purge]')
+    q = _ask_text(c)
+    c.eq([norm(q['text']), norm(q['ok']), q['no']], [norm(ask), norm(_trow('purge', lang)), True],
+         'ONE question from the plan: files, size, zones, the SIA sentence (shared-fr), the files tracked by git kept; one-word confirmation and a way out', what='question')
+    c.eq(len(st['posts']), posts + 1, 'only the plan was started', what='posts')
+    c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'purge', 'args': {'zones': ['es', 'fr'], 'dry': True}}, 'the plan: dry true, the ticked zones', what='dry body')
+    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'],
+         'all four are grey while the question is open', what='verbs during the question')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the window closes')
+    c.wait(400)
+    c.eq([len(st['posts']), c.count('[data-build-result]'), c.count('[data-running]'), _verbs(c), len(_notes_with(c, _trow('purgeDone', lang).split('{n}')[0]))], [posts + 1, 0, 0, ['download', 'build', 'purge'], 0],
+         'No: no second job, nothing said, the buttons live', what='after No')
+    c.eq([o for o in c.doc('cache/data/journal.json')['ops'] if o['verb'] == 'purge'], [], 'the plan is never journaled', what='journal after No')
+    # ---- F: Yes: the real job has no dry; the end; one journal entry
+    real_run = _fview({'es': _fz('purging'), 'fr': _fz('waiting')}, step='Zone es', done=0, verb='purge', args={'zones': ['es', 'fr']}, jid='p2')
+    real_done = _fview({'es': {'state': 'done', 'files': 3, 'bytes': 524288}, 'fr': {'state': 'done', 'files': 12, 'bytes': 14470348}}, state='done', step='Terminé', done=2, verb='purge',
+                       args={'zones': ['es', 'fr']}, jid='p2', result={'ok': True, 'removed': rem, 'warnings': warn})
+    st['views'], st['i'], st['start'] = [dry_done, real_run, real_done], 0, (200, {'job': 'p2'})
+    c.tap('[data-verb=purge]')
+    q = _ask_text(c)
+    c.eq(norm(q['text']), norm(ask), 'the same question', what='question')
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-build] [data-running][data-op=purge]:not([data-dry])')", timeout=8000, what='the real purge runs')
+    c.eq(len(st['posts']), posts + 3, 'the plan, then the real job', what='posts')
+    c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'purge', 'args': {'zones': ['es', 'fr']}}, 'the real body has no dry', what='real body')
+    c.until("!!document.querySelector('[data-build-result][data-op=purge][data-result=done]')", timeout=10000, what='the end of the purge')
+    done = _trow('purgeDone', lang).replace('{n}', f'15 {FILES[lang][1]}').replace('{s}', _size(14994636, lang))
+    c.eq(norm(c.text('[data-build-result] b')), norm(done), 'the end: « Purgé : 15 fichiers, 14,3 Mo »', what='summary')
+    c.eq(c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent.replace(/\\s+/g, ' ').trim())"),
+         [norm(_trow('purgeShared', lang)), norm(_trow('purgeKept', lang, row=1).replace('{n}', '2')), norm(_trow('purgeUnsafe', lang, row=0).replace('{n}', '1'))],
+         'the sentences of the warnings: SIA shared, files kept, one path refused and left in place', what='warning lines')
+    es_name = c.text('[data-build-result] [data-zone-state=es] b')
+    c.eq(norm(c.text('[data-build-result] [data-zone-state=es]')), norm(f"{es_name} : {_trow('done', lang, 'purgeState: {').replace('{n}', f'3 {FILES[lang][1]}').replace('{s}', _size(524288, lang))}"), 'a zone line: its files and size', what='es line')
+    note = _notes_with(c, done)
+    c.eq(len(note), 1, 'ONE notification', what='notifications')
+    c.ok(norm(_trow('purgeShared', lang)) in norm(note[0]), note, 'it carries the sentences of the warnings')
+    c.eq(_verbs(c), ['download', 'build', 'purge'], 'the buttons are live again', what='verbs')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and any(o.get('verb') == 'purge' for o in d.get('ops', []))), what='the purge is journaled')
+    es = [o for o in doc['ops'] if o['verb'] == 'purge']
+    c.eq([[o['set'], o['zones'], o['result'], o['files'], o['bytes']] for o in es], [['base', ['es', 'fr'], 'done', 15, 14994636]], 'ONE journal entry: the real run only', what='journal purge')
+    _screen_ok(c, 'at the end of the purge')
+    # ---- G: nothing to remove: no question
+    dry_none = _fview({'es': {'state': 'done', 'files': 0, 'bytes': 0}, 'fr': {'state': 'done', 'files': 0, 'bytes': 0}}, state='done', step='Plan', done=2, verb='purge', args={'zones': ['es', 'fr'], 'dry': True},
+                      jid='d3', result={'ok': True, 'removed': {'es': {'files': 0, 'bytes': 0}, 'fr': {'files': 0, 'bytes': 0}}, 'warnings': [{'code': 'shared-fr'}]})
+    st['views'], st['i'], st['start'] = [dry_none], 0, (200, {'job': 'p3'})
+    posts = len(st['posts'])
+    c.tap('[data-verb=purge]')
+    c.until("!!document.querySelector('[data-build-result][data-result=nothing]')", timeout=8000, what='« Rien à purger » is said')
+    c.eq([norm(c.text('[data-build-result]')), c.count('.f-modal'), len(st['posts']) - posts, len(_notes_with(c, _trow('purgeNothing', lang))), _verbs(c)],
+         [norm(_trow('purgeNothing', lang)), 0, 1, 1, ['download', 'build', 'purge']], 'an empty plan: the sentence, no question, no second job, one notification', what='nothing to purge')
+    c.eq(len([o for o in c.doc('cache/data/journal.json')['ops'] if o['verb'] == 'purge']), 1, 'still one purge in the journal', what='journal')
+    # ---- H: a running download found at mount is followed with its own lines; the other verbs are grey
+    run = _fview({'fr': _fz('fetching', 1, 3, {'openaip': {'state': 'downloaded', 'files': 2, 'bytes': 1500000}}), 'gb': _fz('waiting')}, step='Zone fr', jid='j7')
+    end2 = _fview({'fr': _fz('done', 3, 3, {'openaip': {'state': 'downloaded', 'files': 2, 'bytes': 1500000}}), 'gb': _fz('done', 2, 2, {'ukmil': {'state': 'unchanged'}})}, state='done', done=2, jid='j7',
+                  result={'ok': True, 'fetched': ['fr'], 'unchanged': ['gb'], 'failed': [], 'manual': [], 'outside_sync': 0, 'warnings': []})
+    st['current'], st['views'], st['i'] = run, [run, run, end2], 0
+    c.page.reload(wait_until='load')
+    _head(c)
+    c.until("!!document.querySelector('[data-build] [data-running][data-op=fetch]')", timeout=8000, what='the running download is followed')
+    _grey(c, 'a download found running')
+    c.eq(c.count('[data-verb=stop]'), 1, 'Arrêter is offered', what='stop')
+    c.eq(c.js("document.querySelector('[data-group=base]').open"), True, 'the base group is open to show it', what='group open')
+    fr_name = c.text('[data-zone-state=fr] > div > b')
+    c.eq(_zhead(c, 'fr'), norm(f"{fr_name} : {sm('fetchingN', 'fetchState').replace('{n}', '1').replace('{m}', '3')}"), 'its own lines: a zone with n / m sources', what='fr line')
+    c.eq(c.count('[data-zone-state=fr] [data-source=openaip]'), 1, 'and its sources', what='source line')
+    c.until("!!document.querySelector('[data-build-result][data-op=fetch][data-result=done]')", timeout=10000, what='the followed download ends')
+    want = _trow('fetchSum', lang).replace('{c}', _trow('fetchChanged', lang, row=0).replace('{n}', '1')).replace('{u}', _trow('fetchSame', lang, row=0).replace('{n}', '1')).replace('{f}', _trow('fetchFails', lang, row=1).replace('{n}', '0'))
+    c.eq([norm(c.text('[data-build-result] b')), len(_notes_with(c, want)), c.count('[data-outside]'), c.count('[data-manual-list]')], [norm(want), 1, 0, 0], 'followed to its end: the summary, one notification, no outside line, no manual list', what='summary')
+    # ---- I: a build running: the other two verbs are grey too
+    st['views'], st['i'], st['start'], st['current'] = [_view(step='Zone fr', done=0, zones={'fr': _zs('building', 1, 4), 'gb': _zs('waiting')}, jid='b1')], 0, (200, {'job': 'b1'}), None
+    c.tap('[data-verb=build]')
+    c.until("!!document.querySelector('[data-build] [data-running][data-op=build]')", timeout=8000, what='the build runs')
+    _grey(c, 'a build running')
+    c.eq(norm(c.text('[data-build] [data-reason]')), norm(_trow('busy', lang, 'greyReason: {')), '« Une autre opération est en cours »', what='reason text')
+    _screen_ok(c, 'a build running')
+    c.check_errors()
