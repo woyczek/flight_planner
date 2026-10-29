@@ -2049,3 +2049,13 @@ exception is in, then the line goes. With it, the end-to-end run through the lau
 `data/sia/base/<zone>/` (`target_of`, K48). **Shape for the module**: `zones` a dict by zone at the root of the job view (`state`, `done`, `total`, `error`
 code), the result `built`, `failed: [{ zone, error }]`, `commits: [{ zone, commit }]`, `reason`; `args.personal` a list of source ids; no browser: `reason: 'no-browser'`;
 `'xplane'` in `personal`: `reason: 'xplane-in-page'`, for the job (the X-Plane folder is a handle held by the page).
+
+## 30 October 2026 — `source.url`: the « Source » link served by the reader (§ 10.25)
+
+- **Asked** (Features SOG, for Fuel and the Map): `charts.base` lives in the aerodrome file and no call gave it to a module; files read before
+  `source.file` (8685b9eeb) carry the page's name in `source.ref` only.
+- **Done** (`aerodb.js` `withSourceUrl`): every record of source `eaip` served by `procedures()` / `procedure()` carries `source.url` =
+  `charts.base` + `Cartes/<ICAO>/` + the page's name (`source.file`, else `source.ref`, then copied into `file`), only when the name is a
+  plain PDF name and the base is https; other sources get no link (their name is enough). Checked on the user's LFPO file: the address answers
+  200 `application/pdf` on the SIA site.
+- **Bench**: K1 (an eAIP record with `ref` only, an EAD record, a bad name).

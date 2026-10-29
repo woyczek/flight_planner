@@ -20,6 +20,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   by each box; the panel is written only when its rows change and the boxes' state is set in place. Its cross ×4, Escape,
   Flight or Details close it.
 
+- **aerodb: each eAIP procedure carries its « Source » link** (`frame/aerodb/aerodb.js`; SPEC, INTEGRATION, DECISIONS; test K1) —
+  `source.url` is the public address of the coded page on the SIA site, so Fuel and the Map open it in one tap.
 - **Fuel: on a phone, choosing a procedure no longer reopens the list; the « Procédures » grid also beside the Map** (`modules/fuel/procedures.js`,
   DECISIONS; cases F34, F35, F38, F40) — and a failed reading says its counts once, translated.
 - **Map: choosing on the map, simplified** (`modules/maps/choose.js`; V3 § 10.23, § 10.24; maps SPEC § 5.1, help ×4, noreg D60):

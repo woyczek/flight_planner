@@ -1685,6 +1685,53 @@
         '2026-10-28T10:00:00Z' && fpub.source.read_at === undefined && fpub.sources.every(x => x.read_at === undefined) && zz.every(
           p => p
           .source.read_at === undefined), [mrec.source, fpx.source, fpub.source]);
+      // § 10.25 : lien « Source » d'une fiche de l'eAIP (charts.base + Cartes/<OACI>/ + nom de la page), rien pour les autres sources
+      const srec = (id, name, kind, file, ref, pts) => ({
+        id,
+        icao: 'LFZX',
+        kind: 'STAR',
+        name,
+        runways: [],
+        transition: null,
+        points: pts,
+        source: {
+          kind,
+          ...(file ? {
+            file
+          } : {}),
+          ...(ref ? {
+            ref
+          } : {}),
+          cycle: '2026-10-29'
+        },
+        status: 'check'
+      });
+      files.set('proc/manual/LFZX.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFZX',
+        cycle: '2026-10-29',
+        charts: {
+          base: 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/FRANCE/AIRAC-2026-10-29/html/eAIP/'
+        },
+        procedures: [srec('LFZX.STAR.AAA1A.RWALL', 'AAA1A', 'eaip', null, 'AD_2_LFZX_DATA_STAR_RWY09_RNAV_CODE_01.pdf', [pt(
+          'AAAAA',
+          45, 1), pt('BBBBB', 45.1, 1.1)]), srec('LFZX.STAR.BBB1A.RWALL', 'BBB1A', 'ead-basic', 'doc.pdf',
+          'ead-basic/LF/doc.pdf', [
+            pt('CCCCC', 45, 1), pt('DDDDD', 45.2, 1.1)
+          ]), srec('LFZX.STAR.CCC1A.RWALL', 'CCC1A', 'eaip', '../x.pdf', null, [pt('EEEEE', 45, 1.3), pt('FFFFF', 45.1,
+          1.4)])]
+      }));
+      const zx = await db.procedures('LFZX'),
+        zA = zx.find(p => p.name === 'AAA1A'),
+        zB = zx.find(p => p.name === 'BBB1A'),
+        zC = zx.find(p => p.name === 'CCC1A');
+      check(
+        'source.url (§ 10.25): an eAIP record gets charts.base + Cartes/<ICAO>/ + its page (file, else ref of an older file); an EAD record and a bad name get none',
+        zA?.source.url ===
+        'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/FRANCE/AIRAC-2026-10-29/html/eAIP/Cartes/LFZX/AD_2_LFZX_DATA_STAR_RWY09_RNAV_CODE_01.pdf' &&
+        zA.source.file === 'AD_2_LFZX_DATA_STAR_RWY09_RNAV_CODE_01.pdf' && zB && zB.source.url === undefined && zC && zC.source
+        .url ===
+        undefined, [zA?.source, zB?.source, zC?.source]);
     } catch (e) {
       check('no exception', false, String(e && e.stack || e));
     }

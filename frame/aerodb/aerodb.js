@@ -421,6 +421,25 @@
      *  `outdated` quand le cycle de leur page n'est plus en vigueur, et `source.read_at` = la date du fichier), vues dans un OFP
      *  (proc-seen/), repli X-Plane du poste (proc/local/ : jamais synchronisé ; statut forcé à `xplane`, le rang le plus bas, et
      *  `local: true`). Copies : le cache du lecteur n'est pas modifié. */
+    /** Lien « Source » d'une fiche de l'eAIP du SIA (§ 10.25) : `source.url` = charts.base du fichier du terrain + Cartes/<OACI>/ +
+     *  le nom de sa page (source.file, sinon source.ref : les fichiers lus avant source.file portent le même nom dans ref) ; posé
+     *  seulement pour une source eaip, un nom simple et une base en https. Les autres sources n'ont pas de lien (leur nom suffit). */
+    function withSourceUrl(k, file, p) {
+      const s = p?.source,
+        name = s?.file || s?.ref,
+        base = file?.charts?.base;
+      if (s?.kind !== 'eaip' || typeof name !== 'string' || !/^[A-Za-z0-9._ -]+\.pdf$/.test(name) || typeof base !== 'string' ||
+        !/^https:\/\/[^\s"'<>]+\/$/.test(base)) return p;
+      return {
+        ...p,
+        source: {
+          ...s,
+          file: s.file || name,
+          url: `${base}Cartes/${k}/${encodeURIComponent(name)}`
+        }
+      };
+    }
+
     function listsOf(k, src) {
       const {
         pub,
@@ -429,16 +448,17 @@
         loc,
         inForce
       } = src;
-      const mv = valueOf(man);
+      const mv = valueOf(man),
+        pv = valueOf(pub);
       const readAt = isoUtc(mv?.updated_at);
       return {
-        pub: valueOf(pub)?.procedures || [],
+        pub: (pv?.procedures || []).map(p => withSourceUrl(k, pv, p)),
         manual: (mv?.procedures || []).map(p => {
           const c = p.source?.cycle || mv.cycle || null,
-            q = c && c !== inForce ? {
+            q = withSourceUrl(k, mv, c && c !== inForce ? {
               ...p,
               outdated: true
-            } : p;
+            } : p);
           return readAt ? {
             ...q,
             source: {
