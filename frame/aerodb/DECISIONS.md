@@ -2059,3 +2059,7 @@ code), the result `built`, `failed: [{ zone, error }]`, `commits: [{ zone, commi
   plain PDF name and the base is https; other sources get no link (their name is enough). Checked on the user's LFPO file: the address answers
   200 `application/pdf` on the SIA site.
 - **Bench**: K1 (an eAIP record with `ref` only, an EAD record, a bad name).
+- **Security review of `source.url`** (30 Oct 2026): `charts.base` is accepted only under the SIA's host (`https://www.sia.aviation-civile.gouv.fr/`,
+  the host of `proc_sia.eaip_url`, no `..`), and the ICAO key inserted in the path must match `^[A-Z0-9]{4}$` — the aerodrome file is in the
+  synchronised repository, editable by any member of the group, so another host would make a phishing link under a trusted label. Bench K1:
+  another host, a look-alike host, a dot-dot path and plain http give no link.

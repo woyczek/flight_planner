@@ -423,13 +423,17 @@
      *  `local: true`). Copies : le cache du lecteur n'est pas modifié. */
     /** Lien « Source » d'une fiche de l'eAIP du SIA (§ 10.25) : `source.url` = charts.base du fichier du terrain + Cartes/<OACI>/ +
      *  le nom de sa page (source.file, sinon source.ref : les fichiers lus avant source.file portent le même nom dans ref) ; posé
-     *  seulement pour une source eaip, un nom simple et une base en https. Les autres sources n'ont pas de lien (leur nom suffit). */
+     *  seulement pour une source eaip, un code OACI de quatre caractères, un nom simple et une base SOUS L'HÔTE DU SIA (celui de
+     *  proc_sia.eaip_url) : le fichier du terrain est dans le dépôt synchronisé, modifiable par tout membre du groupe, et une base vers
+     *  un autre hôte ferait un lien d'hameçonnage sous un libellé de confiance. Les autres sources n'ont pas de lien (leur nom suffit). */
+    const SIA_EAIP_BASE = /^https:\/\/www\.sia\.aviation-civile\.gouv\.fr\/[A-Za-z0-9._~%/-]+\/$/;
+
     function withSourceUrl(k, file, p) {
       const s = p?.source,
         name = s?.file || s?.ref,
         base = file?.charts?.base;
-      if (s?.kind !== 'eaip' || typeof name !== 'string' || !/^[A-Za-z0-9._ -]+\.pdf$/.test(name) || typeof base !== 'string' ||
-        !/^https:\/\/[^\s"'<>]+\/$/.test(base)) return p;
+      if (s?.kind !== 'eaip' || !/^[A-Z0-9]{4}$/.test(k) || typeof name !== 'string' || !/^[A-Za-z0-9._ -]+\.pdf$/.test(name) ||
+        typeof base !== 'string' || !SIA_EAIP_BASE.test(base) || base.includes('..')) return p;
       return {
         ...p,
         source: {

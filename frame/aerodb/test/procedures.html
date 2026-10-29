@@ -1732,6 +1732,28 @@
         zA.source.file === 'AD_2_LFZX_DATA_STAR_RWY09_RNAV_CODE_01.pdf' && zB && zB.source.url === undefined && zC && zC.source
         .url ===
         undefined, [zA?.source, zB?.source, zC?.source]);
+      // une base hors de l'hôte du SIA (fichier du terrain modifié dans le dépôt synchronisé) : jamais de lien
+      for (const [code, base] of [
+          ['LFZW', 'https://evil.example/eAIP/'],
+          ['LFZV', 'https://www.sia.aviation-civile.gouv.fr.evil.example/eAIP/'],
+          ['LFZU', 'https://www.sia.aviation-civile.gouv.fr/media/../../x/'],
+          ['LFZT', 'http://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP/']
+        ]) files.set(`proc/manual/${code}.json`, JSON.stringify({
+        schema: 1,
+        icao: code,
+        cycle: '2026-10-29',
+        charts: {
+          base
+        },
+        procedures: [{
+          ...srec(`${code}.STAR.AAA1A.RWALL`, 'AAA1A', 'eaip', null, 'AD_2_X_CODE_01.pdf', [pt('AAAAA', 45, 1), pt('BBBBB', 45.1,
+            1.1)]),
+          icao: code
+        }]
+      }));
+      const evil = await Promise.all(['LFZW', 'LFZV', 'LFZU', 'LFZT'].map(async c => (await db.procedures(c))[0]?.source));
+      check('source.url: a charts.base outside the SIA host (another host, a look-alike, a dot-dot path, plain http) gives no link',
+        evil.every(s => s && s.url === undefined), evil);
     } catch (e) {
       check('no exception', false, String(e && e.stack || e));
     }
