@@ -586,7 +586,9 @@ redesigned for touch at that point.
        - **One record, one writer per field.** `current_flight.json` `route.procedures` becomes `{ dep: { rwy, sid, trans },
          arr: { rwy, star, trans, app, appTrans }, by, at }` (identifiers of the common schema of aerodb § 5 quinquies,
          `null` for "none"); Fuel writes it; the Map reads it; an OFP prefill proposes values that the pilot keeps or changes.
-       - **Where the pilot chooses.** In Fuel's step *Vol*: after the aerodromes, two short rows "Départ : piste · SID ·
+       - **Where the pilot chooses.** In Fuel's step *Route* (user, 29 Oct: "star et sid sont « route », pas « vol »";
+         first delivered in step *Vol*, moved the same day), a card at the end of the step after the route text, the
+         points and the OFP line: two short rows "Départ : piste · SID ·
          transition" and "Arrivée : piste · STAR · transition · approche", each a `select` filled by
          `aerodb.procedures(icao)`; a runway filters the lists; a choice without data says "aucune procédure publiée"
          and offers the on-demand reading (below). The quote counts the procedure's length and its constraints (climb /
@@ -622,7 +624,7 @@ redesigned for touch at that point.
          without a launcher, the gesture says so and proposes the OFP (SimBrief) as the per-flight source. Nothing is
          fetched silently, nothing is read twice: an aerodrome read once is stored for everyone.
        - **Lots** (owners): aerodb — `procedures()` serving runways and transitions, the `ead/fetch` job (D10 of the Data
-         module brought forward), `proc/manual/` code; fuel — the two rows of step Vol, the arrival row of step Départ, the
+         module brought forward), `proc/manual/` code; fuel — the two rows of step Route, the arrival row of step Départ, the
          quote with constraints, `route.procedures` v2 (INTEGRATION § 3); maps — the traces with constraints and the
          profile steps; help ×4 and tests per lot. The Map and Fuel lots start after the aerodb lot publishes its API.
        **aerodb status (28 Oct 2026)**: commit 1 (`c0027f4ad`, pushed) = the API (`procedures()` with runways, transitions and phases, `runways()`,
@@ -709,7 +711,8 @@ redesigned for touch at that point.
        - **Lists stay short.** No `optgroup` per runway: one flat list ordered by runway then name; the runway is in the
          label only when the procedure serves exactly one ("MAN1A · 07"; approaches already name theirs). ⌛ then ⚠ close
          the label, in that order. Markers go in one place per screen, not in headings.
-       - **Choosing on the Map ("mode choix")**: from the Départ and Arrivée rows of Fuel, one button "Sur la carte"
+       - **Choosing on the Map ("mode choix")**: from the Départ and Arrivée rows of Fuel (step Route before the start,
+         step Départ after), one button "Sur la carte"
          (and "Choisir" on the Map's aerodrome card) opens the Map at `#maps?choose=dep|arr&icao=LFXX`: the view fits the
          aerodrome's procedures, the base map and every other layer are dimmed (one class on the map container), every
          published procedure of the side is drawn with its name as a short cartouche (SID in one hue, STAR in another,
