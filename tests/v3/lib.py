@@ -168,7 +168,7 @@ def load_cases():
 # loaded: `docs` rows { path, text, base, rev, at, policy } are what `FrameData.get()` reads first.
 _SEED_JS = """async (docs) => {
   const db = await new Promise((res, rej) => {
-    const r = indexedDB.open('sogFrame', 1);
+    const r = indexedDB.open('sogFrame');
     r.onupgradeneeded = () => {
       const d = r.result;
       for (const [n, o] of [['docs', { keyPath: 'path' }], ['pending', { keyPath: 'path' }], ['meta', { keyPath: 'key' }],
@@ -288,7 +288,7 @@ def forget(page, paths, base=None):
     base = base or _W['base']
     page.goto(base + '/frame/manifest.webmanifest')
     return page.evaluate("""async (paths) => {
-      const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame', 1); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+      const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
       await new Promise((res, rej) => { const tx = db.transaction('docs', 'readwrite'); for (const p of paths) tx.objectStore('docs').delete(p);
         tx.oncomplete = res; tx.onerror = () => rej(tx.error) });
       db.close(); return paths.length }""", paths)
@@ -558,7 +558,7 @@ class Ctx(Asserts):
     def doc(self, path):
         """The JSON document `path` as the frame's cache holds it (IndexedDB `sogFrame`, store `docs`), or None."""
         return self.page.evaluate("""async (path) => {
-          const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame', 1); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+          const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
           const row = await new Promise(res => { const q = db.transaction('docs').objectStore('docs').get(path); q.onsuccess = () => res(q.result) });
           db.close(); return row ? JSON.parse(row.text) : null }""", path)
 
@@ -604,7 +604,7 @@ class Ctx(Asserts):
     def doc(self, path):
         """The seeded or written document `path` of the frame's cache (IndexedDB `sogFrame`, what the application itself reads
         and writes without a launcher), parsed; None when there is none."""
-        text = self.page.evaluate("""async (p) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame', 1);
+        text = self.page.evaluate("""async (p) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame');
             r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
           const row = await new Promise(res => { const q = db.transaction('docs').objectStore('docs').get(p); q.onsuccess = () => res(q.result); q.onerror = () => res(null) });
           db.close(); return row && typeof row.text === 'string' ? row.text : null }""", path)
@@ -615,7 +615,7 @@ class Ctx(Asserts):
 
     def doc_paths(self, prefix):
         """Paths of the cached documents that start with `prefix`."""
-        return self.page.evaluate("""async (pre) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame', 1);
+        return self.page.evaluate("""async (pre) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame');
             r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
           const rows = await new Promise(res => { const q = db.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result); q.onerror = () => res([]) });
           db.close(); return rows.filter(k => String(k).startsWith(pre)) }""", prefix)

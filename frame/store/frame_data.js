@@ -25,7 +25,7 @@
   //   gitSha(texte), merge, transports.local().
   if (window.FrameData) return;
   const DB = 'sogFrame',
-    DB_VERSION = 1,
+    DB_VERSION = 2, // 2 (29 Oct 2026) : index « policy » des docs (list sans charger les textes)
     EVERY = 10 * 60e3, // synchronisation de fond (en ligne)
     TRIES = 3; // poussées refusées (le dépôt a bougé entre-temps) : tirer puis repousser, au plus 3 fois
   const channel = 'BroadcastChannel' in window ? new BroadcastChannel('sog-frame-data') : null;
@@ -55,6 +55,9 @@
           }]
         ])
         if (!d.objectStoreNames.contains(name)) d.createObjectStore(name, opts);
+      // index des politiques des copies : les chemins d'une politique (cache de l'appareil) lus sans leurs textes
+      const docs = r.transaction.objectStore('docs');
+      if (!docs.indexNames.contains('policy')) docs.createIndex('policy', 'policy');
     };
     r.onsuccess = () => {
       r.result.onversionchange = () => {
@@ -77,6 +80,19 @@
       q.onerror = () => rej(q.error);
     });
   };
+  /** Clés seules d'un magasin (ou d'un index : « magasin.index »), dans une borne : jamais les textes. */
+  const idbKeys = async (store, query) => {
+    const d = await open(),
+      [s, index] = store.split('.');
+    return new Promise((res, rej) => {
+      const os = d.transaction(s, 'readonly').objectStore(s),
+        q = (index ? os.index(index) : os).getAllKeys(query);
+      q.onsuccess = () => res(q.result);
+      q.onerror = () => rej(q.error);
+    });
+  };
+  /** Borne des chemins sous un préfixe (tous si vide) ; under() dit la même chose chemin par chemin. */
+  const rangeOf = prefix => prefix ? IDBKeyRange.bound(prefix, `${prefix}\uffff`) : undefined;
   const getMeta = async key => (await idb('meta', 'get', key)) || null;
   const setMeta = (key, v) => idb('meta', 'put', {
     ...v,
@@ -324,6 +340,7 @@
     remote = false
   } = {}) {
     if (!paths.length) return;
+    for (const p of paths) absent.delete(p); // arrivé ou changé : plus « absent »
     for (const w of watchers) {
       const hit = paths.filter(p => under(p, w.prefix));
       if (hit.length) try {
@@ -400,6 +417,38 @@
   }
 
   // ---------------------------------------------------------------- lecture et écriture (cache seulement)
+  // valeur analysée d'une référence (base aéronautique, procédures, types : jamais écrites par un module), gardée par
+  // révision : relire une zone ne relance pas JSON.parse sur ses mégaoctets ; la même valeur est rendue à chaque lecteur,
+  // en lecture seule (INTEGRATION § 4). Au plus PARSED_MAX octets de texte gardés, les plus anciennement lus partent.
+  const PARSED_MAX = 48e6,
+    ABSENT_MS = 30e3;
+  const parsed = new Map(); // chemin → { rev, value, size }
+  let parsedSize = 0;
+  const absent = new Map(); // chemin d'une référence absente du dépôt → heure de la lecture qui l'a dit
+  function valueFor(path, e) {
+    if (e.pending || !e.rev || e.policy !== 'reference') return valueOf(path, e.text);
+    const m = parsed.get(path);
+    if (m && m.rev === e.rev) {
+      parsed.delete(path);
+      parsed.set(path, m); // la plus récemment lue passe en dernier
+      return m.value;
+    }
+    const value = valueOf(path, e.text),
+      size = e.text?.length || 0;
+    if (m) parsedSize -= m.size;
+    parsed.set(path, {
+      rev: e.rev,
+      value,
+      size
+    });
+    parsedSize += size;
+    for (const [k, v] of parsed) {
+      if (parsedSize <= PARSED_MAX || k === path) break;
+      parsed.delete(k);
+      parsedSize -= v.size;
+    }
+    return value;
+  }
   /** Enveloppe d'un fichier : écriture en attente d'abord, sinon copie du cache ; null s'il n'y a ni l'une ni l'autre. */
   async function local(path) {
     const [p, d] = await Promise.all([idb('pending', 'get', path), idb('docs', 'get', path)]);
@@ -417,7 +466,8 @@
       rev: d.rev,
       cached: true,
       pending: false,
-      at: d.at
+      at: d.at,
+      policy: d.policy
     } : null;
   }
   /** Fichier du dépôt : { value, text, rev, cached, pending, at } ; null s'il est absent. policy 'reference' : lu à la
@@ -429,14 +479,24 @@
     let e = await local(path);
     if (e?.deleted) return null;
     if (!e) {
-      const job = fetchOne(path, policy).catch(() => null);
+      // référence que le dépôt n'a pas, dite il y a moins de 30 s : pas redemandée (un module qui cherche un terrain sans
+      // procédures à chaque dessin ne relance ni l'arbre ni le réseau)
+      if (policy === 'reference' && Date.now() - (absent.get(path) || 0) < ABSENT_MS) return null;
+      const job = fetchOne(path, policy).then(r => {
+        if (!r && policy === 'reference') absent.set(path, Date.now());
+        return r;
+      }).catch(() => null);
       if (!wait) return null;
       e = await job;
       if (!e) return null;
     }
+    const {
+      policy: _pol,
+      ...env
+    } = e;
     return {
-      ...e,
-      value: valueOf(path, e.text)
+      ...env,
+      value: valueFor(path, e)
     };
   }
   /** Valeur d'un fichier (JSON analysé ou texte) ; null s'il est absent. */
@@ -449,7 +509,7 @@
     let paths;
     if (remote?.tree && cfg.transport?.kind !== 'local') paths = Object.keys((await liveTree(cfg.transport, remote)) || remote.tree);
     else if (cfg.transport?.kind === 'local') {
-      paths = (await idb('docs', 'getAll')).map(d => d.path);
+      paths = await idbKeys('docs', rangeOf(prefix)); // les chemins seuls, sous le préfixe (jamais les textes)
       // références de la source en lecture seule (arbre gardé ; lu une fois s'il ne l'a jamais été)
       const R = refSource(),
         tree = R && await refTree(R).catch(() => null);
@@ -457,8 +517,7 @@
     } else return null;
     const set = new Set(paths);
     for (const p of pend) p.text === null ? set.delete(p.path) : set.add(p.path);
-    for (const d of await idb('docs', 'getAll'))
-      if (d.policy === 'cache') set.add(d.path);
+    for (const p of await idbKeys('docs.policy', 'cache')) set.add(p); // documents du cache de l'appareil, par l'index
     return [...set].filter(p => under(p, prefix)).sort();
   }
   /** Écrit un fichier : cache et file d'attente seulement (envoyé à la prochaine synchronisation) ; politique « cache »

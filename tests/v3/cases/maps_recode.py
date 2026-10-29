@@ -278,7 +278,7 @@ def d32(c):
 # ------------------------------------------------------------------------------------------------------ D33
 FIXTURE = ROOT / 'tests/v3/fixtures/missions/1_ESSAI/ESSAI1/missionESSAI1.yaml'
 MISSION_PATH = 'missions/1_ESSAI/ESSAI1/missionESSAI1.yaml'
-_RAW_JS = """async ([path, text]) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame', 1);
+_RAW_JS = """async ([path, text]) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame');
   r.onupgradeneeded = () => { const d = r.result; for (const [n, o] of [['docs', { keyPath: 'path' }], ['pending', { keyPath: 'path' }], ['meta', { keyPath: 'key' }],
     ['conflicts', { keyPath: 'id', autoIncrement: true }]]) if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, o) };
   r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });

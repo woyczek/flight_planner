@@ -1643,3 +1643,15 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   `REMOTE_RE` refuses any user part in https (ssh keeps `git@`), `data_repo_url()` drops it, `remote_info` hands the
   page a cleaned address; a job takes each zone's output once (a second `put` of a zone: 409) and drops what its verb did
   not take when it ends (up to 64 MB a zone would otherwise stay in memory).
+- **29 Oct 2026 — The costs of `list` and `read`** (coordinator, figures from AeroDB: two `list()` were the whole
+  0.46 s left of mounting Fuel + Map on a 22 MB cache):
+  - `list(prefix)` loaded every copy of the cache with its text (`getAll`, twice) to keep paths: now keys only — a key
+    range on the prefix for the local transport, and an index `policy` of the copies (database version 2) for the
+    device's cache documents. `read` parsed the JSON at each call: the parsed value of a `reference` file is kept by
+    revision (48 MB of text at most, the least recently read go first) and shared by its readers, read-only; documents are
+    parsed at each read (a module may change what it read, then write it). A `reference` file absent from the repository
+    is not asked again for 30 s.
+  - Measured (bench of the session, a cache of 17.8 MB: zones of three countries, 120 procedure files, 40 device
+    documents; Chromium, the launcher's transport): `list('sia/base/')` 69 → 0.7 ms, `list('proc/')` 71 → 0.7 ms, a zone
+    of 1 MB read again 8.1 → 2.3 ms (what is left: the text read from IndexedDB), a procedure file 0.4 → 0.2 ms.
+  - The tests open `sogFrame` without a version (the frame upgrades it).

@@ -94,7 +94,12 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - `await data.read(path, { wait: true })` waits for the network only the first time a file is needed. Use it on a
   screen that cannot be shown without the file; otherwise call `get` and let `watch` bring the value.
 - `await data.list(prefix)` gives the paths. **null** means "not known yet" (first launch offline), which is not the
-  same as "empty".
+  same as "empty". It reads keys only (29 Oct 2026: a key range on the prefix, an index of the copies' policies), never
+  the files' texts: cheap, whatever the size of the cache.
+- **A `reference` file is parsed once per revision** (29 Oct 2026): `get` / `read` of the aeronautical base, procedures or
+  types give **the same value to every reader** until its revision changes — treat it as read-only (copy before changing
+  anything). A `reference` file the repository does not have is not asked again for 30 s (`read` gives null at once; a
+  change announced by `watch` lifts it). Documents and the device's cache are parsed at each read, as before.
 - `await data.cached(prefix)` tells what is on the device, with no network: `[{ path, rev, bytes, at, policy }]`.
   `await data.evict(path)` drops the local copy of a `reference` file (or of a prefix ending with `/`) without
   sending anything; it is read again on demand. Use `remove` only to delete a file from the repository.
