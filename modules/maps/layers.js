@@ -38,8 +38,7 @@ import {
 } from './screen.js';
 import {
   covAvail,
-  covShown,
-  covTouch
+  covShown
 } from './coverage.js';
 
 // ---------------------------------------------------------------- modes
@@ -432,7 +431,6 @@ export function layersEvents() {
   S.layersEl.addEventListener('change', e => {
     const c = e.target.closest('input[data-layer]');
     if (c && c.type !== 'range') {
-      if (c.dataset.layer === 'cov') covTouch(); // son choix l'emporte sur l'allumage automatique, pour la vie de la page
       setLayer(c.dataset.layer, c.checked);
     }
   });

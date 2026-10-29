@@ -201,16 +201,13 @@ For the "Aerodrome procedures" layer (SPEC § 6.11), the map asks aerodb:
   four characters `[A-Z0-9]`. Reasons (closed list): green `held` (+ `source` `published` | `manual` | `local`, `outdated`, `counts
   { SID, STAR, APP }`); orange `sia`, `ead`, `lnm`; red `images`, `labels`, `points`, `prose`, `vfr`, `none`, `unknown`. `state` is the
   two-letter ICAO prefix, `here` is true when this device can start the reading. Cheap after the first call (an in-memory table);
-  the map keeps its own cache per code in `S.cov` and asks **only the aerodromes drawn in the frame**, in one batch per drawing
-  (plus the departure and the arrival of the flight, for the automatic lighting). Without the function the layer is not offered
+  the map keeps its own cache per code in `S.cov` and asks **only the aerodromes drawn in the frame**, in one batch per drawing. Without the function the layer is not offered
   and nothing else changes.
 - **`sources()`** → `AeroCatalogue.COVERAGE[reason] = [fr, en, de, es]` (the frame's catalogue): the texts of the reasons on the
   aerodrome card, used as they are; without them the card shows the level alone (text of the map, four languages).
 - **`on('change')`** with `coverage` or `refreshed`: the answers are asked again (SPEC § 6.11).
 
-**Between modules**: nothing. The automatic lighting reads what the map already has (the current flight's `route.procedures`
-through `proceduresOf`, and the coverage of its two aerodromes); Fuel emits no event for it (decision of the ergonomics session,
-28 Oct 2026, replacing a first design with `fuel-procedures` events).
+**Between modules**: nothing (the layer is lit by its box only, V3 § 10.29 h).
 
 ## 4. What it reads from fuel
 

@@ -958,59 +958,22 @@ def d45(c):
     c.ok(all(v is None for v in _ads(c).values()), f'{_ads(c)}', 'unchecked: the pins are the usual ones')
 
 
-@case('D46', 'Procedures layer: lit by itself while a side has no chosen procedure and its aerodrome is not green', 'D', tags=('maps',),
-      screens=False, designs=('standard',),
-      rule='V3 § 10.22 (ergonomics session, 28 Oct): a side without a chosen procedure (arr {}) whose aerodrome is orange or red lights the layer; chosen, null ("none"), or green: not')
+@case('D46', 'Coverage layer: lit by its box only', 'D', tags=('maps',), screens=False, designs=('standard',),
+      rule='V3 § 10.29 h (challenge of 29 Oct): the layer "Coverage" is never lit by itself; its box alone shows it, and is kept')
 def d46(c):
     _cov_open(c, levels={**_COV_LEVELS, 'LFML': 'orange'})
-    c.until("() => window.__cv.covShown()", timeout=8000, what='the layer is lit: nothing chosen, the arrival is orange')
-    _redraw(c)
-    c.ok(_ads(c).get('LFAB') == c.var('--sog-warn'), f'{_ads(c)}', 'lit: the pins are coloured')
-    c.eq(c.js(_COV_BOX), True, 'the box shows the layer as shown', what='box')
-    c.eq(c.doc('cache/maps/ui.json')['layers'], {}, 'the automatic lighting writes nothing on the device', what='ui.json')
-    # both sides chosen: the layer goes out
-    _write_flight(c, {'dep': {'rwy': '03'}, 'arr': {'rwy': '31'}, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 10)
-    c.until("() => !window.__cv.covShown()", timeout=8000, what='the layer goes out when both sides are chosen')
-    c.eq(c.js(_COV_BOX), False, 'the box follows', what='box')
-    c.eq(c.doc('cache/maps/ui.json')['layers'], {}, 'still nothing written', what='ui.json')
-    # an arrival not chosen yet (arr {}): lit again
-    _write_flight(c, {'dep': {'rwy': '03'}, 'arr': {}, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 11)
-    c.until("() => window.__cv.covShown()", timeout=8000, what='lit again: the arrival has no choice')
-    # "none" (null) is a choice
-    _write_flight(c, {'dep': {'rwy': '03'}, 'arr': None, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 12)
-    c.until("() => !window.__cv.covShown()", timeout=8000, what='arr null is a choice: no lighting')
-    # a departure not chosen whose aerodrome is green: nothing to look for; the arrival is chosen
-    _write_flight(c, {'dep': {}, 'arr': {'rwy': '31'}, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 13)
-    c.wait(900)
-    c.eq(_shown(c), False, 'a green departure (LFRS) without choice does not light the layer', what='shown, green side')
-    # the arrival turns green (the base changed): off, even with arr {}
-    _write_flight(c, {'dep': {'rwy': '03'}, 'arr': {}, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 14)
-    c.until("() => window.__cv.covShown()", timeout=8000, what='lit again')
-    c.js("() => { window.__cov.levels.LFML = 'green'; window.__cov.fns.forEach(f => f({ coverage: true })) }")
-    c.until("() => !window.__cv.covShown()", timeout=8000, what='the arrival is green after the change: the layer goes out')
-
-
-@case('D47', 'Procedures layer: the box touched wins over the automatic lighting', 'D', tags=('maps',), screens=False, designs=('standard',),
-      rule='V3 § 10.22 (ergonomics session, 28 Oct): once the user touches the box, the automatic lighting no longer applies until the page is reloaded; the kept state of the box is never written by it')
-def d47(c):
-    _cov_open(c, levels={**_COV_LEVELS, 'LFML': 'orange'})
-    c.until("() => window.__cv.covShown()", timeout=8000, what='lit by itself')
+    c.wait(1200)
+    c.eq(_shown(c), False, 'nothing chosen and an orange arrival: the layer stays off (no automatic lighting)', what='shown')
+    c.eq(c.doc('cache/maps/ui.json')['layers'], {}, 'nothing written', what='ui.json')
     _layers_toggle(c)
     c.until("window.__t.shown(document.querySelector('input[data-layer]'))", what='the Layers content')
-    c.eq(c.js(_COV_BOX), True, 'the box shows what is shown', what='box')
-    c.js("() => window.__mp.S.layersEl.querySelector('input[data-layer=cov]').click()")        # the user switches it off
-    c.until("() => !window.__cv.covShown()", timeout=4000, what='off by the user')
-    _write_flight(c, {'dep': {}, 'arr': {}, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 20)
-    c.wait(1200)
-    c.eq(_shown(c), False, 'the user\'s choice wins: still off with a side to look for', what='shown after the user switched it off')
-    c.eq(c.doc('cache/maps/ui.json')['layers'].get('vfr', {}).get('cov'), None, 'what is kept is the default (off), not the automatic state',
-         what='ui.json')
-    c.js("() => window.__mp.S.layersEl.querySelector('input[data-layer=cov]').click()")        # on by the user
-    c.until("() => window.__cv.covShown()", timeout=4000, what='on by the user')
-    _write_flight(c, {'dep': {'rwy': '03'}, 'arr': {'rwy': '31'}, 'by': 'fuel', 'at': '2026-10-28T10:00:00Z'}, 21)
-    c.wait(1200)
-    c.eq(_shown(c), True, 'on by the user: stays on although both sides are chosen', what='shown after the user switched it on')
-    c.eq(c.doc('cache/maps/ui.json')['layers'].get('vfr', {}).get('cov'), True, 'the user\'s box is kept', what='ui.json')
+    name = c.js("() => window.__mp.S.layersEl.querySelector('input[data-layer=cov]').closest('label').textContent.trim()")
+    c.eq(norm(name), norm(tx(M, 'cov', c.lang, after='layerNames: {')), 'the layer is named "Coverage"', what='layer name')
+    c.js("() => window.__mp.S.layersEl.querySelector('input[data-layer=cov]').click()")
+    c.until("() => window.__cv.covShown()", timeout=4000, what='on by its box')
+    c.eq(c.doc('cache/maps/ui.json')['layers'].get('vfr', {}).get('cov'), True, 'the box is kept', what='ui.json')
+    c.js("() => window.__mp.S.layersEl.querySelector('input[data-layer=cov]').click()")
+    c.until("() => !window.__cv.covShown()", timeout=4000, what='off by its box')
 
 
 @case('D48', 'Procedures layer: a legend line per level; the aerodrome card says the level and why', 'D', tags=('maps',), screens=False,

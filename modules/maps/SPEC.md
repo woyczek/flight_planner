@@ -402,16 +402,7 @@ Layers content like the others, **off by default**, kept per mode on the device 
   and the map is drawn once more when the batch arrives. `aerodb.on('change')` with `coverage` or `refreshed` asks again every code
   known (one batch, the old answers staying in place until the new ones arrive, so the layer does not blink); an answer of a batch
   that left before the change is dropped.
-- **Automatic lighting** (decision of the ergonomics session, 28 Oct 2026; no event between modules): the layer is shown when its box
-  is ticked **or**, until the user touches the box, when the current flight has a side with no chosen procedure whose aerodrome is
-  not green. Read with `proceduresOf(flight)`: the departure side counts when `dep` is not `null` and has neither `sid` nor
-  `rwy`; the arrival side when `arr` is not `null` and has no `star`, no `app` and no `rwy` (`null` = "none", a choice). The aerodrome
-  is `route.dep` / `route.arr` (else the first / last point); its level is asked even while the layer is off. An aerodrome
-  whose level is unknown yet, or whose code is malformed, does not light the layer. The layer goes out by itself when both sides
-  are chosen or their aerodromes green. The kept state of the box (`cache/maps/ui.json`) is never written by the automatic
-  lighting: it stays off by default and the automatic state is laid over it. The box *displays* what is shown (ticked while lit by
-  itself). **Touching the box** (the user's gesture on it; "Reset all" is not one) sets `S.cov.touched`: from then on only the box
-  decides, for the life of the page (until reload). Without a current flight or without `aerodb.coverage`, no automatic lighting.
+- **Lit by its box only** (V3 § 10.29 h, the challenge of 29 Oct 2026, replacing the automatic lighting of 28 Oct): the layer "Coverage" ×4 is shown when its box is ticked (or by the airline's choice), never by itself.
 - **Legend**: while the layer is shown, the "i" panel of the profile gets three rows after the profile's own (pin in the level's
   colour, then "Aerodrome whose procedures are held" / "… are read on demand" / "Aerodrome with no readable procedure");
   the chip is enabled by them even if the profile has no other row.

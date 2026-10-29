@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the coverage layer is named "Coverage" and lit by its box only** (`modules/maps/coverage.js`, `layers.js`, `texts.js`;
+  SPEC § 6.11, INTEGRATION, help ×4, case D46; V3 § 10.29 h) — the automatic lighting (a side without a chosen procedure whose
+  aerodrome is not green) is gone, with the "box touched" state; the layer "Aerodrome procedures" is now "Coverage" ×4.
+
 - **Flight path: the guess of an unmarked missed approach left the helper** (`frame/lib/current_flight.js`; V3 § 10.29 h) — aerodb's
   reader now marks it at the source and counts the records it guessed (`guessed: ['missed']`); `expandedPath` no longer guesses.
 

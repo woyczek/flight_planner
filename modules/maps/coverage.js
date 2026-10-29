@@ -1,7 +1,6 @@
-// V3 maps — couche « Procédures » (V3_SPECIFICATION § 10.22 ; modules/maps/SPEC.md § 6.7 et § 10) : ce que l'appareil sait donner
+// V3 maps — couche « Couverture » (V3_SPECIFICATION § 10.22 ; modules/maps/SPEC.md § 6.7 et § 10) : ce que l'appareil sait donner
 // des procédures de chaque terrain, vert (détenues), orange (lisibles à la demande) ou rouge (rien), lu par aerodb.coverage(icao).
-// Ce fichier : les demandes (seuls les terrains visibles, regroupées par image, gardées dans l'état de la Carte), l'allumage
-// automatique de la couche, la ligne de la légende et la ligne de la carte du terrain. Le dessin de la couleur est dans render.js
+// Ce fichier : les demandes (seuls les terrains visibles, regroupées par image, gardées dans l'état de la Carte), la ligne de la légende et la ligne de la carte du terrain. Le dessin de la couleur est dans render.js
 // (coverPins) ; sans aerodb.coverage la couche n'est pas proposée et rien d'autre ne change.
 
 import {
@@ -16,9 +15,6 @@ import {
 import {
   TX
 } from './texts.js';
-import {
-  proceduresOf
-} from '../../frame/lib/current_flight.js';
 import {
   schedule
 } from './draw.js';
@@ -52,7 +48,6 @@ const C = () => S.cov ||= {
   cache: new Map(),
   want: new Set(),
   gen: 0,
-  touched: false,
   shown: false,
   texts: undefined,
   textsP: null
@@ -104,31 +99,11 @@ export function covClear() {
   for (const k of c.cache.keys()) c.want.add(k);
 }
 
-// ---------------------------------------------------------------- allumage automatique
-/** L'utilisateur a touché la case : son choix l'emporte, l'allumage automatique ne s'applique plus jusqu'au rechargement. */
-export function covTouch() {
-  C().touched = true;
-}
-/** Allumage automatique (décision de la session ergonomie, 28 octobre) : le vol a un côté sans procédure choisie (départ sans
- *  SID ni piste, arrivée sans STAR, approche ni piste ; « aucune » = null est un choix) dont le terrain n'est pas vert. */
-function covAuto() {
-  const f = S.route?.flight;
-  if (!f) return false;
-  const v = proceduresOf(f),
-    r = f.route || {},
-    sides = [];
-  if (v.dep && !v.dep.sid && !v.dep.rwy) sides.push(up(r.dep || r.points?.[0]?.id));
-  if (v.arr && !v.arr.star && !v.arr.app && !v.arr.rwy) sides.push(up(r.arr || r.points?.at?.(-1)?.id));
-  return sides.some(k => {
-    const l = entry(k)?.level;
-    return LEVELS.includes(l) && l !== 'green';
-  });
-}
-/** La couche est-elle montrée : sa case (ou le choix de la compagnie), et tant que l'utilisateur ne l'a pas touchée, l'allumage
- *  automatique en plus. Jamais sans aerodb.coverage, ni sur une carte de mission. */
+/** La couche est-elle montrée : sa case seulement (ou le choix de la compagnie ; plus d'allumage automatique, § 10.29 h). Jamais
+ *  sans aerodb.coverage, ni sur une carte de mission. */
 export function covShown() {
   if (!covAvail() || onMission()) return false;
-  return !!layersNow().cov || (!C().touched && covAuto());
+  return !!layersNow().cov;
 }
 /** Avant un dessin : la couche est-elle montrée ? Si son état a changé (allumage ou extinction automatique), la case des Couches
  *  et la légende le disent. Rend la fonction qui donne le niveau d'un terrain (render.js : cov), ou null. */

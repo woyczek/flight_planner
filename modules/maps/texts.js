@@ -197,7 +197,7 @@ export const TX = {
     nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT'],
     wind: ['Vents en altitude', 'Winds aloft', 'Höhenwinde', 'Vientos en altura'],
     contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel'],
-    cov: ['Procédures des terrains', 'Aerodrome procedures', 'Verfahren der Flugplätze', 'Procedimientos de los aeródromos'],
+    cov: ['Couverture', 'Coverage', 'Abdeckung', 'Cobertura'],
     zoneLabels: ['Noms des espaces', 'Airspace names', 'Namen der Lufträume', 'Nombres de los espacios'],
     awLabels: ['Noms des voies (distance, routes)', 'Airway names (length, tracks)', 'Namen der Flugwege (Länge, Kurse)',
       'Nombres de las aerovías (distancia, rumbos)'
