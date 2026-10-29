@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map, Coverage layer: an aerodrome partly read** (`modules/maps/coverage.js`, `texts.js`; help ×4, maps SPEC § 6.7; noreg
+  D59): an orange aerodrome of reason `partial` (V3 § 10.26: procedures held, part of them not read) no longer reads as
+  "readable on demand": its card says "Procedures: partly held", the reason, "n pages not read" and "n records to check"
+  (from `partial { pages, doubt }`, a zero left out, singular or plural) and the SID / STAR / APP counts, as for green; the
+  orange legend line names both cases ×4.
+
 - **Launcher: a job's headless page returns its output** (`tools/regen_jobs.py`, `tools/launch.py`; frame
   INTEGRATION § 15.1, DECISIONS; noreg I8): `POST /__setup/regen/job/put` hands a zone's output to the running job
   (its random token, a zone of its arguments, bounded names and size, workstation only); the job's verb receives it with

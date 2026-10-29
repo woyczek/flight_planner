@@ -20,7 +20,7 @@ route; zoom in to see everything.
 
 <a id="maps-rwy"></a>**The chosen runway.** Close up (aerodrome view), the runway chosen in Fuel is drawn as an arrow in its side's colour: from its threshold, over its length, the tip at the end of the runway for a departure and at the threshold for an arrival, its number at the threshold; the threshold is set on the thresholds page.
 
-<a id="maps-coverage"></a>**Coverage.** The "Coverage" layer (in the layers list, off to start with, switched on by its box only) colours the aerodromes by what this device can give of their procedures: **green**, they are held (published, entered by hand or read on this computer); **orange**, they are read on demand (France through the SIA's eAIP, a State whose tables can be read, an aerodrome of Little Navmap's local database); **red**, nothing readable (images only, prose text, nothing on this computer). The legend (the "i" chip of the data block) gives one line per colour while the layer is shown. Only the visible aerodromes are asked. Touch an aerodrome: its card adds a line with the pin, the level and the reason (⌛ when the procedures held are from an earlier cycle, then how many SIDs, STARs and approaches are held). When the device cannot give this information, the layer is not offered.
+<a id="maps-coverage"></a>**Coverage.** The "Coverage" layer (in the layers list, off to start with, switched on by its box only) colours the aerodromes by what this device can give of their procedures: **green**, they are held (published, entered by hand or read on this computer); **orange**, they are held but partly read (pages not read, records to check: the aerodrome's card says how many) or they are read on demand (France through the SIA's eAIP, a State whose tables can be read, an aerodrome of Little Navmap's local database); **red**, nothing readable (images only, prose text, nothing on this computer). The legend (the "i" chip of the data block) gives one line per colour while the layer is shown. Only the visible aerodromes are asked. Touch an aerodrome: its card adds a line with the pin, the level and the reason (⌛ when the procedures held are from an earlier cycle, then how many SIDs, STARs and approaches are held). When the device cannot give this information, the layer is not offered.
 
 <a id="maps-weather"></a>**The profile and the cursor.** In the data block under the map, the vertical profile cuts through the route from end to end: the terrain,
 the airspaces you enter at the planned altitude, and the flight path in purple. Slide your finger along the profile: a
@@ -158,4 +158,4 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 0d554de62762 -->
+<!-- fr: 9cbe8dcb3669 -->

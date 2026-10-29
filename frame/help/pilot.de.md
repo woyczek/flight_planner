@@ -278,7 +278,7 @@ der Route liegt; zoomen Sie hinein, um alles zu sehen.
 
 <a id="maps-rwy"></a>**Die gewählte Piste.** Aus der Nähe (Flugplatzansicht) wird die in Kraftstoff gewählte Piste als Pfeil in der Farbe ihrer Seite gezeichnet: von ihrer Schwelle über ihre Länge, die Spitze am Pistenende beim Abflug und an der Schwelle bei der Ankunft, ihre Nummer an der Schwelle; die Schwelle ist auf der Seite der Schwellen einstellbar.
 
-<a id="maps-coverage"></a>**Abdeckung.** Die Ebene „Abdeckung“ (in der Ebenenliste, anfangs aus, nur über ihr Kästchen eingeschaltet) färbt die Flugplätze danach, was dieses Gerät von ihren Verfahren liefern kann: **grün**, sie liegen vor (veröffentlicht, von Hand erfasst oder auf diesem Rechner gelesen); **orange**, sie werden auf Anfrage gelesen (Frankreich über das eAIP des SIA, ein Staat mit lesbaren Tabellen, ein Flugplatz der lokalen Little-Navmap-Datenbank); **rot**, nichts Lesbares (nur Bilder, Fließtext, nichts auf diesem Rechner). Die Legende (die „i“-Schaltfläche des Datenblocks) zeigt eine Zeile pro Farbe, solange die Ebene sichtbar ist. Nur die sichtbaren Flugplätze werden abgefragt. Berühren Sie einen Flugplatz: Seine Karte ergänzt eine Zeile mit Punkt, Stufe und Grund (⌛, wenn die vorliegenden Verfahren aus einem früheren Zyklus stammen, dann die Zahl der vorliegenden SID, STAR und Anflüge). Kann das Gerät diese Auskunft nicht geben, wird die Ebene nicht angeboten.
+<a id="maps-coverage"></a>**Abdeckung.** Die Ebene „Abdeckung“ (in der Ebenenliste, anfangs aus, nur über ihr Kästchen eingeschaltet) färbt die Flugplätze danach, was dieses Gerät von ihren Verfahren liefern kann: **grün**, sie liegen vor (veröffentlicht, von Hand erfasst oder auf diesem Rechner gelesen); **orange**, sie liegen vor, sind aber nur teilweise gelesen (Seiten nicht gelesen, Verfahren zu prüfen: die Karte des Flugplatzes sagt, wie viele), oder sie werden auf Anfrage gelesen (Frankreich über das eAIP des SIA, ein Staat mit lesbaren Tabellen, ein Flugplatz der lokalen Little-Navmap-Datenbank); **rot**, nichts Lesbares (nur Bilder, Fließtext, nichts auf diesem Rechner). Die Legende (die „i“-Schaltfläche des Datenblocks) zeigt eine Zeile pro Farbe, solange die Ebene sichtbar ist. Nur die sichtbaren Flugplätze werden abgefragt. Berühren Sie einen Flugplatz: Seine Karte ergänzt eine Zeile mit Punkt, Stufe und Grund (⌛, wenn die vorliegenden Verfahren aus einem früheren Zyklus stammen, dann die Zahl der vorliegenden SID, STAR und Anflüge). Kann das Gerät diese Auskunft nicht geben, wird die Ebene nicht angeboten.
 
 <a id="maps-weather"></a>**Profil und Cursor.** Im Datenblock unter der Karte schneidet das Vertikalprofil die Route von Anfang bis Ende: das Gelände, die
 Lufträume, in die Sie auf der geplanten Höhe einfliegen, und die Flugbahn in Violett. Fahren Sie mit dem Finger über das
@@ -427,7 +427,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 0d554de62762 -->
+<!-- fr: 9cbe8dcb3669 -->
 
 <!-- chapter: report -->
 # Bericht

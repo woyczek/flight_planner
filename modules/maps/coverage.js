@@ -1,5 +1,5 @@
 // V3 maps — couche « Couverture » (V3_SPECIFICATION § 10.22 ; modules/maps/SPEC.md § 6.7 et § 10) : ce que l'appareil sait donner
-// des procédures de chaque terrain, vert (détenues), orange (lisibles à la demande) ou rouge (rien), lu par aerodb.coverage(icao).
+// des procédures de chaque terrain, vert (détenues), orange (lues en partie, ou lisibles à la demande) ou rouge (rien), lu par aerodb.coverage(icao).
 // Ce fichier : les demandes (seuls les terrains visibles, regroupées par image, gardées dans l'état de la Carte), la ligne de la légende et la ligne de la carte du terrain. Le dessin de la couleur est dans render.js
 // (coverPins) ; sans aerodb.coverage la couche n'est pas proposée et rien d'autre ne change.
 
@@ -139,7 +139,8 @@ function covTexts() {
   return undefined;
 }
 /** Ligne de la carte du terrain épinglé : une pastille de la couleur du niveau, le niveau, la raison (catalogue du cadre), « ⌛ »
- *  et, pour un terrain dont on détient les procédures, SID · STAR · APP. '' sans aerodb.coverage ou tant que la réponse n'est pas
+ *  et, pour un terrain dont on détient les procédures, SID · STAR · APP ; lu en partie (raison `partial`, orange), le niveau
+ *  « détenues en partie », les pages non lues et les fiches à vérifier, puis SID · STAR · APP. '' sans aerodb.coverage ou tant que la réponse n'est pas
  *  là (la carte est refaite à son arrivée). */
 export function covCard(icao) {
   if (!covAvail()) return '';
@@ -150,10 +151,22 @@ export function covCard(icao) {
     parts = [];
   if (T?.[e.reason]) parts.push(tt(T[e.reason]));
   if (e.outdated) parts.push(OUTDATED);
-  if (e.level === 'green' && e.counts) parts.push(tt(TX.covCounts, {
+  // lu en partie (V3 § 10.26) : ce qui manque, puis les procédures détenues comme pour un terrain vert
+  const part = e.reason === 'partial' ? e.partial || {} : null;
+  if (part) {
+    for (const [n, row] of [
+        [+part.pages || 0, TX.covPages],
+        [+part.doubt || 0, TX.covDoubt]
+      ])
+      if (n > 0) parts.push(tt(n === 1 ? row.one : row.many, {
+        n
+      }));
+  }
+  if ((e.level === 'green' || part) && e.counts) parts.push(tt(TX.covCounts, {
     s: +e.counts.SID || 0,
     t: +e.counts.STAR || 0,
     a: +e.counts.APP || 0
   }));
-  return `<p class="mp-ad-cov" data-level="${e.level}"${e.outdated ? ` title="${esc(`${OUTDATED} ${tt(TX.procOutdated)}`)}"` : ''}><i class="mp-cov-dot" style="background:${covColor(e.level)}"></i><span class="mp-cov-lv">${esc(tt(TX.covLevel[e.level]))}</span>${parts.map(p => ` · ${esc(p)}`).join('')}</p>`;
+  const lv = tt(part ? TX.covLevel.partial : TX.covLevel[e.level]);
+  return `<p class="mp-ad-cov" data-level="${e.level}"${part ? ' data-reason="partial"' : ''}${e.outdated ? ` title="${esc(`${OUTDATED} ${tt(TX.procOutdated)}`)}"` : ''}><i class="mp-cov-dot" style="background:${covColor(e.level)}"></i><span class="mp-cov-lv">${esc(lv)}</span>${parts.map(p => ` · ${esc(p)}`).join('')}</p>`;
 }

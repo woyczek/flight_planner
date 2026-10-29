@@ -911,10 +911,14 @@ _COV_LEVELS = {'LFRS': 'green', 'LFML': 'green', 'LFAB': 'orange', 'LFAC': 'red'
 _COV_ROW = {
     'green': {'reason': 'held', 'source': 'published', 'outdated': False, 'counts': {'SID': 3, 'STAR': 2, 'APP': 5}},
     'orange': {'reason': 'sia'},
-    'red': {'reason': 'none'}}
+    'red': {'reason': 'none'},
+    # an aerodrome held but partly read (V3 § 10.26): orange, the fields of 'held' and partial { pages, doubt }
+    'partial': {'level': 'orange', 'reason': 'partial', 'source': 'manual', 'outdated': False, 'counts': {'SID': 4, 'STAR': 6, 'APP': 3},
+                'partial': {'pages': 2, 'doubt': 1}}}
 _COV_TEXTS = {'held': ['tenues ici', 'held here', 'hier gehalten', 'tenidas aquí'],
               'sia': ['lisibles au SIA', 'readable at the SIA', 'beim SIA lesbar', 'legibles en el SIA'],
-              'none': ['rien nulle part', 'nothing anywhere', 'nirgends etwas', 'nada en ninguna parte']}
+              'none': ['rien nulle part', 'nothing anywhere', 'nirgends etwas', 'nada en ninguna parte'],
+              'partial': ['lues à moitié', 'half read', 'halb gelesen', 'leídas a medias']}
 
 
 def _fake_cov(levels=None, texts=True, missing=False):
@@ -922,14 +926,14 @@ def _fake_cov(levels=None, texts=True, missing=False):
     cfg = json.dumps({'levels': levels or _COV_LEVELS, 'rows': _COV_ROW, 'texts': _COV_TEXTS if texts else None, 'missing': missing})
     return """(() => { const cfg = %s; let ab;
   const patch = (A) => {
-  window.__cov = { calls: [], batches: [], fns: [], levels: cfg.levels, outdated: {}, open: null };
+  window.__cov = { calls: [], batches: [], fns: [], levels: cfg.levels, rows: cfg.rows, outdated: {}, open: null };
   if (cfg.missing) { A.coverage = undefined; return A }
   A.coverage = async (icao) => { const C = window.__cov; C.calls.push(icao);
     if (!C.open) { C.open = []; C.batches.push(C.open); setTimeout(() => { C.open = null }, 0) }
     C.open.push(icao);
     if (!/^[A-Z0-9]{4}$/.test(icao)) return null;
     const lv = C.levels[icao] || 'red';
-    return { level: lv, state: icao.slice(0, 2), here: true, ...cfg.rows[lv], ...(C.outdated[icao] ? { outdated: true } : {}) } };
+    return { level: lv, state: icao.slice(0, 2), here: true, ...C.rows[lv], ...(C.outdated[icao] ? { outdated: true } : {}) } };
   if (cfg.texts) { const s = A.sources; A.sources = async () => ({ ...(s ? await s.call(A) : {}), COVERAGE: cfg.texts }) }
   else A.sources = async () => ({});
   const on = A.on; A.on = function (ev, fn) { if (ev === 'change') window.__cov.fns.push(fn); return on.call(A, ev, fn) };
@@ -1121,6 +1125,45 @@ def d49(c):
     c.js("() => window.__cov.fns.forEach(f => f({ aircraft: true }))")
     c.wait(700)
     c.eq(c.js("() => window.__cov.calls.length"), m, 'an aircraft change asks nothing', what='calls')
+
+
+@case('D59', 'Coverage layer: an aerodrome partly read says what is missing and what is held', 'D', tags=('maps',), screens=False,
+      designs=('standard',), langs4=True,
+      rule='V3 § 10.26, maps SPEC § 6.7: reason "partial" (orange): the card says "partly held", the reason, the pages not read and the records to check (singular / plural), then SID / STAR / APP; the orange legend line names both cases')
+def d59(c):
+    _cov_open(c, levels={**_COV_LEVELS, 'LFAC': 'partial'}, layers={'vfr': {'cov': True}})
+    lang = ['fr', 'en', 'de', 'es'].index(c.lang)
+    c.until("(w) => (window.__ads || []).some(a => a[0] === 'LFAC' && a[1] === w)", c.var('--sog-warn'), timeout=8000,
+            what='LFAC is drawn orange')
+    # the legend: the orange line names the partly read aerodromes
+    c.until("() => !document.querySelector('[data-legend]').disabled", timeout=8000, what='the legend chip is on')
+    c.tap('[data-legend]')
+    c.until("() => !document.querySelector('.mp-legend').hidden", what='the legend is open')
+    got = [norm(x) for x in c.js("() => [...document.querySelectorAll('.mp-legend li')].map(l => l.textContent)")]
+    c.ok(norm(tx(M, 'orange', c.lang, after='lgCov: {')) in got, f'{got}', 'the orange legend line, partly read or read on demand')
+    c.tap('[data-legend]')
+    c.until("() => document.querySelector('.mp-legend').hidden", what='the legend is closed')
+    c.js(_COV_PIN, ['LFAC', 46.98, -1.70])
+    c.until("(w) => ((document.querySelector('.mp-ad-cov') || {}).textContent || '').includes(w)", _COV_TEXTS['partial'][lang], timeout=8000,
+            what='the coverage line, with the reason from the frame catalogue')
+    t = norm(c.text('.mp-ad-cov'))
+    pages = tx(M, 'many', c.lang, after='covPages: {').replace('{n}', '2')
+    doubt = tx(M, 'one', c.lang, after='covDoubt: {').replace('{n}', '1')
+    for part in (norm(tx(M, 'partial', c.lang, after='covLevel: {')), _COV_TEXTS['partial'][lang], norm(pages), norm(doubt), 'SID 4 · STAR 6 · APP 3'):
+        c.ok(part in t, t, f'the card says "{part}"')
+    c.ok(norm(tx(M, 'orange', c.lang, after='covLevel: {')) not in t, t, 'not "readable on demand": the procedures are held')
+    c.eq([c.attr('.mp-ad-cov', 'data-level'), c.attr('.mp-ad-cov', 'data-reason')], ['orange', 'partial'], 'orange, reason partial',
+         what='data-level / data-reason')
+    c.eq(c.js("() => document.querySelector('.mp-ad-cov .mp-cov-dot').style.background"), 'var(--sog-warn)', 'the pin of the line is orange',
+         what='dot')
+    # three records to check only: no page line, the plural
+    c.js("() => { window.__cov.rows.partial = { ...window.__cov.rows.partial, counts: { SID: 1, STAR: 0, APP: 0 }, partial: { pages: 0, doubt: 3 } }; "
+         "window.__cov.fns.forEach(f => f({ coverage: true })) }")
+    c.until("() => ((document.querySelector('.mp-ad-cov') || {}).textContent || '').includes('SID 1 ')", timeout=8000, what='the new answer on the card')
+    t = norm(c.text('.mp-ad-cov'))
+    c.ok(norm(tx(M, 'many', c.lang, after='covDoubt: {').replace('{n}', '3')) in t, t, 'three records to check, in the plural')
+    c.ok(norm(tx(M, 'one', c.lang, after='covPages: {').replace('{n}', '0')) not in t and 'SID 1 · STAR 0 · APP 0' in t, t,
+         'no page line for zero pages; the counts are kept')
 
 
 @case('D50', 'Procedures layer: not offered without aerodb.coverage', 'D', tags=('maps',), screens=False, designs=('standard',),

@@ -421,12 +421,15 @@ Layers content like the others, **off by default**, kept per mode on the device 
   that left before the change is dropped.
 - **Lit by its box only** (V3 § 10.29 h, the challenge of 29 Oct 2026, replacing the automatic lighting of 28 Oct): the layer "Coverage" ×4 is shown when its box is ticked (or by the airline's choice), never by itself.
 - **Legend**: while the layer is shown, the "i" panel of the profile gets three rows after the profile's own (pin in the level's
-  colour, then "Aerodrome whose procedures are held" / "… are read on demand" / "Aerodrome with no readable procedure");
+  colour, then "Aerodrome whose procedures are held" / "… are partly read or read on demand" / "Aerodrome with no readable procedure");
   the chip is enabled by them even if the profile has no other row.
 - **The pinned aerodrome's card** (§ 16), always when `aerodb.coverage` exists (the card is already a detail view), after the
   runway / procedure rows: a pin in the level's colour, the level in bold ("Procedures: held" / "readable on demand" / "none"),
   then " · the reason" (`AeroCatalogue.COVERAGE[reason]`, four languages, read from `aerodb.sources()`; absent: the level alone),
-  " · outdated" and, for green, " · SID n · STAR n · APP n". The card is made again when the answer, or the texts, arrive.
+  " · outdated" and, for green, " · SID n · STAR n · APP n". Partly read (orange, reason `partial`, V3 § 10.26: procedures held,
+  part not read): the level "Procedures: partly held", the reason, " · n pages not read" and " · n records to check" (from
+  `partial { pages, doubt }`, a zero left out, singular or plural), then the counts as for green. The card is made again when the
+  answer, or the texts, arrive.
 
 ## 7. The sheet
 

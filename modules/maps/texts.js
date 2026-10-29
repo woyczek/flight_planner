@@ -322,8 +322,10 @@ export const TX = {
     green: ['Terrain dont les procédures sont détenues', 'Aerodrome whose procedures are held',
       'Flugplatz, dessen Verfahren vorliegen', 'Aeródromo cuyos procedimientos se tienen'
     ],
-    orange: ['Terrain dont les procédures se lisent à la demande', 'Aerodrome whose procedures are read on demand',
-      'Flugplatz, dessen Verfahren auf Anfrage gelesen werden', 'Aeródromo cuyos procedimientos se leen a petición'
+    orange: ['Terrain dont les procédures sont lues en partie ou se lisent à la demande',
+      'Aerodrome whose procedures are partly read or read on demand',
+      'Flugplatz, dessen Verfahren teilweise gelesen sind oder auf Anfrage gelesen werden',
+      'Aeródromo cuyos procedimientos están leídos en parte o se leen a petición'
     ],
     red: ['Terrain sans procédure lisible', 'Aerodrome with no readable procedure', 'Flugplatz ohne lesbares Verfahren',
       'Aeródromo sin procedimiento legible'
@@ -334,7 +336,20 @@ export const TX = {
     orange: ['Procédures : lisibles à la demande', 'Procedures: readable on demand', 'Verfahren: auf Anfrage lesbar',
       'Procedimientos: legibles a petición'
     ],
-    red: ['Procédures : aucune', 'Procedures: none', 'Verfahren: keine', 'Procedimientos: ninguno']
+    red: ['Procédures : aucune', 'Procedures: none', 'Verfahren: keine', 'Procedimientos: ninguno'],
+    // orange de la raison `partial` (V3 § 10.26) : les procédures sont détenues, une partie n'est pas lue
+    partial: ['Procédures : détenues en partie', 'Procedures: partly held', 'Verfahren: teilweise vorhanden',
+      'Procedimientos: disponibles en parte'
+    ]
+  },
+  // ce qui manque d'un terrain lu en partie (aerodb.coverage : partial { pages, doubt }), au singulier et au pluriel
+  covPages: {
+    one: ['{n} page non lue', '{n} page not read', '{n} Seite nicht gelesen', '{n} página sin leer'],
+    many: ['{n} pages non lues', '{n} pages not read', '{n} Seiten nicht gelesen', '{n} páginas sin leer']
+  },
+  covDoubt: {
+    one: ['{n} fiche à vérifier', '{n} record to check', '{n} Verfahren zu prüfen', '{n} ficha por revisar'],
+    many: ['{n} fiches à vérifier', '{n} records to check', '{n} Verfahren zu prüfen', '{n} fichas por revisar']
   },
   covCounts: ['SID {s} · STAR {t} · APP {a}', 'SID {s} · STAR {t} · APP {a}', 'SID {s} · STAR {t} · APP {a}',
     'SID {s} · STAR {t} · APP {a}'
