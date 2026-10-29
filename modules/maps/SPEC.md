@@ -30,7 +30,7 @@ The Pilot application's map, fast on a phone:
 | `lib/maplibre-gl.js`, `.css` | MapLibre |
 
 The routing over the airways is a frame library (`frame/lib/routing.js`, INTEGRATION § 9); the ETA and the planned
-position are derived by the frame's `frame/lib/current_flight.js` (§ 13).
+position are derived by the frame's `frame/lib/flight_time.js` (§ 13; re-exported by `current_flight.js` during the transition, § 10.29 b).
 
 ## 2. What is read and written
 
@@ -56,7 +56,7 @@ position are derived by the frame's `frame/lib/current_flight.js` (§ 13).
 - **Weather**: the frame's weather layer `ctx.weather` (grid, world; cache only: the map never asks Open-Meteo), frame
   INTEGRATION § 14 (§ 9).
 - **Aeronautical data**: `ctx.aerodb`, by area only (INTEGRATION § 3), and, for the procedures the flight chose, the records
-  `aerodb.procedure(id)` and the runways `aerodb.runways(icao)` through `loadProcedures` of `frame/lib/current_flight.js`, read
+  `aerodb.procedure(id)` and the runways `aerodb.runways(icao)` through `loadProcedures` of `frame/lib/flight_path.js`, read
   once per change of `route.procedures` (§ 5).
 - **Terrain**: Terrarium elevation tiles (zoom 9, about 300 m), fetched through `ctx.net` from the host declared in
   `meta.net`, never with `fetch`: the module hands the bricks a `load(url)` built on `ctx.net` (profile relief, contour
@@ -668,7 +668,7 @@ Hidden for mission maps. The Edit toggle enters the mode; entering it says its h
 
 ### 13.1 Derived values
 
-The ETAs and the planned position are **derived**, never read from `progress`: `frame/lib/current_flight.js` provides
+The ETAs and the planned position are **derived**, never read from `progress`: `frame/lib/flight_time.js` provides
 `etaOf(flight)` and `plannedPositionAt(flight, now)`, shared by every reader (the map, the frame's status block, Flights).
 - Reference time: `started.at` when the flight is started (`started` not null and `started.at` set — never the presence of
   `progress`), else `planned_at`, else none (no ETA, no planned position).

@@ -63,6 +63,8 @@ export const meta = {
     policy: 'cache'
   }],
   files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../../frame/lib/last_flight.js', '../../frame/lib/current_flight.js',
+    '../../frame/lib/flight_time.js',
+    '../../frame/lib/flight_path.js',
     '../../frame/lib/route_text.js',
     '../../frame/lib/website.js',
     'families/aar.js',

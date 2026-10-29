@@ -47,7 +47,8 @@ export const meta = {
   // gardés hors ligne dès la première visite (service worker du cadre)
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js',
     '../../frame/lib/weather_store.js',
-    '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/routing.js',
+    '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
+    '../../frame/lib/flight_path.js', '../../frame/lib/routing.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/time.js', '../../frame/lib/geo.js'
   ]

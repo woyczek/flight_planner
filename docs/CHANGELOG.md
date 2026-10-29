@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame lib: `current_flight.js` split in three** (`frame/lib/current_flight.js`, `flight_time.js`, `flight_path.js`; V3 § 10.29 b)
+  — the record's merge stays in `current_flight.js`; the flight in time (`legTimes`, `etaOf`, `plannedPositionAt`) goes to
+  `flight_time.js`, the route and its procedures (`proceduresOf` … `altitudeAt`, `conflictsOf`, `orderProcedures`) to
+  `flight_path.js`; `current_flight.js` re-exports both during the transition, the code moved as it was. Listed in the
+  service worker and the modules' files.
+
 - **Frame: requests between modules taken once** (`frame/app.js`, `modules/hello/module.js`, `frame/lib/launcher.js`,
   `frame/aerodb/aerodb.js`; INTEGRATION § 6.1 and § 15.1, SPEC, DECISIONS; cases A29, A34): `ctx.consume(keys)` takes a
   request carried by the address and removes it, so a reload or Back no longer replays it; the address keys used between

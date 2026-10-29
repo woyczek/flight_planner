@@ -21,6 +21,7 @@ export const meta = {
     /* its libraries */ 'render.js?v=0', 'render_airspace.js?v=0', 'render_route.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0', 'lib/aero_symbols.js?v=0',
     'lib/vertical_profile.js?v=0', 'lib/profiles.js?v=0', 'lib/map_base.js?v=0', 'lib/axis_window.js?v=0',
     /* the frame's */ '../../frame/lib/js-yaml.min.js?v=0', '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0',
+    '../../frame/lib/flight_time.js?v=0', '../../frame/lib/flight_path.js?v=0',
     '../../frame/lib/time.js?v=0', '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/icons.js?v=0'],
   lazy: ['edit.js?v=0', 'tune.js?v=0',            // the Edit mode, the tuning page: loaded at their first use
     'lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0',
@@ -90,7 +91,7 @@ with `import(new URL('edit.js?v=0', import.meta.url))` (`need`), and a drawing n
   page `#maps?tune=1`), schema in SPEC.md § 4 quinquies. `meta.reads` has `airline/`, `meta.writes` has that file with
   the `record` merge. The pilot's `fuel.json` (`displayAlt`) gives the contour interval.
 
-- **The flight in time** (SPEC § 13). The ETAs and the planned position are **derived** by `frame/lib/current_flight.js`:
+- **The flight in time** (SPEC § 13). The ETAs and the planned position are **derived** by `frame/lib/flight_time.js`:
 
 | Function | Contract |
 |---|---|
@@ -176,7 +177,7 @@ does not give it:
 
 The map draws the runway, SID, STAR and approach that **fuel** recorded in `route.procedures` (v2, `{ dep: { rwy, sid, trans },
 arr: { rwy, star, trans, app, appTrans }, by, at }`, identifiers of aerodb's common schema; `null` = none, absent = not chosen;
-V3_SPECIFICATION § 10.20). It reads through `proceduresOf(flight)` of `frame/lib/current_flight.js` (the v2 view, also of an
+V3_SPECIFICATION § 10.20). It reads through `proceduresOf(flight)` of `frame/lib/flight_path.js` (the v2 view, also of an
 old `{ sid, star }` record; a side whose aerodrome is not the route's is read as not chosen) and never writes the field.
 `conflictsOf(key, rec, choice, byId)` and `orderProcedures(list, key, choice, byId)` of the same file are the one rule of the ⚠ marks
 and of the order of the lists (V3_SPECIFICATION § 10.23); the choose mode calls them, as Fuel does.

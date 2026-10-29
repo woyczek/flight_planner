@@ -119,7 +119,8 @@ export const meta = {
     'render.js?v=0', 'render_airspace.js?v=0', 'render_route.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0',
     'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/profiles.js?v=0', 'lib/map_base.js?v=0', 'lib/axis_window.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
-    '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', '../../frame/lib/time.js?v=0',
+    '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0',
+    '../../frame/lib/flight_time.js?v=0', '../../frame/lib/flight_path.js?v=0', '../../frame/lib/time.js?v=0',
     '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/icons.js?v=0'
   ],
   // gardés au premier usage : le mode Édition et la page de réglage ; MapLibre (1 Mo, inutile sans tuiles) ; les contours
