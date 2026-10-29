@@ -183,11 +183,11 @@
           "es": "Vista doble en tableta y pantalla ancha: Combustible o Informe a la izquierda, Mapa a la derecha, enlazados por el vuelo actual"
         },
         {
-          "state": "planned",
-          "fr": "Le site web de la compagnie comme transport (quand le web service PHP existera)",
-          "en": "The airline website as a transport (once the PHP web service exists)",
-          "de": "Die Website der Fluggesellschaft als Transport (sobald der PHP-Webservice existiert)",
-          "es": "El sitio web de la aerolínea como transporte (cuando exista el servicio web PHP)"
+          "state": "later",
+          "fr": "Le site web de la compagnie à la place du relais NAS, si son web service existe un jour (même identité, pas une seconde)",
+          "en": "The company website in place of the NAS relay, if its web service ever exists (same identity, not a second one)",
+          "de": "Die Website der Gesellschaft anstelle des NAS-Relais, falls ihr Webdienst je existiert (gleiche Identität, keine zweite)",
+          "es": "El sitio web de la compañía en lugar del relé NAS, si su servicio web existe algún día (misma identidad, no una segunda)"
         },
         {
           "state": "later",
@@ -195,13 +195,6 @@
           "en": "iOS / Android app (shell resumed)",
           "de": "iOS- / Android-App (Wiederaufnahme der Hülle)",
           "es": "App iOS / Android (retomando el envoltorio)"
-        },
-        {
-          "state": "later",
-          "fr": "Connexion GitHub sans jeton à copier (OAuth / GitHub App) dès qu'un relais existera (web service du site)",
-          "en": "GitHub sign-in without a token to copy (OAuth / GitHub App) once a relay exists (the site's web service)",
-          "de": "GitHub-Anmeldung ohne zu kopierendes Token (OAuth / GitHub App), sobald ein Relais existiert (Webdienst der Website)",
-          "es": "Inicio de sesión GitHub sin token que copiar (OAuth / GitHub App) en cuanto exista un relé (servicio web del sitio)"
         },
         {
           "state": "done",

@@ -825,6 +825,12 @@ redesigned for touch at that point.
          relay serves the application itself (same origin, the launcher's CSP); an invited device has the same usage
          levels as on the workstation, the workstation-only routes being excluded by the route public. R1 and R2 are
          coded and tested on the workstation without exposure.
+         **One identity model (user, 29 Oct night: "dissonance entre onboarding via NAS et authentification GitHub
+         via OAuth")**: the relay is the pilots' identity — the signed registry's user keys and the device tokens it
+         issues; a pilot never has a GitHub identity for the suite. The GitHub OAuth / GitHub App idea is dropped from
+         the roadmap; the GitHub token stays the path of the administrator and of the advanced user who runs the
+         suite without a relay. The company website's future web service, if it ever exists, would take the relay's
+         role, not add a second identity.
    29. **Challenge of 29 Oct: refactoring before any new feature** (user, 29 Oct: "tu challengeras toutes les décisions
        prises depuis hier, quitte à commencer par refaire du code (refactoring)"; inventory by a read-only agent on
        a29709172 plus the debts declared by the four sessions). Findings: the specification ran ahead of the code (about
