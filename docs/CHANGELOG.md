@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the profile shows only the airspaces the flight enters, one envelope per family** (`modules/maps/profile.js`,
+  `profile_view.js`, `lib/vertical_profile.js`; help ×4, case D57; user, 29 Oct, LFPO → EIDW at FL280: "toujours la pollution
+  par les CTA") — an airspace is drawn only where the planned vertical path enters it (within 500 ft); overlapping sectors of
+  one name family, type and class (DUBLIN CTA 3 / 4 / 5, VATA LOWER AIRSPACE A1 … D4) are one envelope named by the family,
+  lowest floor to highest ceiling; free route airspace (FRA), W and weather research areas are left out unless the "Other
+  airspaces" layer is on; at most seven airspaces are labelled, the others in the list below.
+
 - **Map and Atmosphere: one point chooses the weather model** (`frame/lib/flight_path.js` `routeMidpoint`,
   `modules/maps/weather.js`, `modules/atmosphere/module.js`; bench) — the map took the middle point of its list by rank,
   Atmosphere the middle point of its own: near the edge of a model's box they could choose different models; both now ask

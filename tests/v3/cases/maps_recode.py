@@ -708,6 +708,38 @@ def d56(c):
     c.ok(not r['mix'] and not r['same'], f'{r}', 'two families, or one family with one floor: no note')
 
 
+_PROF_AS_JS = """async () => {
+  const box = (lo1, lo2) => [[[45.9, lo1], [46.1, lo1], [46.1, lo2], [45.9, lo2]]];
+  const as = (name, type, cls, lower, upper, lo1, lo2) => ({ name, type, cls, lower, upper, rings: box(lo1, lo2) });
+  const pts = [{ id: 'A', lat: 46, lon: 0 }, { id: 'B', lat: 46, lon: 4 }];
+  const data = await MapsProfile.build(pts, { levelFt: 20000, profile: { tocNm: 40, todNm: 40, climbKt: 250, descentKt: 280 },
+    elevation: async () => 0, airspaces: [
+      as('DUBLIN CTA 3', 'CTA', 'C', '2500 ft AMSL', 'FL 245', 1.0, 2.0), as('DUBLIN CTA 4', 'CTA', 'C', '3000 ft AMSL', 'FL 245', 1.5, 2.5),
+      as('DUBLIN CTA 5', 'CTA', 'C', '3500 ft AMSL', 'FL 245', 2.2, 3.0),
+      as('HIGH TMA', 'TMA', 'C', 'FL 300', 'FL 400', 1.0, 3.0),
+      as('JUST ABOVE', 'TMA', 'C', '20300 ft AMSL', 'FL 300', 1.0, 3.0)] });
+  return data.crossed.map(c => [c.a.name, c.a.lower, c.a.upper, c.a.family || 1]) }"""
+
+
+@case('D57', 'Profile: only the airspaces the planned path enters, overlapping sectors of one family as one envelope', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False,
+      rule='user 29 Oct (LFPO → EIDW, FL280): « toujours la pollution par les CTA » — crossed ±500 ft, one envelope per family, FRA / W off, ≤ 7 labels')
+def d57(c):
+    c.page.goto(f'{c.base}/modules/maps/test/profile.html', wait_until='load')
+    c.until("() => !!window.MapsProfile && !!window.SiaProfile", what='the profile libraries')
+    r = c.js(_PROF_AS_JS)
+    names = [x[0] for x in r]
+    c.ok('DUBLIN CTA' in names and not any(n.startswith('DUBLIN CTA ') for n in names), f'{r}', 'DUBLIN CTA 3, 4 and 5, overlapping, are one envelope named "DUBLIN CTA"')
+    d = next((x for x in r if x[0] == 'DUBLIN CTA'), None)
+    c.ok(d and d[1] == '2500 ft AMSL' and d[3] == 3, f'{d}', 'from the lowest floor, three sectors')
+    c.ok('HIGH TMA' not in names, f'{names}', 'an airspace above the planned path (FL300 at FL200) is not drawn')
+    c.ok('JUST ABOVE' in names, f'{names}', 'one 300 ft above the cruise level is kept (±500 ft)')
+    _open_proc(c, _proc_flight())
+    n = c.js("""async () => { const V = await import('/modules/maps/profile_view.js'); return [['FREE RT ASPC EGTT WEST', 'CTA'], ['W-METRESEARCH', 'OTHER'],
+      ['DUBLIN CTA 3', 'CTA'], ['VATA LOWER AIRSPACE A1', 'TRA']].map(([name, type]) => V.profileNoise({ name, type })) }""")
+    c.eq(n, [True, True, False, False], 'free route (FRA) and W / weather research zones are left out of the profile (unless « Other airspaces » is on)', what='noise')
+
+
 @case('D41', 'The chosen SID, STAR and approach are drawn from the runway', 'D', tags=('maps',), screens=False, designs=('standard',), langs4=True,
       rule='V3 § 10.20, maps SPEC § 5: path from the threshold; transition and missed approach dashed; a leg without a fix = 2 NM stroke then dashes; RF = arc; join on a common point or dashed direct; unchosen procedures never drawn')
 def d41(c):

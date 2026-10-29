@@ -267,6 +267,8 @@ cross-section along the route (wind, temperature, cloud, icing) against the flig
 it moves the cursor. It only shows the forecast that Weather has already loaded: without one, the line "No forecast loaded" leads to
 Weather, under Prepare. The last chip, “i” (greyed out while the drawing has no legend), opens the legend of the profile over it (what each line, band and mark is); dragging a finger on the cross-section moves the cursor like on the profile. The profile and the cross-section are drawn to the exact height of the block, their distance axis always in view: on a low block they drop level labels, never the axis.
 
+<a id="maps-profile-spaces"></a>**The profile's airspaces.** The profile shows only the airspaces the planned vertical path enters (within 500 ft); overlapping sectors of one family (Dublin's CTAs) make one envelope there, named by the family; free route airspace (FRA) and W or weather research areas appear only when the "Other airspaces" layer is on; at most seven airspaces are named, the others in the list below.
+
 <a id="maps-profile-zoom"></a>**Zooming the profile.** To read the profile precisely, tighten it on part of the flight: pinch it with two fingers (the middle of the fingers stays in place) and drag with two fingers to move the window; one finger stays the reading cursor. The altitude scale refits to what the window shows (that is where the precision comes from), the distance marks (NM) tighten with it, and points outside the window are not drawn. A double tap goes back to the whole flight, as does the “Whole flight” button, which appears in the top line while the profile is zoomed. On a screen: Ctrl + wheel zooms around the pointer, a drag moves the window, a double click goes back to the whole flight. The zoom is kept while the page stays open and the route does not change; it is never stored. The weather cross-section zooms the same way (same gestures, same “Whole flight” button) and the window is the same for both: zoom on one, switch to the other with the chip, and you find the same part of the flight; the cross-section also refits its height scale to what it shows.
 
 **A fixed screen.** Nothing between the header and the map: the map and the data block fill the screen, and nothing scrolls but the block's content. The buttons sit on the map: on the right, from the top, “Edit the route” (the pencil), “Recentre”, the map mode, “Edit on the map” (the four arrows) and, last, full screen (Escape leaves it); on the left, “Layers”. The block is a sheet: drag its top line (the small bar; at its normal height the line carries no title above a profile or a cross-section, only the three chips) up to enlarge it, down to shrink it to
@@ -391,7 +393,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 9bfdd65c10e0 -->
+<!-- fr: 946e9dffe2c6 -->
 
 <!-- chapter: report -->
 # Report

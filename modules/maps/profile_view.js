@@ -29,7 +29,8 @@ import {
   corridorBoxes
 } from './data.js';
 import {
-  groupOf
+  groupOf,
+  layersNow
 } from './layers.js';
 import {
   status
@@ -69,6 +70,9 @@ function nmTicks(from, to, plotW) {
 }
 /** Coupe du vol (SPEC § 8.1) : espaces des types du profil le long de la route (sans plancher ni plafond, sans les régions),
  *  relief Terrarium, sinon MORA ; la fenêtre gardée tant que la route est la même. */
+/** Espace qui encombre le profil sans le guider : route libre (FRA), zone W / d'avertissement, zone de recherche météo. */
+export const profileNoise = a => /\bFREE RT\b|\bFRA\b/i.test(a?.name || '') || /^(W|WARNING)$/i.test(a?.type || '') ||
+  /^W[-\s]|METRESEARCH|WARNING/i.test(a?.name || '');
 export async function buildProfile() {
   // le chemin « route + procédures » (points volés) quand il existe ; la carte d'une mission fournit ses propres points
   const f = S.route.flight,
@@ -95,6 +99,9 @@ export async function buildProfile() {
     }, pts);
     // régions (FIR, UIR, UTA, FRA…) : des repères de carte, pas des volumes à franchir
     if (!onMission()) airspaces = airspaces.filter(a => groupOf(a.type) !== 'asFir');
+    // espaces à route libre (FRA, codés CTA « FREE RT ASPC »), zones W / d'avertissement et de recherche météo : absents du profil
+    // sauf quand la couche « Autres espaces » est allumée sur la carte (utilisateur, 29 octobre : « la pollution par les CTA »)
+    if (!onMission() && !layersNow().asOther) airspaces = airspaces.filter(a => !profileNoise(a));
   }
   S.terrain ||= SiaProfile.terrainSampler(9, tileLoader(S.ctx));
   // la route modifiée sur la carte (by 'maps') : le profil de Carburant est périmé jusqu'au devis refait ; by est le dernier

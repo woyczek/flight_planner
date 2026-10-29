@@ -183,10 +183,12 @@
         const lo = (rel(c.a.lower) ? q.center : 0) + (lim(c.a.lower, false) || 0),
           up = lim(c.a.upper, true),
           hi = Number.isFinite(up) ? (rel(c.a.upper) ? q.center : 0) + up : Infinity;
-        if (a >= lo && a <= hi) return true;
+        // traversé : le chemin vertical prévu à 500 ft près dans son emprise (utilisateur, 29 octobre : « la pollution par les CTA »)
+        if (a >= lo - 500 && a <= hi + 500) return true;
       }
       return false;
     });
+    data.crossed = families(data.crossed);
     // MORA des cases traversées (sans relief) : une valeur par échantillon
     if (!terrainOk && mora) {
       const memo = new Map();
@@ -199,6 +201,61 @@
     return data;
   }
 
+  /** Famille d'un nom d'espace : sans son numéro, sa lettre ou son code de secteur en fin (« DUBLIN CTA 3 » → « DUBLIN CTA »,
+   *  « VATA LOWER AIRSPACE A1 » → « VATA LOWER AIRSPACE »). */
+  const familyOf = n => String(n || '').toUpperCase().replace(/(\s+(\d+[A-Z]?|[A-Z]\d*))+$/, '').trim();
+  /** Secteurs d'une même famille de nom, de même type et de même classe qui se recouvrent sur la coupe : une seule enveloppe,
+   *  nommée par la famille, du plancher le plus bas au plafond le plus haut (Dublin : openAIP code les CTA 3 à 6 sans leur trou
+   *  intérieur ; donnée de la source, la coupe ne découpe rien) ; les autres tels quels. */
+  function families(crossed) {
+    const lim = window.SiaAero.limitFt,
+      out = [],
+      groups = new Map();
+    for (const c of crossed) {
+      const k = [c.a.type, c.a.cls || '', familyOf(c.a.name)].join('|');
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(c);
+    }
+    for (const list of groups.values()) {
+      list.sort((x, y) => x.i0 - y.i0);
+      let cur = null;
+      const flush = () => cur && out.push(cur.n > 1 ? {
+        a: {
+          ...cur.lo.a,
+          name: familyOf(cur.lo.a.name),
+          lower: cur.lo.a.lower,
+          upper: cur.hi.a.upper,
+          family: cur.n
+        },
+        i0: cur.i0,
+        i1: cur.i1
+      } : cur.first);
+      for (const c of list) {
+        if (cur && c.i0 <= cur.i1 + 1) {
+          cur.i1 = Math.max(cur.i1, c.i1);
+          cur.n++;
+          if ((lim(c.a.lower, false) || 0) < (lim(cur.lo.a.lower, false) || 0)) cur.lo = c;
+          const u = v => {
+            const x = lim(v.a.upper, true);
+            return Number.isFinite(x) ? x : Infinity;
+          };
+          if (u(c) > u(cur.hi)) cur.hi = c;
+          continue;
+        }
+        flush();
+        cur = {
+          first: c,
+          lo: c,
+          hi: c,
+          i0: c.i0,
+          i1: c.i1,
+          n: 1
+        };
+      }
+      flush();
+    }
+    return out.sort((x, y) => x.i0 - y.i0);
+  }
   /** Dessin de la coupe (SiaProfile.draw), puis, sans relief, les MORA en marches tiretées ; rend la géométrie. */
   function draw(ctx, data, {
     W,
@@ -218,6 +275,7 @@
       abbrev: true,
       limits: false,
       strictLabels: true,
+      maxLabels: 7, // au plus 7 espaces étiquetés par écran ; les autres dans la liste du dessous
       reserveBottom: 18 * scale // marques NM posées par module.js au bas de la coupe
     });
     geo.drawn.terrain = !!data.terrainOk;
