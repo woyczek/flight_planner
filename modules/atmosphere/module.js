@@ -559,14 +559,18 @@ export async function mount(el, ctx) {
     cacheOnly,
     stale
   }) {
-    const days = forecastDaysFor(cacheOnly);
+    const {
+      days,
+      from
+    } = forecastDaysFor(cacheOnly);
     if (S.data === 'demo') return {
-      locs: A.locations(Demo.forecast(places, vars, Date.now(), days * 24)),
+      locs: A.locations(Demo.forecast(places, vars, from, days * 24)),
       weight: 0
     };
     const r = await W.forecast(places, vars, {
       model: S.model.id,
       days,
+      from,
       cacheOnly,
       stale,
       onWait: s => setStatus(T('waitQuota', {
@@ -579,13 +583,20 @@ export async function mount(el, ctx) {
     };
   }
 
-  /** Jours de prévision (UTC, depuis aujourd'hui) : en lecture de la réserve, ceux du vol à l'heure choisie ; au
-   *  chargement, tous ceux que le curseur peut atteindre (prévu + 72 h + le vol) — Open-Meteo compte les lieux et les
-   *  variables, pas les jours (jusqu'à deux semaines) : le curseur ne coûte ensuite plus rien. */
+  /** Jours de prévision (UTC) : { from (premier jour, ms : aujourd'hui, ou le jour du départ d'un vol daté d'avant), days } ;
+   *  en lecture de la réserve, ceux du vol à l'heure choisie ; au chargement, tous ceux que le curseur peut atteindre (prévu +
+   *  72 h + le vol) — Open-Meteo compte les lieux et les variables, pas les jours : le curseur ne coûte ensuite plus rien. */
   function forecastDaysFor(cacheOnly) {
     const until = (cacheOnly ? S.depTime || depValue() : depValue() + SHIFT_MAX * 3600) + 10 * 3600,
-      today = Date.parse(new Date().toISOString().slice(0, 10));
-    return clamp(Math.ceil((until * 1000 - today) / 864e5), 2, 16);
+      today = Date.parse(new Date().toISOString().slice(0, 10)),
+      // un vol daté d'avant aujourd'hui : ses jours passés sont demandés aussi (Open-Meteo les sert, jusqu'à 92 jours ;
+      // utilisateur, 29 octobre : « pas de météo avant H+56 » sur un vol du 26), sinon la lecture commence aujourd'hui
+      depDay = Date.parse(new Date(Math.min(S.depTime || depValue(), depValue()) * 1000).toISOString().slice(0, 10)),
+      from = Math.max(today - 92 * 864e5, Math.min(today, depDay));
+    return {
+      from,
+      days: clamp(Math.ceil((until * 1000 - from) / 864e5), 2, 16 + Math.round((today - from) / 864e5))
+    };
   }
   /** TAF d'un terrain : gardé 30 min sur l'appareil (cache/atmosphere/taf/) ; cacheOnly : seulement ce qui est gardé. */
   async function taf(id, cacheOnly) {

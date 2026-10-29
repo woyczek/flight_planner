@@ -205,6 +205,7 @@ export function weatherStore({
   async function forecast(places, vars, {
     model,
     days = 2,
+    from = null, // premier jour (ms) quand il est passé : le jour du départ d'un vol daté d'avant aujourd'hui
     cacheOnly = false,
     stale = () => false,
     onWait,
@@ -212,7 +213,7 @@ export function weatherStore({
   } = {}) {
     prune().catch(() => {});
     const curRun = await run(model),
-      dayList = forecastDays(now(), days),
+      dayList = forecastDays(Number.isFinite(from) ? Math.min(now(), from) : now(), days),
       cells = new Map(),
       size = cellSize(model);
     for (const p of places) {

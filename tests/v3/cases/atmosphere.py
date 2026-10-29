@@ -260,3 +260,20 @@ def e9(c):
     c.wait(400)
     end = _cut_state(c)
     c.eq([round(end['from'], 1), round(end['to'], 1)], [round(st['from'], 1), round(st['to'], 1)], 'the window is the same after the drag', what='window after the drag')
+
+
+@case('E10', 'A flight dated before today: its weather from its departure, not from today', 'E', tags=('atmosphere',), screens=False,
+      designs=('standard',), night=False, rule='user 29 Oct: "pas de météo avant H+56" on a flight of 26 Oct (the days before today were never read)')
+def e10(c):
+    import copy, datetime
+    import lib
+    f = copy.deepcopy(lib.FLIGHT)
+    f['planned_at'] = (datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=60)).strftime('%Y-%m-%dT%H:00:00Z')
+    c.open('atmosphere?donnees=demo', docs=[['pilot/ABC/current_flight.json', f, 'document']])
+    c.until(f"() => !!document.querySelector('{ATM} [data-at=whenOut]') && /[0-9]/.test(document.querySelector('{ATM} [data-at=whenOut]').textContent)",
+            timeout=10000, what='the time line')
+    c.wait(1500)
+    out = c.js(f"""() => {{ const o = document.querySelector('{ATM} [data-at=whenOut]'), b = document.querySelector('{ATM} [data-at=cover]');
+      return [o.className, o.textContent, b ? b.hidden : null] }}""")
+    c.ok('at-out' not in out[0] and '⚠' not in out[1], f'{out}', 'the planned departure 60 h ago is inside the forecast read (no ⚠)')
+    c.eq(out[2], True, 'the slider is covered from its start: no band of covered hours', what='covered band hidden')

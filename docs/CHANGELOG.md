@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Atmosphere: a flight dated before today has its weather from its departure** (`modules/atmosphere/module.js`,
+  `weather_store.js`, case E10; user, 29 Oct: "pas de météo avant H+56" on a flight of 26 Oct) — the forecast was read from
+  today only, so the hours between a past departure and today stayed empty and the nearest hour was shown; the days from the
+  departure (up to 92 days back, which Open-Meteo serves) are now read too.
+
 - **Map: the aircraft arrow points at the position with its tip** (`modules/maps/flight_time.js`, case D55; user, 29 Oct) — the
   planned and the X-Plane (red) arrows were centred on the position; their tip is now on it, the body behind.
 
