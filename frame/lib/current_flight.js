@@ -14,6 +14,8 @@
 //   proceduresOf(f), loadProcedures(aerodb, f), expandedPath(f, procs), flownPath(path) : la route et ses procédures choisies
 //     (SID, STAR, approche : V3_SPECIFICATION § 10.20), un seul chemin pour le profil, les marques, les heures et le devis.
 //   routingChain(f, procs, points) : les points du routage des voies (« Auto »), fin de SID et début d'arrivée choisies insérés.
+//   altitudeAt(f, nm, { cruiseFt, flown, total }), routeNmToFlown(f, flown, points) : l'altitude prévue le long du chemin volé
+//     (profile.path, sinon montée / croisière / descente), et les distances de la route ramenées sur ce chemin.
 
 import {
   unwrapLons,
@@ -565,4 +567,87 @@ export function routingChain(f, procs = {}, points = f?.route?.points) {
   if (start && !inRoute(start) && !(end && samePoint(end, start))) out.push(mk(start));
   out.push(pts[n - 1]);
   return out;
+}
+
+// ---------------------------------------------------------------- l'altitude du vol le long du chemin
+/** Distances de la route (grand cercle point à point sur points, par défaut route.points) ramenées sur le chemin volé
+ *  (flownPath) : une fonction nm de la route → nm du chemin. Les points de la route que le chemin garde font les repères ;
+ *  entre deux repères, au prorata ; au-delà, décalé du dernier repère. Sans chemin (ou sans repère) : l'identité. */
+export function routeNmToFlown(f, flown, points = f?.route?.points) {
+  const pts = (points || []).filter(p => coord(p?.lat) !== null && coord(p?.lon) !== null),
+    fp = (flown || []).filter(p => coord(p?.lat) !== null && coord(p?.lon) !== null && Number.isFinite(+p.nm));
+  if (pts.length < 2 || fp.length < 2) return nm => nm;
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + gcNm({
+    lat: +pts[i - 1].lat,
+    lon: +pts[i - 1].lon
+  }, {
+    lat: +pts[i].lat,
+    lon: +pts[i].lon
+  }));
+  // repères : un point de la route retrouvé (même nom, à moins de 3 NM) sur le chemin, dans l'ordre
+  const marks = [];
+  let j0 = 0;
+  pts.forEach((p, i) => {
+    const q = {
+        id: String(p.id ?? ''),
+        lat: +p.lat,
+        lon: +p.lon
+      },
+      j = fp.findIndex((x, k) => k >= j0 && x.origin === 'route' && samePoint(x, q));
+    if (j < 0) return;
+    marks.push([cum[i], +fp[j].nm]);
+    j0 = j;
+  });
+  if (!marks.length) return nm => nm;
+  return nm => {
+    if (nm <= marks[0][0]) return marks[0][1] - (marks[0][0] - nm);
+    for (let k = 1; k < marks.length; k++) {
+      const [r0, f0] = marks[k - 1], [r1, f1] = marks[k];
+      if (nm <= r1) return r1 > r0 ? f0 + (nm - r0) / (r1 - r0) * (f1 - f0) : f1;
+    }
+    const [r, fl] = marks.at(-1);
+    return fl + (nm - r);
+  };
+}
+/** Altitude prévue (ft) à nm du départ sur le chemin volé : le chemin vertical de fuel (profile.path [{ nm, ft }], interpolé) ;
+ *  sans lui, la croisière (opts.cruiseFt, sinon level.ft, sinon le niveau du devis) avec la montée jusqu'à profile.tocNm et la
+ *  descente sur les derniers profile.todNm du chemin (opts.total, sinon le dernier nm de opts.flown, sinon la route) ; null
+ *  sans niveau. Utilisateur, 29 octobre : les vents de la route et la coupe d'Atmosphère sont pris à cette altitude, pas au
+ *  niveau de croisière partout ; le routage des voies l'emploie pour les tronçons de montée et de descente. */
+export function altitudeAt(f, nm, opts = {}) {
+  const path = Array.isArray(f?.profile?.path) ? f.profile.path.filter(p => Number.isFinite(+p?.nm) && Number.isFinite(+p?.ft)) : [];
+  if (path.length >= 2) {
+    if (nm <= +path[0].nm) return +path[0].ft;
+    for (let i = 1; i < path.length; i++)
+      if (nm <= +path[i].nm) {
+        const a = path[i - 1],
+          b = path[i],
+          d = +b.nm - +a.nm;
+        return d > 0 ? +a.ft + (nm - +a.nm) / d * (+b.ft - +a.ft) : +b.ft;
+      }
+    return +path.at(-1).ft;
+  }
+  const L = num(opts.cruiseFt) ?? num(f?.level?.ft) ?? num(f?.quote?.levelFt);
+  if (!(L > 0)) return null;
+  const P = f?.profile || {},
+    fl = (opts.flown || []).filter(p => Number.isFinite(+p?.nm)),
+    D = num(opts.total) ?? (fl.length ? +fl.at(-1).nm : (() => {
+      const pts = (f?.route?.points || []).filter(p => coord(p?.lat) !== null && coord(p?.lon) !== null);
+      let s = 0;
+      for (let i = 1; i < pts.length; i++) s += gcNm({
+        lat: +pts[i - 1].lat,
+        lon: +pts[i - 1].lon
+      }, {
+        lat: +pts[i].lat,
+        lon: +pts[i].lon
+      });
+      return s;
+    })()),
+    toc = Math.max(0, +P.tocNm || 0),
+    tod = Math.max(0, +P.todNm || 0);
+  let ft = L;
+  if (toc > 0 && nm < toc) ft = Math.min(ft, L * Math.max(0, nm) / toc);
+  if (tod > 0 && D > 0 && nm > D - tod) ft = Math.min(ft, L * Math.max(0, D - nm) / tod);
+  return ft;
 }

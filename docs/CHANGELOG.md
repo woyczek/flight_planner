@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel and Map: the winds aloft along the route are taken at the altitude of the profile** (`frame/lib/current_flight.js`
+  `altitudeAt`, `routeNmToFlown`, `modules/fuel/module.js` `aloftCalc`; bench, case F29; user, 29 Oct: "à LFPO on n'est pas
+  encore au FL260, à BAGIT on n'y est plus") — every point's wind and temperature were read at the cruise level (steps
+  included); they are now read at the planned altitude there: fuel's vertical path (`profile.path`), else the climb to
+  `tocNm` and the descent over the last `todNm`, the route's distances brought onto the flown path of the procedures.
+
 - **Atmosphere: a flight dated before today has its weather from its departure** (`modules/atmosphere/module.js`,
   `weather_store.js`, case E10; user, 29 Oct: "pas de météo avant H+56" on a flight of 26 Oct) — the forecast was read from
   today only, so the hours between a past departure and today stayed empty and the nearest hour was shown; the days from the

@@ -36,7 +36,9 @@
     loadProcedures,
     expandedPath,
     flownPath,
-    routingChain
+    routingChain,
+    altitudeAt,
+    routeNmToFlown
   } from '../current_flight.js?v=0';
   const rows = [],
     out = document.getElementById('out');
@@ -798,6 +800,67 @@
       sid: SIDX
     }, pts2).map(p => p.id).join(' ') ===
     'LFBD S09 BBB LFPO');
+
+  // altitude du vol : le chemin vertical de fuel, sinon montée / croisière / descente (utilisateur, 29 octobre : vents et coupe à
+  // l'altitude du profil, pas au niveau de croisière partout)
+  const AP = {
+    route: RT,
+    level: {
+      ft: 26000
+    },
+    profile: {
+      path: [{
+        nm: 0,
+        ft: 0
+      }, {
+        nm: 50,
+        ft: 26000
+      }, {
+        nm: 200,
+        ft: 26000
+      }, {
+        nm: 260,
+        ft: 3000
+      }, {
+        nm: 270,
+        ft: 0
+      }]
+    }
+  };
+  ck('altitudeAt : profile.path interpolé', altitudeAt(AP, 25) === 13000 && altitudeAt(AP, 100) === 26000 && altitudeAt(AP, 265) === 1500);
+  const AR = {
+    route: RT,
+    level: {
+      ft: 20000
+    },
+    profile: {
+      tocNm: 40,
+      todNm: 60
+    }
+  };
+  ck('altitudeAt : sans chemin, montée jusqu’à tocNm et descente sur todNm', altitudeAt(AR, 20, {
+    total: 300
+  }) === 10000 && altitudeAt(AR, 150, {
+    total: 300
+  }) === 20000 && altitudeAt(AR, 270, {
+    total: 300
+  }) === 10000);
+  ck('altitudeAt : un palier (cruiseFt) gardé en croisière', altitudeAt(AR, 150, {
+    total: 300,
+    cruiseFt: 18000
+  }) === 18000);
+  ck('altitudeAt : sans niveau, null', altitudeAt({
+    route: RT
+  }, 10) === null);
+  const FPr = flownPath(expandedPath(FV, LP)),
+    toF = routeNmToFlown(fl({}), FPr),
+    gcr = (a, b) => 3440.065 * 2 * Math.asin(Math.sqrt(Math.sin((b.lat - a.lat) * Math.PI / 360) ** 2 + Math.cos(a.lat * Math.PI / 180) *
+      Math.cos(b.lat *
+        Math.PI / 180) * Math.sin((b.lon - a.lon) * Math.PI / 360) ** 2)),
+    rAAA = gcr(RT.points[0], RT.points[1]),
+    fAAA = FPr.find(p => p.id === 'AAA').nm;
+  ck('routeNmToFlown : un point de la route tombe sur son nm du chemin volé', Math.abs(toF(rAAA) - fAAA) < 1e-6, `${toF(rAAA)} / ${fAAA}`);
+  ck('routeNmToFlown : sans chemin, l’identité', routeNmToFlown(fl({}), null)(42) === 42);
 
   window.__cfBench = {
     done: true,

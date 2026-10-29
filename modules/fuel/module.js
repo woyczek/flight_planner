@@ -2734,7 +2734,7 @@ async function aloftFetch(loud = false) {
   }
   if (!gone(s)) aloftApply();
 }
-/** Vents et températures au niveau planifié (paliers compris) : aux lieux de lecture et aux points de la route ;
+/** Vents et températures à l'altitude prévue (profil : montée, paliers, descente) : aux lieux de lecture et aux points de la route ;
  *  null sans prévision pour cette route. */
 function aloftCalc() {
   const A = S.aloft,
@@ -2743,14 +2743,26 @@ function aloftCalc() {
   if (!A?.profiles?.length || A.key !== aloftKey() || !(plan > 0) || pts.length < 2) return null;
   const nmPts = [0];
   for (let i = 1; i < pts.length; i++) nmPts.push(nmPts[i - 1] + gcNm(pts[i - 1], pts[i]));
-  const at = new Date(A.time * 1000).toISOString(),
-    winds = A.samples.map((smp, i) => WD.atLevel(A.profiles[i], WD.levelAt(pts, nmPts, plan, smp.nm)));
+  // l'altitude du profil à chaque lieu (montée, paliers, descente : profile.path, sinon tocNm / todNm), pas le niveau de croisière
+  // partout (utilisateur, 29 octobre) ; les distances de la route ramenées sur le chemin volé des procédures
+  const fp = fpNow(),
+    toF = CF.routeNmToFlown(S.flight, fp),
+    lvAt = n => {
+      const c = WD.levelAt(pts, nmPts, plan, n),
+        a = CF.altitudeAt(S.flight, toF(n), {
+          cruiseFt: c,
+          flown: fp
+        });
+      return a == null ? c : Math.round(a / 100) * 100;
+    },
+    at = new Date(A.time * 1000).toISOString(),
+    winds = A.samples.map((smp, i) => WD.atLevel(A.profiles[i], lvAt(smp.nm)));
   return {
     winds,
     nms: A.samples.map(x => x.nm),
     points: pts.map((p, i) => {
       const k = A.samples.findIndex(x => x.point === i),
-        lv = WD.levelAt(pts, nmPts, plan, nmPts[i]),
+        lv = lvAt(nmPts[i]),
         w = k >= 0 ? WD.atLevel(A.profiles[k], lv) : null;
       return w ? {
         dirDeg: w.dirDeg,

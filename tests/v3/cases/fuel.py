@@ -960,3 +960,14 @@ def f27(c):
     want = norm(tx(F, "no-launcher'", c.lang, after='procReasons'))
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=6000,
             what='the same gesture as the reading on demand: its refusal is said (no launcher on the test page)')
+
+
+@case('F29', 'Winds aloft along the route at the altitude of the profile, not at the cruise level everywhere', 'F', tags=('fuel', 'maps'),
+      designs=('standard',), screens=False, rule='user 29 Oct: "à LFPO on n’est pas encore au FL260, à BAGIT on n’y est plus"')
+def f29(c):
+    c.open('fuel', flight=True, forecast=True)
+    d = cf_doc(c, lambda d: all(((p.get('wind') or {}).get('levelFt') is not None) for p in d['route']['points'][1:-1]), 'the winds of the route written',
+               timeout=15000)
+    lv = {p['id']: p['wind']['levelFt'] for p in d['route']['points'] if p.get('wind')}
+    c.ok(lv.get('LUGEN', 27000) < 27000, f'{lv}', 'LUGEN, in the climb (before the top of climb at 62 NM), takes its wind below the cruise level')
+    c.ok(max(lv.values()) <= 27000, f'{lv}', 'no wind above the cruise level')
