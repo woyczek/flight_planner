@@ -287,6 +287,12 @@ Fuel's "Sur la carte" button opens `#maps?choose=dep|arr&icao=LFXX`. The Map rea
 of the Map is offered (the buttons but "Recentre" are hidden, the sheet's content is the list), a mission map or the tuning page never
 enters it.
 
+The **second entry** is the aerodrome card of the departure or the arrival (ergonomics, 29 Oct 2026: the user did not find the
+entry on a phone): next to "Changer" (→ `#fuel?focus=<side>`), "Choisir sur la carte" (`[data-choose]`, full width under 768 px)
+runs `chooseOpen(side, icao)`, the same code path as the address without a reload: the card is released, the mode loads, the
+view fits the procedures (`fitMap`). Leaving the mode (✕, Escape) gives back the flight and its frame (`applyFlight`, then
+`fitMap`).
+
 - **What is read**: `aerodb.procedures(icao)` (the published records; a record of status `doubt` is never asked for, hence never
   listed), `aerodb.runways(icao)`, `aerodb.aerodromes({ icao })` (the axis, when nothing else names a runway), the flight's
   `route.procedures` through `proceduresOf`. Every rule is `frame/lib/procedures.js` (`runwayChoices`, `appChoices`,
@@ -750,7 +756,9 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
     14:32Z"; on the ground at the departure while taxiing; on the profile a circle at the planned distance and altitude;
   - **actual position** (`progress.actual`, the frame's; one older than `started.at` is the previous flight's and is
     ignored, trail included): filled red aircraft turned to `trackDeg` (else the bearing from the previous position), the
-    trail of the last 30 minutes dotted (kept in memory, plus `actual.trail` when given); older than 2 minutes: greyed,
+    trail dotted: the frame's `actual.trail` (`[lat, lon, altFt, s since started.at]`, the whole flight, frame/lib/trail.js),
+    read again at each reading of the flight (a change of tab no longer loses it), followed by the Map's own positions newer
+    than its last point (those of the last 30 minutes); older than 2 minutes: greyed,
     "Position from n min ago"; the source labelled (`gps`, `network`, `ivao`, `vatsim`, `xplane` "X-Plane", `lnm` "Little
     Navmap"; any other value: no label); on the profile a filled dot at the actual distance and altitude;
   - **the progress line** (first of the notes): ahead or late in minutes and NM (both positions projected on the route;

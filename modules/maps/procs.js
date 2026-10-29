@@ -583,9 +583,13 @@ export function cardHtml(icao) {
   }
   if (!rows.length) return '';
   const change = tt(TX.adProcChange),
-    tip = tt(TX.adProcChangeTip);
+    tip = tt(TX.adProcChangeTip),
+    pick = tt(TX.adProcChoose),
+    pickTip = tt(TX.adProcChooseTip);
+  // « Choisir sur la carte » : le mode choix de ce côté, sur la famille qui manque (choose.js, sans rechargement) ; pleine largeur
+  // sur un téléphone (style.js) ; « Changer » ouvre Carburant sur la ligne du côté
   return rows.map(([side, label, text]) =>
-    `<p class="mp-ad-proc" data-proc="${side}"><b>${esc(tt(label))}</b> : ${esc(text ?? tt(TX.adProcUnset))} <button type="button" class="f-btn" data-go="fuel?focus=${side}" title="${esc(tip)}" aria-label="${esc(tip)}">${esc(change)}</button></p>`
+    `<p class="mp-ad-proc" data-proc="${side}"><b>${esc(tt(label))}</b> : ${esc(text ?? tt(TX.adProcUnset))} <button type="button" class="f-btn" data-go="fuel?focus=${side}" title="${esc(tip)}" aria-label="${esc(tip)}">${esc(change)}</button><button type="button" class="f-btn primary mp-ad-choose" data-choose="${side}" data-icao="${esc(k)}" title="${esc(pickTip)}">${esc(pick)}</button></p>`
   ).join('');
 }
 

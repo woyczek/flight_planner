@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the flown trail comes from the frame; "Choose on the map" on the aerodrome card** (`modules/maps/flight_time.js`,
+  `choose.js`, `procs.js`, `texts.js`, `style.js`; help ×4, maps SPEC; noreg D61, D62). The trail starts from
+  `progress.actual.trail` (`[lat, lon, altFt, s since started.at]`, written by the frame), read again at each reading of the
+  flight, so a change of tab no longer loses it and its older points are kept; the Map only adds its own positions newer than
+  the frame's last point (before, the frame's points were not read at all and a reread could double them). The card of the
+  departure or arrival aerodrome offers "Choisir sur la carte" ×4 next to "Changer" (full width on a phone): the choose mode
+  for that side, on the family the flight lacks, by the same code as `#maps?choose=` without a reload; leaving the mode gives
+  back the flight's frame.
+
 - **Base build on the launcher: the browser's temporary profile is always removed** (`tools/regen/base.py`; DECISIONS; test K49) — a
   late browser process could re-create it right after the job deleted it.
 - **Frame: the data repository on GitLab** (`frame/store/transport_gitlab.js`, `frame/store/transport_github.js`,

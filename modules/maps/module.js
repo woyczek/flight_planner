@@ -128,6 +128,7 @@ export const meta = {
     'lib/profiles.js?v=0', 'lib/map_base.js?v=0', 'lib/axis_window.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0',
     '../../frame/lib/flight_time.js?v=0', '../../frame/lib/flight_path.js?v=0', '../../frame/lib/procedures.js?v=0',
+    '../../frame/lib/trail.js?v=0',
     '../../frame/lib/time.js?v=0',
     '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/icons.js?v=0'
   ],

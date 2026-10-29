@@ -159,6 +159,7 @@ export const STYLE = `
 [data-module="maps"] .mp-cov-dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;flex:none;background:var(--sog-muted)}
 [data-module="maps"] .mp-lg-pin::after{content:'';position:absolute;left:8px;top:1px;width:10px;height:10px;border-radius:50%;background:var(--c)}
 [data-module="maps"] .mp-ad-proc{margin:0 0 6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 6px}
+@media (max-width:767px){[data-module="maps"] .mp-ad-choose{flex:1 1 100%;min-height:var(--sog-touch)}}
 [data-module="maps"] .mp-lg-tri::after{content:'';position:absolute;left:8px;top:1px;border:5px solid transparent;border-bottom:9px solid var(--c);border-top:0}
 [data-module="maps"] .mp-chips .mp-chip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
 [data-module="maps"] .mp-data[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}

@@ -28,6 +28,9 @@ import {
   TX
 } from './texts.js';
 import {
+  TRAIL_MAX
+} from '../../frame/lib/trail.js';
+import {
   schedule
 } from './draw.js';
 import {
@@ -59,6 +62,18 @@ const posOf = p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) ? {
   lat: +p.lat,
   lon: +p.lon
 } : null;
+/** Trace volée écrite par le cadre (progress.actual.trail : [[lat, lon, altFt | null, s depuis started.at], …], INTEGRATION § 6) en
+ *  positions { lat, lon, altFt, at } ; [] sans trace ou sans started.at lisible. */
+const trailOf = (f, t0) => {
+  const tr = f?.progress?.actual?.trail;
+  if (!Array.isArray(tr) || !Number.isFinite(t0)) return [];
+  return tr.filter(q => Array.isArray(q) && Number.isFinite(+q[0]) && Number.isFinite(+q[1]) && Number.isFinite(+q[3])).map(q => ({
+    lat: +q[0],
+    lon: +q[1],
+    altFt: q[2] === null || q[2] === undefined ? null : +q[2],
+    at: new Date(t0 + q[3] * 1000).toISOString()
+  }));
+};
 /** Position réelle de ce vol : progress.actual, sauf une position d'avant started.at (celle du vol précédent) ; null sinon. */
 const actualOf = f => {
   const a = posOf(f?.progress?.actual),
@@ -93,12 +108,15 @@ export function progressUpdate() {
     return writeNotes();
   }
   const a = actualOf(f),
-    now = Date.now();
-  S.trail = [...(S.trail || []), ...(Array.isArray(f.progress?.actual?.trail) ? f.progress.actual.trail.map(posOf).filter(Boolean) : []),
-      ...(a ? [a] : [])
-    ].filter(p => !p.at || !Number.isFinite(t0) || Date.parse(p.at) >= t0) // rien du vol précédent
-    .filter(p => !p.at || now - Date.parse(p.at) <= TRAIL_MS).filter((p, i, all) => !i || p.lat !== all[i - 1].lat || p.lon !== all[i - 1]
-      .lon).slice(-400);
+    now = Date.now(),
+    // la trace écrite par le cadre (progress.actual.trail, frame/lib/trail.js) : tout le vol depuis started.at, relue à chaque
+    // lecture (un changement d'onglet ne la perd plus) ; la Carte n'y ajoute que ses positions plus récentes que son dernier point
+    own = trailOf(f, t0),
+    last = own.length ? Date.parse(own.at(-1).at) : -Infinity,
+    mine = [...(S.trail || []), ...(a ? [a] : [])].filter(p => !p.at || !Number.isFinite(t0) || Date.parse(p.at) >=
+      t0) // rien du vol précédent
+    .filter(p => p.at && Date.parse(p.at) > last && now - Date.parse(p.at) <= TRAIL_MS);
+  S.trail = [...own, ...mine].filter((p, i, all) => !i || p.lat !== all[i - 1].lat || p.lon !== all[i - 1].lon).slice(-(TRAIL_MAX + 400));
   const st = progressState();
   S.progHtml = progressHtml(st);
   writeNotes();

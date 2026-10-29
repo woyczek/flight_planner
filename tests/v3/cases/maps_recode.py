@@ -1308,3 +1308,72 @@ def d60(c):
     r = c.js(_CH_ROWS)
     c.eq(r['title'], tx(M, 'trans', c.lang, after='chTitle: {').replace('{p}', 'XX1A').replace('{icao}', 'LFRS'), 'SID chosen: its transition comes next', what='title')
     c.eq(len(r['rows']), 2, '"Aucune" and the one transition', what='rows')
+
+
+# ------------------------------------------------------------------------------------------------------ D61
+_TRAIL_JS = """() => (window.__mp.S.trail || []).map(p => [p.lat, p.lon, p.at])"""
+
+
+@case('D61', 'The flown track comes from the frame: read at mount, the whole flight, then the Map adds its newer positions', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='INTEGRATION § 6 (29 Oct): progress.actual.trail = [[lat, lon, altFt, s since started.at]]; the Map starts its track from it at mount (a tab change no longer loses it), points older than 30 min kept, and only adds positions newer than its last point')
+def d61(c):
+    t0 = now() - datetime.timedelta(minutes=60)
+    trail = [[47.1569, -1.6078, 400, 0], [46.9, -1.45, 12000, 1800], [46.6, -1.21, 20000, 3000]]
+    f = flight(started={'at': iso(t0)},
+               progress={'phase': 'cruise', 'at': iso(now()),
+                         'actual': {'lat': 46.3, 'lon': -0.9, 'altFt': 24000, 'at': iso(now() - datetime.timedelta(seconds=20)), 'trail': trail}})
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js("async () => { window.__mp = await import('/modules/maps/state.js'); return true }")
+    c.until("() => (window.__mp.S && window.__mp.S.trail || []).length >= 4", timeout=8000, what='the track is read')
+    got = c.js(_TRAIL_JS)
+    c.eq([[round(q[0], 4), round(q[1], 4)] for q in got], [[q[0], q[1]] for q in trail] + [[46.3, -0.9]],
+         'the frame\u2019s track, its first point an hour old included, then the current position', what='track')
+    c.eq(got[1][2][:16], iso(t0 + datetime.timedelta(seconds=1800))[:16], 'a point\u2019s time is started.at + s', what='time of a point')
+    # a reread (the frame wrote a new position and the trail grew): the track is the frame's again, nothing doubled
+    g = c.doc(PATH)
+    g['progress']['actual']['trail'] = trail + [[46.3, -0.9, 24000, 3580]]
+    g['progress']['actual'].update({'lat': 46.1, 'lon': -0.7, 'at': iso(now())})
+    g['updated_at'] = iso(now())
+    c.js("""(a) => window.FrameData.adapter({ id: 't-trail', reads: ['pilot/'], writes: ['pilot/'] }).put(a[0], a[1])""", [PATH, g])
+    c.until("() => (window.__mp.S.trail || []).some(p => Math.abs(p.lat - 46.1) < 1e-6)", timeout=8000, what='the new position')
+    got = c.js(_TRAIL_JS)
+    c.eq([[round(q[0], 4), round(q[1], 4)] for q in got], [[q[0], q[1]] for q in trail] + [[46.3, -0.9], [46.1, -0.7]],
+         'the frame\u2019s track plus the new position, nothing doubled', what='track after a reread')
+
+
+# ------------------------------------------------------------------------------------------------------ D62
+@case('D62', 'The aerodrome card offers "Choose on the map" for its side: the choose mode without a reload', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False, langs4=True,
+      rule='ergonomics 29 Oct (the user, on a phone, did not find the entry): the card of the departure or the arrival has "Choisir sur la carte" next to "Changer", full width on a phone; it opens the choose mode on the missing family, the same code as #maps?choose=, without a reload')
+def d62(c):
+    f = flight()
+    f['route']['procedures'] = {'dep': {}, 'arr': {'rwy': '31'}, 'by': 'fuel', 'at': '2026-10-29T10:00:00Z'}
+    docs = [['proc/manual/LFML.json', _CH_FILE, 'reference'], ['proc/manual/LFRS.json', _LFRS_FILE, 'reference']]
+    c.open('maps', docs=fdocs(f) + docs, flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.toC)", timeout=12000, what='the map is drawn')
+    c.js("() => { window.__noReload = 1 }")
+    c.js(_COV_PIN, ['LFML', 43.4367, 5.215])
+    c.until("() => !!document.querySelector('.mp-ad-proc[data-proc=arr] [data-choose]')", timeout=10000, what='the card of the arrival')
+    sel = '.mp-ad-proc[data-proc=arr] [data-choose=arr]'
+    c.eq(norm(c.text(sel)), norm(tx(M, 'adProcChoose', c.lang)), 'the button says "Choose on the map" in the language of the run', what='label')
+    c.ok(c.count('.mp-ad-proc[data-proc=arr] [data-go="fuel?focus=arr"]') == 1, 'no Change button', '"Changer" stays next to it')
+    if c.width < 768:
+        b, p = c.box(sel), c.box('.mp-ad-proc[data-proc=arr]')
+        c.ok(b['w'] >= p['w'] - 2, f'button {b["w"]:.0f} px of a {p["w"]:.0f} px row', 'full width on a phone')
+    c.tap(sel)
+    c.until("() => !!(window.__mp.S.choose && window.__mp.S.choose.ready)", timeout=10000, what='the choose mode opens')
+    st = c.js("() => { const S = window.__mp.S; return { fam: S.choose.family, side: S.choose.side, icao: S.choose.icao, panel: S.dpanel, hash: location.hash, same: window.__noReload === 1, fit: S.fit } }")
+    c.eq([st['side'], st['icao'], st['fam'], st['panel']], ['arr', 'LFML', 'star', 'choose'],
+         'the arrival of LFML, the family the flight lacks (the runway is chosen: the STAR), in the sheet', what='mode')
+    c.ok(st['same'] and st['hash'] == '#maps', f'{st["hash"]}', 'no reload, the address unchanged')
+    fit = st['fit']
+    c.ok(fit['s'] < 44 and fit['n'] > 43.4 and fit['w'] < 5.2 and fit['e'] > 4.3 and fit['e'] - fit['w'] < 3, f'{fit}', 'the view fits the procedures of LFML, not the flight')
+    # leaving by the cross: the flight's view and profile come back
+    c.js("async () => { const C = await import('/modules/maps/choose.js'); await C.chooseExit() }")
+    c.until("() => !window.__mp.S.choose && window.__mp.S.dpanel !== 'choose'", timeout=6000, what='the mode is left')
+    fit = c.js("() => window.__mp.S.fit")
+    c.ok(fit['w'] < -1 and fit['e'] > 5, f'{fit}', 'the flight’s frame again')

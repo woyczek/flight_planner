@@ -313,6 +313,12 @@ export const TX = {
     '{id} (no encontrado en los datos)'
   ],
   adProcChange: ['Changer', 'Change', 'Ändern', 'Cambiar'],
+  adProcChoose: ['Choisir sur la carte', 'Choose on the map', 'Auf der Karte wählen', 'Elegir en el mapa'],
+  adProcChooseTip: ['Les procédures de ce côté tracées sur la carte : un toucher choisit, Carburant l’écrit',
+    'The procedures of this side drawn on the map: one tap chooses, Fuel writes it',
+    'Die Verfahren dieser Seite auf der Karte: ein Tippen wählt, Kraftstoff schreibt es',
+    'Los procedimientos de este lado en el mapa: un toque elige, Combustible lo escribe'
+  ],
   adProcChangeTip: ['Changer la piste et les procédures dans Carburant', 'Change the runway and procedures in Fuel',
     'Piste und Verfahren im Kraftstoff ändern', 'Cambiar la pista y los procedimientos en Combustible'
   ],

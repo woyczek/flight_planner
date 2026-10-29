@@ -14,7 +14,8 @@ import {
   S,
   tt,
   esc,
-  setData
+  setData,
+  onMission
 } from './state.js';
 import {
   TX
@@ -37,8 +38,12 @@ import {
   schedule
 } from './draw.js';
 import {
-  syncButtons
+  syncButtons,
+  fitMap
 } from './screen.js';
+import {
+  unpinAd
+} from './vfr.js';
 import {
   applyFlight
 } from './data.js';
@@ -68,9 +73,14 @@ export function chooseAsk(ctx) {
       choose: ctx.query?.choose,
       icao: ctx.query?.icao
     },
-    side = got.choose === 'dep' || got.choose === 'arr' ? got.choose : null,
+    side = got.choose,
     icao = String(got.icao ?? '').trim().toUpperCase();
-  if (!side || ctx.query?.mission || ctx.query?.tune || (icao && !/^[A-Z0-9]{4}$/.test(icao))) return null;
+  if (ctx.query?.mission || ctx.query?.tune) return null;
+  return askOf(side, icao);
+}
+/** La demande d'un côté et d'un terrain (vide : celui du vol), ou null si elle ne se lit pas. */
+function askOf(side, icao) {
+  if (side !== 'dep' && side !== 'arr' || (icao && !/^[A-Z0-9]{4}$/.test(icao))) return null;
   return {
     side,
     icao,
@@ -233,14 +243,30 @@ export function chooseStart() {
   chooseRender();
   schedule();
 }
-/** Le mode se retire (✕, Échap ou rien à montrer) : la carte reprend le vol entier, la feuille son profil. */
-export function chooseExit() {
+/** Le mode s'ouvre depuis la carte du terrain (« Choisir sur la carte ») : le même chemin que #maps?choose=, sans rechargement ;
+ *  la vue se recadre sur les procédures. */
+export async function chooseOpen(side, icao) {
+  const ask = askOf(side, String(icao ?? '').trim().toUpperCase());
+  if (!S || !ask || onMission()) return;
+  unpinAd();
+  S.choose = ask;
+  syncButtons();
+  chooseView();
+  await chooseLoad();
+  if (!S) return;
+  if (S.choose !== ask) return chooseView(); // rien à montrer (notifié) ou une autre demande : la classe suit
+  chooseStart();
+  if (S.map) fitMap(true);
+}
+/** Le mode se retire (✕, Échap ou rien à montrer) : la carte reprend le vol entier et son cadre, la feuille son profil. */
+export async function chooseExit() {
   if (!S?.choose) return;
   S.choose = null;
   chooseView();
   endData('choose');
   syncButtons();
-  applyFlight(false);
+  await applyFlight(false);
+  if (S?.map && !S.choose) fitMap(true);
 }
 
 // ---------------------------------------------------------------- la feuille : titre, puces, liste
@@ -320,6 +346,8 @@ export function chooseEvents() {
   const el = S.dbodyEl,
     on = () => S?.dpanel === 'choose',
     click = e => {
+      const pick = e.target.closest('[data-choose]');
+      if (pick) return chooseOpen(pick.dataset.choose, pick.dataset.icao); // la carte du terrain
       if (!on()) return;
       const chip = e.target.closest('[data-rwy]');
       if (chip) return setChip(chip.dataset.rwy);
