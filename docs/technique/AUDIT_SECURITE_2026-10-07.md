@@ -871,6 +871,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 29 | Map: track from `progress.actual.trail`, « Choisir sur la carte » button (a158edbe5) | acceptable, one note |
 | 30 | AeroDB: the points of 28 in `aero_fetch` (38a9d39b7) | acceptable; points of 28 settled, one note |
 | 31 | Fuel: « Source » link (c540c3efd), past-date warning (9d9d2f686) | acceptable |
+| 32 | Frame: GitLab fix (02a096440), Maintenance level and `_run` state (9d64081c9); Map « Source » link and track (f7bad9970) | acceptable; **the blocking point of 27 is lifted**; one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1243,7 +1244,25 @@ for every source.
 `rel="noopener noreferrer"`; only the chosen records of the side are looked up by id; other sources' document names go into
 the line's `title` as a DOM property. The past-date warning is text only (`textContent`, `esc`), never blocking, no write.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 29 and 30 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30; 27 blocking until fixed); the sharing of the track and of the position is the user's decision.
+**32. GitLab fix and companions (02a096440, 9d64081c9, f7bad9970) — acceptable; the blocking point of 27 is lifted.**
+- 02a096440: an empty token field no longer brings anything back by itself; `resolve()` reuses the saved token only when the
+  target is the same (provider, API origin in lower case, project), otherwise saving is refused with « New host or new
+  repository: {h} — paste the token for it », shown through `textContent`; `save()` refuses any setting without a token.
+  For a pasted GitLab address, `clean` always recomputes the API from the pasted host (never an earlier one) and empties an
+  API outside `^https://[^/\s]+/api/v4$`; the transport throws on any other form; `call()` uses `redirect: 'error'`. The
+  user's real test on gitlab.com may proceed.
+- 9d64081c9: Maintenance opens at the Complete level (a display level; the guards stay at the launcher, as DECISIONS now
+  says about `?app=`); no Pilot welcome; `_run`'s `finally` sets `error` and `ended` when the state is still `running`;
+  strict mode in the classic scripts.
+- f7bad9970: the Map's « Source » link requires `https://` (aerodb already binds the SIA's host), escaped, new tab,
+  `rel="noopener noreferrer"`; document names escaped; `isDoubt` shared; the track cut (`slice(-TRAIL_MAX)`) before the
+  filter, then bounded (|lat| ≤ 90, |lon| ≤ 180). This settles the note of 29.
+- Note (no sending risk): the host pattern admits `@`: `https://gitlab.com@attacker.example/x/y` yields an API
+  `https://gitlab.com@attacker.example/api/v4` and the message shows « gitlab.com@attacker.example », misleading to the
+  eye; `fetch()` refuses an address carrying credentials, so nothing leaves, but the user may believe they paste a token
+  « for gitlab.com ». Refuse `@` (anything outside `[A-Za-z0-9.-]` and `:port`) in the host.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30 and 32 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32; the blocking point of 27 lifted in 32); the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
