@@ -872,6 +872,10 @@ cartographique (`apps/cpco/map_parser.html`).
 
 ## Bon à savoir
 
+- **Jetons des pilotes (GitLab)** : dans l'application Maintenance, sur le poste du lanceur, « Jetons des pilotes »
+  crée un jeton d'accès de projet par pilote (à son trigramme, rôle Developer, un an au plus), le montre une seule fois,
+  et le révoque. Le lanceur s'y sert du jeton de l'administrateur (secrets/gitlab.json), qu'il ne montre jamais. Réglez
+  la branche des données pour que le rôle Developer puisse y pousser.
 - **Le jeton** : sur github.com, un jeton à grain fin, sur le seul dépôt des données, « Contents » en lecture et
   écriture, 90 jours au plus ; sur GitLab, un jeton d'accès de projet (un par pilote, à son trigramme), créé par
   l'administrateur. Il n'est jamais réaffiché ; ne le collez dans aucun message.

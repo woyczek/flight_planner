@@ -263,6 +263,19 @@
         thrown = x.message;
       }
       ck('save refuse un réglage sans jeton', /token required/.test(thrown) && FD.github.config().token === 'glpat-saved');
+      ck('un hôte collé avec « @ » ou un caractère hors [A-Za-z0-9.-] : dépôt refusé, aucun hôte affiché', [
+        'https://gitlab.com@evil.example/x/y',
+        'https://evil_host/x/y', 'http://gitlab.example/x/y', 'https://gitlab.example/x@y'
+      ].every(repo => {
+        const r = FD.github.resolve({
+          repo,
+          token: 't'
+        });
+        return r.repo === '' && !r.api;
+      }) && FD.github.clean({
+        repo: 'https://gitlab.example:8443/grp/data',
+        token: 't'
+      }).api === 'https://gitlab.example:8443/api/v4');
       FD.github.hold(null);
       let refused = false;
       try {

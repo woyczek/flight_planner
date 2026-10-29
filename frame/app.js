@@ -255,6 +255,14 @@
       icon: 'wrench',
       level: 3,
       launcher: true
+    }, {
+      // jetons d'accès GitLab des pilotes (G2) : écran de service, avec le lanceur du poste (il garde le jeton de l'administrateur)
+      id: 'tokens',
+      href: '#pilot-tokens',
+      label: ['Jetons des pilotes', 'Pilots’ tokens', 'Token der Piloten', 'Tokens de los pilotos'],
+      icon: 'shield',
+      level: 3,
+      launcher: true
     }],
     tabs: [{
       id: 'data',
@@ -272,7 +280,15 @@
       icon: 'help',
       screen: 'help'
     }],
-    screens: []
+    // écrans de service : « Jetons des pilotes » (frame/settings/pilot_tokens.js), avec deux routes du lanceur seulement
+    screens: [{
+      id: 'pilot-tokens',
+      scripts: ['settings/pilot_tokens.js?v=0'],
+      level: 3,
+      launcher: {
+        routes: ['gitlab/tokens', 'gitlab/tokens/revoke']
+      }
+    }]
   };
   const APP = (() => {
     const id = new URLSearchParams(location.search).get('app') || '';
@@ -2876,6 +2892,16 @@
       aerodb,
       level: () => level,
       launcher: () => launcherHere,
+      // routes du lanceur déclarées par l'écran (launcher: { routes }), par le même client que les modules ; null sans lanceur
+      // sur ce poste (ou depuis un appareil appairé)
+      ...(s.launcher ? {
+        routes: () => {
+          const c = launcherHere && !launcherHere.lan ? launcherClient() : null;
+          return c ? c.forModule(s.launcher, {
+            author: () => identity.trigram || ''
+          }) : null;
+        }
+      } : {}),
       // le transport GitHub de l'appareil (head, tree, commit), seulement si la déclaration le demande ; jamais le jeton
       ...(s.github ? {
         github: () => FD.github.config() ? FD.github() : null,

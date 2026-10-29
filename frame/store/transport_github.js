@@ -27,7 +27,10 @@
     let repo = String(c.repo || '').trim().replace(/\.git$/, '').replace(/\/+$/, ''),
       api = c.api || '',
       provider = c.provider === 'gitlab' ? 'gitlab' : 'github';
-    const u = /^https:\/\/([^/\s]+)\/(.+)$/.exec(repo);
+    // un hôte de lettres, chiffres, points et tirets (et un port) : « https://gitlab.com@hote-attaquant/x/y » ou tout autre
+    // caractère dans l'hôte est refusé d'emblée (dépôt vide : « Dépôt et jeton nécessaires »), jamais un hôte trompeur affiché
+    if (/^https?:\/\//i.test(repo) && !/^https:\/\/[A-Za-z0-9.-]+(?::\d+)?\/[^\s@]+$/.test(repo)) repo = '';
+    const u = /^https:\/\/([A-Za-z0-9.-]+(?::\d+)?)\/(.+)$/.exec(repo);
     if (u) {
       provider = u[1].toLowerCase() === 'github.com' ? 'github' : 'gitlab';
       if (provider === 'gitlab') api = `https://${u[1].toLowerCase()}/api/v4`; // l'hôte collé, jamais un api d'avant

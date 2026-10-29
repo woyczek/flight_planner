@@ -1742,3 +1742,18 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   token for it »; `save()` refuses a setting without a token (the check is in the transport, not only in the card). The
   GitLab transport never follows a redirect (`redirect: 'error'`: Fetch drops only `Authorization` across origins, not
   `PRIVATE-TOKEN`) and takes an `api` of the form `https://<host>/api/v4` only (`clean` drops any other). Bench A38.
+- **29 Oct 2026 — G2: the pilots' GitLab tokens, from Maintenance** (coordinator's order after G1):
+  - A service screen of Maintenance (`#pilot-tokens`, level Complet, link with a launcher): list, create, revoke the
+    project access tokens. The launcher does the calls (`GET /__setup/gitlab/tokens`, `POST …/gitlab/tokens`,
+    `POST …/gitlab/tokens/revoke`, workstation only) with the administrator's token of `secrets/gitlab.json` (an https
+    instance only), never handed back nor in a message; a pilot's token is returned once, at its creation, shown in the
+    screen until it is drawn again, never kept.
+  - The tokens are named after the trigram, scope `api` (the REST API: tree, blobs, commits; `write_repository` is for
+    git over HTTP), role Developer (30): a Maintainer token could change the project's settings through the API; the
+    data branch must let Developers push (the screen says where to set it). At most 365 days.
+  - A service screen may now declare launcher routes (`launcher: { routes }` → `routes()`, the same reduced client as
+    a module's `ctx.launcher`). Noreg A39 (the screen against a simulated context) and I12 (the launcher's functions
+    against a simulated GitLab: no value in a list, the administrator's token in no refusal).
+  - With G2, a consolidation (coordinator): a pasted address whose host holds « @ » or any character outside
+    `[A-Za-z0-9.-]` (plus `:port`) is refused at once (empty repository, « Dépôt et jeton nécessaires ») — never a
+    misleading host shown (`https://gitlab.com@attacker/x/y`). Bench A38.

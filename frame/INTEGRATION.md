@@ -829,6 +829,9 @@ screens: [{ id: 'sources', scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js
   `window.SogScreens[id] = { screen(view, ctx) }`.
 - `level`: below it, the frame shows "This screen is not offered at this usage level" and loads nothing more.
 - `reads` / `writes` declare the screen's data adapter, as a module's `meta`.
+- `launcher: { routes: [...] }` (29 Oct 2026) gives `routes()`: the launcher client reduced to those routes, as a
+  module's `ctx.launcher` (`call`, `job`…), or null without a launcher on this workstation (or from a paired device). The
+  Pilots' tokens screen declares `gitlab/tokens` and `gitlab/tokens/revoke`.
 - `github: true` gives `github()` (the device's GitHub transport: `head` / `tree` / `commit`, **the token never leaves the
   transport**, or null) and `githubInfo()` (`{ repo, branch }` or null). Without it, neither exists.
 - The context: `{ t, lang, notify, ask, data, aerodb, level(), launcher() }` and the GitHub pair above.

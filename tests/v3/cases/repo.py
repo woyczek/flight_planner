@@ -589,3 +589,60 @@ def i11(c):
     finally:
         L.SECRETS = kept
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I12', 'GitLab project tokens of the pilots (launcher)', 'I', static=True,
+      rule='frame G2 (29 Oct): the launcher creates, lists and revokes project access tokens with the administrator’s token, never handed back; a pilot’s token returned once')
+def i12(c):
+    import importlib
+    import io
+    import json
+    import urllib.error
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-g2-'))
+    kept = L.SECRETS, L.GITLAB_OPEN
+    calls = []
+
+    class Resp:
+        def __init__(self, status, body):
+            self.status, self.body = status, body
+
+        def read(self):
+            return self.body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def fake(req, timeout=0):
+        calls.append((req.get_method(), req.full_url, req.headers.get('Private-token'), json.loads(req.data) if req.data else None))
+        if req.get_method() == 'POST':
+            return Resp(201, json.dumps({'id': 7, 'name': 'ABC', 'expires_at': '2027-10-29', 'token': 'glpat-PILOT'}).encode())
+        if req.get_method() == 'DELETE':
+            raise urllib.error.HTTPError(req.full_url, 403, 'Forbidden', {}, io.BytesIO(b'{"message": "403 glpat-ADMIN-SECRET refused"}'))
+        return Resp(200, json.dumps([{'id': 7, 'name': 'ABC', 'scopes': ['api'], 'access_level': 30, 'active': True, 'revoked': False,
+                                      'token': 'should-not-leak'}]).encode())
+    try:
+        L.SECRETS, L.GITLAB_OPEN = str(tmp), fake
+        c.eq(L.gitlab_tokens().get('status'), 409, 'no secret on the workstation: refused', what='without secret')
+        (tmp / 'gitlab.json').write_text(json.dumps({'instance': 'http://gitlab.example', 'project': 'grp/data', 'token': 'glpat-ADMIN-SECRET'}), encoding='utf-8')
+        c.eq(L.gitlab_tokens().get('status'), 409, 'an instance that is not https: refused', what='http instance')
+        (tmp / 'gitlab.json').write_text(json.dumps({'instance': 'https://gitlab.example', 'project': 'grp/data', 'token': 'glpat-ADMIN-SECRET'}), encoding='utf-8')
+        lst = L.gitlab_tokens()
+        c.ok(lst['ok'] and lst['tokens'][0]['name'] == 'ABC' and 'should-not-leak' not in json.dumps(lst), json.dumps(lst)[:200], 'the list: names and dates, never a value')
+        cr = L.gitlab_token_create({'trigram': 'abc', 'days': 365})
+        m, url, tok, body = calls[-1]
+        c.ok(cr['ok'] and cr['token'] == 'glpat-PILOT' and url.endswith('/projects/grp%2Fdata/access_tokens') and tok == 'glpat-ADMIN-SECRET'
+             and body['name'] == 'ABC' and body['access_level'] == 30 and body['scopes'] == ['api'], str((url, body)), 'a Developer token with api scope, named after the trigram, returned once')
+        c.eq([L.gitlab_token_create({'trigram': 'x'}).get('status'), L.gitlab_token_create({'trigram': 'ABC', 'days': 400}).get('status'),
+              L.gitlab_token_revoke({'id': 'x'}).get('status')], [400, 400, 400], 'refused: a bad trigram, over 365 days, an id that is not a number', what='checks')
+        rv = L.gitlab_token_revoke({'id': 7})
+        c.ok(rv['ok'] is False and 'glpat-ADMIN-SECRET' not in json.dumps(rv), json.dumps(rv), 'a refusal never shows the administrator’s token')
+        src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+        c.ok("@route('GET', '/__setup/gitlab/tokens', public='poste')" in src and "'/__setup/gitlab/tokens/revoke', public='poste'" in src, '', 'workstation-only routes')
+    finally:
+        L.SECRETS, L.GITLAB_OPEN = kept
+        shutil.rmtree(tmp, ignore_errors=True)

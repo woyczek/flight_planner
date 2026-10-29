@@ -283,7 +283,9 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   `pilot`; nothing is kept on the device (later: the role in the registry). The application lists its modules (order,
   seven at most); a module never knows where it is shelved.
   - **Pilot**: Carburant, Carte, Compte rendu, Mes vols, Site, Météo (as before); no Données in its rail.
-  - **Maintenance**: Données (`modules/data`), then links of the rail that are not modules (`APP.links`): Administration
+  - **Maintenance**: Données (`modules/data`), then links of the rail that are not modules (`APP.links`): « Jetons des
+    pilotes » (`#pilot-tokens`, with a launcher, G2: GitLab project access tokens of the pilots, created, listed and
+    revoked by the launcher with the administrator's token; `frame/settings/pilot_tokens.js`), Administration
     (the settings opened on their Administration card, `#settings?card=admin`), Aide (`#help`), « Page de maintenance
     (V2) » (`apps/settings/maintenance.html`, until D3–D5 cover it); on the phone, three tabs: Données, Administration,
     Aide. Level Complet. It **opens everywhere**: without a launcher, or from a paired device of the local network, it is

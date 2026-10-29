@@ -1,0 +1,151 @@
+<!doctype html>
+<!-- Banc de l'écran « Jetons des pilotes » (frame/settings/pilot_tokens.js ; G2) : sans lanceur, sans secret, liste, création
+     (le jeton montré une fois), trigramme refusé, révocation après question. Contexte du cadre simulé (t, ask, notify,
+     routes) : aucun appel réel. window.__tokensBench = { done, pass, fail, rows }. Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>pilot tokens — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">pilot_tokens.js — bench</h1>
+<pre id="out"></pre>
+<div id="view"></div>
+<script src="../pilot_tokens.js?v=0"></script>
+<script>
+  (async () => {
+    const out = document.getElementById('out'),
+      rows = [];
+    const ck = (name, ok, info = '') => {
+      rows.push([ok ? 'PASS' : 'FAIL', name, info]);
+      out.insertAdjacentHTML('beforeend', `<span class="${ok ? 'PASS' : 'FAIL'}">${ok ? 'PASS' : 'FAIL'}</span> ${name}${ok ? '' : ' — ' + String(info).replace(/</g, '&lt;')}\n`);
+    };
+    const tick = (ms = 30) => new Promise(r => setTimeout(r, ms));
+    const t = (row, v = {}) => String(row[0]).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
+    try {
+      const S = window.SogScreens['pilot-tokens'],
+        view = document.getElementById('view'),
+        notes = [],
+        calls = [];
+      let tokens = [],
+        mode = 'ok',
+        answer = true;
+      const routes = {
+        call: async (route, body) => {
+          calls.push([route, body]);
+          if (mode === 'nosecret') return {
+            ok: false,
+            status: 409,
+            message: 'no GitLab secret'
+          };
+          if (route === 'gitlab/tokens' && !body) return {
+            ok: true,
+            tokens
+          };
+          if (route === 'gitlab/tokens') {
+            const x = {
+              id: tokens.length + 7,
+              name: body.trigram,
+              active: true,
+              revoked: false,
+              expires: '2027-10-29',
+              used: null
+            };
+            tokens = [...tokens, x];
+            return {
+              ok: true,
+              id: x.id,
+              name: x.name,
+              expires: '2027-10-29',
+              token: 'glpat-ONCE'
+            };
+          }
+          if (route === 'gitlab/tokens/revoke') {
+            tokens = tokens.map(x => x.id === body.id ? {
+              ...x,
+              active: false,
+              revoked: true
+            } : x);
+            return {
+              ok: true
+            };
+          }
+          return {
+            ok: false,
+            status: 404
+          };
+        }
+      };
+      const ctx = (withRoutes = true) => ({
+        t,
+        lang: () => 'fr',
+        notify: (m, k) => notes.push([m, k]),
+        ask: async () => answer,
+        routes: () => withRoutes ? routes : null
+      });
+      S.screen(view, ctx(false));
+      await tick();
+      ck('sans lanceur : la carte le dit, aucun appel', !!view.querySelector('[data-tokens-nolauncher]') && calls.length === 0);
+      mode = 'nosecret';
+      S.screen(view, ctx());
+      await tick();
+      ck('sans secret GitLab sur le poste : le chemin du fichier est dit', /secrets\/gitlab\.json/.test(view.querySelector(
+        '[data-tokens-error]')?.textContent || ''));
+      mode = 'ok';
+      S.screen(view, ctx());
+      await tick();
+      ck('aucun jeton : la liste le dit, le formulaire est là', !view.querySelector('[data-tokens-list]') && !!view.querySelector(
+        '[data-act=make]'));
+      view.querySelector('[data-f=tri]').value = 'a';
+      view.querySelector('[data-act=make]').click();
+      await tick();
+      ck('trigramme refusé : un message, aucun appel de création', /2 à 5/.test(view.querySelector('[data-msg]').textContent) && !calls
+        .some(c => c[1]?.trigram));
+      view.querySelector('[data-f=tri]').value = 'abc';
+      view.querySelector('[data-act=make]').click();
+      await tick(80);
+      ck('création : le jeton montré une fois, la liste le porte', view.querySelector('[data-token-value]')?.textContent ===
+        'glpat-ONCE' && view.querySelectorAll(
+          '[data-token]').length === 1 && calls.some(c => c[0] === 'gitlab/tokens' && c[1]?.trigram === 'ABC' && c[1]?.days === 365));
+      S.screen(view, ctx());
+      await tick();
+      ck('un nouveau dessin efface la valeur du jeton', !view.querySelector('[data-token-value]') && !view.innerHTML.includes(
+        'glpat-ONCE'));
+      answer = false;
+      view.querySelector('[data-act=revoke]').click();
+      await tick();
+      ck('révocation : rien sans l’accord', !calls.some(c => c[0] === 'gitlab/tokens/revoke'));
+      answer = true;
+      view.querySelector('[data-act=revoke]').click();
+      await tick(80);
+      ck('révocation : après l’accord, le jeton est dit révoqué', calls.some(c => c[0] === 'gitlab/tokens/revoke' && c[1]?.id === 7) &&
+        !view.querySelector(
+          '[data-act=revoke]') && /révoqué/.test(view.querySelector('[data-token]').textContent));
+    } catch (x) {
+      ck('exception du banc', false, x?.stack || x);
+    }
+    const pass = rows.filter(r => r[0] === 'PASS').length;
+    window.__tokensBench = {
+      done: true,
+      pass,
+      fail: rows.length - pass,
+      rows
+    };
+    out.insertAdjacentHTML('beforeend', `\n${pass}/${rows.length}\n`);
+  })();
+</script>
+</body>
+</html>

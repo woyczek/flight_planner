@@ -1157,3 +1157,9 @@ def a36(c):
       rule='frame/INTEGRATION 4 (29 Oct): the data repository on a GitLab instance, same form as GitHub; the bench reported all pass')
 def a38(c):
     _bench(c, 'frame/store/test/gitlab.html', '__gitlabBench')
+
+
+@case('A39', 'Pilots’ tokens screen bench', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame G2 (29 Oct): Maintenance › Pilots’ tokens: without a launcher, without a secret, list, a token shown once, revoke after the question')
+def a39(c):
+    _bench(c, 'frame/settings/test/pilot_tokens.html', '__tokensBench')

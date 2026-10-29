@@ -833,6 +833,27 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._json({'error': 'refusé'}, 403)
         return self._json(vatsim_bookings())
 
+    @route('GET', '/__setup/gitlab/tokens', public='poste')
+    def _get_gitlab_tokens(self, path):
+        # jetons d'accès du projet GitLab (application Maintenance, « Jetons des pilotes ») : noms, portées, dates, jamais une valeur
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        v = gitlab_tokens()
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
+    @route('POST', '/__setup/gitlab/tokens', '/__setup/gitlab/tokens/revoke', public='poste')
+    def _post_gitlab_tokens(self, path, body):
+        # création (la valeur rendue une fois) ou révocation d'un jeton de pilote, avec le jeton de l'administrateur du lanceur
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        a = a if isinstance(a, dict) else {}
+        v = gitlab_token_revoke(a) if path.endswith('/revoke') else gitlab_token_create(a)
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
     @route('GET', '/__setup/secrets', public='poste')
     def _get_secrets(self, path):
         # clés et identifiants des services externes (Paramètres : Installation pour la suite, Mon profil pour un
@@ -1745,6 +1766,92 @@ def secrets_view(tri=''):
             s = cur.get(service) or {}
             out['user'][service] = {k: (_hint(s.get(k)) if secret else str(s.get(k) or '')) for k, secret in fields.items()}
     return out
+
+
+# ---- jetons d'accès de projet GitLab des pilotes (G2, application Maintenance) : créés, listés et révoqués par le lanceur
+# avec le jeton de l'administrateur (secrets/gitlab.json : instance https, projet, jeton) ; le jeton de l'administrateur ne
+# quitte jamais le lanceur ; celui d'un pilote est rendu UNE fois, à sa création, pour que l'administrateur le lui donne
+GITLAB_TIMEOUT = 20
+GITLAB_LEVEL = 30  # Developer : écrit la branche si elle l'admet (Protected branches : « Developers + Maintainers »), jamais
+#                    les réglages du projet ; un jeton Maintainer pourrait les changer par l'API
+GITLAB_SCOPES = ['api']  # l'API REST (arbre, blobs, commits) : write_repository ne vaut que pour git en HTTP
+GITLAB_OPEN = urllib.request.urlopen  # remplacé par les essais (aucun appel réel)
+
+
+def gitlab_cfg():
+    """(api, projet encodé, jeton) de secrets/gitlab.json, ou None : instance en https seulement."""
+    s = _read_json(_secret_file('app', service='gitlab'))
+    inst, proj, tok = str(s.get('instance') or '').strip().rstrip('/'), str(s.get('project') or '').strip().strip('/'), str(
+        s.get('token') or '').strip()
+    if not (re.fullmatch(r'https://[A-Za-z0-9.-]+(?::\d+)?', inst) and re.fullmatch(r'[\w.-]+(?:/[\w.-]+)+', proj) and tok):
+        return None
+    return f'{inst}/api/v4', urllib.parse.quote(proj, safe=''), tok
+
+
+def gitlab_call(method, path, body=None):
+    """Appel de l'API GitLab du projet avec le jeton de l'administrateur : (statut, JSON) ; (0, message) sans réseau. Le
+    jeton n'apparaît dans aucun message rendu."""
+    cfg = gitlab_cfg()
+    if not cfg:
+        return 409, {'message': 'no GitLab secret on this workstation (secrets/gitlab.json: https instance, project, token)'}
+    api, proj, tok = cfg
+    req = urllib.request.Request(f'{api}/projects/{proj}{path}', method=method,
+                                 data=json.dumps(body).encode() if body is not None else None,
+                                 headers={'PRIVATE-TOKEN': tok, **({'Content-Type': 'application/json'} if body is not None else {})})
+    try:
+        with GITLAB_OPEN(req, timeout=GITLAB_TIMEOUT) as r:
+            raw = r.read()
+            return r.status, (json.loads(raw) if raw else {})
+    except urllib.error.HTTPError as e:
+        try:
+            j = json.loads(e.read() or b'{}')
+        except ValueError:
+            j = {}
+        msg = j.get('message') or j.get('error') or e.reason
+        return e.code, {'message': data_sync.clean_text(str(msg if isinstance(msg, str) else json.dumps(msg)))[:300].replace(tok, '…')}
+    except (OSError, ValueError) as e:
+        return 0, {'message': data_sync.clean_text(str(e))[:200].replace(tok, '…')}
+
+
+def gitlab_tokens():
+    """Jetons d'accès du projet : [{ id, name, scopes, level, active, revoked, created, expires, used }] — jamais une valeur."""
+    code, j = gitlab_call('GET', '/access_tokens?per_page=100')
+    if code != 200 or not isinstance(j, list):
+        return {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab') if isinstance(j, dict) else 'GitLab'}
+    return {'ok': True, 'tokens': [{'id': t.get('id'), 'name': str(t.get('name') or '')[:60], 'scopes': t.get('scopes') or [],
+                                    'level': t.get('access_level'), 'active': bool(t.get('active')), 'revoked': bool(t.get('revoked')),
+                                    'created': t.get('created_at'), 'expires': t.get('expires_at'), 'used': t.get('last_used_at')}
+                                   for t in j if isinstance(t, dict)]}
+
+
+def gitlab_token_create(a):
+    """{ trigram, days (1 à 365) } → un jeton d'accès de projet nommé par le trigramme ; { ok, id, name, expires, token } : la
+    valeur rendue cette fois seulement (jamais gardée ni journalisée par le lanceur)."""
+    tri = str(a.get('trigram') or '').upper()
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', tri):
+        return {'ok': False, 'status': 400, 'message': 'trigram expected (2 to 5 letters or digits)'}
+    try:
+        days = int(a.get('days') or 365)
+    except (TypeError, ValueError):
+        days = 0
+    if not 1 <= days <= 365:
+        return {'ok': False, 'status': 400, 'message': 'days: 1 to 365'}
+    expires = (datetime.date.today() + datetime.timedelta(days=days)).isoformat()
+    code, j = gitlab_call('POST', '/access_tokens', {'name': tri, 'scopes': GITLAB_SCOPES, 'access_level': GITLAB_LEVEL,
+                                                     'expires_at': expires})
+    if code not in (200, 201) or not isinstance(j, dict) or not j.get('token'):
+        return {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab') if isinstance(j, dict) else 'GitLab'}
+    return {'ok': True, 'id': j.get('id'), 'name': j.get('name'), 'expires': j.get('expires_at'), 'token': j['token']}
+
+
+def gitlab_token_revoke(a):
+    """{ id } → jeton révoqué ; { ok }."""
+    try:
+        tid = int(a.get('id'))
+    except (TypeError, ValueError):
+        return {'ok': False, 'status': 400, 'message': 'id expected'}
+    code, j = gitlab_call('DELETE', f'/access_tokens/{tid}')
+    return {'ok': True} if code in (200, 204) else {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab')}
 
 
 def secrets_save(a):

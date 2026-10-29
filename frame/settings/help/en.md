@@ -176,6 +176,10 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
 
 ## Good to know
 
+- **Pilots' tokens (GitLab)**: in the Maintenance application, on the launcher's computer, « Pilots' tokens » creates
+  one project access token per pilot (named after the trigram, Developer role, one year at most), shows it once only, and
+  revokes it. The launcher uses the administrator's token there (secrets/gitlab.json), which it never shows. Set the
+  data branch so that the Developer role may push to it.
 - **The token**: on github.com, a fine-grained token, on the data repository only, “Contents” read and write, 90 days
   at most; on GitLab, a project access token (one per pilot, named after the trigram), created by the administrator. It
   is never shown again; never paste it in a message.

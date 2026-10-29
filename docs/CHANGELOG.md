@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Maintenance: the pilots' tokens** (`frame/settings/pilot_tokens.js`, `frame/app.js`, `tools/launch.py`; frame SPEC,
+  INTEGRATION § 13, DECISIONS, Settings help ×4; noreg A39, I12): on the launcher's computer, the administrator creates
+  a GitLab project access token per pilot (shown once), sees them all and revokes one — the launcher keeps the
+  administrator's token and never shows it.
 - **Fuel: the aerodrome's name under its code, and progressive completion** (`modules/fuel/adnames.js`, `module.js`; SPEC, DECISIONS, help x4;
   cases F44-F47) — a fixed line « LFPO — Paris-Orly » under the departure, arrival and alternate, seven suggestions at most from two
   characters (↑ ↓ Enter Esc, touch), the names in step 5's summary.
