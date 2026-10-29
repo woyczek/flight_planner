@@ -13,6 +13,7 @@ import time
 import urllib.parse
 
 HOST = 'sog.relay.test'
+ORIGIN = 'https://' + HOST
 
 
 def free_port():
@@ -38,6 +39,13 @@ def req(port, method, path, host, body=None, headers=None):
 
 
 def run(check, ROOT):
+    sys.path.insert(0, os.path.join(ROOT, 'tools'))
+    import launch
+    bad = ['//evil.example', '/\t/evil.example', '/%09/evil.example'.replace('%09', chr(9)), '/\\evil.example', '/__setup/x',
+           '/ /x', 'https://evil.example', '/x' + chr(10) + 'y', '/x' + chr(127)]
+    check('the return after pairing stays on this server (tab, //, backslash, controls, /__)',
+          all(launch.safe_next(x) == '/frame/' for x in bad) and launch.safe_next('/frame/index.html#maps') == '/frame/index.html#maps',
+          [x for x in bad if launch.safe_next(x) != '/frame/'])
     port = free_port()
     data = tempfile.mkdtemp(prefix='sog-relay-data-')
     relay_file = os.path.join(ROOT, 'tools', '.relay.json')
@@ -75,26 +83,40 @@ def run(check, ROOT):
         check('unpaired API: 401', req(port, 'GET', '/__setup/status', HOST, headers=api)[0] == 401)
         check('no https from the proxy: 403', req(port, 'GET', '/__setup/status', HOST, headers={**api, 'X-Forwarded-Proto': 'http'})[0] == 403)
         check('another Host from 127.0.0.1 is not the relay (refused host)', req(port, 'GET', '/frame/', 'evil.example', headers=prox)[0] == 403)
+        # proxy qui réécrit Host en 127.0.0.1:port : jamais pris pour le poste (échec fermé)
+        check('a proxy that rewrites Host is refused, never taken for the workstation',
+              [req(port, m, p, local, headers={**api, 'Sec-Fetch-Site': 'same-origin', **xh})[0]
+               for m, p in (('GET', '/__setup/secrets'), ('GET', '/__setup/relay'), ('POST', '/__relay/pair'))
+               for xh in ({'X-Forwarded-For': '203.0.113.7'}, {'Forwarded': 'for=203.0.113.7'}, {'X-Real-IP': '203.0.113.7'})] == [403] * 9)
+        st, h, b = req(port, 'GET', '/__relay/whoami', HOST, headers=prox)
+        check('the start check: a request on the public host comes back as the relay', st == 200 and json.loads(b).get('relay') is True, (st, b[:80]))
+        check('the workstation itself is not a relay request', req(port, 'GET', '/__relay/whoami', local)[0] == 404)
+        st, h, b = req(port, 'POST', '/__relay/pair', HOST, 'code=00000000&next=/frame/',
+                       {**prox, 'Sec-Fetch-Site': 'cross-site', 'Origin': 'https://evil.example', 'Content-Type': 'application/x-www-form-urlencoded'})
+        check('pairing from another site refused (login CSRF)', st == 403, st)
+        st, h, b = req(port, 'POST', '/__relay/pair', HOST, 'code=00000000&next=/frame/',
+                       {**prox, 'Content-Type': 'application/x-www-form-urlencoded'})
+        check('pairing without an origin refused', st == 403, st)
         st, h, b = req(port, 'POST', '/__setup/relay/devices', local, {'trigram': 'abc'}, headers={'X-SOG-Setup': '1'})
         code = json.loads(b).get('code', '')
         check('the workstation issues an 8-digit code for a trigram', st == 200 and len(code) == 8 and code.isdigit(), b[:120])
         check('the relay cannot issue codes', req(port, 'POST', '/__setup/relay/devices', HOST, {'trigram': 'ABC'}, headers=api)[0] == 401)
         for _ in range(5):
-            req(port, 'POST', '/__relay/pair', HOST, 'code=00000000&next=/frame/', {**prox, 'Content-Type': 'application/x-www-form-urlencoded'})
-        st, h, b = req(port, 'POST', '/__relay/pair', HOST, f'code={code}&next=/frame/', {**prox, 'Content-Type': 'application/x-www-form-urlencoded'})
+            req(port, 'POST', '/__relay/pair', HOST, 'code=00000000&next=/frame/', {**prox, 'Content-Type': 'application/x-www-form-urlencoded', 'Origin': ORIGIN})
+        st, h, b = req(port, 'POST', '/__relay/pair', HOST, f'code={code}&next=/frame/', {**prox, 'Content-Type': 'application/x-www-form-urlencoded', 'Origin': ORIGIN})
         check('five wrong codes from an address: wait', st == 429, st)
         # une adresse inventée par le client en tête de X-Forwarded-For : le proxy ajoute la vraie à la fin, seule lue
         st, h, b = req(port, 'POST', '/__relay/pair', HOST, f'code={code}&next=/frame/',
-                       {**prox, 'X-Forwarded-For': '198.51.100.50, 203.0.113.7', 'Content-Type': 'application/x-www-form-urlencoded'})
+                       {**prox, 'X-Forwarded-For': '198.51.100.50, 203.0.113.7', 'Content-Type': 'application/x-www-form-urlencoded', 'Origin': ORIGIN})
         check('a forged X-Forwarded-For head does not lift the wait (last address only)', st == 429, st)
         st, h, b = req(port, 'POST', '/__relay/pair', HOST, f'code={code}&next=/frame/',
-                       {**prox, 'X-Forwarded-For': '203.0.113.8', 'Content-Type': 'application/x-www-form-urlencoded'})
+                       {**prox, 'X-Forwarded-For': '203.0.113.8', 'Content-Type': 'application/x-www-form-urlencoded', 'Origin': ORIGIN})
         cookie = h.get('Set-Cookie', '')
-        check('the right code from another address: 303 and a Secure HttpOnly SameSite=Strict cookie',
-              st == 303 and 'HttpOnly' in cookie and 'Secure' in cookie and 'SameSite=Strict' in cookie, (st, cookie[:40]))
+        check('the right code from another address: 303 and a Secure HttpOnly SameSite=Lax cookie',
+              st == 303 and 'HttpOnly' in cookie and 'Secure' in cookie and 'SameSite=Lax' in cookie, (st, cookie[:40]))
         tok = cookie.split(';')[0]
         st, h, b = req(port, 'POST', '/__relay/pair', HOST, f'code={code}&next=/frame/',
-                       {**prox, 'X-Forwarded-For': '203.0.113.9', 'Content-Type': 'application/x-www-form-urlencoded'})
+                       {**prox, 'X-Forwarded-For': '203.0.113.9', 'Content-Type': 'application/x-www-form-urlencoded', 'Origin': ORIGIN})
         check('a code works once', st == 401, st)
         auth = {**api, 'Cookie': tok}
         check('paired: status 200', req(port, 'GET', '/__setup/status', HOST, headers=auth)[0] == 200)

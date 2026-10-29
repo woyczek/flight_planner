@@ -323,7 +323,14 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         d'appairage pour une page demandée, 401 sinon), puis seulement les routes /__setup/ ouvertes au relais (relay=True)
         et GET / HEAD / POST. Vrai si la requête a reçu sa réponse ici."""
         self.relay_device = None
+        if not RELAY['host']:
+            return False
         if not self._relay():
+            # échec fermé : un proxy qui réécrit Host (127.0.0.1:port) ferait passer une requête d'Internet pour le poste
+            # (secrets, jetons, appareils) ; de 127.0.0.1 avec un en-tête de mandataire et un autre hôte : refusée
+            if not self._lan() and self.client_address[0] in ('127.0.0.1', '::1') and any(self.headers.get(h) for h in PROXY_HEADERS):
+                self._json({'error': 'relais : le proxy doit garder l’en-tête Host'}, 403)
+                return True
             return False
         if (self.headers.get('X-Forwarded-Proto') or '').lower() != 'https':
             self._json({'error': 'https seulement'}, 403)
@@ -331,6 +338,9 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         path = self.path.split('?', 1)[0].split('#', 1)[0]
         if path == '/__relay/pair':
             self._relay_pair()
+            return True
+        if path == '/__relay/whoami':  # vérification du démarrage (relay_probe) : la requête est bien arrivée en relais
+            self._json({'relay': True})
             return True
         jar = http.cookies.SimpleCookie()
         try:
@@ -377,11 +387,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def _relay_pair(self):
-        """/__relay/pair : GET la page ; POST le code saisi — bon : jeton en cookie (HttpOnly, Secure, SameSite=Strict),
+        """/__relay/pair : GET la page ; POST le code saisi, de cette page seulement (même origine) — bon : jeton en cookie
+        (HttpOnly, Secure, SameSite=Lax : un lien suivi arrive appairé ; les écritures exigent déjà la même origine),
         retour à la page demandée ; faux ou trop d'essais : la page avec le motif."""
         tx = {k: v[self._lan_lang()] for k, v in RELAY_TEXT.items()}
         if self.command != 'POST':
             return self._relay_page('/frame/')
+        site, origin = self.headers.get('Sec-Fetch-Site'), self.headers.get('Origin')
+        if not (site == 'same-origin' or (site is None and origin == f'https://{RELAY["host"]}')):
+            return self._relay_page('/frame/', 403, tx['origin'])
         try:
             size = min(int(self.headers.get('Content-Length') or 0), 2048)
         except ValueError:
@@ -391,7 +405,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         res, val, tri = relay_access.attempt(self._client_ip(), (form.get('code') or [''])[0], self.headers.get('User-Agent') or '')
         if res == 'ok':
             self.send_response(303)
-            self.send_header('Set-Cookie', f'{relay_access.COOKIE}={val}; Path=/; Max-Age={relay_access.MAX_AGE}; HttpOnly; Secure; SameSite=Strict')
+            self.send_header('Set-Cookie', f'{relay_access.COOKIE}={val}; Path=/; Max-Age={relay_access.MAX_AGE}; HttpOnly; Secure; SameSite=Lax')
             self.send_header('Location', nxt)
             self.send_header('Content-Length', '0')
             self.send_header('Cache-Control', 'no-store')
@@ -1659,6 +1673,24 @@ NB = '\u202f'  # espace fine insécable avant : ; ! ? en français
 # relais de la compagnie (R1a, --relay <hôte public>) : l'hôte que le proxy inverse du NAS transmet (en-tête Host) ; vide :
 # pas de relais
 RELAY = {'host': ''}
+# en-têtes posés par un mandataire : de 127.0.0.1 sans l'hôte public, la requête est refusée en relais (_relay_gate)
+PROXY_HEADERS = ('X-Forwarded-For', 'X-Forwarded-Proto', 'X-Forwarded-Host', 'Forwarded', 'X-Real-IP')
+
+
+def relay_probe():
+    """Au démarrage en relais : une requête sur l'hôte public, par le proxy, doit revenir ici comme relais
+    (/__relay/whoami) ; le résultat est dit dans la console (le proxy qui réécrit Host est refusé : 403)."""
+    url = f'https://{RELAY["host"]}/__relay/whoami'
+    try:
+        with GITLAB_OPENER.open(urllib.request.Request(url, headers={'Accept': 'application/json'}), timeout=10) as r:
+            ok = json.loads(r.read() or b'{}').get('relay') is True
+        say('  Relais vérifié : une requête sur l’hôte public revient ici comme relais.' if ok else
+            f'  ATTENTION relais : {url} ne répond pas comme ce relais.')
+    except urllib.error.HTTPError as e:
+        say(f'  ATTENTION relais : {url} répond {e.code}' + ('' if e.code != 403 else
+                                                               ' — le proxy doit garder l’en-tête Host (relais fermé).'))
+    except (OSError, ValueError) as e:
+        say(f'  Relais : vérification impossible ({type(e).__name__}) — l’hôte public doit mener à ce poste.')
 RELAY_TEXT = {
     'title': {'fr': 'Appairer cet appareil', 'en': 'Pair this device', 'de': 'Dieses Gerät koppeln', 'es': 'Vincular este dispositivo'},
     'intro': {'fr': 'L’appli Pilote de la compagnie, par son relais. Saisissez le code à 8 chiffres que l’administrateur vous a donné'
@@ -1679,6 +1711,8 @@ RELAY_TEXT = {
                'en': 'Pairing closed after too many wrong codes: ask the administrator for a new code.',
                'de': 'Kopplung nach zu vielen falschen Codes geschlossen: Bitten Sie den Administrator um einen neuen Code.',
                'es': 'Vinculación cerrada tras demasiados códigos erróneos: pida un código nuevo al administrador.'},
+    'origin': {'fr': 'Saisissez le code sur cette page.', 'en': 'Enter the code on this page.', 'de': 'Geben Sie den Code auf dieser Seite ein.',
+               'es': 'Introduzca el código en esta página.'},
     'note': {'fr': 'Cet appareil reçoit un jeton gardé par le navigateur, révocable par l’administrateur ; vos écritures sont signées de votre trigramme.',
              'en': 'This device gets a token kept by the browser, revocable by the administrator; your writes are signed with your trigram.',
              'de': 'Dieses Gerät erhält ein vom Browser verwahrtes Token, das der Administrator widerrufen kann; Ihre Änderungen tragen Ihr Kürzel.',
@@ -1715,9 +1749,10 @@ LAN_TEXT = {
 
 
 def safe_next(p):
-    """Page où revenir après l'appairage : un chemin de ce serveur, jamais un autre site."""
+    """Page où revenir après l'appairage : un chemin de ce serveur, jamais un autre site — ni //, ni \\, ni espace ou
+    caractère de contrôle (« /<tabulation>/hôte » : le navigateur retire la tabulation et lit //hôte), ni /__."""
     p = str(p or '')
-    return p if p.startswith('/') and not p.startswith('//') and '\\' not in p and not p.startswith('/__') else '/frame/'
+    return p if re.fullmatch(r'/[^\s\x00-\x1f\x7f\\]*', p) and not p.startswith('//') and not p.startswith('/__') else '/frame/'
 
 
 def lan_state():
@@ -3535,6 +3570,7 @@ def main():
         if re.fullmatch(r'[A-Za-z0-9.-]+(?::\d+)?', a.relay):
             RELAY['host'] = a.relay.lower()
             say(f'  Relais de la compagnie : hôte public {RELAY["host"]}, derrière le proxy inverse (https) de ce poste.')
+            threading.Thread(target=relay_probe, daemon=True).start()
         else:
             say('  Relais : hôte invalide, relais coupé.')
     say('')

@@ -1780,7 +1780,19 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     `--relay`, `/__setup/lan` open refused: 409); the pairing page never framed, without script (X-Frame-Options DENY,
     CSP `default-src 'none'`); the proxy must append or overwrite `X-Forwarded-For` (the last address is read; a forged
     head does not lift an attempt wait).
-  - Tested on the workstation only: a real launcher `--relay` and requests shaped like the proxy's (noreg I13, 21 checks:
-    https only, Host, pairing page headers, no local network, pairing, single use, attempt limit, forged X-Forwarded-For,
+  - Security review of 7ca73448c (one blocking point, two fixes, two decisions; nothing was exposed): fail closed when
+    the proxy rewrites `Host` (a request from 127.0.0.1 with a proxy header and another host: 403; start check
+    `/__relay/whoami`); `safe_next` refuses spaces and control characters (`/<tab>/host` became `//host`); the pairing
+    POST needs the same origin (login CSRF). Decided by the coordinator: cookie `SameSite=Lax` (a pilot following a link
+    arrives paired; writes already need the same origin and `X-SOG-Setup`); attempts older than an hour forgotten
+    (rotating IPv6 addresses). Debt: bound a device's writes to its pilot's prefixes one day.
+  - Lax checked: a GET navigation from another site carries the cookie, so no GET open to the relay may change a state.
+    They are `status` and `changes` (read the data's head and tree; `changes` keeps a two-second memo of the tree),
+    the pages and the data files (read; the pool's indexes rebuilt before being served are derived), `/__relay/pair`
+    (the form) and `/__relay/whoami`; `net` is POST only. The only write is the device's « last used » mark, at most once
+    an hour. The fail-closed refusal runs first, before the other guards (pages, data files and `/__setup/` alike).
+  - Tested on the workstation only: a real launcher `--relay` and requests shaped like the proxy's (noreg I13, 27 checks:
+    https only, Host, Host rewritten by the proxy, start check, pairing page headers, pairing from another site or
+    without origin, return path, no local network, pairing, single use, attempt limit, forged X-Forwarded-For,
     workstation routes refused, whitelist, PUT, author from the token, revocation), the screen against a simulated
     context (A40). Nothing exposed.

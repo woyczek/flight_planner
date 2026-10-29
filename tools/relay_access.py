@@ -4,7 +4,7 @@ Le lanceur tourne en mode relais (launch.py --relay <hôte public>) derrière le
 écouté sur 127.0.0.1 seulement. Un appareil de pilote :
   · reçoit de l'administrateur, sur le poste, un code à 8 chiffres lié à son trigramme (new_code), à usage unique, valable
     10 minutes ; il le saisit une fois sur la page /__relay/pair ;
-  · garde un jeton long (cookie sog_relay, HttpOnly, Secure, SameSite=Strict) dont seule l'empreinte est gardée ici
+  · garde un jeton long (cookie sog_relay, HttpOnly, Secure, SameSite=Lax) dont seule l'empreinte est gardée ici
     (tools/.relay.json, local, jamais versionné), avec son trigramme : l'auteur de ses écritures vient de là, jamais de la
     page ; un an au plus, révocable par appareil ou par pilote ;
   · 5 codes faux d'une même adresse : une minute d'attente ; 30 codes faux en une heure : appairage fermé jusqu'au prochain
@@ -95,6 +95,8 @@ def attempt(ip, code, ua=''):
     with _lock:
         if state['closed']:
             return 'closed', 0, ''
+        # adresses tournantes (IPv6) : les essais de plus d'une heure oubliés, la table ne grossit pas sans fin
+        state['fails'] = {k: v for k, v in state['fails'].items() if now - v[1] < 3600}
         n, at = state['fails'].get(ip, (0, now))
         if n >= TRIES_PER_IP and now - at < LOCK_S:
             return 'wait', int(LOCK_S - (now - at)) + 1, ''

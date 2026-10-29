@@ -892,16 +892,24 @@ explicit go** (R3).
   script.
 - A device pairs once with an 8-digit code the administrator asks for, on the workstation, for the pilot's trigram
   (one use, 10 minutes): Maintenance › « Appareils du relais » (`#relay-devices`). It gets a long token (cookie
-  `sog_relay`, HttpOnly, Secure, SameSite=Strict, one year), of which only the hash is kept (`tools/.relay.json`), with
-  the trigram; revocable by device or by pilot. 5 wrong codes from an address: one minute; 30 in an hour: pairing closed
-  until the next code.
+  `sog_relay`, HttpOnly, Secure, SameSite=Lax so that a pilot following a link arrives paired; one year), of which only
+  the hash is kept (`tools/.relay.json`), with the trigram; revocable by device or by pilot. The code is accepted from
+  the pairing page only (`Sec-Fetch-Site: same-origin`, or `Origin` the public host): another site cannot pair the
+  pilot's browser with its own code. 5 wrong codes from an address: one minute (attempts older than an hour forgotten);
+  30 in an hour: pairing closed until the next code. The return after pairing is a path of this server (no `//`, `\`,
+  space or control character, no `/__`).
+- **The proxy must keep the `Host` header** (the public host). Fail closed: in relay mode, a request from 127.0.0.1
+  that carries a proxy header (`X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host`, `Forwarded`, `X-Real-IP`)
+  with another `Host` is refused (403), never taken for the workstation's. At start, the launcher asks
+  `https://<public host>/__relay/whoami` through the proxy and says in its console whether it came back as the relay.
 - A paired device reaches the pages and the data files, and only the `/__setup/` routes declared `relay=True` (status,
   changes, batch, sync, net), with GET / HEAD / POST; everything else is « réservé au poste ». The author of a batch or a
   sync is the device's trigram, never the page's; `net` stays on its whitelist (SimBrief, IVAO, VATSIM, METAR,
   Open-Meteo), without the airline's site (no host chosen by the page). A failed synchronisation gives the device a
   generic message (the detail in the console).
 - To come: the invitations by link (R2), the OpenID exchange of IVAO through the relay (R1b), the deployment and the
-  security review (R3).
+  security review (R3). Debt: one day, bound a device's writes to its pilot's prefixes (`pilot/<TRI>/`, their reports,
+  their availabilities).
 
 ## 4. To come in the frame
 
