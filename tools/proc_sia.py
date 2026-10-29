@@ -25,11 +25,12 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 import proc_geometry as G
-from proc_layouts import alt_constraint, alt_ft, DASHES, detect_layout, dms, fingerprint, FIXLESS, _is_leg_row, KNOWN_FINGERPRINTS, MONTHS, page_date, PATH_TERMINATORS
-from proc_pdf import first_page_rows, pdf_pages, PdfTimeout, scan_pdf, show_page
-from proc_records import build_pdf_dir, records
+from proc_layouts import BY_NAME, alt_constraint, alt_ft, DASHES, detect_layout, dms, fingerprint, FIXLESS, _is_leg_row, KNOWN_FINGERPRINTS, MONTHS, page_date, PATH_TERMINATORS
+from proc_pdf import PDF_NAME, first_page_rows, safe_path, pdf_pages, PdfTimeout, scan_pdf, show_page
+from proc_records import build_pdf_dir, page_reason, records
 
 
+ICAO_RE = re.compile(r'^[A-Z0-9]{4}$')
 CODE_PAGE = re.compile(r'^AD_2_([A-Z]{4})_DATA_.*CODE.*\.pdf$')
 AIRAC_IN_URL = re.compile(r'AIRAC-(\d{4}-\d{2}-\d{2})')
 CHART_KINDS = [('ADC', 'ADC'), ('APDC', 'APDC'), ('GMC', 'GMC'), ('SID', 'SID'), ('STAR', 'STAR'), ('IAC', 'IAC'), ('VAC', 'VAC'),
@@ -649,7 +650,7 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
         rows = rows_of(f)
         table = parse_code_table(rows) if detect_layout(rows) else None
         ok, problems, fp, layout = verify_page(rows, table)
-        formats.append({'file': f, 'layout': layout, 'fingerprint': fp, 'ok': ok, 'problems': problems})
+        formats.append({'file': f, 'layout': layout, 'fingerprint': fp, 'ok': ok, 'problems': problems, **({} if ok else {'reason': page_reason(problems)})})
         if not ok:
             warnings.append(f'{f}: page NON lue, format à vérifier: ' + '; '.join(p for p in problems if not p.startswith('info:')))
             continue
@@ -681,7 +682,7 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
     for p in [p for p in procs if '.NONAME.' in p['id']]:
         if (p['kind'], tuple(p['runways']), tuple(q['id'] for q in p['points'])) in named:
             procs.remove(p)
-            dropped.append({'id': p['id'], 'reason': 'bloc sans titre qui répète une procédure nommée', 'file': p['source'].get('ref')})
+            dropped.append({'id': p['id'], 'reason': 'name', 'file': p['source'].get('ref')})
             warnings.append(f'{p["source"].get("ref")}: bloc sans titre identique à une procédure nommée de la même piste, retiré ({p["id"]})')
         else:
             warnings.append(f'{p["source"].get("ref")}: bloc sans titre gardé sous {p["id"]}, À VÉRIFIER (aucune procédure nommée ne lui ressemble)')
@@ -689,7 +690,7 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
     # n'est JAMAIS donnée pour sûre ni purgée : elle reste dans le fichier, statut « doubt » et la raison en code dans `doubt` ; le lecteur ne la sert que sur demande (SPEC § 5 quinquies,
     # { doubt: true }). Les positions encore absentes (points en route) sont celles qu'aerodb résout à la lecture : le contrôle les saute.
     for p in procs:
-        warnings += [f'{p["source"].get("ref")}: {x}' for x in G.review(p)]
+        warnings += [f'{p["source"].get("ref")}: {x}' for x in G.review(p, basis=BY_NAME['sia-code'].tolerances)]
     charts = [{'path': f'Cartes/{icao}/{f}', 'kind': chart_kind(f)} for f in sorted(files)]
     doc = {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
            'procedures': procs, 'charts': {'base': base_url.rstrip('/') + '/html/eAIP/', 'items': charts, 'vac': vac},
@@ -876,9 +877,13 @@ def fetch(url, timeout=60):
         return r.read()
 
 
-def pdf_names(icao, page_html):
-    """Noms des PDF de Cartes/<OACI>/ cités par la page de l'aérodrome."""
-    return sorted(set(re.findall(rf'Cartes/{icao}/([^"\'<>]+?\.pdf)', page_html)))
+def pdf_names(icao, page_html, skipped=None):
+    """Noms des PDF de Cartes/<OACI>/ cités par la page de l'aérodrome. Un nom qui n'est pas un simple nom de fichier (une barre oblique ou inverse, `..`, tout ce qui sort de [A-Za-z0-9._-]) n'est pas gardé : la page
+    est celle d'un serveur, ses noms ne deviennent jamais un chemin ; les noms refusés sont ajoutés à `skipped` (une liste) pour que le lecteur le dise."""
+    names = sorted(set(re.findall(rf'Cartes/{icao}/([^"\'<>]+?\.pdf)', page_html)))
+    if skipped is not None:
+        skipped += [n for n in names if not PDF_NAME.fullmatch(n)]
+    return [n for n in names if PDF_NAME.fullmatch(n)]
 
 
 def icao_list(menu_html):
@@ -929,6 +934,8 @@ def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, st
     codage (rien à lire : cartes seules). `eaip` : dossier AIRAC (…/FRANCE/AIRAC-AAAA-MM-JJ) ; `cache` : dossier (existant) des PDF déjà
     téléchargés ; `resolve(id)` : position d'un point en route ; `say(texte)` : messages ; `rows_dir` : lignes de chaque PDF (fixtures) ;
     `step(texte, fait, total)` : avancement (le lanceur). Les erreurs réseau (urllib) et pypdf manquant remontent à l'appelant."""
+    if not ICAO_RE.fullmatch(str(icao)):
+        raise ValueError(f'code OACI refusé : {icao!r} (quatre lettres ou chiffres)')
     cycle = AIRAC_IN_URL.search(eaip)
     if not cycle:
         raise ValueError('adresse sans « AIRAC-AAAA-MM-JJ »: cycle inconnu')
@@ -936,7 +943,10 @@ def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, st
     if step:
         step(f'{icao}: page AD 2', 0, 0)
     page = fetch(f'{eaip}/html/eAIP/FR-AD-2.{icao}-fr-FR.html').decode('utf-8', 'replace')
-    files = pdf_names(icao, page)
+    skipped = []
+    files = pdf_names(icao, page, skipped)
+    for n in skipped:
+        say(f'{icao}: nom de PDF refusé (pas un simple nom de fichier), ignoré : {n[:80]!r}')
     if not any(CODE_PAGE.match(f) for f in files):      # rien à lire (cartes seules) : pas de fichier
         say(f'{icao}: aucune table de codage')
         return None
@@ -944,7 +954,7 @@ def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, st
     seen = set()
 
     def rows_of(name):
-        p = cache / name
+        p = safe_path(cache, name)                    # le nom vient d'une page du serveur : un nom sûr, sous le dossier du cache
         if step:
             step(f'{icao}: {name}', len(seen), len(wanted))
         seen.add(name)
@@ -963,6 +973,13 @@ def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, st
     if vac and not url_exists(vac):                      # carte VAC : seulement si l'atlas VFR la publie
         vac = None
     return build_aerodrome(icao, files, rows_of, eaip, cycle.group(1), resolve, vac, page)       # la page AD 2 déjà lue donne aussi les pistes (section AD 2.12)
+
+
+def default_cache():
+    """Le dossier des PDF téléchargés quand --cache manque : le cache du travail du lanceur, <dépôt>/data/local/eaip (jamais publié), si le dossier des données existe ; sinon `.proc_cache` dans le
+    dossier courant (ignoré par Git)."""
+    data = Path(__file__).resolve().parent.parent / 'data'
+    return str(data / 'local' / 'eaip') if data.is_dir() else '.proc_cache'
 
 
 def main(argv=None):
@@ -987,6 +1004,8 @@ def main(argv=None):
     if a.pdf_dir:
         if len(a.icao) != 1 or not a.cycle:
             raise SystemExit('--pdf-dir demande UN code OACI et --cycle AAAA-MM-JJ')
+        if not ICAO_RE.fullmatch(a.icao[0].upper()):
+            raise SystemExit(f'code OACI refusé : {a.icao[0]!r} (quatre lettres ou chiffres, comme EGLL)')
         names = sorted(f.name for f in Path(a.pdf_dir).glob('*.pdf'))
         doc = build_pdf_dir(a.icao[0].upper(), names, lambda n: pdf_pages(Path(a.pdf_dir) / n), a.cycle)
         for fm in doc['formats']:
@@ -1010,10 +1029,13 @@ def main(argv=None):
     if not m:
         raise SystemExit('adresse sans « AIRAC-AAAA-MM-JJ »: cycle inconnu')
     cycle = m.group(1)
-    cache = Path(a.cache or '.proc_cache') / cycle
+    cache = Path(a.cache or default_cache()) / cycle
     cache.mkdir(parents=True, exist_ok=True)
     resolve, docs, bad_pages = base_resolver(a.base_dir), {}, []
     codes = [i.upper() for i in a.icao]
+    wrong = [i for i in codes if not ICAO_RE.fullmatch(i)]
+    if wrong:
+        raise SystemExit(f'code OACI refusé : {wrong[0]!r} (quatre lettres ou chiffres, comme LFBD)')
     if a.all:
         codes = icao_list(fetch(f'{a.eaip}/html/eAIP/FR-menu-fr-FR.html').decode('utf-8', 'replace'))
     if not codes:

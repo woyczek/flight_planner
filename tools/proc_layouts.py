@@ -407,10 +407,12 @@ def parse_be_coding(rows):
     les tronçons, un par ligne : « 003 TF BE123 FAF 12.3 @ 3000 -3.00% » (séquence, type, point, rôle, cap vrai, contrainte d'altitude, vitesse « 210Kts », angle vertical). Ni distance
     ni cap magnétique ne sont imprimés : le contrôle de géométrie ne vérifie que le cap vrai des TF. Les coordonnées viennent de la liste de la table ; un identifiant présent dans
     plusieurs listes de la page doit y avoir les mêmes coordonnées, sinon les tables concernées sont rejetées (lectures concurrentes : jamais de choix entre deux valeurs).
+    Un point absent de la liste n'est plus un motif de rejet (§ 10.29 (c)) : le tronçon est gardé sans position, les listes des autres documents peuvent la donner (build_pdf_dir), sinon la procédure
+    reste au statut « doubt », code « unresolved » (proc_geometry, positions requises).
     Approche (« EBBE RNP RWY 09R COORDINATES AND CODING ») : premier tronçon IF, chaque TF porte son cap vrai, sinon la table est rejetée (« NON retenue »). Une table sans titre
     est nommée d'après son point de piste (RWnn).
     SID / STAR (« SID BE 04F (RNAV1) COORDINATES AND CODING ») : la page n'imprime le cap vrai que de certains TF (et celui d'un CF, qui n'est pas contrôlable : aucun point avant lui). RÈGLE :
-    la table est gardée, avec l'avertissement « cap non imprimé : géométrie non contrôlable » (nombre de tronçons concernés), SEULEMENT si tous ses points sont résolus par la liste, si son
+    la table est gardée, avec l'avertissement « cap non imprimé : géométrie non contrôlable » (nombre de tronçons concernés), si son
     premier tronçon est IF ou CF, si tous ses tronçons sont IF, TF, CF ou DF (une chaîne de points nommés, sans arc, attente ni tronçon sans point) et si les caps imprimés passent le contrôle de
     géométrie ; sinon elle est rejetée. Le sens de virage et le survol (cellules d'une lettre) ne sont pas lus par OCR : `turn` et `over` valent None."""
     warnings, tables = [], []
@@ -456,9 +458,7 @@ def parse_be_coding(rows):
                     break
             kt = re.search(r'(\d{2,3})\s*Kts', rest)
             c = coords.get(ident)
-            if c is None:
-                bad.append(f'{ident}: absent de la liste des coordonnées')
-            elif ident in clash:
+            if c is not None and ident in clash:
                 bad.append(f'{ident}: coordonnées différentes dans deux listes de la page')
             legs.append({'id': ident, 'leg': tt, 'over': None, 'alt': alt, 'kt': int(kt.group(1)) if kt else None, 'lat': c[0] if c else None, 'lon': c[1] if c else None,
                          'crs': None, 'true': true, 'nm': None, 'turn': None, 'seq': len(legs) + 1, 'remark': 'MAPt' if 'MAPT' in role.upper() else ''})
@@ -474,7 +474,7 @@ def parse_be_coding(rows):
         first = {'APP': ('IF',)}.get(kind, ('IF', 'CF'))
         unchecked = 0
         if kind == 'APP':
-            bad += [f'{lg["id"]}: tronçon TF sans cap vrai' for lg in legs if lg['leg'] == 'TF' and lg['true'] is None and lg['lat'] is not None]
+            bad += [f'{lg["id"]}: tronçon TF sans cap vrai' for lg in legs if lg['leg'] == 'TF' and lg['true'] is None]
         else:
             bad += [f'{lg["id"]}: tronçon {lg["leg"]} hors de IF / TF / CF / DF' for lg in legs if lg['leg'] not in BE_SIMPLE_LEGS]
             unchecked = sum(1 for lg in legs if lg['leg'] != 'IF' and lg['true'] is None)
@@ -1210,8 +1210,12 @@ def normalize_ge_coding(rows):
 # une autre est signalée « en-tête inconnu », pas bloquante), ce que l'OCR doit corriger avant de la lire (`ocr_normaliser`), si l'OCR sait la lire (`ocr_readable` : chaque tronçon porte ou
 # retrouve ses coordonnées dans la page), ce que la source imprime pour le contrôle de géométrie (`tolerances` : clé de proc_geometry.TOLERANCES, « true » ou « magnetic ») et ce que
 # l'analyseur reprend des autres pages du document (`kind_hint` : le type SID / STAR / APP lu à la page précédente ; `known_names` : les noms coupés confirmés d'une page à l'autre).
+# `tolerances` sert aussi de REPLI : un tronçon qui n'imprime ni cap vrai ni cap magnétique, seulement une distance, est jugé à la tolérance de sa disposition (proc_geometry.check_legs).
+# `positions` : « required » quand la page doit donner la position de chaque point (la liste de la carte belge : un point absent, après les listes des autres documents, est un doute « unresolved » et
+# non plus un bloc refusé) ; « deferred » sinon (aerodb résout encore les points en route à la lecture).
 # `read` vaut None pour sia-code : la table du SIA est lue par proc_sia.parse_code_table (un tableau à groupes, pas une liste de tables).
-Layout = namedtuple('Layout', 'name detect read fingerprints ocr_normaliser ocr_readable tolerances kind_hint known_names', defaults=(None, None, frozenset(), None, False, 'true', False, False))
+Layout = namedtuple('Layout', 'name detect read fingerprints ocr_normaliser ocr_readable tolerances kind_hint known_names positions',
+                    defaults=(None, None, frozenset(), None, False, 'true', False, False, 'deferred'))
 
 
 def _view(rows):
@@ -1288,7 +1292,7 @@ def _detect_uk_app(rows):
 LAYOUTS = [
     Layout('uk-star', _detect_uk_star, parse_uk_star, frozenset(), normalize_uk_star, True),
     Layout('at-coding', _detect_at_coding, parse_at_coding, frozenset(), normalize_at_coding, True),
-    Layout('be-coding', _detect_be_coding, parse_be_coding, frozenset(), normalize_be_coding, True),
+    Layout('be-coding', _detect_be_coding, parse_be_coding, frozenset(), normalize_be_coding, True, positions='required'),
     Layout('ge-coding', _detect_ge_coding, parse_ge_coding, frozenset(), normalize_ge_coding, True),
     Layout('am-coding', _detect_am_coding, parse_am_coding, frozenset(), None, True),
     Layout('ei-coding', _detect_ei_coding, parse_ei_coding, frozenset(), None, True, known_names=True),

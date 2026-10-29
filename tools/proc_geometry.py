@@ -21,6 +21,10 @@ TOLERANCES = {
     'magnetic': (30.0, 0.55),       # cap magnétique seul (SIA, Allemagne) : la variation n'est pas dans la page, le cap n'attrape qu'une position fausse ; distance arrondie au dixième
 }
 
+# raisons pour lesquelles une PAGE n'est pas lue (`formats[].reason`, V3 § 10.29 (c)) : la disposition n'est pas reconnue, moins de 85 % des lignes de tronçon lues, le titre n'est pas reconnu, aucune
+# ligne de tronçon, les comptes d'un bloc ne tiennent pas, page dessinée sans couche de texte, lecture abandonnée (délai). Le texte français détaillé reste dans `formats[].problems` et la console.
+PAGE_CODES = ('layout', 'low-read', 'title', 'no-legs', 'counts', 'vector', 'timeout')
+
 # raisons d'une procédure douteuse, dans l'ordre où les lecteurs les posent ; « uncheckable » est un avertissement, jamais un doute
 CODES = ('unread', 'name', 'repeat', 'zigzag', 'unresolved', 'geometry', 'uncheckable')
 DOUBT_CODES = tuple(c for c in CODES if c != 'uncheckable')
@@ -34,6 +38,14 @@ PHRASES = {
     'repeat': 'point répété hors attente',
     'zigzag': 'zigzag',
     'unread': 'lignes de la table non lues',
+    # les pages non lues
+    'layout': 'mise en page non reconnue',
+    'low-read': 'lignes de tronçon illisibles (moins de 85 % lues)',
+    'title': 'titre de la page non reconnu',
+    'no-legs': 'aucun tronçon lisible',
+    'counts': 'comptes du bloc incohérents (table non retenue)',
+    'vector': 'page dessinée, sans couche de texte',
+    'timeout': 'lecture abandonnée (délai dépassé)',
 }
 
 DEFERRED, REQUIRED = 'deferred', 'required'     # positions : aerodb résout encore les points en route à la lecture (le contrôle les saute) ; ou elles doivent être là (« unresolved »)
@@ -78,15 +90,19 @@ def legs_of(points):
             for q in points]
 
 
-def check_legs(legs):
+def check_legs(legs, fallback=None):
     """Contrôle de cohérence d'une suite de tronçons : pour chaque tronçon TF dont les deux points sont positionnés, le cap et la distance imprimés doivent être ceux recalculés d'après les
     positions, à la tolérance de ce que le tronçon imprime (TOLERANCES). Rend { gaps: [écarts, en texte], compared: tronçons comparés, positioned: tronçons TF dont les deux points sont
-    positionnés, unresolved: identifiants des points sans position sur un tronçon qui imprime un cap ou une distance }. Un tronçon sans cap ni distance n'est pas comparé."""
+    positionnés, unresolved: identifiants des points sans position sur un tronçon qui imprime un cap ou une distance }. Un tronçon sans cap ni distance n'est pas comparé.
+    `fallback` : la clé de TOLERANCES de la disposition de la page (proc_layouts.Layout.tolerances) ; un tronçon qui n'imprime ni cap vrai ni cap magnétique, seulement une distance, la prend
+    (un tronçon qui imprime un cap garde sa propre base, comme avant)."""
     gaps, unresolved, compared, positioned = [], [], 0, 0
     for a, b in zip(legs, legs[1:]):
         if b.get('leg') != 'TF':
             continue
         basis = basis_of(b)
+        if basis and fallback and _true_of(b) is None and b.get('crs') is None:
+            basis = fallback
         if None in (a.get('lat'), b.get('lat')):
             if basis:
                 unresolved += [x['id'] for x in (a, b) if x.get('lat') is None and x.get('id') and x['id'] not in unresolved]
@@ -156,12 +172,12 @@ def guardrails(proc):
     return out
 
 
-def findings(proc, positions=DEFERRED):
+def findings(proc, positions=DEFERRED, basis=None):
     """Tout ce que le contrôle trouve sur une procédure, sans la modifier : [(code, texte)] — les garde-fous (`guardrails`), puis la géométrie : positions manquantes (« unresolved »,
     seulement avec positions=REQUIRED : par défaut aerodb résout encore les points en route à la lecture, le contrôle les saute), écart imprimé / recalculé (« geometry », le premier écart
-    seul est dit), ou « uncheckable » (des tronçons positionnés, aucun ne porte de cap ni de distance : un avertissement, jamais un doute)."""
+    seul est dit ; `basis` : la tolérance de la disposition, pour un tronçon qui n'imprime qu'une distance), ou « uncheckable » (des tronçons positionnés, aucun ne porte de cap ni de distance : un avertissement, jamais un doute)."""
     out = guardrails(proc)
-    res = check_legs(legs_of(proc.get('points', [])))
+    res = check_legs(legs_of(proc.get('points', [])), basis)
     if res['unresolved'] and positions == REQUIRED:
         out.append(('unresolved', f'{PHRASES["unresolved"]}: ' + ', '.join(res['unresolved'][:4])))
     if res['gaps']:
@@ -194,11 +210,11 @@ def mark(proc, code, detail=None):
     return warning_of(proc, detail or PHRASES[code])
 
 
-def review(proc, positions=DEFERRED):
+def review(proc, positions=DEFERRED, basis=None):
     """LA politique, pour un lecteur qui vient de construire une procédure : applique `findings`, marque les doutes, rend les lignes d'avertissement (doutes à vérifier et, en plus,
     l'avertissement « non contrôlable »). Le lecteur les ajoute à ses avertissements ; rappelée sur la même procédure, elle ne redit rien."""
     out = []
-    for code, text in findings(proc, positions):
+    for code, text in findings(proc, positions, basis):
         if code == 'uncheckable':
             out.append(f'{proc.get("id")}: {text}')
         else:

@@ -63,3 +63,6 @@ proc_work/
 
 # identifiant EAD Basic du poste (jamais dans le dépôt)
 pass
+
+# dossier de travail de tools/proc_sia.py sans --cache et sans dossier data/
+.proc_cache/

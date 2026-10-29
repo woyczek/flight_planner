@@ -119,6 +119,23 @@
       check('COVERAGE: the four languages differ (no French text left in en / de / es for the readable-on-demand lines)', ['sia', 'ead',
         'lnm'
       ].every(k => new Set(CV[k]).size === 4), CV.sia);
+      // les raisons de lecture (§ 10.29 c) : les codes de page non lue et de procédure douteuse, chacun avec quatre libellés
+      const RR = K.READ_REASONS,
+        rrKeys = ['layout', 'low-read', 'title', 'no-legs', 'counts', 'vector', 'timeout', 'geometry', 'unresolved', 'name', 'repeat',
+          'zigzag',
+          'unread'
+        ];
+      check(
+        'READ_REASONS: the 7 page codes and the 6 doubt codes, each with four non-empty strings [fr, en, de, es], and the catalogue serves it',
+        J(Object.keys(RR).sort()) === J([...rrKeys].sort()) && Object.values(RR).every(v => Array.isArray(v) && v.length === 4 && v
+          .every(t =>
+            typeof t === 'string' && t.trim())) && AeroSources.READ_REASONS === RR, Object.keys(RR));
+      check('READ_REASONS: French has no plain space before : ; ! ? % » nor after «, a narrow no-break space (U+202F) instead',
+        Object.values(RR).every(v => !/ [:;!?%»]|« /.test(v[0])), Object.values(RR).map(v => v[0]).filter(t => / [:;!?%»]|« /.test(t))
+      );
+      check('READ_REASONS: the four languages differ for every code', Object.values(RR).every(v => new Set(v).size === 4), Object.keys(
+        RR).filter(
+        k => new Set(RR[k]).size !== 4));
       check('the Sources screen still finds its object (AeroSources with the cycle helpers)', AeroSources.SOURCES === K.SOURCES &&
         AeroSources.cycleOf('2026-10-26').id === '2610',
         0);

@@ -26,6 +26,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `flight_time.js`, the route and its procedures (`proceduresOf` … `altitudeAt`, `conflictsOf`, `orderProcedures`) to
   `flight_path.js`; `current_flight.js` re-exports both during the transition, the code moved as it was. Listed in the
   service worker and the modules' files.
+- **aerodb: reasons as codes, the layout's tolerance as a fallback, a missing Belgian point as a doubt, security review of the split** (`tools/proc_geometry.py`, `proc_records.py`, `proc_layouts.py`, `proc_sia.py`, `proc_ead.py`,
+  `proc_ocr.py`, `proc_pdf.py`; `frame/aerodb/catalogue.js` `READ_REASONS`; SPEC, INTEGRATION, DECISIONS; V3 § 10.29 (c); cases K30 to K32, the catalogue test page) — every page not read carries `formats[].reason` (`layout`, `low-read`, `title`,
+  `no-legs`, `counts`, `vector`, `timeout`) and `stats.reasons` is `[code, count]` (the page codes and the doubt codes), the French phrase staying in the console; `AeroCatalogue.READ_REASONS` gives the four-language labels. A leg that prints only a distance is
+  judged at its layout's tolerance. A point missing from a Belgian list no longer refuses the block: the procedure is kept as a doubt (`unresolved`). A PDF name from a server is a plain file name under the cache, the ICAO codes of the command
+  line are checked, and the default cache of `proc_sia.py` is `data/local/eaip` (or the ignored `.proc_cache/`). The readings of LFPO, LFBO, LFPG and EIDW keep their procedures and doubts.
 
 - **Frame: requests between modules taken once** (`frame/app.js`, `modules/hello/module.js`, `frame/lib/launcher.js`,
   `frame/aerodb/aerodb.js`; INTEGRATION § 6.1 and § 15.1, SPEC, DECISIONS; cases A29, A34): `ctx.consume(keys)` takes a

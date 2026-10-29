@@ -553,7 +553,7 @@ def _eaip_fetch(job, args, ctx):
             raise _Cancelled()
         warnings = list(doc.get('warnings', []))
         kept = doc.get('procedures', [])
-        dropped = [d.get('reason') or 'autre' for d in doc.pop('dropped', [])]       # vraiment retirées (build_aerodrome) : un bloc sans titre qui répète une procédure nommée
+        dropped = [d.get('reason') or 'name' for d in doc.pop('dropped', [])]       # vraiment retirées (build_aerodrome) : un bloc sans titre qui répète une procédure nommée
         doubt = _geometry().doubt_codes(kept)             # un code par procédure à vérifier (le constructeur a fait le contrôle, proc_geometry.review)
         stats = proc_records.stats_of(doc.get('formats', []), len({p.get('id') for p in kept}), dropped, doubt)
         job.log(clean(_summary(stats)))

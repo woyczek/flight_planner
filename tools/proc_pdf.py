@@ -80,6 +80,20 @@ def rows_from_pdf(path, page=0, reader=None):
     return [' '.join(' '.join(t for _, _, t in sorted(r)).split()) for _, r in rows]
 
 
+PDF_NAME = re.compile(r'^[A-Za-z0-9._-][A-Za-z0-9._ -]*\.pdf$')      # un nom de PDF cité par un serveur : jamais un chemin (ni « / », ni « \ », ni « .. ») ; l'espace intérieur passe (les cartes ILS de LFBO : « CAT_ 1_2_3 »)
+
+
+def safe_path(folder, name, pattern=PDF_NAME):
+    """`folder / name` si `name` est un nom de fichier sûr (le motif `pattern`, jamais seulement des points) ET si le chemin résolu reste SOUS le dossier ; ValueError sinon. Un nom lu dans une
+    page ou une réponse du serveur ne sert à écrire ou à lire un fichier qu'après ce contrôle (relecture de sécurité de la scission, V3 § 10.29 (c))."""
+    if not isinstance(name, str) or not pattern.fullmatch(name) or set(name) <= {'.'}:
+        raise ValueError(f'nom de fichier refusé : {name!r}')
+    path = Path(folder) / name
+    if Path(folder).resolve() not in path.resolve().parents:
+        raise ValueError(f'nom de fichier hors du dossier : {name!r}')
+    return path
+
+
 PDF_TIMEOUT = 60  # secondes au plus par document lu par pypdf (pdf_pages, pdf_kind)
 OCR_TIMEOUT = 600  # secondes au plus par document lu par OCR (rendu et moteur, plusieurs pages et résolutions) : limited
 

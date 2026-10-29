@@ -1689,3 +1689,26 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
   name (`fetch`, `first_page_rows`, `url_exists`) do it on `proc_sia`, and K6 calls `ead_probe.probe`.
 - **Point schema**: written once in `SPEC.md` § 5 quinquies (every key, its type, its meaning, which source fills it), replacing the descriptions scattered through the section. One correction on the way: the true course is `trk` on a point
   (`true` is the key of the layouts' legs only).
+
+## 29 October 2026 — § 10.29 (c): reasons as codes, the layout's tolerance as a fallback, the Belgian missing point, security review of the split
+
+- **Page reasons are codes** (constraint 6 of the survey session): every `formats[]` entry with `ok: false` carries `reason` ∈ `layout` (no known layout), `low-read` (fewer than 85 % of the leg rows read), `title` (title not recognised, or
+  leg rows with no title), `no-legs` (known layout, no leg row), `counts` (a block whose counts or contents disagree: no record can be built), `vector` (a drawn page, no text layer), `timeout` (the PDF reading was abandoned); `problems` keeps the French
+  detail beside it, for the console. `proc_records.reason_of` / `page_reason` map the French problems to the codes; an entry without `reason` (a file read before this commit) is mapped the same way when `stats_of` counts it (an unknown text is `layout`).
+  The sources: `proc_sia.build_aerodrome` (from `verify_page`), `build_pdf_dir` (NON retenue → `counts`, no table → `no-legs`, an unreadable PDF → `timeout`, an unknown layout → `layout`, or `vector` under 8 rows), `proc_ocr.document_from_rows`.
+- **`stats.reasons` is `[code, count]`, codes only**: page codes, the doubt codes, and `name` for the dropped (the untitled repeat that is removed: `dropped[].reason` is `name` now, the text is in the warning). The French phrase lives in one table
+  (`proc_geometry.PHRASES`, page codes added; `phrase(code)`), which the console uses (`regen_jobs._summary`, `_nothing_read`, the ead console line); the message of a failure still reads « (mise en page non reconnue ×31) ».
+- **`AeroCatalogue.READ_REASONS`** (`frame/aerodb/catalogue.js`): the 13 codes (7 page, 6 doubt; `uncheckable` is a warning, not a reading reason) × `[fr, en, de, es]`, short, French typography (U+202F before `%`). Same exception to invariant 4 as `COVERAGE`
+  (SPEC § 6). The test page checks every code × 4 non-empty, the four languages differ, no plain space before `: ; ! ? % »`; K30 checks that the keys are exactly the codes of `proc_geometry`.
+- **Fallback tolerance** (the survey session's point a): `Layout.tolerances` is no longer descriptive. A leg that prints neither a true nor a magnetic course (a distance only) takes its layout's key (`proc_geometry.check_legs(legs, fallback)`,
+  `review(..., basis)`), a leg that prints a course keeps its own basis. `records_uk_app` and `build_pdf_dir` / `document_from_rows` pass the layout; `build_aerodrome` passes `sia-code` (magnetic: no change). On the cached pages (LFPO, LFBO, LFPG with and
+  without the base, EIDW) no result moved: the fallback only counts for a leg with a distance and no course.
+- **The Belgian missing point is a doubt** (point b): `parse_be_coding` no longer refuses a block because a point is missing from the list (`absent de la liste` is gone from its reasons; two lists that disagree still refuse: concurrent readings);
+  the leg stays without a position, `build_pdf_dir` completes it from the lists of the aerodrome's other documents, and `Layout.positions == 'required'` (be-coding only: its page must give every position) makes `proc_geometry.review(positions=REQUIRED)` mark
+  `unresolved` what is still missing; the warning « à résoudre par aerodb » is not written for it. For the other layouts the position is aerodb's to resolve (warning, the record stays sure). `proc_ocr.read_document` now re-reads a page at the next
+  resolution while any of its procedures is a doubt (a missing list line at 300 dpi may be there at 500), as it did when the table was refused.
+- **Security review of the split** (« relecture de sécurité de la scission »): (1) a PDF name taken from the AD 2 page is kept only if it matches `^[A-Za-z0-9._-][A-Za-z0-9._ -]*\.pdf$` (the brief said `^[A-Za-z0-9._-]+\.pdf$`, which dropped two real LFBO charts whose names carry a space, `…ILS_Y_CAT_ 1_2_3_LOC_Y.pdf`; a space is no path) (`proc_sia.pdf_names`, the others are listed and said), and every write or read in the cache
+  goes through `proc_pdf.safe_path` (plain name, resolved path under the cache); the same for the document names of EAD Basic in `proc_ead.fetch_ad` (`SAFE_NAME`, refused before any download); (2) the command line of `proc_sia.py` without `--cache` uses
+  `<repository>/data/local/eaip` when the data folder exists, else `.proc_cache/`, now in `.gitignore`; (3) the ICAO codes of the command line, and `read_aerodrome`, are checked with `^[A-Z0-9]{4}$` and refused with a clear message. K32 covers them
+  (`../../x.pdf`, `a/b.pdf`, `..\x.pdf` never written or asked, a bad ICAO refused, the EAD names refused).
+- **Not in this commit** (as decided): `coverage(icao)` reason `partial`; Fuel and the Map translating (see INTEGRATION). `frame/aerodb/aerodb.js` needed no change: `fetchProcedures` passes `stats` through as the job gave it, now with codes.

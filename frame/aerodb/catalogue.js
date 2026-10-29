@@ -11,7 +11,7 @@
   //     X-Plane / Navigraph), cycled (adresse du cycle AIRAC), n [fr, en, de, es], url (chaîne, ou fonction du cycle), gives [4],
   //     lic [4] (d'après LICENSE.md), how [4]? (le geste pour l'obtenir) }.
   // Les cycles sont ceux d'airac.js (AeroAirac) : une adresse se construit pour une date d'effet « AAAA-MM-JJ » ou un « AANN ».
-  // API : AeroCatalogue.{ SOURCES, ORDER, GROUPS, EAD_STATES, COVERAGE, byId, urlOf, eaipBase, cifpName, cifpUrl, siaPage, siaFileInfo,
+  // API : AeroCatalogue.{ SOURCES, ORDER, GROUPS, EAD_STATES, COVERAGE, READ_REASONS (codes de lecture → [fr, en, de, es]), byId, urlOf, eaipBase, cifpName, cifpUrl, siaPage, siaFileInfo,
   //   cifpFileInfo } ; AeroSources : le même objet avec cycleOf / cycleDate (écran « Sources », jusqu'à son retrait).
   const A = (typeof window !== 'undefined' ? window : self).AeroAirac;
   if (!A) throw new Error('catalogue.js: airac.js must be loaded first');
@@ -793,6 +793,37 @@
     none: ['Aucune procédure publiée', 'No procedure published', 'Keine Verfahren veröffentlicht', 'Ningún procedimiento publicado'],
     unknown: ['État non relevé', 'State not surveyed', 'Staat nicht erfasst', 'Estado no relevado']
   };
+  /** Raisons de lecture des procédures (SPEC § 5 quinquies, V3 § 10.29 (c)) : UN code pour une page non lue (`formats[].reason`) ou une
+   *  procédure douteuse (`doubt`), et le libellé court [fr, en, de, es] que Carburant (« N non lues ») et la Carte en montrent. aerodb ne produit
+   *  jamais de phrase : `stats.reasons` ([code, nombre]) et ces codes se traduisent ici. Pages : layout (mise en page inconnue), low-read (moins
+   *  de 85 % des lignes lues), title (titre non reconnu), no-legs (aucun tronçon), counts (comptes du bloc incohérents), vector (page dessinée,
+   *  sans texte), timeout (lecture abandonnée). Procédures : geometry, unresolved, name, repeat, zigzag, unread. Même exception que COVERAGE à
+   *  l'invariant 4 de la SPEC ; français : espace fine insécable (U+202F) avant : ; ! ? % et dans « ». */
+  const READ_REASONS = {
+    layout: ['mise en page non reconnue', 'layout not recognised', 'Seitenaufbau nicht erkannt', 'formato de página no reconocido'],
+    'low-read': ['moins de 85 % des lignes lues', 'under 85 % of the rows read', 'unter 85 % der Zeilen gelesen',
+      'menos del 85 % de las líneas leídas'
+    ],
+    title: ['titre de la page non reconnu', 'page title not recognised', 'Seitentitel nicht erkannt', 'título de página no reconocido'],
+    'no-legs': ['aucun tronçon lisible', 'no readable leg', 'kein lesbarer Abschnitt', 'ningún tramo legible'],
+    counts: ['comptes du bloc incohérents', 'block counts do not agree', 'Zählung des Blocks widersprüchlich',
+      'recuentos del bloque incoherentes'
+    ],
+    vector: ['page dessinée, sans texte', 'drawn page, no text layer', 'gezeichnete Seite ohne Textebene',
+      'página dibujada, sin capa de texto'
+    ],
+    timeout: ['lecture abandonnée (délai)', 'reading given up (time limit)', 'Lesen abgebrochen (Zeitlimit)',
+      'lectura abandonada (tiempo límite)'
+    ],
+    geometry: ['géométrie incohérente', 'inconsistent geometry', 'inkonsistente Geometrie', 'geometría incoherente'],
+    unresolved: ['positions non résolues', 'unresolved positions', 'Positionen nicht aufgelöst', 'posiciones sin resolver'],
+    name: ['sans nom', 'no name', 'ohne Namen', 'sin nombre'],
+    repeat: ['point répété hors attente', 'point repeated outside a holding', 'Punkt außerhalb einer Warteschleife wiederholt',
+      'punto repetido fuera de una espera'
+    ],
+    zigzag: ['trajet en zigzag', 'zigzag path', 'Zickzack-Verlauf', 'trayecto en zigzag'],
+    unread: ['lignes de la table non lues', 'table rows not read', 'Tabellenzeilen nicht gelesen', 'filas de la tabla sin leer']
+  };
   const GROUPS = ['base', 'proc', 'aircraft', 'weather'];
   const ORDER = ['used', 'candidate', 'abandoned'];
   const byId = id => SOURCES.find(s => s.id === id) || null;
@@ -805,6 +836,7 @@
     GROUPS,
     EAD_STATES,
     COVERAGE,
+    READ_REASONS,
     byId,
     urlOf,
     eaipBase,

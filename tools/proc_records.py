@@ -9,15 +9,18 @@ import re
 from datetime import datetime, timezone
 
 import proc_geometry as G
-from proc_layouts import detect_layout, ei_names, fingerprint, KNOWN_FINGERPRINTS, page_date, PARSERS, read_page
+from proc_layouts import BY_NAME, detect_layout, ei_names, fingerprint, KNOWN_FINGERPRINTS, page_date, PARSERS, read_page
 from proc_pdf import PdfTimeout, waypoint_coords
 
 
 
-def records_uk_app(icao, parsed, source, cycle, at=None, state='UK'):
+def records_uk_app(icao, parsed, source, cycle, at=None, state='UK', layout=None):
     """Procédures du schéma commun d'une page UK « Instrument Approach Procedure Coding Tables » ; statut « check », source ead-basic/UK. Le cap vrai imprimé est gardé (`trk`) :
     proc_geometry.review contrôle ensuite la procédure construite, à la tolérance du cap vrai ; une procédure qui échoue est GARDÉE, statut « doubt » et le code « geometry » (jamais
-    écartée : la table n'est pas perdue pour une procédure)."""
+    écartée : la table n'est pas perdue pour une procédure). `layout` : la disposition de la page (proc_layouts.LAYOUTS) ; sa tolérance sert de repli à un tronçon qui n'imprime qu'une
+    distance, et si elle exige les positions (`positions: required`, la carte belge) un point resté sans position après les listes des autres documents est un doute « unresolved »."""
+    entry = BY_NAME.get(layout)
+    basis, positions = (entry.tolerances, entry.positions) if entry else (None, G.DEFERRED)
     out, warnings = [], list(parsed['warnings'])
     for t in parsed['tables']:
         pts, missed = [], False
@@ -44,7 +47,7 @@ def records_uk_app(icao, parsed, source, cycle, at=None, state='UK'):
             if re.fullmatch(r'RW\d{2}[LRC]?', lg['id'] or '') or 'MAPt' in lg['remark']:
                 missed = True
             pts.append(p)
-        if any(p['lat'] is None and p['id'] is not None for p in pts):             # un tronçon sans point (CA, VA… : id None) n'a rien à résoudre
+        if positions != G.REQUIRED and any(p['lat'] is None and p['id'] is not None for p in pts):             # un tronçon sans point (CA, VA… : id None) n'a rien à résoudre
             warnings.append(f'{t["title"][:60]}: coordonnées absentes de la page, à résoudre par aerodb (base des points)')
         name = t['name']
         rw = f'RW{t["runways"][0]}' if len(t['runways']) == 1 else 'RWALL'
@@ -53,7 +56,7 @@ def records_uk_app(icao, parsed, source, cycle, at=None, state='UK'):
         out.append({'id': '.'.join([icao, kind, norm(name), rw] + ([norm(t['transition'])] if t['transition'] else [])), 'icao': icao, 'kind': kind, 'name': name,
                     'runways': t['runways'], 'transition': t['transition'], 'points': pts,
                     'source': {'kind': 'ead-basic', 'ref': f'ead-basic/{state}/{source}', 'cycle': cycle, 'at': at}, 'status': 'check'})
-        warnings += G.review(out[-1])
+        warnings += G.review(out[-1], positions, basis)
     return out, warnings
 
 
@@ -100,22 +103,22 @@ def build_pdf_dir(icao, pdfs, rows_of, cycle):
                     if lg.get('lat') is None and lg['id'] in coords:
                         lg['lat'], lg['lon'] = coords[lg['id']]
                         lg['coords_from'] = 'liste'
-            recs, w = records_uk_app(icao, parsed, f, cycle, page_date(rows), icao[:2])
+            recs, w = records_uk_app(icao, parsed, f, cycle, page_date(rows), icao[:2], layout)
             ok = bool(recs) and len(recs) == len(parsed['tables']) and not any('NON retenue' in x for x in w)
             problems = [x for x in w if 'NON retenue' in x] + ([] if recs else ['aucune table lue'])
             if fp not in KNOWN_FINGERPRINTS[layout]:
                 problems.append(f'info: en-tête inconnu (empreinte {fp}): format changé depuis les pages vues ?')
-            formats.append({'file': f, 'page': n, 'layout': layout, 'fingerprint': fp, 'ok': ok, 'problems': problems})
+            formats.append({'file': f, 'page': n, 'layout': layout, 'fingerprint': fp, 'ok': ok, 'problems': problems, **({} if ok else {'reason': page_reason(problems)})})
             procs += recs
             warnings += [f'{f} p.{n}: {x}' for x in w]
         if f in failed:
-            formats.append({'file': f, 'pages': 0, 'layout': None, 'fingerprint': None, 'ok': False, 'problems': [failed[f]]})
+            formats.append({'file': f, 'pages': 0, 'layout': None, 'fingerprint': None, 'ok': False, 'reason': 'timeout', 'problems': [failed[f]]})
             warnings.append(f'{f}: NON lu, {failed[f]}')
             continue
         if not known:
             most = max(len(r) for r in pages_of[f])
             first = pages_of[f][0]
-            formats.append({'file': f, 'pages': len(pages_of[f]), 'layout': detect_layout(first), 'fingerprint': fingerprint(first), 'ok': False,
+            formats.append({'file': f, 'pages': len(pages_of[f]), 'layout': detect_layout(first), 'fingerprint': fingerprint(first), 'ok': False, 'reason': 'vector' if most < 8 else 'layout',
                             'problems': ['disposition non reconnue' + (' (très peu de texte: tableau dessiné en vecteurs ou image ? ' + str(most) + ' ligne(s))' if most < 8 else '')]})
             warnings.append(f'{f}: {len(pages_of[f])} page(s) NON lue(s), disposition non reconnue' + (' (texte absent: tables dessinées sans couche de texte)' if most < 8 else ''))
     return {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'procedures': procs, 'formats': formats,
@@ -223,31 +226,40 @@ def records(icao, table, coords, source, cycle):
 
 
 def reason_of(problem):
-    """Motif court, stable, d'un problème de page ou d'une procédure écartée (`formats[].problems`, géométrie) : sert au compte rendu `stats.reasons` de la lecture à la demande
-    (le texte est celui que Carburant montre, ou associe à sa traduction)."""
+    """Code de page (proc_geometry.PAGE_CODES) d'un problème de page, texte français de `formats[].problems` : layout, low-read, title, no-legs, counts, vector ou timeout. Un texte qu'on ne
+    reconnaît pas est une disposition non lue (« layout »)."""
     t = problem or ''
     if 'moins de 85' in t:
-        return 'lignes de tronçon illisibles (moins de 85 % lues)'
+        return 'low-read'
+    if 'lecture abandonnée' in t or 'processus de lecture' in t:
+        return 'timeout'
+    if 'vecteurs' in t or 'très peu de texte' in t:
+        return 'vector'
     if 'disposition non reconnue' in t:
-        return 'mise en page non reconnue'
-    if 'titre de la page non reconnu' in t or 'titre non reconnu' in t:
-        return 'titre de la page non reconnu'
+        return 'layout'
+    if 'titre de la page non reconnu' in t or 'titre non reconnu' in t or "hors d'un bloc titré" in t:
+        return 'title'
     if 'aucun groupe' in t or 'aucune table lue' in t:
-        return 'aucun tronçon lisible'
-    if 'géométrie' in t:
-        return 'géométrie incohérente'
-    return re.sub(r'\s+', ' ', t.split(':')[0]).strip()[:80] or 'autre'
+        return 'no-legs'
+    if 'NON retenue' in t:
+        return 'counts'
+    return 'layout'
+
+
+def page_reason(problems):
+    """Le code de page qui va dans `formats[].reason` d'une page non lue : celui du premier problème qui n'est pas une simple information (« info: en-tête inconnu… »)."""
+    return reason_of(next((x for x in problems if not x.startswith('info:')), ''))
 
 
 def stats_of(formats, procedures, dropped=(), doubt=()):
     """Compte rendu d'une lecture : { pages (pages de codage trouvées), read (lues), rejected (non lues), procedures (installées, celles « à vérifier » comprises), dropped (VRAIMENT retirées :
-    un bloc sans titre qui en répète une nommée), doubt (installées au statut « doubt »), reasons (les 3 motifs les plus fréquents, [motif, nombre], sur les pages non lues, les procédures
-    retirées et celles à vérifier) }. `formats` : la liste `formats` du fichier du terrain ; `dropped` : un motif (texte) par procédure retirée ; `doubt` : UN CODE par procédure à vérifier
-    (proc_geometry.doubt_codes : « geometry », « name »…), que `reasons` porte tel quel. Les motifs des pages non lues restent des phrases, jusqu'à ce que les pages portent des codes aussi."""
+    un bloc sans titre qui en répète une nommée), doubt (installées au statut « doubt »), reasons (les 3 motifs les plus fréquents, [CODE, nombre], sur les pages non lues, les procédures
+    retirées et celles à vérifier : jamais une phrase, V3 § 10.29 (c)) }. `formats` : la liste `formats` du fichier du terrain (le code d'une page non lue est `reason`, à défaut celui de son
+    premier problème) ; `dropped` : un code par procédure retirée ; `doubt` : UN CODE par procédure à vérifier (proc_geometry.doubt_codes : « geometry », « name »…)."""
     counts, dropped, doubt = {}, list(dropped), list(doubt)
     for f in formats:
         if not f.get('ok'):
-            why = next((reason_of(x) for x in f.get('problems', []) if not x.startswith('info:')), 'autre')
+            why = f.get('reason') or page_reason(f.get('problems', []))
             counts[why] = counts.get(why, 0) + 1
     for why in dropped + doubt:
         counts[why] = counts.get(why, 0) + 1

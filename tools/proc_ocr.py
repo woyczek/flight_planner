@@ -191,7 +191,7 @@ def document_from_rows(icao, file, rows, cycle, state=None):
         problems += [x for x in parsed['warnings'] if 'NON retenue' in x]
         at = L.page_date(rows)
         for t in parsed['tables']:
-            recs, w = proc_records.records_uk_app(icao, {'tables': [t], 'warnings': []}, file, cycle, at, state)
+            recs, w = proc_records.records_uk_app(icao, {'tables': [t], 'warnings': []}, file, cycle, at, state, layout)
             warnings += [f'{file}: {x}' for x in w]
             problems += [x for x in w if 'NON retenue' in x]
             for rec in recs:
@@ -209,7 +209,7 @@ def document_from_rows(icao, file, rows, cycle, state=None):
         problems.append('disposition non reconnue (rien de deviné)')
         warnings.append(f'{file}: page NON lue, disposition non reconnue')
     doc = {'schema': 1, 'icao': icao, 'cycle': cycle, 'procedures': procs,
-           'formats': [{'file': file, 'layout': layout, 'fingerprint': fp, 'ok': ok, 'problems': problems, 'via': 'ocr'}], 'warnings': warnings}
+           'formats': [{'file': file, 'layout': layout, 'fingerprint': fp, 'ok': ok, 'problems': problems, 'via': 'ocr', **({} if ok else {'reason': proc_records.page_reason(problems)})}], 'warnings': warnings}
     warnings += [f'verify: {x}' for x in proc_manual.verify(doc)]
     return doc
 
@@ -240,11 +240,13 @@ def read_document(path, icao, cycle, file=None, pages=None, dpis=(300, 500, 200)
         for dpi in dpis:
             doc = document_from_rows(icao, file, rows_from_pdf_ocr(path, n, dpi, engine), cycle)
             f = doc['formats'][0]
-            if best is None or (len(doc['procedures']), f['ok']) > (len(best[0]['procedures']), best[0]['formats'][0]['ok']):
-                best = (doc, dpi)
-            if f['ok'] or f['layout'] is None:
+            sure = [r for r in doc['procedures'] if r['status'] != 'doubt']               # une procédure douteuse (un chiffre mal lu, un point absent de la liste) vaut une nouvelle lecture à une autre résolution
+            clean = f['ok'] and len(sure) == len(doc['procedures'])
+            if best is None or (len(sure), clean) > best[2]:
+                best = (doc, dpi, (len(sure), clean))
+            if clean or f['layout'] is None:
                 break
-        doc, dpi = best
+        doc, dpi, _ = best
         doc['formats'][0].update({'page': n + 1, 'dpi': dpi})
         merged['formats'] += doc['formats']
         merged['warnings'] += [f'p.{n + 1}: {x}' for x in doc['warnings']]

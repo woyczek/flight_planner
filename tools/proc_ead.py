@@ -258,6 +258,7 @@ PAGE_ROWS = 15
 MAX_PAGES = 50      # pages parcourues au plus par recherche (jamais de boucle sans fin)
 PAGE_TABLE = 'mainForm:searchResults'
 PAGE_PARAMS = {'{t}': '{t}', '{t}_pagination': 'true', '{t}_first': '{first}', '{t}_rows': str(PAGE_ROWS), '{t}_skipChildren': 'true', '{t}_encodeFeature': 'true'}
+SAFE_NAME = re.compile(r'^[A-Za-z0-9._-]+$')  # le nom d'un document d'EAD Basic, tel qu'il devient un nom de fichier du cache (proc_pdf.safe_path)
 ICAO_RE = re.compile(r'^[A-Z0-9]{4}$')  # un code OACI : entre dans un nom de fichier (cache, interprétation manuelle), jamais un chemin
 
 
@@ -541,6 +542,7 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None, step=None):
     (une lecture de PDF dure de 1 à 2 s : sans ces nombres, les trois minutes d'un terrain à 31 documents se passent sans rien montrer) ; `fait` est le nombre de pas déjà terminés quand le texte
     annonce le suivant."""
     sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import proc_pdf
     import proc_records
     step = step or (lambda *a: None)
     icao = icao_code(icao)
@@ -565,10 +567,15 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None, step=None):
     wanted = [(name, d) for name, d in sorted(found.items()) if 'CODING' in d['kinds'] or not only_coding]
     for i, (name, d) in enumerate(wanted):
         step(f'{icao}: téléchargement de {name}', i, len(wanted), 'documents')
+        try:
+            target = proc_pdf.safe_path(cache, name, SAFE_NAME)       # le nom vient du serveur : un simple nom de fichier, sous le dossier du terrain, sinon rien n'est téléchargé
+        except ValueError:
+            say(f'  {name[:80]!r}: nom refusé (pas un simple nom de fichier), ignoré')
+            continue
         raw = lib.fetch(d['row'])
         say(f'  {name}: téléchargé' if raw else f'  {name}: téléchargement impossible')
         if raw:
-            (cache / name).write_bytes(raw)
+            target.write_bytes(raw)
             pdfs.append(name)
     read = []
 

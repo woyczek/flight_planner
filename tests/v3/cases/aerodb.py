@@ -1180,7 +1180,9 @@ def k14(c):
     c.ok([(x['status'], x['doubt']) for x in d2['procedures']] == [('doubt', 'geometry')] and any('À VÉRIFIER' in x for x in d2['warnings']) and not any('NON retenue' in x for x in d2['warnings']) and d2['formats'][0]['ok'],
          str(d2['formats']), 'one corrupted list co-ordinate: the table is kept as a doubt (code geometry) by the geometry check and reported')
     d3 = O.document_from_rows('EBXX', 'be.pdf', [r for r in be if not r.startswith('RW22R:')], '2026-10-01')
-    c.ok(d3['procedures'] == [] and any('NON retenue' in x for x in d3['warnings']), str(d3['warnings']), 'a point missing from the list: the table is dropped, never completed')
+    c.ok([(x['status'], x['doubt']) for x in d3['procedures']] == [('doubt', 'unresolved')] and any('À VÉRIFIER' in x and 'RW22R' in x for x in d3['warnings']) and not any('NON retenue' in x for x in d3['warnings'])
+         and d3['formats'][0]['ok'] and [q['lat'] for q in d3['procedures'][0]['points']][-1] is None, str(d3['warnings']),
+         'a point missing from the list: the table is KEPT, never completed, the procedure is a doubt (code unresolved) and the missing point is named; no « NON retenue »')
 
     # variante SID : le cap vrai n'est imprimé que pour certains TF (et le CF) ; table gardée avec l'avertissement si tout est résolu et simple, rejetée sinon
     sp = [('BE408', 50.77, 4.78), ('BE409', 50.80, 4.81), ('BE600', 50.69, 4.89), ('BE900', 50.66, 4.95)]       # points fictifs
@@ -1205,7 +1207,7 @@ def k14(c):
     c.ok(len(sb['procedures']) == 2 and [x['doubt'] for x in sb['procedures'] if x['status'] == 'doubt'] == ['geometry', 'geometry'] and not any('NON retenue' in x for x in sb['warnings']), str(sb['warnings']),
          'SID variant: the one printed course that exists is checked, 5 degrees off keeps the tables that print it as doubts (code geometry)')
     sh = O.document_from_rows('EBXX', 'sid.pdf', sid(hold=True), '2026-10-01')
-    c.ok(sh['procedures'] == [] and any('hors de IF' in x for x in sh['warnings']), str(sh['warnings']), 'SID variant: a leg other than IF/TF/CF/DF (a hold) drops the table: a polyline would be wrong')
+    c.ok(sh['procedures'] == [] and sh['formats'][0]['reason'] == 'counts' and any('hors de IF' in x for x in sh['warnings']), str(sh['warnings']), 'SID variant: a leg other than IF/TF/CF/DF (a hold) drops the table: a polyline would be wrong')
     sc = O.document_from_rows('EBXX', 'sid.pdf', sid(clash=True), '2026-10-01')
     c.ok(sc['procedures'] == [] and any('deux listes' in x for x in sc['warnings']), str(sc['warnings']), 'the same point with two different co-ordinates in two lists of the page: both tables are dropped (no choice between concurrent readings)')
 
@@ -1628,7 +1630,7 @@ def k22(c):
             seen['doc'] = {**doc_of(), 'procedures': [], 'formats': unknown}
             job = RJ.Job('proc', 'ead-fetch', {'icao': 'EGXX'})
             r = run(ctx, job=job)
-            c.eq((r['ok'], r['reason'], r['stats']), (False, 'failed', {'pages': 31, 'read': 0, 'rejected': 31, 'procedures': 0, 'dropped': 0, 'doubt': 0, 'reasons': [['mise en page non reconnue', 31]]}),
+            c.eq((r['ok'], r['reason'], r['stats']), (False, 'failed', {'pages': 31, 'read': 0, 'rejected': 31, 'procedures': 0, 'dropped': 0, 'doubt': 0, 'reasons': [['layout', 31]]}),
                  'a failure carries stats: 31 pages seen, none read, the reason counted', what='failure stats')
             c.eq(r['message'], 'no procedure could be read for this aerodrome: 31 document(s), 0 of 31 page(s) read (mise en page non reconnue ×31)',
                  'the message says how many documents and pages were seen, how many were read, and why not', what='failure message')
@@ -2195,8 +2197,8 @@ def k24(c):
          'LFBO ILS 14L: IO14L, RW14L (the THR: no displaced threshold), BO512', what='LFBO ILS 14L')
     # 14. the report of a reading
     st = P.stats_of([{'ok': True, 'problems': []}, {'ok': False, 'problems': ['info: x', '3 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}, {'ok': False, 'problems': ['disposition non reconnue (x)']},
-                     {'ok': False, 'problems': ['2 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}], 12, ['bloc sans titre qui répète une procédure nommée'], ['geometry', 'name'])
-    c.eq(st, {'pages': 4, 'read': 1, 'rejected': 3, 'procedures': 12, 'dropped': 1, 'doubt': 2, 'reasons': [['lignes de tronçon illisibles (moins de 85 % lues)', 2], ['bloc sans titre qui répète une procédure nommée', 1], ['geometry', 1]]},
+                     {'ok': False, 'problems': ['2 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}], 12, ['name'], ['geometry', 'repeat'])
+    c.eq(st, {'pages': 4, 'read': 1, 'rejected': 3, 'procedures': 12, 'dropped': 1, 'doubt': 2, 'reasons': [['low-read', 2], ['geometry', 1], ['layout', 1]]},
          'pages found / read / rejected, procedures, dropped (really removed), doubt (kept, to check), the three most frequent reasons', what='stats_of')
     # 15. Orly STAR RWY20 (the user's page 11/24): five STARs, each with its IF; an arrow glyph leading a row (« → TF DIBES ») is no cell;
     # the HOLDING block is no procedure
@@ -2321,7 +2323,7 @@ def k25(c):
     st = P.stats_of(d3['formats'], len(d3['procedures']), [x['reason'] for x in d3.get('dropped', [])], G.doubt_codes(rp))
     c.eq((st['dropped'], st['doubt'], st['reasons']), (0, 1, [['repeat', 1]]), 'stats: nothing removed, one in doubt; the reason is counted', what='stats')
     d7 = P.build_aerodrome('LFPO', ['AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_04.pdf', 'AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_05.pdf'], lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-01', '2026-10-01')
-    c.ok(len(d7['dropped']) == 1 and d7['dropped'][0]['reason'] == 'bloc sans titre qui répète une procédure nommée' and not [p for p in d7['procedures'] if '.NONAME.' in p['id']], str(d7.get('dropped')),
+    c.ok(len(d7['dropped']) == 1 and d7['dropped'][0]['reason'] == 'name' and not [p for p in d7['procedures'] if '.NONAME.' in p['id']], str(d7.get('dropped')),
          'the untitled repeat of a named procedure is REALLY removed and counted as dropped (the only removal)')
     geo = {'id': 'LFPG.SID.G1A.RW27L', 'kind': 'SID', 'status': 'check', 'points': [{'id': 'A', 'lat': 49.0, 'lon': 1.0, 'leg': 'IF'}, {'id': 'B', 'lat': 49.0, 'lon': 0.0, 'leg': 'TF', 'crs': 90, 'nm': 5.0}]}
     c.ok(any('A → B' in x for x in G.review(geo)) and geo['status'] == 'doubt' and geo['doubt'] == 'geometry', str(geo), 'the geometry check marks a procedure whose printed course and distance contradict the positions: doubt, not removed')
@@ -2520,3 +2522,168 @@ def k29(c):
     c.eq(([e.name for e in L.LAYOUTS if e.kind_hint], [e.name for e in L.LAYOUTS if e.known_names], L.BY_NAME['de-route'].tolerances, L.BY_NAME['uk-app'].tolerances),
          (['icao-tab'], ['ei-coding'], 'magnetic', 'true'), 'what a reader takes from the other pages, and the tolerance of what it prints', what='entry fields')
     c.eq((L.detect_layout(['nothing', 'to see']), L.detect_layout(['Path Terminator', 'Waypoint', 'Fly over'])), (None, 'sia-code'), 'a page nobody recognises is None; the SIA header is sia-code', what='detect_layout')
+
+
+@case('K30', 'Page reasons are codes: formats[].reason, stats.reasons, the console phrase, the catalogue labels', 'K', static=True,
+      rule='V3 § 10.29 (c): a page not read carries one reason code (layout, low-read, title, no-legs, counts, vector, timeout); stats.reasons is [code, count]; the text stays in the console; AeroCatalogue.READ_REASONS translates')
+def k30(c):
+    import re
+    P = _proc()
+    G = _geometry()
+    problems = {'3 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %': 'low-read', 'disposition non reconnue (x)': 'layout',
+                'disposition non reconnue (très peu de texte: tableau dessiné en vecteurs ou image ? 3 ligne(s))': 'vector', 'titre de la page non reconnu (SID / STAR / RNP)': 'title',
+                'aucun groupe de tronçons lu': 'no-legs', 'aucune table lue': 'no-legs', 'T (table 1): 2 tronçon(s) lu(s), table NON retenue': 'counts',
+                "3 ligne(s) de tronçon hors d'un bloc titré, NON retenue(s)": 'title', 'x.pdf: lecture abandonnée après 60 s': 'timeout'}
+    c.eq({k: P.reason_of(k) for k in problems}, problems, 'each French problem of a page maps to its code', what='reason_of')
+    c.eq(P.page_reason(['info: en-tête inconnu (empreinte x)', 'aucun groupe de tronçons lu']), 'no-legs', 'an information line is no reason', what='page_reason')
+    # the pages of an aerodrome folder: one reason each
+    uk_empty = ['Instrument Approach Procedure Coding Tables', 'Designator', 'Sequence', 'Co-ordinates']
+
+    def rows_of(name):
+        if name == 'timeout.pdf':
+            raise P.PdfTimeout('timeout.pdf: lecture abandonnée après 60 s')
+        return {'drawn.pdf': [['AIP', 'chart']], 'text.pdf': [[f'line {i} of a page no reader knows' for i in range(30)]], 'empty.pdf': [uk_empty]}[name]
+    d = P.build_pdf_dir('EGXX', ['drawn.pdf', 'empty.pdf', 'text.pdf', 'timeout.pdf'], rows_of, '2026-10-01')
+    c.eq({f['file']: (f['ok'], f['reason']) for f in d['formats']},
+         {'drawn.pdf': (False, 'vector'), 'empty.pdf': (False, 'no-legs'), 'text.pdf': (False, 'layout'), 'timeout.pdf': (False, 'timeout')},
+         'a drawn page, a known layout with no table, an unknown layout and an abandoned reading each carry their code, beside the French problems', what='build_pdf_dir')
+    c.ok(all(f['problems'] for f in d['formats']), str(d['formats']), 'the French detail stays in problems')
+    st = P.stats_of(d['formats'], 0)
+    c.eq((st['reasons'], st['rejected']), ([['layout', 1], ['no-legs', 1], ['timeout', 1]], 4), 'stats.reasons is [code, count], codes only', what='stats_of')
+    # a SIA page: the 85 % rule
+    rows = _eaip(c)[2]
+    widened = [re.sub(r'^((?:INA \S+ )?(?:IF|TF|DF|CF) \S+) ', r'\1 NEW ', r) for r in rows('AD_2_LFAV_DATA_RWY29_RNP_CODE')]
+    sia = P.build_aerodrome('LFAV', ['AD_2_LFAV_DATA_RWY29_RNP_CODE.pdf', 'AD_2_LFAV_DATA_01.pdf'], lambda n: widened if 'RNP_CODE' in n else rows(n.replace('.pdf', '')),
+                            'https://example.org/AIRAC-2026-10-01', '2026-10-01')
+    notread = [f for f in sia['formats'] if not f['ok']]
+    c.ok(notread and all(f['reason'] in ('low-read', 'layout') for f in notread), str(sia['formats']), 'a SIA page that is not read carries a reason code too')
+    # the console says the phrase, one table for every code; the catalogue translates the same codes
+    codes = list(G.PAGE_CODES) + list(G.DOUBT_CODES)
+    c.ok(all(k in G.PHRASES for k in codes) and G.phrase('layout') == 'mise en page non reconnue' and G.phrase('geometry') == 'géométrie incohérente', str([G.phrase(k) for k in codes]),
+         'every page code and doubt code has a phrase for the console')
+    js = (c.root / 'frame/aerodb/catalogue.js').read_text(encoding='utf-8')
+    block = js[js.index('const READ_REASONS = {'):]
+    block = block[:block.index('};')]
+    keys = re.findall(r"^    '?([a-z-]+)'?: \[", block, re.M)
+    c.eq(sorted(keys), sorted(codes), 'AeroCatalogue.READ_REASONS has exactly the page codes and the doubt codes of proc_geometry (the test page checks the four languages)', what='READ_REASONS keys')
+
+
+@case('K31', 'Geometry tolerance falls back to the layout; a point missing from a Belgian list is a doubt, not a refusal', 'K', static=True,
+      rule="V3 § 10.29 (c): a leg that prints neither a true nor a magnetic course takes its layout's tolerance; a leg that prints one keeps its own; a layout that requires positions marks unresolved")
+def k31(c):
+    import importlib
+    P = _proc()
+    G = _geometry()
+    L = importlib.import_module('proc_layouts')
+    a, b = (51.0, -1.0), (51.1, -0.5)
+    brg, nm = G.bearing_nm(a, b)
+
+    def legs(**kw):
+        return [{'id': 'A', 'leg': 'IF', 'lat': a[0], 'lon': a[1]}, {'id': 'B', 'leg': 'TF', 'lat': b[0], 'lon': b[1], **kw}]
+    off = round(nm + 0.4, 1)
+    c.eq((G.check_legs(legs(nm=off))['gaps'], bool(G.check_legs(legs(nm=off), 'true')['gaps']), G.check_legs(legs(nm=off), 'magnetic')['gaps']), ([], True, []),
+         'a distance 0.4 NM off passes the magnetic tolerance and fails the true one: the layout key decides when the leg prints only a distance', what='fallback')
+    c.eq(G.check_legs(legs(nm=off, crs=round(brg)), 'true')['gaps'], [], 'a leg that prints a (magnetic) course keeps its own basis, whatever the layout says', what='own basis')
+    c.ok(G.check_legs(legs(nm=off, true=round(brg, 1)), 'magnetic')['gaps'], 'gap', 'and one that prints a true course keeps the tight tolerance')
+    # through the record builder: the layout's key reaches the check
+    tbl = {'title': 'T', 'kind': 'STAR', 'name': 'TEST 1A', 'runways': [], 'transition': None, 'legs': [
+        {'id': 'A', 'leg': 'IF', 'lat': a[0], 'lon': a[1], 'alt': None, 'kt': None, 'crs': None, 'true': None, 'nm': None, 'over': None, 'remark': ''},
+        {'id': 'B', 'leg': 'TF', 'lat': b[0], 'lon': b[1], 'alt': None, 'kt': None, 'crs': None, 'true': None, 'nm': off, 'over': None, 'remark': ''}]}
+    ei = P.records_uk_app('EIXX', {'tables': [tbl], 'warnings': []}, 'f.pdf', '2026-10-29', None, 'EI', 'ei-coding')[0][0]
+    de = P.records_uk_app('EDXX', {'tables': [tbl], 'warnings': []}, 'f.pdf', '2026-10-29', None, 'ED', 'de-route')[0][0]
+    none = P.records_uk_app('EDXX', {'tables': [tbl], 'warnings': []}, 'f.pdf', '2026-10-29')[0][0]
+    c.eq(((ei['status'], ei.get('doubt')), de['status'], none['status']), (('doubt', 'geometry'), 'check', 'check'),
+         'records_uk_app: the Irish layout (true) judges a distance-only leg tightly, the German one (magnetic) and no layout as before', what='records_uk_app')
+    # unresolved: only the layouts that require positions
+    c.eq({e.name: e.positions for e in L.LAYOUTS if e.positions != 'deferred'}, {'be-coding': 'required'}, 'only the Belgian list requires positions', what='positions')
+    miss = {'tables': [{**tbl, 'legs': [tbl['legs'][0], {**tbl['legs'][1], 'lat': None, 'lon': None, 'true': 90.0, 'nm': None}]}], 'warnings': []}
+    be = P.records_uk_app('EBXX', miss, 'f.pdf', '2026-10-29', None, 'EB', 'be-coding')
+    ea = P.records_uk_app('EIXX', miss, 'f.pdf', '2026-10-29', None, 'EI', 'ei-coding')
+    c.eq(((be[0][0]['status'], be[0][0].get('doubt')), any('à résoudre par aerodb' in w for w in be[1]), ea[0][0]['status'], any('à résoudre par aerodb' in w for w in ea[1])),
+         (('doubt', 'unresolved'), False, 'check', True), 'a missing position is a doubt (unresolved) for the Belgian layout; elsewhere aerodb still resolves it (warning, record sure)', what='unresolved')
+
+
+@case('K32', 'Security review of the split: names taken from a server are never paths; the ICAO codes of the command line are checked', 'K', static=True,
+      rule='V3 § 10.29 (c), relecture de sécurité de la scission: a PDF name from the AD 2 page or from EAD is a plain file name under the cache; ICAO ^[A-Z0-9]{4}$')
+def k32(c):
+    import contextlib
+    import importlib
+    import io
+    import tempfile
+    from pathlib import Path
+    P = _proc()
+    S = importlib.import_module('proc_sia')
+    E = importlib.import_module('proc_ead')
+    hostile = ['../../x.pdf', 'a/b.pdf', '..\\x.pdf', '/etc/x.pdf', 'C:\\x.pdf', ' lead.pdf', '..pdf/..', '.pdf/x', 'a:b.pdf']
+    with tempfile.TemporaryDirectory() as td:
+        cache = Path(td) / 'cache'
+        cache.mkdir()
+        refused = []
+        for n in hostile:
+            try:
+                P.safe_path(cache, n)
+            except ValueError:
+                refused.append(n)
+        c.eq(refused, hostile, 'safe_path refuses every hostile name', what='safe_path')
+        c.ok(P.safe_path(cache, 'AD_2_LFBD_DATA_RWY23_RNP_CODE.pdf').parent == cache and P.safe_path(cache, 'AD_2_LFBO_IAC_RWY14R_FNA_ILS_Y_CAT_ 1_2_3_LOC_Y.pdf').parent == cache and P.safe_path(cache, 'EG_AD_2_EGLL_6-1_en', E.SAFE_NAME).name == 'EG_AD_2_EGLL_6-1_en', 'ok',
+             'a plain file name is accepted (a space inside it too, as in the LFBO ILS charts; EAD names may have no extension)')
+        # the AD 2 page cites hostile names beside a good one: only the good one is asked for, nothing is written outside the cache
+        evil = ('../../x.pdf', 'a/b.pdf', '..\\x.pdf')
+        page = '<a href="Cartes/LFXX/AD_2_LFXX_DATA_RWY09_RNAV_CODE.pdf">x</a>' + ''.join(f'<a href="Cartes/LFXX/{n}">y</a>' for n in evil)
+        skipped = []
+        c.eq((P.pdf_names('LFXX', page, skipped), sorted(skipped)), (['AD_2_LFXX_DATA_RWY09_RNAV_CODE.pdf'], sorted(evil)), 'pdf_names keeps the plain name and lists the refused ones', what='pdf_names')
+        asked, said = [], []
+        saved = (S.fetch, S.first_page_rows, S.url_exists)
+
+        def fake_fetch(url, timeout=60):
+            asked.append(url)
+            return page.encode() if url.endswith('FR-AD-2.LFXX-fr-FR.html') else b'%PDF-1.4'
+        S.fetch, S.first_page_rows, S.url_exists = fake_fetch, lambda p: [], lambda *a, **k: False
+        try:
+            S.read_aerodrome(S.eaip_url('2026-10-01'), 'LFXX', cache, None, lambda *t: said.append(' '.join(map(str, t))))
+        finally:
+            S.fetch, S.first_page_rows, S.url_exists = saved
+        names = sorted(p.name for p in Path(td).rglob('*'))
+        c.ok(len([u for u in asked if u.endswith('.pdf')]) == 1 and sum('nom de PDF refusé' in s for s in said) == 3 and 'x.pdf' not in names
+             and sorted(p.name for p in cache.iterdir()) == ['AD_2_LFXX_DATA_RWY09_RNAV_CODE.pdf'], f'{asked} {said} {names}',
+             'read_aerodrome asks for the plain name only, says the three refusals, and writes nothing but that file in the cache')
+        # a bad ICAO code never reaches an address or a file name
+        bad = []
+        for code in ('lf/../x', 'LFB', 'LFBDX', 'L F', ''):
+            try:
+                S.read_aerodrome(S.eaip_url('2026-10-01'), code, cache)
+            except ValueError as e:
+                bad.append('OACI' in str(e))
+        c.eq(bad, [True] * 5, 'read_aerodrome refuses a bad ICAO code', what='icao read_aerodrome')
+        eaip = S.eaip_url('2026-10-01')
+        for argv in (['..', '--eaip', eaip], ['lf1', '--eaip', eaip], ['LFBD', 'x/y', '--eaip', eaip], ['a/b', '--pdf-dir', td, '--cycle', '2026-10-01']):
+            try:
+                with contextlib.redirect_stderr(io.StringIO()):
+                    S.main(argv + ['--cache', str(cache), '--out', str(Path(td) / 'out')])
+                msg = 'no refusal'
+            except SystemExit as e:
+                msg = str(e)
+            c.ok('code OACI refusé' in msg, msg, f'the command line refuses {argv[0]!r}')
+        c.ok(not (Path(td) / 'out').exists(), 'out', 'and nothing was written')
+
+        # EAD: a document name from the server never leaves the cache
+        class Lib:
+            def authority(self, x):
+                return True
+
+            def choose(self, *a):
+                pass
+
+            def search(self, **kw):
+                return {'count': 3, 'pages': 1, 'warning': None, 'rows': [{'cells': [n, 'a title'], 'links': [], 'buttons': []} for n in ('EG_AD_2_../../x.pdf', 'EG_AD_2_a/b.pdf', 'EG_AD_2_..\\x.pdf')]}
+
+            def fetch(self, row):
+                raise AssertionError('a refused name must not be downloaded')
+        out = Path(td) / 'ead'
+        say = []
+        E.fetch_ad(Lib(), 'EGLL', out, lambda *t: say.append(' '.join(map(str, t))))
+        c.ok(sum('nom refusé' in s for s in say) >= 3 and sorted(p.name for p in (out / 'cache' / 'EGLL').iterdir()) == [] and not (Path(td) / 'x.pdf').exists(), str(say[-4:]),
+             'EAD: the hostile names are refused before any download or write')
+    c.ok('.proc_cache/' in (c.root / '.gitignore').read_text(encoding='utf-8').split(), '.gitignore', 'the default cache folder of the command line is ignored by Git')
+    dc = S.default_cache()
+    c.ok(Path(dc) == c.root / 'data' / 'local' / 'eaip' if (c.root / 'data').is_dir() else dc == '.proc_cache', dc, 'without --cache: data/local/eaip when the data folder exists, else .proc_cache')
