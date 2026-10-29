@@ -237,6 +237,24 @@ def i8(c):
             time.sleep(0.02)
         c.eq(J.view(e['job'])['state'], 'error', 'an exception ends the job in error, the launcher goes on', what='failing job')
         c.ok(('state', 'scan') in R.REGISTRY, str(list(R.REGISTRY)), 'the D0 list holds state/scan')
+        # page sans fenêtre d'un travail : sortie d'une zone rendue par POST /__setup/regen/job/put (Jobs.put), reçue par job.take
+        def build(job, args, ctx):
+            got = job.take('fr', timeout=10)
+            return {'got': sorted(got) if got else None}
+        JB = R.Jobs({('base', 'build'): (build, lambda a: {'zones': ['fr', 'ie']})}, {})
+        bj = JB.start('base', 'build', {})
+        tok = JB.cur.token
+        c.eq([JB.put('nope', tok, 'fr', {'a.json': '{}'})['status'], JB.put(bj['job'], 'wrong', 'fr', {'a.json': '{}'})['status'],
+              JB.put(bj['job'], tok, 'gb', {'a.json': '{}'})['status'], JB.put(bj['job'], tok, 'fr', {'../a.json': '{}'})['status'],
+              JB.put(bj['job'], tok, 'fr', {'a.json': 'x' * (R.PUT_MAX + 1)})['status']], [409, 403, 400, 400, 413],
+             'the output is refused: another job, a wrong token, a zone outside the job, a path, too large', what='put refusals')
+        c.ok(JB.put(bj['job'], tok, 'fr', {'airports.json': '[]', 'navaids.json': '[]'})['ok'], '', 'the running job takes a zone\'s output')
+        for _ in range(200):
+            if JB.view(bj['job'])['state'] != 'running':
+                break
+            time.sleep(0.02)
+        c.eq(JB.view(bj['job'])['result'], {'got': ['airports.json', 'navaids.json']}, 'the verb receives the output by job.take', what='taken output')
+        c.ok(tok not in str(JB.view()) and tok not in str(JB.view(bj['job'])), '', 'the job\'s token is never in its view')
 
         def leaky(job, args, ctx):
             job.step('login as eaduser with s3cretPW')

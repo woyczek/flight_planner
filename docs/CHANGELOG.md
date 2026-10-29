@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: a job's headless page returns its output** (`tools/regen_jobs.py`, `tools/launch.py`; frame
+  INTEGRATION § 15.1, DECISIONS; noreg I8): `POST /__setup/regen/job/put` hands a zone's output to the running job
+  (its random token, a zone of its arguments, bounded names and size, workstation only); the job's verb receives it with
+  `job.take(zone)`, writes and commits it — for the base build on the launcher (D5).
 - **Launcher: one table of routes** (`tools/launch.py`, `tools/lan_access.py`, `frame/sw.js`,
   `shared/maintenance_page.js`; frame INTEGRATION, DECISIONS; noreg I10): each `/__setup/` route is declared once with
   its public (local network or this workstation), and the local network's gate reads that table; the data repository's

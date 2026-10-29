@@ -12,6 +12,7 @@ Socle commun à toutes les opérations de régénération (lot D0 ; les verbes d
 Routes (tools/launch.py, ce poste seulement : refusées à un appareil du réseau local) : GET /__setup/regen/state,
 POST /__setup/regen/job { set, verb, args } → { job }, GET /__setup/regen/job[?id=], POST /__setup/regen/job/cancel { id }.
 """
+import hmac
 import importlib.util
 import json
 import os
@@ -22,6 +23,7 @@ import sys
 import threading
 import time
 import uuid
+from secrets import token_urlsafe  # jeton d'un travail (le paramètre « secrets » des fonctions est un dossier)
 
 # sorties publiées (chemins de data/) et sorties locales jamais publiées ; caches des sources : data/sia/<source>/
 OUTPUTS = ('sia/base/', 'proc/', 'sia/vfr/', 'AircraftDB/', 'sia/mora.csv')
@@ -118,8 +120,15 @@ def state(data, secrets, git_cmd=None, git_env=dict, step=None, cancelled=None):
     return out
 
 
+# sortie d'une zone rendue par la page sans fenêtre d'un travail (POST /__setup/regen/job/put) : noms de fichier, taille
+PUT_NAME = re.compile(r'[a-z0-9_.-]{1,64}\.json')
+PUT_ZONE = re.compile(r'[a-z0-9_-]{1,32}')
+PUT_MAX = 64 * 1024 * 1024  # octets, tous les fichiers d'un envoi
+
+
 class Job:
-    """Un travail : son état lisible par la page, ses aides (étape, journal) et l'annulation demandée."""
+    """Un travail : son état lisible par la page, ses aides (étape, journal), l'annulation demandée, et la sortie des zones
+    rendue par une page sans fenêtre (token, put, take)."""
 
     def __init__(self, set_, verb, args, clean=str, author=''):
         self.clean = clean  # nettoyage des secrets (clean_error) : toute ligne et toute étape passent par lui
@@ -128,6 +137,26 @@ class Job:
         self.data = {'id': self.id, 'set': set_, 'verb': verb, 'args': args, 'author': author, 'state': 'running', 'step': '',
                      'done': 0, 'total': 0, 'unit': '', 'log': [], 'result': None, 'started': int(time.time()), 'ended': None}
         self._cancel = threading.Event()
+        # jeton du travail : le verbe le passe à sa page sans fenêtre dans le fragment de l'adresse (…#job=<id>&t=<jeton>),
+        # jamais dans view(), le fichier du dernier travail ni un journal
+        self.token = token_urlsafe(32)
+        self._inbox, self._cv = {}, threading.Condition()
+
+    def put(self, zone, files):
+        """Sortie d'une zone remise par la route (déjà contrôlée) : { nom: texte }."""
+        with self._cv:
+            self._inbox[zone] = files
+            self._cv.notify_all()
+
+    def take(self, zone, timeout=None):
+        """Attend la sortie de cette zone : { nom: texte }, ou None (délai passé, travail annulé)."""
+        end = None if timeout is None else time.time() + timeout
+        with self._cv:
+            while zone not in self._inbox:
+                if self.cancelled() or (end is not None and time.time() >= end):
+                    return None
+                self._cv.wait(0.5 if end is None else max(0.01, min(0.5, end - time.time())))
+            return self._inbox.pop(zone)
 
     def step(self, text, done=None, total=None, unit=None):
         self.data['step'] = self.clean(str(text))[:200]
@@ -273,6 +302,28 @@ class Jobs:
             return {'ok': False, 'status': 410, 'message': 'no such job'}
         j._cancel.set()
         return {'ok': True, 'job': j.id}
+
+    def put(self, id_, token, zone, files):
+        """Sortie d'une zone rendue par la page sans fenêtre du travail en cours : 409 (pas celui qui tourne), 403 (jeton
+        faux), 400 (zone hors des arguments du travail, nom de fichier refusé), 413 (plus de PUT_MAX octets) ; rien n'est
+        écrit ici, le verbe la reçoit par job.take(zone) et l'écrit lui-même."""
+        with self.lock:
+            j = self.cur
+        if not j or j.id != str(id_ or '') or j.data['state'] != 'running':
+            return {'ok': False, 'status': 409, 'message': 'not the running job'}
+        if not isinstance(token, str) or not hmac.compare_digest(token.encode(), j.token.encode()):
+            return {'ok': False, 'status': 403, 'message': 'wrong token'}
+        args = j.data.get('args') or {}
+        zones = [args.get('zone')] + list(args.get('zones') or []) if isinstance(args, dict) else []
+        if not isinstance(zone, str) or not PUT_ZONE.fullmatch(zone) or zone not in zones:
+            return {'ok': False, 'status': 400, 'message': 'zone not in the job'}
+        if not isinstance(files, dict) or not files or not all(isinstance(k, str) and PUT_NAME.fullmatch(k) and isinstance(v, str)
+                                                                for k, v in files.items()):
+            return {'ok': False, 'status': 400, 'message': 'refused file name'}
+        if sum(len(v.encode('utf-8')) for v in files.values()) > PUT_MAX:
+            return {'ok': False, 'status': 413, 'message': 'too large'}
+        j.put(zone, dict(files))
+        return {'ok': True, 'job': j.id, 'zone': zone, 'files': len(files)}
 
 
 def _scan(job, args, ctx):

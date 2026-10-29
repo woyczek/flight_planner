@@ -943,6 +943,13 @@ in the launcher; `resume` finds it again.
 - **Kept across a restart** (`tools/.regen_last.json`, never in the repository): the last job and the last start of each
   verb. A job still running when the launcher stopped is read back as `state: 'interrupted'` (`resume` gives it, the page
   says it); a verb's gap (`MIN_GAP`) holds across a restart.
+- **A job's headless page** (29 Oct 2026, for the base build of D5): a verb that drives a page without a window gives it
+  the job's token in the fragment of its address (`…#job=<id>&t=<token>`; `job.token`, never in `view()`, the last job's
+  file or a log); the page hands each zone's output back with `POST /__setup/regen/job/put { job, token, zone, files: {
+  "<name>.json": "<text>" } }` (workstation only): 409 not the running job, 403 wrong token, 400 a zone outside the job's
+  `args.zone` / `args.zones` or a name outside `[a-z0-9_.-]{1,64}.json`, 413 over 64 MB in all (`regen_jobs.PUT_MAX`).
+  The route writes nothing: the verb receives the texts by `job.take(zone, timeout)` (`None` on timeout or cancel), writes
+  them itself and commits by `commit_outputs`.
 - `POST /__setup/regen/job { set, verb, args, author }`, `GET …/job[?id=]`, `POST …/job/cancel { id }`: one job at a time in a thread;
   `set` and `verb` from a fixed list (`regen_jobs.REGISTRY`), each with its check of `args`; nothing from the page is a path,
   an address or a command. 400: unknown operation or bad arguments; 409: a job is running; 410: no such job; 429 `{ reason:

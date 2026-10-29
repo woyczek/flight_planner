@@ -1612,3 +1612,11 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - With it: `data_repo_url()` drops a `user:token@` from the configured address; Maintenance says « réglage du poste »
     (not « sans lanceur ») to a paired device refused `/__setup/workstation`; `lib/geo.js` and `lib/launcher.js` join the
     frame's offline shell (`frame/sw.js`).
+- **29 Oct 2026 — A job's headless page hands its output back through the launcher** (AeroDB's D5 build):
+  - The base is built on the launcher by a headless browser per zone; its page must return the zone's output to the job.
+    A second server of the job (ephemeral port, its own token) was the alternative: refused — one local address only, the
+    launcher already serves the builder's scripts and `data/` under its CSP.
+  - `POST /__setup/regen/job/put`: workstation only, the running job only, its random token (`hmac.compare_digest`), a
+    zone of its arguments, bounded names and size; it writes nothing, the verb does (`job.take`, then `commit_outputs`).
+    While a Data job runs, a synchronisation keeps `sia/base/` on the workstation whatever the gesture (decided the same
+    day): a build and a pass never cross.
