@@ -396,6 +396,13 @@
           "en": "Procedure lists: outdated ⌛ and conflicting ⚠ marked, never hidden; flat lists; \"On the map\" button",
           "de": "Verfahrenslisten: veraltet ⌛ und im Konflikt ⚠ markiert, nie verborgen; flache Listen; Schaltfläche „Auf der Karte“",
           "es": "Listas de procedimientos: caducado ⌛ y en conflicto ⚠ marcados, nunca ocultos; listas planas; botón «En el mapa»"
+        },
+        {
+          "state": "planned",
+          "fr": "Lien « Source » sur chaque procédure : la page codée (copie locale du lanceur, sinon le SIA, sinon le portail EAD)",
+          "en": "\"Source\" link on each procedure: the coded page (the launcher's local copy, else the SIA, else the EAD portal)",
+          "de": "Link „Quelle“ bei jedem Verfahren: die kodierte Seite (lokale Kopie des Launchers, sonst SIA, sonst EAD-Portal)",
+          "es": "Enlace «Fuente» en cada procedimiento: la página codificada (copia local del lanzador, si no el SIA, si no el portal EAD)"
         }
       ]
     },
