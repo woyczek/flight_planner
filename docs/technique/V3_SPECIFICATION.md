@@ -780,13 +780,17 @@ redesigned for touch at that point.
          procedure, and the same link in the Map's aerodrome card beside the coverage line; opens in a new tab; absent when
          the record names no file.
        - **What it opens, in this order.** (1) On the workstation with a launcher, the local copy the job kept:
-         `/__setup/doc/<kind>/<cycle>/<file>` served by the launcher **to the workstation only** (never to a paired device
-         nor to the LAN), read-only, `<kind>` ∈ eaip | ead, `<cycle>` four digits, `<file>` matched against
-         `^[A-Za-z0-9_.-]+\.pdf$` with no path separator, 404 otherwise, PDF content type, no listing of the folder;
+         `/__setup/doc/<kind>/<key>/<file>` served by the launcher **to the workstation only** (never to a paired device
+         nor to the LAN: 403 off `lan_access.ROUTES`), GET only, read-only, `<kind>` ∈ eaip | ead, `<key>` = the AIRAC
+         date `AAAA-MM-JJ` for eaip (`data/local/eaip/<date>/`, flat) or the ICAO code for ead (`data/local/ead/cache/<ICAO>/`,
+         rewritten at each reading of the aerodrome, no cycle), `<file>` matched against `^[A-Za-z0-9_.-]+\.pdf$` with no
+         path separator, real path checked under the expected root (links and junctions refused), 404 otherwise,
+         `application/pdf` with nosniff and inline disposition, no listing of the folder (frame session, 29 Oct);
          (2) else, for an eAIP record, the public SIA address `charts.base + Cartes/<ICAO>/<file>`; (3) else, for an EAD
          record off the workstation, the EAD Basic portal (home) with the document's name shown in the link's title, since
          EAD documents are licensed for personal use and never leave the workstation's cache. The launcher's `/__setup/status`
-         says `docs: true` when (1) is available; Fuel and the Map read it through `ctx.launcher`.
+         says `docs: true` when (1) is available (false on the LAN); `ctx.launcher.doc(kind, key, file)` gives the same-origin
+         URL or `null` (no launcher, paired device, or a failed check), with no network call: the module makes a link of it.
        - **What aerodb adds.** Every record read from a document carries `source.file` (the document's file name) beside
          `source.kind` and `source.cycle`; `charts.base` stays on the aerodrome's file; a record without a file has no link.
          The OCR'd records (`<ICAO>.ocr.json`) carry the same.
