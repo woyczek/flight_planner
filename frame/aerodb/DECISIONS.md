@@ -1495,3 +1495,16 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Before / after** (offline, cached pages, gap check `proc_eaip.gaps_of`): LFPO 316 procedures read, 316 kept, 0 dropped, before and after; LFBO 78 / 78 / 0. The check now compares 17 more legs (LFPO 148 → 159, LFBO 64 → 70: the `TF RWnn` of the RNP pages and the legs that leave the threshold): none fails. APP at LFPO 33 (ILS 5, RNP 6, INA 22),
   LFBO 26 (ILS 4, RNP 4, INA 18): unchanged counts, each ILS now has its threshold (IF → RWnn → missed: 4 of 5 at Orly with an IF, 4 of 4 at Toulouse; Orly RWY 07 starts at the threshold). Runways in the file: 0 → 6 (LFPO), 0 → 4 (LFBO).
 - **Bench**: K24 (AD 2.12 of LFPO and LFBO on the real sections, an unreadable latitude, a page without the section, the THR / DTHR measure, ILS 06 / 25 / 07 of Orly and 14L of Toulouse, the page without AD 2.12). Fixtures: `FR-AD-2.LFPO.AD-2.12.html`, `FR-AD-2.LFBO.AD-2.12.html` (the section's first table), five more rows files (SOURCES.md).
+
+## 29 October 2026 — Orly STAR RWY20: a leading arrow cut AMB 9W in two
+
+- **Reported** (the user, through BUGS SOG): LFPO's STARs for runway 20 should be NIMER 9W, AMB 9W, LUMAN 9W, BOBSA 9W and CAD 9W; the
+  installed file had one nameless STAR per runway. That file was read on 28 Oct at 18:01, with the reader before 636a020f4 (one
+  concatenated procedure per STAR page). With the current reader, four of the five were right; AMB 9W was cut in two (AMB alone, then
+  a « NONAME » DIBES → ODILO) because its second row starts with an arrow glyph (« → TF DIBES »).
+- **Done** (`tools/proc_eaip.py`): `norm_tokens` drops arrow glyphs leading a row; a block without a title (a procedure begun at the
+  bottom of the previous page, LFPO SID RWY07 _05) that repeats point for point a named procedure of the same kind and runway is
+  removed, with a warning; otherwise it stays « NONAME », with a warning. Offline, LFPO: 7 nameless records → 0, 316 → 310 (the six
+  duplicates merged into their named procedure). The constraints are read where the table prints them (FL260 and 280 kt at SOMED for
+  NIMER 9W, at the IF for AMB 9W).
+- **Bench**: K24 (the real page STAR RWY20 _02, the arrow, the untitled repeat of SID RWY07 _04 / _05).

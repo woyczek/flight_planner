@@ -406,6 +406,8 @@ def norm_tokens(row):
     terminateur collé à des tirets (« F M-- » → FM --) ou virage collé à des tirets (« L- », « ---L »), virgule décimale → point (« 198,4 » → 198.4). Ne change aucune valeur :
     elle remet seulement les mots où l'extracteur les avait coupés ou collés."""
     t = row.split()
+    while t and re.fullmatch(r'[←→↑↓↗↘➔➜►▶]+', t[0]):    # flèche de renvoi en tête de ligne (« → TF DIBES », LFPO STAR RWY20 : AMB 9W) : pas une cellule
+        t = t[1:]
     out, i = [], 0
     while i < len(t):
         w = t[i]
@@ -2025,6 +2027,15 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
                 procs.append(r)
         warnings += [f'{f}: {x}' for x in w]
         used.append(f)
+    # un bloc sans titre (procédure commencée en bas de la page précédente et reprise en tête de la suivante, LFPO SID RWY07 _05) qui
+    # répète, point pour point, une procédure nommée du même type et de la même piste : c'est elle, il est retiré ; sinon il reste « NONAME »
+    named = {(p['kind'], tuple(p['runways']), tuple(q['id'] for q in p['points'])) for p in procs if '.NONAME.' not in p['id']}
+    for p in [p for p in procs if '.NONAME.' in p['id']]:
+        if (p['kind'], tuple(p['runways']), tuple(q['id'] for q in p['points'])) in named:
+            procs.remove(p)
+            warnings.append(f'{p["source"].get("ref")}: bloc sans titre identique à une procédure nommée de la même piste, retiré ({p["id"]})')
+        else:
+            warnings.append(f'{p["source"].get("ref")}: bloc sans titre gardé sous {p["id"]} (aucune procédure nommée ne lui ressemble)')
     charts = [{'path': f'Cartes/{icao}/{f}', 'kind': chart_kind(f)} for f in sorted(files)]
     doc = {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
            'procedures': procs, 'charts': {'base': base_url.rstrip('/') + '/html/eAIP/', 'items': charts, 'vac': vac},

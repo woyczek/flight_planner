@@ -18,3 +18,4 @@ official character to their use here: tests of a flight-simulation suite, **not 
 
 A new fixture from a State's AIP other than France's does not come here (each State's copyright: `frame/aerodb/EAD_BASIC.md` § 4);
 synthetic data in the same format instead.
+- `eaip/AD_2_LFPO_DATA_STAR_RWY20_RNAV_CODE_02.rows.txt`, `eaip/AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_04.rows.txt`, `…_05.rows.txt`: first-page rows of the SIA eAIP coding tables of Paris-Orly, cycle 2026-10-01 (Licence ouverte du SIA), read 29 Oct 2026.

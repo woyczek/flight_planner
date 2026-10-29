@@ -2112,3 +2112,18 @@ def k24(c):
                      {'ok': False, 'problems': ['2 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}], 12, ['géométrie incohérente'])
     c.eq(st, {'pages': 4, 'read': 1, 'rejected': 3, 'procedures': 12, 'dropped': 1, 'reasons': [['lignes de tronçon illisibles (moins de 85 % lues)', 2], ['géométrie incohérente', 1], ['mise en page non reconnue', 1]]},
          'pages found / read / rejected, procedures, dropped, the three most frequent reasons', what='stats_of')
+    # 15. Orly STAR RWY20 (the user's page 11/24): five STARs, each with its IF; an arrow glyph leading a row (« → TF DIBES ») is no cell;
+    # the HOLDING block is no procedure
+    star = T('AD_2_LFPO_DATA_STAR_RWY20_RNAV_CODE_02')
+    got = {g['label']: [l['id'] for l in g['legs']] for g in star['groups']}
+    c.eq(got, {'NIMER 9W': ['NIMER', 'SOMED', 'DIBES', 'CAD', 'SOTIP', 'ODILO'], 'AMB 9W': ['AMB', 'DIBES', 'CAD', 'SOTIP', 'ODILO'],
+               'LUMAN 9W': ['LUMAN', 'CAD', 'SOTIP', 'ODILO'], 'BOBSA 9W': ['BOBSA', 'BENAR', 'CAD', 'SOTIP', 'ODILO'], 'CAD 9W': ['CAD', 'SOTIP', 'ODILO']},
+         'NIMER, AMB, LUMAN, BOBSA and CAD 9W, each from its IF; no procedure without a name, the holdings left out', what='LFPO STAR RWY20')
+    amb = next(g for g in star['groups'] if g['label'] == 'AMB 9W')['legs']
+    c.eq((amb[0]['alt'], amb[0]['kt'], amb[2]['alt']), ({'type': 'max', 'ft': 26000}, 280, {'type': 'at', 'ft': 13000}), 'AMB: FL260 at most and 280 kt at the IF, FL130 at CAD', what='AMB 9W')
+    c.eq(P.norm_tokens('→ TF DIBES - 018 019,2 5,0 - - - - 1,0')[:2], ['TF', 'DIBES'], 'a leading arrow is dropped', what='norm_tokens')
+    # a block without a title at the head of a page (a procedure begun at the bottom of the previous page) that repeats a named one is removed
+    pages = ['AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_04.pdf', 'AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_05.pdf']
+    d7 = P.build_aerodrome('LFPO', pages, lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-01', '2026-10-01')
+    c.ok(not [p['id'] for p in d7['procedures'] if '.NONAME.' in p['id']] and any('bloc sans titre identique' in w for w in d7['warnings']),
+         [p['id'] for p in d7['procedures'] if 'MONOT' in p['id'] or 'NONAME' in p['id']], 'the untitled repeat of MONOT 2G is removed and reported')
