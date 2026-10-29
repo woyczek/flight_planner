@@ -791,6 +791,20 @@ redesigned for touch at that point.
        - **AIP Ireland as the official source for Irish airspaces** (user, 29 Oct evening, Dublin: openAIP codes the CTA
          sectors 3 to 6 without their inner hole, so five sectors answer at one point): ENR 2.1 / AD 2.17 read like the
          SIA for France; until then the build stats flag overlapping sectors of one family and the point sheet says it.
+       - **Onboarding of a pilot through a relay on the NAS** (user, 29 Oct evening: "le chemin d'onboarding d'un
+         utilisateur. Actuellement ça ne semble pas trivial. la clef à grain fin n'est pas simple à produire… est-ce qu'un
+         synologydrive pourrait répondre ?"; feasibility note by the frame session, decided): the **next priority after
+         the refactoring of § 10.29**. The launcher runs on the NAS (Container Manager) in a **relay mode** and serves the
+         Pilot application itself (same origin, the launcher transport unchanged): it alone holds the git secret; the
+         administrator creates the user (the signed registry's per-user keys) and sends an invitation link
+         (`#settings?join=`); the pilot opens it on any device, types the code once, never sees GitHub nor a token.
+         To write: the LAN pairing extended to the Internet with long, revocable device tokens per user, only the Pilot
+         application's routes exposed (the route table with its public, frame lot 3c, is the base), the commit author
+         taken from the user's key, an invitations page; HTTPS through DSM's reverse proxy with Let's Encrypt, never
+         the bare launcher; attempt limits; a full security review before any exposure. Two to three frame lots.
+         Rejected: a WebDAV / NAS transport (no atomic multi-file commit, no merge, NAS passwords in the browser) and
+         Synology Drive file sync (destroyed `data/.git` once, no tablet nor site). The GitHub token stays the advanced
+         user's path, not the default onboarding.
    29. **Challenge of 29 Oct: refactoring before any new feature** (user, 29 Oct: "tu challengeras toutes les décisions
        prises depuis hier, quitte à commencer par refaire du code (refactoring)"; inventory by a read-only agent on
        a29709172 plus the debts declared by the four sessions). Findings: the specification ran ahead of the code (about

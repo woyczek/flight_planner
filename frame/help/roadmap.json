@@ -258,6 +258,13 @@
           "en": "The launcher opens the Pilot application (V3) at start; the V2 pages stay at their addresses",
           "de": "Der Launcher öffnet beim Start die Pilot-App (V3); die V2-Seiten bleiben unter ihren Adressen",
           "es": "El lanzador abre la aplicación Piloto (V3) al inicio; las páginas V2 permanecen en sus direcciones"
+        },
+        {
+          "state": "planned",
+          "fr": "Accueil d'un pilote par un relais sur le NAS : lien d'invitation, code saisi une fois, aucun jeton git chez le pilote",
+          "en": "Pilot onboarding through a relay on the NAS: invitation link, code typed once, no git token for the pilot",
+          "de": "Aufnahme eines Piloten über ein Relais auf dem NAS: Einladungslink, Code einmal eingeben, kein Git-Token beim Piloten",
+          "es": "Alta de un piloto mediante un relé en el NAS: enlace de invitación, código tecleado una vez, ningún token git para el piloto"
         }
       ]
     },
