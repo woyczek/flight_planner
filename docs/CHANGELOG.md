@@ -32,6 +32,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   ChatGPT reply read as JSON (paste or file) became one sheet with a field "sheets" holding the whole array, and the review
   proposed that single field; the `sheets` envelope and a bare array now give one sheet per element, merged field by field
   into the sheet of the same id.
+- **aerodb: the ILS of Orly and Toulouse are usable, and every runway has its threshold** (`tools/proc_eaip.py`, `frame/aerodb/aerodb.js` comment; SPEC, INTEGRATION, DECISIONS; case K24) — the eAIP builder now reads the section AD 2.12 of the aerodrome page
+  (runway numbers, bearings, dimensions, threshold and displaced-threshold positions and elevations): the file carries every runway (LFPO 6, LFBO 4), and the `RWnn` points of the RNP pages are placed, at the displaced threshold when there is one (the coding tables agree with
+  it, measured on Orly 06 and 25). An ILS page, which codes only the initial fix then « See chart », gets the runway threshold between the initial fix and the missed approach (`synthetic: 'threshold'`): IF → threshold → missed approach, drawn straight. No procedure
+  is dropped by the geometry check (LFPO 316 / 316, LFBO 78 / 78).
 
 - **aerodb: procedures synchronised from the workstation are announced** (`frame/aerodb/aerodb.js`; SPEC, INTEGRATION, DECISIONS;
   test K1) — an aerodrome read on the workstation now shows on the other devices as soon as its file arrives: aerodb announces

@@ -1913,7 +1913,7 @@ def k24(c):
     T = lambda stem: P.parse_code_table(rows(stem))
     legs = lambda g: [(l['leg'], l['id']) for l in g['legs']]
     # 1. every fixture of the two aerodromes: layout recognised, header known, at least 85 % of the leg rows read, each row counted once
-    names = sorted(f.name.replace('.rows.txt', '') for f in fx.glob('*.rows.txt') if '_LFBO_' in f.name or '_LFPO_' in f.name)
+    names = sorted(f.name.replace('.rows.txt', '') for f in fx.glob('*.rows.txt') if ('_LFBO_' in f.name or '_LFPO_' in f.name) and 'CODE' in f.name)
     bad = []
     for n in names:
         t = T(n)
@@ -2038,7 +2038,76 @@ def k24(c):
                            'https://example.org' + base, '2026-10-01')
     c.eq(d2.get('runways'), [{'id': '20', 'lat': 48.733333, 'lon': 2.383333, 'elev': None, 'qfu': 200, 'displaced': None, 'length': None, 'width': None, 'source': 'eaip'}],
          'a positioned threshold gives a runway record in the format of the CIFP ones; a « REF » row gives none', what='runways')
-    # 11. the report of a reading
+    # 11. AD 2.12 « Runway physical characteristics »: the only page that positions the thresholds (the DATA pages say « REF AD 2 LFPO.12 + THR 02 »)
+    page = lambda ic: (fx / f'FR-AD-2.{ic}.AD-2.12.html').read_text(encoding='utf-8')
+    w12 = []
+    lfpo = P.ad212_runways(page('LFPO'), 'LFPO', w12)
+    by = {r['id']: r for r in lfpo}
+    c.eq([r['id'] for r in lfpo], ['02', '20', '06', '24', '07', '25'], 'LFPO: six runways, in the page order', what='AD 2.12 LFPO')
+    c.eq(by['02'], {'id': '02', 'lat': 48.717542, 'lon': 2.376697, 'elev': 287, 'qfu': 17, 'true': 18.35, 'length': 2400, 'width': 45, 'displaced': 0, 'dthr': None, 'source': 'eaip'},
+         'RWY 02: THR 48°43\'03.15"N 002°22\'36.11"E, 287 ft, magnetic 017 (in parentheses), true 018.35, 2400 x 45, no displaced threshold', what='LFPO 02')
+    c.eq((by['06']['lat'], by['06']['lon'], by['06']['elev'], by['06']['dthr'], 950 <= by['06']['displaced'] <= 1000), (48.719975, 2.316919, 288, {'lat': 48.721247, 'lon': 2.320514, 'elev': 283}, True),
+         'RWY 06: THR, then the DTHR printed in parentheses with its own elevation (DTHR : 283ft)', what='LFPO 06')
+    c.eq((by['25']['dthr'], by['25']['qfu'], by['25']['true']), ({'lat': 48.726383, 'lon': 2.396392, 'elev': 288}, 253, 254.4), 'RWY 25: displaced too', what='LFPO 25')
+    c.eq([r['id'] for r in lfpo if r['dthr']], ['06', '25'], 'only 06 and 25 have a displaced threshold', what='LFPO displaced')
+    c.ok(all(isinstance(r['displaced'], int) for r in lfpo) and [r['id'] for r in lfpo if r['displaced']] == ['06', '25'], [(r['id'], r['displaced']) for r in lfpo],
+         '`displaced` is a distance in ft for every source (0 without a displaced threshold), the DTHR position is in `dthr`')
+    c.eq(w12, [], 'nothing to report on the real page', what='AD 2.12 warnings')
+    lfbo = P.ad212_runways(page('LFBO'))         # the aerodrome is found from the section identifier
+    c.eq([(r['id'], r['lat'], r['lon'], r['elev'], r['qfu'], r['length']) for r in lfbo],
+         [('14L', 43.637364, 1.357625, 489, 141, 3025), ('32R', 43.615636, 1.380236, 497, 321, 3025), ('14R', 43.644114, 1.345933, 488, 141, 3503), ('32L', 43.618964, 1.372117, 497, 321, 3503)],
+         'LFBO: four runways, the aerodrome found from « LFBO-AD-2.12 »', what='AD 2.12 LFBO')
+    # the section is found by its identifier, not by a regex on the page: other sections around it change nothing
+    other = ('<div id="LFPO-AD-2.11"><table><tr><td>99</td><td>1</td></tr></table></div>' + page('LFPO')
+             + '<div id="LFPO-AD-2.13"><table><tr><th>Position</th><th>Bearing</th></tr><tr><td>36</td><td>360</td></tr></table></div>')
+    c.eq([r['id'] for r in P.ad212_runways(other, 'LFPO')], ['02', '20', '06', '24', '07', '25'], 'neighbouring sections are not read', what='section by identifier')
+    # nothing guessed: a threshold that does not parse leaves its runway out, said; a page with no section gives nothing, said
+    wu = []
+    cut = P.ad212_runways(page('LFPO').replace('48°43\'03.15"N', '48°43\'??"N'), 'LFPO', wu)
+    c.ok([r['id'] for r in cut] == ['20', '06', '24', '07', '25'] and len(wu) == 1 and '02' in wu[0], f'{[r["id"] for r in cut]} {wu}', 'RWY 02 with an unreadable latitude: left out, one warning')
+    wn = []
+    c.eq((P.ad212_runways('<html><body>nothing</body></html>', 'LFPO', wn), len(wn)), ([], 1), 'no AD 2.12 section: no runway, one warning', what='no section')
+    # 12. the landing point: THR or DTHR? The coding tables agree with the DTHR (measure of 29 October 2026: the TF leg to RWnn of the RNP pages)
+    f06 = ['AD_2_LFPO_DATA_02.pdf', 'AD_2_LFPO_DATA_RWY06_FNA_RNP_CODE.pdf', 'AD_2_LFPO_DATA_RWY06_FNA_ILS_CAT123_LOC_CODE.pdf']
+    rows_pdf = lambda n: rows(n.replace('.pdf', ''))
+    d06 = P.build_aerodrome('LFPO', f06, rows_pdf, 'https://example.org' + base, '2026-10-01', None, None, page('LFPO'))
+    c.eq([r['id'] for r in d06['runways']], ['02', '20', '06', '24', '07', '25'], 'the file takes the runways of AD 2.12 (priority over the RWnn points of the tables)', what='file runways')
+    rnp = next(p for p in d06['procedures'] if 'RNP' in p['name'])
+    rw = next(q for q in rnp['points'] if q['id'] == 'RW06')
+    c.eq((rw['lat'], rw['lon']), (48.721247, 2.320514), 'the RW06 point of the RNP page is placed, at the DTHR (landing point of a displaced runway)', what='RNP RW06')
+    fpo = next(q for q in rnp['points'] if q['id'] == 'FPO06')
+    to_dthr = P.bearing_nm((fpo['lat'], fpo['lon']), (48.721247, 2.320514))[1]
+    to_thr = P.bearing_nm((fpo['lat'], fpo['lon']), (by['06']['lat'], by['06']['lon']))[1]
+    c.ok(abs(to_dthr - rw['nm']) < 0.06 < abs(to_thr - rw['nm']), f'printed {rw["nm"]} NM, to DTHR {to_dthr:.2f}, to THR {to_thr:.2f}',
+         'FPO06 to RW06: 11.5 NM printed, the DTHR is 0.03 NM from it (the page rounds to 0.1), the THR 0.20 NM')
+    c.eq(P.gaps_of(rnp), [], 'the geometry check, now able to compare the leg to RW06, finds nothing', what='gaps RNP 06')
+    # 13. the ILS final: IF -> threshold (straight, synthetic) -> missed approach; the leg that « See chart » hides is not coded
+    ils = next(p for p in d06['procedures'] if 'ILS' in p['name'])
+    c.eq([(q['id'], q['leg'], q.get('phase'), q.get('synthetic'), q.get('gap')) for q in ils['points']],
+         [('IPO06', 'IF', None, None, None), ('RW06', 'CF', None, 'threshold', None), ('PO412', 'TF', 'missed', None, True), ('MLN', 'TF', 'missed', None, None), ('MOLBA', 'TF', 'missed', None, None)],
+         'LFPO ILS 06: IPO06 (IF), RW06 (synthetic threshold), then PO412, MLN, MOLBA as the missed approach, `gap` kept on the first missed leg', what='ILS 06 points')
+    c.eq(({k: ils['points'][1][k] for k in ('lat', 'lon', 'alt')}, ils['points'][0]['lat']), ({'lat': 48.721247, 'lon': 2.320514, 'alt': None}, 48.602972),
+         'the threshold carries its position; the IF its own', what='ILS 06 positions')
+    c.eq(P.gaps_of(ils), [], 'the geometry check does not compare the first missed leg with the threshold', what='gaps ILS 06')
+    f25 = ['AD_2_LFPO_DATA_02.pdf', 'AD_2_LFPO_DATA_RWY25_FNA_ILS_CAT123_LOC_CODE.pdf', 'AD_2_LFPO_DATA_RWY07_FNA_ILS_CAT123_LOC_CODE.pdf']
+    d25 = P.build_aerodrome('LFPO', f25, rows_pdf, 'https://example.org' + base, '2026-10-01', None, None, page('LFPO'))
+    i25 = next(p for p in d25['procedures'] if p['runways'] == ['25'])
+    c.eq([(q['id'], q['leg'], q.get('phase')) for q in i25['points']],
+         [('VEKUH', 'IF', None), ('RW25', 'CF', None), (None, 'CA', 'missed'), ('PO432', 'DF', 'missed'), ('MLN', 'TF', 'missed'), ('MOLBA', 'TF', 'missed')],
+         'LFPO ILS 25: VEKUH, the threshold, then the CA (a leg without a fix) opens the missed approach', what='ILS 25 points')
+    c.eq(i25['points'][2].get('gap'), True, 'the CA keeps `gap`', what='ILS 25 gap')
+    i07 = next(p for p in d25['procedures'] if p['runways'] == ['07'])
+    c.eq([(q['id'], q.get('phase')) for q in i07['points']], [('RW07', None), ('PO412', 'missed'), ('MLN', 'missed'), ('MOLBA', 'missed')], 'LFPO ILS 07: no IF row was read, the threshold comes first', what='ILS 07 points')
+    c.ok(any('IF absent' in x for x in d25['warnings']), str(d25['warnings'][-4:]), 'and the missing IF is said')
+    # without the AD 2 page: no threshold position, nothing inserted, said (the record is what it was before)
+    dn = P.build_aerodrome('LFPO', f06, rows_pdf, 'https://example.org' + base, '2026-10-01')
+    inn = next(p for p in dn['procedures'] if 'ILS' in p['name'])
+    c.eq([q['id'] for q in inn['points']], ['IPO06', 'PO412', 'MLN', 'MOLBA'], 'no AD 2.12: no threshold inserted', what='ILS 06 without AD 2.12')
+    c.ok(any('position du seuil RW06 inconnue' in x for x in dn['warnings']) and 'runways' not in dn, str(dn['warnings'][-3:]), 'a warning says why; no `runways` in the file')
+    dl = P.build_aerodrome('LFBO', ['AD_2_LFBO_DATA_RWY14L_FNA_ILS_Z_LOC_Z_CODE.pdf'], rows_pdf, 'https://example.org' + base, '2026-10-01', None, None, page('LFBO'))
+    c.eq([(q['id'], q.get('synthetic')) for q in dl['procedures'][0]['points']][:3], [('IO14L', None), ('RW14L', 'threshold'), ('BO512', None)],
+         'LFBO ILS 14L: IO14L, RW14L (the THR: no displaced threshold), BO512', what='LFBO ILS 14L')
+    # 14. the report of a reading
     st = P.stats_of([{'ok': True, 'problems': []}, {'ok': False, 'problems': ['info: x', '3 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}, {'ok': False, 'problems': ['disposition non reconnue (x)']},
                      {'ok': False, 'problems': ['2 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}], 12, ['géométrie incohérente'])
     c.eq(st, {'pages': 4, 'read': 1, 'rejected': 3, 'procedures': 12, 'dropped': 1, 'reasons': [['lignes de tronçon illisibles (moins de 85 % lues)', 2], ['géométrie incohérente', 1], ['mise en page non reconnue', 1]]},

@@ -20,6 +20,7 @@ import sys
 import time
 import urllib.request
 from datetime import datetime, timezone
+from html.parser import HTMLParser
 from pathlib import Path
 
 DASHES = '-‐‑‒–—'
@@ -1910,6 +1911,8 @@ def _points(icao, legs, coords, warnings, missed_after=None):
                 p[k] = leg[k]
         if leg['over']:
             p['over'] = True
+        if leg.get('synthetic'):
+            p['synthetic'] = leg['synthetic']        # point que la table n'imprime pas (le seuil d'une approche ILS), ajouté d'après la page AD 2.12
         if seen_rw or leg.get('phase'):
             p['phase'] = 'missed'
         if leg.get('gap'):
@@ -1920,6 +1923,28 @@ def _points(icao, legs, coords, warnings, missed_after=None):
     if missing:
         warnings.append(f'coordonnées introuvables (page DATA ni base, à résoudre à la lecture par aerodb): {", ".join(missing)}')
     return pts
+
+
+def with_threshold(legs, runways, coords, warnings):
+    """Page ILS : la table code le point initial (IF), puis « See chart » (le dernier tronçon, l'alignement sur le radioalignement de piste, n'est PAS codé), puis l'approche interrompue (premier
+    tronçon marqué `gap`). Insère entre les deux le seuil de la piste, { id: 'RWnn', leg: 'CF', synthetic: 'threshold' } : une approche ILS devient IF (/FAF) → seuil → interrompue, tracée droit.
+    Le seuil vient de `coords` (page AD 2.12, voir build_aerodrome) ; sans position, ou si la page ne nomme pas une seule piste, rien n'est inséré (avertissement). Une approche sans point initial lu
+    (la page commence par l'approche interrompue) reçoit quand même le seuil, en tête, avec un avertissement. Le premier tronçon interrompu garde son drapeau `gap` (le contrôle de géométrie
+    ne le compare pas au seuil)."""
+    if len(runways) != 1:
+        warnings.append('page ILS: la page ne nomme pas une seule piste, seuil non ajouté')
+        return legs
+    rw = 'RW' + runways[0]
+    pos = coords.get(rw)
+    if not pos or pos[0] is None:
+        warnings.append(f'page ILS: position du seuil {rw} inconnue (page AD 2.12 absente ou piste non lue), seuil non ajouté')
+        return legs
+    if any(l['id'] == rw for l in legs):
+        return legs
+    at = next((k for k, l in enumerate(legs) if l.get('gap')), len(legs))
+    if not any(l['id'] for l in legs[:at]):
+        warnings.append(f'page ILS: aucun point initial lu avant « See chart » (IF absent), la procédure commence au seuil {rw}')
+    return legs[:at] + [{'id': rw, 'leg': 'CF', 'alt': None, 'over': None, 'synthetic': 'threshold'}] + legs[at:]
 
 
 def records(icao, table, coords, source, cycle):
@@ -1941,6 +1966,8 @@ def records(icao, table, coords, source, cycle):
             legs = (g['legs'] if g else []) + ([l for l in final['legs'] if not (g and l is final['legs'][0] and l['id'] and
                                                                                   g['legs'][-1]['id'] == l['id'])] if final else [])
             trans = g['label'][4:] if g else None
+            if final and final.get('gap') is not None:          # page ILS : l'alignement sur la piste n'est pas codé, le seuil est ajouté
+                legs = with_threshold(legs, table['runways'], coords, warnings)
             out.append({'id': _id_of(icao, 'APP', name, table['runways'], trans), 'icao': icao, 'kind': 'APP', 'name': name,
                         'runways': table['runways'], 'transition': trans,
                         'points': _points(icao, legs, coords, warnings, missed_after=True), 'source': src, 'status': 'check'})
@@ -1959,13 +1986,16 @@ def vac_url(base_url, icao):
     return f'{m.group(1)}/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.{icao}.pdf' if m else None
 
 
-def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=None):
+def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=None, ad2=None):
     """Fichier d'un terrain : { procedures, charts, warnings }. `files` : noms des PDF de Cartes/<OACI>/ ; `rows_of(nom)` : lignes
     d'un PDF ; `resolve(id)` : (lat, lon) d'un point en route, ou None."""
     coords, warnings, procs, used, formats = {}, [], [], [], []
     for f in sorted(files):
         if re.search(r'_DATA_0\d\.pdf$', f):
             coords.update(parse_data01(rows_of(f)))
+    ad_runways = ad2 if isinstance(ad2, list) else (ad212_runways(ad2, icao, warnings) if ad2 else [])
+    for r in ad_runways:                  # AVANT la lecture des pages : les points RWnn des tables RNP (« TF RW06 ») prennent le seuil d'atterrissage de la page AD 2.12
+        coords.setdefault('RW' + r['id'], landing_position(r))
     for f in sorted(files):
         if not CODE_PAGE.match(f) or 'FASDB' in f:
             continue
@@ -1999,7 +2029,7 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
     doc = {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
            'procedures': procs, 'charts': {'base': base_url.rstrip('/') + '/html/eAIP/', 'items': charts, 'vac': vac},
            'pages': used, 'formats': formats, 'warnings': warnings}
-    runways = runways_of(coords)
+    runways = ad_runways or runways_of(coords)       # la page AD 2.12 d'abord (complète) ; sinon les points RWnn positionnés par les pages DATA ou la base
     if runways:
         doc['runways'] = runways
     return doc
@@ -2015,6 +2045,148 @@ def runways_of(coords):
         if m and 1 <= int(m.group(1)) <= 36 and v and v[0] is not None:
             out.append({'id': m.group(1) + m.group(2), 'lat': v[0], 'lon': v[1], 'elev': None, 'qfu': int(m.group(1)) * 10, 'displaced': None, 'length': None, 'width': None,
                         'source': 'eaip'})
+    return out
+
+
+def landing_position(r):
+    """(lat, lon) du point d'atterrissage d'une piste de ad212_runways, celui que les tables de codage appellent RWnn : le seuil décalé (DTHR) quand la piste en a un, sinon le seuil (THR).
+    Mesure (29 octobre 2026, cycle 2026-10-01, tronçons « TF RWnn » des pages RNP, distance calculée depuis le point précédent moins distance imprimée) : Orly 06, THR −0,20 NM contre DTHR −0,03 NM ;
+    Orly 25, THR −0,31 NM contre DTHR −0,08 NM ; les huit autres pistes, sans seuil décalé, s'accordent à ±0,06 NM (la page imprime le dixième de NM) : le THR s'écarte de 3 à 4 fois cet
+    arrondi, le DTHR s'y tient. Le point RWnn des tables est donc l'extrémité de la zone d'atterrissage, pas le début de la piste."""
+    d = r.get('dthr')
+    return (d['lat'], d['lon']) if d else (r['lat'], r['lon'])
+
+
+class _SectionTables(HTMLParser):
+    """Les tableaux d'UNE section de la page AD 2 (la `<div id="LFPO-AD-2.12">`), chacun une liste de lignes, chaque ligne une liste de cellules en texte : les `<br/>` y deviennent
+    un retour à la ligne, les autres espacements une seule espace. La section est repérée par son identifiant et suivie par la profondeur des `<div>` : rien d'autre de la page n'est lu."""
+
+    def __init__(self, section_id):
+        super().__init__(convert_charrefs=True)
+        self.section_id, self.depth, self.tables, self.row, self.cell = section_id, 0, [], None, None
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'div':
+            if self.depth:
+                self.depth += 1
+            elif dict(attrs).get('id') == self.section_id:
+                self.depth = 1
+            return
+        if not self.depth:
+            return
+        if tag == 'table':
+            self.tables.append([])
+        elif tag == 'tr' and self.tables:
+            self.row = []
+        elif tag in ('td', 'th') and self.row is not None:
+            self.cell = []
+        elif tag == 'br' and self.cell is not None:
+            self.cell.append('\n')
+
+    def handle_endtag(self, tag):
+        if tag == 'div' and self.depth:
+            self.depth -= 1
+        elif tag in ('td', 'th') and self.cell is not None and self.row is not None:
+            text = ''.join(self.cell).replace('\xa0', ' ')
+            self.row.append('\n'.join(' '.join(part.split()) for part in text.split('\n')).strip())
+            self.cell = None
+        elif tag == 'tr' and self.row is not None and self.tables:
+            self.tables[-1].append(self.row)
+            self.row = None
+
+    def handle_data(self, data):
+        if self.cell is not None:
+            self.cell.append(data)
+
+
+_D = r'[°º˚]'
+_SEC = r'''\s*(?:["″”]|'')?'''
+_THR_LAT = re.compile(rf"(\d{{2}})\s*{_D}\s*(\d{{2}})\s*['′’]\s*(\d{{2}}(?:[.,]\d+)?){_SEC}\s*([NS])")
+_THR_LON = re.compile(rf"(\d{{3}})\s*{_D}\s*(\d{{2}})\s*['′’]\s*(\d{{2}}(?:[.,]\d+)?){_SEC}\s*([EW])")
+_THR_POS = re.compile(_THR_LAT.pattern + r'\s*[/,;]?\s*' + _THR_LON.pattern)
+
+
+def _pos_of(m):
+    """(lat, lon) en degrés décimaux d'une `_THR_POS` (latitude puis longitude), ou None si minutes ou secondes ≥ 60 ou degrés hors limites."""
+    g = m.groups()
+    out = []
+    for k, (hemi_neg, top) in enumerate((('S', 90), ('W', 180))):
+        d, mi, se, h = g[4 * k], g[4 * k + 1], g[4 * k + 2], g[4 * k + 3]
+        d, mi, se = int(d), int(mi), float(se.replace(',', '.'))
+        if mi >= 60 or se >= 60 or d > top:
+            return None
+        v = d + mi / 60 + se / 3600
+        out.append(round(-v if h == hemi_neg else v, 6))
+    return tuple(out)
+
+
+def ad212_runways(html, icao=None, warnings=None):
+    """Pistes de la section « AD 2.12 Caractéristiques physiques des pistes / Runway physical characteristics » de la page AD 2 du SIA (FR-AD-2.<OACI>-fr-FR.html), seule source qui
+    positionne les seuils (les pages DATA y renvoient : « REF AD 2 LFPO.12 + THR 02 »). Rend [{ id, lat, lon (THR), elev (ft, THR), qfu (cap magnétique imprimé, °), true (cap vrai), length, width (m),
+    displaced (ft, 0 sans seuil décalé : le même champ que le CIFP), dthr: None | { lat, lon, elev } (le seuil décalé, DTHR, imprimé entre parenthèses sous le THR), source: 'eaip' }]. La section est repérée par son identifiant (`<div id="LFPO-AD-2.12">`), le
+    tableau par l'en-tête de ses colonnes (« Position GEO THR », « THR elevation »…), jamais par la place d'une cellule ; une valeur qui ne se lit pas reste None. Rien n'est deviné : une piste dont la
+    position du THR ne se lit pas, ou dont le cap vrai s'écarte de plus de 30° du numéro, est écartée et signalée dans `warnings` (liste, facultative)."""
+    warn = (warnings if warnings is not None else []).append
+    if not icao:
+        found = re.search(r'id="([A-Z0-9]{3,4})-AD-2\.12"', html or '')
+        icao = found.group(1) if found else None
+    if not icao:
+        warn('AD 2.12: section introuvable (aucun identifiant « <OACI>-AD-2.12 » dans la page)')
+        return []
+    parser = _SectionTables(f'{icao}-AD-2.12')
+    parser.feed(html)
+    out, seen_table = [], False
+    for rows in parser.tables:
+        head = next((r for r in rows if any(re.search(r'(?i)position', c) for c in r)), None)
+        if head is None:
+            continue
+        seen_table = True
+        col = {}
+        for i, c in enumerate(head):
+            if re.search(r'(?i)elevation|élévation|altitude', c):
+                col.setdefault('elev', i)
+            elif re.search(r'(?i)position', c):
+                col.setdefault('pos', i)
+            elif re.search(r'(?i)bearing|relèvement|gisement', c):
+                col.setdefault('brg', i)
+            elif re.search(r'(?i)dimensions', c) and not re.search(r'(?i)swy|cwy|strip', c):
+                col.setdefault('dim', i)
+        if 'pos' not in col or 'brg' not in col:
+            warn('AD 2.12: en-têtes du tableau des pistes non reconnus (colonnes « position » et « bearing » introuvables): pistes NON lues')
+            continue
+        for r in rows[rows.index(head) + 1:]:
+            if not r or not re.fullmatch(r'\d{2}[LRC]?', r[0] or ''):
+                continue
+            rid, cell = r[0], lambda k: r[col[k]] if k in col and col[k] < len(r) else ''
+            pairs = list(_THR_POS.finditer(cell('pos')))
+            pos = _pos_of(pairs[0]) if pairs else None
+            if not pos:
+                warn(f'AD 2.12: piste {rid}: position du seuil (THR) illisible, piste écartée')
+                continue
+            brg = re.match(r'\s*(\d{1,3}(?:[.,]\d+)?)', cell('brg'))
+            mag = re.search(r'\(\s*(\d{1,3})\s*\)', cell('brg'))
+            true = float(brg.group(1).replace(',', '.')) if brg else None
+            if true is not None and abs((true - int(rid[:2]) * 10 + 180) % 360 - 180) > 30:
+                warn(f'AD 2.12: piste {rid}: cap vrai {true}° incompatible avec le numéro, piste écartée')
+                continue
+            dim = re.search(r'(\d{3,5})\s*x\s*(\d{2,3})', cell('dim'))
+            elev = re.search(r'(?<![A-Z])THR\s*:\s*(-?\d+)\s*ft', cell('elev'), re.I)
+            displaced, dthr = 0, None
+            if len(pairs) > 1 and '(' in cell('pos')[pairs[0].end():pairs[1].start()]:
+                dpos = _pos_of(pairs[1])
+                if dpos:
+                    delev = re.search(r'DTHR\s*:\s*(-?\d+)\s*ft', cell('elev'), re.I)
+                    dthr = {'lat': dpos[0], 'lon': dpos[1], 'elev': int(delev.group(1)) if delev else None}
+                    # distance THR → DTHR en pieds, comme le champ `displaced` du CIFP (un seul type pour toutes les sources)
+                    la1, la2, dl = math.radians(pos[0]), math.radians(dpos[0]), math.radians(dpos[1] - pos[1])
+                    displaced = round(math.degrees(math.acos(min(1, math.sin(la1) * math.sin(la2) + math.cos(la1) * math.cos(la2) * math.cos(dl)))) * 60
+                                      * 6076.12)
+                else:
+                    warn(f'AD 2.12: piste {rid}: position du seuil décalé (DTHR) illisible, seuil décalé ignoré')
+            out.append({'id': rid, 'lat': pos[0], 'lon': pos[1], 'elev': int(elev.group(1)) if elev else None, 'qfu': int(mag.group(1)) if mag else None, 'true': true,
+                        'length': int(dim.group(1)) if dim else None, 'width': int(dim.group(2)) if dim else None, 'displaced': displaced, 'dthr': dthr, 'source': 'eaip'})
+    if not seen_table:
+        warn('AD 2.12: tableau des pistes introuvable dans la section')
     return out
 
 
@@ -2164,7 +2336,7 @@ def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, st
     vac = vac_url(eaip, icao)
     if vac and not url_exists(vac):                      # carte VAC : seulement si l'atlas VFR la publie
         vac = None
-    return build_aerodrome(icao, files, rows_of, eaip, cycle.group(1), resolve, vac)
+    return build_aerodrome(icao, files, rows_of, eaip, cycle.group(1), resolve, vac, page)       # la page AD 2 déjà lue donne aussi les pistes (section AD 2.12)
 
 
 def main(argv=None):

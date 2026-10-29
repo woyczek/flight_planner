@@ -1,0 +1,16 @@
+AIP AD 2 LFPO DATA RWY07 FNA ILS CAT123 LOC CODE
+FRANCE 07 SEP 23
+PARIS ORLY
+PRECODING FNA ILS CAT 123 LOC RWY 07
+AMDT 09/23 © SIA
+FNA ILS CAT I ou / or CAT II et / and CAT III ou / or LOC RWY 07
+RMK - MAG VAR 2020 1.0°E REF NAVAID : -
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG
+(°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (m) NAV Spec
+See chart FNA ILS CAT I ou/or CAT II et/and CAT III ou/or LOC RWY 07
+- PO410 - - - - - - 2000 230 - RNAV 1
+TF PO412 - 158 158.7 3.4 - 2000 2000 -- RNAV 1
+APCH
+TF MLN - 158 158.7 16.8 - - 4000 -- RNAV 1
+TF MOLBA Yes 133 133.9 13.9 - FL070 FL070 230 - RNAV 1
+HLDG -M O L B A - ---- - -- - -

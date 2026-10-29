@@ -1099,8 +1099,9 @@
       },
       /** Pistes d'un terrain (§ 10.20) : [{ id ('23', '05R'), lat, lon (seuil), elev (ft, seuil), qfu (relèvement magnétique, °),
        *  displaced (ft), length, width, source, approx }] — celles que les fichiers de procédures portent (FAA CIFP : enregistrements
-       *  de piste, complets), sinon déduites des points RWnn des procédures (seuil seulement : `approx: true`, QFU du numéro de la
-       *  piste, altitude du terrain) ; [] sans rien. */
+       *  de piste, complets), ceux de la page AD 2.12 de l'eAIP du SIA (complets aussi : `true` cap vrai, `displaced` en ft comme le CIFP,
+       *  `dthr` : null ou le seuil décalé { lat, lon, elev }), sinon déduites des points RWnn des procédures (seuil seulement :
+       *  `approx: true`, QFU du numéro de la piste, altitude du terrain) ; [] sans rien. */
       async runways(icao) {
         const k = String(icao || '').toUpperCase();
         if (!/^[A-Z0-9]{3,4}$/.test(k)) return [];

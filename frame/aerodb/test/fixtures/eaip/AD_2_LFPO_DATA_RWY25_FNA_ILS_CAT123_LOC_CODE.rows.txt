@@ -1,0 +1,17 @@
+AIP AD 2 LFPO DATA RWY25 FNA ILS CAT123
+LOC CODE
+27 NOV 2025FRANCE
+PARIS ORLY
+PRECODING FNA ILS CAT 123 LOC RWY25
+AMDT 12/25© Service de l'Information Aéronautique, France
+FNA ILS CAT I ou/ or CAT II et/ and CAT III ou/ or LOC RWY 25
+RMK RNAV1 transition to ILS MAG VAR 2020 1.0°E REF NAVAID : -
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+HLDG - MOLBA ----- - - -- -
+IF VEKUH ----- 3000 -- - -
+See chart FNA ILS CAT I ou/ or CAT II et/ and III ou/ or LOC RWY 25
+CA -- 254 254.6 - - 700 - - - 1.0
+APCH
+DF PO432 - - -- L - 2000 - - 1.0
+TF MLN - 101 102.5 21.6 L - 4000 - - 1.0
+TF MOLBA Yes 133 133.9 13.9 - FL 070 FL 070 230 - 1.0

@@ -1466,3 +1466,32 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   `{ procedures: ICAO, coverage: true }`; more than 50 at once (a published cycle) give one `{ coverage: true, refreshed: true }`. The
   echo of aerodb's own read does not count (its read records the revision).
 - **Bench**: K1 (an arrived file announced once, not again after its read; `proc-seen/` likewise; a path that is no procedure file ignored).
+
+## 29 October 2026 (afternoon) — ILS approaches of Orly and Toulouse: the runway thresholds from AD 2.12, the ILS final as IF → threshold (§ 10.20)
+
+- **Asked** (the user's bug at LFPO and LFBO): the ILS approaches come out unusable. The SIA's ILS pages code only the initial fix (`IF IPO06 … 4000`), then « See chart AD 2 LFPO IAC RWY06 … » (the final along the localizer is not coded), then the missed approach
+  (PO412, MLN, MOLBA): the records were the IF and the missed approach, no final, no runway. And no runway threshold has a position anywhere: the `RWnn` points of the RNP pages have `lat` / `lon` null, because the DATA pages refer thresholds to AD 2.12.
+  Wanted: an ILS = at least IF (/FAF) → runway threshold, the « See chart » missed approach accepted as read (possibly empty).
+- **Done**: (1) `proc_eaip.ad212_runways(html, icao, warnings)` reads the section AD 2.12 of the aerodrome page (`FR-AD-2.<ICAO>-fr-FR.html`, which `read_aerodrome` already fetches to list the PDFs): the section is found by its `<div id="LFPO-AD-2.12">`
+  (depth of the `div`s followed; no regex on the whole page), the table by its column headers (« Position GEO THR », « THR elevation… », « True and Mag Bearing », « Dimensions of RWY »), one runway per row: `id`, `lat` / `lon` / `elev` of the THR, `qfu` (the
+  magnetic bearing in parentheses), `true`, `length`, `width`, `displaced` (ft, as the CIFP's: the THR → DTHR distance, 0 without one), `dthr` (`null` or the DTHR `{ lat, lon, elev }`), `source: 'eaip'`. Never guessed: a runway whose THR position does not parse, or whose true bearing is more than 30° off its number, is left out and reported.
+  (2) `build_aerodrome(…, ad2=None)` takes the page (or the parsed list): `doc['runways']` comes from AD 2.12 (priority over `runways_of`), and, before any table is read, `coords['RWnn']` is the landing point, so the RNP `RWnn` points are placed.
+  (3) `with_threshold` (called by `records` on an ILS page, i.e. an APP group with the « See chart » gap) inserts `{ id: 'RWnn', leg: 'CF', alt: null, synthetic: 'threshold' }` between the initial fix and the first missed leg; that leg keeps `gap: true`. (4) `read_aerodrome`
+  and the command line pass the page; `regen_jobs._eaip_fetch` is unchanged. aerodb's `runways()` already spreads a file's runway records, so `true` and `displaced` pass through.
+- **Choice to review — which position for a displaced runway (THR or DTHR)?** Decided by the coding tables, on the cached pages of cycle 2026-10-01: for each `TF RWnn` leg of the RNP pages, distance computed from the previous fix to each candidate minus the printed distance
+  (the page prints the tenth of a NM):
+
+  | Runway | printed | to THR | to DTHR |
+  |---|---|---|---|
+  | LFPO 06 (DTHR) | 11.5 NM | 11.30 (−0.20) | 11.47 (**−0.03**) |
+  | LFPO 25 (DTHR) | 8.4 NM | 8.09 (−0.31) | 8.32 (**−0.08**) |
+  | the eight runways with no displaced threshold (LFPO 02 07 20 24, LFBO 14L 14R 32L 32R) | | | within ±0.06 |
+
+  The tables agree with the DTHR (error inside the page's rounding, like the other eight); the THR is 3 to 5 times off. So the point `RWnn` — in the RNP tables and in the threshold added to an ILS — is the **landing point: the DTHR when the runway has one, else the THR**
+  (`proc_eaip.landing_position`). The runway record keeps the THR in `lat` / `lon` and the DTHR in `dthr` (`displaced` stays a distance in ft for every source: one type, reviewed before the commit).
+- **Choices to review**: the added point is a `CF` with no course and no altitude (nothing is coded: it is the end of the localizer, not a fix of the table); `synthetic: 'threshold'` says it is not printed. The IF → threshold line is straight: checked on the seven ILS of the two
+  aerodromes whose initial fix has a position (Orly 25 and 07 have none to compare), the bearing from the IF to the point is the runway's true bearing within 0.5° and the distance is 11–15 NM (the final). The FAF is not added: the DATA pages give « FAF LOC RWY 06 » positions (equal to the RNP `FPO06`) but under a name the ILS table does not use. `displaced` in the eAIP
+  runway record is the point, not the CIFP's distance in ft: the two sources differ, a reader tests the type (INTEGRATION). A page that starts with the missed approach (LFPO RWY 07: the IF row is not read, the `- PO410` row has no leg type) still gets the threshold first, with a warning.
+- **Before / after** (offline, cached pages, gap check `proc_eaip.gaps_of`): LFPO 316 procedures read, 316 kept, 0 dropped, before and after; LFBO 78 / 78 / 0. The check now compares 17 more legs (LFPO 148 → 159, LFBO 64 → 70: the `TF RWnn` of the RNP pages and the legs that leave the threshold): none fails. APP at LFPO 33 (ILS 5, RNP 6, INA 22),
+  LFBO 26 (ILS 4, RNP 4, INA 18): unchanged counts, each ILS now has its threshold (IF → RWnn → missed: 4 of 5 at Orly with an IF, 4 of 4 at Toulouse; Orly RWY 07 starts at the threshold). Runways in the file: 0 → 6 (LFPO), 0 → 4 (LFBO).
+- **Bench**: K24 (AD 2.12 of LFPO and LFBO on the real sections, an unreadable latitude, a page without the section, the THR / DTHR measure, ILS 06 / 25 / 07 of Orly and 14L of Toulouse, the page without AD 2.12). Fixtures: `FR-AD-2.LFPO.AD-2.12.html`, `FR-AD-2.LFBO.AD-2.12.html` (the section's first table), five more rows files (SOURCES.md).
