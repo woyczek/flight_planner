@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: « Stop » cancels a launcher job again** (`frame/lib/launcher.js`; INTEGRATION § 15.1, DECISIONS; bench A29):
+  declaring a job's route also allows its cancel, which the client sends when the user stops a job.
 - **Launcher: a job's headless page claims its token once** (`tools/regen_jobs.py`, `tools/launch.py`; frame
   INTEGRATION § 15.1, DECISIONS; noreg I8): `POST /__setup/regen/job/claim` hands the running job's token, and what its
   verb offered, once — the base build of D5 needs no exception to the same-origin check.

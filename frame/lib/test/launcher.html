@@ -297,6 +297,15 @@
     }).c.forModule(DECL).job('regen/job', {});
     ck('job : un travail déjà en cours (409) → refus rendu', busy.ok === false && busy.status === 409);
     ck('job : route non déclarée refusée', (await M.job('secrets', {})).refused === true);
+    // l'annulation fait partie du protocole : déclarer « regen/job » permet « regen/job/cancel », rien d'autre en plus
+    const Mj = S.c.forModule({
+      routes: ['regen/job']
+    });
+    ck("call : <route>/cancel d’une route déclarée permise", (await Mj.call('regen/job/cancel', {
+      id: 'x'
+    })).refused !== true);
+    ck("call : ni une autre sous-route, ni l’annulation d’une route non déclarée", (await Mj.call('regen/job/put', {})).refused === true &&
+      (await Mj.call('secrets/cancel', {})).refused === true);
     // l'auteur : le trigramme de l'appareil ajouté au départ d'un travail (l'auteur de ses commits côté lanceur)
     const starts = [],
       F2 = fake({

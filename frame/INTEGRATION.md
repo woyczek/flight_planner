@@ -925,7 +925,7 @@ characters at most) and `wait` (seconds) come only from a launcher that gives th
 that verb again); nothing else of the launcher's answer is handed on. Without an answer: `{ ok: false, offline: true,
 route }` (or `aborted: true` when your `signal` stopped it).
 
-**aerodb declares its routes too**: `AeroDB.declaration().launcher = { routes: ['regen/job'] }`, next to its reads; the frame
+**Declaring a job's route declares its cancel** (29 Oct 2026): `routes: ['regen/job']` also allows `regen/job/cancel`, the cancel being part of the jobs' protocol (the client sends it itself when the signal aborts); nothing else under it. **aerodb declares its routes too**: `AeroDB.declaration().launcher = { routes: ['regen/job'] }`, next to its reads; the frame
 builds aerodb's job from it, as it builds `ctx.launcher` from a module's `meta.launcher`.
 
 **The job protocol is fixed**: `POST <route>` with the body → `{ job: id }`; `GET <route>?id=…` about once a second →

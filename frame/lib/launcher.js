@@ -8,7 +8,8 @@
 //     démontage du module arrête les suivis de travaux en cours (le travail, lui, continue sur le lanceur : resume) ;
 //   · protocole des travaux longs, fixe : POST <route> corps → { job: id } ; GET <route>?id=… → { id, state ('running' |
 //     'done' | 'error' | 'cancelled'), step, done, total, unit, log, result } ; POST <route>/cancel { id } ; GET <route>
-//     sans id → le travail en cours ou le dernier ({ job: null } sans travail).
+//     sans id → le travail en cours ou le dernier ({ job: null } sans travail). Déclarer la route d'un travail (« regen/job »)
+//     déclare aussi son annulation (« regen/job/cancel ») : elle fait partie du protocole (29 oct. 2026).
 // Ni page ni stockage ; fetch et racine donnés (le banc frame/lib/test/launcher.html les simule).
 
 const ROUTE_RX = /^[a-z0-9][a-z0-9/_-]*$/i;
@@ -27,6 +28,8 @@ export function dataPathOf(path) {
 }
 /** Vrai si x relève d'un préfixe déclaré : égal, ou sous un préfixe terminé par « / ». */
 const under = (x, list) => [].concat(list || []).some(p => typeof p === 'string' && p && (x === p || p.endsWith('/') && x.startsWith(p)));
+/** Route permise par une déclaration : sous elle, ou l'annulation d'une route déclarée (<route>/cancel, protocole des travaux). */
+const allowed = (x, list) => under(x, list) || (x.endsWith('/cancel') && under(x.slice(0, -'/cancel'.length), list));
 const sleep = (ms, signal) => new Promise(r => {
   const t = setTimeout(r, ms);
   signal?.addEventListener('abort', () => (clearTimeout(t), r()), {
@@ -93,7 +96,7 @@ export function launcherClient({
       signal
     } = {}) {
       const r = routeOf(route);
-      if (!r || !under(r, routes)) return refuse(route);
+      if (!r || !allowed(r, routes)) return refuse(route);
       const q = String(route).includes('?') ? String(route).slice(String(route).indexOf('?')) : '',
         res = await request(r + q, {
           json: body,

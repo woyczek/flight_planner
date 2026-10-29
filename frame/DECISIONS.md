@@ -1669,3 +1669,8 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   the page claims the token by `POST /__setup/regen/job/claim { job }`, once, after the verb's `job.offer(payload)`
   (what the page must also receive: zones, cycle, inputs), on the workstation only; a second claim, another job, nothing
   offered: 409. Noreg I8.
+- **29 Oct 2026 — A job's route covers its cancel** (Sécurisation/Réglages found it): a route declared without a final
+  `/` covers itself only, so `regen/job` did not cover `regen/job/cancel` — the cancel the client sends itself on an
+  aborted signal was refused (403) and « Arrêter » cancelled nothing on the launcher (aerodb's EAD / eAIP reads too).
+  The cancel is part of the jobs' protocol: `<route>/cancel` of a declared route is allowed (`allowed()` in
+  `frame/lib/launcher.js`), nothing else under it (bench A29).
