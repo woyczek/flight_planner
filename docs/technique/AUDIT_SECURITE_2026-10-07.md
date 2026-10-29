@@ -875,6 +875,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 33 | Fuel: aerodrome names and completion (842ac149b) | acceptable |
 | 34 | Frame G2: « Pilots' tokens » (241eec6c0) | acceptable, one point to fix, two notes |
 | 35 | Data module « Télécharger » and « Purger » (0d2f031d3) | acceptable, one note |
+| 36 | Frame G2 fix (efbb97f49) | acceptable; the point of 34 is settled |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1304,7 +1305,15 @@ launcher recomputes the candidates between the dry pass and the real purge, so a
 to the zone, not tracked) would be removed without having been shown; a purge restricted to the dry pass's list
 (returned by the launcher, then checked again) would close that, if wanted.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30 and 34 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34; the blocking point of 27 lifted in 32); the sharing of the track and of the position is the user's decision.
+**36. G2 fix (efbb97f49) — acceptable; the point to fix of 34 is settled; the real GitLab test may proceed.** The
+launcher's GitLab opener has a redirect handler that returns nothing, so a 30x becomes an error and no request leaves for
+the target host; `PRIVATE-TOKEN` is also set with `add_unredirected_header`; every call goes through `_gitlab_request`.
+Revocation reads the token's name **at GitLab** (`GET /access_tokens/<id>`), never from the page's request, and refuses
+any name outside `^[A-Z0-9]{2,5}$` (403). The new token's value is removed from the page on `hashchange` and `pagehide`.
+The CI/CD note (and merge requests, issues, wiki) is in the four languages. Residual note: a service token that the
+administrator would name with two to five letters or digits stays revocable here; name service tokens otherwise.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30 and 35 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32); the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
