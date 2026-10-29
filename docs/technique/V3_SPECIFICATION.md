@@ -726,9 +726,12 @@ redesigned for touch at that point.
          only retains it (bold), one button "Valider" returns to Fuel with the whole proposal, "Annuler" or the browser's
          back returns without; (3) the proposal is single-use: Fuel consumes `rwy`, `sid`, `star`, `trans`, `app`,
          `appTrans` from the address at mount or address change, writes, then rewrites the address without them
-         (replace, not push); (4) the double view (≥ 980 px, Fuel and the Map side by side): the Map pane receives the
-         `choose` request, and "Valider" sets the **main** address to `#fuel?focus=…&…`, which Fuel reads as above; the
-         frame session confirms the pane mechanism (no event between modules); (5) dimming: a class on the container dims
+         (replace, not push); (4) the double view (≥ 980 px, Fuel and the Map side by side) needs no frame change (frame session, 29
+         Oct): an address always names the main module, so `#maps?choose=…` mounts the Map as main with `ctx.query`
+         (Fuel is unmounted, the pane closes; a pane never receives a query); "Valider" does
+         `location.replace('#fuel?focus=…')`, the frame remounts Fuel with its query and reopens its Map pane by itself;
+         Fuel applies the query at mount then `history.replaceState` to `#fuel`, so Back never reopens the choice;
+         "Annuler" is the header's "← Carburant" the frame sets by itself (origin `#fuel`); (5) dimming: a class on the container dims
          the base map, the Map's own layers (airspaces, airways, aerodromes) are dimmed in the draw loop (reduced opacity
          outside the procedures), since they share the procedures' canvas; (6) on the phone the sheet takes about 45 % of
          the height and the camera keeps the procedures above it; (7) a second tap on the highlighted row only deselects
