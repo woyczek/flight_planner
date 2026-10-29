@@ -867,6 +867,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 25 | AeroDB path B (2dbfea12a) and `source.url` host check (97bf5577f) | acceptable; points of 18 and 22 settled |
 | 26 | Fuel « Sur la carte » and the map's proposal (d4f683475) | acceptable; note of 20 settled |
 | 27 | Frame G1: GitLab transport (a0f3854d9) | **blocking** (token reused for a new host), one to fix, one note |
+| 28 | AeroDB `base/fetch` and `base/purge` (ac84d562e); Data module corrections (6330c5133) | acceptable, two older points to fix, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1195,7 +1196,27 @@ ICAO is escaped and encoded in the Map's address (which checks it again); the `p
   for both transports), module writes by their declarations; `secrets/gitlab.json` in `SECRET_FIELDS` and
   `SECRET_BLIND` (never a character to the page).
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24 and 27 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26; 27 blocking until fixed); the sharing of the track and of the position is the user's decision.
+**28. `base/fetch` and `base/purge` (ac84d562e), Data module corrections (6330c5133) — acceptable, two older points to
+fix, one note.**
+- Purge: arguments `zones` (from the list), `what` (sources, caches), `dry`. The root of `sia/` is read flat (files only),
+  then `openaip/`, `aixm5/`, `geojson/` and `zones/<zone>/`; `sia/base/` and `proc/` are never walked; caches are
+  `local/eaip` for fr only. Each candidate is attributed to the zone (`file_source`), `_walk` never descends a link or a
+  folder (junction included) that resolves outside the base, `_inside` (real path, common path, not a link) is checked
+  again just before `os.remove`; a file tracked by git is kept (`ls-files -z`, literal pathspecs, any case), and a git
+  failure removes nothing for the zone; `os.rmdir` removes empty folders only.
+- Fetch: arguments `zones` and `personal` (from the catalogue); the providers write under `data/sia/` with fixed names; no
+  commit; `outside_sync` counts the tracked files touched; 30 s between two starts. The manual sources' addresses are
+  constants of the code, returned only when they start with `https://`: no free host.
+- *To fix (older, in `tools/aero_fetch.py` and `tools/navcan_dah.py`, now started from the page):* ENAIRE takes the file
+  name from the server's page (`rsplit('/')` leaves `\` under Windows: a name with `\..\` would write, then later remove,
+  outside `sia/aixm5`): pass it through `proc_pdf.safe_path` with
+  `^LE_[A-Za-z0-9._-]+_AIP_DS_FULL_(Airspace|EnRoute)\.xml$`; NAV CANADA's `current_url` accepts any `http…` link of
+  the page (any host, plain http, a local-network host): require the host of `BASE` in https.
+- Note: `get()` reads the whole answer in memory (`r.read()`) with no ceiling; cap it (e.g. 200 MB per file).
+- 6330c5133: `addZone` accepts only a zone known to `zones()` and not covered yet, outside a running build, and writes
+  `cache/data/coverage.json` (local); the selector's options are escaped; the publish question goes through `ctx.ask`.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27 and 28 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26; 27 blocking until fixed); the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
