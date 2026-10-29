@@ -304,11 +304,8 @@ const TX = {
   procConflictRwy: ['Ne dessert pas la piste {rwy}', 'Does not serve runway {rwy}', 'Bedient Piste {rwy} nicht',
     'No sirve a la pista {rwy}'
   ],
-  procConflictStar: ['Ne rejoint pas l’approche choisie (aucun point commun)', 'Does not join the chosen approach (no common point)',
-    'Führt nicht auf den gewählten Anflug (kein gemeinsamer Punkt)', 'No enlaza con la aproximación elegida (sin punto común)'
-  ],
-  procConflictTrans: ['Ne part pas de la fin de la STAR choisie', 'Does not start at the end of the chosen STAR',
-    'Beginnt nicht am Ende der gewählten STAR', 'No parte del final de la STAR elegida'
+  procConflictStarApp: ['Ne dessert aucune piste de {app}', 'Serves no runway of {app}', 'Bedient keine Piste von {app}',
+    'No sirve a ninguna pista de {app}'
   ],
   // une ligne quand un conflit apparaît : « ⚠ RNP RWY 07 : Ne dessert pas la piste 02 »
   procConflictNote: ['⚠ {what}', '⚠ {what}', '⚠ {what}', '⚠ {what}'],
@@ -1499,35 +1496,22 @@ function procLabel(rec) {
     .procXplane) : ''].filter(Boolean).join(' · ') + (rec.outdated ? PROC_OLD : '');
 }
 /** Même repère : même identifiant, ou positions à moins d'une demi-NM. */
-const sameFix = (a, b) => !!a && !!b && (!!a.id && String(a.id).toUpperCase() === String(b.id).toUpperCase() || [a.lat, a.lon, b.lat, b.lon]
-  .every(
-    v => v !== null && v !== undefined && Number.isFinite(+v)) && gcNm(a, b) < .5);
-/** Premier et dernier repères voulus d'une fiche (hors approche interrompue) ; undefined sans points. */
-const firstFix = rec => rec?.points?.find(p => p.phase !== 'missed');
-const lastFix = rec => rec?.points?.filter(p => p.phase !== 'missed').at(-1);
 /** Raisons (textes ×4) pour lesquelles une fiche est en conflit avec le choix courant o du côté ; [] sans conflit. key : sid, star,
- *  app, trans ou appTrans. Une SID, une STAR ou une approche qui ne dessert pas la piste choisie ; une STAR dont la fin n'a aucun
- *  point commun avec l'approche choisie ou sa transition (le premier repère de la transition, sinon un point de l'approche ou le
- *  premier d'une de ses transitions) ; une transition d'approche qui ne part pas de la fin de la STAR choisie. Les points manquants ne
- *  font pas de conflit (rien ne se compare). */
+ *  app, trans ou appTrans. Le conflit ne porte que sur la piste (§ 10.23, 29/10/2026) : une SID, une STAR ou une approche qui ne
+ *  dessert pas la piste choisie ; sans piste choisie, une STAR qui ne dessert aucune piste de l'approche choisie. La continuité STAR →
+ *  approche ou transition → fin de STAR n'est jamais un conflit (les STAR finissent en attente ou en guidage radar ; la Carte raccorde
+ *  en tireté). */
 function conflictsOf(key, rec, o) {
-  const out = [],
-    R = id => typeof id === 'string' ? S.procRecs?.get(id) : null;
+  const out = [];
   if (!rec) return out;
   if (['sid', 'star', 'app'].includes(key) && !servesRwy(rec, o.rwy)) out.push(tt(TX.procConflictRwy, {
     rwy: o.rwy
   }));
-  const trans = R(o.appTrans),
-    app = R(o.app),
-    end = lastFix(rec);
-  if (key === 'star' && end && (firstFix(trans) || app?.points?.length)) {
-    const sibling = x => x.kind === 'APP' && x.name === app.name && x.transition && sameFix(end, firstFix(x)),
-      ok = firstFix(trans) ? sameFix(end, firstFix(trans)) : app.points.some(p => sameFix(end, p)) || [...(S.procRecs?.values() || [])]
-      .some(sibling);
-    if (!ok) out.push(tt(TX.procConflictStar));
-  }
-  const star = R(o.star);
-  if (key === 'appTrans' && lastFix(star) && firstFix(rec) && !sameFix(lastFix(star), firstFix(rec))) out.push(tt(TX.procConflictTrans));
+  const app = typeof o.app === 'string' ? S.procRecs?.get(o.app) : null;
+  if (key === 'star' && !rwKey(o.rwy) && app && !servesAll(app) && !servesAll(rec) && !app.runways.some(x => servesRwy(rec, x))) out
+    .push(tt(TX.procConflictStarApp, {
+      app: app.name || nameOfId(app.id)
+    }));
   return out;
 }
 /** Nom d'une procédure choisie (identifiant) pour une notification, avec ⌛ quand la fiche montrée est périmée et, si le choix o du

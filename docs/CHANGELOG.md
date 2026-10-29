@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: ⚠ only for a runway conflict** (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4; F21, F26) — a STAR that does not
+  join the approach is no longer marked (real STARs end in a hold or radar vectors).
 - **Fuel: a procedure in conflict is marked ⚠ (orange) and stays selectable; the lists are flat** (`modules/fuel/module.js`
   `conflictsOf`, `procOptions`, `procChosen`, SPEC, DECISIONS; help ×4; cases F11, F13, F20-F22, F26) — reverses the pruning: choosing a
   runway no longer cuts the lists nor removes a choice; ⚠ after ⌛ marks a SID, STAR or approach that does not serve the runway, a STAR that

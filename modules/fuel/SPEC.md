@@ -290,9 +290,9 @@ mount. Inside a mount, the two buttons switch as before.
      `outdated`) and ⚠ (in conflict with the current choice, orange, class `conflict`, the reason as `title`, both reasons joined when
      both apply). A change rewrites `route.procedures` v2 (`by: 'fuel'`, `at`) and drops what depended on it. A conflict is marked,
      never forbidden: ⚠ is on a SID, STAR or approach that does not serve the chosen runway (a record with no runway named, or `ALL` /
-     `RWALL`, serves them all), on a STAR whose last fix is not the first fix of the chosen approach transition (else is no point of
-     the chosen approach nor the first fix of one of its transitions), and on an approach transition that does not start at the
-     last fix of the chosen STAR (fixes compared by identifier, or within 0.5 NM; a missing point is no conflict). A conflicting
+     `RWALL`, serves them all) and, with no runway chosen, on a STAR that serves no runway of the chosen approach — the runway only
+     (29 Oct 2026): the STAR → approach and transition → STAR end continuity is never a conflict (real STARs end in a hold or radar
+     vectors; the Map links them dashed). A conflicting
      procedure stays selectable and the choice is kept; ONE floating notification (`⚠ RNP RWY 07 : Ne dessert pas la piste 02`) says
      the conflict when it appears, not at every redraw; the change notifications of « Load my OFP » carry the same ⚠. A SID, STAR
      or approach chosen while no runway is, and serving one runway only, sets that runway; the STAR chosen offers its transitions,

@@ -4,6 +4,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — ⚠ for the runway only** (Simplification, § 10.23, after f3354a593 marked almost every real STAR: LFPO's STAR
+  of runway 20 ends at a hold, the RNP 20 records start elsewhere): `conflictsOf` keeps the runway (a SID, STAR or approach that
+  does not serve the chosen runway; with no runway chosen, a STAR serving no runway of the chosen approach, `procConflictStarApp`)
+  and drops the STAR → approach and transition → STAR-end continuity (`procConflictStar`, `procConflictTrans`, `sameFix`,
+  `firstFix`, `lastFix` removed). F21 and F26 adjusted.
 - **29 Oct 2026 — conflicts marked ⚠, not forbidden; flat lists** (user, 29 Oct, capture of the approach list with no runway
   chosen: five one-line groups « Piste 02 … Piste 20 », « on doit pouvoir choisir quand même, mais c'est affiché “conflit” avec la
   RWY ou la STAR ; si gris est périmé, orange serait en conflit »; V3_SPECIFICATION § 10.23): this reverses the pruning of the
