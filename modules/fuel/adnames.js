@@ -62,7 +62,9 @@ export function createAdNames(host) {
 
   /** Code saisi d'un champ du vol : majuscules, sans blancs ; '' tant que le code n'a pas quatre caractères. */
   const codeOf = k => {
-    const v = String(host.flight()?.route?.[k] || '').trim().toUpperCase();
+    // le texte du champ quand il est à l'écran (la saisie de recherche n'écrit la route qu'une fois le terrain choisi), sinon la route
+    const el = body()?.querySelector(`input[data-k="${k}"]`),
+      v = String(el ? el.value : host.flight()?.route?.[k] || '').trim().toUpperCase();
     return CODE.test(v) ? v : '';
   };
 
@@ -250,6 +252,18 @@ export function createAdNames(host) {
     onPointerDown,
     onClick,
     texts: TX,
+    /** Vrai pendant qu'un choix de la liste est rendu au champ (son code est connu d'aerodb : écrit sans autre contrôle). */
+    isPicking: () => !!st.picking,
+    /** Le code est-il un terrain qu'aerodb connaît ? Promesse de vrai ou faux (le nom demandé une fois, gardé comme pour la ligne). */
+    known: code => {
+      const n = nameOf(code);
+      if (n !== undefined) return Promise.resolve(n !== null);
+      return (asked.get(code) || Promise.resolve(null)).then(x => x !== null && x !== undefined);
+    },
+    /** Nombre de terrains proposés pour le champ k au dernier texte tapé (0 si la liste est fermée ou pour un autre champ). */
+    hitsFor: k => st.key === k ? st.hits.length : 0,
+    /** Le nom gardé d'un code : chaîne ('' sans nom), null (inconnu d'aerodb), undefined (pas encore demandé ou en cours). */
+    nameKnown: code => names.get(code),
     /** Arrête l'abonnement à la base. */
     stop: () => {
       if (typeof off === 'function') off();

@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the aerodrome fields search by full name** (`modules/fuel/module.js`, `adnames.js`, DECISIONS; help ×4; case F48) — only a
+  chosen or typed code reaches the route; leaving without a choice goes back to the saved aerodrome.
 - **Maintenance › Pilots' tokens, security review** (`tools/launch.py`, `frame/settings/pilot_tokens.js`; frame
   DECISIONS; noreg I12, A39): the administrator's token never follows a redirect; only a pilot's token can be revoked;
   a new token's value is wiped when the screen is left; the screen advises turning off CI/CD on the data project.

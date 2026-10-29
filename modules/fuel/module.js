@@ -1617,7 +1617,7 @@ function renderPlanBody() {
   S.body.innerHTML = `
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
-      <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" maxlength="4" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
+      <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
       <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <p class="f-warn" data-pastdate hidden></p>
       <div data-block="aircraft">
@@ -1730,27 +1730,25 @@ function onPlanInput(e) {
     case 'dep':
     case 'arr':
     case 'altn': {
-      const was = r[k];
-      r[k] = v.trim().toUpperCase();
-      // vol démarré : un autre départ, c'est un autre vol ; une autre arrivée, un déroutement (gardé et noté)
-      if (f.started?.at && was && r[k] !== was) {
-        if (k === 'dep') f.started = null; // null et non delete : l'écriture fusionne avec le vol gardé
-        else if (k === 'arr') f.started = {
-          ...f.started,
-          diverted: true
-        };
-      }
-      if (k !== 'altn') {
-        // le terrain changé l'est aussi dans le texte de la route (sinon le nouveau s'ajoute devant ou derrière l'ancien)
-        if (was && r.text && r[k] !== was) {
-          r.text = swapEnd(r.text, was, r[k], k === 'arr');
-          const ta = S.body?.querySelector('[data-k="rtext"]');
-          if (ta && document.activeElement !== ta) ta.value = r.text;
-        }
-        resolveRoute();
-        scheduleWx();
-      }
+      // le champ est une saisie de recherche (« orly », « toulouse ») : la route ne prend qu'un champ vidé, un choix de la liste, ou
+      // un code de quatre caractères qu'aerodb connaît (V3 § 10.27, décision du 29/10) ; un nom tapé n'y entre jamais
+      const code = v.trim().toUpperCase(),
+        s = S;
       S.AD.onInput(e); // la ligne du nom et la liste des terrains proposés
+      if (!code) return; // vidé pour chercher : rien n'est écrit tant que le champ a le focus (revertAd l'écrit vide en le quittant)
+      if (!S.AD.isPicking()) {
+        // un code de quatre caractères n'entre qu'une fois connu d'aerodb (et si le champ le porte encore) ; un texte de recherche
+        // n'écrit rien
+        if (/^[A-Z0-9]{4}$/.test(code)) S.AD.known(code).then(ok => {
+          const el = !gone(s) && S.body?.querySelector(`[data-k="${k}"]`);
+          if (!ok || !el || el.value.trim().toUpperCase() !== code) return;
+          setAd(k, code);
+          saveFlight();
+          refresh();
+        });
+        return;
+      }
+      setAd(k, code);
       break;
     }
     case 'rtext':
@@ -1894,6 +1892,60 @@ function onPlanInput(e) {
   }
   saveFlight();
   refresh();
+}
+/** Écrit un terrain de l'étape Vol (dep, arr, altn) dans la route : départ changé d'un vol démarré = autre vol, arrivée changée =
+ *  déroutement ; le texte de la route suit, puis la route est relue et la météo demandée. code : quatre caractères connus d'aerodb, un
+ *  choix de la liste, un code tapé exprès (revertAd), ou '' (champ quitté vide). */
+function setAd(k, code) {
+  const f = S.flight,
+    r = f.route ||= emptyFlight().route,
+    was = r[k];
+  r[k] = code;
+  // vol démarré : un autre départ, c'est un autre vol ; une autre arrivée, un déroutement (gardé et noté)
+  if (f.started?.at && was && r[k] !== was) {
+    if (k === 'dep') f.started = null; // null et non delete : l'écriture fusionne avec le vol gardé
+    else if (k === 'arr') f.started = {
+      ...f.started,
+      diverted: true
+    };
+  }
+  if (k !== 'altn') {
+    // le terrain changé l'est aussi dans le texte de la route (sinon le nouveau s'ajoute devant ou derrière l'ancien)
+    if (was && r.text && r[k] !== was) {
+      r.text = swapEnd(r.text, was, r[k], k === 'arr');
+      const ta = S.body?.querySelector('[data-k="rtext"]');
+      if (ta && document.activeElement !== ta) ta.value = r.text;
+    }
+    resolveRoute();
+    scheduleWx();
+  }
+}
+/** Champ de terrain quitté sans choix (hits : terrains proposés pour son texte) : un code de quatre caractères qu'aerodb ne connaît pas
+ *  et qui ne proposait rien est un terrain tapé exprès (absent de la base) : il est écrit ; un texte de recherche (« toulouse »,
+ *  « orly » quand il proposait des terrains) fait revenir le champ au code enregistré ; un code connu ou encore vérifié reste (setAd
+ *  l'écrit). */
+function revertAd(el, hits = 0) {
+  const k = el?.dataset?.k;
+  if (!S || !['dep', 'arr', 'altn'].includes(k)) return;
+  const v = el.value.trim().toUpperCase(),
+    saved = S.flight?.route?.[k] || '';
+  if (v === saved) return;
+  if (!v) { // quitté vide : le terrain est retiré (un dégagement qu'on ne veut plus, par exemple)
+    setAd(k, '');
+    saveFlight();
+    return refresh();
+  }
+  const code = /^[A-Z0-9]{4}$/.test(v),
+    n = code ? S.AD.nameKnown(v) : null;
+  if (code && n !== null) return; // connu (ou en cours) : la saisie l'a écrit, ou l'écrira
+  if (code && !hits) {
+    el.value = v;
+    setAd(k, v);
+    saveFlight();
+    return refresh();
+  }
+  el.value = saved;
+  S.AD.paint();
 }
 /** Clic dans Devis : SimBrief, niveau pris sur la courbe ou par un bouton. */
 function onPlanClick(e) {
@@ -4262,7 +4314,11 @@ export async function mount(el, ctx) {
   S.body = el.querySelector('[data-body]');
   // liste des terrains proposés (étape Vol) : fermée quand le champ perd le focus ; un appui sur une proposition ne prend pas le focus
   // du champ (sinon le flou la fermerait avant le clic). Posés une fois : l'écran Devis est redessiné, pas son conteneur.
-  S.body.addEventListener('focusout', e => S?.AD?.onFocusOut(e));
+  S.body.addEventListener('focusout', e => {
+    const hits = S?.AD?.hitsFor(e.target?.dataset?.k) || 0; // avant que la liste se ferme
+    S?.AD?.onFocusOut(e);
+    revertAd(e.target, hits);
+  });
   for (const type of ['pointerdown', 'mousedown']) S.body.addEventListener(type, e => S?.AD?.onPointerDown(e));
   // « ? » de l'en-tête : le chapitre au paragraphe de l'écran (Fiches ; le pas affiché sur téléphone, où la barre des pas est
   // visible ; le devis entier sur un module large, où les cinq pas sont les uns sous les autres)

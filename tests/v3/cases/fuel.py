@@ -1420,3 +1420,25 @@ def f47(c):
     to_step(c, 4)
     c.until(named, what='after the start the summary still names them')
     c.eq(c.count(f'{FUEL} [data-block="summary"] [data-do="cancelstart"]'), 1, 'the flight is started', what='started')
+
+
+@case('F48', 'The aerodrome field is a search: a full name proposes, only a code reaches the route, leaving it unchosen reverts', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, rule='V3 spec 10.27, decided 29 Oct: no maxlength; route.dep / arr / altn written only for a known 4-character code, a pick, or a code typed on purpose; a typed name never reaches the route')
+def f48(c):
+    open_names(c)
+    saved = c.js("document.querySelector('[data-module=fuel] input[data-k=arr]').value")
+    type_in(c, 'arr', 'Zorly-Ville')
+    c.until(OPTS + ' > 0', what='a full name proposes its aerodrome')
+    c.eq(sug(c)['items'], ['LFZO Zorly-Ville'], 'the full name is a search', what='suggestions')
+    d = cf_doc(c, lambda d: True, 'the flight')
+    c.eq(d['route'].get('arr'), saved, 'while typing, the route keeps its aerodrome (no name written)', what='route.arr while typing')
+    c.key('ArrowDown')
+    c.key('Enter')
+    cf_doc(c, lambda d: d['route'].get('arr') == 'LFZO', 'the pick writes the code')
+    # a name typed, then leaving the field without choosing: the field comes back to the code, nothing written
+    type_in(c, 'arr', 'Toulzone')
+    c.until(OPTS + ' > 0', what='the other name proposes')
+    c.page.locator(f'{FUEL} input[data-k="fl"]').click()
+    c.until("document.querySelector('[data-module=fuel] input[data-k=arr]').value === 'LFZO'", what='leaving without a choice brings the field back to the code')
+    c.settle()
+    c.eq(cf_doc(c, lambda d: True, 'the flight')['route'].get('arr'), 'LFZO', 'and the route still holds it', what='route.arr after blur')

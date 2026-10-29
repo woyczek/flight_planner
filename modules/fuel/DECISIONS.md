@@ -4,6 +4,13 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — the aerodrome field is a search** (Simplification, after 842ac149b): `maxlength=4` lifted; while the field has the
+  focus nothing is written but a 4-character code aerodb knows (`AD.known`, written once the field still holds it) or a pick of the
+  list (`isPicking`); emptying the field to search writes nothing. On leaving the field (`revertAd`): empty → the aerodrome is
+  removed; a 4-character code aerodb does not know and that proposed nothing → written (an aerodrome typed on purpose, absent from
+  the base); any other text (a name, « orly » when it proposed aerodromes) → the field goes back to the saved code. A typed name
+  never reaches `route.dep / arr / altn`. The name line reads the field, not the route. `setAd` holds the former write path
+  (started flight: other departure = other flight, other arrival = diversion; route text and weather follow). Case F48.
 - **29 Oct 2026 — the aerodrome's name where its code is, and progressive completion** (user, V3 § 10.27; decided by the ergonomics
   session): new file `modules/fuel/adnames.js` (`createAdNames(host)`, like the procedures block: ctx, body, flight, gone) so that
   `module.js` only gets the markup and four calls. The name is `aerodb.coords(code).name`, the very source of the procedures card's title, kept per
