@@ -626,6 +626,11 @@ redesigned for touch at that point.
          installed under `proc/manual/` and committed to the private data repository, then synchronised to every device;
          without a launcher, the gesture says so and proposes the OFP (SimBrief) as the per-flight source. Nothing is
          fetched silently, nothing is read twice: an aerodrome read once is stored for everyone.
+         **Read again (user, 29 Oct: "il manque un bouton “rafraîchir” les procédures (avec une date pour le dernier
+         fichier)")**: a side whose aerodrome has a file shows the file's date before a short button "Relire" ("lu le
+         28/10 18:01", ⌛ when the cycle is older than the one in force), same gesture `fetchProcedures`, which accepts an
+         aerodrome already read and replaces its file (same source only); the Map's aerodrome card shows the same date in
+         its coverage line. "Lire les procédures de LFXX" stays the gesture of a side without data.
        - **Lots** (owners): aerodb — `procedures()` serving runways and transitions, the `ead/fetch` job (D10 of the Data
          module brought forward), `proc/manual/` code; fuel — the two rows of step Route, the arrival row of step Départ, the
          quote with constraints, `route.procedures` v2 (INTEGRATION § 3); maps — the traces with constraints and the
