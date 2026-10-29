@@ -127,7 +127,7 @@ def find_browser(ctx=None):
 def browser_args(profile, netloc, url):
     return ['--headless=new', f'--user-data-dir={profile}', '--no-first-run', '--no-default-browser-check', '--disable-extensions',
             '--disable-sync', '--disable-background-networking', '--disable-component-update', '--disable-default-apps',
-            '--metrics-recording-only', '--mute-audio', '--disable-gpu', '--disable-breakpad', '--no-pings',
+            '--metrics-recording-only', '--mute-audio', '--disable-gpu', '--disable-breakpad', '--disable-crash-reporter', '--no-pings',
             '--proxy-server=127.0.0.1:9', f'--proxy-bypass-list=<-loopback>;{netloc}', '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
             '--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1',
             '--enable-logging=stderr', '--v=0', url]
@@ -166,12 +166,20 @@ def kill_tree(proc):
 
 
 def remove_tree(path):
-    """Supprime le profil temporaire (Windows garde un instant les fichiers d'un processus qui vient de finir : jusqu'à 15 s d'essais)."""
+    """Supprime le profil temporaire (Windows garde un instant les fichiers d'un processus qui vient de finir : jusqu'à 15 s d'essais).
+    L'effacement n'est tenu pour fait que si le dossier reste absent à deux relevés à 0,5 s d'écart : un processus du navigateur qui
+    survit un instant à son arbre (rapport d'incident) peut le recréer juste après (K49 intermittent, 30 octobre 2026)."""
+    gone = 0
     for _ in range(60):
         shutil.rmtree(path, ignore_errors=True)
-        if not os.path.exists(path):
+        if os.path.exists(path):
+            gone = 0
+            time.sleep(0.25)
+            continue
+        gone += 1
+        if gone >= 2:
             return True
-        time.sleep(0.25)
+        time.sleep(0.5)
     return not os.path.exists(path)
 
 

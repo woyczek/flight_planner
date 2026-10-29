@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Base build on the launcher: the browser's temporary profile is always removed** (`tools/regen/base.py`; DECISIONS; test K49) — a
+  late browser process could re-create it right after the job deleted it.
 - **Frame: the data repository on GitLab** (`frame/store/transport_gitlab.js`, `frame/store/transport_github.js`,
   `frame/settings/access.js`, `frame/app.js`, `tools/launch.py`; frame SPEC, DECISIONS, Settings help ×4; noreg A38, I11):
   paste a GitLab project's address (gitlab.com, framagit…) and the project access token the administrator gave you —

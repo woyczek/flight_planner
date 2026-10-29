@@ -2099,3 +2099,12 @@ was refused (403). K43 reads the declaration.
 `Job.offer` / `Jobs.claim`, the cases install the documented contract (`_d5_offer_shim`) and use the frame's own as soon as it is there. K50 starts the real launcher: the
 page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where the frame's route exists, the job is run end to end with the real browser and the real claim
 (that part is made once the work is rebased on the frame's route; the case says so).
+
+## 30 October 2026 — the build job's temporary profile, deleted for good
+
+- **Seen** (the full noreg of Features SOG, then measured on a clean tree at the head of v3): K49 left its `sog-base-*` profile 2 runs in 3. The
+  job's `finally` killed the browser tree and `rmtree` succeeded, but a browser process outside the killed tree (the crash reporter) wrote into
+  the profile just afterwards and re-created the folder.
+- **Done** (`tools/regen/base.py`): `--disable-crash-reporter` in the closed option list; `remove_tree` holds the deletion for done only when the
+  folder stays absent at two checks 0.5 s apart (up to 15 s). K49: 6 runs in 6 clean; K42–K51 green. `purge_stale` still clears, an hour later,
+  a profile a killed launcher left behind.
