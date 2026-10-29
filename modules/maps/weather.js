@@ -80,7 +80,7 @@ async function loadWeather(key) {
       places = Sx.sectionPlaces(pts),
       dep = depTime(f),
       r = await S.ctx.weather.grid(places, dep, Sx.sectionVars(levelFt, pts), {
-        model: S.ctx.weather.modelFor(mid.lat, mid.lon).id,
+        model: (await S.ctx.weather.modelFor(mid.lat, mid.lon))?.id, // ctx.weather est asynchrone (INTEGRATION § 14.1)
         cacheOnly: true
       }).catch(() => null);
     if (!r?.locs?.length) return {

@@ -34,11 +34,13 @@ const RUN_TTL = 6 * 36e5,
   META_TTL = 10 * 60e3;
 
 /** Modèle dont on lit l'heure du run : un modèle « seamless » n'a pas de métadonnées, on lit celles du modèle qui porte
- *  les premières heures (essayé le 24 octobre 2026 : 200, CORS ouvert). */
+ *  ses niveaux de pression — les mêmes que la couche météo du cadre (frame/lib/weather_store.js), qui lit et écrit les mêmes
+ *  fichiers cache/weather/ : deux heures de run différentes faisaient juger périmés les fichiers de l'autre (la Carte, qui
+ *  relit par le cadre, ne trouvait rien ; chaque réserve réécrivait les fichiers avec ses seules variables ; 29 octobre). */
 const RUN_OF = {
-  meteofrance_seamless: 'meteofrance_arome_france_hd',
+  meteofrance_seamless: 'meteofrance_arpege_europe',
   icon_seamless: 'dwd_icon',
-  gfs_seamless: 'ncep_gfs013'
+  gfs_seamless: 'ncep_gfs025'
 };
 
 /** Poids d'une demande dans le décompte d'Open-Meteo (un appel par lieu et par tranche de 10 variables, au prorata). */

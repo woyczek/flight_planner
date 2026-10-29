@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Weather: the map and Atmosphere again read the same forecast** (`modules/atmosphere/weather_store.js`,
+  `modules/maps/weather.js`; frame DECISIONS): since 28 Oct the two weather stores used two different model runs for the
+  same cache and each discarded the other's data — the map showed no weather and the cut stopped part-way (LFPO → EIDW).
 - **Fuel: the reasons of a procedure reading are translated by aerodb's catalogue** (`modules/fuel/module.js`, DECISIONS) —
   never a code or a French console phrase in another language; a failure always shows what the workstation saw.
 - **Map: one element for the airway names** (`modules/maps/render.js`, `render_airspace.js`; case D51; V3 § 10.29 g) — the

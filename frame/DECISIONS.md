@@ -1578,3 +1578,18 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     JavaScript error, calling `workstation`.
   - The route table with each route's public (lan | poste) is lot (3c-2): a mechanical rewrite of about 42 routes, kept apart
     so that this change stays small.
+- **29 Oct 2026 — « Météo GFS toujours cassée » (LFPO → EIDW): two stores, two runs** (user, through the coordinator):
+  - Cause, mine: on 28 Oct (d8934680f) the frame's weather layer moved Météo-France's run to ARPEGE Europe's metadata
+    (and GFS to `ncep_gfs025`), but Atmosphere's own store (`modules/atmosphere/weather_store.js`, until its recoding on
+    `ctx.weather`) kept AROME HD's and `ncep_gfs013`. The two write the same files `cache/weather/<model>/<cell>/<day>.json`:
+    each judged the other's files stale (« run changed »). The map, which reads through the frame in `cacheOnly`, found
+    nothing; each store rewrote a file with only its own variables, so the other lost its, hence cuts and barbs that
+    stopped part-way.
+  - Not Open-Meteo: `meteofrance_seamless`, `icon_seamless` and `gfs_seamless` serve every variable over the Channel and
+    Ireland (checked).
+  - Fix: Atmosphere's store reads the same metadata as the frame (two lines in its file, the module's owner told). And the
+    map read `.id` on a Promise (`ctx.weather.modelFor` is asynchronous): the model was never passed (`await` added in
+    `modules/maps/weather.js`, the map's owner told).
+  - Checked: LFPO → EIDW loaded in Atmosphere (real network), every cell of the route filled up to 55° N, the files carry
+    ARPEGE's run, the map then draws its weather from the cache (it drew nothing before).
+  - Lesson: while two stores share a cache, one rule for the run; it ends when Atmosphere reads `ctx.weather`.
