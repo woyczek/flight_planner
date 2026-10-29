@@ -961,6 +961,19 @@
     sid: sAll.id
   }, byId).join(' ') === '02 25');
 
+  // § 10.29 a : loadProcedures rend les mêmes enregistrements à Carburant et à la Carte, sans transition égale à sa procédure
+  const LPd = await loadProcedures(fakeDb, fl({
+    dep: {
+      rwy: '23',
+      sid: SID.id,
+      trans: SID.id
+    },
+    arr: {
+      star: STAR.id
+    }
+  }));
+  ck('loadProcedures : une transition égale à sa procédure est ignorée (dedupProcs)', LPd.sid === SID && LPd.sidTrans === null);
+
   window.__cfBench = {
     done: true,
     pass: rows.filter(r => r.ok).length,

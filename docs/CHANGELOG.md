@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Flight path: `loadProcedures` returns the records without duplicates** (`frame/lib/current_flight.js` `dedupProcs`; bench; V3
+  § 10.29 a) — a transition equal to its procedure is dropped there, so Fuel and the Map see the same records (Fuel had its own
+  copy).
+
 - **Fuel: compatible procedures first, one rule shared with the Map, doubtful records never listed** (`frame/lib/current_flight.js`
   `conflictsOf`, `orderProcedures`; `modules/fuel/module.js`; bench `frame/lib/test/current_flight.html`; SPEC, DECISIONS; help ×4;
   cases F22, F31) — every list opens with what fits the choice, then the ⚠ ones; the runway list with the runways of the chosen

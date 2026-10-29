@@ -11,7 +11,7 @@
 //     progress.actual, reste ; progress devient null s'il ne reste rien) ; schema, by et updated_at posés.
 //   isStarted(f), refTime(f), legTimes(f, { path }), etaOf(f, now, { path }), plannedPositionAt(f, now, { path }), TAXI_MIN :
 //     le vol dans le temps, dérivé de started.at / planned_at, quote et profile (voir plus bas ; modules/maps/SPEC.md § 13).
-//   proceduresOf(f), loadProcedures(aerodb, f), expandedPath(f, procs), flownPath(path) : la route et ses procédures choisies
+//   proceduresOf(f), loadProcedures(aerodb, f) (sans doublon : dedupProcs), expandedPath(f, procs), flownPath(path) : la route et ses procédures choisies
 //     (SID, STAR, approche : V3_SPECIFICATION § 10.20), un seul chemin pour le profil, les marques, les heures et le devis.
 //   routingChain(f, procs, points) : les points du routage des voies (« Auto »), fin de SID et début d'arrivée choisies insérés.
 //   altitudeAt(f, nm, { cruiseFt, flown, total }), routeNmToFlown(f, flown, points) : l'altitude prévue le long du chemin volé
@@ -303,7 +303,7 @@ export async function loadProcedures(aerodb, f) {
     };
   const [sid, sidTrans, star, starTrans, app, appTrans, depRwy, arrRwy] = await Promise.all([get(d.sid), get(d.trans), get(a.star), get(
     a.trans), get(a.app), get(a.appTrans), rw(r.dep || r.points?.[0]?.id, d.rwy), rw(r.arr || r.points?.at?.(-1)?.id, a.rwy)]);
-  return {
+  return dedupProcs({
     sid: sid || null,
     sidTrans: sidTrans || null,
     star: star || null,
@@ -312,7 +312,22 @@ export async function loadProcedures(aerodb, f) {
     appTrans: appTrans || null,
     depRwy,
     arrRwy
+  });
+}
+/** Procédures lues sans doublon : une transition identique à sa procédure (un ancien choix, ou venu d'ailleurs) est ignorée, la
+ *  chaîne de ses points serait volée deux fois. Reprise de Carburant (§ 10.29 a) : Carburant et la Carte voient les mêmes
+ *  enregistrements ; elle ira dans frame/lib/procedures.js avec la sortie du bloc procédures de Carburant. */
+export function dedupProcs(p) {
+  const out = {
+    ...p
   };
+  for (const [main, tr] of [
+      ['sid', 'sidTrans'],
+      ['star', 'starTrans'],
+      ['app', 'appTrans']
+    ])
+    if (out[main] && out[tr] && out[main].id === out[tr].id) out[tr] = null;
+  return out;
 }
 
 /** Champs d'un point de procédure repris dans le chemin, tels qu'aerodb les donne (alt { type: 'at' | 'min' | 'max' |
