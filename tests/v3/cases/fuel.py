@@ -570,6 +570,9 @@ def f14(c):
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=6000,
             what='the refusal reason (no launcher serves the test page: aerodb answers "no-launcher") is shown in a notification')
     c.until("!!document.querySelector('[data-module=fuel] [data-do=procfetch]:not([disabled])')", what='the button is available again after a refusal')
+    # never silent (user, 29 Oct, EIDW: « aucun log. est-ce que ça a marché ? »): the start is said, then the end
+    started = norm(row(c, 'procStarted').replace('{icao}', 'LFQQ'))
+    c.ok(started in [norm(n) for n in c.note_log()], f'notifications {[norm(n) for n in c.note_log()]}', 'the start of the reading is said')
     # dispatch par État d'aerodb (82eeef3b5) : France par l'eAIP du SIA, État à tables par EAD Basic, sinon 'no-tables' ; plus de
     # « mise en page inconnue »
     src = (ROOT / F).read_text(encoding='utf-8')

@@ -255,6 +255,12 @@ const TX = {
   // terrain qui a déjà des procédures : la date de la dernière lecture (aerodb coverage().read_at, UTC) et le geste pour le relire
   procFileAt: ['lu le {d}', 'read on {d}', 'gelesen am {d}', 'leído el {d}'],
   procReread: ['Relire', 'Read again', 'Neu lesen', 'Releer'],
+  // une lecture peut durer plusieurs minutes : son départ est dit, sa fin le sera aussi (même hors de Carburant)
+  procStarted: ['Lecture de {icao} lancée : une notification dira la fin.',
+    'Reading {icao} started: a notification will say when it ends.',
+    'Lesen von {icao} gestartet: eine Meldung sagt, wann es endet.', 'Lectura de {icao} iniciada: una notificación dirá cuándo termina.'
+  ],
+  procWarnings: [' {n} avertissements.', ' {n} warnings.', ' {n} Warnungen.', ' {n} advertencias.'],
   procReading: ['Lecture de {icao}…', 'Reading {icao}…', '{icao} wird gelesen…', 'Leyendo {icao}…'],
   // lecture en cours selon la source qu'aerodb annonce (onProgress source) : la France par l'eAIP du SIA, un État à tables par EAD
   procReadingSrc: {
@@ -347,8 +353,12 @@ const TX = {
     cancelled: ['Lecture de {icao} annulée.', 'Reading of {icao} cancelled.', 'Lesen von {icao} abgebrochen.',
       'Lectura de {icao} cancelada.'
     ],
-    failed: ['La lecture de {icao} a échoué.{m}', 'Reading {icao} failed.{m}', 'Das Lesen von {icao} ist fehlgeschlagen.{m}',
-      'La lectura de {icao} ha fallado.{m}'
+    failed: ['La lecture de {icao} a échoué{m}.{wn}', 'Reading {icao} failed{m}.{wn}', 'Das Lesen von {icao} ist fehlgeschlagen{m}.{wn}',
+      'La lectura de {icao} ha fallado{m}.{wn}'
+    ],
+    // le travail a tourné sans rien lire (« no procedure could be read for this aerodrome »)
+    'none-read': ['{icao} : aucune procédure lue.{wn}', '{icao}: no procedure read.{wn}', '{icao}: kein Verfahren gelesen.{wn}',
+      '{icao}: ningún procedimiento leído.{wn}'
     ],
     unavailable: [
       'La lecture à la demande n’est pas encore disponible. Pour ce vol, chargez votre OFP SimBrief : il apporte la SID et la STAR.',
@@ -866,6 +876,9 @@ const gone = s => S !== s;
 /** Ce que la relecture au départ a changé, gardé hors de S (le module peut être remonté quand la vue double s'ouvre) :
  *  { at (started.at), text }. */
 let startNote = null;
+/** Lecture de procédures à la demande en cours, hors de S comme startNote : elle survit au démontage (le travail du poste
+ *  continue, sa fin est dite quand même) ; { icao, text (texte du bouton, avancement compris) }. */
+let procReadingNow = null;
 
 /** Échappe un texte pour le HTML. */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
@@ -1484,11 +1497,11 @@ async function runwayChoices(icao, known, all) {
 function procFileHtml(m) {
   const at = m.cov?.read_at && Number.isFinite(Date.parse(m.cov.read_at)) ? m.cov.read_at : null,
     old = !!m.cov?.outdated,
-    busy = S.procFetch?.icao === m.icao,
+    busy = procReadingNow?.icao === m.icao,
     d = at ? new Date(at) : null,
     two = n => String(n).padStart(2, '0'),
     when = d ? `${two(d.getUTCDate())}/${two(d.getUTCMonth() + 1)} ${fmtZ(d)}` : '';
-  return `${when ? ` <span class="f-muted fu-procfile">${esc(tt(TX.procFileAt, { d: when }) + (old ? PROC_OLD : ''))}</span>` : ''} <button type="button" class="fu-linkbtn" data-do="procfetch" data-again="1" data-icao="${esc(m.icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? tt(TX.procReading, { icao: m.icao }) : tt(TX.procReread))}</button>`;
+  return `${when ? ` <span class="f-muted fu-procfile">${esc(tt(TX.procFileAt, { d: when }) + (old ? PROC_OLD : ''))}</span>` : ''} <button type="button" class="fu-linkbtn" data-do="procfetch" data-again="1" data-icao="${esc(m.icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? procReadingNow.text : tt(TX.procReread))}</button>`;
 }
 async function sideModel(side) {
   const r = S.flight.route || {},
@@ -1576,8 +1589,8 @@ function procRowHtml(side, m, edit) {
   const head = `<b class="fu-prochead">${esc(tt(TX[side]))}</b>`;
   if (!m) return '';
   if (m.nodata) {
-    const busy = S.procFetch?.icao === m.icao;
-    return `<div class="fu-proc" data-proc="${side}">${head}<span class="f-muted">${esc(tt(TX.procNoData))}</span>${edit ? `<button type="button" data-do="procfetch" data-icao="${esc(m.icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? tt(TX.procReading, { icao: m.icao }) : tt(TX.procRead, { icao: m.icao }))}</button>` : ''}</div>`;
+    const busy = procReadingNow?.icao === m.icao;
+    return `<div class="fu-proc" data-proc="${side}">${head}<span class="f-muted">${esc(tt(TX.procNoData))}</span>${edit ? `<button type="button" data-do="procfetch" data-icao="${esc(m.icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? procReadingNow.text : tt(TX.procRead, { icao: m.icao }))}</button>` : ''}</div>`;
   }
   const o = {
     ...(CF.proceduresOf(S.flight)[side] || {})
@@ -1734,82 +1747,93 @@ function procChosen(k, raw) {
   saveFlight();
   refresh();
 }
-/** Motif de rejet le plus fréquent d'une lecture (texte français de l'outil du poste) dans la langue de l'appli ; tel quel s'il est
- *  inconnu, « ? » sans motif. */
-const procWhyText = why => TX.procWhy[why] ? tt(TX.procWhy[why]) : String(why || '?');
 /** « Lire les procédures de LFXX » : aerodb.fetchProcedures (un terrain par geste, rien en silence) ; un refus montre sa raison dans
  *  une notification flottante (sans lanceur : la lecture se fait sur le poste, l'OFP SimBrief reste la source du vol). */
-async function fetchProcs(icao, btn) {
-  const s = S;
-  if (S.procFetch) return;
-  const ctl = new AbortController();
-  S.procFetch = {
+async function fetchProcs(icao) {
+  const s = S,
+    ctx = S.ctx,
+    say = (row, v, level) => ctx.notify(ctx.t(row, v), level); // ctx du montage de départ : dit même après le démontage
+  if (procReadingNow) return say(TX.procReasons.busy, {
+    icao: procReadingNow.icao
+  }, 'warn'); // jamais un appui sans réponse
+  procReadingNow = {
     icao,
-    ctl
+    text: tt(TX.procReading, {
+      icao
+    })
   };
-  // texte du bouton : la source dès qu'aerodb la dit (eAIP du SIA, EAD Basic), sinon le terrain ; n : avancement « 3/12 »
+  // texte du bouton : la source dès qu'aerodb la dit (eAIP du SIA, EAD Basic), sinon le terrain ; « 3/12 » : l'avancement ; le
+  // bouton est retrouvé à chaque fois (les lignes se redessinent pendant la lecture)
   let src = null;
   const label = (n = '') => {
-    if (btn.isConnected) btn.textContent = (TX.procReadingSrc[src] ? tt(TX.procReadingSrc[src]) : tt(TX.procReading, {
+    if (!procReadingNow) return;
+    procReadingNow.text = (TX.procReadingSrc[src] ? ctx.t(TX.procReadingSrc[src]) : ctx.t(TX.procReading, {
       icao
     })) + n;
+    const b = !gone(s) && S.body?.querySelector(`[data-do="procfetch"][data-icao="${icao}"]`);
+    if (b) b.textContent = procReadingNow.text;
   };
-  if (btn.isConnected) {
-    btn.disabled = true;
-    btn.setAttribute('aria-busy', 'true');
+  say(TX.procStarted, {
+    icao
+  }, 'info');
+  if (!gone(s)) {
+    S.rowsKey = null;
+    renderProcRows();
   }
-  label();
   let res;
   try {
-    res = S.ctx.aerodb?.fetchProcedures ? await S.ctx.aerodb.fetchProcedures(icao, {
+    res = ctx.aerodb?.fetchProcedures ? await ctx.aerodb.fetchProcedures(icao, {
       onProgress: p => {
-        if (gone(s)) return;
         if (p?.source) src = p.source;
         label(p && p.total ? ` ${p.done || 0}/${p.total}` : '');
-      },
-      signal: ctl.signal
+      }
     }) : {
       ok: false,
       reason: 'unavailable'
     };
-  } catch {
+  } catch (e) {
     res = {
       ok: false,
-      reason: 'failed'
+      reason: 'failed',
+      message: e?.message || String(e || '')
     };
   }
-  if (gone(s)) return;
-  S.procFetch = null;
+  procReadingNow = null;
+  const wn = Array.isArray(res?.warnings) && res.warnings.length ? ctx.t(TX.procWarnings, {
+    n: res.warnings.length
+  }) : '';
   if (res?.ok) {
     const n = Array.isArray(res.procedures) ? res.procedures.length : +res.procedures || 0,
       st = res.stats;
-    S.ctx.notify(st && +st.pages > 0 ? tt(TX.procFetchedPages, {
+    say(st && +st.pages > 0 ? TX.procFetchedPages : TX.procFetched, {
       icao,
       n,
-      p: +st.pages,
-      rej: +st.rejected > 0 ? tt(TX.procRejected, {
+      p: +st?.pages || 0,
+      rej: +st?.rejected > 0 ? ctx.t(TX.procRejected, {
         r: +st.rejected,
-        why: procWhyText(st.reasons?.[0]?.[0])
+        why: TX.procWhy[st.reasons?.[0]?.[0]] ? ctx.t(TX.procWhy[st.reasons[0][0]]) : String(st.reasons?.[0]?.[0] || '?')
       }) : '',
-      drop: +st.dropped > 0 ? tt(TX.procDropped, {
+      drop: +st?.dropped > 0 ? ctx.t(TX.procDropped, {
         d: +st.dropped
       }) : ''
-    }) : tt(TX.procFetched, {
+    }, 'ok');
+  } else {
+    const none = res?.reason === 'failed' && /no procedure could be read/i.test(res.message || ''),
+      row = none ? TX.procReasons['none-read'] : TX.procReasons[res?.reason] || TX.procReasons.other;
+    say(row, {
       icao,
-      n
-    }), 'ok');
+      r: res?.reason || '?',
+      m: res?.message && !none ? ` (${res.message})` : '', // la cause donnée par le lanceur (refus de connexion…)
+      wn,
+      w: Math.max(1, Math.ceil(+res?.wait || 30)), // too-soon : secondes avant la lecture suivante (EAD Basic, 30 s entre deux)
+      l: res?.reason === 'no-tables' && res.lnm ? ctx.t(TX.procLnm) : '' // indice : les bases de Little Navmap du poste (§ 10.21)
+    }, 'warn');
+  }
+  if (!S) return; // Carburant fermé : la notification a suffi ; rouvert entre-temps : ses lignes sont redessinées
+  if (res?.ok) {
     S.procCache = null;
     S.procs = null;
     refresh();
-  } else {
-    const row = TX.procReasons[res?.reason] || TX.procReasons.other;
-    S.ctx.notify(tt(row, {
-      icao,
-      r: res?.reason || '?',
-      m: res?.message ? ` (${res.message})` : '', // la cause donnée par le lanceur (refus de connexion, rien de lu…)
-      w: Math.max(1, Math.ceil(+res?.wait || 30)), // too-soon : secondes avant la lecture suivante (EAD Basic, 30 s entre deux)
-      l: res?.reason === 'no-tables' && res.lnm ? tt(TX.procLnm) : '' // indice : les bases de Little Navmap du poste (§ 10.21)
-    }), 'warn');
   }
   S.rowsKey = null;
   renderProcRows();
@@ -2482,7 +2506,7 @@ function onPlanClick(e) {
   if (st) return goStep(+st.dataset.step);
   if (e.target.closest('[data-do="showmap"]')) return showMap();
   const pf = e.target.closest('[data-do="procfetch"]');
-  if (pf) return fetchProcs(pf.dataset.icao, pf);
+  if (pf) return fetchProcs(pf.dataset.icao);
   if (e.target.closest('[data-do="start"]')) return startFlight();
   if (e.target.closest('[data-do="cancelstart"]')) return cancelStart();
   const iu = e.target.closest('[data-do="isause"]');
@@ -4931,7 +4955,7 @@ export function unmount() {
   } catch {
     /* déjà arrêté */
   }
-  S.procFetch?.ctl.abort(); // une lecture de procédures en cours est abandonnée
+  // une lecture de procédures en cours n'est pas abandonnée : le travail du poste continue et sa fin est dite (procReadingNow)
   clearTimeout(S.routeTimer);
   clearTimeout(S.roTimer);
   clearTimeout(S.wxTimer);

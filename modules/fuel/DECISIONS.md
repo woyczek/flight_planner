@@ -4,6 +4,12 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — the reading on demand is never silent** (user, EIDW: « aucun log. est-ce que ça a marché ? » — the job ran
+  3 min 30 and answered `failed`, « no procedure could be read », 31 warnings; nothing was shown): the start is said (`procStarted`),
+  every end is said through the context of the mount that started it, even after an unmount (a module-level `procReadingNow`
+  replaces `S.procFetch`; the unmount no longer aborts the job); `failed` carries the launcher's message and the number of
+  warnings, « aucune procédure lue » ×4 when nothing was read; a second tap during a reading says « déjà en cours »; the button's
+  text (source, i/n) is kept in that state and redrawn with the rows. Case F14 checks the start notification.
 - **29 Oct 2026 — the date field after « Maintenant »** (user: the field showed « dd/mm/yyyy » while « +30 » worked): planned_at
   stays null (the flight leaves now), but the field shows the present time (`whenField`) instead of an empty `datetime-local`, which
   the browser draws as its pattern. Case F6.

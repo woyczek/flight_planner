@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Read the procedures » always says how it ended** (`modules/fuel/module.js`, SPEC, DECISIONS; case F14) — its
+  start, then its result or its failure with the reason and the number of warnings, even after leaving Fuel; leaving no longer
+  cancels the reading.
 - **Fuel: « Now » shows the present time in the date field** (`modules/fuel/module.js`, DECISIONS; case F6) — no longer an
   empty field drawn « dd/mm/yyyy ».
 - **Launcher: the jobs' base, alone** (`tools/regen_jobs.py`, `tools/launch.py`, `frame/lib/launcher.js`, `frame/app.js`;
