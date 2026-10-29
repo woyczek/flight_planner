@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: "Read again" on an aerodrome that already has procedures** (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4; case
+  F27) — with the date of its last reading.
 - **Map: SID, STAR and approach in their own hues, and the airway boxes stay over their traces** (`modules/maps/procs.js`,
   `render.js`, `draw.js`, `sheet_view.js`; SPEC § 5, help ×4; user, 29 Oct: "des couleurs de contraste autres que violet (vert ?
   orange ? bleu ?)" and "toujours pas de cartouche pour les routes, mais là c'est une approche") — the SID is green, the STAR

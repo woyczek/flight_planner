@@ -4,6 +4,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — « Relire » on a row that has procedures** (user: « il manque un bouton “rafraîchir” les procédures (avec une date
+  pour le dernier fichier) »; Simplification, § 10.20): the reading on demand existed only without data, so LFPO could not be read
+  again after aerodb's fixes. `procFileHtml`: the date from `coverage(icao).read_at` (aerodb's lot of 17:00; null → the button
+  alone), ⌛ when `coverage().outdated`, then « Relire » with the same `data-do="procfetch"` (fetchProcs unchanged). Case F27. The
+  lists' order (compatible first, then ⚠) and moving `conflictsOf` to frame/lib/current_flight.js come in the next commit.
 - **29 Oct 2026 — procedure rows in step Route** (user: « star et sid sont “route”, pas “vol” »): before the start the Departure and
   Arrival rows leave step 1 Flight (after the aerodromes) for a card « Procédures » at the end of step 2 Route, after the route
   text, the points and the SimBrief / OFP row (`data-block="procrows"`, box `data-procbox="route"` instead of `"vol"`;

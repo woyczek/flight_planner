@@ -710,7 +710,7 @@ def f20(c):
     c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-app\"] option')].some(o => /LFVA/.test(o.value))", what='the approach list of LFVA is drawn')
     txt = norm(c.text(f'{FUEL} [data-proc="arr"]') or '')
     c.ok(norm(row(c, 'procNoData')) not in txt, f'row {txt!r}', 'an aerodrome with approaches only is not "no published procedure"')
-    c.eq(c.count(f'{FUEL} [data-proc="arr"] [data-do="procfetch"]'), 0, 'and offers no reading', what='reading buttons')
+    c.eq(c.count(f'{FUEL} [data-proc="arr"] [data-do="procfetch"]:not([data-again])'), 0, 'and offers no first reading (only « Relire »)', what='reading buttons')
     c.eq(opt_groups(c, 'p-arr-app'), 0, 'the list is flat: no group per runway', what='approach groups')
     apps = [lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')]
     c.eq(apps, ['ILS09', 'VOR09', 'RNP27', 'VOR27'], 'the approaches without transition and the one given by its entries (listed once), sorted by runway then name; the name already says the runway', what='approach options')
@@ -718,7 +718,7 @@ def f20(c):
     # departure: the same aerodrome has no SID, the row still shows (runway, SID "none") and not the reading
     set_icao(c, 'dep', 'LFVA')
     c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-dep-sid\"]')", what='the departure row of LFVA is drawn')
-    c.eq(c.count(f'{FUEL} [data-proc="dep"] [data-do="procfetch"]'), 0, 'the departure row of an aerodrome with approaches only offers no reading', what='reading buttons')
+    c.eq(c.count(f'{FUEL} [data-proc="dep"] [data-do="procfetch"]:not([data-again])'), 0, 'the departure row of an aerodrome with approaches only offers no reading', what='reading buttons')
     # a file installed after a first empty answer is seen at the next question (an empty answer is not kept)
     set_icao(c, 'arr', 'LFQQ')
     c.until("!!document.querySelector('[data-module=fuel] [data-proc=arr] [data-do=procfetch]')", what='LFQQ has nothing: the reading is offered')
@@ -915,3 +915,22 @@ def f26(c):
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]'); return !!s && ![...s.options].some(o => /⚠/.test(o.textContent)) })()", what='the transition is no longer marked')
     c.wait(600)
     c.eq(len(c.note_log()) - n1, 0, 'a choice without conflict says nothing', what='notifications after ARR1A')
+
+
+@case('F27', 'A row with procedures offers "Read again"', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='user, 29 Oct: « il manque un bouton “rafraîchir” les procédures (avec une date pour le dernier fichier) »; V3 spec 10.20: date (coverage().read_at) then « Relire », same gesture as the reading on demand')
+def f27(c):
+    open_proc(c)
+    wait_rows(c, 'arr')
+    b = f'{FUEL} [data-proc="arr"] [data-do="procfetch"][data-again]'
+    c.until("!!document.querySelector('[data-module=fuel] [data-proc=arr] [data-do=procfetch]')", what='the arrival row (it has procedures) offers the reading again')
+    c.eq(norm(c.text(b) or ''), norm(row(c, 'procReread')), 'the button says "Read again" in the language of the run', what='button')
+    c.ok(c.js("!!document.querySelector('[data-module=fuel] [data-proc=arr] select[data-k=\"p-arr-star\"]')"), 'no STAR list', 'the lists stay next to it')
+    # the date: aerodb's coverage().read_at when it gives it (UTC); without it, the button alone
+    at = c.js("(async () => { const v = await (window.__sogAerodb || {}).coverage?.('LFML'); return v ? v.read_at ?? null : undefined })()")
+    if at:
+        c.ok(norm(c.text(f'{FUEL} [data-proc="arr"] .fu-procfile') or '').startswith(norm(row(c, 'procFileAt').split('{d}')[0])), 'no date', 'the date of the last reading is shown before the button')
+    c.tap(b)
+    want = norm(tx(F, "no-launcher'", c.lang, after='procReasons'))
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=6000,
+            what='the same gesture as the reading on demand: its refusal is said (no launcher on the test page)')

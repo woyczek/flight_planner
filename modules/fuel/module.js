@@ -252,6 +252,9 @@ const TX = {
   procRead: ['Lire les procédures de {icao}', 'Read the procedures of {icao}', 'Verfahren von {icao} lesen',
     'Leer los procedimientos de {icao}'
   ],
+  // terrain qui a déjà des procédures : la date de la dernière lecture (aerodb coverage().read_at, UTC) et le geste pour le relire
+  procFileAt: ['lu le {d}', 'read on {d}', 'gelesen am {d}', 'leído el {d}'],
+  procReread: ['Relire', 'Read again', 'Neu lesen', 'Releer'],
   procReading: ['Lecture de {icao}…', 'Reading {icao}…', '{icao} wird gelesen…', 'Leyendo {icao}…'],
   // lecture en cours selon la source qu'aerodb annonce (onProgress source) : la France par l'eAIP du SIA, un État à tables par EAD
   procReadingSrc: {
@@ -1472,14 +1475,29 @@ async function runwayChoices(icao, known, all) {
  *  terrain de quatre caractères. Toutes les fiches du terrain sont lues en une fois (all) ; les listes en gardent les sortes du
  *  côté, toutes les fiches, jamais coupées par la piste (une fiche qui ne la dessert pas est marquée ⚠, pas retirée). rwys :
  *  runwayChoices. nodata : ni fiche (de n'importe quelle sorte) ni piste d'aerodb. */
+/** Date de la dernière lecture des procédures d'un terrain (aerodb coverage(icao).read_at), « lu le 28/10 18:01Z », ⌛ quand ce qu'il
+ *  détient est une lecture d'un cycle passé (coverage().outdated) ; puis le bouton « Relire » (data-do procfetch, comme « Lire les
+ *  procédures »). Sans date (read_at null, aerodb plus ancien) : le bouton seul. */
+function procFileHtml(m) {
+  const at = m.cov?.read_at && Number.isFinite(Date.parse(m.cov.read_at)) ? m.cov.read_at : null,
+    old = !!m.cov?.outdated,
+    busy = S.procFetch?.icao === m.icao,
+    d = at ? new Date(at) : null,
+    two = n => String(n).padStart(2, '0'),
+    when = d ? `${two(d.getUTCDate())}/${two(d.getUTCMonth() + 1)} ${fmtZ(d)}` : '';
+  return `${when ? ` <span class="f-muted fu-procfile">${esc(tt(TX.procFileAt, { d: when }) + (old ? PROC_OLD : ''))}</span>` : ''} <button type="button" class="fu-linkbtn" data-do="procfetch" data-again="1" data-icao="${esc(m.icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? tt(TX.procReading, { icao: m.icao }) : tt(TX.procReread))}</button>`;
+}
 async function sideModel(side) {
   const r = S.flight.route || {},
     icao = String((side === 'dep' ? r.dep : r.arr) || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{4}$/.test(icao)) return null;
   const kinds = side === 'dep' ? ['SID'] : ['STAR', 'APP'],
-    [known, all] = await Promise.all([runwaysOf(icao), procsOf(icao)]);
+    [known, all, cov] = await Promise.all([runwaysOf(icao), procsOf(icao), Promise.resolve().then(() => S.ctx.aerodb?.coverage?.(icao))
+      .catch(() => null)
+    ]);
   return {
     icao,
+    cov, // couverture du terrain : read_at (date de la dernière lecture), outdated
     rwys: await runwayChoices(icao, known, all),
     all,
     lists: Object.fromEntries(kinds.map(k => [k, all.filter(p => p.kind === k)])),
@@ -1495,7 +1513,6 @@ function procLabel(rec) {
   return [name, one.length === 1 && !name.toUpperCase().includes(one[0]) ? one[0] : '', rec.status === 'xplane' || rec.local ? tt(TX
     .procXplane) : ''].filter(Boolean).join(' · ') + (rec.outdated ? PROC_OLD : '');
 }
-/** Même repère : même identifiant, ou positions à moins d'une demi-NM. */
 /** Raisons (textes ×4) pour lesquelles une fiche est en conflit avec le choix courant o du côté ; [] sans conflit. key : sid, star,
  *  app, trans ou appTrans. Le conflit ne porte que sur la piste (§ 10.23, 29/10/2026) : une SID, une STAR ou une approche qui ne
  *  dessert pas la piste choisie ; sans piste choisie, une STAR qui ne dessert aucune piste de l'approche choisie. La continuité STAR →
@@ -1563,6 +1580,9 @@ function procRowHtml(side, m, edit) {
     ...(CF.proceduresOf(S.flight)[side] || {})
   };
   if (o.appTrans && o.appTrans === o.app) delete o.appTrans; // un ancien choix : la transition n'est pas l'approche elle-même
+  // terrain avec des données : la date du dernier fichier lu (⌛ si son cycle est passé) et « Relire » (même geste que la lecture à la
+  // demande : aerodb remplace le fichier de même source)
+  const head2 = edit ? head + procFileHtml(m) : head;
   if (!edit) { // plus modifiable (la SID est passée) : le choix, en lecture seule
     const said = PROC_FIELDS[side].filter(key => o[key] !== undefined).map(key => procValueText(o[key], key, o)).join(' · ');
     return `<div class="fu-proc" data-proc="${side}">${head}<span class="f-muted">${esc(said || '—')}</span></div>`;
@@ -1598,7 +1618,7 @@ function procRowHtml(side, m, edit) {
     const at = chosen ? entry.filter(r => feeds(r, chosen)) : transOf(apps, o.app).filter(r => r.id !== o.app);
     if (at.length) body += sel('appTrans', TX.procAppTrans, at, false);
   }
-  return `<div class="fu-proc" data-proc="${side}">${head}${body}</div>`;
+  return `<div class="fu-proc" data-proc="${side}">${head2}${body}</div>`;
 }
 /** La SID est-elle passée ? Position : progress.actual s'il a moins de deux minutes (et date du vol), sinon la position prévue
  *  (CF.plannedPositionAt sur le chemin) ; fin de la SID : le dernier point d'origine « sid » du chemin (le départ même sans SID).
@@ -1652,7 +1672,7 @@ async function renderProcRows() {
 function focusArr() {
   if (!S?.focusArr || S.body?.inert) return;
   const row = S.body.querySelector('[data-proc="arr"]'),
-    el = row?.querySelector('select,button:not([disabled])');
+    el = row?.querySelector('select') || row?.querySelector('button:not([disabled])'); // la liste d'abord, pas « Relire »
   if (!el) return;
   S.focusArr = false;
   el.scrollIntoView?.({
