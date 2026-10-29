@@ -561,7 +561,7 @@ export function publishEntry(at, out) {
     at: new Date(at).toISOString(),
     set: 'base',
     verb: 'publish',
-    result: out.kind === 'failed' ? 'failed' : 'done',
+    result: out.kind === 'failed' || out.kind === 'no-exchange' ? 'failed' : 'done', // rien n'est parti : jamais « done »
     committed: out.committed,
     received: out.received,
     held: out.held,

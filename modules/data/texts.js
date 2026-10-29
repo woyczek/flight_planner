@@ -24,6 +24,8 @@ export const TX = {
   // couverture : les zones, puis les États
   coverage: ['Couverture', 'Coverage', 'Abdeckung', 'Cobertura'],
   coverageZones: ['Zones : {z}', 'Zones: {z}', 'Zonen: {z}', 'Zonas: {z}'],
+  addZone: ['Ajouter un pays', 'Add a country', 'Land hinzufügen', 'Añadir un país'],
+  addZonePick: ['— choisir —', '— choose —', '— wählen —', '— elegir —'],
   coverageNone: ['Aucune zone publiée pour le moment.', 'No zone published yet.', 'Noch keine Zone veröffentlicht.',
     'Ninguna zona publicada por ahora.'
   ],
@@ -328,6 +330,10 @@ export const TX = {
   pubAsk: ['Publier {f} et {c} vers le dépôt des données ?', 'Publish {f} and {c} to the data repository?',
     '{f} und {c} an das Datenrepository veröffentlichen?', '¿Publicar {f} y {c} en el repositorio de datos?'
   ],
+  // une seule des deux parts (l'autre vaut 0) : « Publier 1 commit vers le dépôt des données ? »
+  pubAskOne: ['Publier {x} vers le dépôt des données ?', 'Publish {x} to the data repository?',
+    '{x} an das Datenrepository veröffentlichen?', '¿Publicar {x} en el repositorio de datos?'
+  ],
   pubRunning: ['Publication en cours…', 'Publishing…', 'Veröffentlichung läuft…', 'Publicando…'],
   // la fin : une ligne par fait, la première est aussi le début de la notification
   pubDone: ['Envoyé. Fichiers commités : {c} ; fichiers reçus : {r}', 'Sent. Files committed: {c}; files received: {r}',
@@ -338,10 +344,11 @@ export const TX = {
     'Auf dem Rechner gespeichert, nichts wurde gesendet. Eingecheckte Dateien: {c}; empfangene Dateien: {r}',
     'Guardado en el equipo, no se envió nada. Archivos con commit: {c}; archivos recibidos: {r}'
   ],
-  pubNoExchange: ['Aucun échange avec le dépôt n’a eu lieu : le trigramme de cet appareil est-il réglé ?',
-    'No exchange with the repository took place: is this device’s trigram set?',
-    'Es fand kein Austausch mit dem Repository statt: ist das Kürzel dieses Geräts eingestellt?',
-    'No hubo intercambio con el repositorio: ¿está configurado el trigrama de este dispositivo?'
+  pubNoExchange: [
+    'Rien n’est parti : cet appareil ne synchronise pas avec le dépôt des données (Réglages › Usages : plusieurs appareils ou plusieurs utilisateurs ; et le trigramme réglé).',
+    'Nothing was sent: this device does not synchronise with the data repository (Settings › Usages: several devices or several users; and the trigram set).',
+    'Nichts wurde gesendet: dieses Gerät synchronisiert nicht mit dem Datenrepository (Einstellungen › Nutzungen: mehrere Geräte oder mehrere Nutzer; und das Kürzel eingestellt).',
+    'No se envió nada: este dispositivo no se sincroniza con el repositorio de datos (Ajustes › Usos: varios dispositivos o varios usuarios; y el trigrama configurado).'
   ],
   pubHeld: [
     ['{n} fichier de la base gardé sur le poste (construction en cours)', '{n} base file kept on this workstation (build under way)',

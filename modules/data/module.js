@@ -217,7 +217,40 @@ function coverageHtml() {
     err = zones ? '' : `<p class="f-warn" data-error="zones">${esc(tt(TX.zonesError))}</p>`;
   return `<section class="f-card" data-coverage><h2>${esc(tt(TX.coverage))}</h2>${err}
     <p data-zones>${esc(cov.ids.length ? tt(TX.coverageZones, { z: names.join(', ') }) : tt(TX.coverageNone))}</p>
+    ${addZoneHtml()}
     <h3>${esc(tt(TX.states))}</h3><div data-states-box>${statesHtml()}</div></section>`;
+}
+/** « Ajouter un pays » : les zones que la suite connaît (zones() d'aerodb, dans l'ordre de leur nom français) hors de la couverture ;
+ *  rien sans la liste des zones ou pendant une construction. Choisir une zone l'ajoute aussitôt (addZone). */
+function addZoneHtml() {
+  const {
+    zones,
+    cov
+  } = S.d;
+  if (!zones) return '';
+  const have = new Set(cov.ids),
+    rest = zones.filter(z => !have.has(z.id));
+  if (!rest.length) return '';
+  return `<p><label>${esc(tt(TX.addZone))} <select data-add-zone${S.run ? ' disabled' : ''}><option value="">${esc(tt(TX.addZonePick))}</option>
+    ${rest.map(z => `<option value="${esc(z.id)}">${esc(M.zoneName(zones, z.id, li()))}</option>`).join('')}</select></label></p>`;
+}
+/** Ajoute une zone connue à la couverture de ce poste : écrite aussitôt (cache/data/coverage.json), cochée pour « Construire » ; une
+ *  zone que personne ne publie est construite et publiée par ce poste (SPEC § 3.2). */
+function addZone(id) {
+  const known = (S.d.zones || []).some(z => z.id === id);
+  if (!known || S.d.cov.ids.includes(id) || S.run) return;
+  S.d.cov = {
+    ...S.d.cov,
+    ids: [...S.d.cov.ids, id],
+    stored: true
+  };
+  S.ticked ||= new Set();
+  S.ticked.add(id);
+  S.ctx.data.put(COVERAGE, {
+    zones: S.d.cov.ids,
+    updated_at: new Date().toISOString()
+  }).catch(() => {});
+  render();
 }
 /** « Cycle 2610 · publié il y a 3 jours · 12 zones » : ce que la ligne d'un jeu dit de lui-même, sans taille en octets
  *  (publication() n'en donne pas : seulement des nombres de zones, de terrains, de fichiers, de types). */
@@ -660,9 +693,11 @@ async function startPublish() {
     S.ctx.notify(tt(TX.pubUnread), 'err');
     return;
   }
-  const yes = c.nothing ? false : await S.ctx.ask(tt(TX.pubAsk, {
+  const yes = c.nothing ? false : await S.ctx.ask(c.changes && c.ahead ? tt(TX.pubAsk, {
     f: count('file', c.changes),
     c: count('commit', c.ahead)
+  }) : tt(TX.pubAskOne, {
+    x: c.changes ? count('file', c.changes) : count('commit', c.ahead)
   }), {
     ok: tt(TX.publish)
   });
@@ -888,6 +923,7 @@ function onClick(e) {
  *  (les sources proposées suivent les zones cochées). */
 function onChange(e) {
   const t = e.target;
+  if (t instanceof HTMLSelectElement && t.matches('[data-add-zone]')) return t.value && addZone(t.value);
   if (!(t instanceof HTMLInputElement) || S.run) return;
   const set = t.dataset.buildZone ? S.ticked : t.dataset.personal ? S.personal : null,
     id = t.dataset.buildZone || t.dataset.personal;

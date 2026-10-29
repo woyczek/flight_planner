@@ -913,6 +913,7 @@ _L11_JS = r"""async () => {
   const ent = M.publishEntry(Date.UTC(2026, 9, 29, 10, 0, 0), M.publishOutcome(x(3, 2, 1, true, 1, 0)));
   out.entry = ent;
   out.entryFailed = M.publishEntry(0, M.publishOutcome({ ok: false })).result;
+  out.entryNoExchange = M.publishEntry(0, M.publishOutcome({ ok: true })).result;   // essai réel du 29/10 : rien n'est parti
   out.add = M.journalAdd([], ent).length + ':' + M.journalAdd([ent], ent).length;   // no job id: two publications are two entries
   out.num = [M.num(3), M.num('3'), M.num(NaN), M.num(null)];
   return out;
@@ -939,6 +940,7 @@ def l11(c):
     c.eq(r['entry'], {'at': '2026-10-29T10:00:00.000Z', 'set': 'base', 'verb': 'publish', 'result': 'done', 'committed': 3, 'received': 1, 'held': 2, 'conflicts': 1},
          'the journal entry: UTC time, set, verb, result, committed, received, held, conflicts', what='publishEntry')
     c.eq([r['entryFailed'], r['add']], ['failed', '1:2'], 'a failure is journaled as failed; two publications without a job id are two entries', what='publishEntry failed / journalAdd')
+    c.eq(r['entryNoExchange'], 'failed', 'a pass without exchange (the device does not synchronise) sent nothing: never journaled « done »', what='publishEntry no exchange')
     c.eq(r['num'], [3, None, None, None], 'num() keeps numbers only', what='num')
     c.check_errors()
 
@@ -1157,3 +1159,26 @@ def l12(c):
     c.eq(len(c.js('window.__sync.calls')), 0, 'nothing is called', what='sync calls')
     _pub_ok(c, 'build running')
     c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L13
+@case('L13', 'Données: « Ajouter un pays » on a repository that publishes no zone yet', 'L', tags=('data',), phone=True, designs=('standard',),
+      rule='modules/data/SPEC 3.2 (Ajouter un pays: a zone ticked here and published by nobody is built by this workstation); real trial of 29 Oct (an empty coverage left Construire without a zone)')
+def l13(c):
+    cfg, _ = _fixture()
+    cfg['publication'] = {'base': {}, 'proc': {'cycles': {}, 'inForce': None}, 'vfr': None, 'aircraft': None}   # nothing published yet
+    for z in cfg['zones']:
+        z['published'] = False
+    _open(c, cfg)
+    c.eq(c.count('[data-build-zone]'), 0, 'an empty coverage: no zone to build yet', what='zones to build')
+    opts = c.js("[...document.querySelectorAll('[data-add-zone] option')].map(o => o.value).filter(Boolean)")
+    c.ok(len(opts) >= 2, opts, 'the known zones are offered under « Ajouter un pays »')
+    z = opts[0]
+    c.js("(z) => { const s = document.querySelector('[data-add-zone]'); s.value = z; s.dispatchEvent(new Event('change', { bubbles: true })) }", z)
+    c.until("!!document.querySelector('[data-build-zone]')", what='the zone added is offered to Construire')
+    c.eq(c.js("[...document.querySelectorAll('[data-build-zone]')].map(e => e.dataset.buildZone + (e.checked ? ':on' : ''))"), [z + ':on'], 'the zone added is ticked', what='zones to build')
+    c.ok(c.js("(z) => ![...document.querySelectorAll('[data-add-zone] option')].some(o => o.value === z)", z), 'still offered', 'a zone of the coverage is no longer offered')
+    stored = c.js("async () => (await window.FrameData.adapter({ id: 'probe', reads: ['cache/data/'] }).get('cache/data/coverage.json'))?.zones || null")
+    c.eq(stored, [z], 'the coverage is written at once (cache/data/coverage.json)', what='coverage.json')
+    c.check_errors()
+
