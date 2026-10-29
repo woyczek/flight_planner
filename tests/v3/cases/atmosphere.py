@@ -277,3 +277,25 @@ def e10(c):
       return [o.className, o.textContent, b ? b.hidden : null] }}""")
     c.ok('at-out' not in out[0] and '⚠' not in out[1], f'{out}', 'the planned departure 60 h ago is inside the forecast read (no ⚠)')
     c.eq(out[2], True, 'the slider is covered from its start: no band of covered hours', what='covered band hidden')
+
+
+_TRAJ_JS = """async () => { const A = await import('/modules/atmosphere/atmo.js');
+  const pts = [{ id: 'A', lat: 45, lon: 0 }, { id: 'B', lat: 45, lon: 4.2 }], total = A.trajectory(pts, { levelFt: 30000 }).total;
+  const path = [{ nm: 0, ft: 0 }, { nm: 40, ft: 20000 }, { nm: 60, ft: 20000 }, { nm: 80, ft: 30000 }, { nm: total - 50, ft: 30000 }, { nm: total, ft: 0 }];
+  const t1 = A.trajectory(pts, { levelFt: 30000, path, cruiseKt: 300 }), t0 = A.trajectory(pts, { levelFt: 30000, cruiseKt: 300 }),
+    tw = A.trajectory(pts, { levelFt: 30000, cruiseKt: 300, headAt: () => 30 });
+  return { total, at50: t1.computed(50), at70: t1.computed(70), free50: t0.computed(50), toc: t1.toc,
+    m0: t0.minutesAt(total), mw: tw.minutesAt(total) } }"""
+
+
+@case('E11', 'The cut follows Fuel’s vertical path, and its times the ground speed', 'E', tags=('atmosphere',), screens=False,
+      designs=('standard',), night=False,
+      rule='user 29 Oct: "la coupe météo ignore les altitudes imposées … 30 kt de face = 30 kt de vitesse sol en moins"')
+def e11(c):
+    c.open('atmosphere?donnees=demo', flight=True)
+    r = c.js(_TRAJ_JS)
+    c.eq(round(r['at50']), 20000, 'a constraint step of profile.path (20 000 ft from 40 to 60 NM) is kept by the cut', what='altitude at 50 NM')
+    c.ok(r['at70'] > 20000 and r['at70'] < 30000, f'{r["at70"]}', 'and the climb resumes after it')
+    c.ok(abs(r['free50'] - r['at50']) > 1000, f'{r["free50"]} without the path', 'without the path the cut takes its own climb (the difference the path makes)')
+    c.ok(r['toc'] is not None and r['toc'] > 75, f'{r["toc"]}', 'the top of climb is where the path reaches its highest level')
+    c.ok(r['mw'] > r['m0'] * 1.05, f'{r["m0"]:.1f} min without wind, {r["mw"]:.1f} with 30 kt on the nose', 'a headwind lengthens the times (ground speed)')

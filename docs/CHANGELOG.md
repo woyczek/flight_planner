@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Atmosphere: the cut follows Fuel's vertical path, and its times the ground speed** (`modules/atmosphere/atmo.js`
+  `trajectory`, `section.js`; case E11; user, 29 Oct: "la coupe météo ignore les altitudes imposées … 30 kt de face = 30 kt de
+  vitesse sol en moins") — the cut drew its own climb and descent at default rates and timed the flight at true airspeed;
+  it now follows `profile.path` (constraint steps included, brought onto the route by its length) when Fuel computed it at
+  this level, its top of climb and of descent where that path reaches and leaves its highest level, and a second pass times
+  each NM at the ground speed, the headwind read along the path at the hours of the first pass.
+
 - **Fuel › Auto: each leg is routed at the altitude of the profile** (`modules/fuel/module.js` `autoAirways`, case F30; user,
   29 Oct, LFPO → EIDW at FL260: "la T421 était à préférer à la J150") — every leg was routed at the cruise level (or the step
   written at its first point), so a leg of the climb could not take a low airway and a leg flown at FL260 could; each leg is
