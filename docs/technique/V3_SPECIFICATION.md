@@ -845,3 +845,15 @@ redesigned for touch at that point.
        for a code without a match); **progressive completion** on the three fields from two characters, by code or by
        name, through `aerodb.find`, aerodromes only, at most seven suggestions, keyboard ↑ ↓ Entrée Échap and touch, a
        list laid over the page (never the native `datalist`), closed on blur. Lot: fuel (cases F), help ×4.
+   28. **Backlog of 29 Oct (planned, deliberately not specified yet)** — the user's requests of the morning, kept as one
+       line each until the challenge pass of 29 Oct 17:00 decides what is built and in which order; a request is specified
+       only when its lot starts, never before (the challenge found the specification running ahead of the code).
+       - **Direct to a point on ATC instruction**: search a point (a procedure point, an RNAV fix), fly direct to it and
+         rewrite the rest of the flight.
+       - **Turn radius on the traces**: a turn of more than 90° on a SID, STAR or approach is drawn with a radius from the
+         indicated speed (OPAL2E RW07 at LFPO).
+       - **FPL route text with runway and procedures**: read and write `LFPO/07 OPAL2E OPALE DCT KUNAV T421 DIDZA N14
+         OKSAW DCT LANON DCT ABLIN DCT EIDW` as soon as the runway and the SID are chosen.
+       - **Runway in use, or probable**: from the departure and arrival METAR at preparation time.
+       - **Active VATSIM / IVAO controllers on the Map**: both networks publish them (VATSIM data v3 with the launcher's
+         relay, IVAO Whazzup directly); one hue per network, dark green and brown, under the airspaces' weight.

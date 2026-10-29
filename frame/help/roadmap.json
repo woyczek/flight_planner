@@ -410,6 +410,27 @@
           "en": "Procedures not read: counted per page with their source, never shown as good; ChatGPT-assisted reading on the sheets' model",
           "de": "Nicht gelesene Verfahren: je Seite gezählt mit Quelle, nie als gut gezeigt; ChatGPT-gestütztes Lesen nach dem Muster der Datenblätter",
           "es": "Procedimientos no leídos: contados por página con su fuente, nunca mostrados como buenos; lectura asistida por ChatGPT según el modelo de las fichas"
+        },
+        {
+          "state": "planned",
+          "fr": "Direct vers un point sur instruction du contrôle : chercher le point, reprendre le reste du vol",
+          "en": "Direct to a point on ATC instruction: find the point, rewrite the rest of the flight",
+          "de": "Direkt zu einem Punkt auf Anweisung der Flugsicherung: Punkt suchen, Rest des Flugs neu schreiben",
+          "es": "Directo a un punto por instrucción del control: buscar el punto, reescribir el resto del vuelo"
+        },
+        {
+          "state": "planned",
+          "fr": "Route au format FPL avec piste et procédures (LFPO/07 OPAL2E OPALE DCT …) : lue et écrite",
+          "en": "Route in FPL form with runway and procedures (LFPO/07 OPAL2E OPALE DCT …): read and written",
+          "de": "Route im FPL-Format mit Piste und Verfahren (LFPO/07 OPAL2E OPALE DCT …): gelesen und geschrieben",
+          "es": "Ruta en formato FPL con pista y procedimientos (LFPO/07 OPAL2E OPALE DCT …): leída y escrita"
+        },
+        {
+          "state": "planned",
+          "fr": "Piste en service ou probable d'après le METAR du départ et de l'arrivée",
+          "en": "Runway in use or probable from the departure and arrival METAR",
+          "de": "Betriebspiste oder wahrscheinliche Piste nach dem METAR von Start und Ziel",
+          "es": "Pista en uso o probable según el METAR de salida y llegada"
         }
       ]
     },
@@ -604,6 +625,20 @@
           "en": "Chosen runway drawn as an arrow in the direction of use, with its aids (ILS, DME)",
           "de": "Gewählte Piste als Pfeil in Nutzungsrichtung gezeichnet, mit ihren Hilfen (ILS, DME)",
           "es": "Pista elegida trazada como flecha en el sentido de uso, con sus ayudas (ILS, DME)"
+        },
+        {
+          "state": "planned",
+          "fr": "Virages de plus de 90° des procédures tracés avec un rayon selon la vitesse indiquée",
+          "en": "Procedure turns over 90° drawn with a radius from the indicated speed",
+          "de": "Verfahrenskurven über 90° mit einem Radius nach der angezeigten Geschwindigkeit gezeichnet",
+          "es": "Virajes de más de 90° de los procedimientos trazados con un radio según la velocidad indicada"
+        },
+        {
+          "state": "planned",
+          "fr": "Contrôleurs VATSIM et IVAO actifs sur la Carte, une teinte par réseau",
+          "en": "Active VATSIM and IVAO controllers on the Map, one hue per network",
+          "de": "Aktive VATSIM- und IVAO-Lotsen auf der Karte, eine Farbe je Netz",
+          "es": "Controladores VATSIM e IVAO activos en el Mapa, un color por red"
         }
       ]
     },
