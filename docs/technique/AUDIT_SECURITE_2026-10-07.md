@@ -876,6 +876,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 34 | Frame G2: « Pilots' tokens » (241eec6c0) | acceptable, one point to fix, two notes |
 | 35 | Data module « Télécharger » and « Purger » (0d2f031d3) | acceptable, one note |
 | 36 | Frame G2 fix (efbb97f49) | acceptable; the point of 34 is settled |
+| 37 | Fuel: an aerodrome field is a search (26d47f149), proposal after the flight is read (fe3d33c5c) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1312,6 +1313,13 @@ Revocation reads the token's name **at GitLab** (`GET /access_tokens/<id>`), nev
 any name outside `^[A-Z0-9]{2,5}$` (403). The new token's value is removed from the page on `hashchange` and `pagehide`.
 The CI/CD note (and merge requests, issues, wiki) is in the four languages. Residual note: a service token that the
 administrator would name with two to five letters or digits stays revocable here; name service tokens otherwise.
+
+**37. Fuel, aerodrome fields (26d47f149, fe3d33c5c) — acceptable.** Free text is never written as such into
+`route.dep`, `arr` or `altn`: `setAd` is called only for a `^[A-Z0-9]{4}$` code known to aerodb (and only if the field still
+holds it when the answer comes), for a choice of the list (already filtered), or on leaving the field (empty to remove the
+aerodrome, or a four-character code when no suggestion exists, an aerodrome unknown to aerodb, wanted by the rule); any
+other text is put back to the saved value. Names are shown through `textContent` and escaped in the list. Nothing is
+written at mounting; writes go through `saveFlight` (`FUEL_FIELDS`). The map's proposal waits for the flight to be read.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30 and 35 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32); the sharing of the track and of the position is the user's decision.
 
