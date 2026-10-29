@@ -810,6 +810,21 @@ redesigned for touch at that point.
          Rejected: a WebDAV / NAS transport (no atomic multi-file commit, no merge, NAS passwords in the browser) and
          Synology Drive file sync (destroyed `data/.git` once, no tablet nor site). The GitHub token stays the advanced
          user's path, not the default onboarding.
+         **Cut (frame session, 29 Oct night, approved)**: R1 — `launch.py --relay`: a third public "relais" in the
+         route table reduced to what the Pilot application needs off the workstation (status, changes, batch, sync,
+         net only towards the relay's allow-list: SimBrief, IVAO, VATSIM, METAR; never an open proxy), long revocable
+         device tokens per user (only their fingerprint kept in tools/.relay.json; HttpOnly, Secure, SameSite=Strict
+         cookie; one year), the commit author taken from the token, never from the page; the launcher listens on
+         127.0.0.1 behind DSM's reverse proxy, reads X-Forwarded-* from 127.0.0.1 only, refuses anything not https as
+         seen by the proxy, limits attempts; the frame's detection says `relay: true`. R2 — invitations from the
+         Maintenance application: user created in the signed registry, one-time code valid 7 days, link
+         `#settings?join=`, the pilot types the code once on any device and gets its device token; a list "Appareils et
+         invitations" per user with revocation. R3 — deployment (Container Manager image: standard Python + git, data/
+         as a volume; DSM reverse proxy with Let's Encrypt, access log, backup of tools/.relay.json) and a full security
+         review with a basic intrusion test before any exposure, opened only on the user's explicit go. Decided: the
+         relay serves the application itself (same origin, the launcher's CSP); an invited device has the same usage
+         levels as on the workstation, the workstation-only routes being excluded by the route public. R1 and R2 are
+         coded and tested on the workstation without exposure.
    29. **Challenge of 29 Oct: refactoring before any new feature** (user, 29 Oct: "tu challengeras toutes les décisions
        prises depuis hier, quitte à commencer par refaire du code (refactoring)"; inventory by a read-only agent on
        a29709172 plus the debts declared by the four sessions). Findings: the specification ran ahead of the code (about
