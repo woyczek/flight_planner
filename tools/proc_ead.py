@@ -161,6 +161,18 @@ def result_info(body):
     return rows, count, msg
 
 
+def page_rows(body, table):
+    """(lignes, trouvé) d'une réponse à un changement de page : la mise à jour `<update id=table>` ne contient que des lignes nues `<tr data-ri=…>` (sans <table> ni <tbody …_data> : c'est ce
+    que veut dire _skipChildren de PrimeFaces, vu sur le vrai écran le 28 octobre 2026) ; si elle a un <tbody>, result_info les lit. `trouvé` est faux quand la réponse n'a aucune mise à jour du tableau."""
+    frag = next((f for i, f in partial_updates(body) if i == table), None)
+    if frag is None:
+        rows, _, _ = result_info(body)
+        return rows, bool(rows)
+    if re.search(r'(?i)<tbody\b', frag):
+        return result_info(body)[0], True
+    return [r for r in parse_rows('<table><tbody>' + frag + '</tbody></table>') if not (len(r['cells']) == 1 and r['cells'][0].startswith('No data found'))], True
+
+
 def describe(body):
     """Résumé d'une réponse JSF partielle : taille, composants mis à jour (id et taille), erreurs, redirection, messages affichés."""
     ups = [(m.group(1), len(m.group(2))) for m in re.finditer(r'(?s)<update id="([^"]*)">\s*<!\[CDATA\[(.*?)\]\]>\s*</update>', body)]
@@ -613,7 +625,7 @@ class EadLibrary:
 
     def _more_pages(self, res, extra, first_body):
         """Lit les pages 2, 3… du tableau de résultats (changement de page PrimeFaces, requête partielle sur le tableau) et ajoute leurs lignes à `res`. S'arrête quand les lignes lues
-        atteignent le nombre annoncé, quand une page ne donne aucune ligne nouvelle, quand la réponse est une erreur ou n'a pas de tableau, ou après MAX_PAGES pages : `res['warning']`
+        atteignent le nombre annoncé, quand une page ne donne aucune ligne nouvelle, quand la réponse est une erreur, une redirection ou n'a pas de mise à jour du tableau (ses lignes y sont nues, sans <tbody>), ou après MAX_PAGES pages : `res['warning']`
         dit alors combien de lignes ont été lues. La première fois, la console imprime les paramètres envoyés et l'anatomie de la réponse (les noms de PAGE_PARAMS n'ont pas été vus)."""
         m = re.search(r'id="([^"]*searchResults)_data"', first_body)
         table = m.group(1) if m else PAGE_TABLE
@@ -627,9 +639,11 @@ class EadLibrary:
             code, body = self._ajax({**base, **params}, 'page', table, execute=table, render=table)
             if not self._page_diag:
                 self._page_diag = True
-                self.say('pagination (noms de paramètres non vus sur le vrai écran) — envoyé :', sent_summary(self.last_sent), '| réponse :', describe(body))
-            got = result_info(body)[0]
-            if code != 200 or '<error' in body or 'searchResults_data' not in body:
+                # deux lignes courtes (le journal du lanceur coupe vers 500 caractères) : l'anatomie de la réponse, puis les seuls NOMS des paramètres envoyés
+                self.say('pagination (noms de paramètres non vus sur le vrai écran), réponse :', describe(body))
+                self.say('pagination, paramètres envoyés :', ', '.join(sorted(self.last_sent)))
+            got, found = page_rows(body, table)
+            if code != 200 or '<error' in body or '<redirect' in body or not found:
                 res['warning'] = f'{len(res["rows"])} ligne(s) lue(s) sur {res["count"]} : la page {page + 1} a répondu par une erreur ou sans tableau de résultats'
                 return
             new = [r for r in got if key(r) not in seen]

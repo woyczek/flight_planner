@@ -20,6 +20,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   que la star se connecte à l'un des points de la route") — the path already dropped them, but the marks, names and wind
   barbs were still drawn from every point of the route; they now follow the route points the path keeps.
 
+- **aerodb: `--fetch` reads every results page (fix)** (`tools/proc_ead.py` `page_rows`, K12) — seen on the real screen (29 Oct 2026, 22 approach documents): the PrimeFaces page change answers with bare `<tr>` rows (no table body), which the walk took for "no results table" and stopped at page 2; the rows are now read from the table's update fragment; the diagnostic is two short lines that fit the launcher's job log.
 - **Map: procedure names at every scale, their fixes and constraints from the regional view, both on the thresholds page**
   (`modules/maps/procs.js`, `layers.js`, `tune.js`, `draw.js`, `render.js`, `texts.js`; SPEC § 5, help ×4, case D53; user, 29 Oct:
   "ils disparaissent trop tôt en zoom arrière (c'est une info hyper importante)" and "le nom de l'approche ne semble pas

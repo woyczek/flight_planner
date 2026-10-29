@@ -494,9 +494,10 @@ def k12(c):
                     self._send(head + '<error><error-name>view expired</error-name></error></partial-response>', 'text/xml')
                     return
                 first = int((q.get('mainForm:searchResults_first') or ['0'])[0]) if paged else 0
-                rows = ''.join('<tr data-ri="%d"><td>2026-01-22</td><td><a href="/doc/%s">%s</a></td><td>%s</td></tr>' % (first + i, d, d, heads['CODING']) for i, d in enumerate(every[first:first + 15]))
+                rows = ''.join('<tr data-ri="%d" data-rk="k%d" class="ui-widget-content ui-datatable-odd" role="row"><td>2026-01-22</td><td><a href="/doc/%s">%s</a></td><td>%s</td></tr>' % (first + i, first + i, d, d, heads['CODING']) for i, d in enumerate(every[first:first + 15]))
                 count = '' if paged else '<div>Number of search results: %d</div>' % len(every)
-                self._send(head + '<update id="mainForm:results"><![CDATA[<table><tbody id="mainForm:searchResults_data">' + rows + '</tbody></table>' + count + ']]></update>' + tail, 'text/xml')
+                self._send(head + (('<update id="mainForm:searchResults"><![CDATA[' + rows + ']]></update>') if paged else           # a paging answer: bare rows, no table (PrimeFaces _skipChildren)
+                                  ('<update id="mainForm:results"><![CDATA[<table><tbody id="mainForm:searchResults_data">' + rows + '</tbody></table>' + count + ']]></update>')) + tail, 'text/xml')
                 return
             name, hd = (q.get('mainForm:docName') or [''])[0], (q.get('mainForm:docHead') or [''])[0]
             pick = docs[state] if (q.get('mainForm:AipType') == ['c']) else []
@@ -584,7 +585,7 @@ def k12(c):
                 O.backend = real_backend
             c.ok(len(out['documents']) == 20 and any('CODING: 20 document(s) en 2 pages' in x for x in said) and not any('ATTENTION' in x for x in said), '\n'.join(said)[:600],
                  'fetch: a result set of 20 documents (15 per page) is read in full, over two pages, with no ATTENTION message')
-            c.ok(sum('pagination (noms de paramètres non vus' in x for x in lines) == 1 and 'mainForm:searchResults_first' in ''.join(lines) and 'mises à jour' in ''.join(lines), '\n'.join(lines)[-600:],
+            c.ok(sum('pagination (noms de paramètres non vus' in x for x in lines) == 1 and 'mainForm:searchResults_first' in ''.join(lines) and max(len(x) for x in lines if x.startswith('pagination')) < 500 and 'mises à jour' in ''.join(lines), '\n'.join(lines)[-600:],
                  'the first paging request prints, once, the parameters sent and the anatomy of the answer')
         lib.authority('ZQ')
         lib.choose('part', 'AD')

@@ -383,6 +383,8 @@ The owner's question: how to automate the retrieval of these documents aerodrome
 Not done yet: the Settings › Maintenance button that launches `--fetch` from the page (§ 5), the layouts of States other than FR / UK, OCR for vector pages. The survey tells which layouts exist before any parser is written.
 Whether EAD Basic's terms allow automated access is still unanswered; the owner kept the status quo (a Basic account, spaced requests, read-only).
 
+**Paging, seen on the real screen (29 Oct 2026).** The PrimeFaces page change (`mainForm:searchResults_pagination=true`, `_first`, `_rows=15`, `_skipChildren=true`, `_encodeFeature=true`, source / execute / render = the table, the whole form sent, ViewState renewed) is accepted and answers with an `<update id="mainForm:searchResults">` holding only the bare `<tr data-ri=…>` rows of that page (no table body): `page_rows` reads them; the walk stops at the announced count, on an error or redirect, or after 50 pages, 1 s between pages (EIDW: 22 approach documents in 2 pages).
+
 ## 6 quaterdecies. Probe run by the user on the workstation (28 October 2026, United Kingdom / EGLL)
 
 Login page 200; login **yes** (200, `home.faces`); home page read with its links (Pre-Flight Briefing, AIP Library,
