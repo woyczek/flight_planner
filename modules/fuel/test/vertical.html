@@ -1,0 +1,239 @@
+<!doctype html>
+<!-- Banc du chemin vertical prévu (modules/fuel/progress.js, verticalPath ; V3_SPECIFICATION § 10.20) : le chemin garde la croisière
+     jusqu'à ce que la descente depuis l'arrivée atteigne la première contrainte, ne remonte plus une fois la descente commencée (ni
+     contrainte plancher, ni remise de gaz), ne saute jamais (aucune pente plus raide que celle du modèle), tient les contraintes
+     at / min / max / between, finit au sol ; seuils de piste ; cas limites. Fonctions pures, données inventées ; page nue ;
+     window.__bench = { done, pass, fail, rows } pour un pilote (Playwright). Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>fuel — vertical path bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">progress.js verticalPath — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    verticalPath
+  } from '../progress.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  /** Une vérification : nom, vrai ou faux, détail montré en cas d'échec. */
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  const at = ft => ({
+      type: 'at',
+      ft
+    }),
+    min = ft => ({
+      type: 'min',
+      ft
+    }),
+    max = ft => ({
+      type: 'max',
+      ft
+    }),
+    between = (ft, ft2) => ({
+      type: 'between',
+      ft,
+      ft2
+    });
+
+  // un chemin volé, nm depuis le départ : la route jusqu'à 296 NM, un point de STAR à 300 (à 3000 ft : 23 000 ft sous la croisière, 4 NM
+  // plus loin), l'approche (plancher, puis « à 1600 »), puis ce que le fichier ne marque pas comme remise de gaz : une montée à 7000 ft,
+  // puis l'aérodrome
+  const fp = [{
+    id: 'AAAA',
+    nm: 0
+  }, {
+    id: 'BBBB',
+    nm: 150
+  }, {
+    id: 'CCCC',
+    nm: 296
+  }, {
+    id: 'E1',
+    nm: 300,
+    alt: at(3000)
+  }, {
+    id: 'I1',
+    nm: 310,
+    alt: min(1600)
+  }, {
+    id: 'F1',
+    nm: 314,
+    alt: at(1600)
+  }, {
+    id: 'M1',
+    nm: 330
+  }, {
+    id: 'M2',
+    nm: 360,
+    alt: at(7000)
+  }, {
+    id: 'XXAD',
+    nm: 380
+  }];
+  const q = {
+      levelFt: 26000,
+      climb: {
+        nm: 60
+      },
+      descent: {
+        nm: 78
+      }
+    },
+    vp = verticalPath(fp, q),
+    nm = Object.fromEntries(fp.map(p => [p.id, p.nm])),
+    up = 26000 / 60,
+    dn = 26000 / 78,
+    by = Object.fromEntries(vp.map(p => [p.nm, p.ft])),
+    nms = vp.map(p => p.nm),
+    steepest = Math.max(...vp.slice(1).map((p, i) => Math.abs(p.ft - vp[i].ft) / (p.nm - vp[i].nm)));
+
+  // forme du chemin (les contrôles du cas F23, hors de la page)
+  ck('un chemin chiffré', vp.length > 2, JSON.stringify(vp));
+  ck('la distance croît strictement', nms.every((v, i) => !i || v > nms[i - 1]), JSON.stringify(nms));
+  ck('aucun saut : pas de pente plus raide que la montée ou la descente du modèle (+5 %)', Math.round(steepest) <= Math.round(Math.max(up,
+      dn) * 1.05),
+    `${steepest.toFixed(0)} ft/NM`);
+  const top = vp.findIndex(p => p.ft >= 26000),
+    after = vp.slice(top).map(p => p.ft),
+    firstDown = after.findIndex(ft => ft < 26000),
+    down = after.slice(firstDown - 1);
+  ck('une fois la descente commencée, le chemin ne remonte plus (la remise de gaz n\'est pas dessinée)', down.every((v, i) => !i || v <=
+    down[i - 1]), JSON.stringify(down));
+  ck('la croisière est gardée à BBBB (la première contrainte est loin)', by[nm.BBBB] === 26000, String(by[nm.BBBB]));
+  ck('la contrainte « à 3000 » tient à E1', by[nm.E1] <= 3000, String(by[nm.E1]));
+  ck('la descente a commencé avant CCCC : la contrainte 4 NM plus loin ne fait pas tomber 23 000 ft d\'un coup', by[nm.CCCC] <= 26000 -
+    2000, String(by[nm.CCCC]));
+  ck('le plancher de l\'approche tient à I1', by[nm.I1] >= 1600, String(by[nm.I1]));
+  ck('le chemin finit au sol', vp.at(-1).ft === 0, String(vp.at(-1).ft));
+  ck('jamais sous le sol', Math.min(...vp.map(p => p.ft)) >= 0, JSON.stringify(vp));
+  ck('nm arrondi au dixième, ft à la dizaine', vp.every(p => Math.abs(p.nm * 10 - Math.round(p.nm * 10)) < 1e-6 && p.ft % 10 === 0), JSON
+    .stringify(vp.slice(0, 4)));
+
+  // les quatre sortes de contrainte
+  const f2 = [{
+    id: 'A',
+    nm: 0
+  }, {
+    id: 'B',
+    nm: 120,
+    alt: max(9000)
+  }, {
+    id: 'C',
+    nm: 150,
+    alt: between(5000, 7000)
+  }, {
+    id: 'D',
+    nm: 180,
+    alt: min(2000)
+  }, {
+    id: 'E',
+    nm: 200
+  }];
+  const v2 = verticalPath(f2, {
+      levelFt: 20000,
+      climb: {
+        nm: 40
+      },
+      descent: {
+        nm: 100
+      }
+    }),
+    b2 = Object.fromEntries(v2.map(p => [p.nm, p.ft]));
+  ck('« max 9000 » tient à B', b2[120] <= 9000, String(b2[120]));
+  ck('« between 5000-7000 » tient à C', b2[150] >= 5000 && b2[150] <= 7000, String(b2[150]));
+  ck('« min 2000 » tient à D', b2[180] >= 2000, String(b2[180]));
+
+  // seuils de piste : le départ et l'arrivée sont à l'altitude des seuils choisis
+  const f3 = [{
+    id: 'RW03',
+    nm: 0,
+    origin: 'sid',
+    rwy: '03',
+    elev: 90
+  }, {
+    id: 'MID',
+    nm: 100
+  }, {
+    id: 'RW13R',
+    nm: 200,
+    origin: 'app',
+    rwy: '13R',
+    elev: 30
+  }];
+  const v3 = verticalPath(f3, {
+    levelFt: 10000,
+    climb: {
+      nm: 25
+    },
+    descent: {
+      nm: 30
+    }
+  });
+  ck('le départ est à l\'altitude du seuil de piste choisi', v3[0].ft === 90, JSON.stringify(v3[0]));
+  ck('l\'arrivée est à l\'altitude du seuil de piste choisi', v3.at(-1).ft === 30, JSON.stringify(v3.at(-1)));
+
+  // cas limites : rien de chiffré sans devis ni chemin de deux points
+  ck('sans chemin : []', verticalPath([], q).length === 0 && verticalPath(null, q).length === 0);
+  ck('un seul point : []', verticalPath([{
+    id: 'A',
+    nm: 0
+  }], q).length === 0);
+  ck('sans niveau : []', verticalPath(fp, {
+    levelFt: 0,
+    climb: {
+      nm: 60
+    },
+    descent: {
+      nm: 78
+    }
+  }).length === 0 && verticalPath(fp, null).length === 0);
+  const short = verticalPath([{
+    id: 'A',
+    nm: 0
+  }, {
+    id: 'B',
+    nm: 40
+  }], q);
+  ck('un vol plus court que la montée et la descente (raccourcies en proportion) : le chemin tient dans la distance, sans saut', short.length >= 2 && short.at(-1)
+    .nm === 40 && short.at(-1).ft === 0 &&
+    Math.max(...short.slice(1).map((p, i) => Math.abs(p.ft - short[i].ft) / (p.nm - short[i].nm))) <= 26000 / (60 * 40 / 138) * 1.05, JSON.stringify(
+      short));
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

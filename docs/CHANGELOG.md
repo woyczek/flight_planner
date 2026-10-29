@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel tests: pure benches, shared fixtures, waits on a state, and `fmtDayZ`** (`frame/lib/time.js`, `frame/lib/test/time.html`,
+  `modules/fuel/test/vertical.html`, `tests/v3/fixtures/procedures.py`, `tests/v3/cases/fuel.py`, `tests/v3/lib.py`; V3 § 10.29 h, i; cases F23,
+  F39) — `fmtDayZ(iso)` writes « 29/10 16:53Z » (UTC) for the procedures line; the vertical path of the quote (`verticalPath`) has a bench without
+  the page, which F23 runs; the invented procedures of the fuel cases live in one fixture file; the fixed pauses of the fuel cases wait for a
+  state (`Ctx.quiet`, the document written, the notification said).
+
 - **Fuel: the challenge of 29 Oct applied to the procedures** (`modules/fuel/procedures.js`, `module.js`; V3 § 10.20, § 10.23, § 10.29 f, g;
   cases F16, F19, F21, F26, F36, F37, F38) — choices made in a row are written once (400 ms after the last one, one quote); nothing is locked after
   the start (the « La SID est passée » lock is gone); a conflicting choice is marked ⚠ and says nothing else (no notification);

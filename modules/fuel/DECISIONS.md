@@ -4,6 +4,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — refactoring (h) and (i): one time format, pure benches, fixtures in one place, waits on a state** (V3_SPECIFICATION § 10.29 h, i).
+  (h) `fmtDayZ(iso)` in `frame/lib/time.js` (« 29/10 16:53Z », UTC, the same in every language) is the only writer of the « lu le … » date; the
+  hand-made format of the card is gone (`frame/lib/test/time.html`, case F39). (i) The vertical path has its bench,
+  `modules/fuel/test/vertical.html` (shape: strictly growing distance, no jump, never rising once the descent has started, constraints at / min /
+  max / between held, runway thresholds, short flights, empty cases): case F23 runs it instead of opening the page. The invented procedures of the
+  cases (`proc_docs`, `rec`, `file`, LFRS, LFML, LFVA–LFVD, the hand-read index) moved to `tests/v3/fixtures/procedures.py`. The fixed `c.wait(...)`
+  of `cases/fuel.py` wait on a state: `Ctx.quiet(expr)` (a value unchanged for a while: the result bar, the aircraft list, the number of
+  notifications), the flight record written, a notification said, the late reads of a slow mount counted (`window.__slow.pending`); two polling
+  loops over the record stay. F15 and F17 already waited on the record and the focus; the « nothing new was said » checks (F19, F21, F26) wait for
+  a quiet count, then count.
 - **29 Oct 2026 — refactoring (f) and (g): one write per series of choices, and the challenge decisions applied** (V3_SPECIFICATION § 10.29 f, g;
   § 10.20, § 10.23; the code landed with the extraction because it lives in the functions that moved). (f) `choose()` redraws the lists in
   place at once and defers the rest: 400 ms after the last choice of a series `settled()` writes the flight once and refreshes once; the quote

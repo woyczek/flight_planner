@@ -26,7 +26,7 @@
 import * as CF from '../../frame/lib/current_flight.js';
 import * as PR from '../../frame/lib/procedures.js';
 import {
-  fmtZ
+  fmtDayZ
 } from '../../frame/lib/time.js';
 import {
   TX
@@ -303,11 +303,8 @@ export function createProcedures(host) {
   /** Date de la dernière lecture d'un terrain (aerodb coverage(icao).read_at), « lu le 28/10 18:01Z », ⌛ quand ce qu'il détient est une
    *  lecture d'un cycle passé (coverage().outdated) ; '' sans date (read_at null, aerodb plus ancien). */
   function fileHtml(m) {
-    const at = m.cov?.read_at && Number.isFinite(Date.parse(m.cov.read_at)) ? m.cov.read_at : null;
-    if (!at) return '';
-    const d = new Date(at),
-      two = n => String(n).padStart(2, '0'),
-      when = `${two(d.getUTCDate())}/${two(d.getUTCMonth() + 1)} ${fmtZ(d)}`;
+    const when = fmtDayZ(m.cov?.read_at); // « 29/10 16:53Z » ; '' sans date (read_at null) ou illisible
+    if (!when) return '';
     return `<span class="fu-procfile">${esc(tt(TX.procFileAt, { d: when }) + (m.cov?.outdated ? PROC_OLD : ''))}</span>`;
   }
   /** L'unique ligne discrète d'un côté (jamais plus) : « lu le 29/10 16:53Z ⌛ · Relire · 3 non lues » ; sans donnée : « aucune

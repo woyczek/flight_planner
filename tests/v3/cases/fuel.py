@@ -28,12 +28,13 @@ Rules covered
   * an approach given only by its entries lists the final record once, its transitions are the records that lead to it, and a transition equal to
     the approach is ignored (F24).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F25 F26 F27 F28 F29 F30 F31 F32 F33 F34 F35 F36.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F25 F26 F27 F28 F29 F30 F31 F32 F33 F34 F35 F36 F37 F38 F39.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 import json
 
 from lib import ROOT, Fail, Skip, case, flight_docs, norm, synthetic_airways, tx
+from fixtures.procedures import proc_docs      # the invented procedures the cases seed (V3 spec 10.29 i)
 
 F = 'modules/fuel/module.js'
 PT = 'modules/fuel/procedures_texts.js'      # the texts of the procedures card (moved out of module.js, V3 spec 10.29 d)
@@ -56,7 +57,7 @@ def wait_quote(c):
 @case('F1', 'Opens on the Plan', 'F', tags=('fuel',), screens=False, langs4=True, rule='user "la vue fiches ne devrait pas être active par défaut"')
 def f1(c):
     c.open('fuel')
-    c.wait(800)
+    c.settle()
     seg = c.js("[...document.querySelectorAll('[data-module=fuel] button')].filter(b => b.hasAttribute('aria-pressed')).slice(0, 2).map(b => ({ t: b.textContent.trim(), p: b.getAttribute('aria-pressed') }))")
     c.eq(len(seg), 2, 'a segmented control with two views (Plan, Sheets)', what='view buttons')
     c.eq([s['p'] for s in seg], ['true', 'false'], 'the first button (the Plan) is pressed at mount, not the Sheets view', what=f'view buttons pressed {[s["t"] for s in seg]}')
@@ -103,7 +104,7 @@ def f3(c):
     after = c.text(f'{FUEL} .fu-result .f-tiles > :nth-child(3)') or ''
     c.ok('km' in after and 'NM' not in after, f'TOD tile {after!r}', 'the distance figure is in km')
     c.page.select_option(f'{FUEL} [data-units] [data-k="unitAlt"]', 'm')
-    c.wait(500)
+    c.quiet("(document.querySelector('[data-module=fuel] .fu-result .fu-ctx') || {}).textContent")      # the result bar is redrawn, then still
     ctx = c.text(f'{FUEL} .fu-result .fu-ctx') or ''
     c.ok('FL270' in ctx, f'context line {ctx!r}', 'the level stays a flight level (FL270) whatever the altitude unit')
 
@@ -123,7 +124,7 @@ def f4(c):
 @case('F5', 'Step tab wording', 'F', tags=('fuel',), screens=False, rule='journal follow-up: the tab "Devis" and step 4 must not share a name')
 def f5(c):
     c.open('fuel')
-    c.wait(800)
+    c.settle()
     labels = c.js("""() => { const norm = s => s.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim();
         const tabs = [...document.querySelectorAll('[data-module=fuel] button[aria-pressed]')].slice(0, 2).filter(b => window.__t.shown(b)).map(b => norm(b.textContent));
         const steps = [...document.querySelectorAll('[data-module=fuel] button[data-step]')].filter(b => window.__t.shown(b)).map(b => norm(b.textContent).replace(/^\\d+\\s*/, ''));
@@ -177,14 +178,14 @@ def f6(c):
 # (set per step, 0 = not delayed), and counted; the request is wrapped so that the module sees the slow disk of a busy phone
 SLOW_READS = """() => {
   if (window.__slow) return;
-  const get = IDBObjectStore.prototype.get, slow = window.__slow = { ms: window.__slowMs || 0, hits: 0 };
+  const get = IDBObjectStore.prototype.get, slow = window.__slow = { ms: window.__slowMs || 0, hits: 0, pending: 0 };
   IDBObjectStore.prototype.get = function (key) {
     const q = get.call(this, key);
     if (!slow.ms || !/^(pilot|cache)\\//.test(String(key))) return q;
-    slow.hits++;
+    slow.hits++; slow.pending++;
     const ms = slow.ms, late = { get result() { return q.result }, get error() { return q.error } };
-    q.onsuccess = () => setTimeout(() => late.onsuccess && late.onsuccess({ target: late }), ms);
-    q.onerror = () => setTimeout(() => late.onerror && late.onerror({ target: late }), ms);
+    q.onsuccess = () => setTimeout(() => { slow.pending--; late.onsuccess && late.onsuccess({ target: late }) }, ms);
+    q.onerror = () => setTimeout(() => { slow.pending--; late.onerror && late.onerror({ target: late }) }, ms);
     return late;
   };
 }"""
@@ -198,7 +199,7 @@ def mount_race(c, first, final, want_sheets):
     c.js("(h) => { window.__slow.ms = 900; window.__slow.hits = 0; location.hash = h }", '#' + first)
     c.until('window.__slow.hits > 0', what=f'the mount of #{first} has started reading')
     c.js("(h) => { window.__slow.ms = 0; location.hash = '#atmosphere'; location.hash = h }", '#' + final)
-    c.wait(2000)                                   # the first mount's reads come back (900 ms) while the second is on screen
+    c.until('window.__slow.pending === 0', timeout=8000, what='the first mount\'s late reads have come back (900 ms) while the second is on screen')
     c.until("!!document.querySelector('[data-module=fuel] [data-view]')", what=f'#{final} draws fuel', timeout=8000)
     c.settle()
     shown = c.js("""() => ({ pressed: [...document.querySelectorAll('[data-module=fuel] [data-view]')].filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.dataset.view),
@@ -245,11 +246,12 @@ def f7(c):
     for k, v in (('dep', 'LFRS'), ('arr', 'LFML'), ('altn', 'LFMT'), ('fl', '270')):
         c.page.fill(f'{FUEL} input[data-k={k}]', v)
     c.js('document.activeElement && document.activeElement.blur && document.activeElement.blur()')
-    c.wait(700)
+    c.until_doc('pilot/ABC/current_flight.json', lambda d: [(d.get('route') or {}).get(k) for k in ('dep', 'arr', 'altn')] == ['LFRS', 'LFML', 'LFMT'] and (d.get('level') or {}).get('ft') == 27000,
+                'the four fields are written in the flight')
     c.tap(f'{FUEL} [data-do="acopen"]')
     c.page.fill(f'{FUEL} input[data-k="acsearch"]', 'C30J')
     c.js('document.activeElement && document.activeElement.blur && document.activeElement.blur()')
-    c.wait(700)                                        # the list is redrawn on the blur: a tap during it would be lost
+    c.quiet("(document.querySelector('[data-module=fuel] [data-acres]') || {}).innerHTML", quiet=300)   # the list is redrawn on the blur: a tap during it would be lost
     c.until("!!document.querySelector('[data-module=fuel] [data-pick=\"free:C30J\"]')", what='the aircraft search offers the type C30J')
     c.tap(f'{FUEL} [data-pick="free:C30J"]')
     c.tap(f'{FUEL} button[data-step="1"]')
@@ -284,7 +286,6 @@ def f8(c):
     c.tap(f'{FUEL} [data-do="rauto"]')
     c.until(f"document.querySelector('{FUEL} [data-k=rtext]').value.includes('UT460')", timeout=6000, what='the route text carries an airway')
     c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS TSA01 UT460 TSA05 LFML', 'FL270: the upper airway between its two ends, its middle points not written (UZ99 is open from FL330 only)', what='route text')
-    c.wait(900)                              # the re-reading of the route (500 ms) and the write of the flight (300 ms)
     f = c.until_doc('pilot/ABC/current_flight.json', lambda d: len((d.get('route') or {}).get('points') or []) == 7, 'seven points: both ends, five nodes of the airway')['route']
     c.eq([p['id'] for p in f['points']], ['LFRS', 'TSA01', 'TSA02', 'TSA03', 'TSA04', 'TSA05', 'LFML'], 'the points of the airway are written, middle ones included', what='route.points')
     c.eq([p.get('via') for p in f['points']], [None, None, 'UT460', 'UT460', 'UT460', 'UT460', None], 'the points reached by the airway carry its name', what='route.points via')
@@ -298,7 +299,7 @@ def f8(c):
     c.until_doc('pilot/ABC/current_flight.json', lambda d: (d.get('quote') or {}).get('distanceNm') in (None, f['distanceNm']) and bool(d.get('quote')), 'the quote is computed on the new distance')
     # a second tap has nothing to add: the legs left are the airway's entry and exit, short
     c.tap(f'{FUEL} [data-do="rauto"]')
-    c.wait(700)
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", norm(row(c, 'autoNoLeg')), timeout=6000, what='the second tap says there is nothing to fill in')
     c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS TSA01 UT460 TSA05 LFML', 'a second tap leaves the text as it is', what='route text after a second tap')
     c.ok(norm(row(c, 'autoNoLeg')) in [norm(n) for n in c.note_log()], f'notifications {[norm(n) for n in c.note_log()]}', 'and says there is nothing to fill in')
     # FL100: the only airway open is the low one, a detour of more than 40 %
@@ -382,85 +383,6 @@ def f10(c):
 # Runway, SID, STAR and approach chosen in the preparation (V3_SPECIFICATION 10.20; modules/fuel/SPEC.md section 9).  Seeded procedures
 # (aerodb SPEC 5 quinquies): LFRS has two SIDs (one per runway) and a SID transition; LFML two STARs (one per runway), a STAR transition,
 # an approach, a hand-read STAR of an old cycle (outdated) and an X-Plane local STAR; LFQQ has nothing.
-PROC_CYCLE = '2026-10-01'
-
-
-def proc_docs(cycle=PROC_CYCLE):
-    """The `proc/` documents of the aerodromes LFRS and LFML (published file, hand-read file, X-Plane local file)."""
-    def pt(seq, id_, lat, lon, alt=None, **kw):
-        return {'seq': seq, 'id': id_, 'lat': lat, 'lon': lon, 'alt': alt, 'phase': kw.pop('phase', 'main'), **kw}
-
-    def rec(icao, kind, name, rws, points, transition=None, status='official', kind_src='eaip', src_cycle=cycle):
-        rw = rws[0] if len(rws) == 1 else 'ALL'
-        return {'id': f'{icao}.{kind}.{name}.RW{rw}.{transition or "NONE"}', 'icao': icao, 'kind': kind, 'name': name, 'runways': rws,
-                'transition': transition, 'points': points, 'status': status,
-                'source': {'kind': kind_src, 'ref': 'test', 'cycle': src_cycle, 'at': '2026-10-01'}}
-
-    def file(icao, procs, runways=None, cy=cycle):
-        return {'schema': 1, 'icao': icao, 'cycle': cy, 'updated_at': '2026-10-01T00:00:00Z', 'procedures': procs,
-                **({'runways': runways} if runways else {})}
-    lfrs = [
-        rec('LFRS', 'SID', 'NTS1A', ['03'], [pt(1, 'RW03', 47.138, -1.62), pt(2, 'NT101', 47.0, -1.5, {'type': 'min', 'ft': 3000}),
-                                             pt(3, 'NT102', 46.8, -1.35, {'type': 'at', 'ft': 5000}, kt=250)]),
-        rec('LFRS', 'SID', 'NTS2B', ['21'], [pt(1, 'RW21', 47.17, -1.595), pt(2, 'NT201', 47.3, -1.4, {'type': 'max', 'ft': 4000}),
-                                             pt(3, 'NT202', 47.0, -1.1, {'type': 'between', 'ft': 6000, 'ft2': 9000})]),
-        rec('LFRS', 'SID', 'NTS1A', [], [pt(1, 'NT102', 46.8, -1.35, phase='trans'), pt(2, 'LUGEN', 46.5833, -1.2, phase='trans')],
-            transition='LUGEN'),
-    ]
-    lfml = [
-        rec('LFML', 'STAR', 'MEN1A', ['13R'], [pt(1, 'MEN01', 44.2, 3.6, {'type': 'between', 'ft': 8000, 'ft2': 10000}),
-                                               pt(2, 'MEN02', 43.8, 4.5, {'type': 'max', 'ft': 5000}, kt=220),
-                                               pt(3, 'MEN03', 43.55, 4.95, {'type': 'at', 'ft': 3000})]),
-        rec('LFML', 'STAR', 'MEN2B', ['31L'], [pt(1, 'MEN11', 44.0, 3.9, {'type': 'min', 'ft': 7000}),
-                                               pt(2, 'MEN12', 43.6, 5.6, {'type': 'at', 'ft': 4000})]),
-        rec('LFML', 'STAR', 'MEN1A', [], [pt(1, 'NEPIX', 44.9, 2.4, phase='trans'), pt(2, 'MEN01', 44.2, 3.6, phase='trans')], transition='NEPIX'),
-        rec('LFML', 'APP', 'I13R', ['13R'], [pt(1, 'FAF13', 43.5, 5.0, {'type': 'at', 'ft': 2500}, kt=180), pt(2, 'RW13R', 43.445, 5.19),
-                                             pt(3, 'MAP13', 43.38, 5.3, phase='missed')]),
-    ]
-    # LFVA (invented): approaches only, on two runways, one with a transition; no SID, no STAR, no runway record
-    lfva = [
-        rec('LFVA', 'APP', 'ILS09', ['09'], [pt(1, 'VA101', 45.0, 3.0, {'type': 'at', 'ft': 3000}), pt(2, 'VA102', 45.02, 3.2, {'type': 'at', 'ft': 2000}),
-                                             pt(3, 'RW09', 45.03, 3.4)]),
-        rec('LFVA', 'APP', 'ILS09', ['09'], [pt(1, 'VA201', 44.8, 2.7, {'type': 'min', 'ft': 4000}), pt(2, 'VA101', 45.0, 3.0)], transition='VA201'),
-        rec('LFVA', 'APP', 'VOR09', ['09'], [pt(1, 'VA111', 45.0, 3.0, {'type': 'at', 'ft': 3000}), pt(2, 'RW09', 45.03, 3.4)]),
-        rec('LFVA', 'APP', 'VOR27', ['27'], [pt(1, 'VA127', 45.05, 3.8, {'type': 'at', 'ft': 3000}), pt(2, 'RW27', 45.03, 3.45)]),
-        # RNP27: no main record, one per entry; VB301 leads to VB127, which is the approach (VB301 -> VB127 -> threshold)
-        rec('LFVA', 'APP', 'RNP27', ['27'], [pt(1, 'VB127', 45.06, 3.9, {'type': 'at', 'ft': 3000}), pt(2, 'RW27', 45.03, 3.45)], transition='VB127'),
-        rec('LFVA', 'APP', 'RNP27', ['27'], [pt(1, 'VB301', 45.2, 4.3, {'type': 'at', 'ft': 5000}), pt(2, 'VB127', 45.06, 3.9)], transition='VB301'),
-    ]
-    # LFVB (invented): one STAR that names no runway (it serves them all), no runway record; the base knows its runway axis
-    lfvb = [rec('LFVB', 'STAR', 'BET1A', [], [pt(1, 'VB101', 45.8, 3.1, {'type': 'max', 'ft': 9000}), pt(2, 'VB102', 45.6, 3.4, {'type': 'at', 'ft': 4000})])]
-    # LFVC (invented): the conflicts. ILS27 (runway 27) with a transition IC301 that starts at IC301 and joins IC127; ILS09; ARR1A (27) ends at
-    # IC301 (joins the transition), ARR2B (09) ends at ID999 (joins nothing)
-    lfvc = [
-        rec('LFVC', 'APP', 'ILS27', ['27'], [pt(1, 'IC127', 45.1, 3.8, {'type': 'at', 'ft': 3000}), pt(2, 'RW27', 45.03, 3.45)]),
-        rec('LFVC', 'APP', 'ILS27', ['27'], [pt(1, 'IC301', 45.3, 4.3, {'type': 'at', 'ft': 5000}), pt(2, 'IC127', 45.1, 3.8)], transition='IC301'),
-        rec('LFVC', 'APP', 'ILS09', ['09'], [pt(1, 'IC109', 45.0, 3.0, {'type': 'at', 'ft': 3000}), pt(2, 'RW09', 45.03, 3.4)]),
-        rec('LFVC', 'STAR', 'ARR1A', ['27'], [pt(1, 'IC201', 45.6, 4.7, {'type': 'max', 'ft': 9000}), pt(2, 'IC301', 45.3, 4.3)]),
-        rec('LFVC', 'STAR', 'ARR2B', ['09'], [pt(1, 'IC210', 45.7, 4.8, {'type': 'max', 'ft': 9000}), pt(2, 'ID999', 45.5, 4.9)]),
-    ]
-    # LFVD (invented): ORD1A (07), ORD2B (25), ILS07, ILS25, and two records never to be listed: a STAR without a name (runway 14) and one
-    # marked status 'doubt' (§ 10.26)
-    nameless = rec('LFVD', 'STAR', 'X', ['14'], [pt(1, 'ID901', 45.9, 3.9), pt(2, 'ID902', 45.8, 3.8)])
-    nameless.update(id='LFVD.STAR.NONAME.RW14.NONE', name=None)
-    lfvd = [
-        rec('LFVD', 'STAR', 'ORD1A', ['07'], [pt(1, 'ID101', 45.9, 3.1, {'type': 'max', 'ft': 9000}), pt(2, 'ID102', 45.7, 3.3)]),
-        rec('LFVD', 'STAR', 'ORD2B', ['25'], [pt(1, 'ID201', 45.9, 3.9, {'type': 'max', 'ft': 9000}), pt(2, 'ID202', 45.7, 3.7)]),
-        rec('LFVD', 'APP', 'ILS07', ['07'], [pt(1, 'ID107', 45.6, 3.4, {'type': 'at', 'ft': 3000}), pt(2, 'RW07', 45.5, 3.5)]),
-        rec('LFVD', 'APP', 'ILS25', ['25'], [pt(1, 'ID125', 45.6, 3.6, {'type': 'at', 'ft': 3000}), pt(2, 'RW25', 45.5, 3.5)]),
-        nameless,
-        rec('LFVD', 'STAR', 'GHOST1', ['07'], [pt(1, 'ID301', 45.9, 3.2), pt(2, 'ID302', 45.8, 3.3)], status='doubt'),
-    ]
-    rw_lfrs = [{'id': '03', 'lat': 47.138, 'lon': -1.62, 'elev': 90, 'qfu': 30}, {'id': '21', 'lat': 47.17, 'lon': -1.595, 'elev': 60, 'qfu': 210}]
-    rw_lfml = [{'id': '13R', 'lat': 43.445, 'lon': 5.19, 'elev': 30, 'qfu': 130}, {'id': '31L', 'lat': 43.41, 'lon': 5.24, 'elev': 20, 'qfu': 310}]
-    old = rec('LFML', 'STAR', 'MAN1A', ['13R'], [pt(1, 'MAN01', 44.0, 3.8)], status='check', kind_src='manual', src_cycle='2025-01-01')
-    xpl = rec('LFML', 'STAR', 'XPL1A', ['13R'], [pt(1, 'XPL01', 44.0, 3.7)], status='official', kind_src='cifp')
-    return [[f'proc/{cycle}/LFRS.json', file('LFRS', lfrs, rw_lfrs), 'reference'], [f'proc/{cycle}/LFML.json', file('LFML', lfml, rw_lfml), 'reference'],
-            [f'proc/{cycle}/LFVA.json', file('LFVA', lfva), 'reference'], [f'proc/{cycle}/LFVB.json', file('LFVB', lfvb), 'reference'],
-            [f'proc/{cycle}/LFVC.json', file('LFVC', lfvc), 'reference'], [f'proc/{cycle}/LFVD.json', file('LFVD', lfvd), 'reference'],
-            ['proc/manual/LFML.json', file('LFML', [old], cy='2025-01-01'), 'reference'], ['proc/local/LFML.json', file('LFML', [xpl]), 'reference'],
-            # the index of the hand-read files: LFML was read on 29 Oct 16:53Z under an earlier cycle (coverage('LFML').read_at, outdated)
-            ['proc/manual/index.json', {'schema': 1, 'aerodromes': {'LFML': {'STAR': 1, 'cycle': '2025-01-01', 'updated_at': '2026-10-29T16:53:00Z'}}}, 'reference']]
 
 
 def proc_flight(procs=None, started=False, actual=None):
@@ -718,7 +640,7 @@ def f18(c):
             d[1]['route'].pop('points', None)                    # and no points: no winds aloft to fetch and write at mount
     c.open('fuel', docs=docs, airfields=True)
     wait_rows(c, 'dep')
-    c.wait(1500)
+    c.quiet("(document.querySelector('[data-module=fuel] .fu-result') || {}).textContent", quiet=800)      # the mount is over: nothing more is drawn
     c.eq(c.doc('pilot/ABC/current_flight.json')['route']['procedures'], v1, 'a v1 record is left as it is at mount', what='route.procedures after mount')
     c.eq(c.js("document.querySelector('[data-module=fuel] select[data-k=\"p-dep-sid\"]').value"), 'LFRS.SID.NTS1A.RW03.NONE',
          'the SID of the v1 record is shown (proceduresOf)', what='SID select')
@@ -881,40 +803,21 @@ def f22(c):
     c.ok(any('BET1A' in lab for _, lab in stars), f'STAR options {stars}', 'a STAR serving every runway is listed')
 
 
-VERTICAL_JS = """async () => {
-  const PG = await import('/modules/fuel/progress.js');
-  // a flown path, nm from the departure: the route to 296 NM, a STAR fix at 300 (at 3000 ft: 23,000 ft under the cruise, 4 NM further),
-  // the approach (floor, then "at 1600"), then what the file does not mark as the missed approach: a climb to 7000 ft, then the aerodrome
-  const at = ft => ({ type: 'at', ft }), min = ft => ({ type: 'min', ft });
-  const fp = [{ id: 'AAAA', nm: 0 }, { id: 'BBBB', nm: 150 }, { id: 'CCCC', nm: 296 }, { id: 'E1', nm: 300, alt: at(3000) }, { id: 'I1', nm: 310, alt: min(1600) },
-    { id: 'F1', nm: 314, alt: at(1600) }, { id: 'M1', nm: 330 }, { id: 'M2', nm: 360, alt: at(7000) }, { id: 'XXAD', nm: 380 }];
-  const q = { levelFt: 26000, climb: { nm: 60 }, descent: { nm: 78 } };
-  return { fp: fp.map(p => [p.id, p.nm]), vp: PG.verticalPath(fp, q), up: 26000 / 60, dn: 26000 / 78 };
-}"""
+def run_bench(c, path):
+    """Opens a pure bench page (window.__bench = { done, pass, fail, rows }) and requires every one of its checks to pass."""
+    c.page.goto(f'{c.base}/{path}', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', path) from None
+    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {[x for x in (r['rows'] or []) if not x['ok']][:3]}", 'every check of the bench passes')
 
 
-@case('F23', 'Vertical path: no fold, no jump, no climb back in the descent', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
-      rule='V3 spec 10.20: profile.path keeps the cruise until the descent from the arrival reaches the first constraint, then never rises and never jumps')
+@case('F23', 'Vertical path bench: no fold, no jump, no climb back in the descent', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='V3 spec 10.20: profile.path keeps the cruise until the descent from the arrival reaches the first constraint, then never rises and never jumps; the pure bench modules/fuel/test/vertical.html (progress.js verticalPath), run without the page')
 def f23(c):
-    c.open('fuel')
-    r = c.js(VERTICAL_JS)
-    vp, fp = r['vp'], dict(r['fp'])
-    nms = [p['nm'] for p in vp]
-    c.ok(all(b > a for a, b in zip(nms, nms[1:])), f'nm {nms}', 'the path grows in distance, strictly')
-    grad = max(abs(b['ft'] - a['ft']) / (b['nm'] - a['nm']) for a, b in zip(vp, vp[1:]))
-    c.le(round(grad), round(max(r['up'], r['dn']) * 1.05), 'no vertical jump: no slope steeper than the model\'s climb or descent', what=f'steepest slope {grad:.0f} ft/NM, path {vp}')
-    top = next(i for i, p in enumerate(vp) if p['ft'] >= 26000)
-    after = [p['ft'] for p in vp[top:]]
-    first_down = next(i for i, ft in enumerate(after) if ft < 26000)
-    down = after[first_down - 1:]
-    c.ok(all(b <= a for a, b in zip(down, down[1:])), f'altitudes {down}', 'once the descent has started the path never rises again (the climb of the missed approach is not drawn)')
-    by = {p['nm']: p['ft'] for p in vp}
-    c.eq(by[fp['BBBB']], 26000, 'the cruise is kept at BBBB (the first constraint is far: the descent has not started)', what='altitude at BBBB')
-    c.le(by[fp['E1']], 3000, 'the "at 3000" constraint holds at E1', what='altitude at E1')
-    c.le(by[fp['CCCC']], 26000 - 2000, 'the descent has started before CCCC: the constraint 4 NM later does not drop 23,000 ft at once', what='altitude at CCCC')
-    c.ge(by[fp['I1']], 1600, 'the approach floor holds at I1', what='altitude at I1')
-    c.eq(vp[-1]['ft'], 0, 'the path ends on the ground', what='last altitude')
-    c.ge(min(p['ft'] for p in vp), 0, 'and never below it', what='lowest altitude')
+    run_bench(c, 'modules/fuel/test/vertical.html')
 
 
 @case('F24', 'An approach given by its entries: listed once, its transitions lead to it, a transition equal to it is ignored', 'F', tags=('fuel', 'aerodb', 'maps'), designs=('standard',),
@@ -1257,3 +1160,9 @@ def f38(c):
     note = next(norm(n) for n in c.note_log() if want in norm(n))
     reason = norm(tx(PT, "none-read'", c.lang, after='procReasons').split('{m}')[0].replace('{icao}', 'LFML'))
     c.ok(note.startswith(reason) and note.index(want) > len(reason) - 1, f'{note!r}', f'the counts come after the reason ({reason!r})')
+
+
+@case('F39', 'Time bench: fmtDayZ and the other Z formats', 'F', tags=('fuel',), designs=('standard',), screens=False,
+      rule='V3 spec 10.29 h: frame/lib/time.js gives "29/10 16:53Z" (UTC, day and month), the one writer of that format; its pure bench passes')
+def f39(c):
+    run_bench(c, 'frame/lib/test/time.html')

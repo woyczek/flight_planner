@@ -8,6 +8,8 @@
 //     la même, appareil réglé en UTC) ;
 //   fmtDateZ(iso, lang) → « 23/10/2026 16:30Z » : la date UTC dans l'écriture de la langue (fr, en, de, es ; fr par
 //     défaut), puis l'heure UTC.
+//   fmtDayZ(iso) → « 29/10 16:53Z » : le jour et le mois UTC (jj/mm, sans année, la même écriture dans toutes les langues), puis
+//     l'heure UTC : « lu le … » de la ligne des procédures de Carburant.
 
 const two = n => String(n).padStart(2, '0');
 /** Date lue, ou null. */
@@ -46,4 +48,9 @@ export function fmtDateZ(iso, lang = 'fr') {
     day: '2-digit'
   });
   return `${day} ${fmtZ(d)}`;
+}
+/** « 29/10 16:53Z » : jour et mois UTC (jj/mm), puis l'heure UTC ; '' si la date est illisible ou vide. */
+export function fmtDayZ(iso) {
+  const d = dateOf(iso);
+  return d ? `${two(d.getUTCDate())}/${two(d.getUTCMonth() + 1)} ${fmtZ(d)}` : '';
 }
