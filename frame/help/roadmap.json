@@ -452,6 +452,20 @@
           "en": "Runway in use or probable from the departure and arrival METAR",
           "de": "Betriebspiste oder wahrscheinliche Piste nach dem METAR von Start und Ziel",
           "es": "Pista en uso o probable según el METAR de salida y llegada"
+        },
+        {
+          "state": "planned",
+          "fr": "Export du plan de vol vers X-Plane (.fms, deux formats, envoi direct dans le dossier FMS plans par le lanceur) et MSFS 2020 / 2024 (.pln)",
+          "en": "Flight plan export to X-Plane (.fms, both formats, sent directly to the FMS plans folder by the launcher) and MSFS 2020 / 2024 (.pln)",
+          "de": "Flugplanexport nach X-Plane (.fms, beide Formate, direkt in den Ordner FMS plans durch den Launcher) und MSFS 2020 / 2024 (.pln)",
+          "es": "Exportación del plan de vuelo a X-Plane (.fms, dos formatos, envío directo a la carpeta FMS plans por el lanzador) y MSFS 2020 / 2024 (.pln)"
+        },
+        {
+          "state": "planned",
+          "fr": "Avertissement quand la date du vol est dans le passé",
+          "en": "Warning when the flight date is in the past",
+          "de": "Warnung, wenn das Flugdatum in der Vergangenheit liegt",
+          "es": "Aviso cuando la fecha del vuelo está en el pasado"
         }
       ]
     },

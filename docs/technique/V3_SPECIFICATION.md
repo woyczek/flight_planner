@@ -798,6 +798,17 @@ redesigned for touch at that point.
        - **Runway in use, or probable**: from the departure and arrival METAR at preparation time.
        - **Active VATSIM / IVAO controllers on the Map**: both networks publish them (VATSIM data v3 with the launcher's
          relay, IVAO Whazzup directly); one hue per network, dark green and brown, under the airspaces' weight.
+       - **Flight plan export to the simulators** (user, 29 Oct night: "Prévoir un export .fms à minima (deux formats
+         pour xplane), voire le pousser direct dans le dossier ad hoc sur X-Plane. Prévoir un export msfs2024/2020"):
+         from Fuel, the expanded path (route + procedures, § 10.20) written as X-Plane `.fms` in both formats (version 3
+         "I 3 version" for X-Plane 10/11 and version 1100 for X-Plane 11/12, with airways and procedure names when the
+         format carries them) and as MSFS `.pln` (2020 and 2024); download in the browser everywhere; on the workstation
+         with a launcher, "Envoyer à X-Plane" writes the file into `Output/FMS plans/` of the X-Plane folder known to the
+         launcher (a verb of a `sim` set, workstation only, name from the flight, never overwrites without saying so).
+         Pure writers in `frame/lib/fms.js` with benches on the suite's test flight; lot fuel + frame after Source and
+         § 10.27.
+       - **Warning when the flight date is in the past** (user, 29 Oct night): one line at step Vol and on the plan
+         ("Vol daté du 26/10, dans le passé : météo et NOTAM ne valent plus"), never blocking; tiny lot fuel.
        - **AIP Ireland as the official source for Irish airspaces** (user, 29 Oct evening, Dublin: openAIP codes the CTA
          sectors 3 to 6 without their inner hole, so five sectors answer at one point): ENR 2.1 / AD 2.17 read like the
          SIA for France; until then the build stats flag overlapping sectors of one family and the point sheet says it.
