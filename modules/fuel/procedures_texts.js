@@ -35,6 +35,8 @@ export const TX = {
   procFileAt: ['lu le {d}', 'read on {d}', 'gelesen am {d}', 'leído el {d}'],
   procReread: ['Relire', 'Read again', 'Neu lesen', 'Releer'],
   // le mode choix de la Carte (§ 10.23) : le bouton du titre d'un côté
+  // la page codée d'une procédure choisie (§ 10.25) : lien public du SIA pour une fiche de l'eAIP
+  procSource: ['Source', 'Source', 'Quelle', 'Fuente'],
   procOnMap: ['Sur la carte', 'On the map', 'Auf der Karte', 'En el mapa'],
   // une lecture peut durer plusieurs minutes : son départ est dit, sa fin le sera aussi (même hors de Carburant)
   procStarted: ['Lecture de {icao} lancée : une notification dira la fin.',

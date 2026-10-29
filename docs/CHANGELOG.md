@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Source » opens the coded page of the chosen procedure** (`modules/fuel/procedures.js`; SPEC, DECISIONS; help ×4;
+  case F42) — the SIA's public page, in a new tab.
 - **Map: the flown trail comes from the frame; "Choose on the map" on the aerodrome card** (`modules/maps/flight_time.js`,
   `choose.js`, `procs.js`, `texts.js`, `style.js`; help ×4, maps SPEC; noreg D61, D62). The trail starts from
   `progress.actual.trail` (`[lat, lon, altFt, s since started.at]`, written by the frame), read again at each reading of the

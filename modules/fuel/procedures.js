@@ -307,12 +307,30 @@ export function createProcedures(host) {
   }
   /** L'unique ligne discrète d'un côté (jamais plus) : « lu le 29/10 16:53Z ⌛ · Relire · 3 non lues » ; sans donnée : « aucune
    *  procédure publiée · Lire les procédures de LFXX ». L'emplacement data-source-slot, à la fin, attend le lien « Source » (§ 10.25). */
-  function metaHtml(m) {
+  function metaHtml(m, side) {
     const parts = m.nodata ? [`<span class="fu-procnone">${esc(tt(TX.procNoData))}</span>`, readButton(m.icao, tt(TX.procRead, {
       icao: m.icao
     }), false)] : [fileHtml(m), readButton(m.icao, tt(TX.procReread), true)];
     if (m.unread > 0) parts.push(`<span class="fu-procunread" title="${esc([m.partialLabel, tt(m.unread === 1 ? TX.procUnread1 : TX.procUnread, { n: m.unread })].filter(Boolean).join(' · '))}">${esc(tt(m.unread === 1 ? TX.procNotRead1 : TX.procNotRead, { n: m.unread }))}</span>`);
-    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true">·</span>') + ' <span data-source-slot></span>';
+    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true">·</span>') + ` <span data-source-slot>${sourceHtml(m, side)}</span>`;
+  }
+  /** « Source » (§ 10.25) : pour chaque procédure choisie du côté (la SID ; la STAR et l'approche), un lien vers la page codée qu'aerodb
+   *  donne en source.url (fiche de l'eAIP : adresse publique du SIA, https seulement), dans un nouvel onglet ; avec deux liens, la sorte
+   *  suit (« Source STAR · Source APP »). Une fiche d'une autre source (EAD, OCR, à la main) n'a pas de lien : le nom de son document
+   *  (source.file) va dans le title de la ligne. */
+  function sourceHtml(m, side) {
+    const o = CF.proceduresOf(host.flight())[side] || {},
+      keys = side === 'dep' ? ['sid'] : ['star', 'app'],
+      recs = keys.map(k => [k, typeof o[k] === 'string' ? (m.all || []).find(r => r.id === o[k]) : null]).filter(([, r]) => r),
+      linked = recs.filter(([, r]) => /^https:\/\//.test(String(r.source?.url || '')));
+    return linked.map(([k, r]) => `<a class="fu-procsrc" href="${esc(r.source.url)}" target="_blank" rel="noopener noreferrer" title="${esc(r.source.file || r.source.url)}">${esc(tt(TX.procSource) + (linked.length > 1 ? ` ${tt(TX.procKinds[k])}` : ''))}</a>`)
+      .join('<span class="fu-sep" aria-hidden="true">·</span>');
+  }
+  /** Les documents sans lien public des procédures choisies d'un côté (autre source que l'eAIP) : pour le title de la ligne. */
+  function sourceTitle(m, side) {
+    const o = CF.proceduresOf(host.flight())[side] || {};
+    return (side === 'dep' ? ['sid'] : ['star', 'app']).map(k => typeof o[k] === 'string' ? (m.all || []).find(r => r.id === o[k]) : null)
+      .filter(r => r && !/^https:\/\//.test(String(r.source?.url || '')) && r.source?.file).map(r => r.source.file).join(' · ');
   }
 
   // ------------------------------------------------------------ dessin sur place
@@ -352,7 +370,11 @@ export function createProcedures(host) {
   /** Met un côté à jour sur place : le titre, la ligne discrète et les options de chaque liste, chacun seulement s'il a changé. */
   function patchSide(el, side, m, fields) {
     setHtml(el.querySelector('[data-r="title"]'), titleHtml(side, m));
-    setHtml(el.querySelector('[data-r="meta"]'), metaHtml(m));
+    const meta = el.querySelector('[data-r="meta"]');
+    setHtml(meta, metaHtml(m, side));
+    const t = sourceTitle(m, side);
+    if (t) meta.title = t;
+    else meta.removeAttribute('title');
     for (const f of fields) setHtml(el.querySelector(`select[data-k="${f.k}"]`), f.html);
   }
   /** Signature de la structure d'un côté : terrain, avec ou sans donnée, listes présentes. Changée, la boîte est refaite. */
