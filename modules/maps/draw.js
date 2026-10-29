@@ -47,6 +47,8 @@ import {
   layout as procLayout,
   draw as drawProcs,
   drawLabels as drawProcLabels,
+  runwayArrows,
+  drawRunways,
   routeLines
 } from './procs.js';
 import {
@@ -299,6 +301,7 @@ function draw() {
     // procédures choisies (SID, STAR, approche) : mise en page à l'écran ; leurs libellés se réservent dans le placeur de la
     // carte, après ceux de la route
     procs = mission ? null : procLayout(ctx, toC, pxDeg, zoomOn),
+    rwys = mission ? [] : runwayArrows(toC, pxDeg, zoomOn),
     // couche « Procédures » : le niveau de couverture des terrains visibles (null : couche cachée ou absente)
     cov = mission ? null : covSync();
   if (S.tuneEl) got('tune')?.markTune(zReal, zv, (shown.n + shown.s) / 2, W, H);
@@ -333,7 +336,10 @@ function draw() {
     cov,
     reserve: procs ? pl => procs.reserve(pl) : null,
     legs: mission ? null : S.route?.path || null,
-    overRoute: procs ? c => drawProcs(c, procs) : null,
+    overRoute: procs || rwys.length ? c => {
+      if (procs) drawProcs(c, procs);
+      drawRunways(c, rwys); // la piste choisie en flèche, par-dessus le tracé de sa procédure
+    } : null,
     top: procs ? c => drawProcLabels(c, procs) : null,
     mission: mission && S.mission ? {
       points: S.mission.points,

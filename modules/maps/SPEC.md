@@ -261,6 +261,14 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     route's labels, forced when no place is free); the state of the source follows: "· X-Plane, local" (status `xplane`),
     "· Little Navmap, local" (`lnm`), "· outdated" (a hand-read file whose cycle is past); the texts are in `texts.js`;
   - **names, fixes and constraints by zoom thresholds** of the tuning page (§ 14; user, 29 Oct: "ils disparaissent trop tôt en zoom arrière"): `procNames` (the procedures' names, [0, 24] to start: every scale) and `procCons` (their fixes and constraints, [6.25, 24]: from the regional view, about 110 px per degree); the names have a fallback anchor (the middle of the longest leg of the procedure's fixes, its threshold included when it has fewer than two) and all procedure labels are painted last, over the airway boxes (`MapsRender.draw` `top`);
+  - **the chosen runway as an arrow** (V3 § 10.24, without the aids for now; `procs.js` `runwayArrows`, `drawRunways`): the runway of
+    `route.procedures` (`dep.rwy`, `arr.rwy`) from its threshold (the landing threshold `dthr` at the arrival) over its `length`
+    (metres; else to the opposite threshold, else 1 NM) along its **true** bearing — the record's `true`, else threshold to
+    opposite threshold, else `qfu` + the aerodrome's `magVar`, else `qfu` (a derived runway) —, the tip at the end of the runway
+    for a departure, at the threshold for an arrival, both pointing the way of the runway; its number at the threshold; the hue
+    of its side (SID; approach, else STAR), one notch wider than the procedure trace (4.5 px on an 8 px paper edge); from the
+    aerodrome view only (zoom threshold `procRwy`, [11.25, 24] ≈ 60 px per NM), never at the scale of the route; the runways of
+    both aerodromes are read with the procedures (`S.rwys`, `aerodb.runways`) to find the opposite threshold;
   - **constraints**, as on the AIP charts, written after the fix's name: altitude **underlined** = at or above
     (`min`), **overlined** = at or below (`max`), both = exactly (`at`), "5000–7000" for `between` (the lower underlined, the higher
     overlined), "≤ 220 kt" for the speed; altitudes as `formatLevel` writes them (FL from the transition altitude, else the feet).

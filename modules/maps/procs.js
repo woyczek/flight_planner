@@ -588,3 +588,137 @@ export function cardHtml(icao) {
     `<p class="mp-ad-proc" data-proc="${side}"><b>${esc(tt(label))}</b> : ${esc(text ?? tt(TX.adProcUnset))} <button type="button" class="f-btn" data-go="fuel?focus=${side}" title="${esc(tip)}" aria-label="${esc(tip)}">${esc(change)}</button></p>`
   ).join('');
 }
+
+// ---------------------------------------------------------------- la piste choisie en flèche (V3_SPECIFICATION § 10.24)
+/** Vue terrain : la flèche de la piste choisie à partir de 3 600 px par degré (≈ 60 px par NM) sans seuils (page d'essai). */
+const RWY_PX = 3600;
+/** Numéro de la piste opposée (« 24 » → « 06 », « 27L » → « 09R »). */
+const oppositeId = id => {
+  const m = /^(?:RW)?(\d{2})([LRC]?)$/i.exec(String(id || '').trim());
+  if (!m) return '';
+  const n = ((+m[1] + 17) % 36) + 1,
+    s = {
+      L: 'R',
+      R: 'L',
+      C: 'C'
+    } [m[2].toUpperCase()] || '';
+  return `${String(n).padStart(2, '0')}${s}`;
+};
+const rwNo = id => String(id ?? '').trim().toUpperCase().replace(/^RW/, '');
+/** Relèvement vrai d'une piste (décision de la session ergonomie, 29 octobre) : `true` de la fiche (eAIP AD 2.12), sinon la
+ *  direction seuil → seuil opposé quand les deux sont connus, sinon qfu (magnétique) + la déclinaison du terrain, sinon qfu tel
+ *  quel (une piste déduite). */
+export function runwayBearing(rw, list, magVar) {
+  if (num(rw?.true)) return +rw.true;
+  const o = (list || []).find(x => rwNo(x?.id) === oppositeId(rw?.id));
+  if (o && num(o.lat) && num(o.lon) && num(rw.lat) && num(rw.lon)) {
+    const dy = +o.lat - +rw.lat,
+      dx = (((+o.lon - +rw.lon) + 540) % 360 - 180) * Math.cos(+rw.lat * RAD);
+    return ((Math.atan2(dx, dy) / RAD) + 360) % 360;
+  }
+  if (num(rw?.qfu)) return (+rw.qfu + (num(magVar) ? +magVar : 0) + 360) % 360;
+  return null;
+}
+/** Déclinaison (degrés, + à l'est) du terrain d'un côté, d'après les terrains lus pour la vue (magVar) ; null sinon. */
+const magVarOf = icao => {
+  const a = (S.data?.data?.aerodromes || []).find(x => String(x.icao || x.id || '').toUpperCase() === String(icao || '').toUpperCase());
+  return num(a?.magVar) ? +a.magVar : null;
+};
+/** Flèches des pistes choisies (route.procedures, dep.rwy / arr.rwy ; fiches de loadProcedures et pistes du terrain, S.rwys) : [{ a, b
+ *  (points écran du seuil et du bout), tip ('b' au départ : la pointe au bout de la piste ; 'a' à l'arrivée : au seuil), name, col,
+ *  side }] ; dès la vue terrain (zoomOn('procRwy'), sinon RWY_PX), jamais à l'échelle de la route ; [] sinon. */
+export function runwayArrows(toC, pxDeg, zoomOn = null) {
+  if (zoomOn ? !zoomOn('procRwy') : pxDeg < RWY_PX) return [];
+  const f = S.route?.flight,
+    v = f ? proceduresOf(f) : null,
+    r = f?.route || {},
+    P = S.procs || {},
+    out = [];
+  for (const [side, rw, icao] of [
+      ['dep', P.depRwy, r.dep || r.points?.[0]?.id],
+      ['arr', P.arrRwy, r.arr || r.points?.at?.(-1)?.id]
+    ]) {
+    if (!rw || !v?.[side]?.rwy || rwNo(rw.id) !== rwNo(v[side].rwy)) continue;
+    const list = S.rwys?.[side] || [],
+      // le seuil d'atterrissage (décalé : dthr) à l'arrivée, le seuil de la piste au départ
+      th = side === 'arr' && rw.dthr && num(rw.dthr.lat) && num(rw.dthr.lon) ? rw.dthr : rw;
+    if (!num(th.lat) || !num(th.lon)) continue;
+    const brg = runwayBearing(rw, list, magVarOf(icao));
+    if (brg === null) continue;
+    const o = list.find(x => rwNo(x?.id) === oppositeId(rw.id)),
+      lenNm = num(rw.length) && +rw.length > 0 ? +rw.length / 1852 : o && num(o.lat) ? gcNmPlain(th, o) : 1,
+      end = ahead({
+        lat: +th.lat,
+        lon: +th.lon
+      }, brg, lenNm);
+    out.push({
+      side,
+      a: toC(+th.lat, +th.lon),
+      b: toC(end.lat, nearLon(end.lon, +th.lon)),
+      tip: side === 'dep' ? 'b' : 'a',
+      name: rwNo(rw.id),
+      col: colOf(side === 'dep' ? 'sid' : P.app ? 'app' : 'star')
+    });
+  }
+  return out;
+}
+/** Distance (NM) entre deux points proches (plan local). */
+const gcNmPlain = (a, b) => Math.hypot((+b.lat - +a.lat) * 60, (((+b.lon - +a.lon) + 540) % 360 - 180) * 60 * Math.cos(+a.lat * RAD));
+/** Dessine les flèches de piste : un cran plus larges que le tracé des procédures, liseré du fond, la pointe au bout (départ) ou
+ *  au seuil (arrivée) dans le sens de la piste, le numéro au seuil. */
+export function drawRunways(ctx, arrows) {
+  if (!arrows?.length) return;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const w of arrows) {
+    const dx = w.b.x - w.a.x,
+      dy = w.b.y - w.a.y,
+      len = Math.hypot(dx, dy) || 1,
+      ux = dx / len,
+      uy = dy / len,
+      h = 11,
+      // la pointe : au bout (départ) ou au seuil (arrivée), toujours dans le sens de la piste
+      t = w.tip === 'b' ? w.b : {
+        x: w.a.x + ux * h,
+        y: w.a.y + uy * h
+      },
+      base = {
+        x: t.x - ux * h,
+        y: t.y - uy * h
+      };
+    for (const [col, lw] of [
+        [S.theme.bg, 8],
+        [w.col, 4.5]
+      ]) {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = lw;
+      ctx.beginPath();
+      ctx.moveTo(w.a.x, w.a.y);
+      ctx.lineTo(w.b.x, w.b.y);
+      ctx.stroke();
+    }
+    ctx.fillStyle = w.col;
+    ctx.strokeStyle = S.theme.bg;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(t.x, t.y);
+    ctx.lineTo(base.x - uy * h * .6, base.y + ux * h * .6);
+    ctx.lineTo(base.x + uy * h * .6, base.y - ux * h * .6);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+    // le numéro au seuil, de l'autre côté de la piste
+    ctx.font = '700 12px Arial,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const nx = w.a.x - ux * 14,
+      ny = w.a.y - uy * 14;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = S.theme.bg;
+    ctx.strokeText(w.name, nx, ny);
+    ctx.fillStyle = w.col;
+    ctx.fillText(w.name, nx, ny);
+  }
+  ctx.restore();
+}

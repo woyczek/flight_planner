@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the chosen runway as an arrow** (`modules/maps/procs.js`, `data.js`, `draw.js`, `layers.js`, `texts.js`; SPEC § 5, help
+  ×4, case D58; V3 § 10.24, user 29 Oct: "quand on choisit une piste, un vecteur sur la carte indiquant la piste (flèche)") —
+  the runway chosen in Fuel is drawn from its threshold over its length along its true bearing (the record's `true`, else
+  threshold to opposite threshold, else QFU + the aerodrome's variation), the tip at the end for a departure and at the
+  threshold for an arrival, its number at the threshold, in its side's hue, from the aerodrome view (threshold "Chosen runway
+  (arrow)" on the thresholds page). The aids (ILS, DME) come later.
+
 - **Map: a flight write that lands during the mount is no longer missed** (`modules/maps/data.js` `watchFlight`; journey J2,
   step 3, seen once in two) — the map read the flight, then subscribed to its changes after other waits; a write between the
   two (Fuel writes `started.at`, then opens the map) had no event, so the map stayed on a flight not started and said nothing

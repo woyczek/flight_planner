@@ -225,6 +225,7 @@ export const TX = {
     procCons: ['Points et contraintes des procédures', 'Procedure fixes and constraints', 'Punkte und Beschränkungen der Verfahren',
       'Puntos y restricciones de los procedimientos'
     ],
+    procRwy: ['Piste choisie (flèche)', 'Chosen runway (arrow)', 'Gewählte Piste (Pfeil)', 'Pista elegida (flecha)'],
     navaids: ['Balises', 'Beacons', 'Funkfeuer', 'Radioayudas'],
     fixes: ['Points des voies', 'Airway points', 'Flugwegpunkte', 'Puntos de aerovía'],
     vrp: ['Points de report VFR', 'VFR reporting points', 'VFR-Meldepunkte', 'Puntos de notificación VFR'],

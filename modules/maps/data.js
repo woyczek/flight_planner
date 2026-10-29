@@ -131,9 +131,19 @@ export function loadProcs() {
     }
     return;
   }
-  loadProcedures(S.ctx.aerodb, f).then(procs => {
+  // les pistes des deux terrains avec les procédures : la flèche de la piste choisie trouve son seuil opposé (§ 10.24)
+  const A = S.ctx.aerodb,
+    r = f.route || {},
+    rwList = icao => icao && A.runways ? Promise.resolve().then(() => A.runways(String(icao).toUpperCase())).catch(() => []) : [];
+  Promise.all([loadProcedures(A, f), rwList(r.dep || r.points?.[0]?.id), rwList(r.arr || r.points?.at?.(-1)?.id)]).then(([procs, rd,
+    ra
+  ]) => {
     if (!S || S.procsKey !== key) return;
     S.procs = procs;
+    S.rwys = {
+      dep: rd || [],
+      arr: ra || []
+    };
     afterPath();
   }, () => {});
 }

@@ -740,6 +740,34 @@ def d57(c):
     c.eq(n, [True, True, False, False], 'free route (FRA) and W / weather research zones are left out of the profile (unless « Other airspaces » is on)', what='noise')
 
 
+_RWY_JS = """(px) => { const pr = window.__pr, k = Math.cos(47.15 * Math.PI / 180), toC = (lat, lon) => ({ x: (lon + 2) * px * k, y: (48 - lat) * px });
+  return pr.runwayArrows(toC, px, null).map(w => ({ side: w.side, tip: w.tip, name: w.name, col: w.col,
+    brg: (Math.atan2(w.b.x - w.a.x, -(w.b.y - w.a.y)) * 180 / Math.PI + 360) % 360, len: Math.hypot(w.b.x - w.a.x, w.b.y - w.a.y) / px * 60,
+    sid: pr.colOf('sid'), app: pr.colOf('app') })) }"""
+
+
+@case('D58', 'The chosen runway as an arrow from its threshold', 'D', tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='V3 § 10.24 (user 29 Oct: « quand on choisit une piste, un vecteur sur la carte indiquant la piste (flèche) »)')
+def d58(c):
+    _open_proc(c, _proc_flight())
+    c.until("() => !!(window.__mp.S.procs && window.__mp.S.procs.depRwy && window.__mp.S.rwys)", timeout=8000, what='the runways read')
+    near = c.js(_RWY_JS, 4000)
+    c.eq(sorted(w['side'] for w in near), ['arr', 'dep'], 'at the aerodrome view both chosen runways are arrows', what=f'arrows {near}')
+    d = next(w for w in near if w['side'] == 'dep')
+    a = next(w for w in near if w['side'] == 'arr')
+    c.eq((d['tip'], a['tip']), ('b', 'a'), 'the tip at the end of the runway for a departure, at its threshold for an arrival', what='tips')
+    c.eq((d['name'], a['name']), ('03', '31'), 'named by the runway', what='names')
+    c.ok(abs(((d['brg'] - 30 + 180) % 360) - 180) < 3, f"{d['brg']:.1f}°", 'a runway read from its number (03) points to 030° (its QFU)')
+    c.eq((d['col'], a['col']), (d['sid'], a['app']), 'in the hue of its side (SID, approach)', what='hues')
+    c.eq(c.js(_RWY_JS, 300), [], 'never at the scale of the route', what='arrows far out')
+    b = c.js("""() => { const B = window.__pr.runwayBearing;
+      return [B({ id: '20', true: 198.35, qfu: 197 }, [], 1.8), B({ id: '20', lat: 48.738, lon: 2.387, qfu: 197 }, [{ id: '02', lat: 48.7175, lon: 2.3767 }], 1.8),
+        B({ id: '20', qfu: 197 }, [], 1.8), B({ id: '20', qfu: 197 }, [], null)] }""")
+    c.ok(abs(b[0] - 198.35) < .01, f'{b}', 'the true bearing of the record first')
+    c.ok(190 < b[1] < 205 and abs(b[1] - 198.8) < 2, f'{b}', 'else threshold to opposite threshold')
+    c.ok(abs(b[2] - 198.8) < .01 and b[3] == 197, f'{b}', 'else QFU + the aerodrome’s variation, else the QFU as it is')
+
+
 @case('D41', 'The chosen SID, STAR and approach are drawn from the runway', 'D', tags=('maps',), screens=False, designs=('standard',), langs4=True,
       rule='V3 § 10.20, maps SPEC § 5: path from the threshold; transition and missed approach dashed; a leg without a fix = 2 NM stroke then dashes; RF = arc; join on a common point or dashed direct; unchosen procedures never drawn')
 def d41(c):
