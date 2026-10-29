@@ -578,7 +578,7 @@ Nach einer Konfliktbenachrichtigung:
 2. übertragen Sie von Hand, was in der behaltenen Datei fehlt;
 3. synchronisieren Sie erneut und löschen Sie dann die Kopie.
 Das Berichtsregister (`cr/missions.yaml`) wird von Hand zusammengeführt.
-Meldung „In data/ läuft ein Merge oder ein Rebase“: Schließen Sie den Git-Vorgang ab oder brechen Sie ihn ab (`git -C data merge --abort`), dann beginnen Sie erneut.
+In `data/` offen gebliebener Merge (unterbrochener Durchgang, Rechner während eines Merges ausgeschaltet): Der nächste Durchgang oder die Aktualisierung beim Start des Launchers schließt ihn ab, wenn keine Datei im Konflikt ist, sonst bricht er ihn ab und führt ihn erneut aus; der Bericht sagt es. Nichts von Hand zu tun. Solange er offen ist, finden die Commits des Launchers (Stapel der App, Regenerierungsaufträge, Veröffentlichungen) nicht statt und sagen es. Meldung „In data/ läuft ein Rebase“: Schließen Sie den Rebase ab oder brechen Sie ihn ab (`git -C data rebase --abort`), dann beginnen Sie erneut.
 Details, Schemata und risikolose Tests: [Architektur der Synchronisierung](../technique/SYNCHRONISATION.md).
 
 ## Starter, Daten und Sicherungen

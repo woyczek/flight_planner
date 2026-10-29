@@ -144,7 +144,9 @@ def set_remote(data, url, allowed=()):
 
 
 def git(data, *args, env=None, check=False):
-    """git -C data … ; rend (code, sortie texte)."""
+    """git -C data … ; rend (code, texte) : git réussi, sa sortie standard seule — ses avertissements (sortie d'erreur :
+    « LF will be replaced by CRLF », …) vont au journal, jamais lus comme un chemin ou une valeur ; git en échec, sortie et
+    erreurs (le message rendu à la page)."""
     try:
         r = subprocess.run(git_cmd('-C', data, *args), capture_output=True, text=True, encoding='utf-8', errors='replace',
                            env=env or git_env(), timeout=TIMEOUT)
@@ -152,10 +154,45 @@ def git(data, *args, env=None, check=False):
         if check:
             raise RuntimeError(str(e))
         return 1, str(e)
+    if r.returncode == 0:
+        _journal(args, r.stderr)
+        return 0, r.stdout.strip()
     out = (r.stdout + r.stderr).strip()
-    if check and r.returncode:
+    if check:
         raise RuntimeError(out or f'git {" ".join(args)} : échec')
     return r.returncode, out
+
+
+def _journal(args, err):
+    """Avertissements d'une commande git réussie (lignes « warning: ») : au journal du lanceur (sa console), pas dans ce
+    que lit le code ; le reste de sa sortie d'erreur (avancement d'un push, …) est laissé."""
+    lines = [x for x in err.splitlines() if x.startswith('warning:')]
+    if lines and sys.stderr:
+        try:
+            sys.stderr.write(''.join(f'git {args[0] if args else ""} : {x[:300]}\n' for x in lines[:20]))
+        except (OSError, ValueError):
+            pass
+
+
+def unmerged(data):
+    """Fichiers en conflit, lus dans l'index (git ls-files -u -z) : des chemins de l'index, jamais une ligne d'un message
+    de git ; sans guillemets ni échappement (-z)."""
+    try:
+        out = subprocess.run(git_cmd('-C', data, 'ls-files', '-u', '-z'), capture_output=True, env=git_env(), timeout=TIMEOUT)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    if out.returncode:
+        return []
+    return sorted({e.split('\t', 1)[1] for e in out.stdout.decode('utf-8', errors='replace').split('\0') if '\t' in e})
+
+
+def merge_pending(data):
+    """Une fusion attend dans data/ (MERGE_HEAD) : le message qui le dit ; '' sinon. Un commit du lanceur fait pendant
+    une fusion en attente la conclurait avec ses seuls fichiers, ou git le refuse : chaque commit le vérifie d'abord."""
+    if os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
+        return ('Une fusion attend dans data/ (passage de synchronisation interrompu) : rien n’est commité ; '
+                '« Synchroniser » la conclut ou l’annule.')
+    return ''
 
 
 def blob(data, stage, path):
@@ -427,7 +464,10 @@ def merge_raw(path, raw):
 
 
 def resolve(data, path):
-    """Fichier en conflit résolu et ajouté ; rend {'path', 'how', 'copy'?}."""
+    """Fichier en conflit résolu et ajouté ; rend {'path', 'how', 'copy'?}. path : un fichier en conflit de l'index
+    (unmerged), jamais un chemin hors de data/."""
+    if not path or path.startswith('/') or '..' in path.split('/') or ':' in path:
+        raise RuntimeError(f'chemin en conflit refusé : {path[:200]}')
     full = os.path.join(data, *path.split('/'))
     if is_index(path):  # index régénéré : retiré du suivi, jamais fusionné (le lanceur le refait)
         git(data, 'rm', '--cached', '-q', '--ignore-unmatch', '--', path)
@@ -470,8 +510,42 @@ def _identity(author, name=''):
 
 
 def _busy(data):
-    """Vrai si une fusion ou un rebase est en cours dans data/."""
-    return os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')) or os.path.isdir(os.path.join(data, '.git', 'rebase-merge'))
+    """Vrai si un rebase est en cours dans data/ (la fusion en attente, elle, est réglée par settle)."""
+    return any(os.path.isdir(os.path.join(data, '.git', d)) for d in ('rebase-merge', 'rebase-apply'))
+
+
+def settle(data, who, env):
+    """Fusion laissée en attente dans data/ (MERGE_HEAD : passage interrompu, poste éteint en pleine fusion), jamais
+    laissée à l'utilisateur : sans fichier en conflit, conclue (commit --no-edit) ; sinon, ou si git refuse de la
+    conclure, annulée (merge --abort : le passage la refait). Les fichiers modifiés sur ce poste et non commités restent
+    tels quels. Rend 'conclue', 'annulée' ou '' (rien en attente) ; RuntimeError si elle ne peut être ni l'une ni l'autre."""
+    if not os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
+        return ''
+    if not unmerged(data) and git(data, *who, 'commit', '--no-edit', env=env)[0] == 0:
+        return 'conclue'
+    code, out = git(data, 'merge', '--abort')
+    if code:
+        raise RuntimeError('Fusion en attente dans data/ ni concluable ni annulable : ' + out[-300:])
+    return 'annulée'
+
+
+def _abort(data):
+    """Passage en échec : la fusion commencée est annulée (jamais de dépôt laissé à moitié fusionné) ; rend '' ou ce qui
+    reste à dire."""
+    if not os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
+        return ''
+    code, out = git(data, 'merge', '--abort')
+    return '' if code == 0 else f' Fusion impossible à annuler : {out[-200:]}'
+
+
+def _why(e):
+    """Texte d'une erreur pour la page : le message de git tel quel, sinon le type d'erreur et son texte (erreur du lanceur)."""
+    return str(e) if isinstance(e, RuntimeError) else f'Erreur du lanceur pendant la synchronisation ({type(e).__name__} : {e}).'
+
+
+def _settled_note(how):
+    return {'conclue': ' Fusion laissée en attente par un passage précédent : conclue.',
+            'annulée': ' Fusion laissée en attente par un passage précédent : annulée, puis refaite.'}.get(how, '')
 
 
 def _commit_local(data, who, env, res, label):
@@ -519,12 +593,13 @@ def _receive(data, who, env, res, remote, up, br):
             os.remove(f)
     code, out = git(data, *who, 'merge', '--no-edit', target, env=env)
     if code:
-        _, unmerged = git(data, 'diff', '--name-only', '--diff-filter=U')
-        if not unmerged.strip():
+        # fichiers en conflit lus dans l'index (jamais dans la sortie de git, où se glissent ses avertissements)
+        paths = unmerged(data)
+        if not paths:
             raise RuntimeError(out)
         # conflits : fusion fiche par fiche
-        for path in unmerged.splitlines():
-            r = resolve(data, path.strip())
+        for path in paths:
+            r = resolve(data, path)
             if r.get('copy') or r.get('conflicts'):
                 res['conflicts'].append(r)
         git(data, *who, 'commit', '--no-edit', env=env, check=True)
@@ -564,10 +639,12 @@ def run(data, author, name=''):
         res['message'] = 'Trigramme de l’auteur manquant ou invalide.'
         return res
     if _busy(data):
-        res['message'] = 'Une fusion ou un rebase est en cours dans data/ : à terminer ou annuler à la main.'
+        res['message'] = 'Un rebase est en cours dans data/ : à terminer ou annuler à la main.'
         return res
     who, env = _identity(author, name)
     try:
+        # 0. fusion laissée en attente par un passage interrompu : conclue ou annulée
+        res['settled'] = settle(data, who, env)
         # 1. modifications de ce poste
         _commit_local(data, who, env, res, f'Synchronisation {author}')
         # index suivis sur ce poste (reçus d'une version précédente, puis refaits par le lanceur) : retirés du suivi
@@ -588,11 +665,10 @@ def run(data, author, name=''):
         git(data, 'push', *([] if up else ['-u']), remote, f'HEAD:{br}', env=env, check=True)
         res['pushed'] = True
         res['ok'] = True
-        res['message'] = 'Synchronisé.' + refused_note(res)
-    except RuntimeError as e:
-        res['message'] = str(e)[-800:]
-        if os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
-            git(data, 'merge', '--abort')  # jamais de dépôt laissé à moitié fusionné
+        res['message'] = 'Synchronisé.' + _settled_note(res['settled']) + refused_note(res)
+    except Exception as e:  # toute erreur, git ou du lanceur : fusion annulée, message à la page (jamais au serveur)
+        res['ok'] = res['pushed'] = False
+        res['message'] = _why(e)[-800:] + _abort(data)
     finally:
         remember(data, res)
     return res
@@ -610,12 +686,13 @@ def update(data, author=''):
     if not is_repo(data):
         return {**res, 'message': 'data/ n’est pas un dépôt git (ou git est absent) : pas de mise à jour.'}
     if _busy(data):
-        return {**res, 'message': 'Une fusion ou un rebase est en cours dans data/ : à terminer ou annuler à la main ; données actuelles gardées.'}
+        return {**res, 'message': 'Un rebase est en cours dans data/ : à terminer ou annuler à la main ; données actuelles gardées.'}
     author = author if re.fullmatch(r'[A-Z0-9]{2,5}', author or '') else str((last_sync(data) or {}).get('author') or '')
     author = author if re.fullmatch(r'[A-Z0-9]{2,5}', author) else 'POSTE'
     who, env = _identity(author)
     res['excluded'] = ensure_excludes(data)
     try:
+        res['settled'] = settle(data, who, env)
         _commit_local(data, who, env, res, f'Modifications du poste {author}')
         res['untracked'] = untrack_indexes(data, who, env)
         br, up, remote = branch_info(data)
@@ -623,10 +700,8 @@ def update(data, author=''):
             return {**res, 'ok': True, 'message': f'{res["committed"]} fichier(s) du poste commités ; pas de dépôt distant : rien à recevoir.'}
         _receive(data, who, env, res, remote, up, br)
         res['untracked'] += untrack_indexes(data, who, env)
-    except RuntimeError as e:
-        if os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
-            git(data, 'merge', '--abort')  # jamais de dépôt laissé à moitié fusionné
-        out = str(e)
+    except Exception as e:  # toute erreur, git ou du lanceur : fusion annulée, données actuelles gardées
+        out = _why(e) + _abort(data)
         why = ('réseau ou accès au dépôt refusé' if re.search(r'Could not resolve|unable to access|timed out|Authentication|denied|'
                                                              r'could not read|403|401', out, re.I) else out[-300:])
         return {**res, 'message': f'{res["committed"]} fichier(s) du poste commités ; réception impossible pour l’instant ({why}) : '
@@ -641,7 +716,7 @@ def update(data, author=''):
     if res['conflicts']:
         parts.append(f'{len(res["conflicts"])} fiche(s) modifiées des deux côtés : la plus récente gardée, l’autre dans _conflits/')
     res['ok'] = not res['blocked']
-    res['message'] = ' ; '.join(parts) + '.' + (' Rien n’est envoyé : « Synchroniser » le fera.' if res['committed'] else '') + refused_note(res)
+    res['message'] = ' ; '.join(parts) + '.' + _settled_note(res.get('settled')) + (' Rien n’est envoyé : « Synchroniser » le fera.' if res['committed'] else '') + refused_note(res)
     return res
 
 

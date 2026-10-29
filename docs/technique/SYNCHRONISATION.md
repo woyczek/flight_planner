@@ -198,7 +198,9 @@ sequenceDiagram
 |---|---|
 | **First synchronisation** | the button counts everything that has never been committed in `data/`; the first click pushes it and creates the remote branch if needed |
 | **Conflict notification** | open the file indicated in `_conflits/`, compare it with the kept file, carry over by hand what is missing, synchronise; then delete the copy |
-| "A merge or rebase is in progress in data/" | a manual git operation has not finished: `git -C data merge --abort` (or finish it), then try again |
+| "A rebase is in progress in data/" | a manual rebase has not finished: `git -C data rebase --abort` (or finish it), then try again |
+| "Merge left pending by a previous pass: concluded / cancelled, then redone" | a pass was interrupted during a merge (`MERGE_HEAD`): the next pass (or the update at start) concludes it (`commit --no-edit`) when no file is unmerged, otherwise cancels it (`merge --abort`) and merges again; nothing for the user to do (29 Oct 2026) |
+| "A merge is pending in data/ … nothing is committed" | the launcher's commits (the app's batches, `commit_outputs` of the regeneration jobs, the aircraft base and VFR publications) check `MERGE_HEAD` first and say so; the next « Synchroniser » settles it |
 | "Local commit only: no remote repository" | `data/` has no remote repository: nothing is shared |
 | "Synchronisation interrupted: …" | git message (network, access to the remote repository denied…); nothing has been lost, try again later |
 | Launcher unreachable | synchronisation requires the launcher (git does not run in the browser) |

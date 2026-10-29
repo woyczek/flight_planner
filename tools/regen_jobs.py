@@ -312,6 +312,9 @@ def commit_outputs(ctx, author, paths, message):
         return {'commit': None, 'warning': 'no trigram: nothing committed'}
     if not git_cmd or not data or not os.path.isdir(os.path.join(data, '.git')):
         return {'commit': None, 'warning': "data/ is not a git repository: nothing committed"}
+    if os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):  # un commit la conclurait, ou git le refuse
+        return {'commit': None, 'warning': 'a merge is pending in data/ (interrupted synchronisation): nothing committed; '
+                                           '"Synchronise" concludes or cancels it'}
     env = dict(git_env(), GIT_LITERAL_PATHSPECS='1')  # chaque chemin est un nom de fichier, jamais un motif
 
     def run(*args):

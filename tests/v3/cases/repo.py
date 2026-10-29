@@ -10,9 +10,11 @@ Rules covered
   * I5 the sources are formatted (`tools/format_sources.py --check`; scope: frame/ and modules/, or the touched files);
   * I6 each documented module has its SPEC / INTEGRATION / DECISIONS, and the frame its three
     (`modules/hello`, the plain example the frame documents as never changed, is exempt);
-  * I7 the CHANGELOG has `## [Unreleased]` with a `### V3` heading in it.
+  * I7 the CHANGELOG has `## [Unreleased]` with a `### V3` heading in it;
+  * I8 the launcher's jobs (regen); I9 the data synchronisation: a git warning is never read as a path, a pending merge
+    is concluded or cancelled, a launcher commit checks it first.
 
-Cases: I1 I2 I3 I4 I5 I6 I7.
+Cases: I1 I2 I3 I4 I5 I6 I7 I8 I9.
 """
 import glob
 import os
@@ -314,4 +316,95 @@ def i8(c):
         R.REGISTRY.update(kept[0])
         R.MIN_GAP.clear()
         R.MIN_GAP.update(kept[1])
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I9', 'Data sync: git warnings, pending merge', 'I', static=True,
+      rule="tools/data_sync.py: a git warning is never read as a path; a failed pass never leaves a merge pending; a pending merge is concluded or cancelled, never left to the user; a launcher commit checks it first")
+def i9(c):
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    import data_sync as DS
+    import regen_jobs as R
+    tmp = Path(tempfile.mkdtemp(prefix='sog-sync-'))
+    kept = DS.git_cmd, DS.resolve
+    warn = "warning: in the working copy of 'references\\\\aircraft_fleet.js', LF will be replaced by CRLF the next time Git touches it"
+    try:
+        remote, a, b = (str(tmp / x) for x in ('remote.git', 'A', 'B'))
+        sh = lambda *args, cwd=str(tmp): subprocess.run(['git', *args], cwd=cwd, check=True, capture_output=True)
+        sh('init', '--bare', '-b', 'main', remote)
+        sh('clone', '-q', remote, a)
+
+        def put(root, rel, obj):
+            p = Path(root, *rel.split('/'))
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(obj), encoding='utf-8')
+        week, other = 'disponibilites/AAA/2026-W44.json', 'disponibilites/AAA/2026-W45.json'
+        put(a, week, {'updated_at': '2026-10-29T10:00:00Z', 'dispos': {'lun': 1}})
+        c.ok(DS.run(a, 'AAA')['ok'], '', 'first pass of A')
+        sh('clone', '-q', remote, b)
+        for d in (a, b):
+            sh('config', 'user.name', 'essai', cwd=d)
+            sh('config', 'user.email', 'essai@example.invalid', cwd=d)
+        # git qui écrit un avertissement CRLF sur sa sortie d'erreur à chaque commande (le cas du poste de l'utilisateur)
+        shim = tmp / 'shim.py'
+        shim.write_text('import subprocess, sys\nsys.stderr.write(%r + "\\n")\nsys.exit(subprocess.run(sys.argv[1:]).returncode)\n' % warn,
+                        encoding='utf-8')
+        DS.git_cmd = lambda *args: [sys.executable, str(shim), *kept[0](*args)]
+        c.eq(DS.git(b, 'rev-parse', '--abbrev-ref', 'HEAD'), (0, 'main'), 'a warning on stderr is not part of the output', what='git() output')
+        Path(b, 'references').mkdir()
+        Path(b, 'references', 'aircraft_fleet.js').write_text('window.X = 1\n', encoding='utf-8')  # hors du pool, non suivi : intact
+        # conflit sur la même fiche des deux côtés
+        put(a, week, {'updated_at': '2026-10-29T11:00:00Z', 'dispos': {'lun': 'A'}})
+        put(b, week, {'updated_at': '2026-10-29T12:00:00Z', 'dispos': {'lun': 'B'}})
+        c.ok(DS.run(a, 'AAA')['ok'], '', 'A sends its version')
+        r = DS.run(b, 'BBB')
+        c.ok(r['ok'] and r['conflicts'], str(r)[:300], 'the conflict is resolved with git warnings in the output')
+        c.ok(not Path(b, '.git', 'MERGE_HEAD').exists(), '', 'no merge left pending')
+        c.ok(not [p for p in Path(b).iterdir() if p.name.startswith('warning')], str(list(Path(b).iterdir())), 'no file named after a git warning')
+        # une erreur du lanceur pendant la résolution (OSError, comme open() sur une ligne d'avertissement) : fusion annulée
+        sh('pull', '-q', cwd=a)
+        put(a, week, {'updated_at': '2026-10-29T13:00:00Z', 'dispos': {'lun': 'A2'}})
+        c.ok(DS.run(a, 'AAA')['ok'], '', 'A sends again')
+        put(b, week, {'updated_at': '2026-10-29T14:00:00Z', 'dispos': {'lun': 'B2'}})
+        head = lambda d: subprocess.run(['git', '-C', d, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
+
+        def boom(data, path):
+            raise OSError(22, 'Invalid argument', path)
+        DS.resolve = boom
+        r = DS.run(b, 'BBB')
+        DS.resolve = kept[1]
+        c.ok(not r['ok'] and 'Erreur du lanceur' in r['message'], r['message'][:300], 'an exception ends the pass with a message for the page')
+        c.ok(not Path(b, '.git', 'MERGE_HEAD').exists() and not DS.unmerged(b), '', 'the merge is cancelled, the repository is clean')
+        c.eq(Path(b, 'references', 'aircraft_fleet.js').read_text(encoding='utf-8'), 'window.X = 1\n', 'a file outside the pool is untouched', what='outside file')
+        c.ok(DS.run(b, 'BBB')['ok'], '', 'the next pass succeeds')
+        # fusion laissée en attente, avec un fichier en conflit : annulée puis refaite
+        sh('pull', '-q', cwd=a)
+        put(a, week, {'updated_at': '2026-10-29T15:00:00Z', 'dispos': {'lun': 'A3'}})
+        c.ok(DS.run(a, 'AAA')['ok'], '', 'A sends a third time')
+        put(b, week, {'updated_at': '2026-10-29T16:00:00Z', 'dispos': {'lun': 'B3'}})
+        sh('commit', '-qam', 'B3', cwd=b)
+        sh('fetch', '-q', cwd=b)
+        subprocess.run(['git', '-C', b, 'merge', 'origin/main'], capture_output=True)
+        c.ok(Path(b, '.git', 'MERGE_HEAD').exists() and DS.unmerged(b) == [week], str(DS.unmerged(b)), 'a merge with a conflict is pending')
+        c.ok(DS.merge_pending(b), '', 'merge_pending says so')
+        cm = R.commit_outputs({'data': b, 'git_cmd': kept[0], 'git_env': DS.git_env}, 'BBB', ['sia/base/x.json'], 'x')
+        c.ok(cm['commit'] is None and 'merge is pending' in (cm['warning'] or ''), str(cm), 'a launcher job does not commit during a pending merge')
+        r = DS.run(b, 'BBB')
+        c.ok(r['ok'] and r['settled'] == 'annulée' and 'annulée' in r['message'], str(r)[:300], 'a pending merge with conflicts is cancelled, then redone')
+        c.ok(not Path(b, '.git', 'MERGE_HEAD').exists(), '', 'no merge left pending')
+        # fusion laissée en attente sans conflit : conclue
+        sh('pull', '-q', cwd=a)
+        put(a, other, {'updated_at': '2026-10-29T17:00:00Z', 'dispos': {}})
+        c.ok(DS.run(a, 'AAA')['ok'], '', 'A sends another week')
+        sh('fetch', '-q', cwd=b)
+        sh('merge', '--no-commit', '--no-ff', 'origin/main', cwd=b)
+        c.ok(Path(b, '.git', 'MERGE_HEAD').exists() and not DS.unmerged(b), '', 'a merge without conflict is pending')
+        r = DS.update(b, 'BBB')
+        c.ok(r['ok'] and r['settled'] == 'conclue' and Path(b, *other.split('/')).is_file(), str(r)[:300], 'a pending merge without conflict is concluded')
+        c.ok(not Path(b, '.git', 'MERGE_HEAD').exists(), '', 'no merge left pending')
+        src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+        c.ge(src.count('data_sync.merge_pending(DATA)'), 3, 'the launcher\'s commits check for a pending merge first', what='merge_pending calls')
+    finally:
+        DS.git_cmd, DS.resolve = kept
         shutil.rmtree(tmp, ignore_errors=True)

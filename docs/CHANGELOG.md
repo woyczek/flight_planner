@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Synchronisation: a git warning no longer stops the merge** (`tools/data_sync.py`, `tools/launch.py`,
+  `tools/regen_jobs.py`; administrator manuals ×4, SYNCHRONISATION; noreg I9): `git()` mixed git's warnings (« LF will
+  be replaced by CRLF ») into its output, so a warning line was taken for a conflicting file, `open()` failed, the
+  exception reached the server and the merge stayed pending — every later launcher commit failed. Now git's output alone
+  is read (its warnings go to the launcher's log), conflicting files are read from the index (`ls-files -u -z`), any error
+  during a pass cancels the merge with a clean message, a merge left pending is concluded or cancelled by the next pass,
+  and the launcher's commits check for a pending merge first.
 - **Map: the rendering parts no longer share a mutable kit, and the theme lives for one drawing** (`modules/maps/render.js`,
   `render_airspace.js`, `render_route.js`, `screen.js`; SPEC § 1; case D40; V3 § 10.29 e, reduced form) — the parts expose
   their drawing as frozen namespaces (`MapsRender.parts.airspace`, `.route`) instead of storing it in `MapsRender.kit`, now

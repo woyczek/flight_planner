@@ -571,7 +571,7 @@ After a conflict notification:
 2. carry over by hand what is missing into the kept file;
 3. synchronise again, then delete the copy.
 The report ledger (`cr/missions.yaml`) is merged by hand.
-Message “A merge or rebase is in progress in data/”: finish or abort the git operation (`git -C data merge --abort`), then start again.
+A merge left pending in `data/` (interrupted pass, computer switched off during a merge): the next pass, or the update when the launcher starts, concludes it when no file is in conflict, otherwise cancels it and does it again; the report says so. Nothing to do by hand. While it is pending, the launcher's commits (the app's batches, regeneration jobs, publications) do not happen and say so. Message “A rebase is in progress in data/”: finish or abort the rebase (`git -C data rebase --abort`), then start again.
 Details, diagrams and risk-free tests: [synchronisation architecture](../technique/SYNCHRONISATION.md).
 
 ## Launcher, data and backups

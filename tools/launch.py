@@ -1837,7 +1837,9 @@ def frame_batch(a):
             with open(full, 'w', encoding='utf-8', newline='') as f:
                 f.write(text)
         bridged = registry_bridge()  # registre V2 à jour des comptes rendus, dans le même commit
-        if todo and os.path.isdir(os.path.join(DATA, '.git')) and re.fullmatch(r'[A-Z0-9]{2,5}', author):
+        # fusion en attente dans data/ : pas de commit (git le refuserait, ou il la conclurait), et le lot le dit
+        pending = data_sync.merge_pending(DATA) if todo and os.path.isdir(os.path.join(DATA, '.git')) else ''
+        if todo and not pending and os.path.isdir(os.path.join(DATA, '.git')) and re.fullmatch(r'[A-Z0-9]{2,5}', author):
             paths = [r for r, _ in todo] + (['/'.join(report_bridge.REGISTRY)] if bridged else [])
             env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
             data_sync.git(DATA, 'add', '-A', '--', *paths, env=env)
@@ -1851,7 +1853,7 @@ def frame_batch(a):
     if any(r.startswith('utilisateurs/') for r, _ in todo):
         with INDEX_LOCK:
             index_users()
-    return {'ok': True, 'head': head}, 200
+    return {'ok': True, 'head': head, **({'warning': pending} if pending else {})}, 200
 
 
 def registry_bridge():
@@ -2686,6 +2688,8 @@ def aircraft_publish(author='', apply=False):
                 f.write(texts[n])
         else:
             shutil.copyfile(os.path.join(src, n), os.path.join(DATA, *c['path'].split('/')))
+    if data_sync.merge_pending(DATA):
+        return {**res, 'ok': False, 'message': data_sync.merge_pending(DATA)}
     env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
     who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
     data_sync.git(DATA, 'add', '-A', '--', 'AircraftDB', check=True)
@@ -2712,6 +2716,8 @@ def vfr_publish(compiled, author='', apply=False):
         return res
     if not re.fullmatch(r'[A-Z0-9]{2,5}', author or ''):
         return {**res, 'ok': False, 'errors': ['Trigramme de l’auteur manquant ou invalide.']}
+    if data_sync.merge_pending(DATA):
+        return {**res, 'ok': False, 'errors': [data_sync.merge_pending(DATA)]}
     vfr_import.write(p, DATA)
     env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
     who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
