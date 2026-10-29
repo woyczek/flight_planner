@@ -141,6 +141,7 @@ export const STYLE = `
 [data-module="maps"] .mp-legend ul{margin:0;padding:0;list-style:none}
 [data-module="maps"] .mp-legend li{display:flex;align-items:center;gap:8px;min-height:20px}
 [data-module="maps"] .mp-lg-sw{flex:none;position:relative;display:block;width:26px;height:12px;--c:#888}
+[data-module="maps"] .mp-lg-sym{flex:none;width:26px;text-align:center;font-style:normal;color:var(--sog-muted)}
 [data-module="maps"] .mp-lg-svg{width:28px;height:14px}
 [data-module="maps"] .mp-lg-svg svg{display:block}
 [data-module="maps"] .mp-lg-line::after{content:'';position:absolute;left:0;right:0;top:4px;height:3px;border-radius:2px;background:var(--c)}

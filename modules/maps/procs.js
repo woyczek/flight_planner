@@ -89,13 +89,15 @@ function linesOf(p, near) {
 // ---------------------------------------------------------------- libellés des procédures
 /** Nom d'une procédure : celui de l'enregistrement, sinon celui de son identifiant (« LFBD.SID.ROYAN6P.RW23.NONE »). */
 const nameOf = (rec, id) => rec?.name || String(id || '').split('.')[2] || '';
-/** « SID ROYAN6P », suivi de l'état de la source : « X-Plane, local », « Little Navmap, local », « périmé » (SPEC § 5). */
+/** Symbole d'une procédure périmée (lue sous un cycle antérieur) : jamais le mot (décision du 29 octobre). */
+export const OUTDATED = '⌛';
+/** « SID ROYAN6P », suivi de l'état de la source : « X-Plane, local », « Little Navmap, local », puis « ⌛ » quand elle est
+ *  périmée (SPEC § 5). */
 export function procLabel(kind, rec, id) {
   const tags = [];
   if (rec?.status === 'xplane') tags.push(tt(TX.procX));
   else if (rec?.status === 'lnm') tags.push(tt(TX.procLnm));
-  if (rec?.outdated) tags.push(tt(TX.procOutdated));
-  return [`${kind} ${nameOf(rec, id)}`.trim(), ...tags].join(' · ');
+  return [`${kind} ${nameOf(rec, id)}`.trim(), ...tags].join(' · ') + (rec?.outdated ? ` ${OUTDATED}` : '');
 }
 /** Identifiants (majuscules) des points des procédures d'un côté : 'dep' (SID et sa transition) ou 'arr' (STAR, approche). */
 function idsOf(side) {
@@ -271,9 +273,11 @@ export function layout(ctx, toC, pxDeg) {
     if (!own.length) continue;
     names.push({
       q: at(own[Math.floor(own.length / 2)]),
-      text: procLabel(kind, rec, id)
+      text: procLabel(kind, rec, id),
+      old: !!rec?.outdated
     });
   }
+  S.lgOutdated = names.some(n => n.old); // la ligne « ⌛ » de la légende
   const L = {
     segs,
     dots,
@@ -288,13 +292,19 @@ export function layout(ctx, toC, pxDeg) {
         ctx.font = '700 12px Arial,sans-serif';
         const w = ctx.measureText(n.text).width,
           r = place(pl, n.q, w + 2, LINE_H, true);
+        // « ⌛ » en gris (jeton muted), le nom dans la couleur des procédures
+        const tail = n.old ? ` ${OUTDATED}` : '';
         L.labels.push({
           r,
           lines: [{
             parts: [{
-              t: n.text,
+              t: tail ? n.text.slice(0, -tail.length) : n.text,
               b: true
-            }]
+            }, ...(tail ? [{
+              t: tail,
+              b: true,
+              m: true
+            }] : [])]
           }],
           name: true
         });
@@ -330,7 +340,7 @@ function drawLines(ctx, lines, r) {
       ctx.strokeStyle = S.theme.bg;
       ctx.lineWidth = 3;
       ctx.strokeText(c.t, x, y);
-      ctx.fillStyle = COL;
+      ctx.fillStyle = c.m ? S.theme.muted || COL : COL;
       ctx.fillText(c.t, x, y);
       ctx.lineWidth = 1.5;
       ctx.strokeStyle = COL;

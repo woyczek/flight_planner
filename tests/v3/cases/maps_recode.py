@@ -589,12 +589,14 @@ def d41(c):
          'dashes: the stub is solid, then dashed to the next fix; transition, direct and missed approach dashed', what='segments dashed')
     c.eq([i for i, s in enumerate(lay['segs']) if s[1]], [2], 'only the RF leg is drawn as an arc', what='arc segments')
     c.eq(lay['lines'], [2], 'the route draws only LUGEN → NEPIX (the SID and the STAR draw the rest of the way)', what='route polylines')
-    want = [f'SID XX1A · {row(c, "procOutdated")}', f'STAR XX2B · {row(c, "procX")}', f'APP I31 · {row(c, "procX")}']
+    # une procédure périmée : le seul symbole « ⌛ », jamais le mot (29 Oct)
+    want = ['SID XX1A ⌛', f'STAR XX2B · {row(c, "procX")}', f'APP I31 · {row(c, "procX")}']
     c.eq(lay['names'], want, 'labelled "SID NAME", "STAR NAME", "APP NAME", with the state of the source', what='procedure labels')
     c.until("(window.__mpTexts || []).some(t => /^SID /.test(t))", timeout=6000, what='the SID label drawn')
     c.wait(400)
     drawn = [norm(t) for t in c.js('window.__mpTexts || []')]
-    c.ok(want[0] in drawn, f'{sorted(set(t for t in drawn if t.startswith(("SID", "STAR", "APP"))))}', 'the SID label is written on the map')
+    c.ok('SID XX1A' in drawn and '⌛' in drawn and 'SID XX1A ⌛' not in drawn, f'{sorted(set(t for t in drawn if t.startswith(("SID", "STAR", "APP", "⌛"))))}',
+         'the SID label is written on the map, its ⌛ written apart (in grey)')
     # the airline's transition altitude is 5,000 ft by default: up to it an altitude in feet, as in the AIP ("5000", not "FL050")
     c.ok('≤ 220 kt' in drawn and '3000' in drawn and '5000' in drawn and 'FL050' not in drawn and '–' in drawn, f'{sorted(set(drawn))[:30]}',
          'a close view writes the constraints in the AIP notation (3000–5000, ≤ 220 kt)')
@@ -910,7 +912,7 @@ def d48(c):
     c.until("(w) => ((document.querySelector('.mp-ad-cov') || {}).textContent || '').includes(w)", _COV_TEXTS['held'][lang], timeout=8000,
             what='the coverage line, with the reason from the frame catalogue')
     t = norm(c.text('.mp-ad-cov'))
-    for part in (norm(tx(M, 'green', c.lang, after='covLevel: {')), _COV_TEXTS['held'][lang], norm(row(c, 'procOutdated')), 'SID 3 · STAR 2 · APP 5'):
+    for part in (norm(tx(M, 'green', c.lang, after='covLevel: {')), _COV_TEXTS['held'][lang], '⌛', 'SID 3 · STAR 2 · APP 5'):
         c.ok(part in t, t, f'the card says "{part}"')
     c.eq(c.attr('.mp-ad-cov', 'data-level'), 'green', 'the line carries its level', what='data-level')
     c.eq(c.js("() => document.querySelector('.mp-ad-cov .mp-cov-dot').style.background"), 'var(--sog-ok)', 'the pin of the line is green', what='dot')

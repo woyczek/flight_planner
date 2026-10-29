@@ -292,7 +292,10 @@ export const TX = {
   // procédures choisies (V3_SPECIFICATION § 10.20) : état de la source ajouté au libellé du tracé, carte du terrain
   procX: ['X-Plane, local', 'X-Plane, local', 'X-Plane, lokal', 'X-Plane, local'],
   procLnm: ['Little Navmap, local', 'Little Navmap, local', 'Little Navmap, lokal', 'Little Navmap, local'],
-  procOutdated: ['périmé', 'outdated', 'veraltet', 'caducado'],
+  // procédure périmée : le seul symbole « ⌛ » (décision du 29 octobre), jamais le mot ; son sens dans la légende et l'infobulle
+  procOutdated: ['Lue sous un cycle antérieur', 'Read under an earlier cycle', 'Unter einem früheren Zyklus gelesen',
+    'Leída bajo un ciclo anterior'
+  ],
   adProcDep: ['Départ', 'Departure', 'Abflug', 'Salida'],
   adProcArr: ['Arrivée', 'Arrival', 'Ankunft', 'Llegada'],
   adProcRwy: ['piste {r}', 'runway {r}', 'Piste {r}', 'pista {r}'],

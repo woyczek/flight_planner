@@ -5,6 +5,9 @@
 // (coverPins) ; sans aerodb.coverage la couche n'est pas proposée et rien d'autre ne change.
 
 import {
+  OUTDATED
+} from './procs.js';
+import {
   S,
   esc,
   tt,
@@ -160,7 +163,7 @@ function covTexts() {
   });
   return undefined;
 }
-/** Ligne de la carte du terrain épinglé : une pastille de la couleur du niveau, le niveau, la raison (catalogue du cadre), « périmé »
+/** Ligne de la carte du terrain épinglé : une pastille de la couleur du niveau, le niveau, la raison (catalogue du cadre), « ⌛ »
  *  et, pour un terrain dont on détient les procédures, SID · STAR · APP. '' sans aerodb.coverage ou tant que la réponse n'est pas
  *  là (la carte est refaite à son arrivée). */
 export function covCard(icao) {
@@ -171,11 +174,11 @@ export function covCard(icao) {
   const T = covTexts(),
     parts = [];
   if (T?.[e.reason]) parts.push(tt(T[e.reason]));
-  if (e.outdated) parts.push(tt(TX.procOutdated));
+  if (e.outdated) parts.push(OUTDATED);
   if (e.level === 'green' && e.counts) parts.push(tt(TX.covCounts, {
     s: +e.counts.SID || 0,
     t: +e.counts.STAR || 0,
     a: +e.counts.APP || 0
   }));
-  return `<p class="mp-ad-cov" data-level="${e.level}"><i class="mp-cov-dot" style="background:${covColor(e.level)}"></i><span class="mp-cov-lv">${esc(tt(TX.covLevel[e.level]))}</span>${parts.map(p => ` · ${esc(p)}`).join('')}</p>`;
+  return `<p class="mp-ad-cov" data-level="${e.level}"${e.outdated ? ` title="${esc(`${OUTDATED} ${tt(TX.procOutdated)}`)}"` : ''}><i class="mp-cov-dot" style="background:${covColor(e.level)}"></i><span class="mp-cov-lv">${esc(tt(TX.covLevel[e.level]))}</span>${parts.map(p => ` · ${esc(p)}`).join('')}</p>`;
 }

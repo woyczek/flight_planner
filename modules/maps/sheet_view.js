@@ -3,6 +3,9 @@
 // (profil, coupe, Couches, espaces d'un point, terrain), sa fermeture, la touche Échap, la taille arrêtée (onSettle).
 
 import {
+  OUTDATED
+} from './procs.js';
+import {
   S,
   keep,
   tt,
@@ -105,7 +108,11 @@ function legendRows(view) {
   if (view === 'weather') return weatherRows();
   const sw = (k, c = '') => `<i class="mp-lg-sw mp-lg-${k}" style="--c:${c}"></i>`,
     d = S.geo?.drawn,
-    cov = covRows(sw); // couche « Procédures » : une ligne par niveau, seulement quand elle est montrée
+    // couche « Procédures » : une ligne par niveau, seulement quand elle est montrée ; « ⌛ » quand une procédure tracée est
+    // périmée
+    cov = (S.lgOutdated ? [
+      [`<i class="mp-lg-sym" aria-hidden="true">${OUTDATED}</i>`, esc(tt(TX.procOutdated))]
+    ] : []).concat(covRows(sw));
   if (!d) return cov;
   const rows = [];
   if (d.plan) rows.push([sw('line', '#6a1b9a'), esc(tt(TX.lgPlan))]);

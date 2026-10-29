@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: an outdated procedure is marked "⌛", never by the word** (`modules/maps/procs.js`, `coverage.js`, `sheet_view.js`,
+  `texts.js`, help ×4; decision of 29 Oct after the user's word "plutôt que « périmé », un symbole court") — the trace's label
+  reads "SID NAME ⌛" (the symbol in grey), the aerodrome card shows ⌛ in place of the word (its meaning in the tooltip),
+  and the "i" legend gives one line "⌛ read under an earlier cycle" while such a procedure is drawn; "X-Plane, local" and
+  "Little Navmap, local" are unchanged.
+
 - **Fuel › Sheets: a pasted or imported `{ "sheets": [...] }` gives its sheets** (`frame/aerodb/sheets.js`, case F25) — the
   ChatGPT reply read as JSON (paste or file) became one sheet with a field "sheets" holding the whole array, and the review
   proposed that single field; the `sheets` envelope and a bare array now give one sheet per element, merged field by field
