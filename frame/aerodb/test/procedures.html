@@ -637,15 +637,21 @@
         ]
         .every(x => x.reason !== 'unknown-layout') && calls.length === 0, [ulLnm, ulNone]);
       // le travail : un faux lanceur qui écrit proc/manual/ comme le ferait le poste, puis rend le résultat du verbe
-      let evicted = [],
-        synced = 0;
+      // revalidate (FD.revalidate) : relit les chemins donnés ; le faux lecteur rattrape, comme le vrai, le fichier que le poste a
+      // installé (le résultat du travail en porte une copie, `file`) avant de rendre
+      let revalidated = [];
       const rdr = {
           ...reader,
-          evict: async x => evicted.push(x),
-          status: async () => ({
-            transport: 'local'
-          }),
-          sync: async () => ++synced
+          revalidate: async ps => {
+            revalidated.push(...ps);
+            const f = typeof jobAnswer.r === 'object' && jobAnswer.r?.result?.file;
+            if (f) files.set(ps[0], JSON.stringify(f));
+            return {
+              changed: ps,
+              unchanged: [],
+              offline: false
+            };
+          }
         },
         okDb = AeroDB.create({
           reader: rdr,
@@ -703,8 +709,9 @@
         .status ===
         'check' && win.icao === 'EGLL' && win.warnings.join() === 'w1' && win.commit === 'a'.repeat(40) && progress[0].step ===
         'EGLL: login' && progress[0].total === 3 && progress[0].source === 'ead' && win.source === 'ead', [before, win, progress]);
-      check('fetchProcedures(): the reader is made to forget both files, and refresh its references without an exchange',
-        evicted.includes('proc/manual/EGLL.json') && evicted.includes('proc/manual/index.json') && synced === 1, [evicted, synced]);
+      check('fetchProcedures(): both files are revalidated (FD.revalidate) before the answer, nothing else',
+        revalidated.length === 2 && revalidated.includes('proc/manual/EGLL.json') && revalidated.includes('proc/manual/index.json'),
+        revalidated);
       check('fetchProcedures(): the aerodrome can be read again once the first reading is over',
         (await okDb.fetchProcedures('EGLL')).ok === true && calls.length === 2, calls.length);
       // les raisons rendues par le poste, et celles du lanceur lui-même
@@ -912,7 +919,7 @@
       };
       const staleRead = await okDb.fetchProcedures('LFBW');
       check(
-        'fetchProcedures(): the reader still holds the OLD file after the job: the answer is built from the file the job returns (3 procedures, not 0), with the stats',
+        'fetchProcedures(): the reader held the OLD file when the job ended: revalidate brings the installed one before the answer (3 procedures, not 0), with the stats',
         staleRead.ok === true && staleRead.procedures.length === 3 && staleRead.stats?.read === 18 && staleRead.stats.rejected ===
         4 && staleRead.stats.reasons[0][1] === 4, staleRead);
       check(

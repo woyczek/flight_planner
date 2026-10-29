@@ -1630,3 +1630,12 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
   so the published files kept their `parserVersion` and the V2 maintenance page marked nothing.
 - **Done**: `VERSION` 17 → 18 (the builder's result changed: X-Plane's OpenAir limits in feet); `COMPAT` stays 14 (the format is unchanged: a
   base 14 to 17 is read, marked `outdated`). The Données module will show « Parseur ancien » from `publication().parserVersion` later.
+
+## 29 October 2026 — after a reading, FD.revalidate instead of hand-made freshness
+
+- **Delivered by the frame** (2c87a031b): `FD.revalidate(paths)` reads these paths only against the repository and awaits the changed copies.
+- **Done**: `fetchProcedures`, on success, awaits `reader.revalidate([proc/manual/<ICAO>.json, proc/manual/index.json])` instead of `evict` +
+  `sync` (local transport) and the in-memory `manualFresh` override; the procedure memo's signature no longer carries that override.
+- **Kept**: `revs` (path → revision read): it filters the echo of aerodb's own reads in the watchers of the zones, the aircraft types and
+  `proc/` — a role `revalidate` does not take; removing it is not part of this commit.
+- **Bench**: K1 (the fake reader's `revalidate` catches up on the installed file; both paths revalidated, nothing else).

@@ -231,11 +231,9 @@
         }
       });
     };
-    const revs = new Map(); // chemin lu → révision lue (un fichier changé se reconnaît à sa révision)
-    /** Fichier de terrain que le travail du poste vient d'installer (proc/manual/<OACI>.json tel qu'écrit, rendu dans le résultat du travail) :
-     *  servi à la place de la copie du lecteur tant que celle-ci n'est pas aussi récente (même updated_at ou plus) — la première lecture
-     *  répondait « 0 procédures » parce que le lecteur tenait encore l'ancienne copie. Retiré dès que le lecteur rattrape. */
-    const manualFresh = new Map();
+    // chemin lu → révision lue : un fichier changé se reconnaît à sa révision, et l'écho d'une lecture d'aerodb elle-même dans les
+    // observateurs (zones, types d'aéronefs, proc/) ne compte pas
+    const revs = new Map();
     const eadBusy = new Map(); // OACI → lecture EAD Basic en cours (fetchProcedures : une seule à la fois par terrain)
     const read = path => reader.read(path, {
       policy: 'reference',
@@ -374,7 +372,7 @@
         seen,
         loc,
         inForce,
-        sig: parts.includes(null) ? null : [cycle || '-', inForce, manualFresh.get(k)?.updated_at || '-', ...parts].join('|')
+        sig: parts.includes(null) ? null : [cycle || '-', inForce, ...parts].join('|')
       };
     }
     /** Les fiches d'un terrain par source : publiées (cycle en vigueur), lues à la main (proc/manual/, hors des cycles : marquées
@@ -389,12 +387,7 @@
         loc,
         inForce
       } = src;
-      let mv = valueOf(man);
-      const fresh = manualFresh.get(k);
-      if (fresh) {
-        if (mv?.updated_at && mv.updated_at >= fresh.updated_at) manualFresh.delete(k);
-        else mv = fresh;
-      }
+      const mv = valueOf(man);
       const readAt = isoUtc(mv?.updated_at);
       return {
         pub: valueOf(pub)?.procedures || [],
@@ -1443,20 +1436,14 @@
             });
           }
           // Les fichiers viennent d'être écrits par le lanceur, hors de toute écriture de la couche de données : sa copie locale de
-          // ces deux fichiers (policy 'reference') est périmée. evict la retire (relue au prochain read) ; mais sans échange
-          // (transport 'local'), l'arbre des références est gardé tel quel et ne connaît pas le fichier neuf : un passage de
-          // synchronisation, qui sans échange se borne à revalider les références, le renouvelle. Avec un transport qui échange
-          // (lanceur, GitHub), l'arbre est relu de lui-même pour un chemin qu'il ne connaît pas : on ne lance PAS de passage ici
-          // (il enverrait le dépôt). Un lecteur sans evict ni sync (bancs) n'a rien à oublier.
+          // ces deux fichiers est périmée. revalidate (FD.revalidate, frame/INTEGRATION.md § 4) relit ces deux chemins seulement
+          // et attend la nouvelle copie avant de rendre : la réponse est bâtie sur le fichier installé (« 0 procédures » du
+          // 28 octobre). Un lecteur sans revalidate (bancs, lecteur provisoire) oublie seulement ses copies.
           const paths = [`proc/manual/${k}.json`, 'proc/manual/index.json'];
-          for (const path of paths) {
-            revs.delete(path);
-            await Promise.resolve(reader.evict?.(path)).catch(() => 0);
-          }
-          if ((await Promise.resolve(reader.status?.()).catch(() => null))?.transport === 'local') await Promise.resolve(reader
-            .sync?.()).catch(() => null);
-          if (res.file && typeof res.file === 'object' && Array.isArray(res.file.procedures)) manualFresh.set(k, res
-            .file); // le résultat fait foi sur la copie du lecteur
+          for (const path of paths) revs.delete(path);
+          if (typeof reader.revalidate === 'function') await Promise.resolve(reader.revalidate(paths)).catch(() => null);
+          else
+            for (const path of paths) await Promise.resolve(reader.evict?.(path)).catch(() => 0);
           dropCoverage(); // le terrain lu est désormais détenu (proc/manual/index.json)
           dropProc(k); // le fichier du terrain a changé : sa liste est à refaire
           emit({
