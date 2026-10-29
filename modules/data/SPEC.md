@@ -184,7 +184,7 @@ fr base (its outlines feed the priority rule) → other zones → MORA → eAIP 
 | Verb | Does | Result |
 |---|---|---|
 | **Télécharger** | brings the source into the workstation's cache: a download by the launcher, or the pick-up of a file the user obtained (Downloads folder, file picker); the expected name is checked and the cycle read from it, a wrong file is refused | files, size, date, « inchangé » |
-| **Construire** | runs the builder on the cache, writes the outputs locally (never a partial output); X-Plane / Navigraph inputs dropped for what will be published | counts, warnings (rows not read), duration |
+| **Construire** | runs the builder on the cache, on the launcher, one process per zone (§ 5.4), writes the outputs locally (never a partial output); X-Plane / Navigraph inputs dropped for what will be published | counts, warnings (rows not read), duration, per zone |
 | **Publier** | plan, one question, then sends the outputs to the data repository under the device's trigram (commit author) | files changed, « rien à envoyer » |
 | **Purger** | plan, one question, then removes what is superseded: base and cycle-built `proc/` cycles beyond the three kept (§ 6.1), never a procedure read by hand, EAD or OCR (§ 4.2), caches of earlier cycles, this workstation's cache of countries no longer in its coverage (never a published zone: another workstation may maintain it), stray files | files and MB freed |
 
@@ -197,7 +197,27 @@ waits for the user (a file to pick) and says so. One plan question for Publier a
 
 Every data set of the coverage, in the order of § 4.5, the publications grouped into one; a set waiting for the user is
 skipped and listed at the end (« 2 jeux attendent votre geste »). It is V2's « Activer » and « Tout récupérer et
-recalculer », with the publication and the purge added.
+recalculer », with the publication and the purge added, its builds run in parallel by zone (§ 5.4).
+
+### 5.4 Building on the launcher: one process per zone
+
+The user's request of 29 Oct (V2's « Tout récupérer et recalculer » is slow: built in the browser, on the main thread,
+file after file). The rule:
+
+- **The build runs on the launcher**, never in the page when a launcher is there: the module orders it (`regen/job`), the
+  launcher runs it and the page only follows.
+- **One process per zone**, as many at once as the workstation's cores minus one (at least one); the other zones wait
+  their turn. A zone's process runs its sources' pieces then its assembler (INTEGRATION § 2.3); zones share nothing
+  but France's outlines, read-only.
+- **Progress per zone**: each zone's line says « en attente », « construction (n / m sources) », « construite », or its
+  failure; the head shows the count (« 4 zones sur 11 »). Following stops when the page closes, the job goes on and is
+  found again (`ctx.launcher.resume`).
+- **Published zone by zone**: a zone is written (`regen/put`) and committed alone as soon as it is built, without waiting
+  for the others (one commit per zone, § 7); a failed zone publishes nothing and never stops the others (invariant 4).
+- **Without the launcher** (§ 8) the Worker path stays: one zone at a time, from the picked files.
+- **The V2 page stays as it is**: Settings › Maintenance keeps its build in the browser, unchanged and obsolete; no
+  parallel build is added there (a Worker cannot use `DOMParser`, and its readers work file after file). The parallel
+  build exists only in this module.
 
 ## 6. Cycles and states
 
@@ -313,7 +333,8 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
 3. The cycle in force is never removed; three cycles kept for what a cycle's builder makes; a procedure read by hand,
    EAD or OCR (`proc/manual/`) is never removed by the module's own operations (it turns « Périmé »): only by the owner's
    explicit « Retirer ».
-4. One operation at a time per workstation; a failure of one set never stops « Tout mettre à jour ».
+4. One operation at a time per workstation (a build's zones run in parallel inside it, § 5.4); a failure of one set or
+   one zone never stops « Tout mettre à jour ».
 5. No `fetch`, no storage of its own, no token handling in the module: `ctx.launcher`, `ctx.aerodb`, `ctx.data` and the
    frame's publication service only.
 6. No path, URL or command comes from the page to the launcher: data-set ids and verbs from a fixed list, arguments

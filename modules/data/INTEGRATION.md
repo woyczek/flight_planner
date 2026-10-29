@@ -103,6 +103,13 @@ Stored and exchanged as effective dates `YYYY-MM-DD` in every answer; shown as `
   outlines are an explicit piece given to every other zone; a zone built alone equals the same zone in a whole build.
 - Both return files `{ path, text }`; the launcher (`regen/put`, then its commit) or the frame's publication service
   writes. `publish: true` drops X-Plane / Navigraph inputs.
+- **Where it runs** (SPEC § 5.4): on the launcher, a job `regen/job { set: 'base', verb: 'build', args: { zones } }`; the
+  launcher starts one process per zone, at most `max(1, cores − 1)` at once, each running its zone's pieces and its
+  assembler; the job state carries `zones: { <zone>: { state: 'waiting|building|built|failed', done, total, error } }`; a
+  built zone is written and committed alone at once (one commit per zone), the others go on. The Worker assembler serves
+  only the no-launcher path (one zone at a time). The runtime of a zone's process (Python port of the builders, proved by
+  the same golden test, or the JavaScript builders under an engine the launcher installs) is settled with aerodb at D5's
+  start; the rule holds either way.
 - Before D5, an aerodb lot « complete readers » (the stream readers keep every field and the arcs), proved by a golden test
   against V2's `SiaBase` on the fixtures.
 - aerodb's invariant 1 is amended: the reader never writes the base; the builders produce on the owner's order from this

@@ -68,3 +68,8 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   personnel) » ×4; never by default, nothing blocked, nothing recorded beyond the box. Amends the rule of 28 Oct (invariant 1).
   The line is already in the V2 maintenance page (`shared/maintenance_page.js`, sources flagged `personal` in
   `shared/aero_zones.js`).
+- **29 Oct 2026 — The build runs on the launcher, in parallel by zone** (user, during a V2 « Tout récupérer et recalculer »,
+  asking for multi-threading; relayed by Simplification): V2 cannot do it at a fair cost (build in the browser, main thread,
+  file after file, `DOMParser` unavailable in a Worker), so V2's page stays as it is, obsolete. In this module (D5) the
+  build runs on the launcher, one process per zone (cores minus one), progress per zone, each zone published as soon as it
+  is built (SPEC § 5.4, INTEGRATION § 2.3).
