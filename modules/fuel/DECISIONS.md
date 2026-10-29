@@ -4,6 +4,17 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — « Sur la carte » and the Map's proposal** (V3 § 10.23; frame/INTEGRATION § 6.1): a text button in each side's
+  title (not for an aerodrome without data) sets `#maps?choose=…&icao=…`; at mount Fuel consumes `focus` with the proposal keys
+  (`rwy sid star trans app appTrans`, `none` = null), and `propose(side, fields)` applies them after the first draw of the side
+  (its records must be known for a single-runway procedure to set the runway), field by field through `choose`, then
+  `changeLines` says it. Also: the reading's progress callback escapes the aerodrome code in its selector (`CSS.escape`; security
+  review of the refactoring). `isDoubt` (a doubtful or nameless record, never listed) moves to frame/lib/procedures.js, so that the
+  Map's choice mode stops re-implementing it (bench procedures.html). **Security of the proposal** (security review): the address
+  can be edited by any link and carries no ICAO, so only « none », a runway offered for the flight's aerodrome on that side
+  (`^\d{2}[LRC]?$`), or a record of that aerodrome of the right kind and not doubtful is admitted, and the value written is the
+  record's or the runway's, never the received string; anything else is ignored. Case F41 (a SID of the other aerodrome as a
+  STAR, an unknown runway and a raw string change nothing).
 - **29 Oct 2026 — the card beside the Map, the failure's counts, the phone's picker** (Simplification, user on a phone: « le choix
   d'une procédure réaffiche immédiatement le popdown »): the three-column grid starts at 480 px of container (the dual view at 1280
   gives about 515 px) and falls back to one column (`fu-one`, `fitGrid`, refitted by a ResizeObserver) whenever it would overflow —

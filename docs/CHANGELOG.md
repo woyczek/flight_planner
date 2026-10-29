@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « On the map » next to each side of the procedures** (`modules/fuel/procedures.js`, `module.js`; SPEC, DECISIONS, frame
+  INTEGRATION § 6.1; help ×4; case F41) — opens the Map's choice mode, and the choice made there comes back into Fuel, said.
 - **Frame data layer, security review** (`frame/store/frame_data.js`, `tools/regen_jobs.py`; INTEGRATION § 4,
   DECISIONS): a shared reference value is deep-frozen when parsed (a reader can no longer change it for the others; about
   44 ms once per revision for the largest zone); a job's zone outputs are dropped in a `finally`.

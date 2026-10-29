@@ -31,6 +31,7 @@
     servesAll,
     servesRwy,
     nameOf,
+    isDoubt,
     conflictsOf,
     orderProcedures,
     transitionsOf,
@@ -83,6 +84,20 @@
   }, 'X.STAR.NONAME.RW20.NONE') === null && nameOf(null, null) === null && nameOf({
     name: 'noname'
   }) === null);
+  ck('isDoubt : statut doubt, sans nom ou NONAME', isDoubt({
+      status: 'doubt',
+      name: 'X1A'
+    }) && isDoubt({
+      name: ''
+    }) && isDoubt({
+      name: 'A',
+      id: 'X.STAR.NONAME.RW20.NONE'
+    }) &&
+    !isDoubt({
+      name: 'MEN1A',
+      id: 'LFML.STAR.MEN1A.RW13R.NONE',
+      status: 'official'
+    }));
 
   // conflits et ordre (V3_SPECIFICATION § 10.23)
   const s07 = Pr('S.SID.A.RW07', 'SID', 'A1', ['07']),

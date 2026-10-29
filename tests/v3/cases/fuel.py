@@ -1034,7 +1034,8 @@ def f34(c):
     wait_rows(c, 'dep')
     wait_rows(c, 'arr')
     # the title: side, code, the name aerodb gives (the seeded base names its aerodromes "<code> TEST")
-    titles = [norm(t) for t in c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc] .fu-proctitle')].map(e => e.textContent)")]
+    # le texte du titre sans son bouton « Sur la carte »
+    titles = [norm(t) for t in c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc] .fu-proctitle')].map(e => { const x = e.cloneNode(true); x.querySelectorAll('button').forEach(b => b.remove()); return x.textContent })")]
     c.eq(titles, [norm(f"{row(c, 'dep')} LFRS LFRS TEST"), norm(f"{row(c, 'arr')} LFML LFML TEST")], 'each side is titled with its side, its code and the aerodrome\'s name', what='titles')
     # ONE secondary line per side; the arrival's file was read by hand (seeded 29 Oct 16:53Z, an earlier cycle: ⌛), the departure's is published (no date)
     c.eq(c.count(f'{FUEL} [data-proc] .fu-procmeta'), 2, 'one secondary line per side, not more', what='secondary lines')
@@ -1194,3 +1195,37 @@ def f40(c):
     c.settle()
     tag = c.js("(() => { const a = document.activeElement; return a && a.closest('[data-proc]') ? a.tagName + ':' + (a.dataset.k || '') : '' })()")
     c.eq(tag, '', 'no list of the card holds the focus after the choice (it would reopen on a phone)', what='focused element')
+
+
+
+@case('F41', '"Sur la carte" opens the choice mode; the Map\'s proposal is applied, said and consumed', 'F', tags=('fuel', 'maps'), designs=('standard',),
+      screens=False, langs4=True, rule='V3 spec 10.23: "Sur la carte" in a side\'s title opens #maps?choose=arr&icao=…; the Map comes back with #fuel?focus=arr&star=ID (one key per trip, none = « Aucune »), Fuel applies it as a choice, says it, and the keys leave the address')
+def f41(c):
+    open_proc(c)
+    wait_rows(c, 'arr')
+    b = f'{FUEL} [data-proc="arr"] .fu-proctitle [data-do="onmap"]'
+    c.eq(norm(c.text(b) or ''), norm(row(c, 'procOnMap')), 'the arrival title carries "Sur la carte"', what='button')
+    c.ge(round(c.box(b)['h']), 24, 'a button one can tap', what='button height')
+    # the Map consumes its keys at mount: the address the button set is recorded when it changes
+    c.js("() => { window.__hashes = []; window.addEventListener('hashchange', () => window.__hashes.push(location.hash)) }")
+    c.tap(b)
+    c.until("location.hash.startsWith('#maps')", what='the tap opens the Map')
+    c.eq(c.js("window.__hashes[0]"), '#maps?choose=arr&icao=LFML', 'in its choice mode, for the arrival aerodrome', what='address')
+    # the Map's answer (location.replace): one key per trip
+    c.js("() => location.replace('#fuel?focus=arr&star=LFML.STAR.MEN2B.RW31L.NONE')")
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFML.STAR.MEN2B.RW31L.NONE', 'the proposed STAR is written', timeout=12000)
+    c.eq((procs_of(d, 'arr') or {}).get('rwy'), '31L', 'as a choice made in Fuel: the STAR serving one runway sets it', what='runway')
+    c.until("(w) => (window.__notes || []).some(n => n.includes('MEN2B'))", None, timeout=6000, what='a line says what changed')
+    c.until("!/[?&](star|focus)=/.test(location.hash)", what='the proposal and focus keys leave the address (consumed)')
+    # « none »: the departure's SID set to « Aucune »
+    c.js("() => location.replace('#fuel?focus=dep&sid=none')")
+    d = cf_doc(c, lambda d: 'sid' in (procs_of(d, 'dep') or {}) and (procs_of(d, 'dep') or {}).get('sid') is None, '"none" writes « Aucune » (null)', timeout=12000)
+    # the address can be edited by any link: only « none », a runway offered for that aerodrome, or a record of the flight's aerodrome on
+    # that side (right kind, not doubtful) is admitted; anything else is ignored and nothing is written
+    before = procs_of(d, 'arr')
+    c.js("() => location.replace('#fuel?focus=arr&star=LFRS.SID.NTS1A.RW03.NONE&rwy=99&app=%22%3E%3Cimg')")
+    c.until("!/[?&](star|focus|app|rwy)=/.test(location.hash)", what='the hostile keys are consumed')
+    c.settle()
+    c.wait(700)
+    d2 = cf_doc(c, lambda d: True, 'the flight record')
+    c.eq(procs_of(d2, 'arr'), before, 'a SID of the departure aerodrome as a STAR, an unknown runway and a raw string change nothing', what='route.procedures.arr')

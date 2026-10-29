@@ -51,9 +51,6 @@ const SETTLE_MS = 400;
 
 /** Échappe un texte pour le HTML. */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
-/** Fiche douteuse (§ 10.26), jamais montrée comme une bonne procédure : statut `doubt` (aerodb), ou, tant qu'aerodb ne le pose pas,
- *  une fiche sans nom (name vide, identifiant « ….NONAME.… »). */
-const isDoubt = rec => rec?.status === 'doubt' || !String(rec?.name ?? '').trim() || /\.NONAME\./i.test(String(rec?.id ?? ''));
 /** Côté d'une valeur de route.procedures laissée telle quelle : un « aucune » posé sur tout le côté (null) n'est pas changé. */
 const keep = x => x === null ? null : cleanSide(x);
 
@@ -210,7 +207,7 @@ export function createProcedures(host) {
         Promise.resolve().then(() => ctx.aerodb?.sources?.()).catch(() =>
           null) // le catalogue : COVERAGE.partial, le libellé de « non lues »
       ]),
-      all = every.filter(p => !isDoubt(p));
+      all = every.filter(p => !PR.isDoubt(p)); // règle partagée avec la Carte (frame/lib/procedures.js)
     return {
       icao,
       name: String(place?.name || '').trim(),
@@ -294,7 +291,7 @@ export function createProcedures(host) {
     return out;
   }
   /** Ligne de titre d'un côté : « Départ LFPO Paris-Orly » (le code seul pour un terrain inconnu d'aerodb). */
-  const titleHtml = (side, m) => `<b class="fu-prochead">${esc(tt(TX[side]))}</b> <span class="fu-procicao">${esc(m.icao)}</span>${m.name ? ` <span class="fu-procname">${esc(m.name)}</span>` : ''}`;
+  const titleHtml = (side, m) => `<b class="fu-prochead">${esc(tt(TX[side]))}</b> <span class="fu-procicao">${esc(m.icao)}</span>${m.name ? ` <span class="fu-procname">${esc(m.name)}</span>` : ''}${m.nodata ? '' : ` <button type="button" class="fu-linkbtn fu-onmap" data-do="onmap" data-side="${side}" data-icao="${esc(m.icao)}">${esc(tt(TX.procOnMap))}</button>`}`;
   /** Un bouton de lecture (même geste « Lire » et « Relire » : data-do procfetch, un seul chemin dans read) ; occupé tant que la lecture
    *  de ce terrain est en cours. */
   const readButton = (icao, text, again) => {
@@ -407,9 +404,14 @@ export function createProcedures(host) {
     const models = await Promise.all([sideModel('dep'), sideModel('arr')]);
     if (host.gone() || mine !== seq || !host.body()) return;
     // toutes les fiches des deux terrains, retrouvées par leur identifiant quand une piste choisie en retire le choix
-    for (const m of models.filter(Boolean)) adOf(m.icao).recs = new Map(m.all.map(r => [r.id, r]));
+    for (const m of models.filter(Boolean)) {
+      adOf(m.icao).recs = new Map(m.all.map(r => [r.id, r]));
+      adOf(m.icao).rwys = m.rwys.map(r => String(r.id)); // les pistes proposées : seules admises dans une proposition de la Carte
+    }
     paint(box, models);
     applyFocus();
+    if (proposal)
+      applyProposal(); // la proposition de la Carte, une fois les fiches des terrains connues (une piste unique suit son choix)
   }
   /** Redessine la carte si ce qu'elle montre a changé (appelée par chaque refresh de l'écran). */
   function sync() {
@@ -509,7 +511,7 @@ export function createProcedures(host) {
       reading.text = (TX.procReadingSrc[src] ? ctx.t(TX.procReadingSrc[src]) : ctx.t(TX.procReading, {
         icao
       })) + n;
-      const b = !host.gone() && host.body()?.querySelector(`[data-do="procfetch"][data-icao="${icao}"]`);
+      const b = !host.gone() && host.body()?.querySelector(`[data-do="procfetch"][data-icao="${CSS.escape(String(icao))}"]`); // code venu du groupe : échappé
       if (b) b.textContent = reading.text;
     };
     say(TX.procStarted, {
@@ -603,6 +605,59 @@ export function createProcedures(host) {
     } else if (host.plan()) render();
   }
 
+  // ------------------------------------------------------------ la proposition de la Carte (mode choix, § 10.23)
+  /** Ce que la Carte a choisi (#fuel?focus=arr&star=ID : une clé par aller, consommée par module.js) : { side, fields }, appliqué dès
+   *  que le vol est lu. */
+  let proposal = null;
+  /** Reçoit la proposition d'un côté ; « none » vaut « Aucune » (null). */
+  function propose(side, fields) {
+    if (side !== 'dep' && side !== 'arr') return;
+    proposal = {
+      side,
+      fields
+    };
+    applyProposal();
+  }
+  /** Applique la proposition comme des choix faits ici (le même chemin que les listes : choose, une écriture différée), dans l'ordre
+   *  du côté (piste, procédure, transition, approche, transition d'approche), puis une ligne dit ce qui a changé ; rien tant que le vol
+   *  n'est pas lu. */
+  function applyProposal() {
+    if (!proposal || !host.flight() || !ads.get(String((proposal.side === 'dep' ? host.route()?.dep : host.route()?.arr) || '')
+        .toUpperCase())?.recs
+      ?.size) return; // le vol lu et les fiches du terrain dessinées : render la rappelle
+    const {
+      side,
+      fields
+    } = proposal,
+    before = snapshot();
+    proposal = null;
+    // l'adresse est modifiable par tout lien et ne porte pas l'OACI : n'est admis que « none », une piste proposée pour ce terrain, ou
+    // l'identifiant d'une fiche du terrain DU VOL de ce côté, de la bonne sorte et non douteuse ; le reste est ignoré, rien n'est écrit,
+    // et jamais la chaîne reçue telle quelle (la valeur écrite est celle de la fiche ou de la piste trouvée)
+    const ad = ads.get(String((side === 'dep' ? host.route()?.dep : host.route()?.arr) || '').toUpperCase()),
+      KIND = {
+        sid: 'SID',
+        star: 'STAR',
+        app: 'APP',
+        trans: side === 'dep' ? 'SID' : 'STAR',
+        appTrans: 'APP'
+      },
+      admit = (k, raw) => {
+        const v = String(raw ?? '').trim();
+        if (!v) return null;
+        if (v === 'none') return k === 'rwy' ? null : '__none';
+        if (k === 'rwy') return /^\d{2}[LRC]?$/.test(v) ? (ad.rwys || []).find(r => PR.rwNum(r) === v) ?? null : null;
+        const rec = ad.recs.get(v);
+        return rec && rec.kind === KIND[k] && !PR.isDoubt(rec) && (k !== 'trans' && k !== 'appTrans' || rec.transition) ? rec.id : null;
+      };
+    for (const k of PROC_FIELDS[side]) {
+      const v = admit(k, fields[k]);
+      if (v) choose(`p-${side}-${k}`, v);
+    }
+    const after = CF.proceduresOf(host.flight());
+    for (const line of changeLines(before, after, [side])) ctx.notify(line, 'ok');
+  }
+
   // ------------------------------------------------------------ l'OFP
   /** La vue des procédures d'avant l'OFP, avec les terrains : { dep, arr, depIcao, arrIcao } (un côté d'un autre terrain n'est pas comparé). */
   function snapshot() {
@@ -675,6 +730,7 @@ export function createProcedures(host) {
   const api = {
     sync,
     render,
+    propose,
     reset,
     choose,
     read,

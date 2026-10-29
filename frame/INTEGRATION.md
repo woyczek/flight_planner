@@ -246,7 +246,7 @@ Modules ask each other things only through the address (no event between modules
 | `#fuel?view=sheets` | the frame (popover) | fuel | a view, not a request: not consumed |
 | `#fuel?focus=route\|dep\|arr` | the map (« Modifier la route », « Changer ») | fuel | the step or the field to show; consumed |
 | `#maps?choose=arr\|dep&icao=<OACI>` | fuel (« Sur la carte ») | the map | the choice mode (§ 10.23 of the coordination); consumed |
-| `#fuel?focus=arr&star=<id>&app=<id>&trans=<id>` | the map (« Valider », `location.replace`) | fuel | the proposal; consumed |
+| `#fuel?focus=dep\|arr&rwy=…&sid=…&star=…&trans=…&app=…&appTrans=…` | the map (a tap in the choice mode comes back by `location.replace`: one key per trip, `none` = « Aucune », no « Valider »; ✕ and Échap of the sheet leave the mode too) | fuel | the proposal, checked against the flight's aerodrome and applied as a choice made in Fuel; consumed with `focus` |
 | `#report?from=flightlog\|fuel\|maps` | flightlog, fuel, the map, the Status block | the frame, report | with `pilot/handoff.json` (the hand-over) |
 | `#maps?mission=<id>&map=<file>` | flightlog, links | the map | a mission's map |
 | `#maps?tune=1` | Settings › Administration | the map | the tuning page |

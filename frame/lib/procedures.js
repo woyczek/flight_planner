@@ -29,6 +29,10 @@ export const rwOrder = (a, b) => String(a).localeCompare(String(b), undefined, {
   numeric: true
 });
 
+/** Fiche douteuse (§ 10.26), jamais listée ni montrée comme une bonne procédure : statut « doubt » (aerodb), ou une fiche sans nom
+ *  (name vide, identifiant « ….NONAME.… »), ceinture tant qu'aerodb ne marque pas lui-même. Une règle pour Carburant et la Carte. */
+export const isDoubt = rec => rec?.status === 'doubt' || !String(rec?.name ?? '').trim() || /\.NONAME\./i.test(String(rec?.id ?? ''));
+
 /** Nom d'une procédure : celui de la fiche, sinon le troisième champ de l'identifiant (« LFBD.SID.ROYAN6P.RW23.NONE » → « ROYAN6P ») ;
  *  null sans nom ou pour « NONAME » (le texte « STAR sans nom » est celui de l'appelant). */
 export function nameOf(rec, id) {

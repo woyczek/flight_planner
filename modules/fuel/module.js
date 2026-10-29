@@ -1871,6 +1871,12 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="showmap"]')) return showMap();
   const pf = e.target.closest('[data-do="procfetch"]');
   if (pf) return S.P.read(pf.dataset.icao); // « Lire » et « Relire » : un seul geste
+  // « Sur la carte » : le mode choix de la Carte pour ce côté (§ 10.23) ; elle revient par location.replace avec son choix
+  const om = e.target.closest('[data-do="onmap"]');
+  if (om) {
+    location.hash = `#maps?choose=${om.dataset.side}&icao=${encodeURIComponent(om.dataset.icao)}`;
+    return;
+  }
   if (e.target.closest('[data-do="start"]')) return startFlight();
   if (e.target.closest('[data-do="cancelstart"]')) return cancelStart();
   const iu = e.target.closest('[data-do="isause"]');
@@ -4178,13 +4184,18 @@ export async function mount(el, ctx) {
   S.aloft = null;
   for (const path of OLD_WEATHER) ctx.data.remove?.(path)?.catch?.(() => {});
   // pas de la préparation : celui gardé, ou Route quand la Carte envoie « Modifier la route » (#fuel?focus=route)
-  const asked = ctx.consume ? ctx.consume('focus').focus : ctx.query
-    ?.focus; // pris une fois et retiré de l'adresse (frame/INTEGRATION.md § 6.1)
+  // et la proposition du mode choix de la Carte (#fuel?focus=arr&star=ID, une clé par aller, « none » = « Aucune », § 10.23) : prises
+  // une fois et retirées de l'adresse (frame/INTEGRATION.md § 6.1)
+  const PROPOSAL_KEYS = ['rwy', 'sid', 'star', 'trans', 'app', 'appTrans'],
+    q = ctx.consume ? ctx.consume('focus', ...PROPOSAL_KEYS) : ctx.query || {},
+    asked = q.focus;
+  if ((asked === 'dep' || asked === 'arr') && PROPOSAL_KEYS.some(k => q[k] != null && q[k] !== '')) S.P.propose(asked, q);
+  if (asked === 'dep') S.P.focus('dep');
   S.focusRoute = asked === 'route';
   // ou le pas qui porte la ligne Arrivée (Route avant le départ, Départ après) quand la Carte envoie « Changer » (#fuel?focus=arr)
   S.focusArr = asked === 'arr';
   if (S.focusArr) S.P.focus('arr'); // la première liste de l'arrivée prend le focus dès qu'elle est dessinée
-  S.step = S.focusRoute ? 1 : S.focusArr ? (kept.started?.at ? 4 : 1) : Math.max(0, Math.min(4, +S.ui.step || 0));
+  S.step = S.focusRoute ? 1 : S.focusArr || asked === 'dep' ? (kept.started?.at ? 4 : 1) : Math.max(0, Math.min(4, +S.ui.step || 0));
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
     <div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>
     <div data-body></div>`;
