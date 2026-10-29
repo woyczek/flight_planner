@@ -857,6 +857,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 15 | Repository address without any user part in https; put once per zone (16734c42f) | acceptable, one note |
 | 16 | `FD.list` by key range, IndexedDB v2, parsed references shared (cf52ad2a2) | acceptable; shared values are mutable |
 | 17 | Flown track at ~100 m, `trailFrom`, privacy sentence (127e0b721) | acceptable, one note |
+| 18 | AeroDB D5: base built on the workstation by a headless browser (8755aad9c) | acceptable; one design point settled, four notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1028,7 +1029,45 @@ in the help. Note for the user's choice: the current position of `progress.actua
 before, so the repository's history keeps exact positions at each synchronisation; only the track is rounded. The choice
 « shared or local » should cover both.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 17 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
+**18. AeroDB D5, headless build (8755aad9c) — acceptable; one design point settled; four notes.**
+- Checked:
+  - browser found by **absolute paths only** (`_abs_file`: a file, not a link): Edge under Program Files (x86) / Program
+    Files, then Chrome under Program Files / (x86) / `%LOCALAPPDATA%` (the per-user install, writable by the user: the
+    user's own trust), the variables themselves absolute; no `PATH`, no current folder; the test hooks come from the
+    launcher's context, never from the arguments;
+  - arguments: `zones` (from the list of zones, 1 to 60, no duplicate), `personal` (pattern, 10 at most, `xplane` refused,
+    empty by default), `parallel` (boolean); no path, address or command from the page; Chromium's sandbox kept;
+  - temporary profile: `mkdtemp` under the user's temporary folder (real path checked), `start.html` created with
+    `O_EXCL` and mode 0600, removed as soon as the page says « started »; the profile removed in a `finally` with retries;
+    the browser killed with its children (`taskkill /T /F`);
+  - the job's token is never on a command line (only the file address of `start.html`) nor in the log (stderr is read
+    for `SOGB` lines only; console lines are logged in debug only, cut at `#`); `headless.js` removes the fragment at once;
+  - writes: `validate` requires the exact names (12 kinds, the manifest entry, the major cities), JSON and the header
+    (zone, cycle, kind); `target_of` goes through `data_path` then the real path under `sia/base/<zone>/` (or `index.json`,
+    `cities_major.json`); one `commit_outputs` per zone under a lock;
+  - network: a dead proxy (`127.0.0.1:9`), `<-loopback>` removing the implicit bypass of local addresses, only the
+    launcher's address bypassed, every host name mapped to « not found »; the inputs are parsed data, never executed.
+- *Design point (settled before the frame's exception)*: the start page is a `file://` document, and its navigation to
+  the launcher arrives with `Sec-Fetch-Site: cross-site`, exactly what any web site produces with a link or
+  `window.open`. An exception of `_same_origin()` for « a document navigation to `headless.html` » would have opened the
+  page to every site, in the user's ordinary browser (no dead proxy), with a fragment of the site's choosing: no token,
+  so `put` refused and nothing returned to the site, but `/data/sia/<rel>` read for any given name (`fetchInput` encodes
+  each component, yet `..` stays `..` and the browser normalises `/data/sia/../../__setup/x` into `/__setup/x`: GET
+  requests on the launcher's routes from its own origin), and a 1.3 GB build in a tab. **Decision (path B):** no
+  exception in `_same_origin()`. The browser is started on `http://127.0.0.1:<port>/frame/aerodb/build/headless.html#job=<id>`
+  without a token (`Sec-Fetch-Site: none`, already admitted); the page claims the token once by a launcher route (V3
+  Frame), accepted only before « started », workstation only; `headless.js` then checks `job`, `cycle`
+  (`^\d{4}-\d{2}-\d{2}$`), the zones and every `rel` (the `SAFE_NAME` rule of `list_inputs`: no `..`, no empty part)
+  before any read (AeroDB). The remaining risk, a local program winning the claim, is no worse than today: any local
+  program already reaches the launcher's routes (no `Sec-Fetch-Site`, `X-SOG-Setup`).
+- Notes (with AeroDB): force `--force-webrtc-ip-handling-policy=disable_non_proxied_udp` (WebRTC's UDP does not go
+  through the proxy; defence in depth, the page's code being the suite's); take `taskkill` from `GetSystemDirectoryW`
+  rather than `%SystemRoot%`; purge the `sog-base-*` profiles left in the temporary folder by a launcher killed before
+  « started » (a token without value by then, and disk space); validate the fragment's parameters before use.
+- Follow-up: the claim route (V3 Frame) and the start by `http` address with the checks of `headless.js` (AeroDB) are to
+  be reviewed when pushed.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 18 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
