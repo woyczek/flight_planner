@@ -35,6 +35,9 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
 
 ## Datos y sincronización
 
+- **Posición y traza del vuelo.** Con el uso «varios usuarios», la posición real y la traza de su vuelo en curso (un punto
+  por milla náutica o por minuto, con unos 100 m de precisión) se comparten con el grupo y quedan en el historial del
+  repositorio; nunca van a un servicio externo sin un gesto suyo.
 - **Primero sin conexión.** Todo lo que hace se guarda en el dispositivo y funciona sin red.
 - **Solo en este dispositivo.** Sin intercambio marcado en Ajustes, nada sale a otro lugar: exporte de vez en cuando la
   copia del dispositivo (un fichero), es la única copia.

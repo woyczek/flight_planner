@@ -37,6 +37,9 @@ Computer, mit oder ohne Netz.
 
 ## Daten und Synchronisation
 
+- **Position und Spur des Flugs.** Bei der Nutzung „mit mehreren“ werden die tatsächliche Position und die Spur Ihres laufenden
+  Flugs (ein Punkt je Seemeile oder je Minute, auf etwa 100 m genau) mit der Gruppe geteilt und bleiben in der Historie des
+  Repositorys; sie gehen nie ohne Ihr Zutun an einen externen Dienst.
 - **Zuerst offline.** Alles, was Sie tun, bleibt auf dem Gerät und funktioniert ohne Netz.
 - **Allein auf diesem Gerät.** Ist in den Einstellungen kein Austausch angekreuzt, geht nichts anderswohin: Exportieren
   Sie ab und zu die Sicherung des Geräts (eine Datei), sie ist die einzige Kopie.

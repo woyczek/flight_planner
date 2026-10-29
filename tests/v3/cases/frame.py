@@ -1109,8 +1109,9 @@ def a35(c):
     c.ok(r['corner'], str(r), 'a 90° turn keeps its corner')
     c.eq(r['slow'], 6, 'a slow taxi: one point per minute', what='taxi points over 5 min')
     c.eq((r['cap'], r['ends']), (500, [0, 28800]), 'an 8 h flight: 500 points, the first and the last kept', what='cap')
-    c.eq(r['point'], [48.01667, 2, 3000, 30], 'a point is [lat, lon, altFt, s since the start]', what='point shape')
+    c.eq(r['point'], [48.017, 2, 3000, 30], 'a point is [lat, lon, altFt, s since the start], to about 100 m', what='point shape')
     c.eq((r['before'], r['junk']), (0, 1), 'a position before the start is not a point; a malformed track is dropped', what='guards')
     src = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8')
-    c.ok("TR.next(prev?.at && String(prev.at) >= String(cur.started.at) ? prev.trail : []" in src, '', 'the frame carries on only a track of the same start')
+    c.ok("TR.next(prev?.trailFrom && prev.trailFrom === cur.started.at ? prev.trail : []" in src and 'trailFrom: cur.started.at' in src, '',
+         'the frame carries on only a track of the same start (trailFrom, exactly)')
 

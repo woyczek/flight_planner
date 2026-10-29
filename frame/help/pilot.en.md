@@ -36,6 +36,9 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
 
 ## Data and synchronisation
 
+- **Position and track of the flight.** With the « several users » use, the actual position and the track of your current
+  flight (one point per nautical mile or per minute, to about 100 m) are shared with the group and stay in the repository's
+  history; they never go to an outside service without a gesture of yours.
 - **Offline first.** Everything you do is kept on the device and works without network.
 - **Alone on this device.** With no exchange ticked in Settings, nothing goes elsewhere: export the device backup (one
   file) from time to time, it is the only copy.

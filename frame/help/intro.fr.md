@@ -34,6 +34,9 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
 
 ## Données et synchronisation
 
+- **Position et trace du vol.** Avec l'usage « à plusieurs », la position réelle et la trace de votre vol en cours
+  (un point par mille nautique ou par minute, à environ 100 m près) sont partagées avec le groupe et restent dans l'historique
+  du dépôt ; elles ne partent jamais vers un service extérieur sans un geste de votre part.
 - **Hors ligne d'abord.** Tout ce que vous faites est gardé sur l'appareil et marche sans réseau.
 - **Seul sur cet appareil.** Sans échange coché dans les Réglages, rien ne part ailleurs : exportez de temps en temps
   la sauvegarde de l'appareil (un fichier), c'est la seule copie.

@@ -1655,3 +1655,11 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     documents; Chromium, the launcher's transport): `list('sia/base/')` 69 → 0.7 ms, `list('proc/')` 71 → 0.7 ms, a zone
     of 1 MB read again 8.1 → 2.3 ms (what is left: the text read from IndexedDB), a procedure file 0.4 → 0.2 ms.
   - The tests open `sogFrame` without a version (the frame upgrades it).
+- **29 Oct 2026 — The flown track and privacy** (coordinator's security review of ff51be774; the user decides
+  tomorrow between keeping it so, or on the device only like `pilot/ANON`):
+  - The whole track of a flight sits in the repository's history read by the group: by default tonight its points have 3
+    decimals (about 100 m; relative seconds kept); « La trace de votre vol en cours est partagée avec le groupe, comme
+    votre position, et reste dans l'historique du dépôt. » is said in the Status block (the current flight's row, « several
+    users » use) and in the help ×4; the track never goes to an outside service without an explicit gesture.
+  - A track is carried on only for the same start: `actual.trailFrom = started.at`, compared exactly (ISO texts of one
+    instant in `Z` and in `+02:00` do not compare as strings).

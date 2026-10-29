@@ -305,6 +305,12 @@
     info: {
       news: ['à voir', 'something to see', 'Hinweise vorhanden', 'algo que ver'],
       title: ['État', 'Status', 'Status', 'Estado'],
+      trailShared: [
+        'La trace de votre vol en cours est partagée avec le groupe, comme votre position, et reste dans l’historique du dépôt.',
+        'The track of your current flight is shared with the group, like your position, and stays in the repository’s history.',
+        'Die Spur Ihres laufenden Flugs wird wie Ihre Position mit der Gruppe geteilt und bleibt in der Historie des Repositorys.',
+        'La traza de su vuelo en curso se comparte con el grupo, como su posición, y queda en el historial del repositorio.'
+      ],
       flight: ['Vol en cours › {m}', 'Flight in progress › {m}', 'Flug läuft › {m}', 'Vuelo en curso › {m}'],
       report: ['CR à écrire pour le vol du {date} {dep}→{arr}', 'Report to write for the flight of {date} {dep}→{arr}',
         'Bericht zu schreiben für den Flug vom {date} {dep}→{arr}', 'Informe por escribir del vuelo del {date} {dep}→{arr}'
@@ -1358,7 +1364,11 @@
         m: t(maps.label)
       }),
       go: '#maps',
-      news: true
+      news: true,
+      // usage « à plusieurs » : la position et la trace du vol partent au dépôt du groupe ; le pilote le lit ici
+      ...(usages.users ? {
+        sub: t(T.info.trailShared)
+      } : {})
     });
     moduleLines.forEach((l, i) => items.push({
       k: `line-${l.from}`,
@@ -3073,17 +3083,18 @@
     const cur = await liveData.get(flightPath).catch(() => null);
     if (!flying(cur)) return;
     // fusion commune du vol courant (frame/lib/current_flight.js) : relu juste avant, seul progress.actual remplacé ;
-    // la trace volée continue celle de l'enregistrement si elle est de ce départ (une position d'avant started.at : vol
-    // précédent, trace neuve)
+    // la trace volée continue celle de l'enregistrement seulement si elle est de ce départ (trailFrom = started.at, à
+    // l'identique : deux écritures d'une même heure, en Z et en +02:00, ne se comparent pas comme des chaînes)
     const [CF, TR] = await Promise.all([import(new URL('frame/lib/current_flight.js', ROOT).href), import(new URL('frame/lib/trail.js',
         ROOT).href)]),
       prev = cur.progress?.actual,
-      trail = TR.next(prev?.at && String(prev.at) >= String(cur.started.at) ? prev.trail : [], a, cur.started.at);
+      trail = TR.next(prev?.trailFrom && prev.trailFrom === cur.started.at ? prev.trail : [], a, cur.started.at);
     await liveData.put(flightPath, CF.merge(cur, {
       progress: {
         actual: {
           ...a,
-          trail
+          trail,
+          trailFrom: cur.started.at
         }
       }
     }, {

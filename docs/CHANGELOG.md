@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the flown track, privacy** (`frame/lib/trail.js`, `frame/app.js`; frame INTEGRATION § 6, DECISIONS, help ×4;
+  noreg A35): points to about 100 m; the track is carried on only for the same start (`trailFrom`); the Status block and
+  the help say that, with several users, the track is shared with the group and stays in the repository's history.
 - **Frame data layer: listing and reading again cost almost nothing** (`frame/store/frame_data.js`; INTEGRATION § 4,
   DECISIONS; tests open the cache without a version): `list` reads keys only (69 → 0.7 ms on a 17.8 MB cache), a
   reference file is parsed once per revision (a 1 MB zone read again: 8.1 → 2.3 ms), an absent reference is not asked

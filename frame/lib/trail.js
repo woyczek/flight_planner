@@ -1,8 +1,9 @@
 // V3 frame/lib (propriétaire : le cadre) — trace volée du vol courant (progress.actual.trail), en calcul pur : ni page,
 // ni stockage, ni réseau. Le cadre l'écrit avec progress.actual (frame/app.js, onFix) ; la Carte la dessine.
 //
-// Un point : [lat, lon, altFt | null, s] — degrés à 5 décimales (environ 1 m), pieds entiers, s = secondes entières depuis
-// started.at du vol. Un point est ajouté à la trace quand l'avion a avancé d'au moins TRAIL_NM depuis le dernier point,
+// Un point : [lat, lon, altFt | null, s] — degrés à 3 décimales (environ 100 m : la trace est partagée avec le groupe et
+// reste dans l'historique du dépôt, elle n'a pas à dire la position au mètre ; 29 oct. 2026), pieds entiers, s = secondes
+// entières depuis started.at du vol. Un point est ajouté à la trace quand l'avion a avancé d'au moins TRAIL_NM depuis le dernier point,
 // ou TRAIL_S secondes ont passé, ou la route a tourné d'au moins TRAIL_TURN degrés (virage gardé : le coin reste dans la
 // trace). Au-delà de TRAIL_MAX points, le point intérieur dont le retrait déforme le moins la trace (écart au segment de
 // ses voisins) est retiré, jamais le premier ni le dernier : la trace garde sa forme, ses virages, ses deux bouts.
@@ -15,6 +16,7 @@ export const TRAIL_NM = 1;
 export const TRAIL_S = 60;
 export const TRAIL_TURN = 15;
 const TURN_MIN_NM = 0.2; // en deçà, un écart de route est du bruit de position, pas un virage
+const ROUND_NM = 0.06; // points arrondis à 1e-3 degré (≈ 0,03 NM chacun) : le seuil de distance tolère leur écart
 
 const R_NM = 3440.065;
 const rad = Math.PI / 180;
@@ -46,7 +48,7 @@ function pointOf(fix, startedAt) {
   const t0 = Date.parse(startedAt),
     t = Date.parse(fix?.at);
   if (!Number.isFinite(t0) || !Number.isFinite(t) || t < t0 || !Number.isFinite(fix.lat) || !Number.isFinite(fix.lon)) return null;
-  return [Math.round(fix.lat * 1e5) / 1e5, Math.round(fix.lon * 1e5) / 1e5, Number.isFinite(fix.altFt) ? Math.round(fix.altFt) : null,
+  return [Math.round(fix.lat * 1e3) / 1e3, Math.round(fix.lon * 1e3) / 1e3, Number.isFinite(fix.altFt) ? Math.round(fix.altFt) : null,
     Math.round((t - t0) / 1000)
   ];
 }
@@ -67,7 +69,7 @@ export function next(trail, fix, startedAt) {
   if (!p) return out;
   const last = out[out.length - 1];
   if (last && p[3] < last[3]) return out; // position plus ancienne que la trace : ignorée
-  let take = !last || p[3] - last[3] >= TRAIL_S || nm(last, p) >= TRAIL_NM;
+  let take = !last || p[3] - last[3] >= TRAIL_S || nm(last, p) >= TRAIL_NM - ROUND_NM;
   if (!take && out.length >= 2 && nm(last, p) >= TURN_MIN_NM) {
     const turn = Math.abs(((bearing(last, p) - bearing(out[out.length - 2], last)) % 360 + 540) % 360 - 180);
     take = turn >= TRAIL_TURN;
