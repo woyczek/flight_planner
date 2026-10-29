@@ -919,7 +919,9 @@ def k11(c):
     with tempfile.TemporaryDirectory() as td:
         (Path(td) / 'manual').mkdir()
         (Path(td) / 'manual' / 'index.json').write_text(json.dumps({'schema': 1, 'folder': 'manual', 'aerodromes': {'KSEA': {'SID': 1}}}))
-        M.install(doc, td)
+        M.install(doc, td, source_file=str(Path(td) / 'hand' / 'EGXX_reading.json'))
+        c.eq(json.loads((Path(td) / 'manual' / 'EGXX.json').read_text())['procedures'][0]['source'].get('file'), 'EGXX_reading.json',
+             'a hand reading carries the NAME (no folder) of the file it came from in source.file', what='manual source.file')
         idx = json.loads((Path(td) / 'manual' / 'index.json').read_text())
         # outside the cycle folders (the user's decision of 28 Oct 2026): proc/manual/, the cycle of the page kept on every procedure
         inst = json.loads((Path(td) / 'manual' / 'EGXX.json').read_text())
@@ -1222,6 +1224,7 @@ def k14(c):
     f = d['formats'][0]
     c.eq((len(d['procedures']), f['layout'], f['ok'], M.verify(d), d['procedures'][0]['kind'], [p['lat'] is not None for p in d['procedures'][0]['points']]),
          (1, 'be-coding', True, [], 'APP', [True] * 4), 'OCR rows of a Belgian page: table kept, every point resolved from the list, geometry check clean, proc_manual.verify finds nothing', what='document_from_rows')
+    c.eq((d['procedures'][0]['source']['file'], d['procedures'][0]['source']['ref']), ('be.pdf', 'ocr:ead-basic/EB/be.pdf'), "OCR: source.file is the document's name, without the ocr: mark of ref", what='OCR source.file')
     d2 = O.document_from_rows('EBXX', 'be.pdf', belgian(shift=0.2), '2026-10-01')
     c.ok([(x['status'], x['doubt']) for x in d2['procedures']] == [('doubt', 'geometry')] and any('À VÉRIFIER' in x for x in d2['warnings']) and not any('NON retenue' in x for x in d2['warnings']) and d2['formats'][0]['ok'],
          str(d2['formats']), 'one corrupted list co-ordinate: the table is kept as a doubt (code geometry) by the geometry check and reported')
@@ -2245,6 +2248,9 @@ def k24(c):
     c.ok((faf['lat'], faf['lon'], faf['alt']) == (48.630667, 2.065889, None) and 5 < to_thr < 12 and abs((brg - by['06']['true'] + 180) % 360 - 180) < 1, f'{faf} {to_thr:.1f} NM {brg:.1f}°',
          "the FAF is the position of « FAF LOC RWY 06 » on the DATA page (no altitude printed), 11.5 NM from the threshold, on the runway's bearing")
     c.eq(_gaps_of(ils), [], 'the geometry check does not compare the first missed leg with the threshold', what='gaps ILS 06')
+    # source.file (V3 § 10.25): the coding page the record was read from, a bare file name that is a page of the set (what the « Source » link opens: charts.base + Cartes/LFPO/ + file)
+    c.eq((ils['source']['file'], ils['source']['ref'], d06['procedures'][0]['source']['file'] in f06, all('/' not in p['source']['file'] and p['source']['file'] == p['source']['ref'] for p in d06['procedures'])),
+         ('AD_2_LFPO_DATA_RWY06_FNA_ILS_CAT123_LOC_CODE.pdf', 'AD_2_LFPO_DATA_RWY06_FNA_ILS_CAT123_LOC_CODE.pdf', True, True), 'eAIP: source.file is the page of the record (ref held it already, the two agree)', what='eAIP source.file')
     f25 = ['AD_2_LFPO_DATA_02.pdf', 'AD_2_LFPO_DATA_RWY25_FNA_ILS_CAT123_LOC_CODE.pdf', 'AD_2_LFPO_DATA_RWY07_FNA_ILS_CAT123_LOC_CODE.pdf']
     d25 = P.build_aerodrome('LFPO', f25, rows_pdf, 'https://example.org' + base, '2026-10-01', None, None, page('LFPO'))
     i25 = next(p for p in d25['procedures'] if p['runways'] == ['25'])
@@ -2523,6 +2529,7 @@ def k26(c):
     c.ok(any('hors d\'un bloc titré' in x and 'NON retenue' in x for x in orphan['warnings']), str(orphan['warnings']), 'leg rows with no title above them are reported, not dropped silently')
     bumped = P.parse_ei_coding(mutate(sid, '200.3 / 203', '205.3 / 203'))
     recs, w = P.records_uk_app('EIXX', bumped, 'f.pdf', '2026-10-29', None, 'EI')
+    c.eq(({p['source']['file'] for p in recs}, recs[0]['source']['ref']), ({'f.pdf'}, 'ead-basic/EI/f.pdf'), "EAD layouts: source.file is the downloaded document's name (ref keeps the path-like form)", what='EAD source.file')
     c.eq((len(recs), [x['doubt'] for x in recs if x['status'] == 'doubt'], sum('NON retenue' in x for x in w)), (2, ['geometry'], 0), 'a true track 5 degrees off is caught by the geometry check: that table is kept as a doubt, no table is dropped', what='geometry check')
 
 

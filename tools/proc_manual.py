@@ -91,15 +91,18 @@ def merge(old, doc):
     return {**old, **{k: v for k, v in doc.items() if k != 'procedures'}, 'procedures': list(by.values()), 'warnings': warnings}
 
 
-def install(doc, out, replace=False, replace_source=None):
+def install(doc, out, replace=False, replace_source=None, source_file=None):
     """Écrit le fichier du terrain (fusionné avec celui qui est déjà là) et l'entrée du terrain dans l'index du cycle. Un fichier qui porte
     des procédures d'une autre source, ou officielles, n'est touché qu'avec `replace` (SystemExit sinon, rien n'est écrit). `replace_source` (« eaip ») : une nouvelle lecture de CETTE source
     remplace la précédente (les procédures du fichier déjà là de cette source, de statut « check », sont retirées avant la fusion : un identifiant d'une lecture plus ancienne, changé
-    depuis par une règle de lecture meilleure, ne reste pas à côté du nouveau) ; les procédures des autres sources sont gardées."""
+    depuis par une règle de lecture meilleure, ne reste pas à côté du nouveau) ; les procédures des autres sources sont gardées. `source_file` : le nom (sans dossier) du fichier d'où vient une lecture à la main, mis dans `source.file` des
+    procédures qui n'ont pas déjà le nom de leur document (V3 § 10.25) ; absent sans lui."""
     out = Path(out) / 'manual'
     path = out / f'{doc["icao"]}.json'
     for p in doc['procedures']:                                 # le cycle de la page lue reste sur chaque procédure (outdated plus tard)
         p['source'] = {**(p.get('source') or {}), 'cycle': (p.get('source') or {}).get('cycle') or doc['cycle']}
+        if source_file and not p['source'].get('file'):
+            p['source']['file'] = Path(source_file).name
     old = json.loads(path.read_text(encoding='utf-8')) if path.exists() else None
     if old and replace_source:
         old = {**old, 'procedures': [p for p in old.get('procedures', []) if not (p.get('status') in ('check', 'doubt') and (p.get('source') or {}).get('kind') == replace_source)]}
@@ -155,7 +158,7 @@ def main(argv=None):
         raise SystemExit(1)
     print(f'{doc["icao"]}: {len(doc["procedures"])} procédure(s) cohérentes (caps et distances recalculés)' + (f', {total - len(doc["procedures"])} refusée(s)' if refused else ''), file=sys.stderr)
     if not a.check:
-        install(doc, a.out, a.replace)
+        install(doc, a.out, a.replace, source_file=a.file)
         print(f'installé dans {Path(a.out) / "manual"} (cycle de la page : {doc["cycle"]})', file=sys.stderr)
 
 

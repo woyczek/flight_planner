@@ -5,6 +5,7 @@ approche ILS (`with_threshold`), source ; puis proc_geometry.review les contrôl
 les documents : les listes de coordonnées d'un autre document complètent les points, le type lu à une page passe à la suivante, les noms coupés se confirment d'une page à l'autre) puis la géométrie
 juge les fiches complétées. `stats_of` compte la lecture. Bibliothèque standard seulement.
 """
+import os
 import re
 from datetime import datetime, timezone
 
@@ -55,7 +56,7 @@ def records_uk_app(icao, parsed, source, cycle, at=None, state='UK', layout=None
         kind = t.get('kind', 'APP')
         out.append({'id': '.'.join([icao, kind, norm(name), rw] + ([norm(t['transition'])] if t['transition'] else [])), 'icao': icao, 'kind': kind, 'name': name,
                     'runways': t['runways'], 'transition': t['transition'], 'points': pts,
-                    'source': {'kind': 'ead-basic', 'ref': f'ead-basic/{state}/{source}', 'cycle': cycle, 'at': at}, 'status': 'check'})
+                    'source': {'kind': 'ead-basic', 'ref': f'ead-basic/{state}/{source}', 'file': os.path.basename(str(source)), 'cycle': cycle, 'at': at}, 'status': 'check'})
         warnings += G.review(out[-1], positions, basis)
     return out, warnings
 
@@ -230,7 +231,7 @@ def _faf_leg(before, runway, threshold, coords, ils, warnings):
 def records(icao, table, coords, source, cycle, ils=None):
     """Procédures du schéma commun d'une table lue (parse_code_table), statut « check »."""
     out, warnings = [], list(table['warnings'])
-    src = {'kind': 'eaip', 'ref': source, 'cycle': cycle, 'at': table.get('amdt')}
+    src = {'kind': 'eaip', 'ref': source, 'file': source, 'cycle': cycle, 'at': table.get('amdt')}      # `file` : la page de codage (son PDF), ce que le lien « Source » ouvre (V3 § 10.25)
     if table['kind'] in ('SID', 'STAR'):
         for g in table['groups']:
             name = g['label'] or None

@@ -1807,3 +1807,13 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
 - **Bench** (K40, `perf_procedures.html`, synthetic: 60 procedures, half the points unplaced, two zones, IndexedDB cache): a warm call reads and lists nothing; ten calls in a row and ten at once build nothing; a cold build reads its `proc` files once and looks up each identifier once (42 `coordsAll` for 240 points); placed positions equal
   the ones computed by the page (nearest of a duplicated identifier, a point only the second zone has); the watcher drops on a changed revision and not on an echo; `refresh()` drops; a file arriving during aerodb's read is no change; a changed published file moves the point; a terrain with no file is read again after 30 s only and when its file
   arrives; budgets generous (ten warm calls under 200 ms, a cold build under 5 s). K1 (`procedures.html`) follows the new contract: its reader announces what it is given to the watchers, 300 calls read no file, an entry waiting for the base is kept 30 s (clock in hand).
+
+## 29 October 2026 — `source.file`: the document a record was read from (§ 10.25)
+
+- **What `source.ref` held**: for the eAIP, already the coding page's PDF name (`ref: 'AD_2_LFPO_DATA_STAR_RWY20_RNAV_CODE_02.pdf'`); for EAD layouts `ead-basic/<State>/<document>`, for OCR `ocr:` + that. So `file` is set consistently from the same name and `ref` is left as it was.
+- **Rule**: every record read from a document carries `source.file`, the NAME of that document without folder — eAIP: the coding page the record was built from (`proc_records.records`; one page per table, so a record built from several legs of one page has that page); EAD layouts and OCR: the downloaded document
+  (`records_uk_app`, without the `ocr:` mark); a hand reading: the input file's name when it is installed from one (`proc_manual.install(source_file=…)`, from the command line), else absent (the launcher's reading job passes none: its records already have theirs); CIFP, X-Plane and OFP records have none.
+  `charts.base` stays on the aerodrome file.
+- **The « Source » link** is for the eAIP only: `charts.base` + `Cartes/<ICAO>/` + `source.file` (INTEGRATION); the other sources show the name in a `title` (the lots of Fuel and the Map).
+- **Measure** (the page sets for LFPO, LFBO, LFPG; EIDW from its rows): every record has `source.file`, it names a page of the set (309 / 78 / 711 / 196 of 309 / 78 / 711 / 196) and agrees with `ref`; counts and doubts unchanged (309 / 1, 78 / 0, 711 / 2, 196 / 0).
+  Bench: K11 (hand reading), K14 (OCR), K24 (eAIP), K26 (EAD layout).

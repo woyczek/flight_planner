@@ -20,6 +20,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   is read (its warnings go to the launcher's log), conflicting files are read from the index (`ls-files -u -z`), any error
   during a pass cancels the merge with a clean message, a merge left pending is concluded or cancelled by the next pass,
   and the launcher's commits check for a pending merge first.
+- **aerodb: `source.file`, the document a record was read from** (`tools/proc_records.py`, `tools/proc_manual.py`; SPEC, INTEGRATION, DECISIONS; V3 § 10.25; cases K11, K14, K24, K26) — every procedure read from a document carries the document's name without folder: the SIA coding page for the eAIP (the page the « Source » link
+  opens, `charts.base` + `Cartes/<ICAO>/` + `source.file`), the downloaded document for EAD layouts and OCR, the input file for a hand reading installed from one. The other sources show the name only.
+
 - **Map: the rendering parts no longer share a mutable kit, and the theme lives for one drawing** (`modules/maps/render.js`,
   `render_airspace.js`, `render_route.js`, `screen.js`; SPEC § 1; case D40; V3 § 10.29 e, reduced form) — the parts expose
   their drawing as frozen namespaces (`MapsRender.parts.airspace`, `.route`) instead of storing it in `MapsRender.kit`, now
