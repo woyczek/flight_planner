@@ -426,7 +426,7 @@
           "es": "Enlace «Fuente» en cada procedimiento: la página codificada del SIA"
         },
         {
-          "state": "planned",
+          "state": "done",
           "fr": "Procédures non lues : comptées par page avec leur source, jamais montrées comme bonnes",
           "en": "Procedures not read: counted per page with their source, never shown as good",
           "de": "Nicht gelesene Verfahren: je Seite gezählt mit Quelle, nie als gut gezeigt",
@@ -466,7 +466,7 @@
       },
       "items": [
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Refonte du rendu : couches en liste ordonnée, palette unique, helpers de chemin et d'horaire séparés, jonctions marquées par le chemin",
           "en": "Rendering refactoring: layers as an ordered list, one palette, path and time helpers split, junctions marked by the path",
           "de": "Umbau des Renderings: Ebenen als geordnete Liste, eine Palette, Pfad- und Zeithelfer getrennt, Übergänge vom Pfad markiert",
@@ -648,7 +648,7 @@
           "es": "Modo «elección»: mapa base atenuado, una familia a la vez, un color por procedimiento, un toque = elegido"
         },
         {
-          "state": "planned",
+          "state": "done",
           "fr": "Piste choisie tracée en flèche dans le sens d'utilisation",
           "en": "Chosen runway drawn as an arrow in the direction of use",
           "de": "Gewählte Piste als Pfeil in Nutzungsrichtung gezeichnet",
@@ -916,7 +916,7 @@
       },
       "items": [
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Refonte du lecteur : un seul contrôle de géométrie, lecteur eAIP scindé, passe commune après lecture, jeux de pages par terrain",
           "en": "Reader refactoring: one geometry check, eAIP reader split, common post-read pass, page fixtures per aerodrome",
           "de": "Umbau des Lesers: eine Geometrieprüfung, eAIP-Leser aufgeteilt, gemeinsamer Nachlauf, Seitensätze je Platz",
