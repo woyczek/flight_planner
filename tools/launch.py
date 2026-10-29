@@ -68,8 +68,9 @@ def data_repo_url():
     l'utilisateur la donne au premier lancement)."""
     m = re.search(r'dataRepo\s*:\s*\{\s*url\s*:\s*"([^"]*)"', config_text())
     url = m.group(1).strip() if m else ''
-    # jamais d'identifiant dans l'adresse (« https://compte:jeton@hôte ») : il finirait affiché, journalisé, dans data/.git/config
-    url = re.sub(r'^(https?://)[^/@\s]*:[^/@\s]*@', r'\1', url, flags=re.I)
+    # jamais d'identifiant dans une adresse https (« compte:jeton@ », ou le jeton seul : « ghp_…@ ») : il finirait affiché,
+    # journalisé, dans data/.git/config ; en ssh (git@hôte:…), l'utilisateur est normal
+    url = re.sub(r'^(https?://)[^/@\s]+@', r'\1', url, flags=re.I)
     return url if not url or url.endswith('.git') else url + '.git'
 
 

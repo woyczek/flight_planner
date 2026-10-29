@@ -75,11 +75,13 @@ def git_env():
 
 
 # ---- dépôt distant de synchronisation (premier lancement : adresse précisée, vérifiée, jamais bloquante)
-# git@hôte:chemin, ssh://[utilisateur@]hôte[:port]/chemin, http(s)://[utilisateur@]hôte[:port]/chemin : jamais de
-# mot de passe ni de jeton dans l'adresse (il finirait en clair dans data/.git/config), jamais de « - » en tête
+# git@hôte:chemin, ssh://[utilisateur@]hôte[:port]/chemin, http(s)://hôte[:port]/chemin : jamais de mot de passe ni de
+# jeton dans l'adresse (il finirait en clair dans data/.git/config) — en https, aucune partie identifiant du tout : le
+# jeton seul en nom d'utilisateur (https://ghp_…@github.com/…) est la forme courante ; en ssh, l'utilisateur (git@) est
+# normal ; jamais de « - » en tête
 REMOTE_RE = re.compile(r'^(?:\w[\w.-]*@\w[\w.-]*:[\w./~-]+'
                        r'|ssh://(?:\w[\w.-]*@)?\w[\w.-]*(?::\d+)?/[\w./~-]+'
-                       r'|https?://(?:\w[\w.-]*@)?\w[\w.-]*(?::\d+)?(?:/[^\s@]*)?)$')
+                       r'|https?://\w[\w.-]*(?::\d+)?(?:/[^\s@]*)?)$')
 REMOTE_HELP = 'Adresse invalide : git@hôte:compte/dépôt.git ou https://hôte/compte/dépôt.git (sans mot de passe ni jeton dans l’adresse).'
 
 
@@ -96,7 +98,8 @@ def remote_info(data):
     if not is_repo(data):
         return {'repo': False, 'remote': '', 'url': '', 'branch': ''}
     br, _, remote = branch_info(data)
-    url = git(data, 'remote', 'get-url', remote)[1] if remote else ''
+    # adresse rendue à la page : sans partie identifiant (un dépôt réglé à la main peut porter un jeton dans .git/config)
+    url = clean_text(git(data, 'remote', 'get-url', remote)[1], data) if remote else ''
     return {'repo': True, 'remote': remote, 'url': url, 'branch': br}
 
 

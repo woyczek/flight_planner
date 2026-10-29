@@ -255,6 +255,21 @@ def i8(c):
             time.sleep(0.02)
         c.eq(JB.view(bj['job'])['result'], {'got': ['airports.json', 'navaids.json']}, 'the verb receives the output by job.take', what='taken output')
         c.ok(tok not in str(JB.view()) and tok not in str(JB.view(bj['job'])), '', 'the job\'s token is never in its view')
+        bj2 = None
+        for _ in range(100):
+            bj2 = JB.start('base', 'build', {})
+            if bj2.get('ok'):
+                break
+            time.sleep(0.02)
+        tok2 = JB.cur.token
+        c.ok(JB.put(bj2['job'], tok2, 'ie', {'a.json': '[]'})['ok'], '', 'a zone is delivered')
+        c.eq(JB.put(bj2['job'], tok2, 'ie', {'a.json': '[]'})['status'], 409, 'a zone is delivered once per job', what='second put of a zone')
+        JB.cancel(bj2['job'])
+        for _ in range(300):
+            if JB.view(bj2['job'])['state'] != 'running':
+                break
+            time.sleep(0.02)
+        c.eq(len(JB.cur._inbox), 0, 'the outputs not taken are dropped at the end of the job', what='inbox after the job')
 
         def leaky(job, args, ctx):
             job.step('login as eaduser with s3cretPW')
@@ -449,6 +464,13 @@ def i9(c):
         pub = src[src.index('def aircraft_publish'):src.index('def vfr_publish')]
         c.ok(pub.index('merge_pending') < pub.index('copyfile'), '', 'the aircraft base checks for a pending merge before writing into data/')
         c.ok('détail est dans sa console' in src, '', 'a paired device gets a generic message on a failed synchronisation')
+        # adresse https : aucune partie identifiant, le jeton seul en nom d'utilisateur compris (ssh : git@ reste normal)
+        c.eq([bool(DS.REMOTE_RE.match(u)) for u in ('https://ghp_secret@github.com/a/b.git', 'https://u:p@host/a.git',
+                                                     'https://github.com/a/b.git', 'git@github.com:a/b.git')], [False, False, True, True],
+             'a https address with credentials is refused; ssh keeps its user', what='REMOTE_RE')
+        sh('remote', 'set-url', 'origin', 'https://ghp_secret@example.invalid/x.git', cwd=b)
+        c.ok('ghp_secret' not in DS.remote_info(b)['url'], DS.remote_info(b)['url'], 'the remote address given to the page has no token')
+        sh('remote', 'set-url', 'origin', remote, cwd=b)
         # le drapeau gesture est une intention : un travail du module Données en cours garde sia/base quel que soit le drapeau
         import importlib
         L = importlib.import_module('launch')

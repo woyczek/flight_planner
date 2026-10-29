@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher, security review** (`tools/data_sync.py`, `tools/launch.py`, `tools/regen_jobs.py`; frame DECISIONS;
+  noreg I8, I9): no credential in a https address of the data repository, the token alone as user name included
+  (refused, dropped from the configured address, cleaned in what the page reads); a job's zone output is taken once and
+  dropped at the end of the job.
 - **Fuel tests: pure benches, shared fixtures, waits on a state, and `fmtDayZ`** (`frame/lib/time.js`, `frame/lib/test/time.html`,
   `modules/fuel/test/vertical.html`, `tests/v3/fixtures/procedures.py`, `tests/v3/cases/fuel.py`, `tests/v3/lib.py`; V3 § 10.29 h, i; cases F23,
   F39) — `fmtDayZ(iso)` writes « 29/10 16:53Z » (UTC) for the procedures line; the vertical path of the quote (`verticalPath`) has a bench without

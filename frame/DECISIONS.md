@@ -1638,3 +1638,8 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - Reset: it lives and dies with `progress.actual` (new `started.at`: a track of an earlier start is never carried on;
     the flight stopped: gone with the position).
   - The pure rule is `frame/lib/trail.js` (noreg A35); the Map initialises its track on it (BUGS SOG).
+- **29 Oct 2026 — Security review of 3073048c7 and 5e785599c** (coordinator): a https address of the data
+  repository carries no credential at all — the common form is the token alone as user name (`https://ghp_…@github.com/…`):
+  `REMOTE_RE` refuses any user part in https (ssh keeps `git@`), `data_repo_url()` drops it, `remote_info` hands the
+  page a cleaned address; a job takes each zone's output once (a second `put` of a zone: 409) and drops what its verb did
+  not take when it ends (up to 64 MB a zone would otherwise stay in memory).

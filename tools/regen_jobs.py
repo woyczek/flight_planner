@@ -140,12 +140,23 @@ class Job:
         # jeton du travail : le verbe le passe à sa page sans fenêtre dans le fragment de l'adresse (…#job=<id>&t=<jeton>),
         # jamais dans view(), le fichier du dernier travail ni un journal
         self.token = token_urlsafe(32)
-        self._inbox, self._cv = {}, threading.Condition()
+        self._inbox, self._given, self._cv = {}, set(), threading.Condition()
 
     def put(self, zone, files):
-        """Sortie d'une zone remise par la route (déjà contrôlée) : { nom: texte }."""
+        """Sortie d'une zone remise par la route (déjà contrôlée) : { nom: texte } ; une zone se rend une fois par travail
+        (False si elle l'a déjà été : jamais deux fois 64 Mo gardés pour la même zone)."""
         with self._cv:
+            if zone in self._given:
+                return False
+            self._given.add(zone)
             self._inbox[zone] = files
+            self._cv.notify_all()
+            return True
+
+    def drop(self):
+        """Fin du travail : les sorties pas reprises par le verbe sont oubliées (rien ne reste en mémoire)."""
+        with self._cv:
+            self._inbox.clear()
             self._cv.notify_all()
 
     def take(self, zone, timeout=None):
@@ -283,6 +294,7 @@ class Jobs:
             job.data['state'] = 'error'
             job.data['result'] = {'message': msg[:300]}
         job.data['ended'] = int(time.time())
+        job.drop()  # sorties de zones non reprises : oubliées avec le travail
         with self.lock:
             self._save()
 
@@ -322,7 +334,8 @@ class Jobs:
             return {'ok': False, 'status': 400, 'message': 'refused file name'}
         if sum(len(v.encode('utf-8')) for v in files.values()) > PUT_MAX:
             return {'ok': False, 'status': 413, 'message': 'too large'}
-        j.put(zone, dict(files))
+        if not j.put(zone, dict(files)):
+            return {'ok': False, 'status': 409, 'message': 'zone already delivered'}
         return {'ok': True, 'job': j.id, 'zone': zone, 'files': len(files)}
 
 
