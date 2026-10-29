@@ -6,8 +6,8 @@
 
 Décision de l'utilisateur du 28 octobre 2026 (« OCR inclus ») : l'OCR est une dépendance FACULTATIVE des constructeurs de poste (jamais du lanceur ni d'une page), comme pypdf ;
 `pypdfium2` (rendu de la page) et un moteur, Tesseract (programme dans le PATH) ou `rapidocr-onnxruntime`. Le moteur n'est pas choisi : les deux sont pris en charge.
-Un texte lu par OCR n'est jamais cru : le document n'est installable que par `tools/proc_manual.py`, dont le contrôle de géométrie refait caps et distances ; toute table
-qui échoue est écartée et signalée. Bibliothèque standard, plus les moteurs importés à la demande.
+Un texte lu par OCR n'est jamais cru : le document n'est installable que par `tools/proc_manual.py` ; le contrôle de géométrie (`tools/proc_geometry.py`) refait caps et distances,
+et toute procédure qui échoue est gardée au statut « doubt » avec son code, jamais servie comme sûre. Bibliothèque standard, plus les moteurs importés à la demande.
 """
 import argparse
 import json
@@ -275,8 +275,8 @@ def rows_from_pdf_ocr(path, page=0, dpi=300, engine=None):
 
 def document_from_rows(icao, file, rows, cycle, state=None):
     """Document d'interprétation (forme de proc_manual) d'après les lignes OCR d'une page. Disposition connue → analyse, puis contrôle de géométrie table par table
-    (une table incohérente est écartée, signalée « NON retenue ») ; disposition inconnue → rien de deviné. Le document n'est qu'un candidat : proc_manual.verify le contrôle
-    et l'installe."""
+    (proc_geometry, tolérance du cap vrai : une table incohérente est GARDÉE, sa procédure au statut « doubt » et au code « geometry » ; seule une table dont les comptes ne tiennent
+    pas est écartée, signalée « NON retenue ») ; disposition inconnue → rien de deviné. Le document n'est qu'un candidat : proc_manual le contrôle et l'installe."""
     state = state or icao[:2]
     layout = proc_eaip.detect_layout(rows)
     fp = proc_eaip.fingerprint(rows)
@@ -291,10 +291,7 @@ def document_from_rows(icao, file, rows, cycle, state=None):
             warnings += [f'{file}: {x}' for x in w]
             problems += [x for x in w if 'NON retenue' in x]
             for rec in recs:
-                for p, lg in zip(rec['points'], t['legs']):
-                    if lg.get('true') is not None:
-                        p['trk'] = lg['true']       # cap vrai imprimé : proc_manual le recalcule d'après les positions
-                rec['source']['ref'] = 'ocr:' + rec['source']['ref']
+                rec['source']['ref'] = 'ocr:' + rec['source']['ref']        # le cap vrai imprimé (`trk`) est déjà sur les points : records_uk_app l'y pose, proc_geometry le contrôle
                 procs.append(rec)
         ok = bool(procs) and not problems
         if not procs:

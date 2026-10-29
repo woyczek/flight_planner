@@ -107,6 +107,26 @@ def k7(c):
 # ------------------------------------------------------------------------------------------------ eAIP tables (static)
 # tools/proc_eaip.py on lines of text read once from the SIA's PDF pages (AIRAC 2026-10-01) and kept in
 # frame/aerodb/test/fixtures/eaip/: no pypdf, no network.
+def _geometry():
+    import importlib
+    import sys
+    tools = str(ROOT / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    return importlib.import_module('proc_geometry')
+
+
+def _gaps(legs):
+    """Écarts de géométrie d'une table de tronçons (proc_geometry.check_legs) : la liste, vide = cohérente."""
+    return _geometry().check_legs(legs)['gaps']
+
+
+def _gaps_of(proc):
+    """Écarts de géométrie d'une procédure lue (ses points, proc_geometry.legs_of)."""
+    G = _geometry()
+    return G.check_legs(G.legs_of(proc['points']))['gaps']
+
+
 def _eaip(c):
     import importlib
     import sys
@@ -162,7 +182,7 @@ def k3(c):
     P, fx, rows = _eaip(c)
     names = [f.name.replace('.rows.txt', '.pdf') for f in fx.glob('*.rows.txt')]
     files = [n for n in names if '_LFBD_' in n] + ['AD_2_LFBD_SID_RWY23_RNAV.pdf', 'AD_2_LFBD_IAC_RWY23_FNA_ILS_LOC.pdf']
-    known = {'ROYAN': (45.6, -1.0), 'CNA': (45.0, 1.0)}
+    known = {'ROYAN': (45.665, -1.04), 'CNA': (45.0, 1.0)}      # points fictifs ; ROYAN à 34,1 NM de BD927 comme la page l'imprime (le contrôle de géométrie est fait par le constructeur)
     doc = P.build_aerodrome('LFBD', files, lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-01', '2026-10-01', known.get)
     ids = [p['id'] for p in doc['procedures']]
     for want in ('LFBD.SID.ROYAN6P.RW23', 'LFBD.STAR.LMG2L.RWALL', 'LFBD.APP.RNPRWY23.RW23.ETPAR'):
@@ -171,7 +191,7 @@ def k3(c):
     p = next(p for p in doc['procedures'] if p['id'] == 'LFBD.SID.ROYAN6P.RW23')
     c.eq((p['status'], p['source']['kind'], p['source']['cycle'], p['kind'], p['runways']), ('check', 'eaip', '2026-10-01', 'SID', ['23']), 'status, source, cycle', what='ROYAN 6P')
     c.eq([q['id'] for q in p['points']], ['BD230', 'BD923', 'BD927', 'ROYAN'], 'ordered points', what='ROYAN 6P')
-    c.ok(p['points'][0]['lat'] is not None and p['points'][3]['lat'] == 45.6, f"{p['points']}", 'BD230 from the DATA page, ROYAN from the base resolver')
+    c.ok(p['points'][0]['lat'] is not None and p['points'][3]['lat'] == 45.665, f"{p['points']}", 'BD230 from the DATA page, ROYAN from the base resolver')
     c.eq(p['points'][1]['turn'], 'R', 'DF turn right kept', what='BD923')
     app = next(q for q in doc['procedures'] if q['id'] == 'LFBD.APP.RNPRWY23.RW23.VAGNA')
     ids_pts = [q['id'] for q in app['points']]
@@ -719,7 +739,8 @@ def k13(c):
          'fixes, level constraint (FL130+ minimum) and speed (K210- maximum IAS)', what='constraints')
     c.eq(([lg['id'] for lg in t1['legs']], t1['runways']), (['AAA', 'DDD'], ['20']), 'the fix printed before its path terminator (IAF DDD ... TF N) is attached to the right leg; the runway comes from the page title', what='id before terminator')
     recs, w = P.records_uk_app('XXXX', r, 'f.pdf', '2026-10-01', None, 'XX')
-    c.eq((len(recs), sum('NON retenue' in x for x in w)), (2, 1), 'the geometry check keeps the two consistent tables and rejects the one whose printed course is 5° off', what='geometry check')
+    c.eq((len(recs), sum('NON retenue' in x for x in w), sum(x['status'] == 'check' for x in recs), [x['doubt'] for x in recs if x['status'] == 'doubt']), (3, 0, 2, ['geometry']),
+         'the geometry check keeps the two consistent tables as they are and the one whose printed course is 5° off as a doubt (code geometry), no table is dropped', what='geometry check')
     c.ok(recs[0]['source']['ref'] == 'ead-basic/XX/f.pdf' and recs[0]['kind'] == 'STAR' and recs[0]['status'] == 'check', str(recs[0]['source']), 'source and status are those of a State read through EAD, to be checked')
     bad = [x for x in rows if 'TF BBB N A11500+' not in x]
     c.ok(any('NON retenue' in x for x in P.parse_am_coding(bad)['warnings']), 'counts', 'a table whose counts disagree (course missing) is rejected and reported, never completed')
@@ -785,15 +806,16 @@ def k10(c):
     c.eq((t['name'], t['runways'], t['transition'], [lg['id'] for lg in t['legs']]), ('RNP RWY 09L', ['09L'], 'TESTA', ['TESTA', 'TESTB', 'RW09L']), 'title, runway, "via" transition, legs in order', what='parse_uk_app')
     c.ok(abs(t['legs'][1]['lat'] - 51.4767) < 1e-4 and abs(t['legs'][1]['lon'] + 0.6711) < 1e-4, f"{t['legs'][1]}", 'latitude read above the leg line, longitude below it')
     c.eq((t['legs'][0]['alt'], t['legs'][2]['over']), ({'type': 'at', 'ft': 3000}, True), 'level constraint and fly-over', what='cells')
-    c.eq(P.check_geometry(t['legs']), [], 'a coherent table has no geometry gap', what='check_geometry')
+    c.eq(_gaps(t['legs']), [], 'a coherent table has no geometry gap', what='check_geometry')
     recs, w = P.records_uk_app('EGXX', parsed, 'x.pdf', '2026-10-01', '2026-01-01')
     c.eq((recs[0]['id'], recs[0]['status'], recs[0]['source']['kind'], recs[0]['points'][2]['id']), ('EGXX.APP.RNPRWY09L.RW09L.TESTA', 'check', 'ead-basic', 'RW09L'), 'common schema, status check, source ead-basic', what='records_uk_app')
     bad = _uk_page(P, pts, corrupt=True)
     pb = P.parse_uk_app(bad)
-    gap = P.check_geometry(pb['tables'][0]['legs'])
+    gap = _gaps(pb['tables'][0]['legs'])
     c.ok(gap and 'cap calculé' in gap[0], f'{gap}', 'a printed true course 5 degrees off the coordinates is caught')
     recs2, w2 = P.records_uk_app('EGXX', pb, 'x.pdf', '2026-10-01')
-    c.ok(recs2 == [] and any('NON retenue' in x for x in w2), f'{recs2} {w2}', 'an incoherent table is not kept: nothing is written from it')
+    c.ok(len(recs2) == 1 and recs2[0]['status'] == 'doubt' and recs2[0]['doubt'] == 'geometry' and any('À VÉRIFIER' in x and 'cap calculé' in x for x in w2) and not any('NON retenue' in x for x in w2), f'{recs2} {w2}',
+         'an incoherent table is kept as a doubt (code geometry, the gap said in the warnings), never installed as sure and never dropped')
     doc = P.build_pdf_dir('EGXX', ['a_8-13.pdf', 'b_7-13.pdf'], lambda n: [rows] if n.startswith('a') else [['UNITED KINGDOM AIP AD 2.EGXX-7-13', '25 Dec 2025', 'CIVIL AVIATION AUTHORITY']], '2026-10-01')
     byf = {f['file']: f for f in doc['formats']}
     c.ok(byf['a_8-13.pdf']['ok'] and not byf['b_7-13.pdf']['ok'] and any('vecteurs' in p for p in byf['b_7-13.pdf']['problems']) and len(doc['procedures']) == 1, f"{doc['formats']}",
@@ -1007,10 +1029,10 @@ def k19(c):
          ({'type': 'min', 'ft': 8000}, {'type': 'min', 'ft': 6000}, None, {'type': 'at', 'ft': 3000}), 'levels: upper = max, lower = min, equal = at, none = nothing', what='constraints')
     c.eq((t0['legs'][2]['kt'], t0['legs'][1]['kt'], t0['legs'][1]['over'], t0['legs'][0]['crs']), (220, None, None, None), 'speed limit; no fly-over; the IF has no course', what='speed')
     c.ok(abs(t0['legs'][0]['lon'] + 7.8) < 0.0002 and abs(t0['legs'][0]['lat'] - 51.8) < 0.0002, (t0['legs'][0]['lat'], t0['legs'][0]['lon']), '(51.8, -7.8)', 'a co-ordinate split in digit groups is joined; west longitude negative')
-    c.eq(P.check_geometry(t0['legs']), [], 'courses and distances agree with the printed positions', what='geometry')
+    c.eq(_gaps(t0['legs']), [], 'courses and distances agree with the printed positions', what='geometry')
     recs, w = P.records_uk_app('EIXX', r, 'f.pdf', '2026-10-01', None, 'EI')
-    c.eq((len(recs), sum('NON retenue' in x and 'incoh' in x for x in w), recs[0]['kind'], recs[0]['status']), (2, 1, 'STAR', 'check'),
-         'the geometry check keeps the consistent tables and rejects the one whose true track is 5 degrees off', what='geometry check')
+    c.eq((len(recs), sum('NON retenue' in x and 'incoh' in x for x in w), recs[0]['kind'], recs[0]['status'], sorted(x['status'] for x in recs)), (3, 0, 'STAR', 'check', ['check', 'check', 'doubt']),
+         'the geometry check keeps the consistent tables and the one whose true track is 5 degrees off as a doubt', what='geometry check')
 
 
 # ------------------------------------------------------------------------------------------------ OCR of drawn pages (static)
@@ -1080,8 +1102,9 @@ def k14(c):
     p0 = doc['procedures'][0]
     c.ok(p0['status'] == 'check' and p0['source']['ref'].startswith('ocr:') and p0['points'][1]['trk'] == round(b1, 1) and p0['points'][1]['nm'] == round(n1, 1), str(p0['points'][1]), 'points carry the printed true course (trk) and distance (nm); status check; source marked OCR')
     bad = O.document_from_rows('XXXX', 'p.pdf', O.rows_from_words(boxes(page(bump=5.0))), '2026-10-01', 'XX')
-    c.ok(len(bad['procedures']) == 1 and any('NON retenue' in x for x in bad['warnings']) and bad['formats'][0]['problems'] and not bad['formats'][0]['ok'] and M.verify(bad) == [], f"{bad['formats']}",
-         'a misread course (5 degrees off) drops that table only, with a NON retenue warning counted in the format problems; the other is kept')
+    c.ok(len(bad['procedures']) == 2 and sorted(x['status'] for x in bad['procedures']) == ['check', 'doubt'] and [x['doubt'] for x in bad['procedures'] if x['status'] == 'doubt'] == ['geometry']
+         and any('À VÉRIFIER' in x for x in bad['warnings']) and not any('NON retenue' in x for x in bad['warnings']) and bad['formats'][0]['ok'] and M.verify(bad) == [], f"{bad['formats']}",
+         'a misread course (5 degrees off) keeps that table as a doubt (code geometry) with a warning, the other is untouched; the page is read, nothing is dropped, proc_manual finds nothing to refuse')
     unk = O.document_from_rows('XXXX', 'u.pdf', ['Some', 'unrelated text', 'on a page'], '2026-10-01')
     c.ok(unk['procedures'] == [] and unk['formats'][0]['ok'] is False and unk['formats'][0]['layout'] is None, str(unk['formats']), 'a page of unknown layout gives no procedure and nothing is guessed')
     which, mods = shutil.which, dict(sys.modules)
@@ -1136,7 +1159,8 @@ def k14(c):
     c.eq((len(d['procedures']), f['layout'], f['ok'], M.verify(d), d['procedures'][0]['kind'], [p['lat'] is not None for p in d['procedures'][0]['points']]),
          (1, 'be-coding', True, [], 'APP', [True] * 4), 'OCR rows of a Belgian page: table kept, every point resolved from the list, geometry check clean, proc_manual.verify finds nothing', what='document_from_rows')
     d2 = O.document_from_rows('EBXX', 'be.pdf', belgian(shift=0.2), '2026-10-01')
-    c.ok(d2['procedures'] == [] and any('NON retenue' in x for x in d2['warnings']) and not d2['formats'][0]['ok'], str(d2['formats']), 'one corrupted list co-ordinate: the table is dropped by the geometry check and reported')
+    c.ok([(x['status'], x['doubt']) for x in d2['procedures']] == [('doubt', 'geometry')] and any('À VÉRIFIER' in x for x in d2['warnings']) and not any('NON retenue' in x for x in d2['warnings']) and d2['formats'][0]['ok'],
+         str(d2['formats']), 'one corrupted list co-ordinate: the table is kept as a doubt (code geometry) by the geometry check and reported')
     d3 = O.document_from_rows('EBXX', 'be.pdf', [r for r in be if not r.startswith('RW22R:')], '2026-10-01')
     c.ok(d3['procedures'] == [] and any('NON retenue' in x for x in d3['warnings']), str(d3['warnings']), 'a point missing from the list: the table is dropped, never completed')
 
@@ -1160,7 +1184,8 @@ def k14(c):
          ('be-coding', 2, True, [], 'SID', 'BE 04F', True), 'SID variant: two tables kept (points resolved, only IF/TF/CF/DF, printed course passes the geometry check), kind SID, name from the title', what='document_from_rows')
     c.ok(sum('cap non imprimé : géométrie non contrôlable' in x for x in sd['warnings']) == 2, str(sd['warnings']), 'each kept SID table carries the warning "cap non imprimé : géométrie non contrôlable"')
     sb = O.document_from_rows('EBXX', 'sid.pdf', sid(bump=5.0), '2026-10-01')
-    c.ok(sb['procedures'] == [] and any('NON retenue' in x for x in sb['warnings']), str(sb['warnings']), 'SID variant: the one printed course that exists is checked, 5 degrees off drops the table')
+    c.ok(len(sb['procedures']) == 2 and [x['doubt'] for x in sb['procedures'] if x['status'] == 'doubt'] == ['geometry', 'geometry'] and not any('NON retenue' in x for x in sb['warnings']), str(sb['warnings']),
+         'SID variant: the one printed course that exists is checked, 5 degrees off keeps the tables that print it as doubts (code geometry)')
     sh = O.document_from_rows('EBXX', 'sid.pdf', sid(hold=True), '2026-10-01')
     c.ok(sh['procedures'] == [] and any('hors de IF' in x for x in sh['warnings']), str(sh['warnings']), 'SID variant: a leg other than IF/TF/CF/DF (a hold) drops the table: a polyline would be wrong')
     sc = O.document_from_rows('EBXX', 'sid.pdf', sid(clash=True), '2026-10-01')
@@ -1223,7 +1248,7 @@ def k16(c):
     c.ok(lg[1]['nm'] and abs(lg[1]['lat'] - 51.35) < 1e-4 and abs(lg[1]['lon'] + 0.40) < 1e-4 and lg[1]['crs'] and lg[1]['true'], str(lg[1]),
          'distance, latitude above and longitude below, magnetic and true courses read')
     c.ok(sum('survol non lu (OCR)' in w for w in parsed['warnings']) == 1, str(parsed['warnings']), 'one "fly-over unread" warning per table')
-    c.eq(P.check_geometry(lg), [], 'a coherent table has no geometry gap', what='check_geometry')
+    c.eq(_gaps(lg), [], 'a coherent table has no geometry gap', what='check_geometry')
     recs, w = P.records_uk_app('EGXX', parsed, 'x.pdf', '2026-10-01', '2026-01-01')
     c.eq((len(recs), recs[0]['status'], recs[0]['kind'], recs[0]['id'], recs[0]['points'][2].get('turn')), (1, 'check', 'STAR', 'EGXX.STAR.ALFAB1H.RWALL', 'L'), 'common schema: status check, kind STAR kept', what='records_uk_app')
     doc = O.document_from_rows('EGXX', 'p.pdf', rows, '2026-10-01')
@@ -1234,11 +1259,11 @@ def k16(c):
     cut = P.parse_uk_star(page(drop_lon=True))
     c.ok(cut['tables'] == [] and any('NON retenue' in x for x in cut['warnings']), str(cut['warnings']), 'a leg without its longitude: the table is rejected, never completed')
     badp = P.parse_uk_star(page(bump=5.0))
-    c.ok(P.check_geometry(badp['tables'][0]['legs']), 'geometry check', 'a printed true course 5 degrees off is caught by the geometry check')
+    c.ok(_gaps(badp['tables'][0]['legs']), 'geometry check', 'a printed true course 5 degrees off is caught by the geometry check')
     r2, w2 = P.records_uk_app('EGXX', badp, 'x.pdf', '2026-10-01')
-    c.ok(r2 == [] and any('NON retenue' in x for x in w2), str(w2), 'and nothing is written from that table')
+    c.ok([(x['status'], x['doubt']) for x in r2] == [('doubt', 'geometry')] and not any('NON retenue' in x for x in w2), str(w2), 'and that table is kept as a doubt (code geometry), not dropped')
     bd = O.document_from_rows('EGXX', 'p.pdf', page(bump=5.0), '2026-10-01')
-    c.ok(bd['procedures'] == [] and not bd['formats'][0]['ok'], str(bd['formats']), 'document_from_rows marks the page not ok')
+    c.ok([(x['status'], x['doubt']) for x in bd['procedures']] == [('doubt', 'geometry')] and bd['formats'][0]['ok'], str(bd['formats']), 'document_from_rows keeps the table as a doubt (code geometry), the page is read')
 
 
 # ------------------------------------------------------------------------------------------------ Austrian RNAV transition coding tables read by OCR (static)
@@ -1280,7 +1305,7 @@ def k17(c):
     c.eq((lg[0]['alt'], lg[2]['kt'], lg[3]['turn'], lg[3]['over'], lg[1]['over'], lg[1]['alt']), ({'type': 'min', 'ft': 9000}, 220, 'L', True, None, {'type': 'min', 'ft': 8000}),
          'level and speed constraints, turn left read as L, fly-over yes -> True and no -> None', what='cells')
     c.ok(abs(lg[1]['lat'] - 47.35) < 1e-4 and abs(lg[1]['lon'] - 14.80) < 1e-4 and lg[1]['nm'] and lg[1]['crs'] and lg[1]['true'], str(lg[1]), 'compact co-ordinates, distance, magnetic and true courses read')
-    c.eq(P.check_geometry(lg), [], 'a coherent table has no geometry gap', what='check_geometry')
+    c.eq(_gaps(lg), [], 'a coherent table has no geometry gap', what='check_geometry')
     recs, w = P.records_uk_app('LOXX', parsed, 'x.pdf', '2026-10-01', '2026-01-01', 'LO')
     c.eq((len(recs), recs[0]['status'], recs[0]['kind'], recs[0]['id']), (1, 'check', 'STAR', 'LOXX.STAR.ALFAB1N.RWALL'), 'common schema: status check, kind STAR', what='records_uk_app')
     doc = O.document_from_rows('LOXX', 'p.pdf', rows, '2026-10-01')
@@ -1289,11 +1314,11 @@ def k17(c):
     cut = P.parse_at_coding(page(drop_lat=True))
     c.ok(cut['tables'] == [] and any('NON retenue' in x for x in cut['warnings']), str(cut['warnings']), 'a leg without its latitude: the table is rejected, never completed')
     badp = P.parse_at_coding(page(bump=5.0))
-    c.ok(P.check_geometry(badp['tables'][0]['legs']), 'geometry check', 'a printed true course 5 degrees off is caught by the geometry check')
+    c.ok(_gaps(badp['tables'][0]['legs']), 'geometry check', 'a printed true course 5 degrees off is caught by the geometry check')
     r2, w2 = P.records_uk_app('LOXX', badp, 'x.pdf', '2026-10-01')
-    c.ok(r2 == [] and any('NON retenue' in x for x in w2), str(w2), 'and nothing is written from that table')
+    c.ok([(x['status'], x['doubt']) for x in r2] == [('doubt', 'geometry')] and not any('NON retenue' in x for x in w2), str(w2), 'and that table is kept as a doubt (code geometry), not dropped')
     bd = O.document_from_rows('LOXX', 'p.pdf', page(bump=5.0), '2026-10-01')
-    c.ok(bd['procedures'] == [] and not bd['formats'][0]['ok'], str(bd['formats']), 'document_from_rows marks the page not ok')
+    c.ok([(x['status'], x['doubt']) for x in bd['procedures']] == [('doubt', 'geometry')] and bd['formats'][0]['ok'], str(bd['formats']), 'document_from_rows keeps the table as a doubt (code geometry), the page is read')
 
     # pypdf text-layer order: the lines of a leg are interleaved (course alone before, co-ordinates inline or apart, true course and distance after)
     def text_page(variant, drop_lon=False):
@@ -1339,7 +1364,7 @@ def k17(c):
         c.ok(lg and abs(lg[1]['lat'] - 47.35) < 1e-4 and abs(lg[1]['lon'] - 14.80) < 1e-4 and lg[1]['crs'] == round(brg) - 1 and abs(lg[1]['true'] - brg) < 0.06 and lg[1]['nm'] == float(f'{nm:.1f}'),
              str(lg[1:2]), f'{variant}-like: co-ordinates, magnetic course before, true course and distance after')
         c.eq((lg[3]['turn'], lg[3]['over'], lg[0]['lat'] is not None), ('L', True if variant == 'LO' else None, True), f'{variant}-like: turn read from the line after the leg', what=f'{variant} cells')
-        c.eq(P.check_geometry(lg), [], f'{variant}-like: the geometry check finds nothing', what=f'{variant} geometry check')
+        c.eq(_gaps(lg), [], f'{variant}-like: the geometry check finds nothing', what=f'{variant} geometry check')
     lz = P.parse_at_coding(text_page('LZ'))['tables'][0]['legs']
     c.eq((lz[1]['alt'], lz[0]['alt']), ({'type': 'min', 'ft': 8001}, {'type': 'min', 'ft': 10000}), 'LZ-like: « A 10000+ » with a space is read as a level', what='LZ level')
     cut = P.parse_at_coding(text_page('LZ', drop_lon=True))
@@ -1399,8 +1424,9 @@ def k20(c):
     c.ok(len(alone['procedures']) == 2 and any('coordonnées absentes' in x for x in alone['warnings']) and alone['procedures'][0]['points'][0]['lat'] is None, str(alone['warnings']),
          'without the list the points stay unresolved and the warning stays')
     bad = P.build_pdf_dir('EDXX', ['route.pdf', 'list.pdf'], lambda n: [route_page()] if n == 'route.pdf' else [list_page(moved=0.2)], '2026-01-01')
-    c.ok(len(bad['procedures']) == 1 and bad['procedures'][0]['name'].startswith('DDD') and any('NON retenue' in x for x in bad['warnings']) and not bad['formats'][0]['ok'],
-         str(bad['warnings']), 'a list that contradicts the printed distances rejects that procedure (geometry check after resolution), the other one stays')
+    c.ok(len(bad['procedures']) == 2 and [(x['name'][:3], x['doubt']) for x in bad['procedures'] if x['status'] == 'doubt'] == [('AAA', 'geometry')] and [x['name'][:3] for x in bad['procedures'] if x['status'] == 'check'] == ['DDD']
+         and not any('NON retenue' in x for x in bad['warnings']) and not bad['formats'][0]['ok'],
+         str(bad['warnings']), 'a list that contradicts the printed distances keeps that procedure as a doubt (geometry check after resolution), the other one stays sure')
     first_only = P.build_pdf_dir('EDXX', ['chart.pdf'], lambda n: [['SOME CHART']], '2026-01-01')
     c.ok(first_only['formats'][0]['ok'] is False and first_only['procedures'] == [] and first_only['formats'][0]['pages'] == 1, str(first_only['formats']), 'a document whose pages are all unknown gets one summary entry')
 
@@ -1840,7 +1866,7 @@ def k23(c):
             inst3 = json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text(encoding='utf-8'))['procedures']
             bad3 = [p for p in inst3 if p['status'] == 'doubt']
             c.ok(r3['ok'] and r3['procedures'] == 14 and bad3 and r3['stats']['doubt'] == len(bad3) and r3['stats']['dropped'] == 0
-                 and all(p['doubt'].startswith('géométrie incohérente') for p in bad3) and any('À VÉRIFIER' in w for w in r3['warnings']), str(r3)[:300],
+                 and all(p['doubt'] == 'geometry' for p in bad3) and any('À VÉRIFIER' in w for w in r3['warnings']), str(r3)[:300],
                  'a wrong position from the base of the workstation fails the geometry check: that procedure is KEPT with status doubt and its reason, counted in stats.doubt, a warning says which')
             idx3 = json.loads((data / 'proc' / 'manual' / 'index.json').read_text(encoding='utf-8'))['aerodromes']['LFBD']
             c.ok(idx3['SID'] + idx3['STAR'] + idx3['APP'] == 14 - len(bad3), str(idx3), 'the doubt records are not counted in the index of the aerodromes')
@@ -2055,7 +2081,7 @@ def k24(c):
     c.ok(any('non lue' in w and 'PO431' in w for w in ol['warnings']), str(ol['warnings']), 'a row with no leg type and no distance is NOT read, and reported')
     # gap: the first leg after the gap is not compared with the previous point
     pts = [{'id': 'A', 'leg': 'IF', 'lat': 45.0, 'lon': 1.0, 'crs': None, 'nm': None}, {'id': 'B', 'leg': 'TF', 'lat': 47.0, 'lon': 5.0, 'crs': 10, 'nm': 5.0}]
-    c.ok(P.gaps_of({'points': pts}) and not P.gaps_of({'points': [pts[0], {**pts[1], 'gap': True}]}), 'gap', 'the geometry check skips the leg flagged gap, and still catches the same leg without the flag')
+    c.ok(_gaps_of({'points': pts}) and not _gaps_of({'points': [pts[0], {**pts[1], 'gap': True}]}), 'gap', 'the geometry check skips the leg flagged gap, and still catches the same leg without the flag')
     # 9. the missed approach of the RNP pages: after the threshold point; none before
     r20 = P.records('LFPO', T('AD_2_LFPO_DATA_RWY20_FNA_RNP_CODE'), {}, 'x', '2026-10-01')[0]
     c.eq(len(r20), 1, 'RWY20: one approach (the former reading gave two, without its threshold)', what='LFPO RNP 20')
@@ -2122,7 +2148,7 @@ def k24(c):
     to_thr = P.bearing_nm((fpo['lat'], fpo['lon']), (by['06']['lat'], by['06']['lon']))[1]
     c.ok(abs(to_dthr - rw['nm']) < 0.06 < abs(to_thr - rw['nm']), f'printed {rw["nm"]} NM, to DTHR {to_dthr:.2f}, to THR {to_thr:.2f}',
          'FPO06 to RW06: 11.5 NM printed, the DTHR is 0.03 NM from it (the page rounds to 0.1), the THR 0.20 NM')
-    c.eq(P.gaps_of(rnp), [], 'the geometry check, now able to compare the leg to RW06, finds nothing', what='gaps RNP 06')
+    c.eq(_gaps_of(rnp), [], 'the geometry check, now able to compare the leg to RW06, finds nothing', what='gaps RNP 06')
     # 13. the ILS final: IF -> threshold (straight, synthetic) -> missed approach; the leg that « See chart » hides is not coded
     ils = next(p for p in d06['procedures'] if 'ILS' in p['name'])
     c.eq([(q['id'], q['leg'], q.get('phase'), q.get('synthetic'), q.get('gap')) for q in ils['points']],
@@ -2130,7 +2156,7 @@ def k24(c):
          'LFPO ILS 06: IPO06 (IF), RW06 (synthetic threshold), then PO412, MLN, MOLBA as the missed approach, `gap` kept on the first missed leg', what='ILS 06 points')
     c.eq(({k: ils['points'][1][k] for k in ('lat', 'lon', 'alt')}, ils['points'][0]['lat']), ({'lat': 48.721247, 'lon': 2.320514, 'alt': None}, 48.602972),
          'the threshold carries its position; the IF its own', what='ILS 06 positions')
-    c.eq(P.gaps_of(ils), [], 'the geometry check does not compare the first missed leg with the threshold', what='gaps ILS 06')
+    c.eq(_gaps_of(ils), [], 'the geometry check does not compare the first missed leg with the threshold', what='gaps ILS 06')
     f25 = ['AD_2_LFPO_DATA_02.pdf', 'AD_2_LFPO_DATA_RWY25_FNA_ILS_CAT123_LOC_CODE.pdf', 'AD_2_LFPO_DATA_RWY07_FNA_ILS_CAT123_LOC_CODE.pdf']
     d25 = P.build_aerodrome('LFPO', f25, rows_pdf, 'https://example.org' + base, '2026-10-01', None, None, page('LFPO'))
     i25 = next(p for p in d25['procedures'] if p['runways'] == ['25'])
@@ -2151,8 +2177,8 @@ def k24(c):
          'LFBO ILS 14L: IO14L, RW14L (the THR: no displaced threshold), BO512', what='LFBO ILS 14L')
     # 14. the report of a reading
     st = P.stats_of([{'ok': True, 'problems': []}, {'ok': False, 'problems': ['info: x', '3 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}, {'ok': False, 'problems': ['disposition non reconnue (x)']},
-                     {'ok': False, 'problems': ['2 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}], 12, ['bloc sans titre qui répète une procédure nommée'], ['géométrie incohérente', 'sans nom'])
-    c.eq(st, {'pages': 4, 'read': 1, 'rejected': 3, 'procedures': 12, 'dropped': 1, 'doubt': 2, 'reasons': [['lignes de tronçon illisibles (moins de 85 % lues)', 2], ['bloc sans titre qui répète une procédure nommée', 1], ['géométrie incohérente', 1]]},
+                     {'ok': False, 'problems': ['2 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %']}], 12, ['bloc sans titre qui répète une procédure nommée'], ['geometry', 'name'])
+    c.eq(st, {'pages': 4, 'read': 1, 'rejected': 3, 'procedures': 12, 'dropped': 1, 'doubt': 2, 'reasons': [['lignes de tronçon illisibles (moins de 85 % lues)', 2], ['bloc sans titre qui répète une procédure nommée', 1], ['geometry', 1]]},
          'pages found / read / rejected, procedures, dropped (really removed), doubt (kept, to check), the three most frequent reasons', what='stats_of')
     # 15. Orly STAR RWY20 (the user's page 11/24): five STARs, each with its IF; an arrow glyph leading a row (« → TF DIBES ») is no cell;
     # the HOLDING block is no procedure
@@ -2229,12 +2255,12 @@ def k25(c):
     c.eq((sorted(pms), pms['BIBAX']['merge'], pms['BIBAX']['arc'][0], pms['BIBAX']['runways'], pms['BIBAX']['source']), (['BIBAX', 'LUKIP'], 'KOLIV', 'BIBA1', ['27L'], {'file': stem('STAR_RWY27L_RNAV_CODE_05') + '.pdf'}),
          'point_merge of the file: name, merge point, arc, the runways that use it, the page', what='doc.point_merge')
     procs = {p['id']: p for p in doc['procedures']}
-    c.ok(not [i for i, p in procs.items() if '.NONAME.' in i and p['status'] != 'doubt'] and not [i for i, p in procs.items() if p['status'] != 'doubt' and P.repeated_points(p)], 'ids',
+    c.ok(not [i for i, p in procs.items() if '.NONAME.' in i and p['status'] != 'doubt'] and not [i for i, p in procs.items() if p['status'] != 'doubt' and _geometry().repeated_points(p)], 'ids',
          'no nameless record and no record that repeats a point is installed as sure')
     c.eq(sorted(p['name'] for p in doc['procedures'] if p['kind'] == 'STAR' and p['runways'] == ['27L'] and 'BIBAX' in p['name']), ['BIBAX 9P', 'BIBAX 9V', 'BIBAX 9W', 'BIBAX 9X'], 'RWY27L BIBAX STARs, each named', what='27L names')
     c.ok(procs['LFPG.SID.AGOPA7A.RW27L']['points'][4]['id'] == 'ADADA', str([q['id'] for q in procs['LFPG.SID.AGOPA7A.RW27L']['points']]), 'a point name split by the page (« ADAD A ») is put back (ADADA is in the DATA page)')
     ol = procs['LFPG.SID.OLZOM7B.RW26L']
-    c.ok(ol['status'] == 'doubt' and ol['doubt'] == '1 ligne(s) de la table non lue(s)' and procs['LFPG.SID.DORDI7B.RW26L']['status'] == 'check', f"{ol['status']} {ol.get('doubt')}",
+    c.ok(ol['status'] == 'doubt' and ol['doubt'] == 'unread' and procs['LFPG.SID.DORDI7B.RW26L']['status'] == 'check', f"{ol['status']} {ol.get('doubt')}",
          'OLZOM 7B: one ambiguous leg row (TF PG275, a cell short) is left out and the procedure is KEPT with status doubt and its reason; DORDI 7B, whole, stays check')
     ina = [p for p in doc['procedures'] if p['kind'] == 'APP' and 'INA' in p['id']]
     c.eq(([p['transition'] for p in ina], all(p['points'][0]['leg'] == 'IF' for p in ina)), (['LORNI 1E', 'LORNI 1X', 'OKIPA 1E', 'OKIPA 1X', 'OKIPA 1N', 'OKIPA 1R', 'BANOX 1E', 'MOPAR 1E'], True),
@@ -2248,16 +2274,17 @@ def k25(c):
     # 6. the guardrails on records: a doubt, never a purge
     mk = lambda i, pts, kind='STAR': {'id': i, 'kind': kind, 'name': None, 'runways': ['27L'], 'points': [{'id': a, 'lat': b, 'lon': d, 'leg': l} for a, b, d, l in pts]}
     nameless = mk('LFPG.STAR.NONAME.RW27L', [('A', 49.0, 1.0, 'IF'), ('B', 49.0, 0.5, 'TF'), ('C', 49.0, 0.0, 'TF')])
-    c.eq(P.doubts_of(nameless), ['sans nom'], 'a nameless record', what='sans nom')
+    G = _geometry()
+    c.eq(G.guardrails(nameless), [('name', 'sans nom')], 'a nameless record', what='name')
     rep = mk('LFPG.STAR.X1A.RW27L', [('BIBAX', 49.0, 1.0, 'IF'), ('KOLIV', 49.0, 0.5, 'TF'), ('MOPAR', 49.0, 0.0, 'TF'), ('KOLIV', 49.0, 0.5, 'TF')])
-    c.eq(P.doubts_of(rep)[0], 'point répété hors attente: KOLIV', 'a point seen twice outside a holding', what='repeated')
+    c.eq(G.guardrails(rep)[0], ('repeat', 'point répété hors attente: KOLIV'), 'a point seen twice outside a holding', what='repeated')
     hold = mk('LFPG.STAR.X2A.RW27L', [('A', 49.0, 1.0, 'IF'), ('B', 49.0, 0.5, 'TF'), ('B', 49.0, 0.5, 'FM'), ('C', 49.0, 0.0, 'TF'), ('B', 49.0, 0.5, 'HM')])
-    c.eq(P.doubts_of(hold), [], 'a manual-termination leg on the same fix and a holding are not repeats', what='holding')
+    c.eq(G.guardrails(hold), [], 'a manual-termination leg on the same fix and a holding are not repeats', what='holding')
     zig = mk('LFPG.STAR.X3A.RW27L', [('A', 49.0, 0.0, 'IF'), ('B', 49.0, 1.0, 'TF'), ('C', 49.0, 0.0, 'TF'), ('D', 49.0, 1.0, 'TF'), ('E', 49.0, 0.2, 'TF')])
-    z = P.zigzag_ratio(zig)
-    c.ok(z and z > 3 and P.doubts_of(zig) == [f'zigzag: {z:.1f} × le trajet direct'.replace('.', ',')], f'{z} {P.doubts_of(zig)}', 'a zigzag: the path is more than three times the direct distance')
+    z = G.zigzag_ratio(zig)
+    c.ok(z and z > 3 and G.guardrails(zig) == [('zigzag', f'zigzag: {z:.1f} × le trajet direct'.replace('.', ','))], f'{z} {G.guardrails(zig)}', 'a zigzag: the path is more than three times the direct distance')
     straight = mk('LFPG.STAR.X4A.RW27L', [('A', 49.0, 1.0, 'IF'), ('B', 49.0, 0.5, 'TF'), ('C', 49.0, 0.0, 'TF')])
-    c.eq((P.zigzag_ratio(straight) < 1.01, P.doubts_of(straight), P.zigzag_ratio(mk('x', [('A', 49.0, 1.0, 'IF'), ('B', None, None, 'TF'), ('C', 49.0, 0.0, 'TF')]))), (True, [], None),
+    c.eq((G.zigzag_ratio(straight) < 1.01, G.guardrails(straight), G.zigzag_ratio(mk('x', [('A', 49.0, 1.0, 'IF'), ('B', None, None, 'TF'), ('C', 49.0, 0.0, 'TF')]))), (True, [], None),
          'a straight route is fine; fewer than three positioned points: not measured', what='zigzag')
     # the same through the whole chain: a page whose first block has lost its title, and a page that repeats a point; both kept as doubt, counted
     r08 = rows(stem('STAR_RWY08L_RNAV_CODE_01'))
@@ -2267,19 +2294,19 @@ def k25(c):
     dup.insert(k + 1, '- TF XERAM - 269 270.5 27.9 -- -- 1.0')
     d2 = P.build_aerodrome('LFPG', [stem('STAR_RWY08L_RNAV_CODE_01') + '.pdf'], lambda n: notitle, 'https://example.org/AIRAC-2026-10-29', '2026-10-29')
     nn = [p for p in d2['procedures'] if '.NONAME.' in p['id']]
-    c.ok(len(nn) == 1 and nn[0]['status'] == 'doubt' and nn[0]['doubt'] == 'sans nom' and any('À VÉRIFIER' in w and 'NONAME' in w for w in d2['warnings']), str([(p['id'], p['status']) for p in nn]),
-         'a nameless record is KEPT, status doubt, reason « sans nom », and said in the warnings (not installed as sure, not purged)')
+    c.ok(len(nn) == 1 and nn[0]['status'] == 'doubt' and nn[0]['doubt'] == 'name' and any('À VÉRIFIER' in w and 'NONAME' in w for w in d2['warnings']), str([(p['id'], p['status']) for p in nn]),
+         'a nameless record is KEPT, status doubt, code name, and said in the warnings (not installed as sure, not purged)')
     d3 = P.build_aerodrome('LFPG', [stem('STAR_RWY08L_RNAV_CODE_01') + '.pdf'], lambda n: dup, 'https://example.org/AIRAC-2026-10-29', '2026-10-29')
     rp = [p for p in d3['procedures'] if p['status'] == 'doubt']
-    c.ok(len(rp) == 1 and rp[0]['name'] == 'MOPIL 9E' and rp[0]['doubt'] == 'point répété hors attente: XERAM' and len(d3['procedures']) == 5, str([(p['id'], p.get('doubt')) for p in rp]),
-         'a repeated point: the procedure is kept with status doubt and the point named')
-    st = P.stats_of(d3['formats'], len(d3['procedures']), [x['reason'] for x in d3.get('dropped', [])], [P.doubt_key(p['doubt']) for p in rp])
-    c.eq((st['dropped'], st['doubt'], st['reasons']), (0, 1, [['point répété hors attente', 1]]), 'stats: nothing removed, one in doubt; the reason is counted', what='stats')
+    c.ok(len(rp) == 1 and rp[0]['name'] == 'MOPIL 9E' and rp[0]['doubt'] == 'repeat' and len(d3['procedures']) == 5 and any('À VÉRIFIER' in w and 'XERAM' in w for w in d3['warnings']), str([(p['id'], p.get('doubt')) for p in rp]),
+         'a repeated point: the procedure is kept with status doubt (code repeat) and the point named in the warnings')
+    st = P.stats_of(d3['formats'], len(d3['procedures']), [x['reason'] for x in d3.get('dropped', [])], G.doubt_codes(rp))
+    c.eq((st['dropped'], st['doubt'], st['reasons']), (0, 1, [['repeat', 1]]), 'stats: nothing removed, one in doubt; the reason is counted', what='stats')
     d7 = P.build_aerodrome('LFPO', ['AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_04.pdf', 'AD_2_LFPO_DATA_SID_RWY07_RNAV_CODE_05.pdf'], lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-01', '2026-10-01')
     c.ok(len(d7['dropped']) == 1 and d7['dropped'][0]['reason'] == 'bloc sans titre qui répète une procédure nommée' and not [p for p in d7['procedures'] if '.NONAME.' in p['id']], str(d7.get('dropped')),
          'the untitled repeat of a named procedure is REALLY removed and counted as dropped (the only removal)')
     geo = {'id': 'LFPG.SID.G1A.RW27L', 'kind': 'SID', 'status': 'check', 'points': [{'id': 'A', 'lat': 49.0, 'lon': 1.0, 'leg': 'IF'}, {'id': 'B', 'lat': 49.0, 'lon': 0.0, 'leg': 'TF', 'crs': 90, 'nm': 5.0}]}
-    c.ok(P.mark_geometry(geo) and geo['status'] == 'doubt' and geo['doubt'].startswith('géométrie incohérente: A → B'), str(geo), 'the geometry check marks a procedure whose printed course and distance contradict the positions: doubt, not removed')
+    c.ok(any('A → B' in x for x in G.review(geo)) and geo['status'] == 'doubt' and geo['doubt'] == 'geometry', str(geo), 'the geometry check marks a procedure whose printed course and distance contradict the positions: doubt, not removed')
 
 @case('K27', 'OpenAir limits: the unit is a whole word (X-Plane airspaces)', 'K', tags=('aerodb',), phone=False,
       rule='aerodb DECISIONS 29 Oct 2026 (Dublin CTA « 3000 m »): the M of MSL is no metre')
@@ -2327,7 +2354,7 @@ def k26(c):
          'digits cut by the text layer are joined: « 52565 6 . 4 », « 15 8 », « 020. 0 », « 1 1.8 »')
     c.eq(([x['id'] for x in b], b[1]['turn'], b[0]['alt']), ([None, 'DX110', 'DX024', 'MAVIS'], 'R', {'type': 'min', 'ft': 750}),
          '« DX0 24 » is put back whole (same position as DX024 above); « Turn R , VOR » is a right turn; « A750+ » joined', what='MAVI 1B')
-    c.eq([P.check_geometry(t['legs']) for t in r['tables']], [[], []], 'true tracks and distances agree with the printed positions', what='geometry')
+    c.eq([_gaps(t['legs']) for t in r['tables']], [[], []], 'true tracks and distances agree with the printed positions', what='geometry')
     # arrivals: the text layer gives the page backwards
     s = P.parse_ei_coding(star)
     c.eq(([t['name'] for t in s['tables']], [t['kind'] for t in s['tables']], [t['runways'] for t in s['tables']], s['warnings']),
@@ -2337,7 +2364,7 @@ def k26(c):
     c.eq(([x['alt'] for x in z][:2], z[4]['alt'], z[1]['kt'], z[1]['turn']), ([{'type': 'max', 'ft': 24000}, {'type': 'at', 'ft': 8000}], {'type': 'min', 'ft': 3000}, 220, 'R'),
          '« - FL240 / - » (sign apart) is at or below FL240; « FL080 / FL080 » at; « - / +A3000 » at or above', what='STAR limits')
     c.eq(k[0]['alt'], {'type': 'between', 'ft': 15000, 'ft2': 17000}, '« -FL170 / +FL150 » is between FL150 and FL170', what='between')
-    c.eq([P.check_geometry(t['legs']) for t in s['tables']], [[], []], 'geometry', what='STAR geometry')
+    c.eq([_gaps(t['legs']) for t in s['tables']], [[], []], 'geometry', what='STAR geometry')
     # RNP approaches: the navigation specification cut over three lines, the vertical angle column, the missed approach after the runway point
     p = P.parse_ei_coding(app)
     c.eq(([t['name'] for t in p['tables']], [t['kind'] for t in p['tables']], [t['runways'] for t in p['tables']]), (['RNP RWY 28L via LUMEX'], ['APP'], [['28L']]),
@@ -2382,4 +2409,75 @@ def k26(c):
     c.ok(any('hors d\'un bloc titré' in x and 'NON retenue' in x for x in orphan['warnings']), str(orphan['warnings']), 'leg rows with no title above them are reported, not dropped silently')
     bumped = P.parse_ei_coding(mutate(sid, '200.3 / 203', '205.3 / 203'))
     recs, w = P.records_uk_app('EIXX', bumped, 'f.pdf', '2026-10-29', None, 'EI')
-    c.eq((len(recs), sum('incoh' in x and 'NON retenue' in x for x in w)), (1, 1), 'a true track 5 degrees off is caught by the geometry check', what='geometry check')
+    c.eq((len(recs), [x['doubt'] for x in recs if x['status'] == 'doubt'], sum('NON retenue' in x for x in w)), (2, ['geometry'], 0), 'a true track 5 degrees off is caught by the geometry check: that table is kept as a doubt, no table is dropped', what='geometry check')
+
+
+@case('K28', 'proc_geometry: one check, tolerance by what the source prints, one policy (a doubt marked with a code, nothing refused)', 'K', static=True,
+      rule='V3 § 10.26 and § 10.29 (a): the tolerance is chosen by what the source prints, a failing record is kept with status doubt and a code, a hand reading is refused procedure by procedure')
+def k28(c):
+    import contextlib
+    import io
+    import json
+    import tempfile
+    from pathlib import Path
+    G = _geometry()
+    import importlib
+    M = importlib.import_module('proc_manual')
+    c.eq(G.TOLERANCES, {'true': (0.25, 0.2), 'magnetic': (30.0, 0.55)}, 'the tolerance table: true course tight, magnetic course broad', what='TOLERANCES')
+    a, b = (51.0, -1.0), (51.1, -0.5)
+    brg, nm = G.bearing_nm(a, b)
+
+    def leg(**kw):
+        return [{'id': 'A', 'leg': 'IF', 'lat': a[0], 'lon': a[1]}, {'id': 'B', 'leg': 'TF', 'lat': b[0], 'lon': b[1], **kw}]
+    c.eq((G.basis_of(leg(true=1)[1]), G.basis_of(leg(crs=10)[1]), G.basis_of(leg(nm=5)[1]), G.basis_of(leg()[1]), G.tolerance_of(leg(trk=1)[1]), G.tolerance_of(leg()[1])),
+         ('true', 'magnetic', 'magnetic', None, (0.25, 0.2), None), 'the basis is what the leg prints: a true course, a magnetic course or a distance, nothing; the tolerance follows', what='basis')
+    c.eq(G.check_legs(leg(true=round(brg + 0.2, 2)))['gaps'], [], 'a true course 0.2° off passes the tight tolerance', what='true ok')
+    c.ok(G.check_legs(leg(true=round(brg + 0.4, 2)))['gaps'], 'gap', 'a true course 0.4° off fails it')
+    c.eq(G.check_legs(leg(crs=round(brg + 20)))['gaps'], [], 'the same 20° off as a magnetic course passes the broad tolerance', what='magnetic ok')
+    c.ok(G.check_legs(leg(crs=round(brg + 40)))['gaps'] and G.check_legs(leg(nm=round(nm + 0.7, 1)))['gaps'], 'gap', 'a magnetic course 40° off and a distance 0.7 NM off fail it')
+    un = G.check_legs(leg())
+    c.eq((un['gaps'], un['compared'], un['positioned']), ([], 0, 1), 'nothing printed: nothing compared, the leg is counted as positioned (uncheckable)', what='uncheckable counts')
+    # the policy: a record that fails is kept with status doubt and a code; uncheckable is a warning, never a doubt; the code is not said twice
+    pts = [{'id': 'A', 'lat': a[0], 'lon': a[1], 'leg': 'IF'}, {'id': 'B', 'lat': b[0], 'lon': b[1], 'leg': 'TF', 'trk': round(brg + 5, 1)}]
+    rec = {'id': 'EGXX.STAR.T1A.RWALL', 'status': 'check', 'points': pts}
+    w = G.review(rec)
+    c.eq((rec['status'], rec['doubt'], len(w), G.review(rec), G.codes_of(rec), G.doubt_codes([rec])), ('doubt', 'geometry', 1, [], ['geometry'], ['geometry']), 'a failing record: status doubt, code geometry, one warning, nothing said twice', what='review')
+    plain = {'id': 'EGXX.STAR.T2A.RWALL', 'status': 'check', 'points': [{**pts[0]}, {'id': 'B', 'lat': b[0], 'lon': b[1], 'leg': 'TF'}]}
+    w2 = G.review(plain)
+    c.ok(plain['status'] == 'check' and 'doubt' not in plain and len(w2) == 1 and 'non contrôlable' in w2[0], str((plain, w2)), 'nothing printed: a warning, the record stays sure (uncheckable is never a doubt)')
+    first = G.mark(plain, 'unread', '2 ligne(s) de la table non lue(s)')
+    c.eq((first.endswith('À VÉRIFIER, 2 ligne(s) de la table non lue(s)'), G.mark(plain, 'unread'), plain['status'], plain['doubt']), (True, None, 'doubt', 'unread'), 'a code already marked is not said again', what='mark twice')
+    unr = {'id': 'EGXX.STAR.T3A.RWALL', 'status': 'check', 'points': [{'id': 'A', 'lat': a[0], 'lon': a[1], 'leg': 'IF'}, {'id': 'B', 'lat': None, 'lon': None, 'leg': 'TF', 'crs': 40}]}
+    c.eq((G.findings(unr), [x[0] for x in G.findings(unr, G.REQUIRED)]), ([], ['unresolved']), 'a point without position is skipped while aerodb still resolves them, a doubt (code unresolved) when positions are required', what='unresolved')
+    c.eq(G.mark(unr, 'unresolved') is not None and unr['doubt'], 'unresolved', 'the code is set on the record', what='unresolved mark')
+    # an approach loops on purpose: the same shape is a doubt as a STAR, none as an APP (repeat and zigzag are for SID and STAR; name is for every kind)
+    loop = [('A', 49.0, 0.0, 'IF'), ('B', 49.0, 1.0, 'TF'), ('C', 49.0, 0.0, 'TF'), ('D', 49.0, 1.0, 'TF'), ('E', 49.0, 0.2, 'TF'), ('B', 49.0, 1.0, 'TF')]
+    mkp = lambda i, kind: {'id': i, 'kind': kind, 'points': [{'id': a_, 'lat': b_, 'lon': d_, 'leg': l_} for a_, b_, d_, l_ in loop]}
+    c.eq(([x[0] for x in G.guardrails(mkp('X.STAR.L1A.RWALL', 'STAR'))], [x[0] for x in G.guardrails(mkp('X.SID.L1A.RWALL', 'SID'))], G.guardrails(mkp('X.APP.L1A.RW27', 'APP')),
+          [x[0] for x in G.guardrails(mkp('X.APP.NONAME.RW27', 'APP'))]), (['repeat', 'zigzag'], ['repeat', 'zigzag'], [], ['name']),
+         'the same looping shape is flagged repeat and zigzag as a STAR or a SID, not as an APP; a nameless APP is still flagged', what='guards by kind')
+    # hand readings: refused one procedure at a time, never the whole file unless none remains
+    good = {'id': 'EGXX.STAR.G1A.RWALL', 'kind': 'STAR', 'status': 'check', 'points': [{**pts[0]}, {**pts[1], 'trk': round(brg, 1), 'nm': round(nm, 1)}]}
+    wrong = {'id': 'EGXX.STAR.W1A.RWALL', 'kind': 'STAR', 'status': 'check', 'points': [{**pts[0]}, {**pts[1], 'trk': round(brg + 5, 1)}]}
+    marked = {'id': 'EGXX.STAR.D1A.RWALL', 'kind': 'STAR', 'status': 'doubt', 'doubt': 'geometry', 'points': [{**pts[0]}, {**pts[1], 'trk': round(brg + 5, 1)}]}
+    doc = {'schema': 1, 'icao': 'EGXX', 'cycle': '2026-10-01', 'procedures': [good, wrong, marked]}
+    kept, refused = M.screen(doc)
+    c.eq(([p['id'] for p in kept['procedures']], len(refused), 'cap calculé' in refused[0], len(M.verify(doc))), (['EGXX.STAR.G1A.RWALL', 'EGXX.STAR.D1A.RWALL'], 1, True, 1),
+         'screen: the hand reading that fails is refused alone, a record the reader already marked doubt is kept, not rechecked; verify lists the same refusal', what='screen')
+    with tempfile.TemporaryDirectory() as td:
+        f = Path(td) / 'EGXX.json'
+        f.write_text(json.dumps(doc), encoding='utf-8')
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            M.main([str(f), '--out', td])
+        inst = json.loads((Path(td) / 'manual' / 'EGXX.json').read_text(encoding='utf-8'))
+        c.ok(sorted(p['id'] for p in inst['procedures']) == ['EGXX.STAR.D1A.RWALL', 'EGXX.STAR.G1A.RWALL'] and 'REFUSÉE' in err.getvalue(), err.getvalue()[-300:],
+             'main installs the procedures that pass and says which one was refused: the file is not refused')
+        f.write_text(json.dumps({**doc, 'procedures': [wrong]}), encoding='utf-8')
+        try:
+            with contextlib.redirect_stderr(io.StringIO()):
+                M.main([str(f), '--out', td])
+            code = 0
+        except SystemExit as e:
+            code = e.code
+        c.eq(code, 1, 'a file whose every procedure is refused is refused (exit 1)', what='none left')

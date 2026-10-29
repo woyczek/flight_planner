@@ -37,6 +37,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   INTEGRATION § 15.1, DECISIONS; cases I8, A29): each data set brings its own verbs in `tools/regen/<set>.py`; one commit
   path for every job, signed with the trigram of the page; the last job and the gaps between readings survive a restart of
   the launcher (an interrupted job is said so).
+- **aerodb: one geometry check and one policy for every reader** (`tools/proc_geometry.py`; `proc_eaip.py`, `proc_manual.py`, `proc_ocr.py`, `proc_ead.py`, `regen_jobs.py`; SPEC § 5 quinquies,
+  DECISIONS; V3 § 10.26 and § 10.29 (a); cases K1 to K28) — the three checks (`check_geometry`, `gaps_of`, `proc_manual.verify`) and the guards (name, repeated point, zigzag) become one module: printed course and
+  distance against the recomputed ones with a tolerance chosen by what the source prints (true course 0.25° / 0.2 NM, magnetic course or distance 30° / 0.55 NM, nothing printed: « uncheckable », a warning). A record that fails is kept
+  with `status: 'doubt'` and its reason as a code (`geometry`, `unresolved`, `name`, `repeat`, `zigzag`, `unread`), the text staying in the console and the file's warnings; EAD and OCR no longer drop a table for one
+  record; a hand reading is still refused procedure by procedure (never the whole file unless none is left); `stats.reasons` carries the codes. The outcome on LFPO, LFBO, LFPG and EIDW is unchanged.
+
 - **Aeronautical data: personal-licence sources say who may tick them** (`shared/aero_zones.js` `personal`,
   `shared/maintenance_page.js`; `modules/data/SPEC.md` invariant 1, DECISIONS): in Settings › Maintenance (V2) ›
   Aeronautical data, the box of the X-Plane source (and of ENAIRE and NATS, personal-use licences) carries the line « À cocher

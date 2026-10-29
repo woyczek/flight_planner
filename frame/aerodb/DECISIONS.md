@@ -1639,3 +1639,29 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
 - **Kept**: `revs` (path → revision read): it filters the echo of aerodb's own reads in the watchers of the zones, the aircraft types and
   `proc/` — a role `revalidate` does not take; removing it is not part of this commit.
 - **Bench**: K1 (the fake reader's `revalidate` catches up on the installed file; both paths revalidated, nothing else).
+
+## 29 October 2026 — § 10.29 (a): `tools/proc_geometry.py`, one geometry check and one policy for every reader
+
+- **Why**: three checks lived apart (`proc_eaip.check_geometry` with two branches, `proc_eaip.gaps_of` for the eAIP records, `proc_manual.verify` for hand readings), the guards (`doubts_of`, `mark_geometry`, `doubt_key`) were in the eAIP
+  reader, and EAD and OCR dropped a whole table when one failed. The reason of a doubt was a French phrase, `stats.reasons` carried phrases. V3 § 10.26 asks for one definition and codes.
+- **The check**: the printed course and distance against the ones recomputed from the positions, **tolerance chosen by what the source prints**, a table (`TOLERANCES`) and one function (`basis_of`): a true course
+  (`trk`) → 0.25° / 0.2 NM (every OCR reading, UK, Ireland, Austria, Belgium, hand readings); a magnetic course or a distance only (`crs`, `nm`) → 30° / 0.55 NM (SIA, Germany); neither → `uncheckable`, a warning, never a doubt.
+  The choice is made leg by leg, as before (a table may print a true course on some legs only). A `gap` leg is not compared with the previous one.
+- **The policy**: a record that fails is **kept**, `status: 'doubt'`, its reason a **code** in `doubt` (`geometry`, `unresolved`, `name`, `repeat`, `zigzag`, `unread`; several: joined by `,`, the first is the one counted); the human
+  detail (« géométrie incohérente: A → B: cap calculé … », « point répété hors attente: KOLIV ») lives only in the console and the file's `warnings` (`<id> À VÉRIFIER, <detail>`), not in the record: no `doubt_detail`. `uncheckable`
+  is not a doubt code (`DOUBT_CODES`). `mark` is idempotent (a code is said once), `review(proc)` is the one call a reader makes on a record it has built.
+- **Where**: `build_aerodrome` runs `review` on every record (guards and geometry); the launcher's second pass (`mark_geometry`) is gone. `records_uk_app` (EAD, OCR) runs `review` on each built record and now keeps the printed
+  true course on the points (`trk`, it used to be added by `proc_ocr` afterwards). **No reader refuses a table or an aerodrome for a record that fails**: the K cases that expected a dropped table (K10, K13, K14, K16, K17, K19,
+  K20, K26) now expect a kept `doubt` record with the code `geometry` — that is the policy, not an adaptation of strings. A block whose counts disagree (no record can be built) stays `NON retenue`, and so does a Belgian block whose point is
+  missing from the list: left for the common pass of § 10.29 (b), which will check after resolution (`positions=REQUIRED` exists for that and is covered by K28, no reader uses it yet).
+- **The guards are the same for every reader** (coordinator, 29 Oct): `name` applies to every kind; `repeat` and `zigzag` to SID and STAR only, never to APP. Measured on EIDW (196 procedures), the guards applied to the EAD records flagged five
+  RNP approaches « via » a beacon (`RNP RWY 28L VIA DUB`: the path comes back near the initial point, ratio 6 to 66) — a false positive that comes from the KIND, not the source (an approach loops on purpose: via a VOR, a procedure turn, a
+  racetrack). So the rule sits in `proc_geometry.guardrails`, for eAIP, EAD and OCR alike; `records_uk_app` calls `review` with the guards on. There is no per-reader switch.
+- **proc_manual** keeps its refusal **per procedure** (`screen(doc)` → the file without the refused procedures, and why; `verify` = `file_problems` + the refusals, kept for the callers and the cases): a hand reading that fails is not installed, named,
+  the others are; the file is refused only when its header or its identifiers are wrong, or when none is left. A procedure the reader already marked `doubt` is not rechecked (it is kept as doubtful, never refused). `regen_jobs._ead_fetch` goes
+  through `screen` as well; its `geometry check failed` answer stays for the case where every procedure is refused.
+- **stats**: `stats_of(formats, procedures, dropped, doubt)` takes one code per doubt procedure (`proc_geometry.doubt_codes`) and `reasons` carries it; the rejected pages and the dropped keep a phrase until (c). The console (`_summary`, `_nothing_read`)
+  says the phrase of a code (`proc_geometry.phrase`). Fuel (`procWhy`, `procWhyText`) shows an unknown reason as it is: it must translate the six codes (see the report of the lot).
+- **Removed** from `proc_eaip.py`: `check_geometry`, `gaps_of`, `mark_geometry`, `doubts_of`, `doubt_key`, `repeated_points`, `zigzag_ratio`, `HOLD_LEGS`, `ZIGZAG_MAX`; `bearing_nm` moved to `proc_geometry` and is re-exported by
+  `proc_eaip` (the cases and the invented pages use `P.bearing_nm`). No other session's code called them (`grep` over the repository). **Bench**: K1 to K28; K28 is new (tolerance table, basis, uncheckable, unresolved, review, screen).
+- **Measure** (cached pages, offline, same reading before and after): LFPO 309 procedures (1 doubt, `unread`), LFBO 78 (0), LFPG 711 (2 `unread`; with the SIA base of the workstation 6 `geometry`, identical), EIDW 196 (0): same identifiers, same doubts.

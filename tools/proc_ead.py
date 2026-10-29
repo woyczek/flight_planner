@@ -842,7 +842,7 @@ def ocr_pass(doc, pdfs, cache, icao, out, say=print):
     """Lecture par OCR des documents dont aucune page n'a de disposition connue ET que la lecture signale « dessinés en vecteurs ou image » (pas de couche de texte). Sans moteur
     d'OCR (tools/proc_ocr.py : pypdfium2 et Tesseract ou rapidocr-onnxruntime), le message d'installation est affiché et on continue. Avec un moteur, chaque document est lu page par
     page, les pages fusionnées dans <out>/<OACI>.ocr.json (que tools/proc_manual.py installe : il refait caps et distances) ; la console dit ce qui a été lu et ce que le contrôle de géométrie
-    a écarté. Rend le document OCR, ou None."""
+    a marqué à vérifier. Rend le document OCR, ou None."""
     vect = [fm['file'] for fm in doc['formats'] if 'pages' in fm and any('vecteurs' in x for x in fm['problems'])]
     if not vect:
         return None
@@ -863,8 +863,9 @@ def ocr_pass(doc, pdfs, cache, icao, out, say=print):
             continue
         dropped = [x for x in d['warnings'] if 'NON retenue' in x]
         read = [f for f in d['formats'] if f['layout']]
+        doubtful = sum(1 for x in d['procedures'] if x.get('status') == 'doubt')
         say(f'  OCR {name}: {len(d["formats"])} page(s), {len(read)} de disposition reconnue ({", ".join(sorted({f["layout"] for f in read})) or "aucune"}), '
-            f'{len(d["procedures"])} procédure(s) retenue(s), {len(dropped)} table(s) écartée(s) par le contrôle de géométrie ou les comptes')
+            f'{len(d["procedures"])} procédure(s) retenue(s), dont {doubtful} à vérifier (contrôle de géométrie, proc_geometry), {len(dropped)} table(s) écartée(s) par les comptes')
         merged['formats'] += d['formats']
         merged['warnings'] += d['warnings']
         for rec in d['procedures']:

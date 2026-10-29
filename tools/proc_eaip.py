@@ -23,6 +23,9 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 
+import proc_geometry as G
+from proc_geometry import bearing_nm  # noqa: F401  (les cas K et les pages inventées s'en servent : P.bearing_nm)
+
 DASHES = '-‐‑‒–—'
 PATH_TERMINATORS = {'IF', 'TF', 'CF', 'DF', 'RF', 'AF', 'CA', 'CD', 'CI', 'CR', 'FA', 'FC', 'FD', 'FM', 'HA', 'HF', 'HM', 'PI',
                     'VA', 'VD', 'VI', 'VM', 'VR'}
@@ -1907,7 +1910,7 @@ def parse_ei_coding(rows, known=None):
     """Tables de codage de l'Irlande (vues le 28 octobre 2026, puis à Dublin le 29) : un tronçon par ligne, avec ses coordonnées → { kind: 'MIXED', tables: [{ title, kind, name, runways,
     transition, legs }], warnings }. Deux ordres de colonnes (voir _ei_cells) ; blocs « ABIDO1B CAT A/B SID RWY28L » + désignateur court, « NIMAT 4L STAR RWY 28L/R » (page à l'envers), titres
     d'approche (voir _ei_title) ; un en-tête sur 2 ou 3 lignes (hémisphères dans « Latitude (N), Longitude (W) », colonne « VPA » pour les pages RNP et ILS). Les groupes de chiffres éclatés
-    d'une coordonnée ou d'un cap sont rejoints (un cap vrai / magnétique, une distance et des coordonnées sont ensuite contrôlés par check_geometry). Limite supérieure = maximum, inférieure =
+    d'une coordonnée ou d'un cap sont rejoints (un cap vrai / magnétique, une distance et des coordonnées sont ensuite contrôlés par proc_geometry). Limite supérieure = maximum, inférieure =
     minimum, égales = à l'altitude (« A750 + » : au moins 750 ft). La première ligne d'un départ « RWY28 - CA » est un tronçon sans point : id None, cap de la piste, altitude. « Turn L / R » (ou « L »,
     « R » seul) des remarques = virage vers ce tronçon. Un nom coupé (« DW0 24 ») n'est lu que si les mêmes coordonnées portent ailleurs, non coupé, le même nom (`known` : { (lat, lon): nom } des
     autres pages ; la page elle-même sert aussi) ; sinon, comme toute ligne illisible, ambiguë ou contraire à elle-même (signe d'une limite, piste du CA différente du titre), elle rejette le
@@ -2002,49 +2005,12 @@ PARSERS = {'uk-app': parse_uk_app, 'uk-star': parse_uk_star, 'am-coding': parse_
            'icao-tab': parse_icao_tab, 'ei-coding': parse_ei_coding, 'be-coding': parse_be_coding, 'ge-coding': parse_ge_coding}
 
 
-def bearing_nm(a, b):
-    """(cap vrai en degrés, distance en NM) du grand cercle de a à b, points (lat, lon) en degrés décimaux."""
-    la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))
-    y = math.sin(lo2 - lo1) * math.cos(la2)
-    x = math.cos(la1) * math.sin(la2) - math.sin(la1) * math.cos(la2) * math.cos(lo2 - lo1)
-    h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
-    return (math.degrees(math.atan2(y, x)) + 360) % 360, 2 * 3440.065 * math.asin(math.sqrt(h))
-
-
-def check_geometry(legs, tol_deg=0.25, tol_nm=0.2):
-    """Contrôle de cohérence d'une table lue (par texte, par OCR ou à la main) : pour chaque tronçon TF, le cap vrai (et la distance, si elle est imprimée) recalculés
-    d'après les coordonnées des deux points doivent être ceux de la page. Rend la liste des écarts ; vide = la table est cohérente."""
-    bad = []
-    for a, b in zip(legs, legs[1:]):
-        if b.get('leg') != 'TF' or None in (a.get('lat'), b.get('lat')):
-            continue
-        if b.get('true') is None:
-            # pas de cap vrai imprimé (ex. Allemagne : cap magnétique et distance arrondie) : cohérence large seulement, variation magnétique ≤ 30° et distance à 0,55 NM près
-            if b.get('crs') is None and b.get('nm') is None:
-                continue
-            brg, nm = bearing_nm((a['lat'], a['lon']), (b['lat'], b['lon']))
-            if b.get('crs') is not None and abs((brg - b['crs'] + 180) % 360 - 180) > 30:
-                bad.append(f'{a["id"]} → {b["id"]}: cap calculé {brg:.1f}° pour {b["crs"]}° magnétique imprimé')
-            if b.get('nm') is not None and abs(nm - b['nm']) > 0.55:
-                bad.append(f'{a["id"]} → {b["id"]}: distance calculée {nm:.2f} NM pour {b["nm"]} imprimés')
-            continue
-        brg, nm = bearing_nm((a['lat'], a['lon']), (b['lat'], b['lon']))
-        d = abs((brg - b['true'] + 180) % 360 - 180)
-        if d > tol_deg:
-            bad.append(f'{a["id"]} → {b["id"]}: cap calculé {brg:.1f}° pour {b["true"]}° imprimé')
-        if b.get('nm') is not None and abs(nm - b['nm']) > tol_nm:
-            bad.append(f'{a["id"]} → {b["id"]}: distance calculée {nm:.2f} NM pour {b["nm"]} imprimés')
-    return bad
-
-
 def records_uk_app(icao, parsed, source, cycle, at=None, state='UK'):
-    """Procédures du schéma commun d'une page UK « Instrument Approach Procedure Coding Tables » ; statut « check », source ead-basic/UK."""
+    """Procédures du schéma commun d'une page UK « Instrument Approach Procedure Coding Tables » ; statut « check », source ead-basic/UK. Le cap vrai imprimé est gardé (`trk`) :
+    proc_geometry.review contrôle ensuite la procédure construite, à la tolérance du cap vrai ; une procédure qui échoue est GARDÉE, statut « doubt » et le code « geometry » (jamais
+    écartée : la table n'est pas perdue pour une procédure)."""
     out, warnings = [], list(parsed['warnings'])
     for t in parsed['tables']:
-        bad = check_geometry(t['legs'])
-        if bad:
-            warnings.append(f'{t["title"][:60]}: incohérence caps/coordonnées, table NON retenue: ' + '; '.join(bad))
-            continue
         pts, missed = [], False
         for lg in t['legs']:
             p = {'seq': len(pts) + 1, 'id': lg['id'], 'lat': lg['lat'], 'lon': lg['lon'], 'alt': lg['alt'], 'leg': lg['leg']}
@@ -2054,6 +2020,8 @@ def records_uk_app(icao, parsed, source, cycle, at=None, state='UK'):
                 p['kt'] = lg['kt']
             if lg['crs'] is not None:
                 p['crs'] = lg['crs']
+            if lg.get('true') is not None:
+                p['trk'] = lg['true']
             if lg.get('nm') is not None:
                 p['nm'] = lg['nm']
             if lg.get('turn'):
@@ -2076,6 +2044,7 @@ def records_uk_app(icao, parsed, source, cycle, at=None, state='UK'):
         out.append({'id': '.'.join([icao, kind, norm(name), rw] + ([norm(t['transition'])] if t['transition'] else [])), 'icao': icao, 'kind': kind, 'name': name,
                     'runways': t['runways'], 'transition': t['transition'], 'points': pts,
                     'source': {'kind': 'ead-basic', 'ref': f'ead-basic/{state}/{source}', 'cycle': cycle, 'at': at}, 'status': 'check'})
+        warnings += G.review(out[-1])
     return out, warnings
 
 
@@ -2270,7 +2239,7 @@ def records(icao, table, coords, source, cycle):
                         'name': name, 'runways': rws, 'transition': None,
                         'points': _points(icao, g['legs'], coords, warnings), 'source': src, 'status': 'check'})
             if g.get('lost'):
-                out[-1].update(status='doubt', doubt=f'{g["lost"]} ligne(s) de la table non lue(s)')
+                warnings.append(G.mark(out[-1], 'unread', f'{g["lost"]} ligne(s) de la table non lue(s)'))
     elif table['kind'] == 'APP':
         final = next((g for g in reversed(table['groups']) if g['label'] == 'APCH'), None)
         inas = [g for g in table['groups'] if g is not final and (g['label'] or '').startswith('INA ') and not g.get('skip')]
@@ -2286,7 +2255,7 @@ def records(icao, table, coords, source, cycle):
                         'points': _points(icao, legs, coords, warnings, missed_after=True), 'source': src, 'status': 'check'})
             lost = sum(x.get('lost', 0) for x in ([final] if final else []) + ([g] if g else []))
             if lost:
-                out[-1].update(status='doubt', doubt=f'{lost} ligne(s) de la table non lue(s)')
+                warnings.append(G.mark(out[-1], 'unread', f'{lost} ligne(s) de la table non lue(s)'))
     return out, warnings
 
 
@@ -2300,75 +2269,6 @@ def vac_url(base_url, icao):
     """Adresse de la carte VAC d'un terrain dans l'atlas VFR du même disque eAIP (…/eAIP_01_OCT_2026/Atlas-VAC/…), ou None."""
     m = re.match(r'^(.*?/eAIP_[^/]+)/', base_url.rstrip('/') + '/')
     return f'{m.group(1)}/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.{icao}.pdf' if m else None
-
-
-HOLD_LEGS = {'HA', 'HF', 'HM', 'PI'}       # attentes et procédure d'inversion : le point y est revu à dessein
-ZIGZAG_MAX = 3.0                            # longueur du parcours / distance directe du premier au dernier point positionné, au-delà : zigzag
-
-
-def repeated_points(proc):
-    """Identifiants que la procédure repasse deux fois HORS ATTENTE : un point suivi d'un autre point, puis revu (non consécutif). Ne comptent pas : un tronçon d'attente ou d'inversion
-    (HA, HF, HM, PI), le même point sur deux tronçons de suite (« TF PG825 » puis « FM PG825 »), un point de l'approche interrompue revu dans l'approche."""
-    seen, out, prev = set(), [], None
-    for q in proc.get('points', []):
-        i = q.get('id')
-        if q.get('leg') in HOLD_LEGS:
-            prev = i or prev
-            continue
-        if i and i != prev:
-            key = (q.get('phase') == 'missed', i)
-            if key in seen and i not in out:
-                out.append(i)
-            seen.add(key)
-        prev = i or prev
-    return out
-
-
-def zigzag_ratio(proc):
-    """Longueur du parcours divisée par la distance directe du premier au dernier point (au moins 3 points positionnés ; le premier et le dernier point nommés de la procédure doivent l'être,
-    sinon « premier au dernier positionné » prendrait pour fin un point du début ; l'approche interrompue d'une approche n'est pas comptée : elle revient vers le terrain) ; None si elle ne se
-    mesure pas. Une procédure normale est de 1 à 2,5 ; un parcours de plusieurs procédures collées, ou un arc de séquencement lu comme route, fait des allers-retours."""
-    named = [q for q in proc.get('points', []) if q.get('id') and q.get('phase') != 'missed']
-    pts = [(q['lat'], q['lon']) for q in named if q.get('lat') is not None and q.get('lon') is not None]
-    if len(pts) < 3 or not named or named[0].get('lat') is None or named[-1].get('lat') is None:
-        return None
-    path = sum(bearing_nm(a, b)[1] for a, b in zip(pts, pts[1:]))
-    direct = bearing_nm(pts[0], pts[-1])[1]
-    return path / max(direct, 1.0)
-
-
-def doubts_of(proc):
-    """Raisons pour lesquelles une procédure lue n'est pas installée comme sûre, dans l'ordre : sans nom, point répété hors attente, zigzag. Vide = rien à dire. Les lignes de table non lues sont
-    déjà notées par `records` ; la géométrie imprimée contre les positions est vue par mark_geometry."""
-    out = []
-    if '.NONAME.' in proc['id']:
-        out.append('sans nom')
-    rep_ids = repeated_points(proc)
-    if rep_ids:
-        out.append('point répété hors attente: ' + ', '.join(rep_ids[:4]))
-    z = zigzag_ratio(proc)
-    if z is not None and z > ZIGZAG_MAX:
-        out.append(f'zigzag: {z:.1f} × le trajet direct'.replace('.', ','))
-    return out
-
-
-def mark_geometry(proc):
-    """Contrôle de géométrie (gaps_of) d'une procédure lue : s'il échoue, elle passe au statut « doubt » (jamais retirée), la raison ajoutée à `doubt`. Rend True si elle a été marquée.
-    Fait par le travail du lanceur, après la lecture complète du terrain (positions des points en route résolues) ; build_aerodrome ne l'applique pas lui-même."""
-    gaps = gaps_of(proc)
-    if not gaps:
-        return False
-    proc['doubt'] = '; '.join(([proc['doubt']] if proc.get('doubt') else []) + ['géométrie incohérente: ' + gaps[0]])
-    proc['status'] = 'doubt'
-    return True
-
-
-def doubt_key(doubt):
-    """Motif court et stable d'un doute (le premier de la liste), pour `stats.reasons` : la partie avant « : », sans les nombres."""
-    t = (doubt or '').split(';')[0]
-    if 'ligne(s) de la table' in t:
-        return 'lignes de la table non lues'
-    return re.sub(r'\s+', ' ', re.sub(r'\d+(?:[.,]\d+)?', 'N', t.split(':')[0])).strip()[:80] or 'autre'
 
 
 def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=None, ad2=None):
@@ -2424,13 +2324,11 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
             warnings.append(f'{p["source"].get("ref")}: bloc sans titre identique à une procédure nommée de la même piste, retiré ({p["id"]})')
         else:
             warnings.append(f'{p["source"].get("ref")}: bloc sans titre gardé sous {p["id"]}, À VÉRIFIER (aucune procédure nommée ne lui ressemble)')
-    # garde-fous : une procédure sans nom, qui repasse par un point hors attente, qui fait un zigzag ou dont la géométrie ne colle pas n'est JAMAIS donnée pour sûre ni purgée : elle reste
-    # dans le fichier, statut « doubt » et la raison dans `doubt` ; le lecteur ne la sert que sur demande (SPEC § 5 quinquies, { doubt: true })
+    # la politique (proc_geometry.review) : une procédure sans nom, qui repasse par un point hors attente, qui fait un zigzag ou dont la géométrie imprimée ne colle pas avec les positions
+    # n'est JAMAIS donnée pour sûre ni purgée : elle reste dans le fichier, statut « doubt » et la raison en code dans `doubt` ; le lecteur ne la sert que sur demande (SPEC § 5 quinquies,
+    # { doubt: true }). Les positions encore absentes (points en route) sont celles qu'aerodb résout à la lecture : le contrôle les saute.
     for p in procs:
-        why = ([p['doubt']] if p.get('doubt') else []) + doubts_of(p)
-        if why:
-            p['status'], p['doubt'] = 'doubt', '; '.join(why)
-            warnings.append(f'{p["source"].get("ref")}: {p["id"]} À VÉRIFIER, {p["doubt"]}')
+        warnings += [f'{p["source"].get("ref")}: {x}' for x in G.review(p)]
     charts = [{'path': f'Cartes/{icao}/{f}', 'kind': chart_kind(f)} for f in sorted(files)]
     doc = {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
            'procedures': procs, 'charts': {'base': base_url.rstrip('/') + '/html/eAIP/', 'items': charts, 'vac': vac},
@@ -2665,16 +2563,6 @@ def url_exists(url, timeout=30):
         return False
 
 
-def gaps_of(proc):
-    """Écarts de géométrie d'une procédure lue dans l'eAIP (liste vide = cohérente). Les tables du SIA impriment le cap MAGNÉTIQUE et la
-    distance de chaque tronçon, pas le cap vrai : c'est la branche large de check_geometry (cap à 30° près, distance à 0,55 NM près), qui
-    attrape une position fausse (point homonyme pris dans la base, coordonnée mal lue) sans rejeter les arrondis de la page. Le contrôle de
-    proc_manual.verify, fait pour des lectures à la main qui impriment `trk`, ne s'applique pas ici."""
-    legs = [{'id': q.get('id'), 'leg': None if q.get('gap') else q.get('leg'), 'lat': q.get('lat'), 'lon': q.get('lon'), 'true': None, 'crs': q.get('crs'), 'nm': q.get('nm')}
-            for q in proc.get('points', [])]       # un tronçon `gap` (ce qui le sépare du précédent n'est pas codé) n'est pas comparé au précédent
-    return check_geometry(legs)
-
-
 def reason_of(problem):
     """Motif court, stable, d'un problème de page ou d'une procédure écartée (`formats[].problems`, géométrie) : sert au compte rendu `stats.reasons` de la lecture à la demande
     (le texte est celui que Carburant montre, ou associe à sa traduction)."""
@@ -2694,8 +2582,9 @@ def reason_of(problem):
 
 def stats_of(formats, procedures, dropped=(), doubt=()):
     """Compte rendu d'une lecture : { pages (pages de codage trouvées), read (lues), rejected (non lues), procedures (installées, celles « à vérifier » comprises), dropped (VRAIMENT retirées :
-    un bloc sans titre qui en répète une nommée), doubt (installées au statut « doubt »), reasons (les 3 motifs les plus fréquents, [texte, nombre], sur les pages non lues, les procédures
-    retirées et celles à vérifier) }. `formats` : la liste `formats` du fichier du terrain ; `dropped` et `doubt` : un motif par procédure."""
+    un bloc sans titre qui en répète une nommée), doubt (installées au statut « doubt »), reasons (les 3 motifs les plus fréquents, [motif, nombre], sur les pages non lues, les procédures
+    retirées et celles à vérifier) }. `formats` : la liste `formats` du fichier du terrain ; `dropped` : un motif (texte) par procédure retirée ; `doubt` : UN CODE par procédure à vérifier
+    (proc_geometry.doubt_codes : « geometry », « name »…), que `reasons` porte tel quel. Les motifs des pages non lues restent des phrases, jusqu'à ce que les pages portent des codes aussi."""
     counts, dropped, doubt = {}, list(dropped), list(doubt)
     for f in formats:
         if not f.get('ok'):

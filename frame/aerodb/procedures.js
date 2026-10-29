@@ -5,8 +5,8 @@
   'use strict';
   if (window.AeroDBProcedures) return;
   /** Précédence des statuts : officiel > à vérifier > vu dans un OFP (source secondaire, jamais prioritaire) > repli X-Plane
-   *  (proc/local/, le poste seulement) > lecture douteuse (`doubt` : sans nom, point répété, zigzag, ligne non lue… ; la raison est
-   *  dans `doubt`) : jamais devant une autre lecture, et servie seulement sur demande (`{ doubt: true }`). */
+   *  (proc/local/, le poste seulement) > lecture douteuse (`doubt` : sans nom, point répété, zigzag, ligne non lue, géométrie… ; la raison est
+   *  un code dans `doubt`, SPEC § 5 quinquies) : jamais devant une autre lecture, et servie seulement sur demande (`{ doubt: true }`). */
   const RANK = {
       official: 0,
       check: 1,

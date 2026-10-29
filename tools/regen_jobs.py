@@ -361,9 +361,19 @@ def _installed_file(data, icao):
         return None
 
 
+def _geometry():
+    """Le module tools/proc_geometry.py (le contrôle de géométrie et ses codes de doute), importé à la demande comme les autres outils de lecture."""
+    tools = os.path.dirname(os.path.abspath(__file__))
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    import proc_geometry
+    return proc_geometry
+
+
 def _summary(stats):
-    """Ligne de journal d'un compte rendu `stats` : « 18 procédure(s) sur 22 page(s) de codage ; 4 non lue(s) ; 2 procédure(s) écartée(s) (motifs : …) »."""
-    why = '; '.join(f'{t} ×{n}' for t, n in stats.get('reasons', []))
+    """Ligne de journal d'un compte rendu `stats` : « 18 procédure(s) sur 22 page(s) de codage ; 4 non lue(s) ; 2 procédure(s) écartée(s) (motifs : …) ». Les motifs des procédures à
+    vérifier sont des codes dans `stats` (proc_geometry), dits ici en texte : la console seule porte des phrases."""
+    why = '; '.join(f'{_geometry().phrase(t)} ×{n}' for t, n in stats.get('reasons', []))
     return (f'{stats.get("procedures", 0)} procédure(s) installée(s) ; {stats.get("read", 0)} page(s) lue(s) sur {stats.get("pages", 0)}, {stats.get("rejected", 0)} non lue(s)'
             f'{"; " + str(stats["doubt"]) + " à vérifier (statut doubt, gardées dans le fichier)" if stats.get("doubt") else ""}'
             f'{"; " + str(stats["dropped"]) + " retirée(s)" if stats.get("dropped") else ""}{" (motifs : " + why + ")" if why else ""}')
@@ -373,7 +383,7 @@ def _nothing_read(formats, stats):
     """Message de l'échec « rien de lu » : combien de documents et de pages ont été vus, combien lus, et les motifs les plus fréquents des autres (« 31 document(s), 0 of 31 page(s) read
     (mise en page non reconnue ×31) ») ; Fuel l'affiche tel quel après la raison, c'est tout ce que l'utilisateur voit d'une lecture qui n'a rien donné."""
     docs = len({f.get('file') for f in formats if f.get('file')})
-    why = '; '.join(f'{t} ×{n}' for t, n in stats.get('reasons', [])[:2])
+    why = '; '.join(f'{_geometry().phrase(t)} ×{n}' for t, n in stats.get('reasons', [])[:2])
     return f'no procedure could be read for this aerodrome: {docs} document(s), {stats.get("read", 0)} of {stats.get("pages", 0)} page(s) read' + (f' ({why})' if why else '')
 
 
@@ -383,7 +393,8 @@ def _ead_fetch(job, args, ctx):
     l'utilisateur, jamais une liste, jamais en masse, jamais planifié — le contrôle d'arguments n'admet qu'un code OACI.
     Identifiants : <secrets>/ead.json { user, password }, sinon EAD_USER / EAD_PASSWORD ; jamais journalisés (say() nettoie), jamais rendus.
     Étapes : connexion à la bibliothèque, proc_ead.fetch_ad (cache local data/local/ead/, jamais publié), contrôle de géométrie de
-    proc_manual.verify (caps et distances refaits : une procédure qui échoue n'est pas installée), proc_manual.install (sans --replace : un
+    proc_manual.screen (caps et distances refaits : une lecture à la main qui échoue n'est pas installée, elle seule ; une procédure que le lecteur a marquée « doubt » est
+    installée comme telle, voir proc_geometry), proc_manual.install (sans --replace : un
     fichier du terrain qui porte des procédures d'une autre source n'est jamais écrasé), puis commit de proc/manual/<OACI>.json et
     proc/manual/index.json SEULS (_ead_commit), sans push. L'annulation est regardée à chaque message et avant d'installer ; une fois les
     fichiers écrits, le travail va jusqu'au commit (sinon data/ resterait sali).
@@ -437,15 +448,25 @@ def _ead_fetch(job, args, ctx):
         todo = [d for d in (doc, ocr) if d and d.get('procedures')]
         warnings = [w for d in (doc, ocr) if d for w in d.get('warnings', [])]
         formats = [f for d in (doc, ocr) if d for f in d.get('formats', [])]
-        stats = proc_eaip.stats_of(formats, 0)            # sans procédure installée ; remplacé par le compte final en cas de succès
+        G = _geometry()
+        stats = proc_eaip.stats_of(formats, 0, doubt=G.doubt_codes(p for d in todo for p in d['procedures']))      # sans procédure installée ; remplacé par le compte final en cas de succès
         if not todo:
             job.log(clean(_summary(stats)))
             return failed(_nothing_read(formats, stats), warnings, stats)
-        for d in todo:                                    # ce que fait proc_manual.main() avant d'installer
-            problems = proc_manual.verify(d)
+        refused = []
+        for k, d in enumerate(todo):                      # ce que fait proc_manual.main() avant d'installer : le fichier, puis chaque procédure (une lecture à la main qui échoue est refusée seule)
+            problems = proc_manual.file_problems(d)
             if problems:
                 job.log(clean(_summary(stats)))
-                return failed('geometry check failed: ' + '; '.join(problems[:3]), warnings, stats)
+                return failed('interpretation file refused: ' + '; '.join(problems[:3]), warnings, stats)
+            todo[k], bad = proc_manual.screen(d)
+            refused += bad
+        warnings += [f'REFUSÉE: {x}' for x in refused]
+        todo = [d for d in todo if d['procedures']]
+        stats = proc_eaip.stats_of(formats, 0, doubt=G.doubt_codes(p for d in todo for p in d['procedures']))
+        if not todo:                                      # plus aucune procédure : le fichier n'est refusé que s'il n'en reste aucune
+            job.log(clean(_summary(stats)))
+            return failed('geometry check failed: ' + '; '.join(refused[:3]), warnings, stats)
         installed = 0
         say(f'{icao}: installation de {sum(len(d["procedures"]) for d in todo)} procédure(s)')
         for d in todo:
@@ -461,7 +482,7 @@ def _ead_fetch(job, args, ctx):
     except (SystemExit, Exception) as e:
         return failed(e, stats=stats)
     commit = _ead_commit(data, icao, ctx.get('git_cmd'), ctx.get('git_env', dict), warnings)
-    stats = proc_eaip.stats_of(formats, installed)       # pages = documents lus (une entrée par page de tableau vue) ; pas de contrôle de géométrie par procédure ici : dropped 0
+    stats = proc_eaip.stats_of(formats, installed, doubt=G.doubt_codes(p for d in todo for p in d['procedures']))       # pages = documents lus (une entrée par page de tableau vue) ; dropped 0 : une procédure à vérifier est gardée
     job.log(clean(_summary(stats)))
     return {'ok': True, 'icao': icao, 'procedures': installed, 'warnings': [clean(w) for w in warnings][:50], 'commit': commit,
             'ocr': bool(ocr and ocr.get('procedures')), 'source': 'ead', 'stats': stats, 'file': _installed_file(data, icao)}
@@ -480,11 +501,10 @@ def _eaip_fetch(job, args, ctx):
     un État dont l'AIP est publiée sans compte. Aucun identifiant ; AUCUNE adresse ne vient de la page : le dossier AIRAC est calculé ici
     (cycle en vigueur d'après le calendrier de 28 jours, proc_eaip.eaip_url). Étapes : proc_eaip.read_aerodrome (page AD 2, pages DATA et CODE,
     cache data/local/eaip/<cycle>/ jamais publié ; les points en route sont placés d'après la base SIA du poste, data/sia/base/fr/<cycle>/, si
-    elle y est, sinon à la lecture par aerodb), contrôle de géométrie par procédure (proc_eaip.gaps_of : une procédure qui échoue n'est pas
-    installée, elle est signalée), proc_manual.install (sans --replace : un fichier du terrain qui porte des procédures d'une autre source n'est
+    elle y est, sinon à la lecture par aerodb), contrôle de géométrie par procédure (proc_geometry.review, fait par le constructeur : une procédure qui échoue est installée
+    au statut « doubt » avec son code, signalée, jamais retirée), proc_manual.install (sans --replace : un fichier du terrain qui porte des procédures d'une autre source n'est
     jamais écrasé), puis commit de proc/manual/<OACI>.json et proc/manual/index.json SEULS (_ead_commit), sans push. Le contrôle de
-    proc_manual.verify n'est PAS appliqué : il demande le cap vrai (`trk`) que seules les lectures à la main portent, les tables du SIA
-    impriment le cap magnétique. L'annulation est regardée à chaque message et avant d'installer.
+    proc_manual.screen n'est PAS appliqué : les tables du SIA impriment le cap magnétique, que proc_geometry contrôle à sa tolérance large pendant la lecture. L'annulation est regardée à chaque message et avant d'installer.
     Rend { ok: True, icao, procedures, warnings, commit (SHA | None), source: 'eaip', cycle } ou { ok: False, reason: 'no-tables' (la page du
     terrain ne cite aucune table de codage) | 'cancelled' | 'failed', message? }."""
     icao = args['icao']
@@ -531,11 +551,8 @@ def _eaip_fetch(job, args, ctx):
             raise _Cancelled()
         warnings = list(doc.get('warnings', []))
         kept = doc.get('procedures', [])
-        for p in kept:                                  # géométrie : proc_eaip.mark_geometry (cap magnétique et distance imprimés) ; une procédure qui échoue reste dans le fichier, statut « doubt »
-            if proc_eaip.mark_geometry(p):
-                warnings.append(f'{p.get("id")}: À VÉRIFIER, {p["doubt"]}')
         dropped = [d.get('reason') or 'autre' for d in doc.pop('dropped', [])]       # vraiment retirées (build_aerodrome) : un bloc sans titre qui répète une procédure nommée
-        doubt = [proc_eaip.doubt_key(p.get('doubt')) for p in kept if p.get('status') == 'doubt']
+        doubt = _geometry().doubt_codes(kept)             # un code par procédure à vérifier (le constructeur a fait le contrôle, proc_geometry.review)
         stats = proc_eaip.stats_of(doc.get('formats', []), len({p.get('id') for p in kept}), dropped, doubt)
         job.log(clean(_summary(stats)))
         if not kept:

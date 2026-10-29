@@ -479,17 +479,17 @@
         cycle: '2026-10-01',
         procedures: [dq('LFQQ.STAR.GOOD1A.RWALL', 'STAR', 'GOOD1A', 'check', [pt('AAAAA', 45, 1), pt('BBBBB', 45.1, 1.1)]),
           dq('LFQQ.STAR.NONAME.RWALL', 'STAR', null, 'doubt', [pt('CCCCC', 45, 1), pt('DDDDD', 45.1, 1.1)], {
-            doubt: 'sans nom'
+            doubt: 'name'
           }),
           dq('LFQQ.STAR.TWIN1A.RW27', 'STAR', 'TWIN1A', 'doubt', [pt('EEEEE', 45, 1), pt('FFFFF', 45.1, 1.1), pt('EEEEE', 45,
             1)], {
             runways: ['27'],
-            doubt: 'point répété hors attente: EEEEE'
+            doubt: 'repeat'
           }),
           dq('LFQQ.STAR.TWIN1A.RWALL', 'STAR', 'TWIN1A', 'check', [pt('EEEEE', 45, 1), pt('FFFFF', 45.1, 1.1)]),
           dq('LFQQ.STAR.XPTW1A.RWALL', 'STAR', 'XPTW1A', 'doubt', [pt('GGGGG', 45, 1), pt('HHHHH', 45.1, 1.1), pt('GGGGG', 45,
             1)], {
-            doubt: 'zigzag: 4,2 × le trajet direct'
+            doubt: 'zigzag'
           })
         ]
       }));
@@ -512,7 +512,7 @@
       check('doubt: procedures() leaves out the records of status doubt unless q.doubt === true, which returns them with their reason',
         dFlat.map(p => p.name).sort().join() === 'GOOD1A,TWIN1A,XPTW1A' && dAll.length === 4 && dAll.find(p => p.id ===
           'LFQQ.STAR.NONAME.RWALL')
-        ?.status === 'doubt' && dAll.find(p => p.id === 'LFQQ.STAR.NONAME.RWALL').doubt === 'sans nom', [dFlat.map(p => p.id), dAll
+        ?.status === 'doubt' && dAll.find(p => p.id === 'LFQQ.STAR.NONAME.RWALL').doubt === 'name', [dFlat.map(p => p.id), dAll
           .map(p => p.id)
         ]);
       check(
@@ -524,7 +524,7 @@
       check('doubt: procedure(id) answers null for a doubt record unless q.doubt === true',
         (await db.procedure('LFQQ.STAR.NONAME.RWALL')) === null && (await db.procedure('LFQQ.STAR.NONAME.RWALL', {
           doubt: true
-        }))?.doubt === 'sans nom' && (await db.procedure('LFQQ.STAR.GOOD1A.RWALL'))?.status === 'check', null);
+        }))?.doubt === 'name' && (await db.procedure('LFQQ.STAR.GOOD1A.RWALL'))?.status === 'check', null);
       const ac = new AbortController();
       ac.abort();
       // fetchProcedures() : le travail du poste est simulé par un faux lanceur (aucun réseau) ; chaque refus a sa raison
