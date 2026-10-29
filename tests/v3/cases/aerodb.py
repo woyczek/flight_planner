@@ -2252,3 +2252,15 @@ def k25(c):
          'the untitled repeat of a named procedure is REALLY removed and counted as dropped (the only removal)')
     geo = {'id': 'LFPG.SID.G1A.RW27L', 'kind': 'SID', 'status': 'check', 'points': [{'id': 'A', 'lat': 49.0, 'lon': 1.0, 'leg': 'IF'}, {'id': 'B', 'lat': 49.0, 'lon': 0.0, 'leg': 'TF', 'crs': 90, 'nm': 5.0}]}
     c.ok(P.mark_geometry(geo) and geo['status'] == 'doubt' and geo['doubt'].startswith('géométrie incohérente: A → B'), str(geo), 'the geometry check marks a procedure whose printed course and distance contradict the positions: doubt, not removed')
+
+@case('K27', 'OpenAir limits: the unit is a whole word (X-Plane airspaces)', 'K', tags=('aerodb',), phone=False,
+      rule='aerodb DECISIONS 29 Oct 2026 (Dublin CTA « 3000 m »): the M of MSL is no metre')
+def k27(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
+    c.page.wait_for_function('!!window.AeroSources', timeout=30000)
+    txt = chr(10).join(['AC C', 'AN DUBLIN CTA', 'AL 3000MSL', 'AH 24500 MSL', 'DP 53:30:00 N 006:30:00 W', 'DP 53:40:00 N 006:10:00 W', 'DP 53:20:00 N 006:00:00 W',
+                     'AC D', 'AN TEST CTR', 'AL GND', 'AH 300 m AGL', 'DP 53:30:00 N 006:30:00 W', 'DP 53:40:00 N 006:10:00 W', 'DP 53:20:00 N 006:00:00 W',
+                     'AC D', 'AN TEST TMA', 'AL 1500ft AMSL', 'AH FL95', 'DP 53:30:00 N 006:30:00 W', 'DP 53:40:00 N 006:10:00 W', 'DP 53:20:00 N 006:00:00 W', ''])
+    got = c.js('(t) => window.AeroSources.openair(t, "xplane").map(z => [z.name, z.lower, z.upper])', txt)
+    c.eq(got, [['DUBLIN CTA', '3000 ft AMSL', '24500 ft AMSL'], ['TEST CTR', 'SFC', '300 m ASFC'], ['TEST TMA', '1500 ft AMSL', 'FL 95']],
+         '« 3000MSL » and « 24500 MSL » are feet; « 300 m AGL » stays metres; ft and FL unchanged', what='OpenAir limits')

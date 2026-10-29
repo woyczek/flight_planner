@@ -1577,3 +1577,16 @@ The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Py
   provides the counts; `tools/proc_manual.py` `install()` writes it (the file's own date, else the one already in the entry, else now): a date taken at each install would make a new commit for a reading that did not change. Every record
   served from `proc/manual/` carries `source.read_at`, the file's `updated_at`. Fuel and the Map use it for « lu le … » with « Relire »; `null` gives the button alone. **Not done here, by decision**: `manualFresh` and `revs` stay until the frame
   delivers `FD.revalidate(paths)`; the memo's signature takes the fresh job file into account meanwhile.
+
+## 29 October 2026 — OpenAir limits: the M of « MSL » is no metre (X-Plane airspaces)
+
+- **Seen** (the user's point sheet near Rathcoole, Dublin): the airspaces of the X-Plane source read « DUBLIN CTA 3000 m AMSL | 24500 m AMSL »,
+  « WESTON … SFC | 2000 m » — feet. `shared/aero_sources.js` `oaLim` took the « M » of « MSL » (« 3000MSL », « 3000 MSL ») for the metre unit.
+- **Done**: the unit is a whole word (`M(?![A-Z])`, `F(?![A-Z])`); « 300 m AGL » stays metres, feet and flight levels unchanged.
+- **Data**: every zone of the base built with X-Plane's airspaces carries the wrong limits until rebuilt (cycle 2026-10-01: be 53, de 657, dz 25,
+  es 200, fr 72, gb 172, ie 70, ma 48, nl 80, pt 171 airspaces of source `xplane`, all in metres). Nothing is rewritten by hand: the zones are
+  rebuilt by their builder.
+- **Also seen, not ours**: openAIP's Dublin CTA 3 to 6 are discs containing the airport (the AIP's annular sectors without their inner
+  boundary); the base reproduces the source. The ergonomics session decided: a build statistic for same-family overlaps with different floors,
+  a note on the point sheet (BUGS SOG), the AIP of Ireland as a source in the backlog (§ 10.28).
+- **Bench**: K27.

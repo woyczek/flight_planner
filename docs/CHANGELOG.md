@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Airspaces from X-Plane: limits in feet again** (`shared/aero_sources.js`; aerodb DECISIONS; test K27) — the « M » of « MSL »
+  (« 3000MSL ») was read as metres, so X-Plane's airspaces showed « 3000 m AMSL »; the zones built with them need a rebuild.
 - **Frame: three bugs** (`frame/app.js`, `tools/regen_jobs.py`, `tests/v3/lib.py`; SPEC § 3, INTEGRATION § 15.3,
   DECISIONS; cases A31, I8, J2):
   - on a device alone, a write waiting an instant in the queue no longer turns the ⚙ amber (journey J2's intermittent
