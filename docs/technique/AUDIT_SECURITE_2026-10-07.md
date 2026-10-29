@@ -828,6 +828,68 @@ cache. The SIA host is fixed and served over HTTPS, so the risk is low, but the 
 
 Follow-up: point 5 and the two notes of point 3 are with V3 Frame.
 
+**Fixes checked (bf540e3c2).** `proc_pdf.safe_path` is used by the eAIP and EAD readers: pattern
+`^[A-Za-z0-9._-][A-Za-z0-9._ -]*\.pdf$` (an inner space for two real LFBO charts; never a leading space, never `:`), a
+name made only of dots refused, the resolved path kept under the folder; names refused by `pdf_names` are said. EAD's
+`SAFE_NAME` is stricter. Default cache `data/local/eaip`, else `.proc_cache/` (ignored by Git). ICAO codes checked on the
+command line, in the single-aerodrome mode and in `read_aerodrome`. Checked.
+
+## <a id="review-1029-evening"></a>Review of 29 October, late evening (V3: frame 3c-1, procedure job, data sync)
+
+Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No blocking point.
+
+| # | Subject | Verdict |
+|---|---|---|
+| 1 | Launcher 3c-1 (cf65c4e86): `/__setup/status` reduced to detection, `/__setup/workstation` | acceptable, two notes |
+| 2 | Procedure job `tools/regen/proc.py` (2ba4e64e7) | acceptable, two notes |
+| 3 | Fuel: read reasons from the catalogue (cba2fb00c) | acceptable |
+| 4 | Data synchronisation fix (8e694e469) | to fix, three notes |
+
+**1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
+`host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
+`relaxNav`) are only in `/__setup/workstation`, refused twice to a paired device (`_lan()` in the handler, and the route is
+not in `lan_access.ROUTES`). The pages fall back safely on a 403 (no badge; `sog_registry` reads `csp` as false and refuses
+the group mode, as before). Notes: `data_repo_url()` returns the address as written in the configuration, so a
+`user:token@` written there reaches the workstation's page (strip the user part, or refuse it at first launch); the
+Maintenance page says « without launcher » on a paired device (wording only).
+
+**2. `tools/regen/proc.py` — acceptable, two notes.**
+- Credentials only from `regen_jobs._ead_credentials` (`secrets/ead.json` or the environment); `check_icao` refuses any
+  field but `icao`, so no credential can reach `args` or `tools/.regen_last.json`. `Env.clean` (`sanitize` with both
+  secrets) covers the progress, the log, the failures and the warnings; the job base cleans again (`clean_error`).
+- ICAO checked once at the entry (`^[A-Z0-9]{4}$`, and `LF` for `eaip-fetch`); `read_aerodrome` repeats the same rule.
+- Outputs: `proc_manual.install` writes `proc/manual/<ICAO>.json` and `index.json`; `commit_outputs` receives these two
+  fixed paths, with the common trigram rule, literal pathspecs, no push. 30 s between two `ead-fetch` starts.
+- Notes: `install` names the file after `doc['icao']`, not the checked argument (today always equal): refuse a
+  document whose code differs; `ead-fetch` accepts an `LF` code although France is never read through EAD: exclude it
+  in the table of sources (fewer needless EAD accesses).
+
+**3. Fuel, read reasons — acceptable.** Reasons are codes translated by `AeroCatalogue.READ_REASONS`; an unknown code
+and the workstation's message (which may carry a server's document name) go through `notify()`, which escapes its text.
+
+**4. Data synchronisation (`tools/data_sync.py`) — to fix, three notes.**
+- Good: `git()` returns stdout alone when git succeeds; files in conflict read from the index (`ls-files -u -z`);
+  `resolve()` refuses `/`, `..` and `:`; any exception cancels the merge; the launcher's commits check `MERGE_HEAD` first
+  (`commit_outputs` before its `add`, the VFR import before writing); `_journal` writes only git's `warning:` lines (300
+  signs, 20 lines) to the launcher's console, never a repository address.
+- *To fix*: `settle()` concluded a pending merge with `commit --no-edit`, that is with **the whole index**. Files staged
+  before the interruption went into the merge commit and were pushed, without `pool_changes` or `data_guard`. Realistic
+  case: under the old code, the data writes, the aircraft database publication, the VFR import and `commit_outputs` ran
+  `git add`, then their commit failed on `MERGE_HEAD`, leaving `AircraftDB/` and `sia/vfr/` (outside the pool) staged.
+  Decision: `settle()` always cancels (`merge --abort`, which keeps the workstation's changes) and the pass redoes the
+  merge.
+- Notes:
+  - `/__setup/sync` is open to paired devices: `_why()` gives « type : text » of a launcher error, where an `OSError`
+    carries the absolute path of `data/` (removed from `/__setup/status`); so can the 800 signs of git's output. Give
+    a paired device a generic message, or remove the installation's path from the text;
+  - strip `user:…@` from any git text returned to the page or written to the console (git hides it in its own
+    « unable to access » and « Authentication failed » messages, the launcher cleans nothing itself);
+  - `resolve()` does not refuse `\` (a separator for `os.path.join` under Windows; git normally refuses such paths there):
+    reuse the rule of `data_file`; the aircraft database publication copies its files into `data/` before checking
+    `MERGE_HEAD`: check first, as the VFR import does.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2 and 4 are with V3 Frame and AeroDB.
+
 ## Appendix A — Hosts contacted
 
 | Host | From | What goes out |
