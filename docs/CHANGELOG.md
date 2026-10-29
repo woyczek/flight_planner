@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the challenge of 29 Oct applied to the procedures** (`modules/fuel/procedures.js`, `module.js`; V3 § 10.20, § 10.23, § 10.29 f, g;
+  cases F16, F19, F21, F26, F36, F37, F38) — choices made in a row are written once (400 ms after the last one, one quote); nothing is locked after
+  the start (the « La SID est passée » lock is gone); a conflicting choice is marked ⚠ and says nothing else (no notification);
+  « Charger mon OFP » fills only the sides you have not chosen and lists only what it filled; « 3 non lues » counts the pages and records
+  of the partly read aerodromes; a failed reading says how many pages were read; `quote.legsAt` is kept while the legs do not change.
+
 - **Fuel: the procedures block has its own file, and the « Procédures » card is redone** (`modules/fuel/procedures.js`, `procedures_texts.js`,
   `module.js`; V3 § 10.29 d, e; cases F34, F35, F36, F11–F31 updated; refactoring 29 Oct d + e) — each side is titled with the aerodrome's
   name (« Départ LFPO Paris-Orly »), carries one muted line « lu le 29/10 16:53Z · Relire · 3 non lues », and its lists sit on one fixed grid, the

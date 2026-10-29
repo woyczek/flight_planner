@@ -1223,3 +1223,37 @@ def f36(c):
     states = [json.loads(x) for x in seen if x != 'null']
     c.ok(bool(states) and states[-1].get('app') == 'LFML.APP.I13R.RW13R.NONE', f'states seen {seen}', 'the last choice reached the flight record')
     c.eq(len(states), 1, 'and it arrived in one write: no intermediate state (the runway alone, the runway and the STAR) was ever written', what=f'states seen {seen}')
+
+
+@case('F37', 'Partly read aerodrome: "N non lues" counts the pages and records of coverage().partial', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='aerodb 567b94440: coverage(icao).partial { pages, doubt } (a held aerodrome with pages not read or records to check is orange, reason partial); Fuel shows the sum on its secondary line and does not take orange for "nothing held"')
+def f37(c):
+    docs = proc_docs()
+    for d in docs:
+        if d[0] == 'proc/manual/index.json':
+            d[1]['aerodromes']['LFML'].update(pages_unread=2, doubt=1)
+    c.open('fuel', docs=docs + proc_flight(None), airfields=True)
+    to_step(c, 1)
+    wait_rows(c, 'arr')
+    c.until("!!document.querySelector('[data-module=fuel] [data-proc=arr] .fu-procunread')", what='the arrival line counts what was not read')
+    c.eq(norm(c.text(f'{FUEL} [data-proc="arr"] .fu-procunread') or ''), norm(row(c, 'procNotRead').replace('{n}', '3')), '2 pages not read and 1 record to check make "3 non lues"', what='unread count')
+    c.ok(c.count(f'{FUEL} [data-proc="arr"] select[data-k="p-arr-star"]') == 1 and c.count(f'{FUEL} [data-proc="arr"] [data-do="procfetch"][data-again]') == 1,
+         'lists or Relire missing', 'orange (partial) still means held: the lists and "Relire" stay, not the "Lire" button alone')
+
+
+@case('F38', 'A failed reading says the counts of its stats after the reason', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.29 g: a failure that saw pages carries stats; Fuel words "0 page lue sur 31" after the reason, the launcher\'s refusal read as { reason, wait, message }')
+def f38(c):
+    # aerodb.fetchProcedures answers a failure with the counts (a launcher in its single refusal form cannot be served by the test page)
+    c.page.add_init_script("""(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+        real = v && { ...v, create: (...a) => { const db = v.create(...a);
+          try { db.fetchProcedures = async () => ({ ok: false, reason: 'failed', message: 'no procedure could be read for this aerodrome', stats: { pages: 31, read: 0, rejected: 31, reasons: [['layout', 31]] } }) } catch (e) {}
+          return db } } } }) })()""")
+    open_proc(c)
+    wait_rows(c, 'arr')
+    c.tap(f'{FUEL} [data-proc="arr"] [data-do="procfetch"][data-again]')
+    want = norm(row(c, 'procCountRead1').replace('{read}', '0').replace('{pages}', '31'))
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", want, timeout=8000, what=f'the failure notification says "{want}"')
+    note = next(norm(n) for n in c.note_log() if want in norm(n))
+    reason = norm(tx(PT, "none-read'", c.lang, after='procReasons').split('{m}')[0].replace('{icao}', 'LFML'))
+    c.ok(note.startswith(reason) and note.index(want) > len(reason) - 1, f'{note!r}', f'the counts come after the reason ({reason!r})')

@@ -4,6 +4,18 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **29 Oct 2026 — refactoring (f) and (g): one write per series of choices, and the challenge decisions applied** (V3_SPECIFICATION § 10.29 f, g;
+  § 10.20, § 10.23; the code landed with the extraction because it lives in the functions that moved). (f) `choose()` redraws the lists in
+  place at once and defers the rest: 400 ms after the last choice of a series `settled()` writes the flight once and refreshes once; the quote
+  waits for the chosen procedures to be read (`ensureProcs`) and the write goes with it (`writeAfterProcs`), so a series is one write whatever the
+  order (case F36); an unmount writes a pending series at once. (g) **No departure lock** (`depPassed`, `procPassed`, `rowsKey`'s third term
+  removed; nothing is locked after the start, case F16). **No conflict notification** (⚠ and the title are enough; cases F21, F26). « Lire » and
+  « Relire » are one code path (`read`, the same `data-do="procfetch"`; case F27). **The OFP proposes**: « Charger mon OFP » fills only the
+  sides with no choice (`null` is a choice) and lists only what it filled (case F19). **`legsAt` kept, one state**: set after the start, only when
+  the legs or `profile.path` really change, kept while they do not. `focus` is read once with `ctx.consume('focus')` (the frame removes it from the
+  address). The launcher is never called by Fuel: its refusals reach it through aerodb's `{ reason, wait, message }`, read as they are. A failed
+  reading says its `stats` after the reason (« 0 page lue sur 31 », `procCountRead`). `coverage(icao).partial { pages, doubt }` (aerodb
+  567b94440) gives « N non lues » (case F37); `coverage().level` is never used to know whether an aerodrome holds procedures.
 - **29 Oct 2026 — refactoring (d) and (e): the procedures block is `modules/fuel/procedures.js`, and the card is redone** (V3_SPECIFICATION
   § 10.29 d, e; § 10.23, § 10.27 for the title; user: « c'est moisi »). Out of `module.js` (4 900 → 4 345 lines): the whole block of the chosen
   procedures' display, choice, on-demand reading and OFP lines, with its texts in `procedures_texts.js` (the `proc*` rows ×4; `dep` / `arr` copied,

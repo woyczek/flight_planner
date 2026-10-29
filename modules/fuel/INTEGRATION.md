@@ -156,8 +156,9 @@ report and maps never write nor erase it.
   (`frame/lib/current_flight.js`), which returns the v2 view, migrates the old `{ sid, star }` (objects of the last OFP) and
   returns `{}` (not chosen) for a side whose aerodrome no longer matches `route.dep` / `route.arr`. Migration: nothing is
   written at mount; the v2 shape is written with fuel's next ordinary write, which also drops such a side. "Load my OFP"
-  replaces the pilot's choice by the OFP's SID and STAR (the records `aerodb.rememberOfp` keeps, runway only when the record
-  has a single one) and says what changed, one line per side.
+  proposes the OFP's SID and STAR (the records `aerodb.rememberOfp` keeps, runway only when the record has a single one) for the
+  sides the pilot has **not chosen yet** (absent = not chosen; `null` = "aucune" is a choice) and never replaces a choice; it says
+  what it filled, one line per side filled (challenge of 29 Oct, V3 § 10.20).
 - `route.points[].wind` (fuel's, lot F): `{ dirDeg, kt, tempC, levelFt, at }` — the forecast wind and temperature
   at the level flown at that point (the plan's, or the step's), from Open-Meteo (`at`: the forecast hour, ISO). Maps
   draws the arrows from it. Absent without a forecast for this route; rewritten whenever the route, the level or

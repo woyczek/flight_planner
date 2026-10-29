@@ -3487,7 +3487,12 @@ function shareProfile(C) {
     cur = S.flight,
     lenient = cur.quote != null && cur.quote.distanceNm == null;
   if (JSON.stringify(p) === JSON.stringify(cur.profile ?? null) && quoteCmp(sum, lenient) === quoteCmp(cur.quote ?? null, lenient)) return;
-  if (sum && cur.started?.at) sum.legsAt = new Date().toISOString();
+  if (sum && cur.started
+    ?.at) { // un seul état : legsAt = l'heure de la dernière réécriture des legs ou du chemin vertical, gardé tant qu'ils ne changent pas
+    const same = JSON.stringify([sum.legs, p?.path ?? null]) === JSON.stringify([cur.quote?.legs, cur.profile?.path ?? null]);
+    if (same && cur.quote?.legsAt) sum.legsAt = cur.quote.legsAt;
+    else if (!same) sum.legsAt = new Date().toISOString();
+  }
   cur.profile = p;
   cur.quote = sum;
   saveFlight();

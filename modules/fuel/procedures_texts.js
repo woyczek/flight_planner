@@ -114,12 +114,14 @@ export const TX = {
     cancelled: ['Lecture de {icao} annulée.', 'Reading of {icao} cancelled.', 'Lesen von {icao} abgebrochen.',
       'Lectura de {icao} cancelada.'
     ],
-    failed: ['La lecture de {icao} a échoué{m}.{wn}', 'Reading {icao} failed{m}.{wn}', 'Das Lesen von {icao} ist fehlgeschlagen{m}.{wn}',
-      'La lectura de {icao} ha fallado{m}.{wn}'
+    failed: ['La lecture de {icao} a échoué{m}.{c}{wn}', 'Reading {icao} failed{m}.{c}{wn}',
+      'Das Lesen von {icao} ist fehlgeschlagen{m}.{c}{wn}',
+      'La lectura de {icao} ha fallado{m}.{c}{wn}'
     ],
     // le travail a tourné sans rien lire (« no procedure could be read for this aerodrome »)
-    'none-read': ['{icao} : aucune procédure lue{m}.{wn}', '{icao}: no procedure read{m}.{wn}', '{icao}: kein Verfahren gelesen{m}.{wn}',
-      '{icao}: ningún procedimiento leído{m}.{wn}'
+    'none-read': ['{icao} : aucune procédure lue{m}.{c}{wn}', '{icao}: no procedure read{m}.{c}{wn}',
+      '{icao}: kein Verfahren gelesen{m}.{c}{wn}',
+      '{icao}: ningún procedimiento leído{m}.{c}{wn}'
     ],
     unavailable: [
       'La lecture à la demande n’est pas encore disponible. Pour ce vol, chargez votre OFP SimBrief : il apporte la SID et la STAR.',
@@ -127,8 +129,8 @@ export const TX = {
       'Das Lesen auf Anfrage ist noch nicht verfügbar. Laden Sie für diesen Flug Ihren SimBrief-OFP: er liefert SID und STAR.',
       'La lectura a demanda aún no está disponible. Para este vuelo, cargue su OFP de SimBrief: aporta la SID y la STAR.'
     ],
-    other: ['Lecture de {icao} refusée ({r}).', 'Reading {icao} refused ({r}).', 'Lesen von {icao} abgelehnt ({r}).',
-      'Lectura de {icao} rechazada ({r}).'
+    other: ['Lecture de {icao} refusée ({r}).{c}', 'Reading {icao} refused ({r}).{c}', 'Lesen von {icao} abgelehnt ({r}).{c}',
+      'Lectura de {icao} rechazada ({r}).{c}'
     ]
   },
   // ligne discrète sous le titre d'un côté : « 3 non lues » (la phrase entière en infobulle : procUnread1 / procUnread)

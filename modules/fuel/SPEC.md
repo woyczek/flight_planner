@@ -307,8 +307,8 @@ mount. Inside a mount, the two buttons switch as before.
      `RWALL`, serves them all) and, with no runway chosen, on a STAR that serves no runway of the chosen approach — the runway only
      (29 Oct 2026): the STAR → approach and transition → STAR end continuity is never a conflict (real STARs end in a hold or radar
      vectors; the Map links them dashed). A conflicting
-     procedure stays selectable and the choice is kept; ONE floating notification (`⚠ RNP RWY 07 : Ne dessert pas la piste 02`) says
-     the conflict when it appears, not at every redraw; the change notifications of « Load my OFP » carry the same ⚠. A SID, STAR
+     procedure stays selectable and the choice is kept; **no notification** says a conflict (challenge of 29 Oct, § 10.23: the ⚠ and the
+     option's `title` are enough); the change lines of « Load my OFP » carry the same ⚠. A SID, STAR
      or approach chosen while no runway is, and serving one runway only, sets that runway; the STAR chosen offers its transitions,
      the approach chosen its approach transitions, another STAR / approach / SID removes the transition. An aerodrome
      without data: the row says "aucune procédure publiée" and offers one button, "Lire les procédures de LFXX"
@@ -329,10 +329,10 @@ mount. Inside a mount, the two buttons switch as before.
      descent has started the path never rises again, so a floor or a missed-approach climb does not lift it). The procedures' altitude constraints reach
      `profile.path` only, not the quote's level steps (the step machinery models cruise levels, not a descent through
      restrictions): fuel and time count the distance. Without procedures: the route's points, legs with origin `'route'`.
-     **After "Start the flight"** the Departure step carries a "Procedures" card: the arrival row stays editable at any time,
-     the departure row while the flight has not passed the end of the SID (the last point of origin `'sid'`; position =
-     `progress.actual` when less than two minutes old, else `plannedPositionAt` on the path; read-only afterwards). A change
-     rewrites `route.procedures`, `quote.legs`, `profile.path`, the progress length and `quote.legsAt`; the block, trip, minutes
+     **After "Start the flight"** the Departure step carries a "Procedures" card: both rows stay editable at any time
+     (challenge of 29 Oct, § 10.20: **no lock after the start** — `depPassed` and the « La SID est passée » sentence are gone; another
+     departure is a new departure). A change rewrites `route.procedures`, `quote.legs`, `profile.path`, the progress length and `quote.legsAt`
+     (a single state: the time of the last rewrite of the legs or the vertical path, kept while they do not change); the block, trip, minutes
      and the rest of the quote do not change (the quote keeps `quote.distanceNm` while the route is unchanged) and no new
      quote is made. Nothing else is made editable by this lot after the start (the former behaviour is untouched, see
      DECISIONS 28 Oct 2026).
