@@ -630,7 +630,10 @@ redesigned for touch at that point.
          fichier)")**: a side whose aerodrome has a file shows the file's date before a short button "Relire" ("lu le
          28/10 18:01", ⌛ when the cycle is older than the one in force), same gesture `fetchProcedures`, which accepts an
          aerodrome already read and replaces its file (same source only); the Map's aerodrome card shows the same date in
-         its coverage line. "Lire les procédures de LFXX" stays the gesture of a side without data.
+         its coverage line; the date is `coverage(icao).read_at` (ISO 8601 UTC, the last reading of the aerodrome's file,
+         `null` before the first reading under this rule: then no date, the button alone) and each record from
+         `proc/manual/` carries `source.read_at`; an EAD reading replaces the previous EAD records like the eAIP one does.
+         "Lire les procédures de LFXX" stays the gesture of a side without data.
        - **Lots** (owners): aerodb — `procedures()` serving runways and transitions, the `ead/fetch` job (D10 of the Data
          module brought forward), `proc/manual/` code; fuel — the two rows of step Route, the arrival row of step Départ, the
          quote with constraints, `route.procedures` v2 (INTEGRATION § 3); maps — the traces with constraints and the
@@ -716,9 +719,14 @@ redesigned for touch at that point.
          notifies "RNP RWY 07 ne dessert pas la piste 02" ×4 once, and the Map joins it with a dashed direct (§ 10.20).
          The lists are no longer pruned by the runway (reverses the pruning of 590e617bc); a choice that only serves one
          runway still sets that runway when none is chosen.
-       - **Lists stay short.** No `optgroup` per runway: one flat list ordered by runway then name; the runway is in the
-         label only when the procedure serves exactly one ("MAN1A · 07"; approaches already name theirs). ⌛ then ⚠ close
-         the label, in that order. Markers go in one place per screen, not in headings.
+       - **Lists stay short, compatible first.** No `optgroup` per runway: one flat list, **the entries compatible with
+         the current choice first, then the ⚠ ones** (user, 29 Oct: "mettre les pistes, approches, sid, compatibles en
+         tête du popdown"), each group ordered by runway then name; for the runway list, the runways served by the SID or
+         the approach already chosen come first; the runway is in the label only when the procedure serves exactly one
+         ("MAN1A · 07"; approaches already name theirs). ⌛ then ⚠ close the label, in that order. Markers go in one place
+         per screen, not in headings. **One rule, one function**: `conflictsOf(proc, choice)` and
+         `orderProcedures(list, choice)` live in `frame/lib/current_flight.js` (moved from Fuel), and Fuel's lists and the
+         Map's choose-mode list call them, so the two never diverge.
        - **Choosing on the Map ("mode choix")**: from the Départ and Arrivée rows of Fuel (step Route before the start,
          step Départ after), one button "Sur la carte"
          (and "Choisir" on the Map's aerodrome card) opens the Map at `#maps?choose=dep|arr&icao=LFXX`: the view fits the
