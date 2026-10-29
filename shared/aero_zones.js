@@ -208,8 +208,10 @@
         'Lufträume (OpenAir), Funkfeuer, Punkte, Luftstraßen, MORA-Gitter; auf die Zone zugeschnitten',
         'espacios (OpenAir), radioayudas, puntos, aerovías, rejilla MORA; recortados al contorno de la zona'),
       howto: L4(
-        'Choisir une fois le dossier d’installation d’X-Plane (bouton ci-dessous). Données Navigraph de « Custom Data » : licence personnelle, jamais copiées.',
-        'Choose the X-Plane installation folder once (button below). Navigraph data in “Custom Data”: personal licence, never copied.'
+        'Choisir une fois le dossier d’installation d’X-Plane (bouton ci-dessous). Données de navigation d’X-Plane ou de Navigraph : usage personnel ; à publier dans le dépôt de données seulement s’il n’est utilisé que par vous.',
+        'Choose the X-Plane installation folder once (button below). X-Plane or Navigraph navigation data: personal use; publish them to the data repository only if it is used by you alone.',
+        'Den Installationsordner von X-Plane einmal wählen (Schaltfläche unten). Navigationsdaten von X-Plane oder Navigraph: persönliche Nutzung; nur dann im Datenrepository veröffentlichen, wenn es allein von Ihnen genutzt wird.',
+        'Elija una vez la carpeta de instalación de X-Plane (botón de abajo). Datos de navegación de X-Plane o de Navigraph: uso personal; publíquelos en el repositorio de datos solo si lo usa únicamente usted.'
       ),
       licence: 'GPL (Laminar) / Navigraph (personnel)',
       personal: 'xplane', // données du simulateur (et Navigraph) : la case dit qu'elle ne vaut que pour un dépôt à soi
