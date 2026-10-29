@@ -68,8 +68,10 @@ def e3(c):
     c.open('atmosphere', flight=True)
     title = c.text('.f-sheet-head .f-sheet-title') or ''
     word = row(c, 'profileTitle')
-    pat = re.compile(r'^' + re.escape(word) + r' · .+ · \S+ → \S+ · FL\d+ · \d\d:\d\dZ')
-    c.ok(pat.search(norm(title)) is not None, f'sheet title {title!r}', f'"{word} · <aircraft> · <from> → <to> · FL<level> · <HH:MM>Z …"')
+    # the departure's time, with its day when it is not today (fmtWhen): the default departure is the next hour, tomorrow after
+    # 23:00Z — the case does not depend on the clock
+    pat = re.compile(r'^' + re.escape(word) + r' · .+ · \S+ → \S+ · FL\d+ · (?:[^·]+ )?\d\d:\d\dZ')
+    c.ok(pat.search(norm(title)) is not None, f'sheet title {title!r}', f'"{word} · <aircraft> · <from> → <to> · FL<level> · [<day>] <HH:MM>Z …"')
 
 
 def open_view(c, key):

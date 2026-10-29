@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Tests: E3 no longer depends on the clock** (`tests/v3/cases/atmosphere.py`). The sheet title gives the departure with its day
+  when it is not today (`fmtWhen`, a correct rule); the default departure being the next hour, after 23:00Z it is tomorrow and
+  the case, which expected "HH:MMZ" alone, failed every night. It now accepts an optional day before the time.
 - **Fuel: the flight plan for the simulators** (`frame/lib/fms.js`, `frame/lib/test/fms.html`, `modules/fuel/module.js`; SPEC, DECISIONS,
   help ×4; noreg F60, F61) — step Departure downloads the route and the chosen procedures as X-Plane `.fms` (11/12 and 10) or MSFS `.pln`.
 - **Launcher: the airline's relay, devices and codes (R1a)** (`tools/launch.py`, `tools/relay_access.py`,
