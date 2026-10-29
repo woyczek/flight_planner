@@ -28,7 +28,7 @@ Rules covered
 
   * the launcher's keys panel gives the EAD Basic user name and password once, and never reads them back (A32).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28 A29 A30 A31 A32.
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28 A29 A30 A31 A32 A33.
 """
 import json
 import re
@@ -1066,3 +1066,9 @@ def a32(c):
          'one call to the launcher with the scope, the service and both values', what='posts')
     c.eq(c.js(f"[...document.querySelectorAll('{ead} input[data-f]')].map(i => i.value)"), ['', ''], 'both fields are emptied: the page keeps no secret', what='fields after save')
     c.ok('test-pass' not in c.js('document.body.innerText') and 'test-user' not in c.js('document.body.innerText'), 'a value is shown', 'the values are shown nowhere')
+
+
+@case('A33', 'Revalidate bench', 'A', tags=('data',), designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 4 (data.revalidate); the bench reported 14/14')
+def a33(c):
+    _bench(c, 'frame/store/test/revalidate.html', '__revalidateBench')

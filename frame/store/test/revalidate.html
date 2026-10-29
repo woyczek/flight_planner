@@ -1,0 +1,246 @@
+<!doctype html>
+<!-- Banc de FD.revalidate (frame/store/frame_data.js, frame/INTEGRATION.md § 4) : seuls les chemins demandés relus, une copie
+     changée remplacée et annoncée par watch, une identique laissée, une « reference » disparue retirée, une écriture en
+     attente gardée, un fichier « cache » sans dépôt, hors ligne sans rien toucher, une lecture refusée dite sans lever,
+     le transport local par sa source des références, l'adaptateur d'un module. Transport simulé dans la page : aucun appel
+     réel. window.__revalidateBench = { done, pass, fail, rows }. Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>revalidate — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">FrameData.revalidate — bench</h1>
+<pre id="out"></pre>
+<script src="../frame_data.js?v=0"></script>
+<script type="module">
+  const FD = window.FrameData,
+    rows = [],
+    out = document.getElementById('out');
+  window.__revalidateBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  /** Dépôt simulé : fichiers { chemin: texte }, révision = texte, tête qui change à chaque écriture ; offline, refus. */
+  function fakeRepo(id, kind = 'remote') {
+    const files = {},
+      st = {
+        n: 0,
+        offline: false,
+        refuse: new Set(),
+        reads: []
+      };
+    const off = () => {
+      if (st.offline) throw Object.assign(new Error('offline'), {
+        offline: true
+      });
+    };
+    return {
+      st,
+      files,
+      set(p, t) {
+        if (t === null) delete files[p];
+        else files[p] = t;
+        st.n++;
+      },
+      t: {
+        id,
+        kind,
+        async head() {
+          off();
+          return `h${st.n}`;
+        },
+        async tree() {
+          off();
+          return Object.fromEntries(Object.entries(files).map(([p, t]) => [p, `r:${t}`]));
+        },
+        async read(p, rev) {
+          off();
+          st.reads.push(p);
+          if (st.refuse.has(p)) throw Object.assign(new Error('GitHub 403: too large'), {
+            status: 403
+          });
+          return rev.slice(2);
+        },
+        async commit(changes, message, parent) {
+          for (const c of changes) this.__repo.set(c.path, c.text);
+          return `h${st.n}`;
+        }
+      }
+    };
+  }
+  const J = v => JSON.stringify(v);
+  try {
+    await FD.reset();
+    const G = fakeRepo('fake');
+    G.t.__repo = G;
+    G.set('proc/a.json', J({
+      v: 1
+    }));
+    G.set('proc/b.json', J({
+      v: 1
+    }));
+    G.set('proc/c.json', J({
+      v: 1
+    }));
+    G.set('pilot/ABC/f.json', J({
+      v: 1
+    }));
+    FD.configure({
+      transport: G.t,
+      identity: {
+        trigram: 'ABC'
+      }
+    });
+    const D = FD.adapter({
+      id: 'bench',
+      reads: [{
+        prefix: 'proc/',
+        policy: 'reference'
+      }, 'pilot/'],
+      writes: ['pilot/', {
+        prefix: 'cache/bench/',
+        policy: 'cache'
+      }]
+    });
+    for (const p of ['proc/a.json', 'proc/b.json', 'proc/c.json']) await D.read(p, {
+      policy: 'reference',
+      wait: true
+    });
+    await D.read('pilot/ABC/f.json', {
+      wait: true
+    });
+    ck('copies lues au départ', (await D.get('proc/a.json'))?.v === 1 && (await D.get('pilot/ABC/f.json'))?.v === 1);
+
+    // a change, b identique, c disparue du dépôt
+    G.set('proc/a.json', J({
+      v: 2
+    }));
+    G.set('proc/c.json', null);
+    const seen = [];
+    const stop = D.watch('proc/', p => seen.push(...p));
+    G.st.reads.length = 0;
+    const r1 = await D.revalidate(['proc/a.json', 'proc/b.json', 'proc/c.json', 'proc/a.json']);
+    stop();
+    ck('changée relue, identique laissée, « reference » disparue retirée', J(r1.changed.sort()) === J(['proc/a.json', 'proc/c.json']) &&
+      J(r1.unchanged) === J(['proc/b.json']) && r1.offline === false, J(r1));
+    ck('la nouvelle version servie', (await D.get('proc/a.json'))?.v === 2);
+    ck('la disparue n\'est plus en cache', !(await FD.cached('proc/')).some(d => d.path === 'proc/c.json'));
+    ck('watch annonce les chemins changés', J(seen.sort()) === J(['proc/a.json', 'proc/c.json']), J(seen));
+    ck('seul le fichier changé est relu (pas b, pas les autres)', J(G.st.reads) === J(['proc/a.json']), J(G.st.reads));
+
+    // une écriture en attente l'emporte
+    await D.put('pilot/ABC/f.json', {
+      v: 'local'
+    });
+    G.set('pilot/ABC/f.json', J({
+      v: 'remote'
+    }));
+    const r2 = await D.revalidate(['pilot/ABC/f.json']);
+    ck('écriture en attente : gardée, rien relu', J(r2.unchanged) === J(['pilot/ABC/f.json']) && (await D.get('pilot/ABC/f.json'))?.v ===
+      'local', J(r2));
+
+    // un fichier « cache » n'a pas de dépôt
+    await D.put('cache/bench/x.json', {
+      v: 1
+    });
+    const r3 = await D.revalidate(['cache/bench/x.json']);
+    ck('fichier « cache » : inchangé, gardé', J(r3.unchanged) === J(['cache/bench/x.json']) && (await D.get('cache/bench/x.json'))?.v ===
+      1);
+
+    // hors ligne : rien touché
+    G.set('proc/b.json', J({
+      v: 3
+    }));
+    G.st.offline = true;
+    const r4 = await D.revalidate(['proc/b.json']);
+    G.st.offline = false;
+    ck('hors ligne : { offline: true }, la copie gardée', r4.offline === true && !r4.changed.length && (await D.get('proc/b.json'))?.v ===
+      1, J(r4));
+
+    // lecture refusée par le dépôt : dite, sans lever, la copie gardée
+    G.st.refuse.add('proc/b.json');
+    const r5 = await D.revalidate(['proc/b.json']);
+    G.st.refuse.clear();
+    ck('lecture refusée : errors, inchangé, jamais d\'exception', r5.errors?.[0]?.path === 'proc/b.json' && J(r5.unchanged) === J([
+      'proc/b.json'
+    ]) && (await D.get('proc/b.json'))?.v === 1, J(r5));
+    ck('liste vide : rien lu', J(await D.revalidate([])) === J({
+      changed: [],
+      unchanged: [],
+      offline: false
+    }));
+
+    // transport local : la source des références fait foi
+    await FD.reset();
+    const S = fakeRepo('refs');
+    S.set('proc/a.json', J({
+      v: 'ref1'
+    }));
+    FD.configure({
+      transport: FD.transports.local(),
+      references: S.t
+    });
+    const L = FD.adapter({
+      id: 'bench-local',
+      reads: [{
+        prefix: 'proc/',
+        policy: 'reference'
+      }]
+    });
+    await L.read('proc/a.json', {
+      policy: 'reference',
+      wait: true
+    });
+    S.set('proc/a.json', J({
+      v: 'ref2'
+    }));
+    const r6 = await L.revalidate(['proc/a.json']);
+    ck('transport local : relu chez la source des références', J(r6.changed) === J(['proc/a.json']) && (await L.get('proc/a.json'))?.v ===
+      'ref2', J(r6));
+    FD.configure({
+      references: null
+    });
+    const r7 = await L.revalidate(['proc/a.json']);
+    ck('transport local sans source : inchangé, rien lu', J(r7.unchanged) === J(['proc/a.json']) && !r7.offline);
+    ck('FD.revalidate exposé (aerodb, ctx.publish)', typeof FD.revalidate === 'function');
+  } catch (e) {
+    ck('exception', false, e.stack || e.message);
+  }
+  await FD.reset().catch(() => {});
+  const pass = rows.filter(r => r.startsWith('PASS')).length,
+    fail = rows.length - pass;
+  Object.assign(window.__revalidateBench, {
+    done: true,
+    pass,
+    fail
+  });
+  const s = document.createElement('p');
+  s.className = fail ? 'FAIL' : 'PASS';
+  s.textContent = `${pass} / ${rows.length}`;
+  out.append(s);
+</script>
+</body>
+</html>

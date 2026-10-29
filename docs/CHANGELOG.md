@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: `revalidate(paths)` in the data layer** (`frame/store/frame_data.js`, `frame/app.js`; INTEGRATION § 4, § 15.2,
+  SPEC, DECISIONS; bench A33): a module (and aerodb) can check a few known files against the repository at once, without
+  waiting for the background sync — changed copies are read again and announced, vanished references dropped, the
+  device's own pending writes kept; a publication now shows its new files at once.
 - **Airspaces from X-Plane: limits in feet again** (`shared/aero_sources.js`; aerodb DECISIONS; test K27) — the « M » of « MSL »
   (« 3000MSL ») was read as metres, so X-Plane's airspaces showed « 3000 m AMSL »; the zones built with them need a rebuild.
 - **Frame: three bugs** (`frame/app.js`, `tools/regen_jobs.py`, `tests/v3/lib.py`; SPEC § 3, INTEGRATION § 15.3,

@@ -1520,3 +1520,14 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     map's case that printed the date reads it there.
   - **`Job.log` and `Job.step` are cleaned** of secrets (`clean_error` with the context's EAD credentials), whatever the
     verb writes: no verb can put a credential in the journal by mistake (I8 checks it).
+- **29 Oct 2026 — `FD.revalidate(paths)`** (lot (2) of the challenge, § 10.29; AeroDB's need: the freshness of `proc/`
+  after another device installed procedures):
+  - **These paths only**, now: one head and one tree for all of them (shared with any reading in flight, `treeNow`), then
+    only the changed files are read. Not a sweep of a prefix: the background pass does that.
+  - **What wins**: a write waiting in the queue (the device's own); a `cache` file has no repository; a `reference` gone
+    from the repository is dropped (a document gone is left to the pass, which knows deletions from conflicts).
+  - **Never throws**: offline stops the reading and touches nothing more (`offline: true`); a file the repository refuses
+    (rights, size) is said in `errors` and its copy kept.
+  - **Given to**: the data layer (`FrameData.revalidate`), every adapter (`ctx.data.revalidate`, aerodb's reader), and
+    `ctx.publish`, which revalidates the published paths instead of dropping their copies (evicted only when offline).
+  - **Tests**: bench `frame/store/test/revalidate.html` 14 / 14 (case A33); A30 (publication) unchanged.

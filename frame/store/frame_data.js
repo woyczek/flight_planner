@@ -19,8 +19,9 @@
   //     viennent d'une source en lecture seule (configure({ references }) : le lanceur qui sert la page, ou le dépôt
   //     GitHub réglé), lus à la demande et revalidés à la synchronisation ; rien n'y est jamais écrit ;
   // API (window.FrameData) : configure({ transport, references, identity, every }), start(), adapter(déclaration) → data (get,
-  //   read, list, cached, evict, put, remove, watch, status, sync, onStatus), sync(), status(), conflicts(),
-  //   conflictSeen(id), restore(id), cached(préfixe), evict(chemin), dump() et load(sauvegarde, { mode }) (sauvegarde de l’appareil),
+  //   read, list, cached, evict, revalidate, put, remove, watch, status, sync, onStatus), sync(), status(), conflicts(),
+  //   conflictSeen(id), restore(id), cached(préfixe), evict(chemin), revalidate(chemins), dump() et load(sauvegarde, { mode })
+  //   (sauvegarde de l’appareil),
   //   gitSha(texte), merge, transports.local().
   if (window.FrameData) return;
   const DB = 'sogFrame',
@@ -1154,6 +1155,93 @@
     }
     return n;
   }
+  /** Revalide ces chemins seulement, sans attendre un passage (frame/INTEGRATION.md § 4) : tête et arbre du dépôt du moment
+   *  (transport local : de la source des références) lus une fois pour tous ; une copie dont la révision a changé est relue
+   *  et remplacée, une copie « reference » disparue du dépôt est retirée, puis watch(chemins) ; une écriture en attente
+   *  l'emporte (rien n'y est touché), un fichier de politique « cache » n'a pas de dépôt. Ne lève jamais. Rend { changed,
+   *  unchanged, offline, errors? } (offline : la lecture s'est arrêtée, ce qui suit n'est pas touché ; errors : [{ path,
+   *  message }] des fichiers que le dépôt a refusé de rendre). */
+  async function revalidate(paths) {
+    const list = [...new Set([].concat(paths || []).map(p => String(p || '')).filter(Boolean))],
+      out = {
+        changed: [],
+        unchanged: [],
+        offline: false
+      };
+    if (!list.length) return out;
+    let src = cfg.transport,
+      tree;
+    try {
+      if (!src || src.kind === 'local') {
+        src = refSource();
+        if (!src) return {
+          ...out,
+          unchanged: list
+        };
+        const head = await src.head();
+        tree = await src.tree(head);
+        await setMeta('refs', {
+          id: src.id,
+          head,
+          tree,
+          at: Date.now()
+        });
+      } else tree = (await treeNow(src)).tree;
+    } catch (e) {
+      return {
+        ...out,
+        offline: true,
+        ...(e?.offline ? {} : {
+          message: e?.message || String(e)
+        })
+      };
+    }
+    for (const path of list) {
+      const pol = policyOf(path),
+        doc = await idb('docs', 'get', path);
+      if (pol === 'cache' || isCache(path) || await idb('pending', 'get', path)) {
+        out.unchanged.push(path);
+        continue;
+      }
+      const rev = tree[path];
+      if (!rev) {
+        if (doc && (doc.policy || pol) === 'reference') {
+          await idb('docs', 'delete', path);
+          out.changed.push(path);
+        } else out.unchanged.push(path);
+        continue;
+      }
+      if (doc?.rev === rev) {
+        out.unchanged.push(path);
+        continue;
+      }
+      try {
+        const text = await src.read(path, rev);
+        await idb('docs', 'put', {
+          ...(doc || {}),
+          path,
+          text,
+          base: text,
+          rev,
+          at: Date.now(),
+          policy: doc?.policy || pol || 'reference'
+        });
+        out.changed.push(path);
+      } catch (e) {
+        if (e?.offline) {
+          out.offline = true;
+          break;
+        }
+        out.unchanged.push(path); // lecture refusée (droits, fichier trop gros) : la copie gardée reste, l'erreur est dite
+        (out.errors ||= []).push({
+          path,
+          message: e?.message || String(e)
+        });
+      }
+    }
+    changed(out.changed);
+    return out;
+  }
   const EXPORT = 'sog-frame-export/1';
   // clés de l'appareil (jeton GitHub, clé météo) : un document « cache » comme l'identité, mais jamais dans une
   // sauvegarde ni reprise d'une sauvegarde, et gardé par un remplacement
@@ -1313,6 +1401,7 @@
       list,
       cached,
       evict,
+      revalidate,
       put: (path, value, opts) => (guard(path), put(path, value, {
         ...(opts || {}),
         module: decl.id || ''
@@ -1344,6 +1433,7 @@
     diagnostic,
     cached,
     evict,
+    revalidate,
     dump,
     load,
     gitSha,

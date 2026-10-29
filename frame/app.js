@@ -2355,7 +2355,7 @@
   const publishReaders = {}; // adaptateur de chaque module qui publie : copies « reference » écartées après un commit
   /** Fichiers générés publiés dans le dépôt des données par l'accès GitHub de l'appareil, un commit par groupe
    *  [{ name, files: [{ path, text | blob }], removed: [path], message }] ; chemins sous meta.publish seulement, trigramme et
-   *  accès requis ; jamais d'exception ; ensuite, les copies « reference » des chemins publiés sont écartées (relues). */
+   *  accès requis ; jamais d'exception ; ensuite, les chemins publiés sont revalidés (FD.revalidate). */
   async function publishFor(id, meta, groups, {
     onProgress,
     signal,
@@ -2401,8 +2401,11 @@
         policy: 'reference'
       }))
     });
-    for (const g of list.slice(from | 0, (from | 0) + (r.groups?.length || 0)))
-      for (const x of paths(g)) await ev.evict(x).catch(() => 0);
+    // les chemins publiés revalidés aussitôt (FD.revalidate) : l'appareil lit les nouvelles versions ; hors ligne, ses copies
+    // sont écartées (relues à la prochaine lecture)
+    const done = list.slice(from | 0, (from | 0) + (r.groups?.length || 0)).flatMap(paths);
+    if (done.length && (await ev.revalidate(done)).offline)
+      for (const x of done) await ev.evict(x).catch(() => 0);
     return r;
   }
 

@@ -98,6 +98,14 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - `await data.cached(prefix)` tells what is on the device, with no network: `[{ path, rev, bytes, at, policy }]`.
   `await data.evict(path)` drops the local copy of a `reference` file (or of a prefix ending with `/`) without
   sending anything; it is read again on demand. Use `remove` only to delete a file from the repository.
+- `await data.revalidate(paths)` (29 Oct 2026) checks **these paths only** against the repository now, without waiting for
+  the background pass: the head and tree are read once for all of them (on the local transport, from its source of
+  references); a copy whose revision changed is read again and replaced, a `reference` copy gone from the repository is
+  dropped, and `watch` announces the changed paths. A write waiting in the queue wins (nothing is touched), a `cache` file
+  has no repository. It never throws: `{ changed, unchanged, offline, errors? }` (`offline`: the reading stopped, what
+  follows is untouched; `errors`: `[{ path, message }]` of files the repository refused to give). For the freshness of a
+  few known files (a `proc/` index after another device installed procedures), not to sweep a prefix: that is the
+  background pass.
 - Always design for the cached value first: the network may never come.
 
 ## 5. Writing
@@ -919,7 +927,8 @@ const r = await ctx.publish([
 - Refused before any call, with `refused`: `'declaration'` (no `meta.publish`), `'path'` (a path outside it, with `path`),
   `'trigram'` (none on the device), `'access'` (no GitHub access on this device). The commit message ends with the
   trigram.
-- After each group, the device's `reference` copies of its paths are dropped: the next read takes the published ones.
+- After the groups, their paths are revalidated (`data.revalidate`): the device reads the published versions at once
+  (offline: its copies are dropped and read again on demand).
 - **GitHub's limits**: a blob is 100 MB at most (larger: `tooBig`, nothing sent for that group); a tree read is
   truncated beyond about 7 MB (`ctx.publish` never reads the whole tree: it builds on `base_tree`); the API counts its
   calls (one per file, plus four per group): split by zone, not by file.
