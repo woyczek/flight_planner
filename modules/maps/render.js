@@ -1109,65 +1109,120 @@
       zv = mission ? zs : effectiveZoom(zs, W, H),
       tier = tierOf(pxOfZoom(zv));
     if (!mission) profile = atZoom(profile, zv);
-    const shown = mission ? data : byZoom(data, profile, zv, tier),
-      labels = K.routeLabels(route, toC, scale, pl, mk, level);
-    if (reserve) reserve(pl);
-    reservePoints(pl, mission?.points, toC, scale, profile);
-    const towns = cityList(shown.cities, profile, toC, bbox, scale, pl);
-    K.drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes');
-    const ends = K.drawAirways(ctx, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier, K.routeLegs(legs || route));
-    // points des voies dessinées (sauf de loin) : les balises avec leur symbole (ajoutées aux balises montrées), les
-    // autres en triangle
-    const fixes = [],
-      endNavs = [];
-    if (ends.size && el(profile, 'fixes') !== false) {
-      const byId = new Map((data.navaids || []).map(n => [n.id, n]));
-      for (const e of ends.values()) {
-        const n = byId.get(e.id);
-        if (n && Math.abs(n.lat - e.lat) < .05 && Math.abs(n.lon - e.lon) < .05) endNavs.push(n);
-        else fixes.push(e);
+    const shown = mission ? data : byZoom(data, profile, zv, tier);
+    // les couches de la carte dans l'ordre de dessin de la SPEC § 3 (§ 10.29 d) : chacune { id, reserve(), paint(ctx) } ; toutes
+    // les réservations dans le placeur d'abord, dans l'ordre de la liste (libellés de la route, de l'écran, points de mission,
+    // villes : les deux premiers n'ont rien à peindre), puis tous les dessins
+    let labels = [],
+      towns = [],
+      ends = new Map(),
+      pts = {},
+      vrpHits = [],
+      zoneLabels = [];
+    const layers = [{
+      id: 'routeLabels',
+      reserve: () => labels = K.routeLabels(route, toC, scale, pl, mk, level)
+    }, {
+      id: 'screenLabels', // l'écran réserve ses libellés (procédures choisies) juste après ceux de la route
+      reserve: () => reserve && reserve(pl)
+    }, {
+      id: 'zoneShapes',
+      paint: c => K.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes')
+    }, {
+      id: 'airways',
+      paint: c => ends = K.drawAirways(c, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier, K.routeLegs(legs ||
+        route))
+    }, {
+      id: 'points',
+      paint: c => {
+        // points des voies dessinées (sauf de loin) : les balises avec leur symbole (ajoutées aux balises montrées), les
+        // autres en triangle
+        const fixes = [],
+          endNavs = [];
+        if (ends.size && el(profile, 'fixes') !== false) {
+          const byId = new Map((data.navaids || []).map(n => [n.id, n]));
+          for (const e of ends.values()) {
+            const n = byId.get(e.id);
+            if (n && Math.abs(n.lat - e.lat) < .05 && Math.abs(n.lon - e.lon) < .05) endNavs.push(n);
+            else fixes.push(e);
+          }
+        }
+        // balises montrées : celles du profil (et de la densité), plus celles qui sont des bouts de voies
+        const navAll = on(profile, 'navaids'),
+          // nom long d'une balise : trop petit (7 px) hors de la vue rapprochée, l'identifiant et la fréquence suffisent
+          navShown = [...new Set([...(navAll ? shown.navaids || [] : []), ...endNavs])].map(n => mission || tier === 'near' ? n : {
+            ...n,
+            name: ''
+          });
+        pts = drawPoints(c, {
+          ...shown,
+          navaids: navShown
+        }, toC, W, H, scale, bbox, pl, navShown.length && !navAll ? {
+          ...profile,
+          elements: {
+            ...profile.elements,
+            navaids: true
+          }
+        } : profile, cov);
+        drawFixes(c, fixes, toC, W, H, scale, pl);
       }
-    }
-    // balises montrées : celles du profil (et de la densité), plus celles qui sont des bouts de voies
-    const navAll = on(profile, 'navaids'),
-      // nom long d'une balise : trop petit (7 px) hors de la vue rapprochée, l'identifiant et la fréquence suffisent
-      navShown = [...new Set([...(navAll ? shown.navaids || [] : []), ...endNavs])].map(n => mission || tier === 'near' ? n : {
-        ...n,
-        name: ''
-      });
-    const pts = drawPoints(ctx, {
-      ...shown,
-      navaids: navShown
-    }, toC, W, H, scale, bbox, pl, navShown.length && !navAll ? {
-      ...profile,
-      elements: {
-        ...profile.elements,
-        navaids: true
+    }, {
+      // axes de ravitaillement et tracks NAT (mode CAM, cartes de mission qui les demandent)
+      id: 'aar',
+      paint: c => on(profile, 'aarTracks') && K.drawAar(c, data.aar, toC, scale, bbox, pl)
+    }, {
+      id: 'nat',
+      paint: c => on(profile, 'natTracks') && K.drawNat(c, data.nat, toC, scale, bbox, pl)
+    }, {
+      id: 'airwayLabels', // étiquettes des voies posées après leurs points
+      paint: () => {
+        for (const f of ends.later || []) f();
       }
-    } : profile, cov);
-    drawFixes(ctx, fixes, toC, W, H, scale, pl);
-    // axes de ravitaillement et tracks NAT (mode CAM, cartes de mission qui les demandent)
-    if (on(profile, 'aarTracks')) K.drawAar(ctx, data.aar, toC, scale, bbox, pl);
-    if (on(profile, 'natTracks')) K.drawNat(ctx, data.nat, toC, scale, bbox, pl);
-    for (const f of ends.later || []) f();
-    const vrpHits = drawVrp(ctx, hideVrp?.size ? {
-      ...shown,
-      vrp: (shown.vrp || []).filter(v => !hideVrp.has(v.id))
-    } : shown, toC, W, H, scale, bbox, pl, profile);
-    const zoneLabels = K.drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels');
-    drawGridMora(ctx, shown.moraCells, toC, bbox, W, H, scale, pl, profile);
-    drawMissionZones(ctx, mission?.zones, toC, scale, pl, profile);
-    drawMissionPoints(ctx, mission?.points, toC, W, H, scale, profile);
-    drawCities(ctx, towns, profile, scale, W, H);
-    K.drawRoute(ctx, route, toC, scale, labels, {
-      marks: mk,
-      lines
-    });
-    if (overRoute) overRoute(ctx);
-    // cartouches des voies que suit le chemin (route et procédures) : par-dessus son trait (le mode Édition de l'écran dessine
-    // ensuite ses poignées)
-    for (const f of ends.over || []) f();
-    if (top) top(ctx);
+    }, {
+      id: 'vrp',
+      paint: c => vrpHits = drawVrp(c, hideVrp?.size ? {
+        ...shown,
+        vrp: (shown.vrp || []).filter(v => !hideVrp.has(v.id))
+      } : shown, toC, W, H, scale, bbox, pl, profile)
+    }, {
+      id: 'zoneLabels',
+      paint: c => zoneLabels = K.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels')
+    }, {
+      id: 'gridMora',
+      paint: c => drawGridMora(c, shown.moraCells, toC, bbox, W, H, scale, pl, profile)
+    }, {
+      id: 'missionZones',
+      paint: c => drawMissionZones(c, mission?.zones, toC, scale, pl, profile)
+    }, {
+      id: 'missionPoints',
+      reserve: () => reservePoints(pl, mission?.points, toC, scale, profile),
+      paint: c => drawMissionPoints(c, mission?.points, toC, W, H, scale, profile)
+    }, {
+      id: 'cities',
+      reserve: () => towns = cityList(shown.cities, profile, toC, bbox, scale, pl),
+      paint: c => drawCities(c, towns, profile, scale, W, H)
+    }, {
+      id: 'route',
+      paint: c => K.drawRoute(c, route, toC, scale, labels, {
+        marks: mk,
+        lines
+      })
+    }, {
+      id: 'screenTraces', // l'écran peint ses tracés au niveau de la route (procédures choisies)
+      paint: c => overRoute && overRoute(c)
+    }, {
+      // cartouches des voies que suit le chemin (route et procédures) : par-dessus son trait (le mode Édition de l'écran
+      // dessine ensuite ses poignées)
+      id: 'airwayOver',
+      paint: () => {
+        for (const f of ends.over || []) f();
+      }
+    }, {
+      id: 'screenTop', // ce que l'écran peint en dernier (noms et contraintes des procédures)
+      paint: c => top && top(c)
+    }];
+    for (const l of layers) l.reserve?.();
+    for (const l of layers) l.paint?.(ctx);
     // cadres posés, pour les infobulles et les libellés ajoutés par l'écran (TOC, TOD) : cartouches des voies, libellés
     // d'espaces, libellés de la route
     return {

@@ -102,6 +102,11 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   6. graticule and MORA (the highest MORA of 2, 4… degree groups when a degree is narrower than 70 px);
   7. the route on top: line, points, NM marks and their labels;
   8. over the route's line, the boxed names of the airways that route legs follow (§ 3, airways).
+  In the code (V3 § 10.29 d) this order is **one list of layers** in `draw()`, each `{ id, reserve(), paint(ctx) }`: every
+  reservation first, in the order of the list (`routeLabels`, `screenLabels`, `missionPoints`, `cities`), then every painting:
+  `zoneShapes`, `airways`, `points` (aerodromes, navaids, airway fixes), `aar`, `nat`, `airwayLabels`, `vrp`, `zoneLabels`,
+  `gridMora`, `missionZones`, `missionPoints`, `cities`, `route`, `screenTraces` (the screen's `overRoute`: the chosen
+  procedures), `airwayOver` (the boxes over the path), `screenTop` (the screen's `top`: the procedures' labels, last).
   It returns the frames it drew for the tooltips and the gestures: `airways [{ x, y, r, g }]`, `labels`, `barbs`,
   `navaids [{ n, x, y, merged }]`, `aerodromes [{ a, x, y }]`, `vrps`, `tocTod`, and `zoom { shifted, effective, tier,
   kept }` (`kept.byKey` per family).
