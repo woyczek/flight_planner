@@ -999,6 +999,10 @@ in the launcher; `resume` finds it again.
   /__setup/workstation`, workstation only) also carries `lnm`: the sorted list of Little Navmap database kinds present on the workstation (the
   `little_navmap_<kind>.sqlite` files of its `little_navmap_db` folder; names only, `[]` when absent); `FrameData.launcher.detect()` hands it on in
   `info()`, aerodb uses it as a hint when a State has no coding tables.
+- **IVAO's sign-in** (29 Oct 2026, R1b): `ctx.ivao` in the settings context — `status()` → `{ connected, expires_at,
+  scope }`, `connect()` (goes to IVAO, back on `#settings?card=ivao`), `disconnect()`, `token()` → a valid access token
+  or null (renewed through the launcher); a module that reads IVAO's tracker for the pilot asks `token()` and never keeps
+  it. The two routes `ivao/oauth/start` and `ivao/oauth/refresh` are open to the local network and to the relay (I10).
 - **The relay's routes** (29 Oct 2026, R1a): `@route(…, public='lan', relay=True)` opens a route to a pilot's device
   through the airline's relay too (frame SPEC § 3.11); today status, changes, batch, sync, net (noreg I10, I13).
 - **The route table** (29 Oct 2026, lot 3c-2): every `/__setup/` route of `tools/launch.py` is a method of the server

@@ -907,9 +907,22 @@ explicit go** (R3).
   sync is the device's trigram, never the page's; `net` stays on its whitelist (SimBrief, IVAO, VATSIM, METAR,
   Open-Meteo), without the airline's site (no host chosen by the page). A failed synchronisation gives the device a
   generic message (the detail in the console).
-- To come: the invitations by link (R2), the OpenID exchange of IVAO through the relay (R1b), the deployment and the
-  security review (R3). Debt: one day, bound a device's writes to its pilot's prefixes (`pilot/<TRI>/`, their reports,
-  their availabilities).
+- **IVAO's OpenID through the relay** (R1b): a pilot links a device to their IVAO account from Settings › « Compte
+  IVAO » (any level when asked by `#settings?card=ivao`, from level 2 otherwise; a launcher is needed, the relay or the
+  workstation). The launcher keeps the application's secret (`secrets/ivao_oauth.json`: `clientId`, `clientSecret`,
+  optional `discovery`; never shown, never logged) and runs the code flow with PKCE S256 and `client_secret_basic`, the
+  endpoints taken from IVAO's discovery document (https only, no redirect followed). `POST /__setup/ivao/oauth/start`
+  gives the authorisation address with a random state bound to the device and to the callback (10 minutes, used once);
+  IVAO comes back to `/__relay/ivao/callback`, which exchanges the code and sends the device to
+  `/frame/index.html#ivao-return?…` (`Referrer-Policy: no-referrer`); the frame keeps the tokens with the device keys
+  (`device/keys.json`, never in a backup) and replaces the address at once, on start or on the same document.
+  `POST /__setup/ivao/oauth/refresh` renews them (the secret stays on the relay). `ctx.ivao` gives the screens
+  `status()`, `connect()`, `disconnect()` and `token()` (renewed five minutes before it expires).
+  The callback is a GET that changes a state: under `SameSite=Lax` IVAO's redirect carries the device's cookie (with
+  `Strict` it would not, and the callback would be refused), and a callback forged by another site fails, its state
+  being bound to another device or to none.
+- To come: the invitations by link (R2), the deployment and the security review (R3). Debt: one day, bound a device's
+  writes to its pilot's prefixes (`pilot/<TRI>/`, their reports, their availabilities).
 
 ## 4. To come in the frame
 

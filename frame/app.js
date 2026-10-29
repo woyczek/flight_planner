@@ -389,6 +389,12 @@
     ok: ['OK', 'OK', 'OK', 'Aceptar'],
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+    ivaoOk: ['Compte IVAO relié à cet appareil.', 'IVAO account linked to this device.', 'IVAO-Konto mit diesem Gerät verbunden.',
+      'Cuenta IVAO vinculada a este dispositivo.'
+    ],
+    ivaoFail: ['Connexion à IVAO refusée ({e}).', 'IVAO sign-in refused ({e}).', 'IVAO-Anmeldung abgelehnt ({e}).',
+      'Inicio de sesión en IVAO rechazado ({e}).'
+    ],
     tabsNav: ['Navigation principale', 'Main navigation', 'Hauptnavigation', 'Navegación principal'],
     // bloc d'état en tête des Réglages et pastille du ⚙ de l'en-tête (frame/SPEC.md § 3.1)
     info: {
@@ -668,6 +674,79 @@
       };
     }
   };
+  // compte IVAO du pilote par le relais (R1b) : { access_token, refresh_token, expires_at, scope }, dans device/keys.json avec
+  // le jeton GitHub et la clé météo (hors des sauvegardes, jamais synchronisé) ; reçu une fois par le retour de l'OpenID
+  // d'IVAO (#ivao-return?…, adresse remplacée aussitôt), renouvelé par le relais (son secret)
+  let ivaoTok = null;
+  /** Retour de l'OpenID d'IVAO (le lanceur renvoie vers #ivao-return?… ) : jetons gardés, adresse remplacée — ni
+   *  l'historique, ni la page, ni un journal ne les gardent ; une erreur est dite. */
+  async function takeIvaoReturn() {
+    if (!location.hash.startsWith('#ivao-return?')) return;
+    const q = new URLSearchParams(location.hash.slice('#ivao-return?'.length));
+    history.replaceState(null, '', `${location.pathname}${location.search}#settings?card=ivao`);
+    const at = q.get('access_token') || '';
+    if (!at) return notify(t(T.ivaoFail, {
+      e: (q.get('error') || 'refused').slice(0, 40)
+    }), 'err');
+    ivaoTok = {
+      access_token: at,
+      refresh_token: q.get('refresh_token') || '',
+      expires_at: +q.get('expires_at') || 0,
+      scope: (q.get('scope') || '').slice(0, 200)
+    };
+    await keepKeys();
+    notify(t(T.ivaoOk), 'ok');
+  }
+  /** Compte IVAO pour les Réglages et les modules : état (jamais le jeton), connexion par le relais, déconnexion, jeton du
+   *  moment (renouvelé par le relais à moins de 5 minutes de sa fin) ou null. */
+  const ivao = {
+    status: () => ivaoTok ? {
+      connected: true,
+      expires_at: ivaoTok.expires_at,
+      scope: ivaoTok.scope
+    } : {
+      connected: false
+    },
+    async connect() {
+      const r = await launcherRequest('ivao/oauth/start', {
+        json: {}
+      });
+      if (r?.body?.ok && /^https:\/\//.test(r.body.url || '')) {
+        location.assign(r.body.url);
+        return {
+          ok: true
+        };
+      }
+      return {
+        ok: false,
+        status: r?.status || 0,
+        message: r?.body?.message || ''
+      };
+    },
+    async disconnect() {
+      ivaoTok = null;
+      await keepKeys();
+    },
+    async token() {
+      if (!ivaoTok) return null;
+      if (ivaoTok.expires_at - Date.now() / 1000 > 300) return ivaoTok.access_token;
+      if (!ivaoTok.refresh_token) return null;
+      const r = await launcherRequest('ivao/oauth/refresh', {
+        json: {
+          refresh_token: ivaoTok.refresh_token
+        }
+      });
+      if (!r?.body?.ok) return null;
+      ivaoTok = {
+        access_token: r.body.access_token,
+        refresh_token: r.body.refresh_token || ivaoTok.refresh_token,
+        expires_at: +r.body.expires_at || 0,
+        scope: r.body.scope || ivaoTok.scope
+      };
+      await keepKeys();
+      return ivaoTok.access_token;
+    }
+  };
   let launcherHere = null; // { data, dataGit, host, lan, lnm } si la page est servie par un lanceur (relevé au démarrage)
   // client du lanceur (frame/lib/launcher.js, INTEGRATION § 15) : chargé au démarrage ; le cadre s'en sert pour lui-même
   // (Réglages, fiches .lnmperf d'aerodb : toutes ses routes), un module par ctx.launcher (ce que son meta.launcher déclare)
@@ -792,6 +871,7 @@
       schema: 1,
       github: FD.github.config(),
       avwx,
+      ivao: ivaoTok,
       updated_at: new Date().toISOString()
     };
     return keysSaved = keysSaved.then(() => own.put(KEYS, doc)).catch(e => console.error(e));
@@ -806,6 +886,7 @@
     if (doc) {
       FD.github.hold(doc.github);
       avwx = typeof doc.avwx === 'string' ? doc.avwx : '';
+      ivaoTok = doc.ivao?.access_token ? doc.ivao : null;
       return;
     }
     // aucun document : l'ancien rangement de localStorage, repris une fois puis effacé
@@ -2139,6 +2220,8 @@
    *  navigation à la fois : chaque appel prend un jeton, et une reprise après un await dont le jeton n'est plus le dernier
    *  abandonne sans rien écrire (la vue est déjà vidée par la navigation suivante, qui a démonté le module en cours de montage). */
   async function route() {
+    // retour de l'OpenID d'IVAO arrivé sans recharger la page (même document) : jetons rangés, adresse remplacée, puis le routage
+    if (location.hash.startsWith('#ivao-return?')) return void takeIvaoReturn().then(route);
     const h = parseHash(),
       id = h.id || visibleModules()[0]?.id || 'settings';
     // écrans du cadre (aide, feuille de route, réglages, conflits) par-dessus le module courant, qui reste monté
@@ -2788,6 +2871,7 @@
         bind: bindStatus
       }),
       weatherKey,
+      ivao,
       // heures de l'appli (frame/lib/time.js) : « 16:30Z », date UTC et heure Z
       time: Object.freeze({
         fmtZ: iso => tz('fmtZ', iso),
@@ -3409,6 +3493,7 @@
     launcherHere = await FD.launcher.detect();
     await timeP; // les heures du cadre (synchronisation, pastilles) en UTC dès leur premier dessin
     await loadDevice();
+    await takeIvaoReturn(); // retour de l'OpenID d'IVAO : avant le premier routage (l'adresse est remplacée)
     // (accès réglé ou coupé dans un autre onglet : device/keys.json change et own.watch('device/'), plus bas, rebranche ici)
     // demande au navigateur de ne pas effacer le stockage du site (Safari le fait pour un site peu visité), au premier geste de
     // l'utilisateur et non au chargement : une demande de stockage pendant le démarrage décale les cartes (essai D7)

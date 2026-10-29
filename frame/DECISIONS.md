@@ -1796,3 +1796,19 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     without origin, return path, no local network, pairing, single use, attempt limit, forged X-Forwarded-For,
     workstation routes refused, whitelist, PUT, author from the token, revocation), the screen against a simulated
     context (A40). Nothing exposed.
+- **29 Oct 2026 — R1b: IVAO's OpenID through the relay** (coordinator's plan R1a then R1b):
+  - The secret of the airline's IVAO application lives on the relay only (`secrets/ivao_oauth.json`, blind to the
+    secrets screen like the GitLab token); the device holds the pilot's own tokens, in its keys, never in a backup.
+  - Code flow with PKCE S256 and `client_secret_basic`; endpoints from the discovery document (default
+    `https://api.ivao.aero/.well-known/openid-configuration`), https only, no redirect followed; state random, bound to
+    the device and the callback, 10 minutes, used once, 100 pending at most.
+  - The tokens go back to the frame in the fragment of a 303 (`#ivao-return?…`, never in a query string, never logged),
+    taken and erased from the address at once; an error comes back as `#ivao-return?error=…`.
+  - Tested against a simulated IVAO (I14: discovery, PKCE, Basic, state used once, wrong device, refresh) and the frame's
+    return (A41); the real IVAO needs the airline's application, registered by the administrator.
+  - The airline's IVAO application serves every paired device (and the workstation): a device that should no longer use
+    it is revoked (Maintenance › « Appareils du relais »), which also closes its IVAO routes; the pilot's own IVAO
+    tokens stay on the device until « Délier ».
+  - The callback `/__relay/ivao/callback` is the relay's only GET that changes a state (it consumes a state and exchanges
+    a code): `SameSite=Lax` is what lets IVAO's redirect carry the device's cookie; a callback sent by another site fails
+    on its state (bound to the device that started the sign-in, used once).

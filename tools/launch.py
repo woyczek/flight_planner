@@ -15,7 +15,7 @@
 Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [--no-data]
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
-import argparse, datetime, fnmatch, glob, hashlib, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
+import argparse, base64, datetime, fnmatch, glob, hashlib, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
 import http.client, http.cookies, ipaddress, posixpath, ssl, urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
@@ -357,11 +357,42 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if self.command not in ('GET', 'HEAD', 'POST'):
             self._json({'error': 'méthode refusée'}, 405)
             return True
+        if path == IVAO_CALLBACK:
+            self.relay_device = dev
+            self._ivao_callback()
+            return True
         if path.startswith('/__setup/') and not ROUTES.get((self.command, path), ('', 'poste', False))[2]:
             self._json({'error': 'réservé au poste'}, 403)
             return True
         self.relay_device = dev
         return False
+
+    def _ivao_callback(self):
+        """Retour d'IVAO (?code&state) : l'état doit être celui d'une demande de cet appareil (relais) ou du poste ; le code
+        échangé avec le secret du relais ; les jetons remis une fois par le fragment de l'adresse du cadre
+        (/frame/index.html#ivao-return?…, jamais envoyé au serveur ni dans un journal ; le cadre les range et remplace
+        l'adresse aussitôt) ; une erreur : #ivao-return?error=… seulement."""
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        dev = getattr(self, 'relay_device', None) if self._relay() else None
+        r = ivao_oauth_finish(q.get('state', [''])[0], q.get('code', [''])[0], q.get('error', [''])[0],
+                              dev['id'] if dev else '', self._ivao_redirect())
+        if r.get('ok'):
+            frag = urllib.parse.urlencode({'access_token': r['access_token'], 'refresh_token': r.get('refresh_token', ''),
+                                           'expires_at': r['expires_at'], 'scope': r.get('scope', '')})
+            loc = f'/frame/index.html#ivao-return?{frag}'
+        else:
+            loc = '/frame/index.html#ivao-return?' + urllib.parse.urlencode({'error': r.get('error', 'refused')[:60]})
+        self.send_response(303)
+        self.send_header('Location', loc)
+        self.send_header('Content-Length', '0')
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Referrer-Policy', 'no-referrer')
+        self.end_headers()
+        return None
+
+    def _ivao_redirect(self):
+        """Adresse de retour déclarée chez IVAO : celle du relais (https, hôte public), sinon celle du poste."""
+        return f'https://{RELAY["host"]}{IVAO_CALLBACK}' if self._relay() else f'http://localhost:{self.port}{IVAO_CALLBACK}'
 
     def _relay_page(self, nxt, code=200, msg=''):
         """Page d'appairage du relais (sans script : formulaire envoyé à /__relay/pair), dans la langue du navigateur."""
@@ -787,6 +818,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._deny(why)
         if self._data_script_refused():
             return self._json({'error': 'fichier de données refusé (format)'}, 403)
+        if self.path.split('?', 1)[0] == IVAO_CALLBACK and not self._lan():
+            return self._ivao_callback()  # retour d'IVAO sur le poste lui-même (le relais le prend dans sa porte)
         # index du pool demandés : refaits d'abord (fichiers changés depuis le démarrage : git, autre poste, éditeur),
         # leurs signatures doivent dire vrai — une page sert sa copie d'un fichier tant que sa signature n'a pas changé
         idx = self.path.split('?')[0]
@@ -958,6 +991,20 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if not self._allowed():
             return self._json({'error': 'refusé'}, 403)
         return self._json(vatsim_bookings())
+
+    @route('POST', '/__setup/ivao/oauth/start', '/__setup/ivao/oauth/refresh', public='lan', relay=True)
+    def _post_ivao_oauth(self, path, body):
+        # OpenID d'IVAO par le relais (R1b) : start → l'adresse d'autorisation (PKCE S256, état lié à cet appareil) ;
+        # refresh { refresh_token } → de nouveaux jetons, avec le secret du relais ; aucun jeton journalisé
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        a = a if isinstance(a, dict) else {}
+        dev = getattr(self, 'relay_device', None) if self._relay() else None
+        v = ivao_oauth_refresh(a.get('refresh_token')) if path.endswith('/refresh') else ivao_oauth_start(dev['id'] if dev else '',
+                                                                                                           self._ivao_redirect())
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
 
     @route('GET', '/__setup/relay', public='poste')
     def _get_relay(self, path):
@@ -1670,6 +1717,121 @@ LAN_MAX_BODY = 16 * 1024 * 1024  # corps d'un POST venu du réseau local (un lot
 _tree_memo = {'at': 0.0, 'v': None}  # dernier arbre de data/ calculé (servi de nouveau à un appareil, 2 s au plus)
 LAN_LOCK = threading.Lock()
 NB = '\u202f'  # espace fine insécable avant : ; ! ? en français
+# ---- OpenID d'IVAO par le relais (R1b) : code + PKCE S256 (le point de jeton d'IVAO n'admet que client_secret_basic /
+# post : pas de client public, le secret reste au relais, secrets/ivao_oauth.json) ; adresses lues du document de découverte
+# (jamais écrites en dur) ; le pilote reçoit son propre jeton (portée tracker) et le refresh_token, une fois, par le fragment
+# d'une page de retour du même origine ; le téléphone lit ensuite le tracker directement
+IVAO_CALLBACK = '/__relay/ivao/callback'
+IVAO_DISCOVERY = 'https://api.ivao.aero/.well-known/openid-configuration'
+IVAO_SCOPE = 'openid tracker'
+IVAO_STATE_TTL = 600
+_ivao_oidc = {'meta': None, 'at': 0.0, 'pending': {}}
+def OIDC_OPEN(req, timeout=20):
+    """Ouvreur des appels OpenID : jamais une redirection suivie (remplacé par les essais : aucun appel réel)."""
+    return urllib.request.build_opener(_NoRedirect).open(req, timeout=timeout)
+
+
+def ivao_oauth_cfg():
+    """(clientId, clientSecret, document de découverte) de secrets/ivao_oauth.json, ou None."""
+    s = _read_json(_secret_file('app', service='ivao_oauth'))
+    cid, sec = str(s.get('clientId') or '').strip(), str(s.get('clientSecret') or '').strip()
+    disc = str(s.get('discovery') or IVAO_DISCOVERY).strip()
+    return (cid, sec, disc) if cid and sec and disc.startswith('https://') else None
+
+
+def _oidc_json(req):
+    with OIDC_OPEN(req, timeout=20) as r:
+        return json.loads(r.read() or b'{}')
+
+
+def ivao_oidc_meta(disc):
+    """Points d'autorisation et de jeton d'IVAO (document de découverte, gardé une heure) ; https seulement."""
+    if _ivao_oidc['meta'] and time.time() - _ivao_oidc['at'] < 3600:
+        return _ivao_oidc['meta']
+    m = _oidc_json(urllib.request.Request(disc, headers={'Accept': 'application/json'}))
+    meta = {k: str(m.get(k) or '') for k in ('authorization_endpoint', 'token_endpoint')}
+    if not all(v.startswith('https://') for v in meta.values()):
+        raise ValueError('IVAO discovery: https endpoints expected')
+    _ivao_oidc.update(meta=meta, at=time.time())
+    return meta
+
+
+def ivao_oauth_start(device, redirect):
+    """Adresse d'autorisation d'IVAO pour cet appareil : { ok, url } ; état aléatoire lié à l'appareil, vérificateur PKCE
+    gardé ici (10 minutes)."""
+    cfg = ivao_oauth_cfg()
+    if not cfg:
+        return {'ok': False, 'status': 409, 'message': 'no IVAO application on the relay (secrets/ivao_oauth.json)'}
+    try:
+        meta = ivao_oidc_meta(cfg[2])
+    except (OSError, ValueError) as e:
+        return {'ok': False, 'status': 502, 'message': f'IVAO discovery: {type(e).__name__}'}
+    verifier = secrets.token_urlsafe(48)
+    challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip('=')
+    state = secrets.token_urlsafe(24)
+    now = time.time()
+    pend = {k: v for k, v in _ivao_oidc['pending'].items() if now - v['at'] < IVAO_STATE_TTL}
+    if len(pend) >= 100:
+        return {'ok': False, 'status': 429, 'message': 'too many sign-ins in progress'}
+    pend[state] = {'verifier': verifier, 'device': device, 'redirect': redirect, 'at': now}
+    _ivao_oidc['pending'] = pend
+    q = urllib.parse.urlencode({'response_type': 'code', 'client_id': cfg[0], 'redirect_uri': redirect, 'scope': IVAO_SCOPE,
+                                'state': state, 'code_challenge': challenge, 'code_challenge_method': 'S256'})
+    return {'ok': True, 'url': f'{meta["authorization_endpoint"]}?{q}'}
+
+
+def _ivao_token(form):
+    """Point de jeton d'IVAO, client_secret_basic : { access_token, refresh_token, expires_in, scope } ou ValueError."""
+    cid, sec, disc = ivao_oauth_cfg()
+    meta = ivao_oidc_meta(disc)
+    basic = base64.b64encode(f'{urllib.parse.quote(cid, safe="")}:{urllib.parse.quote(sec, safe="")}'.encode()).decode()
+    req = urllib.request.Request(meta['token_endpoint'], method='POST', data=urllib.parse.urlencode(form).encode(),
+                                 headers={'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json'})
+    req.add_unredirected_header('Authorization', f'Basic {basic}')
+    j = _oidc_json(req)
+    if not isinstance(j, dict) or not j.get('access_token'):
+        raise ValueError('no access_token')
+    return j
+
+
+def _ivao_tokens(j):
+    return {'ok': True, 'access_token': str(j['access_token']), 'refresh_token': str(j.get('refresh_token') or ''),
+            'scope': str(j.get('scope') or ''), 'expires_at': int(time.time()) + max(60, int(j.get('expires_in') or 3600))}
+
+
+def ivao_oauth_finish(state, code, error, device, redirect):
+    """Retour d'IVAO : l'état d'une demande en cours, du même appareil et de la même adresse de retour ; le code échangé.
+    { ok, access_token, refresh_token, expires_at, scope } ou { ok: False, error }."""
+    p = _ivao_oidc['pending'].pop(str(state or ''), None)
+    if not p or time.time() - p['at'] >= IVAO_STATE_TTL or p['device'] != device or p['redirect'] != redirect:
+        return {'ok': False, 'error': 'state'}
+    if error or not code:
+        return {'ok': False, 'error': 'denied' if error else 'code'}
+    if not ivao_oauth_cfg():
+        return {'ok': False, 'error': 'config'}
+    try:
+        return _ivao_tokens(_ivao_token({'grant_type': 'authorization_code', 'code': code, 'redirect_uri': redirect,
+                                         'code_verifier': p['verifier']}))
+    except (OSError, ValueError, KeyError):
+        return {'ok': False, 'error': 'exchange'}
+
+
+def ivao_oauth_refresh(refresh_token):
+    """Nouveaux jetons pour ce refresh_token, avec le secret du relais : { ok, access_token, refresh_token, expires_at }."""
+    if not isinstance(refresh_token, str) or not 8 <= len(refresh_token) <= 4096:
+        return {'ok': False, 'status': 400, 'message': 'refresh_token expected'}
+    if not ivao_oauth_cfg():
+        return {'ok': False, 'status': 409, 'message': 'no IVAO application on the relay (secrets/ivao_oauth.json)'}
+    try:
+        j = _ivao_token({'grant_type': 'refresh_token', 'refresh_token': refresh_token})
+    except (OSError, ValueError, KeyError) as e:
+        return {'ok': False, 'status': 401 if isinstance(e, urllib.error.HTTPError) and e.code in (400, 401) else 502,
+                'message': 'IVAO refused the refresh' if isinstance(e, urllib.error.HTTPError) else 'IVAO unreachable'}
+    out = _ivao_tokens(j)
+    out['refresh_token'] = out['refresh_token'] or refresh_token
+    return out
+
+
 # relais de la compagnie (R1a, --relay <hôte public>) : l'hôte que le proxy inverse du NAS transmet (en-tête Host) ; vide :
 # pas de relais
 RELAY = {'host': ''}
@@ -1869,9 +2031,11 @@ _ivao = {'at': 0.0, 'areas': None}
 # gitlab : instance, projet et jeton d'accès du dépôt des données sur GitLab (secrets/gitlab.json, posé à la main sur le poste
 # de l'administrateur ; G2, la page « Jetons des pilotes », s'en servira) — comme ead, jamais un caractère vers la page
 SECRET_FIELDS = {'app': {'ivao': {'apiKey': True}, 'ead': {'user': True, 'password': True},
-                         'gitlab': {'instance': True, 'project': True, 'token': True}},
+                         'gitlab': {'instance': True, 'project': True, 'token': True},
+                         # application OpenID d'IVAO du relais (R1b) : le secret reste ici, jamais un caractère vers la page
+                         'ivao_oauth': {'clientId': True, 'clientSecret': True}},
                  'user': {'ivao': {'clientId': False, 'clientSecret': True}}}
-SECRET_BLIND = ('ead', 'gitlab')  # services dont la page ne reçoit que « réglé » et la date, jamais un caractère
+SECRET_BLIND = ('ead', 'gitlab', 'ivao_oauth')  # services dont la page ne reçoit que « réglé » et la date, jamais un caractère
 SECRETS = os.path.join(ROOT, 'secrets')
 
 

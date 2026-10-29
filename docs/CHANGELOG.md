@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **IVAO sign-in through the relay (R1b)** (`tools/launch.py`, `frame/app.js`, `frame/settings/settings.js`; frame
+  SPEC § 3.11, INTEGRATION, DECISIONS, Settings help ×4; noreg I10, I14, A41): Settings › IVAO account links a device to
+  the pilot's IVAO account (OpenID code flow with PKCE run by the launcher, which keeps the application's secret); the
+  tokens stay on the device and are renewed through the launcher. Tested against a simulated IVAO, not exposed.
 - **Tests: E3 no longer depends on the clock** (`tests/v3/cases/atmosphere.py`). The sheet title gives the departure with its day
   when it is not today (`fmtWhen`, a correct rule); the default departure being the next hour, after 23:00Z it is tomorrow and
   the case, which expected "HH:MMZ" alone, failed every night. It now accepts an optional day before the time.

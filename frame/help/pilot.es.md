@@ -893,6 +893,10 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
 
 ## Conviene saber
 
+- **Cuenta IVAO**: la tarjeta «Cuenta IVAO» vincula este dispositivo a su cuenta IVAO por el relé de la aerolínea (o
+  el lanzador del puesto): «Iniciar sesión en IVAO» abre la página de IVAO y luego vuelve aquí. El relé guarda el secreto
+  de la aplicación de la aerolínea; su token se queda en este dispositivo, renovado solo, nunca en una copia de
+  seguridad. «Desvincular» lo borra.
 - **Dispositivos del relé**: cuando el lanzador funciona como relé de la aerolínea (detrás del proxy inverso del NAS,
   en https), un piloto vincula cada dispositivo una vez con un código de 8 cifras que el administrador pide en
   Maintenance › «Dispositivos del relé» para su trigrama (una vez, 10 minutos); sus escrituras llevan ese trigrama. Un

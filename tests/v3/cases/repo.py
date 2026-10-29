@@ -549,12 +549,14 @@ def i10(c):
     L = importlib.import_module('launch')
     lan = sorted(k for k, v in L.ROUTES.items() if v[1] == 'lan')
     c.eq(sorted(k for k, v in L.ROUTES.items() if v[2]), sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('POST', '/__setup/batch'),
-                                                            ('POST', '/__setup/sync'), ('POST', '/__setup/net')]),
-         'the routes open to the relay: status, changes, batch, sync, net', what='relay routes')
+                                                            ('POST', '/__setup/sync'), ('POST', '/__setup/net'),
+                                                            ('POST', '/__setup/ivao/oauth/start'), ('POST', '/__setup/ivao/oauth/refresh')]),
+         'the routes open to the relay: status, changes, batch, sync, net, and the IVAO sign-in (R1b)', what='relay routes')
     c.eq(lan, sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('GET', '/__setup/sim/position'),
                       ('GET', '/__setup/lnmperf'), ('GET', '/__setup/lnmperf-folder'), ('POST', '/__setup/batch'),
-                      ('POST', '/__setup/sync'), ('POST', '/__setup/net')]),
-         'the routes open to a paired device are the Pilot app\'s, unchanged', what='lan routes')
+                      ('POST', '/__setup/sync'), ('POST', '/__setup/net'), ('POST', '/__setup/ivao/oauth/start'),
+                      ('POST', '/__setup/ivao/oauth/refresh')]),
+         'the routes open to a paired device are the Pilot app\'s (and the IVAO sign-in, R1b)', what='lan routes')
     missing = [f'{m} {p} -> {v[0]}' for (m, p), v in L.ROUTES.items() if not callable(getattr(L.Setup, v[0], None))]
     c.eq(missing, [], 'each route names a method of the server', what='routes without handler')
     src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
@@ -699,3 +701,71 @@ def i13(c):
     import importlib
     T = importlib.import_module('relay_trial')
     T.run(lambda name, ok, info='': c.ok(ok, str(info), name), str(c.root))
+
+
+@case('I14', 'IVAO OpenID through the relay (launcher)', 'I', static=True,
+      rule='frame R1b (29 Oct): code + PKCE S256, the secret on the relay only (client_secret_basic), the state bound to the device and used once, endpoints from the discovery, refresh by the relay')
+def i14(c):
+    import base64
+    import hashlib
+    import importlib
+    import json
+    import urllib.parse
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-oidc-'))
+    kept = L.SECRETS, L.OIDC_OPEN, dict(L._ivao_oidc)
+    seen, ch = [], ['']
+
+    class Resp:
+        def __init__(self, b):
+            self.b = b
+
+        def read(self):
+            return self.b
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def fake(req, timeout=20):
+        seen.append((req.full_url, req.get_header('Authorization'), req.data))
+        if 'well-known' in req.full_url:
+            return Resp(json.dumps({'authorization_endpoint': 'https://sso.ivao.test/authorize', 'token_endpoint': 'https://api.ivao.test/oauth/token'}).encode())
+        f = urllib.parse.parse_qs(req.data.decode())
+        if f['grant_type'][0] == 'authorization_code':
+            assert base64.urlsafe_b64encode(hashlib.sha256(f['code_verifier'][0].encode()).digest()).decode().rstrip('=') == ch[0], 'PKCE'
+        return Resp(json.dumps({'access_token': 'AT', 'refresh_token': 'RT', 'expires_in': 3600, 'scope': 'tracker'}).encode())
+    try:
+        L.SECRETS, L.OIDC_OPEN = str(tmp), fake
+        L._ivao_oidc.update(meta=None, at=0.0, pending={})
+        c.eq(L.ivao_oauth_start('d1', 'https://relay/__relay/ivao/callback').get('status'), 409, 'no IVAO application on the relay: refused', what='without secret')
+        (tmp / 'ivao_oauth.json').write_text(json.dumps({'clientId': 'cid', 'clientSecret': 'S3CRET', 'discovery': 'https://ivao.test/.well-known/openid-configuration'}), encoding='utf-8')
+        s = L.ivao_oauth_start('d1', 'https://relay/__relay/ivao/callback')
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(s['url']).query)
+        ch[0] = q['code_challenge'][0]
+        c.ok(s['ok'] and s['url'].startswith('https://sso.ivao.test/authorize?') and q['code_challenge_method'] == ['S256'] and 'S3CRET' not in s['url']
+             and q['redirect_uri'] == ['https://relay/__relay/ivao/callback'], s['url'][:160], 'the authorization address from the discovery, PKCE S256, never the secret')
+        c.eq(L.ivao_oauth_finish(q['state'][0], 'C', '', 'd2', 'https://relay/__relay/ivao/callback'), {'ok': False, 'error': 'state'},
+             'another device cannot use the state', what='state of another device')
+        s = L.ivao_oauth_start('d1', 'https://relay/__relay/ivao/callback')
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(s['url']).query)
+        ch[0] = q['code_challenge'][0]
+        r = L.ivao_oauth_finish(q['state'][0], 'C', '', 'd1', 'https://relay/__relay/ivao/callback')
+        auth = seen[-1][1] or ''
+        c.ok(r['ok'] and r['access_token'] == 'AT' and auth.startswith('Basic ') and base64.b64decode(auth[6:]).decode() == 'cid:S3CRET',
+             str(r)[:120], 'the code exchanged with client_secret_basic and the PKCE verifier')
+        c.eq(L.ivao_oauth_finish(q['state'][0], 'C', '', 'd1', 'https://relay/__relay/ivao/callback').get('error'), 'state', 'a state is used once', what='state again')
+        rf = L.ivao_oauth_refresh('RT-long-enough')
+        c.ok(rf['ok'] and rf['access_token'] == 'AT', str(rf)[:120], 'the refresh by the relay')
+        c.eq(L.ivao_oauth_refresh('x').get('status'), 400, 'a refresh token is checked', what='short refresh token')
+        c.eq(L.ROUTES[('POST', '/__setup/ivao/oauth/start')][1:], ('lan', True), 'start and refresh are relay routes', what='route public')
+        src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+        c.ok("loc = f'/frame/index.html#ivao-return?{frag}'" in src and "'Referrer-Policy', 'no-referrer'" in src, '', 'the tokens leave by the fragment of the frame address, no referrer')
+    finally:
+        L.SECRETS, L.OIDC_OPEN = kept[0], kept[1]
+        L._ivao_oidc.clear()
+        L._ivao_oidc.update(kept[2])
+        shutil.rmtree(tmp, ignore_errors=True)

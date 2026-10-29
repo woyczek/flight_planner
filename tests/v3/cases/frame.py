@@ -1169,3 +1169,21 @@ def a39(c):
       rule='frame R1a (29 Oct): Maintenance › Relay devices: without a launcher, relay off or on, a code shown once and wiped when the screen is left, revoke a device or a pilot after the question')
 def a40(c):
     _bench(c, 'frame/settings/test/relay_devices.html', '__relayBench')
+
+
+@case('A41', 'IVAO sign-in return through the relay', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame R1b (29 Oct): #ivao-return?… (set by the launcher after the OpenID exchange): tokens kept with the device keys, the address replaced at once; an error is said, nothing kept')
+def a41(c):
+    import time as _t
+    exp = int(_t.time()) + 3600
+    c.open('fuel', wait=False)
+    c.until("!!window.FrameData", timeout=15000, what='the frame')
+    c.page.goto(f'{c.base}/frame/index.html#ivao-return?access_token=AT-secret&refresh_token=RT-secret&expires_at={exp}&scope=tracker', wait_until='load')
+    c.until("location.hash === '#settings?card=ivao'", timeout=15000, what='the address replaced by the settings')
+    c.ok('secret' not in c.js('location.href'), c.js('location.href'), 'no token left in the address')
+    keys = c.js("""() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').get('device/keys.json');
+      q.onsuccess = () => res(q.result ? JSON.parse(q.result.text).ivao : null) } })""")
+    c.ok(keys and keys.get('access_token') == 'AT-secret' and keys.get('refresh_token') == 'RT-secret', str(keys)[:80], 'the tokens kept with the device keys')
+    c.page.goto(f'{c.base}/frame/index.html#ivao-return?error=denied', wait_until='load')
+    c.until("location.hash === '#settings?card=ivao'", timeout=15000, what='the address replaced after an error')
+    c.until("window.__notes && window.__notes.some(n => /IVAO/.test(n))", timeout=5000, what='the refusal said')
