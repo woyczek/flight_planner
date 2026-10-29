@@ -11,7 +11,7 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   the slot of the secondary line with one link per chosen SID / STAR / approach that has an `https://` `source.url` (new tab,
   no opener, the page's name in the title, the kind added when there are two); `sourceTitle` puts the document of a record without
   a public address in the line's title. Fuel builds no address. The invented fixture LFML gets a `charts.base` on
-  `example.invalid` and a page name for MEN1A. Case F42.
+  an invented path under the SIA host (the only host aerodb links to since 97bf5577f) and a page name for MEN1A. Case F42.
 - **29 Oct 2026 — « Sur la carte » and the Map's proposal** (V3 § 10.23; frame/INTEGRATION § 6.1): a text button in each side's
   title (not for an aerodrome without data) sets `#maps?choose=…&icao=…`; at mount Fuel consumes `focus` with the proposal keys
   (`rwy sid star trans app appTrans`, `none` = null), and `propose(side, fields)` applies them after the first draw of the side

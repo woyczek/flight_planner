@@ -1242,7 +1242,7 @@ def f42(c):
     c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN1A.RW13R.NONE')
     c.until("!!document.querySelector('[data-module=fuel] [data-proc=arr] [data-source-slot] a')", what='the link appears once the STAR is chosen')
     a = c.js("(() => { const a = document.querySelector('[data-module=fuel] [data-proc=arr] [data-source-slot] a'); return { href: a.getAttribute('href'), t: a.target, rel: a.rel, text: a.textContent.trim(), title: a.title } })()")
-    c.eq(a['href'], 'https://example.invalid/eAIP/Cartes/LFML/AD_2_LFML_STAR_TEST.pdf', 'the address aerodb gives, as is', what='href')
+    c.eq(a['href'], 'https://www.sia.aviation-civile.gouv.fr/test/eAIP/Cartes/LFML/AD_2_LFML_STAR_TEST.pdf', 'the address aerodb gives, as is', what='href')
     c.eq((a['t'], a['rel']), ('_blank', 'noopener noreferrer'), 'in a new tab, without opener', what='target')
     c.eq(norm(a['text']), norm(row(c, 'procSource')), '"Source" in the language of the run', what='text')
     c.eq(a['title'], 'AD_2_LFML_STAR_TEST.pdf', 'the page\'s name in the title', what='title')
