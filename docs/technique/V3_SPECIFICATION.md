@@ -858,6 +858,19 @@ redesigned for touch at that point.
          the roadmap; the GitHub token stays the path of the administrator and of the advanced user who runs the
          suite without a relay. The company website's future web service, if it ever exists, would take the relay's
          role, not add a second identity.
+         **Data repository on GitLab (user, 30 Oct about midnight: "pas sûr. Gitlab ?", then the private project
+         `gitlab.com/woyczek/flight_planner_data`)**: the data repository moves from GitHub to GitLab, where **project
+         access tokens** exist (one per pilot, named after the trigram, role Developer, scope `api`, 365 days at most,
+         revocable, commits attributed to the token's bot). Delivered: **G1** `frame/store/transport_gitlab.js`
+         (PRIVATE-TOKEN header, `redirect: 'error'`, https instance only, a stored token reused only for the same
+         provider, origin and project; the Settings › Accès card takes the project's address then the token, pasted
+         once) — security blocking point on token reuse fixed by 02a096440; **G2** the Maintenance service screen
+         `#pilot-tokens` (level Complet, workstation only: the launcher calls GitLab with the administrator's token
+         from `secrets/gitlab.json`, never rendered nor logged; the pilot's token is shown once, at creation, and
+         never kept) — 241eec6c0, cases A38, A39, I12. The administrator opens the data branch to Developers (GitLab ›
+         Protected branches). The relay (R1–R3) stays the "no git token in the browser" path and the pilots' identity
+         for IVAO; it is not required for the data. The raw sources (openAIP, SIA zones, AIXM, MIAM, MORA archives,
+         AircraftDB caches, about 260 MB) leave the data repository (user: "On sort"), reloadable by Télécharger.
    29. **Challenge of 29 Oct: refactoring before any new feature** (user, 29 Oct: "tu challengeras toutes les décisions
        prises depuis hier, quitte à commencer par refaire du code (refactoring)"; inventory by a read-only agent on
        a29709172 plus the debts declared by the four sessions). Findings: the specification ran ahead of the code (about

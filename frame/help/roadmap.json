@@ -1,6 +1,6 @@
 {
   "schema": "sog-roadmap/1",
-  "updated": "2026-10-29",
+  "updated": "2026-10-30",
   "owner": "ergonomics session (Simplification interface et ergonomie)",
   "note": {
     "fr": "Ce qui est « livré » doit marcher : un écart est un bug à signaler. Ce qui est « en cours », « prévu » ou « plus tard » n'est pas un bug.",
@@ -253,6 +253,13 @@
           "es": "El lanzador abre la aplicación Piloto (V3) al inicio; las páginas V2 permanecen en sus direcciones"
         },
         {
+          "state": "done",
+          "fr": "Données sur GitLab : un jeton de projet par pilote (trigramme, rôle Developer, un an au plus), créé par l'administrateur dans Maintenance › Jetons des pilotes et collé une fois dans Réglages › Accès",
+          "en": "Data on GitLab: one project token per pilot (trigram, Developer role, one year at most), created by the administrator in Maintenance › Pilots’ tokens and pasted once in Settings › Access",
+          "de": "Daten auf GitLab: ein Projekt-Token je Pilot (Kürzel, Rolle Developer, höchstens ein Jahr), vom Administrator unter Wartung › Token der Piloten erstellt und einmal in Einstellungen › Zugang eingefügt",
+          "es": "Datos en GitLab: un token de proyecto por piloto (trigrama, rol Developer, un año como máximo), creado por el administrador en Mantenimiento › Tokens de los pilotos y pegado una vez en Ajustes › Acceso"
+        },
+        {
           "state": "planned",
           "fr": "Accueil d'un pilote par un relais sur le NAS : lien d'invitation, code saisi une fois, aucun jeton git chez le pilote",
           "en": "Pilot onboarding through a relay on the NAS: invitation link, code typed once, no git token for the pilot",
@@ -260,11 +267,11 @@
           "es": "Alta de un piloto mediante un relé en el NAS: enlace de invitación, código tecleado una vez, ningún token git para el piloto"
         },
         {
-          "state": "planned",
-          "fr": "Applications = jeux de modules nommés du même cadre (pilot, maintenance ; puis cpco, client), choisis par l'adresse puis par le rôle",
-          "en": "Applications = named module sets of the same frame (pilot, maintenance; then cpco, client), chosen by the address then by the role",
-          "de": "Anwendungen = benannte Modulsätze desselben Rahmens (pilot, maintenance; dann cpco, client), gewählt über die Adresse, dann über die Rolle",
-          "es": "Aplicaciones = conjuntos de módulos con nombre del mismo marco (pilot, maintenance; luego cpco, client), elegidos por la dirección y luego por el rol"
+          "state": "doing",
+          "fr": "Applications = jeux de modules nommés du même cadre : pilot et maintenance livrés (?app=), choisis par l'adresse ; puis cpco, client, par le rôle",
+          "en": "Applications = named module sets of the same frame: pilot and maintenance delivered (?app=), chosen by the address; then cpco, client, by the role",
+          "de": "Anwendungen = benannte Modulsätze desselben Rahmens: pilot und maintenance geliefert (?app=), gewählt über die Adresse; dann cpco, client, über die Rolle",
+          "es": "Aplicaciones = conjuntos de módulos con nombre del mismo marco: pilot y maintenance entregados (?app=), elegidos por la dirección; luego cpco, client, por el rol"
         },
         {
           "state": "planned",
