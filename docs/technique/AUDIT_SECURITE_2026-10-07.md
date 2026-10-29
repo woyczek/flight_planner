@@ -844,6 +844,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 2 | Procedure job `tools/regen/proc.py` (2ba4e64e7) | acceptable, two notes |
 | 3 | Fuel: read reasons from the catalogue (cba2fb00c) | acceptable |
 | 4 | Data synchronisation fix (8e694e469) | to fix, three notes |
+| 5 | `sia/base` committed only on the user's gesture (1c2506a41) | acceptable, one note |
+| 6 | Overlaps of one family in the base's build stats (6e50698e3) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -888,7 +890,19 @@ and the workstation's message (which may carry a server's document name) go thro
     reuse the rule of `data_file`; the aircraft database publication copies its files into `data/` before checking
     `MERGE_HEAD`: check first, as the VFR import does.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2 and 4 are with V3 Frame and AeroDB.
+**5. `sia/base` on gesture only — acceptable, one note.** `GESTURE_ONLY` paths are taken out of the changes before
+`data_guard` and `git add`; the start-up pass (`update()`) has no gesture; the launcher takes `gesture` only when it is
+`true`; the frame sends it only for a `manual` pass; the number of files kept is said, never their paths. Note: the flag
+is given by the page, like the author: an intention, not an authorisation (any script of the page, or a paired device,
+`/__setup/sync` being open to them, can send it). It guards against background passes, not against a deliberate call.
+Decision: `sia/base` is kept on the workstation while a build job of the base runs, gesture or not (with V3 Frame).
+
+**6. Overlaps of one family — acceptable.** A local computation on the base's airspaces (no network, no `eval`, no DOM).
+The family pattern `(\s+(\d+[A-Z]?|[A-Z]))+$` needs a blank at each repetition, so no catastrophic backtracking on a
+name from a source; pairs are compared inside a family only; `meta.overlaps.families` is capped at 50. The names it
+carries (`ovl`, `members`) come from the source: the Map must insert them escaped when it reads them (with BUGS SOG).
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4 and 5 are with V3 Frame, AeroDB and BUGS SOG.
 
 ## Appendix A — Hosts contacted
 
