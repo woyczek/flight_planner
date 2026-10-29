@@ -107,12 +107,6 @@ export function procLabel(kind, rec, id) {
   else if (rec?.status === 'lnm') tags.push(tt(TX.procLnm));
   return [`${kind} ${nameOf(rec, id)}`.trim(), ...tags].join(' · ') + (rec?.outdated ? ` ${OUTDATED}` : '');
 }
-/** Identifiants (majuscules) des points des procédures d'un côté : 'dep' (SID et sa transition) ou 'arr' (STAR, approche). */
-function idsOf(side) {
-  const P = S.procs || {},
-    recs = side === 'dep' ? [P.sid, P.sidTrans] : [P.starTrans, P.star, P.appTrans, P.app];
-  return new Set(recs.flatMap(r => (r?.points || []).map(p => up(p.id))).filter(Boolean));
-}
 
 // ---------------------------------------------------------------- tracé sur la carte
 /** Point à nm de a le long du cap crs (degrés ; plan local, le trait est court). */
@@ -193,12 +187,6 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
     last = routePts.at(-1),
     isEnd = p => p === path[0] || p === last,
     isRwy = p => !!p.rwy || /^RW\d{2}[LRC]?$/.test(p.id || ''),
-    ids = {
-      dep: idsOf('dep'),
-      arr: idsOf('arr')
-    },
-    // fins de la transition de la SID : la route la rejoint par un tronçon de transition (tireté)
-    transIds = new Set((S.procs?.sidTrans?.points || []).map(p => up(p.id)).filter(Boolean)),
     segs = [],
     dots = [],
     pts = [];
@@ -240,16 +228,12 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
     q.lon = +p.lon;
     if (cur) {
       const from = cur.src,
-        route = p.origin === 'route' ? p : from?.origin === 'route' ? from : null,
-        other = route === p ? from : p,
-        // la route et la procédure ne se joignent pas sur un de leurs points : direct tireté entre les deux (jamais aux
-        // extrémités, où la procédure part du terrain ou y arrive)
-        direct = !!route && !!other && other.origin !== 'route' && !isEnd(route) && !ids[other.origin === 'sid' ? 'dep' : 'arr'].has(up(
-          route.id)),
+        // jonctions marquées par expandedPath (§ 10.29 c) : un direct, ou un tronçon dont le prédécesseur n'est pas codé, en tireté
+        direct = p.join === 'direct' || p.join === 'gap',
         // la route dessine ses propres tronçons ; le terrain et le seuil de la piste se touchent
         skip = (p.origin === 'route' && from?.origin === 'route') || (isRwy(p) && from?.origin === 'route' && isEnd(from)) ||
         (p.origin === 'route' && isEnd(p) && from && isRwy(from)),
-        viaTrans = p.origin === 'route' && from?.origin === 'sid' && transIds.has(up(p.id));
+        viaTrans = p.origin === 'route' && p.join === 'common' && p.joinPhase === 'trans';
       if (!skip) {
         const seg = {
           a: cur,

@@ -910,6 +910,28 @@
   }));
   ck('loadProcedures : une transition égale à sa procédure est ignorée (dedupProcs)', LPd.sid === SID && LPd.sidTrans === null);
 
+  // § 10.29 c : les jonctions marquées par expandedPath (le dessin ne les devine plus)
+  const XJ = expandedPath(FV, LP),
+    jn = id => XJ.find(p => p.id === id)?.join;
+  ck('expandedPath : jonction sur un point commun (SID sur AAA, STAR sur CCC puis S02)', jn('AAA') === 'common' && jn('S02') === 'common' &&
+    !jn('BBB'), XJ.map(p => `${p.id}:${p.join || ''}`).join(' '));
+  const XD2 = expandedPath(fl({}), {
+    sid: SIDX
+  });
+  ck('expandedPath : sans point commun, le point de la route qui suit la SID porte join direct', XD2.find(p => p.id === 'AAA')?.join ===
+    'direct');
+  const SG = {
+      ...STAR,
+      points: [STAR.points[0], {
+        ...STAR.points[1],
+        gap: true
+      }]
+    },
+    XG = expandedPath(fl({}), {
+      star: SG
+    });
+  ck('expandedPath : un tronçon dont le prédécesseur n’est pas codé porte join gap', XG.find(p => p.id === 'S02')?.join === 'gap');
+
   window.__cfBench = {
     done: true,
     pass: rows.filter(r => r.ok).length,

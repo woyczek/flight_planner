@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Flight path: `expandedPath` marks every junction, the map only draws** (`frame/lib/flight_path.js`, `modules/maps/procs.js`;
+  bench; V3 § 10.29 c) — the point after a junction carries `join`: `'common'` (the procedure meets the route on a shared point;
+  `joinPhase`, the phase of the leg that leads there), `'direct'` (no shared point: a dashed direct) or `'gap'` (a leg whose
+  predecessor is not coded, now dashed too); the map no longer guesses them from the procedures' fix names.
+
 - **Frame lib: `current_flight.js` split in three** (`frame/lib/current_flight.js`, `flight_time.js`, `flight_path.js`; V3 § 10.29 b)
   — the record's merge stays in `current_flight.js`; the flight in time (`legTimes`, `etaOf`, `plannedPositionAt`) goes to
   `flight_time.js`, the route and its procedures (`proceduresOf` … `altitudeAt`, `conflictsOf`, `orderProcedures`) to

@@ -117,7 +117,7 @@ export function dedupProcs(p) {
 
 /** Champs d'un point de procédure repris dans le chemin, tels qu'aerodb les donne (alt { type: 'at' | 'min' | 'max' |
  *  'between', ft, ft2? }, kt = vitesse indiquée maximale, forme du tronçon ; nm devient legNm). */
-const LEG_KEYS = ['alt', 'kt', 'leg', 'crs', 'nm', 'arc', 'turn', 'over', 'vpa', 'rnp'];
+const LEG_KEYS = ['alt', 'kt', 'leg', 'crs', 'nm', 'arc', 'turn', 'over', 'vpa', 'rnp', 'gap'];
 /** Coordonnée lue, ou null (un tronçon sans point : VA, CA, VM, FM). */
 const coord = v => v === null || v === undefined || v === '' || !Number.isFinite(+v) ? null : +v;
 /** Point du chemin d'après un point de procédure (sa phase, sinon celle de l'enregistrement ; missed → origin 'missed'). */
@@ -248,6 +248,10 @@ export function expandedPath(f, procs = {}) {
   };
   let start = 1,
     head = depChain;
+  // jonctions marquées sur le point qui suit (§ 10.29 c) : join 'common' (raccord sur un point commun ; joinPhase, la phase du
+  // tronçon de procédure qui y mène), 'direct' (pas de point commun : un direct entre procédure et route), 'gap' (tronçon dont le
+  // prédécesseur n'est pas codé) ; le dessin les lit tels quels
+  let joined = false;
   for (let i = 0; i < depChain.length; i++) {
     const j = routeIndex(depChain[i], 1, n - 2);
     if (j > 0) {
@@ -255,13 +259,22 @@ export function expandedPath(f, procs = {}) {
       head = depChain.slice(0, i);
       R[j] = {
         ...R[j],
-        ...legFields(depChain[i])
+        ...legFields(depChain[i]),
+        join: 'common',
+        joinPhase: depChain[i].phase
       };
+      joined = true;
       break;
     }
   }
+  // jamais aux extrémités : la procédure part du terrain ou y arrive
+  if (depChain.length && !joined && start <= n - 2) R[start] = {
+    ...R[start],
+    join: 'direct'
+  };
   let end = n - 2,
     tail = arrChain;
+  let arrJoin = null;
   for (let i = 0; i < arrChain.length; i++) {
     const j = routeIndex(arrChain[i], start, n - 2);
     if (j > 0) {
@@ -271,14 +284,29 @@ export function expandedPath(f, procs = {}) {
         ...R[j],
         ...legFields(arrChain[i])
       };
+      arrJoin = 'common';
       break;
     }
   }
-  const out = [R[0], ...head.map(finish), ...R.slice(start, end + 1), ...tail.map(finish), R[n - 1], ...missed.map(finish)].map(p =>
-    p.lon === null ? p : {
+  if (!arrJoin && arrChain.length && end >= 1) arrJoin = 'direct';
+  const tailOut = tail.map(finish);
+  if (tailOut.length && arrJoin) tailOut[0] = {
+    ...tailOut[0],
+    join: tailOut[0].gap ? 'gap' : arrJoin,
+    ...(arrJoin === 'common' ? {
+      joinPhase: tailOut[0].phase
+    } : {})
+  };
+  const out = [R[0], ...head.map(finish), ...R.slice(start, end + 1), ...tailOut, R[n - 1], ...missed.map(finish)].map(p => {
+    const q = p.gap && !p.join ? {
       ...p,
-      lon: wrapLon(p.lon)
-    });
+      join: 'gap'
+    } : p;
+    return q.lon === null ? q : {
+      ...q,
+      lon: wrapLon(q.lon)
+    };
+  });
   // un même point deux fois de suite (le terrain et un seuil confondus…) : une fois
   return out.filter((p, i) => !i || p.origin === 'missed' || !samePoint(p, out[i - 1]) || p.id !== out[i - 1].id);
 }
