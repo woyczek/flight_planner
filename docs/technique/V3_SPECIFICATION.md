@@ -733,6 +733,10 @@ redesigned for touch at that point.
          outside the procedures), since they share the procedures' canvas; (6) on the phone the sheet takes about 45 % of
          the height and the camera keeps the procedures above it; (7) a second tap on the highlighted row only deselects
          it; "Aucune" is an explicit first row, since `null` is a choice.
+         **Proposal address (contract, 29 Oct)**: arrival `#fuel?focus=arr&star=ID&trans=ID&app=ID&appTrans=ID`,
+         departure `#fuel?focus=dep&rwy=NN&sid=ID&trans=ID`; the names are those of `route.procedures` v2 (`trans` =
+         the STAR's or the SID's transition, `appTrans` = the approach's); an absent parameter = not proposed, the value
+         `none` = "Aucune" chosen (`null`). Fuel reads these names and no other.
        - **Lots** (after the economy mode): fuel — markers and flat lists, conflict kept and notified, the two buttons,
          reading the proposal from the address (tests F); maps — the choose mode, dimming, cartouches, list, proposal
          address (tests D); aerodb — nothing new (`procedures()` already serves runways and transitions). Help ×4 per lot.
