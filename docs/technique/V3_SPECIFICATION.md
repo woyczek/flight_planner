@@ -594,8 +594,9 @@ redesigned for touch at that point.
          and offers the on-demand reading (below). The quote counts the procedure's length and its constraints (climb /
          descent steps) when known; without them, as today.
        - **Changed en route.** Fuel's step *Départ* (and the Map's aerodrome card) keep the arrival row editable after
-         "Démarrer le vol": the approach, the STAR and the arrival runway may change at any time, the departure too while
-         the flight is not past its first fix; a change rewrites `route.procedures` with `by: 'fuel'` and a fresh
+         "Démarrer le vol": the approach, the STAR and the arrival runway may change at any time, the departure too
+         (challenge of 29 Oct: no lock at all after the start, the `depPassed` guard is removed; another departure is a
+         new departure, as the amendment below says); a change rewrites `route.procedures` with `by: 'fuel'` and a fresh
          `updated_at`; the Map redraws, the ETA is derived again, the quote is **not** redone after the start (the remaining
          fuel is the frame's / fuel's progress). **Amended (28 Oct, evening, after Fuel's delivery)**: nothing of the Plan is
          locked after the start (today's behaviour stays: another departure resets the start, another arrival is the
@@ -666,7 +667,8 @@ redesigned for touch at that point.
        record: a pure helper `proceduresOf(flight)` of `frame/lib/current_flight.js` returns the v2 view, every reader
        uses it, Fuel writes v2 at its next ordinary write (nothing written at mount); aerodb finds an OFP procedure by its
        identifier (`proc-seen/`, status `ofp`). `null` = "none", chosen by the pilot; absent = not chosen yet, which the OFP
-       may fill; "Charger mon OFP" replaces a choice and says what changed. The on-demand reading is
+       may fill; "Charger mon OFP" fills only the sides the pilot has not chosen and says what it filled (challenge of
+       29 Oct: the OFP proposes, it never replaces a pilot's choice). The on-demand reading is
        `aerodb.fetchProcedures(icao, { onProgress, signal })`, which wraps the launcher job and refuses with a reason
        without a launcher or on a paired device: Fuel declares no launcher route; `EAD_BASIC.md` § 1 is amended: the
        gesture lives in Fuel (and later in the Data module), not in Settings › Maintenance. `expandedPath` joins the
@@ -688,11 +690,12 @@ redesigned for touch at that point.
        catalogue, licence rows), position check in `tools/sim_position.py`.
    22. **Coverage map of the procedures** (user, 28 Oct evening: "il faut, du coup, une carte des ADs connus, et/ou des
        zones vertes, orange, rouges"): ergonomics session; the Map's side is built (maps SPEC § 6.11). On the Map, a layer
-       "Procédures" (off by default; lit by itself while the current flight has a side with no chosen procedure whose aerodrome
-       is not green, until the user touches its box; no event between modules) colours the aerodrome pins by what the device can give: **green** =
+       **"Couverture"** (renamed by the challenge of 29 Oct, since § 10.20 says the procedures themselves have no
+       toggle; off by default, lit only by the user's box, the automatic lighting of D46–D49 is removed: a hidden state
+       that ran in the draw loop) colours the aerodrome pins by what the device can give: **green** =
        procedures held (official or check, from the published cycle, `proc/manual/` or `proc/local/`), **orange** =
-       readable on demand (France by the SIA, a State with EAD coding tables, an aerodrome in Little Navmap's local
-       database), **red** = nothing (image-only or prose States, nothing local); one legend line through the "i" chip;
+       readable on demand (France by the SIA, a State with EAD coding tables; Little Navmap counts only once
+       `tools/proc_lnm.py` exists, § 10.21: until then no orange for it), **red** = nothing (image-only or prose States, nothing local); one legend line through the "i" chip;
        aerodb gives `coverage(icao)` → green | orange | red with its reason, and `coverageByState()` for the Data
        module, which shows the same three colours per State in its Procédures group (the EAD table § 8.1 as data). No
        new screen: the Map and the Data module carry it. Lots: aerodb (coverage API), maps (layer and pins), data module
@@ -700,141 +703,69 @@ redesigned for touch at that point.
        **Status (28 Oct, late)**: aerodb done (`coverage(icao)`, `coverageByState()`, `AeroCatalogue.COVERAGE`:
        frame/aerodb/SPEC.md § 5, INTEGRATION « Coverage of the procedures »); the Map's layer done (maps SPEC § 6.11,
        `modules/maps/coverage.js`, cases D45 to D50); the Data module's State list still to code (with the module).
-   23. **Procedure lists: outdated and conflicting marked, never hidden; choosing on the Map** (user, 29 Oct morning,
-       two screenshots of Fuel › Vol and one of Navigraph's "Set arrival" on LFBD: "plutôt que « périmé », un symbole
-       court, peut-être une couleur (gris ?)"; "on doit pouvoir choisir quand même, mais c'est affiché « conflit » avec la
-       RWY ou la STAR"; "ça prend beaucoup de place, à raffiner"; "Je n'ai pas de vue globale de ce qui est faisable. on a
-       sans doute besoin d'un mode « grisé » pour choisir l'approche / le départ : zoom sur une portion de la carte, fond
-       de carte moins visible, toutes les procédures visibles, avec leur nom"): decided by the ergonomics session.
-       - **Two markers, one meaning each, everywhere** (Fuel's lists and notifications, the Map's labels, aerodrome card
-         and legend, later the Data module): **⌛ grey** = outdated (read under an earlier cycle: to read again), **⚠
-         orange** = in conflict with the current choice **on the runway only**: a SID, STAR or approach that does not
-         serve the chosen runway (or, without a runway, a STAR that serves none of the chosen approach's runways).
-         Point continuity between the STAR and the approach is never a conflict (decided 29 Oct after Fuel's reading:
-         on real data the STARs end on a holding or on radar vectors, LFPO's STAR 20 ends at ODILO while the RNP 20
-         starts at PO421 or IPO20, so a continuity ⚠ would mark nearly every STAR); the Map joins them with a dashed
-         direct (§ 10.20), which says it. Never the word. In a native `select` the symbol carries the meaning and the colour only
-         accompanies it (option colour is ignored by phones' native pickers), with the reason as the option's `title`.
-       - **Conflict is marked, not forbidden.** A conflicting procedure stays selectable; choosing it keeps the choice,
-         notifies "RNP RWY 07 ne dessert pas la piste 02" ×4 once, and the Map joins it with a dashed direct (§ 10.20).
-         The lists are no longer pruned by the runway (reverses the pruning of 590e617bc); a choice that only serves one
-         runway still sets that runway when none is chosen.
-       - **Lists stay short, compatible first.** No `optgroup` per runway: one flat list, **the entries compatible with
-         the current choice first, then the ⚠ ones** (user, 29 Oct: "mettre les pistes, approches, sid, compatibles en
-         tête du popdown"), each group ordered by runway then name; for the runway list, the runways served by the SID or
-         the approach already chosen come first; the runway is in the label only when the procedure serves exactly one
-         ("MAN1A · 07"; approaches already name theirs). ⌛ then ⚠ close the label, in that order. Markers go in one place
-         per screen, not in headings. **One rule, one function**: `conflictsOf(proc, choice)` and
-         `orderProcedures(list, choice)` live in `frame/lib/current_flight.js` (moved from Fuel), and Fuel's lists and the
-         Map's choose-mode list call them, so the two never diverge.
-       - **Choosing on the Map ("mode choix")**: from the Départ and Arrivée rows of Fuel (step Route before the start,
-         step Départ after), one button "Sur la carte"
-         (and "Choisir" on the Map's aerodrome card) opens the Map at `#maps?choose=dep|arr&icao=LFXX`: the view fits the
-         aerodrome's procedures, the base map and every other layer are dimmed (one class on the map container), every
-         published procedure of the side is drawn with its name as a short cartouche, **one hue per procedure** (user, 29
-         Oct: "une carte avec une dizaine d'approches méritera plusieurs couleurs", as Navigraph does): a palette of eight
-         distinct hues, legible day and night, assigned in the list's order and cycled, the same hue on the list row's
-         chip, the cartouche and the trace (outside the mode the chosen procedures keep their family hue: SID green, STAR
-         orange, approach sky blue); ⌛ greys the trace, ⚠ stays a symbol; transitions dashed; the current choice bold. A list (sheet
-         on the phone, panel on the desktop) names them in the same order as Fuel's lists, ≤ 7 rows visible then scroll;
-         a tap on a trace or on a row highlights the procedure, shows its runway, length and constraints, and offers
-         "Choisir"; a second tap on the choice leaves it. "Choisir" does not write: the Map returns to Fuel at
-         `#fuel?focus=arr&star=ID&trans=ID&app=ID` (or `focus=dep&rwy=…&sid=…`) and **Fuel writes** `route.procedures`
-         (sole writer, § 10.20) and says what changed; "Annuler" returns without a proposal. The mode ends on any other
-         navigation. No new module, no event between modules: the address carries the proposal.
-         **Refinements (after the Map session's reading, 29 Oct morning)**: (1) volume — LFPO holds 94 SIDs: runway
-         chips head the list ("06 · 07 · 20 · 24 · 25 · toutes", a filter, the chosen runway by default, else all, ≤ 7
-         chips), transitions are drawn only for the highlighted procedure, and one cartouche per SID exit point or STAR
-         entry point stacks the names ("MAN1A / MAN1B") instead of one cartouche per trace; (2) the choices accumulate in
-         the mode — arrival: STAR, then approach (⚠ recomputed on the STAR taken), then transition; departure: runway,
-         then SID, then transition — three step chips at the top of the sheet show the family listed, "Choisir" on a row
-         only retains it (bold), one button "Valider" returns to Fuel with the whole proposal, "Annuler" or the browser's
-         back returns without; (3) the proposal is single-use: Fuel consumes `rwy`, `sid`, `star`, `trans`, `app`,
-         `appTrans` from the address at mount or address change, writes, then rewrites the address without them
-         (replace, not push); (4) the double view (≥ 980 px, Fuel and the Map side by side) needs no frame change (frame session, 29
-         Oct): an address always names the main module, so `#maps?choose=…` mounts the Map as main with `ctx.query`
-         (Fuel is unmounted, the pane closes; a pane never receives a query); "Valider" does
-         `location.replace('#fuel?focus=…')`, the frame remounts Fuel with its query and reopens its Map pane by itself;
-         Fuel applies the query at mount then `history.replaceState` to `#fuel`, so Back never reopens the choice;
-         "Annuler" is the header's "← Carburant" the frame sets by itself (origin `#fuel`); (5) dimming: a class on the container dims
-         the base map, the Map's own layers (airspaces, airways, aerodromes) are dimmed in the draw loop (reduced opacity
-         outside the procedures), since they share the procedures' canvas; (6) on the phone the sheet takes about 45 % of
-         the height and the camera keeps the procedures above it; (7) a second tap on the highlighted row only deselects
-         it; "Aucune" is an explicit first row, since `null` is a choice.
-         **Proposal address (contract, 29 Oct)**: arrival `#fuel?focus=arr&star=ID&trans=ID&app=ID&appTrans=ID`,
-         departure `#fuel?focus=dep&rwy=NN&sid=ID&trans=ID`; the names are those of `route.procedures` v2 (`trans` =
-         the STAR's or the SID's transition, `appTrans` = the approach's); an absent parameter = not proposed, the value
-         `none` = "Aucune" chosen (`null`). Fuel reads these names and no other.
-       - **Lots** (after the economy mode): fuel — markers and flat lists, conflict kept and notified, the two buttons,
-         reading the proposal from the address (tests F); maps — the choose mode, dimming, cartouches, list, proposal
-         address (tests D); aerodb — nothing new (`procedures()` already serves runways and transitions). Help ×4 per lot.
-   24. **The chosen runway drawn as an arrow, with its aids** (user, 29 Oct, screenshot of Fuel beside the Map with runway
-       24 chosen at LFPO and nothing drawn: "quand on choisit une piste, un vecteur sur la carte indiquant la piste
-       (direction matérialisée par une flèche). Ça permet aux feignants de voir dans quel sens prendre la piste et
-       planifier son vol (notamment par la récupération des ILS / DME et autres aides s'il y en a)"): decided by the
-       ergonomics session, planned after the economy mode.
-       - **What is drawn.** When `route.procedures` names a runway (departure or arrival), the Map draws it as one arrow:
-         from the threshold (`runways(icao)`, the landing threshold, § 10.20) along the true QFU over the runway's length,
-         head at the far end for a departure, at the threshold for an arrival (the direction of use), the runway's name at
-         the threshold; the procedure's hue, one stroke wider than the procedure trace; visible from the aerodrome view in
-         (about 60 px per NM), never at the route scale. Without a runway chosen: nothing, as today.
-       - **Its aids.** aerodb adds `aids` to each runway of `runways(icao)`: the navaids that serve it, from the navaid base
-         (a localizer or ILS whose name carries the runway or whose course is within 3° of the QFU and whose position is
-         within 3 NM of the threshold; the DME and glide path attached to it), each `{ kind, ident, freq, course }`. The Map
-         labels the arrow with them once ("ILS OLN 110.3 · DME"), the Fuel row shows the same short text under the runway
-         `select` ("ILS OLN 110.3"), nothing when none.
-       - **In the choose mode (§ 10.23)**, the runway step draws every runway of the aerodrome as an arrow in the direction
-         of use, the retained one bold, its aids labelled; the other steps keep only the retained runway's arrow.
-       - **Lots** (after the economy mode): aerodb — `aids` per runway (cases K); maps — the arrow and its label, in the
-         chosen-procedure trace and in the choose mode (cases D); fuel — the aids line under the runway select (case F).
-         Help ×4 per lot.
-   25. **"Source": the coded page of a procedure, one tap away** (user, 29 Oct, after a wrong STAR list at LFPO: "Où sont
-       cachés en local les PDF téléchargés pour confirmer ? On devrait pouvoir y accéder (ou via le SIA, ou EAD)
-       directement pour confirmation, depuis l'écran de préparation"): decided by the ergonomics session, planned after
-       the economy mode.
-       - **Where.** On each procedure row of Fuel (step Route, step Départ after the start) a link "Source" for the retained
-         procedure, and the same link in the Map's aerodrome card beside the coverage line; opens in a new tab; absent when
-         the record names no file.
-       - **What it opens, in this order.** (1) On the workstation with a launcher, the local copy the job kept:
-         `/__setup/doc/<kind>/<key>/<file>` served by the launcher **to the workstation only** (never to a paired device
-         nor to the LAN: 403 off `lan_access.ROUTES`), GET only, read-only, `<kind>` ∈ eaip | ead, `<key>` = the AIRAC
-         date `AAAA-MM-JJ` for eaip (`data/local/eaip/<date>/`, flat) or the ICAO code for ead (`data/local/ead/cache/<ICAO>/`,
-         rewritten at each reading of the aerodrome, no cycle), `<file>` matched against `^[A-Za-z0-9_.-]+\.pdf$` with no
-         path separator, real path checked under the expected root (links and junctions refused), 404 otherwise,
-         `application/pdf` with nosniff and inline disposition, no listing of the folder (frame session, 29 Oct);
-         (2) else, for an eAIP record, the public SIA address `charts.base + Cartes/<ICAO>/<file>`; (3) else, for an EAD
-         record off the workstation, the EAD Basic portal (home) with the document's name shown in the link's title, since
-         EAD documents are licensed for personal use and never leave the workstation's cache. The launcher's `/__setup/status`
-         says `docs: true` when (1) is available (false on the LAN); `ctx.launcher.doc(kind, key, file)` gives the same-origin
-         URL or `null` (no launcher, paired device, or a failed check), with no network call: the module makes a link of it.
-       - **What aerodb adds.** Every record read from a document carries `source.file` (the document's file name) beside
-         `source.kind` and `source.cycle`; `charts.base` stays on the aerodrome's file; a record without a file has no link.
-         The OCR'd records (`<ICAO>.ocr.json`) carry the same.
-       - **Lots** (after the economy mode): aerodb — `source.file` on every record (eAIP, EAD, OCR), cases K; frame —
-         the `/__setup/doc` route and the `docs` status (tools/launch.py, workstation only, case A), security review by the
-         analysis session; fuel — the link and its three targets (case F); maps — the link in the aerodrome card (case D).
-         Help ×4 per lot.
-   26. **The part not read: doubtful never shown as good, counted, assisted** (user, 29 Oct, LFPG "star sans nom 27"
-       zigzagging on the Map: "incorrect. Trouver moyen de répondre aux 15 % de procédures non parsées"; at LFPG 23 pages
-       of 85 are of an unknown layout and the reader glued several procedures and the point-merge arcs into nameless
-       records): decided by the ergonomics session on the Map session's proposal.
-       - **Never a doubtful procedure presented as good.** A record without a name, or failing the geometry check
-         (repeated point, zigzag, leg longer than the page's span), is kept in the file (data is never purged) with
-         status `doubt` and is served by `procedures()` only on request (`{ doubt: true }`): Fuel's lists and the Map's
-         traces never show it. Fuel shows one line per side "N procédures non lues sur cette page" with the "Source" link
-         (§ 10.25); the coverage (§ 10.22) turns orange with the reason `partial` when an aerodrome has pages `ok: false`
-         or `doubt` records, shown in the Map's aerodrome card and the Data module.
-       - **Fallback by source**, in the order already set: what the eAIP did not give comes from `proc/local/` (X-Plane
-         CIFP, then Little Navmap, § 10.21) when the workstation has it, the source always shown; nothing invented.
-       - **Assisted reading, on the sheets' model.** For a page `ok: false`, Fuel offers "Lire avec ChatGPT": the copied
-         request carries the page's text and aerodb's common schema with selection rules (never closed lists, except the
-         codes the schema requires); the pasted answer goes through the field-by-field preview like the sheets, then into
-         `proc/manual/` with status `check`, source `assisted`, and the geometry check. This covers a new layout without
-         waiting for a reader fix.
-       - **Lots**: aerodb — the LFPG layouts (bug, now), then `doubt` status and the `partial` reason, the `stats`
-         carrying `doubt` (cases K); fuel — the line and its link (with the "Relire" commit), then the assisted reading
-         (after the choose-mode lots, cases F); maps — never draw `doubt`, the reason in the aerodrome card (choose-mode
-         lot, case D). Help ×4 per lot.
+   23. **Procedure lists: outdated and conflicting marked, never hidden; choosing on the Map** (user, 29 Oct morning;
+       rewritten by the challenge of 29 Oct — the first version, in the history before this commit, specified a mode of
+       two screens for what is a `select`).
+       - **Two markers, one meaning each, everywhere** (Fuel's lists, the Map's labels, aerodrome card and legend, later
+         the Data module): **⌛ grey** = outdated (read under an earlier cycle), **⚠ orange** = does not serve the chosen
+         runway (the only conflict: STAR → approach continuity is never one, the Map joins with a dashed direct). Never
+         the word; the symbol carries the meaning, the colour accompanies it, the reason is the option's `title`.
+         **No notification for a conflict** (challenge: a third channel for the same fact).
+       - **Conflict is marked, not forbidden.** Lists are never pruned by the runway; a procedure that serves one runway
+         sets it when none is chosen. One tri-state per field: `null` = "Aucune" chosen, absent = not chosen (the OFP
+         may fill), and one spelling of it in the `select` ("—" / "aucune"), in the record and in an address (`none`).
+       - **Lists stay short, compatible first.** Flat lists, the entries compatible with the current choice first then
+         the ⚠ ones, each group by runway then name; runways served by the chosen SID or approach first in the runway
+         list; the runway in the label only when the procedure serves exactly one. ⌛ then ⚠ close the label.
+       - **One rule, one pure module.** `frame/lib/procedures.js` holds every rule on the records, without any module
+         state: `conflictsOf`, `orderProcedures`, `dedupProcs`, `runwayChoices`, `appChoices` (an approach given by entry
+         listed once, its transitions = the records ending on its first point), `servesRwy`, `nameOf`; Fuel and the Map
+         call it and only display; `current_flight.js` `loadProcedures` applies `dedupProcs` so the two modules see the
+         same records (the challenge found Fuel alone deduplicating). Tested on a bench without a browser.
+       - **One secondary line per side.** Under the selects, one muted line "lu le 28/10 18:01 ⌛ · Relire · Source · 3
+         non lues" (the parts present only), never more; "Lire les procédures de LFXX" and "Relire" are the same gesture
+         and the same code path, the label alone changes. "Sur la carte" is one button in the side's title.
+       - **Choosing on the Map, simplified**: from a side's title, "Sur la carte" opens `#maps?choose=arr&icao=LFPO`
+         (the Map mounts as main, the pane closes, no frame change): the view fits the aerodrome's procedures, the base
+         map and the Map's own layers dimmed, runway chips as a filter (≤ 7), **one family at a time** in the order the
+         side needs (runway, SID or STAR, then approach), every published procedure of that family drawn with one hue
+         per procedure (user: "une dizaine d'approches méritera plusieurs couleurs"; eight hues cycled, the same on the
+         list row, the cartouche and the trace; ⌛ greys), one cartouche per exit / entry point stacking the names,
+         transitions only for the highlighted one; a list ≤ 7 rows then scroll, "Aucune" first. **One tap on a trace or
+         a row chooses it**: the Map does `location.replace('#fuel?focus=arr&star=ID')` (one key per trip, the names of
+         `route.procedures` v2, `none` for "Aucune"), Fuel consumes the key at mount (`ctx.consume`, § 15 of
+         INTEGRATION when the frame delivers it, else `history.replaceState`), writes, says what changed and shows the
+         next family's "Sur la carte". No "Valider", no steps, no accumulation: one trip per choice, each trip short.
+         Outside the mode the chosen procedures keep their family hue (SID green, STAR orange, approach sky blue).
+       - **Lots, after the refactoring of § 10.29**: fuel (markers and lists are delivered; the secondary line, the
+         button, the key consumption), maps (the mode, cases D).
+   24. **The chosen runway drawn as an arrow** (user, 29 Oct: "un vecteur sur la carte indiquant la piste (direction
+       matérialisée par une flèche)"): when `route.procedures` names a runway, the Map draws it from the landing
+       threshold (`runways(icao)`) along the true QFU over the runway's length, head in the direction of use (far end
+       for a departure, threshold for an arrival), name at the threshold, the side's family hue, visible from the
+       aerodrome view (about 60 px per NM). In the choose mode's runway family every runway is drawn so, the chosen one
+       bold. **The ILS / DME aids are deferred** (challenge: a join in aerodb for a label the approach's name already
+       gives); `runways(icao)` stays as delivered. Lot: maps (cases D), after § 10.29.
+   25. **"Source": the coded page of a procedure, one tap away** (user, 29 Oct): on the secondary line of a side and in
+       the Map's aerodrome card, a link "Source" opens in a new tab the public address of the record's page: eAIP =
+       `charts.base + Cartes/<ICAO>/<file>`; a record of another source (EAD, OCR, manual) has no link, its document's
+       name in the line's `title`. **No launcher route** (challenge: a third target and a route to audit for a page the
+       SIA serves to everyone; the local copies stay where they are, `data/local/eaip/<date>/`). aerodb adds
+       `source.file` to every record read from a document. Lots: aerodb (`source.file`, cases K), fuel and maps (the
+       link), after § 10.29.
+   26. **The part not read: doubtful never shown as good, counted** (user, 29 Oct, LFPG "star sans nom 27"): one
+       **geometry check** (`tools/proc_geometry.py`, § 10.29), one definition for every reader (eAIP, EAD, OCR, manual):
+       printed course and distance against the recalculated ones with a tolerance chosen by what the source prints, a
+       repeated point outside a holding, a zigzag (more than three times the direct), a nameless record. A record that
+       fails is kept in the file with `status: 'doubt'` and its reason as a **code** (`name`, `repeat`, `zigzag`,
+       `geometry`, `unread`), served only with `{ doubt: true }`, counted in `stats.doubt`; the reader never refuses a
+       whole aerodrome for one record (EAD did). Pages not read are `formats[].ok: false` with a reason code (`layout`,
+       `low-read`, `title`, `no-legs`); **codes, never phrases**: the modules translate them (`AeroCatalogue`, like
+       `COVERAGE`). The coverage turns orange with the reason `partial` when an aerodrome has such pages or records.
+       Fuel shows "N non lues" on the secondary line with the "Source" link. Fallback by source stays as § 10.21.
+       **"Lire avec ChatGPT" is dropped** (challenge: a fifth write path into `proc/manual/` for a layout the reader
+       should learn; a new layout is a reader fix with its fixture). Lots: aerodb (codes, `partial`, cases K), after
+       § 10.29.
    27. **The aerodrome's name wherever its code is, and progressive completion** (user, 29 Oct: "ajouter le nom (et
        détails) de l'AD. par ex : « Départ LFPO Paris-Orly ». Idem sur l'onglet « départ », rappeler le nom complet de
        l'AD. sur l'onglet 1, dès qu'on a choisi un AD, afficher dans un champ de texte fixe (pour ne pas resize tout le
@@ -857,3 +788,48 @@ redesigned for touch at that point.
        - **Runway in use, or probable**: from the departure and arrival METAR at preparation time.
        - **Active VATSIM / IVAO controllers on the Map**: both networks publish them (VATSIM data v3 with the launcher's
          relay, IVAO Whazzup directly); one hue per network, dark green and brown, under the airspaces' weight.
+   29. **Challenge of 29 Oct: refactoring before any new feature** (user, 29 Oct: "tu challengeras toutes les décisions
+       prises depuis hier, quitte à commencer par refaire du code (refactoring)"; inventory by a read-only agent on
+       a29709172 plus the debts declared by the four sessions). Findings: the specification ran ahead of the code (about
+       130 lines for what did not exist, three contradictions), every real bug added a special case (17 bug commits in
+       two days), Fuel and the Map did not share the computation, `modules/fuel/module.js` at 266 KB and
+       `tools/proc_eaip.py` at 147 KB with four trades inside, three geometry checks, seven hand-invalidated caches.
+       **Decisions** (each with its item above): coverage layer never lit by itself and renamed, no orange without a
+       reader, no conflict notification, no departure lock, the OFP proposes, the choose mode is one tap per choice,
+       aids deferred, "Source" = public link only, no ChatGPT reading, one geometry check and one `doubt`, reasons as
+       codes, one gesture Lire / Relire, `read_at` delivered, § 10.27 stays (it is Fuel's SPEC that carries the details).
+       **Refactoring lots, in this order, one owner each, nothing else started before they are on v3**:
+       - **aerodb (reader side)**: `tools/proc_geometry.py` (one check, one policy: mark `doubt`), `proc_eaip.py` split
+         into `proc_sia.py` (France), `proc_layouts.py` (the foreign layouts as a table `{ name: (detect, read) }`),
+         `proc_records.py` (lines → legs → records, the common post-read pass: phase, threshold, `doubt`), the runway
+         table and HTTP where they belong; `proc_manual.py` and `proc_ocr.py` no longer import the eAIP reader;
+         `probe` moved to `tools/ead_probe.py`; one fixture set per aerodrome (LFBD, LFBO, LFPO, LFPG) regenerable by
+         a tool; the point schema written once in the SPEC with what each source fills; `_ead_fetch` and `_eaip_fetch`
+         merged into one job with a source table (the "LF" rule in one place). Cases K unchanged in meaning.
+       - **aerodb (reader in the browser)**: `procedures(k)` memoised per (aerodrome, revision), `procedure()` and
+         `runways()` read the memo; `withMissed` moved from the consumer to the reader as a counted guard;
+         `coverage(icao).read_at` and `source.read_at` delivered; freshness through the frame's `FD.revalidate(paths)`
+         once delivered, `manualFresh` / `revs` removed.
+       - **fuel**: `frame/lib/procedures.js` (pure rules, above) and `modules/fuel/procedures.js` ≤ 60 KB mounted by
+         `module.js` with `{ render, onChange, focus }` and its own texts file; one state object per aerodrome, emptied
+         by one function on `change { procedures: ICAO }`; `procMemo` removed (aerodb is the only cache); the rows
+         re-render only the options when only the lists change, the focus never touched; one deferred write per series
+         of choices (one quote); `depPassed` and the conflict notification removed; `legsAt` kept with one state;
+         `fmtDayZ` in `frame/lib/time.js`; tests: pure bench for order / conflicts / dedup / profile,
+         `tests/v3/fixtures/procedures.py`, waits on a state (`c.settle()`) instead of fixed delays.
+       - **maps**: `current_flight.js` kept for the record, `flight_time.js` and `flight_path.js` split out
+         (re-exported during the transition); `expandedPath` marks every junction (`join: 'common' | 'direct' | 'gap'`)
+         and `procs.js` only draws; one ordered list of layers in `draw()` each with `reserve(pl)` then `paint(ctx)`;
+         `draw(ctx, env)` instead of the mutable `MapsRender.kit` and the global theme; one palette of the Map, day and
+         night, read by the rendering and the legend; one element for the airway names (profile migration); `covAuto`
+         removed; D41 asserting meaning, not a list of booleans.
+       - **frame**: J2 (a pending write on the local transport never asks attention), the end-of-cycle line on the real
+         `publication()` form, `Job.log` cleaned; then `FD.revalidate(paths)`; then `regen_jobs.py` reduced to its base
+         with `tools/regen/<set>.py` per owner, `commit_outputs(paths, author, message)` for every verb, the job state
+         persisted (`interrupted` shown), `AeroDB.declaration().launcher`, the refusal form `{ ok: false, status,
+         route, message, reason?, wait? }` in § 15.1, `ctx.consume(keys)` with the table of address keys in
+         INTEGRATION, `/__setup/status` = detection only, routes as a table with their public (`lan` | `poste`).
+       - **security session**: review of each lot on v3.
+       **Then, in this order**: the runway arrow (§ 10.24), the choose mode (§ 10.23), "Source" (§ 10.25), the
+       aerodrome names and completion (§ 10.27), the flown trace (`progress.actual.trail`, frame + maps), the Data
+       module's State list, the backlog of § 10.28 one line at a time (specified when its lot starts).

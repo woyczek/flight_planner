@@ -78,6 +78,13 @@
       },
       "items": [
         {
+          "state": "doing",
+          "fr": "Refonte du lanceur : socle des travaux et verbes par propriétaire, état des travaux conservé, revalidation des chemins de données, statut = détection seule",
+          "en": "Launcher refactoring: job base and verbs per owner, job state kept, data path revalidation, status = detection only",
+          "de": "Umbau des Launchers: Arbeitsbasis und Verben je Eigentümer, Arbeitszustand bewahrt, Neuvalidierung der Datenpfade, Status = nur Erkennung",
+          "es": "Refactorización del lanzador: base de trabajos y verbos por propietario, estado de los trabajos conservado, revalidación de rutas de datos, estado = solo detección"
+        },
+        {
           "state": "done",
           "fr": "Position réelle pendant un vol démarré : simulateur par le lanceur (X-Plane 12, Little Navmap), GPS de l'appareil, session IVAO / VATSIM ; écrite dans le vol courant, pastille d'en-tête",
           "en": "Actual position during a started flight: simulator through the launcher (X-Plane 12, Little Navmap), device GPS, IVAO / VATSIM session; written into the current flight, header badge",
@@ -265,6 +272,13 @@
       },
       "items": [
         {
+          "state": "doing",
+          "fr": "Refonte du bloc procédures : règles pures partagées avec la Carte, fichier à part, un seul cache (aerodb), une écriture par série de choix",
+          "en": "Procedures block refactoring: pure rules shared with the Map, own file, one cache (aerodb), one write per series of choices",
+          "de": "Umbau des Verfahrensblocks: reine Regeln mit der Karte geteilt, eigene Datei, ein Cache (aerodb), ein Schreiben je Wahlserie",
+          "es": "Refactorización del bloque de procedimientos: reglas puras compartidas con el Mapa, archivo propio, una sola caché (aerodb), una escritura por serie de elecciones"
+        },
+        {
           "state": "done",
           "fr": "Devis (appareil, route, SimBrief, niveau et vent, réserves), décision du niveau dessinée, consignes de montée",
           "en": "Quote (aircraft, route, SimBrief, level and wind, reserves), drawn level decision, climb guidance",
@@ -399,17 +413,17 @@
         },
         {
           "state": "planned",
-          "fr": "Lien « Source » sur chaque procédure : la page codée (copie locale du lanceur, sinon le SIA, sinon le portail EAD)",
-          "en": "\"Source\" link on each procedure: the coded page (the launcher's local copy, else the SIA, else the EAD portal)",
-          "de": "Link „Quelle“ bei jedem Verfahren: die kodierte Seite (lokale Kopie des Launchers, sonst SIA, sonst EAD-Portal)",
-          "es": "Enlace «Fuente» en cada procedimiento: la página codificada (copia local del lanzador, si no el SIA, si no el portal EAD)"
+          "fr": "Lien « Source » sur chaque procédure : la page codée du SIA",
+          "en": "\"Source\" link on each procedure: the SIA's coded page",
+          "de": "Link „Quelle“ bei jedem Verfahren: die kodierte Seite des SIA",
+          "es": "Enlace «Fuente» en cada procedimiento: la página codificada del SIA"
         },
         {
           "state": "planned",
-          "fr": "Procédures non lues : comptées par page avec leur source, jamais montrées comme bonnes ; lecture assistée par ChatGPT sur le modèle des fiches",
-          "en": "Procedures not read: counted per page with their source, never shown as good; ChatGPT-assisted reading on the sheets' model",
-          "de": "Nicht gelesene Verfahren: je Seite gezählt mit Quelle, nie als gut gezeigt; ChatGPT-gestütztes Lesen nach dem Muster der Datenblätter",
-          "es": "Procedimientos no leídos: contados por página con su fuente, nunca mostrados como buenos; lectura asistida por ChatGPT según el modelo de las fichas"
+          "fr": "Procédures non lues : comptées par page avec leur source, jamais montrées comme bonnes",
+          "en": "Procedures not read: counted per page with their source, never shown as good",
+          "de": "Nicht gelesene Verfahren: je Seite gezählt mit Quelle, nie als gut gezeigt",
+          "es": "Procedimientos no leídos: contados por página con su fuente, nunca mostrados como buenos"
         },
         {
           "state": "planned",
@@ -444,6 +458,13 @@
         "es": "Mapa"
       },
       "items": [
+        {
+          "state": "doing",
+          "fr": "Refonte du rendu : couches en liste ordonnée, palette unique, helpers de chemin et d'horaire séparés, jonctions marquées par le chemin",
+          "en": "Rendering refactoring: layers as an ordered list, one palette, path and time helpers split, junctions marked by the path",
+          "de": "Umbau des Renderings: Ebenen als geordnete Liste, eine Palette, Pfad- und Zeithelfer getrennt, Übergänge vom Pfad markiert",
+          "es": "Refactorización del renderizado: capas en lista ordenada, una sola paleta, ayudantes de trayecto y horario separados, uniones marcadas por el trayecto"
+        },
         {
           "state": "done",
           "fr": "Carte IFR du vol prévu (tuiles ou fond uni hors ligne), profil vertical, curseur commun, TOC / TOD",
@@ -614,17 +635,17 @@
         },
         {
           "state": "planned",
-          "fr": "Mode « choix » : fond de carte grisé, toutes les procédures du terrain tracées avec leur nom, choix renvoyé à Carburant",
-          "en": "\"Choose\" mode: dimmed base map, every procedure of the aerodrome drawn with its name, choice handed back to Fuel",
-          "de": "„Auswahl“-Modus: abgedunkelte Grundkarte, alle Verfahren des Platzes mit Namen gezeichnet, Wahl an Kraftstoff zurückgegeben",
-          "es": "Modo «elección»: mapa base atenuado, todos los procedimientos del aeródromo trazados con su nombre, elección devuelta a Combustible"
+          "fr": "Mode « choix » : fond de carte grisé, une famille à la fois, une teinte par procédure, un toucher = choisi",
+          "en": "\"Choose\" mode: dimmed base map, one family at a time, one hue per procedure, one tap = chosen",
+          "de": "„Auswahl“-Modus: abgedunkelte Grundkarte, eine Familie je Durchgang, eine Farbe je Verfahren, ein Tipp = gewählt",
+          "es": "Modo «elección»: mapa base atenuado, una familia a la vez, un color por procedimiento, un toque = elegido"
         },
         {
           "state": "planned",
-          "fr": "Piste choisie tracée en flèche dans le sens d'utilisation, avec ses aides (ILS, DME)",
-          "en": "Chosen runway drawn as an arrow in the direction of use, with its aids (ILS, DME)",
-          "de": "Gewählte Piste als Pfeil in Nutzungsrichtung gezeichnet, mit ihren Hilfen (ILS, DME)",
-          "es": "Pista elegida trazada como flecha en el sentido de uso, con sus ayudas (ILS, DME)"
+          "fr": "Piste choisie tracée en flèche dans le sens d'utilisation",
+          "en": "Chosen runway drawn as an arrow in the direction of use",
+          "de": "Gewählte Piste als Pfeil in Nutzungsrichtung gezeichnet",
+          "es": "Pista elegida trazada como flecha en el sentido de uso"
         },
         {
           "state": "planned",
@@ -887,6 +908,13 @@
         "es": "Base aeronáutica"
       },
       "items": [
+        {
+          "state": "doing",
+          "fr": "Refonte du lecteur : un seul contrôle de géométrie, lecteur eAIP scindé, passe commune après lecture, jeux de pages par terrain",
+          "en": "Reader refactoring: one geometry check, eAIP reader split, common post-read pass, page fixtures per aerodrome",
+          "de": "Umbau des Lesers: eine Geometrieprüfung, eAIP-Leser aufgeteilt, gemeinsamer Nachlauf, Seitensätze je Platz",
+          "es": "Refactorización del lector: un solo control de geometría, lector eAIP dividido, pasada común tras la lectura, juegos de páginas por aeródromo"
+        },
         {
           "state": "done",
           "fr": "Base SIA par zone, cycle et sorte ; villes ; types d'aéronefs ; lecture à la demande, cache par zone",
