@@ -23,7 +23,7 @@ const CACHE = 'sog-frame-v1',
     'settings/access.js', 'settings/diagnostic.js', 'settings/admin.js', 'settings/groups.js', 'settings/settings.js',
     'lib/markdown.js',
     'lib/dom.js', 'lib/current_flight.js', 'lib/flight_time.js', 'lib/flight_path.js', 'lib/procedures.js', 'lib/time.js',
-    'lib/geo.js', 'lib/launcher.js',
+    'lib/geo.js', 'lib/launcher.js', 'lib/trail.js',
     'help/help.js', 'help/roadmap.js', 'help/roadmap.json',
     // l'aide (manuel, tutoriels) : seulement dans la langue de l'appli, demandée par la page (message « precache ») ;
     // les autres langues et les captures des tutoriels sont gardées à leur première lecture

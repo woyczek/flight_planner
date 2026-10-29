@@ -1630,3 +1630,11 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     « Synchroniser » gesture. When D5 moves the build to the launcher, the running-job check covers it whole.
   - With it: a pending merge that git refuses to cancel (a file brought by the merge, changed since) names the files to
     set aside; `clean_text` also replaces the real path of `data/` (a junction in the workspaces).
+- **29 Oct 2026 — The flown track in `progress.actual.trail`** (the coordinator's go, roadmap of the night):
+  - The frame writes it with the position it already writes (no new record, no new write): one point per NM or per
+    minute, turns kept (15°), 500 points at most thinned by the least change of shape (first and last kept); a point is
+    `[lat, lon, altFt, s]` — arrays, not objects, because the record is written indented (about 22 KB for an 8 h flight
+    instead of about 60).
+  - Reset: it lives and dies with `progress.actual` (new `started.at`: a track of an earlier start is never carried on;
+    the flight stopped: gone with the position).
+  - The pure rule is `frame/lib/trail.js` (noreg A35); the Map initialises its track on it (BUGS SOG).

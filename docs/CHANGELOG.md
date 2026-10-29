@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the flown track** (`frame/lib/trail.js`, `frame/app.js`, `frame/sw.js`; frame INTEGRATION § 6, DECISIONS;
+  noreg A35): the current flight's `progress.actual.trail` keeps where the aircraft went since the start — one point per
+  NM or per minute, turns kept, 500 points at most — written with the position, reset at a new start or when the flight
+  stops.
 - **Synchronisation: a build of the base under way keeps it, even on the button** (`tools/data_sync.py`,
   `tools/launch.py`; SYNCHRONISATION, frame DECISIONS; noreg I9): an uncommitted `sia/base/` file written less than
   10 min ago means a build (the V2 page writes through its allowed folder, unseen by the launcher); a pending merge that

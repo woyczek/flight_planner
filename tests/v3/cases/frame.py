@@ -1086,3 +1086,31 @@ def a34(c):
     c.until("!!document.querySelector('[data-module=hello]')", timeout=15000, what='the module after a reload')
     c.wait(800)
     c.eq(c.count('[data-module=hello] [data-asked]'), 0, 'a reload does not replay the request', what='request after reload')
+
+
+@case('A35', 'Flown track', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 6 (29 Oct): progress.actual.trail, one point per NM or per minute, turns kept, 500 points at most, never carried to another start')
+def a35(c):
+    c.open('fuel', wait=False)
+    c.until("!!document.querySelector('[data-module=fuel]')", timeout=15000, what='the frame is up')
+    r = c.js("""() => import('/frame/lib/trail.js').then(T => {
+      const S = '2026-10-29T20:00:00Z', t0 = Date.parse(S);
+      const fix = (s, lat, lon, alt) => ({ at: new Date(t0 + s * 1000).toISOString(), lat, lon, altFt: alt });
+      let tr = []; for (let s = 0; s <= 600; s += 10) tr = T.next(tr, fix(s, 48 + s / 1800, 2, 3000), S);   // 120 kt plein nord
+      const straight = tr.length, gaps = [...new Set(tr.slice(1).map((p, i) => p[3] - tr[i][3]))];
+      for (let s = 610; s <= 700; s += 10) tr = T.next(tr, fix(s, 48 + 600 / 1800, 2 + (s - 600) / 1800 / Math.cos(48.33 * Math.PI / 180), 3000), S);
+      const corner = tr.some(p => p[3] === 600 || p[3] === 610);
+      let slow = []; for (let s = 0; s <= 300; s += 10) slow = T.next(slow, fix(s, 48 + s / 360000, 2, 0), S);   // roulage, 10 kt
+      let big = []; for (let s = 0; s <= 8 * 3600; s += 10) big = T.next(big, fix(s, 40 + s / 1800, 1 + 0.5 * Math.sin(s / 1800), 5000), S);
+      return { straight, gaps, corner, slow: slow.length, cap: big.length, ends: [big[0][3], big[big.length - 1][3]],
+        point: tr[1], before: T.next([], fix(-30, 48, 2, 0), S).length, junk: T.next([['x'], [1, 2, 3, -5]], fix(0, 48, 2, 0), S).length };
+    })""")
+    c.eq((r['straight'], r['gaps']), (21, [30]), 'a straight leg at 120 kt: one point per NM', what='straight leg')
+    c.ok(r['corner'], str(r), 'a 90° turn keeps its corner')
+    c.eq(r['slow'], 6, 'a slow taxi: one point per minute', what='taxi points over 5 min')
+    c.eq((r['cap'], r['ends']), (500, [0, 28800]), 'an 8 h flight: 500 points, the first and the last kept', what='cap')
+    c.eq(r['point'], [48.01667, 2, 3000, 30], 'a point is [lat, lon, altFt, s since the start]', what='point shape')
+    c.eq((r['before'], r['junk']), (0, 1), 'a position before the start is not a point; a malformed track is dropped', what='guards')
+    src = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8')
+    c.ok("TR.next(prev?.at && String(prev.at) >= String(cur.started.at) ? prev.trail : []" in src, '', 'the frame carries on only a track of the same start')
+

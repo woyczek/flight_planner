@@ -2814,9 +2814,10 @@
   //      de données, CID) par ctx.net — toutes les 15 s avec un lanceur (relais), toutes les 60 s en appel direct (0,7 à
   //      1,7 Mo par appel sur un téléphone) ;
   //   3. rien.
-  // Écrit progress.actual = { at, lat, lon, altFt, gsKt, trackDeg, source } dans le vol courant (ce seul champ, by
-  // 'frame'), au plus une fois par 10 s et seulement si la position a bougé (30 m, 50 ft) ; aucune synchronisation
-  // forcée (la file locale et la synchronisation habituelle suffisent).
+  // Écrit progress.actual = { at, lat, lon, altFt, gsKt, trackDeg, source, trail } dans le vol courant (ce seul champ,
+  // by 'frame'), au plus une fois par 10 s et seulement si la position a bougé (30 m, 50 ft) ; trail : la trace volée
+  // (frame/lib/trail.js : un point par NM ou par minute, virages gardés, 500 points au plus), reprise de l'enregistrement
+  // relu si elle est du même départ ; aucune synchronisation forcée (la file locale et la synchronisation habituelle suffisent).
   const LIVE_WRITE = 10e3,
     LIVE_SIM = 5e3,
     LIVE_SIM_FRESH = 15e3,
@@ -3062,11 +3063,19 @@
     };
     const cur = await liveData.get(flightPath).catch(() => null);
     if (!flying(cur)) return;
-    // fusion commune du vol courant (frame/lib/current_flight.js) : relu juste avant, seul progress.actual remplacé
-    const CF = await import(new URL('frame/lib/current_flight.js', ROOT).href);
+    // fusion commune du vol courant (frame/lib/current_flight.js) : relu juste avant, seul progress.actual remplacé ;
+    // la trace volée continue celle de l'enregistrement si elle est de ce départ (une position d'avant started.at : vol
+    // précédent, trace neuve)
+    const [CF, TR] = await Promise.all([import(new URL('frame/lib/current_flight.js', ROOT).href), import(new URL('frame/lib/trail.js',
+        ROOT).href)]),
+      prev = cur.progress?.actual,
+      trail = TR.next(prev?.at && String(prev.at) >= String(cur.started.at) ? prev.trail : [], a, cur.started.at);
     await liveData.put(flightPath, CF.merge(cur, {
       progress: {
-        actual: a
+        actual: {
+          ...a,
+          trail
+        }
       }
     }, {
       progressKeys: ['actual'],
