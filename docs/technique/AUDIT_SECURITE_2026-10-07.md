@@ -862,6 +862,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 20 | Map: choosing a procedure on the map (5b713f77e) | acceptable, one note for Fuel |
 | 21 | Fuel layout (918ce4010), Atmosphere layers panel (d36f4be70) | acceptable |
 | 22 | AeroDB: `source.url` of the eAIP records (d88463e51) | acceptable, one point to fix |
+| 23 | Data module « Publier » (3355c5e24) | acceptable, one note on the result's shape |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1110,7 +1111,17 @@ group: a « Source » link could lead to another site behind a trusted label (no
 `rel=noopener` on the pages). Admit only bases under the SIA's host (the same constant as `proc_sia.eaip_url`), otherwise
 no link. Note: the ICAO key is inserted as is in the path; check `^[A-Z0-9]{4}$` or encode it.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 22 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
+**23. Data module, « Publier » (3355c5e24) — acceptable, one note.** The module never posts to `/__setup/sync`: its
+declaration adds only `sync-status` (read with GET), and publishing goes through the frame, `ctx.data.sync({ gesture:
+true })`; the button is active only when the frame declares `ctx.data.sync.gesture === true`. The module writes no author
+(the trigram stays with the frame's transport); the launcher still keeps `sia/base` while a build runs, gesture or not.
+The report shows numbers only (`num()`), never a path or a conflict; the launcher's message is escaped (and already cleaned
+by `clean_text`); the attributes take closed sets; the journal stays in `cache/data/`. Note (with the frame's « sync on
+gesture » commit): the frame's `exchange()` discards what `T.exchange` returns, so `r.exchange` does not exist yet; and
+`data_sync.run` returns `conflicts` and `refused` as lists, which `num()` turns into 0 — the report would say « no
+conflict » when there are some. Return counts, or count lists in `publishOutcome`.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 23 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
