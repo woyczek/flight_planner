@@ -846,6 +846,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 4 | Data synchronisation fix (8e694e469) | to fix, three notes |
 | 5 | `sia/base` committed only on the user's gesture (1c2506a41) | acceptable, one note |
 | 6 | Overlaps of one family in the base's build stats (6e50698e3) | acceptable |
+| 7 | Data synchronisation, fixes (2bf0021be) | acceptable, one integrity point, two notes |
+| 8 | Fuel: procedure rules in `frame/lib/procedures.js` (48afe2544) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -902,7 +904,31 @@ The family pattern `(\s+(\d+[A-Z]?|[A-Z]))+$` needs a blank at each repetition, 
 name from a source; pairs are compared inside a family only; `meta.overlaps.families` is capped at 50. The names it
 carries (`ovl`, `members`) come from the source: the Map must insert them escaped when it reads them (with BUGS SOG).
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4 and 5 are with V3 Frame, AeroDB and BUGS SOG.
+**7. Data synchronisation, fixes (2bf0021be) — acceptable for security, one integrity point, two notes.**
+- Checked:
+  - `settle()` never concludes: `_own_staged` unstages what the workstation staged after the interruption (literal
+    pathspecs), then `merge --abort`; a new file becomes untracked, nothing is erased; if `merge-base` fails, the whole
+    index is unstaged (the safe side). Files outside the pool no longer leave: `_commit_local` takes the pool only,
+    after `data_guard`;
+  - `clean_text` removes `user:…@` from any address and replaces the paths of `data/` and of the suite (both separators,
+    any case), in failed `git()` calls, the journal, `_why`, `ls-remote` and the clone;
+  - a paired device gets a generic message on failure, the detail stays in the launcher's console;
+  - `data_path` (paths in conflict) takes the rule of `data_file` (`\`, `:`, control characters, empty, `.` and `..`
+    components, a trailing dot or space, Windows device names, real path under `data/`);
+  - the aircraft database publication checks `MERGE_HEAD` before writing.
+- *Integrity point (not a vulnerability)*: `sync_gesture` only saw the launcher's jobs (`REGEN.view()`), while the base
+  is built in the page (`shared/sia_base.js`, written by `/__setup/batch`), so the guard was inert for the case it aims at.
+  Decision (V3 Frame): building batches marked `building: true / false`, a launcher state that expires 10 minutes after
+  the last write, read by `sync_gesture`; a note in `frame/DECISIONS.md` until the build moves to the launcher (D5).
+- Notes: `merge --abort` (`reset --merge`) fails on a file touched by the merge and then changed in the folder: nothing
+  is lost or committed, but the synchronisation stays blocked, and the message should say what to do; `clean_text`
+  replaces `os.path.abspath(base)`, so add `os.path.realpath(base)` for a `data/` reached through a junction.
+
+**8. `frame/lib/procedures.js` (48afe2544) — acceptable.** Pure functions (no DOM, network, storage, `eval` or global
+state; fixed patterns without dangerous backtracking); the runway options Fuel adds are escaped (`esc` on value and
+text); `frame/sw.js` precaches the file.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5 and 7 are with V3 Frame, AeroDB and BUGS SOG.
 
 ## Appendix A — Hosts contacted
 
