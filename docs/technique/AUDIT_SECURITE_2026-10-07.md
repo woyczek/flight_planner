@@ -1078,7 +1078,8 @@ through `num()`); a zone's free message is never shown; the focus selectors use 
 `cache/data/journal.json` (the last 50 operations) and `coverage.json`, policy `cache`; the journal read back is escaped.
 Note: `base.check` still admits `parallel: true`; the page does not send it, but any script of the page could (bounded by
 `can_start`: cores − 1 and free memory). Write it in DECISIONS as an internal mode reachable through the API, or refuse
-it at the launcher if it only serves the measurements.
+it at the launcher if it only serves the measurements. Decision: `parallel: true` is refused by the launcher (with
+AeroDB's path B commit); the option stays for the benches only.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 19 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG; the sharing of the track and of the position is the user's decision.
 
