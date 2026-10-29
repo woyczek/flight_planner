@@ -848,6 +848,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 6 | Overlaps of one family in the base's build stats (6e50698e3) | acceptable |
 | 7 | Data synchronisation, fixes (2bf0021be) | acceptable, one integrity point, two notes |
 | 8 | Fuel: procedure rules in `frame/lib/procedures.js` (48afe2544) | acceptable |
+| 9 | Launcher: one route table with its audience `lan` / `poste` (3073048c7) | acceptable, one older point to fix |
+| 10 | `POST /__setup/regen/job/put` for the base builder (5e785599c) | acceptable, two notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -928,7 +930,31 @@ carries (`ovl`, `members`) come from the source: the Map must insert them escape
 state; fixed patterns without dangerous backtracking); the runway options Fuel adds are escaped (`esc` on value and
 text); `frame/sw.js` precaches the file.
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5 and 7 are with V3 Frame, AeroDB and BUGS SOG.
+**9. One route table (3073048c7) — acceptable, one older point to fix.**
+- Survey: the 43 `/__setup/` paths cited in `tools/launch.py` are the same before and after; 48 routes are declared
+  (27 GET, 21 POST). Audience `lan`: exactly the 8 of before (GET `status`, `changes`, `sim/position`, `lnmperf`,
+  `lnmperf-folder`; POST `batch`, `sync`, `net`). PUT and the POST `?action=retire` of `lnmperf` are not declared, so the
+  gate refuses them to devices, as before; HEAD goes through the same gate as GET; every GET handler keeps its
+  `_allowed()`, the workstation's ones their `_lan()` refusal; POST keeps the global `_allowed()`. An undeclared route is
+  `poste` by default; a route declared twice stops the launcher (assertion). No route changed audience.
+- *To fix (older than the batch)*: `data_repo_url` only removed `account:token@` (a colon required), while a GitHub
+  token is commonly given as the user name alone (`https://ghp_…@github.com/…`); `data_sync.REMOTE_RE` admits
+  `https://name@host`, so `check_remote` lets that address into `data/.git/config`, and `remote_info()` returns it as is
+  to the page (`GET /__setup/sync-remote`; `git()` only cleans on failure). Refuse or remove any user part of an https
+  address (ssh `git@` stays), and pass `remote_info`'s address through `clean_text`. With V3 Frame.
+
+**10. `POST /__setup/regen/job/put` (5e785599c) — acceptable, two notes.** Workstation only (table and `_lan()`); only
+the running job (409 otherwise); a `token_urlsafe(32)` token compared by `hmac.compare_digest` (403), kept outside
+`job.data` (never in `view()`, `tools/.regen_last.json` or a log); zone `^[a-z0-9_-]{1,32}$` and one of the job's
+arguments; names `^[a-z0-9_.-]{1,64}\.json$`; size bounded (64 MB; 400 / 413); the route writes nothing, `take()`
+returns `None` after its delay or on cancel. A put cannot reach any job but the one waiting. Notes:
+- for the D5 builder verb (with AeroDB): write `zone/name` through `data_path` (or a checked join under
+  `sia/base/<zone>/`); never put the address carrying `#…&t=<token>` in the console, nor on the command line of a browser
+  it starts (visible to other accounts);
+- `_inbox` is only emptied by `take()`: a put after a take, or zones never taken, keep up to 64 MB each in memory while the
+  job stays the last one; empty it when the job ends and refuse a put of a zone already taken (with V3 Frame).
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9 and 10 are with V3 Frame, AeroDB and BUGS SOG.
 
 ## Appendix A — Hosts contacted
 
