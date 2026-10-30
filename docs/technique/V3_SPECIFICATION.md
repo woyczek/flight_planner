@@ -1258,3 +1258,35 @@ redesigned for touch at that point.
          same way, decision by decision.
        Estimate: two to three days of the four sessions once the go is given, the shared lots first so that nobody
        rebuilds on the old rules.
+
+   34. **Administration: what is still missing to turn V2 off** (user, 30 Oct: "j'attends une carte réellement
+       utilisable, et un module d'admin"; inventory V2 → V3 of the same day, scope confirmed). The Maintenance
+       application already holds the aeronautical base (four verbs), access and repository, keys, IVAO, GitLab tokens,
+       relay devices, diagnostic. Lots, in the order of importance for the administrator, rules not screens:
+       - **A1 — every data set has the same four verbs** (Réglages, with the launcher's verbs from V3 Frame): the
+         Data module's groups Procédures (eAIP / EAD / CIFP readings per State, "Relire" of an aerodrome as today),
+         VAC points, aircraft types and performance sheets, and the company's published sheets get Télécharger ·
+         Construire · Publier · Purger exactly as the base has them (one choice of sets, one operation at a time found
+         again on opening, journal, nothing committed by fetch or purge); then **"Tout mettre à jour"**: one gesture
+         that runs the four sets' downloads and builds in the published order and ends on one Publier, with a plan
+         shown first (what will change, sizes, AIRAC cycle) and a stop at the first failure; the V2 maintenance page
+         link leaves the rail when every V2 verb has its V3 twin.
+       - **A2 — aircraft: fleet and sheets edited in Maintenance** (Features SOG): one module `modules/aircraft/` of
+         the Maintenance application, level Complet: the company's fleet (`airline/fleet.json`, today pasted from the
+         site) as a list with add / edit / retire, the performance sheet of each type (`aircraft/sheets/<id>.json`:
+         speeds, fuel flows, `maxCrosswindKt`, the fields Fuel reads) edited in a form built from the sheet's schema
+         (one writer per field, the OFP / lnmperf / CSV imports of § 10.21 as sources, preview before writing), the
+         aerodb registry (types, callsigns) read-only with a search; no V2 "learned types" nor "merges" rebuilt: a
+         type unknown to the registry is a sheet with its own id.
+       - **A3 — the workstation itself** (V3 Frame): Maintenance › Administration gets "Mise à jour de la suite"
+         (channel stable / early, git state of the code checkout, Vérifier · Mettre à jour through the launcher,
+         the launcher's own update stays a documented manual step), "Sauvegarde du poste" (one ZIP of data/ with
+         secrets excluded and said so, restore from a ZIP with a plan first, the journal of backups), "Dossiers"
+         (the local folders the launcher knows — data/, X-Plane, Little Navmap, downloads — read-only paths with
+         Ouvrir, changed only in the launcher's config file, said so).
+       - **A4 — coverage of the procedures on the Map** (BUGS SOG, § 10.22 as written): the layer "Procédures" off by
+         default, aerodrome pins green / orange / red from `aerodb.coverage(icao)`, one legend line; the Data
+         module's per-State colours come with A1.
+       Out of scope, by the user's decision: users and rights, the Centre (dispos, ODV, CR sending: the CPCO
+       application later), theme colours. Each lot: SPEC of the module first, cases, help ×4, `--touched` before the
+       push, one full pass after.

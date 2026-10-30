@@ -965,6 +965,13 @@
           "en": "Settings › Administration: zoom from which the map draws the runway thresholds (maps.runwayZoom, default 11)",
           "de": "Einstellungen › Verwaltung: Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (maps.runwayZoom, Standard 11)",
           "es": "Ajustes › Administración: zoom a partir del cual el mapa dibuja los umbrales de pista (maps.runwayZoom, 11 por defecto)"
+        },
+        {
+          "state": "doing",
+          "fr": "Administration : les quatre verbes pour chaque jeu de données (procédures, VAC, types et fiches d'appareils) et « Tout mettre à jour » ; mise à jour de la suite, sauvegarde du poste, dossiers ; flotte et fiches appareils éditées dans Maintenance",
+          "en": "Administration: the four verbs for every data set (procedures, VAC, aircraft types and sheets) and \"Update everything\"; suite update, workstation backup, folders; fleet and aircraft sheets edited in Maintenance",
+          "de": "Verwaltung: die vier Verben für jeden Datensatz (Verfahren, VAC, Flugzeugtypen und -blätter) und „Alles aktualisieren“; Aktualisierung der Suite, Sicherung des Rechners, Ordner; Flotte und Flugzeugblätter in der Wartung bearbeitet",
+          "es": "Administración: los cuatro verbos para cada conjunto de datos (procedimientos, VAC, tipos y fichas de aeronaves) y «Actualizar todo»; actualización de la suite, copia de seguridad del equipo, carpetas; flota y fichas de aeronaves editadas en Mantenimiento"
         }
       ]
     },
