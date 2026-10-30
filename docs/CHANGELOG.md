@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Noreg: a run whose browser crashed is replayed once** (`tests/v3/lib.py`, `tests/v3/run.py`; tests/v3 README, frame
+  DECISIONS; noreg I21) — in a fresh browser, said in the report; more than 3 crashes in a pass lower it to 6 runs at a
+  time for the rest.
 - **Map: "Around the flight only" made explicit; the same density on both sides of a border** (`modules/maps/data.js`,
   `layers.js`, `sheet_view.js`, `texts.js`, `style.js`, `render_airspace.js`, `lib/aero_symbols.js`, `lib/vertical_profile.js`;
   maps help ×4, SPEC, DECISIONS; noreg D75, D64). The corridor reading is the first box of Layers, "Around the flight only

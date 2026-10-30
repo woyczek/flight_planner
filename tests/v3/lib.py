@@ -878,24 +878,54 @@ LOAD_FAILURE = re.compile(r'Failed to fetch dynamically imported module|Importin
                           r'net::ERR_(?:CONNECTION_\w+|EMPTY_RESPONSE|ADDRESS_IN_USE)')
 
 
+# the browser itself fell (not the page): the run is played once more in a fresh browser before it counts as an error (30 Oct
+# 2026: « Target crashed » under load on four cases green alone), and the report says « replayed after a browser crash »
+CRASH = re.compile(r'Target crashed|Connection closed|Browser has been closed|browser has disconnected|'
+                   r'Target page, context or browser has been closed')
+
+
+def _relaunch():
+    try:
+        _W['browser'].close()
+    except Exception:
+        pass
+    _W['browser'] = _W['pw'].chromium.launch(executable_path=CHROME, args=['--no-sandbox']) if CHROME else _W['pw'].chromium.launch(args=['--no-sandbox'])
+
+
+def _run_or_crash(job):
+    """run_one, or a crash: (result, crash text or '')."""
+    try:
+        res = run_one(_W['browser'], _W['base'], *job)
+    except Exception as e:                        # the browser fell outside the case (a context, a page that cannot open)
+        return None, f'{type(e).__name__}: {str(e).splitlines()[0][:160] if str(e) else ""}'
+    hit = res['status'] == 'ERROR' and CRASH.search(str(res.get('measured', '')))
+    return res, hit.group(0) if hit else ''
+
+
 def worker_run(job):
     case_id, width, design, lang, tone = job
-    try:
-        res = run_one(_W['browser'], _W['base'], case_id, width, design, lang, tone)
-        why = ' '.join([str(res.get('measured', ''))] + [str(x) for x in res.get('errors', [])])
-        if res['status'] in ('FAIL', 'ERROR') and LOAD_FAILURE.search(why):
-            first = LOAD_FAILURE.search(why).group(0)
-            res = run_one(_W['browser'], _W['base'], case_id, width, design, lang, tone)
-            res['retried'] = f'{first} on the first try'
+    res, crash = _run_or_crash(job)
+    if crash:
+        _relaunch()
+        res, again = _run_or_crash(job)
+        if again:                                 # twice: an error, said as a crash; a fresh browser for the next run
+            _relaunch()
+            res = {'id': case_id, 'width': width, 'design': design, 'lang': lang, 'tone': tone, 'status': 'ERROR',
+                   'measured': f'browser crashed twice: {again}', 'expected': 'no crash', 'rule': '', 'secs': 0}
+        res['retried'] = f'replayed after a browser crash ({crash})'
+        res['crashed'] = True
         return res
-    except Exception as e:                        # browser crash: restart it once, report the run as an error
-        try:
-            _W['browser'].close()
-        except Exception:
-            pass
-        _W['browser'] = _W['pw'].chromium.launch(executable_path=CHROME, args=['--no-sandbox']) if CHROME else _W['pw'].chromium.launch(args=['--no-sandbox'])
-        return {'id': case_id, 'width': width, 'design': design, 'lang': lang, 'tone': tone, 'status': 'ERROR',
-                'measured': f'browser crashed: {type(e).__name__}: {str(e)[:160]}', 'expected': 'no crash', 'rule': '', 'secs': 0}
+    why = ' '.join([str(res.get('measured', ''))] + [str(x) for x in res.get('errors', [])])
+    if res['status'] in ('FAIL', 'ERROR') and LOAD_FAILURE.search(why):
+        first = LOAD_FAILURE.search(why).group(0)
+        res, crash = _run_or_crash(job)
+        if crash:
+            _relaunch()
+            res = res or {'id': case_id, 'width': width, 'design': design, 'lang': lang, 'tone': tone, 'status': 'ERROR',
+                          'measured': f'browser crashed: {crash}', 'expected': 'no crash', 'rule': '', 'secs': 0}
+            res['crashed'] = True
+        res['retried'] = f'played twice: {first} on the first try (load failure of the static server)'
+    return res
 
 
 def worker_close():

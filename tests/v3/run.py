@@ -23,6 +23,7 @@ import datetime
 import json
 import multiprocessing
 import os
+import queue
 import socket
 import subprocess
 import sys
@@ -42,6 +43,9 @@ ROOT = lib.ROOT
 # workers by default: the physical cores less two (os.cpu_count() counts the logical ones, two per core); measured on the
 # 12-core workstation (DECISIONS, 30 Oct 2026)
 DEFAULT_JOBS = max(1, (os.cpu_count() or 4) // 2 - 2)
+# more than CRASH_LIMIT browser crashes in a pass (each replayed once, lib.worker_run): the pass lowers itself to LOW_JOBS
+# runs at a time for the rest, and says so (30 Oct 2026: four « Target crashed » under load, green alone)
+CRASH_LIMIT, LOW_JOBS = 3, 6
 SLOWEST = 20  # report.md: the slowest cases, to replace their fixed waits by waits on a condition
 # one heavy pass at a time on this computer (two at 10 workers each crashed a browser driver, 30 Oct 2026): a full pass, or
 # any pass of more than HEAVY cases (an area with --grep, a large --touched); the lock lives in the computer's temp folder,
@@ -435,7 +439,8 @@ def write_reports(results, n, header, args, dur, touched=None, tracked=None, rep
     L = [f'**{header if replay else "Areas run: " + header}**', '',
          f'**Journeys touched: {"; ".join(l[len("JOURNEY "):] for l in jl) if jl else "not chosen by paths (the combinations that failed)" if replay else "all (full run)"}**', '',
          f'# V3 non-regression report', '',
-         f'- date: {stamp}   - commit: `{meta["commit"]}`   - duration: {round(dur)} s',
+         f'- date: {stamp}   - commit: `{meta["commit"]}`   - duration: {round(dur)} s'
+         + (f'   - **{args.lowered}**' if getattr(args, 'lowered', '') else ''),
          f'- **pass {n["pass"]} - fail {n["fail"]} - known {n["known"]} - skip {n["skip"]}**' + (f' - error {n["error"]}' if n['error'] else ''), '']
     for a in sorted({r['area'] for r in results}):
         L += [f'## {a}. {AREA_NAMES.get(a, a)}', '', '| Id | Case | Result | Measured vs expected | Screenshot |', '|---|---|---|---|---|']
@@ -453,8 +458,8 @@ def write_reports(results, n, header, args, dur, touched=None, tracked=None, rep
                 detail = 'skipped runs: ' + ', '.join(r['skipped_runs'][:6])
             if r['status'] == 'PASS' and r.get('skipped_steps'):
                 detail = (detail + ' - ' if detail else '') + 'skipped steps: ' + ' / '.join(r['skipped_steps'])
-            if r.get('retried'):
-                detail = (detail + ' - ' if detail else '') + 'played twice (load failure of the static server): ' + ', '.join(r['retried'][:4])
+            if r.get('retried'):  # each says why: a load failure of the static server, or « replayed after a browser crash »
+                detail = (detail + ' - ' if detail else '') + ', '.join(r['retried'][:4])
             L.append(f"| {r['id']} | {md_cell(r['title'])} | {md_cell(status_text(r))} | {md_cell(detail)} | {r.get('shot', '')} |")
         L.append('')
     L += [f'## The {len(slow)} slowest cases', '', f'Seconds of the case summed over its runs ({args.jobs} workers, wall time {round(dur)} s, '
@@ -580,8 +585,24 @@ def main():
             # the longest jobs first (last report's seconds per run): a slow case never starts last, alone
             browser_jobs.sort(key=lambda j: -PREV_SECS.get(j[0], 0))
             with mp.Pool(n_workers, initializer=lib.worker_init, initargs=(base,)) as pool:
-                for r in pool.imap_unordered(lib.worker_run, browser_jobs, chunksize=1):
+                # the runs are given out one by one, at most `limit` at a time: after CRASH_LIMIT crashes the limit drops to LOW_JOBS
+                done, todo, limit, busy, crashes = queue.Queue(), list(browser_jobs), n_workers, 0, 0
+                while todo or busy:
+                    while todo and busy < limit:
+                        j = todo.pop(0)
+                        pool.apply_async(lib.worker_run, (j,), callback=done.put,
+                                         error_callback=lambda e, j=j: done.put({'id': j[0], 'width': j[1], 'design': j[2], 'lang': j[3], 'tone': j[4],
+                                                                                 'status': 'ERROR', 'measured': f'worker failed: {type(e).__name__}: {str(e)[:160]}',
+                                                                                 'expected': 'no crash', 'rule': '', 'secs': 0}))
+                        busy += 1
+                    r = done.get()
+                    busy -= 1
                     all_runs.setdefault(r['id'], []).append(r)
+                    crashes += 1 if r.get('crashed') else 0
+                    if crashes > CRASH_LIMIT and limit > LOW_JOBS:
+                        limit = LOW_JOBS
+                        args.lowered = f'{crashes} browser crashes: {LOW_JOBS} runs at a time for the last {len(todo) + busy} runs'
+                        print(f'  {args.lowered}', flush=True)
                 pool.close()
                 pool.join()
         st.join()
@@ -608,7 +629,7 @@ def main():
         for st in r.get('skipped_steps', []) if r['status'] == 'PASS' else []:
             print(f'      skipped step: {st}')
         for rt in r.get('retried', []):
-            print(f'      played twice (load failure of the static server): {rt}')
+            print(f'      {rt}')
         if r['status'] in ('FAIL', 'ERROR'):
             print(f"      [{r['where']}] measured: {r['measured']}\n      expected: {r['expected']}" + (f"\n      rule: {r['rule']}" if r.get('rule') else '')
                   + (f"\n      failing runs: {', '.join(r['failing'][:6])}" + (' ...' if len(r['failing']) > 6 else '') if len(r['failing']) > 1 else '')

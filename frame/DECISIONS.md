@@ -2043,6 +2043,15 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     credentials and tokens no longer reach a third-party script); every purge uses `regen_jobs.inside` (the rule of
     `base/purge`, now shared: `base_sources._inside` is it), `files_under` and `prune_empty`, so that a junction inside a cache
     is neither descended nor emptied (I17, I18 with a real junction).
+- **30 Oct 2026 — The noreg runner replays a run whose browser crashed** (Simplification's rule, after Features SOG's full
+  pass on 552e0889d: four « browser crashed: Target crashed », D4, K52, L15, L17, green alone):
+  - `lib.worker_run`: a crash outside the case (a context or a page that cannot open) or inside it (an error naming a
+    crashed target, a closed connection or browser) relaunches the worker's browser and plays the run once more; the
+    run carries « replayed after a browser crash (<the crash>) »; a second crash is an error « browser crashed twice »,
+    with a fresh browser for the next run. A failure of the case itself is never replayed.
+  - `run.py` gives the runs out one by one (at most `limit` at a time instead of `imap_unordered`): after more than
+    `CRASH_LIMIT` = 3 crashes, `LOW_JOBS` = 6 runs at a time for the rest, said in the console and at the top of
+    `report.md`. noreg I21 (a fake browser and a fake `run_one`).
 - **30 Oct 2026 — No path parameter in the console; every zip bounded** (security review of 37b043e68 and 622936805):
   - `outbound.where` kept `urlsplit`'s path, which keeps the `;` parameters: an EAD Basic failure would have written its
     `;jsessionid=…` (audit, line 4: never a session identifier or a ViewState in a log). Each segment is now cut at its

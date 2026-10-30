@@ -1428,3 +1428,51 @@ def i20(c):
         c.ok('regen_jobs.zip_check(zf)' in src, '', 'the data archive of the launcher is checked too')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I21', 'The noreg runner: a run whose browser crashes is played once more in a fresh browser; too many crashes lower the pass', 'I', static=True,
+      rule='Simplification 30 Oct (Features SOG’s full pass: four « Target crashed », D4 K52 L15 L17, green alone): one replay in a fresh browser, said « replayed after a browser crash »; more than 3 crashes, 6 runs at a time for the rest, said')
+def i21(c):
+    import importlib
+    sys.path.insert(0, str(c.root / 'tests' / 'v3'))
+    lib = importlib.import_module('lib')
+    launched = []
+
+    class Browser:
+        def close(self):
+            pass
+
+    class Chromium:
+        def launch(self, **kw):
+            launched.append(1)
+            return Browser()
+
+    class PW:
+        chromium = Chromium()
+    kept = dict(lib._W), lib.run_one
+    script = []
+
+    def fake(browser, base, case_id, *rest):
+        step = script.pop(0)
+        if step == 'raise':
+            raise RuntimeError('Target crashed')
+        return {'id': case_id, 'status': step, 'measured': 'Error: Target crashed' if step == 'ERROR' else ''}
+    try:
+        lib._W.update(pw=PW(), base='http://x', browser=Browser())
+        lib.run_one = fake
+        job = ('Z1', 390, 'standard', 'fr', 'day')
+        out = []
+        for steps in (['raise', 'PASS'], ['ERROR', 'PASS'], ['raise', 'raise'], ['FAIL'], ['PASS']):
+            script[:] = steps
+            launched.clear()
+            r = lib.worker_run(job)
+            out.append((r['status'], bool(r.get('crashed')), 'replayed after a browser crash' in r.get('retried', ''), len(launched)))
+    finally:
+        lib._W.clear()
+        lib._W.update(kept[0])
+        lib.run_one = kept[1]
+    c.eq(out, [('PASS', True, True, 1), ('PASS', True, True, 1), ('ERROR', True, True, 2), ('FAIL', False, False, 0), ('PASS', False, False, 0)],
+         'a crash (outside or inside the case) replayed once in a fresh browser and said; twice: an error; a real failure is not replayed', what='runs')
+    src = (c.root / 'tests' / 'v3' / 'run.py').read_text(encoding='utf-8')
+    c.ok('CRASH_LIMIT, LOW_JOBS = 3, 6' in src and 'crashes > CRASH_LIMIT and limit > LOW_JOBS' in src and 'args.lowered' in src, '',
+         'more than 3 crashes: 6 runs at a time for the rest, said in the console and the report')

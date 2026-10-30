@@ -51,7 +51,10 @@ queue, one thread per connection, fixed file types; `python -m http.server`, one
 ports during a run and lost module loads at random) on a free
 port of `127.0.0.1`, at the repository root. A run that fails on a file the server did not give ("Failed to fetch
 dynamically imported module", a 503 on a module file, a refused connection) is played once more, and the report says
-"played twice" with the first error. The runner runs the
+"played twice" with the first error. A run whose **browser** falls ("Target crashed", "Connection closed", the browser
+closed) is played once more in a fresh browser before it counts as an error, and the report says "replayed after a browser
+crash" (twice: an error "browser crashed twice"); after more than 3 crashes in a pass, the pass gives out 6 runs at a time
+for the rest and says so in the console and at the top of the report (`CRASH_LIMIT`, `LOW_JOBS`, 30 Oct 2026). The runner runs the
 cases in Chromium, kills the server at the end (even on an error), and exits **0 only if no case failed outside
 `cases/known_failures.py`**. It prints one line per case (`PASS`, `FAIL`, `FAIL (known: ...)`, `SKIP`, `ERROR`), the first
 failing run with its measured and expected values and the rule, then a summary line, and writes `report.md` and
