@@ -951,6 +951,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 99 | Data module, the zone map to tick (4b201ca99); noreg locks (b939f4051) | acceptable |
 | 100 | Help panel and welcome card placed under the module (09c9cacb4) | acceptable |
 | 101 | Refactor R-M2 + R-M5 (b): every Map label through one request, aerodb answers deduplicated by key (87748d47a) | acceptable, no change of behaviour |
+| 102 | Refactor R-C6: one base for the GitHub and GitLab transports (72ba695a8) | acceptable, no guard lost |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1896,6 +1897,15 @@ attribute, network, storage or navigation added. The deduplication key of aerodb
 placer only, never in the DOM; airspace limits are strings (`shared/sia_base.js`), so two airspaces with different limits
 keep different keys. The `--sog-map-*` tokens now pass `CSS.supports('color', …)` with the hex fallback, and the rule of 98
 (a theme colour going into HTML passes through `cssColor`) is written in the Map's DECISIONS.
+
+**102. Refactor R-C6, the transports' common base (72ba695a8) — acceptable, no guard lost.** `frame/store/transport_git.js`
+holds the only `fetch` of the three files, still with `cache: 'no-store'` and `redirect: 'error'`, so neither `Authorization`
+nor `PRIVATE-TOKEN` follows a redirect to any host; each transport supplies its own headers, never through the address; the
+refusal messages are built from the status and the server's message only, never the token; the base logs nothing. GitLab's
+pagination is unchanged and checked before the call (the `next` link is kept only when it starts with `${api}/`); the
+publishing loop (cancellation, 100 MB per file, progress, failed rank, resumption) is the former one, written once, and each
+commit still reads the head just before. The base loads before both transports in the page and the service worker list, and
+each transport stands down without it.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
