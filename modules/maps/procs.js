@@ -495,14 +495,30 @@ export function drawProfileCons(ctx, g) {
       ctx.arc(x, y0, 2.5, 0, Math.PI * 2);
       ctx.fill();
     }
-    // le texte quand il reste 40 px depuis le précédent
+    // le texte quand il reste 40 px depuis le précédent, à une place libre de la coupe (g.taken : libellés des espaces, TOC / TOD,
+    // paliers) : au-dessus à droite, à gauche, puis dessous ; sans place, le palier seul (parcours du 30/10, point 15)
     if (x - lastX >= 40) {
-      lastX = x;
       const parts = altParts(a),
-        y = Math.min(g.H - g.padB - 8, Math.max(g.padT + 8, y1 - 12));
-      let tx = x + 8;
-      const w = parts.reduce((s, c) => (ctx.font = '600 10px Arial,sans-serif', s + ctx.measureText(c.t).width), 0);
-      if (tx + w > g.W - g.padR) tx = x - 8 - w;
+        w = parts.reduce((s, c) => (ctx.font = '600 10px Arial,sans-serif', s + ctx.measureText(c.t).width), 0),
+        at = v => Math.min(g.H - g.padB - 8, Math.max(g.padT + 8, v)),
+        taken = g.taken ||= [],
+        box = ([bx, by]) => ({
+          x0: bx - 1,
+          y0: by - 7,
+          x1: bx + w + 1,
+          y1: by + 7
+        }),
+        free = r => r.x0 >= g.padL && r.x1 <= g.W - g.padR && !taken.some(q => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0),
+        spot = [
+          [x + 8, at(y1 - 12)],
+          [x - 8 - w, at(y1 - 12)],
+          [x + 8, at(y0 + 12)],
+          [x - 8 - w, at(y0 + 12)]
+        ].find(q => free(box(q)));
+      if (!spot) continue;
+      lastX = x;
+      taken.push(box(spot));
+      let [tx, y] = spot;
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'left';
       for (const c of parts) {
@@ -745,8 +761,35 @@ export function arrowOf(toC, side, rw, list, magVar, col) {
 }
 /** Distance (NM) entre deux points proches (plan local). */
 const gcNmPlain = (a, b) => Math.hypot((+b.lat - +a.lat) * 60, (((+b.lon - +a.lon) + 540) % 360 - 180) * 60 * Math.cos(+a.lat * RAD));
+/** Place du numéro d'un vecteur de seuil : en queue, derrière le seuil (la police du dessin). */
+function numBox(ctx, w) {
+  const dx = w.b.x - w.a.x,
+    dy = w.b.y - w.a.y,
+    len = Math.hypot(dx, dy) || 1,
+    nx = w.a.x - dx / len * 11,
+    ny = w.a.y - dy / len * 11;
+  ctx.font = `${(w.lw || 2) > 2.5 ? 700 : 600} 11px Arial,sans-serif`;
+  const tw = ctx.measureText(w.name).width;
+  return {
+    x0: nx - tw / 2 - 1,
+    y0: ny - 7,
+    x1: nx + tw / 2 + 1,
+    y1: ny + 7
+  };
+}
+/** Réserve dans la passe de collision la place des numéros de piste avant les balises (l'utilisateur, 30/10 : « a minima le numéro
+ *  de piste au seuil » ; une balise cachée coûte moins qu'une piste muette) : w.num = la place prise, ou false. */
+export function reserveRunways(ctx, arrows, pl) {
+  if (!arrows?.length || !pl) return;
+  ctx.save();
+  for (const w of arrows) {
+    const r = numBox(ctx, w);
+    w.num = pl.take(r) ? r : false;
+  }
+  ctx.restore();
+}
 /** Dessine les vecteurs de seuil : un trait court du seuil vers le sens de la piste (épaisseur lw, liseré du fond), une petite pointe
- *  au bout, l'indicatif en queue, derrière le seuil. */
+ *  au bout, l'indicatif en queue, derrière le seuil (à la place réservée par reserveRunways, sinon à une place libre de pl). */
 export function drawRunways(ctx, arrows, pl = null) {
   if (!arrows?.length) return;
   ctx.save();
@@ -792,8 +835,10 @@ export function drawRunways(ctx, arrows, pl = null) {
     const nx = w.a.x - ux * 11,
       ny = w.a.y - uy * 11,
       tw = ctx.measureText(w.name).width;
-    // dans la passe de collision de la carte : un numéro qui n'a pas de place n'est pas écrit (le vecteur reste)
-    if (pl && !pl.take({
+    // dans la passe de collision de la carte : un numéro qui n'a pas de place n'est pas écrit (le vecteur reste) ; réservé d'avance
+    // (reserveRunways), il est écrit à sa place
+    if (w.num === false) continue;
+    if (!w.num && pl && !pl.take({
         x0: nx - tw / 2 - 1,
         y0: ny - 7,
         x1: nx + tw / 2 + 1,

@@ -1176,8 +1176,10 @@
     // adName(rec) : le libellé d'un terrain de près, son code et son nom (« LFPO Paris-Orly », adTitle de frame/lib/adnames.js, la règle
     // de nom du § 10.27 ; le seuil runwayZoom de la compagnie, V3 § 10.30) ; null : le code seul
     adName = null,
-    // runways(ctx, pl) : l'écran peint les vecteurs et numéros des pistes juste après les terrains, dans la même passe de collision
+    // runways(ctx, pl) : l'écran peint les vecteurs et numéros des pistes juste après les terrains, dans la même passe de collision ;
+    // runwayLabels(ctx, pl) : il réserve d'abord la place de leurs numéros, avant celle des terrains et des balises
     runways = null,
+    runwayLabels = null,
     // dim (0 à 1) : la part dont les couches de la Carte, de la route comprise, sont éteintes avant ce que l'écran peint au niveau de
     // la route (mode « choisir sur la carte », V3 § 10.23) ; 0 : aucune
     dim = 0
@@ -1235,6 +1237,8 @@
     }, {
       id: 'points',
       paint: c => {
+        // les numéros de piste d'abord (« a minima le numéro de piste au seuil ») : une balise qui tomberait dessus cède ou glisse
+        runwayLabels && runwayLabels(c, pl);
         // points des voies dessinées (sauf de loin) : les balises avec leur symbole (ajoutées aux balises montrées), les
         // autres en triangle
         const fixes = [],

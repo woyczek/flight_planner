@@ -49,6 +49,7 @@ import {
   drawLabels as drawProcLabels,
   runwayArrows,
   drawRunways,
+  reserveRunways,
   wantRunways,
   routeLines
 } from './procs.js';
@@ -478,6 +479,7 @@ function draw() {
     overRoute: pick ? (c, pl) => pick.paint(c, pl) : procs ? c => drawProcs(c, procs) : null,
     // les pistes (vecteurs de seuil et numéros) dans la couche des terrains, priorité « terrains » de la passe de collision
     runways: rwys.length ? (c, pl) => drawRunways(c, rwys, pl) : null,
+    runwayLabels: rwys.length ? (c, pl) => reserveRunways(c, rwys, pl) : null,
     adName: !mission && !pick && zReal >= (S.runwayZoom ?? 11) ? a => adTitle(a, a.icao) : null,
     top: pick ? c => pick.top(c) : procs ? c => drawProcLabels(c, procs) : null,
     mission: mission && S.mission ? {

@@ -37,6 +37,7 @@ import {
   place,
   arrowOf,
   drawRunways,
+  reserveRunways,
   runwayBearing,
   LINE_H
 } from './procs.js';
@@ -946,6 +947,8 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
       };
       pl.add(L.ad.r);
     }
+    // les numéros de piste ensuite, avant les cartouches et les balises de la Carte
+    reserveRunways(ctx, L.arrows, pl);
     // la surlignée d'abord : sa place est la meilleure, les autres l'évitent ; elle est toujours posée
     const put = (g, force) => {
       ctx.font = g.full ? '700 11px Arial,sans-serif' : '600 10px Arial,sans-serif';

@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the profile's constraint texts in the collision pass; runway numbers before the beacons** (`modules/maps/procs.js`,
+  `render.js`, `draw.js`, `choose.js`; maps help ×4; noreg D80, D79). The texts of the procedures' constraints on the profile
+  ("FL100", "3000"…) take a free place (above right, above left, below) or none, never over a space's label, TOC / TOD or a
+  level; on the map, from the airline's runway zoom and in the choose mode, runway numbers reserve their place before the
+  beacons (« a minima le numéro de piste au seuil »), which give way.
+
 - **Map: the aerodrome's code above the procedures, runway numbers that give way** (`modules/maps/choose.js`, `draw.js`,
   `render.js`; maps help ×4; noreg D79). In the choose mode the aerodrome's code takes its place before any procedure label and
   is written above the veil, once (the dimmed route no longer repeats it, the base map's label no longer hides under it); the

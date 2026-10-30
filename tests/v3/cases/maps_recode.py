@@ -2112,18 +2112,19 @@ def d78(c):
 
 
 # ------------------------------------------------------------------------------------------------------ D79
-_CH_PAINT = """async ([full]) => { const C = await import('/modules/maps/choose.js'), S = window.__mp.S, cv = document.createElement('canvas');
+_CH_PAINT = """async ([full, reserved]) => { const C = await import('/modules/maps/choose.js'), S = window.__mp.S, cv = document.createElement('canvas');
   cv.width = 1200; cv.height = 900; const ctx = cv.getContext('2d'), got = [], o = ctx.fillText;
   ctx.fillText = function (t, x, y, w) { got.push(String(t)); return o.call(this, t, x, y, w) };
   const L = C.chooseLayout(ctx, S.toC, 1200, 900), pl = SiaAero.placer();
-  if (full) pl.add({ x0: -1e5, y0: -1e5, x1: 1e5, y1: 1e5 });   // every place taken (beacon boxes everywhere)
+  if (reserved) L.reserve(pl);                                   // the screen's reservations first, as in the drawing
+  if (full) pl.add({ x0: -1e5, y0: -1e5, x1: 1e5, y1: 1e5 });   // every place taken afterwards (beacon boxes everywhere)
   L.paint(ctx, pl);
   return { ad: L.ad ? L.ad.text : null, numbers: got.filter(t => /^\\d\\d[LRC]?$/.test(t)).sort() } }"""
 
 
 @case('D79', 'Choosing on the Map: the aerodrome’s code above the procedures, once; runway numbers give way to what is already placed', 'D',
       tags=('maps',), screens=False, designs=('standard',), night=False,
-      rule='usage walk of 30 Oct, point 8 (LFBO hidden under the procedures, "14R" over "(D) TOU 117.7"): in the choose mode the aerodrome’s code takes its place before any procedure cartouche and is written above the veil, once (the dimmed route does not repeat it); the runway numbers are in the collision pass: a number without a free place (a beacon box, a cartouche) is not written, its vector stays')
+      rule='usage walk of 30 Oct, point 8 (LFBO hidden under the procedures, "14R" over "(D) TOU 117.7"): in the choose mode the aerodrome’s code takes its place before any procedure cartouche and is written above the veil, once (the dimmed route does not repeat it); the runway numbers are in the collision pass and reserve their place before the beacons (user: « a minima le numéro de piste au seuil »): what comes later gives way; a number whose place was already taken is not written, its vector stays')
 def d79(c):
     _ch_open(c, {}, file=_CH_FILE)
     c.js(_TEXT_HOOK)
@@ -2132,8 +2133,34 @@ def d79(c):
     c.wait(300)
     c.eq(c.js("() => window.__chT.filter(t => t === 'LFML').length"), 1, 'LFML written once (no second label under the veil, none by the route)',
          what='LFML labels')
-    free = c.js(_CH_PAINT, [False])
+    free = c.js(_CH_PAINT, [False, False])
     c.eq(free['ad'], 'LFML', 'the choose layout carries the aerodrome’s code', what='code')
     c.eq(free['numbers'], ['13', '31'], 'with room, both runway numbers are written', what='numbers with room')
-    full = c.js(_CH_PAINT, [True])
-    c.eq(full['numbers'], [], 'no room (every place taken): no number written, the vectors stay', what='numbers without room')
+    full = c.js(_CH_PAINT, [True, False])
+    c.eq(full['numbers'], [], 'no room (every place taken before): no number written, the vectors stay', what='numbers without room')
+    first = c.js(_CH_PAINT, [True, True])
+    c.eq(first['numbers'], ['13', '31'], 'reserved first, the numbers are written though every place is taken afterwards (beacons give way)',
+         what='numbers reserved before the beacons')
+
+
+# ------------------------------------------------------------------------------------------------------ D80
+_CONS_BOXES = """async () => { const S = window.__mp.S, ctx = S.pc.getContext('2d'), got = [], o = ctx.fillText, P = await import('/modules/maps/procs.js');
+  const g = { ...S.geo, taken: [...(S.geo.taken || [])] }, before = g.taken.length;
+  ctx.fillText = function (t, x, y, w) { got.push(String(t)); return o.call(this, t, x, y, w) };
+  P.drawProfileCons(ctx, g); delete ctx.fillText;
+  const mine = g.taken.slice(before), hit = (r, q) => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0;
+  return { n: mine.length, overlaps: mine.filter((r, i) => g.taken.some((q, j) => j !== before + i && hit(r, q))).length, texts: got } }"""
+
+
+@case('D80', 'The profile: the constraints’ texts take a free place or none, never over a space’s label, TOC / TOD or a level', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='usage walk of 30 Oct, point 15 (« PARIS / PARIS 1 / 205 / FL100 / ORE » over each other on the profile): the texts of the procedures’ constraints go through the profile’s collision pass (g.taken: spaces’ labels, TOC / TOD, levels): above right, above left, below, else no text (the step stays)')
+def d80(c):
+    f = _proc_flight(planned_at=iso(now() + datetime.timedelta(hours=2)), by='fuel')
+    _open_proc(c, f, view='maps?view=-1.5,46.35,-0.9,46.8')
+    c.until("() => !!(window.__mp.S.prof && window.__mp.S.geo)", timeout=10000, what='the profile is drawn')
+    c.wait(300)
+    r = c.js(_CONS_BOXES)
+    c.ok(r['n'] >= 1, f'{r}', 'the constraints write their texts')
+    c.eq(r['overlaps'], 0, 'no constraint text over a space’s label, TOC / TOD, a level or another text', what=f'{r}')
+
