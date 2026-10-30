@@ -1,6 +1,6 @@
 # Daten
 
-Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank, die Verfahren, die Luftfahrzeuge, das Wetter — und der Stand jedes Datensatzes. Dieser Bildschirm dient dem Lesen und bietet Aktionen für die Luftfahrtdatenbank: ihre Quellen herunterladen, sie aufbauen, die Quellen bereinigen, dann veröffentlichen.
+Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank, die Verfahren, die Luftfahrzeuge, das Wetter — und der Stand jedes Datensatzes. Dieser Bildschirm dient dem Lesen und bietet Aktionen für jede Gruppe: die Quellen herunterladen, aufbauen, bereinigen, dann veröffentlichen.
 
 ## So geht's
 
@@ -38,6 +38,10 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 
 <a id="data-publish-end"></a>**Am Ende der Veröffentlichung.** Eine Benachrichtigung nennt die Zahlen, und das Ergebnis bleibt im Feld: was gesendet wurde (eingecheckte Dateien, empfangene Dateien); die Dateien der Basis, die auf dem Rechner bleiben, weil ein Aufbau lief; die Konflikte (die neueste Fassung bleibt, siehe Einstellungen › Konflikte); die abgelehnten Dateien, weil sie nicht das Format einer Datendatei haben. Ein Fehler wird in einem Satz gesagt, mit der Antwort des Starters: nichts geht verloren, die Dateien bleiben auf dem Rechner. Die Schaltfläche ist ausgegraut, ihr Grund steht darunter: „Der Starter des Rechners wird benötigt“, „Ein Aufbau läuft: veröffentlichen Sie, wenn er fertig ist“, „Nichts zu veröffentlichen“, „Der Rahmen kann die Basis noch nicht veröffentlichen: aktualisieren Sie die App“, „Offline“.
 
+<a id="data-set-panels"></a>**Dieselben Schaltflächen für jede Gruppe.** Jede Gruppe hat ihr Feld „Herunterladen · Aufbauen · Bereinigen": die Luftfahrtdatenbank, die Verfahren, die VFR-Punkte der VAC-Karten (in der Gruppe Luftfahrtdatenbank, unter „Veröffentlichen") und die Luftfahrzeuge. Das Prinzip ist überall gleich: ein Vorgang zugleich, über alle Felder hinweg (er wird beim erneuten Öffnen wiedergefunden); eine Zeile je Element während des Laufs, ein Schlusssatz und eine Benachrichtigung, eine Zeile im Protokoll; „Bereinigen" berechnet zuerst einen Plan, ohne etwas zu löschen, und stellt dann eine einzige Frage. Verfahren: Staaten ankreuzen (grün, bereits veröffentlicht, oder orange, auf Anfrage lesbar; keiner ist vorab angekreuzt). VFR-Punkte: der gültige Zyklus, kein Kästchen. Luftfahrzeuge: ICAO-Muster, durch Kommas oder Leerzeichen getrennt (2 bis 4 Buchstaben oder Ziffern); ein abgelehnter Code wird gemeldet und nichts wird gesendet, ein leeres Feld bedeutet die Muster der Flotte; die Zeilen des Laufs sind die drei Schritte (Muster, Leistungsdaten, SimBrief-Profile). Das Wetter hat kein Feld: es wird mit der Website veröffentlicht. Eine ausgegraute Schaltfläche mit „Der Starter dieses Rechners kennt diesen Vorgang noch nicht": der Starter dieses Rechners ist älter als die App, aktualisieren Sie ihn. „Herunterladen" und „Bereinigen" committen nichts. „Aufbauen" committet seine Ergebnisse auf dem Rechner, außer bei den Luftfahrzeugen: der Ordner AircraftDB/ dieses Rechners ist nicht versioniert, gesendet wird über „Veröffentlichte Datenblätter".
+
+<a id="data-aircraft-sheets"></a>**Die veröffentlichten Datenblätter der Fluggesellschaft.** Unter den Luftfahrzeugen kopiert „Veröffentlichen" die Datenblätter der Fluggesellschaft in das Datenrepository. Es berechnet zuerst einen Plan, ohne etwas zu ändern, und stellt dann eine einzige Frage (zu kopierende Datenblätter, zu entfernende Datenblätter, Gesamtgröße); wenn Sie zustimmen, geschehen Kopieren, Commit und Senden in einem Zug. Es braucht Ihr Kürzel (Einstellungen › Identität); ohne es meldet der Bildschirm das und nichts wird gesendet. Gibt es nichts zu kopieren oder zu entfernen: „Nichts zu veröffentlichen".
+
 <a id="data-journal"></a>**Das Protokoll.** Am Ende des Bildschirms die letzten 50 Vorgänge dieses Geräts: UTC-Zeit, Verb, Zonen, Ergebnis.
 
 ## Sonderfälle
@@ -45,4 +49,4 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 - **Ohne Starter**: Der Bildschirm wird genauso gelesen; er zeigt, was veröffentlicht ist.
 - **Ein Lesevorgang schlägt fehl**: Der Abschnitt sagt es in einer Zeile, der Rest des Bildschirms wird gezeichnet.
 
-<!-- fr: 116007677a97 -->
+<!-- fr: a1ff7a83eb8b -->

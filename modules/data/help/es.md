@@ -1,6 +1,6 @@
 # Datos
 
-Lo que la aerolínea publica para la aplicación —la base aeronáutica, los procedimientos, las aeronaves, la meteorología— y el estado de cada conjunto de datos. Esta pantalla sirve para leer y ofrece acciones sobre la base aeronáutica: descargar sus fuentes, construirla, purgar las fuentes y después publicarla.
+Lo que la aerolínea publica para la aplicación —la base aeronáutica, los procedimientos, las aeronaves, la meteorología— y el estado de cada conjunto de datos. Esta pantalla sirve para leer y ofrece acciones sobre cada grupo: descargar las fuentes, construir, purgar y después publicar.
 
 ## Cómo usarla
 
@@ -38,6 +38,10 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 
 <a id="data-publish-end"></a>**Al final de la publicación.** Una notificación da las cifras y el resultado queda en el panel: lo que se envió (archivos con commit, archivos recibidos); los archivos de la base conservados en el equipo porque había una construcción en curso; los conflictos (se conserva el más reciente, véase Ajustes › Conflictos); los archivos rechazados porque no tienen el formato de un archivo de datos. Un fallo se dice en una frase, con lo que responde el lanzador: no se pierde nada, los archivos siguen en el equipo. El botón está en gris con su motivo escrito debajo: «Hace falta el lanzador del equipo», «Hay una construcción en curso: publique cuando termine», «Nada que publicar», «El marco aún no sabe publicar la base: actualice la aplicación», «Sin conexión».
 
+<a id="data-set-panels"></a>**Los mismos botones para cada grupo.** Cada grupo tiene su panel «Descargar · Construir · Purgar»: la Base aeronáutica, los Procedimientos, los puntos VFR de las cartas VAC (en el grupo Base aeronáutica, bajo «Publicar») y las Aeronaves. El principio es el mismo en todas partes: una sola operación a la vez, en todos los paneles (se vuelve a encontrar al reabrir la pantalla); una línea por elemento durante la marcha, una frase final y una notificación, una línea en el diario; «Purgar» calcula primero un plan sin borrar nada y luego hace una sola pregunta. Procedimientos: marque los Estados (verdes, ya publicados, o naranjas, legibles bajo demanda; ninguno viene marcado). Puntos VFR: el ciclo vigente, sin casilla. Aeronaves: tipos OACI separados por comas o espacios (2 a 4 letras o dígitos); un código rechazado se dice y no se envía nada, un campo vacío significa los tipos de la flota; las líneas de la marcha son los tres pasos (tipos, rendimiento, perfiles SimBrief). La meteorología no tiene panel: se publica con el sitio. Un botón en gris con «El lanzador de este equipo aún no conoce esta operación»: el lanzador de este equipo es más antiguo que la aplicación, actualícelo. «Descargar» y «Purgar» no hacen commit de nada. «Construir» hace commit de sus resultados en el equipo, salvo para las aeronaves: la carpeta AircraftDB/ de este equipo no está versionada, el envío se hace con «Fichas publicadas».
+
+<a id="data-aircraft-sheets"></a>**Las fichas publicadas de la compañía.** Bajo las Aeronaves, «Publicar» copia las fichas de la compañía al repositorio de datos. Calcula primero un plan sin cambiar nada y luego hace una sola pregunta (fichas por copiar, fichas por retirar, tamaño total); si acepta, la copia, el commit y el envío se hacen en un solo gesto. Hace falta su trigrama (Ajustes › Identidad); sin él, la pantalla lo dice y no se envía nada. Si no hay nada que copiar ni retirar: «Nada que publicar».
+
 <a id="data-journal"></a>**El diario.** Al pie de la pantalla, las últimas 50 operaciones de este dispositivo: hora UTC, verbo, zonas, resultado.
 
 ## Casos particulares
@@ -45,4 +49,4 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 - **Sin lanzador**: la pantalla se lee igual; muestra lo que está publicado.
 - **Una lectura que falla**: la sección lo dice en una línea y el resto de la pantalla se dibuja.
 
-<!-- fr: 116007677a97 -->
+<!-- fr: a1ff7a83eb8b -->

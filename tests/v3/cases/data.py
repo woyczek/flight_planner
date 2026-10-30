@@ -1,6 +1,10 @@
 """Area L - the Données module: a read-only screen and its first action, Construire (modules/data/SPEC.md sections 3, 5.4, 6.2, 6.5, 9; INTEGRATION.md section 2).
 
 Rules covered
+  * L16 / L17 (V3 § 10.34, lot A1: the same panel for every group): L16 the pure functions (the SETS table, the verbs a launcher knows and the
+    old-launcher fallback, the grey reason of a panel, the States offered, the ICAO types field, the arguments, the view and the end of any set's job,
+    the sheets plan, the journal entries); L17 the panels against the fake launcher (regen/verbs, proc build / purge, VAC and aircraft grey, one
+    operation at a time across panels, the aircraft field, aircraft steps and reasons, the sheets plan then the copy, resume at mount).
   * L1 model.js, the pure functions, on fixtures (no page of the module, no aerodb): the AIRAC cycle written YYNN and its dates, the
     state of a row by priority (a cycle gone by amber then red a week after its end, the parser version with and without the
     constant, absent, an aircraft edition older than 28 days, a procedure outdated), a row of the base aggregated from two zones,
@@ -34,7 +38,7 @@ Rules covered
     (shared-fr, kept-tracked), No does nothing, Yes sends the real job without dry, the end sentences, one journal entry, an empty plan without a question;
     one operation at a time (the other verbs grey while any runs); a running download found at mount is followed with its own lines.
 
-Cases: L1 .. L15.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
+Cases: L1 .. L17.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
 """
 import datetime
 import json
@@ -284,7 +288,7 @@ _ROWS_JS = r"""() => {
     more: (m => m ? { text: m.querySelector(':scope > summary').textContent.trim(), rows: [...m.querySelectorAll('[data-set]')].map(r => r.dataset.set + ':' + r.dataset.status), open: m.open } : null)(g.querySelector(':scope > [data-more]')),
     pills: [...g.querySelectorAll('details[data-set] > summary')].filter(s => s.offsetParent).map(s => s.getBoundingClientRect().height)
   }));
-  return { groups, verbs: [...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : '')), buttons: root.querySelectorAll('button').length,
+  return { groups, verbs: [...document.querySelectorAll('[data-build] [data-verb], [data-publish] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : '')), buttons: root.querySelectorAll('[data-build] button, [data-publish] button').length,
     sw: document.documentElement.scrollWidth, iw: window.innerWidth,
     over: [...root.querySelectorAll('*')].filter(e => e.getBoundingClientRect().width && (e.getBoundingClientRect().right > window.innerWidth + 1) && !e.closest('[hidden]')).slice(0, 3).map(e => e.tagName + '.' + e.className) };
 }"""
@@ -421,7 +425,7 @@ def l3(c):
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the module is mounted by the link (at 390 as at 1280)')
     c.eq((c.js('location.search'), c.hash()), ('?app=maintenance', '#data'), 'the address: the Maintenance application, on Données', what='address')
     c.eq(c.count('#fMenu a[data-id="data"]'), 1, 'in the rail of Maintenance', what='rail entries')
-    c.eq(c.count('[data-verb]'), 4, 'Télécharger, Construire, Purger and Publier, grey without a launcher', what='[data-verb]')
+    c.eq(c.count('[data-build] [data-verb], [data-publish] [data-verb]'), 4, 'Télécharger, Construire, Purger and Publier, grey without a launcher', what='[data-verb]')
     c.ok(c.text('[data-cycle-now]'), 'no cycle', 'the head shows the cycle in force')
     c.check_errors()
 
@@ -438,7 +442,7 @@ def l4(c):
     c.eq(c.count('details.f-group'), 4, 'the four groups are still drawn (names and links)', what='groups')
     c.eq(c.count('[data-set][data-state]'), 0, 'no state is invented without a publication', what='states')
     c.eq(c.doc('cache/data/coverage.json'), None, 'a degraded read writes no coverage', what='coverage.json')
-    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'], 'Télécharger, Construire, Purger and Publier, grey', what='[data-verb]')
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb], [data-publish] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'], 'Télécharger, Construire, Purger and Publier, grey', what='[data-verb]')
     c.check_errors()
 
 
@@ -579,14 +583,15 @@ def _zs(state, done=0, total=0, **extra):
     return {'state': state, 'done': done, 'total': total, **extra}
 
 
-def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None):
+def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None):
     """A FAKE launcher (the technique of frame A32: c.context.route answers /__setup/*; never a real one).  `views`: what GET regen/job?id= answers one
     after the other (the last one stays); `last`: what GET regen/job (no id) answers at first (the running or the last job); `start`: (status, body) of the
     POST that starts a job; `cancel_view`: what the job becomes once POST regen/job/cancel was received; `busy_view`: the running job a refused start
     (409) leaves in place; `sync`: what GET sync-status answers (`{'changes', 'ahead', 'merging', 'last'}`, or `(status, body)`).  The dict it returns records
-    `posts`, `cancels` and `syncs` (the reads of sync-status) and can be changed between steps."""
+    `posts`, `cancels` and `syncs` (the reads of sync-status) and can be changed between steps.  `verbs`: what GET regen/verbs answers: None = an old launcher
+    (200 with no list), a list = `{ verbs: [...] }`, an int = that status (404...); `st['verbs_calls']` counts the reads."""
     st = {'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start, 'syncs': 0,
-          'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}}
+          'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}, 'verbs': verbs, 'verbs_calls': 0}
 
     def handler(route):
         req = route.request
@@ -601,6 +606,12 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 code, body = body
             else:
                 body = {'repo': True, 'branch': 'main', 'behind': 0, **body}
+        elif u.path.endswith('/__setup/regen/verbs'):
+            st['verbs_calls'] += 1
+            if isinstance(st['verbs'], int):
+                code = st['verbs']
+            elif isinstance(st['verbs'], list):
+                body = {'verbs': st['verbs']}
         elif u.path.endswith('/__setup/regen/job/cancel'):
             st['cancels'].append(json.loads(req.post_data or '{}'))
             st['cancelled'] = True
@@ -697,7 +708,7 @@ def l7(c):
     c.eq(post.get('author'), 'ABC', 'the frame adds the trigram itself', what='author')
     c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason')], [True, 'busy'], 'while it runs: grey, « Une autre opération est en cours »', what='running reason')
     c.eq(c.js("[...document.querySelectorAll('[data-build] input[type=checkbox]')].every(i => i.disabled)"), True, 'the choices are frozen while it runs', what='frozen checkboxes')
-    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].map(b => b.dataset.verb).sort()"), ['build', 'download', 'publish', 'purge', 'stop'], 'the four verbs (grey, a build is running) and stop only', what='verbs')
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb], [data-publish] [data-verb]')].map(b => b.dataset.verb).sort()"), ['build', 'download', 'publish', 'purge', 'stop'], 'the four verbs (grey, a build is running) and stop only', what='verbs')
     c.eq(c.js("[...document.querySelectorAll('[data-zone-state]')].map(l => [l.dataset.zoneState, l.dataset.state])"), [['fr', 'waiting'], ['gb', 'waiting']], 'a line per zone, waiting before the first view', what='zone lines')
     c.until("document.querySelector('[data-zone-state=fr]').dataset.state === 'building'", timeout=8000, what='fr is building')
     fr_name = c.text('[data-zone-state=fr] b')
@@ -1368,7 +1379,7 @@ def _verbs(c):
 
 def _grey(c, what):
     """Télécharger, Construire, Purger and Publier are grey, for ONE reason written once under the panel: its key."""
-    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"),
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb], [data-publish] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"),
          ['download:off', 'build:off', 'purge:off', 'publish:off'], f'{what}: the four verbs are grey', what='verbs')
     c.eq(c.js("[...document.querySelectorAll('[data-build] [data-reason]')].map(p => p.dataset.reason)"), ['busy'], f'{what}: one reason, written once', what='reason')
 
@@ -1493,7 +1504,7 @@ def l15(c):
          'ONE question from the plan: files, size, zones, the SIA sentence (shared-fr), the files tracked by git kept; one-word confirmation and a way out', what='question')
     c.eq(len(st['posts']), posts + 1, 'only the plan was started', what='posts')
     c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'purge', 'args': {'zones': ['es', 'fr'], 'dry': True}}, 'the plan: dry true, the ticked zones', what='dry body')
-    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'],
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb], [data-publish] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'],
          'all four are grey while the question is open', what='verbs during the question')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", what='the window closes')
@@ -1564,3 +1575,447 @@ def l15(c):
     c.eq(norm(c.text('[data-build] [data-reason]')), norm(_trow('busy', lang, 'greyReason: {')), '« Une autre opération est en cours »', what='reason text')
     _screen_ok(c, 'a build running')
     c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L16
+_L16_JS = r"""async () => {
+  const M = await import('/modules/data/model.js');
+  const out = {};
+  out.sets = Object.fromEntries(Object.entries(M.SETS).map(([k, v]) => [k, [v.arg, v.unit, v.group, v.verbs, v.noItem]]));
+  out.sheets = [M.SHEETS.set, M.SHEETS.verb, M.SHEETS.panel];
+  out.panels = [M.panelOf('aircraft', 'publish'), M.panelOf('aircraft', 'build'), M.panelOf('base', 'fetch'), M.groupOf('vfr', 'build'), M.groupOf('aircraft', 'publish'), M.groupOf('proc', 'fetch')];
+  // the verbs a launcher knows
+  out.known = [null, { ok: false, status: 404, route: 'regen/verbs' }, {}, { verbs: 'x' }, { verbs: ['base/build', 'proc/fetch', 'bad', 'x/y/z', 3, 'Proc/x'] }, { ok: false, verbs: ['base/build'] }, { verbs: [] }].map(M.knownVerbs);
+  out.verbKnown = [M.verbKnown(null, 'base', 'fetch'), M.verbKnown(null, 'proc', 'fetch'), M.verbKnown(['proc/fetch'], 'proc', 'fetch'), M.verbKnown(['proc/fetch'], 'proc', 'build'), M.verbKey('vfr', 'purge')];
+  // the grey reason of a panel and of each of its verbs
+  const ALL = ['proc/fetch', 'proc/build', 'proc/purge'];
+  const g = s => { const r = M.setGate(s); return [r.reason, Object.fromEntries(Object.entries(r.verbs).map(([k, v]) => [k, v.reason]))] };
+  out.gate = [
+    g({ set: 'proc', launcher: false, known: ALL, items: 1 }),
+    g({ set: 'proc', launcher: true, known: M.OLD_VERBS, items: 2 }),
+    g({ set: 'proc', launcher: true, known: ALL, items: 0 }),
+    g({ set: 'proc', launcher: true, known: ['proc/fetch', 'proc/build'], items: 1 }),
+    g({ set: 'proc', launcher: true, known: ALL, items: 0, busy: true }),
+    g({ set: 'proc', launcher: true, known: ALL, items: 1, busy: true, offline: true }),
+    g({ set: 'proc', launcher: true, known: ALL, items: 1, offline: true }),
+    g({ set: 'aircraft', launcher: true, known: ['aircraft/fetch', 'aircraft/build', 'aircraft/purge'] }),
+    g({ set: 'base', launcher: true, known: null, items: 0 }),
+    g({ set: 'base', launcher: true, known: null, items: 3 }),
+    g({ set: 'vfr', launcher: true, known: M.OLD_VERBS, items: 1 }),
+    g({ set: 'aircraft', verbs: ['publish'], launcher: true, known: ['aircraft/publish'] }),
+    g({ set: 'aircraft', verbs: ['publish'], launcher: true, known: [] })
+  ];
+  // the States offered: green and orange only, by name
+  const L = (a, b, c, d) => [a, b, c, d];
+  const st = { LF: { level: 'green', names: L('France', 'France', 'Frankreich', 'Francia') }, EG: { level: 'green', names: L('Royaume-Uni', 'United Kingdom', 'Vereinigtes Königreich', 'Reino Unido') },
+    EB: { level: 'orange', names: L('Belgique', 'Belgium', 'Belgien', 'Bélgica') }, ED: { level: 'red', names: L('Allemagne', 'Germany', 'Deutschland', 'Alemania') }, XX: { level: 'orange' }, YY: null };
+  out.proc = [M.procItems(st, 0), M.procItems(st, 2), M.procItems(null, 0), M.procItems({}, 1)].map(l => l.map(i => [i.id, i.name, i.level]));
+  // the ICAO types field
+  out.codes = ['a320, b738  e190', '', 'A320,a320,B', 'A320 TOOLONG 7', 'a-1', null, '  ,, '].map(t => { const r = M.parseCodes(t); return [r.codes, r.bad] });
+  // the arguments of each set
+  const sel = { ids: ['EG', 'LF'], personal: ['nats'], cycle: '2026-10-29', codes: ['A320'] };
+  out.args = [['base', 'build'], ['base', 'fetch'], ['base', 'purge'], ['proc', 'build'], ['proc', 'purge'], ['vfr', 'fetch'], ['vfr', 'purge'], ['aircraft', 'build'], ['aircraft', 'fetch'], ['aircraft', 'purge']].map(([s, v]) => M.setArgs(s, v, sel));
+  // which job a view is
+  out.ops = [{ set: 'proc', verb: 'build' }, { set: 'aircraft', verb: 'publish' }, { set: 'vfr', verb: 'x' }, { zones: {} }, { set: 'proc', verb: 'build', zones: {} }, { set: 'weather', verb: 'fetch' }, null, { set: 'aircraft', verb: 'fetch' }].map(M.viewOp);
+  out.dry = [{ set: 'aircraft', verb: 'publish', args: { dry: true } }, { set: 'aircraft', verb: 'publish', args: { dry: false } }, { set: 'proc', verb: 'purge', args: { dry: true } },
+    { set: 'proc', verb: 'fetch', args: { dry: true } }, { set: 'base', verb: 'purge', args: { dry: true } }, null].map(M.opDry);
+  out.baseKept = (v => M.normView('base', v) === v)({ zones: {} });
+  // a view of another set, brought back to the base's shape
+  const pv = { set: 'proc', verb: 'build', states: { LF: { state: 'built' }, EG: { state: 'failed', error: 'x' } }, result: { built: ['LF'], failed: [{ state: 'EG', error: 'x' }], manual: [{ state: 'LF', source: 's' }], reason: 'partial' } };
+  const nv = M.normView('proc', pv);
+  out.norm = [Object.keys(nv.zones), nv.result.failed[0].zone, nv.result.manual[0].zone, nv.result.built];
+  out.single = [['build', 'running'], ['fetch', 'running'], ['purge', 'running'], ['fetch', 'done'], ['build', 'done'], ['build', 'error'], ['build', 'cancelled']].map(([verb, state]) =>
+    Object.entries(M.normView('vfr', { set: 'vfr', verb, state, args: { cycle: '2026-10-29' } }).zones).map(([k, z]) => [k, z.state]));
+  out.singleOutcome = (o => [o.out.kind, o.out.built])(M.setOutcome('vfr', 'build', { set: 'vfr', verb: 'build', state: 'done', args: { cycle: '2026-10-29' }, result: { ok: true } }));
+  // the end of a job of each set
+  const ac = (res, state = 'done', steps) => ({ set: 'aircraft', verb: 'build', state, steps: steps || {}, result: res });
+  const so = (set, verb, v) => { const o = M.setOutcome(set, verb, v).out; return [o.kind, o.built || o.fetched, o.failed, o.level, o.files, o.bytes, o.zones, o.kept, o.nothing] };
+  out.aircraft = [
+    so('aircraft', 'build', ac({ ok: false, codes: ['A320'], steps: ['types'], failed: [{ item: 'apd', error: 'exit-2' }], commit: null, reason: 'partial' }, 'done',
+      { types: { state: 'built' }, apd: { state: 'failed', error: 'exit-2' }, simbrief: { state: 'waiting' } })),
+    so('aircraft', 'build', ac({ ok: true, codes: ['A320'], steps: ['types', 'apd', 'simbrief'], failed: [], commit: null })),
+    so('aircraft', 'fetch', ac({ ok: true, codes: [], steps: ['types', 'apd', 'simbrief'], failed: [], commit: null })),
+    so('aircraft', 'build', ac({ ok: false, codes: [], steps: [], failed: [], reason: 'no-codes' }, 'error')),
+    so('aircraft', 'fetch', ac({ ok: false, codes: ['A320'], steps: [], failed: [], reason: 'no-script' }, 'error')),
+    so('aircraft', 'build', ac({ ok: false, steps: [], failed: [{ item: 'types', error: 'exit-1' }], reason: 'failed' }, 'error')),
+    so('aircraft', 'purge', ac({ ok: true, dry: true, removed: { files: 4, bytes: 2048 }, warnings: [{ code: 'kept-tracked', count: 1 }] })),
+    so('aircraft', 'purge', ac({ ok: true, dry: true, removed: { files: 0, bytes: 0 }, warnings: [] }))
+  ];
+  // the journal entries
+  const at = Date.parse('2026-10-30T10:00:00Z');
+  const po = M.setOutcome('proc', 'build', pv).out;
+  out.entry = [M.setEntry('proc', 'build', { at, ids: ['EG', 'LF'], seconds: 3.4, out: po, job: 'j1' }),
+    M.setEntry('proc', 'fetch', { at, ids: ['LF'], seconds: 1, out: M.setOutcome('proc', 'fetch', { set: 'proc', verb: 'fetch', state: 'done', states: { LF: { state: 'done' } }, result: { fetched: ['LF'], unchanged: [], failed: [] } }).out }),
+    M.setEntry('aircraft', 'purge', { at, ids: [], seconds: 2, out: M.setOutcome('aircraft', 'purge', ac({ ok: true, removed: { files: 4, bytes: 2048 } })).out }),
+    M.setEntry('base', 'build', { at, ids: ['fr'], seconds: 3.4, out: M.outcome({ state: 'done', zones: { fr: { state: 'built' } } }) })];
+  // the sheets: plan, end, entry
+  const R = { ok: true, dry: true, remove: [{ path: 'a', size: 10 }], copy: [{ path: 'b', size: 20 }, { path: 'c', size: 30 }], message: 'm' };
+  const sp = f => { const p = M.sheetsPlan(f); return [p.removed, p.copied, p.bytes, p.remove.length, p.copy.length] };
+  out.plan = [sp({ result: R }), sp({ result: { plan: { remove: [], copy: [{ size: 5 }] } } }), sp(null), sp({ result: { ok: true, copy: 3 } })];
+  const sx = f => { const o = M.sheetsOutcome(f); return [o.kind, o.copied, o.removed, o.nothing, o.level] };
+  out.sheetsEnd = [sx({ state: 'done', result: { ...R, dry: false } }), sx({ state: 'done', result: { ok: true, dry: false, remove: [], copy: [] } }), sx({ state: 'error', result: { ok: false, reason: 'no-author' } }),
+    sx({ state: 'cancelled' }), sx({ state: 'interrupted' }), sx({ state: 'error', result: { ok: false } }), sx({ state: 'done', result: { ok: true, copied: 4, removed: 2 } })];
+  out.sheetsEntry = M.sheetsEntry({ at, seconds: 4.2, out: M.sheetsOutcome({ state: 'done', result: { ...R, dry: false } }), job: 'j5' });
+  out.verbOfBase = [{ set: 'base', verb: 'fetch', zones: {} }, { set: 'proc', verb: 'fetch', states: {} }].map(M.viewVerb);
+  return out;
+}"""
+
+
+@case('L16', 'Données: the other groups\' panels, the pure functions on fixtures (SETS, verbs the launcher knows, grey reason, States, ICAO types, arguments, views and ends, sheets, journal)', 'L',
+      tags=('data',), phone=False,
+      rule='modules/data/SPEC 5.5 (the same verbs for every set), 6.5 (grey reasons); tools/regen (set/verb contract)')
+def l16(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    r = c.js(_L16_JS)
+    c.eq(r['sets'], {'base': ['zones', 'zone', 'base', ['fetch', 'build', 'purge'], 'no-zone'], 'proc': ['states', 'state', 'proc', ['fetch', 'build', 'purge'], 'no-state'],
+                     'vfr': ['cycle', 'cycle', 'base', ['fetch', 'build', 'purge'], None], 'aircraft': ['codes', 'step', 'aircraft', ['fetch', 'build', 'purge'], None]},
+         'SETS: the arguments key, the item noun, the group (the VAC panel lives in the Base group, where its row is), the verbs, the « no item » reason', what='SETS')
+    c.eq(r['sheets'], ['aircraft', 'publish', 'sheets'], 'the published sheets are the aircraft set\'s own verb, with their own panel', what='SHEETS')
+    c.eq(r['panels'], ['sheets', 'aircraft', 'base', 'base', 'aircraft', 'proc'], 'the panel and the group of an operation', what='panelOf / groupOf')
+    old = ['base/fetch', 'base/build', 'base/purge']
+    c.eq(r['known'], [old, old, old, old, ['base/build', 'proc/fetch'], old, []],
+         'regen/verbs: no answer, a 404 or a refusal, no list, a bad list: an old launcher (base only); a list is kept as « set/verb » names, the others dropped; an empty list is trusted', what='knownVerbs')
+    c.eq(r['verbKnown'], [True, False, True, False, 'vfr/purge'], 'an absent list is the old launcher\'s', what='verbKnown')
+    off = lambda reason: [reason, {'fetch': reason, 'build': reason, 'purge': reason}]
+    c.eq(r['gate'], [
+        off('no-launcher'),
+        off('unknown-verb'),
+        off('no-state'),
+        ['unknown-verb', {'fetch': None, 'build': None, 'purge': 'unknown-verb'}],
+        off('busy'),
+        off('busy'),
+        off('offline'),
+        [None, {'fetch': None, 'build': None, 'purge': None}],
+        off('no-zone'),
+        [None, {'fetch': None, 'build': None, 'purge': None}],
+        off('unknown-verb'),
+        [None, {'publish': None}],
+        ['unknown-verb', {'publish': 'unknown-verb'}]],
+         'the one reason of a panel: launcher, then verbs all unknown, then busy, offline, no item (States / zones), then a single unknown verb (only its button is grey); aircraft has no item to tick', what='setGate')
+    c.eq(r['proc'], [[['EB', 'Belgique', 'orange'], ['LF', 'France', 'green'], ['EG', 'Royaume-Uni', 'green'], ['XX', 'XX', 'orange']],
+                     [['EB', 'Belgien', 'orange'], ['LF', 'Frankreich', 'green'], ['EG', 'Vereinigtes Königreich', 'green'], ['XX', 'XX', 'orange']], [], []],
+         'the States offered: green and orange only (red and unreadable dropped), by name in the language, the prefix when it has none', what='procItems')
+    c.eq(r['codes'], [[['A320', 'B738', 'E190'], []], [[], []], [['A320'], ['B']], [['A320'], ['TOOLONG', '7']], [[], ['A-1']], [[], []], [[], []]],
+         'ICAO types: commas or spaces, upper-cased, no duplicate; 2 to 4 letters or digits; the others are refused; an empty field is valid (the fleet\'s types)', what='parseCodes')
+    c.eq(r['args'], [{'zones': ['EG', 'LF'], 'personal': ['nats']}, {'zones': ['EG', 'LF'], 'personal': ['nats']}, {'zones': ['EG', 'LF']}, {'states': ['EG', 'LF']}, {'states': ['EG', 'LF']},
+                     {'cycle': '2026-10-29'}, {'cycle': '2026-10-29'}, {'codes': ['A320']}, {'codes': ['A320']}, {}],
+         'the arguments: base zones (+ personal, not for a purge), proc states, vfr cycle (effective date), aircraft codes (none for the purge, which touches the caches only)', what='setArgs')
+    c.eq(r['ops'], [{'set': 'proc', 'verb': 'build'}, {'set': 'aircraft', 'verb': 'publish'}, None, {'set': 'base', 'verb': 'build'}, {'set': 'proc', 'verb': 'build'}, None, None, {'set': 'aircraft', 'verb': 'fetch'}],
+         'a view is a known set and verb (aircraft/publish too); one without a verb that carries its zones is the base\'s build; an unknown verb or set: none', what='viewOp')
+    c.eq(r['verbOfBase'], ['fetch', None], 'viewVerb stays the base set\'s reading', what='viewVerb')
+    c.eq(r['dry'], [True, False, True, False, True, False], 'a plan is a purge or a publish with args.dry true, of any set', what='opDry')
+    c.eq(r['baseKept'], True, 'the base\'s view is returned as it is', what='normView base')
+    c.eq(r['norm'], [['LF', 'EG'], 'EG', 'LF', ['LF']], 'another set\'s view is brought to the base\'s shape: its items under zones, its failures and manual sources under `zone`', what='normView proc')
+    c.eq(r['single'], [[['2026-10-29', 'building']], [['2026-10-29', 'fetching']], [['2026-10-29', 'purging']], [['2026-10-29', 'done']], [['2026-10-29', 'built']],
+                       [['2026-10-29', 'failed']], [['2026-10-29', 'cancelled']]],
+         'the cycle (one implicit item) takes its state from the job\'s', what='normView vfr')
+    c.eq(r['singleOutcome'], ['done', ['2026-10-29']], 'a clean build of the cycle counts the cycle', what='setOutcome vfr')
+    steps3 = ['types', 'apd', 'simbrief']
+    c.eq(r['aircraft'], [
+        ['partial', ['types'], [{'zone': 'apd', 'error': 'exit-2'}], None, None, None, None, None, None],
+        ['done', steps3, [], None, None, None, None, None, None],
+        ['done', steps3, [], 'ok', None, None, None, None, None],
+        ['no-codes', [], [], None, None, None, None, None, None],
+        ['no-script', [], [], 'err', None, None, None, None, None],
+        ['failed', [], [{'zone': 'types', 'error': 'exit-1'}], None, None, None, None, None, None],
+        ['done', None, None, 'ok', 4, 2048, ['*'], 1, False],
+        ['done', None, None, 'ok', 0, 0, [], 0, True]],
+         'aircraft: `steps` are the steps done, `failed[].item` the step that failed (exit-N kept as written); the reasons no-codes and no-script are kinds of their own; a purge answers one total (files, bytes), not per item',
+         what='aircraft outcomes')
+    e = r['entry']
+    c.eq([e[0]['set'], e[0]['verb'], e[0]['items'], 'zones' in e[0], e[0]['result'], e[0]['built'], e[0]['failed'], e[0]['seconds'], e[0]['job']],
+         ['proc', 'build', ['EG', 'LF'], False, 'partial', ['LF'], [{'zone': 'EG', 'error': 'x'}], 3, 'j1'], 'a journal entry of another set: its set, the items under `items`, the same fields as the base\'s', what='setEntry proc build')
+    c.eq([e[1]['set'], e[1]['verb'], e[1]['items'], e[1]['fetched']], ['proc', 'download', ['LF'], ['LF']], 'a download is journaled « download » whatever the set', what='setEntry proc fetch')
+    c.eq([e[2]['set'], e[2]['verb'], e[2]['items'], e[2]['files'], e[2]['bytes']], ['aircraft', 'purge', [], 4, 2048], 'a purge: files and bytes', what='setEntry aircraft purge')
+    c.eq([e[3]['set'], e[3]['verb'], e[3]['zones'], 'items' in e[3]], ['base', 'build', ['fr'], False], 'the base entry is unchanged', what='setEntry base')
+    c.eq(r['plan'], [[1, 2, 60, 1, 2], [0, 1, 5, 0, 1], [0, 0, 0, 0, 0], [0, 3, 0, 0, 0]],
+         'the sheets plan: what to remove and copy (from `result` or `result.plan`), counts, the total size', what='sheetsPlan')
+    c.eq(r['sheetsEnd'], [['done', 2, 1, False, 'ok'], ['done', 0, 0, True, 'ok'], ['no-author', 0, 0, False, 'err'], ['cancelled', 0, 0, False, 'warn'], ['interrupted', 0, 0, False, 'warn'],
+                          ['failed', 0, 0, False, 'err'], ['done', 4, 2, False, 'ok']],
+         'the end of a sheets publication: done (counts of the lists, or of copied / removed), nothing to do, no trigram, stopped, interrupted, failed', what='sheetsOutcome')
+    c.eq({k: v for k, v in r['sheetsEntry'].items()}, {'at': '2026-10-30T10:00:00.000Z', 'set': 'aircraft', 'verb': 'publish', 'items': [], 'seconds': 4, 'result': 'done', 'copied': 2, 'removed': 1, 'job': 'j5'},
+         'the journal entry of the sheets', what='sheetsEntry')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L17
+BASE3 = ['base/fetch', 'base/build', 'base/purge']
+PROC3 = ['proc/fetch', 'proc/build', 'proc/purge']
+VFR3 = ['vfr/fetch', 'vfr/build', 'vfr/purge']
+AC3 = ['aircraft/fetch', 'aircraft/build', 'aircraft/purge']
+ALL_VERBS = BASE3 + PROC3 + VFR3 + AC3 + ['aircraft/publish']
+
+
+def _sview(set_, verb, key, items, state='running', step='', done=0, total=2, result=None, jid='j1', args=None, unit=None):
+    """The view of a job of any set as the launcher gives it: set and verb say which job it is, the items sit at the root under `key`."""
+    v = _view(state, step=step, done=done, total=total, zones={}, result=result, jid=jid)
+    v.pop('zones')
+    v.update({'set': set_, 'verb': verb, 'args': args or {}})
+    if key:
+        v[key] = items
+    if unit:
+        v['unit'] = unit
+    return v
+
+
+def _pv(c, panel):
+    """The verb buttons of a panel (`[data-set-panel=…]`), each with ':off' when grey."""
+    return c.js("(p) => [...document.querySelectorAll('[data-set-panel=' + p + '] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))", panel)
+
+
+def _preasons(c, panel):
+    """The reasons written under a panel: their keys (one expected at most)."""
+    return c.js("(p) => [...document.querySelectorAll('[data-set-panel=' + p + '] [data-reason]')].map(e => e.dataset.reason)", panel)
+
+
+def _panels_ok(c, what):
+    """No horizontal scroll, nothing beyond the right edge, 44 px on the buttons, the checkbox lines and the field of every panel."""
+    m = c.js("""() => { const ps = [...document.querySelectorAll('[data-set-panel]')];
+      return { sw: document.documentElement.scrollWidth, iw: window.innerWidth,
+      over: ps.flatMap(b => [...b.querySelectorAll('*')].filter(e => e.getBoundingClientRect().width && e.getBoundingClientRect().right > window.innerWidth + 1)).slice(0, 3).map(e => e.tagName + '.' + e.className),
+      hs: ps.flatMap(b => [...b.querySelectorAll('button, label.d-opt, input[type=text]')].map(e => Math.round(e.getBoundingClientRect().height))) } }""")
+    c.le(m['sw'], m['iw'], f'{what}: no horizontal scroll', what='scrollWidth')
+    c.ok(not m['over'], m['over'], f'{what}: nothing beyond the right edge')
+    c.ge(min(m['hs']), 44, f'{what}: buttons, checkbox lines and the field are 44 px', what='touch height')
+
+
+def _all_open(c):
+    """Opens every group (a closed `details` has no visible button): the panels sit in their groups, which open by themselves only when a row needs attention."""
+    c.js("() => document.querySelectorAll('details.f-group').forEach(g => { g.open = true })")
+
+
+def _line(c, sel):
+    """The text of an element, spaces normalised."""
+    return norm(c.text(sel))
+
+
+@case('L17', 'Données: the other groups\' panels against a fake launcher (regen/verbs, proc build and purge, VAC and aircraft grey, one operation at a time, aircraft field and steps, sheets plan then copy, resume)',
+      'L', tags=('data',), langs4=True, designs=('standard',),
+      rule='modules/data/SPEC 3 (one operation at a time, plan before change), 5.5, 6.5; launcher regen/verbs and regen/job { set, verb } (tools/regen)')
+def l17(c):
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    T = lambda key, after=None, row=0: _trow(key, lang, after, row)
+    label = lambda s: T(s, 'setLabel: {')
+    sm = lambda key: T(key, 'setSum: {')
+    cfg, _ = _fixture()
+    name = lambda p: cfg['states'][p]['names'][li]
+    _, cur, _, _ = _cycles()
+    # ---- A: a launcher that knows base and proc only: the Procédures panel is live, VAC and aircraft grey with the reason written once
+    run1 = _sview('proc', 'build', 'states', {'EG': _zs('building', 1, 3), 'LF': _zs('waiting')}, step='État EG', done=0)
+    end1 = _sview('proc', 'build', 'states', {'EG': _zs('built', 3, 3), 'LF': _zs('failed', 2, 2, error='bad-input')}, state='done', step='Terminé', done=2,
+                  result={'built': ['EG'], 'failed': [{'state': 'LF', 'error': 'bad-input'}], 'reason': 'partial'})
+    st = _launcher(c, [run1, run1, end1], verbs=BASE3 + PROC3)
+    _open(c, cfg)
+    _all_open(c)
+    c.eq(st['verbs_calls'], 1, 'regen/verbs is read once, at mount', what='verbs calls')
+    c.eq(_verbs(c), ['download', 'build', 'purge'], 'the base panel is unchanged and live', what='base verbs')
+    c.eq(c.js("[...document.querySelectorAll('[data-set-panel]')].map(p => p.dataset.setPanel)"), ['vfr', 'proc', 'aircraft', 'sheets'],
+         'a panel per group: points VFR in the Base group (where its row is), Procédures, Appareils and its published sheets', what='panels')
+    c.eq(c.js("[...document.querySelectorAll('[data-set-panel]')].map(p => p.closest('details.f-group').dataset.group)"), ['base', 'proc', 'aircraft', 'aircraft'], 'in their groups', what='panel groups')
+    c.eq(c.count('details[data-group=weather] [data-set-panel]'), 0, 'the weather has no panel (published with the site)', what='weather')
+    for panel in ('vfr', 'aircraft'):
+        c.eq([_pv(c, panel), _preasons(c, panel), _line(c, f'[data-set-panel={panel}] [data-reason]')], [['download:off', 'build:off', 'purge:off'], ['unknown-verb'], norm(T('unknown-verb', 'greyReason: {'))],
+             f'{panel}: the launcher does not know its verbs: grey, the reason written once', what=f'{panel} grey')
+    c.eq([_pv(c, 'sheets'), _preasons(c, 'sheets')], [['publish-sheets:off'], ['unknown-verb']], 'the published sheets: grey too', what='sheets grey')
+    c.eq(_line(c, '[data-set-panel=vfr] [data-item-cycle]'), norm(T('cycle').replace('{c}', _name(cur))), 'the VAC panel names the cycle in force (no checkbox)', what='cycle')
+    c.eq(c.count('[data-set-panel=vfr] input'), 0, 'no checkbox for the one implicit item', what='vfr items')
+    ids = c.js("[...document.querySelectorAll('[data-set-panel=proc] [data-item]')].map(i => i.dataset.item).sort()")
+    c.eq(ids, ['EB', 'EG', 'LF', 'LF2', 'LO'], 'the States offered: the green and orange ones of coverageByState (the red ones are not)', what='proc items')
+    c.eq(c.js("[...document.querySelectorAll('[data-set-panel=proc] [data-item]')].map(i => i.checked)"), [False] * 5, 'none ticked by default', what='proc ticked')
+    c.eq(c.text('[data-set-panel=proc] label.d-opt:has([data-item=LF]) span'), name('LF'), 'named in the language', what='proc name')
+    c.eq([_pv(c, 'proc'), _preasons(c, 'proc'), _line(c, '[data-set-panel=proc] [data-reason]')], [['download:off', 'build:off', 'purge:off'], ['no-state'], norm(T('no-state', 'greyReason: {'))],
+         'no State ticked: grey, « Cochez au moins un État »', what='proc no state')
+    _panels_ok(c, 'at the opening')
+    c.tap('[data-set-panel=proc] [data-item=LF]')
+    c.tap('[data-set-panel=proc] [data-item=EG]')
+    c.eq([_pv(c, 'proc'), _preasons(c, 'proc')], [['download', 'build', 'purge'], []], 'two States ticked: live', what='proc live')
+    c.tap('[data-set-panel=proc] [data-verb=build]')
+    c.until("!!document.querySelector('[data-set-panel=proc] [data-running][data-run-set=proc]')", what='the running bar is in the Procédures panel')
+    c.eq(len(st['posts']), 1, 'one start', what='posts')
+    c.eq({k: st['posts'][0][k] for k in ('set', 'verb', 'args', 'author')}, {'set': 'proc', 'verb': 'build', 'args': {'states': ['EG', 'LF']}, 'author': 'ABC'},
+         'the body: set proc, verb build, the ticked States (prefixes, in the order shown)', what='body')
+    c.eq(c.count('[data-build] [data-running]'), 0, 'the base panel shows nothing of it', what='base panel')
+    c.eq([_verbs(c), _preasons(c, 'proc'), c.attr('[data-build] [data-reason]', 'data-reason')], [['download:off', 'build:off', 'purge:off'], ['busy'], 'busy'],
+         'one operation at a time across panels: the base is grey while a proc job runs, « Une autre opération est en cours »', what='base grey')
+    c.eq(c.js("[...document.querySelectorAll('[data-set-panel=proc] input')].every(i => i.disabled)"), True, 'the States are frozen while it runs', what='frozen')
+    c.until("document.querySelector('[data-set-panel=proc] [data-item-state=EG]')?.dataset.state === 'building'", timeout=8000, what='EG is building')
+    c.eq(_line(c, '[data-set-panel=proc] [data-item-state=EG]'), norm(f"{name('EG')} : {T('buildingN', 'zoneState: {').replace('{n}', '1').replace('{m}', '3')}"), 'a line per State, with n / m sources', what='EG line')
+    c.eq(_line(c, '[data-set-panel=proc] [data-running] [data-count]'), norm(T('runCount').replace('{n}', f"0 {_unit('state', lang, 2)}").replace('{m}', '2')), 'the count, in States', what='count')
+    _panels_ok(c, 'a proc job running')
+    c.until("!!document.querySelector('[data-set-panel=proc] [data-build-result]')", timeout=10000, what='the end of the job')
+    unit_state = lambda n: f"{n} {_unit('state', lang, n)}"
+    want = sm('buildPartial').replace('{s}', label('proc')).replace('{built}', unit_state(1)).replace('{failed}', '1').replace('{items}', name('LF'))
+    c.eq([c.attr('[data-set-panel=proc] [data-build-result]', 'data-result'), _line(c, '[data-set-panel=proc] [data-build-result] b')], ['partial', norm(want)],
+         'the summary of the set: « Procédures : construction terminée (1 État) ; 1 en échec (France) »', what='summary')
+    c.eq(_line(c, '[data-set-panel=proc] [data-advice]'), norm(T('partial', 'setAdvice: {')), 'what to do', what='advice')
+    c.eq(_line(c, '[data-set-panel=proc] [data-item-state=LF]'), norm(f"{name('LF')} : {T('failed', 'zoneState: {').replace('{r}', 'bad-input')}"),
+         'the failed State says why (the launcher\'s code as written)', what='LF line')
+    c.eq(len(_notes_with(c, want)), 1, 'ONE notification', what='notification')
+    c.eq([_verbs(c), _pv(c, 'proc')], [['download', 'build', 'purge']] * 2, 'the buttons are live again', what='live again')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and d.get('ops')), what='the journal is written')
+    e = doc['ops'][-1]
+    c.eq([e['set'], e['verb'], e['items'], e['result'], e['built'], e['failed']], ['proc', 'build', ['EG', 'LF'], 'partial', ['EG'], [{'zone': 'LF', 'error': 'bad-input'}]],
+         'the journal entry carries set and verb, the States under `items`', what='journal entry')
+    op = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opSet, o.dataset.opVerb, o.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.ok(len(op) == 1 and op[0][:2] == ['proc', 'build'] and norm(label('proc')) in norm(op[0][2]) and name('EG') in op[0][2], op, 'the journal line says the set, the verb and the States')
+    # ---- B: purge: dry first, ONE question with the plan, the real run says dry false; nothing committed is said in the help
+    rem = {'EG': {'files': 3, 'bytes': 1024}, 'LF': {'files': 2, 'bytes': 2048}}
+    warn = [{'code': 'kept-tracked', 'count': 1}]
+    dry = _sview('proc', 'purge', 'states', {'EG': {'state': 'done', 'files': 3, 'bytes': 1024}, 'LF': {'state': 'done', 'files': 2, 'bytes': 2048}}, state='done', done=2, jid='d1',
+                 args={'states': ['EG', 'LF'], 'dry': True}, result={'ok': True, 'dry': True, 'removed': rem, 'warnings': warn})
+    real = _sview('proc', 'purge', 'states', {'EG': {'state': 'done', 'files': 3, 'bytes': 1024}, 'LF': {'state': 'done', 'files': 2, 'bytes': 2048}}, state='done', done=2, jid='p1',
+                  args={'states': ['EG', 'LF'], 'dry': False}, result={'ok': True, 'dry': False, 'removed': rem, 'warnings': warn})
+    st['views'], st['i'], st['start'] = [dry, real], 0, (200, {'job': 'd1'})
+    posts = len(st['posts'])
+    c.tap('[data-set-panel=proc] [data-verb=purge]')
+    q = _ask_text(c)
+    ask = ' '.join([T('purgeAskSet').replace('{n}', f'5 {FILES[lang][1]}').replace('{s}', _size(3072, lang)).replace('{z}', f"{name('EG')}, {name('LF')}"), T('purgeKept', None, 0).replace('{n}', '1')])
+    c.eq([norm(q['text']), norm(q['ok']), q['no'], len(st['posts']) - posts], [norm(ask), norm(T('purge')), True, 1], 'ONE question from the plan: files, size, the States, the files kept by git; only the plan was started', what='question')
+    c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'proc', 'verb': 'purge', 'args': {'states': ['EG', 'LF'], 'dry': True}}, 'the plan is a dry run', what='dry body')
+    c.eq([_verbs(c), _pv(c, 'proc'), _pv(c, 'aircraft')], [['download:off', 'build:off', 'purge:off']] * 2 + [['download:off', 'build:off', 'purge:off']], 'every panel is grey while the question is open', what='during the question')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the window closes')
+    c.wait(400)
+    c.eq([len(st['posts']) - posts, c.count('[data-set-panel=proc] [data-build-result]'), _pv(c, 'proc')], [1, 0, ['download', 'build', 'purge']], 'No: nothing more is sent, nothing is said, the buttons are live', what='after No')
+    st['views'], st['i'], st['start'] = [dry, real], 0, (200, {'job': 'd1'})
+    c.tap('[data-set-panel=proc] [data-verb=purge]')
+    _ask_text(c)
+    st['start'] = (200, {'job': 'p1'})
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-set-panel=proc] [data-build-result][data-op=purge][data-result=done]')", timeout=10000, what='the end of the purge')
+    c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'proc', 'verb': 'purge', 'args': {'states': ['EG', 'LF'], 'dry': False}}, 'the real run says dry false', what='real body')
+    done = T('purgeDone').replace('{n}', f'5 {FILES[lang][1]}').replace('{s}', _size(3072, lang))
+    c.eq([_line(c, '[data-set-panel=proc] [data-build-result] b'), len(_notes_with(c, done))], [norm(done), 1], 'the end: « Purgé : 5 fichiers, 3,0 Ko », one notification', what='purge end')
+    c.eq(len([o for o in c.doc('cache/data/journal.json')['ops'] if o['verb'] == 'purge']), 1, 'ONE journal entry: the real run only', what='journal purge')
+    # ---- C: an older launcher (404 on regen/verbs): the base only
+    st2 = _launcher(c, [], verbs=404)
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    c.eq(st2['verbs_calls'], 1, 'regen/verbs asked again at the next mount', what='verbs calls')
+    c.eq([_verbs(c), _pv(c, 'proc'), _pv(c, 'vfr'), _pv(c, 'aircraft'), _pv(c, 'sheets')],
+         [['download', 'build', 'purge'], ['download:off', 'build:off', 'purge:off'], ['download:off', 'build:off', 'purge:off'], ['download:off', 'build:off', 'purge:off'], ['publish-sheets:off']],
+         'a 404: an old launcher: only base/fetch, base/build and base/purge are live', what='old launcher')
+    c.eq(_preasons(c, 'proc'), ['unknown-verb'], 'the reason is the one about the launcher, not the States (nothing helps ticking them)', what='proc reason')
+    # ---- D: a launcher that knows everything: a running job greys every panel; the aircraft field; steps; reasons
+    steps_run = {'types': {'state': 'building'}, 'apd': {'state': 'waiting'}, 'simbrief': {'state': 'waiting'}}  # the launcher's steps carry a state (and an error), no n / m
+    steps_end = {'types': {'state': 'built'}, 'apd': {'state': 'failed', 'error': 'exit-2'}, 'simbrief': {'state': 'waiting'}}
+    a_run = _sview('aircraft', 'build', 'steps', steps_run, step='types', done=0, total=3, unit='steps', jid='a1')
+    a_end = _sview('aircraft', 'build', 'steps', steps_end, state='done', step='Terminé', done=3, total=3, unit='steps', jid='a1',
+                   result={'ok': False, 'codes': ['A320', 'B738'], 'steps': ['types'], 'failed': [{'item': 'apd', 'error': 'exit-2'}], 'commit': None, 'reason': 'partial'})
+    st3 = _launcher(c, [a_run, a_run, a_end], verbs=ALL_VERBS, start=(200, {'job': 'a1'}))
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    c.eq([_verbs(c), _pv(c, 'proc'), _pv(c, 'vfr'), _pv(c, 'aircraft'), _pv(c, 'sheets')],
+         [['download', 'build', 'purge'], ['download:off', 'build:off', 'purge:off'], ['download', 'build', 'purge'], ['download', 'build', 'purge'], ['publish-sheets']],
+         'every verb known: all live (the States still to tick)', what='all known')
+    c.eq(_line(c, '[data-set-panel=aircraft] [data-hint]'), norm(T('aircraftHint')), 'the panel says that Construire commits nothing (AircraftDB is not versioned)', what='aircraft hint')
+    c.page.fill('[data-set-panel=aircraft] [data-f=codes]', 'a320 zzzzz')
+    c.tap('[data-set-panel=aircraft] [data-verb=build]')
+    c.until("!!document.querySelector('[data-set-panel=aircraft] [data-codes-error]')", what='the refused code is said')
+    bad = T('codesBad').replace('{c}', 'ZZZZZ')
+    c.eq([_line(c, '[data-set-panel=aircraft] [data-codes-error]'), len(st3['posts']), len(_notes_with(c, bad))], [norm(bad), 0, 1], 'an invalid ICAO code: refused with a message, no call', what='bad code')
+    c.eq(c.js("document.querySelector('[data-set-panel=aircraft] [data-f=codes]').value"), 'a320 zzzzz', 'the field keeps what was typed', what='field value')
+    c.page.fill('[data-set-panel=aircraft] [data-f=codes]', 'a320, b738')
+    c.eq(c.count('[data-codes-error]'), 0, 'typing again clears the warning', what='warning cleared')
+    c.tap('[data-set-panel=aircraft] [data-verb=build]')
+    c.until("!!document.querySelector('[data-set-panel=aircraft] [data-running][data-run-set=aircraft]')", what='the aircraft job runs in its panel')
+    c.eq({k: st3['posts'][0][k] for k in ('set', 'verb', 'args')}, {'set': 'aircraft', 'verb': 'build', 'args': {'codes': ['A320', 'B738']}}, 'the body: the types, upper-cased', what='aircraft body')
+    c.eq([_verbs(c), _pv(c, 'proc'), _pv(c, 'vfr'), _pv(c, 'sheets'), _preasons(c, 'vfr')], [['download:off', 'build:off', 'purge:off'], ['download:off', 'build:off', 'purge:off'],
+                                                                                          ['download:off', 'build:off', 'purge:off'], ['publish-sheets:off'], ['busy']],
+         'one operation at a time: every other panel is grey while it runs', what='all grey')
+    c.eq(c.js("document.querySelector('[data-set-panel=aircraft] [data-f=codes]').disabled"), True, 'the field is frozen', what='field frozen')
+    c.eq(c.js("[...document.querySelectorAll('[data-set-panel=aircraft] [data-running] [data-item-state]')].map(l => l.dataset.itemState)"), ['types', 'apd', 'simbrief'], 'the lines are the three steps, not the types', what='step lines')
+    c.until("document.querySelector('[data-set-panel=aircraft] [data-item-state=types]')?.dataset.state === 'building'", timeout=8000, what='the types step is running')
+    c.eq(_line(c, '[data-set-panel=aircraft] [data-item-state=types]'), norm(f"{T('types', 'stepName: {')} : {T('building', 'zoneState: {')}"), 'a step line, named in the language', what='step line')
+    c.until("!!document.querySelector('[data-set-panel=aircraft] [data-build-result]')", timeout=10000, what='the end of the job')
+    want = sm('buildPartial').replace('{s}', label('aircraft')).replace('{built}', f"1 {_unit('step', lang, 1)}").replace('{failed}', '1').replace('{items}', T('apd', 'stepName: {'))
+    c.eq(_line(c, '[data-set-panel=aircraft] [data-build-result] b'), norm(want), 'the summary counts steps; the failed step is named', what='aircraft summary')
+    c.eq(_line(c, '[data-set-panel=aircraft] [data-item-state=apd]'), norm(f"{T('apd', 'stepName: {')} : {T('failed', 'zoneState: {').replace('{r}', 'exit-2')}"), 'its failure: exit-2 as written', what='apd line')
+    # the field empty: codes [] (the fleet's types); a launcher reason says what to do
+    c.page.fill('[data-set-panel=aircraft] [data-f=codes]', '')
+    nocodes = _sview('aircraft', 'fetch', 'steps', {}, state='error', jid='a2', done=0, total=3, unit='steps',
+                     result={'ok': False, 'codes': [], 'steps': [], 'failed': [], 'commit': None, 'reason': 'no-codes'})
+    st3['views'], st3['i'], st3['start'] = [nocodes], 0, (200, {'job': 'a2'})
+    c.tap('[data-set-panel=aircraft] [data-verb=download]')
+    c.until("document.querySelector('[data-set-panel=aircraft] [data-build-result]')?.dataset.result === 'no-codes'", timeout=8000, what='no-codes is said')
+    c.eq({k: st3['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'aircraft', 'verb': 'fetch', 'args': {'codes': []}}, 'an empty field sends codes [] (the fleet\'s types)', what='empty body')
+    c.eq([_line(c, '[data-set-panel=aircraft] [data-build-result] b'), c.count('[data-set-panel=aircraft] [data-item-state]')], [norm(sm('noCodes').replace('{s}', label('aircraft'))), 0], 'one sentence, no step lines', what='no-codes')
+    # aircraft purge: dry {dry:true} only, one total (not per item), then the real run
+    p_dry = _sview('aircraft', 'purge', None, None, state='done', jid='a3', args={'dry': True}, result={'ok': True, 'dry': True, 'removed': {'files': 4, 'bytes': 2048}, 'warnings': []})
+    p_real = _sview('aircraft', 'purge', None, None, state='done', jid='a4', args={'dry': False}, result={'ok': True, 'dry': False, 'removed': {'files': 4, 'bytes': 2048}, 'warnings': []})
+    st3['views'], st3['i'], st3['start'] = [p_dry, p_real], 0, (200, {'job': 'a3'})
+    c.tap('[data-set-panel=aircraft] [data-verb=purge]')
+    q = _ask_text(c)
+    c.eq([norm(q['text']), st3['posts'][-1]['args']], [norm(T('purgeAskSet').replace('{n}', f'4 {FILES[lang][1]}').replace('{s}', _size(2048, lang)).replace('{z}', label('aircraft'))), {'dry': True}],
+         'the plan: the caches only, no types sent; one question', what='aircraft purge ask')
+    st3['start'] = (200, {'job': 'a4'})
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-set-panel=aircraft] [data-build-result][data-op=purge]')", timeout=10000, what='the purge ends')
+    c.eq(st3['posts'][-1]['args'], {'dry': False}, 'the real run: dry false', what='aircraft real purge')
+    # ---- E: the published sheets: plan, one question with the counts and the size, then the real run
+    R = {'ok': True, 'dry': True, 'remove': [{'path': 'a', 'size': 1024}], 'copy': [{'path': 'b', 'size': 2048}, {'path': 'c', 'size': 1024}], 'message': ''}
+    s_dry = _sview('aircraft', 'publish', None, None, state='done', jid='s1', args={'dry': True}, result=R)
+    s_real = _sview('aircraft', 'publish', None, None, state='done', jid='s2', args={'dry': False}, result={**R, 'dry': False})
+    st3['views'], st3['i'], st3['start'] = [s_dry, s_real], 0, (200, {'job': 's1'})
+    n = len(st3['posts'])
+    c.tap('[data-set-panel=sheets] [data-verb=publish-sheets]')
+    q = _ask_text(c)
+    ask = T('sheetsAsk').replace('{c}', f"2 {_unit('sheet', lang, 2)}").replace('{r}', f"1 {_unit('sheet', lang, 1)}").replace('{s}', _size(4096, lang))
+    c.eq([norm(q['text']), norm(q['ok']), len(st3['posts']) - n, st3['posts'][-1]['args']], [norm(ask), norm(T('publish')), 1, {'dry': True}], 'the plan (dry true sent explicitly), ONE question: the counts and the total size', what='sheets ask')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the window closes')
+    c.wait(300)
+    c.eq([len(st3['posts']) - n, c.count('[data-set-panel=sheets] [data-build-result]')], [1, 0], 'No: nothing copied, nothing said', what='sheets No')
+    st3['views'], st3['i'], st3['start'] = [s_dry, s_real], 0, (200, {'job': 's1'})
+    c.tap('[data-set-panel=sheets] [data-verb=publish-sheets]')
+    _ask_text(c)
+    st3['start'] = (200, {'job': 's2'})
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-set-panel=sheets] [data-build-result][data-op=publish]')", timeout=10000, what='the end of the publication')
+    c.eq(st3['posts'][-1]['args'], {'dry': False}, 'the real run says dry false', what='sheets real body')
+    done = T('sheetsDone').replace('{c}', f"2 {_unit('sheet', lang, 2)}").replace('{r}', f"1 {_unit('sheet', lang, 1)}")
+    c.eq([_line(c, '[data-set-panel=sheets] [data-build-result] b'), len(_notes_with(c, done))], [norm(done), 1], 'the end: the counts, one notification', what='sheets end')
+    j = [o for o in c.doc('cache/data/journal.json')['ops'] if o['verb'] == 'publish' and o.get('set') == 'aircraft']
+    c.eq([[o['copied'], o['removed'], o['result']] for o in j], [[2, 1, 'done']], 'ONE journal entry (the real run)', what='sheets journal')
+    # no trigram: the launcher says so, a sentence
+    s_noauth = _sview('aircraft', 'publish', None, None, state='error', jid='s4', args={'dry': False}, result={'ok': False, 'reason': 'no-author'})
+    st3['views'], st3['i'], st3['start'] = [s_dry, s_noauth], 0, (200, {'job': 's1'})
+    c.tap('[data-set-panel=sheets] [data-verb=publish-sheets]')
+    _ask_text(c)
+    st3['start'] = (200, {'job': 's4'})
+    c.tap('.f-modal [data-ok]')
+    c.until("document.querySelector('[data-set-panel=sheets] [data-build-result]')?.dataset.result === 'no-author'", timeout=10000, what='no trigram is said')
+    c.eq(_line(c, '[data-set-panel=sheets] [data-build-result] b'), norm(T('sheetsNoAuthor')), 'a sentence: set your trigram', what='no-author')
+    # nothing to publish: no question
+    s_none = _sview('aircraft', 'publish', None, None, state='done', jid='s5', args={'dry': True}, result={'ok': True, 'dry': True, 'remove': [], 'copy': [], 'message': ''})
+    st3['views'], st3['i'], st3['start'] = [s_none], 0, (200, {'job': 's5'})
+    n = len(st3['posts'])
+    c.tap('[data-set-panel=sheets] [data-verb=publish-sheets]')
+    c.until("document.querySelector('[data-set-panel=sheets] [data-build-result]')?.dataset.result === 'nothing'", timeout=8000, what='nothing to publish is said')
+    c.eq([_line(c, '[data-set-panel=sheets] [data-build-result] b'), c.count('.f-modal'), len(st3['posts']) - n], [norm(T('sheetsNothing')), 0, 1], 'an empty plan: the sentence, no question, no second job', what='sheets nothing')
+    _panels_ok(c, 'at the end')
+    # ---- F: a running job of another set found at mount is followed in its own panel
+    run = _sview('proc', 'fetch', 'states', {'LF': _zs('fetching', 1, 3), 'EG': _zs('waiting')}, step='État LF', jid='f7')
+    end = _sview('proc', 'fetch', 'states', {'LF': _zs('done', 3, 3), 'EG': _zs('done', 2, 2)}, state='done', done=2, jid='f7',
+                 result={'ok': True, 'fetched': ['LF'], 'unchanged': ['EG'], 'failed': [], 'manual': [], 'outside_sync': 0, 'warnings': []})
+    st3['current'], st3['views'], st3['i'] = run, [run, run, end], 0
+    c.page.reload(wait_until='load')
+    _head(c)
+    c.until("!!document.querySelector('[data-set-panel=proc] [data-running][data-op=fetch]')", timeout=8000, what='the running download is followed in the Procédures panel')
+    c.eq([c.js("document.querySelector('[data-group=proc]').open"), _verbs(c), _pv(c, 'aircraft'), c.count('[data-set-panel=proc] [data-verb=stop]')], [True, ['download:off', 'build:off', 'purge:off'], ['download:off', 'build:off', 'purge:off'], 1],
+         'its group is open, the other panels are grey, Arrêter is offered', what='found at mount')
+    c.eq(sorted(c.js("[...document.querySelectorAll('[data-set-panel=proc] [data-item-state]')].map(l => l.dataset.itemState)")), ['EG', 'LF'], 'its own lines', what='lines')
+    c.until("!!document.querySelector('[data-set-panel=proc] [data-build-result][data-op=fetch][data-result=done]')", timeout=10000, what='the followed job ends')
+    want = sm('fetchDone').replace('{s}', label('proc')).replace('{c}', f"1 {_unit('state', lang, 1)}").replace('{u}', f"1 {_unit('state', lang, 1)}").replace('{f}', _trow('fetchFails', lang, row=1).replace('{n}', '0'))
+    c.eq([_line(c, '[data-set-panel=proc] [data-build-result] b'), len(_notes_with(c, want))], [norm(want), 1], 'followed to its end: the summary, one notification', what='fetch summary')
+    _all_open(c)
+    _panels_ok(c, 'after the followed job')
+    c.check_errors()
+
+
+def _unit(key, lang, n):
+    """A unit noun of texts.js (`unit: { <key>: [[singular…], [plural…]] }`), in the language, for the count n."""
+    return _trow(key, lang, 'unit: {', 0 if n == 1 else 1)

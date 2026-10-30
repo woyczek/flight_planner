@@ -251,7 +251,10 @@ The launcher's verbs are asked of their owners (V3 Frame: `tools/launch.py`, `to
 each with the base's contract: `regen/job { set, verb, args: { <items> } }`, a view with `<items>` at its root (state,
 done / total, error code), a result with what changed, failed, and a reason; `dry: true` for a purge; Télécharger and
 Purger never commit. A verb not yet on the launcher: its button grey, « Le lanceur de ce poste ne connaît pas encore
-cette opération ». **The V2 maintenance page link leaves the Maintenance rail when every row of this table has its four
+cette opération » — the module reads `GET regen/verbs` once at the opening (`{ verbs: ['base/build', …] }`, frame d8919b0e6);
+no answer means an older launcher with `base/*` only. The aircraft verbs follow their launcher (d8919b0e6): the view's items
+are three steps (types, apd, simbrief), `aircraft/build` commits nothing (AircraftDB/ is not versioned), the company's sheets
+reach the data repository by `aircraft/publish` (dry by default, the trigram required). **The V2 maintenance page link leaves the Maintenance rail when every row of this table has its four
 verbs.**
 
 ### 5.4 Building on the launcher: one process per zone
@@ -352,7 +355,7 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
   is fetched and built, links by cycle, licences, statuses, `eadStates`, the file-name readers); never `sia/base/`, `proc/`
   or `AircraftDB/` directly, never aerodb's files; the workstation's state through `ctx.launcher` (INTEGRATION § 1).
 - **Writes through `ctx.data`** (policy `cache`, never synchronised, never in a backup): `cache/data/coverage.json`
-  (`{ zones: [id], updated_at }`) and `cache/data/journal.json` (`{ ops: [{ at, set, verb, zones, seconds, result, built,
+  (`{ zones: [id], updated_at }`) and `cache/data/journal.json` (`{ ops: [{ at, set, verb, zones (the base) | items (any other set), seconds, result, built,
   failed, job, reason? }], updated_at }`, the last 50 operations, newest first; a job found already ended at the opening is
   written once, by its id). Nothing else.
 - **The outputs** (`sia/base/`, `proc/`, `sia/vfr/`, `AircraftDB/`, `sia/mora.csv`) are never written through `ctx.data`
@@ -362,8 +365,8 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
   'cache' }], launcher: { routes: ['regen/'], read: ['sia/', 'proc/', 'local/', 'AircraftDB/'] }, publish: ['sia/base/',
   'proc/', 'sia/vfr/', 'AircraftDB/', 'sia/mora.csv'], files: [… the Worker script included] }` (`frame/INTEGRATION.md`
   § 15). **Until the other verbs exist** the declaration stays the narrowest: `launcher: { routes: ['regen/job',
-  'sync-status'], read: [] }` (declaring a job's route declares its cancel, frame f70eba426; `sync-status` for the count
-  before « Publier »).
+  'regen/verbs', 'sync-status'], read: [] }` (declaring a job's route declares its cancel, frame f70eba426; `regen/verbs`
+  for the verbs this launcher knows; `sync-status` for the count before « Publier »).
 
 ## 8. Without the launcher
 

@@ -96,6 +96,22 @@ export const TX = {
     commit: [
       ['commit', 'commit', 'Commit', 'commit'],
       ['commits', 'commits', 'Commits', 'commits']
+    ],
+    state: [
+      ['État', 'State', 'Staat', 'Estado'],
+      ['États', 'States', 'Staaten', 'Estados']
+    ],
+    cycle: [
+      ['cycle', 'cycle', 'Zyklus', 'ciclo'],
+      ['cycles', 'cycles', 'Zyklen', 'ciclos']
+    ],
+    step: [
+      ['étape', 'step', 'Schritt', 'paso'],
+      ['étapes', 'steps', 'Schritte', 'pasos']
+    ],
+    sheet: [
+      ['fiche', 'sheet', 'Datenblatt', 'ficha'],
+      ['fiches', 'sheets', 'Datenblätter', 'fichas']
     ]
   },
   // l'étiquette d'état d'une ligne (SPEC § 6.2)
@@ -180,6 +196,12 @@ export const TX = {
       'Hay otra operación en curso'
     ],
     'no-zone': ['Cochez au moins une zone', 'Tick at least one zone', 'Mindestens eine Zone ankreuzen', 'Marque al menos una zona'],
+    'no-state': ['Cochez au moins un État', 'Tick at least one State', 'Mindestens einen Staat ankreuzen', 'Marque al menos un Estado'],
+    // le lanceur ne connaît pas le verbe (regen/verbs) : écrit une fois par panneau
+    'unknown-verb': ['Le lanceur de ce poste ne connaît pas encore cette opération',
+      'This workstation’s launcher does not know this operation yet',
+      'Der Starter dieses Rechners kennt diesen Vorgang noch nicht', 'El lanzador de este equipo aún no conoce esta operación'
+    ],
     offline: ['Hors ligne', 'Offline', 'Offline', 'Sin conexión']
   },
   // la marche : « 2 zones sur 5 », l’étape, le temps écoulé, une ligne par zone
@@ -512,6 +534,162 @@ export const TX = {
     'La publicación falló: no se pierde nada, los archivos siguen en el equipo. Corrija la causa y vuelva a empezar.'
   ],
   pubLauncherSays: ['Le lanceur dit : {m}', 'The launcher says: {m}', 'Der Starter meldet: {m}', 'El lanzador dice: {m}'],
+  // les panneaux des autres groupes (V3 § 10.34, lot A1) : procédures par État, points VFR par cycle, appareils par type, fiches publiées
+  setTitle: {
+    proc: ['Procédures : télécharger, construire, purger', 'Procedures: download, build, purge',
+      'Verfahren: herunterladen, aufbauen, bereinigen',
+      'Procedimientos: descargar, construir, purgar'
+    ],
+    vfr: ['Points VFR des cartes VAC : télécharger, construire, purger', 'VFR points of the VAC charts: download, build, purge',
+      'VFR-Punkte der VAC-Karten: herunterladen, aufbauen, bereinigen', 'Puntos VFR de las cartas VAC: descargar, construir, purgar'
+    ],
+    aircraft: ['Appareils : télécharger, construire, purger', 'Aircraft: download, build, purge',
+      'Luftfahrzeuge: herunterladen, aufbauen, bereinigen',
+      'Aeronaves: descargar, construir, purgar'
+    ],
+    sheets: ['Fiches publiées de la compagnie', 'Published sheets of the airline', 'Veröffentlichte Datenblätter der Fluggesellschaft',
+      'Fichas publicadas de la compañía'
+    ]
+  },
+  // le nom du jeu dans les phrases de fin et dans le journal
+  setLabel: {
+    proc: ['Procédures', 'Procedures', 'Verfahren', 'Procedimientos'],
+    vfr: ['Points VFR', 'VFR points', 'VFR-Punkte', 'Puntos VFR'],
+    aircraft: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves']
+  },
+  setItems: {
+    proc: ['États concernés', 'States affected', 'Betroffene Staaten', 'Estados afectados'],
+    vfr: ['Cycle concerné', 'Cycle affected', 'Betroffener Zyklus', 'Ciclo afectado'],
+    aircraft: ['Types concernés', 'Types affected', 'Betroffene Muster', 'Tipos afectados']
+  },
+  noStates: ['Aucun État lisible dans la couverture d’aerodb pour le moment.', 'No readable State in aerodb’s coverage for now.',
+    'Derzeit kein lesbarer Staat in der Abdeckung von aerodb.', 'Por ahora ningún Estado legible en la cobertura de aerodb.'
+  ],
+  codesLabel: ['Types OACI, séparés par des virgules ou des espaces', 'ICAO types, separated by commas or spaces',
+    'ICAO-Muster, durch Kommas oder Leerzeichen getrennt', 'Tipos OACI, separados por comas o espacios'
+  ],
+  codesHint: ['Vide : les types de la flotte.', 'Empty: the fleet’s types.', 'Leer: die Muster der Flotte.',
+    'Vacío: los tipos de la flota.'
+  ],
+  codesBad: ['Codes refusés : {c}. Un code OACI fait 2 à 4 lettres ou chiffres.',
+    'Codes refused: {c}. An ICAO code is 2 to 4 letters or digits.',
+    'Abgelehnte Codes: {c}. Ein ICAO-Code besteht aus 2 bis 4 Buchstaben oder Ziffern.',
+    'Códigos rechazados: {c}. Un código OACI tiene de 2 a 4 letras o dígitos.'
+  ],
+  // la fin d’une construction ou d’un téléchargement d’un autre jeu : « Procédures : construction terminée (3 États) »
+  setSum: {
+    buildDone: ['{s} : construction terminée ({built})', '{s}: build finished ({built})', '{s}: Aufbau abgeschlossen ({built})',
+      '{s}: construcción terminada ({built})'
+    ],
+    buildPartial: ['{s} : construction terminée ({built}) ; {failed} en échec ({items})',
+      '{s}: build finished ({built}); {failed} failed ({items})',
+      '{s}: Aufbau abgeschlossen ({built}); {failed} fehlgeschlagen ({items})',
+      '{s}: construcción terminada ({built}); {failed} con fallo ({items})'
+    ],
+    buildFailed: ['{s} : rien de construit, {failed} en échec ({items})', '{s}: nothing built, {failed} failed ({items})',
+      '{s}: nichts erstellt, {failed} fehlgeschlagen ({items})', '{s}: nada construido, {failed} con fallo ({items})'
+    ],
+    buildStopped: ['{s} : construction arrêtée ; déjà construits : {n}', '{s}: build stopped; already built: {n}',
+      '{s}: Aufbau angehalten; bereits erstellt: {n}', '{s}: construcción detenida; ya construidos: {n}'
+    ],
+    buildInterrupted: ['{s} : construction interrompue (le lanceur s’est arrêté)', '{s}: build interrupted (the launcher stopped)',
+      '{s}: Aufbau unterbrochen (der Starter wurde beendet)', '{s}: construcción interrumpida (el lanzador se detuvo)'
+    ],
+    fetchDone: ['{s} : téléchargé — nouveautés : {c}, sans changement : {u} ; {f}', '{s}: downloaded — new: {c}, unchanged: {u}; {f}',
+      '{s}: heruntergeladen — neu: {c}, unverändert: {u}; {f}', '{s}: descargado — novedades: {c}, sin cambios: {u}; {f}'
+    ],
+    fetchStopped: ['{s} : téléchargement arrêté — nouveautés : {c}, sans changement : {u} ; {f}',
+      '{s}: download stopped — new: {c}, unchanged: {u}; {f}', '{s}: Herunterladen angehalten — neu: {c}, unverändert: {u}; {f}',
+      '{s}: descarga detenida — novedades: {c}, sin cambios: {u}; {f}'
+    ],
+    fetchInterrupted: ['{s} : téléchargement interrompu (le lanceur s’est arrêté)', '{s}: download interrupted (the launcher stopped)',
+      '{s}: Herunterladen unterbrochen (der Starter wurde beendet)', '{s}: descarga interrumpida (el lanzador se detuvo)'
+    ],
+    fetchNothing: ['{s} : rien à télécharger', '{s}: nothing to download', '{s}: nichts herunterzuladen', '{s}: nada que descargar'],
+    // les motifs du lanceur pour les appareils (aircraft/fetch et aircraft/build) : aucun type, script absent
+    noCodes: ['{s} : aucun type à traiter — indiquez des types OACI ou renseignez la flotte',
+      '{s}: no type to process — enter ICAO types or fill in the fleet',
+      '{s}: kein Muster zu verarbeiten — ICAO-Muster eingeben oder die Flotte füllen',
+      '{s}: ningún tipo que procesar — indique tipos OACI o rellene la flota'
+    ],
+    noScript: ['{s} : le lanceur de ce poste n’a pas le script de cette opération',
+      '{s}: this workstation’s launcher does not have this operation’s script',
+      '{s}: der Starter dieses Rechners hat das Skript dieses Vorgangs nicht',
+      '{s}: el lanzador de este equipo no tiene el script de esta operación'
+    ]
+  },
+  // les trois étapes des appareils (les lignes d’une construction ou d’un téléchargement)
+  stepName: {
+    types: ['Types (OACI Doc 8643)', 'Types (ICAO Doc 8643)', 'Muster (ICAO Doc 8643)', 'Tipos (OACI Doc 8643)'],
+    apd: ['Performances (EUROCONTROL APD)', 'Performance (EUROCONTROL APD)', 'Leistungsdaten (EUROCONTROL APD)',
+      'Rendimiento (EUROCONTROL APD)'
+    ],
+    simbrief: ['Profils SimBrief', 'SimBrief profiles', 'SimBrief-Profile', 'Perfiles SimBrief']
+  },
+  // sous les boutons du panneau des appareils
+  aircraftHint: [
+    'Construire n’enregistre rien dans le dépôt de données : AircraftDB/ de ce poste n’est pas versionné. L’envoi se fait par « Fiches publiées », plus bas.',
+    'Build records nothing in the data repository: this workstation’s AircraftDB/ is not versioned. Sending is done by “Published sheets”, below.',
+    'Aufbauen speichert nichts im Datenrepository: AircraftDB/ dieses Rechners ist nicht versioniert. Gesendet wird über „Veröffentlichte Datenblätter“ weiter unten.',
+    'Construir no guarda nada en el repositorio de datos: AircraftDB/ de este equipo no está versionado. El envío se hace con «Fichas publicadas», más abajo.'
+  ],
+  // ce qu’il y a à faire après une construction qui n’a pas tout fait (un jeu sans case à décocher : le même conseil pour tous)
+  setAdvice: {
+    partial: ['Ce qui est construit est gardé ; relancez pour retenter le reste (le motif est écrit à chaque ligne).',
+      'What is built is kept; start again to retry the rest (the reason is written on each line).',
+      'Was erstellt ist, bleibt erhalten; starten Sie neu, um den Rest zu wiederholen (der Grund steht in jeder Zeile).',
+      'Lo construido se conserva; vuelva a empezar para reintentar el resto (el motivo está en cada línea).'
+    ],
+    failed: ['Rien n’a été construit : lisez le motif de chaque ligne, puis relancez.',
+      'Nothing was built: read the reason on each line, then start again.',
+      'Nichts wurde erstellt: Lesen Sie den Grund in jeder Zeile und starten Sie neu.',
+      'No se construyó nada: lea el motivo de cada línea y vuelva a empezar.'
+    ],
+    cancelled: ['Ce qui est déjà construit est gardé ; relancez pour la suite.',
+      'What is already built is kept; start again for the rest.',
+      'Was bereits erstellt ist, bleibt erhalten; starten Sie für den Rest neu.',
+      'Lo ya construido se conserva; vuelva a empezar para el resto.'
+    ],
+    interrupted: ['Relancez la construction : ce qui est déjà construit est gardé.',
+      'Start the build again: what is already built is kept.',
+      'Starten Sie den Aufbau neu: was bereits erstellt ist, bleibt erhalten.',
+      'Vuelva a lanzar la construcción: lo ya construido se conserva.'
+    ]
+  },
+  // la question d’une purge d’un autre jeu
+  purgeAskSet: ['Purger {n} ({s}) pour {z} ?', 'Purge {n} ({s}) for {z}?', '{n} ({s}) für {z} bereinigen?',
+    '¿Purgar {n} ({s}) para {z}?'
+  ],
+  // les fiches publiées de la compagnie (aircraft/publish) : la question, la fin
+  sheetsAsk: ['Publier les fiches : copie de {c}, retrait de {r} ({s}) ?', 'Publish the sheets: copy {c}, remove {r} ({s})?',
+    'Datenblätter veröffentlichen: {c} kopieren, {r} entfernen ({s})?', '¿Publicar las fichas: copia de {c}, retirada de {r} ({s})?'
+  ],
+  sheetsNoAuthor: ['Réglez votre trigramme (Réglages › Identité), puis relancez.',
+    'Set your trigram (Settings › Identity), then start again.',
+    'Stellen Sie Ihr Kürzel ein (Einstellungen › Identität) und starten Sie neu.',
+    'Configure su trigrama (Ajustes › Identidad) y vuelva a empezar.'
+  ],
+  sheetsDone: ['Fiches publiées : copie de {c}, retrait de {r}', 'Sheets published: copied {c}, removed {r}',
+    'Datenblätter veröffentlicht: {c} kopiert, {r} entfernt', 'Fichas publicadas: copia de {c}, retirada de {r}'
+  ],
+  sheetsNothing: ['Rien à publier : les fiches sont à jour', 'Nothing to publish: the sheets are up to date',
+    'Nichts zu veröffentlichen: die Datenblätter sind aktuell', 'Nada que publicar: las fichas están al día'
+  ],
+  sheetsFailed: ['La publication des fiches a échoué : lisez le message du lanceur, puis relancez.',
+    'Publishing the sheets failed: read the launcher’s message, then start again.',
+    'Das Veröffentlichen der Datenblätter ist fehlgeschlagen: Lesen Sie die Meldung des Starters und starten Sie neu.',
+    'La publicación de las fichas falló: lea el mensaje del lanzador y vuelva a empezar.'
+  ],
+  sheetsStopped: ['Publication des fiches arrêtée ; déjà copiées : {c}, retirées : {r}',
+    'Publishing the sheets stopped; already copied: {c}, removed: {r}',
+    'Veröffentlichen der Datenblätter angehalten; bereits kopiert: {c}, entfernt: {r}',
+    'Publicación de las fichas detenida; ya copiadas: {c}, retiradas: {r}'
+  ],
+  sheetsInterrupted: ['Publication des fiches interrompue (le lanceur s’est arrêté)',
+    'Publishing the sheets interrupted (the launcher stopped)',
+    'Veröffentlichen der Datenblätter unterbrochen (der Starter wurde beendet)',
+    'Publicación de las fichas interrumpida (el lanzador se detuvo)'
+  ],
   // le journal des opérations
   journal: ['Journal', 'Journal', 'Protokoll', 'Diario'],
   journalEmpty: ['Aucune opération pour le moment.', 'No operation yet.', 'Noch kein Vorgang.', 'Ninguna operación por ahora.'],

@@ -1,10 +1,11 @@
 // V3 data — « Données » de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/data/SPEC.md, INTEGRATION.md).
-// Un écran de lecture, et des actions sur la base aéronautique : « Télécharger » les sources, « Construire » la base, « Purger » les
-// sources (un seul panneau, les mêmes zones cochées, trois verbes du lanceur base/fetch, base/build, base/purge), puis « Publier » ce
-// qui a été construit vers le dépôt des données (second panneau, en tête du groupe Base aéronautique, journal au pied de l'écran). En tête,
-// le cycle AIRAC en vigueur et le lanceur ; la couverture (les zones de ce poste, puis les États par couleur) ; quatre groupes de
-// jeux de données (base aéronautique,
-// procédures, appareils, météo), une ligne par jeu avec son cycle, son âge, sa taille et un état calculé, le détail sous un toucher.
+// Un écran de lecture, et pour chaque groupe le même panneau de trois verbes du lanceur : « Télécharger » les sources, « Construire », « Purger »
+// (base : zones, base/fetch · base/build · base/purge ; procédures : États, proc/… ; points VFR : le cycle, vfr/… ; appareils : types OACI,
+// aircraft/…), puis « Publier » ce qui a été construit vers le dépôt des données (panneau partagé, groupe Base aéronautique) et « Publier » les
+// fiches de la compagnie (aircraft/publish) ; journal au pied de l'écran. Une seule opération à la fois, tous panneaux confondus, retrouvée à
+// l'ouverture. Les verbes que le lanceur connaît se lisent une fois au montage (regen/verbs) : un verbe inconnu grise son bouton. En tête, le
+// cycle AIRAC en vigueur et le lanceur ; la couverture (les zones de ce poste, puis les États par couleur) ; quatre groupes de jeux de données
+// (base aéronautique, procédures, appareils, météo), une ligne par jeu avec son cycle, son âge, sa taille et un état calculé, le détail sous un toucher.
 // Tout vient des trois appels d'aerodb (publication, zones, sources) et de coverageByState : le module ne lit aucun fichier de
 // données et n'appelle aucun réseau. Calcul pur dans model.js, textes dans texts.js.
 import * as M from './model.js';
@@ -23,11 +24,11 @@ export const meta = {
   title: TX.title, // en-tête du téléphone (règle 16)
   apps: ['pilot'],
   level: 3,
-  // la construction de la base est un travail du lanceur (regen/job) ; aucune lecture de data/ par le lanceur
+  // la construction de la base est un travail du lanceur (regen/job) ; regen/verbs : les opérations que ce lanceur connaît ; aucune lecture de data/ par le lanceur
   launcher: {
     // regen/job couvre aussi son annulation regen/job/cancel (cadre, f70eba426) ; sync-status : l'état de data/ avant la
     // question de « Publier » (GET, jamais de POST /__setup/sync : la publication passe par ctx.data.sync)
-    routes: ['regen/job', 'sync-status'],
+    routes: ['regen/job', 'regen/verbs', 'sync-status'],
     read: []
   },
   files: ['model.js', 'texts.js', '../../frame/lib/dom.js', '../../frame/lib/time.js'],
@@ -41,6 +42,7 @@ export const meta = {
 const COVERAGE = 'cache/data/coverage.json'; // { zones: [id], updated_at } : la couverture de ce poste (SPEC § 3.2)
 const JOURNAL = 'cache/data/journal.json'; // { ops: [opération], updated_at } : les 50 dernières opérations de ce poste (SPEC § 7)
 const ROUTE = 'regen/job'; // le travail du lanceur : construction de la base (verbe D5 d'aerodb)
+const VERBS_ROUTE = 'regen/verbs'; // { verbs: ['base/build', …] } : les opérations que ce lanceur connaît (lue une fois au montage)
 const STATUS_ROUTE = 'sync-status?fresh=1'; // l'état de data/ (fichiers modifiés, commits à envoyer, fusion) ; relevé refait
 const LANGS = ['fr', 'en', 'de', 'es'];
 // couleur d'un État → data-kind du point du cadre (.f-dot) ; statut d'une source du catalogue → data-kind du badge (.f-badge)
@@ -72,8 +74,11 @@ const STYLE = `
 [data-module="data"] .d-opt{display:flex;gap:8px;align-items:center;min-height:var(--sog-touch);overflow-wrap:anywhere}
 [data-module="data"] .d-opt input{flex:none;width:20px;height:20px;margin:0}
 [data-module="data"] .d-pers p{margin:0 0 4px 28px}
-[data-module="data"] [data-build] [data-verb]{min-height:var(--sog-touch);min-width:44px}
-[data-module="data"] [data-build] [data-reason]{margin:6px 0 0}
+[data-module="data"] [data-build] [data-verb],[data-module="data"] [data-set-panel] [data-verb]{min-height:var(--sog-touch);min-width:44px}
+[data-module="data"] [data-build] [data-reason],[data-module="data"] [data-set-panel] [data-reason]{margin:6px 0 0}
+[data-module="data"] [data-set-panel] h2,[data-module="data"] [data-set-panel] h3{margin:8px 0 4px}
+[data-module="data"] .d-codes{display:grid;gap:4px;margin:4px 0}
+[data-module="data"] .d-codes input{min-height:var(--sog-touch);max-width:100%;box-sizing:border-box;text-transform:uppercase}
 [data-module="data"] .d-verbs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0}
 [data-module="data"] .d-sl{list-style:none;margin:2px 0 4px;padding:0;display:grid;gap:2px}
 [data-module="data"] .d-sl li{overflow-wrap:anywhere}
@@ -138,6 +143,18 @@ async function readStatus() {
   } catch {
     return null;
   }
+}
+/** Les opérations que le lanceur connaît (GET regen/verbs), lues une fois au montage : M.knownVerbs de sa réponse ; sans lanceur, sans réponse, sur
+ *  un 404 ou un refus : celles d'un lanceur ancien (base/fetch, base/build, base/purge). Ne lève jamais. */
+async function readVerbs() {
+  const L = S?.ctx.launcher;
+  let r = null;
+  try {
+    r = L ? await L.call(VERBS_ROUTE) : null;
+  } catch {
+    r = null;
+  }
+  return M.knownVerbs(r);
 }
 /** Lit ce que l'écran montre : le catalogue, ce qui est publié, les zones, la couverture par État, la couverture du poste ; puis
  *  dessine, et à la première ouverture écrit la couverture. */
@@ -352,7 +369,7 @@ function groupsHtml() {
   return `${pub ? '' : `<p class="f-warn" data-error="publication">${esc(tt(TX.pubError))}</p>`}${groups.map(g => {
     const open = g.id in S.manual ? S.manual[g.id] : g.attention;
     return `<details class="f-group" data-group="${g.id}"${open ? ' open' : ''}><summary><span>${esc(tt(TX.groups[g.id]))}</span><i class="f-status-dot" data-attn${g.attention ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i></summary>
-      ${g.id === 'base' ? buildHtml() + publishHtml() : ''}
+      ${panelsHtml(g.id)}
       ${g.rows.map(rowHtml).join('') || (g.more.length ? '' : `<p class="f-muted">${esc(tt(TX.groupEmpty))}</p>`)}
       ${g.more.length ? `<details class="d-more" data-more><summary>${esc(tt(TX.moreSets, { n: g.more.length }))}</summary>${g.more.map(rowHtml).join('')}</details>` : ''}</details>`;
   }).join('')}`;
@@ -374,15 +391,28 @@ function buildZones() {
     ticked: ids.filter(z => S.ticked?.has(z))
   };
 }
-/** L'état des boutons « Télécharger », « Construire » et « Purger » (une seule raison pour les trois) : sans lanceur, travail en cours
- *  (le nôtre, la question d'une purge, un autre, une publication), hors ligne, aucune zone cochée. */
-function buildGate(ticked) {
-  return M.buildState({
+/** Une opération tourne-t-elle sur ce poste, de n'importe quel jeu ? Le nôtre, un autre travail du lanceur, la question d'une purge ou d'une
+ *  publication de fiches, une publication : une opération à la fois, tous panneaux confondus. */
+function busyNow() {
+  return !!S.run || !!S.other || !!S.asking || !!S.pub.phase;
+}
+/** L'état des boutons « Télécharger », « Construire » et « Purger » d'un panneau : { reason, verbs } (M.setGate). `set` : le jeu ; `items` : le
+ *  nombre d'éléments cochés (absent : le jeu n'en coche pas) ; `verbs` : ceux du panneau (par défaut ceux du jeu). */
+function gateOf(set, items, verbs) {
+  return M.setGate({
+    set,
+    verbs,
     launcher: !!S.ctx.launcher,
-    busy: !!S.run || !!S.other || !!S.asking || !!S.pub.phase, // une publication tourne : une autre opération à la fois
-    zones: ticked.length,
-    offline: navigator.onLine === false
+    known: S.known,
+    busy: busyNow(),
+    offline: navigator.onLine === false,
+    items
   });
+}
+/** L'état des boutons du panneau de la base (une seule raison pour les trois) : sans lanceur, travail en cours (le nôtre, la question d'une
+ *  purge, un autre, une publication), hors ligne, aucune zone cochée, verbe inconnu du lanceur. */
+function buildGate(ticked) {
+  return gateOf('base', ticked.length);
 }
 /** Le nom d'une source sous licence personnelle : celui du catalogue d'aerodb, à défaut un texte du module. */
 function personalName(id) {
@@ -404,9 +434,11 @@ function sourceName(id) {
 }
 /** Le motif d'un échec de source : « HTTP 404 » (code et statut), « le réseau ne répond pas »… */
 function fetchWhy(code, status) {
-  return code === 'http' && status !== null ? tt(TX.fetchError.httpN, {
+  if (code === 'http' && status !== null) return tt(TX.fetchError.httpN, {
     s: status
-  }) : tt(TX.fetchError[code] || TX.fetchError.unknown);
+  });
+  return code && !TX.fetchError[code] ? code : tt(TX.fetchError[code] || TX.fetchError
+    .unknown); // un code court d'un autre jeu est écrit tel quel
 }
 /** La ligne d'une source dans un téléchargement : son nom et son état en peu de mots (téléchargée : n fichiers, inchangée, échec :
  *  code et statut HTTP, ignorée : licence non déclarée, manuelle). */
@@ -429,8 +461,9 @@ function sourceLineHtml(s) {
 function zoneWord(r, verb) {
   const T = verb === 'fetch' ? TX.fetchState : verb === 'purge' ? TX.purgeState : TX.zoneState;
   if (r.key === 'failed') return tt(T.failed, {
-    r: verb === 'fetch' ? fetchWhy(r.code, null) : verb === 'purge' ? r.code === 'unknown' ? tt(TX.zoneError.unknown) : r.code : tt(TX
-      .zoneError[r.code])
+    r: verb === 'fetch' ? fetchWhy(r.code, null) : verb === 'purge' || !TX.zoneError[r.code] ? r.code === 'unknown' ? tt(TX.zoneError
+      .unknown) : r.code : tt(TX
+      .zoneError[r.code]) // un code que le module ne connaît pas (un jeu autre que la base) est écrit tel quel
   });
   if (r.key.endsWith('N')) return tt(T[r.key], {
     n: r.n,
@@ -442,9 +475,23 @@ function zoneWord(r, verb) {
   });
   return tt(T[r.key]);
 }
-/** La ligne d'une zone dans la marche : point de couleur, nom, phrase ; pour un téléchargement, dessous une ligne par source. */
-function zoneLineHtml(r, verb = 'build') {
+/** Le nom d'un élément d'un jeu dans la langue : la zone (base), l'État (procédures), « Cycle 2611 » (le cycle, désigné par sa date d'effet), le
+ *  type OACI tel quel. */
+function itemName(set, id) {
+  if (set === 'base') return M.zoneName(S.d?.zones, id, li());
+  if (set === 'proc') return S.d?.byState?.[id]?.names?.[li()] || id;
+  if (set === 'vfr') return S.airac && /^\d{4}-\d{2}-\d{2}$/.test(id) ? tt(TX.cycle, {
+    c: M.cycleName(S.airac, id)
+  }) : id;
+  return TX.stepName[id] ? tt(TX.stepName[id]) : id; // les appareils : les trois étapes
+}
+/** La vue du dernier travail du jeu, ramenée à la forme de la base (M.normView) pour les lignes d'éléments. */
+const opView = set => M.normView(set, S.view);
+/** La ligne d'un élément dans la marche : point de couleur, nom, phrase ; pour un téléchargement, dessous une ligne par source. `set` : le jeu
+ *  (la base garde data-zone-state, les autres data-item-state). */
+function zoneLineHtml(r, verb = 'build', set = 'base') {
   const word = zoneWord(r, verb),
+    attr = set === 'base' ? 'data-zone-state' : 'data-item-state',
     k = {
       built: 'ok',
       done: 'ok',
@@ -454,28 +501,82 @@ function zoneLineHtml(r, verb = 'build') {
       purging: 'accent',
       cancelled: 'warn'
     } [r.state],
-    head = `<b>${esc(M.zoneName(S.d.zones, r.zone, li()))}</b> : ${esc(word)}`;
+    head = `<b>${esc(itemName(set, r.zone))}</b> : ${esc(word)}`;
   if (verb === 'fetch') {
-    const src = M.sourceRows(S.view?.zones?.[r.zone]);
-    return `<li data-zone-state="${esc(r.zone)}" data-state="${r.state}"><i class="f-dot"${kind(k)} aria-hidden="true"></i><div>${head}${src.length ? `<ul class="d-sl" data-sources>${src.map(sourceLineHtml).join('')}</ul>` : ''}</div></li>`;
+    const src = M.sourceRows(opView(set)?.zones?.[r.zone]);
+    return `<li ${attr}="${esc(r.zone)}" data-state="${r.state}"><i class="f-dot"${kind(k)} aria-hidden="true"></i><div>${head}${src.length ? `<ul class="d-sl" data-sources>${src.map(sourceLineHtml).join('')}</ul>` : ''}</div></li>`;
   }
-  return `<li data-zone-state="${esc(r.zone)}" data-state="${r.state}"><i class="f-dot"${kind(k)} aria-hidden="true"></i><span>${head}</span></li>`;
+  return `<li ${attr}="${esc(r.zone)}" data-state="${r.state}"><i class="f-dot"${kind(k)} aria-hidden="true"></i><span>${head}</span></li>`;
 }
 /** La marche : barre, « n zones sur m », étape, temps écoulé, « Arrêter », une ligne par zone (par source pour un téléchargement). */
 function runningHtml() {
   const run = S.run,
+    set = run.set,
     p = M.progress(S.view, S.ids),
-    stopping = run.phase === 'stopping';
-  return `<div class="d-run" data-running data-op="${run.verb}"${run.dry ? ' data-dry' : ''} data-phase="${run.phase}">
-    <div class="d-runhead"><b data-count>${esc(tt(TX.runCount, { n: count('zone', p.done), m: p.total }))}</b>
+    stopping = run.phase === 'stopping',
+    unit = M.SETS[set]?.unit || 'sheet', // les fiches publiées : pas d'éléments, la barre seule
+    shown = p.total > 0 || set === 'base' && !M.SETS[set]
+    .free; // un jeu dont on ne connaît pas encore les éléments ne compte pas « 0 sur 0 »
+  return `<div class="d-run" data-running data-op="${run.verb}" data-run-set="${esc(set)}"${run.dry ? ' data-dry' : ''} data-phase="${run.phase}">
+    <div class="d-runhead">${shown ? `<b data-count>${esc(tt(TX.runCount, { n: count(unit, p.done), m: p.total }))}</b>` : ''}
       <span data-step>${esc(stopping ? tt(TX.stopping) : S.view?.step || '')}</span>
       <span class="f-muted" data-elapsed>${esc(tt(TX.elapsed, { t: M.clock((Date.now() - run.t0) / 1e3) }))}</span></div>
     <div class="d-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}"${S.view && p.pct !== null ? '' : ' data-indeterminate'}><i style="width:${p.pct ?? 0}%"></i></div>
-    <ul class="d-zl">${M.zoneRows(S.view, S.ids, run.verb).map(r => zoneLineHtml(r, run.verb)).join('')}</ul>
+    <ul class="d-zl">${M.zoneRows(opView(set), S.ids, run.verb, set !== 'base').map(r => zoneLineHtml(r, run.verb, set)).join('')}</ul>
     <p><button type="button" data-verb="stop"${stopping ? ' disabled' : ''}>${esc(tt(TX.stop))}</button></p></div>`;
 }
+/** Le résumé de fin d'une construction d'un jeu autre que la base : { text, advice, level } d'après la fin calculée par M.outcome. */
+function setSummary(out, set) {
+  const T = TX.setSum,
+    v = {
+      s: tt(TX.setLabel[set]),
+      built: count(M.SETS[set].unit, out.built.length),
+      failed: out.failed.length,
+      items: out.failed.map(f => itemName(set, f.zone)).join(', '),
+      n: count(M.SETS[set].unit, out.built.length)
+    };
+  return {
+    done: {
+      text: tt(T.buildDone, v),
+      level: 'ok'
+    },
+    partial: {
+      text: tt(T.buildPartial, v),
+      advice: TX.setAdvice.partial,
+      level: 'warn'
+    },
+    failed: {
+      text: tt(T.buildFailed, v),
+      advice: TX.setAdvice.failed,
+      level: 'err'
+    },
+    cancelled: {
+      text: tt(T.buildStopped, v),
+      advice: TX.setAdvice.cancelled,
+      level: 'warn'
+    },
+    interrupted: {
+      text: tt(T.buildInterrupted, v),
+      advice: TX.setAdvice.interrupted,
+      level: 'warn'
+    },
+    'no-codes': {
+      text: tt(T.noCodes, v),
+      level: 'err'
+    },
+    'no-script': {
+      text: tt(T.noScript, v),
+      level: 'err'
+    }
+  } [out.kind] || {
+    text: tt(T.buildFailed, v),
+    advice: TX.setAdvice.failed,
+    level: 'err'
+  };
+}
 /** Le résumé de fin (aussi le texte de la notification) : { text, advice, level } d'après la fin calculée par M.outcome. */
-function summary(out) {
+function summary(out, set = 'base') {
+  if (set !== 'base') return setSummary(out, set);
   const z = out.failed.map(f => f.zone).join(', '),
     v = {
       built: count('zone', out.built.length),
@@ -523,7 +624,23 @@ const plural = (key, n) => tt(TX[key][n === 1 ? 0 : 1], {
   n
 });
 /** Le résumé d'un téléchargement : { text, outside (la phrase des fichiers hors synchronisation, vide sans), level }. */
-function fetchSummary(out) {
+function fetchSummary(out, set = 'base') {
+  if (set !== 'base') {
+    const T = TX.setSum,
+      unit = M.SETS[set].unit,
+      v = {
+        s: tt(TX.setLabel[set]),
+        c: count(unit, out.fetched.length),
+        u: count(unit, out.unchanged.length),
+        f: plural('fetchFails', out.failed.length)
+      };
+    return {
+      text: tt(out.kind === 'nothing' ? T.fetchNothing : out.kind === 'interrupted' ? T.fetchInterrupted : out.kind === 'cancelled' ? T
+        .fetchStopped : out.kind === 'no-codes' ? T.noCodes : out.kind === 'no-script' ? T.noScript : T.fetchDone, v),
+      outside: out.outside > 0 ? plural('fetchOutside', out.outside) : '',
+      level: out.level
+    };
+  }
   const v = {
       c: plural('fetchChanged', out.fetched.length),
       u: plural('fetchSame', out.unchanged.length),
@@ -569,55 +686,95 @@ function purgeNotes(out) {
 }
 /** La question de la purge, faite du plan (le résultat à blanc) : « Purger 12 fichiers (13,8 Mo) des sources de France, Espagne ? » puis,
  *  s'il y a lieu, la phrase des fichiers du SIA partagés et celle des fichiers suivis par git gardés. */
-function purgeAsk(out) {
-  const names = M.orderZones(out.zones, S.d.zones).map(z => M.zoneName(S.d.zones, z, li())).join(', ');
-  return [tt(TX.purgeAsk, {
+function purgeAsk(out, set = 'base') {
+  const names = set === 'base' ? M.orderZones(out.zones, S.d.zones).map(z => M.zoneName(S.d.zones, z, li())).join(', ') : out.zones.filter(
+    z => z !== '*').map(z =>
+    itemName(set, z)).join(', ') || tt(TX.setLabel[set]);
+  return [tt(set === 'base' ? TX.purgeAsk : TX.purgeAskSet, {
     n: count('file', out.files),
     s: M.fmtBytes(out.bytes, lang()),
     z: names
   }), out.shared ? tt(TX.purgeShared) : '', out.kept > 0 ? plural('purgeKept', out.kept) : ''].filter(Boolean).join(' ');
 }
 /** Les sources à déposer à la main : leur nom (×4) en lien seulement si l'adresse est en https://, sinon le nom seul. */
-function manualHtml(list) {
+function manualHtml(list, set = 'base') {
   if (!list.length) return '';
   const item = m => {
     const name = esc(m.name?.[li()] || m.name?.[0] || sourceName(m.source)),
       label = M.isHttps(m.url) ? `<a href="${esc(m.url)}" target="_blank" rel="noopener noreferrer">${name}</a>` : `<span>${name}</span>`;
-    return `<li data-manual="${esc(m.zone)}:${esc(m.source)}">${esc(M.zoneName(S.d.zones, m.zone, li()))} : ${label}</li>`;
+    return `<li data-manual="${esc(m.zone)}:${esc(m.source)}">${esc(itemName(set, m.zone))} : ${label}</li>`;
   };
   return `<p data-manual-hint>${esc(tt(TX.fetchManual))}</p><ul class="d-manual" data-manual-list>${list.map(item).join('')}</ul>`;
 }
 /** La fin d'un téléchargement : le résumé, les fichiers hors synchronisation, les sources manuelles, les lignes des zones et de leurs sources. */
-function fetchResultHtml(out) {
-  const sm = fetchSummary(out),
-    rows = out.kind === 'nothing' ? [] : M.zoneRows(S.view, S.ids, 'fetch'); // rien n'a tourné : pas de lignes « en attente »
+function fetchResultHtml(out, set = 'base') {
+  const sm = fetchSummary(out, set),
+    rows = ['nothing', 'no-codes', 'no-script'].includes(out.kind) ? [] : M.zoneRows(opView(set), S.ids, 'fetch', set !==
+      'base'); // rien n'a tourné : pas de lignes « en attente »
   return `<div data-build-result data-op="fetch" data-result="${out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>
     ${sm.outside ? `<p class="f-warn" data-outside>${esc(sm.outside)}</p>` : ''}
-    ${manualHtml(out.manual)}
-    ${rows.length ? `<ul class="d-zl">${rows.map(r => zoneLineHtml(r, 'fetch')).join('')}</ul>` : ''}</div>`;
+    ${manualHtml(out.manual, set)}
+    ${rows.length ? `<ul class="d-zl">${rows.map(r => zoneLineHtml(r, 'fetch', set)).join('')}</ul>` : ''}</div>`;
 }
 /** La fin d'une purge (ou « Rien à purger » quand le plan est vide) : le résumé, les phrases des avertissements, les lignes des zones. */
 function purgeResultHtml(r) {
-  const sm = purgeSummary(r.out, !!r.nothing),
-    rows = !r.nothing && S.view?.zones ? M.zoneRows(S.view, S.ids, 'purge') : [];
+  const set = r.set || 'base',
+    v = opView(set),
+    sm = purgeSummary(r.out, !!r.nothing),
+    rows = !r.nothing && v?.zones ? M.zoneRows(v, S.ids, 'purge', set !== 'base') : [];
   return `<div data-build-result data-op="purge" data-result="${r.nothing ? 'nothing' : r.out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>
     ${sm.notes.map(n => `<p class="f-muted" data-line>${esc(n)}</p>`).join('')}
-    ${rows.length ? `<ul class="d-zl">${rows.map(z => zoneLineHtml(z, 'purge')).join('')}</ul>` : ''}</div>`;
+    ${rows.length ? `<ul class="d-zl">${rows.map(z => zoneLineHtml(z, 'purge', set)).join('')}</ul>` : ''}</div>`;
 }
-/** La fin de la dernière opération du panneau : la phrase de résumé, ce qu'il y a à faire, puis les lignes des zones (leurs derniers
- *  états, avec le motif des échecs) ; ou la phrase d'un départ refusé. */
-function resultHtml() {
+/** Le résumé de la fin d'une publication de fiches : { text, level } (aussi le texte de la notification) ; `none` : le plan n'avait rien à faire. */
+function sheetsSummary(out, none = false) {
+  const v = {
+    c: count('sheet', out.copied),
+    r: count('sheet', out.removed)
+  };
+  if (none) return {
+    text: tt(TX.sheetsNothing),
+    level: 'ok'
+  };
+  return {
+    text: tt({
+      done: TX.sheetsDone,
+      failed: TX.sheetsFailed,
+      'no-author': TX.sheetsNoAuthor,
+      cancelled: TX.sheetsStopped,
+      interrupted: TX.sheetsInterrupted
+    } [out.kind], v),
+    level: out.level
+  };
+}
+/** La fin d'une publication de fiches (ou « Rien à publier » quand le plan est vide) : une phrase. */
+function sheetsResultHtml(r) {
+  const sm = sheetsSummary(r.out, !!r.nothing);
+  return `<div data-build-result data-op="publish" data-result="${r.nothing ? 'nothing' : r.out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p></div>`;
+}
+/** La fin de la dernière opération du panneau `panel` (M.panelOf) : la phrase de résumé, ce qu'il y a à faire, puis les lignes des éléments (leurs
+ *  derniers états, avec le motif des échecs) ; ou la phrase d'un départ refusé. Vide si la dernière opération est celle d'un autre panneau. */
+function resultHtml(panel = 'base') {
   const r = S.result;
-  if (!r) return '';
+  if (!r || M.panelOf(r.set || 'base', r.verb) !== panel) return '';
   if (r.refused) return `<div data-build-result data-result="refused" data-refusal="${r.refused.key}"><p class="f-warn">${esc(tt(TX.refused[r.refused.key], { n: r.refused.wait }))}</p></div>`;
-  if (r.verb === 'fetch') return fetchResultHtml(r.out);
+  const set = r.set || 'base';
+  if (panel === 'sheets') return sheetsResultHtml(r);
+  if (r.verb === 'fetch') return fetchResultHtml(r.out, set);
   if (r.verb === 'purge') return purgeResultHtml(r);
-  const sm = summary(r.out),
-    rows = S.view?.zones && !['no-browser', 'xplane-in-page'].includes(r.out.kind) ? M.zoneRows(S.view, S.ids) :
-  []; // rien n'a tourné : pas de lignes « en attente »
+  const sm = summary(r.out, set),
+    v = opView(set),
+    rows = v?.zones && !['no-browser', 'xplane-in-page', 'no-codes', 'no-script'].includes(r.out.kind) ? M.zoneRows(v, S.ids, 'build',
+      set !== 'base') : []; // rien n'a tourné : pas de lignes « en attente »
   return `<div data-build-result data-result="${r.out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>
     ${sm.advice ? `<p class="f-muted" data-advice>${esc(tt(sm.advice))}</p>` : ''}
-    ${rows.length ? `<ul class="d-zl">${rows.map(z => zoneLineHtml(z)).join('')}</ul>` : ''}</div>`;
+    ${rows.length ? `<ul class="d-zl">${rows.map(z => zoneLineHtml(z, 'build', set)).join('')}</ul>` : ''}</div>`;
+}
+/** Ce que dit un panneau sous ses boutons : une autre opération du lanceur, puis la marche (si c'est son jeu qui tourne) ou la dernière fin. */
+function opAreaHtml(panel) {
+  const here = S.run && M.panelOf(S.run.set, S.run.verb) === panel;
+  return `${S.other && !S.run ? `<p class="f-muted" data-other>${esc(tt(TX.otherRunning, { s: S.other.step || '…' }))}</p>` : ''}
+    ${here ? runningHtml() : S.run ? '' : resultHtml(panel)}`;
 }
 /** L'intérieur du panneau : les zones, les sources sous licence personnelle, les boutons Télécharger · Construire · Purger et leur
  *  raison (une seule), la marche ou la fin. */
@@ -631,7 +788,7 @@ function buildInner() {
     pers = M.personalSources(ticked),
     xplaneOn = pers.some(p => p.id === 'xplane' && S.personal.has('xplane')),
     why = gate.reason ? tt(TX.greyReason[gate.reason]) : '',
-    off = gate.disabled ? ' disabled' : '';
+    off = verb => gate.verbs[verb].disabled ? ' disabled' : '';
   return `<h2>${esc(tt(TX.buildTitle))}</h2>
     <h3>${esc(tt(TX.buildZones))}</h3>
     <div class="d-opts" data-build-zones>${ids.map(z => optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)).join('')}</div>
@@ -639,44 +796,145 @@ function buildInner() {
       ${optHtml('data-personal', p.id, personalName(p.id), S.personal.has(p.id), busy)}
       <p class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</p>
       ${p.id === 'xplane' && xplaneOn ? `<p class="f-warn" data-xplane-hint>${esc(tt(TX.xplaneHint))}</p>` : ''}</div>`).join('')}</div>` : ''}
-    <p class="d-verbs"><button type="button" data-verb="download"${off}>${esc(tt(TX.download))}</button>
-      <button type="button" class="primary" data-verb="build"${off}>${esc(tt(TX.build))}</button>
-      <button type="button" data-verb="purge"${off}>${esc(tt(TX.purge))}</button></p>
+    <p class="d-verbs"><button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>
+      <button type="button" class="primary" data-verb="build"${off('build')}>${esc(tt(TX.build))}</button>
+      <button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button></p>
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
-    ${S.other && !S.run ? `<p class="f-muted" data-other>${esc(tt(TX.otherRunning, { s: S.other.step || '…' }))}</p>` : ''}
-    ${S.run ? runningHtml() : resultHtml()}`;
+    ${opAreaHtml('base')}`;
 }
 /** Le panneau « Télécharger, construire, purger » (en tête du groupe Base aéronautique). */
 function buildHtml() {
   return `<section class="f-card" data-build>${buildInner()}</section>`;
 }
-/** Redessine le panneau seul (une marche s'y met à jour chaque seconde) ; la case ou le bouton qui avait le focus le garde. */
-function renderBuild() {
-  renderPublish(); // le bouton « Publier » suit la construction (et l'inverse) : un seul point de redessin pour les deux panneaux
-  const box = S?.body?.querySelector('[data-build]');
-  if (!box || !S.d) return;
+
+// ---------------------------------------------------------------- les panneaux des autres groupes (V3 § 10.34, lot A1)
+/** Les États proposés aux procédures : verts et oranges de coverageByState(), dans l'ordre de leurs noms. */
+function procList() {
+  return M.procItems(S.d?.byState, li());
+}
+/** Ce qu'un panneau a choisi : { ids (les éléments, dans l'ordre), personal (base), cycle (date d'effet, points VFR), codes et bad (appareils : les
+ *  types valides et les refusés) }. Les États cochés qui ne sont plus proposés ne comptent pas. */
+function selection(set) {
+  if (set === 'base') {
+    const {
+      ticked
+    } = buildZones();
+    return {
+      ids: ticked,
+      personal: personalPicked(ticked)
+    };
+  }
+  if (set === 'proc') return {
+    ids: procList().map(i => i.id).filter(id => S.picked.has(id))
+  };
+  if (set === 'vfr') {
+    const cycle = S.airac ? S.airac.cycleOf(S.now).date : null;
+    return {
+      ids: cycle ? [cycle] : [],
+      cycle
+    };
+  }
+  const p = M.parseCodes(S.codes);
+  return {
+    ids: p.codes,
+    codes: p.codes,
+    bad: p.bad
+  };
+}
+/** Les boutons Télécharger · Construire · Purger d'un panneau (gris pour la raison de M.setGate). */
+function verbsHtml(gate) {
+  const off = verb => gate.verbs[verb].disabled ? ' disabled' : '';
+  return `<p class="d-verbs"><button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>
+      <button type="button" class="primary" data-verb="build"${off('build')}>${esc(tt(TX.build))}</button>
+      <button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button></p>`;
+}
+/** Le choix d'éléments d'un panneau : les États à cocher (procédures), le cycle en vigueur (points VFR), le champ des types OACI (appareils). */
+function choiceHtml(set, busy) {
+  if (set === 'proc') {
+    const list = procList();
+    return list.length ? `<div class="d-opts" data-items>${list.map(i => optHtml('data-item', i.id, i.name, S.picked.has(i.id), busy)).join('')}</div>` :
+      `<p class="f-muted" data-no-items>${esc(tt(TX.noStates))}</p>`;
+  }
+  if (set === 'vfr') return S.cycleId ? `<p data-item-cycle><b>${esc(tt(TX.cycle, { c: S.cycleId }))}</b></p>` : '';
+  return `<div class="d-codes"><label>${esc(tt(TX.codesLabel))}<input type="text" data-f="codes" value="${esc(S.codes)}" autocomplete="off" autocapitalize="characters" spellcheck="false"${busy ? ' disabled' : ''}></label>
+    <p class="f-muted">${esc(tt(TX.codesHint))}</p>
+    ${S.codesBad.length ? `<p class="f-warn" data-codes-error>${esc(tt(TX.codesBad, { c: S.codesBad.join(', ') }))}</p>` : ''}</div>`;
+}
+/** L'intérieur du panneau d'un jeu autre que la base, ou des fiches publiées : le titre, le choix, les boutons et leur raison (une seule), la
+ *  marche ou la fin. */
+function setInner(panel) {
+  if (panel === 'sheets') {
+    const gate = gateOf(M.SHEETS.set, undefined, [M.SHEETS.verb]),
+      why = gate.reason ? tt(TX.greyReason[gate.reason]) : '';
+    return `<h2>${esc(tt(TX.setTitle.sheets))}</h2>
+      <p class="d-verbs"><button type="button" class="primary" data-verb="publish-sheets"${gate.verbs[M.SHEETS.verb].disabled ? ' disabled' : ''}>${esc(tt(TX.publish))}</button></p>
+      ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
+      ${opAreaHtml('sheets')}`;
+  }
+  const sel = selection(panel),
+    gate = gateOf(panel, M.SETS[panel].free ? undefined : sel.ids.length),
+    why = gate.reason ? tt(TX.greyReason[gate.reason]) : '';
+  return `<h2>${esc(tt(TX.setTitle[panel]))}</h2>
+    <h3>${esc(tt(TX.setItems[panel]))}</h3>
+    ${choiceHtml(panel, !!S.run)}
+    ${verbsHtml(gate)}
+    ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
+    ${panel === 'aircraft' ? `<p class="f-muted" data-hint>${esc(tt(TX.aircraftHint))}</p>` : ''}
+    ${opAreaHtml(panel)}`;
+}
+/** Le panneau d'un jeu autre que la base (ou celui des fiches publiées). */
+function setPanelHtml(panel) {
+  return `<section class="f-card" data-set-panel="${panel}">${setInner(panel)}</section>`;
+}
+/** Les panneaux d'un groupe : base (Télécharger · Construire · Purger de la base, « Publier » partagé, puis les points VFR), procédures, appareils (puis
+ *  les fiches publiées) ; aucun pour la météo, publiée avec le site. */
+function panelsHtml(group) {
+  if (group === 'base') return buildHtml() + publishHtml() + setPanelHtml('vfr');
+  if (group === 'proc') return setPanelHtml('proc');
+  if (group === 'aircraft') return setPanelHtml('aircraft') + setPanelHtml('sheets');
+  return '';
+}
+/** Redessine un panneau seul ; ce qui avait le focus (case, champ, bouton) le garde, avec sa sélection de texte. */
+function redrawPanel(box) {
   const a = box.contains(document.activeElement) ? document.activeElement : null,
-    sel = a ? a.dataset.buildZone ? `[data-build-zone="${CSS.escape(a.dataset.buildZone)}"]` : a.dataset.personal ? `[data-personal="${CSS.escape(a.dataset.personal)}"]` : a
-    .dataset.verb ? `[data-verb="${CSS.escape(a.dataset.verb)}"]` : '' : '';
+    q = (attr, v) => `[${attr}="${CSS.escape(v)}"]`,
+    sel = a ? a.dataset.buildZone ? q('data-build-zone', a.dataset.buildZone) : a.dataset.personal ? q('data-personal', a.dataset
+      .personal) : a.dataset
+    .item ? q('data-item', a.dataset.item) : a.dataset.f ? q('data-f', a.dataset.f) : a.dataset.verb ? q('data-verb', a.dataset.verb) : '' :
+    '',
+    from = a?.selectionStart ?? null,
+    to = a?.selectionEnd ?? null;
   keepScroll(S.body, () => {
-    box.innerHTML = buildInner();
+    box.innerHTML = box.matches('[data-build]') ? buildInner() : setInner(box.dataset.setPanel);
     const el = sel && box.querySelector(sel);
-    if (el && !el.disabled) el.focus({
-      preventScroll: true
-    });
+    if (el && !el.disabled) {
+      el.focus({
+        preventScroll: true
+      });
+      if (from !== null && el.setSelectionRange) el.setSelectionRange(from, to);
+    }
   });
 }
-/** Ouvre le groupe Base aéronautique (une marche ou un résultat s'y montre) sans attendre un toucher. */
-function openBase() {
-  S.manual.base = true;
-  const g = S.body?.querySelector('details.f-group[data-group="base"]');
+/** Redessine les panneaux (une marche s'y met à jour chaque seconde) ; la case ou le bouton qui avait le focus le garde. */
+function renderBuild() {
+  renderPublish(); // le bouton « Publier » suit la construction (et l'inverse) : un seul point de redessin pour tous les panneaux
+  if (!S?.body || !S.d) return;
+  for (const box of S.body.querySelectorAll('[data-build], [data-set-panel]')) redrawPanel(box);
+}
+/** Ouvre le groupe d'un panneau (une marche ou un résultat s'y montre) sans attendre un toucher. */
+function openGroup(set, verb) {
+  const id = M.groupOf(set, verb);
+  S.manual[id] = true;
+  const g = S.body?.querySelector(`details.f-group[data-group="${id}"]`);
   if (g) g.open = true;
 }
-/** La ligne d'une opération du journal : heure UTC, verbe, zones, résultat. */
+/** La ligne d'une opération du journal : heure UTC, jeu (hors base), verbe, éléments, résultat. */
 function opHtml(e) {
-  const zs = e.verb === 'publish' ? count('file', M.num(e.committed) ?? 0) : (e.zones || []).map(z => M.zoneName(S.d?.zones, z, li())).join(
-    ', ');
-  return `<li data-op data-result="${esc(e.result)}" data-op-verb="${esc(e.verb)}"><time datetime="${esc(e.at)}">${esc(fmtDateZ(e.at, lang()))}</time> · ${esc(tt(TX.opVerb[e.verb] || [e.verb, e.verb, e.verb, e.verb]))} · ${esc(zs)} · ${esc(tt(TX.opResult[e.result] || [e.result, e.result, e.result, e.result]))}</li>`;
+  const set = e.set || 'base',
+    items = (e.items || e.zones || []).map(z => itemName(set, z)).join(', '),
+    zs = e.verb === 'publish' ? count('file', M.num(e.committed) ?? 0) : items,
+    label = set === 'base' ? '' : `${tt(TX.setLabel[set] || [set, set, set, set])} · `;
+  return `<li data-op data-result="${esc(e.result)}" data-op-verb="${esc(e.verb)}" data-op-set="${esc(set)}"><time datetime="${esc(e.at)}">${esc(fmtDateZ(e.at, lang()))}</time> · ${esc(label)}${esc(tt(TX.opVerb[e.verb] || [e.verb, e.verb, e.verb, e.verb]))} · ${esc(e.set === 'aircraft' && e.verb === 'publish' ? count('sheet', M.num(e.copied) ?? 0) : zs)} · ${esc(tt(TX.opResult[e.result] || [e.result, e.result, e.result, e.result]))}</li>`;
 }
 /** Le journal, replié, au pied de l'écran : les opérations les plus récentes d'abord. */
 function journalHtml() {
@@ -873,10 +1131,10 @@ async function startPublish() {
 }
 
 // ---------------------------------------------------------------- la marche
-/** Une seconde de plus : met à jour le seul temps écoulé de la marche. */
+/** Une seconde de plus : met à jour le seul temps écoulé de la marche (dans le panneau de son jeu). */
 function tick() {
   const run = S?.run,
-    el = S?.body?.querySelector('[data-build] [data-elapsed]');
+    el = S?.body?.querySelector('[data-running] [data-elapsed]');
   if (run && el) el.textContent = tt(TX.elapsed, {
     t: M.clock((Date.now() - run.t0) / 1e3)
   });
@@ -886,35 +1144,40 @@ function stopTimer() {
   clearInterval(S?.timer);
   if (S) S.timer = 0;
 }
-/** Commence une marche (la nôtre ou un travail trouvé en route) : verbe, zones, minuteur, groupe ouvert. `dry` : le plan d'une purge. */
-function beginRun(ids, ctrl, verb = 'build', dry = false) {
+/** Commence une marche (la nôtre ou un travail trouvé en route) : jeu, verbe, éléments, minuteur, groupe ouvert. `dry` : le plan d'une purge ou
+ *  d'une publication de fiches ; `args` : les arguments du travail réel (sans dry), que la question d'un plan renvoie une fois confirmée. */
+function beginRun(ids, ctrl, set = 'base', verb = 'build', dry = false, args = null) {
   S.run = {
     phase: 'running',
     t0: Date.now(),
     ctrl,
+    set,
     verb,
-    dry
+    dry,
+    args
   };
   S.ids = ids;
   S.view = null;
   S.result = null;
   stopTimer();
   S.timer = setInterval(tick, 1000);
-  openBase();
+  openGroup(set, verb);
 }
-/** Une vue du travail arrive : elle remplace la précédente et le panneau se redessine. Un travail de la base (construction,
- *  téléchargement ou purge) trouvé en route (resume) est adopté à sa première vue, avec son verbe ; le travail d'une autre opération
- *  n'est que signalé. */
+/** Les éléments d'une vue de travail d'un jeu (les zones, les États, les types, le cycle), dans l'ordre de la vue. */
+const viewIds = (set, v) => Object.keys(M.normView(set, v)?.zones || {});
+/** Une vue du travail arrive : elle remplace la précédente et le panneau se redessine. Un travail connu (n'importe quel jeu et verbe : construction,
+ *  téléchargement, purge, fiches) trouvé en route (resume) est adopté à sa première vue, avec son jeu et son verbe ; le travail d'une autre
+ *  opération n'est que signalé. */
 function onView(me, v, ctrl) {
   if (S !== me || !v) return;
-  const verb = M.viewVerb(v);
-  if (!verb) {
+  const op = M.viewOp(v);
+  if (!op) {
     S.other = v;
     return renderBuild();
   }
-  if (!S.run) beginRun(Object.keys(v.zones || {}), ctrl, verb, M.isDry(v));
+  if (!S.run) beginRun(viewIds(op.set, v), ctrl, op.set, op.verb, M.opDry(v));
   S.view = v;
-  if (S.ids.length === 0) S.ids = Object.keys(v.zones || {});
+  if (S.ids.length === 0) S.ids = viewIds(S.run.set, v);
   renderBuild();
 }
 /** Écrit l'opération au journal (cache/data/journal.json, les 50 dernières) et redessine le journal. */
@@ -928,39 +1191,44 @@ function journalWrite(entry) {
   }).catch(() => {});
   renderJournal();
 }
-/** Fin d'un travail de la base, quel que soit son verbe : l'état de la marche est rendu, puis la fin propre au verbe (construction,
- *  téléchargement, plan de purge, purge). `live` : la fin s'est produite sous nos yeux (sinon c'est celle d'un travail déjà fini). */
+/** Fin d'un travail, quel que soit son jeu et son verbe : l'état de la marche est rendu, puis la fin propre au verbe (construction,
+ *  téléchargement, plan de purge, purge, plan et publication de fiches). `live` : la fin s'est produite sous nos yeux (sinon c'est celle d'un
+ *  travail déjà fini). */
 async function endRun(me, final, live) {
   const run = S.run,
-    verb = run?.verb || M.viewVerb(final) || 'build',
-    dry = verb === 'purge' && (run ? run.dry : M.isDry(final)),
+    op = M.viewOp(final),
+    set = run?.set || op?.set || 'base',
+    verb = run?.verb || op?.verb || 'build',
+    dry = (verb === 'purge' || verb === 'publish') && (run ? run.dry : M.opDry(final)),
     seconds = run ? (Date.now() - run.t0) / 1e3 : null;
-  if (!S.ids.length) S.ids = Object.keys(final.zones || {});
+  if (!S.ids.length) S.ids = viewIds(set, final);
   stopTimer();
   S.run = null;
   S.other = null;
   S.view = final;
-  if (dry && !live) return renderBuild(); // le plan d'une purge terminé avant l'ouverture : il n'est plus à poser
-  if (verb === 'fetch') return endFetch(me, final, live, seconds);
-  if (verb === 'purge') return dry ? endPlan(me, final, live) : endPurge(me, final, live, seconds);
-  return endBuild(me, final, live, seconds);
+  if (dry && !live) return renderBuild(); // le plan terminé avant l'ouverture : il n'est plus à poser
+  if (verb === 'publish') return dry ? endSheetsPlan(me, final, run) : endSheets(me, final, live, seconds);
+  if (verb === 'fetch') return endFetch(me, final, live, seconds, set);
+  if (verb === 'purge') return dry ? endPlan(me, final, live, run) : endPurge(me, final, live, seconds, set);
+  return endBuild(me, final, live, seconds, set);
 }
 /** Fin d'une construction : le résumé dans le panneau, une notification (si on l'a suivie jusqu'au bout), le journal, puis la
  *  relecture de ce qui est publié. */
-async function endBuild(me, final, live, seconds) {
-  const out = M.outcome(final);
+async function endBuild(me, final, live, seconds, set = 'base') {
+  const out = M.setOutcome(set, 'build', final).out;
   S.result = {
+    set,
     verb: 'build',
     out
   };
   renderBuild();
   if (live) {
-    const sm = summary(out);
+    const sm = summary(out, set);
     S.ctx.notify(sm.text, sm.level);
   }
-  journalWrite(M.journalEntry({
+  journalWrite(M.setEntry(set, 'build', {
     at: Date.now(),
-    zones: S.ids,
+    ids: S.ids,
     seconds,
     out,
     job: final.job || final.id
@@ -969,18 +1237,19 @@ async function endBuild(me, final, live, seconds) {
 }
 /** Fin d'un téléchargement : le résumé, les sources manuelles et les lignes dans le panneau, une notification (le résumé, et les fichiers
  *  hors synchronisation s'il y en a), le journal (verbe « download »), puis la relecture de ce qui est publié. */
-async function endFetch(me, final, live, seconds) {
-  const out = M.fetchOutcome(final),
-    sm = fetchSummary(out);
+async function endFetch(me, final, live, seconds, set = 'base') {
+  const out = M.setOutcome(set, 'fetch', final).out,
+    sm = fetchSummary(out, set);
   S.result = {
+    set,
     verb: 'fetch',
     out
   };
   renderBuild();
   if (live) S.ctx.notify([sm.text, sm.outside].filter(Boolean).join(' · '), sm.level);
-  journalWrite(M.fetchEntry({
+  journalWrite(M.setEntry(set, 'fetch', {
     at: Date.now(),
-    zones: S.ids,
+    ids: S.ids,
     seconds,
     out,
     job: final.job || final.id
@@ -988,18 +1257,19 @@ async function endFetch(me, final, live, seconds) {
   if (live) await load();
 }
 /** Fin d'une purge réelle : le résumé et les phrases des avertissements dans le panneau, une notification, le journal, puis la relecture. */
-async function endPurge(me, final, live, seconds) {
-  const out = M.purgeOutcome(final),
+async function endPurge(me, final, live, seconds, set = 'base') {
+  const out = M.setOutcome(set, 'purge', final).out,
     sm = purgeSummary(out);
   S.result = {
+    set,
     verb: 'purge',
     out
   };
   renderBuild();
   if (live) S.ctx.notify([sm.text, ...sm.notes].join(' · '), sm.level);
-  journalWrite(M.purgeEntry({
+  journalWrite(M.setEntry(set, 'purge', {
     at: Date.now(),
-    zones: S.ids,
+    ids: S.ids,
     seconds,
     out,
     job: final.job || final.id
@@ -1007,20 +1277,23 @@ async function endPurge(me, final, live, seconds) {
   if (live) await load();
 }
 /** Fin du plan d'une purge (le travail à blanc, jamais journalisé) : rien à retirer, on le dit sans question ; sinon UNE question (les
- *  fichiers, la taille, les zones, les phrases des avertissements) et, si oui, la purge réelle sur les mêmes zones. Un plan arrêté,
- *  échoué ou interrompu ne pose aucune question. */
-async function endPlan(me, final, live) {
-  const out = M.purgeOutcome(final);
+ *  fichiers, la taille, les éléments, les phrases des avertissements) et, si oui, la purge réelle sur les mêmes éléments. Un plan arrêté,
+ *  échoué ou interrompu ne pose aucune question. `run` : la marche du plan (son jeu et les arguments du travail réel). */
+async function endPlan(me, final, live, run) {
+  const set = run?.set || 'base',
+    out = M.setOutcome(set, 'purge', final).out;
   if (out.kind === 'cancelled') { // « Arrêter » pendant le plan : rien à dire, rien n'a été retiré
     S.result = null;
     return renderBuild();
   }
   if (out.kind !== 'done' || out.nothing) {
     S.result = out.kind === 'done' ? {
+      set,
       verb: 'purge',
       out,
       nothing: true
     } : {
+      set,
       verb: 'purge',
       out
     };
@@ -1032,7 +1305,7 @@ async function endPlan(me, final, live) {
   S.result = null;
   S.asking = true; // les boutons restent gris pendant la question : une opération à la fois
   renderBuild();
-  const yes = await S.ctx.ask(purgeAsk(out), {
+  const yes = await S.ctx.ask(purgeAsk(out, set), {
     ok: tt(TX.purge)
   });
   if (S !== me) return;
@@ -1041,17 +1314,90 @@ async function endPlan(me, final, live) {
     renderBuild();
     return;
   }
-  await settle(me, await launch('purge', {
-    zones: S.ids
+  const real = run?.args || M.setArgs(set, 'purge', {
+    ids: S.ids
+  });
+  await settle(me, await launch(set, 'purge', set === 'base' ? real : {
+    ...real,
+    dry: false
   }, S.ids), true);
+}
+/** Fin du plan d'une publication de fiches (aircraft/publish à blanc, jamais journalisé) : rien à copier ni à retirer, on le dit sans question ;
+ *  sinon UNE question (les fiches à copier et à retirer) et, si oui, la publication réelle, sans dry. Un plan arrêté, échoué ou interrompu ne
+ *  pose aucune question. */
+async function endSheetsPlan(me, final, run) {
+  const out = M.sheetsOutcome(final),
+    plan = M.sheetsPlan(final);
+  if (out.kind === 'cancelled') { // « Arrêter » pendant le plan : rien n'a été copié
+    S.result = null;
+    return renderBuild();
+  }
+  if (out.kind !== 'done' || !(plan.copied || plan.removed)) {
+    S.result = {
+      set: M.SHEETS.set,
+      verb: M.SHEETS.verb,
+      out: out.kind === 'done' ? {
+        ...out,
+        copied: 0,
+        removed: 0
+      } : out,
+      nothing: out.kind === 'done'
+    };
+    renderBuild();
+    const sm = sheetsSummary(S.result.out, S.result.nothing);
+    S.ctx.notify(sm.text, sm.level);
+    return;
+  }
+  S.result = null;
+  S.asking = true; // les boutons restent gris pendant la question : une opération à la fois
+  renderBuild();
+  const yes = await S.ctx.ask(tt(TX.sheetsAsk, {
+    c: count('sheet', plan.copied),
+    r: count('sheet', plan.removed),
+    s: M.fmtBytes(plan.bytes, lang())
+  }), {
+    ok: tt(TX.publish)
+  });
+  if (S !== me) return;
+  S.asking = false;
+  if (!yes) { // non : rien n'est copié, rien n'est dit
+    renderBuild();
+    return;
+  }
+  await settle(me, await launch(M.SHEETS.set, M.SHEETS.verb, {
+    dry: false
+  }, []), true);
+}
+/** Fin d'une publication de fiches réelle : le résumé dans le panneau, une notification, le journal, puis la relecture. */
+async function endSheets(me, final, live, seconds) {
+  const out = M.sheetsOutcome(final),
+    sm = sheetsSummary(out);
+  S.result = {
+    set: M.SHEETS.set,
+    verb: M.SHEETS.verb,
+    out
+  };
+  renderBuild();
+  if (live) S.ctx.notify(sm.text, sm.level);
+  journalWrite(M.sheetsEntry({
+    at: Date.now(),
+    seconds,
+    out,
+    job: final.job || final.id
+  }));
+  if (live) await load();
 }
 /** Un départ refusé (409 : une autre opération ; 429 : trop tôt ; 404 : lanceur ancien…) : la phrase, une notification. Après un
  *  409 on suit l'opération qui tourne, pour que le bouton redevienne actif à sa fin. */
 function refused(me, r) {
-  const f = M.refusal(r);
+  const f = M.refusal(r),
+    set = S.run?.set || 'base',
+    verb = S.run?.verb || 'build';
   stopTimer();
   S.run = null;
   S.result = {
+    set,
+    verb,
     refused: f
   };
   if (f.key === 'busy') S.other = S.other || {}; // une opération tourne : le bouton reste gris pendant qu'on la rejoint
@@ -1076,21 +1422,21 @@ async function settle(me, r, live = true) {
     });
     if (S !== me) return;
     return endRun(me, e?.state && e.state !== 'running' ? e : {
+      ...S.view,
       state: 'cancelled',
-      zones: S.view?.zones,
       job: r.job
     }, live);
   }
   if (r.state && r.state !== 'running') {
-    if (M.viewVerb(r) || S.run) return endRun(me, r, live);
+    if (M.viewOp(r) || S.run) return endRun(me, r, live);
     S.other = null; // la fin d'une autre opération : le bouton redevient actif
     return renderBuild();
   }
   if (r.aborted) return;
   return refused(me, r);
 }
-/** Suit le travail de la base (construction, téléchargement ou purge) que le lanceur fait tourner (page rechargée, ou départ refusé
- *  pour cause d'opération en cours) ; si le dernier s'est terminé, en dit la fin. Ne bloque pas le montage. */
+/** Suit le travail connu (n'importe quel jeu et verbe) que le lanceur fait tourner (page rechargée, ou départ refusé pour cause d'opération
+ *  en cours) ; si le dernier s'est terminé, en dit la fin. Ne bloque pas le montage. */
 async function follow() {
   const me = S,
     L = S.ctx.launcher;
@@ -1105,15 +1451,16 @@ async function follow() {
   S.other = null;
   return settle(me, r, !!S.run);
 }
-/** Lance un travail de la base sur le lanceur (regen/job) et le suit par ses vues : la marche commence aussitôt ; rend la fin que
- *  ctx.launcher.job donne (à passer à settle). */
-async function launch(verb, args, ids, dry = false) {
+/** Lance un travail d'un jeu sur le lanceur (regen/job) et le suit par ses vues : la marche commence aussitôt ; rend la fin que
+ *  ctx.launcher.job donne (à passer à settle). `args` : le corps du travail (avec dry pour un plan) ; `plain` : les arguments du travail réel
+ *  (sans dry) que la fin d'un plan réutilise. */
+async function launch(set, verb, args, ids, dry = false, plain = null) {
   const me = S,
     ctrl = new AbortController();
-  beginRun(ids, ctrl, verb, dry);
+  beginRun(ids, ctrl, set, verb, dry, plain);
   renderBuild();
   return S.ctx.launcher.job(ROUTE, {
-    set: 'base',
+    set,
     verb,
     args
   }, {
@@ -1121,44 +1468,39 @@ async function launch(verb, args, ids, dry = false) {
     signal: ctrl.signal
   });
 }
-/** « Construire » : les zones cochées et les sources personnelles cochées vont au lanceur (regen/job) ; la marche se suit par
- *  ses vues. Rien ne part si le bouton est gris. */
-async function startBuild() {
+/** Un geste sur un panneau : « Télécharger » (fetch), « Construire » (build) ou « Purger » (purge, d'abord le plan à blanc dont la fin pose la
+ *  question) d'un jeu, ou « Publier » les fiches (aircraft/publish, plan à blanc puis la copie). Rien ne part si le bouton est gris ; des types
+ *  OACI refusés sont dits dans le panneau, sans appel au lanceur. */
+async function startOp(set, verb) {
   const me = S,
-    {
-      ticked
-    } = buildZones();
-  if (buildGate(ticked).disabled) return;
-  await settle(me, await launch('build', {
-    zones: ticked,
-    personal: personalPicked(ticked)
-  }, ticked), true);
-}
-/** « Télécharger » : les zones cochées et les sources personnelles cochées (ENAIRE n'est téléchargée que cochée) vont au lanceur,
- *  verbe « fetch » ; la marche se suit par ses vues. Rien ne part si le bouton est gris. */
-async function startFetch() {
-  const me = S,
-    {
-      ticked
-    } = buildZones();
-  if (buildGate(ticked).disabled) return;
-  await settle(me, await launch('fetch', {
-    zones: ticked,
-    personal: personalPicked(ticked)
-  }, ticked), true);
-}
-/** « Purger » : d'abord le plan (le même travail, à blanc : dry), suivi comme un travail ; sa fin (endPlan) pose la question, puis la
- *  purge réelle. Rien ne part si le bouton est gris. */
-async function startPurge() {
-  const me = S,
-    {
-      ticked
-    } = buildZones();
-  if (buildGate(ticked).disabled) return;
-  await settle(me, await launch('purge', {
-    zones: ticked,
+    sheets = set === M.SHEETS.set && verb === M.SHEETS.verb,
+    sel = sheets ? {
+      ids: []
+    } : selection(set);
+  if (sheets) {
+    if (gateOf(set, undefined, [verb]).verbs[verb].disabled) return;
+  } else {
+    const gate = gateOf(set, M.SETS[set].free ? undefined : sel.ids.length);
+    if (gate.verbs[verb].disabled) return;
+  }
+  if (sel.bad?.length && verb !==
+    'purge') { // un type OACI refusé (la purge ne prend pas de types) : on le dit, on n'appelle pas le lanceur
+    S.codesBad = sel.bad;
+    renderBuild();
+    S.ctx.notify(tt(TX.codesBad, {
+      c: sel.bad.join(', ')
+    }), 'err');
+    return;
+  }
+  if (set === 'vfr' && !sel.cycle) return; // le cycle en vigueur est inconnu : rien à demander
+  const args = sheets ? {} : M.setArgs(set, verb, sel),
+    dry = verb === 'purge' || sheets,
+    // les appareils : les lignes d'une construction ou d'un téléchargement sont les trois étapes ; la purge ne compte rien par élément
+    ids = set === 'aircraft' ? verb === 'purge' || sheets ? [] : M.SETS.aircraft.steps : sel.ids;
+  await settle(me, await launch(set, verb, dry ? {
+    ...args,
     dry: true
-  }, ticked, true), true);
+  } : args, ids, dry, args), true);
 }
 
 // ---------------------------------------------------------------- gestes
@@ -1178,32 +1520,56 @@ function onAerodbChange(e) {
       box.innerHTML = statesHtml();
       if (open) box.querySelector('[data-more]')?.setAttribute('open', '');
     });
+    renderBuild(); // les États que le panneau des procédures propose suivent la table de couverture
   }, 150);
 }
-/** Retient le groupe touché en dernier (le « ? » du cadre ouvre l'aide au paragraphe du groupe ouvert). */
+/** Le verbe du lanceur d'un bouton de l'écran, par son panneau : [jeu, verbe] ou null (« Arrêter », « Publier » la base : traités à part). Les
+ *  boutons du panneau de la base n'ont pas de panneau nommé ; ceux des autres jeux sont sous `data-set-panel`. */
+function opOf(v) {
+  const panel = v.closest('[data-set-panel]')?.dataset.setPanel,
+    verb = {
+      download: 'fetch',
+      build: 'build',
+      purge: 'purge'
+    } [v.dataset.verb];
+  if (panel === 'sheets') return v.dataset.verb === 'publish-sheets' ? [M.SHEETS.set, M.SHEETS.verb] : null;
+  if (panel) return verb ? [panel, verb] : null;
+  return v.closest('[data-build]') && verb ? ['base', verb] : null;
+}
+/** Retient le groupe touché en dernier (le « ? » du cadre ouvre l'aide au paragraphe du groupe ouvert), puis le geste d'un bouton. */
 function onClick(e) {
   const g = e.target.closest?.('details.f-group > summary')?.parentElement;
   if (g) S.focus = g.dataset.group;
   const v = e.target.closest?.('button[data-verb]');
   if (!v || v.disabled) return;
-  if (v.dataset.verb === 'build') startBuild();
-  else if (v.dataset.verb === 'download') startFetch();
-  else if (v.dataset.verb === 'purge') startPurge();
+  if (v.dataset.verb === 'stop') return S.run?.ctrl.abort();
+  const op = opOf(v);
+  if (op) startOp(...op);
   else if (v.dataset.verb === 'publish') startPublish();
-  else if (v.dataset.verb === 'stop') S.run?.ctrl.abort();
 }
-/** Une case du panneau « Construire » (zone ou source sous licence personnelle) change : le choix est retenu, le panneau redessiné
+/** Une case des panneaux (zone, source sous licence personnelle, État des procédures) change : le choix est retenu, le panneau redessiné
  *  (les sources proposées suivent les zones cochées). */
 function onChange(e) {
   const t = e.target;
   if (t instanceof HTMLSelectElement && t.matches('[data-add-zone]')) return t.value && addZone(t.value);
   if (!(t instanceof HTMLInputElement) || S.run) return;
-  const set = t.dataset.buildZone ? S.ticked : t.dataset.personal ? S.personal : null,
-    id = t.dataset.buildZone || t.dataset.personal;
+  const set = t.dataset.buildZone ? S.ticked : t.dataset.personal ? S.personal : t.dataset.item ? S.picked : null,
+    id = t.dataset.buildZone || t.dataset.personal || t.dataset.item;
   if (!set) return;
   if (t.checked) set.add(id);
   else set.delete(id);
   renderBuild();
+}
+/** Le champ des types OACI est tapé : le texte est retenu (sans redessin : la frappe n'est pas dérangée) et l'avertissement des codes refusés
+ *  disparaît ; le bouton reste actif, le refus se fait au geste. */
+function onInput(e) {
+  const t = e.target;
+  if (!(t instanceof HTMLInputElement) || t.dataset.f !== 'codes') return;
+  S.codes = t.value;
+  if (S.codesBad.length) {
+    S.codesBad = [];
+    t.closest('.d-codes')?.querySelector('[data-codes-error]')?.remove();
+  }
 }
 /** Retient les groupes ouverts ou fermés à la main, d'un dessin à l'autre. */
 function onToggle(e) {
@@ -1229,11 +1595,15 @@ export async function mount(el, ctx) {
     again: 0,
     ticked: null, // zones cochées pour la construction (toutes à la première lecture)
     personal: new Set(), // sources sous licence personnelle cochées (aucune par défaut)
-    run: null, // le travail de la base suivi : { phase: 'running' | 'stopping', t0, ctrl, verb ('build' | 'fetch' | 'purge'), dry }
-    asking: false, // la question d'une purge est posée : les boutons restent gris
+    picked: new Set(), // États des procédures cochés (aucun par défaut)
+    codes: '', // le champ des types OACI des appareils (vide : les types de la flotte)
+    codesBad: [], // les types refusés au dernier geste (dits dans le panneau, aucun appel)
+    known: M.knownVerbs(null), // les verbes du lanceur (regen/verbs), lus au montage
+    run: null, // le travail suivi, de n'importe quel jeu : { phase: 'running' | 'stopping', t0, ctrl, set, verb ('build' | 'fetch' | 'purge' | 'publish'), dry, args }
+    asking: false, // la question d'une purge ou d'une publication de fiches est posée : les boutons restent gris
     view: null, // la dernière vue du travail du lanceur
-    ids: [], // les zones du travail en cours ou du dernier
-    result: null, // la fin du dernier : { verb, out } (purge à plan vide : nothing) ou { refused }
+    ids: [], // les éléments du travail en cours ou du dernier (zones, États, cycle, types)
+    result: null, // la fin du dernier : { set, verb, out } (plan vide : nothing) ou { set, verb, refused }
     other: null, // la vue d'une autre opération du lanceur, tant qu'elle tourne
     pub: {
       status: null,
@@ -1255,13 +1625,18 @@ export async function mount(el, ctx) {
   ctx.helpAnchor?.(() => helpGroup() ? `data-group-${helpGroup()}` : 'data-cycle');
   S.body.addEventListener('click', onClick);
   S.body.addEventListener('change', onChange);
+  S.body.addEventListener('input', onInput);
   S.onNet = () => renderBuild(); // « hors ligne » : la raison du bouton suit le réseau
   window.addEventListener('online', S.onNet);
   window.addEventListener('offline', S.onNet);
   S.body.addEventListener('toggle', onToggle, true);
   // la couverture par État dépend de la table de couverture d'aerodb : redemandée quand il annonce { coverage: true }
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', onAerodbChange));
-  S.journal = M.journalList(await ctx.data.get(JOURNAL).catch(() => null));
+  const me = S;
+  const [journal, known] = await Promise.all([ctx.data.get(JOURNAL).catch(() => null), readVerbs()]);
+  if (S !== me) return; // démonté pendant la lecture
+  S.journal = M.journalList(journal);
+  S.known = known;
   await load();
   follow(); // un travail de la base en cours sur le lanceur (page rechargée) se suit ; le dernier terminé dit sa fin
 }

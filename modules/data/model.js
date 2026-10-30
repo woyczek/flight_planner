@@ -393,16 +393,18 @@ export function buildState(s) {
     reason
   };
 }
-/** Le code d'échec d'une zone : ceux du verbe, sinon 'unknown' ; pour la purge (codes non fixés par le lanceur) le code court tel quel. */
-function zoneCode(verb, error) {
-  if (verb === 'build') return ERROR_CODES.includes(error) ? error : 'unknown';
-  if (verb === 'fetch') return FETCH_CODES.includes(error) ? error : 'unknown';
-  return typeof error === 'string' && /^[\w-]{1,40}$/.test(error) ? error : 'unknown';
+/** Le code d'échec d'une zone : ceux du verbe, sinon 'unknown' ; pour la purge (codes non fixés par le lanceur) le code court tel quel ;
+ *  `loose` (les jeux autres que la base : leurs constructeurs sont en Python, codes non fixés) garde aussi le code court d'une construction ou d'un téléchargement. */
+function zoneCode(verb, error, loose = false) {
+  const short = typeof error === 'string' && /^[\w-]{1,40}$/.test(error) ? error : 'unknown';
+  if (verb === 'build') return ERROR_CODES.includes(error) ? error : loose ? short : 'unknown';
+  if (verb === 'fetch') return FETCH_CODES.includes(error) ? error : loose ? short : 'unknown';
+  return short;
 }
 /** Ce que dit la ligne d'une zone d'après son état dans la vue du travail : { state, key, n, m, code, files, bytes } ; key : la phrase
  *  (waiting, building / fetching / purging, buildingN / fetchingN avec n / m sources, built / done, failed avec le code d'erreur,
  *  cancelled) ; `verb` : build (par défaut), fetch ou purge ; files et bytes : ce que la purge a compté pour la zone. */
-export function zonePhrase(z, verb = 'build') {
+export function zonePhrase(z, verb = 'build', loose = false) {
   const states = ZONE_STATES[verb] || ZONE_STATES.build,
     state = states.includes(z?.state) ? z.state : 'waiting',
     n = num(z?.done),
@@ -413,18 +415,18 @@ export function zonePhrase(z, verb = 'build') {
     key: state === run && verb !== 'purge' && n !== null && m !== null ? `${run}N` : state,
     n,
     m,
-    code: state === 'failed' ? zoneCode(verb, z?.error) : null,
+    code: state === 'failed' ? zoneCode(verb, z?.error, loose) : null,
     files: num(z?.files),
     bytes: num(z?.bytes)
   };
 }
 /** Les lignes de zones à montrer : les zones demandées dans leur ordre (celles que la vue ne connaît pas encore : en attente),
  *  puis celles que la vue ajoute ; [{ zone, ...zonePhrase }]. */
-export function zoneRows(view, ids, verb = 'build') {
+export function zoneRows(view, ids, verb = 'build', loose = false) {
   const zs = view?.zones && typeof view.zones === 'object' ? view.zones : {};
   return [...ids, ...Object.keys(zs).filter(z => !ids.includes(z))].map(zone => ({
     zone,
-    ...zonePhrase(zs[zone], verb)
+    ...zonePhrase(zs[zone], verb, loose)
   }));
 }
 /** Les sources d'une zone dans la vue d'un téléchargement : [{ id, state, files, bytes, code, status }] dans l'ordre de la vue ;
@@ -494,7 +496,8 @@ export function outcome(final) {
   let kind;
   if (final?.state === 'interrupted') kind = 'interrupted';
   else if (final?.state === 'cancelled') kind = 'cancelled';
-  else if (r.reason === 'no-browser' || r.reason === 'xplane-in-page') kind = r.reason;
+  else if (r.reason === 'no-browser' || r.reason === 'xplane-in-page' || r.reason === 'no-codes' || r.reason === 'no-script') kind = r
+    .reason;
   else if (r.reason === 'cancelled') kind = 'cancelled';
   else if (r.reason === 'partial' || r.reason === 'failed') kind = r.reason;
   else if (final?.state === 'error' || r.ok === false) kind = 'failed';
@@ -532,7 +535,7 @@ export function journalEntry({
     zones: [...zones],
     seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
     result: journalResult(out.kind),
-    ...(out.kind === 'no-browser' || out.kind === 'xplane-in-page' ? {
+    ...(['no-browser', 'xplane-in-page', 'no-codes', 'no-script'].includes(out.kind) ? {
       reason: out.kind
     } : {}),
     built: [...out.built],
@@ -610,11 +613,12 @@ export function fetchOutcome(final) {
   if (final?.state === 'interrupted') kind = 'interrupted';
   else if (final?.state === 'cancelled') kind = 'cancelled';
   else if (r.reason === 'nothing-to-fetch') kind = 'nothing';
+  else if (r.reason === 'no-codes' || r.reason === 'no-script') kind = r.reason;
   else if (r.reason === 'cancelled') kind = 'cancelled';
   else if (r.reason === 'partial' || r.reason === 'failed') kind = r.reason;
   else if (final?.state === 'error' || r.ok === false) kind = 'failed';
   else kind = failed.length ? fetched.length || unchanged.length ? 'partial' : 'failed' : 'done';
-  const level = kind === 'failed' ? 'err' : kind === 'done' && outside <= 0 ? 'ok' : 'warn';
+  const level = kind === 'failed' || kind === 'no-codes' || kind === 'no-script' ? 'err' : kind === 'done' && outside <= 0 ? 'ok' : 'warn';
   return {
     kind,
     fetched,
@@ -682,7 +686,9 @@ export function fmtBytes(n, lang = 'fr') {
 export function purgeOutcome(final) {
   const r = obj(final?.result),
     zs = obj(final?.zones),
-    from = r.removed && typeof r.removed === 'object' ? r.removed : zs,
+    from = r.removed && typeof r.removed === 'object' ? 'files' in r.removed || 'bytes' in r.removed ? {
+      '*': r.removed
+    } : r.removed : zs, // aircraft/purge : { files, bytes } sans élément (clé '*')
     removed = {};
   for (const [z, e] of Object.entries(obj(from))) removed[z] = {
     files: num(e?.files) ?? 0,
@@ -746,6 +752,327 @@ export function journalList(doc) {
 export function journalAdd(list, entry, max = JOURNAL_MAX) {
   if (entry.job && list.some(e => e.job === entry.job)) return list;
   return [...list, entry].slice(-max);
+}
+
+// ---------------------------------------------------------------- les autres jeux (V3 § 10.34, lot A1)
+/** Les jeux qui ont le panneau Télécharger · Construire · Purger (SPEC § 5.5), par identifiant de jeu du lanceur (`regen/job { set }`) :
+ *  arg : la clé des éléments dans les arguments et à la racine de la vue du travail ; unit : le nom d'un élément (TX.unit) ; noItem : la
+ *  raison grise « aucun élément coché » (absente : le jeu n'a pas à en cocher) ; group : le groupe de l'écran où vit le panneau ; single :
+ *  un seul élément implicite (le cycle) ; free : les éléments se tapent dans un champ. La météo n'a pas de panneau (publiée avec le site). */
+export const SETS = {
+  base: {
+    arg: 'zones',
+    unit: 'zone',
+    noItem: 'no-zone',
+    group: 'base',
+    verbs: ['fetch', 'build', 'purge']
+  },
+  proc: {
+    arg: 'states',
+    unit: 'state',
+    noItem: 'no-state',
+    group: 'proc',
+    verbs: ['fetch', 'build', 'purge']
+  },
+  vfr: {
+    arg: 'cycle',
+    unit: 'cycle',
+    noItem: null,
+    group: 'base',
+    single: true,
+    verbs: ['fetch', 'build', 'purge']
+  },
+  aircraft: {
+    arg: 'codes',
+    unit: 'step',
+    view: 'steps',
+    steps: ['types', 'apd', 'simbrief'],
+    noItem: null,
+    group: 'aircraft',
+    free: true,
+    verbs: ['fetch', 'build', 'purge']
+  }
+};
+/** Les fiches publiées de la compagnie : un seul verbe du jeu « aircraft », son propre panneau (aircraft/publish : plan à blanc, puis la copie). */
+export const SHEETS = {
+  set: 'aircraft',
+  verb: 'publish',
+  panel: 'sheets',
+  group: 'aircraft'
+};
+/** Les verbes que connaît un lanceur ancien (avant `regen/verbs`) : ceux du jeu « base » seulement. */
+export const OLD_VERBS = ['base/fetch', 'base/build', 'base/purge'];
+/** Les clés sous lesquelles un lanceur peut nommer l'élément d'un échec ou d'une source manuelle (la base dit `zone`). */
+const ITEM_KEYS = ['zone', 'state', 'code', 'type', 'cycle', 'item'];
+/** Le verbe du lanceur « set/verb » d'un jeu et d'un verbe. */
+export const verbKey = (set, verb) => `${set}/${verb}`;
+/** Le panneau de l'écran qui montre une opération : 'base' (le panneau d'origine), 'proc', 'vfr', 'aircraft' ou 'sheets' (aircraft/publish). */
+export const panelOf = (set, verb) => set === SHEETS.set && verb === SHEETS.verb ? SHEETS.panel : set;
+/** Le groupe de l'écran qui porte le panneau d'un jeu (ou 'sheets'). */
+export const groupOf = (set, verb) => set === SHEETS.set && verb === SHEETS.verb ? SHEETS.group : SETS[set]?.group || 'base';
+
+/** Les verbes que le lanceur dit connaître, d'après la réponse de `regen/verbs` ({ verbs: ['base/build', …] }) : la liste des « jeu/verbe »
+ *  lisibles ; sans réponse, sur un 404 ou un refus, ou sans liste : un lanceur ancien, qui ne connaît que base/fetch, base/build et base/purge. */
+export function knownVerbs(r) {
+  const list = r && r.ok !== false && Array.isArray(r.verbs) ? r.verbs.filter(v => typeof v === 'string' && /^[a-z]+\/[a-z]+$/.test(v)) :
+    null;
+  return list || [...OLD_VERBS];
+}
+/** Le lanceur connaît-il ce verbe de ce jeu ? `known` : knownVerbs() (absente : celle d'un lanceur ancien). */
+export function verbKnown(known, set, verb) {
+  return (Array.isArray(known) ? known : OLD_VERBS).includes(verbKey(set, verb));
+}
+/** L'état des boutons d'un panneau : { reason, verbs: { <verbe>: { disabled, reason } } }. `s` : { set, verbs (par défaut ceux du jeu), launcher,
+ *  known (knownVerbs), busy (une opération tourne, la nôtre ou une autre, une question est posée), offline, items (nombre d'éléments cochés ;
+ *  absent : le jeu n'en coche pas) }. Les raisons communes passent dans l'ordre no-launcher, busy, offline, « aucun élément » (SETS[set].noItem) ;
+ *  un verbe que le lanceur ne connaît pas est gris pour sa raison propre, 'unknown-verb'. La raison du panneau, écrite une fois : no-launcher ; puis
+ *  'unknown-verb' quand aucun des verbes n'est connu ; puis la commune ; puis 'unknown-verb' pour un verbe seul. */
+export function setGate(s) {
+  const spec = SETS[s.set] || {},
+    verbs = s.verbs || spec.verbs || [],
+    common = !s.launcher ? 'no-launcher' : s.busy ? 'busy' : s.offline ? 'offline' : s.items !== undefined && s.items !== null && !(s
+      .items > 0) &&
+    spec.noItem ? spec.noItem : null,
+    per = Object.fromEntries(verbs.map(v => {
+      const unknown = !verbKnown(s.known, s.set, v),
+        reason = common || (unknown ? 'unknown-verb' : null);
+      return [v, {
+        disabled: !!reason,
+        reason
+      }];
+    })),
+    all = verbs.length > 0 && verbs.every(v => !verbKnown(s.known, s.set, v)),
+    some = verbs.some(v => !verbKnown(s.known, s.set, v)),
+    reason = !s.launcher ? 'no-launcher' : all ? 'unknown-verb' : common || (some ? 'unknown-verb' : null);
+  return {
+    reason,
+    verbs: per
+  };
+}
+/** Les États à proposer pour les procédures, d'après coverageByState() : ceux de niveau vert (détenus) ou orange (lisibles à la demande),
+ *  [{ id (le préfixe), name (names[li], sinon le préfixe), level }] dans l'ordre des noms ; aucun n'est coché d'office (le module le décide). */
+export function procItems(byState, li = 0) {
+  const lang = ['fr', 'en', 'de', 'es'][li] || 'fr';
+  return Object.entries(byState || {}).filter(([, e]) => e && (e.level === 'green' || e.level === 'orange')).map(([id, e]) => ({
+    id,
+    name: e.names?.[li] || id,
+    level: e.level
+  })).sort((a, b) => a.name.localeCompare(b.name, lang) || a.id.localeCompare(b.id));
+}
+/** Les types OACI tapés dans le champ des appareils : séparés par des virgules ou des espaces, mis en majuscules, sans doublon ; { codes
+ *  (les valides, `^[A-Z0-9]{2,4}$`), bad (les refusés, tels que tapés en majuscules) }. Un champ vide est valide : les types de la flotte. */
+export function parseCodes(text) {
+  const parts = [...new Set(String(text ?? '').split(/[\s,]+/).map(x => x.trim().toUpperCase()).filter(Boolean))],
+    ok = x => /^[A-Z0-9]{2,4}$/.test(x);
+  return {
+    codes: parts.filter(ok),
+    bad: parts.filter(x => !ok(x))
+  };
+}
+/** Les arguments d'un travail d'un jeu, pour un verbe (sans `dry`, que l'appelant ajoute pour un plan) : base { zones, personal } (la purge : zones
+ *  seules), proc { states }, vfr { cycle } (date d'effet), aircraft { codes } (vide : les types de la flotte). `sel` : { ids, personal, cycle, codes }. */
+export function setArgs(set, verb, sel = {}) {
+  const ids = [...(sel.ids || [])];
+  if (set === 'base') return verb === 'purge' ? {
+    zones: ids
+  } : {
+    zones: ids,
+    personal: [...(sel.personal || [])]
+  };
+  if (set === 'proc') return {
+    states: ids
+  };
+  if (set === 'vfr') return {
+    cycle: sel.cycle
+  };
+  return verb === 'purge' ? {} : {
+    codes: [...(sel.codes || [])]
+  };
+}
+/** Le jeu et le verbe dont une vue est le travail : { set, verb } ou null (un autre travail du lanceur). Une vue qui dit son jeu et son verbe
+ *  (le lanceur le fait) est lue d'après eux ; une vue sans verbe qui porte ses zones est une construction de la base (viewVerb reste la lecture du
+ *  seul jeu « base »). `aircraft/publish` est connu aussi. */
+export function viewOp(v) {
+  if (!v || typeof v !== 'object') return null;
+  if (SETS[v.set]?.verbs.includes(v.verb)) return {
+    set: v.set,
+    verb: v.verb
+  };
+  if (v.set === SHEETS.set && v.verb === SHEETS.verb) return {
+    set: SHEETS.set,
+    verb: SHEETS.verb
+  };
+  const zones = !!v.zones && typeof v.zones === 'object' && !Array.isArray(v.zones);
+  return zones && !v.verb ? {
+    set: 'base',
+    verb: 'build'
+  } : null;
+}
+/** La vue est-elle le plan à blanc (args.dry) d'une purge ou d'une publication de fiches, de n'importe quel jeu ? */
+export function opDry(v) {
+  const op = viewOp(v);
+  return !!op && (op.verb === 'purge' || op.verb === 'publish') && v.args?.dry === true;
+}
+/** L'état de l'élément unique d'un jeu à un seul élément (le cycle) d'après le travail : l'état de la zone qu'un jeu par éléments aurait. */
+function singleState(verb, v) {
+  const run = {
+    build: 'building',
+    fetch: 'fetching',
+    purge: 'purging'
+  } [verb];
+  if (v?.state === 'cancelled') return 'cancelled';
+  if (v?.state === 'error' || obj(v?.result).ok === false) return 'failed';
+  if (v?.state === 'done') return verb === 'build' ? 'built' : 'done';
+  return v?.state === 'running' ? run : 'waiting';
+}
+/** La vue d'un travail d'un jeu autre que la base, ramenée à la forme de la base (`zones` à la racine, `zone` dans les échecs et les sources
+ *  manuelles) pour que outcome, fetchOutcome, purgeOutcome, zoneRows et sourceRows servent à tous. La base et ce qui n'est pas une vue : rendus
+ *  tels quels. Les éléments sont ceux de la clé du jeu (states, codes, cycle) ; un jeu à un seul élément (le cycle) en reçoit un d'après
+ *  l'état du travail. */
+export function normView(set, v) {
+  const spec = SETS[set];
+  if (!spec || set === 'base' || !v || typeof v !== 'object') return v;
+  const raw = v[spec.view || spec.arg],
+    r = obj(v.result),
+    fix = list => (Array.isArray(list) ? list : []).filter(x => x && typeof x === 'object').map(x => ({
+      ...x,
+      zone: x.zone ?? ITEM_KEYS.map(k => x[k]).find(y => typeof y === 'string' && y) ?? null
+    }));
+  let zones = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  if (spec.single && !Object.keys(zones).length) {
+    const id = String(v.args?.cycle ?? (typeof raw === 'string' ? raw : v.cycle ?? ''));
+    if (id) zones = {
+      [id]: {
+        state: singleState(v.verb, v)
+      }
+    };
+  }
+  const stepsDone = set === 'aircraft' && Array.isArray(r.steps) ? r.steps.filter(x => typeof x === 'string') : null;
+  return {
+    ...v,
+    zones,
+    ...(v.result && typeof v.result === 'object' ? {
+      result: {
+        ...r,
+        // aircraft/fetch et aircraft/build : `steps` liste les étapes faites ; `failed[].item` nomme l'étape en échec
+        ...(stepsDone ? {
+          built: r.built ?? stepsDone,
+          fetched: r.fetched ?? stepsDone,
+          unchanged: r.unchanged ?? []
+        } : {}),
+        ...(Array.isArray(r.failed) ? {
+          failed: fix(r.failed)
+        } : {}),
+        ...(Array.isArray(r.manual) ? {
+          manual: fix(r.manual)
+        } : {})
+      }
+    } : {})
+  };
+}
+/** La fin d'une opération d'un jeu : { verb, out }, `out` calculé par outcome, fetchOutcome ou purgeOutcome sur la vue ramenée à la base
+ *  (normView) ; pour un jeu à un seul élément dont le résultat ne liste rien, l'élément (le cycle) est compté d'après la fin. */
+export function setOutcome(set, verb, final) {
+  const v = normView(set, final),
+    out = verb === 'fetch' ? fetchOutcome(v) : verb === 'purge' ? purgeOutcome(v) : outcome(v);
+  if (SETS[set]?.single && out.kind === 'done' && verb === 'build' && !out.built.length) out.built = Object.keys(obj(v?.zones));
+  return {
+    verb,
+    out
+  };
+}
+/** Une entrée du journal pour une opération d'un jeu : celle de la base (journalEntry, fetchEntry, purgeEntry : le verbe de téléchargement s'écrit
+ *  « download ») ; pour un autre jeu, `set` à sa valeur et les éléments sous `items` (au lieu de `zones`). `ids` : les éléments du travail. */
+export function setEntry(set, verb, {
+  at,
+  ids,
+  seconds,
+  out,
+  job
+}) {
+  const make = {
+      build: journalEntry,
+      fetch: fetchEntry,
+      purge: purgeEntry
+    } [verb],
+    e = make({
+      at,
+      zones: ids,
+      seconds,
+      out,
+      job
+    });
+  if (set === 'base') return e;
+  const {
+    zones,
+    ...rest
+  } = e;
+  return {
+    ...rest,
+    set,
+    items: zones
+  };
+}
+/** Le nombre d'éléments d'une liste de fiches ou d'un nombre ; 0 sinon. */
+const listLen = v => Array.isArray(v) ? v.length : num(v) ?? 0;
+/** Le plan d'une publication de fiches (aircraft/publish à blanc), d'après la dernière vue : { remove: [..], copy: [..] } ; le plan est
+ *  `result.plan`, à défaut le résultat lui-même ; { removed, copied } sont les comptes. */
+export function sheetsPlan(final) {
+  const r = obj(final?.result),
+    p = obj(r.plan && typeof r.plan === 'object' ? r.plan : r),
+    list = v => Array.isArray(v) ? v : [];
+  const size = l => list(l).reduce((a, x) => a + (num(x?.size) ?? 0), 0);
+  return {
+    remove: list(p.remove),
+    copy: list(p.copy),
+    removed: listLen(p.remove),
+    copied: listLen(p.copy),
+    bytes: size(p.remove) + size(p.copy)
+  };
+}
+/** La fin d'une publication de fiches, d'après la dernière vue : { kind, copied, removed, nothing, level } ; kind : 'done' | 'failed' |
+ *  'cancelled' | 'interrupted' | 'no-author' (trigramme non réglé) ; copied et removed : les comptes (de `result.copied` / `result.removed`, à défaut du plan) ; nothing : réussi,
+ *  rien à copier ni à retirer. */
+export function sheetsOutcome(final) {
+  const r = obj(final?.result),
+    p = sheetsPlan(final),
+    copied = num(r.copied) ?? (Array.isArray(r.copied) ? r.copied.length : p.copied),
+    removed = num(r.removed) ?? (Array.isArray(r.removed) ? r.removed.length : p.removed);
+  let kind;
+  if (final?.state === 'interrupted') kind = 'interrupted';
+  else if (final?.state === 'cancelled' || r.reason === 'cancelled') kind = 'cancelled';
+  else if (r.reason === 'no-author') kind = 'no-author';
+  else if (final?.state === 'error' || r.ok === false || r.reason === 'failed') kind = 'failed';
+  else kind = 'done';
+  return {
+    kind,
+    copied,
+    removed,
+    nothing: kind === 'done' && copied === 0 && removed === 0,
+    level: kind === 'failed' || kind === 'no-author' ? 'err' : kind === 'done' ? 'ok' : 'warn'
+  };
+}
+/** Une entrée du journal pour une publication de fiches réelle (le plan n'y est jamais) : { at, set: 'aircraft', verb: 'publish', items: [],
+ *  seconds, result, copied, removed, job? }. */
+export function sheetsEntry({
+  at,
+  seconds,
+  out,
+  job
+}) {
+  return {
+    at: new Date(at).toISOString(),
+    set: SHEETS.set,
+    verb: SHEETS.verb,
+    items: [],
+    seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
+    result: journalResult(out.kind),
+    copied: out.copied,
+    removed: out.removed,
+    ...(job ? {
+      job: String(job)
+    } : {})
+  };
 }
 
 // ---------------------------------------------------------------- publier la base (échange avec le dépôt des données)
