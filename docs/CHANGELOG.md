@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refonte, sans changement de comportement — R-F2b, compatible absorbe conflictsOf, un rendu des noms** (`frame/lib/procedures.js`:
+  one private `reasonsOf` behind `compatible` and `conflictsOf`, same signatures and data; `displayName` for `summaryOf` and Fuel's
+  `nameOfId`; bench F32).
 - **Noreg: a run whose browser crashed is replayed once** (`tests/v3/lib.py`, `tests/v3/run.py`; tests/v3 README, frame
   DECISIONS; noreg I21) — in a fresh browser, said in the report; more than 3 crashes in a pass lower it to 6 runs at a
   time for the rest.

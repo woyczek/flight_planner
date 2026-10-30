@@ -225,6 +225,10 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   Fuel's lists and the Map's choose mode — `servesRwy`, `sameRwy`, `nameOf`, `conflictsOf` and `orderProcedures` (the ⚠ marks and the
   order of the lists, as data), `transitionsOf`, `appChoices`, `runwayChoices`; no state, no text. Bench `frame/lib/test/procedures.html`
   (F32). Callers import them from here (the re-export in `flight_path.js` was removed by refactoring R-F2, 30 Oct 2026).
+  Refactoring R-F2b: one rule of reasons (private `reasonsOf`) behind `compatible` (the filter: no reason) and `conflictsOf` (the ⚠
+  marks: its `rwy` reasons, and its `starApp` reason for a STAR without a chosen runway; same signature and data); one name renderer,
+  `displayName(rec, { key, id, finals })` (a transition by its transition, else the id's fifth field, else its name; a final by
+  `labelOf` among `finals`; else `nameOf`), used by `summaryOf` and by Fuel's names.
   Since § 10.30 (30 Oct 2026): `runwayOf(proc)` (the single runway a procedure serves, else null) and `firstServing(list, rwy)` (the
   first of the group that serves the runway: « Choisir OKRIX5B »).
   § 10.31 (30 Oct 2026): `pointsOf(proc)`, `exitOf(proc)` (a SID's last named point), `entryOf(proc)` (a STAR's first), and

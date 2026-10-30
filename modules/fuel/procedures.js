@@ -156,17 +156,21 @@ export function createProcedures(host) {
   }
 
   // ------------------------------------------------------------ noms et libellés
-  /** Nom d'une procédure d'après son identifiant (« LFBD.SID.ROYAN6P.RW23.NONE » → « ROYAN6P ») ; pour une transition, la
-   *  transition (cinquième champ) quand l'identifiant la porte. */
+  /** Nom d'une procédure d'après son identifiant (« LFBD.SID.ROYAN6P.RW23.NONE » → « ROYAN6P ») : PR.displayName, la règle du résumé
+   *  (refonte § 10.33 R-F2) ; une finale parmi les lignes d'approche de son terrain. */
   function nameOfId(id, k) {
     const p = String(id || '').split('.'),
-      rec = recsNow().get(id);
-    if (rec?.kind === 'APP') return k === 'appTrans' || PR.isAppTransition(rec) ? String(rec.transition || PR.nameOf(rec, id) || id) : PR
-      .labelOf(rec, PR.appChoices([...recsNow().values()].filter(r => r.kind === 'APP' && String(r.id).split('.')[0] === p[0])).list);
-    if ((k === 'trans' || k === 'appTrans') && p[4] && p[4] !== 'NONE') return p[4];
-    // sans nom dans la source : « STAR sans nom » (la sorte, deuxième champ), pas « NONAME »
-    const n = PR.nameOf(null, id);
+      rec = recsNow().get(id),
+      finals = rec?.kind === 'APP' ? PR.appChoices([...recsNow().values()].filter(r => r.kind === 'APP' && String(r.id).split('.')[0] ===
+        p[0])).list : [];
+    // les transitions (k) se nomment par leur fiche quand elle est connue, comme le résumé
+    const n = PR.displayName(rec, {
+      key: k === 'trans' || k === 'appTrans' ? k : null,
+      id,
+      finals
+    });
     if (n) return n;
+    // sans nom dans la source : « STAR sans nom » (la sorte, deuxième champ), pas « NONAME »
     if (p[2] === 'NONAME') return tt(TX.procUnnamed, {
       k: tt({
         SID: TX.procSid,

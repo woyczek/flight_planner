@@ -14,6 +14,7 @@
 //   isAppTransition(rec), labelOf(app, list), transitionLabelOf(rec) : les segments d'approche initiale (« INA RNAV RWY 06 ») en
 //     transitions communes aux finales de la piste, le libellé court d'une finale (« ILS 06 »), celui d'une transition
 //     (« via ODILO · ODILO 1A ») (§ 10.30, quatrième lecture).
+//   displayName(rec, { key, id, finals }) : le nom d'une fiche dans son rôle, une règle pour le résumé et les listes (refonte R-F2).
 //   summaryOf(side, { byId, wind, via }) : les trois lignes du choix (« 28L · ↓ 12 kt · ← 6 kt », « ABLI4L via ABLIN »,
 //     « ILS 28L via PIZSA »), le même texte dans le volet de la Carte et le titre d'un côté de Carburant (§ 10.30, seconde lecture).
 
@@ -54,7 +55,12 @@ const recById = (byId, id) => typeof id !== 'string' || !id ? null : (typeof byI
   .get(id) :
   byId?.[id]) || null;
 
-/** Conflits d'une fiche avec le choix courant de son côté, en données : [] sans conflit, sinon
+/** Une STAR rejoint une approche quand elle dessert une piste de l'approche (l'une ou l'autre les desservant toutes : oui) ; la
+ *  continuité des points n'est jamais exigée (§ 10.23). */
+const joins = (star, app) => servesAll(app) || servesAll(star) || app.runways.some(x => servesRwy(star, x));
+
+/** Conflits d'une fiche avec le choix courant de son côté (les raisons de reasonsOf qui font une marque ⚠), en données : [] sans
+ *  conflit, sinon
  *  [{ kind: 'rwy', rwy }] (une SID, une STAR ou une approche qui ne dessert pas la piste choisie) et/ou
  *  [{ kind: 'starApp', app, appId }] (sans piste choisie, une STAR qui ne dessert aucune piste de l'approche choisie ; app : son nom).
  *  key : 'sid' | 'star' | 'app' | 'trans' | 'appTrans' (les transitions n'ont pas de conflit) ; rec : la fiche d'aerodb ; choice : le
@@ -62,20 +68,22 @@ const recById = (byId, id) => typeof id !== 'string' || !id ? null : (typeof byI
  *  choice.app. La continuité des points entre STAR et approche n'est jamais un conflit (§ 10.23) : les STAR finissent en attente ou en
  *  guidage radar, la Carte raccorde en tireté. Le texte est celui de l'appelant. */
 export function conflictsOf(key, rec, choice, byId) {
-  const out = [],
+  const kind = {
+      sid: 'SID',
+      star: 'STAR',
+      app: 'APP'
+    } [key],
     o = choice || {};
-  if (!rec) return out;
-  if (['sid', 'star', 'app'].includes(key) && !servesRwy(rec, o.rwy)) out.push({
-    kind: 'rwy',
-    rwy: o.rwy
-  });
-  const app = recById(byId, o.app);
-  if (key === 'star' && !rwNum(o.rwy) && app && !servesAll(app) && !servesAll(rec) && !app.runways.some(x => servesRwy(rec, x))) out.push({
-    kind: 'starApp',
-    app: nameOf(app, app.id),
-    appId: app.id
-  });
-  return out;
+  if (!rec || !kind) return [];
+  // les raisons de compatible (refonte § 10.33 R-F2), réduites aux marques : la piste toujours, la STAR et l'approche sans piste
+  // choisie ; choice.app : un identifiant seulement, comme avant
+  return reasonsOf(kind, rec, {
+    ...o,
+    sid: null,
+    star: null,
+    app: typeof o.app === 'string' ? o.app : null,
+    route: null
+  }, byId).filter(c => c.kind === 'rwy' || c.kind === 'starApp' && kind === 'STAR' && !rwNum(o.rwy));
 }
 
 /** Liste de procédures (ou de pistes) dans l'ordre où le pilote les cherche, nouveau tableau : d'abord ce qui est compatible avec le
@@ -216,6 +224,22 @@ export function transitionLabelOf(rec, {
   return [iaf ? `${via} ${iaf}` : '', t && t !== iaf ? t : ''].filter(Boolean).join(' · ') || nameOf(rec, rec?.id) || '';
 }
 
+/** Le nom d'une fiche dans son rôle, une règle pour le résumé et les listes de Carburant (refonte § 10.33 R-F2) : une transition
+ *  (key 'trans' ou 'appTrans', ou un segment d'approche initiale) par sa transition, sinon le cinquième champ de l'identifiant
+ *  (« LFBD.STAR.ABC1A.RW23.ABC » → « ABC »), sinon son nom ; une finale par labelOf parmi finals (les lignes d'approche du terrain) ;
+ *  une autre fiche par nameOf. null sans nom (le texte « STAR sans nom » est celui de l'appelant). id : l'identifiant quand la fiche
+ *  manque ou n'en porte pas. */
+export function displayName(rec, {
+  key = null,
+  id = rec?.id,
+  finals = []
+} = {}) {
+  const field = String(id ?? '').split('.')[4];
+  if (key === 'trans' || key === 'appTrans' || isAppTransition(rec)) return String(rec?.transition ?? '').trim() || (field && field !==
+    'NONE' ? field : '') || nameOf(rec, id);
+  return rec?.kind === 'APP' ? labelOf(rec, finals) : nameOf(rec, id);
+}
+
 /** Pistes à proposer pour un terrain, [{ id }] : celles d'aerodb (known : fiches de pistes, ou déduites des fiches) ; sinon celles que
  *  nomment ses procédures (all : l'union de leurs pistes, « 20 », « 14L » ; une fiche qui les dessert toutes n'en nomme pas) ; sinon les
  *  deux sens de l'axe de la piste principale (ad : l'enregistrement du terrain dans la base, bearing, route vraie, et magVar, Est
@@ -317,10 +341,6 @@ export const exitOf = proc => pointsOf(proc).at(-1) || null;
 /** L'entrée d'une STAR (ou d'une transition de STAR) : son premier point nommé ; null sans point. */
 export const entryOf = proc => pointsOf(proc)[0] || null;
 
-/** Une STAR rejoint une approche quand elle dessert une piste de l'approche (l'une ou l'autre les desservant toutes : oui) ; la
- *  continuité des points n'est jamais exigée (§ 10.23). */
-const joins = (star, app) => servesAll(app) || servesAll(star) || app.runways.some(x => servesRwy(star, x));
-
 /** Ce qui, dans list, va avec le choix : une liste de pistes (chaînes ou { id }), de SID, de STAR ou d'approches, filtrée par les AUTRES
  *  familles du choix, dans n'importe quel ordre (§ 10.30, seconde lecture) :
  *    piste choisie → les SID et STAR qui la desservent, les approches vers elle ;
@@ -334,30 +354,71 @@ const joins = (star, app) => servesAll(app) || servesAll(star) || app.runways.so
  *  la STAR, sa fin comprise ; sinon elle n'est pas proposée avec cette STAR (parcours de BUGS SOG, 30 octobre). Nouveau tableau, dans
  *  l'ordre de list. */
 export function compatible(list, choice, byId) {
+  return [...(list || [])].filter(r => !reasonsOf(typeof r === 'string' || !r?.kind ? 'RWY' : r.kind, r, choice, byId).length);
+}
+
+/** Pourquoi une fiche ne va pas avec le choix, en données (une règle pour compatible et conflictsOf, refonte § 10.33 R-F2) : [] quand
+ *  elle va, sinon, dans l'ordre des axes : { kind: 'rwy', rwy } (elle ne dessert pas la piste choisie), { kind: 'starApp', app, appId }
+ *  (une STAR qui ne rejoint pas l'approche choisie, ou une approche qu'aucune STAR choisie ne rejoint ; app : le nom de la première),
+ *  { kind: 'iaf', iaf } (une transition d'approche dont l'IAF n'est pas sur la STAR choisie), { kind: 'route', point } (une SID dont
+ *  la sortie, une STAR dont l'entrée n'est pas sur la route), { kind: 'sid' | 'star' | 'app' } (une piste que la procédure choisie ne
+ *  dessert pas). kind : 'RWY' (rec : une chaîne ou { id }), 'SID', 'STAR', 'APP' ; une autre sorte va toujours. choice et byId
+ *  comme compatible. */
+function reasonsOf(kind, rec, choice, byId) {
   const o = choice || {},
     recs = v => [].concat(v ?? []).map(x => typeof x === 'string' ? recById(byId, x) : x).filter(x => x && typeof x === 'object'),
     sid = recs(o.sid),
     star = recs(o.star),
     app = recs(o.app),
-    rwy = rwNum(o.rwy),
     route = new Set([...(o.route || [])].map(x => String(typeof x === 'string' ? x : x?.id ?? '').trim().toUpperCase()).filter(Boolean)),
     any = (arr, f) => !arr.length || arr.some(f),
-    onRwy = r => !rwy || servesRwy(r, rwy),
-    onRoute = id => !route.size || route.has(id);
-  return [...(list || [])].filter(r => {
-    if (typeof r === 'string' || !r?.kind) {
-      const id = typeof r === 'string' ? r : r?.id;
-      return any(sid, s => servesRwy(s, id)) && any(star, s => servesRwy(s, id)) && any(app, a => servesRwy(a, id));
-    }
-    if (r.kind === 'SID') return onRwy(r) && onRoute(exitOf(r));
-    if (r.kind === 'STAR') return onRwy(r) && any(app, a => joins(r, a)) && onRoute(entryOf(r));
-    if (r.kind === 'APP' && (isAppTransition(r) || r.transition)) {
-      const iaf = pointsOf(r)[0];
-      return onRwy(r) && any(star, s => !iaf || pointsOf(s).includes(iaf));
-    }
-    if (r.kind === 'APP') return onRwy(r) && any(star, s => joins(s, r));
-    return true;
-  });
+    out = [],
+    add = (ok, why) => ok || out.push(why),
+    rwy = () => add(servesRwy(rec, o.rwy), {
+      kind: 'rwy',
+      rwy: o.rwy
+    }),
+    onRoute = id => add(!route.size || route.has(id), {
+      kind: 'route',
+      point: id
+    }),
+    withApp = ok => add(ok, {
+      kind: 'starApp',
+      app: nameOf(app[0], app[0]?.id),
+      appId: app[0]?.id
+    });
+  if (kind === 'RWY') {
+    const id = typeof rec === 'string' ? rec : rec?.id;
+    [
+      ['sid', sid],
+      ['star', star],
+      ['app', app]
+    ].forEach(([k, arr]) => add(any(arr, s => servesRwy(s, id)), {
+      kind: k
+    }));
+  } else if (kind === 'SID') {
+    rwy();
+    onRoute(exitOf(rec));
+  } else if (kind === 'STAR') {
+    rwy();
+    withApp(any(app, a => joins(rec, a)));
+    onRoute(entryOf(rec));
+  } else if (kind === 'APP' && (isAppTransition(rec) || rec.transition)) {
+    const iaf = pointsOf(rec)[0];
+    rwy();
+    add(any(star, s => !iaf || pointsOf(s).includes(iaf)), {
+      kind: 'iaf',
+      iaf
+    });
+  } else if (kind === 'APP') {
+    rwy();
+    add(any(star, s => joins(s, rec)), {
+      kind: 'starApp',
+      app: nameOf(rec, rec.id),
+      appId: rec.id
+    });
+  }
+  return out;
 }
 
 /** Les trois lignes du choix d'un côté (route.procedures v2 : { rwy, sid | star, trans, app, appTrans }) : { rwy, proc, app }, chacune
@@ -373,14 +434,13 @@ export function summaryOf(side, {
   const o = side || {},
     values = byId instanceof Map ? [...byId.values()] : byId && typeof byId === 'object' ? Object.values(byId) : [],
     finals = appChoices(values.filter(r => r?.kind === 'APP')).list,
-    name = id => {
-      const r = recById(byId, id);
-      return r?.kind === 'APP' && !isAppTransition(r) ? labelOf(r, finals) : nameOf(r, id) || String(id);
-    },
-    entry = id => {
-      const r = recById(byId, id);
-      return String(r?.transition ?? '').trim() || nameOf(r, id) || String(id);
-    },
+    // displayName : la règle des listes de Carburant ; l'identifiant quand rien ne se lit
+    name = (id, key) => displayName(recById(byId, id), {
+      key,
+      id,
+      finals
+    }) || String(id),
+    entry = id => name(id, 'trans'),
     line = (k, sub) => o[k] === undefined ? undefined : o[k] === null ? null : [name(o[k]), typeof o[sub] === 'string' && o[sub] ? entry(o[
       sub]) : ''].filter(Boolean).join(` ${via} `),
     rwy = rwNum(o.rwy),

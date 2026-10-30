@@ -44,6 +44,7 @@
     familiesOf,
     compatible,
     summaryOf,
+    displayName,
     isAppTransition,
     labelOf,
     transitionLabelOf,
@@ -162,6 +163,20 @@
   }).length === 1 && conflictsOf('star', st25, {
     app: ap07.id
   }, id => byId.get(id)).length === 1);
+  // refonte § 10.33 R-F2 : une règle pour les deux, les marques sont des raisons de compatible ; la route, la SID et la STAR choisies
+  // filtrent sans marquer
+  const both = (key, rec, ch) => `${kinds(key, rec, ch) ? '⚠' : ''}${compatible([rec], ch, byId).length ? 'ok' : 'non'}`;
+  ck('conflictsOf : une marque ⚠ est toujours une fiche non compatible ; la route et les autres choix ne marquent pas', both('sid', s07, {
+    rwy: '25'
+  }) === '⚠non' && both('star', st25, {
+    app: ap07.id
+  }) === '⚠non' && both('star', st25, {
+    route: ['NOWHERE']
+  }) === 'non' && kinds('app', ap07, {
+    star: st25.id
+  }) === '' && kinds('star', st25, {
+    app: ap07
+  }) === '');
   const names = l => l.map(r => r.name).join(' ');
   ck('orderProcedures : les compatibles d’abord, puis les ⚠', names(orderProcedures([s25, s07, sAll], 'sid', {
     rwy: '07'
@@ -402,6 +417,22 @@
   });
   ck('summaryOf : « 28L · ↓ 12 kt · → 6 kt », « ABLI4L via ABLIN », « ILS28L via PIZSA »', qSum.rwy === '28L · ↓ 12 kt · → 6 kt' && qSum
     .proc === 'ABLI4L via ABLIN' && qSum.app === 'ILS28L via PIZSA', JSON.stringify(qSum));
+  // refonte § 10.33 R-F2 : un rendu des noms pour le résumé et les listes de Carburant
+  const dnStar = Pr('LFBD.STAR.ABC1A.RW23.NONE', 'STAR', 'ABC 1A', ['23']),
+    dnTr = Pr('LFBD.STAR.ABC1A.RW23.ABC', 'STAR', 'ABC 1A', ['23'], {
+      transition: 'ABC'
+    });
+  ck('displayName : le nom de la fiche, une transition par sa transition (sinon le cinquième champ), l’identifiant sans fiche, null sans nom',
+    displayName(dnStar) === 'ABC 1A' && displayName(dnTr, {
+      key: 'trans'
+    }) === 'ABC' && displayName(null, {
+      key: 'trans',
+      id: 'LFBD.STAR.ABC1A.RW23.XYZ'
+    }) === 'XYZ' && displayName(null, {
+      id: 'LFBD.SID.ROYAN6P.RW23.NONE'
+    }) === 'ROYAN6P' && displayName(null, {
+      id: 'LFBD.SID.NONAME.RW23.NONE'
+    }) === null);
   const qSum2 = summaryOf({
     rwy: '10R',
     sid: null,
