@@ -27,7 +27,10 @@
     components,
     label,
     severity,
-    LIMITS
+    LIMITS,
+    runwayAxis,
+    oppositeRunway,
+    bestRunwayEnd
   } from '../wind.js?v=0';
   const out = document.getElementById('out'),
     rows = [];
@@ -106,6 +109,44 @@
     cross: 'x'
   }) === 'warn' && LIMITS.tail === 5 && LIMITS.crossWarn === 10 && LIMITS.cross === 20);
   ck('severity : null sans composantes', severity(null) === null);
+
+  // refonte § 10.33 R-F1 : une règle d'axe de piste pour Carburant et la Carte, le meilleur bout de l'axe pour la carte météo
+  ck('oppositeRunway : 24 → 06, 27L → 09R, 36 → 18, autre → rien', oppositeRunway('24') === '06' && oppositeRunway('RW27L') === '09R' &&
+    oppositeRunway('36') === '18' && oppositeRunway('X') === '');
+  const r13 = {
+      id: '13R',
+      lat: 43.445,
+      lon: 5.19,
+      qfu: 130
+    },
+    r31 = {
+      id: '31L',
+      lat: 43.41,
+      lon: 5.24,
+      qfu: 310
+    };
+  ck('runwayAxis : true d’abord', runwayAxis({
+    ...r13,
+    true: 132.5
+  }, {
+    list: [r31]
+  }) === 132.5);
+  const geo = runwayAxis(r13, {
+    list: [r13, r31]
+  });
+  ck('runwayAxis : sinon seuil → seuil opposé', geo > 133 && geo < 135, geo);
+  ck('runwayAxis : sinon QFU + déclinaison, sinon numéro × 10 + déclinaison, sinon rien', runwayAxis(r13, {
+    magVar: 2
+  }) === 132 && runwayAxis({
+    id: '07'
+  }, {
+    magVar: -1
+  }) === 69 && runwayAxis({
+    id: 'X'
+  }) === null && runwayAxis(null) === null);
+  const be = bestRunwayEnd(130, 2, 310, 12);
+  ck('bestRunwayEnd : le bout face au vent, son numéro magnétique, ses composantes', be?.trueDeg === 310 && be.ident === '31' && be.head ===
+    12 && be.cross === 0 && bestRunwayEnd(null, 0, 310, 12) === null && bestRunwayEnd(130, 0, 'VRB', 5) === null, JSON.stringify(be));
 
   window.__bench = {
     done: true,

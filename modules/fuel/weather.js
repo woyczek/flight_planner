@@ -105,26 +105,6 @@ export function station(metar, taf, t = null) {
     tempo: []
   };
 }
-/** Piste la plus proche du vent sur l'axe de la piste principale (bearing : route vraie de l'axe, magVar : déclinaison
- *  Est positive) : { trueDeg (sens de la piste retenue), ident (numéro magnétique « 32 »), head (composante de face,
- *  kt, négative : arrière), cross (traversière, kt, valeur absolue), side ('L' | 'R') } ; null sans axe ou sans vent
- *  orienté. */
-export function runwayWind(bearing, magVar, wdir, wspd) {
-  if (!Number.isFinite(+bearing) || !Number.isFinite(+wdir) || !Number.isFinite(+wspd)) return null;
-  const ends = [(+bearing + 360) % 360, (+bearing + 180) % 360],
-    diff = a => ((wdir - a + 540) % 360) - 180,
-    end = ends.reduce((a, b) => Math.abs(diff(b)) < Math.abs(diff(a)) ? b : a),
-    d = diff(end) * Math.PI / 180,
-    mag = (end - (+magVar || 0) + 360) % 360,
-    num = Math.round(mag / 10) % 36 || 36;
-  return {
-    trueDeg: end,
-    ident: String(num).padStart(2, '0'),
-    head: Math.round(wspd * Math.cos(d)),
-    cross: Math.abs(Math.round(wspd * Math.sin(d))),
-    side: Math.sin(d) >= 0 ? 'R' : 'L'
-  };
-}
 /** Vent moyen le long de la route : terrains [{ wdir, wspd }] dans l'ordre (départ, intermédiaire facultatif,
  *  arrivée) et longueurs des segments entre eux (NM) ; chaque segment prend la moyenne vectorielle de ses deux terrains,
  *  pondérée par sa longueur. Sortie : { dirDeg, speedKt } ; null s'il manque un vent. */

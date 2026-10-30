@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refonte, sans changement de comportement — R-F1, une seule règle du vent sur une piste** (`frame/lib/wind.js` `runwayAxis`,
+  `oppositeRunway`, `bestRunwayEnd`; Fuel's `weather.js runwayWind` removed; bench F62) — the axis rule of the Map for both modules.
 - **Frame: the end-of-cycle line says what to do** (`frame/app.js`; frame SPEC § 3, INTEGRATION § 15.3, DECISIONS; noreg
   A31) — « cycle 2610 dépassé, à reconstruire pour 2611 » and « rien de construit pour 2612 », no longer « en attente de
   publication » next to the Data module's « Rien à publier ».

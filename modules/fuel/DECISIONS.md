@@ -4,6 +4,13 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — refactoring R-F1 (§ 10.33): one wind rule.** `wind.runwayAxis` replaces two rules for a runway's true
+  bearing (Fuel: `true`, else QFU / number + variation; the Map's `runwayBearing`: `true`, else threshold geometry, else QFU); the
+  merged order is the Map's, decided by the ergonomics session on 29 Oct, with Fuel's number fallback last. `wind.bestRunwayEnd`
+  replaces `weather.js runwayWind` (the weather card's main runway end), built on `components`. One visible change, explained: on
+  an aerodrome whose runway records carry both thresholds and a QFU but no `true`, Fuel now takes the geometry — the invented LFML
+  of the tests gives 134° where its QFU says 130°, F65 reads « 13R · ↑ 12 kt · ← 1 kt ». Bench wind (23). The Map switches
+  `runwayBearing` to `runwayAxis` on its side (BUGS SOG).
 - **30 Oct 2026 — the sheets editor leaves Fuel** (§ 10.34 lot A2, step 5; decided by Simplification and the user: one editor,
   in Maintenance › Appareils, `modules/aircraft/`, which has had it since step 3). Removed from `modules/fuel/module.js`
   (4973 → 4417 lines, 601 deleted, 45 added): `renderEditor`, `readEditor`, `review`, `applyReview`, `storeSheet`, the

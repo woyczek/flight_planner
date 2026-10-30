@@ -31,6 +31,7 @@ import {
 } from '../../frame/lib/adnames.js';
 import {
   components as windComponents,
+  runwayAxis,
   label as windLabel,
   severity as windSeverity,
   LIMITS as WIND_LIMITS
@@ -304,14 +305,17 @@ export function createProcedures(host) {
     return html.join('');
   }
   /** Le vent sur une piste d'après le METAR connu du terrain (m.wind, celui de l'étape Départ) : { c, text, level, why } ou null sans
-   *  METAR ou sans vent dirigé (VRB : rien d'inventé, § 10.30). Axe vrai : `true` de la fiche de piste, sinon son QFU (ou son numéro
-   *  × 10) plus la déclinaison du terrain. level : severity de frame/lib/wind.js (vert, orange, rouge ; lim : la limite de travers de
+   *  METAR ou sans vent dirigé (VRB : rien d'inventé, § 10.30). Axe vrai : runwayAxis de frame/lib/wind.js, la règle de la Carte
+   *  (refonte § 10.33 R-F1). level : severity de frame/lib/wind.js (vert, orange, rouge ; lim : la limite de travers de
    *  la fiche de l'appareil quand elle en a une) ; why : les raisons d'un orange ou d'un rouge, pour l'infobulle. */
   function runwayWind(m, r, lim) {
     const w = m.wind;
     if (!w) return null;
-    const mag = r.qfu != null && Number.isFinite(+r.qfu) ? +r.qfu : parseInt(PR.rwNum(r.id), 10) * 10,
-      c = windComponents(r.true != null && Number.isFinite(+r.true) ? +r.true : mag + (+w.magVar || 0), w.dir, w.kt);
+    const axis = runwayAxis(r, {
+        list: m.rwys,
+        magVar: w.magVar
+      }),
+      c = axis === null ? null : windComponents(axis, w.dir, w.kt);
     if (!c) return null;
     const L = {
         ...WIND_LIMITS,

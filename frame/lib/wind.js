@@ -10,6 +10,12 @@
 //   Directions vraies en degrés, celle du vent est celle d'où il vient (convention METAR, ramenée au vrai par l'appelant).
 //   label(c) → « ↓ 12 kt · ← 6 kt » : le même texte dans le volet de la Carte et la liste des pistes de Carburant ; '' pour null.
 //   severity(c, { tail, crossWarn, cross }) → 'ok' | 'warn' | 'alert' (null pour null) : la couleur du libellé (vert, orange, rouge).
+//   runwayAxis(rw, { list, magVar }) → relèvement vrai d'une piste (une règle pour Carburant et la Carte, refonte § 10.33 R-F1) :
+//     `true` de la fiche, sinon seuil → seuil opposé (list : les pistes du terrain), sinon QFU + déclinaison, sinon numéro × 10 +
+//     déclinaison ; null sans rien.
+//   oppositeRunway(id) : « 24 » → « 06 », « 27L » → « 09R » ; '' pour un autre identifiant.
+//   bestRunwayEnd(bearing, magVar, windDir, windKt) → { trueDeg, ident, head, cross, side } : le bout de l'axe principal le plus face
+//     au vent (la carte météo de Carburant, sans fiches de pistes) ; null sans axe ou sans vent dirigé.
 
 /** Composantes du vent sur une piste (voir l'en-tête). */
 export function components(runwayTrueHeading, windDirTrue, windKt) {
@@ -59,6 +65,66 @@ export function severity(c, limits = {}) {
     t = tail === 0 ? 0 : tail <= lim('tail') ? 1 : 2,
     x = c.cross <= lim('crossWarn') ? 0 : c.cross <= lim('cross') ? 1 : 2;
   return ['ok', 'warn', 'alert'][Math.max(t, x)];
+}
+
+/** Numéro de la piste opposée (« 24 » → « 06 », « 27L » → « 09R ») ; '' pour un identifiant qui n'est pas une piste. */
+export function oppositeRunway(id) {
+  const m = /^(?:RW)?(\d{2})([LRC]?)$/i.exec(String(id || '').trim());
+  if (!m) return '';
+  const n = ((+m[1] + 17) % 36) + 1,
+    s = {
+      L: 'R',
+      R: 'L',
+      C: 'C'
+    } [m[2].toUpperCase()] || '';
+  return `${String(n).padStart(2, '0')}${s}`;
+}
+
+/** Relèvement vrai d'une piste, une règle pour Carburant et la Carte (refonte § 10.33 R-F1 ; l'ordre est celui que la session
+ *  ergonomie a décidé le 29 octobre pour la Carte) : `true` de la fiche (eAIP AD 2.12), sinon la direction seuil → seuil opposé quand
+ *  les deux sont dans list, sinon QFU (magnétique) + la déclinaison (Est positive), sinon le numéro × 10 + la déclinaison (une piste
+ *  nommée par ses seules procédures) ; null sans rien. rw : { id, true?, qfu?, lat?, lon? }. */
+export function runwayAxis(rw, {
+  list = [],
+  magVar = null
+} = {}) {
+  if (!rw) return null;
+  const t = num(rw.true);
+  if (t !== null) return (t % 360 + 360) % 360;
+  const id = String(rw.id ?? '').trim().toUpperCase().replace(/^RW/, ''),
+    opp = oppositeRunway(id),
+    o = opp ? (list || []).find(x => String(x?.id ?? '').trim().toUpperCase().replace(/^RW/, '') === opp) : null,
+    [la, lo, ola, olo] = [rw.lat, rw.lon, o?.lat, o?.lon].map(num);
+  if (o && la !== null && lo !== null && ola !== null && olo !== null) {
+    const r = Math.PI / 180,
+      dx = (((olo - lo) + 540) % 360 - 180) * Math.cos(la * r);
+    return ((Math.atan2(dx, ola - la) / r) + 360) % 360;
+  }
+  const mv = num(magVar) ?? 0,
+    q = num(rw.qfu),
+    n = /^\d{2}/.test(id) ? parseInt(id, 10) * 10 : null;
+  if (q !== null) return (q + mv + 360) % 360;
+  return n !== null ? (n + mv + 360) % 360 : null;
+}
+
+/** Le bout de l'axe principal d'un terrain le plus face au vent (la carte météo de Carburant, qui n'a que l'axe du terrain) :
+ *  { trueDeg (le sens retenu), ident (son numéro magnétique « 32 »), head, cross, side } (components) ; null sans axe ou sans vent
+ *  dirigé. bearing : route vraie de l'axe ; magVar : déclinaison Est positive. */
+export function bestRunwayEnd(bearing, magVar, windDir, windKt) {
+  const b = num(bearing),
+    wd = num(windDir);
+  if (b === null || wd === null) return null;
+  const ends = [(b + 360) % 360, (b + 180) % 360],
+    diff = a => Math.abs(((wd - a + 540) % 360) - 180),
+    end = diff(ends[1]) < diff(ends[0]) ? ends[1] : ends[0],
+    c = components(end, wd, windKt);
+  if (!c) return null;
+  const mag = (end - (num(magVar) ?? 0) + 360) % 360;
+  return {
+    trueDeg: end,
+    ident: String(Math.round(mag / 10) % 36 || 36).padStart(2, '0'),
+    ...c
+  };
 }
 
 /** Nombre fini, ou null (chaîne vide, null, texte). */

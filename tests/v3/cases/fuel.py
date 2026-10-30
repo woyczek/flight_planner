@@ -1611,7 +1611,9 @@ def f65(c):
     parts = "(s) => [...document.querySelectorAll('[data-module=fuel] [data-proc=\"' + s + '\"] .fu-procsum > span')].map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
     c.until(f"(() => ({parts})('arr').some(t => t.includes('kt')))()", timeout=20000, what='the arrival summary gets the wind of the METAR')
     arr = c.js(f"({parts})('arr')")
-    c.eq(arr, ['13R · ↑ 12 kt', 'MEN1A via NEPIX', 'I13R'], 'runway with its wind (tail: « ↑ »), STAR via its transition, approach', what='arrival summary')
+    # the runway's axis is the Map's rule since the refactoring R-F1 (§ 10.33): threshold → opposite threshold before the QFU; the invented
+    # thresholds of LFML give 134° (their QFU says 130°), hence the 1 kt of crosswind
+    c.eq(arr, ['13R · ↑ 12 kt · ← 1 kt', 'MEN1A via NEPIX', 'I13R'], 'runway with its wind (tail: « ↑ »), STAR via its transition, approach', what='arrival summary')
     c.eq(c.js("document.querySelector('[data-module=fuel] [data-proc=arr] .fu-procsum > span').className"), 'wind-alert', 'the runway of the summary carries the colour of its wind', what='class')
     dep = c.js(f"({parts})('dep')")
     c.eq(dep, ['03', norm(f"{row(c, 'procSid')} {row(c, 'procNone')}")], 'no METAR: the runway alone; « Aucune » said with its kind', what='departure summary')

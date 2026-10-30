@@ -9,6 +9,7 @@
 // module ([data-module="fuel"]) sur les jetons --sog-… du cadre ; aucune feuille globale.
 import * as XL from '../../frame/lib/external_links.js';
 import * as WX from './weather.js';
+import * as WIND from '../../frame/lib/wind.js'; // le vent sur une piste : une règle pour Carburant et la Carte (refonte § 10.33 R-F1)
 import * as WD from './winds.js';
 import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
@@ -2509,7 +2510,7 @@ function renderWx() {
         st
       } = x;
       if (!st) return `<div class="f-item"><span><b>${esc(id)}</b> <span class="f-muted">${esc([where(x), tt(TX.wxNoData)].filter(Boolean).join(' · '))}</span></span></div>`;
-      const rw = ad ? WX.runwayWind(ad.bearing, ad.magVar, st.wdir, st.wspd) : null;
+      const rw = ad ? WIND.bestRunwayEnd(ad.bearing, ad.magVar, st.wdir, st.wspd) : null;
       return `<div class="fu-wx"><div class="f-row"><b>${esc(id)}</b><span class="f-muted">${esc([ad?.name, where(x), `${st.source} ${hhmm(st.at)}`].filter(Boolean).join(' · '))}</span>${st.cat ? `<span class="f-badge" data-kind="${kinds[st.cat] || 'accent'}">${esc(st.cat)}</span>` : ''}</div>
       <dl class="f-dl"><dt>${esc(tt(TX.wxWind))}</dt><dd>${esc(wind(st.wdir, st.wspd, st.wgst))}</dd>
       ${rw ? `<dt>${esc(tt(TX.wxRwy, { r: rw.ident }))}</dt><dd>${esc(tt(TX.wxComp, { h: Math.abs(rw.head), hw: tt(rw.head >= 0 ? TX.wxHead : TX.wxTail), c: rw.cross, s: tt(rw.side === 'L' ? TX.wxLeft : TX.wxRight) }))} <span class="f-muted">(${esc(tt(TX.wxRwyHint))})</span></dd>` : ''}

@@ -256,7 +256,11 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   upward as on final — ↓ head, ↑ tail, ← from the right, → from the left; a zero component left out, « 0 kt » when both are), the one
   text of the Map's pane and Fuel's runway list; `severity(c, { tail, crossWarn, cross })` → 'ok' | 'warn' | 'alert' (head wind ok;
   tail warn up to 5 kt, alert above; crosswind ok up to 10, warn up to 20 or the sheet's `maxCrosswindKt`, alert above; the worse of
-  the two; `LIMITS` holds the defaults), the colour of the label on the design's semantic tokens (§ 10.30, third reading). Pure, shared by the Map's pane and Fuel's runway list. Bench
+  the two; `LIMITS` holds the defaults), the colour of the label on the design's semantic tokens (§ 10.30, third reading). Since the refactoring R-F1 (§ 10.33): `runwayAxis(rw,
+  { list, magVar })` (a runway's true bearing, ONE rule for Fuel and the Map: `true`, else threshold → opposite threshold from `list`,
+  else QFU + variation, else number × 10 + variation), `oppositeRunway(id)`, `bestRunwayEnd(bearing, magVar, dir, kt)` (the end of an
+  aerodrome's axis most into the wind, for Fuel's weather card). Fuel's `weather.js runwayWind` is gone; the Map's `runwayBearing`
+  is to be replaced by `runwayAxis` (BUGS SOG). Pure, shared by the Map's pane and Fuel's runway list. Bench
   `frame/lib/test/wind.html` (F62).
 - Offline is normal. The application starts offline once visited, and your module's files (entry point and
   `meta.files`) are kept from the first visit: draw from `ctx.data` first, and treat a 503 from `ctx.net` as "not now", not as an error.
