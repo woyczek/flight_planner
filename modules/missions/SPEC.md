@@ -102,15 +102,37 @@ skins, never two components):**
   the controls, the order or the address. Without the layer, or under `prefers-reduced-motion`, the light reader is
   whole. The cost of V2's gestures is kept, on a base written once.
 
-## 6. The crew's rendezvous (after the first step)
+## 6. The assignment in V3 and the crew's rendezvous (second step)
 
-- An assignment (`affectations.yaml`, written by the CPCO — V2 today) gains, per participant or per operation, the
-  **rendezvous of the crew**: a dated time (absolute UTC or `H±n` of the exercise) and the channels — Discord
-  (link), SRS (server, frequency), JoinFS (session), others by name — **filled at assignment, never typed by the
-  pilot**. The module shows them on the mission's cover page with "Ouvrir" (a link) and "Copier" (a value).
-- Rule: these are assignment data of the shared repository, readable by every pilot of the airline (the fleet's
-  access model); a session password is a known limit, said here, not a reason to build accounts.
-- The folds (`events[kind:'pli']`) open at their hour as in V2, through the same `book()` bookmark.
+The V2 assignment (`affectations.yaml` in the mission's folder, one line per participant in
+`missions/affectations.json`, written by the CPCO's ODV matrix) is the carrier of everything that is decided for a
+crew. V3 reads it as it is and adds to it; the mission file stays immutable.
+
+- **Shape read as it is**: `{ mission, updated_at, by, h_hour, participants[]{ pilot (trigram), callsign,
+  aircraft{ registration, type, variant, base }, departure (ICAO), takeoff (ISO UTC), ferry|null, block_min,
+  status }, alert }`. Status today is "affectée" only; the planned ones (proposée, confirmée, déclinée, volée,
+  annulée) are kept as the model, with the V2 rule: **an assignment is an order, the pilot acknowledges reading, there
+  is no acceptance**. "volée" is derived from the flight log (a report carrying the mission id), never written by hand.
+- **Added, per operation (the Z's h_hour when there is one) or per mission**:
+  - `rendezvous_at`: the **dated rendezvous**, ISO UTC, or `H±n` relative to the exercise's `h_hour` (the existing
+    `hOffset` rule), the first fixed constraint of the route (§ 4); when absent, Fuel derives it from `takeoff` and
+    the leg times and says "estimé".
+  - `meet[]`: the **channels of the crew**, each `{ kind, label, url?, value? }` — kind in a closed list read from
+    the CPCO's catalogue (discord, srs, joinfs, teamspeak, other), label free ("SRS 243.0 — Air Inter VA"), `url` for
+    a link (Discord invite, JoinFS session), `value` for a thing to copy (server, frequency, code). The module shows
+    them on the cover page with "Ouvrir" for a URL and "Copier" for a value; the pilot never types them.
+  - `briefing[]`: optional named links (OFP, chart pack, exercise doc) already allowed by V2's `exerciseDocs`; same
+    rendering.
+- **Who writes**: the CPCO (V2 today through the ODV matrix, V3 later); the module and the pilot write nothing in
+  the assignment. The "lu" of V2 (`assignmentsRead:v1`, local) becomes the device's own record (`policy: 'cache'`),
+  with the `read_at` the V2 document planned but never wrote: written once on "Ouvrir".
+- **Access model, said**: the assignment is repository data readable by every pilot of the airline (the fleet's
+  model, audit line 63). A meeting password in `value` is readable by all of them: a known limit, stated in the
+  help ("réservez les mots de passe de session au salon lui-même"), not a reason to build accounts.
+- **Rule for the list (§ 3)**: a mission assigned to this pilot with a `rendezvous_at` in the next seven days comes
+  first in the list, marked "affectée · RDV ven. 14:30Z"; the draw never picks an assigned mission.
+- **Exercise**: an operation's participants take off at `h_hour` + their offset (the Z's `exercise.participants`),
+  as in V2; the folds open on the same clock. The V3 module reads the Z for its own mission's offset and nothing else.
 
 ## 7. Out of scope here
 
