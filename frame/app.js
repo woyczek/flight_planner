@@ -238,6 +238,11 @@
       id: 'data',
       label: ['Données', 'Data', 'Daten', 'Datos'],
       icon: 'database'
+    }, {
+      // la flotte, les fiches de performances, le registre des appareils (V3 § 10.34, lot A2)
+      id: 'aircraft',
+      label: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
+      icon: 'plane'
     }],
     links: [{
       id: 'admin',

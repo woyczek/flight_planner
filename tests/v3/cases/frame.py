@@ -1173,7 +1173,7 @@ def a36(c):
     c.until("!!document.querySelector('[data-module=data]')", timeout=15000, what='Maintenance mounts Données, without a launcher too')
     c.wait(800)
     c.eq(c.count('[data-welcome]'), 0, 'no welcome card of Pilot in Maintenance', what='welcome cards')
-    c.eq(c.js(rail), ['data', 'admin', 'help'], 'Maintenance without a launcher: Données, Administration, Aide (no V2 page)', what='rail')
+    c.eq(c.js(rail), ['data', 'aircraft', 'admin', 'help'], 'Maintenance without a launcher: Données, Appareils (§ 10.34 A2), Administration, Aide (no V2 page)', what='rail')
     c.eq(c.js(tabs), ['data', 'admin', 'help'], 'the phone bar of Maintenance', what='tabs')
     c.eq(c.js("[...document.querySelectorAll('[data-verb]')].filter(b => !b.disabled).length"), 0, 'read only without a launcher: every action grey', what='enabled [data-verb]')
     c.ok(c.js('document.title').split(' — ')[0] in ('Maintenance', 'Wartung', 'Mantenimiento'), c.js('document.title'), 'the page is named after the application')

@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Maintenance: the « Appareils » module, the fleet** (`modules/aircraft/`, V3 § 10.34 A2; help ×4; area M, M1–M5) — the
+  company's fleet as a list with search, add, edit (the changed fields said before writing) and retire (a question).
 - **Launcher: jobs of the aircraft set, and the list of loaded verbs** (`tools/regen/aircraft.py`, `tools/launch.py`; frame
   INTEGRATION § 15, DECISIONS; noreg I17, I14): `aircraft/fetch`, `build`, `purge`, `publish` for the Data module (V3 § 10.34
   A1), `GET /__setup/regen/verbs`; IVAO's refusal code shown only for a sign-in in progress of the device.

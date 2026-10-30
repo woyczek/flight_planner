@@ -33,7 +33,8 @@ read), `net` (GET of the log and fleet pages of `airline.site`, relayed by the l
 
 - `ctx.airline` (frame) from `airline/settings.json`.
 - `pilot/<trigram>/site_log.json`: flightlog (SPEC § 3 there).
-- `airline/fleet.json`: report (registration → type, callsigns), maps, CPCO.
+- `airline/fleet.json`: report (registration → type, callsigns), maps, CPCO. Since 30 Oct 2026 the aircraft module of
+  Maintenance writes it too (one aircraft per write, the file read just before; `record` on both sides, modules/aircraft/INTEGRATION.md).
 - `frame/lib/website.js`: report's "Save and record on the website".
 
 ## 4. Next

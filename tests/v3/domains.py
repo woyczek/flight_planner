@@ -43,8 +43,9 @@ RULES = [
     ('frame/store/test/publish.html', ['A30', 'I'], 'publication bench'),
     ('frame/store/test/revalidate.html', ['A33', 'I'], 'revalidate bench'),
     ('frame/lib/test/**', ['C', 'I'], 'sheet bench'),
+    ('modules/aircraft/**', ['M', 'I'] + TITLED, 'the aircraft module of Maintenance: fleet, sheets, registry (V3 § 10.34 A2)'),
     ('modules/hello/**', ['A34', 'I'], 'the example module (ctx.consume)'),
-    ('frame/app.js', FRAME_ALL + ['L'], 'the frame reaches every screen (and registers the Données module)'),
+    ('frame/app.js', FRAME_ALL + ['L', 'M'], 'the frame reaches every screen (and registers the Données and Appareils modules)'),
     ('frame/frame.css', FRAME_ALL, 'the frame reaches every screen'),
     ('frame/index.html', FRAME_ALL, 'the frame reaches every screen'),
     ('frame/lib/*.js', FRAME_ALL + ['L'], 'frame library (dom.js and time.js are used by the Données module)'),
@@ -89,7 +90,7 @@ RULES = [
 FALLBACK = (['A1', 'I'], 'anything else: smoke and static rules')
 # smoke base of --touched (30 Oct 2026): one quick case per area that opens its screen for real, at most 12 cases and
 # 3 minutes of wall time with the default workers; added to the cases chosen by the changed files
-SMOKE = ['A1', 'A3', 'B6', 'C3', 'D1', 'E11', 'F1', 'G3', 'H4', 'J1', 'J4', 'L4']
+SMOKE = ['A1', 'A3', 'B6', 'C3', 'D1', 'E11', 'F1', 'G3', 'H4', 'J1', 'J4', 'L4', 'M1']
 
 
 def _rx(glob):
