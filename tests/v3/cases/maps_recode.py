@@ -1901,3 +1901,40 @@ def d73(c):
     c.until(f"() => {{ const v = ({_CH_VIEW})(); return v.n >= 43.95 && v.w <= 4.3 }}", timeout=6000, what='the view widened to S1A’s entry ENT1')
     v = c.js(_CH_VIEW)
     c.ok(v['n'] < 44.2, f'{v}', 'the view widens to the chosen STAR alone, not to every entry (EN09 at 44.35)')
+
+
+# ------------------------------------------------------------------------------------------------------ D74
+# a direct route LFRS LFML (no point, no airway): three STARs of 31 — S1A enters from the north-west (towards LFRS), S9A from the north,
+# SEA from the south-east
+_DIR_FILE = {**_CH_FILE, 'procedures': [_ch_star(1, ['31']), _ch_star(9, ['31']),
+                                        _proc('LFML', 'STAR', 'SEA', '31', [_pp(1, 'SUDEE', 42.90, 5.95), _pp(2, 'MDSE', 43.30, 5.40)], cycle=AERO_CYCLE)]}
+
+
+@case('D74', 'Choosing on the Map: on a direct route the STARs are ranked by their heading from the other aerodrome, an arrow on each row', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False, langs4=True,
+      rule='V3 § 10.31 (usage walk of 30/10, point 4): a route with no point and no airway between the aerodromes says nothing about "your route" — no "entry X" repeating the name; the SIDs rank by the angle between their exit and the great circle to the arrival, the STARs by their entry and the great circle from the departure ("Towards LFRS" over the rows within 60° when others follow); each row has a small arrow along its heading')
+def d74(c):
+    f = flight()
+    f['route']['points'] = [f['route']['points'][0], f['route']['points'][-1]]
+    f['route']['text'] = 'LFRS LFML'
+    f['route']['procedures'] = {'dep': {}, 'arr': {'rwy': '31'}, 'by': 'fuel', 'at': '2026-10-29T10:00:00Z'}
+    docs = [['proc/manual/LFML.json', _DIR_FILE, 'reference'], ['proc/manual/LFRS.json', _LFRS_FILE, 'reference']]
+    c.open('maps?choose=arr&icao=LFML', docs=fdocs(f) + docs, flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.choose && window.__mp.S.choose.ready)", timeout=12000, what='the choose mode is ready')
+    c.until("() => !!document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-row')", timeout=12000, what='the pane is drawn')
+    g = c.js("""() => { const g = document.querySelector('.mp-ch-grp[data-fam=star]');
+      return { subh: ((g.querySelector('.mp-ch-subh') || {}).textContent || '').trim(), offs: g.querySelectorAll('.mp-ch-off').length,
+        rows: [...g.querySelectorAll('.mp-ch-row')].filter(b => b.dataset.id !== 'none').map(b => [b.querySelector('.mp-ch-name').textContent.trim(),
+          (b.querySelector('.mp-ch-dir') || { getAttribute: () => null }).getAttribute('aria-label')]) } }""")
+    c.eq(g['offs'], 0, 'no "entry X" on a direct route', what='entry marks')
+    c.eq([r[0] for r in g['rows']], ['S1A', 'S9A', 'SEA'], 'the STAR entering from the departure’s side first, the one from the south-east last',
+         what='order')
+    c.eq(g['subh'], tx(M, 'chToward', c.lang).replace('{icao}', 'LFRS'), '"Towards LFRS" heads the rows within 60°', what='label')
+    head = tx(M, 'chDir', c.lang)
+    pre, post = head.split('{c}')
+    c.ok(all(a and a.startswith(pre) and a.endswith(post) for _, a in g['rows']), f"{g['rows']}", 'each row has its arrow, read "heading NNN°"')
+    # SEA enters from the south-east: it flies north-west, towards the aerodrome
+    deg = int(g['rows'][2][1][len(pre):len(g['rows'][2][1]) - len(post)])
+    c.ok(290 <= deg <= 330, f'{deg}', 'SEA’s arrow points north-west, its way in to the aerodrome')

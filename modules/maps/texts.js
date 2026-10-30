@@ -359,6 +359,8 @@ export const TX = {
   chFoldLess: ['Compatibles seulement', 'Compatible only', 'Nur passende', 'Solo compatibles'],
   chNotFit: ['Ne va pas avec le choix', 'Does not fit the choice', 'Passt nicht zur Wahl', 'No encaja con la elección'],
   chToRoute: ['Vers votre route', 'Towards your route', 'Zu Ihrer Route', 'Hacia su ruta'],
+  chToward: ['Vers {icao}', 'Towards {icao}', 'Richtung {icao}', 'Hacia {icao}'],
+  chDir: ['cap {c}°', 'heading {c}°', 'Kurs {c}°', 'rumbo {c}°'],
   chExit: ['sortie {p}', 'exit {p}', 'Ausgang {p}', 'salida {p}'],
   chEntry: ['entrée {p}', 'entry {p}', 'Eintritt {p}', 'entrada {p}'],
   chGoto: ['Aller au groupe {f}', 'Go to the {f} group', 'Zur Gruppe {f}', 'Ir al grupo {f}'],

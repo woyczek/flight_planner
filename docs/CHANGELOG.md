@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: on a direct route the SIDs and STARs rank by heading** (`modules/maps/choose.js`, `texts.js`, `style.js`; maps help ×4,
+  DECISIONS; noreg D74). With no point and no airway between the aerodromes, no more "exit AMOLO" after "AMOLO 7A": the rows rank
+  by the angle between their exit (entry) and the great circle to the other aerodrome, "Towards LFPO" over those within 60°, a
+  small arrow along the way flown on each row.
+
 - **Map: the choose view frames the aerodrome, not every entry** (`modules/maps/choose.js`; maps help ×4, DECISIONS; noreg
   D73). The view fits the aerodrome, its runways and the points of the compatible procedures within 40 NM of it (LFPO opens at
   zoom 8.5 instead of 7); a chosen procedure leaving the view widens it to that procedure alone.

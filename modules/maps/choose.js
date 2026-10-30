@@ -295,8 +295,10 @@ function viewOf(C, fam) {
     ok = new Set(PR.compatible(recs, choice, C.byId).map(idOf)),
     has = (it, set) => it.members ? it.members.some(m => set.has(m.id)) : set.has(it.rec.id),
     // second axe (V3 § 10.31) : une SID dont la sortie, une STAR dont l'entrée est sur la route tapée vient d'abord (« vers votre
-    // route ») ; les autres, compatibles par ailleurs, après, marquées « sortie LACOU » / « entrée OKRIX »
-    route = fam === 'sid' || fam === 'star' ? (S.route?.flight?.route?.points || []).map(p => p?.id).filter(Boolean) : [],
+    // route ») ; les autres, compatibles par ailleurs, après, marquées « sortie LACOU » / « entrée OKRIX ». Une route sans point ni
+    // voie entre les deux terrains n'a rien à dire : l'axe se tait, le cap vers l'autre terrain classe à sa place (towards)
+    rpts = S.route?.flight?.route?.points || [],
+    route = (fam === 'sid' || fam === 'star') && rpts.length > 2 ? rpts.map(p => p?.id).filter(Boolean) : [],
     onRoute = route.length ? new Set(PR.compatible(recs, {
       ...choice,
       route
@@ -314,6 +316,8 @@ function viewOf(C, fam) {
   // ce qui ne va pas avec le choix dit pourquoi (⚠) quand il est déplié, même sans conflit de piste
   for (const it of list)
     if (!fits.includes(it) && !near.includes(it) && !it.why.length) it.why = [tt(TX.chNotFit)];
+  const dir = route.length || (fam !== 'sid' && fam !== 'star') ? null : towards(C, fam, rpts);
+  if (dir) fits.sort((a, b) => a.dir.off - b.dir.off);
   const order = [...fits, ...near],
     shown = C.more[fam] ? [...order, ...list.filter(it => !order.includes(it))] : order.slice(0, MAX_ROWS);
   for (const it of fits)
@@ -323,8 +327,48 @@ function viewOf(C, fam) {
     // les lignes compatibles avec le choix en vigueur (sur la route d'abord), pour le cadre
     ok: order,
     hidden: list.length - shown.length,
-    // l'étiquette « vers votre route » n'a de sens que si des lignes hors de la route suivent
-    toRoute: route.length && near.some(it => shown.includes(it)) ? fits.filter(it => shown.includes(it)).length : 0
+    // l'étiquette « vers votre route » n'a de sens que si des lignes hors de la route suivent ; « vers LFPO » de même, au-dessus des
+    // lignes à moins de TOWARD_DEG du cap quand d'autres suivent
+    head: route.length && near.some(it => shown.includes(it)) ? tt(TX.chToRoute) : dir && shown.some(it => it.dir?.off <= TOWARD_DEG) &&
+      shown.some(it => it.dir?.off > TOWARD_DEG) ? tt(TX.chToward, {
+        icao: dir.icao
+      }) : ''
+  };
+}
+/** Écart (°) en deçà duquel une SID sort, une STAR entre « vers » l'autre terrain. */
+const TOWARD_DEG = 60;
+/** Route initiale (°) de a vers b, orthodromie. */
+function bearing(a, b) {
+  const r = Math.PI / 180,
+    y = Math.sin((b.lon - a.lon) * r) * Math.cos(b.lat * r),
+    x = Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a.lat * r) * Math.cos(b.lat * r) * Math.cos((b.lon - a.lon) * r);
+  return (Math.atan2(y, x) / r + 360) % 360;
+}
+/** Route sans point : chaque SID (STAR) de la famille reçoit it.dir = { deg : le cap du terrain vers sa sortie (depuis son entrée,
+ *  vers le terrain), off : l'écart (°) entre la direction de sa sortie (son entrée) et l'orthodromie vers l'autre terrain } ; rend
+ *  { icao } (l'autre terrain), ou null sans positions. */
+function towards(C, fam, rpts) {
+  const sid = fam === 'sid',
+    other = sid ? rpts.at(-1) : rpts[0];
+  if (!C.at || !num(other?.lat) || !num(other?.lon)) return null;
+  const goal = bearing(C.at, {
+    lat: +other.lat,
+    lon: +other.lon
+  });
+  for (const it of C.items[fam] || []) {
+    const pts = ptsOf(it),
+      end = sid ? pts.at(-1) : pts[0],
+      b = end ? bearing(C.at, end) : null;
+    it.dir = b === null ? {
+      deg: null,
+      off: 360
+    } : {
+      deg: sid ? b : (b + 180) % 360,
+      off: Math.abs((b - goal + 540) % 360 - 180)
+    };
+  }
+  return {
+    icao: String((sid ? S.route?.flight?.route?.arr : S.route?.flight?.route?.dep) || other.id || '').toUpperCase()
   };
 }
 /** Refait les lignes de chaque famille (après un choix) : C.items = { famille: lignes } (la transition de l'approche avec), C.view =
@@ -379,6 +423,11 @@ export async function chooseLoad() {
     kt: +m.wspd
   } : null;
   C.cur = proceduresOf(S.route.flight)[C.side] || {};
+  // la position du terrain : le cadre et, sur une route directe, le cap des SID et des STAR (towards)
+  C.at = num(at?.lat) && num(at?.lon) ? {
+    lat: +at.lat,
+    lon: +at.lon
+  } : null;
   refresh(C);
   if (!allItems(C).length) {
     S.ctx.notify?.(tt(TX.chNoData, {
@@ -390,10 +439,6 @@ export async function chooseLoad() {
   }
   // la famille touchée d'abord : la première du côté que le vol n'a pas choisie, sinon la première qui a quelque chose
   C.focus = FAMS[C.side].find(f => C.cur[f] === undefined && C.items[f]?.length) || FAMS[C.side].find(f => C.items[f]?.length);
-  C.at = num(at?.lat) && num(at?.lon) ? {
-    lat: +at.lat,
-    lon: +at.lon
-  } : null;
   const box = frameOf(C);
   if (box) {
     C.fit = box;
@@ -599,7 +644,7 @@ function fixOf(C, fam) {
  *  ligne ; la ligne choisie pressée. */
 function rowHtml(C, it) {
   const tip = [it.title || '', it.old ? tt(TX.procOutdated) : '', ...it.why, it.wind?.tip || ''].filter(Boolean).join(' · ');
-  return `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.hl === it.id ? 1 : 0}" aria-pressed="${it.chosen}"${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)}"`}${tip ? ` title="${esc(tip)}"` : ''}>${it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>'}<span class="mp-ch-name">${esc(it.label)}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${it.off ? `<span class="mp-ch-off">${esc(it.off)}</span>` : ''}${it.wind ? `<span class="mp-ch-wind" data-sev="${esc(it.wind.sev)}">${esc(it.wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" role="img" aria-label="${esc(tt(TX.procOutdated))}">⌛</span>` : ''}${it.why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(it.why.join(' · '))}">⚠</span>` : ''}</button>`;
+  return `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.hl === it.id ? 1 : 0}" aria-pressed="${it.chosen}"${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)}"`}${tip ? ` title="${esc(tip)}"` : ''}>${it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>'}<span class="mp-ch-name">${esc(it.label)}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${it.off ? `<span class="mp-ch-off">${esc(it.off)}</span>` : ''}${it.dir?.deg != null ? `<span class="mp-ch-dir" style="--r:${Math.round(it.dir.deg)}deg" role="img" aria-label="${esc(tt(TX.chDir, { c: String(Math.round(it.dir.deg) % 360).padStart(3, '0') }))}">↑</span>` : ''}${it.wind ? `<span class="mp-ch-wind" data-sev="${esc(it.wind.sev)}">${esc(it.wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" role="img" aria-label="${esc(tt(TX.procOutdated))}">⌛</span>` : ''}${it.why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(it.why.join(' · '))}">⚠</span>` : ''}</button>`;
 }
 /** Sous-lignes de l'approche choisie : « Sans transition », puis ses transitions (V3 § 10.30 : la transition sous l'approche). */
 function subsHtml(C) {
@@ -623,7 +668,7 @@ function groupHtml(C, fam) {
       n: v.hidden
     }) : C.more[fam] && list.some(it => it.why.length) ? tt(TX.chFoldLess) : '',
     fix = fam === 'rwy' ? null : fixOf(C, fam),
-    rows = (v.toRoute ? `<div class="mp-ch-subh">${esc(tt(TX.chToRoute))}</div>` : '') + v.shown.map(it => rowHtml(C, it) + (fam === 'app' && it.chosen ?
+    rows = (v.head ? `<div class="mp-ch-subh">${esc(v.head)}</div>` : '') + v.shown.map(it => rowHtml(C, it) + (fam === 'app' && it.chosen ?
       subsHtml(C) : '')).join('');
   return `<section class="mp-ch-grp" data-fam="${fam}"><h4 class="mp-ch-head">${esc(tt(TX.chFam[fam]))}</h4><div class="mp-ch-list" role="group" aria-label="${esc(tt(TX.chFam[fam]))}"><button type="button" class="mp-ch-row mp-ch-none" data-fam="${fam}" data-id="none" data-hl="0" aria-pressed="${noneOn}"><span class="mp-ch-name">${esc(tt(TX.chNone))}</span></button>${rows}${fold ? `<button type="button" class="mp-ch-fold" data-more="${fam}" aria-expanded="${!!C.more[fam]}">${esc(fold)}</button>` : ''}</div>${fix ? `<p class="mp-ch-fix">${esc(fix.text)}${fix.val ? ` <button type="button" class="f-btn" data-fix="${fix.fam}" data-val="${esc(fix.val)}">${esc(fix.act)}</button>` : ''}</p>` : ''}${list.length ? '' : `<p class="f-muted mp-ch-empty">${esc(tt(TX.chEmpty, { icao: C.icao }))}</p>`}</section>`;
 }

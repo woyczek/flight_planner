@@ -215,6 +215,7 @@ export const STYLE = `
 [data-module="maps"] .mp-ch-sum-v{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
 [data-module="maps"] .mp-ch-x{flex:none;width:36px;height:32px;margin:0;padding:0;border:0;background:none;color:var(--sog-muted);font:inherit;cursor:pointer;touch-action:manipulation}
 [data-module="maps"] .mp-ch-row[aria-pressed=true]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 20%,var(--sog-surface));box-shadow:inset 3px 0 0 var(--c,var(--sog-accent))}
+[data-module="maps"] .mp-ch-dir{flex:none;display:inline-block;width:16px;text-align:center;font-size:14px;font-weight:700;line-height:14px;color:var(--sog-muted);transform:rotate(var(--r))}
 [data-module="maps"] .mp-ch-off{flex:none;font-size:11px;font-weight:600;color:var(--sog-muted)}
 [data-module="maps"] .mp-ch-subh{padding:2px 8px 0;font-size:11px;line-height:16px;color:var(--sog-accent)}
 [data-module="maps"] .mp-ch-tag{flex:none;padding:0 4px;border:1px solid var(--sog-border);border-radius:3px;font-size:11px;line-height:16px;font-weight:600;color:var(--sog-muted)}

@@ -1608,6 +1608,15 @@ chosen procedures whole. 40 NM holds a terminal area and the initial approach se
 A pick whose procedure leaves the view widens it to that procedure alone (`widenTo`: the view's corners plus its points);
 the view never shrinks by itself and hover never moves it (only a tap). Noreg D73.
 
+## Choosing on the map: a direct route ranks by heading (usage walk of 30 Oct 2026, point 4)
+
+On "LFBO LFPO" (no point, no airway) every SID was "exit X" — its own name again — and nothing said which way it went: the walk
+took AMOLO 7A, east, for Paris. A route of two points now silences the "towards your route" axis; `towards()` gives each SID
+(STAR) `dir = { deg, off }`: `off` the angle between the bearing from the aerodrome to its exit (entry) and the great circle to
+the other aerodrome, `deg` the way flown (the exit's bearing; the entry's reversed). The compatible rows sort by `off`; "Towards
+LFPO" heads them when rows within `TOWARD_DEG` = 60° are followed by others; an arrow `↑` rotated by `deg` on each row (north up,
+like the map). With points on the route the axis keeps its "exit X" marks: they say which rows leave the route. Noreg D74.
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (BUGS SOG, 30 Oct, for the user's challenge "supprimer les faire et défaire vers un point documenté, éviter le
