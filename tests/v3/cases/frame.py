@@ -58,19 +58,32 @@ def hscroll(c):
     return c.js('[document.documentElement.scrollWidth, window.innerWidth]')
 
 
+# A module drawn and settled: its root holds text and that text has not changed for `quiet` ms (a module may empty its box
+# before drawing it again — the report does — so « some text once » is not enough under load); then one reading of the root
+# (shown, height, text length) in the same evaluation. Gives the last reading on timeout, never raises.
+_DRAWN_JS = """([m, quiet, timeout]) => new Promise(res => {
+  const read = () => { const e = document.querySelector('[data-module="' + m + '"]'), r = e && e.getBoundingClientRect();
+    return { text: e ? (e.innerText || '').trim().length : 0, h: r ? r.height : 0, shown: !!e && !!(e.offsetParent || e.getClientRects().length) } };
+  let last = read(), since = performance.now();
+  const t0 = since, tick = () => { const now = read();
+    if (now.text !== last.text || now.text === 0) { last = now; since = performance.now() }
+    if (now.text > 0 && performance.now() - since >= quiet) return res({ ...now, settled: true });
+    if (performance.now() - t0 >= timeout) return res({ ...now, settled: false });
+    setTimeout(tick, 50) };
+  tick() })"""
+
+
 @case('A1', 'Every module loads', 'A', tags=('smoke',), night=False,
       rule='smoke; V3_SPECIFICATION 7.1 rule 1 (no horizontal scroll)')
 def a1(c):
     for m in MODULES:
         c.open(m)
-        c.until("(m) => ((document.querySelector('[data-module=\"' + m + '\"]') || {}).innerText || '').trim().length > 0", m,
-                what=f'#{m} draws its content')
+        got = c.page.evaluate(_DRAWN_JS, [m, 400, 20000])
+        c.ok(got['settled'], f'#{m}: {got}', f'#{m} draws its content and settles (text unchanged for 400 ms)')
         sw, iw = hscroll(c)
         design = c.js('document.documentElement.dataset.design')
         c.eq(design, c.design, rule='the design asked is the one applied', what=f'#{m} dataset.design')
-        root = c.box(f'[data-module="{m}"]') or c.box('#fView > *')
-        inner = c.js("(m) => ((document.querySelector('[data-module=\"' + m + '\"]') || {}).innerText || '').trim().length", m)
-        c.ok(root and root['shown'] and root['h'] > 0 and inner > 0, f'#{m}: module root empty or absent', 'a non-empty module root')
+        c.ok(got['shown'] and got['h'] > 0 and got['text'] > 0, f'#{m}: module root empty or absent ({got})', 'a non-empty module root')
         if m == 'fuel' and sw > iw:
             continue                               # the fuel width is the job of F4 (known failure), not repeated here
         c.ok(sw <= iw, f'#{m} scrollWidth {sw} > innerWidth {iw}', 'scrollWidth <= innerWidth (no horizontal page scroll)')
