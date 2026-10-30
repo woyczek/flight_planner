@@ -1194,6 +1194,15 @@ redesigned for touch at that point.
          le … ⌛ · Relire · Source · N non lues") are folded under the summary and open on a tap on the line, one side
          at a time; "Relire" and "Source" leave the title and live in that folded part only (rare gestures). Under 7
          elements visible at the step's opening: two lines, two buttons, the rest folded.
+       **Delivered (30 Oct)**: Auto idempotent with provenance (5a374c189), the typed airway read along its own nodes
+       or left direct with a line (d34ad04fb), the text as a view of the model with SID / STAR read back and the ICAO
+       form (79993b1ea), the name rule in `frame/lib/adnames.js` (1e36c7570), the folded procedures card (61948bfb3),
+       the procedure group rows in "Points (N)" (512902c66), the closed airway named with its open range (1bade3bc8),
+       the completion at the cursor `modules/fuel/routecomplete.js` (40f834eb7); the Map's "vers votre route" ranking
+       (1ad1b897b). **§ 10.31 is delivered in full**; § 10.30's pane is complete up to its fourth reading (af261d3e3,
+       43df712ef, 1f23b7d73, 8ba329f66, b6b2043e6, 1ad1b897b).
+       **Noreg discipline (30 Oct, after a driver crash)**: one full pass at a time on the workstation; `--touched`
+       passes may run beside it; the runner refuses a second full pass while one runs (lock, V3 Frame).
 
    32. **Missions in V3, first framing** (user, 30 Oct: "les missions actuelles sont communes : je suis le seul à en
        créer, d'autres en profitent ; la numérotation est la mienne ; le premier acte du rôle « équipier enrôlé dans une

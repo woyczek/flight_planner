@@ -489,14 +489,14 @@
           "es": "Aviso cuando la fecha del vuelo está en el pasado"
         },
         {
-          "state": "planned",
+          "state": "done",
           "fr": "Vent sur chaque piste proposée (face ou dos, travers, d'après le METAR connu), piste et procédure qui se corrigent l'une l'autre sans rien imposer",
           "en": "Wind on every proposed runway (head or tail, crosswind, from the known METAR), runway and procedure correcting each other without forcing anything",
           "de": "Wind auf jeder vorgeschlagenen Piste (Gegen- oder Rückenwind, Seitenwind, aus dem bekannten METAR), Piste und Verfahren korrigieren einander ohne Zwang",
           "es": "Viento en cada pista propuesta (de cara o de cola, cruzado, según el METAR conocido), pista y procedimiento que se corrigen mutuamente sin imponer nada"
         },
         {
-          "state": "planned",
+          "state": "done",
           "fr": "Route : « Auto » recalcule depuis les points posés seulement (jamais en boucle), la SID et la STAR choisies s'écrivent dans le texte du plan de vol et s'en relisent, complétion au curseur dans le champ de route",
           "en": "Route: \"Auto\" recomputes from the pinned points only (never loops), the chosen SID and STAR are written into the flight plan text and read back from it, completion at the cursor in the route field",
           "de": "Route: „Auto“ rechnet nur von den gesetzten Punkten neu (nie in Schleife), gewählte SID und STAR werden in den Flugplantext geschrieben und daraus gelesen, Vervollständigung am Cursor im Routenfeld",
@@ -718,7 +718,7 @@
           "es": "Controladores VATSIM e IVAO activos en el Mapa, un color por red"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Choix de la piste et de la procédure en trois tapes, dans n'importe quel ordre : les trois familles visibles à la fois, seules les compatibles par défaut (« N autres · Toutes »), familles de STAR, transitions en sous-lignes, volet condensé ; seuil de piste en petit vecteur au zoom élevé",
           "en": "Runway and procedure chosen in three taps, in any order: the three families visible at once, compatible rows only by default (\"N more · All\"), STAR families, transitions as sub-rows, condensed pane; runway threshold as a small vector at high zoom",
           "de": "Piste und Verfahren mit drei Tipps in beliebiger Reihenfolge: die drei Familien zugleich sichtbar, standardmäßig nur passende Zeilen („N weitere · Alle“), STAR-Familien, Übergänge als Unterzeilen, kompaktes Fenster; Pistenschwelle als kleiner Vektor bei hohem Zoom",
