@@ -30,8 +30,12 @@ flight_performance_database_merged.fpdb.json
 tools/.assets_seen.json
 tools/.defa_site.json
 tools/.lnmperf.json
+tools/.regen_last.json
+tools/.regen_last.json.tmp
 tools/.sim.json
 tools/.lan.json
+tools/.relay.json
+tools/.relay.json.tmp
 tools/.lan.json.tmp
 
 # Commit courant pour le pied de page (tools/write_build.sh, crochets git)
@@ -61,3 +65,6 @@ proc_work/
 
 # identifiant EAD Basic du poste (jamais dans le dépôt)
 pass
+
+# dossier de travail de tools/proc_sia.py sans --cache et sans dossier data/
+.proc_cache/

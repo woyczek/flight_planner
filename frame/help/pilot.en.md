@@ -23,7 +23,8 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
   progress (touch to go to the Map), the reports still to write for your past flights (touch to open the report,
   pre-filled), the missing trigram (touch to set it), the state of the data (last synchronisation, pending writes, the
   exchange in use), the aeronautical database while it is not ready, the launcher, "Offline" when there is no network, the number of weather calls of the day (Open-Meteo forecasts,
-  10,000 allowed a day) and,
+  10,000 allowed a day), the end of the AIRAC cycle when the published aeronautical database or procedures are behind the
+  cycle in force and,
   on a phone, the source of the position during a flight. On a phone the header is reduced to the name, the ? button and the
   ⚙ button.
 - **Full screen.** On the map (the fixed-view tools), a round button at the bottom of the column of buttons over the map hides
@@ -35,6 +36,9 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
 
 ## Data and synchronisation
 
+- **Position and track of the flight.** With the « several users » use, the actual position and the track of your current
+  flight (one point per nautical mile or per minute, to about 100 m) are shared with the group and stay in the repository's
+  history; they never go to an outside service without a gesture of yours.
 - **Offline first.** Everything you do is kept on the device and works without network.
 - **Alone on this device.** With no exchange ticked in Settings, nothing goes elsewhere: export the device backup (one
   file) from time to time, it is the only copy.
@@ -63,7 +67,7 @@ where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060�
 Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in feet below (3,500 ft).
 
 <a id="fuel-step-1"></a>**1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
-rather than the observation, the aircraft and the cruise level (as a flight level). The flight date (entered in the device's local time) is a single value, kept in the current flight: the quote’s weather (the aerodromes’ TAF, winds and temperatures aloft) is read at that date, the Map’s ETA starts from it while the flight has not started, and Atmosphere’s slider starts from it; empty means now. The aircraft fits on one line: the
+rather than the observation, the aircraft and the cruise level (as a flight level). Under each code a fixed line gives the aerodrome's name for checking (“LFPO — Paris-Orly”; “unknown” when the code matches nothing). From two characters, a code or the start of a name (“LFP”, “orly”), the field offers at most seven aerodromes: ↑ ↓ to choose, Enter to confirm, Esc to close, or a tap; the list closes when you leave the field, and typing the whole code by hand always works. The name can be typed in full (“toulouse”): only a chosen or typed code reaches the route, and a field left without a choice goes back to the saved aerodrome. The flight date (entered in the device's local time) is a single value, kept in the current flight: the quote’s weather (the aerodromes’ TAF, winds and temperatures aloft) is read at that date, the Map’s ETA starts from it while the flight has not started, and Weather’s slider starts from it; empty means now. The aircraft fits on one line: the
 chosen aircraft, its registration, its callsign and where it comes from. A new flight takes the last aircraft chosen on this device; with none
 chosen, the quote waits. The magnifying glass opens the search (the last chosen first): type a
 sheet, a registration, a callsign or a type. The results come in this order: your performance sheets, the airline's
@@ -92,7 +96,7 @@ with a direct entry and exit within 60 NM and no detour of more than 40 %. The t
 the airway's middle points, which the text does not write, are kept in the points (distance, map and profile follow them).
 A notification gives the result (“3 airways written, 254 NM”) or “no useful airway between X and Y”. Limits: airways are
 taken in both directions (the base does not carry one-way yet), with no fine level restriction nor SID / STAR; check the
-route.
+route. "Auto" always starts again from the pinned points — the departure, the chosen SID's exit, the points you typed, the STAR's entry, the arrival — and replaces what a previous "Auto" wrote: two "Auto" in a row give the same text, never a route that grows in loops. A leg that would pass a point twice, or lengthen the whole too much, stays direct, and the notification says why ("no airway near LACOU", "detour of more than 40 %"). When the SID's name is in the text, its exit is written after it ("LFBO LACOU7B LACOU …") and the leg from the exit to the first point is routed. An airway you type between two points ("GILUX A3 MOTAL") is always read as an airway, never as a point of the same name elsewhere; it is followed only if it really joins those two points, otherwise the leg stays direct and a line says so ("A3 does not join GILUX to MOTAL: direct leg"). The route text follows your procedures, in ICAO form: the SID's name then its exit after the departure, the STAR's entry then its name before the arrival, "DCT" between two points without an airway ("LFRS NTS1A NT102 DCT LUGEN … MEN01 MEN1A LFML"); the approach never appears. When the SID's exit is not on your route, a line says it is joined by a direct ("NTS1A exits at NT102: NT102 DCT LUGEN"). The other way round, the text is read back: typing the name of a SID of the departure or a STAR of the arrival chooses it, deleting it clears the choice. In the "Points (N)" list, each chosen procedure is a single folded row, in its map colour ("SID NTS1A · 2 points", "STAR MEN1A via NEPIX · 4 points"): its fixes show with a tap, never at the rank of the points you typed; the number counts your points and these rows. When an airway does join two points but is not open at the leg's level, the line names it with its open band, so that you decide ("A34 joins LACOU to LMG, closed at FL260 (open from 6 500 ft to FL195): direct leg"); "Auto" never follows it anyway. While you type in the field, from two characters of the word under the cursor, a list proposes (seven at most) the SIDs of the departure and the STARs of the arrival, the airways around the previous point, the points and navaids of the base: ↑ ↓ and Enter, or a tap, write the word at the cursor; Escape closes the list. The step's lists stay, for the keyboard and screen readers.
 
 The “Points” fold lists the recognised points, from departure to arrival. The arrows move a point up or down the list,
 the cross removes it; the field at the bottom adds one before the arrival: an identifier (beacon, fix, airfield) or
@@ -106,6 +110,8 @@ it stay neighbours and in place.
 “Show the map” shows the flight on the map: on a phone the Map opens (the header button brings you back here); on a wide
 screen it opens alongside, and follows every change. “Edit the route” on the map brings you back to this step, with the
 route field ready for typing.
+
+**Runway, SID, STAR and approach.** At the bottom of the Route step, a "Procedures" card holds a Departure side and an Arrival side. Each has a title ("Departure LFPO Paris-Orly", with "On the map": the Map opens on the aerodrome's procedures; what you choose there — runway, procedure, approach — comes back here in one go, applied as a choice made here and said in a single line; a family the Map does not touch stays as it was), one muted line ("read on 29/10 16:53Z · Read again · 3 not read", then "Source": the coded page of the chosen procedure, at the SIA, in a new tab) and a fixed grid, the same on both sides: runway · SID · transition for the departure; runway · STAR · transition for the arrival, then, below, approach · approach transition (a transition appears only when the chosen procedure has one). On a phone, a single column; no label is cut. Every list comes from aerodb and shows all the procedures of the aerodrome in one list ordered by runway then name (the runway is in the label only when no runway is chosen and the procedure serves just one: "OPALE 2E" once the runway is chosen). Nothing is forbidden: a procedure in conflict with your choice is marked ⚠ (a SID, STAR or approach that does not serve the chosen runway; with no runway chosen, a STAR that serves no runway of the chosen approach; the reason is in the tooltip — a STAR that does not join the approach is no conflict: the Map links them with a dashed line) and you can still choose it — the ⚠ and the tooltip are enough, no notification repeats it. ⌛ (grey) means outdated, ⚠ (orange) means in conflict. In every list, what is compatible with your choice comes first, the ⚠ ones after; in the runway list, the runways of the SID or approach already chosen come first. A procedure the source could not read properly (no name, or doubtful) is never offered: the side's muted line says how many are not read ("3 not read": the pages not read and the procedures to check of the file read). If the data of the aerodrome carry no runway record, the runways offered are those its procedures name. Each runway carries the wind of the aerodrome's known METAR (the one of the Departure step): "13R — ↓ 12 kt · ← 6 kt": the arrow shows where the wind blows, the runway seen upward as on final (↓ head wind, ↑ tail wind, ← a wind from the right, → a wind from the left). Green for a head wind; orange for a tail wind up to 5 kt or a crosswind over 10 kt; red for a tail wind over 5 kt or a crosswind over 20 kt (or the aircraft sheet's limit when it has one); the reason in the tooltip. Without a METAR, nothing is shown. Each side's title ends with the summary of the choice, the same text as the Map's pane: "13R · ↑ 12 kt", "MEN1A via NEPIX", "I13R" ("SID none" for a departure without a SID). Choosing a STAR or an approach that serves a single runway sets that runway; a STAR offers its transitions, an approach its approach transitions. An approach reads short, its type and runway ("ILS 06", "RNP 06"; the published name in the tooltip). The initial approach segments the SIA publishes apart ("INA RNAV RWY 06") are never rows: they are the transitions of every final of their runway, "via ODILO · ODILO 1A" (the IAF then the published name), and "—" stays the direct to the IF. The first choice, "—", means "not chosen"; "none" is a real choice (a direct departure, no SID). A procedure of the workstation's X-Plane fallback comes last, marked "X-Plane, local"; a procedure read under an earlier cycle is marked ⌛ (to read again). For an aerodrome with no published procedure the muted line says so ("no published procedure · Read the procedures of LFXX"): one aerodrome per gesture, never silently. An aerodrome that already has procedures shows, on that same line, the date of its last reading ("read on 29/10 16:53Z", ⌛ when it is from a past cycle) then "Read again": the same gesture, which replaces the file read. A French aerodrome is read from the SIA eAIP, without an account; a State whose AIP publishes procedure tables, from EAD Basic (credentials set on the workstation); for any other State, the message says no table is published. Without a launcher, or on a device paired with the workstation, the reading is done on the workstation — the message says so — and the SimBrief OFP stays the source of the flight. Once the SID and STAR are chosen, the quote runs on the "route + procedures" path (the distance of the SID and STAR included) and the Map draws them with their altitudes and speeds; their altitude constraints do not enter the quote's level steps, they are read on the vertical profile, which keeps the cruise until the descent has to begin and never climbs again once it has. "Last SimBrief OFP" proposes its SID and STAR for the sides you have not chosen yet only ("none" is a choice): it never replaces your choice, and says what it filled, one line per side ("Arrival: STAR — → LERG1R"). Choices made in a row are written once, a moment after the last. The card opens folded, to be read without scrolling: one summary line per side ("Departure LFRS · 03 · NTS1A", with "On the map"); a tap on the line, or on ▸, unfolds its lists and its secondary line ("Read again", "Source"), one side at a time. A side without procedures stays unfolded: its line offers the reading.
 
 <a id="fuel-step-3"></a>**3 Weather.** The wind (direction and speed) and the ISA deviation. Without a direction, or without any wind, the block
 fuel is given as a range. “Read the aerodromes’ weather” shows the departure, the arrival, the alternate and the
@@ -176,6 +182,10 @@ large screen it stays here with the Map on the right. Changing the departure air
 flight: the departure time is cleared. Changing the arrival after departure is a diversion: the time is kept and the
 diversion recorded.
 
+Flight plan for the simulator: under the summary, three buttons — ".fms (XP 11/12)", ".fms (XP 10)" and ".pln (MSFS)" — download the route and the chosen procedures (runway, SID, STAR, approach and their transitions) for X-Plane or Microsoft Flight Simulator, in a file named "LFPO-EIDW_2026-10-30.fms". The route needs at least two placed points. Then copy the file into X-Plane's "Output/FMS plans" folder (sending it directly will come with the launcher).
+
+Once the flight has started, this step carries a "Procedures" card: nothing is locked: the Departure and Arrival sides stay editable at any time (another departure is a new departure). A change does not redo the quote: the block fuel, the trip fuel and the reserves stay those of the departure; only the times at the points, the vertical profile and the remaining distance follow the new path. The Map's "Change" button opens Fuel on the Arrival row (`#fuel?focus=arr`): the Route step before the start, the Departure step after.
+
 Once the flight has started, the result at the bottom of the screen says “Flight started at 11:14Z (13:14) · for 1 h 10”. Times are UTC (“Z”);
 the device's time is added in brackets at the departure, the planned take-off and the planned arrival. A
 started flight ends with the writing of its report: when it is saved, Fuel goes back to preparation and My flights
@@ -190,7 +200,8 @@ it.
 
 The “Sheets” tab gathers the airline's sheets, shared with all its devices. They are sorted by category
 (helicopters, turboprops, jets, piston engines, others); each type the airline uses (fleet, reference) that has no
-sheet yet is listed too, “performance to fill in”, with “Create the sheet”.
+sheet yet is listed too, “performance to fill in”, with “Create the sheet”. Each sheet says what it is missing, by family
+(“To complete: rpm, speeds, cruise, taxi, runway”), or “complete” when nothing is missing.
 
 - **Import**: a file (performance CSV, JSON, Little Navmap `.lnmperf`, SimBrief OFP) or pasted text (the same, or
   ChatGPT's answer). A sheet drawn from an OFP is calibrated on its real times and fuel burn.
@@ -202,7 +213,9 @@ sheet yet is listed too, “performance to fill in”, with “Create the sheet�
 - **ChatGPT**: “Copy the ChatGPT request” prepares the question for the type (or for the empty fields only); paste it
   into ChatGPT, then its answer as it is in the area provided, and “Read”.
 - **Editing, exporting**: the editor shows the fields by group. On a computer screen the power / fuel-flow table is
-  edited row by row; on a phone it is read only. `.lnmperf` and JSON exports; deletion after confirmation.
+  edited row by row; on a phone it is read only. `.lnmperf` and JSON exports; deletion after confirmation. The airframe (aeroplane, helicopter, glider…) and the propulsion
+  (piston, turboprop, turboshaft, jet…) come from the type's ICAO base: leave “auto” unless the base is wrong or does not know
+  the type; they are then neither counted as missing nor asked of ChatGPT.
 
 ## Settings and units
 
@@ -224,7 +237,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: f2764e9c409c -->
+<!-- fr: bac63802e71b -->
 
 <!-- chapter: maps -->
 # Map
@@ -235,7 +248,7 @@ beacons, airways, minimum altitudes. The flight's route can also be changed on t
 ## How to use
 
 **The planned flight.** The map shows the flight prepared in Fuel: departure, route points, arrival, and the alternate
-airfield in grey dashes. When the SimBrief OFP filed a SID or a STAR, they are drawn in purple over the route, named ("SID ROYAN6P"). Its summary (level, distance, planned or in-flight) is not written over the drawing (the drawing shows it): the tooltip of the data block's handle under the map gives it, with departure and arrival, alternate and aircraft type. When the flight changes in Fuel, the map follows by itself.
+airfield in grey dashes. The runway, SID, STAR and approach chosen in Fuel are drawn over the route (SID in green, STAR in orange, approach in blue), named ("SID ROYAN6P"). Its summary (level, distance, planned or in-flight) is not written over the drawing (the drawing shows it): the tooltip of the data block's handle under the map gives it, with departure and arrival, alternate and aircraft type. When the flight changes in Fuel, the map follows by itself.
 
 **The map and what it shows.** Around the route: the airspaces it crosses or skirts (restricted, danger and prohibited
 areas, controlled airspace), the low or high airways depending on your level, the airfields and the beacons, and in each
@@ -245,6 +258,14 @@ finger, spread two fingers to zoom; “Recentre” (the target, at the top right
 the route changes: only “Recentre” (or another flight) reframes it. Seen from afar, the map only shows what is near the
 route; zoom in to see everything.
 
+<a id="maps-procs"></a>**The runway and procedures chosen.** What you chose in Fuel (runway, SID, STAR, approach) is drawn over the route: the SID in green, the STAR in orange, the approach and its missed approach in blue, from the threshold of the departure runway to the first point of the route, and from the last point of the route to the threshold of the arrival runway. Transitions and the missed approach are dashed; a leg without a fix (a climb on a heading, for example) is a short stroke along its course, then dashes to the next point; a constant-radius turn is an arc. When the SID does not reach a point of the route, a dashed straight line joins it to the route (likewise for the STAR). A procedure you did not choose is never drawn, and the Layers list has no box for it. The procedure's name is written on its trace, followed by where its data come from when they come from X-Plane or Little Navmap ("X-Plane, local") then by the symbol ⌛ (in grey) when they were read under an earlier cycle; the legend ("i" chip) recalls it. From the regional view on (adjustable on the thresholds page), each point carries its constraints; the procedure's name is written at every scale, over everything else, as on procedure charts: an **underlined** altitude means "at or above", **overlined** "at or below", both "exactly", "5000–7000" "between the two"; "≤ 220 kt" is the speed not to exceed. The vertical profile follows the same path and shows these constraints as steps (up arrow: at or above, down arrow: at or below, dot: exactly, bar: between two altitudes); distances, estimated times and the cursor are measured along that path. The map never changes this choice: touch an aerodrome of the route and its card gives the runway and procedures chosen, with a "Change" button that opens Fuel on the row to change; a "Source" link opens the procedure's published page (the SIA's eAIP) in a new tab, and for a procedure read elsewhere its document's name shows when hovering the row.
+
+<a id="maps-rwy"></a>**The runways.** Close in, each runway of every aerodrome drawn is a short vector from its threshold, and the aerodrome shows its name next to its code ("LFPO Paris-Orly"); each vector goes along the runway, its number at the tail, behind the threshold: the runway chosen in Fuel bold in its side’s colour, the others thin. They appear only from the zoom set by the airline (Settings › Administration, "Runway thresholds zoom", 11 with no setting); below it, nothing. In "Choose on the map", every runway of the aerodrome is drawn so, the chosen one bold; the choice’s drawings go over the base map’s labels, which are dimmed.
+
+<a id="maps-choose"></a>**Choosing on the map.** The "On the map" button of a side in Fuel (departure or arrival) opens the map on that aerodrome — as does "Choose on the map" on the card of the departure or arrival aerodrome (touch its pin; full width on a phone): the base map and the layers are dimmed and the view fits the aerodrome’s published procedures. At the top of the data block, your selection in one line per family ("Runway 31 · ↑ 12 kt", "OKRI5L", "I31 via IAF1"), each with ✕ to set it back to "None"; touching a family’s name ("Runway", "STAR", "Approach") goes to its group and unfolds it. Below, the three families at once — the runway, the SID (departure) or the STAR, the approach (arrival) — in tight rows: three taps in whatever order suits you. Each choice narrows the two other families to what fits it; the rest is folded under one thin line "N more · All", which unfolds it marked ⚠ (it can still be chosen). SIDs leaving and STARs entering on the route you typed come first, under "Towards your route"; the others follow, marked "exit LACOU" or "entry OKRIX". "None" is always the first row. Procedures that differ only by their runway (OKRI5L, OKRI5R) are one row "OKRI5" with its runways as small tags: tapping it chooses the family and narrows the runways, tapping a runway chooses the procedure. Approaches read by their short label ("ILS 06", "RNP 06"; the published name on hover); under the chosen approach, "No transition" then its transitions, among them the initial approach segments the SIA publishes for the whole runway ("via ODILO · ODILO 1A"), in their final’s hue; a transition that does not meet the final on a shared point joins it with a dashed line. Each procedure has its hue (eight, cycled), the same on its row, its label and its trace; on the map, one small label per family and point ("NIMER 9"), and the procedure hovered or touched goes over everything, with its full name; hovering a row of any family highlights its trace, hovering a trace highlights its row; ⌛ (grey): read under an earlier cycle. Each runway carries the wind of the METAR already known: "↓ 12 kt" head, "↑" tail, then the crosswind (← wind from the right, → wind from the left: the arrow says where it blows, the runway drawn upward, as in Fuel), in green, orange or red by the tailwind and the crosswind; without a METAR, nothing. A tap on a row or a trace adds that choice and leaves it on the map (the runway bold, the procedure in its hue, the others of its family dimmed); nothing is written yet. A procedure that serves one runway sets it when none is chosen; otherwise a line under the group offers the correction, in one tap: "OPAL2E serves 25 — Switch to 25", or "OKRIX5A does not serve 07 — Choose OKRIX5B". "Done", the ✕ cross or Escape take you back to Fuel with everything you chose; Fuel writes it and says what changed; the map writes nothing. To give up without handing anything back: "← Fuel" at the top.
+
+<a id="maps-coverage"></a>**Coverage.** The "Coverage" layer (in the layers list, off to start with, switched on by its box only) colours the aerodromes by what this device can give of their procedures: **green**, they are held (published, entered by hand or read on this computer); **orange**, they are held but partly read (pages not read, records to check: the aerodrome's card says how many) or they are read on demand (France through the SIA's eAIP, a State whose tables can be read, an aerodrome of Little Navmap's local database); **red**, nothing readable (images only, prose text, nothing on this computer). The legend (the "i" chip of the data block) gives one line per colour while the layer is shown. Only the visible aerodromes are asked. Touch an aerodrome: its card adds a line with the pin, the level and the reason (⌛ when the procedures held are from an earlier cycle, then how many SIDs, STARs and approaches are held). When the device cannot give this information, the layer is not offered.
+
 <a id="maps-weather"></a>**The profile and the cursor.** In the data block under the map, the vertical profile cuts through the route from end to end: the terrain,
 the airspaces you enter at the planned altitude, and the flight path in purple. Slide your finger along the profile: a
 blue cursor follows it, and the same cursor moves on the map. Tap the route on the map to put it there. The line below
@@ -252,8 +273,10 @@ the profile says what is under the cursor: distance from the departure, planned 
 airspace you are in at that point. Under the map, this data block shows the profile; the list of airspaces at a point or
 an airfield's reporting points open in its place when you ask for them, and the profile comes back when they are closed. The cloud chip, (the three chips — profile, cloud, “i” — are always in the top line, at the right; one with nothing to show is only greyed out), replaces it (the profile chip brings it back) with the weather
 cross-section along the route (wind, temperature, cloud, icing) against the flight's level; the cross-section follows the same cursor, and a tap on
-it moves the cursor. It only shows the forecast that Atmosphere has already loaded: without one, the line "No forecast loaded" leads to
+it moves the cursor. It only shows the forecast that Weather has already loaded: without one, the line "No forecast loaded" leads to
 Weather, under Prepare. The last chip, “i” (greyed out while the drawing has no legend), opens the legend of the profile over it (what each line, band and mark is); dragging a finger on the cross-section moves the cursor like on the profile. The profile and the cross-section are drawn to the exact height of the block, their distance axis always in view: on a low block they drop level labels, never the axis.
+
+<a id="maps-profile-spaces"></a>**The profile's airspaces.** The profile shows only the airspaces the planned vertical path enters (within 500 ft); overlapping sectors of one family (Dublin's CTAs) make one envelope there, named by the family; free route airspace (FRA) and W or weather research areas appear only when the "Other airspaces" layer is on; at most seven airspaces are named, the others in the list below.
 
 <a id="maps-profile-zoom"></a>**Zooming the profile.** To read the profile precisely, tighten it on part of the flight: pinch it with two fingers (the middle of the fingers stays in place) and drag with two fingers to move the window; one finger stays the reading cursor. The altitude scale refits to what the window shows (that is where the precision comes from), the distance marks (NM) tighten with it, and points outside the window are not drawn. A double tap goes back to the whole flight, as does the “Whole flight” button, which appears in the top line while the profile is zoomed. On a screen: Ctrl + wheel zooms around the pointer, a drag moves the window, a double click goes back to the whole flight. The zoom is kept while the page stays open and the route does not change; it is never stored. The weather cross-section zooms the same way (same gestures, same “Whole flight” button) and the window is the same for both: zoom on one, switch to the other with the chip, and you find the same part of the flight; the cross-section also refits its height scale to what it shows.
 
@@ -314,7 +337,7 @@ it: the line keeps the database's description and published position, and says �
 a mile from there.
 
 <a id="maps-started"></a>**In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
-and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). In the data block's notes, under the profile, a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your altitude against the
+and where you are (filled aircraft, turned to your track, with the flown trail dotted, since departure, kept across a change of tab). In the data block's notes, under the profile, a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your altitude against the
 planned one; the profile shows both altitudes. Close up, each point carries its estimated time (ETA) under its name, never over an airfield, in UTC (“14:52Z”), the local time in brackets at departure and arrival. “Follow” keeps the
 map on your position; moving the map stops it. Without a position (GPS or network not enabled), a notification says so once, the line stays in the notes with an “Enable the position” button; a position older than 2 minutes is greyed. The line ends with the position's source: GPS, network,
 IVAO, VATSIM, X-Plane or Little Navmap. The estimated times are also shown for a flight dated in Fuel, before it leaves. Once arrived, the note “Arrived” replaces the line and “Follow” goes; a diversion is said in the notes.
@@ -379,7 +402,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 462716f97b09 -->
+<!-- fr: df5fbdfdcc6d -->
 
 <!-- chapter: report -->
 # Report
@@ -572,8 +595,9 @@ route and around it. Nothing is asked at opening: the page shows what the device
 area, the map shows the world synoptic published with the application, asking for nothing.
 
 **The weather map.** Isobars, isotherms, cloud, wind, jet stream and convection, at the level chosen with the level chip
-("SFC", the requested level, the computed path or a fixed altitude). The layers button (top left) chooses what is
-drawn. Touch a point of the map to open its slice.
+("SFC", the requested level, the computed path or a fixed altitude). The layers button (top left) opens a panel over
+the map: it chooses what is drawn on the map and in the profile, and the cut stays in view below, redrawn by each box; the
+cross or Escape closes it. Touch a point of the map to open its slice.
 
 **The flight area and the world.** A thin line surrounds the flight area: inside, the fine forecast loaded for the flight
 (Météo-France AROME 1.3 km and ARPEGE 0.1° over France, ICON in Europe); outside, the world synoptic (NOAA GFS,
@@ -581,7 +605,9 @@ published on a 5° grid). The two models do not say quite the same thing: a jump
 is normal. The layers panel names both models and their grid.
 
 **The flight date.** The slider under the grip moves the time from 0 to 72 hours after the planned departure: the map,
-the cross-section and the slices follow.
+the cross-section and the slices follow. When part of the slider is outside the forecast read (a planned departure
+already past, days not loaded yet), a band under the slider shows the hours covered; elsewhere the nearest hour is shown,
+⚠ says so on the slider line and in the grip, and a warning appears.
 
 **The cross-section and the slices.** Under the map, the cross-section shows the route from end to end, from the ground
 to above the flight level. Touch it to open the slice of the nearest point (the vertical profile of the atmosphere
@@ -610,7 +636,57 @@ the legend, the chip or Escape closes it.
   world synoptic comes from GFS (NOAA), every 3 hours up to 72 hours.
 - What is loaded stays on the device and works offline; the Map reuses its weather cross-section.
 
-<!-- fr: 0d64bc05e5c1 -->
+<!-- fr: acaaf2c98cee -->
+
+<!-- chapter: data -->
+# Data
+
+What the airline publishes for the app — the aeronautical base, the procedures, the aircraft, the weather — and the state of each data set. This screen is for reading, and offers actions on the aeronautical base: Download its sources, Build it, Purge the sources, then Publish it.
+
+## How to use it
+
+<a id="data-cycle"></a>**The cycle in force.** At the top, the current AIRAC cycle (for example 2610), its dates and the number of days before the next one. Below, "Launcher of this workstation" or "No launcher: read only" says whether this computer has a launcher.
+
+<a id="data-coverage"></a>**The coverage.** The list of zones (countries, regions) this workstation follows. On the first opening it holds every zone the airline publishes; the list is kept on this device. “Add a country” puts into the coverage a zone the suite knows, even one nobody publishes yet: it is ticked for “Build”.
+
+<a id="data-states"></a>**The States.** Under the coverage, the States are sorted by colour: green, procedures are already published; orange, they can be read on demand; red, nothing is readable. The reason is written on each line, the colour is never alone. Beyond seven lines, "n more" unfolds the rest.
+
+<a id="data-group-base"></a>**Aeronautical base.** One line per source that feeds a zone of the coverage: its cycle, its age ("published 3 days ago"), the number of zones published and a state badge. Tap a line to see the source's link with its address, its licence, the zones it feeds and what each zone has published.
+
+<a id="data-group-proc"></a>**Procedures.** The procedures of France (SIA eAIP) and of the United States (FAA CIFP), with the number of aerodromes published.
+
+<a id="data-group-aircraft"></a>**Aircraft.** The aircraft types and their performance: the edition date, the number of types and of files. After 28 days the badge turns orange.
+
+<a id="data-group-weather"></a>**Weather.** The world weather and the NAT tracks are published with the website: these lines have neither a cycle nor a badge.
+
+<a id="data-states-pill"></a>**The badges.** "Up to date": nothing to do. "Cycle out of date": the published cycle is older than the cycle in force (orange, red after a week). "Old parser": published by an older version of the builders. "Over 28 days old": a set without a cycle, published more than 28 days ago. "Not in the repository": nothing is published. A group opens by itself when one of its lines needs attention.
+
+<a id="data-more"></a>**The other data sets.** At most seven lines per group; "n more data sets" unfolds the rest and the sources that are only considered or set aside (their link, licence and status).
+
+<a id="data-build"></a>**Build the base.** At the top of the Aeronautical base group, the "Download, build, purge" panel acts on the ticked zones with three buttons, in this order: Download · Build · Purge. "Build" rebuilds the base of the ticked zones on this workstation's launcher: a windowless browser (Edge, else Chrome) builds the zones one after the other, and each one is saved to the data repository as soon as it is ready. Every zone of the coverage is ticked at the start; untick the ones you do not want to redo. The three buttons go grey together, with their reason written once below: "The workstation launcher is needed", "Another operation is running", "Tick at least one zone", "Offline".
+
+<a id="data-build-personal"></a>**Personal-licence sources.** ENAIRE (Spain), NATS (United Kingdom) and the X-Plane data are offered only when a ticked zone uses them, and are never ticked by default: tick them only if the data repository is used by you alone. With X-Plane ticked, the build runs in the page, which is not yet possible here: it will stop with that reason.
+
+<a id="data-build-run"></a>**While it builds.** A bar, "n of m zones", the step and the elapsed time; one line per zone says waiting, building (n / m sources), built, failed with its reason, or cancelled. "Stop" asks for the stop: the zone in progress finishes, the zones already built are kept. You can leave the screen: the build goes on in the launcher and is found again when you come back. If the launcher stopped on the way, the screen says "Build interrupted" with the last state of each zone: start again, unticking the zones already done if you like.
+
+<a id="data-build-end"></a>**At the end.** A notification gives the counts ("Base built: 3 zones; 1 failed (gb)") and the summary stays in the panel with what to do: a failed zone (the reason is written on its line: windowless browser, time limit, invalid output, could not write…), a stopped build, no browser found ("Neither Edge nor Chrome was found on this workstation: install one of them."). The state of the lines is read again afterwards.
+
+<a id="data-download"></a>**Download.** The "Download" button fetches, on this workstation's launcher, the raw sources of the ticked zones (openAIP, FAA, UK Mil AIP, NAV CANADA, today's NAT tracks; ENAIRE only if it is ticked among the personal-licence sources). One line per zone says where it stands ("downloading (2 / 3 sources)") and, below it, one line per source: downloaded (n files), unchanged, failed with its reason and HTTP code ("HTTP 404"), skipped (licence not declared) or manual. What has not changed is never rewritten. At the end a notification gives the counts ("Downloaded: 2 zones changed, 1 unchanged; 1 failure"); the sources the launcher does not download (the SIA, for example) are listed by name, with a link only if their address is https, "to be dropped in by hand"; if source files tracked by git were modified, the screen says so ("n source files changed, outside the synchronised data"). "Nothing to download for these zones": none of the ticked zones has a downloadable source. Two downloads cannot follow each other within 30 s: the screen says "Try again in n s".
+
+<a id="data-purge"></a>**Purge.** The "Purge" button removes from this workstation the raw sources of the ticked zones (the ones you download again) and their caches. It first works out the plan without erasing anything, then asks one question: "Purge 15 files (14.3 MB) from the sources of Spain, France?". If the SIA files (France) are part of it, the question recalls that they also serve the outlines of the other zones when building; files tracked by git are always kept and counted. No: nothing is removed. Yes: the purge runs and the screen says "Purged: n files, x MB", with the paths refused (left in place). Nothing to remove: "Nothing to purge", with no question.
+
+<a id="data-publish"></a>**Publish the base.** Under "Build", the "Publish the base" panel sends what was built on this workstation to the data repository. A built zone is committed whole on the workstation and also leaves at the next synchronisation: “Publish” sends it right away. It first says where the workstation stands: "3 files changed · 2 commits to send", the date of the last pass and, if there is one, the merge waiting in data/ (publishing concludes it first). Tap "Publish": one question recalls the files and the commits, then the pass runs; an endless bar shows that it is working. Meanwhile the buttons of the "Download, build, purge" panel are grey, and "Publish" is grey during any operation of that panel: one operation at a time.
+
+<a id="data-publish-end"></a>**At the end of the publication.** A notification gives the counts and the result stays in the panel: what was sent (files committed, files received); the files of the base kept on the workstation because a build was under way; the conflicts (the most recent is kept, see Settings › Conflicts); the files refused because they are not in the format of a data file. A failure says so in one sentence, with what the launcher answers: nothing is lost, the files stay on the workstation. The button is grey with its reason written below: "The workstation launcher is needed", "A build is running: publish when it is finished", "Nothing to publish", "The frame cannot publish the base yet: update the app", "Offline".
+
+<a id="data-journal"></a>**The journal.** At the foot of the screen, the last 50 operations of this device: UTC time, verb, zones, result.
+
+## Special cases
+
+- **Without a launcher**: the screen reads the same way; it shows what is published.
+- **A read that fails**: the section says so in one line, the rest of the screen is drawn.
+
+<!-- fr: 116007677a97 -->
 
 <!-- chapter: settings -->
 # Settings
@@ -695,9 +771,11 @@ Little Navmap requires are listed and not written. On a phone, Fuel downloads th
 
 ## The airline's API keys
 
-On a workstation served by the launcher, at the Full level, the “Airline API keys (IVAO)” button of the “Administration”
+On a workstation served by the launcher, at the Full level, the “Airline API keys (IVAO, EAD Basic)” button of the “Administration”
 card unfolds the setting of the IVAO API key: it stays in the launcher’s `secrets/` folder, never in the browser nor in
 the data. “Test” checks that IVAO answers; “Erase” removes it.
+
+Under the IVAO key, the “EAD Basic (EUROCONTROL)” block takes the user name and password of your EAD Basic account: you give them once to this computer’s launcher (`secrets/` folder), which keeps them; the page never shows them again, it only says whether they are saved and when. They are used by “Read an aerodrome from EAD” (one aerodrome per gesture). EAD Basic is a demonstration tool with non-operational data, to be used for simulation only (the warning stays displayed). “Erase” removes them from the launcher.
 
 ## The tablet next to the simulator
 
@@ -739,6 +817,10 @@ only reported.
   this computer). Without `data/`, “Fetch the data” clones it; with a `data/` without git (example data or archive),
   “Take data/ into this repository” links it to the repository. The card follows the work and reads the state again at
   the end; a failure is explained, nothing is lost.
+- **Rewritten repository history** (for instance to purge big files from it): this computer's synchronisation then
+  refuses any merge and says so; nothing is lost. Here, « Take up the new history » first shows what will leave (your
+  commits, the data files carried over), asks, keeps the old state in a local reference, carries your data files onto
+  the new history, then synchronises. A file outside the synchronised data is never sent again.
 
 ## Configuring a pilot
 
@@ -762,8 +844,9 @@ tested; “Test” says what is wrong: invitation not accepted yet, token copied
 on the contents. A classic token opens all the repositories of the account: for a user's repository, a GitHub account
 dedicated to flying is advised. A file in another format is refused with a message. The airline is written to the
 repository only if it has none yet. On a workstation whose data/ already follows this repository, the assistant skips
-the account and the token. Without a launcher, the app only reaches a GitHub repository: for a framagit or GitLab
-repository, set the access on a workstation with the launcher.
+the account and the token. Without a launcher, the app reaches a GitHub repository or a project on a GitLab instance
+(gitlab.com, framagit…): paste the project's address (https://gitlab.com/group/project) and the project access token the
+administrator gave you; the token is sent to that instance only.
 
 ## Administration
 
@@ -771,8 +854,8 @@ repository, set the access on a workstation with the launcher.
 administration and test pages, **one button per page**, each with a sentence; at the other levels it does not appear, and
 nothing of the administrator's is on the other cards. In the app: the “Map threshold tuning” button (`#maps?tune=1`, read only on a phone; it opens the tuning page: for each map element and each mode, the zooms where it appears, saved for the airline, `airline/map_profiles.json`; a mode you never saved takes the thresholds of a tuned mode, and the page says so; the map's “Complexity” slider only shifts the zoom), back by the back arrow; the “Flight zone limit” button, which unfolds a box
 “Show the edge line of the flight zone limit” (saved at once for the airline, with the thresholds, in `airline/map_profiles.json`,
-key `edge`; the edge line is shown until you set it); the “Export a configuration for a pilot” button (see “Configuring a pilot”);
-on a workstation served by the launcher, the “Remote repository of data/” and “Airline API keys (IVAO)” buttons, which
+key `edge`; the edge line is shown until you set it); the “Runway thresholds on the map” button, which unfolds a list from 8 to 16: the zoom from which the map draws the runway thresholds (saved at once for the airline, same file, key `runwayZoom`; 11 until you set it); the “Export a configuration for a pilot” button (see “Configuring a pilot”);
+on a workstation served by the launcher, the “Remote repository of data/” and “Airline API keys (IVAO, EAD Basic)” buttons, which
 unfold their setting (see “A git repository for data/” and “The airline's API keys”); the roadmap (`#roadmap`) and the diagnostics of the “About” card.
 
 <a id="settings-sources"></a>**Data sources.** The “Data sources” button (`#sources`, Full level) lists the sources of aeronautical data the suite uses, considers or has set aside: for each, what it gives, its licence, its status and a link that opens in a new tab; for those that change with each AIRAC cycle (SIA, VAC, eAIP, CIFP), the link is the one of the cycle in force, written at the top of the screen. The screen downloads nothing. Under the button of the Administration card, the absolute address of the screen, to open or bookmark (“Copy the link”). It replaces the data laboratory, removed on 28 October 2026.
@@ -788,14 +871,29 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
 
 ## Good to know
 
-- **The token**: a fine-grained token from github.com, on the data repository only, “Contents” read and write, 90 days
-  at most. It is never shown again; never paste it in a message.
+- **IVAO account**: the « IVAO account » card links this device to your IVAO account through the airline's relay (or
+  the workstation's launcher): « Sign in to IVAO » opens IVAO's page, then comes back here. The relay keeps the airline
+  application's secret; your token stays on this device, renewed by itself, never in a backup. « Unlink » erases it and asks IVAO
+  to withdraw the access; if IVAO cannot, the suite tells you to withdraw it in your IVAO account. To try on the
+  workstation, without the relay: the return address to declare in the airline's IVAO application is
+  `http://127.0.0.1:<port>/__relay/ivao/callback` (the launcher's port).
+- **Relay devices**: when the launcher runs as the airline's relay (behind the NAS's reverse proxy, in https), a pilot
+  pairs each device once with an 8-digit code the administrator asks for in Maintenance › « Relay devices » for their
+  trigram (once, 10 minutes); their writes are signed with that trigram. A lost device, or all those of a pilot who
+  leaves, are revoked there.
+- **Pilots' tokens (GitLab)**: in the Maintenance application, on the launcher's computer, « Pilots' tokens » creates
+  one project access token per pilot (named after the trigram, Developer role, one year at most), shows it once only, and
+  revokes it. The launcher uses the administrator's token there (secrets/gitlab.json), which it never shows. Set the
+  data branch so that the Developer role may push to it.
+- **The token**: on github.com, a fine-grained token, on the data repository only, “Contents” read and write, 90 days
+  at most; on GitLab, a project access token (one per pilot, named after the trigram), created by the administrator. It
+  is never shown again; never paste it in a message.
 - **Your settings stay after the browser is closed**: the identity, the token and the weather key are kept in the same place
   on the device, never synchronised nor in a backup. If Safari made you lose them anyway (it clears the storage of a site
   that is little used), add the app to the Home Screen: it is better kept there. The diagnostics (“Copy”) say whether the
   browser promised not to clear (`storage.persisted`).
 - **Cut access**: erases the token from this device; your pending writes stay and will leave once access is set again.
-  Lost or stolen phone: also delete the token on github.com.
+  Lost or stolen phone: also delete the token at the host (github.com, gitlab.com…).
 - **V2 settings**: if this browser was already used for V2, the “V2 settings found” card offers once to take over your
   identity and your access.
 - **About**: links to this help and to the roadmap (what is delivered, in progress, planned), then the
@@ -803,4 +901,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 47f9199a8ffd -->
+<!-- fr: c49c76673bd9 -->

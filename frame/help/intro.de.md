@@ -24,7 +24,8 @@ Computer, mit oder ohne Netz.
   schreibenden Berichte zu Ihren vergangenen Flügen (antippen, um den vorausgefüllten Bericht zu öffnen), das fehlende Kürzel
   (antippen, um es einzustellen), der Zustand der Daten (letzte Synchronisation, ausstehende Schreibvorgänge, genutzter
   Austauschweg), die Luftfahrtdatenbank, solange sie nicht bereit ist, der Starter, „Offline“, wenn kein Netz da ist, die Zahl der Wetterabrufe des Tages (Open-Meteo-Vorhersagen,
-  10.000 pro Tag erlaubt) und
+  10.000 pro Tag erlaubt), das Ende des AIRAC-Zyklus, wenn die veröffentlichte Luftfahrtdatenbank oder die Verfahren hinter
+  dem gültigen Zyklus zurückliegen, und
   auf einem Telefon die Quelle der Position während eines Flugs. Auf einem Telefon besteht die Kopfzeile nur aus Name,
   Schaltfläche ? und Schaltfläche ⚙.
 - **Vollbild.** Auf der Karte (Werkzeuge mit fester Ansicht) blendet eine runde Schaltfläche am Ende der Schaltflächenspalte
@@ -36,6 +37,9 @@ Computer, mit oder ohne Netz.
 
 ## Daten und Synchronisation
 
+- **Position und Spur des Flugs.** Bei der Nutzung „mit mehreren“ werden die tatsächliche Position und die Spur Ihres laufenden
+  Flugs (ein Punkt je Seemeile oder je Minute, auf etwa 100 m genau) mit der Gruppe geteilt und bleiben in der Historie des
+  Repositorys; sie gehen nie ohne Ihr Zutun an einen externen Dienst.
 - **Zuerst offline.** Alles, was Sie tun, bleibt auf dem Gerät und funktioniert ohne Netz.
 - **Allein auf diesem Gerät.** Ist in den Einstellungen kein Austausch angekreuzt, geht nichts anderswohin: Exportieren
   Sie ab und zu die Sicherung des Geräts (eine Datei), sie ist die einzige Kopie.

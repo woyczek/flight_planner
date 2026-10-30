@@ -21,7 +21,8 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
   detalle: el vuelo en curso (toque para ir al Mapa), los informes por escribir de sus vuelos pasados (toque para abrir el
   informe ya rellenado), el trigrama que falta (toque para definirlo), el estado de los datos (última sincronización,
   escrituras pendientes, vía de intercambio usada), la base aeronáutica mientras no esté lista, el lanzador, «Sin conexión»
-  cuando no hay red, el número de llamadas meteorológicas del día (previsiones Open-Meteo, 10 000 permitidas al día) y, en un teléfono, la fuente de la posición durante un vuelo. En un teléfono, la cabecera se reduce al
+  cuando no hay red, el número de llamadas meteorológicas del día (previsiones Open-Meteo, 10 000 permitidas al día), el fin
+  del ciclo AIRAC cuando la base aeronáutica o los procedimientos publicados van por detrás del ciclo en vigor y, en un teléfono, la fuente de la posición durante un vuelo. En un teléfono, la cabecera se reduce al
   nombre, el botón ? y el botón ⚙.
 - **Pantalla completa.** En el mapa (las herramientas de vista fija), un botón redondo al final de la columna de botones
   sobre el mapa oculta la cabecera y la barra inferior para dejar todo el sitio al mapa; el mismo botón o Esc los devuelven.
@@ -32,6 +33,9 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
 
 ## Datos y sincronización
 
+- **Posición y traza del vuelo.** Con el uso «varios usuarios», la posición real y la traza de su vuelo en curso (un punto
+  por milla náutica o por minuto, con unos 100 m de precisión) se comparten con el grupo y quedan en el historial del
+  repositorio; nunca van a un servicio externo sin un gesto suyo.
 - **Primero sin conexión.** Todo lo que hace se guarda en el dispositivo y funciona sin red.
 - **Solo en este dispositivo.** Sin intercambio marcado en Ajustes, nada sale a otro lugar: exporte de vez en cuando la
   copia del dispositivo (un fichero), es la única copia.

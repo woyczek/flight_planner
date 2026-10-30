@@ -1,0 +1,251 @@
+(() => {
+  'use strict';
+  // Transport « gitlab » de la couche de données (frame/store/frame_data.js) : dépôt des données sur une instance GitLab
+  // (gitlab.com, framagit…) par l'API REST v4, jeton d'accès de PROJET de l'appareil (un par pilote, nommé par son
+  // trigramme, portée api ou write_repository, créé par l'administrateur, révocable, à expiration). Même forme que le
+  // transport « github » (transport_github.js), qui y renvoie quand le réglage de l'appareil désigne une instance GitLab :
+  // le réglage reste celui de FD.github (device/keys.json : { provider: 'gitlab', api, repo, branch, token }).
+  //   · head() : tête de la branche (GET /projects/:id/repository/branches/:branche) ;
+  //   · tree(tête) : chemins et empreintes (sha git des blobs, comme GitHub) de tous les fichiers, page par page (100 par
+  //     page, pagination par clés) ; gardé par tête ;
+  //   · read(chemin, empreinte) : contenu d'un blob (immuable : jamais relu pour une même empreinte) ;
+  //   · commit(lot, message, parent) : UN commit atomique pour tout le lot (POST /repository/commits, actions create /
+  //     update / delete), auteur = le trigramme de l'appareil ; la tête relue juste avant doit être le parent, sinon
+  //     err.conflict (la couche tire et repousse) ; un commit posé sur une branche partie ailleurs entre-temps le dit
+  //     aussi (err.conflict : la couche tire, sa fusion trouve ses propres changements déjà là) ;
+  //   · publish(groupes) : publication de fichiers générés (frame/INTEGRATION.md § 15.2), un commit par groupe.
+  // Erreur réseau : err.offline ; jeton refusé : message lisible. Le jeton ne sort jamais de l'en-tête PRIVATE-TOKEN :
+  // ni dans une adresse, ni dans un message, ni dans la console.
+  const FD = window.FrameData;
+  if (!FD || FD.gitlab) return;
+
+  function gitlab(c) {
+    if (!c?.repo || !c.token) throw new Error('gitlab transport: project and token required');
+    // l'api de l'instance, de la seule forme https://hôte/api/v4 : jamais un jeton vers une autre forme d'adresse
+    if (!/^https:\/\/[^/\s]+\/api\/v4$/.test(String(c.api || ''))) throw new Error('gitlab transport: api must be https://<host>/api/v4');
+    const api = c.api,
+      branch = c.branch || 'main',
+      project = `${api}/projects/${encodeURIComponent(c.repo)}`,
+      who = () => {
+        const t = typeof c.author === 'function' ? String(c.author() || '') : '';
+        return /^[A-Z0-9]{2,5}$/.test(t) ? t : '';
+      };
+    const treeOf = new Map(); // tête → { chemin: empreinte }
+    let headSha = '';
+    /** Appel de l'API ; erreur réseau → err.offline, refus → message lisible (jeton, droits), err.status ; err.conflict
+     *  pour un refus qui dit que le dépôt a bougé (fichier déjà là, absent, changé entre-temps). */
+    async function call(url, {
+      method = 'GET',
+      body
+    } = {}) {
+      let r;
+      try {
+        r = await fetch(url, {
+          method,
+          cache: 'no-store',
+          // jamais suivre une redirection : Fetch ne retire qu'Authorization d'une redirection vers une autre origine, pas
+          // PRIVATE-TOKEN
+          redirect: 'error',
+          headers: {
+            'PRIVATE-TOKEN': c.token,
+            ...(body ? {
+              'Content-Type': 'application/json'
+            } : {})
+          },
+          body: body ? JSON.stringify(body) : undefined
+        });
+      } catch {
+        throw Object.assign(new Error('offline'), {
+          offline: true
+        });
+      }
+      if (r.ok) return r;
+      const j = await r.json().catch(() => ({})),
+        m = String((typeof j.message === 'string' ? j.message : j.message && JSON.stringify(j.message)) || j.error || r.statusText)
+        .slice(0, 300);
+      throw Object.assign(new Error(r.status === 401 ? 'GitLab token refused (expired, revoked or wrong)' : r.status === 403 ?
+        `GitLab 403: the token may not write this project (${m})` : `GitLab ${r.status}: ${m}`), {
+        status: r.status,
+        conflict: [400, 409, 422].includes(r.status) && /exist|changed|already|conflict|does not/i.test(m)
+      });
+    }
+    const conflict = why => Object.assign(new Error(why), {
+      conflict: true
+    });
+    /** Actions d'un lot sur l'arbre connu : create si le fichier n'y est pas, update sinon, delete pour text null. */
+    const actionsOf = (changes, known) => changes.map(x => x.text === null ? {
+      action: 'delete',
+      file_path: x.path
+    } : x.blob ? {
+      action: x.path in known ? 'update' : 'create',
+      file_path: x.path,
+      content: x.blob,
+      encoding: 'base64'
+    } : {
+      action: x.path in known ? 'update' : 'create',
+      file_path: x.path,
+      content: x.text
+    });
+    /** Un commit des actions sur la branche ; nouvelle tête. parent : la tête attendue (posé ailleurs : err.conflict). */
+    async function post(actions, message, parent) {
+      const author = who(),
+        j = await (await call(`${project}/repository/commits`, {
+          method: 'POST',
+          body: {
+            branch,
+            commit_message: message,
+            actions,
+            ...(author ? {
+              author_name: author,
+              author_email: `${author.toLowerCase()}@defa.local`
+            } : {})
+          }
+        })).json();
+      headSha = j.id;
+      if (parent && (j.parent_ids || [])[0] !== parent) throw Object.assign(conflict('branch moved during the commit'), {
+        head: j.id
+      });
+      return j.id;
+    }
+    const self = {
+      id: 'gitlab',
+      kind: 'remote',
+      /** Tête de la branche (sha du dernier commit). */
+      async head() {
+        const j = await (await call(`${project}/repository/branches/${encodeURIComponent(branch)}`)).json();
+        headSha = j.commit?.id || '';
+        if (!headSha) throw new Error('GitLab: branch without commit');
+        return headSha;
+      },
+      /** Fichiers du commit : { chemin: empreinte du blob } (pages de 100, pagination par clés, lien « next »). */
+      async tree(commit) {
+        if (treeOf.has(commit)) return {
+          ...treeOf.get(commit)
+        };
+        const out = {};
+        let url = `${project}/repository/tree?ref=${encodeURIComponent(commit)}&recursive=true&per_page=100&pagination=keyset`,
+          pages = 0;
+        while (url) {
+          if (++pages > 2000) throw new Error('GitLab tree: too many pages');
+          const r = await call(url);
+          for (const x of await r.json())
+            if (x.type === 'blob') out[x.path] = x.id;
+          const next = /<([^>]+)>\s*;\s*rel="next"/.exec(r.headers.get('Link') || '');
+          // le lien suivant doit rester sur l'API de cette instance (jamais ailleurs avec le jeton)
+          url = next && next[1].startsWith(`${api}/`) ? next[1] : '';
+        }
+        treeOf.set(commit, out);
+        return {
+          ...out
+        };
+      },
+      /** Contenu d'un fichier (blob brut, UTF-8). */
+      async read(path, sha) {
+        return (await call(`${project}/repository/blobs/${encodeURIComponent(sha)}/raw`)).text();
+      },
+      /** Un commit pour tout le lot [{ path, text (null : suppression) }] sur parent ; nouvelle tête. remote : arbre
+       *  connu (une suppression d'un fichier absent du dépôt est sautée). */
+      async commit(changes, message, parent, remote = null) {
+        const known = remote?.tree || await self.tree(parent);
+        changes = changes.filter(x => x.text !== null || x.path in known);
+        if (!changes.length) return parent;
+        if (await self.head() !== parent) throw conflict('branch moved');
+        return post(actionsOf(changes, known), message, parent);
+      },
+      /** Publication de fichiers générés (frame/INTEGRATION.md § 15.2) : un commit par groupe [{ name, files: [{ path,
+       *  text | blob }], removed: [path], message }], dans l'ordre, chacun sur la tête relue juste avant ; un fichier de
+       *  100 Mo au plus ; une suppression d'un fichier absent est sautée. from : rang du premier groupe (reprise). Rend
+       *  { ok: true, groups: [{ name, commit, files, removed, bytes }] } ou { ok: false, at, group, conflict | offline |
+       *  cancelled | tooBig | status, message, groups }. */
+      async publish(groups, {
+        onProgress,
+        signal,
+        from = 0
+      } = {}) {
+        const done = [],
+          list = [].concat(groups || []);
+        for (let gi = Math.max(0, from | 0); gi < list.length; gi++) {
+          const g = list[gi] || {},
+            files = [].concat(g.files || []),
+            removed = [].concat(g.removed || []);
+          const fail = (e, extra = {}) => ({
+            ok: false,
+            at: gi,
+            group: g.name || '',
+            groups: done,
+            message: String(e?.message || e || ''),
+            ...(e?.offline ? {
+              offline: true
+            } : {}),
+            ...(e?.conflict ? {
+              conflict: true
+            } : {}),
+            ...(e?.status && !e.conflict ? {
+              status: e.status
+            } : {}),
+            ...extra
+          });
+          try {
+            const changes = [];
+            let bytes = 0;
+            for (const [k, f] of files.entries()) {
+              if (signal?.aborted) return fail('cancelled', {
+                cancelled: true
+              });
+              const blob = f.blob instanceof Blob ? f.blob : null,
+                size = blob ? blob.size : new TextEncoder().encode(String(f.text ?? '')).length;
+              if (size > 100 * 1024 * 1024) return fail(`${f.path}: over 100 MB`, {
+                tooBig: f.path
+              });
+              changes.push(blob ? {
+                path: f.path,
+                blob: await b64(blob)
+              } : {
+                path: f.path,
+                text: String(f.text ?? '')
+              });
+              bytes += size;
+              onProgress?.({
+                group: g.name || '',
+                index: gi,
+                groups: list.length,
+                files: k + 1,
+                total: files.length,
+                bytes
+              });
+            }
+            const parent = await self.head(),
+              known = await self.tree(parent),
+              gone = removed.filter(p => p in known);
+            const commit = await post(actionsOf([...changes, ...gone.map(path => ({
+              path,
+              text: null
+            }))], known), g.message || `Publication ${g.name || ''}`.trim(), '');
+            done.push({
+              name: g.name || '',
+              commit,
+              files: changes.length,
+              removed: gone.length,
+              bytes
+            });
+          } catch (e) {
+            return fail(e);
+          }
+        }
+        return {
+          ok: true,
+          groups: done
+        };
+      }
+    };
+    return self;
+  }
+  /** Contenu d'un Blob en base64 (actions encoding: base64). */
+  async function b64(blob) {
+    const u = new Uint8Array(await blob.arrayBuffer());
+    let s = '';
+    for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+  FD.gitlab = gitlab;
+})();

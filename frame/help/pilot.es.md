@@ -23,7 +23,8 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
   detalle: el vuelo en curso (toque para ir al Mapa), los informes por escribir de sus vuelos pasados (toque para abrir el
   informe ya rellenado), el trigrama que falta (toque para definirlo), el estado de los datos (última sincronización,
   escrituras pendientes, vía de intercambio usada), la base aeronáutica mientras no esté lista, el lanzador, «Sin conexión»
-  cuando no hay red, el número de llamadas meteorológicas del día (previsiones Open-Meteo, 10 000 permitidas al día) y, en un teléfono, la fuente de la posición durante un vuelo. En un teléfono, la cabecera se reduce al
+  cuando no hay red, el número de llamadas meteorológicas del día (previsiones Open-Meteo, 10 000 permitidas al día), el fin
+  del ciclo AIRAC cuando la base aeronáutica o los procedimientos publicados van por detrás del ciclo en vigor y, en un teléfono, la fuente de la posición durante un vuelo. En un teléfono, la cabecera se reduce al
   nombre, el botón ? y el botón ⚙.
 - **Pantalla completa.** En el mapa (las herramientas de vista fija), un botón redondo al final de la columna de botones
   sobre el mapa oculta la cabecera y la barra inferior para dejar todo el sitio al mapa; el mismo botón o Esc los devuelven.
@@ -34,6 +35,9 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
 
 ## Datos y sincronización
 
+- **Posición y traza del vuelo.** Con el uso «varios usuarios», la posición real y la traza de su vuelo en curso (un punto
+  por milla náutica o por minuto, con unos 100 m de precisión) se comparten con el grupo y quedan en el historial del
+  repositorio; nunca van a un servicio externo sin un gesto suyo.
 - **Primero sin conexión.** Todo lo que hace se guarda en el dispositivo y funciona sin red.
 - **Solo en este dispositivo.** Sin intercambio marcado en Ajustes, nada sale a otro lugar: exporte de vez en cuando la
   copia del dispositivo (un fichero), es la única copia.
@@ -64,7 +68,7 @@ con la pestaña «Fichas». Una ✓ marca un paso completado. Los niveles se esc
 5000 ft (FL060), en pies por debajo (3500 ft).
 
 <a id="fuel-step-1"></a>**1 Vuelo.** La salida, la llegada y la alternativa (códigos OACI), la fecha del vuelo si quiere la previsión (TAF) en
-lugar de la observación, la aeronave y el nivel de crucero (en FL). La fecha del vuelo (introducida en la hora local del dispositivo) es un único valor, guardado en el vuelo actual: la meteorología del cálculo (TAF de los aeródromos, vientos y temperaturas en altura) se lee a esa fecha, el ETA del mapa parte de ella mientras el vuelo no ha empezado, y el deslizador de Atmósfera parte de ella; vacío significa ahora. La aeronave cabe en una línea: la aeronave elegida,
+lugar de la observación, la aeronave y el nivel de crucero (en FL). Bajo cada código, una línea fija da el nombre del aeródromo para comprobarlo (« LFPO — Paris-Orly »; « desconocido » si el código no corresponde a nada). Desde dos caracteres, un código o el comienzo de un nombre (« LFP », « orly »), el campo propone siete aeródromos como máximo: ↑ ↓ para elegir, Intro para validar, Esc para cerrar, o un toque; la lista se cierra al salir del campo, y escribir el código entero a mano funciona siempre. El nombre puede escribirse entero («toulouse»): solo un código elegido o tecleado entra en la ruta, y un campo que se deja sin elegir vuelve al aeródromo guardado. La fecha del vuelo (introducida en la hora local del dispositivo) es un único valor, guardado en el vuelo actual: la meteorología del cálculo (TAF de los aeródromos, vientos y temperaturas en altura) se lee a esa fecha, el ETA del mapa parte de ella mientras el vuelo no ha empezado, y el deslizador de Meteo parte de ella; vacío significa ahora. La aeronave cabe en una línea: la aeronave elegida,
 su matrícula, su indicativo y de dónde viene. Un vuelo nuevo toma la última aeronave elegida en este
 dispositivo; sin elección, el cálculo espera. La lupa abre la búsqueda (la última elegida primero): escriba una ficha, una matrícula, un indicativo
 o un tipo. Los resultados llegan en este orden: sus fichas de rendimiento, las aeronaves de la aerolínea (su flota,
@@ -94,7 +98,7 @@ salida directas a 60 NM como máximo y sin desvío de más del 40 %. El texto pa
 intermedios de la aerovía, que el texto no escribe, se guardan en los puntos (la distancia, el mapa y el perfil los siguen).
 Una notificación da el resultado («3 aerovías inscritas, 254 NM») o «Ninguna aerovía útil entre X y Y». Límites: las aerovías
 se toman en los dos sentidos (la base aún no lleva el sentido único), sin restricción fina de nivel ni SID / STAR; la ruta
-sigue por verificar.
+sigue por verificar. «Auto» parte siempre de los puntos fijados —la salida, el final de la SID elegida, los puntos que usted escribió, la entrada de la STAR, la llegada— y sustituye lo que un «Auto» anterior había escrito: dos «Auto» seguidos dan el mismo texto, nunca una ruta que crece en bucle. Un tramo que pasaría dos veces por un punto, o que alargaría demasiado el conjunto, queda directo, y la notificación dice por qué («ninguna aerovía cerca de LACOU», «desvío de más del 40 %»). Cuando el nombre de la SID está en el texto, su final se escribe después («LFBO LACOU7B LACOU …») y el tramo del final al primer punto se rutea. Una aerovía que usted escribe entre dos puntos («GILUX A3 MOTAL») se lee siempre como aerovía, nunca como un punto del mismo nombre en otro lugar; solo se sigue si une de verdad esos dos puntos; si no, el tramo queda directo y una línea lo dice («A3 no une GILUX con MOTAL: tramo directo»). El texto de la ruta sigue sus procedimientos, en forma OACI: el nombre de la SID y luego su final tras la salida, la entrada y luego el nombre de la STAR antes de la llegada, «DCT» entre dos puntos sin aerovía («LFRS NTS1A NT102 DCT LUGEN … MEN01 MEN1A LFML»); la aproximación nunca aparece. Cuando el final de la SID no está en su ruta, una línea dice que se une por un directo («NTS1A sale por NT102: NT102 DCT LUGEN»). En sentido inverso, el texto se relee: escribir el nombre de una SID de la salida o de una STAR de la llegada la elige, borrarlo quita la elección. En la lista «Puntos (N)», cada procedimiento elegido es una sola fila plegada, en su color del mapa («SID NTS1A · 2 puntos», «STAR MEN1A via NEPIX · 4 puntos»): sus fijos se muestran con un toque, nunca al nivel de los puntos que usted escribió; el número cuenta sus puntos y estas filas. Cuando una aerovía une dos puntos pero no está abierta al nivel del tramo, la línea la nombra con su banda abierta, para que usted decida («A34 une LACOU con LMG, cerrada a FL260 (abierta de 6 500 ft a FL195): tramo directo»); «Auto» nunca la sigue de todos modos. Al escribir en el campo, desde dos caracteres de la palabra bajo el cursor, una lista propone (siete como máximo) las SID de la salida y las STAR de la llegada, las aerovías alrededor del punto anterior, los puntos y radioayudas de la base: ↑ ↓ y Intro, o un toque, escriben la palabra en el cursor; Escape cierra la lista. Las listas del paso se quedan, para el teclado y los lectores de pantalla.
 
 El desplegable «Puntos» enumera los puntos reconocidos, de la salida a la llegada. Las flechas suben o bajan un punto en
 la lista, la cruz lo quita; el campo de abajo añade uno antes de la llegada: un identificador (radioayuda, punto,
@@ -108,6 +112,8 @@ dos puntos que la enmarcan sigan siendo vecinos y en su sitio.
 «Mostrar el mapa» muestra el vuelo en el mapa: en un teléfono se abre el Mapa (el botón de la cabecera devuelve aquí);
 en una pantalla ancha se abre al lado y sigue cada cambio. «Editar la ruta» en el mapa devuelve a este paso, con el
 campo de la ruta listo para escribir.
+
+**Pista, SID, STAR y aproximación.** Al final del paso Ruta, una tarjeta «Procedimientos» lleva un lado Salida y un lado Llegada. Cada uno tiene un título («Salida LFPO Paris-Orly», con «En el mapa»: el Mapa se abre sobre los procedimientos del aeródromo; lo que allí se elige —pista, procedimiento, aproximación— vuelve aquí de una vez, aplicado como una elección hecha aquí y anunciado en una sola línea; una familia que el Mapa no toca queda como estaba), una sola línea discreta («leído el 29/10 16:53Z · Releer · 3 sin leer», luego «Fuente»: la página codificada del procedimiento elegido, en el SIA, en una pestaña nueva) y una cuadrícula fija, la misma en los dos lados: pista · SID · transición en la salida; pista · STAR · transición en la llegada y, debajo, aproximación · transición de aproximación (una transición solo aparece si el procedimiento elegido la tiene). En un teléfono, una sola columna; ninguna etiqueta se corta. Cada lista viene de aerodb y muestra todos los procedimientos del aeródromo en una sola lista ordenada por pista y luego por nombre (la pista figura en el texto solo si no hay pista elegida y el procedimiento sirve solo una: «OPALE 2E» una vez elegida la pista). Nada está prohibido: un procedimiento en conflicto con su elección se marca con ⚠ (una SID, STAR o aproximación que no sirve a la pista elegida; sin pista elegida, una STAR que no sirve a ninguna pista de la aproximación elegida; el motivo está en la información emergente — una STAR que no enlaza con la aproximación no es un conflicto: el Mapa las une con un trazo discontinuo) y aun así puede elegirlo — el ⚠ y la información emergente bastan, ninguna notificación lo repite. ⌛ (gris) significa caducado, ⚠ (naranja) en conflicto. En cada lista, lo compatible con su elección va primero y los ⚠ después; en la lista de pistas van primero las de la SID o la aproximación ya elegida. Un procedimiento que la fuente no supo leer bien (sin nombre o dudoso) nunca se ofrece: la línea discreta del lado dice cuántos no se leen («3 sin leer»: las páginas no leídas y los procedimientos por verificar del archivo leído). Si los datos del aeródromo no traen ninguna ficha de pista, las pistas ofrecidas son las que nombran sus procedimientos. Cada pista lleva el viento del METAR conocido del aeródromo (el del paso Salida): «13R — ↓ 12 kt · ← 6 kt»: la flecha muestra hacia dónde sopla el viento, con la pista vista hacia arriba como en final (↓ de frente, ↑ de cola, ← viento de la derecha, → viento de la izquierda). En verde un viento de frente; en naranja un viento de cola de hasta 5 kt o un cruzado de más de 10 kt; en rojo un viento de cola de más de 5 kt o un cruzado de más de 20 kt (o del límite de la ficha de la aeronave cuando la tiene); la razón en la información emergente. Sin METAR, no se muestra nada. El título de cada lado termina con el resumen de la elección, el mismo texto que el panel del Mapa: «13R · ↑ 12 kt», «MEN1A via NEPIX», «I13R» («SID ninguna» para una salida sin SID). Elegir una STAR o una aproximación que sirve una sola pista fija esa pista; una STAR ofrece sus transiciones, una aproximación sus transiciones de aproximación. Una aproximación se lee corta, su tipo y su pista («ILS 06», «RNP 06»; el nombre publicado en la información emergente). Los segmentos de aproximación inicial que el SIA publica aparte («INA RNAV RWY 06») nunca son filas: son las transiciones de todas las finales de su pista, «via ODILO · ODILO 1A» (el IAF y luego el nombre publicado), y «—» sigue siendo el directo al IF. La primera opción, «—», significa «no elegido»; «ninguna» es una elección real (una salida directa, sin SID). Un procedimiento del respaldo X-Plane del puesto va el último, marcado «X-Plane, local»; uno leído en un ciclo anterior se marca ⌛ (volver a leer). En un aeródromo sin procedimiento publicado, la línea discreta lo dice («ningún procedimiento publicado · Leer los procedimientos de LFXX»): un aeródromo por gesto, nunca en silencio. Un aeródromo que ya tiene procedimientos muestra, en esa misma línea, la fecha de su última lectura («leído el 29/10 16:53Z», ⌛ si es de un ciclo anterior) y luego «Releer»: el mismo gesto, que sustituye el archivo leído. Un aeródromo francés se lee en el eAIP del SIA, sin cuenta; un Estado cuyo AIP publica tablas de procedimientos, en EAD Basic (credenciales configuradas en el puesto); para cualquier otro Estado, el mensaje dice que no hay ninguna tabla publicada. Sin lanzador, o en un dispositivo emparejado con el puesto, la lectura se hace en el puesto —el mensaje lo dice— y el OFP de SimBrief sigue siendo la fuente del vuelo. Una vez elegidas la SID y la STAR, el cálculo corre sobre el camino «ruta + procedimientos» (con la distancia de la SID y la STAR) y el Mapa los traza con sus altitudes y velocidades; sus restricciones de altitud no entran en los escalones del cálculo, se leen en el perfil vertical, que mantiene el crucero hasta que debe empezar el descenso y ya no vuelve a subir una vez empezado. «Último OFP de SimBrief» propone su SID y su STAR solo para los lados que aún no ha elegido («ninguna» es una elección): nunca sustituye su elección y dice lo que ha rellenado, una línea por lado («Llegada: STAR — → LERG1R»). Las elecciones hechas seguidas se escriben una sola vez, un momento después de la última. La tarjeta se abre plegada, para leerse sin desplazarse: una línea de resumen por lado («Salida LFRS · 03 · NTS1A», con «En el mapa»); un toque en la línea, o en ▸, despliega sus listas y su línea secundaria («Releer», «Fuente»), un lado a la vez. Un lado sin procedimientos queda desplegado: su línea ofrece la lectura.
 
 <a id="fuel-step-3"></a>**3 Meteorología.** El viento (dirección e intensidad) y la desviación ISA. Sin dirección, o sin viento alguno, el
 combustible de bloque se da como horquilla. «Leer la meteorología de los aeródromos» muestra la salida, la llegada, el
@@ -181,6 +187,10 @@ marcha del informe. En un teléfono abre el Mapa, en una pantalla grande se qued
 después el aeródromo de salida es preparar otro vuelo: la hora de salida se borra. Cambiar la llegada después de la
 salida es un desvío: la hora se conserva y el desvío queda anotado.
 
+Plan de vuelo para el simulador: bajo el resumen, tres botones — «.fms (XP 11/12)», «.fms (XP 10)» y «.pln (MSFS)» — descargan la ruta y los procedimientos elegidos (pista, SID, STAR, aproximación y sus transiciones) para X-Plane o Microsoft Flight Simulator, en un archivo llamado «LFPO-EIDW_2026-10-30.fms». La ruta necesita al menos dos puntos situados. Después copie el archivo en la carpeta «Output/FMS plans» de X-Plane (el envío directo llegará con el lanzador).
+
+Una vez iniciado el vuelo, este paso lleva una tarjeta «Procedimientos»: nada está bloqueado: los lados Salida y Llegada siguen modificables en todo momento (otra salida es una salida nueva). Un cambio no rehace el cálculo: el combustible de bloque, el de trayecto y las reservas siguen siendo los de la salida; solo las horas en los puntos, el perfil vertical y la distancia restante siguen el nuevo camino. El botón «Cambiar» del Mapa abre Combustible en la línea de Llegada (`#fuel?focus=arr`): el paso Ruta antes del arranque, el paso Salida después.
+
 Una vez iniciado el vuelo, el resultado al pie de la pantalla dice «Vuelo iniciado a las 11:14Z (13:14) · desde hace 1 h 10». Las horas están en UTC
 («Z»); la hora del dispositivo se añade entre paréntesis en la salida, el despegue y la llegada previstos. Un
 vuelo iniciado termina al escribir su informe: al guardarlo, Combustible vuelve a la preparación y Mis vuelos quita «en
@@ -195,7 +205,8 @@ tienen.
 
 La pestaña «Fichas» reúne las fichas de la aerolínea, compartidas con todos sus dispositivos. Están ordenadas por
 categoría (helicópteros, turbohélices, reactores, pistón, otros); cada tipo que usa la compañía (flota, referencia) y
-que aún no tiene ficha figura también, «rendimientos por completar», con «Crear la ficha».
+que aún no tiene ficha figura también, «rendimientos por completar», con «Crear la ficha». Cada ficha dice lo que le
+falta, por familias («Por completar: regímenes, velocidades, crucero, rodaje, pista»), o «completa» si no falta nada.
 
 - **Importar**: un archivo (CSV de rendimiento, JSON, `.lnmperf` de Little Navmap, OFP de SimBrief) o un texto pegado
   (los mismos, o la respuesta de ChatGPT). Una ficha sacada de un OFP se calibra con sus tiempos y su consumo reales.
@@ -208,7 +219,9 @@ que aún no tiene ficha figura también, «rendimientos por completar», con «C
   en ChatGPT, luego su respuesta tal cual en la zona prevista, y «Leer».
 - **Modificar, exportar**: el editor muestra los campos por grupo. En una pantalla de ordenador, la tabla régimen /
   flujo se modifica fila por fila; en un teléfono es de solo lectura. Exportaciones `.lnmperf` y JSON; eliminación tras
-  confirmación.
+  confirmación. La célula (avión, helicóptero, planeador…) y la propulsión (pistón, turbohélice, turboeje, reactor…) vienen de
+  la base OACI del tipo: deje «auto» salvo que la base se equivoque o no conozca el tipo; entonces ni se cuentan como
+  faltantes ni se piden a ChatGPT.
 
 ## Ajustes y unidades
 
@@ -230,7 +243,7 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: f2764e9c409c -->
+<!-- fr: bac63802e71b -->
 
 <!-- chapter: maps -->
 # Mapa
@@ -241,7 +254,7 @@ radioayudas, aerovías, altitudes mínimas. La ruta del vuelo también se modifi
 ## Cómo usarlo
 
 **El vuelo previsto.** El mapa muestra el vuelo preparado en Combustible: salida, puntos de la ruta, llegada, y el
-aeródromo alternativo en guiones grises. Si el OFP de SimBrief presentó una SID o una STAR, se trazan en violeta sobre la ruta, con su nombre («SID ROYAN6P»). Su resumen (nivel, distancia, previsto o en vuelo) no se escribe sobre el dibujo (el dibujo lo muestra): el texto emergente del asa del bloque de datos bajo el mapa lo da, con salida y llegada, alternativa y tipo de aeronave. Cuando el vuelo cambia en Combustible, el mapa lo sigue por sí solo.
+aeródromo alternativo en guiones grises. La pista, la SID, la STAR y la aproximación elegidas en Combustible se trazan sobre la ruta (SID en verde, STAR en naranja, aproximación en azul), con su nombre («SID ROYAN6P»). Su resumen (nivel, distancia, previsto o en vuelo) no se escribe sobre el dibujo (el dibujo lo muestra): el texto emergente del asa del bloque de datos bajo el mapa lo da, con salida y llegada, alternativa y tipo de aeronave. Cuando el vuelo cambia en Combustible, el mapa lo sigue por sí solo.
 
 **El mapa y lo que muestra.** Alrededor de la ruta: los espacios aéreos que atraviesa o roza (zonas restringidas,
 peligrosas, prohibidas, espacios controlados), las aerovías bajas o altas según su nivel, los aeródromos y las
@@ -251,6 +264,14 @@ millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom;
 mapa se queda donde usted lo puso, aunque la ruta cambie: solo «Recentrar» (u otro vuelo) lo reencuadra. Visto de lejos,
 el mapa solo muestra lo que está cerca de la ruta; acérquese para verlo todo.
 
+<a id="maps-procs"></a>**La pista y los procedimientos elegidos.** Lo que eligió en Combustible (pista, SID, STAR, aproximación) se traza sobre la ruta: la SID en verde, la STAR en naranja, la aproximación y su aproximación frustrada en azul, desde el umbral de la pista de salida hasta el primer punto de la ruta, y desde el último punto de la ruta hasta el umbral de la pista de llegada. Las transiciones y la aproximación frustrada van a trazos; un tramo sin punto (un ascenso en un rumbo, por ejemplo) es un trazo corto a lo largo de su rumbo y luego trazos hasta el punto siguiente; un viraje de radio constante es un arco. Cuando la SID no llega a un punto de la ruta, una recta a trazos la une a la ruta (igual para la STAR). Un procedimiento que no eligió no se dibuja nunca, y la lista de capas no tiene casilla para él. El nombre del procedimiento se escribe sobre su trazo, seguido del origen de sus datos cuando vienen de X-Plane o de Little Navmap («X-Plane, local») y luego del símbolo ⌛ (en gris) cuando se leyeron bajo un ciclo anterior; la leyenda (chip «i») lo recuerda. Desde la vista regional (ajustable en la página de umbrales), cada punto lleva sus restricciones; el nombre del procedimiento se escribe a todas las escalas, por encima de lo demás, como en las cartas de procedimientos: una altitud **subrayada** significa «como mínimo», **sobrerrayada** «como máximo», las dos «exactamente», «5000–7000» «entre las dos»; «≤ 220 kt» es la velocidad que no hay que superar. El perfil vertical sigue el mismo camino y muestra estas restricciones como escalones (flecha hacia arriba: como mínimo, hacia abajo: como máximo, punto: exactamente, barra: entre dos altitudes); las distancias, las horas estimadas y el cursor se miden a lo largo de ese camino. El mapa nunca cambia esta elección: toque un aeródromo de la ruta y su ficha da la pista y los procedimientos elegidos, con un botón «Cambiar» que abre Combustible en la línea que hay que modificar; un enlace «Fuente» abre en una pestaña nueva la página publicada del procedimiento (eAIP del SIA), y para un procedimiento leído en otro sitio el nombre de su documento aparece al pasar sobre la línea.
+
+<a id="maps-rwy"></a>**Las pistas.** De cerca, cada pista de cada aeródromo dibujado es un vector corto desde su umbral, y el aeródromo muestra su nombre junto al código («LFPO Paris-Orly»); cada vector va en el sentido de la pista, su número en la cola, detrás del umbral: la pista elegida en Combustible en negrita con el color de su lado, las demás finas. Solo aparecen a partir del zoom fijado por la aerolínea (Ajustes › Administración, «Zoom de los umbrales de pista», 11 sin ajuste); por debajo, nada. En «Elegir en el mapa», todas las pistas del aeródromo se dibujan así, la elegida en negrita; los dibujos de la elección pasan por encima de las etiquetas del fondo, atenuadas.
+
+<a id="maps-choose"></a>**Elegir en el mapa.** El botón «En el mapa» de un lado de Combustible (salida o llegada) abre el mapa sobre ese aeródromo —como «Elegir en el mapa» en la ficha del aeródromo de salida o de llegada (toque su símbolo; a todo el ancho en un teléfono)—: el mapa de fondo y las capas se atenúan y la vista se ajusta a los procedimientos publicados del aeródromo. Arriba del bloque de datos, su selección en una línea por familia («Pista 31 · ↑ 12 kt», «OKRI5L», «I31 vía IAF1»), cada una con ✕ para volver a «Ninguna»; tocar el nombre de una familia («Pista», «STAR», «Aproximación») lleva a su grupo y lo despliega. Debajo, las tres familias a la vez —la pista, la SID (salida) o la STAR, la aproximación (llegada)— en líneas apretadas: tres toques en el orden que prefiera. Cada elección reduce las otras dos familias a lo que le es compatible; el resto queda plegado bajo una línea fina «N más · Todas», que lo despliega marcado con ⚠ (se puede elegir igualmente). Las SID que salen y las STAR que entran en la ruta que ha escrito vienen primero, bajo «Hacia su ruta»; las demás siguen, marcadas «salida LACOU» o «entrada OKRIX». «Ninguna» es siempre la primera línea. Los procedimientos que solo difieren por la pista (OKRI5L, OKRI5R) forman una línea «OKRI5» con sus pistas en pequeñas etiquetas: tocarla elige la familia y reduce las pistas, tocar una pista elige el procedimiento. Las aproximaciones se leen por su etiqueta corta («ILS 06», «RNP 06»; el nombre publicado al pasar por encima); bajo la aproximación elegida, «Sin transición» y luego sus transiciones, entre ellas los segmentos de aproximación inicial que el SIA publica para toda la pista («via ODILO · ODILO 1A»), en el tono de su final; una transición que no se une a la final en un punto común se enlaza con una línea discontinua. Cada procedimiento tiene su tono (ocho, en ciclo), el mismo en su línea, su etiqueta y su trazado; en el mapa, una pequeña etiqueta por familia y por punto («NIMER 9»), y el procedimiento sobrevolado o tocado pasa por encima de todo, con su nombre completo; pasar sobre una línea de cualquier familia resalta su trazado, pasar sobre un trazado resalta su línea; ⌛ (gris): leído en un ciclo anterior. Cada pista lleva el viento del METAR ya conocido: «↓ 12 kt» de cara, «↑» de cola, luego el cruzado (← viento de la derecha, → viento de la izquierda: la flecha dice hacia dónde sopla, la pista dibujada hacia arriba, como en Combustible), en verde, naranja o rojo según el viento de cola y el cruzado; sin METAR, nada. Un toque en una línea o un trazado añade esa elección y la deja en el mapa (la pista en negrita, el procedimiento en su tono, los demás de su familia atenuados); todavía no se escribe nada. Un procedimiento que sirve una sola pista la elige si no hay ninguna; si no, una línea bajo el grupo propone la corrección, con un toque: «OPAL2E sirve a la 25 — Pasar a la 25», o «OKRIX5A no sirve a la 07 — Elegir OKRIX5B». «Terminar», la cruz ✕ o Escape le devuelven a Combustible con todo lo elegido; Combustible lo escribe y dice qué ha cambiado; el mapa no escribe nada. Para renunciar sin devolver nada: «← Combustible» arriba.
+
+<a id="maps-coverage"></a>**Cobertura.** La capa «Cobertura» (en la lista de capas, apagada al principio, encendida solo por su casilla) colorea los aeródromos según lo que este dispositivo puede dar de sus procedimientos: **verde**, se tienen (publicados, introducidos a mano o leídos en este equipo); **naranja**, se tienen pero leídos en parte (páginas sin leer, fichas por revisar: la ficha del aeródromo dice cuántas) o se leen a petición (Francia mediante el eAIP del SIA, un Estado cuyas tablas se pueden leer, un aeródromo de la base local de Little Navmap); **rojo**, nada legible (solo imágenes, texto en prosa, nada en este equipo). La leyenda (la pastilla «i» del bloque de datos) da una línea por color mientras la capa se muestra. Solo se consultan los aeródromos visibles. Toque un aeródromo: su ficha añade una línea con la pastilla, el nivel y el motivo (⌛ si los procedimientos que se tienen son de un ciclo anterior, y luego cuántas SID, STAR y aproximaciones se tienen). Cuando el dispositivo no puede dar esta información, la capa no se ofrece.
+
 <a id="maps-weather"></a>**El perfil y el cursor.** En el bloque de datos bajo el mapa, el perfil vertical corta la ruta de punta a punta: el relieve, los espacios
 aéreos en los que entra a la altitud prevista, y la trayectoria del vuelo en violeta. Deslice el dedo por el perfil: un
 cursor azul lo sigue, y el mismo cursor se coloca en el mapa. Toque la ruta en el mapa para colocarlo allí. La línea
@@ -259,7 +280,9 @@ espacio aéreo en el que está en ese momento. Bajo el mapa, este bloque de dato
 espacios de un punto o los puntos de notificación de un aeródromo se abren en su lugar cuando los pide, y el perfil
 vuelve al cerrarlos. La pastilla con forma de nube, (las tres pastillas — perfil, nube, «i» — están siempre en la línea superior, a la derecha; la que no tiene nada que mostrar solo se atenúa), lo sustituye (la pastilla del perfil lo devuelve) por el corte
 meteorológico a lo largo de la ruta (viento, temperatura, nubes, engelamiento) a la altitud del vuelo; el corte sigue el mismo cursor, y un toque sobre
-él lo mueve. Solo muestra la previsión que Atmósfera ya ha cargado: sin ella, la línea «Sin previsión cargada» lleva a Meteo, en Preparar. La última pastilla, «i» (atenuada mientras el dibujo no tiene leyenda), abre sobre el perfil su leyenda (qué es cada trazo, banda y marca); arrastrar el dedo sobre el corte mueve el cursor como en el perfil. El perfil y el corte se dibujan a la altura exacta del bloque, con su eje de distancias siempre a la vista: en un bloque bajo quitan etiquetas de niveles, nunca el eje.
+él lo mueve. Solo muestra la previsión que Meteo ya ha cargado: sin ella, la línea «Sin previsión cargada» lleva a Meteo, en Preparar. La última pastilla, «i» (atenuada mientras el dibujo no tiene leyenda), abre sobre el perfil su leyenda (qué es cada trazo, banda y marca); arrastrar el dedo sobre el corte mueve el cursor como en el perfil. El perfil y el corte se dibujan a la altura exacta del bloque, con su eje de distancias siempre a la vista: en un bloque bajo quitan etiquetas de niveles, nunca el eje.
+
+<a id="maps-profile-spaces"></a>**Los espacios del perfil.** El perfil solo muestra los espacios en los que entra la trayectoria vertical prevista (con 500 ft de margen); los sectores de una misma familia que se solapan (las CTA de Dublín) forman allí una sola envolvente, nombrada por la familia; el espacio de ruta libre (FRA) y las zonas W o de investigación meteorológica solo aparecen con la capa «Otros espacios» encendida; como mucho se nombran siete espacios, los demás en la lista de abajo.
 
 <a id="maps-profile-zoom"></a>**Ampliar el perfil.** Para leer el perfil con precisión, ciérrelo sobre una parte del vuelo: pellizque con dos dedos (el centro de los dedos se queda en su sitio) y arrastre con dos dedos para mover la ventana; un solo dedo sigue siendo el cursor de lectura. La escala de altitudes se reajusta a lo que muestra la ventana (de ahí viene la precisión), las marcas de distancia (NM) se estrechan con ella, y los puntos fuera de la ventana no se dibujan. Un doble toque vuelve al vuelo entero, igual que el botón «Vuelo entero», que aparece en la línea superior mientras el perfil está ampliado. En pantalla: Ctrl + rueda amplía alrededor del puntero, arrastrar mueve la ventana, un doble clic vuelve al vuelo entero. La ampliación se conserva mientras la página siga abierta y la ruta no cambie; nunca se guarda. El corte meteorológico se amplía de la misma manera (mismos gestos, mismo botón «Vuelo entero») y la ventana es la misma para los dos: amplíe uno, pase al otro con la ficha y encontrará la misma parte del vuelo; el corte también reajusta su escala de altura a lo que muestra.
 
@@ -323,7 +346,7 @@ lo nombren a la vez: la línea conserva la descripción y la posición publicada
 lo sitúa a más de media milla de allí.
 
 <a id="maps-started"></a>**En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto
-14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). En las notas del bloque de datos, bajo el perfil, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a
+14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza volada punteada, desde la salida, conservada al cambiar de pestaña). En las notas del bloque de datos, bajo el perfil, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a
 la prevista; el perfil muestra las dos altitudes. De cerca, cada punto lleva su hora estimada (ETA) bajo su nombre, sin tapar nunca un aeródromo, en UTC («14:52Z»), la hora local entre paréntesis en la salida y la llegada. «Seguir» mantiene
 el mapa en su posición; mover el mapa lo detiene. Sin posición (GPS o red no activados), una notificación lo dice una vez, la línea queda en las notas con un botón «Activar la posición»; una posición de más de 2 minutos aparece en gris. La línea termina con la fuente de la posición: GPS, red,
 IVAO, VATSIM, X-Plane o Little Navmap. Las horas estimadas también se muestran para un vuelo fechado en Combustible, antes de su salida. Una vez llegado, la nota «Llegado» sustituye a la línea y «Seguir» desaparece; un desvío se indica en las notas.
@@ -389,7 +412,7 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 462716f97b09 -->
+<!-- fr: df5fbdfdcc6d -->
 
 <!-- chapter: report -->
 # Informe
@@ -590,7 +613,8 @@ zona del vuelo, el mapa muestra el sinóptico mundial publicado con la aplicaci�
 
 **El mapa meteorológico.** Isobaras, isotermas, nubes, viento, corriente en chorro y convección, al nivel elegido con la
 pastilla del nivel («Suelo», el nivel solicitado, la trayectoria calculada o una altitud fija). El botón de capas (arriba
-a la izquierda) elige lo que se dibuja. Toque un punto del mapa para abrir su corte.
+a la izquierda) abre un panel sobre el mapa: elige lo que se dibuja en el mapa y en el perfil, y el corte sigue visible
+abajo, redibujado con cada casilla; la cruz o Escape lo cierra. Toque un punto del mapa para abrir su corte.
 
 **La zona del vuelo y el mundo.** Una línea fina rodea la zona del vuelo: dentro, la previsión fina cargada para el vuelo
 (Météo-France AROME 1,3 km y ARPEGE 0,1° sobre Francia, ICON en Europa); fuera, el sinóptico mundial (GFS de la NOAA,
@@ -598,7 +622,9 @@ publicado con una malla de 5°). Los dos modelos no dicen exactamente lo mismo: 
 es normal. El panel de capas nombra los dos modelos y su malla.
 
 **La fecha del vuelo.** El cursor bajo el asa adelanta la hora de 0 a 72 horas desde la salida prevista: el mapa, el
-corte y los cortes de punto siguen.
+corte y los cortes de punto siguen. Cuando una parte del cursor queda fuera de la previsión leída (una salida prevista ya
+pasada, días aún no cargados), una banda bajo el cursor muestra las horas cubiertas; fuera de ellas se muestra la hora más
+cercana, ⚠ lo indica en la línea del cursor y en el asa, y aparece un aviso.
 
 **El corte y los cortes de punto.** Bajo el mapa, el corte muestra la ruta de un extremo a otro, del suelo hasta por
 encima del nivel del vuelo. Tóquelo para abrir el corte del punto más cercano (el perfil vertical de la atmósfera allí);
@@ -627,7 +653,57 @@ un toque en la leyenda, en la pastilla o Escape la cierra.
   el sinóptico mundial viene de GFS (NOAA), cada 3 horas hasta 72 horas.
 - Lo cargado se queda en el aparato y sirve sin conexión; el Mapa reutiliza su corte meteorológico.
 
-<!-- fr: 0d64bc05e5c1 -->
+<!-- fr: acaaf2c98cee -->
+
+<!-- chapter: data -->
+# Datos
+
+Lo que la aerolínea publica para la aplicación —la base aeronáutica, los procedimientos, las aeronaves, la meteorología— y el estado de cada conjunto de datos. Esta pantalla sirve para leer y ofrece acciones sobre la base aeronáutica: descargar sus fuentes, construirla, purgar las fuentes y después publicarla.
+
+## Cómo usarla
+
+<a id="data-cycle"></a>**El ciclo vigente.** Arriba, el ciclo AIRAC del momento (por ejemplo 2610), sus fechas y el número de días hasta el siguiente. Debajo, «Lanzador de este equipo» o «Sin lanzador: solo lectura» indica si este ordenador tiene un lanzador.
+
+<a id="data-coverage"></a>**La cobertura.** La lista de zonas (países, regiones) que sigue este equipo. En la primera apertura son todas las zonas que publica la aerolínea; la lista se guarda en este dispositivo. «Añadir un país» pone en la cobertura una zona que la suite conoce, aunque nadie la publique todavía: queda marcada para «Construir».
+
+<a id="data-states"></a>**Los Estados.** Bajo la cobertura, los Estados se ordenan por color: verde, ya hay procedimientos publicados; naranja, se pueden leer bajo demanda; rojo, nada es legible. El motivo está escrito en cada línea, el color nunca va solo. Pasadas siete líneas, «n más» despliega el resto.
+
+<a id="data-group-base"></a>**Base aeronáutica.** Una línea por fuente que alimenta una zona de la cobertura: su ciclo, su antigüedad («publicado hace 3 días»), el número de zonas publicadas y una etiqueta de estado. Toque una línea para ver el enlace de la fuente con su dirección, su licencia, las zonas que alimenta y lo que ha publicado cada zona.
+
+<a id="data-group-proc"></a>**Procedimientos.** Los procedimientos de Francia (eAIP del SIA) y de Estados Unidos (CIFP de la FAA), con el número de aeródromos publicados.
+
+<a id="data-group-aircraft"></a>**Aeronaves.** Los tipos de aeronave y sus prestaciones: la fecha de la edición, el número de tipos y de archivos. Pasados 28 días, la etiqueta se vuelve naranja.
+
+<a id="data-group-weather"></a>**Meteorología.** La meteorología mundial y las rutas NAT se publican con el sitio: estas líneas no tienen ciclo ni etiqueta.
+
+<a id="data-states-pill"></a>**Las etiquetas.** «Al día»: nada que hacer. «Ciclo superado»: el ciclo publicado es anterior al ciclo vigente (naranja, rojo pasada una semana). «Analizador antiguo»: publicado por una versión anterior de los constructores. «Más de 28 días»: un conjunto sin ciclo, publicado hace más de 28 días. «Ausente del repositorio»: no hay nada publicado. Un grupo se abre solo cuando una de sus líneas requiere atención.
+
+<a id="data-more"></a>**Los demás conjuntos.** Como máximo siete líneas por grupo; «n conjuntos más» despliega el resto y las fuentes solo consideradas o descartadas (su enlace, su licencia, su estado).
+
+<a id="data-build"></a>**Construir la base.** Al principio del grupo Base aeronáutica, el panel «Descargar, construir, purgar» actúa sobre las zonas marcadas con tres botones, en este orden: Descargar · Construir · Purgar. «Construir» rehace la base de las zonas marcadas en el lanzador de este equipo: un navegador sin ventana (Edge o, si no, Chrome) construye las zonas una tras otra y cada una se guarda en el repositorio de datos en cuanto está lista. Al empezar están marcadas todas las zonas de la cobertura; desmarque las que no quiera rehacer. Los tres botones se ponen en gris a la vez, con su motivo escrito una sola vez debajo: «Hace falta el lanzador del equipo», «Hay otra operación en curso», «Marque al menos una zona», «Sin conexión».
+
+<a id="data-build-personal"></a>**Fuentes con licencia personal.** ENAIRE (España), NATS (Reino Unido) y los datos de X-Plane solo se ofrecen si una zona marcada los usa, y nunca vienen marcados: márquelos solo si el repositorio de datos lo usa únicamente usted. Con X-Plane marcado, la construcción se hace en la página, lo que todavía no es posible aquí: terminará con ese motivo.
+
+<a id="data-build-run"></a>**Durante la construcción.** Una barra, «n de m zonas», la etapa y el tiempo transcurrido; una línea por zona dice en espera, construcción (n / m fuentes), construida, fallo con su motivo o cancelada. «Detener» pide la parada: la zona en curso termina y las zonas ya construidas se conservan. Puede salir de la pantalla: la construcción sigue en el lanzador y se encuentra al volver. Si el lanzador se detuvo por el camino, la pantalla dice «Construcción interrumpida» con el último estado de cada zona: vuelva a empezar, desmarcando las zonas ya hechas si quiere.
+
+<a id="data-build-end"></a>**Al final.** Una notificación da las cuentas («Base construida: 3 zonas; 1 con fallo (gb)») y el resumen queda en el panel con lo que hay que hacer: una zona con fallo (el motivo está escrito en su línea: navegador sin ventana, tiempo agotado, salida no válida, no se pudo escribir…), una construcción detenida, ningún navegador encontrado («No se encontró Edge ni Chrome en este equipo: instale uno de los dos.»). Después se vuelve a leer el estado de las líneas.
+
+<a id="data-download"></a>**Descargar.** El botón «Descargar» trae, en el lanzador de este equipo, las fuentes en bruto de las zonas marcadas (openAIP, FAA, UK Mil AIP, NAV CANADA, tracks NAT del día; ENAIRE solo si está marcada entre las fuentes con licencia personal). Una línea por zona dice cómo va («descarga (2 / 3 fuentes)») y, debajo, una línea por fuente: descargada (n archivos), sin cambios, fallo con su motivo y su código HTTP («HTTP 404»), omitida (licencia no declarada) o manual. Lo que no ha cambiado no se reescribe nunca. Al final una notificación da las cuentas («Descargado: 2 zonas cambiadas, 1 sin cambios; 1 fallo»); las fuentes que el lanzador no descarga (el SIA, por ejemplo) se listan con su nombre, con enlace solo si su dirección es https, «para depositar a mano»; si se modificaron archivos de fuentes seguidos por git, la pantalla lo dice («n archivos de fuentes modificados, fuera de los datos sincronizados»). «Nada que descargar para estas zonas»: ninguna de las zonas marcadas tiene una fuente descargable. Dos descargas no pueden sucederse en menos de 30 s: la pantalla dice «Vuelva a intentarlo en n s».
+
+<a id="data-purge"></a>**Purgar.** El botón «Purgar» retira del equipo las fuentes en bruto de las zonas marcadas (las que se vuelven a descargar) y sus cachés. Primero calcula el plan sin borrar nada y luego hace una sola pregunta: «¿Purgar 15 archivos (14,3 MB) de las fuentes de España, Francia?». Si los archivos del SIA (Francia) forman parte, la pregunta recuerda que sirven también para los contornos de las demás zonas en la construcción; los archivos seguidos por git se conservan siempre y se cuentan. No: no se retira nada. Sí: la purga se hace y la pantalla dice «Purgado: n archivos, x MB», con las rutas rechazadas (dejadas en su sitio). Nada que retirar: «Nada que purgar», sin pregunta.
+
+<a id="data-publish"></a>**Publicar la base.** Bajo «Construir», el panel «Publicar la base» envía al repositorio de datos lo que se construyó en este equipo. Una zona construida se confirma entera en el equipo y sale también en la siguiente sincronización: «Publicar» la envía enseguida. Primero dice cómo está el equipo: «3 archivos modificados · 2 commits por enviar», la fecha del último paso y, si la hay, la fusión que espera en data/ (la publicación la concluye primero). Toque «Publicar»: una sola pregunta recuerda los archivos y los commits, luego se hace el paso; una barra sin fin indica que trabaja. Mientras tanto los botones del panel «Descargar, construir, purgar» están en gris, y «Publicar» lo está durante cualquier operación de ese panel: una operación a la vez.
+
+<a id="data-publish-end"></a>**Al final de la publicación.** Una notificación da las cifras y el resultado queda en el panel: lo que se envió (archivos con commit, archivos recibidos); los archivos de la base conservados en el equipo porque había una construcción en curso; los conflictos (se conserva el más reciente, véase Ajustes › Conflictos); los archivos rechazados porque no tienen el formato de un archivo de datos. Un fallo se dice en una frase, con lo que responde el lanzador: no se pierde nada, los archivos siguen en el equipo. El botón está en gris con su motivo escrito debajo: «Hace falta el lanzador del equipo», «Hay una construcción en curso: publique cuando termine», «Nada que publicar», «El marco aún no sabe publicar la base: actualice la aplicación», «Sin conexión».
+
+<a id="data-journal"></a>**El diario.** Al pie de la pantalla, las últimas 50 operaciones de este dispositivo: hora UTC, verbo, zonas, resultado.
+
+## Casos particulares
+
+- **Sin lanzador**: la pantalla se lee igual; muestra lo que está publicado.
+- **Una lectura que falla**: la sección lo dice en una línea y el resto de la pantalla se dibuja.
+
+<!-- fr: 116007677a97 -->
 
 <!-- chapter: settings -->
 # Ajustes
@@ -715,9 +791,11 @@ se escriben. En un teléfono, Combustible descarga la ficha en .lnmperf.
 
 ## Las claves API de la aerolínea
 
-En un puesto servido por el lanzador, en el nivel Completo, el botón «Claves API de la aerolínea (IVAO)» de la tarjeta
+En un puesto servido por el lanzador, en el nivel Completo, el botón «Claves API de la aerolínea (IVAO, EAD Basic)» de la tarjeta
 «Administración» despliega el ajuste de la clave de la API IVAO: se queda en la carpeta `secrets/` del lanzador, nunca en
 el navegador ni en los datos. «Probar» comprueba que IVAO responde; «Borrar» la quita.
+
+Bajo la clave IVAO, el bloque «EAD Basic (EUROCONTROL)» recibe el usuario y la contraseña de su cuenta EAD Basic: los entrega una sola vez al lanzador de este equipo (carpeta `secrets/`), que los guarda; la página no los vuelve a mostrar nunca, solo dice si están guardados y cuándo. Sirven para «Leer un aeródromo desde EAD» (un aeródromo por gesto). EAD Basic es una herramienta de demostración con datos no operativos, para usar solo en simulación (el aviso sigue visible). «Borrar» los quita del lanzador.
 
 ## La tableta junto al simulador
 
@@ -762,6 +840,11 @@ se señala.
   «Recordar» los confía a Git en este equipo). Sin `data/`, «Recuperar los datos» lo clona; con un `data/` sin git
   (datos de ejemplo o archivo), «Retomar data/ en este repositorio» lo enlaza al repositorio. La tarjeta sigue el trabajo
   y vuelve a leer el estado al final; un fallo se explica, nada se pierde.
+- **Historial del repositorio reescrito** (por ejemplo para purgar archivos grandes): la sincronización de este equipo
+  rechaza entonces toda fusión y lo dice; no se pierde nada. Aquí, «Retomar el nuevo historial» muestra primero lo que
+  saldrá (sus commits, los archivos de datos trasladados), pregunta, guarda el estado anterior en una referencia local,
+  traslada sus archivos de datos al nuevo historial y luego sincroniza. Un archivo fuera de los datos sincronizados
+  nunca se vuelve a enviar.
 
 ## Configurar un piloto
 
@@ -787,8 +870,9 @@ probado el token; «Probar» dice qué falla: invitación aún no aceptada, toke
 sobre el contenido. Un token clásico abre todos los repositorios de la cuenta: para el repositorio de un usuario, se
 aconseja una cuenta de GitHub dedicada al vuelo. Un archivo de otro formato se rechaza con un mensaje. La aerolínea solo
 se escribe en el repositorio si aún no tiene una. En un puesto cuyo data/ ya sigue este repositorio, el asistente se
-salta la cuenta y el token. Sin lanzador, la aplicación solo llega a un repositorio de GitHub: para un repositorio de
-framagit o GitLab, configure el acceso en un puesto con el lanzador.
+salta la cuenta y el token. Sin lanzador, la aplicación llega a un repositorio de GitHub o a un proyecto en una
+instancia GitLab (gitlab.com, framagit…): pegue la dirección del proyecto (https://gitlab.com/grupo/proyecto) y el token
+de acceso de proyecto que le dio el administrador; el token solo se envía a esa instancia.
 
 ## Administración
 
@@ -796,8 +880,8 @@ framagit o GitLab, configure el acceso en un puesto con el lanzador.
 de», reúne las páginas de administración y de prueba, **un botón por página**, cada una con una frase; en los demás niveles no aparece, y nada del administrador está en las demás tarjetas. En la
 aplicación: el botón «Ajuste de los umbrales del mapa» (`#maps?tune=1`, solo lectura en un teléfono; abre la página de ajuste: para cada elemento del mapa y cada modo, los zooms en que aparece, guardados para la aerolínea, `airline/map_profiles.json`; un modo que nunca guardó toma los umbrales de un modo ajustado, la página lo dice; el control «Complejidad» del mapa solo desplaza el zoom), vuelta con la flecha de retroceso; el botón «Límite de la zona del vuelo», que despliega una casilla
 «Mostrar la línea del límite de la zona del vuelo» (guardada al instante para la aerolínea, con los umbrales, en `airline/map_profiles.json`,
-clave `edge`; la línea se muestra mientras no ajuste nada); el botón «Exportar una configuración para un piloto» (véase «Configurar un piloto»); en un puesto servido por el
-lanzador, los botones «Repositorio remoto de data/» y «Claves API de la aerolínea (IVAO)», que despliegan su ajuste (véase
+clave `edge`; la línea se muestra mientras no ajuste nada); el botón «Umbrales de pista en el mapa», que despliega una lista de 8 a 16: el zoom a partir del cual el mapa dibuja los umbrales de pista (guardado al instante para la aerolínea, mismo archivo, clave `runwayZoom`; 11 mientras no ajuste nada); el botón «Exportar una configuración para un piloto» (véase «Configurar un piloto»); en un puesto servido por el
+lanzador, los botones «Repositorio remoto de data/» y «Claves API de la aerolínea (IVAO, EAD Basic)», que despliegan su ajuste (véase
 «Un repositorio git para data/» y «Las claves API de la aerolínea»);
 la hoja de ruta (`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
 
@@ -814,14 +898,29 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
 
 ## Conviene saber
 
-- **El token**: un token de grano fino de github.com, solo sobre el repositorio de datos, «Contents» lectura y
-  escritura, 90 días como máximo. Nunca se vuelve a mostrar; no lo pegue en ningún mensaje.
+- **Cuenta IVAO**: la tarjeta «Cuenta IVAO» vincula este dispositivo a su cuenta IVAO por el relé de la aerolínea (o
+  el lanzador del puesto): «Iniciar sesión en IVAO» abre la página de IVAO y luego vuelve aquí. El relé guarda el secreto
+  de la aplicación de la aerolínea; su token se queda en este dispositivo, renovado solo, nunca en una copia de
+  seguridad. «Desvincular» lo borra y pide a IVAO que retire el acceso; si IVAO no puede, la suite le dice
+  que lo retire en su cuenta IVAO. Para probar en el puesto, sin relé: la dirección de retorno que se declara en la
+  aplicación IVAO de la aerolínea es `http://127.0.0.1:<port>/__relay/ivao/callback` (el puerto del lanzador).
+- **Dispositivos del relé**: cuando el lanzador funciona como relé de la aerolínea (detrás del proxy inverso del NAS,
+  en https), un piloto vincula cada dispositivo una vez con un código de 8 cifras que el administrador pide en
+  Maintenance › «Dispositivos del relé» para su trigrama (una vez, 10 minutos); sus escrituras llevan ese trigrama. Un
+  dispositivo perdido, o todos los de un piloto que se va, se revocan allí.
+- **Tokens de los pilotos (GitLab)**: en la aplicación Maintenance, en el equipo del lanzador, «Tokens de los pilotos»
+  crea un token de acceso de proyecto por piloto (con su trigrama, rol Developer, un año como máximo), lo muestra una sola
+  vez y lo revoca. El lanzador usa allí el token del administrador (secrets/gitlab.json), que nunca muestra. Configure la
+  rama de datos para que el rol Developer pueda enviar a ella.
+- **El token**: en github.com, un token de grano fino, solo sobre el repositorio de datos, «Contents» lectura y
+  escritura, 90 días como máximo; en GitLab, un token de acceso de proyecto (uno por piloto, con su trigrama), creado por
+  el administrador. Nunca se vuelve a mostrar; no lo pegue en ningún mensaje.
 - **Sus ajustes se quedan al cerrar el navegador**: la identidad, el token y la clave meteorológica se guardan en el mismo
   sitio del dispositivo, nunca sincronizados ni en una copia. Si Safari se los hizo perder igualmente (borra el almacenamiento
   de un sitio poco visitado), añada la aplicación a la pantalla de inicio: allí está mejor guardada. El diagnóstico
   («Copiar») dice si el navegador prometió no borrar (`storage.persisted`).
 - **Cortar el acceso**: borra el token de este dispositivo; sus escrituras pendientes se quedan y saldrán cuando el
-  acceso vuelva a configurarse. Teléfono perdido o robado: borre también el token en github.com.
+  acceso vuelva a configurarse. Teléfono perdido o robado: borre también el token en el alojamiento (github.com, gitlab.com…).
 - **Ajustes de la V2**: si este navegador ya se usó para la V2, la tarjeta «Ajustes de la V2 encontrados» propone una
   vez retomar su identidad y su acceso.
 - **Acerca de**: enlaces a esta ayuda y a la hoja de ruta (lo entregado, en curso, previsto), luego el
@@ -830,4 +929,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 47f9199a8ffd -->
+<!-- fr: c49c76673bd9 -->

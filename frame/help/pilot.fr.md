@@ -24,7 +24,8 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
   ouvrir le compte rendu prérempli), le trigramme manquant (touchez pour le régler), l'état des données (dernière
   synchronisation, écritures en attente, moyen d'échange utilisé), la base aéronautique tant qu'elle n'est pas prête, le
   lanceur, « Hors ligne » quand il n'y a pas de réseau, le nombre d'appels météo du jour (prévisions
-  Open-Meteo, 10 000 permis par jour), et, sur un téléphone, la source de la position pendant un vol. Sur
+  Open-Meteo, 10 000 permis par jour), la fin de cycle AIRAC quand la base aéronautique ou les procédures publiées sont
+  en retard sur le cycle en vigueur, et, sur un téléphone, la source de la position pendant un vol. Sur
   un téléphone, l'en-tête se réduit au nom, au bouton ? et au bouton ⚙.
 - **Plein écran.** Sur la carte (outils à vue fixe), un bouton rond en bas de la colonne de boutons, sur la carte, masque
   l'en-tête et la barre du bas pour laisser toute la place à la carte ; le même bouton ou Échap reviennent.
@@ -35,6 +36,9 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
 
 ## Données et synchronisation
 
+- **Position et trace du vol.** Avec l'usage « à plusieurs », la position réelle et la trace de votre vol en cours
+  (un point par mille nautique ou par minute, à environ 100 m près) sont partagées avec le groupe et restent dans l'historique
+  du dépôt ; elles ne partent jamais vers un service extérieur sans un geste de votre part.
 - **Hors ligne d'abord.** Tout ce que vous faites est gardé sur l'appareil et marche sans réseau.
 - **Seul sur cet appareil.** Sans échange coché dans les Réglages, rien ne part ailleurs : exportez de temps en temps
   la sauvegarde de l'appareil (un fichier), c'est la seule copie.
@@ -64,7 +68,7 @@ s'ouvrent par l'onglet « Fiches ». Un ✓ marque un pas rempli. Les niveaux s'
 façon : en FL à partir de 5 000 ft (FL060), en pieds en dessous (3 500 ft).
 
 <a id="fuel-step-1"></a>**1 Vol.** Le départ, l'arrivée et le dégagement (codes OACI), la date du vol si vous voulez la prévision (TAF) plutôt
-que l'observation, l'appareil et le niveau de croisière (en FL). La date du vol (saisie à l'heure locale de l'appareil) est une seule valeur, gardée dans le vol courant : la météo du devis (TAF des terrains, vents et températures en altitude) est lue à cette date, l'ETA de la Carte en part tant que le vol n'est pas démarré, et le curseur d'Atmosphère part d'elle ; vide, c'est maintenant. L'appareil tient sur une ligne : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. Un nouveau vol reprend le dernier
+que l'observation, l'appareil et le niveau de croisière (en FL). Sous chaque code, une ligne fixe donne le nom du terrain pour vérification (« LFPO — Paris-Orly » ; « inconnu » si le code ne correspond à rien). Dès deux caractères, un code ou un début de nom (« LFP », « orly »), le champ propose sept terrains au plus : ↑ ↓ pour choisir, Entrée pour valider, Échap pour fermer, ou un toucher ; la liste se ferme quand on quitte le champ, et taper le code en entier à la main marche toujours. Le nom peut se taper en entier (« toulouse ») : seul un code choisi ou tapé entre dans la route, et un champ quitté sans choix revient au terrain enregistré. La date du vol (saisie à l'heure locale de l'appareil) est une seule valeur, gardée dans le vol courant : la météo du devis (TAF des terrains, vents et températures en altitude) est lue à cette date, l'ETA de la Carte en part tant que le vol n'est pas démarré, et le curseur de Météo part d'elle ; vide, c'est maintenant. L'appareil tient sur une ligne : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. Un nouveau vol reprend le dernier
 appareil choisi sur cet appareil ; sans choix, le devis attend. La loupe ouvre la recherche (le dernier choisi en tête) : tapez une fiche, une immatriculation, un indicatif ou un type. Les résultats viennent dans
 cet ordre : vos fiches de performances, les appareils de la compagnie (sa flotte, puis ceux connus par son journal),
 les types publiés, et en dernier le code tapé tel quel. Un appareil de la compagnie prend sa propre fiche s'il en a une,
@@ -91,7 +95,7 @@ dit), avec une entrée et une sortie directes à 60 NM au plus et sans détour d
 TSA01 UT460 TSA05 LFML » ; les points intermédiaires de la voie, que le texte n'écrit pas, sont gardés dans les points
 (la distance, la carte et le profil les suivent). Une notification donne le résultat (« 3 voies inscrites, 254 NM »)
 ou « aucune voie utile entre X et Y ». Limites : les voies sont prises dans les deux sens (la base ne porte pas encore le
-sens unique), sans restriction fine de niveau ni SID / STAR ; la route reste à vérifier.
+sens unique), sans restriction fine de niveau ni SID / STAR ; la route reste à vérifier. « Auto » repart toujours des points posés — le départ, la sortie de la SID choisie, les points que vous avez tapés, l'entrée de la STAR, l'arrivée — et remplace ce qu'un « Auto » précédent avait écrit : deux « Auto » de suite donnent le même texte, jamais une route qui s'allonge en boucle. Un tronçon qui repasserait par un point, ou qui rallongerait trop l'ensemble, reste direct, et la notification dit pourquoi (« pas de voie près de LACOU », « détour de plus de 40 % »). Quand le nom de la SID est dans le texte, sa sortie s'écrit après lui (« LFBO LACOU7B LACOU … ») et le tronçon de la sortie au premier point est routé. Une voie que vous tapez entre deux points (« GILUX A3 MOTAL ») est toujours lue comme une voie, jamais comme un point du même nom pris ailleurs ; elle n'est suivie que si elle relie vraiment ces deux points, sinon le tronçon reste direct et une ligne le dit (« A3 ne relie pas GILUX à MOTAL : tronçon direct »). Le texte de la route suit vos procédures, en forme OACI : le nom de la SID puis sa sortie après le départ, l'entrée puis le nom de la STAR avant l'arrivée, « DCT » entre deux points sans voie (« LFRS NTS1A NT102 DCT LUGEN … MEN01 MEN1A LFML ») ; l'approche n'y figure jamais. Quand la sortie de la SID n'est pas sur votre route, une ligne dit la jonction par un direct (« NTS1A sort à NT102 : NT102 DCT LUGEN »). Dans l'autre sens, le texte se relit : taper le nom d'une SID du départ ou d'une STAR de l'arrivée la choisit, l'effacer retire le choix. Dans la liste « Points (N) », chaque procédure choisie est une seule ligne repliée, dans sa couleur de la carte (« SID NTS1A · 2 points », « STAR MEN1A via NEPIX · 4 points ») : ses repères s'affichent d'une tape, jamais au rang des points que vous avez tapés ; le nombre compte vos points et ces lignes. Quand une voie relie bien deux points mais n'est pas ouverte au niveau du tronçon, la ligne la nomme avec sa plage ouverte, pour que vous décidiez (« A34 relie LACOU à LMG, fermée au FL260 (ouverte de 6 500 ft au FL195) : tronçon direct ») ; « Auto » ne la suit jamais quand même. En tapant dans le champ, dès deux caractères du mot sous le curseur, une liste propose (sept au plus) les SID du départ et les STAR de l'arrivée, les voies autour du point qui précède, les points et balises de la base : ↑ ↓ et Entrée, ou une tape, écrivent le mot au curseur ; Échap ferme la liste. Les listes de l'étape restent, pour le clavier et les lecteurs d'écran.
 
 Le pli « Points » liste les points reconnus, du départ à l'arrivée. Les flèches montent ou
 descendent un point dans la liste, la croix le retire ; le champ du bas en ajoute un avant l'arrivée : un identifiant
@@ -105,6 +109,8 @@ aérienne tapée reste écrite tant que les deux points qui l'encadrent restent 
 « Afficher la carte » montre le vol sur la carte : sur un téléphone la Carte s'ouvre (le bouton de l'en-tête ramène
 ici) ; sur un écran large elle s'ouvre à côté, et suit chaque changement. « Modifier la route » sur la carte ramène à
 ce pas, le champ de la route prêt à la frappe.
+
+**Piste, SID, STAR et approche.** En bas du pas Route, une carte « Procédures » porte un côté Départ et un côté Arrivée. Chacun a un titre (« Départ LFPO Paris-Orly », avec « Sur la carte » : la Carte s'ouvre sur les procédures du terrain ; ce qui y est choisi — piste, procédure, approche — revient ici en une fois, appliqué comme un choix fait ici et dit en une seule ligne ; une famille que la Carte ne touche pas reste telle quelle), une seule ligne discrète (« lu le 29/10 16:53Z · Relire · 3 non lues », puis « Source » : la page codée de la procédure choisie, chez le SIA, dans un nouvel onglet) et une grille fixe, la même des deux côtés : piste · SID · transition au départ ; piste · STAR · transition à l'arrivée, puis, dessous, approche · transition d'approche (une transition n'apparaît que si la procédure choisie en a). Sur un téléphone, une seule colonne ; aucun libellé n'est coupé. Chaque liste vient d'aerodb et montre toutes les procédures du terrain dans une seule liste classée par piste puis par nom (la piste n'est dans le libellé que si aucune piste n'est choisie et que la procédure n'en dessert qu'une : « OPALE 2E » quand la piste est choisie). Rien n'est interdit : une procédure en conflit avec votre choix est marquée ⚠ (une SID, une STAR ou une approche qui ne dessert pas la piste choisie ; sans piste choisie, une STAR qui ne dessert aucune piste de l'approche choisie ; la raison est dans l'infobulle — une STAR qui ne rejoint pas l'approche n'est pas un conflit : la Carte raccorde en tireté) et vous pouvez quand même la choisir — le ⚠ et l'infobulle suffisent, aucune notification ne le répète. ⌛ (gris) veut dire périmée, ⚠ (orange) en conflit. Dans chaque liste, ce qui est compatible avec votre choix vient en tête, les ⚠ ensuite ; dans la liste des pistes, celles de la SID ou de l'approche déjà choisie passent d'abord. Une procédure que la source n'a pas su lire correctement (sans nom, ou douteuse) n'est jamais proposée : la ligne discrète du côté dit combien ne sont pas lues (« 3 non lues » : les pages non lues et les procédures à vérifier du fichier lu). Si les données du terrain ne portent aucune fiche de piste, les pistes proposées sont celles que nomment ses procédures. Chaque piste porte le vent du METAR connu du terrain (celui du pas Départ) : « 13R — ↓ 12 kt · ← 6 kt » : la flèche montre où souffle le vent, la piste vue vers le haut comme en finale (↓ de face, ↑ arrière, ← un vent de droite, → un vent de gauche). En vert un vent de face ; en orange un vent arrière jusqu'à 5 kt ou un travers de plus de 10 kt ; en rouge un vent arrière de plus de 5 kt ou un travers de plus de 20 kt (ou de la limite de la fiche de l'appareil quand elle en a une) ; la raison en infobulle. Sans METAR, rien n'est affiché. Le titre de chaque côté se termine par le résumé du choix, le même texte que le volet de la Carte : « 13R · ↑ 12 kt », « MEN1A via NEPIX », « I13R » (« SID aucune » pour un départ sans SID). Choisir une STAR ou une approche qui ne dessert qu'une piste pose cette piste ; une STAR propose ses transitions, une approche ses transitions d'approche. Une approche se lit en court, son type et sa piste (« ILS 06 », « RNP 06 » ; le nom publié dans l'infobulle). Les segments d'approche initiale que le SIA publie à part (« INA RNAV RWY 06 ») ne sont jamais des lignes : ce sont les transitions de toutes les finales de leur piste, « via ODILO · ODILO 1A » (l'IAF puis le nom publié), et « — » reste le direct vers l'IF. Le premier choix, « — », veut dire « pas choisi » ; « aucune » est un vrai choix (un départ direct, sans SID). Une procédure du repli X-Plane du poste passe en dernier, marquée « X-Plane, local » ; une procédure lue sous un cycle antérieur est marquée ⌛ (à relire). Sur un terrain sans procédure publiée, la ligne discrète le dit (« aucune procédure publiée · Lire les procédures de LFXX ») : un terrain par geste, jamais en silence. Un terrain qui a déjà des procédures montre, sur cette même ligne, la date de sa dernière lecture (« lu le 29/10 16:53Z », ⌛ si elle date d'un cycle passé) puis « Relire » : le même geste, qui remplace le fichier lu. Un terrain français se lit dans l'eAIP du SIA, sans compte ; un État dont l'AIP publie des tables de procédures, dans EAD Basic (identifiants réglés sur le poste) ; pour tout autre État, le message dit qu'aucune table n'est publiée. Sans lanceur, ou sur un appareil appairé au poste, la lecture se fait sur le poste — le message le dit — et l'OFP SimBrief reste la source du vol. Une fois la SID et la STAR choisies, le devis court sur le chemin « route + procédures » (la distance de la SID et de la STAR comprise) et la Carte les trace avec leurs altitudes et leurs vitesses ; leurs contraintes d'altitude n'entrent pas dans les paliers du devis, elles se lisent sur le profil vertical, qui garde la croisière jusqu'à ce que la descente doive commencer et ne remonte plus une fois commencée. « Dernier OFP SimBrief » propose sa SID et sa STAR pour les seuls côtés que vous n'avez pas encore choisis (« aucune » est un choix) : il ne remplace jamais votre choix, et dit ce qu'il a rempli, une ligne par côté (« Arrivée : STAR — → LERG1R »). Des choix faits à la suite sont écrits une seule fois, un instant après le dernier. La carte s'ouvre repliée, pour se lire sans défiler : une ligne de résumé par côté (« Départ LFRS · 03 · NTS1A », avec « Sur la carte ») ; une tape sur la ligne, ou sur ▸, déplie ses listes et sa ligne discrète (« Relire », « Source »), un côté à la fois. Un côté sans procédure reste déplié : sa ligne propose la lecture.
 
 <a id="fuel-step-3"></a>**3 Météo.** Le vent (direction et force) et l'écart ISA. Sans direction, ou sans vent du tout, le carburant bloc est
 donné en fourchette. « Lire la météo des terrains » affiche le départ, l'arrivée, le dégagement et
@@ -176,6 +182,10 @@ droite.
 Changer le terrain de départ ensuite, c'est préparer un autre vol : l'heure de départ est effacée. Changer l'arrivée
 après le départ est un déroutement : l'heure est gardée et le déroutement noté.
 
+Plan de vol pour le simulateur : sous le récapitulatif, trois boutons — « .fms (XP 11/12) », « .fms (XP 10) » et « .pln (MSFS) » — téléchargent la route et les procédures choisies (piste, SID, STAR, approche et leurs transitions) pour X-Plane ou Microsoft Flight Simulator, dans un fichier nommé « LFPO-EIDW_2026-10-30.fms ». Il faut une route d'au moins deux points placés. Copiez ensuite le fichier dans le dossier « Output/FMS plans » de X-Plane (l'envoi direct viendra avec le lanceur).
+
+Une fois le vol démarré, ce pas porte une carte « Procédures » : rien n'est verrouillé : les côtés Départ et Arrivée restent modifiables à tout moment (un autre départ est un nouveau départ). Un changement ne refait pas le devis : le carburant bloc, le délestage et les réserves restent ceux du départ ; seuls les points horaires, le profil vertical et la distance restante suivent le nouveau chemin. Le bouton « Changer » de la Carte ouvre Carburant sur la ligne Arrivée (`#fuel?focus=arr`) : le pas Route avant le départ, le pas Départ après.
+
 Une fois le vol démarré, le résultat en bas d'écran dit « Vol démarré à 11:14Z (13:14) · depuis 1 h 10 ». Les heures sont en UTC (« Z ») ;
 l'heure de l'appareil s'ajoute entre parenthèses au départ, au décollage et à l'arrivée prévus. Un vol démarré se
 termine en écrivant son compte rendu : à l'enregistrement, Carburant revient en préparation et Mes vols retire « en
@@ -190,7 +200,9 @@ descente — est partagé : Carte et Compte rendu l'ont déjà.
 
 L'onglet « Fiches » rassemble les fiches de la compagnie, partagées avec tous ses appareils. Elles sont rangées par
 catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons, autres) ; chaque type utilisé par la compagnie (flotte,
-référence) qui n'a pas encore de fiche y figure aussi, « performances à renseigner », avec « Créer la fiche ».
+référence) qui n'a pas encore de fiche y figure aussi, « performances à renseigner », avec « Créer la fiche ». Chaque
+fiche dit ce qui lui manque, par famille (« À compléter : régimes, vitesses, croisière, roulage, piste ») ; « complète » quand
+rien ne manque.
 
 - **Importer** : un fichier (CSV de performances, JSON, `.lnmperf` de Little Navmap, OFP SimBrief) ou un texte collé
   (les mêmes, ou la réponse de ChatGPT). Une fiche tirée d'un OFP est calibrée sur ses temps et sa consommation réels.
@@ -203,7 +215,9 @@ référence) qui n'a pas encore de fiche y figure aussi, « performances à rens
   ChatGPT, puis sa réponse telle quelle dans la zone prévue, et « Lire ».
 - **Modifier, exporter** : l'éditeur montre les champs par groupe. Sur un écran d'ordinateur, la table régime / débit
   se modifie ligne à ligne ; sur un téléphone elle est en lecture. Exports `.lnmperf` et JSON ; suppression après
-  confirmation.
+  confirmation. La cellule (avion, hélicoptère, planeur…) et la propulsion (pistons, turbopropulseur, turbomoteur,
+  réacteur…) viennent de la base OACI du type : laissez « auto », sauf si la base se trompe ou ne connaît pas le type ;
+  elles ne sont alors ni comptées comme manquantes ni demandées à ChatGPT.
 
 ## Réglages et unités
 
@@ -234,7 +248,7 @@ terrains, balises, voies aériennes, altitudes minimales. La route du vol se mod
 ## Comment s'en servir
 
 **Le vol prévu.** La carte montre le vol préparé dans Carburant : départ, points de la route, arrivée, et le terrain
-de dégagement en tirets gris. Si l'OFP SimBrief a déposé une SID ou une STAR, elles sont tracées en violet par-dessus la route, nommées (« SID ROYAN6P »). Son résumé (niveau, distance, vol prévu ou en cours) n'est pas écrit au-dessus du dessin (le dessin le montre) : l'infobulle de la poignée du bloc de données sous la carte le donne, avec départ et arrivée, dégagement et type d'appareil. Quand le vol change dans Carburant, la carte suit d'elle-même.
+de dégagement en tirets gris. La piste, la SID, la STAR et l'approche choisies dans Carburant sont tracées par-dessus la route (SID en vert, STAR en orange, approche en bleu), nommées (« SID ROYAN6P »). Son résumé (niveau, distance, vol prévu ou en cours) n'est pas écrit au-dessus du dessin (le dessin le montre) : l'infobulle de la poignée du bloc de données sous la carte le donne, avec départ et arrivée, dégagement et type d'appareil. Quand le vol change dans Carburant, la carte suit d'elle-même.
 
 **La carte et ce qu'elle montre.** Autour de la route : les espaces aériens qu'elle traverse ou frôle (zones
 réglementées, dangereuses, interdites, espaces contrôlés), les voies aériennes basses ou hautes selon votre niveau,
@@ -245,6 +259,14 @@ zoomer ; « Recentrer » (la cible, en haut à droite de la carte) revient sur t
 seul « Recentrer » (ou un autre vol) la recadre. Vue de loin, la carte ne montre que ce qui est près de la route ;
 rapprochez-vous pour tout voir.
 
+<a id="maps-procs"></a>**La piste et les procédures choisies.** Ce que vous avez choisi dans Carburant (piste, SID, STAR, approche) se trace par-dessus la route : la SID en vert, la STAR en orange, l'approche et son approche interrompue en bleu, depuis le seuil de la piste de départ jusqu'au premier point de la route, et du dernier point de la route jusqu'au seuil de la piste d'arrivée. Les transitions et l'approche interrompue sont en tirets ; un tronçon sans point (une montée sur un cap, par exemple) est un court trait le long de son cap, puis des tirets jusqu'au point suivant ; un virage à rayon constant est un arc. Quand la SID ne rejoint pas un point de la route, un tireté droit la raccorde à la route (de même pour la STAR). Une procédure que vous n'avez pas choisie n'est jamais dessinée, et la liste des couches n'a pas de case pour elle. Le nom de la procédure s'écrit sur son tracé, suivi de l'origine de ses données quand elles viennent de X-Plane ou de Little Navmap (« X-Plane, local ») puis du symbole ⌛ (en gris) quand elles ont été lues sous un cycle antérieur ; la légende (puce « i ») le rappelle. Dès la vue régionale (réglable dans la page des seuils), chaque point porte ses contraintes ; le nom de la procédure s'écrit à toutes les échelles, par-dessus le reste, comme sur les cartes de procédures : l'altitude **soulignée** veut dire « au moins », **surlignée** « au plus », les deux « exactement », « 5000–7000 » « entre les deux » ; « ≤ 220 kt » est la vitesse à ne pas dépasser. Le profil vertical suit le même chemin et montre ces contraintes comme des paliers (flèche vers le haut : au moins, vers le bas : au plus, point : exactement, barre : entre deux altitudes) ; les distances, les heures estimées et le curseur sont mesurés sur ce chemin. La carte ne modifie jamais ce choix : touchez un terrain de la route, sa fiche donne la piste et les procédures choisies, avec un bouton « Changer » qui ouvre Carburant sur la ligne à modifier ; un lien « Source » ouvre dans un nouvel onglet la page publiée de la procédure (eAIP du SIA), et pour une procédure lue ailleurs le nom de son document s’affiche au survol de la ligne.
+
+<a id="maps-rwy"></a>**Les pistes.** De près, chaque piste de chaque terrain dessiné se dessine en petit vecteur depuis son seuil, et le terrain porte son nom à côté de son code (« LFPO Paris-Orly ») ; chaque vecteur part dans le sens de la piste, son numéro en queue, derrière le seuil : la piste choisie dans Carburant en gras dans la couleur de son côté, les autres fines. Elles n’apparaissent qu’à partir du zoom réglé par la compagnie (Réglages › Administration, « Zoom des seuils de piste », 11 sans réglage) ; en dessous, rien. Dans « Choisir sur la carte », toutes les pistes du terrain se dessinent ainsi, la choisie en gras ; les dessins du choix passent au-dessus des étiquettes du fond, estompées.
+
+<a id="maps-choose"></a>**Choisir sur la carte.** Le bouton « Sur la carte » d’un côté de Carburant (départ ou arrivée) ouvre la carte sur ce terrain — de même que « Choisir sur la carte » sur la fiche du terrain de départ ou d’arrivée (touchez sa pastille ; pleine largeur sur un téléphone) : le fond de carte et les couches s’estompent, la vue se cale sur les procédures publiées du terrain. En tête du bloc de données, votre sélection en une ligne par famille (« Piste 31 · ↑ 12 kt », « OKRI5L », « I31 via IAF1 »), chacune avec ✕ pour la remettre à « Aucune » ; toucher le nom d’une famille (« Piste », « STAR », « Approche ») mène à son groupe et le déplie. Dessous, les trois familles à la fois — la piste, la SID (au départ) ou la STAR, l’approche (à l’arrivée) — en lignes serrées : trois touchers dans l’ordre qui vous convient. Chaque choix réduit les deux autres familles à ce qui lui est compatible ; le reste est replié sous une ligne fine « N autres · Toutes », qui le déplie marqué ⚠ (on peut toujours le choisir). Les SID qui sortent et les STAR qui entrent sur la route que vous avez tapée viennent d’abord, sous « Vers votre route » ; les autres suivent, marquées « sortie LACOU » ou « entrée OKRIX ». « Aucune » est toujours la première ligne. Les procédures qui ne diffèrent que par la piste (OKRI5L, OKRI5R) forment une seule ligne « OKRI5 » avec ses pistes en petites étiquettes : la toucher choisit la famille et réduit les pistes, toucher une piste choisit la procédure. Les approches se lisent par leur libellé court (« ILS 06 », « RNP 06 » ; le nom publié au survol) ; sous l’approche choisie, « Sans transition » puis ses transitions, dont les segments d’approche initiale que le SIA publie pour toute la piste (« via ODILO · ODILO 1A »), dans la teinte de leur finale ; une transition qui ne rejoint pas la finale sur un point commun s’y raccorde en tireté. Chaque procédure a sa teinte (huit, reprises en cycle), la même sur sa ligne, son cartouche et son tracé ; sur la carte, un petit cartouche par famille et par point (« NIMER 9 »), et la procédure survolée ou touchée passe au-dessus de tout, avec son nom complet ; survoler une ligne de n’importe quelle famille surligne son tracé, survoler un tracé surligne sa ligne ; ⌛ (gris) : lue sous un cycle antérieur. Chaque piste porte le vent du METAR déjà connu : « ↓ 12 kt » de face, « ↑ » arrière, puis le travers (← vent de droite, → vent de gauche : la flèche dit où il souffle, la piste dessinée vers le haut, comme dans Carburant), en vert, en orange ou en rouge selon le vent arrière et le travers ; sans METAR, rien. Un toucher sur une ligne ou un tracé ajoute ce choix et le laisse sur la carte (la piste en gras, la procédure dans sa teinte, les autres de sa famille estompées) ; rien n’est encore écrit. Une procédure qui ne sert qu’une piste la choisit si aucune ne l’est ; sinon une ligne sous le groupe propose la correction, d’un toucher : « OPAL2E sert la 25 — Passer en 25 », ou « OKRIX5A ne sert pas la 07 — Choisir OKRIX5B ». « Terminer », la croix ✕ ou Échap vous ramènent à Carburant avec tout ce que vous avez choisi ; Carburant l’écrit et dit ce qui a changé ; la carte n’écrit rien. Pour renoncer sans rien rendre : « ← Carburant » en haut.
+
+<a id="maps-coverage"></a>**La couverture.** La couche « Couverture » (la liste des couches, éteinte au départ, allumée seulement par sa case) colore les terrains selon ce que cet appareil sait donner de leurs procédures : **vert**, elles sont détenues (publiées, saisies à la main ou lues sur ce poste) ; **orange**, elles sont détenues mais lues en partie (des pages non lues, des fiches à vérifier : la fiche du terrain dit combien) ou elles se lisent à la demande (la France par l'eAIP du SIA, un État dont les tables sont lisibles, un terrain de la base locale de Little Navmap) ; **rouge**, rien de lisible (images seules, texte en prose, rien sur ce poste). La légende (la pastille « i » du bloc de données) donne une ligne par couleur tant que la couche est montrée. Seuls les terrains visibles sont interrogés. Touchez un terrain : sa fiche ajoute une ligne avec la pastille, le niveau et la raison (⌛ si les procédures détenues datent d'un cycle antérieur, puis le nombre de SID, de STAR et d'approches détenues). Quand l'appareil ne sait pas donner cette information, la couche n'est pas proposée.
+
 <a id="maps-weather"></a>**Le profil et le curseur.** Dans le bloc de données sous la carte, le profil vertical coupe la route de bout en bout : le relief, les espaces
 aériens où vous entrez à l'altitude prévue, et la trajectoire du vol en violet. Faites glisser le doigt sur le profil :
 un curseur bleu le suit, et le même curseur se place sur la carte. Touchez la route sur la carte pour le placer là. La
@@ -253,7 +275,9 @@ et l'espace aérien où vous êtes à ce moment-là. Sous la carte, ce bloc de d
 espaces d'un point ou les points de report d'un terrain s'y ouvrent à sa place quand vous les demandez, et le profil
 revient à leur fermeture. La pastille en forme de nuage, (les trois pastilles — profil, nuage, « i » — sont toujours dans la ligne du haut, à droite ; celle qui n'a rien à montrer est seulement grisée) le remplace (la pastille du profil le ramène) par la coupe météo le long de la route
 (vent, température, nuages, givrage) à l'altitude du vol ; la coupe suit le même curseur, et un toucher dessus le déplace. Elle ne montre que
-la prévision qu'Atmosphère a déjà chargée : sans elle, la ligne « Pas de prévision chargée » mène à Météo, dans Préparer. La dernière pastille, « i » (grisée tant que le dessin n'a pas de légende), ouvre par-dessus le profil sa légende (ce que sont chaque trait, bande et repère) ; glisser le doigt sur la coupe déplace le curseur comme sur le profil. Le profil et la coupe sont dessinés à la hauteur exacte du bloc, leur axe des distances toujours visible : sur un bloc bas ils suppriment des étiquettes de niveaux, jamais l'axe.
+la prévision que Météo a déjà chargée : sans elle, la ligne « Pas de prévision chargée » mène à Météo, dans Préparer. La dernière pastille, « i » (grisée tant que le dessin n'a pas de légende), ouvre par-dessus le profil sa légende (ce que sont chaque trait, bande et repère) ; glisser le doigt sur la coupe déplace le curseur comme sur le profil. Le profil et la coupe sont dessinés à la hauteur exacte du bloc, leur axe des distances toujours visible : sur un bloc bas ils suppriment des étiquettes de niveaux, jamais l'axe.
+
+<a id="maps-profile-spaces"></a>**Les espaces du profil.** Le profil ne montre que les espaces où entre le chemin vertical prévu (à 500 ft près) ; des secteurs d'une même famille qui se recouvrent (les CTA de Dublin) n'y font qu'une enveloppe, nommée par la famille ; la route libre (FRA) et les zones W ou de recherche météo n'y paraissent que si la couche « Autres espaces » est allumée ; au plus sept espaces y sont nommés, les autres dans la liste du dessous.
 
 <a id="maps-profile-zoom"></a>**Zoomer le profil.** Pour lire le profil avec précision, resserrez-le sur une partie du vol : pincez-le à deux doigts (le milieu des doigts reste en place) et glissez à deux doigts pour déplacer la fenêtre ; un seul doigt reste le curseur de lecture. L'échelle des altitudes se recale sur ce que la fenêtre montre (c'est là que vient la précision), les repères de distance (NM) se resserrent avec elle, et les points hors fenêtre ne sont pas posés. Un double toucher revient au vol entier, tout comme le bouton « Vol entier », qui apparaît dans la ligne du haut tant que le profil est zoomé. Sur un écran : Ctrl + molette zoome autour du pointeur, un glisser déplace la fenêtre, un double clic revient au vol entier. Le zoom se garde tant que la page reste ouverte et que la route ne change pas ; il n'est jamais enregistré. La coupe météo se zoome de la même façon (mêmes gestes, même bouton « Vol entier ») et la fenêtre est la même pour les deux : zoomez sur l'un, passez à l'autre avec la puce, vous retrouvez la même portion du vol ; la coupe recale aussi son échelle de hauteur sur ce qu'elle montre.
 
@@ -317,7 +341,7 @@ carte VAC le nomment toutes deux : la ligne garde la description de la base et s
 carte VAC le place à plus d'un demi-mille de là.
 
 <a id="maps-started"></a>**En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu
-14:32Z ») et où vous êtes (avion plein, orienté à votre route, avec la trace des 30 dernières minutes en pointillé). Dans les notes du bloc de données, sous le profil, une ligne dit l'écart : en avance ou en retard (minutes et NM), à combien de NM de la route, et
+14:32Z ») et où vous êtes (avion plein, orienté à votre route, avec la trace volée en pointillé, depuis le départ, gardée au changement d’onglet). Dans les notes du bloc de données, sous le profil, une ligne dit l'écart : en avance ou en retard (minutes et NM), à combien de NM de la route, et
 votre altitude contre celle prévue ; le profil montre les deux altitudes. De près, chaque point porte son heure
 estimée (ETA) sous son nom, sans jamais couvrir un terrain, en UTC (« 14:52Z »), l'heure locale entre parenthèses au départ et à l'arrivée. « Suivre » garde la carte sur votre position ; un déplacement de la carte l'arrête. Sans position (GPS
 ou réseau non activés), une notification le dit une fois, la ligne reste dans les notes avec un bouton « Activer la position » ; une position de plus de 2 minutes est grisée.
@@ -577,7 +601,8 @@ zone du vol, la carte montre le synoptique mondial publié avec l'application, s
 
 **La carte météo.** Isobares, isothermes, nuages, vent, courant-jet et convection, au niveau choisi par la pastille du
 niveau (« Sol », le niveau demandé, la trajectoire calculée ou une altitude fixe). Le bouton des couches (en haut à gauche)
-choisit ce qui est dessiné. Touchez un point de la carte pour ouvrir sa tranche.
+ouvre un volet posé sur la carte : il choisit ce qui est dessiné sur la carte et dans le profil, et la coupe reste visible en
+bas, redessinée à chaque case ; la croix ou Échap le ferme. Touchez un point de la carte pour ouvrir sa tranche.
 
 **La zone du vol et le monde.** Un trait fin entoure la zone du vol : dedans, la prévision fine chargée pour le vol
 (Météo-France AROME 1,3 km et ARPEGE 0,1° sur la France, ICON en Europe) ; dehors, le synoptique mondial (GFS de la
@@ -585,7 +610,9 @@ NOAA, publié avec une maille de 5°). Les deux modèles ne disent pas tout à f
 passage du trait est normal. Le panneau des couches nomme les deux modèles et leur maille.
 
 **La date du vol.** Le curseur sous la poignée avance l'heure de 0 à 72 heures à partir du départ prévu : la carte, la
-coupe et les tranches suivent.
+coupe et les tranches suivent. Quand une partie du curseur sort de la prévision lue (un départ prévu déjà passé, des
+jours pas encore chargés), une bande sous le curseur montre les heures couvertes ; ailleurs, l'heure la plus proche est
+montrée, ⚠ le dit sur la ligne du curseur et dans la poignée, et une alerte s'affiche.
 
 **La coupe et les tranches.** Sous la carte, la coupe montre la route de bout en bout, du sol au-dessus du niveau du vol.
 Touchez-la pour ouvrir la tranche du point le plus proche (le profil vertical de l'atmosphère à cet endroit) ; ◀ et ▶
@@ -613,6 +640,54 @@ dessiné ; un toucher sur la légende, la pastille ou Échap la ferme.
 - La prévision vient d'Open-Meteo (Météo-France AROME et ARPEGE sur la France, ICON en Europe, GFS ailleurs) ; le
   synoptique mondial vient de GFS (NOAA), toutes les 3 heures jusqu'à 72 heures.
 - Ce qui est chargé reste sur l'appareil et sert hors ligne ; la Carte en reprend la coupe météo.
+
+<!-- chapter: data -->
+# Données
+
+Ce que la compagnie publie pour l'appli — la base aéronautique, les procédures, les appareils, la météo — et l'état de chaque jeu de données. Cet écran se lit, et des actions y sont offertes sur la base aéronautique : Télécharger ses sources, la Construire, Purger les sources, puis la Publier.
+
+## Comment s'en servir
+
+<a id="data-cycle"></a>**Le cycle en vigueur.** En haut, le cycle AIRAC du moment (par exemple 2610), ses dates et le nombre de jours avant le suivant. Dessous, « Lanceur de ce poste » ou « Sans lanceur : lecture seulement » dit si cet ordinateur a un lanceur.
+
+<a id="data-coverage"></a>**La couverture.** La liste des zones (pays, régions) que ce poste suit. À la première ouverture, ce sont toutes les zones publiées par la compagnie ; la liste est gardée sur cet appareil. « Ajouter un pays » met dans la couverture une zone que la suite connaît, même si personne ne la publie encore : elle est cochée pour « Construire ».
+
+<a id="data-states"></a>**Les États.** Sous la couverture, les États sont rangés par couleur : vert, des procédures sont déjà publiées ; orange, elles se lisent à la demande ; rouge, rien n'est lisible. Le motif est écrit à chaque ligne, la couleur n'est jamais seule. Au-delà de sept lignes, « n autres » déplie le reste.
+
+<a id="data-group-base"></a>**Base aéronautique.** Une ligne par source qui nourrit une zone de la couverture : son cycle, son âge (« publié il y a 3 jours »), le nombre de zones publiées et une pastille d'état. Touchez une ligne pour voir le lien de la source avec son adresse, sa licence, les zones nourries et ce que chaque zone a publié.
+
+<a id="data-group-proc"></a>**Procédures.** Les procédures de la France (eAIP du SIA) et des États-Unis (CIFP de la FAA), avec le nombre de terrains publiés.
+
+<a id="data-group-aircraft"></a>**Appareils.** Les types d'appareils et leurs performances : la date de l'édition, le nombre de types et de fichiers. Plus de 28 jours, la pastille passe à l'orange.
+
+<a id="data-group-weather"></a>**Météo.** La météo mondiale et les routes NAT sont publiées avec le site : ces lignes n'ont ni cycle ni pastille.
+
+<a id="data-states-pill"></a>**Les pastilles.** « À jour » : rien à faire. « Cycle dépassé » : le cycle publié est plus ancien que le cycle en vigueur (orange, rouge au-delà d'une semaine). « Parseur ancien » : publié par une version plus ancienne des constructeurs. « Plus de 28 jours » : un jeu sans cycle, publié il y a plus de 28 jours. « Absent du dépôt » : rien n'est publié. Un groupe s'ouvre de lui-même quand une de ses lignes demande attention.
+
+<a id="data-more"></a>**Les autres jeux.** Au plus sept lignes par groupe ; « n autres jeux » déplie le reste et les sources seulement envisagées ou écartées (leur lien, leur licence, leur statut).
+
+<a id="data-build"></a>**Construire la base.** En tête du groupe Base aéronautique, le panneau « Télécharger, construire, purger » agit sur les zones cochées avec trois boutons, dans cet ordre : Télécharger · Construire · Purger. « Construire » refait la base des zones cochées sur le lanceur de ce poste : un navigateur sans fenêtre (Edge, sinon Chrome) construit les zones l'une après l'autre, chacune est enregistrée dans le dépôt de données dès qu'elle est prête. Toutes les zones de la couverture sont cochées au départ ; décochez celles que vous ne voulez pas refaire. Les trois boutons sont grisés ensemble, avec leur raison écrite une seule fois dessous : « Il faut le lanceur du poste », « Une autre opération est en cours », « Cochez au moins une zone », « Hors ligne ».
+
+<a id="data-build-personal"></a>**Sources sous licence personnelle.** ENAIRE (Espagne), NATS (Royaume-Uni) et les données X-Plane ne sont proposées que si une zone cochée les utilise, et ne sont jamais cochées d'office : cochez-les seulement si le dépôt de données n'est utilisé que par vous. X-Plane coché, la construction se fait dans la page, ce qui n'est pas encore possible ici : elle s'arrêtera avec ce motif.
+
+<a id="data-build-run"></a>**Pendant la construction.** Une barre, « n zones sur m », l'étape et le temps écoulé ; une ligne par zone dit en attente, construction (n / m sources), construite, échec avec son motif, ou annulée. « Arrêter » demande l'arrêt : la zone en cours se termine, les zones déjà construites sont gardées. Vous pouvez quitter l'écran : la construction continue sur le lanceur et se retrouve à la réouverture. Si le lanceur s'est arrêté en route, l'écran dit « Construction interrompue » avec le dernier état de chaque zone : relancez, en décochant les zones déjà faites si vous voulez.
+
+<a id="data-build-end"></a>**À la fin.** Une notification donne les comptes (« Base construite : 3 zones ; 1 en échec (gb) ») et le résumé reste dans le panneau avec ce qu'il y a à faire : zone en échec (le motif est écrit sur sa ligne : navigateur sans fenêtre, délai dépassé, sortie invalide, écriture impossible…), construction arrêtée, aucun navigateur trouvé (« Ni Edge ni Chrome n'ont été trouvés sur ce poste : installez l'un des deux. »). Les états des lignes sont relus ensuite.
+
+<a id="data-download"></a>**Télécharger.** Le bouton « Télécharger » récupère, sur le lanceur de ce poste, les sources brutes des zones cochées (openAIP, FAA, UK Mil AIP, NAV CANADA, tracks NAT du jour ; ENAIRE seulement si elle est cochée parmi les sources sous licence personnelle). Une ligne par zone dit où elle en est (« téléchargement (2 / 3 sources) ») et, dessous, une ligne par source : téléchargée (n fichiers), inchangée, échec avec son motif et son code HTTP (« HTTP 404 »), ignorée (licence non déclarée) ou manuelle. Ce qui n'a pas changé n'est jamais réécrit. À la fin, une notification donne les comptes (« Téléchargé : 2 zones changées, 1 inchangée ; 1 échec ») ; les sources que le lanceur ne télécharge pas (le SIA, par exemple) sont listées avec leur nom, avec un lien seulement si leur adresse est en https, « à déposer à la main » ; si des fichiers de sources suivis par git ont été modifiés, l'écran le dit (« n fichiers de sources modifiés, hors des données synchronisées »). « Rien à télécharger pour ces zones » : aucune des zones cochées n'a de source téléchargeable. Deux téléchargements ne peuvent pas se suivre à moins de 30 s : l'écran dit « Réessayez dans n s ».
+
+<a id="data-purge"></a>**Purger.** Le bouton « Purger » retire du poste les sources brutes des zones cochées (celles qu'on retélécharge) et leurs caches. Il calcule d'abord le plan sans rien effacer, puis pose une seule question : « Purger 15 fichiers (14,3 Mo) des sources de Espagne, France ? ». Si les fichiers du SIA (France) en font partie, la question rappelle qu'ils servent aussi les contours des autres zones à la construction ; les fichiers suivis par git sont toujours gardés et comptés. Non : rien n'est retiré. Oui : la purge se fait et l'écran dit « Purgé : n fichiers, x Mo », avec les chemins refusés (laissés en place). Rien à retirer : « Rien à purger », sans question.
+
+<a id="data-publish"></a>**Publier la base.** Sous « Construire », le panneau « Publier la base » envoie vers le dépôt des données ce qui a été construit sur ce poste. Une zone construite est commitée entière sur le poste et part aussi à la synchronisation suivante : « Publier » l'envoie tout de suite. Il dit d'abord où en est le poste : « 3 fichiers modifiés · 2 commits à envoyer », la date du dernier passage et, s'il y en a une, la fusion qui attend dans data/ (la publication la conclut d'abord). Touchez « Publier » : une seule question rappelle les fichiers et les commits, puis le passage se fait ; une barre sans fin montre qu'il travaille. Pendant ce temps les boutons du panneau « Télécharger, construire, purger » sont grisés, et « Publier » l'est pendant une opération de ce panneau : une opération à la fois.
+
+<a id="data-publish-end"></a>**À la fin de la publication.** Une notification donne les comptes et le résultat reste dans le panneau : ce qui a été envoyé (fichiers commités, fichiers reçus) ; les fichiers de la base gardés sur le poste parce qu'une construction était en cours ; les conflits (le plus récent est gardé, voir Réglages › Conflits) ; les fichiers refusés parce qu'ils n'ont pas le format d'un fichier de données. Un échec le dit en une phrase, avec ce que répond le lanceur : rien n'est perdu, les fichiers restent sur le poste. Le bouton est grisé avec sa raison écrite dessous : « Il faut le lanceur du poste », « Une construction est en cours : publiez quand elle est finie », « Rien à publier », « Le cadre ne sait pas encore publier la base : mettez l'appli à jour », « Hors ligne ».
+
+<a id="data-journal"></a>**Le journal.** Au pied de l'écran, les 50 dernières opérations de cet appareil : heure UTC, verbe, zones, résultat.
+
+## Cas particuliers
+
+- **Sans lanceur** : l'écran se lit de la même façon ; il montre ce qui est publié.
+- **Une lecture qui échoue** : la section le dit en une ligne, le reste de l'écran s'affiche.
 
 <!-- chapter: settings -->
 # Réglages
@@ -702,9 +777,11 @@ en .lnmperf.
 
 ## Les clés d'API de la compagnie
 
-Sur un poste servi par le lanceur, au niveau Complet, le bouton « Clés d'API de la compagnie (IVAO) » de la carte
+Sur un poste servi par le lanceur, au niveau Complet, le bouton « Clés d'API de la compagnie (IVAO, EAD Basic) » de la carte
 « Administration » déplie le réglage de la clé de l'API IVAO : elle reste dans le dossier `secrets/` du lanceur, jamais
 dans le navigateur ni dans les données. « Tester » vérifie qu'IVAO répond ; « Effacer » la retire.
+
+Sous la clé IVAO, le bloc « EAD Basic (EUROCONTROL) » reçoit l'identifiant et le mot de passe de votre compte EAD Basic : vous les donnez une seule fois au lanceur de cet ordinateur (dossier `secrets/`), qui les garde ; la page ne les réaffiche jamais, elle dit seulement s'ils sont enregistrés et quand. Ils servent à « Lire un terrain depuis EAD » (un terrain par geste). EAD Basic est un outil de démonstration, aux données non opérationnelles, à n'utiliser qu'en simulation (l'avertissement reste affiché). « Effacer » les retire du lanceur.
 
 ## La tablette à côté du simulateur
 
@@ -748,6 +825,11 @@ seulement signalé.
   sur cet ordinateur). Sans `data/`, « Récupérer les données » le clone ; avec un `data/` sans git (données d'exemple
   ou archive), « Reprendre data/ dans ce dépôt » le relie au dépôt. La carte suit le travail et relit l'état à la fin ;
   un échec est expliqué, rien n'est perdu.
+- **Historique du dépôt réécrit** (par exemple pour en purger de gros fichiers) : la synchronisation de ce poste refuse
+  alors toute fusion et le dit ; rien n'est perdu. Ici, « Reprendre le nouvel historique » montre d'abord ce qui
+  repartira (vos commits, les fichiers des données reportés), pose une question, garde l'ancien état dans une référence
+  locale, reporte vos fichiers des données sur le nouvel historique, puis synchronise. Un fichier hors des données
+  synchronisées n'est jamais renvoyé.
 
 ## Configurer un pilote
 
@@ -773,8 +855,9 @@ fois le jeton testé ; « Tester » dit ce qui ne va pas : invitation pas encore
 sans droit sur le contenu. Un jeton classique ouvre tous les dépôts du compte : pour le dépôt d'un utilisateur, un
 compte GitHub dédié au vol est conseillé. Un fichier d'un autre format est refusé avec un message. La compagnie n'est
 écrite dans le dépôt que s'il n'en a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'assistant saute le compte
-et le jeton. Sans lanceur, l'appli ne joint qu'un dépôt GitHub : pour un dépôt framagit ou GitLab, faites l'accès sur un
-poste avec le lanceur.
+et le jeton. Sans lanceur, l'appli joint un dépôt GitHub ou un projet sur une instance GitLab (gitlab.com, framagit…) :
+collez l'adresse du projet (https://gitlab.com/groupe/projet) et le jeton d'accès de projet que l'administrateur vous a
+donné ; le jeton n'est envoyé qu'à cette instance.
 
 ## Administration
 
@@ -782,9 +865,9 @@ poste avec le lanceur.
 », réunit les pages d'administration et d'essai, **un bouton par page**, chacun avec une phrase ; aux autres niveaux, elle
 n'apparaît pas, et rien de l'administrateur n'est sur les autres cartes. Dans l'appli : le bouton « Réglage des seuils de la carte » (`#maps?tune=1`, en lecture seule sur un téléphone ; il ouvre la page de réglage : pour chaque élément de la carte et chaque mode, les zooms où il apparaît, enregistrés pour la compagnie, `airline/map_profiles.json` ; un mode que vous n'avez jamais enregistré reprend les seuils d'un mode réglé, la page le dit ; le curseur « Complexité » de la carte ne fait que décaler le zoom), retour par la flèche de retour ; le bouton « Limite de la zone du vol »,
 qui déplie une case « Afficher le filet de la limite de la zone du vol » (enregistrée aussitôt pour la compagnie, avec les seuils, dans
-`airline/map_profiles.json`, clé `edge` ; le filet est affiché tant que vous n'avez rien réglé) ; le bouton « Exporter une
+`airline/map_profiles.json`, clé `edge` ; le filet est affiché tant que vous n'avez rien réglé) ; le bouton « Seuils de piste sur la carte », qui déplie une liste de 8 à 16 : le zoom à partir duquel la carte dessine les seuils de piste (enregistré aussitôt pour la compagnie, même fichier, clé `runwayZoom` ; 11 tant que vous n'avez rien réglé) ; le bouton « Exporter une
 configuration pour un pilote » (voir « Configurer un pilote ») ; sur un poste servi par le lanceur, les boutons
-« Dépôt distant de data/ » et « Clés d'API de la compagnie (IVAO) », qui déplient leur réglage (voir « Un dépôt git pour
+« Dépôt distant de data/ » et « Clés d'API de la compagnie (IVAO, EAD Basic) », qui déplient leur réglage (voir « Un dépôt git pour
 data/ » et « Les clés d'API de la compagnie ») ; la feuille de route (`#roadmap`) et le diagnostic de la carte « À propos ».
 
 <a id="settings-sources"></a>**Sources des données.** Le bouton « Sources des données » (`#sources`, niveau Complet) liste les sources des données aéronautiques que la suite utilise, envisage ou a écartées : pour chacune, ce qu'elle donne, sa licence, son statut et un lien qui s'ouvre dans un nouvel onglet ; pour celles qui changent à chaque cycle AIRAC (SIA, VAC, eAIP, CIFP), le lien est celui du cycle en vigueur, écrit en haut de l'écran. L'écran ne télécharge rien. Sous le bouton de la carte Administration, l'adresse absolue de l'écran, à ouvrir ou à mettre en favori (« Copier le lien »). Il remplace le laboratoire des données, retiré le 28 octobre 2026.
@@ -800,14 +883,29 @@ cartographique (`apps/cpco/map_parser.html`).
 
 ## Bon à savoir
 
-- **Le jeton** : un jeton à grain fin de github.com, sur le seul dépôt des données, « Contents » en lecture et
-  écriture, 90 jours au plus. Il n'est jamais réaffiché ; ne le collez dans aucun message.
+- **Compte IVAO** : la carte « Compte IVAO » relie cet appareil à votre compte IVAO par le relais de la compagnie (ou
+  le lanceur du poste) : « Se connecter à IVAO » ouvre la page d'IVAO, puis revient ici. Le relais garde le secret de
+  l'application de la compagnie ; votre jeton reste sur cet appareil, renouvelé de lui-même, jamais dans une sauvegarde.
+  « Délier » l'efface et demande à IVAO de retirer l'accès ; si IVAO ne le peut pas, la suite vous dit de le retirer
+  dans votre compte IVAO. Pour essayer sur le poste, sans relais : l'adresse de retour à déclarer dans l'application IVAO
+  de la compagnie est `http://127.0.0.1:<port>/__relay/ivao/callback` (le port du lanceur).
+- **Appareils du relais** : quand le lanceur tourne en relais de la compagnie (derrière le proxy inverse du NAS, en
+  https), un pilote appaire chaque appareil une fois avec un code à 8 chiffres que l'administrateur demande dans
+  Maintenance › « Appareils du relais » pour son trigramme (une fois, 10 minutes) ; ses écritures sont signées de ce
+  trigramme. Un appareil perdu, ou tous ceux d'un pilote qui part, s'y révoquent.
+- **Jetons des pilotes (GitLab)** : dans l'application Maintenance, sur le poste du lanceur, « Jetons des pilotes »
+  crée un jeton d'accès de projet par pilote (à son trigramme, rôle Developer, un an au plus), le montre une seule fois,
+  et le révoque. Le lanceur s'y sert du jeton de l'administrateur (secrets/gitlab.json), qu'il ne montre jamais. Réglez
+  la branche des données pour que le rôle Developer puisse y pousser.
+- **Le jeton** : sur github.com, un jeton à grain fin, sur le seul dépôt des données, « Contents » en lecture et
+  écriture, 90 jours au plus ; sur GitLab, un jeton d'accès de projet (un par pilote, à son trigramme), créé par
+  l'administrateur. Il n'est jamais réaffiché ; ne le collez dans aucun message.
 - **Vos réglages restent après la fermeture du navigateur** : l'identité, le jeton et la clé météo sont rangés au même
   endroit de l'appareil, jamais synchronisés ni dans une sauvegarde. Si Safari vous les a quand même fait perdre (il
   efface le stockage d'un site peu visité), ajoutez l'appli à l'écran d'accueil : elle y est mieux gardée. Le diagnostic
   (« Copier ») dit si le navigateur a promis de ne pas effacer (`storage.persisted`).
 - **Couper l'accès** : efface le jeton de cet appareil ; vos écritures en attente restent et partiront quand l'accès
-  sera de nouveau réglé. Téléphone perdu ou volé : supprimez aussi le jeton sur github.com.
+  sera de nouveau réglé. Téléphone perdu ou volé : supprimez aussi le jeton chez l'hébergeur (github.com, gitlab.com…).
 - **Réglages de la V2** : si ce navigateur a déjà servi à la V2, la carte « Réglages de la V2 trouvés » propose une fois
   de reprendre votre identité et votre accès.
 - **À propos** : liens vers cette aide et la feuille de route (ce qui est livré, en cours, prévu), puis le

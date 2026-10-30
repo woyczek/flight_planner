@@ -1,0 +1,425 @@
+<!doctype html>
+<!-- Banc du transport GitLab (frame/store/transport_gitlab.js ; frame/INTEGRATION.md § 4) : réglage collé (adresse d'un
+     projet GitLab → instance et api), renvoi de FD.github vers lui, tête, arbre page par page (lien « next », jamais vers un
+     autre hôte), lecture d'un blob, commit atomique (create / update / delete, auteur = trigramme), conflits (branche partie,
+     commit posé ailleurs, fichier déjà là), jeton refusé, hors ligne, publication par groupes (texte et binaire, suppression
+     d'un absent sautée). API GitLab simulée dans la page (fetch remplacé) : aucun appel réel, aucun vrai jeton.
+     window.__gitlabBench = { done, pass, fail, rows }. Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>gitlab — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">transport_gitlab.js — bench</h1>
+<pre id="out"></pre>
+<script>
+  // API GitLab simulée : branches, tree (keyset, Link next), blobs/:sha/raw, commits (actions), un seul projet
+  window.GL = (() => {
+    const API = 'https://gitlab.example/api/v4',
+      PROJECT = `${API}/projects/${encodeURIComponent('grp/data')}`,
+      st = {
+        files: {}, // chemin → { sha, text }
+        head: 'c0',
+        n: 0,
+        offline: false,
+        moveBeforeCommit: false, // la branche part ailleurs juste avant le POST du commit
+        moveDuringCommit: false, // un autre commit se glisse avant le nôtre (parent_ids[0] ≠ tête attendue)
+        evilNext: false, // le lien « next » mène à un autre hôte
+        calls: [],
+        perPage: 2
+      };
+    const sha = t => {
+      let h = 0;
+      for (const ch of String(t)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      return `b${h.toString(16).padStart(8, '0')}${(++st.n).toString(16)}`;
+    };
+    const json = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), {
+      status,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      }
+    });
+    const other = () => {
+      st.head = `c${++st.n}`;
+    };
+    const reset = (files = {}) => {
+      st.files = {};
+      for (const [p, t] of Object.entries(files)) st.files[p] = {
+        sha: sha(t),
+        text: t
+      };
+      st.head = `c${++st.n}`;
+      st.calls = [];
+    };
+    window.fetch = async (url, init = {}) => {
+      url = String(url);
+      st.calls.push({
+        url,
+        method: init.method || 'GET',
+        token: init.headers?.['PRIVATE-TOKEN'] || '',
+        redirect: init.redirect || '',
+        body: init.body || ''
+      });
+      if (st.offline) throw new TypeError('Failed to fetch');
+      if ((init.headers?.['PRIVATE-TOKEN'] || '') !== 'glpat-test') return json({
+        message: '401 Unauthorized'
+      }, 401);
+      if (!url.startsWith(PROJECT)) return json({
+        message: '404 Project Not Found'
+      }, 404);
+      const u = new URL(url),
+        rest = url.slice(PROJECT.length).split('?')[0];
+      if (rest === '/repository/branches/main') return json({
+        name: 'main',
+        commit: {
+          id: st.head
+        }
+      });
+      if (rest === '/repository/tree') {
+        const all = Object.keys(st.files).sort().map(p => ({
+            id: st.files[p].sha,
+            name: p.split('/').pop(),
+            type: 'blob',
+            path: p,
+            mode: '100644'
+          })).concat([{
+            id: 'tdir',
+            name: 'sia',
+            type: 'tree',
+            path: 'sia',
+            mode: '040000'
+          }]),
+          from = +(u.searchParams.get('page_token') || 0),
+          page = all.slice(from, from + st.perPage),
+          more = from + st.perPage < all.length;
+        const next = st.evilNext ? 'https://evil.example/api/v4/steal' : `${PROJECT}/repository/tree?ref=${u.searchParams.get('ref')}&recursive=true&per_page=100&pagination=keyset&page_token=${from + st.perPage}`;
+        return json(page, 200, more ? {
+          Link: `<${next}>; rel="next"`
+        } : {});
+      }
+      const blob = /^\/repository\/blobs\/([^/]+)\/raw$/.exec(rest);
+      if (blob) {
+        const f = Object.values(st.files).find(x => x.sha === decodeURIComponent(blob[1]));
+        return f ? new Response(f.text) : json({
+          message: '404 Blob Not Found'
+        }, 404);
+      }
+      if (rest === '/repository/commits' && init.method === 'POST') {
+        const b = JSON.parse(init.body);
+        if (st.moveBeforeCommit) {
+          st.moveBeforeCommit = false;
+          other();
+        }
+        let parent = st.head;
+        if (st.moveDuringCommit) {
+          st.moveDuringCommit = false;
+          other();
+          parent = st.head;
+        }
+        for (const a of b.actions) {
+          if (a.action === 'create' && st.files[a.file_path]) return json({
+            message: 'A file with this name already exists'
+          }, 400);
+          if ((a.action === 'update' || a.action === 'delete') && !st.files[a.file_path]) return json({
+            message: "A file with this name doesn't exist"
+          }, 400);
+        }
+        for (const a of b.actions) {
+          if (a.action === 'delete') delete st.files[a.file_path];
+          else {
+            const text = a.encoding === 'base64' ? atob(a.content) : a.content;
+            st.files[a.file_path] = {
+              sha: sha(text),
+              text
+            };
+          }
+        }
+        st.head = `c${++st.n}`;
+        st.last = b;
+        return json({
+          id: st.head,
+          parent_ids: [parent],
+          author_name: b.author_name || 'project_bot'
+        }, 201);
+      }
+      return json({
+        message: '404 Not Found'
+      }, 404);
+    };
+    return {
+      st,
+      reset,
+      API
+    };
+  })();
+</script>
+<script src="../frame_data.js?v=0"></script>
+<script src="../transport_github.js?v=0"></script>
+<script src="../transport_gitlab.js?v=0"></script>
+<script>
+  (async () => {
+    const out = document.getElementById('out'),
+      rows = [];
+    const ck = (name, ok, info = '') => {
+      rows.push([ok ? 'PASS' : 'FAIL', name, info]);
+      out.insertAdjacentHTML('beforeend', `<span class="${ok ? 'PASS' : 'FAIL'}">${ok ? 'PASS' : 'FAIL'}</span> ${name}${ok ? '' : ' — ' + String(info).replace(/</g, '&lt;')}\n`);
+    };
+    const FD = window.FrameData,
+      G = window.GL;
+    try {
+      // réglage : l'adresse collée d'un projet GitLab dit l'instance et l'api ; GitHub reste GitHub
+      FD.github.hold({
+        repo: 'https://gitlab.example/grp/data.git',
+        token: ' glpat-test '
+      });
+      const cfg = FD.github.config();
+      ck('réglage : adresse GitLab → provider, api de l’instance, projet', cfg.provider === 'gitlab' && cfg.api === `${G.API}` && cfg
+        .repo ===
+        'grp/data' && cfg.token === 'glpat-test', JSON.stringify({
+          ...cfg,
+          token: '…'
+        }));
+      FD.github.hold({
+        repo: 'https://github.com/acme/data',
+        token: 'x'
+      });
+      ck('réglage : adresse GitHub → GitHub', !FD.github.config().provider && FD.github.config().repo === 'acme/data');
+      FD.github.hold(null);
+      const T = FD.github({
+        ...cfg,
+        author: () => 'ABC'
+      });
+      ck('FD.github renvoie vers le transport GitLab', T.id === 'gitlab' && T.kind === 'remote');
+      // tête, arbre page par page, lecture
+      G.reset({
+        'a.json': '{"a":1}',
+        'pilot/ABC/x.json': '{}',
+        'sia/base/fr/1.json': '[1]',
+        'sia/base/fr/2.json': '[2]',
+        'z.txt': 'zz'
+      });
+      const head = await T.head();
+      ck('head : la tête de la branche', head === G.st.head);
+      const tree = await T.tree(head);
+      ck('tree : tous les fichiers, page par page (les dossiers écartés)', Object.keys(tree).length === 5 && tree['a.json'] === G.st
+        .files['a.json'].sha,
+        JSON.stringify(Object.keys(tree)));
+      const pages = G.st.calls.filter(c => c.url.includes('/repository/tree')).length;
+      ck('tree : plusieurs pages suivies par le lien « next »', pages === 3, pages);
+      const before = G.st.calls.length;
+      await T.tree(head);
+      ck('tree : gardé par tête (aucun appel de plus)', G.st.calls.length === before);
+      ck('read : contenu du blob', await T.read('a.json', tree['a.json']) === '{"a":1}');
+      ck('le jeton ne passe que par l’en-tête : jamais dans une adresse', G.st.calls.every(c => !c.url.includes('glpat')) && G.st.calls
+        .every(c => c.token ===
+          'glpat-test'));
+      ck('jamais une redirection suivie (redirect: error)', G.st.calls.every(c => c.redirect === 'error'));
+      // le jeton enregistré n'est repris que pour la même cible (fournisseur, origine de l'API, projet)
+      FD.github.hold({
+        repo: 'https://gitlab.example/grp/data',
+        token: 'glpat-saved'
+      });
+      const same = FD.github.resolve({
+          repo: 'https://gitlab.example/grp/data',
+          token: ''
+        }),
+        host = FD.github.resolve({
+          repo: 'https://evil.example/grp/data',
+          token: ''
+        }),
+        proj = FD.github.resolve({
+          repo: 'https://gitlab.example/grp/other',
+          token: ''
+        }),
+        gh = FD.github.resolve({
+          repo: 'grp/data',
+          token: ''
+        });
+      ck('jeton repris pour la même cible seulement', same.token === 'glpat-saved' && host.token === '' && host.newTarget ===
+        'evil.example' && proj.token ===
+        '' && gh.token === '' && gh.newTarget === 'github.com', JSON.stringify([host.newTarget, gh.newTarget]));
+      let thrown = '';
+      try {
+        FD.github.save({
+          repo: 'https://evil.example/grp/data',
+          token: ''
+        });
+      } catch (x) {
+        thrown = x.message;
+      }
+      ck('save refuse un réglage sans jeton', /token required/.test(thrown) && FD.github.config().token === 'glpat-saved');
+      ck('un hôte collé avec « @ » ou un caractère hors [A-Za-z0-9.-] : dépôt refusé, aucun hôte affiché', [
+        'https://gitlab.com@evil.example/x/y',
+        'https://evil_host/x/y', 'http://gitlab.example/x/y', 'https://gitlab.example/x@y'
+      ].every(repo => {
+        const r = FD.github.resolve({
+          repo,
+          token: 't'
+        });
+        return r.repo === '' && !r.api;
+      }) && FD.github.clean({
+        repo: 'https://gitlab.example:8443/grp/data',
+        token: 't'
+      }).api === 'https://gitlab.example:8443/api/v4');
+      FD.github.hold(null);
+      let refused = false;
+      try {
+        FD.gitlab({
+          repo: 'x/y',
+          token: 't',
+          api: 'https://gitlab.example/api/v4/../steal'
+        });
+      } catch {
+        refused = true;
+      }
+      ck('api GitLab d’une autre forme : ignorée par clean, refusée par le transport', !FD.github.clean({
+        repo: 'x/y',
+        provider: 'gitlab',
+        api: 'http://gitlab.example/api/v4'
+      }).api && refused);
+      // lien « next » vers un autre hôte : jamais suivi (le jeton n'y part pas)
+      G.st.evilNext = true;
+      const T2 = FD.github({
+        ...cfg
+      });
+      const t2 = await T2.tree(await T2.head());
+      G.st.evilNext = false;
+      ck('tree : un lien « next » vers un autre hôte n’est pas suivi', G.st.calls.every(c => !c.url.startsWith(
+          'https://evil.example')) && Object.keys(t2).length ===
+        2, JSON.stringify(Object.keys(t2)));
+      // commit atomique : create, update, delete, auteur
+      const h1 = await T.head(),
+        h2 = await T.commit([{
+          path: 'a.json',
+          text: '{"a":2}'
+        }, {
+          path: 'n.json',
+          text: '{"n":1}'
+        }, {
+          path: 'z.txt',
+          text: null
+        }, {
+          path: 'gone.json',
+          text: null
+        }], 'ABC : lot', h1, {
+          tree: await T.tree(h1)
+        });
+      const acts = G.st.last.actions.map(a => `${a.action}:${a.file_path}`).join(',');
+      ck('commit : un seul commit, create / update / delete (suppression d’un absent sautée)', acts ===
+        'update:a.json,create:n.json,delete:z.txt' &&
+        h2 === G.st.head, acts);
+      ck('commit : l’auteur est le trigramme de l’appareil', G.st.last.author_name === 'ABC' && G.st.last.author_email ===
+        'abc@defa.local');
+      ck('commit : lot vide → la même tête, aucun appel', await T.commit([{
+        path: 'nothere.json',
+        text: null
+      }], 'm', h2, {
+        tree: await T.tree(h2)
+      }) === h2);
+      // conflits
+      let e = await T.commit([{
+        path: 'a.json',
+        text: '3'
+      }], 'm', 'c-old', {
+        tree: await T.tree(h2)
+      }).catch(x => x);
+      ck('commit : la branche est partie ailleurs → err.conflict, rien d’écrit', e?.conflict === true && G.st.files['a.json'].text ===
+        '{"a":2}', e?.message);
+      G.st.moveDuringCommit = true;
+      const h3 = await T.head();
+      e = await T.commit([{
+        path: 'a.json',
+        text: '4'
+      }], 'm', h3, {
+        tree: await T.tree(h3)
+      }).catch(x => x);
+      ck('commit : posé sur une branche qui a bougé entre-temps → err.conflict (la couche tire)', e?.conflict === true, e?.message);
+      const h4 = await T.head();
+      e = await T.commit([{
+        path: 'brand-new.json',
+        text: '1'
+      }], 'm', h4, {
+        tree: {
+          ...await T.tree(h4),
+          'brand-new.json': 'x'
+        }
+      }).catch(x => x);
+      ck('commit : fichier absent alors que l’arbre le croyait là (update refusé) → err.conflict', e?.conflict === true, e?.message);
+      // jeton refusé, hors ligne
+      const bad = FD.gitlab({
+        ...cfg,
+        token: 'glpat-bad'
+      });
+      e = await bad.head().catch(x => x);
+      ck('jeton refusé : message lisible, le jeton jamais cité', e?.status === 401 && /token refused/.test(e.message) && !/glpat-bad/
+        .test(e.message), e?.message);
+      G.st.offline = true;
+      e = await T.head().catch(x => x);
+      G.st.offline = false;
+      ck('hors ligne → err.offline', e?.offline === true);
+      // publication par groupes : texte, binaire (base64), suppression d'un présent et d'un absent
+      const blob = new Blob([new Uint8Array([0, 1, 2, 255])]);
+      const p = await T.publish([{
+        name: 'fr',
+        files: [{
+          path: 'sia/base/fr/3.json',
+          text: '[3]'
+        }, {
+          path: 'sia/base/fr/b.bin',
+          blob
+        }],
+        removed: ['sia/base/fr/1.json', 'sia/base/fr/nope.json'],
+        message: 'Publication fr'
+      }, {
+        name: 'ie',
+        files: [{
+          path: 'sia/base/ie/1.json',
+          text: '[1]'
+        }]
+      }]);
+      ck('publish : un commit par groupe, absents sautés', p.ok && p.groups.length === 2 && p.groups[0].files === 2 && p.groups[0]
+        .removed === 1 &&
+        !G.st.files['sia/base/fr/1.json'] && G.st.files['sia/base/ie/1.json'], JSON.stringify(p));
+      ck('publish : le binaire arrive tel quel (base64)', [...G.st.files['sia/base/fr/b.bin'].text].map(ch => ch.charCodeAt(0)).join(
+        ',') === '0,1,2,255');
+      G.st.offline = true;
+      const po = await T.publish([{
+        name: 'x',
+        files: [{
+          path: 'x.json',
+          text: '1'
+        }]
+      }]);
+      G.st.offline = false;
+      ck('publish : hors ligne → { ok: false, offline, at }', po.ok === false && po.offline === true && po.at === 0, JSON.stringify(
+        po));
+    } catch (x) {
+      ck('exception du banc', false, x?.stack || x);
+    }
+    const pass = rows.filter(r => r[0] === 'PASS').length;
+    window.__gitlabBench = {
+      done: true,
+      pass,
+      fail: rows.length - pass,
+      rows
+    };
+    out.insertAdjacentHTML('beforeend', `\n${pass}/${rows.length}\n`);
+  })();
+</script>
+</body>
+</html>

@@ -31,7 +31,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - The frame loads it on demand and gives it `ctx` (frame/SPEC.md § 3.2): `data`, `aerodb`, `t`, `lang`, `notify`,
   `ask`, `askText`, `net`, `weather` (§ 14), `identity`, `level`, `helpAnchor`; a fixed module (§ 9.2) also gets `overlay`
   (§ 9.3).
-- Its verb in the application's rail (and in its group's popover, § 9.1) is set in `frame/app.js` (`APP.modules`): one short verb, seven
+- Its verb in the application's rail (and in its group's popover, § 9.1) is set in `frame/app.js` (`APPS.<application>.modules`,
+  `APP` being the application of the page, `?app=`; frame SPEC § 3.1): one short verb, seven
   modules at most. Its place in the phone's bottom bar is set in `APP.tabs` (§ 9); a module never writes either.
 - `meta.help` (true by default): the frame draws the folded "How to use" panel at the top of the module as soon as
   the module's chapter (`modules/<id>/help/<lang>.md`) is in the application's manual; `false` hides it. The card has a
@@ -64,6 +65,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - `net`: only when a library you use calls a public host by itself (map tiles): list the hosts (`host` or
   `host/path`), https only. Your own calls still go through `ctx.net`. The page's security policy lets these hosts
   in; any other direct call is blocked.
+- `launcher`: `{ routes, read }`, the launcher's routes and the prefixes of `data/` the module may use (§ 15.1).
+- `publish`: the prefixes of the data repository the module may publish generated files to (§ 15.2).
 
 ## 3. Declaring what the module reads and writes
 
@@ -92,10 +95,33 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - `await data.read(path, { wait: true })` waits for the network only the first time a file is needed. Use it on a
   screen that cannot be shown without the file; otherwise call `get` and let `watch` bring the value.
 - `await data.list(prefix)` gives the paths. **null** means "not known yet" (first launch offline), which is not the
-  same as "empty".
+  same as "empty". It reads keys only (29 Oct 2026: a key range on the prefix, an index of the copies' policies), never
+  the files' texts: cheap, whatever the size of the cache.
+- **A `reference` file is parsed once per revision** (29 Oct 2026): `get` / `read` of the aeronautical base, procedures or
+  types give **the same value to every reader** until its revision changes, **deep-frozen** (a `sort()` or an added field
+  throws a `TypeError`: copy before changing anything, `structuredClone(value)` or `[...list]`). A `reference` copy
+  without a revision (a base seeded without a tree: the noreg's trial base, a restored backup) is deep-frozen too, at
+  each read (30 Oct 2026): a module that writes on a record fails in the noreg, never only on a device. A `reference` file the repository does not have is not asked again for 30 s (`read` gives null at once; a
+  change announced by `watch` lifts it). Documents and the device's cache are parsed at each read, as before.
 - `await data.cached(prefix)` tells what is on the device, with no network: `[{ path, rev, bytes, at, policy }]`.
   `await data.evict(path)` drops the local copy of a `reference` file (or of a prefix ending with `/`) without
   sending anything; it is read again on demand. Use `remove` only to delete a file from the repository.
+- `await data.revalidate(paths)` (29 Oct 2026) checks **these paths only** against the repository now, without waiting for
+  the background pass: the head and tree are read once for all of them (on the local transport, from its source of
+  references); a copy whose revision changed is read again and replaced, a `reference` copy gone from the repository is
+  dropped, and `watch` announces the changed paths. A write waiting in the queue wins (nothing is touched), a `cache` file
+  has no repository. It never throws: `{ changed, unchanged, offline, errors? }` (`offline`: the reading stopped, what
+  follows is untouched; `errors`: `[{ path, message }]` of files the repository refused to give). For the freshness of a
+  few known files (a `proc/` index after another device installed procedures), not to sweep a prefix: that is the
+  background pass.
+- `await data.sync({ gesture: true })` (29 Oct 2026): **the user's gesture** in the module (« Publier ») — a pass of
+  reason `manual`, under the same lock as the header's button, the author added by the frame; with a launcher, the
+  aeronautical base (`sia/base/`) leaves too (frame/SPEC, the synchronisation's gesture rule; still kept while a build
+  runs). Only on a user's click; `data.sync()` without it is a background pass of the module. The result carries the
+  launcher's report, `exchange: { ok, committed, held, received, pushed, conflicts, refused, settled, message }` (numbers
+  and its cleaned message: no path, no git output; absent without a launcher). A module checks the capacity with
+  `data.sync.gesture === true` (an older frame: keep the button grey, never fall back to a pass without the gesture); it
+  never posts `/__setup/sync` itself.
 - Always design for the cached value first: the network may never come.
 
 ## 5. Writing
@@ -133,7 +159,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - **In a pane** (dual view, wide screen), your module gets `ctx.query.pane === '1'` and half the width. Draw for the
   width you are given. Never reach the other module: react to the shared records with `watch`.
 - `ctx.live` (read): the actual position during a started flight, from the device's GPS or the pilot's IVAO / VATSIM
-  session: `status`, `source`, `last` `{ at, lat, lon, altFt, gsKt, trackDeg, source }`. A module that wants the GPS
+  session: `status`, `source`, `last` `{ at, lat, lon, altFt, gsKt, trackDeg, source }`, `trail()` (the device's flown
+  track, below). A module that wants the GPS
   offers a button that calls `ctx.live.enable()` (the permission needs a gesture). The frame writes
   `progress.actual` in the current flight; read it there with `watch`, never write it. Its shape is fixed (28 Oct 2026):
 
@@ -146,6 +173,18 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   | `trackDeg` | degrees (integer, 0–359) or null | the source's heading or track (GPS: course over ground) |
   | `source` | `'xplane'` \| `'lnm'` \| `'gps'` \| `'ivao'` \| `'vatsim'` | where it comes from |
 
+  - **The flown track** (`trail`, `frame/lib/trail.js`, `next(trail, fix, startedAt)`): a point is added when the aircraft
+    moved 1 NM since the last point, or 60 s passed, or the track turned 15° or more (over 0.2 NM: a turn keeps its
+    corner); at most 500 points — beyond, the inner point whose removal changes the track least (offset from its
+    neighbours' segment) goes, never the first nor the last. **It stays on the device** (the user's decision, 30 Oct
+    2026): `device/trail.json` in the frame's base, never synchronised, never in a backup, never in `progress.actual`
+    (the shared flight carries the position only; a track written there before 30 Oct is removed at the next write).
+    `ctx.live.trail()` gives `{ from, trail }` or null: `trail` is an array of `[lat, lon, altFt | null, s]` (degrees
+    with 3 decimals, about 100 m; feet; `s` whole seconds since `started.at`; oldest first), `from` the `started.at` it
+    belongs to — a track of another `started.at` is never carried on (compared exactly; new start: a new track). It
+    grows with the position (at most once every 10 s, about 22 KB for 8 h). The Map draws it when `from` is its flight's
+    `started.at`; a module reads it, never writes it.
+
   - Written at most once every 10 s, and only when the aircraft moved (30 m or 50 ft), with the shared merge of
     `frame/lib/current_flight.js` (`progressKeys: ['actual']`, `by: 'frame'`).
   - `progress.actual` is `null` (or absent) when there is no position: no started flight, the flight stopped (report
@@ -153,7 +192,7 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
     `at` is old as old (show its age), never as current.
   - A new field may be added; none of these changes meaning or unit without a dated note here.
 - `ctx.query`: what follows `?` in the address, as an object (`#report?from=flightlog` → `{ from: 'flightlog' }`).
-  Another module or page opens yours with it.
+  Another module or page opens yours with it; take a request with `ctx.consume` (§ 6.1).
 - `ctx.net.fetch(url, init)` for any outgoing call (SimBrief, IVAO, VATSIM, the DEFA website). It never throws:
   - offline, it answers at once with a 503 carrying `x-sog-offline`;
   - with a launcher, SimBrief, IVAO, VATSIM and aviationweather.gov (METAR) are relayed by it, keys and CORS
@@ -172,12 +211,53 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - `ctx.level` (read, 28 Oct 2026): the device's usage level, 1 Everyday, 2 Advanced, 3 Full (a getter: the value of the
   moment, after a change in Settings too). It shapes what a screen offers (the Map keeps "Save for the airline" for the
   Full level); it is not a right: what the data repository refuses stays refused whatever the level.
-- **The flight in time** (`frame/lib/current_flight.js`, 28 Oct 2026, with the recoded Map): `etaOf(flight, now)` →
+- **The flight in time** (`frame/lib/flight_time.js` since 29 Oct 2026, re-exported by `current_flight.js` during the transition; 28 Oct 2026, with the recoded Map): `etaOf(flight, now)` →
   `[{ id, at }]` and `plannedPositionAt(flight, now)` → `{ lat, lon, legIndex, nmFromDep, phase }`, derived from
   `started.at` / `planned_at`, `quote.taxiMin` and `quote.legs` (else the profile and `quote.minutes`); with
   `isStarted`, `refTime`, `legTimes`, `TAXI_MIN`. Every reader (the Map, Flights, a status line) uses them: never
   recompute an ETA, never read one from `progress`. Rules in `modules/maps/SPEC.md` § 13; bench
   `frame/lib/test/current_flight.html`.
+- **The flight plan for the simulators** (`frame/lib/fms.js`, 29 Oct 2026, § 10.28): pure writers `toFmsV3` / `toFms1100` (X-Plane `.fms`),
+  `toPln` (MSFS 2020 / 2024), `fileName`, `exportOf(kind, flight, path, opts)` → `{ name, text, type }`, `airacOf`, `lla`; input: the
+  current flight, `expandedPath(flight, procs)` and `opts { procs, names, kinds, now }`; no DOM, no network. Fuel's step Departure
+  offers the three downloads; the direct send into X-Plane's `Output/FMS plans/` will be a launcher verb. Bench `frame/lib/test/fms.html` (F60).
+- **The procedure rules** (`frame/lib/procedures.js`, 29 Oct 2026, § 10.29 c): pure functions on aerodb's procedure records, shared by
+  Fuel's lists and the Map's choose mode — `servesRwy`, `sameRwy`, `nameOf`, `conflictsOf` and `orderProcedures` (the ⚠ marks and the
+  order of the lists, as data), `transitionsOf`, `appChoices`, `runwayChoices`; no state, no text. Bench `frame/lib/test/procedures.html`
+  (F32). `conflictsOf` and `orderProcedures` are still re-exported by `flight_path.js` (hence `current_flight.js`) during the transition.
+  Since § 10.30 (30 Oct 2026): `runwayOf(proc)` (the single runway a procedure serves, else null) and `firstServing(list, rwy)` (the
+  first of the group that serves the runway: « Choisir OKRIX5B »).
+  § 10.31 (30 Oct 2026): `pointsOf(proc)`, `exitOf(proc)` (a SID's last named point), `entryOf(proc)` (a STAR's first), and
+  `compatible(list, { …, route })` — `route`, the typed route's point ids: a SID fits when its exit is on it, a STAR when its entry
+  is (the Map's « vers votre route » axis; an empty route filters nothing). In `route_text.js`: `textFromTokens(tokens, { dct })`
+  (ICAO form), `withProcedures(text, o)` (the procedures written into the text) and `proceduresOfText(text, o)` (read back), with
+  `provenance(words, prev)` for Auto; bench `frame/lib/test/route_text.html` (F69).
+  Fourth reading of § 10.30 (30 Oct 2026, LFPO): `isAppTransition(rec)` (an APP record named « INA … », or with a transition and
+  points that never reach a runway threshold « RWnn »: an initial approach segment, never a row); `appChoices` lists only the finals
+  and its `transitionsOf(id)` adds the segments of the final's name and those no final names that serve its runway (the SIA's
+  segments are common to ILS, RNP, LOC…), sorted by IAF; `labelOf(app, list)` (« ILS 06 », « RNP 06 »: type and runway, the SIA
+  letter when two finals would read the same, then the first point); `transitionLabelOf(rec)` (« via ODILO · ODILO 1A »). In
+  `flight_path.js`, `chainOf` joins an approach transition to its final at their first common point, wherever it is in the final,
+  else marks the final's first point `join: 'direct'` (dashed, § 10.20); the STAR → approach join is unchanged.
+  Second reading of § 10.30 (30 Oct 2026): `familyOf(name)` (« ABLI4L » → `{ family: 'ABLI4', suffix: 'L' }`, a form only),
+  `siblingsOf(list, proc)` (the records of its family when at least two suffixes exist, else `[]`: never a guess on a lone name),
+  `familiesOf(list)` (the rows `{ name, recs, runways }`, families grouped), `compatible(list, { rwy, sid, star, app }, byId)` (what
+  fits the OTHER families of the choice, in any order: runway → SID / STAR serving it and approaches to it; STAR → its runways and the
+  approaches it joins; approach → its runways and the STARs joining it; a value may be a record, an id or an array — a family chosen
+  before its runway —; absent, null or unknown filters nothing) and `summaryOf(side, { byId, wind, via })` (the three lines of a
+  side's choice, `{ rwy, proc, app }`: undefined not chosen, null « Aucune » (the caller's word), else « 28L · ↑ 12 kt · ← 6 kt »,
+  « ABLI4L via ABLIN », « ILS28L via PIZSA »): the Map's pane and Fuel's side title print the same text. Bench F32.
+- **The aerodrome's name** (`frame/lib/adnames.js`, 30 Oct 2026, § 10.27): `adLabel(rec)`, `adTitle(rec, code)` → « LFPO
+  Paris-Orly », `adLine(rec, code)` → « LFPO — Paris-Orly », from an aerodb record (`coords`, `aerodromes`, `find`). One text rule
+  for Fuel and the Map's pin; the base carries no city today, the rule adds it only when a record has one. Bench F71.
+- **The wind on a runway** (`frame/lib/wind.js`, 30 Oct 2026, § 10.30): `components(runwayTrueHeading, windDirTrue, windKt)` →
+  `{ head, cross, side }` (knots rounded, `head` negative for a tail wind, `side` 'L' | 'R' or null) or null when a value is missing
+  (a VRB wind has no direction: nothing invented); `label(c)` → « ↓ 12 kt · ← 6 kt » (arrows: where the wind blows, the runway drawn
+  upward as on final — ↓ head, ↑ tail, ← from the right, → from the left; a zero component left out, « 0 kt » when both are), the one
+  text of the Map's pane and Fuel's runway list; `severity(c, { tail, crossWarn, cross })` → 'ok' | 'warn' | 'alert' (head wind ok;
+  tail warn up to 5 kt, alert above; crosswind ok up to 10, warn up to 20 or the sheet's `maxCrosswindKt`, alert above; the worse of
+  the two; `LIMITS` holds the defaults), the colour of the label on the design's semantic tokens (§ 10.30, third reading). Pure, shared by the Map's pane and Fuel's runway list. Bench
+  `frame/lib/test/wind.html` (F62).
 - Offline is normal. The application starts offline once visited, and your module's files (entry point and
   `meta.files`) are kept from the first visit: draw from `ctx.data` first, and treat a 503 from `ctx.net` as "not now", not as an error.
 - `ctx.notify(text, kind)`, `ctx.ask(text)`, `ctx.askText(text, { value })`: the frame's notifications and question
@@ -187,6 +267,33 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   what you show; do not assume who changed it.
 - `data.onStatus(s => …)`: synchronisation state, for a module that shows it (the frame's own control usually does).
 - Conflicts are handled by the frame: the loser is kept and the frame signals it. A module does not ask the user.
+
+### 6.1 Addresses between modules (`ctx.query`, `ctx.consume`)
+
+Modules ask each other things only through the address (no event between modules): the asking one sets `location.hash`
+(`location.replace` when the request must not stay in the history), the frame mounts the named module with `ctx.query`.
+
+- **`ctx.consume(...keys)`** (29 Oct 2026) gives the values of those keys from `ctx.query` and removes them from the address in
+  one write (`history.replaceState`: no `hashchange`, the module is not mounted again). A consumed request is therefore
+  replayed neither by a reload nor by Back. `with`, `from` and `pane` belong to the frame and are never removed; in a pane
+  the address is not the module's own: nothing is rewritten. Consume a request as soon as you have applied it; a key you
+  only read for drawing (`view`) stays.
+- **The keys in use** (one row per key; a new key is added here by the module that reads it, in the same commit):
+
+| Address | Who sets it | Who reads it | Rule |
+| --- | --- | --- | --- |
+| `#<module>?with=<module>` | the frame (dual view) | the frame | the pane beside; kept in `device/layout.json` |
+| `#<module>?from=<module>` | the asking module | the frame | the header's « ← <module> »; never consumed by a module |
+| `#help?m=<module>&a=<anchor>` | the frame (« ? ») | the help screen | the chapter and the paragraph |
+| `#fuel?view=sheets` | the frame (popover) | fuel | a view, not a request: not consumed |
+| `#fuel?focus=route\|dep\|arr` | the map (« Modifier la route », « Changer ») | fuel | the step or the field to show; consumed |
+| `#maps?choose=arr\|dep&icao=<OACI>` | fuel (« Sur la carte ») | the map | the choice mode (§ 10.23 of the coordination); consumed |
+| `#fuel?focus=dep\|arr&rwy=…&sid=…&star=…&app=…&apptrans=…` | the map (the choice mode comes back by `location.replace` with every key of the side in one trip, § 10.30: lower case, id or `none` = « Aucune », a missing key = family untouched, no SID / STAR transition) | fuel | the proposal, checked against the flight's aerodrome and applied as a choice made in Fuel, one write and one change line; consumed together with `focus` |
+| `#report?from=flightlog\|fuel\|maps` | flightlog, fuel, the map, the Status block | the frame, report | with `pilot/handoff.json` (the hand-over) |
+| `#maps?mission=<id>&map=<file>` | flightlog, links | the map | a mission's map |
+| `#maps?tune=1` | Settings › Administration | the map | the tuning page |
+| `#settings?join=…`, `?config=…`, `?card=…`, `?import=…`, `?offline=…` | invitations, links, the frame | Settings | Settings' own keys |
+| `#hello?note=…` | a link (example) | the example module | shows `ctx.consume` |
 
 ## 7. What a module must not do
 
@@ -200,9 +307,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   - So `unmount()` must work at any point of `mount()`: stop timers and watches you have started, and set a flag.
   - After each `await` of `mount()`, stop if that flag is set (or `el.isConnected` is false), and write nothing more.
   - The frame itself writes nothing for a mount it has given up.
-- **Debt (noted 28 Oct 2026)**: three pieces still call the launcher with `fetch`: Settings' `setup()`,
-  `frame/aerodb/lnmperf.js` (the data laboratory, the third, was removed on 28 Oct). They move onto a frame service `ctx.launcher` in the frame lot that
-  follows the weather layer. No new piece calls the launcher directly.
+- No call to the launcher with `fetch`: declare `meta.launcher` and use `ctx.launcher` (§ 15.1). The debt noted on
+  28 Oct 2026 (Settings' `setup()`, `frame/aerodb/lnmperf.js`) was closed the same day by lot D0.
 
 ## 8. Trying a module
 
@@ -263,7 +369,8 @@ stays supported by the code but no tab uses it today.
 - **`ctx.tab`**: the id of the tab that groups the module (`'prepare'` for fuel, `'weather'` for atmosphere), `null` if none. For a
   module that wants to know its group; it never opens or changes a tab.
 - **Landscape on a phone (`html.f-land`)**: when the window is wider than high **and** under 1024 px (a phone or a small
-  tablet turned; Safari does not honour the manifest's portrait lock), the frame sets `<html class="f-land">` (and
+  tablet turned; Safari does not honour the manifest's portrait lock), **without a precise pointer that hovers** (a computer's
+  window wider than high keeps the computer's rail, 30 Oct 2026), the frame sets `<html class="f-land">` (and
   removes it, one write when the value changes, on `resize` / `orientationchange`; `frame-orientation` is fired on
   `window` after, `detail: { land }`). The bottom bar then becomes a **rail of icons at the left edge**: `--f-rail-w`
   (44 px) wide, full height under the header, the same five entries, **no label** (each `<a>` carries the label as
@@ -271,8 +378,9 @@ stays supported by the code but no tab uses it today.
   icon, the caret at the left). The header stays (57 px); `--f-tab-space` is `0` and the view takes `100vw − --f-rail-w` at
   the right of the rail; the 210 px rail of a screen is not shown. The device's safe areas (notch at the left or right,
   home indicator) are left free. A module does nothing for it: it never reads the class, it measures its box.
-- **A computer (`html.f-desk`)** (28 Oct 2026): the window is wider than 760 px, the pointer is precise and hovers (a mouse,
-  a touchpad: `(pointer: fine) and (hover: hover)`), and it is not a phone in landscape (`f-land`). Set before the first
+- **A computer (`html.f-desk`)** (28 Oct 2026; one criterion since 30 Oct): exactly when the layout is the computer's, the
+  rail with labels: the window is wider than 760 px and it is not a phone in landscape (`f-land`). The layout and the
+  computer's design (Aqua) follow this one class: never on the icon rail nor on the bottom bar. Set before the first
   paint (`index.html`), then on `resize`, `orientationchange` and when the pointer changes (a mouse plugged into a
   tablet), one write when the value changes; `frame-desk` is fired on `window` after, `detail: { desk }`. It is for the
   designs and the frame's dress only (a design kept for computers, Aqua); a module never reads it either.
@@ -758,13 +866,16 @@ A service screen is not a module. It is a screen of the frame, opened over the c
 roadmap, whose drawing belongs to a service. The frame knows only its declaration, and its code names no service.
 
 ```js
-screens: [{ id: 'sources', scripts: ['aerodb/sources_data.js?v=0', 'aerodb/sources.js?v=0'], level: 3 }]
+screens: [{ id: 'sources', scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js?v=0', 'aerodb/sources.js?v=0'], level: 3 }]
 ```
 
 - `scripts` (relative to `frame/`) load in order the first time the screen opens. The script registers itself:
   `window.SogScreens[id] = { screen(view, ctx) }`.
 - `level`: below it, the frame shows "This screen is not offered at this usage level" and loads nothing more.
 - `reads` / `writes` declare the screen's data adapter, as a module's `meta`.
+- `launcher: { routes: [...] }` (29 Oct 2026) gives `routes()`: the launcher client reduced to those routes, as a
+  module's `ctx.launcher` (`call`, `job`…), or null without a launcher on this workstation (or from a paired device). The
+  Pilots' tokens screen declares `gitlab/tokens` and `gitlab/tokens/revoke`.
 - `github: true` gives `github()` (the device's GitHub transport: `head` / `tree` / `commit`, **the token never leaves the
   transport**, or null) and `githubInfo()` (`{ repo, branch }` or null). Without it, neither exists.
 - The context: `{ t, lang, notify, ask, data, aerodb, level(), launcher() }` and the GitHub pair above.
@@ -834,4 +945,170 @@ Errors carry a mark, for the module to say why in its own words: `offline`, `unr
 
 - Without a trigram nothing changes: the cache is local to the device anyway, nothing of it is ever pushed or exchanged.
 - `ctx.net` stays for every other call; the weather hosts stay reachable through it for the modules not yet switched.
+
+## 15. The workstation's launcher, publication, end of cycle (lot D0, 28 Oct 2026)
+
+Services for the **Data** module (`modules/data/`), open to any module that declares them. The frame keeps the launcher,
+the token and the repository; a module gets capabilities, never the transport.
+
+### 15.1 `ctx.launcher` — the launcher of this workstation
+
+Declared in `meta`, like `reads` / `writes`:
+
+```js
+launcher: { routes: ['regen/', 'vfr-import'], read: ['sia/', 'proc/', 'local/'] }
+```
+
+- `routes`: the launcher's routes the module may call (`/__setup/<route>`); a route ending in `/` covers what is under it.
+  `read`: the prefixes of `data/` it may read as a stream.
+- `ctx.launcher` is **null** when no launcher serves the page, on a paired device of the local network (`lan`: every
+  `/__setup/regen/*` route is refused there) and without a declaration. Test it before drawing a launcher button.
+- Anything not declared is refused at once, without a call: `{ ok: false, status: 403, refused: true, route }`. A route or a
+  path that would leave its place (`..`, an absolute path, an encoded or backslashed one) is refused the same way.
+- Nothing throws. The calls:
+
+| Call | Gives |
+| --- | --- |
+| `info()` | `{ host, data, dataGit, lan }` (a copy of the frame's survey) |
+| `call(route, body?)` | GET without a body, POST with one (JSON). The route's JSON, or a refusal (below); a 404 says `message: 'unknown route'` (a launcher older than the module: « relancez-le à jour ») |
+| `job(route, body, { onProgress, signal })` | starts a long job and follows it to its end: `{ ok, state, result, … }` |
+| `resume(route, { onProgress, signal })` | follows the job running on that route (a reloaded page), or gives the last one's end; null without a job |
+| `read(path, { signal, onBytes })` | `{ ok, stream (ReadableStream), size }` of `data/<path>`, same origin; `onBytes(n)` as it reads |
+
+**A refusal has one shape**: `{ ok: false, status, route, message, reason?, wait? }`. `status` is the launcher's HTTP status
+(403 for a route or a path not declared, then also `refused: true`, without any call); `reason` (a short code, 40
+characters at most) and `wait` (seconds) come only from a launcher that gives them (429 `'too-soon'`: wait before starting
+that verb again); nothing else of the launcher's answer is handed on. Without an answer: `{ ok: false, offline: true,
+route }` (or `aborted: true` when your `signal` stopped it).
+
+**Declaring a job's route declares its cancel** (29 Oct 2026): `routes: ['regen/job']` also allows `regen/job/cancel`, the cancel being part of the jobs' protocol (the client sends it itself when the signal aborts); nothing else under it. **aerodb declares its routes too**: `AeroDB.declaration().launcher = { routes: ['regen/job'] }`, next to its reads; the frame
+builds aerodb's job from it, as it builds `ctx.launcher` from a module's `meta.launcher`.
+
+**The job protocol is fixed**: `POST <route>` with the body → `{ job: id }`; `GET <route>?id=…` about once a second →
+`{ id, state: 'running' | 'done' | 'error' | 'cancelled', step, done, total, unit, log (200 lines), result }`;
+`POST <route>/cancel { id }` when `signal` aborts (→ `{ ok: false, cancelled: true }`); `GET <route>` without id → `{ job }`,
+the running or the last one. **At unmount** the frame stops following (→ `{ ok: false, detached: true }`): the job goes on
+in the launcher; `resume` finds it again.
+
+**The launcher's side** (`tools/launch.py`, `tools/regen_jobs.py`; this workstation only, refused to a paired device):
+
+- `GET /__setup/regen/state`: for this workstation, the local outputs (`sia/base/`, `proc/`, `sia/vfr/`, `AircraftDB/`,
+  `sia/mora.csv`: files, bytes, newest, cycle folders), `local/` (never published), the source caches under `sia/<source>/`,
+  the commits not pushed that touch the outputs, `pypdf` importable, free space, EAD credentials present (yes / no, never
+  a value).
+- **The jobs' base and the sets' verbs** (29 Oct 2026): `tools/regen_jobs.py` is the base (one job at a time, the state of
+  the workstation, cleaning, gaps, the commit); each set's verbs live in `tools/regen/<set>.py`, owned by its agent (`proc.py`:
+  AeroDB), which exports `VERBS = { (set, verb): (fn, check) }` and, if it wants, `MIN_GAP = { (set, verb): seconds }`. The
+  launcher loads them (`regen_jobs.load_verbs()`, files in name order, `_…` skipped) when it first needs the jobs; a failing
+  file is left aside and named in the launcher's window, the launcher goes on. A verb already defined (by the base or another
+  set) is never overwritten: the second file is refused; a set never lowers a gap (the longest `MIN_GAP` wins). A verb is `fn(job, args, ctx)`: `job.step(text,
+  done, total, unit)`, `job.log(line)` (both cleaned of secrets by the base, whatever the verb writes), `job.cancelled()`,
+  `job.author` (the trigram of the page, the common rule `^[A-Z0-9]{2,5}$`, '' without it); `ctx = { data, secrets, git_cmd,
+  git_env }`.
+- **One commit for every verb**: `regen_jobs.commit_outputs(ctx, author, paths, message)` → `{ commit: SHA | None, warning }`:
+  `git add` and `git commit -- <paths>` of those paths only (relative to `data/`, under the outputs `sia/base/`, `proc/`,
+  `sia/vfr/`, `AircraftDB/`, `sia/mora.csv`; any other refused, as `..`, `:`, `*`, `?`, `[`; git reads them as literal paths,
+  `GIT_LITERAL_PATHSPECS=1`), the page's trigram as author (no trigram: no commit; never a workstation author), no push. Nothing changed, no repository, git failing: `commit: None` and the reason.
+- **The author**: the frame adds the device's trigram to the body of a job's start (`author`, from `ctx.launcher.job` and
+  aerodb's job alike); a module never writes it.
+- **Kept across a restart** (`tools/.regen_last.json`, never in the repository): the last job and the last start of each
+  verb. A job still running when the launcher stopped is read back as `state: 'interrupted'` (`resume` gives it, the page
+  says it); a verb's gap (`MIN_GAP`) holds across a restart.
+- **A job's headless page** (29 Oct 2026, for the base build of D5): the verb opens its page on the launcher's http
+  address with `#job=<id>` only (no token on a command line nor in an address), after `job.offer(payload)`; the page
+  claims the token **once** with `POST /__setup/regen/job/claim { job }` (workstation only) and receives `{ ok, job,
+  token, …payload }` — 409 if not the running job, nothing offered, or already claimed (`job.token` is never in `view()`,
+  the last job's file or a log); the page hands each zone's output back with `POST /__setup/regen/job/put { job, token, zone, files: {
+  "<name>.json": "<text>" } }` (workstation only): 409 not the running job, 403 wrong token, 400 a zone outside the job's
+  `args.zone` / `args.zones` or a name outside `[a-z0-9_.-]{1,64}.json`, 413 over 64 MB in all (`regen_jobs.PUT_MAX`).
+  The route writes nothing: the verb receives the texts by `job.take(zone, timeout)` (`None` on timeout or cancel), writes
+  them itself and commits by `commit_outputs`.
+  The verb `base/build` (lot D5, `tools/regen/base.py`; args `{ zones, personal? }`, `zones` as a dict at the root of the view, SPEC and INTEGRATION of `frame/aerodb/`) is the first user.
+  The verbs `base/fetch` and `base/purge` (30 Oct 2026, `tools/regen/base_sources.py`; args `{ zones, personal? }` and `{ zones, what?, dry? }`; SPEC and INTEGRATION of `frame/aerodb/`): the raw sources of a zone, downloaded by `tools/aero_fetch.py` (no commit; `outside_sync` counts the tracked files it modified) and purged (never `sia/base/`, `proc/` or a file tracked by git).
+- `POST /__setup/regen/job { set, verb, args, author }`, `GET …/job[?id=]`, `POST …/job/cancel { id }`: one job at a time in a thread;
+  `set` and `verb` from a fixed list (`regen_jobs.REGISTRY`), each with its check of `args`; nothing from the page is a path,
+  an address or a command. 400: unknown operation or bad arguments; 409: a job is running; 410: no such job; 429 `{ reason:
+  'too-soon', wait }`: the verb has a minimal gap between two starts (`regen_jobs.MIN_GAP`: 30 s for `proc/ead-fetch`), the client
+  hands `reason` and `wait` on. An error escaping a verb is cleaned (`regen_jobs.clean_error`: the workstation's EAD credentials,
+  tokens, session identifiers, `user:password@` and token parameters of an address) before the job's log and its result. Lot D0 has one
+  verb, `state/scan` (the state as a job, with its progress); the builders' verbs come with them (lot D2). `proc/ead-fetch` (args `{ icao }`: one
+  four-character code, nothing else) reads one aerodrome in EAD Basic and installs it under `proc/manual/`; `proc/eaip-fetch` (same args, the code must
+  start with `LF`) does the same from the SIA eAIP of the cycle in force, without credentials, the address being computed by the launcher (aerodb's
+  `fetchProcedures` picks the verb by the aerodrome's State; the frame gives aerodb `launcher.job`, built on this client with `regen/job` declared).
+  `GET /__setup/status` (the detection only, the same shape everywhere; the workstation's own settings are `GET
+  /__setup/workstation`, workstation only) also carries `lnm`: the sorted list of Little Navmap database kinds present on the workstation (the
+  `little_navmap_<kind>.sqlite` files of its `little_navmap_db` folder; names only, `[]` when absent); `FrameData.launcher.detect()` hands it on in
+  `info()`, aerodb uses it as a hint when a State has no coding tables.
+- **IVAO's sign-in** (29 Oct 2026, R1b): `ctx.ivao` in the settings context — `status()` → `{ connected, expires_at,
+  scope }`, `connect()` (goes to IVAO, back on `#settings?card=ivao`), `disconnect()` → `{ revoked }` (revoked at IVAO by the
+  launcher when it can), `token()` → a valid access token
+  or null (renewed through the launcher); a module that reads IVAO's tracker for the pilot asks `token()` and never keeps
+  it. The three routes `ivao/oauth/start`, `ivao/oauth/refresh` and `ivao/oauth/revoke` are open to the local network and
+  to the relay (I10).
+- **The relay's routes** (29 Oct 2026, R1a): `@route(…, public='lan', relay=True)` opens a route to a pilot's device
+  through the airline's relay too (frame SPEC § 3.11); today status, changes, batch, sync, net (noreg I10, I13).
+- **The route table** (29 Oct 2026, lot 3c-2): every `/__setup/` route of `tools/launch.py` is a method of the server
+  declared where it is written, `@route(method, path…, public='lan' | 'poste')`, gathered in one table `ROUTES` (method,
+  path) → (handler, public); `do_GET` / `do_POST` dispatch by it. `public='lan'`: also open to a paired device of the local
+  network (the Pilot app's routes: `status`, `changes`, `sim/position`, `lnmperf`, `lnmperf-folder`, `batch`, `sync`,
+  `net`); `'poste'` (the default): this workstation only. The local network's gate reads the table — there is no second
+  list any more (`tools/lan_access.py` lost its `ROUTES`). A new route is declared with its public, in one place (noreg
+  I10: the open set is the Pilot app's, each route has its handler, nothing is written outside the table, every route the
+  frame calls is in it).
+- The frame itself uses the same client for its own calls (Settings' `setup()`, aerodb's `.lnmperf` sheets, the
+  simulator's position, the local network's access): no piece of the frame calls the launcher with `fetch` any more,
+  except the network relay (`/__setup/net`, whose answer is the relayed site's, not JSON).
+
+### 15.2 `ctx.publish` — generated files to the data repository, without a launcher
+
+For outputs too big for the data layer's batch (records, 5,000 changes, a copy kept on the device): 20–60 MB, hundreds of
+files. Declared in `meta`:
+
+```js
+publish: ['sia/base/', 'proc/', 'sia/vfr/', 'AircraftDB/', 'sia/mora.csv']
+```
+
+```js
+const r = await ctx.publish([
+  { name: 'fr', files: [{ path: 'sia/base/fr/2026-10-29/airports.json', text }], removed: [...], message: 'Base fr 2611' },
+  { name: 'gb', files: [{ path: 'sia/base/gb/2026-10-29/x.bin', blob }] } ], { onProgress, signal, from: 0 });
+```
+
+- **One commit per group, in order** (a zone, a cycle of `proc/`…), each on the head read just before; files sent one by
+  one as blobs (text in UTF-8, a `Blob` in base64); the branch advanced **without force**.
+- `onProgress({ group, index, groups, files, total, bytes })` after each file.
+- Result: `{ ok: true, groups: [{ name, commit, files, removed, bytes }] }`, or `{ ok: false, at, group, groups (those
+  done), conflict | offline | cancelled | tooBig | status, message }`. **A conflict** (someone pushed meanwhile) **is
+  returned, never overwritten**: call again with `from: at` (the groups done are not redone). A removal of a file absent
+  from the repository is dropped, not refused.
+- Refused before any call, with `refused`: `'declaration'` (no `meta.publish`), `'path'` (a path outside it, with `path`),
+  `'trigram'` (none on the device), `'access'` (no GitHub access on this device). The commit message ends with the
+  trigram.
+- After the groups, their paths are revalidated (`data.revalidate`): the device reads the published versions at once
+  (offline: its copies are dropped and read again on demand).
+- **GitHub's limits**: a blob is 100 MB at most (larger: `tooBig`, nothing sent for that group); a tree read is
+  truncated beyond about 7 MB (`ctx.publish` never reads the whole tree: it builds on `base_tree`); the API counts its
+  calls (one per file, plus four per group): split by zone, not by file.
+- The token never leaves the frame's transport; a module never gets `github()`.
+- With a launcher, publish through its route (`regen/publish`, lot D2: git on the workstation), not `ctx.publish`.
+
+### 15.3 The end-of-cycle line of the Status block
+
+The frame computes it at drawing time, on every device, from `aerodb.publication()` (`{ base: { <zone>: { cycles,
+inForce } }, proc: { cycles, inForce }, … }`; `cycles` is an object keyed by start dates `YYYY-MM-DD`, its contract in
+`frame/aerodb/SPEC.md` « For the Données module »; a list of dates is accepted too):
+
+- the newest published cycle of the base (or of `proc/`) is older than the AIRAC cycle in force: « Base aéronautique :
+  cycle 2610 terminé, en attente de publication » (×4);
+- or the cycle in force ends within 3 days and nothing is published for the next one: « … : le cycle 2611 se termine le
+  25/11, rien de publié pour 2612 ».
+- Amber (attention). It leads to `#data` only on a workstation with a launcher, at the Full level, once the Data module
+  exists; elsewhere nothing to press. Without `aerodb.publication()`, no line (never a guessed one).
+- The Data module's own lines (a job running, publications to send) go through its `cache/data/status.json` (§ 10.0).
+
+### 15.4 Workers
+
+The page's policy allows Workers from the suite's own files (`worker-src 'self' blob:`, `tools/csp_policy.py`, the same in
+the launcher's and the built pages' policy). A module's Worker script is listed in its `meta.files` (kept offline like the
+rest). No outside host is added for it.
 

@@ -1461,3 +1461,529 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     names the file and offers "Reload" (×4, the language of the device or of the browser), no JavaScript error.
   - Checked: each of the three files lost once → the frame starts, the module mounted, no error; lost for good → the
     card, no module, no error. Case A28 (A26 and A27 were taken by the Settings session).
+- **28 Oct 2026 — Lot D0: the frame's services for the Data module** (contracts agreed with the coordinator the same day,
+  `modules/data/INTEGRATION.md` § 1):
+  - **`ctx.launcher`, declared** (`meta.launcher { routes, read }`, as `reads` / `writes`): least privilege, anything else
+    refused without a call (403, `refused`). Null without a launcher, on a paired device (`lan`) and without a declaration;
+    no `available()`: the null says it, and the survey is done before the first mount. `call` / `job` / `resume` / `read`,
+    never an exception. The job protocol is fixed (start, `?id=` about once a second, `/cancel`, `GET` without id for the
+    running one); unmount stops following only (the job goes on, `resume` finds it). 404 → « unknown route » (a launcher
+    older than the module).
+  - **One client** (`frame/lib/launcher.js`) for the frame too: Settings' `setup()` (`kit.js`, bound at the first drawing),
+    aerodb's `.lnmperf` sheets (`AeroDB.create({ launcher })`; aerodb's benches keep their direct call when no launcher is
+    given), the simulator's position, the local network's access. The debt of 28 Oct (« three pieces call the launcher
+    with fetch ») is closed; only the network relay keeps its `fetch` (its answer is the relayed site's).
+  - **The jobs' base in the launcher** (`tools/regen_jobs.py`): one job at a time, a fixed list of (set, verb) with
+    their argument checks, cancel, the last job readable, an exception ending the job and not the launcher; 410 for an
+    unknown job (404 means an unknown route for `ctx.launcher`). `regen/state` and one verb, `state/scan`; the builders'
+    verbs in D2.
+  - **`ctx.publish`, not `github()`**: the token and the full transport stay in the frame (the debt written this morning
+    on the token's reach). One commit per group (a zone), in order, each on the head read just before, blobs one by one;
+    a conflict is returned and resumed with `from` (aerodb's point: 20–60 MB in hundreds of files, never one giant
+    commit). The `reference` copies of the published paths are dropped after each group. GitHub's limits written
+    (INTEGRATION § 15.2).
+  - **The end-of-cycle line** is computed at drawing time from `aerodb.publication()`, so it is right on the day the cycle
+    changes without a timer; absent until aerodb delivers the call (never a guessed line). Amber; `#data` only on a
+    workstation with a launcher at the Full level, once the module exists.
+  - **The « Données » verb** waits for `modules/data/module.js` (a verb without a module would lead nowhere). Workers: no
+    change, `worker-src 'self' blob:` was already in the policy.
+  - **Tests**: bench `frame/lib/test/launcher.html` 32 / 32 (case A29), bench `frame/store/test/publish.html` 12 / 12
+    (A30), A31 (the end-of-cycle line ×4, `publication()` simulated), I8 (the jobs' base, a static case). Against the
+    real launcher: a `state/scan` job followed to its end by the client, an unknown operation refused (400), a call
+    without the frame's header refused (403); Settings at the Full level reach `lan`, `lnmperf-folder`, `secrets`,
+    `sync-remote` through the client, no JavaScript error.
+- **29 Oct 2026 — Four touches to the frame's files reviewed; « Météo », one word** (coordinator, after 6.0.0-alpha.2):
+  - Agreed as they are: the launcher opens the Pilot application (`PAGE = 'frame/'`, 482e87705); the EAD Basic secrets kept
+    without any hint towards the page (`SECRET_FIELDS`, `secrets_view`, ffb026685); `proc/ead-fetch` and `proc/eaip-fetch`
+    in INTEGRATION § 15.1.
+  - Narrowed: `/__setup/status`, open to the paired devices of the local network, gives them only what the frame's
+    detection reads (`server`, `data`, `dataGit`, `host`, `lan`, `lnm: []`): no longer the installation's absolute path
+    (`root`), the data repository's address, git, LFS, the policy or navigation settings, nor the Little Navmap database
+    kinds (82eeef3b5); the workstation's own page gets everything as before. The job the frame gives aerodb (`launcher.job`, daff9f1fb) is null on a paired device, like `ctx.launcher`,
+    instead of calling a route refused there.
+  - **« Météo »**: the weather module is « Météo » / Weather / Wetter / Meteo everywhere — the computer's rail (it said
+    « Atmosphère »), the phone's bar, the group popover, the header's title (`APP.modules` label), the help (fuel's and
+    the map's chapters name it so) and the roadmap. The id and the address stay `atmosphere`. « Atmosphère réelle au
+    départ » (a card of fuel) and the German help's « Atmosphäre entlang des Flugs » name the physical atmosphere, not the
+    module: kept. Translation fingerprints of fuel's and the map's help updated (they were in step before).
+- **29 Oct 2026 — Three bugs** (lot (1) of the challenge, § 10.29):
+  - **J2's amber flash**: on the local transport a write of fuel stayed « pending » about 25 ms before the queue was
+    drained; `syncState` called that « pending », a state of attention, and the ⚙ turned amber for that instant (seen 1
+    time in 6 at the start of J2). Rule written in SPEC § 3: the local transport is « on this device » whatever its queue
+    holds; it never asks for attention.
+  - **The end-of-cycle line never showed**: aerodb's `publication()` (lot D1) gives `cycles` as an object keyed by dates,
+    the line read a list. It reads both now. A31 runs on the real `publication()` (a base seeded for the previous cycle,
+    then the suite's own base: no line), not on a simulated one.
+  - **The suite's seeded base followed no calendar**: `lib.aero_docs()` seeded the cycle `2026-10-15`, in force until
+    28 Oct; since the 29th every case seeding a base would have shown the end-of-cycle line. The seed now takes the AIRAC
+    cycle in force (or the next one in its last 3 days, published ahead as a workstation would), `lib.AERO_CYCLE`; the
+    map's case that printed the date reads it there.
+  - **`Job.log` and `Job.step` are cleaned** of secrets (`clean_error` with the context's EAD credentials), whatever the
+    verb writes: no verb can put a credential in the journal by mistake (I8 checks it).
+- **29 Oct 2026 — `FD.revalidate(paths)`** (lot (2) of the challenge, § 10.29; AeroDB's need: the freshness of `proc/`
+  after another device installed procedures):
+  - **These paths only**, now: one head and one tree for all of them (shared with any reading in flight, `treeNow`), then
+    only the changed files are read. Not a sweep of a prefix: the background pass does that.
+  - **What wins**: a write waiting in the queue (the device's own); a `cache` file has no repository; a `reference` gone
+    from the repository is dropped (a document gone is left to the pass, which knows deletions from conflicts).
+  - **Never throws**: offline stops the reading and touches nothing more (`offline: true`); a file the repository refuses
+    (rights, size) is said in `errors` and its copy kept.
+  - **Given to**: the data layer (`FrameData.revalidate`), every adapter (`ctx.data.revalidate`, aerodb's reader), and
+    `ctx.publish`, which revalidates the published paths instead of dropping their copies (evicted only when offline).
+  - **Tests**: bench `frame/store/test/revalidate.html` 14 / 14 (case A33); A30 (publication) unchanged.
+- **29 Oct 2026 — Lot (3a): the jobs' base, alone** (challenge § 10.29):
+  - **One file per set** (`tools/regen/<set>.py`, its agent's), loaded by the base (`load_verbs`), never registered by
+    hand. Loaded when the launcher first needs the jobs, not at import, so a set file may import the base. AeroDB's
+    procedure verbs stay where they are until its `tools/regen/proc.py` lands (agreed with it the same day: two verbs kept,
+    `MIN_GAP` per verb, so the 30 s of EAD never fall on the eAIP).
+  - **One commit path** (`commit_outputs`): the outputs' paths only, `--` paths (HEAD plus those files, never the index),
+    the page's trigram as author, never « POSTE ». The frame adds the trigram to every job's start; a module never does.
+  - **The state kept** in `tools/.regen_last.json` (git-ignored): a job interrupted by a stop is said so after a restart,
+    and a verb's gap survives a restart (time of day, not a monotonic clock).
+  - **Tests**: I8 extended (set files loaded and a failing one left aside, `_…` skipped; author kept, a bad one dropped;
+    restart: last job found, gap held, a running job read back interrupted; `commit_outputs` on a real repository: outside
+    paths and `..` refused, no trigram no commit, one commit with the page's author and only its path, nothing changed no
+    commit), A29 extended (the trigram added to a job's start, none without it). Against the real launcher: a
+    `state/scan` started with `author: 'ABC'` keeps it, the state file is written and ignored by git.
+- **29 Oct 2026 — Lot (3b): the client and the addresses** (challenge § 10.29):
+  - **One refusal shape** written in INTEGRATION § 15.1: `{ ok: false, status, route, message, reason?, wait? }`; A29
+    checks it field by field (a 429 hands on `reason` and `wait` and nothing else of the body, a refusal without reason
+    has neither).
+  - **aerodb declares its launcher routes** (`declaration().launcher`, one line in `frame/aerodb/aerodb.js`, told to
+    AeroDB) instead of `app.js` writing them for it.
+  - **`ctx.consume(...keys)`** and the table of the address keys (INTEGRATION § 6.1): a request taken leaves the address
+    in one `replaceState` (no new mount), so a reload or Back never replays it; the frame's keys stay. The example module
+    (`modules/hello`) shows it; case A34 (taken once, escaped, `from` kept, not replayed after a reload). Each module that
+    reads a key adds its row to the table in the same commit; fuel and the map may move to `ctx.consume` in their next lots
+    (they rewrite the address by hand today).
+- **29 Oct 2026 — Security review of (3a) and `revalidate`** (no blocker; four corrections, in (3b)):
+  - `load_verbs`: a verb already defined is refused, never overwritten; a set never lowers a gap (the longest wins: EAD
+    Basic's 30 s are part of its conditions).
+  - The trigram follows the common rule `^[A-Z0-9]{2,5}$` (users.js, `secrets_view`, `flightPath`), not `^[A-Z]{3}$`, which
+    silently dropped a trigram of 2, 4 or 5 signs.
+  - `commit_outputs` gives git literal paths (`GIT_LITERAL_PATHSPECS=1`) and refuses `*`, `?`, `[`: « proc/* » would have
+    committed all of `proc/`.
+  - `revalidate`: one `try` per path (the device's storage may fail too), the error kept in `errors`: it never throws.
+  - **The author given by the page is an attribution, not a proof of identity**: the launcher takes the trigram the page
+    sends. Acceptable while the page is trusted (the workstation's own page; a paired device of the local network cannot
+    start a job). A relay open to the Internet (§ 10.28) will need a proof: the user's key of the signed registry.
+- **29 Oct 2026 — Lot (3c-1): `/__setup/status` is the detection only** (challenge § 10.29):
+  - `/__setup/status` gives `{ server, data, dataGit, host, lan, lnm }`, the same shape everywhere (`lnm: []` for a paired
+    device), nothing of the workstation; its special LAN filter is gone with it.
+  - `/__setup/workstation` (workstation only, refused to a paired device) gives the rest: `root`, `git`, `dataRepo`,
+    `lfs`, `csp`, `relaxNav` (and `data`, `dataGit`, `host`). The V2 pages that read them follow: the first launch (`lfs`),
+    Settings › Installation and Maintenance (`relaxNav`), the page frame (`relaxNav` badge), `file_access.js` (`root`), the
+    signed registry (`csp`). Maintenance's « is a launcher here » probe keeps `status` (it only needs a 200).
+  - Checked: the two routes' keys on the real launcher; first launch, Installation and Maintenance reloaded with no
+    JavaScript error, calling `workstation`.
+  - The route table with each route's public (lan | poste) is lot (3c-2): a mechanical rewrite of about 42 routes, kept apart
+    so that this change stays small.
+- **29 Oct 2026 — « Météo GFS toujours cassée » (LFPO → EIDW): two stores, two runs** (user, through the coordinator):
+  - Cause, mine: on 28 Oct (d8934680f) the frame's weather layer moved Météo-France's run to ARPEGE Europe's metadata
+    (and GFS to `ncep_gfs025`), but Atmosphere's own store (`modules/atmosphere/weather_store.js`, until its recoding on
+    `ctx.weather`) kept AROME HD's and `ncep_gfs013`. The two write the same files `cache/weather/<model>/<cell>/<day>.json`:
+    each judged the other's files stale (« run changed »). The map, which reads through the frame in `cacheOnly`, found
+    nothing; each store rewrote a file with only its own variables, so the other lost its, hence cuts and barbs that
+    stopped part-way.
+  - Not Open-Meteo: `meteofrance_seamless`, `icon_seamless` and `gfs_seamless` serve every variable over the Channel and
+    Ireland (checked).
+  - Fix: Atmosphere's store reads the same metadata as the frame (two lines in its file, the module's owner told). And the
+    map read `.id` on a Promise (`ctx.weather.modelFor` is asynchronous): the model was never passed (`await` added in
+    `modules/maps/weather.js`, the map's owner told).
+  - Checked: LFPO → EIDW loaded in Atmosphere (real network), every cell of the route filled up to 55° N, the files carry
+    ARPEGE's run, the map then draws its weather from the cache (it drew nothing before).
+  - Lesson: while two stores share a cache, one rule for the run; it ends when Atmosphere reads `ctx.weather`.
+- **29 Oct 2026 — The launcher's exchange carries the gesture** (coordinator's decision, data_sync): `T.exchange({ gesture })`
+  — a pass of reason `manual` (the user's « Synchroniser ») sends `gesture: true` to `POST /__setup/sync`; every other
+  pass (background, module, interval) does not, and the launcher then keeps `sia/base/` (the aeronautical database being
+  rebuilt) on the workstation: a zone half written never leaves by itself. The build job (D5) commits its own zones.
+- **29 Oct 2026 — The gesture and the author are intentions, not authorisations** (coordinator's security review of
+  1c2506a41): the `gesture` flag of `POST /__setup/sync` comes from the page (a paired device can send it too); while a job
+  of the Data module runs on the launcher (a build of the base included), `sia/base/` stays on the workstation whatever the
+  flag (`sync_gesture`, noreg I9). Likewise the author of a commit is the trigram the page gives (`author`): it names who
+  acted, it proves nothing — the signed registry (comptes signés) is what authenticates.
+- **29 Oct 2026 — Lot (3c-2): one table of the launcher's routes, each with its public** (challenge § 10.29):
+  - The 48 `/__setup/` routes of `tools/launch.py` were `if path == …` blocks in `do_GET` / `do_POST` and the routes open
+    to a paired device a separate list in `tools/lan_access.py`: two places to keep in step. Each block became a method of
+    the server, its body unchanged, declared by `@route(method, path…, public='lan' | 'poste')`; the table `ROUTES`
+    dispatches and the local network's gate reads it. A mechanical rewrite (`routes_table.py` in the session's scratchpad),
+    checked: the same 8 routes open to a paired device, every route answering as before (status and keys of each route,
+    before / after, on a launcher).
+  - With it: `data_repo_url()` drops a `user:token@` from the configured address; Maintenance says « réglage du poste »
+    (not « sans lanceur ») to a paired device refused `/__setup/workstation`; `lib/geo.js` and `lib/launcher.js` join the
+    frame's offline shell (`frame/sw.js`).
+- **29 Oct 2026 — A job's headless page hands its output back through the launcher** (AeroDB's D5 build):
+  - The base is built on the launcher by a headless browser per zone; its page must return the zone's output to the job.
+    A second server of the job (ephemeral port, its own token) was the alternative: refused — one local address only, the
+    launcher already serves the builder's scripts and `data/` under its CSP.
+  - `POST /__setup/regen/job/put`: workstation only, the running job only, its random token (`hmac.compare_digest`), a
+    zone of its arguments, bounded names and size; it writes nothing, the verb does (`job.take`, then `commit_outputs`).
+    While a Data job runs, a synchronisation keeps `sia/base/` on the workstation whatever the gesture (decided the same
+    day): a build and a pass never cross.
+- **29 Oct 2026 — A build of the base is seen by its files' time** (coordinator's security review of 2bf0021be):
+  - The guard of the gesture saw only the launcher's jobs, but today the base is built by the V2 page, which writes
+    `sia/base/` through its allowed folder (File System Access), not through the launcher: a `building` flag on the
+    write batches, proposed, would have stayed blind too. `data_sync.building(data)`: an uncommitted `sia/base/` file
+    written less than 10 min ago (`BUILD_GAP`) means a build is under way, whoever writes; `sync_gesture` reads it with
+    the running job.
+  - Limit: a build paused more than 10 min between two zones is no longer seen; the half-written zone would leave on the
+    « Synchroniser » gesture. When D5 moves the build to the launcher, the running-job check covers it whole.
+  - With it: a pending merge that git refuses to cancel (a file brought by the merge, changed since) names the files to
+    set aside; `clean_text` also replaces the real path of `data/` (a junction in the workspaces).
+- **29 Oct 2026 — The flown track in `progress.actual.trail`** (the coordinator's go, roadmap of the night):
+  - The frame writes it with the position it already writes (no new record, no new write): one point per NM or per
+    minute, turns kept (15°), 500 points at most thinned by the least change of shape (first and last kept); a point is
+    `[lat, lon, altFt, s]` — arrays, not objects, because the record is written indented (about 22 KB for an 8 h flight
+    instead of about 60).
+  - Reset: it lives and dies with `progress.actual` (new `started.at`: a track of an earlier start is never carried on;
+    the flight stopped: gone with the position).
+  - The pure rule is `frame/lib/trail.js` (noreg A35); the Map initialises its track on it (BUGS SOG).
+- **29 Oct 2026 — Security review of 3073048c7 and 5e785599c** (coordinator): a https address of the data
+  repository carries no credential at all — the common form is the token alone as user name (`https://ghp_…@github.com/…`):
+  `REMOTE_RE` refuses any user part in https (ssh keeps `git@`), `data_repo_url()` drops it, `remote_info` hands the
+  page a cleaned address; a job takes each zone's output once (a second `put` of a zone: 409) and drops what its verb did
+  not take when it ends (up to 64 MB a zone would otherwise stay in memory).
+- **29 Oct 2026 — The costs of `list` and `read`** (coordinator, figures from AeroDB: two `list()` were the whole
+  0.46 s left of mounting Fuel + Map on a 22 MB cache):
+  - `list(prefix)` loaded every copy of the cache with its text (`getAll`, twice) to keep paths: now keys only — a key
+    range on the prefix for the local transport, and an index `policy` of the copies (database version 2) for the
+    device's cache documents. `read` parsed the JSON at each call: the parsed value of a `reference` file is kept by
+    revision (48 MB of text at most, the least recently read go first) and shared by its readers, read-only; documents are
+    parsed at each read (a module may change what it read, then write it). A `reference` file absent from the repository
+    is not asked again for 30 s.
+  - Measured (bench of the session, a cache of 17.8 MB: zones of three countries, 120 procedure files, 40 device
+    documents; Chromium, the launcher's transport): `list('sia/base/')` 69 → 0.7 ms, `list('proc/')` 71 → 0.7 ms, a zone
+    of 1 MB read again 8.1 → 2.3 ms (what is left: the text read from IndexedDB), a procedure file 0.4 → 0.2 ms.
+  - The tests open `sogFrame` without a version (the frame upgrades it).
+- **29 Oct 2026 — The flown track and privacy** (coordinator's security review of ff51be774; the user decides
+  tomorrow between keeping it so, or on the device only like `pilot/ANON`):
+  - The whole track of a flight sits in the repository's history read by the group: by default tonight its points have 3
+    decimals (about 100 m; relative seconds kept); « La trace de votre vol en cours est partagée avec le groupe, comme
+    votre position, et reste dans l'historique du dépôt. » is said in the Status block (the current flight's row, « several
+    users » use) and in the help ×4; the track never goes to an outside service without an explicit gesture.
+  - A track is carried on only for the same start: `actual.trailFrom = started.at`, compared exactly (ISO texts of one
+    instant in `Z` and in `+02:00` do not compare as strings).
+- **29 Oct 2026 — A job's headless page claims its token once** (coordinator's security review of D5, way B): no
+  exception to the same-origin check — a document navigation from `file://` to the launcher cannot be told from any
+  website's. The browser opens the launcher's http address with `#job=<id>` (Sec-Fetch-Site `none`, already admitted);
+  the page claims the token by `POST /__setup/regen/job/claim { job }`, once, after the verb's `job.offer(payload)`
+  (what the page must also receive: zones, cycle, inputs), on the workstation only; a second claim, another job, nothing
+  offered: 409. Noreg I8.
+- **29 Oct 2026 — A job's route covers its cancel** (Sécurisation/Réglages found it): a route declared without a final
+  `/` covers itself only, so `regen/job` did not cover `regen/job/cancel` — the cancel the client sends itself on an
+  aborted signal was refused (403) and « Arrêter » cancelled nothing on the launcher (aerodb's EAD / eAIP reads too).
+  The cancel is part of the jobs' protocol: `<route>/cancel` of a declared route is allowed (`allowed()` in
+  `frame/lib/launcher.js`), nothing else under it (bench A29).
+- **29 Oct 2026 — A module's « Publier » is the user's gesture** (Sécurisation/Réglages asked, coordinator approved):
+  `data.sync({ gesture: true })` runs a `manual` pass (the header button's) and hands back the launcher's report
+  (`result.exchange`: numbers and the cleaned message, never paths nor git output), so that a module never posts
+  `/__setup/sync` nor writes an author (§ 15); `data.sync.gesture === true` tells a module the frame takes the gesture.
+  The launcher still decides (`sync_gesture`: a build under way keeps `sia/base`).
+- **29 Oct 2026 — Applications: named sets of modules, chosen by the address** (user's decision, V3 § 2; the
+  coordinator agreed the mechanism):
+  - `APPS = { pilot, maintenance }`, the same shape each (`modules`, `tabs`, `screens`, `links`, `name`, `launcher`);
+    `APP` is the page's, from `?app=` (in the page's query, never in the fragment, which routes the modules; unknown or
+    absent: `pilot`; `Object.hasOwn`, so `?app=__proto__` is Pilot). Nothing kept on the device.
+  - The application lists its modules, not the module its application: order and the limit of seven in one place, a
+    module may serve in two applications without knowing it, INTEGRATION unchanged for modules.
+  - `links`: entries of the rail that are not modules (a frame screen `#…` or a page of the suite, same tab), with a level;
+    Maintenance's: Administration (`#settings?card=admin`), Aide, the V2 maintenance page.
+  - Maintenance opens everywhere, read only without a launcher (first proposed guarded by it: dropped the same evening,
+    since the Données module reads without a launcher and its Administration line is meant for a phone); a link needing
+    the launcher says so (`launcher: true`: the V2 page). Level Complet like the Données module.
+  - The transitional entry `{ id: 'data', rail: false }` of Pilot (Sécurisation/Réglages, waiting for this lot) and its
+    filter go; Réglages › Administration's line « Maintenance » opens `frame/?app=maintenance#data` in the same tab
+    (`same: true` of an admin link); the L cases open Données in Maintenance (`c.open(…, app=)`).
+- **29 Oct 2026 — Security review of 16734c42f, cf52ad2a2 and 127e0b721** (coordinator):
+  - A shared `reference` value is deep-frozen when it is parsed (once per revision): a reader that sorted it or added a
+    field would have changed it for every reader until the next revision; now it throws. Measured (Chromium): a 1.2 MB
+    zone parses in 6.8 ms and freezes in 11.6 ms, a 5.6 MB one (France) 26.6 and 44.1 ms — paid once per revision.
+    The full noreg runs with it.
+  - `job.drop()` in a `finally` of the job's thread: a `BaseException` no longer skips it.
+  - `progress.actual` (`lat`, `lon`) stays exact: only the track is rounded (about 100 m); the user's question of tomorrow
+    is about both (keep them shared, or on the device only).
+- **29 Oct 2026 — G1: the data repository on GitLab** (the user chose GitLab after the feasibility note; coordinator's
+  order: G1 then G2):
+  - `frame/store/transport_gitlab.js`, the same form as the GitHub transport, behind the same device setting: a pasted
+    project address says the host (`github.com` → GitHub, any other https host → a GitLab instance and its `/api/v4`).
+    No new setting, no change for the 15 places of the frame that call `FD.github`.
+  - Project access tokens, one per pilot: the onboarding is « the administrator creates, the pilot pastes »; the token
+    goes to the pasted instance only (header `PRIVATE-TOKEN`, never in an address, a message or the console; a
+    pagination link to another host is not followed). A malicious join link could name another host: the access card
+    shows the address it will use, and a token is pasted by hand — said in the security review's scope.
+  - The commit is atomic (`POST /repository/commits`); concurrency is checked on the head just before, and after, the
+    commit (GitLab has no « advance only from this parent » for a branch): a commit that landed on a moved branch is
+    reported as a conflict, the layer pulls and its merge finds its own changes there.
+  - The tree comes page by page (100), kept per head; bounding it to the declared prefixes is left for when a
+    measurement asks for it.
+  - The launcher registers `secrets/gitlab.json` (instance, project, token) like `ead`: the page gets « set » and the date,
+    never a character (noreg I11); G2 (« Jetons des pilotes ») will use it.
+  - Tested against a GitLab simulated in the page (bench A38, 21 checks); the real gitlab.com only by hand, on the
+    coordinator's and the user's go.
+- **29 Oct 2026 — Security review of 56ab4fd94 … 802e6856f** (coordinator, acceptable; three notes):
+  - **No guard ever rests on `?app=`**: the application of a page is a presentation (rail, bar, name), chosen by anyone who
+    edits the address; the protections stay in the launcher's routes (`ROUTES` and their public, the same-origin check)
+    and in the modules (a module checks what it is allowed to do, whatever the application around it).
+  - The frozen `reference` values throw on mutation only in strict code: the frame's scripts that read them
+    (`frame/aerodb/aerodb.js`, `registry.js`, `sheets.js`, `aircraft.js`) and every module (ES modules) are strict
+    already; `frame/aerodb/zones.js` (generated data) and `shared/sia_base.js` (V2) read none. A new classic script that
+    reads references starts with `'use strict'`.
+  - A job's thread stopped by a `BaseException` no longer leaves the job « running » for ever: its `finally` sets
+    `error` and `ended` (noreg I8).
+- **29 Oct 2026 — An application's level floor and welcome** (seen by Sécurisation/Réglages in `?app=maintenance#data`):
+  at the device's default level, Maintenance's rail was empty (Données is level 3) while `#data` mounted it, and Pilot's
+  welcome card (« Join the airline · Prepare a flight · Write a report ») showed. An application declares its floor
+  (`level`: Maintenance runs at Complet whatever the level chosen for Pilot) and whether it shows Pilot's welcome
+  (`welcome: false`; Maintenance's own help line later). Noreg A36.
+- **29 Oct 2026 — G1, security review (blocking, fixed before any real trial)**: the access card reused the saved token
+  when a new project address was pasted with the token field left empty — an old GitLab or even GitHub token would have
+  left in `PRIVATE-TOKEN` for a new host (the malicious invitation link). `FD.github.resolve(cfg)` reuses the saved token
+  only for the same target (provider, origin of the API, project), otherwise no token and « new host: <host> — paste the
+  token for it »; `save()` refuses a setting without a token (the check is in the transport, not only in the card). The
+  GitLab transport never follows a redirect (`redirect: 'error'`: Fetch drops only `Authorization` across origins, not
+  `PRIVATE-TOKEN`) and takes an `api` of the form `https://<host>/api/v4` only (`clean` drops any other). Bench A38.
+- **29 Oct 2026 — G2: the pilots' GitLab tokens, from Maintenance** (coordinator's order after G1):
+  - A service screen of Maintenance (`#pilot-tokens`, level Complet, link with a launcher): list, create, revoke the
+    project access tokens. The launcher does the calls (`GET /__setup/gitlab/tokens`, `POST …/gitlab/tokens`,
+    `POST …/gitlab/tokens/revoke`, workstation only) with the administrator's token of `secrets/gitlab.json` (an https
+    instance only), never handed back nor in a message; a pilot's token is returned once, at its creation, shown in the
+    screen until it is drawn again, never kept.
+  - The tokens are named after the trigram, scope `api` (the REST API: tree, blobs, commits; `write_repository` is for
+    git over HTTP), role Developer (30): a Maintainer token could change the project's settings through the API; the
+    data branch must let Developers push (the screen says where to set it). At most 365 days.
+  - A service screen may now declare launcher routes (`launcher: { routes }` → `routes()`, the same reduced client as
+    a module's `ctx.launcher`). Noreg A39 (the screen against a simulated context) and I12 (the launcher's functions
+    against a simulated GitLab: no value in a list, the administrator's token in no refusal).
+  - With G2, a consolidation (coordinator): a pasted address whose host holds « @ » or any character outside
+    `[A-Za-z0-9.-]` (plus `:port`) is refused at once (empty repository, « Dépôt et jeton nécessaires ») — never a
+    misleading host shown (`https://gitlab.com@attacker/x/y`). Bench A38.
+- **29 Oct 2026 — G2, security review (before the real trial)**: the launcher put the owner's token in `headers=` of a
+  urllib Request, which `HTTPRedirectHandler` copies to any host, even http, on a 30x. Now the token is added with
+  `add_unredirected_header` and the launcher's GitLab opener follows no redirect (a 30x is an error) — the launcher's
+  side of the transport's `redirect: 'error'` (noreg I12 against a local 302 to another host). With it: the launcher
+  revokes only a pilot's token (a name that is a trigram), never another token of the project, whatever the page asks;
+  the new token's value is wiped as soon as the screen is left (another address, the page closed), not only at the next
+  drawing; the screen tells the administrator to turn off CI/CD and the unused features of the data project (scope
+  `api` + Developer could start pipelines, merge requests or issues with a stolen token).
+- **29 Oct 2026 — R1a: the launcher as the airline's relay** (coordinator approved the split R1a / R1b; the user chose
+  GitLab for the data, the relay stays for IVAO's OpenID and the whitelisted network calls):
+  - `--relay <public host>`: on 127.0.0.1 behind the NAS's reverse proxy; a relay request is told by its `Host` and its
+    origin (127.0.0.1), must be https for the proxy, its client address from `X-Forwarded-For` (the proxy is the only one
+    that can reach 127.0.0.1).
+  - Devices: an 8-digit code per pilot's trigram, issued on the workstation, one use, 10 minutes; a long token kept by
+    hash, revocable by device or pilot, one year; attempt limits as for the local network but per relay address.
+  - A third public in the route table, `relay=True` (a relay route is always a local network route too): status, changes,
+    batch, sync, net. The author comes from the device token; `net` loses the airline's site in relay (`frame_net(site_ok=False)`).
+  - The workstation's screen: Maintenance › « Appareils du relais » (codes, list, revoke), a service screen like the
+    pilots' tokens.
+  - Hardening asked by the security review before the push: no local network in relay mode (`--lan` refused with
+    `--relay`, `/__setup/lan` open refused: 409); the pairing page never framed, without script (X-Frame-Options DENY,
+    CSP `default-src 'none'`); the proxy must append or overwrite `X-Forwarded-For` (the last address is read; a forged
+    head does not lift an attempt wait).
+  - Security review of 7ca73448c (one blocking point, two fixes, two decisions; nothing was exposed): fail closed when
+    the proxy rewrites `Host` (a request from 127.0.0.1 with a proxy header and another host: 403; start check
+    `/__relay/whoami`); `safe_next` refuses spaces and control characters (`/<tab>/host` became `//host`); the pairing
+    POST needs the same origin (login CSRF). Decided by the coordinator: cookie `SameSite=Lax` (a pilot following a link
+    arrives paired; writes already need the same origin and `X-SOG-Setup`); attempts older than an hour forgotten
+    (rotating IPv6 addresses). Debt: bound a device's writes to its pilot's prefixes one day.
+  - Second review (1e573d782): a proxy that rewrites `Host` and adds no proxy header could not be told from the
+    workstation. Decided (way a): a dedicated relay port (`--relay-port`, default interface + 1) on 127.0.0.1, where
+    every request is the relay's; `_relay()` is « arrived by the relay port », never deduced from `Host`; the proxy
+    header guard stays on the interface's port as a belt. I13: on the relay port, without a header and with the
+    workstation's `Host`, a request is the relay's (403 without https, 401 unpaired), never the workstation's; a relay
+    port equal to the interface's stops the launcher at start.
+  - Review of ee6044e8b (acceptable): the public host is set before the relay port listens, `_relay()` is true on that
+    server whatever happens, and a relay server without its public host answers 503 (never served as the workstation).
+  - Lax checked: a GET navigation from another site carries the cookie, so no GET open to the relay may change a state.
+    They are `status` and `changes` (read the data's head and tree; `changes` keeps a two-second memo of the tree),
+    the pages and the data files (read; the pool's indexes rebuilt before being served are derived), `/__relay/pair`
+    (the form) and `/__relay/whoami`; `net` is POST only. The only write is the device's « last used » mark, at most once
+    an hour. The fail-closed refusal runs first, before the other guards (pages, data files and `/__setup/` alike).
+  - Tested on the workstation only: a real launcher `--relay` and requests shaped like the proxy's (noreg I13, 32 checks:
+    https only, dedicated relay port, proxy request on the interface's port, start check, pairing page headers, pairing from another site or
+    without origin, return path, no local network, pairing, single use, attempt limit, forged X-Forwarded-For,
+    workstation routes refused, whitelist, PUT, author from the token, revocation), the screen against a simulated
+    context (A40). Nothing exposed.
+- **29 Oct 2026 — R1b: IVAO's OpenID through the relay** (coordinator's plan R1a then R1b):
+  - The secret of the airline's IVAO application lives on the relay only (`secrets/ivao_oauth.json`, blind to the
+    secrets screen like the GitLab token); the device holds the pilot's own tokens, in its keys, never in a backup.
+  - Code flow with PKCE S256 and `client_secret_basic`; endpoints from the discovery document (default
+    `https://api.ivao.aero/.well-known/openid-configuration`), https only, no redirect followed; state random, bound to
+    the device and the callback, 10 minutes, used once, 100 pending at most.
+  - The tokens go back to the frame in the fragment of a 303 (`#ivao-return?…`, never in a query string, never logged),
+    taken and erased from the address at once; an error comes back as `#ivao-return?error=…`.
+  - Tested against a simulated IVAO (I14: discovery, PKCE, Basic, state used once, wrong device, refresh) and the frame's
+    return (A41); the real IVAO needs the airline's application, registered by the administrator.
+  - The airline's IVAO application serves every paired device (and the workstation): a device that should no longer use
+    it is revoked (Maintenance › « Appareils du relais »), which also closes its IVAO routes; the pilot's own IVAO
+    tokens stay on the device until « Délier ».
+  - The callback `/__relay/ivao/callback` is the relay's only GET that changes a state (it consumes a state and exchanges
+    a code): `SameSite=Lax` is what lets IVAO's redirect carry the device's cookie; a callback sent by another site fails
+    on its state (bound to the device that started the sign-in, used once).
+  - Security review of R1b (acceptable, nothing blocking), three touches: « Délier » revokes the token at IVAO (the
+    discovery's `revocation_endpoint`, https, client authenticated, no redirect followed) before erasing it; without a
+    revocation endpoint or when it fails, a warning tells the pilot to withdraw the application's access in their IVAO
+    account (said after the attempt rather than in the question: only then is it known). The return on the workstation,
+    to try the sign-in without the relay: `http://127.0.0.1:<port>/__relay/ivao/callback`, to declare in the airline's
+    IVAO application; IVAO's redirect is a navigation from another site, served by one narrow exception in `_refused`
+    (exact path, GET, `Sec-Fetch-Dest: document` and `Sec-Fetch-Mode: navigate`, the workstation itself — neither the
+    local network nor the relay — on a local host, and a state of the workstation in progress with its return address);
+    nothing else is opened. Three sign-ins in progress per device, 100 in all.
+  - The relay refreshes with the airline's secret for any paired device: a device that should no longer use IVAO is
+    revoked on the relay, and a pilot withdraws the application's access at IVAO (the answer at IVAO's side).
+- **30 Oct 2026 — The flown track stays on the device** (the user's decision, relayed by the coordinator; replaces
+  « The flown track in `progress.actual.trail` » of 29 Oct):
+  - The track is no longer synchronised nor published: `device/trail.json` in the frame's base (policy cache), never in
+    a backup (`frame_data.js`, like the device keys), read by the modules with `ctx.live.trail()` → `{ from, trail }`.
+  - The shared position is unchanged: `progress.actual` carries the position only; a track written there before is
+    removed at the next write, and taken over once on the device when it belongs to the same start.
+  - The Map draws the device's track when its `from` is its flight's `started.at` (`modules/maps/flight_time.js`, one
+    function; noreg D61). A track already pushed stays in the repository's history (the rewrite of the data repository,
+    30 Oct, is the user's).
+  - The status line in the group usage says it ×4: the position is shared, the track stays on this device.
+- **30 Oct 2026 — A rewritten data repository: refused, then taken up by a gesture** (the user rewrote the history of
+  the data repository, raw sources purged, same tree, force-pushed; the coordinator's go):
+  - Browser transports (GitHub, GitLab) need nothing: they read the head and the trees by blob, unchanged by the rewrite,
+    and commit the queue on the new head.
+  - The launcher's git clone: a remote branch without a common ancestor is never merged (`rewritten`, code and alert;
+    message ×4 in the frame, once per launch, and in the V2 header); nothing lost.
+  - The gesture (Settings › Administration › Remote repository, the workstation only): plan first, one question, then the
+    pool changes committed, the old branch kept in `refs/sog/avant-reecriture-<date>`, `reset --keep` onto the last state
+    common to both histories (found by identical trees), the pool files changed since carried over in one commit, then a
+    normal pass. `reset --keep` rather than the proposed `--soft`: `--soft` would keep the old index, and the next commit
+    (which takes the whole index) would push files outside the pool; with `--keep`, only pool files are carried, a file
+    outside the pool stays in the reference, never pushed, and the folder's uncommitted files outside the pool are
+    untouched.
+  - No common state (a workstation that never synced after the raw sources left): refused, `data/` untouched.
+  - noreg I15 on a rewritten trial repository (refusal, status, plan, trigram, take-up, next pass, remote content, old
+    history never pushed back).
+  - Security review of 6ba742877 (acceptable): every path of the take-up is a file name, never a pattern
+    (`GIT_LITERAL_PATHSPECS`: a pool file named `[ab].json` deleted here no longer deletes `a.json` and `b.json`); names read
+    with `diff -z` (an accented name is no longer quoted with escaped bytes); a file outside the pool that this computer
+    had committed since the common state is copied back into `data/` as it was (bytes from the reference), never committed
+    — the pilot types no git; the plan says it ×4 (I15: a pattern-like name, an accented name outside the pool).
+- **30 Oct 2026 — The trial base frozen like a device's** (the coordinator, after a blocking bug of the tests: the Map
+  wrote on an airspace record, `a._mb ??= …`, a `TypeError` on the device since the deep freeze of 802e6856f, unseen by
+  the noreg):
+  - The frozen value was memoised per revision, and only a copy with a revision was frozen; the noreg seeds its base
+    without a tree, so its references were never frozen. Now a `reference` copy without a revision is deep-frozen at each
+    read, without the memo (`frame/store/frame_data.js`, `valueFor`); a pending write and the other policies are unchanged.
+  - Full noreg with the freeze: the Map's airspace cases (D11, D13, D14, D15, D26, D28, D29) failed on the write BUGS SOG
+    fixed in 0f5891d4c (WeakMap, D64); with that fix, no other module writes on a record.
+- **30 Oct 2026 — A faster noreg** (the user: « optimiser les noreg pour accélérer le delivery, quitte à paralléliser »;
+  the coordinator's lot):
+  - Measured before: the full pass in 926 s of wall time with 4 workers (3,164 s of cases), of which 172 s of static
+    cases played one after the other in the main process **before** the first browser case.
+  - The static cases now run in a thread beside the browser workers; the browser jobs are given out longest first (the
+    seconds per run of the last report), so that a slow case never starts last and alone.
+  - Workers by default: the physical cores less two (`os.cpu_count() // 2 - 2`, 10 here). Measured on the full pass, all
+    green, no flaky failure: 3 workers 982 s, 6 workers 541 s, **10 workers 359 s** (the cases' own seconds grow with the
+    load, 3,067 → 3,751 s, but the wall time keeps falling); kept: 10.
+  - `--touched [BASE]`: the cases chosen by the changed files (`--changed`) plus a smoke base of twelve quick cases, one
+    per area, that open their screen for real (`domains.SMOKE`): the pass before a push. The full pass runs after the
+    push, in the background on the pushed head.
+  - The report keeps each case's seconds and the 20 slowest (`meta.slowest`, a table in `report.md`): their fixed waits
+    are the next target (a wait on a condition, never a delay).
+  - The static server was already started once per pass and shared by the workers. The trial base stays seeded per case,
+    in a fresh browser context: that is each case's isolation, not a cost worth sharing.
+  - K51 (the build page's hostile claim answers, launched in a real headless Edge): « no zone », the last answer, once
+    came after the 40 s ceiling under the full pass. The wait is now on a state (the page's first answer, an error or
+    « started »), with 120 s only for a browser that never starts, and a failure names the race (seconds waited, the
+    browser's exit code, the lines it wrote).
+
+## Inventaire du 30/10 : à refondre
+
+Read-only inventory (V3 frame, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les
+empilages »), frame and launcher from 802e6856f to b44119d88. Per zone: what was done then undone or replaced, what is
+left doubled or dead, the target in one sentence, then an order. Nothing is changed by this section.
+
+**1. The relay's identity** (`tools/launch.py`). 7ca73448c a relay request told by its `Host` → 1e573d782 fail closed on
+proxy headers with another `Host` → ee6044e8b a dedicated port, `_relay()` = « arrived by the relay port » → b27cae045 the
+host set before listening, 503 without it. Undone: the `Host` deduction. Left: three guards for one fact (the port, the
+proxy-header belt on the interface's port, the 503 for a host-less relay server), `_local_host()` answering true for the
+relay, `RELAY` a dict whose `port` is written in `main` while `PROXY_HEADERS` and `relay_probe` live 300 lines away.
+Target: one `Relay` object made in `main` (host, port, server) that the handler asks once; the belt kept, named as such.
+
+**2. Pairing, twice** (`lan_access.py`, `relay_access.py`, `_lan_page` / `_relay_page`, `_lan_pair` / `_relay_pair`,
+`LAN_TEXT` / `RELAY_TEXT`). R1a copied the local network's pairing (codes, attempt limits, hashed tokens, cookie, page,
+four-language texts) and changed the numbers (6 → 8 digits, per-workstation → per-trigram). The security fixes went in one
+copy at a time (1e573d782: `safe_next` shared, but the same-origin check on the relay's pairing POST only — the local
+network's pairing POST still has none: the same login CSRF, on the private network).
+Target: one pairing module with two policies (local network, relay) and one page renderer; each fix lands once.
+
+**3. IVAO's sign-in** (a9840bd19, b27cae045). The callback is handled in three places: the relay gate, the narrow
+exception of `_refused`, and a special case at the top of `do_GET`; two no-redirect openers (`GITLAB_OPENER` once,
+`OIDC_OPEN` building a new one per call; `relay_probe` borrows the GitLab one). `ctx.ivao.token()` has no reader yet (the
+tracker read still goes through `net.fetch` without it). Target: the callback a declared route of the table (public,
+relay, a `nav` guard), one `NO_REDIRECT` opener patched by the tests, `token()` documented as « for the tracker reader ».
+
+**4. Three lists for one route** (`frame/app.js` service screens `launcher: { routes }`, `ROUTES` with `public` / `relay`,
+the expected lists of I10). A new route edits three files and the case fails until all agree (I10 was edited at R1a,
+R1b, b27cae045). Target: the launcher publishes its table (`GET /__setup/routes`), the frame and I10 read it; I10 keeps
+only the security rule (the relay set ⊂ the local-network set ⊂ all).
+
+**5. The data repository's take-overs** (`data_sync.py`: `adopt` / `_fresh` 28 Oct, `rewritten_plan` / `rewritten_resume`
+6ba742877 → add1e78a3). Same rules written twice: commit the pool first, keep a copy before touching, never push outside
+the pool, literal paths (added to the second only after the review; `adopt` still passes paths as patterns to git).
+Target: one `takeover(data, base, keep)` used by both, with the literal pathspecs and `diff -z` once.
+
+**6. The transports** (`transport_github.js` 387 lines, `transport_gitlab.js` 251, G1 a0f3854d9 → 02a096440). Same
+interface, written side by side: `b64`, the auth header, the 409/422 conflict; the redirect refusal
+(`redirect: 'error'`) is in the GitLab one only. Target: a shared base (`transport_git.js`) and two thin adapters (URLs, auth header, tree paging).
+
+**7. The flown track** (A35 29 Oct in `progress.actual.trail` → 0bbe7ebbb on the device). Left: the one-shot takeover of a
+track found in `progress.actual` (dead once no flight started before 30 Oct remains: after 6 Nov), the text key
+`T.info.trailShared` that now says the opposite of its name. Target: remove the takeover after 6 Nov; rename the key.
+
+**8. The freeze of references** (802e6856f → 94515ca99). Two paths in `valueFor` (memoised by revision, or frozen at each
+read without a revision). Target: one path, memoised by revision or by the text's length and hash.
+
+**9. Settings screens** (`pilot_tokens.js` G2, `relay_devices.js` R1a, the remote card's « hist » block 6ba742877). Same
+pattern three times: a list, a value shown once and wiped on leaving, revoke after a question. `launcher.js` has grown to
+eight cards' worth of actions in one `run`. Target: one small « shown once / list / revoke » helper; `launcher.js` split
+by card.
+
+**10. The noreg runner** (`tests/v3/run.py`, b44119d88). Six overlapping selectors (`--changed`, `--touched`, `--for`,
+`--journey`, `--failed`, `--failed-scope`); the one-worker path kept apart from the pool; `DEFAULT_JOBS` assumes two
+threads per core. Target: `--touched` and `--failed` as the two daily verbs, the others as options of one selector.
+
+**Order proposed** (smallest risk first, each with its noreg): 7 (a date, a rename) → 3 (one opener, the callback as a
+route) → 4 (the route table read by the frame and I10) → 2 (one pairing module: the next security fix lands once) → 1
+(the `Relay` object, on top of 2) → 5 (one takeover) → 6 (the transports' base) → 8, 9, 10 when they are touched next.
+- **30 Oct 2026 — Three gaps found by the inventory, closed** (coordinator's go; no refactoring, the rules already
+  reviewed elsewhere):
+  - The local network's pairing POST needs the same origin, as the relay's: `Sec-Fetch-Site: same-origin`, or `Origin`
+    equal to `http://<the workstation's host>`; otherwise 403 and « Saisissez le code sur cette page » ×4.
+  - Every file path sent to git is literal (`data_sync.lit()`: `GIT_LITERAL_PATHSPECS`): `adopt`, `resolve`, the
+    commits of `run`, the untracking of indexes, the frame's batch in `launch.py`; never for `POOL`, `EXCLUDE`,
+    `INDEXES`, which are patterns on purpose.
+  - The GitHub transport follows no redirect (`redirect: 'error'`, as GitLab's): the token is never copied to another
+    host; a moved repository is an error said.
+  - noreg I16: the pairing POST from another site or without origin refused, its own page heard; `adopt` with a file named
+    `[ab].json` keeps the workstation's newer `a.json` (it failed without the fix); no git call of `data_sync` with file
+    paths outside `lit()`; both transports refuse redirects.
+- **30 Oct 2026 — K49 follows its own browser profile** (a full pass of Features SOG: expected `sog-base-dzwjlcpo`, got
+  `sog-base-pgzysd4j`): the case listed every `sog-base-*` of the computer's temp folder before and after the job, a folder
+  shared with other passes, a real build and the job's own purge of old leftovers. It now records the profile the job makes
+  (`tempfile.mkdtemp` watched for the `sog-base-` prefix during the job) and checks that this one, and only one, is gone.
+  Replayed 4 times under the load of area D on 10 workers: green.
+- **30 Oct 2026 — One heavy noreg pass at a time on the computer** (a browser driver crashed, « Connection closed », when two
+  full passes at 10 workers ran together; a load test of mine also ended on a Playwright `MemoryError`, and hung until
+  stopped):
+  - A full pass (no selector, no filter), or any pass of more than 30 cases (the coordinator: an area with `--grep` is
+    heavy), takes a lock, `sog-noreg-full.lock`, in the computer's temp folder rather than in
+    `tests/v3/` as first asked: each session works in its own worktree, and a lock inside the repository would not be
+    seen by the others. It holds the pid, the time and the folder; a second full pass refuses to start and names it (exit
+    3), or waits with `--wait`. A lock older than two hours, or whose process is gone, is ignored.
+  - Whether the pid lives is asked of Windows (`OpenProcess`, `GetExitCodeProcess`): there `os.kill(pid, 0)` would end
+    the process instead of probing it.
+  - A heavy targeted pass (a large `--touched` before a push) waits for its turn rather than refusing: a push is not
+    blocked, only delayed. A pass of 30 cases or fewer stays free.
+- **30 Oct 2026 — One criterion for the layout and the computer's design** (the user, widening a window: phone → Aqua →
+  icon rail without texture → Aqua): the phone's landscape (`f-land`: wider than high and under 1024 px) applied to a
+  computer's window too, while `f-desk` (Aqua) required a precise pointer and not `f-land` — two criteria that did not
+  meet. Now `f-land` needs a pointer that is not precise (a phone or a tablet turned; a computer's window keeps its rail
+  with labels), and `f-desk` is exactly the computer's layout: wider than 760 px and not `f-land`. Aqua reads only
+  `f-desk`: never on the icon rail nor on the bottom bar (A42: 390, 800 × 600 and 1280 with a mouse, then a window widened
+  step by step from 700 to 1300 px; red without the fix). A touch tablet in portrait above 760 px has the rail with labels
+  and so Aqua when chosen.

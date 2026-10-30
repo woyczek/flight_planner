@@ -28,6 +28,7 @@
   const STORE = [
       ['store/frame_data.js', () => window.FrameData],
       ['store/transport_github.js', () => window.FrameData?.github],
+      ['store/transport_gitlab.js', () => window.FrameData?.gitlab],
       ['store/transport_launcher.js', () => window.FrameData?.launcher]
     ],
     lost = STORE.filter(([, has]) => !has()).map(([p]) => p);
@@ -77,8 +78,11 @@
   // posée avant le premier affichage, même règle), puis sur resize et orientationchange, en une seule écriture quand la valeur
   // change ; « frame-orientation » (detail: { land }) le dit ensuite aux primitives du cadre (la feuille). Un clavier à l'écran
   // qui rendrait une fenêtre de téléphone portrait plus large que haute n'y change rien : l'orientation de l'écran, quand le
-  // navigateur la donne, doit être celle d'un paysage.
-  const landNow = () => innerWidth > innerHeight && innerWidth < 1024 && !/^portrait/.test(screen.orientation?.type || '');
+  // navigateur la donne, doit être celle d'un paysage. Jamais avec un pointeur précis qui survole (souris, pavé tactile) : une
+  // fenêtre d'ordinateur plus large que haute garde le rail à libellés et son design (30 oct. : sans cela, en élargissant une
+  // fenêtre, on passait téléphone → ordinateur → rail d'icônes sans Aqua → ordinateur).
+  const fineQ = matchMedia('(pointer: fine) and (hover: hover)'),
+    landNow = () => innerWidth > innerHeight && innerWidth < 1024 && !fineQ.matches && !/^portrait/.test(screen.orientation?.type || '');
 
   function paintLand() {
     const h = document.documentElement,
@@ -91,13 +95,13 @@
       }
     }));
   }
-  // ordinateur (frame/INTEGRATION.md § 9.1) : <html class="f-desk"> quand la fenêtre dépasse 760 px, que le pointeur est précis
-  // et survole (souris, pavé tactile) et que ce n'est pas un paysage de téléphone (f-land) ; un design qui ne vaut que sur un
-  // ordinateur (Aqua) s'y accroche. Même règle dans index.html avant le premier affichage ; recalculée sur resize,
-  // orientationchange et au changement du pointeur (une tablette à laquelle on branche une souris), en une seule écriture
-  // quand la valeur change ; « frame-desk » (detail: { desk }) le dit ensuite.
-  const fineQ = matchMedia('(pointer: fine) and (hover: hover)'),
-    deskNow = () => innerWidth > 760 && fineQ.matches && !landNow();
+  // ordinateur (frame/INTEGRATION.md § 9.1) : <html class="f-desk"> exactement quand la mise en page est celle de l'ordinateur,
+  // le rail à libellés — plus de 760 px et pas le paysage de téléphone (f-land) ; un seul critère pour la mise en page et le
+  // design d'ordinateur (Aqua) qui s'y accroche, jamais sur le rail d'icônes ni sur la barre du bas. Même règle dans
+  // index.html avant le premier affichage ; recalculée sur resize, orientationchange et au changement du pointeur (une
+  // tablette à laquelle on branche une souris), en une seule écriture quand la valeur change ; « frame-desk »
+  // (detail: { desk }) le dit ensuite.
+  const deskNow = () => innerWidth > 760 && !landNow();
 
   function paintDesk() {
     const h = document.documentElement,
@@ -117,7 +121,7 @@
   paintForm();
   window.addEventListener('resize', paintForm);
   window.addEventListener('orientationchange', paintForm);
-  fineQ.addEventListener('change', paintDesk);
+  fineQ.addEventListener('change', paintForm); // le pointeur décide aussi du paysage : les deux classes ensemble
   // heures de l'appli : UTC suffixée Z (frame/lib/time.js) ; module chargé en même temps que le reste du démarrage
   let TZ = null;
   const timeP = import(new URL('lib/time.js?v=0', document.currentScript.src).href).then(m => TZ = m).catch(e => console
@@ -128,8 +132,17 @@
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 
-  // ---------------------------------------------------------------- l'application
-  const APP = {
+  // ---------------------------------------------------------------- les applications
+  // une application = un jeu de modules nommé du même cadre (son rail, sa barre d'onglets, ses écrans, son nom), choisie
+  // par l'adresse de la page : /frame/?app=maintenance ; sans app ou inconnue : pilot (V3_SPECIFICATION § 2) ; rien n'est
+  // gardé sur l'appareil (plus tard : le rôle du registre). L'application liste ses modules (ordre, sept au plus) : un
+  // module ne sait pas où il est rangé. links : entrées du rail qui ne sont pas des modules (un écran du cadre « #… » ou
+  // une page de la suite), au niveau level ; launcher : montrée seulement sur le poste qui a un lanceur. Une application
+  // s'ouvre partout : ce qui demande le lanceur se masque là où il est (le module Données se lit sans lui). level : le
+  // plancher du niveau d'usage de l'application (Maintenance : Complet, quel que soit le niveau choisi pour Pilote) ;
+  // welcome : false, pas de carte d'accueil des tutoriels de Pilote.
+  const APPS = {};
+  APPS.pilot = {
     id: 'pilot',
     name: ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
     // un module = un verbe ; sept au plus
@@ -159,7 +172,7 @@
       // module dédié (vue fixe, gabarit de la Carte) : son onglet « Météo » de la barre du téléphone (APP.tabs, règle 14), dans
       // le rail sur écran ; réinclus plus tard dans Préparer et la Carte (modules/atmosphere/DECISIONS.md, 24 oct 2026)
       id: 'atmosphere',
-      label: ['Atmosphère', 'Atmosphere', 'Atmosphäre', 'Atmósfera'],
+      label: ['Météo', 'Weather', 'Wetter', 'Meteo'],
       icon: 'layers'
     }],
     // barre d'onglets du téléphone (760 px et moins), cinq au plus (V3_SPECIFICATION.md § 7.1 règle 14) : un onglet = un groupe
@@ -208,10 +221,97 @@
     // (jamais le jeton) ; le script s'enregistre lui-même : window.SogScreens[id] = { screen(view, ctx) }
     screens: [{
       id: 'sources', // les sources des données aéronautiques (aerodb) : des liens, rien n'est lu ni écrit
-      scripts: ['aerodb/sources_data.js?v=0', 'aerodb/sources.js?v=0'],
+      scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js?v=0', 'aerodb/sources.js?v=0'],
       level: 3
+    }],
+    links: []
+  };
+  // Maintenance (V3_SPECIFICATION § 2) : les données de la compagnie (module Données), l'administration (les réglages ouverts
+  // sur leur carte Administration), l'aide, et la page V2 de maintenance tant que D3–D5 ne la couvrent pas (avec un lanceur
+  // seulement) ; niveau Complet ; sans lanceur, ou depuis un appareil appairé, en lecture seule
+  APPS.maintenance = {
+    id: 'maintenance',
+    name: ['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento'],
+    level: 3,
+    welcome: false,
+    modules: [{
+      id: 'data',
+      label: ['Données', 'Data', 'Daten', 'Datos'],
+      icon: 'database'
+    }],
+    links: [{
+      id: 'admin',
+      href: '#settings?card=admin',
+      label: ['Administration', 'Administration', 'Verwaltung', 'Administración'],
+      icon: 'settings',
+      level: 3
+    }, {
+      id: 'help',
+      href: '#help',
+      label: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
+      icon: 'help',
+      level: 3
+    }, {
+      id: 'v2',
+      href: '../apps/settings/maintenance.html',
+      label: ['Page de maintenance (V2)', 'Maintenance page (V2)', 'Wartungsseite (V2)', 'Página de mantenimiento (V2)'],
+      icon: 'wrench',
+      level: 3,
+      launcher: true
+    }, {
+      // jetons d'accès GitLab des pilotes (G2) : écran de service, avec le lanceur du poste (il garde le jeton de l'administrateur)
+      id: 'tokens',
+      href: '#pilot-tokens',
+      label: ['Jetons des pilotes', 'Pilots’ tokens', 'Token der Piloten', 'Tokens de los pilotos'],
+      icon: 'shield',
+      level: 3,
+      launcher: true
+    }, {
+      // appareils des pilotes par le relais de la compagnie (R1a) : codes d'appairage, révocation
+      id: 'relay',
+      href: '#relay-devices',
+      label: ['Appareils du relais', 'Relay devices', 'Geräte des Relais', 'Dispositivos del relé'],
+      icon: 'globe',
+      level: 3,
+      launcher: true
+    }],
+    tabs: [{
+      id: 'data',
+      label: ['Données', 'Data', 'Daten', 'Datos'],
+      icon: 'database',
+      modules: ['data']
+    }, {
+      id: 'admin',
+      label: ['Administration', 'Administration', 'Verwaltung', 'Administración'],
+      icon: 'settings',
+      screen: 'settings?card=admin'
+    }, {
+      id: 'help',
+      label: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
+      icon: 'help',
+      screen: 'help'
+    }],
+    // écrans de service : « Jetons des pilotes » (frame/settings/pilot_tokens.js), avec deux routes du lanceur seulement
+    screens: [{
+      id: 'pilot-tokens',
+      scripts: ['settings/pilot_tokens.js?v=0'],
+      level: 3,
+      launcher: {
+        routes: ['gitlab/tokens', 'gitlab/tokens/revoke']
+      }
+    }, {
+      id: 'relay-devices',
+      scripts: ['settings/relay_devices.js?v=0'],
+      level: 3,
+      launcher: {
+        routes: ['relay', 'relay/devices', 'relay/devices/revoke']
+      }
     }]
   };
+  const APP = (() => {
+    const id = new URLSearchParams(location.search).get('app') || '';
+    return Object.hasOwn(APPS, id) ? APPS[id] : APPS.pilot;
+  })();
   // module d'exemple pour les développeurs (modules/hello/, frame/INTEGRATION.md) : absent de l'appli ; il rejoint le
   // menu (et la mise en cache) seulement sur un poste de développement, localStorage « sogFrame:dev » = 1
   try {
@@ -277,6 +377,12 @@
       failed: ['Synchronisation impossible : {e}', 'Synchronisation failed: {e}', 'Synchronisation fehlgeschlagen: {e}',
         'Sincronización imposible: {e}'
       ],
+      rewritten: [
+        'L’historique du dépôt des données a été réécrit : rien n’est fusionné, vos écritures restent sur le poste du lanceur. Sur ce poste : Réglages › Administration › Dépôt distant, « Reprendre le nouvel historique ».',
+        'The data repository’s history was rewritten: nothing is merged, your writes stay on the launcher’s computer. On that computer: Settings › Administration › Remote repository, « Take up the new history ».',
+        'Die Historie des Daten-Repositorys wurde neu geschrieben: nichts wird zusammengeführt, Ihre Änderungen bleiben auf dem Rechner des Starters. Dort: Einstellungen › Administration › Entferntes Repository, „Neue Historie übernehmen“.',
+        'El historial del repositorio de datos se reescribió: no se fusiona nada, sus escrituras se quedan en el equipo del lanzador. En ese equipo: Ajustes › Administración › Repositorio remoto, «Retomar el nuevo historial».'
+      ],
       offlineNote: ['Hors ligne : vos écritures attendent et partiront à la prochaine synchronisation.',
         'Offline: your writes are waiting and will leave at the next synchronisation.',
         'Offline: Ihre Änderungen warten und gehen bei der nächsten Synchronisation hinaus.',
@@ -292,11 +398,23 @@
     ok: ['OK', 'OK', 'OK', 'Aceptar'],
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+    ivaoOk: ['Compte IVAO relié à cet appareil.', 'IVAO account linked to this device.', 'IVAO-Konto mit diesem Gerät verbunden.',
+      'Cuenta IVAO vinculada a este dispositivo.'
+    ],
+    ivaoFail: ['Connexion à IVAO refusée ({e}).', 'IVAO sign-in refused ({e}).', 'IVAO-Anmeldung abgelehnt ({e}).',
+      'Inicio de sesión en IVAO rechazado ({e}).'
+    ],
     tabsNav: ['Navigation principale', 'Main navigation', 'Hauptnavigation', 'Navegación principal'],
     // bloc d'état en tête des Réglages et pastille du ⚙ de l'en-tête (frame/SPEC.md § 3.1)
     info: {
       news: ['à voir', 'something to see', 'Hinweise vorhanden', 'algo que ver'],
       title: ['État', 'Status', 'Status', 'Estado'],
+      trailShared: [
+        'Votre position est partagée avec le groupe et reste dans l’historique du dépôt ; la trace de votre vol reste sur cet appareil.',
+        'Your position is shared with the group and stays in the repository’s history; the track of your flight stays on this device.',
+        'Ihre Position wird mit der Gruppe geteilt und bleibt in der Historie des Repositorys; die Spur Ihres Flugs bleibt auf diesem Gerät.',
+        'Su posición se comparte con el grupo y queda en el historial del repositorio; la traza de su vuelo se queda en este dispositivo.'
+      ],
       flight: ['Vol en cours › {m}', 'Flight in progress › {m}', 'Flug läuft › {m}', 'Vuelo en curso › {m}'],
       report: ['CR à écrire pour le vol du {date} {dep}→{arr}', 'Report to write for the flight of {date} {dep}→{arr}',
         'Bericht zu schreiben für den Flug vom {date} {dep}→{arr}', 'Informe por escribir del vuelo del {date} {dep}→{arr}'
@@ -366,6 +484,16 @@
       weather: ['Météo : {n} appels aujourd’hui', 'Weather: {n} calls today', 'Wetter: {n} Abrufe heute',
         'Meteorología: {n} llamadas hoy'
       ],
+      // fin de cycle AIRAC de ce qui est publié (INTEGRATION § 15.3) : {s} la base ou les procédures, {c} cycle, {d} date
+      cycleOld: ['{s} : cycle {c} terminé, en attente de publication', '{s}: cycle {c} ended, waiting for publication',
+        '{s}: Zyklus {c} beendet, Veröffentlichung ausstehend', '{s}: ciclo {c} terminado, pendiente de publicación'
+      ],
+      cycleEnds: ['{s} : le cycle {c} se termine le {d}, rien de publié pour {n}',
+        '{s}: cycle {c} ends on {d}, nothing published for {n}',
+        '{s}: Zyklus {c} endet am {d}, nichts für {n} veröffentlicht', '{s}: el ciclo {c} termina el {d}, nada publicado para {n}'
+      ],
+      cycleBase: ['Base aéronautique', 'Aeronautical database', 'Luftfahrtdatenbank', 'Base aeronáutica'],
+      cycleProc: ['Procédures', 'Procedures', 'Verfahren', 'Procedimientos'],
       weatherOne: ['Météo : 1 appel aujourd’hui', 'Weather: 1 call today', 'Wetter: 1 Abruf heute', 'Meteorología: 1 llamada hoy'],
       weatherSub: ['Prévisions Open-Meteo, limite {max} par jour', 'Open-Meteo forecasts, limit {max} a day',
         'Open-Meteo-Vorhersagen, Grenze {max} pro Tag', 'Previsiones Open-Meteo, límite {max} al día'
@@ -555,7 +683,109 @@
       };
     }
   };
-  let launcherHere = null; // { data, dataGit } si la page est servie par un lanceur (relevé au démarrage)
+  // compte IVAO du pilote par le relais (R1b) : { access_token, refresh_token, expires_at, scope }, dans device/keys.json avec
+  // le jeton GitHub et la clé météo (hors des sauvegardes, jamais synchronisé) ; reçu une fois par le retour de l'OpenID
+  // d'IVAO (#ivao-return?…, adresse remplacée aussitôt), renouvelé par le relais (son secret)
+  let ivaoTok = null;
+  /** Retour de l'OpenID d'IVAO (le lanceur renvoie vers #ivao-return?… ) : jetons gardés, adresse remplacée — ni
+   *  l'historique, ni la page, ni un journal ne les gardent ; une erreur est dite. */
+  async function takeIvaoReturn() {
+    if (!location.hash.startsWith('#ivao-return?')) return;
+    const q = new URLSearchParams(location.hash.slice('#ivao-return?'.length));
+    history.replaceState(null, '', `${location.pathname}${location.search}#settings?card=ivao`);
+    const at = q.get('access_token') || '';
+    if (!at) return notify(t(T.ivaoFail, {
+      e: (q.get('error') || 'refused').slice(0, 40)
+    }), 'err');
+    ivaoTok = {
+      access_token: at,
+      refresh_token: q.get('refresh_token') || '',
+      expires_at: +q.get('expires_at') || 0,
+      scope: (q.get('scope') || '').slice(0, 200)
+    };
+    await keepKeys();
+    notify(t(T.ivaoOk), 'ok');
+  }
+  /** Compte IVAO pour les Réglages et les modules : état (jamais le jeton), connexion par le relais, déconnexion, jeton du
+   *  moment (renouvelé par le relais à moins de 5 minutes de sa fin) ou null. */
+  const ivao = {
+    status: () => ivaoTok ? {
+      connected: true,
+      expires_at: ivaoTok.expires_at,
+      scope: ivaoTok.scope
+    } : {
+      connected: false
+    },
+    async connect() {
+      const r = await launcherRequest('ivao/oauth/start', {
+        json: {}
+      });
+      if (r?.body?.ok && /^https:\/\//.test(r.body.url || '')) {
+        location.assign(r.body.url);
+        return {
+          ok: true
+        };
+      }
+      return {
+        ok: false,
+        status: r?.status || 0,
+        message: r?.body?.message || ''
+      };
+    },
+    /** Délier : le jeton révoqué chez IVAO par le lanceur (s'il le peut), puis effacé ici ; { revoked }. */
+    async disconnect() {
+      const tok = ivaoTok?.refresh_token || ivaoTok?.access_token || '';
+      const r = tok ? await launcherRequest('ivao/oauth/revoke', {
+        json: {
+          token: tok
+        }
+      }) : null;
+      ivaoTok = null;
+      await keepKeys();
+      return {
+        revoked: r?.body?.revoked === true
+      };
+    },
+    async token() {
+      if (!ivaoTok) return null;
+      if (ivaoTok.expires_at - Date.now() / 1000 > 300) return ivaoTok.access_token;
+      if (!ivaoTok.refresh_token) return null;
+      const r = await launcherRequest('ivao/oauth/refresh', {
+        json: {
+          refresh_token: ivaoTok.refresh_token
+        }
+      });
+      if (!r?.body?.ok) return null;
+      ivaoTok = {
+        access_token: r.body.access_token,
+        refresh_token: r.body.refresh_token || ivaoTok.refresh_token,
+        expires_at: +r.body.expires_at || 0,
+        scope: r.body.scope || ivaoTok.scope
+      };
+      await keepKeys();
+      return ivaoTok.access_token;
+    }
+  };
+  let launcherHere = null; // { data, dataGit, host, lan, lnm } si la page est servie par un lanceur (relevé au démarrage)
+  // client du lanceur (frame/lib/launcher.js, INTEGRATION § 15) : chargé au démarrage ; le cadre s'en sert pour lui-même
+  // (Réglages, fiches .lnmperf d'aerodb : toutes ses routes), un module par ctx.launcher (ce que son meta.launcher déclare)
+  let LC = null,
+    lcFor = null,
+    lcClient = null;
+  /** Client du lanceur qui sert la page (refait si la détection change) ; null sans lanceur. */
+  const launcherClient = () => {
+    if (!LC || !launcherHere) return null;
+    if (lcFor !== launcherHere) {
+      lcFor = launcherHere;
+      lcClient = LC.launcherClient({
+        root: ROOT,
+        info: launcherHere
+      });
+    }
+    return lcClient;
+  };
+  /** Appel du cadre à une route du lanceur : { status, body } ou null (ni lanceur ni réponse) ; jamais d'exception. */
+  const launcherRequest = (route, opts) => launcherClient()?.request(route, opts) ?? Promise.resolve(null);
   let airlineP = Promise.resolve(); // première lecture de la compagnie, en cours au démarrage
   /** Hôte du site de la compagnie (ctx.airline.site, en https) : relayé ou appelé en lecture seule (GET) ; '' sinon. */
   const siteHost = () => {
@@ -595,6 +825,7 @@
       try {
         if (u.origin === location.origin) return await fetch(u, init);
         if (launcherHere && (RELAY.includes(u.hostname) || site)) {
+          // le relais rend la réponse du site telle quelle (pas du JSON du lanceur) : le seul appel direct du cadre au lanceur
           const r = await fetch(new URL('__setup/net', ROOT), {
             method: 'POST',
             cache: 'no-store',
@@ -659,6 +890,7 @@
       schema: 1,
       github: FD.github.config(),
       avwx,
+      ivao: ivaoTok,
       updated_at: new Date().toISOString()
     };
     return keysSaved = keysSaved.then(() => own.put(KEYS, doc)).catch(e => console.error(e));
@@ -673,6 +905,7 @@
     if (doc) {
       FD.github.hold(doc.github);
       avwx = typeof doc.avwx === 'string' ? doc.avwx : '';
+      ivaoTok = doc.ivao?.access_token ? doc.ivao : null;
       return;
     }
     // aucun document : l'ancien rangement de localStorage, repris une fois puis effacé
@@ -748,9 +981,14 @@
     });
     paintWho();
     usages = (await own.get('device/usages.json')) || {};
-    level = levelFrom((await own.get('device/level.json'))?.level);
+    // niveau choisi sur l'appareil (pour Pilote), jamais sous le plancher de l'application (Maintenance : Complet)
+    level = Math.max(levelFrom((await own.get('device/level.json'))?.level), APP.level || 1);
     applyDesign(await own.get('device/design.json'));
     liveGps = (await own.get('device/live.json'))?.gps === true;
+    liveTrail = trailFrom(await own.get(TRAIL_DOC));
+    trailWatch ||= own.watch(TRAIL_DOC, async () => {
+      liveTrail = trailFrom(await own.get(TRAIL_DOC));
+    });
     liveWatch();
     layout = (await own.get('device/layout.json'))?.panes || {};
     renderMenu();
@@ -1320,7 +1558,11 @@
         m: t(maps.label)
       }),
       go: '#maps',
-      news: true
+      news: true,
+      // usage « à plusieurs » : la position part au dépôt du groupe, la trace reste sur l'appareil ; le pilote le lit ici
+      ...(usages.users ? {
+        sub: t(T.info.trailShared)
+      } : {})
     });
     moduleLines.forEach((l, i) => items.push({
       k: `line-${l.from}`,
@@ -1347,6 +1589,7 @@
       go: 'card:identity',
       attn: true
     });
+    items.push(...cycleItems()); // fin de cycle AIRAC de ce qui est publié (base, proc/)
     // la base aéronautique : trois états distincts, jamais « non publiée » pendant qu'elle charge ni sans accès
     if (baseState) items.push({
       k: 'base',
@@ -1548,6 +1791,7 @@
         to = '#report?from=flightlog';
       } else to = '#flightlog';
     }
+    if (to.startsWith('?')) return void location.assign(new URL(to, location.href).href); // une autre application du cadre
     // même adresse : rien ne change, sauf pour un CR (report reprend le passage à son montage, donc il est monté de nouveau)
     if (location.hash === to) return go.startsWith('report:') ? route() : undefined;
     if (isModule(to.slice(1).split('?')[0]) && !to.includes('from=')) viaMenu = true;
@@ -1601,7 +1845,11 @@
       author: () => identity.trigram || ''
     });
     if (!exchange && !usages.backend) return FD.transports.local();
-    if (FD.github.config()) return FD.github();
+    // dépôt de l'appareil (GitHub, ou une instance GitLab : son transport y signe les commits du trigramme)
+    if (FD.github.config()) return FD.github({
+      ...FD.github.config(),
+      author: () => identity.trigram
+    });
     return {
       ...FD.transports.local(),
       missing: true
@@ -1617,7 +1865,9 @@
     if (s.conflicts) return ['conflicts', t(T.sync.conflicts, {
       n: s.conflicts
     })];
-    if (s.transport === 'local' && !s.pending) return ['local', t(T.sync.local)];
+    // transport local (cet appareil seul) : rien n'est jamais « à envoyer » ; une écriture en attente y est vidée aussitôt dans
+    // la copie (FD.sync local) et ne demande pas l'attention, même l'instant où elle attend (SPEC § 3)
+    if (s.transport === 'local') return ['local', t(T.sync.local)];
     if (!s.online || s.lastError === 'offline') return ['offline', s.pending ? `${t(T.sync.offline)} · ${t(T.sync.pending, { n: s.pending })}` : t(T.sync.offline)];
     if (s.lastError) return ['error', t(T.sync.error)];
     if (s.pending) return ['pending', t(T.sync.pending, {
@@ -1652,12 +1902,18 @@
     b.setAttribute('aria-label', label);
     b.querySelector('.f-lbl').textContent = label;
   }
+  let rewrittenSaid = false;
   /** Synchronise maintenant et dit le résultat (reçus, envoyés, conflits, hors ligne, erreur). */
   async function syncNow(quiet = false) {
     const r = await FD.sync();
     if (r.conflicts) notify(t(T.sync.conflictNote, {
       n: r.conflicts
     }), 'warn');
+    // historique du dépôt réécrit (lanceur) : jamais fusionné ; dit même en passage de fond, une fois par lancement
+    if (r.exchange?.code === 'rewritten' && !rewrittenSaid) {
+      rewrittenSaid = true;
+      notify(t(T.sync.rewritten), 'warn');
+    }
     if (quiet) return r;
     if (r.error === 'offline') notify(t(T.sync.offlineNote), 'warn');
     else if (r.error) notify(t(T.sync.failed, {
@@ -1733,7 +1989,9 @@
       if (!el.isConnected) return;
       if (meta.help !== false) SogHelp.panel(entry.id, helpCtx()).then(p => p && el.isConnected && view.insertBefore(p, el))
         .catch(e => console.warn('help', e));
-      SogHelp.welcome?.(helpCtx()).then(w => w && el.isConnected && view.prepend(w)).catch(e => console.warn('help', e));
+      // carte d'accueil des tutoriels : celle de Pilote, pas d'une autre application (APP.welcome: false)
+      if (APP.welcome !== false) SogHelp.welcome?.(helpCtx()).then(w => w && el.isConnected && view.prepend(w)).catch(e => console
+        .warn('help', e));
     }).catch(e => console.warn('help', e));
   }
   /** Fichiers de l'aide dans la langue de l'appli (manuel, tutoriels), gardés dès l'installation. */
@@ -1802,10 +2060,13 @@
     renderTabs(tabFor(active, screen));
     const ul = $('fMenu'),
       list = visibleModules(),
-      key = list.map(m => m.id).join(',');
+      links = (APP.links || []).filter(l => (l.level ?? 1) <= level && (!l.launcher || (launcherHere && !launcherHere.lan))),
+      key = lang() + list.map(m => m.id).join(',') + '|' + links.map(l => l.id).join(',');
     if (key !== menuKey || !ul.children.length) {
       menuKey = key;
-      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}" data-landmark="${esc(m.id)}">${icon(m.icon)}${esc(t(m.label))}</a></li>`).join('');
+      // liens de l'application (écran du cadre « #… » ou page de la suite, dans le même onglet) après ses modules
+      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}" data-landmark="${esc(m.id)}">${icon(m.icon)}${esc(t(m.label))}</a></li>`).join('') +
+        links.map(l => `<li><a href="${esc(l.href.startsWith('#') ? l.href : new URL(l.href, location.href).href)}" data-link="${esc(l.id)}" data-landmark="settings">${icon(l.icon)}${esc(t(l.label))}</a></li>`).join('');
     }
     for (const a of ul.querySelectorAll('a')) {
       const on = a.dataset.id === active;
@@ -1988,6 +2249,8 @@
    *  navigation à la fois : chaque appel prend un jeton, et une reprise après un await dont le jeton n'est plus le dernier
    *  abandonne sans rien écrire (la vue est déjà vidée par la navigation suivante, qui a démonté le module en cours de montage). */
   async function route() {
+    // retour de l'OpenID d'IVAO arrivé sans recharger la page (même document) : jetons rangés, adresse remplacée, puis le routage
+    if (location.hash.startsWith('#ivao-return?')) return void takeIvaoReturn().then(route);
     const h = parseHash(),
       id = h.id || visibleModules()[0]?.id || 'settings';
     // écrans du cadre (aide, feuille de route, réglages, conflits) par-dessus le module courant, qui reste monté
@@ -2001,6 +2264,7 @@
       const tb = tabOf(id);
       if (tb) lastInTab[tb.id] = id; // le toucher de l'onglet y reviendra
     }
+    current?.life?.abort();
     if (current?.mod?.unmount) try {
       current.mod.unmount();
     } catch (e) {
@@ -2033,9 +2297,11 @@
       el.dataset.module = entry.id;
       el.dataset.landmark = entry.id;
       view.append(el);
+      const life = new AbortController(); // démontage : suivis de travaux du lanceur arrêtés (ctx.launcher)
       current = {
         id: entry.id,
-        mod
+        mod,
+        life
       };
       moduleFixed[entry.id] = meta.fixed === true;
       if (Array.isArray(meta.title)) moduleTitle[entry.id] = meta.title;
@@ -2045,7 +2311,7 @@
         id: entry.id,
         hash: location.hash
       };
-      await mod.mount(el, ctxFor(entry, meta, h.query, el));
+      await mod.mount(el, ctxFor(entry, meta, h.query, el, false, life.signal));
       if (tok !== navSeq) return; // la navigation suivante a démonté ce module et vidé la vue
       moduleHelp(entry, meta, el, view);
       // vue double : volet demandé par l'adresse (#fuel?with=maps) ou gardé pour ce module (device/layout.json)
@@ -2078,6 +2344,7 @@
   /** Démonte le volet (changement de module, fermeture, écran devenu étroit). */
   function closePane() {
     if (!pane) return;
+    pane.life?.abort();
     try {
       pane.mod.unmount?.();
     } catch (e) {
@@ -2126,7 +2393,8 @@
     pane = {
       id: p.id,
       mod: null,
-      el
+      el,
+      life: new AbortController()
     };
     $('fView').classList.add('f-split');
     $('fView').append(el);
@@ -2138,7 +2406,7 @@
       if (mod.meta?.fixed === true) sec.dataset.fixed = ''; // module de vue fixe : le cadre lui donne la hauteur du volet (--f-pane-h)
       await mod.mount(sec, ctxFor(p, mod.meta || {}, Object.freeze({
         pane: '1'
-      }), sec, true));
+      }), sec, true, pane.life.signal));
     } catch (e) {
       notify(t(T.loadErr, {
         m: p.id,
@@ -2313,9 +2581,145 @@
     if (b.title !== title) b.title = title;
   }
 
+  // ---------------------------------------------------------------- publication sans lanceur (ctx.publish, INTEGRATION § 15.2)
+  const publishReaders = {}; // adaptateur de chaque module qui publie : copies « reference » écartées après un commit
+  /** Fichiers générés publiés dans le dépôt des données par l'accès GitHub de l'appareil, un commit par groupe
+   *  [{ name, files: [{ path, text | blob }], removed: [path], message }] ; chemins sous meta.publish seulement, trigramme et
+   *  accès requis ; jamais d'exception ; ensuite, les chemins publiés sont revalidés (FD.revalidate). */
+  async function publishFor(id, meta, groups, {
+    onProgress,
+    signal,
+    from = 0
+  } = {}) {
+    const allowed = [].concat(meta.publish || []).filter(x => typeof x === 'string' && x),
+      list = [].concat(groups || []),
+      paths = g => [...[].concat(g?.files || []).map(f => f?.path), ...[].concat(g?.removed || [])],
+      ok = x => !!LC?.dataPathOf(x) && allowed.some(a => x === a || a.endsWith('/') && x.startsWith(a)),
+      refused = (why, message, extra = {}) => ({
+        ok: false,
+        refused: why,
+        message,
+        groups: [],
+        ...extra
+      });
+    if (!allowed.length) return refused('declaration', 'publish not declared (meta.publish)');
+    const bad = list.flatMap(paths).find(x => !ok(x));
+    if (bad !== undefined) return refused('path', 'path not declared', {
+      path: String(bad)
+    });
+    if (!identity.trigram) return refused('trigram', 'no trigram on this device');
+    const cfg = FD.github?.config?.();
+    let tr = null;
+    try {
+      tr = cfg ? FD.github(cfg) : null;
+    } catch {
+      tr = null;
+    }
+    if (!tr?.publish) return refused('access', 'no GitHub access on this device');
+    const r = await tr.publish(list.map(g => ({
+      ...g,
+      message: `${g.message || `Publication ${g.name || ''}`.trim()} (${identity.trigram})`
+    })), {
+      onProgress,
+      signal,
+      from
+    });
+    const ev = publishReaders[id] ||= FD.adapter({
+      id: `frame-publish-${id}`,
+      reads: allowed.map(prefix => ({
+        prefix,
+        policy: 'reference'
+      }))
+    });
+    // les chemins publiés revalidés aussitôt (FD.revalidate) : l'appareil lit les nouvelles versions ; hors ligne, ses copies
+    // sont écartées (relues à la prochaine lecture)
+    const done = list.slice(from | 0, (from | 0) + (r.groups?.length || 0)).flatMap(paths);
+    if (done.length && (await ev.revalidate(done)).offline)
+      for (const x of done) await ev.evict(x).catch(() => 0);
+    return r;
+  }
+
+  // ---------------------------------------------------------------- fin de cycle AIRAC (bloc d'état, INTEGRATION § 15.3)
+  let publication = null; // aerodb.publication() : { base: { <zone>: { cycles } }, proc: { cycles } } ; null sans l'API
+  /** Relit ce qui est publié (aerodb) ; redessine le bloc d'état si cela change. */
+  async function readPublication() {
+    if (typeof aerodb?.publication !== 'function') return;
+    const p = await aerodb.publication().catch(() => null);
+    if (JSON.stringify(p) === JSON.stringify(publication)) return;
+    publication = p;
+    paintStatus();
+  }
+  /** Nom AIRAC (« 2611 ») d'un cycle donné par sa date de début (« 2026-10-29 ») : rang du cycle dans son année. */
+  function airacName(d) {
+    const at = Date.parse(`${d}T00:00:00Z`),
+      y = new Date(at).getUTCFullYear(),
+      REF = Date.UTC(2024, 0, 25), // AIRAC 2401
+      CYCLE = 28 * 864e5,
+      first = REF + Math.ceil((Date.UTC(y, 0, 1) - REF) / CYCLE) * CYCLE;
+    return `${String(y).slice(2)}${String(Math.round((at - first) / CYCLE) + 1).padStart(2, '0')}`;
+  }
+  /** Lignes de fin de cycle (SPEC du module Données § 6.3) : la base ou proc/ publiés pour un cycle plus ancien que celui en
+   *  vigueur, ou le cycle qui se termine dans 3 jours sans rien de publié pour le suivant ; calculées au moment du dessin. */
+  function cycleItems() {
+    if (!publication || !window.AeroDB?.airacCycles) return [];
+    const cur = AeroDB.airacCycles(1)[0],
+      next = new Date(Date.parse(`${cur}T00:00:00Z`) + 28 * 864e5).toISOString().slice(0, 10),
+      soon = Date.parse(`${next}T00:00:00Z`) - Date.now() <= 3 * 864e5,
+      // le module Données est dans l'application Maintenance : depuis une autre, la ligne y mène (même onglet)
+      go = launcherHere && !launcherHere.lan && level >= 3 ? APP.modules.some(m => m.id === 'data') ? '#data' : '?app=maintenance#data' :
+      '',
+      // cycles publiés : un objet { 'AAAA-MM-JJ': {...} } (aerodb, frame/aerodb/SPEC.md « For the Données module ») ou une liste
+      dates = x => Array.isArray(x) ? x : x && typeof x === 'object' ? Object.keys(x) : [],
+      newest = list => list.filter(c => /^\d{4}-\d{2}-\d{2}$/.test(c)).sort().at(-1) || '',
+      sets = [
+        ['base', T.info.cycleBase, newest(Object.values(publication.base || {}).flatMap(z => dates(z?.cycles)))],
+        ['proc', T.info.cycleProc, newest(dates(publication.proc?.cycles))]
+      ];
+    return sets.filter(([, , c]) => c && (c < cur || soon && c < next)).map(([k, s, c]) => ({
+      k: `cycle-${k}`,
+      text: c < cur ? t(T.info.cycleOld, {
+        s: t(s),
+        c: airacName(c)
+      }) : t(T.info.cycleEnds, {
+        s: t(s),
+        c: airacName(cur),
+        d: infoDate(new Date(Date.parse(`${next}T00:00:00Z`) - 864e5).toISOString().slice(0, 10)),
+        n: airacName(next)
+      }),
+      go,
+      attn: true
+    }));
+  }
+
+  // ---------------------------------------------------------------- clés d'adresse consommées (ctx.consume, INTEGRATION § 6.1)
+  const FRAME_KEYS = new Set(['with', 'from', 'pane']); // clés du cadre (vue double, retour, volet) : jamais retirées par un module
+  /** Valeurs des clés demandées (celles de query) ; elles sont retirées de l'adresse du module principal, si elle est la sienne,
+   *  par un seul history.replaceState (pas de hashchange : le module n'est pas remonté) ; une requête consommée ne se rejoue
+   *  donc ni au rechargement ni au retour. */
+  function consumeQuery(id, query, keys, inPane) {
+    const ks = keys.filter(k => typeof k === 'string' && k && !FRAME_KEYS.has(k)),
+      got = {};
+    for (const k of ks)
+      if (Object.prototype.hasOwnProperty.call(query, k)) got[k] = query[k];
+    if (inPane || !Object.keys(got).length) return got;
+    const m = /^#([\w-]+)\?(.*)$/.exec(location.hash);
+    if (!m || m[1] !== id) return got;
+    const q = new URLSearchParams(m[2]);
+    for (const k of ks) q.delete(k);
+    const s = q.toString(),
+      hash = `#${id}${s ? `?${s}` : ''}`;
+    if (location.hash !== hash) {
+      history.replaceState(history.state, '', hash);
+      if (lastScreen?.id === id) lastScreen.hash = hash;
+    }
+    return got;
+  }
+
   /** Contexte d'un module : son adaptateur de données (ses préfixes déclarés), aerodb, textes, notifications, questions,
    *  appels sortants, identité et compagnie en lecture seule, suite de l'adresse (query). */
-  function ctxFor(entry, meta, query = Object.freeze({}), root = null, inPane = false) {
+  function ctxFor(entry, meta, query = Object.freeze({}), root = null, inPane = false, life = null) {
+    let lcOf = null,
+      lcMod = null;
     return {
       app: APP.id,
       data: FD.adapter({
@@ -2331,6 +2735,21 @@
       askText,
       net,
       weather,
+      // le lanceur du poste (INTEGRATION § 15.1) : ce que meta.launcher déclare ({ routes, read }) ; null sans lanceur, sur un
+      // appareil appairé du réseau local (ses routes y sont refusées) ou sans déclaration
+      get launcher() {
+        const c = meta.launcher && !launcherHere?.lan ? launcherClient() : null;
+        if (c && lcOf !== c) {
+          lcOf = c;
+          lcMod = c.forModule(meta.launcher, {
+            life,
+            author: () => identity.trigram || ''
+          });
+        }
+        return c ? lcMod : null;
+      },
+      // publication de fichiers générés par l'accès GitHub de l'appareil (INTEGRATION § 15.2) : chemins de meta.publish
+      publish: (groups, opts) => publishFor(entry.id, meta, groups, opts),
       get identity() {
         return identity;
       },
@@ -2346,6 +2765,10 @@
         return level;
       },
       query,
+      // ctx.consume(clés) : les valeurs de ces clés de ctx.query, retirées de l'adresse en une seule écriture (replaceState, sans
+      // remonter le module) ; with, from et pane restent au cadre ; dans un volet, l'adresse n'est pas la sienne : rien
+      // n'est réécrit (INTEGRATION § 6.1)
+      consume: (...keys) => consumeQuery(entry.id, query, keys.flat(), inPane),
       // l'onglet de la barre du bas qui groupe ce module (id de APP.tabs), null s'il n'en a pas
       tab: tabOf(entry.id)?.id || null,
       // module fixe seulement : la couche de superposition de sa carte (colonnes gauche et droite, boutons ronds ; le bouton
@@ -2459,6 +2882,7 @@
       identity: () => identity,
       usages: () => usages,
       launcher: () => launcherHere,
+      launcherRequest, // routes du lanceur (kit.js, setup) : par le client du cadre (INTEGRATION § 15)
       transport: () => configured,
       aerodb: () => aerodb,
       syncNow,
@@ -2476,6 +2900,7 @@
         bind: bindStatus
       }),
       weatherKey,
+      ivao,
       // heures de l'appli (frame/lib/time.js) : « 16:30Z », date UTC et heure Z
       time: Object.freeze({
         fmtZ: iso => tz('fmtZ', iso),
@@ -2595,6 +3020,16 @@
       aerodb,
       level: () => level,
       launcher: () => launcherHere,
+      // routes du lanceur déclarées par l'écran (launcher: { routes }), par le même client que les modules ; null sans lanceur
+      // sur ce poste (ou depuis un appareil appairé)
+      ...(s.launcher ? {
+        routes: () => {
+          const c = launcherHere && !launcherHere.lan ? launcherClient() : null;
+          return c ? c.forModule(s.launcher, {
+            author: () => identity.trigram || ''
+          }) : null;
+        }
+      } : {}),
       // le transport GitHub de l'appareil (head, tree, commit), seulement si la déclaration le demande ; jamais le jeton
       ...(s.github ? {
         github: () => FD.github.config() ? FD.github() : null,
@@ -2623,8 +3058,24 @@
   //      1,7 Mo par appel sur un téléphone) ;
   //   3. rien.
   // Écrit progress.actual = { at, lat, lon, altFt, gsKt, trackDeg, source } dans le vol courant (ce seul champ, by
-  // 'frame'), au plus une fois par 10 s et seulement si la position a bougé (30 m, 50 ft) ; aucune synchronisation
-  // forcée (la file locale et la synchronisation habituelle suffisent).
+  // 'frame'), au plus une fois par 10 s et seulement si la position a bougé (30 m, 50 ft) ; aucune synchronisation forcée
+  // (la file locale et la synchronisation habituelle suffisent). La trace volée (frame/lib/trail.js : un point par NM ou
+  // par minute, virages gardés, 500 points au plus) reste sur l'appareil : device/trail.json, jamais synchronisée ni dans
+  // une sauvegarde (décision de l'utilisateur du 30 oct.), lue par les modules avec ctx.live.trail().
+  const TRAIL_DOC = 'device/trail.json';
+  let trailWatch = null,
+    liveTrail = {
+      from: '',
+      trail: []
+    };
+  /** Trace de l'appareil relue (document device/trail.json) : { from: started.at, trail } ; vide si illisible. */
+  const trailFrom = doc => doc && typeof doc.from === 'string' && Array.isArray(doc.trail) ? {
+    from: doc.from,
+    trail: doc.trail
+  } : {
+    from: '',
+    trail: []
+  };
   const LIVE_WRITE = 10e3,
     LIVE_SIM = 5e3,
     LIVE_SIM_FRESH = 15e3,
@@ -2781,13 +3232,8 @@
     clearTimeout(simTimer);
     if (!live.active || !launcherHere) return;
     try {
-      const r = await fetch(new URL('__setup/sim/position', ROOT), {
-        cache: 'no-store',
-        headers: {
-          'X-SOG-Setup': '1'
-        }
-      });
-      const p = r.status === 200 ? await r.json() : null;
+      const r = await launcherRequest('sim/position'),
+        p = r?.status === 200 ? r.body : null;
       if (live.active && (p?.source === 'xplane' || p?.source === 'lnm')) {
         simAt = Date.now();
         onFix(p.source, {
@@ -2875,11 +3321,28 @@
     };
     const cur = await liveData.get(flightPath).catch(() => null);
     if (!flying(cur)) return;
-    // fusion commune du vol courant (frame/lib/current_flight.js) : relu juste avant, seul progress.actual remplacé
-    const CF = await import(new URL('frame/lib/current_flight.js', ROOT).href);
+    // fusion commune du vol courant (frame/lib/current_flight.js) : relu juste avant, seul progress.actual remplacé (la
+    // position seule : une trace d'avant le 30 oct. y est retirée) ; la trace de l'appareil continue seulement pour ce
+    // départ (from = started.at, à l'identique : deux écritures d'une même heure, en Z et en +02:00, ne se comparent pas
+    // comme des chaînes), et reprend une fois celle qu'un enregistrement d'avant portait pour ce même départ
+    const [CF, TR] = await Promise.all([import(new URL('frame/lib/current_flight.js', ROOT).href), import(new URL('frame/lib/trail.js',
+        ROOT).href)]),
+      prev = cur.progress?.actual,
+      base = liveTrail.from === cur.started.at ? liveTrail.trail : prev?.trailFrom === cur.started.at && Array.isArray(prev.trail) ?
+      prev.trail : [];
+    liveTrail = {
+      from: cur.started.at,
+      trail: TR.next(base, a, cur.started.at)
+    };
+    await own.put(TRAIL_DOC, {
+      ...liveTrail,
+      updated_at: a.at
+    });
     await liveData.put(flightPath, CF.merge(cur, {
       progress: {
-        actual: a
+        actual: {
+          ...a
+        }
       }
     }, {
       progressKeys: ['actual'],
@@ -2888,12 +3351,18 @@
       quiet: true // toutes les 10 s : pas un commit à chaque fois, le passage de fond l'emporte
     });
   }
-  /** ctx.live : état, source, dernière position, et le GPS de l'appareil (activé par un geste, gardé sur l'appareil). */
+  /** ctx.live : état, source, dernière position, trace volée de l'appareil, et le GPS de l'appareil (activé par un geste,
+   *  gardé sur l'appareil). */
   function liveApi() {
     return {
       status: !live.active ? 'off' : live.source ? 'tracking' : 'waiting',
       source: live.source,
       last: live.last,
+      // trace du vol en cours, sur cet appareil seulement : { from: started.at, trail: [[lat, lon, altFt, s], …] } ou null
+      trail: () => liveTrail.from ? {
+        from: liveTrail.from,
+        trail: liveTrail.trail.slice()
+      } : null,
       gps: gpsState,
       enable: async () => {
         liveGps = true;
@@ -2946,19 +3415,11 @@
   /** Accès des appareils du réseau local, réglé depuis ce poste (GET / POST /__setup/lan du lanceur) : { on, urls,
    *  code, devices, host }. */
   async function lanCall(body) {
-    const r = await fetch(new URL('__setup/lan', ROOT), {
-      method: body ? 'POST' : 'GET',
-      cache: 'no-store',
-      headers: {
-        'X-SOG-Setup': '1',
-        ...(body ? {
-          'Content-Type': 'application/json'
-        } : {})
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-    if (!r.ok) throw new Error(`lan ${r.status}`);
-    return r.json();
+    const r = await launcherRequest('lan', body ? {
+      json: body
+    } : {});
+    if (!r || r.status >= 400) throw new Error(`lan ${r ? r.status : 'offline'}`);
+    return r.body;
   }
   /** Pastille de l'en-tête pendant un vol : la source (X-Plane, Little Navmap, GPS, IVAO, VATSIM, — en attente) ;
    *  bascule du GPS de l'appareil. */
@@ -3086,9 +3547,11 @@
       if (s.conflicts) location.hash = '#conflicts';
       else syncNow();
     };
+    LC = await import(new URL('frame/lib/launcher.js?v=0', ROOT).href).catch(e => (console.warn('launcher', e), null));
     launcherHere = await FD.launcher.detect();
     await timeP; // les heures du cadre (synchronisation, pastilles) en UTC dès leur premier dessin
     await loadDevice();
+    await takeIvaoReturn(); // retour de l'OpenID d'IVAO : avant le premier routage (l'adresse est remplacée)
     // (accès réglé ou coupé dans un autre onglet : device/keys.json change et own.watch('device/'), plus bas, rebranche ici)
     // demande au navigateur de ne pas effacer le stockage du site (Safari le fait pour un site peu visité), au premier geste de
     // l'utilisateur et non au chargement : une demande de stockage pendant le démarrage décale les cartes (essai D7)
@@ -3101,10 +3564,24 @@
       // préfixes d'aerodb (base SIA, types, registre des aéronefs : fiches, flotte, référence) donnés par aerodb lui-même
       aerodb = window.AeroDB ? AeroDB.create({
         reader: FD.adapter(AeroDB.declaration()),
-        access: () => dataAccess().set
+        access: () => dataAccess().set,
+        // le lanceur du poste (fiches .lnmperf) : par le client du cadre, jamais par un fetch d'aerodb
+        launcher: {
+          request: launcherRequest,
+          info: () => launcherHere,
+          // travail long du lanceur (fetchProcedures : regen/job) : par le client du cadre, routes de la déclaration d'aerodb
+          // (AeroDB.declaration().launcher) ; null sans lanceur ou sur un appareil appairé (INTEGRATION § 15.1)
+          job: (route, body, opts) => (launcherHere?.lan ? null : launcherClient()?.forModule(AeroDB.declaration().launcher || {
+            routes: []
+          }, {
+            author: () => identity.trigram || ''
+          }).job(route, body, opts)) ?? Promise.resolve(null)
+        }
       }) : null;
       aerodb?.on('state', syncBase);
       aerodb?.on('change', syncBase);
+      aerodb?.on('change', readPublication);
+      readPublication();
     } catch (e) {
       console.error(e);
     }

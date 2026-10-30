@@ -1,6 +1,6 @@
 {
   "schema": "sog-roadmap/1",
-  "updated": "2026-10-28",
+  "updated": "2026-10-30",
   "owner": "ergonomics session (Simplification interface et ergonomie)",
   "note": {
     "fr": "Ce qui est « livré » doit marcher : un écart est un bug à signaler. Ce qui est « en cours », « prévu » ou « plus tard » n'est pas un bug.",
@@ -77,6 +77,13 @@
         "es": "Marco"
       },
       "items": [
+        {
+          "state": "doing",
+          "fr": "Refonte du lanceur : socle des travaux et verbes par propriétaire, état des travaux conservé, revalidation des chemins de données, statut = détection seule",
+          "en": "Launcher refactoring: job base and verbs per owner, job state kept, data path revalidation, status = detection only",
+          "de": "Umbau des Launchers: Arbeitsbasis und Verben je Eigentümer, Arbeitszustand bewahrt, Neuvalidierung der Datenpfade, Status = nur Erkennung",
+          "es": "Refactorización del lanzador: base de trabajos y verbos por propietario, estado de los trabajos conservado, revalidación de rutas de datos, estado = solo detección"
+        },
         {
           "state": "done",
           "fr": "Position réelle pendant un vol démarré : simulateur par le lanceur (X-Plane 12, Little Navmap), GPS de l'appareil, session IVAO / VATSIM ; écrite dans le vol courant, pastille d'en-tête",
@@ -176,11 +183,11 @@
           "es": "Vista doble en tableta y pantalla ancha: Combustible o Informe a la izquierda, Mapa a la derecha, enlazados por el vuelo actual"
         },
         {
-          "state": "planned",
-          "fr": "Le site web de la compagnie comme transport (quand le web service PHP existera)",
-          "en": "The airline website as a transport (once the PHP web service exists)",
-          "de": "Die Website der Fluggesellschaft als Transport (sobald der PHP-Webservice existiert)",
-          "es": "El sitio web de la aerolínea como transporte (cuando exista el servicio web PHP)"
+          "state": "later",
+          "fr": "Le site web de la compagnie à la place du relais NAS, si son web service existe un jour (même identité, pas une seconde)",
+          "en": "The company website in place of the NAS relay, if its web service ever exists (same identity, not a second one)",
+          "de": "Die Website der Gesellschaft anstelle des NAS-Relais, falls ihr Webdienst je existiert (gleiche Identität, keine zweite)",
+          "es": "El sitio web de la compañía en lugar del relé NAS, si su servicio web existe algún día (misma identidad, no una segunda)"
         },
         {
           "state": "later",
@@ -188,13 +195,6 @@
           "en": "iOS / Android app (shell resumed)",
           "de": "iOS- / Android-App (Wiederaufnahme der Hülle)",
           "es": "App iOS / Android (retomando el envoltorio)"
-        },
-        {
-          "state": "later",
-          "fr": "Connexion GitHub sans jeton à copier (OAuth / GitHub App) dès qu'un relais existera (web service du site)",
-          "en": "GitHub sign-in without a token to copy (OAuth / GitHub App) once a relay exists (the site's web service)",
-          "de": "GitHub-Anmeldung ohne zu kopierendes Token (OAuth / GitHub App), sobald ein Relais existiert (Webdienst der Website)",
-          "es": "Inicio de sesión GitHub sin token que copiar (OAuth / GitHub App) en cuanto exista un relé (servicio web del sitio)"
         },
         {
           "state": "done",
@@ -226,10 +226,10 @@
         },
         {
           "state": "done",
-          "fr": "Couche météo unique du cadre : un cache, une API ctx.weather, quota compté ; Carburant et Atmosphère deviennent lecteurs",
-          "en": "One weather layer in the frame: one cache, one ctx.weather API, counted quota; Fuel and Atmosphere become readers",
-          "de": "Eine Wetterschicht im Rahmen: ein Cache, eine ctx.weather-API, gezählte Quote; Kraftstoff und Atmosphäre werden Leser",
-          "es": "Una capa meteorológica del marco: una caché, una API ctx.weather, cuota contada; Combustible y Atmósfera pasan a lectores"
+          "fr": "Couche météo unique du cadre : un cache, une API ctx.weather, quota compté ; Carburant et Météo deviennent lecteurs",
+          "en": "One weather layer in the frame: one cache, one ctx.weather API, counted quota; Fuel and Weather become readers",
+          "de": "Eine Wetterschicht im Rahmen: ein Cache, eine ctx.weather-API, gezählte Quote; Kraftstoff und Wetter werden Leser",
+          "es": "Una capa meteorológica del marco: una caché, una API ctx.weather, cuota contada; Combustible y Meteo pasan a lectores"
         },
         {
           "state": "done",
@@ -239,11 +239,53 @@
           "es": "Ordenador reconocido por el marco (html.f-desk) para los diseños solo de pantalla"
         },
         {
-          "state": "planned",
+          "state": "done",
           "fr": "Préversion 6.0.0-alpha.2 : Carte recodée, couche météo, Réglages groupés, Aqua, outils EAD ; historique squashé par bloc avant la release (Atmosphère recodée à l'alpha 3)",
           "en": "Pre-release 6.0.0-alpha.2: recoded Map, weather layer, grouped Settings, Aqua, EAD tools; history squashed by block before the release (recoded Atmosphere in alpha 3)",
           "de": "Vorabversion 6.0.0-alpha.2: neu geschriebene Karte, Wetterschicht, gruppierte Einstellungen, Aqua, EAD-Werkzeuge; Historie vor dem Release blockweise zusammengefasst (neu geschriebene Atmosphäre in Alpha 3)",
           "es": "Preversión 6.0.0-alpha.2: Mapa recodificado, capa meteorológica, Ajustes agrupados, Aqua, herramientas EAD; historial compactado por bloque antes de la publicación (Atmósfera recodificada en la alfa 3)"
+        },
+        {
+          "state": "done",
+          "fr": "Le lanceur ouvre l'appli Pilote (V3) au démarrage ; les pages V2 restent à leurs adresses",
+          "en": "The launcher opens the Pilot application (V3) at start; the V2 pages stay at their addresses",
+          "de": "Der Launcher öffnet beim Start die Pilot-App (V3); die V2-Seiten bleiben unter ihren Adressen",
+          "es": "El lanzador abre la aplicación Piloto (V3) al inicio; las páginas V2 permanecen en sus direcciones"
+        },
+        {
+          "state": "done",
+          "fr": "Données sur GitLab : un jeton de projet par pilote (trigramme, rôle Developer, un an au plus), créé par l'administrateur dans Maintenance › Jetons des pilotes et collé une fois dans Réglages › Accès",
+          "en": "Data on GitLab: one project token per pilot (trigram, Developer role, one year at most), created by the administrator in Maintenance › Pilots’ tokens and pasted once in Settings › Access",
+          "de": "Daten auf GitLab: ein Projekt-Token je Pilot (Kürzel, Rolle Developer, höchstens ein Jahr), vom Administrator unter Wartung › Token der Piloten erstellt und einmal in Einstellungen › Zugang eingefügt",
+          "es": "Datos en GitLab: un token de proyecto por piloto (trigrama, rol Developer, un año como máximo), creado por el administrador en Mantenimiento › Tokens de los pilotos y pegado una vez en Ajustes › Acceso"
+        },
+        {
+          "state": "doing",
+          "fr": "Accueil d'un pilote par un relais sur le NAS : relais et appareils appairés codés sur le poste (R1a), connexion IVAO par le relais (R1b) ; invitations et déploiement ensuite, après relecture sécurité complète, rien d'exposé avant le feu vert",
+          "en": "Pilot onboarding through a relay on the NAS: relay and paired devices coded on the workstation (R1a), IVAO login through the relay (R1b); invitations and deployment next, after a full security review, nothing exposed before the go",
+          "de": "Aufnahme eines Piloten über ein Relais auf dem NAS: Relais und gekoppelte Geräte auf dem Rechner codiert (R1a), IVAO-Anmeldung über das Relais (R1b); Einladungen und Bereitstellung danach, nach vollständiger Sicherheitsprüfung, nichts exponiert vor der Freigabe",
+          "es": "Alta de un piloto mediante un relé en el NAS: relé y dispositivos emparejados codificados en el equipo (R1a), inicio de sesión IVAO por el relé (R1b); invitaciones y despliegue después, tras una revisión de seguridad completa, nada expuesto antes del visto bueno"
+        },
+        {
+          "state": "doing",
+          "fr": "Applications = jeux de modules nommés du même cadre : pilot et maintenance livrés (?app=), choisis par l'adresse ; puis cpco, client, par le rôle",
+          "en": "Applications = named module sets of the same frame: pilot and maintenance delivered (?app=), chosen by the address; then cpco, client, by the role",
+          "de": "Anwendungen = benannte Modulsätze desselben Rahmens: pilot und maintenance geliefert (?app=), gewählt über die Adresse; dann cpco, client, über die Rolle",
+          "es": "Aplicaciones = conjuntos de módulos con nombre del mismo marco: pilot y maintenance entregados (?app=), elegidos por la dirección; luego cpco, client, por el rol"
+        },
+        {
+          "state": "planned",
+          "fr": "IVAO sur le téléphone : connexion du pilote par le relais (OpenID), son propre jeton sur son appareil, tracker lu en direct",
+          "en": "IVAO on the phone: pilot login through the relay (OpenID), their own token on their device, tracker read directly",
+          "de": "IVAO auf dem Telefon: Anmeldung des Piloten über das Relais (OpenID), eigenes Token auf dem Gerät, Tracker direkt gelesen",
+          "es": "IVAO en el teléfono: inicio de sesión del piloto por el relé (OpenID), su propio token en su dispositivo, tracker leído directamente"
+        },
+        {
+          "state": "planned",
+          "fr": "Missions (après la stabilisation) : missions communes du dépôt lues par tous, une mission engendre le vol (départ, rendez-vous, arrivée) et sa carte, usage « équipier » du Pilote, CPCO troisième application quand il sera refait",
+          "en": "Missions (after the stabilisation): common missions of the repository read by all, a mission generates the flight (departure, rendezvous, arrival) and its map, \"crew member\" usage of the Pilot, CPCO as the third application once rebuilt",
+          "de": "Missionen (nach der Stabilisierung): gemeinsame Missionen des Depots für alle lesbar, eine Mission erzeugt den Flug (Abflug, Treffpunkt, Ankunft) und seine Karte, Nutzung „Besatzungsmitglied“ des Piloten, CPCO als dritte Anwendung nach dem Neubau",
+          "es": "Misiones (tras la estabilización): misiones comunes del depósito leídas por todos, una misión genera el vuelo (salida, punto de encuentro, llegada) y su mapa, uso «tripulante» del Piloto, CPCO como tercera aplicación cuando se rehaga"
         }
       ]
     },
@@ -257,6 +299,13 @@
         "es": "Combustible"
       },
       "items": [
+        {
+          "state": "doing",
+          "fr": "Refonte du bloc procédures : règles pures partagées avec la Carte, fichier à part, un seul cache (aerodb), une écriture par série de choix",
+          "en": "Procedures block refactoring: pure rules shared with the Map, own file, one cache (aerodb), one write per series of choices",
+          "de": "Umbau des Verfahrensblocks: reine Regeln mit der Karte geteilt, eigene Datei, ein Cache (aerodb), ein Schreiben je Wahlserie",
+          "es": "Refactorización del bloque de procedimientos: reglas puras compartidas con el Mapa, archivo propio, una sola caché (aerodb), una escritura por serie de elecciones"
+        },
         {
           "state": "done",
           "fr": "Devis (appareil, route, SimBrief, niveau et vent, réserves), décision du niveau dessinée, consignes de montée",
@@ -375,6 +424,83 @@
           "en": "Fuel reads the frame's weather layer: no more direct call to weather services, the quote's leg times written for the Map",
           "de": "Kraftstoff liest die Wetterschicht des Rahmens: kein direkter Aufruf von Wetterdiensten mehr, Abschnittszeiten der Berechnung für die Karte geschrieben",
           "es": "Combustible lee la capa meteorológica del marco: sin llamadas directas a los servicios meteorológicos, tiempos por tramo del cálculo escritos para el Mapa"
+        },
+        {
+          "state": "done",
+          "fr": "Piste, SID, STAR et approche choisies dans la préparation, modifiables en route ; lecture des procédures à la demande",
+          "en": "Runway, SID, STAR and approach chosen in the preparation, changeable en route; procedures read on demand",
+          "de": "Piste, SID, STAR und Anflug in der Vorbereitung gewählt, unterwegs änderbar; Verfahren auf Abruf gelesen",
+          "es": "Pista, SID, STAR y aproximación elegidas en la preparación, modificables en ruta; procedimientos leídos bajo demanda"
+        },
+        {
+          "state": "done",
+          "fr": "Listes de procédures : périmée ⌛ et en conflit ⚠ marquées, jamais cachées ; listes plates ; bouton « Sur la carte »",
+          "en": "Procedure lists: outdated ⌛ and conflicting ⚠ marked, never hidden; flat lists; \"On the map\" button",
+          "de": "Verfahrenslisten: veraltet ⌛ und im Konflikt ⚠ markiert, nie verborgen; flache Listen; Schaltfläche „Auf der Karte“",
+          "es": "Listas de procedimientos: caducado ⌛ y en conflicto ⚠ marcados, nunca ocultos; listas planas; botón «En el mapa»"
+        },
+        {
+          "state": "done",
+          "fr": "Lien « Source » sur chaque procédure : la page codée du SIA",
+          "en": "\"Source\" link on each procedure: the SIA's coded page",
+          "de": "Link „Quelle“ bei jedem Verfahren: die kodierte Seite des SIA",
+          "es": "Enlace «Fuente» en cada procedimiento: la página codificada del SIA"
+        },
+        {
+          "state": "done",
+          "fr": "Procédures non lues : comptées par page avec leur source, jamais montrées comme bonnes",
+          "en": "Procedures not read: counted per page with their source, never shown as good",
+          "de": "Nicht gelesene Verfahren: je Seite gezählt mit Quelle, nie als gut gezeigt",
+          "es": "Procedimientos no leídos: contados por página con su fuente, nunca mostrados como buenos"
+        },
+        {
+          "state": "planned",
+          "fr": "Direct vers un point sur instruction du contrôle : chercher le point, reprendre le reste du vol",
+          "en": "Direct to a point on ATC instruction: find the point, rewrite the rest of the flight",
+          "de": "Direkt zu einem Punkt auf Anweisung der Flugsicherung: Punkt suchen, Rest des Flugs neu schreiben",
+          "es": "Directo a un punto por instrucción del control: buscar el punto, reescribir el resto del vuelo"
+        },
+        {
+          "state": "planned",
+          "fr": "Route au format FPL avec piste et procédures (LFPO/07 OPAL2E OPALE DCT …) : lue et écrite",
+          "en": "Route in FPL form with runway and procedures (LFPO/07 OPAL2E OPALE DCT …): read and written",
+          "de": "Route im FPL-Format mit Piste und Verfahren (LFPO/07 OPAL2E OPALE DCT …): gelesen und geschrieben",
+          "es": "Ruta en formato FPL con pista y procedimientos (LFPO/07 OPAL2E OPALE DCT …): leída y escrita"
+        },
+        {
+          "state": "planned",
+          "fr": "Piste en service ou probable d'après le METAR du départ et de l'arrivée",
+          "en": "Runway in use or probable from the departure and arrival METAR",
+          "de": "Betriebspiste oder wahrscheinliche Piste nach dem METAR von Start und Ziel",
+          "es": "Pista en uso o probable según el METAR de salida y llegada"
+        },
+        {
+          "state": "done",
+          "fr": "Export du plan de vol : téléchargement en .fms X-Plane (deux formats) et .pln MSFS 2020 / 2024 depuis l'étape Départ ; l'envoi direct dans le dossier FMS plans par le lanceur viendra ensuite",
+          "en": "Flight plan export: download as X-Plane .fms (both formats) and MSFS 2020 / 2024 .pln from step Départ; the direct send to the FMS plans folder by the launcher comes next",
+          "de": "Flugplanexport: Download als X-Plane .fms (beide Formate) und MSFS 2020 / 2024 .pln aus dem Schritt Abflug; das direkte Senden in den Ordner FMS plans durch den Launcher folgt",
+          "es": "Exportación del plan de vuelo: descarga en .fms X-Plane (dos formatos) y .pln MSFS 2020 / 2024 desde el paso Salida; el envío directo a la carpeta FMS plans por el lanzador vendrá después"
+        },
+        {
+          "state": "done",
+          "fr": "Avertissement quand la date du vol est dans le passé",
+          "en": "Warning when the flight date is in the past",
+          "de": "Warnung, wenn das Flugdatum in der Vergangenheit liegt",
+          "es": "Aviso cuando la fecha del vuelo está en el pasado"
+        },
+        {
+          "state": "done",
+          "fr": "Vent sur chaque piste proposée (face ou dos, travers, d'après le METAR connu), piste et procédure qui se corrigent l'une l'autre sans rien imposer",
+          "en": "Wind on every proposed runway (head or tail, crosswind, from the known METAR), runway and procedure correcting each other without forcing anything",
+          "de": "Wind auf jeder vorgeschlagenen Piste (Gegen- oder Rückenwind, Seitenwind, aus dem bekannten METAR), Piste und Verfahren korrigieren einander ohne Zwang",
+          "es": "Viento en cada pista propuesta (de cara o de cola, cruzado, según el METAR conocido), pista y procedimiento que se corrigen mutuamente sin imponer nada"
+        },
+        {
+          "state": "done",
+          "fr": "Route : « Auto » recalcule depuis les points posés seulement (jamais en boucle), la SID et la STAR choisies s'écrivent dans le texte du plan de vol et s'en relisent, complétion au curseur dans le champ de route",
+          "en": "Route: \"Auto\" recomputes from the pinned points only (never loops), the chosen SID and STAR are written into the flight plan text and read back from it, completion at the cursor in the route field",
+          "de": "Route: „Auto“ rechnet nur von den gesetzten Punkten neu (nie in Schleife), gewählte SID und STAR werden in den Flugplantext geschrieben und daraus gelesen, Vervollständigung am Cursor im Routenfeld",
+          "es": "Ruta: «Auto» recalcula solo desde los puntos fijados (nunca en bucle), la SID y la STAR elegidas se escriben en el texto del plan de vuelo y se releen de él, autocompletado en el cursor del campo de ruta"
         }
       ]
     },
@@ -388,6 +514,13 @@
         "es": "Mapa"
       },
       "items": [
+        {
+          "state": "done",
+          "fr": "Refonte du rendu : couches en liste ordonnée, palette unique, helpers de chemin et d'horaire séparés, jonctions marquées par le chemin",
+          "en": "Rendering refactoring: layers as an ordered list, one palette, path and time helpers split, junctions marked by the path",
+          "de": "Umbau des Renderings: Ebenen als geordnete Liste, eine Palette, Pfad- und Zeithelfer getrennt, Übergänge vom Pfad markiert",
+          "es": "Refactorización del renderizado: capas en lista ordenada, una sola paleta, ayudantes de trayecto y horario separados, uniones marcadas por el trayecto"
+        },
         {
           "state": "done",
           "fr": "Carte IFR du vol prévu (tuiles ou fond uni hors ligne), profil vertical, curseur commun, TOC / TOD",
@@ -530,10 +663,10 @@
         },
         {
           "state": "planned",
-          "fr": "Calques météo sur la carte depuis la bibliothèque d'Atmosphère (puce Météo) et bord de la zone du vol : lot 2 après le recodage",
-          "en": "Weather layers on the map from Atmosphere's library (Weather chip) and flight-zone edge: lot 2 after the recode",
-          "de": "Wetterebenen auf der Karte aus der Bibliothek von Atmosphäre (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
-          "es": "Capas meteorológicas en el mapa desde la biblioteca de Atmósfera (chip Meteo) y borde de la zona del vuelo: lote 2 tras la recodificación"
+          "fr": "Calques météo sur la carte depuis la bibliothèque de Météo (puce Météo) et bord de la zone du vol : lot 2 après le recodage",
+          "en": "Weather layers on the map from Weather's library (Weather chip) and flight-zone edge: lot 2 after the recode",
+          "de": "Wetterebenen auf der Karte aus der Bibliothek von Wetter (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
+          "es": "Capas meteorológicas en el mapa desde la biblioteca de Meteo (chip Meteo) y borde de la zona del vuelo: lote 2 tras la recodificación"
         },
         {
           "state": "done",
@@ -541,6 +674,55 @@
           "en": "Map recoded from its specification (28 Oct): module in files by concern, times and planned position derived from the quote's leg times, Edit mode merging into the route, weather through the frame's layer",
           "de": "Karte nach ihrer Spezifikation neu geschrieben (28.10.): Modul in Dateien je Thema, Zeiten und geplante Position aus den Abschnittszeiten der Berechnung, Bearbeitungsmodus, der in die Route einfügt, Wetter über die Schicht des Rahmens",
           "es": "Mapa recodificado según su especificación (28/10): módulo en archivos por tema, horas y posición prevista derivadas de los tiempos del cálculo, modo Edición que fusiona en la ruta, meteo por la capa del marco"
+        },
+        {
+          "state": "done",
+          "fr": "Tracés des procédures choisies avec altitudes et vitesses, un seul chemin route + procédures, profil avec contraintes",
+          "en": "Traces of the chosen procedures with altitudes and speeds, one route + procedures path, profile with constraints",
+          "de": "Spuren der gewählten Verfahren mit Höhen und Geschwindigkeiten, ein Pfad Route + Verfahren, Profil mit Auflagen",
+          "es": "Trazados de los procedimientos elegidos con altitudes y velocidades, un solo camino ruta + procedimientos, perfil con restricciones"
+        },
+        {
+          "state": "done",
+          "fr": "Carte de couverture des procédures : terrains verts (procédures connues), orange (lisibles à la demande), rouges (rien)",
+          "en": "Coverage map of the procedures: green aerodromes (procedures held), orange (readable on demand), red (nothing)",
+          "de": "Abdeckungskarte der Verfahren: grüne Plätze (Verfahren vorhanden), orange (auf Abruf lesbar), rot (nichts)",
+          "es": "Mapa de cobertura de los procedimientos: aeródromos verdes (procedimientos disponibles), naranja (legibles bajo demanda), rojos (nada)"
+        },
+        {
+          "state": "done",
+          "fr": "Mode « choix » : fond de carte grisé, une famille à la fois, une teinte par procédure, un toucher = choisi",
+          "en": "\"Choose\" mode: dimmed base map, one family at a time, one hue per procedure, one tap = chosen",
+          "de": "„Auswahl“-Modus: abgedunkelte Grundkarte, eine Familie je Durchgang, eine Farbe je Verfahren, ein Tipp = gewählt",
+          "es": "Modo «elección»: mapa base atenuado, una familia a la vez, un color por procedimiento, un toque = elegido"
+        },
+        {
+          "state": "done",
+          "fr": "Piste choisie tracée en flèche dans le sens d'utilisation",
+          "en": "Chosen runway drawn as an arrow in the direction of use",
+          "de": "Gewählte Piste als Pfeil in Nutzungsrichtung gezeichnet",
+          "es": "Pista elegida trazada como flecha en el sentido de uso"
+        },
+        {
+          "state": "planned",
+          "fr": "Virages de plus de 90° des procédures tracés avec un rayon selon la vitesse indiquée",
+          "en": "Procedure turns over 90° drawn with a radius from the indicated speed",
+          "de": "Verfahrenskurven über 90° mit einem Radius nach der angezeigten Geschwindigkeit gezeichnet",
+          "es": "Virajes de más de 90° de los procedimientos trazados con un radio según la velocidad indicada"
+        },
+        {
+          "state": "planned",
+          "fr": "Contrôleurs VATSIM et IVAO actifs sur la Carte, une teinte par réseau",
+          "en": "Active VATSIM and IVAO controllers on the Map, one hue per network",
+          "de": "Aktive VATSIM- und IVAO-Lotsen auf der Karte, eine Farbe je Netz",
+          "es": "Controladores VATSIM e IVAO activos en el Mapa, un color por red"
+        },
+        {
+          "state": "done",
+          "fr": "Choix de la piste et de la procédure en trois tapes, dans n'importe quel ordre : les trois familles visibles à la fois, seules les compatibles par défaut (« N autres · Toutes »), familles de STAR, transitions en sous-lignes, volet condensé ; seuil de piste en petit vecteur au zoom élevé",
+          "en": "Runway and procedure chosen in three taps, in any order: the three families visible at once, compatible rows only by default (\"N more · All\"), STAR families, transitions as sub-rows, condensed pane; runway threshold as a small vector at high zoom",
+          "de": "Piste und Verfahren mit drei Tipps in beliebiger Reihenfolge: die drei Familien zugleich sichtbar, standardmäßig nur passende Zeilen („N weitere · Alle“), STAR-Familien, Übergänge als Unterzeilen, kompaktes Fenster; Pistenschwelle als kleiner Vektor bei hohem Zoom",
+          "es": "Pista y procedimiento elegidos en tres toques, en cualquier orden: las tres familias visibles a la vez, solo las compatibles por defecto («N más · Todas»), familias de STAR, transiciones en sublíneas, panel condensado; umbral de pista como pequeño vector con zoom alto"
         }
       ]
     },
@@ -556,10 +738,10 @@
       "items": [
         {
           "state": "done",
-          "fr": "Module Atmosphère : coupe le long du vol, tranche locale, carte à l'altitude choisie, curseur « date du vol » (0 à +72 h), légende, tout le vol courant",
-          "en": "Atmosphere module: cut along the flight, local slice, map at the chosen altitude, \"flight date\" slider (0 to +72 h), legend, always the current flight",
-          "de": "Modul Atmosphäre: Schnitt entlang des Flugs, lokale Scheibe, Karte in der gewählten Höhe, Regler „Flugdatum“ (0 bis +72 h), Legende, immer der aktuelle Flug",
-          "es": "Módulo Atmósfera: corte a lo largo del vuelo, rebanada local, mapa a la altitud elegida, control «fecha del vuelo» (0 a +72 h), leyenda, siempre el vuelo actual"
+          "fr": "Module Météo : coupe le long du vol, tranche locale, carte à l'altitude choisie, curseur « date du vol » (0 à +72 h), légende, tout le vol courant",
+          "en": "Weather module: cut along the flight, local slice, map at the chosen altitude, \"flight date\" slider (0 to +72 h), legend, always the current flight",
+          "de": "Modul Wetter: Schnitt entlang des Flugs, lokale Scheibe, Karte in der gewählten Höhe, Regler „Flugdatum“ (0 bis +72 h), Legende, immer der aktuelle Flug",
+          "es": "Módulo Meteo: corte a lo largo del vuelo, rebanada local, mapa a la altitud elegida, control «fecha del vuelo» (0 a +72 h), leyenda, siempre el vuelo actual"
         },
         {
           "state": "done",
@@ -584,10 +766,10 @@
         },
         {
           "state": "doing",
-          "fr": "Atmosphère recodée depuis sa spécification sur la couche météo du cadre (session cloud)",
-          "en": "Atmosphere recoded from its specification on the frame's weather layer (cloud session)",
-          "de": "Atmosphäre nach ihrer Spezifikation auf der Wetterschicht des Rahmens neu geschrieben (Cloud-Sitzung)",
-          "es": "Atmósfera recodificada según su especificación sobre la capa meteorológica del marco (sesión en la nube)"
+          "fr": "Module Météo recodé depuis sa spécification sur la couche météo du cadre (session cloud)",
+          "en": "Weather module recoded from its specification on the frame's weather layer (cloud session)",
+          "de": "Modul Wetter nach seiner Spezifikation auf der Wetterschicht des Rahmens neu geschrieben (Cloud-Sitzung)",
+          "es": "Módulo Meteo recodificado según su especificación sobre la capa meteorológica del marco (sesión en la nube)"
         }
       ]
     },
@@ -764,11 +946,11 @@
           "es": "Claves guardadas como la identidad (sin pérdida al relanzar Safari), tarjeta Administración con un botón por página, bloque de estado primero"
         },
         {
-          "state": "doing",
-          "fr": "Écran « Données » : récupérer, compiler, pousser, nettoyer les sources sans la V2 (module au niveau Complet)",
-          "en": "\"Data\" screen: fetch, compile, push, clean the sources without V2 (a module at the Full level)",
-          "de": "Bildschirm „Daten“: Quellen holen, kompilieren, pushen, bereinigen ohne V2 (Modul auf Stufe Vollständig)",
-          "es": "Pantalla «Datos»: obtener, compilar, publicar, limpiar las fuentes sin la V2 (módulo en el nivel Completo)"
+          "state": "done",
+          "fr": "Appli « Maintenance » (module Données) : couverture, jeux de données, Télécharger · Construire · Publier · Purger livrés ; depuis Réglages › Administration de Pilote, la page V2 reste en lien",
+          "en": "\"Maintenance\" application (Data module): coverage, datasets, Fetch · Build · Publish · Purge delivered; from Pilot's Settings › Administration, the V2 page stays as a link",
+          "de": "Anwendung „Wartung“ (Datenmodul): Abdeckung, Datensätze, Holen · Bauen · Veröffentlichen · Bereinigen geliefert; aus Einstellungen › Verwaltung von Pilot, die V2-Seite bleibt als Link",
+          "es": "Aplicación «Mantenimiento» (módulo Datos): cobertura, conjuntos de datos, Descargar · Construir · Publicar · Purgar entregados; desde Ajustes › Administración de Piloto, la página V2 queda como enlace"
         },
         {
           "state": "done",
@@ -776,6 +958,13 @@
           "en": "Settings: file split by concern; Discovery as seven flat cards, Current and Full as seven folded groups; administration cards behind Administration; a card reached by its address shows at any level",
           "de": "Einstellungen: Datei je Thema aufgeteilt; Entdeckung mit sieben flachen Karten, Üblich und Vollständig mit sieben eingeklappten Gruppen; Verwaltungskarten hinter Verwaltung; eine über ihre Adresse erreichte Karte erscheint auf jeder Stufe",
           "es": "Ajustes: archivo dividido por tema; Descubrimiento con siete tarjetas planas, Habitual y Completo con siete grupos plegados; tarjetas de administración tras Administración; una tarjeta alcanzada por su dirección se muestra en cualquier nivel"
+        },
+        {
+          "state": "planned",
+          "fr": "Réglages › Administration : zoom à partir duquel la carte dessine les seuils de piste (maps.runwayZoom, 11 par défaut)",
+          "en": "Settings › Administration: zoom from which the map draws the runway thresholds (maps.runwayZoom, default 11)",
+          "de": "Einstellungen › Verwaltung: Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (maps.runwayZoom, Standard 11)",
+          "es": "Ajustes › Administración: zoom a partir del cual el mapa dibuja los umbrales de pista (maps.runwayZoom, 11 por defecto)"
         }
       ]
     },
@@ -789,6 +978,13 @@
         "es": "Base aeronáutica"
       },
       "items": [
+        {
+          "state": "done",
+          "fr": "Refonte du lecteur : un seul contrôle de géométrie, lecteur eAIP scindé, passe commune après lecture, jeux de pages par terrain",
+          "en": "Reader refactoring: one geometry check, eAIP reader split, common post-read pass, page fixtures per aerodrome",
+          "de": "Umbau des Lesers: eine Geometrieprüfung, eAIP-Leser aufgeteilt, gemeinsamer Nachlauf, Seitensätze je Platz",
+          "es": "Refactorización del lector: un solo control de geometría, lector eAIP dividido, pasada común tras la lectura, juegos de páginas por aeródromo"
+        },
         {
           "state": "done",
           "fr": "Base SIA par zone, cycle et sorte ; villes ; types d'aéronefs ; lecture à la demande, cache par zone",
@@ -881,11 +1077,25 @@
           "es": "Pantalla «Fuentes» tras Administración: una línea por fuente usada, candidata o descartada, con enlace, licencia y estado, sin descarga; sustituida por el módulo Datos en su primer lote"
         },
         {
-          "state": "doing",
-          "fr": "Module « Données » : spécification écrite (Couverture, Jeux de données, Télécharger · Construire · Publier · Purger) ; services du cadre en cours (accès au lanceur déclaré, tâches, publication sans lanceur, fin de cycle), puis l'état publié et le catalogue d'aerodb",
-          "en": "\"Data\" module: specification written (Coverage, Data sets, Fetch · Build · Publish · Purge); frame services in progress (declared launcher access, jobs, publication without launcher, end of cycle), then aerodb's published state and catalogue",
-          "de": "Modul „Daten“: Spezifikation geschrieben (Abdeckung, Datensätze, Holen · Bauen · Veröffentlichen · Bereinigen); Dienste des Rahmens in Arbeit (deklarierter Launcher-Zugang, Aufgaben, Veröffentlichung ohne Launcher, Zyklusende), dann veröffentlichter Zustand und Katalog von aerodb",
-          "es": "Módulo «Datos»: especificación escrita (Cobertura, Conjuntos de datos, Descargar · Construir · Publicar · Purgar); servicios del marco en curso (acceso al lanzador declarado, tareas, publicación sin lanzador, fin de ciclo), luego el estado publicado y el catálogo de aerodb"
+          "state": "done",
+          "fr": "Module « Données » : spécification, services du cadre (accès au lanceur déclaré, tâches, une opération à la fois retrouvée à l'ouverture), état publié et catalogue d'aerodb livrés",
+          "en": "\"Data\" module: specification, frame services (declared launcher access, jobs, one operation at a time found again on opening), aerodb's published state and catalogue delivered",
+          "de": "Modul „Daten“: Spezifikation, Dienste des Rahmens (deklarierter Launcher-Zugang, Aufgaben, ein Vorgang zugleich, beim Öffnen wiedergefunden), veröffentlichter Zustand und Katalog von aerodb geliefert",
+          "es": "Módulo «Datos»: especificación, servicios del marco (acceso al lanzador declarado, tareas, una operación a la vez recuperada al abrir), estado publicado y catálogo de aerodb entregados"
+        },
+        {
+          "state": "planned",
+          "fr": "Procédures depuis Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) en repli local, jamais publié ; position MSFS par Little Navmap",
+          "en": "Procedures from Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) as a local fallback, never published; MSFS position through Little Navmap",
+          "de": "Verfahren aus Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) als lokaler Rückfall, nie veröffentlicht; MSFS-Position über Little Navmap",
+          "es": "Procedimientos desde Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) como respaldo local, nunca publicados; posición MSFS por Little Navmap"
+        },
+        {
+          "state": "done",
+          "fr": "Lecture à la demande par État : la France par l'eAIP du SIA sans identifiants, les États à tables par EAD, sinon Little Navmap",
+          "en": "On-demand reading by State: France through the SIA eAIP without credentials, States with tables through EAD, else Little Navmap",
+          "de": "Lesen auf Abruf je Staat: Frankreich über das eAIP des SIA ohne Zugangsdaten, Staaten mit Tabellen über EAD, sonst Little Navmap",
+          "es": "Lectura bajo demanda por Estado: Francia por el eAIP del SIA sin credenciales, Estados con tablas por EAD, si no Little Navmap"
         }
       ]
     },

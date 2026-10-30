@@ -20,14 +20,55 @@
   const LEGACY = 'githubData:frame'; // ancien rangement (localStorage), repris une fois par le cadre
   let held = null, // réglage { repo, branch, token, api } en mémoire ; null s'il n'y en a pas
     sink = null; // fonction du cadre qui le garde dans device/keys.json
-  const clean = c => ({
-    repo: String(c.repo || '').trim().replace(/^https:\/\/github\.com\//, '').replace(/\.git$/, ''),
-    branch: String(c.branch || 'main').trim() || 'main',
-    token: String(c.token || '').trim(),
-    ...(c.api ? {
-      api: c.api
-    } : {})
-  });
+  /** Réglage nettoyé. Une adresse collée dit l'hébergeur : https://github.com/compte/dépôt → GitHub ; toute autre adresse
+   *  https://hôte/groupe/projet → une instance GitLab (gitlab.com, framagit…), api https://hôte/api/v4 (transport_gitlab.js,
+   *  29 oct. 2026) ; provider 'gitlab' donné tel quel aussi. */
+  const clean = c => {
+    let repo = String(c.repo || '').trim().replace(/\.git$/, '').replace(/\/+$/, ''),
+      api = c.api || '',
+      provider = c.provider === 'gitlab' ? 'gitlab' : 'github';
+    // un hôte de lettres, chiffres, points et tirets (et un port) : « https://gitlab.com@hote-attaquant/x/y » ou tout autre
+    // caractère dans l'hôte est refusé d'emblée (dépôt vide : « Dépôt et jeton nécessaires »), jamais un hôte trompeur affiché
+    if (/^https?:\/\//i.test(repo) && !/^https:\/\/[A-Za-z0-9.-]+(?::\d+)?\/[^\s@]+$/.test(repo)) repo = '';
+    const u = /^https:\/\/([A-Za-z0-9.-]+(?::\d+)?)\/(.+)$/.exec(repo);
+    if (u) {
+      provider = u[1].toLowerCase() === 'github.com' ? 'github' : 'gitlab';
+      if (provider === 'gitlab') api = `https://${u[1].toLowerCase()}/api/v4`; // l'hôte collé, jamais un api d'avant
+      repo = u[2];
+    }
+    // GitLab : une api de la seule forme https://hôte/api/v4 (sinon ignorée : le transport refuse un réglage sans elle)
+    if (provider === 'gitlab' && !GITLAB_API.test(api)) api = '';
+    return {
+      repo,
+      branch: String(c.branch || 'main').trim() || 'main',
+      token: String(c.token || '').trim(),
+      ...(provider === 'gitlab' ? {
+        provider
+      } : {}),
+      ...(api ? {
+        api
+      } : {})
+    };
+  };
+  const GITLAB_API = /^https:\/\/[^/\s]+\/api\/v4$/;
+  /** Cible d'un réglage : fournisseur, origine de l'API, projet — un jeton ne vaut que pour la sienne. */
+  const target = c => `${c?.provider === 'gitlab' ? 'gitlab' : 'github'}|${c?.provider === 'gitlab' ? String(c.api || '').toLowerCase() :
+    (c?.api || 'https://api.github.com').replace(/\/$/, '').toLowerCase()}|${String(c?.repo || '').toLowerCase()}`;
+  /** Réglage de la carte d'accès (adresse collée, jeton peut-être vide) → réglage complet : le jeton enregistré n'est repris
+   *  que si le fournisseur, l'origine de l'API et le projet sont ceux du réglage enregistré (jamais vers un nouvel hôte :
+   *  un lien d'invitation malveillant ne fait pas partir l'ancien jeton) ; sinon token vide et newTarget (l'hôte à dire). */
+  const resolve = c => {
+    const x = clean(c || {});
+    if (x.token) return x;
+    if (held?.token && target(held) === target(x)) return {
+      ...x,
+      token: held.token
+    };
+    return {
+      ...x,
+      newTarget: x.provider === 'gitlab' ? String(x.api || '').replace(/\/api\/v4$/, '').replace(/^https:\/\//, '') : 'github.com'
+    };
+  };
   /** Réglage gardé { repo, branch, token, api } ; null s'il n'y en a pas. */
   const config = () => held?.repo && held.token ? {
     ...held
@@ -36,6 +77,7 @@
     held = c && typeof c === 'object' ? clean(c) : null;
   };
   const save = c => {
+    if (!clean(c || {}).token) throw new Error('github.save: token required (resolve() first)'); // jamais un réglage sans jeton
     hold(c);
     sink?.(held ? {
       ...held
@@ -58,6 +100,11 @@
 
   function github(c = config()) {
     if (!c?.repo || !c.token) throw new Error('github transport: repository and token required');
+    // réglage d'une instance GitLab : son transport (même forme)
+    if (c.provider === 'gitlab') {
+      if (!FD.gitlab) throw new Error('gitlab transport not loaded');
+      return FD.gitlab(c);
+    }
     const api = (c.api || 'https://api.github.com').replace(/\/$/, ''),
       branch = c.branch || 'main',
       repo = `${api}/repos/${c.repo}`;
@@ -77,6 +124,9 @@
         r = await fetch(url, {
           method,
           cache: 'no-store',
+          // jamais suivre une redirection (comme le transport GitLab) : un dépôt déplacé ou une réponse piégée ne reçoit
+          // pas le jeton recopié vers un autre hôte ; une redirection est une erreur dite
+          redirect: 'error',
           headers: {
             Authorization: `Bearer ${c.token}`,
             Accept: accept,
@@ -102,7 +152,7 @@
         conflict: ref && (r.status === 409 || r.status === 422) // branche partie ailleurs (avancée refusée)
       });
     }
-    return {
+    const self = {
       id: 'github',
       kind: 'remote',
       /** Tête de la branche (sha du dernier commit). */
@@ -173,13 +223,165 @@
         refSha = commit;
         refTag = '';
         return commit;
+      },
+      /** Publication de fichiers générés, hors de la file de la couche de données (frame/INTEGRATION.md § 15.2) : un
+       *  commit par groupe [{ name, files: [{ path, text | blob }], removed: [path], message }], dans l'ordre, chacun sur
+       *  la tête relue juste avant ; blobs envoyés un à un (100 Mo au plus chacun), arbre sur celui du parent, avancée
+       *  sans forcer. from : rang du premier groupe (reprise après un échec). Rend { ok: true, groups: [{ name, commit,
+       *  files, bytes }] } ou { ok: false, at (rang du groupe en échec), conflict | offline | cancelled | tooBig | status,
+       *  message, groups (ceux faits) }. */
+      async publish(groups, {
+        onProgress,
+        signal,
+        from = 0
+      } = {}) {
+        const done = [],
+          list = [].concat(groups || []);
+        for (let gi = Math.max(0, from | 0); gi < list.length; gi++) {
+          const g = list[gi] || {},
+            files = [].concat(g.files || []),
+            removed = [].concat(g.removed || []);
+          const fail = (e, extra = {}) => ({
+            ok: false,
+            at: gi,
+            group: g.name || '',
+            groups: done,
+            message: String(e?.message || e || ''),
+            ...(e?.offline ? {
+              offline: true
+            } : {}),
+            ...(e?.conflict ? {
+              conflict: true
+            } : {}),
+            ...(e?.status && !e.conflict ? {
+              status: e.status
+            } : {}),
+            ...extra
+          });
+          try {
+            let bytes = 0;
+            const entries = [];
+            for (const [k, f] of files.entries()) {
+              if (signal?.aborted) return fail('cancelled', {
+                cancelled: true
+              });
+              const blob = f.blob instanceof Blob ? f.blob : null,
+                size = blob ? blob.size : new TextEncoder().encode(String(f.text ?? '')).length;
+              if (size > 100 * 1024 * 1024) return fail(`${f.path}: over 100 MB`, {
+                tooBig: f.path
+              });
+              const body = blob ? {
+                content: await b64(blob),
+                encoding: 'base64'
+              } : {
+                content: String(f.text ?? ''),
+                encoding: 'utf-8'
+              };
+              const sha = (await (await call(`${repo}/git/blobs`, {
+                method: 'POST',
+                body
+              })).json()).sha;
+              entries.push({
+                path: f.path,
+                mode: '100644',
+                type: 'blob',
+                sha
+              });
+              bytes += size;
+              onProgress?.({
+                group: g.name || '',
+                index: gi,
+                groups: list.length,
+                files: k + 1,
+                total: files.length,
+                bytes
+              });
+            }
+            const parent = await self.head(),
+              base = treeOf.get(parent) || (await (await call(`${repo}/git/commits/${parent}`)).json()).tree.sha;
+            treeOf.set(parent, base);
+            let gone = removed;
+            const tree = async () => (await (await call(`${repo}/git/trees`, {
+              method: 'POST',
+              body: {
+                base_tree: base,
+                tree: [...entries, ...gone.map(path => ({
+                  path,
+                  mode: '100644',
+                  type: 'blob',
+                  sha: null
+                }))]
+              }
+            })).json()).sha;
+            let t;
+            try {
+              t = await tree();
+            } catch (e) {
+              // une suppression d'un fichier absent du dépôt fait refuser l'arbre : les absents écartés, un seul nouvel essai
+              if (e.status !== 422 || !gone.length) throw e;
+              const keep = [];
+              for (const path of gone) {
+                try {
+                  await call(`${repo}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${parent}`);
+                  keep.push(path);
+                } catch (x) {
+                  if (x.status !== 404) throw x;
+                }
+              }
+              gone = keep;
+              t = await tree();
+            }
+            const commit = (await (await call(`${repo}/git/commits`, {
+              method: 'POST',
+              body: {
+                message: g.message || `Publication ${g.name || ''}`.trim(),
+                tree: t,
+                parents: [parent]
+              }
+            })).json()).sha;
+            await call(`${repo}/git/refs/heads/${encodeURIComponent(branch)}`, {
+              method: 'PATCH',
+              ref: true,
+              body: {
+                sha: commit,
+                force: false
+              }
+            });
+            treeOf.set(commit, t);
+            refSha = commit;
+            refTag = '';
+            done.push({
+              name: g.name || '',
+              commit,
+              files: entries.length,
+              removed: gone.length,
+              bytes
+            });
+          } catch (e) {
+            return fail(e);
+          }
+        }
+        return {
+          ok: true,
+          groups: done
+        };
       }
     };
+    return self;
+  }
+  /** Contenu d'un Blob en base64 (blobs de l'API GitHub). */
+  async function b64(blob) {
+    const u = new Uint8Array(await blob.arrayBuffer());
+    let s = '';
+    for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000));
+    return btoa(s);
   }
   github.config = config;
   github.save = save;
   github.clear = clear;
   github.hold = hold;
+  github.clean = clean; // réglage tel que la carte d'accès le donne (adresse collée) → réglage du transport
+  github.resolve = resolve; // … avec le jeton enregistré seulement pour la même cible
   github.legacy = legacy;
   github.persist = fn => {
     sink = fn;

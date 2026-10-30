@@ -26,7 +26,8 @@ Computer, mit oder ohne Netz.
   schreibenden Berichte zu Ihren vergangenen Flügen (antippen, um den vorausgefüllten Bericht zu öffnen), das fehlende Kürzel
   (antippen, um es einzustellen), der Zustand der Daten (letzte Synchronisation, ausstehende Schreibvorgänge, genutzter
   Austauschweg), die Luftfahrtdatenbank, solange sie nicht bereit ist, der Starter, „Offline“, wenn kein Netz da ist, die Zahl der Wetterabrufe des Tages (Open-Meteo-Vorhersagen,
-  10.000 pro Tag erlaubt) und
+  10.000 pro Tag erlaubt), das Ende des AIRAC-Zyklus, wenn die veröffentlichte Luftfahrtdatenbank oder die Verfahren hinter
+  dem gültigen Zyklus zurückliegen, und
   auf einem Telefon die Quelle der Position während eines Flugs. Auf einem Telefon besteht die Kopfzeile nur aus Name,
   Schaltfläche ? und Schaltfläche ⚙.
 - **Vollbild.** Auf der Karte (Werkzeuge mit fester Ansicht) blendet eine runde Schaltfläche am Ende der Schaltflächenspalte
@@ -38,6 +39,9 @@ Computer, mit oder ohne Netz.
 
 ## Daten und Synchronisation
 
+- **Position und Spur des Flugs.** Bei der Nutzung „mit mehreren“ werden die tatsächliche Position und die Spur Ihres laufenden
+  Flugs (ein Punkt je Seemeile oder je Minute, auf etwa 100 m genau) mit der Gruppe geteilt und bleiben in der Historie des
+  Repositorys; sie gehen nie ohne Ihr Zutun an einen externen Dienst.
 - **Zuerst offline.** Alles, was Sie tun, bleibt auf dem Gerät und funktioniert ohne Netz.
 - **Allein auf diesem Gerät.** Ist in den Einstellungen kein Austausch angekreuzt, geht nichts anderswohin: Exportieren
   Sie ab und zu die Sicherung des Geräts (eine Datei), sie ist die einzige Kopie.
@@ -68,7 +72,7 @@ Winds („Wind: METAR LFRS“, „Wind: ICON-Vorhersage FL060“, „Wind eingeg
 Flugflächen werden überall gleich geschrieben: als FL ab 5000 ft (FL060), darunter in Fuß (3500 ft).
 
 <a id="fuel-step-1"></a>**1 Flug.** Abflug, Ankunft und Ausweichflugplatz (ICAO-Codes), das Flugdatum, wenn Sie die Vorhersage (TAF) statt der
-Beobachtung wollen, das Luftfahrzeug und die Reiseflugfläche (FL). Das Flugdatum (in der Ortszeit des Geräts eingegeben) ist ein einziger Wert, im aktuellen Flug gespeichert: Das Wetter der Kalkulation (TAF der Flugplätze, Höhenwinde und -temperaturen) wird für dieses Datum gelesen, die ETA der Karte geht davon aus, solange der Flug nicht gestartet ist, und der Schieberegler der Atmosphäre geht von ihm aus; leer heißt jetzt. Das Luftfahrzeug passt auf eine Zeile: das gewählte
+Beobachtung wollen, das Luftfahrzeug und die Reiseflugfläche (FL). Unter jedem Code gibt eine feste Zeile den Namen des Flugplatzes zur Kontrolle an („LFPO — Paris-Orly“; „unbekannt“, wenn der Code zu nichts passt). Ab zwei Zeichen, einem Code oder dem Anfang eines Namens („LFP“, „orly“), schlägt das Feld höchstens sieben Flugplätze vor: ↑ ↓ zum Wählen, Eingabe zum Bestätigen, Esc zum Schließen oder ein Antippen; die Liste schließt sich, wenn Sie das Feld verlassen, und den ganzen Code von Hand zu tippen funktioniert immer. Der Name kann ganz getippt werden („toulouse“): nur ein gewählter oder getippter Code kommt in die Route, und ein ohne Wahl verlassenes Feld kehrt zum gespeicherten Flugplatz zurück. Das Flugdatum (in der Ortszeit des Geräts eingegeben) ist ein einziger Wert, im aktuellen Flug gespeichert: Das Wetter der Kalkulation (TAF der Flugplätze, Höhenwinde und -temperaturen) wird für dieses Datum gelesen, die ETA der Karte geht davon aus, solange der Flug nicht gestartet ist, und der Schieberegler von Wetter geht von ihm aus; leer heißt jetzt. Das Luftfahrzeug passt auf eine Zeile: das gewählte
 Luftfahrzeug, sein Kennzeichen, sein Rufzeichen und woher es stammt. Ein neuer Flug übernimmt das zuletzt auf diesem Gerät
 gewählte Luftfahrzeug; ohne Wahl wartet die Kalkulation. Die Lupe öffnet die Suche (das zuletzt gewählte zuerst): Tippen Sie ein
 Datenblatt, ein Kennzeichen, ein Rufzeichen oder einen Typ. Die Ergebnisse kommen in dieser Reihenfolge: Ihre
@@ -100,7 +104,7 @@ geplante Flugfläche 6 500 ft, eine Meldung sagt es), mit direktem Einflug und A
 Der Text wird zu „LFRS TSA01 UT460 TSA05 LFML“; die Zwischenpunkte der Luftstraße, die der Text nicht schreibt, bleiben in den
 Punkten (Entfernung, Karte und Profil folgen ihnen). Eine Meldung nennt das Ergebnis („3 Luftstraßen eingetragen, 254 NM“)
 oder „Keine nutzbare Luftstraße zwischen X und Y“. Grenzen: Die Luftstraßen gelten in beiden Richtungen (die Datenbank kennt
-noch keine Einbahnstraßen), ohne feine Flugflächenbeschränkungen und ohne SID / STAR; die Route bleibt zu prüfen.
+noch keine Einbahnstraßen), ohne feine Flugflächenbeschränkungen und ohne SID / STAR; die Route bleibt zu prüfen. „Auto“ geht immer von den gesetzten Punkten aus — Abflug, Ausgang der gewählten SID, die von Ihnen getippten Punkte, Eingang der STAR, Ankunft — und ersetzt, was ein vorheriges „Auto“ geschrieben hat: zweimal „Auto“ hintereinander ergibt denselben Text, nie eine Route, die in Schleifen wächst. Ein Abschnitt, der einen Punkt zweimal überfliegen oder das Ganze zu sehr verlängern würde, bleibt direkt, und die Benachrichtigung sagt warum („keine Luftstraße nahe LACOU“, „Umweg von mehr als 40 %“). Steht der Name der SID im Text, wird ihr Ausgang danach geschrieben („LFBO LACOU7B LACOU …“) und der Abschnitt vom Ausgang zum ersten Punkt wird geroutet. Eine Luftstraße, die Sie zwischen zwei Punkten tippen („GILUX A3 MOTAL“), wird immer als Luftstraße gelesen, nie als gleichnamiger Punkt anderswo; ihr wird nur gefolgt, wenn sie diese beiden Punkte wirklich verbindet, sonst bleibt der Abschnitt direkt und eine Zeile sagt es („A3 verbindet GILUX nicht mit MOTAL: direkter Abschnitt“). Der Routentext folgt Ihren Verfahren, in ICAO-Form: der Name der SID und ihr Ausgang nach dem Abflug, der Eingang und der Name der STAR vor der Ankunft, „DCT“ zwischen zwei Punkten ohne Luftstraße („LFRS NTS1A NT102 DCT LUGEN … MEN01 MEN1A LFML“); der Anflug steht nie darin. Liegt der Ausgang der SID nicht auf Ihrer Route, sagt eine Zeile, dass sie direkt angeschlossen wird („NTS1A endet bei NT102: NT102 DCT LUGEN“). Umgekehrt wird der Text gelesen: den Namen einer SID des Abflugs oder einer STAR der Ankunft tippen wählt sie, ihn löschen hebt die Wahl auf. In der Liste „Punkte (N)“ ist jedes gewählte Verfahren eine einzige eingeklappte Zeile in seiner Kartenfarbe („SID NTS1A · 2 Punkte“, „STAR MEN1A via NEPIX · 4 Punkte“): seine Fixpunkte erscheinen mit einem Tippen, nie auf der Ebene der von Ihnen getippten Punkte; die Zahl zählt Ihre Punkte und diese Zeilen. Verbindet eine Luftstraße zwei Punkte, ist aber auf der Höhe des Abschnitts nicht offen, nennt die Zeile sie mit ihrem offenen Band, damit Sie entscheiden („A34 verbindet LACOU mit LMG, gesperrt auf FL260 (offen von 6 500 ft bis FL195): direkter Abschnitt“); „Auto“ folgt ihr nie trotzdem. Beim Tippen im Feld schlägt eine Liste ab zwei Zeichen des Wortes unter dem Cursor (höchstens sieben) die SIDs des Abflugs und die STARs der Ankunft vor, die Luftstraßen um den vorigen Punkt, die Punkte und Funkfeuer der Basis: ↑ ↓ und Eingabe oder ein Tippen schreiben das Wort an den Cursor; Escape schließt die Liste. Die Listen des Schritts bleiben, für Tastatur und Bildschirmleser.
 
 Der aufklappbare Bereich „Punkte“ listet die erkannten Punkte auf, vom Abflug bis zur Ankunft. Die Pfeile schieben einen
 Punkt in der Liste nach oben oder unten, das Kreuz entfernt ihn; das Feld unten fügt einen vor der Ankunft hinzu: eine
@@ -115,6 +119,8 @@ die beiden Punkte, die sie einrahmen, benachbart und an ihrer Stelle bleiben.
 „Karte zeigen“ zeigt den Flug auf der Karte: Auf einem Telefon öffnet sich die Karte (die Schaltfläche in der Kopfzeile
 führt hierher zurück); auf einem breiten Bildschirm öffnet sie sich daneben und folgt jeder Änderung. „Route bearbeiten“
 auf der Karte führt zu diesem Schritt zurück, das Routenfeld bereit zur Eingabe.
+
+**Piste, SID, STAR und Anflug.** Am Ende des Schritts Route steht eine Karte „Verfahren“ mit einer Abflug- und einer Ankunftsseite. Jede hat einen Titel („Abflug LFPO Paris-Orly“, mit „Auf der Karte“: die Karte öffnet sich auf den Verfahren des Flugplatzes; was dort gewählt wird — Piste, Verfahren, Anflug —, kommt in einem Zug hierher zurück, angewandt wie eine hier getroffene Wahl und in einer einzigen Zeile gemeldet; eine Familie, die die Karte nicht berührt, bleibt, wie sie war), eine einzige dezente Zeile („gelesen am 29/10 16:53Z · Neu lesen · 3 nicht gelesen“, dann „Quelle“: die codierte Seite des gewählten Verfahrens beim SIA, in einem neuen Tab) und ein festes Raster, auf beiden Seiten gleich: Piste · SID · Übergang beim Abflug; Piste · STAR · Übergang bei der Ankunft, darunter Anflug · Anflugübergang (ein Übergang erscheint nur, wenn das gewählte Verfahren einen hat). Auf einem Telefon eine einzige Spalte; keine Bezeichnung wird abgeschnitten. Jede Liste kommt aus aerodb und zeigt alle Verfahren des Flugplatzes in einer einzigen Liste, nach Piste und dann nach Namen geordnet (die Piste steht im Text nur, wenn keine Piste gewählt ist und das Verfahren nur eine bedient: „OPALE 2E“, sobald die Piste gewählt ist). Nichts ist verboten: Ein Verfahren im Konflikt mit Ihrer Wahl ist mit ⚠ markiert (eine SID, STAR oder ein Anflug, die die gewählte Piste nicht bedienen; ohne gewählte Piste eine STAR, die keine Piste des gewählten Anflugs bedient; der Grund steht im Tooltip — eine STAR, die den Anflug nicht erreicht, ist kein Konflikt: die Karte verbindet gestrichelt), und Sie können es trotzdem wählen — das ⚠ und der Tooltip genügen, keine Meldung wiederholt es. ⌛ (grau) heißt veraltet, ⚠ (orange) im Konflikt. In jeder Liste steht, was mit Ihrer Wahl vereinbar ist, vorn, die ⚠-Einträge danach; in der Pistenliste kommen zuerst die Pisten der bereits gewählten SID oder des gewählten Anflugs. Ein Verfahren, das die Quelle nicht richtig lesen konnte (ohne Namen oder zweifelhaft), wird nie angeboten: Die dezente Zeile der Seite sagt, wie viele nicht gelesen sind („3 nicht gelesen“: die nicht gelesenen Seiten und die zu prüfenden Verfahren der gelesenen Datei). Tragen die Daten des Flugplatzes keinen Pistensatz, sind die angebotenen Pisten die, die seine Verfahren nennen. Jede Piste trägt den Wind des bekannten METAR des Flugplatzes (den des Schritts Abflug): „13R — ↓ 12 kt · ← 6 kt“: der Pfeil zeigt, wohin der Wind weht, die Piste nach oben gesehen wie im Endanflug (↓ Gegenwind, ↑ Rückenwind, ← Wind von rechts, → Wind von links). Grün ein Gegenwind; orange ein Rückenwind bis 5 kt oder ein Seitenwind über 10 kt; rot ein Rückenwind über 5 kt oder ein Seitenwind über 20 kt (oder über der Grenze des Datenblatts des Luftfahrzeugs, wenn es eine hat); der Grund im Tooltip. Ohne METAR wird nichts angezeigt. Der Titel jeder Seite endet mit der Zusammenfassung der Wahl, demselben Text wie im Bereich der Karte: „13R · ↑ 12 kt“, „MEN1A via NEPIX“, „I13R“ („SID keine“ für einen Abflug ohne SID). Wer eine STAR oder einen Anflug wählt, die nur eine Piste bedienen, setzt diese Piste; eine STAR bietet ihre Übergänge an, ein Anflug seine Anflugübergänge. Ein Anflug liest sich kurz, Art und Piste („ILS 06“, „RNP 06“; der veröffentlichte Name im Tooltip). Die Anfangsanflugsegmente, die der SIA getrennt veröffentlicht („INA RNAV RWY 06“), sind nie Zeilen: Sie sind die Übergänge aller Endanflüge ihrer Piste, „via ODILO · ODILO 1A“ (der IAF, dann der veröffentlichte Name), und „—“ bleibt der Direktflug zum IF. Die erste Wahl „—“ heißt „nicht gewählt“; „keine“ ist eine echte Wahl (ein direkter Abflug ohne SID). Ein Verfahren aus dem X-Plane-Ersatz des Arbeitsplatzes steht zuletzt, markiert „X-Plane, lokal“; ein unter einem früheren Zyklus gelesenes Verfahren trägt ⌛ (neu lesen). Für einen Flugplatz ohne veröffentlichtes Verfahren sagt die dezente Zeile das („kein veröffentlichtes Verfahren · Verfahren von LFXX lesen“): ein Flugplatz pro Geste, nie im Stillen. Ein Flugplatz, der schon Verfahren hat, zeigt auf derselben Zeile das Datum seines letzten Lesens („gelesen am 29/10 16:53Z“, ⌛ wenn es aus einem früheren Zyklus stammt), dann „Neu lesen“: dieselbe Geste, die die gelesene Datei ersetzt. Ein französischer Flugplatz wird aus dem eAIP des SIA gelesen, ohne Konto; ein Staat, dessen AIP Verfahrenstabellen veröffentlicht, aus EAD Basic (Zugangsdaten am Arbeitsplatz eingetragen); für jeden anderen Staat sagt die Meldung, dass keine Tabelle veröffentlicht ist. Ohne Launcher oder auf einem mit dem Arbeitsplatz gekoppelten Gerät geschieht das Lesen am Arbeitsplatz — die Meldung sagt es — und der SimBrief-OFP bleibt die Quelle des Flugs. Sind SID und STAR gewählt, läuft die Berechnung auf dem Weg „Route + Verfahren“ (mit der Strecke von SID und STAR), und die Karte zeichnet sie mit ihren Höhen und Geschwindigkeiten; ihre Höhenbeschränkungen gehen nicht in die Stufen der Berechnung ein, sie stehen im Höhenprofil, das den Reiseflug hält, bis der Sinkflug beginnen muss, und danach nicht mehr steigt. „Letzter SimBrief-OFP“ schlägt seine SID und STAR nur für die Seiten vor, die Sie noch nicht gewählt haben („keine“ ist eine Wahl): Er ersetzt nie Ihre Wahl und sagt, was er ausgefüllt hat, eine Zeile pro Seite („Ankunft: STAR — → LERG1R“). Nacheinander getroffene Entscheidungen werden einmal geschrieben, kurz nach der letzten. Die Karte öffnet sich eingeklappt, damit man sie ohne Scrollen liest: eine Zusammenfassungszeile pro Seite („Abflug LFRS · 03 · NTS1A“, mit „Auf der Karte“); ein Tippen auf die Zeile oder auf ▸ klappt ihre Listen und ihre Nebenzeile („Neu lesen“, „Quelle“) aus, eine Seite nach der anderen. Eine Seite ohne Verfahren bleibt ausgeklappt: ihre Zeile bietet das Lesen an.
 
 <a id="fuel-step-3"></a>**3 Wetter.** Der Wind (Richtung und Stärke) und die ISA-Abweichung. Ohne Richtung oder ganz ohne Wind wird der
 Blockkraftstoff als Spanne angegeben. „Flugplatzwetter lesen“ zeigt Abflug, Ankunft, Ausweichflugplatz und die
@@ -190,6 +196,10 @@ großen Bildschirm bleibt es hier mit der Karte rechts. Den Abflugplatz danach z
 vorzubereiten: Die Abflugzeit wird gelöscht. Die Ankunft nach dem Abflug zu ändern ist eine Umleitung: Die Zeit bleibt
 erhalten, und die Umleitung wird vermerkt.
 
+Flugplan für den Simulator: Unter der Zusammenfassung laden drei Schaltflächen — „.fms (XP 11/12)“, „.fms (XP 10)“ und „.pln (MSFS)“ — die Route und die gewählten Verfahren (Piste, SID, STAR, Anflug und ihre Übergänge) für X-Plane oder Microsoft Flight Simulator herunter, in einer Datei namens „LFPO-EIDW_2026-10-30.fms“. Die Route braucht mindestens zwei gesetzte Punkte. Kopieren Sie die Datei dann in den Ordner „Output/FMS plans“ von X-Plane (das direkte Senden kommt mit dem Launcher).
+
+Sobald der Flug gestartet ist, enthält dieser Schritt eine Karte „Verfahren“: Nichts ist gesperrt: Abflug- und Ankunftsseite bleiben jederzeit änderbar (ein anderer Abflug ist ein neuer Abflug). Eine Änderung rechnet die Berechnung nicht neu: Block-, Strecken- und Reservekraftstoff bleiben die des Abflugs; nur die Zeiten an den Punkten, das Höhenprofil und die Reststrecke folgen dem neuen Weg. Die Schaltfläche „Ändern“ der Karte öffnet Kraftstoff bei der Ankunftszeile (`#fuel?focus=arr`): vor dem Start den Schritt Route, danach den Schritt Abflug.
+
 Sobald der Flug gestartet ist, zeigt das Ergebnis unten im Bildschirm „Flug gestartet um 11:14Z (13:14) · seit 1 h 10“. Die Zeiten sind UTC („Z“);
 die Uhrzeit des Geräts steht in Klammern bei Abflug, geplantem Start und geplanter Ankunft. Ein
 gestarteter Flug endet mit dem Schreiben seines Berichts: Beim Speichern kehrt Kraftstoff zur Vorbereitung zurück, und
@@ -205,7 +215,8 @@ Flugfläche, Steig- und Sinkprofil — wird geteilt: Karte und Bericht haben ihn
 Die Registerkarte „Datenblätter“ versammelt die Datenblätter der Fluggesellschaft, geteilt mit all ihren Geräten. Sie
 sind nach Kategorie geordnet (Hubschrauber, Turboprops, Strahlflugzeuge, Kolbenmotoren, andere); jeder Typ, den die
 Fluggesellschaft nutzt (Flotte, Referenz) und der noch kein Datenblatt hat, steht ebenfalls dort, „Leistungen
-einzutragen“, mit „Datenblatt anlegen“.
+einzutragen“, mit „Datenblatt anlegen“. Jedes Datenblatt sagt, was fehlt, nach Familien („Zu ergänzen: Drehzahlen,
+Geschwindigkeiten, Reiseflug, Rollen, Piste“), oder „vollständig“, wenn nichts fehlt.
 
 - **Importieren**: eine Datei (Leistungs-CSV, JSON, `.lnmperf` von Little Navmap, SimBrief-OFP) oder eingefügter Text
   (dasselbe oder die Antwort von ChatGPT). Ein aus einem OFP gewonnenes Datenblatt wird an dessen echten Zeiten und
@@ -220,7 +231,9 @@ einzutragen“, mit „Datenblatt anlegen“.
   sie in ChatGPT ein, dann dessen Antwort unverändert in das vorgesehene Feld, und „Lesen“.
 - **Bearbeiten, exportieren**: Der Editor zeigt die Felder nach Gruppen. Auf einem Computerbildschirm wird die Tabelle
   Leistung / Durchfluss Zeile für Zeile bearbeitet; auf einem Telefon ist sie nur lesbar. Exporte `.lnmperf` und JSON;
-  Löschen nach Bestätigung.
+  Löschen nach Bestätigung. Zelle (Flugzeug, Hubschrauber, Segelflugzeug …) und Antrieb (Kolbenmotor, Turboprop,
+  Wellenturbine, Strahltriebwerk …) kommen aus der ICAO-Basis des Typs: „auto“ lassen, außer die Basis irrt sich oder kennt den
+  Typ nicht; sie werden dann weder als fehlend gezählt noch bei ChatGPT erfragt.
 
 ## Einstellungen und Einheiten
 
@@ -244,7 +257,7 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: f2764e9c409c -->
+<!-- fr: bac63802e71b -->
 
 <!-- chapter: maps -->
 # Karte
@@ -255,7 +268,7 @@ Flugplätze, Funkfeuer, Luftstraßen, Mindesthöhen. Die Route des Flugs lässt 
 ## So geht’s
 
 **Der geplante Flug.** Die Karte zeigt den in Kraftstoff vorbereiteten Flug: Abflug, Routenpunkte, Ankunft, und den
-Ausweichflugplatz grau gestrichelt. Hat das SimBrief-OFP eine SID oder eine STAR eingereicht, werden sie violett über der Route gezeichnet, mit Namen („SID ROYAN6P“). Seine Zusammenfassung (Flugfläche, Entfernung, geplant oder im Flug) steht nicht über der Zeichnung (die Zeichnung zeigt sie): der Tooltip des Griffs des Datenblocks unter der Karte nennt sie, mit Abflug und Ankunft, Ausweichflugplatz und Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
+Ausweichflugplatz grau gestrichelt. Die in Kraftstoff gewählten Piste, SID, STAR und Anflugverfahren werden über der Route gezeichnet (SID grün, STAR orange, Anflug blau), mit Namen („SID ROYAN6P“). Seine Zusammenfassung (Flugfläche, Entfernung, geplant oder im Flug) steht nicht über der Zeichnung (die Zeichnung zeigt sie): der Tooltip des Griffs des Datenblocks unter der Karte nennt sie, mit Abflug und Ankunft, Ausweichflugplatz und Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
 
 **Die Karte und was sie zeigt.** Rund um die Route: die Lufträume, die sie durchquert oder streift (Flugbeschränkungs-,
 Gefahren- und Sperrgebiete, kontrollierte Lufträume), die unteren oder oberen Luftstraßen je nach Ihrer Flugfläche, die
@@ -266,6 +279,14 @@ Abflug, in nautischen Meilen. Verschieben Sie die Karte mit einem Finger, spreiz
 ändert: nur „Zentrieren“ (oder ein anderer Flug) richtet sie neu aus. Von weitem gesehen zeigt die Karte nur, was nahe
 der Route liegt; zoomen Sie hinein, um alles zu sehen.
 
+<a id="maps-procs"></a>**Gewählte Piste und Verfahren.** Was Sie in Kraftstoff gewählt haben (Piste, SID, STAR, Anflug), wird über der Route gezeichnet: die SID grün, die STAR orange, der Anflug und sein Fehlanflug blau, von der Schwelle der Abflugpiste bis zum ersten Punkt der Route und vom letzten Punkt der Route bis zur Schwelle der Landepiste. Übergänge und das Fehlanflugverfahren sind gestrichelt; ein Abschnitt ohne Punkt (zum Beispiel ein Steigflug auf einem Kurs) ist ein kurzer Strich entlang seines Kurses, dann eine Strichlinie bis zum nächsten Punkt; eine Kurve mit konstantem Radius ist ein Bogen. Erreicht die SID keinen Punkt der Route, verbindet eine gestrichelte Gerade sie mit der Route (ebenso bei der STAR). Ein nicht gewähltes Verfahren wird nie gezeichnet, und die Ebenenliste hat kein Kästchen dafür. Der Name des Verfahrens steht auf seiner Linie, gefolgt von der Herkunft seiner Daten, wenn sie von X-Plane oder Little Navmap stammen („X-Plane, lokal“) dann vom Zeichen ⌛ (grau), wenn sie unter einem früheren Zyklus gelesen wurden; die Legende (Chip „i“) erinnert daran. Ab der regionalen Ansicht (auf der Seite der Schwellen einstellbar) trägt jeder Punkt seine Beschränkungen; der Name des Verfahrens steht in jedem Maßstab, über allem anderen, wie auf Verfahrenskarten: eine **unterstrichene** Höhe heißt „mindestens“, eine **überstrichene** „höchstens“, beides „genau“, „5000–7000“ „dazwischen“; „≤ 220 kt“ ist die nicht zu überschreitende Geschwindigkeit. Das Vertikalprofil folgt demselben Weg und zeigt diese Beschränkungen als Stufen (Pfeil nach oben: mindestens, nach unten: höchstens, Punkt: genau, Balken: zwischen zwei Höhen); Entfernungen, geschätzte Zeiten und der Cursor werden entlang dieses Wegs gemessen. Die Karte ändert diese Wahl nie: Tippen Sie auf einen Flugplatz der Route, seine Karte nennt die gewählte Piste und die Verfahren, mit einer Schaltfläche „Ändern“, die Kraftstoff bei der zu ändernden Zeile öffnet; ein Link „Quelle“ öffnet die veröffentlichte Seite des Verfahrens (eAIP des SIA) in einem neuen Tab, und bei einem anderswo gelesenen Verfahren erscheint der Name seines Dokuments beim Überfahren der Zeile.
+
+<a id="maps-rwy"></a>**Die Pisten.** Aus der Nähe wird jede Piste jedes gezeichneten Flugplatzes als kurzer Vektor von ihrer Schwelle gezeichnet, und der Flugplatz zeigt seinen Namen neben dem Code („LFPO Paris-Orly“); jeder Vektor verläuft in Pistenrichtung, ihre Nummer am Ende hinter der Schwelle: die in Kraftstoff gewählte Piste fett in der Farbe ihrer Seite, die anderen dünn. Sie erscheinen erst ab der von der Fluggesellschaft eingestellten Zoomstufe (Einstellungen › Verwaltung, „Zoomstufe der Pistenschwellen“, ohne Einstellung 11); darunter nichts. In „Auf der Karte wählen“ werden alle Pisten des Flugplatzes so gezeichnet, die gewählte fett; die Zeichnungen der Wahl liegen über den abgeblendeten Beschriftungen des Hintergrunds.
+
+<a id="maps-choose"></a>**Auf der Karte wählen.** Die Schaltfläche „Auf der Karte“ einer Seite im Kraftstoff (Abflug oder Ankunft) öffnet die Karte auf diesem Flugplatz — ebenso „Auf der Karte wählen“ auf der Karte des Abflug- oder Ankunftsflugplatzes (tippen Sie auf sein Symbol; auf einem Telefon in voller Breite): Hintergrundkarte und Ebenen werden abgeblendet, die Ansicht passt sich den veröffentlichten Verfahren des Flugplatzes an. Oben im Datenblock Ihre Auswahl, eine Zeile pro Familie („Piste 31 · ↑ 12 kt“, „OKRI5L“, „I31 über IAF1“), jede mit ✕, um sie auf „Keine“ zurückzusetzen; ein Tippen auf den Namen einer Familie („Piste“, „STAR“, „Anflug“) führt zu ihrer Gruppe und klappt sie auf. Darunter die drei Familien auf einmal — die Piste, die SID (Abflug) oder die STAR, der Anflug (Ankunft) — in engen Zeilen: drei Tipper in beliebiger Reihenfolge. Jede Wahl schränkt die beiden anderen Familien auf das Passende ein; der Rest ist unter einer dünnen Zeile „N weitere · Alle“ eingeklappt, die ihn mit ⚠ markiert aufklappt (er bleibt wählbar). SIDs, die auf der eingegebenen Route enden, und STARs, die auf ihr beginnen, kommen zuerst, unter „Zu Ihrer Route“; die anderen folgen, markiert „Ausgang LACOU“ oder „Eintritt OKRIX“. „Keine“ ist immer die erste Zeile. Verfahren, die sich nur durch die Piste unterscheiden (OKRI5L, OKRI5R), bilden eine Zeile „OKRI5“ mit ihren Pisten als kleine Etiketten: ein Tippen wählt die Familie und schränkt die Pisten ein, ein Tippen auf eine Piste wählt das Verfahren. Anflüge tragen ihre Kurzbezeichnung („ILS 06“, „RNP 06“; der veröffentlichte Name beim Überfahren); unter dem gewählten Anflug „Ohne Übergang“, dann seine Übergänge, darunter die Anfangsanflugsegmente, die der SIA für die ganze Piste veröffentlicht („via ODILO · ODILO 1A“), im Farbton ihres Endanflugs; ein Übergang ohne gemeinsamen Punkt mit dem Endanflug wird gestrichelt angeschlossen. Jedes Verfahren hat seinen Farbton (acht, im Wechsel), gleich auf seiner Zeile, seiner Beschriftung und seiner Spur; auf der Karte eine kleine Beschriftung pro Familie und Punkt („NIMER 9“), und das überfahrene oder angetippte Verfahren liegt über allem, mit seinem vollen Namen; das Überfahren einer Zeile jeder Familie hebt ihre Spur hervor, das Überfahren einer Spur ihre Zeile; ⌛ (grau): unter einem früheren Zyklus gelesen. Jede Piste trägt den Wind des bereits bekannten METAR: „↓ 12 kt“ Gegenwind, „↑“ Rückenwind, dann der Seitenwind (← Wind von rechts, → Wind von links: der Pfeil zeigt, wohin er weht, die Piste nach oben gezeichnet, wie in Kraftstoff), grün, orange oder rot nach Rücken- und Seitenwind; ohne METAR nichts. Ein Tippen auf eine Zeile oder eine Spur fügt diese Wahl hinzu und lässt sie auf der Karte (die Piste fett, das Verfahren in seinem Farbton, die anderen seiner Familie abgeblendet); noch wird nichts geschrieben. Ein Verfahren, das nur eine Piste bedient, setzt sie, wenn keine gewählt ist; sonst bietet eine Zeile unter der Gruppe die Korrektur mit einem Tippen an: „OPAL2E bedient 25 — Auf 25 wechseln“ oder „OKRIX5A bedient 07 nicht — OKRIX5B wählen“. „Fertig“, das Kreuz ✕ oder Esc bringen Sie mit allem Gewählten zurück zu Kraftstoff; Kraftstoff schreibt es und sagt, was sich geändert hat; die Karte schreibt nichts. Zum Verzichten, ohne etwas zurückzugeben: „← Kraftstoff“ oben.
+
+<a id="maps-coverage"></a>**Abdeckung.** Die Ebene „Abdeckung“ (in der Ebenenliste, anfangs aus, nur über ihr Kästchen eingeschaltet) färbt die Flugplätze danach, was dieses Gerät von ihren Verfahren liefern kann: **grün**, sie liegen vor (veröffentlicht, von Hand erfasst oder auf diesem Rechner gelesen); **orange**, sie liegen vor, sind aber nur teilweise gelesen (Seiten nicht gelesen, Verfahren zu prüfen: die Karte des Flugplatzes sagt, wie viele), oder sie werden auf Anfrage gelesen (Frankreich über das eAIP des SIA, ein Staat mit lesbaren Tabellen, ein Flugplatz der lokalen Little-Navmap-Datenbank); **rot**, nichts Lesbares (nur Bilder, Fließtext, nichts auf diesem Rechner). Die Legende (die „i“-Schaltfläche des Datenblocks) zeigt eine Zeile pro Farbe, solange die Ebene sichtbar ist. Nur die sichtbaren Flugplätze werden abgefragt. Berühren Sie einen Flugplatz: Seine Karte ergänzt eine Zeile mit Punkt, Stufe und Grund (⌛, wenn die vorliegenden Verfahren aus einem früheren Zyklus stammen, dann die Zahl der vorliegenden SID, STAR und Anflüge). Kann das Gerät diese Auskunft nicht geben, wird die Ebene nicht angeboten.
+
 <a id="maps-weather"></a>**Profil und Cursor.** Im Datenblock unter der Karte schneidet das Vertikalprofil die Route von Anfang bis Ende: das Gelände, die
 Lufträume, in die Sie auf der geplanten Höhe einfliegen, und die Flugbahn in Violett. Fahren Sie mit dem Finger über das
 Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der Karte ein. Tippen Sie auf die Route auf der
@@ -274,7 +295,9 @@ geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle
 Datenblock das Profil; die Liste der Lufträume an einem Punkt oder die Meldepunkte eines Flugplatzes öffnen sich an
 seiner Stelle, wenn Sie sie verlangen, und das Profil kommt beim Schließen zurück. Der Wolkenchip, (die drei Chips — Profil, Wolke, „i“ — stehen immer in der obersten Zeile rechts; einer ohne Inhalt ist nur ausgegraut), ersetzt es (der Profilchip bringt es zurück) durch den
 Wetterschnitt entlang der Route (Wind, Temperatur, Wolken, Vereisung) auf der Flughöhe; der Schnitt folgt demselben Cursor, und ein Tippen darauf
-verschiebt ihn. Er zeigt nur die Vorhersage, die Atmosphäre schon geladen hat: ohne sie führt die Zeile „Keine Vorhersage geladen“ zu Wetter unter Vorbereiten. Der letzte Chip „i“ (ausgegraut, solange die Zeichnung keine Legende hat) öffnet über dem Profil seine Legende (was jede Linie, Fläche und Marke ist); ein Wischen über den Wetterschnitt bewegt den Cursor wie beim Profil. Profil und Schnitt werden auf die genaue Höhe des Blocks gezeichnet, ihre Entfernungsachse bleibt immer sichtbar: in einem niedrigen Block entfallen Höhenbeschriftungen, nie die Achse.
+verschiebt ihn. Er zeigt nur die Vorhersage, die Wetter schon geladen hat: ohne sie führt die Zeile „Keine Vorhersage geladen“ zu Wetter unter Vorbereiten. Der letzte Chip „i“ (ausgegraut, solange die Zeichnung keine Legende hat) öffnet über dem Profil seine Legende (was jede Linie, Fläche und Marke ist); ein Wischen über den Wetterschnitt bewegt den Cursor wie beim Profil. Profil und Schnitt werden auf die genaue Höhe des Blocks gezeichnet, ihre Entfernungsachse bleibt immer sichtbar: in einem niedrigen Block entfallen Höhenbeschriftungen, nie die Achse.
+
+<a id="maps-profile-spaces"></a>**Die Lufträume des Profils.** Das Profil zeigt nur die Lufträume, in die der geplante Vertikalweg eintritt (auf 500 ft genau); sich überlappende Sektoren einer Familie (die CTAs von Dublin) bilden dort eine Hülle, nach der Familie benannt; Free-Route-Luftraum (FRA) und W- oder Wetterforschungsgebiete erscheinen nur bei eingeschalteter Ebene „Andere Lufträume“; höchstens sieben Lufträume werden benannt, die übrigen in der Liste darunter.
 
 <a id="maps-profile-zoom"></a>**Profil zoomen.** Um das Profil genau zu lesen, zoomen Sie auf einen Teil des Fluges: mit zwei Fingern spreizen oder zusammenziehen (die Mitte der Finger bleibt an ihrem Platz) und mit zwei Fingern ziehen, um das Fenster zu verschieben; ein einzelner Finger bleibt der Lese-Cursor. Die Höhenskala passt sich an das an, was das Fenster zeigt (daher kommt die Genauigkeit), die Entfernungsmarken (NM) rücken mit zusammen, und Punkte außerhalb des Fensters werden nicht gezeichnet. Ein Doppeltipp führt zum ganzen Flug zurück, ebenso die Schaltfläche „Ganzer Flug“, die in der obersten Zeile erscheint, solange das Profil gezoomt ist. Am Bildschirm: Strg + Mausrad zoomt um den Zeiger, Ziehen verschiebt das Fenster, ein Doppelklick führt zum ganzen Flug zurück. Der Zoom bleibt, solange die Seite geöffnet ist und die Route sich nicht ändert; er wird nie gespeichert. Der Wetterschnitt wird genauso gezoomt (dieselben Gesten, dieselbe Schaltfläche „Ganzer Flug“), und das Fenster ist für beide dasselbe: zoomen Sie in einem, wechseln Sie mit dem Chip zum anderen, und Sie finden denselben Flugabschnitt; der Schnitt passt auch seine Höhenskala an das an, was er zeigt.
 
@@ -339,8 +362,8 @@ VAC-Karte ihn beide nennen: die Zeile behält die Beschreibung und die veröffen
 wenn die VAC-Karte ihn mehr als eine halbe Meile davon setzt.
 
 <a id="maps-started"></a>**Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
-„geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
-Minuten). In den Notizen des Datenblocks, unter dem Profil, nennt eine Zeile die Abweichung: voraus oder verspätet (Minuten und NM), wie viele NM neben der
+„geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten geflogenen Spur seit dem
+Abflug, die ein Wechsel des Tabs nicht verliert). In den Notizen des Datenblocks, unter dem Profil, nennt eine Zeile die Abweichung: voraus oder verspätet (Minuten und NM), wie viele NM neben der
 Route, und Ihre Höhe gegenüber der geplanten; das Profil zeigt beide Höhen. Aus der Nähe trägt jeder Punkt seine
 voraussichtliche Zeit (ETA) unter seinem Namen, nie über einem Flugplatz, in UTC („14:52Z“), die Ortszeit in Klammern bei Abflug und Ankunft. „Folgen“ hält die Karte auf Ihrer Position; ein Verschieben der Karte beendet es. Ohne
 Position (GPS oder Netz nicht aktiviert) sagt es eine Benachrichtigung einmal, die Zeile bleibt in den Notizen, mit einer Schaltfläche „Position aktivieren“; eine Position, die älter als 2
@@ -411,7 +434,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 462716f97b09 -->
+<!-- fr: df5fbdfdcc6d -->
 
 <!-- chapter: report -->
 # Bericht
@@ -618,7 +641,8 @@ Außerhalb des Fluggebiets zeigt die Karte die mit der Anwendung veröffentlicht
 
 **Die Wetterkarte.** Isobaren, Isothermen, Wolken, Wind, Jetstream und Konvektion in der mit dem Höhenchip gewählten
 Höhe („Boden", die angeforderte Höhe, die berechnete Bahn oder eine feste Höhe). Die Ebenen-Schaltfläche (oben links)
-wählt, was gezeichnet wird. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
+öffnet ein Feld über der Karte: Es wählt, was auf der Karte und im Profil gezeichnet wird, und der Schnitt bleibt unten
+sichtbar und wird bei jedem Kästchen neu gezeichnet; das Kreuz oder Esc schließt es. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
 
 **Das Fluggebiet und die Welt.** Eine dünne Linie umgibt das Fluggebiet: innen die für den Flug geladene feine Vorhersage
 (Météo-France AROME 1,3 km und ARPEGE 0,1° über Frankreich, ICON in Europa); außen die Weltsynoptik (NOAA GFS, mit
@@ -626,7 +650,9 @@ einem 5°-Raster veröffentlicht). Die beiden Modelle sagen nicht ganz dasselbe:
 ist normal. Das Ebenen-Feld nennt beide Modelle und ihr Raster.
 
 **Das Flugdatum.** Der Regler unter dem Griff verschiebt die Zeit von 0 bis 72 Stunden nach dem geplanten Abflug: Karte,
-Schnitt und Punktschnitte folgen.
+Schnitt und Punktschnitte folgen. Liegt ein Teil des Reglers außerhalb der gelesenen Vorhersage (ein geplanter Abflug in
+der Vergangenheit, noch nicht geladene Tage), zeigt ein Band unter dem Regler die abgedeckten Stunden; sonst wird die
+nächste Stunde gezeigt, ⚠ sagt es in der Zeile des Reglers und im Griff, und eine Warnung erscheint.
 
 **Der Schnitt und die Punktschnitte.** Unter der Karte zeigt der Schnitt die Route von Anfang bis Ende, vom Boden bis
 über die Flughöhe. Tippen Sie darauf, um den Schnitt des nächsten Punkts zu öffnen (das senkrechte Profil der
@@ -655,7 +681,57 @@ die Legende, den Chip oder Escape schließt sie.
   die Weltsynoptik kommt von GFS (NOAA), alle 3 Stunden bis 72 Stunden.
 - Das Geladene bleibt auf dem Gerät und dient offline; die Karte übernimmt seinen Wetterschnitt.
 
-<!-- fr: 0d64bc05e5c1 -->
+<!-- fr: acaaf2c98cee -->
+
+<!-- chapter: data -->
+# Daten
+
+Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank, die Verfahren, die Luftfahrzeuge, das Wetter — und der Stand jedes Datensatzes. Dieser Bildschirm dient dem Lesen und bietet Aktionen für die Luftfahrtdatenbank: ihre Quellen herunterladen, sie aufbauen, die Quellen bereinigen, dann veröffentlichen.
+
+## So geht's
+
+<a id="data-cycle"></a>**Der gültige Zyklus.** Oben der aktuelle AIRAC-Zyklus (zum Beispiel 2610), seine Daten und die Zahl der Tage bis zum nächsten. Darunter sagt „Starter dieses Rechners“ oder „Ohne Starter: nur Lesen“, ob dieser Computer einen Starter hat.
+
+<a id="data-coverage"></a>**Die Abdeckung.** Die Liste der Zonen (Länder, Regionen), die dieser Rechner verfolgt. Beim ersten Öffnen sind es alle Zonen, die die Gesellschaft veröffentlicht; die Liste bleibt auf diesem Gerät. „Land hinzufügen“ nimmt eine Zone, die die Suite kennt, in die Abdeckung auf, auch wenn sie noch niemand veröffentlicht: Sie wird für „Erstellen“ angekreuzt.
+
+<a id="data-states"></a>**Die Staaten.** Unter der Abdeckung sind die Staaten nach Farbe geordnet: grün, Verfahren sind bereits veröffentlicht; orange, sie sind auf Anfrage lesbar; rot, nichts ist lesbar. Der Grund steht in jeder Zeile, die Farbe steht nie allein. Ab sieben Zeilen klappt „n weitere“ den Rest auf.
+
+<a id="data-group-base"></a>**Luftfahrtdatenbank.** Eine Zeile pro Quelle, die eine Zone der Abdeckung versorgt: ihr Zyklus, ihr Alter („vor 3 Tagen veröffentlicht“), die Zahl der veröffentlichten Zonen und eine Statusmarke. Tippen Sie auf eine Zeile, um den Link der Quelle mit seiner Adresse, ihre Lizenz, die versorgten Zonen und das zu sehen, was jede Zone veröffentlicht hat.
+
+<a id="data-group-proc"></a>**Verfahren.** Die Verfahren Frankreichs (eAIP des SIA) und der Vereinigten Staaten (CIFP der FAA), mit der Zahl der veröffentlichten Flugplätze.
+
+<a id="data-group-aircraft"></a>**Luftfahrzeuge.** Die Luftfahrzeugmuster und ihre Leistungen: das Datum der Ausgabe, die Zahl der Muster und der Dateien. Nach 28 Tagen wird die Marke orange.
+
+<a id="data-group-weather"></a>**Wetter.** Das Weltwetter und die NAT-Routen werden mit der Website veröffentlicht: Diese Zeilen haben weder Zyklus noch Marke.
+
+<a id="data-states-pill"></a>**Die Marken.** „Aktuell“: nichts zu tun. „Zyklus überholt“: Der veröffentlichte Zyklus ist älter als der gültige (orange, nach einer Woche rot). „Alter Parser“: von einer älteren Version der Ersteller veröffentlicht. „Über 28 Tage alt“: ein Datensatz ohne Zyklus, vor mehr als 28 Tagen veröffentlicht. „Nicht im Repository“: nichts ist veröffentlicht. Eine Gruppe öffnet sich von selbst, wenn eine ihrer Zeilen Aufmerksamkeit verlangt.
+
+<a id="data-more"></a>**Die weiteren Datensätze.** Höchstens sieben Zeilen pro Gruppe; „n weitere Datensätze“ klappt den Rest und die nur erwogenen oder zurückgestellten Quellen auf (ihr Link, ihre Lizenz, ihr Status).
+
+<a id="data-build"></a>**Die Basis aufbauen.** Am Anfang der Gruppe Luftfahrtdatenbank wirkt das Feld „Herunterladen, aufbauen, bereinigen“ auf die angekreuzten Zonen, mit drei Schaltflächen in dieser Reihenfolge: Herunterladen · Aufbauen · Bereinigen. „Aufbauen“ baut die Basis der angekreuzten Zonen auf dem Starter dieses Rechners neu auf: Ein Browser ohne Fenster (Edge, sonst Chrome) erstellt die Zonen nacheinander, jede wird im Datenrepository gespeichert, sobald sie fertig ist. Zu Beginn sind alle Zonen der Abdeckung angekreuzt; wählen Sie die ab, die Sie nicht neu erstellen wollen. Die drei Schaltflächen sind zusammen grau, der Grund steht nur einmal darunter: „Der Starter des Rechners wird benötigt“, „Ein anderer Vorgang läuft“, „Mindestens eine Zone ankreuzen“, „Offline“.
+
+<a id="data-build-personal"></a>**Quellen mit persönlicher Lizenz.** ENAIRE (Spanien), NATS (Vereinigtes Königreich) und die X-Plane-Daten werden nur angeboten, wenn eine angekreuzte Zone sie nutzt, und sind nie vorab angekreuzt: Kreuzen Sie sie nur an, wenn das Datenrepository nur von Ihnen genutzt wird. Ist X-Plane angekreuzt, läuft der Aufbau in der Seite, was hier noch nicht möglich ist: Er endet mit diesem Grund.
+
+<a id="data-build-run"></a>**Während des Aufbaus.** Ein Balken, „n von m Zonen“, der Schritt und die vergangene Zeit; eine Zeile je Zone sagt: wartet, wird erstellt (n / m Quellen), erstellt, fehlgeschlagen mit Grund oder abgebrochen. „Anhalten“ fordert den Stopp an: Die laufende Zone wird beendet, bereits erstellte Zonen bleiben erhalten. Sie können den Bildschirm verlassen: Der Aufbau läuft im Starter weiter und wird bei Ihrer Rückkehr wiedergefunden. Wurde der Starter unterwegs beendet, steht „Aufbau unterbrochen“ mit dem letzten Stand jeder Zone da: Starten Sie neu und wählen Sie bei Bedarf die fertigen Zonen ab.
+
+<a id="data-build-end"></a>**Am Ende.** Eine Benachrichtigung nennt die Zahlen („Basis erstellt: 3 Zonen; 1 fehlgeschlagen (gb)“), und die Zusammenfassung bleibt im Feld stehen, mit dem, was zu tun ist: eine fehlgeschlagene Zone (der Grund steht in ihrer Zeile: Browser ohne Fenster, Zeitlimit, ungültige Ausgabe, Schreiben nicht möglich…), ein angehaltener Aufbau, kein Browser gefunden („Auf diesem Rechner wurden weder Edge noch Chrome gefunden: installieren Sie einen der beiden.“). Danach wird der Stand der Zeilen neu gelesen.
+
+<a id="data-download"></a>**Herunterladen.** Die Schaltfläche „Herunterladen“ holt auf dem Starter dieses Rechners die Rohquellen der angekreuzten Zonen (openAIP, FAA, UK Mil AIP, NAV CANADA, NAT-Tracks des Tages; ENAIRE nur, wenn sie unter den Quellen mit persönlicher Lizenz angekreuzt ist). Eine Zeile pro Zone sagt, wo sie steht („wird heruntergeladen (2 / 3 Quellen)“), darunter eine Zeile pro Quelle: heruntergeladen (n Dateien), unverändert, fehlgeschlagen mit Grund und HTTP-Code („HTTP 404“), übersprungen (Lizenz nicht erklärt) oder manuell. Was sich nicht geändert hat, wird nie neu geschrieben. Am Ende nennt eine Benachrichtigung die Zahlen („Heruntergeladen: 2 Zonen geändert, 1 unverändert; 1 Fehler“); die Quellen, die der Starter nicht herunterlädt (zum Beispiel der SIA), werden mit Namen aufgelistet, mit einem Link nur, wenn ihre Adresse https ist, „von Hand abzulegen“; wurden von git verfolgte Quelldateien geändert, sagt der Bildschirm es („n Quelldateien geändert, außerhalb der synchronisierten Daten“). „Für diese Zonen gibt es nichts herunterzuladen“: keine der angekreuzten Zonen hat eine herunterladbare Quelle. Zwei Downloads dürfen nicht näher als 30 s aufeinander folgen: der Bildschirm sagt „Versuchen Sie es in n s erneut“.
+
+<a id="data-purge"></a>**Bereinigen.** Die Schaltfläche „Bereinigen“ entfernt vom Rechner die Rohquellen der angekreuzten Zonen (die man erneut herunterlädt) und ihre Zwischenspeicher. Sie berechnet zuerst den Plan, ohne etwas zu löschen, und stellt dann eine einzige Frage: „15 Dateien (14,3 MB) aus den Quellen von Spanien, Frankreich bereinigen?“. Gehören die SIA-Dateien (Frankreich) dazu, erinnert die Frage daran, dass sie beim Aufbau auch die Umrisse der anderen Zonen liefern; von git verfolgte Dateien bleiben immer erhalten und werden gezählt. Nein: nichts wird entfernt. Ja: das Bereinigen läuft und der Bildschirm sagt „Bereinigt: n Dateien, x MB“, mit den abgelehnten Pfaden (an Ort und Stelle belassen). Nichts zu entfernen: „Nichts zu bereinigen“, ohne Frage.
+
+<a id="data-publish"></a>**Basis veröffentlichen.** Unter „Aufbauen“ sendet das Feld „Basis veröffentlichen“ das, was auf diesem Rechner erstellt wurde, an das Datenrepository. Eine erstellte Zone wird auf dem Rechner vollständig eingecheckt und geht auch bei der nächsten Synchronisation hinaus: „Veröffentlichen“ sendet sie sofort. Es sagt zuerst, wo der Rechner steht: „3 Dateien geändert · 2 Commits zu senden“, das Datum des letzten Durchlaufs und, falls vorhanden, die in data/ wartende Zusammenführung (die Veröffentlichung schließt sie zuerst ab). Tippen Sie auf „Veröffentlichen“: eine einzige Frage nennt die Dateien und die Commits, dann läuft der Durchlauf; ein endloser Balken zeigt, dass er arbeitet. Währenddessen sind die Schaltflächen des Feldes „Herunterladen, aufbauen, bereinigen“ ausgegraut, und „Veröffentlichen“ ist es während jedes Vorgangs dieses Feldes: ein Vorgang nach dem anderen.
+
+<a id="data-publish-end"></a>**Am Ende der Veröffentlichung.** Eine Benachrichtigung nennt die Zahlen, und das Ergebnis bleibt im Feld: was gesendet wurde (eingecheckte Dateien, empfangene Dateien); die Dateien der Basis, die auf dem Rechner bleiben, weil ein Aufbau lief; die Konflikte (die neueste Fassung bleibt, siehe Einstellungen › Konflikte); die abgelehnten Dateien, weil sie nicht das Format einer Datendatei haben. Ein Fehler wird in einem Satz gesagt, mit der Antwort des Starters: nichts geht verloren, die Dateien bleiben auf dem Rechner. Die Schaltfläche ist ausgegraut, ihr Grund steht darunter: „Der Starter des Rechners wird benötigt“, „Ein Aufbau läuft: veröffentlichen Sie, wenn er fertig ist“, „Nichts zu veröffentlichen“, „Der Rahmen kann die Basis noch nicht veröffentlichen: aktualisieren Sie die App“, „Offline“.
+
+<a id="data-journal"></a>**Das Protokoll.** Am Ende des Bildschirms die letzten 50 Vorgänge dieses Geräts: UTC-Zeit, Verb, Zonen, Ergebnis.
+
+## Sonderfälle
+
+- **Ohne Starter**: Der Bildschirm wird genauso gelesen; er zeigt, was veröffentlicht ist.
+- **Ein Lesevorgang schlägt fehl**: Der Abschnitt sagt es in einer Zeile, der Rest des Bildschirms wird gezeichnet.
+
+<!-- fr: 116007677a97 -->
 
 <!-- chapter: settings -->
 # Einstellungen
@@ -747,8 +823,10 @@ Kraftstoff das Profil als .lnmperf-Datei herunter.
 ## Die API-Schlüssel der Fluggesellschaft
 
 Auf einem vom Starter bedienten Rechner klappt auf der Stufe Vollständig die Schaltfläche „API-Schlüssel der
-Fluggesellschaft (IVAO)“ der Karte „Verwaltung“ die Einstellung des IVAO-API-Schlüssels auf: Er bleibt im Ordner
+Fluggesellschaft (IVAO, EAD Basic)“ der Karte „Verwaltung“ die Einstellung des IVAO-API-Schlüssels auf: Er bleibt im Ordner
 `secrets/` des Starters, nie im Browser oder in den Daten. „Testen“ prüft, ob IVAO antwortet; „Löschen“ entfernt ihn.
+
+Unter dem IVAO-Schlüssel nimmt der Block „EAD Basic (EUROCONTROL)“ Benutzername und Passwort Ihres EAD-Basic-Kontos auf: Sie geben sie einmal dem Starter dieses Rechners (Ordner `secrets/`), der sie verwahrt; die Seite zeigt sie nie wieder an, sie sagt nur, ob und wann sie gespeichert sind. Sie dienen zum „Flugplatz aus EAD lesen“ (ein Flugplatz pro Geste). EAD Basic ist ein Demonstrationswerkzeug mit nicht operativen Daten, nur für die Simulation zu verwenden (der Hinweis bleibt angezeigt). „Löschen“ entfernt sie aus dem Starter.
 
 ## Das Tablet neben dem Simulator
 
@@ -793,6 +871,11 @@ Repository, das nicht antwortet, wird nur gemeldet.
   „Merken“ überlässt sie Git auf diesem Computer). Ohne `data/` klont „Daten holen“ es; bei einem `data/` ohne git
   (Beispieldaten oder Archiv) verbindet „data/ in dieses Repository übernehmen“ es mit dem Repository. Die Karte verfolgt
   die Arbeit und liest den Zustand am Ende neu; ein Fehlschlag wird erklärt, nichts geht verloren.
+- **Neu geschriebene Historie des Repositorys** (etwa um große Dateien daraus zu entfernen): Die Synchronisation
+  dieses Rechners verweigert dann jede Zusammenführung und sagt es; nichts geht verloren. Hier zeigt „Neue Historie
+  übernehmen“ zuerst, was hinausgeht (Ihre Commits, die übertragenen Datendateien), fragt nach, bewahrt den alten Stand
+  in einer lokalen Referenz, überträgt Ihre Datendateien auf die neue Historie und synchronisiert dann. Eine Datei
+  außerhalb der synchronisierten Daten wird nie erneut gesendet.
 
 ## Einen Piloten einrichten
 
@@ -821,8 +904,9 @@ kopiert oder abgelaufen, Token ohne Recht auf den Inhalt. Ein klassisches Token 
 das Repository eines Benutzers wird ein eigenes GitHub-Konto nur für das Fliegen empfohlen. Eine Datei in einem anderen
 Format wird mit einer Meldung abgelehnt. Die Fluggesellschaft wird nur ins Repository geschrieben, wenn es noch keine
 hat. Auf einem Rechner, dessen data/ diesem Repository bereits folgt, überspringt der Assistent Konto und Token. Ohne
-Starter erreicht die App nur ein GitHub-Repository: Richten Sie den Zugang für ein Repository auf framagit oder GitLab
-auf einem Rechner mit Starter ein.
+Starter erreicht die App ein GitHub-Repository oder ein Projekt auf einer GitLab-Instanz (gitlab.com, framagit…): Fügen
+Sie die Adresse des Projekts (https://gitlab.com/gruppe/projekt) und das Projektzugangstoken ein, das der Administrator
+Ihnen gegeben hat; das Token wird nur an diese Instanz gesendet.
 
 ## Verwaltung
 
@@ -830,9 +914,9 @@ auf einem Rechner mit Starter ein.
 Verwaltungs- und Testseiten, **eine Schaltfläche pro Seite**, jede mit einem Satz; auf den anderen Stufen erscheint sie nicht, und nichts vom Administrator steht auf den anderen Karten. In der App: die Schaltfläche
 „Abstimmung der Kartenschwellen“ (`#maps?tune=1`, auf einem Telefon nur lesbar; sie öffnet die Abstimmungsseite: für jedes Kartenelement und jeden Modus die Zoomstufen, in denen es erscheint, für die Fluggesellschaft gespeichert, `airline/map_profiles.json`; ein Modus, den Sie nie gespeichert haben, übernimmt die Schwellen eines abgestimmten Modus, die Seite sagt es; der Regler „Komplexität“ der Karte verschiebt nur den Zoom), zurück mit dem Zurück-Pfeil; die Schaltfläche „Grenze der Flugzone“, die ein Kästchen
 „Linie der Flugzonengrenze anzeigen“ aufklappt (sofort für die Fluggesellschaft gespeichert, mit den Schwellen, in `airline/map_profiles.json`,
-Schlüssel `edge`; die Linie wird angezeigt, bis Sie etwas einstellen); die Schaltfläche „Konfiguration für einen Piloten exportieren“ (siehe „Einen Piloten einrichten“); auf einem vom
+Schlüssel `edge`; die Linie wird angezeigt, bis Sie etwas einstellen); die Schaltfläche „Pistenschwellen auf der Karte“, die eine Liste von 8 bis 16 aufklappt: die Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (sofort für die Fluggesellschaft gespeichert, dieselbe Datei, Schlüssel `runwayZoom`; 11, bis Sie etwas einstellen); die Schaltfläche „Konfiguration für einen Piloten exportieren“ (siehe „Einen Piloten einrichten“); auf einem vom
 Starter bedienten Rechner die Schaltflächen „Entferntes Repository von data/“ und „API-Schlüssel der Fluggesellschaft
-(IVAO)“, die ihre Einstellung aufklappen (siehe „Ein Git-Repository für data/“ und „Die API-Schlüssel der
+(IVAO, EAD Basic)“, die ihre Einstellung aufklappen (siehe „Ein Git-Repository für data/“ und „Die API-Schlüssel der
 Fluggesellschaft“);
 der Fahrplan (`#roadmap`) und die Diagnose der Karte „Über“.
 
@@ -849,14 +933,30 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
 
 ## Gut zu wissen
 
-- **Das Token**: ein feingranulares Token von github.com, nur für das Datenrepository, „Contents“ lesen und schreiben,
-  höchstens 90 Tage. Es wird nie wieder angezeigt; fügen Sie es in keine Nachricht ein.
+- **IVAO-Konto**: Die Karte „IVAO-Konto“ verbindet dieses Gerät über das Relais der Fluggesellschaft (oder den
+  Starter des Arbeitsplatzes) mit Ihrem IVAO-Konto: „Bei IVAO anmelden“ öffnet die Seite von IVAO und kehrt dann hierher
+  zurück. Das Relais verwahrt das Geheimnis der Anwendung der Fluggesellschaft; Ihr Token bleibt auf diesem Gerät, wird
+  von selbst erneuert, nie in einer Sicherung. „Trennen“ löscht es und bittet IVAO, den Zugriff zu
+  entziehen; kann IVAO das nicht, sagt Ihnen die Suite, ihn in Ihrem IVAO-Konto zu entziehen. Zum Ausprobieren am
+  Arbeitsplatz ohne Relais: Die in der IVAO-Anwendung der Fluggesellschaft anzugebende Rückkehradresse ist
+  `http://127.0.0.1:<port>/__relay/ivao/callback` (der Port des Starters).
+- **Geräte des Relais**: Läuft der Starter als Relais der Fluggesellschaft (hinter dem Reverse-Proxy des NAS, in
+  https), koppelt ein Pilot jedes Gerät einmal mit einem 8-stelligen Code, den der Administrator in Maintenance › „Geräte
+  des Relais“ für sein Kürzel anfordert (einmal, 10 Minuten); seine Änderungen tragen dieses Kürzel. Ein verlorenes Gerät
+  oder alle eines Piloten, der geht, werden dort widerrufen.
+- **Token der Piloten (GitLab)**: In der Anwendung Maintenance erstellt „Token der Piloten“ auf dem Rechner des Starters
+  ein Projektzugangstoken je Pilot (nach seinem Kürzel benannt, Rolle Developer, höchstens ein Jahr), zeigt es nur einmal
+  und widerruft es. Der Starter verwendet dafür das Token des Administrators (secrets/gitlab.json), das er nie zeigt.
+  Stellen Sie den Datenzweig so ein, dass die Rolle Developer dorthin pushen darf.
+- **Das Token**: auf github.com ein feingranulares Token, nur für das Datenrepository, „Contents“ lesen und schreiben,
+  höchstens 90 Tage; auf GitLab ein Projektzugangstoken (eines je Pilot, nach seinem Kürzel benannt), vom Administrator
+  erstellt. Es wird nie wieder angezeigt; fügen Sie es in keine Nachricht ein.
 - **Ihre Einstellungen bleiben nach dem Schließen des Browsers**: Identität, Token und Wetterschlüssel liegen am selben Ort
   des Geräts, nie synchronisiert und nie in einer Sicherung. Hat Safari sie Ihnen trotzdem genommen (er löscht den Speicher
   einer kaum genutzten Seite), fügen Sie die App dem Home-Bildschirm hinzu: Dort ist sie besser geschützt. Die Diagnose
   („Kopieren“) sagt, ob der Browser versprochen hat, nicht zu löschen (`storage.persisted`).
 - **Zugang trennen**: löscht das Token von diesem Gerät; ausstehende Änderungen bleiben und gehen hinaus, sobald der
-  Zugang wieder eingestellt ist. Telefon verloren oder gestohlen: Löschen Sie das Token auch auf github.com.
+  Zugang wieder eingestellt ist. Telefon verloren oder gestohlen: Löschen Sie das Token auch beim Anbieter (github.com, gitlab.com…).
 - **V2-Einstellungen**: Wurde dieser Browser schon für V2 benutzt, bietet die Karte „V2-Einstellungen gefunden“ einmal
   an, Ihre Identität und Ihren Zugang zu übernehmen.
 - **Über**: Links zu dieser Hilfe und zum Fahrplan (was geliefert, in Arbeit, geplant ist), dann die Diagnose,
@@ -864,4 +964,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 47f9199a8ffd -->
+<!-- fr: c49c76673bd9 -->

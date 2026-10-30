@@ -15,14 +15,15 @@ const CACHE = 'sog-frame-v1',
   SHELL = ['./', 'app.js', 'frame.css', 'design/tokens.css', 'design/primitives.css', 'design/metro.css', 'design/swiss.css',
     'design/cupertino.css', 'design/material.css', 'design/aqua.css', 'lib/icons.js',
     'manifest.webmanifest',
-    'store/frame_data.js', 'store/transport_github.js',
+    'store/frame_data.js', 'store/transport_github.js', 'store/transport_gitlab.js',
     'store/transport_launcher.js', 'aerodb/zones.js', 'aerodb/aircraft.js', 'aerodb/aerodb.js', 'aerodb/registry.js', 'aerodb/sheets.js',
     // aerodb/lnmperf.js et aerodb/aar.js : chargés par aerodb à leur première demande, gardés alors (pas à l'installation)
     'settings/admin_links.js', 'settings/config.js', 'settings/join.js', 'lib/qr.js', 'lib/clipboard.js', 'settings/kit.js',
     'settings/launcher.js',
     'settings/access.js', 'settings/diagnostic.js', 'settings/admin.js', 'settings/groups.js', 'settings/settings.js',
     'lib/markdown.js',
-    'lib/dom.js', 'lib/current_flight.js', 'lib/time.js',
+    'lib/dom.js', 'lib/current_flight.js', 'lib/flight_time.js', 'lib/flight_path.js', 'lib/procedures.js', 'lib/wind.js', 'lib/adnames.js', 'lib/fms.js', 'lib/time.js',
+    'lib/geo.js', 'lib/launcher.js', 'lib/trail.js',
     'help/help.js', 'help/roadmap.js', 'help/roadmap.json',
     // l'aide (manuel, tutoriels) : seulement dans la langue de l'appli, demandée par la page (message « precache ») ;
     // les autres langues et les captures des tutoriels sont gardées à leur première lecture

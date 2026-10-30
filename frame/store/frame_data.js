@@ -19,12 +19,13 @@
   //     viennent d'une source en lecture seule (configure({ references }) : le lanceur qui sert la page, ou le dépôt
   //     GitHub réglé), lus à la demande et revalidés à la synchronisation ; rien n'y est jamais écrit ;
   // API (window.FrameData) : configure({ transport, references, identity, every }), start(), adapter(déclaration) → data (get,
-  //   read, list, cached, evict, put, remove, watch, status, sync, onStatus), sync(), status(), conflicts(),
-  //   conflictSeen(id), restore(id), cached(préfixe), evict(chemin), dump() et load(sauvegarde, { mode }) (sauvegarde de l’appareil),
+  //   read, list, cached, evict, revalidate, put, remove, watch, status, sync, onStatus), sync(), status(), conflicts(),
+  //   conflictSeen(id), restore(id), cached(préfixe), evict(chemin), revalidate(chemins), dump() et load(sauvegarde, { mode })
+  //   (sauvegarde de l’appareil),
   //   gitSha(texte), merge, transports.local().
   if (window.FrameData) return;
   const DB = 'sogFrame',
-    DB_VERSION = 1,
+    DB_VERSION = 2, // 2 (29 Oct 2026) : index « policy » des docs (list sans charger les textes)
     EVERY = 10 * 60e3, // synchronisation de fond (en ligne)
     TRIES = 3; // poussées refusées (le dépôt a bougé entre-temps) : tirer puis repousser, au plus 3 fois
   const channel = 'BroadcastChannel' in window ? new BroadcastChannel('sog-frame-data') : null;
@@ -54,6 +55,9 @@
           }]
         ])
         if (!d.objectStoreNames.contains(name)) d.createObjectStore(name, opts);
+      // index des politiques des copies : les chemins d'une politique (cache de l'appareil) lus sans leurs textes
+      const docs = r.transaction.objectStore('docs');
+      if (!docs.indexNames.contains('policy')) docs.createIndex('policy', 'policy');
     };
     r.onsuccess = () => {
       r.result.onversionchange = () => {
@@ -76,6 +80,19 @@
       q.onerror = () => rej(q.error);
     });
   };
+  /** Clés seules d'un magasin (ou d'un index : « magasin.index »), dans une borne : jamais les textes. */
+  const idbKeys = async (store, query) => {
+    const d = await open(),
+      [s, index] = store.split('.');
+    return new Promise((res, rej) => {
+      const os = d.transaction(s, 'readonly').objectStore(s),
+        q = (index ? os.index(index) : os).getAllKeys(query);
+      q.onsuccess = () => res(q.result);
+      q.onerror = () => rej(q.error);
+    });
+  };
+  /** Borne des chemins sous un préfixe (tous si vide) ; under() dit la même chose chemin par chemin. */
+  const rangeOf = prefix => prefix ? IDBKeyRange.bound(prefix, `${prefix}\uffff`) : undefined;
   const getMeta = async key => (await idb('meta', 'get', key)) || null;
   const setMeta = (key, v) => idb('meta', 'put', {
     ...v,
@@ -285,8 +302,9 @@
     }
   }
   // documents écrits sans trigramme (pilot/ANON/…) : gardés sur l'appareil, jamais envoyés ; le cadre les reprend sous
-  // pilot/<TRI>/ dès que le trigramme est posé (frame/SPEC.md § 2)
-  const LOCAL_ONLY = ['pilot/ANON/'];
+  // pilot/<TRI>/ dès que le trigramme est posé (frame/SPEC.md § 2). proc/local/ : procédures converties des CIFP de X-Plane,
+  // propres au poste, jamais envoyées (licence, frame/aerodb/SPEC.md § 5 quinquies)
+  const LOCAL_ONLY = ['pilot/ANON/', 'proc/local/'];
   const localOnly = path => LOCAL_ONLY.some(p => under(path, p));
   /** Vrai si un chemin s'écrit en politique « cache » (préfixe déclaré ainsi, ou documents sans trigramme). */
   const isCache = path => localOnly(path) || caches.some(c => under(path, c));
@@ -322,6 +340,7 @@
     remote = false
   } = {}) {
     if (!paths.length) return;
+    for (const p of paths) absent.delete(p); // arrivé ou changé : plus « absent »
     for (const w of watchers) {
       const hit = paths.filter(p => under(p, w.prefix));
       if (hit.length) try {
@@ -398,6 +417,52 @@
   }
 
   // ---------------------------------------------------------------- lecture et écriture (cache seulement)
+  // valeur analysée d'une référence (base aéronautique, procédures, types : jamais écrites par un module), gardée par
+  // révision : relire une zone ne relance pas JSON.parse sur ses mégaoctets ; la même valeur est rendue à chaque lecteur,
+  // gelée en profondeur à l'analyse (une fois par révision) : un lecteur qui la changerait (sort, champ ajouté) lève une
+  // TypeError au lieu de changer la valeur de tous (INTEGRATION § 4). Au plus PARSED_MAX octets de texte gardés, les plus
+  // anciennement lus partent.
+  const PARSED_MAX = 48e6,
+    ABSENT_MS = 30e3;
+  const parsed = new Map(); // chemin → { rev, value, size }
+  let parsedSize = 0;
+  const absent = new Map(); // chemin d'une référence absente du dépôt → heure de la lecture qui l'a dit
+  /** Gel profond d'une valeur analysée (objets et tableaux), une fois. */
+  const deepFreeze = v => {
+    if (v && typeof v === 'object' && !Object.isFrozen(v)) {
+      Object.freeze(v);
+      for (const k in v) deepFreeze(v[k]);
+    }
+    return v;
+  };
+
+  function valueFor(path, e) {
+    if (e.pending || e.policy !== 'reference') return valueOf(path, e.text);
+    // référence sans révision (copie semée sans arbre : base des essais, reprise d'une sauvegarde) : gelée elle aussi, sans
+    // mémoire — un module qui écrit sur une fiche tombe en noreg, pas chez l'utilisateur (30 oct. 2026, a._mb de la Carte)
+    if (!e.rev) return deepFreeze(valueOf(path, e.text));
+    const m = parsed.get(path);
+    if (m && m.rev === e.rev) {
+      parsed.delete(path);
+      parsed.set(path, m); // la plus récemment lue passe en dernier
+      return m.value;
+    }
+    const value = deepFreeze(valueOf(path, e.text)),
+      size = e.text?.length || 0;
+    if (m) parsedSize -= m.size;
+    parsed.set(path, {
+      rev: e.rev,
+      value,
+      size
+    });
+    parsedSize += size;
+    for (const [k, v] of parsed) {
+      if (parsedSize <= PARSED_MAX || k === path) break;
+      parsed.delete(k);
+      parsedSize -= v.size;
+    }
+    return value;
+  }
   /** Enveloppe d'un fichier : écriture en attente d'abord, sinon copie du cache ; null s'il n'y a ni l'une ni l'autre. */
   async function local(path) {
     const [p, d] = await Promise.all([idb('pending', 'get', path), idb('docs', 'get', path)]);
@@ -415,7 +480,8 @@
       rev: d.rev,
       cached: true,
       pending: false,
-      at: d.at
+      at: d.at,
+      policy: d.policy
     } : null;
   }
   /** Fichier du dépôt : { value, text, rev, cached, pending, at } ; null s'il est absent. policy 'reference' : lu à la
@@ -427,14 +493,24 @@
     let e = await local(path);
     if (e?.deleted) return null;
     if (!e) {
-      const job = fetchOne(path, policy).catch(() => null);
+      // référence que le dépôt n'a pas, dite il y a moins de 30 s : pas redemandée (un module qui cherche un terrain sans
+      // procédures à chaque dessin ne relance ni l'arbre ni le réseau)
+      if (policy === 'reference' && Date.now() - (absent.get(path) || 0) < ABSENT_MS) return null;
+      const job = fetchOne(path, policy).then(r => {
+        if (!r && policy === 'reference') absent.set(path, Date.now());
+        return r;
+      }).catch(() => null);
       if (!wait) return null;
       e = await job;
       if (!e) return null;
     }
+    const {
+      policy: _pol,
+      ...env
+    } = e;
     return {
-      ...e,
-      value: valueOf(path, e.text)
+      ...env,
+      value: valueFor(path, e)
     };
   }
   /** Valeur d'un fichier (JSON analysé ou texte) ; null s'il est absent. */
@@ -447,7 +523,7 @@
     let paths;
     if (remote?.tree && cfg.transport?.kind !== 'local') paths = Object.keys((await liveTree(cfg.transport, remote)) || remote.tree);
     else if (cfg.transport?.kind === 'local') {
-      paths = (await idb('docs', 'getAll')).map(d => d.path);
+      paths = await idbKeys('docs', rangeOf(prefix)); // les chemins seuls, sous le préfixe (jamais les textes)
       // références de la source en lecture seule (arbre gardé ; lu une fois s'il ne l'a jamais été)
       const R = refSource(),
         tree = R && await refTree(R).catch(() => null);
@@ -455,8 +531,7 @@
     } else return null;
     const set = new Set(paths);
     for (const p of pend) p.text === null ? set.delete(p.path) : set.add(p.path);
-    for (const d of await idb('docs', 'getAll'))
-      if (d.policy === 'cache') set.add(d.path);
+    for (const p of await idbKeys('docs.policy', 'cache')) set.add(p); // documents du cache de l'appareil, par l'index
     return [...set].filter(p => under(p, prefix)).sort();
   }
   /** Écrit un fichier : cache et file d'attente seulement (envoyé à la prochaine synchronisation) ; politique « cache »
@@ -720,7 +795,7 @@
       // sans trigramme, rien ne part : ni lot (ses écritures attendent sur l'appareil), ni échange au nom de personne
       const who = !!cfg.identity.trigram;
       // transport qui échange lui-même avec un dépôt distant (lanceur : passage git du poste) : avant, pour recevoir
-      if (reason !== 'write' && who) await exchange(T, result);
+      if (reason !== 'write' && who) await exchange(T, result, reason);
       // premier passage avec un dépôt après un usage sans échange : les copies écrites ici sont reprises
       const mode = await getMeta('mode');
       if (mode?.kind === 'local' || (!mode && !(await getMeta('remote')))) await adoptLocal(T, (await treeNow(T)).tree, result);
@@ -745,7 +820,7 @@
           result.pushed = pend.length;
           result.ok = true;
           // puis après, pour envoyer le lot (ce qu'il a reçu en plus est tiré au passage suivant)
-          if (reason !== 'write' && who) await exchange(T, result);
+          if (reason !== 'write' && who) await exchange(T, result, reason);
           return done(result);
         } catch (e) {
           // écriture refusée pour de bon (chemin ou type interdit) : sortie de la file vers les conflits, le reste repart
@@ -849,11 +924,29 @@
       result.pulled.push(d.path);
     }
   }
-  /** Échange propre au transport (T.exchange) ; un échec ne bloque pas le passage local, il est rapporté (warning). */
-  async function exchange(T, result) {
+  /** Échange propre au transport (T.exchange) ; un échec ne bloque pas le passage local, il est rapporté (warning). Passage
+   *  « manual » (bouton de l'utilisateur) : un geste, le lanceur commite aussi la base aéronautique (sia/base) ; un passage de
+   *  fond la laisse sur le poste. */
+  async function exchange(T, result, reason) {
     if (!T.exchange) return;
     try {
-      await T.exchange();
+      const r = await T.exchange({
+        gesture: reason === 'manual'
+      });
+      // compte rendu du lanceur (tools/data_sync.run) : des nombres et son message, ni chemins ni sortie de git
+      if (r && typeof r === 'object') result.exchange = {
+        ok: r.ok === true,
+        committed: +r.committed || 0,
+        held: +r.held || 0,
+        received: +r.received || 0,
+        pushed: r.pushed === true,
+        conflicts: Array.isArray(r.conflicts) ? r.conflicts.length : +r.conflicts || 0,
+        refused: Array.isArray(r.refused) ? r.refused.length : +r.refused || 0,
+        settled: typeof r.settled === 'string' ? r.settled : '',
+        // code d'un refus que la page sait dire (rewritten : historique du dépôt réécrit, à reprendre par un geste)
+        code: typeof r.code === 'string' ? r.code.slice(0, 30) : '',
+        message: String(r.message || '').slice(0, 300)
+      };
     } catch (e) {
       result.warning = e?.offline ? 'exchange offline' : e?.message || String(e);
     }
@@ -1153,6 +1246,94 @@
     }
     return n;
   }
+  /** Revalide ces chemins seulement, sans attendre un passage (frame/INTEGRATION.md § 4) : tête et arbre du dépôt du moment
+   *  (transport local : de la source des références) lus une fois pour tous ; une copie dont la révision a changé est relue
+   *  et remplacée, une copie « reference » disparue du dépôt est retirée, puis watch(chemins) ; une écriture en attente
+   *  l'emporte (rien n'y est touché), un fichier de politique « cache » n'a pas de dépôt. Ne lève jamais. Rend { changed,
+   *  unchanged, offline, errors? } (offline : la lecture s'est arrêtée, ce qui suit n'est pas touché ; errors : [{ path,
+   *  message }] des fichiers que le dépôt a refusé de rendre). */
+  async function revalidate(paths) {
+    const list = [...new Set([].concat(paths || []).map(p => String(p || '')).filter(Boolean))],
+      out = {
+        changed: [],
+        unchanged: [],
+        offline: false
+      };
+    if (!list.length) return out;
+    let src = cfg.transport,
+      tree;
+    try {
+      if (!src || src.kind === 'local') {
+        src = refSource();
+        if (!src) return {
+          ...out,
+          unchanged: list
+        };
+        const head = await src.head();
+        tree = await src.tree(head);
+        await setMeta('refs', {
+          id: src.id,
+          head,
+          tree,
+          at: Date.now()
+        });
+      } else tree = (await treeNow(src)).tree;
+    } catch (e) {
+      return {
+        ...out,
+        offline: true,
+        ...(e?.offline ? {} : {
+          message: e?.message || String(e)
+        })
+      };
+    }
+    for (const path of list) {
+      try {
+        const pol = policyOf(path),
+          doc = await idb('docs', 'get', path);
+        if (pol === 'cache' || isCache(path) || await idb('pending', 'get', path)) {
+          out.unchanged.push(path);
+          continue;
+        }
+        const rev = tree[path];
+        if (!rev) {
+          if (doc && (doc.policy || pol) === 'reference') {
+            await idb('docs', 'delete', path);
+            out.changed.push(path);
+          } else out.unchanged.push(path);
+          continue;
+        }
+        if (doc?.rev === rev) {
+          out.unchanged.push(path);
+          continue;
+        }
+        const text = await src.read(path, rev);
+        await idb('docs', 'put', {
+          ...(doc || {}),
+          path,
+          text,
+          base: text,
+          rev,
+          at: Date.now(),
+          policy: doc?.policy || pol || 'reference'
+        });
+        out.changed.push(path);
+      } catch (e) {
+        if (e?.offline) {
+          out.offline = true;
+          break;
+        }
+        // lecture refusée (droits, taille) ou stockage de l'appareil en échec : la copie gardée reste, l'erreur est dite
+        out.unchanged.push(path);
+        (out.errors ||= []).push({
+          path,
+          message: e?.message || String(e)
+        });
+      }
+    }
+    changed(out.changed);
+    return out;
+  }
   const EXPORT = 'sog-frame-export/1';
   // clés de l'appareil (jeton GitHub, clé météo) : un document « cache » comme l'identité, mais jamais dans une
   // sauvegarde ni reprise d'une sauvegarde, et gardé par un remplacement
@@ -1160,7 +1341,9 @@
   // réserve météo de l'appareil (frame/lib/weather_store.js) : une réserve relisible à sa source, propre à cet appareil
   // (son décompte des appels compris), jamais dans une sauvegarde ni reprise d'une sauvegarde
   const WEATHER = 'cache/weather/';
-  const saved = path => path !== KEYS && !path.startsWith(WEATHER);
+  // trace volée de l'appareil (device/trail.json, décision du 30 oct. : la trace reste locale) : jamais dans une sauvegarde
+  const TRAIL = 'device/trail.json';
+  const saved = path => path !== KEYS && path !== TRAIL && !path.startsWith(WEATHER);
   /** Sauvegarde des données de l'appareil en un fichier JSON : { name, text, counts }. Copies (docs), écritures en attente,
    *  conflits ; les bases de référence (relisibles à leur source) seulement avec { references: true } ; ni jeton ni
    *  clé (device/keys.json laissé de côté), ni l'état du transport (meta, propre à l'appareil). */
@@ -1312,6 +1495,7 @@
       list,
       cached,
       evict,
+      revalidate,
       put: (path, value, opts) => (guard(path), put(path, value, {
         ...(opts || {}),
         module: decl.id || ''
@@ -1322,8 +1506,12 @@
       watch,
       status,
       onStatus,
-      sync: () => sync({
-        reason: 'module'
+      // { gesture: true } : le geste de l'utilisateur dans le module (« Publier ») — un passage 'manual', comme le bouton de
+      // l'en-tête (sia/base part aussi) ; sinon un passage de fond du module. Le compte rendu de l'échange : result.exchange
+      sync: Object.assign((o = {}) => sync({
+        reason: o?.gesture === true ? 'manual' : 'module'
+      }), {
+        gesture: true // le module sait que le cadre prend le geste (sinon « Publier » reste gris, jamais de repli sans geste)
       })
     };
   }
@@ -1343,6 +1531,7 @@
     diagnostic,
     cached,
     evict,
+    revalidate,
     dump,
     load,
     gitSha,
