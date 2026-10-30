@@ -373,7 +373,7 @@ mount. Inside a mount, the two buttons switch as before.
      departure or the arrival (an OFP repeats its level at every point). "Last SimBrief OFP": through `ctx.net`, the SimBrief identifier
      of the identity (never typed here), the OFP kept on the device only, its route, level, average wind, ISA
      deviation and aircraft taken into the current flight.
-     **The route field completes at the cursor** (§ 10.31 part 4, `modules/fuel/routecomplete.js`, the § 10.27 component): from two
+     **The route field completes at the cursor** (§ 10.31 part 4, `modules/fuel/routecomplete.js`, the § 10.27 component: one list, `modules/fuel/suggest.js`, since refactoring R-F5): from two
      characters of the word under the cursor, at most seven proposals — the SID names of `route.dep` and STAR names of `route.arr`
      (`P.textModel`), the airway names around the last known point before the cursor (`aerodb.airways`, ±2° / ±3°), the points,
      navaids and aerodromes of `aerodb.find` whose code starts with the word; ↑ ↓ Enter Escape, tap (pointerdown kept from blurring),

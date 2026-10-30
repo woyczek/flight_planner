@@ -1181,6 +1181,13 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   « DCT », as in Fuel's field. Visible on the Map only (Fuel normalised the text right after anyway). The old bench
   `modules/fuel/test/route_text.html`, run by no case, is merged into `frame/lib/test/route_text.html` (F69), on invented points.
 
+- **30 Oct 2026 — R-F5, one completion list** (refactoring § 10.33): `modules/fuel/suggest.js` `createSuggestList(o)` holds the list
+  once — drawing under the field, ↑ ↓ Enter Esc, tap, closed on blur, the pick handed back as an `input` event, the last request
+  only. The aerodrome fields (`adnames.js`: aerodb.find, aerodromes with a four-character code, the code written in the field) and
+  the route field (`routecomplete.js`: procedure names, nearby airways, points, the word written at the cursor) keep their sources
+  and their `write`. The DOM is unchanged (`[data-adsug] [data-code]`, `fu-sug-n`; `[data-rtsug] [data-token]`, `fu-rtsug-n`).
+  Cases F44–F47, F75.
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (Features SOG, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les

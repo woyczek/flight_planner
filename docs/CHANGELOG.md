@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refonte, sans changement de comportement — R-F5, une seule liste de complétion** (`modules/fuel/suggest.js`
+  `createSuggestList`, used by `adnames.js` and `routecomplete.js`, which keep their sources; cases F44–F47, F75).
 - **Refonte — R-F4c, un seul écrivain du texte de route** (`frame/lib/route_text.js` `textFromPoints` through `textFromTokens({ dct:
   true })`; bench merged into `frame/lib/test/route_text.html`, F69) — after an edit on the Map the text has its « DCT », the ICAO
   form of Fuel's field; a kept airway stays an airway.
