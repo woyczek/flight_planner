@@ -1273,6 +1273,13 @@ redesigned for touch at that point.
          same way, decision by decision.
        Estimate: two to three days of the four sessions once the go is given, the shared lots first so that nobody
        rebuilds on the old rules.
+       **Go given (user, 30 Oct evening: "en // tu peux lancer la refonte")**, in parallel with the lots in
+       progress, one refactoring lot at a time per session: Fuel R-F1 wind axis → R-F2 procedure rules → R-F3 hue
+       tokens → R-F4 routeModel → R-F5 one completion → R-F6 card flags → cases and SPEC; Map R-M4 runways → R-M6
+       trail → R-M3 pan scheduler → R-M1 paneModel → R-M2+5 labels and cartouches; frame R-C2 **one pairing and one
+       device list first** (user's question of the day: relay devices versus LAN devices) → R-C3 IVAO return → R-C4
+       routes → R-C1 relay identity → R-C5 one data/ recovery → R-C6 transports → R-C7 trail reprise after 6 Nov →
+       R-C8/9/10 when touched; Réglages: a short inventory of frame/settings and modules/data first, then its lots.
 
    34. **Administration: what is still missing to turn V2 off** (user, 30 Oct: "j'attends une carte réellement
        utilisable, et un module d'admin"; inventory V2 → V3 of the same day, scope confirmed). The Maintenance
