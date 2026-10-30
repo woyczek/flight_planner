@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the choose pane opens tall, "Done" always in sight** (`modules/maps/choose.js`, `style.js`; maps help ×4; noreg D78). The
+  pane opens the sheet expanded (it had 240 px at 1280 px, 164 at 390), its hint is shown from the start, and "Done" sticks to
+  the foot of the body however far the rows scroll. Fix of a314a352c: the Layers chip, which a `hidden` did not hide, no longer
+  shows while choosing.
+
 - **Refactor R-C4, no behaviour change: one list of routes** (`tools/launch.py`, `frame/app.js`; frame INTEGRATION § 6.1 and
   § 13, DECISIONS; noreg I10, A48) — the launcher publishes its route table, the noreg checks its rules instead of a copy,
   a service screen says when the launcher is older than it.

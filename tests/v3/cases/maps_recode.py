@@ -2083,3 +2083,29 @@ def d77(c):
     c.js(_PICK_JS, ['star', 'LFML.STAR.S1A.RW31.NONE'])
     c.wait(300)
     c.eq(c.js(_SUBS_JS), [], 'STAR S1A leads to no transition: "No transition" alone', what='transitions with S1A')
+
+
+# ------------------------------------------------------------------------------------------------------ D78
+_CH_SHEET = """() => { const d = document.querySelector('.mp-dbody'), r = d.getBoundingClientRect(), b = document.querySelector('.mp-ch-done').getBoundingClientRect(),
+  h = document.querySelector('.mp-ch-hint');
+  return { pos: document.querySelector('[data-module=maps]').dataset.sheet, scrolls: d.scrollHeight > d.clientHeight + 1,
+    doneIn: b.top >= r.top - 1 && b.bottom <= r.bottom + 1, hint: window.__t.shown(h), layers: window.__t.shown(document.querySelector('[data-mp=layers]')) } }"""
+
+
+@case('D78', 'Choosing on the Map: the pane opens tall, its hint shown, "Done" always in sight at the foot', 'D', tags=('maps', 'sheet'),
+      screens=False, designs=('standard',), night=False,
+      rule='usage walk of 30 Oct, point 7 (240 px of pane at 1280 px, 164 at 390, "Terminer" out of sight, the hint hidden): the choose pane opens the sheet expanded, the hint is shown from the start, "Done" sticks to the foot of the body however far the rows scroll; Layers is not offered while choosing')
+def d78(c):
+    _ch_open(c, {}, file=_CH_FILE)
+    c.until("() => document.querySelector('[data-module=maps]').dataset.sheet === 'expanded'", timeout=6000, what='the sheet expanded')
+    c.wait(300)
+    st = c.js(_CH_SHEET)
+    c.eq([st['pos'], st['hint'], st['doneIn'], st['layers']], ['expanded', True, True, False], 'expanded, the hint shown, "Done" in sight, no Layers',
+         what=f'{st}')
+    c.js("() => { const d = document.querySelector('.mp-dbody'); d.scrollTop = d.scrollHeight }")
+    c.wait(200)
+    st = c.js(_CH_SHEET)
+    c.ok(st['doneIn'], f'{st}', '"Done" stays in sight with the rows scrolled to the end')
+    c.js("() => { const d = document.querySelector('.mp-dbody'); d.scrollTop = 0 }")
+    c.wait(200)
+    c.ok(c.js(_CH_SHEET)['doneIn'], 'out of sight at the top', '"Done" stays in sight with the rows at the top')

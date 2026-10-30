@@ -498,10 +498,13 @@ export function chooseView() {
   const on = !!S?.choose;
   if (S?.box && S.box.classList.contains('mp-choosing') !== on) S.box.classList.toggle('mp-choosing', on);
 }
-/** Le mode s'ouvre une fois les données lues : la feuille porte le volet, le fond s'estompe, la carte est recadrée. */
+/** Le mode s'ouvre une fois les données lues : la feuille porte le volet, dépliée (les trois familles sous les yeux, la carte
+ *  recadrée au-dessus ; parcours du 30/10, point 7), le fond s'estompe. */
 export function chooseStart() {
   chooseView();
+  syncButtons(); // Couches et les boutons du vol se retirent pendant le choix
   chooseRender();
+  if (S.sh && S.sh.pos !== 'expanded') S.sh.set('expanded', true);
   schedule();
 }
 /** Le mode s'ouvre depuis la carte du terrain (« Choisir sur la carte ») : le même chemin que #maps?choose=, sans rechargement ;

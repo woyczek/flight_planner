@@ -125,7 +125,7 @@ export const STYLE = `
    (z-index) : la zone de toucher de la primitive mord de 8 px sur lui, que le dessin positionné recouvrirait sinon. */
 [data-module="maps"] .mp-chips{position:relative;z-index:2;flex:none;display:flex;flex-direction:row;align-items:center;gap:4px;padding-right:4px}
 [data-module="maps"] .mp-chips.mp-chips-l{padding:0 0 0 4px}
-[data-module="maps"] .mp-chips[hidden],[data-module="maps"] .mp-chips .mp-chip[hidden]{display:none}
+[data-module="maps"] .mp-chips[hidden],[data-module="maps"] .mp-chips .mp-chip[hidden],[data-module="maps"] .mp-chips .mp-lchip[hidden]{display:none}
 [data-module="maps"] .mp-chips .mp-chip,[data-module="maps"] .mp-chips-l .mp-lchip{box-sizing:border-box;display:grid;place-items:center;width:40px;height:40px;min-height:0;margin:0;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:none;color:var(--sog-muted);box-shadow:none;cursor:pointer;touch-action:manipulation}
 [data-module="maps"] .mp-dhead.f-sheet-head-bare .mp-chips .mp-chip,[data-module="maps"] .mp-dhead.f-sheet-head-bare .mp-chips-l .mp-lchip{width:28px}
 [data-module="maps"] .mp-chips .mp-chip .f-icon,[data-module="maps"] .mp-chips-l .mp-lchip .f-icon{width:20px;height:20px}
@@ -203,7 +203,6 @@ export const STYLE = `
 [data-module="maps"] .mp-choosing .mp-map{opacity:.45}
 [data-module="maps"] .mp-dbody[data-kind=choose]{--mp-ch-row:36px}
 [data-module="maps"] .mp-ch-hint{margin:0 0 4px}
-[data-module="maps"].f-sheet:not([data-sheet="expanded"]) .mp-ch-hint{display:none}
 [data-module="maps"] .mp-ch-list{border-top:1px solid var(--sog-border)}
 [data-module="maps"] .mp-ch-grp{margin:0 0 4px}
 [data-module="maps"] .mp-ch-head{margin:4px 0 0;font-size:11px;line-height:16px;font-weight:600;color:var(--sog-muted);text-transform:uppercase;letter-spacing:.04em}
@@ -227,7 +226,8 @@ export const STYLE = `
 [data-module="maps"] .mp-ch-wind[data-sev=alert]{color:var(--sog-err)}
 [data-module="maps"] .mp-ch-fix{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:4px 0 0;color:var(--sog-warn)}
 [data-module="maps"] .mp-ch-fix .f-btn{margin:0}
-[data-module="maps"] .mp-ch-done{display:block;width:100%;min-height:var(--sog-touch);margin:4px 0 8px}
+/* « Terminer » en pied, toujours visible : il colle au bas du corps qui défile (parcours du 30/10, point 7) */
+[data-module="maps"] .mp-ch-done{position:sticky;bottom:0;z-index:1;display:block;width:100%;min-height:var(--sog-touch);margin:4px 0 0;box-shadow:0 -6px 8px -6px #0003}
 [data-module="maps"] .mp-ch-row{box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;height:var(--mp-ch-row);min-height:0;margin:0;padding:0 8px;border:0;border-bottom:1px solid var(--sog-border);border-radius:0;background:none;color:var(--c,var(--sog-fg));font:inherit;font-weight:700;text-align:left;cursor:pointer;touch-action:manipulation}
 [data-module="maps"] .mp-ch-row[data-hl="1"]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 14%,var(--sog-surface))}
 [data-module="maps"] .mp-ch-none{color:var(--sog-fg)}
