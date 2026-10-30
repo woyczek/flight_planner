@@ -59,19 +59,37 @@ depuis une mission" gesture (the same door as the OFP, § 10.32 of the specifica
 Fuel writes the flight; the module writes nothing. What the mission does not carry (runway, procedures, FPL, fuel,
 weather) is Fuel's as for any flight.
 
-## 5. The envelope and the page-by-page reader: two primitives of the frame's design
+## 5. The envelope and the page-by-page reader: two primitives, simplified (user, 30 Oct: "le bookify peut
+probablement être simplifié")
 
-- Opening a mission shows the **sealed folder** (cover with the label: number, title, aircraft, callsign, takeoff when
-  assigned), "Ouvrir" breaks the seal (and marks it read), then the **reader**: cover page, title, order, details,
-  maps two per page, final part; corners to turn, a bookmark to the folds. This is V2's `bookify()` of
-  `apps/pilot/mes_missions.html`, rewritten as two primitives of `frame/design/` — `envelope()` and `book()` — used by
-  this module today and by the CPCO's registry tomorrow.
-- **Two skins, one reader**: on the computer designs (Aqua, Cabinet, Carnet de vol, Durci) the textured skin with the
-  design's images (`shared/deco/<design>/mission-*.webp`, corner, seal, bookmark; the `--pm-*` geometry variables of
-  V2 become the primitive's tokens); on Standard and on the phone a plain skin: same pages, same corners as buttons,
-  same bookmark, no texture, no animation. `prefers-reduced-motion` turns the animations off everywhere.
-- `Default.png` cited by the specification for Aqua does not exist: Aqua's envelope is the V2 Aqua set (folder that
-  grows into a book). To settle with the design session when the primitives are built.
+V2's `bookify()` paginates by measuring overflow, inserts blank pages so that the last page falls on the left, builds a
+turning leaf with a recto and a verso, carries a bookmark that turns with the page, and reads its geometry from
+twenty `--pm-*` variables per design. Most of it exists to imitate paper. The V3 primitives keep what the reader
+needs and drop the imitation:
+
+- **Pages are sections, not measurements.** A mission is cut into pages by its content, once, in a pure function
+  (`pagesOf(mission)`: cover, title and order, details, maps two per page, final part, folds); a page that is too long
+  **scrolls inside its frame**, it is never re-cut by measuring the screen. No blank page: the spread shows the last
+  page alone on the left when the count is odd.
+- **One component, two layouts.** `book(pages)` shows a two-page spread above 760 px and one page below (and on the
+  phone); the same pages, the same order, the same controls: two corners as buttons, swipe, ← → and Page keys. The
+  current page is in the address (`#missions?id=M-016A&p=3`), so back, forward and a reload land on the same page.
+- **Turning is a transition, not a leaf.** One CSS transition of the page (slide or fade by design token); no
+  recto / verso element, no clone of the content; `prefers-reduced-motion` makes it instant. The textured skins keep
+  their images (open book, page, corner, seal, bookmark) as **backgrounds through tokens** (`--book-*`, a dozen at
+  most: ratio, padding, ink, font, page images); the geometry is the component's, not the design's.
+- **The bookmark is a tab.** A fixed tab "Plis" goes to the folds section and back; it does not move with the pages.
+  The folds keep V2's rule (sealed until their hour, opened by a tap with a two-step confirmation before the hour,
+  "Resceller"), implemented by the module on top of `book()`, not inside it.
+- **The envelope is a cover.** `envelope(label, { sealed })` draws the closed folder with its label (number, title,
+  aircraft, callsign, takeoff when assigned) and one gesture, "Ouvrir", that breaks the seal and opens the book at
+  page 1; the opening animation is one transition by design, the plain skin has none. Reading state ("lu") is the
+  module's, written once on "Ouvrir".
+- **What the skins may do**: colours, fonts, background images, the transition's kind and duration. **What they may
+  not do**: change the pagination, the controls, the order or the address. A design without textures gets the
+  plain skin for free.
+- Target size: the two primitives under 400 lines together, benched (pagination, address, keys) without a browser
+  for `pagesOf`, and one case per layout for `book()`.
 
 ## 6. The crew's rendezvous (after the first step)
 
