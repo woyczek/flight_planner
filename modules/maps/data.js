@@ -48,8 +48,9 @@ import {
 /** Le vol courant lu : { flight, points, altn, levelFt, updated }. Le dégagement vient d'aerodb, sans être attendu : sa
  *  position trouvée est gardée, puis le vol est redessiné une fois. */
 async function readFlight() {
-  const f = (await S.ctx.data.get(flightPath()).catch(() => null)) || null,
-    pts = pointsOf(f);
+  const f = (await S.ctx.data.get(flightPath()).catch(() => null)) || null;
+  if (!S) return null; // la Carte a été quittée pendant la lecture
+  const pts = pointsOf(f);
   let altn = null;
   if (f?.route?.altn && pts.length && S.ctx.aerodb) {
     const id = f.route.altn,
@@ -194,8 +195,9 @@ export const viewOf = () => {
  *  écriture du vol pendant qu'on le regarde — la caméra de l'utilisateur est gardée (SPEC § 5), les zones déjà lues ne sont
  *  pas relues. */
 export async function applyFlight(live = false) {
-  S.route = await readFlight();
-  if (!S) return;
+  const route = await readFlight();
+  if (!S || !route) return; // quittée pendant la lecture : rien n'est posé sur un état démonté
+  S.route = route;
   if (S.procs && !isChosen(S.route.flight)) S.procs = null; // le choix est vidé : le chemin redevient la route tout de suite
   buildPath();
   loadProcs();
@@ -258,8 +260,10 @@ export function watchFlight() {
 /** Profils des modes de la compagnie (airline/map_profiles.json) et unité d'altitude du pilote (fuel.json, displayAlt :
  *  équidistance des courbes de niveau). */
 export async function readSettings() {
-  const P = await S.ctx.data.get('airline/map_profiles.json').catch(() => null),
-    F = await S.ctx.data.get(`pilot/${S.ctx.identity?.trigram || 'ANON'}/fuel.json`).catch(() => null);
+  const P = await S.ctx.data.get('airline/map_profiles.json').catch(() => null);
+  if (!S) return; // la Carte a été quittée pendant la lecture
+  const F = await S.ctx.data.get(`pilot/${S.ctx.identity?.trigram || 'ANON'}/fuel.json`).catch(() => null);
+  if (!S) return;
   S.repoProfiles = P?.profiles && typeof P.profiles === 'object' ? P.profiles : null;
   S.altUnit = F?.displayAlt === 'm' ? 'm' : 'ft';
 }

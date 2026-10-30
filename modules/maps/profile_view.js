@@ -85,9 +85,9 @@ export async function buildProfile() {
   const key = S.route.updated;
   let airspaces = [];
   if (A) {
-    const list = await many(A.airspaces, corridorBoxes(pts, 2, null)).catch(() => []),
-      p = S.vprofProfile || S.profile;
-    if (!S) return;
+    const list = await many(A.airspaces, corridorBoxes(pts, 2, null)).catch(() => []);
+    if (!S) return; // la Carte a été quittée pendant la lecture
+    const p = S.vprofProfile || S.profile;
     airspaces = MapsRender.selectAirspaces(list, {
       ...p,
       corridorNm: 0,

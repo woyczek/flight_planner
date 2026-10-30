@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: no error when it is left right after it mounts** (`modules/maps/module.js`, `data.js`, `profile_view.js`,
+  `mission_view.js`; noreg D65; reported by Features SOG, F41 / F63 under load). The mount, `readFlight`, `applyFlight`,
+  `readSettings`, `buildProfile` and `applyMission` resumed after an await on the state the teardown had cleared (TypeError on
+  `S`); every resumption now checks the Map is still there first. D65 slows the Map's readings and leaves it at five moments of
+  its mount (no error), and checks that leaving the choose mode from outside adds no return of its own (the return to Fuel is the
+  pane's ✕ / Escape / "Terminer" only).
+
 - **Data layer: the trial base frozen like a device's** (`frame/store/frame_data.js`; INTEGRATION § 4, DECISIONS): a
   `reference` copy without a revision is deep-frozen at each read too, so that a module writing on a record fails in the
   noreg rather than on a device.

@@ -280,6 +280,7 @@ export async function mount(el, ctx) {
   S.theme = MapsRender.tokens();
   S.stops.push(watchTheme());
   const ui = (await ctx.data.get('cache/maps/ui.json').catch(() => null)) || {};
+  if (!S) return; // la Carte a été quittée pendant la lecture (chaque reprise après une attente vérifie S d'abord)
   await readSettings();
   if (!S) return;
   S.stops.push(ctx.data.watch('airline/map_profiles.json', async () => {
@@ -298,6 +299,7 @@ export async function mount(el, ctx) {
   if (ctx.query?.mission) await applyMission();
   else {
     await applyFlight();
+    if (!S) return;
     fillPick();
   }
   if (!S) return;

@@ -1522,3 +1522,42 @@ def d64(c):
     d = c.js(_DRAWN)
     c.ok(d['aerodromes'] > 0 and {'LFAB', 'LFAC', 'LFAD'} <= set(d['ads']), f'{d}', 'zoom 9, complexity +2: the aerodromes are read and drawn')
     c.eq(errs, [], 'no error on the page (no write on a frozen record)', what='page errors')
+
+
+# ------------------------------------------------------------------------------------------------------ D65
+# every get of a module's data adapter and every answer of aerodb waits window.__slow ms when it is set
+_SLOW_READS = """(() => { const slow = p => window.__slow ? p.then(v => new Promise(r => setTimeout(() => r(v), window.__slow))) : p;
+  let fd; Object.defineProperty(window, 'FrameData', { configurable: true, get() { return fd }, set(v) { fd = v;
+    if (v && v.adapter && !v.__slow) { const o = v.adapter; v.__slow = 1; v.adapter = function (...a) { const d = o.apply(this, a), g = d.get;
+      d.get = (...q) => slow(Promise.resolve(g.apply(d, q))); return d } } } });
+  let ab; Object.defineProperty(window, 'AeroDB', { configurable: true, get() { return ab }, set(v) { ab = v;
+    if (v && v.create && !v.__slow) { const o = v.create; v.__slow = 1; v.create = function (...a) { const A = o.apply(this, a);
+      for (const k of ['airspaces', 'aerodromes', 'procedure', 'runways', 'coverage']) { const f = A[k]; if (typeof f === 'function') A[k] = (...q) => slow(Promise.resolve(f.apply(A, q))) }
+      return A } } } }) })()"""
+@case('D65', 'Leaving the Map right after it mounts: no error; the choose mode returns to Fuel only when its pane is closed', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False,
+      rule='Features SOG 30 Oct (F41 / F63 under load): a reading awaited at mount resumed after the teardown (readFlight, buildProfile, readSettings) and read the gone state; the return to Fuel is the pane’s ✕ / Escape / Terminer only, never an outside navigation')
+def d65(c):
+    errs = []
+    c.page.on('pageerror', lambda e: errs.append(str(e)))
+    # the frame catches an error of a module's mount and logs it: those count too
+    c.page.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'Error' in m.text and '/modules/maps/' in m.text + str(m.location) else None)
+    # the readings of the Map made slow on demand (window.__slow): the teardown always falls during an await
+    c.page.add_init_script(_SLOW_READS)
+    f = _proc_flight()
+    c.open('fuel', docs=fdocs(f) + [list(d) for d in _PROC_DOCS], flight=False, airfields=True, wait=False)
+    c.wait(1500)
+    for d in (100, 250, 400, 700, 1000):     # leaving at every step of the mount
+        c.js("() => { window.__slow = 400; location.hash = '#maps' }")
+        c.wait(d)
+        c.js("() => { location.replace('#fuel?focus=arr&rwy=31') }")
+        c.wait(1500)
+    c.js("() => { window.__slow = 0 }")
+    c.eq(errs, [], 'leaving the Map at once: no error from a reading that resumes after the teardown', what='page errors')
+    # the choose mode left from outside (another module, Back): no return of its own
+    _ch_open(c, {'rwy': '31'})
+    c.js("() => { location.replace('#fuel') }")
+    c.wait(1500)
+    hc = [u.split('#', 1)[1] for u in c.js('window.__hc')]
+    c.eq(hc, ['fuel'], 'the Map adds no return of its own when it is left from outside', what='address changes')
+    c.eq(errs, [], 'and no error either', what='page errors')
