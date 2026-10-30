@@ -28,9 +28,19 @@ def fleet_doc(n=3):
     return {'schema': 1, 'updated_at': '2026-10-28T09:00:00Z', 'by': 'website', 'aircraft': ac}
 
 
+def help_placed(c):
+    """Waits for the frame's « Comment s'en servir » panel above the module: the frame inserts it after the module is drawn, and under
+    the load of a full pass it came late — the whole screen moved down between the locating of a control and the tap, which then hit
+    the row below (M3 edited another aircraft) or nothing (M2's « Ajouter »)."""
+    c.until(f"() => {{ const m = document.querySelector('{M}'); return !!m && !!m.parentElement?.querySelector(':scope > .f-help') }}", timeout=15000,
+            what='the help panel of the module is placed (no more layout shift)')
+    c.settle()
+
+
 def open_fleet(c, n=3):
     c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(n), 'document']], wait=False, app='maintenance')
     c.until(f"!!document.querySelector('{M} [data-pane=fleet]')", timeout=15000, what='the fleet list is drawn')
+    help_placed(c)
 
 
 def regs(c):
@@ -190,6 +200,7 @@ def open_sheets(c, view='sheets', target='aircraft', n=3):
     c.open(target, docs=LEVEL3 + [['airline/fleet.json', fleet_doc(n), 'document']] + SHEET_DOCS + [TYPES] + ui, wait=False, app='maintenance')
     c.until(f"!!document.querySelector('{M} {SHEETS} [data-id], {M} [data-pane=fleet], {M} {SHEETS} [data-do=save]')", timeout=15000,
             what='the Fiches list, the fleet list or the editor is drawn')
+    help_placed(c)
 
 
 def sheet_ids(c):
