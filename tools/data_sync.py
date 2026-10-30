@@ -164,6 +164,12 @@ def clean_text(text, data=''):
     return s
 
 
+def lit(env=None):
+    """Environnement de git où chaque chemin est un nom de fichier, jamais un motif (« [ab].json » n'emporte pas a.json ni
+    b.json) : pour toute commande qui reçoit des chemins de fichiers ; jamais pour POOL, EXCLUDE ou INDEXES (des motifs)."""
+    return dict(env or git_env(), GIT_LITERAL_PATHSPECS='1')
+
+
 def git(data, *args, env=None, check=False):
     """git -C data … ; rend (code, texte) : git réussi, sa sortie standard seule — ses avertissements (sortie d'erreur :
     « LF will be replaced by CRLF », …) vont au journal, jamais lus comme un chemin ou une valeur ; git en échec, sortie et
@@ -495,14 +501,14 @@ def resolve(data, path):
     if not full:
         raise RuntimeError(f'chemin en conflit refusé : {path[:200]}')
     if is_index(path):  # index régénéré : retiré du suivi, jamais fusionné (le lanceur le refait)
-        git(data, 'rm', '--cached', '-q', '--ignore-unmatch', '--', path)
+        git(data, 'rm', '--cached', '-q', '--ignore-unmatch', '--', path, env=lit())
         if os.path.isfile(full):
             os.remove(full)
         return {'path': path, 'how': 'index retiré (régénéré)'}
     out, info, lose, side = merge_raw(path, {s: blob(data, s, path) for s in (1, 2, 3)})
     open(full, 'wb').write(out)
     copy = keep_copy(data, path, lose, side) if lose is not None else ''
-    git(data, 'add', '--', path)
+    git(data, 'add', '--', path, env=lit())
     return {'path': path, **info, **({'copy': copy} if copy else {})}
 
 
@@ -535,7 +541,7 @@ def untrack_indexes(data, who, env):
     _, out = git(data, 'ls-files', '--', *INDEXES)
     tracked = [x for x in out.splitlines() if x.strip()]
     if tracked:
-        git(data, 'rm', '--cached', '-q', '--', *tracked, check=True)
+        git(data, 'rm', '--cached', '-q', '--', *tracked, env=lit(), check=True)
         git(data, *who, 'commit', '-m', 'Index des dossiers retirés du dépôt (régénérés)', env=env, check=True)
     return tracked
 
@@ -596,7 +602,7 @@ def settle(data):
     # merge --abort (git reset --merge) les ramènerait à la branche — un fichier nouveau serait effacé
     own = _own_staged(data)
     if own:
-        git(data, 'reset', '-q', '--', *own, env=dict(git_env(), GIT_LITERAL_PATHSPECS='1'), check=True)
+        git(data, 'reset', '-q', '--', *own, env=lit(), check=True)
     code, out = git(data, 'merge', '--abort')
     if code:
         # git refuse : un fichier apporté par la fusion a été modifié depuis dans le dossier ; la page dit lequel mettre de côté
@@ -659,7 +665,7 @@ def _commit_local(data, who, env, res, label, gesture=False):
             changes.remove(p)
             res['refused'].append({'path': p, 'why': why})
     if changes:
-        git(data, 'add', '-A', '--', *changes, check=True)  # fichiers modifiés seuls (dossier du pool absent : pas d'erreur)
+        git(data, 'add', '-A', '--', *changes, env=lit(env), check=True)  # fichiers modifiés seuls (dossier du pool absent : pas d'erreur)
         code, _ = git(data, 'diff', '--cached', '--quiet')
         if code:
             git(data, *who, 'commit', '-m', f'{label} : {len(changes)} fichier(s)', env=env, check=True)
@@ -754,7 +760,7 @@ def rewritten_resume(data, author, name=''):
         return plan
     res = {**plan, 'committed': 0, 'refused': [], 'ref': '', 'moved': 0, 'copied': 0}
     _commit_local(data, who, env, res, f'Synchronisation {author}')
-    lit = dict(env or git_env(), GIT_LITERAL_PATHSPECS='1')  # « [ab].json » est un nom, jamais un motif
+    lenv = lit(env)  # « [ab].json » est un nom, jamais un motif
     target = _target(data)[0]
     old, new = _tree_match(data, target)
     ref = f'refs/sog/avant-reecriture-{time.strftime("%Y%m%d-%H%M%S")}'
@@ -770,9 +776,9 @@ def rewritten_resume(data, author, name=''):
     try:
         for p in pool:
             if git(data, 'cat-file', '-e', f'{ref}:{p}')[0] == 0:
-                git(data, 'checkout', ref, '--', p, env=lit, check=True)
+                git(data, 'checkout', ref, '--', p, env=lenv, check=True)
             else:
-                git(data, 'rm', '-q', '--ignore-unmatch', '--', p, env=lit, check=True)
+                git(data, 'rm', '-q', '--ignore-unmatch', '--', p, env=lenv, check=True)
         if git(data, 'diff', '--cached', '--quiet')[0]:
             git(data, *who, 'commit', '-m', f'Reprise après réécriture de l’historique ({author}) : {len(pool)} fichier(s)', env=env, check=True)
             res['moved'] = len(pool)
@@ -1078,13 +1084,13 @@ def adopt(data, url, author, env=None, name='', auth=()):
                 full = os.path.join(data, *p.split('/'))
                 if not os.path.isfile(full):
                     created.append(p)
-                    git(data, 'checkout', '--', p, check=True)
+                    git(data, 'checkout', '--', p, env=lit(), check=True)
                     continue
                 if is_index(p):  # index suivi dans le dépôt : régénéré, retiré du suivi plus bas
                     continue
                 if not in_pool(p):  # fichier de la suite (références, arbre) : celui du dépôt
                     keep_original(p)
-                    git(data, 'checkout', '--', p, check=True)
+                    git(data, 'checkout', '--', p, env=lit(), check=True)
                     res['replaced'] += 1
                     continue
                 ours = open(full, 'rb').read()
@@ -1094,7 +1100,7 @@ def adopt(data, url, author, env=None, name='', auth=()):
                 if info['how'] == 'la plus récente' and stamp(ours, p) == stamp(theirs, p):
                     # sans updated_at qui les départage : la plus récente par date (fichier du poste, dernier commit du
                     # dépôt) — un fichier d'exemple ne remplace pas celui de la compagnie
-                    at = git(data, 'log', '-1', '--format=%ct', 'HEAD', '--', p)[1]
+                    at = git(data, 'log', '-1', '--format=%ct', 'HEAD', '--', p, env=lit())[1]
                     if at.isdigit() and int(at) > os.path.getmtime(full):
                         out, lose, side = theirs, ours, 'locale'
                 if out != ours:
@@ -1113,7 +1119,7 @@ def adopt(data, url, author, env=None, name='', auth=()):
                 changes.remove(p)
                 res['refused'].append({'path': p, 'why': why})
         if changes:
-            git(data, 'add', '-A', '--', *changes, check=True)
+            git(data, 'add', '-A', '--', *changes, env=lit(), check=True)
             if git(data, 'diff', '--cached', '--quiet')[0]:
                 git(data, *who, 'commit', '-m', f'Reprise du poste {author} : {len(changes)} fichier(s)', env=cenv, check=True)
                 res['committed'] = len(changes)

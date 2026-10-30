@@ -903,3 +903,69 @@ def i15(c):
         c.ok(not D.status(str(b))['rewritten'] and D.rewritten_plan(str(b), fetch=False)['rewritten'] is False, '', 'afterwards: nothing to take up')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I16', 'Pairing from its own page; paths are names, never patterns; the GitHub transport follows no redirect', 'I', static=True,
+      rule='security review of the inventory (30 Oct 2026): the local network pairing POST same-origin only (as the relay); every file path sent to git literal (adopt, resolve, the commits); redirect: \'error\' in both transports')
+def i16(c):
+    import importlib
+    import io
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    D = importlib.import_module('data_sync')
+    # 1. le POST d'appairage du réseau local, sur un gestionnaire du lanceur : refusé d'un autre site ou sans origine
+    def pair(headers):
+        h = L.Setup.__new__(L.Setup)
+        body = b'code=000000&next=/frame/'
+        h.command, h.path, h.port, h.client_address = 'POST', '/__lan/pair', 8000, ('192.168.1.20', 50000)
+        h.server = type('Srv', (), {'lan': True})()
+        h.headers = {'Host': '192.168.1.10:8000', 'Content-Length': str(len(body)), **headers}
+        h.rfile = io.BytesIO(body)
+        got = []
+        h._lan_page = lambda nxt, code=200, msg='': got.append(code)
+        h._lan_lang = lambda: 'fr'
+        h._lan_pair()
+        return got
+    c.eq([pair({'Sec-Fetch-Site': 'cross-site', 'Origin': 'https://evil.example'}), pair({}), pair({'Origin': 'http://evil.example'})],
+         [[403], [403], [403]], 'the local network pairing refuses another site and a POST without origin', what='pairing from elsewhere')
+    ok = [pair({'Sec-Fetch-Site': 'same-origin'}), pair({'Origin': 'http://192.168.1.10:8000'})]
+    c.ok(all(x and x[0] != 403 for x in ok), str(ok), 'its own page is heard (same-origin, or the workstation\u2019s origin)')
+    # 2. adopt : « [ab].json » absent du poste n'emporte pas a.json (le motif aurait remis la version du dépôt sur celle du poste)
+    tmp = Path(tempfile.mkdtemp(prefix='sog-literal-'))
+
+    def g(cwd, *a):
+        r = subprocess.run(['git', '-C', str(cwd), *a], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        return r.returncode, (r.stdout + r.stderr).strip()
+    try:
+        bare, a, data = tmp / 'remote.git', tmp / 'a', tmp / 'data'
+        g(tmp, 'init', '-q', '--bare', '-b', 'main', str(bare))
+        g(tmp, 'clone', '-q', str(bare), str(a))
+        for k, v in (('user.name', 'essai'), ('user.email', 'essai@example.invalid')):
+            g(a, 'config', k, v)
+        (a / 'cr' / 'X').mkdir(parents=True)
+        (a / 'cr' / 'X' / '[ab].json').write_text('{"updated_at": "2020-01-01T00:00:00Z", "v": "glob"}\n', encoding='utf-8')
+        (a / 'cr' / 'X' / 'a.json').write_text('{"updated_at": "2020-01-01T00:00:00Z", "v": "remote"}\n', encoding='utf-8')
+        g(a, 'add', '-A')
+        g(a, 'commit', '-qm', 'one')
+        g(a, 'push', '-q', '-u', 'origin', 'main')
+        (data / 'cr' / 'X').mkdir(parents=True)
+        (data / 'cr' / 'X' / 'a.json').write_text('{"updated_at": "2030-01-01T00:00:00Z", "v": "local"}\n', encoding='utf-8')
+        kept_re = D.REMOTE_RE
+        D.REMOTE_RE = re.compile(r'.+')  # a local bare repository stands for the remote (no network)
+        try:
+            r = D.adopt(str(data), bare.as_posix(), 'ABC')
+        finally:
+            D.REMOTE_RE = kept_re
+        got = json.loads((data / 'cr' / 'X' / 'a.json').read_text(encoding='utf-8'))['v']
+        c.ok(r.get('ok') and got == 'local' and (data / 'cr' / 'X' / '[ab].json').is_file(), json.dumps(r, ensure_ascii=False)[:300] + f' a.json: {got}',
+             'adopt takes « [ab].json » alone; the workstation\u2019s newer a.json is kept')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    src = (c.root / 'tools' / 'data_sync.py').read_text(encoding='utf-8')
+    bare_paths = [ln.strip() for ln in src.splitlines() if re.search(r"git\(data, [^)]*'--', (\*?changes|\*?tracked|p|path)\b", ln) and 'env=' not in ln]
+    c.eq(bare_paths, [], 'every git call given file paths in data_sync is literal (lit())', what='calls with paths as patterns')
+    # 3. le transport GitHub, comme GitLab : une redirection est une erreur, le jeton n'est jamais recopié
+    gh = (c.root / 'frame' / 'store' / 'transport_github.js').read_text(encoding='utf-8')
+    gl = (c.root / 'frame' / 'store' / 'transport_gitlab.js').read_text(encoding='utf-8')
+    c.ok("redirect: 'error'" in gh and "redirect: 'error'" in gl and gh.count('await fetch(') == 1, '', 'both transports refuse a redirect (one fetch each)')

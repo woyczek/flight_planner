@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Security: three gaps of the inventory closed** (`tools/launch.py`, `tools/data_sync.py`,
+  `frame/store/transport_github.js`; frame DECISIONS; noreg I16): the local network's pairing accepts a code from its own
+  page only; every file path given to git is a name, never a pattern; the GitHub transport, like GitLab's, never follows a
+  redirect with the token.
 - **Fuel: each chosen procedure is one group row of the points list** (`modules/fuel/module.js` renderPts; help ×4; F73) —
   « SID NTS1A · 2 points », its fixes under a tap, never at the rank of the typed points; « Points (N) » counts points and groups.
 - **Fuel: the procedure card opens folded** (`modules/fuel/procedures.js`; help ×4; F72) — one summary line per side, a tap

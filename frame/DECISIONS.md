@@ -1950,3 +1950,15 @@ threads per core. Target: `--touched` and `--failed` as the two daily verbs, the
 **Order proposed** (smallest risk first, each with its noreg): 7 (a date, a rename) → 3 (one opener, the callback as a
 route) → 4 (the route table read by the frame and I10) → 2 (one pairing module: the next security fix lands once) → 1
 (the `Relay` object, on top of 2) → 5 (one takeover) → 6 (the transports' base) → 8, 9, 10 when they are touched next.
+- **30 Oct 2026 — Three gaps found by the inventory, closed** (coordinator's go; no refactoring, the rules already
+  reviewed elsewhere):
+  - The local network's pairing POST needs the same origin, as the relay's: `Sec-Fetch-Site: same-origin`, or `Origin`
+    equal to `http://<the workstation's host>`; otherwise 403 and « Saisissez le code sur cette page » ×4.
+  - Every file path sent to git is literal (`data_sync.lit()`: `GIT_LITERAL_PATHSPECS`): `adopt`, `resolve`, the
+    commits of `run`, the untracking of indexes, the frame's batch in `launch.py`; never for `POOL`, `EXCLUDE`,
+    `INDEXES`, which are patterns on purpose.
+  - The GitHub transport follows no redirect (`redirect: 'error'`, as GitLab's): the token is never copied to another
+    host; a moved repository is an error said.
+  - noreg I16: the pairing POST from another site or without origin refused, its own page heard; `adopt` with a file named
+    `[ab].json` keeps the workstation's newer `a.json` (it failed without the fix); no git call of `data_sync` with file
+    paths outside `lit()`; both transports refuse redirects.

@@ -517,11 +517,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def _lan_pair(self):
-        """/__lan/pair : GET la page ; POST le code saisi — bon : jeton en cookie, retour à la page demandée ; faux ou
-        trop d'essais : la page avec le motif."""
+        """/__lan/pair : GET la page ; POST le code saisi, de cette page seulement (même origine : sinon un site tiers lie
+        l'appareil avec son propre code) — bon : jeton en cookie, retour à la page demandée ; faux ou trop d'essais : la
+        page avec le motif."""
         tx = {k: v[self._lan_lang()] for k, v in LAN_TEXT.items()}
         if self.command != 'POST':
             return self._lan_page('/frame/')
+        site, origin = self.headers.get('Sec-Fetch-Site'), self.headers.get('Origin')
+        if not (site == 'same-origin' or (site is None and origin == f'http://{self.headers.get("Host") or ""}')):
+            return self._lan_page('/frame/', 403, tx['origin'])
         try:
             size = min(int(self.headers.get('Content-Length') or 0), 2048)
         except ValueError:
@@ -1993,6 +1997,8 @@ LAN_TEXT = {
                'es': 'Vinculación cerrada tras demasiados códigos erróneos: se vuelve a abrir con «Código nuevo» en el equipo (Ajustes › Acceso del equipo).'},
     'wait': {'fr': 'Trop d’essais' + NB + ': réessayez dans {s} s.', 'en': 'Too many attempts: try again in {s} s.',
              'de': 'Zu viele Versuche: in {s} s erneut versuchen.', 'es': 'Demasiados intentos: vuelva a intentarlo en {s} s.'},
+    'origin': {'fr': 'Saisissez le code sur cette page.', 'en': 'Enter the code on this page.', 'de': 'Geben Sie den Code auf dieser Seite ein.',
+               'es': 'Introduzca el código en esta página.'},
     'note': {'fr': 'Réseau local en http' + NB + ': à n’utiliser que sur un réseau de confiance (à la maison), jamais sur un wifi public.',
              'en': 'Local network over http: use it only on a trusted network (at home), never on public wifi.',
              'de': 'Lokales Netz über http: nur in einem vertrauenswürdigen Netz (zu Hause) verwenden, nie in einem öffentlichen WLAN.',
@@ -2591,7 +2597,8 @@ def frame_batch(a):
         pending = data_sync.merge_pending(DATA) if todo and os.path.isdir(os.path.join(DATA, '.git')) else ''
         if todo and not pending and os.path.isdir(os.path.join(DATA, '.git')) and re.fullmatch(r'[A-Z0-9]{2,5}', author):
             paths = [r for r, _ in todo] + (['/'.join(report_bridge.REGISTRY)] if bridged else [])
-            env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
+            # chaque chemin est un nom de fichier, jamais un motif (« [ab].json » n'emporte pas a.json)
+            env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local', GIT_LITERAL_PATHSPECS='1')
             data_sync.git(DATA, 'add', '-A', '--', *paths, env=env)
             data_sync.git(DATA, '-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local', 'commit', '-q', '-m',
                           str(a.get('message') or f'{author} : lot du frame')[:500], '--', *paths, env=env)

@@ -124,6 +124,9 @@
         r = await fetch(url, {
           method,
           cache: 'no-store',
+          // jamais suivre une redirection (comme le transport GitLab) : un dépôt déplacé ou une réponse piégée ne reçoit
+          // pas le jeton recopié vers un autre hôte ; une redirection est une erreur dite
+          redirect: 'error',
           headers: {
             Authorization: `Bearer ${c.token}`,
             Accept: accept,
