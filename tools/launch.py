@@ -308,10 +308,17 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         return getattr(self.server, 'lan', False)
 
     def _relay(self):
-        """Requête du relais de la compagnie (--relay <hôte>) : arrivée par le port du relais (127.0.0.1, visé par le
-        proxy inverse du NAS seulement), quels que soient Host et les en-têtes ; jamais déduite de Host : un proxy qui
-        réécrirait Host sans en-tête de mandataire serait indiscernable du poste sur le port de l'interface."""
+        """Requête du relais de la compagnie (--relay <hôte>) : arrivée par le serveur du relais (Relay.start, 127.0.0.1,
+        visé par le proxy inverse du NAS seulement), quels que soient Host et les en-têtes ; jamais déduite de Host : un proxy
+        qui réécrirait Host sans en-tête de mandataire serait indiscernable du poste sur le port de l'interface."""
         return getattr(self.server, 'relay', False) is True
+
+    def _proxy_belt(self):
+        """Ceinture, en relais : une requête sur le port de l'interface venue de 127.0.0.1 avec un en-tête de mandataire
+        (Relay.PROXY_HEADERS) est celle d'un proxy qui viserait le mauvais port ou réécrirait Host — refusée (vrai), jamais
+        prise pour le poste (secrets, jetons, appareils). Le relais se reconnaît à son port ; ceci n'est qu'un second filet."""
+        return (RELAY.on and not self._relay() and not self._lan() and self.client_address[0] in ('127.0.0.1', '::1')
+                and any(self.headers.get(h) for h in Relay.PROXY_HEADERS))
 
     def _client_ip(self):
         """Adresse du client : en relais, la dernière de X-Forwarded-For (posée par le proxy, seul à joindre 127.0.0.1) ;
@@ -328,15 +335,11 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         et GET / HEAD / POST. Vrai si la requête a reçu sa réponse ici."""
         self.relay_device = None
         if not self._relay():
-            if not RELAY['host']:
-                return False
-            # échec fermé : un proxy qui réécrit Host (127.0.0.1:port) ferait passer une requête d'Internet pour le poste
-            # (secrets, jetons, appareils) ; de 127.0.0.1 avec un en-tête de mandataire et un autre hôte : refusée
-            if not self._lan() and self.client_address[0] in ('127.0.0.1', '::1') and any(self.headers.get(h) for h in PROXY_HEADERS):
+            if self._proxy_belt():
                 self._json({'error': 'relais : le proxy doit garder l’en-tête Host'}, 403)
                 return True
             return False
-        if not RELAY['host']:  # serveur du relais sans hôte public posé : jamais servi, ni comme relais ni comme poste
+        if not RELAY.on:  # serveur du relais sans hôte public posé : jamais servi, ni comme relais ni comme poste
             self._json({'error': 'relais pas prêt'}, 503)
             return True
         if (self.headers.get('X-Forwarded-Proto') or '').lower() != 'https':
@@ -435,7 +438,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if self.command != 'POST':
             return self._relay_page('/frame/')
         site, origin = self.headers.get('Sec-Fetch-Site'), self.headers.get('Origin')
-        if not (site == 'same-origin' or (site is None and origin == f'https://{RELAY["host"]}')):
+        if not (site == 'same-origin' or (site is None and origin == RELAY.origin())):
             return self._relay_page('/frame/', 403, tx['origin'])
         try:
             size = min(int(self.headers.get('Content-Length') or 0), 2048)
@@ -1123,7 +1126,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if not self._allowed() or self._lan():
             return self._json({'error': 'refusé'}, 403)
         return self._json({'devices': device_access.listing(), 'pending': device_access.pending(), 'lan': lan_state(),
-                           'relay': {'on': bool(RELAY['host']), 'host': RELAY['host']}})
+                           'relay': {'on': RELAY.on, 'host': RELAY.host}})
 
     @route('POST', '/__setup/devices', '/__setup/devices/revoke', '/__setup/devices/name', public='poste')
     def _post_devices(self, path, body):
@@ -1420,7 +1423,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             a = json.loads(body or b'{}')
         except ValueError:
             a = {}
-        if a.get('open') is True and RELAY['host']:
+        if a.get('open') is True and RELAY.on:
             # relais de la compagnie : le poste n'écoute que sur 127.0.0.1, jamais aussi sur le réseau local
             return self._json({'error': 'relais : réseau local fermé'}, 409)
         if a.get('open') is True:
@@ -1856,7 +1859,7 @@ assert ('GET', IVAO_CALLBACK) in ROUTES  # le retour d'IVAO est une route décla
 def ivao_redirects(port):
     """Les adresses de retour d'IVAO, calculées ici seulement (démarrage, retour, refus 409, assistant des Réglages) :
     { poste: http://127.0.0.1:<port>/…, relay: https://<hôte public>/… ou '' sans relais }."""
-    return {'poste': f'http://127.0.0.1:{port}{IVAO_CALLBACK}', 'relay': f'https://{RELAY["host"]}{IVAO_CALLBACK}' if RELAY['host'] else ''}
+    return {'poste': f'http://127.0.0.1:{port}{IVAO_CALLBACK}', 'relay': RELAY.origin() + IVAO_CALLBACK if RELAY.on else ''}
 IVAO_DISCOVERY = 'https://api.ivao.aero/.well-known/openid-configuration'
 IVAO_SCOPE = 'openid tracker'
 IVAO_STATE_TTL = 600
@@ -1985,19 +1988,44 @@ def ivao_oauth_finish(state, code, error, device, redirect):
 
 
 
-# relais de la compagnie (R1a, --relay <hôte public>) : l'hôte que le proxy inverse du NAS transmet (en-tête Host) ; vide :
-# pas de relais
-RELAY = {'host': ''}
-# port du relais (--relay-port, sinon celui de l'interface + 1) : toute requête qui y arrive est du relais ; le proxy le vise
-RELAY['port'] = 0
-# en-têtes posés par un mandataire : sur le port de l'interface en relais, la requête est refusée (_relay_gate, ceinture)
-PROXY_HEADERS = ('X-Forwarded-For', 'X-Forwarded-Proto', 'X-Forwarded-Host', 'Forwarded', 'X-Real-IP')
+class Relay:
+    """Le relais de la compagnie (R1a, --relay <hôte public> ; une seule identité, refonte R-C1) : l'hôte public que le
+    proxy inverse du NAS transmet, le port qu'il vise (--relay-port, sinon celui de l'interface + 1) et le serveur qui y
+    écoute (127.0.0.1 seulement), posés ensemble par start() avant toute écoute. Une requête est du relais si elle arrive
+    par ce serveur (Setup._relay), jamais d'après Host ; sur le port de l'interface, un en-tête de mandataire est refusé
+    (Setup._proxy_belt, la ceinture)."""
+    # en-têtes posés par un mandataire (la ceinture)
+    PROXY_HEADERS = ('X-Forwarded-For', 'X-Forwarded-Proto', 'X-Forwarded-Host', 'Forwarded', 'X-Real-IP')
+
+    def __init__(self):
+        self.host, self.port, self.server = '', 0, None
+
+    @property
+    def on(self):
+        """Vrai une fois l'hôte public posé (start) : le lanceur tourne en relais."""
+        return bool(self.host)
+
+    def origin(self):
+        """L'origine publique du relais (https://<hôte>) ; '' sans relais."""
+        return f'https://{self.host}' if self.host else ''
+
+    def start(self, host, port, handler):
+        """Pose l'hôte et le port, puis écoute (127.0.0.1:port) : aucune requête du relais n'arrive sans son hôte."""
+        self.host, self.port = host.lower(), port
+        srv = Server(('127.0.0.1', port), handler)
+        srv.relay = True
+        self.server = srv
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        return srv
+
+
+RELAY = Relay()
 
 
 def relay_probe():
     """Au démarrage en relais : une requête sur l'hôte public, par le proxy, doit revenir ici par le port du relais
     (/__relay/whoami) ; le résultat est dit dans la console (le proxy qui vise le port de l'interface est refusé : 403)."""
-    url = f'https://{RELAY["host"]}/__relay/whoami'
+    url = RELAY.origin() + '/__relay/whoami'
     try:
         with NO_REDIRECT_OPEN(urllib.request.Request(url, headers={'Accept': 'application/json'}), timeout=10, what='relais') as r:
             ok = json.loads(r.read() or b'{}').get('relay') is True
@@ -2005,7 +2033,7 @@ def relay_probe():
             f'  ATTENTION relais : {url} ne répond pas comme ce relais.')
     except urllib.error.HTTPError as e:
         say(f'  ATTENTION relais : {url} répond {e.code}' + ('' if e.code != 403 else
-                                                               f' — le proxy doit viser le port du relais ({RELAY["port"]}) et garder l’en-tête Host.'))
+                                                               f' — le proxy doit viser le port du relais ({RELAY.port}) et garder l’en-tête Host.'))
     except (OSError, ValueError) as e:
         say(f'  Relais : vérification impossible ({type(e).__name__}) — l’hôte public doit mener à ce poste.')
 RELAY_TEXT = {
@@ -3950,11 +3978,8 @@ def main():
             say(f'  Relais : port {rport} refusé (celui de l’interface, hors limites ou occupé), lanceur arrêté.')
             return 2
         # écoute à part, 127.0.0.1 seulement : tout ce qui y arrive est du relais ; l'interface du poste reste sur son port
-        RELAY.update(host=a.relay.lower(), port=rport)  # posé avant d'écouter : aucune requête du relais sans son hôte
-        rsrv = Server(('127.0.0.1', rport), handler)
-        rsrv.relay = True
-        threading.Thread(target=rsrv.serve_forever, daemon=True).start()
-        say(f'  Relais de la compagnie : hôte public {RELAY["host"]}, sur 127.0.0.1:{rport} que vise le proxy inverse (https).')
+        RELAY.start(a.relay, rport, handler)
+        say(f'  Relais de la compagnie : hôte public {RELAY.host}, sur 127.0.0.1:{rport} que vise le proxy inverse (https).')
         threading.Thread(target=relay_probe, daemon=True).start()
     say('')
     say('3. Navigateur')

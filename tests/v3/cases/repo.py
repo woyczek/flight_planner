@@ -542,7 +542,7 @@ def i9(c):
 
 
 @case('I10', 'Launcher routes', 'I', static=True,
-      rule='frame/INTEGRATION 6.1, R-C4 (30 Oct 2026, one list): the launcher publishes its table (route_table, GET /__setup/routes); the rule relay ⊂ local network ⊂ all; every route the frame or a module declares is in it; no route outside the table')
+      rule='frame/INTEGRATION 6.1, R-C4 (30 Oct 2026, one list): the launcher publishes its table (route_table, GET /__setup/routes); the rule relay ⊂ local network ⊂ all, the relay set pinned; every route the frame or a module declares is in it; no route outside the table')
 def i10(c):
     import importlib
     import json
@@ -554,6 +554,16 @@ def i10(c):
     lan = {(r['method'], r['path']) for r in table if r['public'] == 'lan'}
     c.ok(relay <= lan and lan <= set(L.ROUTES) and relay, json.dumps(sorted(relay - lan)) if relay - lan else '',
          'the rule: a relay route is a local network route, a local network route a route of the table')
+    # the relay's set, pinned (Simplification on R-C4: the rule does not catch a workstation route marked relay=True by
+    # mistake): a route more or less through the relay fails here and is added knowingly; /__relay/pair and /__relay/whoami
+    # are answered by the relay's gate itself, outside the table (I13)
+    c.eq(sorted(relay), sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('POST', '/__setup/batch'), ('POST', '/__setup/sync'),
+                                ('POST', '/__setup/net'), ('POST', '/__setup/ivao/oauth/start'), ('POST', '/__setup/ivao/oauth/revoke'),
+                                ('GET', '/__setup/ivao/oauth'), ('GET', '/__relay/ivao/callback')]),
+         'the routes open to the relay: status, changes, batch, sync, net, the IVAO sign-in and its return', what='relay routes')
+    # the local network's own set (« lan » without the relay), pinned the same way: one more or less is justified here
+    c.eq(sorted(lan - relay), sorted([('GET', '/__setup/lnmperf'), ('GET', '/__setup/lnmperf-folder'), ('GET', '/__setup/sim/position')]),
+         'the routes open to a paired device of the local network only: Little Navmap sheets, the simulator’s position', what='lan-only routes')
     c.ok(all(p.startswith('/__setup/') or p == L.IVAO_CALLBACK for _, p in L.ROUTES), '', 'the table holds /__setup/ routes and IVAO\'s return only')
     c.eq(L.ROUTES[('GET', '/__setup/routes')][1:], ('poste', False), 'the table is published to the workstation only', what='GET routes')
     missing = [f'{m} {p} -> {v[0]}' for (m, p), v in L.ROUTES.items() if not callable(getattr(L.Setup, v[0], None))]

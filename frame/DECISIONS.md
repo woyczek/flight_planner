@@ -2059,6 +2059,19 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     credentials and tokens no longer reach a third-party script); every purge uses `regen_jobs.inside` (the rule of
     `base/purge`, now shared: `base_sources._inside` is it), `files_under` and `prune_empty`, so that a junction inside a cache
     is neither descended nor emptied (I17, I18 with a real junction).
+- **30 Oct 2026 — Refactor R-C1: one identity of the relay** (§ 10.33, the inventory's item 1):
+  - The relay was a dict `RELAY` whose host and port were written in `main`, `PROXY_HEADERS` and the start check living
+    300 lines away, the listening server built in `main` with its `relay` flag, and its public origin spelt out in four
+    places. `class Relay` (`host`, `port`, `server`, `on`, `origin()`, `start(host, port, handler)`) holds them; `start`
+    sets the host before listening, as before; the proxy-header check is a named method, `_proxy_belt()` (« the belt »),
+    and stays a second net: the relay is still known by its port only (`_relay()`).
+  - No behaviour change: the same 503 for a host-less relay server, the same 403 for a proxy aimed at the interface's
+    port, the same pairing origin and IVAO return address. noreg I13 (the trial reads the one `Relay`), I14, I10.
+  - With it, Simplification's answer on R-C4: I10 pins the relay's set (status, changes, batch, sync, net, the IVAO
+    sign-in and its return) against the published table, since the rule « relay ⊂ local network ⊂ all » would not catch a
+    workstation route marked `relay=True` by mistake; and the local network's own set (`lan` without the relay: the
+    Little Navmap sheets and their folder, the simulator's position) is pinned the same way. A route more or less in
+    either fails I10 and is added knowingly; the workstation's routes stay checked by the rule.
 - **30 Oct 2026 — Refactor R-C4: one list of routes** (§ 10.33, the inventory's item 4):
   - A new launcher route edited three files (the table `ROUTES`, the screen's `launcher: { routes }`, I10's two fixed
     lists) and I10 failed until all agreed (edited at R1a, R1b, b27cae045, R-C2, R-C3). The launcher now publishes its

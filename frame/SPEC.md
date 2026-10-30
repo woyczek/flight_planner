@@ -924,7 +924,9 @@ explicit go** (R3).
   pilot's browser with its own code. 5 wrong codes from an address: one minute (attempts older than an hour forgotten);
   30 in an hour: pairing closed until the next code. The return after pairing is a path of this server (no `//`, `\`,
   space or control character, no `/__`).
-- Belt and braces: in relay mode, a request on the interface's port from 127.0.0.1 that carries a proxy header
+- One identity (refactor R-C1, 30 Oct 2026): `tools/launch.py`'s `Relay` holds the public host, the port and the server
+  that listens there, set together by `RELAY.start()` before any listening; a request is the relay's when it came by
+  that server (`_relay()`), never from its `Host`. Belt and braces (`_proxy_belt()`): in relay mode, a request on the interface's port from 127.0.0.1 that carries a proxy header
   (`X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host`, `Forwarded`, `X-Real-IP`) is refused (403), never taken
   for the workstation's (a proxy aimed at the wrong port). At start, the launcher asks
   `https://<public host>/__relay/whoami` through the proxy and says in its console whether it came back by the relay

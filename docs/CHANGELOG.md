@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-C1, no behaviour change: one identity of the relay** (`tools/launch.py`; frame SPEC § 3.11, DECISIONS; noreg
+  I13) — host, port and server in one `Relay`, set together before listening; the proxy-header belt a named method.
 - **Settings: the keys panel's link to the IVAO application assistant says its own text** (`frame/settings/launcher.js`) — the key
   `ivaoAppLink` was defined twice in the shared texts (settings.js and launcher.js), the later loaded won and the keys panel showed the
   IVAO account card's wording; the panel's key is now `ivaoAppSteps` (« Créer l'application IVAO des pilotes : pas à pas » ×4).

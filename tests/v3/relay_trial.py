@@ -50,15 +50,18 @@ def run(check, ROOT):
     # serveur du relais sans hôte public posé : 503, jamais le poste ; l'hôte est posé avant d'écouter (sans course)
     h = launch.Setup.__new__(launch.Setup)
     h.server, h.command, h.path, h.headers, h.client_address = type('Srv', (), {'relay': True})(), 'GET', '/__setup/secrets', {}, ('127.0.0.1', 1)
-    got, kept_relay = [], dict(launch.RELAY)
+    got, kept_relay = [], (launch.RELAY.host, launch.RELAY.port, launch.RELAY.server)
     h._json = lambda body, code=200: got.append(code)
-    launch.RELAY['host'] = ''
+    launch.RELAY.host = ''
     try:
         check('a relay server without its public host answers 503, never as the workstation', h._relay() and h._relay_gate() is True and got == [503], got)
     finally:
-        launch.RELAY.update(kept_relay)
+        launch.RELAY.host, launch.RELAY.port, launch.RELAY.server = kept_relay
     src = open(os.path.join(ROOT, 'tools', 'launch.py'), encoding='utf-8').read()
-    check('the public host is set before the relay listens', 0 < src.find('RELAY.update(host=a.relay.lower()') < src.find('rsrv.serve_forever'))
+    start = src[src.index('    def start(self, host, port, handler):'):src.index('RELAY = Relay()')]
+    check('the public host is set before the relay listens (one Relay, R-C1)', 0 < start.find('self.host, self.port = host.lower(), port') < start.find('serve_forever')
+          and src.count('srv.relay = True') == 1 and 'RELAY[' not in src
+          and 'PROXY_HEADERS = (' in src[src.index('class Relay:'):src.index('RELAY = Relay()')])
     port, rport = free_port(), free_port()
     data = tempfile.mkdtemp(prefix='sog-relay-data-')
     files = [os.path.join(ROOT, 'tools', n) for n in ('.devices.json', '.lan.json', '.relay.json')]  # la liste des appareils de ce dépôt
