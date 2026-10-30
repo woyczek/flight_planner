@@ -904,6 +904,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 52 | Fuel: the route batch (5a374c189, d34ad04fb, 79993b1ea, 40f834eb7, 1bade3bc8, 512902c66) | acceptable |
 | 53 | Tests: K49 and the noreg lock (6673bc93f, 13763c136, 28a914d36, 2bb9162e1) | acceptable |
 | 54 | Map: nine display commits (83c31fed9 to 43df712ef) | acceptable |
+| 55 | Settings: « IVAO application » assistant (b98589ae4) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1543,6 +1544,14 @@ numbers. No network of its own.
 **54. Map display commits — acceptable.** No `data.put`, `fetch`, `location` or `localStorage` added; unescaped
 interpolations are family names, booleans, numbers, the palette's hue and already-escaped fragments; selectors use
 `CSS.escape`. Defence in depth: `data-sev` could go through `esc` too.
+
+**55. Settings, « IVAO application » assistant (b98589ae4) — acceptable, one note.** `GET secrets` returns only
+`{ set, at }` for `ivao_oauth` (`SECRET_BLIND`); the fields are emptied after sending, never shown again;
+`secrets_test('ivao_oauth')` returns only success or the error's name after reading the discovery document again. Writing
+goes only through `POST /__setup/secrets`, a workstation route, limited to `clientId` and `clientSecret`; the discovery
+address cannot be set from the page. The return addresses are computed by the launcher (`ivaoRedirects`, the same as
+`_ivao_redirect`) and only shown, escaped, with « Copy ». Note: the relay's address appears only when the launcher runs
+with `--relay`; the page could say so.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
