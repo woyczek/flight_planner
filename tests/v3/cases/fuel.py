@@ -1721,16 +1721,19 @@ def f68(c):
     c.ok('A3' in c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value").split(), 'text', 'the word the pilot typed stays in the text')
 
 
-@case('F69', 'Route text bench', 'F', tags=('fuel',), designs=('standard',), screens=False,
-      rule='frame/lib/route_text.js (V3 spec 10.31): provenance of an Auto, ICAO form with DCT, SID / STAR names rendered and read back; its bench passes')
+@case('F69', 'Route text and route model benches', 'F', tags=('fuel',), designs=('standard',), screens=False,
+      rule='frame/lib/route_text.js (V3 spec 10.31): provenance of an Auto, ICAO form with DCT, SID / STAR names rendered and read back; '
+      'frame/lib/route_model.js (refactoring 10.33 R-F4): the route read from its text on an invented base; both benches pass')
 def f69(c):
-    c.page.goto(f'{c.base}/frame/lib/test/route_text.html', wait_until='load')
-    try:
-        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
-    except Exception:
-        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'frame/lib/test/route_text.html') from None
-    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
+    for page in ('route_text', 'route_model'):
+        c.page.goto(f'{c.base}/frame/lib/test/{page}.html', wait_until='load')
+        try:
+            c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
+        except Exception:
+            raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', f'frame/lib/test/{page}.html') from None
+        r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+        c.ok(r['fail'] == 0 and r['pass'] > 0, f"{page}: {r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+             f'every check of the {page} bench passes')
 
 
 @case('F70', 'The route text is a view of the procedures: a choice writes its name, an edit sets or clears the choice', 'F', tags=('fuel', 'aerodb'),

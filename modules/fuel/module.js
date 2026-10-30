@@ -13,6 +13,7 @@ import * as WIND from '../../frame/lib/wind.js'; // le vent sur une piste : une 
 import * as WD from './winds.js';
 import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
+import * as RM from '../../frame/lib/route_model.js'; // la route lue depuis son texte (refonte § 10.33 R-F4)
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
 import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
@@ -809,179 +810,6 @@ function bearing(a, b) {
     x = Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a.lat * r) * Math.cos(b.lat * r) * Math.cos((b.lon - a.lon) * r);
   return (Math.atan2(y, x) / r + 360) % 360;
 }
-/** Points d'une route. Deux formes : la liste « ID lat lon[/N0450F370] » d'un OFP (une entrée par ligne ou virgule),
- *  ou un texte libre façon item 15 (« LFBO N0450F350 DCT TOU UN460 NTS/F280 LFRN »). Dans le texte libre : groupes
- *  vitesse-niveau et DCT écartés (le niveau d'un groupe, ou un « /Fnnn » collé à un point, devient l'alt_ft de ce
- *  point) ; voies aériennes et procédures gardées telles quelles dans le texte (pas de points) ; coordonnées OACI
- *  (4436N00612E, 44N006E) et « NOM lat lon » lus comme points ; un identifiant cherché dans aerodb, sinon dans known
- *  (points déjà connus du vol : un point posé à la main garde sa position), sinon signalé inconnu. Départ et arrivée
- *  ajoutés aux extrémités s'ils manquent. Les niveaux ne restent que là où ils changent, jamais au départ ni à
- *  l'arrivée. Un point écrit après une voie aérienne (« NEPIX UN460 LUGEN ») porte via: « UN460 » ; les points de la
- *  voie entre les deux, que le texte n'écrit pas, sont repris de chain (les points déjà gardés du vol : awy: true, via:
- *  la voie) quand ils y reliaient les mêmes deux points — c'est ce que le bouton « Auto » laisse dans route.points.
- *  Sortie : { points, unresolved, tokens } — tokens : la suite lue ({ pt: point } | { keep: mot }) pour réécrire le texte
- *  normalisé (routeText). */
-async function routePoints(text, dep, arr, known = new Map(), chain = []) {
-  const ctx = S.ctx,
-    points = [],
-    unresolved = [],
-    tokens = [];
-  let via = ''; // voie aérienne lue depuis le dernier point : le point suivant y arrive par elle
-  /** Position d'un identifiant : un point arrivé par une voie garde la position de son segment (aerodb ne connaît pas
-   *  toujours les extrémités des voies, ni le bon point si le nom existe ailleurs) ; sinon aerodb, puis un point déjà
-   *  connu du vol ; null sinon. */
-  const find = async id => {
-    const kv = known.get(id);
-    if (kv?.via && Number.isFinite(+kv.lat) && Number.isFinite(+kv.lon)) return {
-      lat: +kv.lat,
-      lon: +kv.lon
-    };
-    const c = ctx.aerodb ? await ctx.aerodb.coords(id).catch(() => null) : null;
-    if (c && Number.isFinite(+c.lat)) return {
-      lat: +c.lat,
-      lon: +c.lon
-    };
-    const k = known.get(id);
-    return k ? {
-      lat: k.lat,
-      lon: k.lon
-    } : null;
-  };
-  /** Ajoute un point (et son jeton) ; son niveau s'il en a un. */
-  const add = (id, c, alt) => {
-    const p = {
-      id,
-      lat: c.lat,
-      lon: c.lon,
-      ...(alt ? {
-        alt_ft: alt
-      } : {})
-    };
-    if (via && points.length) {
-      p.via = via;
-      // points de la voie entre le précédent et celui-ci, s'ils étaient déjà gardés
-      const prev = points.at(-1),
-        i = chain.findIndex(q => q && q.id === prev.id && !q.awy);
-      let j = i + 1;
-      while (i >= 0 && chain[j]?.awy && chain[j].via === via) j++;
-      if (i >= 0 && j > i + 1 && chain[j]?.id === id && chain[j].via === via)
-        for (const q of chain.slice(i + 1, j)) points.push({
-          ...q
-        });
-    }
-    via = '';
-    points.push(p);
-    tokens.push({
-      pt: p
-    });
-  };
-  // « A VOIE B » (V3 § 10.31) : un mot en forme de voie entre deux points nommés est une voie quand la base a une voie de ce nom à
-  // proximité ; un point de la base du même nom ne gagne jamais contre elle (utilisateur, 30 octobre : « A3 » lu comme un point près
-  // de Gibraltar, 1 871 NM). Sans voie de ce nom à proximité, l'identifiant reste un point (PO421…)
-  const near = new Map(),
-    airwayNear = async (name, p) => {
-        const k = `${name}|${Math.round(+p.lat)}|${Math.round(+p.lon)}`;
-        if (!near.has(k)) near.set(k, Promise.resolve().then(() => ctx.aerodb?.airways?.({
-          bbox: [+p.lon - 3, +p.lat - 2, +p.lon + 3, +p.lat + 2]
-        })).then(s => (s || []).some(x => String(x?.route || '').toUpperCase() === name), () => false));
-        return near.get(k);
-      },
-      words = RT.tokenize(text);
-  // jetons du texte (frame/lib/route_text.js) ; un nom est cherché dans aerodb, puis parmi les points connus
-  for (const [ti, t] of words.entries()) {
-    const nx = words[ti + 1];
-    if (t.kind === 'name' && AIRWAY_WORD.test(t.id) && points.length && (nx?.kind === 'name' || nx?.kind === 'coord') && await airwayNear(
-        t
-        .id, points.at(-1))) {
-      via = t.id;
-      tokens.push({
-        keep: t.id
-      });
-      continue;
-    }
-    if (t.kind === 'group') { // groupe vitesse-niveau seul : niveau du dernier point
-      if (t.alt_ft && points.length) points.at(-1).alt_ft = t.alt_ft;
-    } else if (t.kind === 'coord') add(t.id, t, t.alt_ft);
-    else if (t.kind === 'name') {
-      const c = await find(t.id);
-      if (c) add(t.id, c, t.alt_ft);
-      else {
-        if (!t.airway) unresolved.push(t.id); // voie aérienne ou procédure : gardée dans le texte, sans alerte
-        if (AIRWAY_WORD.test(t.id)) via = t.id;
-        tokens.push({
-          keep: t.id
-        });
-      }
-    } else {
-      if (AIRWAY_WORD.test(t.id)) via = t.id; // voie composée (G54-R66)
-      tokens.push({
-        keep: t.id
-      });
-    }
-  }
-  if (dep && points[0]?.id !== dep) {
-    const c = await find(dep);
-    if (c) {
-      const p = {
-        id: dep,
-        lat: c.lat,
-        lon: c.lon
-      };
-      points.unshift(p);
-      tokens.unshift({
-        pt: p
-      });
-    } else if (!unresolved.includes(dep)) unresolved.unshift(dep);
-  }
-  if (arr && points.at(-1)?.id !== arr) {
-    const c = await find(arr);
-    if (c) add(arr, c);
-    else if (!unresolved.includes(arr)) unresolved.push(arr);
-  }
-  // une voie écrite n'est suivie que si ses deux bouts en sont des nœuds reliés le long d'elle dans le couloir du tronçon : ses nœuds
-  // sont alors insérés (la distance et la carte la suivent) ; sinon le tronçon reste direct et la ligne le dit (badAirways). Les
-  // nœuds déjà gardés du vol (awy) sont repris tels quels ; sans base lisible, rien n'est jugé
-  const badAirways = [];
-  for (let i = 1; i < points.length; i++) {
-    const p = points[i],
-      a = points[i - 1];
-    if (!p.via || !AIRWAY_WORD.test(p.via) || a.awy || p.awy || !ctx.aerodb?.airways) continue;
-    const segs = await ctx.aerodb.airways({
-        bbox: RG.corridor([a, p])
-      }).catch(() => null),
-      st = ctx.aerodb.state?.().state;
-    if (!segs || !segs.length && st && st !== 'ready') continue;
-    const path = RG.along(segs, p.via, a, p);
-    if (path) {
-      const mid = path.slice(1, -1);
-      points.splice(i, 0, ...mid);
-      i += mid.length;
-    } else {
-      badAirways.push({
-        w: p.via,
-        a: a.id,
-        b: p.id
-      });
-      delete p.via;
-    }
-  }
-  // niveaux : seuls les changements restent (une route d'OFP répète son niveau à chaque point), jamais au départ ni à
-  // l'arrivée — le vol part au niveau du plan
-  let prev = points[0]?.alt_ft;
-  points.forEach((p, i) => {
-    const a = p.alt_ft;
-    if (!i || i === points.length - 1 || a === prev) delete p.alt_ft;
-    if (a) prev = a;
-  });
-  return {
-    points,
-    unresolved,
-    tokens,
-    badAirways
-  };
-}
-/** Désignateur de voie aérienne, composé compris (UN460, G54-R66) : le mot qui précède un point y arrivant par cette voie. */
-const AIRWAY_WORD = /^[A-Z]{1,2}\d{1,4}[A-Z]?(-[A-Z]{1,2}\d{1,4}[A-Z]?)*$/;
 /** Texte normalisé de la route : « DEP PT1 UN460 PT2/F280 … ARR » — points par leur identifiant (niveau en /Fnnn là
  *  où il change), voies, procédures et mots inconnus gardés à leur place, une seule ligne (frame/lib/route_text.js). */
 /** Texte normalisé du champ de route, en forme OACI avec ses « DCT » (V3 § 10.31). */
@@ -3328,7 +3156,13 @@ function resolveRoute(normalize = true) {
         unresolved,
         tokens,
         badAirways
-      } = await routePoints(r.text, r.dep, r.arr, known, r.points || []);
+      } = await RM.routeModel(r.text, {
+        dep: r.dep,
+        arr: r.arr,
+        known,
+        chain: r.points || [],
+        base: S.ctx.aerodb
+      });
     if (gone(s) || seq !== S.routeSeq || !S.body) return;
     r.points = points;
     // une voie écrite qui ne relie pas ses deux points : tronçon direct, dit une fois par texte (pas à chaque frappe) (§ 10.31)
@@ -3379,7 +3213,13 @@ async function autoAirways() {
       {
         points,
         tokens
-      } = await routePoints(r.text, r.dep, r.arr, known, r.points || []);
+      } = await RM.routeModel(r.text, {
+        dep: r.dep,
+        arr: r.arr,
+        known,
+        chain: r.points || [],
+        base: S.ctx.aerodb
+      });
     if (gone(s) || seq !== S.routeSeq) return;
     // les mots d'un Auto précédent (voies, nœuds, sortie de SID et entrée de STAR qu'il a ajoutées) sont retirés : jamais le départ
     // ni l'arrivée ; un point gardé ne garde sa voie d'arrivée que si le mot qui le précède est une voie posée ; les points
@@ -3394,7 +3234,7 @@ async function autoAirways() {
       kept.forEach((t, i) => {
         if (!t.pt) return;
         const before = kept[i - 1];
-        if (before?.keep && AIRWAY_WORD.test(before.keep)) t.pt.via = before.keep;
+        if (before?.keep && RM.AIRWAY_WORD.test(before.keep)) t.pt.via = before.keep;
         else delete t.pt.via;
       });
       const keptPts = new Set(kept.filter(t => t.pt).map(t => t.pt)),
@@ -3441,7 +3281,7 @@ async function autoAirways() {
         else {
           let at = tokens.findIndex(t => t.pt === prev) + 1;
           if (k === 1)
-            while (tokens[at]?.keep && !AIRWAY_WORD.test(tokens[at].keep)) at++;
+            while (tokens[at]?.keep && !RM.AIRWAY_WORD.test(tokens[at].keep)) at++;
           tokens.splice(at, 0, tok);
           genTok.add(tok);
         }
@@ -3456,7 +3296,7 @@ async function autoAirways() {
       chain = idx.map(i => tokens[i].pt),
       last = chain.length - 1,
       adj = idx.map((t, i) => idx[i + 1] === t + 1 && !(i === 0 && procPts.has(chain[1])) && !(i === last - 1 && procPts.has(chain[i]))),
-      entry = idx.map(i => !!tokens[i + 1]?.keep && AIRWAY_WORD.test(tokens[i + 1].keep)),
+      entry = idx.map(i => !!tokens[i + 1]?.keep && RM.AIRWAY_WORD.test(tokens[i + 1].keep)),
       free = i => !(chain[i].via || entry[i]);
     // une SID choisie couvre le départ → premier point, une STAR le dernier point → arrivée : jamais routés (le routage part de la
     // sortie de la SID ; parcours de BUGS SOG, 30 octobre : « pas de voie près de LFBO »)

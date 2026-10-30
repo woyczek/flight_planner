@@ -233,7 +233,10 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   first of the group that serves the runway: « Choisir OKRIX5B »).
   § 10.31 (30 Oct 2026): `pointsOf(proc)`, `exitOf(proc)` (a SID's last named point), `entryOf(proc)` (a STAR's first), and
   `compatible(list, { …, route })` — `route`, the typed route's point ids: a SID fits when its exit is on it, a STAR when its entry
-  is (the Map's « vers votre route » axis; an empty route filters nothing). In `route_text.js`: `textFromTokens(tokens, { dct })`
+  is (the Map's « vers votre route » axis; an empty route filters nothing). Refactoring R-F4a (30 Oct 2026): `route_model.js`
+  (owner: fuel), `routeModel(text, { dep, arr, known, chain, base })` → `{ points, unresolved, tokens, badAirways }`, the route
+  read from its text on the base the caller passes (`ctx.aerodb`'s `coords`, `airways`, `state`), and `AIRWAY_WORD`; Fuel's
+  `routePoints` moved there unchanged; bench `frame/lib/test/route_model.html` (F69). In `route_text.js`: `textFromTokens(tokens, { dct })`
   (ICAO form), `withProcedures(text, o)` (the procedures written into the text) and `proceduresOfText(text, o)` (read back), with
   `provenance(words, prev)` for Auto; bench `frame/lib/test/route_text.html` (F69).
   Fourth reading of § 10.30 (30 Oct 2026, LFPO): `isAppTransition(rec)` (an APP record named « INA … », or with a transition and

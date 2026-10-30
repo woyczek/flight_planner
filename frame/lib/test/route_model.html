@@ -1,0 +1,153 @@
+<!doctype html>
+<!-- Banc du modèle de route (frame/lib/route_model.js, refonte § 10.33 R-F4) : routeModel sur une base inventée (points QAA… et voies
+     Q1, Q9 qui n'existent nulle part) — points résolus, départ et arrivée, voie tapée suivie ou dite fermée, niveaux, points connus du
+     vol. Fonctions pures ; page nue ; window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>route_model — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">route_model.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    routeModel,
+    AIRWAY_WORD
+  } from '../route_model.js?v=0';
+  const out = document.getElementById('out'),
+    rows = [];
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      got: String(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `  → ${got}`}`;
+    out.append(l);
+  }
+
+  // une base inventée : cinq points, la voie Q1 de QAA à QCC par QBB, la voie Q9 loin de là
+  const P = {
+      XDEP: [44, 0],
+      QAA: [45, 1],
+      QBB: [45, 2],
+      QCC: [45, 3],
+      XARR: [46, 4],
+      QFAR: [10, 100]
+    },
+    pt = id => ({
+      id,
+      lat: P[id][0],
+      lon: P[id][1]
+    }),
+    SEGS = [
+      ['Q1', 'QAA', 'QBB'],
+      ['Q1', 'QBB', 'QCC'],
+      ['Q9', 'QFAR', 'QFAR']
+    ].map(([route, a, b]) => ({
+      route,
+      a: pt(a),
+      b: pt(b)
+    })),
+    inBox = (p, [w, s, e, n]) => p.lon >= w && p.lon <= e && p.lat >= s && p.lat <= n,
+    base = {
+      coords: async id => P[id] ? pt(id) : null,
+      airways: async ({
+        bbox
+      }) => SEGS.filter(x => inBox(x.a, bbox) || inBox(x.b, bbox)),
+      state: () => ({
+        state: 'ready'
+      })
+    },
+    ids = m => m.points.map(p => p.id).join(' ');
+
+  const m1 = await routeModel('QAA QCC', {
+    dep: 'XDEP',
+    arr: 'XARR',
+    base
+  });
+  ck('routeModel : les points de la base, le départ et l’arrivée ajoutés aux extrémités', ids(m1) === 'XDEP QAA QCC XARR' && !m1.unresolved
+    .length, ids(m1));
+  const m2 = await routeModel('XDEP QAA Q1 QCC XARR', {
+    dep: 'XDEP',
+    arr: 'XARR',
+    base
+  });
+  ck('routeModel : une voie tapée entre deux de ses nœuds est suivie, ses nœuds insérés', ids(m2) === 'XDEP QAA QBB QCC XARR' && m2
+    .points[3].via === 'Q1' && m2.tokens.some(t => t.keep === 'Q1') && !m2.badAirways.length, ids(m2));
+  const m3 = await routeModel('XDEP QAA Q1 XARR', {
+    dep: 'XDEP',
+    arr: 'XARR',
+    base
+  });
+  ck('routeModel : une voie qui ne relie pas ses deux points laisse le tronçon direct et le dit', ids(m3) === 'XDEP QAA XARR' && m3
+    .badAirways.length === 1 && m3.badAirways[0].w === 'Q1' && !m3.points[2].via, JSON.stringify(m3.badAirways));
+  const m4 = await routeModel('XDEP QAA/F120 QBB/F120 QCC/F140 XARR/F140', {
+    dep: 'XDEP',
+    arr: 'XARR',
+    base
+  });
+  ck('routeModel : les niveaux seulement là où ils changent, jamais aux extrémités', m4.points.map(p => p.alt_ft || '-').join() ===
+    '-,12000,-,14000,-', m4.points.map(p => p.alt_ft || '-').join());
+  const m5 = await routeModel('XDEP ZZZ1 QMINE XARR', {
+    dep: 'XDEP',
+    arr: 'XARR',
+    known: new Map([
+      ['QMINE', {
+        id: 'QMINE',
+        lat: 45.5,
+        lon: 2.5
+      }]
+    ]),
+    base
+  });
+  ck('routeModel : un point connu du vol en secours, un nom inconnu signalé', ids(m5) === 'XDEP QMINE XARR' && m5.unresolved.join() ===
+    'ZZZ1', `${ids(m5)} / ${m5.unresolved}`);
+  const chain = [pt('XDEP'), pt('QAA'), {
+      ...pt('QBB'),
+      awy: true,
+      via: 'Q1'
+    }, {
+      ...pt('QCC'),
+      via: 'Q1'
+    }, pt('XARR')],
+    m6 = await routeModel('XDEP QAA Q1 QCC XARR', {
+      dep: 'XDEP',
+      arr: 'XARR',
+      known: new Map(chain.map(p => [p.id, p])),
+      chain
+    });
+  ck('routeModel : sans base, les nœuds déjà gardés du vol (chain) repris entre les deux points de la voie', ids(m6) ===
+    'XDEP QAA QBB QCC XARR' && m6.points[2].awy === true, ids(m6));
+  ck('AIRWAY_WORD : UN460, G54-R66 ; pas un terrain', AIRWAY_WORD.test('UN460') && AIRWAY_WORD.test('G54-R66') && !AIRWAY_WORD.test(
+    'XDEP'));
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

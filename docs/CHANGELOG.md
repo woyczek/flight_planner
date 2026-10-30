@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refonte, sans changement de comportement — R-F4a, la route lue depuis son texte dans le cadre** (`frame/lib/route_model.js`
+  `routeModel`, `AIRWAY_WORD`: Fuel's `routePoints` moved unchanged, the aerodb face passed as `base`; bench
+  `frame/lib/test/route_model.html` in F69).
 - **Launcher: pairing closes per channel, expired devices purged** (`tools/device_access.py`; frame SPEC § 3.12, DECISIONS;
   noreg I22) — 30 wrong codes on the relay no longer close the local network; an expired device leaves the list.
 - **Administration: « Dossiers du poste »** (`frame/settings/launcher.js`, `admin_links.js`, `settings.js`, `tools/launch.py`;
