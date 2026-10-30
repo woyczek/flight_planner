@@ -1224,6 +1224,10 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   « Cancel the start », the ISA proposal, the density altitude chart, the decision drawing, « Open in », the details, the climb
   instructions and the settings fold, Auto's limits.
 
+- **30 Oct 2026 — debts « no case », first: « Cancel the start » is F81** (Simplification's order: a flight state that, broken, leaves a
+  flight started with no way back). The question, « No » changes nothing, « Yes » writes `started = null` and `progress = null` (null,
+  not removed), « Start the flight » offered again. The code does what the SPEC says: no gap.
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (Features SOG, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les

@@ -404,7 +404,7 @@ before the start, in step 5 after (F11).
   route, level and steps, wind and source, block fuel; the planned times name the first and last point when they are those aerodromes
   (F47).
 - **« Start the flight »** (§ 12) writes `current_flight.started = { at, by: 'fuel' }` and opens the Map (F16 starts one); « Cancel the
-  start » after a question (no case).
+  start » after a question (F81).
 - **Flight plan for the simulator**: three buttons — « .fms (XP 11/12) », « .fms (XP 10) », « .pln (MSFS) » — download the route and the
   chosen procedures (`frame/lib/fms.js`; 44 px; disabled under two placed points; named `LFRS-LFML_<day>.<ext>`) (F61, F60).
 - The procedure card after the start (§ 9.4), and the « Planned progress » card (§ 12).
@@ -472,8 +472,8 @@ No field, import, preview or removal here (F79).
 - **Start, cancel**: « Start the flight » first redoes everything for now — the flight date goes back to now, the aerodromes' weather
   and the winds aloft are read again, the quote is redone — and says in one line what changed (wind, block, planned arrival); offline
   it says so and starts with the last quote. Then it writes `started = { at, by: 'fuel' }` (Report's engine start). A started flight
-  ends with its report (Report writes `started = null` and `progress = null`) or with « Cancel the start » (a question, the same
-  nulls). The sticky result shows « Flight started at hh:mm · for 1 h 12 » (F16 starts a flight; no case for the line of what changed).
+  ends with its report (Report writes `started = null` and `progress = null`) or with « Cancel the start » (a question; « No » changes
+  nothing; « Yes » writes the same nulls, not removed: the write merges with the kept record) (F81). The sticky result shows « Flight started at hh:mm · for 1 h 12 » (F16 starts a flight; no case for the line of what changed).
 - **Planned timeline** from the start time: taxi, the quote's climb, the cruise split by route leg — ground speed = cruise TAS + the
   leg's wind component (the forecast winds at both ends of the leg, else the quote's wind), durations scaled so the cruise keeps the
   quote's time —, the quote's descent; fuel burnt by phase. From it: the time over each point, the planned position at a given time,

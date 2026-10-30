@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: F81, « Cancel the start »** (a « no case » debt of the SPEC): the question, « No » changes nothing, « Yes » clears `started`
+  and `progress`.
 - **Map: the choose pane has one exit, refactor without change of behaviour (R-M1 c, § 10.33)** (`modules/maps/choose.js`,
   `sheet_view.js`; SPEC, DECISIONS; noreg D62). `chooseClose()` for Done, ✕ and Escape replaces `chooseFinish` and `chooseExit`:
   the keys back to Fuel, or, opened from the aerodrome card with nothing chosen, back to the flight without a reload.

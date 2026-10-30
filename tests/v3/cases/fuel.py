@@ -1919,6 +1919,32 @@ def f79(c):
     d = cf_doc(c, lambda d: ((d.get('aircraft') or {}).get('sheetId') == 'C30J'), 'the flight now uses C30J')
 
 
+@case('F81', '« Cancel the start » after a question: the flight is no longer started, its progress cleared, « Start the flight » back', 'F',
+      tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='modules/fuel SPEC 9.7 and 12: a started flight ends with its report or with « Cancel the start », after a question; « No » changes '
+      'nothing; « Yes » writes started = null and progress = null (null, not removed: the write merges with the kept record)')
+def f81(c):
+    c.open('fuel', flight=True, started=True)
+    wait_quote(c)
+    # a started flight writes its progress: the cancellation must clear it, not only the start
+    cf_doc(c, lambda d: bool((d.get('started') or {}).get('at')) and bool(d.get('progress')), 'the started flight has its progress', timeout=12000)
+    to_step(c, 4)
+    c.until(f"!!document.querySelector('{FUEL} [data-startrow] [data-do=cancelstart]')", what='a started flight offers « Annuler le départ »')
+    c.tap(f'{FUEL} [data-do="cancelstart"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", what='a question is asked')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='« Non » closes the question')
+    c.wait(500)
+    d = cf_doc(c, lambda d: True, 'the flight record')
+    c.ok(bool((d.get('started') or {}).get('at')) and bool(d.get('progress')), f"started={d.get('started')}", '« Non » changes nothing: still started')
+    c.tap(f'{FUEL} [data-do="cancelstart"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", what='asked again')
+    c.tap('.f-modal [data-ok]')
+    d = cf_doc(c, lambda d: 'started' in d and d['started'] is None and 'progress' in d and d['progress'] is None,
+               'started = null and progress = null (null, not removed)')
+    c.until(f"!!document.querySelector('{FUEL} [data-startrow] [data-do=start]')", what='« Démarrer le vol » is offered again')
+
+
 @case('F77', 'The route text stays the same after two returns from the Map, with a SID whose published name has a space', 'F', tags=('fuel', 'maps'),
       designs=('standard',), screens=False, langs4=True,
       rule='V3 spec 10.31 (BUGS SOG walk, 30 Oct: « LFBO AMOLO 7A AMOLO 7A AMOLO DCT AMB … » after two returns): procsToText is idempotent, '
