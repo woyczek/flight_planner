@@ -348,38 +348,22 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
   return L;
 }
 
-/** Écrit des lignes de morceaux dans le rectangle r : liseré du fond, puis le texte, souligné ou surligné (SPEC § 5). */
-export function drawLines(ctx, lines, r, col) {
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'left';
-  ctx.lineJoin = 'round';
-  lines.forEach((line, k) => {
-    const y = r.y0 + k * LINE_H + LINE_H / 2;
-    let x = r.x0;
-    for (const c of line.parts) {
-      ctx.font = `${c.b ? 700 : 600} 11px Arial,sans-serif`;
-      const w = ctx.measureText(c.t).width;
-      ctx.strokeStyle = S.theme.bg;
-      ctx.lineWidth = 3;
-      ctx.strokeText(c.t, x, y);
-      ctx.fillStyle = c.m ? S.theme.muted || col : col;
-      ctx.fillText(c.t, x, y);
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = col;
-      if (c.u || c.o) {
-        ctx.beginPath();
-        if (c.u) {
-          ctx.moveTo(x, y + 7);
-          ctx.lineTo(x + w, y + 7);
-        }
-        if (c.o) {
-          ctx.moveTo(x, y - 7);
-          ctx.lineTo(x + w, y - 7);
-        }
-        ctx.stroke();
-      }
-      x += w;
-    }
+/** Écrit des lignes de morceaux dans le rectangle r (la cartouche du noyau, sans cadre : un liseré du fond autour du texte), souligné
+ *  ou surligné (SPEC § 5). */
+function drawLines(ctx, lines, r, col) {
+  MapsRender.cartouche(ctx, r, {
+    lineH: LINE_H,
+    halo: S.theme.bg,
+    rows: lines.map(line => ({
+      runs: line.parts.map(c => ({
+        t: c.t,
+        color: c.m ? S.theme.muted || col : col,
+        font: `${c.b ? 700 : 600} 11px Arial,sans-serif`,
+        u: c.u,
+        o: c.o,
+        deco: col
+      }))
+    }))
   });
 }
 /** Dessine la mise en page L (layout) par-dessus la route : traits (liseré du fond puis la teinte de la procédure), points,

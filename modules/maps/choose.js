@@ -725,43 +725,38 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
       c.fillStyle = L.ad.col;
       c.fillText(L.ad.text, L.ad.x, L.ad.y);
     }
-    c.textBaseline = 'middle';
-    c.textAlign = 'left';
-    // les cartouches des familles, petites et estompées ; la surlignée en dernier, au-dessus de tout, son nom complet
+    // les cartouches des familles, petites et estompées ; la surlignée en dernier, au-dessus de tout, son nom complet (la primitive
+    // du noyau, R-M5)
     for (const g of [...L.groups, ...(L.hl ? [L.hl] : [])]) {
       if (g.hidden || !g.r) continue;
-      const lh = g.full ? LINE_H : LINE_SM;
-      c.font = g.full ? '700 11px Arial,sans-serif' : '600 10px Arial,sans-serif';
-      c.globalAlpha = g.full ? .96 : .8;
-      c.fillStyle = S.theme.bg;
-      c.fillRect(g.r.x0, g.r.y0, g.r.x1 - g.r.x0, g.r.y1 - g.r.y0);
-      c.globalAlpha = g.full ? 1 : .85;
-      c.lineWidth = 1;
-      c.strokeStyle = g.full ? hueOf(g.rows[0]) : S.theme.grid;
-      c.strokeRect(g.r.x0 + .5, g.r.y0 + .5, g.r.x1 - g.r.x0 - 1, g.r.y1 - g.r.y0 - 1);
-      g.rows.forEach((it, i) => {
-        const y0 = g.r.y0 + PAD + i * lh,
-          y = y0 + lh / 2,
-          text = cartText(it, g);
-        let x = g.r.x0 + PAD + 1;
-        if (it.chosen) {
-          c.fillStyle = MapsRender.withAlpha(hueOf(it), .16);
-          c.fillRect(g.r.x0 + 1, y0, g.r.x1 - g.r.x0 - 2, lh);
-        }
-        c.fillStyle = hueOf(it);
-        c.fillRect(x, y - 3.5, 7, 7);
-        x += 12;
-        c.fillText(text, x, y);
-        x += c.measureText(text).width + 4;
-        if (it.old) {
-          c.fillStyle = S.theme.muted;
-          c.fillText('⌛', x, y);
-          x += c.measureText('⌛').width + 4;
-        }
-        if (it.why.length) {
-          c.fillStyle = S.theme.warn;
-          c.fillText('⚠', x, y);
-        }
+      const font = g.full ? '700 11px Arial,sans-serif' : '600 10px Arial,sans-serif';
+      MapsRender.cartouche(c, g.r, {
+        fill: S.theme.bg,
+        fillAlpha: g.full ? .96 : .8,
+        alpha: g.full ? 1 : .85,
+        frame: g.full ? hueOf(g.rows[0]) : S.theme.grid,
+        pad: PAD,
+        inset: 1,
+        lineH: g.full ? LINE_H : LINE_SM,
+        rows: g.rows.map(it => ({
+          band: it.chosen ? MapsRender.withAlpha(hueOf(it), .16) : null,
+          swatch: hueOf(it),
+          runs: [{
+            t: cartText(it, g),
+            color: hueOf(it),
+            font,
+            gap: 4
+          }, ...(it.old ? [{
+            t: '⌛',
+            color: S.theme.muted,
+            font,
+            gap: 4
+          }] : []), ...(it.why.length ? [{
+            t: '⚠',
+            color: S.theme.warn,
+            font
+          }] : [])]
+        }))
       });
     }
     c.restore();

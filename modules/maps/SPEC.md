@@ -119,6 +119,30 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   It returns the frames it drew for the tooltips and the gestures: `airways [{ x, y, r, g }]`, `labels`, `barbs`,
   `navaids [{ n, x, y, merged }]`, `aerodromes [{ a, x, y }]`, `vrps`, `tocTod`, and `zoom { shifted, effective, tier,
   kept }` (`kept.byKey` per family).
+- **Target form of the labels (refactor R-M2 + R-M5, § 10.33).** Three lots, pushed apart:
+  - **(a) one boxed-label primitive** in the render kit, `MapsRender.cartouche(ctx, r, { runs, hue, swatch, full, alpha })`
+    (a frame, a halo, text runs `{ text, color, weight }`, an optional hue swatch, the full or faded look), the only drawer of
+    the procedure labels (`procs.js`), the choose mode's labels (`choose.js`) and the airway boxes (`render_airspace.js`); the
+    procedures' hues `PALETTE.sid / star / app` read the design tokens `--sog-map-sid / -star / -app` (Features SOG, R-F3), the
+    hex values staying only as the fallback when a token is missing.
+  - **(b) every layer declares its labels** instead of taking the placer itself: `{ layer, prio, key, anchor, boxes: [rect, …],
+    paint(ctx, rect) }` — `boxes` the candidate rectangles in the layer's own order of preference (its sliding along the anchor),
+    `paint` writes the label in the rectangle the pass gives; `many()` of `data.js` deduplicates the answers of aerodb **by a key
+    per kind** (airspace `key`, airway segment `route|a|b`, aerodrome `icao`, navaid / point / VRP `id@lat,lon`, town `name@lat,lon`)
+    instead of by object identity (which frozen copies defeat), so `drawAirways` no longer deduplicates for it.
+  - **(c) one collision pass** (`MapsRender.labelPass(requests, placer)`) replaces the placements scattered in the parts: every
+    request of every layer, sorted by **the closed priority list** below (stable inside a rank: the layer's own order), each
+    takes its first free candidate or is left out; then the layers paint in their drawing order (§ 3), each label at the rectangle
+    it was given. The vertical profile goes through the same pass with its own list (TOC / TOD, levels, constraints, the spaces
+    entered, the fixes, the other spaces).
+  - **The closed priority list** (the user's arbitration of 30 Oct 2026; no number scattered in the layers): 1. the aerodrome's
+    name (code, and name from `runwayZoom`); 2. the runway numbers at the threshold; 3. the navaids' boxes; 4. the procedures'
+    labels (the highlighted procedure, then the chosen ones, then the touched family, then the others); 5. the route's points
+    (names, levels, ETA) and the cartouches of the airways the path follows; 6. the rest, in this order: airway boxes off the
+    path, airway fixes, VRP, airspace names, MORA, towns, mission points and zones.
+  - **What a zoom hides is said by the zoom rule**: a label left out at a zoom because of its kind is the profile's threshold of
+    that element (`map_profiles.json`, `runwayZoom`, the tuning page's thresholds § 14), never a pixel or zoom threshold hidden in
+    a layer; what remains in a layer is geometry (a label longer than its segment is not written).
 - **Overview rule** (under 120 px per degree): only aerodromes and VOR / TACAN within 15 NM of the route, airways whose
   middle is within 30 NM, no obstacles. Closer views show everything the profile allows.
 - **Density** (`tierOf(px per degree)`: far under 80, mid under 300, near beyond, computed on the effective zoom § 6.6;

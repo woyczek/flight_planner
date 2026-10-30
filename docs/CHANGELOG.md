@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: one cartouche primitive, the procedures' hues from the design tokens, refactor without change of behaviour (R-M5 a,
+  § 10.33)** (`modules/maps/render.js`, `procs.js`, `choose.js`, `render_airspace.js`; SPEC § 3 target form of the labels,
+  DECISIONS; noreg D83). `MapsRender.cartouche` draws the procedure labels, the choose mode's labels and the airway boxes (the same
+  pixels on four real scenes); `PALETTE.sid / star / app` read `--sog-map-*` (Features SOG, R-F3).
+
 - **Administration: « Mise à jour de la suite »** (`tools/suite_update.py`, `tools/launch.py`, `frame/settings/launcher.js`;
   frame/settings SPEC 9a-bis, DECISIONS, frame INTEGRATION; help ×4; noreg I25, A51) — stable, pre-releases or the development
   branch; the plan first, forward only, refused on local changes; the launcher to restart by hand; the data never touched.

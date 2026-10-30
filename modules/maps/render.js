@@ -58,11 +58,113 @@
         accent: v('--sog-accent', '#1d6fd8'),
         ok: v('--sog-ok', '#1e7d32'),
         warn: v('--sog-warn', '#9a5b00'),
-        err: v('--sog-err', '#b3261e')
+        err: v('--sog-err', '#b3261e'),
+        // teintes des procédures (Features SOG, R-F3) : la palette les prend, ses valeurs en hex ne sont que le repli
+        map: {
+          sid: v('--sog-map-sid', ''),
+          star: v('--sog-map-star', ''),
+          app: v('--sog-map-app', '')
+        }
       },
       rgb = rgbOf(t.bg) || [255, 255, 255];
     t.dark = (.2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2]) / 255 < .45;
+    MAP_TOK = t.map;
     return t;
+  }
+  /** Les teintes des procédures lues par le dernier tokens() (au montage et à chaque changement de thème, l'événement du cadre). */
+  let MAP_TOK = null;
+  // ---------------------------------------------------------------- la cartouche (refonte R-M5, SPEC § 3)
+  /** Le seul dessinateur des étiquettes encadrées de la Carte (les procédures, le mode « choisir sur la carte », les voies) : r
+   *  { x0, y0, x1, y1 } (dans le repère de at quand il est donné) ; o : at { x, y, angle } (posée tournée autour de ce centre),
+   *  margin { px, color } (un liseré plein autour), fill et fillAlpha (le fond), alpha (le cadre et le contenu), frame (un trait d'un
+   *  pixel à l'intérieur), pad (marge du haut et de gauche), inset (décalage des lignes), lineH, rows [{ runs: [{ t, color, font, u, o,
+   *  gap, deco }], swatch (l'échantillon de teinte), band (le fond de la ligne), y (sa hauteur, sinon celle de son rang), center (la
+   *  ligne centrée) }], halo (le liseré du texte, 3 px), decoW (l'épaisseur des soulignés). */
+  function cartouche(ctx, r, o = {}) {
+    const {
+      at = null,
+        margin = null,
+        fill = null,
+        fillAlpha = 1,
+        alpha = 1,
+        frame = null,
+        pad = 0,
+        inset = 0,
+        lineH = 16,
+        rows = [],
+        halo = null,
+        decoW = 1.5
+    } = o,
+    w = r.x1 - r.x0,
+      h = r.y1 - r.y0;
+    ctx.save();
+    if (at) {
+      ctx.translate(at.x, at.y);
+      if (at.angle) ctx.rotate(at.angle);
+    }
+    if (margin) {
+      ctx.fillStyle = margin.color;
+      ctx.fillRect(r.x0 - margin.px, r.y0 - margin.px, w + 2 * margin.px, h + 2 * margin.px);
+    }
+    if (fill) {
+      ctx.globalAlpha = fillAlpha;
+      ctx.fillStyle = fill;
+      ctx.fillRect(r.x0, r.y0, w, h);
+    }
+    ctx.globalAlpha = alpha;
+    if (frame) {
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = frame;
+      ctx.strokeRect(r.x0 + .5, r.y0 + .5, w - 1, h - 1);
+    }
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.lineJoin = 'round';
+    rows.forEach((row, k) => {
+      const y0 = r.y0 + pad + k * lineH,
+        y = row.y ?? y0 + lineH / 2;
+      if (row.band) {
+        ctx.fillStyle = row.band;
+        ctx.fillRect(r.x0 + 1, y0, w - 2, lineH);
+      }
+      let x = r.x0 + pad + inset;
+      if (row.center) {
+        const tw = row.runs.reduce((a, c) => (ctx.font = c.font, a + ctx.measureText(c.t).width), 0);
+        x = (r.x0 + r.x1) / 2 - tw / 2;
+      }
+      if (row.swatch) {
+        ctx.fillStyle = row.swatch;
+        ctx.fillRect(x, y - 3.5, 7, 7);
+        x += 12;
+      }
+      for (const c of row.runs) {
+        ctx.font = c.font;
+        const tw = ctx.measureText(c.t).width;
+        if (halo) {
+          ctx.strokeStyle = halo;
+          ctx.lineWidth = 3;
+          ctx.strokeText(c.t, x, y);
+        }
+        ctx.fillStyle = c.color;
+        ctx.fillText(c.t, x, y);
+        if (c.u || c.o) {
+          ctx.lineWidth = decoW;
+          ctx.strokeStyle = c.deco || c.color;
+          ctx.beginPath();
+          if (c.u) {
+            ctx.moveTo(x, y + 7);
+            ctx.lineTo(x + tw, y + 7);
+          }
+          if (c.o) {
+            ctx.moveTo(x, y - 7);
+            ctx.lineTo(x + tw, y - 7);
+          }
+          ctx.stroke();
+        }
+        x += tw + (c.gap || 0);
+      }
+    });
+    ctx.restore();
   }
   /** Jetons du dessin en cours (draw : opts.theme, sinon lus) ; paper() : fond des dessins (halos, cartouches). */
   let T = null;
@@ -196,8 +298,23 @@
   };
   Object.freeze(PALETTE.day);
   Object.freeze(PALETTE.night);
-  /** Palette du jour ou de la nuit (dark : les jetons du design le disent). */
-  const palette = dark => dark ? PALETTE.night : PALETTE.day;
+  /** Palette du jour ou de la nuit (dark : les jetons du design le disent) ; SID, STAR et approche prises aux jetons --sog-map-* du
+   *  thème en cours (refonte R-M5), une palette fusionnée par jeu de jetons lus. */
+  const merged = new WeakMap();
+  const palette = dark => {
+    const base = dark ? PALETTE.night : PALETTE.day,
+      m = MAP_TOK;
+    if (!m || !(m.sid || m.star || m.app)) return base;
+    let p = merged.get(m);
+    if (!p) merged.set(m, p = {});
+    const k = dark ? 'night' : 'day';
+    return p[k] ||= Object.freeze({
+      ...base,
+      sid: m.sid || base.sid,
+      star: m.star || base.star,
+      app: m.app || base.app
+    });
+  };
 
   // ---------------------------------------------------------------- profil d'affichage
   /** Réglages par défaut d'un élément (ceux du profil « IFR simplifié » du studio). */
@@ -1134,6 +1251,7 @@
     trackOf,
     withAlpha,
     wrapLon,
+    cartouche
   };
   // gelé (§ 10.29 e) : les parties y lisent des aides, n'y rangent rien ; leurs dessins sont dans MapsRender.parts
   Object.freeze(K);
@@ -1403,6 +1521,7 @@
   }
 
   window.MapsRender = {
+    cartouche,
     vrpRotary,
     vrpColor,
     routeProfile,

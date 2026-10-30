@@ -19,7 +19,8 @@
     rad,
     trackOf,
     withAlpha,
-    wrapLon
+    wrapLon,
+    cartouche
   } = R.kit;
 
   // ---------------------------------------------------------------- choix des espaces le long de la route
@@ -307,41 +308,52 @@
         r,
         g
       });
+      // la cartouche de la voie (la primitive du noyau, R-M5) : son nom en blanc sur sa couleur, tournée le long du tronçon ; la route
+      // interrompue : un liseré du fond autour ; une seule ligne sous elle : la distance (couleur de la voie), puis le niveau minimal
+      // (rouge), « 22 · F065 »
       const paint = () => {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(ang);
-        if (along) { // la route interrompue : un liseré du fond autour du cartouche
-          ctx.fillStyle = env.theme.bg;
-          ctx.fillRect(-w / 2 - 2 * scale, -f * .7 - 2 * scale, w + 4 * scale, f * 1.4 + 4 * scale);
-        }
-        ctx.fillStyle = col;
-        ctx.fillRect(-w / 2, -f * .7, w, f * 1.4);
-        ctx.font = `700 ${f}px Arial,sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = env.theme.bg;
-        ctx.fillText(g.route, 0, 0);
-        // une seule ligne sous le cartouche : la distance (couleur de la voie), puis le niveau minimal (rouge), « 22 · F065 »
-        if (sub.length) {
-          ctx.font = `700 ${f * .85}px Arial,sans-serif`;
-          const parts = nm && sub.length > 1 ? [
-              [nm, col],
-              [' · ', col],
-              [sub[1], env.pal.airwayLevel]
-            ] : [
-              [sub[0], nm ? col : env.pal.airwayLevel]
-            ],
-            tw = parts.reduce((a, [t]) => a + ctx.measureText(t).width, 0);
-          let px = -tw / 2;
-          ctx.textAlign = 'left';
-          for (const [t, cl] of parts) {
-            ctx.fillStyle = cl;
-            ctx.fillText(t, px, f * 1.35);
-            px += ctx.measureText(t).width;
-          }
-        }
-        ctx.restore();
+        const small = `700 ${f * .85}px Arial,sans-serif`,
+          parts = !sub.length ? [] : nm && sub.length > 1 ? [
+            [nm, col],
+            [' · ', col],
+            [sub[1], env.pal.airwayLevel]
+          ] : [
+            [sub[0], nm ? col : env.pal.airwayLevel]
+          ];
+        cartouche(ctx, {
+          x0: -w / 2,
+          y0: -f * .7,
+          x1: w / 2,
+          y1: f * .7
+        }, {
+          at: {
+            x,
+            y,
+            angle: ang
+          },
+          margin: along ? {
+            px: 2 * scale,
+            color: env.theme.bg
+          } : null,
+          fill: col,
+          rows: [{
+            center: true,
+            y: 0,
+            runs: [{
+              t: g.route,
+              color: env.theme.bg,
+              font: `700 ${f}px Arial,sans-serif`
+            }]
+          }, ...(parts.length ? [{
+            center: true,
+            y: f * 1.35,
+            runs: parts.map(([t, cl]) => ({
+              t,
+              color: cl,
+              font: small
+            }))
+          }] : [])]
+        });
       };
       if (along) ends.over.push(paint);
       else paint();

@@ -1729,6 +1729,12 @@ mode's wind line its bearing, as Fuel does; `magVarOf` indexes the aerodromes on
 drawers of boxed labels with their own fonts, paddings and line heights (`LINE_H`, `LINE_SM`); `procLabel` per procedure outside
 the mode, `cartText` per family inside; `drawLines` exported from `procs.js` for the first choose mode, used nowhere else.
 Target: one boxed-label primitive in the render kit (text runs, hue, full / faded), used by the three.
+Done (R-M5 a, 30 Oct): `MapsRender.cartouche(ctx, r, o)` in the render kit draws the three — `procs.js drawLines` (no frame, a
+halo, underlined / overlined runs), `choose.js L.top` (fill, frame, swatch, chosen band, ⌛ ⚠), the airway boxes of
+`render_airspace.js` (turned, filled, the line below) — each with its own metrics, so nothing moves: the canvas of four real
+scenes (LFBO with AMOLO 7A chosen, the choose mode at LFBO, the low-airway map at Toulouse with 17 boxes and at Paris with 10)
+hashes the same before (e70eacb38) and after. `PALETTE.sid / star / app` read `--sog-map-*` through `tokens()` (at mount and at
+each change of theme), the hex values a fallback. Noreg D83.
 
 **6. Flown trail** (`flight_time.js`). a158edbe5 trail read from `progress.actual.trail` → f7bad9970 bounds and `TRAIL_MAX`
 slice → 0bbe7ebbb (V3 Frame) device-local `ctx.live.trail()`. Left: the Map still merges the frame's trail with its own

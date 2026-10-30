@@ -2198,3 +2198,31 @@ def d82(c):
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
     c.ok(r['fail'] == 0 and r['pass'] >= 30, f"{r['pass']} passed, {r['fail']} failed. First failures: {[x for x in (r['rows'] or []) if not x['ok']][:3]}",
          'every check of the bench passes')
+
+
+# ------------------------------------------------------------------------------------------------------ D83
+_CART_SPY = """() => { const R = window.MapsRender, o = R.cartouche; window.__cart = 0; if (!o.__spy) { R.cartouche = function (...a) { window.__cart++; return o.apply(this, a) };
+  R.cartouche.__spy = true } return true }"""
+
+
+@case('D83', 'One boxed-label primitive draws the Map’s cartouches; the procedures’ hues read the design tokens', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False,
+      rule='refactor R-M5 (a), § 10.33: MapsRender.cartouche is the one drawer of the procedure labels, the choose mode’s labels and the airway boxes; PALETTE.sid / star / app read --sog-map-sid / -star / -app (Features SOG, R-F3), read again at each change of theme, the hex values only a fallback')
+def d83(c):
+    _ch_open(c, {'rwy': '31'}, file=_CH_FILE)
+    # the primitive: a filled frame and a text, in a rectangle
+    px = c.js("""() => { const cv = document.createElement('canvas'); cv.width = cv.height = 60; const g = cv.getContext('2d');
+      MapsRender.cartouche(g, { x0: 5, y0: 5, x1: 55, y1: 25 }, { fill: '#ff0000', frame: '#0000ff', pad: 3, rows: [{ runs: [{ t: 'AB', color: '#00ff00', font: '700 11px Arial' }] }] });
+      const at = (x, y) => [...g.getImageData(x, y, 1, 1).data].slice(0, 3); return { fill: at(50, 20), frame: at(5, 15), out: at(58, 58) } }""")
+    c.eq([px['fill'], px['frame'], px['out']], [[255, 0, 0], [0, 0, 255], [0, 0, 0]], 'a fill, a frame of one pixel, nothing outside', what='primitive')
+    # the choose mode's labels go through it
+    c.js(_CART_SPY)
+    c.js("async () => (await import('/modules/maps/draw.js')).schedule()")
+    c.until("() => window.__cart > 0", timeout=6000, what='the choose mode’s labels drawn by the primitive')
+    # the tokens: the default is the token, a changed token changes the palette at the next reading of the theme
+    t = c.js("""() => { const d = document.documentElement, P = () => MapsRender.palette(false);
+      const before = [P().sid, getComputedStyle(d).getPropertyValue('--sog-map-sid').trim()];
+      d.style.setProperty('--sog-map-sid', '#123456'); MapsRender.tokens(); const after = P().sid;
+      d.style.removeProperty('--sog-map-sid'); MapsRender.tokens(); return { before, after, back: P().sid } }""")
+    c.eq(t['before'][0].lower(), t['before'][1].lower(), 'the SID hue is the design token', what='default SID hue')
+    c.eq([t['after'].lower(), t['back'].lower()], ['#123456', t['before'][1].lower()], 'a changed token is read at the next reading of the theme', what='changed token')
