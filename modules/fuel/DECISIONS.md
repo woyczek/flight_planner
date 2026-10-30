@@ -4,6 +4,452 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — the route field completes at the cursor** (§ 10.31 part 4). A module of its own (`routecomplete.js`) on the
+  pattern of `adnames.js` rather than a generalised component: the two share the CSS (`.fu-sug`, `.fu-sugitem`) and the gestures,
+  not the sources (aerodromes only there; procedures, airways, points here). Airways are proposed by name around the previous
+  point (the base has no airway name index; a bbox query is cheap once the zone is open). Case F75. To merge into one component
+  in the inventory if a third field needs it.
+- **30 Oct 2026 — A34 « pas de voie près de LACOU » was a wrong reason** (user's answer 1 of § 10.31). Diagnosed on the real base
+  (read only): A34 is complete (AGN LACOU RUMEL BUGUS PERIG MAVAC LMG …, 91.3 NM along it for 91.4 NM direct), every segment from
+  6 500 ft to FL195; the user's flight is at FL260, so A34 (and G39, T258 at LACOU) are closed for that leg. The base is not at
+  fault. Rule agreed: the line names the airway joining the two points and its open band (`RG.joiningAirway`), the leg stays
+  direct; no heuristic that follows a closed airway (it would write a route that cannot be filed). Case F74 on invented segments.
+- **30 Oct 2026 — the points list groups the procedures** (the user confirmed the objection recorded in § 10.31: « une procédure
+  pourrait être un point comme un autre » in the text, never in the point list). One folded `<details>` row per chosen procedure,
+  in the Map's hue (copied from modules/maps/render.js PALETTE: sid, star, app — a shared token would be better, noted for the
+  inventory); the exit / entry the text now carries are shown in their group. The aerodrome name in the summary line keeps an
+  ellipsis on a phone (Simplification). F26 made deterministic (set_icao waits for the field on screen). Case F73.
+- **30 Oct 2026 — the procedure card opens folded** (§ 10.31, user's answer 2): two summary lines, one side unfolded at a time.
+  Folded rows are hidden with `visibility: hidden; height: 0`, not `display: none`: the grid keeps the columns of both sides (F34's
+  « one grid ») and the selects stay out of reach. A side without data is never folded (the reading is its only gesture). The
+  tests open a side before a pick (`unfold`, `pick_proc`, `wait_rows`); F35 keeps the focus on the open side while the folded one
+  changes. The AD name stays in the line (the user asked for it on 29 Oct). Case F72.
+- **30 Oct 2026 — the aerodrome name rule moves to frame/lib/adnames.js** (Simplification: the Map needs « LFPO Paris-Orly » at the
+  pin, § 10.30 fourth reading). The pure part only (`adLabel`, `adTitle`, `adLine`); the completion and the drawing stay in
+  modules/fuel/adnames.js, which imports it, as does the procedure card's title. The base has no city field: the rule takes one when
+  a record carries it, and invents nothing; the elevation is not part of the label. Bench F71.
+- **30 Oct 2026 — § 10.31 parts 2 and 3, the text is a view of the procedures** (user: « on doit pouvoir modifier le FPL après
+  sélection SID / STAR »). The text follows the model at every settled choice and once the records are drawn; it is read back when
+  the pilot leaves the field (not while typing: no choice flickers). The names are matched on the main records of the two
+  aerodromes (a waypoint never ends with a digit and a letter the way a procedure does). The exit / entry is written only when no
+  point of the procedure (transition included) is on the route: the join is then at the first common point (expandedPath, § 10.20).
+  DCT is opt-in in `textFromTokens` (Fuel's field), so routing.js keeps its « PT1 UN460 PT2 » texts. A chosen SID whose name the
+  pilot deleted is cleared — the old flights get the names written at their first drawing, so an edit never clears a choice the
+  text did not show. The Map's ranking of SIDs by exit uses `compatible({ route })`. Cases F69 (bench), F70; F28 adapted.
+- **30 Oct 2026 — a typed airway is never a point** (user: « LFBO … GILUX A3 MOTAL J18 KOTAP LFPO » gave 1 871 NM and a trace to
+  Gibraltar, « transitoire et inexplicable »). Diagnosis on the user's flight (read only): `route.points` held { id: 'A3', 36.05 N
+  5.30 W }: routePoints asked `aerodb.coords()` for every name-shaped word, and some point of the base carries the identifier A3. The
+  ergonomics reading (an expansion along A3 into Spain) was not the cause: routing.js never expands a typed airway. Rule agreed with
+  Simplification: an airway-shaped word between two named points is an airway when the base has one of that name near A; a point
+  of the base never wins against it; without such an airway the identifier stays a point. A typed airway is followed along its
+  own nodes in the leg's corridor (`RG.along`), else the leg is direct with one line. No « follow the airway anyway » heuristic (it
+  would write a route that cannot be filed). Case F68 with the user's exact text on invented positions; it fails without the fix.
+- **30 Oct 2026 — § 10.31 part 1, Auto idempotent** (user, LFBO → LFPO: successive Autos made a loop through Spain, and « LACOU
+  LMG n'est toujours pas trouvée »). Two causes. (1) The SID exit was inserted right after the departure, before the SID's name
+  (« LFBO LACOU LACOU7B LMG »): the leg LACOU → LMG was never adjacent, never routed. It is now written after the name. (2) Every
+  word of a previous Auto stayed a constraint, and a stale `via` on a pinned point blocked its leg: Autos stacked. The provenance
+  is now kept with the route (`route.auto.seq`, aligned by longest common subsequence in `route_text.js provenance`, so a word the
+  pilot adds or removes shifts nothing); generated words are dropped before routing, `via` is re-derived from the pinned airway
+  words, the intermediate points of a generated airway go with it. Rejections: a loop (a node already on the route), then the
+  most stretched legs while the chain exceeds `detourPct`. The reason of a direct leg is in the line (four texts). The text keeps
+  no « DCT » for now: the ICAO rendering with DCT comes with part 2 (the text as a view of the model). F8 updated (a second Auto
+  recomputes and says so), F28 extended (SID name in the text), F67 new.
+- **30 Oct 2026 — § 10.30 fourth reading, the SIA's initial approach segments** (user at LFPO: six identical rows « INA RNAV RWY
+  06 »): an APP record that never reaches a runway threshold, or named « INA », is a transition (`isAppTransition`). A segment named
+  like a final stays that final's own (the CIFP way: ILS09 via VA201); a segment no final names is shared by every final serving its
+  runway (the SIA way). Consequence: entry records that loop without a runway are segments, no longer rows (bench updated). Labels:
+  the type and the runway; the SIA letter only when two finals collide, then the first point. The junction rule moves into
+  `chainOf` for appTrans → app only (BUGS SOG agreed not to touch it meanwhile). No AIP data in the repository: the benches and the
+  fixture LFVE are invented records of the same shape as LFPO's. Cases F66, F26 (« via IC301 »); benches procedures (55), current_flight (81).
+- **30 Oct 2026 — § 10.30 third reading, the wind arrows turned and three colours** (user: « on atterrit toujours à contre-vent, la
+  flèche vers le bas ; vert / orange / rouge »): `label()` now says where the wind blows in the runway's frame (↓ head, ↑ tail, ←
+  from the right, → from the left), which reverses the arrows of 25b887349. `severity()` and `LIMITS` join wind.js, the Map reads
+  the same call. In Fuel the option and the summary's runway take `wind-ok | wind-warn | wind-alert` on `--sog-ok / --sog-warn /
+  --sog-err` (no hard-coded colour, the fallbacks removed); the reasons: a tail wind (any, then over 5 kt), a crosswind over 10 kt,
+  over 20 kt or over the sheet's limit. A sheet limit replaces only `cross`, never `crossWarn`. F64, F65, benches F62 and F32.
+- **30 Oct 2026 — the side's title reads summaryOf** (§ 10.30, second reading): one `.fu-procsum` line under the title, one span per
+  part (runway with its wind, procedure via its transition, approach via its transition), separated by space, not by a character
+  (the wind label already holds « · »). The wind is `runwayWind` of the chosen runway (it now returns the components `c` too). The
+  title is patched at every paint, so the summary follows each choice. F34 leaves the summary out of the title it compares; F65
+  checks it.
+- **30 Oct 2026 — § 10.30 second reading, the rules first** (Simplification, after the user's test of af261d3e3; BUGS SOG waits for
+  them): `familyOf`, `siblingsOf`, `familiesOf`, `compatible`, `summaryOf` in frame/lib/procedures.js, pure, benched (F32). A family
+  needs two suffixes among the aerodrome's records (`familyOf` alone is only a form). A STAR joins an approach when it serves one of
+  its runways, never by point continuity (§ 10.23). `summaryOf` keeps « Aucune » to the caller (null) and joins with « via », the same
+  word in the four languages; the wind is the label of wind.js. Fuel's side title reading summaryOf comes next.
+- **30 Oct 2026 — § 10.30, the Map's return in one trip and the wind on each runway** (Simplification, keys confirmed with BUGS SOG):
+  the address keys are `rwy sid star app apptrans`, lower case, only those (no SID / STAR transition): `trans` and `appTrans` are
+  no longer consumed; `apptrans` is mapped to the field `appTrans`. `applyProposal` makes its choices quietly (`choose(k, v, true)`:
+  route.procedures changed, nothing drawn), then draws once and arms the single deferred write (`settleSoon`); one change line for
+  the side. Nothing admitted → nothing written, nothing said. Wind: `frame/lib/wind.js` gains `label()` so that the Map and Fuel print
+  the same text (arrows where the wind comes from: ↑ head, ↓ tail, ← / → crosswind). The METAR is the one of the Départ step
+  (`WX.station(metar, null)`: never the TAF of the flight time), taken from `S.wx` through the card's host (`wind(icao)`); the true
+  axis is the runway record's `true`, else `qfu` (or the number × 10) + the aerodrome's `magVar` (`wxAd`). Orange: tail over 5 kt;
+  crosswind over the sheet's `maxCrosswindKt` — no sheet carries this field and the editor does not offer it: the rule is ready,
+  the field is for a later lot. The card is drawn again when the weather arrives (`S.P.render()` after `renderWx()`). Cases F63, F64.
+- **30 Oct 2026 — § 10.30, the rules first** (the Map's pane depends on them): `runwayOf` and `firstServing` added to
+  frame/lib/procedures.js; frame/lib/wind.js `components()` (head / tail and cross wind on a runway, true directions, rounded to the
+  knot; null for a missing or variable wind). Benches procedures.html (F32) and wind.html (F62); wind.js in frame/sw.js. Fuel's
+  consumption of several keys in one trip and the wind suffix of its runway list come next.
+- **30 Oct 2026 — control characters out of the .pln** (security review of 99d28acd0): `escText` of frame/lib/fms.js removes the
+  characters XML 1.0 forbids (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F) before escaping, so a damaged aerodrome or point
+  name never makes a file MSFS refuses (`escAttr` goes through it). Bench fms.html: one more check (fails without the change).
+- **29 Oct 2026 — flight plan export to the simulators, first step: the download** (V3 § 10.28, user: « Prévoir un export .fms à
+  minima (deux formats pour xplane), voire le pousser direct dans le dossier ad hoc sur X-Plane. Prévoir un export msfs2024/2020 »).
+  Pure writers in `frame/lib/fms.js` (`toFmsV3`, `toFms1100`, `toPln`, `fileName`, `exportOf`, `airacOf`, `lla`; bench
+  `frame/lib/test/fms.html`, case F60); in step 5 Departure a card « Plan de vol pour le simulateur » with three text buttons
+  (« .fms (XP 11/12) », « .fms (XP 10) », « .pln (MSFS) », 44 px, disabled with the reason as title when the route has fewer than two
+  placed points) that download the file by a Blob and a temporary `<a download>`, named `LFRS-LFML_2026-10-30.fms` (case F61). The
+  card sits in step 5, not in the sticky result (which must stay under 120 px, F2) and not near the Vol / Départ aerodrome lines
+  another session is editing. **Sending the file straight into X-Plane's `Output/FMS plans/` is not in this lot**: it will be a
+  verb of the launcher (workstation only); the download is the first step and the only one that works in a browser. What the
+  files contain and what was a choice:
+  - **Path.** Fuel gives the writers `CF.expandedPath(flight, procs)` (route + chosen procedures, read by `CF.loadProcedures`
+    when not yet read) and `{ procs, names, kinds }`. `.fms` version 3 has no field for procedures, so it gets the whole flown path
+    (SID and STAR points included, no runway threshold, no missed approach). `.fms` 1100 and `.pln` get the route's points only
+    (`origin === 'route'`) plus the procedures by name: X-Plane and MSFS expand them themselves; writing both would draw them twice.
+  - **Altitude.** Airports 0 (or the elevation when the path carries one); a route point the planned level, or its own `alt_ft`
+    step, which then holds for the following points; a procedure point (version 3 only) its constraint when it has one, else 0.
+  - **Point types.** Departure and arrival are airports (type 1); otherwise the point's `kind` / `type`, then `opts.kinds[id]`
+    (Fuel asks `aerodb.find` for ids of at most four letters: a navaid whose name starts « NDB » is 2, any other navaid 3), then
+    28 for an id that is a written coordinate (`4830N`, `N48E002`…), else 11. **Not sure**: the route points do not carry their kind,
+    so a VOR or an NDB that aerodb does not find is written as a fix (11), which X-Plane resolves by identifier and position.
+  - **`.fms` version 3.** `I`, `3 version`, `1`, count minus one, then `type ident alt lat lon`; altitude and coordinates with six
+    decimals and a dot, as X-Plane writes them. Line ends are **CR LF** in every file (X-Plane and MSFS read both; Windows is where
+    these files live).
+  - **`.fms` 1100.** Header `I`, `1100 Version`, `CYCLE`, then `ADEP`, `DEPRWY RWnn`, `SID`, `SIDTRANS`, `ADES`, `DESRWY`, `STAR`,
+    `STARTRANS`, `APP`, `APPTRANS`, each line omitted when it has no value; `NUMENR n` counts every following line, the ADEP and ADES
+    lines included (as X-Plane writes it); lines `type ident via alt lat lon`, `via` = `ADEP`, `ADES`, the airway that reaches the
+    point, else `DRCT`. **Cycle**: the AIRAC ident (`2611`: year, then the cycle's number in the year, counted from the cycle that
+    starts in the first 28 days of January) of the chosen records' `source.cycle` (either `2610` or a date), else of the flight's day
+    (`airacOf`: 2601 starts 22 Jan 2026). **Not sure**: names are `nameOf(record)` without spaces or dots, so an approach named
+    « ILS Z RWY 25L » is written `ILSZRWY25L`, whereas X-Plane's own navdata calls it `I25L`; X-Plane may not match it, and the
+    runway and the transition are what it reliably reads. A transition is the record's `transition`, else the fifth field of its
+    identifier; `NONE` and `ALL` are not written.
+  - **`.pln`** (AceXML). Document, `Descr`, `FlightPlan.FlightPlan` with Title « DEP to ARR », `FPType` IFR, `RouteType` HighAlt
+    above 18 000 ft else LowAlt, `CruisingAlt` (`35000.000`), `DepartureID` / `DepartureLLA`, `DestinationID` / `DestinationLLA`,
+    `Descr`, `DepartureName` / `DestinationName` (only when aerodb knows the name), `AppVersion`, then one `ATCWaypoint` per route
+    point: type Airport / Intersection / VOR / NDB / User, `WorldPosition`, `ATCAirway` on a point reached by an airway, `ICAO`
+    with `ICAOIdent` (none for a User point). On the airports: `RunwayNumberFP` (`7`, no leading zero) and `RunwayDesignatorFP`
+    (`LEFT` `RIGHT` `CENTER` `NONE`), `DepartureFP` (SID) / `ArrivalFP` (STAR) / `ApproachTypeFP` (ILS, LOCALIZER, RNAV, GPS, VOR,
+    NDB, from the approach's name: « ILS Z RWY 25L », or CIFP's « I25L ») / `SuffixFP` (the letter of « ILS Z »). DMS format
+    `N48° 43' 22.80",E2° 22' 44.40",+000291.00`, seconds rounded once so that a minute is never 60, no zero padding of degrees,
+    minutes or seconds, altitude on nine characters. XML special characters escaped in texts (`& < >`) and attributes (and quotes).
+  - **2020 and 2024 differ only by `AppVersion`**: 2020 writes `11` / `282174`, 2024 writes `12` / `282174`. **Not sure**: the real
+    build numbers and whether 2024 changed anything else in the document; MSFS does not check them on reading as far as we know, and
+    reads a 2020 file. The Fuel button writes the 2020 variant (`pln2020`), which both versions open; `exportOf('pln2024', …)` is
+    there for the day it matters. **Not sure either**: whether MSFS wants the SID's transition (it has no field here, only
+    `DepartureFP`), the padding of minutes and seconds in the DMS strings, and the order of the airport's children (the usual order
+    is followed; the reader should ignore it).
+  - Checked by the bench on an invented flight (LFXA to EIXB, invented procedures and fixes: no AIP data), not in a simulator.
+- **29 Oct 2026 — the Map's proposal waits for the complete screen** (noreg red on efbb97f49, F41: « Aucune » said but not written):
+  since the rows are drawn during `refsPending` (636a05179), a proposal could be applied while the aircraft registry was still
+  loading and its deferred write was lost; `applyProposal` now waits for `!host.pending()` (the next render applies it). F41 also
+  makes each trip go through the Map, as a real one does (the frame mounts Fuel again on the way back).
+- **29 Oct 2026 — the aerodrome field is a search** (Simplification, after 842ac149b): `maxlength=4` lifted; while the field has the
+  focus nothing is written but a 4-character code aerodb knows (`AD.known`, written once the field still holds it) or a pick of the
+  list (`isPicking`); emptying the field to search writes nothing. On leaving the field (`revertAd`): empty → the aerodrome is
+  removed; a 4-character code aerodb does not know and that proposed nothing → written (an aerodrome typed on purpose, absent from
+  the base); any other text (a name, « orly » when it proposed aerodromes) → the field goes back to the saved code. A typed name
+  never reaches `route.dep / arr / altn`. The name line reads the field, not the route. `setAd` holds the former write path
+  (started flight: other departure = other flight, other arrival = diversion; route text and weather follow). Case F48.
+- **29 Oct 2026 — the aerodrome's name where its code is, and progressive completion** (user, V3 § 10.27; decided by the ergonomics
+  session): new file `modules/fuel/adnames.js` (`createAdNames(host)`, like the procedures block: ctx, body, flight, gone) so that
+  `module.js` only gets the markup and four calls. The name is `aerodb.coords(code).name`, the very source of the procedures card's title, kept per
+  code until aerodb's next `change` (answers, unknown ones included, so a refresh never asks again); a line keeps its text while the answer for the
+  same code is awaited and is emptied for another code, so it never shows a stale name. The completion uses `aerodb.find(q, 40)` filtered to
+  aerodromes with a four-character code, seven at most (`find` ranks code, names starting, towns, then the rest: forty are asked so that seven aerodromes remain
+  when towns and points come first). The list is one `[data-adsug]` of the fields' container (`position:absolute`, the container is `relative`),
+  placed under the field's label from `offsetTop`; `pointerdown` and `mousedown` are cancelled on it so the field keeps the focus and
+  the click registers (no timer); `focusout` closes it. A pick sets the value and dispatches `input`, with a flag so that this event does not
+  reopen the list. The fields stay at `maxlength=4`: a typed name is its first four letters (« orly », « toul »); lifting the
+  limit would write a name into `route.dep` and the route text. The three columns are 12 em wide (were 8) so the names read. Step 5:
+  Departure and Arrival rows in the summary plus the names beside the first and last time of the list. Cases F44-F47.
+- **29 Oct 2026 — a flight dated in the past says so** (user, V3 § 10.28): a flight not started whose `planned_at` is more than a
+  minute behind now shows « Vol daté du 26/10 14:00Z, dans le passé : météo et NOTAM ne valent plus. » under the level and the
+  date (step Vol) and on the plan (the sticky result), as `f-warn` lines; never blocking (the quote and every gesture stay). Case F43.
+- **29 Oct 2026 — « Source »** (V3 § 10.25; aerodb d88463e51 sets `source.url` on every eAIP record it serves): `sourceHtml` fills
+  the slot of the secondary line with one link per chosen SID / STAR / approach that has an `https://` `source.url` (new tab,
+  no opener, the page's name in the title, the kind added when there are two); `sourceTitle` puts the document of a record without
+  a public address in the line's title. Fuel builds no address. The invented fixture LFML gets a `charts.base` on
+  an invented path under the SIA host (the only host aerodb links to since 97bf5577f) and a page name for MEN1A. Case F42.
+- **29 Oct 2026 — « Sur la carte » and the Map's proposal** (V3 § 10.23; frame/INTEGRATION § 6.1): a text button in each side's
+  title (not for an aerodrome without data) sets `#maps?choose=…&icao=…`; at mount Fuel consumes `focus` with the proposal keys
+  (`rwy sid star trans app appTrans`, `none` = null), and `propose(side, fields)` applies them after the first draw of the side
+  (its records must be known for a single-runway procedure to set the runway), field by field through `choose`, then
+  `changeLines` says it. Also: the reading's progress callback escapes the aerodrome code in its selector (`CSS.escape`; security
+  review of the refactoring). `isDoubt` (a doubtful or nameless record, never listed) moves to frame/lib/procedures.js, so that the
+  Map's choice mode stops re-implementing it (bench procedures.html). **Security of the proposal** (security review): the address
+  can be edited by any link and carries no ICAO, so only « none », a runway offered for the flight's aerodrome on that side
+  (`^\d{2}[LRC]?$`), or a record of that aerodrome of the right kind and not doubtful is admitted, and the value written is the
+  record's or the runway's, never the received string; anything else is ignored. Case F41 (a SID of the other aerodrome as a
+  STAR, an unknown runway and a raw string change nothing).
+- **29 Oct 2026 — the card beside the Map, the failure's counts, the phone's picker** (Simplification, user on a phone: « le choix
+  d'une procédure réaffiche immédiatement le popdown »): the three-column grid starts at 480 px of container (the dual view at 1280
+  gives about 515 px) and falls back to one column (`fu-one`, `fitGrid`, refitted by a ResizeObserver) whenever it would overflow —
+  never cut wins; a failed reading shows the translated counts alone when `stats` has pages, the launcher's English message only
+  without them; on a coarse pointer the card never gives the focus back to a select after a change (a rebuilt box or a replaced
+  region), since the native picker reopens on focus — on a computer the select that had it keeps it. Cases F34 (no overflow beside
+  the Map), F35 (focus by pointer kind), F38 (no English message with counts), F40 (touch: no list focused after a choice; fails
+  without the change).
+- **29 Oct 2026 — refactoring (h) and (i): one time format, pure benches, fixtures in one place, waits on a state** (V3_SPECIFICATION § 10.29 h, i).
+  (h) `fmtDayZ(iso)` in `frame/lib/time.js` (« 29/10 16:53Z », UTC, the same in every language) is the only writer of the « lu le … » date; the
+  hand-made format of the card is gone (`frame/lib/test/time.html`, case F39). (i) The vertical path has its bench,
+  `modules/fuel/test/vertical.html` (shape: strictly growing distance, no jump, never rising once the descent has started, constraints at / min /
+  max / between held, runway thresholds, short flights, empty cases): case F23 runs it instead of opening the page. The invented procedures of the
+  cases (`proc_docs`, `rec`, `file`, LFRS, LFML, LFVA–LFVD, the hand-read index) moved to `tests/v3/fixtures/procedures.py`. The fixed `c.wait(...)`
+  of `cases/fuel.py` wait on a state: `Ctx.quiet(expr)` (a value unchanged for a while: the result bar, the aircraft list, the number of
+  notifications), the flight record written, a notification said, the late reads of a slow mount counted (`window.__slow.pending`); two polling
+  loops over the record stay. F15 and F17 already waited on the record and the focus; the « nothing new was said » checks (F19, F21, F26) wait for
+  a quiet count, then count.
+- **29 Oct 2026 — refactoring (f) and (g): one write per series of choices, and the challenge decisions applied** (V3_SPECIFICATION § 10.29 f, g;
+  § 10.20, § 10.23; the code landed with the extraction because it lives in the functions that moved). (f) `choose()` redraws the lists in
+  place at once and defers the rest: 400 ms after the last choice of a series `settled()` writes the flight once and refreshes once; the quote
+  waits for the chosen procedures to be read (`ensureProcs`) and the write goes with it (`writeAfterProcs`), so a series is one write whatever the
+  order (case F36); an unmount writes a pending series at once. (g) **No departure lock** (`depPassed`, `procPassed`, `rowsKey`'s third term
+  removed; nothing is locked after the start, case F16). **No conflict notification** (⚠ and the title are enough; cases F21, F26). « Lire » and
+  « Relire » are one code path (`read`, the same `data-do="procfetch"`; case F27). **The OFP proposes**: « Charger mon OFP » fills only the
+  sides with no choice (`null` is a choice) and lists only what it filled (case F19). **`legsAt` kept, one state**: set after the start, only when
+  the legs or `profile.path` really change, kept while they do not. `focus` is read once with `ctx.consume('focus')` (the frame removes it from the
+  address). The launcher is never called by Fuel: its refusals reach it through aerodb's `{ reason, wait, message }`, read as they are. A failed
+  reading says its `stats` after the reason (« 0 page lue sur 31 », `procCountRead`). `coverage(icao).partial { pages, doubt }` (aerodb
+  567b94440) gives « N non lues » (case F37); `coverage().level` is never used to know whether an aerodrome holds procedures.
+- **29 Oct 2026 — refactoring (d) and (e): the procedures block is `modules/fuel/procedures.js`, and the card is redone** (V3_SPECIFICATION
+  § 10.29 d, e; § 10.23, § 10.27 for the title; user: « c'est moisi »). Out of `module.js` (4 900 → 4 345 lines): the whole block of the chosen
+  procedures' display, choice, on-demand reading and OFP lines, with its texts in `procedures_texts.js` (the `proc*` rows ×4; `dep` / `arr` copied,
+  `procTitle` stays on the screen). `createProcedures(host)` → `{ sync, render, reset, choose, read, onChange, focus, applyFocus, snapshot, applyOfp,
+  afterRead, stop }`; `host` gives what the block needs from the screen and nothing else (ctx, flight(), route(), body(), plan(), key() = `procsKey`,
+  gone(), save(), settled(), drop(), refresh()). The state is one object per aerodrome (`ads`), moved with it; the reading in progress (`reading`,
+  was `procReadingNow`) is module-level in `procedures.js` and its end goes to the live instance. `module.js` keeps the step flow, the quote (the
+  path of the chosen procedures: `procsKey`, `fpNow`, `ensureProcs`, `quoteNm`), the progress and the write of the flight. The stylesheet of the card
+  (`PROC_STYLE`) is exported and included in the screen's. **Rendering in place**: a redraw replaces only the options of the existing selects and the
+  text of the title and the line, each only when it changed; the box is rebuilt only when its structure changes (aerodrome, with or without data, a
+  transition list appearing or disappearing, started or not); the focus is never moved (case F35). **The new form**: title with the aerodrome's name,
+  one secondary line « lu le … · Relire · N non lues », a fixed grid identical on both sides (subgrid), no label cut, one column under 600 px,
+  no runway in a label when a runway is chosen (cases F34, F35; the single write, F36). Interface kept small: nothing of the card reads `S`.
+- **29 Oct 2026 — refactoring (c): the rules of the procedures in `frame/lib/procedures.js`** (V3_SPECIFICATION § 10.29 c; no visible
+  change). Pure ES module, no state, no text, no DOM: `rwNum`, `sameRwy`, `servesAll`, `servesRwy` (they were in `module.js`, `rwNum` also in
+  the flight library), `nameOf(rec, id)` (the record's name, else the id's third field; null for none or `NONAME` — Fuel adds its
+  « STAR sans nom »), `conflictsOf` and `orderProcedures` (moved from `flight_path.js`, which re-exports them during the transition, and so
+  does `current_flight.js`), `transitionsOf(recs, id)` (SID and STAR), `appChoices(apps)` → `{ list, transitionsOf(id) }` (the approach
+  given by its entries listed once, its transitions the records that lead to its final record: the logic of `procRowHtml`),
+  `runwayChoices(known, all, ad)` (the three sources; `ad`, the aerodrome's base record, is passed in: Fuel asks aerodb for it only when
+  the first two sources give nothing, `runwayChoicesOf`). Fuel's local copies and its `dedupProcs` are gone (`CF.loadProcedures` applies
+  `dedupProcs` since § 10.29 a). `frame/sw.js` and the `meta.files` of fuel, maps and report list the new file. Bench
+  `frame/lib/test/procedures.html` (32 checks: the ones that were in `current_flight.html` moved, plus the new functions), noreg case F32.
+- **29 Oct 2026 — the reasons of doubtful records are codes** (aerodb 72ca8b2fa): `TX.procWhy` gets the six codes ×4 (`geometry`,
+  `unresolved`, `name`, `repeat`, `zigzag`, `unread`), so a reading's notification never shows a bare code; the French phrases of
+  the pages not read stay until aerodb gives their codes, then the table holds codes only (refactoring (d), V3 § 10.29).
+- **29 Oct 2026 — the procedure rows no longer wait for the aircraft registry** (user: « vue Carburant + Carte : très long à charger
+  (10 s ?) avant de faire apparaître les procédures »). Measured in the test environment on the user's real files (LFPO 309, EIDW
+  196 records): rows at 0.3–0.5 s, one render, departure and arrival read in parallel, rowsKey 0.2 ms — but drawn only after
+  `refsPending` (aerodb.aircraft() then the sheets), which the rows never need; on the workstation the real registry through the
+  launcher can take seconds. `refresh()` now draws the rows while `refsPending` (not while `flightPending`: the flight is not read
+  yet). Case F33 holds aircraft() back 6 s and expects the rows within 4 s (it fails without the change).
+- **29 Oct 2026 — the reading's reasons come from aerodb's catalogue** (aerodb bf540e3c2, V3 § 10.29 c): `stats.reasons` carries
+  codes only (7 for pages, 6 for doubtful records); their labels ×4 are `AeroCatalogue.READ_REASONS`, read through
+  `aerodb.sources()` when a reading ends. `TX.procWhy` (the tool's French phrases) is removed; an unknown code is shown as is. A
+  failure always shows the launcher's message after the reason, « aucune procédure lue » included (it says the documents and
+  pages seen).
+- **29 Oct 2026 — refactoring (a) and (b) of V3 § 10.29: aerodb is the only cache, one state per aerodrome**: `procMemo` and
+  `S.procCache` removed — every draw asks aerodb (`procedures(icao)`, `runways(icao)`, `aerodromes`, `coverage`), which memoises
+  per revision since cdbeb5c29; the « empty list after a reading » class of bugs had its cause there. `S.procRecs` and
+  `S.procStats` become `S.ads` (one object per ICAO: `recs`, the records shown at the last draw; `stats`, the counts of its last
+  reading on demand), read through `adOf` / `procRecsNow`; `dropAd(icao)` is the one function that forgets an aerodrome on
+  aerodb's `change { procedures: ICAO }` (all aerodromes on `changed` / `refreshed`) and drops the flight's read procedures when
+  it is its departure or arrival. No behaviour change.
+- **29 Oct 2026 — the reading on demand is never silent** (user, EIDW: « aucun log. est-ce que ça a marché ? » — the job ran
+  3 min 30 and answered `failed`, « no procedure could be read », 31 warnings; nothing was shown): the start is said (`procStarted`),
+  every end is said through the context of the mount that started it, even after an unmount (a module-level `procReadingNow`
+  replaces `S.procFetch`; the unmount no longer aborts the job); `failed` carries the launcher's message and the number of
+  warnings, « aucune procédure lue » ×4 when nothing was read; a second tap during a reading says « déjà en cours »; the button's
+  text (source, i/n) is kept in that state and redrawn with the rows. Case F14 checks the start notification.
+- **29 Oct 2026 — the date field after « Maintenant »** (user: the field showed « dd/mm/yyyy » while « +30 » worked): planned_at
+  stays null (the flight leaves now), but the field shows the present time (`whenField`) instead of an empty `datetime-local`, which
+  the browser draws as its pattern. Case F6.
+- **29 Oct 2026 — Auto routes from the end of the chosen SID** (user: « un départ FINOT depuis LFBO, premier point GOSAD, ne sort
+  pas GAI via G36 en Auto »; Simplification, BUGS SOG 1ee2673a5): `autoAirways` passes the chain of its tokens to
+  `CF.routingChain(flight, procs, chain)` when the chosen procedures are read; the points it inserts (end of the SID after the
+  departure, start of the arrival before the arrival) become tokens and points, so they are written in `route.text`
+  (« LFBO FINOT G36 GOSAD … »; expandedPath joins the SID on FINOT), and the leg between the aerodrome and such a point is never
+  routed (the procedure covers it). Without procedures read, as before. Case F28 (invented airway from the seeded SID's end).
+- **29 Oct 2026 — compatible first; one shared rule; the part not read** (Simplification, V3_SPECIFICATION § 10.23 and § 10.26).
+  (1) `conflictsOf(key, rec, choice, byId)` moves to `frame/lib/current_flight.js`, pure, returning data (`{ kind: 'rwy', rwy }`,
+  `{ kind: 'starApp', app, appId }`; same rule as before: the runway only, and without a runway a STAR that serves no runway of the
+  chosen approach); Fuel only turns the data into its ×4 texts (`conflictsOf` here is that wrapper). `orderProcedures(list, key,
+  choice, byId)` is next to it: compatible first then ⚠, in each group X-Plane records last, then runway (all-runway records first),
+  name, transition; for `key: 'rwy'` the runways served by the chosen SID (Departure) or approach (Arrival) lead. The Map calls the
+  same two functions in its choose mode (BUGS SOG's lot). Existing exports untouched; bench `frame/lib/test/current_flight.html`
+  (+14 checks, D38). (2) Records with `status: 'doubt'`, and until aerodb sets it records without a name (`name` empty or id
+  `….NONAME.…`), are filtered out of everything (lists, `S.procRecs`, runway names); the muted line under each side's row counts
+  them (`m.unread`) — since fe04ed8b8 aerodb keeps `doubt` records out of `procedures()` (Fuel never asks `{ doubt: true }`), so the
+  count is the nameless records that still reach Fuel, `stats.doubt` of the last reading of that aerodrome in this session
+  (`S.procStats`) and `coverage().doubt` if aerodb gives it one day: **a persistent per-aerodrome count (and pages `ok: false`) needs
+  aerodb to expose it**, reported. `data-source-slot` is the hook of § 10.25. `TX.procUnnamed` stays: a stored choice that is nameless is still named
+  « STAR sans nom » in the cell kept outside the list. (3) aerodb's `runways()` now also derives runways from every record's
+  `runways` and does not skip doubtful or nameless ones: Fuel drops a position-less runway that only unread records name
+  (`runwayChoices`) — reported to AeroDB (`runways()` should ignore `doubt` and nameless records). Cases F22, new F31.
+- **29 Oct 2026 — « Relire » on a row that has procedures** (user: « il manque un bouton “rafraîchir” les procédures (avec une date
+  pour le dernier fichier) »; Simplification, § 10.20): the reading on demand existed only without data, so LFPO could not be read
+  again after aerodb's fixes. `procFileHtml`: the date from `coverage(icao).read_at` (aerodb's lot of 17:00; null → the button
+  alone), ⌛ when `coverage().outdated`, then « Relire » with the same `data-do="procfetch"` (fetchProcs unchanged). Case F27. The
+  lists' order (compatible first, then ⚠) and moving `conflictsOf` to frame/lib/current_flight.js come in the next commit.
+- **29 Oct 2026 — procedure rows in step Route** (user: « star et sid sont “route”, pas “vol” »): before the start the Departure and
+  Arrival rows leave step 1 Flight (after the aerodromes) for a card « Procédures » at the end of step 2 Route, after the route
+  text, the points and the SimBrief / OFP row (`data-block="procrows"`, box `data-procbox="route"` instead of `"vol"`;
+  `renderProcRows` fills it before the start and empties it after, the card is then hidden). After « Start the flight » nothing
+  changes: the rows stay in the « Procédures » card of step 5 Departure. `#fuel?focus=arr` opens step 2 before the start and 5
+  after (it was 1). `focus=dep` is not handled by the module (only `route` and `arr`): not added. Changing an aerodrome (step 1) and
+  choosing its procedures (step 2) are now two steps, as the route already is. Cases F11 (rows in step 2, none in step 1, the card is
+  last), F14-F26 (the helper `to_step`, `set_icao` goes back to step 2).
+- **29 Oct 2026 — ⚠ for the runway only** (Simplification, § 10.23, after f3354a593 marked almost every real STAR: LFPO's STAR
+  of runway 20 ends at a hold, the RNP 20 records start elsewhere): `conflictsOf` keeps the runway (a SID, STAR or approach that
+  does not serve the chosen runway; with no runway chosen, a STAR serving no runway of the chosen approach, `procConflictStarApp`)
+  and drops the STAR → approach and transition → STAR-end continuity (`procConflictStar`, `procConflictTrans`, `sameFix`,
+  `firstFix`, `lastFix` removed). F21 and F26 adjusted.
+- **29 Oct 2026 — conflicts marked ⚠, not forbidden; flat lists** (user, 29 Oct, capture of the approach list with no runway
+  chosen: five one-line groups « Piste 02 … Piste 20 », « on doit pouvoir choisir quand même, mais c'est affiché “conflit” avec la
+  RWY ou la STAR ; si gris est périmé, orange serait en conflit »; V3_SPECIFICATION § 10.23): this reverses the pruning of the
+  28 Oct entries (the lists cut by the runway, the choice removed when another made it incompatible). (1) The lists are never cut
+  by the runway and `procChosen` removes nothing but the transition of a changed procedure; a procedure serving a single runway
+  still sets it when none is chosen. (2) Each option is marked by `conflictsOf(key, rec, o)` against the side's current choice `o`:
+  the runway (SID, STAR, approach); a STAR whose last fix is not where the chosen approach transition starts (else no point of the
+  chosen approach, nor the first fix of one of its transitions — a STAR may end at an IAF that is the start of a transition);
+  an approach transition that does not start at the STAR's last fix. Fixes: same identifier, or within 0.5 NM; no point, no
+  conflict. The label ends with ` ⌛` then ` ⚠`, the option has `class="outdated"` and/or `class="conflict"` (`--sog-warn`) and a
+  title joining the reasons ×4. (3) ONE `ctx.notify` ×4 when a conflict appears (`conflicts` before and after the choice,
+  keyed by kind, id and reasons): « ⚠ MEN1A : Ne dessert pas la piste 31L ; I13R : … », nothing at the next redraw, nothing for a
+  choice without conflict; `TX.procReset` is gone. (4) Flat lists: no `<optgroup>`; sorted X-Plane last, then by runway (the
+  records serving all first), then name, then transition; the runway is in the label only when the record serves exactly one and
+  its name does not contain it (« MAN1A · 07 », « RNP RWY 02 »). Note: with real data nearly every STAR is marked once an approach
+  is chosen, because the eAIP STAR ends at an IAF the approach record does not start at; the mark says « no common point », it
+  does not forbid. Cases F11, F13, F20-F22, new F26.
+- **29 Oct 2026 — ⌛ instead of « périmé »; `too-soon`; synchronised procedures** (user: « plutôt que “périmé”, un symbole court,
+  peut-être une couleur (gris ?) »; Simplification): an outdated procedure ends with ` ⌛` (`PROC_OLD`) in the lists, its
+  transitions and the change notifications (`procNameOf`), with `class="outdated"` (`color: var(--sog-muted)`; a phone's native
+  picker ignores it, the symbol carries the meaning) and the title ×4 « Lue sous un cycle antérieur : à relire »; `TX.procOutdated`
+  is gone. aerodb's `too-soon` refusal (f9f66de6f, `wait` in s) gets its text ×4. aerodb's `change { procedures: ICAO, coverage:
+  true }` (cce670d28, a proc/ file arrived by synchronisation) was already covered by `onProcChange` (any `procedures` key empties
+  the whole cache; the flight's aerodrome reads its procedures again): checked, no code change. Case F13 checks the symbol, the
+  class and the title.
+- **29 Oct 2026 — a procedure without a name** (Simplification): a record read with `name: null` (id `….STAR.NONAME.…`) is
+  labelled by its kind, « STAR sans nom » / « SID sans nom » / « Approche sans nom » ×4 (`TX.procUnnamed`), never « NONAME »
+  taken from the id.
+- **29 Oct 2026 — the reading's counts in the success notification** (aerodb 636a020f4, `stats`; Simplification): « {n} procédures
+  lues sur {p} pages », then « {r} pages non lues (motif le plus fréquent : …) » when `rejected` > 0 and « {d} procédures écartées
+  par le contrôle de géométrie » when `dropped` > 0; `n` is the answer's `procedures.length` (right on the first reading). The
+  tool's five reason phrases are translated ×4 (`TX.procWhy`), an unknown one is shown as given. Without `stats` (older
+  launcher), the former « {n} procédures lues ».
+- **28 Oct 2026 — the vertical path folded back on the user's flight LFBO → LFPO** (user's report: 524 NM, the profile drops to
+  1,600 ft around 400 NM, jumps back up around 520 NM). Reproduced from the user's own saved flight and files (read only; no
+  procedure content is kept here). Causes: (1) the saved choice had the SAME record as approach and as approach transition, so
+  `expandedPath` chained its fixes twice (524 NM for a 327 NM route, the chain's fixes flown twice); (2) that record, which has no
+  `missed` mark, went on after the final approach to a climb to 7,000 ft (the Map's fix 7606aec4b stops a final without a
+  `missed` point at the point nearest the threshold); (3) `verticalPath` applied each constraint at its own point: a ceiling
+  4 NM after the cruise dropped the path 24,000 ft in 4 NM, and an `at` later lifted it back. Fuel's part: the list offered every
+  record of an approach that the eAIP gives by entry (one record per initial fix) as an approach and as the transition of every
+  other; now such an approach lists its final record once (the one no other record leads to), its transitions are the records
+  whose last fix is the first fix of the final, and a transition equal to the approach is shown as not chosen and ignored by the
+  path (`dedupProcs`), so a stored choice like the user's heals itself. `verticalPath` is rewritten on a gradient-limited
+  envelope: nodes at the base's breaks and the points' `nm`, plus where each ceiling's gradient meets the cruise; ceilings in the
+  descent hold from the model's descent gradient taken back from them, ceilings in the climb are flat up to them; the slope never
+  exceeds the model's climb or descent; once the descent has started (first node past the top of climb that a ceiling pulls under
+  the base) the path never rises. A floor that the gradient or the monotony cannot hold is not held (no vertical jump wins).
+  Cases F23, F24.
+- **28 Oct 2026 — no runway could be chosen at LFPO (nor LFBO): fuel offers the runways its procedures name** (user's report).
+  Measured in a page with the user's files (`proc/manual/LFPO.json`, `LFBO.json`, read only): `aerodb.runways('LFPO')` and
+  `aerodb.runways('LFBO')` both answer `[]`. The files carry no `runways`, and the `RWnn` points that aerodb would deduce the
+  runways from are there (one per runway) but without position
+  (`lat: null`: « coordonnées introuvables… à résoudre à la lecture par aerodb »), and `runways()` skips a point without `lat`.
+  Fuel now offers, in this order: aerodb's runways; the union of the `runways` of the aerodrome's procedures (« 20 »,
+  « 14L »…); the two ends of the axis in the base (`aerodromes({ icao }).bearing`, true, and `magVar`, east positive, giving the
+  magnetic numbers), numbers without side. Fuel reads only. A runway chosen this way has
+  no threshold for `CF.loadProcedures` (it looks the runway up in `aerodb.runways`): the path shows no `RWnn` point until aerodb
+  gives one. Reported to AeroDB: `runways()` should answer the ids of `RWnn` points without position (`approx: true`, no
+  `lat`/`lon`), or the union of the procedures' `runways`.
+- **28 Oct 2026 — the runway, the STAR and the approach filter one another** (user's report, same session as the previous
+  entry): `procChosen` now decides in both directions. A runway chosen removes the SID / STAR / approach (and its transition)
+  that does not serve it — « serves » = the record names that runway, names none, or names `ALL` / `RWALL`; a bare number
+  (« 14 ») matches « 14L » / « 14R » — to « not chosen » (absent, never `null`), with one `ctx.notify` line (×4: « Retiré du
+  choix (ne dessert pas la piste 31L) : STAR MEN1A, approche I13R. »). The records come from the new `S.procRecs`, which holds
+  ALL the records of both aerodromes (before, only the filtered lists: a record already out of the list could not be judged).
+  Decision taken: a SID, STAR or approach chosen while no runway is, and serving ONE runway only, sets that runway (the select
+  shows it; the other lists follow; a choice that the new runway does not serve is removed as above). A record serving several
+  runways (parallel ones) sets nothing. The transition of a STAR / SID / approach follows its procedure as before (another
+  procedure drops it, silently: it is not an incompatibility).
+- **28 Oct 2026 — the procedure rows show every procedure of the aerodrome, grouped by runway** (the user's report: LFBO, 18
+  approaches installed in `proc/manual/`, and the Departure row said « aucune procédure publiée » with the reading button):
+  the cause was in `sideModel`, which asked aerodb for the kinds of the side only (SID for the departure) and called an
+  aerodrome « without data » when that kind was empty, although it had approaches (no SID, no STAR, no `runways` in the file).
+  Now one question per aerodrome, `aerodb.procedures(icao)` (all kinds), sorted by kind and filtered by the runway in fuel;
+  « without data » means no procedure of any kind and no runway. Without a runway chosen a list shows ALL its procedures
+  (the approach list does not wait for a STAR) in one `<optgroup>` per runway ("Piste 14L"; a procedure serving all runways
+  — none named, or `ALL` / `RWALL` — comes first, ungrouped); a runway chosen gives a flat list of the procedures that serve it.
+  The memo of aerodb's answers no longer keeps an empty answer, and is dropped when aerodb says `change` with `procedures`
+  (`fetchProcedures` installed files), `changed` or `refreshed` (`onProcChange`): the lists are read again without another
+  gesture. aerodb does not watch `proc/` (a file synchronised after the first question is not announced): reported to AeroDB.
+- **28 Oct 2026 — reading on demand dispatched by State** (aerodb 82eeef3b5; Simplification, the user's report: « Lire les
+  procédures de LFPO » answered « mise en page inconnue »): aerodb now reads France from the SIA eAIP and the States with coding
+  tables from EAD Basic, and refuses every other State with `no-tables`. Fuel: the reason `unknown-layout` and its text are
+  removed; `no-tables` gets its text ×4, with the Little Navmap hint when `lnm` is true; the button shows the source announced
+  by `onProgress` (`source: 'eaip' | 'ead'`) instead of the aerodrome alone; `no-credentials` keeps its EAD wording (France
+  needs no account). Case F14 checks the texts statically (the test page has no launcher: the live answer is `no-launcher`).
+- **28 Oct 2026 — runway, SID, STAR and approach in the preparation (§ 10.20)** (the user's decision relayed by the ergonomics
+  session; lot `v3-fuel-proc`, with `frame/lib/current_flight.js` of the Map's owner and aerodb's `procedures` / `runways`):
+  - `route.procedures` is v2 (`{ dep: { rwy, sid, trans }, arr: { rwy, star, trans, app, appTrans }, by, at }`, identifiers,
+    `null` = none, absent = not chosen); fuel is the only writer and reads it through `proceduresOf`. Nothing is written at
+    mount: fuel's next ordinary write (`saveFlight`) puts v2 and drops a side whose aerodrome changed.
+  - Rows in the step Flight (departure: runway · SID · transition; arrival: runway · STAR · transition · approach · approach
+    transition), selects filled by aerodb and filtered by the runway; the X-Plane local record last, the outdated one marked;
+    "aucune" for SID, STAR and approach (transitions only have "—"). No data: one reading button per aerodrome, refusal shown.
+  - "Load my OFP" **replaces** the pilot's choice by the OFP's SID and STAR (a side the OFP has no procedure for is kept) and
+    says what changed, one line per side. The whole side is replaced (the approach and transitions of the previous choice go).
+  - **The quote runs on the flown path** when procedures are chosen and read: distance = the last `nm`; `quote.legs` one per
+    flown point with its `origin`; `quote.distanceNm` (new) = the length the quote ran on; `profile.path` = the planned
+    vertical path with the constraints applied where tighter. **The constraints do not go through the level-step machinery**
+    (`levels.js` / `alt_ft` steps model cruise levels reached by a climb or descent of the aircraft; a STAR's restrictions are
+    inside the descent, so feeding them as steps would invent level flights at 3 000 ft): fuel and time count the procedures'
+    distance, the constraints are drawn in `profile.path` only. To revisit if the Map's profile needs them in the figures.
+  - **After the start**: arrival row always editable, departure row until the end of the SID (last `'sid'` point of the path,
+    position = `progress.actual` if younger than two minutes, else `plannedPositionAt`); a change rewrites
+    `route.procedures`, `quote.legs`, `profile.path`, the progress length and `quote.legsAt` only. To keep the figures still,
+    the quote's distance is held (`quoteNm`: seeded from the stored `quote.distanceNm` at mount, kept while the route's points
+    and distance do not change) — so a change of level or wind after the start still redoes the figures, as before. Nothing is
+    made newly editable after the start. **What is editable after the start today and was left as it is**: every field of the
+    Plan (aerodromes — another departure ends the flight, another arrival marks a diversion —, level, date, aircraft, route
+    text and points, Auto, wind, ISA, settings); only the quote settings and the stored figures follow. The spec's `quote.at`
+    does not exist in the code (no `at` in `quote`), so there is nothing to keep still there.
+  - `#fuel?focus=arr` (the Map's "Change"): step Flight before the start, step Departure after, first select focused (same
+    mechanism as `focus=route`).
+- **28 Oct 2026 — airframe and propulsion replace engineType** (the user's decision; lot `v3-fuel-sheets`, with aerodb's
+  `sheets.js`, see its DECISIONS of the same day):
+  - The sheet's `engineType` (jet | turboprop | piston | auto) is replaced by `airframe` (aeroplane, helicopter,
+    gyroplane, glider, balloon, airship) and `propulsion` (piston, turboprop, turboshaft, jet, electric, none, other). A
+    ChatGPT guess of `engineType` had made an EC45 a turboprop; the ICAO base knows better.
+  - Both are deduced from the ICAO catalogue (`catalogFacts`), the sheet's own value winning when the user set one. What
+    the catalogue gives is never counted empty and never asked of ChatGPT; a ChatGPT reply loses those keys. **Pressurised**
+    follows the same rule, but no catalogue carries a boolean `pressurized` today: the hook is there, nothing is deduced.
+  - **The RPM fields stay counted and asked** (user's decision). Example given: the Caravelle III has 7,950 rpm max
+    continuous, 7,800 climb, 7,750 cruise, 5,000–5,780 transient only, 2,800–3,250 ground idle, 4,600 approach — a sheet
+    with a single "nominal" number would lose all of that, so the nominal RPM per phase and the engine map are still
+    requested.
+  - **Addendum (same day, the user): the critical altitude `engineCriticalAltFt` is counted and asked for a piston
+    propulsion only** (the value in force: the sheet's, else the catalogue's); an unknown propulsion still counts it. Jet,
+    turboprop, turboshaft, electric, none and other: neither counted nor asked, so the "aircraft" family and the missing
+    prompt follow. The prompt's rule 7 says it too (null for any other propulsion).
+  - **The sheets list names what is missing by family** instead of a count: "To complete: rpm, speeds, cruise, taxi,
+    runway" (rpm, speeds, cruise, rates, fuel flows, taxi, runway, fuel, aircraft, other; the same set of empty paths as
+    before, minus the deduced ones). "complete" is unchanged.
+  - `performance_model.js` reads `propulsion` first (jet → jet, turboprop and turboshaft → turboprop, piston and electric
+    → piston; none and other fall through), then the legacy `engineType` (old sheets not re-read by aerodb), then the base
+    and the cruise TAS. The note asking to set the engine type now names "Propulsion".
+  - The prompt (`docs/technique/PROMPT_PROFIL_PERFORMANCES.md`): schema keys `airframe` and `propulsion`; rule 7 became a
+    selection rule (what carries the aircraft, what drives it, turboprop vs turboshaft, none, other, copy the known
+    powerplant). **The V2 planner's copy is frozen**: `tools/build_perf_prompt.py` no longer writes
+    `apps/planner/perf_prompt.js` (V2 lives on `v2-maintenance`).
+  - Benches: `sheets.html` (new checks, stub catalogue; its V2 reference file now carries `propulsion` and the pounds of
+    the `.lnmperf` export — both deliberate V3 differences; the bench had two stale checks since the kg → lb fix), the
+    other two use `propulsion`, `quote.html` keeps a legacy `engineType` check. Case F10 runs the sheets bench.
 - **28 Oct 2026 — ETA and planned position no longer written** (the recoded Map, 4dd3e232b, derives them; Simplification):
   `updateProgress` writes `{ at, fuelRemainingKg, remainingNm, phase }` for a started flight only; `plannedPos` and `eta`
   are set `undefined` in the next write so that `merge` removes what an earlier version left (JSON drops them), and the
@@ -675,3 +1121,58 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 - **Atmosphere**: its code is not touched; INTEGRATION § 3 carries the sentence its session reads ("the slider's origin is
   `planned_at` of the current flight").
 - **Checked**: see the report of the lot (suite `--changed`, Playwright at 390 and 360 in the five designs, smoke).
+
+## Inventaire du 30/10 : à refondre
+
+Read-only inventory (Features SOG, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les
+empilages »), modules/fuel and frame/lib (procedures, wind, routing, route_text, fms, adnames, current_flight, flight_path) from
+802e6856f to 40f834eb7 (24 commits). Per zone: history, what is left doubled or dead, the target in one sentence. Nothing changes here.
+
+**1. The Map's return, keys** (`module.js` mount, `procedures.js` propose / applyProposal). d4f683475 one key per trip (`rwy sid
+star trans app appTrans`) → fe3d33c5c wait for the full screen → 25b887349 several keys, `apptrans`, `trans` dropped. Left: `admit`
+still maps `trans` / `appTrans` keys no longer consumed; four write paths for one side (lists `choose`, quiet `choose` of the
+proposal, `applyOfp`, `textToProcs`). Target: one `writeSide(side, values, why)` used by the four, the change line said once there.
+
+**2. Route text and Auto** (`module.js` routePoints / resolveRoute / autoAirways / writeAuto / procsToText / textToProcs;
+`route_text.js`; `routing.js`; `flight_path.js` routingChain). Auto 25 Oct → routingChain (SID end inserted, 29 Oct) →
+5a374c189 provenance, exit after the SID name, rejections → d34ad04fb typed airway checked, `along` → 79993b1ea text as a view
+(withProcedures writes the exit) and Auto turning an exit word into a point → 1bade3bc8 `joiningAirway`. Left: the SID exit enters
+three ways (CF.routingChain in Auto, RT.withProcedures in the text, expandedPath's join in the drawing); intermediate airway nodes
+two ways (routePoints copies kept `r.points` between two points; `RG.along` for a typed airway) plus Auto's `pend` re-attachment;
+two text writers (`textFromPoints` for the Map's edit, no DCT; `textFromTokens({ dct })` in Fuel); routePoints (~200 lines) reads,
+detects airways, validates and smooths levels; autoAirways (~250 lines) filters provenance, inserts, routes, rejects and writes.
+Target: one pure `routeModel(text, base)` in frame/lib (tokens → pinned points, typed airways by `along`, procedures by name) and
+one `routeText(model)`; Auto = routing over the pinned legs of that model; routingChain and the chain copy removed.
+
+**3. Procedures and transitions** (`frame/lib/procedures.js`, fuel `procedures.js`). conflictsOf / orderProcedures (⚠, § 10.23)
+→ compatible (filter, § 10.30) → transitionsOf (same name) → appChoices (entries feeding a final) → isAppTransition (SIA segments,
+e5a97c23d) → labelOf, transitionLabelOf, summaryOf. Left: two compatibility rules written twice (runway, STAR ↔ approach: marks in
+conflictsOf, filters in compatible); three notions of an approach transition in appChoices, and its « no final recognised »
+fallback is unreachable since entries that never reach a runway are segments; five name renderers (PR.nameOf, labelOf, summaryOf's
+`name`, Fuel's `procLabel` and `nameOfId`); flight_path.js still re-exports conflictsOf / orderProcedures « for the Map », which
+imports procedures.js directly: dead. Target: `compatible` the only rule (a mark = not compatible, with its reason),
+`approachModel(apps)` → { finals, transitionsOf } with one notion, `labelOf` the only renderer.
+
+**4. Wind** (`wind.js`, fuel `weather.js`, fuel `procedures.js`, maps `procs.js`). bf5599e21 components → 25b887349 label (where it
+comes from) → 094e7a891 arrows reversed (where it blows), severity. Left: `weather.js runwayWind` (the weather card's main-runway
+components, own maths and texts) beside `components`; the runway's true axis computed twice (Fuel `runwayWind`: record `true`, else
+qfu + magVar; the Map's `runwayBearing`). Target: `wind.runwayAxis(rec, magVar)`, the weather card on components / label / severity.
+
+**5. Procedure card** (fuel `procedures.js`, `module.js`). 636a05179 rows before the registry → struct / in-place patch → summary
+in the title (b7cf7bc5a) → fold (61948bfb3) → point-list groups (512902c66). Left: focus and fold state in four flags over two
+files (`wantFocus`, `openSide`, `S.focusArr`, `S.focusRoute`); the group hues copied from the Map's palette. Target: one side
+state { open, focus } in procedures.js; the procedure hues as design tokens shared with the Map.
+
+**6. Names and completion** (`adnames.js` ×2, `routecomplete.js`). 842ac149b names + completion → 26d47f149 search field →
+1e36c7570 the rule in frame/lib → 40f834eb7 route completion. Left: two completion lists with the same list / keyboard / tap /
+blur code (~120 lines each). Target: one completion component, sources injected.
+
+**7. Export** (`fms.js`). 99d28acd0, d18a739b4: nothing doubled.
+
+**8. Cases and docs.** F28 rewritten three times, F41 and F63 overlap (one key, several keys), F8 and F67 overlap (Auto, then
+idempotent Auto); fuel SPEC's procedures paragraph is one line of « since § x » additions; twenty DECISIONS entries on 30 Oct.
+Target: the SPEC's procedures and route sections rewritten as the current state; F41 into F63, F8 into F67.
+
+**Order proposed** (after the stabilisation): 4 (small), 3 with its benches (the rules the Map and Fuel share), then 2 on top of
+3 (the biggest, cases F8 F28 F67 F68 F70 F74 as the net), 1 inside 2, then 5 and 6, docs and cases last. One commit per zone,
+--touched before, the full noreg after.

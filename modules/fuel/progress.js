@@ -11,6 +11,8 @@
 //   etas(P, startMs) → [{ i, at (ms) }] : heure prévue de passage à chaque point (le départ : après le roulage).
 //   at(P, elapsedMin) → { nmFromDep, remainingNm, fuelUsed, phase ('taxi' | 'climb' | 'cruise' | 'descent' | 'arrived') }.
 //   position(points, cum, nm) → { lat, lon, legIndex } : le point de la route à nm NM du départ.
+//   verticalPath(path, q) → [{ nm, ft }] : le chemin vertical prévu le long de flownPath (profile.path), contraintes de procédure comprises.
+//   nmAlong(path, pos) → NM : la distance du départ du point du chemin le plus proche d'une position (le départ est-il passé ?).
 
 const R = Math.PI / 180;
 /** Distance orthodromique (NM). */
@@ -154,4 +156,211 @@ export function position(points, cum, nm) {
     lon: +pts.at(-1).lon,
     legIndex: pts.length - 2
   };
+}
+
+// ---------------------------------------------------------------- chemin vertical prévu et position sur le chemin (§ 10.20)
+// Calcul pur sur flownPath (frame/lib/current_flight.js) : ses points portent nm (distance cumulée depuis le départ, la seule
+// mesure des distances) et, pour ceux d'une procédure, alt { type: 'at' | 'min' | 'max' | 'between', ft, ft2? }.
+
+/** Plafond et plancher (ft) que la contrainte d'un point impose au chemin : { cap, floor }, null pour l'un ou l'autre quand il n'y en a
+ *  pas (at → les deux ; max → plafond ; min → plancher ; between → les deux bornes) ; le seuil d'une piste (rwy) vaut son altitude
+ *  quand elle est connue. */
+function limitsOf(p) {
+  const none = {
+    cap: null,
+    floor: null
+  };
+  if (!p) return none;
+  if (p.rwy && Number.isFinite(+p.elev)) return {
+    cap: +p.elev,
+    floor: +p.elev
+  };
+  const a = p.alt;
+  if (!a || !Number.isFinite(+a.ft)) return none;
+  const ft = +a.ft;
+  if (a.type === 'at') return {
+    cap: ft,
+    floor: ft
+  };
+  if (a.type === 'max') return {
+    cap: ft,
+    floor: null
+  };
+  if (a.type === 'min') return {
+    cap: null,
+    floor: ft
+  };
+  if (a.type === 'between' && Number.isFinite(+a.ft2)) return {
+    cap: Math.max(ft, +a.ft2),
+    floor: Math.min(ft, +a.ft2)
+  };
+  return none;
+}
+
+/** Chemin vertical prévu [{ nm, ft }] le long de flownPath : la montée, la croisière (et ses paliers) et la descente du devis q
+ *  comme le modèle les compte (la base), puis les contraintes d'altitude des points (at, max, min, between), sans jamais de saut
+ *  vertical : une contrainte plafond placée dans la descente ne tire le chemin vers le bas qu'à partir de l'endroit où la pente de
+ *  descente du modèle, remontée depuis elle, rejoint la base (avant, la croisière est gardée) ; une contrainte plafond placée dans la
+ *  montée tient le chemin à plat jusqu'à elle, la montée reprenant à la pente du modèle ensuite. Une fois passé le sommet de
+ *  montée, dès que la descente est commencée le chemin ne remonte plus : une contrainte plus haute que le chemin (le plancher d'une
+ *  procédure, la remise de gaz d'une approche) ne le relève pas. Le départ et l'arrivée sont à l'altitude du seuil de piste choisie
+ *  quand elle est connue, sinon à 0 ft. nm arrondi au dixième, ft à la dizaine ; nm strictement croissant ; [] sans devis chiffré ni
+ *  chemin de deux points. */
+export function verticalPath(path, q) {
+  const pts = (path || []).filter(p => Number.isFinite(+p?.nm));
+  if (pts.length < 2 || !q || !(q.levelFt > 0)) return [];
+  const D = +pts.at(-1).nm,
+    th = pts.filter(p => p.rwy && Number.isFinite(+p.elev)),
+    depFt = th.length && th[0].origin === 'sid' ? +th[0].elev : 0,
+    arrFt = th.length && th.at(-1).origin !== 'sid' ? +th.at(-1).elev : 0,
+    levels = q.steps?.levels?.length ? q.steps.levels : [{
+      nm: 0,
+      ft: q.levelFt
+    }],
+    climbNm = Math.max(0, +q.climb?.nm || 0),
+    descNm = Math.max(0, +q.descent?.nm || 0),
+    k = climbNm + descNm > D && climbNm + descNm > 0 ? D / (climbNm + descNm) : 1,
+    toc = climbNm * k,
+    tod = D - descNm * k,
+    first = levels[0].ft,
+    last = levels.at(-1).ft,
+    upGrad = climbNm > 0 ? first / climbNm : 300, // ft par NM de la montée du modèle, pour les changements de niveau
+    dnGrad = descNm > 0 ? last / descNm : 300,
+    // pentes bornant le chemin : celles du modèle (au besoin raccourcies pour tenir dans la distance)
+    up = Math.max(upGrad, toc > 0 ? first / toc : 0),
+    dn = Math.max(dnGrad, D - tod > 1e-6 ? last / (D - tod) : 0),
+    peak = Math.max(...levels.map(l => l.ft));
+  // points de rupture de la base : le sol, le sommet de montée, chaque changement de niveau (rampe à la pente de la montée ou
+  // de la descente), le sommet de descente, le sol
+  const base = [{
+    nm: 0,
+    ft: depFt
+  }, {
+    nm: toc,
+    ft: first
+  }];
+  for (let i = 1; i < levels.length; i++) {
+    const a = levels[i - 1].ft,
+      b = levels[i].ft,
+      len = Math.abs(b - a) / (b > a ? upGrad : dnGrad),
+      nm = Math.min(Math.max(+levels[i].nm, toc), tod);
+    base.push({
+      nm,
+      ft: a
+    }, {
+      nm: Math.min(nm + len, tod),
+      ft: b
+    });
+  }
+  base.push({
+    nm: tod,
+    ft: last
+  }, {
+    nm: D,
+    ft: arrFt
+  });
+  const baseAt = nm => {
+    for (let i = 1; i < base.length; i++)
+      if (nm <= base[i].nm + 1e-9) {
+        const a = base[i - 1],
+          b = base[i];
+        return b.nm > a.nm ? a.ft + (b.ft - a.ft) * (nm - a.nm) / (b.nm - a.nm) : b.ft;
+      }
+    return base.at(-1).ft;
+  };
+  // nœuds du chemin (nm au dixième, strictement croissants) : les ruptures de la base et chaque point du chemin, plus, pour chaque
+  // plafond, l'endroit où la pente du modèle le rejoint (descente : remontée depuis lui jusqu'au niveau le plus haut ; montée :
+  // reprise de la montée après lui), pour que le chemin y change de pente et non plus loin
+  const r1 = nm => Math.round(nm * 10) / 10,
+    at = new Map();
+  for (const b of base) at.set(r1(b.nm), {
+    p: null
+  });
+  for (const p of pts) at.set(r1(+p.nm), {
+    p
+  });
+  for (const p of pts) {
+    const c = limitsOf(p).cap;
+    if (c === null) continue;
+    const x = +p.nm,
+      s = x > toc ? x - (peak - c) / dn : x + (first - c) / up;
+    if (s > 0 && s < D && !at.has(r1(s)) && (x > toc ? s > toc : s > x && s < tod)) at.set(r1(s), {
+      p: null
+    });
+  }
+  const nodes = [...at.keys()].sort((a, b) => a - b).map(nm => ({
+      nm,
+      p: at.get(nm).p,
+      b: baseAt(nm)
+    })),
+    n = nodes.length,
+    lim = nodes.map(x => limitsOf(x.p)),
+    v = nodes.map(x => x.b),
+    // plafonds : à plat dans la montée (jusqu'à lui), en pente de descente remontée depuis lui après le sommet de montée
+    flat = Array(n).fill(Infinity),
+    slope = Array(n).fill(Infinity);
+  for (let i = n - 1; i >= 0; i--) {
+    const x = nodes[i].nm,
+      c = lim[i].cap ?? Infinity;
+    flat[i] = x <= toc + 1e-9 ? Math.min(c, i + 1 < n ? flat[i + 1] : Infinity) : Infinity;
+    slope[i] = Math.min(x > toc + 1e-9 ? c : Infinity, i + 1 < n ? slope[i + 1] + dn * (nodes[i + 1].nm - x) : Infinity);
+  }
+  for (let i = 0; i < n; i++) {
+    v[i] = Math.min(v[i], flat[i], slope[i]);
+    if (lim[i].floor !== null) v[i] = Math.max(v[i], Math.min(lim[i].floor, lim[i].cap ?? Infinity));
+  }
+  // la descente est commencée au premier nœud, passé le sommet de montée, que la pente d'un plafond tire sous la base
+  let from = nodes.findIndex((x, i) => x.nm >= toc - 1e-9 && slope[i] < x.b - 100);
+  if (from < 0) from = n;
+  // bornes de pente (descente, montée) et descente qui ne remonte pas, jusqu'à ce que plus rien ne bouge
+  for (let pass = 0; pass < 8; pass++) {
+    let moved = false;
+    const lower = (i, ft) => {
+      if (ft < v[i] - 1e-6) {
+        v[i] = ft;
+        moved = true;
+      }
+    };
+    for (let i = n - 2; i >= 0; i--) lower(i, v[i + 1] + dn * (nodes[i + 1].nm - nodes[i].nm));
+    for (let i = 1; i < n; i++) lower(i, v[i - 1] + up * (nodes[i].nm - nodes[i - 1].nm));
+    for (let i = from + 1; i < n; i++) lower(i, v[i - 1]);
+    if (!moved) break;
+  }
+  v[n - 1] = Math.max(v[n - 1], arrFt);
+  return nodes.map((x, i) => ({
+    nm: x.nm,
+    ft: Math.round(v[i] / 10) * 10
+  }));
+}
+
+/** Distance du départ (NM, sur le chemin) du point du chemin le plus proche de la position pos { lat, lon } : projection sur le
+ *  tronçon le plus proche (plan local, assez exact sur un tronçon) ; null sans chemin de deux points ni position. */
+export function nmAlong(path, pos) {
+  const pts = (path || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon) && Number.isFinite(+p?.nm));
+  if (pts.length < 2 || !Number.isFinite(+pos?.lat) || !Number.isFinite(+pos?.lon)) return null;
+  const kx = Math.cos(+pos.lat * R);
+  let best = null;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1],
+      b = pts[i],
+      lon = x => {
+        let d = +x - +pos.lon; // longitude relative à la position, dans [-180, 180[ (une route qui passe 180°)
+        d -= 360 * Math.round(d / 360);
+        return d * kx;
+      },
+      ax = lon(a.lon),
+      ay = +a.lat - +pos.lat,
+      bx = lon(b.lon),
+      by = +b.lat - +pos.lat,
+      dx = bx - ax,
+      dy = by - ay,
+      len2 = dx * dx + dy * dy,
+      t = len2 > 0 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2)) : 0,
+      d2 = (ax + dx * t) ** 2 + (ay + dy * t) ** 2;
+    if (!best || d2 < best.d2) best = {
+      d2,
+      nm: +a.nm + (+b.nm - +a.nm) * t
+    };
+  }
+  return best.nm;
 }

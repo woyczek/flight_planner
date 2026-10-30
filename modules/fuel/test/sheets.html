@@ -6,7 +6,9 @@
      (bloc de code, commentaire, virgule finale, unités dans les valeurs), différences entre deux fiches, champs
      comblés par une autre fiche, date d'une fiche, valeurs à plat, champs manquants ; résultats attendus dans
      sheets_v2.json (identifiants aléatoires, dates et date de création .lnmperf écartés). Page d'outil, servie par un
-     serveur (fetch du JSON). -->
+     serveur (fetch du JSON). Deux écarts voulus de la V3 sont reportés dans sheets_v2.json : engineType est devenu
+     airframe + propulsion (28/10/2026), et une fiche en kg s'écrit en .lnmperf en livres (c14aac84b). La suite du banc
+     (cellule et propulsion déduites de la base OACI, migration, familles de champs manquants) n'a pas de relevé V2. -->
 <style>
   :root {
     color-scheme: light
@@ -44,8 +46,67 @@
   (async () => {
     'use strict';
     const V2 = await fetch('sheets_v2.json').then(r => r.json()),
+      // base des types factice (classement comme aerodb.aircraft().classify : famille et motorisation de la description
+      // OACI, dirigeable / ballon par la fiche) ; ZZ.. : codes d'essai, EC45 : un hélicoptère de la base
+      STUB = {
+        ZZJ2: {
+          description: 'L2J'
+        },
+        ZZT2: {
+          description: 'L2T'
+        },
+        ZZP1: {
+          description: 'L1P'
+        },
+        ZZH2: {
+          description: 'H2T'
+        },
+        EC45: {
+          description: 'H2T'
+        },
+        ZZH1: {
+          description: 'H1P'
+        },
+        ZZGY: {
+          description: 'G1P'
+        },
+        ZZTR: {
+          description: 'T2T'
+        },
+        ZZRK: {
+          description: 'L1R'
+        },
+        ZZAS: {
+          kind: 'airship',
+          engines: 2,
+          engine_type: 'P'
+        },
+        ZZPR: {
+          description: 'L2J',
+          pressurized: true
+        }
+      },
+      classify = c => {
+        const code = String(c || '').toUpperCase(),
+          rec = STUB[code] || null,
+          d = String(rec?.description || ''),
+          kind = rec?.kind === 'airship' || rec?.kind === 'balloon' ? rec.kind : '';
+        return {
+          code,
+          rec,
+          kind,
+          family: kind ? 'B' : d[0] && 'LSAHGT'.includes(d[0]) ? d[0] : '',
+          power: kind ? String(rec.engine_type || '').toUpperCase() : d[2] && 'JTPER'.includes(d[2]) ? d[2] : ''
+        };
+      },
       F = window.AeroDBSheets.configure({
-        lang: () => 'en' // langue de la page V2 au relevé
+        lang: () => 'en', // langue de la page V2 au relevé
+        aircraft: {
+          classify,
+          related: c => [c],
+          record: c => STUB[c] || null,
+          perf: () => null
+        }
       }),
       lines = [];
     let pass = 0,
@@ -67,7 +128,7 @@
       name: 'Test turboprop',
       icao: 'ZZTP',
       unit: 'kg',
-      engineType: 'turboprop',
+      propulsion: 'turboprop',
       fuelAsVolume: false,
       jetFuel: true,
       usableFuel: 5000,
@@ -122,7 +183,7 @@
       'Aircraft;ICAO;Registration;Confidence;Basis;Cruise TAS kt;Cruise Fuel Flow lb/h;Climb Rate fpm;Descent Rate fpm;Service Ceiling ft;Fuel Flow vs RPM / Power;LNM Min Runway ft\nTest Twin;ZZTW;F-TEST;medium;manual;250;900;1800;1500;25000;1 000 RPM : 800-900 lb/h | 1 100 RPM : 950 lb/h;3000';
     check('enriched CSV', strip(F.parsePerformanceCsvEnriched(CSV, 'test.csv')), V2.csv);
     const GPT =
-      'Here is the sheet:\n```json\n{\n  // profile\n  "name": "Test jet",\n  "icao": "ZZJT",\n  "unit": "kg",\n  "engineType": "jet",\n  "cruise": { "tasKt": "450 kt", "fuelFlowPerHour": "2,400", "refAltFt": 35000, },\n  "climb": { "iasKt": 280, "rateFpm": 2500 },\n  "descent": { "rateFpm": -2000 },\n  "estimated": ["climb.rateFpm"],\n  "sources": ["manufacturer brochure"]\n}\n```\nHope it helps.';
+      'Here is the sheet:\n```json\n{\n  // profile\n  "name": "Test jet",\n  "icao": "ZZJT",\n  "unit": "kg",\n  "propulsion": "jet",\n  "cruise": { "tasKt": "450 kt", "fuelFlowPerHour": "2,400", "refAltFt": 35000, },\n  "climb": { "iasKt": 280, "rateFpm": 2500 },\n  "descent": { "rateFpm": -2000 },\n  "estimated": ["climb.rateFpm"],\n  "sources": ["manufacturer brochure"]\n}\n```\nHope it helps.';
     // V2 lisait « 2,400 » comme 2,4 ; la V3 corrige (gptNumberText) : seule cette valeur diffère du relevé V2
     const gptV3 = structuredClone(V2.gpt);
     gptV3.profile.cruise.fuelFlowPerHour = 2400;
@@ -176,9 +237,249 @@
         tasKt: 300
       }
     })), V2.missing);
+    // ---- V3 : cellule et propulsion déduites de la base OACI à la place d'engineType (aerodb DECISIONS, 28 Oct 2026)
+    lines.push('<b>airframe and propulsion (V3)</b>');
+    const facts = icao => F.catalogFacts({
+      icao
+    });
+    check('catalogFacts L2J → aeroplane, jet', facts('ZZJ2'), {
+      airframe: 'aeroplane',
+      propulsion: 'jet'
+    });
+    check('catalogFacts L2T → aeroplane, turboprop', facts('ZZT2'), {
+      airframe: 'aeroplane',
+      propulsion: 'turboprop'
+    });
+    check('catalogFacts L1P → aeroplane, piston', facts('ZZP1'), {
+      airframe: 'aeroplane',
+      propulsion: 'piston'
+    });
+    check('catalogFacts H2T → helicopter, turboshaft', facts('ZZH2'), {
+      airframe: 'helicopter',
+      propulsion: 'turboshaft'
+    });
+    check('catalogFacts H1P → helicopter, piston', facts('ZZH1'), {
+      airframe: 'helicopter',
+      propulsion: 'piston'
+    });
+    check('catalogFacts G1P → gyroplane, piston', facts('ZZGY'), {
+      airframe: 'gyroplane',
+      propulsion: 'piston'
+    });
+    check('catalogFacts T2T (tiltrotor) → propulsion only', facts('ZZTR'), {
+      propulsion: 'turboprop'
+    });
+    check('catalogFacts rocket (R) → airframe only', facts('ZZRK'), {
+      airframe: 'aeroplane'
+    });
+    check('catalogFacts airship → airship, piston', facts('ZZAS'), {
+      airframe: 'airship',
+      propulsion: 'piston'
+    });
+    check('catalogFacts GLID → glider, none', facts('GLID'), {
+      airframe: 'glider',
+      propulsion: 'none'
+    });
+    check('catalogFacts BALL → balloon, none', facts('BALL'), {
+      airframe: 'balloon',
+      propulsion: 'none'
+    });
+    check('catalogFacts unknown code → nothing', facts('QQQQ'), {});
+    check('catalogFacts reads icao, then type, then id', [F.catalogFacts({
+      type: 'ZZJ2'
+    }), F.catalogFacts({
+      id: 'ZZJ2'
+    })], [{
+      airframe: 'aeroplane',
+      propulsion: 'jet'
+    }, {
+      airframe: 'aeroplane',
+      propulsion: 'jet'
+    }]);
+    check('catalogFacts pressurized only from a boolean of the record', [facts('ZZPR').pressurized, 'pressurized' in facts('ZZJ2')], [
+      true,
+      false
+    ]);
+    check('effective values: the sheet\'s own first, the catalogue\'s otherwise', F.effectiveFacts({
+      icao: 'ZZJ2',
+      propulsion: 'other'
+    }), {
+      airframe: 'aeroplane',
+      propulsion: 'other'
+    });
+    // migration à la lecture
+    const mig = p => {
+      const q = F.normalize(structuredClone(p));
+      return [q.engineType, q.airframe, q.propulsion];
+    };
+    check('migration: EC45 with engineType turboprop (a ChatGPT guess) → nothing stored', mig({
+      id: 'EC45',
+      icao: 'EC45',
+      engineType: 'turboprop'
+    }), [undefined, undefined, undefined]);
+    check('migration: unknown code + turboprop → propulsion turboprop', mig({
+      id: 'QQ1',
+      icao: 'QQQQ',
+      engineType: 'turboprop'
+    }), [undefined, undefined, 'turboprop']);
+    check('migration: unknown code + helicopter + turboprop → turboshaft', mig({
+      id: 'QQ2',
+      icao: 'QQQQ',
+      airframe: 'helicopter',
+      engineType: 'turboprop'
+    }), [undefined, 'helicopter', 'turboshaft']);
+    check('migration: a propulsion already stored is kept', mig({
+      id: 'QQ3',
+      icao: 'QQQQ',
+      propulsion: 'piston',
+      engineType: 'jet'
+    }), [undefined, undefined, 'piston']);
+    check('migration: engineType auto is only dropped', mig({
+      id: 'QQ4',
+      icao: 'QQQQ',
+      engineType: 'auto'
+    }), [undefined, undefined, undefined]);
+    check('migration: "auto" in the new fields is removed', mig({
+      id: 'QQ5',
+      icao: 'QQQQ',
+      airframe: 'auto',
+      propulsion: 'auto'
+    }), [undefined, undefined, undefined]);
+    // champs manquants
+    const miss = p => F.sheetMissingPaths(F.normalize(p));
+    check('missing: unknown type still lists airframe and propulsion', miss({
+      id: 'X',
+      icao: 'QQQQ'
+    }).filter(k => ['airframe', 'propulsion'].includes(k)), ['airframe', 'propulsion']);
+    check('missing: deduced airframe and propulsion are not listed, the rpm fields are', miss({
+      id: 'X',
+      icao: 'ZZJ2'
+    }).filter(k => ['airframe', 'propulsion', 'taxi.rpmNominal', 'cruise.rpmNominal', 'rpmFuelCurve'].includes(k)), [
+      'taxi.rpmNominal',
+      'cruise.rpmNominal', 'rpmFuelCurve'
+    ]);
+    check('missing: a stored propulsion is not listed either', miss({
+      id: 'X',
+      icao: 'QQQQ',
+      propulsion: 'jet'
+    }).filter(k => ['airframe', 'propulsion'].includes(k)), ['airframe']);
+    check('missing: a pressurized flag of the catalogue is not listed', [miss({
+      id: 'X',
+      icao: 'ZZPR'
+    }).includes('pressurized'), miss({
+      id: 'X',
+      icao: 'ZZJ2'
+    }).includes('pressurized')], [false, true]);
+    check('missing: iasKt is still listed when tasKt is filled', miss({
+      id: 'X',
+      icao: 'ZZJ2',
+      cruise: {
+        tasKt: 300
+      }
+    }).includes('cruise.iasKt'), true);
+    // altitude de rétablissement : comptée et demandée pour un moteur à pistons ou une propulsion inconnue seulement
+    const crit = p => miss(p).includes('engineCriticalAltFt');
+    check('missing: critical altitude not listed for a jet (catalogue)', crit({
+      id: 'X',
+      icao: 'ZZJ2'
+    }), false);
+    check('missing: critical altitude not listed for a turboshaft helicopter (catalogue)', crit({
+      id: 'X',
+      icao: 'ZZH2'
+    }), false);
+    check('missing: critical altitude not listed for a stored jet propulsion', crit({
+      id: 'X',
+      icao: 'QQQQ',
+      propulsion: 'jet'
+    }), false);
+    check('missing: critical altitude listed for a piston (catalogue) when empty', crit({
+      id: 'X',
+      icao: 'ZZP1'
+    }), true);
+    check('missing: critical altitude listed for a stored piston when empty', crit({
+      id: 'X',
+      icao: 'QQQQ',
+      propulsion: 'piston'
+    }), true);
+    check('missing: critical altitude not listed for a piston once filled', crit({
+      id: 'X',
+      icao: 'ZZP1',
+      engineCriticalAltFt: 8000
+    }), false);
+    check('missing: critical altitude listed when the propulsion is unknown', crit({
+      id: 'X',
+      icao: 'QQQQ'
+    }), true);
+    check('missing: the stored propulsion wins over the catalogue for the critical altitude', crit({
+      id: 'X',
+      icao: 'ZZJ2',
+      propulsion: 'piston'
+    }), true);
+    // familles de champs manquants, dans l'ordre de la liste des fiches
+    check('families: ordered, once each', F.sheetMissingFamilies(['pressurized', 'taxiFuel', 'runwayType', 'cruise.tasKt',
+      'climb.rpmNominal',
+      'cruise.refAltFt', 'climb.rateFpm', 'descent.fuelFlowPerHour', 'usableFuel', 'jetFuel', 'foo', 'rpmFuelCurve', 'climb.iasKt'
+    ]), ['rpm', 'speeds', 'cruise', 'rates', 'flows', 'taxi', 'runway', 'fuel', 'aircraft', 'other']);
+    check('families: taxi.rpmNominal is a rpm, taxi.fuelFlowPerHour a taxi, cruise.fuelFlowPerHour a cruise', [
+      F.sheetMissingFamilies(['taxi.rpmNominal']), F.sheetMissingFamilies(['taxi.fuelFlowPerHour']), F.sheetMissingFamilies([
+        'cruise.fuelFlowPerHour'
+      ]), F.sheetMissingFamilies(['alternate.fuelFlowPerHour']), F.sheetMissingFamilies(['engineCriticalAltFt', 'airframe'])
+    ], [
+      ['rpm'],
+      ['taxi'],
+      ['cruise'],
+      ['flows'],
+      ['aircraft']
+    ]);
+    check('families: nothing missing → none', F.sheetMissingFamilies([]), []);
+    // réponse de ChatGPT : la base OACI prime, les mots libres sont ramenés à la liste
+    const reply = (icao, o) => F.parseGptReply(JSON.stringify({
+      icao,
+      cruise: {
+        tasKt: 300
+      },
+      ...o
+    }), icao);
+    check('reply: keys the catalogue deduces are dropped (catalogue wins)', ['airframe', 'propulsion'].map(k => k in reply('ZZJ2', {
+      airframe: 'helicopter',
+      propulsion: 'piston'
+    }).profile), [false, false]);
+    check('reply: the other keys are kept', reply('ZZJ2', {
+      propulsion: 'piston'
+    }).profile.cruise.tasKt, 300);
+    const free = (k, v) => reply('QQQQ', {
+      [k]: v
+    });
+    for (const [k, v, want] of [
+        ['propulsion', 'turbofan', 'jet'],
+        ['propulsion', 'Turbojet', 'jet'],
+        ['propulsion', 'turboshaft', 'turboshaft'],
+        ['propulsion', 'free-turboshaft', 'turboshaft'],
+        ['propulsion', 'turboprop', 'turboprop'],
+        ['propulsion', 'reciprocating', 'piston'],
+        ['propulsion', 'piston', 'piston'],
+        ['airframe', 'Helicopter', 'helicopter'],
+        ['airframe', 'heli', 'helicopter'],
+        ['airframe', 'autogyro', 'gyroplane'],
+        ['airframe', 'sailplane', 'glider'],
+        ['airframe', 'blimp', 'airship'],
+        ['airframe', 'airplane', 'aeroplane']
+      ]) check(`reply: ${k} "${v}" → ${want}`, free(k, v).profile[k], want);
+    const odd = free('propulsion', 'warp drive');
+    check('reply: a value out of the list is dropped with a warning', [odd.profile.propulsion, odd.warnings.some(w => /propulsion/.test(
+      w))], [
+      undefined, true
+    ]);
     lines.unshift(`<b class="${fail ? 'ko' : 'ok'}">${pass} passed, ${fail} failed</b>`);
     document.getElementById('out').innerHTML = lines.join('\n');
     document.title = `fuel — sheets bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
+    // compte rendu lu par le contrôle de non-régression (tests/v3, cas F10)
+    window.__bench = {
+      pass,
+      fail,
+      rows: lines.filter(l => l.includes('class="ko"')),
+      done: true
+    };
   })().catch(e => {
     document.getElementById('out').textContent = 'ERROR ' + e.stack;
     document.title = 'fuel — sheets bench: ERROR';

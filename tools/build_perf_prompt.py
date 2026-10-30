@@ -1,7 +1,9 @@
-"""Construit « apps/planner/perf_prompt.js » à partir de docs/technique/PROMPT_PROFIL_PERFORMANCES.md.
+"""Construit « modules/fuel/perf_prompt.js » à partir de docs/technique/PROMPT_PROFIL_PERFORMANCES.md.
 
-Le bouton « Demander à ChatGPT » du bloc « Profils de performances » (page Carburant) lit le prompt dans ce fichier
-JavaScript, chargé par <script> (fonctionne aussi hors serveur web). Le document reste la source unique : un bloc
+Le bouton « Demander à ChatGPT » des fiches de performances (module Carburant) lit le prompt dans ce fichier
+JavaScript, chargé par <script> (fonctionne aussi hors serveur web). Sur la ligne V3, la copie du planificateur V2
+(apps/planner/perf_prompt.js) n'est plus construite : la V2 est maintenue sur la branche v2-maintenance, son prompt reste
+tel qu'il est ici. Le document reste la source unique : un bloc
 ```text <langue> par langue (fr, en, de, es), un bloc ```text <langue>-missing (champs manquants des fiches cochées :
 window.PERF_PROMPT_MISSING) et un bloc ```json (le schéma, mis à la place de {{SCHEMA}} et
 donné aussi à la page : window.PERF_PROMPT_SCHEMA, clés admises dans la réponse). Relancer
@@ -13,9 +15,8 @@ import io, json, os, re, sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 SRC = os.path.join(ROOT, 'docs', 'technique', 'PROMPT_PROFIL_PERFORMANCES.md')
-OUT = os.path.join(ROOT, 'apps', 'planner', 'perf_prompt.js')
-# V3 : le module carburant en a sa copie (modules/fuel/perf_prompt.js), écrite à l'identique
-OUTS = [OUT, os.path.join(ROOT, 'modules', 'fuel', 'perf_prompt.js')]
+# fichiers écrits : la copie du module carburant seule (V2 : branche v2-maintenance, apps/planner/perf_prompt.js reste telle quelle ici)
+OUTS = [os.path.join(ROOT, 'modules', 'fuel', 'perf_prompt.js')]
 LANGS = ('fr', 'en', 'de', 'es')
 
 

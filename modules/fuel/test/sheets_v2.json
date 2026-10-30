@@ -1,5 +1,5 @@
 {
- "lnm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<LittleNavmap xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"https://www.littlenavmap.org/schema/lnmperf.xsd\">\n  <AircraftPerf>\n    <Header>\n      <CreationDate>2026-10-21T17:48:26.319Z</CreationDate>\n      <FileVersion>1.0</FileVersion>\n      <ProgramName>Flight Performance &amp; Fuel Planner</ProgramName>\n      <ProgramVersion>0.2</ProgramVersion>\n      <Documentation>https://www.littlenavmap.org/lnmperf.html</Documentation>\n    </Header>\n    <Options>\n      <Name>Test turboprop</Name>\n      <AircraftType>ZZTP</AircraftType>\n      <Description></Description>\n      <FuelAsVolume>0</FuelAsVolume>\n      <JetFuel>1</JetFuel>\n    </Options>\n    <Perf>\n      <ContingencyFuelPercent>5.0</ContingencyFuelPercent>\n      <ExtraFuelLbsGal>0.000</ExtraFuelLbsGal>\n      <MinRunwayLengthFt>3000.000</MinRunwayLengthFt>\n      <ReserveFuelLbsGal>350.000</ReserveFuelLbsGal>\n      <RunwayType>HARD</RunwayType>\n      <TaxiFuelLbsGal>30.000</TaxiFuelLbsGal>\n      <UsableFuelLbsGal>5000.000</UsableFuelLbsGal>\n      <Alternate>\n        <FuelFlowLbsGalPerHour>900.000</FuelFlowLbsGalPerHour>\n        <SpeedKtsTAS>280.000</SpeedKtsTAS>\n      </Alternate>\n      <Climb>\n        <FuelFlowLbsGalPerHour>1300.000</FuelFlowLbsGalPerHour>\n        <SpeedKtsTAS>220.000</SpeedKtsTAS>\n        <VertSpeedFtPerMin>1500.000</VertSpeedFtPerMin>\n      </Climb>\n      <Cruise>\n        <FuelFlowLbsGalPerHour>1000.000</FuelFlowLbsGalPerHour>\n        <SpeedKtsTAS>300.000</SpeedKtsTAS>\n      </Cruise>\n      <Descent>\n        <FuelFlowLbsGalPerHour>450.000</FuelFlowLbsGalPerHour>\n        <SpeedKtsTAS>250.000</SpeedKtsTAS>\n        <VertSpeedFtPerMin>1500.000</VertSpeedFtPerMin>\n      </Descent>\n    </Perf>\n  </AircraftPerf>\n</LittleNavmap>\n",
+ "lnm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<LittleNavmap xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"https://www.littlenavmap.org/schema/lnmperf.xsd\">\n  <AircraftPerf>\n    <Header>\n      <CreationDate>2026-10-21T17:48:26.319Z</CreationDate>\n      <FileVersion>1.0</FileVersion>\n      <ProgramName>Flight Performance &amp; Fuel Planner</ProgramName>\n      <ProgramVersion>0.2</ProgramVersion>\n      <Documentation>https://www.littlenavmap.org/lnmperf.html</Documentation>\n    </Header>\n    <Options>\n      <Name>Test turboprop</Name>\n      <AircraftType>ZZTP</AircraftType>\n      <Description></Description>\n      <FuelAsVolume>0</FuelAsVolume>\n      <JetFuel>1</JetFuel>\n    </Options>\n    <Perf>\n      <ContingencyFuelPercent>5.0</ContingencyFuelPercent>\n      <ExtraFuelLbsGal>0.000</ExtraFuelLbsGal>\n      <MinRunwayLengthFt>3000.000</MinRunwayLengthFt>\n      <ReserveFuelLbsGal>771.618</ReserveFuelLbsGal>\n      <RunwayType>HARD</RunwayType>\n      <TaxiFuelLbsGal>66.139</TaxiFuelLbsGal>\n      <UsableFuelLbsGal>11023.113</UsableFuelLbsGal>\n      <Alternate>\n        <FuelFlowLbsGalPerHour>1984.160</FuelFlowLbsGalPerHour>\n        <SpeedKtsTAS>280.000</SpeedKtsTAS>\n      </Alternate>\n      <Climb>\n        <FuelFlowLbsGalPerHour>2866.009</FuelFlowLbsGalPerHour>\n        <SpeedKtsTAS>220.000</SpeedKtsTAS>\n        <VertSpeedFtPerMin>1500.000</VertSpeedFtPerMin>\n      </Climb>\n      <Cruise>\n        <FuelFlowLbsGalPerHour>2204.623</FuelFlowLbsGalPerHour>\n        <SpeedKtsTAS>300.000</SpeedKtsTAS>\n      </Cruise>\n      <Descent>\n        <FuelFlowLbsGalPerHour>992.080</FuelFlowLbsGalPerHour>\n        <SpeedKtsTAS>250.000</SpeedKtsTAS>\n        <VertSpeedFtPerMin>1500.000</VertSpeedFtPerMin>\n      </Descent>\n    </Perf>\n  </AircraftPerf>\n</LittleNavmap>\n",
  "lnmBack": {
   "id": "ZZTP",
   "icao": "ZZTP",
@@ -10,26 +10,26 @@
   "fuelAsVolume": false,
   "contingencyPercent": 5,
   "extraFuel": 0,
-  "reserveFuel": 350,
-  "taxiFuel": 30,
-  "usableFuel": 5000,
+  "reserveFuel": 771.618,
+  "taxiFuel": 66.139,
+  "usableFuel": 11023.113,
   "minRunwayLengthFt": 3000,
   "runwayType": "HARD",
   "alternate": {
-   "fuelFlowPerHour": 900,
+   "fuelFlowPerHour": 1984.16,
    "tasKt": 280
   },
   "climb": {
-   "fuelFlowPerHour": 1300,
+   "fuelFlowPerHour": 2866.009,
    "tasKt": 220,
    "rateFpm": 1500
   },
   "cruise": {
-   "fuelFlowPerHour": 1000,
+   "fuelFlowPerHour": 2204.623,
    "tasKt": 300
   },
   "descent": {
-   "fuelFlowPerHour": 450,
+   "fuelFlowPerHour": 992.08,
    "tasKt": 250,
    "rateFpm": 1500
   },
@@ -100,7 +100,7 @@
   "profile": {
    "name": "Test jet",
    "icao": "ZZJT",
-   "engineType": "jet",
+   "propulsion": "jet",
    "cruise": {
     "tasKt": 450,
     "fuelFlowPerHour": 2.4,
@@ -157,8 +157,8 @@
     "src": ""
    },
    {
-    "path": "engineType",
-    "label": "Croisière · Motorisation (auto : base OACI)",
+    "path": "propulsion",
+    "label": "Identité et format · Propulsion (auto : base OACI)",
     "old": "\"turboprop\"",
     "now": "\"turboprop\"",
     "changed": false,
@@ -411,7 +411,7 @@
     "fuelFlowPerHour": 1000
    }
   ],
-  "engineType": "turboprop",
+  "propulsion": "turboprop",
   "fuelAsVolume": false,
   "jetFuel": true,
   "usableFuel": 5000,
@@ -431,7 +431,7 @@
  "leaves": {
   "name": "\"Test turboprop\"",
   "icao": "\"ZZTP\"",
-  "engineType": "\"turboprop\"",
+  "propulsion": "\"turboprop\"",
   "fuelAsVolume": "false",
   "jetFuel": "true",
   "usableFuel": "5000",
@@ -460,7 +460,8 @@
   "tod.bufferNm": "5"
  },
  "missing": [
-  "engineType",
+  "airframe",
+  "propulsion",
   "pressurized",
   "jetFuel",
   "usableFuel",

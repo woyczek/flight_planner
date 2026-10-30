@@ -15,6 +15,20 @@ import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
+import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
+import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plane (.fms) et MSFS (.pln), V3 § 10.28
+import {
+  createProcedures,
+  sideChosen,
+  cleanSide,
+  PROC_STYLE
+} from './procedures.js'; // la carte « Procédures » (choix, lecture, OFP) : voir l'interface en tête de ce fichier
+import {
+  createAdNames
+} from './adnames.js'; // le nom du terrain sous son code et la complétion des champs de l'étape Vol (§ 10.27)
+import {
+  createRouteComplete
+} from './routecomplete.js'; // la complétion au curseur du champ de route (§ 10.31)
 import {
   svg
 } from '../../frame/lib/icons.js';
@@ -27,7 +41,8 @@ import {
 import {
   fmtZ,
   fmtZLocal,
-  fmtDateZ
+  fmtDateZ,
+  fmtDayZ
 } from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »), l'heure locale seulement au départ et à l'arrivée
 
 export const meta = {
@@ -45,9 +60,11 @@ export const meta = {
     policy: 'cache'
   }],
   // gardés hors ligne dès la première visite (service worker du cadre)
-  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js',
+  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
+    'procedures_texts.js', 'adnames.js', 'routecomplete.js',
     '../../frame/lib/weather_store.js',
-    '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/routing.js',
+    '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
+    '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/time.js', '../../frame/lib/geo.js'
   ]
@@ -147,8 +164,31 @@ const TX = {
   ],
   autoOne: ['1 voie inscrite, {d}', '1 airway written, {d}', '1 Luftstraße eingetragen, {d}', '1 aerovía inscrita, {d}'],
   autoMany: ['{n} voies inscrites, {d}', '{n} airways written, {d}', '{n} Luftstraßen eingetragen, {d}', '{n} aerovías inscritas, {d}'],
-  autoNone: ['Aucune voie utile entre {a} et {b}{more}', 'No useful airway between {a} and {b}{more}',
-    'Keine nutzbare Luftstraße zwischen {a} und {b}{more}', 'Ninguna aerovía útil entre {a} y {b}{more}'
+  autoNone: ['Aucune voie utile entre {a} et {b} ({why}){more}', 'No useful airway between {a} and {b} ({why}){more}',
+    'Keine nutzbare Luftstraße zwischen {a} und {b} ({why}){more}', 'Ninguna aerovía útil entre {a} y {b} ({why}){more}'
+  ],
+  // la raison d'un tronçon resté direct (§ 10.31 : « route non trouvée » est un fait que le pilote lit, jamais un silence)
+  autoWhyNone: ['pas de voie près de {a}', 'no airway near {a}', 'keine Luftstraße nahe {a}', 'ninguna aerovía cerca de {a}'],
+  autoWhyFar: ['trop loin des voies', 'too far from the airways', 'zu weit von den Luftstraßen', 'demasiado lejos de las aerovías'],
+  autoWhyDetour: ['détour de plus de {p} %', 'detour of more than {p} %', 'Umweg von mehr als {p} %', 'desvío de más del {p} %'],
+  // une voie relie bien les deux points mais n'est pas ouverte au niveau du tronçon (§ 10.31 : la plage ouverte, le pilote décide)
+  autoWhyClosed: ['{w} relie {a} à {b}, fermée au {lvl} (ouverte de {lo} au {hi}) : tronçon direct',
+    '{w} joins {a} to {b}, closed at {lvl} (open from {lo} to {hi}): direct leg',
+    '{w} verbindet {a} mit {b}, gesperrt auf {lvl} (offen von {lo} bis {hi}): direkter Abschnitt',
+    '{w} une {a} con {b}, cerrada a {lvl} (abierta de {lo} a {hi}): tramo directo'
+  ],
+  autoWhyLoop: ['la route repasserait par un point', 'the route would pass a point twice',
+    'die Route würde einen Punkt zweimal überfliegen',
+    'la ruta pasaría dos veces por un punto'
+  ],
+  // « A VOIE B » où la voie ne relie pas A à B dans le couloir du tronçon (§ 10.31) : le tronçon reste direct
+  awyBad: ['{w} ne relie pas {a} à {b} : tronçon direct', '{w} does not join {a} to {b}: direct leg',
+    '{w} verbindet {a} nicht mit {b}: direkter Abschnitt', '{w} no une {a} con {b}: tramo directo'
+  ],
+  // la SID choisie rejoint la route tapée par un direct depuis sa sortie (§ 10.31)
+  procExitDct: ['{sid} sort à {exit} : {exit} DCT {next}', '{sid} exits at {exit}: {exit} DCT {next}',
+    '{sid} endet bei {exit}: {exit} DCT {next}',
+    '{sid} sale por {exit}: {exit} DCT {next}'
   ],
   autoNoLeg: ['Aucun tronçon sans voie à compléter.', 'No leg without an airway to fill in.',
     'Kein Abschnitt ohne Luftstraße zu ergänzen.',
@@ -161,6 +201,9 @@ const TX = {
     'Keine geplante Flugfläche: Luftstraßen auf {l} gesucht.', 'Sin nivel previsto: aerovías buscadas a {l}.'
   ],
   ptsN: ['Points ({n})', 'Points ({n})', 'Punkte ({n})', 'Puntos ({n})'],
+  // une procédure choisie dans la liste des points : une ligne de groupe, ses repères dépliés au toucher (§ 10.31)
+  ptsGroupN: ['{n} points', '{n} points', '{n} Punkte', '{n} puntos'],
+  ptsGroup1: ['1 point', '1 point', '1 Punkt', '1 punto'],
   stepNames: [
     ['Vol', 'Flight', 'Flug', 'Vuelo'],
     ['Route', 'Route', 'Route', 'Ruta'],
@@ -232,6 +275,8 @@ const TX = {
     'OFP {dep} → {arr} übernommen ({n} Punkte).',
     'OFP {dep} → {arr} cargado ({n} puntos).'
   ],
+  // piste, SID, STAR et approche choisies dans la préparation (V3_SPECIFICATION § 10.20)
+  procTitle: ['Procédures', 'Procedures', 'Verfahren', 'Procedimientos'],
   offline: ['Hors ligne : rien n’a été demandé.', 'Offline: nothing was requested.', 'Offline: nichts wurde angefragt.',
     'Sin conexión: no se pidió nada.'
   ],
@@ -323,6 +368,31 @@ const TX = {
   thr: ['Gaz', 'Thr.', 'Gas', 'Gases'],
   wxDate: ['Date du vol (heure locale de l’appareil)', 'Flight date (device’s local time)', 'Flugdatum (Ortszeit des Geräts)',
     'Fecha del vuelo (hora local del dispositivo)'
+  ],
+  // date du vol passée (V3 § 10.28) : un avertissement, jamais un blocage
+  pastDate: ['Vol daté du {d}, dans le passé : météo et NOTAM ne valent plus.',
+    'Flight dated {d}, in the past: weather and NOTAMs no longer apply.',
+    'Flug datiert auf {d}, in der Vergangenheit: Wetter und NOTAM gelten nicht mehr.',
+    'Vuelo fechado el {d}, en el pasado: la meteorología y los NOTAM ya no valen.'
+  ],
+  // export du plan de vol vers les simulateurs (V3 § 10.28) : trois boutons à l'étape Départ
+  fmsTitle: ['Plan de vol pour le simulateur', 'Flight plan for the simulator', 'Flugplan für den Simulator',
+    'Plan de vuelo para el simulador'
+  ],
+  fmsHint: ['La route et les procédures choisies, écrites pour X-Plane ou Microsoft Flight Simulator ; le fichier est téléchargé.',
+    'The route and the chosen procedures, written for X-Plane or Microsoft Flight Simulator; the file is downloaded.',
+    'Die Route und die gewählten Verfahren, geschrieben für X-Plane oder Microsoft Flight Simulator; die Datei wird heruntergeladen.',
+    'La ruta y los procedimientos elegidos, escritos para X-Plane o Microsoft Flight Simulator; se descarga el archivo.'
+  ],
+  fmsXp11: ['.fms (XP 11/12)', '.fms (XP 11/12)', '.fms (XP 11/12)', '.fms (XP 11/12)'],
+  fmsXp10: ['.fms (XP 10)', '.fms (XP 10)', '.fms (XP 10)', '.fms (XP 10)'],
+  fmsPln: ['.pln (MSFS)', '.pln (MSFS)', '.pln (MSFS)', '.pln (MSFS)'],
+  fmsNeed: ['Il faut une route d’au moins deux points placés.', 'The route needs at least two placed points.',
+    'Die Route braucht mindestens zwei gesetzte Punkte.', 'La ruta necesita al menos dos puntos situados.'
+  ],
+  fmsFailed: ['Le plan de vol n’a pas pu être écrit.', 'The flight plan could not be written.',
+    'Der Flugplan konnte nicht geschrieben werden.',
+    'No se pudo escribir el plan de vuelo.'
   ],
   wxDateHint: ['La météo du devis (TAF, vents en altitude) et la Carte sont lues à cette date ; vide : maintenant.',
     'The quote’s weather (TAF, winds aloft) and the Map are read at this date; empty: now.',
@@ -564,8 +634,22 @@ const TX = {
     'Datenblätter der gemeinsamen Datenbank; jede Änderung wird vor dem Schreiben gezeigt.',
     'Fichas de la base compartida; cada cambio se muestra antes de escribirse.'
   ],
-  missing: ['{n} champ(s) vide(s)', '{n} empty field(s)', '{n} leere(s) Feld(er)', '{n} campo(s) vacío(s)'],
+  missing: ['À compléter : {list}', 'To complete: {list}', 'Zu ergänzen: {list}', 'Por completar: {list}'],
+  // familles de champs vides nommées par la liste des fiches (F.sheetMissingFamilies), dans l'ordre de la liste
+  missingFamily: {
+    rpm: ['régimes', 'rpm', 'Drehzahlen', 'regímenes'],
+    speeds: ['vitesses', 'speeds', 'Geschwindigkeiten', 'velocidades'],
+    cruise: ['croisière', 'cruise', 'Reiseflug', 'crucero'],
+    rates: ['varios', 'rates', 'Steigraten', 'velocidades verticales'],
+    flows: ['débits', 'fuel flows', 'Verbräuche', 'consumos'],
+    taxi: ['roulage', 'taxi', 'Rollen', 'rodaje'],
+    runway: ['piste', 'runway', 'Piste', 'pista'],
+    fuel: ['carburant', 'fuel', 'Kraftstoff', 'combustible'],
+    aircraft: ['appareil', 'aircraft', 'Luftfahrzeug', 'aeronave'],
+    other: ['divers', 'other', 'Sonstiges', 'otros']
+  },
   complete: ['complète', 'complete', 'vollständig', 'completa'],
+  auto: ['auto', 'auto', 'auto', 'auto'],
   updated: ['mise à jour {d}', 'updated {d}', 'aktualisiert {d}', 'actualizada {d}'],
   useSheet: ['Utiliser', 'Use', 'Verwenden', 'Usar'],
   edit: ['Modifier', 'Edit', 'Bearbeiten', 'Editar'],
@@ -671,8 +755,11 @@ const FIELD_TX = {
   'Altitude de référence (ft)': ['Altitude de référence (ft)', 'Reference altitude (ft)', 'Referenzhöhe (ft)',
     'Altitud de referencia (ft)'
   ],
-  'Motorisation (auto : base OACI)': ['Motorisation (auto : base OACI)', 'Engines (auto: ICAO base)', 'Antrieb (auto: ICAO-Basis)',
-    'Motorización (auto: base OACI)'
+  'Cellule (auto : base OACI)': ['Cellule (auto : base OACI)', 'Airframe (auto: ICAO base)', 'Zelle (auto: ICAO-Basis)',
+    'Célula (auto: base OACI)'
+  ],
+  'Propulsion (auto : base OACI)': ['Propulsion (auto : base OACI)', 'Propulsion (auto: ICAO base)', 'Antrieb (auto: ICAO-Basis)',
+    'Propulsión (auto: base OACI)'
   ],
   'Altitude de rétablissement (ft)': ['Altitude de rétablissement (ft)', 'Critical altitude (ft)', 'Volldruckhöhe (ft)',
     'Altitud crítica (ft)'
@@ -685,6 +772,22 @@ const FIELD_TX = {
   'Base / provenance': ['Base / provenance', 'Basis / origin', 'Grundlage / Herkunft', 'Base / procedencia']
 };
 
+// libellés des valeurs des champs à liste (cellule, propulsion) ; les autres listes (type de piste) gardent leur code
+const OPTION_TX = {
+  aeroplane: ['avion', 'aeroplane', 'Flugzeug', 'avión'],
+  helicopter: ['hélicoptère', 'helicopter', 'Hubschrauber', 'helicóptero'],
+  gyroplane: ['gyroplane', 'gyroplane', 'Tragschrauber', 'autogiro'],
+  glider: ['planeur', 'glider', 'Segelflugzeug', 'planeador'],
+  balloon: ['ballon', 'balloon', 'Ballon', 'globo'],
+  airship: ['dirigeable', 'airship', 'Luftschiff', 'dirigible'],
+  piston: ['moteur à pistons', 'piston engine', 'Kolbenmotor', 'motor de pistón'],
+  turboprop: ['turbopropulseur', 'turboprop', 'Turboprop', 'turbohélice'],
+  turboshaft: ['turbomoteur', 'turboshaft', 'Wellenturbine', 'turboeje'],
+  jet: ['réacteur', 'jet', 'Strahltriebwerk', 'reactor'],
+  electric: ['électrique', 'electric', 'elektrisch', 'eléctrico'],
+  none: ['aucune (sans moteur)', 'none (unpowered)', 'keine (ohne Antrieb)', 'ninguna (sin motor)'],
+  other: ['autre', 'other', 'andere', 'otra']
+};
 // champs de fiche hors du formulaire de la V2
 const PATH_TX = {
   reserveFuelFlowPerHour: ['Réserve · débit', 'Reserve · fuel flow', 'Reserve · Verbrauch', 'Reserva · consumo'],
@@ -932,8 +1035,30 @@ async function routePoints(text, dep, arr, known = new Map(), chain = []) {
       pt: p
     });
   };
+  // « A VOIE B » (V3 § 10.31) : un mot en forme de voie entre deux points nommés est une voie quand la base a une voie de ce nom à
+  // proximité ; un point de la base du même nom ne gagne jamais contre elle (utilisateur, 30 octobre : « A3 » lu comme un point près
+  // de Gibraltar, 1 871 NM). Sans voie de ce nom à proximité, l'identifiant reste un point (PO421…)
+  const near = new Map(),
+    airwayNear = async (name, p) => {
+        const k = `${name}|${Math.round(+p.lat)}|${Math.round(+p.lon)}`;
+        if (!near.has(k)) near.set(k, Promise.resolve().then(() => ctx.aerodb?.airways?.({
+          bbox: [+p.lon - 3, +p.lat - 2, +p.lon + 3, +p.lat + 2]
+        })).then(s => (s || []).some(x => String(x?.route || '').toUpperCase() === name), () => false));
+        return near.get(k);
+      },
+      words = RT.tokenize(text);
   // jetons du texte (frame/lib/route_text.js) ; un nom est cherché dans aerodb, puis parmi les points connus
-  for (const t of RT.tokenize(text)) {
+  for (const [ti, t] of words.entries()) {
+    const nx = words[ti + 1];
+    if (t.kind === 'name' && AIRWAY_WORD.test(t.id) && points.length && (nx?.kind === 'name' || nx?.kind === 'coord') && await airwayNear(
+        t
+        .id, points.at(-1))) {
+      via = t.id;
+      tokens.push({
+        keep: t.id
+      });
+      continue;
+    }
     if (t.kind === 'group') { // groupe vitesse-niveau seul : niveau du dernier point
       if (t.alt_ft && points.length) points.at(-1).alt_ft = t.alt_ft;
     } else if (t.kind === 'coord') add(t.id, t, t.alt_ft);
@@ -973,6 +1098,33 @@ async function routePoints(text, dep, arr, known = new Map(), chain = []) {
     if (c) add(arr, c);
     else if (!unresolved.includes(arr)) unresolved.push(arr);
   }
+  // une voie écrite n'est suivie que si ses deux bouts en sont des nœuds reliés le long d'elle dans le couloir du tronçon : ses nœuds
+  // sont alors insérés (la distance et la carte la suivent) ; sinon le tronçon reste direct et la ligne le dit (badAirways). Les
+  // nœuds déjà gardés du vol (awy) sont repris tels quels ; sans base lisible, rien n'est jugé
+  const badAirways = [];
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i],
+      a = points[i - 1];
+    if (!p.via || !AIRWAY_WORD.test(p.via) || a.awy || p.awy || !ctx.aerodb?.airways) continue;
+    const segs = await ctx.aerodb.airways({
+        bbox: RG.corridor([a, p])
+      }).catch(() => null),
+      st = ctx.aerodb.state?.().state;
+    if (!segs || !segs.length && st && st !== 'ready') continue;
+    const path = RG.along(segs, p.via, a, p);
+    if (path) {
+      const mid = path.slice(1, -1);
+      points.splice(i, 0, ...mid);
+      i += mid.length;
+    } else {
+      badAirways.push({
+        w: p.via,
+        a: a.id,
+        b: p.id
+      });
+      delete p.via;
+    }
+  }
   // niveaux : seuls les changements restent (une route d'OFP répète son niveau à chaque point), jamais au départ ni à
   // l'arrivée — le vol part au niveau du plan
   let prev = points[0]?.alt_ft;
@@ -984,14 +1136,18 @@ async function routePoints(text, dep, arr, known = new Map(), chain = []) {
   return {
     points,
     unresolved,
-    tokens
+    tokens,
+    badAirways
   };
 }
 /** Désignateur de voie aérienne, composé compris (UN460, G54-R66) : le mot qui précède un point y arrivant par cette voie. */
 const AIRWAY_WORD = /^[A-Z]{1,2}\d{1,4}[A-Z]?(-[A-Z]{1,2}\d{1,4}[A-Z]?)*$/;
 /** Texte normalisé de la route : « DEP PT1 UN460 PT2/F280 … ARR » — points par leur identifiant (niveau en /Fnnn là
  *  où il change), voies, procédures et mots inconnus gardés à leur place, une seule ligne (frame/lib/route_text.js). */
-const routeText = RT.textFromTokens;
+/** Texte normalisé du champ de route, en forme OACI avec ses « DCT » (V3 § 10.31). */
+const routeText = tokens => RT.textFromTokens(tokens, {
+  dct: true
+});
 
 // ---------------------------------------------------------------- données (vol courant, réglages, fiches)
 /** Chemin d'un document du pilote (trigramme de l'identité, ANON sans identité). */
@@ -1028,6 +1184,18 @@ const isoToWhen = iso => {
   const t = Date.parse(iso || '');
   return Number.isFinite(t) ? new Date(t - new Date(t).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
 };
+/** Avertissement d'un vol pas démarré daté dans le passé (planned_at plus d'une minute avant maintenant) : « Vol daté du 26/10 14:00Z,
+ *  dans le passé : météo et NOTAM ne valent plus. » ; '' sinon. Jamais bloquant (V3 § 10.28). */
+function pastDateText() {
+  const f = S?.flight,
+    t = Date.parse(f?.planned_at || '');
+  return !f?.started?.at && Number.isFinite(t) && t < Date.now() - 60000 ? tt(TX.pastDate, {
+    d: fmtDayZ(f.planned_at)
+  }) : '';
+}
+/** Valeur du champ de la date du vol : planned_at à l'heure de l'appareil, ou l'heure présente quand le vol part maintenant
+ *  (planned_at null) — jamais un champ vide, que le navigateur montre « jj/mm/aaaa » (bouton « Maintenant », 29/10/2026). */
+const whenField = iso => isoToWhen(iso ?? new Date().toISOString());
 /** La date du vol n'a qu'une valeur : current_flight.planned_at (ISO UTC, null = maintenant) ; le champ de saisie en
  *  montre l'heure de l'appareil (isoToWhen). Un vol écrit avant planned_at (weather.when seul, l'ancienne copie) en reçoit
  *  un ; la copie est retirée (fuel ne l'écrit plus : une copie périmée tromperait ses lecteurs). */
@@ -1081,6 +1249,7 @@ function saveFlight() {
   s.flightTimer = setTimeout(async () => {
     const path = `pilot/${s.ctx.identity.trigram || 'ANON'}/current_flight.json`,
       cur = (await s.ctx.data.get(path)) || {};
+    normProcedures(s.flight); // route.procedures au schéma v2 (un ancien { sid, star } migré, un côté d'un autre terrain retiré)
     s.flight = CF.merge(cur, s.flight, {
       fields: CF.FUEL_FIELDS,
       progressKeys: CF.FUEL_PROGRESS,
@@ -1099,6 +1268,216 @@ function saveSettings() {
     schema: 1,
     updated_at: new Date().toISOString()
   }), 800);
+}
+
+// ---------------------------------------------------------------- procédures choisies et chemin du devis (§ 10.20)
+// route.procedures v2 = { dep: { rwy, sid, trans }, arr: { rwy, star, trans, app, appTrans }, by: 'fuel', at } : identifiants du
+// schéma d'aerodb, null = « aucune » (choix du pilote), champ absent = pas choisi. Fuel est seul à l'écrire ; il ne la lit que
+// par CF.proceduresOf. Avant le départ, le devis court sur le chemin « route + procédures » (CF.expandedPath, CF.flownPath) ;
+// après, un changement de procédure ne réécrit que les legs, le chemin vertical et la longueur (rewriteLegs).
+
+/** Clé des entrées de la lecture des procédures : les choix et les terrains (une autre clé, le chemin est relu). */
+const procsKey = (f = S.flight) => JSON.stringify([CF.proceduresOf(f).dep, CF.proceduresOf(f).arr, f.route?.dep || '', f.route?.arr || '']);
+
+/** Chemin volé du vol (CF.flownPath d'expandedPath) : null sans procédure choisie, sans route de deux points, avec une
+ *  distance saisie à la main, ou tant que les procédures choisies ne sont pas lues par aerodb (ensureProcs). */
+function fpNow() {
+  const f = S.flight,
+    r = f.route || {},
+    v = CF.proceduresOf(f);
+  if (r.manual || (r.points || []).length < 2 || !sideChosen(v.dep) && !sideChosen(v.arr) || S.procs?.key !== procsKey(f)) return null;
+  const fp = CF.flownPath(CF.expandedPath(f, S.procs.procs || {}));
+  return fp.length >= 2 ? fp : null;
+}
+/** Vrai si des procédures sont choisies mais pas encore lues : le devis attend (aucune écriture d'un devis passager). */
+function procsPending() {
+  const v = CF.proceduresOf(S.flight);
+  return (sideChosen(v.dep) || sideChosen(v.arr)) && S.procs?.key !== procsKey();
+}
+/** Lit les procédures choisies par aerodb (CF.loadProcedures : enregistrements et pistes) quand les choix ou les terrains ont
+ *  changé, puis redessine ; sans procédure choisie, rien à lire. Une lecture à la fois par clé. */
+function ensureProcs() {
+  const key = procsKey(),
+    v = CF.proceduresOf(S.flight),
+    s = S;
+  if (S.procs?.key === key) return;
+  if (!sideChosen(v.dep) && !sideChosen(v.arr)) {
+    S.procs = {
+      key,
+      procs: null
+    };
+    renderPts(); // plus de groupe de procédure dans la liste des points
+    return;
+  }
+  if (S.procsBusy === key) return;
+  S.procsBusy = key;
+  Promise.resolve().then(() => CF.loadProcedures(s.ctx.aerodb, s.flight)).catch(() => ({})).then(procs => {
+    if (gone(s)) return;
+    if (s.procsBusy === key) s.procsBusy = null;
+    s.procs = {
+      key,
+      procs: procs || {}
+    };
+    if (S === s) renderPts(); // les groupes de procédure de la liste des points (§ 10.31)
+    refresh();
+    if (s.writeAfterProcs) { // une série de choix attendait cette lecture : le vol est écrit avec le devis, en une seule écriture
+      s.writeAfterProcs = false;
+      saveFlight();
+    }
+  });
+}
+/** Fin d'une série de choix de procédures (400 ms sans nouveau choix, procedures.js) : un seul devis et une seule écriture du vol.
+ *  Les procédures choisies sont lues par aerodb (ensureProcs) avant le devis ; le vol est alors écrit avec lui, sinon tout de suite. */
+function procsSettled() {
+  procsToText(true); // le texte de route suit le choix (§ 10.31)
+  if (procsPending()) S.writeAfterProcs = true;
+  else saveFlight();
+  refresh();
+}
+// ---------------------------------------------------------------- le texte de route, vue du modèle (V3 § 10.31)
+/** Même texte de route, aux « DCT » et à la casse près. */
+const sameRoute = (a, b) => [a, b].map(t => String(t || '').toUpperCase().split(/\s+/).filter(w => w && w !== 'DCT').join(' ')).reduce((x,
+    y) =>
+  x === y);
+/** Le texte de route suit le choix des procédures (RT.withProcedures) : le nom de la SID et sa sortie après le départ, l'entrée et le
+ *  nom de la STAR avant l'arrivée ; jamais l'approche (elle n'est pas un élément du plan de vol). La sortie (l'entrée) n'est écrite
+ *  que si aucun point de la procédure n'est déjà dans la route ; quand elle l'est et que say est vrai, une ligne dit la jonction par
+ *  un direct (« NTS1A sort à NT102 : NT102 DCT LUGEN »). Rien tant que les fiches ne sont pas lues, ni pendant la frappe dans le
+ *  champ, ni quand le texte est déjà le bon. */
+function procsToText(say) {
+  const m = S?.P?.textModel?.(),
+    r = S?.flight?.route,
+    ta = S?.body?.querySelector('[data-k="rtext"]');
+  if (!m || !r || (ta && document.activeElement === ta)) return;
+  const o = CF.proceduresOf(S.flight),
+    rec = id => typeof id === 'string' ? m.recs.get(id) || null : null,
+    name = (id, x) => typeof id === 'string' ? (PR.nameOf(x, id) || '').toUpperCase() || null : null,
+    sid = rec(o.dep?.sid),
+    sidT = rec(o.dep?.trans),
+    star = rec(o.arr?.star),
+    starT = rec(o.arr?.trans),
+    sidName = name(o.dep?.sid, sid),
+    exit = PR.exitOf(sidT || sid),
+    res = RT.withProcedures(r.text || '', {
+      dep: r.dep,
+      arr: r.arr,
+      sid: sidName,
+      star: name(o.arr?.star, star),
+      exit,
+      entry: PR.entryOf(starT || star),
+      sidPoints: [...PR.pointsOf(sid), ...PR.pointsOf(sidT)],
+      starPoints: [...PR.pointsOf(starT), ...PR.pointsOf(star)],
+      sidNames: [...m.sid.keys()],
+      starNames: [...m.star.keys()]
+    });
+  if (sameRoute(res.text, r.text)) return;
+  r.text = res.text;
+  r.from = 'route';
+  if (ta) ta.value = r.text;
+  resolveRoute(true); // relu et normalisé (forme OACI, « DCT »), écrit, devis refait
+  if (say && res.exitAdded && res.next) S.ctx.notify(tt(TX.procExitDct, {
+    sid: sidName,
+    exit,
+    next: res.next
+  }), 'ok');
+}
+/** Relecture d'un texte de route que le pilote a édité (V3 § 10.31) : le premier nom d'une SID de route.dep pose cette SID (la fiche
+ *  qui dessert la piste choisie, sinon la première), le dernier nom d'une STAR de route.arr pose cette STAR ; l'absence du nom d'une
+ *  procédure choisie la retire (« Aucune » reste « Aucune ») ; un mot inconnu reste un point nommé (la ligne des points non reconnus le
+ *  dit). Le choix passe par le même chemin qu'une liste de la carte des procédures ; sans changement, le texte reprend sa forme. */
+function textToProcs() {
+  const m = S.P?.textModel?.(),
+    r = S.flight?.route;
+  if (!m || !r) return;
+  const o = CF.proceduresOf(S.flight),
+    found = RT.proceduresOfText(r.text, {
+      sidNames: [...m.sid.keys()],
+      starNames: [...m.star.keys()]
+    }),
+    nameOf = id => typeof id === 'string' ? (PR.nameOf(m.recs.get(id), id) || '').toUpperCase() : null;
+  let changed = false;
+  const set = (side, k, byName, want) => {
+    const cur = o[side]?.[k];
+    if (want && nameOf(cur) !== want) {
+      const list = byName.get(want) || [],
+        pick = PR.firstServing(list, o[side]?.rwy) || list[0];
+      if (pick) {
+        S.P.choose(`p-${side}-${k}`, pick.id);
+        changed = true;
+      }
+    } else if (!want && typeof cur === 'string') {
+      S.P.choose(`p-${side}-${k}`, '');
+      changed = true;
+    }
+  };
+  set('dep', 'sid', m.sid, found.sid);
+  set('arr', 'star', m.star, found.star);
+  if (!changed) procsToText(true);
+}
+/** Signature de la route (points, distance, saisie à la main) : ce qui, changé après le départ, refait tout le devis. */
+const routeSig = () => {
+  const r = S.flight.route || {};
+  return JSON.stringify([(r.points || []).map(p => [p.id, p.lat, p.lon]), r.distanceNm, !!r.manual]);
+};
+/** Distance (NM) sur laquelle court le devis. Avant le départ, celle du chemin (ou de la route) ; après, celle de l'ouverture du vol
+ *  (quote.distanceNm) tant que la route ne change pas : un changement de procédure ne bouge ni le carburant ni le temps du
+ *  devis (V3_SPECIFICATION § 10.20), seulement les legs, le chemin vertical et la longueur de progression. */
+function quoteNm(cur) {
+  const f = S.flight;
+  if (!f.started?.at) {
+    S.froze = undefined;
+    return cur;
+  }
+  if (procsPending()) return cur; // les procédures choisies ne sont pas lues : pas de longueur à garder (rien n'est écrit non plus)
+  const sig = routeSig();
+  if (S.froze === undefined) S.froze = {
+    sig,
+    nm: +f.quote?.distanceNm > 0 ? +f.quote.distanceNm : cur
+  };
+  else if (S.froze === false || S.froze.sig !== sig) S.froze = {
+    sig,
+    nm: cur
+  };
+  return S.froze.nm;
+}
+/** Paliers du devis sur le chemin volé : le niveau (alt_ft) des points de la route à leur distance cumulée du chemin, ramenée à
+ *  la distance du devis. Les contraintes des procédures n'y entrent pas (voir DECISIONS, 28 oct. 2026). */
+function pathSteps(fp, distanceNm) {
+  const k = fp.at(-1).nm > 0 ? distanceNm / fp.at(-1).nm : 1,
+    out = fp.slice(1, -1).filter(p => p.origin === 'route' && p.alt_ft > 0).map(p => ({
+      nm: p.nm * k,
+      ft: +p.alt_ft
+    }));
+  return out.length ? out : null;
+}
+/** Points suivis par l'horaire et la progression : le chemin volé quand les procédures sont lues, sinon les points de la route ;
+ *  nm : sa longueur (celle de la route sans chemin). */
+function progPath() {
+  const fp = fpNow();
+  return {
+    pts: fp || S.flight.route?.points || [],
+    nm: fp ? fp.at(-1).nm : +S.flight.route?.distanceNm || 0
+  };
+}
+/** Procédures de l'enregistrement mises au schéma v2 avant d'écrire : un ancien { sid, star } devient dep / arr, un côté dont le
+ *  terrain a changé (CF.proceduresOf le rend vide) est retiré. Rien n'est réécrit quand l'enregistrement est déjà v2 et à jour ;
+ *  jamais appelée au montage : la migration part avec la prochaine écriture ordinaire. */
+function normProcedures(f) {
+  const pr = f?.route?.procedures;
+  if (!pr || typeof pr !== 'object') return;
+  const v = CF.proceduresOf(f),
+    dep = v.dep === null ? null : cleanSide(v.dep),
+    arr = v.arr === null ? null : cleanSide(v.arr);
+  if (('dep' in pr || 'arr' in pr) && JSON.stringify([dep, arr]) === JSON.stringify([pr.dep ?? null, pr.arr ?? null].map(x => x === null ?
+      null :
+      cleanSide(x)))) return;
+  if (!sideChosen(dep) && !sideChosen(arr) && dep !== null && arr !== null) delete f.route.procedures;
+  else f.route.procedures = {
+    dep: dep ?? null,
+    arr: arr ?? null,
+    by: 'fuel',
+    at: pr.at || new Date().toISOString()
+  };
 }
 
 // ---------------------------------------------------------------- calcul du devis et de la décision
@@ -1156,7 +1535,8 @@ function compute() {
     o.manual = S.manual;
   }
   const goal = perf ? L.goalNow(S.settings.goal || 'prof', o.profileIas) : null,
-    distanceNm = +f.route?.distanceNm || 0,
+    fp = fpNow(), // chemin « route + procédures » quand des procédures sont choisies et lues
+    distanceNm = quoteNm(fp ? fp.at(-1).nm : +f.route?.distanceNm || 0),
     qIn = {
       sheet,
       source,
@@ -1170,7 +1550,7 @@ function compute() {
       reserveMin: +S.settings.reserveMin,
       contingencyPct: +S.settings.contingencyPct,
       climbLaw: perf ? L.tripLaw(perf, goal, o) : null,
-      steps: routeSteps(f.route, distanceNm)
+      steps: fp ? pathSteps(fp, distanceNm) : routeSteps(f.route, distanceNm)
     },
     q = distanceNm > 0 ? M.quote(qIn) : null,
     D = perf && q ? L.requoteSeries(L.decisionSeries(perf, {
@@ -1197,7 +1577,8 @@ function compute() {
     D,
     G,
     goal,
-    levelFt
+    levelFt,
+    nm: distanceNm // la distance du devis (quote.distanceNm)
   };
 }
 
@@ -1307,7 +1688,16 @@ function climbSvg(G, box) {
 // couleurs dans --sog-chart-* (suivent le design et la nuit sans redessin)
 const STYLE = `
 [data-module="fuel"] .fu-g3{--f-min:96px}
-[data-module="fuel"] .fu-ads{grid-template-columns:repeat(3,minmax(0,8em))} /* codes OACI : 4 lettres, pas plus large */
+[data-module="fuel"] .f-table .fu-txt{white-space:normal;overflow-wrap:anywhere;min-width:9em} /* aperçu d'un réimport : un texte revient à la ligne */
+[data-module="fuel"] .fu-ads{grid-template-columns:repeat(3,minmax(0,12em));position:relative} /* trois terrains ; position:relative : la liste de propositions s'y pose */
+[data-module="fuel"] .fu-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
+[data-module="fuel"] .fu-adname[data-state="unknown"]{font-style:italic}
+[data-module="fuel"] .fu-sug{position:absolute;left:0;right:0;max-width:26em;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius);box-shadow:var(--sog-shadow)} /* par-dessus la page, jamais dans la mise en page */
+[data-module="fuel"] .fu-sug[hidden]{display:none}
+[data-module="fuel"] .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border-width:0 0 1px;border-radius:0;background:transparent}
+[data-module="fuel"] .fu-sugitem:last-child{border-bottom-width:0}
+[data-module="fuel"] .fu-sugitem[aria-selected="true"]{background:var(--sog-surface-2);box-shadow:inset 3px 0 0 var(--sog-accent)}
+[data-module="fuel"] .fu-sugitem span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-module="fuel"] .fu-flight{display:flex;flex-wrap:wrap;align-items:flex-end} /* niveau et date à leur largeur utile ; la date passe dessous sur un téléphone */
 [data-module="fuel"] .fu-flight>.f-field:first-child{flex:0 0 8em}
 [data-module="fuel"] .fu-flight>.f-field:last-child{flex:1 1 20em;max-width:26em;min-width:0} /* min-width:0 : la date ne pousse pas la ligne au-delà de l'écran */
@@ -1351,6 +1741,14 @@ const STYLE = `
   [data-module="fuel"] .fu-steps,[data-module="fuel"] .fu-next{display:none}
   [data-module="fuel"] .fu-step[hidden]{display:block}
 }
+${PROC_STYLE}
+/* groupes de procédure de la liste des points (§ 10.31) : la teinte de la Carte (modules/maps/render.js, PALETTE sid / star / app) */
+[data-module="fuel"] .fu-ptgrp{border-left:3px solid currentColor;padding-left:8px;display:block}
+[data-module="fuel"] .fu-ptgrp>summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+[data-module="fuel"] .fu-ptgrp[data-kind="sid"]{border-left-color:#1b8a3a}
+[data-module="fuel"] .fu-ptgrp[data-kind="star"]{border-left-color:#d95500}
+[data-module="fuel"] .fu-ptgrp[data-kind="app"]{border-left-color:#0a86c4}
+[data-module="fuel"] .fu-rrow>label{position:relative} /* la liste de complétion du champ de route s'y pose (§ 10.31) */
 [data-module="fuel"] .fu-rrow{display:flex;gap:8px;align-items:flex-end} /* champ de la route + « Auto » : le champ prend la place restante */
 [data-module="fuel"] .fu-rrow>.f-field{flex:1 1 0;min-width:0}
 [data-module="fuel"] .fu-rrow>button{flex:none;min-width:56px;min-height:44px;margin-bottom:2px}
@@ -1412,8 +1810,9 @@ function renderPlanBody() {
   S.body.innerHTML = `
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
-      <div class="f-grid fu-ads">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
-      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(isoToWhen(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
+      <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
+      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
+      <p class="f-warn" data-pastdate hidden></p>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
       <div class="fu-hide" data-acpanel>
@@ -1424,7 +1823,7 @@ function renderPlanBody() {
       </div>
     </div>`)}
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
-      <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false">${esc(r.text || '')}</textarea></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
+      <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-rtsug">${esc(r.text || '')}</textarea><div class="fu-sug" id="fu-rtsug" data-rtsug role="listbox" aria-label="${esc(tt(S.RC.texts.listLabel))}" hidden></div></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
       <p class="f-warn" data-unres></p>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
       <div class="f-grid fu-g3 fu-hide" data-rmanual>${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
@@ -1433,7 +1832,8 @@ function renderPlanBody() {
       <div class="f-row fu-addpt"><input data-k="addpt" autocapitalize="characters" autocomplete="off" placeholder="${esc(tt(TX.addPt))}" aria-label="${esc(tt(TX.addPt))}"><button type="button" data-do="addpt" aria-label="${esc(tt(TX.add))}">${svg('plus')}</button></div>
       <p class="f-muted">${esc(tt(TX.ptsHint))}</p></details>
       <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}<button type="button" data-do="showmap"${S.ctx.layout?.with === 'maps' ? ' class="fu-hide"' : ''}>${svg('map')} ${esc(tt(TX.showMap))}</button></div>
-    </div>`)}
+    </div>
+    <div class="f-card" data-block="procrows"><h2>${esc(tt(TX.procTitle))}</h2><div class="fu-procbox" data-procbox="route"></div></div>`)}
   ${sec(2, `<div class="f-card" data-block="level"><h2>${esc(tt(TX.stepNames[2]))}</h2>
       <div class="f-grid fu-g3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
       <p class="f-muted" data-windsrc></p>
@@ -1463,7 +1863,9 @@ function renderPlanBody() {
       <div class="f-row" data-startrow></div>
       <p class="fu-startnote" data-startnote aria-live="polite"></p>
       <p class="f-muted">${esc(tt(TX.startHint))}</p></div>
-    <div class="f-card fu-hide" data-progcard><h2>${esc(tt(TX.progTitle))}</h2><div data-prog></div><p class="f-muted">${esc(tt(TX.progHint))}</p></div>`, true)}
+    <div class="f-card fu-hide" data-block="procs"><h2>${esc(tt(TX.procTitle))}</h2><div class="fu-procbox" data-procbox="start"></div></div>
+    <div class="f-card fu-hide" data-progcard><h2>${esc(tt(TX.progTitle))}</h2><div data-prog></div><p class="f-muted">${esc(tt(TX.progHint))}</p></div>
+    <div class="f-card" data-block="fms"><h2>${esc(tt(TX.fmsTitle))}</h2><p class="f-muted">${esc(tt(TX.fmsHint))}</p><div class="f-row">${[['xp11', TX.fmsXp11], ['xp10', TX.fmsXp10], ['pln', TX.fmsPln]].map(([k, t]) => `<button type="button" data-do="fms" data-fms="${k}" disabled>${esc(tt(t))}</button>`).join('')}</div></div>`, true)}
   <div class="f-bar fu-result" data-block="result" aria-live="polite"></div>`;
   for (const d of S.body.querySelectorAll('details[data-fold]')) {
     d.open = !!S.ui.open?.[d.dataset.fold];
@@ -1478,6 +1880,7 @@ function renderPlanBody() {
   }
   S.body.oninput = S.body.onchange = e => onPlanInput(e);
   S.body.onkeydown = e => {
+    if (S.AD.onKey(e) || S.RC.onKey(e)) return; // liste de terrains ou de route ouverte : ↑ ↓ Entrée Échap sont à elle
     if (e.key !== 'Enter') return;
     if (e.target.dataset?.k === 'addpt') {
       e.preventDefault();
@@ -1489,7 +1892,9 @@ function renderPlanBody() {
   };
   renderPts();
   renderRinfo();
-  S.body.onclick = e => onPlanClick(e);
+  S.body.onclick = e => S.AD.onClick(e) || S.RC.onClick(e) || onPlanClick(e);
+  S.AD.paint();
+  S.P.reset(); // le corps est neuf : refresh dessine la carte des procédures
   refresh();
   renderWx();
   renderAloft();
@@ -1507,6 +1912,7 @@ function onPlanInput(e) {
     f = S.flight;
   if (!k) return;
   if (e.type === 'input' && e.target.tagName === 'SELECT') return;
+  if (k.startsWith('p-') && !S.flightPending) return S.P.choose(k, v); // piste, SID, STAR, approche (§ 10.20)
   // vol courant pas encore lu : l'écran est inerte (refresh), un champ changé quand même (saisie programmée, remplissage
   // automatique) n'écrit pas dans le vol d'attente — completeMount le remplace par le vol lu, et le niveau, le départ ou
   // l'appareil tapés là disparaîtraient en laissant un devis « 0 ft » ; le dernier état lu gagne, les champs sont redessinés
@@ -1518,32 +1924,33 @@ function onPlanInput(e) {
     case 'dep':
     case 'arr':
     case 'altn': {
-      const was = r[k];
-      r[k] = v.trim().toUpperCase();
-      // vol démarré : un autre départ, c'est un autre vol ; une autre arrivée, un déroutement (gardé et noté)
-      if (f.started?.at && was && r[k] !== was) {
-        if (k === 'dep') f.started = null; // null et non delete : l'écriture fusionne avec le vol gardé
-        else if (k === 'arr') f.started = {
-          ...f.started,
-          diverted: true
-        };
+      // le champ est une saisie de recherche (« orly », « toulouse ») : la route ne prend qu'un champ vidé, un choix de la liste, ou
+      // un code de quatre caractères qu'aerodb connaît (V3 § 10.27, décision du 29/10) ; un nom tapé n'y entre jamais
+      const code = v.trim().toUpperCase(),
+        s = S;
+      S.AD.onInput(e); // la ligne du nom et la liste des terrains proposés
+      if (!code) return; // vidé pour chercher : rien n'est écrit tant que le champ a le focus (revertAd l'écrit vide en le quittant)
+      if (!S.AD.isPicking()) {
+        // un code de quatre caractères n'entre qu'une fois connu d'aerodb (et si le champ le porte encore) ; un texte de recherche
+        // n'écrit rien
+        if (/^[A-Z0-9]{4}$/.test(code)) S.AD.known(code).then(ok => {
+          const el = !gone(s) && S.body?.querySelector(`[data-k="${k}"]`);
+          if (!ok || !el || el.value.trim().toUpperCase() !== code) return;
+          setAd(k, code);
+          saveFlight();
+          refresh();
+        });
+        return;
       }
-      if (k !== 'altn') {
-        // le terrain changé l'est aussi dans le texte de la route (sinon le nouveau s'ajoute devant ou derrière l'ancien)
-        if (was && r.text && r[k] !== was) {
-          r.text = swapEnd(r.text, was, r[k], k === 'arr');
-          const ta = S.body?.querySelector('[data-k="rtext"]');
-          if (ta && document.activeElement !== ta) ta.value = r.text;
-        }
-        resolveRoute();
-        scheduleWx();
-      }
+      setAd(k, code);
       break;
     }
     case 'rtext':
       r.text = v;
       if (e.type === 'input') r.from = 'route';
       resolveRoute(e.type === 'change'); // pendant la frappe : points relus ; à la sortie : texte normalisé
+      if (e.type === 'change') textToProcs(); // à la sortie : les noms de SID et de STAR du texte posent ou retirent le choix (§ 10.31)
+      else S.RC.onInput(e); // pendant la frappe : la complétion au curseur (§ 10.31)
       break;
     case 'addpt':
       return; // ajouté par « Ajouter » ou Entrée
@@ -1682,11 +2089,78 @@ function onPlanInput(e) {
   saveFlight();
   refresh();
 }
+/** Écrit un terrain de l'étape Vol (dep, arr, altn) dans la route : départ changé d'un vol démarré = autre vol, arrivée changée =
+ *  déroutement ; le texte de la route suit, puis la route est relue et la météo demandée. code : quatre caractères connus d'aerodb, un
+ *  choix de la liste, un code tapé exprès (revertAd), ou '' (champ quitté vide). */
+function setAd(k, code) {
+  const f = S.flight,
+    r = f.route ||= emptyFlight().route,
+    was = r[k];
+  r[k] = code;
+  // vol démarré : un autre départ, c'est un autre vol ; une autre arrivée, un déroutement (gardé et noté)
+  if (f.started?.at && was && r[k] !== was) {
+    if (k === 'dep') f.started = null; // null et non delete : l'écriture fusionne avec le vol gardé
+    else if (k === 'arr') f.started = {
+      ...f.started,
+      diverted: true
+    };
+  }
+  if (k !== 'altn') {
+    // le terrain changé l'est aussi dans le texte de la route (sinon le nouveau s'ajoute devant ou derrière l'ancien)
+    if (was && r.text && r[k] !== was) {
+      r.text = swapEnd(r.text, was, r[k], k === 'arr');
+      const ta = S.body?.querySelector('[data-k="rtext"]');
+      if (ta && document.activeElement !== ta) ta.value = r.text;
+    }
+    resolveRoute();
+    scheduleWx();
+  }
+}
+/** Champ de terrain quitté sans choix (hits : terrains proposés pour son texte) : un code de quatre caractères qu'aerodb ne connaît pas
+ *  et qui ne proposait rien est un terrain tapé exprès (absent de la base) : il est écrit ; un texte de recherche (« toulouse »,
+ *  « orly » quand il proposait des terrains) fait revenir le champ au code enregistré ; un code connu ou encore vérifié reste (setAd
+ *  l'écrit). */
+function revertAd(el, hits = 0) {
+  const k = el?.dataset?.k;
+  if (!S || !['dep', 'arr', 'altn'].includes(k)) return;
+  const v = el.value.trim().toUpperCase(),
+    saved = S.flight?.route?.[k] || '';
+  if (v === saved) return;
+  if (!v) { // quitté vide : le terrain est retiré (un dégagement qu'on ne veut plus, par exemple)
+    setAd(k, '');
+    saveFlight();
+    return refresh();
+  }
+  const code = /^[A-Z0-9]{4}$/.test(v),
+    n = code ? S.AD.nameKnown(v) : null;
+  if (code && n !== null) return; // connu (ou en cours) : la saisie l'a écrit, ou l'écrira
+  if (code && !hits) {
+    el.value = v;
+    setAd(k, v);
+    saveFlight();
+    return refresh();
+  }
+  el.value = saved;
+  S.AD.paint();
+}
 /** Clic dans Devis : SimBrief, niveau pris sur la courbe ou par un bouton. */
 function onPlanClick(e) {
   const st = e.target.closest('[data-step]');
   if (st) return goStep(+st.dataset.step);
   if (e.target.closest('[data-do="showmap"]')) return showMap();
+  const pf = e.target.closest('[data-do="procfetch"]');
+  if (pf) return S.P.read(pf.dataset.icao); // « Lire » et « Relire » : un seul geste
+  // « Sur la carte » : le mode choix de la Carte pour ce côté (§ 10.23) ; elle revient par location.replace avec son choix
+  const om = e.target.closest('[data-do="onmap"]');
+  if (om) {
+    location.hash = `#maps?choose=${om.dataset.side}&icao=${encodeURIComponent(om.dataset.icao)}`;
+    return;
+  }
+  // une tape sur la ligne de résumé d'un côté (ou son bouton ▸) le déplie (§ 10.31) ; les autres boutons de la ligne gardent leur geste
+  const pfold = e.target.closest('[data-do="procfold"]');
+  if (pfold && (pfold.matches('button') || !e.target.closest('button, a'))) return S.P.fold(pfold.dataset.side);
+  const fm = e.target.closest('[data-do="fms"]');
+  if (fm) return fm.disabled ? undefined : exportFms(fm.dataset.fms);
   if (e.target.closest('[data-do="start"]')) return startFlight();
   if (e.target.closest('[data-do="cancelstart"]')) return cancelStart();
   const iu = e.target.closest('[data-do="isause"]');
@@ -1871,6 +2345,7 @@ async function wxFetch(loud = false) {
   await aloftFetch(loud);
   if (gone(s) || !S.body) return;
   renderWx();
+  S.P.render(); // le vent de chaque piste de la carte des procédures suit le METAR (§ 10.30)
   isaHint();
   if (S.flight.weather?.real) applyRealWind();
   else if (S.C) renderDa(S.C);
@@ -1941,7 +2416,7 @@ async function aloftFetch(loud = false) {
   }
   if (!gone(s)) aloftApply();
 }
-/** Vents et températures au niveau planifié (paliers compris) : aux lieux de lecture et aux points de la route ;
+/** Vents et températures à l'altitude prévue (profil : montée, paliers, descente) : aux lieux de lecture et aux points de la route ;
  *  null sans prévision pour cette route. */
 function aloftCalc() {
   const A = S.aloft,
@@ -1950,14 +2425,26 @@ function aloftCalc() {
   if (!A?.profiles?.length || A.key !== aloftKey() || !(plan > 0) || pts.length < 2) return null;
   const nmPts = [0];
   for (let i = 1; i < pts.length; i++) nmPts.push(nmPts[i - 1] + gcNm(pts[i - 1], pts[i]));
-  const at = new Date(A.time * 1000).toISOString(),
-    winds = A.samples.map((smp, i) => WD.atLevel(A.profiles[i], WD.levelAt(pts, nmPts, plan, smp.nm)));
+  // l'altitude du profil à chaque lieu (montée, paliers, descente : profile.path, sinon tocNm / todNm), pas le niveau de croisière
+  // partout (utilisateur, 29 octobre) ; les distances de la route ramenées sur le chemin volé des procédures
+  const fp = fpNow(),
+    toF = CF.routeNmToFlown(S.flight, fp),
+    lvAt = n => {
+      const c = WD.levelAt(pts, nmPts, plan, n),
+        a = CF.altitudeAt(S.flight, toF(n), {
+          cruiseFt: c,
+          flown: fp
+        });
+      return a == null ? c : Math.round(a / 100) * 100;
+    },
+    at = new Date(A.time * 1000).toISOString(),
+    winds = A.samples.map((smp, i) => WD.atLevel(A.profiles[i], lvAt(smp.nm)));
   return {
     winds,
     nms: A.samples.map(x => x.nm),
     points: pts.map((p, i) => {
       const k = A.samples.findIndex(x => x.point === i),
-        lv = WD.levelAt(pts, nmPts, plan, nmPts[i]),
+        lv = lvAt(nmPts[i]),
         w = k >= 0 ? WD.atLevel(A.profiles[k], lv) : null;
       return w ? {
         dirDeg: w.dirDeg,
@@ -2099,7 +2586,7 @@ function setWhen(plus) {
 /** Pose la date du vol : current_flight.planned_at (ISO UTC, null = maintenant), et le champ à l'écran (heure de
  *  l'appareil) seulement si sa valeur change. L'écriture du vol et le calcul suivent (saveFlight, whenChanged). */
 function setPlanned(iso) {
-  const local = isoToWhen(iso);
+  const local = whenField(iso);
   S.flight.planned_at = iso;
   const wd = S.body?.querySelector('[data-k="wxdate"]');
   if (wd && wd.value !== local) wd.value = local;
@@ -2569,24 +3056,61 @@ function renderRinfo() {
 }
 /** Liste des points (ordre, niveau facultatif, monter, descendre, retirer) ; le niveau ne se règle pas au départ ni à
  *  l'arrivée. L'indication d'un point sans niveau est celui qu'il continue. */
+/** Les procédures choisies et lues, en groupes de la liste des points (V3 § 10.31) : [{ kind: 'sid' | 'star' | 'app', label, fixes }]
+ *  — « SID NTS1A », « STAR MEN1A via NEPIX », « I13R via ODILO 1A » ; fixes : les identifiants de leurs repères (transition comprise),
+ *  hors seuil et approche interrompue. [] tant que les procédures du vol ne sont pas lues. */
+function procGroups() {
+  const pr = S.procs?.key === procsKey(S.flight) ? S.procs.procs : null;
+  if (!pr) return [];
+  const via = t => t?.transition ? ` via ${t.transition}` : '',
+    out = [];
+  if (pr.sid) out.push({
+    kind: 'sid',
+    label: `SID ${PR.nameOf(pr.sid, pr.sid.id)}${via(pr.sidTrans)}`,
+    fixes: [...new Set([...PR.pointsOf(pr.sid), ...PR.pointsOf(pr.sidTrans)])]
+  });
+  if (pr.star) out.push({
+    kind: 'star',
+    label: `STAR ${PR.nameOf(pr.star, pr.star.id)}${via(pr.starTrans)}`,
+    fixes: [...new Set([...PR.pointsOf(pr.starTrans), ...PR.pointsOf(pr.star)])]
+  });
+  if (pr.app) out.push({
+    kind: 'app',
+    label: `${PR.labelOf(pr.app)}${via(pr.appTrans)}`,
+    fixes: [...new Set([...PR.pointsOf(pr.appTrans), ...PR.pointsOf(pr.app)])]
+  });
+  return out;
+}
+/** Liste des points de l'étape Route : les points du pilote (niveau, monter, descendre, retirer) et, pour chaque procédure choisie,
+ *  UNE ligne de groupe repliée dans sa teinte (« SID NTS1A · 3 points »), ses repères dépliés au toucher, jamais au rang des points
+ *  tapés (§ 10.31) : la SID après le départ, la STAR et l'approche avant l'arrivée ; un point de la route qui est un repère d'une
+ *  procédure choisie (sa sortie, son entrée) est dans son groupe. Le compte « Points (N) » : les points montrés et les groupes. */
 function renderPts() {
   const box = S.body?.querySelector('[data-pts]');
   if (!box) return;
   const pts = S.flight.route?.points || [],
-    plan = +S.flight.level?.ft || 0;
-  let cur = plan;
+    plan = +S.flight.level?.ft || 0,
+    groups = procGroups(),
+    inGroup = new Set(groups.flatMap(g => g.fixes)),
+    group = g => `<details class="f-item fu-ptgrp" data-kind="${g.kind}"><summary>${esc(`${g.label} · ${tt(g.fixes.length === 1 ? TX.ptsGroup1 : TX.ptsGroupN, { n: g.fixes.length })}`)}</summary><div class="f-muted fu-ptfix">${esc(g.fixes.join(' · '))}</div></details>`;
+  let cur = plan,
+    shown = 0;
   box.innerHTML = pts.length ? pts.map((p, i) => {
     const mid = i > 0 && i < pts.length - 1,
       hint = cur > 0 ? Math.round(cur / 100) : '';
     if (mid && p.alt_ft > 0) cur = p.alt_ft;
+    const before = i === pts.length - 1 && i > 0 ? groups.filter(g => g.kind !== 'sid').map(group).join('') : '',
+      after = i === 0 ? groups.filter(g => g.kind === 'sid').map(group).join('') : '';
+    if (mid && inGroup.has(String(p.id || '').toUpperCase())) return ''; // un repère de procédure : dans son groupe
+    shown++;
     const id = esc(p.id || '?');
-    return `<div class="f-item fu-pt"><span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small></span>
+    return `${before}<div class="f-item fu-pt"><span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small></span>
       ${mid ? `<input data-k="ptalt" data-i="${i}" inputmode="numeric" maxlength="3" value="${p.alt_ft > 0 ? Math.round(p.alt_ft / 100) : ''}" placeholder="${hint}" aria-label="${esc(tt(TX.ptLevel, { id: p.id }))}">` : '<span class="fu-ptgap"></span>'}
-      <button type="button" data-do="ptup" data-i="${i}" ${i ? '' : 'disabled'} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 ? '' : 'disabled'} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}" aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button></div>`;
+      <button type="button" data-do="ptup" data-i="${i}" ${i ? '' : 'disabled'} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 ? '' : 'disabled'} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}" aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button></div>${after}`;
   }).join('') : `<p class="f-muted">${esc(tt(TX.ptsNone))}</p>`;
   const n = S.body.querySelector('[data-ptsn]');
   if (n) n.textContent = tt(TX.ptsN, {
-    n: pts.length
+    n: pts.length ? shown + groups.length : 0
   });
 }
 /** Points changés à la main : texte de la route réécrit, distance et route vraie déduites, vol courant écrit, devis
@@ -2791,7 +3315,7 @@ function progressCalc(C = S.C) {
   if (!P) return null;
   const start = Date.parse(st.at),
     state = PG.at(P, (Date.now() - start) / 60000),
-    pts = S.flight.route.points;
+    pts = progPath().pts;
   return {
     P,
     st: state,
@@ -2803,7 +3327,10 @@ function progressCalc(C = S.C) {
  *  sans route. */
 function progressPlan(C) {
   const f = S.flight,
-    pts = f.route?.points || [];
+    {
+      pts,
+      nm
+    } = progPath(); // le chemin volé quand des procédures sont choisies (sa longueur), sinon la route
   if (!C?.q?.hasFuel || pts.length < 2) return null;
   // vent de chaque tronçon : moyenne vectorielle des vents prévus à ses deux bouts (prévision en altitude), sinon celui du devis
   const vec = w => [w.kt * Math.sin(w.dirDeg * Math.PI / 180), w.kt * Math.cos(w.dirDeg * Math.PI / 180)],
@@ -2820,7 +3347,7 @@ function progressPlan(C) {
     });
   return PG.plan({
     points: pts,
-    distanceNm: +f.route.distanceNm || 0,
+    distanceNm: nm,
     taxiMin: +S.settings.taxiMin || 0,
     q: C.q,
     legWinds,
@@ -2877,7 +3404,8 @@ function renderProgress(C) {
   const c = progressCalc(C);
   card.classList.toggle('fu-hide', !c);
   if (!c) return;
-  const pts = S.flight.route.points,
+  const pts = progPath().pts,
+    f0 = S.flight,
     unit = C.sheet?.unit || 'kg',
     rem = fuelTxt(Math.max(0, C.q.block - c.st.fuelUsed), unit),
     line = c.st.phase === 'arrived' ? tt(TX.progArrived, {
@@ -2892,7 +3420,12 @@ function renderProgress(C) {
       r: distTxt(c.st.remainingNm),
       f: rem
     });
-  box.innerHTML = `<p>${esc(line)}</p><div class="f-list">${c.etas.map(e => `<div class="f-item fu-eta${c.st.phase !== 'arrived' && e.i === c.pos.legIndex + 1 ? ' fu-next-pt' : ''}"${e.i === c.pos.legIndex + 1 && c.st.phase !== 'arrived' ? ' aria-current="step"' : ''}><span><b>${esc(pts[e.i]?.id || '')}</b></span><span class="f-num">${esc((e === c.etas[0] || e === c.etas.at(-1) ? hhmmLocal : hhmmOf)(new Date(e.at).toISOString()))}</span></div>`).join('')}</div>`;
+  box.innerHTML = `<p>${esc(line)}</p><div class="f-list">${c.etas.map(e => `<div class="f-item fu-eta${c.st.phase !== 'arrived' && e.i === c.pos.legIndex + 1 ? ' fu-next-pt' : ''}"${e.i === c.pos.legIndex + 1 && c.st.phase !== 'arrived' ? ' aria-current="step"' : ''}><span><b>${esc(pts[e.i]?.id || '')}</b>${[f0.route?.dep, f0.route?.arr].includes(pts[e.i]?.id) && pts[e.i]?.id ? ` <small class="f-muted" data-adtext data-code="${esc(pts[e.i].id)}"></small>` : ''}</span><span class="f-num">${esc((e === c.etas[0] || e === c.etas.at(-1) ? hhmmLocal : hhmmOf)(new Date(e.at).toISOString()))}</span></div>`).join('')}</div>`;
+}
+/** Un terrain du récapitulatif : son code puis son nom (rempli par S.AD.paint, d'après aerodb) ; `none` sans code. */
+function adSum(code, none) {
+  const c = String(code || '').trim().toUpperCase();
+  return c ? `<b>${esc(c)}</b> <span data-adtext data-code="${esc(c)}"></span>` : esc(none);
 }
 /** Récapitulatif du pas Départ : appareil, route normalisée, niveau (paliers), vent et sa source, carburant bloc. */
 function renderSummary(C) {
@@ -2909,6 +3442,8 @@ function renderSummary(C) {
     block = q?.hasFuel ? q.windKnown || !Number.isFinite(q.blockLow) ? fuelTxt(q.block, unit) : `${fuelTxt(q.blockLow, unit)} – ${fuelTxt(q.blockHigh, unit)}` : none;
   box.innerHTML = `<dl class="f-dl">
     <dt>${esc(tt(TX.sumAircraft))}</dt><dd>${esc([a.name || a.type, a.registration, a.callsign].filter(Boolean).join(' · ') || none)}</dd>
+    <dt>${esc(tt(TX.dep))}</dt><dd>${adSum(r.dep, none)}</dd>
+    <dt>${esc(tt(TX.arr))}</dt><dd>${adSum(r.arr, none)}</dd>
     <dt>${esc(tt(TX.sumRoute))}</dt><dd><code class="fu-sumroute">${esc(r.text || [r.dep, r.arr].filter(Boolean).join(' ') || none)}</code></dd>
     <dt>${esc(tt(TX.sumLevel))}</dt><dd>${esc(lvl)}</dd>
     <dt>${esc(tt(TX.sumWind))}</dt><dd>${esc(wind)}${windShort() ? ` <span class="f-muted">(${esc(windShort())})</span>` : ''}</dd>
@@ -2921,6 +3456,7 @@ function renderSummary(C) {
   const sn = S.body.querySelector('[data-startnote]');
   if (sn) sn.textContent = f.started?.at && startNote?.at === f.started.at ? startNote.text : ''; // ce que la relecture au départ a changé
   renderProgress(C);
+  S.AD.paint(); // les noms des terrains du récapitulatif et des horaires
 }
 /** Vol courant écrit par un autre module (by ≠ 'fuel' : maps, route modifiée sur la carte) : ses points et son texte
  *  sont gardés tels qu'il les a écrits (ni relus ni normalisés) ; distance et route vraie redéduites des points, devis
@@ -2930,8 +3466,10 @@ function adoptForeignFlight() {
   const r = S.flight.route ||= emptyFlight().route;
   routeDerived(r);
   if (S.aloft) aloftApply(); // vents en altitude aux nouveaux points (relus si la route a changé : scheduleWx)
+  S.froze = false; // une route changée ailleurs refait le devis de la longueur qu'elle a maintenant
+  ensureProcs();
   const C = S.C = compute();
-  S.flight.profile = verticalProfile(C.q);
+  S.flight.profile = profileOf(C);
   if (S.view === 'plan' && S.body) {
     const ta = S.body.querySelector('[data-k="rtext"]');
     if (ta && document.activeElement !== ta) ta.value = r.text || '';
@@ -2953,10 +3491,15 @@ function resolveRoute(normalize = true) {
       {
         points,
         unresolved,
-        tokens
+        tokens,
+        badAirways
       } = await routePoints(r.text, r.dep, r.arr, known, r.points || []);
     if (gone(s) || seq !== S.routeSeq || !S.body) return;
     r.points = points;
+    // une voie écrite qui ne relie pas ses deux points : tronçon direct, dit une fois par texte (pas à chaque frappe) (§ 10.31)
+    const bad = badAirways.map(x => tt(TX.awyBad, x)).join(' · ');
+    if (normalize && bad && S.awyBadSaid !== bad) S.ctx.notify(bad, 'warn');
+    if (normalize) S.awyBadSaid = bad;
     if (S.aloft) aloftApply();
     const ta = S.body.querySelector('[data-k="rtext"]');
     if (normalize && tokens.length && document.activeElement !== ta) {
@@ -2977,7 +3520,11 @@ function resolveRoute(normalize = true) {
   }, 500);
 }
 /** Bouton « Auto » : inscrit les voies aériennes entre les points nommés consécutifs qui n'en ont pas, au niveau prévu
- *  (celui du vol, sinon celui du devis, sinon 6 500 ft comme la V2 — dit dans une notification). Le routage est celui de
+ *  (celui du vol, sinon celui du devis, sinon 6 500 ft comme la V2 — dit dans une notification). Idempotent (V3 § 10.31) : il
+ *  recalcule depuis les points POSÉS seulement (départ, sortie de la SID choisie, points tapés, entrée de la STAR, arrivée) et
+ *  remplace ; les voies et nœuds d'un Auto précédent (route.auto.seq, RT.provenance) ne sont jamais des contraintes : même entrée,
+ *  même texte. Un tronçon qui repasserait par un point, puis, tant que l'ensemble dépasse la chaîne directe de plus de detourPct,
+ *  le tronçon le plus allongé, restent directs ; un tronçon sans voie le dit avec sa raison, jamais en silence. Le routage est celui de
  *  la bibliothèque du cadre (frame/lib/routing.js : plus court chemin sur les segments de la base publiée, tronçons
  *  ouverts au niveau, détour limité à 40 %, pas de sens unique ni de restriction fine). Écrit route.text (« PT1 UN460 PT2 »)
  *  et route.points (les points de la voie y compris ceux que le texte n'écrit pas : distance et carte suivent la voie), puis
@@ -2999,14 +3546,84 @@ async function autoAirways() {
         tokens
       } = await routePoints(r.text, r.dep, r.arr, known, r.points || []);
     if (gone(s) || seq !== S.routeSeq) return;
+    // les mots d'un Auto précédent (voies, nœuds, sortie de SID et entrée de STAR qu'il a ajoutées) sont retirés : jamais le départ
+    // ni l'arrivée ; un point gardé ne garde sa voie d'arrivée que si le mot qui le précède est une voie posée ; les points
+    // intermédiaires d'une voie posée restent (distance et carte la suivent), ceux d'une voie générée partent avec elle
+    const wordOf = t => t.pt ? t.pt.id : t.keep,
+      gen = RT.provenance(tokens.map(wordOf), r.auto?.seq),
+      ends = new Set([points[0], points.at(-1)]),
+      dropped = tokens.some((t, i) => gen[i] && !(t.pt && ends.has(t.pt)));
+    if (dropped) {
+      const asTok = new Set(tokens.filter(t => t.pt).map(t => t.pt)),
+        kept = tokens.filter((t, i) => !gen[i] || t.pt && ends.has(t.pt));
+      kept.forEach((t, i) => {
+        if (!t.pt) return;
+        const before = kept[i - 1];
+        if (before?.keep && AIRWAY_WORD.test(before.keep)) t.pt.via = before.keep;
+        else delete t.pt.via;
+      });
+      const keptPts = new Set(kept.filter(t => t.pt).map(t => t.pt)),
+        pts = [];
+      let pend = [];
+      for (const p of points) {
+        if (!asTok.has(p)) {
+          pend.push(p);
+          continue;
+        }
+        if (keptPts.has(p)) {
+          if (p.via) pts.push(...pend);
+          pts.push(p);
+        }
+        pend = [];
+      }
+      tokens.splice(0, tokens.length, ...kept);
+      points.splice(0, points.length, ...pts);
+    }
+    const genTok = new Set(); // jetons que cet Auto écrit (provenance gardée dans route.auto.seq)
+    // procédures choisies et lues : la fin de la SID après le départ et le début de l'arrivée avant l'arrivée entrent dans la chaîne
+    // (CF.routingChain, quand la route ne les a pas), pour que le routage parte de la sortie de la SID (LFBO FINOT G36 GOSAD) ; ces
+    // points sont écrits dans le texte, le tronçon terrain ↔ point de procédure n'est jamais routé (la procédure le couvre)
+    const procPts = new Set(),
+      procs = S.procs?.key === procsKey(f) ? S.procs.procs : null;
+    if (procs) {
+      const ext = CF.routingChain(f, procs, tokens.filter(t => t.pt).map(t => t.pt));
+      for (let k = 1; k < ext.length; k++) {
+        if (!ext[k].inserted) continue;
+        const prev = ext[k - 1],
+          p = {
+            id: ext[k].id,
+            lat: ext[k].lat,
+            lon: ext[k].lon
+          },
+          tok = {
+            pt: p
+          };
+        // après le départ, la sortie de la SID s'écrit après le nom de la SID s'il le suit (« LFBO LACOU7B LACOU LMG ») : le tronçon
+        // sortie → premier point est alors adjacent et routé (utilisateur, 30 octobre : « LACOU LMG n'est toujours pas trouvée »)
+        // le texte la nomme déjà sans que la base la connaisse comme point (mot gardé tel quel) : ce mot devient le point
+        const named = tokens.findIndex(t => t.keep && t.keep.toUpperCase() === String(p.id).toUpperCase());
+        if (named >= 0) tokens[named] = tok;
+        else {
+          let at = tokens.findIndex(t => t.pt === prev) + 1;
+          if (k === 1)
+            while (tokens[at]?.keep && !AIRWAY_WORD.test(tokens[at].keep)) at++;
+          tokens.splice(at, 0, tok);
+          genTok.add(tok);
+        }
+        points.splice(points.indexOf(prev) + 1, 0, p);
+        procPts.add(p);
+        ext[k] = p;
+      }
+    }
     // points écrits, dans l'ordre ; adj[i] : le point i+1 suit le point i dans le texte sans rien entre eux (ni voie, ni
     // procédure) ; entry[i] : une voie part du point i ; exit[i] : le point i est arrivé par une voie
     const idx = tokens.map((t, i) => t.pt ? i : -1).filter(i => i >= 0),
       chain = idx.map(i => tokens[i].pt),
-      adj = idx.map((t, i) => idx[i + 1] === t + 1),
+      last = chain.length - 1,
+      adj = idx.map((t, i) => idx[i + 1] === t + 1 && !(i === 0 && procPts.has(chain[1])) && !(i === last - 1 && procPts.has(chain[i]))),
       entry = idx.map(i => !!tokens[i + 1]?.keep && AIRWAY_WORD.test(tokens[i + 1].keep)),
       free = i => !(chain[i].via || entry[i]);
-    if (chain.length < 2 || !adj.some(Boolean)) return S.ctx.notify(tt(TX.autoNoLeg), 'warn');
+    if (chain.length < 2 || !adj.some(Boolean)) return dropped ? writeAuto(tokens, points, []) : S.ctx.notify(tt(TX.autoNoLeg), 'warn');
     const planned = +f.level?.ft || +S.C?.q?.levelFt || 0,
       base = planned || RG.DEFAULTS.ifrMinFt,
       at = [];
@@ -3015,10 +3632,23 @@ async function autoAirways() {
       if (i && p.alt_ft) cur = p.alt_ft;
       at.push(cur);
     });
+    // chaque tronçon routé à l'altitude du profil en son milieu (montée, paliers, descente), pas au niveau de croisière partout :
+    // un tronçon de montée ouvre les voies basses, un tronçon en croisière au FL260 ne les prend pas (utilisateur, 29 octobre :
+    // LFPO → EIDW, « la T421 était à préférer à la J150 ») ; la chaîne élargie des points de procédure, ramenée sur le chemin volé
+    const fp = fpNow(),
+      cum = chain.reduce((a, p, i) => (a.push(i ? a[i - 1] + gcNm(chain[i - 1], p) : 0), a), []),
+      toF = CF.routeNmToFlown(f, fp, chain),
+      legAlt = i => {
+        const a = CF.altitudeAt(f, toF((cum[i] + (cum[i + 1] ?? cum[i])) / 2), {
+          cruiseFt: at[i],
+          flown: fp
+        });
+        return a == null ? at[i] : Math.max(0, Math.round(a / 100) * 100);
+      };
     let res;
     try {
       res = await RG.expand(S.ctx.aerodb, chain, {
-        altOf: i => at[i],
+        altOf: legAlt,
         skip: i => !adj[i]
       });
     } catch (e) {
@@ -3030,20 +3660,74 @@ async function autoAirways() {
     if (!planned) S.ctx.notify(tt(TX.autoNoLevel, {
       l: flTxt(base)
     }), 'warn');
+    // rejet (§ 10.31) : un tronçon routé qui repasse par un point déjà sur la route (posé, ou d'un tronçon précédent) reste direct ;
+    // puis, tant que l'ensemble dépasse la chaîne directe de plus de detourPct, le tronçon routé le plus allongé reste direct
+    const seen = new Set(chain.map(p => p.id));
+    res.legs.forEach(l => {
+      if (l.status !== 'routed') return;
+      const mid = l.points.slice(1, -1).map(p => p.id);
+      if (mid.some(id => seen.has(id))) l.status = 'loop';
+      else mid.forEach(id => seen.add(id));
+    });
+    const direct = chain.slice(1).map((p, i) => gcNm(chain[i], p)),
+      lenOf = () => res.legs.reduce((a, l, i) => a + (l.status === 'routed' ? +l.nm || direct[i] : direct[i]), 0),
+      sum = direct.reduce((a, b) => a + b, 0);
+    while (lenOf() > sum * (1 + RG.DEFAULTS.detourPct / 100)) {
+      const worst = res.legs.map((l, i) => l.status === 'routed' ? [(+l.nm || 0) - direct[i], i] : null).filter(Boolean).sort((a, b) => b[
+          0] -
+        a[0])[0];
+      if (!worst) break;
+      res.legs[worst[1]].status = 'detour';
+    }
     // un tronçon sans voie compte comme un échec s'il ne touche pas une voie déjà écrite (l'entrée ou la sortie directe
-    // d'une voie, que le routage a choisie, ne se retente pas sans bruit)
-    const failed = res.legs.map((l, i) => ['none', 'far', 'detour'].includes(l.status) && free(i) && free(i + 1) ? i : -1).filter(i =>
+    // d'une voie, que le routage a choisie, ne se retente pas sans bruit) ; sa raison est dite
+    const failed = res.legs.map((l, i) => ['none', 'far', 'detour', 'loop'].includes(l.status) && free(i) && free(i + 1) ? i : -1).filter(
+        i =>
         i >= 0),
-      noway = () => {
-        const [i] = failed;
+      noway = async () => {
+        // une voie qui relie les deux points mais fermée au niveau du tronçon : elle est nommée, avec sa plage ouverte (§ 10.31,
+        // utilisateur : « AGN A34 LACOU … LMG » dit « pas de voie près de LACOU » au FL260, A34 étant plafonnée au FL195) ; le premier
+        // tronçon qui en a une, sinon le premier
+        for (const k of failed) {
+          const a = chain[k],
+            b = chain[k + 1],
+            segs = await Promise.resolve().then(() => S.ctx.aerodb?.airways?.({
+              bbox: RG.corridor([a, b])
+            })).catch(() => null),
+            j = segs ? RG.joiningAirway(segs, a, b) : null,
+            lvl = legAlt(k);
+          if (gone(s)) return;
+          if (j && (lvl > j.ceiling || lvl < j.floor)) return S.ctx.notify(tt(TX.autoWhyClosed, {
+            w: j.name,
+            a: a.id,
+            b: b.id,
+            lvl: flTxt(lvl),
+            lo: flTxt(j.floor),
+            hi: Number.isFinite(j.ceiling) ? flTxt(j.ceiling) : '∞'
+          }) + (failed.length > 1 ? ` (+${failed.length - 1})` : ''), 'warn');
+        }
+        const [i] = failed,
+        why = {
+          none: TX.autoWhyNone,
+          far: TX.autoWhyFar,
+          detour: TX.autoWhyDetour,
+          loop: TX.autoWhyLoop
+        } [res.legs[i].status];
         S.ctx.notify(tt(TX.autoNone, {
           a: chain[i].id,
           b: chain[i + 1].id,
+          why: tt(why, {
+            a: chain[i].id,
+            p: RG.DEFAULTS.detourPct
+          }),
           more: failed.length > 1 ? ` (+${failed.length - 1})` : ''
         }), 'warn');
       };
     const done = res.legs.map((l, i) => l.status === 'routed' ? i : -1).filter(i => i >= 0);
-    if (!done.length) return failed.length ? noway() : S.ctx.notify(tt(TX.autoNoLeg), 'warn');
+    if (!done.length) {
+      if (dropped) writeAuto(tokens, points, []);
+      return failed.length ? noway() : dropped ? null : S.ctx.notify(tt(TX.autoNoLeg), 'warn');
+    }
     // texte et points réécrits : les tronçons routés reçoivent les jetons et les points de leur voie avant leur point d'arrivée
     const dest = new Map(done.map(i => [chain[i + 1], res.legs[i]])),
       newTokens = [],
@@ -3054,9 +3738,13 @@ async function autoAirways() {
       };
     for (const t of tokens) {
       const l = t.pt && dest.get(t.pt);
-      if (l) newTokens.push(...RG.tokensOf(l.points, {
-        dct: false
-      }).slice(1, -1));
+      if (l)
+        for (const w of RG.tokensOf(l.points, {
+            dct: false
+          }).slice(1, -1)) {
+          newTokens.push(w);
+          genTok.add(w);
+        }
       newTokens.push(t);
     }
     for (const p of points) {
@@ -3069,16 +3757,7 @@ async function autoAirways() {
       }
       newPoints.push(p);
     }
-    r.points = newPoints;
-    r.text = routeText(newTokens);
-    r.from = 'route';
-    const ta = S.body?.querySelector('[data-k="rtext"]');
-    if (ta && ta.value !== r.text) ta.value = r.text;
-    routeDerived(r);
-    renderPts();
-    saveFlight();
-    refresh();
-    resolveRoute(); // relecture (position des extrémités de voie prise dans route.points), distance, météo, devis
+    writeAuto(newTokens, newPoints, genTok);
     const names = new Set(done.flatMap(i => res.legs[i].routes));
     S.ctx.notify(tt(names.size === 1 ? TX.autoOne : TX.autoMany, {
       n: names.size,
@@ -3090,6 +3769,29 @@ async function autoAirways() {
     const b = s.body?.querySelector('[data-do="rauto"]');
     if (b) b.disabled = false;
   }
+}
+/** Écrit le résultat d'« Auto » : route.points, route.text, et sa provenance route.auto.seq ([{ w, g }] : chaque mot du texte, g vrai
+ *  pour ce que cet Auto a écrit — voies, nœuds, sortie de SID et entrée de STAR ajoutées), relue par l'Auto suivant (§ 10.31) ;
+ *  puis la route est relue (positions, distance, météo, devis). */
+function writeAuto(tokens, points, gen) {
+  const r = S.flight.route,
+    g = gen instanceof Set ? gen : new Set(gen);
+  r.points = points;
+  r.text = routeText(tokens);
+  r.auto = {
+    seq: tokens.filter(t => t.pt || t.keep).map(t => ({
+      w: t.pt ? t.pt.id : t.keep,
+      g: g.has(t)
+    }))
+  };
+  r.from = 'route';
+  const ta = S.body?.querySelector('[data-k="rtext"]');
+  if (ta && ta.value !== r.text) ta.value = r.text;
+  routeDerived(r);
+  renderPts();
+  saveFlight();
+  refresh();
+  resolveRoute(); // relecture (position des extrémités de voie prise dans route.points), distance, météo, devis
 }
 /** Dernier OFP SimBrief (identifiant de l'identité) par ctx.net : gardé sur l'appareil (cache), route, niveau, vent et
  *  appareil repris dans le vol courant. */
@@ -3119,9 +3821,10 @@ async function loadSimbrief() {
   });
   if (gone(s)) return;
   S.ofp = ofp;
+  const before = S.P.snapshot(); // les choix d'avant l'OFP, pour dire ce qu'il remplit
   applyOfp(ofp);
   // SID et STAR déposées dans l'OFP : au schéma commun d'aerodb (gardées sur l'appareil et synchronisées si le lecteur
-  // écrit), et dans le vol courant pour que la Carte les trace ; un OFP à la fois, aucun autre appel à SimBrief
+  // écrit), puis leurs identifiants dans le vol courant (route.procedures v2) ; un OFP à la fois, aucun autre appel à SimBrief
   let pr = null;
   try {
     pr = (await s.ctx.aerodb?.rememberOfp?.(ofp)) || (await s.ctx.aerodb?.procedureFromOfp?.(ofp));
@@ -3129,14 +3832,9 @@ async function loadSimbrief() {
     /* sans procédures : la route de l'OFP reste telle quelle */
   }
   if (gone(s) || S.ofp !== ofp) return;
-  S.flight.route = {
-    ...S.flight.route,
-    procedures: pr && (pr.sid || pr.star) ? {
-      sid: pr.sid,
-      star: pr.star
-    } : null
-  };
+  S.P.applyOfp(pr, before); // v2 : les identifiants de la SID et de la STAR, seulement pour les côtés que le pilote n'a pas choisis
   saveFlight();
+  refresh();
 }
 /** Reprend un OFP SimBrief dans le vol courant (route « ID lat lon », départ, arrivée, dégagement, niveau, vent moyen,
  *  écart ISA, appareil s'il a une fiche du même type ou de la même immatriculation). */
@@ -3220,24 +3918,59 @@ function verticalProfile(q) {
     todNm: r(q.descent?.nm, .1)
   };
 }
-/** Écrit le profil du devis dans le vol courant quand il change (maps le lit pour le profil vertical). */
-function shareProfile(q) {
-  const p = verticalProfile(q),
-    sum = quoteSummary(q);
-  if (JSON.stringify(p) === JSON.stringify(S.flight.profile ?? null) && JSON.stringify(sum) === JSON.stringify(S.flight.quote ?? null))
-    return;
-  S.flight.profile = p;
-  S.flight.quote = sum;
+/** Profil du devis (verticalProfile) et, quand des procédures sont choisies et lues, profile.path : le chemin vertical prévu le long
+ *  du chemin volé, [{ nm, ft }] (PG.verticalPath : montée, croisière, descente, puis les contraintes d'altitude des procédures). */
+function profileOf(C) {
+  const p = verticalProfile(C.q),
+    fp = p ? fpNow() : null;
+  if (p && fp) {
+    const path = PG.verticalPath(fp, C.q);
+    if (path.length) p.path = path;
+  }
+  return p;
+}
+/** Le devis comparé : sans legsAt (l'heure d'une réécriture), les legs sans origin lus comme « route » et, d'un devis écrit avant
+ *  quote.distanceNm, sans elle — un enregistrement d'avant ne se réécrit pas pour si peu. */
+const quoteCmp = (x, lenient) => x == null ? null : JSON.stringify({
+  ...x,
+  legsAt: undefined,
+  distanceNm: lenient ? undefined : x.distanceNm,
+  legs: Array.isArray(x.legs) ? x.legs.map(l => ({
+    ...l,
+    origin: l.origin || 'route'
+  })) : x.legs
+});
+/** Écrit le profil et le devis dans le vol courant quand ils changent (maps le lit pour le profil vertical). Après le départ, un
+ *  devis qui change ne le fait que par ses legs et le chemin vertical quand seules les procédures changent (quoteNm garde la
+ *  distance du devis) : quote.legsAt dit alors quand ils ont été réécrits. Rien n'est écrit tant que les procédures choisies ne
+ *  sont pas lues (un devis passager sur la route seule). */
+function shareProfile(C) {
+  if (procsPending()) return;
+  const p = profileOf(C),
+    sum = quoteSummary(C.q),
+    cur = S.flight,
+    lenient = cur.quote != null && cur.quote.distanceNm == null;
+  if (JSON.stringify(p) === JSON.stringify(cur.profile ?? null) && quoteCmp(sum, lenient) === quoteCmp(cur.quote ?? null, lenient)) return;
+  if (sum && cur.started
+    ?.at) { // un seul état : legsAt = l'heure de la dernière réécriture des legs ou du chemin vertical, gardé tant qu'ils ne changent pas
+    const same = JSON.stringify([sum.legs, p?.path ?? null]) === JSON.stringify([cur.quote?.legs, cur.profile?.path ?? null]);
+    if (same && cur.quote?.legsAt) sum.legsAt = cur.quote.legsAt;
+    else if (!same) sum.legsAt = new Date().toISOString();
+  }
+  cur.profile = p;
+  cur.quote = sum;
   saveFlight();
 }
 /** Résumé du devis pour le compte rendu et la Carte (current_flight.quote) : carburant bloc et délestage arrondis,
- *  dans l'unité de la fiche, temps de vol (min), niveau, et legs : à chaque point de la route, les minutes cumulées
+ *  dans l'unité de la fiche, temps de vol (min), niveau, distanceNm (celle du devis : le chemin des procédures quand il y en a un),
+ *  et legs : à chaque point du chemin volé (ceux de la route sans procédure choisie), les minutes cumulées
  *  depuis le lâcher des freins (roulage à part : settings.taxiMin), tirées de l'horaire prévu du devis (montée,
- *  croisière par tronçon avec son vent, descente), et taxiMin, ce roulage ; null sans devis chiffré. */
+ *  croisière par tronçon avec son vent, descente), avec l'origine du point (route, sid, star, app), et taxiMin, ce roulage ;
+ *  null sans devis chiffré. */
 function quoteSummary(q) {
   if (!q?.hasFuel) return null;
   const P = progressPlan(S.C),
-    pts = S.flight.route?.points || [],
+    pts = progPath().pts,
     taxi = +S.settings.taxiMin || 0;
   return {
     block: Math.round(q.block),
@@ -3247,9 +3980,11 @@ function quoteSummary(q) {
     levelFt: q.levelFt || null,
     approx: !!q.approx,
     taxiMin: taxi, // roulage compté par le devis : legs part du lâcher des freins, après lui
+    distanceNm: Math.round((S.C?.nm || 0) * 10) / 10,
     legs: P ? PG.etas(P, 0).map(e => ({
       id: pts[e.i]?.id || '',
-      min: Math.max(0, Math.round((e.at / 60000 - taxi) * 10) / 10)
+      min: Math.max(0, Math.round((e.at / 60000 - taxi) * 10) / 10),
+      origin: pts[e.i]?.origin || 'route'
     })) : null
   };
 }
@@ -3288,9 +4023,13 @@ function refresh() {
     }
     if (ac) ac.innerHTML = `<span class="f-muted">${esc(tt(TX.loadingRefs))}</span>`;
     S.body.inert = !!S.flightPending; // le vol pas encore lu : rien à saisir
+    // la carte des procédures ne dépend que des terrains du vol et d'aerodb : dessinée sans attendre le registre des aéronefs ni les fiches
+    // (refsPending ; utilisateur, 29/10 : « très long à charger avant de faire apparaître les procédures »)
+    if (!S.flightPending) S.P.sync();
     return;
   }
   S.body.querySelector('[data-block="result"]')?.removeAttribute('data-loading');
+  ensureProcs(); // les procédures choisies, lues par aerodb une fois par clé : le devis court ensuite sur leur chemin
   const C = S.C = compute(),
     {
       q,
@@ -3300,8 +4039,10 @@ function refresh() {
     } = C,
     $ = s => S.body.querySelector(s),
     unit = sheet?.unit || 'kg';
-  shareProfile(q);
+  shareProfile(C);
+  S.P.sync(); // choix, terrains, vol démarré : la carte des procédures est redessinée (sur place quand seules les listes changent)
   openInLinks(C);
+  fmsState();
   acSelected();
   renderSummary(C);
   updateProgress();
@@ -3326,6 +4067,13 @@ function refresh() {
     </div>
     ${D.gap ? `<p class="f-warn">${esc(tt(TX.gap, { fl: flTxt(D.gap.from), r: tt(TX.reasons[D.gap.reason] || TX.reasons.thrust) }))}</p>` : ''}
     <div class="f-row"><button type="button" data-do="level" data-ft="${D.best.h}">${esc(tt(TX.use, { fl: flTxt(D.best.h) }))}</button>${D.fast.h !== D.best.h ? `<button type="button" data-do="level" data-ft="${D.fast.h}">${esc(tt(TX.use, { fl: flTxt(D.fast.h) }))}</button>` : ''}<span class="f-muted">${esc(tt(TX.decisionHint))}</span></div>`;
+  // date du vol passée : la ligne de l'étape Vol et celle du résultat (le plan), jamais bloquantes
+  const past = pastDateText(),
+    pd = $('[data-pastdate]');
+  if (pd) {
+    pd.textContent = past;
+    pd.hidden = !past;
+  }
   // résultat collant
   const res = $('[data-block="result"]');
   if (!q) res.innerHTML = `<span class="f-muted">${esc(tt(sheet ? TX.noDistance : TX.noSheet))}</span>`;
@@ -3336,7 +4084,7 @@ function refresh() {
     res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted fu-ctx" title="${esc(resultContext(q, range, false))}">${esc(resultContext(q, range, true))}</div>
       <div class="fu-big">${range ? `${esc(fuelTxt(q.blockLow, unit))} – ${esc(fuelTxt(q.blockHigh, unit))}` : esc(fuelTxt(q.block, unit))}</div>
       <div class="f-tiles"><span class="f-muted" title="${esc(tt(TX.trip))}">${esc(tt(TX.tripS))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted" title="${esc(tt(TX.time))}">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted" title="${esc(`${tt(TX.tod)} : ${tt(TX.todVal, { d: distTxt(q.todNm) })}`)}">${esc(tt(TX.todS))}<b>${esc(distTxt(q.todNm))}</b></span></div>
-      ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}`;
+      ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}${past ? `<div class="f-warn fu-pastdate">${esc(past)}</div>` : ''}`;
   }
   // détail du devis (replié)
   const det = $('[data-details]');
@@ -3384,10 +4132,10 @@ function renderSheets() {
         <div class="f-muted">${esc(tt(TX.coType, { n: r.todo.registrations.length }))}</div></div>
         <div class="f-row"><button type="button" data-do="newfor">${esc(tt(TX.createSheet))}</button></div></div>`;
       const p = F.normalize(structuredClone(r.sheet)),
-        miss = F.sheetMissingPaths(p).length,
+        miss = F.sheetMissingFamilies(F.sheetMissingPaths(p)).map(f => tt(TX.missingFamily[f])),
         when = F.profileWhen(p);
       return `<div class="f-item" data-id="${esc(p.id)}"><div><b>${esc(p.name || p.id)}</b> <span class="f-muted">${esc(p.icao || '')} · ${esc(p.unit)}</span>
-        <div class="f-muted">${esc(F.profileSourceText(p))} · ${esc(miss ? tt(TX.missing, { n: miss }) : tt(TX.complete))}${when ? ` · ${esc(tt(TX.updated, { d: new Date(when).toLocaleDateString(lang) }))}` : ''}</div></div>
+        <div class="f-muted">${esc(F.profileSourceText(p))} · ${esc(miss.length ? tt(TX.missing, { list: miss.join(', ') }) : tt(TX.complete))}${when ? ` · ${esc(tt(TX.updated, { d: new Date(when).toLocaleDateString(lang) }))}` : ''}</div></div>
         <div class="f-row"><button type="button" data-do="use">${esc(tt(TX.useSheet))}</button><button type="button" data-do="edit">${esc(tt(TX.edit))}</button></div></div>`;
     }).join('')}`).join('') || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}</div>`;
   S.body.onclick = e => onSheetsClick(e);
@@ -3684,12 +4432,18 @@ function renderEditor(id, draft = null) {
   const p = S.edit = draft || F.normalize(structuredClone(raw)),
     rpmCell = (i, k, v) => `<td class="f-num"><input data-rpm="${i}" data-rk="${k}" inputmode="decimal" value="${esc(v ?? '')}" style="width:7em" aria-label="${esc(k)}"></td>`,
     groups = [...new Set(F.PROFILE_FIELDS.map(f => f[0]))],
+    facts = F.catalogFacts(p), // ce que la base OACI donne de la cellule et de la propulsion
     fuelUnit = path => F.FUEL_PATHS.has(path) ? ` (${p.unit}${path.endsWith('fuelFlowPerHour') ? '/h' : ''})` : '',
     input = ([, , path, type]) => {
       const v = F.pathGet(p, path),
         lab = esc(fieldLabel(path) + fuelUnit(path));
       if (type === 'bool') return `<label class="f-check"><input type="checkbox" data-path="${path}" data-type="bool"${v ? ' checked' : ''}>${lab}</label>`;
-      if (type.startsWith('select:')) return `<label class="f-field">${lab}<select data-path="${path}" data-type="text"><option value=""></option>${type.slice(7).split(',').map(o => `<option${String(v ?? '') === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
+      if (type.startsWith('select:')) {
+        // cellule et propulsion : libellés traduits, case vide = « auto · valeur de la base OACI » quand elle la donne
+        const deduced = facts[path],
+          none = deduced ? `${tt(TX.auto)} · ${tt(OPTION_TX[deduced])}` : '';
+        return `<label class="f-field">${lab}<select data-path="${path}" data-type="text"><option value="">${esc(none)}</option>${type.slice(7).split(',').map(o => `<option value="${esc(o)}"${String(v ?? '') === o ? ' selected' : ''}>${esc(OPTION_TX[o] ? tt(OPTION_TX[o]) : o)}</option>`).join('')}</select></label>`;
+      }
       if (type === 'textarea') return `<label class="f-field">${lab}<textarea rows="2" data-path="${path}" data-type="text">${esc(v ?? '')}</textarea></label>`;
       return `<label class="f-field">${lab}<input data-path="${path}" data-type="${type}" value="${esc(v ?? '')}"${type === 'number' ? ' inputmode="decimal"' : ''}></label>`;
     },
@@ -3752,6 +4506,9 @@ function review(before, after, o = {}) {
       }
       return esc(String(v));
     },
+    // cellule d'une valeur : un nombre (ou une suite de nombres) aligné à droite sans retour à la ligne ; un texte (description,
+    // nom) revient à la ligne dans sa colonne, sans pousser le tableau en défilement de côté
+    cell = v => `<td class="${typeof v === 'number' || /^[-+\d\s.,/–%°]{0,24}$/.test(String(v ?? '')) ? 'f-num' : 'fu-txt'}">${show(v)}</td>`,
     box = (attr, on) => before ? `<td><input type="checkbox" ${attr}${on ? ' checked' : ''}></td>` : '<td></td>',
     ff = r => [r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x !== null && x !== undefined && x !== '').join(' / '),
     gone = (before?.rpmFuelCurve || []).filter(r => r.rpm !== null && r.rpm !== '' && !(after.rpmFuelCurve || []).some(a => rpmKey(a) ===
@@ -3765,7 +4522,7 @@ function review(before, after, o = {}) {
   };
   S.body.innerHTML = `<div class="f-card"><h2>${esc(before ? tt(TX.review) : tt(TX.reviewNew, { n: after.name || after.id }))}${o.src ? ` <span class="f-muted">· ${esc(o.src)}</span>` : ''}</h2>
     ${rows.length || diff.curve.length || gone.length ? `<div class="f-scroll"><table class="f-table"><thead><tr><th></th><th>${esc(tt(TX.field))}</th><th class="f-num">${esc(tt(TX.before))}</th><th class="f-num">${esc(tt(TX.after))}</th></tr></thead><tbody>
-      ${rows.map(r => `<tr>${box(`data-path="${esc(r.path)}"`, !o.checked || o.checked(r.path))}<td>${esc(fieldLabel(r.path, true))}</td><td class="f-num">${show(r.old)}</td><td class="f-num">${show(r.now)}</td></tr>`).join('')}
+      ${rows.map(r => `<tr>${box(`data-path="${esc(r.path)}"`, !o.checked || o.checked(r.path))}<td>${esc(fieldLabel(r.path, true))}</td>${cell(r.old)}${cell(r.now)}</tr>`).join('')}
       ${diff.curve.map(c => `<tr>${box(`data-curve="${esc(c.key)}"`, true)}<td>RPM ${esc(c.label)} <span class="f-muted">(${esc(tt(c.kind === 'added' ? TX.added : TX.replaced))})</span></td><td class="f-num">${esc(c.old)}</td><td class="f-num">${esc(c.now)}</td></tr>`).join('')}
       ${gone.map((r, i) => `<tr>${box(`data-gone="${i}"`, true)}<td>RPM ${esc(r.rpm)}${r.altFt !== null && r.altFt !== undefined && r.altFt !== '' ? ` @ ${esc(r.altFt)} ft` : ''} <span class="f-muted">(${esc(tt(TX.rpmGone))})</span></td><td class="f-num">${esc(ff(r))}</td><td class="f-num">—</td></tr>`).join('')}
     </tbody></table></div>` : `<p class="f-muted">${esc(tt(TX.reviewNone))}</p>`}
@@ -3796,6 +4553,66 @@ async function applyReview() {
   if (S.queue?.length) return proposeIncoming(S.queue);
   return S.edit && S.sheets.some(x => x.id === S.edit.id) ? renderEditor(S.edit.id) : renderSheets();
 }
+// ---------------------------------------------------------------- plan de vol pour les simulateurs (V3 § 10.28)
+/** Nombre de points de la route qui ont une position : l'export en demande deux. */
+const placedPoints = () => (S.flight?.route?.points || []).filter(p => p && p.lat !== null && p.lat !== '' && p.lon !== null && p.lon !==
+  '' && Number
+  .isFinite(+p.lat) && Number.isFinite(+p.lon)).length;
+/** Boutons d'export : actifs avec une route d'au moins deux points placés, sinon grisés avec la raison en infobulle. */
+function fmsState() {
+  const ok = placedPoints() >= 2;
+  for (const b of S.body?.querySelectorAll('[data-fms]') || []) {
+    b.disabled = !ok;
+    b.title = ok ? '' : tt(TX.fmsNeed);
+  }
+}
+/** Natures et noms que la route ne porte pas, lus dans aerodb (au mieux, sans bloquer l'export) : { names: { LFPO: 'Paris-Orly' },
+ *  kinds: { RGS: 'vor' } } — le nom des deux terrains, la nature (VOR, NDB) des points de trois ou quatre lettres. */
+async function fmsLookups(f) {
+  const names = {},
+    kinds = {},
+    pts = (f.route?.points || []).map(p => String(p?.id || '').toUpperCase()),
+    ends = new Set([f.route?.dep, f.route?.arr, pts[0], pts.at(-1)].map(x => String(x || '').toUpperCase()).filter(Boolean)),
+    find = S.ctx.aerodb?.find ? id => Promise.resolve(S.ctx.aerodb.find(id, 6)).catch(() => []) : () => Promise.resolve([]);
+  await Promise.all([...new Set(pts.filter(Boolean))].map(async id => {
+    const hit = ((await find(id)) || []).filter(h => String(h?.code || '').toUpperCase() === id);
+    if (ends.has(id)) {
+      const ad = hit.find(h => h.kind === 'aerodrome');
+      if (ad?.name) names[id] = ad.name;
+    } else if (id.length <= 4) {
+      const nav = hit.find(h => h.kind === 'navaid');
+      if (nav) kinds[id] = /^NDB/i.test(nav.name) ? 'ndb' : 'vor';
+    }
+  }));
+  return {
+    names,
+    kinds
+  };
+}
+/** Écrit le plan de vol dans le format demandé (xp11 : .fms 1100, xp10 : .fms version 3, pln : MSFS) d'après la route et les
+ *  procédures choisies (CF.expandedPath, lues par aerodb si elles ne le sont pas encore), et le propose au téléchargement. */
+async function exportFms(which) {
+  const s = S,
+    f = s.flight;
+  if (placedPoints() < 2) return;
+  try {
+    const procs = s.procs?.key === procsKey(f) ? s.procs.procs || {} : await CF.loadProcedures(s.ctx.aerodb, f).catch(() => ({})),
+      look = await fmsLookups(f);
+    if (gone(s)) return;
+    const file = FMS.exportOf({
+      xp11: 'fms1100',
+      xp10: 'fmsv3',
+      pln: 'pln2020'
+    } [which] || 'fms1100', f, CF.expandedPath(f, procs || {}), {
+      procs: procs || {},
+      ...look
+    });
+    download(file.name, file.text, `${file.type};charset=utf-8`);
+  } catch (e) {
+    if (!gone(s)) s.ctx.notify(tt(TX.fmsFailed), 'warn');
+  }
+}
+
 /** Propose au pilote un fichier créé ici (export). */
 function download(name, text, type) {
   const a = document.createElement('a');
@@ -3841,6 +4658,64 @@ export async function mount(el, ctx) {
     stops: [],
     view: 'plan'
   };
+  // la carte « Procédures » (modules/fuel/procedures.js) : ce qu'elle demande à l'écran, rien d'autre
+  S.P = createProcedures({
+    ctx,
+    flight: () => self.flight,
+    route: () => self.flight.route ||= emptyFlight().route,
+    body: () => S === self ? self.body : null,
+    plan: () => self.view === 'plan',
+    key: () => procsKey(self.flight),
+    gone: () => gone(self),
+    pending: () => !!self.refsPending,
+    save: () => S === self && saveFlight(),
+    settled: procsSettled,
+    drop: () => {
+      self.procs = null; // les procédures lues du vol sont périmées : relues au prochain refresh
+    },
+    refresh: () => S === self && refresh(),
+    // le vent du METAR connu du terrain, celui de l'étape Départ (jamais le TAF) : { dir (vrai, d'où il vient), kt, magVar } ou null
+    wind: icao => {
+      const st = WX.station(self.wx?.metar?.[icao], null);
+      return st && st.wspd != null ? {
+        dir: st.wdir,
+        kt: st.wspd,
+        magVar: self.wxAd?.[icao]?.magVar
+      } : null;
+    },
+    // la limite de vent de travers de la fiche de l'appareil (maxCrosswindKt), 0 sans fiche ou sans limite
+    crossLimit: () => +self.sheets?.find(p => p.id === self.flight.aircraft?.sheetId)?.maxCrosswindKt || 0
+  });
+  // les noms de terrain et la complétion des champs de l'étape Vol (modules/fuel/adnames.js)
+  S.AD = createAdNames({
+    ctx,
+    body: () => S === self ? self.body : null,
+    flight: () => self.flight,
+    gone: () => gone(self)
+  });
+  S.stops.push(S.AD.stop);
+  // la complétion au curseur du champ de route (modules/fuel/routecomplete.js, § 10.31)
+  S.RC = createRouteComplete({
+    ctx,
+    body: () => S === self ? self.body : null,
+    gone: () => gone(self),
+    names: () => {
+      const m = self.P?.textModel?.();
+      return m ? {
+        sid: [...m.sid.keys()],
+        star: [...m.star.keys()]
+      } : null;
+    },
+    // le dernier point connu du vol parmi les mots avant le curseur, sinon le départ
+    around: words => {
+      const pts = (self.flight.route?.points || []).filter(p => Number.isFinite(+p.lat));
+      for (const w of [...(words || [])].reverse()) {
+        const p = pts.find(x => String(x.id).toUpperCase() === w.split('/')[0]);
+        if (p) return p;
+      }
+      return pts[0] || null;
+    }
+  });
   // premier dessin sans attendre le réseau (audit de poids, mesure 4) : les bibliothèques et ce que l'appareil a déjà
   // (read sans wait : la copie gardée, ou null pour un fichier jamais lu) ; le registre d'aerodb, les fiches, et le
   // vol courant ou les réglages jamais lus arrivent ensuite (completeMount) — en attendant « chargement… », et rien
@@ -3876,8 +4751,25 @@ export async function mount(el, ctx) {
   S.aloft = null;
   for (const path of OLD_WEATHER) ctx.data.remove?.(path)?.catch?.(() => {});
   // pas de la préparation : celui gardé, ou Route quand la Carte envoie « Modifier la route » (#fuel?focus=route)
-  S.focusRoute = ctx.query?.focus === 'route';
-  S.step = S.focusRoute ? 1 : Math.max(0, Math.min(4, +S.ui.step || 0));
+  // et la proposition du mode choix de la Carte (#fuel?focus=arr&rwy=13R&star=ID&app=ID, plusieurs clés d'un aller, « none » =
+  // « Aucune », une clé absente laisse sa famille ; § 10.23 puis § 10.30 : rwy sid star app apptrans, pas de transition SID / STAR) :
+  // prises une fois, ensemble, et retirées de l'adresse (frame/INTEGRATION.md § 6.1)
+  const PROPOSAL_KEYS = ['rwy', 'sid', 'star', 'app', 'apptrans'],
+    q = ctx.consume ? ctx.consume('focus', ...PROPOSAL_KEYS) : ctx.query || {},
+    asked = q.focus;
+  if ((asked === 'dep' || asked === 'arr') && PROPOSAL_KEYS.some(k => q[k] != null && q[k] !== '')) S.P.propose(asked, {
+    rwy: q.rwy,
+    sid: q.sid,
+    star: q.star,
+    app: q.app,
+    appTrans: q.apptrans // la clé de l'adresse en minuscules, le champ de route.procedures en appTrans
+  });
+  if (asked === 'dep') S.P.focus('dep');
+  S.focusRoute = asked === 'route';
+  // ou le pas qui porte la ligne Arrivée (Route avant le départ, Départ après) quand la Carte envoie « Changer » (#fuel?focus=arr)
+  S.focusArr = asked === 'arr';
+  if (S.focusArr) S.P.focus('arr'); // la première liste de l'arrivée prend le focus dès qu'elle est dessinée
+  S.step = S.focusRoute ? 1 : S.focusArr || asked === 'dep' ? (kept.started?.at ? 4 : 1) : Math.max(0, Math.min(4, +S.ui.step || 0));
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
     <div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>
     <div data-body></div>`;
@@ -3887,12 +4779,25 @@ export async function mount(el, ctx) {
   S.srTitle();
   window.addEventListener('frame-titled', S.srTitle);
   S.body = el.querySelector('[data-body]');
+  // liste des terrains proposés (étape Vol) : fermée quand le champ perd le focus ; un appui sur une proposition ne prend pas le focus
+  // du champ (sinon le flou la fermerait avant le clic). Posés une fois : l'écran Devis est redessiné, pas son conteneur.
+  S.body.addEventListener('focusout', e => {
+    const hits = S?.AD?.hitsFor(e.target?.dataset?.k) || 0; // avant que la liste se ferme
+    S?.AD?.onFocusOut(e);
+    S?.RC?.onFocusOut(e);
+    revertAd(e.target, hits);
+  });
+  for (const type of ['pointerdown', 'mousedown']) S.body.addEventListener(type, e => {
+    S?.AD?.onPointerDown(e);
+    S?.RC?.onPointerDown(e);
+  });
   // « ? » de l'en-tête : le chapitre au paragraphe de l'écran (Fiches ; le pas affiché sur téléphone, où la barre des pas est
   // visible ; le devis entier sur un module large, où les cinq pas sont les uns sous les autres)
   ctx.helpAnchor?.(() => S?.view === 'sheets' ? 'fuel-sheets' : S?.body?.querySelector('.fu-steps')?.offsetParent ? `fuel-step-${S.step + 1}` :
     'fuel-quote');
   el.querySelector('.f-tabs').onclick = e => e.target.dataset.view && show(e.target.dataset.view);
   // fiches changées ailleurs (synchronisation, autre onglet) ; vol courant écrit par maps
+  S.stops.push(ctx.aerodb?.on?.('change', e => self.P.onChange(e)));
   S.stops.push(ctx.aerodb?.on?.('change', async e => {
     if (!e?.aircraft || gone(self) || !S.body) return;
     const A = await ctx.aerodb.aircraft().catch(() => S.A);
@@ -3922,7 +4827,7 @@ export async function mount(el, ctx) {
     if ((S.flight.planned_at ?? null) !==
       oldPlanned) { // date du vol changée ailleurs (autre appareil) : champ, météo et vents relus
       const wd = S.body?.querySelector('[data-k="wxdate"]');
-      if (wd && wd.value !== isoToWhen(S.flight.planned_at)) wd.value = isoToWhen(S.flight.planned_at);
+      if (wd && wd.value !== whenField(S.flight.planned_at)) wd.value = whenField(S.flight.planned_at);
       whenChanged();
     }
     if (keepText != null) S.flight.route = { // route en cours de frappe : la valeur du champ reste la vérité
@@ -3955,7 +4860,7 @@ export async function mount(el, ctx) {
   S.stops.push(() => clearInterval(tick));
   // toujours le Plan à l'ouverture : on vient ici pour le plan de vol ou le devis, rarement pour une fiche d'appareil ;
   // les Fiches s'ouvrent par leur onglet ou par l'adresse #fuel?view=sheets (le dernier écran n'est plus gardé)
-  show(!S.focusRoute && ctx.query?.view === 'sheets' ? 'sheets' : 'plan');
+  show(!S.focusRoute && !S.focusArr && ctx.query?.view === 'sheets' ? 'sheets' : 'plan');
   if (!S.flightPending) flightReady();
   completeMount(self); // pas attendu : le cadre a son écran tout de suite
 }
@@ -3977,6 +4882,7 @@ function flightReady() {
     ta?.focus();
     ta?.setSelectionRange?.(ta.value.length, ta.value.length);
   }
+  S.P.applyFocus();
   if (!S.refsPending) resumeFlight();
 }
 /** Vol modifié ailleurs pendant l'absence de fuel : repris (devis refait) ; sinon la route relue. */
@@ -4034,6 +4940,9 @@ export function unmount() {
   } catch {
     /* déjà arrêté */
   }
+  // une série de choix de procédures en attente est écrite ; une lecture en cours n'est pas abandonnée : le travail du poste continue
+  // et sa fin est dite (procedures.js)
+  S.P.stop();
   clearTimeout(S.routeTimer);
   clearTimeout(S.roTimer);
   clearTimeout(S.wxTimer);

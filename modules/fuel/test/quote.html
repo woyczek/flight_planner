@@ -46,7 +46,7 @@
       name: 'Test turboprop',
       icao: 'ZZTP',
       unit: 'kg',
-      engineType: 'turboprop',
+      propulsion: 'turboprop',
       cruise: {
         tasKt: 300,
         fuelFlowPerHour: 1000,
@@ -282,6 +282,29 @@
         if (typed(f, from, base, x) !== x) bad++;
       check(`typed whole numbers 1…${max}, ${lab}`, bad, 0);
     }
+    // classe de motorisation du modèle : la propulsion de la fiche d'abord, l'ancien champ engineType ensuite (fiches d'avant
+    // le 28/10/2026 non relues par aerodb), puis la base des types et la TAS
+    lines.push('<b>engine class</b>');
+    const kind = window.FlightPerfModel.kindOf;
+    check('propulsion turboshaft → turboprop class', kind({
+      propulsion: 'turboshaft'
+    }, {}), 'turboprop');
+    check('propulsion electric → piston class', kind({
+      propulsion: 'electric'
+    }, {}), 'piston');
+    check('legacy engineType still accepted', kind({
+      engineType: 'jet'
+    }, {}), 'jet');
+    check('propulsion wins over the legacy engineType', kind({
+      propulsion: 'piston',
+      engineType: 'jet'
+    }, {}), 'piston');
+    check('propulsion none says nothing: the cruise TAS decides', kind({
+      propulsion: 'none',
+      cruise: {
+        tasKt: 350
+      }
+    }, {}), 'jet');
     lines.unshift(`<b class="${fail ? 'ko' : 'ok'}">${pass} passed, ${fail} failed</b>`);
     document.getElementById('out').innerHTML = lines.join('\n');
     document.title = `fuel — quote bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
