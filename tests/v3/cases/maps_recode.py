@@ -2183,3 +2183,17 @@ def d81(c):
     c.ok((c.js('window.__zoCalls') or 0) >= 1, f"{c.js('window.__zoCalls')}", 'read through aerodb.zoneOutlines()')
     c.eq(c.js("() => performance.getEntriesByType('resource').some(e => /maps\\/lib\\/outlines\\.js/.test(e.name))"), False,
          'the Map’s own copy (lib/outlines.js) is not loaded', what='outlines.js')
+
+
+# ------------------------------------------------------------------------------------------------------ D82
+@case('D82', 'The choose pane’s model bench (frame/lib/pane_model.js) passes', 'D', tags=('maps',), screens=False, designs=('standard',),
+      night=False, rule='refactor R-M1 (§ 10.33): the pane’s meaning is one pure function, paneModel(input, state), with its reducers; its bench covers groups, folds, families, the pending family, transitions, the route and heading axes, marks, the correction line, the summary, the wind, the frame and the way back')
+def d82(c):
+    c.page.goto(f'{c.base}/frame/lib/test/pane_model.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'frame/lib/test/pane_model.html') from None
+    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+    c.ok(r['fail'] == 0 and r['pass'] >= 30, f"{r['pass']} passed, {r['fail']} failed. First failures: {[x for x in (r['rows'] or []) if not x['ok']][:3]}",
+         'every check of the bench passes')

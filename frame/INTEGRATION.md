@@ -293,6 +293,12 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 Modules ask each other things only through the address (no event between modules): the asking one sets `location.hash`
 (`location.replace` when the request must not stay in the history), the frame mounts the named module with `ctx.query`.
 
+- **The choose pane's model** (`frame/lib/pane_model.js`, 30 Oct 2026, refactor R-M1 of § 10.33; the Map's `choose.js` renders it):
+  `paneModel(input, state)` → `{ choice, groups, subs, rows, summary, focus, frame, empty }`, pure (no DOM, no translation: every
+  text is a code the module writes); `input` `{ side, icao, records, runways, ad, at, cur, route, wind }` read once, `state`
+  `{ sel, pend, open: { focus, last, more }, hl }` the pane's only state; the gestures as pure reducers `panePick`, `paneFold`,
+  `paneGoto`, `paneHl`; the one way back `paneReturn(side, state)` (`#fuel?focus=…&rwy=…&star=…&app=…&apptrans=…`). It reads
+  `procedures.js` and `wind.js`. Bench `frame/lib/test/pane_model.html` (D82).
 - **`ctx.consume(...keys)`** (29 Oct 2026) gives the values of those keys from `ctx.query` and removes them from the address in
   one write (`history.replaceState`: no `hashchange`, the module is not mounted again). A consumed request is therefore
   replayed neither by a reload nor by Back. `with`, `from` and `pane` belong to the frame and are never removed; in a pane

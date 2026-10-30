@@ -1,0 +1,323 @@
+<!doctype html>
+<!-- Banc du modèle du volet « choisir sur la carte » (frame/lib/pane_model.js, modules/maps/SPEC.md § 5.1, refonte R-M1) : groupes,
+     rétrécissement aux compatibles et repli, familles, attente d'une famille et sa résolution par la piste, piste posée par une
+     procédure, transitions sous l'approche et la STAR, axes route et cap, marques, ligne de correction, résumé, vent, cadre, retour.
+     Fonctions pures, données inventées ; page nue, aucun module du cadre ; window.__bench = { done, pass, fail, rows } pour un pilote
+     (Playwright). Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>pane_model — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">pane_model.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    paneModel,
+    paneState,
+    panePick,
+    paneFold,
+    paneGoto,
+    paneHl,
+    paneReturn,
+    MAX_ROWS
+  } from '../pane_model.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  const freeze = v => {
+    if (v && typeof v === 'object' && !Object.isFrozen(v)) {
+      Object.freeze(v);
+      for (const k in v) freeze(v[k]);
+    }
+    return v;
+  };
+  // fiches inventées, la forme d'aerodb : { id, icao, kind, name, runways, transition, points }
+  const pp = (seq, id, lat, lon) => ({
+      seq,
+      id,
+      lat,
+      lon,
+      phase: 'main'
+    }),
+    P = (kind, name, rwy, points, trans = null, runways = [rwy]) => ({
+      id: `LFML.${kind}.${name}.RW${rwy}.${trans || 'NONE'}`,
+      icao: 'LFML',
+      kind,
+      name,
+      runways,
+      transition: trans,
+      points,
+      status: 'check'
+    }),
+    star = (n, rwys, entry) => P('STAR', `S${n}A`, rwys[0], [pp(1, entry || `EN0${n}`, 43.9 + .05 * n, 4.2 + .1 * n), pp(2, `MD0${n}`, 43.6,
+      4.9)], null, rwys),
+    // le seuil de la 31 au sud-est, celui de la 13 au nord-ouest (l'axe se lit d'un seuil à l'autre)
+    RWY = [{
+      id: '31',
+      lat: 43.4367,
+      lon: 5.215,
+      qfu: 310
+    }, {
+      id: '13',
+      lat: 43.44,
+      lon: 5.20,
+      qfu: 130
+    }],
+    ILS = P('APP', 'ILS RWY 31', '31', [pp(1, 'XF01', 43.52, 4.95), pp(2, 'RW31', 43.44, 5.20)]),
+    RNP = P('APP', 'RNP RWY 31', '31', [pp(1, 'XF02', 43.55, 4.9), pp(2, 'RW31', 43.44, 5.20)]),
+    ODILO = P('APP', 'INA RNAV RWY 31', '31', [pp(1, 'ODILO', 43.75, 4.6), pp(2, 'XF01', 43.52, 4.95)], 'ODILO 1A'),
+    ABC = P('APP', 'INA RNAV RWY 31', '31', [pp(1, 'ABC1', 43.8, 5.3), pp(2, 'ABC2', 43.7, 5.25)], 'ABC 1A'),
+    // une transition propre à l'ILS (une fiche de l'ILS qui porte une transition), pas un segment de toute la piste
+    ILST = P('APP', 'ILS RWY 31', '31', [pp(1, 'IAF1', 43.7, 4.6), pp(2, 'XF01', 43.52, 4.95)], 'IAF1'),
+    TOODILO = P('STAR', 'S0A', '31', [pp(1, 'ENT0', 44.1, 4.2), pp(2, 'ODILO', 43.75, 4.6)]),
+    OKL = P('STAR', 'OKRI5L', '31', [pp(1, 'OKR', 44.0, 4.4), pp(2, 'MD31', 43.6, 4.9)]),
+    OKR = P('STAR', 'OKRI5R', '13', [pp(1, 'OKR', 44.0, 4.4), pp(2, 'MD13', 43.6, 5.4)]),
+    STARS = [1, 2, 3, 4, 5, 6, 7].map(n => star(n, ['31'])),
+    S9 = star(9, ['13']),
+    route = (pts = [{
+      id: 'LFRS',
+      lat: 47.1569,
+      lon: -1.6078
+    }, {
+      id: 'LUGEN',
+      lat: 46.58,
+      lon: -1.2
+    }, {
+      id: 'LFML',
+      lat: 43.4367,
+      lon: 5.215
+    }]) => ({
+      points: pts,
+      dep: 'LFRS',
+      arr: 'LFML'
+    }),
+    input = (records, extra = {}) => freeze({
+      side: 'arr',
+      icao: 'LFML',
+      records,
+      runways: RWY,
+      ad: {
+        icao: 'LFML',
+        magVar: 0
+      },
+      at: {
+        lat: 43.4367,
+        lon: 5.215
+      },
+      cur: {},
+      route: route(),
+      wind: null,
+      ...extra
+    }),
+    S0 = () => freeze(paneState());
+
+  // les groupes du côté
+  const I1 = input([...STARS, S9, ILS, RNP]);
+  let m = paneModel(I1, S0());
+  ck('arrivée : piste, STAR, approche ; départ : piste, SID', Object.keys(m.groups).join() === 'rwy,star,app' && Object.keys(paneModel(
+    input([], {
+      side: 'dep'
+    }), S0()).groups).join() === 'rwy,sid');
+  ck('les pistes du terrain, sans choix', m.groups.rwy.rows.map(r => r.id).sort().join() === '13,31' && !m.groups.rwy.rows.some(r => r
+    .chosen));
+  ck(`six lignes montrées au plus, le reste replié (${MAX_ROWS})`, m.groups.star.shown.length === MAX_ROWS && m.groups.star.folded === 2,
+    JSON.stringify(m.groups.star.shown));
+  // la piste choisie rétrécit les STAR aux compatibles
+  let s = panePick(I1, S0(), 'rwy', '31');
+  m = paneModel(I1, s);
+  ck('piste 31 : S9A (13 seulement) n’est plus montrée', !m.groups.star.shown.includes(S9.id) && m.groups.star.folded >= 1);
+  ck('dépliée, S9A revient marquée ⚠ (ne va pas)', (() => {
+    const mm = paneModel(I1, paneFold(I1, s, 'star'));
+    return mm.groups.star.shown.includes(S9.id) && mm.groups.star.rows.find(r => r.id === S9.id).why.length > 0;
+  })());
+  ck('paneGoto déplie un groupe replié, laisse un groupe sans repli', paneGoto(I1, s, 'star').open.more.star === true && paneGoto(I1, s,
+    'rwy') === s);
+  // une procédure à une piste pose la piste
+  s = panePick(I1, S0(), 'star', STARS[0].id);
+  ck('une STAR qui ne sert que la 31 pose la piste', s.sel.rwy === '31' && s.sel.star === STARS[0].id && s.open.focus === 'star');
+  ck('la tape laisse la ligne surlignée', s.hl === STARS[0].id);
+  // familles
+  const I2 = input([OKL, OKR, ILS]);
+  m = paneModel(I2, S0());
+  const fam = m.groups.star.rows.find(r => r.id === 'fam:OKRI5');
+  ck('OKRI5L et OKRI5R font une ligne « OKRI5 », ses pistes en étiquettes', !!fam && fam.tags.join() === '13,31' && fam.label.name ===
+    'OKRI5');
+  s = panePick(I2, S0(), 'star', 'fam:OKRI5');
+  ck('la famille sans piste se met en attente', s.pend.star === 'OKRI5' && s.sel.star === undefined);
+  m = paneModel(I2, s);
+  ck('le résumé dit la famille et ses pistes en attendant la piste', m.summary.proc?.family === 'OKRI5' && m.summary.proc.runways.join() ===
+    '13,31');
+  s = panePick(I2, s, 'rwy', '13');
+  ck('la piste 13 résout la famille en OKRI5R', s.sel.star === OKR.id && !s.pend.star);
+  ck('avec une piste, la famille se résout tout de suite', panePick(I2, panePick(I2, S0(), 'rwy', '31'), 'star', 'fam:OKRI5').sel.star ===
+    OKL.id);
+  // approches et transitions
+  const I3 = input([STARS[0], TOODILO, ILS, RNP, ODILO, ABC]);
+  m = paneModel(I3, panePick(I3, S0(), 'rwy', '31'));
+  ck('les finales par leur libellé court, sans étiquette de piste redite', m.groups.app.rows.map(r => r.label.name).sort().join() ===
+    'ILS 31,RNP 31' && m.groups.app.rows.every(r => !r.tags.length));
+  s = panePick(I3, panePick(I3, S0(), 'rwy', '31'), 'app', ILS.id);
+  m = paneModel(I3, s);
+  ck('sous l’approche choisie, ses transitions (via ODILO 1A, via ABC1 · ABC 1A)', m.subs.map(r => r.label.name).sort().join() ===
+    'via ABC1 · ABC 1A,via ODILO 1A', JSON.stringify(m.subs.map(r => r.label)));
+  ck('une transition dans la teinte de sa finale', m.subs.every(r => r.hi === m.groups.app.rows.find(x => x.id === ILS.id).hi));
+  s = panePick(I3, s, 'appTrans', ABC.id);
+  s = panePick(I3, s, 'star', TOODILO.id);
+  m = paneModel(I3, s);
+  ck('une STAR qui finit sur ODILO ne laisse que ODILO 1A, ABC 1A revient à « Aucune »', m.subs.map(r => r.id).join() === ODILO.id && s.sel
+    .appTrans === null);
+  const I3b = input([ILS, ILST, RNP]);
+  s = panePick(I3b, panePick(I3b, panePick(I3b, S0(), 'rwy', '31'), 'app', ILS.id), 'appTrans', ILST.id);
+  ck('une autre approche remet la transition à « Aucune » quand elle ne la suit pas', s.sel.appTrans === ILST.id && panePick(I3b, s, 'app',
+    RNP.id).sel.appTrans === null, JSON.stringify(s.sel));
+  // les axes : la route tapée, sinon le cap
+  const I4 = input([star(1, ['31']), star(5, ['31']), star(6, ['31'])], {
+    route: route([{
+      id: 'LFRS',
+      lat: 47.1569,
+      lon: -1.6078
+    }, {
+      id: 'EN05',
+      lat: 44.15,
+      lon: 4.7
+    }, {
+      id: 'LFML',
+      lat: 43.4367,
+      lon: 5.215
+    }])
+  });
+  m = paneModel(I4, S0());
+  ck('la STAR qui entre sur la route tapée d’abord, « vers votre route » au-dessus', m.groups.star.shown[0] === I4.records[1].id && m.groups
+    .star.head?.kind === 'toRoute');
+  ck('les autres marquées de leur entrée', m.groups.star.rows.filter(r => r.id !== I4.records[1].id).every(r => r.off?.kind === 'entry' &&
+    /^EN0/
+    .test(r.off.p)));
+  const SE = P('STAR', 'SEA', '31', [pp(1, 'SUDEE', 42.90, 5.95), pp(2, 'MDSE', 43.30, 5.40)]),
+    I5 = input([SE, star(9, ['31']), star(1, ['31'])], {
+      route: route([{
+        id: 'LFRS',
+        lat: 47.1569,
+        lon: -1.6078
+      }, {
+        id: 'LFML',
+        lat: 43.4367,
+        lon: 5.215
+      }])
+    });
+  m = paneModel(I5, S0());
+  ck('route directe : classées par l’écart à l’orthodromie, « vers LFRS », pas de « entrée X »', m.groups.star.shown.join() === [I5.records[
+      2].id, I5.records[1].id, SE.id].join() && m.groups.star.head?.kind === 'toward' && m.groups.star.head.icao === 'LFRS' && m.groups
+    .star.rows.every(r => !r.off), JSON.stringify(m.groups.star.shown));
+  ck('chaque STAR a son cap (SEA vers le nord-ouest)', (() => {
+    const d = m.groups.star.rows.find(r => r.id === SE.id).dir?.deg;
+    return d > 290 && d < 330;
+  })());
+  // marques et correction
+  s = panePick(I1, S0(), 'app', ILS.id);
+  m = paneModel(I1, s);
+  ck('l’ILS 31 choisi : la piste 13 dit pourquoi (⚠)', m.groups.rwy.rows.find(r => r.id === '13').why.some(w => w.kind ===
+    'rwyNotServed' && w.p));
+  s = panePick(I1, panePick(I1, S0(), 'rwy', '31'), 'star', S9.id);
+  m = paneModel(I1, s);
+  ck('S9A choisie avec la 31 : « S9A sert la 13 — Passer en 13 »', s.sel.rwy === '31' && m.groups.star.fix?.kind === 'serves' && m.groups
+    .star.fix.r === '13' && m.groups.star.fix.val === '13', JSON.stringify(m.groups.star.fix));
+  s = panePick(I1, s, 'rwy', '31');
+  m = paneModel(I1, s);
+  ck('puis la piste retouchée : « S9A ne sert pas la 31 — Choisir … »', m.groups.star.fix?.kind === 'notServes' && !!m.groups.star.fix.val,
+    JSON.stringify(m.groups.star.fix));
+  // vent
+  const I6 = input([STARS[0]], {
+    wind: {
+      dir: 310,
+      kt: 12
+    }
+  });
+  m = paneModel(I6, S0());
+  ck('le vent du METAR : face sur la 31, arrière (alerte) sur la 13', (() => {
+    const a = m.groups.rwy.rows.find(r => r.id === '31').wind,
+      b = m.groups.rwy.rows.find(r => r.id === '13').wind;
+    return a && a.k.head >= 10 && a.sev === 'ok' && b && b.k.head <= -10 && b.sev !== 'ok';
+  })(), JSON.stringify(m.groups.rwy.rows.map(r => [r.id, r.wind])));
+  ck('sans METAR, pas de vent', paneModel(I1, S0()).groups.rwy.rows.every(r => r.wind === null));
+  // cadre
+  m = paneModel(I1, S0());
+  ck('le cadre : le terrain, ses pistes, les points proches ; pas les entrées lointaines (> 40 NM)', m.frame.some(p => p.lat === 43.4367) &&
+    !m.frame.some(p => p.lat > 43.9));
+  s = panePick(I1, S0(), 'star', STARS[0].id);
+  ck('une procédure choisie entre entière dans le cadre', paneModel(I1, s).frame.some(p => p.lat > 43.9));
+  // surlignage
+  s = paneHl(I1, panePick(I1, S0(), 'rwy', '31'), S9.id, true);
+  ck('touchée sur la carte, une ligne repliée déplie son groupe et passe au premier plan', s.hl === S9.id && s.open.more.star === true && s
+    .open.focus === 'star');
+  ck('le survol ne touche que hl', (() => {
+    const a = S0(),
+      b = paneHl(I1, a, STARS[1].id);
+    return b.hl === STARS[1].id && b.sel === a.sel && b.open === a.open;
+  })());
+  // retour
+  s = panePick(I3, panePick(I3, panePick(I3, S0(), 'rwy', '31'), 'app', ILS.id), 'appTrans', ODILO.id);
+  ck('le retour : une clé par famille touchée', paneReturn('arr', s) === `#fuel?focus=arr&rwy=31&app=${encodeURIComponent(ILS.id)}&apptrans=${encodeURIComponent(ODILO.id)}`,
+    paneReturn('arr', s));
+  ck('« Aucune » se dit none ; rien de touché, rien', paneReturn('arr', panePick(I1, S0(), 'star', 'none')) ===
+    '#fuel?focus=arr&star=none' &&
+    paneReturn('arr', S0()) === '');
+  // le choix du vol, l'état vide
+  m = paneModel(input([...STARS, ILS], {
+    cur: {
+      rwy: '31',
+      star: STARS[2].id
+    }
+  }), S0());
+  ck('le choix du vol est en vigueur sans rien toucher ; la famille au premier plan est la première qui manque', m.choice.star === STARS[2]
+    .id && m.groups.star.rows.find(r => r.id === STARS[2].id).chosen && m.focus === 'app', m.focus);
+  ck('sans fiche ni piste : vide', paneModel(input([], {
+    runways: []
+  }), S0()).empty === true);
+  ck('pur : les entrées et l’état gelés ne bougent pas', (() => {
+    try {
+      const st = S0();
+      paneModel(I1, st);
+      panePick(I1, st, 'rwy', '31');
+      return true;
+    } catch (e) {
+      return false;
+    }
+  })());
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

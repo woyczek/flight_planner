@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the choose pane's model, pure (R-M1 a, § 10.33)** (`frame/lib/pane_model.js`, bench `frame/lib/test/pane_model.html`;
+  maps SPEC § 5.1 target form, frame INTEGRATION; noreg D82). `paneModel(input, state)` holds the pane's meaning — groups, folds,
+  families, the pending family, transitions under the STAR, route and heading axes, marks, the correction line, summary, wind,
+  frame — with its reducers and the one way back; the Map does not use it yet (next lot), nothing changes on screen.
+
 - **Map: the plain background from aerodb; the modules' file lists complete** (`modules/maps/lib/map_base.js`, `draw.js`,
   `module.js`, `modules/atmosphere/module.js` (meta.files only); DECISIONS; noreg D81, I26). The plain background draws the
   countries of `aerodb.zoneOutlines()` instead of the Map's own copy (kept for Atmosphere until it moves too); the Map's and

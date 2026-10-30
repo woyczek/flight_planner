@@ -400,6 +400,33 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   the row, the label and the trace. ⌛ (grey, symbol only) = read under an earlier cycle; ⚠ (orange) = `conflictsOf`, the reason in
   the row's `title`.
 - Texts `TX.ch*` (×4); help anchor `maps-choose`; cases D60, D62.
+- **Target form (refactor R-M1, § 10.33; no change of behaviour).** The pane's whole meaning is one pure function of the frame,
+  `paneModel(input, state)` in `frame/lib/pane_model.js` (no DOM, no translation, no Map state), with its bench
+  `frame/lib/test/pane_model.html`:
+  - `input` — read once when the mode opens, never changed: `{ side, icao, records, runways, ad, at, cur, route, wind }`:
+    the aerodrome's procedure records (doubtful ones already out), its runway records, its aerodrome record (`magVar`, axis),
+    its position, the flight's choice for the side (`route.procedures` v2 through `proceduresOf`), the flight's route points
+    (`[{ id, lat, lon }]`, the other aerodrome's position included) and the METAR wind `{ dir, kt }` or null;
+  - `state` — the only state of the pane, `{ sel, pend, open, hl }`: `sel` the families touched in the pane (absent = the
+    flight's, `null` = "None", else the id; the runway without "RW"), `pend` the SID / STAR family put before its runway
+    (`{ sid?: name, star?: name }`), `open` `{ focus, more: { [family]: true } }` (the family in front and the groups unfolded),
+    `hl` the highlighted row id or null;
+  - result `{ choice, groups, subs, summary, focus, frame }`: `choice` the choice in force (`cur` overlaid by `sel`); `groups`
+    per family of the side (`rwy`, `sid` | `star`, `app`) `{ rows, shown, folded, head, fix }` — `rows` every row
+    `{ id, fam, rec, members?, family?, hi, label: { kind, … }, tags, chosen, why: [codes], off: code | null,
+    dir: { deg, off } | null, wind: { k, sev } | null, old, pts, anchor }`, `shown` the ids shown (compatible first, then on
+    the route or towards the other aerodrome, six at most unless `more`), `folded` how many are folded, `head` the sub-heading
+    code (`toRoute` / `{ toward: icao }` / null), `fix` the correction line as data (`{ kind: 'serves' | 'notServes', p, r,
+    fam, val }`); `subs` the transitions under the chosen approach (compatible with the chosen STAR); `summary` the three
+    lines as data (`PR.summaryOf`, the pending family with its runways); `frame` the points to frame (aerodrome, runways,
+    compatible points within 40 NM, chosen procedures whole). Every text is a code: `choose.js` writes it with `TX.ch*`.
+  - `choose.js` keeps only `S.choose = { side, icao, fromCard, input, state, model }`: `input` loaded once (`chooseLoad`),
+    `state` changed by the gestures (`choosePick`, the fold, the highlight, ✕ of the summary), `model` = `paneModel(input,
+    state)` recomputed only when `sel`, `pend` or `open` change (the highlight does not recompute it); it renders the pane's
+    HTML and the map's layout (`chooseLayout`, its hit boxes per drawing) from `model`, nothing else.
+  - **One exit**, `chooseClose()` (Done, ✕, Escape): the keys of `sel` (`#fuel?focus=<side>&rwy=…&star=…&app=…&apptrans=…`,
+    `none` for "None") through `location.replace`; nothing touched: back to Fuel on that side, or, opened from the aerodrome
+    card, back to the flight's map without a reload (today's `chooseExit`, which becomes its private branch).
 
 ## 6. Map contents
 
