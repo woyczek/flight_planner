@@ -842,7 +842,7 @@ def d41(c):
 
 
 @case('D42', 'The profile follows the flown path and the constraints', 'D', tags=('maps',), screens=False, designs=('standard',),
-      rule='V3 § 10.20, maps SPEC § 8: profile.path drawn when it exists, else the fallback; NM marks, cursor and ETA on the flown path; constraints as steps')
+      rule='V3 § 10.20, maps SPEC § 8: profile.path drawn when it exists, else the fallback; NM marks, cursor and ETA on the flown path; constraints as steps; TOC / TOD read within 100 ft of the top')
 def d42(c):
     T = _FLOWN_NM
     path = [{'nm': 0, 'ft': 90}, {'nm': round(T * .1, 1), 'ft': 6000}, {'nm': round(T * .2, 1), 'ft': 27000}, {'nm': round(T * .8, 1), 'ft': 27000},
@@ -872,6 +872,15 @@ def d42(c):
     _open_proc(c, g, view='maps?view=-1.5,46.35,-0.9,46.8')
     c.until("() => !!window.__mp.S.prof", timeout=10000, what='the profile is built')
     c.eq(c.js("() => !!window.__mp.S.prof.plan?.path"), False, 'without profile.path the profile keeps its fallback', what='plan.path')
+    # a cruise that drifts by a few feet (Fuel's 24 980 → 24 970) keeps TOC at its start and TOD at its end; a step climb keeps TOC
+    # at the higher level
+    r = c.js("""async () => { const pts = [{ id: 'A', lat: 46, lon: 0 }, { id: 'B', lat: 46 + 100 / 60, lon: 0 }],
+      at = async path => { const p = await MapsProfile.build(pts, { path }); return [p.plan.toc.s, p.plan.tod.s].map(s => Math.round(s / 1852)) };
+      return [await at([{ nm: 0, ft: 0 }, { nm: 20, ft: 24980 }, { nm: 80, ft: 24970 }, { nm: 100, ft: 0 }]),
+        await at([{ nm: 0, ft: 0 }, { nm: 20, ft: 24970 }, { nm: 80, ft: 24980 }, { nm: 100, ft: 0 }]),
+        await at([{ nm: 0, ft: 0 }, { nm: 20, ft: 23000 }, { nm: 50, ft: 23000 }, { nm: 55, ft: 25000 }, { nm: 80, ft: 25000 }, { nm: 100, ft: 0 }])] }""")
+    c.eq(r, [[20, 80], [20, 80], [55, 80]], 'TOC and TOD at the ends of a drifting cruise; a step climb tops at the higher level',
+         what='TOC / TOD on profile.path')
 
 
 @case('D43', 'The aerodrome card shows the choice and a button to Fuel', 'D', tags=('maps',), screens=False, designs=('standard',), langs4=True,

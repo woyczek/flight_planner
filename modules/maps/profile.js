@@ -47,7 +47,7 @@
 
   /** Trajectoire que Carburant a calculée sous les contraintes des procédures (profile.path [{ nm, ft }], V3_SPECIFICATION
    *  § 10.20) : l'altitude de chaque échantillon est lue sur la polyligne du plan ; TOC / TOD = début et fin du plus haut palier
-   *  (TOC : la première fois qu'il est atteint), paliers nommés comme ceux de planPath. Même forme que fuelPlan. */
+   *  (TOC : la première fois qu'il est atteint, à 100 ft près), paliers nommés comme ceux de planPath. Même forme que fuelPlan. */
   function pathPlan(samples, total, path) {
     const at = nm => {
       if (nm <= path[0].nm) return path[0].ft;
@@ -64,9 +64,12 @@
       n = samples.length - 1,
       top = Math.max(...alt),
       start = alt[0],
-      eps = 1;
-    let iToc = alt.findIndex(v => v >= top - eps),
-      iTod = alt.length - 1 - [...alt].reverse().findIndex(v => v >= top - eps);
+      eps = 1,
+      // le palier de Carburant dérive de quelques pieds (24 980 → 24 970) : TOC et TOD se lisent à 100 ft du sommet, sinon l'un
+      // des deux colle à l'autre au bout du palier
+      near = 100;
+    let iToc = alt.findIndex(v => v >= top - near),
+      iTod = alt.length - 1 - [...alt].reverse().findIndex(v => v >= top - near);
     if (iToc < 0) iToc = 0;
     if (iTod < iToc) iTod = iToc;
     const levels = [];

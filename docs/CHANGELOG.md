@@ -18,6 +18,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `tools/regen_jobs.py`, `tools/regen/aircraft.py`, `tools/regen/base_sources.py`; frame INTEGRATION § 15, DECISIONS; noreg I17,
   I18): `vfr/fetch`, `build`, `purge` for the Data module (V3 § 10.34 A1); the jobs' subprocesses never see the launcher's
   credentials; no purge follows a link or a junction.
+
+- **Map: TOC and TOD in place on Fuel's constrained path** (`modules/maps/profile.js`; noreg D42). Fuel's cruise drifts by a
+  few feet (24,980 → 24,970 ft) and the top was read to the foot, so TOC slid to the end of the cruise or TOD to its start
+  (LFBO → LFPO: TOC drawn at 290 NM instead of 77). Both are now read within 100 ft of the top; a real step climb still tops
+  at the higher level.
+
 - **Maintenance: the « Appareils » module, the fleet** (`modules/aircraft/`, V3 § 10.34 A2; help ×4; area M, M1–M5) — the
   company's fleet as a list with search, add, edit (the changed fields said before writing) and retire (a question).
 - **Launcher: jobs of the aircraft set, and the list of loaded verbs** (`tools/regen/aircraft.py`, `tools/launch.py`; frame
