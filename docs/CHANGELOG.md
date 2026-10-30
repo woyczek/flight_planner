@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **A rewritten data repository: refused, then « Take up the new history »** (`tools/data_sync.py`, `tools/launch.py`,
+  `frame/settings/launcher.js`, `frame/app.js`, `frame/store/frame_data.js`, `shared/sync.js`; SYNCHRONISATION § 10, frame
+  DECISIONS, Settings help ×4; noreg I15): a remote branch without a common ancestor is never merged and is said ×4;
+  on the launcher's computer, Settings › Administration › Remote repository takes up the new history after showing the
+  plan (old branch kept in `refs/sog/`, pool files carried over, files outside the pool never pushed), then synchronises.
 - **The flown track stays on the device** (`frame/app.js`, `frame/store/frame_data.js`, `modules/maps/flight_time.js`; frame
   SPEC, INTEGRATION § 6, DECISIONS; noreg A35, D61): the track is kept in the device's data (never synchronised, never in a
   backup) and read with `ctx.live.trail()`; the shared current flight carries the position only. The group usage's

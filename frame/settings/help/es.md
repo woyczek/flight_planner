@@ -132,6 +132,11 @@ se señala.
   «Recordar» los confía a Git en este equipo). Sin `data/`, «Recuperar los datos» lo clona; con un `data/` sin git
   (datos de ejemplo o archivo), «Retomar data/ en este repositorio» lo enlaza al repositorio. La tarjeta sigue el trabajo
   y vuelve a leer el estado al final; un fallo se explica, nada se pierde.
+- **Historial del repositorio reescrito** (por ejemplo para purgar archivos grandes): la sincronización de este equipo
+  rechaza entonces toda fusión y lo dice; no se pierde nada. Aquí, «Retomar el nuevo historial» muestra primero lo que
+  saldrá (sus commits, los archivos de datos trasladados), pregunta, guarda el estado anterior en una referencia local,
+  traslada sus archivos de datos al nuevo historial y luego sincroniza. Un archivo fuera de los datos sincronizados
+  nunca se vuelve a enviar.
 
 ## Configurar un piloto
 

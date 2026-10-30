@@ -810,3 +810,84 @@ def i14(c):
         L._ivao_oidc.clear()
         L._ivao_oidc.update(kept[2])
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I15', 'Rewritten history of the data repository: refused, then taken up by a gesture', 'I', static=True,
+      rule='frame 30 Oct 2026 (the data repository was rewritten and force-pushed): no common ancestor is never merged, nothing lost; the gesture keeps the old branch in refs/sog/, carries the pool files onto the new history, never pushes a file outside the pool')
+def i15(c):
+    import importlib
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    D = importlib.import_module('data_sync')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-rewritten-'))
+
+    def g(cwd, *a):
+        r = subprocess.run(['git', '-C', str(cwd), *a], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        return r.returncode, (r.stdout + r.stderr).strip()
+
+    def put(repo, rel, text):
+        f = repo / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(text, encoding='utf-8')
+
+    try:
+        bare, a, b, v = tmp / 'remote.git', tmp / 'a', tmp / 'b', tmp / 'verify'
+        g(tmp, 'init', '-q', '--bare', '-b', 'main', str(bare))
+        g(tmp, 'clone', '-q', str(bare), str(a))
+        for k, val in (('user.name', 'essai'), ('user.email', 'essai@example.invalid')):
+            g(a, 'config', k, val)
+        put(a, 'cr/ABC/a.json', '{"v": 1}\n')
+        put(a, 'cr/XYZ/b.json', '{"v": 1}\n')
+        put(a, 'notes.txt', 'socle\n')
+        put(a, 'raw/source.bin', 'x' * 2000)
+        g(a, 'add', '-A')
+        g(a, 'commit', '-qm', 'one')
+        g(a, 'rm', '-q', 'raw/source.bin')
+        g(a, 'commit', '-qm', 'two: the raw source removed')
+        g(a, 'push', '-q', '-u', 'origin', 'main')
+        g(tmp, 'clone', '-q', str(bare), str(b))  # the pilot's workstation
+        for k, val in (('user.name', 'pilote'), ('user.email', 'pilote@example.invalid')):
+            g(b, 'config', k, val)
+        # on the workstation: a pool file committed, a file outside the pool committed, a pool change in progress
+        put(b, 'cr/ABC/a.json', '{"v": 2}\n')
+        g(b, 'commit', '-qam', 'local pool change')
+        put(b, 'notes.txt', 'local, never pushed\n')
+        g(b, 'commit', '-qam', 'local change outside the pool')
+        put(b, 'cr/ABC/pending.json', '{"p": 1}\n')
+        # the rewrite: same tree, a new history, force-pushed; then another pilot writes on the new history
+        g(a, 'checkout', '-q', '--orphan', 'new')
+        g(a, 'commit', '-qm', 'rewritten')
+        g(a, 'push', '-q', '-f', 'origin', 'new:main')
+        put(a, 'cr/XYZ/new.json', '{"n": 1}\n')
+        g(a, 'add', '-A')
+        g(a, 'commit', '-qm', 'another pilot, on the new history')
+        g(a, 'push', '-q', 'origin', 'new:main')
+        r = D.run(str(b), 'ABC')
+        c.ok(not r['ok'] and r.get('code') == 'rewritten' and 'réécrit' in r['message'] and not r['pushed'], json.dumps(r, ensure_ascii=False)[:300],
+             'a pass refuses the rewritten history: no merge, said clearly')
+        c.ok((b / 'cr' / 'ABC' / 'pending.json').read_text(encoding='utf-8') == '{"p": 1}\n' and not (b / '.git' / 'MERGE_HEAD').exists(), '',
+             'nothing lost, no merge left open')
+        st = D.status(str(b))
+        c.ok(st['rewritten'] and st['divergence']['level'] == 'alert' and any(x['code'] == 'rewritten' for x in st['divergence']['reasons']),
+             json.dumps(st['divergence']), 'the status says it, as an alert')
+        p = D.rewritten_plan(str(b))
+        c.eq((p['ok'], p['rewritten'], p['commits'], p['files'], p['kept']), (True, True, 3, ['cr/ABC/a.json', 'cr/ABC/pending.json'], ['notes.txt']),
+             'the plan: the workstation’s commits since the common state (the refused pass committed the change in progress), the pool files carried, the file outside the pool kept',
+             what='plan')
+        c.eq(D.rewritten_resume(str(b), 'ab1').get('ok'), False, 'an invalid trigram is refused', what='trigram')
+        r = D.rewritten_resume(str(b), 'ABC')
+        refs = g(b, 'for-each-ref', '--format=%(refname)', 'refs/sog/')[1].split()
+        c.ok(r['ok'] and r['moved'] >= 1 and len(refs) == 1 and refs[0] == r['ref'] and refs[0].startswith('refs/sog/avant-reecriture-'),
+             json.dumps(r, ensure_ascii=False)[:300], 'taken up: the old branch kept in refs/sog/avant-reecriture-<date>')
+        r = D.run(str(b), 'ABC')
+        c.ok(r['ok'] and r['pushed'], json.dumps(r, ensure_ascii=False)[:300], 'the next pass receives the new history and sends')
+        g(tmp, 'clone', '-q', str(bare), str(v))
+        got = {k: (v / k).read_text(encoding='utf-8') if (v / k).exists() else None
+               for k in ('cr/ABC/a.json', 'cr/ABC/pending.json', 'cr/XYZ/new.json', 'notes.txt', 'raw/source.bin')}
+        c.eq(got, {'cr/ABC/a.json': '{"v": 2}\n', 'cr/ABC/pending.json': '{"p": 1}\n', 'cr/XYZ/new.json': '{"n": 1}\n', 'notes.txt': 'socle\n',
+                   'raw/source.bin': None}, 'on the remote: the workstation’s pool files, the other pilot’s file, never the file outside the pool', what='remote')
+        c.eq(g(b, 'merge-base', 'origin/main', refs[0])[0], 1, 'the old history is never pushed back (no common ancestor with the remote)',
+             what='old history on the remote')
+        c.ok(not D.status(str(b))['rewritten'] and D.rewritten_plan(str(b), fetch=False)['rewritten'] is False, '', 'afterwards: nothing to take up')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)

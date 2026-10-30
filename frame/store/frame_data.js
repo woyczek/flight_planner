@@ -940,6 +940,8 @@
         conflicts: Array.isArray(r.conflicts) ? r.conflicts.length : +r.conflicts || 0,
         refused: Array.isArray(r.refused) ? r.refused.length : +r.refused || 0,
         settled: typeof r.settled === 'string' ? r.settled : '',
+        // code d'un refus que la page sait dire (rewritten : historique du dépôt réécrit, à reprendre par un geste)
+        code: typeof r.code === 'string' ? r.code.slice(0, 30) : '',
         message: String(r.message || '').slice(0, 300)
       };
     } catch (e) {

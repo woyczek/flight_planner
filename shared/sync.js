@@ -82,6 +82,12 @@
       'data/ hat kein entferntes Repository: Änderungen bleiben auf diesem Rechner.',
       'data/ no tiene repositorio remoto: los cambios se quedan en este equipo.'
     ],
+    rewritten: [
+      'L’historique du dépôt des données a été réécrit : rien n’est fusionné. Réglages › Administration › Dépôt distant (V3) : « Reprendre le nouvel historique ».',
+      'The data repository’s history was rewritten: nothing is merged. Settings › Administration › Remote repository (V3): « Take up the new history ».',
+      'Die Historie des Daten-Repositorys wurde neu geschrieben: nichts wird zusammengeführt. Einstellungen › Administration › Entferntes Repository (V3): „Neue Historie übernehmen“.',
+      'El historial del repositorio de datos se reescribió: no se fusiona nada. Ajustes › Administración › Repositorio remoto (V3): «Retomar el nuevo historial».'
+    ],
     merging: ['Une fusion est en cours dans data/ : à terminer ou annuler à la main.',
       'A merge is in progress in data/: finish or abort it by hand.',
       'In data/ läuft eine Zusammenführung: von Hand abschließen oder abbrechen.',

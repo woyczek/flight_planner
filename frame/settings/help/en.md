@@ -126,6 +126,10 @@ only reported.
   this computer). Without `data/`, “Fetch the data” clones it; with a `data/` without git (example data or archive),
   “Take data/ into this repository” links it to the repository. The card follows the work and reads the state again at
   the end; a failure is explained, nothing is lost.
+- **Rewritten repository history** (for instance to purge big files from it): this computer's synchronisation then
+  refuses any merge and says so; nothing is lost. Here, « Take up the new history » first shows what will leave (your
+  commits, the data files carried over), asks, keeps the old state in a local reference, carries your data files onto
+  the new history, then synchronises. A file outside the synchronised data is never sent again.
 
 ## Configuring a pilot
 

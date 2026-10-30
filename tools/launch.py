@@ -984,7 +984,41 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if not self._allowed():
             return self._json({'error': 'refusé'}, 403)
         # state : 'absent' (rien : clone), 'plain' (des fichiers sans dépôt : reprise, POST /__setup/adopt), 'repo'
-        return self._json({**data_sync.remote_info(DATA), 'default': data_repo_url(), 'state': data_sync.data_state(DATA)})
+        state = data_sync.data_state(DATA)
+        return self._json({**data_sync.remote_info(DATA), 'default': data_repo_url(), 'state': state,
+                           'rewritten': state == 'repo' and data_sync.rewritten(DATA)})
+
+    @route('GET', '/__setup/sync-rewritten', public='poste')
+    def _get_sync_rewritten(self, path):
+        # historique du dépôt des données réécrit : le plan de la reprise (récupéré du dépôt distant, rien changé) — ce poste
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        with SYNC_LOCK:
+            return self._json(data_sync.rewritten_plan(DATA))
+
+    @route('POST', '/__setup/sync-rewritten', public='poste')
+    def _post_sync_rewritten(self, path, body):
+        # « Reprendre le nouvel historique » (geste de l'administrateur, ce poste) : reprise, puis un passage de
+        # synchronisation (réception du nouvel historique fiche par fiche, envoi)
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        a = a if isinstance(a, dict) else {}
+        author = str(a.get('author') or '').upper()
+        with SYNC_LOCK:
+            r = data_sync.rewritten_resume(DATA, author, str(a.get('name') or '')[:60])
+            if r.get('ok'):
+                registry_bridge()
+                r['sync'] = data_sync.run(DATA, author, str(a.get('name') or '')[:60], True)
+        sync_status_reset()
+        if r.get('sync', {}).get('received'):
+            with INDEX_LOCK:
+                index_availability()
+                index_users()
+        return self._json(r)
 
     @route('GET', '/__setup/sync-status', public='poste')
     def _get_sync_status(self, path):

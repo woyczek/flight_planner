@@ -31,6 +31,39 @@
       'Dirección del repositorio (git@host:cuenta/repo.git o https://…)'
     ],
     remoteCheck: ['Vérifier', 'Check', 'Prüfen', 'Comprobar'],
+    histWarn: [
+      'L’historique du dépôt des données a été réécrit (aucun ancêtre commun) : rien n’est fusionné, les écritures de ce poste restent dans data/.',
+      'The data repository’s history was rewritten (no common ancestor): nothing is merged, this computer’s writes stay in data/.',
+      'Die Historie des Daten-Repositorys wurde neu geschrieben (kein gemeinsamer Vorfahr): nichts wird zusammengeführt, die Änderungen dieses Rechners bleiben in data/.',
+      'El historial del repositorio de datos se reescribió (sin antepasado común): no se fusiona nada, las escrituras de este equipo se quedan en data/.'
+    ],
+    histResume: ['Reprendre le nouvel historique', 'Take up the new history', 'Neue Historie übernehmen',
+      'Retomar el nuevo historial'
+    ],
+    histReading: ['Lecture du dépôt distant…', 'Reading the remote repository…', 'Entferntes Repository wird gelesen…',
+      'Leyendo el repositorio remoto…'
+    ],
+    histAsk: [
+      'Reprendre le nouvel historique ? {c} commit(s) de ce poste, {n} fichier(s) des données reportés sur le nouvel historique, {p} modification(s) en cours commitées d’abord{k}. L’ancien état reste gardé dans une référence locale ; rien n’est supprimé. Puis une synchronisation.',
+      'Take up the new history? {c} commit(s) of this computer, {n} data file(s) carried onto the new history, {p} change(s) in progress committed first{k}. The old state stays kept in a local reference; nothing is deleted. Then a synchronisation.',
+      'Neue Historie übernehmen? {c} Commit(s) dieses Rechners, {n} Datendatei(en) auf die neue Historie übertragen, {p} laufende Änderung(en) zuerst committet{k}. Der alte Stand bleibt in einer lokalen Referenz; nichts wird gelöscht. Danach eine Synchronisation.',
+      '¿Retomar el nuevo historial? {c} commit(s) de este equipo, {n} archivo(s) de datos trasladados al nuevo historial, {p} cambio(s) en curso confirmados antes{k}. El estado anterior queda guardado en una referencia local; no se borra nada. Luego una sincronización.'
+    ],
+    histKept: [' ; {k} fichier(s) hors des données synchronisées gardés seulement dans la référence locale, jamais envoyés',
+      '; {k} file(s) outside the synchronised data kept only in the local reference, never sent',
+      '; {k} Datei(en) außerhalb der synchronisierten Daten bleiben nur in der lokalen Referenz, nie gesendet',
+      '; {k} archivo(s) fuera de los datos sincronizados se quedan solo en la referencia local, nunca enviados'
+    ],
+    histDone: ['Nouvel historique repris : {n} fichier(s) reportés, puis synchronisé.',
+      'New history taken up: {n} file(s) carried over, then synchronised.',
+      'Neue Historie übernommen: {n} Datei(en) übertragen, dann synchronisiert.',
+      'Nuevo historial retomado: {n} archivo(s) trasladados, luego sincronizado.'
+    ],
+    histNoTri: ['Réglez d’abord votre trigramme (Mon profil) : il signe le commit de reprise.',
+      'Set your trigram first (My profile): it signs the take-up commit.',
+      'Legen Sie zuerst Ihr Kürzel fest (Mein Profil): Es zeichnet den Übernahme-Commit.',
+      'Configure primero su trigrama (Mi perfil): firma el commit de recuperación.'
+    ],
     remoteSaving: [
       'Enregistrement, puis vérification… Autre dépôt que l’actuel : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
       'Saving, then checking… Another repository than the current one: confirm in the window the launcher opens on the computer.',
@@ -295,7 +328,9 @@
       fld
     } = env;
     if (gitState !== 'repo' || !remote) return '';
-    return `<div data-card="remote"><p data-remote-now>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
+    const hist = remote.rewritten ? `<div data-card="hist"><p class="f-msg" data-kind="warn" data-hist>${esc(t(T.histWarn))}</p><p class="f-msg" data-msg></p>
+        <div class="f-row"><button type="button" class="primary" data-act="histResume">${esc(t(T.histResume))}</button></div></div>` : '';
+    return `${hist}<div data-card="remote"><p data-remote-now>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
         ${fld('remote', T.remoteUrl, remote.url || remote.default || '')}<p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div><p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p></div>`;
   }
@@ -551,6 +586,34 @@
       c.notify(t(act === 'eadErase' ? T.eadErased : T.eadSaved), 'ok');
       return paintEad(env, r.app?.ead);
     }
+    if (act === 'histResume') {
+      // historique réécrit : le plan d'abord (rien changé), une question, puis la reprise et une synchronisation
+      const tri = c.identity().trigram || '';
+      if (!tri) return say('hist', t(T.histNoTri), 'warn');
+      say('hist', t(T.histReading), 'warn');
+      const plan = await setup('sync-rewritten');
+      if (!plan?.ok || !plan.rewritten) return say('hist', plan?.message || t(T.launcherOld), plan?.ok ? 'ok' : 'err');
+      say('hist', '');
+      const k = plan.kept?.length ? t(T.histKept, {
+        k: plan.kept.length
+      }) : '';
+      if (!await c.ask(t(T.histAsk, {
+          c: plan.commits,
+          n: plan.files.length,
+          p: plan.pending,
+          k
+        }))) return;
+      say('hist', t(T.histReading), 'warn');
+      const r = await setup('sync-rewritten', {
+        author: tri
+      });
+      if (!r?.ok) return say('hist', r?.message || t(T.launcherOld), 'err');
+      c.notify(t(T.histDone, {
+        n: r.moved || 0
+      }), r.sync?.ok ? 'ok' : 'warn');
+      if (r.sync && !r.sync.ok) say('hist', r.sync.message || '', 'warn');
+      return again();
+    }
     if (act === 'remoteCheck' || act === 'remoteSave') {
       const url = val('remote', card('remote')),
         save = act === 'remoteSave';
@@ -615,7 +678,7 @@
   (window.SogSettingsParts ||= {}).launcher = {
     acts: ['lanToggle', 'lanForget', 'lanCode', 'lanAll', 'keySave', 'keyErase', 'keyTest', 'eadSave', 'eadErase', 'remoteCheck',
       'remoteSave', 'gitClone',
-      'gitAdopt'
+      'gitAdopt', 'histResume'
     ],
     readRemote,
     accessHtml,

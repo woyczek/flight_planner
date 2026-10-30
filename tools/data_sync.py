@@ -331,6 +331,8 @@ def divergence(data, st):
         bump('alert', {'code': 'no_remote'})
     if st.get('merging'):
         bump('alert', {'code': 'merging'})
+    if st.get('rewritten'):
+        bump('alert', {'code': 'rewritten'})
     t = thresholds(data)
     for code, n in (('changes', st.get('changes', 0)), ('age_h', st.get('oldest_h', 0) if st.get('changes') else 0),
                     ('behind', st.get('behind', 0)), ('ahead', st.get('ahead', 0)), ('outside', len(st.get('outside') or []))):
@@ -362,7 +364,8 @@ def status(data, fetch=False):
     changes = pool_changes(data)
     st = {'repo': True, 'branch': br, 'upstream': up, 'remote': remote, 'changes': len(changes),
           'oldest_h': oldest_age_h(data, changes), 'outside': outside_changes(data)[:200],
-          'ahead': ahead, 'behind': behind, 'merging': merging, 'fetched': fetched, 'last': last_sync(data)}
+          'ahead': ahead, 'behind': behind, 'merging': merging, 'fetched': fetched, 'last': last_sync(data),
+          'rewritten': bool(up) and rewritten(data, up)}
     st['divergence'] = divergence(data, st)
     return st
 
@@ -663,6 +666,116 @@ def _commit_local(data, who, env, res, label, gesture=False):
             res['committed'] = len(changes)
 
 
+# historique du dépôt réécrit (sources purgées puis poussé en forcé, 30 oct. 2026) : aucun ancêtre commun avec la branche
+# distante ; jamais fusionné, repris par un geste (rewritten_resume)
+REWRITTEN_MSG = ('L’historique du dépôt des données a été réécrit : rien n’est fusionné, les écritures de ce poste restent '
+                 'dans data/. Réglages › Administration › Dépôt distant : « Reprendre le nouvel historique ».')
+
+
+def _target(data):
+    """(branche distante suivie ou <distant>/<branche>, distant) ; ('', '') sans dépôt distant."""
+    br, up, remote = branch_info(data)
+    return (up or (f'{remote}/{br}' if remote and br else '')), remote
+
+
+def rewritten(data, target=''):
+    """Vrai si la branche distante déjà récupérée n'a aucun ancêtre commun avec HEAD : son historique a été réécrit."""
+    target = target or _target(data)[0]
+    if not target or git(data, 'rev-parse', '--verify', '--quiet', target)[0] or git(data, 'rev-parse', '--verify', '--quiet', 'HEAD')[0]:
+        return False
+    return git(data, 'merge-base', 'HEAD', target)[0] == 1  # 1 : aucun ancêtre commun (sans erreur)
+
+
+def _tree_match(data, target):
+    """Le dernier commit de HEAD dont l'arbre est aussi celui d'un commit du nouvel historique : (ancien, nouveau) ; None
+    sinon. La réécriture garde les arbres (mêmes fichiers) : cet état commun sert de base à la reprise."""
+    _, theirs = git(data, 'log', '--format=%H %T', target)
+    trees = {}
+    for line in theirs.splitlines():
+        h, _, t = line.partition(' ')
+        trees.setdefault(t, h)  # le plus récent d'abord
+    _, ours = git(data, 'log', '--format=%H %T', 'HEAD')
+    for line in ours.splitlines():
+        h, _, t = line.partition(' ')
+        if t in trees:
+            return h, trees[t]
+    return None
+
+
+def rewritten_plan(data, fetch=True, env=None):
+    """Ce que ferait la reprise du nouvel historique, sans rien changer : { ok, rewritten, commits (de ce poste depuis
+    l'état commun), files (du pool, reportés), kept (hors du pool : jamais repoussés, gardés dans la référence de
+    sauvegarde), pending (fichiers du pool pas encore commités, commités d'abord), message }."""
+    res = {'ok': False, 'rewritten': False, 'commits': 0, 'files': [], 'kept': [], 'pending': 0}
+    if not is_repo(data):
+        return {**res, 'message': 'data/ n’est pas un dépôt git (ou git est absent).'}
+    if _busy(data) or os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
+        return {**res, 'message': 'Une fusion ou un rebase est en cours dans data/ : synchroniser d’abord.'}
+    target, remote = _target(data)
+    if not target:
+        return {**res, 'message': 'Pas de dépôt distant : rien à reprendre.'}
+    if fetch:
+        code, out = git(data, 'fetch', '--quiet', remote, env=env)
+        if code:
+            return {**res, 'message': f'Dépôt distant injoignable : {out[-300:]}'}
+    if not rewritten(data, target):
+        return {**res, 'ok': True, 'message': 'L’historique du dépôt n’a pas été réécrit : rien à reprendre.'}
+    m = _tree_match(data, target)
+    if not m:
+        return {**res, 'rewritten': True, 'message': 'Aucun état commun entre ce poste et le nouvel historique : reprise impossible '
+                'ici (les fichiers de data/ sont intacts).'}
+    old, _new = m
+    _, names = git(data, 'diff', '--name-only', old, 'HEAD')
+    files = [x for x in names.splitlines() if x.strip()]
+    _, n = git(data, 'rev-list', '--count', '--no-merges', f'{old}..HEAD')
+    return {**res, 'ok': True, 'rewritten': True, 'commits': int(n or 0), 'files': [x for x in files if in_pool(x)],
+            'kept': [x for x in files if not in_pool(x)], 'pending': len(pool_changes(data)), 'message': ''}
+
+
+def rewritten_resume(data, author, name=''):
+    """Geste « Reprendre le nouvel historique » : les fichiers du pool de ce poste commités d'abord ; l'ancienne branche
+    gardée dans refs/sog/avant-reecriture-<date> (rien n'est supprimé) ; la branche posée sur l'état commun du nouvel
+    historique (reset --keep : fichiers du poste hors du pool intacts) ; les fichiers du pool que ce poste avait changés
+    depuis cet état y sont reportés en un commit ; un fichier hors du pool n'est jamais repoussé. La synchronisation
+    suivante reçoit le reste du nouvel historique (fusion fiche par fiche) et envoie. Rend le plan, plus { ref, moved }."""
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', author or ''):
+        return {'ok': False, 'message': 'Trigramme de l’auteur manquant ou invalide.'}
+    who, env = _identity(author, name)
+    plan = rewritten_plan(data, env=env)
+    if not plan.get('ok') or not plan.get('rewritten'):
+        return plan
+    res = {**plan, 'committed': 0, 'refused': [], 'ref': '', 'moved': 0}
+    _commit_local(data, who, env, res, f'Synchronisation {author}')
+    target = _target(data)[0]
+    old, new = _tree_match(data, target)
+    ref = f'refs/sog/avant-reecriture-{time.strftime("%Y%m%d-%H%M%S")}'
+    git(data, 'update-ref', ref, 'HEAD', check=True)
+    res['ref'] = ref
+    _, names = git(data, 'diff', '--name-only', old, ref)
+    pool = [x for x in names.splitlines() if x.strip() and in_pool(x)]
+    res['kept'] = [x for x in names.splitlines() if x.strip() and not in_pool(x)]
+    code, out = git(data, 'reset', '--keep', new)
+    if code:
+        return {**res, 'ok': False, 'message': 'Reprise refusée : des fichiers de ce poste seraient écrasés '
+                f'({out[-200:]}). Rien n’a changé ; ancien état gardé dans {ref}.'}
+    try:
+        for p in pool:
+            if git(data, 'cat-file', '-e', f'{ref}:{p}')[0] == 0:
+                git(data, 'checkout', ref, '--', p, check=True)
+            else:
+                git(data, 'rm', '-q', '--ignore-unmatch', '--', p, check=True)
+        if git(data, 'diff', '--cached', '--quiet')[0]:
+            git(data, *who, 'commit', '-m', f'Reprise après réécriture de l’historique ({author}) : {len(pool)} fichier(s)', env=env, check=True)
+            res['moved'] = len(pool)
+    except RuntimeError as e:
+        git(data, 'reset', '--keep', ref)  # remis comme avant le geste
+        return {**res, 'ok': False, 'message': f'Reprise interrompue ({_why(e, data)[-200:]}) : data/ remis comme avant.'}
+    res.update(ok=True, rewritten=False, message=f'Nouvel historique repris : {res["moved"]} fichier(s) de ce poste reportés ; ancien '
+               f'état gardé dans {ref}.' + (f' {len(res["kept"])} fichier(s) hors des données synchronisées gardés '
+                                            'seulement dans cette référence, jamais envoyés.' if res['kept'] else ''))
+    return res
+
+
 def _receive(data, who, env, res, remote, up, br):
     """Branche distante récupérée et fusionnée, conflits du pool résolus fiche par fiche (res['received'], res['conflicts']).
     Fusion refusée parce qu'elle écraserait des fichiers du poste hors du pool : res['blocked'] (chemins), rien de changé."""
@@ -671,6 +784,9 @@ def _receive(data, who, env, res, remote, up, br):
     code, _ = git(data, 'rev-parse', '--verify', '--quiet', target)
     if code:
         return
+    if rewritten(data, target):  # aucun ancêtre commun : jamais fusionné (git refuserait, et sans base la fusion écraserait)
+        res['code'] = 'rewritten'
+        raise RuntimeError(REWRITTEN_MSG)
     _, before = git(data, 'rev-parse', 'HEAD')
     # fichiers du poste, modifiés ou non suivis (hors du pool : jamais commités), que la fusion écraserait : rien n'est
     # fusionné, le compte rendu les nomme (calculé, pas lu dans le message de git, qui dépend de sa langue)

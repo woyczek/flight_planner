@@ -374,6 +374,12 @@
       failed: ['Synchronisation impossible : {e}', 'Synchronisation failed: {e}', 'Synchronisation fehlgeschlagen: {e}',
         'Sincronización imposible: {e}'
       ],
+      rewritten: [
+        'L’historique du dépôt des données a été réécrit : rien n’est fusionné, vos écritures restent sur le poste du lanceur. Sur ce poste : Réglages › Administration › Dépôt distant, « Reprendre le nouvel historique ».',
+        'The data repository’s history was rewritten: nothing is merged, your writes stay on the launcher’s computer. On that computer: Settings › Administration › Remote repository, « Take up the new history ».',
+        'Die Historie des Daten-Repositorys wurde neu geschrieben: nichts wird zusammengeführt, Ihre Änderungen bleiben auf dem Rechner des Starters. Dort: Einstellungen › Administration › Entferntes Repository, „Neue Historie übernehmen“.',
+        'El historial del repositorio de datos se reescribió: no se fusiona nada, sus escrituras se quedan en el equipo del lanzador. En ese equipo: Ajustes › Administración › Repositorio remoto, «Retomar el nuevo historial».'
+      ],
       offlineNote: ['Hors ligne : vos écritures attendent et partiront à la prochaine synchronisation.',
         'Offline: your writes are waiting and will leave at the next synchronisation.',
         'Offline: Ihre Änderungen warten und gehen bei der nächsten Synchronisation hinaus.',
@@ -1893,12 +1899,18 @@
     b.setAttribute('aria-label', label);
     b.querySelector('.f-lbl').textContent = label;
   }
+  let rewrittenSaid = false;
   /** Synchronise maintenant et dit le résultat (reçus, envoyés, conflits, hors ligne, erreur). */
   async function syncNow(quiet = false) {
     const r = await FD.sync();
     if (r.conflicts) notify(t(T.sync.conflictNote, {
       n: r.conflicts
     }), 'warn');
+    // historique du dépôt réécrit (lanceur) : jamais fusionné ; dit même en passage de fond, une fois par lancement
+    if (r.exchange?.code === 'rewritten' && !rewrittenSaid) {
+      rewrittenSaid = true;
+      notify(t(T.sync.rewritten), 'warn');
+    }
     if (quiet) return r;
     if (r.error === 'offline') notify(t(T.sync.offlineNote), 'warn');
     else if (r.error) notify(t(T.sync.failed, {

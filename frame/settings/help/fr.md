@@ -133,6 +133,11 @@ seulement signalé.
   sur cet ordinateur). Sans `data/`, « Récupérer les données » le clone ; avec un `data/` sans git (données d'exemple
   ou archive), « Reprendre data/ dans ce dépôt » le relie au dépôt. La carte suit le travail et relit l'état à la fin ;
   un échec est expliqué, rien n'est perdu.
+- **Historique du dépôt réécrit** (par exemple pour en purger de gros fichiers) : la synchronisation de ce poste refuse
+  alors toute fusion et le dit ; rien n'est perdu. Ici, « Reprendre le nouvel historique » montre d'abord ce qui
+  repartira (vos commits, les fichiers des données reportés), pose une question, garde l'ancien état dans une référence
+  locale, reporte vos fichiers des données sur le nouvel historique, puis synchronise. Un fichier hors des données
+  synchronisées n'est jamais renvoyé.
 
 ## Configurer un pilote
 

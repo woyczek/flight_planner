@@ -1841,3 +1841,19 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     function; noreg D61). A track already pushed stays in the repository's history (the rewrite of the data repository,
     30 Oct, is the user's).
   - The status line in the group usage says it ×4: the position is shared, the track stays on this device.
+- **30 Oct 2026 — A rewritten data repository: refused, then taken up by a gesture** (the user rewrote the history of
+  the data repository, raw sources purged, same tree, force-pushed; the coordinator's go):
+  - Browser transports (GitHub, GitLab) need nothing: they read the head and the trees by blob, unchanged by the rewrite,
+    and commit the queue on the new head.
+  - The launcher's git clone: a remote branch without a common ancestor is never merged (`rewritten`, code and alert;
+    message ×4 in the frame, once per launch, and in the V2 header); nothing lost.
+  - The gesture (Settings › Administration › Remote repository, the workstation only): plan first, one question, then the
+    pool changes committed, the old branch kept in `refs/sog/avant-reecriture-<date>`, `reset --keep` onto the last state
+    common to both histories (found by identical trees), the pool files changed since carried over in one commit, then a
+    normal pass. `reset --keep` rather than the proposed `--soft`: `--soft` would keep the old index, and the next commit
+    (which takes the whole index) would push files outside the pool; with `--keep`, only pool files are carried, a file
+    outside the pool stays in the reference, never pushed, and the folder's uncommitted files outside the pool are
+    untouched.
+  - No common state (a workstation that never synced after the raw sources left): refused, `data/` untouched.
+  - noreg I15 on a rewritten trial repository (refusal, status, plan, trigram, take-up, next pass, remote content, old
+    history never pushed back).
