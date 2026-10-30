@@ -945,6 +945,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 93 | Refactors R-M3 (70e63c907) and R-F6 (d734c3572); 83e75ad89, 5590b5f72 | acceptable, no change of behaviour |
 | 94 | Fuel test cases (d24772b8a, bb9076aca, ad2f8330c); Map plain background from aerodb (bb9c98570) | acceptable |
 | 95 | Data module, “take the downloaded file” (c62d555e6, `base/pickup` of 89) | acceptable, one note |
+| 96 | Refactor R-M1: the Map's choose pane on one model (5e4b9433f, 7112b1b3b, e70eacb38) | acceptable, no change of behaviour |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1844,6 +1845,13 @@ panel as in `ctx.ask` and `notify`; the destination shown is a label only, the r
 89); never part of “Update all”; the plan is never logged. Note: the real take reads Downloads again and takes the
 newest matching zip, so a zip arriving while the question is open would be taken without having been shown; pass the
 name (and size or date) of the zip shown in the plan and let the launcher refuse when it no longer matches.
+
+**96. Refactor R-M1, the Map's choose pane (5e4b9433f, 7112b1b3b, e70eacb38) — acceptable, no change of
+behaviour.** The pane's rules move to a pure model (`frame/lib/pane_model.js`: no DOM, network or storage); the return to
+Fuel is still built by `paneReturn` from a closed table of keys with `encodeURIComponent` values and the side validated at
+opening, and Fuel checks it again before writing; every name from the model is shown through the Map's escaped texts; (c)
+merges the three exits into `chooseClose()` (Done, ✕, Escape), the only `location.replace`, with no caller of the removed
+functions left. The Map still writes nothing.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
