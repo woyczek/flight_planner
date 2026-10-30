@@ -1758,3 +1758,15 @@ def f70(c):
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFML.STAR.MEN2B.RW31L.NONE', 'the STAR named in the text is chosen', timeout=8000)
     c.ok('sid' not in (procs_of(d, 'dep') or {}), f"{procs_of(d, 'dep')}", 'the SID whose name left the text is no longer chosen')
 
+
+@case('F71', 'Aerodrome names bench', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='frame/lib/adnames.js (V3 spec 10.27): one text rule for the aerodrome name next to its code, « LFPO Paris-Orly », shared by fuel and the Map; its bench passes')
+def f71(c):
+    c.page.goto(f'{c.base}/frame/lib/test/adnames.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'frame/lib/test/adnames.html') from None
+    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
+

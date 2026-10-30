@@ -4,6 +4,10 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — the aerodrome name rule moves to frame/lib/adnames.js** (Simplification: the Map needs « LFPO Paris-Orly » at the
+  pin, § 10.30 fourth reading). The pure part only (`adLabel`, `adTitle`, `adLine`); the completion and the drawing stay in
+  modules/fuel/adnames.js, which imports it, as does the procedure card's title. The base has no city field: the rule takes one when
+  a record carries it, and invents nothing; the elevation is not part of the label. Bench F71.
 - **30 Oct 2026 — § 10.31 parts 2 and 3, the text is a view of the procedures** (user: « on doit pouvoir modifier le FPL après
   sélection SID / STAR »). The text follows the model at every settled choice and once the records are drawn; it is read back when
   the pilot leaves the field (not while typing: no choice flickers). The names are matched on the main records of the two

@@ -14,6 +14,10 @@
 // Le nom vient de aerodb.coords (la même source que le titre de la carte des procédures : « Départ LFPO Paris-Orly »), gardé par code
 // jusqu'au prochain changement de la base. Le marquage de l'écran : une ligne [data-adline=dep|arr|altn] par champ (étape Vol, hauteur
 // réservée) et des [data-adtext][data-code] ailleurs (le nom seul). La liste est un seul élément [data-adsug] du conteneur des champs.
+import {
+  adLabel,
+  adLine
+} from '../../frame/lib/adnames.js'; // la règle de texte du nom, partagée avec la Carte (§ 10.27)
 const TX = {
   unknown: ['inconnu', 'unknown', 'unbekannt', 'desconocido'],
   listLabel: ['Terrains proposés', 'Suggested aerodromes', 'Vorgeschlagene Flugplätze', 'Aeródromos propuestos']
@@ -47,7 +51,10 @@ export function createAdNames(host) {
   function nameOf(code) {
     if (names.has(code)) return names.get(code);
     if (!asked.has(code) && ctx.aerodb?.coords) {
-      const p = Promise.resolve().then(() => ctx.aerodb.coords(code)).then(place => place ? String(place.name || '').trim() : null)
+      const p = Promise.resolve().then(() => ctx.aerodb.coords(code)).then(place => place ? adLabel({
+          ...place,
+          icao: code
+        }) : null)
         .catch(() => null);
       asked.set(code, p);
       p.then(n => {
@@ -82,7 +89,9 @@ export function createAdNames(host) {
         continue;
       }
       el.dataset.code = code;
-      const text = !code ? '' : n === null ? tt(TX.unknown) : n && n.toUpperCase() !== code ? `${code} — ${n}` : code;
+      const text = !code ? '' : n === null ? tt(TX.unknown) : adLine({
+        name: n
+      }, code);
       if (el.textContent !== text) el.textContent = text;
       if (el.title !== text) el.title = text;
       el.dataset.state = !code ? 'empty' : n === null ? 'unknown' : 'found';

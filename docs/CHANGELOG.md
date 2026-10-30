@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the aerodrome name next to its code, one rule** (`frame/lib/adnames.js` `adLabel`, `adTitle`, `adLine`; bench F71) —
+  « LFPO Paris-Orly » for the Map's pin and Fuel, from the rule Fuel had.
 - **Fuel: the route text is a view of the procedures** (`frame/lib/route_text.js` `withProcedures`, `proceduresOfText`,
   `textFromTokens` dct; `frame/lib/procedures.js` `exitOf`, `entryOf`, `compatible({ route })`; help ×4; F69, F70) — ICAO form with
   DCT, the SID and STAR names written from the choice and read back from an edit; « NTS1A sort à NT102 : NT102 DCT LUGEN ».

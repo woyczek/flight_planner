@@ -247,6 +247,9 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   before its runway —; absent, null or unknown filters nothing) and `summaryOf(side, { byId, wind, via })` (the three lines of a
   side's choice, `{ rwy, proc, app }`: undefined not chosen, null « Aucune » (the caller's word), else « 28L · ↑ 12 kt · ← 6 kt »,
   « ABLI4L via ABLIN », « ILS28L via PIZSA »): the Map's pane and Fuel's side title print the same text. Bench F32.
+- **The aerodrome's name** (`frame/lib/adnames.js`, 30 Oct 2026, § 10.27): `adLabel(rec)`, `adTitle(rec, code)` → « LFPO
+  Paris-Orly », `adLine(rec, code)` → « LFPO — Paris-Orly », from an aerodb record (`coords`, `aerodromes`, `find`). One text rule
+  for Fuel and the Map's pin; the base carries no city today, the rule adds it only when a record has one. Bench F71.
 - **The wind on a runway** (`frame/lib/wind.js`, 30 Oct 2026, § 10.30): `components(runwayTrueHeading, windDirTrue, windKt)` →
   `{ head, cross, side }` (knots rounded, `head` negative for a tail wind, `side` 'L' | 'R' or null) or null when a value is missing
   (a VRB wind has no direction: nothing invented); `label(c)` → « ↓ 12 kt · ← 6 kt » (arrows: where the wind blows, the runway drawn

@@ -26,6 +26,9 @@
 import * as CF from '../../frame/lib/current_flight.js';
 import * as PR from '../../frame/lib/procedures.js';
 import {
+  adLabel
+} from '../../frame/lib/adnames.js';
+import {
   components as windComponents,
   label as windLabel,
   severity as windSeverity,
@@ -224,7 +227,10 @@ export function createProcedures(host) {
       all = every.filter(p => !PR.isDoubt(p)); // règle partagée avec la Carte (frame/lib/procedures.js)
     return {
       icao,
-      name: String(place?.name || '').trim(),
+      name: adLabel({
+        ...(place || {}),
+        icao
+      }), // la règle du nom partagée avec la Carte (frame/lib/adnames.js)
       cov, // couverture du terrain : read_at (date de la dernière lecture), outdated
       wind: host.wind?.(icao) || null, // le vent du METAR connu (étape Départ) : { dir, kt, magVar }, null sans METAR (§ 10.30)
       rwys: await runwayChoicesOf(icao, known, all),
