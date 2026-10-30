@@ -12,6 +12,905 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: one criterion for the layout and the computer's design** (`frame/app.js`, `frame/index.html`; INTEGRATION
+  § 9.1, DECISIONS; noreg A42): a computer's window wider than high no longer falls into the phone's landscape rail;
+  Aqua applies exactly with the computer's rail with labels.
+- **Tests: one heavy noreg pass at a time** (`tests/v3/run.py`; tests README, frame DECISIONS): a full pass or any pass of
+  more than 30 cases takes a lock in the computer's temp folder, shared by every worktree; a second full pass refuses with
+  the holder named, or waits with `--wait`, a heavy targeted pass waits for its turn; a stale lock is ignored.
+- **Tests: K49 checks its own profile only** (`tests/v3/cases/aerodb.py`; frame DECISIONS): the build job's temporary
+  browser profile is followed by name, no longer compared with everything in the shared temp folder.
+- **Fuel: the route field completes at the cursor** (`modules/fuel/routecomplete.js`; help ×4; F75) — SID / STAR names, nearby
+  airways, points and navaids, seven at most; the word is written at the cursor.
+- **Fuel: Auto names the airway that joins two points but is closed at the leg's level** (`frame/lib/routing.js`
+  `joiningAirway`; help ×4; F74) — « A34 relie LACOU à LMG, fermée au FL260 (ouverte de 6 500 ft au FL195) : tronçon direct ».
+- **Tests: the choose-mode cases and D68 hold under load** (`tests/v3/cases/maps_recode.py`). D60 read the pane before it was drawn
+  (the mode's state is ready a moment before the sheet): the cases now wait for the pane itself, and a missing group says so;
+  their waits are 10 s. D68 checks the rule rather than a timing: a full drawing during a drag is only the one of rest (no copy
+  for 140 ms), never one closely following a copy. Ten runs of D60 under load green, six of the eight neighbours.
+
+- **Security: three gaps of the inventory closed** (`tools/launch.py`, `tools/data_sync.py`,
+  `frame/store/transport_github.js`; frame DECISIONS; noreg I16): the local network's pairing accepts a code from its own
+  page only; every file path given to git is a name, never a pattern; the GitHub transport, like GitLab's, never follows a
+  redirect with the token.
+- **Fuel: each chosen procedure is one group row of the points list** (`modules/fuel/module.js` renderPts; help ×4; F73) —
+  « SID NTS1A · 2 points », its fixes under a tap, never at the rank of the typed points; « Points (N) » counts points and groups.
+- **Fuel: the procedure card opens folded** (`modules/fuel/procedures.js`; help ×4; F72) — one summary line per side, a tap
+  unfolds its lists, one side at a time; readable without scrolling on a phone.
+- **Noreg: 2.6 times faster, and a targeted pass before a push** (`tests/v3/run.py`, `tests/v3/domains.py`,
+  `tests/v3/cases/aerodb.py`; tests README, frame DECISIONS): the static cases beside the browser workers, the slowest
+  jobs first, 10 workers by default (the full pass in 359 s instead of 926 s); `--touched` = the changed files' cases plus
+  a smoke base of twelve; each case's seconds and the 20 slowest in the report; K51 waits for the page's answer, never a
+  fixed 40 s, and names the race when it fails.
+- **Map: inventory "à refondre" of 28–30 Oct** (`modules/maps/DECISIONS.md`, docs only). Per zone (choose mode, labels and the
+  collision pass, panning, runways, procedure labels, flown trail): what was done then undone, what is left doubled or dead, and
+  the target form in one sentence, with an order for after the stabilisation.
+- **Map, choosing on the map: SIDs and STARs towards your route first; aerodromes named by the shared rule**
+  (`modules/maps/choose.js`, `draw.js`, `render.js`, `texts.js`, `style.js`; help ×4, maps SPEC; noreg D71, D72; V3 § 10.31,
+  § 10.30). Among the procedures that fit the choice, the SIDs whose exit and the STARs whose entry is on the typed route come
+  first under "Towards your route" ×4, the others after, marked "exit LACOU" / "entry OKRIX" ×4 (`compatible({ route })`,
+  `exitOf`, `entryOf`). Close in, the aerodromes' labels read `adTitle` of `frame/lib/adnames.js` ("LFPO Paris-Orly"), the
+  name rule Fuel uses.
+- **Frame: the aerodrome name next to its code, one rule** (`frame/lib/adnames.js` `adLabel`, `adTitle`, `adLine`; bench F71) —
+  « LFPO Paris-Orly » for the Map's pin and Fuel, from the rule Fuel had.
+- **Fuel: the route text is a view of the procedures** (`frame/lib/route_text.js` `withProcedures`, `proceduresOfText`,
+  `textFromTokens` dct; `frame/lib/procedures.js` `exitOf`, `entryOf`, `compatible({ route })`; help ×4; F69, F70) — ICAO form with
+  DCT, the SID and STAR names written from the choice and read back from an edit; « NTS1A sort à NT102 : NT102 DCT LUGEN ».
+- **Map: from the airline's zoom, every aerodrome shows its runways and its name** (`modules/maps/procs.js`, `draw.js`,
+  `render.js`, `lib/aero_symbols.js`; help ×4, maps SPEC; noreg D71; V3 § 10.30 fourth reading, point 3). Above `runwayZoom`
+  each aerodrome drawn has its runways read on demand and drawn as thin 24 px vectors with their numbers at the thresholds, in
+  the labels' collision pass right after the aerodromes; its label reads its code and name ("LFPO PARIS ORLY"). Below the zoom
+  nothing changes.
+- **Map, choosing on the map: approaches as the SIA publishes them** (`modules/maps/choose.js`; help ×4, maps SPEC § 5.1;
+  noreg D66, D70; V3 § 10.30, fourth reading). The approach rows are the finals by their short label ("ILS 06", "RNP 06";
+  `labelOf`), the published name in the tooltip; the initial approach segments the SIA publishes once for the runway are
+  transitions under the chosen final ("via ODILO · ODILO 1A"; `transitionsOf`, `transitionLabelOf`), in the final's hue; a
+  transition meeting the final on no shared point is joined to it by a dashed line.
+- **Fuel: a typed airway is never read as a point** (`modules/fuel/module.js` routePoints, `frame/lib/routing.js` `along`,
+  `corridor`; help ×4; F68) — « GILUX A3 MOTAL » no longer goes to a point « A3 » near Gibraltar (1 871 NM); the airway is followed
+  only along its own nodes, else the leg is direct and a line says so.
+- **Fuel: « Auto » is idempotent and routes the SID exit** (`modules/fuel/module.js`, `frame/lib/route_text.js` `provenance`;
+  help ×4; F8, F28, F67) — it recomputes from the pinned points and replaces what a previous Auto wrote (no more loops through
+  Spain on LFBO → LFPO); a leg left direct says why; « LFBO LACOU7B LACOU LMG » routes LACOU → LMG.
+- **Map, choosing on the map, third reading: what is looked at goes on top** (`modules/maps/choose.js`, `texts.js`, `style.js`;
+  help ×4, maps SPEC § 5.1, DECISIONS; noreg D60, D69; V3 § 10.30). The highlighted procedure is drawn last with its own label
+  and full name, the others below (⌛, ⚠, compatible, chosen); one small label per family and point ("NIMER 9"), never one per
+  procedure of a family, dropped when there is no room. Hovering a row of any family highlights its trace (and a trace its
+  row); a tap leaves the row highlighted. Runway rows show `wind.label` (↓ head, ↑ tail, ← from the right, → from the left) in
+  the colour of `wind.severity` (green, orange, red) ×4. The summary at the top is the table of contents: three lines always,
+  a tap on a family's label scrolls to its group and unfolds it, ✕ clears.
+
+- **Tests: C1 names the failures of the sheet bench** (`tests/v3/cases/sheet.py`): the bench's rows are
+  `{ name, ok, detail }`; the case looked for the text « FAIL » in them and always listed none. It now names up to five
+  failed assertions with what they measured.
+- **Map: one label per airway segment, one collision pass by priority** (`modules/maps/render_airspace.js`, `render.js`; maps
+  SPEC, DECISIONS; noreg D67; user, 30 Oct: "toujours ce recouvrement", the leg towards Le Blanc). The same segment read by
+  several boxes of the corridor was labelled once per copy, the copies sliding along the line ("22", "F065" repeated). A segment
+  is now drawn and labelled once, distance and level on one line ("22 · F065"), only when it is longer on screen than its
+  label, the longer segments first. The labels' single collision pass now follows the priority of V3 § 10.30: the procedures
+  (highlighted, then chosen), the route's segments, the airway boxes, aerodromes, navaids and fixes, then the rest (the towns no
+  longer reserve their room before everything else).
+- **Map: fluid panning on a dense map** (`modules/maps/draw.js`, `screen.js`, `render.js`; maps DECISIONS; noreg D68; user, 30 Oct:
+  "déplacement de carte sur la région de Paris : très saccadé (2 fps ?)"). Every move event of the base map redrew the whole
+  overlay — every airspace ring re-projected, every label placed again, several times per frame. During a gesture the last full
+  image now follows the map by its two geographic corners (one copy, no projection), other drawing requests wait, and the full
+  drawing comes once at rest (end of the gesture, or 150 ms without movement). The drawing context's proxy no longer binds a
+  new function at each call. Measured (synthetic dense base, 20-step drag): 51 full drawings of 8–12 ms during the drag before,
+  none after (20 copies of 0.2 ms, one full drawing at rest).
+
+- **Approaches the SIA way: initial segments are transitions, finals read short** (`frame/lib/procedures.js` `isAppTransition`,
+  `labelOf`, `transitionLabelOf`, `appChoices`; `frame/lib/flight_path.js` junction at the first common point; Fuel's approach list;
+  help ×4; F66) — no more six identical « INA RNAV RWY 06 » rows at LFPO: « ILS 06 » via « ODILO · ODILO 1A ».
+- **Map: the runways as 24 px threshold vectors from the airline's zoom; the choice above the base's labels** (`modules/maps/procs.js`,
+  `draw.js`, `data.js`, `render.js`, `layers.js`, `choose.js`; help ×4, maps SPEC, DECISIONS; noreg D58; V3 § 10.30, fourth
+  reading). The full-length runway arrow of § 10.24 is gone: every runway of the departure and arrival aerodromes is a short
+  screen vector from its threshold along its true bearing, the designator behind the threshold, the chosen one bold in its
+  side's hue, from `runwayZoom` of `airline/map_profiles.json` (8 to 16, 11 by default; Settings › Administration) only; the
+  runways are read with the flight even without a chosen procedure; the thresholds page loses `procRwy`. In the choose mode the
+  airway boxes go under the dim veil, so the mode's traces, vectors and labels are above every label of the base.
+- **Wind on a runway: arrows where the wind blows, and three colours** (`frame/lib/wind.js` `label`, `severity`; Fuel's runway
+  list and side title; help ×4; F62, F64, F65) — « ↓ 12 kt » is a head wind (the runway drawn upward); green, orange, red by one rule.
+- **Fuel: each side's title ends with the summary of its choice** (`modules/fuel/procedures.js`, `summaryOf`; help ×4; case F65) —
+  « 13R · ↑ 12 kt », « MEN1A via NEPIX », « I13R », the same text as the Map's pane.
+- **Map, choosing on the map, second reading: compatible rows only, families as rows, condensed** (`modules/maps/choose.js`,
+  `texts.js`, `style.js`; help ×4, maps SPEC § 5.1, DECISIONS; noreg D60, D66; V3 § 10.30 second reading, the user after
+  af261d3e3: "en trois clics … qu'on ne voie que les compatibles, mais qu'on puisse changer facilement … condenser"). The three
+  families stay visible, any order; each choice narrows the two others to what fits (`compatible`), the rest folded under one
+  thin "N more · All" line ×4 that unfolds it marked ⚠. A STAR / SID family (OKRI5L, OKRI5R) is one row "OKRI5" with runway
+  tags (`familiesOf`): chosen before its runway it waits, the runway resolves the record (`firstServing`). The chosen
+  approach's transitions are sub-rows ("No transition" first, key `apptrans`). The selection reads at the top, one line per
+  family with ✕ (`summaryOf`, Fuel's text); the wind uses `wind.label` (arrows where the wind comes from, as in Fuel). Rows
+  are 36 px, no gap (the frame's 44 px minimum set to 0 in the pane).
+- **Frame: procedure families, compatibility and the choice summary** (`frame/lib/procedures.js`: `familyOf`, `siblingsOf`,
+  `familiesOf`, `compatible`, `summaryOf`; bench F32) — the rules of the Map's three-tap pane and of Fuel's side title (§ 10.30).
+- **Fuel: the Map's choice comes back in one trip, and each runway shows its wind** (`modules/fuel/procedures.js`, `module.js`,
+  `frame/lib/wind.js` `label`; help ×4; cases F63, F64) — runway, procedure and approach applied together with one change line;
+  « 13R — ↑ 12 kt · ← 6 kt » from the known METAR, orange for a tail wind over 5 kt.
+- **Map: no error when it is left right after it mounts** (`modules/maps/module.js`, `data.js`, `profile_view.js`,
+  `mission_view.js`; noreg D65; reported by Features SOG, F41 / F63 under load). The mount, `readFlight`, `applyFlight`,
+  `readSettings`, `buildProfile` and `applyMission` resumed after an await on the state the teardown had cleared (TypeError on
+  `S`); every resumption now checks the Map is still there first. D65 slows the Map's readings and leaves it at five moments of
+  its mount (no error), and checks that leaving the choose mode from outside adds no return of its own (the return to Fuel is the
+  pane's ✕ / Escape / "Terminer" only).
+
+- **Data layer: the trial base frozen like a device's** (`frame/store/frame_data.js`; INTEGRATION § 4, DECISIONS): a
+  `reference` copy without a revision is deep-frozen at each read too, so that a module writing on a record fails in the
+  noreg rather than on a device.
+- **Taking up a rewritten history, security review** (`tools/data_sync.py`, `frame/settings/launcher.js`; SYNCHRONISATION
+  § 10, frame DECISIONS; noreg I15): paths are file names, never patterns; accented names read as they are; a file outside
+  the synchronised data that this computer had committed is copied back into `data/`, never sent, and the plan says so ×4.
+- **Map: choosing on the map in one pane, the selection kept, one trip back to Fuel** (`modules/maps/choose.js`, `texts.js`,
+  `style.js`, `sheet_view.js`; help ×4, maps SPEC § 5.1, DECISIONS; noreg D60, D62; V3 § 10.30, after the first group tests:
+  "sa version Sur la carte n'est pas convaincante"). The pane lists the side's families at once — runway, SID or STAR,
+  approach (its transition folded under it) — each "Aucune" first, compatible rows then ⚠, six rows and "N more…". A tap on a row
+  or a trace adds that choice to the pane and leaves it drawn (every runway, the one in force bold; the family touched whole, its
+  other procedures dimmed; the other families' choice in its hue). A procedure serving one runway sets it when none is chosen;
+  otherwise a line under the group offers the correction in one tap ("OPAL2E sert la 25 — Passer en 25", "OKRIX5A ne sert pas
+  la 07 — Choisir OKRIX5B"; `runwayOf`, `firstServing`). Each runway row carries the wind of the METAR already known ("↑ 12 kt ·
+  ← 6 kt", tail in orange above 5 kt; `components`; no METAR, no line). "Terminer", ✕ or Escape return once:
+  `#fuel?focus=<side>&rwy=…&star=…&app=…&apptrans=…`, one key per family touched, `none` for "Aucune"; the Map writes nothing.
+  The runway chips go (the runway group replaces them).
+
+- **Map: every element invisible in the general view** (`modules/maps/render_airspace.js`; noreg D64; user, 30 Oct: "tous les
+  éléments sont invisibles, même à complexité > 0, sauf si on zoome très fort"). Since the data layer deep-freezes the published
+  base (shared references, 802e6856f), the corridor selection's cache of an airspace's box, written on the record itself
+  (`a._mb ??=`), threw a TypeError; the reading of the corridor was lost whole, so the general view showed the route and the
+  procedures only, until a zoom close enough to read without the corridor. The box is now kept in a `WeakMap`; D64 runs the Map
+  on a frozen base (as on the device) and checks airspaces and aerodromes in the general view and at zoom 9.
+
+- **A rewritten data repository: refused, then « Take up the new history »** (`tools/data_sync.py`, `tools/launch.py`,
+  `frame/settings/launcher.js`, `frame/app.js`, `frame/store/frame_data.js`, `shared/sync.js`; SYNCHRONISATION § 10, frame
+  DECISIONS, Settings help ×4; noreg I15): a remote branch without a common ancestor is never merged and is said ×4;
+  on the launcher's computer, Settings › Administration › Remote repository takes up the new history after showing the
+  plan (old branch kept in `refs/sog/`, pool files carried over, files outside the pool never pushed), then synchronises.
+- **The flown track stays on the device** (`frame/app.js`, `frame/store/frame_data.js`, `modules/maps/flight_time.js`; frame
+  SPEC, INTEGRATION § 6, DECISIONS; noreg A35, D61): the track is kept in the device's data (never synchronised, never in a
+  backup) and read with `ctx.live.trail()`; the shared current flight carries the position only. The group usage's
+  status line says so ×4.
+- **Map, choose mode: one scrolling surface** (`modules/maps/choose.js`, `style.js`, `texts.js`; help ×4, maps SPEC § 5.1; noreg
+  D60). The list scrolled inside the sheet that scrolled too (two scrollbars, V3 § 10.30). It now shows "Aucune" and six
+  procedures, the others folded under "N more…" ×4 which unfolds them in place (a procedure highlighted from the map unfolds
+  them too); only the sheet scrolls.
+
+- **Settings: the runway thresholds zoom** (`frame/settings/admin.js`, `admin_links.js`, `settings.js`; V3 § 10.30) — Settings › Administration (Full level) has the line « Seuils de piste sur la carte »: a list from 8 to 16 (11 by default), saved
+  at once for the airline in `airline/map_profiles.json`, key `runwayZoom` (the rest of the file kept, like `edge`); the Map draws
+  the runway thresholds from that zoom and reads the key with its profiles (`frame/settings/INTEGRATION.md` § 4); help ×4; case A12.
+- **Frame: wind components on a runway, and the runway a procedure serves** (`frame/lib/wind.js`, `frame/lib/procedures.js`;
+  benches F62, F32) — the rules the Map's pane and Fuel share for § 10.30.
+- **Tests: D61 is deterministic** (`tests/v3/cases/maps_recode.py`). Its reread was stamped `updated_at` in whole seconds; on a
+  warm browser the write could fall in the same second as the flight's own stamp, and the Map, which rereads only a strictly
+  newer record (a correct rule: real writers stamp milliseconds), rightly ignored it — one run in seven under load. The reread
+  is now stamped strictly later, and the case waits for the expected track itself (20 s) instead of a length.
+
+- **IVAO sign-in through the relay (R1b)** (`tools/launch.py`, `frame/app.js`, `frame/settings/settings.js`; frame
+  SPEC § 3.11, INTEGRATION, DECISIONS, Settings help ×4; noreg I10, I14, A41): Settings › IVAO account links a device to
+  the pilot's IVAO account (OpenID code flow with PKCE run by the launcher, which keeps the application's secret); the
+  tokens stay on the device and are renewed through the launcher; « Unlink » revokes the token at IVAO when it can;
+  the sign-in can be tried on the workstation without the relay (return `http://127.0.0.1:<port>/__relay/ivao/callback`).
+  Tested against a simulated IVAO, not exposed.
+- **Tests: E3 no longer depends on the clock** (`tests/v3/cases/atmosphere.py`). The sheet title gives the departure with its day
+  when it is not today (`fmtWhen`, a correct rule); the default departure being the next hour, after 23:00Z it is tomorrow and
+  the case, which expected "HH:MMZ" alone, failed every night. It now accepts an optional day before the time.
+- **Fuel: the flight plan for the simulators** (`frame/lib/fms.js`, `frame/lib/test/fms.html`, `modules/fuel/module.js`; SPEC, DECISIONS,
+  help ×4; noreg F60, F61) — step Departure downloads the route and the chosen procedures as X-Plane `.fms` (11/12 and 10) or MSFS `.pln`.
+- **Launcher: the airline's relay, devices and codes (R1a)** (`tools/launch.py`, `tools/relay_access.py`,
+  `frame/settings/relay_devices.js`, `frame/app.js`; frame SPEC § 3.11, INTEGRATION, DECISIONS, Settings help ×4; noreg
+  I10, I13, A40): `launch.py --relay <host>` serves the Pilot application to paired devices behind a reverse proxy (https
+  only), the Pilot app's routes only, writes signed with the device's trigram; the administrator issues pairing codes and
+  revokes devices in Maintenance › Relay devices. Never with the local network (`--lan` refused); the pairing page is
+  never framed. Security review: the relay on its own port (`--relay-port`, everything there is the relay's; the proxy
+  targets it and keeps `Host`), a proxy request on the interface's port refused, start check of the public host, pairing
+  from the same origin only, no space or control character in the return path, cookie `SameSite=Lax`. Tested on the
+  workstation only, not exposed.
+- **Fuel: the aerodrome fields search by full name** (`modules/fuel/module.js`, `adnames.js`, DECISIONS; help ×4; case F48) — only a
+  chosen or typed code reaches the route; leaving without a choice goes back to the saved aerodrome.
+- **Maintenance › Pilots' tokens, security review** (`tools/launch.py`, `frame/settings/pilot_tokens.js`; frame
+  DECISIONS; noreg I12, A39): the administrator's token never follows a redirect; only a pilot's token can be revoked;
+  a new token's value is wiped when the screen is left; the screen advises turning off CI/CD on the data project.
+- **Data: "Télécharger" and "Purger" next to "Construire"** (`modules/data/module.js`, `model.js`, `texts.js`; help ×4; noreg L14, L15).
+  The Aeronautical base panel (now "Télécharger, construire, purger" ×4) holds the three launcher verbs on one choice of zones, in
+  this order: **Télécharger** (`base/fetch`, `args { zones, personal }`: ENAIRE only when ticked) follows the job with one line per
+  zone ("n / m sources") and one per source (downloaded n files, unchanged, failed with its code and HTTP status, skipped:
+  licence not declared, manual); the end says "Téléchargé : n zones changées, m inchangées ; k échecs", lists the manual sources
+  by name ×4 ("à déposer à la main", a link only for an `https://` address), warns of tracked source files changed outside the
+  synchronised data, says "Rien à télécharger pour ces zones" when nothing is downloadable, and tells "Réessayez dans n s" on a
+  429. **Purger** (`base/purge`) first runs the plan (`dry`), then asks ONE question ("Purger n fichiers (x Mo) des sources de …",
+  with the SIA sentence when France is in it and the count of files tracked by git that are kept), nothing on No, the real job on
+  Yes ("Purgé : n fichiers, x Mo", refused paths said); an empty plan says "Rien à purger" without a question. One operation at
+  a time: the four verbs share one grey reason; a download or a purge found running at mount is followed like a build. Sizes
+  are written with the language's decimal separator; the journal records `download` and `purge` (never the plan).
+
+- **Maintenance: the pilots' tokens** (`frame/settings/pilot_tokens.js`, `frame/app.js`, `tools/launch.py`; frame SPEC,
+  INTEGRATION § 13, DECISIONS, Settings help ×4; noreg A39, I12): on the launcher's computer, the administrator creates
+  a GitLab project access token per pilot (shown once), sees them all and revokes one — the launcher keeps the
+  administrator's token and never shows it.
+- **Fuel: the aerodrome's name under its code, and progressive completion** (`modules/fuel/adnames.js`, `module.js`; SPEC, DECISIONS, help x4;
+  cases F44-F47) — a fixed line « LFPO — Paris-Orly » under the departure, arrival and alternate, seven suggestions at most from two
+  characters (↑ ↓ Enter Esc, touch), the names in step 5's summary.
+- **Map: "Source" on the aerodrome card; one doubt rule** (`modules/maps/procs.js`, `choose.js`, `texts.js`; help ×4, maps
+  SPEC; noreg D63). Each chosen procedure whose record carries an `https://` `source.url` (aerodb, V3 § 10.25) gets a
+  "Source" ×4 link to its published page, in a new tab with `rel="noopener noreferrer"` ("Source STAR" / "Source APP" when
+  both have one); a record without a public page has no link, its document named in the row's tooltip. The choose mode now
+  filters with `isDoubt` from `frame/lib/procedures.js` (the rule of Fuel's lists) instead of its own copy. The flown trail read
+  from the frame is cut to `TRAIL_MAX` before it is read and drops points off the Earth (|lat| > 90, |lon| > 180; noreg D61).
+
+- **Frame: a data token never goes to a new host** (`frame/store/transport_github.js`, `frame/store/transport_gitlab.js`,
+  `frame/settings/access.js`; frame DECISIONS; bench A38): the saved token is reused only for the same provider, host and
+  project; pasting another address asks for its token; the GitLab transport follows no redirect and accepts only an
+  `https://<host>/api/v4` address.
+- **Frame: Maintenance at its own level, without Pilot's welcome** (`frame/app.js`; frame DECISIONS; noreg A36): the
+  Maintenance application runs at the Complet level whatever the level chosen for Pilot, and no longer shows Pilot's
+  first-visit tutorials.
+- **Launcher: a job stopped by a fatal interruption ends in error** (`tools/regen_jobs.py`; frame DECISIONS; noreg I8): never
+  « running » for ever; the decisions also say that no guard rests on the application chosen by the address.
+- **Fuel: a flight dated in the past says so** (`modules/fuel/module.js`, SPEC, DECISIONS; case F43) — weather and NOTAMs no longer
+  apply; nothing is blocked.
+- **Fuel: « Source » opens the coded page of the chosen procedure** (`modules/fuel/procedures.js`; SPEC, DECISIONS; help ×4;
+  case F42) — the SIA's public page, in a new tab.
+- **Map: the flown trail comes from the frame; "Choose on the map" on the aerodrome card** (`modules/maps/flight_time.js`,
+  `choose.js`, `procs.js`, `texts.js`, `style.js`; help ×4, maps SPEC; noreg D61, D62). The trail starts from
+  `progress.actual.trail` (`[lat, lon, altFt, s since started.at]`, written by the frame), read again at each reading of the
+  flight, so a change of tab no longer loses it and its older points are kept; the Map only adds its own positions newer than
+  the frame's last point (before, the frame's points were not read at all and a reread could double them). The card of the
+  departure or arrival aerodrome offers "Choisir sur la carte" ×4 next to "Changer" (full width on a phone): the choose mode
+  for that side, on the family the flight lacks, by the same code as `#maps?choose=` without a reload; leaving the mode gives
+  back the flight's frame.
+
+- **Base build on the launcher: the browser's temporary profile is always removed** (`tools/regen/base.py`; DECISIONS; test K49) — a
+  late browser process could re-create it right after the job deleted it.
+- **Frame: the data repository on GitLab** (`frame/store/transport_gitlab.js`, `frame/store/transport_github.js`,
+  `frame/settings/access.js`, `frame/app.js`, `tools/launch.py`; frame SPEC, DECISIONS, Settings help ×4; noreg A38, I11):
+  paste a GitLab project's address (gitlab.com, framagit…) and the project access token the administrator gave you —
+  the app reads and writes the data there as it does on GitHub; the launcher keeps a GitLab secret without ever showing
+  it.
+- **Fuel: « On the map » next to each side of the procedures** (`modules/fuel/procedures.js`, `module.js`; SPEC, DECISIONS, frame
+  INTEGRATION § 6.1; help ×4; case F41) — opens the Map's choice mode, and the choice made there comes back into Fuel, said.
+- **Frame data layer, security review** (`frame/store/frame_data.js`, `tools/regen_jobs.py`; INTEGRATION § 4,
+  DECISIONS): a shared reference value is deep-frozen when parsed (a reader can no longer change it for the others; about
+  44 ms once per revision for the largest zone); a job's zone outputs are dropped in a `finally`.
+- **Frame: applications** (`frame/app.js`, `frame/settings/admin_links.js`, `frame/settings/admin.js`; frame SPEC § 3.1,
+  INTEGRATION, DECISIONS; noreg A36): one frame, named sets of modules chosen by the address — Pilot (default) and
+  Maintenance (`/frame/?app=maintenance`: Données, Administration, Aide, and the V2 maintenance page with a launcher; read
+  only elsewhere); Pilot's Réglages › Administration opens Maintenance, and Pilot no longer carries Données.
+- **Frame: a module can publish on the user's gesture** (`frame/store/frame_data.js`; INTEGRATION § 4, DECISIONS; noreg
+  A37): `data.sync({ gesture: true })` is the header button's pass and returns the launcher's report (sent, kept,
+  received, conflicts, merge settled) — for « Publier » of the Données module.
+- **Frame: « Stop » cancels a launcher job again** (`frame/lib/launcher.js`; INTEGRATION § 15.1, DECISIONS; bench A29):
+  declaring a job's route also allows its cancel, which the client sends when the user stops a job.
+- **Launcher: a job's headless page claims its token once** (`tools/regen_jobs.py`, `tools/launch.py`; frame
+  INTEGRATION § 15.1, DECISIONS; noreg I8): `POST /__setup/regen/job/claim` hands the running job's token, and what its
+  verb offered, once — the base build of D5 needs no exception to the same-origin check.
+- **aerodb: the « Source » link only points to the SIA** (`frame/aerodb/aerodb.js`; SPEC, DECISIONS; test K1) — a link is given only
+  when the aerodrome file's base address is on the SIA's site, so an edited file cannot turn it into a link elsewhere.
+- **Weather (Atmosphere): choosing the layers no longer hides the cut, one tap is one toggle** (`modules/atmosphere/module.js`,
+  `texts.js`; help ×4, SPEC; noreg E12). The Layers content took the bottom block in place of the cut (user: "choisir les
+  éléments météo masque le profil vertical"), and its whole HTML was rewritten at each box and on every status update, so a
+  rewrite between press and release lost the tap ("certaines coches doivent être cliquées deux fois"). The layers are now a
+  panel over the map under their button (scrolling on a phone, never over the sheet); the cut stays in view and is redrawn
+  by each box; the panel is written only when its rows change and the boxes' state is set in place. Its cross ×4, Escape,
+  Flight or Details close it.
+
+- **Data: what the download job takes from a server is checked** (`tools/aero_fetch.py`, `tools/navcan_dah.py`; `frame/aerodb/INTEGRATION.md`; test K57) — an
+  ENAIRE file name read from its page is written (and the previous amendment removed) only if it matches a strict pattern and stays under `sia/aixm5`; the
+  NAV CANADA guide is requested only in https on its own host; a response over 200 MB is stopped and nothing is written.
+- **Data: the raw sources of a zone, fetched and purged by the launcher; they leave the data repository** (`tools/regen/base_sources.py`, `tools/data_template/.gitignore`; frame SPEC, INTEGRATION, DECISIONS of `frame/aerodb/`; tests K52 to K56) — the jobs `base/fetch` (downloads the zone's openAIP, FAA, ENAIRE, UK Mil, NAV CANADA and NAT sources through `tools/aero_fetch.py`, no commit; manual sources are listed with their address; the tracked files it modified are counted) and `base/purge` (removes a zone's raw sources and caches; never `sia/base/`, `proc/` or a file tracked by git; dry run). The data template now ignores `sia/openaip/`, `sia/zones/`, `sia/aixm5/`, `sia/geojson/`, `sia/miam-*.xml`, the aircraft HTTP cache and `__pycache__`.
+- **aerodb: each eAIP procedure carries its « Source » link** (`frame/aerodb/aerodb.js`; SPEC, INTEGRATION, DECISIONS; test K1) —
+  `source.url` is the public address of the coded page on the SIA site, so Fuel and the Map open it in one tap.
+- **Fuel: on a phone, choosing a procedure no longer reopens the list; the « Procédures » grid also beside the Map** (`modules/fuel/procedures.js`,
+  DECISIONS; cases F34, F35, F38, F40) — and a failed reading says its counts once, translated.
+- **Map: choosing on the map, simplified** (`modules/maps/choose.js`; V3 § 10.23, § 10.24; maps SPEC § 5.1, help ×4, noreg D60):
+  `#maps?choose=dep|arr&icao=LFXX` (read and removed at mount by `ctx.consume`) opens the Map on the aerodrome's published
+  procedures, the base map and the Map's own layers dimmed (`mp-choosing`, the new `dim` option of `MapsRender.draw`), **one
+  family per opening** — the first the flight has not chosen yet: departure runway, SID, transition; arrival runway, STAR,
+  approach, transitions. Each procedure has one hue of eight (`MapsRender.palette().procHues`, cycled), the same on its row, its
+  label and its trace; one label per exit (SID) or entry point (STAR, approach) stacks the names; the transitions are drawn
+  only for the highlighted procedure; the runway family draws every runway as an arrow (`arrowOf`, shared with the chosen
+  runway's), the chosen one bold. The sheet lists the family ("Aucune" first, seven rows then scrolling, ⌛ and ⚠ from
+  `frame/lib/procedures.js`, runway chips as a filter); **one tap on a row, a label or a trace** replaces the address by
+  `#fuel?focus=<side>&<key>=<id>` (`none` for "Aucune"); the Map writes nothing to the flight. Doubt records and records without a name are never listed (as in Fuel).
+  Fuel's side (the button, the key's consumption) is its own lot.
+
+- **Data: « Construire » the aeronautical base on the launcher** (`modules/data/` `module.js`, `model.js`, `texts.js`, `help/` x4; SPEC § 3, § 5.4, § 6.5; cases L1, L6–L10; V3 data regeneration, D5 front end) — first action of the module, in the Aeronautical base group: a build panel with a checkbox per zone of the coverage (all ticked) and, only when a ticked zone feeds them, the personal-licence sources (ENAIRE, NATS, X-Plane: unticked by default, each with its « only if the data repository is used by you alone » line; a hint when X-Plane is ticked, the build in the page not being possible yet). « Construire » starts `regen/job { set: 'base', verb: 'build', args: { zones, personal } }` through `ctx.launcher.job`; the bar, « n zones sur m », the step, the elapsed time and one line per zone (waiting, building n / m sources, built, failed with the reason of its code, cancelled) follow the job's view; « Arrêter » cancels; at mount `resume` follows a running build, or says « Construction interrompue » (state `interrupted`) or the summary of the last one. One notification with the counts at the end only, the summary and what to do in the panel (partial, failed, cancelled, `no-browser`, `xplane-in-page`), the rows re-read; the grey button says why once (no launcher, another operation running, no zone, offline), the refusals (409, 429 too-soon, 404 unknown route, 400) are worded. The last 50 operations go to `cache/data/journal.json` and to a journal fold at the foot. `meta.launcher` declares `regen/job` and `regen/job/cancel` (a declaration of `regen/job` alone does not cover the cancel call the job client makes). Tests against a fake launcher; the personal-licence table of `model.js` is checked against `shared/aero_zones.js`.
+- **Data: « Publier » the base through the frame's gesture sync** (`modules/data/` `module.js`, `model.js`, `texts.js`, `help/` x4; SPEC § 3, § 6.5; INTEGRATION § 1.3; cases L11, L12) — second action of the module, in a panel right after « Construire »: the state of `data/` from `GET sync-status` (n files changed · m commits to send, a pending merge, the last pass), the button « Publier » (44 px) and, one question « Publier n fichiers et m commits vers le dépôt des données ? », `ctx.data.sync({ gesture: true })` (only when the frame carries `ctx.data.sync.gesture === true`: otherwise the button stays grey, never a pass without the gesture). While it runs an indeterminate line shows and « Construire » is grey (and the reverse); the end says what was committed and received, the files of the base kept on the workstation (a build is under way), the conflicts (see Settings › Conflicts), the refused files, or, on a failure, a sentence and the launcher's message as text; one notification with the counts, a journal entry, then `sync-status` and `publication()` are read again. The grey reasons are written once (no launcher, publishing, build running, another operation, frame too old, nothing to publish, offline). `meta.launcher` declares `sync-status`. Tests on a fake launcher and a fake `ctx.data.sync`.
+- **Frame: the flown track, privacy** (`frame/lib/trail.js`, `frame/app.js`; frame INTEGRATION § 6, DECISIONS, help ×4;
+  noreg A35): points to about 100 m; the track is carried on only for the same start (`trailFrom`); the Status block and
+  the help say that, with several users, the track is shared with the group and stays in the repository's history.
+- **Frame data layer: listing and reading again cost almost nothing** (`frame/store/frame_data.js`; INTEGRATION § 4,
+  DECISIONS; tests open the cache without a version): `list` reads keys only (69 → 0.7 ms on a 17.8 MB cache), a
+  reference file is parsed once per revision (a 1 MB zone read again: 8.1 → 2.3 ms), an absent reference is not asked
+  again for 30 s.
+- **Launcher, security review** (`tools/data_sync.py`, `tools/launch.py`, `tools/regen_jobs.py`; frame DECISIONS;
+  noreg I8, I9): no credential in a https address of the data repository, the token alone as user name included
+  (refused, dropped from the configured address, cleaned in what the page reads); a job's zone output is taken once and
+  dropped at the end of the job.
+- **Fuel tests: pure benches, shared fixtures, waits on a state, and `fmtDayZ`** (`frame/lib/time.js`, `frame/lib/test/time.html`,
+  `modules/fuel/test/vertical.html`, `tests/v3/fixtures/procedures.py`, `tests/v3/cases/fuel.py`, `tests/v3/lib.py`; V3 § 10.29 h, i; cases F23,
+  F39) — `fmtDayZ(iso)` writes « 29/10 16:53Z » (UTC) for the procedures line; the vertical path of the quote (`verticalPath`) has a bench without
+  the page, which F23 runs; the invented procedures of the fuel cases live in one fixture file; the fixed pauses of the fuel cases wait for a
+  state (`Ctx.quiet`, the document written, the notification said).
+
+- **Fuel: the challenge of 29 Oct applied to the procedures** (`modules/fuel/procedures.js`, `module.js`; V3 § 10.20, § 10.23, § 10.29 f, g;
+  cases F16, F19, F21, F26, F36, F37, F38) — choices made in a row are written once (400 ms after the last one, one quote); nothing is locked after
+  the start (the « La SID est passée » lock is gone); a conflicting choice is marked ⚠ and says nothing else (no notification);
+  « Charger mon OFP » fills only the sides you have not chosen and lists only what it filled; « 3 non lues » counts the pages and records
+  of the partly read aerodromes; a failed reading says how many pages were read; `quote.legsAt` is kept while the legs do not change.
+
+- **Fuel: the procedures block has its own file, and the « Procédures » card is redone** (`modules/fuel/procedures.js`, `procedures_texts.js`,
+  `module.js`; V3 § 10.29 d, e; cases F34, F35, F36, F11–F31 updated; refactoring 29 Oct d + e) — each side is titled with the aerodrome's
+  name (« Départ LFPO Paris-Orly »), carries one muted line « lu le 29/10 16:53Z · Relire · 3 non lues », and its lists sit on one fixed grid, the
+  same on both sides (runway · procedure · transition; approach under the STAR), no label cut, one column on a phone; a runway chosen,
+  the labels no longer repeat it (« OPALE 2E »); a change of the lists updates the existing selects in place and never moves the focus.
+
+- **Data: a read-only « Données » screen** (`modules/data/` `module.js`, `model.js`, `texts.js`, `help/`; `frame/app.js` registry; SPEC § 3, § 6.2,
+  § 9; cases L1–L5; V3 data regeneration, first lot) — Full level (level 3); not a place of Pilot's rail: the heart of the future « Maintenance » application (user, 29 Oct), reached by
+  `#data` and by the line « Maintenance » of Settings › Administration (read only on a phone). It shows the AIRAC cycle in force and the next one, the workstation's coverage by zone (written once to
+  `cache/data/coverage.json`) and the States grouped green / orange / red (seven lines, the rest folded), then the four groups — aeronautical
+  base, procedures, aircraft, weather — one row per data set with its cycle, age, counts and a computed state (cycle gone by, old parser, absent,
+  over 28 days, up to date), the link, licence and published zones under a tap. Everything comes from aerodb's `publication()`, `zones()`,
+  `sources()` and `coverageByState()`; no action button, no launcher job, no network. The model (`model.js`) is pure and tested on fixtures.
+- **Frame: the flown track** (`frame/lib/trail.js`, `frame/app.js`, `frame/sw.js`; frame INTEGRATION § 6, DECISIONS;
+  noreg A35): the current flight's `progress.actual.trail` keeps where the aircraft went since the start — one point per
+  NM or per minute, turns kept, 500 points at most — written with the position, reset at a new start or when the flight
+  stops.
+- **Synchronisation: a build of the base under way keeps it, even on the button** (`tools/data_sync.py`,
+  `tools/launch.py`; SYNCHRONISATION, frame DECISIONS; noreg I9): an uncommitted `sia/base/` file written less than
+  10 min ago means a build (the V2 page writes through its allowed folder, unseen by the launcher); a pending merge that
+  cannot be cancelled names the files to set aside; git's texts also lose the real path of `data/` behind a junction.
+- **Map, Coverage layer: an aerodrome partly read** (`modules/maps/coverage.js`, `texts.js`; help ×4, maps SPEC § 6.7; noreg
+  D59): an orange aerodrome of reason `partial` (V3 § 10.26: procedures held, part of them not read) no longer reads as
+  "readable on demand": its card says "Procedures: partly held", the reason, "n pages not read" and "n records to check"
+  (from `partial { pages, doubt }`, a zero left out, singular or plural) and the SID / STAR / APP counts, as for green; the
+  orange legend line names both cases ×4.
+
+- **Launcher: a job's headless page returns its output** (`tools/regen_jobs.py`, `tools/launch.py`; frame
+  INTEGRATION § 15.1, DECISIONS; noreg I8): `POST /__setup/regen/job/put` hands a zone's output to the running job
+  (its random token, a zone of its arguments, bounded names and size, workstation only); the job's verb receives it with
+  `job.take(zone)`, writes and commits it — for the base build on the launcher (D5).
+- **Launcher: one table of routes** (`tools/launch.py`, `tools/lan_access.py`, `frame/sw.js`,
+  `shared/maintenance_page.js`; frame INTEGRATION, DECISIONS; noreg I10): each `/__setup/` route is declared once with
+  its public (local network or this workstation), and the local network's gate reads that table; the data repository's
+  configured address never carries credentials; Maintenance names a workstation setting to a paired device; two frame
+  libraries join the offline shell.
+- **Fuel and the Map: the rules of the procedures are one pure module, `frame/lib/procedures.js`** (refactoring 29 Oct c; `modules/fuel/module.js`,
+  `frame/lib/flight_path.js` re-exporting `conflictsOf` / `orderProcedures`; bench `frame/lib/test/procedures.html`, case F32; no visible
+  change) — runway matching, names, conflicts, order, transitions, the approaches listed once and the runways offered, with no state and no text.
+- **Synchronisation, security review** (`tools/data_sync.py`, `tools/launch.py`, `tools/regen_jobs.py`; administrator
+  manuals ×4, SYNCHRONISATION; noreg I9): a merge left pending is always cancelled and redone, never concluded (a merge
+  commit would carry files staged before the interruption, outside the pool, unchecked); files the workstation staged
+  since are unstaged first so that the cancel keeps them; git's texts lose credentials and local paths; a paired device
+  gets a generic message on a failed pass; conflicting paths follow the `data_file` rule; the aircraft base publication
+  checks for a pending merge before writing into `data/`; while a job of the Data module runs on the launcher,
+  `sia/base/` stays on the workstation whatever the page's `gesture` flag (an intention, not an authorisation).
+- **Map: the chosen runway as an arrow** (`modules/maps/procs.js`, `data.js`, `draw.js`, `layers.js`, `texts.js`; SPEC § 5, help
+  ×4, case D58; V3 § 10.24, user 29 Oct: "quand on choisit une piste, un vecteur sur la carte indiquant la piste (flèche)") —
+  the runway chosen in Fuel is drawn from its threshold over its length along its true bearing (the record's `true`, else
+  threshold to opposite threshold, else QFU + the aerodrome's variation), the tip at the end for a departure and at the
+  threshold for an arrival, its number at the threshold, in its side's hue, from the aerodrome view (threshold "Chosen runway
+  (arrow)" on the thresholds page). The aids (ILS, DME) come later.
+- **Données: the aeronautical base built on the launcher, in one headless browser** (lot D5; `tools/regen/base.py` — job `base/build`, args `{ zones,
+  personal? }`; `frame/aerodb/build/headless.html` + `headless.js`; `shared/sia_base.js` `buildZones` and the pieces `publishSplit` now shares; cases
+  K42–K51; SPEC § 5 septies, INTEGRATION, DECISIONS 30 Oct) — the page's own builders run in Edge or Chrome without a window, **one instance for all the
+  requested zones** (output identical to the page's, byte for byte), each zone written under `sia/base/<zone>/<cycle>/` through the launcher's path rule
+  and committed alone as soon as it is handed back by `POST /__setup/regen/job/put` (a failed zone publishes nothing and stops no other). **Route B**: the
+  verb offers `{ zones, cycle, personal, inputs }` (`job.offer`) and starts the browser on the launcher's page with `#job=<id>` only; the page makes one
+  `POST /__setup/regen/job/claim` for the offer and the token, **checks it before reading anything**, and reads (no token, no parameter on any command line,
+  no bootstrap file, no exception in the launcher's same-origin check). Zones as a dict at the root of the job view (`state`, `done`, `total`, `error`), result
+  `built` / `failed` / `commits` / `reason`; no browser: `no-browser`; `xplane` in `personal`: `xplane-in-page`. Ten zones: 10 to 12 s, 1.3 GB. Security: browser by
+  absolute path only (`taskkill` through `GetSystemDirectoryW`), temporary profile deleted (leftovers purged at load), WebRTC limited, nothing reachable beyond the
+  launcher's address, time limit and cancel kill the process tree. `aerodb` also declares `regen/job/cancel` (cancelling an EAD or eAIP reading was refused).
+  The V2 page and the Worker path are unchanged (same files byte for byte).
+
+- **Map: a flight write that lands during the mount is no longer missed** (`modules/maps/data.js` `watchFlight`; journey J2,
+  step 3, seen once in two) — the map read the flight, then subscribed to its changes after other waits; a write between the
+  two (Fuel writes `started.at`, then opens the map) had no event, so the map stayed on a flight not started and said nothing
+  ("no actual position"); right after subscribing it now reads the flight once more.
+
+- **Map: the profile shows only the airspaces the flight enters, one envelope per family** (`modules/maps/profile.js`,
+  `profile_view.js`, `lib/vertical_profile.js`; help ×4, case D57; user, 29 Oct, LFPO → EIDW at FL280: "toujours la pollution
+  par les CTA") — an airspace is drawn only where the planned vertical path enters it (within 500 ft); overlapping sectors of
+  one name family, type and class (DUBLIN CTA 3 / 4 / 5, VATA LOWER AIRSPACE A1 … D4) are one envelope named by the family,
+  lowest floor to highest ceiling; free route airspace (FRA), W and weather research areas are left out unless the "Other
+  airspaces" layer is on; at most seven airspaces are labelled, the others in the list below.
+
+- **Map and Atmosphere: one point chooses the weather model** (`frame/lib/flight_path.js` `routeMidpoint`,
+  `modules/maps/weather.js`, `modules/atmosphere/module.js`; bench) — the map took the middle point of its list by rank,
+  Atmosphere the middle point of its own: near the edge of a model's box they could choose different models; both now ask
+  the frame's `modelFor` at the same point, half the length of the route.
+
+- **Synchronisation: the aeronautical database leaves by the user's gesture only** (`tools/data_sync.py`,
+  `tools/launch.py`, `shared/sync.js`, `frame/store/transport_launcher.js`, `frame/store/frame_data.js`; administrator
+  manuals ×4, SYNCHRONISATION; noreg I9): `sia/base/` is committed by the « Synchroniser » button (and by the build job
+  itself), never by a background pass (update at start, the frame's periodic exchange), which keeps it on the computer
+  and says so — a zone half written by a rebuild no longer leaves by itself.
+- **Fuel: the procedure rows appear without waiting for the aircraft registry** (`modules/fuel/module.js`, DECISIONS; case F33).
+- **aerodb: coverage `partial`, States held and named, `PARSER_VERSION`** (`frame/aerodb/aerodb.js`, `catalogue.js`, `tools/proc_manual.py`; cases K1, K11, K21; SPEC § 5, INTEGRATION « Coverage »; V3 § 10.26) — `coverage(icao)`
+  answers **orange `partial`** (with `partial { pages, doubt }` and the fields of `held`) for an aerodrome held whose file has pages not read or records to check; `proc_manual.py install` writes `pages_unread` and `doubt` into the
+  aerodrome's entry of `proc/manual/index.json` (an entry without them is not partial). `coverageByState()` gives each State its `names` [fr, en, de, es] (47 States, in `AeroCatalogue.EAD_STATES`) and `held` (aerodromes
+  held; `held > 0` → green `held`). `AeroCatalogue.PARSER_VERSION` (= `VERSION` of `shared/sia_base.js`, checked by K21). `COVERAGE.partial` in the four languages.
+
+- **Synchronisation: a git warning no longer stops the merge** (`tools/data_sync.py`, `tools/launch.py`,
+  `tools/regen_jobs.py`; administrator manuals ×4, SYNCHRONISATION; noreg I9): `git()` mixed git's warnings (« LF will
+  be replaced by CRLF ») into its output, so a warning line was taken for a conflicting file, `open()` failed, the
+  exception reached the server and the merge stayed pending — every later launcher commit failed. Now git's output alone
+  is read (its warnings go to the launcher's log), conflicting files are read from the index (`ls-files -u -z`), any error
+  during a pass cancels the merge with a clean message, a merge left pending is concluded or cancelled by the next pass,
+  and the launcher's commits check for a pending merge first.
+- **aerodb: `source.file`, the document a record was read from** (`tools/proc_records.py`, `tools/proc_manual.py`; SPEC, INTEGRATION, DECISIONS; V3 § 10.25; cases K11, K14, K24, K26) — every procedure read from a document carries the document's name without folder: the SIA coding page for the eAIP (the page the « Source » link
+  opens, `charts.base` + `Cartes/<ICAO>/` + `source.file`), the downloaded document for EAD layouts and OCR, the input file for a hand reading installed from one. The other sources show the name only.
+- **Zone builds: sectors of one family that overlap with different floors are reported, never cut** (`shared/sia_base.js`
+  `SiaBase.sameFamilyOverlaps`, parser version 18 → 19; `frame/aerodb/SPEC.md` § 2, DECISIONS 29 Oct; case K41) — openAIP's
+  Dublin CTA 3 to 6 are discs that contain the airport; the base reproduces the source. The publication now checks each zone
+  (same source, type, class and family name, real shared surface, different floors, shared volume) and writes
+  `meta.json › overlaps` { count, airspaces, families: [{ family, type, cls, src, members, floors }] } (50 families at most) and
+  an `ovl` flag (the family name) on every airspace involved, for the Map's point sheet. Measured on the published zones: 0 to
+  23 ms, ie 3 families (Dublin CTA, Shannon CTA, Shannon CTA Cork), de 5, fr 5, in 6, iq 3, tr 2, es 1. Zones built with
+  parser 18 show as outdated until rebuilt.
+
+- **Map: the rendering parts no longer share a mutable kit, and the theme lives for one drawing** (`modules/maps/render.js`,
+  `render_airspace.js`, `render_route.js`, `screen.js`; SPEC § 1; case D40; V3 § 10.29 e, reduced form) — the parts expose
+  their drawing as frozen namespaces (`MapsRender.parts.airspace`, `.route`) instead of storing it in `MapsRender.kit`, now
+  frozen; `draw()` hands them a frozen `env = { theme, placer, pal }` and resets its theme when it returns, so nothing
+  lingers from one drawing to the next. Nothing changes on screen.
+
+- **Weather: the map and Atmosphere again read the same forecast** (`modules/atmosphere/weather_store.js`,
+  `modules/maps/weather.js`; frame DECISIONS): since 28 Oct the two weather stores used two different model runs for the
+  same cache and each discarded the other's data — the map showed no weather and the cut stopped part-way (LFPO → EIDW).
+- **aerodb: the ILS of the SIA eAIP goes through its final approach fix** (`tools/proc_sia.py` `parse_faf`, `tools/proc_records.py`; SPEC § 5 quinquies, INTEGRATION; V3 § 10.20; cases K24, K25) — the DATA pages print « FAF LOC RWY nn »: an ILS is now IF → FAF → threshold → missed
+  (`{ id: 'FAFnn', leg: 'CF', alt: null, synthetic: 'faf' }`), the FAF inserted only when it lies on the final (nearer than the initial fix, within 10° of the runway bearing), else a warning and the former IF → threshold. 16 of the 17 ILS of Orly, Toulouse and Paris-CDG get theirs
+  (8 to 14 NM from the threshold). The ILS initial fix printed as « IG08L ( IF ILS/LOC RWY 08L ) … » is read too.
+
+- **Fuel: the reasons of a procedure reading are translated by aerodb's catalogue** (`modules/fuel/module.js`, DECISIONS) —
+  never a code or a French console phrase in another language; a failure always shows what the workstation saw.
+- **aerodb: the procedures load at once** (`frame/aerodb/aerodb.js`; bench `frame/aerodb/test/perf_procedures.html`, case K40; SPEC § 5 quinquies, DECISIONS 29 Oct 2026; V3 § 10.29 g) — Fuel and the Map took
+  250–400 ms for **every** `procedures()`, `procedure()`, `runways()` call (2.2 s + 1.3 s + 1.8 s for the mount of Fuel, the Map and a redraw on the real files): each call read the aerodrome's four files and asked
+  the frame for `list('proc/')` (which loads the whole cache), and the aerodromes whose points the base does not all give (LFPO, LFBO, LFPG) were rebuilt at each call, one base search per point. Now the merged list is
+  built **once per aerodrome**, shared by every call and every module, trusted until the `proc/` watcher, `fetchProcedures`, `refresh()` or a change of the base drops it: a warm call is 0 ms, 0 reads, 0 lists (mount
+  of Fuel 456 ms, of the Map 0.1 ms, a redraw 0.2 ms; same answers). The base is searched once per identifier (864 searches → 82 for LFPO), the cycle choice and `procedureIndex()` are kept. What is left (a
+  `FrameData.list` that loads every cached document) is the frame's.
+
+- **Map: one element for the airway names** (`modules/maps/render.js`, `render_airspace.js`; case D51; V3 § 10.29 g) — the
+  display profile's `airwayLabels` and the Layers box's `awLabels` were combined; `awLabels` alone remains, and a profile of
+  the studio or of an airline that still carries `airwayLabels` is read as `awLabels` (`MapsRender.migrated`).
+
+- **Map: one palette, day and night** (`modules/maps/render.js` `MapsRender.palette`, read by `render_route.js`,
+  `render_airspace.js`, `procs.js`, `sheet_view.js`, `flight_time.js`, `tips.js`, `vfr.js`, `draw.js`; SPEC § 3; V3 § 10.29 f)
+  — the map's cartographic colours were written in a dozen places; they are now one palette read by the renderer and by the
+  legend, so a swatch is always the colour of what it names. Same colours as before.
+
+- **Map: the drawing order is one list of layers** (`modules/maps/render.js` `draw`; SPEC § 3; V3 § 10.29 d) — each layer
+  `{ id, reserve(), paint(ctx) }`, every reservation in the label placer first, then every painting, in the list's order; the
+  same order as before, nothing changes on screen.
+- **aerodb: one page set per French aerodrome, regenerable by a tool** (`tools/make_eaip_fixtures.py`, `frame/aerodb/test/fixtures/eaip/<ICAO>/`, `SOURCES.md`; `tools/regen/proc.py`; V3 § 10.29 (e); cases K24, K25, K33, K34, K22) — the loose `.rows.txt` of the SIA eAIP become a set per aerodrome (LFPO, LFBO, LFPG whole: 171 pages, 346 KB of text;
+  LFBD and LFAV as they were) with the AD 2.12 extract and a manifest (cycle, pages, rows, hash of each PDF); `make_eaip_fixtures.py LFPO --cache <PDF> [--check|--fetch|--adopt]` rebuilds or verifies them. K24 and K25 assert on whole aerodromes (and find a real row that cannot be read in LFPO STAR RWY07). Also from the
+  security review of the reading job: a document of another aerodrome than the requested one is never installed, and `ead-fetch` refuses a French code.
+
+- **aerodb: one reading job, `tools/regen/proc.py`** (`tools/regen_jobs.py`; SPEC, DECISIONS; V3 § 10.29 (d); cases K22, K23, I8) — `proc/ead-fetch` and `proc/eaip-fetch` were two copies of one job; they are now ONE function driven by a source table (which
+  State each source reads — France by the SIA eAIP, no account; any other State by EAD Basic, with the account — where its cache is, how it is read, what is checked before installing), loaded by the frame's base (`load_verbs()`). The commit is the base's
+  `commit_outputs`, signed by the page's trigram (nothing is committed without one). `regen_jobs.py` goes from 656 to 373 lines. The results are unchanged.
+
+- **Launcher: detection and the workstation's settings apart** (`tools/launch.py`, `shared/app_framework.js`,
+  `shared/file_access.js`, `shared/maintenance_page.js`, `shared/sog_registry.js`, `apps/settings/premier_lancement.html`;
+  frame SPEC, DECISIONS): `/__setup/status` only says that a launcher serves the page (the same everywhere);
+  the workstation's own settings move to `/__setup/workstation`, never given to a paired device.
+- **Flight path: `expandedPath` marks every junction, the map only draws** (`frame/lib/flight_path.js`, `modules/maps/procs.js`;
+  bench; V3 § 10.29 c) — the point after a junction carries `join`: `'common'` (the procedure meets the route on a shared point;
+  `joinPhase`, the phase of the leg that leads there), `'direct'` (no shared point: a dashed direct) or `'gap'` (a leg whose
+  predecessor is not coded, now dashed too); the map no longer guesses them from the procedures' fix names.
+
+- **Frame lib: `current_flight.js` split in three** (`frame/lib/current_flight.js`, `flight_time.js`, `flight_path.js`; V3 § 10.29 b)
+  — the record's merge stays in `current_flight.js`; the flight in time (`legTimes`, `etaOf`, `plannedPositionAt`) goes to
+  `flight_time.js`, the route and its procedures (`proceduresOf` … `altitudeAt`, `conflictsOf`, `orderProcedures`) to
+  `flight_path.js`; `current_flight.js` re-exports both during the transition, the code moved as it was. Listed in the
+  service worker and the modules' files.
+- **aerodb: reasons as codes, the layout's tolerance as a fallback, a missing Belgian point as a doubt, security review of the split** (`tools/proc_geometry.py`, `proc_records.py`, `proc_layouts.py`, `proc_sia.py`, `proc_ead.py`,
+  `proc_ocr.py`, `proc_pdf.py`; `frame/aerodb/catalogue.js` `READ_REASONS`; SPEC, INTEGRATION, DECISIONS; V3 § 10.29 (c); cases K30 to K32, the catalogue test page) — every page not read carries `formats[].reason` (`layout`, `low-read`, `title`,
+  `no-legs`, `counts`, `vector`, `timeout`) and `stats.reasons` is `[code, count]` (the page codes and the doubt codes), the French phrase staying in the console; `AeroCatalogue.READ_REASONS` gives the four-language labels. A leg that prints only a distance is
+  judged at its layout's tolerance. A point missing from a Belgian list no longer refuses the block: the procedure is kept as a doubt (`unresolved`). A PDF name from a server is a plain file name under the cache, the ICAO codes of the command
+  line are checked, and the default cache of `proc_sia.py` is `data/local/eaip` (or the ignored `.proc_cache/`). The readings of LFPO, LFBO, LFPG and EIDW keep their procedures and doubts.
+
+- **Frame: requests between modules taken once** (`frame/app.js`, `modules/hello/module.js`, `frame/lib/launcher.js`,
+  `frame/aerodb/aerodb.js`; INTEGRATION § 6.1 and § 15.1, SPEC, DECISIONS; cases A29, A34): `ctx.consume(keys)` takes a
+  request carried by the address and removes it, so a reload or Back no longer replays it; the address keys used between
+  modules are listed in one table; the launcher's refusals have one written shape; aerodb declares the launcher routes it
+  calls.
+- **Launcher jobs: security review** (`tools/regen_jobs.py`, `frame/store/frame_data.js`; DECISIONS; I8): a set can no
+  longer overwrite another's verb nor shorten a gap; trigrams of 2 to 5 signs are accepted as authors; commit paths are
+  literal (no pattern); `revalidate` keeps an error of the device's storage in its result instead of throwing.
+- **aerodb: `proc_eaip.py` split, no logic changed** (`tools/proc_layouts.py`, `proc_pdf.py`, `proc_records.py`, `proc_sia.py`, `ead_probe.py`; `proc_ocr.py`, `proc_ead.py`, `proc_manual.py`, `regen_jobs.py`; SPEC § 5 quinquies,
+  DECISIONS; V3 § 10.29 (b); cases K1 to K29) — the 2 718-line eAIP reader becomes the SIA reader (`proc_sia`), the foreign layouts as **one ordered list** (`proc_layouts.LAYOUTS`: detection, parser, fingerprints, OCR normaliser,
+  OCR flag, tolerance), the PDF reading shared by every reader (`proc_pdf`) and lines → records with the whole-aerodrome pass (`proc_records`); the EAD probe leaves `proc_ead.py` (`tools/ead_probe.py`). `proc_ocr` and
+  `proc_manual` no longer import the eAIP reader. The command line is `python tools/proc_sia.py` (same options). The readings of LFPO, LFBO, LFPG and EIDW are byte-identical. The point schema is written once in the SPEC.
+
+- **Map: the coverage layer is named "Coverage" and lit by its box only** (`modules/maps/coverage.js`, `layers.js`, `texts.js`;
+  SPEC § 6.11, INTEGRATION, help ×4, case D46; V3 § 10.29 h) — the automatic lighting (a side without a chosen procedure whose
+  aerodrome is not green) is gone, with the "box touched" state; the layer "Aerodrome procedures" is now "Coverage" ×4.
+
+- **Flight path: the guess of an unmarked missed approach left the helper** (`frame/lib/current_flight.js`; V3 § 10.29 h) — aerodb's
+  reader now marks it at the source and counts the records it guessed (`guessed: ['missed']`); `expandedPath` no longer guesses.
+
+- **Flight path: `loadProcedures` returns the records without duplicates** (`frame/lib/current_flight.js` `dedupProcs`; bench; V3
+  § 10.29 a) — a transition equal to its procedure is dropped there, so Fuel and the Map see the same records (Fuel had its own
+  copy).
+
+- **Fuel: compatible procedures first, one rule shared with the Map, doubtful records never listed** (`frame/lib/current_flight.js`
+  `conflictsOf`, `orderProcedures`; `modules/fuel/module.js`; bench `frame/lib/test/current_flight.html`; SPEC, DECISIONS; help ×4;
+  cases F22, F31) — every list opens with what fits the choice, then the ⚠ ones; the runway list with the runways of the chosen
+  SID or approach; a record without a name or with status `doubt` is not listed and a muted line counts « N procédures non lues sur
+  cette page » (slot reserved for the « Source » link).
+- **Fuel: « Read the procedures » always says how it ended** (`modules/fuel/module.js`, SPEC, DECISIONS; case F14) — its
+  start, then its result or its failure with the reason and the number of warnings, even after leaving Fuel; leaving no longer
+  cancels the reading.
+- **Fuel: « Now » shows the present time in the date field** (`modules/fuel/module.js`, DECISIONS; case F6) — no longer an
+  empty field drawn « dd/mm/yyyy ».
+- **Launcher: the jobs' base, alone** (`tools/regen_jobs.py`, `tools/launch.py`, `frame/lib/launcher.js`, `frame/app.js`;
+  INTEGRATION § 15.1, DECISIONS; cases I8, A29): each data set brings its own verbs in `tools/regen/<set>.py`; one commit
+  path for every job, signed with the trigram of the page; the last job and the gaps between readings survive a restart of
+  the launcher (an interrupted job is said so).
+- **aerodb: one geometry check and one policy for every reader** (`tools/proc_geometry.py`; `proc_eaip.py`, `proc_manual.py`, `proc_ocr.py`, `proc_ead.py`, `regen_jobs.py`; SPEC § 5 quinquies,
+  DECISIONS; V3 § 10.26 and § 10.29 (a); cases K1 to K28) — the three checks (`check_geometry`, `gaps_of`, `proc_manual.verify`) and the guards (name, repeated point, zigzag) become one module: printed course and
+  distance against the recomputed ones with a tolerance chosen by what the source prints (true course 0.25° / 0.2 NM, magnetic course or distance 30° / 0.55 NM, nothing printed: « uncheckable », a warning). A record that fails is kept
+  with `status: 'doubt'` and its reason as a code (`geometry`, `unresolved`, `name`, `repeat`, `zigzag`, `unread`), the text staying in the console and the file's warnings; EAD and OCR no longer drop a table for one
+  record; a hand reading is still refused procedure by procedure (never the whole file unless none is left); `stats.reasons` carries the codes. The outcome on LFPO, LFBO, LFPG and EIDW is unchanged.
+
+- **Aeronautical data: personal-licence sources say who may tick them** (`shared/aero_zones.js` `personal`,
+  `shared/maintenance_page.js`; `modules/data/SPEC.md` invariant 1, DECISIONS): in Settings › Maintenance (V2) ›
+  Aeronautical data, the box of the X-Plane source (and of ENAIRE and NATS, personal-use licences) carries the line « À cocher
+  seulement si le dépôt de données n'est utilisé que par vous » ×4; the box stays, nothing is blocked (user, 29 Oct).
+- **aerodb: a reading is shown from the installed file through the frame's revalidation** (`frame/aerodb/aerodb.js`; SPEC,
+  DECISIONS; test K1) — the hand-made freshness after « Lire les procédures » (forget, sync, in-memory copy) gives way to
+  `FD.revalidate` of the aerodrome's two files.
+- **The base's parser version goes to 18** (`shared/sia_base.js`) — the zones built before the fix of X-Plane's airspace limits
+  are now shown as outdated, so the maintenance page offers to rebuild them.
+- **Map: the airspaces at a point say when sectors of one family overlap** (`modules/maps/lv.js`, `texts.js`, case D56) — when
+  airspaces of one name family, one type and one class overlap there with different floors (Dublin: openAIP codes CTA 3 to 6
+  without their inner hole), a discreet note ×4 under the list: "Overlapping sectors of one family: as given by the source";
+  the map cuts nothing.
+
+- **Atmosphere: the cut follows Fuel's vertical path, and its times the ground speed** (`modules/atmosphere/atmo.js`
+  `trajectory`, `section.js`; case E11; user, 29 Oct: "la coupe météo ignore les altitudes imposées … 30 kt de face = 30 kt de
+  vitesse sol en moins") — the cut drew its own climb and descent at default rates and timed the flight at true airspeed;
+  it now follows `profile.path` (constraint steps included, brought onto the route by its length) when Fuel computed it at
+  this level, its top of climb and of descent where that path reaches and leaves its highest level, and a second pass times
+  each NM at the ground speed, the headwind read along the path at the hours of the first pass.
+
+- **Fuel › Auto: each leg is routed at the altitude of the profile** (`modules/fuel/module.js` `autoAirways`, case F30; user,
+  29 Oct, LFPO → EIDW at FL260: "la T421 était à préférer à la J150") — every leg was routed at the cruise level (or the step
+  written at its first point), so a leg of the climb could not take a low airway and a leg flown at FL260 could; each leg is
+  now routed at the planned altitude at its middle (`altitudeAt` on the chain widened with the procedures' points, brought
+  onto the flown path).
+
+- **Frame: `revalidate(paths)` in the data layer** (`frame/store/frame_data.js`, `frame/app.js`; INTEGRATION § 4, § 15.2,
+  SPEC, DECISIONS; bench A33): a module (and aerodb) can check a few known files against the repository at once, without
+  waiting for the background sync — changed copies are read again and announced, vanished references dropped, the
+  device's own pending writes kept; a publication now shows its new files at once.
+- **Airspaces from X-Plane: limits in feet again** (`shared/aero_sources.js`; aerodb DECISIONS; test K27) — the « M » of « MSL »
+  (« 3000MSL ») was read as metres, so X-Plane's airspaces showed « 3000 m AMSL »; the zones built with them need a rebuild.
+- **Frame: three bugs** (`frame/app.js`, `tools/regen_jobs.py`, `tests/v3/lib.py`; SPEC § 3, INTEGRATION § 15.3,
+  DECISIONS; cases A31, I8, J2):
+  - on a device alone, a write waiting an instant in the queue no longer turns the ⚙ amber (journey J2's intermittent
+    failure);
+  - the end-of-cycle line reads the real form of aerodb's publication (it never showed);
+  - the launcher jobs' journal and steps are cleaned of secrets whatever a job writes;
+  - the suite's seeded aeronautical base follows the AIRAC calendar.
+- **Fuel and Map: the winds aloft along the route are taken at the altitude of the profile** (`frame/lib/current_flight.js`
+  `altitudeAt`, `routeNmToFlown`, `modules/fuel/module.js` `aloftCalc`; bench, case F29; user, 29 Oct: "à LFPO on n'est pas
+  encore au FL260, à BAGIT on n'y est plus") — every point's wind and temperature were read at the cruise level (steps
+  included); they are now read at the planned altitude there: fuel's vertical path (`profile.path`), else the climb to
+  `tocNm` and the descent over the last `todNm`, the route's distances brought onto the flown path of the procedures.
+
+- **Atmosphere: a flight dated before today has its weather from its departure** (`modules/atmosphere/module.js`,
+  `weather_store.js`, case E10; user, 29 Oct: "pas de météo avant H+56" on a flight of 26 Oct) — the forecast was read from
+  today only, so the hours between a past departure and today stayed empty and the nearest hour was shown; the days from the
+  departure (up to 92 days back, which Open-Meteo serves) are now read too.
+- **aerodb: the date of the last reading** (`frame/aerodb/aerodb.js`, `tools/proc_manual.py`, K1, K11; V3 § 10.29) — `coverage(icao).read_at` (ISO 8601 UTC, or `null`) is the
+  most recent `updated_at` of the aerodrome's entries in `proc/manual/index.json` and `proc/local/index.json`, which `proc_manual.install()` now writes; every record served from
+  `proc/manual/` carries `source.read_at`. Fuel and the Map show « lu le … » with « Relire », or the button alone when it is `null`.
+
+- **aerodb: no orange without a reader** (`frame/aerodb/aerodb.js`, K1; V3 § 10.29) — `coverage()` and `coverageByState()` no longer give the orange `lnm` (Little Navmap has no
+  reader yet); the key stays in `AeroCatalogue.COVERAGE`, never produced. The `lnm` hint of `fetchProcedures` (`no-tables`) stays.
+
+- **aerodb: the missed approach is guessed by the reader and counted** (`frame/aerodb/procedures.js`, `aerodb.js`, K1; V3 § 10.29) — an approach with no point of phase `missed`
+  gets it after the point nearest to the landing threshold of its runway (`dthr`, else `lat` / `lon`, else the aerodrome), unless that point is the last; the record carries
+  `guessed: ['missed']` and `procedureStats().guessed.missed` counts them. The consumer's `withMissed` in `frame/lib/current_flight.js` becomes a no-op on these records (the maps lot removes it).
+
+- **aerodb: `procedures()` memoised per aerodrome and per revision of its files** (`frame/aerodb/aerodb.js`, K1; V3 § 10.29) — the merged, phased and placed list is built once per
+  revision of `proc/<cycle>/`, `proc/manual/`, `proc-seen/` and `proc/local/` files (300 calls cost one merge); `procedure(id)` and `runways(icao)` read the same entry; the watcher,
+  a successful `fetchProcedures`, `refresh()` and `rememberOfp` drop it; new `procedureStats()` (`memo`, `merges`, `hits`, `guessed`).
+
+- **Map: the aircraft arrow points at the position with its tip** (`modules/maps/flight_time.js`, case D55; user, 29 Oct) — the
+  planned and the X-Plane (red) arrows were centred on the position; their tip is now on it, the body behind.
+
+- **Map: the route points a STAR (or a SID) bypasses are no longer drawn, nor given winds** (`modules/maps/state.js` `keptRoute`,
+  `draw.js`, `tips.js`, case D54; user, 29 Oct: "les points de la route sont toujours présents, avec les flèches de vent, bien
+  que la star se connecte à l'un des points de la route") — the path already dropped them, but the marks, names and wind
+  barbs were still drawn from every point of the route; they now follow the route points the path keeps.
+
+- **aerodb: `--fetch` reads every results page (fix)** (`tools/proc_ead.py` `page_rows`, K12) — seen on the real screen (29 Oct 2026, 22 approach documents): the PrimeFaces page change answers with bare `<tr>` rows (no table body), which the walk took for "no results table" and stopped at page 2; the rows are now read from the table's update fragment; the diagnostic is two short lines that fit the launcher's job log.
+- **Map: procedure names at every scale, their fixes and constraints from the regional view, both on the thresholds page**
+  (`modules/maps/procs.js`, `layers.js`, `tune.js`, `draw.js`, `render.js`, `texts.js`; SPEC § 5, help ×4, case D53; user, 29 Oct:
+  "ils disparaissent trop tôt en zoom arrière (c'est une info hyper importante)" and "le nom de l'approche ne semble pas
+  s'afficher") — the fixed 300 px per degree became two thresholds of `#maps?tune=1`, "Procedure names" (every scale) and
+  "Procedure fixes and constraints" (from about 110 px per degree); the names are anchored at the middle of the procedure's
+  longest leg, with a fallback when an approach has a single fix off its threshold, and every procedure label is painted
+  last, so an airway box near the aerodrome no longer hides the approach's name.
+
+- **Fuel: "Auto" starts from the end of the chosen SID and ends at the start of the arrival** (`modules/fuel/module.js`,
+  DECISIONS; case F28) — e.g. LFBO FINOT G36 GOSAD, which it could not find from the aerodrome.
+- **aerodb: "Read the procedures" for Dublin (EIDW) and the other Irish aerodromes** (`tools/proc_eaip.py`, `tools/proc_ead.py`, `tools/regen_jobs.py`; `frame/aerodb/EAD_BASIC.md` § 10, DECISIONS 29 Oct; cases K26, K19, K22, K12) — the reading ran
+  3.5 minutes and ended « no procedure could be read » (31 documents, every one "layout not recognised"): Dublin prints `Term` / `Mag track` and its columns in another order than the page seen on 28 October (name, position, terminator, tracks,
+  distance), the departures start with a point-less `RWY28 - CA` leg, the text layer spaces digits and cuts names, STAR pages come backwards, RNP rows are cut over three lines. One tolerant row reader now takes both column orders; on the 31 documents:
+  43 pages read, **196 procedures (115 SID, 43 STAR, 38 approaches)**, 659 legs through the geometry check with none rejected; VOR approaches (fix tables) and missed-approach tables alone stay unread, said. The job now gives real progress
+  (searches, documents downloaded / read / analysed, i of n) and its counts (`stats`) and a message that says what was seen even when nothing could be read (« 31 document(s), 0 of 31 page(s) read (…) »).
+
+- **Flight path: `routingChain(flight, procs, points)` for the airway routing** (`frame/lib/current_flight.js`; bench
+  `frame/lib/test/current_flight.html`) — the points between which the routing looks for airways, with the chosen SID's end
+  (its transition included) inserted after the departure and the start of the chosen arrival (STAR transition, else STAR,
+  else approach transition, else approach) before the arrival, when the route does not hold them yet (user, 29 Oct: a FINOT
+  departure from LFBO with a route starting at GOSAD did not get G36 from "Auto"; Fuel's button is wired to it next).
+
+- **Map: the flight's procedures are read again after "Read" / "Read again" in Fuel** (`modules/maps/module.js`, case D52) — aerodb
+  says `{ procedures: ICAO, coverage: true }` after reading an aerodrome, and the map only cleared its coverage: it kept drawing
+  the old records (it read them again on a refresh of the base only). It now reads them again when that aerodrome is the
+  flight's departure or arrival.
+
+- **Map › Layers: the "Airway names" box works** (`modules/maps/render_airspace.js`, case D51) — it only switched the segment's
+  length and tracks, while the name box obeyed another element of the display profile that Layers never set: unticking it
+  left every name on the map. It now shows and hides the airway's box, with its length and tracks. Its label is the same in Layers and on the thresholds page: "Airway names (length, tracks)" ×4.
+- **Fuel: "Read again" on an aerodrome that already has procedures** (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4; case
+  F27) — with the date of its last reading.
+- **Map: SID, STAR and approach in their own hues, and the airway boxes stay over their traces** (`modules/maps/procs.js`,
+  `render.js`, `draw.js`, `sheet_view.js`; SPEC § 5, help ×4; user, 29 Oct: "des couleurs de contraste autres que violet (vert ?
+  orange ? bleu ?)" and "toujours pas de cartouche pour les routes, mais là c'est une approche") — the SID is green, the STAR
+  orange, the approach and its missed approach sky blue (day and night shades), their constraints and point names in the same
+  hue; the chosen procedures are now painted at the route's level, before the boxes of the airways their legs follow, which
+  were hidden under an approach's trace.
+- **aerodb: Paris-CDG (LFPG) read whole, point merge kept apart, a doubtful reading kept with status `doubt`** (`tools/proc_eaip.py`, `tools/proc_manual.py`, `tools/regen_jobs.py`, `frame/aerodb/procedures.js`,
+  `aerodb.js`; SPEC, INTEGRATION, DECISIONS; tests K25, K1, K22-K24) — the SIA's cycle 2026-10-29 prints three more layouts: STAR titles with a parenthesis
+  of conditions (the cause of the glued STARs and the nameless one), SIDs with a « Nav Spec » column and scrambled cells, INA / FNA pages with spaced words. Offline: 85 of 85 pages read (62 before), 711 procedures (296),
+  0 nameless; the sequencing arcs BIBA1-5 / LUKI1-5 leave the routes and go to `point_merge` of the aerodrome file. A nameless record, a point repeated outside a holding, a zigzag, a record with an unreadable leg row or a failed
+  geometry check is kept with `status: 'doubt'` and a `doubt` reason (counted in `stats.doubt`), served only to `procedures(icao, { doubt: true })`; Orly's ELCOB SIDs gain their last leg, one Orly STAR is now flagged.
+
+- **Fuel: the Departure and Arrival procedure rows are in step 2 Route, not in step 1 Flight** (`modules/fuel/module.js`, SPEC,
+  INTEGRATION, DECISIONS; help ×4; cases F11-F26) — user: « star et sid sont “route”, pas “vol” »; a card at the end of the Route step before
+  the start, still in the Departure step after; `#fuel?focus=arr` opens the Route step before the start.
+
+- **Fuel: ⚠ only for a runway conflict** (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4; F21, F26) — a STAR that does not
+  join the approach is no longer marked (real STARs end in a hold or radar vectors).
+- **aerodb: Orly's STARs keep their names** (`tools/proc_eaip.py`; DECISIONS; test K24) — an arrow leading a table row cut
+  AMB 9W in two and left a nameless STAR; an untitled block repeating a procedure begun on the previous page is no longer kept twice.
+- **Fuel: a procedure in conflict is marked ⚠ (orange) and stays selectable; the lists are flat** (`modules/fuel/module.js`
+  `conflictsOf`, `procOptions`, `procChosen`, SPEC, DECISIONS; help ×4; cases F11, F13, F20-F22, F26) — reverses the pruning: choosing a
+  runway no longer cuts the lists nor removes a choice; ⚠ after ⌛ marks a SID, STAR or approach that does not serve the runway, a STAR that
+  joins no point of the chosen approach, a transition that does not start where the STAR ends (class `conflict`, the reason as title);
+  one notification says it when it appears. One list sorted by runway then name, no group per runway; the runway is in the label
+  only for a single-runway procedure whose name does not say it.
+
+- **Fuel: an outdated procedure shows ⌛ instead of the word "outdated"** (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4;
+  case F13) — greyed on the computer, with a tooltip "Read under an earlier cycle: to read again"; and "Wait n s before the next
+  reading (EAD Basic)" when EAD Basic is asked again too soon.
+- **Map: an outdated procedure is marked "⌛", never by the word** (`modules/maps/procs.js`, `coverage.js`, `sheet_view.js`,
+  `texts.js`, help ×4; decision of 29 Oct after the user's word "plutôt que « périmé », un symbole court") — the trace's label
+  reads "SID NAME ⌛" (the symbol in grey), the aerodrome card shows ⌛ in place of the word (its meaning in the tooltip),
+  and the "i" legend gives one line "⌛ read under an earlier cycle" while such a procedure is drawn; "X-Plane, local" and
+  "Little Navmap, local" are unchanged.
+
+- **Fuel › Sheets: a pasted or imported `{ "sheets": [...] }` gives its sheets** (`frame/aerodb/sheets.js`, case F25) — the
+  ChatGPT reply read as JSON (paste or file) became one sheet with a field "sheets" holding the whole array, and the review
+  proposed that single field; the `sheets` envelope and a bare array now give one sheet per element, merged field by field
+  into the sheet of the same id.
+- **aerodb: the ILS of Orly and Toulouse are usable, and every runway has its threshold** (`tools/proc_eaip.py`, `frame/aerodb/aerodb.js` comment; SPEC, INTEGRATION, DECISIONS; case K24) — the eAIP builder now reads the section AD 2.12 of the aerodrome page
+  (runway numbers, bearings, dimensions, threshold and displaced-threshold positions and elevations): the file carries every runway (LFPO 6, LFBO 4), and the `RWnn` points of the RNP pages are placed, at the displaced threshold when there is one (the coding tables agree with
+  it, measured on Orly 06 and 25). An ILS page, which codes only the initial fix then « See chart », gets the runway threshold between the initial fix and the missed approach (`synthetic: 'threshold'`): IF → threshold → missed approach, drawn straight. No procedure
+  is dropped by the geometry check (LFPO 316 / 316, LFBO 78 / 78).
+
+- **aerodb: procedures synchronised from the workstation are announced** (`frame/aerodb/aerodb.js`; SPEC, INTEGRATION, DECISIONS;
+  test K1) — an aerodrome read on the workstation now shows on the other devices as soon as its file arrives: aerodb announces
+  `{ procedures, coverage }` for it, and Fuel and the Map ask again instead of keeping an empty answer.
+- **Flight path: a transition that runs past its junction with the approach is cut there** (`frame/lib/current_flight.js`;
+  bench `frame/lib/test/current_flight.html`) — when the first point of a procedure (the approach after its transition, the
+  approach after the STAR) is already in the chain, the chain is cut at that point: the previous procedure's own tail is
+  no longer flown, and no leg is flown twice.
+
+- **Map: the rendering core split in three files** (`modules/maps/render.js`, `render_airspace.js`, `render_route.js`; SPEC § 1,
+  INTEGRATION) — `render.js` had grown to 78 KB, above the module's 60 KB rule; airspaces, airways, AAR and NAT
+  (21 KB) and the route's labels and trace (7 KB) moved as they were into two classic scripts loaded after the core
+  (50 KB), which shares its helpers in `MapsRender.kit`. Nothing changes on screen.
+
+- **Fuel: a procedure read without a name says "STAR without a name"** (`modules/fuel/module.js`, DECISIONS) — no longer
+  "NONAME".
+- **Fuel: "Read the procedures" gives its counts** (`modules/fuel/module.js`, SPEC, DECISIONS; case F14) — e.g. "78
+  procedures read from 18 pages", with the pages not read and their most frequent reason, and the procedures dropped by
+  the geometry check.
+- **Fuel: the vertical path no longer folds — no vertical jump, no climb back in the descent; an approach given by its entries is
+  listed once** (`modules/fuel/progress.js` `verticalPath`, `module.js` `dedupProcs`, SPEC, DECISIONS; help ×4; cases F23, F24) — on the
+  user's LFBO → LFPO the saved choice had the same record as approach and as transition (its fixes chained twice, 524 NM for 327), the
+  path dropped from FL260 to 1,600 ft in 4 NM and rose to 7,000 ft; a ceiling now pulls the path down along the model's descent
+  gradient, and once the descent has started the path never rises.
+
+- **Fuel: a runway can be chosen at LFPO and LFBO — the runways are those of the procedures when aerodb has none**
+  (`modules/fuel/module.js` `runwayChoices`, SPEC, DECISIONS; help ×4; case F22) — `aerodb.runways()` answers `[]` for files whose
+  `RWnn` points have no position; the select now offers the runways the procedures name, then the two ends of the runway axis of the base.
+
+- **Fuel: the runway, the STAR and the approach filter one another** (`modules/fuel/module.js` `procChosen`, SPEC, DECISIONS; help ×4;
+  case F21) — a runway keeps the procedures that serve it (those with no runway named or `ALL` serve all); the choice that no longer
+  fits goes back to « not chosen » with one floating line saying which; a SID, STAR or approach chosen first that serves one runway
+  sets it.
+
+- **Fuel: an aerodrome with approaches only shows them — LFBO's 18 were hidden behind « aucune procédure publiée »**
+  (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4; case F20) — the rows ask aerodb once per aerodrome for all kinds, so
+  the Departure row of an aerodrome with approaches but no SID is no longer « without data »; without a runway chosen
+  a list shows all the procedures, one group per runway; the lists are read again when aerodb installs or announces
+  procedures.
+- **Launcher jobs: errors cleaned, EAD Basic paced** (`tools/regen_jobs.py`, `frame/lib/launcher.js`, `frame/aerodb/aerodb.js`; INTEGRATION,
+  SPEC, DECISIONS; tests K1, K22) — an error escaping a job no longer carries credentials, session identifiers or tokens into the job's log
+  or the page; two EAD Basic readings are at least 30 s apart (« too soon », with the seconds left), so it is never read in bulk.
+- **Map: "Aerodrome procedures" layer — the aerodrome pins coloured by what the device holds of their procedures**
+  (`modules/maps/coverage.js`, `render.js`, `draw.js`, `layers.js`, `sheet_view.js`, `vfr.js`, `texts.js`, `lib/aero_symbols.js`,
+  help ×4; V3_SPECIFICATION § 10.22) — green (held), orange (readable on demand), red (nothing readable), from
+  `aerodb.coverage(icao)`; a box in Layers (off by default, not offered without `coverage`), one legend row per level in the "i"
+  panel while the layer is shown, a coverage line (pin, level, reason from `AeroCatalogue.COVERAGE`, outdated, SID / STAR / APP
+  counts) on the pinned aerodrome's card. Only the aerodromes in the frame are asked, in one batch per drawing, cached and asked
+  again on an aerodb `coverage` / `refreshed` change. The layer lights up by itself while the flight has a side without chosen
+  procedure whose aerodrome is not green (and goes out when both sides are chosen or green); touching its box wins until the page
+  is reloaded; the kept state of the box is never written by the automatic lighting. Cases D45 to D50.
+
+- **« Météo », one word for the weather module** (`frame/app.js`, help of fuel and the map, roadmap; DECISIONS): the computer's
+  rail said « Atmosphère » while the phone's bar said « Météo »; now « Météo » / Weather / Wetter / Meteo everywhere (rail,
+  bar, popover, header title, help). The address stays `#atmosphere`.
+- **Launcher: nothing local to the workstation for a paired device** (`tools/launch.py`, `frame/app.js`): `/__setup/status`
+  gives a paired device of the local network only what the frame's detection needs (no installation path, repository
+  address, settings or Little Navmap databases), and aerodb's launcher job is null on such a device.
+- **Flight path: an approach whose missed approach is not marked no longer flies it** (`frame/lib/current_flight.js`; bench
+  `frame/lib/test/current_flight.html`) — LFPO RNP 20 read from the eAIP gave IPO20, FPO20, then PO425, MLN and MOLBA at
+  7,000 ft without the `missed` phase: the path flew the missed approach before LFPO, the profile went down to 1,600 ft
+  and climbed back, the distance grew by about 60 NM and the extra fixes crowded the labels. A final approach with no
+  `missed` point now stops at its fix nearest to the chosen threshold (else the aerodrome); the fixes after it are its missed
+  approach, drawn dashed and never flown.
+
+- **aerodb: `--fetch` walks every results page, `proc_manual` refuses an empty file, safer Tesseract lookup** (`tools/proc_ead.py`, `tools/proc_manual.py`, `tools/proc_ocr.py`, K11 K12 K14) — the EAD results table is paged through (15 rows a page, 1 s between pages; the PrimeFaces paging parameters were not seen on the real screen: the first paged walk prints what it sends); `--fetch` ends by naming the text file and the OCR file with their counts and install commands; a file without procedures is never installed and its reasons are printed; Tesseract is looked up with `NoDefaultCurrentDirectoryInExePath` and run by absolute path, `--dpi` is capped at 600, the display mode runs under the OCR timeout.
+- **Fuel: "Read the procedures" says where it reads** (`modules/fuel/module.js`, SPEC, DECISIONS; help ×4; case F14) — while
+  reading, the button says "Reading the SIA eAIP…" (France) or "Reading EAD Basic…"; a State without published procedure
+  tables is told so (and that Little Navmap has a database on this workstation, when it has); the old "layout unknown" refusal
+  is gone.
+- **aerodb: « Lire les procédures » for Toulouse and Orly — every page of the eAIP read, counts in the answer, runways of Orly selectable** (`tools/proc_eaip.py`, `tools/regen_jobs.py`, `tools/proc_manual.py`,
+  `frame/aerodb/aerodb.js`; SPEC § 5 quinquies, INTEGRATION, DECISIONS; tests K1, K22, K23, K24) — LFBO installed 18 approaches and no SID / STAR, LFPO 160 procedures with whole pages missing, because the SIA's pages
+  have layouts the reader refused (spelled cells `Y e s` / `1 . 0`, a runway header before each runway's own first legs, glued dashes, decimal commas, `F L 070`, a name cut in two `PB 096`, STAR titles with `(FIR)`, INA and ILS pages). All
+  74 pages of the two aerodromes are now read (LFBO: 38 SID, 14 STAR, 26 approaches; LFPO: 181 SID, 102 STAR, 33 approaches), the one row that stays ambiguous is reported. Departures for two runways give one procedure per runway;
+  legs without a fix (CA, FM) are kept; INA transitions are named by their STAR designator; ILS pages give the initial fix and the missed approach (`gap`). The missed approach of the RNP page of Orly RWY 20 was lost
+  (its threshold row held a decimal comma): found. The first reading answered « 0 procédures » although the files were installed: the job result now carries `file` (the installed file) and aerodb serves it until its reader
+  catches up; it also carries `stats` `{ pages, read, rejected, procedures, dropped, reasons }` for Fuel's notification (INTEGRATION). `runways(icao)` adds the runways the records name (Orly: 02, 06, 07, 20, 24, 25). A new reading of an
+  aerodrome replaces the previous eAIP reading in `proc/manual/` (no ghost procedure under an old identifier).
+- **aerodb: coverage of the procedures — `coverage(icao)`, `coverageByState()`, `AeroCatalogue.COVERAGE`**
+  (`frame/aerodb/aerodb.js`, `catalogue.js`; SPEC § 5 and § 6 invariant 4, INTEGRATION « Coverage of the procedures », DECISIONS, V3_SPECIFICATION § 10.22; tests K1, K21) — what the
+  Map's « Procédures » layer and the Données module's State list need: per aerodrome, green (procedures held: published, hand reading, X-Plane fallback, with the source, `outdated`
+  and the counts), orange (readable on demand: SIA eAIP for France, EAD Basic, a Little Navmap database on the workstation) or red (nothing, with the reason: images, labels, points,
+  prose, VFR only, none, unknown State), and `here` (this device can start the reading); per State, the same without held aerodromes, with a four-language label. One in-memory table
+  built once from the procedure indexes (the base is never loaded), dropped and announced by `on('change')` as `{ coverage: true }` after an on-demand reading, a `refresh()` or a
+  changed index.
+
+- **aerodb: « Lire les procédures de LFPO » works for France — the on-demand reading is dispatched by State**
+  (`frame/aerodb/aerodb.js` `fetchProcedures`, `tools/regen_jobs.py` verb `proc/eaip-fetch`, `tools/proc_eaip.py` `read_aerodrome`
+  / `eaip_url`, `tools/launch.py` `/__setup/status › lnm`, `frame/store/transport_launcher.js`; SPEC § 5 quinquies, INTEGRATION,
+  DECISIONS, V3_SPECIFICATION § 10.20; tests K1, K21, K23) — France (`LF`) reads the SIA eAIP coding tables (free, no account; the AIRAC
+  folder address is computed by the launcher from the cycle in force, nothing from the page is an address), a State readable in EAD Basic
+  keeps `proc/ead-fetch`, any other State answers `no-tables` (« aucune table publiée pour cet État », with `lnm` set when Little Navmap
+  databases are on the workstation); `unknown-layout` is gone, `onProgress` and the success carry `source` (`eaip` | `ead`). Records stay
+  `check` / `eaip`; a procedure whose geometry (magnetic course, distance) disagrees with its positions is not installed; installed under
+  `proc/manual/` without overwriting another source and committed (those two paths, no push).
+
+- **Launcher opens the Pilot application** (`tools/launch.py`) — the browser now opens `/frame/` (V3) at start; the V2
+  pages stay at their addresses (`--page apps/…`, Settings › Administration). User: "le lanceur lance la v2, désormais
+  obsolète".
+
+- **Map: the chosen runway, SID, STAR and approach are drawn, and the profile follows the path "route + procedures"**
+  (`modules/maps/procs.js`, `data.js`, `draw.js`, `render.js`, `profile.js`, `profile_view.js`, `flight_time.js`, `edit.js`,
+  `vfr.js`, `texts.js`, help ×4; V3_SPECIFICATION § 10.20) — the procedures chosen in Fuel (`route.procedures` v2) are loaded once
+  per change (`loadProcedures`) and the map keeps the expanded path and the flown path (`expandedPath`, `flownPath`); without
+  aerodb, a choice or a record the path is the route and nothing changes. The trace starts at the runway threshold, transitions
+  and the missed approach are dashed, a leg without a fix is a 2 NM stroke along its course then dashes, an RF leg is an arc,
+  the SID and the STAR join the route on a common point or by a dashed direct (the route no longer draws the legs they draw),
+  labelled "SID NAME" / "STAR NAME" / "APP NAME" with "X-Plane, local", "Little Navmap, local" or "outdated" when the source says
+  so; from 300 px per degree each fix carries its altitude (underlined = at or above, overlined = at or below, both = exactly,
+  "5000–7000" between) and speed ("≤ 220 kt") constraints, reserved in the label placer after the route's labels; procedures that
+  are not chosen are never drawn and Layers has no box for them. The profile is cut along the flown path (distance, NM marks,
+  cursor, ETA and planned position by `{ path }`), draws fuel's `profile.path` when it exists (else its fallback) and shows the
+  constraints as steps. The aerodrome card gives the runway and procedures chosen with a "Change" button to
+  `#fuel?focus=arr` (`dep`); the map never writes `route.procedures`, Edit mode no longer removes it. Constraint altitudes are in
+  feet up to the airline's transition altitude included ("5000", never "FL050" at a 5,000 ft transition). Fixed on the way:
+  fuel's profile was ignored whenever the frame had written the live position (`by: 'frame'`); only the map's own edit
+  (`by: 'maps'`) makes it stale. Cases D41–D44, D30 updated.
+
+- **Fuel: runway, SID, STAR and approach chosen in the preparation, the quote on their path, the arrival changed in flight**
+  (`modules/fuel/module.js`, `progress.js`, `INTEGRATION.md` § 3, `SPEC.md`, `DECISIONS.md`; help ×4; cases F11–F19) —
+  V3_SPECIFICATION § 10.20. Step Flight gets two short rows ("Departure: runway · SID · transition", "Arrival: runway · STAR ·
+  transition · approach"), selects filled by aerodb and filtered by the runway (the X-Plane local record last, "outdated" marked,
+  "aucune" writes `null`); an aerodrome without data offers "Read the procedures of LFXX" and shows the reason of a refusal in
+  a floating notification. `route.procedures` is v2 (identifiers; fuel the only writer, readers through `proceduresOf`; an old
+  `{ sid, star }` is migrated by fuel's next write, nothing at mount). "Load my OFP" replaces the choice by the OFP's SID and STAR
+  and says what changed, one line per side. Before the start the quote runs on the flown path (`quote.legs` one per point with
+  its origin, `quote.distanceNm`, `profile.path` with the constraints applied); after "Start the flight" the Departure step keeps
+  the arrival row editable (the departure row until the end of the SID) and a change rewrites only the legs, `profile.path`, the
+  length and `quote.legsAt`, never the block fuel. `#fuel?focus=arr` (the Map's "Change") opens the step with the arrival row.
+
+- **Settings: EAD Basic credentials in the launcher's keys panel** (`frame/settings/launcher.js`, `tools/launch.py`, help ×4)
+  — under the IVAO key, a block for the EAD Basic user name and password (given once to the launcher, kept in
+  `secrets/ead.json`, never read back by the page, which only shows « saved on <date> » or « missing »), with the notice
+  « demonstration tool, non-operational data, simulation use » ×4; used by the procedures job `proc/ead-fetch`; never
+  synchronised. Test A32.
+- **Data module: specification aligned on aerodb's and the frame's contracts (documentation only)** (`modules/data/SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`, `ROADMAP.md`): compiling (builders, workstation) kept apart from using (reader, every
+  device); cycles as effective dates shown `YYNN`; the module reads aerodb's `publication()`, `zones()`, `sources()` only;
+  procedures read by hand, EAD or OCR in `proc/manual/`, never purged, « Périmé » with « Relire », removed only by the
+  owner's « Retirer »; `meta.launcher` / `meta.publish`, the launcher's operations as verbs of `regen/job`, `ctx.publish`
+  one commit per zone; D0 and aerodb's D1 marked delivered.
+- **Atmosphere: the date slider no longer jumps, and says when it is outside the forecast** (`modules/atmosphere/module.js`,
+  `texts.js`, help ×4) — the time line beside the slider has a fixed width: a longer text (the day added past midnight) no
+  longer shortened the slider, whose thumb moved under the pointer and changed the hour back and forth (+30 h ↔ +32 h); when
+  part of the slider is outside the forecast read (a planned departure already past: the first hours seemed inoperative), a
+  band under it shows the hours covered, ⚠ is shown on the slider line (not only in the collapsed grip) and a floating
+  warning says it once; widening the panel no longer turns the cross-section's title into "World synoptic · 00:00Z · run
+  00:00Z +— h" (the world title is for the map without a cross-section, and never shows an unknown hour); the departure in
+  the title carries its day.
+
+- **Flight path with the chosen procedures** (`frame/lib/current_flight.js`; bench `frame/lib/test/current_flight.html`) —
+  `proceduresOf(flight)` gives the v2 view of `route.procedures` (`{ dep: { rwy, sid, trans }, arr: { rwy, star, trans, app,
+  appTrans } }`; an old `{ sid, star }` migrated, a side naming another aerodrome returned empty), `loadProcedures(aerodb,
+  flight)` resolves the ids and the chosen runways, `expandedPath(flight, procs)` lays route and procedures end to end (joined
+  on the first common point, never a leg twice, legs without a fix kept for drawing, missed approach last) and `flownPath(path)`
+  gives the flown points with their cumulative distance `nm`, the single measure for the profile, the map marks, the times and
+  the quote; `legTimes`, `etaOf` and `plannedPositionAt` take `{ path }`, and without it read only the `quote.legs` of route
+  points.
+
+- **Performance sheets: airframe and propulsion come from the ICAO catalogue** (`frame/aerodb/sheets.js`, `modules/fuel/`; SPEC, DECISIONS, F10) —
+  the "engine type" of a sheet (a ChatGPT guess that made a helicopter a turboprop) is replaced by two lists, airframe (aeroplane,
+  helicopter, gyroplane, glider, balloon, airship) and propulsion (piston, turboprop, turboshaft, jet, electric, none, other),
+  which the ICAO catalogue fills in by itself ("auto · helicopter" in the form); you only choose when the catalogue is silent or
+  wrong. They are no longer counted as empty nor asked of ChatGPT, whose prompt got the new keys. Old sheets are converted when read.
+  The sheets list now says what is missing by family ("To complete: rpm, speeds, cruise, taxi, runway") instead of a count.
+  The critical altitude is only counted (and asked of ChatGPT) for piston engines.
+
+- **aerodb: the on-demand reading of an aerodrome's procedures is wired** (`frame/aerodb/aerodb.js` `fetchProcedures`, `tools/regen_jobs.py` verb
+  `proc/ead-fetch`, `frame/app.js`; SPEC § 5 quinquies, INTEGRATION, EAD_BASIC § 1, DECISIONS; tests K1, K22) — one aerodrome per gesture: the launcher
+  logs in to EAD Basic with `secrets/ead.json` (never shown or logged), reads the aerodrome, repeats the geometry check, installs it under `proc/manual/`
+  and commits those two files only in the data repository (whatever else the user has staged or modified there stays; no push); `fetchProcedures`
+  answers the merged procedures, or a reason (`no-launcher`, `paired`, `unknown-layout`, `no-credentials`, `busy`, `cancelled`, `failed`). The frame hands
+  aerodb `launcher.job`.
+- **Fuel: the review of a re-imported sheet wraps its texts** (`modules/fuel/module.js`) — a long value (the description written by
+  ChatGPT) stayed on one line in the "before / after" table and pushed it into a sideways scroll; numbers stay right-aligned on
+  one line, texts wrap in their column.
+
+- **aerodb: procedures for the preparation** (`frame/aerodb/aerodb.js`, `procedures.js`, `tools/proc_cifp.py`, `tools/proc_manual.py`;
+  SPEC § 5 quinquies, INTEGRATION, EAD_BASIC § 1, DECISIONS; tests K1, K4, K11) — every leg with its phase (main, transition, missed),
+  RF arcs and runway records from the FAA CIFP, legs without a fix kept without a position; hand-read procedures installed outside
+  the cycles (`proc/manual/`) and served « outdated » once their cycle is past; `procedure(id)` (an OFP procedure included),
+  `runways(icao)`, the index with the hand-read aerodromes, and the contract of `fetchProcedures` (the on-demand reading, wired next);
+  a local X-Plane fallback (`proc/local/`, lowest rank, never synchronised).
+- **Airway routing and map: the airways a route follows are found and readable** (`frame/lib/routing.js`, `modules/maps/render.js`;
+  bench `frame/lib/test/routing.html`, 45 checks; fuel SPEC) — the user's route "LFBO GOSAD AULON LAVRA OBLOC VELIN LMG … LFPO":
+  VELIN → LMG stayed direct although R10 joins them through NORON (a point on a node reached the next node by a direct entry
+  of the same length, so the path had no airway segment); the airway now wins a tie, and a leg of 40 NM or less whose two ends
+  are airway nodes takes the airway (OBLOC R10 VELIN, GOSAD G36 AULON) when the base is read for the chain; above FL195 these
+  low airways stay closed, as they should. LAVRA → OBLOC is V14 through IBDER in the published base (V44 runs MTL – ROLIR). On
+  the map, the boxed name of an airway that a route leg follows stays on the airway and is drawn over the route's line, which
+  it interrupts (the en-route charts' convention; decided with the user), sliding along the segment, never beside it, when a
+  route label is in the way (case D40).
+
+- **Frame, lot D0: services for the Data module** (`frame/lib/launcher.js`, `frame/app.js`,
+  `frame/store/transport_github.js`, `tools/regen_jobs.py`, `tools/launch.py`, Settings' `kit.js`, aerodb's `lnmperf.js`;
+  INTEGRATION § 15, SPEC, DECISIONS; benches A29, A30, cases A31, I8):
+  - `ctx.launcher`: the workstation's launcher for a module, limited to the routes and paths its `meta.launcher` declares,
+    with a fixed protocol for long jobs (progress, cancel, resume after a reload);
+  - `ctx.publish`: generated files committed to the data repository without a launcher, one commit per zone, a conflict
+    returned and resumed, the token never given to a module;
+  - the launcher's jobs base (`/__setup/regen/state`, `/__setup/regen/job`): one job at a time from a fixed list;
+  - an end-of-cycle line in the Status block when the published base or procedures are behind the AIRAC cycle;
+  - Settings and aerodb's `.lnmperf` sheets now reach the launcher through the frame's one client.
+- **aerodb, lot D1 for the Données module** (`frame/aerodb/airac.js`, `catalogue.js` (was `sources_data.js`), `aerodb.js`,
+  `frame/app.js` (the Sources screen's scripts); SPEC § 5 and § 5 sexies, INTEGRATION, DECISIONS; bench `test/catalogue.html`, test K21) —
+  one calculation of the AIRAC cycle; the catalogue with each source's group, zones, fetch, build and publication, the EAD Basic
+  outcome of the 47 States and the file-name readers; `publication()` (what is published, without loading the data), `zones()` (every
+  known zone) and `sources()` (the catalogue) for the module.
+
 ## [6.0.0-alpha.2] — 2026-10-28
 
 Second alpha of the V3 **Pilot application**, five days after the first. The phone screen follows the iVAC target
@@ -923,6 +1822,11 @@ formats and screens may still change; Atmosphere is being recoded for the next a
   (`apps/cpco/map_parser.html`, `apps/planner/map_planner.html` rebuilt) — with "Town labels" ticked, the studio wrote its
   own names over the place names of the vector background. The background's place layers (`place`, `place_labels`) are
   now hidden while "Town labels" is ticked, and shown again when it is not.
+
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-6.0.0-alpha.2.zip` — SHA-256 `c3b262d74812ee4ece2233053cc68c3cfc73310a458bbb8da9a86cf007a1b9c7` (code seul, hors dépôt : dossier `dist/`).
+- Module package: `dispos-module-6.0.0-alpha.2.zip` — SHA-256 `a1bd93c26a95aeccbc13c0220bf30916447fcb84c3b0da28e616d0c6e26aedb3` (outside the repository: `dist/` folder).
 
 ## [6.0.0-alpha.1] — 2026-10-23
 

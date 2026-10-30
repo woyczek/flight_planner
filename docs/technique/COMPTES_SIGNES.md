@@ -41,7 +41,7 @@ not taken into account, and the reason for the refusal is shown.
 **Switching to group mode** (“Switch to group mode” (« Passer en mode groupe ») button, Settings › Centre):
 
 1. It requires **Centre access** (password) and the launcher's **CSP**. The launcher announces `csp: true` in
-   `/__setup/status`; without it, the button is greyed out and says why.
+   `/__setup/workstation` (`/__setup/status` until 29 Oct 2026); without it, the button is greyed out and says why.
 2. The signed-in user becomes the **first admin**. Their device creates its key pair, then the **recovery key**
    (§ 6), exported straight away to a password-protected file.
 3. Version 1 of the registry is written and signed by this device. It takes over the existing records (trigram, name,

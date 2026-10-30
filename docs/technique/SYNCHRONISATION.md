@@ -62,6 +62,15 @@ flowchart LR
 | `cr/` (reports) | display preferences (theme, language, blocks…): specific to each browser |
 | `atc/` (the week's ATC sessions) | ODV planning settings (`odvPlanning:v1`, see the technical debt) |
 | `airline/` (settings shared with the V3 app: map profiles written by the studio, airline settings and fleet) | |
+| `sia/base/` (the aeronautical database, by zone) — **committed by the user's gesture only** (below) | |
+
+`sia/base/` is committed only by the **« Synchroniser » button** (`run(gesture=True)`: the V2 button, and a frame pass
+of reason `manual`) and by the build job itself (D5, `commit_outputs`); a background pass — the update at start, the
+frame's periodic exchange — leaves it on the workstation and says so (« n fichier(s) de sia/base gardés sur ce
+poste »), so that a zone half written by a rebuild never leaves by itself (29 Oct 2026, noreg I9). The gesture is an
+intention, not an authorisation: while a build is under way, `sia/base/` stays even on the button — a job of the Data
+module running on the launcher, or an uncommitted `sia/base/` file written less than 10 min ago (`data_sync.building`:
+the V2 page writes the base through its allowed folder, not through the launcher).
 
 ## 4. Reading: signed copies
 
@@ -198,7 +207,15 @@ sequenceDiagram
 |---|---|
 | **First synchronisation** | the button counts everything that has never been committed in `data/`; the first click pushes it and creates the remote branch if needed |
 | **Conflict notification** | open the file indicated in `_conflits/`, compare it with the kept file, carry over by hand what is missing, synchronise; then delete the copy |
-| "A merge or rebase is in progress in data/" | a manual git operation has not finished: `git -C data merge --abort` (or finish it), then try again |
+| "A rebase is in progress in data/" | a manual rebase has not finished: `git -C data rebase --abort` (or finish it), then try again |
+| "Merge left pending by a previous pass: cancelled, then redone" | a pass was interrupted during a merge (`MERGE_HEAD`): the next pass (or the update at start) cancels it and merges again, **never concludes it** — a merge commit would carry the whole index (files staged before the interruption, outside the pool, without the `.js` check); the files the workstation staged since (not brought by the merge) are unstaged first, so that `merge --abort` keeps them in the folder; nothing for the user to do (29 Oct 2026) |
+| "A merge is pending in data/ … nothing is written or committed" | the launcher's commits (the app's batches, `commit_outputs` of the regeneration jobs, the aircraft base and VFR publications) check `MERGE_HEAD` first, before writing into `data/`, and say so; the next « Synchroniser » settles it |
+| "The data repository's history was rewritten: nothing is merged" | the remote branch has no common ancestor with `data/` (history rewritten and force-pushed, 30 Oct 2026): every pass refuses (code `rewritten`, alert in the status), nothing is merged nor lost. On the launcher's computer, Settings › Administration › Remote repository › « Reprendre le nouvel historique »: the plan first (`GET /__setup/sync-rewritten`: the workstation's commits since the last state common to both histories — found by identical trees —, the pool files carried, the files outside the pool), one question, then (`POST`) the pool changes in progress committed, the old branch kept in `refs/sog/avant-reecriture-<date>` (nothing deleted), `reset --keep` onto the common state of the new history (files outside the pool untouched in the folder), the pool files this workstation changed since carried over in one commit (every path literal, `GIT_LITERAL_PATHSPECS`; names read with `diff -z`) — a file outside the pool is never pushed: one this workstation had committed since is copied back into `data/` as it was, never committed —, then a normal pass (the rest of the new history merged record by record, sent). Devices on the GitHub or GitLab transports (browser) read trees by blob and need nothing |
+| "Synchronisation stopped on the launcher's computer: the detail is in its console" | a paired device of the local network asked for a pass that failed: it gets no git output nor path of the workstation; the console has the detail |
+
+Every git text returned to a page or written to the console goes through `clean_text`: no credential in an address
+(`https://account:token@host` → `https://host`), no path of the workstation (the data folder → `data`, the suite →
+`suite`). A conflicting path is checked by the same rule as the launcher's `data_file` (`data_path`).
 | "Local commit only: no remote repository" | `data/` has no remote repository: nothing is shared |
 | "Synchronisation interrupted: …" | git message (network, access to the remote repository denied…); nothing has been lost, try again later |
 | Launcher unreachable | synchronisation requires the launcher (git does not run in the browser) |

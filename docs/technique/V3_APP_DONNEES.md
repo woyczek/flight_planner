@@ -58,7 +58,7 @@ the measurements of § 5.
 | `tools/aero_fetch.py` (361) + `ukmil_aip.py` (255) + `navcan_dah.py` (402) | HTTP, paging of the ArcGIS service, page scraping, hand-written PDF stream readers → GeoJSON, XML, JSON | none (the page never downloads these) | the fetchers; the two PDF readers use `zlib`, whose twin is `DecompressionStream` | fetchers: yes with native HTTP (§ 2.3); UK Mil and NAV CANADA: low priority |
 | `shared/sia_base.js` (2,711), `aero_sources.js` (1,147), `carto/aero_symbols.js` (1,139), `aar_tracks.js` (577), `zip_store.js` (183), `airac.js` (169), `aero_zones.js` (550) | SIA XML, AIXM 5.1, GeoJSON, OpenAir, X-Plane, ZIP → the zone files | **they are the JavaScript** | cut the page out (`window`, scripts injection, IndexedDB, folder handles) and keep the parsers: lot D5 of the screen document | yes in principle; the cost is memory (§ 2.2) |
 | `tools/vfr_import.py` (263) | `vfr-compiled.json` → `sia/vfr/` (check, plan, write) | none | all of it (JSON in, JSON out) | importer yes, **compiler** (`tools/report-vfr`, 531 lines + pypdf) no |
-| `tools/proc_eaip.py` (420) | the eAIP pages and PDF coding tables (141 aerodromes, ≈ 100 MB of pages) → `proc/` | none | the parsers of the rows of text (pure); `rows_from_pdf` needs a PDF text reader | see § 2.4 |
+| `tools/proc_sia.py` (420) | the eAIP pages and PDF coding tables (141 aerodromes, ≈ 100 MB of pages) → `proc/` | none | the parsers of the rows of text (pure); `rows_from_pdf` needs a PDF text reader | see § 2.4 |
 | `AircraftDB/update_aircraft_db.py` (1,495), `update_fleet.py` (92) | Doc 8643, APD pages, SimBrief list, Airframe DB, Wikidata → the aircraft base | none | not in v1 | no |
 | `tools/data_sync.py` (1,002) | git: commit the pool, fetch, merge card by card, push | the frame's `github` transport does the *push* side | nothing to port: the application writes published files only, never pool cards | replaced (§ 2.4) |
 | `tools/build_world_weather.py` (321) + `grib2_lite.py` (161) | GFS GRIB → site files | none | no: GitHub Actions | no |
@@ -138,7 +138,7 @@ the measurements of § 5.
 **The PDF rows (eAIP, VAC)**
 
 - The builders read the text of PDF pages with **pypdf**, placing fragments by their text matrix (`rows_from_pdf`), and
-  reconstruct rows; their tests are the text rows kept as fixtures (`frame/aerodb/test/fixtures/eaip/*.rows.txt`, cases K2,
+  reconstruct rows; their tests are the text rows kept as fixtures (`frame/aerodb/test/fixtures/eaip/<ICAO>/*.rows.txt`, regenerable by `tools/make_eaip_fixtures.py`, cases K2,
   K3). pdf.js (already a pinned script source of the CSP, used for the DIRCAM PDF) returns text items with transforms.
   Options: (a) **port `rows_from_pdf` to pdf.js** and compare, on the same real PDFs, the rows with pypdf's — the measure is
   the share of equal rows, and the warnings it adds (M6); (b) **renounce on the phone**: the rows show their published state
