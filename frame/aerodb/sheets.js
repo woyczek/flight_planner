@@ -110,6 +110,8 @@
     ["Carburant et opération", "Carburant extra", "extraFuel", "number"],
     ["Piste et alternat", "Longueur piste mini (ft)", "minRunwayLengthFt", "number"],
     ["Piste et alternat", "Type de piste", "runwayType", "select:HARD,SOFT,WATER"],
+    // la limite de vent de travers (V3 § 10.30 : la couleur du vent sur une piste) ; absente du format .lnmperf
+    ["Piste et alternat", "Vent de travers max (kt)", "maxCrosswindKt", "number", false],
     ["Piste et alternat", "Alternat · fuel flow", "alternate.fuelFlowPerHour", "number"],
     ["Piste et alternat", "Alternat · TAS (kt)", "alternate.tasKt", "number"],
     ["Montée", "Badin / IAS (kt)", "climb.iasKt", "number", false],

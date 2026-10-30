@@ -124,6 +124,10 @@
         [h,
           hm
         ]);
+      // V3 § 10.34 (lot A2) : la limite de vent de travers est un champ de la fiche, hors du format .lnmperf
+      const xw = A.lib?.PROFILE_FIELDS?.find(f => f[2] === 'maxCrosswindKt');
+      check('schema: maxCrosswindKt in PROFILE_FIELDS (« Piste et alternat », number, not in .lnmperf)', !!xw && xw[0] ===
+        'Piste et alternat' && xw[3] === 'number' && xw[4] === false, xw);
       check('sheets library configured (AeroDBSheets, lnmperf parser)', typeof A.lib?.parseLnmperf === 'function' && typeof A.lib
         ?.toLnmperf ===
         'function', null);

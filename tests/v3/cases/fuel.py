@@ -1909,3 +1909,18 @@ def f75(c):
     c.quiet(f"{items}.length")
     c.ok(c.js(f"document.querySelector('{FUEL} [data-rtsug]').hidden"), 'list', 'one character proposes nothing')
 
+
+@case('F76', 'The sheet schema carries the crosswind limit: one field of the editor, translated, read by the wind colours', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.34 (lot A2) and 10.30: maxCrosswindKt in PROFILE_FIELDS (« Piste et alternat », kt), absent from the .lnmperf format')
+def f76(c):
+    old = {'id': 'EC25', 'name': 'EC25', 'icao': 'EC25', 'usableFuel': 2000, 'maxCrosswindKt': 17, 'cruise': {'tasKt': 141, 'fuelFlowPerHour': 650}}
+    c.open('fuel?view=sheets', docs=[['aircraft/sheets/EC25.json', old, 'document']])
+    c.until(f"() => !!document.querySelector('{FUEL} [data-id=\"EC25\"] [data-do=\"edit\"]')", what='the sheet EC25 is listed')
+    c.tap(f'{FUEL} [data-id="EC25"] [data-do="edit"]')
+    c.until(f"() => !!document.querySelector('{FUEL} input[data-path=\"maxCrosswindKt\"]')", what='the editor has a crosswind limit field')
+    v = c.js(f"() => {{ const i = document.querySelector('{FUEL} input[data-path=\"maxCrosswindKt\"]'); return {{ value: i.value, label: (i.closest('label') || {{}}).textContent || '' }} }}")
+    c.eq(v['value'], '17', 'the field shows the sheet\'s value', what='maxCrosswindKt')
+    want = c.pick({'fr': 'Vent de travers max', 'en': 'Max crosswind', 'de': 'Max. Seitenwind', 'es': 'Viento cruzado máx.'})
+    c.ok(want in v['label'], v['label'], 'its label is in the language of the run')
+

@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft sheets: the crosswind limit is a field of the schema** (`frame/aerodb/sheets.js` PROFILE_FIELDS `maxCrosswindKt`,
+  « Piste et alternat », kt, not in .lnmperf; F76) — read by Fuel's wind colours (§ 10.30), edited in the sheet form (§ 10.34 A2).
 - **Map: one value escaped, one stale comment** (`modules/maps/choose.js`, `layers.js`). The wind severity on a runway row goes
   through `esc()` like every other attribute (defence in depth from the security review); the Coverage layer's comment no longer
   says it lights itself (the automatic lighting went on 29 Oct, § 10.29 h).

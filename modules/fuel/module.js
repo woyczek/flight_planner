@@ -744,6 +744,7 @@ const FIELD_TX = {
     'Longitud mínima de pista (ft)'
   ],
   'Type de piste': ['Type de piste', 'Runway type', 'Pistenart', 'Tipo de pista'],
+  'Vent de travers max (kt)': ['Vent de travers max (kt)', 'Max crosswind (kt)', 'Max. Seitenwind (kt)', 'Viento cruzado máx. (kt)'],
   'Alternat': TX.altn,
   'Badin / IAS (kt)': ['Badin (kt)', 'IAS (kt)', 'IAS (kt)', 'IAS (kt)'],
   'Régime nominal (RPM / N1)': ['Régime nominal (RPM / N1)', 'Nominal RPM / N1', 'Nenndrehzahl (RPM / N1)', 'Régimen nominal (RPM / N1)'],
