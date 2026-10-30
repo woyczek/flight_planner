@@ -932,6 +932,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 80 | Map: Layers chip (a314a352c), approach transitions filtered by the STAR (c884c8b3d) | acceptable |
 | 81 | Refactor R-F4b: procedure ends computed once (ddf10e3b8) | acceptable |
 | 82 | Data module: « Update everything » chain (3a908fa44) | acceptable |
+| 83 | Refactor R-C4: the launcher publishes its route table (d3fa3614a) | acceptable; no route changed audience |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1755,6 +1756,15 @@ sets, skipped sets, the publication). The publication skips its own question onl
 failure or a stop ends the chain without publishing), and the publish gate is evaluated again just before (a build
 running, no gesture, nothing to publish). Display through closed lists and escaped text; a chain cut by a reload is said,
 never resumed by itself.
+
+**83. Refactor R-C4, the route table published (d3fa3614a) — acceptable; no route changed audience.** The only
+difference among the route declarations is the new `GET /__setup/routes` (workstation, `_allowed`, `_lan`, not open to
+the relay), which returns method, path, audience and relay flag of each route: no path of the workstation, no secret. A
+screen's or module's declaration stays its allow-list; a missing route only shows a message. Recommended for I10 (R-C1):
+freeze the relay's routes as they are today — `GET status`, `GET changes`, `GET ivao/oauth`, `GET /__relay/ivao/callback`,
+`POST batch`, `POST sync`, `POST net`, `POST ivao/oauth/start`, `POST ivao/oauth/revoke` — so that any other route marked
+`relay=True` fails the case; and justify each `lan` route that is not open to the relay (the Little Navmap sheets, the
+simulator's position).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
