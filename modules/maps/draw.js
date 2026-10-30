@@ -8,7 +8,8 @@ import {
   got,
   onMission,
   level,
-  tileLoader
+  tileLoader,
+  keptRoute
 } from './state.js';
 import {
   nearLon
@@ -42,20 +43,113 @@ import {
 import {
   drawWinds
 } from './tips.js';
+import {
+  layout as procLayout,
+  draw as drawProcs,
+  drawLabels as drawProcLabels,
+  runwayArrows,
+  drawRunways,
+  wantRunways,
+  routeLines
+} from './procs.js';
+import {
+  covSync,
+  covFlush
+} from './coverage.js';
+import {
+  adTitle
+} from '../../frame/lib/adnames.js';
+import {
+  chooseLayout,
+  DIM
+} from './choose.js';
 
 // ---------------------------------------------------------------- un dessin par tour d'animation
 let frame = 0;
-/** Demande un dessin au prochain tour d'animation (un seul, quel que soit le nombre de demandes). */
-export const schedule = () => {
+/** Dessin complet au prochain tour d'animation (un seul, quel que soit le nombre de demandes). */
+const request = () => {
   if (!frame) frame = requestAnimationFrame(() => {
     frame = 0;
     draw();
   });
 };
+/** Demande un dessin au prochain tour d'animation ; pendant un geste sur la carte (S.moving), la demande attend le repos (un survol,
+ *  une lecture qui aboutit ne relancent pas tout le dessin au milieu d'un pan). */
+export const schedule = () => {
+  if (S?.moving) return;
+  request();
+};
 /** Dessin demandé abandonné (démontage). */
 export function cancelDraw() {
   if (frame) cancelAnimationFrame(frame);
   frame = 0;
+  if (quick) cancelAnimationFrame(quick);
+  quick = 0;
+  clearTimeout(rest);
+}
+
+// ---------------------------------------------------------------- pendant un geste : l'image déjà dessinée suit la carte
+// (V3 maps, 30 octobre : « déplacement de carte sur la région de Paris : très saccadé ») — chaque image d'un pan reprojetait tous
+// les anneaux des espaces et reposait toutes les étiquettes ; pendant le mouvement, la dernière image complète est recopiée,
+// translatée et mise à l'échelle par deux de ses coins géographiques, rien n'est reprojeté ; le dessin complet (étiquettes,
+// vecteurs, collisions, lectures) revient au repos : fin du geste, ou 150 ms sans mouvement
+const REST_MS = 150;
+let quick = 0,
+  rest = 0;
+/** La carte bouge (événement « move » de MapLibre) : l'image gardée suit au prochain tour d'animation, le dessin complet attend le
+ *  repos. Sans image gardée (premier dessin, fond uni), le dessin complet tout de suite. */
+export function moving() {
+  clearTimeout(rest);
+  rest = setTimeout(settle, REST_MS);
+  if (!S?.map || !S.frame?.ok) return request();
+  S.moving = true;
+  if (!quick) quick = requestAnimationFrame(() => {
+    quick = 0;
+    if (S?.map && S.frame?.ok && !frame) follow();
+  });
+}
+/** Repos (fin du geste, ou REST_MS sans mouvement) : le dessin complet, les demandes faites pendant le geste comprises. */
+export function settle() {
+  clearTimeout(rest);
+  if (!S) return;
+  S.moving = false;
+  request();
+}
+/** Recopie la dernière image complète là où ses deux coins géographiques sont maintenant (pan et zoom ; une rotation de la carte
+ *  n'existe pas ici). */
+function follow() {
+  const F = S.frame,
+    a = S.map.project(F.g0),
+    b = S.map.project(F.g1),
+    c = S.canvas,
+    g = c.getContext('2d'),
+    dpr = c.width / Math.max(1, F.W);
+  performance.mark('maps:follow:start');
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, c.width, c.height);
+  g.drawImage(F.bmp, a.x * dpr, a.y * dpr, (b.x - a.x) * dpr, (b.y - a.y) * dpr);
+  performance.measure('maps:follow', 'maps:follow:start');
+}
+/** Garde l'image complète qui vient d'être dessinée et ses deux coins géographiques (le haut gauche et le bas droit de la carte). */
+function keepFrame(W, H) {
+  if (!S.map) return;
+  const F = S.frame ||= {
+      bmp: document.createElement('canvas')
+    },
+    c = S.canvas;
+  if (F.bmp.width !== c.width || F.bmp.height !== c.height) {
+    F.bmp.width = c.width;
+    F.bmp.height = c.height;
+  }
+  const g = F.bmp.getContext('2d');
+  g.clearRect(0, 0, c.width, c.height);
+  g.drawImage(c, 0, 0);
+  const p0 = S.map.unproject([0, 0]),
+    p1 = S.map.unproject([W, H]);
+  F.g0 = [p0.lng, p0.lat];
+  F.g1 = [p1.lng, p1.lat];
+  F.W = W;
+  F.ok = true;
 }
 
 // ---------------------------------------------------------------- fond uni : contours des pays
@@ -93,11 +187,14 @@ function sizeCanvas() {
 function routeSpan() {
   const r = S.route;
   if (!r?.points?.length) return null;
-  if (r.span?.of !== r.points || r.span.altn !== r.altn) {
-    const lons = [...r.points, ...(r.altn ? [r.altn] : [])].map(p => +p.lon);
+  if (r.span?.of !== r.points || r.span.altn !== r.altn || r.span.path !== r.path) {
+    // les points des procédures choisies comptent aussi : une SID peut sortir de la route d'un degré ou deux
+    const lons = [...r.points, ...(r.altn ? [r.altn] : []), ...(r.path || []).filter(p => p.lon != null && Number.isFinite(+p.lon))].map(
+      p => +p.lon);
     r.span = {
       of: r.points,
       altn: r.altn,
+      path: r.path,
       w: Math.min(...lons),
       e: Math.max(...lons)
     };
@@ -221,46 +318,13 @@ export function baseNames(off) {
 }
 
 // ---------------------------------------------------------------- dessin
-/** SID et STAR du vol courant (route.procedures, écrites par Carburant) : tracé violet par-dessus la route, « SID ROYAN6P » ;
- *  une procédure d'un autre terrain que le départ ou l'arrivée de la route n'est pas dessinée (SPEC § 5). */
-function drawProcedures(ctx, toC) {
-  const r = S.route?.flight?.route,
-    pr = r?.procedures;
-  if (!pr || !S.route.points.length) return;
-  for (const [rec, icao, end] of [
-      [pr.sid, r.dep, 0],
-      [pr.star, r.arr, S.route.points.length - 1]
-    ]) {
-    const pts = (rec?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon));
-    if (pts.length < 2 || !icao || String(rec.icao).toUpperCase() !== String(icao).toUpperCase()) continue;
-    const ref = S.route.points[end],
-      q = pts.map(p => toC(+p.lat, nearLon(+p.lon, ref.lon)));
-    ctx.save();
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#7c3aed';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    q.forEach((c, i) => (i ? ctx.lineTo(c.x, c.y) : ctx.moveTo(c.x, c.y)));
-    ctx.stroke();
-    ctx.font = '700 12px Arial,sans-serif';
-    ctx.textBaseline = 'middle';
-    ctx.strokeStyle = S.theme.bg;
-    ctx.lineWidth = 3;
-    const label = [rec.kind || (end ? 'STAR' : 'SID'), rec.name].filter(Boolean).join(' '),
-      m = q[Math.floor(q.length / 2)];
-    ctx.strokeText(label, m.x + 8, m.y - 8);
-    ctx.fillStyle = '#7c3aed';
-    ctx.fillText(label, m.x + 8, m.y - 8);
-    ctx.restore();
-  }
-}
 /** Dégagement : tireté gris de l'arrivée au terrain (sous la surcouche), puis rond gris et code (par-dessus). */
 function drawAltn(ctx, toC, altn, on) {
   const route = S.route.points,
     a = toC(route[route.length - 1].lat, route[route.length - 1].lon),
     b = toC(altn.lat, altn.lon);
   ctx.save();
-  ctx.strokeStyle = '#6b7280';
+  ctx.strokeStyle = MapsRender.palette(!!S.theme.dark).altn;
   ctx.lineWidth = 2;
   if (!on) {
     ctx.setLineDash([6, 5]);
@@ -281,13 +345,15 @@ function drawAltn(ctx, toC, altn, on) {
   ctx.strokeStyle = S.theme.bg;
   ctx.lineWidth = 3;
   ctx.strokeText(altn.id, b.x + 8, b.y);
-  ctx.fillStyle = '#4b5563';
+  ctx.fillStyle = MapsRender.palette(!!S.theme.dark).altnText;
   ctx.fillText(altn.id, b.x + 8, b.y);
   ctx.restore();
 }
 /** Redessine la surcouche (et le fond uni sans tuiles) ; données relues si la vue sort de celles chargées. */
 function draw() {
   if (!S?.canvas || !S.fit || !S.route.points.length) return;
+  performance.mark('maps:draw:start');
+  clearTimeout(rest); // ce dessin complet tient lieu de celui du repos (un nouveau mouvement le redemande)
   mapSize();
   const {
     W,
@@ -306,14 +372,24 @@ function draw() {
     land: t.bg,
     border: t.grid
   });
-  const route = S.route.points,
+  // la route que le chemin garde (une STAR raccordée sur un de ses points court-circuite les suivants)
+  const route = mission ? S.route.points : keptRoute(S.route.points),
     altn = mission || L.altn ? S.route.altn : null;
   if (altn) drawAltn(ctx, toC, altn, false);
   // zoom réel, décalé par le curseur de Complexité, corrigé par la taille du cadre : le zoom effectif comparé aux seuils (§ 6.6)
   const pxDeg = W / Math.max(1e-6, shown.e - shown.w),
     zReal = MapsRender.zoomOf(pxDeg),
     zv = mission ? zReal : MapsRender.effectiveZoom(zReal + MapsRender.detailZoom(detailShift()), W, H),
-    zoomOn = k => MapsRender.visibleAt(S.profile, k, zv);
+    zoomOn = k => MapsRender.visibleAt(S.profile, k, zv),
+    // procédures choisies (SID, STAR, approche) : mise en page à l'écran ; leurs libellés se réservent dans le placeur de la
+    // carte, après ceux de la route
+    // mode « choisir sur la carte » (V3 § 10.23) : les procédures du terrain à choisir, tracées par choose.js à la place de celles du vol,
+    // sur les couches de la Carte éteintes ; null hors du mode
+    pick = mission ? null : chooseLayout(ctx, toC, W, H),
+    procs = mission || pick ? null : procLayout(ctx, toC, pxDeg, zoomOn),
+    rwys = mission || pick ? [] : runwayArrows(toC, zReal), // vecteurs de seuil au-dessus du réglage de la compagnie (runwayZoom)
+    // couche « Procédures » : le niveau de couverture des terrains visibles (null : couche cachée ou absente)
+    cov = mission || pick ? null : covSync();
   if (S.tuneEl) got('tune')?.markTune(zReal, zv, (shown.n + shown.s) / 2, W, H);
   // nos villes dessinées à ce zoom : les noms de lieux du fond s'effacent (sinon « Mérignac » en double)
   baseNames(!!S.profile?.cities && !!S.data?.data?.cities?.length && ['citiesBig', 'citiesMid', 'citiesSmall'].some(zoomOn));
@@ -342,23 +418,36 @@ function draw() {
     level,
     detail: mission ? 0 : detailShift(),
     hideVrp: mission ? null : vfrVrpIds(),
+    lines: mission || pick ? null : routeLines(),
+    cov,
+    reserve: pick ? pl => pick.reserve(pl) : procs ? pl => procs.reserve(pl) : null,
+    legs: mission || pick ? null : S.route?.path || null,
+    dim: pick ? DIM : 0,
+    overRoute: pick ? c => pick.paint(c) : procs ? c => drawProcs(c, procs) : null,
+    // les pistes (vecteurs de seuil et numéros) dans la couche des terrains, priorité « terrains » de la passe de collision
+    runways: rwys.length ? (c, pl) => drawRunways(c, rwys, pl) : null,
+    adName: !mission && !pick && zReal >= (S.runwayZoom ?? 11) ? a => adTitle(a, a.icao) : null,
+    top: pick ? c => pick.top(c) : procs ? c => drawProcLabels(c, procs) : null,
     mission: mission && S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones
     } : null
   }) || {};
+  covFlush(); // les terrains demandés pendant ce dessin partent ensemble ; redessin une fois à l'arrivée du lot
   S.awHits = got0.airways || [];
   stat(got0.zoom);
   S.zoneHits = got0.zoneLabels || [];
   S.adHits = got0.aerodromes || [];
+  if (!mission && !pick) wantRunways(zReal); // les pistes des terrains dessinés, de près
   S.navHits = got0.navaids || [];
   S.vrpHits = got0.vrps || [];
-  if (altn) drawAltn(ctx, toC, altn, true);
-  if (!mission) drawProcedures(ctx, toC);
-  drawPlanOnMap(ctx, toC, got0.routeLabels || []);
-  if (!mission) drawVfr(ctx, toC);
-  S.windHits = !mission && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
-  if (!mission && isStarted(S.route.flight)) drawProgress(ctx, toC);
+  // mode choix : rien par-dessus les procédures à choisir (ni dégagement, ni TOC / TOD, ni points de report, ni vents, ni position)
+  if (altn && !pick) drawAltn(ctx, toC, altn, true);
+  if (!pick) drawPlanOnMap(ctx, toC, [...(got0.routeLabels || []), ...(procs?.labels || []).map(l => l
+    .r)]); // TOC / TOD : ni sur la route ni sur une procédure
+  if (!mission && !pick) drawVfr(ctx, toC);
+  S.windHits = !mission && !pick && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
+  if (!mission && !pick && isStarted(S.route.flight)) drawProgress(ctx, toC);
   S.toC = toC;
   if (S.edit.on) got('edit')?.drawEdit(ctx, toC);
   if (S.data && !S.drawn) {
@@ -368,6 +457,8 @@ function draw() {
   const want = wantBox(shown),
     corr = corridorFor(shown, W);
   if (!within(want, S.data?.box) || corr !== S.data?.corridor) refresh(want, corr);
+  keepFrame(W, H);
+  performance.measure('maps:draw', 'maps:draw:start');
 }
 /** Zoom effectif et éléments gardés par les seuils, posés sur l'élément de la carte (data-zoom-eff, data-kept : § 18) ; écrits
  *  seulement s'ils changent. */
@@ -383,7 +474,7 @@ function stat(z) {
  *  TOD au nord-est, sinon au sud-est, au nord-ouest, au sud-ouest : là où il ne couvre pas un libellé de la route (taken). */
 function drawPlanOnMap(ctx, toC, taken = []) {
   const pr = S.prof,
-    col = '#6a1b9a';
+    col = MapsRender.palette(!!S.theme.dark).plan;
   if (!pr) return;
   ctx.save();
   ctx.font = '700 11px Arial,sans-serif';

@@ -18,9 +18,10 @@ export const meta = {
   files: [/* the module's own files */ 'state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'data.js?v=0',
     'layers.js?v=0', 'sheet_view.js?v=0', 'profile_view.js?v=0', 'tips.js?v=0', 'lv.js?v=0', 'vfr.js?v=0', 'flight_time.js?v=0',
     'mission_view.js?v=0', 'weather.js?v=0',
-    /* its libraries */ 'render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0', 'lib/aero_symbols.js?v=0',
+    /* its libraries */ 'render.js?v=0', 'render_airspace.js?v=0', 'render_route.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0', 'lib/aero_symbols.js?v=0',
     'lib/vertical_profile.js?v=0', 'lib/profiles.js?v=0', 'lib/map_base.js?v=0', 'lib/axis_window.js?v=0',
     /* the frame's */ '../../frame/lib/js-yaml.min.js?v=0', '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0',
+    '../../frame/lib/flight_time.js?v=0', '../../frame/lib/flight_path.js?v=0',
     '../../frame/lib/time.js?v=0', '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/icons.js?v=0'],
   lazy: ['edit.js?v=0', 'tune.js?v=0',            // the Edit mode, the tuning page: loaded at their first use
     'lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0',
@@ -38,11 +39,12 @@ export const meta = {
 | `state.js` | the mount's state `S` (live binding, `setS`), what lives for the page (`keep`), shared helpers, `got` / `need` for the lazy files |
 | `texts.js`, `style.js` | the texts (four languages), the module's style |
 | `screen.js` | the overlay buttons and which are shown, empty state, notes and notifications, flight summary, camera, MapLibre or plain background, design and night, the help anchor |
-| `draw.js` | the drawing loop of the map (one frame per animation frame), projection across world copies, map size, hillshade, base-map place names, TOC / TOD, procedures |
-| `data.js` | the current flight, aerodb's data for the useful area, the live view, the device's and airline's settings |
+| `draw.js` | the drawing loop of the map (one frame per animation frame), projection across world copies, map size, hillshade, base-map place names, TOC / TOD, the shared route lines |
+| `data.js` | the current flight, the path "route + procedures", aerodb's data for the useful area, the live view, the device's and airline's settings |
 | `layers.js` | modes, zoom thresholds, the effective profile, the Layers content, the modes panel |
 | `sheet_view.js` | the sheet: head, chips, legend, contents, Escape, `onSettle` |
 | `profile_view.js` | the vertical profile, the common cursor, the strip, the window on the distance axis |
+| `procs.js` | the chosen SID, STAR and approach: the trace, the constraints, the labels, the profile's constraint steps, the aerodrome card's rows |
 | `tips.js` | tooltip, winds aloft, a tap on the map |
 | `lv.js`, `vfr.js` | the airspaces at a point, an aerodrome's VFR reporting points |
 | `flight_time.js` | ETA labels, planned and actual positions, the progress line, Follow |
@@ -89,7 +91,7 @@ with `import(new URL('edit.js?v=0', import.meta.url))` (`need`), and a drawing n
   page `#maps?tune=1`), schema in SPEC.md § 4 quinquies. `meta.reads` has `airline/`, `meta.writes` has that file with
   the `record` merge. The pilot's `fuel.json` (`displayAlt`) gives the contour interval.
 
-- **The flight in time** (SPEC § 13). The ETAs and the planned position are **derived** by `frame/lib/current_flight.js`:
+- **The flight in time** (SPEC § 13). The ETAs and the planned position are **derived** by `frame/lib/flight_time.js`:
 
 | Function | Contract |
 |---|---|
@@ -168,20 +170,53 @@ does not give it:
   view; nothing to open for NAT.
 - `state()` and `on('state')` (`loading`, `noaccess`, `unpublished`, `offline`: SPEC § 4), `status().cycle` (a mission
   map's cycle).
-- `on('change')`: read again for a zone or a changed file; an `aircraft` change is ignored.
+- `on('change')`: read again for a zone or a changed file; an `aircraft` change is ignored. An event with `coverage` or
+  `refreshed` also asks the coverage again (§ 3 ter).
 
 ## 3 bis. Procedures
 
-The map draws `route.procedures.sid` / `.star` of the current flight (written by fuel, aerodb schema) as a purple line over the
-route, labelled "SID <name>" / "STAR <name>", with the points whose `lat` and `lon` are finite; skipped when its aerodrome is not
-the route's departure / arrival. The vertical profile does not draw them (they carry `planned` altitudes only, no
-constraints); a published library (`aerodb.procedures`) is not drawn.
+The map draws the runway, SID, STAR and approach that **fuel** recorded in `route.procedures` (v2, `{ dep: { rwy, sid, trans },
+arr: { rwy, star, trans, app, appTrans }, by, at }`, identifiers of aerodb's common schema; `null` = none, absent = not chosen;
+V3_SPECIFICATION § 10.20). It reads through `proceduresOf(flight)` of `frame/lib/flight_path.js` (the v2 view, also of an
+old `{ sid, star }` record; a side whose aerodrome is not the route's is read as not chosen) and never writes the field.
+`conflictsOf(key, rec, choice, byId)` and `orderProcedures(list, key, choice, byId)` live in `frame/lib/procedures.js` (still re-exported
+by `flight_path.js` during the transition, § 10.29 c): the one rule of the ⚠ marks and of the order of the lists (V3_SPECIFICATION
+§ 10.23); the choose mode calls them, as Fuel does, with `appChoices` / `transitionsOf` for the approaches and their transitions.
+- **Asked of aerodb**: `procedure(id)` for each chosen identifier and `runways(icao)` for the chosen runways, through
+  `loadProcedures(aerodb, flight)`, once per change of `route.procedures` (or of departure and arrival), without waiting; a
+  `refreshed` event of aerodb reads them again. The map never calls `procedures(icao)`: nothing that is not chosen is drawn, and
+  the on-demand reading (`fetchProcedures`) is fuel's gesture.
+- **Kept in the state**: `S.procs` (the records), `S.route.path` (`expandedPath`: route and procedures in flight order, legs
+  without a fix and the missed approach included) and `S.route.flown` (`flownPath`: the points flown, with cumulative NM).
+  Without `aerodb`, without a choice or without a record, both are the route.
+- **Read from the record**: `profile.path` [{ nm, ft }] (drawn by the profile when it covers the path's length, else the profile's
+  own fallback) and `quote.legs` [{ id, min, origin }] (the times, through `etaOf(flight, now, { path })`).
+- **The map's aerodrome card** gives the runway and procedures chosen for that aerodrome (departure and / or arrival) and a
+  "Change" button, `data-go="fuel?focus=dep"` or `fuel?focus=arr`; fuel's step focuses the row.
+- **Source states** shown in the label: `status` `xplane` → "X-Plane, local", `lnm` → "Little Navmap, local", `outdated` →
+  "outdated"; the other statuses add nothing.
+
+## 3 ter. Coverage of the procedures (V3_SPECIFICATION § 10.22)
+
+For the "Aerodrome procedures" layer (SPEC § 6.11), the map asks aerodb:
+- **`coverage(icao)`** → `Promise<{ level: 'green' | 'orange' | 'red', reason, state, here, … } | null>`; `null` for a code that is not
+  four characters `[A-Z0-9]`. Reasons (closed list): green `held` (+ `source` `published` | `manual` | `local`, `outdated`, `counts
+  { SID, STAR, APP }`); orange `sia`, `ead`, `lnm`; red `images`, `labels`, `points`, `prose`, `vfr`, `none`, `unknown`. `state` is the
+  two-letter ICAO prefix, `here` is true when this device can start the reading. Cheap after the first call (an in-memory table);
+  the map keeps its own cache per code in `S.cov` and asks **only the aerodromes drawn in the frame**, in one batch per drawing. Without the function the layer is not offered
+  and nothing else changes.
+- **`sources()`** → `AeroCatalogue.COVERAGE[reason] = [fr, en, de, es]` (the frame's catalogue): the texts of the reasons on the
+  aerodrome card, used as they are; without them the card shows the level alone (text of the map, four languages).
+- **`on('change')`** with `coverage` or `refreshed`: the answers are asked again (SPEC § 6.11).
+
+**Between modules**: nothing (the layer is lit by its box only, V3 § 10.29 h).
 
 ## 4. What it reads from fuel
 
 `pilot/<trigram>/current_flight.json`: `route.points` (resolved positions, optional `alt_ft`), `route.dep / arr /
 altn`, `level.ft`, `aircraft.type`, and `profile: { climbFpm, climbKt, descentFpm, descentKt, tocNm, todNm }` for the
-vertical profile (drawn as fuel computed it; without it, the profile computes its own). "Edit the route" opens
+vertical profile (drawn as fuel computed it; without it, the profile computes its own), and `profile.path` [{ nm, ft }], the
+planned vertical path under the procedures' constraints (§ 3 bis). "Edit the route" opens
 `#fuel?from=maps&focus=route`: fuel shows its Route step with the text field focused (in the dual view, the frame
 keeps the module and fuel scrolls to that step).
 
@@ -190,13 +225,14 @@ keeps the module and fuel scrolls to that step).
   profile then draws the steps and computes TOC and TOD per segment.
 - **Writes** of the Edit mode go through `frame/lib/current_flight.js` `merge`, on the record read just before, with
   `by: 'maps'`; the map writes `level.ft` when the first segment's level changed and **merges into `route`**: `points`, `text`,
-  `distanceNm`, `trackDeg`, `from: 'points'`, `manual: false`; every other key of `route` is kept, `procedures` while departure
-  and arrival are unchanged (removed otherwise), `wind` removed from the points that moved, `via` / `awy` kept on the points
+  `distanceNm`, `trackDeg`, `from: 'points'`, `manual: false`; every other key of `route` is kept, **`procedures` as it is** (fuel's choice: the
+  map never writes nor removes it; fuel sets to "none" the side whose aerodrome no longer matches `route.dep` / `route.arr` at its
+  next write, and the readers check the aerodrome), `wind` removed from the points that moved, `via` / `awy` kept on the points
   left intact. Nothing outside `route` and `level` (`progress` is fuel's and the frame's, `quote` and `profile` fuel's);
   `updated_at` is then the version shown (the live view takes only a newer one). **Maps is a writer of `route` and `level`**:
   fuel's "who writes what" table (fuel INTEGRATION § 3) lists it.
-- **Fuel writes `quote.legs` `[{ id, min }]` and `quote.taxiMin`** with every quote (minutes from brake release at each route
-  point; the taxi apart): the source of the derived times (§ 2 bis).
+- **Fuel writes `quote.legs` `[{ id, min, origin }]` and `quote.taxiMin`** with every quote (minutes from brake release at each
+  point of the flown path, `origin` ∈ route | sid | star | app; the taxi apart): the source of the derived times (§ 2 bis).
 - Missions keep the studio's meaning for `route_points[].alt_ft`: the altitude reached at the point (`mission.js`).
 - Every write of the file redraws the map and the profile (debounced 300 ms).
 - `route.text` comes from `textFromPoints(points, previousText, previousPoints)` of `frame/lib/route_text.js` (airways of
@@ -272,7 +308,7 @@ import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, loadRender, l
 | `mapSize(map, box)` → boolean | `map.resize()` only if the canvas is not the box's size; true when it resized. **`startTiles` creates the map with `trackResize: false`: MapLibre does not follow its container's size by itself** (its own observer resized, and so cleared, the canvas at every frame of a sheet drag), so call it when the size has stopped (the sheet's `onSettle`, a rotation, full screen), at load and style change, on return of a hidden tab (`visibilitychange`, `pageshow`) and at each draw |
 | `isOwnResize(map)` → boolean | true during the `resize()` that `mapSize` runs: its `movestart` is not a user gesture (`map.on('movestart', () => { if (!isOwnResize(map)) userMoved = true })`) |
 | `setBottomInset(map, px)` → boolean | the map's bottom controls (attribution, scale, any other in `bottom-left` / `bottom-right`) move up by `px`: the part of the map's box that a sheet covers (the sheet's top against the box's bottom; 0 when the map sits above the sheet or beside it). Sets `--mb-inset-b` on the map's container, written only when the value changes (true then); the camera is not touched (frame the route with a bottom `padding`). Call it at every size change and at each `onSettle` of the sheet, and from a `ResizeObserver` on the sheet if the map can sit under it (V3 spec § 7.1 rule 17). Atmosphere: its `--at-hide-b` rule (an oversized map) can give way to one call with the same value |
-| `loadRender()` → `Promise` | loads `render.js` (`window.MapsRender`) if it is not there |
+| `loadRender()` → `Promise` | loads `render.js` (`window.MapsRender`) if it is not there: the core only (background, `mercator`, `tokens`), enough for atmosphere; the map's own loader adds `render_airspace.js` and `render_route.js` |
 | `loadOutlines()` → `Promise` | loads `lib/outlines.js` (`window.MAPS_OUTLINES`, 350 KB), once; rejects (and the next call tries again) if it does not come |
 | `plainView(fit, W, H, pad = 12)` → `{ toC(lat, lon), toLL(x, y), shown }` | Mercator fitting the box `fit` (`{ w, e, s, n }`) in W × H, north up (`MapsRender.mercator`; `loadRender()` first) |
 | `drawPlain(ctx, toC, W, H, colors)` | sea, then land from the outlines (sea only until they arrive); `colors` `{ sea, land, border }`, day defaults |

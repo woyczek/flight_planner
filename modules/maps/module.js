@@ -7,7 +7,8 @@
 //   · state.js : l'état partagé, les aides communes, le chargement à la demande ; texts.js : les textes ×4 ; style.js ;
 //   · screen.js : boutons de la carte, état vide, notes, fond MapLibre, thème ; draw.js : le dessin de la carte ;
 //   · data.js : le vol, les données d'aerodb, la vue vivante ; layers.js : modes, seuils, contenu Couches ;
-//   · sheet_view.js : la feuille ; profile_view.js : le profil vertical ; tips.js : infobulles, vents, toucher sur la carte ;
+//   · sheet_view.js : la feuille ; profile_view.js : le profil vertical ; procs.js : SID, STAR et approche choisies ;
+//     tips.js : infobulles, vents, toucher sur la carte ;
 //   · lv.js : les espaces d'un point ; vfr.js : les points de report d'un terrain ; flight_time.js : heures et vol démarré ;
 //   · mission_view.js : cartes de mission ; weather.js : la coupe météo ; à la demande : edit.js (mode Édition), tune.js
 //     (réglage des seuils).
@@ -37,7 +38,8 @@ import {
 import {
   applyFlight,
   watchFlight,
-  readSettings
+  readSettings,
+  loadProcs
 } from './data.js';
 import {
   effectiveProfile,
@@ -80,6 +82,15 @@ import {
 import {
   weatherEvents
 } from './weather.js';
+import {
+  covClear
+} from './coverage.js';
+import {
+  chooseAsk,
+  chooseLoad,
+  chooseStart,
+  chooseEvents
+} from './choose.js';
 
 export const meta = {
   id: 'maps',
@@ -107,11 +118,19 @@ export const meta = {
   }],
   // gardés à l'installation (hors ligne dès la première visite)
   files: ['state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'data.js?v=0', 'layers.js?v=0',
-    'sheet_view.js?v=0', 'profile_view.js?v=0', 'tips.js?v=0', 'lv.js?v=0', 'vfr.js?v=0', 'flight_time.js?v=0', 'mission_view.js?v=0',
+    'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'choose.js?v=0', 'coverage.js?v=0', 'tips.js?v=0', 'lv.js?v=0',
+    'vfr.js?v=0',
+    'flight_time.js?v=0',
+    'mission_view.js?v=0',
     'weather.js?v=0',
-    'render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
+    'render.js?v=0', 'render_airspace.js?v=0', 'render_route.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0',
+    'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/profiles.js?v=0', 'lib/map_base.js?v=0', 'lib/axis_window.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
-    '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', '../../frame/lib/time.js?v=0',
+    '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0',
+    '../../frame/lib/flight_time.js?v=0', '../../frame/lib/flight_path.js?v=0', '../../frame/lib/procedures.js?v=0',
+    '../../frame/lib/trail.js?v=0',
+    '../../frame/lib/adnames.js?v=0',
+    '../../frame/lib/time.js?v=0',
     '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/icons.js?v=0'
   ],
   // gardés au premier usage : le mode Édition et la page de réglage ; MapLibre (1 Mo, inutile sans tuiles) ; les contours
@@ -162,7 +181,10 @@ export async function mount(el, ctx) {
     },
     map: null,
     plain: false,
-    noted: {}
+    noted: {},
+    // le mode « choisir sur la carte » (#maps?choose=dep|arr&icao=LFXX, V3 § 10.23) : la demande est lue et retirée de l'adresse
+    // tout de suite ; null hors du mode
+    choose: chooseAsk(ctx)
   });
   el.innerHTML = skeleton(ctx);
   const q = s => el.querySelector(s),
@@ -213,7 +235,7 @@ export async function mount(el, ctx) {
     toggleModes(false);
     if (m !== S.preset) setPreset(m);
   });
-  S.stops.push(missionEvents(), ...profileEvents(), ...weatherEvents());
+  S.stops.push(missionEvents(), ...profileEvents(), ...weatherEvents(), chooseEvents());
   layersEvents();
   sheetEvents();
   // fond uni (sans MapLibre) : la boîte reçoit le survol et le toucher
@@ -259,6 +281,7 @@ export async function mount(el, ctx) {
   S.theme = MapsRender.tokens();
   S.stops.push(watchTheme());
   const ui = (await ctx.data.get('cache/maps/ui.json').catch(() => null)) || {};
+  if (!S) return; // la Carte a été quittée pendant la lecture (chaque reprise après une attente vérifie S d'abord)
   await readSettings();
   if (!S) return;
   S.stops.push(ctx.data.watch('airline/map_profiles.json', async () => {
@@ -277,9 +300,15 @@ export async function mount(el, ctx) {
   if (ctx.query?.mission) await applyMission();
   else {
     await applyFlight();
+    if (!S) return;
     fillPick();
   }
   if (!S) return;
+  // mode « choisir sur la carte » : les procédures du terrain sont lues avant le fond, qui part de la vue qu'elles donnent (S.fit)
+  if (S.choose) {
+    await chooseLoad();
+    if (!S) return;
+  }
   // fond à tuiles si possible, sinon fond uni
   const tiles = S.route.points.length || S.mission ? await startTiles() : false;
   if (!S) return;
@@ -290,11 +319,26 @@ export async function mount(el, ctx) {
     T?.tuneSetup(el.querySelector('.mp-tune'));
   }
   status();
+  if (S.choose) chooseStart();
   schedule();
   if (!ctx.query?.mission) S.stops.push(...watchFlight());
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', e => {
     if (!S || (e?.aircraft && !e.zone && !e.changed)) return; // la base appareils ne touche pas la carte
+    if (e?.coverage || e?.refreshed) covClear(); // couverture des procédures : redemandée au prochain dessin
+    // procédures d'un terrain relues (« Lire » / « Relire » de Carburant : { procedures: OACI }) : celles du vol aussi, quand
+    // c'est son départ ou son arrivée
+    const r = S.route?.flight?.route,
+      k = String(e?.procedures || '').toUpperCase();
+    if (k && r && [r.dep, r.arr].some(x => String(x || '').toUpperCase() === k)) {
+      S.procsKey = null;
+      loadProcs();
+    }
+    if (e?.coverage && !e.refreshed && !e.zone && !e.changed) return schedule(); // ni zone ni fichier d'espaces : rien à relire
     S.data = null;
+    if (e?.refreshed) { // la base a été relue (Paramètres) : les procédures du vol aussi
+      S.procsKey = null;
+      loadProcs();
+    }
     schedule();
   }), ctx.aerodb.on('state', () => S && status()));
   // un seul observateur de taille : il ne dessine rien, il demande à la feuille sa taille arrêtée (onSettle, SPEC § 7.5)

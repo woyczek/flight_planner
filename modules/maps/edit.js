@@ -32,7 +32,8 @@ import {
   schedule
 } from './draw.js';
 import {
-  pointsOf
+  pointsOf,
+  buildPath
 } from './data.js';
 import {
   closePanels
@@ -176,10 +177,12 @@ function commit(points, levelFt = null) {
     },
     rec = {
       ...f,
-      route: withProcedures({
+      // route.procedures est le choix de Carburant : la Carte ne l'écrit pas et ne le retire jamais (Carburant remet à « aucune »
+      // le côté dont le terrain a changé, et les lecteurs vérifient l'aérodrome)
+      route: {
         ...(f.route || {}),
         ...route
-      }),
+      },
       ...(levelFt > 0 ? {
         level: {
           ...(f.level || {}),
@@ -196,7 +199,7 @@ function commit(points, levelFt = null) {
     levelFt: +rec.level?.ft || 0,
     updated: rec.updated_at
   };
-  S.marks = MapsRender.marks(S.route.points);
+  buildPath(); // le chemin « route + procédures » et les marques NM suivent les nouveaux points
   S.undoBtn.disabled = !S.edit.undo.length;
   header();
   schedule();
@@ -211,37 +214,16 @@ function commit(points, levelFt = null) {
   };
   S.edit.saveT = setTimeout(S.edit.flush, 400);
 }
-/** Procédures gardées tant que leur terrain est le départ (SID) ou l'arrivée (STAR) de la route, retirées sinon. */
-function withProcedures(r) {
-  const pr = r.procedures;
-  if (!pr) return r;
-  const up = v => String(v || '').toUpperCase(),
-    pts = r.points || [],
-    dep = up(r.dep || pts[0]?.id),
-    arr = up(r.arr || pts[pts.length - 1]?.id),
-    sid = pr.sid && up(pr.sid.icao) === dep ? pr.sid : null,
-    star = pr.star && up(pr.star.icao) === arr ? pr.star : null,
-    out = {
-      ...r
-    };
-  if (sid || star) out.procedures = {
-    ...pr,
-    sid,
-    star
-  };
-  else delete out.procedures;
-  return out;
-}
 /** Écrit la route (montage ctx, chemin path) sur la dernière version lue de l'enregistrement : fusion dans route (ses autres clés gardées), level.ft si
  *  le premier tronçon a changé ; rien d'autre (progress, quote, profile sont à Carburant ou au cadre). */
 async function saveRoute(ctx, path, route, levelFt, at) {
   try {
     const cur = (await ctx.data.get(path).catch(() => null)) || {},
       next = merge(cur, {
-        route: withProcedures({
+        route: {
           ...(cur.route || {}),
           ...route
-        }),
+        },
         ...(levelFt ? {
           level: {
             ...(cur.level || {}),
@@ -352,19 +334,22 @@ function setLevel(i, ft) {
   pts[i] = p;
   commit(pts);
 }
-/** Tronçon du profil sous la distance s (mètres de la coupe) : { i (point qui l'ouvre), s0, s1 }. */
+/** Tronçon du profil sous la distance s (mètres de la coupe) : { i (point qui l'ouvre), s0, s1 }. Les points de la route sont
+ *  placés sur la coupe par leur échantillon le plus proche (la coupe suit le chemin « route + procédures », plus long que la
+ *  route seule), jamais en arrière du précédent. */
 function segmentAt(s) {
   const pts = rawPoints().map(p => ({
       lat: +p.lat,
       lon: +p.lon
     })),
-    cum = MapsRender.distances(pts),
-    k = S.geo.total / (cum[cum.length - 1] || 1);
+    total = S.geo.total,
+    cum = pts.map((p, i) => i === 0 ? 0 : i === pts.length - 1 ? total : MapsProfile.project(S.prof, p.lat, p.lon).s ?? 0);
+  for (let i = 1; i < cum.length; i++) cum[i] = Math.max(cum[i], cum[i - 1]);
   for (let i = 0; i < pts.length - 1; i++)
-    if (s <= cum[i + 1] * k || i === pts.length - 2) return {
+    if (s <= cum[i + 1] || i === pts.length - 2) return {
       i,
-      s0: cum[i] * k,
-      s1: cum[i + 1] * k
+      s0: cum[i],
+      s1: cum[i + 1]
     };
   return null;
 }

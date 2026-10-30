@@ -194,7 +194,9 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     after the last gesture. `meta.writes` gains `pilot/` (document policy, same declaration as fuel).
   - **The quote**: fuel requotes when it sees a record written by another module (`by` ≠ `fuel`), at once when it is
     mounted (the dual view shows both), else at its next mount; it then writes `profile` again. Until then maps draws
-    its own TOC and TOD and ignores the stale `profile.tocNm` / `todNm`. To agree with the fuel session (one line in
+    its own TOC and TOD and ignores the stale `profile.tocNm` / `todNm`. Reviewed 28 Oct (lot 2): only `by: 'maps'` makes the profile stale — `by` is the
+    last writer of the whole record, and the frame writes `by: 'frame'` with the live position (`progress.actual`), which
+    hid fuel's profile. To agree with the fuel session (one line in
     its INTEGRATION § 3).
   - **Cut**:
     - 6a: the mode, dragging and snapping, insertion, removal, undo, writing; checked at 375 px touch and 1280 px mouse;
@@ -1476,3 +1478,175 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   proof of concept at 390 and 1280 px, five designs, day and night, profile, Layers, airspaces and expanded sheet: the same
   buttons, titles, chips, profile attributes, kept counts, notes and strip, except the Weather chip (above) and the order of
   Layers (§ 6.7).
+- **28 Oct 2026 — lot 2: the chosen SID, STAR and approach, and the profile on the path "route + procedures"** (V3_SPECIFICATION
+  § 10.20 and its two refinements; branch `v3-maps-proc`; the frame's `proceduresOf`, `loadProcedures`, `expandedPath`, `flownPath`
+  and aerodb's `procedure(id)`, `runways(icao)` were already there). The old `drawProcedures` (which read `{ sid, star }` records
+  with their points) is replaced by `procs.js`; SPEC § 5, § 8, § 12, § 13, INTEGRATION § 3 bis and § 4 say the result. Choices of
+  the session, with their reasons:
+  - **The route is drawn only between its consecutive path points.** Rather than drawing the route whole and the procedure over it
+    (a SID that leaves the route's first leg would show two lines), `MapsRender.draw` takes `lines` (the polylines of the route's
+    runs in the path); the route's markers and labels stay those of its points. A route point that a SID covers but the join did not
+    keep (a point between the first and the join) keeps its marker without a line: rare, and it is the route's own point.
+  - **Labels are reserved through a callback, not drawn by the core.** `MapsRender.draw` gains `reserve(placer)`, called right after
+    the route's labels: the render core stays free of texts and of the flight's state, the screen's `procs.js` builds the labels
+    (names, fix ids, constraints) and writes them after the core's drawing, so "after the route's labels" holds without changing the
+    order of the rest.
+  - **A direct is a dashed line, decided from the ids.** `expandedPath` does not say whether the SID joined the route on a common
+    point; the map decides: the leg between a procedure point and a route point (neither the departure nor the arrival) is the
+    procedure's own, solid, when the route point is one of the procedure's fixes, else a dashed direct. A joined point reached by the
+    SID's transition is dashed too (transition).
+  - **The course of a leg without a fix is drawn as given**, magnetic taken as true: over 2 NM a variation of a few degrees moves the
+    end by a few tenths of a NM, and no variation model is in the suite; the stroke says "somewhere that way", the dashes lead on.
+  - **Altitudes in the notation**: the feet alone up to the transition altitude included ("3000", "5000" when it is 5,000 ft, as
+    the AIP writes it), "FL060" above it (review of 28 Oct: "FL050" at a 5,000 ft transition read as a level) — the airline's own
+    `transitionFt` (5,000 ft by default), not the chart's; the transition level of a given aerodrome is not known to the map.
+  - **The profile's own plan stays the fallback**, with no constraints fed to it (a constraint "at 3000" read as the new cruise level
+    would hold the flight at 3000 ft): the steps are drawn on the profile from the points, the planned path comes from fuel's
+    `profile.path`; a path that does not cover the cut to 3 NM or 3 % is stale and ignored.
+  - **Level drag in Edit mode** finds its segment by projecting the route's points on the cut (the cut is longer than the route), no
+    longer by scaling the route's cumulative distances.
+  - **Edit mode no longer drops `route.procedures`** (the user's rule: the map never writes it): D30 expects it kept as it is, even
+    for a side whose aerodrome is not the route's, which every reader ignores (`proceduresOf`).
+  - **Not done here**: the Fuel side (rows, "Changer" target `#fuel?focus=`, `profile.path`, `quote.legs` with `origin`) is the fuel
+    lot's; until it writes `profile.path` the profile draws its fallback, and a quote without `origin` gives times by the quote's
+    total over the flown path.
+
+## The aerodrome procedures layer (28 Oct 2026, V3_SPECIFICATION § 10.22)
+
+SPEC § 6.11, INTEGRATION § 3 ter. Choices of the session, with their reasons:
+- **No event between modules** (decision of the ergonomics session, 28 Oct, replacing a first brief with `fuel-procedures` and
+  `fuel-procedures-ask`): the map lights the layer by itself from what it already reads, the choice of procedures
+  (`proceduresOf(flight)`) and the coverage of the two aerodromes. A contract between two modules would have been one more thing
+  to keep in step; the rule is the map's, readable in one function (`covAuto`). "Nothing chosen" is `{}` and absent fields; `null` is
+  "none", a choice, so it does not light.
+- **The user's touch wins, for the page's life.** The stored state of the box stays "off" by default and the automatic state is laid
+  over it, never written. Once the user touches the box, only the box decides until reload (not stored, not per mode), so the
+  automatic lighting cannot fight a gesture. "Reset all" is not a touch: it restores the defaults, and the automatic lighting, if it
+  was not switched off by a touch, stays on.
+- **The box displays what is shown.** A box unticked while the layer is lit by itself would be a lie; ticked, it can be unticked, which
+  is the touch above. The stored value is not changed by displaying it.
+- **The pins are recoloured, not ringed.** The symbols already carry the aerodrome's class in their shape and fill (open to public
+  traffic, restricted, State in red); a halo or ring would add a mark to every aerodrome and fight the labels. The colour replaces
+  the blue (or the State red, while the layer is on: the level is the question then). Colours are the design's `--sog-ok` /
+  `--sog-warn` / `--sog-err`, which the drawing context already keeps readable at night. The copy of `aero_symbols.js` diverges by
+  two lines (`ad.cov`), noted where it diverges. Colour alone does not carry the meaning: the legend and the card say it in words.
+- **Requests: visible aerodromes only, one batch per drawing, stale while refreshing.** `coverage` is cheap, but a world map has
+  thousands of aerodromes in the data area; only those inside the frame (and drawn: public, or the close view) are asked. When
+  aerodb says the coverage changed, the old answers stay on screen until the new ones arrive (no blinking, no flash of the usual
+  colours), and a late batch from before the change is dropped.
+- **The card line is always there** when `aerodb.coverage` exists, whether or not the layer is shown: the card is a detail view,
+  and "why is this one orange" is asked there.
+- **Not on mission maps** (their Layers content is the selector only), and not without a flight for the automatic lighting.
+- **A new file, `coverage.js`**: `render.js` is already past the 60 KB of SPEC § 1; it only takes the drawing of the colour
+  (`coverPins`, `cov` in `MapsRender.draw`); the requests, the rule, the legend rows and the card line are in `coverage.js`.
+
+## Choosing on the map: one pane, the selection kept, one trip back (V3 § 10.30, 30 Oct 2026)
+
+- **The whole side in one pane, one scrolling surface.** The first group tests found the one-family-per-trip mode "not
+  convincing": the pane now lists the runway, the SID or the STAR and the approach together. § 10.30 first asked for "≤ 7 rows
+  then scroll inside the group" and "never two scrollbars": a group scrolling inside a sheet that scrolls is the double scrollbar
+  the user reported. Decided with the ergonomics session: the sheet is the only surface that scrolls; a group shows "Aucune" and
+  six rows, the rest folded under "N more…" which unfolds it in place.
+- **Selection in the pane, written by Fuel once.** A tap sets the family's choice in the mode's local state and leaves it drawn;
+  closing returns every family touched in one `location.replace`, keys `rwy`, `sid`, `star`, `app`, `apptrans` (lower case, no
+  key for SID / STAR transitions: Fuel's model has none). A key absent means "untouched", `none` means "Aucune": Fuel can tell
+  "keep" from "remove". The Map still never writes; one writer, one write, one address.
+- **Corrections offered, never imposed.** A procedure serving one runway sets it only when none is in force; otherwise one line
+  under the group and one tap. Which line depends on what changed last: the procedure ("sert la 25 — Passer en 25") or the
+  runway ("ne sert pas la 07 — Choisir OKRIX5B", the first of the group by its order). The rules are `runwayOf` / `firstServing`
+  in `frame/lib/procedures.js`, shared with Fuel.
+- **Wind from the METAR the suite already has**, read from the frame's cache (`cacheOnly`): the pane never asks the network; no
+  METAR, a variable wind or a runway without a bearing gives no line. Arrows: ↑ head, ↓ tail (orange above 5 kt), ← from the
+  left, → from the right (where the wind comes from: `wind.label`, the one text rule Fuel prints too), the numbers in the row's
+  tooltip.
+- **Second reading (30 Oct, after af261d3e3): compatible only, folded the rest, three taps in any order.** The user wanted to
+  see only what fits and to change easily: each group shows the rows compatible with the choice in force (`compatible` of
+  `frame/lib/procedures.js`, shared with Fuel), the rest behind one thin "N more · All" line that unfolds it marked ⚠ —
+  shown, never forbidden. A STAR / SID family (ABLI4L, ABLI4R) is one row with runway tags; chosen before its runway it waits
+  (`pend`) and the runway resolves it, so no record is guessed. The summary at the top uses `summaryOf`, the same text Fuel
+  writes in its side's title. Rows are 36 px with no gap: the frame's buttons ask 44 px, the pane's rows set `min-height: 0`
+  (the rows are contiguous, each one its own target).
+- **The runway as a 24 px threshold vector, from the airline's zoom (fourth reading, 30 Oct).** The full-length arrow of § 10.24
+  was found "not convincing" at LFPO and hidden by its own label: it is replaced, on the general Map and in the choose mode, by a
+  screen-sized vector from each threshold with the designator behind the threshold. The zoom from which it appears is an
+  airline setting (`runwayZoom` in `airline/map_profiles.json`, written by Settings › Administration): the thresholds page's
+  `procRwy` went with the arrow. In the choose mode the airway boxes, painted over the route on the general Map, now go under the
+  dim veil, so nothing of the base covers the choice.
+- **Panning: the drawn image follows the gesture, the full drawing waits for rest (30 Oct, "déplacement de carte sur la région
+  de Paris : très saccadé (2 fps ?)").** Every MapLibre `move` event drew the whole overlay: each airspace ring re-projected
+  point by point (`fromLngLat`, `coordinatePoint`, `ringPath`, `screenBox`), every label measured and placed again, several
+  times per frame (MapLibre fires more than one `move` per pointer step). Now, during a gesture (`S.moving`, set by `moving()`),
+  the last full image is copied where its two geographic corners now are (`follow`: one `drawImage`, pan and zoom), and every
+  other drawing request (a hover, a reading that lands) waits; the full drawing comes at rest — `moveend`, or 150 ms without
+  movement — once (`settle`, one `requestAnimationFrame`). Also, the themed context's proxy bound a new function at every
+  method access; the bound methods are now kept per name.
+  Measured on a synthetic dense base (2 000 aerodromes, 600 airspaces of 41 points, all frozen as on the device; Paris,
+  zoom ≈ 9.5, VFR mode, complexity +2; a 20-step mouse drag, Chromium, this machine): **before**, 51 full drawings during the
+  drag, 8 ms each on average, 12 ms at worst (the user's real base is far denser: "2 fps"); **after**, no full drawing during
+  the drag, 20 copies of 0.2 ms at worst, then one full drawing at rest (14–19 ms). Case D68 holds the rule (no full drawing
+  during a 20-image drag, under 16 ms of work per image).
+- **One label per airway segment, one collision pass by priority (30 Oct, « toujours ce recouvrement »).** The leg towards Le
+  Blanc showed "22" and "F065" several times along it: the corridor reads airways box by box, and the same segment came back as
+  distinct objects (frozen copies); `drawAirways` labelled each, the second one finding the middle taken and sliding further
+  along the line. Segments are now keyed by route and ends; distance and level share one line; a segment shorter than its label
+  gets none; the longer segments are placed first. The placer was already one pass per drawing, but in the wrong order: the
+  route's labels reserved before the procedures', and the towns before everything painted. The order is now the priority of
+  § 10.30 (screen, route, airway boxes, aerodromes, navaids and fixes, the rest), the towns placed at their own painting.
+- **Third reading (30 Oct): what is looked at goes on top.** The STARs covered each other: the highlighted procedure is now
+  drawn last with its own label (its full name), the others below in a fixed order (⌛, ⚠, compatible, chosen); the labels are
+  one per family and point ("NIMER 9"), small and faded, never one per procedure of a family, and a label without room is
+  dropped rather than overlapping. Hover follows the pointer across every family (the user: "survoler une STAR ne surligne
+  plus : pas intuitif"). The wind's colour comes from `wind.severity` and its arrows from `wind.label` (where it blows, runway
+  upward), Fuel's rules, so the two screens print the same thing.
+
+## Inventaire du 30/10 : à refondre
+
+Read-only inventory (BUGS SOG, 30 Oct, for the user's challenge "supprimer les faire et défaire vers un point documenté, éviter le
+code mort et les empilages"), from 28 Oct to 1ad1b897b. Per zone: what was done then undone or replaced, what is left doubled or
+dead, the target in one sentence. Nothing is changed by this section.
+
+**1. Choose mode** (`choose.js`). 5b713f77e one family per trip (`pickFamily`, `chTitle`, runway chips, full-length arrows) →
+afdb5db1f one scroll surface → af261d3e3 three families, local selection, one return → 43df712ef second reading (compatible
+only, family rows, summary) → 1f23b7d73 third reading (draw order, family labels, severity, table of contents) → 8ba329f66
+approaches as the SIA publishes them → 1ad1b897b "towards your route". Undone on the way: the one-family trip, the chips, the
+"sans nom" rows, the local `isDoubt` copy, `chMore`. Left: the mode's state has nine fields with overlapping roles (`sel`, `pend`,
+`more`, `focus`, `last`, `hl`, `items`, `view`, `hits`); `C.view` is recomputed in three places (`refresh`, the fold toggle,
+`setHl`); `itemsOf` mutates rows after the fact (`why`, `off` set in `viewOf`); two exits (`chooseExit` for the card,
+`chooseFinish`). D60 was rewritten four times and the fixtures `_CH_FILE`, `_CH2_FILE`, `_CH3_FILE` overlap.
+Target: one pure function `paneModel(records, side, sel, route)` → groups, rows, folds, summary, corrections (bench without a
+browser, in `frame/lib` beside `procedures.js`), `choose.js` keeping only `{ sel, pend, open, hl }` and rendering.
+
+**2. Labels and the collision pass** (`render.js`, `render_airspace.js`, `procs.js`, `choose.js`, `aero_symbols.js`).
+ab37f44dd airway box over the route → e14a078af procedure labels painted last → 19cb208b3 one layer list → 24197a867 one label
+per airway segment, priority order → 20233a006 airway boxes under the dim veil (a `splice` of the layer list) → b6b2043e6 runway
+numbers inside the points layer. Left: the priority is implicit (reserve phase vs paint phase, layer order, one `splice`, the
+towns moved to their paint); each part places its own labels with its own sliding rule; `many()` still deduplicates by object
+identity, which frozen copies defeat, so the airway dedup lives in `drawAirways` instead of at the source.
+Target: every layer declares its labels `{ box(es) along an anchor, priority }`, one pass sorts them by priority and places them
+(slide along the anchor, else hide); `many()` deduplicates by a key per kind.
+
+**3. Panning** (`draw.js`, `screen.js`). c9238c050: `moving` / `follow` / `settle` / `request` / `schedule` and `S.moving` — four
+entry points into drawing; `keepFrame` copies the canvas after every full drawing (≈ 1.2 ms on the real base) even when nothing
+moves. Target: one scheduler with three states (draw, follow, rest), the image kept only at `movestart`.
+
+**4. Runways** (`procs.js`, `data.js`, `draw.js`). 949f7cbd7 full-length arrow of the chosen runway (§ 10.24, `procRwy`
+threshold) → the choose mode's arrows (agent) → 20233a006 24 px threshold vector from `runwayZoom` (`procRwy` removed) →
+b6b2043e6 every aerodrome's runways. Left: two caches for one thing — `S.rwys` (departure and arrival, read in `loadProcs`)
+and `S.adRwys` (the others, asked from the previous drawing's `S.adHits`, one frame late); the default 11 written three times
+(`readSettings`, `RWY_ZOOM`, `?? 11` in `draw.js`); `arrowOf(…, side, …)` keeps a `side` the vector no longer uses; `gcNmPlain`
+is dead; `magVarOf` scans the aerodromes at each call.
+Target: one store `S.runways` (Map icao → records, departure and arrival included) filled by one request path, `runwayZoom`
+read once with its default in `readSettings`.
+
+**5. Labels of procedures** (`procs.js` `layout` / `drawLabels`, `choose.js` `L.top`, `render_airspace.js` airway boxes). Three
+drawers of boxed labels with their own fonts, paddings and line heights (`LINE_H`, `LINE_SM`); `procLabel` per procedure outside
+the mode, `cartText` per family inside; `drawLines` exported from `procs.js` for the first choose mode, used nowhere else.
+Target: one boxed-label primitive in the render kit (text runs, hue, full / faded), used by the three.
+
+**6. Flown trail** (`flight_time.js`). a158edbe5 trail read from `progress.actual.trail` → f7bad9970 bounds and `TRAIL_MAX`
+slice → 0bbe7ebbb (V3 Frame) device-local `ctx.live.trail()`. Left: the Map still merges the frame's trail with its own
+positions (`S.trail`, `TRAIL_MS`, de-duplication of consecutive points): two sources for one track.
+Target: the frame's trail is the only source, the Map draws it and keeps nothing.
+
+**Order proposed** (after the stabilisation): 4 and 6 (small, state removed), 3, then 1 with its bench, then 2 and 5 together
+(one label model). Each lot: cases first (current D cases as the safety net), one commit per zone, the full noreg after.

@@ -4,13 +4,20 @@
 
 import {
   S,
-  flightPath
+  flightPath,
+  flownPts
 } from './state.js';
 import {
   wrapLon,
   nearLon,
   unwrapLons
 } from '../../frame/lib/geo.js';
+import {
+  expandedPath,
+  flownPath,
+  loadProcedures,
+  proceduresOf
+} from '../../frame/lib/current_flight.js';
 import {
   effectiveProfile,
   groupOf
@@ -41,8 +48,9 @@ import {
 /** Le vol courant lu : { flight, points, altn, levelFt, updated }. Le dégagement vient d'aerodb, sans être attendu : sa
  *  position trouvée est gardée, puis le vol est redessiné une fois. */
 async function readFlight() {
-  const f = (await S.ctx.data.get(flightPath()).catch(() => null)) || null,
-    pts = pointsOf(f);
+  const f = (await S.ctx.data.get(flightPath()).catch(() => null)) || null;
+  if (!S) return null; // la Carte a été quittée pendant la lecture
+  const pts = pointsOf(f);
   let altn = null;
   if (f?.route?.altn && pts.length && S.ctx.aerodb) {
     const id = f.route.altn,
@@ -91,8 +99,99 @@ export function pointsOf(f) {
   };
   return pts;
 }
-/** Emprise donnée par l'adresse (#maps?view=ouest,sud,est,nord), sinon null. */
+// ---------------------------------------------------------------- le chemin « route + procédures » (V3_SPECIFICATION § 10.20)
+/** Clé des procédures à charger : le choix du vol (v2) et les terrains de la route ; elle change, on relit les enregistrements. */
+const procKey = f => JSON.stringify([proceduresOf(f), f?.route?.dep || '', f?.route?.arr || '']);
+/** Chemin du vol (route + procédures choisies) et ses points volés, rangés dans S.route (path : tout, tronçons sans point et
+ *  approche interrompue compris ; flown : les points volés avec nm), marques NM sur le chemin volé. Sans aerodb, sans
+ *  procédure ou sans enregistrement : le chemin est la route. Longitudes continues. */
+export function buildPath() {
+  const f = S.route.flight,
+    path = expandedPath(f, S.procs || {});
+  S.route.path = unwrapLons(path);
+  S.route.flown = unwrapLons(flownPath(path));
+  S.marks = MapsRender.marks(flownPts());
+}
+/** Vrai si le vol a une piste ou une procédure choisie (route.procedures v2, côtés vérifiés). */
+const isChosen = f => {
+  const v = proceduresOf(f);
+  return [v.dep?.sid, v.dep?.trans, v.dep?.rwy, v.arr?.star, v.arr?.trans, v.arr?.app, v.arr?.appTrans, v.arr?.rwy].some(Boolean);
+};
+/** Procédures du vol (aerodb, loadProcedures de frame/lib/current_flight.js), relues une fois par changement de
+ *  route.procedures : le chemin est refait et la carte redessinée à leur arrivée, sans attendre (le dessin d'avant reste). La
+ *  Carte ne les écrit jamais. */
+export function loadProcs() {
+  const f = S.route.flight,
+    key = procKey(f);
+  if (key === S.procsKey) return;
+  S.procsKey = key;
+  // les pistes des deux terrains, lues avec les procédures ou seules : les vecteurs de seuil de la carte (§ 10.30) et le seuil
+  // opposé d'une piste (relèvement)
+  const A = S.ctx.aerodb,
+    r = f?.route || {},
+    rwList = icao => icao && A?.runways ? Promise.resolve().then(() => A.runways(String(icao).toUpperCase())).catch(() => []) : [];
+  if (!isChosen(f) || !A) {
+    if (S.procs) {
+      S.procs = null;
+      afterPath();
+    }
+    if (A) Promise.all([rwList(r.dep || r.points?.[0]?.id), rwList(r.arr || r.points?.at?.(-1)?.id)]).then(([rd, ra]) => {
+      if (!S || S.procsKey !== key) return;
+      S.rwys = {
+        dep: rd || [],
+        arr: ra || []
+      };
+      schedule();
+    }, () => {});
+    return;
+  }
+  Promise.all([loadProcedures(A, f), rwList(r.dep || r.points?.[0]?.id), rwList(r.arr || r.points?.at?.(-1)?.id)]).then(([procs, rd,
+    ra
+  ]) => {
+    if (!S || S.procsKey !== key) return;
+    S.procs = procs;
+    S.rwys = {
+      dep: rd || [],
+      arr: ra || []
+    };
+    afterPath();
+  }, () => {});
+}
+/** Le chemin a changé (procédures arrivées ou retirées) : refait, puis la carte et le profil redessinés. */
+function afterPath() {
+  buildPath();
+  schedule();
+  buildProfile();
+}
+/** Points du profil d'après les points volés : longitudes continues, niveaux tenus (alt_ft des points de la route, jamais le
+ *  premier ni le dernier ; le premier prend level.ft dès qu'un palier existe) ; noMark pour les points de procédure, qui ne
+ *  portent pas de nom sous la coupe. */
+export function flownProfilePoints(flown, f) {
+  const routeIdx = flown.map((p, i) => p.origin === 'route' ? i : -1).filter(i => i >= 0),
+    ends = new Set([routeIdx[0], routeIdx.at(-1)]),
+    pts = flown.map((p, i) => ({
+      id: p.id || '',
+      lat: +p.lat,
+      lon: +p.lon,
+      nm: p.nm,
+      ...(p.origin === 'route' && !ends.has(i) && p.alt_ft != null && +p.alt_ft > 0 ? {
+        lvl: {
+          ft: +p.alt_ft
+        }
+      } : {}),
+      ...(p.origin !== 'route' ? {
+        noMark: true
+      } : {})
+    }));
+  if (pts.some(p => p.lvl) && +f?.level?.ft > 0) pts[0].lvl = {
+    ft: +f.level.ft
+  };
+  return pts;
+}
+/** Emprise imposée : celle des procédures du mode « choisir sur la carte », sinon celle de l'adresse (#maps?view=ouest,sud,est,nord),
+ *  sinon null. */
 export const viewOf = () => {
+  if (S.choose?.fit) return S.choose.fit;
   const v = String(S.ctx.query?.view || '').split(',').map(Number);
   return v.length === 4 && v.every(Number.isFinite) ? {
     w: v[0],
@@ -105,8 +204,12 @@ export const viewOf = () => {
  *  écriture du vol pendant qu'on le regarde — la caméra de l'utilisateur est gardée (SPEC § 5), les zones déjà lues ne sont
  *  pas relues. */
 export async function applyFlight(live = false) {
-  S.route = await readFlight();
-  if (!S) return;
+  const route = await readFlight();
+  if (!S || !route) return; // quittée pendant la lecture : rien n'est posé sur un état démonté
+  S.route = route;
+  if (S.procs && !isChosen(S.route.flight)) S.procs = null; // le choix est vidé : le chemin redevient la route tout de suite
+  buildPath();
+  loadProcs();
   S.profile = effectiveProfile();
   const all = [...S.route.points, ...(S.route.altn ? [S.route.altn] : [])];
   S.fit = viewOf() || MapsRender.bboxOf(all, 25) || {
@@ -115,7 +218,6 @@ export async function applyFlight(live = false) {
     e: 10,
     n: 51.5
   };
-  S.marks = MapsRender.marks(S.route.points);
   S.data = null;
   if (!live) S.cursor = null;
   showBox(!!S.route.points.length);
@@ -146,7 +248,7 @@ export async function applyFlight(live = false) {
  *  dernière écriture, s'il est plus récent que la version montrée ; seule la progression a changé : rien n'est relu. */
 export function watchFlight() {
   let live = 0;
-  return [S.ctx.data.watch(flightPath(), () => {
+  const check = (ms = 300) => {
     clearTimeout(live);
     live = setTimeout(async () => {
       const f = await S?.ctx.data.get(flightPath()).catch(() => null);
@@ -154,17 +256,27 @@ export function watchFlight() {
       performance.mark('maps:live');
       if (sameRoute(f, S.route.flight)) return progressOnly(f);
       await applyFlight(true);
-    }, 300);
-  }), () => clearTimeout(live)];
+    }, ms);
+  };
+  const stop = S.ctx.data.watch(flightPath(), () => check());
+  // une écriture arrivée entre la lecture du montage et cet abonnement (Carburant écrit started.at puis ouvre la Carte) n'a pas
+  // d'événement : relue une fois, tout de suite (J2, étape 3 : « Carte says something at mount », une fois sur deux)
+  check(0);
+  return [stop, () => clearTimeout(live)];
 }
 
 // ---------------------------------------------------------------- réglages
 /** Profils des modes de la compagnie (airline/map_profiles.json) et unité d'altitude du pilote (fuel.json, displayAlt :
  *  équidistance des courbes de niveau). */
 export async function readSettings() {
-  const P = await S.ctx.data.get('airline/map_profiles.json').catch(() => null),
-    F = await S.ctx.data.get(`pilot/${S.ctx.identity?.trigram || 'ANON'}/fuel.json`).catch(() => null);
+  const P = await S.ctx.data.get('airline/map_profiles.json').catch(() => null);
+  if (!S) return; // la Carte a été quittée pendant la lecture
+  const F = await S.ctx.data.get(`pilot/${S.ctx.identity?.trigram || 'ANON'}/fuel.json`).catch(() => null);
+  if (!S) return;
   S.repoProfiles = P?.profiles && typeof P.profiles === 'object' ? P.profiles : null;
+  // seuil de zoom des vecteurs de piste (V3 § 10.30 ; Réglages › Administration ; frame/settings/INTEGRATION.md § 4)
+  const z = P?.runwayZoom;
+  S.runwayZoom = Number.isInteger(z) && z >= 8 && z <= 16 ? z : 11;
   S.altUnit = F?.displayAlt === 'm' ? 'm' : 'ft';
 }
 /** Réglages de l'écran gardés sur cet appareil (cache/maps/ui.json) : mode et couches par mode (seulement ce qui diffère des

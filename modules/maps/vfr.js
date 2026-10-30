@@ -25,6 +25,12 @@ import {
   endData
 } from './sheet_view.js';
 import {
+  cardHtml
+} from './procs.js';
+import {
+  covCard
+} from './coverage.js';
+import {
   hideTips,
   followTip,
   hoverHtml,
@@ -36,7 +42,8 @@ import {
 // (séquences en texte, consignes des VAC repliées par page), jusqu'à ✕, Échap ou un autre terrain ; en mode VFR, départ et
 // arrivée épinglés d'office (dessin seul). Données : aerodb.vfrRoutes (sia/vfr/<OACI>.json), candidats tirés des VAC,
 // toujours en tirets et marqués « à vérifier », jamais un itinéraire publié ni un sens de parcours.
-const VFR_COL = '#00897b'; // séquences et tracés tirés des VAC (les points de report : MapsRender.vrpColor)
+// séquences et tracés tirés des VAC (les points de report : MapsRender.vrpColor), couleur de la palette de la Carte
+const vfrCol = () => MapsRender.palette(!!S.theme?.dark).vfr;
 /** Terrain dessiné sous (x, y), à 22 px près (une cible de doigt) ; null sinon. */
 export function adAt(x, y) {
   let best = null,
@@ -313,6 +320,10 @@ function pinView(icao) {
   });
 }
 
+/** Contenu du terrain épinglé refait (une réponse arrivée : couverture des procédures, textes de ses raisons). */
+export function refreshAdCard() {
+  if (S?.vfrPin && S.vfrCard) pinView(S.vfrPin);
+}
 /** Terrain relâché (la surbrillance s'arrête) ; le bloc de données n'est pas touché. */
 export function releaseAd() {
   if (!S.vfrPin) return;
@@ -380,6 +391,8 @@ function showAdCard(icao) {
       body += `<p class="mp-vfr-warn">${esc(tt(TX.vfrLabel))}</p>${st ? `<p><b>${esc(tt(st, { s: tt(TX.vfrScope[A.scope] || TX.vfrScope.partial) }))}</b></p>` : ''}${A.notes?.length ? `<ul class="mp-vfr-seq">${A.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}${seqs.length ? `<div><b>${esc(tt(TX.vfrSeqCount, { r: seqs.length }))}</b>${part ? ` <span class="f-muted">${esc(tt(TX.vfrPart))}</span>` : ''}</div><ul class="mp-vfr-seq">${seqs.map(item).join('')}</ul>` : ''}${man}${v.notes?.length ? `<div><b>${esc(tt(TX.vfrNotes))}</b></div>${v.notes.map(n => `<details class="mp-vfr-note"><summary>${esc(n.title || tt(TX.vfrPage, { p: n.page }))}${page(n.page)}</summary><div>${esc(n.text)}</div></details>`).join('')}` : ''}`;
     }
   }
+  // piste et procédures choisies dans Carburant pour ce terrain (départ ou arrivée du vol), avec « Changer » ; la Carte ne les écrit jamais
+  body = cardHtml(icao) + covCard(icao) + body;
   openData('ad', `ad:${icao}`, title, () => body, label);
 }
 /** VRP de la base que la surbrillance dessine (terrains montrés) : la couche des VRP ne les redessine pas. */
@@ -415,7 +428,7 @@ export function drawVfr(ctx, toC) {
       // points de la compilation ; le terrain lui-même (son code, « AD ») n'est jamais relié : une intégration non
       // numérisée n'est pas remplacée par une droite vers son centre
       const at = new Map(v.points.filter(p => p.role !== 'aerodrome_reference_point' && p.code !== 'AD').map(p => [p.code, p]));
-      ctx.strokeStyle = VFR_COL;
+      ctx.strokeStyle = vfrCol();
       ctx.lineWidth = 1.6;
       for (const r of v.routes) {
         // tracé de l'analyse (tirets longs), sinon tirets courts entre les points de report connus
@@ -450,7 +463,7 @@ export function drawVfr(ctx, toC) {
       }
       ctx.setLineDash([]);
       // sommets de tracé de l'analyse : ni points de report, ni noms
-      ctx.fillStyle = VFR_COL;
+      ctx.fillStyle = vfrCol();
       for (const p of v.points.filter(p => p.role === 'intermediate_waypoint')) {
         const q = toC(+p.lat, +p.lon);
         ctx.beginPath();
@@ -493,7 +506,7 @@ export function drawVfr(ctx, toC) {
       ctx.strokeStyle = S.theme.bg;
       ctx.lineWidth = 3;
       ctx.strokeText(t, q.x + 10, q.y + 14);
-      ctx.fillStyle = VFR_COL;
+      ctx.fillStyle = vfrCol();
       ctx.fillText(t, q.x + 10, q.y + 14);
     }
   }

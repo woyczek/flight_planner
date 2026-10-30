@@ -55,7 +55,10 @@
         fg: v('--sog-fg', '#17202a'),
         muted: v('--sog-muted', '#5b6670'),
         grid: v('--sog-chart-grid', '#d9dee4'),
-        accent: v('--sog-accent', '#1d6fd8')
+        accent: v('--sog-accent', '#1d6fd8'),
+        ok: v('--sog-ok', '#1e7d32'),
+        warn: v('--sog-warn', '#9a5b00'),
+        err: v('--sog-err', '#b3261e')
       },
       rgb = rgbOf(t.bg) || [255, 255, 255];
     t.dark = (.2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2]) / 255 < .45;
@@ -132,10 +135,15 @@
       memo.set(k, out);
       return out;
     };
+    // une méthode liée une fois par nom (un bind à chaque appel créait des milliers de fonctions par dessin : travail du ramasse-miettes)
+    const bound = new Map();
     return new Proxy(ctx, {
       get(o, p) {
         const v = o[p];
-        return typeof v === 'function' ? v.bind(o) : v;
+        if (typeof v !== 'function') return v;
+        let f = bound.get(p);
+        if (!f) bound.set(p, f = v.bind(o));
+        return f;
       },
       set(o, p, v) {
         o[p] = p === 'fillStyle' || p === 'strokeStyle' ? map(v) : v;
@@ -144,12 +152,59 @@
     });
   }
 
+  // ---------------------------------------------------------------- palette de la Carte (§ 10.29 f)
+  /** Couleurs cartographiques de la Carte, de jour et de nuit : la route, les voies, les procédures, le profil, la position, les
+   *  vents, les zones de mission… Lues par le rendu, l'écran (procs.js, la légende, la position, les barbules) : aucune ailleurs.
+   *  Les couleurs « de papier » (fond, encre, gris) restent les jetons du design (tokens, themed). */
+  const PALETTE = {
+    day: {
+      route: '#8e24aa',
+      nm: '#8e24aa',
+      plan: '#6a1b9a',
+      airwayLow: '#1f6fb2',
+      airwayHigh: '#6a3fa0',
+      airwayLevel: '#c62828',
+      aar: '#00695c',
+      nat: '#37474f',
+      obstacleLabel: '#1565c0',
+      vrpHeli: '#2e7d32',
+      vfr: '#00897b',
+      altn: '#6b7280',
+      altnText: '#4b5563',
+      terrain: '#b08a5a',
+      mora: '#8b2d18',
+      sid: '#1b8a3a',
+      star: '#d95500',
+      app: '#0a86c4',
+      // mode « choisir sur la carte » (V3 § 10.23) : huit teintes, reprises en cycle, une par procédure (ligne de la liste, cartouche et
+      // tracé la même) ; toutes lisibles sur le fond du jour sans que le dessin ait à les foncer
+      procHues: ['#c2185b', '#1565c0', '#d84315', '#00796b', '#827717', '#2e7d32', '#7b1fa2', '#795548'],
+      actual: '#c62828',
+      wind: '#1a237e',
+      missionSearch: ['#d0106a', 'rgba(208,16,106,.10)'],
+      missionExclusion: ['#c62828', 'rgba(198,40,40,.09)'],
+      missionZone: ['#6a1b9a', 'rgba(106,27,154,.08)']
+    }
+  };
+  PALETTE.night = {
+    ...PALETTE.day,
+    sid: '#5cd27a',
+    star: '#ff9a4d',
+    app: '#5cc4f5',
+    procHues: ['#f48fb1', '#64b5f6', '#ff8a65', '#4db6ac', '#dce775', '#81c784', '#ce93d8', '#bcaaa4'],
+    wind: '#b3c7ff'
+  };
+  Object.freeze(PALETTE.day);
+  Object.freeze(PALETTE.night);
+  /** Palette du jour ou de la nuit (dark : les jetons du design le disent). */
+  const palette = dark => dark ? PALETTE.night : PALETTE.day;
+
   // ---------------------------------------------------------------- profil d'affichage
   /** Réglages par défaut d'un élément (ceux du profil « IFR simplifié » du studio). */
   const DEFAULTS = {
     airwaysLow: false,
     airwaysHigh: false,
-    airwayLabels: true,
+    awLabels: true,
     zoneAbbrev: true,
     zoneLabelsShow: true,
     zoneOpacity: '25',
@@ -185,7 +240,7 @@
     graticuleColor: '#365a6c',
     mora: false,
     moraFont: '12',
-    moraColor: '#8b2d18',
+    moraColor: PALETTE.day.mora,
     moraOpacity: '90',
     moraSpacing: '70',
     vrpPoints: false,
@@ -233,6 +288,23 @@
     };
   }
   /** Valeur d'un élément du profil (défaut si absent). */
+  /** Un seul élément pour les noms des voies (§ 10.29 g) : awLabels ; un profil du studio ou d'une compagnie qui porte encore
+   *  airwayLabels (l'ancien interrupteur du profil d'affichage) est lu comme awLabels quand celui-ci est absent. */
+  const migrated = p => {
+    const E = p?.elements;
+    if (!E || !('airwayLabels' in E)) return p;
+    const {
+      airwayLabels,
+      ...rest
+    } = E;
+    return {
+      ...p,
+      elements: 'awLabels' in rest ? rest : {
+        ...rest,
+        awLabels: airwayLabels
+      }
+    };
+  };
   const el = (p, id) => {
     const v = p?.elements?.[id];
     return v === undefined || v === '' ? DEFAULTS[id] : v;
@@ -331,90 +403,7 @@
     };
   }
 
-  // ---------------------------------------------------------------- choix des espaces
-  const family = (types, t) => types.has(t) || (t === 'RMZ-TMZ' && (types.has('RMZ') || types.has('TMZ')));
-  const ringBox = a => a._mb ??= (() => {
-    let s = 90,
-      n = -90,
-      w = 180,
-      e = -180;
-    for (const r of a.rings || [])
-      for (const [la, lo] of r) {
-        s = Math.min(s, la);
-        n = Math.max(n, la);
-        w = Math.min(w, lo);
-        e = Math.max(e, lo);
-      }
-    return {
-      s,
-      n,
-      w,
-      e
-    };
-  })();
-  /** Échantillons de la route (un tous les 2 NM environ). */
-  function samples(points) {
-    const out = [];
-    for (let i = 1; i < points.length; i++) {
-      const a = points[i - 1],
-        b = points[i],
-        n = Math.max(1, Math.ceil(gc(a, b) / 2));
-      // les espaces d'aerodb sont en [-180, 180[ : les échantillons (route déroulée) y sont ramenés
-      for (let k = 0; k < n; k++) out.push([a.lat + (b.lat - a.lat) * k / n, wrapLon(a.lon + (b.lon - a.lon) * k / n)]);
-    }
-    if (points.length) out.push([points[points.length - 1].lat, wrapLon(points[points.length - 1].lon)]);
-    return out;
-  }
-  /** Vrai si l'espace est à moins de nm NM des échantillons de la route (un échantillon dedans ou un bord proche). */
-  function nearRoute(a, smp, nm) {
-    const b = ringBox(a),
-      m = nm / 60;
-    if (!smp.some(([la, lo]) => la >= b.s - m && la <= b.n + m && lo >= b.w - m * 2 && lo <= b.e + m * 2)) return false;
-    const seg = (la, lo, p, q) => {
-      const k = Math.cos(rad(la)),
-        ax = (p[1] - lo) * 60 * k,
-        ay = (p[0] - la) * 60,
-        bx = (q[1] - lo) * 60 * k,
-        by = (q[0] - la) * 60,
-        dx = bx - ax,
-        dy = by - ay,
-        t = dx || dy ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy))) : 0;
-      return Math.hypot(ax + t * dx, ay + t * dy);
-    };
-    const inside = (la, lo, ring) => {
-      let c = false;
-      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-        const [yi, xi] = ring[i],
-          [yj, xj] = ring[j];
-        if ((yi > la) !== (yj > la) && lo < (xj - xi) * (la - yi) / (yj - yi) + xi) c = !c;
-      }
-      return c;
-    };
-    return smp.some(([la, lo]) => a.rings.some(r => inside(la, lo, r) || r.some((p, i) => i && seg(la, lo, r[i - 1], p) <= nm)));
-  }
-  /** Espaces à dessiner selon le profil : familles cochées, plancher / plafond, liste blanche ou noire (nom ou clé),
-   *  couloir autour de la route (corridorNm). */
-  function selectAirspaces(list, profile, route = []) {
-    const types = new Set(profile?.zones || []),
-      lo = parseFloat(el(profile, 'zoneFloor')),
-      hi = parseFloat(el(profile, 'zoneCeil')),
-      names = (profile?.zoneList || []).map(x => String(x).toUpperCase().replace(/[^A-Z0-9]/g, '')).filter(Boolean),
-      hit = a => names.some(q => [a.name, a.key, a.type + a.name].some(v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
-        .includes(q))),
-      lim = A()?.limitFt;
-    if (!types.size) return [];
-    let out = (list || []).filter(a => family(types, a.type) && (!(lo > 0) || !lim || lim(a.upper, true) > lo) && (!(hi > 0) || !lim ||
-      lim(a.lower, false) < hi) && (!names.length || (profile.zoneMode === 'black' ? !hit(a) : hit(a))));
-    const nm = +profile?.corridorNm || 0,
-      pts = route.filter(p => Number.isFinite(p?.lat));
-    if (nm > 0 && pts.length >= 2) {
-      const smp = samples(pts);
-      out = out.filter(a => nearRoute(a, smp, nm));
-    }
-    return out;
-  }
-
-  // ---------------------------------------------------------------- dessin
+  // ---------------------------------------------------------------- dessin (espaces et voies : render_airspace.js ; route : render_route.js)
   /** Texte gras avec halo blanc, centré verticalement sur y. */
   function halo(ctx, text, x, y, size, color, align = 'left', alpha = 1) {
     ctx.save();
@@ -472,81 +461,37 @@
     ctx.restore();
   }
 
-  /** Espaces : formes (part 'shapes') ou libellés (part 'labels'). Les libellés sont posés un espace à la fois, dans
-   *  l'ordre du studio (plus grande emprise d'abord), pour relever le cadre de chacun : rend [{ x0, y0, x1, y1, a }]
-   *  (infobulle au survol du libellé). */
-  function drawZones(ctx, zones, toC, W, H, scale, pl, profile, part) {
-    const showLabels = on(profile, 'zoneLabelsShow');
-    if (part === 'labels' && !showLabels) return [];
-    const opts = {
-      W,
-      H,
-      scale,
-      font: +el(profile, 'zoneFont') * PT * scale,
-      limits: on(profile, 'zoneLimitsShow'),
-      alpha: (+el(profile, 'zoneOpacity') || 50) / 100,
-      abbrev: on(profile, 'zoneAbbrev'),
-      smallCross: on(profile, 'zoneSmallCross'),
-      placer: pl,
-      shapes: part !== 'labels',
-      labels: part !== 'shapes' && showLabels
-    };
-    if (part !== 'labels') {
-      A().drawAirspaces(ctx, zones, toC, opts);
-      return [];
+  /** Couche « Procédures » : les terrains visibles prennent la couleur de leur niveau de couverture (cov(icao) → 'green' |
+   *  'orange' | 'red', ou rien tant que la réponse n'est pas là : symbole d'origine) ; ok / warn / err du design, le fond
+   *  clair du symbole étant la même teinte éclaircie vers le fond du dessin. Les terrains hors cadre ne sont pas demandés. */
+  function coverPins(ads, toC, W, H, detailed, cov) {
+    const t = T || tokens(),
+      bg = rgbOf(t.bg) || [255, 255, 255],
+      paint = {};
+    for (const [lv, k] of [
+        ['green', 'ok'],
+        ['orange', 'warn'],
+        ['red', 'err']
+      ]) {
+      const m = rgbOf(t[k]) || [128, 128, 128];
+      paint[lv] = {
+        main: t[k],
+        pale: `rgb(${m.map((x, i) => Math.round(x * .25 + bg[i] * .75)).join(',')})`
+      };
     }
-    const area = a => {
-        let x0 = Infinity,
-          y0 = Infinity,
-          x1 = -Infinity,
-          y1 = -Infinity;
-        for (const r of a.rings || [])
-          for (const [lat, lon] of r) {
-            const q = toC(lat, lon);
-            if (q.x < x0) x0 = q.x;
-            if (q.x > x1) x1 = q.x;
-            if (q.y < y0) y0 = q.y;
-            if (q.y > y1) y1 = q.y;
-          }
-        return x1 > x0 ? (x1 - x0) * (y1 - y0) : 0;
-      },
-      hits = [];
-    let cur = null;
-    // placeur partagé, vu au travers : chaque cadre réservé pendant le libellé d'un espace lui est attribué
-    const seen = pl ? new Proxy(pl, {
-      get(o, p) {
-        if (p === 'take') return r => {
-          const ok = o.take(r);
-          if (ok && cur) hits.push({
-            x0: r.x0,
-            y0: r.y0,
-            x1: r.x1,
-            y1: r.y1,
-            a: cur
-          });
-          return ok;
-        };
-        const v = o[p];
-        return typeof v === 'function' ? v.bind(o) : v;
-      }
-    }) : pl;
-    for (const {
-        a
-      }
-      of zones.map(a => ({
-        a,
-        k: area(a)
-      })).sort((x, y) => y.k - x.k)) {
-      cur = a;
-      A().drawAirspaces(ctx, [a], toC, {
-        ...opts,
-        placer: seen
-      });
-    }
-    return hits;
+    return ads.map(a => {
+      if (!a.icao || !(detailed || a.public || a.state)) return a;
+      const p = toC(a.lat, a.lon);
+      if (p.x < -30 || p.y < -30 || p.x > W + 30 || p.y > H + 30) return a;
+      const c = paint[cov(a.icao)];
+      return c ? {
+        ...a,
+        cov: c
+      } : a;
+    });
   }
 
-  function drawPoints(ctx, data, toC, W, H, scale, b, pl, profile) {
+  function drawPoints(ctx, data, toC, W, H, scale, b, pl, profile, cov) {
     const ad = on(profile, 'aerodromes'),
       nv = on(profile, 'navaids'),
       ob = on(profile, 'obstacles');
@@ -567,7 +512,7 @@
     const pxDeg = toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x,
       ads = ad ? (data.aerodromes || []).filter(adOk) : [];
     const got = A().drawPoints(ctx, {
-      aerodromes: ads,
+      aerodromes: cov ? coverPins(ads, toC, W, H, pxDeg >= 180, cov) : ads,
       navaids: nv ? (data.navaids || []).filter(navOk) : [],
       obstacles: []
     }, toC, {
@@ -629,7 +574,7 @@
     });
     if (pxDeg < 300) return;
     const f = Math.max(9, +el(profile, 'pointFont') * PT * scale * .85),
-      col = '#1565c0';
+      col = palette((T || tokens()).dark).obstacleLabel;
     for (const {
         o,
         p
@@ -660,237 +605,6 @@
     return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
   };
   const deg3 = d => `${String(Math.round(d) % 360).padStart(3, '0')}°`;
-  /** Voies aériennes : basses (trait bleu) et hautes (tireté violet), selon le profil ; étiquettes comme les cartes en
-   *  route : nom de la voie dans un cartouche couché le long du tronçon, niveau minimal dessous (F195) ; de près, la
-   *  distance du tronçon (NM) et les routes vraies à chaque bout. Rend les bouts des tronçons dessinés (leurs points). */
-  function drawAirways(ctx, airways, toC, scale, b, pl, profile, tier = 'near') {
-    const lo = on(profile, 'airwaysLow'),
-      hi = on(profile, 'airwaysHigh'),
-      ends = new Map();
-    ends.later = []; // étiquettes à poser après les points des voies
-    ends.hits = []; // cartouches posés (centre, rayon, tronçon) : infobulle des voies
-    if (!(lo || hi) || !airways?.length) return ends;
-    const lab = el(profile, 'airwayLabels') !== false,
-      t = {
-        s: b.s - .3,
-        n: b.n + .3,
-        w: b.w - .5,
-        e: b.e + .5
-      },
-      seen = new Set(),
-      named = [], // tronçons à nommer, dans l'ordre des traits
-      f = 8.5 * PT * scale * .8;
-    ctx.save();
-    ctx.lineCap = 'round';
-    for (const g of airways) {
-      const high = (+g.lower || 0) >= 19500 || /^U/.test(g.route);
-      if (high ? !hi : !lo) continue;
-      if (!inBox(t, g.a.lat, g.a.lon) && !inBox(t, g.b.lat, g.b.lon)) continue;
-      const P = toC(g.a.lat, g.a.lon),
-        Q = toC(g.b.lat, g.b.lon),
-        col = high ? '#6a3fa0' : '#1f6fb2',
-        len = Math.hypot(Q.x - P.x, Q.y - P.y);
-      ctx.strokeStyle = col;
-      ctx.globalAlpha = .75;
-      ctx.lineWidth = (high ? 1 : 1.2) * scale;
-      ctx.setLineDash(high ? [6 * scale, 4 * scale] : []);
-      ctx.beginPath();
-      ctx.moveTo(P.x, P.y);
-      ctx.lineTo(Q.x, Q.y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
-      for (const e of [g.a, g.b])
-        if (e?.id) ends.set(`${e.id}|${e.lat.toFixed(3)}|${e.lon.toFixed(3)}`, e);
-      if (lab && len >= 60 * scale) named.push({
-        g,
-        P,
-        Q,
-        col,
-        len
-      });
-    }
-    // les noms après TOUS les traits (V3 maps, 24 Oct : « les noms des AWY au-dessus des traits, pas l'inverse ») : posés dans la
-    // boucle des traits, ils étaient barrés par les voies tracées ensuite
-    for (const {
-        g,
-        P,
-        Q,
-        col,
-        len
-      }
-      of named) {
-      // cartouche couché le long du tronçon (texte toujours lisible de gauche à droite)
-      const x = (P.x + Q.x) / 2,
-        y = (P.y + Q.y) / 2,
-        k = `${g.route}|${Math.round(x / 90)}|${Math.round(y / 90)}`;
-      if (seen.has(k)) continue;
-      let ang = Math.atan2(Q.y - P.y, Q.x - P.x);
-      if (ang > Math.PI / 2) ang -= Math.PI;
-      if (ang < -Math.PI / 2) ang += Math.PI;
-      const lvl = +g.lower >= 1000 ? `F${String(Math.round(+g.lower / 100)).padStart(3, '0')}` : '',
-        w = g.route.length * f * .62 + 6 * scale,
-        r = Math.max(w, f * 3) / 2 + 2;
-      if (pl && !pl.take({
-          x0: x - r,
-          y0: y - r,
-          x1: x + r,
-          y1: y + r
-        })) continue;
-      seen.add(k);
-      ends.hits.push({
-        x,
-        y,
-        r,
-        g
-      });
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(ang);
-      ctx.fillStyle = col;
-      ctx.fillRect(-w / 2, -f * .7, w, f * 1.4);
-      ctx.font = `700 ${f}px Arial,sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = paper();
-      ctx.fillText(g.route, 0, 0);
-      if (lvl && tier !== 'far') {
-        ctx.font = `700 ${f * .85}px Arial,sans-serif`;
-        ctx.fillStyle = '#c62828';
-        ctx.fillText(lvl, 0, f * 1.35);
-      }
-      if (el(profile, 'awLabels') !== false && Number.isFinite(+g.nm)) {
-        ctx.font = `700 ${f * .85}px Arial,sans-serif`;
-        ctx.fillStyle = col;
-        ctx.fillText(String(Math.round(+g.nm)), 0, -f * 1.3);
-      }
-      ctx.restore();
-      if (el(profile, 'awLabels') !== false && len > 140 * scale) {
-        // routes vraies près de chaque bout (comme « 097° » sur les cartes)
-        for (const [A, B, from] of [
-            [P, Q, g.a],
-            [Q, P, g.b]
-          ]) {
-          const d = Math.hypot(B.x - A.x, B.y - A.y),
-            u = 26 * scale / d,
-            px = A.x + (B.x - A.x) * u,
-            py = A.y + (B.y - A.y) * u,
-            to = from === g.a ? g.b : g.a,
-            tw = 4 * f * .8 * .62;
-          // posées après les points des voies (leurs noms passent d'abord)
-          ends.later.push(() => {
-            if (!pl || pl.take({
-                x0: px - tw / 2,
-                y0: py - 7 * scale - f * .5,
-                x1: px + tw / 2,
-                y1: py - 7 * scale + f * .5
-              })) halo(ctx, deg3(trackOf(from, to)), px, py - 7 * scale, f * .8, col, 'center');
-          });
-        }
-      }
-    }
-    ctx.restore();
-    return ends;
-  }
-  /** Points des voies dessinées qui ne sont pas des balises (fixes, intersections) : triangle et nom. */
-  /** Trait fléché de a vers b (points du canevas). */
-  function arrowLine(ctx, a, b, scale) {
-    const ang = Math.atan2(b.y - a.y, b.x - a.x),
-      h = 7 * scale;
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(b.x, b.y);
-    ctx.lineTo(b.x - h * Math.cos(ang - .4), b.y - h * Math.sin(ang - .4));
-    ctx.lineTo(b.x - h * Math.cos(ang + .4), b.y - h * Math.sin(ang + .4));
-    ctx.closePath();
-    ctx.fill();
-  }
-  /** Axes de ravitaillement en vol (aerodb.aarTracks) : hippodrome vert sombre légèrement teinté, branche aller fléchée
-   *  IP → CP et nom de l'axe ; axes lourds : leurs deux branches fléchées. */
-  function drawAar(ctx, tracks, toC, scale, b, pl) {
-    if (!tracks?.length) return;
-    const col = '#00695c',
-      t = {
-        s: b.s - 1,
-        n: b.n + 1,
-        w: b.w - 1.5,
-        e: b.e + 1.5
-      },
-      f = 10 * scale;
-    ctx.save();
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = ctx.fillStyle = col;
-    for (const tr of tracks) {
-      const legs = tr.ring ? [
-        [tr.ip, tr.cp]
-      ] : tr.legs || [];
-      if (!legs.length || ![...(tr.ring || []), ...legs.flat()].some(p => inBox(t, p.lat, p.lon))) continue;
-      if (tr.ring) {
-        ctx.beginPath();
-        tr.ring.forEach((p, i) => {
-          const q = toC(p.lat, p.lon);
-          i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
-        });
-        ctx.closePath();
-        ctx.fillStyle = withAlpha(col, .08);
-        ctx.fill();
-        ctx.fillStyle = col;
-        ctx.lineWidth = 1.4 * scale;
-        ctx.setLineDash([5 * scale, 3 * scale]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-      ctx.lineWidth = 2 * scale;
-      for (const [a, c] of legs) arrowLine(ctx, toC(a.lat, a.lon), toC(c.lat, c.lon), scale);
-      const [a, c] = legs[0],
-        m = toC((a.lat + c.lat) / 2, (a.lon + c.lon) / 2),
-        w = tr.name.length * f * .62;
-      if (!pl || pl.take({
-          x0: m.x + 4 * scale,
-          y0: m.y - f * .7,
-          x1: m.x + 6 * scale + w,
-          y1: m.y + f * .7
-        })) halo(ctx, tr.name, m.x + 5 * scale, m.y, f, col, 'left');
-    }
-    ctx.restore();
-  }
-  /** Tracks NAT du jour (aerodb.natTracks) : tireté ardoise par les points de la track, « NAT A FL350–400 » au premier
-   *  point. */
-  function drawNat(ctx, tracks, toC, scale, b, pl) {
-    if (!tracks?.length) return;
-    const col = '#37474f',
-      f = 10 * scale;
-    ctx.save();
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = ctx.fillStyle = col;
-    ctx.lineWidth = 1.6 * scale;
-    for (const tr of tracks) {
-      const pts = (tr.points || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
-      if (pts.length < 2) continue;
-      ctx.setLineDash([8 * scale, 4 * scale]);
-      ctx.beginPath();
-      pts.forEach((p, i) => {
-        const q = toC(p.lat, p.lon);
-        i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
-      });
-      ctx.stroke();
-      ctx.setLineDash([]);
-      const lv = [...(tr.west || []), ...(tr.east || [])].map(Number).filter(Number.isFinite),
-        text = `NAT ${tr.id}${lv.length ? ` FL${Math.min(...lv)}–${Math.max(...lv)}` : ''}`,
-        q = toC(pts[0].lat, pts[0].lon),
-        w = text.length * f * .62;
-      if (!pl || pl.take({
-          x0: q.x + 4 * scale,
-          y0: q.y - f * 1.6,
-          x1: q.x + 6 * scale + w,
-          y1: q.y - f * .2
-        })) halo(ctx, text, q.x + 5 * scale, q.y - f * .9, f, col, 'left');
-    }
-    ctx.restore();
-  }
 
   function drawFixes(ctx, fixes, toC, W, H, scale, pl) {
     const f = 8 * PT * scale * .85,
@@ -967,7 +681,7 @@
     }
     return kept;
   }
-  const VRP_HELI = '#2e7d32';
+  const VRP_HELI = PALETTE.day.vrpHeli;
 
   function drawVrp(ctx, data, toC, W, H, scale, b, pl, profile) {
     const vrp = on(profile, 'vrpPoints') && data.vrp?.length,
@@ -1086,9 +800,9 @@
     }
   }
   const ZONE_STYLE = {
-    search: ['#d0106a', 'rgba(208,16,106,.10)'],
-    exclusion: ['#c62828', 'rgba(198,40,40,.09)'],
-    mission: ['#6a1b9a', 'rgba(106,27,154,.08)']
+    search: PALETTE.day.missionSearch,
+    exclusion: PALETTE.day.missionExclusion,
+    mission: PALETTE.day.missionZone
   };
   /** Zones de la mission : fond, hachures à 45°, liseré blanc et tireté de la couleur de la zone, nom au-dessus. */
   function drawMissionZones(ctx, zones, toC, scale, pl, profile) {
@@ -1323,136 +1037,6 @@
       halo(ctx, String(m.text), at.x, at.y, font, color, 'center', Math.max(alpha, .95));
     }
   }
-  /** Libellés de la route (points : identifiant et niveau ; marques NM) réservés dans le placeur avant tout le reste :
-   *  [{ text, x, y, size, align }] ; les extrémités sont toujours écrites. */
-  function routeLabels(route, toC, scale, pl, mk = [], level = null) {
-    const pts = (route || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon)),
-      f0 = 12 * scale,
-      out = [];
-    if (pts.length < 2) return out;
-    for (const [i, p] of pts.entries()) {
-      const q = toC(p.lat, p.lon),
-        end = i === 0 || i === pts.length - 1,
-        // altitude à atteindre au point (alt), sinon niveau tenu à partir du point (lvl ; pas au départ, déjà en tête)
-        h = Number.isFinite(p.alt) ? p.alt : i > 0 && !end && +p.lvl?.ft > 0 ? +p.lvl.ft : NaN,
-        // niveau écrit comme dans toute la suite (formatLevel de frame/lib/route_text.js, donné par l'écran)
-        alt = Number.isFinite(h) ? level ? level(h) : h >= 10000 ? `FL${Math.round(h / 100)}` : `${h} ft` : '',
-        text = [p.id || p.name || '', alt].filter(Boolean).join(' · ');
-      if (!text) continue;
-      const f = end ? 13 * scale : f0,
-        r = {
-          x0: q.x + 7 * scale,
-          y0: q.y + 2 * scale,
-          x1: q.x + 9 * scale + text.length * f * .6,
-          y1: q.y + 4 * scale + f * 1.2
-        };
-      if ((pl ? pl.take(r) : true) || end) out.push({
-        text,
-        x: r.x0,
-        y: q.y + 3 * scale + f * .6,
-        size: f,
-        align: 'left'
-      });
-      // heure estimée du point (vol démarré, de près : p.eta, posé par l'écran) : sous son nom, sinon au-dessus du point,
-      // sinon à sa gauche ; réservée avec les libellés de la route, avant les terrains (jamais sur « LFBD »)
-      if (p.eta) {
-        const fe = f * .85,
-          we = p.eta.length * fe * .6,
-          spots = [
-            [r.x0, r.y1 + 1 * scale, 'left'],
-            [q.x + 7 * scale, q.y - 6 * scale - fe * 1.2, 'left'],
-            [q.x - 9 * scale - we, q.y + 2 * scale, 'left'],
-            [q.x - 9 * scale - we, q.y - 6 * scale - fe * 1.2, 'left']
-          ];
-        for (const [x, y, align] of spots) {
-          const e = {
-            x0: x,
-            y0: y,
-            x1: x + we + 2 * scale,
-            y1: y + fe * 1.2
-          };
-          if (pl && !pl.take(e)) continue;
-          out.push({
-            text: p.eta,
-            x,
-            y: y + fe * .6,
-            size: fe,
-            align,
-            color: (T || tokens()).accent
-          });
-          break;
-        }
-      }
-    }
-    const f = f0;
-    for (const m of mk) {
-      const q = toC(m.lat, m.lon),
-        text = String(m.nm),
-        w = text.length * f * .55,
-        r = {
-          x0: q.x - w / 2 - 1,
-          y0: q.y - 4 * scale - f * 1.1,
-          x1: q.x + w / 2 + 1,
-          y1: q.y - 4 * scale
-        };
-      if (!pl || pl.take(r)) out.push({
-        text,
-        x: q.x,
-        y: q.y - 4 * scale - f * .55,
-        size: f * .85,
-        align: 'center'
-      });
-    }
-    return out;
-  }
-  /** Route : trait violet, points, marques de distance (NM), libellés réservés (routeLabels). */
-  function drawRoute(ctx, route, toC, scale, labels = [], {
-    marks: mk = [],
-    color = '#8e24aa'
-  } = {}) {
-    const pts = (route || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
-    if (pts.length < 2) return;
-    ctx.save();
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    const line = () => {
-      ctx.beginPath();
-      pts.forEach((p, i) => {
-        const q = toC(p.lat, p.lon);
-        i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
-      });
-      ctx.stroke();
-    };
-    // liseré du fond (détache la route des voies et des limites qu'elle croise), puis le trait : le plus épais de la carte
-    ctx.strokeStyle = paper();
-    ctx.lineWidth = Math.max(5, 7.5 * scale);
-    line();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = Math.max(2.5, 4 * scale);
-    line();
-    // marques NM : point plein sur la route
-    ctx.lineWidth = Math.max(1, 1.5 * scale);
-    for (const m of mk) {
-      const q = toC(m.lat, m.lon);
-      ctx.beginPath();
-      ctx.arc(q.x, q.y, 3 * scale, 0, Math.PI * 2);
-      ctx.fillStyle = color; // plein, de la couleur de la route : un point du fond la ferait paraître tiretée
-      ctx.fill();
-    }
-    for (const [i, p] of pts.entries()) {
-      const q = toC(p.lat, p.lon),
-        end = i === 0 || i === pts.length - 1;
-      ctx.beginPath();
-      ctx.arc(q.x, q.y, (end ? 6 : 4.5) * scale, 0, Math.PI * 2);
-      ctx.fillStyle = paper();
-      ctx.fill();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = Math.max(1.5, (end ? 2.5 : 2) * scale);
-      ctx.stroke();
-    }
-    for (const l of labels) halo(ctx, l.text, l.x, l.y, l.size, l.color || color, l.align);
-    ctx.restore();
-  }
   /** Densité selon le zoom (px par degré) : loin (moins de 80) — grands terrains, voies et leurs noms ; moyen (moins de
    *  300) — tous les terrains et balises du profil, points des voies, niveaux minimaux ; près — tout, dont la distance
    *  et la route de chaque tronçon, les VRP et les obstacles du profil. */
@@ -1529,108 +1113,42 @@
       cities: (data.cities || []).filter(c => v(cityKey(c)))
     };
   }
-  /** Notation SIA d'un espace : « TMA AQUITAINE 8 2000|FL145 D » — type, nom, plancher | plafond (ft AMSL sans
-   *  unité, ASFC précisé, SFC, FL, UNL), classe ; activation et informations sur une seconde ligne si elles sont
-   *  connues. Rend [ligne principale, ligne secondaire]. */
-  function siaLimit(v) {
-    const t = String(v ?? '').trim().toUpperCase().replace(/\s+/g, ' ');
-    if (!t || /^(SFC|GND)$/.test(t)) return 'SFC';
-    if (/UNL/.test(t) || /^FL\s*999/.test(t)) return 'UNL';
-    let m = /^FL\s*(\d+)/.exec(t);
-    if (m) return `FL${m[1].padStart(3, '0')}`;
-    m = /^(\d+)\s*(FT|M)?\s*(AMSL|MSL|ASFC|AGL|SFC)?/.exec(t);
-    if (m) return m[3] && /ASFC|AGL|SFC/.test(m[3]) ? `${m[1]} ASFC` : m[1];
-    return t;
-  }
-  const sia = a => [
-    // limites omises quand l'espace n'en porte aucune (FIR, UTA de la base : rien plutôt que « SFC|SFC »)
-    [a.type, a.name].filter(Boolean).join(' ') + (a.lower == null && a.upper == null ? '' : ` ${siaLimit(a.lower)}|${siaLimit(a.upper)}`) +
-    (a.cls ? ` ${a.cls}` : ''),
-    [a.act, a.info].filter(Boolean).join(' · ')
-  ];
-  /** Niveau d'une voie (pieds) en notation SIA : FL au-dessus de 5000 ft, UNL au plafond ouvert. */
-  const awLimit = ft => {
-    const v = +ft;
-    if (!Number.isFinite(v) || v <= 0) return 'SFC';
-    if (v >= 66000) return 'UNL';
-    return v >= 5000 ? `FL${String(Math.round(v / 100)).padStart(3, '0')}` : String(Math.round(v));
-  };
-  /** Tronçons dont le cartouche est sous (x, y) (pixels du canevas), le plus proche d'abord. */
-  const airwaysAt = (hits, x, y) => (hits || []).map(h => ({
-    h,
-    d: Math.hypot(h.x - x, h.y - y)
-  })).filter(o => o.d <= o.h.r + 4).sort((a, b) => a.d - b.d).map(o => o.h.g);
-  /** L'ordre de lecture des espaces d'un point (mot de l'utilisateur, 26 octobre : « le plus haut en haut, le plus bas en bas »), écrit
-   *  ici une seule fois : la feuille « n espaces sur ce point » (liste et colonnes du graphique), l'infobulle et la ligne du curseur du
-   *  profil le prennent. Tri sur place et rendu : plafond décroissant (UNL le plus haut), puis plancher décroissant, puis le nom. Les
-   *  hauteurs ASFC sont comptées depuis 0, comme le graphique. Plafond vide, illisible ou sous le plancher : classé avec son plancher
-   *  (comme si le plafond le valait), après les plafonds connus de même valeur. Fonctionne sur tout objet { type, name, lower, upper }. */
-  function sortAirspacesTopDown(list) {
-    const read = A()?.limitRead;
-    const key = a => {
-      const l = read ? read(a.lower, false) : {},
-        u = read ? read(a.upper, true) : {},
-        lo = l.ok && Number.isFinite(l.ft) ? Math.max(0, l.ft) : 0,
-        known = !!(u.ok && (u.unl || Number.isFinite(u.ft) && u.ft > lo));
-      return {
-        up: u.ok && u.unl ? Infinity : known ? u.ft : lo,
-        unk: known ? 0 : 1,
-        lo,
-        name: [a.type, a.name].filter(Boolean).join(' ')
-      };
-    };
-    const k = new Map((list || []).map(a => [a, key(a)]));
-    return (list || []).sort((x, y) => {
-      const a = k.get(x),
-        b = k.get(y);
-      return a.up === b.up ? a.unk - b.unk || b.lo - a.lo || a.name.localeCompare(b.name) : b.up > a.up ? 1 : -1;
-    });
-  }
-  /** Espaces de la liste qui contiennent le point (lat, lon) : `shown`, du plus haut au plus bas (`sortAirspacesTopDown`), sans ceux qui vont de la
-   *  surface au plafond (règle d'affichage du 25 octobre : SiaAero.surfaceToCeiling), et `also`, les noms de ces espaces écartés
-   *  (« FIR PARIS », « SIV POITIERS »), sans doublon, FIR, UIR, SIV d'abord puis les autres par nom : la ligne « Aussi ici » de la
-   *  feuille et de l'infobulle (règle 21 amendée, 26 octobre : le SIV ou la FIR à appeler se lit, jamais en colonne). `more` : espaces
-   *  de la même lecture que le choix des couches a écartés (la FIR décochée reste un service à appeler) ; seuls les écartés par la
-   *  règle y sont repris. */
-  function airspacesAround(list, lat, lon, more = []) {
-    lon = wrapLon(lon); // un toucher sur la carte de l'autre côté de la ligne de changement de date : 195° → 165° W
-    const inRing = r => {
-      let c = false;
-      for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
-        const [yi, xi] = r[i],
-          [yj, xj] = r[j];
-        if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) c = !c;
-      }
-      return c;
-    };
-    const flat = A()?.surfaceToCeiling || (() => false),
-      shown = [],
-      skipped = [];
-    for (const a of list || []) {
-      if (!(a.rings || []).some(inRing)) continue;
-      (flat(a) ? skipped : shown).push(a);
-    }
-    for (const a of more || [])
-      if (flat(a) && (a.rings || []).some(inRing)) skipped.push(a); // lus mais écartés par le choix des couches
-    sortAirspacesTopDown(shown);
-    const rank = a => ['FIR', 'UIR', 'SIV'].indexOf(String(a.type || '').toUpperCase()),
-      key = a => {
-        const r = rank(a);
-        return r < 0 ? 3 : r;
-      },
-      name = a => [a.type, a.name].filter(Boolean).join(' ');
-    skipped.sort((x, y) => key(x) - key(y) || name(x).localeCompare(name(y)));
-    return {
-      shown,
-      also: [...new Set(skipped.map(name).filter(Boolean))]
-    };
-  }
-  /** Espaces à dessiner au point (lat, lon) : `airspacesAround(...).shown`. */
-  const airspacesAt = (list, lat, lon) => airspacesAround(list, lat, lon).shown;
   /** Surcouche aéronautique complète, dans l'ordre du studio : espaces (formes), route (réservée en premier pour ses
    *  libellés), voies, aérodromes et balises, libellés d'espaces, canevas et MORA. data : { airspaces (déjà choisis),
    *  aerodromes, navaids, obstacles, airways, moraCells } ; bbox : emprise affichée { w, s, e, n }. */
-  function draw(ctx, {
+  // ---------------------------------------------------------------- aides partagées avec les parties du rendu
+  // render_airspace.js (espaces, voies, AAR, NAT) et render_route.js (libellés et tracé de la route), scripts classiques
+  // chargés après celui-ci, y lisent ces aides ; leurs dessins sont dans leurs espaces de noms gelés, MapsRender.parts.airspace
+  // et MapsRender.parts.route, que draw() appelle avec env = { theme, placer, pal } (§ 10.29 e).
+  const K = {
+    A,
+    PT,
+    deg3,
+    el,
+    gc,
+    halo,
+    inBox,
+    on,
+    rad,
+    tokens,
+    trackOf,
+    withAlpha,
+    wrapLon,
+  };
+  // gelé (§ 10.29 e) : les parties y lisent des aides, n'y rangent rien ; leurs dessins sont dans MapsRender.parts
+  Object.freeze(K);
+
+  /** Surcouche complète (drawFrame) ; le thème du dessin (T) est remis à null en sortie, même sur une erreur : rien ne reste
+   *  d'un dessin à l'autre (§ 10.29 e). */
+  function draw(ctx, opts = {}) {
+    try {
+      return drawFrame(ctx, opts);
+    } finally {
+      T = null;
+    }
+  }
+
+  function drawFrame(ctx, {
     toC,
     W,
     H,
@@ -1644,11 +1162,38 @@
     theme = null,
     level = null,
     detail = 0,
-    hideVrp = null // identifiants de VRP que l'écran dessine lui-même (terrain survolé ou épinglé) : pas deux fois
+    hideVrp = null, // identifiants de VRP que l'écran dessine lui-même (terrain survolé ou épinglé) : pas deux fois
+    lines = null, // suites de points que la route trace (null : toute la route), voir drawRoute
+    cov = null, // couche « Procédures » : cov(icao) → niveau de couverture ('green' | 'orange' | 'red') ou rien, voir coverPins
+    reserve = null, // reserve(placeur) : l'écran réserve ses libellés (procédures choisies) juste après ceux de la route
+    // chemin volé (route et procédures, points nommés dans l'ordre) : ses tronçons portent les cartouches des voies qu'ils
+    // suivent par-dessus leur trait ; sans lui, la route
+    legs = null,
+    // overRoute(ctx) : l'écran peint ses tracés au niveau de la route (procédures choisies), avant ces cartouches
+    overRoute = null,
+    // top(ctx) : ce que l'écran peint en dernier, par-dessus tout (les noms et contraintes des procédures : jamais couverts)
+    top = null,
+    // adName(rec) : le libellé d'un terrain de près, son code et son nom (« LFPO Paris-Orly », adTitle de frame/lib/adnames.js, la règle
+    // de nom du § 10.27 ; le seuil runwayZoom de la compagnie, V3 § 10.30) ; null : le code seul
+    adName = null,
+    // runways(ctx, pl) : l'écran peint les vecteurs et numéros des pistes juste après les terrains, dans la même passe de collision
+    runways = null,
+    // dim (0 à 1) : la part dont les couches de la Carte, de la route comprise, sont éteintes avant ce que l'écran peint au niveau de
+    // la route (mode « choisir sur la carte », V3 § 10.23) ; 0 : aucune
+    dim = 0
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
+    // le thème ne vit que le temps du dessin (§ 10.29 e) : posé ici, remis à null en sortie (draw) ; les parties le reçoivent
+    // dans env, gelé, avec le placeur et la palette
     T = theme || tokens();
     const pl = A().placer(),
+      env = Object.freeze({
+        theme: T,
+        placer: pl,
+        pal: palette(T.dark)
+      }),
+      PA = window.MapsRender.parts.airspace,
+      PR = window.MapsRender.parts.route,
       c = {
         lat: (bbox.n + bbox.s) / 2,
         lon: (bbox.e + bbox.w) / 2
@@ -1659,59 +1204,151 @@
       zs = zoomOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x) + detailZoom(detail),
       zv = mission ? zs : effectiveZoom(zs, W, H),
       tier = tierOf(pxOfZoom(zv));
+    profile = migrated(profile); // l'ancien airwayLabels lu comme awLabels (§ 10.29 g)
     if (!mission) profile = atZoom(profile, zv);
-    const shown = mission ? data : byZoom(data, profile, zv, tier),
-      labels = routeLabels(route, toC, scale, pl, mk, level);
-    reservePoints(pl, mission?.points, toC, scale, profile);
-    const towns = cityList(shown.cities, profile, toC, bbox, scale, pl);
-    drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes');
-    const ends = drawAirways(ctx, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier);
-    // points des voies dessinées (sauf de loin) : les balises avec leur symbole (ajoutées aux balises montrées), les
-    // autres en triangle
-    const fixes = [],
-      endNavs = [];
-    if (ends.size && el(profile, 'fixes') !== false) {
-      const byId = new Map((data.navaids || []).map(n => [n.id, n]));
-      for (const e of ends.values()) {
-        const n = byId.get(e.id);
-        if (n && Math.abs(n.lat - e.lat) < .05 && Math.abs(n.lon - e.lon) < .05) endNavs.push(n);
-        else fixes.push(e);
+    const shown = mission ? data : byZoom(data, profile, zv, tier);
+    // les couches de la carte dans l'ordre de dessin de la SPEC § 3 (§ 10.29 d) : chacune { id, reserve(), paint(ctx) } ; toutes
+    // les réservations dans le placeur d'abord, dans l'ordre de la liste (libellés de la route, de l'écran, points de mission,
+    // villes : les deux premiers n'ont rien à peindre), puis tous les dessins
+    let labels = [],
+      towns = [],
+      ends = new Map(),
+      pts = {},
+      vrpHits = [],
+      zoneLabels = [];
+    // une seule passe de collision (le placeur pl), dans l'ordre des priorités (V3 § 10.30) : les libellés de l'écran (procédure
+    // surlignée, puis choisies), les tronçons de la route, les cartouches des voies, les terrains, les balises et fixes, le reste
+    // (points de report, espaces, villes) ; une étiquette sans place glisse le long de son ancre, sinon elle se cache
+    const layers = [{
+      id: 'screenLabels', // l'écran réserve ses libellés d'abord (procédure surlignée, puis choisies)
+      reserve: () => reserve && reserve(pl)
+    }, {
+      id: 'routeLabels',
+      reserve: () => labels = PR.routeLabels(route, toC, scale, pl, mk, level, env)
+    }, {
+      id: 'zoneShapes',
+      paint: c => PA.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes')
+    }, {
+      id: 'airways',
+      paint: c => ends = PA.drawAirways(c, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier, PR.routeLegs(legs ||
+        route), env)
+    }, {
+      id: 'points',
+      paint: c => {
+        // points des voies dessinées (sauf de loin) : les balises avec leur symbole (ajoutées aux balises montrées), les
+        // autres en triangle
+        const fixes = [],
+          endNavs = [];
+        if (ends.size && el(profile, 'fixes') !== false) {
+          const byId = new Map((data.navaids || []).map(n => [n.id, n]));
+          for (const e of ends.values()) {
+            const n = byId.get(e.id);
+            if (n && Math.abs(n.lat - e.lat) < .05 && Math.abs(n.lon - e.lon) < .05) endNavs.push(n);
+            else fixes.push(e);
+          }
+        }
+        // balises montrées : celles du profil (et de la densité), plus celles qui sont des bouts de voies
+        const navAll = on(profile, 'navaids'),
+          // nom long d'une balise : trop petit (7 px) hors de la vue rapprochée, l'identifiant et la fréquence suffisent
+          navShown = [...new Set([...(navAll ? shown.navaids || [] : []), ...endNavs])].map(n => mission || tier === 'near' ? n : {
+            ...n,
+            name: ''
+          });
+        pts = drawPoints(c, {
+          ...shown,
+          aerodromes: adName ? (shown.aerodromes || []).map(a => a.icao ? {
+            ...a,
+            label: adName(a) || a.icao
+          } : a) : shown.aerodromes,
+          navaids: navShown
+        }, toC, W, H, scale, bbox, pl, navShown.length && !navAll ? {
+          ...profile,
+          elements: {
+            ...profile.elements,
+            navaids: true
+          }
+        } : profile, cov);
+        drawFixes(c, fixes, toC, W, H, scale, pl);
+        // les pistes des terrains (vecteurs de seuil et numéros), juste après eux : leurs numéros prennent leur place avant les
+        // balises, les points de report et le reste
+        runways && runways(c, pl);
       }
-    }
-    // balises montrées : celles du profil (et de la densité), plus celles qui sont des bouts de voies
-    const navAll = on(profile, 'navaids'),
-      // nom long d'une balise : trop petit (7 px) hors de la vue rapprochée, l'identifiant et la fréquence suffisent
-      navShown = [...new Set([...(navAll ? shown.navaids || [] : []), ...endNavs])].map(n => mission || tier === 'near' ? n : {
-        ...n,
-        name: ''
-      });
-    const pts = drawPoints(ctx, {
-      ...shown,
-      navaids: navShown
-    }, toC, W, H, scale, bbox, pl, navShown.length && !navAll ? {
-      ...profile,
-      elements: {
-        ...profile.elements,
-        navaids: true
+    }, {
+      // axes de ravitaillement et tracks NAT (mode CAM, cartes de mission qui les demandent)
+      id: 'aar',
+      paint: c => on(profile, 'aarTracks') && PA.drawAar(c, data.aar, toC, scale, bbox, pl, env)
+    }, {
+      id: 'nat',
+      paint: c => on(profile, 'natTracks') && PA.drawNat(c, data.nat, toC, scale, bbox, pl, env)
+    }, {
+      id: 'airwayNames', // étiquettes des voies posées après leurs points
+      paint: () => {
+        for (const f of ends.later || []) f();
       }
-    } : profile);
-    drawFixes(ctx, fixes, toC, W, H, scale, pl);
-    // axes de ravitaillement et tracks NAT (mode CAM, cartes de mission qui les demandent)
-    if (on(profile, 'aarTracks')) drawAar(ctx, data.aar, toC, scale, bbox, pl);
-    if (on(profile, 'natTracks')) drawNat(ctx, data.nat, toC, scale, bbox, pl);
-    for (const f of ends.later || []) f();
-    const vrpHits = drawVrp(ctx, hideVrp?.size ? {
-      ...shown,
-      vrp: (shown.vrp || []).filter(v => !hideVrp.has(v.id))
-    } : shown, toC, W, H, scale, bbox, pl, profile);
-    const zoneLabels = drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels');
-    drawGridMora(ctx, shown.moraCells, toC, bbox, W, H, scale, pl, profile);
-    drawMissionZones(ctx, mission?.zones, toC, scale, pl, profile);
-    drawMissionPoints(ctx, mission?.points, toC, W, H, scale, profile);
-    drawCities(ctx, towns, profile, scale, W, H);
-    drawRoute(ctx, route, toC, scale, labels, {
-      marks: mk
-    });
+    }, {
+      id: 'vrp',
+      paint: c => vrpHits = drawVrp(c, hideVrp?.size ? {
+        ...shown,
+        vrp: (shown.vrp || []).filter(v => !hideVrp.has(v.id))
+      } : shown, toC, W, H, scale, bbox, pl, profile)
+    }, {
+      id: 'zoneLabels',
+      paint: c => zoneLabels = PA.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels')
+    }, {
+      id: 'gridMora',
+      paint: c => drawGridMora(c, shown.moraCells, toC, bbox, W, H, scale, pl, profile)
+    }, {
+      id: 'missionZones',
+      paint: c => drawMissionZones(c, mission?.zones, toC, scale, pl, profile)
+    }, {
+      id: 'missionPoints',
+      reserve: () => reservePoints(pl, mission?.points, toC, scale, profile),
+      paint: c => drawMissionPoints(c, mission?.points, toC, W, H, scale, profile)
+    }, {
+      id: 'cities', // les villes après les terrains, balises et points de report : leur place n'est plus réservée d'avance
+      paint: c => {
+        towns = cityList(shown.cities, profile, toC, bbox, scale, pl);
+        drawCities(c, towns, profile, scale, W, H);
+      }
+    }, {
+      id: 'route',
+      paint: c => PR.drawRoute(c, route, toC, scale, labels, {
+        marks: mk,
+        lines
+      }, env)
+    }, {
+      // couches de la Carte éteintes : la part dim de ce qui est déjà peint s'efface (destination-out), le fond MapLibre l'est par la
+      // classe de la boîte ; ce que l'écran peint ensuite est entier
+      id: 'dim',
+      paint: c => {
+        if (!(dim > 0)) return;
+        c.save();
+        c.globalCompositeOperation = 'destination-out';
+        c.globalAlpha = Math.min(1, dim);
+        c.fillStyle = '#000';
+        c.fillRect(0, 0, W, H);
+        c.restore();
+      }
+    }, {
+      id: 'screenTraces', // l'écran peint ses tracés au niveau de la route (procédures choisies)
+      paint: c => overRoute && overRoute(c)
+    }, {
+      // cartouches des voies que suit le chemin (route et procédures) : par-dessus son trait (le mode Édition de l'écran
+      // dessine ensuite ses poignées)
+      id: 'airwayOver',
+      paint: () => {
+        for (const f of ends.over || []) f();
+      }
+    }, {
+      id: 'screenTop', // ce que l'écran peint en dernier (noms et contraintes des procédures)
+      paint: c => top && top(c)
+    }];
+    // couches estompées (mode « choisir sur la carte », V3 § 10.30) : les cartouches des voies passent sous le voile avec le reste de
+    // la Carte ; ce que l'écran dessine (traces, vecteurs, cartouches des procédures) reste au-dessus de toutes les étiquettes
+    if (dim > 0) layers.splice(layers.findIndex(l => l.id === 'dim'), 0, ...layers.splice(layers.findIndex(l => l.id === 'airwayOver'),
+      1));
+    for (const l of layers) l.reserve?.();
+    for (const l of layers) l.paint?.(ctx);
     // cadres posés, pour les infobulles et les libellés ajoutés par l'écran (TOC, TOD) : cartouches des voies, libellés
     // d'espaces, libellés de la route
     return {
@@ -1759,7 +1396,6 @@
     vrpRotary,
     vrpColor,
     routeProfile,
-    selectAirspaces,
     bboxOf,
     nearLon,
     wrapLon,
@@ -1768,13 +1404,6 @@
     mercator,
     drawBackground,
     draw,
-    sia,
-    siaLimit,
-    airspacesAt,
-    airspacesAround,
-    sortAirspacesTopDown,
-    airwaysAt,
-    awLimit,
     zoomOf,
     pxOfZoom,
     effectiveZoom,
@@ -1789,13 +1418,21 @@
     atZoom,
     byZoom,
     /** Valeur d'un élément d'un profil d'affichage (défaut du studio si absent). */
-    elementOf: el,
+    elementOf: (p, id) => el(migrated(p), id),
+    /** Profil d'affichage dont l'ancien airwayLabels est rendu en awLabels (§ 10.29 g). */
+    migrated,
     deg3,
     tierOf,
     trackOf,
     tokens,
     themed,
     withAlpha,
-    contrast: (a, b) => contrast(rgbOf(a) || [0, 0, 0], rgbOf(b) || [0, 0, 0])
+    contrast: (a, b) => contrast(rgbOf(a) || [0, 0, 0], rgbOf(b) || [0, 0, 0]),
+    /** Palette de la Carte, de jour ou de nuit (§ 10.29 f). */
+    palette,
+    /** Aides du noyau, gelées, que lisent les parties : interne au rendu. */
+    kit: K,
+    /** Espaces de noms gelés des parties (airspace : render_airspace.js ; route : render_route.js), posés à leur chargement. */
+    parts: {}
   };
 })();

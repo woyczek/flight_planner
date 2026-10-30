@@ -29,7 +29,8 @@ import {
   corridorBoxes
 } from './data.js';
 import {
-  groupOf
+  groupOf,
+  layersNow
 } from './layers.js';
 import {
   status
@@ -49,6 +50,12 @@ import {
   linger,
   stay
 } from './tips.js';
+import {
+  flownProfilePoints
+} from './data.js';
+import {
+  drawProfileCons
+} from './procs.js';
 
 /** Repères de distance d'une fenêtre : un pas rond (1, 2, 5, 10, 20, 25, 50, 100, 200, 500 NM), deux repères à 40 px au
  *  moins (SPEC § 8.5). */
@@ -63,8 +70,14 @@ function nmTicks(from, to, plotW) {
 }
 /** Coupe du vol (SPEC § 8.1) : espaces des types du profil le long de la route (sans plancher ni plafond, sans les régions),
  *  relief Terrarium, sinon MORA ; la fenêtre gardée tant que la route est la même. */
+/** Espace qui encombre le profil sans le guider : route libre (FRA), zone W / d'avertissement, zone de recherche météo. */
+export const profileNoise = a => /\bFREE RT\b|\bFRA\b/i.test(a?.name || '') || /^(W|WARNING)$/i.test(a?.type || '') ||
+  /^W[-\s]|METRESEARCH|WARNING/i.test(a?.name || '');
 export async function buildProfile() {
-  const pts = S.route.profilePoints || S.route.points,
+  // le chemin « route + procédures » (points volés) quand il existe ; la carte d'une mission fournit ses propres points
+  const f = S.route.flight,
+    flown = !S.route.profilePoints && S.route.flown?.length > 1 ? S.route.flown : null,
+    pts = S.route.profilePoints || (flown ? flownProfilePoints(flown, f) : S.route.points),
     A = S.ctx.aerodb;
   S.prof = null;
   S.geo = null;
@@ -72,9 +85,9 @@ export async function buildProfile() {
   const key = S.route.updated;
   let airspaces = [];
   if (A) {
-    const list = await many(A.airspaces, corridorBoxes(pts, 2, null)).catch(() => []),
-      p = S.vprofProfile || S.profile;
-    if (!S) return;
+    const list = await many(A.airspaces, corridorBoxes(pts, 2, null)).catch(() => []);
+    if (!S) return; // la Carte a été quittée pendant la lecture
+    const p = S.vprofProfile || S.profile;
     airspaces = MapsRender.selectAirspaces(list, {
       ...p,
       corridorNm: 0,
@@ -86,13 +99,19 @@ export async function buildProfile() {
     }, pts);
     // régions (FIR, UIR, UTA, FRA…) : des repères de carte, pas des volumes à franchir
     if (!onMission()) airspaces = airspaces.filter(a => groupOf(a.type) !== 'asFir');
+    // espaces à route libre (FRA, codés CTA « FREE RT ASPC »), zones W / d'avertissement et de recherche météo : absents du profil
+    // sauf quand la couche « Autres espaces » est allumée sur la carte (utilisateur, 29 octobre : « la pollution par les CTA »)
+    if (!onMission() && !layersNow().asOther) airspaces = airspaces.filter(a => !profileNoise(a));
   }
   S.terrain ||= SiaProfile.terrainSampler(9, tileLoader(S.ctx));
-  const f = S.route.flight,
+  // la route modifiée sur la carte (by 'maps') : le profil de Carburant est périmé jusqu'au devis refait ; by est le dernier
+  // auteur de tout l'enregistrement (le cadre y écrit progress.actual, by 'frame'), seul 'maps' périme le profil ; un
+  // profile.path qui ne couvre plus la coupe est de plus écarté par MapsProfile.build
+  const stale = f?.by === 'maps',
     prof = await MapsProfile.build(pts, {
       levelFt: S.route.levelFt,
-      // écrit par un autre module (la carte) : le profil de Carburant est périmé jusqu'au devis refait (by 'fuel')
-      profile: f?.by && f.by !== 'fuel' ? null : f?.profile || null,
+      profile: stale ? null : f?.profile || null,
+      path: stale ? null : f?.profile?.path || null, // la trajectoire de Carburant sous les contraintes des procédures
       airspaces,
       // les échantillons sont sur la route déroulée : relief et MORA lus à la longitude enroulée
       elevation: navigator.onLine === false ? null : (lat, lon) => S.terrain(lat, outLon(lon)),
@@ -159,6 +178,8 @@ export function drawProfile() {
     scale: W < 500 ? .78 : 1,
     window: windowNm()
   });
+  // paliers de contraintes des procédures choisies, sur la trajectoire prévue
+  S.lgCons = !onMission() && drawProfileCons(ctx, g) > 0;
   setData(S.pc, 'axis', g.axisOk ? '1' : '0');
   setData(S.pc, 'marks', String(g.marks));
   // la fenêtre au centième de NM, comme la coupe (deux arrondis différents d'une même fenêtre ne se comparent pas)

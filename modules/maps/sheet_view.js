@@ -3,6 +3,10 @@
 // (profil, coupe, Couches, espaces d'un point, terrain), sa fermeture, la touche Échap, la taille arrêtée (onSettle).
 
 import {
+  OUTDATED,
+  colOf
+} from './procs.js';
+import {
   S,
   keep,
   tt,
@@ -47,6 +51,13 @@ import {
   redrawWeather,
   legendRows as weatherRows
 } from './weather.js';
+import {
+  covRows
+} from './coverage.js';
+import {
+  chooseFinish,
+  chooseRender
+} from './choose.js';
 
 /** Positions de la feuille, dans l'ordre de la primitive. */
 const SHEET_POS = ['collapsed', 'default', 'expanded'];
@@ -101,18 +112,25 @@ function onSheetSettled() {
 function legendRows(view) {
   if (view === 'weather') return weatherRows();
   const sw = (k, c = '') => `<i class="mp-lg-sw mp-lg-${k}" style="--c:${c}"></i>`,
-    d = S.geo?.drawn;
-  if (!d) return [];
+    d = S.geo?.drawn,
+    // couche « Procédures » : une ligne par niveau, seulement quand elle est montrée ; « ⌛ » quand une procédure tracée est
+    // périmée
+    cov = (S.lgOutdated ? [
+      [`<i class="mp-lg-sym" aria-hidden="true">${OUTDATED}</i>`, esc(tt(TX.procOutdated))]
+    ] : []).concat(covRows(sw));
+  if (!d) return cov;
   const rows = [];
-  if (d.plan) rows.push([sw('line', '#6a1b9a'), esc(tt(TX.lgPlan))]);
-  if (d.tocTod) rows.push([sw('diamond', '#6a1b9a'), esc(tt(TX.lgToc))]);
-  if (d.terrain) rows.push([sw('relief', '#b08a5a'), esc(tt(TX.lgTerrain))]);
-  if (d.mora) rows.push([sw('dash', '#8b2d18'), esc(tt(TX.lgMora))]);
+  const P = MapsRender.palette(!!S.theme?.dark); // la palette de la Carte (§ 10.29 f)
+  if (d.plan) rows.push([sw('line', P.plan), esc(tt(TX.lgPlan))]);
+  if (d.tocTod) rows.push([sw('diamond', P.plan), esc(tt(TX.lgToc))]);
+  if (d.terrain) rows.push([sw('relief', P.terrain), esc(tt(TX.lgTerrain))]);
+  if (d.mora) rows.push([sw('dash', P.mora), esc(tt(TX.lgMora))]);
   for (const [type, col] of d.zones) rows.push([sw('band', col), `<b>${esc(type)}</b> ${esc(tt(TX.lgZone))}`]);
-  if (d.marks) rows.push([sw('vdash', '#17202a'), esc(tt(TX.lgPoints))]);
-  if ((S.marks || []).length) rows.push([sw('tick', '#8e24aa'), esc(tt(TX.lgNm))]);
-  if (S.lgFixes) rows.push([sw('tri', S.theme?.fg || '#17202a'), esc(tt(TX.lgFixes))]);
-  return rows;
+  if (d.marks) rows.push([sw('vdash', S.theme?.fg), esc(tt(TX.lgPoints))]);
+  if ((S.marks || []).length) rows.push([sw('tick', P.nm), esc(tt(TX.lgNm))]);
+  if (S.lgFixes) rows.push([sw('tri', S.theme?.fg), esc(tt(TX.lgFixes))]);
+  if (S.lgCons) rows.push([sw('cons', colOf('app')), esc(tt(TX.lgCons))]);
+  return rows.concat(cov);
 }
 /** Puce « i » et panneau de légende : la puce est toujours là, désactivée tant que le dessin n'a pas de légende ; le panneau
  *  couvre le dessin ; écrits seulement s'ils changent. */
@@ -210,12 +228,14 @@ export function endData(kind = null) {
 }
 /** Fermeture voulue (✕, Échap) : le contenu quel qu'il soit ; la coupe ferme sur le profil (et le choix suit). */
 export function closeData() {
+  if (S.dpanel === 'choose') return chooseFinish(); // ✕ ou Échap : comme « Terminer », la sélection part vers Carburant
   if (S.dpanel === 'ad' || S.vfrPin) return unpinAd();
   if (S.dpanel === 'weather') keep.view = 'profile';
   endData();
 }
 /** Dessin de la feuille redessiné sans relecture (taille, curseur, design) : la coupe si elle est montrée. */
 export function redrawSheet() {
+  if (S?.dpanel === 'choose') chooseRender(); // les teintes suivent le jour ou la nuit
   if (S?.dpanel === 'weather') redrawWeather();
 }
 /** Le vol a changé ou la feuille revient : la coupe suit le choix « Profil · Météo » (jamais rejoué sur une feuille repliée). */

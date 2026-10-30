@@ -141,6 +141,7 @@ export const STYLE = `
 [data-module="maps"] .mp-legend ul{margin:0;padding:0;list-style:none}
 [data-module="maps"] .mp-legend li{display:flex;align-items:center;gap:8px;min-height:20px}
 [data-module="maps"] .mp-lg-sw{flex:none;position:relative;display:block;width:26px;height:12px;--c:#888}
+[data-module="maps"] .mp-lg-sym{flex:none;width:26px;text-align:center;font-style:normal;color:var(--sog-muted)}
 [data-module="maps"] .mp-lg-svg{width:28px;height:14px}
 [data-module="maps"] .mp-lg-svg svg{display:block}
 [data-module="maps"] .mp-lg-line::after{content:'';position:absolute;left:0;right:0;top:4px;height:3px;border-radius:2px;background:var(--c)}
@@ -150,6 +151,15 @@ export const STYLE = `
 [data-module="maps"] .mp-lg-relief{background:linear-gradient(var(--c),color-mix(in srgb,var(--c) 45%,#fff));border-top:1.5px solid #7a5a32}
 [data-module="maps"] .mp-lg-band{background:color-mix(in srgb,var(--c) 16%,transparent);border:1.2px solid var(--c);box-sizing:border-box}
 [data-module="maps"] .mp-lg-tick::after{content:'';position:absolute;left:12px;top:2px;height:8px;border-left:2px solid var(--c)}
+[data-module="maps"] .mp-lg-cons::after{content:'';position:absolute;left:5px;right:5px;top:6px;border-top:2px solid var(--c)}
+[data-module="maps"] .mp-lg-cons::before{content:'';position:absolute;left:10px;top:1px;border:3px solid transparent;border-bottom:4px solid var(--c);border-top:0}
+[data-module="maps"] .mp-ad-cov{margin:0 0 6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 6px}
+/* le niveau en gras sans être un titre : les titres de la carte du terrain (b) restent ceux de ses blocs */
+[data-module="maps"] .mp-ad-cov .mp-cov-lv{font-weight:700}
+[data-module="maps"] .mp-cov-dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;flex:none;background:var(--sog-muted)}
+[data-module="maps"] .mp-lg-pin::after{content:'';position:absolute;left:8px;top:1px;width:10px;height:10px;border-radius:50%;background:var(--c)}
+[data-module="maps"] .mp-ad-proc{margin:0 0 6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 6px}
+@media (max-width:767px){[data-module="maps"] .mp-ad-choose{flex:1 1 100%;min-height:var(--sog-touch)}}
 [data-module="maps"] .mp-lg-tri::after{content:'';position:absolute;left:8px;top:1px;border:5px solid transparent;border-bottom:9px solid var(--c);border-top:0}
 [data-module="maps"] .mp-chips .mp-chip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
 [data-module="maps"] .mp-data[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}
@@ -170,6 +180,7 @@ export const STYLE = `
 [data-module="maps"] .mp-dbody p{margin:2px 0}
 [data-module="maps"] .mp-lv-body{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 12px}
 [data-module="maps"] .mp-lv-also{margin:8px 0 0}
+[data-module="maps"] .mp-lv-fam{margin:6px 0 0;font-size:12px}
 [data-module="maps"] .mp-lv-also>p{margin:0;overflow-wrap:anywhere}
 [data-module="maps"] .mp-lv{flex:none;position:sticky;top:0;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
 [data-module="maps"] .mp-lv-list{flex:1 1 calc(2.5em + 9ch);min-width:0;margin:0;padding:0;list-style:none;column-width:19em;column-gap:16px;font-size:.95em;line-height:1.25}
@@ -183,6 +194,45 @@ export const STYLE = `
 /* le point qui sépare le nom des niveaux est posé dans l'écart avant eux : en début de seconde ligne il sort du texte (rogné) */
 [data-module="maps"] .mp-lv-lim::before{content:"·";position:absolute;right:100%;width:10px;text-align:center}
 [data-module="maps"] .mp-lv-n{font-weight:700;min-width:1.4em;text-align:right}
+/* mode « choisir sur la carte » (choose.js) : le fond MapLibre éteint (les couches de la Carte le sont dans le dessin), puis dans la feuille la
+   consigne, puis un groupe par famille du côté (piste, SID ou STAR, approche) : « Aucune » d'abord, sept lignes au plus (--mp-ch-row chacune), le reste replié sous « N autres » (la feuille est la seule
+   surface qui défile, V3 § 10.30) ; la ligne
+   porte la teinte de la procédure (--c), ⌛ en gris, ⚠ en orange, la ligne surlignée (data-hl) comme son tracé */
+[data-module="maps"] .mp-choosing .mp-map{opacity:.45}
+[data-module="maps"] .mp-dbody[data-kind=choose]{--mp-ch-row:36px}
+[data-module="maps"] .mp-ch-hint{margin:0 0 4px}
+[data-module="maps"].f-sheet:not([data-sheet="expanded"]) .mp-ch-hint{display:none}
+[data-module="maps"] .mp-ch-list{border-top:1px solid var(--sog-border)}
+[data-module="maps"] .mp-ch-grp{margin:0 0 4px}
+[data-module="maps"] .mp-ch-head{margin:4px 0 0;font-size:11px;line-height:16px;font-weight:600;color:var(--sog-muted);text-transform:uppercase;letter-spacing:.04em}
+[data-module="maps"] .mp-ch-fold{display:block;width:100%;min-height:28px;margin:0;padding:0 8px;border:0;border-bottom:1px solid var(--sog-border);background:none;color:var(--sog-accent);font:inherit;font-size:var(--sog-size-s);text-align:left;cursor:pointer;touch-action:manipulation}
+[data-module="maps"] .mp-ch-subs{margin:0 0 0 22px;border-left:2px solid var(--c,var(--sog-border))}
+[data-module="maps"] .mp-ch-row.mp-ch-sub{font-weight:600}
+[data-module="maps"] .mp-ch-sums{margin:0 0 4px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px)}
+[data-module="maps"] .mp-ch-sum{display:flex;align-items:center;gap:8px;min-height:32px;padding:0 0 0 8px;border-bottom:1px solid var(--sog-border);box-shadow:inset 3px 0 0 var(--c,var(--sog-fg))}
+[data-module="maps"] .mp-ch-sum:last-child{border-bottom:0}
+[data-module="maps"] .mp-ch-sum-k{flex:none;min-width:5.5em;min-height:0;margin:0;padding:0 4px 0 0;border:0;background:none;font:inherit;font-size:var(--sog-size-s);color:var(--sog-accent);text-align:left;cursor:pointer;touch-action:manipulation}
+[data-module="maps"] .mp-ch-sum-v{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+[data-module="maps"] .mp-ch-x{flex:none;width:36px;height:32px;margin:0;padding:0;border:0;background:none;color:var(--sog-muted);font:inherit;cursor:pointer;touch-action:manipulation}
+[data-module="maps"] .mp-ch-row[aria-pressed=true]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 20%,var(--sog-surface));box-shadow:inset 3px 0 0 var(--c,var(--sog-accent))}
+[data-module="maps"] .mp-ch-off{flex:none;font-size:11px;font-weight:600;color:var(--sog-muted)}
+[data-module="maps"] .mp-ch-subh{padding:2px 8px 0;font-size:11px;line-height:16px;color:var(--sog-accent)}
+[data-module="maps"] .mp-ch-tag{flex:none;padding:0 4px;border:1px solid var(--sog-border);border-radius:3px;font-size:11px;line-height:16px;font-weight:600;color:var(--sog-muted)}
+[data-module="maps"] .mp-ch-wind{flex:none;font-weight:600;color:var(--sog-fg);font-variant-numeric:tabular-nums}
+[data-module="maps"] .mp-ch-wind[data-sev=ok]{color:var(--sog-ok)}
+[data-module="maps"] .mp-ch-wind[data-sev=warn]{color:var(--sog-warn)}
+[data-module="maps"] .mp-ch-wind[data-sev=alert]{color:var(--sog-err)}
+[data-module="maps"] .mp-ch-fix{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:4px 0 0;color:var(--sog-warn)}
+[data-module="maps"] .mp-ch-fix .f-btn{margin:0}
+[data-module="maps"] .mp-ch-done{display:block;width:100%;min-height:var(--sog-touch);margin:4px 0 8px}
+[data-module="maps"] .mp-ch-row{box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;height:var(--mp-ch-row);min-height:0;margin:0;padding:0 8px;border:0;border-bottom:1px solid var(--sog-border);border-radius:0;background:none;color:var(--c,var(--sog-fg));font:inherit;font-weight:700;text-align:left;cursor:pointer;touch-action:manipulation}
+[data-module="maps"] .mp-ch-row[data-hl="1"]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 14%,var(--sog-surface))}
+[data-module="maps"] .mp-ch-none{color:var(--sog-fg)}
+[data-module="maps"] .mp-ch-sw{flex:none;width:12px;height:12px;background:var(--c)}
+[data-module="maps"] .mp-ch-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-module="maps"] .mp-ch-old{flex:none;color:var(--sog-muted)}
+[data-module="maps"] .mp-ch-warn{flex:none;color:var(--sog-warn)}
+[data-module="maps"] .mp-ch-empty{margin:6px 0 0}
 [data-module="maps"] .mp-lvl{display:flex;align-items:center;gap:8px}
 [data-module="maps"] .mp-lvl .f-btn{margin:0;min-width:var(--sog-touch);font-weight:700}
 [data-module="maps"].mp-editing .mp-prof{cursor:ns-resize}

@@ -25,6 +25,8 @@ import {
 } from './lib/map_base.js';
 import {
   schedule,
+  moving,
+  settle,
   mapSize,
   mapBase,
   relief,
@@ -58,11 +60,13 @@ import {
   previewAd
 } from './vfr.js';
 
-/** Bibliothèques du dossier du module (scripts classiques, une fois par page) : [variable globale, fichier]. */
+/** Bibliothèques du dossier du module (scripts classiques, une fois par page) : [variable globale (chemin pointé), fichier]. */
 const LIBS = [
   ['SiaAero', 'lib/aero_symbols.js'],
   ['SiaProfile', 'lib/vertical_profile.js'],
   ['MapsRender', 'render.js'],
+  ['MapsRender.parts.airspace', 'render_airspace.js'], // les parties du rendu, après son noyau (SPEC § 1)
+  ['MapsRender.parts.route', 'render_route.js'],
   ['MapsProfile', 'profile.js'],
   ['MapsMission', 'mission.js'],
   ['MapsContours', 'contours.js'],
@@ -73,7 +77,7 @@ const LIBS = [
  *  conserve dès l'installation. */
 export async function loadLibs() {
   for (const [glob, file] of LIBS)
-    if (!window[glob]) await import(new URL(`${file}?v=0`, import.meta.url).href);
+    if (!glob.split('.').reduce((o, k) => o?.[k], window)) await import(new URL(`${file}?v=0`, import.meta.url).href);
 }
 /** Style du fond : celui du profil d'affichage, de jour ; la nuit, le style sombre. */
 export const styleFor = () => baseStyle({
@@ -203,9 +207,11 @@ export function buildOverlay(ctx, modesHtml) {
 export function syncButtons() {
   if (!S?.routeBtn) return;
   const on = !!S.boxOn,
-    flight = on && !onMission(),
+    pick = !!S.choose, // mode « choisir sur la carte » : seul Recentrer reste (Couches, mode, Édition, Suivre : hors sujet)
+    flight = on && !onMission() && !pick,
     edit = flight && S.edit.on;
   show(S.fitBtn, on);
+  show(S.layersBtn, !pick);
   show(S.routeBtn, flight && !edit);
   show(S.modeBtn, flight && !edit);
   show(S.editBtn, flight);
@@ -305,7 +311,8 @@ export function header() {
     const f = S.route.flight,
       r = f?.route || {},
       lvl = S.route.levelFt ? level(S.route.levelFt) : '',
-      d = S.route.points.length >= 2 ? MapsRender.distances(S.route.points).pop() : 0,
+      // la distance du chemin volé (route et procédures choisies), la même que celle du profil
+      d = S.route.flown?.length > 1 ? S.route.flown.at(-1).nm : S.route.points.length >= 2 ? MapsRender.distances(S.route.points).pop() : 0,
       state = S.route.points.length ? tt(isStarted(f) ? TX.stFlying : TX.stPlanned) : '',
       ends = r.dep || r.arr ? tt(TX.summary, {
         dep: r.dep || '?',
@@ -329,6 +336,7 @@ export function header() {
 export function helpAnchor() {
   if (!S) return null;
   if (S.edit.on) return 'maps-edit';
+  if (S.choose) return 'maps-choose';
   const k = S.dpanel;
   if (k === 'layers') return 'maps-layers';
   if (k === 'weather') return 'maps-weather';
@@ -390,8 +398,8 @@ export async function startTiles() {
       mapBase(map);
       mapSize(); // le cadre a pu changer de taille pendant le chargement des tuiles
       relief();
-      map.on('move', schedule);
-      map.on('moveend', schedule);
+      map.on('move', moving); // pendant le geste l'image suit (draw.js), le dessin complet au repos
+      map.on('moveend', settle); // repos : le dessin complet
       map.on('click', e => S && tapAt(e.point.x, e.point.y, e.lngLat.lat, e.lngLat.lng));
       // survol à la souris seulement (les événements souris qui suivent un toucher sont ignorés)
       map.on('mousemove', e => {

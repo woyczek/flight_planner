@@ -19,6 +19,9 @@ import {
   isStarted
 } from '../../frame/lib/current_flight.js';
 import {
+  routeMidpoint
+} from '../../frame/lib/flight_path.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -76,11 +79,12 @@ async function loadWeather(key) {
       key,
       state: 'none'
     };
-    const mid = pts[Math.floor(pts.length / 2)],
+    // le point qui choisit le modèle : le même qu'Atmosphère (flight_path.js routeMidpoint, mi-longueur de la route)
+    const mid = routeMidpoint(pts),
       places = Sx.sectionPlaces(pts),
       dep = depTime(f),
       r = await S.ctx.weather.grid(places, dep, Sx.sectionVars(levelFt, pts), {
-        model: S.ctx.weather.modelFor(mid.lat, mid.lon).id,
+        model: (await S.ctx.weather.modelFor(mid.lat, mid.lon))?.id, // ctx.weather est asynchrone (INTEGRATION § 14.1)
         cacheOnly: true
       }).catch(() => null);
     if (!r?.locs?.length) return {
@@ -91,7 +95,7 @@ async function loadWeather(key) {
       route: pts,
       levelFt,
       // le profil de Carburant n'est repris que s'il est de Carburant (écrit par la carte, il est périmé : taux par défaut)
-      profile: f?.by && f.by !== 'fuel' ? null : f?.profile || null,
+      profile: f?.by === 'maps' ? null : f?.profile || null, // périmé après une modification sur la carte seulement
       profileLevelFt: levelFt,
       depTime: dep,
       cruiseKt: A.cruiseKtOf(f?.route?.text) || 200,

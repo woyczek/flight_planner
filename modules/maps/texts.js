@@ -197,8 +197,11 @@ export const TX = {
     nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT'],
     wind: ['Vents en altitude', 'Winds aloft', 'Höhenwinde', 'Vientos en altura'],
     contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel'],
+    cov: ['Couverture', 'Coverage', 'Abdeckung', 'Cobertura'],
     zoneLabels: ['Noms des espaces', 'Airspace names', 'Namen der Lufträume', 'Nombres de los espacios'],
-    awLabels: ['Noms des voies', 'Airway names', 'Namen der Flugwege', 'Nombres de las aerovías']
+    awLabels: ['Noms des voies (distance, routes)', 'Airway names (length, tracks)', 'Namen der Flugwege (Länge, Kurse)',
+      'Nombres de las aerovías (distancia, rumbos)'
+    ]
   },
   layersReset: ['Tout remettre', 'Reset all', 'Alles zurücksetzen', 'Restablecer todo'],
   detail: ['Complexité', 'Complexity', 'Komplexität', 'Complejidad'],
@@ -215,8 +218,12 @@ export const TX = {
     zoneLabels: ['Noms des espaces', 'Airspace names', 'Luftraumnamen', 'Nombres de espacios'],
     awLow: ['Voies basses', 'Lower airways', 'Untere Flugwege', 'Aerovías inferiores'],
     awHigh: ['Voies hautes', 'Upper airways', 'Obere Flugwege', 'Aerovías superiores'],
-    awLabels: ['Étiquettes de tronçon (distance, route)', 'Segment labels (distance, track)', 'Abschnittsbeschriftungen (Länge, Kurs)',
-      'Etiquetas de tramo (distancia, rumbo)'
+    awLabels: ['Noms des voies (distance, routes)', 'Airway names (length, tracks)', 'Namen der Flugwege (Länge, Kurse)',
+      'Nombres de las aerovías (distancia, rumbos)'
+    ],
+    procNames: ['Noms des procédures', 'Procedure names', 'Namen der Verfahren', 'Nombres de los procedimientos'],
+    procCons: ['Points et contraintes des procédures', 'Procedure fixes and constraints', 'Punkte und Beschränkungen der Verfahren',
+      'Puntos y restricciones de los procedimientos'
     ],
     navaids: ['Balises', 'Beacons', 'Funkfeuer', 'Radioayudas'],
     fixes: ['Points des voies', 'Airway points', 'Flugwegpunkte', 'Puntos de aerovía'],
@@ -281,6 +288,147 @@ export const TX = {
   ],
   lgFixes: ['Points des voies et balises à moins de 3 NM de la route', 'Airway points and beacons within 3 NM of the route',
     'Streckenpunkte und Funkfeuer innerhalb von 3 NM der Route', 'Puntos de aerovías y radioayudas a menos de 3 NM de la ruta'
+  ],
+  lgCons: [
+    'Contraintes des procédures : flèche haute = au moins, flèche basse = au plus, point = exactement, barre = entre deux altitudes',
+    'Procedure constraints: up arrow = at or above, down arrow = at or below, dot = exactly, bar = between two altitudes',
+    'Verfahrensbeschränkungen: Pfeil nach oben = mindestens, nach unten = höchstens, Punkt = genau, Balken = zwischen zwei Höhen',
+    'Restricciones de los procedimientos: flecha arriba = como mínimo, abajo = como máximo, punto = exactamente, barra = entre dos altitudes'
+  ],
+  // procédures choisies (V3_SPECIFICATION § 10.20) : état de la source ajouté au libellé du tracé, carte du terrain
+  procX: ['X-Plane, local', 'X-Plane, local', 'X-Plane, lokal', 'X-Plane, local'],
+  procLnm: ['Little Navmap, local', 'Little Navmap, local', 'Little Navmap, lokal', 'Little Navmap, local'],
+  // procédure périmée : le seul symbole « ⌛ » (décision du 29 octobre), jamais le mot ; son sens dans la légende et l'infobulle
+  procOutdated: ['Lue sous un cycle antérieur', 'Read under an earlier cycle', 'Unter einem früheren Zyklus gelesen',
+    'Leída bajo un ciclo anterior'
+  ],
+  adProcDep: ['Départ', 'Departure', 'Abflug', 'Salida'],
+  adProcArr: ['Arrivée', 'Arrival', 'Ankunft', 'Llegada'],
+  adProcRwy: ['piste {r}', 'runway {r}', 'Piste {r}', 'pista {r}'],
+  adProcTrans: ['transition {t}', 'transition {t}', 'Übergang {t}', 'transición {t}'],
+  adProcNone: ['aucune procédure', 'no procedure', 'kein Verfahren', 'sin procedimiento'],
+  adProcUnset: ['pas encore choisi', 'not chosen yet', 'noch nicht gewählt', 'aún sin elegir'],
+  adProcLost: ['{id} (introuvable dans les données)', '{id} (not found in the data)', '{id} (in den Daten nicht gefunden)',
+    '{id} (no encontrado en los datos)'
+  ],
+  adProcChange: ['Changer', 'Change', 'Ändern', 'Cambiar'],
+  adProcSource: ['Source', 'Source', 'Quelle', 'Fuente'],
+  adProcSourceTip: ['La page publiée de la procédure (nouvel onglet)', 'The published page of the procedure (new tab)',
+    'Die veröffentlichte Seite des Verfahrens (neuer Tab)', 'La página publicada del procedimiento (nueva pestaña)'
+  ],
+  adProcChoose: ['Choisir sur la carte', 'Choose on the map', 'Auf der Karte wählen', 'Elegir en el mapa'],
+  adProcChooseTip: ['Les procédures de ce côté tracées sur la carte : un toucher choisit, Carburant l’écrit',
+    'The procedures of this side drawn on the map: one tap chooses, Fuel writes it',
+    'Die Verfahren dieser Seite auf der Karte: ein Tippen wählt, Kraftstoff schreibt es',
+    'Los procedimientos de este lado en el mapa: un toque elige, Combustible lo escribe'
+  ],
+  adProcChangeTip: ['Changer la piste et les procédures dans Carburant', 'Change the runway and procedures in Fuel',
+    'Piste und Verfahren im Kraftstoff ändern', 'Cambiar la pista y los procedimientos en Combustible'
+  ],
+  // mode « choisir sur la carte » (V3_SPECIFICATION § 10.23, choose.js) : le titre de la famille montrée (une par ouverture), la
+  // consigne, « Aucune », les puces de piste, les lignes, les marques ⚠ en infobulle, les cas vides
+  // mode choix (V3 § 10.30) : titre du volet par côté, titre de chaque groupe, « Terminer », lignes de correction, vent d'une piste
+  chSide: {
+    dep: ['Départ · {icao}', 'Departure · {icao}', 'Abflug · {icao}', 'Salida · {icao}'],
+    arr: ['Arrivée · {icao}', 'Arrival · {icao}', 'Ankunft · {icao}', 'Llegada · {icao}']
+  },
+  chFam: {
+    rwy: ['Piste', 'Runway', 'Piste', 'Pista'],
+    sid: ['SID', 'SID', 'SID', 'SID'],
+    star: ['STAR', 'STAR', 'STAR', 'STAR'],
+    app: ['Approche', 'Approach', 'Anflug', 'Aproximación'],
+    appTrans: ['Transition de l’approche', 'Approach transition', 'Anflugübergang', 'Transición de la aproximación']
+  },
+  chHint: ['Touchez une ligne ou un tracé : le choix s’ajoute et reste sur la carte ; « Terminer » le rend à Carburant.',
+    'Tap a row or a trace: the choice adds up and stays on the map; "Done" hands it to Fuel.',
+    'Zeile oder Spur antippen: die Wahl kommt hinzu und bleibt auf der Karte; „Fertig“ gibt sie an Kraftstoff.',
+    'Toque una línea o un trazado: la elección se suma y queda en el mapa; «Terminar» la entrega a Combustible.'
+  ],
+  chDone: ['Terminer', 'Done', 'Fertig', 'Terminar'],
+  chServes: ['{p} sert la {r} —', '{p} serves {r} —', '{p} bedient {r} —', '{p} sirve a la {r} —'],
+  chUseRwy: ['Passer en {r}', 'Switch to {r}', 'Auf {r} wechseln', 'Pasar a la {r}'],
+  chNotServes: ['{p} ne sert pas la {r} —', '{p} does not serve {r} —', '{p} bedient {r} nicht —', '{p} no sirve a la {r} —'],
+  chUseProc: ['Choisir {p}', 'Choose {p}', '{p} wählen', 'Elegir {p}'],
+  chWindTip: ['METAR {id} : vent {d}° {kt} kt — face {h} kt (négatif : arrière), travers {x} kt',
+    'METAR {id}: wind {d}° {kt} kt — head {h} kt (negative: tail), cross {x} kt',
+    'METAR {id}: Wind {d}° {kt} kt — Gegenwind {h} kt (negativ: Rückenwind), Seitenwind {x} kt',
+    'METAR {id}: viento {d}° {kt} kt — de cara {h} kt (negativo: de cola), cruzado {x} kt'
+  ],
+  chNone: ['Aucune', 'None', 'Keine', 'Ninguna'],
+  chFold: ['{n} autres · Toutes', '{n} more · All', '{n} weitere · Alle', '{n} más · Todas'],
+  chFoldLess: ['Compatibles seulement', 'Compatible only', 'Nur passende', 'Solo compatibles'],
+  chNotFit: ['Ne va pas avec le choix', 'Does not fit the choice', 'Passt nicht zur Wahl', 'No encaja con la elección'],
+  chToRoute: ['Vers votre route', 'Towards your route', 'Zu Ihrer Route', 'Hacia su ruta'],
+  chExit: ['sortie {p}', 'exit {p}', 'Ausgang {p}', 'salida {p}'],
+  chEntry: ['entrée {p}', 'entry {p}', 'Eintritt {p}', 'entrada {p}'],
+  chGoto: ['Aller au groupe {f}', 'Go to the {f} group', 'Zur Gruppe {f}', 'Ir al grupo {f}'],
+  chSev: {
+    ok: ['vent dans les limites', 'wind within limits', 'Wind innerhalb der Grenzen', 'viento dentro de los límites'],
+    warn: ['vent à surveiller (arrière ou travers)', 'wind to watch (tail or cross)', 'Wind beachten (Rücken- oder Seitenwind)',
+      'viento a vigilar (de cola o cruzado)'
+    ],
+    alert: ['vent hors limites (arrière ou travers)', 'wind beyond limits (tail or cross)',
+      'Wind außerhalb der Grenzen (Rücken- oder Seitenwind)',
+      'viento fuera de límites (de cola o cruzado)'
+    ]
+  },
+  chRwyNotServed: ['Pas desservie par {p}', 'Not served by {p}', 'Nicht bedient von {p}', 'No servida por {p}'],
+  chVia: ['{p} via {t}', '{p} via {t}', '{p} über {t}', '{p} vía {t}'],
+  chClear: ['Retirer : {f}', 'Clear: {f}', 'Entfernen: {f}', 'Quitar: {f}'],
+  chTrans: ['Transitions de l’approche', 'Approach transitions', 'Anflugübergänge', 'Transiciones de la aproximación'],
+  chNoTrans: ['Sans transition', 'No transition', 'Ohne Übergang', 'Sin transición'],
+  chRwy: ['Piste {r}', 'Runway {r}', 'Piste {r}', 'Pista {r}'],
+  chEmpty: ['Rien de publié à choisir pour {icao}.', 'Nothing published to choose for {icao}.',
+    'Für {icao} ist nichts zur Auswahl veröffentlicht.', 'No hay nada publicado para elegir en {icao}.'
+  ],
+  chConflictRwy: ['Ne dessert pas la piste {rwy}', 'Does not serve runway {rwy}', 'Bedient Piste {rwy} nicht',
+    'No sirve a la pista {rwy}'
+  ],
+  chConflictStarApp: ['Ne dessert aucune piste de {app}', 'Serves no runway of {app}', 'Bedient keine Piste von {app}',
+    'No sirve a ninguna pista de {app}'
+  ],
+  chNoData: ['Ni piste ni procédure connue pour {icao} : la carte reste telle quelle.',
+    'No runway or procedure known for {icao}: the map stays as it is.',
+    'Keine Piste und kein Verfahren für {icao} bekannt: die Karte bleibt unverändert.',
+    'Ninguna pista ni procedimiento conocidos para {icao}: el mapa queda como está.'
+  ],
+  // couche « Procédures » (V3_SPECIFICATION § 10.22) : légende (une ligne par niveau), ligne de la carte du terrain (le niveau, puis la
+  // raison d'AeroCatalogue.COVERAGE quand le catalogue du cadre la donne, « périmé », et les procédures détenues)
+  lgCov: {
+    green: ['Terrain dont les procédures sont détenues', 'Aerodrome whose procedures are held',
+      'Flugplatz, dessen Verfahren vorliegen', 'Aeródromo cuyos procedimientos se tienen'
+    ],
+    orange: ['Terrain dont les procédures sont lues en partie ou se lisent à la demande',
+      'Aerodrome whose procedures are partly read or read on demand',
+      'Flugplatz, dessen Verfahren teilweise gelesen sind oder auf Anfrage gelesen werden',
+      'Aeródromo cuyos procedimientos están leídos en parte o se leen a petición'
+    ],
+    red: ['Terrain sans procédure lisible', 'Aerodrome with no readable procedure', 'Flugplatz ohne lesbares Verfahren',
+      'Aeródromo sin procedimiento legible'
+    ]
+  },
+  covLevel: {
+    green: ['Procédures : détenues', 'Procedures: held', 'Verfahren: vorhanden', 'Procedimientos: disponibles'],
+    orange: ['Procédures : lisibles à la demande', 'Procedures: readable on demand', 'Verfahren: auf Anfrage lesbar',
+      'Procedimientos: legibles a petición'
+    ],
+    red: ['Procédures : aucune', 'Procedures: none', 'Verfahren: keine', 'Procedimientos: ninguno'],
+    // orange de la raison `partial` (V3 § 10.26) : les procédures sont détenues, une partie n'est pas lue
+    partial: ['Procédures : détenues en partie', 'Procedures: partly held', 'Verfahren: teilweise vorhanden',
+      'Procedimientos: disponibles en parte'
+    ]
+  },
+  // ce qui manque d'un terrain lu en partie (aerodb.coverage : partial { pages, doubt }), au singulier et au pluriel
+  covPages: {
+    one: ['{n} page non lue', '{n} page not read', '{n} Seite nicht gelesen', '{n} página sin leer'],
+    many: ['{n} pages non lues', '{n} pages not read', '{n} Seiten nicht gelesen', '{n} páginas sin leer']
+  },
+  covDoubt: {
+    one: ['{n} fiche à vérifier', '{n} record to check', '{n} Verfahren zu prüfen', '{n} ficha por revisar'],
+    many: ['{n} fiches à vérifier', '{n} records to check', '{n} Verfahren zu prüfen', '{n} fichas por revisar']
+  },
+  covCounts: ['SID {s} · STAR {t} · APP {a}', 'SID {s} · STAR {t} · APP {a}', 'SID {s} · STAR {t} · APP {a}',
+    'SID {s} · STAR {t} · APP {a}'
   ],
   wxTitle: ['Coupe météo', 'Weather cross-section', 'Wetterschnitt', 'Corte meteorológico'],
   wxLabel: ['Coupe météo le long de la route', 'Weather cross-section along the route', 'Wetterschnitt entlang der Route',
@@ -430,6 +578,10 @@ export const TX = {
   vfrPage: ['page {p}', 'page {p}', 'Seite {p}', 'página {p}'],
   vfrPart: ['(certaines peuvent n\'être qu\'une partie d\'un itinéraire)', '(some may be only part of a route)',
     '(manche sind möglicherweise nur ein Teil einer Route)', '(algunas pueden ser solo una parte de un itinerario)'
+  ],
+  levelsFamily: ['Secteurs d’une même famille qui se recouvrent : donnée de la source',
+    'Overlapping sectors of one family: as given by the source',
+    'Sich überlappende Sektoren einer Familie: Angabe der Quelle', 'Sectores de una misma familia que se solapan: dato de la fuente'
   ],
   levelsTitle: ['{n} espaces sur ce point', '{n} airspaces at this point', '{n} Lufträume an diesem Punkt',
     '{n} espacios en este punto'

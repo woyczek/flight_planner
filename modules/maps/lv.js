@@ -41,6 +41,20 @@ const ZONE_COL = {
  *  largeur que demandent ses colonnes (14 px au moins, 22 px au plus sur un téléphone, moins de 600 px ; 400 px au plus sinon), 60 % du
  *  bloc au plus (les 14 px passent avant : la liste cède, elle passe sur deux lignes puis sous le graphique), et jamais plus haut que le bloc. Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas sous la main ici, la
  *  lecture des terrains est asynchrone : la liste garde la notation SIA « ASFC ») ; plafond inconnu : colonne pointillée « ? ». */
+/** Vrai quand des espaces d'une même famille de nom (le nom sans son numéro ou sa lettre de secteur), de même type et de même
+ *  classe se recouvrent ici avec des planchers différents : une note le dit sous la liste (Dublin : openAIP code les CTA 3 à 6
+ *  sans leur trou intérieur ; donnée de la source, la Carte ne découpe rien). */
+function sameFamilyOverlap(list, read) {
+  const fam = a => [a.type, a.cls, String(a.name || '').toUpperCase().replace(/(\s+(\d+[A-Z]?|[A-Z]))+$/, '').trim()].join('|'),
+    floors = new Map();
+  for (const a of list) {
+    const l = read(a.lower, false),
+      k = fam(a);
+    if (!floors.has(k)) floors.set(k, new Set());
+    floors.get(k).add(l.ok && Number.isFinite(l.ft) ? Math.round(l.ft) : 'x');
+  }
+  return [...floors.values()].some(s => s.size > 1);
+}
 export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
   bh -= also?.length ? 56 : 0; // la ligne repliée « Aussi ici » (44 px + son espacement) reste dans la vue, sous le graphique
   // la même lecture des limites que la coupe verticale (SiaAero.limitRead) : « 800 ASFC » est 800 ft au-dessus du sol, pas le sol
@@ -127,7 +141,8 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
       note = [x.act, x.info].filter(Boolean).join(' · ');
     return `<li${note ? ` title="${esc(note)}"` : ''}><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><span class="mp-lv-txt"><b class="mp-lv-name">${esc(name)}</b>${tail ? `<span class="mp-lv-lim f-muted">${esc(tail)}</span>` : ''}</span></li>`;
   }).join('');
-  return `<div class="mp-lv-body"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>${alsoHtml(also)}`;
+  const fam = sameFamilyOverlap(list, read) ? `<p class="f-muted mp-lv-fam">${esc(tt(TX.levelsFamily))}</p>` : '';
+  return `<div class="mp-lv-body"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>${fam}${alsoHtml(also)}`;
 }
 /** Ligne repliée sous la liste : les espaces écartés du point (FIR, UIR, SIV, secteurs, surface au plafond), par leur nom, sans
  *  colonne ni compte dans le titre (règle 21 amendée). Rien quand il n'y en a pas ; repliée à chaque écriture. */

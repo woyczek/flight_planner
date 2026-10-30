@@ -101,6 +101,7 @@ export async function applyMission() {
         wait: true
       }),
       text = typeof r?.value === 'string' ? r.value : r?.text;
+    if (!S) return; // la Carte a été quittée pendant la lecture
     if (!text) throw new Error('empty');
     S.mission = MapsMission.parse(window.jsyaml.load(text));
     S.mission.id ||= hit.id;

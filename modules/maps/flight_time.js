@@ -9,7 +9,8 @@ import {
   setPressed,
   dLon,
   level,
-  nmTxt
+  nmTxt,
+  flownPts
 } from './state.js';
 import {
   nearLon
@@ -26,6 +27,9 @@ import {
 import {
   TX
 } from './texts.js';
+import {
+  TRAIL_MAX
+} from '../../frame/lib/trail.js';
 import {
   schedule
 } from './draw.js';
@@ -48,15 +52,32 @@ const STALE_MS = 120e3,
 /** Vrai si le vol démarré est arrivé (progress.phase « arrived »). */
 export const isArrived = f => isStarted(f) && f?.progress?.phase === 'arrived';
 /** Même route (points, niveau, départ) : seule la progression a changé. */
-export const sameRoute = (a, b) => !!a && !!b && JSON.stringify([a.route?.points, a.level?.ft, a.started?.at]) === JSON.stringify([b.route
-  ?.points, b.level?.ft, b.started?.at
-]);
+export const sameRoute = (a, b) => !!a && !!b && JSON.stringify(sigOf(a)) === JSON.stringify(sigOf(b));
+/** Ce qui change la route dessinée : les points, le niveau, le départ, la route et les terrains, les procédures choisies et le
+ *  profil prévu par Carburant (profile.path suit les procédures). */
+const sigOf = f => [f.route?.points, f.level?.ft, f.started?.at, f.route?.dep, f.route?.arr, f.route?.procedures, f.profile?.path];
 /** Position valide { lat, lon, … } d'un objet, sinon null. */
 const posOf = p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) ? {
   ...p,
   lat: +p.lat,
   lon: +p.lon
 } : null;
+/** Trace volée gardée par le cadre sur cet appareil (ctx.live.trail() : { from: started.at, trail: [[lat, lon, altFt | null, s
+ *  depuis started.at], …] }, INTEGRATION § 6 ; jamais dans le vol partagé) en positions { lat, lon, altFt, at } ; [] sans trace
+ *  de ce départ ou sans started.at lisible. */
+const trailOf = (f, t0) => {
+  const L = S.ctx?.live?.trail?.(),
+    tr = L && L.from === f?.started?.at ? L.trail : null;
+  if (!Array.isArray(tr) || !Number.isFinite(t0)) return [];
+  // coupée à TRAIL_MAX avant d'être lue, et un point hors des bornes de la Terre n'est jamais tracé
+  return tr.slice(-TRAIL_MAX).filter(q => Array.isArray(q) && Number.isFinite(+q[0]) && Math.abs(+q[0]) <= 90 && Number.isFinite(+q[1]) &&
+    Math.abs(+q[1]) <= 180 && Number.isFinite(+q[3])).map(q => ({
+    lat: +q[0],
+    lon: +q[1],
+    altFt: q[2] === null || q[2] === undefined ? null : +q[2],
+    at: new Date(t0 + q[3] * 1000).toISOString()
+  }));
+};
 /** Position réelle de ce vol : progress.actual, sauf une position d'avant started.at (celle du vol précédent) ; null sinon. */
 const actualOf = f => {
   const a = posOf(f?.progress?.actual),
@@ -91,12 +112,15 @@ export function progressUpdate() {
     return writeNotes();
   }
   const a = actualOf(f),
-    now = Date.now();
-  S.trail = [...(S.trail || []), ...(Array.isArray(f.progress?.actual?.trail) ? f.progress.actual.trail.map(posOf).filter(Boolean) : []),
-      ...(a ? [a] : [])
-    ].filter(p => !p.at || !Number.isFinite(t0) || Date.parse(p.at) >= t0) // rien du vol précédent
-    .filter(p => !p.at || now - Date.parse(p.at) <= TRAIL_MS).filter((p, i, all) => !i || p.lat !== all[i - 1].lat || p.lon !== all[i - 1]
-      .lon).slice(-400);
+    now = Date.now(),
+    // la trace du cadre (ctx.live.trail(), frame/lib/trail.js) : tout le vol depuis started.at, relue à chaque
+    // lecture (un changement d'onglet ne la perd plus) ; la Carte n'y ajoute que ses positions plus récentes que son dernier point
+    own = trailOf(f, t0),
+    last = own.length ? Date.parse(own.at(-1).at) : -Infinity,
+    mine = [...(S.trail || []), ...(a ? [a] : [])].filter(p => !p.at || !Number.isFinite(t0) || Date.parse(p.at) >=
+      t0) // rien du vol précédent
+    .filter(p => p.at && Date.parse(p.at) > last && now - Date.parse(p.at) <= TRAIL_MS);
+  S.trail = [...own, ...mine].filter((p, i, all) => !i || p.lat !== all[i - 1].lat || p.lon !== all[i - 1].lon).slice(-(TRAIL_MAX + 400));
   const st = progressState();
   S.progHtml = progressHtml(st);
   writeNotes();
@@ -114,7 +138,7 @@ export function progressUpdate() {
 }
 /** Projection d'une position sur la route : { nm (depuis le départ), xtk (écart latéral, NM, positif à droite), total }. */
 function alongRoute(p) {
-  const pts = S.route.points;
+  const pts = flownPts();
   if (pts.length < 2 || !p) return null;
   const cum = MapsRender.distances(pts);
   let best = null;
@@ -145,7 +169,9 @@ function alongRoute(p) {
  *  péremption. */
 function progressState() {
   const f = S.route.flight,
-    pl = plannedPositionAt(f),
+    pl = plannedPositionAt(f, Date.now(), {
+      path: flownPts()
+    }),
     planned = pl ? {
       ...pl,
       altFt: pl.phase === 'taxi' ? 0 : null
@@ -153,7 +179,7 @@ function progressState() {
     actual = actualOf(f),
     ageMs = actual?.at ? Date.now() - Date.parse(actual.at) : 0,
     pa = actual ? alongRoute(actual) : null,
-    total = pa?.total ?? (S.route.points.length > 1 ? MapsRender.distances(S.route.points).pop() : 0),
+    total = pa?.total ?? (flownPts().length > 1 ? MapsRender.distances(flownPts()).pop() : 0),
     pp = planned ? {
       nm: planned.nmFromDep,
       total
@@ -208,16 +234,17 @@ function progressHtml(st) {
     }))}</span>` : '';
   return `<p><b>${esc(parts[0] || '')}</b>${parts.length > 1 ? ` · ${esc(parts.slice(1).join(' · '))}` : ''}${stale}${src}</p>${div}`;
 }
-/** Avion vu de dessus orienté au cap (degrés vrais), plein ou creux, liseré du fond. */
-function drawPlane(ctx, c, hdg, col, filled, r = 9) {
+/** Avion vu de dessus orienté au cap (degrés vrais), plein ou creux, liseré du fond ; la POINTE de la flèche est sur la position
+ *  (utilisateur, 29 octobre : « c'est la pointe de la flèche qui doit indiquer la position, pas son centre »). */
+export function drawPlane(ctx, c, hdg, col, filled, r = 9) {
   ctx.save();
   ctx.translate(c.x, c.y);
   ctx.rotate((+hdg || 0) * Math.PI / 180);
   ctx.beginPath();
-  ctx.moveTo(0, -r);
-  ctx.lineTo(r * .75, r * .8);
-  ctx.lineTo(0, r * .35);
-  ctx.lineTo(-r * .75, r * .8);
+  ctx.moveTo(0, 0);
+  ctx.lineTo(r * .75, r * 1.8);
+  ctx.lineTo(0, r * 1.35);
+  ctx.lineTo(-r * .75, r * 1.8);
   ctx.closePath();
   ctx.lineJoin = 'round';
   ctx.lineWidth = 4;
@@ -247,7 +274,9 @@ function haloText(ctx, t, x, y, col) {
  *  locale de l'appareil en plus au départ et à l'arrivée ; placées par render.js avec les libellés de la route (SPEC § 13.2). */
 export function withEta(route, pxDeg) {
   if (S.ctx.query?.mission || pxDeg < 300) return route;
-  const eta = etaOf(S.route.flight);
+  const eta = etaOf(S.route.flight, Date.now(), {
+    path: flownPts()
+  });
   if (!eta) return route;
   const last = route.length - 1;
   return route.map((p, i) => {
@@ -260,7 +289,7 @@ export function withEta(route, pxDeg) {
 }
 /** Route vraie de la route au point à nm du départ (pour orienter la position prévue). */
 function trackAt(nm) {
-  const pts = S.route.points,
+  const pts = flownPts(),
     cum = MapsRender.distances(pts);
   for (let i = 0; i < pts.length - 1; i++)
     if (nm <= cum[i + 1] || i === pts.length - 2) return MapsRender.trackOf(pts[i], pts[i + 1]);
@@ -270,7 +299,7 @@ function trackAt(nm) {
 export function drawProgress(ctx, toC) {
   const st = progressState(),
     acc = S.theme.accent,
-    real = st.stale ? S.theme.muted : '#c62828',
+    real = st.stale ? S.theme.muted : MapsRender.palette(!!S.theme.dark).actual,
     ref = S.route.points[0]?.lon ?? 0;
   if (S.trail?.length > 1) {
     ctx.save();
@@ -322,7 +351,7 @@ export function drawProgressProfile(ctx) {
   if (st.pa && k && +st.actual.altFt > 0) {
     ctx.beginPath();
     ctx.arc(MapsProfile.xOf(g, st.pa.nm * k), y(+st.actual.altFt), 6, 0, Math.PI * 2);
-    ctx.fillStyle = st.stale ? S.theme.muted : '#c62828';
+    ctx.fillStyle = st.stale ? S.theme.muted : MapsRender.palette(!!S.theme.dark).actual;
     ctx.fill();
   }
   ctx.restore();

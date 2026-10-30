@@ -10,7 +10,8 @@ import {
   got,
   onMission,
   outLon,
-  level
+  level,
+  keptRoute
 } from './state.js';
 import {
   unwrapLons
@@ -34,6 +35,10 @@ import {
   showLvAt,
   closeLv
 } from './lv.js';
+import {
+  chooseTap,
+  chooseHover
+} from './choose.js';
 import {
   adAt,
   adHover,
@@ -172,6 +177,7 @@ export function llAt(x, y) {
 /** Survol de la carte en (x, y) : un terrain (aperçu de ses points de report), sinon l'infobulle de ce qui est dessous,
  *  sinon rien (l'infobulle reste 5 s). */
 export function hoverMap(x, y) {
+  if (S.choose) return chooseHover(x, y); // mode choix : seul ce qu'on peut choisir réagit
   const t = tipAt(x, y),
     ad = t || onMission() ? null : adAt(x, y);
   previewAd(ad?.icao || null);
@@ -203,6 +209,7 @@ export function mapTip(lat, lon, x, y) {
  *  point ouverte qui se ferme, l'infobulle de ce qui est dessous, le curseur sur la route, les espaces du point (SPEC § 11,
  *  § 16). */
 export function tapAt(x, y, lat, lon) {
+  if (S.choose) return chooseTap(x, y); // mode choix : un toucher sur un tracé ou un cartouche choisit, ailleurs rien
   lon = outLon(lon); // la vue peut être sur une autre copie du monde : le test des espaces se fait dans [-180, 180[
   if (!S.modeOpts.hidden) return toggleModes(false);
   closeLv();
@@ -225,7 +232,7 @@ export function tapAt(x, y, lat, lon) {
 const WIND_STEP_NM = 50;
 /** Vents à dessiner : ceux des points (route.points[].wind), plus des interpolés composante par composante tous les 50 NM. */
 function windPoints() {
-  const pts = unwrapLons((S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon))),
+  const pts = unwrapLons(keptRoute(S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon))),
     ok = w => w && Number.isFinite(+w.dirDeg) && Number.isFinite(+w.kt),
     out = [];
   if (!pts.some(p => ok(p.wind))) return out;
@@ -337,7 +344,7 @@ function drawBarb(ctx, c, w, col, lw = 1.8) {
 }
 /** Barbules de la route, sur un liseré du fond de 5 px ; rend les cadres touchés pour l'infobulle : [{ x, y, w }]. */
 export function drawWinds(ctx, toC) {
-  const col = S.theme?.dark ? '#b3c7ff' : '#1a237e',
+  const col = MapsRender.palette(!!S.theme?.dark).wind,
     hits = [];
   for (const w of windPoints()) {
     const c = toC(w.lat, w.lon);

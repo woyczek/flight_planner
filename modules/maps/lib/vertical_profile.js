@@ -496,6 +496,8 @@
     // résumé en « +n » en haut à droite de la coupe (case réservée) ; TOC / TOD réservés avant, reserveBottom px gardés
     // libres au bas de la coupe (marques posées ensuite par l'appelant), cases prises rendues dans geo.taken
     strictLabels = false,
+    // V3 maps (ajout, sans effet par défaut) : maxLabels — au plus autant d'espaces étiquetés (les premiers dans l'ordre de tri)
+    maxLabels = Infinity,
     reserveBottom = 0,
     // V3 maps (ajout, sans effet par défaut) : win { s0, s1 } (mètres depuis le départ) — fenêtre sur l'axe des distances : seule cette
     // portion est dessinée, l'axe vertical se recale sur ce qui y est visible (relief, obstacles, espaces, trajectoire, niveaux des
@@ -736,7 +738,8 @@
       iR = W - padR,
       iT = padT,
       iB = H - padB - (strictLabels ? reserveBottom : 0);
-    let skipped = 0;
+    let skipped = 0,
+      placedZones = 0;
     const more = strictLabels ? {
       x0: iR - 34 * scale,
       y0: iT,
@@ -784,12 +787,13 @@
         for (const x of xs) cands.push(rect(x, y));
       const yT = Math.max(l.y0, iT),
         near = r => r.x1 > l.xa && r.x0 < l.xb && r.y1 >= yT - hgt - 4 * scale && r.y0 <= l.y1 + hgt + 4 * scale;
-      const r = strictLabels ? cands.find(c => ok(c) && near(c)) : cands.find(ok) || cands[0];
+      const r = placedZones >= maxLabels ? null : strictLabels ? cands.find(c => ok(c) && near(c)) : cands.find(ok) || cands[0];
       if (!r) {
         skipped++;
         continue;
       }
       taken.push(r);
+      placedZones++;
       if (r.y1 < l.y0 || r.y0 > l.y1 || r.x < l.xa || r.x > l.xb) { // trait de rappel vers la bande
         const bx = Math.min(l.xb, Math.max(l.xa, r.x)),
           by = Math.min(l.y1, Math.max(Math.max(l.y0, iT), r.y));
