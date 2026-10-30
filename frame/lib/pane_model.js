@@ -55,7 +55,7 @@ export const paneState = () => ({
 });
 
 /** Points d'une fiche qui ont une position, hors approche interrompue : [{ id, lat, lon }]. */
-const pointsOf = rec => (rec?.points || []).filter(p => p.phase !== 'missed' && num(p.lat) && num(p.lon)).map(p => ({
+export const pointsOf = rec => (rec?.points || []).filter(p => p.phase !== 'missed' && num(p.lat) && num(p.lon)).map(p => ({
   id: String(p.id ?? ''),
   lat: +p.lat,
   lon: +p.lon

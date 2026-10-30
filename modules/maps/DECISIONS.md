@@ -1682,6 +1682,12 @@ approaches as the SIA publishes them → 1ad1b897b "towards your route". Undone 
 `chooseFinish`). D60 was rewritten four times and the fixtures `_CH_FILE`, `_CH2_FILE`, `_CH3_FILE` overlap.
 Target: one pure function `paneModel(records, side, sel, route)` → groups, rows, folds, summary, corrections (bench without a
 browser, in `frame/lib` beside `procedures.js`), `choose.js` keeping only `{ sel, pend, open, hl }` and rendering.
+Done (R-M1 a and b, 30 Oct): the pane's meaning is `paneModel(input, state)` of `frame/lib/pane_model.js` with its reducers
+(bench `pane_model.html`, D82); `choose.js` keeps `S.choose = { side, icao, fromCard, ready, input, state, model, hits }`,
+`setState` recomputes the model only when `sel`, `pend` or `open` change (the highlight does not), and renders the pane and the
+map's layout from it (labels, marks, the correction line, the sub-heading and the summary are codes written with `TX.ch*`);
+the frame comes from `model.frame`. 1 108 → 808 lines; the cases of the safety net unchanged, the four that read the internal
+state (D60, D66 via `_CH_LAYOUT`, D62, D70, D77) read `state.sel` / `model.focus` / `model.groups`.
 
 **2. Labels and the collision pass** (`render.js`, `render_airspace.js`, `procs.js`, `choose.js`, `aero_symbols.js`).
 ab37f44dd airway box over the route → e14a078af procedure labels painted last → 19cb208b3 one layer list → 24197a867 one label

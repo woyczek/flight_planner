@@ -132,7 +132,8 @@ export const meta = {
     '../../frame/lib/adnames.js?v=0',
     '../../frame/lib/time.js?v=0',
     '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/icons.js?v=0',
-    '../../frame/lib/wind.js?v=0', '../../frame/lib/metar.js?v=0', '../../frame/lib/weather_store.js?v=0'
+    '../../frame/lib/wind.js?v=0', '../../frame/lib/metar.js?v=0', '../../frame/lib/weather_store.js?v=0',
+    '../../frame/lib/pane_model.js?v=0'
   ],
   // gardés au premier usage : le mode Édition et la page de réglage ; MapLibre (1 Mo, inutile sans tuiles) ; le rendu de la coupe
   // météo d'Atmosphère (au premier « Météo ») ; les contours des pays du fond uni viennent d'aerodb (zoneOutlines, le cadre), la

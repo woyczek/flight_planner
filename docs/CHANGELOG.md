@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the choose pane rendered from its model, refactor without change of behaviour (R-M1 b, § 10.33)**
+  (`modules/maps/choose.js`, `frame/lib/pane_model.js`; DECISIONS; noreg D60, D62, D66, D70, D77 read the new state). The pane
+  keeps one state `{ sel, pend, open, hl }` and renders the pane and the map from `paneModel`; its rules left `choose.js`
+  (1 108 → 808 lines).
+
 - **Map: the choose pane's model, pure (R-M1 a, § 10.33)** (`frame/lib/pane_model.js`, bench `frame/lib/test/pane_model.html`;
   maps SPEC § 5.1 target form, frame INTEGRATION; noreg D82). `paneModel(input, state)` holds the pane's meaning — groups, folds,
   families, the pending family, transitions under the STAR, route and heading axes, marks, the correction line, summary, wind,

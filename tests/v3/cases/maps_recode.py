@@ -1259,8 +1259,8 @@ _CH_ROWS = """() => { const lists = [...document.querySelectorAll('.mp-ch-list')
 _CH_LAYOUT = """async ([id, fam]) => { const C = await import('/modules/maps/choose.js'), S = window.__mp.S, cv = document.createElement('canvas').getContext('2d'),
   L = C.chooseLayout(cv, S.toC), pal = MapsRender.palette(!!S.theme.dark).procHues;
   const t = L.traces.find(x => x.it && x.it.id === id), mid = t ? { x: (t.pts[0].x + t.pts[1].x) / 2, y: (t.pts[0].y + t.pts[1].y) / 2 } : { x: -50, y: -50 };
-  return { focus: S.choose.focus, sel: S.choose.sel, n: L.traces.length, dim: L.traces.filter(t => t.dim).length, groups: L.groups.map(g => g.rows.map(r => r.id)),
-    hues: (S.choose.items[fam] || []).map(i => pal[i.hi % pal.length]), dashed: L.traces.filter(t => t.dash).length,
+  return { focus: S.choose.model.focus, sel: S.choose.state.sel, n: L.traces.length, dim: L.traces.filter(t => t.dim).length, groups: L.groups.map(g => g.rows.map(r => r.id)),
+    hues: (fam === 'appTrans' ? S.choose.model.subs : (S.choose.model.groups[fam] || {}).rows || []).map(i => pal[i.hi % pal.length]), dashed: L.traces.filter(t => t.dash).length,
     arrows: L.arrows.map(a => [a.name, a.lw]), at: C.chooseAt(mid.x, mid.y), nothing: C.chooseAt(-50, -50),
     last: L.traces.length ? L.traces[L.traces.length - 1].it.id : null, traced: [...new Set(L.traces.map(t => t.it.id))],
     hl: L.hl ? { text: L.hl.text, rows: L.hl.rows.map(r => r.id) } : null } }"""
@@ -1496,7 +1496,7 @@ def d62(c):
         c.ok(b['w'] >= p['w'] - 2, f'button {b["w"]:.0f} px of a {p["w"]:.0f} px row', 'full width on a phone')
     c.tap(sel)
     c.until("() => !!(window.__mp.S.choose && window.__mp.S.choose.ready)", timeout=10000, what='the choose mode opens')
-    st = c.js("() => { const S = window.__mp.S; return { fam: S.choose.focus, side: S.choose.side, icao: S.choose.icao, panel: S.dpanel, hash: location.hash, same: window.__noReload === 1, fit: S.fit } }")
+    st = c.js("() => { const S = window.__mp.S; return { fam: S.choose.model.focus, side: S.choose.side, icao: S.choose.icao, panel: S.dpanel, hash: location.hash, same: window.__noReload === 1, fit: S.fit } }")
     c.eq([st['side'], st['icao'], st['fam'], st['panel']], ['arr', 'LFML', 'star', 'choose'],
          'the arrival of LFML, the family the flight lacks touched first (the runway is chosen: the STAR), in the sheet', what='mode')
     c.ok(st['same'] and st['hash'] == '#maps', f'{st["hash"]}', 'no reload, the address unchanged')
@@ -1821,7 +1821,8 @@ def d70(c):
     c.js("""async () => { window.__chT = []; const o = CanvasRenderingContext2D.prototype.fillText;
       if (!o.__ch) { CanvasRenderingContext2D.prototype.fillText = function (t, x, y, w) { window.__chT.push(String(t)); return o.call(this, t, x, y, w) };
         CanvasRenderingContext2D.prototype.fillText.__ch = true }
-      window.__mp.S.choose.focus = 'app'; (await import('/modules/maps/draw.js')).schedule(); return true }""")
+      const C = window.__mp.S.choose, PM = await import('/frame/lib/pane_model.js'); C.state = { ...C.state, open: { ...C.state.open, focus: 'app' } };
+      C.model = PM.paneModel(C.input, C.state); (await import('/modules/maps/draw.js')).schedule(); return true }""")
     c.until("() => (window.__chT || []).some(t => /^(ILS|RNP) /.test(t))", timeout=6000, what='the approaches’ labels drawn')
     drawn = sorted({t for t in c.js('window.__chT') if re.match(r'^(ILS|RNP) ', t)})
     c.eq(drawn, ['ILS 31', 'RNP 31'], 'the map labels the approaches as the list does', what='map labels')
@@ -2078,7 +2079,7 @@ def d77(c):
     c.js(_PICK_JS, ['star', 'LFML.STAR.S2A.RW31.NONE'])
     c.wait(300)
     c.eq([norm(x) for x in c.js(_SUBS_JS)], ['via ODILO 1A'], 'STAR S2A ends on ODILO: only ODILO 1A is offered', what='transitions with S2A')
-    c.eq(c.js("() => window.__mp.S.choose.sel.appTrans"), None, 'the transition ABC 1A, which S2A does not lead to, is set back to "None"',
+    c.eq(c.js("() => window.__mp.S.choose.state.sel.appTrans"), None, 'the transition ABC 1A, which S2A does not lead to, is set back to "None"',
          what='chosen transition')
     # a STAR that leads to none: "No transition" alone
     c.js(_PICK_JS, ['star', 'LFML.STAR.S1A.RW31.NONE'])
