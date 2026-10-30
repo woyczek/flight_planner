@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: `base/pickup` takes the file the plan showed** (`tools/regen/base_sources.py`; aerodb INTEGRATION; noreg I24) —
+  with `zips` from the plan, a zip changed in Downloads during the question is refused for its source, nothing written.
 - **Fuel: a METAR without a wind direction no longer counts as a north wind** (`modules/fuel/weather.js` `hasWind`, `routeWind`, the
   « Real weather » filter; METAR bench, F80) — that aerodrome leaves the mean, which comes from the others; 00000KT stays a calm wind.
 - **Map: one cartouche primitive, the procedures' hues from the design tokens, refactor without change of behaviour (R-M5 a,

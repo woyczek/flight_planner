@@ -386,8 +386,10 @@ const p = await ctx.launcher.job('regen/job', { set: 'base', verb: 'purge', args
   files named EG…, but the DIFF, DELTA, filters and metadata — never aero_fetch's `ukmil_aara-tracks.xml` of the same folder; an entry's path
   never followed; each final name through `data_sync.data_path`: no Windows reserved name, no final dot or space), written `.tmp` then replaced where the build reads them
   (the root of `data/sia/` for the SIA, `data/sia/zones/gb/` for NATS: raw sources, never committed). Args `{ zones, dry? }` (dry by default: the
-  plan). Result `{ ok, dry, taken: [{ zone, source, zip, files, bytes }], missing: [{ zone, source, expected }], failed: [{ zone, source, error }],
-  reason? }`. `base/fetch` marks such a source in its `manual` list with `pickup: true` and the `expected` name, for the button « Prendre le fichier
+  plan). Result `{ ok, dry, taken: [{ zone, source, zip, size, files, bytes }], missing: [{ zone, source, expected }], failed: [{ zone, source, error }],
+  reason? }`. **The file shown is the file taken** (Sécurisation's note on c62d555e6, audit line 95): the real pickup may carry
+  `zips: { <source>: { name, size } }` from the plan; a source whose latest zip is no longer that one (another arrived during the
+  question) is refused, `error: 'changed'` with the zip now found, and nothing is written for it; without `zips`, as before. `base/fetch` marks such a source in its `manual` list with `pickup: true` and the `expected` name, for the button « Prendre le fichier
   téléchargé ». Not under `data/local/<source>/` as first asked: the build does not read there (Simplification informed).
 - **Refusals**: 400 (unknown zone or source, extra key, `dry` not a boolean), 409 (a job is running), 429 for `base/fetch` (30 s between two starts).
 

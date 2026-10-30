@@ -1672,7 +1672,20 @@ def i24(c):
               ('sia', 'export_xml_bd_SIA_2026-10-29.zip', ('AIXM4.5_all_FR_OM_2026-10-29.xml', 'XML_SIA_2026-10-29.xml'))],
              'the latest zip of each source, its useful entries by their names only (the readme, the DIFF, a non-EG name for NATS set aside: never aero_fetch\u2019s ukmil_aara-tracks.xml)', what='plan')
         c.ok(r['dry'] and not (data / 'sia').exists(), json.dumps(r)[:300], 'dry: nothing written')
-        r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['fr', 'gb'], 'dry': False}, ctx)
+        # the file shown by the plan is the one taken: another zip arrived during the question → refused, nothing written
+        shown = {t['source']: {'name': t['zip'], 'size': t['size']} for t in r['taken']}
+        c.eq((B.check_pickup({'zones': ['fr'], 'zips': {'sia': {'name': '../x.zip', 'size': 1}}}), B.check_pickup({'zones': ['fr'], 'zips': {'faa': shown['sia']}})),
+             (None, None), 'zips: a plain file name of a source that can be picked up, nothing else', what='zips check')
+        r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['fr'], 'dry': False, 'zips': {'sia': {'name': shown['sia']['name'], 'size': shown['sia']['size'] + 1}}}, ctx)
+        c.ok(r['failed'] and r['failed'][0]['error'] == 'changed' and not r['taken'] and not (data / 'sia').exists(), json.dumps(r)[:300],
+             'a zip that is not the one the plan showed: refused (« changed »), nothing written')
+        # the name is only compared, never used to choose a file: naming the older zip still in Downloads takes nothing
+        r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['fr'], 'dry': False, 'zips': {'sia': {'name': old.name, 'size': old.stat().st_size}}}, ctx)
+        c.ok(r['failed'] and r['failed'][0]['error'] == 'changed' and r['failed'][0]['zip'] == 'export_xml_bd_SIA_2026-10-29.zip' and not (data / 'sia').exists(),
+             json.dumps(r)[:300], 'zips names no file: the launcher keeps its own choice (the latest) and only compares; the older zip named is never taken')
+        c.eq((B.check_pickup({'zones': ['fr'], 'zips': {'sia': {'name': 'a.zip', 'size': -1}}}), B.check_pickup({'zones': ['fr'], 'zips': {'sia': {'name': 'a.zip', 'size': 1, 'path': 'x'}}}),
+              B.check_pickup({'zones': ['fr'], 'zips': ['sia']})), (None, None, None), 'zips: a dict, a size ≥ 0, no other key (400)', what='zips shape')
+        r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['fr', 'gb'], 'dry': False, 'zips': shown}, ctx)
         sia, gb = data / 'sia', data / 'sia' / 'zones' / 'gb'
         c.ok(r['ok'] and (sia / 'AIXM4.5_all_FR_OM_2026-10-29.xml').read_text() == '<aixm/>' and (sia / 'XML_SIA_2026-10-29.xml').is_file()
              and (gb / 'EG_AIP_DS_FULL_20261029.xml').read_text() == '<nats/>' and not (gb / 'EG_AIP_DS_DIFF_20261029.xml').exists(), json.dumps(r)[:300],

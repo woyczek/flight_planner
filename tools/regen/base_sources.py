@@ -627,14 +627,23 @@ PICKUP_NAME = re.compile(r'^[\w .()+-]{1,150}\Z', re.A)  # un nom d'entrée pris
 
 
 def check_pickup(a):
-    """Contrôle des arguments de base/pickup (→ 400 si None) : { zones, dry?: vrai (par défaut) / faux } et rien d'autre."""
-    if not isinstance(a, dict) or not set(a) <= {'zones', 'dry'}:
+    """Contrôle des arguments de base/pickup (→ 400 si None) : { zones, dry?: vrai (par défaut) / faux, zips?: { <source>:
+    { name, size } } } et rien d'autre. zips : le fichier que le plan a montré, par source ; la prise refuse celle dont le zip
+    le plus récent n'est plus celui-là (un autre arrivé pendant la question : audit, ligne 95)."""
+    if not isinstance(a, dict) or not set(a) <= {'zones', 'dry', 'zips'}:
         return None
     zones = _zones_arg(a)
     dry = a.get('dry', True)
-    if zones is None or not isinstance(dry, bool):
+    zips = a.get('zips', {})
+    if zones is None or not isinstance(dry, bool) or not isinstance(zips, dict) or len(zips) > len(PICKUP):
         return None
-    return {'zones': zones, 'dry': dry}
+    shown = {}
+    for s, z in zips.items():
+        if s not in PICKUP or not isinstance(z, dict) or set(z) != {'name', 'size'} or not isinstance(z['name'], str) or not PICKUP_NAME.match(z['name']) \
+                or not isinstance(z['size'], int) or isinstance(z['size'], bool) or z['size'] < 0:
+            return None
+        shown[s] = {'name': z['name'], 'size': z['size']}
+    return {'zones': zones, 'dry': dry, **({'zips': shown} if shown else {})}
 
 
 def _latest(dirs, pattern):
@@ -667,6 +676,11 @@ def pickup(job, args, ctx):
         if not zp:
             missing.append({'zone': z, 'source': s, 'expected': p['zip']})
             continue
+        want = args.get('zips', {}).get(s)
+        if want and (os.path.basename(zp), os.path.getsize(zp)) != (want['name'], want['size']):
+            # le fichier n'est plus celui que le plan a montré : rien de pris pour cette source, le plan est à refaire
+            failed.append({'zone': z, 'source': s, 'error': 'changed', 'zip': os.path.basename(zp), 'size': os.path.getsize(zp)})
+            continue
         try:
             if os.path.getsize(zp) > PICKUP_MAX:
                 raise regen_jobs.TooLarge(f'zip over {PICKUP_MAX // 1048576} MB')
@@ -691,7 +705,7 @@ def pickup(job, args, ctx):
                         with zf.open(i) as src, open(dest + '.tmp', 'wb') as dst:
                             shutil.copyfileobj(src, dst)
                         os.replace(dest + '.tmp', dest)
-                taken.append({'zone': z, 'source': s, 'zip': os.path.basename(zp), 'files': sorted(pick),
+                taken.append({'zone': z, 'source': s, 'zip': os.path.basename(zp), 'size': os.path.getsize(zp), 'files': sorted(pick),
                               'bytes': sum(i.file_size for i in pick.values())})
                 job.log(f'{z}: {s} ← {os.path.basename(zp)} : {len(pick)} fichier(s)' + (' (à blanc)' if dry else ''))
         except (zipfile.BadZipFile, OSError, ValueError, regen_jobs.TooLarge) as e:
