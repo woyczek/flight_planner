@@ -24,25 +24,34 @@
 
   // ---------------------------------------------------------------- choix des espaces le long de la route
   const family = (types, t) => types.has(t) || (t === 'RMZ-TMZ' && (types.has('RMZ') || types.has('TMZ')));
-  const ringBox = a => a._mb ??= (() => {
-    let s = 90,
-      n = -90,
-      w = 180,
-      e = -180;
-    for (const r of a.rings || [])
-      for (const [la, lo] of r) {
-        s = Math.min(s, la);
-        n = Math.max(n, la);
-        w = Math.min(w, lo);
-        e = Math.max(e, lo);
-      }
-    return {
-      s,
-      n,
-      w,
-      e
+  // emprise des anneaux d'un espace, gardée à part : les fiches d'aerodb sont gelées (couche de données, références partagées) et une
+  // propriété posée sur elles lève une TypeError qui vidait la lecture du couloir (utilisateur, 30 octobre : tout invisible en vue
+  // générale) ; une WeakMap accepte une fiche gelée et la lâche avec elle
+  const boxes = new WeakMap(),
+    ringBox = a => {
+      let b = boxes.get(a);
+      if (!b) boxes.set(a, b = ringBoxOf(a));
+      return b;
+    },
+    ringBoxOf = a => {
+      let s = 90,
+        n = -90,
+        w = 180,
+        e = -180;
+      for (const r of a.rings || [])
+        for (const [la, lo] of r) {
+          s = Math.min(s, la);
+          n = Math.max(n, la);
+          w = Math.min(w, lo);
+          e = Math.max(e, lo);
+        }
+      return {
+        s,
+        n,
+        w,
+        e
+      };
     };
-  })();
   /** Échantillons de la route (un tous les 2 NM environ). */
   function samples(points) {
     const out = [];

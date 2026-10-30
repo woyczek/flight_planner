@@ -1435,3 +1435,46 @@ def d63(c):
     c.until("() => !!document.querySelector('.mp-ad-proc[data-proc=dep]')", timeout=10000, what='the card of the departure')
     c.eq(c.count('.mp-ad-proc[data-proc=dep] a.mp-ad-src'), 0, 'an EAD record has no link', what='departure links')
     c.eq(c.attr('.mp-ad-proc[data-proc=dep]', 'title'), 'LF_AD_2_LFRS_en.pdf', 'its document is named in the line’s title', what='title')
+
+
+# ------------------------------------------------------------------------------------------------------ D64
+# aerodb as the user's device gives it: the data layer deep-freezes the published base (shared references, 802e6856f); the
+# seeded test base is not frozen (no revision), so the case freezes every answer of aerodb itself
+_FREEZE_AERO = """(() => { const fz = v => { if (v && typeof v === 'object' && !Object.isFrozen(v)) { Object.freeze(v); for (const k in v) fz(v[k]) } return v };
+  let ab; Object.defineProperty(window, 'AeroDB', { configurable: true, get() { return ab }, set(v) { ab = v;
+    if (v && v.create && !v.__fz) { const o = v.create; v.__fz = 1; v.create = function (...a) { const A = o.apply(this, a);
+      for (const k of ['airspaces', 'aerodromes', 'navaids', 'airways', 'cities', 'vrp', 'points', 'obstacles', 'moraCells', 'procedures', 'procedure', 'runways'])
+        { const f = A[k]; if (typeof f === 'function') A[k] = async (...q) => fz(await f.apply(A, q)) }
+      return A } } } }) })()"""
+_DRAWN = """() => { const S = window.__mp.S, d = (S.data && S.data.data) || {};
+  return { corridor: S.data ? S.data.corridor : null, airspaces: (d.airspaces || []).length, aerodromes: (d.aerodromes || []).length,
+    zones: (S.zoneHits || []).length, ads: (S.adHits || []).map(h => h.a.icao) } }"""
+
+
+@case('D64', 'The published base frozen by the data layer: airspaces and aerodromes still drawn in the general view and at zoom 9', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='user 30 Oct ("tous les éléments sont invisibles, même à complexité > 0, sauf si on zoome très fort"): the corridor selection cached a box ON the airspace record (a._mb), a TypeError on a frozen record emptied the whole reading; nothing of the Map writes on an aerodb record')
+def d64(c):
+    c.page.add_init_script(_FREEZE_AERO)
+    ui = ['cache/maps/ui.json', {'preset': 'auto', 'layers': {'auto': {'detail': 2}}}, 'cache']
+    errs = []
+    c.page.on('pageerror', lambda e: errs.append(str(e)))
+    # the general view: the whole route, read along its corridor
+    c.open('maps', docs=fdocs(flight()) + [ui], flight=False, airfields=True, aero_extra={'aerodromes': _COV_ADS, 'cells': _COV_CELLS}, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.data && window.__mp.S.data.box)", timeout=12000, what='the first reading')
+    c.wait(600)
+    d = c.js(_DRAWN)
+    c.eq(d['corridor'], True, 'the general view reads along the corridor of the route', what='corridor')
+    c.ok(d['airspaces'] > 0 and d['zones'] > 0, f'{d}', 'the airspaces along the route are read and drawn')
+    c.eq(c.js("() => Object.isFrozen((window.__mp.S.data.data.airspaces || [])[0] || {})"), True, 'the records are frozen, as on the device', what='frozen')
+    # zoom 9 around the departure, complexity +2: the aerodromes are drawn too
+    c.open('maps?view=-2.2,46.6,-0.8,47.6', docs=fdocs(flight()) + [ui], flight=False, airfields=True,
+           aero_extra={'aerodromes': _COV_ADS, 'cells': _COV_CELLS}, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => (window.__mp.S && window.__mp.S.adHits || []).some(h => h.a.icao === 'LFAB')", timeout=12000, what='the aerodromes are drawn at zoom 9')
+    d = c.js(_DRAWN)
+    c.ok(d['aerodromes'] > 0 and {'LFAB', 'LFAC', 'LFAD'} <= set(d['ads']), f'{d}', 'zoom 9, complexity +2: the aerodromes are read and drawn')
+    c.eq(errs, [], 'no error on the page (no write on a frozen record)', what='page errors')

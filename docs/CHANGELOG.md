@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: every element invisible in the general view** (`modules/maps/render_airspace.js`; noreg D64; user, 30 Oct: "tous les
+  éléments sont invisibles, même à complexité > 0, sauf si on zoome très fort"). Since the data layer deep-freezes the published
+  base (shared references, 802e6856f), the corridor selection's cache of an airspace's box, written on the record itself
+  (`a._mb ??=`), threw a TypeError; the reading of the corridor was lost whole, so the general view showed the route and the
+  procedures only, until a zoom close enough to read without the corridor. The box is now kept in a `WeakMap`; D64 runs the Map
+  on a frozen base (as on the device) and checks airspaces and aerodromes in the general view and at zoom 9.
+
 - **A rewritten data repository: refused, then « Take up the new history »** (`tools/data_sync.py`, `tools/launch.py`,
   `frame/settings/launcher.js`, `frame/app.js`, `frame/store/frame_data.js`, `shared/sync.js`; SYNCHRONISATION § 10, frame
   DECISIONS, Settings help ×4; noreg I15): a remote branch without a common ancestor is never merged and is said ×4;
