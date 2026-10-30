@@ -858,6 +858,11 @@ export const TX = {
     '{z} ({s}): die Datei hat sich seit dem Plan geändert ({zip}): für diese Quelle wurde nichts übernommen',
     '{z} ({s}): el archivo cambió desde el plan ({zip}): no se tomó nada de esta fuente'
   ],
+  pickupNotShown: ['{z} ({s}) : ce fichier n’a pas été montré au plan ({zip}) : rien n’a été pris pour cette source',
+    '{z} ({s}): this file was not shown in the plan ({zip}): nothing was taken for this source',
+    '{z} ({s}): diese Datei wurde im Plan nicht gezeigt ({zip}): für diese Quelle wurde nichts übernommen',
+    '{z} ({s}): este archivo no se mostró en el plan ({zip}): no se tomó nada de esta fuente'
+  ],
   pickupRename: ['{z} ({s}) : {zip} — nom de fichier à renommer : lettres, chiffres, . _ -',
     '{z} ({s}): {zip} — file name to rename: letters, digits, . _ -',
     '{z} ({s}): {zip} — Dateiname umbenennen: Buchstaben, Ziffern, . _ -',

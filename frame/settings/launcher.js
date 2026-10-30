@@ -675,38 +675,68 @@
       ul.innerHTML = list ? list.map(u => `<li><code>${esc(u)}</code> <button type="button" data-act="ivaoCopy" data-text="${esc(u)}">${esc(t(T.ivaoCopy))}</button></li>`).join('') :
         `<li class="f-muted" data-ivao-old>${esc(t(T.ivaoRedirOld))}</li>`;
     }
-    paintIvaoState(env, s?.app?.ivao_oauth);
+    paintSecretState(env, 'ivao_oauth', s?.app?.ivao_oauth);
   }
-  /** Ligne d'état de l'application IVAO ([data-ivaoapp]) d'après { clientId, clientSecret } du lanceur (set, at). */
-  function paintIvaoState(env, o) {
+  // cartes de secrets du lanceur qui montrent « enregistrés le … » ou « absents » : pour chaque service (clé de `app` dans GET
+  // /__setup/secrets), la ligne d'état, les deux champs réglés (set, at) et les textes (clés de T)
+  const SECRET_STATES = {
+    ead: {
+      el: '[data-ead]',
+      fields: ['user', 'password'],
+      set: 'eadSet',
+      missing: 'eadMissing'
+    },
+    ivao_oauth: {
+      el: '[data-ivaoapp]',
+      fields: ['clientId', 'clientSecret'],
+      set: 'ivaoAppSet',
+      missing: 'ivaoAppMissing'
+    }
+  };
+  /** Ligne d'état d'un service à deux champs (SECRET_STATES) d'après sa vue du lanceur ({ champ: { set, at } }) : « enregistrés
+   *  le … » (date la plus récente) quand les deux sont réglés, « absents » sinon. */
+  function paintSecretState(env, service, o) {
     const {
       view,
       c,
       t
     } = env;
-    const b = view.querySelector('[data-ivaoapp]');
+    const d = SECRET_STATES[service],
+      b = view.querySelector(d.el);
     if (!b) return;
-    const both = !!o?.clientId?.set && !!o?.clientSecret?.set,
-      at = [o?.clientId?.at, o?.clientSecret?.at].filter(Boolean).sort().pop() || '';
-    b.textContent = both ? t(T.ivaoAppSet, {
+    const [f1, f2] = d.fields,
+      both = !!o?.[f1]?.set && !!o?.[f2]?.set,
+      at = [o?.[f1]?.at, o?.[f2]?.at].filter(Boolean).sort().pop() || '';
+    b.textContent = both ? t(T[d.set], {
       d: at ? c.time?.fmtDateZ(at) || at : '?'
-    }) : t(T.ivaoAppMissing);
+    }) : t(T[d.missing]);
   }
-  /** Ligne d'état des identifiants EAD Basic ([data-ead]) d'après { user, password } du lanceur (set, at) : « enregistrés le … »
-   *  quand les deux sont réglés (date la plus récente), « absents » sinon. */
-  function paintEad(env, ead) {
+  /** Enregistre ou efface les secrets d'un service du lanceur (POST secrets { scope: 'app', service, values }), la page n'en
+   *  gardant aucun. o : { service, card (nom de la carte, pour son message), values (champs saisis), erase (effacer : les
+   *  mêmes champs vides, après la question `ask`), missing (texte si un champ manque ; sans lui, silence), box (la carte dont
+   *  les champs sont vidés AVANT l'appel et le message effacé ; sans lui, rien n'est vidé), ask / saved / erased (clés de T), fail
+   *  (texte si le lanceur refuse sans message ; « lanceur trop ancien » par défaut), paint (après l'appel, sur la réponse ; l'état
+   *  du service par défaut) }. */
+  async function saveSecret(env, o) {
     const {
-      view,
       c,
-      t
+      t,
+      say
     } = env;
-    const b = view.querySelector('[data-ead]');
-    if (!b) return;
-    const both = !!ead?.user?.set && !!ead?.password?.set,
-      at = [ead?.user?.at, ead?.password?.at].filter(Boolean).sort().pop() || '';
-    b.textContent = both ? t(T.eadSet, {
-      d: at ? c.time?.fmtDateZ(at) || at : '?'
-    }) : t(T.eadMissing);
+    if (!o.erase && Object.values(o.values).some(v => !v)) return say(o.card, o.missing ? t(o.missing) : '');
+    if (o.erase && !await c.ask(t(o.ask))) return;
+    if (o.box) {
+      o.box.querySelectorAll('[data-f]').forEach(x => x.value = '');
+      say(o.card, '');
+    }
+    const r = await setup('secrets', {
+      scope: 'app',
+      service: o.service,
+      values: o.erase ? Object.fromEntries(Object.keys(o.values).map(k => [k, ''])) : o.values
+    });
+    if (!r?.ok) return say(o.card, r?.message || o.fail || t(T.launcherOld));
+    c.notify(t(o.erase ? o.erased : o.saved), 'ok');
+    return o.paint ? o.paint(r) : paintSecretState(env, o.service, r.app?.[o.service]);
   }
   /** Clés du lanceur (niveau Complet) : l'état de la clé IVAO ([data-key]), celui des identifiants EAD Basic ([data-ead]) et
    *  la carte de l'application IVAO (adresses de retour, état), d'une seule lecture de GET /__setup/secrets. */
@@ -721,7 +751,7 @@
     if (b) b.textContent = !k?.set ? t(T.keyMissing) : t(k.env ? T.keyEnv : T.keySet, {
       h: k.hint || '••••'
     });
-    paintEad(env, s?.app?.ead);
+    paintSecretState(env, 'ead', s?.app?.ead);
     paintIvaoApp(env, s);
   }
   /** Adresses privées de ce poste encore fermées au réseau local (état du lanceur : available moins celles des urls). */
@@ -941,43 +971,38 @@
       return;
     }
     if (act === 'keySave' || act === 'keyErase') {
-      const k = val('ivaoKey', card('keys'));
-      if (act === 'keySave' && !k) return say('keys', '');
-      if (act === 'keyErase' && !await c.ask(t(T.eraseAsk))) return;
-      const r = await setup('secrets', {
-        scope: 'app',
+      // la clé IVAO : son champ seul est vidé avant l'appel (le bloc EAD est dans la même carte), la carte est redessinée ensuite
+      return saveSecret(env, {
         service: 'ivao',
+        card: 'keys',
+        box: card('keys').querySelector('[data-f="ivaoKey"]')?.closest('label'),
         values: {
-          apiKey: act === 'keyErase' ? '' : k
-        }
+          apiKey: val('ivaoKey', card('keys'))
+        },
+        erase: act === 'keyErase',
+        ask: T.eraseAsk,
+        saved: T.saved,
+        erased: T.saved,
+        fail: '?',
+        paint: again
       });
-      if (!r?.ok) return say('keys', r?.message || '?');
-      c.notify(t(T.saved), 'ok');
-      return again();
     }
     if (act === 'eadSave' || act === 'eadErase') {
-      const box = card('ead'),
-        user = val('eadUser', box),
-        pass = val('eadPassword', box);
-      if (act === 'eadSave' && (!user || !pass)) return say('ead', t(T.eadBoth));
-      if (act === 'eadErase' && !await c.ask(t(T.eadEraseAsk))) return;
-      // la page ne garde aucun secret : champs vidés avant l'appel
-      box.querySelectorAll('[data-f]').forEach(x => x.value = '');
-      say('ead', '');
-      const r = await setup('secrets', {
-        scope: 'app',
+      const box = card('ead');
+      return saveSecret(env, {
         service: 'ead',
-        values: act === 'eadErase' ? {
-          user: '',
-          password: ''
-        } : {
-          user,
-          password: pass
-        }
+        card: 'ead',
+        box,
+        values: {
+          user: val('eadUser', box),
+          password: val('eadPassword', box)
+        },
+        erase: act === 'eadErase',
+        missing: T.eadBoth,
+        ask: T.eadEraseAsk,
+        saved: T.eadSaved,
+        erased: T.eadErased
       });
-      if (!r?.ok) return say('ead', r?.message || t(T.launcherOld));
-      c.notify(t(act === 'eadErase' ? T.eadErased : T.eadSaved), 'ok');
-      return paintEad(env, r.app?.ead);
     }
     if (act === 'ivaoCopy') {
       // une adresse de retour copiée (ou montrée sélectionnée si la copie est impossible ici)
@@ -987,28 +1012,21 @@
       return c.notify(t(how === 'shown' ? T.copyShown : T.ivaoCopied), how === 'shown' ? 'warn' : 'ok');
     }
     if (act === 'ivaoAppSave' || act === 'ivaoAppErase') {
-      const box = card('ivaoapp'),
-        cid = val('ivaoClientId', box),
-        sec = val('ivaoClientSecret', box);
-      if (act === 'ivaoAppSave' && (!cid || !sec)) return say('ivaoapp', t(T.ivaoAppBoth));
-      if (act === 'ivaoAppErase' && !await c.ask(t(T.ivaoAppAsk))) return;
-      // la page ne garde aucun secret : champs vidés avant l'appel
-      box.querySelectorAll('[data-f]').forEach(x => x.value = '');
-      say('ivaoapp', '');
-      const r = await setup('secrets', {
-        scope: 'app',
+      const box = card('ivaoapp');
+      return saveSecret(env, {
         service: 'ivao_oauth',
-        values: act === 'ivaoAppErase' ? {
-          clientId: '',
-          clientSecret: ''
-        } : {
-          clientId: cid,
-          clientSecret: sec
-        }
+        card: 'ivaoapp',
+        box,
+        values: {
+          clientId: val('ivaoClientId', box),
+          clientSecret: val('ivaoClientSecret', box)
+        },
+        erase: act === 'ivaoAppErase',
+        missing: T.ivaoAppBoth,
+        ask: T.ivaoAppAsk,
+        saved: T.ivaoAppSaved,
+        erased: T.ivaoAppErased
       });
-      if (!r?.ok) return say('ivaoapp', r?.message || t(T.launcherOld));
-      c.notify(t(act === 'ivaoAppErase' ? T.ivaoAppErased : T.ivaoAppSaved), 'ok');
-      return paintIvaoState(env, r.app?.ivao_oauth);
     }
     if (act === 'ivaoAppTest') {
       const r = await setup('secrets/test?service=ivao_oauth');

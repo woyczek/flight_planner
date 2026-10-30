@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: a pickup source the launcher did not see in `zips` is said** (`modules/data`; launcher 8965e8c47) — the refusal `not-shown`
+  reads like `changed` (« ce fichier n'a pas été montré au plan : rien n'a été pris pour cette source » ×4) with « Relancer le plan »;
+  the module never sends `zips: {}` (with no ready source there is no question and no run); case L19.
+- **Refactor R-S3, no behaviour change: one helper for the launcher's secrets cards** (`frame/settings/launcher.js` `saveSecret`, `paintSecretState`; A32, A43) — the IVAO key, EAD Basic and the IVAO application shared one pattern (check what is required, ask once to erase, empty the fields, one `POST secrets`, notify, repaint); it now lives once, each card keeping its own texts and extras (the key's hint and environment, the application's return addresses and Test). One deliberate step, from the secrets rule: the IVAO key field is now emptied before the call, like the two others. A32 and A43 also check that the typed values are in no element, no attribute and no console line.
 - **base/pickup: with `zips`, only the sources it names are taken** (`tools/regen/base_sources.py`; aerodb INTEGRATION;
   noreg I24) — Sécurisation's line 109: a source missing at the plan whose zip arrived during the question is refused
   (`not-shown`), nothing written for it; `zips: {}` shows nothing; without `zips`, as before.

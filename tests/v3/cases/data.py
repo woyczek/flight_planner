@@ -2674,6 +2674,18 @@ def l19(c):
     c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['gb'], 'dry': True}}, 'the button starts a new dry run (no zips), for that zone', what='replan')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", what='the window closes')
+    # ---- H2: a source the launcher did not see in zips (not-shown, 8965e8c47): said like « changed », with « Relancer le plan »
+    nshown = {'zone': 'gb', 'source': 'nats', 'error': 'not-shown', 'zip': 'EG_2026_DS_3_XML.zip'}
+    st['views'], st['i'], st['start'] = [plan3, _pk_plan([sia_zip], [], [nshown], dry=False, jid='h5', reason='partial')], 0, (200, {'job': 'h4'})
+    c.tap(pk)
+    _ask_text(c)
+    st['start'] = (200, {'job': 'h5'})
+    c.tap('.f-modal [data-ok]')
+    c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'partial'", timeout=10000, what='the partial end (not-shown)')
+    ns = T('pickupNotShown').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{zip}', nshown['zip'])
+    c.eq([[norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")],
+          c.attr('[data-build-result] [data-verb=pickup-replan]', 'data-zones')], [[norm(ns)], 'gb'],
+         'a source not shown in the plan is said, nothing taken for it, with « Relancer le plan »', what='not-shown')
     # ---- I: a zip whose name is outside the rule (an accent): shown in the plan, never run; the other source is taken
     bad_zip = {**sia_zip, 'zip': 'export_xml_bd_SIA_é.zip'}
     plan5 = _pk_plan([bad_zip, nats_zip], [], [], jid='i1')

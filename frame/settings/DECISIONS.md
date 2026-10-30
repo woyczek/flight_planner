@@ -484,7 +484,7 @@ after, CHANGELOG « refactor, no behaviour change », `:recycle:`, one lot at a 
 - **Provider and host knowledge in five places** (config.js `kind` / `providerOf` / `webUrl`, join.js links, admin.js invitation
   link, access.js `/api/v4` trimmed by hand, launcher.js `providerHtml`). **Target**: one provider table in `SogConfig`, read by all.
 - **frame/settings/launcher.js**: the secrets cards (IVAO key, EAD, IVAO application) repeat one « fields emptied, call, paint
-  the state » pattern. **Target**: one secrets helper.
+  the state » pattern. **Target**: one secrets helper. **Done (R-S3, 31 Oct)**: `saveSecret` / `paintSecretState`.
 - **frame/settings (texts)**: the same meaning under several keys across files (trigram prompts, revoke / expires, copy link /
   copied, pending / online / last error). **Target**: shared texts in the kit, one key per meaning; tests that scrape `tx(file,
   key)` move with them.

@@ -1044,6 +1044,21 @@ def a31(c):
     c.eq(c.count('[data-card="status"] li[data-k^="cycle-"]'), 0, 'a base of the cycle in force: no end-of-cycle line', what='cycle lines')
 
 
+def _watch_console(c):
+    """Every console line of the page from now on (text only), for the secrets cases."""
+    logs = []
+    c.page.on('console', lambda m: logs.append(m.text or ''))
+    return logs
+
+
+def _no_secret(c, logs, *values):
+    """A secret typed in a card is nowhere afterwards: not in the markup (attributes included, not only the text), not in a console line."""
+    html = c.js('document.documentElement.outerHTML')
+    for v in values:
+        c.ok(v not in html, 'a secret is in the markup', 'the value is in no element, no attribute')
+        c.ok(not any(v in line for line in logs), 'a secret is in the console', 'the value is in no console line')
+
+
 @case('A32', 'EAD Basic credentials in the launcher keys panel', 'A', designs=('standard',), screens=False, night=False,
       rule='frame/settings SPEC 3 item 9: given once, never read back')
 def a32(c):
@@ -1053,6 +1068,7 @@ def a32(c):
               'relaxNav': False, 'host': 'TEST', 'lan': False}
     secrets = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}},
                        'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
+    logs = _watch_console(c)
 
     def launcher(route):
         req = route.request
@@ -1099,6 +1115,18 @@ def a32(c):
          'one call to the launcher with the scope, the service and both values', what='posts')
     c.eq(c.js(f"[...document.querySelectorAll('{ead} input[data-f]')].map(i => i.value)"), ['', ''], 'both fields are emptied: the page keeps no secret', what='fields after save')
     c.ok('test-pass' not in c.js('document.body.innerText') and 'test-user' not in c.js('document.body.innerText'), 'a value is shown', 'the values are shown nowhere')
+    _no_secret(c, logs, 'test-user', 'test-pass')
+    # the IVAO API key: same rule, sent once with its service, nowhere in the page or the console afterwards
+    key = '[data-adminpanel="keys"] input[data-f="ivaoKey"]'
+    c.page.fill(key, 'test-ivao-key')
+    c.tap('[data-adminpanel="keys"] [data-act="keySave"]')
+    for _ in range(30):
+        if len(posts) == 2:
+            break
+        c.wait(100)
+    c.eq(posts[1:], [{'scope': 'app', 'service': 'ivao', 'values': {'apiKey': 'test-ivao-key'}}], 'one call with the scope, the service and the key', what='key post')
+    c.wait(500)                                   # the card is drawn again from the launcher's state
+    _no_secret(c, logs, 'test-ivao-key')
 
 
 @case('A33', 'Revalidate bench', 'A', tags=('data',), designs=('standard',), screens=False, night=False,
@@ -1234,6 +1262,7 @@ def a41(c):
       rule='frame/settings SPEC 3 item 9: the airline registers an IVAO application; the Client ID and Secret go once to the launcher (secrets/ivao_oauth.json), never read back')
 def a43(c):
     posts = []
+    logs = _watch_console(c)
     file = 'frame/settings/launcher.js'
 
     def t(key):
@@ -1309,6 +1338,7 @@ def a43(c):
     c.until(f"/2026/.test(document.querySelector('{card} [data-ivaoapp]').textContent)", what='the state says when the application was saved')
     body = c.js('document.body.innerText')
     c.ok('test-client-id' not in body and 'test-client-secret' not in body, 'a value is shown', 'the values are shown nowhere')
+    _no_secret(c, logs, 'test-client-id', 'test-client-secret')
     c.ok(norm(c.text(f'{card} [data-ivaoapp]')).startswith(norm(t('ivaoAppSet').split('{d}')[0])), c.text(f'{card} [data-ivaoapp]'), 'saved on <date>')
     # Test: the discovery answers, then the application is missing, then IVAO does not answer
     def tested(answer, key, what):

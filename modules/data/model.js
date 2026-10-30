@@ -1044,6 +1044,9 @@ const zipSendable = t => !!t && t.source in PICKUP_DEST && typeof t.zip === 'str
 /** Ce que la prise réelle peut faire du plan montré : { ready (les entrées dont le zip peut être envoyé), blocked (les autres : un nom hors de la règle, une taille absente… ; la prise
  *  réelle ne les lance pas, car le lanceur prendrait « le plus récent » sans contrôle), zips (celui de chaque source prête : { name, size }, le premier par source), zones (les zones
  *  à lancer : celles qui ont une entrée prête et aucune entrée bloquée) }. */
+/** Refus d'une prise qui appellent un nouveau plan : le zip a changé depuis le plan (changed), ou la source n'y figurait pas
+ *  (not-shown, lanceur 8965e8c47) ; dits avec « Relancer le plan ». */
+export const REPLAN_ERRORS = Object.freeze(['changed', 'not-shown']);
 export function pickupSplit(taken) {
   const list = (Array.isArray(taken) ? taken : []).filter(t => t && typeof t === 'object'),
     ready = list.filter(zipSendable),

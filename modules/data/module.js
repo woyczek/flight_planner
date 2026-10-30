@@ -1761,11 +1761,12 @@ function pickupProblems(out) {
     })), ...out.missing.map(m => tt(TX.pickupMissing, {
     ...who(m),
     e: m.expected
-  })), ...out.failed.map(f => f.error === 'changed' ? tt(TX
-    .pickupChanged, { // le zip le plus récent n'est plus celui que le plan a montré : rien n'a été pris pour cette source
-      ...who(f),
-      zip: f.zip || '?'
-    }) : tt(TX.pickupFailedLine, {
+  })), ...out.failed.map(f => M.REPLAN_ERRORS.includes(f.error) ? tt(TX[f.error === 'changed' ? 'pickupChanged' :
+    'pickupNotShown'
+  ], { // le zip pris ne serait pas celui que le plan a montré (changé, ou absent du plan) : rien n'a été pris pour cette source
+    ...who(f),
+    zip: f.zip || '?'
+  }) : tt(TX.pickupFailedLine, {
     ...who(f),
     r: pickupWhy(f.error)
   }))];
@@ -1810,7 +1811,7 @@ function pickupResultHtml(r) {
 }
 /** Le bouton « Relancer le plan » quand une source a été refusée parce que son zip a changé depuis le plan : il relance le plan à blanc sur les zones concernées. */
 function replanHtml(out) {
-  const zones = [...new Set(out.failed.filter(f => f.error === 'changed').map(f => f.zone))];
+  const zones = [...new Set(out.failed.filter(f => M.REPLAN_ERRORS.includes(f.error)).map(f => f.zone))];
   if (!zones.length) return '';
   const off = gateOf('base', zones.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb].disabled ? ' disabled' : '';
   return `<p><button type="button" data-verb="pickup-replan" data-zones="${esc(zones.join(','))}"${off}>${esc(tt(TX.pickupReplan))}</button></p>`;
