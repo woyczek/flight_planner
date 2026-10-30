@@ -1890,3 +1890,63 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     came after the 40 s ceiling under the full pass. The wait is now on a state (the page's first answer, an error or
     « started »), with 120 s only for a browser that never starts, and a failure names the race (seconds waited, the
     browser's exit code, the lines it wrote).
+
+## Inventaire du 30/10 : à refondre
+
+Read-only inventory (V3 frame, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les
+empilages »), frame and launcher from 802e6856f to b44119d88. Per zone: what was done then undone or replaced, what is
+left doubled or dead, the target in one sentence, then an order. Nothing is changed by this section.
+
+**1. The relay's identity** (`tools/launch.py`). 7ca73448c a relay request told by its `Host` → 1e573d782 fail closed on
+proxy headers with another `Host` → ee6044e8b a dedicated port, `_relay()` = « arrived by the relay port » → b27cae045 the
+host set before listening, 503 without it. Undone: the `Host` deduction. Left: three guards for one fact (the port, the
+proxy-header belt on the interface's port, the 503 for a host-less relay server), `_local_host()` answering true for the
+relay, `RELAY` a dict whose `port` is written in `main` while `PROXY_HEADERS` and `relay_probe` live 300 lines away.
+Target: one `Relay` object made in `main` (host, port, server) that the handler asks once; the belt kept, named as such.
+
+**2. Pairing, twice** (`lan_access.py`, `relay_access.py`, `_lan_page` / `_relay_page`, `_lan_pair` / `_relay_pair`,
+`LAN_TEXT` / `RELAY_TEXT`). R1a copied the local network's pairing (codes, attempt limits, hashed tokens, cookie, page,
+four-language texts) and changed the numbers (6 → 8 digits, per-workstation → per-trigram). The security fixes went in one
+copy at a time (1e573d782: `safe_next` shared, but the same-origin check on the relay's pairing POST only — the local
+network's pairing POST still has none: the same login CSRF, on the private network).
+Target: one pairing module with two policies (local network, relay) and one page renderer; each fix lands once.
+
+**3. IVAO's sign-in** (a9840bd19, b27cae045). The callback is handled in three places: the relay gate, the narrow
+exception of `_refused`, and a special case at the top of `do_GET`; two no-redirect openers (`GITLAB_OPENER` once,
+`OIDC_OPEN` building a new one per call; `relay_probe` borrows the GitLab one). `ctx.ivao.token()` has no reader yet (the
+tracker read still goes through `net.fetch` without it). Target: the callback a declared route of the table (public,
+relay, a `nav` guard), one `NO_REDIRECT` opener patched by the tests, `token()` documented as « for the tracker reader ».
+
+**4. Three lists for one route** (`frame/app.js` service screens `launcher: { routes }`, `ROUTES` with `public` / `relay`,
+the expected lists of I10). A new route edits three files and the case fails until all agree (I10 was edited at R1a,
+R1b, b27cae045). Target: the launcher publishes its table (`GET /__setup/routes`), the frame and I10 read it; I10 keeps
+only the security rule (the relay set ⊂ the local-network set ⊂ all).
+
+**5. The data repository's take-overs** (`data_sync.py`: `adopt` / `_fresh` 28 Oct, `rewritten_plan` / `rewritten_resume`
+6ba742877 → add1e78a3). Same rules written twice: commit the pool first, keep a copy before touching, never push outside
+the pool, literal paths (added to the second only after the review; `adopt` still passes paths as patterns to git).
+Target: one `takeover(data, base, keep)` used by both, with the literal pathspecs and `diff -z` once.
+
+**6. The transports** (`transport_github.js` 387 lines, `transport_gitlab.js` 251, G1 a0f3854d9 → 02a096440). Same
+interface, written side by side: `b64`, the auth header, the 409/422 conflict; the redirect refusal
+(`redirect: 'error'`) is in the GitLab one only. Target: a shared base (`transport_git.js`) and two thin adapters (URLs, auth header, tree paging).
+
+**7. The flown track** (A35 29 Oct in `progress.actual.trail` → 0bbe7ebbb on the device). Left: the one-shot takeover of a
+track found in `progress.actual` (dead once no flight started before 30 Oct remains: after 6 Nov), the text key
+`T.info.trailShared` that now says the opposite of its name. Target: remove the takeover after 6 Nov; rename the key.
+
+**8. The freeze of references** (802e6856f → 94515ca99). Two paths in `valueFor` (memoised by revision, or frozen at each
+read without a revision). Target: one path, memoised by revision or by the text's length and hash.
+
+**9. Settings screens** (`pilot_tokens.js` G2, `relay_devices.js` R1a, the remote card's « hist » block 6ba742877). Same
+pattern three times: a list, a value shown once and wiped on leaving, revoke after a question. `launcher.js` has grown to
+eight cards' worth of actions in one `run`. Target: one small « shown once / list / revoke » helper; `launcher.js` split
+by card.
+
+**10. The noreg runner** (`tests/v3/run.py`, b44119d88). Six overlapping selectors (`--changed`, `--touched`, `--for`,
+`--journey`, `--failed`, `--failed-scope`); the one-worker path kept apart from the pool; `DEFAULT_JOBS` assumes two
+threads per core. Target: `--touched` and `--failed` as the two daily verbs, the others as options of one selector.
+
+**Order proposed** (smallest risk first, each with its noreg): 7 (a date, a rename) → 3 (one opener, the callback as a
+route) → 4 (the route table read by the frame and I10) → 2 (one pairing module: the next security fix lands once) → 1
+(the `Relay` object, on top of 2) → 5 (one takeover) → 6 (the transports' base) → 8, 9, 10 when they are touched next.
