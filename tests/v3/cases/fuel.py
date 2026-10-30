@@ -1214,8 +1214,11 @@ def f40(c):
 
 
 
-@case('F41', '"Sur la carte" opens the choice mode; the Map\'s proposal is applied, said and consumed', 'F', tags=('fuel', 'maps'), designs=('standard',),
-      screens=False, langs4=True, rule='V3 spec 10.23: "Sur la carte" in a side\'s title opens #maps?choose=arr&icao=…; the Map comes back with #fuel?focus=arr&star=ID (one key per trip, none = « Aucune »), Fuel applies it as a choice, says it, and the keys leave the address')
+@case('F41', 'The Map\'s return: « Sur la carte » opens the choice mode; one key or several, applied together, said once and consumed', 'F',
+      tags=('fuel', 'maps'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.23 / 10.30: « Sur la carte » in a side\'s title opens #maps?choose=arr&icao=…; the Map comes back with every key of the '
+      'side (rwy sid star app apptrans, id or none), Fuel consumes them together at mount, one write, one line says what changed; a missing '
+      'key leaves its family as it was; anything not admitted is ignored (F63 merged here, refactoring 10.33)')
 def f41(c):
     open_proc(c)
     wait_rows(c, 'arr')
@@ -1233,6 +1236,35 @@ def f41(c):
     c.eq((procs_of(d, 'arr') or {}).get('rwy'), '31L', 'as a choice made in Fuel: the STAR serving one runway sets it', what='runway')
     c.until("(w) => (window.__notes || []).some(n => n.includes('MEN2B'))", None, timeout=6000, what='a line says what changed')
     c.until("!/[?&](star|focus)=/.test(location.hash)", what='the proposal and focus keys leave the address (consumed)')
+    # several keys of one side in one trip: applied together, one write, one change line naming them; the other side untouched
+    dep0 = procs_of(cf_doc(c, lambda d: True, 'the flight record'), 'dep')
+    c.js("() => { location.hash = '#maps' }")
+    c.until("location.hash === '#maps'", what='the Map is open again')
+    c.settle()  # the Map settled before it is left (a Map left during its mount throws: sent to BUGS SOG, 30 Oct)
+    c.js("() => { window.__notes = window.__notes || []; window.__n0 = window.__notes.length }")
+    c.js("() => location.replace('#fuel?focus=arr&rwy=13R&star=LFML.STAR.MEN1A.RW13R.NONE&app=LFML.APP.I13R.RW13R.NONE&apptrans=none')")
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the proposed approach is written', timeout=12000)
+    a = procs_of(d, 'arr') or {}
+    c.eq((a.get('rwy'), a.get('star'), a.get('app')), ('13R', 'LFML.STAR.MEN1A.RW13R.NONE', 'LFML.APP.I13R.RW13R.NONE'),
+         'the runway, the STAR and the approach of one trip are all written', what='route.procedures.arr')
+    c.ok('appTrans' in a and a['appTrans'] is None, f'{a}', 'apptrans=none (lower case in the address) writes « Aucune » in appTrans')
+    c.eq(procs_of(d, 'dep'), dep0, 'the other side is untouched', what='route.procedures.dep')
+    c.until("!/[?&](rwy|star|app|apptrans|focus)=/.test(location.hash)", what='every key leaves the address (consumed together)')
+    c.until("(w) => window.__notes.slice(window.__n0).some(n => n.includes('MEN1A'))", None, timeout=6000, what='a line says what changed')
+    c.settle()
+    c.wait(700)
+    lines = c.js("window.__notes.slice(window.__n0).filter(n => n.includes('MEN1A') || n.includes('I13R'))")
+    c.eq(len(lines), 1, f'one change line for the whole trip: {lines}', what='change lines')
+    c.ok('MEN1A' in lines[0] and 'I13R' in lines[0], lines[0], 'the line names the STAR and the approach')
+    # a missing key leaves its family: a trip with the runway only keeps the STAR and the approach
+    c.js("() => { location.hash = '#maps' }")
+    c.until("location.hash === '#maps'", what='the Map is open again')
+    c.settle()
+    c.js("() => location.replace('#fuel?focus=arr&rwy=31L')")
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '31L', 'the runway alone is written', timeout=12000)
+    a = procs_of(d, 'arr') or {}
+    c.eq((a.get('star'), a.get('app')), ('LFML.STAR.MEN1A.RW13R.NONE', 'LFML.APP.I13R.RW13R.NONE'), 'the STAR and the approach stay (keys absent)',
+         what='route.procedures.arr')
     # « none »: the departure's SID set to « Aucune » — a real trip goes through the Map (Fuel is mounted again by the frame on its way back)
     c.js("() => { location.hash = '#maps' }")
     c.until("location.hash === '#maps'", what='the Map is open again')
@@ -1527,42 +1559,6 @@ def f62(c):
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'frame/lib/test/wind.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
-
-
-@case('F63', 'The Map\'s return with several keys of a side: applied together, one change line', 'F', tags=('fuel', 'maps'), designs=('standard',),
-      screens=False, langs4=True, rule='V3 spec 10.30: the Map comes back with every key of the side (rwy sid star app apptrans, id or none); Fuel '
-      'consumes them together at mount, one write, one line says what changed; a missing key leaves its family as it was')
-def f63(c):
-    open_proc(c, procs={'dep': {'rwy': '03', 'sid': 'LFRS.SID.NTS1A.RW03.NONE'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'})
-    wait_rows(c, 'arr')
-    # the Map's answer (its location.replace) is played over the plain Map, once it has settled
-    c.js("() => { location.hash = '#maps' }")
-    c.until("location.hash === '#maps'", what='the Map is open')
-    c.settle()  # the Map settled before it is left (a Map left during its mount throws: sent to BUGS SOG, 30 Oct)
-    c.js("() => { window.__notes = window.__notes || []; window.__n0 = window.__notes.length }")
-    c.js("() => location.replace('#fuel?focus=arr&rwy=13R&star=LFML.STAR.MEN1A.RW13R.NONE&app=LFML.APP.I13R.RW13R.NONE&apptrans=none')")
-    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the proposed approach is written', timeout=12000)
-    a = procs_of(d, 'arr') or {}
-    c.eq((a.get('rwy'), a.get('star'), a.get('app')), ('13R', 'LFML.STAR.MEN1A.RW13R.NONE', 'LFML.APP.I13R.RW13R.NONE'),
-         'the runway, the STAR and the approach of one trip are all written', what='route.procedures.arr')
-    c.ok('appTrans' in a and a['appTrans'] is None, f'{a}', 'apptrans=none (lower case in the address) writes « Aucune » in appTrans')
-    c.eq(procs_of(d, 'dep'), {'rwy': '03', 'sid': 'LFRS.SID.NTS1A.RW03.NONE'}, 'the other side is untouched', what='route.procedures.dep')
-    c.until("!/[?&](rwy|star|app|apptrans|focus)=/.test(location.hash)", what='every key leaves the address (consumed together)')
-    c.until("(w) => window.__notes.slice(window.__n0).some(n => n.includes('MEN1A'))", None, timeout=6000, what='a line says what changed')
-    c.settle()
-    c.wait(700)
-    lines = c.js("window.__notes.slice(window.__n0).filter(n => n.includes('MEN1A') || n.includes('I13R'))")
-    c.eq(len(lines), 1, f'one change line for the whole trip: {lines}', what='change lines')
-    c.ok('MEN1A' in lines[0] and 'I13R' in lines[0], lines[0], 'the line names the STAR and the approach')
-    # a missing key leaves its family: a trip with the runway only keeps the STAR and the approach
-    c.js("() => { location.hash = '#maps' }")
-    c.until("location.hash === '#maps'", what='the Map is open again')
-    c.settle()  # the Map settled before it is left (a Map left during its mount throws: sent to BUGS SOG, 30 Oct)
-    c.js("() => location.replace('#fuel?focus=arr&rwy=31L')")
-    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '31L', 'the runway alone is written', timeout=12000)
-    a = procs_of(d, 'arr') or {}
-    c.eq((a.get('star'), a.get('app')), ('LFML.STAR.MEN1A.RW13R.NONE', 'LFML.APP.I13R.RW13R.NONE'), 'the STAR and the approach stay (keys absent)',
-         what='route.procedures.arr')
 
 
 def route_metar(c, items):

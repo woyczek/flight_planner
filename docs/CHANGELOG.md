@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Cases merged (refactoring § 10.33)**: F63 → F41 (« the Map's return »: one key or several, said once, consumed; a missing key
+  keeps its family; « none »; hostile keys ignored), F67 → F8 (« Auto »: written, idempotent, the previous Auto replaced). F63 and
+  F67 are retired.
 - **Refonte, sans changement de comportement — R-F6, un seul état des côtés de la carte des procédures** (`modules/fuel/procedures.js`
   `cardState { open, focus }`, `modules/fuel/module.js` `S.focus`: four flags over two files become two; fuel DECISIONS).
 - **Map: panning scheduler, refactor without change of behaviour (R-M3, § 10.33)** (`modules/maps/draw.js`; SPEC, DECISIONS;
