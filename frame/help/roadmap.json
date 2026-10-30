@@ -279,6 +279,13 @@
           "en": "IVAO on the phone: pilot login through the relay (OpenID), their own token on their device, tracker read directly",
           "de": "IVAO auf dem Telefon: Anmeldung des Piloten über das Relais (OpenID), eigenes Token auf dem Gerät, Tracker direkt gelesen",
           "es": "IVAO en el teléfono: inicio de sesión del piloto por el relé (OpenID), su propio token en su dispositivo, tracker leído directamente"
+        },
+        {
+          "state": "planned",
+          "fr": "Missions (après la stabilisation) : missions communes du dépôt lues par tous, une mission engendre le vol (départ, rendez-vous, arrivée) et sa carte, usage « équipier » du Pilote, CPCO troisième application quand il sera refait",
+          "en": "Missions (after the stabilisation): common missions of the repository read by all, a mission generates the flight (departure, rendezvous, arrival) and its map, \"crew member\" usage of the Pilot, CPCO as the third application once rebuilt",
+          "de": "Missionen (nach der Stabilisierung): gemeinsame Missionen des Depots für alle lesbar, eine Mission erzeugt den Flug (Abflug, Treffpunkt, Ankunft) und seine Karte, Nutzung „Besatzungsmitglied“ des Piloten, CPCO als dritte Anwendung nach dem Neubau",
+          "es": "Misiones (tras la estabilización): misiones comunes del depósito leídas por todos, una misión genera el vuelo (salida, punto de encuentro, llegada) y su mapa, uso «tripulante» del Piloto, CPCO como tercera aplicación cuando se rehaga"
         }
       ]
     },

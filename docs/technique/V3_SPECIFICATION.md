@@ -35,20 +35,15 @@ does not carry the Données module in its rail, it offers one line "Maintenance"
 it (D2 to D5 of the Data module). Open: which application a given person opens by default (role in the registry), and whether one person can switch
 between them on the same device.
 
-**Missions and the CPCO (user, 30 Oct, a remark on the ergonomics session's objection — to be challenged, not
-recorded)**: "la gestion des missions est strictement personnelle (module Missions, module CPCO) ; le CPCO n'existe
-qu'en V2 et n'entre pas dans le périmètre pilote ; l'appli 2 sera distincte (ou pas) et se traduit par le premier pas :
-choisir une mission, ou en tirer une au sort ; pas d'utilisateurs actuels, on réintroduira plus tard peut-être."
-Objections of the ergonomics session, **open until the user confirms or forces**: (1) "never in the shared
-repository" is more than "personal": one writer, the pilot, yes — but kept under the pilot's prefix
-(`pilot/<TRI>/missions/`, like the current flight), private by prefix and convention, so a mission survives a lost
-phone and follows the pilot to the workstation; the repository is the transport, not the sharing; (2) "CPCO in V2
-only" contradicts "turn V2 off": the CPCO becomes the third application of the same frame after the Pilot and
-Maintenance are stable, and V2 serving only the CPCO meanwhile is written as a debt; (3) a mission as the first step
-of every flight imposes the concept on flights that have none (tests, free flights, SimBrief OFP): the mission is a
-**source of the flight**, at the OFP's rank — one gesture at Fuel's start, "Nouveau vol : depuis une mission (choisir
-ou tirer au sort) · depuis l'OFP SimBrief · libre", no separate application for the pilot; (4) no users nor rights in
-V3 for now: agreed, the roles being GitLab's and the relay's device revocation.
+**Missions and the CPCO (user, 30 Oct; the ergonomics session's four objections were confirmed: "désaccord de
+formulation, accord de fond")**: missions are **common** data — one author today (the user, whose numbering is the
+reference until a later reorganisation of the mission repository), read by every pilot — kept in the shared
+repository under `missions/`, one writer (the author, later the CPCO application); the CPCO stays V2 **until it is
+built in V3** as the third application of the frame (a debt, not a scope); the "first step" is the first act of a new
+**role**, "équipier enrôlé dans une structure réalisant des missions imposées" (neither the VFR pilot nor the airline
+pilot: "mission d'un organisme supérieur"), and for that role Fuel starts from a mission (choose, or draw one); mission
+categories depend on the airline's kind (a commercial VA has ferry, passenger and cargo missions, inactive for a SOG);
+no users nor rights in V3 for now. Framing in § 10.32.
 
 ## 3. Transverse blocks (the frame)
 
@@ -1199,3 +1194,30 @@ redesigned for touch at that point.
          le … ⌛ · Relire · Source · N non lues") are folded under the summary and open on a tap on the line, one side
          at a time; "Relire" and "Source" leave the title and live in that folded part only (rare gestures). Under 7
          elements visible at the step's opening: two lines, two buttons, the rest folded.
+
+   32. **Missions in V3, first framing** (user, 30 Oct: "les missions actuelles sont communes : je suis le seul à en
+       créer, d'autres en profitent ; la numérotation est la mienne ; le premier acte du rôle « équipier enrôlé dans une
+       structure réalisant des missions imposées » ; une mission d'une VA : rapatrier un appareil, vol commercial, cargo ;
+       l'intégration avec l'appli Pilote reste à décider, mais une mission qui a un point de départ et un point de
+       rendez-vous doit pouvoir engendrer un FPL et une carte avec les espaces"). Planned after the stabilisation (a
+       usable Map, the administration verbs); no lot opened. Rules, so that nothing built meanwhile contradicts them:
+       - **Data**: `missions/<id>.json` in the shared repository, the author's numbering as the identifier, one writer
+         (the author's device today, the CPCO application tomorrow), read by every pilot; a mission is never
+         rewritten by a pilot — what the pilot does with it is the flight record (`pilot/<TRI>/…`). The V2 mission files
+         are imported once by a reader, never kept in two shapes.
+       - **A mission is a source of the flight**, at the OFP's rank: departure, a **rendezvous** (a point with a time,
+         the first fixed constraint of the route), an arrival (the base unless the mission says otherwise), the
+         aircraft or its type, the imposed constraints (level, zones, time windows). From it Fuel builds the route
+         (dep → rendezvous → arr, "Auto" between), the Map draws the points and the airspaces that matter (the
+         rendezvous area, the activated zones). One contract, `missionFlight(mission) → flight fields`, pure, in
+         `frame/lib`.
+       - **The role is a usage, not an application**: the Pilot application carries a usage "équipier" beside the VFR
+         and airline usages (identity / level axis, § 7); with it, Fuel's start offers "Nouveau vol : depuis une mission
+         (choisir · tirer au sort) · depuis l'OFP SimBrief · libre", the mission list is a module of the Pilot
+         application (rail entry only for the role), and the CPCO (authoring, assignment) is the third application
+         when built. The integration level stays the user's call; this framing keeps both doors open.
+       - **Categories follow the airline's kind** (`airline/settings.json` `kind`: `sog` | `va` | …): a rule per
+         kind decides which mission categories are active (ferry, passenger, cargo for a commercial VA; the SOG's own
+         ones), never a hard-coded list in a module.
+       Lots: none before the stabilisation; then a reader of the V2 missions (survey), `missionFlight` with a bench
+       (fuel), the usage "équipier" (frame), the mission list (new module), the Map's drawing (maps).
