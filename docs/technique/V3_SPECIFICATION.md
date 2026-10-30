@@ -1126,3 +1126,43 @@ redesigned for touch at that point.
        Lots: fuel first (Features SOG: the transition detection in `appChoices` / `transitionsOf`, `labelOf`, the join
        in `expandedPath`, benches on LFPO's records; Fuel's own approach select uses the same rows), then maps (BUGS
        SOG: sub-rows and hues from the rule, the join on the trace, vectors withdrawn then the threshold vector).
+
+   31. **The route text and the procedures are one model; "Auto" is idempotent** (user, 30 Oct, LFBO → LFPO: "LFBO
+       LACOU7B LACOU LMG BALAN SOPIL UN859 AMB GILUX VEROS G54 CTX G28 LMG R10 BTZ R299 DONOS PPN N10 CJN L27 NASOS ANZAN
+       L27 BLN PIMOS A3 MOTAL J18 KOTAP LFPO tourne en boucle, résultat de plusieurs Auto successifs depuis LFBO LACOU7B
+       LMG BALAN SOPIL UN859 AMB LFPO ; et pourtant la route LACOU LMG n'est toujours pas trouvée ; on doit pouvoir
+       modifier le FPL après sélection SID / STAR, ce qui implique que le choix se reporte dans le FPL ; une procédure
+       pourrait être un point comme un autre ; LACOU7B impose une sortie vers LMG alors que le départ initial était via
+       GAI G38 LMG"). Decided by the ergonomics session, with two objections recorded below.
+       - **"Auto" recomputes from the pinned points only, and replaces.** Pinned = departure, the chosen SID's exit,
+         every point the pilot typed, the chosen STAR's entry, arrival. Airway names and intermediate nodes produced by
+         a previous Auto are never constraints: the tokens Auto writes are tagged generated (`route_text.js` keeps the
+         provenance), a second Auto on the same pinned points gives the same text. A result that visits a point twice,
+         or whose length exceeds the direct chain by more than `detourPct` over the whole chain, is rejected leg by
+         leg (direct for that leg). No path between two pinned points → "LACOU DCT LMG" and one line that says why
+         (no airway from LACOU; too far), never silence: "route non trouvée" is a fact the pilot reads, not a bug.
+       - **The route text is a view of the model, parsed back when edited.** The model is `route.dep`, `route.procedures`
+         (SID, STAR, approach, transition), the points, `route.arr`. Rendering writes the ICAO form: the SID's name
+         first, then its exit, the points and airways, the STAR's entry and name last ("LACOU7B LACOU DCT LMG UN859 AMB
+         OKRIX5A"); the approach never appears in the text (it is not an FPL item). Parsing a text the pilot edited:
+         a first token that names a SID of `route.dep`, or a last token that names a STAR of `route.arr`, sets that
+         choice; its absence clears it; a token the base does not know stays a point by name and is flagged. One
+         writer stays Fuel; the Map's choices write the model and the text follows at once. Hence "modifier le FPL
+         après sélection SID / STAR" works, and the pane and the text never disagree.
+       - **SID exit against the typed route.** The chosen procedure joins the route at the first common point, else by
+         a direct leg to the route's first point, and Fuel's change line says it ("LACOU7B sort à LACOU : LACOU DCT
+         LMG"). In the pane, the SIDs whose exit is on the typed route come first ("vers votre route"), the others
+         after, marked "sortie LACOU" — a second compatibility axis beside the runway, `compatible()` takes the route's
+         points. The pilot keeps the last word.
+       - **A text field with completion at the cursor.** The route field proposes, from two characters at the cursor,
+         points, navaids, airways and the procedure names of the two aerodromes (≤ 7, the component of § 10.27);
+         inserting writes the token at the cursor. The selects of the Route step stay as the keyboard and screen-reader
+         path, secondary (objection to "les popdown ne fonctionnent pas": they are not removed, the failing case is to
+         be named).
+       - **Objection recorded, user to confirm**: "une procédure pourrait être un point comme un autre" — in the
+         route text, yes (ICAO form, above); in the Map's point list a procedure is one folded group row (its legs under
+         it, one hue), never a single point: a point has a position, a procedure is a path with constraints and a runway.
+         Treating it as a point would hide the legs the pilot flies and break the join rule. Group row proposed instead.
+       Lots: fuel (Features SOG: Auto idempotent with provenance in `route_text.js` and `routing.js`, render / parse of
+       the text with procedures, the change line, the completion field; cases F), maps (BUGS SOG, after the performance
+       fix: SIDs ranked by exit on the route, the group row in the point list; cases D).

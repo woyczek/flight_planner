@@ -487,6 +487,13 @@
           "en": "Wind on every proposed runway (head or tail, crosswind, from the known METAR), runway and procedure correcting each other without forcing anything",
           "de": "Wind auf jeder vorgeschlagenen Piste (Gegen- oder Rückenwind, Seitenwind, aus dem bekannten METAR), Piste und Verfahren korrigieren einander ohne Zwang",
           "es": "Viento en cada pista propuesta (de cara o de cola, cruzado, según el METAR conocido), pista y procedimiento que se corrigen mutuamente sin imponer nada"
+        },
+        {
+          "state": "planned",
+          "fr": "Route : « Auto » recalcule depuis les points posés seulement (jamais en boucle), la SID et la STAR choisies s'écrivent dans le texte du plan de vol et s'en relisent, complétion au curseur dans le champ de route",
+          "en": "Route: \"Auto\" recomputes from the pinned points only (never loops), the chosen SID and STAR are written into the flight plan text and read back from it, completion at the cursor in the route field",
+          "de": "Route: „Auto“ rechnet nur von den gesetzten Punkten neu (nie in Schleife), gewählte SID und STAR werden in den Flugplantext geschrieben und daraus gelesen, Vervollständigung am Cursor im Routenfeld",
+          "es": "Ruta: «Auto» recalcula solo desde los puntos fijados (nunca en bucle), la SID y la STAR elegidas se escriben en el texto del plan de vuelo y se releen de él, autocompletado en el cursor del campo de ruta"
         }
       ]
     },
