@@ -220,7 +220,10 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 
 ## 5. The map
 
-- Pan and pinch, no rotation, no pitch, Mercator, north up; redrawn on every move, one frame at a time.
+- Pan and pinch, no rotation, no pitch, Mercator, north up. During a gesture, a light drawing at most every 120 ms (lines
+  only: airspaces, airways, route, aerodromes as squares; `light.js`), the last image copied in between; a light drawing over
+  8 ms leaves the rest of the gesture to the copy; the full drawing (labels, collisions, vectors, readings) at rest — end of
+  the gesture or 150 ms without movement.
 - **Base map**: MapLibre loaded at the first map (`lib/map_base.js`); the mode's base style (OpenFreeMap `positron` by
   default, `liberty` in VFR and Topo; VersaTiles styles when a profile names one); `dark` at night (VersaTiles
   `eclipse`). With no network, no WebGL, an error, or no style after 10 s, the plain background: sea, land and borders

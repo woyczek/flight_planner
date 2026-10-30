@@ -1640,6 +1640,23 @@ Measured (real fr + es bases, LFBO → LEBL FL260, view -1.6..5.4 / 40.9..44.6 a
 view 128 airspaces (69 fr, 59 es) · 748 airways, 12.7–15.6 ms. After: around the flight 3.3–4.7 ms; whole view 10.2–13.8
 ms. Both under 16 ms (§ 10.30): no geometry cache needed for this. Noreg D75 (and D64: `corridor` is now a number).
 
+## A light drawing while panning (user, 30 Oct 2026: « un intermédiaire ? »)
+
+The kept image alone (c9238c050) made panning fluid but the map was frozen until rest. Now, during a gesture, a light drawing
+at most every `LIGHT_MS` = 120 ms (requestAnimationFrame, synchronous: never two in flight) replaces the copy: airspaces
+(stroke only, the colour rule of the full drawing), airways, route, aerodromes as 5 px squares; no label, no collision pass,
+no runway vector, no cartouche (`light.js`). Its paths are Path2D in Mercator pixels at zoom 10, relative to a reference
+point, built once per set of lists from the last full drawing (`S.lightSrc`; the arrays of `byZoom`) and placed by one
+transform (`2^(zoom − 10)`, the reference projected by MapLibre): unlike a cache per zoom, they also hold through a
+pinch. Between two light drawings the last image is copied as before. A light drawing over `LIGHT_MAX_MS` = 8 ms on this
+base gives the rest of the gesture back to the copy alone. Not on a mission map nor in the choose mode (no `lightSrc`).
+
+Measured (real fr base, Paris, zoom 8.2, 1280 × 900, a 30-step drag of ~1 s, three gestures each): before (422ed8b3f), 30
+copies ≤ 0.2 ms, nothing redrawn; after, auto (114 airspaces, 71 aerodromes): 8 light drawings of 0.1–0.4 ms, paths 0.8–1.6
+ms once per gesture, 22 copies ≤ 0.2 ms, no full drawing during; vfr (97–164 airspaces, 73–123 aerodromes): 8–9 light
+drawings of 0.1–0.5 ms, paths 0.7–1.9 ms. Dense test base (D68, 600 airspaces of 41 points, 2 000 aerodromes): under 8 ms.
+The work measured is the CPU's (stroking a Path2D is queued to the GPU). Noreg D68 extended.
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (BUGS SOG, 30 Oct, for the user's challenge "supprimer les faire et défaire vers un point documenté, éviter le

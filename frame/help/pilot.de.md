@@ -263,10 +263,12 @@ Ausweichflugplatz grau gestrichelt. Die in Kraftstoff gewählten Piste, SID, STA
 Gefahren- und Sperrgebiete, kontrollierte Lufträume), die unteren oder oberen Luftstraßen je nach Ihrer Flugfläche, die
 Flugplätze und die Funkfeuer, und in jedem Ein-Grad-Feld die Mindestsicherheitshöhe (die braune Zahl, in Tausenden und
 Hunderten Fuß: „3⁵“ bedeutet 3 500 ft). Die kleinen violetten Zahlen entlang der Route sind die Entfernungen ab dem
-Abflug, in nautischen Meilen. Verschieben Sie die Karte mit einem Finger, spreizen Sie zwei Finger zum Zoomen;
+Abflug, in nautischen Meilen. Verschieben Sie die Karte mit einem Finger, spreizen Sie zwei Finger zum Zoomen (während der Geste behält die Karte nur ihre Linien — Lufträume,
+Luftstraßen, Route, Flugplätze als kleine Quadrate — und ihre Namen kommen zurück, sobald sie stillsteht);
 „Zentrieren“ (das Zielsymbol oben rechts auf der Karte) kehrt zur ganzen Route zurück. Die Karte bleibt, wo Sie sie hingelegt haben, auch wenn sich die Route
-ändert: nur „Zentrieren“ (oder ein anderer Flug) richtet sie neu aus. Von weitem gesehen zeigt die Karte nur, was nahe
-der Route liegt; zoomen Sie hinein, um alles zu sehen.
+ändert: nur „Zentrieren“ (oder ein anderer Flug) richtet sie neu aus. Solange „Nur rund um den Flug“ (Ebenen) angehakt
+ist, werden Lufträume und Luftstraßen von weitem nur nahe dem Flug gelesen; entfernen Sie den Haken oder zoomen Sie hinein,
+um alles zu sehen.
 
 <a id="maps-procs"></a>**Gewählte Piste und Verfahren.** Was Sie in Kraftstoff gewählt haben (Piste, SID, STAR, Anflug), wird über der Route gezeichnet: die SID grün, die STAR orange, der Anflug und sein Fehlanflug blau, von der Schwelle der Abflugpiste bis zum ersten Punkt der Route und vom letzten Punkt der Route bis zur Schwelle der Landepiste. Übergänge und das Fehlanflugverfahren sind gestrichelt; ein Abschnitt ohne Punkt (zum Beispiel ein Steigflug auf einem Kurs) ist ein kurzer Strich entlang seines Kurses, dann eine Strichlinie bis zum nächsten Punkt; eine Kurve mit konstantem Radius ist ein Bogen. Erreicht die SID keinen Punkt der Route, verbindet eine gestrichelte Gerade sie mit der Route (ebenso bei der STAR). Ein nicht gewähltes Verfahren wird nie gezeichnet, und die Ebenenliste hat kein Kästchen dafür. Der Name des Verfahrens steht auf seiner Linie, gefolgt von der Herkunft seiner Daten, wenn sie von X-Plane oder Little Navmap stammen („X-Plane, lokal“) dann vom Zeichen ⌛ (grau), wenn sie unter einem früheren Zyklus gelesen wurden; die Legende (Chip „i“) erinnert daran. Ab der regionalen Ansicht (auf der Seite der Schwellen einstellbar) trägt jeder Punkt seine Beschränkungen; der Name des Verfahrens steht in jedem Maßstab, über allem anderen, wie auf Verfahrenskarten: eine **unterstrichene** Höhe heißt „mindestens“, eine **überstrichene** „höchstens“, beides „genau“, „5000–7000“ „dazwischen“; „≤ 220 kt“ ist die nicht zu überschreitende Geschwindigkeit. Das Vertikalprofil folgt demselben Weg und zeigt diese Beschränkungen als Stufen (Pfeil nach oben: mindestens, nach unten: höchstens, Punkt: genau, Balken: zwischen zwei Höhen); Entfernungen, geschätzte Zeiten und der Cursor werden entlang dieses Wegs gemessen. Die Karte ändert diese Wahl nie: Tippen Sie auf einen Flugplatz der Route, seine Karte nennt die gewählte Piste und die Verfahren, mit einer Schaltfläche „Ändern“, die Kraftstoff bei der zu ändernden Zeile öffnet; ein Link „Quelle“ öffnet die veröffentlichte Seite des Verfahrens (eAIP des SIA) in einem neuen Tab, und bei einem anderswo gelesenen Verfahren erscheint der Name seines Dokuments beim Überfahren der Zeile.
 
@@ -426,7 +428,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: e1805ee753f9 -->
+<!-- fr: 7ed01fb36c21 -->
 
 <!-- chapter: report -->
 # Bericht

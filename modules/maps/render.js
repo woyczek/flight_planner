@@ -1374,6 +1374,12 @@
         }
       },
       airways: ends.hits || [],
+      // les listes montrées (espaces, voies, terrains) : le dessin léger d'un geste les reprend en traits seuls (light.js)
+      light: mission ? null : {
+        airspaces: shown.airspaces || [],
+        airways: shown.airways || [],
+        aerodromes: shown.aerodromes || []
+      },
       // terrains dessinés dans le cadre, à leur place à l'écran (survol et toucher d'un terrain : points de report VFR)
       // balises dessinées et celles qui leur sont rattachées faute de place (même endroit) : infobulle
       navaids: pts.navs,

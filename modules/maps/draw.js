@@ -63,6 +63,11 @@ import {
   chooseLayout,
   DIM
 } from './choose.js';
+import {
+  lightPaths,
+  drawLight,
+  sameSrc
+} from './light.js';
 
 // ---------------------------------------------------------------- un dessin par tour d'animation
 let frame = 0;
@@ -88,25 +93,67 @@ export function cancelDraw() {
   clearTimeout(rest);
 }
 
-// ---------------------------------------------------------------- pendant un geste : l'image déjà dessinée suit la carte
-// (V3 maps, 30 octobre : « déplacement de carte sur la région de Paris : très saccadé ») — chaque image d'un pan reprojetait tous
-// les anneaux des espaces et reposait toutes les étiquettes ; pendant le mouvement, la dernière image complète est recopiée,
-// translatée et mise à l'échelle par deux de ses coins géographiques, rien n'est reprojeté ; le dessin complet (étiquettes,
-// vecteurs, collisions, lectures) revient au repos : fin du geste, ou 150 ms sans mouvement
-const REST_MS = 150;
+// ---------------------------------------------------------------- pendant un geste : un dessin léger, l'image gardée entre deux
+// (V3 maps, 30 octobre : « déplacement de carte sur la région de Paris : très saccadé », puis « le freeze de refresh est efficace
+// pour la fluidité, mais gênant pour se déplacer : un intermédiaire ? ») — pendant le mouvement, au plus un dessin léger toutes
+// les LIGHT_MS (traits seuls, light.js : rien d'étiqueté, aucune collision) ; entre deux, la dernière image est recopiée, translatée
+// et mise à l'échelle par ses deux coins géographiques ; un dessin léger de plus de LIGHT_MAX_MS sur cette base rend la main à la
+// copie seule pour le reste du geste ; le dessin complet (étiquettes, vecteurs, collisions, lectures) revient au repos : fin du
+// geste, ou 150 ms sans mouvement
+const REST_MS = 150,
+  LIGHT_MS = 120,
+  LIGHT_MAX_MS = 8;
 let quick = 0,
-  rest = 0;
-/** La carte bouge (événement « move » de MapLibre) : l'image gardée suit au prochain tour d'animation, le dessin complet attend le
- *  repos. Sans image gardée (premier dessin, fond uni), le dessin complet tout de suite. */
+  rest = 0,
+  lastLight = 0;
+/** La carte bouge (événement « move » de MapLibre) : au prochain tour d'animation, le dessin léger s'il est dû et permis, sinon
+ *  l'image gardée suit ; le dessin complet attend le repos. Sans image gardée (premier dessin, fond uni), le dessin complet tout de
+ *  suite. */
 export function moving() {
   clearTimeout(rest);
   rest = setTimeout(settle, REST_MS);
   if (!S?.map || !S.frame?.ok) return request();
+  if (!S.moving) S.lightOn = !!S.lightSrc; // un geste commence : le dessin léger permis s'il y a de quoi
   S.moving = true;
   if (!quick) quick = requestAnimationFrame(() => {
     quick = 0;
-    if (S?.map && S.frame?.ok && !frame) follow();
+    if (!S?.map || !S.frame?.ok || frame) return;
+    if (S.lightOn && performance.now() - lastLight >= LIGHT_MS) light();
+    else follow();
   });
+}
+/** Le dessin léger (light.js) à la vue de la carte, gardé comme image à recopier jusqu'au suivant ; les chemins refaits seulement
+ *  quand les listes du dernier dessin complet ont changé (mesure à part : maps:light:paths). */
+function light() {
+  if (!sameSrc(S.lightPaths?.src, S.lightSrc)) {
+    performance.mark('maps:light:paths:start');
+    S.lightPaths = lightPaths(S.lightSrc);
+    performance.measure('maps:light:paths', 'maps:light:paths:start');
+  }
+  performance.mark('maps:light:start');
+  const t0 = performance.now(),
+    {
+      W,
+      H,
+      dpr
+    } = sizeCanvas(),
+    c = S.canvas,
+    g = c.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, c.width, c.height);
+  drawLight(g, S.lightPaths, {
+    project: ll => S.map.project(ll),
+    zoom: S.map.getZoom(),
+    W,
+    H,
+    dpr,
+    pal: MapsRender.palette(!!S.theme.dark),
+    ink: S.theme.fg
+  });
+  keepFrame(W, H);
+  lastLight = performance.now();
+  performance.measure('maps:light', 'maps:light:start');
+  if (lastLight - t0 > LIGHT_MAX_MS) S.lightOn = false; // trop lourd sur cette base : la copie seule pour le reste du geste
 }
 /** Repos (fin du geste, ou REST_MS sans mouvement) : le dessin complet, les demandes faites pendant le geste comprises. */
 export function settle() {
@@ -434,6 +481,11 @@ function draw() {
     } : null
   }) || {};
   covFlush(); // les terrains demandés pendant ce dessin partent ensemble ; redessin une fois à l'arrivée du lot
+  // ce que le dessin léger d'un geste reprendra (pas sur une carte de mission ni pendant le choix sur la carte)
+  S.lightSrc = mission || pick || !got0.light ? null : {
+    ...got0.light,
+    route
+  };
   S.awHits = got0.airways || [];
   stat(got0.zoom);
   S.zoneHits = got0.zoneLabels || [];

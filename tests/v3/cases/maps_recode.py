@@ -1684,9 +1684,9 @@ def _dense_base():
     return ads, spaces, {str(y): [[-2, 7]] for y in range(45, 52)}
 
 
-@case('D68', 'Panning a dense map: the drawn image follows the gesture, the full drawing waits for rest (under 16 ms of work per image)', 'D',
+@case('D68', 'Panning a dense map: light drawings (lines only) and the kept image carry the gesture, the full drawing waits for rest', 'D',
       tags=('maps',), screens=False, designs=('standard',), night=False,
-      rule='user 30 Oct (« déplacement de carte sur la région de Paris : très saccadé (2 fps ?) »): during a pan nothing is projected again — the last full image follows by its two geographic corners; labels, vectors and collisions are drawn at rest (end of the gesture or 150 ms without movement); threshold: 16 ms of work per image of a 20-image drag')
+      rule='user 30 Oct (« très saccadé (2 fps ?) », then « le freeze de refresh est efficace pour la fluidité, mais gênant pour se déplacer : un intermédiaire ? »): during a pan, a light drawing at most every 120 ms — airspaces, airways, route, aerodromes as symbols, from cached Mercator paths, no label, no collision — each under 8 ms of work (else the kept image alone for the rest of the gesture); between two, the last image follows by its two geographic corners; labels, vectors and collisions at rest (end of the gesture or 150 ms without movement), one full drawing; 16 ms at most per image')
 def d68(c):
     ads, spaces, cells = _dense_base()
     c.page.add_init_script(_FREEZE_AERO)
@@ -1707,17 +1707,22 @@ def d68(c):
     c.page.mouse.move(box[0] - 400, box[1] - 120, steps=20)
     during = c.js("""() => ({ draws: performance.getEntriesByName('maps:draw').map(e => e.duration),
       follows: performance.getEntriesByName('maps:follow').map(e => e.duration),
+      lights: performance.getEntriesByName('maps:light').map(e => e.duration),
+      paths: performance.getEntriesByName('maps:light:paths').map(e => e.duration),
       times: [...performance.getEntriesByName('maps:draw').map(e => 'D' + Math.round(e.startTime)), ...performance.getEntriesByName('maps:follow').map(e => 'f' + Math.round(e.startTime))] })""")
     c.page.mouse.up()
     c.until("() => performance.getEntriesByName('maps:draw').length > 0", timeout=4000, what='the full drawing at rest')
+    # at rest the full drawing comes back (a second one may follow when the data of the new view arrive)
     # a full drawing during the drag is only the one of rest: 150 ms without movement (a loaded machine can take that long between
     # two pointer steps) — never one following a copy closely; the copies carry the gesture
     seq = sorted(during['times'], key=lambda x: int(x[1:]))
     early = [t for i, t in enumerate(seq) if t[0] == 'D' and (lambda prev: prev and prev[0] == 'f' and int(t[1:]) - int(prev[1:]) < 140)(
         next((x for x in reversed(seq[:i]) if x[0] == 'f'), None) if not (i and seq[i - 1][0] == 'D') else None)]
     c.eq(early, [], 'no full drawing during the gesture (nothing projected again), only at rest', what=f'full drawings while panning {seq}')
-    c.ok(len(during['follows']) >= 10, f"{len(during['follows'])}", 'the drawn image follows the gesture')
-    worst = max(during['follows'] or [0])
+    c.ok(len(during['lights']) >= 1, f"lights {during['lights']}, paths {during['paths']}", 'light drawings carry the gesture (lines only)')
+    c.le(round(max(during['lights'] or [0]), 1), 8, 'each light drawing under 8 ms of work', what=f"light drawings {[round(x, 1) for x in during['lights']]}")
+    c.ok(len(during['follows']) + len(during['lights']) >= 10, f"{len(during['follows'])} copies, {len(during['lights'])} light", 'an image for every step of the gesture')
+    worst = max(during['follows'] + during['lights'] or [0])
     c.le(round(worst, 1), 16, 'under 16 ms of work per image of the drag', what=f'worst image {worst:.1f} ms')
 
 

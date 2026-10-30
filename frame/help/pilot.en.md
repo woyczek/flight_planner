@@ -246,9 +246,10 @@ airfield in grey dashes. The runway, SID, STAR and approach chosen in Fuel are d
 areas, controlled airspace), the low or high airways depending on your level, the airfields and the beacons, and in each
 one-degree square the minimum safe altitude (the brown figure, in thousands and hundreds of feet: “3⁵” means 3,500 ft).
 The small purple figures along the route are the distances from the departure, in nautical miles. Drag the map with one
-finger, spread two fingers to zoom; “Recentre” (the target, at the top right of the map) comes back to the whole route. The map stays where you put it, even when
-the route changes: only “Recentre” (or another flight) reframes it. Seen from afar, the map only shows what is near the
-route; zoom in to see everything.
+finger, spread two fingers to zoom (during the gesture the map keeps only its lines — airspaces, airways, route,
+aerodromes as small squares — and its names come back as soon as it stops); “Recentre” (the target, at the top right of the map) comes back to the whole route. The map stays where you put it, even when
+the route changes: only “Recentre” (or another flight) reframes it. While “Around the flight only” is ticked (Layers),
+airspaces and airways are read only near the flight, from afar; untick it or zoom in to see everything.
 
 <a id="maps-procs"></a>**The runway and procedures chosen.** What you chose in Fuel (runway, SID, STAR, approach) is drawn over the route: the SID in green, the STAR in orange, the approach and its missed approach in blue, from the threshold of the departure runway to the first point of the route, and from the last point of the route to the threshold of the arrival runway. Transitions and the missed approach are dashed; a leg without a fix (a climb on a heading, for example) is a short stroke along its course, then dashes to the next point; a constant-radius turn is an arc. When the SID does not reach a point of the route, a dashed straight line joins it to the route (likewise for the STAR). A procedure you did not choose is never drawn, and the Layers list has no box for it. The procedure's name is written on its trace, followed by where its data come from when they come from X-Plane or Little Navmap ("X-Plane, local") then by the symbol ⌛ (in grey) when they were read under an earlier cycle; the legend ("i" chip) recalls it. From the regional view on (adjustable on the thresholds page), each point carries its constraints; the procedure's name is written at every scale, over everything else, as on procedure charts: an **underlined** altitude means "at or above", **overlined** "at or below", both "exactly", "5000–7000" "between the two"; "≤ 220 kt" is the speed not to exceed. The vertical profile follows the same path and shows these constraints as steps (up arrow: at or above, down arrow: at or below, dot: exactly, bar: between two altitudes); distances, estimated times and the cursor are measured along that path. The map never changes this choice: touch an aerodrome of the route and its card gives the runway and procedures chosen, with a "Change" button that opens Fuel on the row to change; a "Source" link opens the procedure's published page (the SIA's eAIP) in a new tab, and for a procedure read elsewhere its document's name shows when hovering the row.
 
@@ -396,7 +397,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: e1805ee753f9 -->
+<!-- fr: 7ed01fb36c21 -->
 
 <!-- chapter: report -->
 # Report
