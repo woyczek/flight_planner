@@ -125,7 +125,9 @@ def apply(root, channel, fetch=True, want=''):
     if not p.get('ok') or p.get('reason') == 'up-to-date':
         return {**p, 'done': False}
     if channel == 'suivi':
-        code, out = _git(root, 'merge', '--ff-only', '--quiet', f'origin/{DEV_BRANCH}')
+        # le commit que le plan a lu lui-même (rev-parse), jamais le nom origin/<branche> qu'un autre fetch pourrait avancer
+        # entre-temps (relecture Sécurisation de 513f6fb5b, ligne 107)
+        code, out = _git(root, 'merge', '--ff-only', '--quiet', p['sha'])
     else:
         code, out = _git(root, 'checkout', '--quiet', '--detach', f'refs/tags/{p["target"]}')
     if code:

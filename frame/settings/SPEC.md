@@ -204,7 +204,8 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    (`{ channel, target: <sha> }`, 40 lowercase hex digits, 400 otherwise): a plan whose target is no longer that sha —
    after the fetch, then again without fetch just before writing — is refused (`reason: 'changed'`, with the sha found),
    nothing written; the panel then says the channel's version changed and asks to check again (review of 99b4c2a25, line
-   105). Without `target`, as before. The target is not verified (no
+   105). Without `target`, as before. On `suivi` the branch is fast-forwarded to the commit the plan read itself
+   (`rev-parse`), never to the name `origin/<branch>`, which another check's fetch could move meanwhile (line 107). The target is not verified (no
    `git verify-tag`: the tags are not signed): the same trust as the manual `git pull` it replaces, said in the help; to be
    tightened if the tags are signed one day.
 9b. **Little Navmap sheets (.lnmperf)** (page served by a launcher, when `aerodb.lnmperf` exists): an empty, hidden

@@ -1837,7 +1837,15 @@ def i25(c):
         c.eq(U.plan(root, 'stable')['reason'], 'downgrade', 'a target that does not contain the installed version: refused', what='downgrade')
         # suivi: on the development branch, fast-forward only
         g(suite, 'checkout', '-q', U.DEV_BRANCH)
-        r = U.apply(root, 'suivi')
+        calls, git0 = [], U._git
+        U._git = lambda root_, *a: calls.append(a) or git0(root_, *a)
+        try:
+            r = U.apply(root, 'suivi')
+        finally:
+            U._git = git0
+        merges = [a for a in calls if a[0] == 'merge']
+        c.eq(merges, [('merge', '--ff-only', '--quiet', r.get('sha'))], 'the fast-forward goes to the commit the plan read, never to the name origin/<branch>',
+             what='merge target')
         _, head = g(suite, 'rev-parse', 'HEAD')
         _, tip = g(dev, 'rev-parse', 'HEAD')
         c.ok(r['done'] and head == tip and r['current']['branch'] == U.DEV_BRANCH, str(r)[:200], 'suivi: the branch fast-forwarded to the remote head')

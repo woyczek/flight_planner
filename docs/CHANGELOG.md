@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Update the suite, « suivi »: the fast-forward goes to the commit the plan read** (`tools/suite_update.py`; Settings
+  SPEC 9a-bis; noreg I25) — Sécurisation's review of 513f6fb5b: never the name `origin/<branch>`, which another check's
+  fetch could move between the plan and the merge.
 - **Update the suite: the version written is the one the check showed** (`tools/suite_update.py` `changed`,
   `tools/launch.py` `update_target`; Settings panel, SPEC 9a-bis, DECISIONS, help ×4; noreg I25, A51) — Sécurisation's
   review of 99b4c2a25. « Mettre à jour » sends back the sha « Vérifier » showed; another target is refused (`changed`),
