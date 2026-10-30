@@ -887,6 +887,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 45 | Frame: the flown track kept on the device (0bbe7ebbb) | acceptable |
 | 46 | Map: an airspace's bounds kept in a `WeakMap` (0f5891d4c) | acceptable |
 | 47 | Map: choose mode over three families, one return (af261d3e3) | acceptable; one functional note |
+| 48 | Resumption retouches (add1e78a3), frozen test base (94515ca99) | acceptable; point and note of 44 settled |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1489,6 +1490,15 @@ again on receipt (26). Names, ids, reasons, titles and the wind text are escaped
 code; selectors use `CSS.escape`. The wind comes from the METAR already cached, read only. The Map writes nothing; the
 selection stays in local state until `location.replace`. Functional note: the Map sends the approach transition as
 `apptrans` while Fuel consumes `appTrans`; the parameters being case-sensitive, that choice is silently ignored.
+
+**48. Resumption retouches (add1e78a3) and frozen test base (94515ca99) — acceptable; the point to fix and the note of
+44 are settled.** `checkout` and `rm` run with `GIT_LITERAL_PATHSPECS=1` (`[ab].json` is a name); names are read with
+`diff -z --name-only` (an accented name is found as it is). Files outside the pool committed by the workstation since the
+common state are copied back into `data/` byte for byte from the reference, each path through `data_path`, never
+committed (the plan says so, in the four languages). Minor note: such a file stays a changed file of the folder; a later
+launcher publication on the same prefix (`git add -A -- <prefix>`) would carry it, so « never sent » means « never by the
+resumption nor by synchronisation ». 94515ca99: a reference copy without a revision (a seeded test base, a restored
+backup) is frozen too, at each reading, so that a write on a record fails in the noreg runs rather than at the user's.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
