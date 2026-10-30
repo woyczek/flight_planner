@@ -94,6 +94,19 @@
       'La clave IVAO y las credenciales de EAD Basic, guardadas por el lanzador de este equipo (carpeta secrets/), nunca por el navegador ni en los datos.'
     ]
   }, {
+    // les dossiers que le lanceur connaît (A3) : chemins en lecture seule, « Ouvrir » par identifiant (POST /__setup/folders/open)
+    id: 'folders',
+    panel: 'folders',
+    where: 'launcher',
+    primary: true,
+    title: ['Dossiers du poste', 'Folders of this computer', 'Ordner dieses Rechners', 'Carpetas de este equipo'],
+    text: [
+      'Où sont la suite, les données, les téléchargements et les fichiers de Little Navmap sur ce poste ; en lecture seule, avec « Ouvrir ».',
+      'Where the suite, the data, the downloads and Little Navmap’s files are on this computer; read only, with “Open”.',
+      'Wo die Suite, die Daten, die Downloads und die Dateien von Little Navmap auf diesem Rechner liegen; nur lesbar, mit „Öffnen“.',
+      'Dónde están la suite, los datos, las descargas y los archivos de Little Navmap en este equipo; solo lectura, con «Abrir».'
+    ]
+  }, {
     id: 'data',
     href: 'frame/?app=maintenance#data',
     same: true, // une autre application du même cadre : dans le même onglet

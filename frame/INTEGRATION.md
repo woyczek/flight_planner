@@ -1048,6 +1048,8 @@ in the launcher; `resume` finds it again.
   four-character code, nothing else) reads one aerodrome in EAD Basic and installs it under `proc/manual/`; `proc/eaip-fetch` (same args, the code must
   start with `LF`) does the same from the SIA eAIP of the cycle in force, without credentials, the address being computed by the launcher (aerodb's
   `fetchProcedures` picks the verb by the aerodrome's State; the frame gives aerodb `launcher.job`, built on this client with `regen/job` declared).
+  `GET /__setup/folders` → `{ folders: [{ id, path, exists, from }] }` and `POST /__setup/folders/open { id }` (workstation only, 30 Oct
+  2026; the Administration card's « Dossiers du poste », frame/settings SPEC 9a): the folders the launcher knows, opened by id.
   `GET /__setup/regen/verbs` → `{ verbs: ['aircraft/build', 'base/fetch', …] }` (workstation only, 30 Oct 2026): the « set/verb » of every
   loaded job, so that a page greys at once what this launcher does not know. **Set `aircraft`** (`tools/regen/aircraft.py`, V3 § 10.34 A1):
   `aircraft/fetch` and `aircraft/build` `{ codes }` (ICAO designators; empty: the types of `airline/fleet.json`), the steps `types`

@@ -367,6 +367,51 @@
     ivaoAppLink: ['Créer l’application IVAO des pilotes : pas à pas', 'Create the pilots’ IVAO application: step by step',
       'IVAO-Anwendung der Piloten anlegen: Schritt für Schritt', 'Crear la aplicación IVAO de los pilotos: paso a paso'
     ],
+    // volet « Dossiers du poste » (A3) : un dossier par ligne, son chemin en lecture seule, d'où il vient, « Ouvrir »
+    folders: {
+      suite: ['La suite', 'The suite', 'Die Suite', 'La suite'],
+      data: ['Les données (data/)', 'The data (data/)', 'Die Daten (data/)', 'Los datos (data/)'],
+      downloads: ['Téléchargements', 'Downloads', 'Downloads', 'Descargas'],
+      lnmdb: ['Bases de Little Navmap', 'Little Navmap databases', 'Little-Navmap-Datenbanken', 'Bases de Little Navmap'],
+      lnmperf: ['Fiches Little Navmap (.lnmperf)', 'Little Navmap sheets (.lnmperf)', 'Little-Navmap-Blätter (.lnmperf)',
+        'Fichas de Little Navmap (.lnmperf)'
+      ],
+      xplane: ['X-Plane', 'X-Plane', 'X-Plane', 'X-Plane']
+    },
+    folderFrom: {
+      install: ['là où la suite est installée (le dossier de lancer.cmd)', 'where the suite is installed (the folder of lancer.cmd)',
+        'wo die Suite installiert ist (der Ordner von lancer.cmd)', 'donde está instalada la suite (la carpeta de lancer.cmd)'
+      ],
+      'data-option': ['data/ de la suite, ou le dossier donné au lancement par --data',
+        'the suite’s data/, or the folder given at start with --data',
+        'data/ der Suite oder der beim Start mit --data angegebene Ordner',
+        'data/ de la suite, o la carpeta dada al iniciar con --data'
+      ],
+      system: ['le dossier Téléchargements de ce poste', 'this computer’s Downloads folder', 'der Download-Ordner dieses Rechners',
+        'la carpeta Descargas de este equipo'
+      ],
+      lnm: ['celui de Little Navmap sur ce poste', 'Little Navmap’s own on this computer', 'der von Little Navmap auf diesem Rechner',
+        'la de Little Navmap en este equipo'
+      ],
+      'lnmperf-setting': ['réglé dans Réglages › Fiches Little Navmap', 'set in Settings › Little Navmap sheets',
+        'eingestellt unter Einstellungen › Little-Navmap-Blätter', 'ajustada en Ajustes › Fichas de Little Navmap'
+      ],
+      unknown: ['inconnu du lanceur : il lit la position du simulateur sans connaître son dossier',
+        'unknown to the launcher: it reads the simulator’s position without knowing its folder',
+        'dem Starter unbekannt: Er liest die Position des Simulators, ohne dessen Ordner zu kennen',
+        'desconocida para el lanzador: lee la posición del simulador sin conocer su carpeta'
+      ]
+    },
+    folderNone: ['non réglé', 'not set', 'nicht eingestellt', 'sin ajustar'],
+    folderAbsent: ['absent de ce poste', 'missing on this computer', 'auf diesem Rechner nicht vorhanden', 'ausente en este equipo'],
+    folderOpen: ['Ouvrir', 'Open', 'Öffnen', 'Abrir'],
+    folderHint: [
+      'Lecture seule : un chemin se change là où il est dit (au lancement, dans Little Navmap, dans Réglages), jamais ici. « Ouvrir » montre le dossier dans l’explorateur de ce poste.',
+      'Read only: a path is changed where it says (at start, in Little Navmap, in Settings), never here. “Open” shows the folder in this computer’s file explorer.',
+      'Nur lesbar: Ein Pfad wird dort geändert, wo es angegeben ist (beim Start, in Little Navmap, in den Einstellungen), nie hier. „Öffnen“ zeigt den Ordner im Dateiexplorer dieses Rechners.',
+      'Solo lectura: una ruta se cambia donde se indica (al iniciar, en Little Navmap, en Ajustes), nunca aquí. «Abrir» muestra la carpeta en el explorador de archivos de este equipo.'
+    ],
+    folderFail: ['Ouverture refusée : {m}', 'Opening refused: {m}', 'Öffnen abgelehnt: {m}', 'Apertura rechazada: {m}']
   });
 
   /** L'opération ouvrira-t-elle la fenêtre Oui / Non du lanceur ? Réponse du lanceur pour cette adresse (POST adopt dry,
@@ -422,6 +467,28 @@
     return `${hist}<div data-card="remote"><p data-remote-now>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
         ${fld('remote', T.remoteUrl, remote.url || remote.default || '')}<p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div><p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p></div>`;
+  }
+  /** Volet « Dossiers du poste » de la carte Administration (A3) : rempli par paintFolders (GET /__setup/folders). */
+  function foldersHtml(env) {
+    return `<div data-card="folders"><p class="f-muted">${esc(env.t(T.folderHint))}</p><ul class="f-list" data-folders><li class="f-muted">…</li></ul><p class="f-msg" data-msg></p></div>`;
+  }
+  /** Les dossiers que le lanceur connaît : nom, chemin (lecture seule), d'où il vient, « Ouvrir » s'il existe. */
+  async function paintFolders(env) {
+    const {
+      view,
+      t
+    } = env;
+    const s = await setup('folders'),
+      ul = view.querySelector('[data-folders]');
+    if (!ul) return;
+    const rows = Array.isArray(s?.folders) ? s.folders : [];
+    ul.innerHTML = rows.map(f => {
+      const name = T.folders[f.id] ? t(T.folders[f.id]) : f.id,
+        from = T.folderFrom[f.from] ? t(T.folderFrom[f.from]) : '',
+        path = f.path ? `<code data-folder-path>${esc(f.path)}</code>${f.exists ? '' : ` <span class="f-muted">(${esc(t(T.folderAbsent))})</span>`}` :
+        `<span class="f-muted">${esc(t(T.folderNone))}</span>`;
+      return `<li data-folder="${esc(f.id)}"><b>${esc(name)}</b> ${path}<br><span class="f-muted">${esc(from)}</span>${f.exists ? ` <button type="button" data-act="folderOpen" data-id="${esc(f.id)}">${esc(t(T.folderOpen))}</button>` : ''}</li>`;
+    }).join('') || `<li class="f-msg" data-kind="err">${esc(t(T.folderFail, { m: '' }))}</li>`;
   }
   /** Volet « Clés d'API de la compagnie » de la carte Administration : la clé IVAO, puis les identifiants EAD Basic,
    *  gardés par le lanceur (secrets/) ; la page ne les relit jamais. */
@@ -593,6 +660,7 @@
     }
     if (L && (view.querySelector('[data-key]') || view.querySelector('[data-ead]') || view.querySelector('[data-ivaoapp]'))) paintKeys(
       env); // volet des clés : niveau Complet seulement
+    if (L && view.querySelector('[data-folders]')) paintFolders(env); // volet des dossiers du poste
 
     // indication « fenêtre Oui / Non sur ce poste » sous le bouton, selon l'adresse saisie
     // (le lanceur répond à POST /__setup/adopt { url, dry: true } sans rien faire : needsConfirm ; sans réponse, comparaison
@@ -683,6 +751,16 @@
         b.disabled = false;
         say('lan', t(T.lanFail));
       }
+      return;
+    }
+    if (act === 'folderOpen') {
+      // l'identifiant du dossier seulement : le lanceur prend son chemin chez lui
+      const r = await setup('folders/open', {
+        id: b.dataset.id
+      });
+      if (!r?.ok) say('folders', t(T.folderFail, {
+        m: r?.message || ''
+      }), 'err');
       return;
     }
     if (act === 'keySave' || act === 'keyErase') {
@@ -853,12 +931,13 @@
     acts: ['lanToggle', 'lanForget', 'lanCode', 'lanAll', 'keySave', 'keyErase', 'keyTest', 'eadSave', 'eadErase', 'ivaoCopy',
       'ivaoAppSave', 'ivaoAppTest', 'ivaoAppErase', 'remoteCheck',
       'remoteSave', 'gitClone',
-      'gitAdopt', 'histResume'
+      'gitAdopt', 'histResume', 'folderOpen'
     ],
     readRemote,
     accessHtml,
     remoteHtml,
     keysHtml,
+    foldersHtml,
     ivaoAppHtml,
     lanHtml,
     live,

@@ -662,7 +662,8 @@
       edge: edgeShow,
       runway: runwayZoom,
       remote: L ? P.launcher.remoteHtml(env) : '',
-      keys: L ? P.launcher.keysHtml(env) : ''
+      keys: L ? P.launcher.keysHtml(env) : '',
+      folders: L ? P.launcher.foldersHtml(env) : ''
     }) : '';
     // assistant « Application IVAO (connexion des pilotes) » : groupe Administration, avec un lanceur, au niveau Complet ou atteint
     // par son adresse (#settings?card=ivaoapp)

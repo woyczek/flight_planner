@@ -926,6 +926,34 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                            'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
                            'csp': True, 'relaxNav': RELAX['nav'], 'host': socket.gethostname()})
 
+    @route('GET', '/__setup/folders', public='poste')
+    def _get_folders(self, path):
+        # carte « Dossiers » : les dossiers que le lanceur connaît (chemins en lecture seule) — ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({'folders': folders()})
+
+    @route('POST', '/__setup/folders/open', public='poste')
+    def _post_folders_open(self, path, body):
+        # « Ouvrir » : l'identifiant d'un dossier connu, jamais un chemin de la page ; ouvert dans l'explorateur de ce poste
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        fid = str(a.get('id') or '') if isinstance(a, dict) else ''
+        row = next((f for f in folders() if f['id'] == fid), None)
+        if not row:
+            return self._json({'ok': False, 'message': 'dossier inconnu'}, 400)
+        if not row['exists']:
+            return self._json({'ok': False, 'message': 'dossier absent de ce poste'}, 409)
+        try:
+            FOLDER_OPEN(row['path'])
+        except OSError as e:
+            return self._json({'ok': False, 'message': f'ouverture impossible ({type(e).__name__})'}, 500)
+        return self._json({'ok': True})
+
     @route('GET', '/__setup/lan', public='poste')
     def _get_lan(self, path):
         # accès des appareils du réseau local (Réglages du poste) : état, adresses, code — ce poste seulement
@@ -2202,16 +2230,48 @@ def lnmperf_suggestions():
     return out
 
 
+def lnm_db_folder():
+    """Dossier des bases de Little Navmap de ce poste (%APPDATA%/ABarthel/little_navmap_db sous Windows,
+    ~/.config/ABarthel/little_navmap_db ailleurs), qu'il existe ou non."""
+    home = os.path.expanduser('~')
+    base = (os.environ.get('APPDATA') or os.path.join(home, 'AppData', 'Roaming')) if sys.platform == 'win32' else os.path.join(home, '.config')
+    return os.path.join(base, 'ABarthel', 'little_navmap_db')
+
+
+# carte « Dossiers » (Maintenance › Administration, A3) : les dossiers que le lanceur connaît, en lecture seule. Chaque
+# dossier a un identifiant fixe et dit d'où il vient (« from », traduit par la page) ; « Ouvrir » ne reçoit que
+# l'identifiant, jamais un chemin de la page. X-Plane : le lanceur ne connaît pas son dossier (il lit la position du
+# simulateur par la boucle locale, 127.0.0.1), la ligne le dit.
+FOLDER_IDS = ('suite', 'data', 'downloads', 'lnmdb', 'lnmperf', 'xplane')
+
+
+def folders():
+    """[{ id, path ('' : inconnu), exists, from }] des dossiers de ce poste, dans l'ordre de FOLDER_IDS."""
+    dl = next((d for d in downloads_dirs() if os.path.normcase(d) != os.path.normcase(ROOT)), '')
+    rows = {'suite': (ROOT, 'install'), 'data': (DATA, 'data-option'), 'downloads': (dl, 'system'), 'lnmdb': (lnm_db_folder(), 'lnm'),
+            'lnmperf': (lnmperf_folder(), 'lnmperf-setting'), 'xplane': ('', 'unknown')}
+    return [{'id': k, 'path': rows[k][0], 'exists': bool(rows[k][0]) and os.path.isdir(rows[k][0]), 'from': rows[k][1]} for k in FOLDER_IDS]
+
+
+def _open_folder(path):
+    """Le dossier ouvert dans l'explorateur de fichiers de ce poste (Explorateur Windows, Finder, xdg-open)."""
+    if sys.platform == 'win32':
+        os.startfile(path)  # un dossier : l'Explorateur, rien n'est exécuté
+    else:
+        subprocess.Popen(['open' if sys.platform == 'darwin' else 'xdg-open', path], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, env=regen_jobs.child_env())
+
+
+FOLDER_OPEN = _open_folder  # remplacé par les essais (rien n'est ouvert)
+
+
 def lnm_db_kinds():
     """Genres de bases de données de Little Navmap présents sur ce poste, triés (« navigraph », « userdata »…) : les fichiers
     little_navmap_<genre>.sqlite de %APPDATA%/ABarthel/little_navmap_db (Windows) ou ~/.config/ABarthel/little_navmap_db.
     Des noms seulement, jamais un chemin ni un contenu ; [] si le dossier est absent ; ne lève jamais. Sert d'indice à aerodb
     (frame/aerodb : « Little Navmap a ces données ») ; la lecture de ces bases n'est pas faite ici (V3 § 10.21)."""
     try:
-        home = os.path.expanduser('~')
-        base = (os.environ.get('APPDATA') or os.path.join(home, 'AppData', 'Roaming')) if sys.platform == 'win32' else os.path.join(home, '.config')
-        folder = os.path.join(base, 'ABarthel', 'little_navmap_db')
-        found = (re.fullmatch(r'little_navmap_([a-z0-9_]+)\.sqlite', n) for n in os.listdir(folder))
+        found = (re.fullmatch(r'little_navmap_([a-z0-9_]+)\.sqlite', n) for n in os.listdir(lnm_db_folder()))
         return sorted({m.group(1) for m in found if m})
     except Exception:
         return []

@@ -1486,12 +1486,13 @@ def i22(c):
     sys.path.insert(0, str(c.root / 'tools'))
     D = importlib.import_module('device_access')
     tmp = Path(tempfile.mkdtemp(prefix='sog-devices-'))
-    kept = D.FILE, dict(D.OLD), {k: (dict(v) if isinstance(v, dict) else list(v) if isinstance(v, list) else v) for k, v in D.state.items()}
+    import copy
+    kept = D.FILE, dict(D.OLD), copy.deepcopy(D.state)
     try:
         D.FILE = str(tmp / '.devices.json')
         D.OLD = {'lan': str(tmp / '.lan.json'), 'relay': str(tmp / '.relay.json')}
         D._devices.update(mtime=None, list=[])
-        D.state.update(codes={}, fails={}, wrong=[], closed=False)
+        D.state.update(codes={}, fails={}, wrong={ch: [] for ch in D.CHANNELS}, closed={ch: False for ch in D.CHANNELS})
         h = D._hash
         (tmp / '.lan.json').write_text(json.dumps({'devices': [{'hash': h('lan-old'), 'label': 'iPad · Safari', 'at': '2026-10-01T10:00:00+00:00'}]}), encoding='utf-8')
         (tmp / '.relay.json').write_text(json.dumps({'devices': [{'id': 'r1', 'hash': h('relay-old'), 'trigram': 'ABC', 'label': 'iPhone', 'at': '2026-10-02T10:00:00+00:00',
@@ -1523,12 +1524,29 @@ def i22(c):
         D.new_code('abc')
         got = [D.attempt('198.51.100.1', '00000000', '', ch)[0] for ch in ('lan', 'relay', 'lan', 'relay', 'lan', 'relay')]
         c.eq(got, ['bad'] * 5 + ['wait'], 'five wrong codes from an address, whatever the channel: wait', what='shared counter')
+        # 30 wrong codes in an hour close one channel only (one bucket each: someone in front of the relay cannot close the local
+        # network; security review of R-C2)
+        D.state['fails'].clear()
+        D.new_code('def')
+        got = [D.attempt(f'203.0.113.{i}', '00000000', '', 'relay')[0] for i in range(30)]
+        c.eq(got[-1], 'closed', 'the relay closed after 30 wrong codes', what='relay closed')
+        lan_code = D.new_code('ghi', ('lan',))
+        c.eq((D.attempt('203.0.113.99', lan_code, '', 'relay')[0], D.attempt('10.0.0.9', lan_code, '', 'lan')[:3:2]), ('closed', ('ok', 'GHI')),
+             'the local network still pairs while the relay is closed', what='buckets')
+        D.forget(trigram='ghi')
         # one revocation: a device, a pilot, a channel
         c.eq(D.forget(trigram='xyz'), 1, 'a pilot’s devices revoked', what='forget trigram')
         c.ok(not D.paired(tok, 'lan'), '', 'its token no longer opens')
         c.eq(D.forget(channel='lan'), 2, 'the local network devices revoked (the old one and the named one)', what='forget channel')
         c.eq([r['channel'] for r in D.listing()], ['relay'], 'the relay device stays', what='left')
         c.ok('hash' not in json.dumps(D.listing()), '', 'the listing never carries a hash')
+        # an expired row is removed at the reading: neither kept nor shown
+        doc = json.loads((tmp / '.devices.json').read_text(encoding='utf-8'))
+        doc['devices'][0]['expires'] = '2020-01-01T00:00:00+00:00'
+        (tmp / '.devices.json').write_text(json.dumps(doc), encoding='utf-8')
+        D._devices.update(mtime=None, list=[])
+        c.eq((D.listing(), json.loads((tmp / '.devices.json').read_text(encoding='utf-8'))['devices']), ([], []),
+             'an expired device is purged from the file and the screen', what='expired')
     finally:
         D.FILE, D.OLD = kept[0], kept[1]
         D.state.clear()
@@ -1538,3 +1556,44 @@ def i22(c):
     src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
     c.ok(not (c.root / 'tools' / 'lan_access.py').exists() and not (c.root / 'tools' / 'relay_access.py').exists() and 'lan_access' not in src
          and 'relay_access' not in src and 'pattern="[0-9]{{6}}"' not in src, '', 'the two old modules are gone; no 6-digit field left')
+
+
+@case('I23', 'Launcher: the folders it knows, opened by id', 'I', static=True,
+      rule='V3 § 10.34 A3 « Dossiers »: GET /__setup/folders and POST /__setup/folders/open on the workstation only; a fixed list of ids, the path taken by the launcher, never from the page')
+def i23(c):
+    import importlib
+    import io
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    rows = L.folders()
+    c.eq([r['id'] for r in rows], list(L.FOLDER_IDS), 'the fixed list', what='ids')
+    c.eq({r['id']: r['from'] for r in rows}, {'suite': 'install', 'data': 'data-option', 'downloads': 'system', 'lnmdb': 'lnm', 'lnmperf': 'lnmperf-setting', 'xplane': 'unknown'},
+         'where each comes from', what='from')
+    c.eq(next(r['path'] for r in rows if r['id'] == 'suite'), L.ROOT, 'the suite is the launcher\u2019s root', what='suite')
+    c.eq(next(r['path'] for r in rows if r['id'] == 'xplane'), '', 'X-Plane unknown to the launcher', what='xplane')
+    for m, p in (('GET', '/__setup/folders'), ('POST', '/__setup/folders/open')):
+        c.eq(L.ROUTES[(m, p)][1:], ('poste', False), f'{m} {p}: the workstation only, never a paired device nor the relay', what=p)
+    tmp = Path(tempfile.mkdtemp(prefix='sog-folders-'))
+    kept = L.FOLDER_OPEN, L.DATA
+    opened = []
+    try:
+        L.FOLDER_OPEN = opened.append
+        L.DATA = str(tmp)
+
+        def post(a):
+            h = L.Setup.__new__(L.Setup)
+            h.server = type('Srv', (), {'lan': False, 'relay': False})()
+            h.client_address = ('127.0.0.1', 1)
+            out = []
+            h._json = lambda body, code=200: out.append((code, body))
+            h._post_folders_open('/__setup/folders/open', json.dumps(a).encode())
+            return out[0]
+        c.eq(post({'id': 'data', 'path': 'C:\\Windows'})[0], 200, 'a known id is opened', what='open data')
+        c.eq(opened, [str(tmp)], 'with the launcher\u2019s own path, whatever the page sends', what='opened path')
+        c.eq([post({'id': 'nope'})[0], post({'path': str(tmp)})[0], post({'id': 'xplane'})[0]], [400, 400, 409],
+             'an unknown id or a path refused; a folder absent from the computer: 409', what='refusals')
+        c.eq(len(opened), 1, 'nothing else opened', what='opened count')
+    finally:
+        L.FOLDER_OPEN, L.DATA = kept
+        shutil.rmtree(tmp, ignore_errors=True)

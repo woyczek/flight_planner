@@ -213,6 +213,9 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   anfordert (einmal, 10 Minuten, auf dem einen oder anderen Kanal); seine Änderungen tragen dieses Kürzel. Jede Zeile
   nennt den Kanal des Geräts; ein mit dem Konsolencode gekoppeltes Gerät zeigt „Konsolencode“, und „Benennen“ gibt ihm ein
   Kürzel. Ein verlorenes Gerät oder alle eines Piloten, der geht, werden dort widerrufen.
+- **Ordner dieses Rechners** (Verwaltung, mit dem Starter): wo die Suite, die Daten, die Downloads, die Datenbanken und
+  Blätter von Little Navmap auf diesem Rechner liegen, der Pfad nur lesbar und woher er kommt; „Öffnen“ zeigt den Ordner im
+  Dateiexplorer. Ein Pfad wird dort geändert, wo es angegeben ist, nie hier; X-Plane ist dem Starter unbekannt.
 - **Token der Piloten (GitLab)**: In der Anwendung Maintenance erstellt „Token der Piloten“ auf dem Rechner des Starters
   ein Projektzugangstoken je Pilot (nach seinem Kürzel benannt, Rolle Developer, höchstens ein Jahr), zeigt es nur einmal
   und widerruft es. Der Starter verwendet dafür das Token des Administrators (secrets/gitlab.json), das er nie zeigt.

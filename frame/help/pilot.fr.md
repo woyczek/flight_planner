@@ -918,6 +918,9 @@ cartographique (`apps/cpco/map_parser.html`).
   trigramme (une fois, 10 minutes, sur l'un ou l'autre canal) ; ses écritures sont signées de ce trigramme. Chaque ligne
   dit le canal de l'appareil ; celle d'un appareil appairé par le code de la console dit « code de console », et
   « Nommer » lui pose un trigramme. Un appareil perdu, ou tous ceux d'un pilote qui part, s'y révoquent.
+- **Dossiers du poste** (Administration, avec le lanceur) : où sont la suite, les données, les téléchargements, les
+  bases et les fiches de Little Navmap sur ce poste, chemin en lecture seule et d'où il vient ; « Ouvrir » montre le
+  dossier dans l'explorateur. Un chemin se change là où il est dit, jamais ici ; X-Plane est inconnu du lanceur.
 - **Jetons des pilotes (GitLab)** : dans l'application Maintenance, sur le poste du lanceur, « Jetons des pilotes »
   crée un jeton d'accès de projet par pilote (à son trigramme, rôle Developer, un an au plus), le montre une seule fois,
   et le révoque. Le lanceur s'y sert du jeton de l'administrateur (secrets/gitlab.json), qu'il ne montre jamais. Réglez

@@ -194,6 +194,9 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   channel); their writes are signed with that trigram. Each row says the device's channel; a device paired with the
   console's code says « console code », and « Name » sets a trigram on it. A lost device, or all those of a pilot who
   leaves, are revoked there.
+- **Folders of this computer** (Administration, with the launcher): where the suite, the data, the downloads, Little
+  Navmap's databases and sheets are on this computer, the path read only and where it comes from; “Open” shows the folder
+  in the file explorer. A path is changed where it says, never here; X-Plane is unknown to the launcher.
 - **Pilots' tokens (GitLab)**: in the Maintenance application, on the launcher's computer, « Pilots' tokens » creates
   one project access token per pilot (named after the trigram, Developer role, one year at most), shows it once only, and
   revokes it. The launcher uses the administrator's token there (secrets/gitlab.json), which it never shows. Set the

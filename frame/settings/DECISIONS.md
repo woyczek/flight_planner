@@ -449,3 +449,12 @@ rule 18); only the lab entry has it. The lab screen starts with a "Settings › 
   characters of the user name (the IVAO `hint` rule is for keys, an EAD user name is a personal identifier). The routes
   stay refused to a paired device of the local network. Test A32. The panel's title in `admin_links.js` still reads "(IVAO)":
   to be widened by the frame's owner of that file.
+- **30 Oct 2026 — « Dossiers du poste » in the Administration card** (V3 § 10.34 A3, the first card of the lot; V3 Frame):
+  - The folders the launcher really knows: the suite (its root), `data/` (or `--data`), the system's Downloads, Little
+    Navmap's databases and its sheets folder (the one set for `.lnmperf`), and X-Plane, which the launcher does not know
+    (it reads the simulator's position on 127.0.0.1): the row says so instead of guessing a path.
+  - Not as written in § 10.34 (« changed only in the launcher's config file »): the launcher has no config file; each row
+    says where its path is set (at start, in Little Navmap, in Settings) and the panel changes none.
+  - « Ouvrir » sends an id from a fixed list (`FOLDER_IDS`), never a path; the launcher opens its own path (`os.startfile`
+    on Windows, `open` / `xdg-open` with the jobs' reduced environment elsewhere); an unknown id 400, a missing folder 409;
+    the workstation only. noreg A47 (×4), I23.

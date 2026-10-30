@@ -173,6 +173,14 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    `POST /__setup/secrets { scope: 'app', service: 'ivao_oauth', values: { clientId, clientSecret } }` writes
    `secrets/ivao_oauth.json`), "Test" (`/__setup/secrets/test?service=ivao_oauth`: the OpenID discovery document is read again,
    no secret in the answer) and "Erase" (asks). Read once with the keys panel (a single `GET /__setup/secrets`).
+9a. **Folders of this computer** (page served by a launcher, Full level; V3 § 10.34 A3, 30 Oct 2026): a panel of the
+   Administration card, `[data-card="folders"]` inside `[data-adminpanel="folders"]`, its title and sentence in
+   `admin_links.js`. One row per folder the launcher knows (`GET /__setup/folders` → `{ folders: [{ id, path, exists, from }] }`,
+   ids `suite`, `data`, `downloads`, `lnmdb`, `lnmperf`, `xplane`): its name, its path in `<code>` (read only: no field;
+   « non réglé » when empty, « absent de ce poste » when missing), where it comes from (`from`: the suite's folder, `data/` or
+   `--data` at start, the system's Downloads, Little Navmap's own, Settings › Little Navmap sheets, unknown to the launcher
+   for X-Plane) and « Ouvrir » for a folder present: `POST /__setup/folders/open { id }`, the id only, the launcher takes the
+   path itself and opens it in this computer's file explorer. A path is changed where it says, never here.
 9b. **Little Navmap sheets (.lnmperf)** (page served by a launcher, when `aerodb.lnmperf` exists): an empty, hidden
    `[data-card="lnmperf"]` block that settings places after the launcher keys; its content and states (folder, Little
    Navmap folders found, "Save", "Synchronise now", "Stop", last pass, sheets not written) are drawn by aerodb

@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: pairing closes per channel, expired devices purged** (`tools/device_access.py`; frame SPEC § 3.12, DECISIONS;
+  noreg I22) — 30 wrong codes on the relay no longer close the local network; an expired device leaves the list.
+- **Administration: « Dossiers du poste »** (`frame/settings/launcher.js`, `admin_links.js`, `settings.js`, `tools/launch.py`;
+  frame/settings SPEC 9a, DECISIONS, frame INTEGRATION; help ×4; noreg A47, I23) — the suite, data/, downloads and Little
+  Navmap's folders of this computer, read only, where each comes from, « Ouvrir » by id; X-Plane said unknown to the
+  launcher.
 - **Refactor R-C2, no behaviour change but one: one pairing for the local network and the relay**
   (`tools/device_access.py` replaces `lan_access.py` and `relay_access.py`; `tools/launch.py`, `frame/settings/devices.js`
   replaces `relay_devices.js`, `frame/settings/launcher.js`, `frame/app.js`; frame SPEC § 3.10–3.12, INTEGRATION,

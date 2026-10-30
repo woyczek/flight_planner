@@ -972,8 +972,10 @@ which replaced `lan_access.py` and `relay_access.py`):
   (§ 3.10) has no trigram and works on the local network only; its row says « code de console », and « Nommer » sets a
   trigram on it afterwards (`POST /__setup/devices/name { id, trigram }`, a row without trigram only). The relay never
   pairs without a trigram (it signs the device's writes with it).
-- **One counter**: 5 wrong codes from an address, a minute; 30 in an hour, all addresses and channels, pairing closed
-  until the next code asked on the computer. A new code reopens a closed pairing but never lifts an address's wait.
+- **The same limits**: 5 wrong codes from an address, a minute; 30 in an hour **on a channel**, all addresses, pairing
+  closed on that channel until the next code asked on the computer for it — one bucket per channel, so that someone in
+  front of the relay cannot close the local network (security review of R-C2). A new code reopens its channels but never
+  lifts an address's wait. An expired device (one year) is removed from the list at the reading, never shown.
 - **One revocation**: `POST /__setup/devices/revoke { id | trigram | channel | all: true }` → `{ ok, removed }`.
 - **Routes** (computer only): `GET /__setup/devices` → `{ devices: [{ id, channel, trigram, label, at, last, expires }]
   (never a hash), pending: [{ trigram, channels, expires_in }] (never a code), lan: <GET /__setup/lan>, relay: { on, host }

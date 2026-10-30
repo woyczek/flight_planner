@@ -1451,3 +1451,43 @@ def a46(c):
     c.page.keyboard.press('Escape')
     c.until("!document.querySelector('.f-tabpop')", what='Escape closes the list')
     c.eq(c.attr('#fApp', 'aria-expanded'), None, 'the button is no longer expanded', what='aria-expanded after Escape')
+
+
+@case('A47', 'Administration › Folders of this computer: read-only paths, « Ouvrir » by id', 'A', designs=('standard',), screens=False, night=False, langs4=True,
+      rule='V3 § 10.34 A3 « Dossiers »: the local folders the launcher knows (suite, data/, downloads, Little Navmap databases and sheets, X-Plane unknown), read only, where each comes from, « Ouvrir » sends the id only')
+def a47(c):
+    opened = []
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
+              'relaxNav': False, 'host': 'TEST', 'lan': False}
+    rows = [{'id': 'suite', 'path': 'C:\\SOG', 'exists': True, 'from': 'install'}, {'id': 'data', 'path': 'C:\\SOG\\data', 'exists': True, 'from': 'data-option'},
+            {'id': 'downloads', 'path': 'C:\\Users\\p\\Downloads', 'exists': True, 'from': 'system'},
+            {'id': 'lnmdb', 'path': 'C:\\Users\\p\\AppData\\Roaming\\ABarthel\\little_navmap_db', 'exists': False, 'from': 'lnm'},
+            {'id': 'lnmperf', 'path': '', 'exists': False, 'from': 'lnmperf-setting'}, {'id': 'xplane', 'path': '', 'exists': False, 'from': 'unknown'}]
+
+    def launcher(route):
+        path = urllib.parse.urlparse(route.request.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/folders'):
+            body = {'folders': rows}
+        elif path.endswith('/__setup/folders/open'):
+            opened.append(json.loads(route.request.post_data or '{}'))
+            body = {'ok': True}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('settings?card=admin', app='maintenance', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-act=\"adminPanel\"][data-panel=\"folders\"]')", what='the « Dossiers du poste » entry (with a launcher)')
+    c.tap('[data-act="adminPanel"][data-panel="folders"]')
+    c.until("document.querySelectorAll('[data-folder]').length === 6", what='six folders listed')
+    c.eq(c.js("[...document.querySelectorAll('[data-folder]')].map(li => li.dataset.folder)"), ['suite', 'data', 'downloads', 'lnmdb', 'lnmperf', 'xplane'],
+         'the suite, data/, downloads, Little Navmap\u2019s databases and sheets, X-Plane', what='folders')
+    c.eq(c.text('[data-folder="data"] [data-folder-path]'), 'C:\\SOG\\data', 'the path as the launcher gives it, read only (no field)', what='data path')
+    c.eq(c.count('[data-card="folders"] input'), 0, 'nothing to type: paths are changed where they come from', what='inputs')
+    c.eq(c.js("[...document.querySelectorAll('[data-act=folderOpen]')].map(b => b.dataset.id)"), ['suite', 'data', 'downloads'],
+         '« Ouvrir » only for a folder present on the computer', what='open buttons')
+    c.ok(norm(tx('frame/settings/launcher.js', 'unknown', c.lang, after='folderFrom')) in norm(c.text('[data-folder="xplane"]')), c.text('[data-folder="xplane"]'),
+         'X-Plane: unknown to the launcher, said')
+    c.tap('[data-act="folderOpen"][data-id="data"]')
+    c.wait(300)
+    c.eq(opened, [{'id': 'data'}], 'the id only goes to the launcher, never a path', what='open request')

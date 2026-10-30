@@ -2059,6 +2059,12 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     credentials and tokens no longer reach a third-party script); every purge uses `regen_jobs.inside` (the rule of
     `base/purge`, now shared: `base_sources._inside` is it), `files_under` and `prune_empty`, so that a junction inside a cache
     is neither descended nor emptied (I17, I18 with a real junction).
+- **30 Oct 2026 — R-C2's security review: one bucket of wrong codes per channel, expired devices purged** (Simplification,
+  verdict acceptable on 4e83fc50a, two notes taken with the « Dossiers » commit): the 30 wrong codes an hour closed both
+  channels, so a stranger in front of the relay could close the local network; `closed` and `wrong` are now one per
+  channel (a closed channel's codes no longer open it, a code of both channels keeps the other), the per-address wait
+  stays shared. An expired row (`expires` passed) is removed from `.devices.json` at the reading, so the screen never
+  shows it. noreg I22.
 - **30 Oct 2026 — Refactor R-C2: one pairing and one list of devices for the local network and the relay** (§ 10.33,
   the user's question « appareils du relais : différent des appareils appairés ? »; target form validated by
   Simplification before the code):
