@@ -1,5 +1,15 @@
 # Security audit — 7 October 2026
 
+> **Commit identifiers cited here.** The history of the code repository was squashed three times; the commits reviewed
+> stay reachable through these tags, pushed on `origin`:
+> - before v6.0.0-alpha.2: tag `backup/develop-avant-squash`;
+> - before the rewrite of `v3` on 28 October 2026 (`2665371bf`, `7cb8303ef`, `0345a5688`): tag
+>   `backup/v3-avant-reecriture-2026-10-28`;
+> - before the squash of 30 October 2026 (every other identifier of the reviews of 22 to 30 October): tag
+>   `backup/v3-avant-squash-2026-10-30`.
+>
+> `git show <identifier>` works once these tags are fetched (`git fetch origin --tags`).
+
 Follow-up to the [audit of 2 October](AUDIT_SECURITE_2026-10-02.md). Four questions:
 
 1. which flaws can let **data get out** (exfiltration);
