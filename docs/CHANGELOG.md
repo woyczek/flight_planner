@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refonte, sans changement de comportement — R-F6, un seul état des côtés de la carte des procédures** (`modules/fuel/procedures.js`
+  `cardState { open, focus }`, `modules/fuel/module.js` `S.focus`: four flags over two files become two; fuel DECISIONS).
 - **Map: panning scheduler, refactor without change of behaviour (R-M3, § 10.33)** (`modules/maps/draw.js`; SPEC, DECISIONS;
   noreg D68, D65). One scheduler in three states (rest, move, settle) with one animation-frame slot replaces the four entry
   points; the image kept for the gesture is copied at its first move only, no longer after every full drawing at rest.

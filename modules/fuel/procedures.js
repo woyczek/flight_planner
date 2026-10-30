@@ -122,9 +122,14 @@ export function createProcedures(host) {
     painted = new WeakMap();
   let seq = 0, // dernière demande de dessin : seule elle est dessinée
     key = null, // clé de ce que la carte montre (null : à redessiner)
-    wantFocus = '', // côté dont la première liste doit prendre le focus dès qu'il est dessiné (« Changer » de la Carte)
-    openSide = '', // le côté déplié (§ 10.31 : deux lignes de résumé à l'ouverture, un côté déplié à la fois) ; '' : les deux repliés
     timer = null; // fin de série de choix
+  // l'état des côtés de la carte, un seul objet (refonte § 10.33 R-F6) : open, le côté déplié (§ 10.31 : deux lignes de résumé à
+  // l'ouverture, un côté déplié à la fois ; '' : les deux repliés) ; focus, le côté dont la première liste prend le focus dès qu'il est
+  // dessiné (« Changer » de la Carte, #fuel?focus=arr), vidé une fois donné
+  const cardState = {
+    open: '',
+    focus: ''
+  };
 
   /** État d'un terrain, créé au besoin. */
   function adOf(icao) {
@@ -417,7 +422,7 @@ export function createProcedures(host) {
   /** Ligne de titre d'un côté, la ligne de résumé de la carte repliée (§ 10.31) : un bouton ▸ / ▾ qui déplie le côté (toute la ligne
    *  le fait aussi), « Départ LFPO Paris-Orly » (le code seul pour un terrain inconnu d'aerodb), « Sur la carte », puis le résumé du
    *  choix (summaryHtml). « Relire » et « Source » sont sur la ligne discrète, dépliée avec les listes. */
-  const titleHtml = (side, m) => `${m.nodata ? '' : `<button type="button" class="fu-procfold" data-do="procfold" data-side="${side}" aria-expanded="${openSide === side}" aria-label="${esc(tt(TX[side]))}">${openSide === side ? '▾' : '▸'}</button>`}<b class="fu-prochead">${esc(tt(TX[side]))}</b> <span class="fu-procicao">${esc(m.icao)}</span>${m.name ? ` <span class="fu-procname">${esc(m.name)}</span>` : ''}${m.nodata ? '' : ` <button type="button" class="fu-linkbtn fu-onmap" data-do="onmap" data-side="${side}" data-icao="${esc(m.icao)}">${esc(tt(TX.procOnMap))}</button>`}${summaryHtml(side, m)}`;
+  const titleHtml = (side, m) => `${m.nodata ? '' : `<button type="button" class="fu-procfold" data-do="procfold" data-side="${side}" aria-expanded="${cardState.open === side}" aria-label="${esc(tt(TX[side]))}">${cardState.open === side ? '▾' : '▸'}</button>`}<b class="fu-prochead">${esc(tt(TX[side]))}</b> <span class="fu-procicao">${esc(m.icao)}</span>${m.name ? ` <span class="fu-procname">${esc(m.name)}</span>` : ''}${m.nodata ? '' : ` <button type="button" class="fu-linkbtn fu-onmap" data-do="onmap" data-side="${side}" data-icao="${esc(m.icao)}">${esc(tt(TX.procOnMap))}</button>`}${summaryHtml(side, m)}`;
   /** Un bouton de lecture (même geste « Lire » et « Relire » : data-do procfetch, un seul chemin dans read) ; occupé tant que la lecture
    *  de ce terrain est en cours. */
   const readButton = (icao, text, again) => {
@@ -492,10 +497,10 @@ export function createProcedures(host) {
     if (sel && !(coarse() && el.tagName === 'SELECT')) el.querySelector(sel)?.focus();
   }
   /** Squelette d'un côté : titre, ligne discrète et une étiquette avec sa liste par champ (vides : patchSide les remplit). */
-  const skeleton = (side, m, fields) => `<div class="fu-proc${openSide === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}</div>`;
+  const skeleton = (side, m, fields) => `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}</div>`;
   /** Met un côté à jour sur place : le titre, la ligne discrète et les options de chaque liste, chacun seulement s'il a changé. */
   function patchSide(el, side, m, fields) {
-    el.classList.toggle('fu-folded', openSide !== side && !m.nodata); // sans donnée, la ligne de lecture reste visible
+    el.classList.toggle('fu-folded', cardState.open !== side && !m.nodata); // sans donnée, la ligne de lecture reste visible
     setHtml(el.querySelector('[data-r="title"]'), titleHtml(side, m));
     const meta = el.querySelector('[data-r="meta"]');
     setHtml(meta, metaHtml(m, side));
@@ -574,15 +579,15 @@ export function createProcedures(host) {
   }
   /** Demande le focus du premier champ d'un côté (« Changer » de la Carte, #fuel?focus=arr), pris dès que le côté est dessiné. */
   function focus(side) {
-    wantFocus = side;
-    openSide = side; // le côté demandé est déplié : sa première liste est visible
+    cardState.focus = side;
+    cardState.open = side; // le côté demandé est déplié : sa première liste est visible
   }
   /** Déplie un côté (et replie l'autre), ou le replie s'il l'était (une tape sur sa ligne de résumé, § 10.31). */
   function fold(side) {
-    openSide = openSide === side ? '' : side;
+    cardState.open = cardState.open === side ? '' : side;
     const body = host.body();
     for (const el of body?.querySelectorAll('.fu-proc[data-proc]') || []) {
-      const on = el.dataset.proc === openSide,
+      const on = el.dataset.proc === cardState.open,
         b = el.querySelector('.fu-procfold');
       el.classList.toggle('fu-folded', !on && !el.dataset.nodata);
       if (b) {
@@ -596,11 +601,11 @@ export function createProcedures(host) {
   /** Donne le focus à la première liste du côté demandé, dès qu'elle est dessinée et que l'écran n'est plus inerte. */
   function applyFocus() {
     const body = host.body();
-    if (!wantFocus || !body || body.inert || host.pending?.()) return; // pas avant l'écran complet : le dessin suivant le refait
-    const row = body.querySelector(`[data-proc="${wantFocus}"]`),
+    if (!cardState.focus || !body || body.inert || host.pending?.()) return; // pas avant l'écran complet : le dessin suivant le refait
+    const row = body.querySelector(`[data-proc="${cardState.focus}"]`),
       el = row?.querySelector('select') || row?.querySelector('button:not([disabled])'); // la liste d'abord, pas « Relire »
     if (!el) return;
-    wantFocus = '';
+    cardState.focus = '';
     el.scrollIntoView?.({
       block: 'center'
     });

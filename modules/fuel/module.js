@@ -4101,11 +4101,11 @@ export async function mount(el, ctx) {
     appTrans: q.apptrans // la clé de l'adresse en minuscules, le champ de route.procedures en appTrans
   });
   if (asked === 'dep') S.P.focus('dep');
-  S.focusRoute = asked === 'route';
-  // ou le pas qui porte la ligne Arrivée (Route avant le départ, Départ après) quand la Carte envoie « Changer » (#fuel?focus=arr)
-  S.focusArr = asked === 'arr';
-  if (S.focusArr) S.P.focus('arr'); // la première liste de l'arrivée prend le focus dès qu'elle est dessinée
-  S.step = S.focusRoute ? 1 : S.focusArr || asked === 'dep' ? (kept.started?.at ? 4 : 1) : Math.max(0, Math.min(4, +S.ui.step || 0));
+  // ce que l'adresse demande à l'ouverture (#fuel?focus=route | dep | arr), une seule valeur (refonte § 10.33 R-F6) : le pas qui porte
+  // le champ de route, ou celui qui porte la ligne Arrivée (Route avant le départ, Départ après) quand la Carte envoie « Changer »
+  S.focus = ['route', 'dep', 'arr'].includes(asked) ? asked : '';
+  if (S.focus === 'arr') S.P.focus('arr'); // la première liste de l'arrivée prend le focus dès qu'elle est dessinée
+  S.step = S.focus === 'route' ? 1 : S.focus ? (kept.started?.at ? 4 : 1) : Math.max(0, Math.min(4, +S.ui.step || 0));
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
     <div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>
     <div data-body></div>`;
@@ -4196,7 +4196,7 @@ export async function mount(el, ctx) {
   S.stops.push(() => clearInterval(tick));
   // toujours le Plan à l'ouverture : on vient ici pour le plan de vol ou le devis, rarement pour une fiche d'appareil ;
   // les Fiches s'ouvrent par leur onglet ou par l'adresse #fuel?view=sheets (le dernier écran n'est plus gardé)
-  show(!S.focusRoute && !S.focusArr && ctx.query?.view === 'sheets' ? 'sheets' : 'plan');
+  show(S.focus !== 'route' && S.focus !== 'arr' && ctx.query?.view === 'sheets' ? 'sheets' : 'plan');
   if (!S.flightPending) flightReady();
   completeMount(self); // pas attendu : le cadre a son écran tout de suite
 }
@@ -4213,7 +4213,7 @@ function flightDefaults(kept) {
  *  registre d'aerodb (elle chiffre le devis). */
 function flightReady() {
   S.body.inert = false;
-  if (S.focusRoute) {
+  if (S.focus === 'route') {
     const ta = S.body.querySelector('[data-k="rtext"]');
     ta?.focus();
     ta?.setSelectionRange?.(ta.value.length, ta.value.length);

@@ -1188,6 +1188,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   and their `write`. The DOM is unchanged (`[data-adsug] [data-code]`, `fu-sug-n`; `[data-rtsug] [data-token]`, `fu-rtsug-n`).
   Cases F44–F47, F75.
 
+- **30 Oct 2026 — R-F6, one state for the procedure card's sides** (refactoring § 10.33): in `procedures.js`, `wantFocus` and
+  `openSide` become one object `cardState = { open, focus }` (the side unfolded; the side whose first list takes the focus once
+  drawn, emptied when given); in `module.js`, `S.focusArr` and `S.focusRoute` become one `S.focus`, what the address asked at mount
+  (`'route' | 'dep' | 'arr' | ''`). Same behaviour (F41, F63, F72).
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (Features SOG, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les
