@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: one value escaped, one stale comment** (`modules/maps/choose.js`, `layers.js`). The wind severity on a runway row goes
+  through `esc()` like every other attribute (defence in depth from the security review); the Coverage layer's comment no longer
+  says it lights itself (the automatic lighting went on 29 Oct, § 10.29 h).
+
 - **Settings › IVAO account without an application** (`tools/launch.py`, `frame/app.js`, `frame/settings/settings.js`;
   Settings help ×4, frame DECISIONS; noreg A44, I14, I10): the button is off with the reason
   (this workstation or the relay) and nothing leaves; on the workstation a link opens the « IVAO application » assistant;

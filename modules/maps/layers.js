@@ -283,7 +283,8 @@ export function layerDefaults(B) {
     aar: B.id === 'v3-cam',
     nat: B.id === 'v3-cam',
     wind: true,
-    // couche « Procédures » (couverture des terrains) : éteinte d'origine, allumée d'elle-même par la Carte (coverage.js)
+    // couche « Couverture » (ce que l'appareil sait donner des procédures de chaque terrain, coverage.js) : éteinte d'origine,
+    // allumée par sa case seulement (V3 § 10.22, § 10.29 h)
     cov: false,
     // courbes de niveau : modes à densité VFR (VFR, Topo), de près
     contours: !!MapsRender.elementOf(B, 'vfrDensity'),
