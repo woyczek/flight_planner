@@ -364,8 +364,8 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
     conflicts); **"Launcher: <host> · <state>"** on a launcher (touch → the Access card); **"Offline: working on this
     device's copy"** when `ctx.net.online()` is false; **"Weather: n calls today"** when the weather layer has called
     Open-Meteo today (weighted calls of the UTC day, read from `cache/weather/ledger.json`; under it the limit, 10,000 a
-    day; INTEGRATION § 14); **"Aeronautical database: cycle 2610 ended, waiting for publication"** (and the same for the
-    procedures, or "cycle 2611 ends on 25/11, nothing published for 2612" in its last 3 days), amber, from
+    day; INTEGRATION § 14); **"Aeronautical database: cycle 2610 out of date, to rebuild for 2611"** (and the same for the
+    procedures, or "cycle 2611 ends on 25/11, nothing built for 2612" in its last 3 days), amber, from
     `aerodb.publication()` (INTEGRATION § 15.3; no line without that call); and, **on a phone only**, **"Position: <source>"** while a flight is
     started (touch toggles the device's GPS like the header's badge on a screen). The "Help for this screen" line no longer
     exists: the "?" of the header is that. The block follows the state while it is on screen. Four languages.

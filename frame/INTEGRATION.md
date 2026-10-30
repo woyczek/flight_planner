@@ -1147,9 +1147,12 @@ inForce } }, proc: { cycles, inForce }, … }`; `cycles` is an object keyed by s
 `frame/aerodb/SPEC.md` « For the Données module »; a list of dates is accepted too):
 
 - the newest published cycle of the base (or of `proc/`) is older than the AIRAC cycle in force: « Base aéronautique :
-  cycle 2610 terminé, en attente de publication » (×4);
+  cycle 2610 dépassé, à reconstruire pour 2611 » (×4);
 - or the cycle in force ends within 3 days and nothing is published for the next one: « … : le cycle 2611 se termine le
-  25/11, rien de publié pour 2612 ».
+  25/11, rien de construit pour 2612 ».
+- « Build », never « publish » (30 Oct 2026, the user and Simplification): the line said « waiting for publication »
+  while the Data module's Publish said « Nothing to publish » — both true, the repository lacks the new cycle and this
+  workstation has nothing built to send; the first step is to build.
 - Amber (attention). It leads to `#data` only on a workstation with a launcher, at the Full level, once the Data module
   exists; elsewhere nothing to press. Without `aerodb.publication()`, no line (never a guessed one).
 - The Data module's own lines (a job running, publications to send) go through its `cache/data/status.json` (§ 10.0).

@@ -2007,6 +2007,11 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     `#settings?card=<one card>` with a launcher, the local network card's refresh started without its card
     (`null.isConnected`, on the very address IVAO's return lands on). noreg A44 (button off, title, link, nothing leaves even forced, on with an application, a stray
     return's sentence), I14 (IVAO's refusal said as IVAO's, a stray return as « state »), I10.
+- **30 Oct 2026 — The end-of-cycle line says « rebuild », not « publication »** (the user, Simplification's decision,
+  relayed by Settings): « Base aéronautique : cycle 2610 terminé, en attente de publication » next to the Data module's
+  « Rien à publier » read as a contradiction; both were true (the repository has no 2611, this workstation has nothing
+  built). The line now says « cycle 2610 dépassé, à reconstruire pour 2611 », the near-end form « rien de construit pour
+  2612 », ×4, same link to `#data`; the Data module puts its own mark on Build (Settings).
 - **30 Oct 2026 — The notes above a view's sticky bar** (Features SOG's request, from BUGS SOG's walk, anomaly 10):
   - On a phone, Fuel's result bar (`.f-bar`) lay under the notes (`.f-notes` cleared the tab bar only). A module must not
     restyle `.f-notes`, so the frame does it: `notesClear` (app.js) measures the visible `.f-bar` stuck in the lower half

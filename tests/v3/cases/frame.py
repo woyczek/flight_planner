@@ -1023,10 +1023,13 @@ def a31(c):
     prev = cur - datetime.timedelta(days=28)
     first = ref + datetime.timedelta(days=-(-(datetime.date(prev.year, 1, 1) - ref).days // 28) * 28)
     name = f'{prev.year % 100:02d}{(prev - first).days // 28 + 1:02d}'
+    first_cur = ref + datetime.timedelta(days=-(-(datetime.date(cur.year, 1, 1) - ref).days // 28) * 28)
+    name_cur = f'{cur.year % 100:02d}{(cur - first_cur).days // 28 + 1:02d}'
     c.open('settings', docs=aero_docs(cycle=prev.isoformat()))
     c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"cycle-base\"]')", timeout=15000, what='the end-of-cycle line of the base')
-    want = tx('frame/app.js', 'cycleOld', c.lang).replace('{s}', tx('frame/app.js', 'cycleBase', c.lang)).replace('{c}', name)
-    c.eq(norm(c.text('[data-card="status"] li[data-k="cycle-base"] .f-status-txt span')), norm(want), 'worded in the language of the run, the AIRAC name of the published cycle', what='base line')
+    want = tx('frame/app.js', 'cycleOld', c.lang).replace('{s}', tx('frame/app.js', 'cycleBase', c.lang)).replace('{c}', name).replace('{n}', name_cur)
+    c.eq(norm(c.text('[data-card="status"] li[data-k="cycle-base"] .f-status-txt span')), norm(want),
+         'worded in the language of the run: the published cycle out of date, to rebuild for the one in force (never « publication »)', what='base line')
     c.ok(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"cycle-base\"] .f-status-dot').hasAttribute('data-attn')"), 'no amber dot', 'an amber dot (attention)')
     c.eq(c.count('[data-card="status"] li[data-k="cycle-proc"]'), 0, 'no procedures index published: no procedures line', what='proc lines')
     c.eq(c.count('[data-card="status"] li[data-k="cycle-base"] [data-go]'), 0, 'no launcher here: nothing to press', what='links on the line')

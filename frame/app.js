@@ -501,13 +501,14 @@
       weather: ['Météo : {n} appels aujourd’hui', 'Weather: {n} calls today', 'Wetter: {n} Abrufe heute',
         'Meteorología: {n} llamadas hoy'
       ],
-      // fin de cycle AIRAC de ce qui est publié (INTEGRATION § 15.3) : {s} la base ou les procédures, {c} cycle, {d} date
-      cycleOld: ['{s} : cycle {c} terminé, en attente de publication', '{s}: cycle {c} ended, waiting for publication',
-        '{s}: Zyklus {c} beendet, Veröffentlichung ausstehend', '{s}: ciclo {c} terminado, pendiente de publicación'
+      // fin de cycle AIRAC de ce qui est publié (INTEGRATION § 15.3) : {s} la base ou les procédures, {c} cycle, {d} date,
+      // {n} le cycle à construire ; « construire », jamais « publier » : rien n'est à envoyer tant que rien n'est construit
+      cycleOld: ['{s} : cycle {c} dépassé, à reconstruire pour {n}', '{s}: cycle {c} out of date, to rebuild for {n}',
+        '{s}: Zyklus {c} veraltet, für {n} neu zu erstellen', '{s}: ciclo {c} caducado, por reconstruir para {n}'
       ],
-      cycleEnds: ['{s} : le cycle {c} se termine le {d}, rien de publié pour {n}',
-        '{s}: cycle {c} ends on {d}, nothing published for {n}',
-        '{s}: Zyklus {c} endet am {d}, nichts für {n} veröffentlicht', '{s}: el ciclo {c} termina el {d}, nada publicado para {n}'
+      cycleEnds: ['{s} : le cycle {c} se termine le {d}, rien de construit pour {n}',
+        '{s}: cycle {c} ends on {d}, nothing built for {n}',
+        '{s}: Zyklus {c} endet am {d}, nichts für {n} erstellt', '{s}: el ciclo {c} termina el {d}, nada construido para {n}'
       ],
       cycleBase: ['Base aéronautique', 'Aeronautical database', 'Luftfahrtdatenbank', 'Base aeronáutica'],
       cycleProc: ['Procédures', 'Procedures', 'Verfahren', 'Procedimientos'],
@@ -2752,7 +2753,8 @@
     return `${String(y).slice(2)}${String(Math.round((at - first) / CYCLE) + 1).padStart(2, '0')}`;
   }
   /** Lignes de fin de cycle (SPEC du module Données § 6.3) : la base ou proc/ publiés pour un cycle plus ancien que celui en
-   *  vigueur, ou le cycle qui se termine dans 3 jours sans rien de publié pour le suivant ; calculées au moment du dessin. */
+   *  vigueur (à reconstruire), ou le cycle qui se termine dans 3 jours sans rien de publié pour le suivant ; calculées au
+   *  moment du dessin. */
   function cycleItems() {
     if (!publication || !window.AeroDB?.airacCycles) return [];
     const cur = AeroDB.airacCycles(1)[0],
@@ -2772,7 +2774,8 @@
       k: `cycle-${k}`,
       text: c < cur ? t(T.info.cycleOld, {
         s: t(s),
-        c: airacName(c)
+        c: airacName(c),
+        n: airacName(cur)
       }) : t(T.info.cycleEnds, {
         s: t(s),
         c: airacName(cur),

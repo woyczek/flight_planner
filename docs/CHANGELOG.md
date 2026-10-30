@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the end-of-cycle line says what to do** (`frame/app.js`; frame SPEC § 3, INTEGRATION § 15.3, DECISIONS; noreg
+  A31) — « cycle 2610 dépassé, à reconstruire pour 2611 » and « rien de construit pour 2612 », no longer « en attente de
+  publication » next to the Data module's « Rien à publier ».
 - **Frame: the floating notes rise above a view's sticky bar** (`frame/app.js`, `frame/frame.css`; frame SPEC § 3,
   INTEGRATION, DECISIONS; noreg A45) — on a phone Fuel's result bar is no longer covered by a note.
 - **Launcher: one named User-Agent for every outgoing request, each failure said in the console** (`tools/outbound.py`,
