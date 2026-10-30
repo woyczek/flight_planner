@@ -147,26 +147,17 @@ descente — est partagé : Carte et Compte rendu l'ont déjà.
 
 ## Les fiches de performances <a id="fuel-sheets"></a>
 
-L'onglet « Fiches » rassemble les fiches de la compagnie, partagées avec tous ses appareils. Elles sont rangées par
-catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons, autres) ; chaque type utilisé par la compagnie (flotte,
-référence) qui n'a pas encore de fiche y figure aussi, « performances à renseigner », avec « Créer la fiche ». Chaque
-fiche dit ce qui lui manque, par famille (« À compléter : régimes, vitesses, croisière, roulage, piste ») ; « complète » quand
-rien ne manque.
+L'onglet « Fiches » liste les fiches de la compagnie, partagées avec tous ses appareils, **en lecture seule** : elles se
+modifient dans Maintenance › Appareils, onglet « Fiches ». Elles sont rangées par catégorie (hélicoptères, turbopropulseurs,
+réacteurs, pistons, autres) ; chaque type utilisé par la compagnie (flotte, référence) qui n'a pas encore de fiche y figure
+aussi, « performances à renseigner », avec « Créer dans Maintenance ». Chaque fiche dit ce qui lui manque, par famille
+(« À compléter : régimes, vitesses, croisière, roulage, piste ») ; « complète » quand rien ne manque ; celle du vol porte
+« utilisée pour ce vol ».
 
-- **Importer** : un fichier (CSV de performances, JSON, `.lnmperf` de Little Navmap, OFP SimBrief) ou un texte collé
-  (les mêmes, ou la réponse de ChatGPT). Une fiche tirée d'un OFP est calibrée sur ses temps et sa consommation réels.
-- **Rien n'est écrit sans vous** : chaque changement d'une fiche passe par un aperçu, une ligne par valeur, avant et
-  après. Décochez ce que vous ne voulez pas prendre, puis « Appliquer la sélection ». Une ligne de la table de régimes
-  retirée y figure aussi : décochée, elle reste.
-- **Compléter une fiche** : « Compléter (EUROCONTROL) » propose les valeurs connues du type ; celles qui remplaceraient
-  une valeur déjà saisie arrivent décochées. « Compléter depuis une autre fiche » ne remplit que les champs vides.
-- **ChatGPT** : « Copier la demande » prépare la question pour le type (ou pour les seuls champs vides) ; collez-la dans
-  ChatGPT, puis sa réponse telle quelle dans la zone prévue, et « Lire ».
-- **Modifier, exporter** : l'éditeur montre les champs par groupe. Sur un écran d'ordinateur, la table régime / débit
-  se modifie ligne à ligne ; sur un téléphone elle est en lecture. Exports `.lnmperf` et JSON ; suppression après
-  confirmation. La cellule (avion, hélicoptère, planeur…) et la propulsion (pistons, turbopropulseur, turbomoteur,
-  réacteur…) viennent de la base OACI du type : laissez « auto », sauf si la base se trompe ou ne connaît pas le type ;
-  elles ne sont alors ni comptées comme manquantes ni demandées à ChatGPT.
+- **Utiliser** : choisit cette fiche pour le vol et revient au devis.
+- **Modifier dans Maintenance** : le nom de la fiche et ce bouton ouvrent son éditeur dans le même onglet. C'est là que
+  se font l'import (fichier, texte collé, réponse de ChatGPT), les compléments EUROCONTROL, l'aperçu champ par champ avant
+  toute écriture, l'origine et la date de chaque champ, les exports `.lnmperf` et JSON et la suppression.
 
 ## Réglages et unités
 

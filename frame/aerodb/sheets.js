@@ -11,7 +11,7 @@
   // Configuration : AeroDBSheets.configure({ aircraft (aerodb.aircraft()), profiles () → { id: fiche }, active () →
   //   fiche, t (ligne [fr, en, de, es] → texte), tf (ligne, valeurs → texte), lang () → 'fr' | 'en' | 'de' | 'es', fleet ()
   //   → [{ type, model, registrations }] (flotte du registre), prompt () → { profile, missing, schema } (textes ChatGPT
-  //   de fuel, modules/fuel/perf_prompt.js, par défaut s'ils sont chargés) }). aerodb la règle lui-même (registry.js) ;
+  //   de fuel, modules/aircraft/perf_prompt.js, par défaut s'ils sont chargés) }). aerodb la règle lui-même (registry.js) ;
   //   immatriculation et indicatif sont des champs de fiche modifiables.
   if (window.AeroDBSheets) return;
   const LANGS = ['fr', 'en', 'de', 'es'];

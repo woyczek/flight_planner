@@ -19,7 +19,7 @@ export const meta = {
   apps: ['maintenance'],
   level: 3,
   title: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
-  files: ['fleet.js', 'sheets.js', 'sheets_texts.js', '../fuel/perf_prompt.js', '../../frame/lib/clipboard.js', '../../frame/lib/dom.js'],
+  files: ['fleet.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../../frame/lib/clipboard.js', '../../frame/lib/dom.js'],
   reads: ['airline/', 'cache/aircraft/'],
   writes: [{
     prefix: 'airline/fleet.json',

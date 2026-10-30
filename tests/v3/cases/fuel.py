@@ -32,7 +32,7 @@ Rules covered
     that matches nothing (F44); from two characters seven suggestions at most, ↑ ↓ Enter Esc, tap, closed on blur, the pick written like a typing (F45); no
     overflow and 44 px targets at 390 px (F46); the summary of the step Departure names both aerodromes (F47).
 
-Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F25 F26 F27 F28 F29 F30 F31 F32 F33 F34 F35 F36 F37 F38 F39 F40 F41 F42 F43 F44 F45 F46 F47.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F21 F22 F23 F24 F26 F27 F28 F29 F30 F31 F32 F33 F34 F35 F36 F37 F38 F39 F40 F41 F42 F43 F44 F45 F46 F47.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 import json
@@ -210,7 +210,7 @@ def mount_race(c, first, final, want_sheets):
     c.settle()
     shown = c.js("""() => ({ pressed: [...document.querySelectorAll('[data-module=fuel] [data-view]')].filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.dataset.view),
         quote: [...document.querySelectorAll('[data-module=fuel] .fu-step, [data-module=fuel] [data-block=result]')].filter(e => window.__t.shown(e)).length,
-        sheets: !![...document.querySelectorAll('[data-module=fuel] [data-do=import]')].some(e => window.__t.shown(e)),
+        sheets: !![...document.querySelectorAll('[data-module=fuel] [data-sheets]')].some(e => window.__t.shown(e)),
         hash: location.hash })""")
     c.eq(shown['pressed'], ['sheets' if want_sheets else 'plan'], f'#{first} then away then #{final}: the view of the last address is the pressed one', what='pressed view')
     c.eq(shown['sheets'], want_sheets, 'the Sheets screen is shown only on #fuel?view=sheets', what='Sheets screen shown')
@@ -865,26 +865,6 @@ def f24(c):
     d = cf_doc(c, lambda d: len(((d.get('quote') or {}).get('legs')) or []) > 3, 'the quote runs on the procedures path', timeout=15000)
     ids = [x['id'] for x in d['quote']['legs']]
     c.eq(len(ids), len(set(ids)), 'no fix is flown twice', what=f'legs {ids}')
-
-
-_SHEETS_REPLY = {'sheets': [{'id': 'EC25', 'engineType': 'turboprop', 'pressurized': False, 'jetFuel': True, 'usableFuel': 2277,
-                             'cruise': {'tasKt': 141, 'fuelFlowPerHour': 650, 'ceilingFt': 19135, 'rpmNominal': 265},
-                             'climb': {'tasKt': 80, 'rateFpm': 1362, 'rpmNominal': 265}}]}
-
-
-@case('F25', 'A pasted { "sheets": [...] } gives its sheets, never a "sheets" field', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
-      screens=False, rule='user 29 Oct: the ChatGPT reply pasted as JSON showed one field "sheets" with the whole array in the review')
-def f25(c):
-    # une fiche EC25 déjà là (sa croisière inconnue) : la fiche collée s'y fond, champ par champ
-    old = {'id': 'EC25', 'name': 'EC25', 'icao': 'EC25', 'usableFuel': 2000, 'cruise': {'tasKt': None}}
-    c.open('fuel?view=sheets', docs=[['aircraft/sheets/EC25.json', old, 'document']])
-    c.page.click(f'{FUEL} button[data-do="paste"]')
-    c.page.fill(f'{FUEL} textarea[data-k="pastetext"]', json.dumps(_SHEETS_REPLY))
-    c.page.click(f'{FUEL} button[data-do="pasteread"]')
-    c.until(f"() => !!document.querySelector('{FUEL} [data-do=\"apply\"]')", what='the review of the pasted sheet')
-    paths = c.js(f"() => [...document.querySelectorAll('{FUEL} input[data-path]')].map(i => i.dataset.path)")
-    c.ok(not any(p == 'sheets' or p.startswith('sheets.') for p in paths), f'{paths}', 'no "sheets" field is proposed')
-    c.ok('cruise.tasKt' in paths and 'usableFuel' in paths, f'{paths}', 'the fields of the sheet inside are proposed one by one')
 
 
 def opt_info(c, k, start):
@@ -1910,19 +1890,32 @@ def f75(c):
     c.ok(c.js(f"document.querySelector('{FUEL} [data-rtsug]').hidden"), 'list', 'one character proposes nothing')
 
 
-@case('F76', 'The sheet schema carries the crosswind limit: one field of the editor, translated, read by the wind colours', 'F', tags=('fuel', 'aerodb'),
+@case('F79', 'The Sheets view of Fuel is read-only: the list, the sheet of the flight marked, links to the editor of Maintenance', 'F', tags=('fuel', 'aerodb'),
       designs=('standard',), screens=False, langs4=True,
-      rule='V3 spec 10.34 (lot A2) and 10.30: maxCrosswindKt in PROFILE_FIELDS (« Piste et alternat », kt), absent from the .lnmperf format')
-def f76(c):
-    old = {'id': 'EC25', 'name': 'EC25', 'icao': 'EC25', 'usableFuel': 2000, 'maxCrosswindKt': 17, 'cruise': {'tasKt': 141, 'fuelFlowPerHour': 650}}
-    c.open('fuel?view=sheets', docs=[['aircraft/sheets/EC25.json', old, 'document']])
-    c.until(f"() => !!document.querySelector('{FUEL} [data-id=\"EC25\"] [data-do=\"edit\"]')", what='the sheet EC25 is listed')
-    c.tap(f'{FUEL} [data-id="EC25"] [data-do="edit"]')
-    c.until(f"() => !!document.querySelector('{FUEL} input[data-path=\"maxCrosswindKt\"]')", what='the editor has a crosswind limit field')
-    v = c.js(f"() => {{ const i = document.querySelector('{FUEL} input[data-path=\"maxCrosswindKt\"]'); return {{ value: i.value, label: (i.closest('label') || {{}}).textContent || '' }} }}")
-    c.eq(v['value'], '17', 'the field shows the sheet\'s value', what='maxCrosswindKt')
-    want = c.pick({'fr': 'Vent de travers max', 'en': 'Max crosswind', 'de': 'Max. Seitenwind', 'es': 'Viento cruzado máx.'})
-    c.ok(want in v['label'], v['label'], 'its label is in the language of the run')
+      rule='V3 spec 10.34 (lot A2, step 5): one editor, in Maintenance; Fuel keeps the list, « Utiliser » and plain links to ?app=maintenance#aircraft?sheet=<id>')
+def f79(c):
+    ec25 = {'id': 'EC25', 'name': 'EC25', 'icao': 'EC25', 'usableFuel': 2000, 'maxCrosswindKt': 17, 'cruise': {'tasKt': 141, 'fuelFlowPerHour': 650}}
+    c25 = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'usableFuel': 20000, 'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000}}
+    c.open('fuel?view=sheets', docs=[['aircraft/sheets/EC25.json', ec25, 'document'], ['aircraft/sheets/C30J.json', c25, 'document']])
+    c.until(f"() => document.querySelectorAll('{FUEL} [data-sheets] [data-id]').length === 2", what='the two sheets are listed')
+    c.tap(f'{FUEL} [data-id="EC25"] [data-do="use"]')
+    cf_doc(c, lambda d: ((d.get('aircraft') or {}).get('sheetId') == 'EC25'), 'the flight uses EC25')
+    c.tap(f'{FUEL} [data-view="sheets"]')
+    c.until(f"() => document.querySelectorAll('{FUEL} [data-sheets] [data-id]').length === 2", what='back on the list')
+    r = c.js(f"""() => ({{ inputs: document.querySelectorAll('{FUEL} [data-sheets] input, {FUEL} [data-sheets] select, {FUEL} [data-sheets] textarea, {FUEL} [data-sheets] [data-path]').length,
+        rows: [...document.querySelectorAll('{FUEL} [data-sheets] [data-id]')].map(r => [r.dataset.id, [...r.querySelectorAll('a')].map(a => a.getAttribute('href')),
+                                                                                   !!r.querySelector('[data-used]'), !!r.querySelector('[data-do=use]')]) }})""")
+    c.eq(r['inputs'], 0, 'no field to type in: the list is read-only', what='inputs of the Sheets view')
+    want = {row[0]: row for row in r['rows']}
+    for sid in ('EC25', 'C30J'):
+        c.ok(want[sid][1] and all(h == f'?app=maintenance#aircraft?sheet={sid}' for h in want[sid][1]), f'{want[sid][1]}', f'the links of {sid} open its editor in Maintenance')
+        c.ok(want[sid][3], 'no « Utiliser »', f'{sid} can still be chosen for the flight')
+    c.eq([want['EC25'][2], want['C30J'][2]], [True, False], 'only the sheet of the flight is marked', what='used marks')
+    c.eq(c.js(f"() => document.querySelectorAll('{FUEL} [data-do=import], {FUEL} [data-do=edit], {FUEL} [data-do=new], {FUEL} [data-do=del]').length"), 0,
+         'no import, edit, new or remove gesture is left', what='editor gestures')
+    c.tap(f'{FUEL} [data-id="C30J"] [data-do="use"]')
+    c.until(f"() => !document.querySelector('{FUEL} [data-sheets]') && !!document.querySelector('{FUEL} .fu-step, {FUEL} [data-block=result]')", what='« Utiliser » goes back to the quote')
+    d = cf_doc(c, lambda d: ((d.get('aircraft') or {}).get('sheetId') == 'C30J'), 'the flight now uses C30J')
 
 
 @case('F77', 'The route text stays the same after two returns from the Map, with a SID whose published name has a space', 'F', tags=('fuel', 'maps'),

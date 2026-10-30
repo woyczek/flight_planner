@@ -1,4 +1,4 @@
-"""Construit « modules/fuel/perf_prompt.js » à partir de docs/technique/PROMPT_PROFIL_PERFORMANCES.md.
+"""Construit « modules/aircraft/perf_prompt.js » à partir de docs/technique/PROMPT_PROFIL_PERFORMANCES.md.
 
 Le bouton « Demander à ChatGPT » des fiches de performances (module Carburant) lit le prompt dans ce fichier
 JavaScript, chargé par <script> (fonctionne aussi hors serveur web). Sur la ligne V3, la copie du planificateur V2
@@ -15,8 +15,8 @@ import io, json, os, re, sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 SRC = os.path.join(ROOT, 'docs', 'technique', 'PROMPT_PROFIL_PERFORMANCES.md')
-# fichiers écrits : la copie du module carburant seule (V2 : branche v2-maintenance, apps/planner/perf_prompt.js reste telle quelle ici)
-OUTS = [os.path.join(ROOT, 'modules', 'fuel', 'perf_prompt.js')]
+# fichiers écrits : la copie du module Appareils (Maintenance) seule (V2 : branche v2-maintenance, apps/planner/perf_prompt.js reste telle quelle ici)
+OUTS = [os.path.join(ROOT, 'modules', 'aircraft', 'perf_prompt.js')]
 LANGS = ('fr', 'en', 'de', 'es')
 
 

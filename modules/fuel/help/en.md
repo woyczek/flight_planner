@@ -147,24 +147,16 @@ it.
 
 ## Performance sheets <a id="fuel-sheets"></a>
 
-The “Sheets” tab gathers the airline's sheets, shared with all its devices. They are sorted by category
-(helicopters, turboprops, jets, piston engines, others); each type the airline uses (fleet, reference) that has no
-sheet yet is listed too, “performance to fill in”, with “Create the sheet”. Each sheet says what it is missing, by family
-(“To complete: rpm, speeds, cruise, taxi, runway”), or “complete” when nothing is missing.
+The "Sheets" tab lists the company's sheets, shared with all its devices, **read-only**: they are edited in
+Maintenance › Aircraft, "Sheets" tab. They are sorted by category (helicopters, turboprops, jets, piston engines, others);
+every type used by the company (fleet, reference) that has no sheet yet is listed too, "performance to fill in", with
+"Create in Maintenance". Each sheet says what it lacks, by family ("To complete: rpm, speeds, cruise, taxi, runway"),
+"complete" when nothing is missing; the sheet of the flight reads "used for this flight".
 
-- **Import**: a file (performance CSV, JSON, Little Navmap `.lnmperf`, SimBrief OFP) or pasted text (the same, or
-  ChatGPT's answer). A sheet drawn from an OFP is calibrated on its real times and fuel burn.
-- **Nothing is written without you**: every change to a sheet goes through a preview, one line per value, before and
-  after. Untick what you do not want to take, then “Apply the selection”. A row of the power table that would be
-  removed is listed too: unticked, it stays.
-- **Completing a sheet**: “Complete (EUROCONTROL)” offers the known values of the type; those that would replace a value
-  already entered come unticked. “Complete from another sheet” fills the empty fields only.
-- **ChatGPT**: “Copy the ChatGPT request” prepares the question for the type (or for the empty fields only); paste it
-  into ChatGPT, then its answer as it is in the area provided, and “Read”.
-- **Editing, exporting**: the editor shows the fields by group. On a computer screen the power / fuel-flow table is
-  edited row by row; on a phone it is read only. `.lnmperf` and JSON exports; deletion after confirmation. The airframe (aeroplane, helicopter, glider…) and the propulsion
-  (piston, turboprop, turboshaft, jet…) come from the type's ICAO base: leave “auto” unless the base is wrong or does not know
-  the type; they are then neither counted as missing nor asked of ChatGPT.
+- **Use**: chooses this sheet for the flight and goes back to the quote.
+- **Edit in Maintenance**: the sheet's name and this button open its editor in the same tab. That is where the import
+  (file, pasted text, ChatGPT answer), the EUROCONTROL completions, the field-by-field preview before any write, the origin
+  and date of each field, the `.lnmperf` and JSON exports and the removal live.
 
 ## Settings and units
 
@@ -186,4 +178,4 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: e0486bc63add -->
+<!-- fr: 7f87e06dbfcb -->

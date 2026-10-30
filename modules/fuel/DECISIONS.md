@@ -4,6 +4,19 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — the sheets editor leaves Fuel** (§ 10.34 lot A2, step 5; decided by Simplification and the user: one editor,
+  in Maintenance › Appareils, `modules/aircraft/`, which has had it since step 3). Removed from `modules/fuel/module.js`
+  (4973 → 4417 lines, 601 deleted, 45 added): `renderEditor`, `readEditor`, `review`, `applyReview`, `storeSheet`, the
+  import / paste / OFP / ChatGPT / EUROCONTROL / fill-from / export / remove gestures and their helpers (`importFiles`,
+  `importText`, `readText`, `proposeIncoming`, `mergeInto`, `uniqueId`, `rpmKey`, `rpmEditable`), `fieldLabel`, `plain`, the
+  text tables `FIELD_TX` / `OPTION_TX` / `PATH_TX`, 45 `TX` rows and the `fu-txt` rule; Fuel never wrote a sheet except
+  from this editor (no other `sheets.put` caller), so no writing path was kept. Kept: the « Fiches » list read-only
+  (families, what each lacks, the airline's types without a sheet), « Utiliser » (Fuel's own gesture), the sheet of the
+  flight marked « utilisée pour ce vol », and plain same-tab links « Modifier / Créer dans Maintenance ». `perf_prompt.js`
+  (ChatGPT texts) moved with `git mv` to `modules/aircraft/perf_prompt.js` (Fuel no longer uses it; `tools/build_perf_prompt.py`
+  writes it there). Cases: F25 (paste) and F76 (crosswind field) deleted, covered by M9 and M7; F79 added (read-only list,
+  links, « Utiliser »); F7 and F10 follow the new markers and the new prompt path.
+
 - **30 Oct 2026 — the .fms export, APP and CYCLE; a shared rule for the Map** (BUGS SOG's walk). `APP` is the ARINC 424
   identifier (`PR.arincApp`: the name when it already is one, « I13R »; else derived from the published name, ILS → I, LOC → L,
   RNP / RNAV / GNSS → R, VOR → V, VOR/DME → D, NDB → N, NDB/DME → Q, the SIA letter after a dash, « R06-Y »), else the name without

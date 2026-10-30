@@ -16,3 +16,5 @@
   `#aircraft?sheet=<id>` (consumed once), and the status line `cache/aircraft/status.json`. The cards of the two views carry
   `data-pane`, the tabs `data-view` (the M1–M5 selectors follow). Left out: « Utiliser » and « Depuis le dernier OFP »
   (a flight and an OFP are Fuel's, not Maintenance's). Cases M6–M11.
+- **30 Oct 2026 — Fuel's editor removed** (step 5). Fuel keeps its « Fiches » list read-only, with « Utiliser » and links to
+  `?app=maintenance#aircraft?sheet=<id>`; `perf_prompt.js` moved here (`git mv`). Details in modules/fuel/DECISIONS.md.

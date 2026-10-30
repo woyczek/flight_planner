@@ -98,7 +98,7 @@ export function createSheetsView(host) {
   // ---------------------------------------------------------------- lecture
   /** Charge le texte du prompt de ChatGPT (celui de Fuel, une fois par page) : aerodb le lit dans window.PERF_PROMPT. */
   async function loadPrompt() {
-    if (!window.PERF_PROMPT) await import(new URL('../fuel/perf_prompt.js?v=0', import.meta.url).href).catch(() => {});
+    if (!window.PERF_PROMPT) await import(new URL('./perf_prompt.js?v=0', import.meta.url).href).catch(() => {});
   }
   /** Fiches du registre d'aerodb (les plus récentes d'abord) et types de la compagnie (flotte, référence) ; aucune sans aerodb. */
   async function readSheets() {

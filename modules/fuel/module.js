@@ -2,9 +2,8 @@
 // modules/fuel/SPEC.md, INTEGRATION.md). Deux écrans dans le module :
 //   · Devis : cinq blocs visibles sur téléphone (appareil, route, niveau et vent, décision du niveau, résultat
 //     collant en bas), le reste replié (détail du devis, consignes de montée, réglages du devis) ;
-//   · Fiches : les fiches de performances (import CSV / JSON / .lnmperf / OFP, réponse ChatGPT collée, compléments
-//     EUROCONTROL, autre fiche du type, édition, export .lnmperf et JSON), chaque changement montré champ par champ et
-//     choisi par le pilote avant d'être écrit.
+//   · Fiches : la liste des fiches de performances en lecture seule (famille, ce qui manque, la fiche du vol, « Utiliser ») ;
+//     elles se modifient dans Maintenance › Appareils (modules/aircraft/, liens `?app=maintenance#aircraft?sheet=<id>`).
 // Calcul pur dans performance_model.js, model.js, levels.js, sheets.js (chargés à la demande, une fois) ; ici seulement
 // l'écran, les lectures et écritures par ctx.data, SimBrief par ctx.net, l'identité par ctx.identity. Styles limités au
 // module ([data-module="fuel"]) sur les jetons --sog-… du cadre ; aucune feuille globale.
@@ -33,9 +32,6 @@ import {
   svg
 } from '../../frame/lib/icons.js';
 import {
-  copyText
-} from '../../frame/lib/clipboard.js'; // marche aussi en http (tablette servie par le poste)
-import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import {
@@ -60,7 +56,7 @@ export const meta = {
     policy: 'cache'
   }],
   // gardés hors ligne dès la première visite (service worker du cadre)
-  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
+  files: ['performance_model.js', 'model.js', 'levels.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
     'procedures_texts.js', 'adnames.js', 'routecomplete.js',
     '../../frame/lib/weather_store.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
@@ -78,8 +74,7 @@ const OFP_PATH = 'cache/fuel/last_ofp.json',
   LIBS = [
     ['FlightPerfModel', 'performance_model.js'],
     ['FuelModel', 'model.js'],
-    ['FuelLevels', 'levels.js'],
-    ['PERF_PROMPT', 'perf_prompt.js']
+    ['FuelLevels', 'levels.js']
   ];
 
 // ---------------------------------------------------------------- textes [fr, en, de, es]
@@ -115,11 +110,10 @@ const TX = {
     estimate: ['estimation du type', 'type estimate', 'Typschätzung', 'estimación del tipo']
   },
   otherType: ['Autre type (code OACI)…', 'Other type (ICAO code)…', 'Anderer Typ (ICAO-Code)…', 'Otro tipo (código OACI)…'],
-  typeCode: ['Code OACI du type', 'ICAO type code', 'ICAO-Typcode', 'Código OACI del tipo'],
-  noSheet: ['Aucune fiche : importez-en une dans Fiches, ou choisissez un type (estimation).',
-    'No sheet: import one in Sheets, or choose a type (estimate).',
-    'Kein Datenblatt: eines unter Datenblätter importieren oder einen Typ wählen (Schätzung).',
-    'Ninguna ficha: importe una en Fichas o elija un tipo (estimación).'
+  noSheet: ['Aucune fiche : créez-en une dans Maintenance › Appareils, ou choisissez un type (estimation).',
+    'No sheet: create one in Maintenance › Aircraft, or choose a type (estimate).',
+    'Kein Datenblatt: eines in Wartung › Luftfahrzeuge anlegen oder einen Typ wählen (Schätzung).',
+    'Ninguna ficha: cree una en Mantenimiento › Aeronaves o elija un tipo (estimación).'
   ],
   source: ['Croisière : {s}', 'Cruise: {s}', 'Reiseflug: {s}', 'Crucero: {s}'],
   approx: ['approché', 'approximate', 'ungefähr', 'aproximado'],
@@ -618,9 +612,6 @@ const TX = {
     'Reiseverbrauch für diesen Flug (kg/h, leer: Datenblatt)', 'Consumo de crucero de este vuelo (kg/h, vacío: la ficha)'
   ],
   // écran des fiches
-  import: ['Importer un fichier', 'Import a file', 'Datei importieren', 'Importar un archivo'],
-  paste: ['Coller un texte', 'Paste a text', 'Text einfügen', 'Pegar un texto'],
-  newSheet: ['Nouvelle fiche', 'New sheet', 'Neues Datenblatt', 'Nueva ficha'],
   sheetCats: {
     helico: ['Hélicoptères', 'Helicopters', 'Hubschrauber', 'Helicópteros'],
     turboprop: ['Turbopropulseurs', 'Turboprops', 'Turboprops', 'Turbohélices'],
@@ -632,13 +623,14 @@ const TX = {
     'Company type ({n} aircraft): performance to fill in', 'Typ der Fluggesellschaft ({n} Luftfahrzeug(e)): Leistungen einzutragen',
     'Tipo de la compañía ({n} aeronave(s)): rendimientos por completar'
   ],
-  createSheet: ['Créer la fiche', 'Create the sheet', 'Datenblatt anlegen', 'Crear la ficha'],
-  fromOfp: ['Depuis le dernier OFP', 'From the last OFP', 'Aus dem letzten OFP', 'Desde el último OFP'],
-  sheetsIntro: ['Fiches de la base partagée ; chaque changement est montré avant d’être écrit.',
-    'Sheets of the shared database; every change is shown before it is written.',
-    'Datenblätter der gemeinsamen Datenbank; jede Änderung wird vor dem Schreiben gezeigt.',
-    'Fichas de la base compartida; cada cambio se muestra antes de escribirse.'
+  sheetsIntro: ['Fiches de la base partagée, lues ici ; elles se modifient dans Maintenance › Appareils.',
+    'Sheets of the shared database, read here; they are edited in Maintenance › Aircraft.',
+    'Datenblätter der gemeinsamen Datenbank, hier nur lesbar; bearbeitet wird in Wartung › Luftfahrzeuge.',
+    'Fichas de la base compartida, leídas aquí; se modifican en Mantenimiento › Aeronaves.'
   ],
+  editInMaint: ['Modifier dans Maintenance', 'Edit in Maintenance', 'In der Wartung bearbeiten', 'Modificar en Mantenimiento'],
+  createInMaint: ['Créer dans Maintenance', 'Create in Maintenance', 'In der Wartung anlegen', 'Crear en Mantenimiento'],
+  sheetUsed: ['utilisée pour ce vol', 'used for this flight', 'für diesen Flug verwendet', 'usada para este vuelo'],
   missing: ['À compléter : {list}', 'To complete: {list}', 'Zu ergänzen: {list}', 'Por completar: {list}'],
   // familles de champs vides nommées par la liste des fiches (F.sheetMissingFamilies), dans l'ordre de la liste
   missingFamily: {
@@ -654,158 +646,9 @@ const TX = {
     other: ['divers', 'other', 'Sonstiges', 'otros']
   },
   complete: ['complète', 'complete', 'vollständig', 'completa'],
-  auto: ['auto', 'auto', 'auto', 'auto'],
   updated: ['mise à jour {d}', 'updated {d}', 'aktualisiert {d}', 'actualizada {d}'],
   useSheet: ['Utiliser', 'Use', 'Verwenden', 'Usar'],
-  edit: ['Modifier', 'Edit', 'Bearbeiten', 'Editar'],
-  back: ['← Fiches', '← Sheets', '← Datenblätter', '← Fichas'],
-  save: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
-  saved: ['Fiche enregistrée : elle partira à la prochaine synchronisation.', 'Sheet saved: it will leave at the next synchronisation.',
-    'Datenblatt gespeichert: es geht bei der nächsten Synchronisation hinaus.', 'Ficha guardada: saldrá en la próxima sincronización.'
-  ],
-  eurocontrol: ['Compléter (EUROCONTROL)', 'Complete (EUROCONTROL)', 'Ergänzen (EUROCONTROL)', 'Completar (EUROCONTROL)'],
-  noApd: ['Pas de fiche EUROCONTROL pour ce type.', 'No EUROCONTROL record for this type.', 'Kein EUROCONTROL-Datensatz für diesen Typ.',
-    'Ninguna ficha EUROCONTROL para este tipo.'
-  ],
-  fillFrom: ['Compléter depuis une autre fiche', 'Complete from another sheet', 'Aus anderem Datenblatt ergänzen',
-    'Completar desde otra ficha'
-  ],
-  gpt: ['ChatGPT', 'ChatGPT', 'ChatGPT', 'ChatGPT'],
-  gptPrompt: ['Copier la demande ChatGPT', 'Copy the ChatGPT request', 'ChatGPT-Anfrage kopieren', 'Copiar la petición a ChatGPT'],
-  gptMissing: ['Demande pour les champs vides', 'Request for the empty fields', 'Anfrage für die leeren Felder',
-    'Petición para los campos vacíos'
-  ],
-  copyManual: ['Copie impossible ici : le texte est sélectionné, copiez-le (Ctrl+C ou appui long).',
-    'Copying is not possible here: the text is selected, copy it (Ctrl+C or long press).',
-    'Kopieren ist hier nicht möglich: Der Text ist markiert, kopieren Sie ihn (Strg+C oder lange drücken).',
-    'Aquí no se puede copiar: el texto está seleccionado, cópielo (Ctrl+C o pulsación larga).'
-  ],
-  copied: ['Demande copiée : collez-la dans ChatGPT, puis sa réponse ci-dessous.',
-    'Request copied: paste it into ChatGPT, then its answer below.',
-    'Anfrage kopiert: in ChatGPT einfügen, dann die Antwort unten.', 'Petición copiada: péguela en ChatGPT y luego su respuesta abajo.'
-  ],
-  gptReply: ['Réponse de ChatGPT (telle quelle)', 'ChatGPT’s answer (as is)', 'Antwort von ChatGPT (unverändert)',
-    'Respuesta de ChatGPT (tal cual)'
-  ],
-  read: ['Lire', 'Read', 'Lesen', 'Leer'],
-  exportLnm: ['Exporter .lnmperf', 'Export .lnmperf', '.lnmperf exportieren', 'Exportar .lnmperf'],
-  exportJson: ['Exporter JSON', 'Export JSON', 'JSON exportieren', 'Exportar JSON'],
-  remove: ['Supprimer', 'Delete', 'Löschen', 'Eliminar'],
-  removeAsk: ['Supprimer la fiche « {n} » de la base partagée ?', 'Delete the sheet “{n}” from the shared database?',
-    'Datenblatt „{n}“ aus der gemeinsamen Datenbank löschen?', '¿Eliminar la ficha «{n}» de la base compartida?'
-  ],
-  rpmAdd: ['+ Ligne', '+ Row', '+ Zeile', '+ Fila'],
-  rpmGone: ['retirée', 'removed', 'entfernt', 'retirada'],
-  rpmTable: ['Table régime / débit', 'RPM / fuel flow table', 'Drehzahl-/Verbrauchstabelle', 'Tabla régimen / consumo'],
-  review: ['Changements proposés', 'Proposed changes', 'Vorgeschlagene Änderungen', 'Cambios propuestos'],
-  reviewNew: ['Nouvelle fiche « {n} »', 'New sheet “{n}”', 'Neues Datenblatt „{n}“', 'Nueva ficha «{n}»'],
-  reviewNone: ['Rien ne change.', 'Nothing changes.', 'Nichts ändert sich.', 'Nada cambia.'],
-  field: ['Champ', 'Field', 'Feld', 'Campo'],
-  before: ['Avant', 'Before', 'Vorher', 'Antes'],
-  after: ['Après', 'After', 'Nachher', 'Después'],
-  apply: ['Appliquer la sélection', 'Apply the selection', 'Auswahl übernehmen', 'Aplicar la selección'],
-  cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
-  added: ['ajoutée', 'added', 'hinzugefügt', 'añadida'],
-  replaced: ['remplacée', 'replaced', 'ersetzt', 'sustituida'],
-  imported: ['{n} fiche(s) lue(s) dans {f}.', '{n} sheet(s) read from {f}.', '{n} Datenblatt/-blätter aus {f} gelesen.',
-    '{n} ficha(s) leída(s) de {f}.'
-  ],
-  unreadable: ['{f} : format non reconnu ({e}).', '{f}: format not recognised ({e}).', '{f}: Format nicht erkannt ({e}).',
-    '{f}: formato no reconocido ({e}).'
-  ],
-  pasteAsk: ['Collez une fiche (JSON, CSV de performances, .lnmperf) ou une réponse de ChatGPT :',
-    'Paste a sheet (JSON, performance CSV, .lnmperf) or a ChatGPT answer:',
-    'Datenblatt (JSON, Leistungs-CSV, .lnmperf) oder ChatGPT-Antwort einfügen:',
-    'Pegue una ficha (JSON, CSV de rendimiento, .lnmperf) o una respuesta de ChatGPT:'
-  ],
-  pasted: ['texte collé', 'pasted text', 'eingefügter Text', 'texto pegado'],
-  noOfp: ['Aucun OFP sur cet appareil : reprenez-le dans l\'onglet Devis.', 'No OFP on this device: load it in the Quote tab.',
-    'Kein OFP auf diesem Gerät: im Reiter Berechnung laden.', 'Ningún OFP en este dispositivo: cárguelo en la pestaña Cálculo.'
-  ],
-  calibrated: ['calibrée sur le navlog', 'calibrated on the navlog', 'am Navlog kalibriert', 'calibrada con el navlog']
 };
-// libellés des champs de fiche (PROFILE_FIELDS de la V2, en français) : groupes, puis libellés, puis préfixes « X · »
-const FIELD_TX = {
-  'Identité et format': ['Identité et format', 'Identity and format', 'Identität und Format', 'Identidad y formato'],
-  'Carburant et opération': ['Carburant et opération', 'Fuel and operation', 'Kraftstoff und Betrieb', 'Combustible y operación'],
-  'Piste et alternat': ['Piste et dégagement', 'Runway and alternate', 'Piste und Ausweichflughafen', 'Pista y alternativo'],
-  'Montée': TX.climb,
-  'Croisière': TX.cruise,
-  'Descente': TX.descent,
-  'Régime et consommation': ['Régime et consommation', 'RPM and fuel flow', 'Drehzahl und Verbrauch', 'Régimen y consumo'],
-  'Nom': ['Nom', 'Name', 'Name', 'Nombre'],
-  'Type / ICAO': ['Type / OACI', 'Type / ICAO', 'Typ / ICAO', 'Tipo / OACI'],
-  'Description': ['Description', 'Description', 'Beschreibung', 'Descripción'],
-  'Immatriculation': ['Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula'],
-  'Indicatif': ['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'],
-  'Carburant en volume': ['Carburant en volume', 'Fuel as volume', 'Kraftstoff als Volumen', 'Combustible en volumen'],
-  'Carburant Jet': ['Carburant Jet', 'Jet fuel', 'Jet-Kraftstoff', 'Combustible jet'],
-  'Carburant utilisable': ['Carburant utilisable', 'Usable fuel', 'Nutzbarer Kraftstoff', 'Combustible utilizable'],
-  'Taxi': TX.taxi,
-  'Réserve': TX.reserve,
-  'Contingence (%)': TX.contPct,
-  'Carburant extra': ['Carburant extra', 'Extra fuel', 'Zusatzkraftstoff', 'Combustible extra'],
-  'Longueur piste mini (ft)': ['Longueur de piste mini (ft)', 'Minimum runway length (ft)', 'Mindestpistenlänge (ft)',
-    'Longitud mínima de pista (ft)'
-  ],
-  'Type de piste': ['Type de piste', 'Runway type', 'Pistenart', 'Tipo de pista'],
-  'Vent de travers max (kt)': ['Vent de travers max (kt)', 'Max crosswind (kt)', 'Max. Seitenwind (kt)', 'Viento cruzado máx. (kt)'],
-  'Alternat': TX.altn,
-  'Badin / IAS (kt)': ['Badin (kt)', 'IAS (kt)', 'IAS (kt)', 'IAS (kt)'],
-  'Régime nominal (RPM / N1)': ['Régime nominal (RPM / N1)', 'Nominal RPM / N1', 'Nenndrehzahl (RPM / N1)', 'Régimen nominal (RPM / N1)'],
-  'fuel flow': ['débit', 'fuel flow', 'Verbrauch', 'consumo'],
-  'Fuel flow': ['Débit', 'Fuel flow', 'Verbrauch', 'Consumo'],
-  'TAS (kt)': ['TAS (kt)', 'TAS (kt)', 'TAS (kt)', 'TAS (kt)'],
-  'Vario (ft/min)': ['Vario (ft/min)', 'Rate (ft/min)', 'Steigrate (ft/min)', 'Régimen vertical (ft/min)'],
-  'Plafond max (ft)': ['Plafond (ft)', 'Ceiling (ft)', 'Gipfelhöhe (ft)', 'Techo (ft)'],
-  'Altitude de référence (ft)': ['Altitude de référence (ft)', 'Reference altitude (ft)', 'Referenzhöhe (ft)',
-    'Altitud de referencia (ft)'
-  ],
-  'Cellule (auto : base OACI)': ['Cellule (auto : base OACI)', 'Airframe (auto: ICAO base)', 'Zelle (auto: ICAO-Basis)',
-    'Célula (auto: base OACI)'
-  ],
-  'Propulsion (auto : base OACI)': ['Propulsion (auto : base OACI)', 'Propulsion (auto: ICAO base)', 'Antrieb (auto: ICAO-Basis)',
-    'Propulsión (auto: base OACI)'
-  ],
-  'Altitude de rétablissement (ft)': ['Altitude de rétablissement (ft)', 'Critical altitude (ft)', 'Volldruckhöhe (ft)',
-    'Altitud crítica (ft)'
-  ],
-  'Cabine pressurisée': ['Cabine pressurisée', 'Pressurised cabin', 'Druckkabine', 'Cabina presurizada'],
-  'Référence RPM / puissance': ['Référence régime / puissance', 'RPM / power reference', 'Drehzahl-/Leistungsreferenz',
-    'Referencia RPM / potencia'
-  ],
-  'Données RPM / fuel flow': ['Données régime / débit', 'RPM / fuel flow data', 'Drehzahl-/Verbrauchsdaten', 'Datos RPM / consumo'],
-  'Base / provenance': ['Base / provenance', 'Basis / origin', 'Grundlage / Herkunft', 'Base / procedencia']
-};
-
-// libellés des valeurs des champs à liste (cellule, propulsion) ; les autres listes (type de piste) gardent leur code
-const OPTION_TX = {
-  aeroplane: ['avion', 'aeroplane', 'Flugzeug', 'avión'],
-  helicopter: ['hélicoptère', 'helicopter', 'Hubschrauber', 'helicóptero'],
-  gyroplane: ['gyroplane', 'gyroplane', 'Tragschrauber', 'autogiro'],
-  glider: ['planeur', 'glider', 'Segelflugzeug', 'planeador'],
-  balloon: ['ballon', 'balloon', 'Ballon', 'globo'],
-  airship: ['dirigeable', 'airship', 'Luftschiff', 'dirigible'],
-  piston: ['moteur à pistons', 'piston engine', 'Kolbenmotor', 'motor de pistón'],
-  turboprop: ['turbopropulseur', 'turboprop', 'Turboprop', 'turbohélice'],
-  turboshaft: ['turbomoteur', 'turboshaft', 'Wellenturbine', 'turboeje'],
-  jet: ['réacteur', 'jet', 'Strahltriebwerk', 'reactor'],
-  electric: ['électrique', 'electric', 'elektrisch', 'eléctrico'],
-  none: ['aucune (sans moteur)', 'none (unpowered)', 'keine (ohne Antrieb)', 'ninguna (sin motor)'],
-  other: ['autre', 'other', 'andere', 'otra']
-};
-// champs de fiche hors du formulaire de la V2
-const PATH_TX = {
-  reserveFuelFlowPerHour: ['Réserve · débit', 'Reserve · fuel flow', 'Reserve · Verbrauch', 'Reserva · consumo'],
-  'tod.gradientFtPerNm': ['Descente · pente (ft/NM)', 'Descent · gradient (ft/NM)', 'Sinkflug · Gradient (ft/NM)',
-    'Descenso · pendiente (ft/NM)'
-  ],
-  'tod.bufferNm': ['Descente · marge (NM)', 'Descent · buffer (NM)', 'Sinkflug · Puffer (NM)', 'Descenso · margen (NM)'],
-  typicalWindKt: ['Vent typique (kt)', 'Typical wind (kt)', 'Typischer Wind (kt)', 'Viento típico (kt)'],
-  registration: ['Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula'],
-  type: ['Type', 'Type', 'Typ', 'Tipo']
-};
-
 // ---------------------------------------------------------------- état du module (un montage à la fois)
 let S = null;
 /** Vrai si le montage s a été démonté ou remplacé pendant une attente (réponse réseau, base, dialogue) : la suite est
@@ -831,8 +674,6 @@ const hmm = m => {
   const x = Math.max(0, Math.round(+m || 0));
   return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`;
 };
-/** Copie d'une fiche sans ses clés de travail (« _… » : identifiants de ligne, marques d'origine). */
-const plain = p => JSON.parse(JSON.stringify(p, (k, v) => k.startsWith('_') ? undefined : v));
 
 /** Charge le calcul pur (scripts du dossier du module, une fois par page), tous au montage : le service worker du
  *  cadre garde le point d'entrée du module dès la première visite et les fichiers qu'il importe au premier passage. */
@@ -852,14 +693,6 @@ async function loadLibs() {
 
 /** Texte d'une ligne de TX dans la langue de l'appli. */
 const tt = (row, v) => S.ctx.t(row, v);
-/** Libellé traduit d'un champ de fiche (chemin) ; groupe compris si group. */
-function fieldLabel(path, group = false) {
-  const f = SH().PROFILE_FIELDS.find(x => x[2] === path);
-  if (!f) return PATH_TX[path] ? tt(PATH_TX[path]) : path;
-  const tr = s => FIELD_TX[s] ? tt(FIELD_TX[s]) : s,
-    label = f[1].split(' · ').map(tr).join(' · ');
-  return group ? `${tr(f[0])} · ${label}` : label;
-}
 
 // ---------------------------------------------------------------- unités et formats
 /** Unité de carburant affichée (réglage « Carburant »), à défaut celle de la fiche. */
@@ -1234,17 +1067,6 @@ async function readSheets() {
   if (gone(s)) return;
   S.sheets = list;
   S.coTypes = co;
-}
-/** Enregistre une fiche par aerodb (champs changés tamponnés avec leur source, fichier aircraft/sheets/<id>.json et
- *  miroir V2 écrits par aerodb), puis relit la liste. */
-async function storeSheet(p, source = 'edit') {
-  const s = S;
-  await S.A.sheets.put(plain(p), {
-    source
-  });
-  if (gone(s)) return;
-  await readSheets();
-  if (!gone(s)) S.ctx.notify(tt(TX.saved), 'ok');
 }
 /** Écrit le vol courant (après un temps calme) : relu juste avant, seuls les champs de fuel remplacés (et dans progress
  *  ses seules clés : progress.actual appartient au cadre), le reste gardé tel qu'il est (frame/lib/current_flight.js). */
@@ -1697,7 +1519,6 @@ function climbSvg(G, box) {
 // couleurs dans --sog-chart-* (suivent le design et la nuit sans redessin)
 const STYLE = `
 [data-module="fuel"] .fu-g3{--f-min:96px}
-[data-module="fuel"] .f-table .fu-txt{white-space:normal;overflow-wrap:anywhere;min-width:9em} /* aperçu d'un réimport : un texte revient à la ligne */
 [data-module="fuel"] .fu-ads{grid-template-columns:repeat(3,minmax(0,12em));position:relative} /* trois terrains ; position:relative : la liste de propositions s'y pose */
 [data-module="fuel"] .fu-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
 [data-module="fuel"] .fu-adname[data-state="unknown"]{font-style:italic}
@@ -4128,37 +3949,31 @@ function refresh() {
   }
 }
 
-// ---------------------------------------------------------------- écran Fiches
-/** Dessine la liste des fiches et les gestes d'import. */
+// ---------------------------------------------------------------- écran Fiches (lecture seule)
+// Les fiches se modifient dans Maintenance › Appareils (modules/aircraft/, V3 § 10.34 A2) : ici la liste, la fiche du vol
+// courant et « Utiliser » ; chaque ligne renvoie par un lien simple (même onglet) vers l'éditeur de Maintenance.
+/** Adresse de l'éditeur de la fiche id dans Maintenance › Appareils, ou celle des Appareils (création) sans id. */
+const maintenanceLink = id => `?app=maintenance#aircraft${id ? `?sheet=${encodeURIComponent(id)}` : ''}`;
+/** Dessine la liste des fiches, en lecture seule. */
 function renderSheets() {
   if (S.refsPending) return void(S.body.innerHTML = `<p class="f-muted">${esc(tt(TX.loadingRefs))}</p>`); // fiches pas encore là
   const F = SH(),
-    lang = S.ctx.lang();
-  S.edit = null;
+    lang = S.ctx.lang(),
+    used = S.flight?.aircraft?.sheetId || '';
   S.body.innerHTML = `<p class="f-muted">${esc(tt(TX.sheetsIntro))}</p>
-    <div class="f-row" style="margin-bottom:var(--sog-gap)">
-      <button type="button" class="primary" data-do="import">${esc(tt(TX.import))}</button>
-      <button type="button" data-do="paste">${esc(tt(TX.paste))}</button>
-      <button type="button" data-do="new">${esc(tt(TX.newSheet))}</button>
-      ${S.ofp ? `<button type="button" data-do="ofp">${esc(tt(TX.fromOfp))}</button>` : ''}
-      <input type="file" data-file accept=".csv,.json,.lnmperf,.txt,.xml" multiple hidden>
-    </div>
-    <div class="f-card fu-hide" data-pastebox><label class="f-field">${esc(tt(TX.pasteAsk))}<textarea data-k="pastetext" rows="6"></textarea></label>
-      <button type="button" class="primary" data-do="pasteread">${esc(tt(TX.read))}</button></div>
-    <div class="f-list">${sheetGroups().map(g => `<h3 class="fu-cat">${esc(tt(TX.sheetCats[g.cat]))}</h3>${g.rows.map(r => {
+    <div class="f-list" data-sheets>${sheetGroups().map(g => `<h3 class="fu-cat">${esc(tt(TX.sheetCats[g.cat]))}</h3>${g.rows.map(r => {
       if (r.todo) return `<div class="f-item" data-type="${esc(r.todo.type)}"><div><b>${esc(S.A.label?.(r.todo.type) || r.todo.type)}</b>
         <div class="f-muted">${esc(tt(TX.coType, { n: r.todo.registrations.length }))}</div></div>
-        <div class="f-row"><button type="button" data-do="newfor">${esc(tt(TX.createSheet))}</button></div></div>`;
+        <div class="f-row"><a class="f-btn" href="${maintenanceLink()}">${esc(tt(TX.createInMaint))}</a></div></div>`;
       const p = F.normalize(structuredClone(r.sheet)),
         miss = F.sheetMissingFamilies(F.sheetMissingPaths(p)).map(f => tt(TX.missingFamily[f])),
         when = F.profileWhen(p);
-      return `<div class="f-item" data-id="${esc(p.id)}"><div><b>${esc(p.name || p.id)}</b> <span class="f-muted">${esc(p.icao || '')} · ${esc(p.unit)}</span>
+      return `<div class="f-item" data-id="${esc(p.id)}"><div><a href="${maintenanceLink(p.id)}"><b>${esc(p.name || p.id)}</b></a> <span class="f-muted">${esc(p.icao || '')} · ${esc(p.unit)}</span>${p.id === used ? ` <span class="f-badge" data-kind="ok" data-used>${esc(tt(TX.sheetUsed))}</span>` : ''}
         <div class="f-muted">${esc(F.profileSourceText(p))} · ${esc(miss.length ? tt(TX.missing, { list: miss.join(', ') }) : tt(TX.complete))}${when ? ` · ${esc(tt(TX.updated, { d: new Date(when).toLocaleDateString(lang) }))}` : ''}</div></div>
-        <div class="f-row"><button type="button" data-do="use">${esc(tt(TX.useSheet))}</button><button type="button" data-do="edit">${esc(tt(TX.edit))}</button></div></div>`;
+        <div class="f-row"><button type="button" data-do="use">${esc(tt(TX.useSheet))}</button><a class="f-btn" href="${maintenanceLink(p.id)}">${esc(tt(TX.editInMaint))}</a></div></div>`;
     }).join('')}`).join('') || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}</div>`;
   S.body.onclick = e => onSheetsClick(e);
-  S.body.oninput = S.body.onkeydown = null;
-  S.body.onchange = e => e.target.matches('[data-file]') && importFiles([...e.target.files]);
+  S.body.oninput = S.body.onkeydown = S.body.onchange = null;
 }
 /** Liste de l'écran Fiches rangée comme la V2 : par catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons,
  *  autres ; aerodb classify), les fiches, puis les types de la compagnie qui n'en ont pas (« à compléter ») ; par nom. */
@@ -4183,393 +3998,22 @@ function sheetGroups() {
     }))
   })).filter(g => g.rows.length);
 }
-/** Gestes de l'écran Fiches (liste, éditeur, aperçu des changements). */
-async function onSheetsClick(e) {
-  const s = S,
-    b = e.target.closest('[data-do]');
+/** Geste de l'écran Fiches : « Utiliser » choisit cette fiche pour le vol (les liens vers Maintenance sont de simples liens). */
+function onSheetsClick(e) {
+  const b = e.target.closest('[data-do="use"]');
   if (!b) return;
-  const F = SH(),
-    id = b.closest('[data-id]')?.dataset.id,
-    p = S.edit;
-  switch (b.dataset.do) {
-    case 'import':
-      return S.body.querySelector('[data-file]').click();
-    case 'paste': {
-      const box = S.body.querySelector('[data-pastebox]');
-      box.classList.toggle('fu-hide');
-      if (!box.classList.contains('fu-hide')) box.querySelector('textarea').focus();
-      return;
-    }
-    case 'pasteread': {
-      const txt = S.body.querySelector('[data-k="pastetext"]').value;
-      if (txt.trim()) await importText(txt, tt(TX.pasted));
-      return;
-    }
-    case 'new':
-    case 'newfor': { // « Créer la fiche » d'un type de la compagnie : son code, sans le demander
-      const code = (b.dataset.do === 'newfor' ? b.closest('[data-type]')?.dataset.type || '' : await S.ctx.askText(tt(TX.typeCode), {
-        value: ''
-      }) || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-      if (!code || gone(s)) return;
-      const sb = F.simbriefRecordFor(code),
-        model = S.A?.record?.(code)?.model, // nom du modèle (base des types) : « EC-145 » plutôt que « EC45 »
-        np = sb ? F.profileFromSimbriefType(code, sb) : F.normalize({
-          id: code,
-          icao: code,
-          name: model && S.A.displayName ? S.A.displayName(model).split(' — ')[0] : code
-        });
-      np.id = uniqueId(np.id || code);
-      return review(null, F.normalize(np), {});
-    }
-    case 'ofp': {
-      if (!S.ofp) return S.ctx.notify(tt(TX.noOfp), 'warn');
-      const np = F.profileFromOFP(S.ofp),
-        c = F.extractOfpCalibration(S.ofp);
-      if (c) F.applyCalibration(np, c);
-      return proposeIncoming([F.normalize(np)]);
-    }
-    case 'use': {
-      const raw = S.sheets.find(x => x.id === id);
-      S.flight.aircraft = {
-        sheetId: raw.id,
-        type: raw.icao || raw.type || '',
-        registration: raw.registration || '',
-        callsign: raw.callsign || '',
-        name: raw.name || raw.id,
-        source: 'sheet'
-      };
-      saveFlight();
-      return show('plan');
-    }
-    case 'edit':
-      return renderEditor(id);
-    case 'back':
-      return renderSheets();
-    case 'rpmadd': {
-      const d = readEditor(p, true);
-      d.rpmFuelCurve.push({
-        rpm: null,
-        altFt: null,
-        fuelFlowPerHour: null
-      });
-      return renderEditor(p.id, F.normalize(d));
-    }
-    case 'rpmdel': {
-      const d = readEditor(p, true);
-      d.rpmFuelCurve.splice(+b.dataset.i, 1);
-      return renderEditor(p.id, d);
-    }
-    case 'save': {
-      const out = readEditor(p);
-      return review(S.sheets.find(x => x.id === p.id), out, {});
-    }
-    case 'apd': {
-      const a = F.apdFor(p);
-      if (!a) return S.ctx.notify(tt(TX.noApd), 'warn');
-      const out = structuredClone(p),
-        filled = new Set();
-      for (const [path, x] of Object.entries(a.fields || {})) {
-        const was = F.pathGet(p, path);
-        if (was === null || was === undefined || was === '') filled.add(path);
-        F.pathSet(out, path, x.v);
-      }
-      // une valeur déjà renseignée n'est remplacée que cochée par le pilote
-      return review(p, out, {
-        checked: path => filled.has(path),
-        src: 'EUROCONTROL',
-        source: 'eurocontrol'
-      });
-    }
-    case 'fill': {
-      const other = S.sheets.find(x => x.id === S.body.querySelector('[data-k="fillfrom"]')?.value);
-      if (!other) return;
-      return review(p, F.fillProfileGaps(structuredClone(p), F.normalize(structuredClone(other))), {
-        src: other.name || other.id,
-        source: 'edit'
-      });
-    }
-    case 'gpt':
-    case 'gptmiss': {
-      const txt = b.dataset.do === 'gpt' ? F.gptPrompt({
-        id: p.id,
-        p
-      }) : F.gptMissingPrompt([{
-        p,
-        paths: F.sheetMissingPaths(p)
-      }]);
-      const box = S.body.querySelector('[data-k="gptprompt"]');
-      box.value = txt;
-      box.closest('label').classList.remove('fu-hide');
-      // presse-papiers, sinon copie à l'ancienne, sinon la demande reste sélectionnée dans sa zone : « copiez-la »
-      const how = await copyText(txt, {
-        box
-      });
-      S.ctx.notify(tt(how === 'shown' ? TX.copyManual : TX.copied), how === 'shown' ? 'warn' : 'ok');
-      return;
-    }
-    case 'gptread': {
-      const txt = S.body.querySelector('[data-k="gptreply"]').value;
-      if (!txt.trim()) return;
-      try {
-        const r = F.parseGptReply(txt, F.normalize(structuredClone(p)).icao),
-          incoming = r.profile?.sheets ? r.profile.sheets.find(x => x.id === p.id) || r.profile.sheets[0] : r.profile;
-        for (const w of r.warnings || []) S.ctx.notify(w, 'warn');
-        return review(p, mergeInto(p, F.normalize(incoming)), {
-          src: 'ChatGPT',
-          source: 'chatgpt'
-        });
-      } catch (err) {
-        return S.ctx.notify(String(err.message || err), 'err');
-      }
-    }
-    case 'lnm':
-      try {
-        return download(`${p.id}.lnmperf`, F.toLnmperf(F.normalize(structuredClone(p))), 'application/xml');
-      } catch (err) {
-        return S.ctx.notify(String(err.message || err), 'err');
-      }
-    case 'json':
-      return download(`${p.id}.json`, JSON.stringify(plain(p), null, 1), 'application/json');
-    case 'del':
-      if (!(await S.ctx.ask(tt(TX.removeAsk, {
-          n: p.name || p.id
-        })))) return;
-      if (gone(s)) return;
-      await S.A.sheets.remove(p.id);
-      await readSheets();
-      return gone(s) ? undefined : renderSheets();
-    case 'apply':
-      return applyReview();
-    case 'cancel':
-      return S.edit ? renderEditor(S.edit.id) : renderSheets();
-  }
-}
-/** Clé d'une ligne RPM (régime et altitude), comme celle de l'aperçu de la V2. */
-const rpmKey = r => `${Math.round(Number(r.rpm) * 1000)}@${r.altFt ?? ''}`;
-/** Identifiant libre dans la base (suffixe -2, -3… si pris). */
-function uniqueId(id) {
-  let out = id,
-    k = 2;
-  while (S.sheets.some(x => x.id === out)) out = `${id}-${k++}`;
-  return out;
-}
-/** Fiche entrante ramenée à la fiche existante p : même identifiant et nom, carburant dans l'unité de p, champs vides de
- *  l'entrante complétés par p (la réponse l'emporte champ par champ, le pilote choisit ensuite). */
-function mergeInto(p, incoming) {
-  const F = SH();
-  let src = structuredClone(incoming);
-  if (src.unit && p.unit && src.unit !== p.unit && ['kg', 'lb'].includes(src.unit) && ['kg', 'lb'].includes(p.unit)) src = F
-    .fuelConvertedCopy(src, src.unit, p.unit, true);
-  src.id = p.id;
-  src.name = p.name || src.name;
-  src.unit = p.unit;
-  return F.fillProfileGaps(F.normalize(src), F.normalize(structuredClone(p)));
-}
-/** Fiches lues (fichier, texte, OFP) : une fiche de même identifiant passe par l'aperçu des changements, une nouvelle
- *  aussi (créée à l'application) ; une à la fois. */
-function proposeIncoming(list) {
-  S.queue = list.slice(1);
-  const np = list[0];
-  if (!np) return renderSheets();
-  const old = S.sheets.find(x => x.id === np.id);
-  return review(old || null, old ? mergeInto(SH().normalize(structuredClone(old)), np) : np, {
-    src: np.source?.format || np.source?.file || '',
-    source: /lnm/i.test(np.source?.format || '') ? 'lnmperf' : np.calibration ? 'ofp' : 'import'
-  });
-}
-/** Lit des fichiers choisis (CSV, JSON, .lnmperf, OFP) puis propose leurs fiches. */
-async function importFiles(files) {
-  const s = S,
-    all = [];
-  for (const file of files) {
-    const txt = await file.text();
-    all.push(...readText(txt, file.name));
-  }
-  if (all.length && !gone(s)) proposeIncoming(all);
-}
-/** Lit un texte collé (fiche, CSV, .lnmperf, OFP, réponse ChatGPT) puis propose ses fiches. */
-async function importText(txt, name) {
-  const list = readText(txt, name);
-  if (list.length) proposeIncoming(list);
-}
-/** Fiches d'un texte, selon sa forme : XML .lnmperf, JSON (base, fiche, OFP SimBrief calibré), CSV de performances,
- *  sinon réponse ChatGPT ; notification du nombre lu ou de l'échec. */
-function readText(txt, name) {
-  const F = SH(),
-    s = String(txt || '').replace(/^﻿/, '').trim();
-  let list = [];
-  try {
-    if (/^<\?xml|<AircraftPerf/i.test(s)) list = [F.parseLnmperf(s, name)];
-    else if (/^[{[]/.test(s) && (() => {
-        try {
-          JSON.parse(s);
-          return true;
-        } catch {
-          return false;
-        }
-      })()) {
-      const o = JSON.parse(s);
-      if (F.isSimbriefOfp(o)) {
-        const p = F.profileFromOFP(o),
-          c = F.extractOfpCalibration(o);
-        if (c) F.applyCalibration(p, c);
-        list = [p];
-      } else list = F.profilesFromJson(o, name);
-    } else if (/aircraft/i.test(s.split(/\r?\n/)[0]) && /icao/i.test(s.split(/\r?\n/)[0])) {
-      try {
-        list = F.parsePerformanceCsvEnriched(s, name);
-      } catch {
-        list = F.parsePerformanceCsv(s, name);
-      }
-    } else {
-      const r = F.parseGptReply(s);
-      for (const w of r.warnings || []) S.ctx.notify(w, 'warn');
-      list = r.profile?.sheets || [r.profile];
-    }
-    list = list.filter(Boolean).map(p => F.normalize(p, name));
-    S.ctx.notify(tt(TX.imported, {
-      n: list.length,
-      f: name
-    }), list.length ? 'ok' : 'warn');
-  } catch (e) {
-    S.ctx.notify(tt(TX.unreadable, {
-      f: name,
-      e: e.message || e
-    }), 'err');
-  }
-  return list;
-}
-/** Table régime / débit modifiable : écran d'ordinateur seulement (sur téléphone, en lecture). */
-const rpmEditable = () => matchMedia('(min-width: 761px)').matches;
-/** Éditeur d'une fiche : champs par groupe (libellés traduits), table RPM (modifiable sur écran d'ordinateur),
- *  compléments, ChatGPT, exports. draft : fiche en cours de saisie (ligne RPM ajoutée ou retirée), sinon celle de la base. */
-function renderEditor(id, draft = null) {
-  const F = SH(),
-    raw = S.sheets.find(x => x.id === id);
-  if (!raw) return renderSheets();
-  const p = S.edit = draft || F.normalize(structuredClone(raw)),
-    rpmCell = (i, k, v) => `<td class="f-num"><input data-rpm="${i}" data-rk="${k}" inputmode="decimal" value="${esc(v ?? '')}" style="width:7em" aria-label="${esc(k)}"></td>`,
-    groups = [...new Set(F.PROFILE_FIELDS.map(f => f[0]))],
-    facts = F.catalogFacts(p), // ce que la base OACI donne de la cellule et de la propulsion
-    fuelUnit = path => F.FUEL_PATHS.has(path) ? ` (${p.unit}${path.endsWith('fuelFlowPerHour') ? '/h' : ''})` : '',
-    input = ([, , path, type]) => {
-      const v = F.pathGet(p, path),
-        lab = esc(fieldLabel(path) + fuelUnit(path));
-      if (type === 'bool') return `<label class="f-check"><input type="checkbox" data-path="${path}" data-type="bool"${v ? ' checked' : ''}>${lab}</label>`;
-      if (type.startsWith('select:')) {
-        // cellule et propulsion : libellés traduits, case vide = « auto · valeur de la base OACI » quand elle la donne
-        const deduced = facts[path],
-          none = deduced ? `${tt(TX.auto)} · ${tt(OPTION_TX[deduced])}` : '';
-        return `<label class="f-field">${lab}<select data-path="${path}" data-type="text"><option value="">${esc(none)}</option>${type.slice(7).split(',').map(o => `<option value="${esc(o)}"${String(v ?? '') === o ? ' selected' : ''}>${esc(OPTION_TX[o] ? tt(OPTION_TX[o]) : o)}</option>`).join('')}</select></label>`;
-      }
-      if (type === 'textarea') return `<label class="f-field">${lab}<textarea rows="2" data-path="${path}" data-type="text">${esc(v ?? '')}</textarea></label>`;
-      return `<label class="f-field">${lab}<input data-path="${path}" data-type="${type}" value="${esc(v ?? '')}"${type === 'number' ? ' inputmode="decimal"' : ''}></label>`;
-    },
-    others = S.sheets.filter(x => x.id !== p.id);
-  S.body.innerHTML = `<div class="f-row" style="margin-bottom:var(--sog-gap)"><button type="button" data-do="back">${esc(tt(TX.back))}</button><b>${esc(p.name || p.id)}</b><span class="f-muted">${esc(F.profileSourceText(p))}</span></div>
-    <div class="f-card"><div class="f-row">
-      <button type="button" data-do="apd">${esc(tt(TX.eurocontrol))}</button>
-      ${others.length ? `<select data-k="fillfrom" aria-label="${esc(tt(TX.fillFrom))}">${others.map(o => `<option value="${esc(o.id)}"${(o.icao || '') === (p.icao || '-') ? ' selected' : ''}>${esc(o.name || o.id)}</option>`).join('')}</select><button type="button" data-do="fill">${esc(tt(TX.fillFrom))}</button>` : ''}
-    </div></div>
-    <details class="f-card"><summary>${esc(tt(TX.gpt))}</summary>
-      <div class="f-row"><button type="button" data-do="gpt">${esc(tt(TX.gptPrompt))}</button><button type="button" data-do="gptmiss">${esc(tt(TX.gptMissing))}</button></div>
-      <label class="f-field fu-hide">&nbsp;<textarea data-k="gptprompt" rows="4" readonly></textarea></label>
-      <label class="f-field">${esc(tt(TX.gptReply))}<textarea data-k="gptreply" rows="4"></textarea></label>
-      <button type="button" data-do="gptread">${esc(tt(TX.read))}</button>
-    </details>
-    ${groups.map((g, i) => `<details class="f-card"${i < 2 ? ' open' : ''}><summary>${esc(FIELD_TX[g] ? tt(FIELD_TX[g]) : g)}</summary><div class="f-grid fu-g3">${F.PROFILE_FIELDS.filter(f => f[0] === g).map(input).join('')}</div></details>`).join('')}
-    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(p.unit)}/h min</th><th class="f-num">${esc(p.unit)}/h</th><th class="f-num">${esc(p.unit)}/h max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button></details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(p.unit)}/h</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="f-num">${esc(r.rpm)}</td><td class="f-num">${esc(r.altFt ?? '')}</td><td class="f-num">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
-    <div class="f-row"><button type="button" class="primary" data-do="save">${esc(tt(TX.save))}</button><button type="button" data-do="lnm">${esc(tt(TX.exportLnm))}</button><button type="button" data-do="json">${esc(tt(TX.exportJson))}</button><button type="button" data-do="del">${esc(tt(TX.remove))}</button></div>`;
-}
-/** Fiche de l'éditeur avec les valeurs des champs (nombres lus, vides → null). */
-function readEditor(p, keepEmpty = false) {
-  const F = SH(),
-    out = structuredClone(p);
-  // table RPM saisie (écran d'ordinateur) : chaque ligne reprend ses autres champs ; sans régime, retirée à
-  // l'enregistrement
-  if (S.body.querySelector('[data-rpm]')) {
-    out.rpmFuelCurve = out.rpmFuelCurve.map(r => ({
-      ...r
-    }));
-    for (const i of S.body.querySelectorAll('[data-rpm]')) {
-      const row = out.rpmFuelCurve[+i.dataset.rpm],
-        k = i.dataset.rk,
-        v = num(i.value);
-      if (v !== null || (row[k] !== undefined && row[k] !== null && row[k] !== '')) row[k] = v;
-    }
-    if (!keepEmpty) out.rpmFuelCurve = out.rpmFuelCurve.filter(r => r.rpm !== null);
-  }
-  for (const i of S.body.querySelectorAll('[data-path]')) {
-    const t = i.dataset.type,
-      v = t === 'bool' ? i.checked : t === 'number' ? num(i.value) : i.value.trim() || null;
-    // case décochée d'un champ jamais renseigné : laissé vide (pas de « false » inventé)
-    if (t === 'bool' && !v && F.pathGet(p, i.dataset.path) == null) continue;
-    F.pathSet(out, i.dataset.path, v);
-  }
-  return F.normalize(out);
-}
-/** Aperçu des changements before → after : une ligne cochable par champ et par ligne de table RPM ; o.checked(path) :
- *  coché d'office (tout sinon), o.src : origine affichée. Appliquer écrit la sélection (pickChanges). */
-function review(before, after, o = {}) {
-  const F = SH(),
-    diff = F.profileDiff(before, after, {}, o.src || ''),
-    rows = diff.rows.filter(r => r.changed && !r.path.startsWith('source') && !r.path.startsWith('calibration') && r.path !==
-      'description' || (r.changed && r.path === 'description' && before)),
-    show = v => {
-      if (v === undefined || v === null || v === '') return '—';
-      try {
-        if (typeof v === 'string' && v.startsWith('"')) v = JSON.parse(v);
-      } catch {
-        /* texte tel quel */
-      }
-      return esc(String(v));
-    },
-    // cellule d'une valeur : un nombre (ou une suite de nombres) aligné à droite sans retour à la ligne ; un texte (description,
-    // nom) revient à la ligne dans sa colonne, sans pousser le tableau en défilement de côté
-    cell = v => `<td class="${typeof v === 'number' || /^[-+\d\s.,/–%°]{0,24}$/.test(String(v ?? '')) ? 'f-num' : 'fu-txt'}">${show(v)}</td>`,
-    box = (attr, on) => before ? `<td><input type="checkbox" ${attr}${on ? ' checked' : ''}></td>` : '<td></td>',
-    ff = r => [r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x !== null && x !== undefined && x !== '').join(' / '),
-    gone = (before?.rpmFuelCurve || []).filter(r => r.rpm !== null && r.rpm !== '' && !(after.rpmFuelCurve || []).some(a => rpmKey(a) ===
-      rpmKey(r)));
-  S.pending = {
-    source: o.source || 'edit',
-    before,
-    after,
-    diff,
-    gone
+  const raw = S.sheets.find(x => x.id === b.closest('[data-id]')?.dataset.id);
+  if (!raw) return;
+  S.flight.aircraft = {
+    sheetId: raw.id,
+    type: raw.icao || raw.type || '',
+    registration: raw.registration || '',
+    callsign: raw.callsign || '',
+    name: raw.name || raw.id,
+    source: 'sheet'
   };
-  S.body.innerHTML = `<div class="f-card"><h2>${esc(before ? tt(TX.review) : tt(TX.reviewNew, { n: after.name || after.id }))}${o.src ? ` <span class="f-muted">· ${esc(o.src)}</span>` : ''}</h2>
-    ${rows.length || diff.curve.length || gone.length ? `<div class="f-scroll"><table class="f-table"><thead><tr><th></th><th>${esc(tt(TX.field))}</th><th class="f-num">${esc(tt(TX.before))}</th><th class="f-num">${esc(tt(TX.after))}</th></tr></thead><tbody>
-      ${rows.map(r => `<tr>${box(`data-path="${esc(r.path)}"`, !o.checked || o.checked(r.path))}<td>${esc(fieldLabel(r.path, true))}</td>${cell(r.old)}${cell(r.now)}</tr>`).join('')}
-      ${diff.curve.map(c => `<tr>${box(`data-curve="${esc(c.key)}"`, true)}<td>RPM ${esc(c.label)} <span class="f-muted">(${esc(tt(c.kind === 'added' ? TX.added : TX.replaced))})</span></td><td class="f-num">${esc(c.old)}</td><td class="f-num">${esc(c.now)}</td></tr>`).join('')}
-      ${gone.map((r, i) => `<tr>${box(`data-gone="${i}"`, true)}<td>RPM ${esc(r.rpm)}${r.altFt !== null && r.altFt !== undefined && r.altFt !== '' ? ` @ ${esc(r.altFt)} ft` : ''} <span class="f-muted">(${esc(tt(TX.rpmGone))})</span></td><td class="f-num">${esc(ff(r))}</td><td class="f-num">—</td></tr>`).join('')}
-    </tbody></table></div>` : `<p class="f-muted">${esc(tt(TX.reviewNone))}</p>`}
-    <div class="f-row"><button type="button" class="primary" data-do="apply">${esc(tt(TX.apply))}</button><button type="button" data-do="cancel">${esc(tt(TX.cancel))}</button></div></div>`;
-}
-/** Écrit la sélection de l'aperçu (champs décochés gardés tels qu'avant), puis la fiche suivante de la file. */
-async function applyReview() {
-  const F = SH(),
-    {
-      before,
-      after,
-      diff
-    } = S.pending,
-    skip = new Set([...S.body.querySelectorAll('[data-path]')].filter(i => !i.checked).map(i => i.dataset.path)),
-    skipCurve = new Set([...S.body.querySelectorAll('[data-curve]')].filter(i => !i.checked).map(i => i.dataset.curve)),
-    out = before ? F.pickChanges(before, after, diff, {
-      skip,
-      skipCurve
-    }) : after;
-  // lignes RPM retirées mais décochées : remises
-  for (const i of S.body.querySelectorAll('[data-gone]'))
-    if (!i.checked) out.rpmFuelCurve = [...(out.rpmFuelCurve || []), structuredClone(S.pending.gone[+i.dataset.gone])];
-  if (!before) out.id = uniqueId(out.id);
-  const s = S;
-  await storeSheet(out, S.pending.source);
-  if (gone(s)) return;
-  S.pending = null;
-  if (S.queue?.length) return proposeIncoming(S.queue);
-  return S.edit && S.sheets.some(x => x.id === S.edit.id) ? renderEditor(S.edit.id) : renderSheets();
+  saveFlight();
+  return show('plan');
 }
 // ---------------------------------------------------------------- plan de vol pour les simulateurs (V3 § 10.28)
 /** Nombre de points de la route qui ont une position : l'export en demande deux. */
@@ -4827,7 +4271,7 @@ export async function mount(el, ctx) {
     S.A = A;
     await readSheets();
     if (gone(self)) return;
-    if (S.view === 'sheets' && !S.edit && !S.pending) keepScroll(S.body, renderSheets);
+    if (S.view === 'sheets') keepScroll(S.body, renderSheets);
     else if (S.view === 'plan') refresh();
   }));
   S.stops.push(ctx.data.watch(pilotPath('current_flight.json'), async () => {
@@ -4929,7 +4373,7 @@ async function completeMount(self) {
   // logique des fiches d'aerodb : types, fiches et flotte réglés par aerodb ; ici la fiche active, la langue, les textes
   SH()?.configure({
     profiles: () => Object.fromEntries(S.sheets.map(p => [p.id, p])),
-    active: () => S.edit || S.C?.sheet || null,
+    active: () => S.C?.sheet || null,
     lang: () => ctx.lang(),
     t: row => ctx.t(row),
     tf: (row, vals) => ctx.t(row, vals)
@@ -4951,7 +4395,7 @@ async function completeMount(self) {
   }
   S.refsPending = false;
   if (S.view === 'plan') renderPlan();
-  else if (!S.edit && !S.pending) keepScroll(S.body, renderSheets);
+  else keepScroll(S.body, renderSheets);
   wasPending ? flightReady() : resumeFlight();
 }
 

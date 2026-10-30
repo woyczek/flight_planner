@@ -153,25 +153,16 @@ tienen.
 
 ## Fichas de rendimiento <a id="fuel-sheets"></a>
 
-La pestaña «Fichas» reúne las fichas de la aerolínea, compartidas con todos sus dispositivos. Están ordenadas por
-categoría (helicópteros, turbohélices, reactores, pistón, otros); cada tipo que usa la compañía (flota, referencia) y
-que aún no tiene ficha figura también, «rendimientos por completar», con «Crear la ficha». Cada ficha dice lo que le
-falta, por familias («Por completar: regímenes, velocidades, crucero, rodaje, pista»), o «completa» si no falta nada.
+La pestaña «Fichas» lista las fichas de la compañía, compartidas con todos sus dispositivos, **en solo lectura**: se
+modifican en Mantenimiento › Aeronaves, pestaña «Fichas». Están ordenadas por categoría (helicópteros, turbohélices,
+reactores, pistón, otros); cada tipo que usa la compañía (flota, referencia) y aún no tiene ficha figura también,
+«rendimientos por completar», con «Crear en Mantenimiento». Cada ficha dice lo que le falta, por familia («Por completar:
+regímenes, velocidades, crucero, rodaje, pista»); «completa» cuando no falta nada; la del vuelo lleva «usada para este vuelo».
 
-- **Importar**: un archivo (CSV de rendimiento, JSON, `.lnmperf` de Little Navmap, OFP de SimBrief) o un texto pegado
-  (los mismos, o la respuesta de ChatGPT). Una ficha sacada de un OFP se calibra con sus tiempos y su consumo reales.
-- **Nada se escribe sin usted**: cada cambio de una ficha pasa por una vista previa, una línea por valor, antes y
-  después. Desmarque lo que no quiera tomar, luego «Aplicar la selección». Una fila de la tabla de regímenes que se
-  quitaría también aparece: desmarcada, se queda.
-- **Completar una ficha**: «Completar (EUROCONTROL)» propone los valores conocidos del tipo; los que sustituirían un
-  valor ya introducido llegan desmarcados. «Completar desde otra ficha» solo rellena los campos vacíos.
-- **ChatGPT**: «Copiar la petición a ChatGPT» prepara la pregunta para el tipo (o solo para los campos vacíos); péguela
-  en ChatGPT, luego su respuesta tal cual en la zona prevista, y «Leer».
-- **Modificar, exportar**: el editor muestra los campos por grupo. En una pantalla de ordenador, la tabla régimen /
-  flujo se modifica fila por fila; en un teléfono es de solo lectura. Exportaciones `.lnmperf` y JSON; eliminación tras
-  confirmación. La célula (avión, helicóptero, planeador…) y la propulsión (pistón, turbohélice, turboeje, reactor…) vienen de
-  la base OACI del tipo: deje «auto» salvo que la base se equivoque o no conozca el tipo; entonces ni se cuentan como
-  faltantes ni se piden a ChatGPT.
+- **Usar**: elige esta ficha para el vuelo y vuelve al cálculo.
+- **Modificar en Mantenimiento**: el nombre de la ficha y este botón abren su editor en la misma pestaña. Ahí se hacen la
+  importación (archivo, texto pegado, respuesta de ChatGPT), los complementos EUROCONTROL, la vista previa campo por campo
+  antes de escribir, el origen y la fecha de cada campo, las exportaciones `.lnmperf` y JSON y la eliminación.
 
 ## Ajustes y unidades
 
@@ -193,4 +184,4 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: e0486bc63add -->
+<!-- fr: 7f87e06dbfcb -->

@@ -5,7 +5,7 @@ type, copies it to the clipboard and opens ChatGPT; the reply (the JSON, or a pe
 the button, then imported as a new profile or merged with the existing profile (preview of the changes first).
 
 This document is the **single source** of the prompt: `tools/build_perf_prompt.py` derives
-`modules/fuel/perf_prompt.js` from it (also rerun by `tools/bump_versions.py`). On this V3 line the V2 planner's copy
+`modules/aircraft/perf_prompt.js` from it (also rerun by `tools/bump_versions.py`). On this V3 line the V2 planner's copy
 (`apps/planner/perf_prompt.js`) is no longer built: V2 is maintained on the branch `v2-maintenance`, its prompt stays as it
 is here. One ` ```text <language> ` block per
 page language (fr, en, de, es); the ` ```json ` block is the schema, common to the four languages.

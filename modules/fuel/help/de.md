@@ -158,28 +158,17 @@ Flugfläche, Steig- und Sinkprofil — wird geteilt: Karte und Bericht haben ihn
 
 ## Leistungsdatenblätter <a id="fuel-sheets"></a>
 
-Die Registerkarte „Datenblätter“ versammelt die Datenblätter der Fluggesellschaft, geteilt mit all ihren Geräten. Sie
-sind nach Kategorie geordnet (Hubschrauber, Turboprops, Strahlflugzeuge, Kolbenmotoren, andere); jeder Typ, den die
-Fluggesellschaft nutzt (Flotte, Referenz) und der noch kein Datenblatt hat, steht ebenfalls dort, „Leistungen
-einzutragen“, mit „Datenblatt anlegen“. Jedes Datenblatt sagt, was fehlt, nach Familien („Zu ergänzen: Drehzahlen,
-Geschwindigkeiten, Reiseflug, Rollen, Piste“), oder „vollständig“, wenn nichts fehlt.
+Der Reiter „Datenblätter“ listet die Datenblätter der Gesellschaft, geteilt mit allen ihren Geräten, **nur lesbar**: Sie
+werden in Wartung › Luftfahrzeuge, Reiter „Datenblätter“ bearbeitet. Sie sind nach Kategorie sortiert (Hubschrauber,
+Turboprops, Strahlflugzeuge, Kolbenmotoren, Andere); jeder von der Gesellschaft genutzte Typ (Flotte, Referenz) ohne
+Datenblatt steht ebenfalls dort, „Leistungen einzutragen“, mit „In der Wartung anlegen“. Jedes Datenblatt sagt, was fehlt,
+nach Familie („Zu ergänzen: Drehzahlen, Geschwindigkeiten, Reiseflug, Rollen, Piste“); „vollständig“, wenn nichts fehlt;
+das Blatt des Fluges trägt „für diesen Flug verwendet“.
 
-- **Importieren**: eine Datei (Leistungs-CSV, JSON, `.lnmperf` von Little Navmap, SimBrief-OFP) oder eingefügter Text
-  (dasselbe oder die Antwort von ChatGPT). Ein aus einem OFP gewonnenes Datenblatt wird an dessen echten Zeiten und
-  Verbrauch kalibriert.
-- **Nichts wird ohne Sie geschrieben**: Jede Änderung eines Datenblatts geht über eine Vorschau, eine Zeile pro Wert,
-  vorher und nachher. Entfernen Sie das Häkchen bei dem, was Sie nicht übernehmen wollen, dann „Auswahl übernehmen“.
-  Eine Zeile der Leistungstabelle, die entfernt würde, steht auch dort: ohne Häkchen bleibt sie.
-- **Ein Datenblatt ergänzen**: „Ergänzen (EUROCONTROL)“ schlägt die bekannten Werte des Typs vor; solche, die einen
-  bereits eingegebenen Wert ersetzen würden, kommen ohne Häkchen. „Aus anderem Datenblatt ergänzen“ füllt nur leere
-  Felder.
-- **ChatGPT**: „ChatGPT-Anfrage kopieren“ bereitet die Frage für den Typ vor (oder nur für die leeren Felder); fügen Sie
-  sie in ChatGPT ein, dann dessen Antwort unverändert in das vorgesehene Feld, und „Lesen“.
-- **Bearbeiten, exportieren**: Der Editor zeigt die Felder nach Gruppen. Auf einem Computerbildschirm wird die Tabelle
-  Leistung / Durchfluss Zeile für Zeile bearbeitet; auf einem Telefon ist sie nur lesbar. Exporte `.lnmperf` und JSON;
-  Löschen nach Bestätigung. Zelle (Flugzeug, Hubschrauber, Segelflugzeug …) und Antrieb (Kolbenmotor, Turboprop,
-  Wellenturbine, Strahltriebwerk …) kommen aus der ICAO-Basis des Typs: „auto“ lassen, außer die Basis irrt sich oder kennt den
-  Typ nicht; sie werden dann weder als fehlend gezählt noch bei ChatGPT erfragt.
+- **Verwenden**: wählt dieses Datenblatt für den Flug und kehrt zur Berechnung zurück.
+- **In der Wartung bearbeiten**: Der Name des Datenblatts und diese Schaltfläche öffnen den Editor im selben Reiter. Dort
+  finden der Import (Datei, eingefügter Text, ChatGPT-Antwort), die EUROCONTROL-Ergänzungen, die Vorschau Feld für Feld vor
+  jedem Schreiben, Herkunft und Datum jedes Feldes, die Exporte `.lnmperf` und JSON und das Löschen statt.
 
 ## Einstellungen und Einheiten
 
@@ -203,4 +192,4 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: e0486bc63add -->
+<!-- fr: 7f87e06dbfcb -->

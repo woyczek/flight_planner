@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the sheets editor is removed, the « Fiches » list is read-only** (`modules/fuel/module.js` −556 lines, V3 § 10.34 A2
+  step 5; help ×4; F79) — sheets are edited in Maintenance › Appareils only; Fuel keeps the list, « Utiliser » and the links
+  « Modifier / Créer dans Maintenance »; `perf_prompt.js` moves to `modules/aircraft/`.
 - **Maintenance: the performance-sheets editor moves from Fuel to « Appareils »** (`modules/aircraft/sheets.js`, `sheets_texts.js`,
   V3 § 10.34 A2 step 3; help ×4; M6–M11) — Fuel's « Fiches » code moved, not rewritten (Fuel keeps its copy for now): list by
   family with search, editor, imports with the preview, export, removal; new: the origin and date of each field, the tabs

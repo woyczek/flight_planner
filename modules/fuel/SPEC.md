@@ -488,27 +488,16 @@ mount. Inside a mount, the two buttons switch as before.
     shows as a value where an altitude is a value: the climb table's altitude column (flight levels while the unit is
     ft, the altitude in metres otherwise), the vertical rate column and the manual rate field (ft/min or m/min), and the
     level in metres next to the FL in the sticky result when the unit is not ft.
-  - The Sheets screen shows and edits the sheets' own fields (kt, ft, NM, fuel unit of the sheet): it is not affected.
-- **Sheets**: the list, sorted like V2's by category (helicopters, turboprops, jets, piston engines, others: aerodb
-  `classify`), then by name: each sheet (name, type, unit, origin, what is missing named by family — "To complete: rpm, speeds, cruise…", or
-  "complete" —, date; "Use" sets it for the flight,
-  "Edit"), then the airline's types without a sheet (aerodb `fleetTypes()`: fleet and reference, aliases resolved;
-  a type is covered when a sheet's ICAO code, type or id resolves to it), "Company type (n aircraft): performance to
-  fill in", with "Create the sheet" (the "new sheet" flow without asking the code, named after the model);
-  import of files (CSV, JSON, `.lnmperf`, SimBrief OFP) or of a pasted text (the same, or a ChatGPT answer); a new
-  sheet from an ICAO code (SimBrief type data when aerodb has them); a sheet from the last OFP (calibrated on its
-  navlog). The editor: the fields by group (labels in the four languages; airframe and propulsion are lists whose empty
-  choice reads "auto · <what the ICAO base says>"), the RPM table (edited row by row on a
-  computer screen, wider than 760 px: RPM, altitude, minimum, nominal and maximum flow, rows added or removed; read only
-  on a phone), completion from
-  EUROCONTROL or from another sheet, the ChatGPT request (whole sheet or empty fields, copied) and its answer pasted,
-  export `.lnmperf` and JSON, deletion after a question.
-- **Every change of a sheet goes through a preview**: one line per changed field and per RPM row, before and after,
-  ticked by default (a EUROCONTROL value replacing a filled field is not ticked); "Apply the selection" writes only the
-  ticked lines (`pickChanges`), dated `updatedAt`. A removed RPM row is a line too: unticked, it stays. A new sheet is shown whole, without boxes. Several sheets read at
-  once are previewed one after the other.
-- **Writes**: the sheets database whole (sheets without their working keys `_…`, the other fields of the file kept);
-  the current flight after a quiet time (read again, own fields changed, the rest kept, `updated_at`); the settings
+  - The Sheets screen shows the sheets' own fields (kt, ft, NM, fuel unit of the sheet): it is not affected.
+- **Sheets** (read-only since 30 Oct 2026; the editor moved to Maintenance › Appareils, `modules/aircraft/`, § 10.34 A2 step 5):
+  the list, sorted like V2's by category (helicopters, turboprops, jets, piston engines, others: aerodb `classify`), then
+  by name: each sheet (name, type, unit, origin, what is missing named by family — "To complete: rpm, speeds, cruise…", or
+  "complete" —, date; the sheet of the current flight marked "used for this flight"; "Use" sets it for the flight; the
+  name and "Edit in Maintenance" are plain links to `?app=maintenance#aircraft?sheet=<id>`, same tab), then the airline's
+  types without a sheet (aerodb `fleetTypes()`: fleet and reference, aliases resolved; a type is covered when a sheet's ICAO
+  code, type or id resolves to it), "Company type (n aircraft): performance to fill in", with "Create in Maintenance"
+  (`?app=maintenance#aircraft`). No field, import, preview or removal here: one editor, in Maintenance (its SPEC § 4).
+- **Writes**: the sheets are never written by Fuel; the current flight after a quiet time (read again, own fields changed, the rest kept, `updated_at`); the settings
   likewise. A change of the current flight written elsewhere (maps, another device) redraws the screen when no field
   has the focus.
 - **Phone**: no horizontal scroll at 375 px (wide tables scroll inside their block), touch targets of the frame

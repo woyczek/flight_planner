@@ -74,9 +74,9 @@ Registre view comes with its step. The cards of the two views are marked `data-p
   (Fuel's flight choice) and « Depuis le dernier OFP » (no OFP in Maintenance; the pasted OFP still imports). Added: the
   origin line under each filled field (`<small data-origin="<path>">`, `source · dd/mm` from `sheets.origins`, the kept
   values in its tooltip), a search on the list, the tabs, `#aircraft?sheet=<id>`, and the status line (§ 6). The ChatGPT
-  prompt text is Fuel's `perf_prompt.js`, loaded from there (`meta.files`).
+  prompt text is `perf_prompt.js`, moved here from Fuel in step 5 (`meta.files`).
 
-## 5. Fuel's « Fiches » view (decided 30 Oct 2026: one editor, here)
+## 5. Fuel's « Fiches » view (decided 30 Oct 2026: one editor, here; **done**, step 5)
 
 Fuel already has a sheets editor (list, form, imports, preview, export: `modules/fuel/module.js`, about 900 lines). Two
 editors of the same files is the duplication the 30/10 inventory asks to remove. Proposed: the editor lives in
