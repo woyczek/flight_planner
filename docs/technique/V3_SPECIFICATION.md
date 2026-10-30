@@ -1113,6 +1113,16 @@ redesigned for touch at that point.
          threshold** ("06", "24"), with the threshold vector when it lands and without it meanwhile, and the
          aerodrome's pin shows its **name beside the code** ("LFPO Paris-Orly", the name rule of § 10.27) instead of
          the code alone; below `runwayZoom` nothing changes.
+       - **One label pass for every label the Map draws** (user, 30 Oct, Blois: a leg label "30" over the navaid
+         label "BLB 397", then along a leg "22" and "F065" repeated and overlapping; "attention aux règles de
+         recouvrement pour approche, SID, STAR aussi"): per render, the Map's own labels (leg distance and level,
+         procedure cartouches, runway designators, aerodrome names, navaids, fixes, VRP, obstacles) go through one
+         collision pass in priority order — highlighted procedure, chosen procedures, route legs, other cartouches,
+         aerodromes, navaids, fixes, the rest; a label that would overlap a higher one is slid along its anchor
+         line (a leg, a trace) within its segment, else hidden; one label per leg and per datum at the leg's
+         midpoint, distance and level in one label ("22 · F065"), only when the leg's screen length exceeds the
+         label's; a label is never repeated along a leg cut into pieces (tiles, date line). The base tiles' labels
+         are not moved; the choose mode dims them.
        Lots: fuel first (Features SOG: the transition detection in `appChoices` / `transitionsOf`, `labelOf`, the join
        in `expandedPath`, benches on LFPO's records; Fuel's own approach select uses the same rows), then maps (BUGS
        SOG: sub-rows and hues from the rule, the join on the trace, vectors withdrawn then the threshold vector).
