@@ -962,6 +962,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 110 | Refactor R-M2 + R-M5 (c): one collision pass over a closed list of ranks (9f703190c) | acceptable |
 | 111 | `base/pickup` with `zips` takes only the sources shown (8965e8c47): the hardening of 109 done | acceptable |
 | 112 | Refactor R-S3: one function saves the launcher's secrets (77264918e); `not-shown` in the Data module | acceptable, one note |
+| 113 | Map: the sheet as high as what it shows, at most half the view (06dcd175b) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1990,6 +1991,11 @@ outlives the call; a failure shows the launcher's text and asks for the input ag
 `at`. The Data module shows `not-shown` like `changed`, with “Run the plan again”. Note: the IVAO key's field is emptied
 through its enclosing `<label>`; if the field ever leaves its label, nothing is emptied and nothing says so; empty the field
 itself when no label is found, or pass the fields to empty instead of a box.
+
+**113. The Map's sheet height (06dcd175b) — acceptable.** `sheetFit()` sets or removes four constant custom properties
+on the module's root, with pixel values computed from DOM measurements and the frame's tokens (never a string from the
+data or the address), and only when they change; the choose pane restores the sheet position it found, an internal state.
+No DOM, network or storage added.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
