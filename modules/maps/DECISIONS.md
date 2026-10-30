@@ -1585,3 +1585,10 @@ SPEC § 6.11, INTEGRATION § 3 ter. Choices of the session, with their reasons:
   drag, 8 ms each on average, 12 ms at worst (the user's real base is far denser: "2 fps"); **after**, no full drawing during
   the drag, 20 copies of 0.2 ms at worst, then one full drawing at rest (14–19 ms). Case D68 holds the rule (no full drawing
   during a 20-image drag, under 16 ms of work per image).
+- **One label per airway segment, one collision pass by priority (30 Oct, « toujours ce recouvrement »).** The leg towards Le
+  Blanc showed "22" and "F065" several times along it: the corridor reads airways box by box, and the same segment came back as
+  distinct objects (frozen copies); `drawAirways` labelled each, the second one finding the middle taken and sliding further
+  along the line. Segments are now keyed by route and ends; distance and level share one line; a segment shorter than its label
+  gets none; the longer segments are placed first. The placer was already one pass per drawing, but in the wrong order: the
+  route's labels reserved before the procedures', and the towns before everything painted. The order is now the priority of
+  § 10.30 (screen, route, airway boxes, aerodromes, navaids and fixes, the rest), the towns placed at their own painting.

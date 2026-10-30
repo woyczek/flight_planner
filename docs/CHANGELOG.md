@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: one label per airway segment, one collision pass by priority** (`modules/maps/render_airspace.js`, `render.js`; maps
+  SPEC, DECISIONS; noreg D67; user, 30 Oct: "toujours ce recouvrement", the leg towards Le Blanc). The same segment read by
+  several boxes of the corridor was labelled once per copy, the copies sliding along the line ("22", "F065" repeated). A segment
+  is now drawn and labelled once, distance and level on one line ("22 · F065"), only when it is longer on screen than its
+  label, the longer segments first. The labels' single collision pass now follows the priority of V3 § 10.30: the procedures
+  (highlighted, then chosen), the route's segments, the airway boxes, aerodromes, navaids and fixes, then the rest (the towns no
+  longer reserve their room before everything else).
 - **Map: fluid panning on a dense map** (`modules/maps/draw.js`, `screen.js`, `render.js`; maps DECISIONS; noreg D68; user, 30 Oct:
   "déplacement de carte sur la région de Paris : très saccadé (2 fps ?)"). Every move event of the base map redrew the whole
   overlay — every airspace ring re-projected, every label placed again, several times per frame. During a gesture the last full

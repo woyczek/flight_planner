@@ -1694,3 +1694,29 @@ def d68(c):
     c.ok(len(during['follows']) >= 10, f"{len(during['follows'])}", 'the drawn image follows the gesture')
     worst = max(during['follows'] or [0])
     c.le(round(worst, 1), 16, 'under 16 ms of work per image of the drag', what=f'worst image {worst:.1f} ms')
+
+
+# ------------------------------------------------------------------------------------------------------ D67
+_AW_JS = """(n) => { const PA = MapsRender.parts.airspace, pl = SiaAero.placer(), cv = document.createElement('canvas'); cv.width = 800; cv.height = 800;
+  const ctx = cv.getContext('2d'), toC = (lat, lon) => ({ x: (lon - 1) * 400, y: (47.5 - lat) * 400 }),
+    seg = (route, a, b, nm, lower) => ({ route, nm, lower, a: { id: a[0], lat: a[1], lon: a[2] }, b: { id: b[0], lat: b[1], lon: b[2] } }),
+    long = seg('A34', ['NEVER', 47.4, 1.5], ['LEBLA', 46.6, 1.5], 22, 6500),
+    short = seg('B12', ['TINY1', 47.0, 1.8], ['TINY2', 46.99, 1.8], 1, 3000),
+    list = [long, ...Array.from({ length: n }, () => ({ ...long, a: { ...long.a }, b: { ...long.b } })), short],
+    profile = { elements: { airwaysLow: true, airwaysHigh: true, awLabels: true } },
+    env = { theme: MapsRender.tokens(), pal: MapsRender.palette(false), placer: pl },
+    ends = PA.drawAirways(ctx, list, toC, 1, { s: 46, n: 48, w: 0, e: 3 }, pl, profile, 'near', new Set(), env);
+  return ends.hits.map(h => h.g.route) }"""
+
+
+@case('D67', 'One label per airway segment, distance and level on one line, none on a segment shorter than its label', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False,
+      rule='user 30 Oct (« toujours ce recouvrement », the leg towards Le Blanc): the same segment read by several boxes of the corridor came as distinct objects, the second slid its label further along the same line; a segment is drawn and labelled once, "22 · F065" on one line, the longer segment kept when two labels would overlap')
+def d67(c):
+    c.open('maps', docs=fdocs(flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.until("() => !!(window.MapsRender && window.MapsRender.parts && window.MapsRender.parts.airspace && window.SiaAero)", timeout=10000,
+            what='the render parts')
+    hits = c.js(_AW_JS, 3)
+    c.eq(hits.count('A34'), 1, 'a segment read four times (four boxes of the corridor) is labelled once', what=f'labels {hits}')
+    c.eq(hits.count('B12'), 0, 'a segment shorter on screen than its label has none (its line stays)', what=f'labels {hits}')

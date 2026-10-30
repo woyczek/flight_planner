@@ -214,7 +214,14 @@
       f = 8.5 * PT * scale * .8;
     ctx.save();
     ctx.lineCap = 'round';
+    // un tronçon une seule fois (V3 maps, 30 octobre : « toujours ce recouvrement ») : lu par plusieurs boîtes du couloir, le même
+    // tronçon arrivait en objets distincts ; le second, trouvant le milieu pris, glissait son étiquette plus loin sur le même trait
+    const once = new Set(),
+      endKey = e => e?.id || `${(+e?.lat).toFixed(4)},${(+e?.lon).toFixed(4)}`;
     for (const g of airways) {
+      const k = [g.route, ...[endKey(g.a), endKey(g.b)].sort()].join('|');
+      if (once.has(k)) continue;
+      once.add(k);
       const high = (+g.lower || 0) >= 19500 || /^U/.test(g.route);
       if (high ? !hi : !lo) continue;
       if (!inBox(t, g.a.lat, g.a.lon) && !inBox(t, g.b.lat, g.b.lon)) continue;
@@ -243,7 +250,9 @@
       });
     }
     // les noms après TOUS les traits (V3 maps, 24 Oct : « les noms des AWY au-dessus des traits, pas l'inverse ») : posés dans la
-    // boucle des traits, ils étaient barrés par les voies tracées ensuite
+    // boucle des traits, ils étaient barrés par les voies tracées ensuite ; les plus longs tronçons d'abord (deux étiquettes voisines
+    // qui se recouvriraient : celle du plus long reste)
+    named.sort((x, y) => y.len - x.len);
     for (const {
         g,
         P,
@@ -261,8 +270,11 @@
       if (ang < -Math.PI / 2) ang += Math.PI;
       const along = onRoute.has(`${g.a?.id}|${g.b?.id}`),
         lvl = +g.lower >= 1000 ? `F${String(Math.round(+g.lower / 100)).padStart(3, '0')}` : '',
+        nm = el(profile, 'awLabels') !== false && Number.isFinite(+g.nm) ? String(Math.round(+g.nm)) : '',
+        sub = [nm, tier !== 'far' ? lvl : ''].filter(Boolean),
         w = g.route.length * f * .62 + 6 * scale,
-        r = Math.max(w, f * 3) / 2 + 2,
+        ws = sub.join(' · ').length * f * .85 * .6,
+        r = Math.max(w, ws, f * 3) / 2 + 2,
         at = u => ({
           x: P.x + (Q.x - P.x) * u,
           y: P.y + (Q.y - P.y) * u
@@ -277,7 +289,7 @@
         lim = Math.min(.45, Math.max(0, .5 - (r + 4) / Math.max(1, len))),
         spots = [0, .1, -.1, .2, -.2, .3, -.3, .4, -.4].filter(d => Math.abs(d) <= lim).map(d => at(.5 + d)),
         c = pl ? spots.find(q => !seen.has(`${g.route}|${Math.round(q.x / 90)}|${Math.round(q.y / 90)}`) && pl.take(box(q))) : spots[0];
-      if (!c) continue;
+      if (!c || len < 2 * r) continue; // le tronçon plus court que son étiquette : pas d'étiquette (le trait reste)
       const {
         x,
         y
@@ -304,15 +316,24 @@
         ctx.textBaseline = 'middle';
         ctx.fillStyle = env.theme.bg;
         ctx.fillText(g.route, 0, 0);
-        if (lvl && tier !== 'far') {
+        // une seule ligne sous le cartouche : la distance (couleur de la voie), puis le niveau minimal (rouge), « 22 · F065 »
+        if (sub.length) {
           ctx.font = `700 ${f * .85}px Arial,sans-serif`;
-          ctx.fillStyle = env.pal.airwayLevel;
-          ctx.fillText(lvl, 0, f * 1.35);
-        }
-        if (el(profile, 'awLabels') !== false && Number.isFinite(+g.nm)) {
-          ctx.font = `700 ${f * .85}px Arial,sans-serif`;
-          ctx.fillStyle = col;
-          ctx.fillText(String(Math.round(+g.nm)), 0, -f * 1.3);
+          const parts = nm && sub.length > 1 ? [
+              [nm, col],
+              [' · ', col],
+              [sub[1], env.pal.airwayLevel]
+            ] : [
+              [sub[0], nm ? col : env.pal.airwayLevel]
+            ],
+            tw = parts.reduce((a, [t]) => a + ctx.measureText(t).width, 0);
+          let px = -tw / 2;
+          ctx.textAlign = 'left';
+          for (const [t, cl] of parts) {
+            ctx.fillStyle = cl;
+            ctx.fillText(t, px, f * 1.35);
+            px += ctx.measureText(t).width;
+          }
         }
         ctx.restore();
       };

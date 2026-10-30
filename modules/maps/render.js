@@ -1211,12 +1211,15 @@
       pts = {},
       vrpHits = [],
       zoneLabels = [];
+    // une seule passe de collision (le placeur pl), dans l'ordre des priorités (V3 § 10.30) : les libellés de l'écran (procédure
+    // surlignée, puis choisies), les tronçons de la route, les cartouches des voies, les terrains, les balises et fixes, le reste
+    // (points de report, espaces, villes) ; une étiquette sans place glisse le long de son ancre, sinon elle se cache
     const layers = [{
+      id: 'screenLabels', // l'écran réserve ses libellés d'abord (procédure surlignée, puis choisies)
+      reserve: () => reserve && reserve(pl)
+    }, {
       id: 'routeLabels',
       reserve: () => labels = PR.routeLabels(route, toC, scale, pl, mk, level, env)
-    }, {
-      id: 'screenLabels', // l'écran réserve ses libellés (procédures choisies) juste après ceux de la route
-      reserve: () => reserve && reserve(pl)
     }, {
       id: 'zoneShapes',
       paint: c => PA.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes')
@@ -1290,9 +1293,11 @@
       reserve: () => reservePoints(pl, mission?.points, toC, scale, profile),
       paint: c => drawMissionPoints(c, mission?.points, toC, W, H, scale, profile)
     }, {
-      id: 'cities',
-      reserve: () => towns = cityList(shown.cities, profile, toC, bbox, scale, pl),
-      paint: c => drawCities(c, towns, profile, scale, W, H)
+      id: 'cities', // les villes après les terrains, balises et points de report : leur place n'est plus réservée d'avance
+      paint: c => {
+        towns = cityList(shown.cities, profile, toC, bbox, scale, pl);
+        drawCities(c, towns, profile, scale, W, H);
+      }
     }, {
       id: 'route',
       paint: c => PR.drawRoute(c, route, toC, scale, labels, {

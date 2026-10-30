@@ -107,7 +107,11 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   `MapsRender.palette(dark)`, day and night, read by the renderer and the screen (procedures, legend, position, barbs); the
   "paper" colours stay the design tokens (`tokens`, `themed`).
   In the code (V3 § 10.29 d) this order is **one list of layers** in `draw()`, each `{ id, reserve(), paint(ctx) }`: every
-  reservation first, in the order of the list (`routeLabels`, `screenLabels`, `missionPoints`, `cities`), then every painting:
+  reservation first, in the order of the list (`screenLabels`, `routeLabels`, `missionPoints`), then every painting, the
+  `cities` placing their names at their own painting (V3 § 10.30: **one collision pass** per drawing, the placer `pl`, by
+  priority — the screen's labels (the highlighted procedure, then the chosen ones), the route's segments, the airway boxes, the
+  aerodromes, the navaids and fixes, then the rest; a label without room slides along its anchor or is left out; the base
+  map's own labels do not move):
   `zoneShapes`, `airways`, `points` (aerodromes, navaids, airway fixes), `aar`, `nat`, `airwayNames`, `vrp`, `zoneLabels`,
   `gridMora`, `missionZones`, `missionPoints`, `cities`, `route`, `dim` (the choose mode: `dim` option, 0 to 1, the share by which what is
   already painted fades), `screenTraces` (the screen's `overRoute`: the chosen
@@ -121,8 +125,12 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   `densify(data, tier, profile)`; mission maps are drawn in full; with `vfrDensity`, VRP at every tier):
   - far: large aerodromes only, no navaids, airways with their boxed names;
   - mid: plus the airway points and the minimum level under each name ("F195");
-  - near: everything, plus each segment's distance (NM) above the name, the true tracks near both ends ("097°"), VRP
-    and obstacles.
+  - near: everything, plus each segment's distance (NM) with the level on one line under the name ("22 · F065"), the true
+    tracks near both ends ("097°"), VRP and obstacles.
+  An airway segment is drawn and labelled **once** (keyed by its route and both ends: the corridor's several boxes give the
+  same segment as distinct objects, and the second used to slide its label further along the same line), only when the
+  segment is longer on screen than its label; the longer segments are placed first (two labels that would overlap: the
+  longer segment's stays).
 - **Airways** (`drawAirways`), as en-route charts: low airways solid blue, high airways dashed purple, the name in a
   filled box laid on the segment (readable left to right), at its middle; when that place is taken (the route's labels are
   reserved first) the box slides along the segment, never beside it, and is left out if no place is free. The box of an
