@@ -70,58 +70,74 @@ import {
   sameSrc
 } from './light.js';
 
-// ---------------------------------------------------------------- un dessin par tour d'animation
-let frame = 0;
-/** Dessin complet au prochain tour d'animation (un seul, quel que soit le nombre de demandes). */
-const request = () => {
-  if (!frame) frame = requestAnimationFrame(() => {
-    frame = 0;
-    draw();
-  });
-};
-/** Demande un dessin au prochain tour d'animation ; pendant un geste sur la carte (S.moving), la demande attend le repos (un survol,
- *  une lecture qui aboutit ne relancent pas tout le dessin au milieu d'un pan). */
-export const schedule = () => {
-  if (S?.moving) return;
-  request();
-};
-/** Dessin demandé abandonné (démontage). */
-export function cancelDraw() {
-  if (frame) cancelAnimationFrame(frame);
-  frame = 0;
-  if (quick) cancelAnimationFrame(quick);
-  quick = 0;
-  clearTimeout(rest);
-}
-
-// ---------------------------------------------------------------- pendant un geste : un dessin léger, l'image gardée entre deux
+// ---------------------------------------------------------------- l'ordonnanceur : trois états (refonte R-M3)
 // (V3 maps, 30 octobre : « déplacement de carte sur la région de Paris : très saccadé », puis « le freeze de refresh est efficace
-// pour la fluidité, mais gênant pour se déplacer : un intermédiaire ? ») — pendant le mouvement, au plus un dessin léger toutes
-// les LIGHT_MS (traits seuls, light.js : rien d'étiqueté, aucune collision) ; entre deux, la dernière image est recopiée, translatée
-// et mise à l'échelle par ses deux coins géographiques ; un dessin léger de plus de LIGHT_MAX_MS sur cette base rend la main à la
-// copie seule pour le reste du geste ; le dessin complet (étiquettes, vecteurs, collisions, lectures) revient au repos : fin du
-// geste, ou 150 ms sans mouvement
+// pour la fluidité, mais gênant pour se déplacer : un intermédiaire ? ») — rest : un dessin complet par tour d'animation quand il est
+// demandé ; move : un geste — les demandes de dessin complet attendent, l'image du dernier dessin complet est copiée au premier
+// mouvement, puis au plus un dessin léger toutes les LIGHT_MS (traits seuls, light.js : rien d'étiqueté, aucune collision), la
+// copie translatée et mise à l'échelle par ses deux coins géographiques entre deux ; un dessin léger de plus de LIGHT_MAX_MS sur cette
+// base rend la main à la copie seule pour le reste du geste ; settle : fin du geste (150 ms sans mouvement), retour à rest et le
+// dessin complet (étiquettes, vecteurs, collisions, lectures), les demandes faites pendant le geste comprises
 const REST_MS = 150,
   LIGHT_MS = 120,
   LIGHT_MAX_MS = 8;
-let quick = 0,
-  rest = 0,
-  lastLight = 0;
-/** La carte bouge (événement « move » de MapLibre) : au prochain tour d'animation, le dessin léger s'il est dû et permis, sinon
- *  l'image gardée suit ; le dessin complet attend le repos. Sans image gardée (premier dessin, fond uni), le dessin complet tout de
- *  suite. */
-export function moving() {
-  clearTimeout(rest);
-  rest = setTimeout(settle, REST_MS);
-  if (!S?.map || !S.frame?.ok) return request();
-  if (!S.moving) S.lightOn = !!S.lightSrc; // un geste commence : le dessin léger permis s'il y a de quoi
-  S.moving = true;
-  if (!quick) quick = requestAnimationFrame(() => {
-    quick = 0;
-    if (!S?.map || !S.frame?.ok || frame) return;
-    if (S.lightOn && performance.now() - lastLight >= LIGHT_MS) light();
+/** L'état de l'ordonnanceur : state, la case du tour d'animation (raf, kind : 'full' l'emporte sur 'move'), la minuterie du repos,
+ *  le dernier dessin léger et s'il reste permis pour ce geste. */
+const sched = {
+  state: 'rest',
+  raf: 0,
+  kind: null,
+  rest: 0,
+  lastLight: 0,
+  lightOn: false
+};
+/** Une seule case de tour d'animation pour tous les dessins ; une demande complète l'emporte sur un mouvement déjà demandé. */
+function tick(kind) {
+  if (sched.raf) {
+    if (kind === 'full') sched.kind = 'full';
+    return;
+  }
+  sched.kind = kind;
+  sched.raf = requestAnimationFrame(() => {
+    const k = sched.kind;
+    sched.raf = 0;
+    sched.kind = null;
+    if (!S) return;
+    if (k === 'full' || !S.map || !S.frame?.bmp) return draw();
+    if (sched.lightOn && performance.now() - sched.lastLight >= LIGHT_MS) light();
     else follow();
   });
+}
+/** Demande un dessin complet au prochain tour d'animation ; pendant un geste, la demande attend le repos (un survol, une lecture
+ *  qui aboutit ne relancent pas tout le dessin au milieu d'un pan). */
+export const schedule = () => {
+  if (S && sched.state === 'rest') tick('full');
+};
+/** Dessin demandé abandonné (démontage) : l'ordonnanceur revient au repos. */
+export function cancelDraw() {
+  if (sched.raf) cancelAnimationFrame(sched.raf);
+  clearTimeout(sched.rest);
+  Object.assign(sched, {
+    state: 'rest',
+    raf: 0,
+    kind: null,
+    rest: 0,
+    lightOn: false
+  });
+}
+/** La carte bouge (événement « move » de MapLibre) : au premier mouvement d'un geste, l'image du dernier dessin complet est copiée
+ *  et le dessin léger permis s'il y a de quoi ; au prochain tour d'animation, un dessin léger s'il est dû, sinon la copie suit ; le
+ *  dessin complet attend le repos. Sans dessin complet encore (fond uni, premier dessin), le dessin complet tout de suite. */
+export function moving() {
+  clearTimeout(sched.rest);
+  sched.rest = setTimeout(settle, REST_MS);
+  if (!S?.map || !S.frame?.ok) return tick('full');
+  if (sched.state !== 'move') {
+    sched.state = 'move';
+    copyFrame();
+    sched.lightOn = !!S.lightSrc;
+  }
+  tick('move');
 }
 /** Le dessin léger (light.js) à la vue de la carte, gardé comme image à recopier jusqu'au suivant ; les chemins refaits seulement
  *  quand les listes du dernier dessin complet ont changé (mesure à part : maps:light:paths). */
@@ -151,17 +167,19 @@ function light() {
     pal: MapsRender.palette(!!S.theme.dark),
     ink: S.theme.fg
   });
-  keepFrame(W, H);
-  lastLight = performance.now();
+  markFrame(W, H);
+  copyFrame();
+  sched.lastLight = performance.now();
   performance.measure('maps:light', 'maps:light:start');
-  if (lastLight - t0 > LIGHT_MAX_MS) S.lightOn = false; // trop lourd sur cette base : la copie seule pour le reste du geste
+  if (sched.lastLight - t0 > LIGHT_MAX_MS) sched.lightOn = false; // trop lourd sur cette base : la copie seule pour le reste du geste
 }
-/** Repos (fin du geste, ou REST_MS sans mouvement) : le dessin complet, les demandes faites pendant le geste comprises. */
+/** Repos (fin du geste, ou REST_MS sans mouvement) : retour à rest et le dessin complet, les demandes faites pendant le geste
+ *  comprises. */
 export function settle() {
-  clearTimeout(rest);
+  clearTimeout(sched.rest);
   if (!S) return;
-  S.moving = false;
-  request();
+  sched.state = 'rest';
+  tick('full');
 }
 /** Recopie la dernière image complète là où ses deux coins géographiques sont maintenant (pan et zoom ; une rotation de la carte
  *  n'existe pas ici). */
@@ -178,26 +196,31 @@ function follow() {
   g.drawImage(F.bmp, a.x * dpr, a.y * dpr, (b.x - a.x) * dpr, (b.y - a.y) * dpr);
   performance.measure('maps:follow', 'maps:follow:start');
 }
-/** Garde l'image complète qui vient d'être dessinée et ses deux coins géographiques (le haut gauche et le bas droit de la carte). */
-function keepFrame(W, H) {
+/** Note les deux coins géographiques de l'image qui vient d'être dessinée (le haut gauche et le bas droit de la carte) : deux
+ *  unproject, rien n'est copié (l'image l'est au premier mouvement d'un geste, copyFrame). */
+function markFrame(W, H) {
   if (!S.map) return;
-  const F = S.frame ||= {
-      bmp: document.createElement('canvas')
-    },
-    c = S.canvas;
-  if (F.bmp.width !== c.width || F.bmp.height !== c.height) {
-    F.bmp.width = c.width;
-    F.bmp.height = c.height;
-  }
-  const g = F.bmp.getContext('2d');
-  g.clearRect(0, 0, c.width, c.height);
-  g.drawImage(c, 0, 0);
-  const p0 = S.map.unproject([0, 0]),
+  const F = S.frame ||= {},
+    p0 = S.map.unproject([0, 0]),
     p1 = S.map.unproject([W, H]);
   F.g0 = [p0.lng, p0.lat];
   F.g1 = [p1.lng, p1.lat];
   F.W = W;
   F.ok = true;
+}
+/** Copie l'image de la carte (celle des coins notés par markFrame) pour qu'elle suive le geste. */
+function copyFrame() {
+  const F = S.frame,
+    c = S.canvas;
+  if (!F) return;
+  const bmp = F.bmp ||= document.createElement('canvas');
+  if (bmp.width !== c.width || bmp.height !== c.height) {
+    bmp.width = c.width;
+    bmp.height = c.height;
+  }
+  const g = bmp.getContext('2d');
+  g.clearRect(0, 0, c.width, c.height);
+  g.drawImage(c, 0, 0);
 }
 
 // ---------------------------------------------------------------- fond uni : contours des pays
@@ -401,7 +424,7 @@ function drawAltn(ctx, toC, altn, on) {
 function draw() {
   if (!S?.canvas || !S.fit || !S.route.points.length) return;
   performance.mark('maps:draw:start');
-  clearTimeout(rest); // ce dessin complet tient lieu de celui du repos (un nouveau mouvement le redemande)
+  clearTimeout(sched.rest); // ce dessin complet tient lieu de celui du repos (un nouveau mouvement le redemande)
   mapSize();
   const {
     W,
@@ -516,7 +539,7 @@ function draw() {
   const want = wantBox(shown),
     corr = corridorFor(shown, W);
   if (!within(want, S.data?.box) || corr !== S.data?.corridor) refresh(want, corr);
-  keepFrame(W, H);
+  markFrame(W, H);
   performance.measure('maps:draw', 'maps:draw:start');
 }
 /** Zoom effectif et éléments gardés par les seuils, posés sur l'élément de la carte (data-zoom-eff, data-kept : § 18) ; écrits

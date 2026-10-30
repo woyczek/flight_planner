@@ -1686,6 +1686,12 @@ Target: every layer declares its labels `{ box(es) along an anchor, priority }`,
 **3. Panning** (`draw.js`, `screen.js`). c9238c050: `moving` / `follow` / `settle` / `request` / `schedule` and `S.moving` — four
 entry points into drawing; `keepFrame` copies the canvas after every full drawing (≈ 1.2 ms on the real base) even when nothing
 moves. Target: one scheduler with three states (draw, follow, rest), the image kept only at `movestart`.
+Done (R-M3, 30 Oct, with the light drawing of c3eed56db): one scheduler `sched` in three states (`rest`, `move`, `settle`) and
+one slot of `requestAnimationFrame` (`tick(kind)`, a full request outranking a move); `moving` / `settle` / `schedule` are its
+entries, `request` and `S.moving` / `S.lightOn` are gone. A full drawing only notes its two corners (`markFrame`); the bitmap
+is copied at the first move of a gesture and after each light drawing (`copyFrame`), no longer after every full drawing at
+rest (≈ 1.2 ms saved per drawing on the real base). Measured on the real Paris base (zoom 8.2, a 30-step drag): light
+drawings 0.2–0.5 ms, copies ≤ 0.6 ms, no full drawing during the gesture — as before.
 
 **4. Runways** (`procs.js`, `data.js`, `draw.js`). 949f7cbd7 full-length arrow of the chosen runway (§ 10.24, `procRwy`
 threshold) → the choose mode's arrows (agent) → 20233a006 24 px threshold vector from `runwayZoom` (`procRwy` removed) →

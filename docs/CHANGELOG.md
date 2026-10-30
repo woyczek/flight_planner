@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: panning scheduler, refactor without change of behaviour (R-M3, § 10.33)** (`modules/maps/draw.js`; SPEC, DECISIONS;
+  noreg D68, D65). One scheduler in three states (rest, move, settle) with one animation-frame slot replaces the four entry
+  points; the image kept for the gesture is copied at its first move only, no longer after every full drawing at rest.
+
 - **Noreg: every module loads offline before its first opening** (`tests/v3/cases/repo.py`; frame INTEGRATION § 2; noreg I26,
   known for now) — a static case: meta.files (with lazy) holds the whole chain of a module's imports, the service worker's
   list the frame's; today's gaps (Fuel, Maps, Report, Atmosphere) are listed for their owners.
