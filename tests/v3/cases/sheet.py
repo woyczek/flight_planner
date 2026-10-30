@@ -36,7 +36,8 @@ def c1(c):
     except Exception:
         raise Fail('the bench never reported done (window.__sheetBench.done)', 'a finished bench', 'frame/lib/test/sheet.html') from None
     r = c.js('({ pass: window.__sheetBench.pass, fail: window.__sheetBench.fail, rows: window.__sheetBench.rows })')
-    bad = [x for x in (r['rows'] or []) if 'FAIL' in str(x)][:3]
+    # rangées { name, ok, detail } du banc : chaque échec nommé, avec ce qu'il a mesuré
+    bad = [f"{x.get('name')} ({x.get('detail') or '-'})" for x in (r['rows'] or []) if isinstance(x, dict) and not x.get('ok')][:5]
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}", 'every assertion of the bench passes')
 
 

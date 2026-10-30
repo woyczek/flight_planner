@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Tests: C1 names the failures of the sheet bench** (`tests/v3/cases/sheet.py`): the bench's rows are
+  `{ name, ok, detail }`; the case looked for the text « FAIL » in them and always listed none. It now names up to five
+  failed assertions with what they measured.
 - **Map: one label per airway segment, one collision pass by priority** (`modules/maps/render_airspace.js`, `render.js`; maps
   SPEC, DECISIONS; noreg D67; user, 30 Oct: "toujours ce recouvrement", the leg towards Le Blanc). The same segment read by
   several boxes of the corridor was labelled once per copy, the copies sliding along the line ("22", "F065" repeated). A segment
