@@ -30,6 +30,11 @@ EXCLUDE = [':(exclude,glob)**/_index.json', ':(exclude,glob)**/_conflits/**', ':
 # index des dossiers : régénérés par le lanceur (et par l'appli en mode GitHub, depuis l'arbre), jamais suivis par git ;
 # une copie suivie dans le dépôt (écrite par une version précédente de l'appli) est retirée du suivi, jamais fusionnée
 INDEXES = [':(glob)**/_index.json']
+# chemins du pool que seul un geste de l'utilisateur commite (« Synchroniser » : run(gesture=True)) ; un passage de fond
+# (mise à jour au démarrage du lanceur, échange périodique du cadre) les laisse sur le poste : une zone de la base à
+# moitié écrite par une reconstruction ne part jamais d'elle-même (le travail de construction, D5, commite la sienne)
+GESTURE_ONLY = ['sia/base/']
+BUILD_GAP = 600  # s : une écriture de sia/base plus récente dit qu'une construction est en cours (building)
 TIMEOUT = 120
 
 try:
@@ -70,11 +75,13 @@ def git_env():
 
 
 # ---- dépôt distant de synchronisation (premier lancement : adresse précisée, vérifiée, jamais bloquante)
-# git@hôte:chemin, ssh://[utilisateur@]hôte[:port]/chemin, http(s)://[utilisateur@]hôte[:port]/chemin : jamais de
-# mot de passe ni de jeton dans l'adresse (il finirait en clair dans data/.git/config), jamais de « - » en tête
+# git@hôte:chemin, ssh://[utilisateur@]hôte[:port]/chemin, http(s)://hôte[:port]/chemin : jamais de mot de passe ni de
+# jeton dans l'adresse (il finirait en clair dans data/.git/config) — en https, aucune partie identifiant du tout : le
+# jeton seul en nom d'utilisateur (https://ghp_…@github.com/…) est la forme courante ; en ssh, l'utilisateur (git@) est
+# normal ; jamais de « - » en tête
 REMOTE_RE = re.compile(r'^(?:\w[\w.-]*@\w[\w.-]*:[\w./~-]+'
                        r'|ssh://(?:\w[\w.-]*@)?\w[\w.-]*(?::\d+)?/[\w./~-]+'
-                       r'|https?://(?:\w[\w.-]*@)?\w[\w.-]*(?::\d+)?(?:/[^\s@]*)?)$')
+                       r'|https?://\w[\w.-]*(?::\d+)?(?:/[^\s@]*)?)$')
 REMOTE_HELP = 'Adresse invalide : git@hôte:compte/dépôt.git ou https://hôte/compte/dépôt.git (sans mot de passe ni jeton dans l’adresse).'
 
 
@@ -91,7 +98,8 @@ def remote_info(data):
     if not is_repo(data):
         return {'repo': False, 'remote': '', 'url': '', 'branch': ''}
     br, _, remote = branch_info(data)
-    url = git(data, 'remote', 'get-url', remote)[1] if remote else ''
+    # adresse rendue à la page : sans partie identifiant (un dépôt réglé à la main peut porter un jeton dans .git/config)
+    url = clean_text(git(data, 'remote', 'get-url', remote)[1], data) if remote else ''
     return {'repo': True, 'remote': remote, 'url': url, 'branch': br}
 
 
@@ -118,7 +126,7 @@ def check_remote(url):
         elif re.search(r'Could not resolve|unable to access|Connection|timed out', out, re.I):
             msg = 'Hôte injoignable (réseau, nom d’hôte, pare-feu).'
         else:
-            msg = out[-300:] or 'Échec de git ls-remote.'
+            msg = clean_text(out)[-300:] or 'Échec de git ls-remote.'
         return {'ok': False, 'message': msg, 'branches': []}
     branches = [l.split('refs/heads/', 1)[1] for l in r.stdout.splitlines() if 'refs/heads/' in l]
     return {'ok': True, 'message': f'Le dépôt répond : {len(branches)} branche(s).', 'branches': branches}
@@ -143,8 +151,29 @@ def set_remote(data, url, allowed=()):
     return {'ok': code == 0, 'message': f'Dépôt distant « {name} » : {url}' if code == 0 else out}
 
 
+def clean_text(text, data=''):
+    """Texte de git rendu à la page ou journalisé : jamais d'identifiant dans une adresse (« https://compte:jeton@hôte » →
+    « https://hôte »), jamais le chemin de ce poste (dossier des données → « data », dossier de la suite → « suite »)."""
+    s = re.sub(r'://[^/@\s]+@', '://', str(text or ''))
+    for base, name in ((data, 'data'), (ROOT, 'suite')):  # data/ d'abord : il est souvent sous la suite
+        if base:
+            # chemin donné et chemin réel (data/ atteint par une jonction dans les espaces de travail), « \\ » et « / »
+            full = {os.path.abspath(base), os.path.realpath(base)}
+            for b in sorted(full | {f.replace('\\', '/') for f in full}, key=len, reverse=True):
+                s = re.sub(re.escape(b), name, s, flags=re.I)
+    return s
+
+
+def lit(env=None):
+    """Environnement de git où chaque chemin est un nom de fichier, jamais un motif (« [ab].json » n'emporte pas a.json ni
+    b.json) : pour toute commande qui reçoit des chemins de fichiers ; jamais pour POOL, EXCLUDE ou INDEXES (des motifs)."""
+    return dict(env or git_env(), GIT_LITERAL_PATHSPECS='1')
+
+
 def git(data, *args, env=None, check=False):
-    """git -C data … ; rend (code, sortie texte)."""
+    """git -C data … ; rend (code, texte) : git réussi, sa sortie standard seule — ses avertissements (sortie d'erreur :
+    « LF will be replaced by CRLF », …) vont au journal, jamais lus comme un chemin ou une valeur ; git en échec, sortie et
+    erreurs (le message rendu à la page)."""
     try:
         r = subprocess.run(git_cmd('-C', data, *args), capture_output=True, text=True, encoding='utf-8', errors='replace',
                            env=env or git_env(), timeout=TIMEOUT)
@@ -152,10 +181,46 @@ def git(data, *args, env=None, check=False):
         if check:
             raise RuntimeError(str(e))
         return 1, str(e)
-    out = (r.stdout + r.stderr).strip()
-    if check and r.returncode:
+    if r.returncode == 0:
+        _journal(args, r.stderr, data)
+        return 0, r.stdout.strip()
+    out = clean_text((r.stdout + r.stderr).strip(), data)
+    if check:
         raise RuntimeError(out or f'git {" ".join(args)} : échec')
     return r.returncode, out
+
+
+def _journal(args, err, data=''):
+    """Avertissements d'une commande git réussie (lignes « warning: ») : au journal du lanceur (sa console), pas dans ce
+    que lit le code ; le reste de sa sortie d'erreur (avancement d'un push, …) est laissé."""
+    lines = [x for x in err.splitlines() if x.startswith('warning:')]
+    if lines and sys.stderr:
+        try:
+            sys.stderr.write(''.join(f'git {args[0] if args else ""} : {clean_text(x, data)[:300]}\n' for x in lines[:20]))
+        except (OSError, ValueError):
+            pass
+
+
+def unmerged(data):
+    """Fichiers en conflit, lus dans l'index (git ls-files -u -z) : des chemins de l'index, jamais une ligne d'un message
+    de git ; sans guillemets ni échappement (-z)."""
+    try:
+        out = subprocess.run(git_cmd('-C', data, 'ls-files', '-u', '-z'), capture_output=True, env=git_env(), timeout=TIMEOUT)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    if out.returncode:
+        return []
+    return sorted({e.split('\t', 1)[1] for e in out.stdout.decode('utf-8', errors='replace').split('\0') if '\t' in e})
+
+
+def merge_pending(data):
+    """Une fusion attend dans data/ (MERGE_HEAD) : le message qui le dit ; '' sinon. Un commit du lanceur fait pendant
+    une fusion en attente la conclurait avec tout l'index, ou git le refuse : chaque commit le vérifie d'abord, avant
+    d'écrire quoi que ce soit dans data/."""
+    if os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
+        return ('Une fusion attend dans data/ (passage de synchronisation interrompu) : rien n’est écrit ni commité ; '
+                '« Synchroniser » l’annule et refait la fusion.')
+    return ''
 
 
 def blob(data, stage, path):
@@ -272,6 +337,8 @@ def divergence(data, st):
         bump('alert', {'code': 'no_remote'})
     if st.get('merging'):
         bump('alert', {'code': 'merging'})
+    if st.get('rewritten'):
+        bump('alert', {'code': 'rewritten'})
     t = thresholds(data)
     for code, n in (('changes', st.get('changes', 0)), ('age_h', st.get('oldest_h', 0) if st.get('changes') else 0),
                     ('behind', st.get('behind', 0)), ('ahead', st.get('ahead', 0)), ('outside', len(st.get('outside') or []))):
@@ -303,7 +370,8 @@ def status(data, fetch=False):
     changes = pool_changes(data)
     st = {'repo': True, 'branch': br, 'upstream': up, 'remote': remote, 'changes': len(changes),
           'oldest_h': oldest_age_h(data, changes), 'outside': outside_changes(data)[:200],
-          'ahead': ahead, 'behind': behind, 'merging': merging, 'fetched': fetched, 'last': last_sync(data)}
+          'ahead': ahead, 'behind': behind, 'merging': merging, 'fetched': fetched, 'last': last_sync(data),
+          'rewritten': bool(up) and rewritten(data, up)}
     st['divergence'] = divergence(data, st)
     return st
 
@@ -427,18 +495,40 @@ def merge_raw(path, raw):
 
 
 def resolve(data, path):
-    """Fichier en conflit résolu et ajouté ; rend {'path', 'how', 'copy'?}."""
-    full = os.path.join(data, *path.split('/'))
+    """Fichier en conflit résolu et ajouté ; rend {'path', 'how', 'copy'?}. path : un fichier en conflit de l'index
+    (unmerged), jamais un chemin hors de data/."""
+    full = data_path(data, path)
+    if not full:
+        raise RuntimeError(f'chemin en conflit refusé : {path[:200]}')
     if is_index(path):  # index régénéré : retiré du suivi, jamais fusionné (le lanceur le refait)
-        git(data, 'rm', '--cached', '-q', '--ignore-unmatch', '--', path)
+        git(data, 'rm', '--cached', '-q', '--ignore-unmatch', '--', path, env=lit())
         if os.path.isfile(full):
             os.remove(full)
         return {'path': path, 'how': 'index retiré (régénéré)'}
     out, info, lose, side = merge_raw(path, {s: blob(data, s, path) for s in (1, 2, 3)})
     open(full, 'wb').write(out)
     copy = keep_copy(data, path, lose, side) if lose is not None else ''
-    git(data, 'add', '--', path)
+    git(data, 'add', '--', path, env=lit())
     return {'path': path, **info, **({'copy': copy} if copy else {})}
+
+
+WIN_RESERVED = re.compile(r'(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³]|conin\$|conout\$)(\..*)?', re.I)
+
+
+def data_path(data, rel):
+    """Chemin relatif à data/ (séparateur « / ») → son chemin complet, ou '' (refusé) : la règle de data_file du lanceur —
+    ni « \\ », ni « : » (lecteur, flux NTFS), ni caractère de contrôle, ni chemin absolu, ni composant vide, « . » ou
+    « .. », ni composant finissant par un point ou une espace, ni nom de périphérique de Windows ; le chemin réel reste
+    sous data/."""
+    if not isinstance(rel, str) or not rel or len(rel) > 400 or rel.startswith('/') or any(c in rel for c in '\\:') or any(
+            ord(c) < 32 for c in rel):
+        return ''
+    parts = rel.split('/')
+    if any(x in ('', '.', '..') or x != x.rstrip('. ') or WIN_RESERVED.fullmatch(x) for x in parts):
+        return ''
+    full = os.path.join(data, *parts)
+    base = os.path.normcase(os.path.realpath(data))
+    return full if os.path.normcase(os.path.realpath(full)).startswith(base + os.sep) else ''
 
 
 def is_index(path):
@@ -451,15 +541,19 @@ def untrack_indexes(data, who, env):
     _, out = git(data, 'ls-files', '--', *INDEXES)
     tracked = [x for x in out.splitlines() if x.strip()]
     if tracked:
-        git(data, 'rm', '--cached', '-q', '--', *tracked, check=True)
+        git(data, 'rm', '--cached', '-q', '--', *tracked, env=lit(), check=True)
         git(data, *who, 'commit', '-m', 'Index des dossiers retirés du dépôt (régénérés)', env=env, check=True)
     return tracked
 
 
 def refused_note(res):
-    """Fichiers .js refusés à l'envoi (format des données, tools/data_guard.py), pour le compte rendu."""
+    """Fichiers .js refusés à l'envoi (format des données, tools/data_guard.py), et fichiers gardés sur le poste faute de
+    geste (GESTURE_ONLY), pour le compte rendu."""
     r = res.get('refused') or []
-    return f" {len(r)} fichier(s) .js refusé(s), pas au format des données : {', '.join(x['path'] for x in r)}." if r else ''
+    note = f" {len(r)} fichier(s) .js refusé(s), pas au format des données : {', '.join(x['path'] for x in r)}." if r else ''
+    if res.get('held'):
+        note += f" {res['held']} fichier(s) de sia/base gardés sur ce poste : « Synchroniser » les envoie."
+    return note
 
 
 def _identity(author, name=''):
@@ -470,14 +564,99 @@ def _identity(author, name=''):
 
 
 def _busy(data):
-    """Vrai si une fusion ou un rebase est en cours dans data/."""
-    return os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')) or os.path.isdir(os.path.join(data, '.git', 'rebase-merge'))
+    """Vrai si un rebase est en cours dans data/ (la fusion en attente, elle, est réglée par settle)."""
+    return any(os.path.isdir(os.path.join(data, '.git', d)) for d in ('rebase-merge', 'rebase-apply'))
 
 
-def _commit_local(data, who, env, res, label):
+def _own_staged(data):
+    """Fichiers indexés pendant une fusion en attente qui ne viennent pas d'elle (un « git add » du poste après
+    l'interruption) : ni apportés par l'autre branche, ni identiques à sa version ; un fichier changé des deux côtés est
+    tenu pour le résultat de la fusion ; les fichiers en conflit n'en sont jamais."""
+    staged = set(_files(data, 'diff', '--cached', '--name-only', '-z', 'HEAD')) - set(unmerged(data))
+    code, base = git(data, 'merge-base', 'HEAD', 'MERGE_HEAD')
+    if not staged or code:
+        return sorted(staged)
+
+    def blobs(args, col):
+        out = {}
+        for e in _files(data, *args):
+            meta, _, p = e.partition('\t')
+            if p and len(meta.split()) > col:
+                out[p] = meta.split()[col]
+        return out
+    merged = set(_files(data, 'diff', '--name-only', '-z', base, 'MERGE_HEAD'))
+    ours = set(_files(data, 'diff', '--name-only', '-z', base, 'HEAD'))
+    index, theirs = blobs(('ls-files', '-s', '-z'), 1), blobs(('ls-tree', '-r', '-z', 'MERGE_HEAD'), 2)
+    return sorted(p for p in staged if p not in merged or (p not in ours and index.get(p) != theirs.get(p)))
+
+
+def settle(data):
+    """Fusion laissée en attente dans data/ (MERGE_HEAD : passage interrompu, poste éteint en pleine fusion), jamais
+    laissée à l'utilisateur ni conclue : un commit de fusion emporterait tout l'index (des fichiers indexés avant
+    l'interruption, hors du pool, sans le contrôle des .js) ; annulée (merge --abort : les modifications du poste, indexées
+    ou non, restent dans le dossier), le passage refait la fusion proprement. Rend 'annulée' ou '' (rien en attente) ;
+    RuntimeError si git refuse de l'annuler."""
+    if not os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
+        return ''
+    # fichiers indexés par ce poste depuis l'interruption : retirés de l'index d'abord (le dossier n'y perd rien), sinon
+    # merge --abort (git reset --merge) les ramènerait à la branche — un fichier nouveau serait effacé
+    own = _own_staged(data)
+    if own:
+        git(data, 'reset', '-q', '--', *own, env=lit(), check=True)
+    code, out = git(data, 'merge', '--abort')
+    if code:
+        # git refuse : un fichier apporté par la fusion a été modifié depuis dans le dossier ; la page dit lequel mettre de côté
+        touched = sorted(set(_files(data, 'diff', '--name-only', '-z')) & set(_files(data, 'diff', '--cached', '--name-only', '-z', 'HEAD')))
+        if touched:
+            raise RuntimeError('Fusion en attente dans data/ impossible à annuler : fichier(s) modifiés depuis la fusion — '
+                               + ', '.join(touched[:20]) + ' ; à copier ailleurs (puis à retirer de data/), puis relancer.')
+        raise RuntimeError('Fusion en attente dans data/ impossible à annuler : ' + out[-300:])
+    return 'annulée'
+
+
+def _abort(data):
+    """Passage en échec : la fusion commencée est annulée (jamais de dépôt laissé à moitié fusionné) ; rend '' ou ce qui
+    reste à dire."""
+    if not os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
+        return ''
+    code, out = git(data, 'merge', '--abort')
+    return '' if code == 0 else f' Fusion impossible à annuler : {out[-200:]}'
+
+
+def _why(e, data=''):
+    """Texte d'une erreur pour la page : le message de git, sinon le type d'erreur et son texte (erreur du lanceur) ;
+    nettoyé (clean_text : ni identifiant d'adresse, ni chemin du poste)."""
+    return clean_text(str(e) if isinstance(e, RuntimeError) else f'Erreur du lanceur pendant la synchronisation ({type(e).__name__} : {e}).',
+                      data)
+
+
+def _settled_note(how):
+    return ' Fusion laissée en attente par un passage précédent : annulée, puis refaite.' if how == 'annulée' else ''
+
+
+def building(data, gap=BUILD_GAP):
+    """Vrai si un fichier de sia/base modifié sur ce poste, pas encore commité, l'a été il y a moins de gap secondes : une
+    construction de la base écrit là (page V2 par son dossier autorisé, travail du lanceur), zone par zone ; vue par
+    l'heure des fichiers, quel que soit l'écrivain."""
+    now = time.time()
+    for p in pool_changes(data, [g.rstrip('/') for g in GESTURE_ONLY]):
+        try:
+            if now - os.path.getmtime(os.path.join(data, *p.split('/'))) < gap:
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def _commit_local(data, who, env, res, label, gesture=False):
     """Fichiers du pool modifiés sur ce poste : un commit « <label> : n fichier(s) » (res['committed']) ; .js hors du format
-    des fichiers de données jamais commités (res['refused'])."""
+    des fichiers de données jamais commités (res['refused']) ; sans geste de l'utilisateur, les chemins GESTURE_ONLY
+    restent sur le poste (res['held'] : leur nombre)."""
     changes = pool_changes(data)
+    if not gesture:
+        held = [c for c in changes if any(c.startswith(g) for g in GESTURE_ONLY)]
+        changes = [c for c in changes if c not in held]
+        res['held'] = len(held)
     # .js hors du format des fichiers de données (tools/data_guard.py) : jamais commités, jamais envoyés — un script
     # glissé dans data/ (page piégée, dossier autorisé) ne se propage pas aux autres postes
     for p in [c for c in changes if c.lower().endswith('.js') and os.path.isfile(os.path.join(data, *c.split('/')))]:
@@ -486,11 +665,141 @@ def _commit_local(data, who, env, res, label):
             changes.remove(p)
             res['refused'].append({'path': p, 'why': why})
     if changes:
-        git(data, 'add', '-A', '--', *changes, check=True)  # fichiers modifiés seuls (dossier du pool absent : pas d'erreur)
+        git(data, 'add', '-A', '--', *changes, env=lit(env), check=True)  # fichiers modifiés seuls (dossier du pool absent : pas d'erreur)
         code, _ = git(data, 'diff', '--cached', '--quiet')
         if code:
             git(data, *who, 'commit', '-m', f'{label} : {len(changes)} fichier(s)', env=env, check=True)
             res['committed'] = len(changes)
+
+
+# historique du dépôt réécrit (sources purgées puis poussé en forcé, 30 oct. 2026) : aucun ancêtre commun avec la branche
+# distante ; jamais fusionné, repris par un geste (rewritten_resume)
+REWRITTEN_MSG = ('L’historique du dépôt des données a été réécrit : rien n’est fusionné, les écritures de ce poste restent '
+                 'dans data/. Réglages › Administration › Dépôt distant : « Reprendre le nouvel historique ».')
+
+
+def _target(data):
+    """(branche distante suivie ou <distant>/<branche>, distant) ; ('', '') sans dépôt distant."""
+    br, up, remote = branch_info(data)
+    return (up or (f'{remote}/{br}' if remote and br else '')), remote
+
+
+def rewritten(data, target=''):
+    """Vrai si la branche distante déjà récupérée n'a aucun ancêtre commun avec HEAD : son historique a été réécrit."""
+    target = target or _target(data)[0]
+    if not target or git(data, 'rev-parse', '--verify', '--quiet', target)[0] or git(data, 'rev-parse', '--verify', '--quiet', 'HEAD')[0]:
+        return False
+    return git(data, 'merge-base', 'HEAD', target)[0] == 1  # 1 : aucun ancêtre commun (sans erreur)
+
+
+def _tree_match(data, target):
+    """Le dernier commit de HEAD dont l'arbre est aussi celui d'un commit du nouvel historique : (ancien, nouveau) ; None
+    sinon. La réécriture garde les arbres (mêmes fichiers) : cet état commun sert de base à la reprise."""
+    _, theirs = git(data, 'log', '--format=%H %T', target)
+    trees = {}
+    for line in theirs.splitlines():
+        h, _, t = line.partition(' ')
+        trees.setdefault(t, h)  # le plus récent d'abord
+    _, ours = git(data, 'log', '--format=%H %T', 'HEAD')
+    for line in ours.splitlines():
+        h, _, t = line.partition(' ')
+        if t in trees:
+            return h, trees[t]
+    return None
+
+
+def _changed_names(data, a, b):
+    """Chemins changés entre deux commits, tels quels (-z : ni guillemets ni octets échappés pour un nom accentué)."""
+    _, out = git(data, 'diff', '-z', '--name-only', a, b)
+    return [x for x in out.split('\0') if x.strip()]
+
+
+def rewritten_plan(data, fetch=True, env=None):
+    """Ce que ferait la reprise du nouvel historique, sans rien changer : { ok, rewritten, commits (de ce poste depuis
+    l'état commun), files (du pool, reportés), kept (hors du pool : jamais repoussés, gardés dans la référence de
+    sauvegarde puis recopiés dans data/ tels que sur ce poste), pending (fichiers du pool pas encore commités, commités
+    d'abord), message }."""
+    res = {'ok': False, 'rewritten': False, 'commits': 0, 'files': [], 'kept': [], 'pending': 0}
+    if not is_repo(data):
+        return {**res, 'message': 'data/ n’est pas un dépôt git (ou git est absent).'}
+    if _busy(data) or os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
+        return {**res, 'message': 'Une fusion ou un rebase est en cours dans data/ : synchroniser d’abord.'}
+    target, remote = _target(data)
+    if not target:
+        return {**res, 'message': 'Pas de dépôt distant : rien à reprendre.'}
+    if fetch:
+        code, out = git(data, 'fetch', '--quiet', remote, env=env)
+        if code:
+            return {**res, 'message': f'Dépôt distant injoignable : {out[-300:]}'}
+    if not rewritten(data, target):
+        return {**res, 'ok': True, 'message': 'L’historique du dépôt n’a pas été réécrit : rien à reprendre.'}
+    m = _tree_match(data, target)
+    if not m:
+        return {**res, 'rewritten': True, 'message': 'Aucun état commun entre ce poste et le nouvel historique : reprise impossible '
+                'ici (les fichiers de data/ sont intacts).'}
+    old, _new = m
+    files = _changed_names(data, old, 'HEAD')
+    _, n = git(data, 'rev-list', '--count', '--no-merges', f'{old}..HEAD')
+    return {**res, 'ok': True, 'rewritten': True, 'commits': int(n or 0), 'files': [x for x in files if in_pool(x)],
+            'kept': [x for x in files if not in_pool(x)], 'pending': len(pool_changes(data)), 'message': ''}
+
+
+def rewritten_resume(data, author, name=''):
+    """Geste « Reprendre le nouvel historique » : les fichiers du pool de ce poste commités d'abord ; l'ancienne branche
+    gardée dans refs/sog/avant-reecriture-<date> (rien n'est supprimé) ; la branche posée sur l'état commun du nouvel
+    historique (reset --keep : fichiers du poste hors du pool intacts) ; les fichiers du pool que ce poste avait changés
+    depuis cet état y sont reportés en un commit ; un fichier hors du pool n'est jamais repoussé : celui que ce poste avait
+    commité depuis l'état commun est recopié dans data/ tel quel, hors suivi ou modifié, jamais commité (le pilote ne tape
+    pas de git). Chaque chemin est un nom de fichier, jamais un motif (GIT_LITERAL_PATHSPECS). La synchronisation suivante
+    reçoit le reste du nouvel historique (fusion fiche par fiche) et envoie. Rend le plan, plus { ref, moved, copied }."""
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', author or ''):
+        return {'ok': False, 'message': 'Trigramme de l’auteur manquant ou invalide.'}
+    who, env = _identity(author, name)
+    plan = rewritten_plan(data, env=env)
+    if not plan.get('ok') or not plan.get('rewritten'):
+        return plan
+    res = {**plan, 'committed': 0, 'refused': [], 'ref': '', 'moved': 0, 'copied': 0}
+    _commit_local(data, who, env, res, f'Synchronisation {author}')
+    lenv = lit(env)  # « [ab].json » est un nom, jamais un motif
+    target = _target(data)[0]
+    old, new = _tree_match(data, target)
+    ref = f'refs/sog/avant-reecriture-{time.strftime("%Y%m%d-%H%M%S")}'
+    git(data, 'update-ref', ref, 'HEAD', check=True)
+    res['ref'] = ref
+    names = _changed_names(data, old, ref)
+    pool = [x for x in names if in_pool(x)]
+    res['kept'] = [x for x in names if not in_pool(x)]
+    code, out = git(data, 'reset', '--keep', new)
+    if code:
+        return {**res, 'ok': False, 'message': 'Reprise refusée : des fichiers de ce poste seraient écrasés '
+                f'({out[-200:]}). Rien n’a changé ; ancien état gardé dans {ref}.'}
+    try:
+        for p in pool:
+            if git(data, 'cat-file', '-e', f'{ref}:{p}')[0] == 0:
+                git(data, 'checkout', ref, '--', p, env=lenv, check=True)
+            else:
+                git(data, 'rm', '-q', '--ignore-unmatch', '--', p, env=lenv, check=True)
+        if git(data, 'diff', '--cached', '--quiet')[0]:
+            git(data, *who, 'commit', '-m', f'Reprise après réécriture de l’historique ({author}) : {len(pool)} fichier(s)', env=env, check=True)
+            res['moved'] = len(pool)
+        # fichiers hors du pool commités par ce poste depuis l'état commun : recopiés tels quels (octets), jamais commités
+        for p in res['kept']:
+            full = data_path(data, p)
+            if not full or git(data, 'cat-file', '-e', f'{ref}:{p}')[0]:
+                continue
+            r = subprocess.run(git_cmd('-C', data, 'cat-file', 'blob', f'{ref}:{p}'), capture_output=True, env=env or git_env(), timeout=TIMEOUT)
+            if r.returncode == 0:
+                os.makedirs(os.path.dirname(full), exist_ok=True)
+                with open(full, 'wb') as f:
+                    f.write(r.stdout)
+                res['copied'] += 1
+    except RuntimeError as e:
+        git(data, 'reset', '--keep', ref)  # remis comme avant le geste
+        return {**res, 'ok': False, 'message': f'Reprise interrompue ({_why(e, data)[-200:]}) : data/ remis comme avant.'}
+    res.update(ok=True, rewritten=False, message=f'Nouvel historique repris : {res["moved"]} fichier(s) de ce poste reportés ; ancien '
+               f'état gardé dans {ref}.' + (f' {res["copied"]} fichier(s) hors des données synchronisées recopiés dans data/ tels '
+                                            'quels, jamais envoyés.' if res['copied'] else ''))
+    return res
 
 
 def _receive(data, who, env, res, remote, up, br):
@@ -501,6 +810,9 @@ def _receive(data, who, env, res, remote, up, br):
     code, _ = git(data, 'rev-parse', '--verify', '--quiet', target)
     if code:
         return
+    if rewritten(data, target):  # aucun ancêtre commun : jamais fusionné (git refuserait, et sans base la fusion écraserait)
+        res['code'] = 'rewritten'
+        raise RuntimeError(REWRITTEN_MSG)
     _, before = git(data, 'rev-parse', 'HEAD')
     # fichiers du poste, modifiés ou non suivis (hors du pool : jamais commités), que la fusion écraserait : rien n'est
     # fusionné, le compte rendu les nomme (calculé, pas lu dans le message de git, qui dépend de sa langue)
@@ -519,12 +831,13 @@ def _receive(data, who, env, res, remote, up, br):
             os.remove(f)
     code, out = git(data, *who, 'merge', '--no-edit', target, env=env)
     if code:
-        _, unmerged = git(data, 'diff', '--name-only', '--diff-filter=U')
-        if not unmerged.strip():
+        # fichiers en conflit lus dans l'index (jamais dans la sortie de git, où se glissent ses avertissements)
+        paths = unmerged(data)
+        if not paths:
             raise RuntimeError(out)
         # conflits : fusion fiche par fiche
-        for path in unmerged.splitlines():
-            r = resolve(data, path.strip())
+        for path in paths:
+            r = resolve(data, path)
             if r.get('copy') or r.get('conflicts'):
                 res['conflicts'].append(r)
         git(data, *who, 'commit', '--no-edit', env=env, check=True)
@@ -553,8 +866,9 @@ def ensure_excludes(data):
         return []
 
 
-def run(data, author, name=''):
-    """Un passage de synchronisation ; rend le compte rendu (ok, committed, received, pushed, conflicts, message)."""
+def run(data, author, name='', gesture=False):
+    """Un passage de synchronisation ; rend le compte rendu (ok, committed, received, pushed, conflicts, message). gesture :
+    l'utilisateur l'a demandé (bouton « Synchroniser ») — seul ce passage commite aussi les chemins GESTURE_ONLY."""
     res = {'ok': False, 'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'author': author, 'committed': 0,
            'received': 0, 'pushed': False, 'conflicts': [], 'refused': []}
     if not is_repo(data):
@@ -564,12 +878,14 @@ def run(data, author, name=''):
         res['message'] = 'Trigramme de l’auteur manquant ou invalide.'
         return res
     if _busy(data):
-        res['message'] = 'Une fusion ou un rebase est en cours dans data/ : à terminer ou annuler à la main.'
+        res['message'] = 'Un rebase est en cours dans data/ : à terminer ou annuler à la main.'
         return res
     who, env = _identity(author, name)
     try:
+        # 0. fusion laissée en attente par un passage interrompu : conclue ou annulée
+        res['settled'] = settle(data)
         # 1. modifications de ce poste
-        _commit_local(data, who, env, res, f'Synchronisation {author}')
+        _commit_local(data, who, env, res, f'Synchronisation {author}', gesture)
         # index suivis sur ce poste (reçus d'une version précédente, puis refaits par le lanceur) : retirés du suivi
         # d'abord, sinon la fusion refuserait d'écraser la copie refaite
         res['untracked'] = untrack_indexes(data, who, env)
@@ -588,11 +904,10 @@ def run(data, author, name=''):
         git(data, 'push', *([] if up else ['-u']), remote, f'HEAD:{br}', env=env, check=True)
         res['pushed'] = True
         res['ok'] = True
-        res['message'] = 'Synchronisé.' + refused_note(res)
-    except RuntimeError as e:
-        res['message'] = str(e)[-800:]
-        if os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
-            git(data, 'merge', '--abort')  # jamais de dépôt laissé à moitié fusionné
+        res['message'] = 'Synchronisé.' + _settled_note(res['settled']) + refused_note(res)
+    except Exception as e:  # toute erreur, git ou du lanceur : fusion annulée, message à la page (jamais au serveur)
+        res['ok'] = res['pushed'] = False
+        res['message'] = _why(e, data)[-800:] + _abort(data)
     finally:
         remember(data, res)
     return res
@@ -610,12 +925,13 @@ def update(data, author=''):
     if not is_repo(data):
         return {**res, 'message': 'data/ n’est pas un dépôt git (ou git est absent) : pas de mise à jour.'}
     if _busy(data):
-        return {**res, 'message': 'Une fusion ou un rebase est en cours dans data/ : à terminer ou annuler à la main ; données actuelles gardées.'}
+        return {**res, 'message': 'Un rebase est en cours dans data/ : à terminer ou annuler à la main ; données actuelles gardées.'}
     author = author if re.fullmatch(r'[A-Z0-9]{2,5}', author or '') else str((last_sync(data) or {}).get('author') or '')
     author = author if re.fullmatch(r'[A-Z0-9]{2,5}', author) else 'POSTE'
     who, env = _identity(author)
     res['excluded'] = ensure_excludes(data)
     try:
+        res['settled'] = settle(data)
         _commit_local(data, who, env, res, f'Modifications du poste {author}')
         res['untracked'] = untrack_indexes(data, who, env)
         br, up, remote = branch_info(data)
@@ -623,10 +939,8 @@ def update(data, author=''):
             return {**res, 'ok': True, 'message': f'{res["committed"]} fichier(s) du poste commités ; pas de dépôt distant : rien à recevoir.'}
         _receive(data, who, env, res, remote, up, br)
         res['untracked'] += untrack_indexes(data, who, env)
-    except RuntimeError as e:
-        if os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD')):
-            git(data, 'merge', '--abort')  # jamais de dépôt laissé à moitié fusionné
-        out = str(e)
+    except Exception as e:  # toute erreur, git ou du lanceur : fusion annulée, données actuelles gardées
+        out = _why(e, data) + _abort(data)
         why = ('réseau ou accès au dépôt refusé' if re.search(r'Could not resolve|unable to access|timed out|Authentication|denied|'
                                                              r'could not read|403|401', out, re.I) else out[-300:])
         return {**res, 'message': f'{res["committed"]} fichier(s) du poste commités ; réception impossible pour l’instant ({why}) : '
@@ -641,7 +955,7 @@ def update(data, author=''):
     if res['conflicts']:
         parts.append(f'{len(res["conflicts"])} fiche(s) modifiées des deux côtés : la plus récente gardée, l’autre dans _conflits/')
     res['ok'] = not res['blocked']
-    res['message'] = ' ; '.join(parts) + '.' + (' Rien n’est envoyé : « Synchroniser » le fera.' if res['committed'] else '') + refused_note(res)
+    res['message'] = ' ; '.join(parts) + '.' + _settled_note(res.get('settled')) + (' Rien n’est envoyé : « Synchroniser » le fera.' if res['committed'] else '') + refused_note(res)
     return res
 
 
@@ -682,7 +996,7 @@ def _clone_message(log):
         return 'Accès refusé : identifiant, mot de passe ou jeton, clé SSH, ou accès au dépôt pas encore donné.'
     if re.search(r'not found|does not exist|Repository not found|404', log, re.I):
         return 'Dépôt introuvable à cette adresse.'
-    return log[-400:] or 'Échec du clone.'
+    return clean_text(log)[-400:] or 'Échec du clone.'
 
 
 def _fresh(data, url, env, auth, backup, res):
@@ -770,13 +1084,13 @@ def adopt(data, url, author, env=None, name='', auth=()):
                 full = os.path.join(data, *p.split('/'))
                 if not os.path.isfile(full):
                     created.append(p)
-                    git(data, 'checkout', '--', p, check=True)
+                    git(data, 'checkout', '--', p, env=lit(), check=True)
                     continue
                 if is_index(p):  # index suivi dans le dépôt : régénéré, retiré du suivi plus bas
                     continue
                 if not in_pool(p):  # fichier de la suite (références, arbre) : celui du dépôt
                     keep_original(p)
-                    git(data, 'checkout', '--', p, check=True)
+                    git(data, 'checkout', '--', p, env=lit(), check=True)
                     res['replaced'] += 1
                     continue
                 ours = open(full, 'rb').read()
@@ -786,7 +1100,7 @@ def adopt(data, url, author, env=None, name='', auth=()):
                 if info['how'] == 'la plus récente' and stamp(ours, p) == stamp(theirs, p):
                     # sans updated_at qui les départage : la plus récente par date (fichier du poste, dernier commit du
                     # dépôt) — un fichier d'exemple ne remplace pas celui de la compagnie
-                    at = git(data, 'log', '-1', '--format=%ct', 'HEAD', '--', p)[1]
+                    at = git(data, 'log', '-1', '--format=%ct', 'HEAD', '--', p, env=lit())[1]
                     if at.isdigit() and int(at) > os.path.getmtime(full):
                         out, lose, side = theirs, ours, 'locale'
                 if out != ours:
@@ -805,7 +1119,7 @@ def adopt(data, url, author, env=None, name='', auth=()):
                 changes.remove(p)
                 res['refused'].append({'path': p, 'why': why})
         if changes:
-            git(data, 'add', '-A', '--', *changes, check=True)
+            git(data, 'add', '-A', '--', *changes, env=lit(), check=True)
             if git(data, 'diff', '--cached', '--quiet')[0]:
                 git(data, *who, 'commit', '-m', f'Reprise du poste {author} : {len(changes)} fichier(s)', env=cenv, check=True)
                 res['committed'] = len(changes)

@@ -23,13 +23,10 @@ CODE_TTL = 600  # durée d'un code (s)
 TRIES_PER_IP = 5
 LOCK_S = 60
 TRIES_HOUR = 30  # codes faux en une heure, toutes adresses : appairage fermé
-# routes /__setup/ ouvertes à un appareil appairé : celles de l'appli Pilote (relevé du lanceur, arbre et lot
+# routes /__setup/ ouvertes à un appareil appairé : déclarées là où elles sont écrites, dans launch.py (@route(…,
+# public='lan') ; table ROUTES), plus dans une liste à part : celles de l'appli Pilote (relevé du lanceur, arbre et lot
 # d'écritures de data/, passage d'échange, relais réseau, position du simulateur, fiches Little Navmap en lecture) ;
 # tout le reste (clés, clone, reprise, imports, maintenance, débrayage, réglage de cet accès) : ce poste seulement
-ROUTES = {
-    'GET': {'/__setup/status', '/__setup/changes', '/__setup/sim/position', '/__setup/lnmperf', '/__setup/lnmperf-folder'},
-    'POST': {'/__setup/batch', '/__setup/sync', '/__setup/net'},
-}
 
 _lock = threading.Lock()
 state = {'code': '', 'issued': 0.0, 'closed': False, 'fails': {}, 'wrong': []}
@@ -185,6 +182,3 @@ def forget(device=None):
         _save([] if device is None else [d for d in devices() if not d['hash'].startswith(str(device)) or len(str(device)) < 8])
 
 
-def allowed_route(method, path):
-    """Route /__setup/ ouverte à un appareil appairé (PUT : jamais)."""
-    return path in ROUTES.get(method, set())

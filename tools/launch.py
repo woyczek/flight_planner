@@ -9,13 +9,13 @@
      identifiants ; sinon, la page de premier lancement les demande (ou l'archive).
 2. Serveur web local (http://127.0.0.1, premier port libre à partir de 8000) servi depuis la racine du dossier, avec
    l'interface de la page de premier lancement (/__setup/…, voir Setup) ; déjà lancé : on ouvre seulement le navigateur.
-3. Navigateur ouvert sur la page de premier lancement (apps/settings/premier_lancement.html), qui renvoie vers
-   l'accueil une fois la suite réglée.
+3. Navigateur ouvert sur l'appli Pilote (frame/, V3) ; --page apps/settings/premier_lancement.html pour l'assistant V2,
+   --page apps/… pour une page V2.
 
 Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [--no-data]
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
-import argparse, datetime, fnmatch, glob, hashlib, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
+import argparse, base64, datetime, fnmatch, glob, hashlib, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
 import http.client, http.cookies, ipaddress, posixpath, ssl, urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
@@ -26,12 +26,14 @@ import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Main
 from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
 import version_stamps  # empreintes ?v=… posées au moment de servir (pages, scripts, feuilles des designs)
 import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Navmap) pour le cadre V3
+import relay_access  # appareils des pilotes par le relais de la compagnie (R1a) : codes, jetons, révocation
 import lan_access  # appareils du réseau local (tablette, téléphone) appairés par un code : état, essais, appareils
 import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
+import regen_jobs  # travaux longs du module Données (régénération) : un à la fois, état, annulation ; état du poste
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.path.join(ROOT, 'data')
-PAGE = 'apps/settings/premier_lancement.html'
+PAGE = 'frame/'  # l'appli Pilote (V3) ; la V2 reste servie à ses adresses (apps/…) et depuis Réglages › Administration
 try:
     sys.stdout.reconfigure(encoding='utf-8')
 except Exception:
@@ -67,6 +69,9 @@ def data_repo_url():
     l'utilisateur la donne au premier lancement)."""
     m = re.search(r'dataRepo\s*:\s*\{\s*url\s*:\s*"([^"]*)"', config_text())
     url = m.group(1).strip() if m else ''
+    # jamais d'identifiant dans une adresse https (« compte:jeton@ », ou le jeton seul : « ghp_…@ ») : il finirait affiché,
+    # journalisé, dans data/.git/config ; en ssh (git@hôte:…), l'utilisateur est normal
+    url = re.sub(r'^(https?://)[^/@\s]+@', r'\1', url, flags=re.I)
     return url if not url or url.endswith('.git') else url + '.git'
 
 
@@ -255,6 +260,28 @@ def hidden(parts):
 # ---- interface de la page de premier lancement (/__setup/…) : seulement depuis la page servie ici (adresse
 # 127.0.0.1:<port> exigée, en-tête X-SOG-Setup : une autre page web ne peut pas l'envoyer sans pré-vérification CORS,
 # à laquelle ce serveur ne répond pas)
+# routes /__setup/ du lanceur : (méthode, chemin) → (gestionnaire, public, relay) ; public 'lan' : ouverte aussi à un appareil
+# appairé du réseau local (tools/lan_access.py la lit ici) ; 'poste' (par défaut) : ce poste seulement ; relay : ouverte aussi à
+# un appareil d'un pilote par le relais de la compagnie (--relay, tools/relay_access.py ; R1a). Une route nouvelle se déclare
+# là où elle est écrite (@route), jamais dans une liste à part.
+ROUTES = {}
+ROUTE_PATHS = set()
+
+
+def route(method, *paths, public='poste', relay=False):
+    """Inscrit une méthode du serveur pour ces chemins ; public : 'lan' ou 'poste' ; relay : ouverte au relais."""
+    assert public in ('lan', 'poste'), public
+    assert not relay or public == 'lan', 'une route du relais est aussi une route du réseau local'
+
+    def deco(fn):
+        for p in paths:
+            assert (method, p) not in ROUTES, (method, p)
+            ROUTES[(method, p)] = (fn.__name__, public, bool(relay))
+            ROUTE_PATHS.add(p)
+        return fn
+    return deco
+
+
 class Setup(http.server.SimpleHTTPRequestHandler):
     port = 0
     MAX_UPLOAD = 512 * 1024 * 1024  # archive des données ou journal : 512 Mo au plus
@@ -266,6 +293,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def _local_host(self):
         """En-tête Host de cette machine : une page d'un autre site qui ferait pointer son nom vers 127.0.0.1
         (« DNS rebinding ») envoie son propre nom et se voit refuser tout le dossier, données comprises."""
+        if self._relay():  # relais : l'hôte public déclaré (--relay), venu du proxy inverse sur 127.0.0.1
+            return True
         if self._lan():  # serveur du réseau local : l'adresse privée exacte de ce poste (jamais un nom de domaine)
             return self.headers.get('Host') in LAN['hosts']
         return self.headers.get('Host') in (f'127.0.0.1:{self.port}', f'localhost:{self.port}', f'[::1]:{self.port}')
@@ -273,6 +302,158 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def _lan(self):
         """Requête reçue par un serveur du réseau local (« Ouvrir aux appareils du réseau local »)."""
         return getattr(self.server, 'lan', False)
+
+    def _relay(self):
+        """Requête du relais de la compagnie (--relay <hôte>) : arrivée par le port du relais (127.0.0.1, visé par le
+        proxy inverse du NAS seulement), quels que soient Host et les en-têtes ; jamais déduite de Host : un proxy qui
+        réécrirait Host sans en-tête de mandataire serait indiscernable du poste sur le port de l'interface."""
+        return getattr(self.server, 'relay', False) is True
+
+    def _client_ip(self):
+        """Adresse du client : en relais, la dernière de X-Forwarded-For (posée par le proxy, seul à joindre 127.0.0.1) ;
+        sinon celle de la connexion."""
+        if self._relay():
+            xs = [x.strip() for x in (self.headers.get('X-Forwarded-For') or '').split(',') if x.strip()]
+            if xs:
+                return xs[-1][:64]
+        return self.client_address[0]
+
+    def _relay_gate(self):
+        """Appareil d'un pilote par le relais : https vu par le proxy exigé, appareil appairé exigé pour tout (page
+        d'appairage pour une page demandée, 401 sinon), puis seulement les routes /__setup/ ouvertes au relais (relay=True)
+        et GET / HEAD / POST. Vrai si la requête a reçu sa réponse ici."""
+        self.relay_device = None
+        if not self._relay():
+            if not RELAY['host']:
+                return False
+            # échec fermé : un proxy qui réécrit Host (127.0.0.1:port) ferait passer une requête d'Internet pour le poste
+            # (secrets, jetons, appareils) ; de 127.0.0.1 avec un en-tête de mandataire et un autre hôte : refusée
+            if not self._lan() and self.client_address[0] in ('127.0.0.1', '::1') and any(self.headers.get(h) for h in PROXY_HEADERS):
+                self._json({'error': 'relais : le proxy doit garder l’en-tête Host'}, 403)
+                return True
+            return False
+        if not RELAY['host']:  # serveur du relais sans hôte public posé : jamais servi, ni comme relais ni comme poste
+            self._json({'error': 'relais pas prêt'}, 503)
+            return True
+        if (self.headers.get('X-Forwarded-Proto') or '').lower() != 'https':
+            self._json({'error': 'https seulement'}, 403)
+            return True
+        path = self.path.split('?', 1)[0].split('#', 1)[0]
+        if path == '/__relay/pair':
+            self._relay_pair()
+            return True
+        if path == '/__relay/whoami':  # vérification du démarrage (relay_probe) : la requête est bien arrivée en relais
+            self._json({'relay': True})
+            return True
+        jar = http.cookies.SimpleCookie()
+        try:
+            jar.load(self.headers.get('Cookie') or '')
+        except http.cookies.CookieError:
+            pass
+        dev = relay_access.paired(jar[relay_access.COOKIE].value if relay_access.COOKIE in jar else '')
+        if not dev:
+            if self.command == 'GET' and 'text/html' in (self.headers.get('Accept') or '') and not path.startswith('/__setup/'):
+                self._relay_page(safe_next(self.path), 401)
+            else:
+                self._json({'error': 'appareil non appairé'}, 401)
+            return True
+        if self.command not in ('GET', 'HEAD', 'POST'):
+            self._json({'error': 'méthode refusée'}, 405)
+            return True
+        if path == IVAO_CALLBACK:
+            self.relay_device = dev
+            self._ivao_callback()
+            return True
+        if path.startswith('/__setup/') and not ROUTES.get((self.command, path), ('', 'poste', False))[2]:
+            self._json({'error': 'réservé au poste'}, 403)
+            return True
+        self.relay_device = dev
+        return False
+
+    def _ivao_callback(self):
+        """Retour d'IVAO (?code&state) : l'état doit être celui d'une demande de cet appareil (relais) ou du poste ; le code
+        échangé avec le secret du relais ; les jetons remis une fois par le fragment de l'adresse du cadre
+        (/frame/index.html#ivao-return?…, jamais envoyé au serveur ni dans un journal ; le cadre les range et remplace
+        l'adresse aussitôt) ; une erreur : #ivao-return?error=… seulement."""
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        dev = getattr(self, 'relay_device', None) if self._relay() else None
+        r = ivao_oauth_finish(q.get('state', [''])[0], q.get('code', [''])[0], q.get('error', [''])[0],
+                              dev['id'] if dev else '', self._ivao_redirect())
+        if r.get('ok'):
+            frag = urllib.parse.urlencode({'access_token': r['access_token'], 'refresh_token': r.get('refresh_token', ''),
+                                           'expires_at': r['expires_at'], 'scope': r.get('scope', '')})
+            loc = f'/frame/index.html#ivao-return?{frag}'
+        else:
+            loc = '/frame/index.html#ivao-return?' + urllib.parse.urlencode({'error': r.get('error', 'refused')[:60]})
+        self.send_response(303)
+        self.send_header('Location', loc)
+        self.send_header('Content-Length', '0')
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Referrer-Policy', 'no-referrer')
+        self.end_headers()
+        return None
+
+    def _ivao_redirect(self):
+        """Adresse de retour déclarée chez IVAO : celle du relais (https, hôte public), sinon celle du poste."""
+        return f'https://{RELAY["host"]}{IVAO_CALLBACK}' if self._relay() else f'http://127.0.0.1:{self.port}{IVAO_CALLBACK}'
+
+    def _relay_page(self, nxt, code=200, msg=''):
+        """Page d'appairage du relais (sans script : formulaire envoyé à /__relay/pair), dans la langue du navigateur."""
+        lg = self._lan_lang()
+        tx = {k: v[lg] for k, v in RELAY_TEXT.items()}
+        e = lambda s: str(s).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+        body = (f'<!doctype html><html lang="{lg}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+                f'<title>{e(tx["title"])}</title><body style="font:17px system-ui,sans-serif;margin:0;padding:24px 16px;max-width:30em">'
+                f'<h1 style="font-size:1.3em">{e(tx["title"])}</h1><p>{e(tx["intro"])}</p>'
+                + (f'<p role="alert" style="color:#b00020"><b>{e(msg)}</b></p>' if msg else '')
+                + f'<form method="post" action="/__relay/pair"><input type="hidden" name="next" value="{e(nxt)}">'
+                f'<label>{e(tx["code"])}<br><input name="code" inputmode="numeric" pattern="[0-9]{{8}}" maxlength="8" '
+                f'autocomplete="one-time-code" required autofocus style="font-size:1.6em;letter-spacing:.2em;width:8em;margin:8px 0"></label><br>'
+                f'<button type="submit" style="font-size:1.1em;padding:8px 20px">{e(tx["pair"])}</button></form>'
+                f'<p style="color:#666;font-size:.9em">{e(tx["note"])}</p></body></html>').encode('utf-8')
+        self.send_response(code)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        # page publique du relais : jamais dans un cadre (code saisi sous une page piégée), ni script, ni formulaire ailleurs
+        self._strict_csp = "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
+        self.send_header('Referrer-Policy', 'no-referrer')
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _relay_pair(self):
+        """/__relay/pair : GET la page ; POST le code saisi, de cette page seulement (même origine) — bon : jeton en cookie
+        (HttpOnly, Secure, SameSite=Lax : un lien suivi arrive appairé ; les écritures exigent déjà la même origine),
+        retour à la page demandée ; faux ou trop d'essais : la page avec le motif."""
+        tx = {k: v[self._lan_lang()] for k, v in RELAY_TEXT.items()}
+        if self.command != 'POST':
+            return self._relay_page('/frame/')
+        site, origin = self.headers.get('Sec-Fetch-Site'), self.headers.get('Origin')
+        if not (site == 'same-origin' or (site is None and origin == f'https://{RELAY["host"]}')):
+            return self._relay_page('/frame/', 403, tx['origin'])
+        try:
+            size = min(int(self.headers.get('Content-Length') or 0), 2048)
+        except ValueError:
+            size = 0
+        form = urllib.parse.parse_qs(self.rfile.read(size).decode('utf-8', 'replace') if size > 0 else '')
+        nxt = safe_next((form.get('next') or ['/frame/'])[0])
+        res, val, tri = relay_access.attempt(self._client_ip(), (form.get('code') or [''])[0], self.headers.get('User-Agent') or '')
+        if res == 'ok':
+            self.send_response(303)
+            self.send_header('Set-Cookie', f'{relay_access.COOKIE}={val}; Path=/; Max-Age={relay_access.MAX_AGE}; HttpOnly; Secure; SameSite=Lax')
+            self.send_header('Location', nxt)
+            self.send_header('Content-Length', '0')
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            say(f'  Relais : appareil appairé pour {tri}.')
+            return None
+        if res == 'wait':
+            return self._relay_page(nxt, 429, tx['wait'].format(s=val))
+        if res == 'closed':
+            say('  Relais : trop de codes faux en une heure, appairage fermé (un nouveau code sur le poste le rouvre).')
+            return self._relay_page(nxt, 403, tx['closed'])
+        if res == 'expired':
+            return self._relay_page(nxt, 401, tx['expired'])
+        return self._relay_page(nxt, 401, tx['bad'])
 
     def _lan_gate(self):
         """Appareil du réseau local : adresse privée et hôte exact exigés, appairage (cookie) exigé pour tout — page
@@ -300,7 +481,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             else:
                 self._json({'error': 'appareil non appairé'}, 401)
             return True
-        if path.startswith('/__setup/') and not lan_access.allowed_route(self.command, path):
+        # route /__setup/ ouverte à un appareil appairé : public 'lan' dans la table ROUTES (déclarée par @route) ; PUT : jamais
+        if path.startswith('/__setup/') and ROUTES.get((self.command, path), ('', 'poste'))[1] != 'lan':
             self._json({'error': 'réservé au poste'}, 403)
             return True
         return False
@@ -335,11 +517,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def _lan_pair(self):
-        """/__lan/pair : GET la page ; POST le code saisi — bon : jeton en cookie, retour à la page demandée ; faux ou
-        trop d'essais : la page avec le motif."""
+        """/__lan/pair : GET la page ; POST le code saisi, de cette page seulement (même origine : sinon un site tiers lie
+        l'appareil avec son propre code) — bon : jeton en cookie, retour à la page demandée ; faux ou trop d'essais : la
+        page avec le motif."""
         tx = {k: v[self._lan_lang()] for k, v in LAN_TEXT.items()}
         if self.command != 'POST':
             return self._lan_page('/frame/')
+        site, origin = self.headers.get('Sec-Fetch-Site'), self.headers.get('Origin')
+        if not (site == 'same-origin' or (site is None and origin == f'http://{self.headers.get("Host") or ""}')):
+            return self._lan_page('/frame/', 403, tx['origin'])
         try:
             size = min(int(self.headers.get('Content-Length') or 0), 2048)
         except ValueError:
@@ -377,6 +563,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if not self._local_host():
             return 'hôte'
         path = self.path.split('?', 1)[0].split('#', 1)[0]
+        if self._ivao_return(path):
+            return ''
         if not self._same_origin() and not self._relaxed_navigation(path):
             return 'autre site'
         if path.startswith('/__setup/'):
@@ -397,6 +585,18 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                     return 'chemin'
                 break
         return ''
+
+    def _ivao_return(self, path):
+        """Retour d'IVAO sur le poste (R1b, essai sans relais) : navigation venue du site d'IVAO, donc d'un autre site —
+        servie seulement si tout y est : ce chemin exact en GET, document de premier plan (Sec-Fetch-Dest document,
+        Sec-Fetch-Mode navigate), requête du poste (ni réseau local ni relais ; l'hôte local est vérifié avant), et l'état
+        d'une demande en cours du poste avec son adresse de retour. Rien d'autre n'est ouvert."""
+        if path != IVAO_CALLBACK or self.command != 'GET' or self._lan() or self._relay():
+            return False
+        if self.headers.get('Sec-Fetch-Dest') != 'document' or self.headers.get('Sec-Fetch-Mode') != 'navigate':
+            return False
+        state = (urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get('state') or [''])[0]
+        return ivao_state_open(state, '', self._ivao_redirect())
 
     def _relaxed_navigation(self, path):
         """Débrayage (RELAX, jusqu'à la fermeture du lanceur) : une page de la suite ouverte depuis un autre site ou une
@@ -543,21 +743,24 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             self.send_header('Clear-Site-Data', '"cache"')
             Setup.purge = False
         self.send_header('X-Content-Type-Options', 'nosniff')
+        # page servie avec sa propre politique (appairage du relais) : jamais encadrée, jamais en cache ; une seule
+        # requête (pop : la connexion gardée ouverte sert la suivante avec les en-têtes communs)
+        strict = self.__dict__.pop('_strict_csp', '')
         # rien d'ici n'est utilisable par une autre origine : ni encadré (« Synchroniser » cliqué à l'insu du pilote),
         # ni chargé comme script ou image par un autre site (en plus du contrôle Sec-Fetch-Site)
-        self.send_header('X-Frame-Options', 'SAMEORIGIN')
+        self.send_header('X-Frame-Options', 'DENY' if strict else 'SAMEORIGIN')
         self.send_header('Cross-Origin-Resource-Policy', 'same-origin')
         # requête illisible (TLS sur le port HTTP, version inconnue) : send_error passe par ici avant que path existe
         raw = getattr(self, 'path', '') or ''
         path = raw.split('?', 1)[0].lower()
         sandbox = path.startswith('/data/') and path.endswith(SANDBOXED)
-        self.send_header('Content-Security-Policy', ("sandbox; " if sandbox else '') + csp_policy())
+        self.send_header('Content-Security-Policy', strict or ("sandbox; " if sandbox else '') + csp_policy())
         # fichier versionné par son empreinte (?v=…, tools/bump_versions.py : elle change avec le contenu) : gardé tel
         # quel, sans revalidation — une quarantaine d'allers-retours de moins par page, qui retardaient la fin de
         # l'analyse et laissaient voir la page à moitié construite ; le reste (pages, données) : revalidé à chaque fois,
         # jamais de script périmé (ni de type) en cache
         versioned = re.search(r'[?&]v=[0-9a-f]{6,}', raw)
-        self.send_header('Cache-Control', 'public, max-age=31536000, immutable' if versioned else 'no-cache')
+        self.send_header('Cache-Control', 'no-store' if strict else 'public, max-age=31536000, immutable' if versioned else 'no-cache')
         super().end_headers()
 
     def guess_type(self, path):
@@ -591,7 +794,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
 
     def do_HEAD(self):
         """HEAD : mêmes refus que GET."""
-        if self._lan_gate():
+        if self._lan_gate() or self._relay_gate():
             return None
         why = self._refused()
         if why:
@@ -629,13 +832,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         """GET : refus (chemins cachés, autre site, scripts de données hors format), index du pool refaits avant d'être
         servis, routes /__setup/, sinon fichier statique."""
-        if self._lan_gate():
+        if self._lan_gate() or self._relay_gate():
             return None
         why = self._refused()
         if why:
             return self._deny(why)
         if self._data_script_refused():
             return self._json({'error': 'fichier de données refusé (format)'}, 403)
+        if self.path.split('?', 1)[0] == IVAO_CALLBACK and not self._lan():
+            return self._ivao_callback()  # retour d'IVAO sur le poste lui-même (le relais le prend dans sa porte)
         # index du pool demandés : refaits d'abord (fichiers changés depuis le démarrage : git, autre poste, éditeur),
         # leurs signatures doivent dire vrai — une page sert sa copie d'un fichier tant que sa signature n'a pas changé
         idx = self.path.split('?')[0]
@@ -646,195 +851,11 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             with INDEX_LOCK:
                 index_users()
         self._purge = Setup.purge and re.search(r'(\.html|/)$', self.path.split('?')[0]) is not None
-        if self.path.split('?')[0] in LNMPERF_ROUTES:
-            return self._lnmperf(b'')
-        if self.path.split('?')[0] == '/__setup/status':
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            git = data_sync.git_exe()
-            return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
-                               'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
-                               'csp': True, 'relaxNav': RELAX['nav'], 'host': socket.gethostname(), 'lan': self._lan()})
-        if self.path.split('?')[0] == '/__setup/lan':
-            # accès des appareils du réseau local (Réglages du poste) : état, adresses, code — ce poste seulement
-            if not self._allowed() or self._lan():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json(lan_state())
-        if self.path.split('?')[0] == '/__setup/changes':
-            # V3 frame : tête de data/ et, si elle a changé depuis since, son arbre (transport « lanceur »)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            since = (urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('since') or [''])[0]
-            with FRAME_LOCK:
-                # appareil du réseau local : l'arbre calculé il y a moins de 2 s sert de nouveau (un lot l'efface)
-                fresh = self._lan() and _tree_memo['v'] and time.monotonic() - _tree_memo['at'] < 2
-                if fresh:
-                    head, tree = _tree_memo['v']
-                else:
-                    head, tree = frame_tree()
-                    _tree_memo.update(at=time.monotonic(), v=(head, tree))
-            return self._json({'head': head, 'same': True} if since == head else {'head': head, 'tree': tree})
-        if self.path.split('?')[0] == '/__setup/mission-folders':
-            # dossiers de missions présents (data/missions/<famille>/<id>) : le registre repris par le navigateur au
-            # premier démarrage écarte les missions dont le dossier n'existe plus (registre périmé)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            root, out = os.path.join(DATA, 'missions'), []
-            try:
-                for fam in sorted(os.listdir(root)):
-                    if os.path.isdir(os.path.join(root, fam)) and not fam.startswith('.'):
-                        out += [f'{fam}/{m}' for m in sorted(os.listdir(os.path.join(root, fam)))
-                                if os.path.isdir(os.path.join(root, fam, m)) and not m.startswith('.')]
-            except OSError:
-                pass
-            return self._json({'folders': out})
-        if self.path.split('?')[0] == '/__setup/data-list':
-            # fichiers d'un dossier de données de la liste DATA_LISTS (demandes d'accès des postes, comptes signés) :
-            # noms seulement, le contenu se lit comme tout fichier de data/
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            return self._json(data_list(q.get('dir', [''])[0]))
-        if self.path.split('?')[0] == '/__setup/registre-historique':
-            # versions du registre signé des utilisateurs dans l'historique git des données (comptes signés : poste
-            # resté hors ligne, refondation) ; contenus seulement, rien n'est vérifié ici (les pages vérifient)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json(registry_history())
-        if self.path.split('?')[0] == '/__setup/sites':
-            # sites que les pages peuvent contacter (connect-src) : liste fixe, configuration, sites autorisés ici
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json(sites_view())
-        if self.path.split('?')[0] == '/__setup/sync-remote':
-            # dépôt git de synchronisation de data/ : adresse actuelle (ou celle du clone par défaut)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            # state : 'absent' (rien : clone), 'plain' (des fichiers sans dépôt : reprise, POST /__setup/adopt), 'repo'
-            return self._json({**data_sync.remote_info(DATA), 'default': data_repo_url(), 'state': data_sync.data_state(DATA)})
-        if self.path.split('?')[0] == '/__setup/sync-status':
-            # synchronisation git du pool (tools/data_sync.py) : état pour le bouton de l'en-tête ; ?fetch=1 : relu
-            # sur le dépôt distant (commits à recevoir)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json(sync_status(fetch='fetch=1' in self.path, fresh='fresh=1' in self.path))
-        if self.path.split('?')[0] == '/__setup/tools':
-            # outils de tools/ (sommaire tools/index.html) : nom, sorte, titre et en-tête de chaque fichier
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json({'tools': tools_inventory()})
-        if self.path.split('?')[0] == '/__setup/vatsim-bookings':
-            # réservations ATC publiques de VATSIM (Planning ODV, shared/atc_sessions.js) : l'API ne permet pas la
-            # lecture directe depuis une page (pas d'en-tête CORS) ; relayées ici
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json(vatsim_bookings())
-        if self.path.split('?')[0] == '/__setup/secrets':
-            # clés et identifiants des services externes (Paramètres : Installation pour la suite, Mon profil pour un
-            # utilisateur) : indicateurs seulement (enregistré, 4 derniers caractères), jamais les valeurs secrètes
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            return self._json(secrets_view(q.get('tri', [''])[0]))
-        if self.path.split('?')[0] == '/__setup/secrets/test':
-            # « Tester » d'une carte de Paramètres › Installation › Clés et services externes : un appel de contrôle au
-            # service avec la clé enregistrée ; { ok, count } ou { ok: false, key: missing | refused, error }
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            return self._json(secrets_test(q.get('service', [''])[0]))
-        if self.path.split('?')[0] == '/__setup/ivao-activations':
-            # zones spéciales IVAO activées (Ordres de vols, shared/odv_airspace.js) : NOTAM de la division liés à une
-            # zone et horaires publiés des zones de France ; clé d'API locale (ivao_key), jamais transmise à la page
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            return self._json(ivao_activations(q.get('from', [''])[0], q.get('to', [''])[0]))
-        if self.path.split('?')[0] == '/__setup/defa-site':
-            # état de la mise à jour de la flotte et du journal DEFA depuis le site (Paramètres › Maintenance)
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json(defa_state())
-        if self.path.split('?')[0] in ('/__setup/ivao/last-flight', '/__setup/vatsim/last-flight'):
-            # dernier vol du pilote pour le CR (« Mon dernier vol IVAO / VATSIM ») : liste des vols des 7 derniers jours,
-            # ou détail d'un vol (session / connection) au format du collage du tracker ; clé IVAO jamais transmise
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            arg = lambda k: (q.get(k) or [''])[0].strip()
-            if 'ivao' in self.path.split('?')[0]:
-                return self._json(ivao_last_flight(arg('vid'), arg('session')))
-            return self._json(vatsim_last_flight(arg('cid'), arg('connection')))
-        if self.path.split('?')[0] == '/__setup/sim/position':
-            # V3 frame, position réelle : simulateur de ce poste (X-Plane 12 puis Little Navmap, boucle locale seulement,
-            # un passage par seconde au plus) ; 204 sans simulateur
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            fix = sim_position.position()
-            if fix:
-                return self._json(fix)
-            self.send_response(204)
-            self.send_header('Cache-Control', 'no-store')
-            self.end_headers()
-            return None
-        if self.path.split('?')[0] == '/__setup/ivao-bookings':
-            # réservations ATC d'IVAO (trainings, examens, réservations ; shared/atc_sessions.js) : API sous clé
-            # (ivao_key), jamais transmise à la page
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            return self._json(ivao_bookings(q.get('from', [''])[0], q.get('to', [''])[0], q.get('pre', ['LF'])[0]))
-        if self.path.split('?')[0] == '/__setup/aircraft-db':
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            return self._json({**AIRCRAFT, **aircraft_files()})
-        if self.path.split('?')[0] == '/__setup/downloads':
-            # derniers fichiers téléchargés d'une source (motif sans chemin, ex. EG_*_DS_*_XML.zip pour NATS) :
-            # ?glob=…&info → [{ name, size, mtime }] (le plus récent de chaque jeu : nom sans ses dates) ;
-            # ?glob=…&name=… → le fichier, seulement s'il suit le motif et se trouve dans Téléchargements
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query, keep_blank_values=True)  # « &info » sans valeur
-            pattern = (q.get('glob') or [''])[0]
-            if pattern not in download_patterns():  # motifs des sources déclarées seulement, jamais « *.* »
-                return self._json({'error': 'motif inconnu'}, 400)
-            latest = downloads_matching(pattern)
-            if 'info' in q:
-                return self._json({'files': [{'name': os.path.basename(p), 'size': os.path.getsize(p), 'mtime': os.path.getmtime(p)} for p in latest],
-                                   'where': [os.path.basename(d) or d for d in downloads_dirs()]})
-            name = (q.get('name') or [''])[0]
-            path = next((p for p in latest if os.path.basename(p) == name), None)
-            if not path:
-                return self._json({'error': 'fichier absent'}, 404)
-            with open(path, 'rb') as f:
-                body = f.read()
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/octet-stream')
-            self.send_header('Content-Length', str(len(body)))
-            self.send_header('Cache-Control', 'no-store')
-            self.end_headers()
-            self.wfile.write(body)
-            return None
-        if self.path.split('?')[0] == '/__setup/sia-zip':
-            # ZIP du SIA téléchargé : ?info → nom, taille, date ; sinon le fichier lui-même
-            if not self._allowed():
-                return self._json({'error': 'refusé'}, 403)
-            z = sia_zip()
-            if 'info' in self.path:
-                return self._json({'found': bool(z), 'name': os.path.basename(z) if z else '', 'size': os.path.getsize(z) if z else 0,
-                                   'mtime': os.path.getmtime(z) if z else 0, 'where': [os.path.basename(d) or d for d in downloads_dirs()]})
-            if not z:
-                return self._json({'error': 'aucun ZIP du SIA'}, 404)
-            with open(z, 'rb') as f:
-                body = f.read()
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/zip')
-            self.send_header('X-File-Name', urllib.parse.quote(os.path.basename(z)))
-            self.send_header('Content-Length', str(len(body)))
-            self.send_header('Cache-Control', 'no-store')
-            self.end_headers()
-            self.wfile.write(body)
-            return None
+        if self.path.split('?')[0] in ROUTE_PATHS:  # routes /__setup/ (table ROUTES : gestionnaire, public)
+            r = ROUTES.get(('GET', self.path.split('?')[0]))
+            if r:
+                return getattr(self, r[0])(self.path.split('?')[0])
+            return self._json({'error': 'méthode refusée'}, 405)
         if self._stamped():
             return None
         return super().do_GET()
@@ -842,7 +863,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         """POST /__setup/… (page servie ici seulement) : synchronisation, secrets, imports, jeu d'essai, clone et dépôt
         des données."""
-        if self._lan_gate():
+        if self._lan_gate() or self._relay_gate():
             return None
         path = self.path.split('?')[0]
         if not path.startswith('/__setup/') or not self._allowed():
@@ -858,256 +879,707 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._lnmperf(body)
         if self.command != 'POST':
             return self._json({'error': 'méthode refusée'}, 405)
-        if path == '/__setup/perf':
-            # mesures de l'audit de performance (tools/perf_audit.html) : docs/technique/perf/runs/<nom>.json
-            name = re.sub(r'[^\w.-]+', '_', urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('name', ['audit'])[0])[:80]
-            try:
-                json.loads(body or b'null')
-            except ValueError:
-                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
-            out = os.path.join(ROOT, 'docs', 'technique', 'perf', 'runs')
-            os.makedirs(out, exist_ok=True)
-            with open(os.path.join(out, name + '.json'), 'wb') as f:
-                f.write(body)
-            return self._json({'ok': True, 'file': f'docs/technique/perf/runs/{name}.json'})
-        if path == '/__setup/sync-remote':
-            # dépôt git de synchronisation de data/ (premier lancement) : vérifié (git ls-remote), enregistré si demandé
-            # et si c'est le dépôt actuel ou celui de la configuration (autre dépôt : dans un terminal) ; jamais
-            # bloquant : le compte rendu dit seulement si le dépôt répond
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            url = str(a.get('url') or '').strip()
-            # needsConfirm : ni le dépôt actuel ni celui de la configuration — la page prévient avant « Enregistrer »
-            r = {'check': data_sync.check_remote(url),
-                 'needsConfirm': not any(data_sync.same_repo(url, u) for u in (data_sync.remote_info(DATA)['url'], data_repo_url()))}
-            if a.get('save'):
-                saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url()])
-                if saved.get('refused'):
-                    # autre dépôt : confirmé par l'utilisateur dans une fenêtre du système (ancienne et nouvelle adresse),
-                    # hors du navigateur — un script de la page ne peut ni la voir ni y répondre
-                    ok, why = confirm_remote(saved.get('current') or '', url)
-                    if ok:
-                        saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url(), url])
-                    else:
-                        saved['message'] = f'Changement de dépôt non confirmé : {why} Dépôt inchangé.'
-                r['saved'] = saved
-            return self._json(r)
-        if path == '/__setup/net':
-            # V3 frame : appel sortant d'un module relayé (SimBrief, IVAO, VATSIM)
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                return self._json({'error': 'JSON invalide'}, 400)
-            code, hdrs, out = frame_net(a if isinstance(a, dict) else {})
-            self.send_response(code)
-            for k, v in hdrs.items():
-                self.send_header(k, v)
-            self.send_header('Content-Length', str(len(out)))
-            self.send_header('Cache-Control', 'no-store')
-            self.send_header('X-SOG-Relay', '1')
-            self.end_headers()
-            self.wfile.write(out)
-            return None
-        if path == '/__setup/batch':
-            # V3 frame : lot d'écritures de la couche de données, en une fois (frame/store/transport_launcher.js)
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
-            r, code = frame_batch(a if isinstance(a, dict) else {})
-            return self._json(r, code)
-        if path == '/__setup/sync':
-            # un passage de synchronisation (commit au nom du trigramme, fusion fiche par fiche, envoi), un à la fois
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            with SYNC_LOCK:
-                # pont du registre avant (le registre rejoué part dans ce passage) et après (comptes rendus reçus : le
-                # registre rejoué partira au passage suivant)
-                registry_bridge()
-                r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60])
-                if r.get('received'):
-                    registry_bridge()
-            sync_status_reset()  # état relu au prochain appel : le bouton reflète le passage qui vient d'avoir lieu
-            if r.get('received'):
-                with INDEX_LOCK:
-                    index_availability()
-                    index_users()
-            return self._json(r)
-        if path == '/__setup/aircraft-db':
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            return self._json({'started': aircraft_start(a.get('codes') or [], bool(a.get('quick'))), **AIRCRAFT, **aircraft_files()})
-        if path == '/__setup/lan':
-            # ouvrir ou fermer l'accès du réseau local, oublier les appareils appairés — ce poste seulement
-            if self._lan():
-                return self._json({'error': 'refusé'}, 403)
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            if a.get('forget') is True:
-                lan_access.forget()
-            elif isinstance(a.get('forget'), str):
-                lan_access.forget(a['forget'])
-            if a.get('open') is True:
-                lan_open(bool(a.get('all')))
-            elif a.get('open') is False:
-                lan_close()
-            if a.get('code') and LAN['servers']:
-                say(f'  Réseau local : nouveau code d’appairage : {lan_access.new_code()} (10 minutes)')
-            return self._json(lan_state())
-        if path == '/__setup/vfr-import':
-            # compilation VFR (vfr-compiled.json choisi sur la page) : { apply, author, compiled } ; contrôle strict,
-            # plan rendu sans rien écrire (apply faux), puis écriture de sia/vfr/, commit et synchronisation
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                return self._json({'ok': False, 'errors': ['JSON illisible.'], 'summary': {}})
-            try:
-                return self._json(vfr_publish(a.get('compiled'), str(a.get('author') or '').upper(), bool(a.get('apply'))))
-            except (OSError, RuntimeError) as e:
-                return self._json({'ok': False, 'errors': [str(e)[-600:]], 'summary': {}})
-        if path == '/__setup/aircraft-publish':
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            try:
-                return self._json(aircraft_publish(str(a.get('author') or '').upper(), bool(a.get('apply'))))
-            except (OSError, RuntimeError) as e:
-                return self._json({'ok': False, 'remove': [], 'copy': [], 'message': str(e)[-600:]})
-        if path == '/__setup/defa-site':
-            # flotte et journal DEFA depuis le site : { refresh, auto, force } (une fois par jour en auto) ou
-            # { auto_enabled } (réglage de Paramètres › Maintenance)
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            if 'auto_enabled' in a:
-                return self._json(defa_set_auto(bool(a['auto_enabled'])))
-            pages = a.get('pages') if isinstance(a.get('pages'), dict) else None
-            return self._json(defa_refresh(force=bool(a.get('force')), auto=bool(a.get('auto')), pages=pages))
-        if path == '/__setup/secrets':
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
-            return self._json(secrets_save(a))
-        if path == '/__setup/relax':
-            # débrayage de l'ouverture depuis un autre site ou une extension : activé après confirmation dans la fenêtre du
-            # lanceur, jusqu'à sa fermeture ; rétabli sans confirmation
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            return self._json(relax_set(bool(a.get('on'))))
-        if path in ('/__setup/site-allow', '/__setup/site-remove'):
-            # site ajouté à la CSP (connect-src) : confirmé dans la fenêtre du lanceur, qu'aucune page ne peut voir ni
-            # valider ; retiré : sans confirmation (la liste ne fait que rétrécir)
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            return self._json(site_allow(str(a.get('url') or '')) if path.endswith('allow') else site_remove(str(a.get('url') or '')))
-        if path == '/__setup/aero-fetch':
-            # données aéronautiques d'autres pays (tools/aero_fetch.py) : téléchargées dans data/sia/<source>/
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            args = [str(x)[:12] for x in (a.get('args') or [])][:40]
-            with AERO_LOCK:
-                return self._json(fresh(aero_fetch).fetch(DATA, str(a.get('provider') or ''), args))
-        if path == '/__setup/jeu-essai':
-            ok, log = sample_data()
-            if ok:
-                mark_instance()  # data/ vient d'être créé : ses repères
-                with INDEX_LOCK:
-                    index_availability()
-                    index_users()
-            return self._json({'ok': ok, 'message': log})
-        if path == '/__setup/clone':
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            ok, log = clone((a.get('user') or '').strip(), a.get('secret') or '', bool(a.get('remember')), a.get('url'))
-            if ok:
-                mark_instance()
-            return self._json({'ok': ok, 'message': log})
-        if path == '/__setup/adopt':
-            # data/ déjà là sans être un dépôt (exemples, archive, données saisies) devenu un clone du dépôt des données,
-            # fiches du poste reprises par les règles de la synchronisation, rien d'envoyé (tools/data_sync.adopt) ;
-            # dépôt de la configuration admis, autre dépôt : confirmé dans la fenêtre du lanceur, comme sync-remote
-            try:
-                a = json.loads(body or b'{}')
-            except ValueError:
-                a = {}
-            url = str(a.get('url') or '').strip() or data_repo_url()
-            user, secret = str(a.get('user') or '').strip(), str(a.get('secret') or '')
-            if any(c in user + secret for c in '\r\n\0'):
-                return self._json({'ok': False, 'message': 'Identifiant ou mot de passe invalide (retour à la ligne).'})
-            if not data_sync.REMOTE_RE.match(url):
-                return self._json({'ok': False, 'message': data_sync.REMOTE_HELP})
-            # needsConfirm : autre dépôt que celui de la configuration ; dry : la page le demande avant le clic, rien n'est fait
-            need = not data_sync.same_repo(url, data_repo_url())
-            if a.get('dry'):
-                return self._json({'ok': True, 'dry': True, 'needsConfirm': need, 'state': data_sync.data_state(DATA)})
-            if need:
-                ok, why = confirm_adopt(url)
-                if not ok:
-                    return self._json({'ok': False, 'needsConfirm': True, 'message': f'Reprise non confirmée : {why} data/ inchangé.'})
-            git = data_sync.git_exe()
-            if git and run([git, 'lfs', 'version'], capture_output=True) == 0:
-                run([git, 'lfs', 'install'], capture_output=True)
-            extra, auth = git_auth(user, secret)
-            with SYNC_LOCK:
-                r = data_sync.adopt(DATA, url, str(a.get('author') or 'POSTE').upper(), env=dict(git_env(), **extra),
-                                    name=str(a.get('name') or '')[:60], auth=auth)
-            if r.get('ok'):
-                say(f'  Reprise de data/ dans le dépôt {url} : ' + r.get('message', ''))
-                ensure_lfs(DATA, 'data', 'Données')
-                mark_instance()
-                if a.get('remember'):
-                    remember_credentials(url, user, secret)
-                with INDEX_LOCK:
-                    index_availability()
-                    index_users()
-            sync_status_reset()
-            return self._json({**r, 'needsConfirm': need})
-        if path == '/__setup/upload':
-            kind = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('kind', [''])[0]
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.upload') as f:
-                f.write(body)
-                tmp = f.name
-            try:
-                if kind == 'data':
-                    if has_data():
-                        return self._json({'ok': False, 'message': 'Les données sont déjà là (data/data_tree.js).'})
-                    ok = extract_data(tmp, quiet=True)
-                    if ok:
-                        mark_instance()
-                    return self._json({'ok': ok, 'message': 'Données installées dans data/.' if ok else 'Ce fichier n’est pas une archive de données (data_tree.js absent).'})
-                if kind == 'log':
-                    if not has_data():
-                        return self._json({'ok': False, 'message': 'Installez d’abord les données (étape 1).'})
-                    r = subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'defa_reference.py'), tmp,
-                                        '--out=' + os.path.join(DATA, 'references', 'defa_reference.js')], cwd=ROOT,
-                                       capture_output=True, text=True, encoding='utf-8', errors='replace')
-                    return self._json({'ok': r.returncode == 0, 'message': (r.stdout + r.stderr).strip()[-1500:] or 'Référence mise à jour.'})
-                return self._json({'ok': False, 'message': 'Type de fichier inconnu.'}, 400)
-            finally:
-                try:
-                    os.remove(tmp)
-                except OSError:
-                    pass
+        r = ROUTES.get(('POST', path))  # routes /__setup/ (table ROUTES : gestionnaire, public)
+        if r:
+            return getattr(self, r[0])(path, body)
         return self._json({'error': 'inconnu'}, 404)
+
+    # ---------------------------------------------------------------- routes /__setup/ (table ROUTES)
+    @route('GET', '/__setup/lnmperf-folder', '/__setup/lnmperf', public='lan')
+    def _get_lnmperf_folder(self, path):
+        return self._lnmperf(b'')
+
+    @route('GET', '/__setup/regen/state', '/__setup/regen/job', public='poste')
+    def _get_regen_state(self, path):
+        # module Données (frame/INTEGRATION.md § 15) : état du poste, travail en cours ou id — ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        if self.path.split('?')[0].endswith('/state'):
+            return self._json(regen_jobs.state(DATA, SECRETS, *regen_git()))
+        jid = (urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get('id') or [''])[0][:40]
+        v = regen().view(jid or None)
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
+    @route('GET', '/__setup/status', public='lan', relay=True)
+    def _get_status(self, path):
+        # détection du lanceur (frame/store/transport_launcher.js) : la même forme partout, rien de propre au poste ;
+        # un appareil appairé du réseau local la lit aussi (lnm : [] pour lui, les bases de Little Navmap sont du poste)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({'server': True, 'data': has_data(), 'dataGit': os.path.isdir(os.path.join(DATA, '.git')),
+                           'host': socket.gethostname(), 'lan': self._lan(), 'lnm': [] if self._lan() else lnm_db_kinds()})
+
+    @route('GET', '/__setup/workstation', public='poste')
+    def _get_workstation(self, path):
+        # réglages du poste pour ses propres pages (V2 : premier lancement, Paramètres, cadre de page) : chemin
+        # d'installation, git, dépôt distant de data/, Git LFS, politique, navigation détendue — ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({'server': True, 'root': ROOT, 'git': bool(data_sync.git_exe()), 'data': has_data(),
+                           'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
+                           'csp': True, 'relaxNav': RELAX['nav'], 'host': socket.gethostname()})
+
+    @route('GET', '/__setup/lan', public='poste')
+    def _get_lan(self, path):
+        # accès des appareils du réseau local (Réglages du poste) : état, adresses, code — ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(lan_state())
+
+    @route('GET', '/__setup/changes', public='lan', relay=True)
+    def _get_changes(self, path):
+        # V3 frame : tête de data/ et, si elle a changé depuis since, son arbre (transport « lanceur »)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        since = (urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('since') or [''])[0]
+        with FRAME_LOCK:
+            # appareil du réseau local : l'arbre calculé il y a moins de 2 s sert de nouveau (un lot l'efface)
+            fresh = self._lan() and _tree_memo['v'] and time.monotonic() - _tree_memo['at'] < 2
+            if fresh:
+                head, tree = _tree_memo['v']
+            else:
+                head, tree = frame_tree()
+                _tree_memo.update(at=time.monotonic(), v=(head, tree))
+        return self._json({'head': head, 'same': True} if since == head else {'head': head, 'tree': tree})
+
+    @route('GET', '/__setup/mission-folders', public='poste')
+    def _get_mission_folders(self, path):
+        # dossiers de missions présents (data/missions/<famille>/<id>) : le registre repris par le navigateur au
+        # premier démarrage écarte les missions dont le dossier n'existe plus (registre périmé)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        root, out = os.path.join(DATA, 'missions'), []
+        try:
+            for fam in sorted(os.listdir(root)):
+                if os.path.isdir(os.path.join(root, fam)) and not fam.startswith('.'):
+                    out += [f'{fam}/{m}' for m in sorted(os.listdir(os.path.join(root, fam)))
+                            if os.path.isdir(os.path.join(root, fam, m)) and not m.startswith('.')]
+        except OSError:
+            pass
+        return self._json({'folders': out})
+
+    @route('GET', '/__setup/data-list', public='poste')
+    def _get_data_list(self, path):
+        # fichiers d'un dossier de données de la liste DATA_LISTS (demandes d'accès des postes, comptes signés) :
+        # noms seulement, le contenu se lit comme tout fichier de data/
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        return self._json(data_list(q.get('dir', [''])[0]))
+
+    @route('GET', '/__setup/registre-historique', public='poste')
+    def _get_registre_historique(self, path):
+        # versions du registre signé des utilisateurs dans l'historique git des données (comptes signés : poste
+        # resté hors ligne, refondation) ; contenus seulement, rien n'est vérifié ici (les pages vérifient)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(registry_history())
+
+    @route('GET', '/__setup/sites', public='poste')
+    def _get_sites(self, path):
+        # sites que les pages peuvent contacter (connect-src) : liste fixe, configuration, sites autorisés ici
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(sites_view())
+
+    @route('GET', '/__setup/sync-remote', public='poste')
+    def _get_sync_remote(self, path):
+        # dépôt git de synchronisation de data/ : adresse actuelle (ou celle du clone par défaut)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        # state : 'absent' (rien : clone), 'plain' (des fichiers sans dépôt : reprise, POST /__setup/adopt), 'repo'
+        state = data_sync.data_state(DATA)
+        return self._json({**data_sync.remote_info(DATA), 'default': data_repo_url(), 'state': state,
+                           'rewritten': state == 'repo' and data_sync.rewritten(DATA)})
+
+    @route('GET', '/__setup/sync-rewritten', public='poste')
+    def _get_sync_rewritten(self, path):
+        # historique du dépôt des données réécrit : le plan de la reprise (récupéré du dépôt distant, rien changé) — ce poste
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        with SYNC_LOCK:
+            return self._json(data_sync.rewritten_plan(DATA))
+
+    @route('POST', '/__setup/sync-rewritten', public='poste')
+    def _post_sync_rewritten(self, path, body):
+        # « Reprendre le nouvel historique » (geste de l'administrateur, ce poste) : reprise, puis un passage de
+        # synchronisation (réception du nouvel historique fiche par fiche, envoi)
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        a = a if isinstance(a, dict) else {}
+        author = str(a.get('author') or '').upper()
+        with SYNC_LOCK:
+            r = data_sync.rewritten_resume(DATA, author, str(a.get('name') or '')[:60])
+            if r.get('ok'):
+                registry_bridge()
+                r['sync'] = data_sync.run(DATA, author, str(a.get('name') or '')[:60], True)
+        sync_status_reset()
+        if r.get('sync', {}).get('received'):
+            with INDEX_LOCK:
+                index_availability()
+                index_users()
+        return self._json(r)
+
+    @route('GET', '/__setup/sync-status', public='poste')
+    def _get_sync_status(self, path):
+        # synchronisation git du pool (tools/data_sync.py) : état pour le bouton de l'en-tête ; ?fetch=1 : relu
+        # sur le dépôt distant (commits à recevoir)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(sync_status(fetch='fetch=1' in self.path, fresh='fresh=1' in self.path))
+
+    @route('GET', '/__setup/tools', public='poste')
+    def _get_tools(self, path):
+        # outils de tools/ (sommaire tools/index.html) : nom, sorte, titre et en-tête de chaque fichier
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({'tools': tools_inventory()})
+
+    @route('GET', '/__setup/vatsim-bookings', public='poste')
+    def _get_vatsim_bookings(self, path):
+        # réservations ATC publiques de VATSIM (Planning ODV, shared/atc_sessions.js) : l'API ne permet pas la
+        # lecture directe depuis une page (pas d'en-tête CORS) ; relayées ici
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(vatsim_bookings())
+
+    @route('POST', '/__setup/ivao/oauth/start', '/__setup/ivao/oauth/refresh', '/__setup/ivao/oauth/revoke', public='lan', relay=True)
+    def _post_ivao_oauth(self, path, body):
+        # OpenID d'IVAO par le relais (R1b) : start → l'adresse d'autorisation (PKCE S256, état lié à cet appareil) ;
+        # refresh { refresh_token } → de nouveaux jetons, avec le secret du relais ; revoke { token } → révoqué chez IVAO
+        # (Délier) ; aucun jeton journalisé
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        a = a if isinstance(a, dict) else {}
+        dev = getattr(self, 'relay_device', None) if self._relay() else None
+        if path.endswith('/refresh'):
+            v = ivao_oauth_refresh(a.get('refresh_token'))
+        elif path.endswith('/revoke'):
+            v = ivao_oauth_revoke(a.get('token'))
+        else:
+            v = ivao_oauth_start(dev['id'] if dev else '', self._ivao_redirect())
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
+    @route('GET', '/__setup/relay', public='poste')
+    def _get_relay(self, path):
+        # relais de la compagnie (R1a) : en marche ou non, l'hôte public, les appareils (trigramme, appareil, dates ; jamais
+        # une empreinte) et les codes en cours (sans leur valeur) — ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({'on': bool(RELAY['host']), 'host': RELAY['host'], 'devices': relay_access.listing(),
+                           'pending': relay_access.pending()})
+
+    @route('POST', '/__setup/relay/devices', '/__setup/relay/devices/revoke', public='poste')
+    def _post_relay_devices(self, path, body):
+        # un code d'appairage pour un pilote (8 chiffres, 10 minutes, une fois), ou la révocation d'un appareil ou d'un pilote
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        a = a if isinstance(a, dict) else {}
+        if path.endswith('/revoke'):
+            n = relay_access.forget(device_id=str(a.get('id') or '') or None, trigram=str(a.get('trigram') or '') or None)
+            return self._json({'ok': True, 'removed': n})
+        code = relay_access.new_code(a.get('trigram'))
+        if not code:
+            return self._json({'ok': False, 'message': 'trigramme attendu (2 à 5 lettres ou chiffres)'}, 400)
+        return self._json({'ok': True, 'code': code, 'trigram': str(a.get('trigram')).upper(), 'expires_in': relay_access.CODE_TTL})
+
+    @route('GET', '/__setup/gitlab/tokens', public='poste')
+    def _get_gitlab_tokens(self, path):
+        # jetons d'accès du projet GitLab (application Maintenance, « Jetons des pilotes ») : noms, portées, dates, jamais une valeur
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        v = gitlab_tokens()
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
+    @route('POST', '/__setup/gitlab/tokens', '/__setup/gitlab/tokens/revoke', public='poste')
+    def _post_gitlab_tokens(self, path, body):
+        # création (la valeur rendue une fois) ou révocation d'un jeton de pilote, avec le jeton de l'administrateur du lanceur
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        a = a if isinstance(a, dict) else {}
+        v = gitlab_token_revoke(a) if path.endswith('/revoke') else gitlab_token_create(a)
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
+    @route('GET', '/__setup/secrets', public='poste')
+    def _get_secrets(self, path):
+        # clés et identifiants des services externes (Paramètres : Installation pour la suite, Mon profil pour un
+        # utilisateur) : indicateurs seulement (enregistré, 4 derniers caractères), jamais les valeurs secrètes
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        return self._json(secrets_view(q.get('tri', [''])[0]))
+
+    @route('GET', '/__setup/secrets/test', public='poste')
+    def _get_secrets_test(self, path):
+        # « Tester » d'une carte de Paramètres › Installation › Clés et services externes : un appel de contrôle au
+        # service avec la clé enregistrée ; { ok, count } ou { ok: false, key: missing | refused, error }
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        return self._json(secrets_test(q.get('service', [''])[0]))
+
+    @route('GET', '/__setup/ivao-activations', public='poste')
+    def _get_ivao_activations(self, path):
+        # zones spéciales IVAO activées (Ordres de vols, shared/odv_airspace.js) : NOTAM de la division liés à une
+        # zone et horaires publiés des zones de France ; clé d'API locale (ivao_key), jamais transmise à la page
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        return self._json(ivao_activations(q.get('from', [''])[0], q.get('to', [''])[0]))
+
+    @route('GET', '/__setup/defa-site', public='poste')
+    def _get_defa_site(self, path):
+        # état de la mise à jour de la flotte et du journal DEFA depuis le site (Paramètres › Maintenance)
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(defa_state())
+
+    @route('GET', '/__setup/ivao/last-flight', '/__setup/vatsim/last-flight', public='poste')
+    def _get_ivao_last_flight(self, path):
+        # dernier vol du pilote pour le CR (« Mon dernier vol IVAO / VATSIM ») : liste des vols des 7 derniers jours,
+        # ou détail d'un vol (session / connection) au format du collage du tracker ; clé IVAO jamais transmise
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        arg = lambda k: (q.get(k) or [''])[0].strip()
+        if 'ivao' in self.path.split('?')[0]:
+            return self._json(ivao_last_flight(arg('vid'), arg('session')))
+        return self._json(vatsim_last_flight(arg('cid'), arg('connection')))
+
+    @route('GET', '/__setup/sim/position', public='lan')
+    def _get_sim_position(self, path):
+        # V3 frame, position réelle : simulateur de ce poste (X-Plane 12 puis Little Navmap, boucle locale seulement,
+        # un passage par seconde au plus) ; 204 sans simulateur
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        fix = sim_position.position()
+        if fix:
+            return self._json(fix)
+        self.send_response(204)
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        return None
+
+    @route('GET', '/__setup/ivao-bookings', public='poste')
+    def _get_ivao_bookings(self, path):
+        # réservations ATC d'IVAO (trainings, examens, réservations ; shared/atc_sessions.js) : API sous clé
+        # (ivao_key), jamais transmise à la page
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        return self._json(ivao_bookings(q.get('from', [''])[0], q.get('to', [''])[0], q.get('pre', ['LF'])[0]))
+
+    @route('GET', '/__setup/aircraft-db', public='poste')
+    def _get_aircraft_db(self, path):
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({**AIRCRAFT, **aircraft_files()})
+
+    @route('GET', '/__setup/downloads', public='poste')
+    def _get_downloads(self, path):
+        # derniers fichiers téléchargés d'une source (motif sans chemin, ex. EG_*_DS_*_XML.zip pour NATS) :
+        # ?glob=…&info → [{ name, size, mtime }] (le plus récent de chaque jeu : nom sans ses dates) ;
+        # ?glob=…&name=… → le fichier, seulement s'il suit le motif et se trouve dans Téléchargements
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query, keep_blank_values=True)  # « &info » sans valeur
+        pattern = (q.get('glob') or [''])[0]
+        if pattern not in download_patterns():  # motifs des sources déclarées seulement, jamais « *.* »
+            return self._json({'error': 'motif inconnu'}, 400)
+        latest = downloads_matching(pattern)
+        if 'info' in q:
+            return self._json({'files': [{'name': os.path.basename(p), 'size': os.path.getsize(p), 'mtime': os.path.getmtime(p)} for p in latest],
+                               'where': [os.path.basename(d) or d for d in downloads_dirs()]})
+        name = (q.get('name') or [''])[0]
+        path = next((p for p in latest if os.path.basename(p) == name), None)
+        if not path:
+            return self._json({'error': 'fichier absent'}, 404)
+        with open(path, 'rb') as f:
+            body = f.read()
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/octet-stream')
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(body)
+        return None
+
+    @route('GET', '/__setup/sia-zip', public='poste')
+    def _get_sia_zip(self, path):
+        # ZIP du SIA téléchargé : ?info → nom, taille, date ; sinon le fichier lui-même
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        z = sia_zip()
+        if 'info' in self.path:
+            return self._json({'found': bool(z), 'name': os.path.basename(z) if z else '', 'size': os.path.getsize(z) if z else 0,
+                               'mtime': os.path.getmtime(z) if z else 0, 'where': [os.path.basename(d) or d for d in downloads_dirs()]})
+        if not z:
+            return self._json({'error': 'aucun ZIP du SIA'}, 404)
+        with open(z, 'rb') as f:
+            body = f.read()
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/zip')
+        self.send_header('X-File-Name', urllib.parse.quote(os.path.basename(z)))
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(body)
+        return None
+
+    @route('POST', '/__setup/perf', public='poste')
+    def _post_perf(self, path, body):
+        # mesures de l'audit de performance (tools/perf_audit.html) : docs/technique/perf/runs/<nom>.json
+        name = re.sub(r'[^\w.-]+', '_', urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('name', ['audit'])[0])[:80]
+        try:
+            json.loads(body or b'null')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        out = os.path.join(ROOT, 'docs', 'technique', 'perf', 'runs')
+        os.makedirs(out, exist_ok=True)
+        with open(os.path.join(out, name + '.json'), 'wb') as f:
+            f.write(body)
+        return self._json({'ok': True, 'file': f'docs/technique/perf/runs/{name}.json'})
+
+    @route('POST', '/__setup/sync-remote', public='poste')
+    def _post_sync_remote(self, path, body):
+        # dépôt git de synchronisation de data/ (premier lancement) : vérifié (git ls-remote), enregistré si demandé
+        # et si c'est le dépôt actuel ou celui de la configuration (autre dépôt : dans un terminal) ; jamais
+        # bloquant : le compte rendu dit seulement si le dépôt répond
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        url = str(a.get('url') or '').strip()
+        # needsConfirm : ni le dépôt actuel ni celui de la configuration — la page prévient avant « Enregistrer »
+        r = {'check': data_sync.check_remote(url),
+             'needsConfirm': not any(data_sync.same_repo(url, u) for u in (data_sync.remote_info(DATA)['url'], data_repo_url()))}
+        if a.get('save'):
+            saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url()])
+            if saved.get('refused'):
+                # autre dépôt : confirmé par l'utilisateur dans une fenêtre du système (ancienne et nouvelle adresse),
+                # hors du navigateur — un script de la page ne peut ni la voir ni y répondre
+                ok, why = confirm_remote(saved.get('current') or '', url)
+                if ok:
+                    saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url(), url])
+                else:
+                    saved['message'] = f'Changement de dépôt non confirmé : {why} Dépôt inchangé.'
+            r['saved'] = saved
+        return self._json(r)
+
+    @route('POST', '/__setup/net', public='lan', relay=True)
+    def _post_net(self, path, body):
+        # V3 frame : appel sortant d'un module relayé (SimBrief, IVAO, VATSIM)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'error': 'JSON invalide'}, 400)
+        code, hdrs, out = frame_net(a if isinstance(a, dict) else {}, site_ok=not self._relay())
+        self.send_response(code)
+        for k, v in hdrs.items():
+            self.send_header(k, v)
+        self.send_header('Content-Length', str(len(out)))
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('X-SOG-Relay', '1')
+        self.end_headers()
+        self.wfile.write(out)
+        return None
+
+    @route('POST', '/__setup/batch', public='lan', relay=True)
+    def _post_batch(self, path, body):
+        # V3 frame : lot d'écritures de la couche de données, en une fois (frame/store/transport_launcher.js)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        a = a if isinstance(a, dict) else {}
+        if self._relay() and getattr(self, 'relay_device', None):
+            a['author'] = self.relay_device['trigram']  # relais : l'auteur est celui du jeton de l'appareil, jamais de la page
+        r, code = frame_batch(a)
+        return self._json(r, code)
+
+    @route('POST', '/__setup/sync', public='lan', relay=True)
+    def _post_sync(self, path, body):
+        # un passage de synchronisation (commit au nom du trigramme, fusion fiche par fiche, envoi), un à la fois
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        with SYNC_LOCK:
+            # pont du registre avant (le registre rejoué part dans ce passage) et après (comptes rendus reçus : le
+            # registre rejoué partira au passage suivant)
+            registry_bridge()
+            # gesture : bouton « Synchroniser » (sia/base commitée aussi) ; sinon passage de fond (échange du cadre)
+            if self._relay() and getattr(self, 'relay_device', None) and isinstance(a, dict):
+                a['author'] = self.relay_device['trigram']  # relais : l'auteur du jeton de l'appareil
+            r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60], sync_gesture(a))
+            if r.get('received'):
+                registry_bridge()
+        if (self._lan() or self._relay()) and not r.get('ok'):
+            # appareil appairé du réseau local ou du relais : rien du poste (sortie de git, chemins) ; le détail reste dans la console
+            say(f"  Synchronisation demandée par un appareil appairé, en échec : {r.get('message', '')}")
+            r = {**r, 'message': 'Synchronisation interrompue sur le poste du lanceur : le détail est dans sa console.'}
+        sync_status_reset()  # état relu au prochain appel : le bouton reflète le passage qui vient d'avoir lieu
+        if r.get('received'):
+            with INDEX_LOCK:
+                index_availability()
+                index_users()
+        return self._json(r)
+
+    @route('POST', '/__setup/aircraft-db', public='poste')
+    def _post_aircraft_db(self, path, body):
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        return self._json({'started': aircraft_start(a.get('codes') or [], bool(a.get('quick'))), **AIRCRAFT, **aircraft_files()})
+
+    @route('POST', '/__setup/lan', public='poste')
+    def _post_lan(self, path, body):
+        # ouvrir ou fermer l'accès du réseau local, oublier les appareils appairés — ce poste seulement
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        if a.get('open') is True and RELAY['host']:
+            # relais de la compagnie : le poste n'écoute que sur 127.0.0.1, jamais aussi sur le réseau local
+            return self._json({'error': 'relais : réseau local fermé'}, 409)
+        if a.get('forget') is True:
+            lan_access.forget()
+        elif isinstance(a.get('forget'), str):
+            lan_access.forget(a['forget'])
+        if a.get('open') is True:
+            lan_open(bool(a.get('all')))
+        elif a.get('open') is False:
+            lan_close()
+        if a.get('code') and LAN['servers']:
+            say(f'  Réseau local : nouveau code d’appairage : {lan_access.new_code()} (10 minutes)')
+        return self._json(lan_state())
+
+    @route('POST', '/__setup/vfr-import', public='poste')
+    def _post_vfr_import(self, path, body):
+        # compilation VFR (vfr-compiled.json choisi sur la page) : { apply, author, compiled } ; contrôle strict,
+        # plan rendu sans rien écrire (apply faux), puis écriture de sia/vfr/, commit et synchronisation
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'errors': ['JSON illisible.'], 'summary': {}})
+        try:
+            return self._json(vfr_publish(a.get('compiled'), str(a.get('author') or '').upper(), bool(a.get('apply'))))
+        except (OSError, RuntimeError) as e:
+            return self._json({'ok': False, 'errors': [str(e)[-600:]], 'summary': {}})
+
+    @route('POST', '/__setup/aircraft-publish', public='poste')
+    def _post_aircraft_publish(self, path, body):
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        try:
+            return self._json(aircraft_publish(str(a.get('author') or '').upper(), bool(a.get('apply'))))
+        except (OSError, RuntimeError) as e:
+            return self._json({'ok': False, 'remove': [], 'copy': [], 'message': str(e)[-600:]})
+
+    @route('POST', '/__setup/defa-site', public='poste')
+    def _post_defa_site(self, path, body):
+        # flotte et journal DEFA depuis le site : { refresh, auto, force } (une fois par jour en auto) ou
+        # { auto_enabled } (réglage de Paramètres › Maintenance)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        if 'auto_enabled' in a:
+            return self._json(defa_set_auto(bool(a['auto_enabled'])))
+        pages = a.get('pages') if isinstance(a.get('pages'), dict) else None
+        return self._json(defa_refresh(force=bool(a.get('force')), auto=bool(a.get('auto')), pages=pages))
+
+    @route('POST', '/__setup/secrets', public='poste')
+    def _post_secrets(self, path, body):
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        return self._json(secrets_save(a))
+
+    @route('POST', '/__setup/relax', public='poste')
+    def _post_relax(self, path, body):
+        # débrayage de l'ouverture depuis un autre site ou une extension : activé après confirmation dans la fenêtre du
+        # lanceur, jusqu'à sa fermeture ; rétabli sans confirmation
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        return self._json(relax_set(bool(a.get('on'))))
+
+    @route('POST', '/__setup/site-allow', '/__setup/site-remove', public='poste')
+    def _post_site_allow(self, path, body):
+        # site ajouté à la CSP (connect-src) : confirmé dans la fenêtre du lanceur, qu'aucune page ne peut voir ni
+        # valider ; retiré : sans confirmation (la liste ne fait que rétrécir)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        return self._json(site_allow(str(a.get('url') or '')) if path.endswith('allow') else site_remove(str(a.get('url') or '')))
+
+    @route('POST', '/__setup/regen/job', '/__setup/regen/job/cancel', public='poste')
+    def _post_regen_job(self, path, body):
+        # travaux du module Données : jeu et verbe d'une liste fixe, arguments contrôlés (tools/regen_jobs.py)
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        a = a if isinstance(a, dict) else {}
+        v = regen().cancel(str(a.get('id') or '')[:40]) if path.endswith('/cancel') else regen().start(
+            a.get('set'), a.get('verb'), a.get('args'), a.get('author') or '')
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
+    @route('POST', '/__setup/regen/job/claim', public='poste')
+    def _post_regen_job_claim(self, path, body):
+        # jeton du travail en cours remis UNE fois à sa page sans fenêtre (ouverte sur l'adresse http du lanceur avec #job=<id>,
+        # sans jeton : Sec-Fetch-Site none), après job.offer() du verbe ; ce poste seulement, rien d'autre ouvert
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        v = regen().claim((a if isinstance(a, dict) else {}).get('job'))
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
+    @route('POST', '/__setup/regen/job/put', public='poste')
+    def _post_regen_job_put(self, path, body):
+        # sortie d'une zone rendue par la page sans fenêtre du travail en cours (construction de la base, D5) : jeton du
+        # travail, zone de ses arguments, noms et taille bornés ; rien n'est écrit ici (le verbe la reçoit par job.take)
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        if len(body) > regen_jobs.PUT_MAX + 1024 * 1024:
+            return self._json({'ok': False, 'status': 413, 'message': 'too large'}, 413)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        a = a if isinstance(a, dict) else {}
+        v = regen().put(a.get('job'), a.get('token'), a.get('zone'), a.get('files'))
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
+    @route('POST', '/__setup/aero-fetch', public='poste')
+    def _post_aero_fetch(self, path, body):
+        # données aéronautiques d'autres pays (tools/aero_fetch.py) : téléchargées dans data/sia/<source>/
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        args = [str(x)[:12] for x in (a.get('args') or [])][:40]
+        with AERO_LOCK:
+            return self._json(fresh(aero_fetch).fetch(DATA, str(a.get('provider') or ''), args))
+
+    @route('POST', '/__setup/jeu-essai', public='poste')
+    def _post_jeu_essai(self, path, body):
+        ok, log = sample_data()
+        if ok:
+            mark_instance()  # data/ vient d'être créé : ses repères
+            with INDEX_LOCK:
+                index_availability()
+                index_users()
+        return self._json({'ok': ok, 'message': log})
+
+    @route('POST', '/__setup/clone', public='poste')
+    def _post_clone(self, path, body):
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        ok, log = clone((a.get('user') or '').strip(), a.get('secret') or '', bool(a.get('remember')), a.get('url'))
+        if ok:
+            mark_instance()
+        return self._json({'ok': ok, 'message': log})
+
+    @route('POST', '/__setup/adopt', public='poste')
+    def _post_adopt(self, path, body):
+        # data/ déjà là sans être un dépôt (exemples, archive, données saisies) devenu un clone du dépôt des données,
+        # fiches du poste reprises par les règles de la synchronisation, rien d'envoyé (tools/data_sync.adopt) ;
+        # dépôt de la configuration admis, autre dépôt : confirmé dans la fenêtre du lanceur, comme sync-remote
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        url = str(a.get('url') or '').strip() or data_repo_url()
+        user, secret = str(a.get('user') or '').strip(), str(a.get('secret') or '')
+        if any(c in user + secret for c in '\r\n\0'):
+            return self._json({'ok': False, 'message': 'Identifiant ou mot de passe invalide (retour à la ligne).'})
+        if not data_sync.REMOTE_RE.match(url):
+            return self._json({'ok': False, 'message': data_sync.REMOTE_HELP})
+        # needsConfirm : autre dépôt que celui de la configuration ; dry : la page le demande avant le clic, rien n'est fait
+        need = not data_sync.same_repo(url, data_repo_url())
+        if a.get('dry'):
+            return self._json({'ok': True, 'dry': True, 'needsConfirm': need, 'state': data_sync.data_state(DATA)})
+        if need:
+            ok, why = confirm_adopt(url)
+            if not ok:
+                return self._json({'ok': False, 'needsConfirm': True, 'message': f'Reprise non confirmée : {why} data/ inchangé.'})
+        git = data_sync.git_exe()
+        if git and run([git, 'lfs', 'version'], capture_output=True) == 0:
+            run([git, 'lfs', 'install'], capture_output=True)
+        extra, auth = git_auth(user, secret)
+        with SYNC_LOCK:
+            r = data_sync.adopt(DATA, url, str(a.get('author') or 'POSTE').upper(), env=dict(git_env(), **extra),
+                                name=str(a.get('name') or '')[:60], auth=auth)
+        if r.get('ok'):
+            say(f'  Reprise de data/ dans le dépôt {url} : ' + r.get('message', ''))
+            ensure_lfs(DATA, 'data', 'Données')
+            mark_instance()
+            if a.get('remember'):
+                remember_credentials(url, user, secret)
+            with INDEX_LOCK:
+                index_availability()
+                index_users()
+        sync_status_reset()
+        return self._json({**r, 'needsConfirm': need})
+
+    @route('POST', '/__setup/upload', public='poste')
+    def _post_upload(self, path, body):
+        kind = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('kind', [''])[0]
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.upload') as f:
+            f.write(body)
+            tmp = f.name
+        try:
+            if kind == 'data':
+                if has_data():
+                    return self._json({'ok': False, 'message': 'Les données sont déjà là (data/data_tree.js).'})
+                ok = extract_data(tmp, quiet=True)
+                if ok:
+                    mark_instance()
+                return self._json({'ok': ok, 'message': 'Données installées dans data/.' if ok else 'Ce fichier n’est pas une archive de données (data_tree.js absent).'})
+            if kind == 'log':
+                if not has_data():
+                    return self._json({'ok': False, 'message': 'Installez d’abord les données (étape 1).'})
+                r = subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'defa_reference.py'), tmp,
+                                    '--out=' + os.path.join(DATA, 'references', 'defa_reference.js')], cwd=ROOT,
+                                   capture_output=True, text=True, encoding='utf-8', errors='replace')
+                return self._json({'ok': r.returncode == 0, 'message': (r.stdout + r.stderr).strip()[-1500:] or 'Référence mise à jour.'})
+            return self._json({'ok': False, 'message': 'Type de fichier inconnu.'}, 400)
+        finally:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
 
 
 def downloads_dirs():
@@ -1305,6 +1777,203 @@ LAN_MAX_BODY = 16 * 1024 * 1024  # corps d'un POST venu du réseau local (un lot
 _tree_memo = {'at': 0.0, 'v': None}  # dernier arbre de data/ calculé (servi de nouveau à un appareil, 2 s au plus)
 LAN_LOCK = threading.Lock()
 NB = '\u202f'  # espace fine insécable avant : ; ! ? en français
+# ---- OpenID d'IVAO par le relais (R1b) : code + PKCE S256 (le point de jeton d'IVAO n'admet que client_secret_basic /
+# post : pas de client public, le secret reste au relais, secrets/ivao_oauth.json) ; adresses lues du document de découverte
+# (jamais écrites en dur) ; le pilote reçoit son propre jeton (portée tracker) et le refresh_token, une fois, par le fragment
+# d'une page de retour du même origine ; le téléphone lit ensuite le tracker directement
+IVAO_CALLBACK = '/__relay/ivao/callback'
+IVAO_DISCOVERY = 'https://api.ivao.aero/.well-known/openid-configuration'
+IVAO_SCOPE = 'openid tracker'
+IVAO_STATE_TTL = 600
+_ivao_oidc = {'meta': None, 'at': 0.0, 'pending': {}}
+def OIDC_OPEN(req, timeout=20):
+    """Ouvreur des appels OpenID : jamais une redirection suivie (remplacé par les essais : aucun appel réel)."""
+    return urllib.request.build_opener(_NoRedirect).open(req, timeout=timeout)
+
+
+def ivao_oauth_cfg():
+    """(clientId, clientSecret, document de découverte) de secrets/ivao_oauth.json, ou None."""
+    s = _read_json(_secret_file('app', service='ivao_oauth'))
+    cid, sec = str(s.get('clientId') or '').strip(), str(s.get('clientSecret') or '').strip()
+    disc = str(s.get('discovery') or IVAO_DISCOVERY).strip()
+    return (cid, sec, disc) if cid and sec and disc.startswith('https://') else None
+
+
+def _oidc_json(req):
+    with OIDC_OPEN(req, timeout=20) as r:
+        return json.loads(r.read() or b'{}')
+
+
+def ivao_oidc_meta(disc):
+    """Points d'autorisation et de jeton d'IVAO (document de découverte, gardé une heure) ; https seulement."""
+    if _ivao_oidc['meta'] and time.time() - _ivao_oidc['at'] < 3600:
+        return _ivao_oidc['meta']
+    m = _oidc_json(urllib.request.Request(disc, headers={'Accept': 'application/json'}))
+    meta = {k: str(m.get(k) or '') for k in ('authorization_endpoint', 'token_endpoint')}
+    if not all(v.startswith('https://') for v in meta.values()):
+        raise ValueError('IVAO discovery: https endpoints expected')
+    rev = str(m.get('revocation_endpoint') or '')  # facultatif (RFC 7009) : https seulement, sinon pas de révocation
+    meta['revocation_endpoint'] = rev if rev.startswith('https://') else ''
+    _ivao_oidc.update(meta=meta, at=time.time())
+    return meta
+
+
+def ivao_oauth_start(device, redirect):
+    """Adresse d'autorisation d'IVAO pour cet appareil : { ok, url } ; état aléatoire lié à l'appareil, vérificateur PKCE
+    gardé ici (10 minutes)."""
+    cfg = ivao_oauth_cfg()
+    if not cfg:
+        return {'ok': False, 'status': 409, 'message': 'no IVAO application on the relay (secrets/ivao_oauth.json)'}
+    try:
+        meta = ivao_oidc_meta(cfg[2])
+    except (OSError, ValueError) as e:
+        return {'ok': False, 'status': 502, 'message': f'IVAO discovery: {type(e).__name__}'}
+    verifier = secrets.token_urlsafe(48)
+    challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip('=')
+    state = secrets.token_urlsafe(24)
+    now = time.time()
+    pend = {k: v for k, v in _ivao_oidc['pending'].items() if now - v['at'] < IVAO_STATE_TTL}
+    if len(pend) >= 100 or sum(1 for v in pend.values() if v['device'] == device) >= 3:  # 100 en tout, 3 par appareil
+        return {'ok': False, 'status': 429, 'message': 'too many sign-ins in progress'}
+    pend[state] = {'verifier': verifier, 'device': device, 'redirect': redirect, 'at': now}
+    _ivao_oidc['pending'] = pend
+    q = urllib.parse.urlencode({'response_type': 'code', 'client_id': cfg[0], 'redirect_uri': redirect, 'scope': IVAO_SCOPE,
+                                'state': state, 'code_challenge': challenge, 'code_challenge_method': 'S256'})
+    return {'ok': True, 'url': f'{meta["authorization_endpoint"]}?{q}'}
+
+
+def _ivao_post(url, form):
+    """POST au point d'IVAO, client_secret_basic (en-tête jamais recopié : l'ouvreur ne suit aucune redirection)."""
+    cid, sec, _ = ivao_oauth_cfg()
+    basic = base64.b64encode(f'{urllib.parse.quote(cid, safe="")}:{urllib.parse.quote(sec, safe="")}'.encode()).decode()
+    req = urllib.request.Request(url, method='POST', data=urllib.parse.urlencode(form).encode(),
+                                 headers={'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json'})
+    req.add_unredirected_header('Authorization', f'Basic {basic}')
+    return req
+
+
+def _ivao_token(form):
+    """Point de jeton d'IVAO, client_secret_basic : { access_token, refresh_token, expires_in, scope } ou ValueError."""
+    j = _oidc_json(_ivao_post(ivao_oidc_meta(ivao_oauth_cfg()[2])['token_endpoint'], form))
+    if not isinstance(j, dict) or not j.get('access_token'):
+        raise ValueError('no access_token')
+    return j
+
+
+def _ivao_tokens(j):
+    return {'ok': True, 'access_token': str(j['access_token']), 'refresh_token': str(j.get('refresh_token') or ''),
+            'scope': str(j.get('scope') or ''), 'expires_at': int(time.time()) + max(60, int(j.get('expires_in') or 3600))}
+
+
+def ivao_state_open(state, device, redirect):
+    """Vrai si cet état est celui d'une demande en cours de cet appareil, avec cette adresse de retour (sans le consommer)."""
+    p = _ivao_oidc['pending'].get(str(state or ''))
+    return bool(p) and time.time() - p['at'] < IVAO_STATE_TTL and p['device'] == device and p['redirect'] == redirect
+
+
+def ivao_oauth_revoke(token):
+    """Délier : le jeton (refresh_token d'abord) révoqué chez IVAO, revocation_endpoint de la découverte (RFC 7009, https,
+    client_secret_basic) : { ok, revoked } ; revoked faux sans point de révocation ou s'il refuse — l'appareil efface quand
+    même son jeton et dit au pilote de retirer l'accès dans son compte IVAO."""
+    if not isinstance(token, str) or not 8 <= len(token) <= 4096:
+        return {'ok': False, 'status': 400, 'message': 'token expected'}
+    cfg = ivao_oauth_cfg()
+    if not cfg:
+        return {'ok': True, 'revoked': False}
+    try:
+        url = ivao_oidc_meta(cfg[2]).get('revocation_endpoint') or ''
+        if not url:
+            return {'ok': True, 'revoked': False}
+        with OIDC_OPEN(_ivao_post(url, {'token': token, 'token_type_hint': 'refresh_token'}), timeout=20) as r:
+            r.read()
+        return {'ok': True, 'revoked': True}
+    except (OSError, ValueError):
+        return {'ok': True, 'revoked': False}
+
+
+def ivao_oauth_finish(state, code, error, device, redirect):
+    """Retour d'IVAO : l'état d'une demande en cours, du même appareil et de la même adresse de retour ; le code échangé.
+    { ok, access_token, refresh_token, expires_at, scope } ou { ok: False, error }."""
+    p = _ivao_oidc['pending'].pop(str(state or ''), None)
+    if not p or time.time() - p['at'] >= IVAO_STATE_TTL or p['device'] != device or p['redirect'] != redirect:
+        return {'ok': False, 'error': 'state'}
+    if error or not code:
+        return {'ok': False, 'error': 'denied' if error else 'code'}
+    if not ivao_oauth_cfg():
+        return {'ok': False, 'error': 'config'}
+    try:
+        return _ivao_tokens(_ivao_token({'grant_type': 'authorization_code', 'code': code, 'redirect_uri': redirect,
+                                         'code_verifier': p['verifier']}))
+    except (OSError, ValueError, KeyError):
+        return {'ok': False, 'error': 'exchange'}
+
+
+def ivao_oauth_refresh(refresh_token):
+    """Nouveaux jetons pour ce refresh_token, avec le secret du relais : { ok, access_token, refresh_token, expires_at }."""
+    if not isinstance(refresh_token, str) or not 8 <= len(refresh_token) <= 4096:
+        return {'ok': False, 'status': 400, 'message': 'refresh_token expected'}
+    if not ivao_oauth_cfg():
+        return {'ok': False, 'status': 409, 'message': 'no IVAO application on the relay (secrets/ivao_oauth.json)'}
+    try:
+        j = _ivao_token({'grant_type': 'refresh_token', 'refresh_token': refresh_token})
+    except (OSError, ValueError, KeyError) as e:
+        return {'ok': False, 'status': 401 if isinstance(e, urllib.error.HTTPError) and e.code in (400, 401) else 502,
+                'message': 'IVAO refused the refresh' if isinstance(e, urllib.error.HTTPError) else 'IVAO unreachable'}
+    out = _ivao_tokens(j)
+    out['refresh_token'] = out['refresh_token'] or refresh_token
+    return out
+
+
+# relais de la compagnie (R1a, --relay <hôte public>) : l'hôte que le proxy inverse du NAS transmet (en-tête Host) ; vide :
+# pas de relais
+RELAY = {'host': ''}
+# port du relais (--relay-port, sinon celui de l'interface + 1) : toute requête qui y arrive est du relais ; le proxy le vise
+RELAY['port'] = 0
+# en-têtes posés par un mandataire : sur le port de l'interface en relais, la requête est refusée (_relay_gate, ceinture)
+PROXY_HEADERS = ('X-Forwarded-For', 'X-Forwarded-Proto', 'X-Forwarded-Host', 'Forwarded', 'X-Real-IP')
+
+
+def relay_probe():
+    """Au démarrage en relais : une requête sur l'hôte public, par le proxy, doit revenir ici par le port du relais
+    (/__relay/whoami) ; le résultat est dit dans la console (le proxy qui vise le port de l'interface est refusé : 403)."""
+    url = f'https://{RELAY["host"]}/__relay/whoami'
+    try:
+        with GITLAB_OPENER.open(urllib.request.Request(url, headers={'Accept': 'application/json'}), timeout=10) as r:
+            ok = json.loads(r.read() or b'{}').get('relay') is True
+        say('  Relais vérifié : une requête sur l’hôte public revient ici comme relais.' if ok else
+            f'  ATTENTION relais : {url} ne répond pas comme ce relais.')
+    except urllib.error.HTTPError as e:
+        say(f'  ATTENTION relais : {url} répond {e.code}' + ('' if e.code != 403 else
+                                                               f' — le proxy doit viser le port du relais ({RELAY["port"]}) et garder l’en-tête Host.'))
+    except (OSError, ValueError) as e:
+        say(f'  Relais : vérification impossible ({type(e).__name__}) — l’hôte public doit mener à ce poste.')
+RELAY_TEXT = {
+    'title': {'fr': 'Appairer cet appareil', 'en': 'Pair this device', 'de': 'Dieses Gerät koppeln', 'es': 'Vincular este dispositivo'},
+    'intro': {'fr': 'L’appli Pilote de la compagnie, par son relais. Saisissez le code à 8 chiffres que l’administrateur vous a donné'
+                    + NB + ': une seule fois pour cet appareil.',
+              'en': 'The airline’s Pilot application, through its relay. Enter the 8-digit code the administrator gave you: only once for this device.',
+              'de': 'Die Pilot-App der Fluggesellschaft über ihr Relais. Geben Sie den 8-stelligen Code ein, den Ihnen der Administrator gegeben hat: nur einmal für dieses Gerät.',
+              'es': 'La aplicación Piloto de la aerolínea, por su relé. Introduzca el código de 8 cifras que le dio el administrador: una sola vez para este dispositivo.'},
+    'code': {'fr': 'Code d’appairage', 'en': 'Pairing code', 'de': 'Kopplungscode', 'es': 'Código de vinculación'},
+    'pair': {'fr': 'Appairer', 'en': 'Pair', 'de': 'Koppeln', 'es': 'Vincular'},
+    'bad': {'fr': 'Code incorrect.', 'en': 'Wrong code.', 'de': 'Falscher Code.', 'es': 'Código incorrecto.'},
+    'expired': {'fr': 'Pas de code en cours (un code sert une fois et dure 10 minutes)' + NB + ': demandez-en un à l’administrateur.',
+                'en': 'No code in progress (a code works once and lasts 10 minutes): ask the administrator for one.',
+                'de': 'Kein Code aktiv (ein Code gilt einmal und 10 Minuten): Bitten Sie den Administrator um einen.',
+                'es': 'Ningún código en curso (un código sirve una vez y dura 10 minutos): pida uno al administrador.'},
+    'wait': {'fr': 'Trop d’essais' + NB + ': réessayez dans {s} s.', 'en': 'Too many tries: try again in {s} s.',
+             'de': 'Zu viele Versuche: in {s} s erneut versuchen.', 'es': 'Demasiados intentos: vuelva a intentarlo en {s} s.'},
+    'closed': {'fr': 'Appairage fermé après trop de codes faux' + NB + ': demandez un nouveau code à l’administrateur.',
+               'en': 'Pairing closed after too many wrong codes: ask the administrator for a new code.',
+               'de': 'Kopplung nach zu vielen falschen Codes geschlossen: Bitten Sie den Administrator um einen neuen Code.',
+               'es': 'Vinculación cerrada tras demasiados códigos erróneos: pida un código nuevo al administrador.'},
+    'origin': {'fr': 'Saisissez le code sur cette page.', 'en': 'Enter the code on this page.', 'de': 'Geben Sie den Code auf dieser Seite ein.',
+               'es': 'Introduzca el código en esta página.'},
+    'note': {'fr': 'Cet appareil reçoit un jeton gardé par le navigateur, révocable par l’administrateur ; vos écritures sont signées de votre trigramme.',
+             'en': 'This device gets a token kept by the browser, revocable by the administrator; your writes are signed with your trigram.',
+             'de': 'Dieses Gerät erhält ein vom Browser verwahrtes Token, das der Administrator widerrufen kann; Ihre Änderungen tragen Ihr Kürzel.',
+             'es': 'Este dispositivo recibe un token guardado por el navegador, revocable por el administrador; sus escrituras llevan su trigrama.'},
+}
 LAN_TEXT = {
     'title': {'fr': 'Appairer cet appareil', 'en': 'Pair this device', 'de': 'Dieses Gerät koppeln', 'es': 'Vincular este dispositivo'},
     'intro': {'fr': 'L’appli Pilote du poste « {host} », sur le réseau local. Saisissez le code à 6 chiffres affiché sur le poste '
@@ -1328,6 +1997,8 @@ LAN_TEXT = {
                'es': 'Vinculación cerrada tras demasiados códigos erróneos: se vuelve a abrir con «Código nuevo» en el equipo (Ajustes › Acceso del equipo).'},
     'wait': {'fr': 'Trop d’essais' + NB + ': réessayez dans {s} s.', 'en': 'Too many attempts: try again in {s} s.',
              'de': 'Zu viele Versuche: in {s} s erneut versuchen.', 'es': 'Demasiados intentos: vuelva a intentarlo en {s} s.'},
+    'origin': {'fr': 'Saisissez le code sur cette page.', 'en': 'Enter the code on this page.', 'de': 'Geben Sie den Code auf dieser Seite ein.',
+               'es': 'Introduzca el código en esta página.'},
     'note': {'fr': 'Réseau local en http' + NB + ': à n’utiliser que sur un réseau de confiance (à la maison), jamais sur un wifi public.',
              'en': 'Local network over http: use it only on a trusted network (at home), never on public wifi.',
              'de': 'Lokales Netz über http: nur in einem vertrauenswürdigen Netz (zu Hause) verwenden, nie in einem öffentlichen WLAN.',
@@ -1336,9 +2007,10 @@ LAN_TEXT = {
 
 
 def safe_next(p):
-    """Page où revenir après l'appairage : un chemin de ce serveur, jamais un autre site."""
+    """Page où revenir après l'appairage : un chemin de ce serveur, jamais un autre site — ni //, ni \\, ni espace ou
+    caractère de contrôle (« /<tabulation>/hôte » : le navigateur retire la tabulation et lit //hôte), ni /__."""
     p = str(p or '')
-    return p if p.startswith('/') and not p.startswith('//') and '\\' not in p and not p.startswith('/__') else '/frame/'
+    return p if re.fullmatch(r'/[^\s\x00-\x1f\x7f\\]*', p) and not p.startswith('//') and not p.startswith('/__') else '/frame/'
 
 
 def lan_state():
@@ -1449,10 +2121,17 @@ _ivao = {'at': 0.0, 'areas': None}
 
 
 # ---- secrets locaux (dossier secrets/ à la racine de la suite, exclu de git, hors des données et des sauvegardes) :
-#   secrets/<service>.json            clés de la suite (IVAO : apiKey, savedAt) — Paramètres › Installation › Clés et services externes
+#   secrets/<service>.json            clés de la suite (IVAO : apiKey, savedAt ; EAD Basic : user, password, savedAt) — Paramètres › Installation › Clés et services externes
 #   secrets/users/<TRI>.json          identifiants d'un utilisateur ({ ivao: { clientId, clientSecret } }) — Mon profil
 # Champs admis par service et portée ; écrits par POST /__setup/secrets, jamais relus par la page (indicateurs seuls).
-SECRET_FIELDS = {'app': {'ivao': {'apiKey': True}}, 'user': {'ivao': {'clientId': False, 'clientSecret': True}}}
+# gitlab : instance, projet et jeton d'accès du dépôt des données sur GitLab (secrets/gitlab.json, posé à la main sur le poste
+# de l'administrateur ; G2, la page « Jetons des pilotes », s'en servira) — comme ead, jamais un caractère vers la page
+SECRET_FIELDS = {'app': {'ivao': {'apiKey': True}, 'ead': {'user': True, 'password': True},
+                         'gitlab': {'instance': True, 'project': True, 'token': True},
+                         # application OpenID d'IVAO du relais (R1b) : le secret reste ici, jamais un caractère vers la page
+                         'ivao_oauth': {'clientId': True, 'clientSecret': True}},
+                 'user': {'ivao': {'clientId': False, 'clientSecret': True}}}
+SECRET_BLIND = ('ead', 'gitlab', 'ivao_oauth')  # services dont la page ne reçoit que « réglé » et la date, jamais un caractère
 SECRETS = os.path.join(ROOT, 'secrets')
 
 
@@ -1485,6 +2164,21 @@ def lnmperf_suggestions():
             if os.path.isdir(p) and p not in out:
                 out.append(p)
     return out
+
+
+def lnm_db_kinds():
+    """Genres de bases de données de Little Navmap présents sur ce poste, triés (« navigraph », « userdata »…) : les fichiers
+    little_navmap_<genre>.sqlite de %APPDATA%/ABarthel/little_navmap_db (Windows) ou ~/.config/ABarthel/little_navmap_db.
+    Des noms seulement, jamais un chemin ni un contenu ; [] si le dossier est absent ; ne lève jamais. Sert d'indice à aerodb
+    (frame/aerodb : « Little Navmap a ces données ») ; la lecture de ces bases n'est pas faite ici (V3 § 10.21)."""
+    try:
+        home = os.path.expanduser('~')
+        base = (os.environ.get('APPDATA') or os.path.join(home, 'AppData', 'Roaming')) if sys.platform == 'win32' else os.path.join(home, '.config')
+        folder = os.path.join(base, 'ABarthel', 'little_navmap_db')
+        found = (re.fullmatch(r'little_navmap_([a-z0-9_]+)\.sqlite', n) for n in os.listdir(folder))
+        return sorted({m.group(1) for m in found if m})
+    except Exception:
+        return []
 
 
 def lnmperf_entry(path):
@@ -1529,6 +2223,9 @@ def secrets_view(tri=''):
     for service, fields in SECRET_FIELDS['app'].items():
         cur = _read_json(_secret_file('app', service=service))
         saved = cur.get('savedAt') if isinstance(cur.get('savedAt'), dict) else {}
+        if service in SECRET_BLIND:  # EAD Basic, GitLab : jamais le moindre caractère vers la page (réglé ou non, et quand)
+            out['app'][service] = {k: {'set': bool(cur.get(k)), 'at': str(saved.get(k) or '') if cur.get(k) else ''} for k in fields}
+            continue
         out['app'][service] = {k: {**_hint(cur.get(k)), 'at': str(saved.get(k) or '') if cur.get(k) else ''} for k in fields}
     if os.environ.get('IVAO_API_KEY'):
         out['app']['ivao']['apiKey'] = {**_hint(os.environ['IVAO_API_KEY']), 'env': True}
@@ -1539,6 +2236,113 @@ def secrets_view(tri=''):
             s = cur.get(service) or {}
             out['user'][service] = {k: (_hint(s.get(k)) if secret else str(s.get(k) or '')) for k, secret in fields.items()}
     return out
+
+
+# ---- jetons d'accès de projet GitLab des pilotes (G2, application Maintenance) : créés, listés et révoqués par le lanceur
+# avec le jeton de l'administrateur (secrets/gitlab.json : instance https, projet, jeton) ; le jeton de l'administrateur ne
+# quitte jamais le lanceur ; celui d'un pilote est rendu UNE fois, à sa création, pour que l'administrateur le lui donne
+GITLAB_TIMEOUT = 20
+GITLAB_LEVEL = 30  # Developer : écrit la branche si elle l'admet (Protected branches : « Developers + Maintainers »), jamais
+#                    les réglages du projet ; un jeton Maintainer pourrait les changer par l'API
+GITLAB_SCOPES = ['api']  # l'API REST (arbre, blobs, commits) : write_repository ne vaut que pour git en HTTP
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Jamais une redirection suivie avec le jeton de l'administrateur : un 30x est une erreur (le pendant, côté lanceur, du
+    redirect: 'error' du transport GitLab du navigateur ; HTTPRedirectHandler recopierait l'en-tête vers n'importe quel hôte)."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+GITLAB_OPENER = urllib.request.build_opener(_NoRedirect)
+GITLAB_OPEN = GITLAB_OPENER.open  # remplacé par les essais (aucun appel réel)
+
+
+def _gitlab_request(url, method, body, tok):
+    """Requête de l'API GitLab : le jeton en en-tête jamais recopié par une redirection (add_unredirected_header)."""
+    req = urllib.request.Request(url, method=method, data=json.dumps(body).encode() if body is not None else None,
+                                 headers={'Content-Type': 'application/json'} if body is not None else {})
+    req.add_unredirected_header('PRIVATE-TOKEN', tok)
+    return req
+
+
+def gitlab_cfg():
+    """(api, projet encodé, jeton) de secrets/gitlab.json, ou None : instance en https seulement."""
+    s = _read_json(_secret_file('app', service='gitlab'))
+    inst, proj, tok = str(s.get('instance') or '').strip().rstrip('/'), str(s.get('project') or '').strip().strip('/'), str(
+        s.get('token') or '').strip()
+    if not (re.fullmatch(r'https://[A-Za-z0-9.-]+(?::\d+)?', inst) and re.fullmatch(r'[\w.-]+(?:/[\w.-]+)+', proj) and tok):
+        return None
+    return f'{inst}/api/v4', urllib.parse.quote(proj, safe=''), tok
+
+
+def gitlab_call(method, path, body=None):
+    """Appel de l'API GitLab du projet avec le jeton de l'administrateur : (statut, JSON) ; (0, message) sans réseau. Le
+    jeton n'apparaît dans aucun message rendu."""
+    cfg = gitlab_cfg()
+    if not cfg:
+        return 409, {'message': 'no GitLab secret on this workstation (secrets/gitlab.json: https instance, project, token)'}
+    api, proj, tok = cfg
+    req = _gitlab_request(f'{api}/projects/{proj}{path}', method, body, tok)
+    try:
+        with GITLAB_OPEN(req, timeout=GITLAB_TIMEOUT) as r:
+            raw = r.read()
+            return r.status, (json.loads(raw) if raw else {})
+    except urllib.error.HTTPError as e:
+        try:
+            j = json.loads(e.read() or b'{}')
+        except ValueError:
+            j = {}
+        msg = j.get('message') or j.get('error') or e.reason
+        return e.code, {'message': data_sync.clean_text(str(msg if isinstance(msg, str) else json.dumps(msg)))[:300].replace(tok, '…')}
+    except (OSError, ValueError) as e:
+        return 0, {'message': data_sync.clean_text(str(e))[:200].replace(tok, '…')}
+
+
+def gitlab_tokens():
+    """Jetons d'accès du projet : [{ id, name, scopes, level, active, revoked, created, expires, used }] — jamais une valeur."""
+    code, j = gitlab_call('GET', '/access_tokens?per_page=100')
+    if code != 200 or not isinstance(j, list):
+        return {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab') if isinstance(j, dict) else 'GitLab'}
+    return {'ok': True, 'tokens': [{'id': t.get('id'), 'name': str(t.get('name') or '')[:60], 'scopes': t.get('scopes') or [],
+                                    'level': t.get('access_level'), 'active': bool(t.get('active')), 'revoked': bool(t.get('revoked')),
+                                    'created': t.get('created_at'), 'expires': t.get('expires_at'), 'used': t.get('last_used_at')}
+                                   for t in j if isinstance(t, dict)]}
+
+
+def gitlab_token_create(a):
+    """{ trigram, days (1 à 365) } → un jeton d'accès de projet nommé par le trigramme ; { ok, id, name, expires, token } : la
+    valeur rendue cette fois seulement (jamais gardée ni journalisée par le lanceur)."""
+    tri = str(a.get('trigram') or '').upper()
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', tri):
+        return {'ok': False, 'status': 400, 'message': 'trigram expected (2 to 5 letters or digits)'}
+    try:
+        days = int(a.get('days') or 365)
+    except (TypeError, ValueError):
+        days = 0
+    if not 1 <= days <= 365:
+        return {'ok': False, 'status': 400, 'message': 'days: 1 to 365'}
+    expires = (datetime.date.today() + datetime.timedelta(days=days)).isoformat()
+    code, j = gitlab_call('POST', '/access_tokens', {'name': tri, 'scopes': GITLAB_SCOPES, 'access_level': GITLAB_LEVEL,
+                                                     'expires_at': expires})
+    if code not in (200, 201) or not isinstance(j, dict) or not j.get('token'):
+        return {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab') if isinstance(j, dict) else 'GitLab'}
+    return {'ok': True, 'id': j.get('id'), 'name': j.get('name'), 'expires': j.get('expires_at'), 'token': j['token']}
+
+
+def gitlab_token_revoke(a):
+    """{ id } → jeton révoqué ; { ok }. Seulement un jeton de pilote (nom = un trigramme) : jamais un autre jeton du projet
+    (celui de l'administrateur, d'un service), quelle que soit la page qui le demande."""
+    try:
+        tid = int(a.get('id'))
+    except (TypeError, ValueError):
+        return {'ok': False, 'status': 400, 'message': 'id expected'}
+    code, j = gitlab_call('GET', f'/access_tokens/{tid}')
+    if code != 200 or not isinstance(j, dict):
+        return {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab') if isinstance(j, dict) else 'GitLab'}
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', str(j.get('name') or '')):
+        return {'ok': False, 'status': 403, 'message': 'only a pilot token (named after a trigram) is revoked here'}
+    code, j = gitlab_call('DELETE', f'/access_tokens/{tid}')
+    return {'ok': True} if code in (200, 204) else {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab')}
 
 
 def secrets_save(a):
@@ -1789,9 +2593,12 @@ def frame_batch(a):
             with open(full, 'w', encoding='utf-8', newline='') as f:
                 f.write(text)
         bridged = registry_bridge()  # registre V2 à jour des comptes rendus, dans le même commit
-        if todo and os.path.isdir(os.path.join(DATA, '.git')) and re.fullmatch(r'[A-Z0-9]{2,5}', author):
+        # fusion en attente dans data/ : pas de commit (git le refuserait, ou il la conclurait), et le lot le dit
+        pending = data_sync.merge_pending(DATA) if todo and os.path.isdir(os.path.join(DATA, '.git')) else ''
+        if todo and not pending and os.path.isdir(os.path.join(DATA, '.git')) and re.fullmatch(r'[A-Z0-9]{2,5}', author):
             paths = [r for r, _ in todo] + (['/'.join(report_bridge.REGISTRY)] if bridged else [])
-            env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
+            # chaque chemin est un nom de fichier, jamais un motif (« [ab].json » n'emporte pas a.json)
+            env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local', GIT_LITERAL_PATHSPECS='1')
             data_sync.git(DATA, 'add', '-A', '--', *paths, env=env)
             data_sync.git(DATA, '-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local', 'commit', '-q', '-m',
                           str(a.get('message') or f'{author} : lot du frame')[:500], '--', *paths, env=env)
@@ -1803,7 +2610,7 @@ def frame_batch(a):
     if any(r.startswith('utilisateurs/') for r, _ in todo):
         with INDEX_LOCK:
             index_users()
-    return {'ok': True, 'head': head}, 200
+    return {'ok': True, 'head': head, **({'warning': pending} if pending else {})}, 200
 
 
 def registry_bridge():
@@ -1891,12 +2698,13 @@ class _RelayRedirect(urllib.request.HTTPRedirectHandler):
 NET_OPENER = urllib.request.build_opener(_RelayRedirect(), _RelayHTTPSHandler(context=ssl.create_default_context()))
 
 
-def frame_net(a):
-    """Relais d'un appel { url, method, accept, contentType, body } : (statut, en-têtes, corps)."""
+def frame_net(a, site_ok=True):
+    """Relais d'un appel { url, method, accept, contentType, body } : (statut, en-têtes, corps). site_ok faux (relais de la
+    compagnie) : la liste blanche NET_HOSTS seule, jamais le site de la compagnie (aucun hôte choisi par la page)."""
     url = str(a.get('url') or '')
     u = urllib.parse.urlparse(url)
-    site = u.scheme == 'https' and bool(u.hostname) and u.hostname not in NET_HOSTS and u.hostname == airline_host()
-    if u.scheme != 'https' or not relay_host(u.hostname):
+    site = site_ok and u.scheme == 'https' and bool(u.hostname) and u.hostname not in NET_HOSTS and u.hostname == airline_host()
+    if u.scheme != 'https' or not (u.hostname in NET_HOSTS or site):
         return 403, {'Content-Type': 'application/json'}, json.dumps({'error': 'site non relayé'}).encode()
     method = str(a.get('method') or 'GET').upper()
     if method not in (('GET',) if site else ('GET', 'POST')):
@@ -2590,6 +3398,9 @@ def aircraft_publish(author='', apply=False):
     if not data_sync.is_repo(DATA):
         res['message'] = 'data/ n’est pas un dépôt git : rien à publier.'
         return res
+    if data_sync.merge_pending(DATA):  # avant toute écriture dans data/ (comme l'import VFR)
+        res['message'] = data_sync.merge_pending(DATA)
+        return res
     missing = [n for n in AIRCRAFT_KEEP if n not in AIRCRAFT_JSON and not os.path.isfile(os.path.join(src, n))]
     if missing:
         res['message'] = 'Base des types absente sur ce poste (' + ', '.join(missing) + ') : la compléter d’abord.'
@@ -2664,6 +3475,8 @@ def vfr_publish(compiled, author='', apply=False):
         return res
     if not re.fullmatch(r'[A-Z0-9]{2,5}', author or ''):
         return {**res, 'ok': False, 'errors': ['Trigramme de l’auteur manquant ou invalide.']}
+    if data_sync.merge_pending(DATA):
+        return {**res, 'ok': False, 'errors': [data_sync.merge_pending(DATA)]}
     vfr_import.write(p, DATA)
     env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
     who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
@@ -2737,6 +3550,36 @@ def aircraft_start(codes, quick=False):
 
 
 AERO_LOCK = threading.Lock()  # un téléchargement de données aéronautiques à la fois (tools/aero_fetch.py)
+REGEN = None  # travaux du module Données (tools/regen_jobs.py) : créés au premier appel (DATA est réglé au démarrage)
+
+
+def regen_git():
+    """git durci et son environnement pour l'état du poste ; (None, dict) sans git."""
+    return (data_sync.git_cmd, data_sync.git_env) if data_sync.git_exe() else (None, dict)
+
+
+def sync_gesture(a):
+    """Geste « Synchroniser » d'une demande de passage (POST /__setup/sync) : le drapeau gesture de la page est une
+    intention, pas une autorisation (un appareil appairé peut l'envoyer) ; tant qu'une construction de la base est en
+    cours, sia/base reste sur le poste quel que soit le drapeau : un travail du module Données tourne sur ce lanceur, ou
+    un fichier de sia/base non commité a été écrit il y a moins de 10 min (data_sync.building : la page V2 écrit la base
+    par son dossier autorisé, sans passer par le lanceur)."""
+    if not isinstance(a, dict) or a.get('gesture') is not True:
+        return False
+    job = ((REGEN.view() or {}).get('job') or {}) if REGEN is not None else {}
+    return job.get('state') != 'running' and not data_sync.building(DATA)
+
+
+def regen():
+    """Les travaux du module Données de ce lanceur (un à la fois)."""
+    global REGEN
+    if REGEN is None:
+        g, env = regen_git()
+        for name, why in regen_jobs.load_verbs():  # tools/regen/<jeu>.py : les verbes de chaque jeu
+            say(f'  Données : {name} laissé de côté ({why}).')
+        REGEN = regen_jobs.Jobs(regen_jobs.REGISTRY, {'data': DATA, 'secrets': SECRETS, 'git_cmd': g, 'git_env': env},
+                                store=os.path.join(ROOT, 'tools', '.regen_last.json'))
+    return REGEN
 _loaded = {}  # module → date du fichier au chargement
 
 
@@ -2923,9 +3766,16 @@ def main():
     ap.add_argument('--no-browser', action='store_true')
     ap.add_argument('--no-data', action='store_true')
     ap.add_argument('--data', help='autre dossier de données servi sous /data/ (essais sur une copie, ex. synchronisation)')
+    ap.add_argument('--relay', metavar='HÔTE', default='',
+                    help='relais de la compagnie (R1a) derrière un proxy inverse https sur ce poste : nom public transmis par le '
+                         'proxy (en-tête Host) ; jamais exposé sans le proxy, jamais sans revue de sécurité')
+    ap.add_argument('--relay-port', type=int, default=0, metavar='PORT',
+                    help='port du relais sur 127.0.0.1, que vise le proxy (défaut : celui de l’interface + 1)')
     ap.add_argument('--lan', action='store_true',
                     help='ouvrir aussi aux appareils du réseau local (adresses privées, code d’appairage ; jusqu’à la fermeture)')
     a = ap.parse_args()
+    if a.relay and a.lan:
+        ap.error('--lan et --relay ne vont pas ensemble : le relais n’écoute que sur 127.0.0.1')
     global DATA
     if a.data:  # autre dossier de données (copie d'essai) : servi sous /data/, ni clone ni mise à jour au démarrage
         DATA = os.path.abspath(a.data)
@@ -2979,6 +3829,23 @@ def main():
     say(f'  Suite servie sur http://127.0.0.1:{port}/')
     if a.lan:
         lan_open()
+    if a.relay:  # --lan avec --relay : refusé plus haut
+        rport = a.relay_port or port + 1
+        # refus au démarrage : hôte invalide, port du relais égal à celui de l'interface (celui du réseau local aussi, fermé
+        # en relais), hors limites ou occupé — jamais un relais à moitié ouvert
+        if not re.fullmatch(r'[A-Za-z0-9.-]+(?::\d+)?', a.relay):
+            say('  Relais : hôte invalide, lanceur arrêté.')
+            return 2
+        if rport == port or not 0 < rport < 65536 or not free(rport):
+            say(f'  Relais : port {rport} refusé (celui de l’interface, hors limites ou occupé), lanceur arrêté.')
+            return 2
+        # écoute à part, 127.0.0.1 seulement : tout ce qui y arrive est du relais ; l'interface du poste reste sur son port
+        RELAY.update(host=a.relay.lower(), port=rport)  # posé avant d'écouter : aucune requête du relais sans son hôte
+        rsrv = Server(('127.0.0.1', rport), handler)
+        rsrv.relay = True
+        threading.Thread(target=rsrv.serve_forever, daemon=True).start()
+        say(f'  Relais de la compagnie : hôte public {RELAY["host"]}, sur 127.0.0.1:{rport} que vise le proxy inverse (https).')
+        threading.Thread(target=relay_probe, daemon=True).start()
     say('')
     say('3. Navigateur')
     say(f'  {url}')
