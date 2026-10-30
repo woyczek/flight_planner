@@ -949,6 +949,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 97 | Suite update by channel, `/__setup/update` (4fc473e5d); the two notes of 89 closed | acceptable, two notes |
 | 98 | Refactor R-M2 + R-M5 (a): one cartouche, procedure hues from the theme tokens (3e65a0465) | acceptable, no change of behaviour |
 | 99 | Data module, the zone map to tick (4b201ca99); noreg locks (b939f4051) | acceptable |
+| 100 | Help panel and welcome card placed under the module (09c9cacb4) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1883,6 +1884,10 @@ of `ctx.aerodb.zoneOutlines()` only (92); the SVG path, view box and size are ma
 the same selection, and nothing while an operation runs. No network or write added. The noreg locks live at constant paths
 in the temporary folder, are created exclusively, are removed when stale only if their process is gone, and only by their
 owner otherwise; no path comes from an argument.
+
+**100. Help placed under the module (09c9cacb4) — acceptable.** Only the insertion points change in `frame/app.js`
+(after the module instead of before it); the same nodes built by `SogHelp.panel` and `SogHelp.welcome`, from the same help
+bundle, under the same guards; no new HTML or text source.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
