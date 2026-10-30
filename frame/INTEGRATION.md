@@ -1045,6 +1045,18 @@ in the launcher; `resume` finds it again.
   no commit; `aircraft/purge { dry }` the caches only, never a tracked file nor the base (`kept-tracked`); `aircraft/publish { dry }` dry
   the plan `{ remove, copy }`, then the launcher's `aircraft_publish` (written into `AircraftDB/` of the data repository, a commit in
   the author's name, a synchronisation pass); a real publish needs a trigram (`no-author`). MIN_GAP 30 s for `aircraft/fetch`.
+  **Set `vfr`** (`tools/regen/vfr.py`, V3 § 10.34 A1), one element, the AIRAC cycle (`AAAA-MM-JJ`, the one in force by default) in the
+  view's `cycles: { <cycle>: { state, done, total, error? } }`: `vfr/fetch { cycle, icaos? }` the cycle's VAC charts (the SIA eAIP's VFR
+  atlas, the address computed by the launcher, `proc_sia.vac_url`) into `data/local/vac/<cycle>/` (never versioned); the aerodromes are the
+  workstation's SIA base for that cycle (`sia/base/fr/<cycle>/aerodromes.json`, LF… codes) or the list given; a chart already cached is
+  not asked again, a missing one (404) is no failure, none at all is `not-published`, no base `no-base`; result `{ ok, cycle, fetched,
+  unchanged, notPublished, failed, reason? }`, MIN_GAP 30 s. `vfr/build { cycle }` compiles that cache (tools/report-vfr `vfr_core`),
+  checks it strictly (`vfr_import.plan`), writes `sia/vfr/` and commits it once in the author's name (`regen_jobs.commit_outputs`):
+  `no-pypdf`, `no-cache`, a compilation error (`failed`) or a refused plan (`invalid`) write nothing; result `{ ok, cycle, summary,
+  commit, warning?, failed, reason? }`. `vfr/purge { cycle?, dry }` the cache (charts and their extracted text) of a cycle or of all.
+  **Every job** runs its subprocesses with a reduced environment (`regen_jobs.child_env`: PATH, the system and temp folders, the
+  user's folders, a proxy; never the launcher's credentials), and **every purge** checks each path against its real place just before
+  removing it (`regen_jobs.inside`, `files_under`, `prune_empty`: a link or a Windows junction to elsewhere is refused, `unsafe-path`).
   `GET /__setup/status` (the detection only, the same shape everywhere; the workstation's own settings are `GET
   /__setup/workstation`, workstation only) also carries `lnm`: the sorted list of Little Navmap database kinds present on the workstation (the
   `little_navmap_<kind>.sqlite` files of its `little_navmap_db` folder; names only, `[]` when absent); `FrameData.launcher.detect()` hands it on in

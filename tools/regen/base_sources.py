@@ -44,6 +44,7 @@ ROOT = os.path.dirname(TOOLS)
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import aero_fetch  # noqa: E402  (le téléchargement lui-même : jamais recopié ici)
+import regen_jobs  # noqa: E402  (le socle : inside, la règle commune des purges)
 
 ZONES_GEO = 'shared/carto/aero_zones_geo.js'
 ZONE_ID = re.compile(r'^[a-z0-9_-]{2,12}$')
@@ -459,16 +460,7 @@ def attributed_zone(rel):
     return 'fr' if '/' not in rel and MIAM.search(rel) else None
 
 
-def _inside(path, base):
-    """Vrai si `path` n'est pas un lien et se résout (liens et jonctions compris) sous `base` (déjà résolu). Le dernier garde-fou avant un retrait."""
-    try:
-        if os.path.islink(path):
-            return False
-        real = os.path.normcase(os.path.realpath(path))
-        base = os.path.normcase(base)
-        return os.path.commonpath([real, base]) == base and real != base
-    except (OSError, ValueError):
-        return False
+_inside = regen_jobs.inside  # une seule règle pour toutes les purges (regen_jobs.inside)
 
 
 def _walk(top, prefix, base):

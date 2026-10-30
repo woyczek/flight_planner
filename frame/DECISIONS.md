@@ -2018,3 +2018,14 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   - `GET /__setup/regen/verbs`: the loaded « set/verb » list, for the page to grey what the launcher lacks.
   - noreg I17 against a fake updater and a trial folder (no network): fleet codes, fetch leaves the base, build offline,
     the overrides of the served data, purge dry / real with a tracked file kept, publish dry / without author / real.
+- **30 Oct 2026 — Launcher jobs for the VFR set; one environment and one path rule for every job** (V3 § 10.34 A1, the
+  Settings session's request; security review of d8919b0e6 folded in):
+  - `tools/regen/vfr.py`: fetch downloads the cycle's VAC from the SIA's VFR atlas (the address from `proc_sia`, never the
+    page's) into `data/local/vac/<cycle>/`, for the aerodromes of the workstation's SIA base of that cycle; build runs the
+    existing compiler of `tools/report-vfr` on that cache and the strict check of `tools/vfr_import.py` (the V2 route's work,
+    from the cache rather than a file chosen in the page) and commits `sia/vfr/` once; purge empties the cache. One real
+    chart fetched by hand to check the address (LFBD, cycle 2026-10-29, 548 KB); the noreg never calls the network (I18).
+  - The review's two notes, for the three sets: the job's subprocesses get `regen_jobs.child_env()` (the launcher's EAD
+    credentials and tokens no longer reach a third-party script); every purge uses `regen_jobs.inside` (the rule of
+    `base/purge`, now shared: `base_sources._inside` is it), `files_under` and `prune_empty`, so that a junction inside a cache
+    is neither descended nor emptied (I17, I18 with a real junction).

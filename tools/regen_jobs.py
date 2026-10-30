@@ -388,6 +388,68 @@ def _ead_credentials(secrets):
     return os.environ.get('EAD_USER', '').strip(), os.environ.get('EAD_PASSWORD', '')
 
 
+# environnement d'un sous-processus d'un travail (script d'un jeu, git) : ce qu'il faut pour tourner et passer un proxy, jamais
+# le reste du lanceur (EAD_USER, EAD_PASSWORD, jetons… : un script tiers n'a pas à les voir)
+CHILD_KEEP = {k.upper() for k in ('PATH', 'PATHEXT', 'SYSTEMROOT', 'SYSTEMDRIVE', 'WINDIR', 'COMSPEC', 'TEMP', 'TMP', 'TMPDIR', 'HOME', 'USERPROFILE',
+                                  'APPDATA', 'LOCALAPPDATA', 'HOMEDRIVE', 'HOMEPATH', 'LANG', 'LC_ALL', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY')}
+
+
+def child_env(**extra):
+    """Environnement réduit d'un sous-processus de travail (CHILD_KEEP), sortie en UTF-8, plus `extra`."""
+    env = {k: v for k, v in os.environ.items() if k.upper() in CHILD_KEEP}
+    env['PYTHONIOENCODING'] = 'utf-8'
+    env.update(extra)
+    return env
+
+
+def git_child_env():
+    """child_env() pour git : sans question, chaque chemin un nom de fichier."""
+    return child_env(GIT_TERMINAL_PROMPT='0', GCM_INTERACTIVE='never', GIT_LITERAL_PATHSPECS='1')
+
+
+def inside(path, base):
+    """Vrai si `path` n'est pas un lien et se résout (liens et jonctions compris) sous `base` (déjà résolu). Le dernier garde-fou avant
+    un retrait, pour toutes les purges."""
+    try:
+        if os.path.islink(path):
+            return False
+        real = os.path.normcase(os.path.realpath(path))
+        base = os.path.normcase(base)
+        return os.path.commonpath([real, base]) == base and real != base
+    except (OSError, ValueError):
+        return False
+
+
+def files_under(top, base):
+    """(fichiers, refusés) sous `top` sans suivre de lien : un dossier qui est un lien ou se résout hors de `base` (une jonction de
+    Windows n'est pas un lien pour os.walk) n'est pas descendu ; un fichier lien ou hors de `base` est compté parmi les refusés."""
+    files, bad = [], 0
+    for d, subs, names in os.walk(top):
+        bad += sum(1 for x in subs if not inside(os.path.join(d, x), base))
+        subs[:] = [x for x in subs if inside(os.path.join(d, x), base)]
+        for n in names:
+            full = os.path.join(d, n)
+            if inside(full, base):
+                files.append(full)
+            else:
+                bad += 1
+    return files, bad
+
+
+def prune_empty(top, base):
+    """Retire les dossiers vidés sous `top` (lui compris), du plus profond au plus haut, sans descendre un lien ni une jonction
+    (regen_jobs.inside) ; un dossier non vide reste."""
+    dirs = []
+    for d, subs, _names in os.walk(top):
+        dirs.append(d)
+        subs[:] = [x for x in subs if inside(os.path.join(d, x), base)]
+    for d in sorted(dirs, key=len, reverse=True):
+        try:
+            os.rmdir(d)
+        except OSError:
+            pass
+
+
 def commit_outputs(ctx, author, paths, message):
     """Le seul commit des sorties dans data/, pour tous les verbes : `git add` puis `git commit -m … -- <chemins>` (avec chemins :
     HEAD plus ces fichiers tels qu'ils sont sur le disque, jamais l'index ni un autre chemin ; ce que l'utilisateur a mis en

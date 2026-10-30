@@ -24,6 +24,9 @@ import shutil
 
 TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(TOOLS)
+if TOOLS not in sys.path:
+    sys.path.insert(0, TOOLS)
+import regen_jobs  # noqa: E402  (le socle : environnement réduit des sous-processus, règle commune des purges)
 ADB = os.path.join(ROOT, 'AircraftDB')
 SCRIPT = os.path.join(ADB, 'update_aircraft_db.py')
 OUTPUTS = ('aircraft_db.js', 'aircraft_perf.js')
@@ -76,8 +79,9 @@ class _View:
 
 def _run(job, cmd):
     """Le script en sous-processus, dans AircraftDB/ ; chaque ligne au journal ; l'annulation l'arrête. Rend le code de sortie (None : annulé)."""
-    env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
-    p = subprocess.Popen(cmd, cwd=ADB, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env, text=True, encoding='utf-8', errors='replace')
+    # environnement réduit (regen_jobs.child_env) : le script ne voit pas les identifiants du lanceur
+    p = subprocess.Popen(cmd, cwd=ADB, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=regen_jobs.child_env(), text=True, encoding='utf-8',
+                         errors='replace')
     try:
         for line in p.stdout:
             job.log(line.rstrip())
@@ -155,8 +159,7 @@ def _tracked(ctx, rels):
     git = ctx.get('git_cmd')
     if not git:
         return set()
-    p = subprocess.run(git('-C', ROOT, 'ls-files', '-z', '--', *rels), capture_output=True, env={**os.environ, **(ctx.get('git_env') or dict)(),
-                                                                                                'GIT_LITERAL_PATHSPECS': '1'}, timeout=60)
+    p = subprocess.run(git('-C', ROOT, 'ls-files', '-z', '--', *rels), capture_output=True, env=regen_jobs.git_child_env(), timeout=60)
     if p.returncode:
         raise RuntimeError('git ls-files failed')
     return {x for x in p.stdout.decode('utf-8', 'replace').split('\0') if x}
@@ -165,14 +168,20 @@ def _tracked(ctx, rels):
 def purge(job, args, ctx):
     """Verbe aircraft/purge : les caches du script (dry : ce qui partirait), jamais un fichier suivi ni la base."""
     dry, files, size, kept, removed = args['dry'], 0, 0, 0, []
-    cands = []
-    for c in CACHES:
+    cands, refused = [], 0
+    base = os.path.realpath(ADB)
+    for c in CACHES:  # chaque chemin résolu sous AircraftDB/ (regen_jobs.inside : un lien ou une jonction vers ailleurs est refusé)
         full = os.path.join(ADB, c)
-        if os.path.isfile(full) and not os.path.islink(full):
+        if not os.path.lexists(full):
+            continue
+        if not regen_jobs.inside(full, base):
+            refused += 1
+        elif os.path.isfile(full):
             cands.append(full)
-        elif os.path.isdir(full) and not os.path.islink(full):
-            for d, _dirs, fs in os.walk(full):
-                cands += [os.path.join(d, f) for f in fs if not os.path.islink(os.path.join(d, f))]
+        elif os.path.isdir(full):
+            fs, bad = regen_jobs.files_under(full, base)
+            cands += fs
+            refused += bad
     rels = [os.path.relpath(f, ROOT).replace(os.sep, '/') for f in cands]
     try:
         tracked = _tracked(ctx, rels) if rels else set()
@@ -185,6 +194,9 @@ def purge(job, args, ctx):
         if rel in tracked:
             kept += 1
             continue
+        if not regen_jobs.inside(full, base):  # revérifié juste avant le retrait
+            refused += 1
+            continue
         try:
             nb = os.lstat(full).st_size
             if not dry:
@@ -196,15 +208,12 @@ def purge(job, args, ctx):
         size += nb
         removed.append(rel)
         job.step('purge', n + 1, len(cands), 'files')
-    if not dry and not job.cancelled():
-        for d, _dirs, _fs in sorted(os.walk(os.path.join(ADB, CACHES[1])), key=lambda x: len(x[0]), reverse=True):
-            try:
-                os.rmdir(d)  # un dossier vidé ; un dossier non vide reste
-            except OSError:
-                pass
+    top = os.path.join(ADB, CACHES[1])
+    if not dry and not job.cancelled() and os.path.isdir(top) and regen_jobs.inside(top, base):
+        regen_jobs.prune_empty(top, base)  # les dossiers vidés ; jamais au travers d'une jonction
     job.log(f"{'à retirer' if dry else 'retiré'} : {files} fichier(s), {size // 1024} Ko" + (f', {kept} suivi(s) par git gardé(s)' if kept else ''))
     res = {'ok': not job.cancelled(), 'dry': dry, 'removed': {'files': files, 'bytes': size},
-           'warnings': [{'code': 'kept-tracked', 'count': kept}] if kept else []}
+           'warnings': ([{'code': 'kept-tracked', 'count': kept}] if kept else []) + ([{'code': 'unsafe-path', 'count': refused}] if refused else [])}
     if job.cancelled():
         res['reason'] = 'cancelled'
     return res

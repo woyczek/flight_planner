@@ -1054,6 +1054,102 @@ for flag in ('--out', '--perf-out'):
         r = A.publish(RJ.Job('aircraft', 'publish', {'dry': False}, author='ABC'), {'dry': False}, ctx_pub)
         c.ok(r['ok'] and calls[-1] == ('ABC', True), str(calls), 'a real publish, in the author\u2019s name')
         c.eq(A.check_dry({}), {'dry': True}, 'purge and publish are dry unless told otherwise', what='dry default')
+        # the job's subprocesses get a reduced environment: never the launcher's credentials
+        os.environ['EAD_PASSWORD'] = 'not-for-scripts'
+        try:
+            env = RJ.child_env()
+            c.ok('EAD_PASSWORD' not in env and env.get('PYTHONIOENCODING') == 'utf-8' and 'PATH' in {k.upper() for k in env}, str(sorted(env))[:200],
+                 'a job subprocess never sees the launcher credentials')
+        finally:
+            del os.environ['EAD_PASSWORD']
+        # purge: a junction inside a cache, to a folder outside, is never followed
+        outside = tmp / 'outside'
+        outside.mkdir()
+        (outside / 'precious.txt').write_text('keep', encoding='utf-8')
+        link = adb / 'icao_doc8643_cache' / 'evil'
+        made = subprocess.run(['cmd', '/c', 'mklink', '/J', str(link), str(outside)], capture_output=True) if os.name == 'nt' else None
+        if made is not None and made.returncode == 0:
+            r = A.purge(RJ.Job('aircraft', 'purge', {'dry': False}), {'dry': False}, ctx_git)
+            c.ok((outside / 'precious.txt').is_file() and any(w['code'] == 'unsafe-path' for w in r['warnings']), json.dumps(r),
+                 'a junction to a folder outside AircraftDB/ is refused, its files kept')
+            os.rmdir(link)
     finally:
         A.ROOT, A.ADB, A.SCRIPT = kept
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I18', 'Launcher jobs « vfr »: the VAC of a cycle to the cache, one commit of sia/vfr/ from it, the cache purged', 'I', static=True,
+      rule='V3 § 10.34 A1 (Settings asked, base/* contract): the address computed by the launcher, a missing chart is not a failure, a cycle not published is said, build refuses without the cache, writes sia/vfr/ once, purge keeps what is outside local/')
+def i18(c):
+    import importlib
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    RJ = importlib.import_module('regen_jobs')
+    V = importlib.import_module('regen.vfr')
+    c.eq((V.check_fetch({'cycle': '2026-10-01', 'icaos': ['LFBD']})['icaos'], V.check_fetch({'cycle': '2026/10/01'}), V.check_fetch({'icaos': ['EGLL']}),
+          V.check_purge({})), (['LFBD'], None, None, {'cycle': None, 'dry': True}), 'a cycle date, French codes only, purge dry by default', what='checks')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-vfr-'))
+    kept = V.GET, V.PAUSE
+    asked = []
+    try:
+        data = tmp / 'data'
+        base = data / 'sia' / 'base' / 'fr' / '2026-10-01'
+        base.mkdir(parents=True)
+        (base / 'aerodromes.json').write_text(json.dumps({'data': [{'icao': 'LFBD'}, {'icao': 'LFXX'}, {'icao': ''}, {'icao': 'EGLL'}]}), encoding='utf-8')
+        ctx = {'data': str(data), 'secrets': str(tmp / 's'), 'git_cmd': None, 'git_env': dict}
+        V.PAUSE = 0
+        V.GET = lambda url: asked.append(url) or ((404, b'') if 'LFXX' in url else (200, b'%PDF-1.4 fake'))
+        r = V.fetch(RJ.Job('vfr', 'fetch', {}), {'cycle': '2026-10-01', 'icaos': []}, ctx)
+        c.ok(r['ok'] and (r['fetched'], r['notPublished']) == (1, 1) and (data / 'local' / 'vac' / '2026-10-01' / 'AD-2.LFBD.pdf').is_file(), json.dumps(r),
+             'the base French aerodromes: one chart cached, a missing one is not a failure')
+        c.ok(all(u.startswith('https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_01_OCT_2026/Atlas-VAC/') for u in asked), str(asked),
+             'the address computed by the launcher')
+        asked.clear()
+        r = V.fetch(RJ.Job('vfr', 'fetch', {}), {'cycle': '2026-10-01', 'icaos': []}, ctx)
+        c.eq((r['unchanged'], len([u for u in asked if 'LFBD' in u])), (1, 0), 'a chart of the cycle already cached is not asked again', what='cache')
+        V.GET = lambda url: (404, b'')
+        r = V.fetch(RJ.Job('vfr', 'fetch', {}), {'cycle': '2026-10-01', 'icaos': ['LFXX']}, ctx)
+        c.eq(r.get('reason'), 'not-published', 'no chart at all: the cycle is not published yet', what='not published')
+        c.eq(V.fetch(RJ.Job('vfr', 'fetch', {}), {'cycle': '2026-11-26', 'icaos': []}, ctx).get('reason'), 'no-base', 'no base for that cycle: said', what='no base')
+        c.eq(V.build(RJ.Job('vfr', 'build', {}), {'cycle': '2026-11-26'}, ctx).get('reason'), 'no-cache', 'build without the cache: refused', what='build without cache')
+        # build: the compiler and the strict check stand in; the real write and one commit of sia/vfr/
+        sys.path.insert(0, str(c.root / 'tools' / 'report-vfr'))
+        core, imp = importlib.import_module('vfr_core'), importlib.import_module('vfr_import')
+        k2 = core.compile_corpus, imp.plan
+        subprocess.run(['git', 'init', '-q', '-b', 'main', str(data)], capture_output=True)
+        for k, v in (('user.name', 'essai'), ('user.email', 'essai@example.invalid')):
+            subprocess.run(['git', '-C', str(data), 'config', k, v], capture_output=True)
+        (data / 'README').write_text('x', encoding='utf-8')
+        subprocess.run(['git', '-C', str(data), 'add', 'README'], capture_output=True)
+        subprocess.run(['git', '-C', str(data), 'commit', '-qm', 'init'], capture_output=True)
+        try:
+            core.compile_corpus = lambda *a, **k: {'errors': [{'icao': 'LFBD', 'error': 'bad page'}], 'summary': {}}
+            r = V.build(RJ.Job('vfr', 'build', {}), {'cycle': '2026-10-01'}, ctx)
+            c.ok(r['reason'] == 'failed' and r['failed'][0]['item'] == 'LFBD' and not (data / 'sia' / 'vfr').exists(), json.dumps(r), 'a compilation error: nothing written')
+            core.compile_corpus = lambda *a, **k: {'errors': [], 'summary': {}}
+            imp.plan = lambda compiled, d: {'ok': True, 'errors': [], 'summary': {'aerodromes': 1}, 'changed': ['sia/vfr/LFBD.json'], 'remove': [],
+                                            'files': {'sia/vfr/LFBD.json': b'{"icao": "LFBD"}\n'}}
+            ctx_git = {**ctx, 'git_cmd': lambda *a: ['git', *a], 'git_env': dict}
+            r = V.build(RJ.Job('vfr', 'build', {}, author='ABC'), {'cycle': '2026-10-01'}, ctx_git)
+            log = subprocess.run(['git', '-C', str(data), 'log', '-1', '--format=%an %s', '--name-only'], capture_output=True, text=True).stdout
+            c.ok(r['ok'] and r['commit'] and 'ABC' in log and 'sia/vfr/LFBD.json' in log, json.dumps(r) + log, 'build: sia/vfr/ written and one commit in the author name')
+        finally:
+            core.compile_corpus, imp.plan = k2
+        # purge: dry first; a junction to a folder outside local/ refused
+        r = V.purge(RJ.Job('vfr', 'purge', {}), {'cycle': None, 'dry': True}, ctx)
+        c.ok(r['dry'] and r['removed']['files'] >= 1 and (data / 'local' / 'vac' / '2026-10-01' / 'AD-2.LFBD.pdf').is_file(), json.dumps(r), 'purge dry: the plan, nothing removed')
+        outside = tmp / 'outside'
+        outside.mkdir()
+        (outside / 'precious.pdf').write_text('keep', encoding='utf-8')
+        link = data / 'local' / 'vac' / '2026-10-01' / 'evil'
+        made = subprocess.run(['cmd', '/c', 'mklink', '/J', str(link), str(outside)], capture_output=True) if os.name == 'nt' else None
+        r = V.purge(RJ.Job('vfr', 'purge', {}), {'cycle': None, 'dry': False}, ctx)
+        c.ok(r['ok'] and not (data / 'local' / 'vac' / '2026-10-01' / 'AD-2.LFBD.pdf').exists() and (data / 'sia' / 'vfr' / 'LFBD.json').is_file()
+             and (outside / 'precious.pdf').is_file(), json.dumps(r), 'purge: the cache gone, sia/vfr/ and a folder outside local/ kept')
+        if made is not None and made.returncode == 0:
+            c.ok(any(w['code'] == 'unsafe-path' for w in r['warnings']), json.dumps(r), 'the junction is said as an unsafe path')
+            if os.path.lexists(link):
+                os.rmdir(link)
+    finally:
+        V.GET, V.PAUSE = kept
         shutil.rmtree(tmp, ignore_errors=True)
