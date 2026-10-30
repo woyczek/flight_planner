@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Maintenance: the performance-sheets editor moves from Fuel to « Appareils »** (`modules/aircraft/sheets.js`, `sheets_texts.js`,
+  V3 § 10.34 A2 step 3; help ×4; M6–M11) — Fuel's « Fiches » code moved, not rewritten (Fuel keeps its copy for now): list by
+  family with search, editor, imports with the preview, export, removal; new: the origin and date of each field, the tabs
+  Flotte / Fiches kept on the device, `#aircraft?sheet=<id>`, and the status line « N appareils, M fiches ».
 - **Flight plan export: APP as the ARINC identifier, CYCLE of the published base** (`frame/lib/fms.js`, `procedures.js`
   `arincApp`; `compatible({ star })` for approach transitions) — « APP I02 », « CYCLE 2610 ».
 - **Map and Fuel: approach labels without repeats** (`modules/maps/choose.js`, `frame/lib/procedures.js` `transitionLabelOf`;

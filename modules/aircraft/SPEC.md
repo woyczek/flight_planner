@@ -26,8 +26,9 @@ in one row of tabs (`f-tabs`), the last one kept on the device (`cache/aircraft/
 | **Registre** | a search over the registry (`A.search`, `A.searchTypes`): types, registrations, callsigns, each with its source; read-only, a « Fiche » link when one exists |
 
 A row opens its editor in place of the list (one card, « Retour » goes back), one editor at a time. The frame's sheet
-primitive (§ 11 of frame/INTEGRATION.md) is the map's draggable panel: too much for a form in Maintenance. The tabs appear
-with the second view (step 3); until then the screen is the Flotte view alone.
+primitive (§ 11 of frame/INTEGRATION.md) is the map's draggable panel: too much for a form in Maintenance. **As built**
+(30 Oct 2026, step 3): the row of tabs (`f-tabs`, `data-view="fleet" | "sheets"`, `aria-pressed`) shows Flotte and Fiches; the
+Registre view comes with its step. The cards of the two views are marked `data-pane`, the tabs `data-view`.
 
 ## 3. The fleet (`airline/fleet.json`)
 
@@ -65,6 +66,15 @@ with the second view (step 3); until then the screen is the Flotte view alone.
   sheet with that id, nothing more. **Remove**: `ctx.ask`, then `sheets.remove(id)`; aircraft of the fleet that used it
   fall back on their type's sheet (said in the question with their count).
 - **Export**: « Exporter .lnmperf » and « JSON » of the sheet in the editor (download), as Fuel does today.
+- **As built** (30 Oct 2026, step 3, `modules/aircraft/sheets.js` + `sheets_texts.js`): the code was **moved from Fuel, not
+  rewritten** (`renderSheets`, `sheetGroups`, `onSheetsClick`, `renderEditor`, `readEditor`, `review`, `applyReview`,
+  `importFiles`, `readText`, `download`, the text tables). Fuel's globals became the closure state of
+  `createSheetsView(host)`; host = `{ ctx, body(), gone(), back(), changed() }`, api `{ load, render(id?), onClick, onInput,
+  onChange, counts, editing, stop }`. Fuel's copy stays until its own commit (§ 5). Left behind on purpose: « Utiliser »
+  (Fuel's flight choice) and « Depuis le dernier OFP » (no OFP in Maintenance; the pasted OFP still imports). Added: the
+  origin line under each filled field (`<small data-origin="<path>">`, `source · dd/mm` from `sheets.origins`, the kept
+  values in its tooltip), a search on the list, the tabs, `#aircraft?sheet=<id>`, and the status line (§ 6). The ChatGPT
+  prompt text is Fuel's `perf_prompt.js`, loaded from there (`meta.files`).
 
 ## 5. Fuel's « Fiches » view (decided 30 Oct 2026: one editor, here)
 

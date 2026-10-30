@@ -7,8 +7,9 @@ What the module reads and writes, and how the other modules meet it. The rules a
 | Path | Who writes | Rule | Read by |
 |---|---|---|---|
 | `airline/fleet.json` | aircraft (one aircraft per write, the file read just before), website (the pasted « Flotte » page, its V2 merge) | `record` on both sides (frame/INTEGRATION.md § 3, shared prefix) | aerodb's registry (fleet), report, maps, CPCO |
-| `aircraft/sheets/<id>.json` | aerodb only (`aircraft().sheets.put`), called by this module from step 3 | aerodb's `mergeSheets` | aerodb, Fuel (quote), lnmperf |
-| `cache/aircraft/` | aircraft | cache (this device) | aircraft |
+| `aircraft/sheets/<id>.json` | aerodb only (`aircraft().sheets.put`), called by this module (the Fiches view, step 3) | aerodb's `mergeSheets` | aerodb, Fuel (quote), lnmperf |
+| `cache/aircraft/ui.json` | aircraft: `{ view: 'fleet' \| 'sheets' }`, the last tab | cache (this device) | aircraft |
+| `cache/aircraft/status.json` | aircraft: one line « N appareils, M fiches[, K types de la flotte sans fiche] », `go: '#aircraft'` (frame/INTEGRATION.md § 10.0, schema 1), rewritten when the fleet, the sheets or the fleet types change | cache (this device) | the frame (status block) |
 
 - The fleet's record is `{ schema: 1, updated_at, by, aircraft: [{ operator, type, variant, registration, tacticalNumber,
   number, callsigns, base, operational, location, locationAt }] }` (website SPEC § 3). The editor carries registration,
@@ -18,5 +19,8 @@ What the module reads and writes, and how the other modules meet it. The rules a
 
 ## Addresses
 
-- `?app=maintenance#aircraft` opens the module; `#aircraft?sheet=<id>` will open a sheet's editor (step 3), the link Fuel's
-  « Fiches » list gives for any change (SPEC § 5).
+- `?app=maintenance#aircraft` opens the module on its last tab; `#aircraft?sheet=<id>` opens the Fiches tab on that sheet's
+  editor (the list when the sheet does not exist), the link Fuel's « Fiches » list gives for any change (SPEC § 5). It is a
+  request, taken once with `ctx.consume('sheet')` and removed from the address (frame/INTEGRATION.md § 6.1).
+- The ChatGPT prompt text is `modules/fuel/perf_prompt.js` (`window.PERF_PROMPT`), imported by the Fiches view; it stays in
+  Fuel's folder until Fuel's editor is removed, then moves here.
