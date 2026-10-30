@@ -1633,3 +1633,72 @@ def i23(c):
     finally:
         L.FOLDER_OPEN, L.DATA = kept
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I24', 'Launcher job base/pickup: the file of a manual source taken from Downloads', 'I', static=True,
+      rule='Réglages\u2019 inventory D8 (30 Oct 2026, Simplification): for a zone with a manual source (SIA, NATS), the latest file of Downloads with the name the launcher expects, checked (size, zip_check), its useful entries by their names only, .tmp then replace where the build reads them; the page gives the zone only; dry first')
+def i24(c):
+    import importlib
+    import json
+    import zipfile
+    sys.path.insert(0, str(c.root / 'tools'))
+    RJ = importlib.import_module('regen_jobs')
+    B = importlib.import_module('regen.base_sources')
+    c.eq((B.check_pickup({'zones': ['fr']}), B.check_pickup({'zones': ['fr'], 'path': 'C:/x.zip'}), B.check_pickup({'zones': ['fr'], 'dry': 'no'})),
+         ({'zones': ['fr'], 'dry': True}, None, None), 'the zone only, dry by default; no path, no name from the page', what='checks')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-pickup-'))
+    try:
+        dl, data = tmp / 'Downloads', tmp / 'data'
+        dl.mkdir()
+        data.mkdir()
+        old = dl / 'export_xml_bd_SIA_2026-10-01.zip'
+        with zipfile.ZipFile(old, 'w') as z:
+            z.writestr('AIXM4.5_all_FR_OM_2026-10-01.xml', '<old/>')
+        os.utime(old, (1_700_000_000, 1_700_000_000))
+        with zipfile.ZipFile(dl / 'export_xml_bd_SIA_2026-10-29.zip', 'w') as z:
+            z.writestr('export/AIXM4.5_all_FR_OM_2026-10-29.xml', '<aixm/>')
+            z.writestr('export/XML_SIA_2026-10-29.xml', '<sia/>')
+            z.writestr('export/Lisez_moi.txt', 'readme')
+            z.writestr('../../evil.xml', '<evil/>')
+        with zipfile.ZipFile(dl / 'EG_AIP_DS_FULL_20261029_XML.zip', 'w') as z:
+            z.writestr('EG_AIP_DS_FULL_20261029.xml', '<nats/>')
+            z.writestr('EG_AIP_DS_DIFF_20261029.xml', '<diff/>')
+            z.writestr('../../../outside.xml', '<x/>')
+        ctx = {'data': str(data), 'downloads': lambda: [str(dl)]}
+        r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['fr', 'gb', 'us'], 'dry': True}, ctx)
+        c.eq(sorted((t['source'], t['zip'], tuple(t['files'])) for t in r['taken']),
+             [('nats', 'EG_AIP_DS_FULL_20261029_XML.zip', ('EG_AIP_DS_FULL_20261029.xml', 'outside.xml')),
+              ('sia', 'export_xml_bd_SIA_2026-10-29.zip', ('AIXM4.5_all_FR_OM_2026-10-29.xml', 'XML_SIA_2026-10-29.xml'))],
+             'the latest zip of each source, its useful entries by their names only (the readme, the DIFF, a name outside the rule set aside)', what='plan')
+        c.ok(r['dry'] and not (data / 'sia').exists(), json.dumps(r)[:300], 'dry: nothing written')
+        r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['fr', 'gb'], 'dry': False}, ctx)
+        sia, gb = data / 'sia', data / 'sia' / 'zones' / 'gb'
+        c.ok(r['ok'] and (sia / 'AIXM4.5_all_FR_OM_2026-10-29.xml').read_text() == '<aixm/>' and (sia / 'XML_SIA_2026-10-29.xml').is_file()
+             and (gb / 'EG_AIP_DS_FULL_20261029.xml').read_text() == '<nats/>' and not (gb / 'EG_AIP_DS_DIFF_20261029.xml').exists(), json.dumps(r)[:300],
+             'written where the build reads them: data/sia/ for the SIA, data/sia/zones/gb/ for NATS')
+        c.ok(not (tmp / 'evil.xml').exists() and not (tmp / 'outside.xml').exists() and not list(sia.glob('*.tmp')) and not list(gb.glob('*.tmp')),
+             '', 'nothing outside its folder, no .tmp left (an entry\u2019s path is never followed)')
+        seen = set(importlib.import_module('regen.base').list_inputs(str(data)))
+        c.ok(seen >= {'AIXM4.5_all_FR_OM_2026-10-29.xml', 'XML_SIA_2026-10-29.xml', 'zones/gb/EG_AIP_DS_FULL_20261029.xml'}, str(sorted(seen)),
+             'the build sees them (base.list_inputs)')
+        # nothing in Downloads: said with the name expected
+        for f in dl.iterdir():
+            f.unlink()
+        r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['gb'], 'dry': True}, ctx)
+        c.eq(r['missing'], [{'zone': 'gb', 'source': 'nats', 'expected': 'EG_*_DS_*_XML.zip'}], 'no file: the name expected is said', what='missing')
+        # over the cap once unpacked: refused before any read
+        with zipfile.ZipFile(dl / 'EG_AIP_DS_FULL_20261126_XML.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('EG_AIP_DS_FULL_20261126.xml', 'x' * 5000)
+        kept = RJ.MAX_UNZIP
+        RJ.MAX_UNZIP = 1000
+        try:
+            r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['gb'], 'dry': False}, ctx)
+        finally:
+            RJ.MAX_UNZIP = kept
+        c.ok(r['reason'] == 'failed' and 'MB' in r['failed'][0]['error'] and not (gb / 'EG_AIP_DS_FULL_20261126.xml').exists(), json.dumps(r)[:200],
+             'a zip over the cap is refused, nothing written')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+    c.ok("'downloads': downloads_dirs" in src and ('base', 'pickup') in importlib.import_module('regen.base_sources').VERBS, '',
+         'the launcher gives the jobs its Downloads folders; base/pickup is a verb of the base set')

@@ -1046,7 +1046,7 @@ in the launcher; `resume` finds it again.
   The route writes nothing: the verb receives the texts by `job.take(zone, timeout)` (`None` on timeout or cancel), writes
   them itself and commits by `commit_outputs`.
   The verb `base/build` (lot D5, `tools/regen/base.py`; args `{ zones, personal? }`, `zones` as a dict at the root of the view, SPEC and INTEGRATION of `frame/aerodb/`) is the first user.
-  The verbs `base/fetch` and `base/purge` (30 Oct 2026, `tools/regen/base_sources.py`; args `{ zones, personal? }` and `{ zones, what?, dry? }`; SPEC and INTEGRATION of `frame/aerodb/`): the raw sources of a zone, downloaded by `tools/aero_fetch.py` (no commit; `outside_sync` counts the tracked files it modified) and purged (never `sia/base/`, `proc/` or a file tracked by git).
+  The verbs `base/fetch`, `base/purge` and `base/pickup` (30 Oct 2026, `tools/regen/base_sources.py`; args `{ zones, personal? }`, `{ zones, what?, dry? }` and `{ zones, dry? }`; SPEC and INTEGRATION of `frame/aerodb/`): the raw sources of a zone, downloaded by `tools/aero_fetch.py` (no commit; `outside_sync` counts the tracked files it modified) and purged (never `sia/base/`, `proc/` or a file tracked by git).
 - `POST /__setup/regen/job { set, verb, args, author }`, `GET …/job[?id=]`, `POST …/job/cancel { id }`: one job at a time in a thread;
   `set` and `verb` from a fixed list (`regen_jobs.REGISTRY`), each with its check of `args`; nothing from the page is a path,
   an address or a command. 400: unknown operation or bad arguments; 409: a job is running; 410: no such job; 429 `{ reason:

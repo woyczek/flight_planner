@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: `base/pickup`, the SIA and NATS files taken from Downloads** (`tools/regen/base_sources.py`, `tools/launch.py`;
+  frame and aerodb INTEGRATION; noreg I24, K54) — for France and the United Kingdom, the downloaded zip with the expected name is
+  checked and its useful files put where the build reads them; dry first; the page gives the zone only.
 - **Refactor R-C5, no behaviour change: the two take-overs of data/ share their rules** (`tools/data_sync.py`; frame
   DECISIONS; noreg I15, I16) — one identity, one pool commit with the `.js` check, one reader of a file at a revision.
 - **Settings: the « Compte IVAO » card sits in the Identity group** (`frame/settings/groups.js`; ergonomics session, 30 Oct) — next to

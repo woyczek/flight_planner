@@ -33,11 +33,14 @@ de France, lus dans XML_SIA, servent la construction de toutes les zones). `dry`
   'shared-fr', 'unsafe-path' (un chemin refusé par le contrôle de confinement, jamais retiré).
 Crochets des essais (ctx, jamais posés par le lanceur) : data, git_cmd, git_env comme partout ; le réseau d'essai passe par aero_fetch.get / aero_fetch.<fournisseur> remplacés.
 """
+import fnmatch
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import zipfile
 
 TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(TOOLS)
@@ -436,8 +439,9 @@ def fetch(job, args, ctx):
         outside = len(tracked_among(ctx, modified))
     except RuntimeError as e:
         job.log(f'git: suivi des fichiers modifiés non vérifié ({e})')
-    manual_list = [{'zone': z, 'source': s, **({'url': SOURCES[s]['link']} if SOURCES[s]['link'].startswith('https://') else {}), 'name': list(SOURCES[s]['label'])}
-                   for z in zones for s in plans[z][2]]
+    # pickup : le lanceur sait prendre son fichier dans Téléchargements (base/pickup, motif expected)
+    manual_list = [{'zone': z, 'source': s, **({'url': SOURCES[s]['link']} if SOURCES[s]['link'].startswith('https://') else {}), 'name': list(SOURCES[s]['label']),
+                    **({'pickup': True, 'expected': PICKUP[s]['zip']} if s in PICKUP else {})} for z in zones for s in plans[z][2]]
     reason = ('cancelled' if cancelled else 'nothing-to-fetch' if not attempted else 'failed' if failed and not good else 'partial' if failed else None)
     res = {'ok': reason is None, 'fetched': fetched, 'unchanged': unchanged, 'failed': failed, 'manual': manual_list, 'outside_sync': outside,
            'warnings': [{'code': 'outside-sync', 'count': outside}] if outside else []}
@@ -604,7 +608,100 @@ def purge(job, args, ctx):
     return res
 
 
+# ----------------------------------------------------------------------------------------------------------------------- base/pickup
+# Le fichier d'une source à déposer à la main (SIA, NATS), pris dans les Téléchargements du poste (inventaire D8 de Réglages,
+# 30 oct. 2026 : la page V2 le faisait, rien en V3). Le motif du nom vient d'ici, jamais de la page ; le plus récent qui le suit
+# est contrôlé avant toute lecture (taille, regen_jobs.zip_check) ; seuls les noms de ses entrées utiles sont pris (jamais un
+# chemin du zip), copiés en .tmp puis remplacés là où la construction les lit (base.list_inputs) : la racine de data/sia/ pour
+# le SIA, data/sia/zones/gb/ pour NATS. Sources brutes du poste, jamais commitées (comme celles de base/fetch). Le passage à
+# blanc (dry, par défaut) rend le plan.
+PICKUP = {
+    'sia': {'zip': 'export_xml_bd_SIA_*.zip', 'to': 'sia', 'keep': lambda n: bool(SIA_ROOT.match(n))},
+    'nats': {'zip': 'EG_*_DS_*_XML.zip', 'to': 'sia/zones/gb',
+             'keep': lambda n: n.lower().endswith('.xml') and not re.search(r'DIFF|DELTA|export-filter|METADATA', n, re.I)},
+}
+PICKUP_MAX = 500 * 1024 * 1024  # un zip déposé plus gros : refusé avant d'être ouvert
+PICKUP_NAME = re.compile(r'^[\w .()+-]{1,150}\Z', re.A)  # un nom d'entrée pris (le SAFE_NAME de base.py) : ni séparateur, ni « : »
+
+
+def check_pickup(a):
+    """Contrôle des arguments de base/pickup (→ 400 si None) : { zones, dry?: vrai (par défaut) / faux } et rien d'autre."""
+    if not isinstance(a, dict) or not set(a) <= {'zones', 'dry'}:
+        return None
+    zones = _zones_arg(a)
+    dry = a.get('dry', True)
+    if zones is None or not isinstance(dry, bool):
+        return None
+    return {'zones': zones, 'dry': dry}
+
+
+def _latest(dirs, pattern):
+    """Le plus récent des fichiers de ces dossiers qui suivent le motif (sans chemin ; ni lien ni dossier), ou ''."""
+    found = []
+    for d in dirs:
+        try:
+            with os.scandir(d) as it:
+                found += [e.path for e in it if fnmatch.fnmatch(e.name, pattern) and not e.is_symlink() and e.is_file(follow_symlinks=False)]
+        except OSError:
+            continue
+    return max(found, key=os.path.getmtime) if found else ''
+
+
+def pickup(job, args, ctx):
+    """Verbe base/pickup : pour chaque zone, ses sources à déposer à la main que le lanceur sait prendre (PICKUP). Rend
+    { ok, dry, taken: [{ zone, source, zip, files: [noms], bytes }], missing: [{ zone, source, expected }], failed:
+    [{ zone, source, error }], reason? } ; missing : aucun fichier au nom attendu dans Téléchargements (le motif dit lequel)."""
+    data, dry = ctx['data'], args['dry']
+    dirs = list((ctx.get('downloads') or (lambda: []))())
+    base = os.path.realpath(data)
+    taken, missing, failed = [], [], []
+    todo = [(z, s) for z in args['zones'] for s in sources_of(z) if s in PICKUP]
+    for n, (z, s) in enumerate(todo):
+        if job.cancelled():
+            break
+        p = PICKUP[s]
+        _step(job, n, len(todo))
+        zp = _latest(dirs, p['zip'])
+        if not zp:
+            missing.append({'zone': z, 'source': s, 'expected': p['zip']})
+            continue
+        try:
+            if os.path.getsize(zp) > PICKUP_MAX:
+                raise regen_jobs.TooLarge(f'zip over {PICKUP_MAX // 1048576} MB')
+            with zipfile.ZipFile(zp) as zf:
+                infos = regen_jobs.zip_check(zf)  # taille décompressée plafonnée avant toute lecture
+                pick = {}
+                for i in infos:
+                    leaf = i.filename.replace('\\', '/').rsplit('/', 1)[-1]
+                    if not i.is_dir() and PICKUP_NAME.match(leaf) and p['keep'](leaf):
+                        pick.setdefault(leaf, i)  # un nom une fois : la première entrée qui le porte
+                if not pick:
+                    failed.append({'zone': z, 'source': s, 'error': 'nothing-to-take', 'zip': os.path.basename(zp)})
+                    continue
+                out = os.path.join(data, *p['to'].split('/'))
+                if not dry:
+                    os.makedirs(out, exist_ok=True)
+                    if not regen_jobs.inside(out, base):
+                        raise ValueError('unsafe-path')
+                    for leaf, i in pick.items():
+                        dest = os.path.join(out, leaf)
+                        with zf.open(i) as src, open(dest + '.tmp', 'wb') as dst:
+                            shutil.copyfileobj(src, dst)
+                        os.replace(dest + '.tmp', dest)
+                taken.append({'zone': z, 'source': s, 'zip': os.path.basename(zp), 'files': sorted(pick),
+                              'bytes': sum(i.file_size for i in pick.values())})
+                job.log(f'{z}: {s} ← {os.path.basename(zp)} : {len(pick)} fichier(s)' + (' (à blanc)' if dry else ''))
+        except (zipfile.BadZipFile, OSError, ValueError, regen_jobs.TooLarge) as e:
+            failed.append({'zone': z, 'source': s, 'error': str(e)[:120] if isinstance(e, (ValueError, regen_jobs.TooLarge)) else type(e).__name__})
+    reason = 'cancelled' if job.cancelled() else 'failed' if failed and not taken else 'partial' if failed else None
+    res = {'ok': reason is None, 'dry': dry, 'taken': taken, 'missing': missing, 'failed': failed}
+    if reason:
+        res['reason'] = reason
+    return res
+
+
 VERBS = {
     ('base', 'fetch'): (fetch, check_fetch),
     ('base', 'purge'): (purge, check_purge),
+    ('base', 'pickup'): (pickup, check_pickup),
 }

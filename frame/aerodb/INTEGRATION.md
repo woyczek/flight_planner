@@ -375,6 +375,15 @@ const p = await ctx.launcher.job('regen/job', { set: 'base', verb: 'purge', args
   by git** (kept, counted: `warnings: [{ code: 'kept-tracked', count }]`: it would leave the repository for every workstation), a link or a path that leaves
   `data/sia` and `data/local` (`unsafe-path`). Purging `fr` adds `{ code: 'shared-fr' }`: France's FIR outlines, read in `XML_SIA`, serve the build of every zone.
   `dry: true` gives the same view and result and removes nothing. `what` is `['sources']`, `['caches']` or both (the default).
+- **`base/pickup`** (30 Oct 2026, Settings' inventory D8: the V2 page did it, nothing in V3): for each zone, its sources « à déposer à la main »
+  that the launcher can take (`PICKUP`: the SIA for `fr`, NATS for `gb`) are taken from the workstation's Downloads: the latest file with the name the
+  launcher expects (`export_xml_bd_SIA_*.zip`, `EG_*_DS_*_XML.zip`; never a name from the page), refused over 500 MB, checked before any read
+  (`regen_jobs.zip_check`: 2 GB unpacked), its useful entries taken by their names only (SIA: the AIXM and XML_SIA files of a cycle; NATS: the XML
+  files but the DIFF, DELTA, filters and metadata; an entry's path never followed), written `.tmp` then replaced where the build reads them
+  (the root of `data/sia/` for the SIA, `data/sia/zones/gb/` for NATS: raw sources, never committed). Args `{ zones, dry? }` (dry by default: the
+  plan). Result `{ ok, dry, taken: [{ zone, source, zip, files, bytes }], missing: [{ zone, source, expected }], failed: [{ zone, source, error }],
+  reason? }`. `base/fetch` marks such a source in its `manual` list with `pickup: true` and the `expected` name, for the button « Prendre le fichier
+  téléchargé ». Not under `data/local/<source>/` as first asked: the build does not read there (Simplification informed).
 - **Refusals**: 400 (unknown zone or source, extra key, `dry` not a boolean), 409 (a job is running), 429 for `base/fetch` (30 s between two starts).
 
 ### Sources screen (`#sources`)
