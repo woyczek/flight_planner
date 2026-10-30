@@ -1228,6 +1228,32 @@ redesigned for touch at that point.
          transition is offered with a STAR only when its IAF is on that STAR (`compatible({ star })`); the sheet takes
          the available height with "Terminer" always in view; near the aerodrome its label wins over the traces and
          the runway numbers yield to the navaid boxes; the vertical cut goes through the same collision pass.
+       **Sixth reading: the Map after the refactoring (maps session, 31 Oct, LFBO → LFPO on the real base at 1280 and
+       390 px, read only; seven gaps, confirmed on the captures; nothing wrong in the procedures, the cut, the
+       constraints, the navaids, the runway numbers, the layers, the corridor and the return to Fuel)**. Rules, one lot
+       and one case each, in this order:
+       1. **The sheet's height** is the height of what it shows (the cut, or its line alone), capped at half the view;
+          the map takes the rest; never a blank under the content; the same at 1280 and 390 (the map was 250 px of 900).
+       2. **The return frames the flight**: opening the Map from Fuel or coming back after "Terminer" frames the flight
+          with its procedures, as the first opening does; a framing made by the user (pan / zoom) on the same flight in
+          the session is kept, not beyond.
+       3. **One distance**: the sheet's title reads the route model's distance (expanded path, procedures included),
+          the same as Fuel and the cut's axis; one writer, `frame/lib/route_model` (373 NM against 388 NM today).
+       4. **The aerodrome written once**: "one box per key" extends to the aerodrome at the route's end — the route's
+          forced label and the aerodrome's name are one box, rank 1, in the aerodrome's style.
+       5. **Procedure names**: the flight's map names through `displayName` / `labelOf` of `frame/lib/procedures.js`
+          like the pane and Fuel ("ILS 06", "AMOLO 7A"), never the base's raw name ("APP ILS CAT I or CAT II or CAT III
+          RWY 06"); the chosen SID's label is a procedure (rank 4) that slides instead of being bitten.
+       6. **Choosing starts on the map**: on entry the aerodrome is framed and the first family's candidates (the
+          runways, then the compatible procedures) are drawn faded, as "N autres"; the sheet takes half the view at
+          most at 1280; touching a row only highlights.
+       7. **Light drawing during the pan** draws the same set of aerodromes as the full drawing (the zoom rule chooses,
+          not the drawing mode), with simpler marks; the image does not change its aspect at the start nor the end of
+          the gesture (seventy black squares between Paris and Bourges today, a dozen aerodromes in the full drawing).
+       Each rule is written in the Map's SPEC before its code, the D / M cases stay green, `--touched` before each push,
+       a measure at rest when 6 or 7 touches the drawing. F41 (return from the Map to Fuel) failed once under load, green
+       twice alone: recorded as a known flake; at the third time, a wait in the case's helper as Fuel's `to_step`, the
+       module untouched.
 
    32. **Missions in V3, first framing** (user, 30 Oct: "les missions actuelles sont communes : je suis le seul à en
        créer, d'autres en profitent ; la numérotation est la mienne ; le premier acte du rôle « équipier enrôlé dans une
