@@ -1057,6 +1057,12 @@ redesigned for touch at that point.
        - **Drawing order.** The highlighted procedure (hovered, tapped or chosen) is drawn last, above every other
          trace and cartouche of the mode; its cartouche too. Order of the rest: chosen, then compatible, then ⚠,
          then ⌛. A highlight change re-orders without redrawing the base.
+         **Hover highlights everywhere, always** (user, 30 Oct: "cliquer sur une approche permet la surbrillance
+         d'une approche, un survol d'une STAR ne fait plus de surbrillance, ce n'est pas intuitif"): with a
+         pointer, hovering any row of any family highlights its trace and cartouche, whatever is chosen and
+         whatever family was touched last; leaving the row restores the previous state; the chosen rows stay bold
+         under the hover. A tap chooses and leaves the row highlighted; on a coarse pointer the tapped row is the
+         highlight. Hovering a trace on the Map highlights its row the same way (the pane scrolls it into view).
        - **Wind arrows show where the wind blows, in the runway's frame** (runway direction drawn upward, as the
          pilot sees it on final): a head wind is "↓" (it blows towards the aircraft), a tail wind "↑", a wind from the
          right "←", from the left "→". The figure follows the arrow: "↓ 12 kt · ← 6 kt". One text rule,
