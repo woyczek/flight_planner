@@ -61,6 +61,20 @@ the first failure, one Publier at the end), one set per commit: Procédures, VAC
 « Tout mettre à jour », then the V2 link leaves the Maintenance rail. Launcher verbs asked of V3 Frame (`vfr/*`,
 `aircraft/*`) and aerodb (`proc/fetch|build|purge`).
 
+**D8 inventory (30 Oct, after A1)**: every data set has its four verbs (base, proc per State, VAC, aircraft, the company's
+sheets) and « Tout mettre à jour » exists, but the V2 page `apps/settings/maintenance.html` still holds verbs with no V3
+twin, so **its link stays in the Maintenance rail** until this list is empty:
+
+| V2 (section, launcher route) | V3 twin | Owner |
+|---|---|---|
+| Données aéronautiques: the SIA France zip and the NATS zip picked up from Downloads (`/__setup/sia-zip`, `/__setup/downloads`) | none: `base/fetch` lists them as « à déposer à la main » with their link, nothing takes the file in | V3 Frame (a `base/pickup` verb or a pick-up step of `base/fetch`), then the module |
+| Mises à jour de la suite (channel, check, `update_suite.py`) | « Mise à jour de la suite » (V3 § 10.34 A3) | V3 Frame |
+| Sauvegarde totale, its reload and its journal | « Sauvegarde du poste » (A3) | V3 Frame |
+| Sources et dossiers: local folders | « Dossiers du poste » (A3, 36f571e40) | delivered |
+| Sources et dossiers: websites the suite may contact (`/__setup/sites`, `site-allow`, `site-remove`) and opening from another website or an extension (`/__setup/relax`) | none | V3 Frame, Settings for the card |
+| Espace disque, Caches (sizes, clear) | the device's offline zones only (Settings) | Settings, with the launcher's sizes from V3 Frame |
+| Premier lancement (the first-install assistant: data folder, repository, pypdf) | none; the grey reason « pypdf manque » still points to the V2 assistant | V3 Frame (launcher), Settings |
+
 Existing guards kept green throughout: K1–K9, A12, A15, A19, A20, I4, I6, I7.
 
 ## Answers of the ergonomics session (28 October 2026), applied to SPEC and INTEGRATION
