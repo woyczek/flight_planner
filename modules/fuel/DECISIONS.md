@@ -1206,6 +1206,24 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   what changed at the start, the « Planned progress » card, the redraw on a change written elsewhere, invariants 2 and 5 (rules of
   the repository). § 9 follows in part 3b.
 
+- **30 Oct 2026 — the SPEC as a state, part 3b: § 9 by screen and step** (refactoring § 10.33). The old § 9 was one list in the order
+  things arrived (lot G, « block 0 » before 1 to 5, dated paragraphs, « second / fourth reading »); it is now 9.1 the five steps, 9.2
+  Flight, 9.3 Route, 9.4 the procedure card, 9.5 Weather, 9.6 Result, 9.7 Departure, 9.8 Sheets, each rule with its case. Every F case
+  is cited at least once. Where each old paragraph went: the screens and the opening → § 9 and 9.1 (F1, F5, F17); names and completion
+  → 9.2 (F44–F48; « the field takes four characters » dropped: the field is a search since 29 Oct, F48); plan in five steps → 9.1;
+  flight date and past date → 9.2 (F6, F43); the simulator export → 9.7 (F60, F61; the direct send to X-Plane's `Output/FMS plans`
+  stays a debt, see 29 Oct); « block 0 » (the procedure card) → 9.4, split into folded line, secondary line, grid, lists, runways and
+  wind, a choice and its conflicts, approaches, reading on demand, Source, Sur la carte, the quote on the procedures path, after the
+  start; « Load my OFP replaces the choice » → 9.3, as F19 checks it (fills only the sides not chosen); aircraft → 9.2; route, points,
+  OFP → 9.3; completion, groups, fold, text as a view, typed airway, Auto → 9.3 / 9.4; level and wind, density altitude → 9.5 / 9.6;
+  level decision, result, Open in, details, units → 9.6; Sheets → 9.8; writes and phone → § 9 and § 4. Dropped as no longer true: « no
+  sheet carries `maxCrosswindKt` » (Maintenance edits it), « no SID / STAR » among Auto's limits (it routes from the SID's exit), the
+  `compatible(route)` axis (the Map's, frame INTEGRATION). Left to this log: the old names of the tabs, « star et sid sont route », « c'est
+  moisi », `depPassed`, the 190 px result bar of before (now about 100 px at 390 px), V2's `mission_routing.js` as the source of Auto's
+  limits. **No case** (debts): the ✓ marks of the steps, « Show the map », the aircraft line and its search, the points list's editing,
+  « Cancel the start », the ISA proposal, the density altitude chart, the decision drawing, « Open in », the details, the climb
+  instructions and the settings fold, Auto's limits.
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (Features SOG, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les
