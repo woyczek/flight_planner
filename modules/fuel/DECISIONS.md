@@ -1121,3 +1121,58 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 - **Atmosphere**: its code is not touched; INTEGRATION § 3 carries the sentence its session reads ("the slider's origin is
   `planned_at` of the current flight").
 - **Checked**: see the report of the lot (suite `--changed`, Playwright at 390 and 360 in the five designs, smoke).
+
+## Inventaire du 30/10 : à refondre
+
+Read-only inventory (Features SOG, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les
+empilages »), modules/fuel and frame/lib (procedures, wind, routing, route_text, fms, adnames, current_flight, flight_path) from
+802e6856f to 40f834eb7 (24 commits). Per zone: history, what is left doubled or dead, the target in one sentence. Nothing changes here.
+
+**1. The Map's return, keys** (`module.js` mount, `procedures.js` propose / applyProposal). d4f683475 one key per trip (`rwy sid
+star trans app appTrans`) → fe3d33c5c wait for the full screen → 25b887349 several keys, `apptrans`, `trans` dropped. Left: `admit`
+still maps `trans` / `appTrans` keys no longer consumed; four write paths for one side (lists `choose`, quiet `choose` of the
+proposal, `applyOfp`, `textToProcs`). Target: one `writeSide(side, values, why)` used by the four, the change line said once there.
+
+**2. Route text and Auto** (`module.js` routePoints / resolveRoute / autoAirways / writeAuto / procsToText / textToProcs;
+`route_text.js`; `routing.js`; `flight_path.js` routingChain). Auto 25 Oct → routingChain (SID end inserted, 29 Oct) →
+5a374c189 provenance, exit after the SID name, rejections → d34ad04fb typed airway checked, `along` → 79993b1ea text as a view
+(withProcedures writes the exit) and Auto turning an exit word into a point → 1bade3bc8 `joiningAirway`. Left: the SID exit enters
+three ways (CF.routingChain in Auto, RT.withProcedures in the text, expandedPath's join in the drawing); intermediate airway nodes
+two ways (routePoints copies kept `r.points` between two points; `RG.along` for a typed airway) plus Auto's `pend` re-attachment;
+two text writers (`textFromPoints` for the Map's edit, no DCT; `textFromTokens({ dct })` in Fuel); routePoints (~200 lines) reads,
+detects airways, validates and smooths levels; autoAirways (~250 lines) filters provenance, inserts, routes, rejects and writes.
+Target: one pure `routeModel(text, base)` in frame/lib (tokens → pinned points, typed airways by `along`, procedures by name) and
+one `routeText(model)`; Auto = routing over the pinned legs of that model; routingChain and the chain copy removed.
+
+**3. Procedures and transitions** (`frame/lib/procedures.js`, fuel `procedures.js`). conflictsOf / orderProcedures (⚠, § 10.23)
+→ compatible (filter, § 10.30) → transitionsOf (same name) → appChoices (entries feeding a final) → isAppTransition (SIA segments,
+e5a97c23d) → labelOf, transitionLabelOf, summaryOf. Left: two compatibility rules written twice (runway, STAR ↔ approach: marks in
+conflictsOf, filters in compatible); three notions of an approach transition in appChoices, and its « no final recognised »
+fallback is unreachable since entries that never reach a runway are segments; five name renderers (PR.nameOf, labelOf, summaryOf's
+`name`, Fuel's `procLabel` and `nameOfId`); flight_path.js still re-exports conflictsOf / orderProcedures « for the Map », which
+imports procedures.js directly: dead. Target: `compatible` the only rule (a mark = not compatible, with its reason),
+`approachModel(apps)` → { finals, transitionsOf } with one notion, `labelOf` the only renderer.
+
+**4. Wind** (`wind.js`, fuel `weather.js`, fuel `procedures.js`, maps `procs.js`). bf5599e21 components → 25b887349 label (where it
+comes from) → 094e7a891 arrows reversed (where it blows), severity. Left: `weather.js runwayWind` (the weather card's main-runway
+components, own maths and texts) beside `components`; the runway's true axis computed twice (Fuel `runwayWind`: record `true`, else
+qfu + magVar; the Map's `runwayBearing`). Target: `wind.runwayAxis(rec, magVar)`, the weather card on components / label / severity.
+
+**5. Procedure card** (fuel `procedures.js`, `module.js`). 636a05179 rows before the registry → struct / in-place patch → summary
+in the title (b7cf7bc5a) → fold (61948bfb3) → point-list groups (512902c66). Left: focus and fold state in four flags over two
+files (`wantFocus`, `openSide`, `S.focusArr`, `S.focusRoute`); the group hues copied from the Map's palette. Target: one side
+state { open, focus } in procedures.js; the procedure hues as design tokens shared with the Map.
+
+**6. Names and completion** (`adnames.js` ×2, `routecomplete.js`). 842ac149b names + completion → 26d47f149 search field →
+1e36c7570 the rule in frame/lib → 40f834eb7 route completion. Left: two completion lists with the same list / keyboard / tap /
+blur code (~120 lines each). Target: one completion component, sources injected.
+
+**7. Export** (`fms.js`). 99d28acd0, d18a739b4: nothing doubled.
+
+**8. Cases and docs.** F28 rewritten three times, F41 and F63 overlap (one key, several keys), F8 and F67 overlap (Auto, then
+idempotent Auto); fuel SPEC's procedures paragraph is one line of « since § x » additions; twenty DECISIONS entries on 30 Oct.
+Target: the SPEC's procedures and route sections rewritten as the current state; F41 into F63, F8 into F67.
+
+**Order proposed** (after the stabilisation): 4 (small), 3 with its benches (the rules the Map and Fuel share), then 2 on top of
+3 (the biggest, cases F8 F28 F67 F68 F70 F74 as the net), 1 inside 2, then 5 and 6, docs and cases last. One commit per zone,
+--touched before, the full noreg after.
