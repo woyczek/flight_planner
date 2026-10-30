@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: one criterion for the layout and the computer's design** (`frame/app.js`, `frame/index.html`; INTEGRATION
+  § 9.1, DECISIONS; noreg A42): a computer's window wider than high no longer falls into the phone's landscape rail;
+  Aqua applies exactly with the computer's rail with labels.
 - **Tests: one heavy noreg pass at a time** (`tests/v3/run.py`; tests README, frame DECISIONS): a full pass or any pass of
   more than 30 cases takes a lock in the computer's temp folder, shared by every worktree; a second full pass refuses with
   the holder named, or waits with `--wait`, a heavy targeted pass waits for its turn; a stale lock is ignored.

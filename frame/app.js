@@ -78,8 +78,11 @@
   // posée avant le premier affichage, même règle), puis sur resize et orientationchange, en une seule écriture quand la valeur
   // change ; « frame-orientation » (detail: { land }) le dit ensuite aux primitives du cadre (la feuille). Un clavier à l'écran
   // qui rendrait une fenêtre de téléphone portrait plus large que haute n'y change rien : l'orientation de l'écran, quand le
-  // navigateur la donne, doit être celle d'un paysage.
-  const landNow = () => innerWidth > innerHeight && innerWidth < 1024 && !/^portrait/.test(screen.orientation?.type || '');
+  // navigateur la donne, doit être celle d'un paysage. Jamais avec un pointeur précis qui survole (souris, pavé tactile) : une
+  // fenêtre d'ordinateur plus large que haute garde le rail à libellés et son design (30 oct. : sans cela, en élargissant une
+  // fenêtre, on passait téléphone → ordinateur → rail d'icônes sans Aqua → ordinateur).
+  const fineQ = matchMedia('(pointer: fine) and (hover: hover)'),
+    landNow = () => innerWidth > innerHeight && innerWidth < 1024 && !fineQ.matches && !/^portrait/.test(screen.orientation?.type || '');
 
   function paintLand() {
     const h = document.documentElement,
@@ -92,13 +95,13 @@
       }
     }));
   }
-  // ordinateur (frame/INTEGRATION.md § 9.1) : <html class="f-desk"> quand la fenêtre dépasse 760 px, que le pointeur est précis
-  // et survole (souris, pavé tactile) et que ce n'est pas un paysage de téléphone (f-land) ; un design qui ne vaut que sur un
-  // ordinateur (Aqua) s'y accroche. Même règle dans index.html avant le premier affichage ; recalculée sur resize,
-  // orientationchange et au changement du pointeur (une tablette à laquelle on branche une souris), en une seule écriture
-  // quand la valeur change ; « frame-desk » (detail: { desk }) le dit ensuite.
-  const fineQ = matchMedia('(pointer: fine) and (hover: hover)'),
-    deskNow = () => innerWidth > 760 && fineQ.matches && !landNow();
+  // ordinateur (frame/INTEGRATION.md § 9.1) : <html class="f-desk"> exactement quand la mise en page est celle de l'ordinateur,
+  // le rail à libellés — plus de 760 px et pas le paysage de téléphone (f-land) ; un seul critère pour la mise en page et le
+  // design d'ordinateur (Aqua) qui s'y accroche, jamais sur le rail d'icônes ni sur la barre du bas. Même règle dans
+  // index.html avant le premier affichage ; recalculée sur resize, orientationchange et au changement du pointeur (une
+  // tablette à laquelle on branche une souris), en une seule écriture quand la valeur change ; « frame-desk »
+  // (detail: { desk }) le dit ensuite.
+  const deskNow = () => innerWidth > 760 && !landNow();
 
   function paintDesk() {
     const h = document.documentElement,
@@ -118,7 +121,7 @@
   paintForm();
   window.addEventListener('resize', paintForm);
   window.addEventListener('orientationchange', paintForm);
-  fineQ.addEventListener('change', paintDesk);
+  fineQ.addEventListener('change', paintForm); // le pointeur décide aussi du paysage : les deux classes ensemble
   // heures de l'appli : UTC suffixée Z (frame/lib/time.js) ; module chargé en même temps que le reste du démarrage
   let TZ = null;
   const timeP = import(new URL('lib/time.js?v=0', document.currentScript.src).href).then(m => TZ = m).catch(e => console

@@ -1979,3 +1979,11 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     the process instead of probing it.
   - A heavy targeted pass (a large `--touched` before a push) waits for its turn rather than refusing: a push is not
     blocked, only delayed. A pass of 30 cases or fewer stays free.
+- **30 Oct 2026 — One criterion for the layout and the computer's design** (the user, widening a window: phone → Aqua →
+  icon rail without texture → Aqua): the phone's landscape (`f-land`: wider than high and under 1024 px) applied to a
+  computer's window too, while `f-desk` (Aqua) required a precise pointer and not `f-land` — two criteria that did not
+  meet. Now `f-land` needs a pointer that is not precise (a phone or a tablet turned; a computer's window keeps its rail
+  with labels), and `f-desk` is exactly the computer's layout: wider than 760 px and not `f-land`. Aqua reads only
+  `f-desk`: never on the icon rail nor on the bottom bar (A42: 390, 800 × 600 and 1280 with a mouse, then a window widened
+  step by step from 700 to 1300 px; red without the fix). A touch tablet in portrait above 760 px has the rail with labels
+  and so Aqua when chosen.

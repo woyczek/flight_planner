@@ -13,12 +13,13 @@ try {
   if (/^(day|night)$/.test(d.tone)) h.dataset.tone = d.tone
 } catch (e) {}
 // paysage sur un téléphone (même règle que landNow() de frame/app.js, qui la tient ensuite à jour) : la mise en page du rail et de la
-// colonne est juste dès le premier affichage
+// colonne est juste dès le premier affichage ; jamais avec une souris (une fenêtre d'ordinateur garde le rail à libellés)
 try {
-  if (innerWidth > innerHeight && innerWidth < 1024 && !/^portrait/.test(screen.orientation?.type || '')) document.documentElement.classList
-    .add('f-land')
-  // ordinateur (frame/app.js, paintDesk) : le design d'un ordinateur (Aqua) juste dès le premier affichage
-  else if (innerWidth > 760 && matchMedia('(pointer: fine) and (hover: hover)').matches) document.documentElement.classList.add('f-desk')
+  if (innerWidth > innerHeight && innerWidth < 1024 && !matchMedia('(pointer: fine) and (hover: hover)').matches && !/^portrait/.test(screen
+      .orientation?.type || '')) document.documentElement.classList.add('f-land')
+  // ordinateur (frame/app.js, paintDesk) : la mise en page de l'ordinateur (rail à libellés), et son design (Aqua), dès le premier
+  // affichage
+  else if (innerWidth > 760) document.documentElement.classList.add('f-desk')
   // design réservé à l'ordinateur (Aqua) ailleurs : standard (frame/app.js, applyDesign)
   if (document.documentElement.dataset.design === 'aqua' && !document.documentElement.classList.contains('f-desk')) delete document
     .documentElement.dataset.design

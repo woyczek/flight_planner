@@ -369,7 +369,8 @@ stays supported by the code but no tab uses it today.
 - **`ctx.tab`**: the id of the tab that groups the module (`'prepare'` for fuel, `'weather'` for atmosphere), `null` if none. For a
   module that wants to know its group; it never opens or changes a tab.
 - **Landscape on a phone (`html.f-land`)**: when the window is wider than high **and** under 1024 px (a phone or a small
-  tablet turned; Safari does not honour the manifest's portrait lock), the frame sets `<html class="f-land">` (and
+  tablet turned; Safari does not honour the manifest's portrait lock), **without a precise pointer that hovers** (a computer's
+  window wider than high keeps the computer's rail, 30 Oct 2026), the frame sets `<html class="f-land">` (and
   removes it, one write when the value changes, on `resize` / `orientationchange`; `frame-orientation` is fired on
   `window` after, `detail: { land }`). The bottom bar then becomes a **rail of icons at the left edge**: `--f-rail-w`
   (44 px) wide, full height under the header, the same five entries, **no label** (each `<a>` carries the label as
@@ -377,8 +378,9 @@ stays supported by the code but no tab uses it today.
   icon, the caret at the left). The header stays (57 px); `--f-tab-space` is `0` and the view takes `100vw − --f-rail-w` at
   the right of the rail; the 210 px rail of a screen is not shown. The device's safe areas (notch at the left or right,
   home indicator) are left free. A module does nothing for it: it never reads the class, it measures its box.
-- **A computer (`html.f-desk`)** (28 Oct 2026): the window is wider than 760 px, the pointer is precise and hovers (a mouse,
-  a touchpad: `(pointer: fine) and (hover: hover)`), and it is not a phone in landscape (`f-land`). Set before the first
+- **A computer (`html.f-desk`)** (28 Oct 2026; one criterion since 30 Oct): exactly when the layout is the computer's, the
+  rail with labels: the window is wider than 760 px and it is not a phone in landscape (`f-land`). The layout and the
+  computer's design (Aqua) follow this one class: never on the icon rail nor on the bottom bar. Set before the first
   paint (`index.html`), then on `resize`, `orientationchange` and when the pointer changes (a mouse plugged into a
   tablet), one write when the value changes; `frame-desk` is fired on `window` after, `detail: { desk }`. It is for the
   designs and the frame's dress only (a design kept for computers, Aqua); a module never reads it either.

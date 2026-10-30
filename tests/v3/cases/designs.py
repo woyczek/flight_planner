@@ -165,3 +165,33 @@ def h6(c):
     c.wait(6000)                                  # late loads (the help, the precache) included
     c.eq(seen, [], what='requests for frame/design/aqua/ on a phone')
 
+
+
+_FORM_JS = """() => { const h = document.documentElement, nav = document.querySelector('.f-nav');
+  return { w: innerWidth, desk: h.classList.contains('f-desk'), land: h.classList.contains('f-land'), design: h.dataset.design || '',
+           rail: !!nav && getComputedStyle(nav).display !== 'none' } }"""
+
+
+@case('A42', 'One criterion for the layout and the computer\u2019s design: Aqua exactly on the rail with labels', 'A', tags=('design', 'aqua'), phone=False,
+      designs=('standard',), night=False,
+      rule='user 30 Oct (widening a window: phone → Aqua → icon rail without texture → Aqua): html.f-desk ⇔ the computer\u2019s layout (rail with labels) ⇔ Aqua; never on the icon rail nor on the bottom bar')
+def a42(c):
+    seen = []
+    for w, h in ((390, 844), (800, 600), (1280, 800)):            # a phone-sized window, a computer window wider than high, a screen
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.open('fuel', docs=[['device/design.json', {'design': 'aqua', 'tone': 'day'}, 'cache']])
+        seen.append(c.js(_FORM_JS))
+    c.eq([(s['w'], s['rail'], s['desk'], s['design']) for s in seen],
+         [(390, False, False, 'standard'), (800, True, True, 'aqua'), (1280, True, True, 'aqua')],
+         'with a mouse: the bottom bar and standard at 390; the rail with labels and Aqua at 800 (wider than high) and 1280', what='forms')
+    # the user's gesture: one page, the window widened step by step — at each width, Aqua exactly with the rail with labels
+    c.page.set_viewport_size({'width': 700, 'height': 640})
+    c.open('fuel', docs=[['device/design.json', {'design': 'aqua', 'tone': 'day'}, 'cache']])
+    steps = []
+    for w in range(700, 1301, 60):
+        c.page.set_viewport_size({'width': w, 'height': 640})
+        c.until(f"() => innerWidth === {w} && document.documentElement.classList.contains('f-desk') === (innerWidth > 760)",
+                 what=f'the frame follows the width {w}')
+        steps.append(c.js(_FORM_JS))
+    bad = [s for s in steps if s['rail'] != s['desk'] or (s['design'] == 'aqua') != s['rail'] or s['land']]
+    c.eq(bad, [], 'widening a computer window: never the icon rail, Aqua exactly with the rail with labels', what='states that disagree')
