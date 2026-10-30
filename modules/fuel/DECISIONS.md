@@ -1242,6 +1242,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   no mean; 00000KT stays a direction (0°, 0 kt, no weight); VRB unchanged. Three checks in the METAR bench (F80). The parser is not
   touched.
 
+- **30 Oct 2026 — debts « no case », third: the weather corridor is F82** (invented aerodromes XQAA… beside the seeded route): within
+  10 NM, sorted along the route; 30 NM off left out until the radius is 50 NM; an aerodrome without METAR left out; two shown, three
+  folded under « 3 terrains le long de la route ». The code does what the SPEC says: no gap. The other debts stay debts (Simplification:
+  density altitude, « Open in », the decision drawing, the steps' ✓, « Show the map »).
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (Features SOG, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les

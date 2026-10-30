@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: F82, the weather corridor** (a « no case » debt of the SPEC): the radius, the order along the route, the aerodromes without a
+  message left out, the folding beyond two.
 - **Launcher: `base/pickup` takes the file the plan showed** (`tools/regen/base_sources.py`; aerodb INTEGRATION; noreg I24) —
   with `zips` from the plan, a zip changed in Downloads during the question is refused for its source, nothing written.
 - **Fuel: a METAR without a wind direction no longer counts as a north wind** (`modules/fuel/weather.js` `hasWind`, `routeWind`, the

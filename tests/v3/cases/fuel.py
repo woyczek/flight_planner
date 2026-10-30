@@ -1945,6 +1945,41 @@ def f81(c):
     c.until(f"!!document.querySelector('{FUEL} [data-startrow] [data-do=start]')", what='« Démarrer le vol » is offered again')
 
 
+
+# invented aerodromes beside the seeded route LFRS LUGEN NEPIX LFML (positions computed off its legs; no AIP content)
+CORRIDOR_ADS = [{'icao': 'XQAA', 'name': 'XQAA TEST', 'lat': 45.811, 'lon': 0.668, 'elev': 100},    # 5 NM off LUGEN-NEPIX
+                {'icao': 'XQBB', 'name': 'XQBB TEST', 'lat': 44.222, 'lon': 3.864, 'elev': 100},    # 4 NM off NEPIX-LFML
+                {'icao': 'XQCC', 'name': 'XQCC TEST', 'lat': 46.155, 'lon': 1.01, 'elev': 100},     # 30 NM off LUGEN-NEPIX
+                {'icao': 'XQDD', 'name': 'XQDD TEST', 'lat': 45.70, 'lon': 0.56, 'elev': 100}]      # 3 NM off, but no METAR
+
+
+@case('F82', 'The weather corridor: the aerodromes within the radius of the route, sorted along it, those without a message left out; folded beyond two',
+      'F', tags=('fuel', 'weather'), designs=('standard',), screens=False, langs4=True,
+      rule='modules/fuel SPEC 10: aerodb aerodromes of each leg\'s box widened by the radius (wxRadiusNm, 10 NM by default), kept within that radius '
+      'of the route, departure and arrival excluded, sorted by distance along the route, recomputed when the radius changes; an aerodrome without '
+      'METAR or TAF is left out; more than two are folded under « n aerodromes along the route »')
+def f82(c):
+    route_metar(c, {'LFRS': (270, 10), 'LFML': (300, 12), 'XQAA': (280, 15), 'XQBB': (290, 10), 'XQCC': (250, 8)})
+    c.open('fuel', flight=True, airfields=True, aero_extra={'aerodromes': CORRIDOR_ADS})
+    wait_quote(c)
+    to_step(c, 2)
+    mids = f"""(() => [...document.querySelectorAll('{FUEL} [data-wx] .fu-wx .f-row b')].map(b => b.textContent.trim())
+        .filter(id => /^XQ/.test(id)))()"""
+    c.until(f"{mids}.length === 2", timeout=15000, what='the two aerodromes within 10 NM of the route are in the weather card')
+    c.eq(c.js(mids), ['XQAA', 'XQBB'], 'within 10 NM, sorted along the route; 30 NM off (XQCC) left out; without METAR (XQDD) left out', what='corridor')
+    c.eq(c.count(f'{FUEL} [data-wx] [data-wxmids]'), 0, 'two aerodromes: shown, not folded', what='fold')
+    # the radius of the quote settings: 50 NM takes XQCC in; three aerodromes are folded under one line
+    to_step(c, 3)
+    c.js(f"document.querySelectorAll('{FUEL} details').forEach(d => {{ if (d.querySelector('[data-k=wxRadius]')) d.open = true }})")
+    c.page.fill(f'{FUEL} [data-k="wxRadius"]', '50')
+    c.page.locator(f'{FUEL} [data-k="wxRadius"]').blur()
+    to_step(c, 2)
+    c.until(f"!!document.querySelector('{FUEL} [data-wx] [data-wxmids]')", timeout=15000, what='three aerodromes: folded under one line')
+    c.eq(sorted(c.js(mids)), ['XQAA', 'XQBB', 'XQCC'], 'within 50 NM: XQCC too; XQDD (no METAR) still left out', what='corridor at 50 NM')
+    c.eq(norm(c.text(f'{FUEL} [data-wx] [data-wxmids] summary') or ''), norm(row(c, 'wxMids').replace('{n}', '3')), 'the line says how many',
+         what='fold line')
+
+
 @case('F77', 'The route text stays the same after two returns from the Map, with a SID whose published name has a space', 'F', tags=('fuel', 'maps'),
       designs=('standard',), screens=False, langs4=True,
       rule='V3 spec 10.31 (BUGS SOG walk, 30 Oct: « LFBO AMOLO 7A AMOLO 7A AMOLO DCT AMB … » after two returns): procsToText is idempotent, '

@@ -429,7 +429,7 @@ No field, import, preview or removal here (F79).
 - **Stations**: the departure, the aerodromes of the route's corridor, the arrival and the alternate. **Corridor**: aerodb
   `aerodromes({ bbox, lite: true })` of each leg's box widened by the radius of the quote settings (`wxRadiusNm`, default 10 NM, 0 to
   50), kept within that radius of the route (projection on the nearest leg), departure and arrival excluded, sorted by distance
-  along the route, recomputed when the points or the radius change; an aerodrome without METAR or TAF is left out (no case).
+  along the route, recomputed when the points or the radius change; an aerodrome without METAR or TAF is left out (F82).
 - **Which message**: with a flight date (`current_flight.planned_at`) inside the TAF's validity, the TAF — its base group (the last
   group without change, BECMG or FM covering the time) and its temporary groups (TEMPO, PROB) covering it; otherwise the METAR (F80).
 - **Shown per aerodrome**: flight category (LIFR: ceiling < 500 ft or visibility < 1 SM; IFR: < 1,000 ft or < 3 SM; MVFR: ≤ 3,000 ft
@@ -438,7 +438,7 @@ No field, import, preview or removal here (F79).
   else vertical visibility), visibility in km (« ≥ 10 km » for 6 SM and more), temperature and QNH, weather, temporary groups, a
   warning for CB / TCU, the raw message folded (F80 METAR bench, F62 wind bench).
 - **Card**: departure, arrival, alternate, then the corridor aerodromes (folded under « n aerodromes along the route » beyond two);
-  each line gives its distance from departure (the alternate: from arrival) (no case).
+  each line gives its distance from departure (the alternate: from arrival) (F82 for the folding; no case for the distances).
 - **Real weather** (a box): the quote's wind becomes the forecast wind aloft (§ 11); without it, the mean of the surface wind vectors
   of the departure, the corridor aerodromes and the arrival that have one — a direction and a speed (`hasWind`: 00000KT is one, 0° and
   0 kt; VRB or a missing direction is not, and that aerodrome leaves the mean, which comes from the others; the source line names the
