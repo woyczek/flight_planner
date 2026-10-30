@@ -944,7 +944,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 92 | Zone outlines (d6011f983), Fuel offline files (6379d2b18), a test (7691a3397), sheets on a phone (7fc062bd1) | acceptable |
 | 93 | Refactors R-M3 (70e63c907) and R-F6 (d734c3572); 83e75ad89, 5590b5f72 | acceptable, no change of behaviour |
 | 94 | Fuel test cases (d24772b8a, bb9076aca, ad2f8330c); Map plain background from aerodb (bb9c98570) | acceptable |
-| 95 | Data module, “take the downloaded file” (c62d555e6, `base/pickup` of 89) | acceptable, one note |
+| 95 | Data module, “take the downloaded file” (c62d555e6, `base/pickup` of 89) | acceptable, one note (closed in 104) |
 | 96 | Refactor R-M1: the Map's choose pane on one model (5e4b9433f, 7112b1b3b, e70eacb38) | acceptable, no change of behaviour |
 | 97 | Suite update by channel, `/__setup/update` (4fc473e5d); the two notes of 89 closed | acceptable, two notes |
 | 98 | Refactor R-M2 + R-M5 (a): one cartouche, procedure hues from the theme tokens (3e65a0465) | acceptable, no change of behaviour |
@@ -953,6 +953,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 101 | Refactor R-M2 + R-M5 (b): every Map label through one request, aerodb answers deduplicated by key (87748d47a) | acceptable, no change of behaviour |
 | 102 | Refactor R-C6: one base for the GitHub and GitLab transports (72ba695a8) | acceptable, no guard lost |
 | 103 | Suite update refused while a job or a sync runs; trust stated (2a02aedde): the notes of 97 closed | acceptable, one note |
+| 104 | The take bound to the zip shown in the plan (79aaed096, 1e7a06443): the note of 95 closed; approximate outlines on the zone map | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1915,6 +1916,18 @@ help and the SPEC state that the target is not verified (unsigned tags, the same
 not security): the jobs lock is held during the whole update, `git fetch` included, while `view`, `cancel`, `claim` and
 `put` take the same lock, so the Data module's polls and “Stop” hang until the update ends; plan with the fetch outside
 the locks and hold them for the writing phase only, or raise an “update running” flag that `start()` refuses.
+
+**104. The note of 95 (79aaed096, 1e7a06443) — acceptable, one note.** `base/pickup` takes an optional `zips` key
+(`{ <source>: { name, size } }`, a closed shape: a known source, a simple file name, a whole size of zero or more, 400
+otherwise); `name` and `size` are only compared with the zip the launcher finds, never used to build a path; a source whose
+newest zip no longer matches is refused (`changed`) before anything is opened or written. The module builds that key from
+the plan's `taken` entries alone, keeps it in its state, sends nothing else for the real take, and shows the refused zip's
+name escaped with “Run the plan again”. The zone map draws a zone without its own outline (no ring, or a ring equal to its
+box, recognised from the data) dashed and says so; its fallback path is made of the box's numbers. Note: the launcher finds
+the zip by its pattern without restricting the rest of its name, so a zip whose name falls outside the simple-name rule
+(an accent, a bracket, over 150 characters) is shown in the plan but left out of `zips`, and the real take then picks the
+newest file unchecked for that source; the module should not start the real take (or ask to rename the file) when a taken
+source has no entry.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
