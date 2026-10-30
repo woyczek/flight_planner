@@ -949,20 +949,61 @@ def url_exists(url, timeout=30):
         return False
 
 
-def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, step=None):
+def page_name(icao):
+    """Nom de la page AD 2 d'un terrain dans l'eAIP, et dans le cache du poste (download_aerodrome)."""
+    return f'FR-AD-2.{icao}-fr-FR.html'
+
+
+def download_aerodrome(eaip, icao, cache, get=None):
+    """Télécharge seulement (sans rien lire) ce que read_aerodrome lira d'UN terrain : sa page AD 2 et les PDF de ses tables de codage et
+    pages DATA, dans `cache` (le dossier du cycle) ; un fichier déjà là n'est pas redemandé. Rend { fetched, unchanged, tables } (tables faux :
+    la page ne cite aucune table de codage, rien d'autre n'est demandé). `get(url)` : les octets d'une adresse (fetch par défaut)."""
+    if not ICAO_RE.fullmatch(str(icao)):
+        raise ValueError(f'code OACI refusé : {icao!r} (quatre lettres ou chiffres)')
+    get, cache = get or fetch, Path(cache)
+    fetched = unchanged = 0
+    page_file = cache / page_name(icao)
+    if page_file.is_file():
+        page, unchanged = page_file.read_bytes(), unchanged + 1
+    else:
+        page = get(f'{eaip}/html/eAIP/{page_name(icao)}')
+        tmp = page_file.with_suffix('.tmp')
+        tmp.write_bytes(page)
+        tmp.replace(page_file)
+        fetched += 1
+    files = pdf_names(icao, page.decode('utf-8', 'replace'))
+    if not any(CODE_PAGE.match(f) for f in files):
+        return {'fetched': fetched, 'unchanged': unchanged, 'tables': False}
+    for name in [f for f in files if re.search(r'_DATA_0\d\.pdf$', f) or (CODE_PAGE.match(f) and 'FASDB' not in f)]:
+        p = safe_path(cache, name)  # le nom vient d'une page du serveur : un nom sûr, sous le dossier du cache
+        if p.exists():
+            unchanged += 1
+            continue
+        body = get(f'{eaip}/html/eAIP/Cartes/{icao}/{name}')
+        tmp = p.with_suffix('.tmp')
+        tmp.write_bytes(body)
+        tmp.replace(p)
+        fetched += 1
+    return {'fetched': fetched, 'unchanged': unchanged, 'tables': True}
+
+
+def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, step=None, get=None, vac_exists=None):
     """Fichier d'UN terrain lu dans l'eAIP (page AD 2, pages DATA et CODE) : build_aerodrome, ou None si la page ne cite aucune table de
     codage (rien à lire : cartes seules). `eaip` : dossier AIRAC (…/FRANCE/AIRAC-AAAA-MM-JJ) ; `cache` : dossier (existant) des PDF déjà
     téléchargés ; `resolve(id)` : position d'un point en route ; `say(texte)` : messages ; `rows_dir` : lignes de chaque PDF (fixtures) ;
-    `step(texte, fait, total)` : avancement (le lanceur). Les erreurs réseau (urllib) et pypdf manquant remontent à l'appelant."""
+    `step(texte, fait, total)` : avancement (le lanceur) ; `get(url)` : les octets d'une adresse (fetch par défaut ; le travail proc/build
+    passe une lecture du cache seul) ; `vac_exists(url)` : la carte VAC est-elle publiée (url_exists par défaut). Les erreurs réseau (urllib)
+    et pypdf manquant remontent à l'appelant."""
     if not ICAO_RE.fullmatch(str(icao)):
         raise ValueError(f'code OACI refusé : {icao!r} (quatre lettres ou chiffres)')
+    get, vac_exists = get or fetch, vac_exists or url_exists
     cycle = AIRAC_IN_URL.search(eaip)
     if not cycle:
         raise ValueError('adresse sans « AIRAC-AAAA-MM-JJ »: cycle inconnu')
     cache = Path(cache)
     if step:
         step(f'{icao}: page AD 2', 0, 0)
-    page = fetch(f'{eaip}/html/eAIP/FR-AD-2.{icao}-fr-FR.html').decode('utf-8', 'replace')
+    page = get(f'{eaip}/html/eAIP/{page_name(icao)}').decode('utf-8', 'replace')
     skipped = []
     files = pdf_names(icao, page, skipped)
     for n in skipped:
@@ -979,7 +1020,7 @@ def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, st
             step(f'{icao}: {name}', len(seen), len(wanted))
         seen.add(name)
         if not p.exists():
-            p.write_bytes(fetch(f'{eaip}/html/eAIP/Cartes/{icao}/{name}'))
+            p.write_bytes(get(f'{eaip}/html/eAIP/Cartes/{icao}/{name}'))
         try:
             rows = first_page_rows(p)
         except PdfTimeout as e:                       # document non lu : signalé, la page est vide pour le constructeur
@@ -990,7 +1031,7 @@ def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, st
             (Path(rows_dir) / (p.stem + '.rows.txt')).write_text('\n'.join(rows) + '\n', encoding='utf-8')
         return rows
     vac = vac_url(eaip, icao)
-    if vac and not url_exists(vac):                      # carte VAC : seulement si l'atlas VFR la publie
+    if vac and not vac_exists(vac):                      # carte VAC : seulement si l'atlas VFR la publie
         vac = None
     return build_aerodrome(icao, files, rows_of, eaip, cycle.group(1), resolve, vac, page)       # la page AD 2 déjà lue donne aussi les pistes (section AD 2.12)
 

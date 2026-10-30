@@ -199,6 +199,8 @@ def fetch(name):
     def run(job, args, ctx):
         icao = args['icao']
         data = ctx['data']
+        if regen_jobs.merge_pending(ctx):                  # rien n'est écrit dans data/ tant qu'une fusion y attend (aerodb lit « failed » et son message)
+            return {'ok': False, 'reason': 'failed', 'message': 'a merge is pending in data/ (interrupted synchronisation): nothing installed; "Synchronise" settles it'}
         secrets = ()
         if src['account']:
             user, password = regen_jobs._ead_credentials(ctx['secrets'])
@@ -270,3 +272,312 @@ def fetch(name):
 
 
 VERBS = {('proc', src['verb']): (fetch(name), check_icao(name)) for name, src in SOURCES.items()}
+
+
+# ---------------------------------------------------------------------------------------------------- par État (V3 § 10.34 A1)
+# Trois verbes au contrat de base/* pour le module Données, un élément par État (préfixe OACI : LF, K), le cycle en vigueur :
+#   · proc/fetch { states } : les documents du cycle dans le cache du poste, jamais versionné — LF : page AD 2 et PDF de chaque terrain du
+#     menu de l'eAIP du SIA (data/local/eaip/<cycle>/, proc_sia.download_aerodrome ; une pause entre deux terrains) ; K : le CIFP de la FAA
+#     (data/local/cifp/<cycle>/CIFP_<aammjj>.zip) ; un État d'EAD Basic : refusé sans aucun appel (« ead-per-aerodrome » : un terrain par
+#     geste, jamais en masse, frame/aerodb/EAD_BASIC.md § 1 ; le geste reste proc/ead-fetch) ; un autre préfixe : « no-source » ;
+#   · proc/build { states } : depuis ce cache seul, proc/<cycle>/<OACI>.json et l'index du cycle (fusionné : les terrains des autres États
+#     restent), UN commit par État ;
+#   · proc/purge { states, dry } : le cache seulement (jamais proc/, proc/manual/ ni un fichier suivi), le plan d'abord.
+# Vue : job.data['states'] = { <préfixe>: { state, done, total, error? } }.
+STATES = {'LF': 'eaip', 'K': 'cifp'}
+STATE = re.compile(r'[A-Z]{1,2}')
+EAIP_PAUSE = 0.5
+CIFP_URL = 'https://aeronav.faa.gov/Upload_313-d/cifp/{name}'
+MIN_GAP[('proc', 'fetch')] = 30
+
+
+def check_states(a):
+    """{ states: [préfixes] } ; None si la liste est vide ou un préfixe n'en est pas un."""
+    s = a.get('states')
+    if not isinstance(s, list) or not s or len(s) > 40 or not all(isinstance(x, str) and STATE.fullmatch(x) for x in s):
+        return None
+    return {'states': sorted(set(s))}
+
+
+def check_states_purge(a):
+    b = check_states(a)
+    return b and {**b, 'dry': a.get('dry', True) is not False}
+
+
+def _cycle(data):
+    import proc_ead
+    return proc_ead.lib_cycle(data)  # cycle en vigueur (calendrier de 28 jours)
+
+
+def _cifp_name(cycle):
+    y, m, d = cycle.split('-')
+    return f'CIFP_{y[2:]}{m}{d}.zip'
+
+
+def _get(url, timeout=120):
+    """Les octets d'une adresse calculée ici (eAIP du SIA, CIFP de la FAA) : plafonnée, redirection vers un autre hôte refusée ; une
+    erreur HTTP lève OSError."""
+    status, body = regen_jobs.download(url, timeout, ua='SOG-proc-fetch')
+    if status != 200:
+        raise OSError(f'http-{status}')
+    return body
+
+
+GET = _get  # remplacé par les essais (aucun appel réel)
+
+
+class _States:
+    def __init__(self, job, states):
+        self.job = job
+        job.data['states'] = {s: {'state': 'waiting', 'done': 0, 'total': 0} for s in states}
+
+    def set(self, s, **kw):
+        self.job.data['states'][s] = {**self.job.data['states'][s], **kw}
+
+
+def _ead_states():
+    """Les États lus par EAD Basic (frame/aerodb : EAD_STATES « read »), d'après le catalogue ; [] s'il est illisible."""
+    try:
+        with open(os.path.join(os.path.dirname(TOOLS), 'frame', 'aerodb', 'catalogue.js'), encoding='utf-8') as f:
+            text = f.read()
+        return sorted(set(re.findall(r"\b([A-Z]{2}):\s*\{[^}]*outcome:\s*'read'", text)))
+    except OSError:
+        return []
+
+
+def states_fetch(job, args, ctx):
+    """Verbe proc/fetch (voir l'en-tête de cette partie)."""
+    import proc_sia
+    data, cycle = ctx['data'], _cycle(ctx['data'])
+    view, ead = _States(job, args['states']), set(_ead_states())
+    fetched = unchanged = 0
+    failed = []
+    for s in args['states']:
+        if job.cancelled():
+            break
+        if s in ead:
+            failed.append({'state': s, 'error': 'ead-per-aerodrome'})
+            view.set(s, state='failed', error='ead-per-aerodrome')
+            continue
+        kind = STATES.get(s)
+        if not kind:
+            failed.append({'state': s, 'error': 'no-source'})
+            view.set(s, state='failed', error='no-source')
+            continue
+        view.set(s, state='fetching')
+        try:
+            if kind == 'cifp':
+                folder = os.path.join(data, 'local', 'cifp', cycle)
+                os.makedirs(folder, exist_ok=True)
+                dest = os.path.join(folder, _cifp_name(cycle))
+                view.set(s, total=1)
+                if os.path.isfile(dest) and os.path.getsize(dest) > 0:
+                    unchanged += 1
+                else:
+                    job.step(f'{s}: {_cifp_name(cycle)}', 0, 1, 'files')
+                    body = GET(CIFP_URL.format(name=_cifp_name(cycle)))
+                    if not body.startswith(b'PK'):
+                        raise ValueError('not-a-zip')
+                    with open(dest + '.tmp', 'wb') as f:
+                        f.write(body)
+                    os.replace(dest + '.tmp', dest)
+                    fetched += 1
+                view.set(s, state='done', done=1)
+            else:
+                eaip = proc_sia.eaip_url(cycle)
+                cache = os.path.join(data, 'local', 'eaip', cycle)
+                os.makedirs(cache, exist_ok=True)
+                icaos = proc_sia.icao_list(GET(f'{eaip}/html/eAIP/FR-menu-fr-FR.html').decode('utf-8', 'replace'))
+                view.set(s, total=len(icaos))
+                bad = 0
+                for n, icao in enumerate(icaos):
+                    if job.cancelled():
+                        break
+                    job.step(f'{s}: {icao}', n, len(icaos), 'aerodromes')
+                    try:
+                        r = proc_sia.download_aerodrome(eaip, icao, cache, get=GET)
+                        fetched += r['fetched']
+                        unchanged += r['unchanged']
+                        if r['fetched'] and EAIP_PAUSE:
+                            time.sleep(EAIP_PAUSE)
+                    except (OSError, ValueError, regen_jobs.TooLarge) as e:  # un terrain seulement : le suivant est demandé
+                        bad += 1
+                        job.log(f'{icao}: {e.__class__.__name__}')
+                    view.set(s, done=n + 1)
+                if bad == len(icaos) and icaos:
+                    raise RuntimeError('every aerodrome failed')
+                view.set(s, state='cancelled' if job.cancelled() else 'done', **({'error': f'{bad} aerodrome(s) failed'} if bad else {}))
+        except (OSError, ValueError, RuntimeError, regen_jobs.TooLarge) as e:  # réseau, réponse illisible ou trop grande : cet État seulement
+            failed.append({'state': s, 'error': e.__class__.__name__ if not isinstance(e, ValueError) else str(e)[:60]})
+            view.set(s, state='failed', error=failed[-1]['error'])
+    job.log(f'{cycle} : {fetched} fichier(s) téléchargé(s), {unchanged} déjà là, {len(failed)} État(s) en échec')
+    ok_states = [s for s in args['states'] if job.data['states'][s]['state'] == 'done']
+    reason = 'cancelled' if job.cancelled() else 'failed' if failed and not ok_states else 'partial' if failed else None
+    res = {'ok': reason is None, 'cycle': cycle, 'fetched': fetched, 'unchanged': unchanged, 'failed': failed}
+    if reason:
+        res['reason'] = reason
+    return res
+
+
+def _merge_index(folder, cycle, entries):
+    """index.json du cycle : les entrées données remplacent les leurs, celles des autres États restent."""
+    path = os.path.join(folder, 'index.json')
+    try:
+        with open(path, encoding='utf-8') as f:
+            idx = json.load(f)
+    except (OSError, ValueError):
+        idx = {}
+    if not isinstance(idx, dict) or not isinstance(idx.get('aerodromes'), dict):
+        idx = {'schema': 1, 'cycle': cycle, 'aerodromes': {}}
+    idx['aerodromes'].update(entries)
+    with open(path + '.tmp', 'w', encoding='utf-8') as f:
+        f.write(json.dumps(idx, ensure_ascii=False, indent=1) + '\n')
+    os.replace(path + '.tmp', path)
+
+
+def states_build(job, args, ctx):
+    """Verbe proc/build (voir l'en-tête de cette partie)."""
+    data, cycle = ctx['data'], _cycle(ctx['data'])
+    view = _States(job, args['states'])
+    if regen_jobs.merge_pending(ctx):  # rien n'est écrit dans data/ tant qu'une fusion y attend
+        return {'ok': False, 'cycle': cycle, 'reason': 'merge-pending', 'built': {}, 'commits': {}, 'failed': []}
+    out = os.path.join(data, 'proc', cycle)
+    built, commits, failed = {}, {}, []
+    for s in args['states']:
+        if job.cancelled():
+            break
+        kind = STATES.get(s)
+        if not kind:
+            failed.append({'state': s, 'error': 'no-source'})
+            view.set(s, state='failed', error='no-source')
+            continue
+        view.set(s, state='building')
+        try:
+            if kind == 'cifp':
+                src = os.path.join(data, 'local', 'cifp', cycle, _cifp_name(cycle))
+                if not os.path.isfile(src):
+                    raise FileNotFoundError('no-cache')
+                import proc_cifp
+                job.step(f'{s}: CIFP', 0, 1, 'files')
+                before = set(os.listdir(out)) if os.path.isdir(out) else set()
+                proc_cifp.main([src, '--out', os.path.join(data, 'proc')])
+                built[s] = len({n for n in os.listdir(out) if n.endswith('.json') and n != 'index.json'} - before) if os.path.isdir(out) else 0
+                view.set(s, done=1, total=1)
+            else:
+                n_ok = _build_eaip(job, view, s, data, cycle, out)
+                built[s] = n_ok
+            c = regen_jobs.commit_outputs(ctx, job.author, [f'proc/{cycle}/'], f'Procédures {s} du cycle {cycle} ({job.author or "?"})')
+            commits[s] = c['commit']
+            if c.get('warning'):
+                job.log(f'{s}: git: {c["warning"]}')
+            view.set(s, state='done')
+        except (OSError, ValueError, SystemExit) as e:
+            err = 'no-cache' if isinstance(e, FileNotFoundError) and str(e) == 'no-cache' else str(e)[:120] or e.__class__.__name__
+            failed.append({'state': s, 'error': err})
+            view.set(s, state='failed', error=err)
+    reason = 'cancelled' if job.cancelled() else 'failed' if failed and not built else 'partial' if failed else None
+    res = {'ok': reason is None, 'cycle': cycle, 'built': built, 'commits': commits, 'failed': failed}
+    if reason:
+        res['reason'] = reason
+    return res
+
+
+def _build_eaip(job, view, s, data, cycle, out):
+    """Les terrains de la France depuis le cache seul (aucun appel) : proc/<cycle>/<OACI>.json, l'index fusionné ; rend leur nombre."""
+    import proc_sia
+    cache = os.path.join(data, 'local', 'eaip', cycle)
+    pages = sorted(n for n in os.listdir(cache) if re.fullmatch(r'FR-AD-2\.[A-Z0-9]{4}-fr-FR\.html', n)) if os.path.isdir(cache) else []
+    if not pages:
+        raise FileNotFoundError('no-cache')
+    eaip = proc_sia.eaip_url(cycle)
+    vac_dir = os.path.join(data, 'local', 'vac', cycle)
+
+    def offline(url):  # le cache seul : un document absent est une erreur de ce terrain, jamais un appel
+        p = os.path.join(cache, url.rsplit('/', 1)[-1])
+        with open(p, 'rb') as f:
+            return f.read()
+    base = os.path.join(data, 'sia', 'base', 'fr', cycle)
+    try:
+        resolve = proc_sia.base_resolver(base) if os.path.isdir(base) else None
+    except (OSError, ValueError, AttributeError, TypeError):
+        resolve = None
+    os.makedirs(out, exist_ok=True)
+    entries, n_ok = {}, 0
+    view.set(s, total=len(pages))
+    for n, page in enumerate(pages):
+        if job.cancelled():
+            break
+        icao = page[len('FR-AD-2.'):len('FR-AD-2.') + 4]
+        job.step(f'{s}: {icao}', n, len(pages), 'aerodromes')
+        try:
+            d = proc_sia.read_aerodrome(eaip, icao, cache, resolve, lambda *t: job.log(' '.join(map(str, t))), get=offline,
+                                        vac_exists=lambda url, i=icao: os.path.isfile(os.path.join(vac_dir, f'AD-2.{i}.pdf')))
+        except (OSError, ValueError, SystemExit) as e:
+            job.log(f'{icao}: {e.__class__.__name__}')
+            d = None
+        if d:
+            with open(os.path.join(out, f'{icao}.json'), 'w', encoding='utf-8') as f:
+                f.write(json.dumps(d, ensure_ascii=False, indent=1) + '\n')
+            entries.update(proc_sia.index_of({icao: d}, cycle)['aerodromes'])
+            n_ok += 1
+        view.set(s, done=n + 1)
+    if entries:
+        _merge_index(out, cycle, entries)
+    return n_ok
+
+
+def states_purge(job, args, ctx):
+    """Verbe proc/purge : le cache de ces États (jamais proc/, proc/manual/ ni un fichier suivi), le plan d'abord."""
+    data, dry = ctx['data'], args['dry']
+    base = os.path.realpath(os.path.join(data, 'local'))
+    roots = [os.path.join(data, 'local', {'eaip': 'eaip', 'cifp': 'cifp'}[STATES[s]]) for s in args['states'] if s in STATES]
+    cands, refused = [], 0
+    for r in roots:
+        if not os.path.lexists(r):
+            continue
+        if not regen_jobs.inside(r, base):
+            refused += 1
+            continue
+        fs, bad = regen_jobs.files_under(r, base)
+        cands += fs
+        refused += bad
+    rels = [os.path.relpath(f, data).replace(os.sep, '/') for f in cands]
+    tracked = set()
+    if rels and ctx.get('git_cmd'):
+        import subprocess
+        p = subprocess.run(ctx['git_cmd']('-C', data, 'ls-files', '-z', '--', *rels), capture_output=True, env=regen_jobs.git_child_env(), timeout=60)
+        if p.returncode:
+            return {'ok': False, 'reason': 'failed', 'message': 'git ls-files failed: nothing removed', 'removed': {}, 'warnings': []}
+        tracked = {x for x in p.stdout.decode('utf-8', 'replace').split('\0') if x}
+    files = size = kept = 0
+    for full, rel in zip(cands, rels):
+        if job.cancelled():
+            break
+        if rel in tracked:
+            kept += 1
+            continue
+        if not regen_jobs.inside(full, base):
+            refused += 1
+            continue
+        try:
+            nb = os.lstat(full).st_size
+            if not dry:
+                os.remove(full)
+        except OSError as e:
+            job.log(f'{rel} non retiré ({e.__class__.__name__})')
+            continue
+        files += 1
+        size += nb
+    if not dry and not job.cancelled():
+        for r in roots:
+            if os.path.isdir(r) and regen_jobs.inside(r, base):
+                regen_jobs.prune_empty(r, base)
+    res = {'ok': not job.cancelled(), 'dry': dry, 'removed': {'files': files, 'bytes': size},
+           'warnings': ([{'code': 'kept-tracked', 'count': kept}] if kept else []) + ([{'code': 'unsafe-path', 'count': refused}] if refused else [])}
+    if job.cancelled():
+        res['reason'] = 'cancelled'
+    return res
+
+
+VERBS.update({('proc', 'fetch'): (states_fetch, check_states), ('proc', 'build'): (states_build, check_states),
+              ('proc', 'purge'): (states_purge, check_states_purge)})

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: procedure jobs per State; merge, download and environment rules for every job** (`tools/regen/proc.py`,
+  `tools/proc_sia.py`, `tools/regen_jobs.py`, `tools/regen/base.py`, `tools/regen/base_sources.py`; frame INTEGRATION § 15,
+  DECISIONS; noreg I19, K22): `proc/fetch`, `build`, `purge` for LF (SIA eAIP) and K (FAA CIFP) — EAD States stay one
+  aerodrome at a time; nothing is written into `data/` while a merge is pending; downloads are capped and stay on their host.
 - **Map: on a direct route the SIDs and STARs rank by heading** (`modules/maps/choose.js`, `texts.js`, `style.js`; maps help ×4,
   DECISIONS; noreg D74). With no point and no airway between the aerodromes, no more "exit AMOLO" after "AMOLO 7A": the rows rank
   by the angle between their exit (entry) and the great circle to the other aerodrome, "Towards LFPO" over those within 60°, a

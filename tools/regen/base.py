@@ -405,6 +405,8 @@ def _sogb(line):
 
 def build(job, args, ctx):
     t0 = time.time()
+    if regen_jobs.merge_pending(ctx):  # rien n'est écrit dans data/ tant qu'une fusion y attend
+        return {'ok': False, 'reason': 'merge-pending', 'message': 'a merge is pending in data/ (interrupted synchronisation): nothing written; "Synchronise" settles it'}
     cmd = find_browser(ctx)
     if not cmd:
         return {'ok': False, 'reason': 'no-browser', 'message': 'no Edge or Chrome found at a known absolute location'}
@@ -462,8 +464,9 @@ def build(job, args, ctx):
     try:
         try:
             flags = {'creationflags': 0x08000000} if sys.platform.startswith('win') else {'start_new_session': True}
+            # environnement réduit (regen_jobs.child_env) : le navigateur ne reçoit pas les identifiants du lanceur
             proc = subprocess.Popen(cmd + browser_args(profile, netloc, f'{origin}/{PAGE}#job={job.id}'), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                                    stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace', **flags)
+                                    stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace', env=regen_jobs.child_env(), **flags)
         except (OSError, ValueError) as e:
             for z in zones:
                 update(z, state='failed', error='browser-failed', message=str(e)[:200])

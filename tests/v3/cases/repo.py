@@ -1153,3 +1153,133 @@ def i18(c):
     finally:
         V.GET, V.PAUSE = kept
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I19', 'Launcher jobs « proc » per State, and the rules every job shares (download, merge, environment)', 'I', static=True,
+      rule='V3 § 10.34 A1 (Settings asked) and the security review of ab0258453: LF by the eAIP and K by the CIFP to the cache, an EAD State refused without a call (EAD_BASIC § 1), build offline with one commit per State and the index merged, nothing written while a merge waits, downloads capped and kept on their host, subprocesses with a reduced environment')
+def i19(c):
+    import http.server
+    import importlib
+    import json
+    import threading
+    sys.path.insert(0, str(c.root / 'tools'))
+    RJ = importlib.import_module('regen_jobs')
+    P = importlib.import_module('regen.proc')
+    S = importlib.import_module('proc_sia')
+    c.eq((P.check_states({'states': ['LF', 'K']}), P.check_states({'states': []}), P.check_states({'states': ['lf']}), P.check_states_purge({'states': ['LF']})),
+         ({'states': ['K', 'LF']}, None, None, {'states': ['LF'], 'dry': True}), 'State prefixes only, purge dry by default', what='checks')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-proc-'))
+    kept = P.GET, P.EAIP_PAUSE, P._cycle, S.read_aerodrome
+    asked = []
+    try:
+        data = tmp / 'data'
+        data.mkdir()
+        ctx = {'data': str(data), 'secrets': str(tmp / 's'), 'git_cmd': None, 'git_env': dict}
+        P._cycle = lambda d: '2026-10-29'
+        P.EAIP_PAUSE = 0
+        menu = b'<a href="FR-AD-2.LFBD-fr-FR.html">LFBD</a>'
+        page = b'<a href="Cartes/LFBD/AD_2_LFBD_DATA_CODE_01.pdf">x</a><a href="Cartes/LFBD/AD_2_LFBD_ADC.pdf">y</a>'
+
+        def fake(url):
+            asked.append(url)
+            if url.endswith('FR-menu-fr-FR.html'):
+                return menu
+            if url.endswith('FR-AD-2.LFBD-fr-FR.html'):
+                return page
+            if url.endswith('.pdf'):
+                return b'%PDF-1.4 fake'
+            if url.endswith('.zip'):
+                return b'PK\x03\x04 fake'
+            raise OSError('http-404')
+        P.GET = fake
+        r = P.states_fetch(RJ.Job('proc', 'fetch', {}), {'states': ['ED', 'K', 'LF', 'ZZ']}, ctx)
+        cache = data / 'local' / 'eaip' / '2026-10-29'
+        c.ok((cache / 'FR-AD-2.LFBD-fr-FR.html').is_file() and (cache / 'AD_2_LFBD_DATA_CODE_01.pdf').is_file() and not (cache / 'AD_2_LFBD_ADC.pdf').exists()
+             and (data / 'local' / 'cifp' / '2026-10-29' / 'CIFP_261029.zip').is_file(), json.dumps(r), 'LF: the page and its coding tables (not the charts); K: the CIFP of the cycle')
+        c.eq(sorted((f['state'], f['error']) for f in r['failed']), [('ED', 'ead-per-aerodrome'), ('ZZ', 'no-source')],
+             'an EAD State refused (one aerodrome per gesture), an unknown prefix said', what='refused States')
+        c.ok(not any('ead' in u.lower() for u in asked) and all(u.startswith(('https://www.sia.aviation-civile.gouv.fr/', 'https://aeronav.faa.gov/')) for u in asked),
+             str(asked), 'no call for the EAD State; the addresses computed by the launcher')
+        asked.clear()
+        r = P.states_fetch(RJ.Job('proc', 'fetch', {}), {'states': ['K', 'LF']}, ctx)
+        c.eq((r['fetched'], len([u for u in asked if not u.endswith('FR-menu-fr-FR.html')])), (0, 0), 'what is cached is not asked again', what='second fetch')
+        # build: offline, the index merged, one commit per State; nothing written while a merge waits
+        asked.clear()
+        subprocess.run(['git', 'init', '-q', '-b', 'main', str(data)], capture_output=True)
+        for k, v in (('user.name', 'essai'), ('user.email', 'essai@example.invalid')):
+            subprocess.run(['git', '-C', str(data), 'config', k, v], capture_output=True)
+        out = data / 'proc' / '2026-10-29'
+        out.mkdir(parents=True)
+        (out / 'index.json').write_text(json.dumps({'schema': 1, 'cycle': '2026-10-29', 'aerodromes': {'KJFK': {'SID': 1}}}), encoding='utf-8')
+        (data / '.gitignore').write_text('local/\n', encoding='utf-8')  # like the data template: the workstation's caches are never tracked
+        subprocess.run(['git', '-C', str(data), 'add', '-A'], capture_output=True)
+        subprocess.run(['git', '-C', str(data), 'commit', '-qm', 'init'], capture_output=True)
+        used = []
+
+        def fake_read(eaip, icao, cache_dir, resolve=None, say=print, rows_dir=None, step=None, get=None, vac_exists=None):
+            used.append(get(f'{eaip}/html/eAIP/FR-AD-2.{icao}-fr-FR.html')[:2])
+            return {'procedures': [{'kind': 'SID'}, {'kind': 'APP'}], 'warnings': [], 'formats': []}
+        S.read_aerodrome = fake_read
+        (data / '.git' / 'MERGE_HEAD').write_text('x', encoding='utf-8')
+        ctx_git = {**ctx, 'git_cmd': lambda *a: ['git', *a], 'git_env': dict}
+        c.eq(P.states_build(RJ.Job('proc', 'build', {}), {'states': ['LF']}, ctx_git).get('reason'), 'merge-pending', 'a merge waits: nothing written', what='merge pending')
+        r = P.fetch('eaip')(RJ.Job('proc', 'eaip-fetch', {}), {'icao': 'LFBD'}, ctx_git)
+        c.ok(r.get('reason') == 'failed' and 'merge' in r.get('message', '') and not asked, json.dumps(r), 'one aerodrome (eaip-fetch) refused too, before any call')
+        (data / '.git' / 'MERGE_HEAD').unlink()
+        r = P.states_build(RJ.Job('proc', 'build', {}, author='ABC'), {'states': ['LF']}, ctx_git)
+        idx = json.loads((out / 'index.json').read_text(encoding='utf-8'))
+        c.ok(r['ok'] and r['built'] == {'LF': 1} and r['commits'].get('LF') and used == [b'<a'] and set(idx['aerodromes']) == {'KJFK', 'LFBD'},
+             json.dumps(r) + json.dumps(idx), 'build LF from the cache only, one commit, the other States kept in the index')
+        c.eq(asked, [], 'build asks nothing on the network', what='calls during build')
+        # purge: the cache only, never proc/; a junction refused
+        r = P.states_purge(RJ.Job('proc', 'purge', {}), {'states': ['LF', 'K'], 'dry': True}, ctx_git)
+        c.ok(r['dry'] and r['removed']['files'] >= 3 and (cache / 'FR-AD-2.LFBD-fr-FR.html').is_file(), json.dumps(r), 'purge dry: the plan')
+        outside = tmp / 'outside'
+        outside.mkdir()
+        (outside / 'keep.pdf').write_text('k', encoding='utf-8')
+        made = subprocess.run(['cmd', '/c', 'mklink', '/J', str(cache / 'evil'), str(outside)], capture_output=True) if os.name == 'nt' else None
+        r = P.states_purge(RJ.Job('proc', 'purge', {}), {'states': ['LF', 'K'], 'dry': False}, ctx_git)
+        c.ok(r['ok'] and not (cache / 'FR-AD-2.LFBD-fr-FR.html').exists() and (out / 'LFBD.json').is_file() and (outside / 'keep.pdf').is_file(), json.dumps(r),
+             'purge: the cache gone, proc/ and a folder outside kept')
+        if made is not None and made.returncode == 0 and os.path.lexists(cache / 'evil'):
+            os.rmdir(cache / 'evil')
+    finally:
+        P.GET, P.EAIP_PAUSE, P._cycle, S.read_aerodrome = kept
+        shutil.rmtree(tmp, ignore_errors=True)
+    # the shared download: capped, never redirected to another host
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == '/away':
+                self.send_response(302)
+                self.send_header('Location', f'http://localhost:{self.server.server_port}/big')
+                self.end_headers()
+                return
+            body = b'x' * 5000
+            self.send_response(200)
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *a):
+            pass
+    srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        base = f'http://127.0.0.1:{srv.server_port}'
+        st, body = RJ.download(base + '/big', 10)
+        c.eq((st, len(body)), (200, 5000), 'a response under the cap is read', what='download')
+        try:
+            RJ.download(base + '/big', 10, max_bytes=1000)
+            capped = False
+        except RJ.TooLarge:
+            capped = True
+        c.ok(capped, '', 'a response over the cap is stopped')
+        st, body = RJ.download(base + '/away', 10)
+        c.eq((st, body), (302, b''), 'a redirect to another host is refused', what='redirect')
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    src = (c.root / 'tools' / 'regen' / 'base.py').read_text(encoding='utf-8') + (c.root / 'tools' / 'regen' / 'base_sources.py').read_text(encoding='utf-8')
+    c.ok('env=regen_jobs.child_env()' in src and 'env=regen_jobs.git_child_env()' in src and 'git_env() if git_env else os.environ' not in src, '',
+         'the headless browser and git of the base set run with the reduced environment')

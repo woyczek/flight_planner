@@ -2029,3 +2029,17 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     credentials and tokens no longer reach a third-party script); every purge uses `regen_jobs.inside` (the rule of
     `base/purge`, now shared: `base_sources._inside` is it), `files_under` and `prune_empty`, so that a junction inside a cache
     is neither descended nor emptied (I17, I18 with a real junction).
+- **30 Oct 2026 — Launcher jobs for procedures per State; merge, download and environment rules for every job** (V3 § 10.34
+  A1, the Settings session's request; security review of ab0258453 folded in):
+  - `proc/fetch`, `build`, `purge { states }` in `tools/regen/proc.py`, beside `ead-fetch` and `eaip-fetch`: `LF` from the SIA
+    eAIP (each aerodrome's page and coding tables, `proc_sia.download_aerodrome`, split from `read_aerodrome`, which now takes
+    the reader and the VAC test it is given), `K` from the FAA CIFP; the download fills `data/local/` only, the build works
+    offline and commits per State, the index of the cycle merged.
+  - Not as asked, said to Settings: an EAD State is refused (`ead-per-aerodrome`) without a single call. EAD_BASIC.md § 1
+    allows one aerodrome per explicit gesture, never a whole State, so the EAD States stay with `proc/ead-fetch`; Settings
+    agreed and offers only LF and K in its panel.
+  - The review's notes, for every set: `regen_jobs.merge_pending` before any write into `data/` (a commit would conclude a
+    pending merge, or git would refuse it after the files were written); `regen_jobs.download` caps a response and refuses a
+    redirection to another host; the base set's headless browser and its git get the reduced environment as well.
+  - noreg I19 (fake eAIP and CIFP, a trial data repository, a real junction, a local server for the cap and the redirection;
+    no network), K22 (the new gap), K45 (the fake browser's folder let through the reduced environment in the test only).

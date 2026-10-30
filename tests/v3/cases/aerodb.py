@@ -1805,7 +1805,9 @@ def k22(c):
          'a second ead-fetch within 30 s is refused too-soon, with the seconds left')
     quick.last[('proc', 'ead-fetch')] -= 31
     c.ok(quick.start('proc', 'ead-fetch', {}).get('ok'), quick.last, 'after 30 s a new reading starts')
-    c.eq({k: v for k, v in RJ.MIN_GAP.items() if k[0] == 'proc'}, {('proc', 'ead-fetch'): 30}, 'among the procedure readings only EAD Basic has a minimal gap (the eAIP of the SIA is free; base/fetch has its own, K53)', what='MIN_GAP')
+    c.eq({k: v for k, v in RJ.MIN_GAP.items() if k[0] == 'proc'}, {('proc', 'ead-fetch'): 30, ('proc', 'fetch'): 30},
+         'among the procedure readings, EAD Basic (one aerodrome) and the per-State download (whole States, 30 Oct) have a minimal gap; reading one French aerodrome by the eAIP has none (base/fetch has its own, K53)',
+         what='MIN_GAP')
 
 
 # ------------------------------------------------------------------------------------------------ the launcher's eAIP job (static)
@@ -3004,6 +3006,9 @@ def _d5_ctx(data, fake, **extra):
     import sys
     DS = importlib.import_module('data_sync')
     os.environ['SOG_FAKE_DIR'] = str(fake)
+    # the fake browser reads its folder from its environment: the jobs' reduced environment (regen_jobs.child_env) lets it through
+    # in this test process only, never in the launcher's list
+    _regen().CHILD_KEEP.add('SOG_FAKE_DIR')
     return {'data': str(data), 'secrets': str(data.parent / 'secrets'), 'git_cmd': DS.git_cmd, 'git_env': DS.git_env,
             'browser': [sys.executable, str(ROOT / 'tests' / 'v3' / 'fixtures' / 'd5_fake_browser.py')], **extra}
 

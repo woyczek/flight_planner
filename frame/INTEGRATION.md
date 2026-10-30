@@ -1028,7 +1028,7 @@ in the launcher; `resume` finds it again.
 - `POST /__setup/regen/job { set, verb, args, author }`, `GET …/job[?id=]`, `POST …/job/cancel { id }`: one job at a time in a thread;
   `set` and `verb` from a fixed list (`regen_jobs.REGISTRY`), each with its check of `args`; nothing from the page is a path,
   an address or a command. 400: unknown operation or bad arguments; 409: a job is running; 410: no such job; 429 `{ reason:
-  'too-soon', wait }`: the verb has a minimal gap between two starts (`regen_jobs.MIN_GAP`: 30 s for `proc/ead-fetch`), the client
+  'too-soon', wait }`: the verb has a minimal gap between two starts (`regen_jobs.MIN_GAP`: 30 s for `proc/ead-fetch`, `proc/fetch`, `vfr/fetch`, `aircraft/fetch`), the client
   hands `reason` and `wait` on. An error escaping a verb is cleaned (`regen_jobs.clean_error`: the workstation's EAD credentials,
   tokens, session identifiers, `user:password@` and token parameters of an address) before the job's log and its result. Lot D0 has one
   verb, `state/scan` (the state as a job, with its progress); the builders' verbs come with them (lot D2). `proc/ead-fetch` (args `{ icao }`: one
@@ -1054,9 +1054,27 @@ in the launcher; `resume` finds it again.
   checks it strictly (`vfr_import.plan`), writes `sia/vfr/` and commits it once in the author's name (`regen_jobs.commit_outputs`):
   `no-pypdf`, `no-cache`, a compilation error (`failed`) or a refused plan (`invalid`) write nothing; result `{ ok, cycle, summary,
   commit, warning?, failed, reason? }`. `vfr/purge { cycle?, dry }` the cache (charts and their extracted text) of a cycle or of all.
+  **Set `proc` per State** (`tools/regen/proc.py`, V3 § 10.34 A1, 30 Oct 2026), beside the two one-aerodrome verbs; args `{ states }`,
+  State prefixes (`LF`, `K`; one or two capitals, sorted, no duplicate), the cycle in force (`proc_ead.lib_cycle`), the view's
+  `states: { <State>: { state, done, total, error? } }`. `proc/fetch { states }` fills the workstation's cache, never versioned:
+  `LF` reads the SIA eAIP's menu of the cycle, then each aerodrome's page and its coding tables (not the charts) into
+  `data/local/eaip/<cycle>/` (`proc_sia.download_aerodrome`; a file already there is not asked again; one aerodrome failing goes
+  on to the next); `K` the FAA's CIFP of the cycle (`CIFP_yymmdd.zip`) into `data/local/cifp/<cycle>/`. A State read by EAD Basic
+  is refused without any call, `ead-per-aerodrome` (EAD_BASIC.md § 1: one aerodrome per explicit gesture, `proc/ead-fetch`); a
+  prefix with no source is `no-source`. Result `{ ok, cycle, fetched, unchanged, failed: [{ state, error }], reason? }`
+  (`partial`, `failed`, `cancelled`), MIN_GAP 30 s. `proc/build { states }` works offline on that cache: `K` by `proc_cifp`, `LF` by
+  `proc_sia.read_aerodrome` reading the cached files only (`no-cache` otherwise); it writes `proc/<cycle>/<ICAO>.json`, merges
+  `proc/<cycle>/index.json` (the other States' entries kept) and commits once per State in the author's name; result `{ ok, cycle,
+  built: { <State>: n }, commits: { <State>: sha }, failed, reason? }`. `proc/purge { states, dry }` (dry by default) the cache of
+  those States only, never `proc/` nor a tracked file; result `{ ok, dry, removed: { files, bytes }, warnings: [{ code, count }] }`.
   **Every job** runs its subprocesses with a reduced environment (`regen_jobs.child_env`: PATH, the system and temp folders, the
-  user's folders, a proxy; never the launcher's credentials), and **every purge** checks each path against its real place just before
-  removing it (`regen_jobs.inside`, `files_under`, `prune_empty`: a link or a Windows junction to elsewhere is refused, `unsafe-path`).
+  user's folders, a proxy; never the launcher's credentials; `git_child_env` for git, the base set's headless browser and its git
+  included), and **every purge** checks each path against its real place just before removing it (`regen_jobs.inside`,
+  `files_under`, `prune_empty`: a link or a Windows junction to elsewhere is refused, `unsafe-path`). **Nothing is written into
+  `data/` while a merge is pending there** (`regen_jobs.merge_pending`, an interrupted synchronisation): `base/build`,
+  `vfr/build`, `proc/build` and a real `aircraft/publish` return `merge-pending`, the one-aerodrome verbs `failed` with its message
+  (aerodb's reasons unchanged). **Every download** of a job goes through `regen_jobs.download`: read by pieces and stopped at a cap
+  (200 MB, 50 MB for a VAC chart; `TooLarge`), a redirection followed only to the same host (and never from https to http).
   `GET /__setup/status` (the detection only, the same shape everywhere; the workstation's own settings are `GET
   /__setup/workstation`, workstation only) also carries `lnm`: the sorted list of Little Navmap database kinds present on the workstation (the
   `little_navmap_<kind>.sqlite` files of its `little_navmap_db` folder; names only, `[]` when absent); `FrameData.launcher.detect()` hands it on in

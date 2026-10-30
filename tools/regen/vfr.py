@@ -23,8 +23,6 @@ import shutil
 import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
 
 TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if TOOLS not in sys.path:
@@ -103,12 +101,8 @@ class _View:
 
 
 def _get(url, timeout=60):
-    """(statut, octets) ; statut 404 / 410 : absente."""
-    try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': UA}), timeout=timeout) as r:
-            return r.status, r.read()
-    except urllib.error.HTTPError as e:
-        return e.code, b''
+    """(statut, octets) ; statut 404 / 410 : absente. Réponse plafonnée, redirection vers un autre hôte refusée (regen_jobs.download)."""
+    return regen_jobs.download(url, timeout, max_bytes=50 * 1024 * 1024, ua=UA)
 
 
 GET = _get  # remplacé par les essais (aucun appel réel)
@@ -149,7 +143,7 @@ def fetch(job, args, ctx):
                         f.write(body)
                     os.replace(tmp, dest)
                     fetched += 1
-            except (OSError, ValueError) as e:  # réseau, délai : cette carte seulement
+            except (OSError, ValueError, regen_jobs.TooLarge) as e:  # réseau, délai, réponse trop grande : cette carte seulement
                 failed.append({'item': icao, 'error': e.__class__.__name__})
             time.sleep(PAUSE)
         view.set(done=n + 1)
@@ -207,6 +201,9 @@ def build(job, args, ctx):
                 'summary': p['summary']}
     view.set(done=2)
     job.step('écriture', 2, 3, 'steps')
+    if regen_jobs.merge_pending(ctx):  # rien n'est écrit dans data/ tant qu'une fusion y attend
+        view.set(state='failed', error='merge-pending')
+        return {'ok': False, 'cycle': cycle, 'reason': 'merge-pending', 'failed': [], 'summary': p['summary']}
     vfr_import.write(p, data)
     s = p['summary']
     c = regen_jobs.commit_outputs(ctx, job.author, ['sia/vfr/'], f"Points VFR des VAC, cycle {cycle} : {s.get('aerodromes', '?')} terrain(s) ({job.author or '?'})")

@@ -226,6 +226,8 @@ def publish(job, args, ctx):
         return {'ok': False, 'reason': 'unsupported', 'message': 'this launcher cannot publish the aircraft base'}
     if not args['dry'] and not job.author:
         return {'ok': False, 'reason': 'no-author', 'message': 'a trigram is needed to commit'}
+    if not args['dry'] and regen_jobs.merge_pending(ctx):  # rien n'est écrit dans data/ tant qu'une fusion y attend
+        return {'ok': False, 'reason': 'merge-pending', 'message': 'a merge is pending in data/ (interrupted synchronisation): nothing written; "Synchronise" settles it'}
     job.step('publish', 0, 1, 'steps')
     r = fn(job.author, not args['dry']) or {}
     job.step('publish', 1, 1, 'steps')

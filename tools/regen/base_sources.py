@@ -245,8 +245,8 @@ def _git(ctx, *args):
     """git -C data … avec les crochets du lanceur (git_cmd, git_env : data_sync) ; des chemins littéraux (GIT_LITERAL_PATHSPECS), jamais des motifs."""
     data, git_cmd, git_env = ctx['data'], ctx.get('git_cmd'), ctx.get('git_env')
     cmd = list(git_cmd('-C', data, *args)) if git_cmd else ['git', '-C', data, *args]
-    env = dict(git_env() if git_env else os.environ, GIT_LITERAL_PATHSPECS='1')
-    return subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60, env=env)
+    # environnement réduit (regen_jobs.git_child_env : sans question, chemins littéraux) ; jamais tout celui du lanceur
+    return subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60, env=regen_jobs.git_child_env())
 
 
 def tracked_among(ctx, rels):

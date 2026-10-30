@@ -22,6 +22,9 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
 from secrets import token_urlsafe  # jeton d'un travail (le paramètre « secrets » des fonctions est un dossier)
 
@@ -391,7 +394,11 @@ def _ead_credentials(secrets):
 # environnement d'un sous-processus d'un travail (script d'un jeu, git) : ce qu'il faut pour tourner et passer un proxy, jamais
 # le reste du lanceur (EAD_USER, EAD_PASSWORD, jetons… : un script tiers n'a pas à les voir)
 CHILD_KEEP = {k.upper() for k in ('PATH', 'PATHEXT', 'SYSTEMROOT', 'SYSTEMDRIVE', 'WINDIR', 'COMSPEC', 'TEMP', 'TMP', 'TMPDIR', 'HOME', 'USERPROFILE',
-                                  'APPDATA', 'LOCALAPPDATA', 'HOMEDRIVE', 'HOMEPATH', 'LANG', 'LC_ALL', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY')}
+                                  'APPDATA', 'LOCALAPPDATA', 'HOMEDRIVE', 'HOMEPATH', 'LANG', 'LC_ALL', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY',
+                                  # dossiers et description du système, sans secret : un navigateur sans fenêtre (base/build) en a besoin
+                                  'PROGRAMFILES', 'PROGRAMFILES(X86)', 'PROGRAMW6432', 'COMMONPROGRAMFILES', 'COMMONPROGRAMFILES(X86)',
+                                  'PROGRAMDATA', 'ALLUSERSPROFILE', 'PUBLIC', 'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'OS',
+                                  'USERNAME', 'USERDOMAIN', 'COMPUTERNAME', 'XDG_RUNTIME_DIR', 'DISPLAY')}
 
 
 def child_env(**extra):
@@ -448,6 +455,55 @@ def prune_empty(top, base):
             os.rmdir(d)
         except OSError:
             pass
+
+
+def merge_pending(ctx):
+    """Une fusion attend dans data/ (passage de synchronisation interrompu) : aucun verbe n'y écrit avant qu'elle soit réglée (un
+    commit la conclurait, ou git le refuse après coup sur des fichiers déjà écrits)."""
+    data = ctx.get('data') or ''
+    return bool(data) and os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD'))
+
+
+MAX_DOWNLOAD = 200 * 1024 * 1024  # plafond d'une réponse (comme aero_fetch : un CIFP fait quelques dizaines de Mo)
+
+
+class TooLarge(Exception):
+    """Réponse au-delà de MAX_DOWNLOAD : arrêtée."""
+
+
+class _SameHost(urllib.request.HTTPRedirectHandler):
+    """Une redirection n'est suivie que vers le même hôte (et en https si l'adresse l'était) ; sinon une erreur."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        a, b = urllib.parse.urlsplit(req.full_url), urllib.parse.urlsplit(newurl)
+        if b.hostname != a.hostname or (a.scheme == 'https' and b.scheme != 'https'):
+            raise urllib.error.HTTPError(newurl, code, f'redirect to another host refused: {b.hostname}', headers, fp)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urllib.request.build_opener(_SameHost)
+
+
+def download(url, timeout=120, max_bytes=None, ua='SOG-launcher'):
+    """(statut, octets) d'une adresse calculée par un verbe : réponse lue par morceaux et arrêtée au plafond (TooLarge), redirection
+    vers un autre hôte refusée ; une erreur HTTP rend son statut et b''."""
+    cap = MAX_DOWNLOAD if max_bytes is None else max_bytes
+    try:
+        with _OPENER.open(urllib.request.Request(url, headers={'User-Agent': ua}), timeout=timeout) as r:
+            size = r.headers.get('Content-Length')
+            if size and size.isdigit() and int(size) > cap:
+                raise TooLarge(f'response of {int(size) // 1048576} MB, over {cap // 1048576} MB')
+            parts, n = [], 0
+            while True:
+                part = r.read(1 << 16)
+                if not part:
+                    return r.status, b''.join(parts)
+                n += len(part)
+                if n > cap:
+                    raise TooLarge(f'response over {cap // 1048576} MB')
+                parts.append(part)
+    except urllib.error.HTTPError as e:
+        return e.code, b''
 
 
 def commit_outputs(ctx, author, paths, message):
