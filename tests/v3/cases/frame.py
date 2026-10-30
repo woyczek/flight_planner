@@ -23,9 +23,12 @@ Rules covered
     fetches nothing (A20).
 
   * the weather layer (frame/lib/weather_store.js, INTEGRATION 14): its bench passes (A25);
-  * a store script lost on the way: asked again once, the frame starts; lost for good, the page says why with a Reload button (A28).
+  * a store script lost on the way: asked again once, the frame starts; lost for good, the page says why with a Reload button (A28);
+  * the frame's launcher and publication services: their benches pass (A29, A30); the end-of-cycle line of the Status block, ×4 (A31).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28.
+  * the launcher's keys panel gives the EAD Basic user name and password once, and never reads them back (A32).
+
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28 A29 A30 A31 A32 A33 A34.
 """
 import json
 import re
@@ -55,19 +58,32 @@ def hscroll(c):
     return c.js('[document.documentElement.scrollWidth, window.innerWidth]')
 
 
+# A module drawn and settled: its root holds text and that text has not changed for `quiet` ms (a module may empty its box
+# before drawing it again — the report does — so « some text once » is not enough under load); then one reading of the root
+# (shown, height, text length) in the same evaluation. Gives the last reading on timeout, never raises.
+_DRAWN_JS = """([m, quiet, timeout]) => new Promise(res => {
+  const read = () => { const e = document.querySelector('[data-module="' + m + '"]'), r = e && e.getBoundingClientRect();
+    return { text: e ? (e.innerText || '').trim().length : 0, h: r ? r.height : 0, shown: !!e && !!(e.offsetParent || e.getClientRects().length) } };
+  let last = read(), since = performance.now();
+  const t0 = since, tick = () => { const now = read();
+    if (now.text !== last.text || now.text === 0) { last = now; since = performance.now() }
+    if (now.text > 0 && performance.now() - since >= quiet) return res({ ...now, settled: true });
+    if (performance.now() - t0 >= timeout) return res({ ...now, settled: false });
+    setTimeout(tick, 50) };
+  tick() })"""
+
+
 @case('A1', 'Every module loads', 'A', tags=('smoke',), night=False,
       rule='smoke; V3_SPECIFICATION 7.1 rule 1 (no horizontal scroll)')
 def a1(c):
     for m in MODULES:
         c.open(m)
-        c.until("(m) => ((document.querySelector('[data-module=\"' + m + '\"]') || {}).innerText || '').trim().length > 0", m,
-                what=f'#{m} draws its content')
+        got = c.page.evaluate(_DRAWN_JS, [m, 400, 20000])
+        c.ok(got['settled'], f'#{m}: {got}', f'#{m} draws its content and settles (text unchanged for 400 ms)')
         sw, iw = hscroll(c)
         design = c.js('document.documentElement.dataset.design')
         c.eq(design, c.design, rule='the design asked is the one applied', what=f'#{m} dataset.design')
-        root = c.box(f'[data-module="{m}"]') or c.box('#fView > *')
-        inner = c.js("(m) => ((document.querySelector('[data-module=\"' + m + '\"]') || {}).innerText || '').trim().length", m)
-        c.ok(root and root['shown'] and root['h'] > 0 and inner > 0, f'#{m}: module root empty or absent', 'a non-empty module root')
+        c.ok(got['shown'] and got['h'] > 0 and got['text'] > 0, f'#{m}: module root empty or absent ({got})', 'a non-empty module root')
         if m == 'fuel' and sw > iw:
             continue                               # the fuel width is the job of F4 (known failure), not repeated here
         c.ok(sw <= iw, f'#{m} scrollWidth {sw} > innerWidth {iw}', 'scrollWidth <= innerWidth (no horizontal page scroll)')
@@ -321,7 +337,8 @@ def a11(c):
 
 
 ADMIN_FR = {   # Settings > Administration at the Full level, French (the run's language): one button per administrator page
-    'tune': 'Réglage des seuils de la carte', 'edge': 'Limite de la zone du vol', 'roadmap': 'Feuille de route', 'diag': 'Diagnostic',
+    'tune': 'Réglage des seuils de la carte', 'edge': 'Limite de la zone du vol', 'runwayZoom': 'Seuils de piste sur la carte',
+    'roadmap': 'Feuille de route', 'diag': 'Diagnostic',
 }
 
 
@@ -403,6 +420,15 @@ def a12(c):
     c.until_doc('airline/map_profiles.json', lambda d: d and (d.get('edge') or {}).get('show') is True, what='edge.show is true again (shown)')
     c.tap('[data-admin="edge"] > button')
     c.until("!window.__t.shown(document.querySelector('[data-adminpanel=\"edge\"]'))", what='a second tap folds the panel')
+    # the runway thresholds zoom (V3 § 10.30, maps.runwayZoom): a list 8–16, 11 by default, saved at once under `runwayZoom`
+    c.tap('[data-admin="runwayZoom"] > button')
+    c.until("window.__t.shown(document.querySelector('[data-adminpanel=\"runway\"]'))", what='the runway thresholds panel opens')
+    opts = c.js("[...document.querySelectorAll('[data-runway-zoom] option')].map(o => +o.value)")
+    c.eq([opts[0], opts[-1], len(opts)], [8, 16, 9], 'the zoom is chosen from 8 to 16', what='zoom options')
+    c.eq(c.js("+document.querySelector('[data-runway-zoom]').value"), 11, 'no `runwayZoom` in the file: 11', what='default zoom')
+    c.js("() => { const s = document.querySelector('[data-runway-zoom]'); s.value = '13'; s.dispatchEvent(new Event('change', { bubbles: true })) }")
+    d = c.until_doc('airline/map_profiles.json', lambda d: d and d.get('runwayZoom') == 13, what='runwayZoom is 13')
+    c.eq([d.get('profiles'), (d.get('edge') or {}).get('show')], [profiles['profiles'], True], 'saving the zoom keeps the thresholds and the edge option', what='rest of the file')
 
 
 @case('A13', 'Cupertino bar navigates', 'A', screens=False, designs=('cupertino',), night=False,
@@ -810,7 +836,7 @@ def a18(c):
 # ------------------------------------------------------------------------------------------------ data sources (#sources)
 # The screen that replaced the data laboratory on 28 Oct 2026 (user's decision): links only, nothing fetched, parsed or published.
 SRC = 'frame/aerodb/sources.js'
-DATA = 'frame/aerodb/sources_data.js'
+DATA = 'frame/aerodb/catalogue.js'
 LEVEL3 = [['device/level.json', {'level': 3}, 'cache']]
 
 
@@ -847,7 +873,7 @@ def a20(c):
     src = (ROOT / DATA).read_text(encoding='utf-8')
     ids = re.findall(r"^\s{4}id: '([a-z0-9]+)',", src, re.M)
     rows = c.js("[...document.querySelectorAll('[data-screen=sources] li[data-src]')].map(li => ({ id: li.dataset.src, status: li.dataset.status, chip: li.querySelector('.src-status').textContent.trim(), a: (a => a && { href: a.getAttribute('href'), target: a.target, rel: a.rel, h: a.getBoundingClientRect().height, text: a.textContent.trim() })(li.querySelector('a[data-open]')), text: li.innerText }))")
-    c.eq(sorted(r['id'] for r in rows), sorted(ids), 'one line per source of sources_data.js', what='source lines')
+    c.eq(sorted(r['id'] for r in rows), sorted(ids), 'one line per source of the catalogue', what='source lines')
     for want in ('sia', 'eaip', 'cifp', 'ead', 'dfs', 'enaire', 'nats'):
         c.ok(want in [r['id'] for r in rows], [r['id'] for r in rows], f'the line {want} is there (the table of the laboratory, EAD Basic, the national AIPs)')
     order = {'used': 0, 'candidate': 1, 'abandoned': 2}
@@ -874,7 +900,7 @@ def a20(c):
     req = c.js('window.__srcReq')
     ext = [u for u in req if not u.startswith(c.js('location.origin'))]
     c.eq(ext, [], 'the screen calls no external host (links only)', what='external requests')
-    c.ok(all('/aerodb/' not in u or re.search(r'/frame/aerodb/sources(_data)?\.(js|css)', u) for u in req), f'{req}', "of aerodb, only the screen's own files are asked for")
+    c.ok(all('/aerodb/' not in u or re.search(r'/frame/aerodb/(sources\.(js|css)|catalogue\.js|airac\.js)', u) for u in req), f'{req}', "of aerodb, only the screen's own files are asked for")
     sw, iw = hscroll(c)
     c.le(sw, iw, 'no horizontal scroll', what='page width')
     c.shot(f'A20_{c.design}_{c.width}_{c.lang}.png')
@@ -958,3 +984,233 @@ def a28(c):
         c.eq(errs, [], 'no JavaScript error, the store missing', what='page errors')
     finally:
         ctx.close()
+
+
+def _bench(c, page, var):
+    c.page.goto(f'{c.base}/{page}', wait_until='load')
+    try:
+        c.page.wait_for_function(f'window.{var} && window.{var}.done', timeout=60000)
+    except Exception:
+        raise Fail(f'the bench never reported done (window.{var}.done)', 'a finished bench', page) from None
+    r = c.js(f'({{ pass: window.{var}.pass, fail: window.{var}.fail, rows: window.{var}.rows }})')
+    bad = [x for x in (r['rows'] or []) if str(x).startswith('FAIL')][:3]
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}", 'every assertion of the bench passes')
+
+
+@case('A29', 'Launcher client bench', 'A', tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 15.1; the bench reported 32/32')
+def a29(c):
+    _bench(c, 'frame/lib/test/launcher.html', '__launcherBench')
+
+
+@case('A30', 'Publication bench', 'A', tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 15.2; the bench reported 12/12')
+def a30(c):
+    _bench(c, 'frame/store/test/publish.html', '__publishBench')
+
+
+@case('A31', 'End-of-cycle line', 'A', langs4=True, designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 15.3; modules/data/SPEC 6.3: the base published for an older cycle than the one in force is said in the Status block, amber, on every device')
+def a31(c):
+    # the real aerodb.publication() (cycles as an object { date: {...} }) on a base seeded for the previous AIRAC cycle
+    import datetime
+    from lib import aero_docs
+    ref = datetime.date(2024, 1, 25)
+    today = datetime.datetime.now(datetime.timezone.utc).date()
+    cur = ref + datetime.timedelta(days=(today - ref).days // 28 * 28)
+    prev = cur - datetime.timedelta(days=28)
+    first = ref + datetime.timedelta(days=-(-(datetime.date(prev.year, 1, 1) - ref).days // 28) * 28)
+    name = f'{prev.year % 100:02d}{(prev - first).days // 28 + 1:02d}'
+    c.open('settings', docs=aero_docs(cycle=prev.isoformat()))
+    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"cycle-base\"]')", timeout=15000, what='the end-of-cycle line of the base')
+    want = tx('frame/app.js', 'cycleOld', c.lang).replace('{s}', tx('frame/app.js', 'cycleBase', c.lang)).replace('{c}', name)
+    c.eq(norm(c.text('[data-card="status"] li[data-k="cycle-base"] .f-status-txt span')), norm(want), 'worded in the language of the run, the AIRAC name of the published cycle', what='base line')
+    c.ok(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"cycle-base\"] .f-status-dot').hasAttribute('data-attn')"), 'no amber dot', 'an amber dot (attention)')
+    c.eq(c.count('[data-card="status"] li[data-k="cycle-proc"]'), 0, 'no procedures index published: no procedures line', what='proc lines')
+    c.eq(c.count('[data-card="status"] li[data-k="cycle-base"] [data-go]'), 0, 'no launcher here: nothing to press', what='links on the line')
+    # the base of the cycle in force (the suite's own seed, lib.AERO_CYCLE): no line
+    c.open('settings', aero=True)
+    c.wait(1500)
+    c.eq(c.count('[data-card="status"] li[data-k^="cycle-"]'), 0, 'a base of the cycle in force: no end-of-cycle line', what='cycle lines')
+
+
+@case('A32', 'EAD Basic credentials in the launcher keys panel', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 3 item 9: given once, never read back')
+def a32(c):
+    # the suite has no launcher: a fake one answers the routes the Settings screen asks for (detect(), secrets, the rest empty)
+    posts = []
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
+              'relaxNav': False, 'host': 'TEST', 'lan': False}
+    secrets = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}},
+                       'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
+
+    def launcher(route):
+        req = route.request
+        path = urllib.parse.urlparse(req.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/secrets'):
+            if req.method == 'POST':
+                posts.append(json.loads(req.post_data or '{}'))
+                body = {'ok': True, **secrets}
+            else:
+                body = secrets
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"admin\"] li[data-admin=\"keys\"]')", what='the Administration card lists the keys panel')
+    if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
+        c.tap('[data-group="admin"] > summary')
+    c.tap('[data-admin="keys"] > button')
+    c.until("!!document.querySelector('[data-adminpanel=\"keys\"]:not([hidden]) [data-card=\"ead\"]')", what='the EAD Basic block is shown')
+    ead = '[data-adminpanel="keys"] [data-card="ead"]'
+    c.eq(norm(c.text(f'{ead} h3')), norm(tx('frame/settings/launcher.js', 'eadTitle', c.lang)), 'the block is titled', what='EAD title')
+    c.eq(norm(c.text(f'{ead} p.f-msg[data-kind="warn"]')), norm(tx('frame/settings/launcher.js', 'eadNotice', c.lang)),
+         'the notice (demonstration tool, simulation use) is worded in the language of the run', what='EAD notice')
+    c.until(f"document.querySelector('{ead} [data-ead]').textContent.trim() !== '…'", what='the state of the credentials is painted')
+    c.eq(norm(c.text(f'{ead} [data-ead]')), norm(tx('frame/settings/launcher.js', 'eadMissing', c.lang)), 'nothing saved yet: missing', what='EAD state')
+    c.eq(c.count(f'{ead} input[data-f="eadUser"]'), 1, 'a user name field', what='user field')
+    c.eq(c.attr(f'{ead} input[data-f="eadPassword"]', 'type'), 'password', 'the password field hides what is typed', what='password type')
+    # both are required: one alone calls nothing
+    c.page.fill(f'{ead} input[data-f="eadUser"]', 'test-user')
+    c.tap(f'{ead} [data-act="eadSave"]')
+    c.wait(300)
+    c.eq(len(posts), 0, 'a user name without a password is refused in the card, no call', what='posts')
+    c.eq(norm(c.text(f'{ead} [data-msg]')), norm(tx('frame/settings/launcher.js', 'eadBoth', c.lang)), 'the card says what is missing', what='EAD message')
+    # save: the launcher receives both values, the page keeps none
+    c.page.fill(f'{ead} input[data-f="eadPassword"]', 'test-pass')
+    c.tap(f'{ead} [data-act="eadSave"]')
+    for _ in range(30):                           # the call is sent once the fields are emptied
+        if posts:
+            break
+        c.wait(100)
+    c.eq(posts, [{'scope': 'app', 'service': 'ead', 'values': {'user': 'test-user', 'password': 'test-pass'}}],
+         'one call to the launcher with the scope, the service and both values', what='posts')
+    c.eq(c.js(f"[...document.querySelectorAll('{ead} input[data-f]')].map(i => i.value)"), ['', ''], 'both fields are emptied: the page keeps no secret', what='fields after save')
+    c.ok('test-pass' not in c.js('document.body.innerText') and 'test-user' not in c.js('document.body.innerText'), 'a value is shown', 'the values are shown nowhere')
+
+
+@case('A33', 'Revalidate bench', 'A', tags=('data',), designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 4 (data.revalidate); the bench reported 14/14')
+def a33(c):
+    _bench(c, 'frame/store/test/revalidate.html', '__revalidateBench')
+
+
+@case('A34', 'An address request consumed once', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 6.1 (ctx.consume): the keys a module takes leave the address in one write, the frame keys stay, a reload does not replay them')
+def a34(c):
+    c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")  # le module d'exemple (modules/hello) s'en sert
+    c.open('hello?note=bonjour%20%3Cb%3E&from=fuel', wait=False)
+    c.until("!!document.querySelector('[data-module=hello] [data-asked]')", timeout=15000, what='the example module took the request')
+    c.ok('bonjour <b>' in c.text('[data-module=hello] [data-asked]'), c.text('[data-module=hello] [data-asked]'), 'the value given to the module, shown as text')
+    c.eq(c.js('location.hash'), '#hello?from=fuel', 'the consumed key leaves the address, the frame key (from) stays', what='address')
+    c.page.reload(wait_until='load')
+    c.until("!!document.querySelector('[data-module=hello]')", timeout=15000, what='the module after a reload')
+    c.wait(800)
+    c.eq(c.count('[data-module=hello] [data-asked]'), 0, 'a reload does not replay the request', what='request after reload')
+
+
+@case('A35', 'Flown track', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 6 (29 Oct; local since 30 Oct): the track on the device (device/trail.json, ctx.live.trail()), one point per NM or per minute, turns kept, 500 points at most, never carried to another start, never in the shared flight')
+def a35(c):
+    c.open('fuel', wait=False)
+    c.until("!!document.querySelector('[data-module=fuel]')", timeout=15000, what='the frame is up')
+    r = c.js("""() => import('/frame/lib/trail.js').then(T => {
+      const S = '2026-10-29T20:00:00Z', t0 = Date.parse(S);
+      const fix = (s, lat, lon, alt) => ({ at: new Date(t0 + s * 1000).toISOString(), lat, lon, altFt: alt });
+      let tr = []; for (let s = 0; s <= 600; s += 10) tr = T.next(tr, fix(s, 48 + s / 1800, 2, 3000), S);   // 120 kt plein nord
+      const straight = tr.length, gaps = [...new Set(tr.slice(1).map((p, i) => p[3] - tr[i][3]))];
+      for (let s = 610; s <= 700; s += 10) tr = T.next(tr, fix(s, 48 + 600 / 1800, 2 + (s - 600) / 1800 / Math.cos(48.33 * Math.PI / 180), 3000), S);
+      const corner = tr.some(p => p[3] === 600 || p[3] === 610);
+      let slow = []; for (let s = 0; s <= 300; s += 10) slow = T.next(slow, fix(s, 48 + s / 360000, 2, 0), S);   // roulage, 10 kt
+      let big = []; for (let s = 0; s <= 8 * 3600; s += 10) big = T.next(big, fix(s, 40 + s / 1800, 1 + 0.5 * Math.sin(s / 1800), 5000), S);
+      return { straight, gaps, corner, slow: slow.length, cap: big.length, ends: [big[0][3], big[big.length - 1][3]],
+        point: tr[1], before: T.next([], fix(-30, 48, 2, 0), S).length, junk: T.next([['x'], [1, 2, 3, -5]], fix(0, 48, 2, 0), S).length };
+    })""")
+    c.eq((r['straight'], r['gaps']), (21, [30]), 'a straight leg at 120 kt: one point per NM', what='straight leg')
+    c.ok(r['corner'], str(r), 'a 90° turn keeps its corner')
+    c.eq(r['slow'], 6, 'a slow taxi: one point per minute', what='taxi points over 5 min')
+    c.eq((r['cap'], r['ends']), (500, [0, 28800]), 'an 8 h flight: 500 points, the first and the last kept', what='cap')
+    c.eq(r['point'], [48.017, 2, 3000, 30], 'a point is [lat, lon, altFt, s since the start], to about 100 m', what='point shape')
+    c.eq((r['before'], r['junk']), (0, 1), 'a position before the start is not a point; a malformed track is dropped', what='guards')
+    src = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8')
+    c.ok("base = liveTrail.from === cur.started.at ? liveTrail.trail" in src and 'trail: TR.next(base, a, cur.started.at)' in src, '',
+         'the frame carries on only a track of the same start (from = started.at, exactly)')
+    c.ok("trailFrom: cur.started.at" not in src and "actual: {\n          ...a\n        }" in src.replace('\r\n', '\n'), '',
+         'the shared flight gets the position only, never the track')
+    fd = (ROOT / 'frame' / 'store' / 'frame_data.js').read_text(encoding='utf-8')
+    c.ok("path !== TRAIL" in fd and "const TRAIL = 'device/trail.json'" in fd, '', 'the device track is never in a backup')
+
+
+@case('A37', "A module publishes on the user’s gesture", 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 4 (29 Oct): data.sync({ gesture: true }) is a manual pass; data.sync.gesture tells the capacity; the launcher’s report without paths')
+def a37(c):
+    c.open('fuel', wait=False)
+    c.until("!!window.FrameData", timeout=15000, what='the data layer')
+    c.eq(c.js("() => FrameData.adapter({ id: 'x', writes: ['pilot/'] }).sync.gesture"), True, 'the capacity is announced on the function', what='sync.gesture')
+    r = c.js("() => FrameData.adapter({ id: 'x', writes: ['pilot/'] }).sync({ gesture: true }).then(r => ({ ok: !!r, ex: 'exchange' in r }))")
+    c.eq(r, {'ok': True, 'ex': False}, 'a gesture pass runs; without a launcher, no report of an exchange', what='gesture pass without a launcher')
+    src = (ROOT / 'frame' / 'store' / 'frame_data.js').read_text(encoding='utf-8')
+    c.ok("reason: o?.gesture === true ? 'manual' : 'module'" in src, '', 'only gesture === true makes a manual pass')
+    c.ok('conflicts: Array.isArray(r.conflicts) ? r.conflicts.length' in src and 'message: String(r.message ||' in src, '',
+         'the report keeps numbers and the message, never the conflicting paths')
+@case('A36', 'Applications', 'A', designs=('standard',), night=False,
+      rule='frame SPEC 3.1 (29 Oct): an application is a named set of modules of the same frame, chosen by ?app= (pilot by default); Maintenance opens everywhere, read only without a launcher')
+def a36(c):
+    rail = "() => [...document.querySelectorAll('#fMenu a')].map(a => a.dataset.id || a.dataset.link)"
+    tabs = "() => [...document.querySelectorAll('#fTabs a')].map(a => a.dataset.tab)"
+    c.open('fuel', docs=LEVEL3)
+    c.ok('data' not in c.js(rail), str(c.js(rail)), 'Pilot has no Données in its rail')
+    c.page.goto(f'{c.base}/frame/index.html#data', wait_until='load')
+    c.until("!!document.querySelector('[data-module=fuel]')", timeout=15000, what='#data in Pilot: its first module')
+    c.eq(c.count('[data-module=data]'), 0, 'Pilot does not mount Données', what='Données in Pilot')
+    # Maintenance au niveau par défaut de l'appareil : son plancher (Complet), son rail entier, pas l'accueil de Pilote
+    c.page.evaluate("() => new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const tx = r.result.transaction('docs', 'readwrite'); tx.objectStore('docs').delete('device/level.json'); tx.objectStore('docs').delete('device/help.json'); tx.oncomplete = () => res(); }; r.onerror = () => rej(r.error) })")
+    c.page.goto(f'{c.base}/frame/index.html?app=maintenance#data', wait_until='load')
+    c.until("!!document.querySelector('[data-module=data]')", timeout=15000, what='Maintenance mounts Données, without a launcher too')
+    c.wait(800)
+    c.eq(c.count('[data-welcome]'), 0, 'no welcome card of Pilot in Maintenance', what='welcome cards')
+    c.eq(c.js(rail), ['data', 'admin', 'help'], 'Maintenance without a launcher: Données, Administration, Aide (no V2 page)', what='rail')
+    c.eq(c.js(tabs), ['data', 'admin', 'help'], 'the phone bar of Maintenance', what='tabs')
+    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].filter(b => !b.disabled).length"), 0, 'read only without a launcher: every action grey', what='enabled [data-verb]')
+    c.ok(c.js('document.title').split(' — ')[0] in ('Maintenance', 'Wartung', 'Mantenimiento'), c.js('document.title'), 'the page is named after the application')
+    c.page.goto(f'{c.base}/frame/index.html?app=__proto__#fuel', wait_until='load')
+    c.until("!!document.querySelector('[data-module=fuel]')", timeout=15000, what='an unknown application: Pilot')
+    c.ok('fuel' in c.js(rail) and 'data' not in c.js(rail), str(c.js(rail)), 'an unknown app is Pilot')
+
+
+@case('A38', 'GitLab transport bench', 'A', tags=('data',), designs=('standard',), screens=False, night=False,
+      rule='frame/INTEGRATION 4 (29 Oct): the data repository on a GitLab instance, same form as GitHub; the bench reported all pass')
+def a38(c):
+    _bench(c, 'frame/store/test/gitlab.html', '__gitlabBench')
+
+
+@case('A39', 'Pilots’ tokens screen bench', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame G2 (29 Oct): Maintenance › Pilots’ tokens: without a launcher, without a secret, list, a token shown once, revoke after the question')
+def a39(c):
+    _bench(c, 'frame/settings/test/pilot_tokens.html', '__tokensBench')
+
+
+@case('A40', 'Relay devices screen bench', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame R1a (29 Oct): Maintenance › Relay devices: without a launcher, relay off or on, a code shown once and wiped when the screen is left, revoke a device or a pilot after the question')
+def a40(c):
+    _bench(c, 'frame/settings/test/relay_devices.html', '__relayBench')
+
+
+@case('A41', 'IVAO sign-in return through the relay', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame R1b (29 Oct): #ivao-return?… (set by the launcher after the OpenID exchange): tokens kept with the device keys, the address replaced at once; an error is said, nothing kept')
+def a41(c):
+    import time as _t
+    exp = int(_t.time()) + 3600
+    c.open('fuel', wait=False)
+    c.until("!!window.FrameData", timeout=15000, what='the frame')
+    c.page.goto(f'{c.base}/frame/index.html#ivao-return?access_token=AT-secret&refresh_token=RT-secret&expires_at={exp}&scope=tracker', wait_until='load')
+    c.until("location.hash === '#settings?card=ivao'", timeout=15000, what='the address replaced by the settings')
+    c.ok('secret' not in c.js('location.href'), c.js('location.href'), 'no token left in the address')
+    keys = c.js("""() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').get('device/keys.json');
+      q.onsuccess = () => res(q.result ? JSON.parse(q.result.text).ivao : null) } })""")
+    c.ok(keys and keys.get('access_token') == 'AT-secret' and keys.get('refresh_token') == 'RT-secret', str(keys)[:80], 'the tokens kept with the device keys')
+    c.page.goto(f'{c.base}/frame/index.html#ivao-return?error=denied', wait_until='load')
+    c.until("location.hash === '#settings?card=ivao'", timeout=15000, what='the address replaced after an error')
+    c.until("window.__notes && window.__notes.some(n => /IVAO/.test(n))", timeout=5000, what='the refusal said')

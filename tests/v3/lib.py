@@ -89,7 +89,7 @@ LANGS = ('fr', 'en', 'de', 'es')
 LANGS4 = ('en', 'de', 'es')
 PHONE = (390, 844)
 SCREEN = (1280, 800)
-CASE_FILES = ('frame', 'overlay', 'sheet', 'maps', 'maps_recode', 'atmosphere', 'fuel', 'flightlog', 'designs', 'repo', 'aerodb', 'journeys')
+CASE_FILES = ('frame', 'overlay', 'sheet', 'maps', 'maps_recode', 'atmosphere', 'fuel', 'flightlog', 'designs', 'repo', 'aerodb', 'base_sources', 'data', 'journeys')
 
 
 # ------------------------------------------------------------------------------------------------------ outcomes
@@ -168,7 +168,7 @@ def load_cases():
 # loaded: `docs` rows { path, text, base, rev, at, policy } are what `FrameData.get()` reads first.
 _SEED_JS = """async (docs) => {
   const db = await new Promise((res, rej) => {
-    const r = indexedDB.open('sogFrame', 1);
+    const r = indexedDB.open('sogFrame');
     r.onupgradeneeded = () => {
       const d = r.result;
       for (const [n, o] of [['docs', { keyPath: 'path' }], ['pending', { keyPath: 'path' }], ['meta', { keyPath: 'key' }],
@@ -288,7 +288,7 @@ def forget(page, paths, base=None):
     base = base or _W['base']
     page.goto(base + '/frame/manifest.webmanifest')
     return page.evaluate("""async (paths) => {
-      const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame', 1); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+      const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
       await new Promise((res, rej) => { const tx = db.transaction('docs', 'readwrite'); for (const p of paths) tx.objectStore('docs').delete(p);
         tx.oncomplete = res; tx.onerror = () => rej(tx.error) });
       db.close(); return paths.length }""", paths)
@@ -486,7 +486,8 @@ class Ctx(Asserts):
 
     # -- navigation and seeding
     def open(self, target='fuel', flight=False, started=False, trigram='ABC', pending=0, wait=True, steps=False, aero=False,
-             tone=None, airfields=False, flights=0, reports=0, forecast=False, docs=(), airspaces=(), airways=(), aero_extra=None):
+             tone=None, airfields=False, flights=0, reports=0, forecast=False, docs=(), airspaces=(), airways=(), aero_extra=None, identity=None,
+             app=None):
         """Seeds the cache, then loads `frame/index.html#<target>` and waits for the screen.  `target` is the part after
         '#', e.g. 'maps', 'help?m=maps', 'settings'.  Always seeded: the design and tone of the run (device/design.json,
         which the frame applies over the localStorage mirror; `tone` overrides the run's) and a trigram (`trigram=''`: none,
@@ -496,10 +497,11 @@ class Ctx(Asserts):
         a report (seed_flights); `forecast`: a synthetic forecast of the seeded flight in the weather store (seed_forecast);
         `docs`: more documents [[path, value, policy], ...]; `airspaces`: more airspaces for the published base (implies `aero`);
         `airways`: airway segments for the published base (implies `aero`; `synthetic_airways()`); `aero_extra`: more of the published base
-        (implies `aero`; see aero_docs, D27's LFQN)."""
+        (implies `aero`; see aero_docs, D27's LFQN); `identity`: more keys of the device identity (e.g. `{'simbrief': '12345'}`);
+        `app`: the application of the frame (`?app=maintenance`; none: Pilot)."""
         docs = [['device/design.json', {'design': self.design, 'tone': tone or self.tone}, 'cache']] + [list(d) for d in docs]
         if trigram:
-            docs.append(['device/identity.json', {'trigram': trigram}, 'cache'])
+            docs.append(['device/identity.json', {'trigram': trigram, **(identity or {})}, 'cache'])
         if flight:
             docs += flight_docs(started, trigram or 'ABC', steps)
         if aero or airfields or airspaces or airways or aero_extra:
@@ -511,7 +513,7 @@ class Ctx(Asserts):
         _seed(self.page, self.base, docs)
         if forecast:
             seed_forecast(self.page, self.base)
-        self.page.goto(f'{self.base}/frame/index.html#{target}', wait_until='load')
+        self.page.goto(f'{self.base}/frame/index.html{"?app=" + app if app else ""}#{target}', wait_until='load')
         if wait:
             self.ready(target, sheet=flight)
 
@@ -558,7 +560,7 @@ class Ctx(Asserts):
     def doc(self, path):
         """The JSON document `path` as the frame's cache holds it (IndexedDB `sogFrame`, store `docs`), or None."""
         return self.page.evaluate("""async (path) => {
-          const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame', 1); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+          const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
           const row = await new Promise(res => { const q = db.transaction('docs').objectStore('docs').get(path); q.onsuccess = () => res(q.result) });
           db.close(); return row ? JSON.parse(row.text) : null }""", path)
 
@@ -604,7 +606,7 @@ class Ctx(Asserts):
     def doc(self, path):
         """The seeded or written document `path` of the frame's cache (IndexedDB `sogFrame`, what the application itself reads
         and writes without a launcher), parsed; None when there is none."""
-        text = self.page.evaluate("""async (p) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame', 1);
+        text = self.page.evaluate("""async (p) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame');
             r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
           const row = await new Promise(res => { const q = db.transaction('docs').objectStore('docs').get(p); q.onsuccess = () => res(q.result); q.onerror = () => res(null) });
           db.close(); return row && typeof row.text === 'string' ? row.text : null }""", path)
@@ -615,7 +617,7 @@ class Ctx(Asserts):
 
     def doc_paths(self, prefix):
         """Paths of the cached documents that start with `prefix`."""
-        return self.page.evaluate("""async (pre) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame', 1);
+        return self.page.evaluate("""async (pre) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame');
             r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
           const rows = await new Promise(res => { const q = db.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result); q.onerror = () => res([]) });
           db.close(); return rows.filter(k => String(k).startsWith(pre)) }""", prefix)
@@ -673,6 +675,23 @@ class Ctx(Asserts):
             self.page.wait_for_function(expr, arg=arg, timeout=timeout)
         except Exception:
             raise Fail(f'never true within {timeout} ms: {what or expr[:80]}', 'it becomes true') from None
+
+    def quiet(self, expr, arg=None, quiet=500, timeout=8000):
+        """Waits until the value of a JavaScript expression stops changing for `quiet` ms (it is read every 50 ms, compared as JSON)
+        and returns that value: a state to wait on instead of a fixed pause, for "nothing else happens" checks (the number of
+        notifications, a list of options).  Fail if it keeps changing for `timeout` ms."""
+        js = """([src, arg, quiet, timeout]) => new Promise((res, rej) => {
+          const read = () => { try { return JSON.stringify((new Function('arg', 'return (' + src + ')'))(arg)) } catch (e) { return 'ERR ' + e } };
+          let last = read(), since = performance.now(); const t0 = since;
+          const tick = () => { const v = read(), now = performance.now();
+            if (v !== last) { last = v; since = now }
+            if (now - since >= quiet) res(last === undefined ? null : JSON.parse(last));
+            else if (now - t0 > timeout) rej(new Error('still changing: ' + last)); else setTimeout(tick, 50) };
+          tick() })"""
+        try:
+            return self.page.evaluate(js, [expr, arg, quiet, timeout])
+        except Exception as e:
+            raise Fail(f'never quiet within {timeout} ms: {expr[:80]} ({str(e).splitlines()[0][:80]})', f'unchanged for {quiet} ms') from None
 
     def shot(self, name):
         SHOTS.mkdir(exist_ok=True)
@@ -960,7 +979,21 @@ def synthetic_airways():
             + [seg('UL9', 'TSA10', 'TSA12', 6500, 19500), seg('UL9', 'TSA12', 'TSA11', 6500, 19500)])
 
 
-def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=(), airways=(), extra=None):
+def _aero_cycle(today=None):
+    """Cycle de la base semée : le cycle AIRAC en vigueur (début « AAAA-MM-JJ », 28 jours depuis l'AIRAC 2401 du 25 janvier
+    2024), ou le suivant dans les 3 derniers jours du cycle (publié en avance, comme le ferait le poste) ; ainsi la ligne de fin de
+    cycle du bloc d'état (frame/INTEGRATION.md § 15.3) ne s'allume pas d'elle-même au fil du calendrier."""
+    ref = datetime.date(2024, 1, 25)
+    today = today or datetime.datetime.now(datetime.timezone.utc).date()
+    cur = ref + datetime.timedelta(days=(today - ref).days // 28 * 28)
+    nxt = cur + datetime.timedelta(days=28)
+    return (nxt if (nxt - today).days <= 3 else cur).isoformat()
+
+
+AERO_CYCLE = _aero_cycle()
+
+
+def aero_docs(cycle=AERO_CYCLE, airfields=False, airspaces_extra=(), airways=(), extra=None):
     """`extra`: { kind: rows } more rows for the aerodromes / vrp kinds of the base (they come after the route's own), and `cells`: more cells of the index { 'lat': [[lon0, lon1]] }."""
     extra = extra or {}
     def ring(lat0, lat1, lon0, lon1):
@@ -976,7 +1009,7 @@ def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=(), airways=(
 
     def kind(k, data):
         return [f'sia/base/fr/{cycle}/{k}.json', {'schema': 2, 'zone': 'fr', 'cycle': cycle, 'kind': k, 'parserVersion': 1,
-                                                  'data': data, 'updated_at': '2026-10-15T00:00:00Z'}, 'reference']
+                                                  'data': data, 'updated_at': f'{cycle}T00:00:00Z'}, 'reference']
     docs = [['sia/base/index.json', {'zones': {'fr': {'cycle': cycle, 'prefixes': ['LF'], 'kb': {}, 'cells': cells}}}, 'reference'],
             kind('meta', {}), kind('airspaces', airspaces)]
     if airways:           # a case's own airway segments (F8: synthetic_airways())
@@ -987,7 +1020,7 @@ def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=(), airways=(
         docs.append(kind('aerodromes', [{'icao': i, 'name': i + ' TEST', 'lat': p['lat'], 'lon': p['lon'], 'elev': 100}
                                         for i, p in [('LFRS', pts['LFRS']), ('LFML', pts['LFML']), ('LFMT', altn)]]))
         docs.append(kind('points', [{'id': i, 'lat': pts[i]['lat'], 'lon': pts[i]['lon'], 'type': 'RNAV'} for i in ('LUGEN', 'NEPIX')]))
-    for k in ('aerodromes', 'vrp', 'cities'):   # a case's own aerodromes, VRPs and towns, beside those of the route
+    for k in ('aerodromes', 'vrp', 'cities', 'points'):   # a case's own aerodromes, VRPs, towns and points, beside those of the route
         if extra.get(k):
             docs = [d for d in docs if d[0] != f'sia/base/fr/{cycle}/{k}.json'] + [kind(k, (extra.get(k) or []) + ([x for d in docs if d[0] == f'sia/base/fr/{cycle}/{k}.json' for x in d[1]['data']]))]
     return docs

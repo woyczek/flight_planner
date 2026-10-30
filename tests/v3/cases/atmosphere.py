@@ -68,8 +68,10 @@ def e3(c):
     c.open('atmosphere', flight=True)
     title = c.text('.f-sheet-head .f-sheet-title') or ''
     word = row(c, 'profileTitle')
-    pat = re.compile(r'^' + re.escape(word) + r' · .+ · \S+ → \S+ · FL\d+ · \d\d:\d\dZ')
-    c.ok(pat.search(norm(title)) is not None, f'sheet title {title!r}', f'"{word} · <aircraft> · <from> → <to> · FL<level> · <HH:MM>Z …"')
+    # the departure's time, with its day when it is not today (fmtWhen): the default departure is the next hour, tomorrow after
+    # 23:00Z — the case does not depend on the clock
+    pat = re.compile(r'^' + re.escape(word) + r' · .+ · \S+ → \S+ · FL\d+ · (?:[^·]+ )?\d\d:\d\dZ')
+    c.ok(pat.search(norm(title)) is not None, f'sheet title {title!r}', f'"{word} · <aircraft> · <from> → <to> · FL<level> · [<day>] <HH:MM>Z …"')
 
 
 def open_view(c, key):
@@ -260,3 +262,85 @@ def e9(c):
     c.wait(400)
     end = _cut_state(c)
     c.eq([round(end['from'], 1), round(end['to'], 1)], [round(st['from'], 1), round(st['to'], 1)], 'the window is the same after the drag', what='window after the drag')
+
+
+@case('E10', 'A flight dated before today: its weather from its departure, not from today', 'E', tags=('atmosphere',), screens=False,
+      designs=('standard',), night=False, rule='user 29 Oct: "pas de météo avant H+56" on a flight of 26 Oct (the days before today were never read)')
+def e10(c):
+    import copy, datetime
+    import lib
+    f = copy.deepcopy(lib.FLIGHT)
+    f['planned_at'] = (datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=60)).strftime('%Y-%m-%dT%H:00:00Z')
+    c.open('atmosphere?donnees=demo', docs=[['pilot/ABC/current_flight.json', f, 'document']])
+    c.until(f"() => !!document.querySelector('{ATM} [data-at=whenOut]') && /[0-9]/.test(document.querySelector('{ATM} [data-at=whenOut]').textContent)",
+            timeout=10000, what='the time line')
+    c.wait(1500)
+    out = c.js(f"""() => {{ const o = document.querySelector('{ATM} [data-at=whenOut]'), b = document.querySelector('{ATM} [data-at=cover]');
+      return [o.className, o.textContent, b ? b.hidden : null] }}""")
+    c.ok('at-out' not in out[0] and '⚠' not in out[1], f'{out}', 'the planned departure 60 h ago is inside the forecast read (no ⚠)')
+    c.eq(out[2], True, 'the slider is covered from its start: no band of covered hours', what='covered band hidden')
+
+
+_TRAJ_JS = """async () => { const A = await import('/modules/atmosphere/atmo.js');
+  const pts = [{ id: 'A', lat: 45, lon: 0 }, { id: 'B', lat: 45, lon: 4.2 }], total = A.trajectory(pts, { levelFt: 30000 }).total;
+  const path = [{ nm: 0, ft: 0 }, { nm: 40, ft: 20000 }, { nm: 60, ft: 20000 }, { nm: 80, ft: 30000 }, { nm: total - 50, ft: 30000 }, { nm: total, ft: 0 }];
+  const t1 = A.trajectory(pts, { levelFt: 30000, path, cruiseKt: 300 }), t0 = A.trajectory(pts, { levelFt: 30000, cruiseKt: 300 }),
+    tw = A.trajectory(pts, { levelFt: 30000, cruiseKt: 300, headAt: () => 30 });
+  return { total, at50: t1.computed(50), at70: t1.computed(70), free50: t0.computed(50), toc: t1.toc,
+    m0: t0.minutesAt(total), mw: tw.minutesAt(total) } }"""
+
+
+@case('E11', 'The cut follows Fuel’s vertical path, and its times the ground speed', 'E', tags=('atmosphere',), screens=False,
+      designs=('standard',), night=False,
+      rule='user 29 Oct: "la coupe météo ignore les altitudes imposées … 30 kt de face = 30 kt de vitesse sol en moins"')
+def e11(c):
+    c.open('atmosphere?donnees=demo', flight=True)
+    r = c.js(_TRAJ_JS)
+    c.eq(round(r['at50']), 20000, 'a constraint step of profile.path (20 000 ft from 40 to 60 NM) is kept by the cut', what='altitude at 50 NM')
+    c.ok(r['at70'] > 20000 and r['at70'] < 30000, f'{r["at70"]}', 'and the climb resumes after it')
+    c.ok(abs(r['free50'] - r['at50']) > 1000, f'{r["free50"]} without the path', 'without the path the cut takes its own climb (the difference the path makes)')
+    c.ok(r['toc'] is not None and r['toc'] > 75, f'{r["toc"]}', 'the top of climb is where the path reaches its highest level')
+    c.ok(r['mw'] > r['m0'] * 1.05, f'{r["m0"]:.1f} min without wind, {r["mw"]:.1f} with 30 kt on the nose', 'a headwind lengthens the times (ground speed)')
+
+
+_POP = f'{ATM} .at-layerpop'
+_CUT = f"() => {{ const s = document.querySelector('{ATM} [data-at=dbody] svg'); return s ? s.outerHTML.length : 0 }}"
+
+
+@case('E12', 'Layers: a panel over the map, the cut stays in view and follows each box at once', 'E', tags=('atmosphere',), screens=False,
+      designs=('standard',), night=False,
+      rule='user 29 Oct: "choisir les éléments météo masque le profil vertical. Certaines coches doivent être cliquées deux fois" — the Layers panel sits over the map under its button, the cut stays in the sheet and is redrawn by each box, one tap = one toggle (the panel is not rewritten between press and release)')
+def e12(c):
+    c.open('atmosphere?donnees=demo', flight=True)
+    c.until(f"() => !!document.querySelector('{ATM} [data-at=dbody] svg')", timeout=12000, what='the cut is drawn (demonstration)')
+    c.wait(800)
+    c.tap(button_sel(c, 'layers'))
+    c.until(f"window.__t.shown(document.querySelector('{_POP}'))", what='the Layers panel opens')
+    c.ok(c.shown(f'{ATM} [data-at=dbody] svg'), 'the cut is no longer shown', 'the cut stays in the sheet while the panel is open')
+    pop, box, panel = c.box(_POP), c.box(f'{ATM} .at-box'), c.box(f'{ATM} .f-sheet-panel')
+    c.ok(pop['y'] >= box['y'] - 1 and pop['y'] + pop['h'] <= box['y'] + box['h'] + 1, f'panel {pop}, map {box}', 'the panel lies within the map')
+    c.ok(pop['y'] + pop['h'] <= panel['y'] + 1, f'panel bottom {pop["y"] + pop["h"]:.0f}, sheet top {panel["y"]:.0f}', 'the panel never covers the sheet')
+    c.eq(c.attr(button_sel(c, 'layers'), 'aria-pressed'), 'true', 'the Layers button is pressed', what='aria-pressed')
+    # one tap, one toggle, the cut redrawn at once, the panel's boxes kept (not rewritten)
+    c.js(f"() => document.querySelectorAll('{_POP} input[data-g]').forEach(i => {{ i.__kept = 1 }})")
+    for k in ('wind', 'iso', 'cloud'):
+        sel = f'{_POP} input[data-g=xsLayers][data-k={k}]'
+        before, cut = c.js(f"() => document.querySelector('{sel}').checked"), c.js(_CUT)
+        c.tap(f'{_POP} label:has(input[data-g=xsLayers][data-k={k}])')
+        c.until(f"(b) => document.querySelector('{sel}').checked !== b", before, timeout=3000, what=f'one tap toggles "{k}"')
+        c.wait(400)
+        c.ok(c.js(_CUT) != cut, f'cut length {cut} -> {c.js(_CUT)}', f'the cut is redrawn by "{k}", the panel still open')
+        c.ok(c.shown(_POP), 'the panel closed', 'the panel stays open')
+    c.ok(c.js(f"() => [...document.querySelectorAll('{_POP} input[data-g]')].every(i => i.__kept === 1)"), 'the boxes were rebuilt',
+         'the panel is not rewritten by a box (its boxes are the same nodes)')
+    # the cross and Escape close it; Flight closes it too
+    c.tap(f'{_POP} [data-at=layersClose]')
+    c.until(f"!window.__t.shown(document.querySelector('{_POP}'))", what='the cross closes the panel')
+    c.tap(button_sel(c, 'layers'))
+    c.until(f"window.__t.shown(document.querySelector('{_POP}'))", what='open again')
+    c.page.keyboard.press('Escape')
+    c.until(f"!window.__t.shown(document.querySelector('{_POP}'))", what='Escape closes the panel')
+    c.tap(button_sel(c, 'layers'))
+    c.until(f"window.__t.shown(document.querySelector('{_POP}'))", what='open again')
+    c.tap(button_sel(c, 'flightTitle'))
+    c.until(f"!window.__t.shown(document.querySelector('{_POP}'))", what='Flight takes the sheet and closes the panel')
