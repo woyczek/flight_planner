@@ -21,6 +21,9 @@ import {
 import {
   TX
 } from './texts.js';
+import {
+  schedule
+} from './draw.js';
 
 /** Teintes des procédures, de jour puis de nuit (utilisateur, 29 octobre : « des couleurs de contraste autres que violet (vert ?
  *  orange ? bleu ?) ») : SID en vert, STAR en orange, approche (et son approche interrompue) en bleu ciel — ni le violet de la
@@ -684,7 +687,35 @@ export function runwayArrows(toC, zoom) {
       out.push(a);
     }
   }
+  // les autres terrains dessinés (S.adHits du dernier dessin), leurs pistes lues à la demande (S.adRwys), fines
+  const own = new Set([r.dep, r.arr].filter(Boolean).map(x => String(x).toUpperCase()));
+  for (const h of S.adHits || []) {
+    const icao = String(h.a?.icao || '').toUpperCase(),
+      list = S.adRwys?.get(icao);
+    if (!icao || own.has(icao) || !list?.length) continue;
+    for (const rw of list) {
+      const a = arrowOf(toC, 'arr', rw, list, num(h.a.magVar) ? +h.a.magVar : null, S.theme.muted);
+      if (!a) continue;
+      a.lw = 1.6;
+      out.push(a);
+    }
+  }
   return out;
+}
+/** Les pistes des terrains dessinés au dernier dessin, de près (au-dessus de runwayZoom) : demandées à aerodb une fois par terrain,
+ *  en un lot, gardées dans S.adRwys (undefined : demandée ; [] : rien) ; la carte est redessinée à l'arrivée du lot. */
+export function wantRunways(zoom) {
+  const A = S.ctx.aerodb;
+  if (!(zoom >= (S.runwayZoom ?? RWY_ZOOM)) || !A?.runways) return;
+  const M = S.adRwys ||= new Map(),
+    ask = [...new Set((S.adHits || []).map(h => String(h.a?.icao || '').toUpperCase()).filter(i => /^[A-Z0-9]{4}$/.test(i) && !M.has(i)))];
+  if (!ask.length) return;
+  for (const i of ask) M.set(i, undefined);
+  Promise.all(ask.map(i => Promise.resolve().then(() => A.runways(i)).then(l => [i, l || []], () => [i, []]))).then(got => {
+    if (!S || S.adRwys !== M) return;
+    for (const [i, l] of got) M.set(i, l);
+    schedule();
+  });
 }
 /** Vecteur de seuil d'une piste rw (fiche d'aerodb) parmi les pistes list du terrain : { side, a (le seuil), b (VEC_PX plus loin le long
  *  du relèvement vrai, sur l'écran), name, col } ; null sans position ni relèvement. Partagé avec le mode « choisir sur la carte »
@@ -716,7 +747,7 @@ export function arrowOf(toC, side, rw, list, magVar, col) {
 const gcNmPlain = (a, b) => Math.hypot((+b.lat - +a.lat) * 60, (((+b.lon - +a.lon) + 540) % 360 - 180) * 60 * Math.cos(+a.lat * RAD));
 /** Dessine les vecteurs de seuil : un trait court du seuil vers le sens de la piste (épaisseur lw, liseré du fond), une petite pointe
  *  au bout, l'indicatif en queue, derrière le seuil. */
-export function drawRunways(ctx, arrows) {
+export function drawRunways(ctx, arrows, pl = null) {
   if (!arrows?.length) return;
   ctx.save();
   ctx.lineCap = 'round';
@@ -759,7 +790,15 @@ export function drawRunways(ctx, arrows) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const nx = w.a.x - ux * 11,
-      ny = w.a.y - uy * 11;
+      ny = w.a.y - uy * 11,
+      tw = ctx.measureText(w.name).width;
+    // dans la passe de collision de la carte : un numéro qui n'a pas de place n'est pas écrit (le vecteur reste)
+    if (pl && !pl.take({
+        x0: nx - tw / 2 - 1,
+        y0: ny - 7,
+        x1: nx + tw / 2 + 1,
+        y1: ny + 7
+      })) continue;
     ctx.lineWidth = 3;
     ctx.strokeStyle = S.theme.bg;
     ctx.strokeText(w.name, nx, ny);

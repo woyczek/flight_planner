@@ -874,7 +874,7 @@
   /** Étiquette d'un aérodrome (code OACI, nom, altitude, fréquence) près de son symbole. */
   function aerodromeLabel(ctx, ad, p, s, labelFont) {
     const main = ad.cov?.main || (ad.state ? C.red : C.blue);
-    const label = ad.icao || (labelFont && labelFont.full ? ad.name : '');
+    const label = ad.label || ad.icao || (labelFont && labelFont.full ? ad.name : ''); // ad.label : posé par la Carte (code et nom)
     if (labelFont && label) {
       ctx.save();
       ctx.font = `700 ${+labelFont}px Arial,sans-serif`;

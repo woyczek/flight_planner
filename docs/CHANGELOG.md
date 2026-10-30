@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: from the airline's zoom, every aerodrome shows its runways and its name** (`modules/maps/procs.js`, `draw.js`,
+  `render.js`, `lib/aero_symbols.js`; help ×4, maps SPEC; noreg D71; V3 § 10.30 fourth reading, point 3). Above `runwayZoom`
+  each aerodrome drawn has its runways read on demand and drawn as thin 24 px vectors with their numbers at the thresholds, in
+  the labels' collision pass right after the aerodromes; its label reads its code and name ("LFPO PARIS ORLY"). Below the zoom
+  nothing changes.
 - **Map, choosing on the map: approaches as the SIA publishes them** (`modules/maps/choose.js`; help ×4, maps SPEC § 5.1;
   noreg D66, D70; V3 § 10.30, fourth reading). The approach rows are the finals by their short label ("ILS 06", "RNP 06";
   `labelOf`), the published name in the tooltip; the initial approach segments the SIA publishes once for the runway are

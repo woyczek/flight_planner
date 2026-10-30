@@ -278,7 +278,11 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     `route.procedures` bold in its side's hue (SID; approach, else STAR), the others thin and muted. Only from the airline's
     `runwayZoom` (`airline/map_profiles.json`, integer 8 to 16, 11 by default; read with the profiles, `readSettings`, redrawn
     on the watch of that file), compared with the real zoom of the view (`MapsRender.zoomOf`); below it nothing is drawn. The
-    tuning page's `procRwy` threshold is gone. In the choose mode every runway of the aerodrome is a vector, the one in force
+    tuning page's `procRwy` threshold is gone. From the same zoom, every aerodrome drawn (`S.adHits` of the last drawing) has its
+    runways read on demand (`wantRunways`: `aerodb.runways`, one batch, kept in `S.adRwys`) and drawn thin with their numbers;
+    the vectors and numbers are painted by the screen's `runways(ctx, pl)` callback right after the aerodromes, in the one
+    collision pass with the aerodromes' priority (a number without room is not written, its vector stays); the aerodromes'
+    labels read code and name (`adNames`: "LFPO PARIS ORLY", the aerodb name as it is until `adTitle` of § 10.27). In the choose mode every runway of the aerodrome is a vector, the one in force
     bold; while the Map is dimmed the airway boxes go under the dim veil (`render.js`: `airwayOver` before `dim`), so the
     mode's traces, vectors and labels are above every label of the base;
   - **constraints**, as on the AIP charts, written after the fix's name: altitude **underlined** = at or above

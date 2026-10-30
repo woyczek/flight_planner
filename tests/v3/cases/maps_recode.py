@@ -1803,3 +1803,36 @@ def d70(c):
     joins = c.js("""async () => { const C = await import('/modules/maps/choose.js'), S = window.__mp.S, L = C.chooseLayout(document.createElement('canvas').getContext('2d'), S.toC);
       return L.traces.filter(t => t.join).length }""")
     c.eq(joins, 0, 'ODILO 1A ends on the final’s IF: no junction', what='junctions')
+
+
+# ------------------------------------------------------------------------------------------------------ D71
+_LFAB_RWY = {'schema': 1, 'icao': 'LFAB', 'cycle': AERO_CYCLE, 'updated_at': '2025-01-02T00:00:00Z', 'procedures': [],
+             'runways': [{'id': '09', 'lat': 47.30, 'lon': -1.7560, 'elev': 50, 'qfu': 90}, {'id': '27', 'lat': 47.30, 'lon': -1.7440, 'elev': 50, 'qfu': 270}]}
+_AD_STATE = """() => { const S = window.__mp.S, z = MapsRender.zoomOf(S.canvas.clientWidth / (S.fit.e - S.fit.w)), h = (S.adHits || []).find(h => h.a.icao === 'LFAB');
+  return { zoom: z, label: h ? h.a.label || null : 'absent', rwys: (window.__pr.runwayArrows(S.toC, z) || []).filter(w => w.lw === 1.6).map(w => w.name).sort() } }"""
+
+
+@case('D71', 'From the airline’s zoom, every drawn aerodrome shows its runways’ numbers and its name next to its code', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False,
+      rule='V3 § 10.30 fourth reading, point 3: from runwayZoom, each runway of each aerodrome drawn carries its number at its threshold (with the 24 px vector), in the collision pass with the aerodromes’ priority; the aerodrome’s label reads "LFAB AB TEST" (code and name); below the zoom nothing changes')
+def d71(c):
+    docs = fdocs(flight()) + [['proc/manual/LFAB.json', _LFAB_RWY, 'reference'], ['cache/maps/ui.json', {'preset': 'vfr', 'layers': {}}, 'cache']]
+    # zoom ≈ 12 over LFAB, off the route
+    c.open('maps?view=-1.80,47.28,-1.70,47.32', docs=docs, flight=False, airfields=True, aero_extra={'aerodromes': _COV_ADS, 'cells': _COV_CELLS}, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && (window.__mp.S.adHits || []).some(h => h.a.icao === 'LFAB'))", timeout=12000, what='LFAB is drawn')
+    c.until("() => !!(window.__mp.S.adRwys && (window.__mp.S.adRwys.get('LFAB') || []).length)", timeout=8000, what='its runways are read')
+    c.until("() => (window.__mp.S.adHits || []).some(h => h.a.icao === 'LFAB' && h.a.label)", timeout=6000, what='the label with the name')
+    st = c.js(_AD_STATE)
+    c.ok(st['zoom'] >= 11, f"{st['zoom']:.1f}", 'the view is above the airline’s zoom (11)')
+    c.eq(st['label'], 'LFAB AB TEST', 'the aerodrome reads its code and its name', what='aerodrome label')
+    c.eq(st['rwys'], ['09', '27'], 'both runways of LFAB as vectors with their numbers', what='runways of an aerodrome off the route')
+    # below the zoom: the code alone, no runway
+    c.open('maps?view=-3.2,46.4,-0.2,48.2', docs=docs, flight=False, airfields=True, aero_extra={'aerodromes': _COV_ADS, 'cells': _COV_CELLS}, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && (window.__mp.S.adHits || []).some(h => h.a.icao === 'LFAB'))", timeout=12000, what='LFAB is drawn far out')
+    st = c.js(_AD_STATE)
+    c.ok(st['zoom'] < 11, f"{st['zoom']:.1f}", 'the view is below the airline’s zoom')
+    c.eq([st['label'], st['rwys']], [None, []], 'below the zoom: the code alone, no runway', what='far out')
