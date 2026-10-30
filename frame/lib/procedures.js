@@ -138,3 +138,17 @@ export function runwayChoices(known, all, ad) {
     id: String(Math.round(((+ad.bearing + a - (+ad.magVar || 0)) % 360 + 360) % 360 / 10) % 36 || 36).padStart(2, '0')
   })).sort((a, b) => rwOrder(a.id, b.id));
 }
+
+/** La piste unique que dessert une procédure (« 07 », « 14L », sans « RW ») ; null quand elle en dessert plusieurs, toutes, ou aucune
+ *  nommée (V3 § 10.30 : une procédure choisie qui ne dessert qu'une piste la propose). */
+export function runwayOf(proc) {
+  if (!proc || servesAll(proc)) return null;
+  const r = [...new Set(proc.runways.map(rwNum))];
+  return r.length === 1 ? r[0] : null;
+}
+
+/** La première procédure de la liste, dans l'ordre du groupe, qui dessert la piste (« Choisir OKRIX5B ») ; null s'il n'y en a pas.
+ *  Sans piste, la première de la liste. */
+export function firstServing(list, rwy) {
+  return (list || []).find(p => p && servesRwy(p, rwy)) || null;
+}

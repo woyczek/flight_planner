@@ -1,0 +1,90 @@
+<!doctype html>
+<!-- Banc du vent sur une piste (frame/lib/wind.js, V3_SPECIFICATION § 10.30) : composantes de face / arrière et de travers, côté,
+     arrondis, données manquantes. Fonction pure ; page nue ; window.__bench = { done, pass, fail, rows }. Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>wind — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">wind.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    components
+  } from '../wind.js?v=0';
+  const out = document.getElementById('out'),
+    rows = [];
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      got: String(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `  → ${got}`}`;
+    out.appendChild(l);
+  }
+  const J = x => JSON.stringify(x);
+  ck('face pleine : tout en face, pas de travers', J(components(70, 70, 15)) === J({
+    head: 15,
+    cross: 0,
+    side: null
+  }), J(components(70, 70, 15)));
+  ck('arrière pleine : face négative', components(250, 70, 8).head === -8 && components(250, 70, 8).cross === 0, J(components(250, 70, 8)));
+  ck('travers pur venant de droite (piste 070, vent du 160)', J(components(70, 160, 10)) === J({
+    head: 0,
+    cross: 10,
+    side: 'R'
+  }), J(components(70, 160, 10)));
+  ck('travers pur venant de gauche (piste 070, vent du 340)', J(components(70, 340, 10)) === J({
+    head: 0,
+    cross: 10,
+    side: 'L'
+  }), J(components(70, 340, 10)));
+  ck('à 30° à droite : face cos, travers sin, arrondis', J(components(70, 100, 20)) === J({
+    head: 17,
+    cross: 10,
+    side: 'R'
+  }), J(components(70, 100, 20)));
+  ck('passage du nord : piste 350, vent du 020 (30° à droite)', J(components(350, 20, 20)) === J({
+    head: 17,
+    cross: 10,
+    side: 'R'
+  }), J(components(350, 20, 20)));
+  ck('vent calme : zéros, pas de côté', J(components(70, 0, 0)) === J({
+    head: 0,
+    cross: 0,
+    side: null
+  }), J(components(70, 0, 0)));
+  ck('données manquantes ou variables : null, rien d’inventé', components(70, null, 10) === null && components(70, 'VRB', 5) === null &&
+    components(null, 70, 10) === null && components(70, 70, '') === null && components(70, 70, -3) === null);
+  ck('chaînes numériques acceptées', components('70', '100', '20')?.head === 17);
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

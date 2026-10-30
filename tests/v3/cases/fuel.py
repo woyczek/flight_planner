@@ -1493,3 +1493,16 @@ def f61(c):
             c.ok('ADEP LFRS' in text and 'ADES LFML' in text and 'NUMENR 4' in text, text[:200], 'the 1100 file names both aerodromes and counts the four route points')
         if k == 'pln':
             c.ok('<DepartureID>LFRS</DepartureID>' in text and text.count('<ATCWaypoint ') == 4, text[:200], 'the .pln has the four waypoints')
+
+
+
+@case('F62', 'Wind components bench', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='frame/lib/wind.js (V3 spec 10.30): head / tail and cross wind on a runway, pure, its bench passes')
+def f62(c):
+    c.page.goto(f'{c.base}/frame/lib/test/wind.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'frame/lib/test/wind.html') from None
+    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')

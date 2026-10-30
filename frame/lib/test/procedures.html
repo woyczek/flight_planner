@@ -36,7 +36,9 @@
     orderProcedures,
     transitionsOf,
     appChoices,
-    runwayChoices
+    runwayChoices,
+    runwayOf,
+    firstServing
   } from '../procedures.js?v=0';
   const rows = [],
     out = document.getElementById('out');
@@ -270,6 +272,34 @@
     bearing: 322.9,
     magVar: 1.7
   }).map(r => r.id).join() === '14,32');
+  // runwayOf, firstServing (§ 10.30)
+  ck('runwayOf : la piste unique servie, sans RW ; null pour plusieurs, toutes ou aucune', runwayOf({
+    runways: ['RW07']
+  }) === '07' && runwayOf({
+    runways: ['14L', '14L']
+  }) === '14L' && runwayOf({
+    runways: ['07', '25']
+  }) === null && runwayOf({
+    runways: ['ALL']
+  }) === null && runwayOf({
+    runways: []
+  }) === null && runwayOf(null) === null);
+  const fa = {
+      id: 'A',
+      runways: ['25']
+    },
+    fb = {
+      id: 'B',
+      runways: ['07']
+    },
+    fc = {
+      id: 'C',
+      runways: ['07']
+    };
+  ck('firstServing : la première du groupe qui dessert la piste ; null sinon ; sans piste, la première', firstServing([fa, fb, fc], '07')
+    ?.id === 'B' && firstServing([fa, fb], 'RW25')?.id === 'A' && firstServing([fa, fb], '14') === null && firstServing([fa, fb], '')
+    ?.id ===
+    'A' && firstServing(null, '07') === null);
   ck('runwayChoices : rien de rien, rien', runwayChoices([], [], null).length === 0 && runwayChoices(null, null, {}).length === 0);
 
   window.__bench = {
