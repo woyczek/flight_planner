@@ -1657,6 +1657,15 @@ ms once per gesture, 22 copies ≤ 0.2 ms, no full drawing during; vfr (97–164
 drawings of 0.1–0.5 ms, paths 0.7–1.9 ms. Dense test base (D68, 600 airspaces of 41 points, 2 000 aerodromes): under 8 ms.
 The work measured is the CPU's (stroking a Path2D is queued to the GPU). Noreg D68 extended.
 
+## The plain background from aerodb; meta.files complete (30 Oct 2026)
+
+V3 Frame exposes the zones' outlines (`aerodb.zoneOutlines()`, d6011f983, asked by Settings for the Data module): the Map's
+plain background reads them through `map_base.loadOutlines(aerodb)` and no longer loads its copy `lib/outlines.js`, which stays
+for Atmosphere only (it calls `loadOutlines()` without aerodb; its rewrite by the cloud session is pending, nothing else is
+touched there) and goes when Atmosphere moves too, with `tools/build_maps_outlines.py`. I26 (V3 Frame): `meta.files` now holds
+the whole import chain — the Map's `light.js`, `frame/lib/wind.js`, `metar.js`, `weather_store.js`; Atmosphere's
+`frame/lib/weather_store.js` (its one line). Noreg D81.
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (BUGS SOG, 30 Oct, for the user's challenge "supprimer les faire et défaire vers un point documenté, éviter le

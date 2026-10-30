@@ -119,7 +119,7 @@ export const meta = {
   // gardés à l'installation (hors ligne dès la première visite)
   files: ['state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'data.js?v=0', 'layers.js?v=0',
     'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'choose.js?v=0', 'coverage.js?v=0', 'tips.js?v=0', 'lv.js?v=0',
-    'vfr.js?v=0',
+    'vfr.js?v=0', 'light.js?v=0',
     'flight_time.js?v=0',
     'mission_view.js?v=0',
     'weather.js?v=0',
@@ -131,11 +131,12 @@ export const meta = {
     '../../frame/lib/trail.js?v=0',
     '../../frame/lib/adnames.js?v=0',
     '../../frame/lib/time.js?v=0',
-    '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/icons.js?v=0'
+    '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/icons.js?v=0',
+    '../../frame/lib/wind.js?v=0', '../../frame/lib/metar.js?v=0', '../../frame/lib/weather_store.js?v=0'
   ],
-  // gardés au premier usage : le mode Édition et la page de réglage ; MapLibre (1 Mo, inutile sans tuiles) ; les contours
-  // des pays du fond uni (350 Ko, gardés à leur premier dessin : le fond uni marche hors ligne une fois vu) ; le rendu de la coupe
-  // météo d'Atmosphère (au premier « Météo »)
+  // gardés au premier usage : le mode Édition et la page de réglage ; MapLibre (1 Mo, inutile sans tuiles) ; le rendu de la coupe
+  // météo d'Atmosphère (au premier « Météo ») ; les contours des pays du fond uni viennent d'aerodb (zoneOutlines, le cadre), la
+  // copie lib/outlines.js reste le repli de map_base.loadOutlines sans aerodb (Atmosphère)
   lazy: ['edit.js?v=0', 'tune.js?v=0', 'lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0',
     '../atmosphere/section.js?v=0', '../atmosphere/atmo.js?v=0', '../atmosphere/texts.js?v=0', '../fuel/winds.js?v=0'
   ],

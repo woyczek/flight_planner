@@ -2165,3 +2165,21 @@ def d80(c):
     c.ok(r['n'] >= 1, f'{r}', 'the constraints write their texts')
     c.eq(r['overlaps'], 0, 'no constraint text over a space’s label, TOC / TOD, a level or another text', what=f'{r}')
 
+
+
+# ------------------------------------------------------------------------------------------------------ D81
+@case('D81', 'The plain background draws the countries the frame gives (aerodb.zoneOutlines), not a copy of its own', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False,
+      rule='V3 Frame d6011f983: aerodb.zoneOutlines() is the one source of the zones’ outlines; the Map’s plain background reads it (lib/outlines.js stays only for Atmosphere until it moves too)')
+def d81(c):
+    c.page.route(re.compile(r'.*tiles\.openfreemap\.org.*'), lambda r: r.abort())
+    c.page.add_init_script("""(() => { let ab; Object.defineProperty(window, 'AeroDB', { configurable: true, get() { return ab }, set(v) { ab = v;
+      if (v && v.create && !v.__zo) { const o = v.create; v.__zo = 1; v.create = function (...a) { const A = o.apply(this, a), z = A.zoneOutlines;
+        if (typeof z === 'function') A.zoneOutlines = (...q) => { window.__zoCalls = (window.__zoCalls || 0) + 1; return z.apply(A, q) };
+        return A } } } }) })()""")
+    c.open('maps', flight=True, aero=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.until("() => Array.isArray(window.MAPS_OUTLINES) && window.MAPS_OUTLINES.length > 100", timeout=15000, what='the countries of the plain background')
+    c.ok((c.js('window.__zoCalls') or 0) >= 1, f"{c.js('window.__zoCalls')}", 'read through aerodb.zoneOutlines()')
+    c.eq(c.js("() => performance.getEntriesByType('resource').some(e => /maps\\/lib\\/outlines\\.js/.test(e.name))"), False,
+         'the Map’s own copy (lib/outlines.js) is not loaded', what='outlines.js')

@@ -225,9 +225,9 @@ function copyFrame() {
 
 // ---------------------------------------------------------------- fond uni : contours des pays
 let outlinesP = null;
-/** Contours des pays du fond uni (lib/outlines.js, 350 Ko), chargés au premier dessin sans tuiles ; la carte est redessinée
+/** Contours des pays du fond uni (aerodb.zoneOutlines() du cadre), chargés au premier dessin sans tuiles ; la carte est redessinée
  *  quand ils arrivent (mer seule en attendant). */
-const loadOutlines = () => outlinesP ||= baseOutlines().then(() => S && schedule(), () => {
+const loadOutlines = () => outlinesP ||= baseOutlines(S.ctx.aerodb).then(() => S && schedule(), () => {
   outlinesP = null; // hors ligne sans copie : redemandé au dessin suivant
 });
 

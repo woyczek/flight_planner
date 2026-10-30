@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the plain background from aerodb; the modules' file lists complete** (`modules/maps/lib/map_base.js`, `draw.js`,
+  `module.js`, `modules/atmosphere/module.js` (meta.files only); DECISIONS; noreg D81, I26). The plain background draws the
+  countries of `aerodb.zoneOutlines()` instead of the Map's own copy (kept for Atmosphere until it moves too); the Map's and
+  Atmosphere's `meta.files` list every file they import, so they load offline from the start.
+
 - **Cases merged (refactoring § 10.33)**: F63 → F41 (« the Map's return »: one key or several, said once, consumed; a missing key
   keeps its family; « none »; hostile keys ignored), F67 → F8 (« Auto »: written, idempotent, the previous Auto replaced). F63 and
   F67 are retired.
