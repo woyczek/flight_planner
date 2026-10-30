@@ -293,7 +293,20 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
     panels, the V2 page's link: `launcher: true` on a link).
   - From Pilot, the end-of-cycle line of the Status block opens `?app=maintenance#data` (same tab); Réglages ›
     Administration offers a line « Maintenance » (level Complet, with a launcher).
-  - The header shows the application's name; the page's title is « <name> — SOG ».
+  - **Identity** (30 Oct 2026, the user, Simplification's rule): each application declares in `APPS` its name (×4), its
+    icon (a name of `frame/lib/icons.js`) and its tint (a semantic token, never a colour in the code): Pilot the plane in
+    `--sog-accent`, Maintenance the same plane in `--sog-err`. The header shows the icon in the tint before the name; the
+    page's title is « <name> — SOG »; the browser tab's icon is the suite's plane (`assets/favicon-flight.svg`), recoloured
+    in the tint for an application that asks it (`tintIcon`: Maintenance), drawn again at each change of design or tone,
+    written only when it changes.
+  - **Switching** (same date): the application's name in the header is a button (`#fApp`, its icon and `#fName`); a tap
+    opens the list of the frame's applications in a popover under it (the tab bar's popover, pointing up): each with its
+    icon and name, the current one marked; one above the device's usage level (`device/level.json`, not the floor of the
+    application shown) is greyed with its level (« Niveau Complet ») and never opened. A tap on another replaces the page
+    (`location.replace`) with `?app=<id>` (none for Pilot; the other keys of the query kept) and the anchor of its first
+    module; the device, its settings and the repository stay (same origin). Escape, a tap beside it, a scroll, a change of
+    address or of size close it. On a phone, when the back button takes the name's place, the button goes with it. Réglages ›
+    Administration's « Maintenance » line stays. A manifest per application (to install both on a phone) comes later.
 - On a screen (wider than 760 px), the verbs sit in a column on the left (the **rail**): every module that has a screen,
   the current one marked. On a phone (760 px or narrower) there is **no menu button and no drawer**: a **bottom tab
   bar** replaces them (below).

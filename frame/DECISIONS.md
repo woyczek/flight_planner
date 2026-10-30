@@ -2007,6 +2007,22 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     `#settings?card=<one card>` with a launcher, the local network card's refresh started without its card
     (`null.isConnected`, on the very address IVAO's return lands on). noreg A44 (button off, title, link, nothing leaves even forced, on with an application, a stray
     return's sentence), I14 (IVAO's refusal said as IVAO's, a stray return as « state »), I10.
+- **30 Oct 2026 — Each application's identity, and a switcher on its name** (the user: « Comment passer d'une appli à
+  l'autre ? », « une icône différente, le même avion mais rouge ? »; Simplification's rule):
+  - One gesture in the header: the application's name is a button (`#fApp`, its icon and `#fName`) that opens the list of
+    `APPS` in the tab bar's popover, pointing down from it (`.f-tabpop.f-down`, shown on every screen; the closing rules
+    are the popover's). An application above the device's own level (`device/level.json`, kept apart from the floor
+    `APP.level` of the application shown: `deviceLevel`) is greyed with « Au niveau Complet (Réglages) » and never opened.
+    A tap replaces the page (`location.replace`, no history entry to come back to the other application) with
+    `?app=<id>` and the anchor of its first module; the other keys of the query stay.
+  - `APPS` carries `icon` and `tint` (a token: `var(--sog-accent)`, `var(--sog-err)`), set on the header's icon by the code
+    that draws it; `tintIcon` recolours the tab's icon: the path of `assets/favicon-flight.svg` takes the tint's computed
+    colour, read on that icon, drawn again with the design and written only when it changes. Pilot keeps the file.
+  - The name kept the look of the name in every design (`:root .f-head button.f-app`: before the designs' header-button
+    rules); on a phone, when the back button takes the name's place, the whole button goes.
+  - Not done here, said: a manifest per application (to install Pilot and Maintenance apart on a phone) needs a manifest
+    chosen before the page loads, its icon in the service worker's list and its own `id`; more than this lot, kept for later.
+  - noreg A46 (×4 languages).
 - **30 Oct 2026 — The end-of-cycle line says « rebuild », not « publication »** (the user, Simplification's decision,
   relayed by Settings): « Base aéronautique : cycle 2610 terminé, en attente de publication » next to the Data module's
   « Rien à publier » read as a contradiction; both were true (the repository has no 2611, this workstation has nothing

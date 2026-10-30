@@ -8,7 +8,7 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
 - **The verbs.** On a phone, the bottom bar gives five entries: Prepare, Map, Report, Flights, Weather. Touch an already
   selected tab again when it groups several screens: a small list opens above it (Prepare: Fuel and Performance sheets). On a
   screen, each tool is a verb of the left column. A tool's address (`#fuel`, `#report`…) is enough to come back to it.
-  Settings are the ⚙ button of the header.
+  Settings are the ⚙ button of the header. The application's name, top left, opens the list of applications: Pilot and, at the Full level, Maintenance (the same plane in red); a tap switches to it.
 - **Your identity.** In ⚙ Settings, set your trigram and your IVAO, VATSIM and SimBrief IDs: the tools use them to
   prefill.
 - **The level.** Also in Settings, "Level" chooses what the menu shows: Discovery, Everyday or Full. A hidden tool stays

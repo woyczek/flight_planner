@@ -142,9 +142,13 @@
   // plancher du niveau d'usage de l'application (Maintenance : Complet, quel que soit le niveau choisi pour Pilote) ;
   // welcome : false, pas de carte d'accueil des tutoriels de Pilote.
   const APPS = {};
+  // identité (frame/SPEC.md § 3.1) : icon (frame/lib/icons.js) et tint (un jeton du design, jamais une couleur écrite ici)
+  // dans l'en-tête ; tintIcon : l'icône de l'onglet du navigateur prend la teinte (sinon celle du fichier)
   APPS.pilot = {
     id: 'pilot',
     name: ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
+    icon: 'plane',
+    tint: 'var(--sog-accent)',
     // un module = un verbe ; sept au plus
     modules: [{
       id: 'fuel',
@@ -232,6 +236,9 @@
   APPS.maintenance = {
     id: 'maintenance',
     name: ['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento'],
+    icon: 'plane',
+    tint: 'var(--sog-err)',
+    tintIcon: true,
     level: 3,
     welcome: false,
     modules: [{
@@ -401,6 +408,16 @@
       ]
     },
     ok: ['OK', 'OK', 'OK', 'Aceptar'],
+    // sélecteur d'application (nom de l'en-tête) : son nom, et le niveau qu'il faut pour une application au-dessus de celui de l'appareil
+    appSwitch: ['Changer d’application', 'Switch application', 'Anwendung wechseln', 'Cambiar de aplicación'],
+    appNeeds: ['Au niveau {l} (Réglages)', 'At the {l} level (Settings)', 'Auf der Stufe {l} (Einstellungen)',
+      'En el nivel {l} (Ajustes)'
+    ],
+    levelNames: [
+      ['Découverte', 'Discovery', 'Einstieg', 'Descubrimiento'],
+      ['Courant', 'Everyday', 'Alltag', 'Habitual'],
+      ['Complet', 'Full', 'Vollständig', 'Completo']
+    ],
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
     ivaoOk: ['Compte IVAO relié à cet appareil.', 'IVAO account linked to this device.', 'IVAO-Konto mit diesem Gerät verbunden.',
@@ -1019,6 +1036,7 @@
     identityLoaded = false, // l'identité a été lue une fois (sans cela, « pas de trigramme » serait une fausse alerte au démarrage)
     usages = {},
     level = 2, // niveau d'usage de l'appareil (1 à 3)
+    deviceLevel = 2, // celui que l'appareil a choisi, sans le plancher de l'application affichée (sélecteur d'application)
     airline = Object.freeze({});
   const LEVELS = [1, 2, 3],
     DEFAULT_LEVEL = 2;
@@ -1076,7 +1094,8 @@
     paintWho();
     usages = (await own.get('device/usages.json')) || {};
     // niveau choisi sur l'appareil (pour Pilote), jamais sous le plancher de l'application (Maintenance : Complet)
-    level = Math.max(levelFrom((await own.get('device/level.json'))?.level), APP.level || 1);
+    deviceLevel = levelFrom((await own.get('device/level.json'))?.level);
+    level = Math.max(deviceLevel, APP.level || 1);
     applyDesign(await own.get('device/design.json'));
     liveGps = (await own.get('device/live.json'))?.gps === true;
     liveTrail = trailFrom(await own.get(TRAIL_DOC));
@@ -1245,6 +1264,7 @@
       /* stockage indisponible : la page démarre sur le design standard puis applique celui-ci */
     }
     paintBar();
+    paintFavicon();
   }
   // l'appareil devient ou cesse d'être un ordinateur (fenêtre, pointeur) : le design posé suit (Aqua ↔ standard)
   window.addEventListener('frame-desk', () => applyDesign(design));
@@ -1254,6 +1274,25 @@
       head = document.querySelector('.f-head'),
       bar = head ? getComputedStyle(head).backgroundColor : '';
     if (meta && bar && meta.content !== bar) meta.content = bar;
+  }
+  // icône de l'onglet du navigateur d'une application qui la veut à sa teinte (tintIcon) : l'avion de la suite
+  // (assets/favicon-flight.svg) dont le tracé prend la couleur calculée du jeton (lue sur l'icône de l'en-tête, qui la porte) ;
+  // le fichier est lu une fois ; hors ligne sans lui, l'icône du fichier reste
+  let faviconText = null;
+  async function paintFavicon() {
+    const ico = $('fAppIco'),
+      link = document.querySelector('link[rel="icon"]');
+    if (!APP.tintIcon || !ico || !link) return;
+    try {
+      faviconText ??= await fetch(new URL('assets/favicon-flight.svg', ROOT)).then(r => r.ok ? r.text() : Promise.reject(r.status));
+    } catch {
+      faviconText = null;
+      return;
+    }
+    const tint = getComputedStyle(ico).color,
+      svg = faviconText.replace(/(<path\b[^>]*\bfill=")[^"]*"/, `$1${tint}"`),
+      href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+    if (link.getAttribute('href') !== href) link.setAttribute('href', href);
   }
   /** Module (ou écran du cadre) affiché : son id sur <html> (data-landmark), d'où le design metro tire la couleur repère
    *  (--sog-module, frame/design/tokens.css) de l'en-tête ; les écrans du cadre ont celle des réglages. Posé seulement
@@ -2332,6 +2371,77 @@
         viaMenu = true; // un choix de module ou de vue, pas un passage : pas de « ← »
         location.hash = row.hash;
       }
+    }, opt);
+    el.querySelector('[aria-current]')?.focus({
+      preventScroll: true
+    });
+  }
+  // sélecteur d'application (frame/SPEC.md § 3.1) : le nom de l'en-tête ouvre, sous lui, la liste des applications du cadre ;
+  // le même popover que celui des onglets (tabPop : un toucher à côté, Échap, un défilement, une adresse ou une taille le ferment)
+  /** Adresse d'une application : ?app=<id> (aucun pour Pilote, les autres clés gardées) et l'ancre de son premier module. */
+  function appHref(app) {
+    const q = new URLSearchParams(location.search);
+    if (app.id === 'pilot') q.delete('app');
+    else q.set('app', app.id);
+    const s = q.toString();
+    return `${location.pathname}${s ? `?${s}` : ''}#${app.modules[0]?.id || ''}`;
+  }
+  /** Ouvre (ou ferme, s'il l'est) la liste des applications sous le bouton du nom. */
+  function toggleAppPop() {
+    if (tabPop) return closeTabPop();
+    const a = $('fApp'),
+      apps = Object.values(APPS);
+    const el = document.createElement('div');
+    el.className = 'f-tabpop f-down';
+    el.setAttribute('role', 'group');
+    el.setAttribute('aria-label', t(T.appSwitch));
+    el.innerHTML = apps.map(p => {
+      const cur = p === APP,
+        off = !cur && (p.level || 1) > deviceLevel,
+        need = off ? `<small>${esc(t(T.appNeeds, { l: t(T.levelNames[(p.level || 1) - 1]) }))}</small>` : '';
+      return `<button type="button" class="f-tabpop-row" data-app="${esc(p.id)}"${cur ? ' aria-current="page"' : ''}${off ? ' disabled' : ''}><span class="f-app-ico" style="color:${esc(p.tint || 'currentColor')}">${icon(p.icon)}</span><span>${esc(t(p.name))}${need}</span></button>`;
+    }).join('');
+    el.style.visibility = 'hidden';
+    document.body.append(el);
+    // sous le bouton, à gauche de la fenêtre au plus près, la pointe (--f-pop-caret) face à l'icône
+    const r = ($('fAppIco') || a).getBoundingClientRect(),
+      w = el.offsetWidth,
+      cx = r.left + r.width / 2,
+      x = Math.min(Math.max(cx - 24, 8), document.documentElement.clientWidth - w - 8);
+    el.style.left = `${Math.round(x)}px`;
+    el.style.top = `${Math.round(a.getBoundingClientRect().bottom + 10)}px`;
+    el.style.setProperty('--f-pop-caret', `${Math.round(cx - x)}px`);
+    el.style.visibility = '';
+    const off = new AbortController(),
+      opt = {
+        signal: off.signal
+      };
+    tabPop = {
+      el,
+      tab: a,
+      off
+    };
+    a.setAttribute('aria-expanded', 'true');
+    document.addEventListener('pointerdown', e => {
+      if (!el.contains(e.target) && !a.contains(e.target)) closeTabPop();
+    }, {
+      ...opt,
+      capture: true
+    });
+    window.addEventListener('scroll', e => {
+      if (!(e.target instanceof Node && el.contains(e.target))) closeTabPop();
+    }, {
+      ...opt,
+      capture: true,
+      passive: true
+    });
+    window.addEventListener('hashchange', () => closeTabPop(), opt);
+    window.addEventListener('resize', () => closeTabPop(), opt);
+    el.addEventListener('click', e => {
+      const p = APPS[e.target.closest('[data-app]:not([disabled])')?.dataset.app];
+      if (!p) return;
+      closeTabPop();
+      if (p !== APP) location.replace(appHref(p));
     }, opt);
     el.querySelector('[aria-current]')?.focus({
       preventScroll: true
@@ -3574,6 +3684,12 @@
     headIcon('fDevice', 'settings');
     document.title = `${t(APP.name)} — SOG`;
     $('fName').textContent = t(APP.name);
+    // identité de l'application (icône dans sa teinte, posée à la source) et sélecteur d'application
+    $('fAppIco').style.color = APP.tint || '';
+    $('fAppIco').innerHTML = icon(APP.icon);
+    $('fApp').title = t(T.appSwitch);
+    $('fApp').onclick = toggleAppPop;
+    paintFavicon();
     paintStatus();
     $('fHelp').setAttribute('aria-label', t(T.help));
     $('fHelp').title = t(T.help);

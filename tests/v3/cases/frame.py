@@ -98,7 +98,9 @@ def a2(c):
     c.eq(head['h'], 57, 'header is --f-head-h = 57 px', tol=0.5, what='header height')
     c.eq(c.px('--f-head-h'), 57, '--f-head-h resolves to 57 px', tol=0.5, what='--f-head-h')
     shown = c.js("[...document.querySelectorAll('.f-head > *')].filter(e => window.__t.shown(e)).map(e => e.id)")
-    c.eq(sorted(shown), sorted(['fName', 'fHelp', 'fDevice']), 'exactly the name, "?" and gear are displayed', what='displayed header controls')
+    # the name is the application switcher's button (#fApp: its icon and #fName, SPEC 3.1, 30 Oct 2026)
+    c.eq(sorted(shown), sorted(['fApp', 'fHelp', 'fDevice']), 'exactly the name, "?" and gear are displayed', what='displayed header controls')
+    c.ok(c.shown('#fName'), '', 'the name is shown inside its button')
     for i in ('fSync', 'fWho', 'fLive', 'fHost'):
         c.ok(not c.shown('#' + i), f'#{i} is displayed', 'not displayed on a phone')
     c.eq(c.count('#fInfo'), 0, 'the "i" button no longer exists (its lines are the status block of Settings)', what='#fInfo elements')
@@ -1406,3 +1408,42 @@ def a45(c):
     c.js("() => document.querySelectorAll('#fNotes .f-note [data-x]').forEach(x => x.click())")
     c.until("!document.querySelector('#fNotes .f-note') && !document.getElementById('fNotes').style.getPropertyValue('--f-bar-clear')",
             what='no note: --f-bar-clear removed')
+
+
+@case('A46', 'Applications: each one’s identity in the header, and a switcher on its name', 'A', designs=('standard',), screens=False, night=False, langs4=True,
+      rule='frame/SPEC 3.1 (the user 30 Oct, Simplification’s rule): icon and tint declared in APPS (Maintenance: the plane in --sog-err, tab icon too); the name opens the list of applications, one above the device’s level greyed with its level, a tap replaces the page with ?app=… and its first module')
+def a46(c):
+    rows = "[...document.querySelectorAll('.f-tabpop.f-down [data-app]')].map(b => ({ id: b.dataset.app, off: b.disabled, cur: b.getAttribute('aria-current'), need: (b.querySelector('small') || {}).textContent || '' }))"
+    c.open('data', app='maintenance', docs=LEVEL3)
+    c.until("!!document.querySelector('#fApp #fAppIco svg')", what='the application’s icon in the header')
+    name = tx('frame/app.js', 'name', c.lang, after='APPS.maintenance')
+    titled = "document.documentElement.classList.contains('f-titled')"  # on a phone a module's title takes the name's place (rule 16)
+    if not c.js(titled):
+        c.eq(norm(c.text('#fName')), norm(name), 'the header names the application', what='header name')
+    c.eq(c.js('document.title'), f'{name} — SOG', 'the page’s title', what='title')
+    err = c.js("(() => { const p = document.createElement('i'); p.style.color = 'var(--sog-err)'; document.body.append(p); const v = getComputedStyle(p).color; p.remove(); return v })()")
+    c.eq(c.js("getComputedStyle(document.getElementById('fAppIco')).color"), err, 'Maintenance’s plane is in --sog-err', what='icon tint')
+    c.until("(document.querySelector('link[rel=icon]').getAttribute('href') || '').startsWith('data:image/svg+xml')", what='the tab icon is drawn in the tint')
+    fav = urllib.parse.unquote(c.js("document.querySelector('link[rel=icon]').getAttribute('href')"))
+    c.ok(err.replace(' ', '') in fav.replace(' ', '') and '<path' in fav, fav[:200], 'the suite’s plane, its path in the tint')
+    # the switcher: Pilot and Maintenance, the current one marked; a tap on Pilot replaces the page
+    c.tap('#fApp')
+    c.until("!!document.querySelector('.f-tabpop.f-down')", what='the list of applications opens under the name')
+    c.eq(c.attr('#fApp', 'aria-expanded'), 'true', 'the button says it is open', what='aria-expanded')
+    c.eq([(r['id'], r['off'], r['cur']) for r in c.js(rows)], [('pilot', False, None), ('maintenance', False, 'page')], 'both applications, Maintenance marked', what='rows')
+    c.tap('.f-tabpop.f-down [data-app="pilot"]')
+    c.until("location.search === '' && location.hash === '#fuel' && !!document.querySelector('#fApp #fAppIco svg')", timeout=15000,
+            what='Pilot opens on its first module, without ?app=')
+    c.eq(c.js('document.title'), f"{tx('frame/app.js', 'name', c.lang, after='APPS.pilot')} — SOG", 'the page is Pilot’s', what='title after the switch')
+    c.ok(not c.js("(document.querySelector('link[rel=icon]').getAttribute('href') || '').startsWith('data:')"), '', 'Pilot keeps the file’s tab icon')
+    # the device at the Full level (seeded above): Maintenance offered; at the everyday level it is greyed with its level
+    c.open('fuel', docs=[['device/level.json', {'level': 2}, 'cache']])
+    c.tap('#fApp')
+    c.until("!!document.querySelector('.f-tabpop.f-down')", what='the list opens')
+    got = c.js(rows)
+    need = tx('frame/app.js', 'appNeeds', c.lang).split('{l}')[0]
+    c.eq([(r['id'], r['off'], r['cur']) for r in got], [('pilot', False, 'page'), ('maintenance', True, None)], 'below the Full level, Maintenance is greyed', what='rows at level 2')
+    c.ok(norm(got[1]['need']).startswith(norm(need)), got[1]['need'], 'its level is said under it')
+    c.page.keyboard.press('Escape')
+    c.until("!document.querySelector('.f-tabpop')", what='Escape closes the list')
+    c.eq(c.attr('#fApp', 'aria-expanded'), None, 'the button is no longer expanded', what='aria-expanded after Escape')

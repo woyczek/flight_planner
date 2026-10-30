@@ -123,10 +123,40 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   margin-top: 0;
   margin-bottom: 0
 }
+/* le nom de l'application : un bouton (sélecteur d'application, app.js toggleAppPop) qui garde l'allure du nom ; :root pour
+   passer devant les règles des designs sur les boutons de l'en-tête (cupertino, metro, swiss) */
+:root .f-head button.f-app {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+  width: auto;
+  min-height: var(--sog-touch);
+  margin: 0 auto 0 0;
+  padding: 0 6px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer
+}
+.f-app-ico {
+  display: inline-flex;
+  flex: none;
+  width: 22px;
+  height: 22px
+}
+.f-app-ico svg {
+  width: 100%;
+  height: 100%
+}
 .f-head .f-name {
   font-weight: 700;
   text-shadow: var(--sog-head-text-shadow);
-  margin-right: auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -134,7 +164,7 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
 }
 /* boutons à icône seule de l'en-tête (menu, aide, réglages) : carrés de la taille d'une cible ; les boutons à libellé
    (synchronisation, retour, bascule de la vue double) gardent leur largeur */
-.f-head button:not(.f-sync):not(.f-back):not(.f-pane-btn):not(.f-live):not(.f-who) {
+.f-head button:not(.f-sync):not(.f-back):not(.f-pane-btn):not(.f-live):not(.f-who):not(.f-app) {
   width: var(--sog-touch);
   padding: 0;
   flex: none
@@ -288,7 +318,7 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
 }
 @media (max-width: 760px) {
   /* le nom de l'application cède la place au bouton retour ; le titre du module (html.f-titled), lui, reste */
-  html:not(.f-titled) .f-head.f-has-back .f-name {
+  html:not(.f-titled) .f-head.f-has-back .f-app {
     display: none
   }
 }
@@ -1076,6 +1106,25 @@ p.f-back {
   text-align: left;
   cursor: pointer
 }
+/* liste des applications (sélecteur du nom de l'en-tête) : sous le bouton, la pointe en haut ; une application au-dessus du
+   niveau de l'appareil grisée, son niveau dessous ; montrée sur tout écran (:root : devant la pointe du rail en paysage) */
+:root .f-tabpop.f-down::after {
+  left: var(--f-pop-caret, 50%);
+  top: -6px;
+  bottom: auto;
+  margin: 0 0 0 -5px;
+  border-width: 0 1px 1px 0;
+  transform: rotate(225deg)
+}
+.f-tabpop button.f-tabpop-row[disabled] {
+  opacity: .55;
+  cursor: default
+}
+.f-tabpop button.f-tabpop-row small {
+  display: block;
+  color: var(--sog-muted);
+  font-size: .8em
+}
 .f-tabpop button.f-tabpop-row[aria-current] {
   background: color-mix(in srgb, var(--sog-accent) 12%, var(--sog-surface));
   font-weight: 600
@@ -1084,7 +1133,7 @@ p.f-back {
   background: color-mix(in srgb, var(--sog-accent) 18%, var(--sog-surface))
 }
 @media (min-width: 761px) {
-  .f-tabpop {
+  .f-tabpop:not(.f-down) {
     display: none
   }
 }

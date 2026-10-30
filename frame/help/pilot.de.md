@@ -12,7 +12,7 @@ Computer, mit oder ohne Netz.
   Tippen Sie einen bereits gewählten Reiter, der mehrere Bildschirme bündelt, noch einmal an: Darüber öffnet sich eine kleine
   Liste (Vorbereiten: Kraftstoff und Leistungsdatenblätter). Auf einem Bildschirm ist jedes Werkzeug ein Verb der linken
   Spalte. Die Adresse eines Werkzeugs (`#fuel`, `#report`…) genügt, um zu ihm zurückzukehren. Die Einstellungen sind die
-  Schaltfläche ⚙ der Kopfzeile.
+  Schaltfläche ⚙ der Kopfzeile. Der Name der Anwendung oben links öffnet die Liste der Anwendungen: Pilot und, auf der Stufe Vollständig, Wartung (dasselbe Flugzeug in Rot); ein Tippen wechselt dorthin.
 - **Ihre Identität.** Stellen Sie unter ⚙ Einstellungen Ihr Kürzel und Ihre IVAO-, VATSIM- und SimBrief-IDs ein: Die
   Werkzeuge nutzen sie zum Vorausfüllen.
 - **Die Stufe.** Ebenfalls in den Einstellungen wählt „Stufe“, was das Menü zeigt: Einstieg, Alltag oder Vollständig.

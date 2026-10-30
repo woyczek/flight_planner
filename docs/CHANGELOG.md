@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: each application's identity, and a switcher on its name** (`frame/app.js`, `frame/index.html`,
+  `frame/frame.css`; frame SPEC § 3.1, INTEGRATION, DECISIONS; help ×4; noreg A46) — the header's name opens the list of
+  applications (Maintenance greyed below the Full level); Maintenance shows the suite's plane in red, in the header and
+  the browser tab.
 - **Refonte — R-F3, les teintes des procédures en jetons du design** (`frame/design/tokens.css` `--sog-map-sid`, `--sog-map-star`,
   `--sog-map-app`, design SPEC § 2; Fuel's points-list groups read them instead of a copy of the Map's `PALETTE`). One visible
   change, on purpose: at night the groups take the Map's night hues (they kept the day ones).
