@@ -926,6 +926,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 74 | Frame: the application switcher and per-application identity (1d11ae81c) | acceptable |
 | 75 | Map: light drawing during a gesture (c3eed56db) | acceptable |
 | 76 | Refactor R-C2: one pairing for both channels (4e83fc50a) | acceptable, no guard lost; two notes |
+| 77 | Frame: « Workstation folders » card; R-C2 notes (36f571e40) | acceptable; notes of 76 settled; one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1709,6 +1710,16 @@ single use, 10 minutes; a new code reopens closed pairing but no longer lifts an
 are kept, in a hidden file. Notes: the shared counter (30 wrong codes an hour) now closes pairing on **both** channels, so
 a stranger on the Internet can close local-network pairing too (a new code reopens it; separate counters per channel if
 it bothers); expired rows are refused but never purged from the list.
+
+**77. « Workstation folders » and the R-C2 notes (36f571e40) — acceptable; the notes of 76 are settled; one note.**
+`GET /__setup/folders` and `POST /__setup/folders/open` are workstation routes (`_allowed`, `_lan`, not open to the relay);
+absolute paths are shown to the workstation only. The page sends only an id, looked up in a fixed list (unknown: 400;
+missing folder: 409); the launcher opens its own path, and only a directory (`os.path.isdir`); elsewhere than Windows,
+`open` / `xdg-open` as an argument list with the reduced environment. R-C2: one bucket of wrong codes per channel (closing
+one channel only, and removing it from pending codes), the per-address wait still shared, a new code reopening only its
+channels; expired rows removed at reading. Note: under Windows `os.startfile(path)` with the default verb would run an
+executable or a shortcut if the path changed between `isdir()` and the call (a local account only); `os.startfile(path,
+'explore')` forces the file explorer.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
