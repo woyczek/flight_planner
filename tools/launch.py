@@ -365,21 +365,23 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if self.command not in ('GET', 'HEAD', 'POST'):
             self._json({'error': 'méthode refusée'}, 405)
             return True
-        if path == IVAO_CALLBACK:
-            self.relay_device = dev
-            self._ivao_callback()
-            return True
         if path.startswith('/__setup/') and not ROUTES.get((self.command, path), ('', 'poste', False))[2]:
             self._json({'error': 'réservé au poste'}, 403)
             return True
         self.relay_device = dev
         return False
 
-    def _ivao_callback(self):
-        """Retour d'IVAO (?code&state) : l'état doit être celui d'une demande de cet appareil (relais) ou du poste ; le code
+    @route('GET', '/__relay/ivao/callback', public='lan', relay=True)
+    def _ivao_callback(self, path=''):
+        """Retour d'IVAO (?code&state), route déclarée de la table (R-C3 : un seul lieu ; ouverte au relais, donc au réseau
+        local par la règle des routes, mais un appareil du réseau local n'a jamais de demande en cours : refusé ici) ; la
+        navigation venue du site d'IVAO passe le contrôle d'origine par _ivao_return seulement. L'état doit être celui d'une
+        demande de cet appareil (relais) ou du poste ; le code
         échangé avec le secret du relais ; les jetons remis une fois par le fragment de l'adresse du cadre
         (/frame/index.html#ivao-return?…, jamais envoyé au serveur ni dans un journal ; le cadre les range et remplace
         l'adresse aussitôt) ; une erreur : #ivao-return?error=… seulement."""
+        if self._lan():
+            return self._json({'error': 'réservé au poste'}, 403)
         q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
         dev = getattr(self, 'relay_device', None) if self._relay() else None
         r = ivao_oauth_finish(q.get('state', [''])[0], q.get('code', [''])[0], q.get('error', [''])[0],
@@ -592,12 +594,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         return ''
 
     def _ivao_return(self, path):
-        """Retour d'IVAO sur le poste (R1b, essai sans relais) : navigation venue du site d'IVAO, donc d'un autre site —
-        servie seulement si tout y est : ce chemin exact en GET, document de premier plan (Sec-Fetch-Dest document,
-        Sec-Fetch-Mode navigate), requête du poste (ni réseau local ni relais ; l'hôte local est vérifié avant), et l'état
-        d'une demande en cours du poste avec son adresse de retour. Rien d'autre n'est ouvert."""
-        if path != IVAO_CALLBACK or self.command != 'GET' or self._lan() or self._relay():
+        """Le retour d'IVAO, navigation venue du site d'IVAO donc d'un autre site : servi malgré le contrôle d'origine
+        seulement s'il est bien ce retour. Par le relais : ce chemin en GET (l'appareil est appairé, sa porte l'a vérifié ;
+        l'état est vérifié au retour). Sur le poste (R1b, essai sans relais) : ce chemin en GET, document de premier plan
+        (Sec-Fetch-Dest document, Sec-Fetch-Mode navigate), et l'état d'une demande en cours du poste avec son adresse de
+        retour. Jamais pour le réseau local. Rien d'autre n'est ouvert."""
+        if path != IVAO_CALLBACK or self.command != 'GET' or self._lan():
             return False
+        if self._relay():
+            return True
         if self.headers.get('Sec-Fetch-Dest') != 'document' or self.headers.get('Sec-Fetch-Mode') != 'navigate':
             return False
         state = (urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get('state') or [''])[0]
@@ -844,8 +849,6 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._deny(why)
         if self._data_script_refused():
             return self._json({'error': 'fichier de données refusé (format)'}, 403)
-        if self.path.split('?', 1)[0] == IVAO_CALLBACK and not self._lan():
-            return self._ivao_callback()  # retour d'IVAO sur le poste lui-même (le relais le prend dans sa porte)
         # index du pool demandés : refaits d'abord (fichiers changés depuis le démarrage : git, autre poste, éditeur),
         # leurs signatures doivent dire vrai — une page sert sa copie d'un fichier tant que sa signature n'a pas changé
         idx = self.path.split('?')[0]
@@ -1088,20 +1091,18 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         # aucun secret, seulement sa présence
         return self._json({'app': bool(ivao_oauth_cfg()), 'relay': self._relay()})
 
-    @route('POST', '/__setup/ivao/oauth/start', '/__setup/ivao/oauth/refresh', '/__setup/ivao/oauth/revoke', public='lan', relay=True)
+    @route('POST', '/__setup/ivao/oauth/start', '/__setup/ivao/oauth/revoke', public='lan', relay=True)
     def _post_ivao_oauth(self, path, body):
         # OpenID d'IVAO par le relais (R1b) : start → l'adresse d'autorisation (PKCE S256, état lié à cet appareil) ;
-        # refresh { refresh_token } → de nouveaux jetons, avec le secret du relais ; revoke { token } → révoqué chez IVAO
-        # (Délier) ; aucun jeton journalisé
+        # revoke { token } → révoqué chez IVAO (Délier) ; aucun jeton journalisé. Le renouvellement (refresh) reviendra avec
+        # le lecteur du tracker qui en aura besoin (R-C3 : sans lecteur, retiré)
         try:
             a = json.loads(body or b'{}')
         except ValueError:
             return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
         a = a if isinstance(a, dict) else {}
         dev = getattr(self, 'relay_device', None) if self._relay() else None
-        if path.endswith('/refresh'):
-            v = ivao_oauth_refresh(a.get('refresh_token'))
-        elif path.endswith('/revoke'):
+        if path.endswith('/revoke'):
             v = ivao_oauth_revoke(a.get('token'))
         else:
             v = ivao_oauth_start(dev['id'] if dev else '', self._ivao_redirect())
@@ -1833,6 +1834,7 @@ NB = '\u202f'  # espace fine insécable avant : ; ! ? en français
 # (jamais écrites en dur) ; le pilote reçoit son propre jeton (portée tracker) et le refresh_token, une fois, par le fragment
 # d'une page de retour du même origine ; le téléphone lit ensuite le tracker directement
 IVAO_CALLBACK = '/__relay/ivao/callback'
+assert ('GET', IVAO_CALLBACK) in ROUTES  # le retour d'IVAO est une route déclarée (Setup._ivao_callback)
 
 
 def ivao_redirects(port):
@@ -1843,12 +1845,6 @@ IVAO_DISCOVERY = 'https://api.ivao.aero/.well-known/openid-configuration'
 IVAO_SCOPE = 'openid tracker'
 IVAO_STATE_TTL = 600
 _ivao_oidc = {'meta': None, 'at': 0.0, 'pending': {}}
-def OIDC_OPEN(req, timeout=20):
-    """Ouvreur des appels OpenID : jamais une redirection suivie, le User-Agent du lanceur (Cloudflare refuse celui de urllib
-    devant api.ivao.aero : 403), un échec dit en console (remplacé par les essais : aucun appel réel)."""
-    return outbound.opener(_NoRedirect, what='IVAO').open(req, timeout=timeout)
-
-
 def ivao_oauth_cfg():
     """(clientId, clientSecret, document de découverte) de secrets/ivao_oauth.json, ou None."""
     s = _read_json(_secret_file('app', service='ivao_oauth'))
@@ -1858,7 +1854,7 @@ def ivao_oauth_cfg():
 
 
 def _oidc_json(req):
-    with OIDC_OPEN(req, timeout=20) as r:
+    with NO_REDIRECT_OPEN(req, timeout=20, what='IVAO') as r:
         return json.loads(r.read() or b'{}')
 
 
@@ -1944,7 +1940,7 @@ def ivao_oauth_revoke(token):
         url = ivao_oidc_meta(cfg[2]).get('revocation_endpoint') or ''
         if not url:
             return {'ok': True, 'revoked': False}
-        with OIDC_OPEN(_ivao_post(url, {'token': token, 'token_type_hint': 'refresh_token'}), timeout=20) as r:
+        with NO_REDIRECT_OPEN(_ivao_post(url, {'token': token, 'token_type_hint': 'refresh_token'}), timeout=20, what='IVAO') as r:
             r.read()
         return {'ok': True, 'revoked': True}
     except (OSError, ValueError):
@@ -1971,21 +1967,6 @@ def ivao_oauth_finish(state, code, error, device, redirect):
         return {'ok': False, 'error': 'exchange'}
 
 
-def ivao_oauth_refresh(refresh_token):
-    """Nouveaux jetons pour ce refresh_token, avec le secret du relais : { ok, access_token, refresh_token, expires_at }."""
-    if not isinstance(refresh_token, str) or not 8 <= len(refresh_token) <= 4096:
-        return {'ok': False, 'status': 400, 'message': 'refresh_token expected'}
-    if not ivao_oauth_cfg():
-        return {'ok': False, 'status': 409, 'message': 'no IVAO application on the relay (secrets/ivao_oauth.json)'}
-    try:
-        j = _ivao_token({'grant_type': 'refresh_token', 'refresh_token': refresh_token})
-    except (OSError, ValueError, KeyError) as e:
-        return {'ok': False, 'status': 401 if isinstance(e, urllib.error.HTTPError) and e.code in (400, 401) else 502,
-                'message': f'IVAO refused the refresh ({outbound.reason(e)})' if isinstance(e, urllib.error.HTTPError) else
-                f'IVAO unreachable ({outbound.reason(e)})'}
-    out = _ivao_tokens(j)
-    out['refresh_token'] = out['refresh_token'] or refresh_token
-    return out
 
 
 # relais de la compagnie (R1a, --relay <hôte public>) : l'hôte que le proxy inverse du NAS transmet (en-tête Host) ; vide :
@@ -2002,7 +1983,7 @@ def relay_probe():
     (/__relay/whoami) ; le résultat est dit dans la console (le proxy qui vise le port de l'interface est refusé : 403)."""
     url = f'https://{RELAY["host"]}/__relay/whoami'
     try:
-        with GITLAB_OPENER.open(urllib.request.Request(url, headers={'Accept': 'application/json'}), timeout=10) as r:
+        with NO_REDIRECT_OPEN(urllib.request.Request(url, headers={'Accept': 'application/json'}), timeout=10, what='relais') as r:
             ok = json.loads(r.read() or b'{}').get('relay') is True
         say('  Relais vérifié : une requête sur l’hôte public revient ici comme relais.' if ok else
             f'  ATTENTION relais : {url} ne répond pas comme ce relais.')
@@ -2256,7 +2237,7 @@ def folders():
 def _open_folder(path):
     """Le dossier ouvert dans l'explorateur de fichiers de ce poste (Explorateur Windows, Finder, xdg-open)."""
     if sys.platform == 'win32':
-        os.startfile(path)  # un dossier : l'Explorateur, rien n'est exécuté
+        os.startfile(path, 'explore')  # l'Explorateur imposé, quoi que devienne le chemin entre isdir() et l'appel
     else:
         subprocess.Popen(['open' if sys.platform == 'darwin' else 'xdg-open', path], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL, env=regen_jobs.child_env())
@@ -2342,15 +2323,18 @@ GITLAB_LEVEL = 30  # Developer : écrit la branche si elle l'admet (Protected br
 #                    les réglages du projet ; un jeton Maintainer pourrait les changer par l'API
 GITLAB_SCOPES = ['api']  # l'API REST (arbre, blobs, commits) : write_repository ne vaut que pour git en HTTP
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    """Jamais une redirection suivie avec le jeton de l'administrateur : un 30x est une erreur (le pendant, côté lanceur, du
-    redirect: 'error' du transport GitLab du navigateur ; HTTPRedirectHandler recopierait l'en-tête vers n'importe quel hôte)."""
+    """Jamais une redirection suivie : un 30x est une erreur (le pendant, côté lanceur, du redirect: 'error' des transports
+    du navigateur ; HTTPRedirectHandler recopierait un en-tête d'autorisation vers n'importe quel hôte)."""
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
 
 
-GITLAB_OPENER = outbound.opener(_NoRedirect, what='GitLab')
-GITLAB_OPEN = GITLAB_OPENER.open  # remplacé par les essais (aucun appel réel)
+# un seul ouvreur sans redirection (R-C3) : l'OpenID d'IVAO (découverte, jeton, révocation), l'API GitLab avec le jeton de
+# l'administrateur, la vérification du relais au démarrage ; le service est dit en console par l'appel (what=…).
+# NO_REDIRECT_OPEN est remplacé par les essais (aucun appel réel)
+NO_REDIRECT = outbound.opener(_NoRedirect)
+NO_REDIRECT_OPEN = NO_REDIRECT.open
 
 
 def _gitlab_request(url, method, body, tok):
@@ -2380,7 +2364,7 @@ def gitlab_call(method, path, body=None):
     api, proj, tok = cfg
     req = _gitlab_request(f'{api}/projects/{proj}{path}', method, body, tok)
     try:
-        with GITLAB_OPEN(req, timeout=GITLAB_TIMEOUT) as r:
+        with NO_REDIRECT_OPEN(req, timeout=GITLAB_TIMEOUT, what='GitLab') as r:
             raw = r.read()
             return r.status, (json.loads(raw) if raw else {})
     except urllib.error.HTTPError as e:

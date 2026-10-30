@@ -84,7 +84,8 @@ def opener(*handlers, what='', quiet=()):
     op.addheaders = [('User-agent', UA)]
     raw = op.open
 
-    def open_(req, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+    def open_(req, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, what=what):
+        # what : le service dit en console, celui de l'ouvreur ou celui de l'appel (un ouvreur partagé : IVAO, GitLab, relais)
         try:
             return raw(req, data, timeout)
         except urllib.error.HTTPError as e:

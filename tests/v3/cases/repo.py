@@ -550,13 +550,13 @@ def i10(c):
     lan = sorted(k for k, v in L.ROUTES.items() if v[1] == 'lan')
     c.eq(sorted(k for k, v in L.ROUTES.items() if v[2]), sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('POST', '/__setup/batch'),
                                                             ('POST', '/__setup/sync'), ('POST', '/__setup/net'),
-                                                            ('POST', '/__setup/ivao/oauth/start'), ('POST', '/__setup/ivao/oauth/refresh'),
-                                                            ('POST', '/__setup/ivao/oauth/revoke'), ('GET', '/__setup/ivao/oauth')]),
+                                                            ('POST', '/__setup/ivao/oauth/start'), ('POST', '/__setup/ivao/oauth/revoke'),
+                                                            ('GET', '/__setup/ivao/oauth'), ('GET', '/__relay/ivao/callback')]),
          'the routes open to the relay: status, changes, batch, sync, net, and the IVAO sign-in (R1b)', what='relay routes')
     c.eq(lan, sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('GET', '/__setup/sim/position'),
                       ('GET', '/__setup/lnmperf'), ('GET', '/__setup/lnmperf-folder'), ('POST', '/__setup/batch'),
                       ('POST', '/__setup/sync'), ('POST', '/__setup/net'), ('POST', '/__setup/ivao/oauth/start'),
-                      ('POST', '/__setup/ivao/oauth/refresh'), ('POST', '/__setup/ivao/oauth/revoke'), ('GET', '/__setup/ivao/oauth')]),
+                      ('POST', '/__setup/ivao/oauth/revoke'), ('GET', '/__setup/ivao/oauth'), ('GET', '/__relay/ivao/callback')]),
          'the routes open to a paired device are the Pilot app\'s (and the IVAO sign-in, R1b)', what='lan routes')
     missing = [f'{m} {p} -> {v[0]}' for (m, p), v in L.ROUTES.items() if not callable(getattr(L.Setup, v[0], None))]
     c.eq(missing, [], 'each route names a method of the server', what='routes without handler')
@@ -607,7 +607,7 @@ def i12(c):
     sys.path.insert(0, str(c.root / 'tools'))
     L = importlib.import_module('launch')
     tmp = Path(tempfile.mkdtemp(prefix='sog-g2-'))
-    kept = L.SECRETS, L.GITLAB_OPEN
+    kept = L.SECRETS, L.NO_REDIRECT_OPEN
     calls = []
 
     class Resp:
@@ -623,7 +623,7 @@ def i12(c):
         def __exit__(self, *a):
             return False
 
-    def fake(req, timeout=0):
+    def fake(req, timeout=0, what=''):
         calls.append((req.get_method(), req.full_url, req.get_header('Private-token'), json.loads(req.data) if req.data else None))
         if req.get_method() == 'POST':
             return Resp(201, json.dumps({'id': 7, 'name': 'ABC', 'expires_at': '2027-10-29', 'token': 'glpat-PILOT'}).encode())
@@ -632,7 +632,7 @@ def i12(c):
         return Resp(200, json.dumps([{'id': 7, 'name': 'ABC', 'scopes': ['api'], 'access_level': 30, 'active': True, 'revoked': False,
                                       'token': 'should-not-leak'}]).encode())
     try:
-        L.SECRETS, L.GITLAB_OPEN = str(tmp), fake
+        L.SECRETS, L.NO_REDIRECT_OPEN = str(tmp), fake
         c.eq(L.gitlab_tokens().get('status'), 409, 'no secret on the workstation: refused', what='without secret')
         (tmp / 'gitlab.json').write_text(json.dumps({'instance': 'http://gitlab.example', 'project': 'grp/data', 'token': 'glpat-ADMIN-SECRET'}), encoding='utf-8')
         c.eq(L.gitlab_tokens().get('status'), 409, 'an instance that is not https: refused', what='http instance')
@@ -648,7 +648,7 @@ def i12(c):
         rv = L.gitlab_token_revoke({'id': 7})
         c.ok(rv['ok'] is False and 'glpat-ADMIN-SECRET' not in json.dumps(rv), json.dumps(rv), 'a refusal never shows the administrator’s token')
         # un jeton qui n'est pas celui d'un pilote (nom hors trigramme) : jamais révoqué ici
-        L.GITLAB_OPEN = lambda req, timeout=0: Resp(200, json.dumps({'id': 9, 'name': 'owner-bot'}).encode())
+        L.NO_REDIRECT_OPEN = lambda req, timeout=0, what='': Resp(200, json.dumps({'id': 9, 'name': 'owner-bot'}).encode())
         c.eq(L.gitlab_token_revoke({'id': 9}).get('status'), 403, 'only a pilot token is revoked', what='revoke another token')
         # le vrai ouvreur du lanceur : une redirection n'est jamais suivie, le jeton n'arrive jamais à un autre hôte
         import http.server
@@ -680,7 +680,7 @@ def i12(c):
             threading.Thread(target=s_.serve_forever, daemon=True).start()
         try:
             try:
-                L.GITLAB_OPENER.open(L._gitlab_request(f'http://127.0.0.1:{hop.server_port}/x', 'GET', None, 'glpat-ADMIN-SECRET'), timeout=5)
+                L.NO_REDIRECT.open(L._gitlab_request(f'http://127.0.0.1:{hop.server_port}/x', 'GET', None, 'glpat-ADMIN-SECRET'), timeout=5)
                 followed = True
             except urllib.error.HTTPError as e:
                 followed = e.code != 302
@@ -691,7 +691,7 @@ def i12(c):
         src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
         c.ok("@route('GET', '/__setup/gitlab/tokens', public='poste')" in src and "'/__setup/gitlab/tokens/revoke', public='poste'" in src, '', 'workstation-only routes')
     finally:
-        L.SECRETS, L.GITLAB_OPEN = kept
+        L.SECRETS, L.NO_REDIRECT_OPEN = kept
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -715,7 +715,7 @@ def i14(c):
     sys.path.insert(0, str(c.root / 'tools'))
     L = importlib.import_module('launch')
     tmp = Path(tempfile.mkdtemp(prefix='sog-oidc-'))
-    kept = L.SECRETS, L.OIDC_OPEN, dict(L._ivao_oidc)
+    kept = L.SECRETS, L.NO_REDIRECT_OPEN, dict(L._ivao_oidc)
     seen, ch, rev = [], [''], ['yes']
 
     class Resp:
@@ -731,7 +731,7 @@ def i14(c):
         def __exit__(self, *a):
             return False
 
-    def fake(req, timeout=20):
+    def fake(req, timeout=20, what=''):
         seen.append((req.full_url, req.get_header('Authorization'), req.data))
         if 'well-known' in req.full_url:
             return Resp(json.dumps({'authorization_endpoint': 'https://sso.ivao.test/authorize', 'token_endpoint': 'https://api.ivao.test/oauth/token',
@@ -745,7 +745,7 @@ def i14(c):
             assert base64.urlsafe_b64encode(hashlib.sha256(f['code_verifier'][0].encode()).digest()).decode().rstrip('=') == ch[0], 'PKCE'
         return Resp(json.dumps({'access_token': 'AT', 'refresh_token': 'RT', 'expires_in': 3600, 'scope': 'tracker'}).encode())
     try:
-        L.SECRETS, L.OIDC_OPEN = str(tmp), fake
+        L.SECRETS, L.NO_REDIRECT_OPEN = str(tmp), fake
         L._ivao_oidc.update(meta=None, at=0.0, pending={})
         no = L.ivao_oauth_start('d1', 'https://relay/__relay/ivao/callback')
         c.eq((no.get('status'), no.get('redirect'), no.get('relay')), (409, 'https://relay/__relay/ivao/callback', True),
@@ -774,9 +774,8 @@ def i14(c):
         c.ok(r['ok'] and r['access_token'] == 'AT' and auth.startswith('Basic ') and base64.b64decode(auth[6:]).decode() == 'cid:S3CRET',
              str(r)[:120], 'the code exchanged with client_secret_basic and the PKCE verifier')
         c.eq(L.ivao_oauth_finish(q['state'][0], 'C', '', 'd1', 'https://relay/__relay/ivao/callback').get('error'), 'state', 'a state is used once', what='state again')
-        rf = L.ivao_oauth_refresh('RT-long-enough')
-        c.ok(rf['ok'] and rf['access_token'] == 'AT', str(rf)[:120], 'the refresh by the relay')
-        c.eq(L.ivao_oauth_refresh('x').get('status'), 400, 'a refresh token is checked', what='short refresh token')
+        c.ok(not hasattr(L, 'ivao_oauth_refresh') and ('POST', '/__setup/ivao/oauth/refresh') not in L.ROUTES, '',
+             'no refresh route while nothing reads a renewed token (R-C3)')
         s = L.ivao_oauth_start('d4', 'https://relay/__relay/ivao/callback')
         st = urllib.parse.parse_qs(urllib.parse.urlsplit(s['url']).query)['state'][0]
         c.eq(L.ivao_oauth_finish(st, '', 'access_denied', 'd4', 'https://relay/__relay/ivao/callback').get('error'), 'ivao:access_denied',
@@ -816,11 +815,28 @@ def i14(c):
              ['', 'autre site', 'autre site', 'autre site', 'autre site', 'autre site', 'hôte'],
              'IVAO\'s return on the workstation: exact path, GET, document navigation, a state of the workstation; nothing else opened',
              what='workstation return')
-        c.eq(L.ROUTES[('POST', '/__setup/ivao/oauth/start')][1:], ('lan', True), 'start and refresh are relay routes', what='route public')
+        c.eq(L.ROUTES[('POST', '/__setup/ivao/oauth/start')][1:], ('lan', True), 'start is a relay route', what='route public')
+        # R-C3: the return is one declared route; through the relay it passes the origin check (the device's gate checked it),
+        # a paired device of the local network never; the special cases of the relay gate and of do_GET are gone
+        c.eq(L.ROUTES[('GET', L.IVAO_CALLBACK)], ('_ivao_callback', 'lan', True), 'the IVAO return is a declared route', what='callback route')
+
+        def relay_refused(path, lan=False):
+            h = L.Setup.__new__(L.Setup)
+            h.command, h.path, h.port, h.client_address = 'GET', path, 8001, ('127.0.0.1', 50000)
+            h.server = type('Srv', (), {'relay': not lan, 'lan': lan})()
+            h.headers = {'Host': 'relay.example.test', 'Sec-Fetch-Site': 'cross-site'}
+            return h._ivao_return(path.split('?')[0])
+        c.eq([relay_refused(f'{L.IVAO_CALLBACK}?state=x&code=C'), relay_refused('/frame/index.html'), relay_refused(L.IVAO_CALLBACK, lan=True)],
+             [True, False, False], 'through the relay the return passes the origin check; nothing else; never from the local network',
+             what='relay return')
+        lsrc = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+        c.ok("== IVAO_CALLBACK and not self._lan()" not in lsrc and 'if path == IVAO_CALLBACK:' not in lsrc and 'OIDC_OPEN' not in lsrc
+             and 'GITLAB_OPENER' not in lsrc and lsrc.count('outbound.opener(_NoRedirect') == 1, '',
+             'one place for the return, one no-redirect opener')
         src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
         c.ok("loc = f'/frame/index.html#ivao-return?{frag}'" in src and "'Referrer-Policy', 'no-referrer'" in src, '', 'the tokens leave by the fragment of the frame address, no referrer')
     finally:
-        L.SECRETS, L.OIDC_OPEN = kept[0], kept[1]
+        L.SECRETS, L.NO_REDIRECT_OPEN = kept[0], kept[1]
         L._ivao_oidc.clear()
         L._ivao_oidc.update(kept[2])
         shutil.rmtree(tmp, ignore_errors=True)
@@ -1342,7 +1358,7 @@ def i20(c):
             L._ivao_oidc.clear()
             L._ivao_oidc.update(kept)
         c.eq(meta.get('token_endpoint'), 'https://api.example.invalid/token', 'the IVAO discovery passes a server that refuses urllib’s User-Agent', what='discovery')
-        with L.GITLAB_OPENER.open(base + '/api', timeout=5) as r:
+        with L.NO_REDIRECT_OPEN(base + '/api', timeout=5, what='GitLab') as r:
             r.read()
         st, _ = RJ.download(base + '/file', 5)
         AF.get(base + '/aero')
@@ -1367,7 +1383,7 @@ def i20(c):
         req = L._gitlab_request(base + '/deny/projects?private_token=glpat-SECRET-1', 'GET', None, 'glpat-SECRET-2')
         with contextlib.redirect_stdout(out):
             try:
-                L.GITLAB_OPENER.open(req, timeout=5)
+                L.NO_REDIRECT_OPEN(req, timeout=5, what='GitLab')
                 failed = None
             except urllib.error.HTTPError as e:
                 failed = OB.reason(e)

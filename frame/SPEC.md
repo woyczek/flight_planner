@@ -943,15 +943,21 @@ explicit go** (R3).
   IVAO comes back to `/__relay/ivao/callback`, which exchanges the code and sends the device to
   `/frame/index.html#ivao-return?…` (`Referrer-Policy: no-referrer`); the frame keeps the tokens with the device keys
   (`device/keys.json`, never in a backup) and replaces the address at once, on start or on the same document.
-  `POST /__setup/ivao/oauth/refresh` renews them (the secret stays on the relay); « Délier » asks
+  Nothing renews them yet: the renewal (`ivao/oauth/refresh`, the secret staying on the relay) comes back with the
+  reader of IVAO's tracker that needs it (removed with `ctx.ivao.token()`, R-C3). « Délier » asks
   `POST /__setup/ivao/oauth/revoke` to revoke the token at IVAO (the discovery's `revocation_endpoint`, https,
   client authenticated) before erasing it, and tells the pilot to withdraw the access in their IVAO account when there is
   no revocation or it fails. Three sign-ins in progress per device at most (100 in all). On the workstation without
   relay, IVAO comes back to `http://127.0.0.1:<port>/__relay/ivao/callback` (to declare in the airline's IVAO
-  application): that navigation from IVAO's site is served by one narrow exception (this exact path, GET,
-  `Sec-Fetch-Dest: document` and `Sec-Fetch-Mode: navigate`, the workstation itself on a local host, a state of the
-  workstation in progress), nothing else opened. `ctx.ivao` gives the screens
-  `status()`, `connect()`, `disconnect()` and `token()` (renewed five minutes before it expires).
+  application). The return is **one declared route** of the launcher's table (`GET /__relay/ivao/callback`, public
+  `lan`, relay; refused to a device of the local network, which never has a sign-in in progress), and that navigation
+  from IVAO's site passes the origin check by one narrow guard (`_ivao_return`): through the relay, this exact path in
+  GET (the device's gate has checked its pairing; the state is checked at the return); on the workstation, this exact
+  path, GET, `Sec-Fetch-Dest: document` and `Sec-Fetch-Mode: navigate`, a local host and a state of the workstation in
+  progress; nothing else opened (refactor R-C3, 30 Oct 2026: before, three places — the relay's gate, this guard and a
+  special case of `do_GET`). The launcher's calls that must never follow a redirect (IVAO's OpenID, GitLab's API with the
+  administrator's token, the relay's start check) share one opener, `NO_REDIRECT_OPEN`, the service named in the
+  console by each call. `ctx.ivao` gives the screens `status()`, `connect()` and `disconnect()`.
   The callback is a GET that changes a state: under `SameSite=Lax` IVAO's redirect carries the device's cookie (with
   `Strict` it would not, and the callback would be refused), and a callback forged by another site fails, its state
   being bound to another device or to none.

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-C3, no behaviour change: IVAO's return in one place** (`tools/launch.py`, `tools/outbound.py`,
+  `frame/app.js`; frame SPEC § 3.11, INTEGRATION, DECISIONS; noreg I10, I14, I20) — one declared route and one guard, one
+  opener that never follows a redirect; `ctx.ivao.token()` and the launcher's refresh, without a reader, removed; « Ouvrir »
+  of « Dossiers du poste » imposes the Explorer.
 - **Refonte, sans changement de comportement — R-F4a, la route lue depuis son texte dans le cadre** (`frame/lib/route_model.js`
   `routeModel`, `AIRWAY_WORD`: Fuel's `routePoints` moved unchanged, the aerodb face passed as `base`; bench
   `frame/lib/test/route_model.html` in F69).

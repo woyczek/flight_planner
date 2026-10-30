@@ -1110,10 +1110,10 @@ in the launcher; `resume` finds it again.
   `info()`, aerodb uses it as a hint when a State has no coding tables.
 - **IVAO's sign-in** (29 Oct 2026, R1b): `ctx.ivao` in the settings context — `status()` → `{ connected, expires_at,
   scope }`, `connect()` (goes to IVAO, back on `#settings?card=ivao`), `disconnect()` → `{ revoked }` (revoked at IVAO by the
-  launcher when it can), `token()` → a valid access token
-  or null (renewed through the launcher); a module that reads IVAO's tracker for the pilot asks `token()` and never keeps
-  it. The three routes `ivao/oauth/start`, `ivao/oauth/refresh` and `ivao/oauth/revoke` are open to the local network and
-  to the relay (I10).
+  launcher when it can). No `token()` while nothing reads IVAO's tracker for the pilot (R-C3, 30 Oct 2026): the module
+  that will read it brings back `token()` and the launcher's renewal (`ivao/oauth/refresh`) together. The routes
+  `ivao/oauth/start`, `ivao/oauth/revoke` and the return `GET /__relay/ivao/callback` (one declared route) are open to the
+  local network and to the relay (I10).
 - **The relay's routes** (29 Oct 2026, R1a): `@route(…, public='lan', relay=True)` opens a route to a pilot's device
   through the airline's relay too (frame SPEC § 3.11); today status, changes, batch, sync, net (noreg I10, I13).
 - **The route table** (29 Oct 2026, lot 3c-2): every `/__setup/` route of `tools/launch.py` is a method of the server

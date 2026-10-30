@@ -2059,6 +2059,22 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     credentials and tokens no longer reach a third-party script); every purge uses `regen_jobs.inside` (the rule of
     `base/purge`, now shared: `base_sources._inside` is it), `files_under` and `prune_empty`, so that a junction inside a cache
     is neither descended nor emptied (I17, I18 with a real junction).
+- **30 Oct 2026 — Refactor R-C3: IVAO's return in one place, one no-redirect opener, no `token()` without a reader**
+  (§ 10.33, the inventory's item 3; Simplification's wording « ctx.ivao.token() sans lecteur retiré »):
+  - The return was handled in three places (a special case of the relay's gate, the narrow exception of `_refused`, a
+    special case at the top of `do_GET`). It is now a declared route of the table (`@route('GET', '/__relay/ivao/callback',
+    public='lan', relay=True)`, the rule « a relay route is a local-network route » kept; the handler refuses the local
+    network, as before), and `_ivao_return` is the one guard that lets IVAO's navigation through the origin check: always
+    for the relay's GET of that path (the gate has checked the device), the workstation's conditions unchanged.
+  - Two no-redirect openers (`GITLAB_OPENER`, and `OIDC_OPEN` building one per call; `relay_probe` borrowing GitLab's)
+    became `NO_REDIRECT` / `NO_REDIRECT_OPEN`, patched by the tests; `outbound.opener`'s `open` takes the service's name
+    per call (`what=`), so the console still says IVAO, GitLab or relais.
+  - `ctx.ivao.token()` had no reader (the tracker read still goes through `net.fetch` without it): removed, and the
+    launcher's `ivao/oauth/refresh`, its only caller, with it; they come back together with the tracker's reader.
+  - No behaviour change for a user: the same returns are served and refused (I14 adds the relay's case); a POST to the
+    callback through the relay is now refused (only IVAO's GET ever came).
+  - With it, the security review of 36f571e40: « Ouvrir » calls `os.startfile(path, 'explore')`, the Explorer imposed
+    whatever the path becomes between `isdir()` and the call.
 - **30 Oct 2026 — R-C2's security review: one bucket of wrong codes per channel, expired devices purged** (Simplification,
   verdict acceptable on 4e83fc50a, two notes taken with the « Dossiers » commit): the 30 wrong codes an hour closed both
   channels, so a stranger in front of the relay could close the local network; `closed` and `wrong` are now one per

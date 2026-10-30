@@ -856,26 +856,9 @@
       return {
         revoked: r?.body?.revoked === true
       };
-    },
-    async token() {
-      if (!ivaoTok) return null;
-      if (ivaoTok.expires_at - Date.now() / 1000 > 300) return ivaoTok.access_token;
-      if (!ivaoTok.refresh_token) return null;
-      const r = await launcherRequest('ivao/oauth/refresh', {
-        json: {
-          refresh_token: ivaoTok.refresh_token
-        }
-      });
-      if (!r?.body?.ok) return null;
-      ivaoTok = {
-        access_token: r.body.access_token,
-        refresh_token: r.body.refresh_token || ivaoTok.refresh_token,
-        expires_at: +r.body.expires_at || 0,
-        scope: r.body.scope || ivaoTok.scope
-      };
-      await keepKeys();
-      return ivaoTok.access_token;
     }
+    // token() (le jeton à jour, renouvelé par le relais) : retiré faute de lecteur (R-C3) ; il reviendra avec le lecteur du
+    // tracker d'IVAO, et la route ivao/oauth/refresh du lanceur avec lui
   };
   let launcherHere = null; // { data, dataGit, host, lan, lnm } si la page est servie par un lanceur (relevé au démarrage)
   // client du lanceur (frame/lib/launcher.js, INTEGRATION § 15) : chargé au démarrage ; le cadre s'en sert pour lui-même
