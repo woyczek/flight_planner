@@ -1278,15 +1278,23 @@ redesigned for touch at that point.
          (one writer per field, the OFP / lnmperf / CSV imports of § 10.21 as sources, preview before writing), the
          aerodb registry (types, callsigns) read-only with a search; no V2 "learned types" nor "merges" rebuilt: a
          type unknown to the registry is a sheet with its own id.
+         **One editor only** (decision on Features SOG's SPEC, 30 Oct): the sheets editor lives in `modules/aircraft/`;
+         Fuel's "Fiches" tab keeps the reading (which sheet the flight uses, what it lacks) and opens
+         `?app=maintenance#aircraft?sheet=<id>` to change it; Fuel's own editor (about 900 lines) is removed in a
+         separate commit once the new cases pass. `maxCrosswindKt` joins aerodb's `PROFILE_FIELDS` first. A
+         pilot who needs a personal sheet opens the same Maintenance application on their device.
        - **A3 — the workstation itself** (V3 Frame): Maintenance › Administration gets "Mise à jour de la suite"
-         (channel stable / early, git state of the code checkout, Vérifier · Mettre à jour through the launcher,
-         the launcher's own update stays a documented manual step), "Sauvegarde du poste" (one ZIP of data/ with
+         (a channel is a version selector, not a branch: stable = the last release tag, early = the last pre-release
+         tag, "suivi" for the administrator who tests = the head of the development branch named once in the
+         launcher; fetch then fast-forward only, refused on local changes, plan first, manual restart said as
+         such, the data repository never touched; the launcher's own update stays a documented manual step), "Sauvegarde du poste" (one ZIP of data/ with
          secrets excluded and said so, restore from a ZIP with a plan first, the journal of backups), "Dossiers"
          (the local folders the launcher knows — data/, X-Plane, Little Navmap, downloads — read-only paths with
          Ouvrir, changed only in the launcher's config file, said so).
-       - **A4 — coverage of the procedures on the Map** (BUGS SOG, § 10.22 as written): the layer "Procédures" off by
-         default, aerodrome pins green / orange / red from `aerodb.coverage(icao)`, one legend line; the Data
-         module's per-State colours come with A1.
+       - **A4 — coverage of the procedures on the Map**: already delivered as the layer "Couverture" (§ 10.22,
+         28 Oct late; maps session's correction of 30 Oct): lit by the user's box only, never automatically (§ 10.29),
+         no Little Navmap orange until `tools/proc_lnm.py` exists; nothing to do. The Data module's per-State
+         colours come with A1.
        Out of scope, by the user's decision: users and rights, the Centre (dispos, ODV, CR sending: the CPCO
        application later), theme colours. Each lot: SPEC of the module first, cases, help ×4, `--touched` before the
        push, one full pass after.
