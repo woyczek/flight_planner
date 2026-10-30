@@ -359,6 +359,10 @@ const ZONE_RUNNING = {
   fetch: 'fetching',
   purge: 'purging'
 };
+/** Les motifs du lanceur qui sont chacun une fin à part d'une construction (une phrase chacun) : le navigateur, X-Plane, les appareils (aucun type,
+ *  script absent), les points VFR (pypdf manque, aucune carte en cache, plan refusé) et, pour tous les jeux, une fusion qui attend dans data/
+ *  (rien n'est écrit : « merge-pending »). */
+const EXTRA_KINDS = ['no-browser', 'xplane-in-page', 'no-codes', 'no-script', 'no-pypdf', 'no-cache', 'invalid', 'merge-pending'];
 const ERROR_CODES = ['browser-failed', 'browser-exited', 'timeout', 'page-error', 'invalid-output', 'write-failed', 'cancelled'];
 /** Codes d'échec d'une source téléchargée (base/fetch). */
 const FETCH_CODES = ['network', 'http', 'parse', 'personal', 'manual'];
@@ -412,7 +416,8 @@ export function zonePhrase(z, verb = 'build', loose = false) {
     run = ZONE_RUNNING[verb] || 'building';
   return {
     state,
-    key: state === run && verb !== 'purge' && n !== null && m !== null ? `${run}N` : state,
+    key: state === run && verb !== 'purge' && n !== null && m !== null ? `${run}${loose ? 'P' : 'N'}` :
+    state, // P : « (n / m) » sans nom (les autres jeux comptent des terrains, des étapes…)
     n,
     m,
     code: state === 'failed' ? zoneCode(verb, z?.error, loose) : null,
@@ -496,12 +501,13 @@ export function outcome(final) {
   let kind;
   if (final?.state === 'interrupted') kind = 'interrupted';
   else if (final?.state === 'cancelled') kind = 'cancelled';
-  else if (r.reason === 'no-browser' || r.reason === 'xplane-in-page' || r.reason === 'no-codes' || r.reason === 'no-script') kind = r
-    .reason;
+  else if (EXTRA_KINDS.includes(r.reason)) kind = r.reason;
   else if (r.reason === 'cancelled') kind = 'cancelled';
   else if (r.reason === 'partial' || r.reason === 'failed') kind = r.reason;
   else if (final?.state === 'error' || r.ok === false) kind = 'failed';
   else kind = failed.length ? built.length ? 'partial' : 'failed' : 'done';
+  if (EXTRA_KINDS.includes(kind) && !Array.isArray(r.failed)) failed.length =
+    0; // un motif propre (pypdf manque…) : la zone « en échec » de la vue n'est pas un échec de plus
   return {
     kind,
     built,
@@ -535,7 +541,7 @@ export function journalEntry({
     zones: [...zones],
     seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
     result: journalResult(out.kind),
-    ...(['no-browser', 'xplane-in-page', 'no-codes', 'no-script'].includes(out.kind) ? {
+    ...(EXTRA_KINDS.includes(out.kind) ? {
       reason: out.kind
     } : {}),
     built: [...out.built],
@@ -776,6 +782,7 @@ export const SETS = {
   },
   vfr: {
     arg: 'cycle',
+    view: 'cycles',
     unit: 'cycle',
     noItem: null,
     group: 'base',
@@ -849,14 +856,24 @@ export function setGate(s) {
     verbs: per
   };
 }
-/** Les États à proposer pour les procédures, d'après coverageByState() : ceux de niveau vert (détenus) ou orange (lisibles à la demande),
- *  [{ id (le préfixe), name (names[li], sinon le préfixe), level }] dans l'ordre des noms ; aucun n'est coché d'office (le module le décide). */
+/** Les États qui ont une source en bloc : la France (« LF », l'eAIP du SIA) et les États-Unis (« K », le CIFP de la FAA). Les États lus par EAD
+ *  Basic ne se lisent jamais en bloc (frame/aerodb/EAD_BASIC.md § 1) : un terrain par geste, « Relire » ; ils ne sont pas proposés. */
+export const BULK_STATES = ['LF', 'K'];
+/** Le nom des États en bloc quand coverageByState() n'en donne pas (les États-Unis n'y figurent pas). */
+export const BULK_NAMES = {
+  LF: ['France', 'France', 'Frankreich', 'Francia'],
+  K: ['États-Unis', 'United States', 'Vereinigte Staaten', 'Estados Unidos']
+};
+/** Le nom d'un État en bloc dans la langue (index li) : celui de coverageByState(), sinon BULK_NAMES, sinon le préfixe. */
+export const bulkName = (byState, id, li = 0) => byState?.[id]?.names?.[li] || BULK_NAMES[id]?.[li] || id;
+/** Les États à proposer pour les procédures : ceux qui ont une source en bloc (BULK_STATES), [{ id (le préfixe), name, level (celui de
+ *  coverageByState(), sinon null) }] dans l'ordre des noms ; aucun n'est coché d'office (le module le décide). */
 export function procItems(byState, li = 0) {
   const lang = ['fr', 'en', 'de', 'es'][li] || 'fr';
-  return Object.entries(byState || {}).filter(([, e]) => e && (e.level === 'green' || e.level === 'orange')).map(([id, e]) => ({
+  return BULK_STATES.map(id => ({
     id,
-    name: e.names?.[li] || id,
-    level: e.level
+    name: bulkName(byState, id, li),
+    level: byState?.[id]?.level ?? null
   })).sort((a, b) => a.name.localeCompare(b.name, lang) || a.id.localeCompare(b.id));
 }
 /** Les types OACI tapés dans le champ des appareils : séparés par des virgules ou des espaces, mis en majuscules, sans doublon ; { codes
@@ -880,9 +897,9 @@ export function setArgs(set, verb, sel = {}) {
     personal: [...(sel.personal || [])]
   };
   if (set === 'proc') return {
-    states: ids
+    states: [...new Set(ids)].sort() // 1 à 2 préfixes, triés et sans doublon (« K » avant « LF »), comme le lanceur les prend
   };
-  if (set === 'vfr') return {
+  if (set === 'vfr') return verb === 'purge' ? {} : {
     cycle: sel.cycle
   };
   return verb === 'purge' ? {} : {
@@ -947,6 +964,10 @@ export function normView(set, v) {
       }
     };
   }
+  if (v.verb === 'build') zones = Object.fromEntries(Object.entries(zones).map(([k, z]) => [k, z && z.state === 'done' ? {
+    ...z,
+    state: 'built'
+  } : z])); // un jeu autre que la base dit « done » où la base dit « construite »
   const stepsDone = set === 'aircraft' && Array.isArray(r.steps) ? r.steps.filter(x => typeof x === 'string') : null;
   return {
     ...v,
@@ -955,6 +976,10 @@ export function normView(set, v) {
       result: {
         ...r,
         // aircraft/fetch et aircraft/build : `steps` liste les étapes faites ; `failed[].item` nomme l'étape en échec
+        ...(r.built && typeof r.built === 'object' && !Array.isArray(r.built) ? {
+          built: Object.keys(r.built).filter(k => num(r.built[k]) === null || r.built[k] >
+            0) // proc/build : { État: nombre de terrains }
+        } : {}),
         ...(stepsDone ? {
           built: r.built ?? stepsDone,
           fetched: r.fetched ?? stepsDone,
@@ -970,12 +995,59 @@ export function normView(set, v) {
     } : {})
   };
 }
+/** Un compte : le nombre d'une liste, ou le nombre lui-même ; 0 sinon. */
+const countOf = v => Array.isArray(v) ? v.length : num(v) ?? 0;
+/** La fin d'un téléchargement des cartes VAC (vfr/fetch), d'après la vue ramenée à la base : { kind, fetched, unchanged, failed [{ zone (l'OACI),
+ *  error }], manual, outside, level, counts { fetched, unchanged, notPublished } } ; kind : 'done' | 'partial' | 'failed' | 'cancelled' |
+ *  'interrupted' | 'no-base' (aucune base SIA de ce cycle sur le poste) | 'not-published' (le SIA ne publie pas encore le cycle). fetched et
+ *  unchanged sont des nombres (de cartes) chez le lanceur ; une carte absente compte dans notPublished, jamais comme un échec. */
+export function vfrFetchOutcome(final) {
+  const r = obj(final?.result),
+    failed = (Array.isArray(r.failed) ? r.failed : []).filter(f => f && f.zone).map(f => ({
+      zone: f.zone,
+      error: f.error ?? null
+    })),
+    counts = {
+      fetched: countOf(r.fetched),
+      unchanged: countOf(r.unchanged),
+      notPublished: countOf(r.notPublished)
+    };
+  let kind;
+  if (final?.state === 'interrupted') kind = 'interrupted';
+  else if (final?.state === 'cancelled' || r.reason === 'cancelled') kind = 'cancelled';
+  else if (['no-base', 'not-published', 'partial', 'failed'].includes(r.reason)) kind = r.reason;
+  else if (final?.state === 'error' || r.ok === false) kind = 'failed';
+  else kind = failed.length ? counts.fetched || counts.unchanged ? 'partial' : 'failed' : 'done';
+  return {
+    kind,
+    fetched: [],
+    unchanged: [],
+    failed,
+    manual: [],
+    outside: 0,
+    level: kind === 'failed' || kind === 'no-base' ? 'err' : kind === 'done' && !counts.notPublished ? 'ok' : 'warn',
+    counts
+  };
+}
 /** La fin d'une opération d'un jeu : { verb, out }, `out` calculé par outcome, fetchOutcome ou purgeOutcome sur la vue ramenée à la base
  *  (normView) ; pour un jeu à un seul élément dont le résultat ne liste rien, l'élément (le cycle) est compté d'après la fin. */
 export function setOutcome(set, verb, final) {
   const v = normView(set, final),
-    out = verb === 'fetch' ? fetchOutcome(v) : verb === 'purge' ? purgeOutcome(v) : outcome(v);
+    out = set === 'vfr' && verb === 'fetch' ? vfrFetchOutcome(v) : verb === 'fetch' ? fetchOutcome(v) : verb === 'purge' ? purgeOutcome(v) :
+    outcome(v);
   if (SETS[set]?.single && out.kind === 'done' && verb === 'build' && !out.built.length) out.built = Object.keys(obj(v?.zones));
+  if (set === 'proc' && verb === 'fetch') { // proc/fetch : fetched et unchanged sont des nombres de terrains (ou des listes d'États)
+    const r = obj(v?.result);
+    if (typeof r.fetched === 'number' || typeof r.unchanged === 'number') out.counts = {
+      fetched: countOf(r.fetched),
+      unchanged: countOf(r.unchanged)
+    };
+  }
+  if (set === 'vfr' && verb === 'build') { // sans trigramme le lanceur ne commite pas (commit null, warning) : la page le dit
+    const r = obj(v?.result);
+    out.commit = typeof r.commit === 'string' && r.commit ? r.commit : null;
+    out.noCommit = out.kind === 'done' && !out.commit;
+  }
   return {
     verb,
     out
@@ -1010,7 +1082,10 @@ export function setEntry(set, verb, {
   return {
     ...rest,
     set,
-    items: zones
+    items: zones,
+    ...(out.counts ? {
+      counts: out.counts
+    } : {}) // vfr/fetch : les cartes téléchargées, déjà là, pas encore publiées
   };
 }
 /** Le nombre d'éléments d'une liste de fiches ou d'un nombre ; 0 sinon. */
@@ -1041,7 +1116,7 @@ export function sheetsOutcome(final) {
   let kind;
   if (final?.state === 'interrupted') kind = 'interrupted';
   else if (final?.state === 'cancelled' || r.reason === 'cancelled') kind = 'cancelled';
-  else if (r.reason === 'no-author') kind = 'no-author';
+  else if (r.reason === 'no-author' || r.reason === 'merge-pending') kind = r.reason;
   else if (final?.state === 'error' || r.ok === false || r.reason === 'failed') kind = 'failed';
   else kind = 'done';
   return {
@@ -1049,7 +1124,7 @@ export function sheetsOutcome(final) {
     copied,
     removed,
     nothing: kind === 'done' && copied === 0 && removed === 0,
-    level: kind === 'failed' || kind === 'no-author' ? 'err' : kind === 'done' ? 'ok' : 'warn'
+    level: kind === 'failed' || kind === 'no-author' || kind === 'merge-pending' ? 'err' : kind === 'done' ? 'ok' : 'warn'
   };
 }
 /** Une entrée du journal pour une publication de fiches réelle (le plan n'y est jamais) : { at, set: 'aircraft', verb: 'publish', items: [],

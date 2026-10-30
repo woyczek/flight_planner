@@ -70,7 +70,7 @@ publish: ['sia/base/', 'proc/', 'sia/vfr/', 'AircraftDB/', 'sia/mora.csv']
 ### 1.4 The end-of-cycle line of the Status block
 
 Delivered by the frame (§ 15.3): computed on every device from `aerodb.publication()`, amber, « Base aéronautique : cycle
-2610 terminé, en attente de publication » or « … : le cycle 2611 se termine le 25/11, rien de publié pour 2612 »; it leads
+2610 dépassé, à reconstruire pour 2611 » or « … : le cycle 2611 se termine le 25/11, rien de construit pour 2612 »; it leads
 to `#data` only on a workstation with a launcher at the Full level once the module exists; without `publication()`, no
 line. The module's own lines (a job running, « n publications à envoyer ») go through `cache/data/status.json`
 (`frame/INTEGRATION.md` § 10.0).

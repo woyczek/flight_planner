@@ -242,8 +242,8 @@ commits its outputs on the workstation (the launcher's `commit_outputs`); a grey
 | Group | Items | Télécharger | Construire | Purger | Today in V2 |
 |---|---|---|---|---|---|
 | Base aéronautique | zones | `base/fetch` | `base/build` | `base/purge` | delivered |
-| Procédures | States (EAD_STATES ; LF by the SIA's eAIP, the US by the CIFP); « Relire » of one aerodrome as today | `proc/fetch` | `proc/build` | `proc/purge` | per aerodrome only (`proc/eaip-fetch`, `proc/ead-fetch`) |
-| Points VFR des cartes VAC | the cycle (France) | `vfr/fetch` | `vfr/build` | `vfr/purge` | `/__setup/vfr-import` (a compiled file picked in the page) |
+| Procédures | the States with a bulk source only: LF (the SIA's eAIP) and K (the FAA's CIFP); an EAD Basic State is never fetched in bulk (`frame/aerodb/EAD_BASIC.md` § 1: one aerodrome at a time, « Relire » in Fuel or on the Map) | `proc/fetch` | `proc/build` | `proc/purge` | per aerodrome only (`proc/eaip-fetch`, `proc/ead-fetch`) |
+| Points VFR des cartes VAC | the cycle in force (France); Purger clears the cached charts of every cycle | `vfr/fetch` | `vfr/build` | `vfr/purge` | `/__setup/vfr-import` (a compiled file picked in the page) |
 | Appareils (types et performances) | ICAO types (the fleet's by default) | `aircraft/fetch` | `aircraft/build` | `aircraft/purge` | `/__setup/aircraft-db` |
 | Fiches publiées de la compagnie | the sheets | — | `aircraft/publish` (plan, then the copy) | — | `/__setup/aircraft-publish` |
 
@@ -317,7 +317,7 @@ Ages follow V2's rules (AIRAC sources against the cycle in force, anything else 
 
 When the published base or `proc/` is older than the cycle in force, or the cycle ends within 3 days with nothing
 published for the next: **on every device**, an amber line of the Status block, drawn by the frame (« Base aéronautique :
-cycle 2610 terminé, en attente de publication », or « … : le cycle 2611 se termine le 25/11, rien de publié pour 2612 »;
+cycle 2610 dépassé, à reconstruire pour 2611 », or « … : le cycle 2611 se termine le 25/11, rien de construit pour 2612 »;
 INTEGRATION § 1.4): nothing to press on a phone; **on a workstation** with a launcher at the Full level it leads to
 `#data`, whose head shows « Reconstruire pour le cycle 2611 », which is « Tout mettre à jour ». On a phone the module
 opens **read-only** (no verb), by its address `#data` or the line « Maintenance » of Settings › Administration (ergonomics

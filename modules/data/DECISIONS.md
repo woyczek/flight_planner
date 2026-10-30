@@ -128,3 +128,7 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   purge with its plan, nothing committed by fetch or purge). « Tout mettre à jour »: a plan and one question first, the
   sets in the published order, stop at the first failure with nothing published, one Publier at the end, no purge in the
   chain. The V2 maintenance page leaves the Maintenance rail when every set has its four verbs.
+- **30 Oct 2026 — The end-of-cycle line says « rebuild », not « publish »** (user's feedback, ergonomics session; frame 4cf6f9b5d):
+  « Base aéronautique : cycle 2610 dépassé, à reconstruire pour 2611 » (and « … rien de construit pour 2612 » before the end),
+  the same for Procédures; it compares the cycle published in the repository with the cycle in force. « Publier » lights only
+  once something is built on the workstation (sync-status): the two no longer contradict each other.

@@ -1656,6 +1656,53 @@ _L16_JS = r"""async () => {
   out.sheetsEnd = [sx({ state: 'done', result: { ...R, dry: false } }), sx({ state: 'done', result: { ok: true, dry: false, remove: [], copy: [] } }), sx({ state: 'error', result: { ok: false, reason: 'no-author' } }),
     sx({ state: 'cancelled' }), sx({ state: 'interrupted' }), sx({ state: 'error', result: { ok: false } }), sx({ state: 'done', result: { ok: true, copied: 4, removed: 2 } })];
   out.sheetsEntry = M.sheetsEntry({ at, seconds: 4.2, out: M.sheetsOutcome({ state: 'done', result: { ...R, dry: false } }), job: 'j5' });
+  // the VAC points: the cycle's view, the fetch end (counts; a missing chart is not a failure), the build reasons, the purge total
+  const vc = '2026-10-29';
+  out.vfrView = [['build', 'done'], ['fetch', 'done'], ['build', 'building'], ['fetch', 'failed']].map(([verb, state]) =>
+    Object.entries(M.normView('vfr', { set: 'vfr', verb, args: { cycle: vc }, cycles: { [vc]: { state, done: 3, total: 3 } } }).zones).map(([k, z]) => [k, z.state]));
+  const vf = (res, state = 'done') => { const o = M.setOutcome('vfr', 'fetch', { set: 'vfr', verb: 'fetch', state, cycles: {}, result: res }).out; return [o.kind, o.counts, o.failed, o.level] };
+  out.vfrFetch = [
+    vf({ ok: true, cycle: vc, fetched: 12, unchanged: 25, notPublished: 3, failed: [] }),
+    vf({ ok: true, cycle: vc, fetched: 40, unchanged: 0, notPublished: 0, failed: [] }),
+    vf({ ok: false, cycle: vc, fetched: 5, unchanged: 0, notPublished: 1, failed: [{ item: 'LFPG', error: 'http-500' }], reason: 'partial' }),
+    vf({ ok: false, cycle: vc, fetched: 0, unchanged: 0, notPublished: 0, failed: [{ item: 'LFPG', error: 'URLError' }], reason: 'failed' }, 'error'),
+    vf({ ok: false, cycle: vc, fetched: 0, unchanged: 0, notPublished: 40, failed: [], reason: 'not-published' }, 'error'),
+    vf({ ok: false, cycle: vc, reason: 'no-base', message: 'x' }, 'error'),
+    vf({ ok: false, cycle: vc, fetched: 2, reason: 'cancelled' }, 'cancelled'),
+    vf({ ok: true, fetched: ['A'], unchanged: ['B', 'C'], notPublished: [], failed: [] })
+  ];
+  const vb = (res, state = 'done') => { const o = M.setOutcome('vfr', 'build', { set: 'vfr', verb: 'build', state, args: { cycle: vc }, result: res }).out; return [o.kind, o.built, o.failed, o.commit, o.noCommit] };
+  out.vfrBuild = [
+    vb({ ok: true, cycle: vc, summary: { aerodromes: 300 }, commit: 'abc1234', failed: [] }),
+    vb({ ok: true, cycle: vc, summary: {}, commit: null, warning: 'no author', failed: [] }),
+    vb({ ok: false, cycle: vc, reason: 'no-pypdf', message: 'x' }, 'error'),
+    vb({ ok: false, cycle: vc, reason: 'no-cache', message: 'x' }, 'error'),
+    vb({ ok: false, cycle: vc, reason: 'invalid', failed: [{ item: 'plan', error: 'bad point' }], summary: {} }, 'error'),
+    vb({ ok: false, cycle: vc, reason: 'failed', failed: [{ item: 'LFPG', error: 'unreadable' }], summary: {} }, 'error'),
+    vb({ ok: false, cycle: vc, reason: 'cancelled' }, 'cancelled')
+  ];
+  const vp = res => { const o = M.setOutcome('vfr', 'purge', { set: 'vfr', verb: 'purge', state: 'done', result: res }).out; return [o.kind, o.files, o.bytes, o.zones, o.unsafe, o.kept] };
+  out.vfrPurge = [vp({ ok: true, dry: true, removed: { files: 6, bytes: 3072 }, warnings: [{ code: 'unsafe-path', count: 2 }, { code: 'kept-tracked', count: 1 }] }), vp({ ok: true, dry: true, removed: { files: 0, bytes: 0 }, warnings: [] })];
+  out.vfrEntry = M.setEntry('vfr', 'fetch', { at: Date.parse('2026-10-30T10:00:00Z'), ids: [vc], seconds: 5, out: M.setOutcome('vfr', 'fetch', { set: 'vfr', verb: 'fetch', state: 'done', result: { ok: true, fetched: 12, unchanged: 25, notPublished: 3, failed: [] } }).out, job: 'v1' });
+  // proc (frame/INTEGRATION § 15 « Set proc per State »): built is { State: n }, fetched and unchanged are numbers of aerodromes, merge-pending for every set
+  out.argsProc = [M.setArgs('proc', 'build', { ids: ['LF', 'K', 'LF'] }), M.setArgs('proc', 'purge', { ids: ['K'] })];
+  const pb = (res, state = 'done') => { const o = M.setOutcome('proc', 'build', { set: 'proc', verb: 'build', state, states: { K: { state: 'done' }, LF: { state: 'failed' } }, result: res }).out; return [o.kind, o.built, o.failed] };
+  out.procBuild = [
+    pb({ ok: false, cycle: vc, built: { K: 12 }, commits: { K: 'abc1234' }, failed: [{ state: 'LF', error: 'no-cache' }], reason: 'partial' }),
+    pb({ ok: true, cycle: vc, built: { K: 0, LF: 5 }, commits: { LF: 'def5678' }, failed: [] }),
+    pb({ ok: false, cycle: vc, built: {}, commits: {}, failed: [], reason: 'merge-pending' }, 'error')
+  ];
+  const pf = res => { const o = M.setOutcome('proc', 'fetch', { set: 'proc', verb: 'fetch', state: 'done', states: { K: { state: 'done' } }, result: res }).out; return [o.kind, o.counts ?? null, o.failed] };
+  out.procFetch = [
+    pf({ ok: true, cycle: vc, fetched: 12, unchanged: 3, failed: [] }),
+    pf({ ok: false, cycle: vc, fetched: 5, unchanged: 0, failed: [{ state: 'LF', error: 'not-a-zip' }], reason: 'partial' }),
+    pf({ ok: true, cycle: vc, fetched: ['K'], unchanged: ['LF'], failed: [] })
+  ];
+  out.merge = [M.outcome({ state: 'error', zones: {}, result: { ok: false, reason: 'merge-pending' } }).kind,
+    M.setOutcome('vfr', 'build', { set: 'vfr', verb: 'build', state: 'error', args: { cycle: vc }, result: { ok: false, reason: 'merge-pending' } }).out.kind,
+    M.setOutcome('proc', 'build', { set: 'proc', verb: 'build', state: 'error', states: {}, result: { ok: false, reason: 'merge-pending' } }).out.kind,
+    (o => [o.kind, o.level])(M.sheetsOutcome({ state: 'error', result: { ok: false, reason: 'merge-pending' } })),
+    M.journalEntry({ at: 0, zones: ['fr'], seconds: 1, out: M.outcome({ state: 'error', zones: {}, result: { ok: false, reason: 'merge-pending' } }) }).reason];
   out.verbOfBase = [{ set: 'base', verb: 'fetch', zones: {} }, { set: 'proc', verb: 'fetch', states: {} }].map(M.viewVerb);
   return out;
 }"""
@@ -1692,14 +1739,14 @@ def l16(c):
         [None, {'publish': None}],
         ['unknown-verb', {'publish': 'unknown-verb'}]],
          'the one reason of a panel: launcher, then verbs all unknown, then busy, offline, no item (States / zones), then a single unknown verb (only its button is grey); aircraft has no item to tick', what='setGate')
-    c.eq(r['proc'], [[['EB', 'Belgique', 'orange'], ['LF', 'France', 'green'], ['EG', 'Royaume-Uni', 'green'], ['XX', 'XX', 'orange']],
-                     [['EB', 'Belgien', 'orange'], ['LF', 'Frankreich', 'green'], ['EG', 'Vereinigtes Königreich', 'green'], ['XX', 'XX', 'orange']], [], []],
-         'the States offered: green and orange only (red and unreadable dropped), by name in the language, the prefix when it has none', what='procItems')
+    c.eq(r['proc'], [[['K', 'États-Unis', None], ['LF', 'France', 'green']], [['LF', 'Frankreich', 'green'], ['K', 'Vereinigte Staaten', None]],
+                     [['K', 'États-Unis', None], ['LF', 'France', None]], [['LF', 'France', None], ['K', 'United States', None]]],
+         'the States offered: only those with a bulk source (LF: the SIA\'s eAIP, K: the FAA\'s CIFP), never an EAD State, by name in the language (coverageByState\'s, else the module\'s: the US is not in its table), level or none', what='procItems')
     c.eq(r['codes'], [[['A320', 'B738', 'E190'], []], [[], []], [['A320'], ['B']], [['A320'], ['TOOLONG', '7']], [[], ['A-1']], [[], []], [[], []]],
          'ICAO types: commas or spaces, upper-cased, no duplicate; 2 to 4 letters or digits; the others are refused; an empty field is valid (the fleet\'s types)', what='parseCodes')
     c.eq(r['args'], [{'zones': ['EG', 'LF'], 'personal': ['nats']}, {'zones': ['EG', 'LF'], 'personal': ['nats']}, {'zones': ['EG', 'LF']}, {'states': ['EG', 'LF']}, {'states': ['EG', 'LF']},
-                     {'cycle': '2026-10-29'}, {'cycle': '2026-10-29'}, {'codes': ['A320']}, {'codes': ['A320']}, {}],
-         'the arguments: base zones (+ personal, not for a purge), proc states, vfr cycle (effective date), aircraft codes (none for the purge, which touches the caches only)', what='setArgs')
+                     {'cycle': '2026-10-29'}, {}, {'codes': ['A320']}, {'codes': ['A320']}, {}],
+         'the arguments: base zones (+ personal, not for a purge), proc states, vfr cycle (effective date; its purge has none: the caches of all cycles), aircraft codes (none for the purge, which touches the caches only)', what='setArgs')
     c.eq(r['ops'], [{'set': 'proc', 'verb': 'build'}, {'set': 'aircraft', 'verb': 'publish'}, None, {'set': 'base', 'verb': 'build'}, {'set': 'proc', 'verb': 'build'}, None, None, {'set': 'aircraft', 'verb': 'fetch'}],
          'a view is a known set and verb (aircraft/publish too); one without a verb that carries its zones is the base\'s build; an unknown verb or set: none', what='viewOp')
     c.eq(r['verbOfBase'], ['fetch', None], 'viewVerb stays the base set\'s reading', what='viewVerb')
@@ -1728,6 +1775,37 @@ def l16(c):
     c.eq([e[1]['set'], e[1]['verb'], e[1]['items'], e[1]['fetched']], ['proc', 'download', ['LF'], ['LF']], 'a download is journaled « download » whatever the set', what='setEntry proc fetch')
     c.eq([e[2]['set'], e[2]['verb'], e[2]['items'], e[2]['files'], e[2]['bytes']], ['aircraft', 'purge', [], 4, 2048], 'a purge: files and bytes', what='setEntry aircraft purge')
     c.eq([e[3]['set'], e[3]['verb'], e[3]['zones'], 'items' in e[3]], ['base', 'build', ['fr'], False], 'the base entry is unchanged', what='setEntry base')
+    c.eq(r['argsProc'], [{'states': ['K', 'LF']}, {'states': ['K']}], 'proc: the States sent are sorted and unique (the launcher takes one or two, « K » before « LF »)', what='setArgs proc')
+    c.eq(r['procBuild'], [['partial', ['K'], [{'zone': 'LF', 'error': 'no-cache'}]], ['done', ['LF'], []], ['merge-pending', [], []]],
+         'proc/build: built is { State: aerodromes } (a State with none is not built), the failures name the State, no-cache per State; merge-pending is a kind of its own', what='proc build')
+    c.eq(r['procFetch'], [['done', {'fetched': 12, 'unchanged': 3}, []], ['partial', {'fetched': 5, 'unchanged': 0}, [{'zone': 'LF', 'source': None, 'error': 'not-a-zip'}]], ['done', None, []]],
+         'proc/fetch: fetched and unchanged are numbers of aerodromes (counts), or lists of States as before; one State failing is a partial end', what='proc fetch')
+    c.eq(r['merge'], ['merge-pending', 'merge-pending', 'merge-pending', ['merge-pending', 'err'], 'merge-pending'],
+         'merge-pending (nothing written while a merge waits in data/) is one end for every set: base, vfr, proc, the sheets; the journal keeps it as the reason', what='merge-pending')
+    c.eq(r['vfrView'], [[['2026-10-29', 'built']], [['2026-10-29', 'done']], [['2026-10-29', 'building']], [['2026-10-29', 'failed']]],
+         'the cycle\'s entry of the view (`cycles`) as the launcher gives it: « done » of a build is a built cycle', what='normView vfr cycles')
+    cnt = lambda f, u, n: {'fetched': f, 'unchanged': u, 'notPublished': n}
+    c.eq(r['vfrFetch'], [
+        ['done', cnt(12, 25, 3), [], 'warn'],
+        ['done', cnt(40, 0, 0), [], 'ok'],
+        ['partial', cnt(5, 0, 1), [{'zone': 'LFPG', 'error': 'http-500'}], 'warn'],
+        ['failed', cnt(0, 0, 0), [{'zone': 'LFPG', 'error': 'URLError'}], 'err'],
+        ['not-published', cnt(0, 0, 40), [], 'warn'],
+        ['no-base', cnt(0, 0, 0), [], 'err'],
+        ['cancelled', cnt(2, 0, 0), [], 'warn'],
+        ['done', cnt(1, 2, 0), [], 'ok']],
+         'vfr/fetch: the numbers of charts (or the lengths of lists); a chart not published is counted apart and is no failure (amber); the reasons no-base, not-published, partial, failed, cancelled are kinds', what='vfrFetchOutcome')
+    c.eq(r['vfrBuild'], [
+        ['done', ['2026-10-29'], [], 'abc1234', False],
+        ['done', ['2026-10-29'], [], None, True],
+        ['no-pypdf', [], [], None, False],
+        ['no-cache', [], [], None, False],
+        ['invalid', [], [{'zone': 'plan', 'error': 'bad point'}], None, False],
+        ['failed', [], [{'zone': 'LFPG', 'error': 'unreadable'}], None, False],
+        ['cancelled', [], [], None, False]],
+         'vfr/build: no-pypdf, no-cache and invalid are kinds of their own (invalid lists the plan\'s problems); a clean build without a commit (no trigram) is flagged noCommit', what='vfr build outcomes')
+    c.eq(r['vfrPurge'], [['done', 6, 3072, ['*'], 2, 1], ['done', 0, 0, [], 0, 0]], 'vfr/purge answers one total; unsafe-path and kept-tracked are counted', what='vfr purge outcome')
+    c.eq([r['vfrEntry']['set'], r['vfrEntry']['verb'], r['vfrEntry']['items'], r['vfrEntry']['counts']], ['vfr', 'download', ['2026-10-29'], cnt(12, 25, 3)], 'the journal entry of a chart download carries the counts', what='setEntry vfr')
     c.eq(r['plan'], [[1, 2, 60, 1, 2], [0, 1, 5, 0, 1], [0, 0, 0, 0, 0], [0, 3, 0, 0, 0]],
          'the sheets plan: what to remove and copy (from `result` or `result.plan`), counts, the total size', what='sheetsPlan')
     c.eq(r['sheetsEnd'], [['done', 2, 1, False, 'ok'], ['done', 0, 0, True, 'ok'], ['no-author', 0, 0, False, 'err'], ['cancelled', 0, 0, False, 'warn'], ['interrupted', 0, 0, False, 'warn'],
@@ -1799,12 +1877,15 @@ def l17(c):
     label = lambda s: T(s, 'setLabel: {')
     sm = lambda key: T(key, 'setSum: {')
     cfg, _ = _fixture()
-    name = lambda p: cfg['states'][p]['names'][li]
+    K_NAMES = [['États-Unis', 'United States', 'Vereinigte Staaten', 'Estados Unidos'][i] for i in range(4)]
+    name = lambda p: K_NAMES[li] if p == 'K' else cfg['states'][p]['names'][li]
+    SORTED = ['K', 'LF']   # what is sent: sorted prefixes
+    ORDER = {'fr': ['K', 'LF'], 'en': ['LF', 'K'], 'de': ['LF', 'K'], 'es': ['K', 'LF']}[lang]   # the States in the order of their names in the language
     _, cur, _, _ = _cycles()
     # ---- A: a launcher that knows base and proc only: the Procédures panel is live, VAC and aircraft grey with the reason written once
-    run1 = _sview('proc', 'build', 'states', {'EG': _zs('building', 1, 3), 'LF': _zs('waiting')}, step='État EG', done=0)
-    end1 = _sview('proc', 'build', 'states', {'EG': _zs('built', 3, 3), 'LF': _zs('failed', 2, 2, error='bad-input')}, state='done', step='Terminé', done=2,
-                  result={'built': ['EG'], 'failed': [{'state': 'LF', 'error': 'bad-input'}], 'reason': 'partial'})
+    run1 = _sview('proc', 'build', 'states', {'K': _zs('building', 1, 3), 'LF': _zs('waiting')}, step='État K', done=0, unit='states')
+    end1 = _sview('proc', 'build', 'states', {'K': _zs('built', 3, 3), 'LF': _zs('failed', 2, 2, error='no-cache')}, state='done', step='Terminé', done=2, unit='states',
+                  result={'ok': False, 'cycle': '2026-10-29', 'built': {'K': 12}, 'commits': {'K': 'abc1234'}, 'failed': [{'state': 'LF', 'error': 'no-cache'}], 'reason': 'partial'})
     st = _launcher(c, [run1, run1, end1], verbs=BASE3 + PROC3)
     _open(c, cfg)
     _all_open(c)
@@ -1821,26 +1902,27 @@ def l17(c):
     c.eq(_line(c, '[data-set-panel=vfr] [data-item-cycle]'), norm(T('cycle').replace('{c}', _name(cur))), 'the VAC panel names the cycle in force (no checkbox)', what='cycle')
     c.eq(c.count('[data-set-panel=vfr] input'), 0, 'no checkbox for the one implicit item', what='vfr items')
     ids = c.js("[...document.querySelectorAll('[data-set-panel=proc] [data-item]')].map(i => i.dataset.item).sort()")
-    c.eq(ids, ['EB', 'EG', 'LF', 'LF2', 'LO'], 'the States offered: the green and orange ones of coverageByState (the red ones are not)', what='proc items')
-    c.eq(c.js("[...document.querySelectorAll('[data-set-panel=proc] [data-item]')].map(i => i.checked)"), [False] * 5, 'none ticked by default', what='proc ticked')
+    c.eq(ids, ['K', 'LF'], 'the States offered: those with a bulk source (France: the SIA\'s eAIP, the US: the FAA\'s CIFP); the EAD States are never listed', what='proc items')
+    c.eq(c.js("[...document.querySelectorAll('[data-set-panel=proc] [data-item]')].map(i => i.checked)"), [False] * 2, 'none ticked by default', what='proc ticked')
+    c.eq(_line(c, '[data-set-panel=proc] [data-ead-note]'), norm(T('eadNote')), 'the line about the States read by EAD Basic, one aerodrome at a time', what='ead note')
     c.eq(c.text('[data-set-panel=proc] label.d-opt:has([data-item=LF]) span'), name('LF'), 'named in the language', what='proc name')
     c.eq([_pv(c, 'proc'), _preasons(c, 'proc'), _line(c, '[data-set-panel=proc] [data-reason]')], [['download:off', 'build:off', 'purge:off'], ['no-state'], norm(T('no-state', 'greyReason: {'))],
          'no State ticked: grey, « Cochez au moins un État »', what='proc no state')
     _panels_ok(c, 'at the opening')
     c.tap('[data-set-panel=proc] [data-item=LF]')
-    c.tap('[data-set-panel=proc] [data-item=EG]')
+    c.tap('[data-set-panel=proc] [data-item=K]')
     c.eq([_pv(c, 'proc'), _preasons(c, 'proc')], [['download', 'build', 'purge'], []], 'two States ticked: live', what='proc live')
     c.tap('[data-set-panel=proc] [data-verb=build]')
     c.until("!!document.querySelector('[data-set-panel=proc] [data-running][data-run-set=proc]')", what='the running bar is in the Procédures panel')
     c.eq(len(st['posts']), 1, 'one start', what='posts')
-    c.eq({k: st['posts'][0][k] for k in ('set', 'verb', 'args', 'author')}, {'set': 'proc', 'verb': 'build', 'args': {'states': ['EG', 'LF']}, 'author': 'ABC'},
+    c.eq({k: st['posts'][0][k] for k in ('set', 'verb', 'args', 'author')}, {'set': 'proc', 'verb': 'build', 'args': {'states': SORTED}, 'author': 'ABC'},
          'the body: set proc, verb build, the ticked States (prefixes, in the order shown)', what='body')
     c.eq(c.count('[data-build] [data-running]'), 0, 'the base panel shows nothing of it', what='base panel')
     c.eq([_verbs(c), _preasons(c, 'proc'), c.attr('[data-build] [data-reason]', 'data-reason')], [['download:off', 'build:off', 'purge:off'], ['busy'], 'busy'],
          'one operation at a time across panels: the base is grey while a proc job runs, « Une autre opération est en cours »', what='base grey')
     c.eq(c.js("[...document.querySelectorAll('[data-set-panel=proc] input')].every(i => i.disabled)"), True, 'the States are frozen while it runs', what='frozen')
-    c.until("document.querySelector('[data-set-panel=proc] [data-item-state=EG]')?.dataset.state === 'building'", timeout=8000, what='EG is building')
-    c.eq(_line(c, '[data-set-panel=proc] [data-item-state=EG]'), norm(f"{name('EG')} : {T('buildingN', 'zoneState: {').replace('{n}', '1').replace('{m}', '3')}"), 'a line per State, with n / m sources', what='EG line')
+    c.until("document.querySelector('[data-set-panel=proc] [data-item-state=K]')?.dataset.state === 'building'", timeout=8000, what='K is building')
+    c.eq(_line(c, '[data-set-panel=proc] [data-item-state=K]'), norm(f"{name('K')} : {T('buildingP', 'zoneState: {').replace('{n}', '1').replace('{m}', '3')}"), 'a line per State, with (n / m) and no noun (the launcher counts aerodromes, not sources)', what='K line')
     c.eq(_line(c, '[data-set-panel=proc] [data-running] [data-count]'), norm(T('runCount').replace('{n}', f"0 {_unit('state', lang, 2)}").replace('{m}', '2')), 'the count, in States', what='count')
     _panels_ok(c, 'a proc job running')
     c.until("!!document.querySelector('[data-set-panel=proc] [data-build-result]')", timeout=10000, what='the end of the job')
@@ -1849,30 +1931,32 @@ def l17(c):
     c.eq([c.attr('[data-set-panel=proc] [data-build-result]', 'data-result'), _line(c, '[data-set-panel=proc] [data-build-result] b')], ['partial', norm(want)],
          'the summary of the set: « Procédures : construction terminée (1 État) ; 1 en échec (France) »', what='summary')
     c.eq(_line(c, '[data-set-panel=proc] [data-advice]'), norm(T('partial', 'setAdvice: {')), 'what to do', what='advice')
-    c.eq(_line(c, '[data-set-panel=proc] [data-item-state=LF]'), norm(f"{name('LF')} : {T('failed', 'zoneState: {').replace('{r}', 'bad-input')}"),
-         'the failed State says why (the launcher\'s code as written)', what='LF line')
+    c.eq(_line(c, '[data-set-panel=proc] [data-item-state=LF]'), norm(f"{name('LF')} : {T('failed', 'zoneState: {').replace('{r}', T('no-cache', 'itemError: {'))}"),
+         'the failed State says why: « téléchargez d\'abord » (no-cache, per State)', what='LF line')
     c.eq(len(_notes_with(c, want)), 1, 'ONE notification', what='notification')
     c.eq([_verbs(c), _pv(c, 'proc')], [['download', 'build', 'purge']] * 2, 'the buttons are live again', what='live again')
     doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and d.get('ops')), what='the journal is written')
     e = doc['ops'][-1]
-    c.eq([e['set'], e['verb'], e['items'], e['result'], e['built'], e['failed']], ['proc', 'build', ['EG', 'LF'], 'partial', ['EG'], [{'zone': 'LF', 'error': 'bad-input'}]],
+    c.eq([e['set'], e['verb'], e['items'], e['result'], e['built'], e['failed']], ['proc', 'build', ORDER, 'partial', ['K'], [{'zone': 'LF', 'error': 'no-cache'}]],
          'the journal entry carries set and verb, the States under `items`', what='journal entry')
     op = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opSet, o.dataset.opVerb, o.textContent.replace(/\\s+/g, ' ').trim()])")
-    c.ok(len(op) == 1 and op[0][:2] == ['proc', 'build'] and norm(label('proc')) in norm(op[0][2]) and name('EG') in op[0][2], op, 'the journal line says the set, the verb and the States')
+    c.ok(len(op) == 1 and op[0][:2] == ['proc', 'build'] and norm(label('proc')) in norm(op[0][2]) and name('K') in op[0][2], op, 'the journal line says the set, the verb and the States')
     # ---- B: purge: dry first, ONE question with the plan, the real run says dry false; nothing committed is said in the help
-    rem = {'EG': {'files': 3, 'bytes': 1024}, 'LF': {'files': 2, 'bytes': 2048}}
+    rem0 = {'K': {'files': 3, 'bytes': 1024}, 'LF': {'files': 2, 'bytes': 2048}}
+    rem = {k: rem0[k] for k in ORDER}
+    pst = {k: {'state': 'done', **rem0[k]} for k in ORDER}
     warn = [{'code': 'kept-tracked', 'count': 1}]
-    dry = _sview('proc', 'purge', 'states', {'EG': {'state': 'done', 'files': 3, 'bytes': 1024}, 'LF': {'state': 'done', 'files': 2, 'bytes': 2048}}, state='done', done=2, jid='d1',
-                 args={'states': ['EG', 'LF'], 'dry': True}, result={'ok': True, 'dry': True, 'removed': rem, 'warnings': warn})
-    real = _sview('proc', 'purge', 'states', {'EG': {'state': 'done', 'files': 3, 'bytes': 1024}, 'LF': {'state': 'done', 'files': 2, 'bytes': 2048}}, state='done', done=2, jid='p1',
-                  args={'states': ['EG', 'LF'], 'dry': False}, result={'ok': True, 'dry': False, 'removed': rem, 'warnings': warn})
+    dry = _sview('proc', 'purge', 'states', pst, state='done', done=2, jid='d1',
+                 args={'states': SORTED, 'dry': True}, result={'ok': True, 'dry': True, 'removed': rem, 'warnings': warn})
+    real = _sview('proc', 'purge', 'states', pst, state='done', done=2, jid='p1',
+                  args={'states': SORTED, 'dry': False}, result={'ok': True, 'dry': False, 'removed': rem, 'warnings': warn})
     st['views'], st['i'], st['start'] = [dry, real], 0, (200, {'job': 'd1'})
     posts = len(st['posts'])
     c.tap('[data-set-panel=proc] [data-verb=purge]')
     q = _ask_text(c)
-    ask = ' '.join([T('purgeAskSet').replace('{n}', f'5 {FILES[lang][1]}').replace('{s}', _size(3072, lang)).replace('{z}', f"{name('EG')}, {name('LF')}"), T('purgeKept', None, 0).replace('{n}', '1')])
+    ask = ' '.join([T('purgeAskSet').replace('{n}', f'5 {FILES[lang][1]}').replace('{s}', _size(3072, lang)).replace('{z}', ', '.join(name(k) for k in ORDER)), T('purgeKept', None, 0).replace('{n}', '1')])
     c.eq([norm(q['text']), norm(q['ok']), q['no'], len(st['posts']) - posts], [norm(ask), norm(T('purge')), True, 1], 'ONE question from the plan: files, size, the States, the files kept by git; only the plan was started', what='question')
-    c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'proc', 'verb': 'purge', 'args': {'states': ['EG', 'LF'], 'dry': True}}, 'the plan is a dry run', what='dry body')
+    c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'proc', 'verb': 'purge', 'args': {'states': SORTED, 'dry': True}}, 'the plan is a dry run', what='dry body')
     c.eq([_verbs(c), _pv(c, 'proc'), _pv(c, 'aircraft')], [['download:off', 'build:off', 'purge:off']] * 2 + [['download:off', 'build:off', 'purge:off']], 'every panel is grey while the question is open', what='during the question')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", what='the window closes')
@@ -1884,7 +1968,7 @@ def l17(c):
     st['start'] = (200, {'job': 'p1'})
     c.tap('.f-modal [data-ok]')
     c.until("!!document.querySelector('[data-set-panel=proc] [data-build-result][data-op=purge][data-result=done]')", timeout=10000, what='the end of the purge')
-    c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'proc', 'verb': 'purge', 'args': {'states': ['EG', 'LF'], 'dry': False}}, 'the real run says dry false', what='real body')
+    c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'proc', 'verb': 'purge', 'args': {'states': SORTED, 'dry': False}}, 'the real run says dry false', what='real body')
     done = T('purgeDone').replace('{n}', f'5 {FILES[lang][1]}').replace('{s}', _size(3072, lang))
     c.eq([_line(c, '[data-set-panel=proc] [data-build-result] b'), len(_notes_with(c, done))], [norm(done), 1], 'the end: « Purgé : 5 fichiers, 3,0 Ko », one notification', what='purge end')
     c.eq(len([o for o in c.doc('cache/data/journal.json')['ops'] if o['verb'] == 'purge']), 1, 'ONE journal entry: the real run only', what='journal purge')
@@ -1998,21 +2082,117 @@ def l17(c):
     c.eq([_line(c, '[data-set-panel=sheets] [data-build-result] b'), c.count('.f-modal'), len(st3['posts']) - n], [norm(T('sheetsNothing')), 0, 1], 'an empty plan: the sentence, no question, no second job', what='sheets nothing')
     _panels_ok(c, 'at the end')
     # ---- F: a running job of another set found at mount is followed in its own panel
-    run = _sview('proc', 'fetch', 'states', {'LF': _zs('fetching', 1, 3), 'EG': _zs('waiting')}, step='État LF', jid='f7')
-    end = _sview('proc', 'fetch', 'states', {'LF': _zs('done', 3, 3), 'EG': _zs('done', 2, 2)}, state='done', done=2, jid='f7',
-                 result={'ok': True, 'fetched': ['LF'], 'unchanged': ['EG'], 'failed': [], 'manual': [], 'outside_sync': 0, 'warnings': []})
+    run = _sview('proc', 'fetch', 'states', {'LF': _zs('fetching', 1, 3), 'K': _zs('waiting')}, step='État LF', jid='f7', unit='states')
+    end = _sview('proc', 'fetch', 'states', {'LF': _zs('done', 3, 3), 'K': _zs('done', 2, 2)}, state='done', done=2, jid='f7', unit='states',
+                 result={'ok': True, 'cycle': '2026-10-29', 'fetched': 12, 'unchanged': 3, 'failed': []})
     st3['current'], st3['views'], st3['i'] = run, [run, run, end], 0
     c.page.reload(wait_until='load')
     _head(c)
     c.until("!!document.querySelector('[data-set-panel=proc] [data-running][data-op=fetch]')", timeout=8000, what='the running download is followed in the Procédures panel')
     c.eq([c.js("document.querySelector('[data-group=proc]').open"), _verbs(c), _pv(c, 'aircraft'), c.count('[data-set-panel=proc] [data-verb=stop]')], [True, ['download:off', 'build:off', 'purge:off'], ['download:off', 'build:off', 'purge:off'], 1],
          'its group is open, the other panels are grey, Arrêter is offered', what='found at mount')
-    c.eq(sorted(c.js("[...document.querySelectorAll('[data-set-panel=proc] [data-item-state]')].map(l => l.dataset.itemState)")), ['EG', 'LF'], 'its own lines', what='lines')
+    c.eq(sorted(c.js("[...document.querySelectorAll('[data-set-panel=proc] [data-item-state]')].map(l => l.dataset.itemState)")), ['K', 'LF'], 'its own lines', what='lines')
     c.until("!!document.querySelector('[data-set-panel=proc] [data-build-result][data-op=fetch][data-result=done]')", timeout=10000, what='the followed job ends')
-    want = sm('fetchDone').replace('{s}', label('proc')).replace('{c}', f"1 {_unit('state', lang, 1)}").replace('{u}', f"1 {_unit('state', lang, 1)}").replace('{f}', _trow('fetchFails', lang, row=1).replace('{n}', '0'))
+    want = sm('fetchDone').replace('{s}', label('proc')).replace('{c}', f"12 {_unit('aerodrome', lang, 12)}").replace('{u}', f"3 {_unit('aerodrome', lang, 3)}").replace('{f}', _trow('fetchFails', lang, row=1).replace('{n}', '0'))
     c.eq([_line(c, '[data-set-panel=proc] [data-build-result] b'), len(_notes_with(c, want))], [norm(want), 1], 'followed to its end: the summary, one notification', what='fetch summary')
     _all_open(c)
     _panels_ok(c, 'after the followed job')
+    # ---- G: the VAC points (the shapes of tools/regen/vfr.py): fetch with charts not published, build without a commit, a dry purge, the reasons
+    cyc = cur.isoformat()
+    cyc_name = T('cycle').replace('{c}', _name(cur))
+    v_run = _sview('vfr', 'fetch', 'cycles', {cyc: {'state': 'fetching', 'done': 12, 'total': 40}}, step='LFPG', done=12, total=40, unit='aerodromes', jid='v1')
+    v_end = _sview('vfr', 'fetch', 'cycles', {cyc: {'state': 'done', 'done': 40, 'total': 40}}, state='done', done=40, total=40, unit='aerodromes', jid='v1',
+                   result={'ok': True, 'cycle': cyc, 'fetched': 12, 'unchanged': 25, 'notPublished': 3, 'failed': []})
+    st3['current'], st3['views'], st3['i'], st3['start'] = None, [v_run, v_run, v_end], 0, (200, {'job': 'v1'})
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    n = len(st3['posts'])
+    c.tap('[data-set-panel=vfr] [data-verb=download]')
+    c.until("!!document.querySelector('[data-set-panel=vfr] [data-running][data-run-set=vfr]')", what='the VAC download runs in its panel')
+    c.eq({k: st3['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'vfr', 'verb': 'fetch', 'args': {'cycle': cyc}}, 'the body: the cycle in force (its effective date)', what='vfr fetch body')
+    c.until("document.querySelector('[data-set-panel=vfr] [data-item-state]')?.dataset.state === 'fetching'", timeout=8000, what='the cycle line follows the view')
+    c.eq(_line(c, '[data-set-panel=vfr] [data-item-state]'), norm(f"{cyc_name} : {T('fetchingP', 'fetchState: {').replace('{n}', '12').replace('{m}', '40')}"), 'the cycle\'s line: (12 / 40), no « sources »', what='cycle line')
+    c.eq(_line(c, '[data-set-panel=vfr] [data-running] [data-count]'), norm(T('runCount').replace('{n}', f"12 {_unit('aerodrome', lang, 12)}").replace('{m}', '40')), 'the count is the launcher\'s unit: aerodromes', what='vfr count')
+    c.until("!!document.querySelector('[data-set-panel=vfr] [data-build-result][data-op=fetch]')", timeout=10000, what='the end of the download')
+    want = _trow('fetchDone', lang, 'vfrSum: {').replace('{s}', label('vfr')).replace('{c}', '12').replace('{u}', '25').replace('{p}', _trow('vfrNotPublished', lang, row=1).replace('{n}', '3')).replace('{f}', _trow('fetchFails', lang, row=1).replace('{n}', '0'))
+    c.eq([c.attr('[data-set-panel=vfr] [data-build-result]', 'data-result'), _line(c, '[data-set-panel=vfr] [data-build-result] b'), len(_notes_with(c, want))], ['done', norm(want), 1],
+         'the end: charts downloaded, already there, « 3 cartes pas encore publiées » (not a failure), no failure; one notification', what='vfr fetch end')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and any(o.get('set') == 'vfr' for o in d.get('ops', []))), what='the download is journaled')
+    e = [o for o in doc['ops'] if o.get('set') == 'vfr'][-1]
+    c.eq([e['verb'], e['items'], e['result'], e['counts']], ['download', [cyc], 'done', {'fetched': 12, 'unchanged': 25, 'notPublished': 3}], 'the journal entry', what='vfr journal')
+    # no base of the cycle on the workstation
+    nb = _sview('vfr', 'fetch', 'cycles', {cyc: {'state': 'failed', 'error': 'no-base'}}, state='error', jid='v2', unit='aerodromes', done=0, total=0,
+                result={'ok': False, 'cycle': cyc, 'reason': 'no-base', 'message': 'x'})
+    st3['views'], st3['i'], st3['start'] = [nb], 0, (200, {'job': 'v2'})
+    c.tap('[data-set-panel=vfr] [data-verb=download]')
+    c.until("document.querySelector('[data-set-panel=vfr] [data-build-result]')?.dataset.result === 'no-base'", timeout=8000, what='no-base is said')
+    c.eq([_line(c, '[data-set-panel=vfr] [data-build-result] b'), c.count('[data-set-panel=vfr] [data-item-state]')], [norm(_trow('noBase', lang, 'vfrSum: {').replace('{s}', label('vfr'))), 0], '« Construisez d\'abord la base France de ce cycle »', what='no-base')
+    # build: done, but no commit (no trigram): said
+    b_run = _sview('vfr', 'build', 'cycles', {cyc: {'state': 'building', 'done': 1, 'total': 3}}, step='contrôle', done=1, total=3, unit='steps', jid='v3')
+    b_end = _sview('vfr', 'build', 'cycles', {cyc: {'state': 'done', 'done': 3, 'total': 3}}, state='done', done=3, total=3, unit='steps', jid='v3',
+                   result={'ok': True, 'cycle': cyc, 'summary': {'aerodromes': 300}, 'commit': None, 'warning': 'no author', 'failed': []})
+    st3['views'], st3['i'], st3['start'] = [b_run, b_end], 0, (200, {'job': 'v3'})
+    n = len(st3['posts'])
+    c.tap('[data-set-panel=vfr] [data-verb=build]')
+    c.until("!!document.querySelector('[data-set-panel=vfr] [data-build-result][data-result=done]')", timeout=10000, what='the end of the build')
+    c.eq({k: st3['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'vfr', 'verb': 'build', 'args': {'cycle': cyc}}, 'the build body', what='vfr build body')
+    done = _trow('buildDone', lang, 'setSum: {').replace('{s}', label('vfr')).replace('{built}', f"1 {_unit('cycle', lang, 1)}")
+    c.eq([_line(c, '[data-set-panel=vfr] [data-build-result] b'), _line(c, '[data-set-panel=vfr] [data-build-result] [data-line]'), c.count('[data-set-panel=vfr] [data-item-state=\"' + cyc + '\"][data-state=built]')],
+         [norm(done), norm(_trow('vfrNoCommit', lang)), 1], 'the cycle is built (« done » of the launcher), and the missing commit is said (no trigram)', what='vfr build end')
+    c.eq(len(_notes_with(c, _trow('vfrNoCommit', lang))), 1, 'one notification, carrying that sentence', what='vfr build note')
+    # build refused: pypdf missing: a sentence and the link to the first-install assistant
+    nop = _sview('vfr', 'build', 'cycles', {cyc: {'state': 'failed', 'error': 'no-pypdf'}}, state='error', jid='v4', unit='steps', done=0, total=3,
+                 result={'ok': False, 'cycle': cyc, 'reason': 'no-pypdf', 'message': 'x'})
+    st3['views'], st3['i'], st3['start'] = [nop], 0, (200, {'job': 'v4'})
+    c.tap('[data-set-panel=vfr] [data-verb=build]')
+    c.until("document.querySelector('[data-set-panel=vfr] [data-build-result]')?.dataset.result === 'no-pypdf'", timeout=8000, what='no-pypdf is said')
+    c.eq([_line(c, '[data-set-panel=vfr] [data-build-result] b'), c.attr('[data-set-panel=vfr] [data-build-result] a', 'href').endswith('/apps/settings/premier_lancement.html'),
+          _line(c, '[data-set-panel=vfr] [data-build-result] a'), c.count('[data-set-panel=vfr] [data-failed]')],
+         [norm(_trow('noPypdf', lang, 'vfrSum: {').replace('{s}', label('vfr'))), True, norm(_trow('firstInstall', lang)), 0], 'a sentence and the link to the first-install assistant', what='no-pypdf')
+    # the plan refused: its problems are listed
+    inv = _sview('vfr', 'build', 'cycles', {cyc: {'state': 'failed', 'error': 'invalid'}}, state='error', jid='v5', unit='steps', done=1, total=3,
+                 result={'ok': False, 'cycle': cyc, 'reason': 'invalid', 'failed': [{'item': 'plan', 'error': 'point <b>x</b>'}], 'summary': {}})
+    st3['views'], st3['i'], st3['start'] = [inv], 0, (200, {'job': 'v5'})
+    c.tap('[data-set-panel=vfr] [data-verb=build]')
+    c.until("document.querySelector('[data-set-panel=vfr] [data-build-result]')?.dataset.result === 'invalid'", timeout=8000, what='invalid is said')
+    c.eq([_line(c, '[data-set-panel=vfr] [data-build-result] b'), _line(c, '[data-set-panel=vfr] [data-failed] li'), c.count('[data-set-panel=vfr] [data-failed] b b')],
+         [norm(_trow('invalid', lang, 'vfrSum: {').replace('{s}', label('vfr')).replace('{failed}', '1')), 'plan : point <b>x</b>', 0], 'the problem of the plan is listed, as text', what='invalid')
+    # purge: the plan (dry sent explicitly, no cycle: all of them), one question, the real run; unsafe paths are said
+    warn = [{'code': 'unsafe-path', 'count': 2}]
+    pd = _sview('vfr', 'purge', None, None, state='done', jid='v6', args={'dry': True}, result={'ok': True, 'dry': True, 'removed': {'files': 6, 'bytes': 3072}, 'warnings': warn})
+    pr = _sview('vfr', 'purge', None, None, state='done', jid='v7', args={'dry': False}, result={'ok': True, 'dry': False, 'removed': {'files': 6, 'bytes': 3072}, 'warnings': warn})
+    st3['views'], st3['i'], st3['start'] = [pd, pr], 0, (200, {'job': 'v6'})
+    n = len(st3['posts'])
+    c.tap('[data-set-panel=vfr] [data-verb=purge]')
+    q = _ask_text(c)
+    c.eq([norm(q['text']), st3['posts'][n]['args']], [norm(T('purgeAskSet').replace('{n}', f'6 {FILES[lang][1]}').replace('{s}', _size(3072, lang)).replace('{z}', label('vfr'))), {'dry': True}],
+         'the plan: dry true, no cycle (all of them); one question with the files and the size', what='vfr purge ask')
+    st3['start'] = (200, {'job': 'v7'})
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-set-panel=vfr] [data-build-result][data-op=purge]')", timeout=10000, what='the purge ends')
+    c.eq(st3['posts'][-1]['args'], {'dry': False}, 'the real run says dry false', what='vfr real purge')
+    c.eq([_line(c, '[data-set-panel=vfr] [data-build-result] b'), c.js("[...document.querySelectorAll('[data-set-panel=vfr] [data-build-result] [data-line]')].map(p => p.textContent.replace(/\\s+/g, ' ').trim())")],
+         [norm(T('purgeDone').replace('{n}', f'6 {FILES[lang][1]}').replace('{s}', _size(3072, lang))), [norm(_trow('purgeUnsafe', lang, row=1).replace('{n}', '2'))]],
+         'the end, and « 2 chemins refusés, laissés en place »', what='vfr purge end')
+    # a State read by EAD one aerodrome at a time: the launcher's error is a sentence, never a bulk read
+    ead = _sview('proc', 'fetch', 'states', {'LF': {'state': 'failed', 'error': 'ead-per-aerodrome'}}, state='error', jid='e1', unit='states', done=0, total=1,
+                 result={'ok': False, 'fetched': [], 'unchanged': [], 'failed': [{'state': 'LF', 'error': 'ead-per-aerodrome'}], 'reason': 'failed'})
+    st3['views'], st3['i'], st3['start'] = [ead], 0, (200, {'job': 'e1'})
+    c.tap('[data-set-panel=proc] [data-item=LF]')
+    mp = _sview('proc', 'build', 'states', {'LF': {'state': 'failed', 'error': 'merge-pending'}}, state='error', jid='m1', unit='states', done=0, total=1,
+                result={'ok': False, 'cycle': '2026-10-29', 'built': {}, 'commits': {}, 'failed': [], 'reason': 'merge-pending'})
+    st3['views'], st3['i'], st3['start'] = [mp], 0, (200, {'job': 'm1'})
+    c.tap('[data-set-panel=proc] [data-verb=build]')
+    c.until("document.querySelector('[data-set-panel=proc] [data-build-result]')?.dataset.result === 'merge-pending'", timeout=8000, what='merge-pending is said')
+    c.eq([_line(c, '[data-set-panel=proc] [data-build-result] b'), c.count('[data-set-panel=proc] [data-item-state]'), len(_notes_with(c, T('mergePending')))], [norm(T('mergePending')), 0, 1],
+         'a merge waits in data/: one sentence (synchronise first), no line, one notification; nothing was written', what='merge-pending')
+    st3['views'], st3['i'], st3['start'] = [ead], 0, (200, {'job': 'e1'})
+    c.tap('[data-set-panel=proc] [data-verb=download]')
+    c.until("!!document.querySelector('[data-set-panel=proc] [data-build-result][data-op=fetch]')", timeout=8000, what='the proc download ends')
+    c.eq(_line(c, '[data-set-panel=proc] [data-item-state=LF]'), norm(f"{name('LF')} : {T('failed', 'fetchState: {').replace('{r}', T('eadNote'))}"), 'ead-per-aerodrome: the sentence « un terrain à la fois »', what='ead error')
+    _all_open(c)
+    _panels_ok(c, 'after the VAC points')
     c.check_errors()
 
 

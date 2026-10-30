@@ -109,6 +109,10 @@ export const TX = {
       ['étape', 'step', 'Schritt', 'paso'],
       ['étapes', 'steps', 'Schritte', 'pasos']
     ],
+    chart: [
+      ['carte', 'chart', 'Karte', 'carta'],
+      ['cartes', 'charts', 'Karten', 'cartas']
+    ],
     sheet: [
       ['fiche', 'sheet', 'Datenblatt', 'ficha'],
       ['fiches', 'sheets', 'Datenblätter', 'fichas']
@@ -216,6 +220,7 @@ export const TX = {
     buildingN: ['construction ({n} / {m} sources)', 'building ({n} / {m} sources)', 'wird erstellt ({n} / {m} Quellen)',
       'construcción ({n} / {m} fuentes)'
     ],
+    buildingP: ['construction ({n} / {m})', 'building ({n} / {m})', 'wird erstellt ({n} / {m})', 'construcción ({n} / {m})'],
     built: ['construite', 'built', 'erstellt', 'construida'],
     failed: ['échec : {r}', 'failed: {r}', 'fehlgeschlagen: {r}', 'fallo: {r}'],
     cancelled: ['annulée', 'cancelled', 'abgebrochen', 'cancelada']
@@ -319,6 +324,7 @@ export const TX = {
     fetchingN: ['téléchargement ({n} / {m} sources)', 'downloading ({n} / {m} sources)', 'wird heruntergeladen ({n} / {m} Quellen)',
       'descarga ({n} / {m} fuentes)'
     ],
+    fetchingP: ['téléchargement ({n} / {m})', 'downloading ({n} / {m})', 'wird heruntergeladen ({n} / {m})', 'descarga ({n} / {m})'],
     done: ['terminée', 'done', 'abgeschlossen', 'terminada'],
     failed: ['échec : {r}', 'failed: {r}', 'fehlgeschlagen: {r}', 'fallo: {r}'],
     cancelled: ['annulée', 'cancelled', 'abgebrochen', 'cancelada']
@@ -689,6 +695,82 @@ export const TX = {
     'Publishing the sheets interrupted (the launcher stopped)',
     'Veröffentlichen der Datenblätter unterbrochen (der Starter wurde beendet)',
     'Publicación de las fichas interrumpida (el lanzador se detuvo)'
+  ],
+  // les États lus par EAD Basic ne se lisent jamais en bloc (EAD_BASIC.md § 1) : la phrase sous le panneau des procédures, et celle d'un résultat qui porte encore
+  // l'erreur ead-per-aerodrome
+  eadNote: ['États lus par EAD Basic : un terrain à la fois, par « Relire » dans Carburant ou sur la Carte',
+    'States read through EAD Basic: one aerodrome at a time, with “Read again” in Fuel or on the Map',
+    'Über EAD Basic gelesene Staaten: ein Flugplatz nach dem anderen, mit „Erneut lesen“ in Treibstoff oder auf der Karte',
+    'Estados leídos por EAD Basic: un aeródromo a la vez, con «Volver a leer» en Combustible o en el Mapa'
+  ],
+  // les codes d’erreur d’un élément que le lanceur donne aux jeux autres que la base (les autres s’écrivent tels quels)
+  itemError: {
+    'ead-per-aerodrome': ['États lus par EAD Basic : un terrain à la fois, par « Relire » dans Carburant ou sur la Carte',
+      'States read through EAD Basic: one aerodrome at a time, with “Read again” in Fuel or on the Map',
+      'Über EAD Basic gelesene Staaten: ein Flugplatz nach dem anderen, mit „Erneut lesen“ in Treibstoff oder auf der Karte',
+      'Estados leídos por EAD Basic: un aeródromo a la vez, con «Volver a leer» en Combustible o en el Mapa'
+    ],
+    'not-a-zip': ['l’archive du CIFP n’est pas un zip', 'the CIFP archive is not a zip', 'das CIFP-Archiv ist keine Zip-Datei',
+      'el archivo del CIFP no es un zip'
+    ],
+    'no-cache': ['téléchargez d’abord', 'download first', 'zuerst herunterladen', 'descargue primero'],
+    'no-source': ['aucune source en bloc pour cet État', 'no bulk source for this State', 'keine Sammelquelle für diesen Staat',
+      'ninguna fuente en bloque para este Estado'
+    ]
+  },
+  // les points VFR des cartes VAC : la fin d’un téléchargement (cartes), les motifs de la construction
+  vfrSum: {
+    fetchDone: ['{s} : cartes téléchargées : {c}, déjà là : {u} ; {p} ; {f}', '{s}: charts downloaded: {c}, already there: {u}; {p}; {f}',
+      '{s}: Karten heruntergeladen: {c}, bereits vorhanden: {u}; {p}; {f}', '{s}: cartas descargadas: {c}, ya presentes: {u}; {p}; {f}'
+    ],
+    fetchStopped: ['{s} : téléchargement arrêté — cartes téléchargées : {c}, déjà là : {u} ; {p} ; {f}',
+      '{s}: download stopped — charts downloaded: {c}, already there: {u}; {p}; {f}',
+      '{s}: Herunterladen angehalten — Karten heruntergeladen: {c}, bereits vorhanden: {u}; {p}; {f}',
+      '{s}: descarga detenida — cartas descargadas: {c}, ya presentes: {u}; {p}; {f}'
+    ],
+    noBase: ['{s} : construisez d’abord la base France de ce cycle', '{s}: build the France base of this cycle first',
+      '{s}: erstellen Sie zuerst die Frankreich-Basis dieses Zyklus', '{s}: construya primero la base de Francia de este ciclo'
+    ],
+    notPublished: ['{s} : le SIA n’a pas encore publié les cartes de ce cycle',
+      '{s}: the SIA has not published the charts of this cycle yet',
+      '{s}: der SIA hat die Karten dieses Zyklus noch nicht veröffentlicht', '{s}: el SIA aún no ha publicado las cartas de este ciclo'
+    ],
+    noPypdf: ['{s} : pypdf manque — l’assistant de première installation l’installe',
+      '{s}: pypdf is missing — the first-install assistant installs it',
+      '{s}: pypdf fehlt — der Assistent der Ersteinrichtung installiert es',
+      '{s}: falta pypdf — el asistente de primera instalación lo instala'
+    ],
+    noCache: ['{s} : téléchargez d’abord les cartes de ce cycle', '{s}: download the charts of this cycle first',
+      '{s}: laden Sie zuerst die Karten dieses Zyklus herunter', '{s}: descargue primero las cartas de este ciclo'
+    ],
+    invalid: ['{s} : le contrôle a refusé la compilation, rien n’a été écrit ({failed} problème(s))',
+      '{s}: the check refused the compilation, nothing was written ({failed} problem(s))',
+      '{s}: die Prüfung hat die Kompilierung abgelehnt, nichts wurde geschrieben ({failed} Problem(e))',
+      '{s}: la comprobación rechazó la compilación, no se escribió nada ({failed} problema(s))'
+    ]
+  },
+  vfrNotPublished: [
+    ['{n} carte pas encore publiée', '{n} chart not published yet', '{n} Karte noch nicht veröffentlicht',
+      '{n} carta aún no publicada'
+    ],
+    ['{n} cartes pas encore publiées', '{n} charts not published yet', '{n} Karten noch nicht veröffentlicht',
+      '{n} cartas aún no publicadas'
+    ]
+  ],
+  vfrNoCommit: ['Construit, mais rien n’a été commité : réglez votre trigramme (Réglages › Identité), puis relancez.',
+    'Built, but nothing was committed: set your trigram (Settings › Identity), then start again.',
+    'Erstellt, aber nichts wurde committet: Stellen Sie Ihr Kürzel ein (Einstellungen › Identität) und starten Sie neu.',
+    'Construido, pero no se hizo commit de nada: configure su trigrama (Ajustes › Identidad) y vuelva a empezar.'
+  ],
+  // rien n'est écrit dans data/ tant qu'une fusion y attend (base/build, vfr/build, proc/build, aircraft/publish réel)
+  mergePending: ['Une fusion attend dans data/ : synchronisez d’abord (Réglages › Synchronisation)',
+    'A merge is waiting in data/: synchronise first (Settings › Synchronisation)',
+    'In data/ wartet eine Zusammenführung: synchronisieren Sie zuerst (Einstellungen › Synchronisierung)',
+    'Una fusión espera en data/: sincronice primero (Ajustes › Sincronización)'
+  ],
+  firstInstall: ['Ouvrir l’assistant de première installation', 'Open the first-install assistant',
+    'Assistenten der Ersteinrichtung öffnen',
+    'Abrir el asistente de primera instalación'
   ],
   // le journal des opérations
   journal: ['Journal', 'Journal', 'Protokoll', 'Diario'],

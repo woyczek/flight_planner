@@ -41,6 +41,8 @@ export const meta = {
 
 const COVERAGE = 'cache/data/coverage.json'; // { zones: [id], updated_at } : la couverture de ce poste (SPEC § 3.2)
 const JOURNAL = 'cache/data/journal.json'; // { ops: [opération], updated_at } : les 50 dernières opérations de ce poste (SPEC § 7)
+/** L'assistant de première installation (page V2 servie par le lanceur : SPEC § 6.5), adresse fixe du dépôt, jamais prise d'une réponse. */
+const FIRST_INSTALL = new URL('../../apps/settings/premier_lancement.html', import.meta.url).pathname;
 const ROUTE = 'regen/job'; // le travail du lanceur : construction de la base (verbe D5 d'aerodb)
 const VERBS_ROUTE = 'regen/verbs'; // { verbs: ['base/build', …] } : les opérations que ce lanceur connaît (lue une fois au montage)
 const STATUS_ROUTE = 'sync-status?fresh=1'; // l'état de data/ (fichiers modifiés, commits à envoyer, fusion) ; relevé refait
@@ -437,9 +439,11 @@ function fetchWhy(code, status) {
   if (code === 'http' && status !== null) return tt(TX.fetchError.httpN, {
     s: status
   });
-  return code && !TX.fetchError[code] ? code : tt(TX.fetchError[code] || TX.fetchError
-    .unknown); // un code court d'un autre jeu est écrit tel quel
+  return code && !TX.fetchError[code] ? itemWhy(code) : tt(TX.fetchError[code] || TX.fetchError
+    .unknown); // un code court d'un autre jeu : sa phrase, sinon tel quel
 }
+/** Le motif d'un code d'erreur d'un élément propre aux jeux autres que la base (TX.itemError : « un terrain à la fois »…), sinon le code tel quel. */
+const itemWhy = code => TX.itemError[code] ? tt(TX.itemError[code]) : code ?? '';
 /** La ligne d'une source dans un téléchargement : son nom et son état en peu de mots (téléchargée : n fichiers, inchangée, échec :
  *  code et statut HTTP, ignorée : licence non déclarée, manuelle). */
 function sourceLineHtml(s) {
@@ -461,11 +465,12 @@ function sourceLineHtml(s) {
 function zoneWord(r, verb) {
   const T = verb === 'fetch' ? TX.fetchState : verb === 'purge' ? TX.purgeState : TX.zoneState;
   if (r.key === 'failed') return tt(T.failed, {
-    r: verb === 'fetch' ? fetchWhy(r.code, null) : verb === 'purge' || !TX.zoneError[r.code] ? r.code === 'unknown' ? tt(TX.zoneError
-      .unknown) : r.code : tt(TX
-      .zoneError[r.code]) // un code que le module ne connaît pas (un jeu autre que la base) est écrit tel quel
+    r: verb === 'fetch' ? fetchWhy(r.code, null) : verb !== 'purge' && TX.zoneError[r.code] ? tt(TX.zoneError[r.code]) : r.code ===
+      'unknown' ? tt(TX
+        .zoneError.unknown) : itemWhy(r
+        .code) // un code que le module ne connaît pas (un jeu autre que la base) : sa phrase, sinon tel quel
   });
-  if (r.key.endsWith('N')) return tt(T[r.key], {
+  if (/[NP]$/.test(r.key)) return tt(T[r.key], {
     n: r.n,
     m: r.m
   });
@@ -479,7 +484,7 @@ function zoneWord(r, verb) {
  *  type OACI tel quel. */
 function itemName(set, id) {
   if (set === 'base') return M.zoneName(S.d?.zones, id, li());
-  if (set === 'proc') return S.d?.byState?.[id]?.names?.[li()] || id;
+  if (set === 'proc') return M.bulkName(S.d?.byState, id, li());
   if (set === 'vfr') return S.airac && /^\d{4}-\d{2}-\d{2}$/.test(id) ? tt(TX.cycle, {
     c: M.cycleName(S.airac, id)
   }) : id;
@@ -508,17 +513,33 @@ function zoneLineHtml(r, verb = 'build', set = 'base') {
   }
   return `<li ${attr}="${esc(r.zone)}" data-state="${r.state}"><i class="f-dot"${kind(k)} aria-hidden="true"></i><span>${head}</span></li>`;
 }
+/** « 12 terrains » : le nombre fait, avec le nom de ce que le travail compte (la vue dit son unité : aerodromes, steps…) ; la base compte des zones ; un
+ *  jeu dont l'unité est inconnue donne le nombre seul. */
+function runUnit(set, view, n) {
+  if (set === 'base') return count('zone', n);
+  const u = {
+    steps: 'step',
+    aerodromes: 'aerodrome',
+    files: 'file',
+    types: 'type',
+    states: 'state',
+    zones: 'zone',
+    cycles: 'cycle',
+    sheets: 'sheet',
+    charts: 'chart'
+  } [view?.unit];
+  return u ? count(u, n) : String(n);
+}
 /** La marche : barre, « n zones sur m », étape, temps écoulé, « Arrêter », une ligne par zone (par source pour un téléchargement). */
 function runningHtml() {
   const run = S.run,
     set = run.set,
     p = M.progress(S.view, S.ids),
     stopping = run.phase === 'stopping',
-    unit = M.SETS[set]?.unit || 'sheet', // les fiches publiées : pas d'éléments, la barre seule
     shown = p.total > 0 || set === 'base' && !M.SETS[set]
     .free; // un jeu dont on ne connaît pas encore les éléments ne compte pas « 0 sur 0 »
   return `<div class="d-run" data-running data-op="${run.verb}" data-run-set="${esc(set)}"${run.dry ? ' data-dry' : ''} data-phase="${run.phase}">
-    <div class="d-runhead">${shown ? `<b data-count>${esc(tt(TX.runCount, { n: count(unit, p.done), m: p.total }))}</b>` : ''}
+    <div class="d-runhead">${shown ? `<b data-count>${esc(tt(TX.runCount, { n: runUnit(set, S.view, p.done), m: p.total }))}</b>` : ''}
       <span data-step>${esc(stopping ? tt(TX.stopping) : S.view?.step || '')}</span>
       <span class="f-muted" data-elapsed>${esc(tt(TX.elapsed, { t: M.clock((Date.now() - run.t0) / 1e3) }))}</span></div>
     <div class="d-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}"${S.view && p.pct !== null ? '' : ' data-indeterminate'}><i style="width:${p.pct ?? 0}%"></i></div>
@@ -567,6 +588,22 @@ function setSummary(out, set) {
     'no-script': {
       text: tt(T.noScript, v),
       level: 'err'
+    },
+    'merge-pending': {
+      text: tt(TX.mergePending),
+      level: 'err'
+    },
+    'no-pypdf': {
+      text: tt(TX.vfrSum.noPypdf, v),
+      level: 'err'
+    },
+    'no-cache': {
+      text: tt(TX.vfrSum.noCache, v),
+      level: 'err'
+    },
+    invalid: {
+      text: tt(TX.vfrSum.invalid, v),
+      level: 'err'
     }
   } [out.kind] || {
     text: tt(T.buildFailed, v),
@@ -574,9 +611,18 @@ function setSummary(out, set) {
     level: 'err'
   };
 }
+/** Le résumé de fin d'une construction d'un jeu autre que la base, avec ses notes : sans trigramme le lanceur ne commite pas, on le dit. */
+function setSummaryNotes(out, set) {
+  const sm = setSummary(out, set);
+  return out.noCommit ? {
+    ...sm,
+    level: sm.level === 'ok' ? 'warn' : sm.level,
+    notes: [tt(TX.vfrNoCommit)]
+  } : sm;
+}
 /** Le résumé de fin (aussi le texte de la notification) : { text, advice, level } d'après la fin calculée par M.outcome. */
 function summary(out, set = 'base') {
-  if (set !== 'base') return setSummary(out, set);
+  if (set !== 'base') return setSummaryNotes(out, set);
   const z = out.failed.map(f => f.zone).join(', '),
     v = {
       built: count('zone', out.built.length),
@@ -616,6 +662,10 @@ function summary(out, set = 'base') {
     'xplane-in-page': {
       text: tt(TX.sumXplane),
       level: 'err'
+    },
+    'merge-pending': {
+      text: tt(TX.mergePending),
+      level: 'err'
     }
   } [out.kind];
 }
@@ -625,13 +675,29 @@ const plural = (key, n) => tt(TX[key][n === 1 ? 0 : 1], {
 });
 /** Le résumé d'un téléchargement : { text, outside (la phrase des fichiers hors synchronisation, vide sans), level }. */
 function fetchSummary(out, set = 'base') {
+  if (set === 'vfr') {
+    const v = {
+      s: tt(TX.setLabel.vfr),
+      c: out.counts.fetched,
+      u: out.counts.unchanged,
+      p: plural('vfrNotPublished', out.counts.notPublished),
+      f: plural('fetchFails', out.failed.length)
+    };
+    return {
+      text: tt(out.kind === 'no-base' ? TX.vfrSum.noBase : out.kind === 'not-published' ? TX.vfrSum.notPublished : out.kind ===
+        'interrupted' ? TX.setSum
+        .fetchInterrupted : out.kind === 'cancelled' ? TX.vfrSum.fetchStopped : TX.vfrSum.fetchDone, v),
+      outside: '',
+      level: out.level
+    };
+  }
   if (set !== 'base') {
     const T = TX.setSum,
       unit = M.SETS[set].unit,
       v = {
         s: tt(TX.setLabel[set]),
-        c: count(unit, out.fetched.length),
-        u: count(unit, out.unchanged.length),
+        c: out.counts ? count('aerodrome', out.counts.fetched) : count(unit, out.fetched.length), // proc/fetch compte des terrains
+        u: out.counts ? count('aerodrome', out.counts.unchanged) : count(unit, out.unchanged.length),
         f: plural('fetchFails', out.failed.length)
       };
     return {
@@ -709,12 +775,24 @@ function manualHtml(list, set = 'base') {
 /** La fin d'un téléchargement : le résumé, les fichiers hors synchronisation, les sources manuelles, les lignes des zones et de leurs sources. */
 function fetchResultHtml(out, set = 'base') {
   const sm = fetchSummary(out, set),
-    rows = ['nothing', 'no-codes', 'no-script'].includes(out.kind) ? [] : M.zoneRows(opView(set), S.ids, 'fetch', set !==
+    rows = ['nothing', 'no-codes', 'no-script', 'no-base', 'not-published'].includes(out.kind) ? [] : M.zoneRows(opView(set), S.ids,
+      'fetch', set !==
       'base'); // rien n'a tourné : pas de lignes « en attente »
   return `<div data-build-result data-op="fetch" data-result="${out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>
     ${sm.outside ? `<p class="f-warn" data-outside>${esc(sm.outside)}</p>` : ''}
     ${manualHtml(out.manual, set)}
+    ${failedHtml(out, set)}
     ${rows.length ? `<ul class="d-zl">${rows.map(r => zoneLineHtml(r, 'fetch', set)).join('')}</ul>` : ''}</div>`;
+}
+/** Les échecs d'un téléchargement ou d'une construction des points VFR : une ligne par carte ou par problème du plan (l'OACI ou « plan », puis le motif),
+ *  sept au plus, le reste sous « n autres ». */
+function failedHtml(out, set) {
+  if (set !== 'vfr' || !out.failed.length) return '';
+  const {
+    visible,
+    more
+  } = M.split(out.failed);
+  return `<ul class="d-sl" data-failed>${visible.map(f => `<li data-failed-item="${esc(f.zone)}"><b>${esc(f.zone)}</b> : ${esc(itemWhy(f.error ?? ''))}</li>`).join('')}${more.length ? `<li>${esc(tt(TX.moreStates, { n: more.length }))}</li>` : ''}</ul>`;
 }
 /** La fin d'une purge (ou « Rien à purger » quand le plan est vide) : le résumé, les phrases des avertissements, les lignes des zones. */
 function purgeResultHtml(r) {
@@ -741,6 +819,7 @@ function sheetsSummary(out, none = false) {
       done: TX.sheetsDone,
       failed: TX.sheetsFailed,
       'no-author': TX.sheetsNoAuthor,
+      'merge-pending': TX.mergePending,
       cancelled: TX.sheetsStopped,
       interrupted: TX.sheetsInterrupted
     } [out.kind], v),
@@ -764,10 +843,15 @@ function resultHtml(panel = 'base') {
   if (r.verb === 'purge') return purgeResultHtml(r);
   const sm = summary(r.out, set),
     v = opView(set),
-    rows = v?.zones && !['no-browser', 'xplane-in-page', 'no-codes', 'no-script'].includes(r.out.kind) ? M.zoneRows(v, S.ids, 'build',
-      set !== 'base') : []; // rien n'a tourné : pas de lignes « en attente »
+    rows = v?.zones && !['no-browser', 'xplane-in-page', 'no-codes', 'no-script', 'no-pypdf', 'no-cache', 'merge-pending'].includes(r.out
+      .kind) ? M.zoneRows(
+      v, S.ids,
+      'build', set !== 'base') : []; // rien n'a tourné : pas de lignes « en attente »
   return `<div data-build-result data-result="${r.out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>
+    ${(sm.notes || []).map(n => `<p class="f-warn" data-line>${esc(n)}</p>`).join('')}
+    ${r.out.kind === 'no-pypdf' ? `<p data-line><a href="${esc(FIRST_INSTALL)}">${esc(tt(TX.firstInstall))}</a></p>` : ''}
     ${sm.advice ? `<p class="f-muted" data-advice>${esc(tt(sm.advice))}</p>` : ''}
+    ${failedHtml(r.out, set)}
     ${rows.length ? `<ul class="d-zl">${rows.map(z => zoneLineHtml(z, 'build', set)).join('')}</ul>` : ''}</div>`;
 }
 /** Ce que dit un panneau sous ses boutons : une autre opération du lanceur, puis la marche (si c'est son jeu qui tourne) ou la dernière fin. */
@@ -880,6 +964,7 @@ function setInner(panel) {
     ${verbsHtml(gate)}
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
     ${panel === 'aircraft' ? `<p class="f-muted" data-hint>${esc(tt(TX.aircraftHint))}</p>` : ''}
+    ${panel === 'proc' ? `<p class="f-muted" data-ead-note>${esc(tt(TX.eadNote))}</p>` : ''}
     ${opAreaHtml(panel)}`;
 }
 /** Le panneau d'un jeu autre que la base (ou celui des fiches publiées). */
@@ -1224,7 +1309,7 @@ async function endBuild(me, final, live, seconds, set = 'base') {
   renderBuild();
   if (live) {
     const sm = summary(out, set);
-    S.ctx.notify(sm.text, sm.level);
+    S.ctx.notify([sm.text, ...(sm.notes || [])].join(' · '), sm.level);
   }
   journalWrite(M.setEntry(set, 'build', {
     at: Date.now(),
