@@ -219,7 +219,9 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   abgelehnt, wenn Dateien der Suite auf diesem Rechner geändert wurden, und während ein Auftrag des Moduls Daten oder eine
   Synchronisierung läuft (erneut versuchen, wenn er beendet ist). Die Daten bleiben unberührt. Genommen wird die Version, die
   das Repository der Suite angibt: Seine Tags sind nicht signiert, das Vertrauen ist dasselbe wie bei einer Aktualisierung von
-  Hand mit git. Danach das Fenster des Starters schließen und lancer.cmd erneut starten.
+  Hand mit git. Es ist die Version, die „Prüfen“ gezeigt hat: Hat sich der Kanal inzwischen geändert, wird nichts
+  geschrieben und der Bereich bittet, erneut zu prüfen.
+  Danach das Fenster des Starters schließen und lancer.cmd erneut starten.
 - **Ordner dieses Rechners** (Verwaltung, mit dem Starter): wo die Suite, die Daten, die Downloads, die Datenbanken und
   Blätter von Little Navmap auf diesem Rechner liegen, der Pfad nur lesbar und woher er kommt; „Öffnen“ zeigt den Ordner im
   Dateiexplorer. Ein Pfad wird dort geändert, wo es angegeben ist, nie hier; X-Plane ist dem Starter unbekannt.
@@ -243,4 +245,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 3346d25d3c8d -->
+<!-- fr: 811e3ccf2b42 -->

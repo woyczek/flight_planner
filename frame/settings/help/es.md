@@ -211,7 +211,9 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   rechazado si se modificaron archivos de la suite en este equipo, y mientras haya un trabajo del módulo Datos o una
   sincronización en curso (inténtelo de nuevo cuando termine). Los datos no se tocan. La versión que se toma es la que anuncia
   el repositorio de la suite: sus etiquetas no están firmadas, la confianza es la misma que la de una actualización hecha a
-  mano con git. Después, cierre la ventana del lanzador y vuelva a ejecutar lancer.cmd.
+  mano con git. Es la que «Comprobar» mostró: si el canal cambió entretanto, no se escribe nada y el panel pide comprobar
+  de nuevo.
+  Después, cierre la ventana del lanzador y vuelva a ejecutar lancer.cmd.
 - **Carpetas de este equipo** (Administración, con el lanzador): dónde están la suite, los datos, las descargas, las bases
   y fichas de Little Navmap en este equipo, la ruta en solo lectura y de dónde viene; «Abrir» muestra la carpeta en el
   explorador de archivos. Una ruta se cambia donde se indica, nunca aquí; X-Plane es desconocido para el lanzador.
@@ -236,4 +238,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 3346d25d3c8d -->
+<!-- fr: 811e3ccf2b42 -->

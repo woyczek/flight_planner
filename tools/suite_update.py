@@ -24,6 +24,7 @@ DEV_BRANCH = 'v3'  # la branche de développement suivie par le canal « suivi �
 TAG = re.compile(r'^v(\d+)\.(\d+)\.(\d+)(?:-(alpha|beta|rc)\.(\d+))?$')
 PRE_ORDER = {'alpha': 0, 'beta': 1, 'rc': 2}
 TIMEOUT = 120
+SHA = re.compile(r'^[0-9a-f]{40}$')  # la cible montrée par « Vérifier », renvoyée par « Mettre à jour »
 
 
 def _git(root, *args):
@@ -71,8 +72,8 @@ def current(root):
 
 
 def plan(root, channel, fetch=True):
-    """Ce que ferait la mise à jour sur ce canal, sans rien changer : { ok, channel, current, target, commits, reason?,
-    message } ; reason : 'no-git', 'unknown-channel', 'fetch-failed', 'no-target', 'dirty', 'other-checkout', 'downgrade',
+    """Ce que ferait la mise à jour sur ce canal, sans rien changer : { ok, channel, current, target, sha, commits, reason?,
+    message } (sha : le commit de la cible) ; reason : 'no-git', 'unknown-channel', 'fetch-failed', 'no-target', 'dirty', 'other-checkout', 'downgrade',
     'up-to-date'."""
     res = {'ok': False, 'channel': channel, 'current': {}, 'target': '', 'commits': 0}
     if channel not in CHANNELS:
@@ -88,7 +89,7 @@ def plan(root, channel, fetch=True):
     name, sha = target_of(root, channel)
     if not sha:
         return {**res, 'reason': 'no-target', 'message': 'aucune version sur ce canal'}
-    res['target'] = name
+    res['target'], res['sha'] = name, sha
     if cur['dirty']:
         return {**res, 'reason': 'dirty', 'message': 'des fichiers de la suite ont été modifiés sur ce poste : rien n’est changé'}
     if (channel == 'suivi') != (cur['branch'] == DEV_BRANCH) or (channel != 'suivi' and cur['branch']):
@@ -104,11 +105,23 @@ def plan(root, channel, fetch=True):
     return res
 
 
-def apply(root, channel, fetch=True):
+def changed(p, want):
+    """Le plan p refusé (reason 'changed', avec le sha trouvé) si sa cible n'est plus want, le sha que « Vérifier » a
+    montré ; None sinon, et sans want (relecture Sécurisation de 99b4c2a25, ligne 105)."""
+    if want and p.get('sha') != want:
+        return {**p, 'ok': False, 'done': False, 'reason': 'changed',
+                'message': f'la version du canal a changé depuis la vérification ({p.get("sha", "")[:12] or "aucune"}) : vérifiez à nouveau'}
+    return None
+
+
+def apply(root, channel, fetch=True, want=''):
     """La mise à jour du canal, après un plan refait (avec fetch, ou sans quand l'appelant vient de le faire) : extraction
-    détachée de l'étiquette, ou avance rapide de la branche ; { ok, …plan, done, message }. Le lanceur en cours n'est pas
-    relancé : à faire à la main."""
+    détachée de l'étiquette, ou avance rapide de la branche ; { ok, …plan, done, message }. want : le sha que la question a
+    montré ; une autre cible est refusée ('changed'), rien n'est écrit. Le lanceur en cours n'est pas relancé : à faire à la
+    main."""
     p = plan(root, channel, fetch=fetch)
+    if no := changed(p, want):
+        return no
     if not p.get('ok') or p.get('reason') == 'up-to-date':
         return {**p, 'done': False}
     if channel == 'suivi':

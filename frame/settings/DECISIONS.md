@@ -524,3 +524,9 @@ R-S8 module.js then model.js split by responsibility; R-S9 settings.js `render` 
   of up to 120 s the Data module's polling and « Arrêter » hung. Now the plan and its fetch run outside any lock, a flag
   (`Jobs.hold('updating')`) refuses new starts while the lock is held only to set it, and `SYNC_LOCK` covers the writing
   alone.
+
+- **30 Oct 2026 — The update writes the version the check showed** (Sécurisation on 99b4c2a25, line 105; the same form as
+  base/pickup's `zips`). The question names a version; without the sha, the writing went to whatever origin served at the
+  time of the POST. The panel keeps the sha of the last « Vérifier » and sends it back; the launcher compares it twice
+  (after its own fetch, and on the plan made again under `SYNC_LOCK`) and refuses `changed`. A channel changed in the
+  panel forgets it.

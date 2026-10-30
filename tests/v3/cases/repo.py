@@ -1823,7 +1823,12 @@ def i25(c):
         (suite / 'f.txt').write_text('changed here', encoding='utf-8')
         c.eq(U.apply(root, 'stable')['reason'], 'dirty', 'a local change: nothing is changed', what='dirty')
         g(suite, 'checkout', '-q', '--', 'f.txt')
-        r = U.apply(root, 'stable')
+        # the version written is the one the check showed: another target is refused, nothing written
+        head = U.current(root)['head']
+        r = U.apply(root, 'stable', fetch=False, want='0' * 40)
+        c.ok(r['reason'] == 'changed' and not r['done'] and r['sha'] == p['sha'] and U.current(root)['head'] == head, str(r)[:200],
+             'a target that is not the one shown: refused (« changed », with the sha found), nothing written')
+        r = U.apply(root, 'stable', want=p['sha'])
         c.ok(r['done'] and r['current']['version'] == 'v1.1.0' and not r['current']['branch'], str(r)[:200], 'stable applied: the tag checked out, detached')
         c.eq(U.plan(root, 'stable', fetch=False)['reason'], 'up-to-date', 'then up to date', what='after')
         # a step back is never taken: a stable tag on an older commit
@@ -1843,6 +1848,8 @@ def i25(c):
     L = importlib.import_module('launch')
     c.eq((L.ROUTES[('GET', '/__setup/update')][1:], L.ROUTES[('POST', '/__setup/update')][1:]), (('poste', False), ('poste', False)),
          'the update routes: this workstation only', what='routes')
+    c.eq([L.update_target(x) for x in ({}, {'target': 'a' * 40}, {'target': 'A' * 40}, {'target': 'a' * 39}, {'target': 1}, {'target': '../x'})],
+         ['', 'a' * 40, None, None, None, None], 'the target sent back: none, or a sha of 40 lowercase hex digits (else 400)', what='target check')
     src = (c.root / 'tools' / 'suite_update.py').read_text(encoding='utf-8')
     c.ok('DATA' not in src and 'data/' not in src.split('"""', 2)[2], '', 'the module never names the data repository')
     # refused while a job of the Data module or a synchronisation runs (Sécurisation on 4fc473e5d): both locks held during it
@@ -1850,7 +1857,7 @@ def i25(c):
     kept = L.REGEN, L.suite_update.apply, L.suite_update.plan
     seen = []
 
-    def during(root, ch, fetch=True):
+    def during(root, ch, fetch=True, want=''):
         # while the update writes: no fetch again, the jobs' state answers, a start is refused, data/ is not synchronised
         seen.append({'fetch': fetch, 'lock free': not L.REGEN.lock.locked(), 'view': 'job' in L.REGEN.view(), 'start': L.REGEN.start('t', 'x', {}).get('reason'),
                      'sync held': L.SYNC_LOCK.locked()})
@@ -1888,6 +1895,7 @@ def i27(c):
     kept = R.FULL_LOCK, R.TARGET_LOCK
     try:
         R.FULL_LOCK, R.TARGET_LOCK = tmp / 'full.lock', tmp / 'targeted.lock'
+        R.print = lambda *a, **k: None  # heavy_slot's lines about this trial stay out of the pass's own output
         c.eq(R.heavy_slot(False, False, 10), (True, 10), 'a light pass is free, its runs untouched', what='light')
         # a full pass of another worktree runs (a live process: this one, under another folder name)
         R.FULL_LOCK.write_text(json.dumps({'pid': os.getpid(), 'at': _t.time(), 'cwd': 'E:/other', 'jobs': 10}), encoding='utf-8')
@@ -1903,6 +1911,7 @@ def i27(c):
         c.ok(not R.TARGET_LOCK.exists() and not R.FULL_LOCK.exists(), '', 'the locks are dropped by their own process')
     finally:
         R.FULL_LOCK, R.TARGET_LOCK = kept
+        R.__dict__.pop('print', None)
         shutil.rmtree(tmp, ignore_errors=True)
 
 

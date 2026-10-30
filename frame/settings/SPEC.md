@@ -200,7 +200,11 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    4fc473e5d). The plan and its `git fetch` come first, outside any lock; then job starts are held (`Jobs.hold`: a start
    answers 409 `updating`, while the job state, « Arrêter » and the windowless page keep answering) and `SYNC_LOCK` is
    taken for the writing alone (plan again without fetch, then the checkout or the fast-forward); both are given back at
-   the end (review of 2a02aedde, line 103). The target is not verified (no
+   the end (review of 2a02aedde, line 103). « Mettre à jour » sends back the target « Vérifier » showed
+   (`{ channel, target: <sha> }`, 40 lowercase hex digits, 400 otherwise): a plan whose target is no longer that sha —
+   after the fetch, then again without fetch just before writing — is refused (`reason: 'changed'`, with the sha found),
+   nothing written; the panel then says the channel's version changed and asks to check again (review of 99b4c2a25, line
+   105). Without `target`, as before. The target is not verified (no
    `git verify-tag`: the tags are not signed): the same trust as the manual `git pull` it replaces, said in the help; to be
    tightened if the tags are signed one day.
 9b. **Little Navmap sheets (.lnmperf)** (page served by a launcher, when `aerodb.lnmperf` exists): an empty, hidden

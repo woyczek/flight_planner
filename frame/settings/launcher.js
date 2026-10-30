@@ -477,6 +477,11 @@
         'Ein Auftrag des Moduls Daten oder eine Synchronisierung läuft: erneut versuchen, wenn er beendet ist.',
         'Hay un trabajo del módulo Datos o una sincronización en curso: inténtelo de nuevo cuando termine.'
       ],
+      changed: ['La version du canal a changé depuis la vérification : vérifiez à nouveau.',
+        'The channel’s version changed since the check: check again.',
+        'Die Version des Kanals hat sich seit der Prüfung geändert: erneut prüfen.',
+        'La versión del canal cambió desde la comprobación: compruebe de nuevo.'
+      ],
       'no-target': ['Aucune version sur ce canal.', 'No version on this channel.', 'Keine Version in diesem Kanal.',
         'Ninguna versión en este canal.'
       ],
@@ -623,6 +628,7 @@
         n: p.commits
       }) : p.message || '', p?.ok ? 'ok' : 'warn');
     box.dataset.target = p?.target || '';
+    box.dataset.sha = p?.sha || ''; // « Mettre à jour » écrit cette version-là, ou refuse (changed)
     return p;
   }
   /** Volet « Clés d'API de la compagnie » de la carte Administration : la clé IVAO, puis les identifiants EAD Basic,
@@ -799,6 +805,7 @@
     if (L && view.querySelector('[data-card="update"]')) { // volet de la mise à jour : un autre canal efface le plan affiché
       view.querySelector('[data-up-channel]')?.addEventListener('change', () => {
         view.querySelector('[data-act="upGo"]').disabled = true;
+        view.querySelector('[data-card="update"]').dataset.sha = '';
         env.say('update', '');
       });
     }
@@ -904,8 +911,12 @@
             t: box.dataset.target || ch
           }))) return;
         const r = await setup('update', {
-          channel: ch
+          channel: ch,
+          ...(box.dataset.sha ? {
+            target: box.dataset.sha
+          } : {})
         });
+        if (r?.reason === 'changed') box.querySelector('[data-act="upGo"]').disabled = true; // la question est à reposer
         if (r?.done) {
           say('update', t(T.upDone, {
             v: r.current?.version || ''

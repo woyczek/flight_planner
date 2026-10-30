@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Update the suite: the version written is the one the check showed** (`tools/suite_update.py` `changed`,
+  `tools/launch.py` `update_target`; Settings panel, SPEC 9a-bis, DECISIONS, help ×4; noreg I25, A51) — Sécurisation's
+  review of 99b4c2a25. « Mettre à jour » sends back the sha « Vérifier » showed; another target is refused (`changed`),
+  nothing written, and the panel asks to check again. Noreg: I27 keeps its own trial's lines out of the pass's output.
 - **Refactor R-S2, no behaviour change: one reader and one writer for the airline's map profiles** (`frame/settings/admin.js`, `settings.js`; INTEGRATION § 4) — `readEdge` / `writeEdge` / `readRunwayZoom` / `writeRunwayZoom` become `readProfiles` (one `get`, `{ edge, runwayZoom }`) and `writeProfiles(c, patch)` (`{ edge: { show } }` or `{ runwayZoom }`, the rest of the file kept); the Settings screen reads the file once instead of twice; same file contents, same defaults, same messages.
 - **Update the suite: the Data module keeps answering during an update** (`tools/launch.py` `update_suite`,
   `tools/regen_jobs.py` `Jobs.hold`; Settings SPEC 9a-bis, DECISIONS; noreg I25) — Sécurisation's review of 2a02aedde.

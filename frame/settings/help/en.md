@@ -199,7 +199,9 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   follow-up —, “Check” says what would change without touching anything, then “Update” (after a question). Never a step back;
   refused if files of the suite were changed on this computer, and while a job of the Data module or a synchronisation runs
   (try again once it is over). The data are not touched. The version taken is the one the suite’s repository announces: its
-  tags are not signed, the trust is the same as an update made by hand with git. Then close the launcher’s window and run
+  tags are not signed, the trust is the same as an update made by hand with git. It is the one “Check” showed: if the
+  channel changed meanwhile, nothing is written and the panel asks to check again.
+  Then close the launcher’s window and run
   lancer.cmd again.
 - **Folders of this computer** (Administration, with the launcher): where the suite, the data, the downloads, Little
   Navmap's databases and sheets are on this computer, the path read only and where it comes from; “Open” shows the folder
@@ -224,4 +226,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 3346d25d3c8d -->
+<!-- fr: 811e3ccf2b42 -->

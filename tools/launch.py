@@ -963,7 +963,10 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         ch = str(a.get('channel') or '') if isinstance(a, dict) else ''
         if ch not in suite_update.CHANNELS:
             return self._json({'ok': False, 'reason': 'unknown-channel', 'message': 'canal inconnu'}, 400)
-        r = update_suite(ch)
+        want = update_target(a)
+        if want is None:
+            return self._json({'ok': False, 'reason': 'bad-target', 'message': 'cible illisible'}, 400)
+        r = update_suite(ch, want)
         if r.get('done'):
             say(f'  Suite mise à jour ({ch}) : {r["current"].get("version", "")} — relancez le lanceur.')
         return self._json(r)
@@ -3737,14 +3740,26 @@ UPDATE_BUSY = {'ok': False, 'done': False, 'reason': 'busy',
                'message': 'un travail du module Données ou une synchronisation est en cours : réessayez quand il est fini'}
 
 
-def update_suite(channel):
+def update_target(a):
+    """La cible renvoyée par « Mettre à jour » ({ target } : le sha que « Vérifier » a montré) : '' sans elle, None si elle
+    n'est pas un sha de 40 caractères hexadécimaux (→ 400)."""
+    t = a.get('target', '') if isinstance(a, dict) else ''
+    if t == '':
+        return ''
+    return t if isinstance(t, str) and suite_update.SHA.match(t) else None
+
+
+def update_suite(channel, want=''):
     """« Mettre à jour » (POST /__setup/update) : refusé (reason 'busy') pendant un travail du module Données ou une
     synchronisation de data/, l'extraction changeant tools/ alors qu'un sous-processus peut encore en importer un module
     (relecture Sécurisation de 4fc473e5d). Le plan et son git fetch (jusqu'à 120 s) d'abord, hors de tout verrou ; puis
     les départs de travaux suspendus (jobs.hold : l'état, « Arrêter » et la page sans fenêtre répondent toujours) et
     SYNC_LOCK pris pour la seule écriture (plan refait sans fetch, extraction ou avance rapide) ; les deux rendus à la fin
-    (relecture Sécurisation de 2a02aedde, ligne 103)."""
+    (relecture Sécurisation de 2a02aedde, ligne 103). want : le sha que « Vérifier » a montré ; une autre cible est refusée
+    ('changed'), ici après le fetch et de nouveau au moment d'écrire (ligne 105)."""
     p = suite_update.plan(ROOT, channel)
+    if no := suite_update.changed(p, want):
+        return no
     if not p.get('ok') or p.get('reason') == 'up-to-date':
         return {**p, 'done': False}
     jobs = regen()
@@ -3754,7 +3769,7 @@ def update_suite(channel):
         if not SYNC_LOCK.acquire(blocking=False):
             return dict(UPDATE_BUSY)
         try:
-            return suite_update.apply(ROOT, channel, fetch=False)
+            return suite_update.apply(ROOT, channel, fetch=False, want=want)
         finally:
             SYNC_LOCK.release()
     finally:

@@ -1687,7 +1687,7 @@ def a51(c):
     status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
               'relaxNav': False, 'host': 'TEST', 'lan': False}
     plans = {'stable': {'ok': False, 'reason': 'dirty', 'target': 'v5.4.0', 'commits': 0, 'current': {'version': 'v6.0.0-alpha.2'}},
-             'early': {'ok': True, 'target': 'v6.0.0-beta.1', 'commits': 5, 'current': {'version': 'v6.0.0-alpha.2'}}}
+             'early': {'ok': True, 'target': 'v6.0.0-beta.1', 'sha': 'b' * 40, 'commits': 5, 'current': {'version': 'v6.0.0-alpha.2'}}}
     posted = []
 
     def launcher(route):
@@ -1724,7 +1724,7 @@ def a51(c):
     c.tap('.f-modal [data-ok]')
     c.until("(document.querySelector('[data-card=\"update\"] [data-msg]').textContent || '').includes('v6.0.0-beta.1') && !document.querySelector('.f-modal')",
             what='done, said')
-    c.eq(posted, [{'channel': 'early'}], 'the channel only goes to the launcher', what='request')
+    c.eq(posted, [{'channel': 'early', 'target': 'b' * 40}], 'the channel and the version the check showed go to the launcher', what='request')
     c.ok('lancer.cmd' in c.text('[data-card="update"] [data-msg]'), c.text('[data-card="update"] [data-msg]'), 'the launcher to restart by hand, said')
 
 
