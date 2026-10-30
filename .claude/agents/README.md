@@ -69,6 +69,10 @@ référence (dernier commit de la session ergonomie), une ligne par décision, c
 7. **Fichiers partagés sensibles** (`shared/mission_core/core.js`, `apps/planner/flight_planner.js`, `shared/dispos_*.js`,
    `shared/aircraft_*.js`, `shared/repository_nav.js`) : prévenir la session qui y travaille avant d'y toucher ;
    la session ergonomie annonce les gels.
+   En V3, **un propriétaire par ensemble de fichiers** (`frame/<zone>/`, `modules/<nom>/`) : une autre session n'y
+   écrit pas. Seule exception admise (30 octobre 2026) : les cartes d'administration du lanceur (Dossiers du
+   poste, Mise à jour de la suite) portées par V3 frame dans `frame/settings/*.js` ; V3 frame prévient Réglages
+   avant d'y toucher, et Réglages ne s'arrête pas sur un simple `.md` lors de sa reprise.
 8. **Jamais** : dialogue natif du navigateur, clé ou jeton dans le dépôt ou dans un message, push sur `master`,
    `gitnet` ou `hg`, modification des remotes, suppression d'un fichier déposé par l'utilisateur.
 9. **`develop` est la ligne V3 depuis le 23 octobre 2026** (les pages V2 y vivent aussi, inchangées). `v3` est la
