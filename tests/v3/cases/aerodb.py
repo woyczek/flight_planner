@@ -3626,13 +3626,23 @@ def k49(c):
         ctx = {'data': str(data), 'secrets': str(Path(td) / 's'), 'git_cmd': None, 'git_env': dict, 'zone_timeout': 120}
         jobs = RJ.Jobs(RJ.REGISTRY, ctx)
         srv, ctx['origin'] = _d5_site(RJ, data, {'jobs': jobs}, c.root)
-        before = sorted(p.name for p in Path(tempfile.gettempdir()).glob('sog-base-*'))
+        # the job's own profile, seen when it is made: the temp folder is shared (another pass, a real build, the purge of
+        # old leftovers by the job itself), a before / after listing of every sog-base-* raced with them (30 Oct 2026)
+        made, mkdtemp = [], tempfile.mkdtemp
+
+        def spy(*a, **k):
+            p = mkdtemp(*a, **k)
+            if str(k.get('prefix') or (a[1] if len(a) > 1 else '')).startswith('sog-base-'):
+                made.append(p)
+            return p
         t0 = time.time()
+        tempfile.mkdtemp = spy
         try:
             jobs.start('base', 'build', {'zones': ['ie']}, 'TST')
             while jobs.cur.data['state'] == 'running' and time.time() < t0 + 150:
                 time.sleep(0.1)
         finally:
+            tempfile.mkdtemp = mkdtemp
             srv.shutdown()
             srv.server_close()
         view = jobs.cur.view()
@@ -3647,7 +3657,7 @@ def k49(c):
         idx = json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))
         c.eq((idx['zones']['ie']['prefixes'], idx['zones']['ie']['cycle']), (['EI'], res['cycle']), "the zone's entry of the manifest", what='manifest')
         c.ok(z['commit'] is None and 'not a git repository' in (z['warning'] or ''), str(z), 'without a repository the files are written and the reason is said (no commit)')
-        c.eq(sorted(p.name for p in Path(tempfile.gettempdir()).glob('sog-base-*')), before, 'the temporary profile of the job is deleted: the temp folder holds what it held before', what='profile')
+        c.ok(len(made) == 1 and not any(os.path.exists(p) for p in made), str(made), 'the temporary profile of the job (one) is deleted')
 
 
 @case('K50', 'The real launcher serves the build page to the browser the job starts, and the claim works', 'K', static=True,

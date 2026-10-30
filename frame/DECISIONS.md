@@ -1962,3 +1962,8 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   - noreg I16: the pairing POST from another site or without origin refused, its own page heard; `adopt` with a file named
     `[ab].json` keeps the workstation's newer `a.json` (it failed without the fix); no git call of `data_sync` with file
     paths outside `lit()`; both transports refuse redirects.
+- **30 Oct 2026 — K49 follows its own browser profile** (a full pass of Features SOG: expected `sog-base-dzwjlcpo`, got
+  `sog-base-pgzysd4j`): the case listed every `sog-base-*` of the computer's temp folder before and after the job, a folder
+  shared with other passes, a real build and the job's own purge of old leftovers. It now records the profile the job makes
+  (`tempfile.mkdtemp` watched for the `sog-base-` prefix during the job) and checks that this one, and only one, is gone.
+  Replayed 4 times under the load of area D on 10 workers: green.
