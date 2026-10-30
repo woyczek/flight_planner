@@ -4,6 +4,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — the side's title reads summaryOf** (§ 10.30, second reading): one `.fu-procsum` line under the title, one span per
+  part (runway with its wind, procedure via its transition, approach via its transition), separated by space, not by a character
+  (the wind label already holds « · »). The wind is `runwayWind` of the chosen runway (it now returns the components `c` too). The
+  title is patched at every paint, so the summary follows each choice. F34 leaves the summary out of the title it compares; F65
+  checks it.
 - **30 Oct 2026 — § 10.30 second reading, the rules first** (Simplification, after the user's test of af261d3e3; BUGS SOG waits for
   them): `familyOf`, `siblingsOf`, `familiesOf`, `compatible`, `summaryOf` in frame/lib/procedures.js, pure, benched (F32). A family
   needs two suffixes among the aerodrome's records (`familyOf` alone is only a form). A STAR joins an approach when it serves one of

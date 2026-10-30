@@ -73,6 +73,8 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-proc{display:grid;grid-column:1/-1;grid-template-columns:subgrid;row-gap:2px;align-items:end;margin-top:10px}
 [data-module="fuel"] .fu-proc>.fu-proctitle,[data-module="fuel"] .fu-proc>.fu-procmeta{grid-column:1/-1}
 [data-module="fuel"] .fu-proctitle{font-size:1.05em}
+[data-module="fuel"] .fu-procsum{display:block;font-size:.92em;margin-top:2px}
+[data-module="fuel"] .fu-procsum>span{display:inline-block;margin-right:1em;white-space:nowrap}
 [data-module="fuel"] .fu-procicao{font-weight:600}
 [data-module="fuel"] .fu-procmeta{display:flex;flex-wrap:wrap;align-items:center;column-gap:.45em;font-size:.85em}
 [data-module="fuel"] .fu-procmeta .fu-linkbtn{margin:-10px 0;padding:0 2px}
@@ -267,6 +269,7 @@ export function createProcedures(host) {
       c = windComponents(r.true != null && Number.isFinite(+r.true) ? +r.true : mag + (+w.magVar || 0), w.dir, w.kt);
     if (!c) return null;
     return {
+      c,
       text: windLabel(c),
       why: [c.head < -5 ? tt(TX.procWindTail, {
         kt: -c.head
@@ -323,8 +326,24 @@ export function createProcedures(host) {
     }
     return out;
   }
-  /** Ligne de titre d'un côté : « Départ LFPO Paris-Orly » (le code seul pour un terrain inconnu d'aerodb). */
-  const titleHtml = (side, m) => `<b class="fu-prochead">${esc(tt(TX[side]))}</b> <span class="fu-procicao">${esc(m.icao)}</span>${m.name ? ` <span class="fu-procname">${esc(m.name)}</span>` : ''}${m.nodata ? '' : ` <button type="button" class="fu-linkbtn fu-onmap" data-do="onmap" data-side="${side}" data-icao="${esc(m.icao)}">${esc(tt(TX.procOnMap))}</button>`}`;
+  /** Le résumé du choix d'un côté, la même règle que le volet de la Carte (PR.summaryOf, § 10.30) : « 13R · ↑ 12 kt · ← 6 kt »,
+   *  « MEN1A via NEPIX », « I13R » ; « Aucune » dit avec sa sorte (« SID aucune ») ; '' sans choix. Le vent est celui de la piste
+   *  choisie, du METAR connu (runwayWind). */
+  function summaryHtml(side, m) {
+    const o = CF.proceduresOf(host.flight())[side] || {},
+      r = o.rwy ? m.rwys.find(x => PR.rwNum(x.id) === PR.rwNum(o.rwy)) : null,
+      s = PR.summaryOf(o, {
+        byId: adOf(m.icao).recs || new Map(),
+        wind: r ? runwayWind(m, r, 0)?.c : null
+      }),
+      none = k => `${tt(TX[k])} ${tt(TX.procNone)}`,
+      parts = [s.rwy, s.proc === null ? none(side === 'dep' ? 'procSid' : 'procStar') : s.proc, s.app === null ? none('procApp') : s.app]
+      .filter(Boolean);
+    return parts.length ? `<span class="fu-procsum">${parts.map(p => `<span>${esc(p)}</span>`).join('')}</span>` : '';
+  }
+  /** Ligne de titre d'un côté : « Départ LFPO Paris-Orly » (le code seul pour un terrain inconnu d'aerodb), « Sur la carte », puis
+   *  le résumé du choix (summaryHtml). */
+  const titleHtml = (side, m) => `<b class="fu-prochead">${esc(tt(TX[side]))}</b> <span class="fu-procicao">${esc(m.icao)}</span>${m.name ? ` <span class="fu-procname">${esc(m.name)}</span>` : ''}${m.nodata ? '' : ` <button type="button" class="fu-linkbtn fu-onmap" data-do="onmap" data-side="${side}" data-icao="${esc(m.icao)}">${esc(tt(TX.procOnMap))}</button>`}${summaryHtml(side, m)}`;
   /** Un bouton de lecture (même geste « Lire » et « Relire » : data-do procfetch, un seul chemin dans read) ; occupé tant que la lecture
    *  de ce terrain est en cours. */
   const readButton = (icao, text, again) => {

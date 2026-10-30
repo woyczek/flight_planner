@@ -1041,7 +1041,7 @@ def f34(c):
     wait_rows(c, 'arr')
     # the title: side, code, the name aerodb gives (the seeded base names its aerodromes "<code> TEST")
     # le texte du titre sans son bouton « Sur la carte »
-    titles = [norm(t) for t in c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc] .fu-proctitle')].map(e => { const x = e.cloneNode(true); x.querySelectorAll('button').forEach(b => b.remove()); return x.textContent })")]
+    titles = [norm(t) for t in c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc] .fu-proctitle')].map(e => { const x = e.cloneNode(true); x.querySelectorAll('button, .fu-procsum').forEach(b => b.remove()); return x.textContent })")]  # the summary: F65
     c.eq(titles, [norm(f"{row(c, 'dep')} LFRS LFRS TEST"), norm(f"{row(c, 'arr')} LFML LFML TEST")], 'each side is titled with its side, its code and the aerodrome\'s name', what='titles')
     # ONE secondary line per side; the arrival's file was read by hand (seeded 29 Oct 16:53Z, an earlier cycle: ⌛), the departure's is published (no date)
     c.eq(c.count(f'{FUEL} [data-proc] .fu-procmeta'), 2, 'one secondary line per side, not more', what='secondary lines')
@@ -1593,4 +1593,20 @@ def f64(c):
     # the departure (LFRS) has no METAR: no suffix, nothing invented
     dep = c.js("""[...(document.querySelector('[data-module=fuel] select[data-k="p-dep-rwy"]')?.options || [])].map(o => o.textContent)""")
     c.ok(dep and not any('kt' in t for t in dep), f'{dep}', 'no METAR for the departure: no wind on its runways')
+
+
+@case('F65', 'Each side\'s title ends with the summary of its choice, the rule of the Map\'s pane', 'F', tags=('fuel', 'maps', 'weather'), designs=('standard',),
+      screens=False, langs4=True, rule='V3 spec 10.30 (second reading): the side title reads summaryOf: « 13R · ↓ 12 kt », « MEN1A », « I13R »; '
+      '« Aucune » said with its kind; the wind of the chosen runway from the known METAR')
+def f65(c):
+    route_metar(c, {'LFML': (310, 12)})
+    open_proc(c, procs={'dep': {'rwy': '03', 'sid': None}, 'arr': {'rwy': '13R', 'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'trans': 'LFML.STAR.MEN1A.RWALL.NEPIX',
+                                                                    'app': 'LFML.APP.I13R.RW13R.NONE'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'})
+    wait_rows(c, 'arr')
+    parts = "(s) => [...document.querySelectorAll('[data-module=fuel] [data-proc=\"' + s + '\"] .fu-procsum > span')].map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
+    c.until(f"(() => ({parts})('arr').some(t => t.includes('kt')))()", timeout=20000, what='the arrival summary gets the wind of the METAR')
+    arr = c.js(f"({parts})('arr')")
+    c.eq(arr, ['13R · ↓ 12 kt', 'MEN1A via NEPIX', 'I13R'], 'runway with its wind, STAR via its transition, approach', what='arrival summary')
+    dep = c.js(f"({parts})('dep')")
+    c.eq(dep, ['03', norm(f"{row(c, 'procSid')} {row(c, 'procNone')}")], 'no METAR: the runway alone; « Aucune » said with its kind', what='departure summary')
 
