@@ -272,12 +272,33 @@
       const src = await db.sources();
       check('sources(): the catalogue and the AIRAC helpers', src.SOURCES === K.SOURCES && src.airac === A && typeof src.siaFileInfo ===
         'function', Object.keys(src));
+      // zoneOutlines() : les contours de shared/carto/aero_zones_geo.js, chargés une fois, servis tels quels (ordre GeoJSON), gelés
+      const pO = db.zoneOutlines(),
+        o = await pO,
+        fr = o.fr;
+      check('zoneOutlines(): every zone of the source file, once (one promise for the page)', Object.keys(o).length === Object.keys(
+        window
+        .AERO_ZONES_GEO || {}).length && Object.keys(o).length > 200 && db.zoneOutlines() === pO, Object.keys(o).length);
+      check('zoneOutlines(): France with its names ×4, its rings in [lon, lat] (the file’s, not copied) and a box holding Paris', fr &&
+        fr.name
+        .length === 4 && fr.rings === window.AERO_ZONES_GEO.fr.r && fr.box[0] <= 2.35 && 2.35 <= fr.box[2] && fr.box[1] <= 48.85 &&
+        48.85 <=
+        fr.box[3], fr && {
+          name: fr.name,
+          box: fr.box
+        });
+      check('zoneOutlines(): frozen, nobody changes them', Object.isFrozen(o) && Object.isFrozen(fr) && Object.isFrozen(fr.rings[0]) &&
+        Object
+        .isFrozen(fr.rings[0][0]), 0);
     } catch (e) {
       check('no exception', false, String(e && e.stack || e));
     }
     const pass = results.filter(r => r.ok).length;
-    document.getElementById('state').textContent = `${pass} passed, ${results.length - pass} failed`;
-    document.getElementById('out').innerHTML = results.map(r => `<li class="${r.ok ? 'ok' : 'ko'}">${r.name.replace(/</g, '&lt;')}${r.ok ? '' : ' — ' + r.detail.replace(/</g, '&lt;').slice(0, 400)}</li>`).join('');
+    document.getElementById('state').textContent =
+      `${pass} passed, ${results.length - pass} failed`;
+    document.getElementById('out').innerHTML = results.map(r =>
+      `<li class="${r.ok ? 'ok' : 'ko'}">${r.name.replace(/</g, '&lt;')}${r.ok ? '' : ' — ' + r.detail.replace(/</g, '&lt;').slice(0, 400)}</li>`
+    ).join('');
     window.__catBench = {
       done: true,
       pass,

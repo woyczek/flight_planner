@@ -2052,6 +2052,17 @@ exception is in, then the line goes. With it, the end-to-end run through the lau
 code), the result `built`, `failed: [{ zone, error }]`, `commits: [{ zone, commit }]`, `reason`; `args.personal` a list of source ids; no browser: `reason: 'no-browser'`;
 `'xplane'` in `personal`: `reason: 'xplane-in-page'`, for the job (the X-Plane folder is a handle held by the page).
 
+## 30 October 2026 — `zoneOutlines()`: the zones' outlines served by aerodb
+
+The Data module's map of zones (Settings, the user's request decided by Simplification) needs the countries' outlines; BUGS
+SOG found no way to them for a module and recommended aerodb. `zoneOutlines()` loads `shared/carto/aero_zones_geo.js` (218
+zones, Natural Earth 1:50 M, public domain, already simplified) once, at the first call, and serves `{ <zone>: { name ×4,
+rings, box } }`: the file's rings as they are, in its GeoJSON order ([lon, lat]: Simplification's first sketch said
+[lat, lon], dropped for the consumer's shape so that 218 outlines are not turned over), frozen; `box` joins the zone's
+frames already known (`AERODB_ZONES`), computed otherwise. A failed load (offline at the first call) is tried again at the
+next. The Map will read its plain background here and drop its generated copy (`modules/maps/lib/outlines.js`): one source.
+Bench K21.
+
 ## 30 October 2026 — `source.url`: the « Source » link served by the reader (§ 10.25)
 
 - **Asked** (Features SOG, for Fuel and the Map): `charts.base` lives in the aerodrome file and no call gave it to a module; files read before

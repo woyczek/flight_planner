@@ -297,6 +297,10 @@ session, which keeps the module's files):
   `aerodb.zones()` (every known zone, published or not), `aerodb.sources()` (the catalogue: groups, zones fed, fetch and
   build modes, links by cycle, licences, statuses, EAD outcome per State, file-name readers). SPEC § 5. The module reads
   nothing else of aerodb and never `sia/base/`, `proc/` or `AircraftDB/` itself.
+- **The zones' outlines** (30 Oct 2026, the Data module's map of zones): `await aerodb.zoneOutlines()` → `{ <zone>: { name:
+  [fr, en, de, es], rings: [[[lon, lat], …]], box: [w, s, e, n] } }`, frozen, one load for the page (bench K21). A module
+  never loads `shared/carto/aero_zones_geo.js` itself; the Map's plain background reads it here too (its own copy,
+  `modules/maps/lib/outlines.js`, goes with the Map's refactor).
 - **Cycles**: dates `YYYY-MM-DD` in every answer, the AIRAC id `YYNN` only on screen, converted by `frame/aerodb/airac.js`
   (SPEC § 4). Three cycles kept for the base and `proc/`.
 - **Building** (lot D5): with a launcher, the job `base/build` runs the existing builders in one window-less browser for all the requested

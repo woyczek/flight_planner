@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: `zoneOutlines()`, the zones' outlines for the modules** (`frame/aerodb/aerodb.js`; aerodb SPEC, INTEGRATION,
+  DECISIONS; noreg K21) — loaded once, served frozen in the GeoJSON order, with each zone's box; the Data module's map of
+  zones reads it, the Map's background will.
 - **Map: flown trail, refactor without change of behaviour (R-M6, § 10.33)** (`modules/maps/flight_time.js`; SPEC, DECISIONS;
   noreg D61). The frame's trail (`ctx.live.trail()`) is the only source: the Map joins it to the actual position and keeps no
   position of its own (`TRAIL_MS` and the merge removed).

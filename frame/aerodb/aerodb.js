@@ -37,6 +37,50 @@
     sc.onerror = () => ko(new Error(`aerodb: ${file} not loaded`));
     document.head.append(sc);
   });
+  // contours des zones (zoneOutlines) : shared/carto/aero_zones_geo.js (Natural Earth 1:50 M, domaine public), chargé à la
+  // première demande, une fois pour toute la page (une promesse partagée par tous les services)
+  let outlinesP = null;
+  /** Gel en profondeur (les contours servis tels quels, sans copie : personne ne les change). */
+  const freezeAll = v => {
+    if (v && typeof v === 'object' && !Object.isFrozen(v)) {
+      Object.freeze(v);
+      for (const k in v) freezeAll(v[k]);
+    }
+    return v;
+  };
+  /** { <zone>: { name: [fr, en, de, es], rings: [[[lon, lat], …]], box: [w, s, e, n] } } : les contours du fichier, servis tels
+   *  quels (ordre GeoJSON) et gelés ; box, le cadre de la zone (ses parties de AERODB_ZONES réunies, sinon calculé). */
+  function zoneOutlines() {
+    outlinesP ||= (window.AERO_ZONES_GEO ? Promise.resolve() : new Promise((ok, ko) => {
+      const sc = document.createElement('script');
+      sc.src = new URL('../../shared/carto/aero_zones_geo.js?v=0', HERE).href;
+      sc.onload = () => ok();
+      sc.onerror = () => ko(new Error('aerodb: aero_zones_geo.js not loaded'));
+      document.head.append(sc);
+    })).then(() => {
+      const geo = window.AERO_ZONES_GEO || {},
+        frames = window.AERODB_ZONES || {},
+        out = {};
+      for (const [id, g] of Object.entries(geo)) {
+        const parts = frames[id]?.b?.length ? frames[id].b : (g.r || []).map(r => r.reduce((b, [x, y]) => [Math.min(b[0], x), Math
+          .min(b[1], y),
+          Math.max(b[2], x), Math.max(b[3], y)
+        ], [180, 90, -180, -90]));
+        out[id] = {
+          name: g.n || [id, id, id, id],
+          rings: g.r || [],
+          box: parts.reduce((b, p) => [Math.min(b[0], p[0]), Math.min(b[1], p[1]), Math.max(b[2], p[2]), Math.max(b[3], p[3])], [
+            180, 90, -180, -90
+          ])
+        };
+      }
+      return freezeAll(out);
+    }).catch(e => {
+      outlinesP = null; // un échec de chargement (hors ligne au premier appel) : le suivant réessaie
+      throw e;
+    });
+    return outlinesP;
+  }
   const PUB = 'sia/base/',
     PUB_WHOLE = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\.json$/,
     PUB_SPLIT = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\/([a-z_]+)\.json$/,
@@ -1760,6 +1804,10 @@
           } : null
         };
       },
+      /** Les contours des zones (shared/carto/aero_zones_geo.js, chargé une fois à la première demande) : { <zone>: { name:
+       *  [fr, en, de, es], rings: [[[lon, lat], …]], box: [w, s, e, n] } }, gelés ; la carte des zones du module Données,
+       *  bientôt le fond uni de la Carte (frame/aerodb/INTEGRATION.md). */
+      zoneOutlines,
       /** Toutes les zones connues de la suite (AERODB_ZONES), publiées ou non : [{ id, names: [fr, en, de, es], frames, published }],
        *  dans l'ordre de leur nom français (« Ajouter un pays » du module Données). */
       async zones() {
