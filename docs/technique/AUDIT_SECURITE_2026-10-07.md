@@ -927,6 +927,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 75 | Map: light drawing during a gesture (c3eed56db) | acceptable |
 | 76 | Refactor R-C2: one pairing for both channels (4e83fc50a) | acceptable, no guard lost; two notes |
 | 77 | Frame: « Workstation folders » card; R-C2 notes (36f571e40) | acceptable; notes of 76 settled; one note |
+| 78 | Refactor R-F4a: the route model in `frame/lib/route_model.js` (7cd47db8d) | acceptable, no change of behaviour |
+| 79 | Refactor R-C3: IVAO's return in one place (7426e127d) | acceptable; no guard lost, surface reduced; notes of 77 and 41.4 settled |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1720,6 +1722,21 @@ one channel only, and removing it from pending codes), the per-address wait stil
 channels; expired rows removed at reading. Note: under Windows `os.startfile(path)` with the default verb would run an
 executable or a shortcut if the path changed between `isdir()` and the call (a local account only); `os.startfile(path,
 'explore')` forces the file explorer.
+
+**78. Refactor R-F4a (7cd47db8d) — acceptable, no change of behaviour.** Fuel's route reading moves (not copied) to
+`frame/lib/route_model.js`, pure (no DOM, network, storage, `eval` or pattern built from data); the flight is still written
+by Fuel's bounded save.
+
+**79. Refactor R-C3, IVAO's return in one place (7426e127d) — acceptable; no guard lost; the surface is reduced.**
+`ivao_oauth_finish` is unchanged: state bound to the device and the return address, single use, ten minutes, IVAO's code
+shown only with a pending sign-in. Discovery, token, revocation, GitLab and the relay probe use one opener without
+redirects. The callback is a declared route open to the relay; the local network's gate lets it through (it filters
+`/__setup/` only), but `_ivao_return` refuses the local network (a navigation from IVAO is « another site ») and the handler
+answers 403 to a same-origin local-network request. One guard, `_ivao_return`, runs in `_refused()` after `_local_host()`:
+through the relay, a GET of this path after the device's gate; on the workstation, a document navigation with a pending
+state of the workstation. Removed: the page's `ivao.token()` (no reader), the `ivao/oauth/refresh` route (so the note
+of 41 on renewing any presented refresh token no longer applies), the former opener names. `os.startfile(path, 'explore')`
+settles the note of 77.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
