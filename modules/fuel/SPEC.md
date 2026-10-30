@@ -441,8 +441,8 @@ No field, import, preview or removal here (F79).
   each line gives its distance from departure (the alternate: from arrival) (no case).
 - **Real weather** (a box): the quote's wind becomes the forecast wind aloft (§ 11); without it, the mean of the surface wind vectors
   of the departure, the corridor aerodromes and the arrival that have one, each segment between two of them the mean of its ends,
-  weighted by its length along the route (at least two aerodromes, else said), an approximation said as such; its source is written
-  under the wind fields; typing a wind unticks the box (no case).
+  weighted by its length along the route (at least two aerodromes, else said), an approximation said as such (`weather.js`
+  `routeWind`: F80, METAR bench); its source is written under the wind fields; typing a wind unticks the box (no case for the box).
 
 ## 11. Winds and temperatures aloft (`modules/fuel/winds.js`)
 

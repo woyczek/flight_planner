@@ -1228,6 +1228,14 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   flight started with no way back). The question, « No » changes nothing, « Yes » writes `started = null` and `progress = null` (null,
   not removed), « Start the flight » offered again. The code does what the SPEC says: no gap.
 
+- **30 Oct 2026 — debts « no case », second: the surface-wind mean of « Real weather »** (`weather.js` `routeWind`), four checks in
+  the METAR bench (F80): the same wind at both ends, each leg weighted by its length, opposite winds cancel, one aerodrome or a
+  variable wind gives no mean. **A gap found, not fixed** (Simplification's rule: said here, asked before fixing): a missing direction
+  (`wdir: null`) is read as 0° — `Number.isFinite(+null)` is true — so `routeWind` returns a mean (284° / 10 kt for null/5 kt and
+  270°/20 kt) where its comment says « null s'il manque un vent », and the screen's filter (`wxStations` … `Number.isFinite(+x.st.wdir)`)
+  lets such a station through the same way. The fix would test `w.wdir != null` (and the same in the filter): a mean drawn from fewer
+  aerodromes, or none, for a METAR without a wind group.
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (Features SOG, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les

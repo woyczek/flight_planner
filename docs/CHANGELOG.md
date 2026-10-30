@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the surface-wind mean of « Real weather » has its checks** (METAR bench, F80; a « no case » debt of the SPEC); a gap noted in
+  fuel DECISIONS (a missing wind direction read as 0°), not fixed yet.
 - **Fuel: F81, « Cancel the start »** (a « no case » debt of the SPEC): the question, « No » changes nothing, « Yes » clears `started`
   and `progress`.
 - **Map: the choose pane has one exit, refactor without change of behaviour (R-M1 c, § 10.33)** (`modules/maps/choose.js`,
