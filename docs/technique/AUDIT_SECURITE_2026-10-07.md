@@ -888,6 +888,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 46 | Map: an airspace's bounds kept in a `WeakMap` (0f5891d4c) | acceptable |
 | 47 | Map: choose mode over three families, one return (af261d3e3) | acceptable; one functional note |
 | 48 | Resumption retouches (add1e78a3), frozen test base (94515ca99) | acceptable; point and note of 44 settled |
+| 49 | Map left right after mounting (94ce646e8) | acceptable |
+| 50 | Fuel: the map's proposal in one pass, runway wind (25b887349) | acceptable; note of 47 settled |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1499,6 +1501,16 @@ committed (the plan says so, in the four languages). Minor note: such a file sta
 launcher publication on the same prefix (`git add -A -- <prefix>`) would carry it, so « never sent » means « never by the
 resumption nor by synchronisation ». 94515ca99: a reference copy without a revision (a seeded test base, a restored
 backup) is frozen too, at each reading, so that a write on a record fails in the noreg runs rather than at the user's.
+
+**49. Map left right after mounting (94ce646e8) — acceptable.** Checks of the module's state after each `await`; no new
+write, network or HTML (one added read of the pilot's own `fuel.json`); the choose mode left from outside no longer sends
+an address back to Fuel by itself.
+
+**50. Fuel, the map's proposal in one pass and runway wind (25b887349) — acceptable; the note of 47 is settled.** The keys
+`rwy`, `sid`, `star`, `app` and `apptrans` are read once (`ctx.consume`) and mapped to `appTrans`; `admit()` checks each of
+them as before; the choices are applied quietly, then one drawing and one write; with no admitted key nothing is written
+or said, and without keys nothing happens at mounting. The wind of each runway option comes from the known METAR (never
+the TAF), turned into numbers and arrows by `frame/lib/wind.js`, escaped in the option's text and title.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
