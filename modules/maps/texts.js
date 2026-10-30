@@ -358,6 +358,9 @@ export const TX = {
   chFold: ['{n} autres · Toutes', '{n} more · All', '{n} weitere · Alle', '{n} más · Todas'],
   chFoldLess: ['Compatibles seulement', 'Compatible only', 'Nur passende', 'Solo compatibles'],
   chNotFit: ['Ne va pas avec le choix', 'Does not fit the choice', 'Passt nicht zur Wahl', 'No encaja con la elección'],
+  chToRoute: ['Vers votre route', 'Towards your route', 'Zu Ihrer Route', 'Hacia su ruta'],
+  chExit: ['sortie {p}', 'exit {p}', 'Ausgang {p}', 'salida {p}'],
+  chEntry: ['entrée {p}', 'entry {p}', 'Eintritt {p}', 'entrada {p}'],
   chGoto: ['Aller au groupe {f}', 'Go to the {f} group', 'Zur Gruppe {f}', 'Ir al grupo {f}'],
   chSev: {
     ok: ['vent dans les limites', 'wind within limits', 'Wind innerhalb der Grenzen', 'viento dentro de los límites'],

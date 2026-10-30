@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map, choosing on the map: SIDs and STARs towards your route first; aerodromes named by the shared rule**
+  (`modules/maps/choose.js`, `draw.js`, `render.js`, `texts.js`, `style.js`; help ×4, maps SPEC; noreg D71, D72; V3 § 10.31,
+  § 10.30). Among the procedures that fit the choice, the SIDs whose exit and the STARs whose entry is on the typed route come
+  first under "Towards your route" ×4, the others after, marked "exit LACOU" / "entry OKRIX" ×4 (`compatible({ route })`,
+  `exitOf`, `entryOf`). Close in, the aerodromes' labels read `adTitle` of `frame/lib/adnames.js` ("LFPO Paris-Orly"), the
+  name rule Fuel uses.
 - **Frame: the aerodrome name next to its code, one rule** (`frame/lib/adnames.js` `adLabel`, `adTitle`, `adLine`; bench F71) —
   « LFPO Paris-Orly » for the Map's pin and Fuel, from the rule Fuel had.
 - **Fuel: the route text is a view of the procedures** (`frame/lib/route_text.js` `withProcedures`, `proceduresOfText`,

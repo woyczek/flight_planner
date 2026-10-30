@@ -282,7 +282,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     runways read on demand (`wantRunways`: `aerodb.runways`, one batch, kept in `S.adRwys`) and drawn thin with their numbers;
     the vectors and numbers are painted by the screen's `runways(ctx, pl)` callback right after the aerodromes, in the one
     collision pass with the aerodromes' priority (a number without room is not written, its vector stays); the aerodromes'
-    labels read code and name (`adNames`: "LFPO PARIS ORLY", the aerodb name as it is until `adTitle` of § 10.27). In the choose mode every runway of the aerodrome is a vector, the one in force
+    labels read code and name (`adName`: `adTitle` of `frame/lib/adnames.js`, "LFPO Paris-Orly", the name rule of § 10.27 shared with Fuel). In the choose mode every runway of the aerodrome is a vector, the one in force
     bold; while the Map is dimmed the airway boxes go under the dim veil (`render.js`: `airwayOver` before `dim`), so the
     mode's traces, vectors and labels are above every label of the base;
   - **constraints**, as on the AIP charts, written after the fix's name: altitude **underlined** = at or above
@@ -354,6 +354,10 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   the SIA's initial segments ("INA … RWY 06", shared by every final of the runway) among them, by `transitionLabelOf` ("via
   ODILO · ODILO 1A"), in the final's hue; a chosen transition sharing no point with its final is joined to the final's first
   point by a dashed line (`join`).
+- **Towards your route** (§ 10.31): a second axis beside the runway for SIDs and STARs — among the rows that fit the choice, those
+  whose exit (SID, `exitOf`) or entry (STAR, `entryOf`) is on the typed route (`compatible({ …, route })`, the ids of
+  `route.points`) come first under a thin label "Towards your route" ×4 (only when other rows follow), the others after, marked
+  "exit LACOU" / "entry OKRIX" ×4; what does not fit stays folded under "N more · All".
 - **Runway and procedure correct each other** (one line under the procedure's group, one tap, never silently): the procedure just
   chosen serves one other runway → "OPAL2E sert la 25 — Passer en 25"; otherwise (the runway changed, or the procedure serves
   several) → "OKRIX5A ne sert pas la 07 — Choisir OKRIX5B", the first of the group that serves it (`firstServing`); the row keeps ⚠.

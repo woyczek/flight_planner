@@ -1173,8 +1173,9 @@
     overRoute = null,
     // top(ctx) : ce que l'écran peint en dernier, par-dessus tout (les noms et contraintes des procédures : jamais couverts)
     top = null,
-    // adNames : le nom à côté du code des terrains (« LFPO PARIS ORLY »), de près (le seuil runwayZoom de la compagnie, V3 § 10.30)
-    adNames = false,
+    // adName(rec) : le libellé d'un terrain de près, son code et son nom (« LFPO Paris-Orly », adTitle de frame/lib/adnames.js, la règle
+    // de nom du § 10.27 ; le seuil runwayZoom de la compagnie, V3 § 10.30) ; null : le code seul
+    adName = null,
     // runways(ctx, pl) : l'écran peint les vecteurs et numéros des pistes juste après les terrains, dans la même passe de collision
     runways = null,
     // dim (0 à 1) : la part dont les couches de la Carte, de la route comprise, sont éteintes avant ce que l'écran peint au niveau de
@@ -1255,9 +1256,9 @@
           });
         pts = drawPoints(c, {
           ...shown,
-          aerodromes: adNames ? (shown.aerodromes || []).map(a => a.name && a.icao ? {
+          aerodromes: adName ? (shown.aerodromes || []).map(a => a.icao ? {
             ...a,
-            label: `${a.icao} ${a.name}`
+            label: adName(a) || a.icao
           } : a) : shown.aerodromes,
           navaids: navShown
         }, toC, W, H, scale, bbox, pl, navShown.length && !navAll ? {

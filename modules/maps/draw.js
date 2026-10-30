@@ -57,6 +57,9 @@ import {
   covFlush
 } from './coverage.js';
 import {
+  adTitle
+} from '../../frame/lib/adnames.js';
+import {
   chooseLayout,
   DIM
 } from './choose.js';
@@ -423,7 +426,7 @@ function draw() {
     overRoute: pick ? c => pick.paint(c) : procs ? c => drawProcs(c, procs) : null,
     // les pistes (vecteurs de seuil et numéros) dans la couche des terrains, priorité « terrains » de la passe de collision
     runways: rwys.length ? (c, pl) => drawRunways(c, rwys, pl) : null,
-    adNames: !mission && !pick && zReal >= (S.runwayZoom ?? 11),
+    adName: !mission && !pick && zReal >= (S.runwayZoom ?? 11) ? a => adTitle(a, a.icao) : null,
     top: pick ? c => pick.top(c) : procs ? c => drawProcLabels(c, procs) : null,
     mission: mission && S.mission ? {
       points: S.mission.points,

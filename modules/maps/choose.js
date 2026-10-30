@@ -288,17 +288,38 @@ function viewOf(C, fam) {
       app: o.app
     },
     recs = fam === 'rwy' ? list.map(i => i.rec.id) : list.flatMap(i => i.members ? i.members.map(m => m.rec) : [i.rec]),
-    ok = new Set(PR.compatible(recs, choice, C.byId).map(r => typeof r === 'string' ? r : r.id)),
-    fits = list.filter(it => it.chosen || (it.members ? it.members.some(m => ok.has(m.id)) : ok.has(it.rec.id)));
+    idOf = r => typeof r === 'string' ? r : r.id,
+    ok = new Set(PR.compatible(recs, choice, C.byId).map(idOf)),
+    has = (it, set) => it.members ? it.members.some(m => set.has(m.id)) : set.has(it.rec.id),
+    // second axe (V3 § 10.31) : une SID dont la sortie, une STAR dont l'entrée est sur la route tapée vient d'abord (« vers votre
+    // route ») ; les autres, compatibles par ailleurs, après, marquées « sortie LACOU » / « entrée OKRIX »
+    route = fam === 'sid' || fam === 'star' ? (S.route?.flight?.route?.points || []).map(p => p?.id).filter(Boolean) : [],
+    onRoute = route.length ? new Set(PR.compatible(recs, {
+      ...choice,
+      route
+    }, C.byId).map(idOf)) : ok,
+    fits = list.filter(it => it.chosen || has(it, onRoute)),
+    near = list.filter(it => !fits.includes(it) && has(it, ok));
+  for (const it of near) {
+    const r = it.members ? it.members[0].rec : it.rec,
+      pt = fam === 'sid' ? PR.exitOf(r) : PR.entryOf(r);
+    it.off = pt ? tt(fam === 'sid' ? TX.chExit : TX.chEntry, {
+      p: pt
+    }) : ''; // exitOf / entryOf : l'identifiant du point
+  }
+  for (const it of fits) it.off = '';
   // ce qui ne va pas avec le choix dit pourquoi (⚠) quand il est déplié, même sans conflit de piste
   for (const it of list)
-    if (!fits.includes(it) && !it.why.length) it.why = [tt(TX.chNotFit)];
-  const shown = C.more[fam] ? list : fits.slice(0, MAX_ROWS);
+    if (!fits.includes(it) && !near.includes(it) && !it.why.length) it.why = [tt(TX.chNotFit)];
+  const order = [...fits, ...near],
+    shown = C.more[fam] ? [...order, ...list.filter(it => !order.includes(it))] : order.slice(0, MAX_ROWS);
   for (const it of fits)
     if (it.chosen && !shown.includes(it)) shown.push(it);
   return {
     shown,
-    hidden: list.length - shown.length
+    hidden: list.length - shown.length,
+    // l'étiquette « vers votre route » n'a de sens que si des lignes hors de la route suivent
+    toRoute: route.length && near.some(it => shown.includes(it)) ? fits.filter(it => shown.includes(it)).length : 0
   };
 }
 /** Refait les lignes de chaque famille (après un choix) : C.items = { famille: lignes } (la transition de l'approche avec), C.view =
@@ -533,7 +554,7 @@ function fixOf(C, fam) {
  *  ligne ; la ligne choisie pressée. */
 function rowHtml(C, it) {
   const tip = [it.title || '', it.old ? tt(TX.procOutdated) : '', ...it.why, it.wind?.tip || ''].filter(Boolean).join(' · ');
-  return `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.hl === it.id ? 1 : 0}" aria-pressed="${it.chosen}"${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)}"`}${tip ? ` title="${esc(tip)}"` : ''}>${it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>'}<span class="mp-ch-name">${esc(it.label)}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${it.wind ? `<span class="mp-ch-wind" data-sev="${it.wind.sev}">${esc(it.wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" role="img" aria-label="${esc(tt(TX.procOutdated))}">⌛</span>` : ''}${it.why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(it.why.join(' · '))}">⚠</span>` : ''}</button>`;
+  return `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.hl === it.id ? 1 : 0}" aria-pressed="${it.chosen}"${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)}"`}${tip ? ` title="${esc(tip)}"` : ''}>${it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>'}<span class="mp-ch-name">${esc(it.label)}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${it.off ? `<span class="mp-ch-off">${esc(it.off)}</span>` : ''}${it.wind ? `<span class="mp-ch-wind" data-sev="${it.wind.sev}">${esc(it.wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" role="img" aria-label="${esc(tt(TX.procOutdated))}">⌛</span>` : ''}${it.why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(it.why.join(' · '))}">⚠</span>` : ''}</button>`;
 }
 /** Sous-lignes de l'approche choisie : « Sans transition », puis ses transitions (V3 § 10.30 : la transition sous l'approche). */
 function subsHtml(C) {
@@ -557,7 +578,8 @@ function groupHtml(C, fam) {
       n: v.hidden
     }) : C.more[fam] && list.some(it => it.why.length) ? tt(TX.chFoldLess) : '',
     fix = fam === 'rwy' ? null : fixOf(C, fam),
-    rows = v.shown.map(it => rowHtml(C, it) + (fam === 'app' && it.chosen ? subsHtml(C) : '')).join('');
+    rows = (v.toRoute ? `<div class="mp-ch-subh">${esc(tt(TX.chToRoute))}</div>` : '') + v.shown.map(it => rowHtml(C, it) + (fam === 'app' && it.chosen ?
+      subsHtml(C) : '')).join('');
   return `<section class="mp-ch-grp" data-fam="${fam}"><h4 class="mp-ch-head">${esc(tt(TX.chFam[fam]))}</h4><div class="mp-ch-list" role="group" aria-label="${esc(tt(TX.chFam[fam]))}"><button type="button" class="mp-ch-row mp-ch-none" data-fam="${fam}" data-id="none" data-hl="0" aria-pressed="${noneOn}"><span class="mp-ch-name">${esc(tt(TX.chNone))}</span></button>${rows}${fold ? `<button type="button" class="mp-ch-fold" data-more="${fam}" aria-expanded="${!!C.more[fam]}">${esc(fold)}</button>` : ''}</div>${fix ? `<p class="mp-ch-fix">${esc(fix.text)}${fix.val ? ` <button type="button" class="f-btn" data-fix="${fix.fam}" data-val="${esc(fix.val)}">${esc(fix.act)}</button>` : ''}</p>` : ''}${list.length ? '' : `<p class="f-muted mp-ch-empty">${esc(tt(TX.chEmpty, { icao: C.icao }))}</p>`}</section>`;
 }
 /** La sélection en tête du volet : une ligne par famille choisie (« Piste 28L · ↑ 12 kt · ← 6 kt », « ABLI4L », « I28L via

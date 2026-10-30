@@ -1814,7 +1814,7 @@ _AD_STATE = """() => { const S = window.__mp.S, z = MapsRender.zoomOf(S.canvas.c
 
 @case('D71', 'From the airline’s zoom, every drawn aerodrome shows its runways’ numbers and its name next to its code', 'D', tags=('maps',),
       screens=False, designs=('standard',), night=False,
-      rule='V3 § 10.30 fourth reading, point 3: from runwayZoom, each runway of each aerodrome drawn carries its number at its threshold (with the 24 px vector), in the collision pass with the aerodromes’ priority; the aerodrome’s label reads "LFAB AB TEST" (code and name); below the zoom nothing changes')
+      rule='V3 § 10.30 fourth reading, point 3: from runwayZoom, each runway of each aerodrome drawn carries its number at its threshold (with the 24 px vector), in the collision pass with the aerodromes’ priority; the aerodrome’s label reads its code and its name (adTitle of frame/lib/adnames.js); below the zoom nothing changes')
 def d71(c):
     docs = fdocs(flight()) + [['proc/manual/LFAB.json', _LFAB_RWY, 'reference'], ['cache/maps/ui.json', {'preset': 'vfr', 'layers': {}}, 'cache']]
     # zoom ≈ 12 over LFAB, off the route
@@ -1826,7 +1826,9 @@ def d71(c):
     c.until("() => (window.__mp.S.adHits || []).some(h => h.a.icao === 'LFAB' && h.a.label)", timeout=6000, what='the label with the name')
     st = c.js(_AD_STATE)
     c.ok(st['zoom'] >= 11, f"{st['zoom']:.1f}", 'the view is above the airline’s zoom (11)')
-    c.eq(st['label'], 'LFAB AB TEST', 'the aerodrome reads its code and its name', what='aerodrome label')
+    want = c.js("async () => (await import('/frame/lib/adnames.js')).adTitle({ icao: 'LFAB', name: 'AB TEST' }, 'LFAB')")
+    c.ok(want.startswith('LFAB '), want, 'adTitle gives the code then the name')
+    c.eq(st['label'], want, 'the aerodrome reads its code and its name (adTitle, the name rule of § 10.27)', what='aerodrome label')
     c.eq(st['rwys'], ['09', '27'], 'both runways of LFAB as vectors with their numbers', what='runways of an aerodrome off the route')
     # below the zoom: the code alone, no runway
     c.open('maps?view=-3.2,46.4,-0.2,48.2', docs=docs, flight=False, airfields=True, aero_extra={'aerodromes': _COV_ADS, 'cells': _COV_CELLS}, wait=False)
@@ -1836,3 +1838,26 @@ def d71(c):
     st = c.js(_AD_STATE)
     c.ok(st['zoom'] < 11, f"{st['zoom']:.1f}", 'the view is below the airline’s zoom')
     c.eq([st['label'], st['rwys']], [None, []], 'below the zoom: the code alone, no runway', what='far out')
+
+
+# ------------------------------------------------------------------------------------------------------ D72
+@case('D72', 'Choosing on the Map: the STARs entering on the typed route come first, the others marked with their entry', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False, langs4=True,
+      rule='V3 § 10.31: a second axis beside the runway — the SID whose exit, the STAR whose entry is on the typed route comes first ("towards your route", compatible({ route })), the others after, marked "entry OKRIX" (exitOf / entryOf); the incompatible ones stay folded')
+def d72(c):
+    f = flight()
+    f['route']['points'] = f['route']['points'][:-1] + [{'id': 'EN05', 'lat': 44.15, 'lon': 4.7}] + f['route']['points'][-1:]
+    f['route']['procedures'] = {'dep': {}, 'arr': {'rwy': '31'}, 'by': 'fuel', 'at': '2026-10-29T10:00:00Z'}
+    docs = [['proc/manual/LFML.json', _CH_FILE, 'reference'], ['proc/manual/LFRS.json', _LFRS_FILE, 'reference']]
+    c.open('maps?choose=arr&icao=LFML', docs=fdocs(f) + docs, flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.choose && window.__mp.S.choose.ready)", timeout=12000, what='the choose mode is ready')
+    g = c.js("""() => { const g = document.querySelector('.mp-ch-grp[data-fam=star]');
+      return { subh: ((g.querySelector('.mp-ch-subh') || {}).textContent || '').trim(),
+        rows: [...g.querySelectorAll('.mp-ch-row')].filter(b => b.dataset.id !== 'none').map(b => [b.querySelector('.mp-ch-name').textContent.trim(), ((b.querySelector('.mp-ch-off') || {}).textContent || '').trim()]) } }""")
+    c.eq(g['subh'], tx(M, 'chToRoute', c.lang), '"Towards your route" heads the STARs entering on the route', what='label')
+    c.eq(g['rows'][0], ['S5A', ''], 'S5A, whose entry EN05 is on the typed route, comes first, unmarked', what='first STAR')
+    entry = tx(M, 'chEntry', c.lang)
+    c.ok(all(off == entry.replace('{p}', 'ENT1' if n in ('S1A', 'S2A') else f'EN0{n[1]}') for n, off in g['rows'][1:]), f"{g['rows']}",
+         'the others follow, each marked with its entry')
