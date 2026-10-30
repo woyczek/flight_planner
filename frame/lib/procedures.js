@@ -16,10 +16,6 @@
 //     (« via ODILO · ODILO 1A ») (§ 10.30, quatrième lecture).
 //   summaryOf(side, { byId, wind, via }) : les trois lignes du choix (« 28L · ↓ 12 kt · ← 6 kt », « ABLI4L via ABLIN »,
 //     « ILS 28L via PIZSA »), le même texte dans le volet de la Carte et le titre d'un côté de Carburant (§ 10.30, seconde lecture).
-//
-// Transition : conflictsOf et orderProcedures ont d'abord vécu dans frame/lib/current_flight.js (29/10/2026), puis flight_path.js,
-// qui les ré-exporte encore (current_flight.js ré-exporte flight_path.js), pour que les imports de la Carte continuent de marcher ;
-// les appelants importent d'ici, et la ré-exportation partira quand la Carte aura changé ses imports.
 
 import {
   label as windLabel
@@ -122,36 +118,31 @@ const reachesRunway = rec => (rec?.points || []).some(p => p?.phase !== 'missed'
 export const isAppTransition = rec => rec?.kind === 'APP' && (/^INA\b/i.test(String(rec?.name ?? '').trim()) || !!rec?.transition && !!rec
   .points?.length && !reachesRunway(rec));
 
-/** Les approches d'un terrain, listées une fois : { list, transitionsOf(id) }. Les segments d'approche initiale (isAppTransition) ne
- *  sont jamais des lignes. list : parmi les autres fiches, les approches sans transition et, pour une approche que l'eAIP ne donne que
- *  par point d'entrée (une fiche par entrée jusqu'à la piste, toutes avec une transition), sa fiche finale seule : celle qu'aucune
- *  autre fiche de même nom ne suit (une fiche alimente une autre quand son dernier repère est le premier de l'autre) ; sans fiche finale
- *  reconnue, toutes les fiches d'entrée. transitionsOf(id) : pour une approche donnée par ses entrées, les fiches qui mènent à sa fiche
- *  finale ; sinon ses transitions de même nom ; plus les segments d'approche initiale : ceux de son nom, et ceux qu'aucune finale ne
- *  nomme et qui desservent sa piste (le SIA les publie une fois pour toutes les finales de la piste : ILS, RNP, LOC…) ; jamais elle-même,
- *  triées par IAF (premier point) puis par transition. */
+/** Les approches d'un terrain, listées une fois : { list, transitionsOf(id) }. Une seule notion de transition (refonte § 10.33 R-F2) :
+ *  un segment d'approche initiale (isAppTransition) ou une fiche à transition au nom d'une finale ; jamais une ligne. list : toutes
+ *  les autres fiches (une approche que l'eAIP ne donne que par point d'entrée y est par sa fiche qui atteint la piste).
+ *  transitionsOf(id) : les transitions de son nom, et celles qu'aucune finale ne nomme et qui desservent sa piste (le SIA les publie une
+ *  fois pour toutes les finales de la piste : ILS, RNP, LOC…) ; jamais elle-même, triées par IAF (premier point) puis par transition. */
 export function appChoices(apps) {
   const every = apps || [],
-    init = every.filter(isAppTransition),
-    all = every.filter(r => !isAppTransition(r)),
-    main = all.filter(r => !r.transition),
-    named = new Set(main.map(r => nameOf(r))),
-    entry = all.filter(r => r.transition && !named.has(nameOf(r))),
-    feeds = (a, b) => a !== b && nameOf(a) === nameOf(b) && !!a.points?.at(-1)?.id && a.points.at(-1).id === b.points?.[0]?.id,
-    finals = entry.filter(r => !entry.some(x => feeds(r, x))),
-    list = [...main, ...(finals.length ? finals : entry)],
+    // une seule notion de transition d'approche (refonte § 10.33 R-F2) : un segment d'approche initiale (isAppTransition : « INA … », ou
+    // une transition qui n'atteint pas la piste), ou une fiche à transition qui porte le nom d'une finale sans transition (CIFP)
+    finalNames = new Set(every.filter(r => !r.transition && !isAppTransition(r)).map(r => nameOf(r))),
+    isTrans = r => isAppTransition(r) || !!r.transition && finalNames.has(nameOf(r)),
+    trans = every.filter(isTrans),
+    rest = every.filter(r => !isTrans(r)),
+    // les finales sans transition d'abord, puis celles qu'une approche donnée par ses entrées porte
+    list = [...rest.filter(r => !r.transition), ...rest.filter(r => r.transition)],
     listed = new Set(list.map(r => nameOf(r))),
     iaf = r => String(r?.points?.[0]?.id ?? ''),
     shares = (r, app) => servesAll(r) || servesAll(app) || r.runways.some(x => servesRwy(app, x));
   return {
     list,
     transitionsOf: id => {
-      const chosen = entry.find(r => r.id === id),
-        app = list.find(r => r.id === id) || every.find(r => r.id === id) || null,
-        own = chosen ? entry.filter(r => feeds(r, chosen)) : transitionsOf(all, id).filter(r => r.id !== id),
-        segs = app ? init.filter(r => nameOf(r) === nameOf(app) || !listed.has(nameOf(r)) && shares(r, app)) : [];
-      return [...new Map([...own, ...segs].filter(r => r.id !== id).map(r => [r.id, r])).values()].sort((a, b) => iaf(a).localeCompare(
-        iaf(b)) || String(a.transition ?? '').localeCompare(String(b.transition ?? '')));
+      const app = list.find(r => r.id === id) || every.find(r => r.id === id) || null,
+        own = app ? trans.filter(r => r.id !== id && (nameOf(r) === nameOf(app) || !listed.has(nameOf(r)) && shares(r, app))) : [];
+      return [...new Map(own.map(r => [r.id, r])).values()].sort((a, b) => iaf(a).localeCompare(iaf(b)) || String(a.transition ?? '')
+        .localeCompare(String(b.transition ?? '')));
     }
   };
 }

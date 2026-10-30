@@ -248,6 +248,9 @@
     `${main.id},${rnpFinal.id}`, ac.list.map(r => r.id).join());
   ck('appChoices : les transitions de l’approche donnée par ses entrées sont les fiches qui mènent à la fiche finale', ac.transitionsOf(
     rnpFinal.id).map(r => r.id).join() === rnpFeed.id);
+  // refonte § 10.33 R-F2 : une seule notion de transition, l'ordre de la liste ne suit pas celui des fiches reçues
+  ck('appChoices : les finales sans transition d’abord, quel que soit l’ordre reçu', appChoices([rnpFinal, mainTr, rnpFeed, main]).list
+    .map(r => r.id).join() === `${main.id},${rnpFinal.id}`);
   ck('appChoices : celles d’une approche à fiche principale sont ses transitions, jamais elle-même', ac.transitionsOf(main.id).map(r => r
       .id).join() === mainTr.id &&
     ac.transitionsOf(null).length === 0);
@@ -457,7 +460,8 @@
   ck('labelOf : deux finales de même type et piste gardent la lettre ; jamais deux libellés identiques (le premier point s’ajoute)',
     labelOf(zY, [zY, zZ]) === 'RNP Y 06' && labelOf(zZ, [zY, zZ]) === 'RNP Z 06' && labelOf(zRnp, [zRnp, zDup]) === 'RNP 06 · IZZ06' &&
     labelOf(zDup, [zRnp, zDup]) === 'RNP 06 · IZX06' && labelOf(zY, [zY]) === 'RNP 06');
-  ck('transitionLabelOf : « via OKAPI 1A » quand le nom commence par l’IAF ; « via ZP421 » quand le nom est l’IAF', transitionLabelOf(zT1) ===
+  ck('transitionLabelOf : « via OKAPI 1A » quand le nom commence par l’IAF ; « via ZP421 » quand le nom est l’IAF', transitionLabelOf(
+      zT1) ===
     'via OKAPI 1A' && transitionLabelOf(zEnt) === 'via ZP421', transitionLabelOf(zT1));
   const zSum = summaryOf({
     rwy: '06',

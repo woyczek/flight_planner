@@ -39,8 +39,6 @@
     routingChain,
     altitudeAt,
     routeNmToFlown,
-    conflictsOf,
-    orderProcedures,
     routeMidpoint
   } from '../current_flight.js?v=0';
 
@@ -845,15 +843,6 @@
     fAAA = FPr.find(p => p.id === 'AAA').nm;
   ck('routeNmToFlown : un point de la route tombe sur son nm du chemin volé', Math.abs(toF(rAAA) - fAAA) < 1e-6, `${toF(rAAA)} / ${fAAA}`);
   ck('routeNmToFlown : sans chemin, l’identité', routeNmToFlown(fl({}), null)(42) === 42);
-  // conflictsOf et orderProcedures vivent dans procedures.js (banc frame/lib/test/procedures.html) : ici, la ré-exportation
-  ck('ré-exportation : conflictsOf et orderProcedures marchent depuis current_flight.js (procedures.js les porte)',
-    typeof orderProcedures === 'function' &&
-    orderProcedures(['25', '07'], 'rwy', {}, new Map()).join() === '07,25' && conflictsOf('sid', {
-      id: 'x',
-      runways: ['07']
-    }, {
-      rwy: '25'
-    }, new Map()).length === 1);
 
   // § 10.29 a : loadProcedures rend les mêmes enregistrements à Carburant et à la Carte, sans transition égale à sa procédure
   const LPd = await loadProcedures(fakeDb, fl({

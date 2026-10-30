@@ -1,9 +1,9 @@
 // V3 frame/lib (propriétaire : maps ; fuel et Atmosphère s'en servent) — la route et ses procédures choisies, un seul chemin
 // « route + procédures » pour le profil, les marques, les heures et le devis (V3_SPECIFICATION § 10.20), l'altitude prévue le
-// long de ce chemin, et les conflits et l'ordre des listes de procédures. Sorti de current_flight.js le 29 octobre 2026
-// (V3_SPECIFICATION § 10.29 b), qui le ré-exporte pendant la transition. Calcul pur.
+// long de ce chemin. Sorti de current_flight.js le 29 octobre 2026 (V3_SPECIFICATION § 10.29 b), qui le ré-exporte pendant la
+// transition ; les conflits et l'ordre des listes de procédures sont dans procedures.js. Calcul pur.
 // API : proceduresOf, loadProcedures, dedupProcs, expandedPath, flownPath, routingChain, routeNmToFlown, altitudeAt,
-//   conflictsOf, orderProcedures, routeMidpoint (le point qui choisit le modèle météo).
+//   routeMidpoint (le point qui choisit le modèle météo).
 
 import {
   wrapLon
@@ -478,16 +478,6 @@ export function altitudeAt(f, nm, opts = {}) {
   if (tod > 0 && D > 0 && nm > D - tod) ft = Math.min(ft, L * Math.max(0, D - nm) / tod);
   return ft;
 }
-
-// ---------------------------------------------------------------- conflits et ordre des listes de procédures (V3_SPECIFICATION § 10.23)
-// Déplacés dans frame/lib/procedures.js (règles pures partagées par Carburant et la Carte, § 10.29 c). Ré-exportés ici pendant la
-// transition (current_flight.js ré-exporte ce fichier), pour que les imports de la Carte continuent de marcher ; à retirer quand
-// elle importera procedures.js.
-export {
-  conflictsOf,
-  orderProcedures
-}
-from './procedures.js';
 
 // ---------------------------------------------------------------- le point qui choisit le modèle météo
 /** Point à mi-longueur d'une route (grand cercle point à point ; interpolé dans son tronçon, longitude dans [-180, 180[) : le

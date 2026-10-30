@@ -224,7 +224,7 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - **The procedure rules** (`frame/lib/procedures.js`, 29 Oct 2026, § 10.29 c): pure functions on aerodb's procedure records, shared by
   Fuel's lists and the Map's choose mode — `servesRwy`, `sameRwy`, `nameOf`, `conflictsOf` and `orderProcedures` (the ⚠ marks and the
   order of the lists, as data), `transitionsOf`, `appChoices`, `runwayChoices`; no state, no text. Bench `frame/lib/test/procedures.html`
-  (F32). `conflictsOf` and `orderProcedures` are still re-exported by `flight_path.js` (hence `current_flight.js`) during the transition.
+  (F32). Callers import them from here (the re-export in `flight_path.js` was removed by refactoring R-F2, 30 Oct 2026).
   Since § 10.30 (30 Oct 2026): `runwayOf(proc)` (the single runway a procedure serves, else null) and `firstServing(list, rwy)` (the
   first of the group that serves the runway: « Choisir OKRIX5B »).
   § 10.31 (30 Oct 2026): `pointsOf(proc)`, `exitOf(proc)` (a SID's last named point), `entryOf(proc)` (a STAR's first), and
@@ -234,6 +234,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   `provenance(words, prev)` for Auto; bench `frame/lib/test/route_text.html` (F69).
   Fourth reading of § 10.30 (30 Oct 2026, LFPO): `isAppTransition(rec)` (an APP record named « INA … », or with a transition and
   points that never reach a runway threshold « RWnn »: an initial approach segment, never a row); `appChoices` lists only the finals
+  (refactoring R-F2: one notion of an approach transition — an initial approach segment, or a record with a transition named like
+  a final without one, as the CIFP codes them; every other record is a final, those without a transition first)
   and its `transitionsOf(id)` adds the segments of the final's name and those no final names that serve its runway (the SIA's
   segments are common to ILS, RNP, LOC…), sorted by IAF; `labelOf(app, list)` (« ILS 06 », « RNP 06 »: type and runway, the SIA
   letter when two finals would read the same, then the first point); `transitionLabelOf(rec)` (« via ODILO 1A »). In

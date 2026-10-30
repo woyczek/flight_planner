@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refonte, sans changement de comportement — R-F2a, une seule notion de transition d'approche** (`frame/lib/procedures.js`
+  `appChoices`; the « fiche qui en alimente une autre » rule and its fallback removed, `isAppTransition` already covers them; the
+  dead re-export of `conflictsOf` / `orderProcedures` in `flight_path.js` removed; benches F32 and current_flight).
 - **Refonte, sans changement de comportement — R-F1, une seule règle du vent sur une piste** (`frame/lib/wind.js` `runwayAxis`,
   `oppositeRunway`, `bestRunwayEnd`; Fuel's `weather.js runwayWind` removed; bench F62) — the axis rule of the Map for both modules.
 - **Frame: the end-of-cycle line says what to do** (`frame/app.js`; frame SPEC § 3, INTEGRATION § 15.3, DECISIONS; noreg
