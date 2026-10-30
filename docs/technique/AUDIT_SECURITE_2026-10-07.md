@@ -952,8 +952,9 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 100 | Help panel and welcome card placed under the module (09c9cacb4) | acceptable |
 | 101 | Refactor R-M2 + R-M5 (b): every Map label through one request, aerodb answers deduplicated by key (87748d47a) | acceptable, no change of behaviour |
 | 102 | Refactor R-C6: one base for the GitHub and GitLab transports (72ba695a8) | acceptable, no guard lost |
-| 103 | Suite update refused while a job or a sync runs; trust stated (2a02aedde): the notes of 97 closed | acceptable, one note |
+| 103 | Suite update refused while a job or a sync runs; trust stated (2a02aedde): the notes of 97 closed | acceptable, one note (closed in 105) |
 | 104 | The take bound to the zip shown in the plan (79aaed096, 1e7a06443): the note of 95 closed; approximate outlines on the zone map | acceptable, one note |
+| 105 | Suite update: fetch outside the locks, job starts held during the write (99b4c2a25): the note of 103 closed | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1928,6 +1929,15 @@ the zip by its pattern without restricting the rest of its name, so a zip whose 
 (an accent, a bracket, over 150 characters) is shown in the plan but left out of `zips`, and the real take then picks the
 newest file unchecked for that source; the module should not start the real take (or ask to rename the file) when a taken
 source has no entry.
+
+**105. The note of 103 (99b4c2a25) — acceptable, one note.** The plan and its `git fetch` run outside every lock;
+`Jobs.hold` raises a flag under the jobs lock and releases the lock at once (refused while a job runs or another update
+holds the flag), so `start()` answers 409 while `view`, `cancel`, `claim` and `put` keep answering; `SYNC_LOCK` is taken
+without waiting for the writing phase only (the plan done again without a fetch, then the checkout or the fast-forward);
+the lock and the flag are released on every exit. Note: the write goes to the target of the plan this request has just
+made, which is not necessarily the one shown on screen (the request fetches again, and another fetch may move the
+references before the write); still a strict tag or a fast-forward, on this workstation only. Pass the commit shown
+(`target`, 40 hexadecimal characters) with the request and refuse (`changed`) when the plan done again no longer points to it.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
