@@ -1,0 +1,67 @@
+<!doctype html>
+<!-- Banc des heures de l'appli Pilote (frame/lib/time.js) : fmtZ, fmtZLocal, fmtDateZ, fmtDayZ (« 29/10 16:53Z », § 10.29 h). Fonctions
+     pures, dates inventées ; page nue ; window.__bench = { done, pass, fail, rows } pour un pilote (Playwright). Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>time — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">time.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    fmtZ,
+    fmtDateZ,
+    fmtDayZ
+  } from '../time.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  /** Une vérification : nom, vrai ou faux, détail montré en cas d'échec. */
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  ck('fmtZ : heure UTC', fmtZ('2026-10-29T16:53:20Z') === '16:53Z', fmtZ('2026-10-29T16:53:20Z'));
+  ck('fmtDateZ : date et heure UTC dans la langue', fmtDateZ('2026-10-29T16:53:20Z', 'fr') === '29/10/2026 16:53Z', fmtDateZ(
+    '2026-10-29T16:53:20Z', 'fr'));
+  ck('fmtDayZ : jour, mois et heure UTC', fmtDayZ('2026-10-29T16:53:00Z') === '29/10 16:53Z', fmtDayZ('2026-10-29T16:53:00Z'));
+  ck('fmtDayZ : zéros de tête', fmtDayZ('2026-01-05T07:04:00Z') === '05/01 07:04Z', fmtDayZ('2026-01-05T07:04:00Z'));
+  ck('fmtDayZ : UTC et non l\'heure de l\'appareil (22h30 à -02:00 est le lendemain en UTC)', fmtDayZ('2026-10-29T22:30:00-02:00') ===
+    '30/10 00:30Z', fmtDayZ('2026-10-29T22:30:00-02:00'));
+  ck('fmtDayZ : un nombre de millisecondes et un objet Date', fmtDayZ(Date.UTC(2026, 9, 29, 16, 53)) === '29/10 16:53Z' && fmtDayZ(new Date(
+    Date.UTC(2026, 9, 29, 16, 53))) === '29/10 16:53Z');
+  ck('fmtDayZ : vide ou illisible → \'\'', fmtDayZ(null) === '' && fmtDayZ('') === '' && fmtDayZ(undefined) === '' && fmtDayZ(
+    'pas une date') === '');
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

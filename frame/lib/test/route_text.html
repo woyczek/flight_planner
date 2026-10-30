@@ -1,0 +1,127 @@
+<!doctype html>
+<!-- Banc du texte de route (frame/lib/route_text.js, V3_SPECIFICATION § 10.31) : provenance des mots d'un Auto, forme OACI avec « DCT »,
+     noms de SID et de STAR posés depuis le choix et relus. Fonctions pures ; page nue ; window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>route_text — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">route_text.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    provenance,
+    textFromTokens,
+    withProcedures,
+    proceduresOfText
+  } from '../route_text.js?v=0';
+  const out = document.getElementById('out'),
+    rows = [];
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      got: String(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `  → ${got}`}`;
+    out.appendChild(l);
+  }
+  const J = x => JSON.stringify(x);
+  // provenance : les mots d'un Auto précédent
+  const seq = [['LFRS', false], ['TSA01', true], ['UT460', true], ['TSA05', true], ['LFML', false]].map(([w, g]) => ({
+    w,
+    g
+  }));
+  ck('provenance : le texte écrit par l’Auto, mot pour mot', J(provenance(['LFRS', 'TSA01', 'UT460', 'TSA05', 'LFML'], seq)) === J([false,
+    true, true, true, false]));
+  ck('provenance : un mot ajouté par le pilote est posé, rien ne se décale', J(provenance(['LFRS', 'TSA01', 'UT460', 'TSA05', 'XYZ',
+    'LFML'], seq)) === J([false, true, true, true, false, false]));
+  ck('provenance : sans Auto précédent, tout est posé', J(provenance(['A', 'B'], null)) === J([false, false]) && J(provenance([], seq)) ===
+    '[]');
+  // textFromTokens : forme OACI
+  const P = id => ({
+    pt: {
+      id
+    }
+  });
+  ck('textFromTokens dct : « DCT » entre deux points de route, jamais contre le départ ni l’arrivée', textFromTokens([P('LFBO'), {
+    keep: 'LACOU7B'
+  }, P('LACOU'), P('LMG'), {
+    keep: 'UN859'
+  }, P('AMB'), {
+    keep: 'OKRIX5A'
+  }, P('LFPO')], {
+    dct: true
+  }) === 'LFBO LACOU7B LACOU DCT LMG UN859 AMB OKRIX5A LFPO');
+  ck('textFromTokens sans dct : rien d’ajouté', textFromTokens([P('A'), P('B'), P('C'), P('D')]) === 'A B C D' && textFromTokens([P('A'),
+    P('B'), P('C')], {
+    dct: true
+  }) === 'A B C');
+  // withProcedures : rendu
+  const o = {
+    dep: 'LFBO',
+    arr: 'LFPO',
+    sidNames: ['LACOU7B', 'FINOT5B'],
+    starNames: ['OKRIX5A', 'MOLBA1W']
+  };
+  const w1 = withProcedures('LFBO LMG UN859 AMB LFPO', {
+    ...o,
+    sid: 'LACOU7B',
+    exit: 'LACOU',
+    sidPoints: ['TOU01', 'LACOU'],
+    star: 'OKRIX5A',
+    entry: 'OKRIX',
+    starPoints: ['OKRIX', 'PO401']
+  });
+  ck('withProcedures : SID et sa sortie après le départ, entrée et STAR avant l’arrivée ; le premier point suivant est dit', w1.text ===
+    'LFBO LACOU7B LACOU LMG UN859 AMB OKRIX OKRIX5A LFPO' && w1.exitAdded && w1.entryAdded && w1.next === 'LMG', J(w1));
+  const w2 = withProcedures('LFBO FINOT5B FINOT LACOU LMG AMB MOLBA1W LFPO', {
+    ...o,
+    sid: 'LACOU7B',
+    exit: 'LACOU',
+    sidPoints: ['LACOU'],
+    star: null
+  });
+  ck('withProcedures : les anciens noms retirés ; un point de la procédure déjà dans la route : pas de sortie ajoutée', w2.text ===
+    'LFBO LACOU7B FINOT LACOU LMG AMB LFPO' && !w2.exitAdded, J(w2));
+  ck('withProcedures : rien de choisi, le texte sans noms de procédures', withProcedures('LFBO LACOU7B LACOU LMG LFPO', o).text ===
+    'LFBO LACOU LMG LFPO');
+  // proceduresOfText : relecture
+  ck('proceduresOfText : la première SID du départ, la dernière STAR de l’arrivée ; rien sinon', J(proceduresOfText(
+    'LFBO lacou7b LACOU LMG AMB OKRIX5A LFPO', o)) === J({
+    sid: 'LACOU7B',
+    star: 'OKRIX5A'
+  }) && J(proceduresOfText('LFBO LMG LFPO', o)) === J({
+    sid: null,
+    star: null
+  }));
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

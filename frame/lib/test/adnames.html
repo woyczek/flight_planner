@@ -1,0 +1,82 @@
+<!doctype html>
+<!-- Banc du nom des terrains (frame/lib/adnames.js, V3_SPECIFICATION § 10.27) : libellé, titre « LFPO Paris-Orly », ligne
+     « LFPO — Paris-Orly ». Fonctions pures ; page nue ; window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>adnames — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">adnames.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    adLabel,
+    adTitle,
+    adLine
+  } from '../adnames.js?v=0';
+  const out = document.getElementById('out'),
+    rows = [];
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      got: String(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `  → ${got}`}`;
+    out.appendChild(l);
+  }
+  const ory = {
+    icao: 'LFVX',
+    name: '  Testville-Nord  '
+  };
+  ck('adLabel : le nom publié, nettoyé', adLabel(ory) === 'Testville-Nord', adLabel(ory));
+  ck('adLabel : rien sans nom, ni quand le nom n’est que le code', adLabel({
+    icao: 'LFVX'
+  }) === '' && adLabel({
+    code: 'LFVX',
+    name: 'lfvx'
+  }) === '' && adLabel(null) === '');
+  ck('adLabel : la ville quand le nom ne la porte pas, jamais deux fois', adLabel({
+    icao: 'LFVY',
+    name: 'Les Essarts',
+    city: 'Testville'
+  }) === 'Les Essarts (Testville)' && adLabel({
+    icao: 'LFVY',
+    name: 'Testville-Sud',
+    city: 'Testville'
+  }) === 'Testville-Sud');
+  ck('adTitle : « LFVX Testville-Nord », le code seul sans nom, rien sans code', adTitle(ory) === 'LFVX Testville-Nord' && adTitle({
+    name: 'X'
+  }, 'lfvz') === 'LFVZ X' && adTitle({}, 'LFVZ') === 'LFVZ' && adTitle(null) === '');
+  ck('adLine : « LFVX — Testville-Nord », le code seul sans nom', adLine(ory) === 'LFVX — Testville-Nord' && adLine(null, 'LFVZ') ===
+    'LFVZ');
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>
