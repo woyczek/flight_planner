@@ -345,6 +345,11 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   `wind.severity` (ok, warn, alert: the design's green, orange, red), the reason in the row's title. The summary at the top is
   the pane's table of contents: three lines always ("—" when not chosen), a tap on a family's label scrolls to its group and
   unfolds it, ✕ (chosen families only) clears.
+- **Approaches** (§ 10.30 fourth reading): the rows are the finals (`appChoices(apps).list`) by `labelOf(app, list)` ("ILS 06",
+  unique within the list), the published name in the row's title; the sub-rows of the chosen final are `transitionsOf(id)`,
+  the SIA's initial segments ("INA … RWY 06", shared by every final of the runway) among them, by `transitionLabelOf` ("via
+  ODILO · ODILO 1A"), in the final's hue; a chosen transition sharing no point with its final is joined to the final's first
+  point by a dashed line (`join`).
 - **Runway and procedure correct each other** (one line under the procedure's group, one tap, never silently): the procedure just
   chosen serves one other runway → "OPAL2E sert la 25 — Passer en 25"; otherwise (the runway changed, or the procedure serves
   several) → "OKRIX5A ne sert pas la 07 — Choisir OKRIX5B", the first of the group that serves it (`firstServing`); the row keeps ⚠.

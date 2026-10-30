@@ -1637,7 +1637,7 @@ def d66(c):
     c.until("() => !!document.querySelector('.mp-ch-subs')", what='the transitions under the chosen approach')
     subs = c.js("() => [...document.querySelectorAll('.mp-ch-subs .mp-ch-row')].map(b => [b.dataset.id, b.textContent.trim()])")
     c.eq(norm(subs[0][1]), norm(tx(M, 'chNoTrans', c.lang)), '"No transition" first', what='first sub-row')
-    c.eq([norm(x[1]) for x in subs[1:]], ['IAF1'], 'then the transition by its entry', what='sub-rows')
+    c.eq([norm(x[1]) for x in subs[1:]], ['via IAF1'], 'then the transition by its entry (transitionLabelOf)', what='sub-rows')
     c.tap('.mp-ch-subs .mp-ch-row[data-id="LFML.APP.I31.RW31.IAF1"]')
     c.until("() => /IAF1/.test((document.querySelector('.mp-ch-sum[data-fam=app] .mp-ch-sum-v') || {}).textContent || '')", what='the summary of the approach')
     c.eq(dict(c.js(_CH_ROWS)['sums']).get('app'), 'I31 via IAF1', 'the approach reads "I31 via IAF1"', what='summary')
@@ -1760,3 +1760,46 @@ def d69(c):
     top = c.js("() => { const g = document.querySelector('.mp-ch-grp[data-fam=app]').getBoundingClientRect(), b = window.__mp.S.dbodyEl.getBoundingClientRect(); return [g.top, b.top, b.bottom] }")
     c.ok(top[1] - 2 <= top[0] <= top[2], f'{top}', 'the group of the approaches is in view')
     c.eq(c.count('.mp-ch-sum[data-fam=app] .mp-ch-x'), 0, 'no ✕ on a family not chosen (only its label)', what='clear buttons')
+
+
+# ------------------------------------------------------------------------------------------------------ D70
+# LFML as the SIA publishes it: two finals to 31 (ILS, RNP), and initial approach segments "INA RNAV RWY 31" published once for every
+# final of the runway: ODILO 1A ends on the finals' IF (XF01), ABC 1A shares no point with them
+_CH3_PROCS = [_proc('LFML', 'STAR', 'S1A', '31', [_pp(1, 'ENT1', 43.95, 4.3), _pp(2, 'MD31', 43.6, 4.9)], cycle=AERO_CYCLE),
+              _proc('LFML', 'APP', 'ILS RWY 31', '31', [_pp(1, 'XF01', 43.52, 4.95), _pp(2, 'RW31', 43.44, 5.20)], cycle=AERO_CYCLE),
+              _proc('LFML', 'APP', 'RNP RWY 31', '31', [_pp(1, 'XF02', 43.55, 4.9), _pp(2, 'RW31', 43.44, 5.20)], cycle=AERO_CYCLE),
+              _proc('LFML', 'APP', 'INA RNAV RWY 31', '31', [_pp(1, 'ODILO', 43.75, 4.6), _pp(2, 'XF01', 43.52, 4.95)], trans='ODILO 1A',
+                    cycle=AERO_CYCLE),
+              _proc('LFML', 'APP', 'INA RNAV RWY 31', '31', [_pp(1, 'ABC1', 43.8, 5.3), _pp(2, 'ABC2', 43.7, 5.25)], trans='ABC 1A',
+                    cycle=AERO_CYCLE)]
+_CH3_FILE = {**_CH_FILE, 'procedures': _CH3_PROCS}
+
+
+@case('D70', 'Choosing on the Map: approaches by their short label, the SIA’s initial segments as transitions in the hue of their final', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='V3 § 10.30 fourth reading: the rows are the finals (appChoices().list) by labelOf ("ILS 31", "RNP 31"), the published name in the title; the INA records are sub-rows of the chosen final (transitionLabelOf, "via ODILO · ODILO 1A"), in its hue; a transition sharing no point with its final joins it by a dashed line')
+def d70(c):
+    _ch_open(c, {'rwy': '31'}, file=_CH3_FILE)
+    rows = c.js("() => [...document.querySelectorAll('.mp-ch-grp[data-fam=app] .mp-ch-row')].filter(b => b.dataset.id !== 'none').map(b => [b.dataset.id, b.querySelector('.mp-ch-name').textContent.trim(), b.title, b.style.getPropertyValue('--c')])")
+    c.eq(sorted(r[1] for r in rows), ['ILS 31', 'RNP 31'], 'the finals only, by their short label (the INA segments are not rows)', what='approach rows')
+    ils = next(r for r in rows if r[1] == 'ILS 31')
+    c.ok('ILS RWY 31' in ils[2], ils[2], 'the published name in the row’s title')
+    c.tap(f'.mp-ch-row[data-id="{ils[0]}"]')
+    c.until("() => !!document.querySelector('.mp-ch-subs')", what='the transitions under the chosen final')
+    subs = c.js("() => [...document.querySelectorAll('.mp-ch-subs .mp-ch-row')].filter(b => b.dataset.id !== 'none').map(b => [b.dataset.id, b.querySelector('.mp-ch-name').textContent.trim(), b.style.getPropertyValue('--c')])")
+    c.eq(sorted(norm(x[1]) for x in subs), ['via ABC1 · ABC 1A', 'via ODILO · ODILO 1A'], 'the SIA’s initial segments as transitions (transitionLabelOf)', what='sub-rows')
+    c.ok(all(x[2] == ils[3] for x in subs), f'{subs} vs {ils[3]}', 'each transition in the hue of its final')
+    # ABC 1A shares no point with the ILS: a dashed junction to the final's first point; ODILO 1A ends on its IF: none
+    abc = next(x[0] for x in subs if 'ABC' in x[1])
+    c.tap(f'.mp-ch-subs .mp-ch-row[data-id="{abc}"]')
+    c.until("(id) => (document.querySelector(`.mp-ch-subs .mp-ch-row[data-id=\"${id}\"]`) || {}).getAttribute && document.querySelector(`.mp-ch-subs .mp-ch-row[data-id=\"${id}\"]`).getAttribute('aria-pressed') === 'true'", abc,
+            what='ABC 1A chosen')
+    joins = c.js("""async () => { const C = await import('/modules/maps/choose.js'), S = window.__mp.S, L = C.chooseLayout(document.createElement('canvas').getContext('2d'), S.toC);
+      return L.traces.filter(t => t.join).map(t => t.it.id) }""")
+    c.eq(joins, [abc], 'a dashed junction from ABC 1A to the final', what='junctions')
+    odilo = next(x[0] for x in subs if 'ODILO' in x[1])
+    c.tap(f'.mp-ch-subs .mp-ch-row[data-id="{odilo}"]')
+    c.wait(300)
+    joins = c.js("""async () => { const C = await import('/modules/maps/choose.js'), S = window.__mp.S, L = C.chooseLayout(document.createElement('canvas').getContext('2d'), S.toC);
+      return L.traces.filter(t => t.join).length }""")
+    c.eq(joins, 0, 'ODILO 1A ends on the final’s IF: no junction', what='junctions')

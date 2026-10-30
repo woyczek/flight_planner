@@ -143,11 +143,12 @@ function recsOf(C, fam) {
 /** Nom d'une fiche pour une ligne ou un cartouche : la piste (« Piste 25 »), sinon le nom (les fiches sans nom ne sont pas listées),
  *  la piste quand elle n'en dessert qu'une et que le nom ne la dit pas, l'état de la source ; une transition porte le nom de sa
  *  transition. ⌛ et ⚠ viennent à part. */
-function labelOf(fam, rec) {
+function labelOf(fam, rec, finals = null) {
   if (fam === 'rwy') return tt(TX.chRwy, {
     r: rec.id
   });
-  const name = (fam === 'appTrans' ? rec.transition : null) || PR.nameOf(rec, rec.id) || rec.id,
+  const name = fam === 'appTrans' ? PR.transitionLabelOf(rec) : fam === 'app' && finals ? PR.labelOf(rec, finals) : PR.nameOf(rec, rec
+      .id) || rec.id,
     src = rec.status === 'xplane' || rec.local ? tt(TX.procX) : rec.status === 'lnm' ? tt(TX.procLnm) : '';
   return [name, src].filter(Boolean).join(' · ');
 }
@@ -202,8 +203,12 @@ function windOf(C, rec) {
  *  pts, anchor (point de sortie d'une SID, d'entrée sinon), chosen, wind (piste) }. */
 function itemsOf(C, fam) {
   const o = eff(C),
-    exit = fam === 'sid';
-  return recsOf(C, fam).map((rec, hi) => {
+    exit = fam === 'sid',
+    finals = fam === 'app' || fam === 'appTrans' ? recsOf(C, 'app') : null,
+    // une transition d'approche prend la teinte de sa finale (V3 § 10.30, quatrième lecture)
+    finalHi = fam === 'appTrans' ? Math.max(0, finals.findIndex(r => r.id === o.app)) : null;
+  return recsOf(C, fam).map((rec, i) => {
+    const hi = finalHi ?? i;
     const why = fam === 'rwy' ? rwyWhy(C, rec) : PR.conflictsOf(fam, rec, o, C.byId).map(c => c.kind === 'rwy' ? tt(TX.chConflictRwy, {
         rwy: c.rwy
       }) : tt(TX.chConflictStarApp, {
@@ -217,7 +222,9 @@ function itemsOf(C, fam) {
       fam,
       rec,
       hi,
-      label: labelOf(fam, rec),
+      label: labelOf(fam, rec, finals),
+      // le nom publié de l'approche ou de sa transition, en infobulle (le libellé court est sur la ligne)
+      title: fam === 'app' || fam === 'appTrans' ? [rec.name, rec.transition].filter(Boolean).join(' · ') : '',
       old: !!rec.outdated,
       why,
       pts,
@@ -525,7 +532,7 @@ function fixOf(C, fam) {
 /** Ligne d'un groupe : l'échantillon de teinte (pas pour les pistes), le nom, le vent (pistes), ⌛ (gris) et ⚠ (orange) en fin de
  *  ligne ; la ligne choisie pressée. */
 function rowHtml(C, it) {
-  const tip = [it.old ? tt(TX.procOutdated) : '', ...it.why, it.wind?.tip || ''].filter(Boolean).join(' · ');
+  const tip = [it.title || '', it.old ? tt(TX.procOutdated) : '', ...it.why, it.wind?.tip || ''].filter(Boolean).join(' · ');
   return `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.hl === it.id ? 1 : 0}" aria-pressed="${it.chosen}"${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)}"`}${tip ? ` title="${esc(tip)}"` : ''}>${it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>'}<span class="mp-ch-name">${esc(it.label)}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${it.wind ? `<span class="mp-ch-wind" data-sev="${it.wind.sev}">${esc(it.wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" role="img" aria-label="${esc(tt(TX.procOutdated))}">⌛</span>` : ''}${it.why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(it.why.join(' · '))}">⚠</span>` : ''}</button>`;
 }
 /** Sous-lignes de l'approche choisie : « Sans transition », puis ses transitions (V3 § 10.30 : la transition sous l'approche). */
@@ -746,9 +753,20 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
       dash: true
     });
   const at = (C.items.appTrans || []).find(i => i.chosen);
-  if (at) trace(at, pointsOf(at.rec).map(p => toC(p.lat, p.lon)), {
-    dash: true
-  });
+  if (at) {
+    const tp = pointsOf(at.rec),
+      fin = o.app && C.byId.get(o.app),
+      fp = fin ? pointsOf(fin) : [],
+      shared = tp.some(p => p.id && fp.some(q => q.id === p.id));
+    trace(at, tp.map(p => toC(p.lat, p.lon)), {
+      dash: true
+    });
+    // sans point commun, la jonction de la fin de la transition au premier point de la finale est un tireté (§ 10.20)
+    if (!shared && tp.length && fp.length) trace(at, [tp.at(-1), fp[0]].map(p => toC(p.lat, p.lon)), {
+      dash: true,
+      join: true
+    });
+  }
   // ordre de dessin (V3 § 10.30, troisième lecture) : du dessous au dessus, ⌛, ⚠, compatibles, choisies, la surlignée en dernier
   const rank = it => it.id === hl ? 4 : it.chosen ? 3 : it.why.length ? 1 : it.old ? 0 : 2;
   L.traces.sort((a, b) => rank(a.it) - rank(b.it));
