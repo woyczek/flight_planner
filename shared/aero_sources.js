@@ -613,10 +613,11 @@
       const len = r.dimension?.length,
         m = len && Number.isFinite(+len.value) ? +len.value * (len.unit === 1 ? .3048 : 1) : null;
       return {
-        id: String(r.designator),
+        id: String(r.designator).slice(0, 8), // un indicatif de piste tient en 8 signes : une chaîne étrange n'entre pas dans la base
         trueHdg: Number.isFinite(r.trueHeading) ? Math.round(r.trueHeading) : null,
         lengthM: m == null ? null : Math.round(m),
-        surface: OA_SURFACE[r.surface?.mainComposite] || 'unknown',
+        surface: Object.hasOwn(OA_SURFACE, r.surface?.mainComposite) ? OA_SURFACE[r.surface.mainComposite] :
+        'unknown', // clé propre seulement
         main: !!r.mainRunway
       };
     });
