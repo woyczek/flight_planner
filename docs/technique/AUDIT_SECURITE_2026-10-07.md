@@ -908,6 +908,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 56 | Frame: IVAO account without an application, one source of return addresses (e13964b44) | acceptable, one remark |
 | 57 | Launcher: the « aircraft » job set, `regen/verbs`, IVAO retouch (d8919b0e6) | acceptable, two notes |
 | 58 | Launcher: the « vfr » job set, common rules for children and purges (ab0258453) | acceptable; notes of 57 settled; three notes |
+| 59 | Data module: a panel per group (2456bf289) | acceptable |
+| 60 | Fuel two-word procedure name (bae413f55), Map TOC / TOD (3ed39a3e4) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1588,6 +1590,15 @@ pause between requests and 30 s between starts; build goes through `vfr_import`'
 `/__setup/vfr-import` route checks first): check `merge_pending` before writing; `vfr._get` reads without a ceiling and
 follows redirects (reuse the 200 MB ceiling of `aero_fetch.get`); two children still get the full environment
 (`base_sources._git`, the headless browser of `base.py`): use `child_env()` / `git_child_env()` there too.
+
+**59. Data module, a panel per group (2456bf289) — acceptable.** The declaration lists `regen/job`, `regen/verbs` and
+`sync-status` only; a verb unknown to the launcher is greyed with its reason. The page sends identifiers only (zones and
+personal sources, States, a cycle, codes; `dry` for a plan), never a path, and every verb checks them again (25, 28, 57,
+58). Publishing records runs a dry plan, asks, then runs the real job with the same arguments, the trigram being the
+job's author. One operation at a time. Names, identifiers, manual addresses (https only) and report lines are escaped;
+states, verbs and outcomes go through closed lists; selectors use `CSS.escape`; the journal keeps counts and results.
+
+**60. Two small commits (bae413f55, 3ed39a3e4) — acceptable.** No write, network or new HTML.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
