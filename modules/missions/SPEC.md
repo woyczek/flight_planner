@@ -91,6 +91,17 @@ needs and drop the imitation:
 - Target size: the two primitives under 400 lines together, benched (pagination, address, keys) without a browser
   for `pagesOf`, and one case per layout for `book()`.
 
+**Light first, full as a layer (user, 30 Oct: "c'est fort simplifié ; chacun de ces petits gestes a coûté des
+tokens et a un vrai effet skeuomorphe ; probablement deux versions, une light que je testerai, une full plus
+lourde mais terriblement réaliste" — counter-proposal of the ergonomics session, retained: one reader, two
+skins, never two components):**
+- The **light** version is the component itself (sections, controls, address, plain skin): built and tested first.
+- The **full** version is a visual layer on top of the same component, opted in per design: the turning leaf with its
+  recto and verso, the seal's opening animation, the bookmark that moves with the page, V2's images and gestures
+  reused as they are (`shared/deco/<design>/mission-*.webp`). It may add visuals; it may not change the pagination,
+  the controls, the order or the address. Without the layer, or under `prefers-reduced-motion`, the light reader is
+  whole. The cost of V2's gestures is kept, on a base written once.
+
 ## 6. The crew's rendezvous (after the first step)
 
 - An assignment (`affectations.yaml`, written by the CPCO — V2 today) gains, per participant or per operation, the
