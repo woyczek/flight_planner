@@ -244,7 +244,7 @@ commits its outputs on the workstation (the launcher's `commit_outputs`); a grey
 
 | Group | Items | Télécharger | Construire | Purger | Today in V2 |
 |---|---|---|---|---|---|
-| Base aéronautique | zones | `base/fetch` | `base/build` | `base/purge` | delivered |
+| Base aéronautique | zones | `base/fetch`, and `base/pickup` for the files to drop by hand (the SIA France zip, the NATS zip: taken from Downloads, dry run and one question first, raw sources never committed, never in « Tout mettre à jour ») | `base/build` | `base/purge` | delivered |
 | Procédures | the States with a bulk source only: LF (the SIA's eAIP) and K (the FAA's CIFP); an EAD Basic State is never fetched in bulk (`frame/aerodb/EAD_BASIC.md` § 1: one aerodrome at a time, « Relire » in Fuel or on the Map) | `proc/fetch` | `proc/build` | `proc/purge` | per aerodrome only (`proc/eaip-fetch`, `proc/ead-fetch`) |
 | Points VFR des cartes VAC | the cycle in force (France); Purger clears the cached charts of every cycle | `vfr/fetch` | `vfr/build` | `vfr/purge` | `/__setup/vfr-import` (a compiled file picked in the page) |
 | Appareils (types et performances) | ICAO types (the fleet's by default) | `aircraft/fetch` | `aircraft/build` | `aircraft/purge` | `/__setup/aircraft-db` |

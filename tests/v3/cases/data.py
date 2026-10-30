@@ -4,6 +4,9 @@ Rules covered
   * L18 « Tout mettre à jour » (SPEC § 5.3) against the fake launcher: the plan question and its No, the eight jobs in the published order then ONE sync with the
     gesture and one notification, the stop at the first failure (nothing published), Arrêter mid-chain, the skipped sets with their reasons, the chain interrupted by a
     reload, the attention mark of a published cycle gone by on Construire and on the button.
+  * L19 « Prendre le fichier téléchargé » (base/pickup) against the fake launcher: the fourth verb of the base panel, the plan (dry sent) then ONE question (zip found, file
+    missing with its pattern, where the files go), No takes nothing, Yes sends dry false, the summary and the hint, one journal entry, nothing found says the missing files
+    without a question, a partial end, the button under the manual sources of a download, grey when the launcher does not know the verb.
   * L16 / L17 (V3 § 10.34, lot A1: the same panel for every group): L16 the pure functions (the SETS table, the verbs a launcher knows and the
     old-launcher fallback, the grey reason of a panel, the States offered, the ICAO types field, the arguments, the view and the end of any set's job,
     the sheets plan, the journal entries); L17 the panels against the fake launcher (regen/verbs, proc build / purge, VAC and aircraft grey, one
@@ -41,7 +44,7 @@ Rules covered
     (shared-fr, kept-tracked), No does nothing, Yes sends the real job without dry, the end sentences, one journal entry, an empty plan without a question;
     one operation at a time (the other verbs grey while any runs); a running download found at mount is followed with its own lines.
 
-Cases: L1 .. L18.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
+Cases: L1 .. L19.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
 """
 import datetime
 import json
@@ -291,7 +294,7 @@ _ROWS_JS = r"""() => {
     more: (m => m ? { text: m.querySelector(':scope > summary').textContent.trim(), rows: [...m.querySelectorAll('[data-set]')].map(r => r.dataset.set + ':' + r.dataset.status), open: m.open } : null)(g.querySelector(':scope > [data-more]')),
     pills: [...g.querySelectorAll('details[data-set] > summary')].filter(s => s.offsetParent).map(s => s.getBoundingClientRect().height)
   }));
-  return { groups, verbs: [...document.querySelectorAll('[data-build] [data-verb], [data-publish] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : '')), buttons: root.querySelectorAll('[data-build] button, [data-publish] button').length,
+  return { groups, verbs: [...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : '')), buttons: root.querySelectorAll('[data-build] button:not([data-verb=pickup]), [data-publish] button').length,
     sw: document.documentElement.scrollWidth, iw: window.innerWidth,
     over: [...root.querySelectorAll('*')].filter(e => e.getBoundingClientRect().width && (e.getBoundingClientRect().right > window.innerWidth + 1) && !e.closest('[hidden]')).slice(0, 3).map(e => e.tagName + '.' + e.className) };
 }"""
@@ -428,7 +431,7 @@ def l3(c):
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the module is mounted by the link (at 390 as at 1280)')
     c.eq((c.js('location.search'), c.hash()), ('?app=maintenance', '#data'), 'the address: the Maintenance application, on Données', what='address')
     c.eq(c.count('#fMenu a[data-id="data"]'), 1, 'in the rail of Maintenance', what='rail entries')
-    c.eq(c.count('[data-build] [data-verb], [data-publish] [data-verb]'), 4, 'Télécharger, Construire, Purger and Publier, grey without a launcher', what='[data-verb]')
+    c.eq(c.count('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]'), 4, 'Télécharger, Construire, Purger and Publier, grey without a launcher', what='[data-verb]')
     c.ok(c.text('[data-cycle-now]'), 'no cycle', 'the head shows the cycle in force')
     c.check_errors()
 
@@ -445,7 +448,7 @@ def l4(c):
     c.eq(c.count('details.f-group'), 4, 'the four groups are still drawn (names and links)', what='groups')
     c.eq(c.count('[data-set][data-state]'), 0, 'no state is invented without a publication', what='states')
     c.eq(c.doc('cache/data/coverage.json'), None, 'a degraded read writes no coverage', what='coverage.json')
-    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb], [data-publish] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'], 'Télécharger, Construire, Purger and Publier, grey', what='[data-verb]')
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'], 'Télécharger, Construire, Purger and Publier, grey', what='[data-verb]')
     c.check_errors()
 
 
@@ -711,7 +714,7 @@ def l7(c):
     c.eq(post.get('author'), 'ABC', 'the frame adds the trigram itself', what='author')
     c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason')], [True, 'busy'], 'while it runs: grey, « Une autre opération est en cours »', what='running reason')
     c.eq(c.js("[...document.querySelectorAll('[data-build] input[type=checkbox]')].every(i => i.disabled)"), True, 'the choices are frozen while it runs', what='frozen checkboxes')
-    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb], [data-publish] [data-verb]')].map(b => b.dataset.verb).sort()"), ['build', 'download', 'publish', 'purge', 'stop'], 'the four verbs (grey, a build is running) and stop only', what='verbs')
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]')].map(b => b.dataset.verb).sort()"), ['build', 'download', 'publish', 'purge', 'stop'], 'the four verbs (grey, a build is running) and stop only', what='verbs')
     c.eq(c.js("[...document.querySelectorAll('[data-zone-state]')].map(l => [l.dataset.zoneState, l.dataset.state])"), [['fr', 'waiting'], ['gb', 'waiting']], 'a line per zone, waiting before the first view', what='zone lines')
     c.until("document.querySelector('[data-zone-state=fr]').dataset.state === 'building'", timeout=8000, what='fr is building')
     fr_name = c.text('[data-zone-state=fr] b')
@@ -1378,12 +1381,12 @@ def _zhead(c, z):
 
 def _verbs(c):
     """The verb buttons of the panel, in order, each with ':off' when grey."""
-    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
+    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].filter(b => b.dataset.verb !== 'pickup').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
 
 
 def _grey(c, what):
     """Télécharger, Construire, Purger and Publier are grey, for ONE reason written once under the panel: its key."""
-    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb], [data-publish] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"),
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"),
          ['download:off', 'build:off', 'purge:off', 'publish:off'], f'{what}: the four verbs are grey', what='verbs')
     c.eq(c.js("[...document.querySelectorAll('[data-build] [data-reason]')].map(p => p.dataset.reason)"), ['busy'], f'{what}: one reason, written once', what='reason')
 
@@ -1508,7 +1511,7 @@ def l15(c):
          'ONE question from the plan: files, size, zones, the SIA sentence (shared-fr), the files tracked by git kept; one-word confirmation and a way out', what='question')
     c.eq(len(st['posts']), posts + 1, 'only the plan was started', what='posts')
     c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'purge', 'args': {'zones': ['es', 'fr'], 'dry': True}}, 'the plan: dry true, the ticked zones', what='dry body')
-    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb], [data-publish] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'],
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'],
          'all four are grey while the question is open', what='verbs during the question')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", what='the window closes')
@@ -1718,6 +1721,20 @@ _L16_JS = r"""async () => {
   out.jset = [M.journalSet(jl, { at: 'c', verb: 'x', job: 'j1', result: 'done' }).map(e => e.result ?? e.verb), M.journalSet(jl, { at: 'd', verb: 'z', job: 'j2' }).map(e => e.at), M.journalSet(jl, { at: 'e', verb: 'z' }, 2).map(e => e.at)];
   out.chainEntry = M.chainEntry({ at: Date.parse('2026-10-30T10:00:00Z'), items: [{ set: 'base', result: 'done', why: 'x' }, { set: 'proc', result: 'skipped' }], seconds: 12.6, result: 'failed', job: 'chain-1' });
   out.open = [M.openChain([{ set: 'all', verb: 'update', result: 'done', job: 'a' }, { set: 'all', verb: 'update', result: 'running', job: 'b' }, { set: 'base', verb: 'build', result: 'running' }])?.job, M.openChain([]), M.openChain([{ set: 'all', verb: 'update', result: 'interrupted' }])];
+  // base/pickup: the plan and the end, the entry, the manual sources the launcher can take
+  const pkTk = { zone: 'fr', source: 'sia', zip: 'z.zip', files: ['a', 'b'], bytes: 10 }, pkMs = { zone: 'gb', source: 'nats', expected: 'EG_*.zip' }, pkBg = { zone: 'gb', source: 'nats', error: 'zip over 500 MB' };
+  const pko = f => { const o = M.pickupOutcome(f); return [o.kind, o.dry, o.files, o.bytes, o.taken.map(t => t.zone), o.missing.length, o.failed, o.level] };
+  out.pickup = [
+    pko({ state: 'done', result: { ok: true, dry: true, taken: [pkTk], missing: [pkMs], failed: [] } }),
+    pko({ state: 'done', result: { ok: true, dry: true, taken: [], missing: [pkMs, { ...pkMs, zone: 'fr', source: 'sia' }], failed: [] } }),
+    pko({ state: 'done', result: { ok: false, dry: false, taken: [pkTk], missing: [], failed: [pkBg], reason: 'partial' } }),
+    pko({ state: 'error', result: { ok: false, dry: false, taken: [], missing: [], failed: [{ ...pkBg, error: 'nothing-to-take' }], reason: 'failed' } }),
+    pko({ state: 'cancelled', result: { ok: false, dry: false, taken: [pkTk], missing: [], failed: [], reason: 'cancelled' } }),
+    pko({ state: 'interrupted' }), pko(null), pko({ state: 'done', result: { ok: true, dry: false, taken: [{ zone: 'fr' }, null, { ...pkTk, files: 'x', bytes: 'y' }], missing: 'x', failed: [{ source: 's' }] } })];
+  out.pickupOp = [M.viewOp({ set: 'base', verb: 'pickup' }), M.opDry({ set: 'base', verb: 'pickup', args: { dry: true } }), M.opDry({ set: 'base', verb: 'pickup', args: { dry: false } }), M.viewOp({ set: 'proc', verb: 'pickup' })];
+  out.pickupEntry = M.setEntry('base', 'pickup', { at: Date.parse('2026-10-30T10:00:00Z'), ids: ['fr', 'gb'], seconds: 2.4, out: M.pickupOutcome({ state: 'done', result: { ok: false, dry: false, taken: [pkTk], missing: [], failed: [pkBg], reason: 'partial' } }), job: 'k9' });
+  out.manualFlags = M.fetchOutcome({ state: 'done', result: { ok: true, fetched: [], unchanged: [], failed: [], manual: [{ zone: 'fr', source: 'sia', name: ['a'], pickup: true, expected: 'x*.zip' }, { zone: 'fr', source: 'dircam' }] } }).manual.map(m => [m.source, m.pickup, m.expected]);
+  out.pickupDest = M.PICKUP_DEST;
   out.verbOfBase = [{ set: 'base', verb: 'fetch', zones: {} }, { set: 'proc', verb: 'fetch', states: {} }].map(M.viewOp);
   return out;
 }"""
@@ -1790,6 +1807,23 @@ def l16(c):
     c.eq([e[1]['set'], e[1]['verb'], e[1]['items'], e[1]['fetched']], ['proc', 'download', ['LF'], ['LF']], 'a download is journaled « download » whatever the set', what='setEntry proc fetch')
     c.eq([e[2]['set'], e[2]['verb'], e[2]['items'], e[2]['files'], e[2]['bytes']], ['aircraft', 'purge', [], 4, 2048], 'a purge: files and bytes', what='setEntry aircraft purge')
     c.eq([e[3]['set'], e[3]['verb'], e[3]['zones'], 'items' in e[3]], ['base', 'build', ['fr'], False], 'the base entry is unchanged', what='setEntry base')
+    c.eq(r['pickup'], [
+        ['done', True, 2, 10, ['fr'], 1, [], 'ok'],
+        ['nothing', True, 0, 0, [], 2, [], 'warn'],
+        ['partial', False, 2, 10, ['fr'], 0, [{'zone': 'gb', 'source': 'nats', 'error': 'zip over 500 MB'}], 'warn'],
+        ['failed', False, 0, 0, [], 0, [{'zone': 'gb', 'source': 'nats', 'error': 'nothing-to-take'}], 'err'],
+        ['cancelled', False, 2, 10, ['fr'], 0, [], 'warn'],
+        ['interrupted', False, 0, 0, [], 0, [], 'warn'],
+        ['nothing', False, 0, 0, [], 0, [], 'warn'],
+        ['done', False, 0, 0, ['fr'], 0, [], 'ok']],
+         'base/pickup: the plan or the end; taken zips with their files and size, a missing file is no failure (nothing found = « nothing »), failed and partial by the launcher\'s reason, unreadable entries dropped',
+         what='pickupOutcome')
+    c.eq(r['pickupOp'], [{'set': 'base', 'verb': 'pickup'}, True, False, None], 'a pickup view is a base operation; its plan is a dry run', what='viewOp pickup')
+    e = r['pickupEntry']
+    c.eq([e['set'], e['verb'], e['zones'], e['result'], e['files'], e['bytes'], e['failed'], e['seconds'], e['job']],
+         ['base', 'pickup', ['fr', 'gb'], 'partial', 2, 10, [{'zone': 'gb', 'source': 'nats', 'error': 'zip over 500 MB'}], 2, 'k9'], 'the journal entry of a pickup', what='pickupEntry')
+    c.eq(r['manualFlags'], [['sia', True, 'x*.zip'], ['dircam', False, '']], 'a manual source says whether the launcher can take its file, and the name it expects', what='manual flags')
+    c.eq(r['pickupDest'], {'sia': 'data/sia/', 'nats': 'data/sia/zones/gb/'}, 'where the raw files go, as the launcher writes them', what='PICKUP_DEST')
     c.eq(r['argsProc'], [{'states': ['K', 'LF']}, {'states': ['K']}], 'proc: the States sent are sorted and unique (the launcher takes one or two, « K » before « LF »)', what='setArgs proc')
     c.eq(r['procBuild'], [['partial', ['K'], [{'zone': 'LF', 'error': 'no-cache'}]], ['done', ['LF'], []], ['merge-pending', [], []]],
          'proc/build: built is { State: aerodromes } (a State with none is not built), the failures name the State, no-cache per State; merge-pending is a kind of its own', what='proc build')
@@ -2262,7 +2296,7 @@ def _card_ok(c, what):
 
 def _bv(c):
     """The base panel's three verb buttons (not Arrêter), each with ':off' when grey."""
-    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
+    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].filter(b => b.dataset.verb !== 'stop' && b.dataset.verb !== 'pickup').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
 
 
 def _chain_rows(c):
@@ -2432,4 +2466,136 @@ def l18(c):
     c.eq([c.count('[data-build] [data-verb=build] [data-attn]'), c.count('[data-update-all] [data-verb=all] [data-attn]'), c.count('[data-update-all] [data-stale]')], [0, 0, 0],
          'every published cycle is the one in force: no attention mark, no line', what='no attention')
     _card_ok(c, 'fresh')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L19
+def _pk_plan(taken=(), missing=(), failed=(), dry=True, state='done', jid='k1', zones=('fr', 'gb'), reason=None, step=''):
+    """The view of a base/pickup job: the plan (dry true) or the real run, with the launcher's result shape (tools/regen/base_sources.py)."""
+    res = {'ok': reason is None and state != 'running', 'dry': dry, 'taken': list(taken), 'missing': list(missing), 'failed': list(failed)}
+    if reason:
+        res['reason'] = reason
+    v = _fview({}, state=state, step=step, verb='pickup', args={'zones': list(zones), 'dry': dry}, jid=jid, result=res if state != 'running' else None)
+    return v
+
+
+@case('L19', 'Données: « Prendre le fichier téléchargé » against a fake launcher (plan, one question, No, the real run with dry false, summary and hint, journal, the button of a manual source, grey when unknown)',
+      'L', tags=('data',), langs4=True, designs=('standard',),
+      rule='modules/data/SPEC 5.1 (plan before change, one question), 5.5; tools/regen/base_sources.py (base/pickup)')
+def l19(c):
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    T = lambda key, after=None, row=0: _trow(key, lang, after, row)
+    cfg, _ = _fixture()
+    zname = lambda z: next(x['names'][li] for x in cfg['zones'] if x['id'] == z)
+    sia_zip = {'zone': 'fr', 'source': 'sia', 'zip': 'export_xml_bd_SIA_2026-11-26.zip', 'files': ['a.xml', 'b.xml', 'c.xml'], 'bytes': 5242880}
+    miss_gb = {'zone': 'gb', 'source': 'nats', 'expected': 'EG_*_DS_*_XML.zip'}
+    st = _launcher(c, [], verbs=ALL_VERBS + ['base/pickup'])
+    _open(c, cfg)
+    _all_open(c)
+    _untick(c, 'ca', 'es', 'us')
+    s_sia, s_nats = [c.js(f"document.querySelector('[data-set={x}] summary b').textContent").strip() for x in ('sia', 'nats')]
+    pk = "[data-build] [data-verb=pickup]"
+    # ---- A: the fourth verb of the base panel, live with a launcher that knows base/pickup
+    c.eq([norm(c.text(pk)), c.js(f"document.querySelector('{pk}').disabled"), c.count('[data-build] [data-pickup-reason]'), _verbs(c)], [norm(T('pickup')), False, 0, ['download', 'build', 'purge']],
+         'a fourth button « Prendre le fichier téléchargé », live; the three others unchanged', what='button')
+    c.eq(c.js("[...document.querySelectorAll('[data-build] .d-verbs button')].map(b => b.dataset.verb)"), ['download', 'pickup', 'build', 'purge'], 'after Télécharger', what='order')
+    _screen_ok(c, 'before')
+    # ---- B: the plan (dry sent explicitly), ONE question; No takes nothing
+    taken_txt = T('pickupTaken').replace('{z}', zname('fr')).replace('{s}', s_sia).replace('{zip}', sia_zip['zip']).replace('{n}', f"3 {FILES[lang][1]}").replace('{b}', _size(5242880, lang))
+    miss_txt = T('pickupMissing').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{e}', miss_gb['expected'])
+    ask = T('pickupAsk').replace('{taken}', taken_txt).replace('{missing}', f' {miss_txt}.').replace('{to}', 'data/sia/')
+    plan = _pk_plan([sia_zip], [miss_gb])
+    st['views'], st['i'], st['start'] = [plan], 0, (200, {'job': 'k1'})
+    n = len(st['posts'])
+    c.tap(pk)
+    q = _ask_text(c)
+    c.eq([norm(q['text']), norm(q['ok']), q['no'], len(st['posts']) - n], [norm(ask), norm(T('pickup')), True, 1], 'ONE question from the plan: the zip found (name, files, size), the file missing with its pattern, where the files go, raw and never committed', what='question')
+    c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr', 'gb'], 'dry': True}}, 'the plan is a dry run, sent explicitly', what='dry body')
+    c.eq([_bv(c), c.js(f"document.querySelector('{pk}').disabled")], [['download:off', 'build:off', 'purge:off'], True], 'every button is grey while the question is open', what='during the question')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the window closes')
+    c.wait(400)
+    c.eq([len(st['posts']) - n, c.count('[data-build-result]'), _bv(c), c.js(f"document.querySelector('{pk}').disabled"), c.count('[data-build] [data-op=pickup]')], [1, 0, ['download', 'build', 'purge'], False, 0],
+         'No: nothing more is sent, nothing is said, the buttons are live', what='after No')
+    c.eq([o for o in c.doc('cache/data/journal.json')['ops'] if o['verb'] == 'pickup'] if c.doc('cache/data/journal.json') else [], [], 'the plan is never journaled', what='journal after No')
+    # ---- C: Yes: the real run (dry false), no zone lines, every button grey; then the summary, the hint, the missing file, one notification, one journal entry
+    real_run = _pk_plan([], [], [], dry=False, state='running', jid='k2', step='fr')
+    real = _pk_plan([sia_zip], [miss_gb], dry=False, jid='k2')
+    st['views'], st['i'], st['start'] = [plan, real_run, real], 0, (200, {'job': 'k1'})
+    n = len(st['posts'])
+    c.tap(pk)
+    _ask_text(c)
+    st['start'] = (200, {'job': 'k2'})
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-build] [data-running][data-op=pickup]:not([data-dry])')", timeout=8000, what='the real run is followed')
+    c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr', 'gb'], 'dry': False}}, 'the real body says dry false', what='real body')
+    c.eq([_bv(c), c.js(f"document.querySelector('{pk}').disabled"), c.count('[data-build] [data-running] [data-zone-state]'), c.count('[data-build] [data-running] [data-count]'), c.count('[data-build] [data-running] [data-verb=stop]')],
+         [['download:off', 'build:off', 'purge:off'], True, 0, 0, 1], 'one operation at a time; the bar has its step, no zone lines, no count; Arrêter', what='running')
+    c.until("!!document.querySelector('[data-build-result][data-op=pickup][data-result=done]')", timeout=10000, what='the end of the pickup')
+    done = T('done', 'pickupSum: {').replace('{n}', f"3 {FILES[lang][1]}").replace('{s}', _size(5242880, lang))
+    c.eq([norm(c.text('[data-build-result] b')), norm(c.text('[data-build-result] [data-pickup-hint]')), [norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")]],
+         [norm(done), norm(T('pickupHint')), [norm(miss_txt)]], 'the end: « Pris : 3 fichiers (5,0 Mo) », « Lancez maintenant Construire », the file still missing', what='summary')
+    notes = _notes_with(c, done)
+    c.eq([len(notes), norm(T('pickupHint')) in norm(notes[0])], [1, True], 'ONE notification, with the hint', what='notification')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and any(o.get('verb') == 'pickup' for o in d.get('ops', []))), what='the pickup is journaled')
+    pks = [o for o in doc['ops'] if o['verb'] == 'pickup']
+    c.eq([[o['set'], o['zones'], o['result'], o['files'], o['bytes'], o['failed']] for o in pks], [['base', ['fr', 'gb'], 'done', 3, 5242880, []]], 'ONE journal entry: the real run only', what='journal')
+    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.ok(any(o[0] == 'pickup' and norm(T('pickup', 'opVerb: {')) in norm(o[1]) for o in ops), ops, 'the journal line says the verb')
+    _screen_ok(c, 'at the end')
+    # ---- D: nothing in Downloads: no question, the missing files said with their pattern
+    none = _pk_plan([], [{'zone': 'fr', 'source': 'sia', 'expected': 'export_xml_bd_SIA_*.zip'}, miss_gb], jid='k3')
+    st['views'], st['i'], st['start'] = [none], 0, (200, {'job': 'k3'})
+    n = len(st['posts'])
+    c.tap(pk)
+    c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'nothing'", timeout=8000, what='nothing to take is said')
+    lines = [norm(T('pickupMissing').replace('{z}', zname('fr')).replace('{s}', s_sia).replace('{e}', 'export_xml_bd_SIA_*.zip')), norm(miss_txt)]
+    c.eq([norm(c.text('[data-build-result] b')), [norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")], c.count('.f-modal'), len(st['posts']) - n,
+          c.count('[data-build-result] [data-pickup-hint]'), len(_notes_with(c, T('nothing', 'pickupSum: {')))],
+         [norm(T('nothing', 'pickupSum: {')), lines, 0, 1, 0, 1], 'no file found: the sentence and each missing pattern, no question, no second job, no hint', what='nothing')
+    # ---- E: a zip too large and a zip with nothing useful: the failures are named; a partial end
+    big = {'zone': 'gb', 'source': 'nats', 'error': 'zip over 500 MB'}
+    plan2 = _pk_plan([sia_zip], [], [big], jid='k4')
+    real2 = _pk_plan([sia_zip], [], [big], dry=False, jid='k5', reason='partial')
+    st['views'], st['i'], st['start'] = [plan2, real2], 0, (200, {'job': 'k4'})
+    c.tap(pk)
+    q = _ask_text(c)
+    big_txt = T('pickupFailedLine').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{r}', T('pickupTooLarge').replace('{n}', '500'))
+    c.eq(norm(q['text']), norm(T('pickupAsk').replace('{taken}', taken_txt).replace('{missing}', f' {big_txt}.').replace('{to}', 'data/sia/')), 'the failure is in the question: the size message in words', what='question 2')
+    st['start'] = (200, {'job': 'k5'})
+    c.tap('.f-modal [data-ok]')
+    c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'partial'", timeout=10000, what='the partial end')
+    partial = T('partial', 'pickupSum: {').replace('{n}', f"3 {FILES[lang][1]}").replace('{s}', _size(5242880, lang)).replace('{f}', T('fetchFails', row=0).replace('{n}', '1'))
+    c.eq([norm(c.text('[data-build-result] b')), [norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")], c.count('[data-build-result] [data-pickup-hint]')],
+         [norm(partial), [norm(big_txt)], 1], 'partial: what was taken, the failure named, the hint (files were taken)', what='partial')
+    # ---- F: the manual sources of a download that the launcher can take carry a button
+    man = [{'zone': 'fr', 'source': 'sia', 'url': 'https://www.sia.example/aip', 'name': ['SIA fr', 'SIA en', 'SIA de', 'SIA es'], 'pickup': True, 'expected': 'export_xml_bd_SIA_*.zip'},
+           {'zone': 'gb', 'source': 'nats', 'name': ['NATS fr', 'NATS en', 'NATS de', 'NATS es'], 'pickup': True, 'expected': 'EG_*_DS_*_XML.zip'},
+           {'zone': 'fr', 'source': 'dircam', 'name': ['DIRCAM fr', 'DIRCAM en', 'DIRCAM de', 'DIRCAM es']}]
+    fend = _fview({'fr': _fz('done', 1, 1), 'gb': _fz('done', 1, 1)}, state='done', verb='fetch', jid='f1', done=2,
+                  result={'ok': True, 'fetched': ['fr', 'gb'], 'unchanged': [], 'failed': [], 'manual': man, 'outside_sync': 0, 'warnings': []})
+    st['views'], st['i'], st['start'] = [fend], 0, (200, {'job': 'f1'})
+    c.tap('[data-build] [data-verb=download]')
+    c.until("!!document.querySelector('[data-build-result][data-op=fetch]')", timeout=10000, what='the download ends')
+    items = c.js("[...document.querySelectorAll('[data-build-result] [data-manual-list] li')].map(li => [li.dataset.manual, li.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.eq([i[0] for i in items], ['fr:sia', 'gb:nats', 'fr:dircam'], 'the three manual sources', what='manual')
+    c.eq(['export_xml_bd_SIA_*.zip' in items[0][1], 'EG_*_DS_*_XML.zip' in items[1][1], '*' in items[2][1]], [True, True, False], 'the expected name is shown for the sources the launcher can take, not for the others', what='expected')
+    rb = "[data-build-result] [data-verb=pickup]"
+    c.eq([c.count(rb), norm(c.text(rb)), c.attr(rb, 'data-zones'), c.js(f"document.querySelector('{rb}').disabled")], [1, norm(T('pickup')), 'fr,gb', False], 'one button under the list, for the zones of the sources that can be taken', what='result button')
+    st['views'], st['i'], st['start'] = [_pk_plan([sia_zip], [miss_gb], jid='k6')], 0, (200, {'job': 'k6'})
+    n = len(st['posts'])
+    c.tap(rb)
+    _ask_text(c)
+    c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr', 'gb'], 'dry': True}}, 'the button starts the same plan for those zones', what='button body')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the window closes')
+    # ---- G: a launcher that does not know base/pickup: grey, the reason written once under the panel; the others live
+    st['verbs'] = BASE3
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    c.eq([c.js(f"document.querySelector('{pk}').disabled"), _bv(c), norm(c.text('[data-build] [data-pickup-reason]')), c.count('[data-build] [data-reason]')],
+         [True, ['download', 'build', 'purge'], norm(T('unknown-verb', 'greyReason: {')), 0], 'unknown to this launcher: the button is grey with the usual reason, the three others are live', what='unknown')
+    _screen_ok(c, 'old launcher')
     c.check_errors()

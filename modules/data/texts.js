@@ -780,6 +780,49 @@ export const TX = {
     'Assistenten der Ersteinrichtung öffnen',
     'Abrir el asistente de primera instalación'
   ],
+  // prendre le fichier téléchargé à la main dans Téléchargements (base/pickup) : le bouton, la question, la fin
+  pickup: ['Prendre le fichier téléchargé', 'Take the downloaded file', 'Heruntergeladene Datei übernehmen',
+    'Tomar el archivo descargado'
+  ],
+  pickupAsk: [
+    'Prendre dans Téléchargements : {taken}.{missing} Les fichiers vont dans {to} ; ce sont des sources brutes du poste, jamais commitées.',
+    'Take from Downloads: {taken}.{missing} The files go into {to}; they are raw sources of this workstation, never committed.',
+    'Aus Downloads übernehmen: {taken}.{missing} Die Dateien kommen nach {to}; es sind Rohquellen dieses Rechners, nie committet.',
+    'Tomar de Descargas: {taken}.{missing} Los archivos van a {to}; son fuentes en bruto de este equipo, nunca con commit.'
+  ],
+  pickupTaken: ['{z} ({s}) : {zip} ({n}, {b})', '{z} ({s}): {zip} ({n}, {b})', '{z} ({s}): {zip} ({n}, {b})',
+    '{z} ({s}): {zip} ({n}, {b})'
+  ],
+  pickupMissing: ['{z} ({s}) : aucun fichier {e} dans Téléchargements', '{z} ({s}): no file {e} in Downloads',
+    '{z} ({s}): keine Datei {e} in Downloads',
+    '{z} ({s}): ningún archivo {e} en Descargas'
+  ],
+  pickupFailedLine: ['{z} ({s}) : échec, {r}', '{z} ({s}): failed, {r}', '{z} ({s}): fehlgeschlagen, {r}', '{z} ({s}): fallo, {r}'],
+  pickupError: {
+    'nothing-to-take': ['aucun fichier utile dans le zip', 'no useful file in the zip', 'keine brauchbare Datei im Zip',
+      'ningún archivo útil en el zip'
+    ],
+    BadZipFile: ['zip illisible', 'unreadable zip', 'Zip nicht lesbar', 'zip ilegible'],
+    'unsafe-path': ['chemin refusé', 'path refused', 'Pfad abgelehnt', 'ruta rechazada']
+  },
+  pickupTooLarge: ['zip de plus de {n} Mo', 'zip over {n} MB', 'Zip über {n} MB', 'zip de más de {n} MB'],
+  pickupSum: {
+    done: ['Pris : {n} ({s})', 'Taken: {n} ({s})', 'Übernommen: {n} ({s})', 'Tomado: {n} ({s})'],
+    partial: ['Pris : {n} ({s}) ; {f}', 'Taken: {n} ({s}); {f}', 'Übernommen: {n} ({s}); {f}', 'Tomado: {n} ({s}); {f}'],
+    failed: ['Rien n’a été pris : {f}', 'Nothing was taken: {f}', 'Nichts wurde übernommen: {f}', 'No se tomó nada: {f}'],
+    cancelled: ['Prise arrêtée ; déjà pris : {n} ({s})', 'Take stopped; already taken: {n} ({s})',
+      'Übernahme angehalten; bereits übernommen: {n} ({s})',
+      'Toma detenida; ya tomado: {n} ({s})'
+    ],
+    interrupted: ['Prise interrompue (le lanceur s’est arrêté)', 'Take interrupted (the launcher stopped)',
+      'Übernahme unterbrochen (der Starter wurde beendet)',
+      'Toma interrumpida (el lanzador se detuvo)'
+    ],
+    nothing: ['Rien à prendre dans Téléchargements', 'Nothing to take in Downloads', 'Nichts zum Übernehmen in Downloads',
+      'Nada que tomar en Descargas'
+    ]
+  },
+  pickupHint: ['Lancez maintenant Construire.', 'Now start Build.', 'Starten Sie jetzt Aufbauen.', 'Ahora lance Construir.'],
   // « Tout mettre à jour » (SPEC § 5.3) : le bouton, la question, la chaîne, la fin
   updateAll: ['Tout mettre à jour', 'Update all', 'Alle aktualisieren', 'Actualizar todo'],
   updateAllN: ['Tout mettre à jour ({n})', 'Update all ({n})', 'Alle aktualisieren ({n})', 'Actualizar todo ({n})'],
@@ -833,7 +876,8 @@ export const TX = {
     download: ['Télécharger', 'Download', 'Herunterladen', 'Descargar'],
     purge: ['Purger', 'Purge', 'Bereinigen', 'Purgar'],
     publish: ['Publier', 'Publish', 'Veröffentlichen', 'Publicar'],
-    update: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar']
+    update: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar'],
+    pickup: ['Prendre le fichier', 'Take the file', 'Datei übernehmen', 'Tomar el archivo']
   },
   opResult: {
     running: ['en cours', 'running', 'läuft', 'en curso'],

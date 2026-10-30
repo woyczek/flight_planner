@@ -583,7 +583,9 @@ export function fetchOutcome(final) {
       zone: m.zone,
       source: m.source,
       url: typeof m.url === 'string' ? m.url : '',
-      name: Array.isArray(m.name) ? m.name.map(x => String(x ?? '')) : []
+      name: Array.isArray(m.name) ? m.name.map(x => String(x ?? '')) : [],
+      pickup: m.pickup === true,
+      expected: typeof m.expected === 'string' ? m.expected : ''
     })),
     warns = warningsOf(r),
     outside = num(r.outside_sync) ?? warned(warns, 'outside-sync');
@@ -772,6 +774,17 @@ export const SETS = {
     verbs: ['fetch', 'build', 'purge']
   }
 };
+/** La prise du fichier téléchargé à la main (SIA, NATS) dans Téléchargements : un verbe du jeu « base » à part (base/pickup : plan à blanc, puis la prise), un
+ *  quatrième bouton du panneau de la base ; jamais dans la chaîne « Tout mettre à jour ». */
+export const PICKUP = {
+  set: 'base',
+  verb: 'pickup'
+};
+/** Où la prise dépose les fichiers de chaque source (écrit tel que le lanceur le fait : tools/regen/base_sources.py PICKUP) : sources brutes du poste, jamais commitées. */
+export const PICKUP_DEST = {
+  sia: 'data/sia/',
+  nats: 'data/sia/zones/gb/'
+};
 /** Les fiches publiées de la compagnie : un seul verbe du jeu « aircraft », son propre panneau (aircraft/publish : plan à blanc, puis la copie). */
 export const SHEETS = {
   set: 'aircraft',
@@ -891,6 +904,10 @@ export function viewOp(v) {
     set: SHEETS.set,
     verb: SHEETS.verb
   };
+  if (v.set === PICKUP.set && v.verb === PICKUP.verb) return {
+    set: PICKUP.set,
+    verb: PICKUP.verb
+  };
   const zones = !!v.zones && typeof v.zones === 'object' && !Array.isArray(v.zones);
   return zones && !v.verb ? {
     set: 'base',
@@ -900,7 +917,7 @@ export function viewOp(v) {
 /** La vue est-elle le plan à blanc (args.dry) d'une purge ou d'une publication de fiches, de n'importe quel jeu ? */
 export function opDry(v) {
   const op = viewOp(v);
-  return !!op && (op.verb === 'purge' || op.verb === 'publish') && v.args?.dry === true;
+  return !!op && (op.verb === 'purge' || op.verb === 'publish' || op.verb === 'pickup') && v.args?.dry === true;
 }
 /** L'état de l'élément unique d'un jeu à un seul élément (le cycle) d'après le travail : l'état de la zone qu'un jeu par éléments aurait. */
 function singleState(verb, v) {
@@ -967,6 +984,73 @@ export function normView(set, v) {
     } : {})
   };
 }
+/** La fin d'une prise de fichiers (base/pickup), plan à blanc ou réelle, d'après la dernière vue : { kind, dry, taken [{ zone, source, zip, files [noms], bytes }],
+ *  missing [{ zone, source, expected }], failed [{ zone, source, error }], files (nombre de fichiers pris), bytes, level } ; kind : 'done' | 'partial' | 'failed' |
+ *  'cancelled' | 'interrupted' | 'nothing' (rien de pris ni d'en échec : aucun fichier au nom attendu dans Téléchargements). */
+export function pickupOutcome(final) {
+  const r = obj(final?.result),
+    list = v => (Array.isArray(v) ? v : []).filter(x => x && x.zone && x.source),
+    taken = list(r.taken).map(t => ({
+      zone: t.zone,
+      source: t.source,
+      zip: String(t.zip ?? ''),
+      files: strs(t.files),
+      bytes: num(t.bytes) ?? 0
+    })),
+    missing = list(r.missing).map(m => ({
+      zone: m.zone,
+      source: m.source,
+      expected: String(m.expected ?? '')
+    })),
+    failed = list(r.failed).map(f => ({
+      zone: f.zone,
+      source: f.source,
+      error: f.error ?? null
+    }));
+  let kind;
+  if (final?.state === 'interrupted') kind = 'interrupted';
+  else if (final?.state === 'cancelled' || r.reason === 'cancelled') kind = 'cancelled';
+  else if (r.reason === 'partial' || r.reason === 'failed') kind = r.reason;
+  else if (final?.state === 'error' || r.ok === false) kind = 'failed';
+  else kind = taken.length ? failed.length ? 'partial' : 'done' : failed.length ? 'failed' : 'nothing';
+  return {
+    kind,
+    dry: r.dry === true,
+    taken,
+    missing,
+    failed,
+    files: taken.reduce((a, t) => a + t.files.length, 0),
+    bytes: taken.reduce((a, t) => a + t.bytes, 0),
+    level: kind === 'done' ? 'ok' : kind === 'failed' ? 'err' : 'warn'
+  };
+}
+/** Une entrée du journal pour une prise réelle (le plan n'y est jamais) : { at, set: 'base', verb: 'pickup', zones, seconds, result, files, bytes, failed, job? }. */
+export function pickupEntry({
+  at,
+  zones,
+  seconds,
+  out,
+  job
+}) {
+  return {
+    at: new Date(at).toISOString(),
+    set: 'base',
+    verb: 'pickup',
+    zones: [...zones],
+    seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
+    result: journalResult(out.kind),
+    files: out.files,
+    bytes: out.bytes,
+    failed: out.failed.map(f => ({
+      zone: f.zone,
+      source: f.source,
+      error: f.error ?? null
+    })),
+    ...(job ? {
+      job: String(job)
+    } : {})
+  };
+}
 /** Un compte : le nombre d'une liste, ou le nombre lui-même ; 0 sinon. */
 const countOf = v => Array.isArray(v) ? v.length : num(v) ?? 0;
 /** La fin d'un téléchargement des cartes VAC (vfr/fetch), d'après la vue ramenée à la base : { kind, fetched, unchanged, failed [{ zone (l'OACI),
@@ -1006,7 +1090,8 @@ export function vfrFetchOutcome(final) {
 export function setOutcome(set, verb, final) {
   const v = normView(set, final),
     out = set === 'vfr' && verb === 'fetch' ? vfrFetchOutcome(v) : verb === 'fetch' ? fetchOutcome(v) : verb === 'purge' ? purgeOutcome(v) :
-    outcome(v);
+    verb ===
+    'pickup' ? pickupOutcome(v) : outcome(v);
   if (SETS[set]?.single && out.kind === 'done' && verb === 'build' && !out.built.length) out.built = Object.keys(obj(v?.zones));
   if (set === 'proc' && verb === 'fetch') { // proc/fetch : fetched et unchanged sont des nombres de terrains (ou des listes d'États)
     const r = obj(v?.result);
@@ -1037,7 +1122,8 @@ export function setEntry(set, verb, {
   const make = {
       build: journalEntry,
       fetch: fetchEntry,
-      purge: purgeEntry
+      purge: purgeEntry,
+      pickup: pickupEntry
     } [verb],
     e = make({
       at,

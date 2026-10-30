@@ -550,14 +550,15 @@ function runningHtml() {
     set = run.set,
     p = M.progress(S.view, S.ids),
     stopping = run.phase === 'stopping',
-    shown = p.total > 0 || set === 'base' && !M.SETS[set]
-    .free; // un jeu dont on ne connaît pas encore les éléments ne compte pas « 0 sur 0 »
+    shown = run.verb !== M.PICKUP.verb && (p.total > 0 || set === 'base' && !M.SETS[set]
+      .free
+    ); // un jeu dont on ne connaît pas encore les éléments ne compte pas « 0 sur 0 » ; la prise de fichiers compte des fichiers à la fin
   return `<div class="d-run" data-running data-op="${run.verb}" data-run-set="${esc(set)}"${run.dry ? ' data-dry' : ''} data-phase="${run.phase}">
     <div class="d-runhead">${shown ? `<b data-count>${esc(tt(TX.runCount, { n: runUnit(set, S.view, p.done), m: p.total }))}</b>` : ''}
       <span data-step>${esc(stopping ? tt(TX.stopping) : S.view?.step || '')}</span>
       <span class="f-muted" data-elapsed>${esc(tt(TX.elapsed, { t: M.clock((Date.now() - run.t0) / 1e3) }))}</span></div>
     <div class="d-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}"${S.view && p.pct !== null ? '' : ' data-indeterminate'}><i style="width:${p.pct ?? 0}%"></i></div>
-    <ul class="d-zl">${M.zoneRows(opView(set), S.ids, run.verb, set !== 'base').map(r => zoneLineHtml(r, run.verb, set)).join('')}</ul>
+    ${run.verb === M.PICKUP.verb ? '' : `<ul class="d-zl">${M.zoneRows(opView(set), S.ids, run.verb, set !== 'base').map(r => zoneLineHtml(r, run.verb, set)).join('')}</ul>`}
     <p><button type="button" data-verb="stop"${stopping ? ' disabled' : ''}>${esc(tt(TX.stop))}</button></p></div>`;
 }
 /** Le résumé de fin d'une construction d'un jeu autre que la base : { text, advice, level } d'après la fin calculée par M.outcome. */
@@ -782,9 +783,12 @@ function manualHtml(list, set = 'base') {
   const item = m => {
     const name = esc(m.name?.[li()] || m.name?.[0] || sourceName(m.source)),
       label = M.isHttps(m.url) ? `<a href="${esc(m.url)}" target="_blank" rel="noopener noreferrer">${name}</a>` : `<span>${name}</span>`;
-    return `<li data-manual="${esc(m.zone)}:${esc(m.source)}">${esc(itemName(set, m.zone))} : ${label}</li>`;
+    return `<li data-manual="${esc(m.zone)}:${esc(m.source)}">${esc(itemName(set, m.zone))} : ${label}${m.pickup && m.expected ? ` <span class="f-muted">(${esc(m.expected)})</span>` : ''}</li>`;
   };
-  return `<p data-manual-hint>${esc(tt(TX.fetchManual))}</p><ul class="d-manual" data-manual-list>${list.map(item).join('')}</ul>`;
+  const zones = [...new Set(list.filter(m => m.pickup).map(m => m.zone))],
+    off = !zones.length || gateOf('base', zones.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb].disabled ? ' disabled' : '';
+  return `<p data-manual-hint>${esc(tt(TX.fetchManual))}</p><ul class="d-manual" data-manual-list>${list.map(item).join('')}</ul>
+    ${set === 'base' && zones.length ? `<p><button type="button" data-verb="pickup" data-zones="${esc(zones.join(','))}"${off}>${esc(tt(TX.pickup))}</button></p>` : ''}`;
 }
 /** La fin d'un téléchargement : le résumé, les fichiers hors synchronisation, les sources manuelles, les lignes des zones et de leurs sources. */
 function fetchResultHtml(out, set = 'base') {
@@ -850,6 +854,7 @@ function sheetsResultHtml(r) {
 function resultHtml(panel = 'base') {
   const r = S.result;
   if (!r || M.panelOf(r.set || 'base', r.verb) !== panel) return '';
+  if (r.verb === M.PICKUP.verb && !r.refused) return pickupResultHtml(r);
   if (r.refused) return `<div data-build-result data-result="refused" data-refusal="${r.refused.key}"><p class="f-warn">${esc(tt(TX.refused[r.refused.key], { n: r.refused.wait }))}</p></div>`;
   const set = r.set || 'base';
   if (panel === 'sheets') return sheetsResultHtml(r);
@@ -886,7 +891,9 @@ function buildInner() {
     pers = M.personalSources(ticked),
     xplaneOn = pers.some(p => p.id === 'xplane' && S.personal.has('xplane')),
     why = gate.reason ? tt(TX.greyReason[gate.reason]) : '',
-    off = verb => gate.verbs[verb].disabled ? ' disabled' : '';
+    off = verb => gate.verbs[verb].disabled ? ' disabled' : '',
+    pk = gateOf('base', ticked.length, [M.PICKUP.verb]).verbs[M.PICKUP
+      .verb]; // « Prendre le fichier téléchargé » : le verbe base/pickup, grisé pour sa propre raison
   return `<h2>${esc(tt(TX.buildTitle))}</h2>
     <h3>${esc(tt(TX.buildZones))}</h3>
     <div class="d-opts" data-build-zones>${ids.map(z => optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)).join('')}</div>
@@ -895,9 +902,11 @@ function buildInner() {
       <p class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</p>
       ${p.id === 'xplane' && xplaneOn ? `<p class="f-warn" data-xplane-hint>${esc(tt(TX.xplaneHint))}</p>` : ''}</div>`).join('')}</div>` : ''}
     <p class="d-verbs"><button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>
+      <button type="button" data-verb="pickup"${pk.disabled ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>
       <button type="button" class="primary" data-verb="build"${off('build')}>${esc(tt(TX.build))}${attnDot(S.attn?.base)}</button>
       <button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button></p>
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
+    ${pk.reason === 'unknown-verb' && gate.reason !== 'unknown-verb' ? `<p class="f-muted" data-pickup-reason>${esc(tt(TX.greyReason['unknown-verb']))}</p>` : ''}
     ${opAreaHtml('base')}`;
 }
 /** Le panneau « Télécharger, construire, purger » (en tête du groupe Base aéronautique). */
@@ -1303,7 +1312,7 @@ async function endRun(me, final, live) {
     op = M.viewOp(final),
     set = run?.set || op?.set || 'base',
     verb = run?.verb || op?.verb || 'build',
-    dry = (verb === 'purge' || verb === 'publish') && (run ? run.dry : M.opDry(final)),
+    dry = (verb === 'purge' || verb === 'publish' || verb === 'pickup') && (run ? run.dry : M.opDry(final)),
     seconds = run ? (Date.now() - run.t0) / 1e3 : null;
   if (!S.ids.length) S.ids = viewIds(set, final);
   stopTimer();
@@ -1312,6 +1321,7 @@ async function endRun(me, final, live) {
   S.view = final;
   if (dry && !live) return renderBuild(); // le plan terminé avant l'ouverture : il n'est plus à poser
   if (verb === 'publish') return dry ? endSheetsPlan(me, final, run) : endSheets(final, live, seconds);
+  if (verb === 'pickup') return dry ? endPickupPlan(me, final, run) : endPickup(final, live, seconds);
   if (verb === 'fetch') return endFetch(final, live, seconds, set);
   if (verb === 'purge') return dry ? endPlan(me, final, live, run) : endPurge(final, live, seconds, set);
   return endBuild(final, live, seconds, set);
@@ -1618,6 +1628,138 @@ async function startOp(set, verb) {
     ...args,
     dry: true
   } : args, ids, dry, args), true);
+}
+
+// ---------------------------------------------------------------- prendre le fichier téléchargé (base/pickup)
+/** Le motif d'un échec de prise : sa phrase pour les codes connus (rien d'utile dans le zip, zip illisible, chemin refusé), « zip de plus de 500 Mo » pour le
+ *  message de taille du lanceur, sinon le texte tel que le lanceur le donne. */
+function pickupWhy(error) {
+  const big = /^zip over (\d+) MB$/.exec(String(error ?? ''));
+  return big ? tt(TX.pickupTooLarge, {
+    n: big[1]
+  }) : TX.pickupError[error] ? tt(TX.pickupError[error]) : String(error ?? '');
+}
+/** Les phrases de ce que la prise n'a pas pu faire : un fichier au nom attendu introuvable dans Téléchargements (le motif est dit), un échec avec son motif. */
+function pickupProblems(out) {
+  const who = x => ({
+    z: itemName('base', x.zone),
+    s: sourceName(x.source)
+  });
+  return [...out.missing.map(m => tt(TX.pickupMissing, {
+    ...who(m),
+    e: m.expected
+  })), ...out.failed.map(f => tt(TX.pickupFailedLine, {
+    ...who(f),
+    r: pickupWhy(f.error)
+  }))];
+}
+/** La question du plan : pour chaque zone le zip trouvé (nom, nombre de fichiers, taille), ce qui manque ou a échoué, où vont les fichiers (sources brutes du poste,
+ *  jamais commitées). */
+function pickupAsk(out) {
+  const problems = pickupProblems(out),
+    dest = [...new Set(out.taken.map(t => M.PICKUP_DEST[t.source]).filter(Boolean))].join(', ');
+  return tt(TX.pickupAsk, {
+    taken: out.taken.map(t => tt(TX.pickupTaken, {
+      z: itemName('base', t.zone),
+      s: sourceName(t.source),
+      zip: t.zip,
+      n: count('file', t.files.length),
+      b: M.fmtBytes(t.bytes, lang())
+    })).join(' ; '),
+    missing: problems.length ? ` ${problems.join(' ; ')}.` : '',
+    to: dest
+  });
+}
+/** Le résumé de la fin d'une prise : { text, hint (« Lancez maintenant Construire » quand des fichiers ont été pris), level }. */
+function pickupSummary(out) {
+  const text = tt(TX.pickupSum[out.kind], {
+    n: count('file', out.files),
+    s: M.fmtBytes(out.bytes, lang()),
+    f: plural('fetchFails', out.failed.length)
+  });
+  return {
+    text,
+    hint: out.files > 0 ? tt(TX.pickupHint) : '',
+    level: out.level
+  };
+}
+/** La fin d'une prise (ou « Rien à prendre » quand le plan ne trouve rien) : le résumé, le conseil, puis ce qui manque ou a échoué. */
+function pickupResultHtml(r) {
+  const sm = pickupSummary(r.out);
+  return `<div data-build-result data-op="pickup" data-result="${r.out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>
+    ${sm.hint ? `<p class="f-muted" data-pickup-hint>${esc(sm.hint)}</p>` : ''}
+    ${pickupProblems(r.out).map(t => `<p class="f-muted" data-line>${esc(t)}</p>`).join('')}</div>`;
+}
+/** « Prendre le fichier téléchargé » : le plan d'abord (base/pickup à blanc, dry envoyé explicitement), dont la fin pose la question puis la prise réelle. `zonesAttr` :
+ *  les zones des sources du résultat d'un téléchargement (séparées par des virgules), sinon les zones cochées. Rien ne part si le bouton est gris. */
+async function startPickup(zonesAttr) {
+  const me = S,
+    known = new Set(S.d?.cov?.ids || []),
+    zones = zonesAttr ? zonesAttr.split(',').filter(z => known.has(z)) : buildZones().ticked;
+  if (!zones.length || gateOf('base', zones.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb].disabled) return;
+  await settle(me, await launch('base', M.PICKUP.verb, {
+    zones,
+    dry: true
+  }, zones, true, {
+    zones
+  }), true);
+}
+/** Fin du plan d'une prise (jamais journalisé) : rien à prendre, on le dit sans question ; sinon UNE question (les zips trouvés, ce qui manque, où vont les fichiers) et,
+ *  si oui, la prise réelle (dry false) sur les mêmes zones. Un plan arrêté ne pose aucune question. */
+async function endPickupPlan(me, final, run) {
+  const out = M.setOutcome('base', M.PICKUP.verb, final).out;
+  if (out.kind === 'cancelled') { // « Arrêter » pendant le plan : rien n'a été pris
+    S.result = null;
+    return renderBuild();
+  }
+  if (!out.taken.length) {
+    S.result = {
+      set: 'base',
+      verb: M.PICKUP.verb,
+      out
+    };
+    renderBuild();
+    const sm = pickupSummary(out);
+    S.ctx.notify(sm.text, sm.level);
+    return;
+  }
+  S.result = null;
+  S.asking = true; // les boutons restent gris pendant la question : une opération à la fois
+  renderBuild();
+  const yes = await S.ctx.ask(pickupAsk(out), {
+    ok: tt(TX.pickup)
+  });
+  if (S !== me) return;
+  S.asking = false;
+  if (!yes) { // non : rien n'est pris, rien n'est dit
+    renderBuild();
+    return;
+  }
+  await settle(me, await launch('base', M.PICKUP.verb, {
+    ...(run?.args || {
+      zones: S.ids
+    }),
+    dry: false
+  }, S.ids), true);
+}
+/** Fin d'une prise réelle : le résumé et le conseil dans le panneau, une notification, le journal. */
+async function endPickup(final, live, seconds) {
+  const out = M.setOutcome('base', M.PICKUP.verb, final).out,
+    sm = pickupSummary(out);
+  S.result = {
+    set: 'base',
+    verb: M.PICKUP.verb,
+    out
+  };
+  renderBuild();
+  if (live) S.ctx.notify([sm.text, sm.hint].filter(Boolean).join(' · '), sm.level);
+  journalWrite(M.setEntry('base', M.PICKUP.verb, {
+    at: Date.now(),
+    ids: S.ids,
+    seconds,
+    out,
+    job: final.job || final.id
+  }));
 }
 
 // ---------------------------------------------------------------- « Tout mettre à jour » (SPEC § 5.3)
@@ -1944,6 +2086,7 @@ function onClick(e) {
   if (!v || v.disabled) return;
   if (v.dataset.verb === 'stop') return S.run?.ctrl.abort();
   if (v.dataset.verb === 'all') return updateAll();
+  if (v.dataset.verb === 'pickup') return startPickup(v.dataset.zones);
   if (v.dataset.verb === 'stop-chain') return stopChain();
   const op = opOf(v);
   if (op) startOp(...op);
