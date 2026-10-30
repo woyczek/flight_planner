@@ -352,7 +352,7 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
 - **Approaches** (§ 10.30 fourth reading): the rows are the finals (`appChoices(apps).list`) by `labelOf(app, list)` ("ILS 06",
   unique within the list), the published name in the row's title; the sub-rows of the chosen final are `transitionsOf(id)`,
   the SIA's initial segments ("INA … RWY 06", shared by every final of the runway) among them, by `transitionLabelOf` ("via
-  ODILO · ODILO 1A"), in the final's hue; a chosen transition sharing no point with its final is joined to the final's first
+  ODILO 1A" when the name starts with the IAF, else "via ABC1 · ABC 1A"), in the final's hue; a chosen transition sharing no point with its final is joined to the final's first
   point by a dashed line (`join`).
 - **Towards your route** (§ 10.31): a second axis beside the runway for SIDs and STARs — among the rows that fit the choice, those
   whose exit (SID, `exitOf`) or entry (STAR, `entryOf`) is on the typed route (`compatible({ …, route })`, the ids of

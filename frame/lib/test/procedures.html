@@ -456,8 +456,8 @@
   ck('labelOf : deux finales de même type et piste gardent la lettre ; jamais deux libellés identiques (le premier point s’ajoute)',
     labelOf(zY, [zY, zZ]) === 'RNP Y 06' && labelOf(zZ, [zY, zZ]) === 'RNP Z 06' && labelOf(zRnp, [zRnp, zDup]) === 'RNP 06 · IZZ06' &&
     labelOf(zDup, [zRnp, zDup]) === 'RNP 06 · IZX06' && labelOf(zY, [zY]) === 'RNP 06');
-  ck('transitionLabelOf : « via OKAPI · OKAPI 1A » (IAF puis nom publié) ; « via ZP421 » quand le nom est l’IAF', transitionLabelOf(zT1) ===
-    'via OKAPI · OKAPI 1A' && transitionLabelOf(zEnt) === 'via ZP421', transitionLabelOf(zT1));
+  ck('transitionLabelOf : « via OKAPI 1A » quand le nom commence par l’IAF ; « via ZP421 » quand le nom est l’IAF', transitionLabelOf(zT1) ===
+    'via OKAPI 1A' && transitionLabelOf(zEnt) === 'via ZP421', transitionLabelOf(zT1));
   const zSum = summaryOf({
     rwy: '06',
     app: zIls.id,

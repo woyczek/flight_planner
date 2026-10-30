@@ -190,13 +190,15 @@ export function labelOf(app, list) {
   return mine[2];
 }
 
-/** Libellé d'une transition d'approche : « via ODILO · ODILO 1A » (l'IAF, son premier point, puis le nom publié avec sa lettre) ;
- *  « via VA201 » quand le nom est l'IAF. via : le mot de liaison (« via », le même dans les quatre langues). */
+/** Libellé d'une transition d'approche : « via ODILO 1A » quand le nom publié commence par l'IAF (son premier point) ; sinon
+ *  « via ABC1 · ABC 1A » (l'IAF, puis le nom) ; « via VA201 » quand le nom est l'IAF. via : le mot de liaison (« via », le même dans
+ *  les quatre langues). */
 export function transitionLabelOf(rec, {
   via = 'via'
 } = {}) {
   const iaf = String(rec?.points?.[0]?.id ?? '').trim(),
     t = String(rec?.transition ?? '').trim();
+  if (iaf && t.startsWith(`${iaf} `)) return `${via} ${t}`;
   return [iaf ? `${via} ${iaf}` : '', t && t !== iaf ? t : ''].filter(Boolean).join(' · ') || nameOf(rec, rec?.id) || '';
 }
 

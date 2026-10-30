@@ -155,9 +155,10 @@ function labelOf(fam, rec, finals = null) {
     src = rec.status === 'xplane' || rec.local ? tt(TX.procX) : rec.status === 'lnm' ? tt(TX.procLnm) : '';
   return [name, src].filter(Boolean).join(' · ');
 }
-/** Les pistes d'une fiche, en petites étiquettes sur sa ligne ([] pour une fiche qui les dessert toutes, une piste, une transition). */
-const tagsOf = (fam, rec) => fam === 'rwy' || fam === 'appTrans' || PR.servesAll(rec) ? [] : [...new Set(rec.runways.map(PR.rwNum))].sort(PR
-  .rwOrder);
+/** Les pistes d'une fiche, en petites étiquettes sur sa ligne ([] pour une fiche qui les dessert toutes, une piste, une transition) ;
+ *  sans celle que le libellé dit déjà (« ILS 02 », pas « ILS 02 02 »). */
+const tagsOf = (fam, rec, label = '') => fam === 'rwy' || fam === 'appTrans' || PR.servesAll(rec) ? [] : [...new Set(rec.runways.map(PR
+  .rwNum))].filter(r => !String(label).split(/[\s·]+/).includes(r)).sort(PR.rwOrder);
 /** Nom de famille d'une procédure pour un cartouche : le radical, une espace, le chiffre (« NIMER9A » → « NIMER 9 », PR.familyOf) ;
  *  le nom tel quel s'il n'a pas cette forme. */
 const familyText = name => {
@@ -166,7 +167,8 @@ const familyText = name => {
 };
 /** Texte d'une ligne de cartouche : le nom de famille sur les petits (une ligne par famille au point), le nom complet de la procédure
  *  sur celui de la surlignée (g.full : g.text). */
-const cartText = (it, g = null) => g?.full ? g.text : familyText(it.family || PR.nameOf(it.rec, it.id) || it.label);
+const cartText = (it, g = null) => g?.full ? g.text : it.fam === 'app' || it.fam === 'appTrans' ? it.label : familyText(it.family || PR
+  .nameOf(it.rec, it.id) || it.label);
 /** Le seuil de piste où une SID commence, ajouté devant ses points : la piste choisie si la SID la dessert, sinon la seule qu'elle
  *  dessert ; null si elle n'est pas connue. */
 function thresholdOf(C, rec) {
@@ -218,21 +220,22 @@ function itemsOf(C, fam) {
         app: c.app || PR.nameOf(C.byId.get(c.appId), c.appId) || ''
       })),
       pts = fam === 'rwy' ? [] : pointsOf(rec),
-      th = fam === 'sid' && pts.length ? thresholdOf(C, rec) : null;
+      th = fam === 'sid' && pts.length ? thresholdOf(C, rec) : null,
+      label = labelOf(fam, rec, finals);
     if (th) pts.unshift(th);
     return {
       id: rec.id,
       fam,
       rec,
       hi,
-      label: labelOf(fam, rec, finals),
+      label,
       // le nom publié de l'approche ou de sa transition, en infobulle (le libellé court est sur la ligne)
       title: fam === 'app' || fam === 'appTrans' ? [rec.name, rec.transition].filter(Boolean).join(' · ') : '',
       old: !!rec.outdated,
       why,
       pts,
       anchor: pts.length ? exit ? pts.at(-1) : pts[0] : null,
-      tags: tagsOf(fam, rec),
+      tags: tagsOf(fam, rec, label),
       chosen: fam === 'rwy' ? !!PR.rwNum(o.rwy) && PR.rwNum(rec.id) === PR.rwNum(o.rwy) : o[fam] === rec.id,
       wind: fam === 'rwy' ? windOf(C, rec) : null
     };

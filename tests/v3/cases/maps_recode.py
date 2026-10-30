@@ -1796,17 +1796,27 @@ _CH3_FILE = {**_CH_FILE, 'procedures': _CH3_PROCS}
 
 @case('D70', 'Choosing on the Map: approaches by their short label, the SIA’s initial segments as transitions in the hue of their final', 'D',
       tags=('maps',), screens=False, designs=('standard',), night=False,
-      rule='V3 § 10.30 fourth reading: the rows are the finals (appChoices().list) by labelOf ("ILS 31", "RNP 31"), the published name in the title; the INA records are sub-rows of the chosen final (transitionLabelOf, "via ODILO · ODILO 1A"), in its hue; a transition sharing no point with its final joins it by a dashed line')
+      rule='V3 § 10.30 fourth reading: the rows are the finals (appChoices().list) by labelOf ("ILS 31", "RNP 31"), the published name in the title, no runway tag the label already says, the same label on the map; the INA records are sub-rows of the chosen final (transitionLabelOf, "via ODILO 1A", "via ABC1 · ABC 1A" when the name does not start with the IAF), in its hue; a transition sharing no point with its final joins it by a dashed line')
 def d70(c):
     _ch_open(c, {'rwy': '31'}, file=_CH3_FILE)
     rows = c.js("() => [...document.querySelectorAll('.mp-ch-grp[data-fam=app] .mp-ch-row')].filter(b => b.dataset.id !== 'none').map(b => [b.dataset.id, b.querySelector('.mp-ch-name').textContent.trim(), b.title, b.style.getPropertyValue('--c')])")
     c.eq(sorted(r[1] for r in rows), ['ILS 31', 'RNP 31'], 'the finals only, by their short label (the INA segments are not rows)', what='approach rows')
     ils = next(r for r in rows if r[1] == 'ILS 31')
     c.ok('ILS RWY 31' in ils[2], ils[2], 'the published name in the row’s title')
+    tags = c.js("() => [...document.querySelectorAll('.mp-ch-grp[data-fam=app] .mp-ch-row .mp-ch-tag')].map(t => t.textContent.trim())")
+    c.eq(tags, [], 'no runway tag where the label already says it ("ILS 31", not "ILS 31 31")', what='approach tags')
+    # the map's small labels (the approaches touched) read the list's label, not the published name
+    c.js("""async () => { window.__chT = []; const o = CanvasRenderingContext2D.prototype.fillText;
+      if (!o.__ch) { CanvasRenderingContext2D.prototype.fillText = function (t, x, y, w) { window.__chT.push(String(t)); return o.call(this, t, x, y, w) };
+        CanvasRenderingContext2D.prototype.fillText.__ch = true }
+      window.__mp.S.choose.focus = 'app'; (await import('/modules/maps/draw.js')).schedule(); return true }""")
+    c.until("() => (window.__chT || []).some(t => /^(ILS|RNP) /.test(t))", timeout=6000, what='the approaches’ labels drawn')
+    drawn = sorted({t for t in c.js('window.__chT') if re.match(r'^(ILS|RNP) ', t)})
+    c.eq(drawn, ['ILS 31', 'RNP 31'], 'the map labels the approaches as the list does', what='map labels')
     c.tap(f'.mp-ch-row[data-id="{ils[0]}"]')
     c.until("() => !!document.querySelector('.mp-ch-subs')", timeout=10000, what='the transitions under the chosen final')
     subs = c.js("() => [...document.querySelectorAll('.mp-ch-subs .mp-ch-row')].filter(b => b.dataset.id !== 'none').map(b => [b.dataset.id, b.querySelector('.mp-ch-name').textContent.trim(), b.style.getPropertyValue('--c')])")
-    c.eq(sorted(norm(x[1]) for x in subs), ['via ABC1 · ABC 1A', 'via ODILO · ODILO 1A'], 'the SIA’s initial segments as transitions (transitionLabelOf)', what='sub-rows')
+    c.eq(sorted(norm(x[1]) for x in subs), ['via ABC1 · ABC 1A', 'via ODILO 1A'], 'the SIA’s initial segments as transitions (transitionLabelOf)', what='sub-rows')
     c.ok(all(x[2] == ils[3] for x in subs), f'{subs} vs {ils[3]}', 'each transition in the hue of its final')
     # ABC 1A shares no point with the ILS: a dashed junction to the final's first point; ODILO 1A ends on its IF: none
     abc = next(x[0] for x in subs if 'ABC' in x[1])

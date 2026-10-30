@@ -236,7 +236,7 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   points that never reach a runway threshold « RWnn »: an initial approach segment, never a row); `appChoices` lists only the finals
   and its `transitionsOf(id)` adds the segments of the final's name and those no final names that serve its runway (the SIA's
   segments are common to ILS, RNP, LOC…), sorted by IAF; `labelOf(app, list)` (« ILS 06 », « RNP 06 »: type and runway, the SIA
-  letter when two finals would read the same, then the first point); `transitionLabelOf(rec)` (« via ODILO · ODILO 1A »). In
+  letter when two finals would read the same, then the first point); `transitionLabelOf(rec)` (« via ODILO 1A »). In
   `flight_path.js`, `chainOf` joins an approach transition to its final at their first common point, wherever it is in the final,
   else marks the final's first point `join: 'direct'` (dashed, § 10.20); the STAR → approach join is unchanged.
   Second reading of § 10.30 (30 Oct 2026): `familyOf(name)` (« ABLI4L » → `{ family: 'ABLI4', suffix: 'L' }`, a form only),

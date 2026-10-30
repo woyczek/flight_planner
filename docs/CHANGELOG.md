@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map and Fuel: approach labels without repeats** (`modules/maps/choose.js`, `frame/lib/procedures.js` `transitionLabelOf`;
+  Fuel and Map help ×4, maps SPEC, frame INTEGRATION; noreg D70, F66, procedures unit page). The runway tag goes when the label
+  already says it ("ILS 02", not "ILS 02 02"); a transition whose published name starts with its IAF reads "via MOLBA 1E" (not
+  "via MOLBA · MOLBA 1E"), in Fuel's list as on the Map; the Map's small labels of the approaches read the list's label ("ILS 02",
+  not "ILS LOC RWY 02"), the published name staying in the row's title.
+
 - **Launcher: procedure jobs per State; merge, download and environment rules for every job** (`tools/regen/proc.py`,
   `tools/proc_sia.py`, `tools/regen_jobs.py`, `tools/regen/base.py`, `tools/regen/base_sources.py`; frame INTEGRATION § 15,
   DECISIONS; noreg I19, K22): `proc/fetch`, `build`, `purge` for LF (SIA eAIP) and K (FAA CIFP) — EAD States stay one

@@ -1640,7 +1640,7 @@ def f65(c):
 @case('F66', 'Approaches the SIA way: initial segments are transitions of every final of the runway, short labels', 'F', tags=('fuel', 'aerodb'),
       designs=('standard',), screens=False, langs4=True,
       rule='V3 spec 10.30 (fourth reading): "INA RNAV RWY 06" records are never rows but the transitions of every final of runway 06, '
-      '"via OKAPI · OKAPI 1A", by IAF; a final reads "ILS 06", "RNP 06", its published name in the title; apptrans is the segment\'s id')
+      '"via OKAPI 1A", by IAF; a final reads "ILS 06", "RNP 06", its published name in the title; apptrans is the segment\'s id')
 def f66(c):
     open_proc(c)
     wait_rows(c, 'arr')
@@ -1654,7 +1654,7 @@ def f66(c):
     pick_proc(c, 'p-arr-app', ils)
     c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]')", what='the final has transitions: the segments of its runway')
     tr = [(v, lab) for v, lab in sel_opts(c, 'p-arr-appTrans') if v]
-    c.eq([lab for _, lab in tr], ['via ALPAG · ALPAG 1E', 'via BISON · BISON 1E', 'via OKAPI · OKAPI 1A'], 'the segments, IAF then published name, by IAF', what='transition options')
+    c.eq([lab for _, lab in tr], ['via ALPAG 1E', 'via BISON 1E', 'via OKAPI 1A'], 'the segments by their published name, which starts with the IAF, by IAF', what='transition options')
     c.eq(sel_opts(c, 'p-arr-appTrans')[0][0], '', 'no transition (direct to the IF) stays the first choice', what='first option')
     okapi = tr[2][0]
     pick_proc(c, 'p-arr-appTrans', okapi)
