@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the choose pane has one exit, refactor without change of behaviour (R-M1 c, § 10.33)** (`modules/maps/choose.js`,
+  `sheet_view.js`; SPEC, DECISIONS; noreg D62). `chooseClose()` for Done, ✕ and Escape replaces `chooseFinish` and `chooseExit`:
+  the keys back to Fuel, or, opened from the aerodrome card with nothing chosen, back to the flight without a reload.
+
 - **Fuel SPEC as a state, part 3b** (`modules/fuel/SPEC.md` § 9; refactoring § 10.33): the screens by screen and step (9.1–9.8), each
   rule with its case, every F case cited; what was no longer true dropped, the history in DECISIONS with where each paragraph went.
 - **Fuel SPEC as a state, part 3a** (`modules/fuel/SPEC.md`; refactoring § 10.33): sections 1–12 in order, the files as they are, each

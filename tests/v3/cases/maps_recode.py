@@ -1503,7 +1503,7 @@ def d62(c):
     fit = st['fit']
     c.ok(fit['s'] < 44 and fit['n'] > 43.4 and fit['w'] < 5.2 and fit['e'] > 4.3 and fit['e'] - fit['w'] < 3, f'{fit}', 'the view fits the procedures of LFML, not the flight')
     # leaving by the cross: the flight's view and profile come back
-    c.js("async () => { const C = await import('/modules/maps/choose.js'); await C.chooseExit() }")
+    c.js("async () => { const C = await import('/modules/maps/choose.js'); await C.chooseClose() }")  # the one exit: nothing chosen, from the card
     c.until("() => !window.__mp.S.choose && window.__mp.S.dpanel !== 'choose'", timeout=6000, what='the mode is left')
     fit = c.js("() => window.__mp.S.fit")
     c.ok(fit['w'] < -1 and fit['e'] > 5, f'{fit}', 'the flight’s frame again')

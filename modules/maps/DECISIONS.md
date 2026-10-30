@@ -1686,7 +1686,9 @@ Done (R-M1 a and b, 30 Oct): the pane's meaning is `paneModel(input, state)` of 
 (bench `pane_model.html`, D82); `choose.js` keeps `S.choose = { side, icao, fromCard, ready, input, state, model, hits }`,
 `setState` recomputes the model only when `sel`, `pend` or `open` change (the highlight does not), and renders the pane and the
 map's layout from it (labels, marks, the correction line, the sub-heading and the summary are codes written with `TX.ch*`);
-the frame comes from `model.frame`. 1 108 → 808 lines; the cases of the safety net unchanged, the four that read the internal
+the frame comes from `model.frame`. Done (R-M1 c): one exit, `chooseClose()` (Done, ✕, Escape) — the keys of `state.sel` through
+`paneReturn` and `location.replace`, or, opened from the aerodrome card with nothing chosen, back to the flight without a reload;
+`chooseExit`, `chooseReturn` and `chooseFinish` are gone. 1 108 → 808 lines; the cases of the safety net unchanged, the four that read the internal
 state (D60, D66 via `_CH_LAYOUT`, D62, D70, D77) read `state.sel` / `model.focus` / `model.groups`.
 
 **2. Labels and the collision pass** (`render.js`, `render_airspace.js`, `procs.js`, `choose.js`, `aero_symbols.js`).

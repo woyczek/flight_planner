@@ -324,7 +324,8 @@ enters it.
 The **second entry** is the aerodrome card of the departure or the arrival (ergonomics, 29 Oct 2026: the user did not find the
 entry on a phone): next to "Changer" (→ `#fuel?focus=<side>`), "Choisir sur la carte" (`[data-choose]`, full width under 768 px)
 runs `chooseOpen(side, icao)`, the same code path as the address without a reload: the card is released, the mode loads, the
-view fits the procedures (`fitMap`). Closing the pane from there with nothing chosen gives back the flight and its frame (`chooseExit`: `applyFlight`, then `fitMap`).
+view fits the procedures (`fitMap`). Closing the pane from there with nothing chosen gives back the flight and its frame (`chooseClose`, its branch without a key:
+`applyFlight`, then `fitMap`).
 
 **"Source"** (V3 § 10.25): each chosen procedure of the side (SID; STAR and APP) whose record carries an `https://` `source.url`
 (aerodb, the SIA's eAIP page) gets a link "Source" in its row (`a.mp-ad-src`, new tab, `rel="noopener noreferrer"`; "Source STAR"
@@ -381,9 +382,9 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   chosen serves one other runway → "OPAL2E sert la 25 — Passer en 25"; otherwise (the runway changed, or the procedure serves
   several) → "OKRIX5A ne sert pas la 07 — Choisir OKRIX5B", the first of the group that serves it (`firstServing`); the row keeps ⚠.
 - **Wind on every runway row**: `components(true bearing, METAR wdir, wspd)` → "↑ 12 kt · ← 6 kt" (↑ head, ↓ tail, orange above
-  5 kt of tail; the arrows say where the wind comes from, `label` of `frame/lib/wind.js`, the text Fuel prints too); the true bearing is `runwayBearing`; no METAR, a variable wind
+  5 kt of tail; the arrows say where the wind comes from, `label` of `frame/lib/wind.js`, the text Fuel prints too); the true bearing is `runwayAxis` of `frame/lib/wind.js`; no METAR, a variable wind
   or no bearing → no wind, nothing invented. The crosswind limit of the aircraft sheet is not read yet.
-- **Closing** ("Terminer", ✕, Escape: `chooseFinish`) returns once: `location.replace('#fuel?focus=<side>&rwy=25&star=ID&app=ID&
+- **Closing** ("Terminer", ✕, Escape: `chooseClose`, the one exit) returns once: `location.replace('#fuel?focus=<side>&rwy=25&star=ID&app=ID&
   apptrans=none')` — one key per family touched (`rwy`, `sid`, `star`, `app`, `apptrans`; `none` for "Aucune"), a key absent =
   that family untouched; nothing touched → `#fuel?focus=<side>`. Fuel consumes the keys together (`ctx.consume`), writes once and
   says what changed; the Map never writes. Giving up without handing anything back is the frame's "← Fuel".
@@ -426,7 +427,7 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
     HTML and the map's layout (`chooseLayout`, its hit boxes per drawing) from `model`, nothing else.
   - **One exit**, `chooseClose()` (Done, ✕, Escape): the keys of `sel` (`#fuel?focus=<side>&rwy=…&star=…&app=…&apptrans=…`,
     `none` for "None") through `location.replace`; nothing touched: back to Fuel on that side, or, opened from the aerodrome
-    card, back to the flight's map without a reload (today's `chooseExit`, which becomes its private branch).
+    card, back to the flight's map without a reload (its branch without a key; `chooseExit` and `chooseFinish` are gone).
 
 ## 6. Map contents
 

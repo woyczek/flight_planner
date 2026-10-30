@@ -294,29 +294,21 @@ export async function chooseOpen(side, icao) {
   chooseStart();
   if (S.map) fitMap(true);
 }
-/** Le mode se retire sans retour vers Carburant (ouvert depuis la carte du terrain, rien choisi) : la carte reprend le vol entier et
- *  son cadre, la feuille son profil. */
-export async function chooseExit() {
-  if (!S?.choose) return;
+/** La seule sortie du volet (« Terminer », ✕, Échap ; refonte R-M1) : tout ce qui a été choisi part vers Carburant en un seul retour
+ *  (paneReturn : #fuel?focus=<côté>&rwy=…&star=…&app=…&apptrans=…, « none » pour « Aucune »), qui l'écrit ; la Carte n'écrit jamais.
+ *  Rien de choisi : retour à Carburant sur ce côté, ou, ouvert depuis la carte du terrain, à la carte du vol sans rechargement (la
+ *  carte reprend le vol entier et son cadre, la feuille son profil). */
+export async function chooseClose() {
+  const C = S?.choose;
+  if (!C) return;
+  const to = paneReturn(C.side, C.state);
+  if (to || !C.fromCard) return location.replace(to || `#fuel?focus=${C.side}`);
   S.choose = null;
   chooseView();
   endData('choose');
   syncButtons();
   await applyFlight(false);
   if (S?.map && !S.choose) fitMap(true);
-}
-/** L'adresse du retour : #fuel?focus=<côté> et une clé par famille touchée (« none » pour « Aucune ») ; '' rien de touché. */
-export function chooseReturn(C = S?.choose) {
-  return C ? paneReturn(C.side, C.state) : '';
-}
-/** Fermeture du volet (✕, Échap, « Terminer ») : tout ce qui a été choisi part vers Carburant en un seul retour, qui l'écrit ; la
- *  Carte n'écrit jamais. Rien de choisi : retour à Carburant sur ce côté, ou, ouvert depuis la carte du terrain, à la carte du vol. */
-export function chooseFinish() {
-  const C = S?.choose;
-  if (!C) return;
-  const to = chooseReturn(C);
-  if (!to && C.fromCard) return chooseExit();
-  location.replace(to || `#fuel?focus=${C.side}`);
 }
 
 // ---------------------------------------------------------------- choisir
@@ -468,7 +460,7 @@ export function chooseEvents() {
         more = e.target.closest('[data-more]'),
         fix = e.target.closest('[data-fix]'),
         row = e.target.closest('.mp-ch-row[data-fam]');
-      if (e.target.closest('[data-done]')) return chooseFinish();
+      if (e.target.closest('[data-done]')) return chooseClose();
       if (more) {
         setState(C, paneFold(C.input, C.state, more.dataset.more));
         return chooseRender();
