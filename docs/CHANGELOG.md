@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Noreg: 2.6 times faster, and a targeted pass before a push** (`tests/v3/run.py`, `tests/v3/domains.py`,
+  `tests/v3/cases/aerodb.py`; tests README, frame DECISIONS): the static cases beside the browser workers, the slowest
+  jobs first, 10 workers by default (the full pass in 359 s instead of 926 s); `--touched` = the changed files' cases plus
+  a smoke base of twelve; each case's seconds and the 20 slowest in the report; K51 waits for the page's answer, never a
+  fixed 40 s, and names the race when it fails.
 - **Map: inventory "à refondre" of 28–30 Oct** (`modules/maps/DECISIONS.md`, docs only). Per zone (choose mode, labels and the
   collision pass, panning, runways, procedure labels, flown trail): what was done then undone, what is left doubled or dead, and
   the target form in one sentence, with an order for after the stabilisation.

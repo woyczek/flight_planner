@@ -33,12 +33,13 @@ them. Nothing else, and nothing is written outside `tests/v3/` (the temporary co
 |---|---|
 | `python tests/v3/run.py` or `--all` | every case |
 | `--changed [<base>]` | the cases chosen by the files changed: `git diff --name-only <base>...HEAD` (default base `origin/v3`) plus the working tree and untracked files |
+| `--touched [<base>]` | `--changed <base>` plus the smoke base (`domains.SMOKE`: twelve quick cases, one per area, that open their screen for real): **the pass before a push** |
 | `--for <path> [<path>...]` | the cases chosen by these paths, by hand |
 | `--grep <id or text>` | a case id (`B2`), an area letter (`B`), or text of a title or tag (3 letters or more); commas for several |
 | `--journey <P1,P3>` | the guard cases and the end-to-end case (`J`) of those journeys (section "Journeys" below); added to `--changed` / `--for` when both are given |
 | `--tag <tag>` | the cases carrying one of these tags (`overlay`, `sheet`, `maps`, `atmosphere`, `fuel`, `fullscreen`, `design`...) |
 | `--designs a,b`, `--widths 390,1280`, `--langs fr,en` | narrow the combinations each case runs in |
-| `--jobs N` | worker processes (default 3; `1` runs in this process, easiest to debug) |
+| `--jobs N` | worker processes (default: the physical cores less two, `os.cpu_count() // 2 - 2`, 10 on the 12-core workstation; `1` runs in this process, easiest to debug) |
 | `--failed [IDS]` | replay the failed cases of the last `report.json`, in the combinations that failed (section "Replaying a failure") |
 | `--failed-scope [BASE]` | the full scope of those failures (their areas and journeys, full grid) plus the cases chosen by the files changed since BASE |
 | `--list` | print, run nothing: for paths (`--for`, `--changed`) the areas and the journeys they touch, then the selected cases and how many runs each one has (no browser needed) |
@@ -66,7 +67,15 @@ run (`390/metro/fr`) and lists the others. A case whose runs are all skipped is 
 A few cases narrow the combinations in their decorator, and say why in their file: `C1` (the frame's bench, one design),
 `A10` (the night tone, `standard` only), `A13` (the Cupertino bar, `cupertino` only), `H4` (the demo pages, one design),
 and the cases with `screens=False` that are about the phone's chrome only; `B6`, `B10`, `C3`, `A3` and `H4` run on the screen
-only or also on it. The full run takes about 6 minutes on four cores with `--jobs 3` (73 cases, about 500 runs).
+only or also on it. The full run takes about 6 minutes with the default 10 workers on the 12-core workstation (287 cases,
+836 runs; 16 minutes with 3). The static cases (no browser) run beside the browser workers, and the slowest
+cases of the last report are given out first. `report.json` keeps each case's seconds (summed over its runs) and the
+20 slowest in `meta.slowest`; `report.md` ends with their table: their fixed waits are the next to replace by a wait on
+a condition.
+
+**When to run what** (the coordinator's policy, 30 Oct 2026): before a push, the targeted pass
+`python tests/v3/run.py --touched`; the full pass after the push, in the background on the pushed head, and a fix at once
+if it is red.
 
 ### Which cases run for which change (`--changed`, `--for`)
 

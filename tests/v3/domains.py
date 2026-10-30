@@ -87,6 +87,9 @@ RULES = [
     ('.github/**', ['I'], 'tooling'),
 ]
 FALLBACK = (['A1', 'I'], 'anything else: smoke and static rules')
+# smoke base of --touched (30 Oct 2026): one quick case per area that opens its screen for real, at most 12 cases and
+# 3 minutes of wall time with the default workers; added to the cases chosen by the changed files
+SMOKE = ['A1', 'A3', 'B6', 'C3', 'D1', 'E11', 'F1', 'G3', 'H4', 'J1', 'J4', 'L4']
 
 
 def _rx(glob):

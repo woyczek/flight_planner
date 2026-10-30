@@ -3,6 +3,7 @@
 
     python tests/v3/run.py                       # --all
     python tests/v3/run.py --changed [<base>]    # cases chosen by the files changed since <base> (default origin/v3)
+    python tests/v3/run.py --touched [<base>]    # the same, plus the smoke base (domains.SMOKE): the pass before a push
     python tests/v3/run.py --for modules/atmosphere/module.js docs/x.md
     python tests/v3/run.py --grep B2             # an id, or text of a title / tag; commas for several
     python tests/v3/run.py --journey P1,P3       # the guard cases and the end-to-end case of those journeys (PLAN.md section N)
@@ -21,9 +22,11 @@ import atexit
 import datetime
 import json
 import multiprocessing
+import os
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -35,6 +38,10 @@ import journeys  # noqa: E402
 import lib  # noqa: E402
 
 ROOT = lib.ROOT
+# workers by default: the physical cores less two (os.cpu_count() counts the logical ones, two per core); measured on the
+# 12-core workstation (DECISIONS, 30 Oct 2026)
+DEFAULT_JOBS = max(1, (os.cpu_count() or 4) // 2 - 2)
+SLOWEST = 20  # report.md: the slowest cases, to replace their fixed waits by waits on a condition
 
 
 # ------------------------------------------------------------------------------------------------------ server
@@ -90,9 +97,13 @@ def select_cases(args, registry):
     header = 'all areas'
     touched = None
     paths = None
+    if args.touched is not None:
+        args.changed = args.touched
     if args.changed is not None:
         paths = domains.changed_paths(ROOT, args.changed or None)
         if not paths and not args.journey:
+            if args.touched is not None:  # nothing changed: the smoke base still runs
+                return [registry[i] for i in domains.SMOKE if i in registry], '--touched: no changed path, smoke base only', {}
             return [], 'no changed path since ' + (args.changed or domains.BASE_DEFAULT), {}
         sel, why = domains.select(paths)
         header = f'--changed {args.changed or domains.BASE_DEFAULT}: ' + '; '.join(why[:12]) + (f' (+{len(why) - 12} more)' if len(why) > 12 else '')
@@ -103,6 +114,9 @@ def select_cases(args, registry):
     if paths is not None:
         touched = journeys.touched(paths)
         ids = {journeys.JOURNEYS[j]['e2e'] for j in touched}                  # the end-to-end case of each journey touched is added
+        if args.touched is not None:
+            ids |= set(domains.SMOKE)
+            header = header.replace('--changed', '--touched', 1) + ' | + smoke base'
         cases = [c for c in cases if domains.matches(c, sel) or c.id in ids]
     if args.journey:
         wanted = [j.upper() for j in csv(args.journey)]
@@ -156,6 +170,7 @@ def journey_lines(touched):
 
 # ------------------------------------------------------------------------------------------------------ replaying failures
 REPORT = HERE / 'report.json'
+PREV_SECS = {}  # id -> seconds per run in the last report (order of the browser jobs)
 
 
 def parse_label(label):
@@ -321,7 +336,10 @@ def md_cell(s):
 def write_reports(results, n, header, args, dur, touched=None, tracked=None, replay_of=None):
     stamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
     jl = journey_lines(touched)
-    meta = {'date': stamp, 'commit': git_head(), 'selection': header, 'counts': n, 'seconds': round(dur),
+    slow = sorted(results, key=lambda r: -r.get('secs', 0))[:SLOWEST]
+    meta = {'date': stamp, 'commit': git_head(), 'selection': header, 'counts': n, 'seconds': round(dur), 'jobs': args.jobs,
+            'case_seconds': round(sum(r.get('secs', 0) for r in results)),
+            'slowest': [{'id': r['id'], 'runs': r['runs'], 'secs': r.get('secs', 0)} for r in slow],
             'failed': tracked if tracked is not None else failures_of(results), 'replay_of': replay_of,
             'journeys': None if touched is None else [{'id': j, 'title': journeys.JOURNEYS[j]['title'], 'files': f, 'e2e': journeys.JOURNEYS[j]['e2e']} for j, f in touched.items()],
             'options': {k: v for k, v in vars(args).items() if v not in (None, False, [], '')}}
@@ -352,6 +370,11 @@ def write_reports(results, n, header, args, dur, touched=None, tracked=None, rep
                 detail = (detail + ' - ' if detail else '') + 'played twice (load failure of the static server): ' + ', '.join(r['retried'][:4])
             L.append(f"| {r['id']} | {md_cell(r['title'])} | {md_cell(status_text(r))} | {md_cell(detail)} | {r.get('shot', '')} |")
         L.append('')
+    L += [f'## The {len(slow)} slowest cases', '', f'Seconds of the case summed over its runs ({args.jobs} workers, wall time {round(dur)} s, '
+          f'{meta["case_seconds"]} s of cases). Their fixed waits go first: wait for a condition, never for a delay.', '',
+          '| Id | Case | Runs | Seconds | Per run |', '|---|---|---|---|---|']
+    L += [f"| {r['id']} | {md_cell(r['title'])} | {r['runs']} | {r.get('secs', 0)} | {round(r.get('secs', 0) / max(1, r['runs']), 1)} |" for r in slow]
+    L.append('')
     (HERE / 'report.md').write_text('\n'.join(L) + '\n', encoding='utf-8')
 
 
@@ -360,6 +383,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--all', action='store_true', help='every case (the default)')
     ap.add_argument('--changed', nargs='?', const='', default=None, metavar='BASE', help='cases chosen by the files changed since BASE (default origin/v3, plus the working tree)')
+    ap.add_argument('--touched', nargs='?', const='', default=None, metavar='BASE', help='--changed BASE plus the smoke base (domains.SMOKE): the pass before a push')
     ap.add_argument('--for', dest='paths', nargs='+', metavar='PATH', help='cases chosen by these paths')
     ap.add_argument('--grep', help='case id, or text of a title or tag (commas for several)')
     ap.add_argument('--designs', help='comma list, e.g. standard,metro')
@@ -370,7 +394,7 @@ def main():
     ap.add_argument('--tag', help='run the cases carrying one of these tags')
     ap.add_argument('--journey', help='the guard cases and the end-to-end case of these journeys (P1..P6, commas), added to --changed / --for if given')
     ap.add_argument('--keep-server', action='store_true', help='leave the static server running and print its address')
-    ap.add_argument('--jobs', type=int, default=3, help='worker processes (default 3; 1 runs in this process)')
+    ap.add_argument('--jobs', type=int, default=DEFAULT_JOBS, help=f'worker processes (default {DEFAULT_JOBS}: the physical cores less two; 1 runs in this process)')
     ap.add_argument('--list', action='store_true', help='show the areas, the journeys and the cases chosen, and exit (nothing runs)')
     args = ap.parse_args()
 
@@ -436,6 +460,10 @@ def main():
         print(l)
 
     t0 = time.time()
+    try:  # seconds per run of each case in the last report: the slowest jobs are given out first
+        PREV_SECS.update({c['id']: c.get('secs', 0) / max(1, c.get('runs', 1)) for c in json.loads(REPORT.read_text(encoding='utf-8'))['cases']})
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
     server, base = start_server()
     if not args.keep_server:
         atexit.register(stop_server, server)
@@ -445,24 +473,34 @@ def main():
     try:
         static = [j for j in jobs if registry[j[0]].static]
         browser_jobs = [j for j in jobs if not registry[j[0]].static]
-        for j in static:                          # the repository rules need no browser
-            all_runs.setdefault(j[0], []).append(lib.run_one(None, base, *j))
-        if browser_jobs:
+        static_runs = []
+
+        def run_static():
+            for j in static:                      # the repository rules need no browser: one after the other, in this process
+                static_runs.append(lib.run_one(None, base, *j))
+        # the static cases (a sixth of the full pass, one after the other) run beside the browser workers, not before them
+        st = threading.Thread(target=run_static, daemon=True)
+        st.start()
+        if browser_jobs and args.jobs > 1:
             n_workers = max(1, min(args.jobs, len(browser_jobs)))
-            if n_workers == 1:
-                lib.worker_init(base)
-                try:
-                    for j in browser_jobs:
-                        all_runs.setdefault(j[0], []).append(lib.worker_run(j))
-                finally:
-                    lib.worker_close()
-            else:
-                mp = multiprocessing.get_context('spawn')
-                with mp.Pool(n_workers, initializer=lib.worker_init, initargs=(base,)) as pool:
-                    for r in pool.imap_unordered(lib.worker_run, browser_jobs, chunksize=1):
-                        all_runs.setdefault(r['id'], []).append(r)
-                    pool.close()
-                    pool.join()
+            mp = multiprocessing.get_context('spawn')
+            # the longest jobs first (last report's seconds per run): a slow case never starts last, alone
+            browser_jobs.sort(key=lambda j: -PREV_SECS.get(j[0], 0))
+            with mp.Pool(n_workers, initializer=lib.worker_init, initargs=(base,)) as pool:
+                for r in pool.imap_unordered(lib.worker_run, browser_jobs, chunksize=1):
+                    all_runs.setdefault(r['id'], []).append(r)
+                pool.close()
+                pool.join()
+        st.join()
+        if browser_jobs and args.jobs <= 1:  # one worker: in this process, after the static cases (Playwright's sync API)
+            lib.worker_init(base)
+            try:
+                for j in browser_jobs:
+                    all_runs.setdefault(j[0], []).append(lib.worker_run(j))
+            finally:
+                lib.worker_close()
+        for r in static_runs:
+            all_runs.setdefault(r['id'], []).append(r)
     finally:
         if not args.keep_server:
             stop_server(server)

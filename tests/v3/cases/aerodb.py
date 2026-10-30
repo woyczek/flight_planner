@@ -3739,7 +3739,7 @@ def k51(c):
                'source': {**good, 'personal': ['../x']}, 'dotdot': {**good, 'inputs': ['openaip/../../notes.txt']}, 'absolute': {**good, 'inputs': ['/etc/passwd']},
                'backslash': {**good, 'inputs': ['openaip\\ie_apt.geojson']}, 'drive': {**good, 'inputs': ['C:/x.xml']}, 'empty component': {**good, 'inputs': ['openaip//x.json']},
                'token': {**good, 'token': 'short'}, 'no zone': {**good, 'zones': []}}
-    out = {}
+    out, race = {}, {}
     for name, answer in hostile.items():
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
             data = Path(td) / 'data'
@@ -3751,13 +3751,21 @@ def k51(c):
             p = subprocess.Popen(cmd + B.browser_args(prof, origin.split('//')[1], f'{origin}/frame/aerodb/build/headless.html#job=job123'), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                  stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace')
             lines = []
-            threading.Thread(target=lambda: [lines.append(B._sogb(l)) for l in p.stderr], daemon=True).start()
-            end = time.time() + 40
-            while time.time() < end and not any(o and 'error' in o for o in lines):
+            reader = threading.Thread(target=lambda: [lines.append(B._sogb(l)) for l in p.stderr], daemon=True)
+            reader.start()
+            # waits for a state, never a delay: the page's first answer (an error or « started »); the ceiling is only for a
+            # browser that never starts (its exit is not a state: a launcher may hand over to another process and end at
+            # once); under a full pass the last answer (« no zone ») once did not come within the 40 s of the first version
+            t0, end = time.time(), time.time() + 120
+            while time.time() < end and not any(o and ('error' in o or o.get('started')) for o in lines):
                 time.sleep(0.1)
+            race[name] = {'secs': round(time.time() - t0, 1), 'exit': p.poll(), 'lines': [o for o in lines if o][:3]}
             B.kill_tree(p)
             B.remove_tree(prof)
             srv.shutdown()
             srv.server_close()
             out[name] = ([o['error'] for o in lines if o and 'error' in o][:1], [x for x in seen if x.startswith('data/')], any(o and o.get('started') for o in lines))
-    c.eq({k: (bool(v[0]), v[1], v[2]) for k, v in out.items()}, {k: (True, [], False) for k in hostile}, 'every hostile claim answer: an error said, no data file read, never « started »', what='hostile')
+    got = {k: (bool(v[0]), v[1], v[2]) for k, v in out.items()}
+    # an answer without its error: the race named (seconds waited, the browser's exit code, the lines it wrote)
+    c.eq(got, {k: (True, [], False) for k in hostile}, 'every hostile claim answer: an error said, no data file read, never « started »',
+         what='hostile' + ''.join(f' — {k}: {race.get(k)}' for k, v in got.items() if not v[0]))

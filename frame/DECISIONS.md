@@ -1870,3 +1870,23 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     read, without the memo (`frame/store/frame_data.js`, `valueFor`); a pending write and the other policies are unchanged.
   - Full noreg with the freeze: the Map's airspace cases (D11, D13, D14, D15, D26, D28, D29) failed on the write BUGS SOG
     fixed in 0f5891d4c (WeakMap, D64); with that fix, no other module writes on a record.
+- **30 Oct 2026 — A faster noreg** (the user: « optimiser les noreg pour accélérer le delivery, quitte à paralléliser »;
+  the coordinator's lot):
+  - Measured before: the full pass in 926 s of wall time with 4 workers (3,164 s of cases), of which 172 s of static
+    cases played one after the other in the main process **before** the first browser case.
+  - The static cases now run in a thread beside the browser workers; the browser jobs are given out longest first (the
+    seconds per run of the last report), so that a slow case never starts last and alone.
+  - Workers by default: the physical cores less two (`os.cpu_count() // 2 - 2`, 10 here). Measured on the full pass, all
+    green, no flaky failure: 3 workers 982 s, 6 workers 541 s, **10 workers 359 s** (the cases' own seconds grow with the
+    load, 3,067 → 3,751 s, but the wall time keeps falling); kept: 10.
+  - `--touched [BASE]`: the cases chosen by the changed files (`--changed`) plus a smoke base of twelve quick cases, one
+    per area, that open their screen for real (`domains.SMOKE`): the pass before a push. The full pass runs after the
+    push, in the background on the pushed head.
+  - The report keeps each case's seconds and the 20 slowest (`meta.slowest`, a table in `report.md`): their fixed waits
+    are the next target (a wait on a condition, never a delay).
+  - The static server was already started once per pass and shared by the workers. The trial base stays seeded per case,
+    in a fresh browser context: that is each case's isolation, not a cost worth sharing.
+  - K51 (the build page's hostile claim answers, launched in a real headless Edge): « no zone », the last answer, once
+    came after the 40 s ceiling under the full pass. The wait is now on a state (the page's first answer, an error or
+    « started »), with 120 s only for a browser that never starts, and a failure names the race (seconds waited, the
+    browser's exit code, the lines it wrote).
