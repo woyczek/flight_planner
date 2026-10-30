@@ -88,11 +88,57 @@ export function makeSheet(el) {
     onSettle: onSheetSettled
   });
 }
+/** Jetons de hauteur de la feuille que sheetFit pose sur la racine. */
+const FIT_KEYS = ['--f-sheet-default', '--f-sheet-default-min', '--f-sheet-expanded', '--f-sheet-expanded-min'];
+/** Longueur d'un jeton de la feuille : « 35% » une part de h, « 170px » des pixels (la lecture de frame/lib/sheet.js). */
+const tokLen = (v, h) => String(v).includes('%') ? (parseFloat(v) || 0) * h / 100 : parseFloat(v) || 0;
+/** La hauteur de ce que la feuille montre (SPEC § 7.1, sixième lecture) : jamais plus haute que son contenu ni que la moitié de la
+ *  vue, la carte prend le reste. Un dessin (profil, coupe) remplit le corps, la position agrandie à la moitié de la vue ; un contenu
+ *  fait de la position agrandie son en-tête et sa propre hauteur, plafonnée, et de la normale la plus petite de celle du cadre et
+ *  de celle-là. Jetons posés en pixels sur la racine, écrits seulement s'ils changent ; retirés en colonne (paysage) et sur la page
+ *  de réglage. */
+export function sheetFit() {
+  const root = S?.dataEl?.parentElement;
+  if (!root || !S.sh) return;
+  const st = root.style,
+    put = (k, v) => {
+      if (st.getPropertyValue(k) !== v) v ? st.setProperty(k, v) : st.removeProperty(k);
+    };
+  if (document.documentElement.classList.contains('f-land') || root.classList.contains('mp-tuning')) {
+    for (const k of FIT_KEYS) put(k, '');
+    return;
+  }
+  const cs = getComputedStyle(root),
+    vh = root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+  // un contenu replié n'a pas de boîte : sa hauteur se lit quand il se voit
+  if (!(vh > 0) || (S.dpanel && S.dpanel !== 'weather' && S.sh.pos === 'collapsed')) return;
+  // la normale du cadre (35 % au-delà de 760 px, 30 % sinon, 170 px au moins), lue avant que sheetFit ne pose la sienne
+  if (!st.getPropertyValue('--f-sheet-default')) S.sheetTok = {
+    def: cs.getPropertyValue('--f-sheet-default').trim(),
+    min: cs.getPropertyValue('--f-sheet-default-min').trim()
+  };
+  const half = Math.round(vh / 2);
+  let exp = half;
+  if (S.dpanel && S.dpanel !== 'weather') {
+    const r = document.createRange(),
+      b = getComputedStyle(S.dbodyEl),
+      panelTop = parseFloat(getComputedStyle(S.dataEl).borderTopWidth) || 0;
+    r.selectNodeContents(S.dbodyEl);
+    const own = r.getBoundingClientRect().height + (parseFloat(b.paddingTop) || 0) + (parseFloat(b.paddingBottom) || 0);
+    exp = Math.min(half, Math.ceil(S.dheadEl.offsetHeight + panelTop + own));
+  }
+  const def = Math.min(Math.round(Math.max(tokLen(S.sheetTok?.def || '30%', vh), tokLen(S.sheetTok?.min || '170px', vh))), exp);
+  put('--f-sheet-expanded', `${exp}px`);
+  put('--f-sheet-expanded-min', '0px');
+  put('--f-sheet-default', `${def}px`);
+  put('--f-sheet-default-min', '0px');
+}
 /** Taille arrêtée de la feuille et de la carte (fin d'un glissement, rotation, plein écran, volet) : le fond MapLibre reprend
  *  la taille du cadre, la route est recadrée tant que l'utilisateur n'a pas bougé la carte, tout est redessiné (SPEC § 7.5) ;
  *  rien si les tailles sont celles du dernier passage. */
 function onSheetSettled() {
   if (!S) return;
+  sheetFit(); // une vue d'une autre taille : la moitié change (un jeton changé relance la feuille, puis ce passage)
   const key = [S.box, S.dbodyEl, S.profBox].map(e => `${e.clientWidth}x${e.clientHeight}`).join(' ') +
     ` ${S.sh.pos} ${document.documentElement.classList.contains('f-land')}`;
   if (key === S.settledKey) return;
@@ -229,6 +275,7 @@ export function openData(kind, key, title, build, label = title) {
     S.dbodyEl.innerHTML = html;
   }
   if (fresh) S.dbodyEl.scrollTop = 0;
+  sheetFit(); // la feuille prend la hauteur du contenu, plafonnée
   legendSync();
   winSync();
 }
@@ -244,6 +291,7 @@ export function endData(kind = null) {
   show(S.dbodyEl, false);
   S.dbodyEl.textContent = '';
   show(S.dprofEl, true);
+  sheetFit(); // le dessin revient : la feuille reprend ses hauteurs de dessin
   drawProfile();
   dataHead();
 }

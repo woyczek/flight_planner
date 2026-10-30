@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the sheet is the height of what it shows, at most half the view (sixth reading, gap 1)** (`modules/maps/sheet_view.js`
+  `sheetFit`, `choose.js`, `style.js`; SPEC § 3, § 7.1, § 7.6; DECISIONS; noreg D86). After the choose mode the sheet no longer stays
+  expanded at 70 % with a blank under the profile: a drawing fills the body and the expanded position is half the view, a content
+  (Layers…) is its own height capped at half, the map takes the rest, at 1280 as at 390; the choose mode gives back the position it
+  found. SPEC § 3 also says that no drawing code writes through `ctx.canvas` (the mute round's one link to the real canvas).
 - **Data: a pickup source the launcher did not see in `zips` is said** (`modules/data`; launcher 8965e8c47) — the refusal `not-shown`
   reads like `changed` (« ce fichier n'a pas été montré au plan : rien n'a été pris pour cette source » ×4) with « Relancer le plan »;
   the module never sends `zips: {}` (with no ready source there is no question and no run); case L19.

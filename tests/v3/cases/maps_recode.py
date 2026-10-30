@@ -1261,7 +1261,7 @@ _CH_LAYOUT = """async ([id, fam]) => { const C = await import('/modules/maps/cho
   const t = L.traces.find(x => x.it && x.it.id === id), mid = t ? { x: (t.pts[0].x + t.pts[1].x) / 2, y: (t.pts[0].y + t.pts[1].y) / 2 } : { x: -50, y: -50 };
   return { focus: S.choose.model.focus, sel: S.choose.state.sel, n: L.traces.length, dim: L.traces.filter(t => t.dim).length, groups: L.groups.map(g => g.rows.map(r => r.id)),
     hues: (fam === 'appTrans' ? S.choose.model.subs : (S.choose.model.groups[fam] || {}).rows || []).map(i => pal[i.hi % pal.length]), dashed: L.traces.filter(t => t.dash).length,
-    arrows: L.arrows.map(a => [a.name, a.lw]), at: C.chooseAt(mid.x, mid.y), nothing: C.chooseAt(-50, -50),
+    arrows: L.arrows.map(a => [a.name, a.lw]), at: C.chooseAt(mid.x, mid.y), nothing: C.chooseAt(-2000, -2000),
     last: L.traces.length ? L.traces[L.traces.length - 1].it.id : null, traced: [...new Set(L.traces.map(t => t.it.id))],
     hl: L.hl ? { text: L.hl.text, rows: L.hl.rows.map(r => r.id) } : null } }"""
 
@@ -2328,3 +2328,44 @@ def d85(c):
     c.eq(bad, [], 'no two placed labels overlap', what='overlaps')
     over = [x['key'] for x in proc if any(hit(x['r'], y['r']) for y in placed if y['rank'] in ('runway', 'navaid'))]
     c.eq(over, [], 'the procedure’s name is never over a runway number or a beacon’s box (it slides)', what='procedure name')
+
+
+# ------------------------------------------------------------------------------------------------------ D86
+_SHEET_JS = """() => { const S = window.__mp.S, root = S.dataEl.parentElement, box = S.dataEl.getBoundingClientRect(),
+  last = [...S.dataEl.children].filter(e => e.getClientRects().length).at(-1);
+  return { pos: S.sh.pos, view: root.clientHeight, sheet: Math.round(box.height), map: S.box.clientHeight,
+    blank: Math.round(box.bottom - last.getBoundingClientRect().bottom), prof: S.profBox.clientHeight } }"""
+
+
+@case('D86', 'The sheet is the height of what it shows, at most half the view; the map takes the rest; the choose mode gives the position back', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False,
+      rule='sixth reading (31 Oct 2026), SPEC § 7.1: in portrait the sheet is never taller than what it shows nor than half the view, no blank under the content, at 1280 as at 390 — a drawing fills the body (expanded: half the view), a content (Layers) is its head plus its own height, capped at half; the choose mode opens the sheet expanded and gives back the position it found')
+def d86(c):
+    _ch_open(c, {})
+    c.until("() => window.__mp.S.sh.pos === 'expanded'", timeout=6000, what='the choose mode opens the sheet expanded')
+    st = c.js(_SHEET_JS)
+    c.ok(st['sheet'] <= st['view'] / 2 + 1, f'{st}', 'the choose pane is at most half the view')
+    c.js("async () => { (await import('/modules/maps/choose.js')).chooseClose(); return true }")
+    c.until("() => location.hash.startsWith('#fuel')", timeout=6000, what='back to Fuel')
+    c.ready('fuel')
+    c.js("() => { location.hash = '#maps'; return true }")
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.sh)", timeout=12000, what='the map and its profile again')
+    c.wait(600)
+    st = c.js(_SHEET_JS)
+    c.eq(st['pos'], 'default', 'after the choose mode the sheet is back at the position it had (not left expanded)', what='position')
+    c.eq(st['blank'], 0, 'no blank under the profile', what=f'{st}')
+    c.js("() => { window.__mp.S.sh.set('expanded'); return true }")
+    c.until("() => window.__mp.S.sh.pos === 'expanded'", timeout=3000, what='expanded')
+    c.wait(700)
+    ex = c.js(_SHEET_JS)
+    c.ok(abs(ex['sheet'] - ex['view'] / 2) <= 2, f'{ex}', 'expanded over the profile: half the view, the map the other half')
+    c.ok(ex['blank'] == 0 and ex['prof'] > st['prof'], f'{st} → {ex}', 'the profile fills the body, taller than at the default position, no blank under it')
+    c.js("() => { document.querySelector('[data-mp=layers]').click(); return true }")
+    c.until("() => window.__mp.S.dpanel === 'layers'", timeout=4000, what='Layers open')
+    c.wait(700)
+    ly = c.js(_SHEET_JS)
+    want = c.js("""() => { const S = window.__mp.S, r = document.createRange(); r.selectNodeContents(S.dbodyEl); const b = getComputedStyle(S.dbodyEl);
+      return Math.ceil(S.dheadEl.offsetHeight + 1 + r.getBoundingClientRect().height + parseFloat(b.paddingTop) + parseFloat(b.paddingBottom)) }""")
+    c.ok(abs(ly['sheet'] - min(want, round(ly['view'] / 2))) <= 2, f'{ly}, content {want}', 'Layers: its head and its own height, capped at half the view')

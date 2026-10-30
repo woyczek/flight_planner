@@ -135,7 +135,10 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     of the calls. The drawing `run(ctx, pl, first)` is played **twice**: a mute round on a context that paints nothing **by
     construction** — a local object of the Map's own (`muted`, one per canvas: every drawing method a no-op, `measureText` on a
     measuring canvas of its own), never a Proxy over the real context, so no stroke of the first round can reach the screen; the
-    `bare` layers, strokes only, are skipped — lists every request `pl.ask(req)` and every
+    `bare` layers, strokes only, are skipped. Its one link to the real context is `canvas`, the real element, for reading:
+    **no drawing code of the Map writes through `ctx.canvas`** (width, height, style, `getContext`), else the mute round would
+    touch the real canvas; the day one needs to, the mute context exposes a canvas of its own (Securisation, audit line 110) —
+    lists every request `pl.ask(req)` and every
     symbol reservation `pl.add(rect, rank)`; the pass then places them in the order of `rankOf` (stable inside a rank: the order
     in which the layers asked), each taking its first free candidate or none; the painting round replays the drawing, each
     request finding its decision by layer, key and occurrence (a request the first round did not see, its code having taken
@@ -644,8 +647,16 @@ to its size. A new content replaces the open one; opening the airspaces list rel
 - **Portrait**: collapsed (the head line only), default and expanded, the frame's tokens (`--f-sheet-head`, `-default`,
   `-default-min`, `-expanded`, `-expanded-min`) read from the root; the module has no value of its own. At 390 × 844 (view
   730 px) the sheet is 45 / 219 / 511 px and the map 685 / 511 / 219 px.
+- **The height of what it shows** (sixth reading, 31 Oct 2026): in portrait the sheet is never taller than what it shows nor
+  than half the view (the root's height); the map takes the rest; no blank under the content, at 1280 as at 390. A drawing
+  (profile, weather cut) fills the body at every position, with no maximum height of its own, the expanded position being half
+  the view; a content (Layers, airspaces at a point, aerodrome, the choose pane) makes the expanded position its head plus its
+  content's own height, capped at half, and the default position the smaller of the frame's default and that. `sheetFit()`
+  (`sheet_view.js`) writes `--f-sheet-default`, `-default-min`, `-expanded`, `-expanded-min` on the root in pixels, only when they
+  change: after a content is built or closed, after the profile is drawn, at every settle. The choose mode opens the sheet
+  expanded and gives the position it found back at its exit (§ 5.1).
 - **Landscape** (`html.f-land`): a right column with two positions, default and expanded (`--f-sheet-side`, `-side-min`,
-  `-side-max`), its head at the top as the title row.
+  `-side-max`), its head at the top as the title row; the height rule above does not apply.
 - The drag, the flick, the glide, the keyboard and the ARIA are the primitive's; the position is kept while the page lives
   (`sheetKeep`, through `onChange`), not on the device. A content opened while the sheet is collapsed opens it to the
   default position, without sliding; the weather chip or the "i" chip on a collapsed sheet does the same.
@@ -704,7 +715,8 @@ profile and the cut. One `ResizeObserver` (the root, the map box, the sheet's bo
 ### 7.6 Inside the sheet
 
 - **At the default position the body holds the drawing alone**, at its exact height (§ 8.5, § 9).
-- **Expanded**: the drawing at its maximum height, then the strip under the profile (two lines, § 8.4), then the notes.
+- **Expanded**: the drawing filling what the strip under the profile (two lines, § 8.4) and the notes leave, at half the view
+  (§ 7.1).
 - **The notes** (two lines of `--sog-size-xs` at most, scrolling beyond), in this order: the progress line of a started
   flight (§ 13.2); what is missing (the base's state § 4, a mission's notes, a cycle different from aerodb's); what is
   only information (plain background, terrain unavailable). A note that must be seen at once is also a notification.

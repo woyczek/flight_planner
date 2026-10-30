@@ -276,7 +276,10 @@ export function chooseStart() {
   chooseView();
   syncButtons(); // Couches et les boutons du vol se retirent pendant le choix
   chooseRender();
-  if (S.sh && S.sh.pos !== 'expanded') S.sh.set('expanded', true);
+  if (S.sh && S.sh.pos !== 'expanded') {
+    S.choose.sheetFrom ??= S.sh.pos; // rendue à la sortie : le choix ne laisse pas la feuille haute (SPEC § 7.1)
+    S.sh.set('expanded', true);
+  }
   schedule();
 }
 /** Le mode s'ouvre depuis la carte du terrain (« Choisir sur la carte ») : le même chemin que #maps?choose=, sans rechargement ;
@@ -302,6 +305,7 @@ export async function chooseClose() {
   const C = S?.choose;
   if (!C) return;
   const to = paneReturn(C.side, C.state);
+  if (C.sheetFrom && S.sh && S.sh.pos !== C.sheetFrom) S.sh.set(C.sheetFrom, true); // la position d'avant le choix
   if (to || !C.fromCard) return location.replace(to || `#fuel?focus=${C.side}`);
   S.choose = null;
   chooseView();

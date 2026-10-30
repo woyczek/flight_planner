@@ -76,7 +76,9 @@ def c4(c):
         c.drag(grip, -420)
         c.settle()
         up = c.box('.f-sheet-panel')['h']
-        c.eq(round(up, 1), round(max(0.70 * view, 260), 1), f'expanded = max(70 % of the view {view:.0f} px, 260 px)', tol=2, what=f'#{m} height after dragging up')
+        # the Map: the sheet is at most half the view, its profile filling it (modules/maps SPEC § 7.1, sixth reading of 31 Oct)
+        want, rule = (view / 2, f'expanded = half the view {view:.0f} px (the Map)') if m == 'maps' else (max(0.70 * view, 260), f'expanded = max(70 % of the view {view:.0f} px, 260 px)')
+        c.eq(round(up, 1), round(want, 1), rule, tol=2, what=f'#{m} height after dragging up')
         c.eq(c.attr(f'[data-module="{m}"]', 'data-sheet'), 'expanded', 'data-sheet follows the drag', what=f'#{m} data-sheet')
         c.eq(c.attr(grip, 'aria-expanded'), 'true', 'aria-expanded is true when not collapsed', what=f'#{m} grip aria-expanded (expanded)')
         mp = c.js(MAP_JS, m)

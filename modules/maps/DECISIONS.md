@@ -1788,3 +1788,25 @@ the Map had seen in between: the same line to within the frame's own sampling.
 
 **Order proposed** (after the stabilisation): 4 and 6 (small, state removed), 3, then 1 with its bench, then 2 and 5 together
 (one label model). Each lot: cases first (current D cases as the safety net), one commit per zone, the full noreg after.
+
+## The sheet is the height of what it shows (sixth reading, 31 Oct 2026, gap 1)
+
+- **Seen** (LFBO → LFPO on the real base, 1280 × 900 and 390 × 844): once the choose mode had opened the sheet expanded (70 %),
+  it stayed there for the rest of the page — the map 250 px high at 1280, 270 px on the phone — with 140 px of blank under the
+  profile, held by its own `max-height: 380px`.
+- **Rule** (Simplification): in portrait the sheet is never taller than what it shows nor than half the view; the map takes the
+  rest; no blank under the content; the same at 1280 and 390. `sheetFit()` writes the four height tokens of the frame's sheet on
+  the root, in pixels, only when they change: a drawing fills the body and the expanded position is half the view; a content is
+  its head plus its own height (a `Range` over the body's children, the body's own height being the sheet's), capped at half;
+  the default position is the frame's own (read once, before the tokens are set) or that, the smaller. The profile lost its
+  maximum height. The choose mode keeps the position it found (`sheetFrom`) and gives it back at its exit, whichever exit.
+- **Not done here**: the landscape column (two positions, widths) and the tuning page keep their tokens; the frame's primitive is
+  untouched (the module may set the tokens on its root, primitives.css § sheet).
+- **Measured**: 1280 × 900 (view 843 px): default 295, expanded 422 (half), Layers 399 (its height); 390 × 844 (view 730): 219,
+  365, 365. Noreg D86; cases adapted: C4 (the Map's expanded sheet was 70 % of the view, it is half; Atmosphere keeps 70 %),
+  D60 (its « tap on nothing » at (−50, −50), off the canvas, now met a STAR trace drawn beyond the edge of the larger map: the
+  point is far off, (−2000, −2000)).
+- **Known flake, F41** (the Map's return to Fuel): failed once in the full pass of 9f703190c under load, green twice alone. While
+  writing D86 a related race showed: going back to `#maps` before Fuel had mounted after `chooseClose` threw « Cannot read
+  properties of null (reading 'unmount') » in the frame's router (`closePane`, frame/app.js). D86 now waits for Fuel; the router
+  is V3 Frame's (told). At a third failure of F41, a wait in the case's own tool, as Fuel's `to_step`, the module untouched.
