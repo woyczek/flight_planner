@@ -35,13 +35,20 @@ does not carry the Données module in its rail, it offers one line "Maintenance"
 it (D2 to D5 of the Data module). Open: which application a given person opens by default (role in the registry), and whether one person can switch
 between them on the same device.
 
-**Missions and the CPCO (user, 30 Oct): "la gestion des missions est strictement personnelle (module Missions, module
-CPCO). Le CPCO n'existe qu'en V2 et n'entre pas dans le périmètre pilote. L'appli 2 sera distincte (ou pas) et se
-traduit par le premier pas : choisir une mission, ou en tirer une au sort."** Recorded: missions are personal data (never
-shared through the airline's repository), the CPCO stays V2 and outside the Pilot application, and the pilot's first
-step, once missions exist, is "choose a mission, or draw one" — whether as a second application or as the Pilot's first
-screen is open; no users nor rights in V3 for now (the V2 "Centre" rights and the signed registry are not rebuilt;
-identity = the GitLab project token and the paired device).
+**Missions and the CPCO (user, 30 Oct, a remark on the ergonomics session's objection — to be challenged, not
+recorded)**: "la gestion des missions est strictement personnelle (module Missions, module CPCO) ; le CPCO n'existe
+qu'en V2 et n'entre pas dans le périmètre pilote ; l'appli 2 sera distincte (ou pas) et se traduit par le premier pas :
+choisir une mission, ou en tirer une au sort ; pas d'utilisateurs actuels, on réintroduira plus tard peut-être."
+Objections of the ergonomics session, **open until the user confirms or forces**: (1) "never in the shared
+repository" is more than "personal": one writer, the pilot, yes — but kept under the pilot's prefix
+(`pilot/<TRI>/missions/`, like the current flight), private by prefix and convention, so a mission survives a lost
+phone and follows the pilot to the workstation; the repository is the transport, not the sharing; (2) "CPCO in V2
+only" contradicts "turn V2 off": the CPCO becomes the third application of the same frame after the Pilot and
+Maintenance are stable, and V2 serving only the CPCO meanwhile is written as a debt; (3) a mission as the first step
+of every flight imposes the concept on flights that have none (tests, free flights, SimBrief OFP): the mission is a
+**source of the flight**, at the OFP's rank — one gesture at Fuel's start, "Nouveau vol : depuis une mission (choisir
+ou tirer au sort) · depuis l'OFP SimBrief · libre", no separate application for the pilot; (4) no users nor rights in
+V3 for now: agreed, the roles being GitLab's and the relay's device revocation.
 
 ## 3. Transverse blocks (the frame)
 
