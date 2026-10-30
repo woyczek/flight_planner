@@ -907,6 +907,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 55 | Settings: « IVAO application » assistant (b98589ae4) | acceptable, one note |
 | 56 | Frame: IVAO account without an application, one source of return addresses (e13964b44) | acceptable, one remark |
 | 57 | Launcher: the « aircraft » job set, `regen/verbs`, IVAO retouch (d8919b0e6) | acceptable, two notes |
+| 58 | Launcher: the « vfr » job set, common rules for children and purges (ab0258453) | acceptable; notes of 57 settled; three notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1575,6 +1576,18 @@ IVAO retouch shows IVAO's code only when the device had a pending sign-in: the r
 passes the whole environment to the script (`EAD_PASSWORD` or other secrets if the launcher has them): a reduced
 environment is enough; the purge does not check the real path before `os.remove` (`os.walk` descends a junction under
 Windows): reuse `_inside` as `base/purge` does.
+
+**58. The « vfr » job set and common rules (ab0258453) — acceptable; the notes of 57 are settled; three notes.**
+`regen_jobs.child_env()` keeps a short allow-list (path, system, temporary folders, profile, language, proxy): no EAD
+credentials nor tokens for a job's child process; `git_child_env()` serves the purges' `ls-files`; `inside()`,
+`files_under()` and `prune_empty()` are one rule for every purge (no link or junction descended, the real path checked
+again just before removal). VFR: cycle `\d{4}-\d{2}-\d{2}`, codes `^LF[A-Z0-9]{2}$` (800 at most); the chart address built
+on the SIA's fixed host, the body required to start with `%PDF`, written atomically under `data/local/vac/<cycle>/`; a
+pause between requests and 30 s between starts; build goes through `vfr_import`'s strict check, then `commit_outputs` on
+`sia/vfr/` with the trigram. Notes: `build` writes `sia/vfr/` before `commit_outputs` checks for a pending merge (the
+`/__setup/vfr-import` route checks first): check `merge_pending` before writing; `vfr._get` reads without a ceiling and
+follows redirects (reuse the 200 MB ceiling of `aero_fetch.get`); two children still get the full environment
+(`base_sources._git`, the headless browser of `base.py`): use `child_env()` / `git_child_env()` there too.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
