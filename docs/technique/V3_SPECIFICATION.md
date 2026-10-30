@@ -35,6 +35,14 @@ does not carry the Données module in its rail, it offers one line "Maintenance"
 it (D2 to D5 of the Data module). Open: which application a given person opens by default (role in the registry), and whether one person can switch
 between them on the same device.
 
+**Missions and the CPCO (user, 30 Oct): "la gestion des missions est strictement personnelle (module Missions, module
+CPCO). Le CPCO n'existe qu'en V2 et n'entre pas dans le périmètre pilote. L'appli 2 sera distincte (ou pas) et se
+traduit par le premier pas : choisir une mission, ou en tirer une au sort."** Recorded: missions are personal data (never
+shared through the airline's repository), the CPCO stays V2 and outside the Pilot application, and the pilot's first
+step, once missions exist, is "choose a mission, or draw one" — whether as a second application or as the Pilot's first
+screen is open; no users nor rights in V3 for now (the V2 "Centre" rights and the signed registry are not rebuilt;
+identity = the GitLab project token and the paired device).
+
 ## 3. Transverse blocks (the frame)
 
 - **Design**: designs and skins, tokens, icons, density (desktop / touch), day / night.
@@ -1166,3 +1174,21 @@ redesigned for touch at that point.
        Lots: fuel (Features SOG: Auto idempotent with provenance in `route_text.js` and `routing.js`, render / parse of
        the text with procedures, the change line, the completion field; cases F), maps (BUGS SOG, after the performance
        fix: SIDs ranked by exit on the route, the group row in the point list; cases D).
+       **User's answers (30 Oct, afternoon)**: the group row is accepted ("contre-proposition acceptée"). Two more
+       points:
+       - **"AGN A34 LACOU A34 PERIG A34 NAVAC A34 LECAR A34 LMG"**: the airway exists in the publication, so "no airway
+         from LACOU" is wrong as a reason. Rule: when no open path joins two pinned points, the router names the airway
+         that joins them and why it is closed ("A34 relie LACOU à LMG, fermée au FL250 : plafond FL195"), from the
+         segments' limits; the pilot then changes the level or keeps the direct. The user's heuristic ("the airway that
+         arrives at B is the one that leaves A") is what the shortest path already does when the airway is open; it
+         is not added as a rule — objection recorded: a heuristic that follows an airway closed at the level would
+         write a route the pilot cannot file. Features SOG checks the real base on this leg first (level of the flight,
+         corridor width, segments present), and fixes what is actually missing.
+       - **Fuel's procedure area must read without scrolling** ("ça ne tient pas sur un écran, c'est pire sur un
+         téléphone ; a minima un TL;DR départ / arrivée avec procédures, puis les outils de sélection ; les boutons Sur
+         la carte / Relire / Source complexifient la lecture"). Rules: the step opens on **two summary lines**, one per
+         side, the same text as the pane's summary (`summaryOf`: "Départ LFBO 32L · LACOU7B", "Arrivée LFPO 25 ·
+         OKRIX5A via ABLIN · ILS 25"), each with **one** button "Sur la carte"; the selects and the secondary line ("lu
+         le … ⌛ · Relire · Source · N non lues") are folded under the summary and open on a tap on the line, one side
+         at a time; "Relire" and "Source" leave the title and live in that folded part only (rare gestures). Under 7
+         elements visible at the step's opening: two lines, two buttons, the rest folded.
