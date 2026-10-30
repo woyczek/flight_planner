@@ -1039,6 +1039,10 @@ redesigned for touch at that point.
        - **The current selection reads as three lines at the top of the pane** ("28L · ↑ 12 kt · ← 6 kt", "ABLI4L via
          ABLIN", "ILS 28L via PIZSA"), each with ✕ to clear that family; they are the summary Fuel also shows in its
          side's title after the return (one text rule, `summaryOf(side)` in `procedures.js`).
+         **The summary lines are the pane's table of contents** (user, 30 Oct: "un clic sur Piste renvoie direct à
+         la liste des pistes, idem pour SID, STAR, approche"): a tap on the line's label ("Piste", "STAR",
+         "Approche"), chosen or not, scrolls the sheet to that family's group and unfolds it if it was folded; ✕
+         stays the clearing gesture, separate from the label.
        Lots: maps (BUGS SOG: the pane v2 — three lists at once, narrowing, folds, family rows, transition sub-rows,
        condensed rows, summary lines; cases D), fuel (Features SOG: `familyOf`, `siblingsOf`, `compatible(list,
        { rwy, star, app })`, `summaryOf` in `frame/lib/procedures.js` with benches first, then the same summary line
