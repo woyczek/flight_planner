@@ -954,8 +954,9 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 102 | Refactor R-C6: one base for the GitHub and GitLab transports (72ba695a8) | acceptable, no guard lost |
 | 103 | Suite update refused while a job or a sync runs; trust stated (2a02aedde): the notes of 97 closed | acceptable, one note (closed in 105) |
 | 104 | The take bound to the zip shown in the plan (79aaed096, 1e7a06443): the note of 95 closed; approximate outlines on the zone map | acceptable, one note |
-| 105 | Suite update: fetch outside the locks, job starts held during the write (99b4c2a25): the note of 103 closed | acceptable, one note |
+| 105 | Suite update: fetch outside the locks, job starts held during the write (99b4c2a25): the note of 103 closed | acceptable, one note (closed in 107) |
 | 106 | Refactor R-S2: one read and one write of the airline's map profiles (b4e76634e) | acceptable, no change of behaviour |
+| 107 | Suite update bound to the version shown (513f6fb5b): the note of 105 closed | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1944,6 +1945,14 @@ references before the write); still a strict tag or a fast-forward, on this work
 the four functions of `edge` and `runwayZoom`; the zoom is still checked against its bounds before anything is read or
 written; same file, same data layer, same `put`; the content written is the former one (the rest of the file kept, any
 unknown key included, `edge` merged with the existing one).
+
+**107. The note of 105 (513f6fb5b) — acceptable, one note.** The plan returns the target's commit; the panel keeps it
+and sends it back as `target` (empty, or 40 hexadecimal characters, 400 otherwise); it is only compared with the plan,
+after the fetch and again under `SYNC_LOCK` on the plan done again without a fetch, and a different target is refused
+(`changed`) before anything is written; it is never passed to git. Note: on the `suivi` channel the fast-forward still names
+`origin/<branch>` rather than the commit just checked, so a check from another tab fetching in between could still move it;
+merge the plan's own commit (read by the launcher with `rev-parse`). Tags do not have this window (a fetch without `--force`
+does not move an existing tag).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
