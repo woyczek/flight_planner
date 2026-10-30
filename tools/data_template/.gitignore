@@ -17,3 +17,13 @@ missions/**/*.svg
 missions/**/*.zip
 missions/**/*.pdf
 missions/*.pdf
+# Sources brutes téléchargées, récupérables par « Télécharger » du module Données (base/fetch) et retirées par « Purger » (base/purge) : elles ne sont plus dans
+# le dépôt des données (décision du 30 octobre 2026 ; seule la base construite, sia/base/, est publiée). Les AIXM / XML_SIA du SIA ci-dessus restent ignorés.
+sia/openaip/
+sia/zones/
+sia/aixm5/
+sia/geojson/
+sia/miam-*.xml
+# Cache de la lecture des aéronefs (régénéré), et les caches de l'interpréteur Python
+AircraftDB/aircraft_http_cache.json
+**/__pycache__/

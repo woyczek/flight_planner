@@ -638,7 +638,7 @@
     if (!nav()?.cpco?.enabled?.()) throw fail('centre');
     let csp = false;
     try {
-      csp = (await (await fetch('/__setup/status', {
+      csp = (await (await fetch('/__setup/workstation', {
         headers: {
           'X-SOG-Setup': '1'
         },

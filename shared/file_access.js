@@ -345,7 +345,7 @@
     return s === 'same' ? true : s === 'other' ? false : null;
   }
   /** Dossier de la suite servie (chemin donné par le lanceur), pour le message. */
-  const servedRoot = () => fetch(new URL('__setup/status', ROOT_URL), {
+  const servedRoot = () => fetch(new URL('__setup/workstation', ROOT_URL), {
     headers: {
       'X-SOG-Setup': '1'
     },

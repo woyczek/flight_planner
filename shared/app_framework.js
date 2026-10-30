@@ -760,10 +760,10 @@
 
   // ---- Protection réduite (débrayage du lanceur : pages ouvrables depuis un autre site ou une extension, jusqu'à sa
   // fermeture) : bouton rouge dans l'en-tête de chaque page ; un clic rétablit la protection. État lu au lanceur au
-  // chargement de la page (/__setup/status), et de nouveau quand un réglage de Paramètres l'annonce (suite-relax-change).
+  // chargement de la page (/__setup/workstation), et de nouveau quand un réglage de Paramètres l'annonce (suite-relax-change).
   async function relaxBadge() {
     if (!/^https?:$/.test(location.protocol)) return;
-    const st = await fetch("/__setup/status", {
+    const st = await fetch("/__setup/workstation", {
       headers: {
         "X-SOG-Setup": "1"
       },

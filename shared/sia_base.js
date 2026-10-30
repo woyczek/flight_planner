@@ -15,6 +15,7 @@
  * (dossiers mémorisés) ; window.Airac (cycles). Valeurs MORA calculées, non certifiées.
  */
 (() => {
+  'use strict'; // références partagées gelées par le cadre (802e6856f) : une mutation échoue avec une erreur, jamais en silence
   const DB = 'sia-map-parser',
     STORE = 'cache',
     KEY = 'base',
@@ -27,9 +28,9 @@
     FOLDER_NAME = 'siaFolderName';
   /** Version du format de la base mémorisée : une base d'une autre version est ignorée (à relire). */
   const COMPAT =
-    14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp ; 17 ne change pas le format : une base 14 à 16 se lit, signalée « outdated »)
+    14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp ; 17, 18 et 19 ne changent pas le format : une base 14 à 18 se lit, signalée « outdated »)
   const VERSION =
-    17; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge)
+    19; // 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge) ; 18 : limites des espaces OpenAir d'X-Plane en pieds (le M de « MSL » n'est plus des mètres, AeroSources.openair : les zones construites avant sont à reconstruire) ; 19 : secteurs d'une même famille qui se recouvrent avec des planchers différents, signalés (ovl sur les espaces, overlaps dans le meta de la zone ; les zones construites avant n'ont ni l'un ni l'autre)
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
@@ -1362,6 +1363,17 @@
     appAssetWhy = `${appUrl('shared/carto/' + name)} : ${[...new Set(why)].join(' ; ')}`;
     return null;
   }
+  /** Contours (premier anneau) des FIR françaises du SIA parmi des espaces : la France y a la priorité (une construction qui
+   *  lit d'autres sources écarte leurs espaces dont le centre y tombe). */
+  const FR_FIR = /^(PARIS|REIMS|BREST|BORDEAUX|MARSEILLE|CAYENNE)$/i;
+  const frenchFirRings = airspaces => (airspaces || []).filter(a => a.type === 'FIR' && a.src === 'sia' && FR_FIR.test(a.name)).map(a =>
+    a.rings[0]).filter(Boolean);
+  /** Contours prioritaires (FIR françaises) d'un export XML_SIA (texte) : ce que build en retient quand il le lit lui-même. */
+  function priorityRingsFromXmlSia(text) {
+    const list = parseXmlSiaAirspaces(text);
+    for (const a of list) a.src ||= a.azba ? 'dircam' : 'sia';
+    return frenchFirRings(list);
+  }
   const AIRAC_NAME = /^(?:AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)(\d{4}-\d{2}-\d{2})\.xml$/i;
   // zone d'origine de chaque élément de la base (espace, aérodrome, point…), d'après le fichier lu : notée par build, lue
   // par la publication par zone (splitZones) ; rien n'est ajouté à la base mémorisée
@@ -1382,13 +1394,17 @@
     folderName = 'Dossier SIA',
     progress = () => {},
     signal,
-    extra = {}
+    extra = {},
+    settings = null,
+    priorityRings = null
   } = {}) {
     const t0 = performance.now(),
       timings = [];
     const AS = await needAero(),
       Z = await needZones(),
-      zs = Z?.settings(),
+      // réglages des zones : ceux de ce navigateur, sauf donnés (la construction sur le poste, buildZones, lit
+      // seulement les zones demandées, sans toucher aux réglages de l'utilisateur)
+      zs = settings || Z?.settings(),
       // zones actives et sources cochées (Paramètres › Maintenance › Données aéronautiques) ; sans zones : tout est lu
       wanted = rel => !Z || Z.fileWanted(rel, zs),
       xpZones = Z ? Object.keys(zs.on).filter(id => Z.isOn(id, zs) && Z.srcOn(id, 'xplane', zs)) : null;
@@ -1545,9 +1561,9 @@
     // FIR françaises (contours XML_SIA), le SIA seul : un espace d'une autre source dont le centre y tombe est écarté
     // (les autres sources découpent et nomment les mêmes espaces autrement)
     const bySource = {};
-    const FR_FIR = /^(PARIS|REIMS|BREST|BORDEAUX|MARSEILLE|CAYENNE)$/i,
-      cover = base.airspaces.filter(a => a.type === 'FIR' && a.src === 'sia' && FR_FIR.test(a.name)).map(a => a.rings[0]).filter(
-        Boolean);
+    // priorityRings : contours des FIR françaises lus à part (frenchFirRings) quand le SIA n'est pas lu dans cette construction
+    // (zones construites sans la France, buildZones) : la règle est la même, un seul calcul
+    const cover = [...frenchFirRings(base.airspaces), ...(priorityRings || [])];
     /** Vrai si le centre du cadre du premier anneau de l'espace a tombe dans une FIR française du SIA (cover). */
     const inFrance = a => {
       let la0 = 90,
@@ -1780,11 +1796,204 @@
       dir: st.handle
     };
   }
+  // ---- secteurs d'une même famille qui se recouvrent avec des planchers différents (statistique de construction)
+  // openAIP code certains secteurs de l'AIP en disques qui contiennent l'aérodrome (Dublin CTA 3 à 6 : les secteurs annulaires
+  // de l'AIP sans leur frontière intérieure) ; la base reproduit la source et ne coupe rien. Cette vérification le SIGNALE
+  // seulement : une statistique par zone (meta.overlaps) et un drapeau sur chaque espace concerné (ovl, la famille), que la
+  // fiche de point de la Carte lit pour sa note. Des couches verticales d'une même structure peuvent aussi se recouvrir
+  // légitimement : rien n'est retiré ni modifié dans les contours.
+  /** Famille d'un espace : le nom sans son numéro ou sa lettre de secteur (« DUBLIN CTA 3 » → « DUBLIN CTA »), la même règle
+   *  que la note de la fiche de point (modules/maps/lv.js). */
+  const familyName = a => String(a.name || '').toUpperCase().replace(/(\s+(\d+[A-Z]?|[A-Z]))+$/, '').trim();
+  const OVL_TOL = .005, // degrés (≈ 0,3 NM) : un recouvrement plus mince qu'un tracé approché des frontières communes n'en est pas un
+    OVL_FLOOR_FT = 20, // deux planchers à moins de 20 ft l'un de l'autre sont le même (mètres arrondis)
+    OVL_MAX = 50; // familles détaillées dans la statistique (le total est toujours donné)
+  /** Vrai si les deux anneaux (suites de x, y à plat) se recouvrent d'une surface réelle : un sommet de l'un à plus de OVL_TOL
+   *  à l'intérieur de l'autre, ou deux côtés qui se croisent franchement (extrémités à plus de OVL_TOL de la droite de l'autre,
+   *  de part et d'autre). Deux secteurs voisins qui partagent une frontière, même un peu différente, ne se recouvrent pas ;
+   *  deux contours identiques (couches verticales) non plus. */
+  function ringsOverlap(p, q) {
+    const np = p.length / 2,
+      nq = q.length / 2;
+    /** Position de (x, y) par rapport à l'anneau r de n sommets : dedans (pair-impair) et distance à sa frontière. */
+    const probe = (x, y, r, n) => {
+      let inside = false,
+        d2 = Infinity;
+      for (let i = 0, j = n - 1; i < n; j = i++) {
+        const x0 = r[2 * j],
+          y0 = r[2 * j + 1],
+          x1 = r[2 * i],
+          y1 = r[2 * i + 1];
+        if ((y1 > y) !== (y0 > y) && x < (x0 - x1) * (y - y1) / (y0 - y1) + x1) inside = !inside;
+        const dx = x1 - x0,
+          dy = y1 - y0,
+          l2 = dx * dx + dy * dy,
+          t = l2 ? Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / l2)) : 0;
+        d2 = Math.min(d2, (x - x0 - t * dx) ** 2 + (y - y0 - t * dy) ** 2);
+      }
+      return {
+        inside,
+        d: Math.sqrt(d2)
+      };
+    };
+    for (const [a, na, b, nb] of [
+        [p, np, q, nq],
+        [q, nq, p, np]
+      ])
+      for (let i = 0; i < na; i++) {
+        const r = probe(a[2 * i], a[2 * i + 1], b, nb);
+        if (r.inside && r.d > OVL_TOL) return true;
+      }
+    /** Côté franc de (x, y) par rapport à la droite (x0, y0)-(x1, y1) de longueur len : -1, 1, ou 0 à moins de OVL_TOL. */
+    const side = (x0, y0, x1, y1, x, y, len) => {
+      const d = ((x1 - x0) * (y - y0) - (y1 - y0) * (x - x0)) / len;
+      return Math.abs(d) <= OVL_TOL ? 0 : d > 0 ? 1 : -1;
+    };
+    for (let i = 0, j = np - 1; i < np; j = i++) {
+      const ax = p[2 * j],
+        ay = p[2 * j + 1],
+        bx = p[2 * i],
+        by = p[2 * i + 1],
+        la = Math.hypot(bx - ax, by - ay);
+      if (!la) continue;
+      for (let k = 0, m = nq - 1; k < nq; m = k++) {
+        const cx = q[2 * m],
+          cy = q[2 * m + 1],
+          dx = q[2 * k],
+          dy = q[2 * k + 1],
+          lb = Math.hypot(dx - cx, dy - cy);
+        if (!lb || Math.max(ax, bx) < Math.min(cx, dx) || Math.min(ax, bx) > Math.max(cx, dx) || Math.max(ay, by) < Math.min(cy, dy) ||
+          Math.min(ay, by) > Math.max(cy, dy)) continue;
+        if (side(cx, cy, dx, dy, ax, ay, lb) * side(cx, cy, dx, dy, bx, by, lb) < 0 && side(ax, ay, bx, by, cx, cy, la) * side(ax,
+            ay, bx, by, dx, dy, la) < 0) return true;
+      }
+    }
+    return false;
+  }
+  /** Vérifie, parmi les espaces d'une zone finie, les secteurs d'une même famille (type, classe, nom sans son numéro ou sa
+   *  lettre de secteur, source) qui se recouvrent avec des planchers différents et un volume commun (le plafond de l'un
+   *  n'est pas le plancher de l'autre : des couches superposées ne sont pas signalées). read : la lecture des limites de la
+   *  base (SiaAero.limitRead : SFC = 0, FL × 100, mètres convertis ; un plancher ASFC et un plancher AMSL de même valeur sont
+   *  différents). Rend { airspaces, overlaps } : airspaces, la liste où chaque espace concerné porte ovl (le nom de sa famille ;
+   *  copie de surface, la liste donnée n'est pas modifiée ; un ovl périmé est retiré des autres) et overlaps, la statistique
+   *  { count (familles), airspaces (espaces concernés), families: [{ family, type, cls, src, members: [noms], floors: [planchers
+   *  tels qu'écrits, dans l'ordre des membres] }] } limitée à OVL_MAX familles, les plus grandes d'abord. Sans lecteur de
+   *  limites : null (rien n'est vérifié, la zone garde ses espaces). */
+  function sameFamilyOverlaps(airspaces, read) {
+    if (typeof read !== 'function') return null;
+    const groups = new Map();
+    for (const a of airspaces || []) {
+      const rings = (a.rings || []).filter(r => r?.length > 2);
+      if (!rings.length) continue;
+      const f = familyName(a),
+        k = [a.type, a.cls, f, a.src].join('|');
+      (groups.get(k) || groups.set(k, {
+        family: f,
+        type: a.type || '',
+        cls: a.cls || '',
+        src: a.src || '',
+        list: []
+      }).get(k)).list.push({
+        a,
+        rings
+      });
+    }
+    const flagged = new Map(), // espace → famille
+      families = [];
+    for (const g of groups.values()) {
+      if (g.list.length < 2) continue;
+      const items = [];
+      for (const {
+          a,
+          rings
+        }
+        of g.list) {
+        const r = read(a.lower, false),
+          u = read(a.upper, true);
+        if (r?.ok && Number.isFinite(r.ft)) items.push({ // plancher illisible : on ne dit rien
+          a,
+          rings,
+          ft: r.ft,
+          rel: !!r.rel,
+          up: u?.ok && Number.isFinite(u.ft) && !u.unl ? u.ft : Infinity // plafond illisible ou sans limite : jusqu'en haut
+        });
+      }
+      if (items.length < 2) continue;
+      // projection plane commune au groupe (degrés de longitude réduits à la latitude moyenne)
+      const kx = Math.cos(items.reduce((s, it) => s + it.rings[0][0][0], 0) / items.length * Math.PI / 180);
+      for (const it of items) {
+        let s = 90,
+          w = 180,
+          n = -90,
+          e = -180;
+        it.flat = it.rings.map(r => {
+          const f = new Float64Array(2 * r.length);
+          r.forEach(([y, x], i) => {
+            f[2 * i] = x * kx;
+            f[2 * i + 1] = y;
+            s = Math.min(s, y);
+            n = Math.max(n, y);
+            w = Math.min(w, x * kx);
+            e = Math.max(e, x * kx);
+          });
+          return f;
+        });
+        it.box = [s, w, n, e];
+      }
+      const hit = new Set();
+      for (let i = 0; i < items.length; i++)
+        for (let j = i + 1; j < items.length; j++) {
+          const A = items[i],
+            B = items[j];
+          if (A.rel === B.rel && Math.abs(A.ft - B.ft) <= OVL_FLOOR_FT) continue;
+          // couches l'une sur l'autre (le plafond de l'une est le plancher de l'autre) : pas de volume commun
+          if (A.up - B.ft <= OVL_FLOOR_FT || B.up - A.ft <= OVL_FLOOR_FT) continue;
+          if (A.box[0] > B.box[2] || B.box[0] > A.box[2] || A.box[1] > B.box[3] || B.box[1] > A.box[3]) continue;
+          if (A.flat.some(p => B.flat.some(q => ringsOverlap(p, q)))) {
+            hit.add(A);
+            hit.add(B);
+          }
+        }
+      if (!hit.size) continue;
+      const members = items.filter(it => hit.has(it));
+      for (const it of members) flagged.set(it.a, g.family);
+      families.push({
+        family: g.family,
+        type: g.type,
+        cls: g.cls,
+        src: g.src,
+        members: members.map(it => it.a.name),
+        floors: members.map(it => it.a.lower ?? '')
+      });
+    }
+    families.sort((x, y) => y.members.length - x.members.length || (x.family < y.family ? -1 : 1));
+    return {
+      airspaces: (airspaces || []).map(a => {
+        if (flagged.has(a)) return {
+          ...a,
+          ovl: flagged.get(a)
+        };
+        if (!('ovl' in a)) return a;
+        const {
+          ovl,
+          ...rest
+        } = a;
+        return rest;
+      }),
+      overlaps: {
+        count: families.length,
+        airspaces: flagged.size,
+        families: families.slice(0, OVL_MAX)
+      }
+    };
+  }
+
   /** Base découpée par zone : { zone: morceau }. Chaque élément va à la zone de son fichier (ZONE_OF), sinon à la zone
    *  qui contient sa position (X-Plane, MORA, obstacles), sinon à la zone principale (France si active) ; les autres
-   *  champs (cycle, axes ENR 5.7, fichiers analysés…) vont à la zone principale. meta : report.zones de build. */
-  function splitZones(b, zones, Z, meta = {}) {
-    const home = zones.includes('fr') ? 'fr' : zones[0],
+   *  champs (cycle, axes ENR 5.7, fichiers analysés…) vont à la zone principale. meta : report.zones de build. mainZone :
+   *  la zone principale si ce n'est pas la France (ou la première). */
+  function splitZones(b, zones, Z, meta = {}, mainZone = null) {
+    const home = mainZone || (zones.includes('fr') ? 'fr' : zones[0]),
       parts = Object.fromEntries(zones.map(z => [z, {
         airspaces: [],
         aero: {},
@@ -1832,10 +2041,20 @@
     (b.aarXmlExtra || []).forEach((t, i) => parts[parts[meta.aar?.[i]] ? meta.aar[i] : home].aarXmlExtra.push(t));
     if (b.natTracks) parts[parts[meta.nat] ? meta.nat : parts.nat ? 'nat' : home].natTracks = b.natTracks;
     const SPLIT = new Set(['airspaces', 'aero', 'obstacleMax', 'moraCells', 'aarXmlExtra', 'natTracks', 'cities', 'citiesCount',
-      'sources', 'cachedAt', 'parserVersion', 'outdated'
+      'sources', 'cachedAt', 'parserVersion', 'outdated', 'overlaps'
     ]);
     for (const [k, v] of Object.entries(b))
       if (!SPLIT.has(k)) parts[home][k] = v;
+    // les espaces de chaque zone sont définitifs : secteurs d'une même famille qui se recouvrent avec des planchers différents,
+    // signalés (drapeau ovl sur les espaces, statistique overlaps de la zone) et jamais corrigés ; sans lecteur de limites
+    // (SiaAero.limitRead), rien n'est vérifié et la zone n'a pas de statistique
+    for (const p of Object.values(parts)) {
+      const o = sameFamilyOverlaps(p.airspaces, window.SiaAero?.limitRead);
+      if (o) {
+        p.airspaces = o.airspaces;
+        p.overlaps = o.overlaps;
+      }
+    }
     return parts;
   }
   /** Base recollée à partir des morceaux publiés (un par zone) : la France d'abord, puis les autres zones. */
@@ -1860,6 +2079,7 @@
         moraCells,
         aarXmlExtra,
         natTracks,
+        overlaps, // statistique de la zone : se recalcule à la publication
         zone,
         cycle,
         schema,
@@ -1995,6 +2215,84 @@
   // d'une zone publiée sont retirés.
   const SPLIT_KINDS = ['aerodromes', 'navaids', 'points', 'vrp', 'airways', 'obstacles'],
     MAJOR_POP = 100000; // habitants : seuil de l'index des grandes villes
+  /** Réglages (forme de AeroZones.settings) d'une construction de zones données : elles seules actives, leurs sources sous licence
+   *  d'usage personnel et X-Plane décochées sauf celles de `personal` (déclaration du propriétaire, SPEC du module Données § 10.1). */
+  const zoneSettings = (Z, zones, personal = []) => {
+    const list = [].concat(zones),
+      off = Object.fromEntries(Object.entries(Z.SOURCES).filter(([id, s]) => s.personal && !personal.includes(id)).map(([id]) => [id,
+        false
+      ]));
+    return {
+      on: Object.fromEntries(list.map(z => [z, true])),
+      src: Object.fromEntries(list.map(z => [z, {
+        ...off
+      }]))
+    };
+  };
+  /** Zones dans l'ordre du découpage : la France d'abord (zone principale, jamais absente du découpage), puis les autres par ordre
+   *  alphabétique ; l'ordre départage les éléments qui touchent la marge de deux zones, quel que soit l'ordre demandé. */
+  const splitOrder = zones => ['fr', ...[...new Set(zones)].filter(z => z !== 'fr').sort()];
+  /** Textes prêts à écrire d'une zone : ses 12 fichiers (updated_at = at), son entrée du manifeste et les grandes villes. */
+  function zoneTexts(zone, part, cities, base, cycle, at) {
+    const bodies = zoneBodies(zone, part, {
+        cycle,
+        cities
+      }),
+      texts = {},
+      sizes = {};
+    for (const [kind, body] of Object.entries(bodies)) sizes[kind] = (texts[`${kind}.json`] = JSON.stringify({
+      ...body,
+      updated_at: at
+    })).length;
+    texts['manifest.json'] = JSON.stringify(zoneEntry(cycle, part, sizes));
+    texts['cities_major.json'] = JSON.stringify({
+      ...majorCities(base.cities),
+      updated_at: at
+    });
+    return texts;
+  }
+  /** Construit PLUSIEURS zones d'un coup, comme la page V2 (build de toutes, puis splitZones et zoneBodies / zoneEntry, les mêmes
+   *  fonctions que publishSplit) sans toucher aux réglages de l'utilisateur ni à la base mémorisée : la sortie de chaque zone est
+   *  celle de la page, octet pour octet (updated_at mis à part). onZone(zone, textes) est appelée pour chaque zone dans l'ordre du
+   *  découpage, dès que son texte est prêt (le lanceur la remet zone après zone : tools/regen/base.py, frame/aerodb/build/headless.js).
+   *  La zone principale est la France même si elle n'est pas construite (priorityRings : ses contours, priorityRingsFromXmlSia).
+   *  Rend { base, report, cycle }. */
+  async function buildZones(files, {
+    zones,
+    cycle = '',
+    at = new Date().toISOString(),
+    personal = [],
+    extra = {},
+    priorityRings = null,
+    folderName = 'Dossier SIA',
+    progress,
+    signal,
+    onZone
+  }) {
+    const Z = await needZones();
+    if (!Z) throw new Error('Zones de données absentes (aero_zones.js)');
+    const together = splitOrder(zones),
+      r = await build(files, {
+        folderName,
+        progress,
+        signal,
+        extra,
+        settings: zoneSettings(Z, together.filter(z => zones.includes(z)), personal),
+        priorityRings
+      });
+    if (cycle && r.base.airac && r.base.airac !== cycle) throw new Error(`Cycle ${r.base.airac} des fichiers du SIA, ${cycle} demandé`);
+    cycle ||= r.base.airac;
+    if (!cycle) throw new Error('Cycle inconnu : aucun fichier du SIA daté');
+    const parts = splitZones(r.base, together, Z, r.report.zones, 'fr'),
+      cities = citiesByZone(r.base.cities, together, Z);
+    for (const zone of together.filter(z => zones.includes(z))) await onZone(zone, zoneTexts(zone, parts[zone], cities[zone], r.base,
+      cycle, at));
+    return {
+      base: r.base,
+      report: r.report,
+      cycle
+    };
+  }
   /** Écrit name dans le dossier d (handle) si son contenu (hors updated_at) change ; rend la taille écrite (0 : inchangé). */
   async function writeIfChanged(d, name, body, at) {
     const old = await fileText(d, name);
@@ -2113,6 +2411,74 @@
     }
     return out;
   }
+  /** Villes rangées par zone : dans la zone de leur pays (GeoNames) quand ce pays a une zone, publiée ici ou non ; sinon (pays
+   *  sans zone : outre-mer, micro-États ; ville sans pays, base d'avant cette règle) dans la zone dont le contour la contient.
+   *  zones : les zones publiées ensemble ; { zone: [ville…] } (une ville dont la zone n'est pas publiée est écartée). */
+  function citiesByZone(villes, zones, Z) {
+    const locate = zoneLocator(zones, Z),
+      byZone = Object.fromEntries(zones.map(z => [z, []]));
+    for (const c of villes || []) {
+      const z = c.cc && Z?.ringsOf?.(c.cc)?.length ? c.cc : locate(+c.lat, +c.lon);
+      if (byZone[z]) byZone[z].push(plainCity(c));
+    }
+    return byZone;
+  }
+  /** Corps (avant sérialisation, sans updated_at) des fichiers d'UNE zone du format découpé : { sorte: { schema, zone, cycle,
+   *  kind, parserVersion, data } } ; p : le morceau de la zone (splitZones), cities : ses villes (citiesByZone). Un seul
+   *  calcul pour la publication par le navigateur (publishSplit) et pour la construction sur le poste (buildZones). */
+  function zoneBodies(z, p, {
+    cycle,
+    cities
+  }) {
+    const {
+      airspaces,
+      aero = {},
+      moraCells,
+      obstacleMax,
+      ...rest
+    } = p,
+    other = Object.fromEntries(Object.entries(aero).filter(([k]) => !SPLIT_KINDS.includes(k))),
+      files = {
+        airspaces: airspaces || [],
+        ...Object.fromEntries(SPLIT_KINDS.map(k => [k, aero[k] || []])),
+        aeroindex: aeroIndex(aero.aerodromes),
+        mora: moraCells || [],
+        obstaclemax: obstacleMax || {},
+        cities: cities || [],
+        meta: {
+          ...rest,
+          ...(Object.keys(other).length ? {
+            aero: other
+          } : {})
+        }
+      };
+    return Object.fromEntries(Object.entries(files).map(([kind, data]) => [kind, {
+      schema: 2,
+      zone: z,
+      cycle,
+      kind,
+      parserVersion: VERSION,
+      data
+    }]));
+  }
+  /** Entrée de la zone dans le manifeste (index.json) : cycle, préfixes OACI des aérodromes, tailles (Ko) de ses fichiers,
+   *  cases couvertes ; sizes : { sorte: octets }. */
+  function zoneEntry(cycle, p, sizes) {
+    return {
+      cycle,
+      prefixes: [...new Set(((p.aero || {}).aerodromes || []).map(a => String(a.icao || '').slice(0, 2).toUpperCase()).filter(x =>
+        /^[A-Z]{2}$/.test(x)))].sort(),
+      kb: Object.fromEntries(Object.entries(sizes).map(([k, n]) => [k, Math.ceil(n / 1024)])),
+      cells: coverage(p)
+    };
+  }
+  /** Grandes villes du monde (index de recherche hors emprise), corps de cities_major.json. */
+  const majorCities = villes => ({
+    schema: 2,
+    kind: 'cities_major',
+    minPopulation: MAJOR_POP,
+    data: (villes || []).filter(c => (+c.population || 0) >= MAJOR_POP).map(plainCity)
+  });
   async function publishSplit(d, parts, {
     cycle,
     at,
@@ -2125,8 +2491,7 @@
         unchanged: 0,
         mb: 0
       },
-      locate = zoneLocator(zones, Z),
-      byZone = Object.fromEntries(zones.map(z => [z, []])),
+      byZone = citiesByZone(villes, zones, Z),
       count = n => {
         if (n) {
           res.files++;
@@ -2134,12 +2499,6 @@
         } else res.unchanged++;
         return n;
       };
-    // ville rangée dans la zone de son pays (GeoNames) quand ce pays a une zone, publiée ici ou non ; sinon (pays sans
-    // zone : outre-mer, micro-États ; ville sans pays, base d'avant cette règle) dans la zone dont le contour la contient
-    for (const c of villes || []) {
-      const z = c.cc && Z?.ringsOf?.(c.cc)?.length ? c.cc : locate(+c.lat, +c.lon);
-      if (byZone[z]) byZone[z].push(plainCity(c));
-    }
     const manifest = {};
     for (const [z, p] of Object.entries(parts)) {
       const zd = await d.getDirectoryHandle(z, {
@@ -2148,57 +2507,20 @@
         cd = await zd.getDirectoryHandle(cycle, {
           create: true
         }),
-        {
-          airspaces,
-          aero = {},
-          moraCells,
-          obstacleMax,
-          ...rest
-        } = p,
-        other = Object.fromEntries(Object.entries(aero).filter(([k]) => !SPLIT_KINDS.includes(k))),
-        files = {
-          airspaces: airspaces || [],
-          ...Object.fromEntries(SPLIT_KINDS.map(k => [k, aero[k] || []])),
-          aeroindex: aeroIndex(aero.aerodromes),
-          mora: moraCells || [],
-          obstaclemax: obstacleMax || {},
-          cities: byZone[z] || [],
-          meta: {
-            ...rest,
-            ...(Object.keys(other).length ? {
-              aero: other
-            } : {})
-          }
-        },
+        bodies = zoneBodies(z, p, {
+          cycle,
+          cities: byZone[z]
+        }),
         sizes = {};
-      for (const [kind, data] of Object.entries(files)) sizes[kind] = count(await writeIfChanged(cd, `${kind}.json`, {
-        schema: 2,
-        zone: z,
-        cycle,
-        kind,
-        parserVersion: VERSION,
-        data
-      }, at)) || (await fileText(cd, `${kind}.json`) || '').length;
+      for (const [kind, body] of Object.entries(bodies)) sizes[kind] = count(await writeIfChanged(cd, `${kind}.json`, body, at)) || (
+        await fileText(cd, `${kind}.json`) || '').length;
       for await (const h of zd.values())
       if (h.kind === 'directory' && /^\d{4}-\d{2}-\d{2}$/.test(h.name) && h.name !== cycle) await zd.removeEntry(h.name, {
         recursive: true
       }).catch(() => {});
-      manifest[z] = {
-        cycle,
-        prefixes: [...new Set((aero.aerodromes || []).map(a => String(a.icao || '').slice(0, 2).toUpperCase()).filter(x =>
-          /^[A-Z]{2}$/
-          .test(x)))].sort(),
-        kb: Object.fromEntries(Object.entries(sizes).map(([k, n]) => [k, Math.ceil(n / 1024)])),
-        cells: coverage(p)
-      };
+      manifest[z] = zoneEntry(cycle, p, sizes);
     }
-    const major = (villes || []).filter(c => (+c.population || 0) >= MAJOR_POP).map(plainCity);
-    count(await writeIfChanged(d, 'cities_major.json', {
-      schema: 2,
-      kind: 'cities_major',
-      minPopulation: MAJOR_POP,
-      data: major
-    }, at));
+    count(await writeIfChanged(d, 'cities_major.json', majorCities(villes), at));
     // manifeste : zones de ce poste remplacées, celles des autres postes gardées
     let prev = {};
     try {
@@ -2310,7 +2632,8 @@
 
   // ===================================================================== bloc d'interface commun
   const L = row => row[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || row[0];
-  const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
+  const esc = (...a) => window.RepositoryKit.esc(...
+    a); // échappement HTML commun (shared/kit.js), lu à l'appel : la construction sans fenêtre (frame/aerodb/build) n'a pas de kit
   const T = {
     folder: ['Dossier SIA', 'SIA folder', 'SIA-Ordner', 'Carpeta SIA'],
     // mode GitHub (appli sans lanceur) : ni dossier SIA ni relecture
@@ -2669,6 +2992,15 @@
     ghSync,
     publish,
     splitZones,
+    buildZones,
+    zoneSettings,
+    zoneBodies,
+    zoneEntry,
+    citiesByZone,
+    majorCities,
+    frenchFirRings,
+    priorityRingsFromXmlSia,
+    sameFamilyOverlaps,
     joinZones,
     patch,
     purge,

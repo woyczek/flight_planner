@@ -2,6 +2,7 @@
 //   · meta : ce qu'il lit et écrit (préfixes du dépôt des données, règle de fusion), son application, son niveau ;
 //   · mount(el, ctx) : dessine dans el ; ctx.data (sa part de la couche de données), ctx.t (textes [fr, en, de, es]),
 //     ctx.notify, ctx.ask, ctx.identity (lecture seule), ctx.aerodb (service), ctx.net (appels sortants) ;
+//   · ctx.consume(clés) : une demande d'un autre module ou d'un lien (#hello?note=…) prise une fois, puis retirée de l'adresse ;
 //   · unmount() : arrête ce qu'il a lancé (observateurs) ; le cadre vide el.
 // Une note par pilote, pilot/<trigramme>/hello.json (préfixe pilot/ partagé avec d'autres modules : fuel, maps), et
 // une copie locale de l'appareil, jamais synchronisée (politique « cache ») : cache/hello/last.json.
@@ -36,7 +37,10 @@ const TX = {
   ],
   first: ['première fois', 'first time', 'erstes Mal', 'primera vez'],
   aero: ['Base aéronautique : {s}', 'Aeronautical database: {s}', 'Luftfahrtdatenbank: {s}', 'Base aeronáutica: {s}'],
-  noAero: ['non chargée', 'not loaded', 'nicht geladen', 'no cargada']
+  noAero: ['non chargée', 'not loaded', 'nicht geladen', 'no cargada'],
+  asked: ['Texte proposé par le lien : {s}', 'Text offered by the link: {s}', 'Vom Link vorgeschlagener Text: {s}',
+    'Texto propuesto por el enlace: {s}'
+  ]
 };
 
 let stop = null;
@@ -54,10 +58,14 @@ export async function mount(el, ctx) {
     at: new Date().toISOString()
   });
   const aero = ctx.aerodb?.status ? await Promise.resolve(ctx.aerodb.status()).catch(() => null) : null;
+  // une demande portée par l'adresse (#hello?note=…) : prise une fois, puis retirée de l'adresse par le cadre (un rechargement
+  // ou un retour ne la rejoue pas) ; frame/INTEGRATION.md § 6.1
+  const asked = ctx.consume?.('note').note || '';
   el.innerHTML = `<h1>${t(TX.title)}</h1>
     <div class="f-card"><p>${t(TX.hello, { who: tri || t(TX.nobody) })}</p>
     <p class="f-muted">${t(TX.local, { d: last?.at ? new Date(last.at).toLocaleString() : t(TX.first) })}</p>
-    <p class="f-muted">${t(TX.aero, { s: aero ? JSON.stringify(aero).slice(0, 120) : t(TX.noAero) })}</p></div>
+    <p class="f-muted">${t(TX.aero, { s: aero ? JSON.stringify(aero).slice(0, 120) : t(TX.noAero) })}</p>
+    ${asked ? `<p data-asked>${t(TX.asked, { s: asked.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`) })}</p>` : ''}</div>
     <div class="f-card"><label class="f-field">${t(TX.note)}<textarea data-note rows="3"></textarea></label>
     <button type="button" class="primary" data-save>${t(TX.save)}</button></div>`;
   const area = el.querySelector('[data-note]');

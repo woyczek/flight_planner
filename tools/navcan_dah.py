@@ -23,14 +23,19 @@ BASE = 'https://www.navcanada.ca'
 
 
 def current_url(html, today=None):
-    """Adresse du DAH en vigueur d'après la page des guides : plus récente édition déjà entrée en vigueur."""
+    """Adresse du DAH en vigueur d'après la page des guides : plus récente édition déjà entrée en vigueur. Seules les adresses
+    en https sur l'hôte de BASE sont retenues (un lien d'un autre hôte ou en http:// est écarté, jamais demandé par le lanceur)."""
     today = today or datetime.date.today().strftime('%Y%m%d')
-    links = sorted(set(re.findall(r'href="([^"]*?dah(\d{8})\.pdf)"', html, re.I)), key=lambda l: l[1])
+    links = []
+    for href, day in set(re.findall(r'href="([^"]*?dah(\d{8})\.pdf)"', html, re.I)):
+        url = href if re.match(r'[A-Za-z][A-Za-z0-9+.-]*:|//', href) else BASE + ('' if href.startswith('/') else '/') + href
+        if url.startswith(BASE + '/'):
+            links.append((url, day))
     if not links:
         return None
+    links.sort(key=lambda l: l[1])
     past = [l for l in links if l[1] <= today]
-    href = (past or links)[-1][0]
-    return href if href.startswith('http') else BASE + ('' if href.startswith('/') else '/') + href
+    return (past or links)[-1][0]
 
 
 # ---------------------------------------------------------------- objets du PDF (flux d'objets compris)

@@ -757,7 +757,8 @@
     if (/^(GND|SFC|0)$/.test(t)) return 'SFC';
     const fl = /FL\s*(\d+)/.exec(t);
     if (fl) return 'FL ' + +fl[1];
-    const n = /(\d+(?:\.\d+)?)\s*(M|FT|F)?\s*(AGL|GND|SFC|ASFC|AMSL|MSL)?/.exec(t);
+    // l'unité est un mot entier : le M de « MSL » (« 3000MSL », « 3000 MSL », espaces d'X-Plane) n'est pas des mètres
+    const n = /(\d+(?:\.\d+)?)\s*(M(?![A-Z])|FT|F(?![A-Z]))?\s*(AGL|GND|SFC|ASFC|AMSL|MSL)?/.exec(t);
     return n ? limit(n[1], n[2] === 'M' ? 'M' : 'FT', /AGL|GND|SFC|ASFC/.test(n[3] || '') ? 'SFC' : 'MSL') : t;
   };
 

@@ -1006,7 +1006,7 @@
   }
 
   // ---- débrayage de l'ouverture depuis un autre site ou une extension (lanceur : POST /__setup/relax ; état dans
-  // /__setup/status) : activé après confirmation dans la fenêtre du lanceur, jusqu'à sa fermeture
+  // /__setup/workstation) : activé après confirmation dans la fenêtre du lanceur, jusqu’à sa fermeture
   async function relaxRow(host) {
     const state = host.querySelector('#mtRelaxState'),
       btn = host.querySelector('#mtRelax');
@@ -1021,12 +1021,19 @@
         on
       })
     }).then(r => r.json()).catch(() => null);
-    const st = await fetch('/__setup/status', {
+    const st = await fetch('/__setup/workstation', {
       headers: {
         'X-SOG-Setup': '1'
       },
       cache: 'no-store'
-    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    }).then(r => r.ok ? r.json() : r.status === 403 ? {
+      forbidden: true
+    } : null).catch(() => null);
+    if (st?.forbidden) { // appareil appairé du réseau local : un lanceur sert la page, mais ce réglage est celui du poste
+      state.innerHTML = pill('info', t(['réglage du poste', 'workstation setting', 'Einstellung des Rechners', 'ajuste del equipo']));
+      btn.hidden = true;
+      return;
+    }
     if (!st) {
       state.innerHTML = pill('info', t(['sans lanceur', 'without launcher', 'ohne Starter', 'sin lanzador']));
       btn.hidden = true;
@@ -2366,7 +2373,20 @@
         'ok', age === 'warn' ? t(['à rafraîchir', 'to refresh', 'zu erneuern', 'por actualizar']) : t(['présent', 'present',
           'vorhanden', 'presente'
         ])) : pill('err', t(['manquant', 'missing', 'fehlt', 'falta']));
-      return `<li class="mt-aero-src"><label><input type="checkbox" data-zone-src="${esc(src)}"${Z.srcOn(id, src) ? ' checked' : ''}> <b>${esc(t(S.label))}</b></label> ${mark}
+      // source sous licence personnelle (X-Plane / Navigraph, ENAIRE, NATS) : la case reste, une ligne dit à qui elle est
+      // réservée (décision de l'utilisateur, 29/10/2026) ; rien n'est bloqué ni gardé au-delà de la case
+      const own = S.personal ? `<div class="mt-small" data-personal>${esc(t(S.personal === 'xplane' ? [
+        'À cocher seulement si le dépôt de données n’est utilisé que par vous (données X-Plane, usage personnel).',
+        'Tick only if the data repository is used by you alone (X-Plane data, personal use).',
+        'Nur ankreuzen, wenn das Datenrepository nur von Ihnen genutzt wird (X-Plane-Daten, persönliche Nutzung).',
+        'Marque solo si el repositorio de datos lo usa únicamente usted (datos de X-Plane, uso personal).'
+      ] : [
+        'À cocher seulement si le dépôt de données n’est utilisé que par vous (licence d’usage personnel).',
+        'Tick only if the data repository is used by you alone (personal-use licence).',
+        'Nur ankreuzen, wenn das Datenrepository nur von Ihnen genutzt wird (Lizenz zur persönlichen Nutzung).',
+        'Marque solo si el repositorio de datos lo usa únicamente usted (licencia de uso personal).'
+      ]))}</div>` : '';
+      return `<li class="mt-aero-src"><label><input type="checkbox" data-zone-src="${esc(src)}"${Z.srcOn(id, src) ? ' checked' : ''}> <b>${esc(t(S.label))}</b></label> ${mark}${own}
         <div class="mt-small">${esc(t(S.gives))} · ${esc(st.text)} · ${esc(S.licence || '')}</div>${action(src)}</li>`;
     }).join('');
     return `<h3>${esc(zName(z))} <span class="mt-small">(${esc(id.toUpperCase())})</span>${aeroLocked && id === aeroPinned ? ` <button type="button" class="secondary" data-zone-unpin title="${esc(t(['Le panneau suit de nouveau le survol de la carte (aussi : nouveau clic sur la zone, Échap)', 'The panel follows the map hover again (also: click the zone again, Esc)', 'Das Feld folgt wieder dem Überfahren der Karte (auch: erneuter Klick auf die Zone, Esc)', 'El panel vuelve a seguir el paso del ratón (también: nuevo clic en la zona, Esc)']))}">📌 ${esc(t(['Libérer', 'Release', 'Lösen', 'Soltar']))}</button>` : ''}</h3>

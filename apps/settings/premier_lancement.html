@@ -1097,7 +1097,7 @@
   async function dataState() {
     let st;
     try {
-      st = await api('status');
+      st = await api('workstation'); // réglages du poste : data, Git LFS (la détection seule est /__setup/status)
     } catch {
       $('plDataState').textContent =
         'Pour cette étape, ouvrez la suite avec le lanceur (lancer.cmd sous Windows, sh lancer.sh sous macOS / Linux).';
