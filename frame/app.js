@@ -27,6 +27,7 @@
   // de recharger, au lieu de rester blanche
   const STORE = [
       ['store/frame_data.js', () => window.FrameData],
+      ['store/transport_git.js', () => window.FrameData?.git],
       ['store/transport_github.js', () => window.FrameData?.github],
       ['store/transport_gitlab.js', () => window.FrameData?.gitlab],
       ['store/transport_launcher.js', () => window.FrameData?.launcher]

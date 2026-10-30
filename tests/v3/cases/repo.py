@@ -1015,10 +1015,11 @@ def i16(c):
     src = (c.root / 'tools' / 'data_sync.py').read_text(encoding='utf-8')
     bare_paths = [ln.strip() for ln in src.splitlines() if re.search(r"git\(data, [^)]*'--', (\*?changes|\*?tracked|p|path)\b", ln) and 'env=' not in ln]
     c.eq(bare_paths, [], 'every git call given file paths in data_sync is literal (lit())', what='calls with paths as patterns')
-    # 3. le transport GitHub, comme GitLab : une redirection est une erreur, le jeton n'est jamais recopié
-    gh = (c.root / 'frame' / 'store' / 'transport_github.js').read_text(encoding='utf-8')
-    gl = (c.root / 'frame' / 'store' / 'transport_gitlab.js').read_text(encoding='utf-8')
-    c.ok("redirect: 'error'" in gh and "redirect: 'error'" in gl and gh.count('await fetch(') == 1, '', 'both transports refuse a redirect (one fetch each)')
+    # 3. les transports GitHub et GitLab : une redirection est une erreur, le jeton n'est jamais recopié — depuis R-C6, leur
+    # seul appel est celui de la base commune (transport_git.js)
+    gh, gl, base = ((c.root / 'frame' / 'store' / f'transport_{n}.js').read_text(encoding='utf-8') for n in ('github', 'gitlab', 'git'))
+    c.ok("redirect: 'error'" in base and base.count('await fetch(') == 1 and 'fetch(' not in gh and 'fetch(' not in gl
+         and 'G.caller(' in gh and 'G.caller(' in gl, '', 'both transports refuse a redirect (their one fetch, in the shared base)')
 
 
 @case('I17', 'Launcher jobs « aircraft »: fetch to the caches, build without network, purge the caches only, publish with a plan first', 'I', static=True,

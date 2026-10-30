@@ -183,6 +183,19 @@ The transports:
     parent, otherwise `err.conflict`; a commit that landed on a moved branch (`parent_ids[0]` ≠ parent) says
     `err.conflict` too (the layer pulls, its merge finds its own changes there).
   - `publish` (§ 15.2 of INTEGRATION): one commit per group, base64 for binaries.
+- **The remote transports' shared base** (`frame/store/transport_git.js`, `FD.git`; refactor R-C6, 30 Oct 2026): what
+  `github` and `gitlab` had written side by side, loaded before both (index.html, the service worker's list, the frame's
+  list of store scripts to ask again, every bench that loads them). Each transport keeps its addresses, its access header,
+  how it reads a refusal and how it lands a commit.
+  - `FD.git.caller({ headers, ok, refuse })` → `call(url, opts)`: never cached, **never follows a redirect** (Fetch strips
+    only `Authorization` on a cross-origin redirect, not `PRIVATE-TOKEN`: the token is never copied to another host); a
+    network error is `err.offline`; a refusal is `refuse(response, JSON body, opts)` → `{ message, conflict }`, thrown
+    with `err.status`. GitHub's `ok` takes a 304 (head unchanged).
+  - `FD.git.publish(groups, opts, { prepare, land })`: the publication loop — one commit per group in order, `from` to
+    resume, cancellation, 100 MB per file, progress, a failure said with the group's rank; `prepare(file, blob)` → the
+    transport's entry (GitHub: a blob posted, GitLab: the content in base64 or text), `land(entries, removed, message)`
+    → `{ commit, removed }` on the head read just before.
+  - `FD.git.b64(blob)`.
   - Bench `frame/store/test/gitlab.html` (noreg A38), against a GitLab API simulated in the page; never the real one.
 - **`launcher`** (`frame/store/transport_launcher.js`, workstation): the `data/` folder of the workstation is the
   repository, served by `tools/launch.py`. Every route requires the `X-SOG-Setup` header.

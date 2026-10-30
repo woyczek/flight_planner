@@ -15,9 +15,11 @@
   //     aussi (err.conflict : la couche tire, sa fusion trouve ses propres changements déjà là) ;
   //   · publish(groupes) : publication de fichiers générés (frame/INTEGRATION.md § 15.2), un commit par groupe.
   // Erreur réseau : err.offline ; jeton refusé : message lisible. Le jeton ne sort jamais de l'en-tête PRIVATE-TOKEN :
-  // ni dans une adresse, ni dans un message, ni dans la console.
+  // ni dans une adresse, ni dans un message, ni dans la console. L'appel, la boucle de publication et le base64 sont ceux
+  // de la base commune (transport_git.js, refonte R-C6).
   const FD = window.FrameData;
-  if (!FD || FD.gitlab) return;
+  if (!FD?.git || FD.gitlab) return;
+  const G = FD.git;
 
   function gitlab(c) {
     if (!c?.repo || !c.token) throw new Error('gitlab transport: project and token required');
@@ -32,43 +34,22 @@
       };
     const treeOf = new Map(); // tête → { chemin: empreinte }
     let headSha = '';
-    /** Appel de l'API ; erreur réseau → err.offline, refus → message lisible (jeton, droits), err.status ; err.conflict
-     *  pour un refus qui dit que le dépôt a bougé (fichier déjà là, absent, changé entre-temps). */
-    async function call(url, {
-      method = 'GET',
-      body
-    } = {}) {
-      let r;
-      try {
-        r = await fetch(url, {
-          method,
-          cache: 'no-store',
-          // jamais suivre une redirection : Fetch ne retire qu'Authorization d'une redirection vers une autre origine, pas
-          // PRIVATE-TOKEN
-          redirect: 'error',
-          headers: {
-            'PRIVATE-TOKEN': c.token,
-            ...(body ? {
-              'Content-Type': 'application/json'
-            } : {})
-          },
-          body: body ? JSON.stringify(body) : undefined
-        });
-      } catch {
-        throw Object.assign(new Error('offline'), {
-          offline: true
-        });
+    /** Appel de l'API (base commune) ; refus → message lisible (jeton, droits), err.status ; err.conflict pour un refus
+     *  qui dit que le dépôt a bougé (fichier déjà là, absent, changé entre-temps). */
+    const call = G.caller({
+      headers: () => ({
+        'PRIVATE-TOKEN': c.token
+      }),
+      refuse(r, j) {
+        const m = String((typeof j.message === 'string' ? j.message : j.message && JSON.stringify(j.message)) || j.error || r
+          .statusText).slice(0, 300);
+        return {
+          message: r.status === 401 ? 'GitLab token refused (expired, revoked or wrong)' : r.status === 403 ?
+            `GitLab 403: the token may not write this project (${m})` : `GitLab ${r.status}: ${m}`,
+          conflict: [400, 409, 422].includes(r.status) && /exist|changed|already|conflict|does not/i.test(m)
+        };
       }
-      if (r.ok) return r;
-      const j = await r.json().catch(() => ({})),
-        m = String((typeof j.message === 'string' ? j.message : j.message && JSON.stringify(j.message)) || j.error || r.statusText)
-        .slice(0, 300);
-      throw Object.assign(new Error(r.status === 401 ? 'GitLab token refused (expired, revoked or wrong)' : r.status === 403 ?
-        `GitLab 403: the token may not write this project (${m})` : `GitLab ${r.status}: ${m}`), {
-        status: r.status,
-        conflict: [400, 409, 422].includes(r.status) && /exist|changed|already|conflict|does not/i.test(m)
-      });
-    }
+    });
     const conflict = why => Object.assign(new Error(why), {
       conflict: true
     });
@@ -152,100 +133,32 @@
         if (await self.head() !== parent) throw conflict('branch moved');
         return post(actionsOf(changes, known), message, parent);
       },
-      /** Publication de fichiers générés (frame/INTEGRATION.md § 15.2) : un commit par groupe [{ name, files: [{ path,
-       *  text | blob }], removed: [path], message }], dans l'ordre, chacun sur la tête relue juste avant ; un fichier de
-       *  100 Mo au plus ; une suppression d'un fichier absent est sautée. from : rang du premier groupe (reprise). Rend
-       *  { ok: true, groups: [{ name, commit, files, removed, bytes }] } ou { ok: false, at, group, conflict | offline |
-       *  cancelled | tooBig | status, message, groups }. */
-      async publish(groups, {
-        onProgress,
-        signal,
-        from = 0
-      } = {}) {
-        const done = [],
-          list = [].concat(groups || []);
-        for (let gi = Math.max(0, from | 0); gi < list.length; gi++) {
-          const g = list[gi] || {},
-            files = [].concat(g.files || []),
-            removed = [].concat(g.removed || []);
-          const fail = (e, extra = {}) => ({
-            ok: false,
-            at: gi,
-            group: g.name || '',
-            groups: done,
-            message: String(e?.message || e || ''),
-            ...(e?.offline ? {
-              offline: true
-            } : {}),
-            ...(e?.conflict ? {
-              conflict: true
-            } : {}),
-            ...(e?.status && !e.conflict ? {
-              status: e.status
-            } : {}),
-            ...extra
-          });
-          try {
-            const changes = [];
-            let bytes = 0;
-            for (const [k, f] of files.entries()) {
-              if (signal?.aborted) return fail('cancelled', {
-                cancelled: true
-              });
-              const blob = f.blob instanceof Blob ? f.blob : null,
-                size = blob ? blob.size : new TextEncoder().encode(String(f.text ?? '')).length;
-              if (size > 100 * 1024 * 1024) return fail(`${f.path}: over 100 MB`, {
-                tooBig: f.path
-              });
-              changes.push(blob ? {
-                path: f.path,
-                blob: await b64(blob)
-              } : {
-                path: f.path,
-                text: String(f.text ?? '')
-              });
-              bytes += size;
-              onProgress?.({
-                group: g.name || '',
-                index: gi,
-                groups: list.length,
-                files: k + 1,
-                total: files.length,
-                bytes
-              });
-            }
-            const parent = await self.head(),
-              known = await self.tree(parent),
-              gone = removed.filter(p => p in known);
-            const commit = await post(actionsOf([...changes, ...gone.map(path => ({
-              path,
-              text: null
-            }))], known), g.message || `Publication ${g.name || ''}`.trim(), '');
-            done.push({
-              name: g.name || '',
-              commit,
-              files: changes.length,
-              removed: gone.length,
-              bytes
-            });
-          } catch (e) {
-            return fail(e);
-          }
+      /** Publication de fichiers générés (frame/INTEGRATION.md § 15.2 ; boucle de la base commune) : un commit par groupe,
+       *  chacun sur la tête relue juste avant ; une suppression d'un fichier absent est sautée. */
+      publish: (groups, opts) => G.publish(groups, opts, {
+        prepare: async (f, blob) => blob ? {
+          path: f.path,
+          blob: await G.b64(blob)
+        } : {
+          path: f.path,
+          text: String(f.text ?? '')
+        },
+        async land(changes, removed, message) {
+          const parent = await self.head(),
+            known = await self.tree(parent),
+            gone = removed.filter(p => p in known);
+          const commit = await post(actionsOf([...changes, ...gone.map(path => ({
+            path,
+            text: null
+          }))], known), message, '');
+          return {
+            commit,
+            removed: gone.length
+          };
         }
-        return {
-          ok: true,
-          groups: done
-        };
-      }
+      })
     };
     return self;
-  }
-  /** Contenu d'un Blob en base64 (actions encoding: base64). */
-  async function b64(blob) {
-    const u = new Uint8Array(await blob.arrayBuffer());
-    let s = '';
-    for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000));
-    return btoa(s);
   }
   FD.gitlab = gitlab;
 })();

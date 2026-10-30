@@ -1928,8 +1928,9 @@ the pool, literal paths (added to the second only after the review; `adopt` stil
 Target: one `takeover(data, base, keep)` used by both, with the literal pathspecs and `diff -z` once.
 
 **6. The transports** (`transport_github.js` 387 lines, `transport_gitlab.js` 251, G1 a0f3854d9 → 02a096440). Same
-interface, written side by side: `b64`, the auth header, the 409/422 conflict; the redirect refusal
-(`redirect: 'error'`) is in the GitLab one only. Target: a shared base (`transport_git.js`) and two thin adapters (URLs, auth header, tree paging).
+interface, written side by side: `b64`, the auth header, the 409/422 conflict, the publication loop; the redirect refusal
+(`redirect: 'error'`) was already in both (corrected at R-C6: the inventory said GitLab only). Target: a shared base
+(`transport_git.js`) and two thin adapters (URLs, auth header, tree paging). **Done: R-C6, 30 Oct 2026.**
 
 **7. The flown track** (A35 29 Oct in `progress.actual.trail` → 0bbe7ebbb on the device). Left: the one-shot takeover of a
 track found in `progress.actual` (dead once no flight started before 30 Oct remains: after 6 Nov), the text key
@@ -2193,3 +2194,13 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     redirection to another host; the base set's headless browser and its git get the reduced environment as well.
   - noreg I19 (fake eAIP and CIFP, a trial data repository, a real junction, a local server for the cap and the redirection;
     no network), K22 (the new gap), K45 (the fake browser's folder let through the reduced environment in the test only).
+
+- **30 Oct 2026 — Refactor R-C6: the two remote transports on one base** (§ 10.33, the inventory's item 6; no behaviour
+  change). `frame/store/transport_git.js` holds the call (no cache, no redirect followed, offline, refusal → error with
+  its status), the publication loop and `b64`; `transport_github.js` (390 → 303 lines) and `transport_gitlab.js` (251 →
+  164) keep their URLs, access header, refusal reading (GitHub: conflict only on the ref update, 409 / 422; GitLab: 400 /
+  409 / 422 with a message saying the repository moved) and their way of landing a commit. The inventory was late on one
+  point: `redirect: 'error'` was already in both (I16); the check now looks for it in the base, with the transports'
+  only `fetch` there. Each transport returns early without `FD.git`, so the frame's « script lost on the way » path asks
+  the base again before them (A28). Kept apart on purpose: the device setting (`clean`, `resolve`, `hold`) stays in
+  `transport_github.js`, which both providers share, and `head` / `tree` / `commit`, whose APIs have nothing in common.

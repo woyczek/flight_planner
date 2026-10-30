@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-C6, no behaviour change: the GitHub and GitLab transports on one base** (`frame/store/transport_git.js`;
+  frame SPEC 2, DECISIONS; noreg I16 now finds the redirect refusal in the base) — the API call (no cache, no redirect
+  followed, offline and refusals), the publication loop and the base64 were written twice; each transport keeps its
+  addresses, access header, refusal reading and commit. Loaded before both on every page, in the service worker's list
+  and in the frame's list of store scripts to ask again.
 - **Map: labels declared as requests, aerodb answers deduplicated by key, refactor without change of behaviour (R-M2 b, § 10.33)**
   (`modules/maps/lib/aero_symbols.js`, `render.js`, `render_airspace.js`, `render_route.js`, `procs.js`, `choose.js`, `data.js`;
   DECISIONS; noreg D84). Every label of the Map is a request `{ layer, rank, key, anchor, boxes, paint, force }` through one
