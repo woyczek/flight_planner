@@ -30,6 +30,7 @@ A design sets tokens and nothing else; a module reads them and never redefines o
 | Colours | `bg`, `surface`, `surface-2` (fields, callouts), `fg`, `muted`, `border`, `accent`, `accent-ink`, `link`, `focus`, `ok`, `warn`, `err`, `on-status` (text on ok / warn / err) |
 | Overlays | `shadow` (notes, dialogs), `shadow-up` (sticky bottom bars), `veil` (dialog backdrop) |
 | Charts | `chart-1` … `chart-6`, `chart-grid`, `chart-bg` |
+| Map (30 Oct 2026, refactoring § 10.33 R-F3) | `map-sid`, `map-star`, `map-app`: the hue of each kind of procedure, the Map's (its `PALETTE` of `modules/maps/render.js`) and Fuel's points-list groups the same. Cartographic, so one value for every design, day and night (set in the common block and the night blocks, never by a design) |
 | Type | `font` (shorthand), `font-title`, `font-mono`, `title-case`, `title-spacing`, `title-size` (page title, 1.25rem), `title-weight` (700), `size-s` (.9em), `size-xs` (.8em), `h1` (1.25rem: figures, not the page title), `h2` (1rem), `h3` (.95rem) |
 | Space | `gap` (12px), `gap-s` (6px), `gap-l` (20px) |
 | Shape | `radius` (6px), `radius-s` (3px); both 0 in textured designs |

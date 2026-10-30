@@ -1822,6 +1822,11 @@ def f73(c):
     c.ok(norm(c.text(f'{FUEL} [data-ptsn]') or '').startswith(norm(row(c, 'ptsN').replace('{n}', str(len(pilot) + 3)))), c.text(f'{FUEL} [data-ptsn]'),
          '« Points (N) » counts the pilot\'s points and the three groups')
     c.ok(c.js(f"!document.querySelector('{FUEL} .fu-ptgrp[data-kind=sid]').open"), 'open', 'a group row is folded: its fixes under a tap')
+    # refonte § 10.33 R-F3 : la teinte d'un groupe est le jeton du design que la Carte partage, aucune copie de couleur
+    hues = c.js(f"(() => {{ const t = document.createElement('i'); document.querySelector('{FUEL}').append(t); const out = ['sid', 'star', 'app'].map(k => {{ "
+                f"t.style.color = 'var(--sog-map-' + k + ')'; const g = document.querySelector('{FUEL} .fu-ptgrp[data-kind=' + k + ']'); "
+                f"return [getComputedStyle(t).color, g && getComputedStyle(g).borderLeftColor]; }}); t.remove(); return out; }})()")
+    c.ok(all(x[0] and x[0] == x[1] for x in hues), f'{hues}', 'each group\'s hue is the design token --sog-map-<kind> (shared with the Map)')
 
 
 @case('F74', 'A leg left direct names the airway that joins its points and why it is closed at the leg\'s level, with its open band', 'F', tags=('fuel', 'maps'),

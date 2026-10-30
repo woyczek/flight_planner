@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refonte — R-F3, les teintes des procédures en jetons du design** (`frame/design/tokens.css` `--sog-map-sid`, `--sog-map-star`,
+  `--sog-map-app`, design SPEC § 2; Fuel's points-list groups read them instead of a copy of the Map's `PALETTE`). One visible
+  change, on purpose: at night the groups take the Map's night hues (they kept the day ones).
 - **Refonte, sans changement de comportement — R-F2b, compatible absorbe conflictsOf, un rendu des noms** (`frame/lib/procedures.js`:
   one private `reasonsOf` behind `compatible` and `conflictsOf`, same signatures and data; `displayName` for `summaryOf` and Fuel's
   `nameOfId`; bench F32).

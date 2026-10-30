@@ -1573,12 +1573,12 @@ const STYLE = `
   [data-module="fuel"] .fu-step[hidden]{display:block}
 }
 ${PROC_STYLE}
-/* groupes de procédure de la liste des points (§ 10.31) : la teinte de la Carte (modules/maps/render.js, PALETTE sid / star / app) */
+/* groupes de procédure de la liste des points (§ 10.31) : la teinte de la Carte, jetons du design (refonte § 10.33 R-F3) */
 [data-module="fuel"] .fu-ptgrp{border-left:3px solid currentColor;padding-left:8px;display:block}
 [data-module="fuel"] .fu-ptgrp>summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
-[data-module="fuel"] .fu-ptgrp[data-kind="sid"]{border-left-color:#1b8a3a}
-[data-module="fuel"] .fu-ptgrp[data-kind="star"]{border-left-color:#d95500}
-[data-module="fuel"] .fu-ptgrp[data-kind="app"]{border-left-color:#0a86c4}
+[data-module="fuel"] .fu-ptgrp[data-kind="sid"]{border-left-color:var(--sog-map-sid)}
+[data-module="fuel"] .fu-ptgrp[data-kind="star"]{border-left-color:var(--sog-map-star)}
+[data-module="fuel"] .fu-ptgrp[data-kind="app"]{border-left-color:var(--sog-map-app)}
 [data-module="fuel"] .fu-rrow>label{position:relative} /* la liste de complétion du champ de route s'y pose (§ 10.31) */
 [data-module="fuel"] .fu-rrow{display:flex;gap:8px;align-items:flex-end} /* champ de la route + « Auto » : le champ prend la place restante */
 [data-module="fuel"] .fu-rrow>.f-field{flex:1 1 0;min-width:0}

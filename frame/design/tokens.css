@@ -20,7 +20,28 @@
   --sog-h3: .95rem;
   --sog-title-size: 1.25rem;
   --sog-title-weight: 700;
-  --sog-font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace
+  --sog-font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  /* teintes cartographiques des procédures (SPEC § 2, refonte § 10.33 R-F3) : la Carte et la liste des points de Carburant, les
+     mêmes dans tous les designs */
+  --sog-map-sid: #1b8a3a;
+  --sog-map-star: #d95500;
+  --sog-map-app: #0a86c4
+}
+
+/* ---- leurs valeurs de nuit, à l'écran seulement (forcée, ou demandée par le système sauf data-tone="day") */
+@media screen {
+  [data-tone="night"] {
+    --sog-map-sid: #5cd27a;
+    --sog-map-star: #ff9a4d;
+    --sog-map-app: #5cc4f5
+  }
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-tone="day"]) {
+    --sog-map-sid: #5cd27a;
+    --sog-map-star: #ff9a4d;
+    --sog-map-app: #5cc4f5
+  }
 }
 
 /* ---- standard : le cadre tel qu'il était, jour */
