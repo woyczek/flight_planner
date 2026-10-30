@@ -1684,3 +1684,43 @@ def f67(c):
     why = norm(row(c, 'autoWhyDetour')).replace('{p}', '40')
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').includes(w))", why, timeout=6000, what=f'the line says why ({why})')
 
+
+@case('F68', 'A typed airway between two points is an airway, never a point of the same name elsewhere; followed only along its own nodes', 'F',
+      tags=('fuel', 'maps'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.31 (user, 30 Oct: « A3 » read as a point near Gibraltar, 1 871 NM): « A VOIE B » is an airway when the base has one of '
+      'that name nearby; it is followed only when A and B are nodes joined along it in the leg corridor; else the leg is direct and a line says so')
+def f68(c):
+    import math
+
+    def gc(a, b):
+        r = math.pi / 180
+        h = math.sin((b[0] - a[0]) * r / 2) ** 2 + math.cos(a[0] * r) * math.cos(b[0] * r) * math.sin((b[1] - a[1]) * r / 2) ** 2
+        return round(2 * 3440.065 * math.asin(math.sqrt(h)), 1)
+    # invented positions (no AIP content); « A3 » is ALSO the identifier of a point far away, as in the user's base
+    fix = {'LACOU': (44.3, 0.9), 'LMG': (45.8, 1.0), 'BALAN': (46.5, 1.0), 'OLINO': (46.9, 1.05), 'AMB': (47.4, 1.06), 'GILUX': (47.7, 1.74),
+           'PIMOS': (46.9, 2.6), 'MOTAL': (47.58, 2.22), 'OLZOM': (48.16, 2.26), 'KOTAP': (48.28, 2.3), 'A3': (43.3, -1.4)}
+
+    def seg(route, a, b):
+        return {'route': route, 'a': {'id': a, 'lat': fix[a][0], 'lon': fix[a][1]}, 'b': {'id': b, 'lat': fix[b][0], 'lon': fix[b][1]},
+                'lower': 0, 'upper': 46000, 'nm': gc(fix[a], fix[b])}
+    pts = [{'id': k, 'lat': v[0], 'lon': v[1], 'type': 'RNAV'} for k, v in fix.items()]
+    ads = [{'icao': 'LFBO', 'name': 'LFBO TEST', 'lat': 43.63, 'lon': 1.37, 'elev': 500}, {'icao': 'LFPO', 'name': 'LFPO TEST', 'lat': 48.72, 'lon': 2.38, 'elev': 300}]
+    c.open('fuel', flight=True, airfields=True, airways=[seg('A3', 'PIMOS', 'MOTAL'), seg('J18', 'MOTAL', 'OLZOM'), seg('J18', 'OLZOM', 'KOTAP')],
+           aero_extra={'points': pts, 'aerodromes': ads})
+    wait_quote(c)
+    set_icao(c, 'dep', 'LFBO')
+    set_icao(c, 'arr', 'LFPO')
+    rt = f'{FUEL} [data-k="rtext"]'
+    c.page.fill(rt, 'LFBO LACOU7B LACOU LMG BALAN OLINO AMB GILUX A3 MOTAL J18 KOTAP LFPO')
+    c.page.locator(rt).blur()
+    d = c.until_doc('pilot/ABC/current_flight.json', lambda d: [p['id'] for p in (d.get('route') or {}).get('points') or []][-2:] == ['KOTAP', 'LFPO'],
+                    'the route is read', timeout=10000)
+    ids = [p['id'] for p in d['route']['points']]
+    c.ok('A3' not in ids, f'{ids}', 'the airway word A3 is never the point « A3 » of the base (far away)')
+    c.eq(ids[ids.index('MOTAL'):], ['MOTAL', 'OLZOM', 'KOTAP', 'LFPO'], 'MOTAL J18 KOTAP: the airway is followed along its node OLZOM', what='points after MOTAL')
+    c.ok(ids[ids.index('GILUX') + 1] == 'MOTAL', f'{ids}', 'A3 does not join GILUX to MOTAL: the leg is direct, no node of A3 elsewhere')
+    c.ok(0 < (d['route'].get('distanceNm') or 0) < 450, f"distance {d['route'].get('distanceNm')}", 'the distance stays that of the route (not 1 871 NM)')
+    line = norm(row(c, 'awyBad')).replace('{w}', 'A3').replace('{a}', 'GILUX').replace('{b}', 'MOTAL')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').trim() === w)", line, timeout=6000, what=f'the line « {line} »')
+    c.ok('A3' in c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value").split(), 'text', 'the word the pilot typed stays in the text')
+

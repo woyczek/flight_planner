@@ -4,6 +4,14 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — a typed airway is never a point** (user: « LFBO … GILUX A3 MOTAL J18 KOTAP LFPO » gave 1 871 NM and a trace to
+  Gibraltar, « transitoire et inexplicable »). Diagnosis on the user's flight (read only): `route.points` held { id: 'A3', 36.05 N
+  5.30 W }: routePoints asked `aerodb.coords()` for every name-shaped word, and some point of the base carries the identifier A3. The
+  ergonomics reading (an expansion along A3 into Spain) was not the cause: routing.js never expands a typed airway. Rule agreed with
+  Simplification: an airway-shaped word between two named points is an airway when the base has one of that name near A; a point
+  of the base never wins against it; without such an airway the identifier stays a point. A typed airway is followed along its
+  own nodes in the leg's corridor (`RG.along`), else the leg is direct with one line. No « follow the airway anyway » heuristic (it
+  would write a route that cannot be filed). Case F68 with the user's exact text on invented positions; it fails without the fix.
 - **30 Oct 2026 — § 10.31 part 1, Auto idempotent** (user, LFBO → LFPO: successive Autos made a loop through Spain, and « LACOU
   LMG n'est toujours pas trouvée »). Two causes. (1) The SID exit was inserted right after the departure, before the SID's name
   (« LFBO LACOU LACOU7B LMG »): the leg LACOU → LMG was never adjacent, never routed. It is now written after the name. (2) Every

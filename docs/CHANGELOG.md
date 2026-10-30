@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a typed airway is never read as a point** (`modules/fuel/module.js` routePoints, `frame/lib/routing.js` `along`,
+  `corridor`; help ×4; F68) — « GILUX A3 MOTAL » no longer goes to a point « A3 » near Gibraltar (1 871 NM); the airway is followed
+  only along its own nodes, else the leg is direct and a line says so.
 - **Fuel: « Auto » is idempotent and routes the SID exit** (`modules/fuel/module.js`, `frame/lib/route_text.js` `provenance`;
   help ×4; F8, F28, F67) — it recomputes from the pinned points and replaces what a previous Auto wrote (no more loops through
   Spain on LFBO → LFPO); a leg left direct says why; « LFBO LACOU7B LACOU LMG » routes LACOU → LMG.

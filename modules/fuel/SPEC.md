@@ -373,6 +373,12 @@ mount. Inside a mount, the two buttons switch as before.
      departure or the arrival (an OFP repeats its level at every point). "Last SimBrief OFP": through `ctx.net`, the SimBrief identifier
      of the identity (never typed here), the OFP kept on the device only, its route, level, average wind, ISA
      deviation and aircraft taken into the current flight.
+     **A typed airway** (§ 10.31, 30 Oct 2026): in « A VOIE B », a word of airway form between two named points is an airway when the
+     base has an airway of that name near A (a ±2° box), and then never a point of the same identifier taken elsewhere (the user's
+     « A3 », a point near Gibraltar: 1 871 NM); without such an airway nearby the identifier stays a point (PO421…). The airway is
+     followed only when A and B are both nodes of it joined contiguously along it in the leg's corridor (`RG.corridor`, `RG.along`):
+     its nodes are inserted (awy, via) so that distance and map follow it; otherwise the leg stays direct and one line says
+     « A3 ne relie pas GILUX à MOTAL : tronçon direct » (once per text, at the field's change). The word stays in the text.
      **"Auto" button** (25 Oct 2026, next to the route field, 44 px, in the field's row; **idempotent since § 10.31**, 30 Oct
      2026: it recomputes from the pinned points only — departure, the chosen SID's exit, the points the pilot typed, the STAR's
      entry, arrival — and replaces: the words a previous Auto wrote (airways, nodes, the exit and entry it added) are found by

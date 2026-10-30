@@ -344,8 +344,8 @@ export function tokensOf(points, {
 /** Texte normalisé d'un trajet (voir tokensOf) ; dct : avec « DCT » entre deux points reliés en direct. */
 export const textOf = (points, opts) => textFromTokens(tokensOf(points, opts));
 
-/** Emprise d'une chaîne de points, élargie du couloir : [ouest, sud, est, nord]. */
-function corridor(chain, S) {
+/** Emprise d'une chaîne de points, élargie du couloir : [ouest, sud, est, nord]. S : reachNm et padPct (DEFAULTS par défaut). */
+export function corridor(chain, S = DEFAULTS) {
   const lat = chain.map(p => +p.lat),
     lon = chain.map(p => +p.lon);
   let direct = 0;
@@ -357,6 +357,63 @@ function corridor(chain, S) {
     cos = Math.max(.2, Math.cos(rad(Math.max(Math.abs(s), Math.abs(n), 0)))),
     dLon = pad / (60 * cos);
   return [Math.max(-180, Math.min(...lon) - dLon), Math.max(-90, s), Math.min(180, Math.max(...lon) + dLon), Math.min(90, n)];
+}
+
+/** Le passage le long d'une voie écrite par le pilote, « A VOIE B » (V3 § 10.31) : [a, nœuds…, b] — les nœuds { id, lat, lon, via,
+ *  awy: true }, b avec via — quand a et b sont deux nœuds de la voie name (même identifiant à moins de 3 NM, ou même position à
+ *  0,5 NM) reliés en contigu le long d'elle dans segments (ceux du couloir du tronçon : jamais le même nom pris dans une autre zone) ;
+ *  null sinon. Les niveaux ne comptent pas : c'est la voie que le pilote a écrite, le devis la suit. */
+export function along(segments, name, a, b) {
+  const W = String(name || '').toUpperCase(),
+    key = n => `${String(n.id || '').toUpperCase()}|${(+n.lat).toFixed(3)}|${(+n.lon).toFixed(3)}`,
+    nodes = new Map(),
+    adj = new Map();
+  for (const s of segments || []) {
+    if (String(s?.route || '').toUpperCase() !== W || !isNum(s.a?.lat) || !isNum(s.b?.lat)) continue;
+    const [ka, kb] = [key(s.a), key(s.b)],
+    d = nm(s.a, s.b);
+    nodes.set(ka, s.a);
+    nodes.set(kb, s.b);
+    adj.set(ka, [...(adj.get(ka) || []), [kb, d]]);
+    adj.set(kb, [...(adj.get(kb) || []), [ka, d]]);
+  }
+  const same = (n, p) => String(n.id || '').toUpperCase() === String(p.id || '').toUpperCase() && nm(n, p) < 3 || nm(n, p) < .5,
+    find = p => [...nodes.keys()].find(k => same(nodes.get(k), p)),
+    from = a && find(a),
+    to = b && find(b);
+  if (!from || !to || from === to) return null;
+  // plus court passage le long de la voie (Dijkstra sur ses seuls segments)
+  const dist = new Map([
+      [from, 0]
+    ]),
+    prev = new Map(),
+    open = new Set([from]);
+  while (open.size) {
+    const u = [...open].reduce((x, y) => dist.get(y) < dist.get(x) ? y : x);
+    open.delete(u);
+    if (u === to) break;
+    for (const [v, d] of adj.get(u) || []) {
+      const nd = dist.get(u) + d;
+      if (!dist.has(v) || nd < dist.get(v)) {
+        dist.set(v, nd);
+        prev.set(v, u);
+        open.add(v);
+      }
+    }
+  }
+  if (!dist.has(to)) return null;
+  const path = [];
+  for (let k = prev.get(to); k && k !== from; k = prev.get(k)) path.unshift(nodes.get(k));
+  return [a, ...path.map(n => ({
+    id: n.id,
+    lat: +n.lat,
+    lon: +n.lon,
+    via: W,
+    awy: true
+  })), {
+    ...b,
+    via: W
+  }];
 }
 
 /** Tronçons d'une chaîne de points { id, lat, lon[, altFt] } routés sur les voies ouvertes à leur niveau.

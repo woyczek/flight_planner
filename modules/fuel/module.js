@@ -171,6 +171,10 @@ const TX = {
     'die Route würde einen Punkt zweimal überfliegen',
     'la ruta pasaría dos veces por un punto'
   ],
+  // « A VOIE B » où la voie ne relie pas A à B dans le couloir du tronçon (§ 10.31) : le tronçon reste direct
+  awyBad: ['{w} ne relie pas {a} à {b} : tronçon direct', '{w} does not join {a} to {b}: direct leg',
+    '{w} verbindet {a} nicht mit {b}: direkter Abschnitt', '{w} no une {a} con {b}: tramo directo'
+  ],
   autoNoLeg: ['Aucun tronçon sans voie à compléter.', 'No leg without an airway to fill in.',
     'Kein Abschnitt ohne Luftstraße zu ergänzen.',
     'Ningún tramo sin aerovía por completar.'
@@ -1013,8 +1017,30 @@ async function routePoints(text, dep, arr, known = new Map(), chain = []) {
       pt: p
     });
   };
+  // « A VOIE B » (V3 § 10.31) : un mot en forme de voie entre deux points nommés est une voie quand la base a une voie de ce nom à
+  // proximité ; un point de la base du même nom ne gagne jamais contre elle (utilisateur, 30 octobre : « A3 » lu comme un point près
+  // de Gibraltar, 1 871 NM). Sans voie de ce nom à proximité, l'identifiant reste un point (PO421…)
+  const near = new Map(),
+    airwayNear = async (name, p) => {
+        const k = `${name}|${Math.round(+p.lat)}|${Math.round(+p.lon)}`;
+        if (!near.has(k)) near.set(k, Promise.resolve().then(() => ctx.aerodb?.airways?.({
+          bbox: [+p.lon - 3, +p.lat - 2, +p.lon + 3, +p.lat + 2]
+        })).then(s => (s || []).some(x => String(x?.route || '').toUpperCase() === name), () => false));
+        return near.get(k);
+      },
+      words = RT.tokenize(text);
   // jetons du texte (frame/lib/route_text.js) ; un nom est cherché dans aerodb, puis parmi les points connus
-  for (const t of RT.tokenize(text)) {
+  for (const [ti, t] of words.entries()) {
+    const nx = words[ti + 1];
+    if (t.kind === 'name' && AIRWAY_WORD.test(t.id) && points.length && (nx?.kind === 'name' || nx?.kind === 'coord') && await airwayNear(
+        t
+        .id, points.at(-1))) {
+      via = t.id;
+      tokens.push({
+        keep: t.id
+      });
+      continue;
+    }
     if (t.kind === 'group') { // groupe vitesse-niveau seul : niveau du dernier point
       if (t.alt_ft && points.length) points.at(-1).alt_ft = t.alt_ft;
     } else if (t.kind === 'coord') add(t.id, t, t.alt_ft);
@@ -1054,6 +1080,33 @@ async function routePoints(text, dep, arr, known = new Map(), chain = []) {
     if (c) add(arr, c);
     else if (!unresolved.includes(arr)) unresolved.push(arr);
   }
+  // une voie écrite n'est suivie que si ses deux bouts en sont des nœuds reliés le long d'elle dans le couloir du tronçon : ses nœuds
+  // sont alors insérés (la distance et la carte la suivent) ; sinon le tronçon reste direct et la ligne le dit (badAirways). Les
+  // nœuds déjà gardés du vol (awy) sont repris tels quels ; sans base lisible, rien n'est jugé
+  const badAirways = [];
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i],
+      a = points[i - 1];
+    if (!p.via || !AIRWAY_WORD.test(p.via) || a.awy || p.awy || !ctx.aerodb?.airways) continue;
+    const segs = await ctx.aerodb.airways({
+        bbox: RG.corridor([a, p])
+      }).catch(() => null),
+      st = ctx.aerodb.state?.().state;
+    if (!segs || !segs.length && st && st !== 'ready') continue;
+    const path = RG.along(segs, p.via, a, p);
+    if (path) {
+      const mid = path.slice(1, -1);
+      points.splice(i, 0, ...mid);
+      i += mid.length;
+    } else {
+      badAirways.push({
+        w: p.via,
+        a: a.id,
+        b: p.id
+      });
+      delete p.via;
+    }
+  }
   // niveaux : seuls les changements restent (une route d'OFP répète son niveau à chaque point), jamais au départ ni à
   // l'arrivée — le vol part au niveau du plan
   let prev = points[0]?.alt_ft;
@@ -1065,7 +1118,8 @@ async function routePoints(text, dep, arr, known = new Map(), chain = []) {
   return {
     points,
     unresolved,
-    tokens
+    tokens,
+    badAirways
   };
 }
 /** Désignateur de voie aérienne, composé compris (UN460, G54-R66) : le mot qui précède un point y arrivant par cette voie. */
@@ -3284,10 +3338,15 @@ function resolveRoute(normalize = true) {
       {
         points,
         unresolved,
-        tokens
+        tokens,
+        badAirways
       } = await routePoints(r.text, r.dep, r.arr, known, r.points || []);
     if (gone(s) || seq !== S.routeSeq || !S.body) return;
     r.points = points;
+    // une voie écrite qui ne relie pas ses deux points : tronçon direct, dit une fois par texte (pas à chaque frappe) (§ 10.31)
+    const bad = badAirways.map(x => tt(TX.awyBad, x)).join(' · ');
+    if (normalize && bad && S.awyBadSaid !== bad) S.ctx.notify(bad, 'warn');
+    if (normalize) S.awyBadSaid = bad;
     if (S.aloft) aloftApply();
     const ta = S.body.querySelector('[data-k="rtext"]');
     if (normalize && tokens.length && document.activeElement !== ta) {
