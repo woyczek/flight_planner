@@ -916,6 +916,10 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 64 | Fuel `.fms` with ARINC approach (232f85dfe), approach labels (e315c2e0b) | acceptable |
 | 65 | Fuel: the sheets editor removed (4044dc8ba) | acceptable |
 | 66 | Launcher: one User-Agent, outbound failures logged (37b043e68) | acceptable, one small point to fix |
+| 67 | openAIP runways (abf143819) and its fix (4802818a2) | acceptable |
+| 68 | Refactor R-F1: runway wind in `frame/lib/wind.js` (552e0889d) | acceptable, no change of behaviour |
+| 69 | Refactor R-F2a: one approach-transition rule (30cf56414) | acceptable, no change of behaviour |
+| 70 | Session id cut from the log, zip ceilings, same host by default (423ae3f98) | acceptable; points of 66, 61 and 30 settled |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1644,6 +1648,24 @@ carries the host, the path (160 signs) and the code or the kind of error: never 
 messages to the page carry the HTTP code only. *To fix:* `where()` keeps the path, and EAD Basic carries its session id
 in it (`…;jsessionid=…`, kept in `path` by `urlsplit`): a failed EAD request would write it to the launcher's console,
 against the rule of 4; cut each path segment at its first `;`.
+
+**67. openAIP runways (abf143819, 4802818a2) — acceptable.** A reading of the local GeoJSON only; headings and
+declination through `Number.isFinite`, lengths converted and rounded, surface from a closed table (own keys only, else
+`unknown`), the runway designator cut to 8 signs; displayed escaped by the Map.
+
+**68. Refactor R-F1 (552e0889d) — acceptable, no change of behaviour.** The runway wind moves to `frame/lib/wind.js`
+(pure); Fuel's old copy is gone and no longer called; the one changed case (the heading taken from the thresholds before
+the QFU) is explained in the commit. No guard involved.
+
+**69. Refactor R-F2a (30cf56414) — acceptable, no change of behaviour.** One rule for approach transitions in
+`frame/lib/procedures.js` (pure); the removed re-export of `flight_path.js` is imported by no one. No guard involved.
+
+**70. 423ae3f98 — acceptable; the point of 66 and the notes of 61 and 30 are settled.** `where()` cuts each path
+segment at its first `;`, so a session id never reaches the console. `zip_check` caps the announced uncompressed size at
+2 GB before any reading (`zipfile` never returns more than an entry's announced size; a false size ends in a CRC error),
+limits the CIFP to the archive's root, and also covers the first run's data archive. `outbound.opener` adds a same-host
+redirect rule (never https to http) unless a redirect handler is given (no redirects for OpenID and GitLab, the relay's
+rule, EAD's stay-on-host); `aero_fetch`, the SIA and the jobs' downloads now benefit from it.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
