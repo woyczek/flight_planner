@@ -244,7 +244,7 @@ commits its outputs on the workstation (the launcher's `commit_outputs`); a grey
 
 | Group | Items | Télécharger | Construire | Purger | Today in V2 |
 |---|---|---|---|---|---|
-| Base aéronautique | zones | `base/fetch`, and `base/pickup` for the files to drop by hand (the SIA France zip, the NATS zip: taken from Downloads, dry run and one question first, raw sources never committed, never in « Tout mettre à jour ») | `base/build` | `base/purge` | delivered |
+| Base aéronautique | zones | `base/fetch`, and `base/pickup` for the files to drop by hand (the SIA France zip, the NATS zip: taken from Downloads, dry run and one question first, raw sources never committed, never in « Tout mettre à jour »; the real run names the zip shown in the plan per source, `zips: { <source>: { name, size } }`, and a file changed since the plan is refused for that source, « Relancer le plan », 79aaed096) | `base/build` | `base/purge` | delivered |
 | Procédures | the States with a bulk source only: LF (the SIA's eAIP) and K (the FAA's CIFP); an EAD Basic State is never fetched in bulk (`frame/aerodb/EAD_BASIC.md` § 1: one aerodrome at a time, « Relire » in Fuel or on the Map) | `proc/fetch` | `proc/build` | `proc/purge` | per aerodrome only (`proc/eaip-fetch`, `proc/ead-fetch`) |
 | Points VFR des cartes VAC | the cycle in force (France); Purger clears the cached charts of every cycle | `vfr/fetch` | `vfr/build` | `vfr/purge` | `/__setup/vfr-import` (a compiled file picked in the page) |
 | Appareils (types et performances) | ICAO types (the fleet's by default) | `aircraft/fetch` | `aircraft/build` | `aircraft/purge` | `/__setup/aircraft-db` |
@@ -259,6 +259,11 @@ no answer means an older launcher with `base/*` only. The aircraft verbs follow 
 are three steps (types, apd, simbrief), `aircraft/build` commits nothing (AircraftDB/ is not versioned), the company's sheets
 reach the data repository by `aircraft/publish` (dry by default, the trigram required). **The V2 maintenance page link leaves the Maintenance rail when every row of this table has its four
 verbs.**
+
+**The map of the zones** (Base and Procédures panels, 30 Oct): `ctx.aerodb.zoneOutlines()` drawn in SVG above the list, one
+selection written by the module and read by both; colour by state with its words on hover and keyboard; no map when a zone
+would be under 44 px or the outlines are missing. A zone whose outline is only its frame (no ring, or a ring equal to its
+box: known from the data, never from an id) is drawn dashed and said « contour approximatif ».
 
 ### 5.4 Building on the launcher: one process per zone
 

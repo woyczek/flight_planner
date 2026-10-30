@@ -792,6 +792,10 @@ export const TX = {
     muted: ['hors couverture', 'not in the coverage', 'nicht in der Abdeckung', 'fuera de la cobertura']
   },
   mapTicked: ['cochée', 'ticked', 'angekreuzt', 'marcada'],
+  mapApprox: ['contour approximatif', 'approximate outline', 'ungefährer Umriss', 'contorno aproximado'],
+  mapLegendApprox: ['pointillé : contour approximatif', 'dashed: approximate outline', 'gestrichelt: ungefährer Umriss',
+    'punteado: contorno aproximado'
+  ],
   mapLegend: ['Légende', 'Legend', 'Legende', 'Leyenda'],
   mapLegendNote: ['Trait épais et teinte pleine : zone cochée ; touchez une zone ou appuyez sur Espace pour la cocher.',
     'Thick outline and solid tint: zone ticked; tap a zone or press Space to tick it.',
@@ -840,6 +844,12 @@ export const TX = {
       'Nada que tomar en Descargas'
     ]
   },
+  pickupChanged: ['{z} ({s}) : le fichier a changé depuis le plan ({zip}) : rien n’a été pris pour cette source',
+    '{z} ({s}): the file changed since the plan ({zip}): nothing was taken for this source',
+    '{z} ({s}): die Datei hat sich seit dem Plan geändert ({zip}): für diese Quelle wurde nichts übernommen',
+    '{z} ({s}): el archivo cambió desde el plan ({zip}): no se tomó nada de esta fuente'
+  ],
+  pickupReplan: ['Relancer le plan', 'Run the plan again', 'Plan erneut ausführen', 'Repetir el plan'],
   pickupHint: ['Lancez maintenant Construire.', 'Now start Build.', 'Starten Sie jetzt Aufbauen.', 'Ahora lance Construir.'],
   // « Tout mettre à jour » (SPEC § 5.3) : le bouton, la question, la chaîne, la fin
   updateAll: ['Tout mettre à jour', 'Update all', 'Alle aktualisieren', 'Actualizar todo'],

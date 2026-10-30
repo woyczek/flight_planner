@@ -994,6 +994,7 @@ export function pickupOutcome(final) {
       zone: t.zone,
       source: t.source,
       zip: String(t.zip ?? ''),
+      size: num(t.size),
       files: strs(t.files),
       bytes: num(t.bytes) ?? 0
     })),
@@ -1005,7 +1006,13 @@ export function pickupOutcome(final) {
     failed = list(r.failed).map(f => ({
       zone: f.zone,
       source: f.source,
-      error: f.error ?? null
+      error: f.error ?? null,
+      ...(typeof f.zip === 'string' ? {
+        zip: f.zip
+      } : {}),
+      ...(num(f.size) !== null ? {
+        size: f.size
+      } : {})
     }));
   let kind;
   if (final?.state === 'interrupted') kind = 'interrupted';
@@ -1023,6 +1030,20 @@ export function pickupOutcome(final) {
     bytes: taken.reduce((a, t) => a + t.bytes, 0),
     level: kind === 'done' ? 'ok' : kind === 'failed' ? 'err' : 'warn'
   };
+}
+/** Les zips que le plan a montrés, pour la prise réelle : { <source>: { name, size } } construit des seules entrées `taken` du plan (jamais relu), une par source (la première),
+ *  seulement pour une source connue, un nom de fichier simple (le motif du lanceur : lettres, chiffres, espace, point, parenthèses, + et -) et une taille entière positive ou nulle.
+ *  Le lanceur refuse la source dont le zip le plus récent n'est plus celui-là (« changed »). */
+export function pickupZips(taken) {
+  const out = {};
+  for (const t of Array.isArray(taken) ? taken : []) {
+    if (!t || !(t.source in PICKUP_DEST) || t.source in out) continue;
+    if (typeof t.zip === 'string' && /^[A-Za-z0-9_ .()+-]{1,150}$/.test(t.zip) && Number.isInteger(t.size) && t.size >= 0) out[t.source] = {
+      name: t.zip,
+      size: t.size
+    };
+  }
+  return out;
 }
 /** Une entrée du journal pour une prise réelle (le plan n'y est jamais) : { at, set: 'base', verb: 'pickup', zones, seconds, result, files, bytes, failed, job? }. */
 export function pickupEntry({
@@ -1287,9 +1308,29 @@ export function mapTone({
 }
 /** Un nombre arrondi à trois décimales (les coordonnées du dessin). */
 const r3 = v => Math.round(v * 1000) / 1000;
+/** Le contour d'une zone n'est-il qu'un cadre ? Vrai sans aucun anneau, ou quand l'unique anneau est exactement le rectangle de son `box` (quatre coins, fermé ou non, dans
+ *  n'importe quel ordre) : le contour est alors approximatif. Jamais d'après le nom ou l'identifiant d'une zone. Faux sans `box` lisible. */
+export function isApproxOutline(e) {
+  if (!e || !Array.isArray(e.box) || e.box.length !== 4 || !e.box.every(Number.isFinite)) return false;
+  const rings = Array.isArray(e.rings) ? e.rings : [];
+  if (!rings.length) return true;
+  if (rings.length !== 1 || !Array.isArray(rings[0])) return false;
+  const ring = rings[0],
+    pts = ring.length > 1 && ring[0][0] === ring.at(-1)[0] && ring[0][1] === ring.at(-1)[1] ? ring.slice(0, -1) : ring,
+    [w, s, ea, n] = e.box,
+    corners = new Set([
+      [w, s],
+      [ea, s],
+      [ea, n],
+      [w, n]
+    ].map(String)),
+    got = new Set(pts.map(p => String([p[0], p[1]])));
+  return pts.length === 4 && got.size === 4 && [...got].every(p => corners.has(p));
+}
 /** La carte de zones, projetée et mesurée : `entries` [{ id, rings [[[lon, lat], …]], box [w, s, e, n] }], `widthPx` la largeur disponible, `maxH` la hauteur maximale.
  *  Projection équirectangulaire x = lon·cos φ0, y = −lat sur le cadre qui réunit les zones (φ0 : sa latitude médiane), 5 % de marge. Rend null sans zone ; sinon { vb [x, y, w, h]
- *  (le viewBox), w, h (pixels), scale (pixels par unité), small (une zone à cocher fait moins de MAP_MIN_PX en largeur ou en hauteur : pas de carte), shapes [{ id, d }] }. */
+ *  (le viewBox), w, h (pixels), scale (pixels par unité), small (une zone à cocher fait moins de MAP_MIN_PX en largeur ou en hauteur : pas de carte), shapes [{ id, d, approx
+ *  (contour approximatif : voir isApproxOutline) }] }. Une zone sans anneau est dessinée par le rectangle de son cadre. */
 export function zoneMap(entries, widthPx, maxH = 260) {
   const list = (entries || []).filter(e => e && Array.isArray(e.box) && e.box.length === 4 && e.box.every(Number.isFinite) && Array.isArray(
     e.rings));
@@ -1309,7 +1350,16 @@ export function zoneMap(entries, widthPx, maxH = 260) {
     small: list.some(e => (e.box[2] - e.box[0]) * k * scale < MAP_MIN_PX || (e.box[3] - e.box[1]) * scale < MAP_MIN_PX),
     shapes: list.map(e => ({
       id: e.id,
-      d: e.rings.map(ring => `M${ring.map(([lon, lat]) => `${r3(lon * k)} ${r3(-lat)}`).join('L')}Z`).join('')
+      approx: e.approx === true || isApproxOutline(e),
+      d: (e.rings.length ? e.rings : [
+        [
+          [e.box[0], e.box[1]],
+          [e.box[2], e.box[1]],
+          [e.box[2], e.box[3]],
+          [e.box[0], e.box[3]],
+          [e.box[0], e.box[1]]
+        ]
+      ]).map(ring => `M${ring.map(([lon, lat]) => `${r3(lon * k)} ${r3(-lat)}`).join('L')}Z`).join('')
     }))
   };
 }

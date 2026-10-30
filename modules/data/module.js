@@ -116,6 +116,7 @@ const STYLE = `
 [data-module="data"] .d-map path[data-tone=accent],[data-module="data"] .d-sw[data-tone=accent]{fill:var(--sog-accent);stroke:var(--sog-accent)}
 [data-module="data"] .d-map path[data-tone=muted],[data-module="data"] .d-sw[data-tone=muted]{fill:var(--sog-muted);stroke:var(--sog-muted)}
 [data-module="data"] .d-map path[aria-checked=true]{fill-opacity:.65;stroke-width:3}
+[data-module="data"] .d-map path[data-approx]{stroke-dasharray:6 3}
 [data-module="data"] .d-map path[aria-disabled=true]{cursor:default}
 [data-module="data"] .d-map path:focus-visible{outline:2px solid var(--sog-accent);outline-offset:1px}
 [data-module="data"] .d-sw{display:inline-block;width:12px;height:12px;vertical-align:middle;margin:0 4px 0 8px;background:currentColor;border:1px solid}
@@ -1672,7 +1673,8 @@ function outlineOf(kind, id) {
   return {
     id,
     rings: zs.flatMap(z => z.rings || []),
-    box: zs.map(z => z.box).reduce((b, x) => [Math.min(b[0], x[0]), Math.min(b[1], x[1]), Math.max(b[2], x[2]), Math.max(b[3], x[3])])
+    box: zs.map(z => z.box).reduce((b, x) => [Math.min(b[0], x[0]), Math.min(b[1], x[1]), Math.max(b[2], x[2]), Math.max(b[3], x[3])]),
+    approx: zs.every(M.isApproxOutline) // le contour de chaque zone n'est qu'un cadre : tireté, dit en mots
   };
 }
 /** Les éléments que la carte dessine : ceux que la liste du panneau propose (zones de la couverture, États en bloc), avec leur contour. */
@@ -1710,11 +1712,11 @@ function zoneMapHtml(kind) {
     paths = m.shapes.map(sh => {
       const on = !!sel?.has(sh.id),
         tone = mapToneOf(kind, sh.id),
-        label = `${mapName(kind, sh.id)} — ${tt(TX.mapTone[tone])}${on ? `, ${tt(TX.mapTicked)}` : ''}`;
-      return `<path d="${sh.d}" fill-rule="evenodd" data-map-zone="${esc(sh.id)}" data-tone="${tone}" role="checkbox" aria-checked="${on}" tabindex="0"${off ? ' aria-disabled="true"' : ''} aria-label="${esc(label)}"><title>${esc(label)}</title></path>`;
+        label = `${mapName(kind, sh.id)} — ${tt(TX.mapTone[tone])}${on ? `, ${tt(TX.mapTicked)}` : ''}${sh.approx ? `, ${tt(TX.mapApprox)}` : ''}`;
+      return `<path d="${sh.d}" fill-rule="evenodd" data-map-zone="${esc(sh.id)}" data-tone="${tone}"${sh.approx ? ' data-approx="true"' : ''} role="checkbox" aria-checked="${on}" tabindex="0"${off ? ' aria-disabled="true"' : ''} aria-label="${esc(label)}"><title>${esc(label)}</title></path>`;
     }).join('');
   return `<div class="d-map" data-zone-map="${kind}"><svg viewBox="${m.vb.join(' ')}" width="${m.w}" height="${m.h}" role="group" aria-label="${esc(tt(TX.zoneMap[kind]))}">${paths}</svg>
-    <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${['ok', 'warn', 'accent', 'muted'].map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(TX.mapTone[t]))}`).join(' · ')}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
+    <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${['ok', 'warn', 'accent', 'muted'].map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(TX.mapTone[t]))}`).join(' · ')}${m.shapes.some(sh => sh.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
 }
 /** Coche ou décoche, dans la sélection du module (S.ticked pour la base, S.picked pour les États), l'élément d'une zone de la carte, puis redessine les panneaux : la carte
  *  et la liste se lisent toutes deux de cette sélection, jamais l'une de l'autre. Sans effet pendant une marche, ou pour un élément que la liste ne propose pas. */
@@ -1755,7 +1757,11 @@ function pickupProblems(out) {
   return [...out.missing.map(m => tt(TX.pickupMissing, {
     ...who(m),
     e: m.expected
-  })), ...out.failed.map(f => tt(TX.pickupFailedLine, {
+  })), ...out.failed.map(f => f.error === 'changed' ? tt(TX
+    .pickupChanged, { // le zip le plus récent n'est plus celui que le plan a montré : rien n'a été pris pour cette source
+      ...who(f),
+      zip: f.zip || '?'
+    }) : tt(TX.pickupFailedLine, {
     ...who(f),
     r: pickupWhy(f.error)
   }))];
@@ -1795,7 +1801,15 @@ function pickupResultHtml(r) {
   const sm = pickupSummary(r.out);
   return `<div data-build-result data-op="pickup" data-result="${r.out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>
     ${sm.hint ? `<p class="f-muted" data-pickup-hint>${esc(sm.hint)}</p>` : ''}
-    ${pickupProblems(r.out).map(t => `<p class="f-muted" data-line>${esc(t)}</p>`).join('')}</div>`;
+    ${pickupProblems(r.out).map(t => `<p class="f-muted" data-line>${esc(t)}</p>`).join('')}
+    ${replanHtml(r.out)}</div>`;
+}
+/** Le bouton « Relancer le plan » quand une source a été refusée parce que son zip a changé depuis le plan : il relance le plan à blanc sur les zones concernées. */
+function replanHtml(out) {
+  const zones = [...new Set(out.failed.filter(f => f.error === 'changed').map(f => f.zone))];
+  if (!zones.length) return '';
+  const off = gateOf('base', zones.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb].disabled ? ' disabled' : '';
+  return `<p><button type="button" data-verb="pickup-replan" data-zones="${esc(zones.join(','))}"${off}>${esc(tt(TX.pickupReplan))}</button></p>`;
 }
 /** « Prendre le fichier téléchargé » : le plan d'abord (base/pickup à blanc, dry envoyé explicitement), dont la fin pose la question puis la prise réelle. `zonesAttr` :
  *  les zones des sources du résultat d'un téléchargement (séparées par des virgules), sinon les zones cochées. Rien ne part si le bouton est gris. */
@@ -1831,6 +1845,10 @@ async function endPickupPlan(me, final, run) {
     return;
   }
   S.result = null;
+  S.pickupPlan = {
+    zones: [...S.ids],
+    zips: M.pickupZips(out.taken)
+  }; // le plan montré : la prise réelle n'envoie que ces zips (nom et taille), jamais un plan relu ; le lanceur refuse la source dont le zip a changé entre-temps
   S.asking = true; // les boutons restent gris pendant la question : une opération à la fois
   renderBuild();
   const yes = await S.ctx.ask(pickupAsk(out), {
@@ -1838,16 +1856,17 @@ async function endPickupPlan(me, final, run) {
   });
   if (S !== me) return;
   S.asking = false;
+  const plan = S.pickupPlan;
+  S.pickupPlan = null;
   if (!yes) { // non : rien n'est pris, rien n'est dit
     renderBuild();
     return;
   }
   await settle(me, await launch('base', M.PICKUP.verb, {
-    ...(run?.args || {
-      zones: S.ids
-    }),
-    dry: false
-  }, S.ids), true);
+    zones: plan.zones,
+    dry: false,
+    zips: plan.zips
+  }, plan.zones), true);
 }
 /** Fin d'une prise réelle : le résumé et le conseil dans le panneau, une notification, le journal. */
 async function endPickup(final, live, seconds) {
@@ -2195,7 +2214,7 @@ function onClick(e) {
   if (!v || v.disabled) return;
   if (v.dataset.verb === 'stop') return S.run?.ctrl.abort();
   if (v.dataset.verb === 'all') return updateAll();
-  if (v.dataset.verb === 'pickup') return startPickup(v.dataset.zones);
+  if (v.dataset.verb === 'pickup' || v.dataset.verb === 'pickup-replan') return startPickup(v.dataset.zones);
   if (v.dataset.verb === 'stop-chain') return stopChain();
   const op = opOf(v);
   if (op) startOp(...op);
@@ -2256,6 +2275,7 @@ export async function mount(el, ctx) {
     groups: null, // les groupes de l'écran (buildGroups), calculés à chaque dessin
     attn: {}, // les groupes dont le cycle publié est dépassé : { base, proc } (le cycle « AANN » ou null)
     outlines: null, // les contours des zones (ctx.aerodb.zoneOutlines) : null (pas demandés), 'loading', l'objet, ou false (sans réponse : la liste seule)
+    pickupPlan: null, // le plan d'une prise montré dans la question : { zones, zips } (la prise réelle est construite de lui seul)
     mapW: 0, // la largeur pour laquelle la carte a été calculée
     rz: 0, // l'image d'animation en attente du recalcul à la taille de la fenêtre
     picked: new Set(), // États des procédures cochés (aucun par défaut)

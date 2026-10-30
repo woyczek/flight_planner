@@ -1384,7 +1384,7 @@ def _zhead(c, z):
 
 def _verbs(c):
     """The verb buttons of the panel, in order, each with ':off' when grey."""
-    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].filter(b => b.dataset.verb !== 'pickup').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
+    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].filter(b => !b.dataset.verb.startsWith('pickup')).map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
 
 
 def _grey(c, what):
@@ -1738,6 +1738,21 @@ _L16_JS = r"""async () => {
   out.pickupEntry = M.setEntry('base', 'pickup', { at: Date.parse('2026-10-30T10:00:00Z'), ids: ['fr', 'gb'], seconds: 2.4, out: M.pickupOutcome({ state: 'done', result: { ok: false, dry: false, taken: [pkTk], missing: [], failed: [pkBg], reason: 'partial' } }), job: 'k9' });
   out.manualFlags = M.fetchOutcome({ state: 'done', result: { ok: true, fetched: [], unchanged: [], failed: [], manual: [{ zone: 'fr', source: 'sia', name: ['a'], pickup: true, expected: 'x*.zip' }, { zone: 'fr', source: 'dircam' }] } }).manual.map(m => [m.source, m.pickup, m.expected]);
   out.pickupDest = M.PICKUP_DEST;
+  const pz = (...t) => M.pickupZips(t);
+  out.zips = [
+    pz({ zone: 'fr', source: 'sia', zip: 'a.zip', size: 10 }, { zone: 'gb', source: 'nats', zip: 'b b (1).zip', size: 0 }, { zone: 'x', source: 'sia', zip: 'dup.zip', size: 5 }),
+    pz({ source: 'other', zip: 'c.zip', size: 1 }, { source: 'nats', zip: '../e.zip', size: 1 }, { source: 'nats', zip: 'a/b.zip', size: 1 }, { source: 'nats', zip: 'd.zip', size: -1 },
+      { source: 'nats', zip: 'e.zip', size: 1.5 }, { source: 'nats', zip: 'f.zip' }, { source: 'nats', size: 3 }, null),
+    M.pickupZips(null), M.pickupZips('x')];
+  const sz = M.pickupOutcome({ state: 'done', result: { ok: false, dry: false, reason: 'partial', taken: [{ zone: 'fr', source: 'sia', zip: 'z.zip', size: 7, files: [], bytes: 1 }],
+    failed: [{ zone: 'gb', source: 'nats', error: 'changed', zip: 'n.zip', size: 9 }, { zone: 'fr', source: 'sia', error: 'x' }] } });
+  out.sizes = [sz.kind, sz.taken[0].size, sz.failed];
+  const rect = [[0, 0], [10, 0], [10, 5], [0, 5], [0, 0]], bx = [0, 0, 10, 5];
+  out.approx = [{ rings: [], box: bx }, { box: bx }, { rings: [rect], box: bx }, { rings: [[[0, 0], [10, 0], [10, 5], [0, 5]]], box: bx }, { rings: [[[10, 5], [0, 5], [0, 0], [10, 0], [10, 5]]], box: bx },
+    { rings: [[[0, 0], [10, 0], [5, 5], [0, 0]]], box: bx }, { rings: [rect, rect], box: bx }, { rings: [[[0, 0], [9.9, 0], [9.9, 5], [0, 5], [0, 0]]], box: bx }, { rings: [rect] }, { rings: [], box: [0, 0, 'a', 1] }, null,
+    { rings: [[[0, 0], [10, 0], [10, 0], [0, 5], [0, 0]]], box: bx }].map(M.isApproxOutline);
+  const zm = M.zoneMap([{ id: 'a', rings: [], box: bx }, { id: 'b', rings: [rect], box: bx }, { id: 'c', rings: [[[0, 0], [10, 0], [5, 5], [0, 0]]], box: bx }], 400);
+  out.zmApprox = [zm.shapes.map(x => x.approx), zm.shapes[0].d === zm.shapes[1].d && zm.shapes[0].d.length > 10, zm.shapes[2].d === zm.shapes[1].d];
   out.verbOfBase = [{ set: 'base', verb: 'fetch', zones: {} }, { set: 'proc', verb: 'fetch', states: {} }].map(M.viewOp);
   return out;
 }"""
@@ -1826,6 +1841,13 @@ def l16(c):
     c.eq([e['set'], e['verb'], e['zones'], e['result'], e['files'], e['bytes'], e['failed'], e['seconds'], e['job']],
          ['base', 'pickup', ['fr', 'gb'], 'partial', 2, 10, [{'zone': 'gb', 'source': 'nats', 'error': 'zip over 500 MB'}], 2, 'k9'], 'the journal entry of a pickup', what='pickupEntry')
     c.eq(r['manualFlags'], [['sia', True, 'x*.zip'], ['dircam', False, '']], 'a manual source says whether the launcher can take its file, and the name it expects', what='manual flags')
+    c.eq(r['zips'], [{'sia': {'name': 'a.zip', 'size': 10}, 'nats': {'name': 'b b (1).zip', 'size': 0}}, {}, {}, {}],
+         'the zips for the real run, built from the plan\'s taken entries only: a known source, a plain file name, an integer size; one per source (the first)', what='pickupZips')
+    c.eq(r['sizes'], ['partial', 7, [{'zone': 'gb', 'source': 'nats', 'error': 'changed', 'zip': 'n.zip', 'size': 9}, {'zone': 'fr', 'source': 'sia', 'error': 'x'}]],
+         'the plan\'s taken entries carry the zip size; a refusal « changed » carries the newest name and size', what='pickup sizes')
+    c.eq(r['approx'], [True, True, True, True, True, False, False, False, False, False, False, False],
+         'an outline is approximate when it has no ring or its only ring is exactly the box rectangle (closed or not, any order); never from a name; unreadable boxes are not', what='isApproxOutline')
+    c.eq(r['zmApprox'], [[True, True, False], True, False], 'the map flags the approximate shapes; a zone without ring is drawn as its frame', what='zoneMap approx')
     c.eq(r['pickupDest'], {'sia': 'data/sia/', 'nats': 'data/sia/zones/gb/'}, 'where the raw files go, as the launcher writes them', what='PICKUP_DEST')
     c.eq(r['argsProc'], [{'states': ['K', 'LF']}, {'states': ['K']}], 'proc: the States sent are sorted and unique (the launcher takes one or two, « K » before « LF »)', what='setArgs proc')
     c.eq(r['procBuild'], [['partial', ['K'], [{'zone': 'LF', 'error': 'no-cache'}]], ['done', ['LF'], []], ['merge-pending', [], []]],
@@ -2299,7 +2321,7 @@ def _card_ok(c, what):
 
 def _bv(c):
     """The base panel's three verb buttons (not Arrêter), each with ':off' when grey."""
-    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].filter(b => b.dataset.verb !== 'stop' && b.dataset.verb !== 'pickup').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
+    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].filter(b => b.dataset.verb !== 'stop' && !b.dataset.verb.startsWith('pickup')).map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
 
 
 def _chain_rows(c):
@@ -2491,7 +2513,7 @@ def l19(c):
     T = lambda key, after=None, row=0: _trow(key, lang, after, row)
     cfg, _ = _fixture()
     zname = lambda z: next(x['names'][li] for x in cfg['zones'] if x['id'] == z)
-    sia_zip = {'zone': 'fr', 'source': 'sia', 'zip': 'export_xml_bd_SIA_2026-11-26.zip', 'files': ['a.xml', 'b.xml', 'c.xml'], 'bytes': 5242880}
+    sia_zip = {'zone': 'fr', 'source': 'sia', 'zip': 'export_xml_bd_SIA_2026-11-26.zip', 'size': 3000000, 'files': ['a.xml', 'b.xml', 'c.xml'], 'bytes': 5242880}
     miss_gb = {'zone': 'gb', 'source': 'nats', 'expected': 'EG_*_DS_*_XML.zip'}
     st = _launcher(c, [], verbs=ALL_VERBS + ['base/pickup'])
     _open(c, cfg)
@@ -2532,7 +2554,9 @@ def l19(c):
     st['start'] = (200, {'job': 'k2'})
     c.tap('.f-modal [data-ok]')
     c.until("!!document.querySelector('[data-build] [data-running][data-op=pickup]:not([data-dry])')", timeout=8000, what='the real run is followed')
-    c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr', 'gb'], 'dry': False}}, 'the real body says dry false', what='real body')
+    c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')},
+         {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr', 'gb'], 'dry': False, 'zips': {'sia': {'name': sia_zip['zip'], 'size': 3000000}}}},
+         'the real body says dry false and carries the zip the plan showed (name and size), nothing re-read', what='real body')
     c.eq([_bv(c), c.js(f"document.querySelector('{pk}').disabled"), c.count('[data-build] [data-running] [data-zone-state]'), c.count('[data-build] [data-running] [data-count]'), c.count('[data-build] [data-running] [data-verb=stop]')],
          [['download:off', 'build:off', 'purge:off'], True, 0, 0, 1], 'one operation at a time; the bar has its step, no zone lines, no count; Arrêter', what='running')
     c.until("!!document.querySelector('[data-build-result][data-op=pickup][data-result=done]')", timeout=10000, what='the end of the pickup')
@@ -2593,6 +2617,34 @@ def l19(c):
     c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr', 'gb'], 'dry': True}}, 'the button starts the same plan for those zones', what='button body')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", what='the window closes')
+    # ---- H: a zip arrived during the question: the launcher refuses that source (changed), the other is taken; « Relancer le plan » asks the plan again
+    nats_zip = {'zone': 'gb', 'source': 'nats', 'zip': 'EG_2026_DS_1_XML.zip', 'size': 2097152, 'files': ['n.xml'], 'bytes': 4194304}
+    changed = {'zone': 'gb', 'source': 'nats', 'error': 'changed', 'zip': 'EG_2026_DS_2_XML.zip<b>', 'size': 3145728}
+    plan3 = _pk_plan([sia_zip, nats_zip], [], [], jid='h1')
+    real3 = _pk_plan([sia_zip], [], [changed], dry=False, jid='h2', reason='partial')
+    st['views'], st['i'], st['start'] = [plan3, real3], 0, (200, {'job': 'h1'})
+    n = len(st['posts'])
+    c.tap(pk)
+    _ask_text(c)
+    st['start'] = (200, {'job': 'h2'})
+    c.tap('.f-modal [data-ok]')
+    c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'partial'", timeout=10000, what='the partial end')
+    c.eq(st['posts'][-1]['args'], {'zones': ['fr', 'gb'], 'dry': False, 'zips': {'sia': {'name': sia_zip['zip'], 'size': 3000000}, 'nats': {'name': nats_zip['zip'], 'size': 2097152}}},
+         'the real body carries both zips of the plan, equal to what it showed', what='real body 2')
+    chg = T('pickupChanged').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{zip}', changed['zip'])
+    c.eq([[norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")], c.count('[data-build-result] b b'),
+          norm(c.text('[data-build-result] [data-verb=pickup-replan]')), c.attr('[data-build-result] [data-verb=pickup-replan]', 'data-zones')],
+         [[norm(chg)], 0, norm(T('pickupReplan')), 'gb'], 'the refusal is said with the newest name (as text, escaped), with a « Relancer le plan » button for that zone', what='changed')
+    taken_one = T('partial', 'pickupSum: {').replace('{n}', f"3 {FILES[lang][1]}").replace('{s}', _size(5242880, lang)).replace('{f}', T('fetchFails', row=0).replace('{n}', '1'))
+    c.eq(norm(c.text('[data-build-result] b')), norm(taken_one), 'the other source was taken', what='partial summary')
+    plan4 = _pk_plan([{**nats_zip, 'zip': changed['zip'].replace('<b>', ''), 'size': 3145728}], [], [], jid='h3', zones=('gb',))
+    st['views'], st['i'], st['start'] = [plan4], 0, (200, {'job': 'h3'})
+    n = len(st['posts'])
+    c.tap('[data-build-result] [data-verb=pickup-replan]')
+    _ask_text(c)
+    c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['gb'], 'dry': True}}, 'the button starts a new dry run (no zips), for that zone', what='replan')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the window closes')
     # ---- G: a launcher that does not know base/pickup: grey, the reason written once under the panel; the others live
     st['verbs'] = BASE3
     c.page.reload(wait_until='load')
@@ -2606,6 +2658,7 @@ def l19(c):
 
 # ------------------------------------------------------------------------------------------------------ L20
 _FAILOUT_JS = """(() => { try { if (sessionStorage.getItem('__failOutlines') && window.__stub) window.__stub.fail.push('zoneOutlines') } catch {} })()"""
+_REALUS_JS = """(() => { try { if (sessionStorage.getItem('__realUs') && window.__stub) window.__stub.outlines.us.rings = [[[12, 45], [24, 45], [24, 46], [18, 47], [12, 47], [12, 45]]] } catch {} })()"""
 _RESIZE_JS = """(() => { window.__mapResize = 0; const a = window.addEventListener, r = window.removeEventListener;
   window.addEventListener = function (t, f, o) { if (t === 'resize' && String(f).includes('mapWidth')) window.__mapResize++; return a.call(this, t, f, o) };
   window.removeEventListener = function (t, f, o) { if (t === 'resize' && String(f).includes('mapWidth')) window.__mapResize--; return r.call(this, t, f, o) } })()"""
@@ -2613,11 +2666,12 @@ _ZONE_NAMES = {'fr': ['France', 'France', 'Frankreich', 'Francia'], 'gb': ['Roya
                'es': ['Espagne', 'Spain', 'Spanien', 'España'], 'us': ['États-Unis', 'United States', 'Vereinigte Staaten', 'Estados Unidos']}
 # flat rectangles, 2 degrees tall: wide enough for a finger on a desktop, too thin for one on a phone
 _RECTS = {'fr': [0, 45, 12, 47], 'gb': [-12, 45, 0, 47], 'es': [-12, 43, 0, 45], 'us': [12, 45, 24, 47]}
+_NO_RINGS = ('us',)   # the outline of these stubbed zones is only their frame (no ring)
 
 
 def _outlines():
     """What the stubbed ctx.aerodb.zoneOutlines() answers: the shape of the real one ({ name ×4, rings, box })."""
-    return {z: {'name': _ZONE_NAMES[z], 'rings': [[[w, s], [e, s], [e, n], [w, n], [w, s]]], 'box': [w, s, e, n]} for z, (w, s, e, n) in _RECTS.items()}
+    return {z: {'name': _ZONE_NAMES[z], 'rings': [] if z in _NO_RINGS else [[[w, s], [e, s], [e, n - 1], [w, n], [w, s]]], 'box': [w, s, e, n]} for z, (w, s, e, n) in _RECTS.items()}
 
 
 _L20_JS = r"""async () => {
@@ -2658,6 +2712,7 @@ def l20(c):
     c.page.add_init_script(_RESIZE_JS)
     _open(c, cfg)
     c.page.add_init_script(_FAILOUT_JS)
+    c.page.add_init_script(_REALUS_JS)
     _all_open(c)
     wide = c.js('window.innerWidth') >= 700
     names = {z: _ZONE_NAMES[z][li] for z in _ZONE_NAMES}
@@ -2681,6 +2736,11 @@ def l20(c):
     fr = c.js("(() => { const p = document.querySelector('[data-map-zone=fr]'); return [p.getAttribute('role'), p.getAttribute('aria-checked'), p.tabIndex, p.getAttribute('aria-label'), p.querySelector('title').textContent, p.dataset.tone] })()")
     c.eq(fr, ['checkbox', 'true', 0, f"{names['fr']} — {tone('warn')}, {T('mapTicked')}", f"{names['fr']} — {tone('warn')}, {T('mapTicked')}", 'warn'],
          'role checkbox, keyboard reachable; the name AND the state in words (France is one cycle behind, ticked), in the title and the aria-label', what='fr attributes')
+    # a zone whose outline is only its frame (no ring) is dashed and says so; a real outline is not
+    ap = c.js("""() => [...document.querySelectorAll('[data-zone-map=base] [data-map-zone]')].map(p => [p.dataset.mapZone, getComputedStyle(p).strokeDasharray, p.hasAttribute('data-approx'), p.querySelector('title').textContent])""")
+    c.eq([[a[0], a[1] != 'none', a[2]] for a in ap], [['es', False, False], ['fr', False, False], ['gb', False, False], ['us', True, True]], 'only the zone without ring is drawn with a dashed stroke', what='dashed')
+    c.eq([a[3] for a in ap if a[0] == 'us'], [f"{names['us']} — {tone('ok')}, {T('mapTicked')}, {T('mapApprox')}"], 'and its title adds « contour approximatif » in words', what='approx words')
+    c.ok(norm(T('mapLegendApprox')) in norm(c.text('[data-zone-legend]')), c.text('[data-zone-legend]'), 'the legend gains « pointillé : contour approximatif » since such a zone is drawn')
     # the colours are the frame's tokens
     col = c.js("""() => { const probe = t => { const s = document.createElement('span'); s.style.color = 'var(--sog-' + t + ')'; document.body.append(s); const v = getComputedStyle(s).color; s.remove(); return v };
       const g = z => { const cs = getComputedStyle(document.querySelector('[data-map-zone=' + z + ']')); return [cs.fill, cs.stroke] };
@@ -2710,7 +2770,7 @@ def l20(c):
     c.eq(c.js("[...document.querySelectorAll('[data-zone-map=proc] [data-map-zone]')].map(p => [p.dataset.mapZone, p.getAttribute('aria-checked')])"), [['K', 'false'], ['LF', 'false']], 'the States with a bulk source, none ticked', what='proc paths')
     c.tap('[data-zone-map=proc] [data-map-zone=K]')
     c.eq([c.js("document.querySelector('[data-set-panel=proc] [data-item=K]').checked"), c.js("document.querySelector('[data-set-panel=proc] [data-item=LF]').checked"),
-          c.attr('[data-zone-map=proc] [data-map-zone=K]', 'aria-label')], [True, False, f"{K_NAME[lang]} — {tone('ok')}, {T('mapTicked')}"],
+          c.attr('[data-zone-map=proc] [data-map-zone=K]', 'aria-label')], [True, False, f"{K_NAME[lang]} — {tone('ok')}, {T('mapTicked')}, {T('mapApprox')}"],
          'a click on the United States ticks the State K in the panel\'s selection', what='proc click')
     # ---- E: a running operation freezes the map as it freezes the list
     st = _launcher(c, [_view(step='Zone fr', done=0, zones={'fr': _zs('building', 1, 4), 'es': _zs('waiting')})], verbs=BASE3)
@@ -2736,6 +2796,15 @@ def l20(c):
     c.tap(f'#fMenu a[data-id="{other}"]')
     c.until("!document.querySelector('[data-module=data]')", timeout=8000, what='the module is unmounted')
     c.eq(c.js('window.__mapResize'), 0, 'the listener is removed at unmount', what='listener removed')
+    # ---- G2: a real outline for the same zone: no dash, no words, no legend item
+    c.page.evaluate("sessionStorage.setItem('__realUs', '1')")
+    c.open('data', docs=LEVEL3, wait=False, app='maintenance')
+    _head(c)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-zone-map=base]')", timeout=8000, what='the map is drawn again')
+    c.eq([c.count('[data-map-zone][data-approx]'), c.js("getComputedStyle(document.querySelector('[data-zone-map=base] [data-map-zone=us]')).strokeDasharray"),
+          c.attr('[data-zone-map=base] [data-map-zone=us]', 'aria-label'), norm(T('mapLegendApprox')) in norm(c.text('[data-zone-legend]'))],
+         [0, 'none', f"{names['us']} — {tone('ok')}, {T('mapTicked')}", False], 'a ring that is not the frame: solid stroke, no « contour approximatif », no legend item', what='real outline')
     # ---- G: a failing zoneOutlines: the list alone, no error line
     c.page.evaluate("sessionStorage.setItem('__failOutlines', '1')")
     c.open('data', docs=LEVEL3, wait=False, app='maintenance')   # back on the module (the init scripts stay), now with a failing zoneOutlines
