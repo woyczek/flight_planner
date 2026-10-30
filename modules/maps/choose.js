@@ -27,7 +27,8 @@ import {
 import * as PR from '../../frame/lib/procedures.js';
 import {
   components,
-  label as windLabel
+  label as windLabel,
+  severity as windSeverity
 } from '../../frame/lib/wind.js';
 import {
   proceduresOf
@@ -73,11 +74,11 @@ const KEY = {
 /** Au plus 7 lignes montrées par groupe (« Aucune » et six), le reste replié sous « N autres… » qui le déplie sur place : la feuille
  *  est la seule surface qui défile (V3 § 10.30 : jamais deux barres de défilement). */
 const MAX_ROWS = 6;
-/** Vent arrière au-delà duquel la ligne de piste le dit en orange (nœuds). */
-const TAIL_WARN = 5;
 /** Part dont les couches de la Carte sont éteintes (render.js, option dim du dessin). */
 export const DIM = .6;
-const PAD = 3;
+const PAD = 3,
+  // hauteur d'une ligne des petits cartouches de famille
+  LINE_SM = 13;
 /** Marge des cartouches au bord de la carte, et à droite la place de la colonne des boutons (px). */
 const EDGE = 4,
   EDGE_R = 56;
@@ -153,8 +154,15 @@ function labelOf(fam, rec) {
 /** Les pistes d'une fiche, en petites étiquettes sur sa ligne ([] pour une fiche qui les dessert toutes, une piste, une transition). */
 const tagsOf = (fam, rec) => fam === 'rwy' || fam === 'appTrans' || PR.servesAll(rec) ? [] : [...new Set(rec.runways.map(PR.rwNum))].sort(PR
   .rwOrder);
-/** Le nom d'une ligne sur un cartouche de la carte : le nom, puis ses pistes. */
-const mapLabel = it => [it.label, (it.tags || []).join('/')].filter(Boolean).join(' · ');
+/** Nom de famille d'une procédure pour un cartouche : le radical, une espace, le chiffre (« NIMER9A » → « NIMER 9 », PR.familyOf) ;
+ *  le nom tel quel s'il n'a pas cette forme. */
+const familyText = name => {
+  const f = PR.familyOf(name);
+  return f ? f.family.replace(/(\d)$/, ' $1') : name;
+};
+/** Texte d'une ligne de cartouche : le nom de famille sur les petits (une ligne par famille au point), le nom complet de la procédure
+ *  sur celui de la surlignée (g.full : g.text). */
+const cartText = (it, g = null) => g?.full ? g.text : familyText(it.family || PR.nameOf(it.rec, it.id) || it.label);
 /** Le seuil de piste où une SID commence, ajouté devant ses points : la piste choisie si la SID la dessert, sinon la seule qu'elle
  *  dessert ; null si elle n'est pas connue. */
 function thresholdOf(C, rec) {
@@ -167,7 +175,7 @@ function thresholdOf(C, rec) {
     lon: +rw.lon
   } : null;
 }
-/** Vent du METAR déjà connu sur la piste rec : { text, tail (arrière au-delà de TAIL_WARN), tip } ; null sans METAR, sans direction
+/** Vent du METAR déjà connu sur la piste rec : { k (composantes), sev (wind.severity : ok, warn, alert), text, tip } ; null sans METAR, sans direction
  *  (VRB) ou sans relèvement de la piste — rien n'est inventé. */
 function windOf(C, rec) {
   const w = C.wind;
@@ -176,17 +184,18 @@ function windOf(C, rec) {
     k = brg === null ? null : components(brg, w.dir, w.kt);
   if (!k) return null;
   // le texte de frame/lib/wind.js (label : les flèches disent d'où vient le vent), le même que Carburant
+  const sev = windSeverity(k);
   return {
     k,
+    sev,
     text: windLabel(k),
-    tail: k.head < -TAIL_WARN,
     tip: tt(TX.chWindTip, {
       id: C.icao,
       d: String(Math.round(w.dir)).padStart(3, '0'),
       kt: Math.round(w.kt),
       h: k.head,
       x: k.cross
-    })
+    }) + ` — ${tt(TX.chSev[sev])}`
   };
 }
 /** Les lignes d'une famille, dans l'ordre du groupe : { id, fam, rec, hi (rang de teinte, stable), label, old, why (raisons du ⚠),
@@ -439,6 +448,7 @@ export function choosePick(fam, id) {
   }
   if (fam !== 'rwy') delete C.pend[fam];
   C.sel[fam] = v;
+  C.hl = v && fam !== 'rwy' ? id : C.hl; // la tape laisse la ligne surlignée
   // une piste posée résout la famille posée avant elle
   if (fam === 'rwy' && v)
     for (const f of ['sid', 'star']) {
@@ -461,6 +471,20 @@ export function choosePick(fam, id) {
   refresh(C);
   chooseRender();
   schedule();
+}
+/** Le groupe d'une famille sous les yeux (une tape sur son libellé dans la sélection) : déplié s'il était replié, la feuille
+ *  défile jusqu'à lui. */
+function gotoFamily(f) {
+  const C = S?.choose;
+  if (!C?.ready || !famsOf(C).includes(f)) return;
+  if (C.view[f]?.hidden) {
+    C.more[f] = true;
+    C.view = Object.fromEntries(famsOf(C).map(x => [x, viewOf(C, x)]));
+    chooseRender();
+  }
+  S.dbodyEl.querySelector(`.mp-ch-grp[data-fam="${f}"]`)?.scrollIntoView({
+    block: 'start'
+  });
 }
 /** Ligne de correction sous un groupe de procédures (V3 § 10.30), en données : { text, fam, val, act } ou null. La procédure vient
  *  d'être choisie et ne dessert qu'une autre piste : « OPAL2E sert la 25 — Passer en 25 » ; sinon (la piste a changé, ou elle en
@@ -502,7 +526,7 @@ function fixOf(C, fam) {
  *  ligne ; la ligne choisie pressée. */
 function rowHtml(C, it) {
   const tip = [it.old ? tt(TX.procOutdated) : '', ...it.why, it.wind?.tip || ''].filter(Boolean).join(' · ');
-  return `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.hl === it.id ? 1 : 0}" aria-pressed="${it.chosen}"${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)}"`}${tip ? ` title="${esc(tip)}"` : ''}>${it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>'}<span class="mp-ch-name">${esc(it.label)}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${it.wind ? `<span class="mp-ch-wind"${it.wind.tail ? ' data-tail="1"' : ''}>${esc(it.wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" role="img" aria-label="${esc(tt(TX.procOutdated))}">⌛</span>` : ''}${it.why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(it.why.join(' · '))}">⚠</span>` : ''}</button>`;
+  return `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.hl === it.id ? 1 : 0}" aria-pressed="${it.chosen}"${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)}"`}${tip ? ` title="${esc(tip)}"` : ''}>${it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>'}<span class="mp-ch-name">${esc(it.label)}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${it.wind ? `<span class="mp-ch-wind" data-sev="${it.wind.sev}">${esc(it.wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" role="img" aria-label="${esc(tt(TX.procOutdated))}">⌛</span>` : ''}${it.why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(it.why.join(' · '))}">⚠</span>` : ''}</button>`;
 }
 /** Sous-lignes de l'approche choisie : « Sans transition », puis ses transitions (V3 § 10.30 : la transition sous l'approche). */
 function subsHtml(C) {
@@ -542,16 +566,18 @@ function summaryHtml(C) {
     pendRow = C.pend[proc] && (C.items[proc] || []).find(i => i.family === C.pend[proc]),
     lines = [],
     line = (f, text) => {
-      if (text === undefined) return;
       const it = (C.items[f] || []).find(i => i.chosen),
-        k = tt(TX.chFam[f]);
-      lines.push(`<div class="mp-ch-sum" data-fam="${f}"${f === 'rwy' ? '' : ` style="--c:${it ? hueOf(it) : 'var(--sog-fg)'}"`}><span class="mp-ch-sum-k">${esc(k)}</span><span class="mp-ch-sum-v">${esc(text === null ? tt(TX.chNone) : text)}</span><button type="button" class="mp-ch-x" data-clear="${f}" aria-label="${esc(tt(TX.chClear, { f: k }))}" title="${esc(tt(TX.chClear, { f: k }))}">✕</button></div>`);
+        k = tt(TX.chFam[f]),
+        v = text === undefined ? '—' : text === null ? tt(TX.chNone) : text,
+        x = text === undefined ? '' : `<button type="button" class="mp-ch-x" data-clear="${f}" aria-label="${esc(tt(TX.chClear, { f: k }))}" title="${esc(tt(TX.chClear, { f: k }))}">✕</button>`;
+      // le libellé mène au groupe de la famille (table des matières du volet) ; ✕, à part, efface
+      lines.push(`<div class="mp-ch-sum" data-fam="${f}"${f === 'rwy' || !it ? '' : ` style="--c:${hueOf(it)}"`}><button type="button" class="mp-ch-sum-k" data-goto="${f}" title="${esc(tt(TX.chGoto, { f: k }))}">${esc(k)}</button><span class="mp-ch-sum-v">${esc(v)}</span>${x}</div>`);
     };
   line('rwy', o.rwy === null ? null : sum.rwy);
   // une famille posée avant sa piste : son nom et ses pistes, en attendant la piste
   line(proc, pendRow ? [pendRow.family, pendRow.tags.join('/')].filter(Boolean).join(' · ') : sum.proc);
   if (C.side === 'arr') line('app', sum.app);
-  return lines.length ? `<div class="mp-ch-sums">${lines.join('')}</div>` : '';
+  return `<div class="mp-ch-sums">${lines.join('')}</div>`;
 }
 /** Le corps de la feuille : la consigne, la sélection, les groupes du côté, « Terminer ». */
 function bodyHtml(C) {
@@ -610,6 +636,8 @@ export function chooseEvents() {
       }
       const clear = e.target.closest('[data-clear]');
       if (clear) return choosePick(clear.dataset.clear, 'none');
+      const go = e.target.closest('[data-goto]');
+      if (go) return gotoFamily(go.dataset.goto);
       if (fix) return choosePick(fix.dataset.fix, fix.dataset.val);
       if (row) choosePick(row.dataset.fam, row.dataset.id);
     },
@@ -642,7 +670,8 @@ function distSeg(x, y, a, b) {
   return Math.hypot(x - a.x - t * dx, y - a.y - t * dy);
 }
 /** Largeur d'une ligne de cartouche : l'échantillon, le nom, ⌛ et ⚠ (la police étant posée). */
-const rowWidth = (ctx, it) => 14 + ctx.measureText(mapLabel(it)).width + (it.old ? 4 + ctx.measureText('⌛').width : 0) + (it.why.length ?
+const rowWidth = (ctx, it, g = null) => 12 + ctx.measureText(cartText(it, g)).width + (it.old ? 4 + ctx.measureText('⌛').width : 0) + (it
+  .why.length ?
   4 +
   ctx.measureText('⚠').width : 0);
 /** Mise en page du mode à l'écran (projection toC) : { traces, arrows, groups, reserve(pl), paint(ctx), top(ctx) } ; null hors du
@@ -702,6 +731,14 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
       shown.push(it);
     }
   }
+  // la ligne survolée, de quelque famille qu'elle soit (V3 § 10.30) : sa trace aussi, même hors de la famille touchée
+  const over = hl && !shown.some(i => i.id === hl) && allItems(C).find(i => i.id === hl && i.fam !== 'rwy');
+  if (over) {
+    for (const m of over.members || [over]) trace(over, m.pts.map(p => toC(p.lat, p.lon)), {
+      dash: over.fam === 'appTrans'
+    });
+    if (over.fam !== 'appTrans') shown.push(over);
+  }
   // transitions : celles de la procédure surlignée, et la transition choisie de l'approche
   const on = hl && shown.find(i => i.id === hl);
   if (on)
@@ -712,28 +749,49 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
   if (at) trace(at, pointsOf(at.rec).map(p => toC(p.lat, p.lon)), {
     dash: true
   });
-  // un cartouche par point de sortie ou d'entrée : les noms qui s'y rejoignent, empilés
-  const groups = new Map();
+  // ordre de dessin (V3 § 10.30, troisième lecture) : du dessous au dessus, ⌛, ⚠, compatibles, choisies, la surlignée en dernier
+  const rank = it => it.id === hl ? 4 : it.chosen ? 3 : it.why.length ? 1 : it.old ? 0 : 2;
+  L.traces.sort((a, b) => rank(a.it) - rank(b.it));
+  // un cartouche par point de sortie ou d'entrée : les FAMILLES qui s'y rejoignent, une ligne chacune, sous leur nom de famille
+  // (« NIMER 9 ») — jamais une ligne par procédure d'une famille ; la surlignée a le sien, au-dessus, avec son nom complet
+  const keyOf = a => a.id ? a.id.toUpperCase() : `${a.lat.toFixed(3)},${a.lon.toFixed(3)}`,
+    groups = new Map();
   for (const it of shown) {
-    if (!it.anchor) continue;
-    const k = it.anchor.id ? it.anchor.id.toUpperCase() : `${it.anchor.lat.toFixed(3)},${it.anchor.lon.toFixed(3)}`;
-    if (!groups.has(k)) groups.set(k, {
-      q: toC(it.anchor.lat, it.anchor.lon),
-      rows: []
-    });
-    groups.get(k).rows.push(it);
+    if (it.id === hl) continue;
+    for (const m of it.members || [it]) {
+      if (!m.anchor) continue;
+      const k = keyOf(m.anchor);
+      if (!groups.has(k)) groups.set(k, {
+        q: toC(m.anchor.lat, m.anchor.lon),
+        rows: []
+      });
+      const g = groups.get(k);
+      if (!g.rows.includes(it)) g.rows.push(it);
+    }
   }
   L.groups = [...groups.values()];
+  const hit = on || (hl && allItems(C).find(i => i.id === hl && i.fam !== 'rwy')),
+    hm = hit && ((hit.members || []).find(m => m.chosen) || (hit.members || [hit])[0]);
+  L.hl = hm?.anchor ? {
+    q: toC(hm.anchor.lat, hm.anchor.lon),
+    rows: [hit],
+    full: true,
+    text: hit.members ? hm.label : hit.label
+  } : null;
   L.reserve = pl => {
     ctx.save();
-    ctx.font = '700 11px Arial,sans-serif';
-    for (const g of L.groups) {
-      const w = Math.max(...g.rows.map(it => rowWidth(ctx, it))) + 2 * PAD + 2;
-      const h = g.rows.length * LINE_H + 2 * PAD,
-        r = place(pl, g.q, w, h, true),
-        // le cartouche reste dans la carte, hors de la colonne des boutons de droite
-        dx = W ? Math.min(0, W - EDGE_R - r.x1) || Math.max(0, EDGE - r.x0) : 0,
-        dy = H ? Math.min(0, H - EDGE - r.y1) || Math.max(0, EDGE - r.y0) : 0;
+    // la surlignée d'abord : sa place est la meilleure, les autres l'évitent ; elle est toujours posée
+    const put = (g, force) => {
+      ctx.font = g.full ? '700 11px Arial,sans-serif' : '600 10px Arial,sans-serif';
+      const w = Math.max(...g.rows.map(it => rowWidth(ctx, it, g))) + 2 * PAD + 2;
+      const h = g.rows.length * (g.full ? LINE_H : LINE_SM) + 2 * PAD,
+        r = place(pl, g.q, w, h, force);
+      // sous le zoom où deux cartouches se recouvrent, celle d'une famille non surlignée est cachée (sa trace reste)
+      if (!r) return g.hidden = true;
+      // le cartouche reste dans la carte, hors de la colonne des boutons de droite
+      const dx = W ? Math.min(0, W - EDGE_R - r.x1) || Math.max(0, EDGE - r.x0) : 0,
+        dy = H ? Math.min(0, H - EDGE - r.y1) || Math.max(0, EDGE - r.y0) : 0,
+        lh = g.full ? LINE_H : LINE_SM;
       g.r = {
         x0: r.x0 + dx,
         x1: r.x1 + dx,
@@ -744,10 +802,12 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
         id: it.id,
         x0: g.r.x0,
         x1: g.r.x1,
-        y0: g.r.y0 + PAD + i * LINE_H,
-        y1: g.r.y0 + PAD + (i + 1) * LINE_H
+        y0: g.r.y0 + PAD + i * lh,
+        y1: g.r.y0 + PAD + (i + 1) * lh
       }));
-    }
+    };
+    if (L.hl) put(L.hl, true);
+    for (const g of L.groups) put(g, false);
     ctx.restore();
   };
   L.paint = c => {
@@ -775,7 +835,7 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
     c.setLineDash([]);
     c.globalAlpha = 1;
     // le point de sortie ou d'entrée de chaque cartouche
-    for (const g of L.groups) {
+    for (const g of [...L.groups, ...(L.hl ? [L.hl] : [])]) {
       const lit = g.rows.find(i => i.id === hl) || g.rows.find(i => i.chosen);
       c.beginPath();
       c.arc(g.q.x, g.q.y, 4, 0, Math.PI * 2);
@@ -792,28 +852,32 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
     c.save();
     c.textBaseline = 'middle';
     c.textAlign = 'left';
-    c.font = '700 11px Arial,sans-serif';
-    for (const g of L.groups) {
+    // les cartouches des familles, petites et estompées ; la surlignée en dernier, au-dessus de tout, son nom complet
+    for (const g of [...L.groups, ...(L.hl ? [L.hl] : [])]) {
+      if (g.hidden || !g.r) continue;
+      const lh = g.full ? LINE_H : LINE_SM;
+      c.font = g.full ? '700 11px Arial,sans-serif' : '600 10px Arial,sans-serif';
+      c.globalAlpha = g.full ? .96 : .8;
       c.fillStyle = S.theme.bg;
-      c.globalAlpha = .94;
       c.fillRect(g.r.x0, g.r.y0, g.r.x1 - g.r.x0, g.r.y1 - g.r.y0);
-      c.globalAlpha = 1;
+      c.globalAlpha = g.full ? 1 : .85;
       c.lineWidth = 1;
-      c.strokeStyle = S.theme.grid;
+      c.strokeStyle = g.full ? hueOf(g.rows[0]) : S.theme.grid;
       c.strokeRect(g.r.x0 + .5, g.r.y0 + .5, g.r.x1 - g.r.x0 - 1, g.r.y1 - g.r.y0 - 1);
       g.rows.forEach((it, i) => {
-        const y0 = g.r.y0 + PAD + i * LINE_H,
-          y = y0 + LINE_H / 2;
+        const y0 = g.r.y0 + PAD + i * lh,
+          y = y0 + lh / 2,
+          text = cartText(it, g);
         let x = g.r.x0 + PAD + 1;
-        if (it.id === hl || it.chosen) {
+        if (it.chosen) {
           c.fillStyle = MapsRender.withAlpha(hueOf(it), .16);
-          c.fillRect(g.r.x0 + 1, y0, g.r.x1 - g.r.x0 - 2, LINE_H);
+          c.fillRect(g.r.x0 + 1, y0, g.r.x1 - g.r.x0 - 2, lh);
         }
         c.fillStyle = hueOf(it);
-        c.fillRect(x, y - 4, 8, 8);
-        x += 14;
-        c.fillText(mapLabel(it), x, y);
-        x += c.measureText(mapLabel(it)).width + 4;
+        c.fillRect(x, y - 3.5, 7, 7);
+        x += 12;
+        c.fillText(text, x, y);
+        x += c.measureText(text).width + 4;
         if (it.old) {
           c.fillStyle = S.theme.muted;
           c.fillText('⌛', x, y);

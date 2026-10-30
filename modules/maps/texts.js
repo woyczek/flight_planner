@@ -358,6 +358,17 @@ export const TX = {
   chFold: ['{n} autres · Toutes', '{n} more · All', '{n} weitere · Alle', '{n} más · Todas'],
   chFoldLess: ['Compatibles seulement', 'Compatible only', 'Nur passende', 'Solo compatibles'],
   chNotFit: ['Ne va pas avec le choix', 'Does not fit the choice', 'Passt nicht zur Wahl', 'No encaja con la elección'],
+  chGoto: ['Aller au groupe {f}', 'Go to the {f} group', 'Zur Gruppe {f}', 'Ir al grupo {f}'],
+  chSev: {
+    ok: ['vent dans les limites', 'wind within limits', 'Wind innerhalb der Grenzen', 'viento dentro de los límites'],
+    warn: ['vent à surveiller (arrière ou travers)', 'wind to watch (tail or cross)', 'Wind beachten (Rücken- oder Seitenwind)',
+      'viento a vigilar (de cola o cruzado)'
+    ],
+    alert: ['vent hors limites (arrière ou travers)', 'wind beyond limits (tail or cross)',
+      'Wind außerhalb der Grenzen (Rücken- oder Seitenwind)',
+      'viento fuera de límites (de cola o cruzado)'
+    ]
+  },
   chRwyNotServed: ['Pas desservie par {p}', 'Not served by {p}', 'Nicht bedient von {p}', 'No servida por {p}'],
   chVia: ['{p} via {t}', '{p} via {t}', '{p} über {t}', '{p} vía {t}'],
   chClear: ['Retirer : {f}', 'Clear: {f}', 'Entfernen: {f}', 'Quitar: {f}'],

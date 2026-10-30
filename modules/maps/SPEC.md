@@ -335,6 +335,16 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   returned for an unresolved family). The chosen approach's transitions are sub-rows under it ("No transition" first; key
   `apptrans`). Rows are 36 px, no gap; the group headers thin labels. The selection reads at the top of the pane, one line per
   family (`PR.summaryOf`, the text Fuel shows), each with ✕ setting that family to "Aucune".
+- **Third reading** (§ 10.30, 30 Oct): the highlighted procedure (hovered, touched or chosen) is drawn last, over every trace and
+  label of the mode, with its own label and its full name (placed first); the other traces, from below, ⌛, ⚠, compatible,
+  chosen. One small faded label per family and point, under the family's name ("NIMER 9", `familyOf`: stem, space, digit), the
+  families meeting at a point stacked one line each; a label without room is left out (its trace stays). Hovering any row of
+  any family highlights its trace and label (drawn even outside the family touched last), leaving it gives the previous state
+  back; a tap chooses and leaves the row highlighted; hovering a trace highlights its row (unfolded and scrolled into view).
+  Runway rows: the wind text of `wind.label` (↓ head, ↑ tail, ← wind from the right, → from the left) coloured by
+  `wind.severity` (ok, warn, alert: the design's green, orange, red), the reason in the row's title. The summary at the top is
+  the pane's table of contents: three lines always ("—" when not chosen), a tap on a family's label scrolls to its group and
+  unfolds it, ✕ (chosen families only) clears.
 - **Runway and procedure correct each other** (one line under the procedure's group, one tap, never silently): the procedure just
   chosen serves one other runway → "OPAL2E sert la 25 — Passer en 25"; otherwise (the runway changed, or the procedure serves
   several) → "OKRIX5A ne sert pas la 07 — Choisir OKRIX5B", the first of the group that serves it (`firstServing`); the row keeps ⚠.

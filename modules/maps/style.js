@@ -211,13 +211,15 @@ export const STYLE = `
 [data-module="maps"] .mp-ch-sums{margin:0 0 4px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px)}
 [data-module="maps"] .mp-ch-sum{display:flex;align-items:center;gap:8px;min-height:32px;padding:0 0 0 8px;border-bottom:1px solid var(--sog-border);box-shadow:inset 3px 0 0 var(--c,var(--sog-fg))}
 [data-module="maps"] .mp-ch-sum:last-child{border-bottom:0}
-[data-module="maps"] .mp-ch-sum-k{flex:none;min-width:5.5em;font-size:var(--sog-size-s);color:var(--sog-muted)}
+[data-module="maps"] .mp-ch-sum-k{flex:none;min-width:5.5em;min-height:0;margin:0;padding:0 4px 0 0;border:0;background:none;font:inherit;font-size:var(--sog-size-s);color:var(--sog-accent);text-align:left;cursor:pointer;touch-action:manipulation}
 [data-module="maps"] .mp-ch-sum-v{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
 [data-module="maps"] .mp-ch-x{flex:none;width:36px;height:32px;margin:0;padding:0;border:0;background:none;color:var(--sog-muted);font:inherit;cursor:pointer;touch-action:manipulation}
 [data-module="maps"] .mp-ch-row[aria-pressed=true]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 20%,var(--sog-surface));box-shadow:inset 3px 0 0 var(--c,var(--sog-accent))}
 [data-module="maps"] .mp-ch-tag{flex:none;padding:0 4px;border:1px solid var(--sog-border);border-radius:3px;font-size:11px;line-height:16px;font-weight:600;color:var(--sog-muted)}
 [data-module="maps"] .mp-ch-wind{flex:none;font-weight:600;color:var(--sog-fg);font-variant-numeric:tabular-nums}
-[data-module="maps"] .mp-ch-wind[data-tail]{color:var(--sog-warn)}
+[data-module="maps"] .mp-ch-wind[data-sev=ok]{color:var(--sog-ok)}
+[data-module="maps"] .mp-ch-wind[data-sev=warn]{color:var(--sog-warn)}
+[data-module="maps"] .mp-ch-wind[data-sev=alert]{color:var(--sog-err)}
 [data-module="maps"] .mp-ch-fix{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:4px 0 0;color:var(--sog-warn)}
 [data-module="maps"] .mp-ch-fix .f-btn{margin:0}
 [data-module="maps"] .mp-ch-done{display:block;width:100%;min-height:var(--sog-touch);margin:4px 0 8px}

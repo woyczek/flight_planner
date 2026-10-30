@@ -1592,3 +1592,9 @@ SPEC § 6.11, INTEGRATION § 3 ter. Choices of the session, with their reasons:
   gets none; the longer segments are placed first. The placer was already one pass per drawing, but in the wrong order: the
   route's labels reserved before the procedures', and the towns before everything painted. The order is now the priority of
   § 10.30 (screen, route, airway boxes, aerodromes, navaids and fixes, the rest), the towns placed at their own painting.
+- **Third reading (30 Oct): what is looked at goes on top.** The STARs covered each other: the highlighted procedure is now
+  drawn last with its own label (its full name), the others below in a fixed order (⌛, ⚠, compatible, chosen); the labels are
+  one per family and point ("NIMER 9"), small and faded, never one per procedure of a family, and a label without room is
+  dropped rather than overlapping. Hover follows the pointer across every family (the user: "survoler une STAR ne surligne
+  plus : pas intuitif"). The wind's colour comes from `wind.severity` and its arrows from `wind.label` (where it blows, runway
+  upward), Fuel's rules, so the two screens print the same thing.

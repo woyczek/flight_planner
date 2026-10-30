@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map, choosing on the map, third reading: what is looked at goes on top** (`modules/maps/choose.js`, `texts.js`, `style.js`;
+  help ×4, maps SPEC § 5.1, DECISIONS; noreg D60, D69; V3 § 10.30). The highlighted procedure is drawn last with its own label
+  and full name, the others below (⌛, ⚠, compatible, chosen); one small label per family and point ("NIMER 9"), never one per
+  procedure of a family, dropped when there is no room. Hovering a row of any family highlights its trace (and a trace its
+  row); a tap leaves the row highlighted. Runway rows show `wind.label` (↓ head, ↑ tail, ← from the right, → from the left) in
+  the colour of `wind.severity` (green, orange, red) ×4. The summary at the top is the table of contents: three lines always,
+  a tap on a family's label scrolls to its group and unfolds it, ✕ clears.
+
 - **Tests: C1 names the failures of the sheet bench** (`tests/v3/cases/sheet.py`): the bench's rows are
   `{ name, ok, detail }`; the case looked for the text « FAIL » in them and always listed none. It now names up to five
   failed assertions with what they measured.

@@ -1235,7 +1235,7 @@ _CH_ROWS = """() => { const lists = [...document.querySelectorAll('.mp-ch-list')
   return { groups: [...document.querySelectorAll('.mp-ch-grp')].map(g => ({ fam: g.dataset.fam,
       rows: [...g.querySelectorAll('.mp-ch-row')].map(b => ({ id: b.dataset.id || null, text: b.textContent.trim(), c: b.style.getPropertyValue('--c'),
         pressed: b.getAttribute('aria-pressed') === 'true', wind: (b.querySelector('.mp-ch-wind') || {}).textContent || null,
-        tail: !!b.querySelector('.mp-ch-wind[data-tail]') })),
+        sev: (b.querySelector('.mp-ch-wind') || {}).dataset ? b.querySelector('.mp-ch-wind').dataset.sev : null })),
       fix: ((g.querySelector('.mp-ch-fix') || {}).textContent || '').trim(), fixVal: (g.querySelector('[data-fix]') || {}).dataset ? g.querySelector('[data-fix]').dataset.val : null,
       fixFam: g.querySelector('[data-fix]') ? g.querySelector('[data-fix]').dataset.fix : null })),
     scrolls: lists.some(l => l.scrollHeight > l.clientHeight + 1),
@@ -1247,7 +1247,9 @@ _CH_LAYOUT = """async ([id, fam]) => { const C = await import('/modules/maps/cho
   const t = L.traces.find(x => x.it && x.it.id === id), mid = t ? { x: (t.pts[0].x + t.pts[1].x) / 2, y: (t.pts[0].y + t.pts[1].y) / 2 } : { x: -50, y: -50 };
   return { focus: S.choose.focus, sel: S.choose.sel, n: L.traces.length, dim: L.traces.filter(t => t.dim).length, groups: L.groups.map(g => g.rows.map(r => r.id)),
     hues: (S.choose.items[fam] || []).map(i => pal[i.hi % pal.length]), dashed: L.traces.filter(t => t.dash).length,
-    arrows: L.arrows.map(a => [a.name, a.lw]), at: C.chooseAt(mid.x, mid.y), nothing: C.chooseAt(-50, -50) } }"""
+    arrows: L.arrows.map(a => [a.name, a.lw]), at: C.chooseAt(mid.x, mid.y), nothing: C.chooseAt(-50, -50),
+    last: L.traces.length ? L.traces[L.traces.length - 1].it.id : null, traced: [...new Set(L.traces.map(t => t.it.id))],
+    hl: L.hl ? { text: L.hl.text, rows: L.hl.rows.map(r => r.id) } : null } }"""
 
 
 def _ch_open(c, cur, side='arr', icao='LFML', extra=(), file=None):
@@ -1294,7 +1296,7 @@ def d60(c):
     c.ok(all(g['rows'][0]['id'] == 'none' for g in r['groups']), f"{[g['rows'][0] for g in r['groups']]}", '"Aucune" first in every group')
     c.eq([x['id'] for x in _grp(r, 'rwy')['rows'] if x['pressed']], ['31'], 'the runway of the flight is the one pressed', what='runway')
     c.ok(all(x['wind'] is None for x in _grp(r, 'rwy')['rows']), 'a wind without METAR', 'no METAR known: no wind, nothing invented')
-    c.eq(r['sums'], [['rwy', '31']], 'the selection at the top: the runway of the flight', what='summary')
+    c.eq(r['sums'], [['rwy', '31'], ['star', '—'], ['app', '—']], 'the selection at the top, three lines: the runway of the flight, the rest not chosen', what='summary')
     star = _grp(r, 'star')['rows']
     c.eq(len([x for x in star if x['id'] not in (None, 'none')]), 6, 'six compatible STARs shown, the rest folded', what='STAR rows')
     c.ok(not any('S9A' in x['text'] for x in star), f'{star}', 'S9A (runway 13 only) is not shown while 31 is chosen')
@@ -1386,8 +1388,8 @@ def d60(c):
     # the wind of the METAR known on every runway: headwind on 31, tailwind (orange) on 13
     _ch_open(c, {}, extra=[_CH_METAR])
     rw = {x['id']: x for x in _grp(c.js(_CH_ROWS), 'rwy')['rows'] if x['id'] != 'none'}
-    c.eq([rw['31']['wind'], rw['31']['tail']], ['↓ 12 kt', False], 'runway 31 (true 107° here) faces the 107° wind: 12 kt head', what='wind on 31')
-    c.eq([rw['13']['wind'], rw['13']['tail']], ['↑ 12 kt', True], 'runway 13: 12 kt tail, in orange', what='wind on 13')
+    c.eq([rw['31']['wind'], rw['31']['sev']], ['↓ 12 kt', 'ok'], 'runway 31 (true 107° here) faces the 107° wind: 12 kt head, green (wind.severity)', what='wind on 31')
+    c.eq([rw['13']['wind'], rw['13']['sev']], ['↑ 12 kt', 'alert'], 'runway 13: 12 kt tail, red (beyond 5 kt of tail)', what='wind on 13')
     # the departure: runway and SID, the transitions drawn for the highlighted SID only
     _ch_open(c, {'rwy': '03'}, 'dep', 'LFRS')
     r = c.js(_CH_ROWS)
@@ -1720,3 +1722,41 @@ def d67(c):
     hits = c.js(_AW_JS, 3)
     c.eq(hits.count('A34'), 1, 'a segment read four times (four boxes of the corridor) is labelled once', what=f'labels {hits}')
     c.eq(hits.count('B12'), 0, 'a segment shorter on screen than its label has none (its line stays)', what=f'labels {hits}')
+
+
+# ------------------------------------------------------------------------------------------------------ D69
+_SET_HL = "async (id) => { (await import('/modules/maps/choose.js')).setHl(id) }"
+
+
+@case('D69', 'Choosing on the Map, third reading: the highlighted procedure drawn last, one label per family, any row highlights, the summary leads to its group', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='V3 § 10.30 third reading: the highlighted procedure is drawn last with its own label (its full name) over the others; one small label per family and point ("OKRI 5"), never one per procedure of a family; hovering a row of any family highlights its trace; a tap on a summary label scrolls to its group and unfolds it')
+def d69(c):
+    # a family: one label "OKRI 5" at the shared entry point; highlighted, its own label with the full name, drawn last
+    _ch_open(c, {'rwy': '31'}, file=_CH2_FILE)
+    L = c.js(_CH_LAYOUT, ['', 'star'])
+    c.ok(any('fam:OKRI5' in g for g in L['groups']) and sum(g.count('fam:OKRI5') for g in L['groups']) == 1, f"{L['groups']}",
+         'the family OKRI5 has one line in one label, not one per procedure')
+    c.js(_SET_HL, 'fam:OKRI5')
+    L = c.js(_CH_LAYOUT, ['fam:OKRI5', 'star'])
+    c.eq(L['last'], 'fam:OKRI5', 'the highlighted procedure is drawn last, over the others', what='last trace')
+    c.eq(L['hl'] and L['hl']['rows'], ['fam:OKRI5'], 'it has its own label, placed first (above)', what='highlighted label')
+    c.ok(L['hl'] and L['hl']['text'] in ('OKRI5L', 'OKRI5R'), f"{L['hl']}", 'with the full name of the procedure')
+    c.ok(not any('fam:OKRI5' in g for g in L['groups']), f"{L['groups']}", 'and no longer in the small labels')
+    # hovering a row of another family (the approaches while the STARs were touched): its trace is drawn and highlighted
+    i31 = 'LFML.APP.I31.RW31.NONE'
+    c.js(_SET_HL, i31)
+    L = c.js(_CH_LAYOUT, [i31, 'app'])
+    c.ok(i31 in L['traced'] and L['last'] == i31, f"{L['traced']}", 'an approach hovered while the STARs are the family touched: drawn, last')
+    c.js(_SET_HL, None)
+    L = c.js(_CH_LAYOUT, ['', 'app'])
+    c.ok(i31 not in L['traced'], f"{L['traced']}", 'leaving the row gives back the previous state')
+    # the summary is the table of contents: a tap on "Approach" scrolls to its group and unfolds it
+    _ch_open(c, {'rwy': '13', 'star': 'LFML.STAR.OKRI5R.RW13.NONE'}, file=_CH2_FILE)
+    c.ok(c.count('.mp-ch-fold[data-more=app]') == 1, 'no fold line', 'I31 does not fit runway 13: the approaches are folded')
+    c.tap('.mp-ch-sum-k[data-goto=app]')
+    c.until("() => (document.querySelector('.mp-ch-fold[data-more=app]') || {}).getAttribute && document.querySelector('.mp-ch-fold[data-more=app]').getAttribute('aria-expanded') === 'true'",
+            what='the approaches unfold')
+    top = c.js("() => { const g = document.querySelector('.mp-ch-grp[data-fam=app]').getBoundingClientRect(), b = window.__mp.S.dbodyEl.getBoundingClientRect(); return [g.top, b.top, b.bottom] }")
+    c.ok(top[1] - 2 <= top[0] <= top[2], f'{top}', 'the group of the approaches is in view')
+    c.eq(c.count('.mp-ch-sum[data-fam=app] .mp-ch-x'), 0, 'no ✕ on a family not chosen (only its label)', what='clear buttons')
