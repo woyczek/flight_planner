@@ -883,6 +883,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 41 | Frame R1b: IVAO OpenID through the relay (a9840bd19) | acceptable, four notes |
 | 42 | Frame: a port dedicated to the relay (ee6044e8b) | acceptable; **the residual case of 40 is closed**; one note |
 | 43 | Frame: R1b retouches and start-up order (b27cae045) | acceptable; notes of 41 and 42 settled |
+| 44 | Data sync: resuming a rewritten history (6ba742877) | acceptable, one small point to fix, one note |
+| 45 | Frame: the flown track kept on the device (0bbe7ebbb) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1453,6 +1455,26 @@ consistent with `_local_host` (to register as such in IVAO's application).
 **State of the relay (R1a, R1b, dedicated port), 30 October.** No open point in the code. Before any exposure: the proxy's
 configuration (aim at the relay port, keep `Host`), a green probe at start-up, and IVAO's application registered with the
 two return addresses.
+
+**44. Resuming a rewritten history of the data repository (6ba742877) — acceptable, one small point to fix, one note.**
+`GET` and `POST /__setup/sync-rewritten` are workstation routes (`_allowed()`, `_lan()`, not open to the relay), under the
+synchronisation lock. No path comes from the page: the files come from `git diff --name-only` between the common state and
+the saved branch, filtered by `in_pool`; the page gives a trigram and a name only. Nothing is deleted in git: the old
+branch is kept in `refs/sog/avant-reecriture-<date>` before `reset --keep` (which refuses to overwrite a changed file of the
+workstation; a failure puts everything back); uncommitted files stay. The old history is never pushed (only
+`HEAD:<branch>` is pushed), and a synchronisation never merges two histories without a common ancestor. Messages carry
+counts and the reference's name; git errors go through `clean_text`. *To fix:* `git checkout <ref> -- <path>` and
+`git rm -- <path>` take paths as patterns: a pool file whose name holds `*`, `?` or `[` would bring other files of the old
+state over the new history, then send them; set `GIT_LITERAL_PATHSPECS=1` for the resumption. Note: `reset --keep` removes
+from the folder the files outside the pool added since the common state (and puts the others back to their common
+version): they stay in the reference, no longer on disk; the plan should say so (« they leave `data/`; recoverable with
+`git checkout <ref> -- <path>` »).
+
+**45. The flown track kept on the device (0bbe7ebbb) — acceptable.** The track is written to the device's own store
+(`device/trail.json`), excluded from backups; `progress.actual` carries the position only, so the next write of the
+flight removes the track from the shared file (the repository's history keeps the older ones); the privacy sentence now
+says « your position is shared; the track of your flight stays on this device », in the four languages. This applies
+the user's choice « local only » for the track (12).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
