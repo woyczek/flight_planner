@@ -850,7 +850,7 @@ administrator gave you; the token is sent to that instance only.
 administration and test pages, **one button per page**, each with a sentence; at the other levels it does not appear, and
 nothing of the administrator's is on the other cards. In the app: the “Map threshold tuning” button (`#maps?tune=1`, read only on a phone; it opens the tuning page: for each map element and each mode, the zooms where it appears, saved for the airline, `airline/map_profiles.json`; a mode you never saved takes the thresholds of a tuned mode, and the page says so; the map's “Complexity” slider only shifts the zoom), back by the back arrow; the “Flight zone limit” button, which unfolds a box
 “Show the edge line of the flight zone limit” (saved at once for the airline, with the thresholds, in `airline/map_profiles.json`,
-key `edge`; the edge line is shown until you set it); the “Export a configuration for a pilot” button (see “Configuring a pilot”);
+key `edge`; the edge line is shown until you set it); the “Runway thresholds on the map” button, which unfolds a list from 8 to 16: the zoom from which the map draws the runway thresholds (saved at once for the airline, same file, key `runwayZoom`; 11 until you set it); the “Export a configuration for a pilot” button (see “Configuring a pilot”);
 on a workstation served by the launcher, the “Remote repository of data/” and “Airline API keys (IVAO, EAD Basic)” buttons, which
 unfold their setting (see “A git repository for data/” and “The airline's API keys”); the roadmap (`#roadmap`) and the diagnostics of the “About” card.
 
@@ -897,4 +897,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 9e9ac77130ef -->
+<!-- fr: c49c76673bd9 -->

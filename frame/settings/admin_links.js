@@ -37,6 +37,20 @@
       'La línea que bordea la zona del vuelo en el mapa: mostrada (por omisión) u oculta, para toda la aerolínea; guardada con los umbrales del mapa.'
     ]
   }, {
+    id: 'runwayZoom',
+    panel: 'runway',
+    where: 'app',
+    primary: true,
+    title: ['Seuils de piste sur la carte', 'Runway thresholds on the map', 'Pistenschwellen auf der Karte',
+      'Umbrales de pista en el mapa'
+    ],
+    text: [
+      'Le zoom à partir duquel la carte dessine les seuils de piste (petit vecteur et numéro), pour toute la compagnie ; en dessous, rien n’est dessiné.',
+      'The zoom from which the map draws the runway thresholds (small vector and designator), for the whole airline; below it, nothing is drawn.',
+      'Die Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (kleiner Vektor und Bezeichnung), für die ganze Fluggesellschaft; darunter wird nichts gezeichnet.',
+      'El zoom a partir del cual el mapa dibuja los umbrales de pista (pequeño vector y designador), para toda la aerolínea; por debajo, no se dibuja nada.'
+    ]
+  }, {
     id: 'cfg',
     panel: 'cfg',
     where: 'app',

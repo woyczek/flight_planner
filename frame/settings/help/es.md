@@ -167,7 +167,7 @@ de acceso de proyecto que le dio el administrador; el token solo se envía a esa
 de», reúne las páginas de administración y de prueba, **un botón por página**, cada una con una frase; en los demás niveles no aparece, y nada del administrador está en las demás tarjetas. En la
 aplicación: el botón «Ajuste de los umbrales del mapa» (`#maps?tune=1`, solo lectura en un teléfono; abre la página de ajuste: para cada elemento del mapa y cada modo, los zooms en que aparece, guardados para la aerolínea, `airline/map_profiles.json`; un modo que nunca guardó toma los umbrales de un modo ajustado, la página lo dice; el control «Complejidad» del mapa solo desplaza el zoom), vuelta con la flecha de retroceso; el botón «Límite de la zona del vuelo», que despliega una casilla
 «Mostrar la línea del límite de la zona del vuelo» (guardada al instante para la aerolínea, con los umbrales, en `airline/map_profiles.json`,
-clave `edge`; la línea se muestra mientras no ajuste nada); el botón «Exportar una configuración para un piloto» (véase «Configurar un piloto»); en un puesto servido por el
+clave `edge`; la línea se muestra mientras no ajuste nada); el botón «Umbrales de pista en el mapa», que despliega una lista de 8 a 16: el zoom a partir del cual el mapa dibuja los umbrales de pista (guardado al instante para la aerolínea, mismo archivo, clave `runwayZoom`; 11 mientras no ajuste nada); el botón «Exportar una configuración para un piloto» (véase «Configurar un piloto»); en un puesto servido por el
 lanzador, los botones «Repositorio remoto de data/» y «Claves API de la aerolínea (IVAO, EAD Basic)», que despliegan su ajuste (véase
 «Un repositorio git para data/» y «Las claves API de la aerolínea»);
 la hoja de ruta (`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
@@ -216,4 +216,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 9e9ac77130ef -->
+<!-- fr: c49c76673bd9 -->

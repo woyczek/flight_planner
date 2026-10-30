@@ -499,6 +499,7 @@
     // carte Administration (niveau Complet, ou atteinte par son adresse) : le filet de la limite de la zone du vol, option
     // enregistrée avec les seuils
     const edgeShow = (c.level?.() || 2) === 3 || focus === 'admin' ? await P.admin.readEdge(c) : true;
+    const runwayZoom = (c.level?.() || 2) === 3 || focus === 'admin' ? await P.admin.readRunwayZoom(c) : 11;
     let inErr = '';
     if (q.get('config') && window.SogConfig && window.SogJoin) {
       try {
@@ -649,6 +650,7 @@
     const adminHtml = lvl === 3 || focus === 'admin' ? P.admin.adminCard(t, L, {
       cfg: cfgOut,
       edge: edgeShow,
+      runway: runwayZoom,
       remote: L ? P.launcher.remoteHtml(env) : '',
       keys: L ? P.launcher.keysHtml(env) : ''
     }) : '';

@@ -324,7 +324,8 @@ def a11(c):
 
 
 ADMIN_FR = {   # Settings > Administration at the Full level, French (the run's language): one button per administrator page
-    'tune': 'Réglage des seuils de la carte', 'edge': 'Limite de la zone du vol', 'roadmap': 'Feuille de route', 'diag': 'Diagnostic',
+    'tune': 'Réglage des seuils de la carte', 'edge': 'Limite de la zone du vol', 'runwayZoom': 'Seuils de piste sur la carte',
+    'roadmap': 'Feuille de route', 'diag': 'Diagnostic',
 }
 
 
@@ -406,6 +407,15 @@ def a12(c):
     c.until_doc('airline/map_profiles.json', lambda d: d and (d.get('edge') or {}).get('show') is True, what='edge.show is true again (shown)')
     c.tap('[data-admin="edge"] > button')
     c.until("!window.__t.shown(document.querySelector('[data-adminpanel=\"edge\"]'))", what='a second tap folds the panel')
+    # the runway thresholds zoom (V3 § 10.30, maps.runwayZoom): a list 8–16, 11 by default, saved at once under `runwayZoom`
+    c.tap('[data-admin="runwayZoom"] > button')
+    c.until("window.__t.shown(document.querySelector('[data-adminpanel=\"runway\"]'))", what='the runway thresholds panel opens')
+    opts = c.js("[...document.querySelectorAll('[data-runway-zoom] option')].map(o => +o.value)")
+    c.eq([opts[0], opts[-1], len(opts)], [8, 16, 9], 'the zoom is chosen from 8 to 16', what='zoom options')
+    c.eq(c.js("+document.querySelector('[data-runway-zoom]').value"), 11, 'no `runwayZoom` in the file: 11', what='default zoom')
+    c.js("() => { const s = document.querySelector('[data-runway-zoom]'); s.value = '13'; s.dispatchEvent(new Event('change', { bubbles: true })) }")
+    d = c.until_doc('airline/map_profiles.json', lambda d: d and d.get('runwayZoom') == 13, what='runwayZoom is 13')
+    c.eq([d.get('profiles'), (d.get('edge') or {}).get('show')], [profiles['profiles'], True], 'saving the zoom keeps the thresholds and the edge option', what='rest of the file')
 
 
 @case('A13', 'Cupertino bar navigates', 'A', screens=False, designs=('cupertino',), night=False,

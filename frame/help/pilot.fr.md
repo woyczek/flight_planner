@@ -860,7 +860,7 @@ donné ; le jeton n'est envoyé qu'à cette instance.
 », réunit les pages d'administration et d'essai, **un bouton par page**, chacun avec une phrase ; aux autres niveaux, elle
 n'apparaît pas, et rien de l'administrateur n'est sur les autres cartes. Dans l'appli : le bouton « Réglage des seuils de la carte » (`#maps?tune=1`, en lecture seule sur un téléphone ; il ouvre la page de réglage : pour chaque élément de la carte et chaque mode, les zooms où il apparaît, enregistrés pour la compagnie, `airline/map_profiles.json` ; un mode que vous n'avez jamais enregistré reprend les seuils d'un mode réglé, la page le dit ; le curseur « Complexité » de la carte ne fait que décaler le zoom), retour par la flèche de retour ; le bouton « Limite de la zone du vol »,
 qui déplie une case « Afficher le filet de la limite de la zone du vol » (enregistrée aussitôt pour la compagnie, avec les seuils, dans
-`airline/map_profiles.json`, clé `edge` ; le filet est affiché tant que vous n'avez rien réglé) ; le bouton « Exporter une
+`airline/map_profiles.json`, clé `edge` ; le filet est affiché tant que vous n'avez rien réglé) ; le bouton « Seuils de piste sur la carte », qui déplie une liste de 8 à 16 : le zoom à partir duquel la carte dessine les seuils de piste (enregistré aussitôt pour la compagnie, même fichier, clé `runwayZoom` ; 11 tant que vous n'avez rien réglé) ; le bouton « Exporter une
 configuration pour un pilote » (voir « Configurer un pilote ») ; sur un poste servi par le lanceur, les boutons
 « Dépôt distant de data/ » et « Clés d'API de la compagnie (IVAO, EAD Basic) », qui déplient leur réglage (voir « Un dépôt git pour
 data/ » et « Les clés d'API de la compagnie ») ; la feuille de route (`#roadmap`) et le diagnostic de la carte « À propos ».

@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: the runway thresholds zoom** (`frame/settings/admin.js`, `admin_links.js`, `settings.js`; V3 § 10.30) — Settings › Administration (Full level) has the line « Seuils de piste sur la carte »: a list from 8 to 16 (11 by default), saved
+  at once for the airline in `airline/map_profiles.json`, key `runwayZoom` (the rest of the file kept, like `edge`); the Map draws
+  the runway thresholds from that zoom and reads the key with its profiles (`frame/settings/INTEGRATION.md` § 4); help ×4; case A12.
 - **Frame: wind components on a runway, and the runway a procedure serves** (`frame/lib/wind.js`, `frame/lib/procedures.js`;
   benches F62, F32) — the rules the Map's pane and Fuel share for § 10.30.
 - **Tests: D61 is deterministic** (`tests/v3/cases/maps_recode.py`). Its reread was stamped `updated_at` in whole seconds; on a
