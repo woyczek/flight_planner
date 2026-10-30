@@ -1344,6 +1344,27 @@ redesigned for touch at that point.
        New cases: the three kinds of cartouche pixel-identical and the hue following the token; a dense fixture with
        identical positions before and after (b); LFBO 14L / 14R with AMOLO 7A / 7H and the threshold navaids at zoom
        11–12, no box overlapping, LFBO and every runway number written, the navaids yielding.
+       **Delivered (31 Oct, night)**: (a) 3e65a0465, (b) 87748d47a, (c) 9f703190c. The pass plays the drawing twice: a
+       mute turn (a local context that paints nothing, true `measureText`) collects the requests, they are placed by
+       rank, the painting turn writes each at its decided place so the drawing order (route over cartouches, the
+       choice's veil) stays the image. Final closed list: aerodrome symbols · 1 aerodrome name (the choose pane's code
+       first) · 2 runway numbers · navaid symbols (a threshold number beats the symbol of a DME sitting on it) · 3
+       navaid boxes · 4 procedures (highlighted, chosen, touched family, others) · 5 route (names, levels, ETA, NM
+       marks, TOC / TOD, the path's airway cartouches; a mission's points) · 6 airways off the path and true tracks,
+       AAR / NAT, fixes, VRP, obstacles, airspaces, MORA, grid, towns, mission zones. One box per key (a navaid, fix
+       or VRP that is a route point is written once), a child silent with its parent (an airway's true tracks), ETA
+       then TOC / TOD slide along the trace (16 to 64 px) before going silent, the pass hides nothing by zoom. The
+       vertical cut goes through the same pass (TOC / TOD, constraints, levels, airspaces, obstacles, airway points).
+       Winners changed, written as rules: at LFBO the navaid box "(D) TBS 110.7" is written and "RW14R" slides; in VFR
+       fixes and VRP beat obstacle heights; in the cut a procedure constraint beats levels and airspaces (D80 adapted,
+       D85 on the real LFBO). Measure at rest on the real base, 1280 × 900: worst 13.6 ms (Paris VFR z9, 10.1 before),
+       everything else under 9 ms; **13.6 ms is the ceiling: nothing is added to the drawing without a measure**.
+       Also: the SIA key does not identify an airspace (74 duplicates in fr, "LF600" SUR and PRN): an airspace is keyed
+       by type, key, name, limits and first point (§ 3 of the Map, aerodb's DECISIONS).
+       **State of the refactoring (31 Oct)**: Fuel R-F1–F6 done; Map R-M1–M6 done; frame R-C1–R-C6 done (R-C7 after
+       6 Nov, R-C8/9/10 when touched); Réglages R-S1, R-S2 done, R-S3 (one helper for the launcher's secrets) in
+       progress. Every session's queue is then empty: the Map's sixth reading (read only, after the refactoring) and
+       the user's answers (Missions, pre-release 6.0.0-alpha.3) decide what comes next.
 
    34. **Administration: what is still missing to turn V2 off** (user, 30 Oct: "j'attends une carte réellement
        utilisable, et un module d'admin"; inventory V2 → V3 of the same day, scope confirmed). The Maintenance
