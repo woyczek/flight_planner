@@ -1,5 +1,15 @@
 # aircraft — decisions
 
+- **30 Oct 2026 — the SPEC as a state** (Simplification, the discipline of Fuel's 3a / 3b: each rule cites its case or « no case »,
+  what became false removed). Removed as false: the **Registre** view (never built: the Flotte and Fiches tabs only; a registry search
+  stays a debt), the type field's **completion** from the registry (it is free text with a line under it, « type absent de la base »),
+  `aircraft/` in `meta.reads` (it reads `airline/` and `cache/aircraft/`), the **count** of the fleet's aircraft in the removal question
+  (it names the sheet only), the status line linking to the Fiches view (it links to `#aircraft`); the history moved here or dropped:
+  « As built », the editor « moved from Fuel, not rewritten », § 5 « Fuel's Fiches view » (done: Fuel's list is read-only, F79), the
+  case plan and the order of the steps. New cases for the writes that had none: M12 (new sheet, a company type's sheet), M13 (a file
+  imported), M14 (completion from another sheet), M15 (a ChatGPT reply). **No case** (debts): the EUROCONTROL completion (no invented
+  APD record in the fixtures yet), the two exports, the RPM table read-only on a phone, a site paste after an edit (website's rule), a
+  registry search view.
 - **30 Oct 2026 — the module, the fleet first** (§ 10.34 lot A2, Features SOG; SPEC agreed by Simplification). Order: the
   schema field `maxCrosswindKt` (586a25b0f, in frame/aerodb/sheets.js since the AeroDB session is closed), then this shell and
   the Flotte view, then the sheets, the imports, and the removal of Fuel's editor. The editor opens in place of the list,
