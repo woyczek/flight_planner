@@ -840,6 +840,8 @@ def i15(c):
         put(a, 'cr/XYZ/b.json', '{"v": 1}\n')
         put(a, 'notes.txt', 'socle\n')
         put(a, 'raw/source.bin', 'x' * 2000)
+        put(a, 'cr/ABC/[ab].json', '{"glob": 1}\n')  # a name that is also a pattern (it matches a.json and b.json)
+        put(a, 'cr/ABC/b.json', '{"b": 1}\n')
         g(a, 'add', '-A')
         g(a, 'commit', '-qm', 'one')
         g(a, 'rm', '-q', 'raw/source.bin')
@@ -852,7 +854,11 @@ def i15(c):
         put(b, 'cr/ABC/a.json', '{"v": 2}\n')
         g(b, 'commit', '-qam', 'local pool change')
         put(b, 'notes.txt', 'local, never pushed\n')
+        put(b, 'outils/mémo é.txt', 'mon mémo\n')  # outside the pool, added here, an accented name
+        g(b, 'add', '-A')
         g(b, 'commit', '-qam', 'local change outside the pool')
+        g(b, '--literal-pathspecs', 'rm', '-q', '--', 'cr/ABC/[ab].json')
+        g(b, '-c', 'core.quotePath=false', 'commit', '-qm', 'local deletion of a file named like a pattern')
         put(b, 'cr/ABC/pending.json', '{"p": 1}\n')
         # the rewrite: same tree, a new history, force-pushed; then another pilot writes on the new history
         g(a, 'checkout', '-q', '--orphan', 'new')
@@ -871,7 +877,8 @@ def i15(c):
         c.ok(st['rewritten'] and st['divergence']['level'] == 'alert' and any(x['code'] == 'rewritten' for x in st['divergence']['reasons']),
              json.dumps(st['divergence']), 'the status says it, as an alert')
         p = D.rewritten_plan(str(b))
-        c.eq((p['ok'], p['rewritten'], p['commits'], p['files'], p['kept']), (True, True, 3, ['cr/ABC/a.json', 'cr/ABC/pending.json'], ['notes.txt']),
+        c.eq((p['ok'], p['rewritten'], p['commits'], sorted(p['files']), sorted(p['kept'])),
+             (True, True, 4, ['cr/ABC/[ab].json', 'cr/ABC/a.json', 'cr/ABC/pending.json'], ['notes.txt', 'outils/mémo é.txt']),
              'the plan: the workstation’s commits since the common state (the refused pass committed the change in progress), the pool files carried, the file outside the pool kept',
              what='plan')
         c.eq(D.rewritten_resume(str(b), 'ab1').get('ok'), False, 'an invalid trigram is refused', what='trigram')
@@ -883,9 +890,14 @@ def i15(c):
         c.ok(r['ok'] and r['pushed'], json.dumps(r, ensure_ascii=False)[:300], 'the next pass receives the new history and sends')
         g(tmp, 'clone', '-q', str(bare), str(v))
         got = {k: (v / k).read_text(encoding='utf-8') if (v / k).exists() else None
-               for k in ('cr/ABC/a.json', 'cr/ABC/pending.json', 'cr/XYZ/new.json', 'notes.txt', 'raw/source.bin')}
-        c.eq(got, {'cr/ABC/a.json': '{"v": 2}\n', 'cr/ABC/pending.json': '{"p": 1}\n', 'cr/XYZ/new.json': '{"n": 1}\n', 'notes.txt': 'socle\n',
-                   'raw/source.bin': None}, 'on the remote: the workstation’s pool files, the other pilot’s file, never the file outside the pool', what='remote')
+               for k in ('cr/ABC/a.json', 'cr/ABC/b.json', 'cr/ABC/[ab].json', 'cr/ABC/pending.json', 'cr/XYZ/new.json', 'notes.txt',
+                         'outils/mémo é.txt', 'raw/source.bin')}
+        c.eq(got, {'cr/ABC/a.json': '{"v": 2}\n', 'cr/ABC/b.json': '{"b": 1}\n', 'cr/ABC/[ab].json': None, 'cr/ABC/pending.json': '{"p": 1}\n',
+                   'cr/XYZ/new.json': '{"n": 1}\n', 'notes.txt': 'socle\n', 'outils/mémo é.txt': None, 'raw/source.bin': None},
+             'on the remote: the workstation’s pool files (a name like a pattern deleted alone, its look-alikes kept), the other pilot’s file, '
+             'never a file outside the pool', what='remote')
+        c.eq([(b / 'notes.txt').read_text(encoding='utf-8'), (b / 'outils' / 'mémo é.txt').read_text(encoding='utf-8')],
+             ['local, never pushed\n', 'mon mémo\n'], 'the files outside the pool are copied back into data/ as they were, never sent', what='copied back')
         c.eq(g(b, 'merge-base', 'origin/main', refs[0])[0], 1, 'the old history is never pushed back (no common ancestor with the remote)',
              what='old history on the remote')
         c.ok(not D.status(str(b))['rewritten'] and D.rewritten_plan(str(b), fetch=False)['rewritten'] is False, '', 'afterwards: nothing to take up')

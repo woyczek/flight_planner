@@ -1857,3 +1857,8 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - No common state (a workstation that never synced after the raw sources left): refused, `data/` untouched.
   - noreg I15 on a rewritten trial repository (refusal, status, plan, trigram, take-up, next pass, remote content, old
     history never pushed back).
+  - Security review of 6ba742877 (acceptable): every path of the take-up is a file name, never a pattern
+    (`GIT_LITERAL_PATHSPECS`: a pool file named `[ab].json` deleted here no longer deletes `a.json` and `b.json`); names read
+    with `diff -z` (an accented name is no longer quoted with escaped bytes); a file outside the pool that this computer
+    had committed since the common state is copied back into `data/` as it was (bytes from the reference), never committed
+    — the pilot types no git; the plan says it ×4 (I15: a pattern-like name, an accented name outside the pool).

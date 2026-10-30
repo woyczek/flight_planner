@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Taking up a rewritten history, security review** (`tools/data_sync.py`, `frame/settings/launcher.js`; SYNCHRONISATION
+  § 10, frame DECISIONS; noreg I15): paths are file names, never patterns; accented names read as they are; a file outside
+  the synchronised data that this computer had committed is copied back into `data/`, never sent, and the plan says so ×4.
 - **Map: choosing on the map in one pane, the selection kept, one trip back to Fuel** (`modules/maps/choose.js`, `texts.js`,
   `style.js`, `sheet_view.js`; help ×4, maps SPEC § 5.1, DECISIONS; noreg D60, D62; V3 § 10.30, after the first group tests:
   "sa version Sur la carte n'est pas convaincante"). The pane lists the side's families at once — runway, SID or STAR,

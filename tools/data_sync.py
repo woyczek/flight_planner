@@ -702,10 +702,17 @@ def _tree_match(data, target):
     return None
 
 
+def _changed_names(data, a, b):
+    """Chemins changés entre deux commits, tels quels (-z : ni guillemets ni octets échappés pour un nom accentué)."""
+    _, out = git(data, 'diff', '-z', '--name-only', a, b)
+    return [x for x in out.split('\0') if x.strip()]
+
+
 def rewritten_plan(data, fetch=True, env=None):
     """Ce que ferait la reprise du nouvel historique, sans rien changer : { ok, rewritten, commits (de ce poste depuis
     l'état commun), files (du pool, reportés), kept (hors du pool : jamais repoussés, gardés dans la référence de
-    sauvegarde), pending (fichiers du pool pas encore commités, commités d'abord), message }."""
+    sauvegarde puis recopiés dans data/ tels que sur ce poste), pending (fichiers du pool pas encore commités, commités
+    d'abord), message }."""
     res = {'ok': False, 'rewritten': False, 'commits': 0, 'files': [], 'kept': [], 'pending': 0}
     if not is_repo(data):
         return {**res, 'message': 'data/ n’est pas un dépôt git (ou git est absent).'}
@@ -725,8 +732,7 @@ def rewritten_plan(data, fetch=True, env=None):
         return {**res, 'rewritten': True, 'message': 'Aucun état commun entre ce poste et le nouvel historique : reprise impossible '
                 'ici (les fichiers de data/ sont intacts).'}
     old, _new = m
-    _, names = git(data, 'diff', '--name-only', old, 'HEAD')
-    files = [x for x in names.splitlines() if x.strip()]
+    files = _changed_names(data, old, 'HEAD')
     _, n = git(data, 'rev-list', '--count', '--no-merges', f'{old}..HEAD')
     return {**res, 'ok': True, 'rewritten': True, 'commits': int(n or 0), 'files': [x for x in files if in_pool(x)],
             'kept': [x for x in files if not in_pool(x)], 'pending': len(pool_changes(data)), 'message': ''}
@@ -736,24 +742,27 @@ def rewritten_resume(data, author, name=''):
     """Geste « Reprendre le nouvel historique » : les fichiers du pool de ce poste commités d'abord ; l'ancienne branche
     gardée dans refs/sog/avant-reecriture-<date> (rien n'est supprimé) ; la branche posée sur l'état commun du nouvel
     historique (reset --keep : fichiers du poste hors du pool intacts) ; les fichiers du pool que ce poste avait changés
-    depuis cet état y sont reportés en un commit ; un fichier hors du pool n'est jamais repoussé. La synchronisation
-    suivante reçoit le reste du nouvel historique (fusion fiche par fiche) et envoie. Rend le plan, plus { ref, moved }."""
+    depuis cet état y sont reportés en un commit ; un fichier hors du pool n'est jamais repoussé : celui que ce poste avait
+    commité depuis l'état commun est recopié dans data/ tel quel, hors suivi ou modifié, jamais commité (le pilote ne tape
+    pas de git). Chaque chemin est un nom de fichier, jamais un motif (GIT_LITERAL_PATHSPECS). La synchronisation suivante
+    reçoit le reste du nouvel historique (fusion fiche par fiche) et envoie. Rend le plan, plus { ref, moved, copied }."""
     if not re.fullmatch(r'[A-Z0-9]{2,5}', author or ''):
         return {'ok': False, 'message': 'Trigramme de l’auteur manquant ou invalide.'}
     who, env = _identity(author, name)
     plan = rewritten_plan(data, env=env)
     if not plan.get('ok') or not plan.get('rewritten'):
         return plan
-    res = {**plan, 'committed': 0, 'refused': [], 'ref': '', 'moved': 0}
+    res = {**plan, 'committed': 0, 'refused': [], 'ref': '', 'moved': 0, 'copied': 0}
     _commit_local(data, who, env, res, f'Synchronisation {author}')
+    lit = dict(env or git_env(), GIT_LITERAL_PATHSPECS='1')  # « [ab].json » est un nom, jamais un motif
     target = _target(data)[0]
     old, new = _tree_match(data, target)
     ref = f'refs/sog/avant-reecriture-{time.strftime("%Y%m%d-%H%M%S")}'
     git(data, 'update-ref', ref, 'HEAD', check=True)
     res['ref'] = ref
-    _, names = git(data, 'diff', '--name-only', old, ref)
-    pool = [x for x in names.splitlines() if x.strip() and in_pool(x)]
-    res['kept'] = [x for x in names.splitlines() if x.strip() and not in_pool(x)]
+    names = _changed_names(data, old, ref)
+    pool = [x for x in names if in_pool(x)]
+    res['kept'] = [x for x in names if not in_pool(x)]
     code, out = git(data, 'reset', '--keep', new)
     if code:
         return {**res, 'ok': False, 'message': 'Reprise refusée : des fichiers de ce poste seraient écrasés '
@@ -761,18 +770,29 @@ def rewritten_resume(data, author, name=''):
     try:
         for p in pool:
             if git(data, 'cat-file', '-e', f'{ref}:{p}')[0] == 0:
-                git(data, 'checkout', ref, '--', p, check=True)
+                git(data, 'checkout', ref, '--', p, env=lit, check=True)
             else:
-                git(data, 'rm', '-q', '--ignore-unmatch', '--', p, check=True)
+                git(data, 'rm', '-q', '--ignore-unmatch', '--', p, env=lit, check=True)
         if git(data, 'diff', '--cached', '--quiet')[0]:
             git(data, *who, 'commit', '-m', f'Reprise après réécriture de l’historique ({author}) : {len(pool)} fichier(s)', env=env, check=True)
             res['moved'] = len(pool)
+        # fichiers hors du pool commités par ce poste depuis l'état commun : recopiés tels quels (octets), jamais commités
+        for p in res['kept']:
+            full = data_path(data, p)
+            if not full or git(data, 'cat-file', '-e', f'{ref}:{p}')[0]:
+                continue
+            r = subprocess.run(git_cmd('-C', data, 'cat-file', 'blob', f'{ref}:{p}'), capture_output=True, env=env or git_env(), timeout=TIMEOUT)
+            if r.returncode == 0:
+                os.makedirs(os.path.dirname(full), exist_ok=True)
+                with open(full, 'wb') as f:
+                    f.write(r.stdout)
+                res['copied'] += 1
     except RuntimeError as e:
         git(data, 'reset', '--keep', ref)  # remis comme avant le geste
         return {**res, 'ok': False, 'message': f'Reprise interrompue ({_why(e, data)[-200:]}) : data/ remis comme avant.'}
     res.update(ok=True, rewritten=False, message=f'Nouvel historique repris : {res["moved"]} fichier(s) de ce poste reportés ; ancien '
-               f'état gardé dans {ref}.' + (f' {len(res["kept"])} fichier(s) hors des données synchronisées gardés '
-                                            'seulement dans cette référence, jamais envoyés.' if res['kept'] else ''))
+               f'état gardé dans {ref}.' + (f' {res["copied"]} fichier(s) hors des données synchronisées recopiés dans data/ tels '
+                                            'quels, jamais envoyés.' if res['copied'] else ''))
     return res
 
 

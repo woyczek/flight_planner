@@ -49,10 +49,10 @@
       'Neue Historie übernehmen? {c} Commit(s) dieses Rechners, {n} Datendatei(en) auf die neue Historie übertragen, {p} laufende Änderung(en) zuerst committet{k}. Der alte Stand bleibt in einer lokalen Referenz; nichts wird gelöscht. Danach eine Synchronisation.',
       '¿Retomar el nuevo historial? {c} commit(s) de este equipo, {n} archivo(s) de datos trasladados al nuevo historial, {p} cambio(s) en curso confirmados antes{k}. El estado anterior queda guardado en una referencia local; no se borra nada. Luego una sincronización.'
     ],
-    histKept: [' ; {k} fichier(s) hors des données synchronisées gardés seulement dans la référence locale, jamais envoyés',
-      '; {k} file(s) outside the synchronised data kept only in the local reference, never sent',
-      '; {k} Datei(en) außerhalb der synchronisierten Daten bleiben nur in der lokalen Referenz, nie gesendet',
-      '; {k} archivo(s) fuera de los datos sincronizados se quedan solo en la referencia local, nunca enviados'
+    histKept: [' ; {k} fichier(s) hors des données synchronisées recopiés dans data/ tels que sur ce poste, jamais envoyés',
+      '; {k} file(s) outside the synchronised data copied back into data/ as they are on this computer, never sent',
+      '; {k} Datei(en) außerhalb der synchronisierten Daten werden so, wie sie auf diesem Rechner sind, wieder in data/ kopiert, nie gesendet',
+      '; {k} archivo(s) fuera de los datos sincronizados se copian de nuevo en data/ tal como están en este equipo, nunca enviados'
     ],
     histDone: ['Nouvel historique repris : {n} fichier(s) reportés, puis synchronisé.',
       'New history taken up: {n} file(s) carried over, then synchronised.',
