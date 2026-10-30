@@ -933,6 +933,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 81 | Refactor R-F4b: procedure ends computed once (ddf10e3b8) | acceptable |
 | 82 | Data module: « Update everything » chain (3a908fa44) | acceptable |
 | 83 | Refactor R-C4: the launcher publishes its route table (d3fa3614a) | acceptable; no route changed audience |
+| 84 | Map choose pane (c47470399); data repository's provider read from its address (48079d78f) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1765,6 +1766,12 @@ freeze the relay's routes as they are today — `GET status`, `GET changes`, `GE
 `POST batch`, `POST sync`, `POST net`, `POST ivao/oauth/start`, `POST ivao/oauth/revoke` — so that any other route marked
 `relay=True` fails the case; and justify each `lan` route that is not open to the relay (the Little Navmap sheets, the
 simulator's position).
+
+**84. Choose pane (c47470399) and the data repository's provider (48079d78f) — acceptable.** `providerOf` goes through
+`parseRepo`, which drops any user part (https, ssh, git, and the user of `git@host:`), requires a plain host and project,
+and rebuilds the web address from those two only: a `user:token@` can never come back. The provider is a closed list;
+the project and its link are escaped (a link only for https, `noopener`); the « Pilots' tokens » link is internal. The
+exported configuration carries the repository and the provider, never a token. The map commit is layout only.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
