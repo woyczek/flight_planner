@@ -2143,3 +2143,21 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
 - **Confinement**: purge walks only the root of `sia/`, `openaip/`, `aixm5/`, `geojson/` and `zones/<zone>/` (and `local/eaip/` for caches), follows no link or junction, and
   re-checks each file resolves under the real `data/sia` or `data/local` before removing it. `sia/base/` and `proc/` are never walked.
 - **Bench**: K52 to K56 (`tests/v3/cases/base_sources.py`); no test downloads anything.
+
+## 30 October 2026 — openAIP aerodromes carry their runways (parser version 20)
+
+- **Why**: the zones compiled from openAIP had only `elev`, `icao`, `id`, `lat`, `lon`, `name`, `public`, `type` per aerodrome, while France (SIA) had
+  `bearing`, `hardLen`, `water`, `magVar` (the Map draws the runway axis and ranks the symbols with them). The export has per runway `designator`,
+  `trueHeading`, `mainRunway`, `surface.mainComposite`, `dimension.length`, and per aerodrome `magneticDeclination`.
+- **Rule** (`AeroSources.geojson` → `oaRunways`, table `OA_SURFACE` in the same file): `runways` = [{ `id`, `trueHdg`, `lengthM`, `surface`
+  (`hard` \| `soft` \| `water` \| `unknown`), `main` }], one per runway end as exported; `bearing` = `trueHdg` of the main runway (the flagged ones,
+  else all; the longest, the first on a tie) modulo 180; `hardLen` = longest hard runway (0 with runways but none hard, as France); `water`;
+  `magVar` = `magneticDeclination` (also for an aerodrome without runway). No runway: the four runway fields are absent, not zero. The hard classes are
+  the SIA reader's (asphalt, concrete, bitumen, macadam); a code the table does not know is `unknown`.
+- **Not done**: no threshold (openAIP's `thresholdLocation` exists on 85 runways of 10,398 only); `controlled` / `afis` / `state`; and `aerodb.runways(icao)`
+  does not yet fall back on these runways when the aerodrome has no procedure file, because `aerodromes({ icao })` answers from the light index
+  (`aeroindex.json`) whose items carry no `runways`: the fallback needs either a `runways` column in the index or a read of the zone's
+  `aerodromes.json` for that one code. A separate lot.
+- **Parser version 19 → 20** (`COMPAT` stays 14): the builder's output changed, not the format; zones built with 19 show as outdated until rebuilt.
+  `aerodromes.json` grows by about 100 bytes per runway end (10,398 ends in the 6,656 openAIP aerodromes held).
+- **Bench**: K58 (`tests/v3/fixtures/openaip_apt_runways.geojson`, an invented export of the real shape).

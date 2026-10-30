@@ -36,6 +36,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   "via MOLBA · MOLBA 1E"), in Fuel's list as on the Map; the Map's small labels of the approaches read the list's label ("ILS 02",
   not "ILS LOC RWY 02"), the published name staying in the row's title.
 
+- **aerodb: openAIP aerodromes carry `bearing`, `hardLen`, `water`, `runways` and `magVar`; parser version 20** (`shared/aero_sources.js`, `shared/sia_base.js`, `frame/aerodb/catalogue.js`; SPEC § 2, DECISIONS 30 Oct; noreg K58) — derived from the export's runways and `magneticDeclination`, as the SIA gives them to France; zones built before show as outdated until rebuilt.
 - **Launcher: procedure jobs per State; merge, download and environment rules for every job** (`tools/regen/proc.py`,
   `tools/proc_sia.py`, `tools/regen_jobs.py`, `tools/regen/base.py`, `tools/regen/base_sources.py`; frame INTEGRATION § 15,
   DECISIONS; noreg I19, K22): `proc/fetch`, `build`, `purge` for LF (SIA eAIP) and K (FAA CIFP) — EAD States stay one

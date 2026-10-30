@@ -39,7 +39,23 @@ removed (§ 5 quinquies); the raw sources never are.
     `aerodromes.json`). Read, when the zone has one (tree listing or manifest sizes), to find an aerodrome by its code
     (`coords`, `coordsAll`, `aerodromes({ icao })`) and for `aerodromes({ bbox, lite: true })`; its items carry
     `lite: true` and no type, state nor hard runway. Everything else (the map's symbols, `find`) reads
-    `aerodromes.json`. Without the index (a base published before), `aerodromes.json` as before;
+    `aerodromes.json`. Without the index (a base published before), `aerodromes.json` as before. Since parser version 20 the
+    index's `bearing` and `magVar` are filled for the openAIP zones too (before: empty for every zone but France);
+  - **the aerodrome record** of `aerodromes.json` (`shared/aero_sources.js` `geojson` for openAIP, `shared/carto/aero_symbols.js`
+    `parseAixm` for the SIA). Common to every source: `id`, `icao`, `name`, `type` (`AD`, `HP`, `MIL`…), `lat`, `lon`, `elev`
+    (ft), `public`. The rest depends on the source and is **absent, not zero**, when the source does not give it:
+
+    | field | SIA (France, AIXM) | openAIP (every other zone) |
+    |---|---|---|
+    | `bearing` (° true: axis of the main runway) | `valTrueBrg` of the main runway (the longest hard one), else its number × 10 | `trueHeading` of the runway flagged `mainRunway` (else the longest; on a tie the first of the export), modulo 180; absent without a runway |
+    | `hardLen` (m: longest hard runway; 0 when the runways are all soft) | `valLen` of the runways whose `codeComposition` is asphalt, concrete, bitumen, macadam or paved | `dimension.length` (m; feet converted) of the runways whose `surface.mainComposite` is hard (table `OA_SURFACE`: 0 asphalt, 1 concrete, 5 bituminous, 7 macadam); absent without a runway |
+    | `water` (a seaplane runway) | `codeComposition` water | `mainComposite` 4; absent without a runway |
+    | `magVar` (° east positive) | `valMagVar` | `magneticDeclination`, when the export gives it |
+    | `runways` | – (the SIA's runway table comes with the procedures, § 5 quinquies) | [{ `id` (`designator`), `trueHdg` (true heading of that end, ° or null), `lengthM` (m or null), `surface` (`hard` \| `soft` \| `water` \| `unknown`: `OA_SURFACE`, an unknown code is `unknown`), `main` (`mainRunway`) }], one entry per runway end as in the export; absent without a runway |
+    | `controlled`, `afis`, `state` | from the units and the administrator | not derived (the export has frequencies and services, not the unit type) |
+
+    No threshold position is derived: openAIP gives a `thresholdLocation` on 85 runways out of 10,398 and the record does not keep it.
+    A zone built before parser version 20 has none of the openAIP fields; it shows as outdated until rebuilt.
   - `sia/base/cities_major.json` { `data`: towns of 100,000 inhabitants or more, the whole world }, for a place search
     outside the loaded zones;
   - `sia/base/index.json` { `zones`: { zone: { `cycle`, `prefixes` (first two letters of its aerodromes' ICAO

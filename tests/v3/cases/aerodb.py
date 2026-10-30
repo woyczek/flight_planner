@@ -3784,3 +3784,34 @@ def k51(c):
     # an answer without its error: the race named (seconds waited, the browser's exit code, the lines it wrote)
     c.eq(got, {k: (True, [], False) for k in hostile}, 'every hostile claim answer: an error said, no data file read, never « started »',
          what='hostile' + ''.join(f' — {k}: {race.get(k)}' for k, v in got.items() if not v[0]))
+
+
+@case('K58', 'openAIP aerodromes: runways, bearing, hardLen and magVar derived like the SIA gives them to France', 'K', tags=('aerodb',), phone=False,
+      rule='aerodb SPEC 2 (aerodrome fields, parser version 20): bearing, hardLen, water, runways and magVar come from the openAIP runways and magneticDeclination; a terrain without runways carries none of the runway fields')
+def k58(c):
+    import json
+    fx = json.loads((ROOT / 'tests' / 'v3' / 'fixtures' / 'openaip_apt_runways.geojson').read_text(encoding='utf-8'))
+    c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
+    c.page.wait_for_function('!!window.AeroSources', timeout=30000)
+    got = c.js('(fx) => Object.fromEntries(window.AeroSources.geojson(fx, "es_apt.geojson").aero.aerodromes.map(a => [a.icao, a]))', fx)
+    c.eq(sorted(got), ['LEEL', 'LEMG', 'LENM', 'LENR', 'LESP', 'LETV'], 'the six invented terrains are read', what='terrains')
+    pick = lambda a, *ks: {k: a.get(k) for k in ks}
+    # main runway flagged (two ends): the axis of the first flagged end, modulo 180; the hard length is the longest hard runway; feet become metres
+    tv = got['LETV']
+    c.eq(pick(tv, 'bearing', 'hardLen', 'water', 'magVar', 'public'), {'bearing': 92, 'hardLen': 2400, 'water': False, 'magVar': 1.25, 'public': True}, 'LETV: axis of 09, 2400 m hard, declination', what='LETV')
+    c.eq([[r['id'], r['trueHdg'], r['lengthM'], r['surface'], r['main']] for r in tv['runways']],
+         [['03', 32, 900, 'soft', False], ['09', 92, 2400, 'hard', True], ['14', 140, 914, 'soft', False], ['21', 212, 900, 'soft', False], ['27', 272, 2400, 'hard', True]],
+         'one entry per end, in the export order: true heading, length in metres (3000 ft = 914 m), surface class, main flag', what='LETV runways')
+    # the flagged runway wins over a longer one; hardLen ignores the flag; an unknown or missing surface code is « unknown »
+    mg = got['LEMG']
+    c.eq(pick(mg, 'bearing', 'hardLen', 'magVar'), {'bearing': 50, 'hardLen': 1500, 'magVar': -0.5}, 'LEMG: axis of the flagged grass runway, hard length of the longer asphalt one', what='LEMG')
+    c.eq([r['surface'] for r in mg['runways']], ['hard', 'soft', 'unknown', 'unknown'], 'surface classes: asphalt, grass, code 22, a code the table does not know', what='LEMG surfaces')
+    # no runway flagged: the longest; 250 -> 70; a zero declination is a declination
+    nm = got['LENM']
+    c.eq(pick(nm, 'bearing', 'hardLen', 'magVar'), {'bearing': 70, 'hardLen': 1800, 'magVar': 0}, 'LENM: no flag, the longest runway (25), heading 250 gives 70', what='LENM')
+    # water: no hard length, the water flag, 180 gives 0, no declination given: no magVar
+    sp = got['LESP']
+    c.eq((pick(sp, 'bearing', 'hardLen', 'water'), 'magVar' in sp, sp['runways'][0]['surface']), ({'bearing': 0, 'hardLen': 0, 'water': True}, False, 'water'), 'LESP: water runway', what='LESP')
+    # no runway: the runway fields are absent (not zero), the declination is still carried; an empty list is the same
+    c.eq((sorted(set(got['LENR']) & {'bearing', 'hardLen', 'water', 'runways'}), got['LENR'].get('magVar'), got['LENR']['public']), ([], -0.5, False), 'LENR: no runway fields, declination kept', what='LENR')
+    c.eq(sorted(set(got['LEEL']) & {'bearing', 'hardLen', 'water', 'runways', 'magVar'}), [], 'LEEL: an empty list of runways and no declination give none of the fields', what='LEEL')

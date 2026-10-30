@@ -1,0 +1,74 @@
+{
+  "type": "FeatureCollection",
+  "name": "openAIP apt export, invented: terrains of the runway cases (K52); the shape of the real export (es_apt.geojson), no real aerodrome",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-3.5, 40.5] },
+      "properties": {
+        "_id": "t1", "name": "TESTVILLE", "type": 0, "trafficType": 0, "icaoCode": "LETV", "private": false,
+        "elevation": { "value": 600, "unit": 0 }, "magneticDeclination": 1.25,
+        "runways": [
+          { "designator": "03", "trueHeading": 32, "mainRunway": false, "surface": { "mainComposite": 2 }, "dimension": { "length": { "value": 900, "unit": 0 } } },
+          { "designator": "09", "trueHeading": 92, "mainRunway": true, "surface": { "mainComposite": 1 }, "dimension": { "length": { "value": 2400, "unit": 0 } } },
+          { "designator": "14", "trueHeading": 140, "mainRunway": false, "surface": { "mainComposite": 2 }, "dimension": { "length": { "value": 3000, "unit": 1 } } },
+          { "designator": "21", "trueHeading": 212, "mainRunway": false, "surface": { "mainComposite": 2 }, "dimension": { "length": { "value": 900, "unit": 0 } } },
+          { "designator": "27", "trueHeading": 272, "mainRunway": true, "surface": { "mainComposite": 1 }, "dimension": { "length": { "value": 2400, "unit": 0 } } }
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-3.4, 40.6] },
+      "properties": {
+        "_id": "t2", "name": "MAINGRASS", "type": 0, "trafficType": 0, "icaoCode": "LEMG", "private": false,
+        "elevation": { "value": 300, "unit": 0 }, "magneticDeclination": -0.5,
+        "runways": [
+          { "designator": "12", "trueHeading": 120, "mainRunway": false, "surface": { "mainComposite": 0 }, "dimension": { "length": { "value": 1500, "unit": 0 } } },
+          { "designator": "05", "trueHeading": 50, "mainRunway": true, "surface": { "mainComposite": 2 }, "dimension": { "length": { "value": 700, "unit": 0 } } },
+          { "designator": "01", "trueHeading": 10, "mainRunway": false, "surface": { "mainComposite": 22 }, "dimension": { "length": { "value": 400, "unit": 0 } } },
+          { "designator": "19", "trueHeading": 190, "mainRunway": false, "surface": { "mainComposite": 99 }, "dimension": { "length": { "value": 400, "unit": 0 } } }
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-3.3, 40.7] },
+      "properties": {
+        "_id": "t3", "name": "NOMAIN", "type": 0, "trafficType": 0, "icaoCode": "LENM", "private": false,
+        "elevation": { "value": 100, "unit": 0 }, "magneticDeclination": 0,
+        "runways": [
+          { "designator": "07", "trueHeading": 70, "mainRunway": false, "surface": { "mainComposite": 2 }, "dimension": { "length": { "value": 800, "unit": 0 } } },
+          { "designator": "25", "trueHeading": 250, "mainRunway": false, "surface": { "mainComposite": 0 }, "dimension": { "length": { "value": 1800, "unit": 0 } } }
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-3.2, 40.8] },
+      "properties": {
+        "_id": "t4", "name": "SEAPLANE", "type": 0, "trafficType": 0, "icaoCode": "LESP", "private": false,
+        "elevation": { "value": 0, "unit": 0 },
+        "runways": [
+          { "designator": "18", "trueHeading": 180, "mainRunway": true, "surface": { "mainComposite": 4 }, "dimension": { "length": { "value": 1500, "unit": 0 } } }
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-3.1, 40.9] },
+      "properties": {
+        "_id": "t5", "name": "NORUNWAY", "type": 0, "trafficType": 0, "icaoCode": "LENR", "private": true,
+        "elevation": { "value": 50, "unit": 0 }, "magneticDeclination": -0.5
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-3.0, 41.0] },
+      "properties": {
+        "_id": "t6", "name": "EMPTYLIST", "type": 0, "trafficType": 0, "icaoCode": "LEEL", "private": false,
+        "elevation": { "value": 50, "unit": 0 }, "runways": []
+      }
+    }
+  ]
+}

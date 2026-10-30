@@ -574,6 +574,63 @@
     7: 'VOR',
     8: 'VOR'
   };
+  // openAIP : revêtement principal d'une piste (surface.mainComposite) -> classe de la base. « hard » = revêtu comme le fait le
+  // lecteur du SIA (HARD : asphalte, béton, bitume, macadam) ; « water » = plan d'eau ; « unknown » = revêtement inconnu (22) ;
+  // tout autre code (herbe, sable, brique, pierre, gravier, terre, glace, neige, laminé, métal, tapis, acier perforé, bois, mélange
+  // non bitumineux) est « soft ». Un code absent de la table reste « unknown » : on ne devine pas.
+  const OA_SURFACE = {
+    0: 'hard', // asphalte
+    1: 'hard', // béton
+    2: 'soft', // herbe
+    3: 'soft', // sable
+    4: 'water', // eau
+    5: 'hard', // bitume ou goudron (huilé)
+    6: 'soft', // brique
+    7: 'hard', // macadam
+    8: 'soft', // pierre
+    9: 'soft', // corail
+    10: 'soft', // argile
+    11: 'soft', // latérite
+    12: 'soft', // gravier
+    13: 'soft', // terre
+    14: 'soft', // glace
+    15: 'soft', // neige
+    16: 'soft', // laminé de protection (caoutchouc)
+    17: 'soft', // métal
+    18: 'soft', // tapis portable
+    19: 'soft', // acier perforé
+    20: 'soft', // bois
+    21: 'soft', // mélange non bitumineux
+    22: 'unknown'
+  };
+  /** Pistes d'un terrain openAIP (propriétés `runways`) au modèle de la base : { id (designator), trueHdg (cap vrai de cette
+   *  extrémité, ° ou null), lengthM (m ou null), surface ('hard' | 'soft' | 'water' | 'unknown'), main (mainRunway) }, une entrée par
+   *  extrémité comme dans l'export. Rend aussi les champs que le SIA donne au terrain : bearing (axe de la piste principale, cap vrai
+   *  modulo 180 : la piste portée `mainRunway`, sinon la plus longue ; à longueur égale la première de l'export), hardLen (la plus longue
+   *  piste en dur, 0 sans), water (une piste sur l'eau). Un terrain sans piste (ou sans designator) : {} et les champs restent absents. */
+  function oaRunways(p) {
+    const list = (Array.isArray(p.runways) ? p.runways : []).filter(r => r && r.designator).map(r => {
+      const len = r.dimension?.length,
+        m = len && Number.isFinite(+len.value) ? +len.value * (len.unit === 1 ? .3048 : 1) : null;
+      return {
+        id: String(r.designator),
+        trueHdg: Number.isFinite(r.trueHeading) ? Math.round(r.trueHeading) : null,
+        lengthM: m == null ? null : Math.round(m),
+        surface: OA_SURFACE[r.surface?.mainComposite] || 'unknown',
+        main: !!r.mainRunway
+      };
+    });
+    if (!list.length) return {};
+    const pool = list.some(r => r.main) ? list.filter(r => r.main) : list,
+      lead = pool.reduce((a, r) => (r.lengthM || 0) > (a.lengthM || 0) ? r : a),
+      out = {
+        runways: list,
+        hardLen: Math.max(0, ...list.filter(r => r.surface === 'hard').map(r => r.lengthM || 0)),
+        water: list.some(r => r.surface === 'water')
+      };
+    if (lead.trueHdg != null) out.bearing = lead.trueHdg % 180;
+    return out;
+  }
   /** Limite verticale openAIP ({ value, unit, referenceDatum } codés) au format de la base ; '' si absente. */
   const oaLimit = l => l ? limit(l.value, {
     0: 'M',
@@ -644,7 +701,12 @@
             lat,
             lon,
             elev: p.elevation ? Math.round(toFt(p.elevation.value, p.elevation.unit === 0 ? 'M' : 'FT')) : null,
-            public: !p.private
+            public: !p.private,
+            // déclinaison magnétique du terrain (° positifs à l'est, comme valMagVar du SIA) et pistes (bearing, hardLen, water, runways)
+            ...(Number.isFinite(p.magneticDeclination) ? {
+              magVar: p.magneticDeclination
+            } : {}),
+            ...oaRunways(p)
           });
         } else if (pointOf(g) && p.identifier !== undefined) {
           const [lat, lon] = pointOf(g),
