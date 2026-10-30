@@ -1260,12 +1260,17 @@ def _ch_open(c, cur, side='arr', icao='LFML', extra=(), file=None):
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     c.until("() => !!(window.__mp.S && window.__mp.S.choose && window.__mp.S.choose.ready && window.__mp.S.toC)", timeout=12000, what='the choose mode is ready')
+    # the pane drawn (its groups and the selection at the top), not only the mode's state: under load the sheet comes a moment later
+    c.until("() => document.querySelectorAll('.mp-ch-grp').length >= 2 && !!document.querySelector('.mp-ch-sums')", timeout=12000, what='the pane is drawn')
     c.js(_CH_HASH)
     return f
 
 
 def _grp(r, fam):
-    return next((g for g in r['groups'] if g['fam'] == fam), None)
+    g = next((g for g in r['groups'] if g['fam'] == fam), None)
+    if g is None:
+        raise Fail(f"no group {fam!r} in the pane: {[x['fam'] for x in r['groups']]}", f'the group {fam}', 'the pane')
+    return g
 
 
 def _back(c, how):
@@ -1335,9 +1340,9 @@ def d60(c):
     # the runway changed: S3A does not serve 13 (13 is folded under "All") — the line offers the first STAR of the group that does
     c.ok(not c.count('.mp-ch-row[data-fam="rwy"][data-id="13"]'), 'runway 13 shown', 'S3A chosen: only the runway it serves is shown')
     c.tap('.mp-ch-fold[data-more="rwy"]')
-    c.until("() => !!document.querySelector('.mp-ch-row[data-fam=\"rwy\"][data-id=\"13\"]')", what='the runways unfold')
+    c.until("() => !!document.querySelector('.mp-ch-row[data-fam=\"rwy\"][data-id=\"13\"]')", timeout=10000, what='the runways unfold')
     c.tap('.mp-ch-row[data-fam="rwy"][data-id="13"]')
-    c.until("() => !!document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-fix')", what='the correction line under the STARs')
+    c.until("() => !!document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-fix')", timeout=10000, what='the correction line under the STARs')
     r = c.js(_CH_ROWS)
     g = _grp(r, 'star')
     serving13 = [x['id'] for x in g['rows'] if x['id'] not in (None, 'none') and re.search(r'S[24689]A', x['text'])]
@@ -1345,14 +1350,14 @@ def d60(c):
     c.ok(norm(tx(M, 'chNotServes', c.lang).replace('{p}', 'S3A').replace('{r}', '13')) in norm(g['fix']), g['fix'], '"S3A ne sert pas la 13 — Choisir …"')
     c.ok(any(x['id'] == s3 and '⚠' in x['text'] for x in g['rows']), f"{g['rows']}", 'S3A keeps its ⚠ meanwhile')
     c.tap('.mp-ch-grp[data-fam=star] [data-fix]')
-    c.until("() => !document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-fix')", what='the STAR is replaced, the line goes')
+    c.until("() => !document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-fix')", timeout=10000, what='the STAR is replaced, the line goes')
     star13 = serving13[0]
     # an approach that serves 31 only while 13 is chosen: "I31 sert la 31 — Passer en 31", one tap sets the runway
     i31 = 'LFML.APP.I31.RW31.NONE'
     c.tap('.mp-ch-fold[data-more="app"]')           # I31 does not fit runway 13: folded
-    c.until(f"() => !!document.querySelector('.mp-ch-row[data-id=\"{i31}\"]')", what='the approaches unfold')
+    c.until(f"() => !!document.querySelector('.mp-ch-row[data-id=\"{i31}\"]')", timeout=10000, what='the approaches unfold')
     c.tap(f'.mp-ch-row[data-id="{i31}"]')
-    c.until("() => !!document.querySelector('.mp-ch-grp[data-fam=app] .mp-ch-fix')", what='the correction line under the approaches')
+    c.until("() => !!document.querySelector('.mp-ch-grp[data-fam=app] .mp-ch-fix')", timeout=10000, what='the correction line under the approaches')
     g = _grp(c.js(_CH_ROWS), 'app')
     c.eq([g['fixFam'], g['fixVal']], ['rwy', '31'], 'the line offers runway 31', what='proposed runway')
     c.ok(norm(tx(M, 'chServes', c.lang).replace('{p}', 'I31').replace('{r}', '31')) in norm(g['fix']), g['fix'], '"I31 sert la 31 — Passer en 31"')
@@ -1381,7 +1386,7 @@ def d60(c):
     # "Aucune" is a choice; a family left untouched has no key
     _ch_open(c, {'rwy': '31'})
     c.tap('.mp-ch-grp[data-fam=star] .mp-ch-row[data-id="none"]')
-    c.until("() => document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-none').getAttribute('aria-pressed') === 'true'", what='"Aucune" pressed')
+    c.until("() => document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-none').getAttribute('aria-pressed') === 'true'", timeout=10000, what='"Aucune" pressed')
     c.eq(_back(c, 'done'), {'focus': 'arr', 'star': 'none'}, '"Aucune" is none; the runway and the approach, untouched, have no key', what='keys')
     _ch_open(c, {'rwy': '31'})
     c.eq(_back(c, 'done'), {'focus': 'arr'}, 'nothing touched: back to Fuel on the side, without keys', what='keys')
@@ -1626,20 +1631,20 @@ def d66(c):
     c.ok(norm(fam['text']).startswith('OKRI5') and '13' in fam['text'] and '31' in fam['text'], fam['text'], 'the row "OKRI5" carries its runways as tags')
     # the family first: no record yet, the selection says the family and its runways
     c.tap('.mp-ch-row[data-id="fam:OKRI5"]')
-    c.until("() => !!document.querySelector('.mp-ch-sum[data-fam=star]')", what='the family in the selection')
+    c.until("() => !!document.querySelector('.mp-ch-sum[data-fam=star]')", timeout=10000, what='the family in the selection')
     c.eq(dict(c.js(_CH_ROWS)['sums']).get('star'), 'OKRI5 · 13/31', 'the family and its runways while the runway is open', what='summary')
     # the runway resolves it
     c.tap('.mp-ch-row[data-fam="rwy"][data-id="31"]')
-    c.until("() => (document.querySelector('.mp-ch-sum[data-fam=star] .mp-ch-sum-v') || {}).textContent === 'OKRI5L'", what='the record of the family is resolved')
+    c.until("() => (document.querySelector('.mp-ch-sum[data-fam=star] .mp-ch-sum-v') || {}).textContent === 'OKRI5L'", timeout=10000, what='the record of the family is resolved')
     # the approach, then its transition
     i31 = 'LFML.APP.I31.RW31.NONE'
     c.tap(f'.mp-ch-row[data-id="{i31}"]')
-    c.until("() => !!document.querySelector('.mp-ch-subs')", what='the transitions under the chosen approach')
+    c.until("() => !!document.querySelector('.mp-ch-subs')", timeout=10000, what='the transitions under the chosen approach')
     subs = c.js("() => [...document.querySelectorAll('.mp-ch-subs .mp-ch-row')].map(b => [b.dataset.id, b.textContent.trim()])")
     c.eq(norm(subs[0][1]), norm(tx(M, 'chNoTrans', c.lang)), '"No transition" first', what='first sub-row')
     c.eq([norm(x[1]) for x in subs[1:]], ['via IAF1'], 'then the transition by its entry (transitionLabelOf)', what='sub-rows')
     c.tap('.mp-ch-subs .mp-ch-row[data-id="LFML.APP.I31.RW31.IAF1"]')
-    c.until("() => /IAF1/.test((document.querySelector('.mp-ch-sum[data-fam=app] .mp-ch-sum-v') || {}).textContent || '')", what='the summary of the approach')
+    c.until("() => /IAF1/.test((document.querySelector('.mp-ch-sum[data-fam=app] .mp-ch-sum-v') || {}).textContent || '')", timeout=10000, what='the summary of the approach')
     c.eq(dict(c.js(_CH_ROWS)['sums']).get('app'), 'I31 via IAF1', 'the approach reads "I31 via IAF1"', what='summary')
     q = _back(c, 'done')
     c.eq(q, {'focus': 'arr', 'star': 'LFML.STAR.OKRI5L.RW31.NONE', 'rwy': '31', 'app': i31, 'apptrans': 'LFML.APP.I31.RW31.IAF1'},
@@ -1647,7 +1652,7 @@ def d66(c):
     # the runway first: tapping the family resolves it at once
     _ch_open(c, {'rwy': '13'}, file=_CH2_FILE)
     c.tap('.mp-ch-row[data-id="fam:OKRI5"]')
-    c.until("() => (document.querySelector('.mp-ch-sum[data-fam=star] .mp-ch-sum-v') || {}).textContent === 'OKRI5R'", what='runway 13 chosen: the family resolves to OKRI5R')
+    c.until("() => (document.querySelector('.mp-ch-sum[data-fam=star] .mp-ch-sum-v') || {}).textContent === 'OKRI5R'", timeout=10000, what='runway 13 chosen: the family resolves to OKRI5R')
 
 
 # ------------------------------------------------------------------------------------------------------ D68
@@ -1692,7 +1697,12 @@ def d68(c):
       times: [...performance.getEntriesByName('maps:draw').map(e => 'D' + Math.round(e.startTime)), ...performance.getEntriesByName('maps:follow').map(e => 'f' + Math.round(e.startTime))] })""")
     c.page.mouse.up()
     c.until("() => performance.getEntriesByName('maps:draw').length > 0", timeout=4000, what='the full drawing at rest')
-    c.eq(len(during['draws']), 0, 'no full drawing during the gesture (nothing projected again)', what=f"full drawings while panning {sorted(during['times'], key=lambda x: int(x[1:]))}")
+    # a full drawing during the drag is only the one of rest: 150 ms without movement (a loaded machine can take that long between
+    # two pointer steps) — never one following a copy closely; the copies carry the gesture
+    seq = sorted(during['times'], key=lambda x: int(x[1:]))
+    early = [t for i, t in enumerate(seq) if t[0] == 'D' and (lambda prev: prev and prev[0] == 'f' and int(t[1:]) - int(prev[1:]) < 140)(
+        next((x for x in reversed(seq[:i]) if x[0] == 'f'), None) if not (i and seq[i - 1][0] == 'D') else None)]
+    c.eq(early, [], 'no full drawing during the gesture (nothing projected again), only at rest', what=f'full drawings while panning {seq}')
     c.ok(len(during['follows']) >= 10, f"{len(during['follows'])}", 'the drawn image follows the gesture')
     worst = max(during['follows'] or [0])
     c.le(round(worst, 1), 16, 'under 16 ms of work per image of the drag', what=f'worst image {worst:.1f} ms')
@@ -1785,7 +1795,7 @@ def d70(c):
     ils = next(r for r in rows if r[1] == 'ILS 31')
     c.ok('ILS RWY 31' in ils[2], ils[2], 'the published name in the row’s title')
     c.tap(f'.mp-ch-row[data-id="{ils[0]}"]')
-    c.until("() => !!document.querySelector('.mp-ch-subs')", what='the transitions under the chosen final')
+    c.until("() => !!document.querySelector('.mp-ch-subs')", timeout=10000, what='the transitions under the chosen final')
     subs = c.js("() => [...document.querySelectorAll('.mp-ch-subs .mp-ch-row')].filter(b => b.dataset.id !== 'none').map(b => [b.dataset.id, b.querySelector('.mp-ch-name').textContent.trim(), b.style.getPropertyValue('--c')])")
     c.eq(sorted(norm(x[1]) for x in subs), ['via ABC1 · ABC 1A', 'via ODILO · ODILO 1A'], 'the SIA’s initial segments as transitions (transitionLabelOf)', what='sub-rows')
     c.ok(all(x[2] == ils[3] for x in subs), f'{subs} vs {ils[3]}', 'each transition in the hue of its final')
@@ -1853,6 +1863,7 @@ def d72(c):
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     c.until("() => !!(window.__mp.S && window.__mp.S.choose && window.__mp.S.choose.ready)", timeout=12000, what='the choose mode is ready')
+    c.until("() => !!document.querySelector('.mp-ch-grp[data-fam=star] .mp-ch-row')", timeout=12000, what='the pane is drawn')
     g = c.js("""() => { const g = document.querySelector('.mp-ch-grp[data-fam=star]');
       return { subh: ((g.querySelector('.mp-ch-subh') || {}).textContent || '').trim(),
         rows: [...g.querySelectorAll('.mp-ch-row')].filter(b => b.dataset.id !== 'none').map(b => [b.querySelector('.mp-ch-name').textContent.trim(), ((b.querySelector('.mp-ch-off') || {}).textContent || '').trim()]) } }""")

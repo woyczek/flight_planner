@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Tests: the choose-mode cases and D68 hold under load** (`tests/v3/cases/maps_recode.py`). D60 read the pane before it was drawn
+  (the mode's state is ready a moment before the sheet): the cases now wait for the pane itself, and a missing group says so;
+  their waits are 10 s. D68 checks the rule rather than a timing: a full drawing during a drag is only the one of rest (no copy
+  for 140 ms), never one closely following a copy. Ten runs of D60 under load green, six of the eight neighbours.
+
 - **Security: three gaps of the inventory closed** (`tools/launch.py`, `tools/data_sync.py`,
   `frame/store/transport_github.js`; frame DECISIONS; noreg I16): the local network's pairing accepts a code from its own
   page only; every file path given to git is a name, never a pattern; the GitHub transport, like GitLab's, never follows a
