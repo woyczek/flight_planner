@@ -480,7 +480,7 @@ after, CHANGELOG « refactor, no behaviour change », `:recycle:`, one lot at a 
   set panel driven by SETS with the base as one entry (keeping `data-build` for the tests), one job follower with one ending,
   one summary table, texts keyed by meaning, the file split by responsibility (screen, panels, follower, chain).
 - **frame/settings/admin.js**: `readEdge` / `writeEdge` / `readRunwayZoom` / `writeRunwayZoom` are one pattern on one file, and
-  settings.js reads that file twice. **Target**: one profile reader / writer by key.
+  settings.js reads that file twice. **Target**: one profile reader / writer by key. **Done (R-S2, 30 Oct)**: `readProfiles` / `writeProfiles`, one read in settings.js.
 - **Provider and host knowledge in five places** (config.js `kind` / `providerOf` / `webUrl`, join.js links, admin.js invitation
   link, access.js `/api/v4` trimmed by hand, launcher.js `providerHtml`). **Target**: one provider table in `SogConfig`, read by all.
 - **frame/settings/launcher.js**: the secrets cards (IVAO key, EAD, IVAO application) repeat one « fields emptied, call, paint

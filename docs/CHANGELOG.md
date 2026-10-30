@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-S2, no behaviour change: one reader and one writer for the airline's map profiles** (`frame/settings/admin.js`, `settings.js`; INTEGRATION § 4) — `readEdge` / `writeEdge` / `readRunwayZoom` / `writeRunwayZoom` become `readProfiles` (one `get`, `{ edge, runwayZoom }`) and `writeProfiles(c, patch)` (`{ edge: { show } }` or `{ runwayZoom }`, the rest of the file kept); the Settings screen reads the file once instead of twice; same file contents, same defaults, same messages.
 - **Update the suite: the Data module keeps answering during an update** (`tools/launch.py` `update_suite`,
   `tools/regen_jobs.py` `Jobs.hold`; Settings SPEC 9a-bis, DECISIONS; noreg I25) — Sécurisation's review of 2a02aedde.
   The plan and its fetch run outside any lock; job starts are refused (`updating`) by a flag instead of the jobs' lock,

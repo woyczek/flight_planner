@@ -50,10 +50,11 @@ Settings is part of the frame: its context is wider than a module's `ctx`.
   level is at most the device's, and a hidden module stays reachable by its address (`#id`). The level hides verbs,
   never data: a module never reads the level and never changes with it.
 
-## 4. The airline's map options written by the Administration card (`airline/map_profiles.json`, key `edge`)
+## 4. The airline's map options written by the Administration card (`airline/map_profiles.json`, keys `edge` and `runwayZoom`)
 
-The card's "Flight zone limit" panel writes one key of the file the map's threshold page already writes
-(`modules/maps/SPEC.md`, "The airline's profiles"): settings adds `edge` and leaves everything else of the file as it was
+The card's "Flight zone limit" panel and its runway-threshold line write two keys of the file the map's threshold page already writes
+(`modules/maps/SPEC.md`, "The airline's profiles"): settings adds `edge` and `runwayZoom` (one reader, `readProfiles`, one `get` of the
+file; one writer, `writeProfiles(c, patch)`, `{ edge: { show } }` or `{ runwayZoom }`) and leaves everything else of the file as it was
 (`schema`, `profiles`, any other key); the map module's own save spreads the file it read (`...cur`), so `edge` survives its
 saves too. The file is a `record` (the newest `updated_at` wins), `by` is the last writer (`settings` or `maps`).
 

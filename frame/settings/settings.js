@@ -508,8 +508,11 @@
     const focus = q.get('card') || (q.get('offline') ? 'offline' : '');
     // carte Administration (niveau Complet, ou atteinte par son adresse) : le filet de la limite de la zone du vol, option
     // enregistrée avec les seuils
-    const edgeShow = (c.level?.() || 2) === 3 || focus === 'admin' ? await P.admin.readEdge(c) : true;
-    const runwayZoom = (c.level?.() || 2) === 3 || focus === 'admin' ? await P.admin.readRunwayZoom(c) : 11;
+    // (une seule lecture du fichier des profils : le filet et le zoom des seuils de piste)
+    const {
+      edge: edgeShow,
+      runwayZoom
+    } = (c.level?.() || 2) === 3 || focus === 'admin' ? await P.admin.readProfiles(c) : P.admin.PROFILE_DEFAULTS;
     let inErr = '';
     if (q.get('config') && window.SogConfig && window.SogJoin) {
       try {

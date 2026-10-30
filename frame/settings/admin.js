@@ -107,8 +107,8 @@
     ]
   });
 
-  // profils d'affichage de la compagnie (écrits par la page des seuils du module Carte) : la clé « edge » y est la seule que
-  // cette carte écrit (frame/settings/INTEGRATION.md § 4) ; le reste du fichier est repris tel quel
+  // profils d'affichage de la compagnie (écrits par la page des seuils du module Carte) : les clés « edge » et « runwayZoom » y sont
+  // les seules que cette carte écrit (frame/settings/INTEGRATION.md § 4) ; le reste du fichier est repris tel quel
   const PROFILES = 'airline/map_profiles.json';
   let profiles = null;
   /** Adaptateur (créé une fois) qui lit et écrit les profils de carte de la compagnie. */
@@ -124,39 +124,31 @@
   const RUNWAY_MIN = 8,
     RUNWAY_MAX = 16,
     RUNWAY_DEFAULT = 11;
+  // réglages sans fichier (ou carte non montrée) : le filet affiché, le zoom par défaut
+  const PROFILE_DEFAULTS = {
+    edge: true,
+    runwayZoom: RUNWAY_DEFAULT
+  };
   /** Le zoom des seuils de piste lu dans le fichier (runwayZoom) : un entier dans les bornes, sinon la valeur par défaut. */
   const runwayZoomOf = f => Number.isInteger(f?.runwayZoom) && f.runwayZoom >= RUNWAY_MIN && f.runwayZoom <= RUNWAY_MAX ? f.runwayZoom :
     RUNWAY_DEFAULT;
-  /** Le zoom à partir duquel la carte dessine les seuils de piste, pour la compagnie (runwayZoom ; 11 par défaut). */
-  async function readRunwayZoom(c) {
-    return runwayZoomOf(await profilesOf(c).get(PROFILES, {
-      wait: true
-    }).catch(() => null));
-  }
-  /** Enregistre runwayZoom dans airline/map_profiles.json sans toucher au reste du fichier ; refuse une valeur hors des bornes. */
-  async function writeRunwayZoom(c, zoom) {
-    if (!Number.isInteger(zoom) || zoom < RUNWAY_MIN || zoom > RUNWAY_MAX) throw new Error(`runwayZoom ${zoom}`);
-    const data = profilesOf(c),
-      cur = (await data.get(PROFILES, {
-        wait: true
-      }).catch(() => null)) || {};
-    await data.put(PROFILES, {
-      schema: 1,
-      ...cur,
-      runwayZoom: zoom,
-      by: 'settings',
-      updated_at: now()
-    });
-  }
-  /** Le filet de la limite de la zone du vol est-il affiché pour la compagnie ? (edge.show ; affiché par défaut) */
-  async function readEdge(c) {
+  /** Lit airline/map_profiles.json d'un seul `get` : { edge (le filet de la limite de la zone du vol est affiché : edge.show,
+   *  affiché par défaut), runwayZoom (le zoom à partir duquel la carte dessine les seuils de piste, 11 par défaut) }. */
+  async function readProfiles(c) {
     const f = await profilesOf(c).get(PROFILES, {
       wait: true
     }).catch(() => null);
-    return f?.edge?.show !== false;
+    return {
+      edge: f?.edge?.show !== false,
+      runwayZoom: runwayZoomOf(f)
+    };
   }
-  /** Enregistre edge.show dans airline/map_profiles.json sans toucher au reste du fichier (seuils, profils). */
-  async function writeEdge(c, show) {
+  /** Enregistre un réglage dans airline/map_profiles.json sans toucher au reste du fichier (schema, seuils, profils, toute autre
+   *  clé) ; patch : { edge: { show } } ou { runwayZoom } (hors des bornes : refusé). `by` et `updated_at` disent le dernier écrivain. */
+  async function writeProfiles(c, patch) {
+    if ('runwayZoom' in patch && (!Number.isInteger(patch.runwayZoom) || patch.runwayZoom < RUNWAY_MIN || patch.runwayZoom >
+        RUNWAY_MAX)) throw new Error(
+      `runwayZoom ${patch.runwayZoom}`);
     const data = profilesOf(c),
       cur = (await data.get(PROFILES, {
         wait: true
@@ -164,10 +156,15 @@
     await data.put(PROFILES, {
       schema: 1,
       ...cur,
-      edge: {
-        ...(cur.edge && typeof cur.edge === 'object' ? cur.edge : {}),
-        show
-      },
+      ...('runwayZoom' in patch ? {
+        runwayZoom: patch.runwayZoom
+      } : {}),
+      ...(patch.edge ? {
+        edge: {
+          ...(cur.edge && typeof cur.edge === 'object' ? cur.edge : {}),
+          ...patch.edge
+        }
+      } : {}),
       by: 'settings',
       updated_at: now()
     });
@@ -349,7 +346,9 @@
         before = sel.dataset.was || String(RUNWAY_DEFAULT);
       sel.disabled = true;
       try {
-        await writeRunwayZoom(c, Number(sel.value));
+        await writeProfiles(c, {
+          runwayZoom: Number(sel.value)
+        });
         sel.dataset.was = sel.value;
         say('admin', '');
         c.notify(t(T.saved), 'ok');
@@ -363,7 +362,11 @@
       const box = e.target;
       box.disabled = true;
       try {
-        await writeEdge(c, box.checked);
+        await writeProfiles(c, {
+          edge: {
+            show: box.checked
+          }
+        });
         say('admin', '');
         c.notify(t(T.saved), 'ok');
       } catch (err) {
@@ -406,8 +409,8 @@
 
   (window.SogSettingsParts ||= {}).admin = {
     acts: ['adminCopy', 'adminPanel', 'cfgMake', 'cfgCopy'],
-    readEdge,
-    readRunwayZoom,
+    readProfiles,
+    PROFILE_DEFAULTS,
     adminCard,
     cfgPanel,
     live,
