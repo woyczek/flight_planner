@@ -1894,3 +1894,36 @@ def i27(c):
     finally:
         R.FULL_LOCK, R.TARGET_LOCK = kept
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I28', 'Every bench is opened by a case: frame/*/test and modules/*/test', 'I', static=True,
+      rule='Simplification 30 Oct (F80: Fuel\u2019s pure benches had passed unseen, no case ran them): each page of frame/*/test/ and modules/*/test/ is opened by at least one case (its path, or its file name in a case of a file that names its folder); a page that says « serve this page from the launcher » is out; the others wait in the case’s own table with their owner')
+def i28(c):
+    # benches no case opens yet, with the session that owns them (I28); a bench leaves this table with the case that opens it
+    # (Simplification, 30 Oct: the owners; pending.html gets a minimal case from V3 Frame if Flightlog has not resumed by
+    # 31 Oct evening)
+    BENCH_ORPHANS = {
+        'modules/atmosphere/test/weather_map.html': 'Atmosphère (cloud session, integrated by Simplification)',
+        'modules/atmosphere/test/weather_store.html': 'Atmosphère (cloud session, integrated by Simplification)',
+        'modules/flightlog/test/pending.html': 'Flightlog (dormant session)',
+    }
+    # pages that measure (a time, a rate) and give no verdict: out of the check, said as such
+    MEASURES = {
+        'modules/atmosphere/test/weather_map_perf.html': 'Atmosphère: the weather map\u2019s drawing times',
+    }
+    chunks = []
+    for p in sorted((c.root / 'tests' / 'v3' / 'cases').glob('*.py')):
+        s = p.read_text(encoding='utf-8')
+        chunks += [(s, part) for part in re.split(r'\n(?=@case\()', s) if part.startswith('@case(') and not part.startswith("@case('I28'")]
+    benches = sorted(str(p.relative_to(c.root)).replace(os.sep, '/') for g in ('frame/*/test/*.html', 'modules/*/test/*.html') for p in c.root.glob(g))
+    orphans = []
+    for b in benches:
+        if b in MEASURES or 'serve this page from the launcher' in (c.root / b).read_text(encoding='utf-8'):
+            continue
+        d, f = b.rsplit('/', 1)
+        q = re.compile(r"[\'\"]" + re.escape(f[:-5]) + r"(\.html)?[\'\"]")
+        if not any(b in part or (d + '/' in s and q.search(part)) for s, part in chunks):
+            orphans.append(b)
+    c.ok(len(benches) > 40, str(len(benches)), 'the benches are found')
+    c.eq({b: BENCH_ORPHANS.get(b, '?') for b in orphans}, BENCH_ORPHANS, 'each bench opened by a case, or waiting in BENCH_ORPHANS with its owner (a new orphan, or one now opened, changes the table)', what='benches no case opens')
+    c.eq(sorted((set(BENCH_ORPHANS) | set(MEASURES)) - set(benches)), [], 'the tables name existing pages', what='stale rows')

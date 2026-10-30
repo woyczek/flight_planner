@@ -1744,3 +1744,48 @@ def a52(c):
     c.js(f"() => document.querySelector('{m}').parentElement.querySelectorAll(':scope > .f-help, :scope > [data-welcome]').forEach(e => e.remove())")
     after = c.js(f"Math.round(document.querySelector('{sel}').getBoundingClientRect().top + scrollY)")
     c.eq(after, before, 'the help’s arrival moves nothing of the module', tol=0.5, what='first control top')
+
+
+@case('A53', 'The frame\u2019s own benches: geometry, data layer, QR code', 'A', designs=('standard',), screens=False, night=False,
+      rule='I28 (every bench opened by a case): frame/lib/test/geo.html (window.__geoBench), frame/store/test/index.html (« run », window.__results) and frame/lib/test/qr.html (its grids read back by the independent decoder qr_check.py) had no case')
+def a53(c):
+    import os
+    import subprocess
+    import sys
+    import tempfile
+    _bench(c, 'frame/lib/test/geo.html', '__geoBench')
+    # the data layer bench runs against its own fake GitHub (frame/store/test/fake_github.py), which serves the page too
+    import socket
+    with socket.socket() as so:
+        so.bind(('127.0.0.1', 0))
+        port = so.getsockname()[1]
+    fake = subprocess.Popen([sys.executable, '-I', str(ROOT / 'frame' / 'store' / 'test' / 'fake_github.py'), str(port)], cwd=str(ROOT),
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        import time
+        for _ in range(100):  # the fake GitHub answers within 10 s
+            try:
+                socket.create_connection(('127.0.0.1', port), timeout=0.5).close()
+                break
+            except OSError:
+                time.sleep(0.1)
+        c.page.goto(f'http://127.0.0.1:{port}/frame/store/test/index.html', wait_until='load')
+        c.page.click('#run')
+        c.page.wait_for_function('window.__results', timeout=90000)
+        r = c.js('({ total: window.__results.total, failed: window.__results.failed.map(x => x.name).slice(0, 3) })')
+    finally:
+        fake.kill()
+        fake.wait(10)
+    c.ok(r['total'] > 0 and not r['failed'], f"{r['total']} checks, first failures: {r['failed']}", 'every check of the data layer bench passes')
+    c.page.goto(f'{c.base}/frame/lib/test/qr.html', wait_until='load')
+    grids = c.js("document.getElementById('rows').textContent")
+    with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8') as f:
+        f.write(grids)
+    try:
+        out = subprocess.run([sys.executable, '-I', str(ROOT / 'frame' / 'lib' / 'test' / 'qr_check.py'), f.name], capture_output=True,
+                             text=True, encoding='utf-8', timeout=120).stdout.splitlines()
+    finally:
+        os.unlink(f.name)
+    codes = [x for x in out if x.startswith('v')]
+    bad = [x for x in out if 'OK' not in x]
+    c.ok(len(codes) == 10 and not bad, f'{len(codes)} codes; {bad[:3]}', 'each QR code of the bench is read back with its text by the independent decoder')

@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Noreg: every bench is opened by a case** (noreg I28, A53; frame DECISIONS) — I28 lists the pages of `frame/*/test/` and
+  `modules/*/test/` and fails on one that no case opens (pages served only by the launcher are out). The three still without a case
+  wait in the case's own table with their owner (two of Atmosphère, one of Flightlog); a page that only measures
+  (Atmosphère's drawing times) is out of the check, said as such; the sessions table gets Atmosphère's row. A53 runs the frame's three: geometry,
+  the data layer against its own fake GitHub (on a free port), and the QR codes read back by the independent decoder.
 - **Update the suite: refused while a job or a synchronisation runs** (`tools/launch.py` `update_suite`; Settings SPEC 9a-bis,
   help ×4; noreg I25) — Sécurisation's review of 4fc473e5d. « Mettre à jour » answers `reason: 'busy'` while a job of the Data
   module or a synchronisation of data/ runs, and holds both locks while it runs: the checkout changes `tools/` while a child

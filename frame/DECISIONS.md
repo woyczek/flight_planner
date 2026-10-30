@@ -2204,3 +2204,8 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   only `fetch` there. Each transport returns early without `FD.git`, so the frame's « script lost on the way » path asks
   the base again before them (A28). Kept apart on purpose: the device setting (`clean`, `resolve`, `hold`) stays in
   `transport_github.js`, which both providers share, and `head` / `tree` / `commit`, whose APIs have nothing in common.
+
+- **30 Oct 2026 — A bench no case opens fails I28, it does not go to known_failures** (Simplification, after F80). A known failure
+  covers the whole case, so a new orphan would hide behind it. I28 compares the orphans with its own table (bench → owner)
+  instead: a new orphan turns it red, and so does a listed bench once a case opens it, until its row goes. The test is static:
+  the bench's path in a case, or its file name in a case whose file names its folder (the `_bench(c, 'x.html')` helpers).

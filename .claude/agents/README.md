@@ -28,6 +28,7 @@ Pilote. Cahier des charges et journal des décisions : `docs/technique/V3_SPECIF
 | V3 fuel (carburant, niveau, fiches) | `v3-fuel.md` | `E:\DEFA-v3-fuel` | 8793 |
 | V3 maps (carte vivante, profil vertical) | `v3-maps.md` | `E:\DEFA-v3-maps` | 8794 |
 | V3 flightlog (mes vols) | `v3-flightlog.md` | `E:\DEFA-v3-flightlog` | 8795 |
+| Atmosphère — modules/atmosphere, session cloud, intégrée par Simplification | — | cloud | — |
 | V3 design (jetons, densité, designs) | `v3-design.md` | `E:\DEFA-v3-design` | 8796 |
 | V3 aerodb (bases SIA et appareils) | `v3-aerodb.md` | `E:\DEFA-v3-aerodb` | 8797 |
 | V3 help (aide, tutoriels, manuels) | `v3-help.md` | `E:\DEFA-v3-help` | 8798 |
