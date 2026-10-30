@@ -103,6 +103,11 @@ const STYLE = `
 [data-module="data"] [data-publish] [data-publishing]{margin-top:10px;display:grid;gap:6px}
 [data-module="data"] [data-publish] [data-publish-result]{margin-top:10px;display:grid;gap:4px}
 [data-module="data"] [data-publish] [data-publish-message]{overflow-wrap:anywhere}
+[data-module="data"] [data-update-all] h2{margin:8px 0 4px}
+[data-module="data"] [data-update-all] [data-verb]{min-height:var(--sog-touch);min-width:44px}
+[data-module="data"] [data-update-all] [data-reason]{margin:6px 0 0}
+[data-module="data"] [data-update-all] [data-chain],[data-module="data"] [data-update-all] [data-chain-result]{margin-top:10px;display:grid;gap:6px}
+[data-module="data"] .f-status-dot[data-attn]{display:inline-block;vertical-align:middle;margin-left:6px}
 [data-module="data"] .d-journal{margin-top:var(--sog-gap-s)}
 [data-module="data"] .d-journal summary{min-height:var(--sog-touch);display:flex;align-items:center}
 [data-module="data"] .d-ops{list-style:none;margin:0;padding:0;display:grid;gap:4px}
@@ -257,14 +262,14 @@ function addZoneHtml() {
   const have = new Set(cov.ids),
     rest = zones.filter(z => !have.has(z.id));
   if (!rest.length) return '';
-  return `<p><label>${esc(tt(TX.addZone))} <select data-add-zone${S.run ? ' disabled' : ''}><option value="">${esc(tt(TX.addZonePick))}</option>
+  return `<p><label>${esc(tt(TX.addZone))} <select data-add-zone${frozen() ? ' disabled' : ''}><option value="">${esc(tt(TX.addZonePick))}</option>
     ${rest.map(z => `<option value="${esc(z.id)}">${esc(M.zoneName(zones, z.id, li()))}</option>`).join('')}</select></label></p>`;
 }
 /** Ajoute une zone connue à la couverture de ce poste : écrite aussitôt (cache/data/coverage.json), cochée pour « Construire » ; une
  *  zone que personne ne publie est construite et publiée par ce poste (SPEC § 3.2). */
 function addZone(id) {
   const known = (S.d.zones || []).some(z => z.id === id);
-  if (!known || S.d.cov.ids.includes(id) || S.run) return;
+  if (!known || S.d.cov.ids.includes(id) || frozen()) return;
   S.d.cov = {
     ...S.d.cov,
     ids: [...S.d.cov.ids, id],
@@ -361,13 +366,7 @@ function groupsHtml() {
     cov
   } = S.d;
   if (!cat || !S.airac) return `<p class="f-warn" data-error="catalogue">${esc(tt(TX.catError))}</p>`;
-  const groups = M.buildGroups(cat, {
-    airac: S.airac,
-    pub,
-    ids: cov.ids,
-    now: S.now,
-    parserVersion: cat.PARSER_VERSION
-  });
+  const groups = S.groups;
   return `${pub ? '' : `<p class="f-warn" data-error="publication">${esc(tt(TX.pubError))}</p>`}${groups.map(g => {
     const open = g.id in S.manual ? S.manual[g.id] : g.attention;
     return `<details class="f-group" data-group="${g.id}"${open ? ' open' : ''}><summary><span>${esc(tt(TX.groups[g.id]))}</span><i class="f-status-dot" data-attn${g.attention ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i></summary>
@@ -376,12 +375,22 @@ function groupsHtml() {
       ${g.more.length ? `<details class="d-more" data-more><summary>${esc(tt(TX.moreSets, { n: g.more.length }))}</summary>${g.more.map(rowHtml).join('')}</details>` : ''}</details>`;
   }).join('')}`;
 }
-/** L'écran : l'en-tête, la couverture, les groupes. */
+/** L'écran : l'en-tête, la couverture, « Tout mettre à jour », les groupes, le journal. */
 function renderBody() {
   S.now = Date.now();
   S.airac = S.d.cat?.airac || null;
   S.cycleId = S.airac ? S.airac.cycleOf(S.now).id : undefined;
-  S.body.innerHTML = `${headHtml()}${coverageHtml()}${groupsHtml()}${journalHtml()}`;
+  const d = S.d;
+  S.groups = d.cat && S.airac ? M.buildGroups(d.cat, {
+    airac: S.airac,
+    pub: d.pub,
+    ids: d.cov.ids,
+    now: S.now,
+    parserVersion: d.cat.PARSER_VERSION
+  }) : null;
+  S.attn = M.staleGroups(S
+    .groups); // les groupes dont le cycle publié est dépassé : le point d'attention de « Construire » et de « Tout mettre à jour »
+  S.body.innerHTML = `${headHtml()}${coverageHtml()}${updateAllHtml()}${groupsHtml()}${journalHtml()}`;
 }
 
 // ---------------------------------------------------------------- construire la base
@@ -396,8 +405,10 @@ function buildZones() {
 /** Une opération tourne-t-elle sur ce poste, de n'importe quel jeu ? Le nôtre, un autre travail du lanceur, la question d'une purge ou d'une
  *  publication de fiches, une publication : une opération à la fois, tous panneaux confondus. */
 function busyNow() {
-  return !!S.run || !!S.other || !!S.asking || !!S.pub.phase;
+  return !!S.run || !!S.other || !!S.asking || !!S.pub.phase || !!S.chain;
 }
+/** Les choix des panneaux sont-ils figés ? Pendant une marche et pendant toute la chaîne (y compris entre deux de ses opérations). */
+const frozen = () => !!S.run || !!S.chain;
 /** L'état des boutons « Télécharger », « Construire » et « Purger » d'un panneau : { reason, verbs } (M.setGate). `set` : le jeu ; `items` : le
  *  nombre d'éléments cochés (absent : le jeu n'en coche pas) ; `verbs` : ceux du panneau (par défaut ceux du jeu). */
 function gateOf(set, items, verbs) {
@@ -868,7 +879,7 @@ function buildInner() {
     ticked
   } = buildZones(),
     gate = buildGate(ticked),
-    busy = !!S.run,
+    busy = frozen(),
     pers = M.personalSources(ticked),
     xplaneOn = pers.some(p => p.id === 'xplane' && S.personal.has('xplane')),
     why = gate.reason ? tt(TX.greyReason[gate.reason]) : '',
@@ -881,7 +892,7 @@ function buildInner() {
       <p class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</p>
       ${p.id === 'xplane' && xplaneOn ? `<p class="f-warn" data-xplane-hint>${esc(tt(TX.xplaneHint))}</p>` : ''}</div>`).join('')}</div>` : ''}
     <p class="d-verbs"><button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>
-      <button type="button" class="primary" data-verb="build"${off('build')}>${esc(tt(TX.build))}</button>
+      <button type="button" class="primary" data-verb="build"${off('build')}>${esc(tt(TX.build))}${attnDot(S.attn?.base)}</button>
       <button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button></p>
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
     ${opAreaHtml('base')}`;
@@ -926,10 +937,10 @@ function selection(set) {
   };
 }
 /** Les boutons Télécharger · Construire · Purger d'un panneau (gris pour la raison de M.setGate). */
-function verbsHtml(gate) {
+function verbsHtml(gate, panel) {
   const off = verb => gate.verbs[verb].disabled ? ' disabled' : '';
   return `<p class="d-verbs"><button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>
-      <button type="button" class="primary" data-verb="build"${off('build')}>${esc(tt(TX.build))}</button>
+      <button type="button" class="primary" data-verb="build"${off('build')}>${esc(tt(TX.build))}${attnDot(S.attn?.[panel])}</button>
       <button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button></p>`;
 }
 /** Le choix d'éléments d'un panneau : les États à cocher (procédures), le cycle en vigueur (points VFR), le champ des types OACI (appareils). */
@@ -960,8 +971,8 @@ function setInner(panel) {
     why = gate.reason ? tt(TX.greyReason[gate.reason]) : '';
   return `<h2>${esc(tt(TX.setTitle[panel]))}</h2>
     <h3>${esc(tt(TX.setItems[panel]))}</h3>
-    ${choiceHtml(panel, !!S.run)}
-    ${verbsHtml(gate)}
+    ${choiceHtml(panel, frozen())}
+    ${verbsHtml(gate, panel)}
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
     ${panel === 'aircraft' ? `<p class="f-muted" data-hint>${esc(tt(TX.aircraftHint))}</p>` : ''}
     ${panel === 'proc' ? `<p class="f-muted" data-ead-note>${esc(tt(TX.eadNote))}</p>` : ''}
@@ -990,7 +1001,8 @@ function redrawPanel(box) {
     from = a?.selectionStart ?? null,
     to = a?.selectionEnd ?? null;
   keepScroll(S.body, () => {
-    box.innerHTML = box.matches('[data-build]') ? buildInner() : setInner(box.dataset.setPanel);
+    box.innerHTML = box.matches('[data-build]') ? buildInner() : box.matches('[data-update-all]') ? updateAllInner() : setInner(box
+      .dataset.setPanel);
     const el = sel && box.querySelector(sel);
     if (el && !el.disabled) {
       el.focus({
@@ -1004,7 +1016,7 @@ function redrawPanel(box) {
 function renderBuild() {
   renderPublish(); // le bouton « Publier » suit la construction (et l'inverse) : un seul point de redessin pour tous les panneaux
   if (!S?.body || !S.d) return;
-  for (const box of S.body.querySelectorAll('[data-build], [data-set-panel]')) redrawPanel(box);
+  for (const box of S.body.querySelectorAll('[data-build], [data-set-panel], [data-update-all]')) redrawPanel(box);
 }
 /** Ouvre le groupe d'un panneau (une marche ou un résultat s'y montre) sans attendre un toucher. */
 function openGroup(set, verb) {
@@ -1016,9 +1028,10 @@ function openGroup(set, verb) {
 /** La ligne d'une opération du journal : heure UTC, jeu (hors base), verbe, éléments, résultat. */
 function opHtml(e) {
   const set = e.set || 'base',
-    items = (e.items || e.zones || []).map(z => itemName(set, z)).join(', '),
+    items = e.set === 'all' ? (e.items || []).map(i => `${chainName(i.set)} : ${tt(TX.chainWord[i.result] || [i.result, i.result, i.result, i.result])}`).join(', ') :
+    (e.items || e.zones || []).map(z => itemName(set, z)).join(', '),
     zs = e.verb === 'publish' ? count('file', M.num(e.committed) ?? 0) : items,
-    label = set === 'base' ? '' : `${tt(TX.setLabel[set] || [set, set, set, set])} · `;
+    label = set === 'base' || set === 'all' ? '' : `${tt(TX.setLabel[set] || [set, set, set, set])} · `;
   return `<li data-op data-result="${esc(e.result)}" data-op-verb="${esc(e.verb)}" data-op-set="${esc(set)}"><time datetime="${esc(e.at)}">${esc(fmtDateZ(e.at, lang()))}</time> · ${esc(label)}${esc(tt(TX.opVerb[e.verb] || [e.verb, e.verb, e.verb, e.verb]))} · ${esc(e.set === 'aircraft' && e.verb === 'publish' ? count('sheet', M.num(e.copied) ?? 0) : zs)} · ${esc(tt(TX.opResult[e.result] || [e.result, e.result, e.result, e.result]))}</li>`;
 }
 /** Le journal, replié, au pied de l'écran : les opérations les plus récentes d'abord. */
@@ -1043,7 +1056,8 @@ function publishGate() {
     launcher: !!S.ctx.launcher,
     publishing: !!S.pub.phase,
     building: !!S.run,
-    other: !!S.other || !!S.asking, // la question d'une purge est posée : une opération à la fois
+    other: !!S.other || !!S.asking || !!S.chain && S.chain.phase !==
+      'publishing', // la question d'une purge est posée, ou la chaîne tourne (sauf à sa publication finale)
     gesture: canGesture(),
     nothing: M.publishCounts(S.pub.status).nothing,
     offline: navigator.onLine === false
@@ -1159,13 +1173,13 @@ async function endPublish(me, out) {
     out
   };
   renderBuild();
-  S.ctx.notify(lines.map(l => l.text).join(' · '), level);
+  if (!S.chain) S.ctx.notify(lines.map(l => l.text).join(' · '), level); // dans la chaîne : la notification de la fin de la chaîne
   journalWrite(M.publishEntry(Date.now(), out));
   await load();
 }
 /** « Publier » : l'état de data/ est relu, une seule question (les fichiers et les commits), puis le passage du cadre avec le geste
  *  (ctx.data.sync({ gesture: true })) — jamais sans la question, jamais pendant une construction. Rien ne part si le bouton est gris. */
-async function startPublish() {
+async function startPublish(skipAsk = false) {
   const me = S;
   if (publishGate().disabled) return;
   S.pub.phase = 'asking'; // les deux boutons sont gris dès le toucher : une opération à la fois
@@ -1184,7 +1198,7 @@ async function startPublish() {
     S.ctx.notify(tt(TX.pubUnread), 'err');
     return;
   }
-  const yes = c.nothing ? false : await S.ctx.ask(c.changes && c.ahead ? tt(TX.pubAsk, {
+  const yes = c.nothing ? false : skipAsk ? true : await S.ctx.ask(c.changes && c.ahead ? tt(TX.pubAsk, {
     f: count('file', c.changes),
     c: count('commit', c.ahead)
   }) : tt(TX.pubAskOne, {
@@ -1266,8 +1280,8 @@ function onView(me, v, ctrl) {
   renderBuild();
 }
 /** Écrit l'opération au journal (cache/data/journal.json, les 50 dernières) et redessine le journal. */
-function journalWrite(entry) {
-  const list = M.journalAdd(S.journal, entry);
+function journalWrite(entry, replace = false) {
+  const list = replace ? M.journalSet(S.journal, entry) : M.journalAdd(S.journal, entry);
   if (list === S.journal) return;
   S.journal = list;
   S.ctx.data.put(JOURNAL, {
@@ -1307,18 +1321,24 @@ async function endBuild(me, final, live, seconds, set = 'base') {
     out
   };
   renderBuild();
-  if (live) {
-    const sm = summary(out, set);
-    S.ctx.notify([sm.text, ...(sm.notes || [])].join(' · '), sm.level);
-  }
-  journalWrite(M.setEntry(set, 'build', {
+  const sm = summary(out, set),
+    quiet = !!S
+    .chain; // dans la chaîne : ni notification, ni entrée, ni relecture à chaque opération (la chaîne le fait une fois à sa fin)
+  S.lastOp = {
+    set,
+    verb: 'build',
+    out,
+    text: sm.text
+  };
+  if (live && !quiet) S.ctx.notify([sm.text, ...(sm.notes || [])].join(' · '), sm.level);
+  if (!quiet) journalWrite(M.setEntry(set, 'build', {
     at: Date.now(),
     ids: S.ids,
     seconds,
     out,
     job: final.job || final.id
   }));
-  if (live) await load(); // les états des lignes ont changé : même chemin de lecture que l'ouverture
+  if (live && !quiet) await load(); // les états des lignes ont changé : même chemin de lecture que l'ouverture
 }
 /** Fin d'un téléchargement : le résumé, les sources manuelles et les lignes dans le panneau, une notification (le résumé, et les fichiers
  *  hors synchronisation s'il y en a), le journal (verbe « download »), puis la relecture de ce qui est publié. */
@@ -1331,15 +1351,22 @@ async function endFetch(me, final, live, seconds, set = 'base') {
     out
   };
   renderBuild();
-  if (live) S.ctx.notify([sm.text, sm.outside].filter(Boolean).join(' · '), sm.level);
-  journalWrite(M.setEntry(set, 'fetch', {
+  const quiet = !!S.chain; // voir endBuild
+  S.lastOp = {
+    set,
+    verb: 'fetch',
+    out,
+    text: sm.text
+  };
+  if (live && !quiet) S.ctx.notify([sm.text, sm.outside].filter(Boolean).join(' · '), sm.level);
+  if (!quiet) journalWrite(M.setEntry(set, 'fetch', {
     at: Date.now(),
     ids: S.ids,
     seconds,
     out,
     job: final.job || final.id
   }));
-  if (live) await load();
+  if (live && !quiet) await load();
 }
 /** Fin d'une purge réelle : le résumé et les phrases des avertissements dans le panneau, une notification, le journal, puis la relecture. */
 async function endPurge(me, final, live, seconds, set = 'base') {
@@ -1588,6 +1615,289 @@ async function startOp(set, verb) {
   } : args, ids, dry, args), true);
 }
 
+// ---------------------------------------------------------------- « Tout mettre à jour » (SPEC § 5.3)
+/** Le nom d'un jeu dans les phrases de la chaîne : le groupe pour la base, le nom du jeu pour les autres. */
+const chainName = set => tt(set === 'base' ? TX.groups.base : TX.setLabel[set]);
+/** Le texte d'une raison pour laquelle un jeu est ignoré par la chaîne (clé de TX.greyReason ; les types OACI refusés : leur phrase). */
+const skipWhy = (key, sel) => key === 'bad-codes' ? tt(TX.codesBad, {
+  c: sel.bad.join(', ')
+}) : tt(TX.greyReason[key]);
+/** Ce que la chaîne ferait d'après les choix des panneaux : { runs: [{ set, sel, what }], skipped: [{ set, key, why }] } dans l'ordre publié. Un jeu sans
+ *  éléments cochés, aux types OACI refusés ou dont l'un des deux verbes n'est pas connu du lanceur est ignoré, avec sa raison. */
+function chainPlan() {
+  const runs = [],
+    skipped = [];
+  if (!S.d) return {
+    runs,
+    skipped
+  };
+  for (const set of M.CHAIN_SETS) {
+    const sel = selection(set),
+      names = () => sel.ids.map(id => itemName(set, id)).join(', ');
+    const key = !M.CHAIN_VERBS.every(v => M.verbKnown(S.known, set, v)) ? 'unknown-verb' : set === 'base' && !sel.ids.length ? 'no-zone' :
+      set === 'proc' && !sel
+      .ids.length ? 'no-state' : set === 'vfr' && !sel.cycle ? 'no-set' : sel.bad?.length ? 'bad-codes' : null;
+    if (key) {
+      skipped.push({
+        set,
+        key,
+        why: skipWhy(key, sel)
+      });
+      continue;
+    }
+    runs.push({
+      set,
+      sel,
+      what: set === 'vfr' ? itemName(set, sel.cycle) : set === 'aircraft' && !sel.ids.length ? tt(TX.chainFleet) : `${count(M.SETS[set].unit, sel.ids.length)} (${names()})`
+    });
+  }
+  return {
+    runs,
+    skipped
+  };
+}
+/** L'état du bouton « Tout mettre à jour » : { disabled, reason } ; reason : no-launcher | busy | offline | no-set (aucun jeu à lancer). */
+function chainGate(plan) {
+  const reason = !S.ctx.launcher ? 'no-launcher' : busyNow() ? 'busy' : navigator.onLine === false ? 'offline' : !plan.runs.length ?
+    'no-set' : null;
+  return {
+    disabled: !!reason,
+    reason
+  };
+}
+/** Le point d'attention du cadre (le même que celui d'un groupe) : le cycle publié est dépassé ; `title` dit pour quel cycle reconstruire. */
+function attnDot(oldCycle) {
+  return oldCycle ? ` <i class="f-status-dot" data-attn title="${esc(tt(TX.staleCycle, { x: oldCycle, y: S.cycleId }))}"></i>` : '';
+}
+/** Les lignes des jeux de la chaîne (en cours ou finie) : [{ set, result, why? }], result : done | nothing | failed | cancelled | skipped | notrun | running |
+ *  waiting. */
+function chainRows() {
+  const ch = S.chain || S.chainEnd;
+  if (!ch) return [];
+  return ch.rows.map(r => ({
+    ...r
+  }));
+}
+/** La liste des jeux de la chaîne, une ligne chacun avec où il en est. */
+function chainListHtml() {
+  return `<ul class="d-sl" data-chain-sets>${chainRows().map(r => `<li data-chain-set="${esc(r.set)}" data-result="${esc(r.result)}"><b>${esc(chainName(r.set))}</b> : ${esc(tt(TX.chainWord[r.result]))}${r.why ? ` (${esc(r.why)})` : ''}</li>`).join('')}</ul>`;
+}
+/** La chaîne en cours (jeu, étape, « n / m jeux », « Arrêter » pour toute la chaîne) ou sa fin (le résumé et les jeux). */
+function chainHtml() {
+  const ch = S.chain;
+  if (ch && ch.phase !== 'asking') {
+    const run = ch.runs[ch.i],
+      stopping = ch.phase === 'stopping';
+    return `<div data-chain data-phase="${ch.phase}"><div class="d-runhead"><b data-chain-count>${esc(tt(TX.chainCount, { n: Math.min(ch.i + 1, ch.runs.length), m: ch.runs.length }))}</b>
+      <span data-chain-step>${esc(stopping ? tt(TX.stopping) : ch.phase === 'publishing' ? tt(TX.pubRunning) : `${chainName(run.set)} : ${tt(ch.verb === 'fetch' ? TX.download : TX.build)}`)}</span></div>
+      ${chainListHtml()}
+      <p><button type="button" data-verb="stop-chain"${stopping ? ' disabled' : ''}>${esc(tt(TX.stop))}</button></p></div>`;
+  }
+  const end = S.chainEnd;
+  if (!end) return S.chainNote ? `<p class="f-warn" data-chain-note>${esc(tt(TX.chainReload))}</p>` : '';
+  return `<div data-chain-result data-result="${end.result}"><p class="${end.result === 'done' ? '' : 'f-warn'}"><b>${esc(end.text)}</b></p>${chainListHtml()}</div>`;
+}
+/** L'intérieur de la carte « Tout mettre à jour » : le bouton avec le nombre de jeux (et le point d'attention d'un cycle dépassé), sa raison grise, la
+ *  chaîne ou sa fin. */
+function updateAllInner() {
+  const plan = chainPlan(),
+    gate = chainGate(plan),
+    n = S.chain ? S.chain.runs.length : plan.runs.length,
+    stale = ['base', 'proc'].filter(g => S.attn?.[g]).map(g => `<p class="f-warn" data-stale="${g}">${esc(tt(TX.staleCycle, { x: S.attn[g], y: S.cycleId }))}</p>`).join('');
+  return `<h2>${esc(tt(TX.updateAll))}</h2>${stale}
+    <p class="d-verbs"><button type="button" class="primary" data-verb="all"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.updateAllN, { n: count('set', n) }))}${attnDot(S.attn?.base || S.attn?.proc)}</button></p>
+    ${gate.reason ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}
+    ${chainHtml()}`;
+}
+/** La carte « Tout mettre à jour », sous la couverture et au-dessus des groupes. */
+function updateAllHtml() {
+  return `<section class="f-card" data-update-all>${updateAllInner()}</section>`;
+}
+/** La question du plan de la chaîne : le cycle AIRAC, les jeux dans l'ordre avec ce qu'ils touchent, la taille inconnue des téléchargements, pas de purge, une seule
+ *  publication ; puis les jeux ignorés avec leur raison. */
+function chainAsk(plan) {
+  return tt(TX.chainAsk, {
+    c: S.cycleId,
+    sets: plan.runs.map(r => `${chainName(r.set)} : ${r.what}`).join(' ; '),
+    skipped: plan.skipped.length ? ` ${tt(TX.chainSkipped, { s: plan.skipped.map(s => `${chainName(s.set)} (${s.why})`).join(', ') })}` : ''
+  });
+}
+/** Les lignes de départ de la chaîne : les jeux lancés « en attente », les ignorés « ignoré » avec leur raison, dans l'ordre publié. */
+function chainStartRows(plan) {
+  return M.CHAIN_SETS.map(set => {
+    const sk = plan.skipped.find(s => s.set === set);
+    return sk ? {
+      set,
+      result: 'skipped',
+      why: sk.why
+    } : {
+      set,
+      result: 'waiting'
+    };
+  });
+}
+/** Une opération de la chaîne : lance le verbe du jeu par le suiveur ordinaire (les fins se taisent : une seule notification, une seule entrée au journal) ;
+ *  { verdict: 'ok' | 'nothing' | 'stop', kind, text } d'après sa fin, ou un refus de départ. */
+async function chainOp(me, run, verb) {
+  S.lastOp = null;
+  const ids = run.set === 'aircraft' ? M.SETS.aircraft.steps : run.sel.ids;
+  await settle(me, await launch(run.set, verb, M.setArgs(run.set, verb, run.sel), ids), true);
+  if (S !== me) return null;
+  const op = S.lastOp;
+  if (op) return {
+    verdict: M.chainVerdict(verb, op.out),
+    kind: op.out.kind,
+    text: op.text
+  };
+  const f = S.result?.refused;
+  return {
+    verdict: 'stop',
+    kind: f ? 'refused' : 'failed',
+    text: tt(TX.refused[f?.key || 'failed'], {
+      n: f?.wait
+    })
+  };
+}
+/** Fin de la chaîne : le résumé dans la carte, une notification, l'entrée du journal (qui remplace le repère de départ), puis la relecture de ce qui est publié. */
+async function endChain(me, ch, result, text, level) {
+  S.chain = null;
+  S.chainEnd = {
+    result,
+    text,
+    rows: ch.rows
+  };
+  renderBuild();
+  S.ctx.notify(text, level);
+  journalWrite(M.chainEntry({
+    at: Date.now(),
+    items: ch.rows,
+    seconds: (Date.now() - ch.t0) / 1e3,
+    result,
+    job: ch.job
+  }), true);
+  await load();
+}
+/** La chaîne : pour chaque jeu, Télécharger puis Construire par le suiveur ; au premier échec, arrêt (ce qui est construit reste commité sur le poste, rien n'est
+ *  publié) ; si tout a réussi, UNE publication sans autre question que celle du plan. */
+async function runChain(me, plan) {
+  const ch = S.chain = {
+    phase: 'running',
+    runs: plan.runs,
+    i: 0,
+    verb: 'fetch',
+    stopped: false,
+    rows: chainStartRows(plan),
+    t0: Date.now(),
+    job: `chain-${Date.now()}`
+  };
+  S.chainEnd = null;
+  S.chainNote = false;
+  journalWrite(M.chainEntry({
+    at: Date.now(),
+    items: ch.rows,
+    seconds: null,
+    result: 'running',
+    job: ch.job
+  }), true);
+  const row = set => ch.rows.find(r => r.set === set);
+  let failure = null;
+  for (let i = 0; i < ch.runs.length && !failure; i++) {
+    const run = ch.runs[i];
+    ch.i = i;
+    row(run.set).result = 'running';
+    for (const verb of M.CHAIN_VERBS) {
+      ch.verb = verb;
+      if (ch.stopped) {
+        failure = {
+          set: run.set,
+          kind: 'cancelled',
+          text: ''
+        };
+        break;
+      }
+      renderBuild();
+      const res = await chainOp(me, run, verb);
+      if (S !== me || !res) return;
+      if (res.verdict === 'stop') {
+        failure = {
+          set: run.set,
+          kind: ch.stopped || res.kind === 'cancelled' ? 'cancelled' : 'failed',
+          text: res.text
+        };
+        break;
+      }
+    }
+    row(run.set).result = failure ? failure.kind : 'done';
+  }
+  if (failure) {
+    for (const r of ch.rows)
+      if (r.result === 'waiting') r.result = 'notrun';
+    const s = chainName(failure.set);
+    return endChain(me, ch, failure.kind, failure.kind === 'cancelled' ? tt(TX.chainStopped, {
+      s
+    }) : tt(TX.chainFailed, {
+      s,
+      r: failure.text
+    }), failure.kind === 'cancelled' ? 'warn' : 'err');
+  }
+  // tout a réussi : une seule publication, sans autre question que celle du plan
+  ch.phase = 'publishing';
+  renderBuild();
+  S.pub.status = await readStatus();
+  if (S !== me) return;
+  const gate = publishGate();
+  let p, level = 'ok',
+    result = 'done';
+  if (gate.disabled) {
+    p = gate.reason === 'nothing' ? publishReason('nothing') : tt(TX.chainNotPublished, {
+      r: publishReason(gate.reason)
+    });
+    level = gate.reason === 'nothing' ? 'ok' : 'warn';
+  } else {
+    await startPublish(true);
+    if (S !== me) return;
+    const out = S.pub.result?.out;
+    p = out ? publishLines(out)[0].text : S.pub.result?.unread ? tt(TX.pubUnread) : publishReason('nothing');
+    if (out && (out.kind === 'failed' || out.kind === 'no-exchange'))[result, level] = ['failed', 'err'];
+    else if (out && out.kind !== 'done') level = 'warn';
+  }
+  return endChain(me, ch, result, tt(TX.chainDone, {
+    n: count('set', ch.runs.length),
+    p
+  }), level);
+}
+/** « Tout mettre à jour » : le plan, UNE question ; sur Non rien n'est appelé ; sur Oui la chaîne (runChain). */
+async function updateAll() {
+  const me = S,
+    plan = chainPlan();
+  if (chainGate(plan).disabled) return;
+  S.chain = {
+    phase: 'asking',
+    runs: plan.runs,
+    rows: []
+  }; // tous les boutons sont gris pendant la question
+  renderBuild();
+  const yes = await S.ctx.ask(chainAsk(plan), {
+    ok: tt(TX.updateAll)
+  });
+  if (S !== me) return;
+  if (!yes) {
+    S.chain = null;
+    renderBuild();
+    return;
+  }
+  await runChain(me, plan);
+}
+/** « Arrêter » de la chaîne : l'opération en cours est arrêtée (la zone ou l'étape en cours se termine), puis la chaîne s'arrête ; ce qui est construit est gardé. */
+function stopChain() {
+  const ch = S.chain;
+  if (!ch || ch.phase === 'asking') return;
+  ch.stopped = true;
+  if (ch.phase === 'running') ch.phase = 'stopping';
+  S.run?.ctrl.abort();
+  renderBuild();
+}
+
 // ---------------------------------------------------------------- gestes
 /** aerodb annonce un changement avec { coverage: true } (la table de couverture a bougé) : la liste des États est redemandée, et
  *  elle seule est redessinée (un changement en rafale est regroupé en un seul rappel). */
@@ -1628,6 +1938,8 @@ function onClick(e) {
   const v = e.target.closest?.('button[data-verb]');
   if (!v || v.disabled) return;
   if (v.dataset.verb === 'stop') return S.run?.ctrl.abort();
+  if (v.dataset.verb === 'all') return updateAll();
+  if (v.dataset.verb === 'stop-chain') return stopChain();
   const op = opOf(v);
   if (op) startOp(...op);
   else if (v.dataset.verb === 'publish') startPublish();
@@ -1637,7 +1949,7 @@ function onClick(e) {
 function onChange(e) {
   const t = e.target;
   if (t instanceof HTMLSelectElement && t.matches('[data-add-zone]')) return t.value && addZone(t.value);
-  if (!(t instanceof HTMLInputElement) || S.run) return;
+  if (!(t instanceof HTMLInputElement) || frozen()) return;
   const set = t.dataset.buildZone ? S.ticked : t.dataset.personal ? S.personal : t.dataset.item ? S.picked : null,
     id = t.dataset.buildZone || t.dataset.personal || t.dataset.item;
   if (!set) return;
@@ -1680,6 +1992,12 @@ export async function mount(el, ctx) {
     again: 0,
     ticked: null, // zones cochées pour la construction (toutes à la première lecture)
     personal: new Set(), // sources sous licence personnelle cochées (aucune par défaut)
+    chain: null, // « Tout mettre à jour » en cours : { phase: 'asking' | 'running' | 'stopping' | 'publishing', runs, i, verb, stopped, rows, t0, job }
+    chainEnd: null, // la fin de la dernière chaîne : { result, text, rows }
+    chainNote: false, // un repère de chaîne sans fin a été trouvé à l'ouverture
+    lastOp: null, // la fin de la dernière opération suivie : { set, verb, out, text } (la chaîne la lit)
+    groups: null, // les groupes de l'écran (buildGroups), calculés à chaque dessin
+    attn: {}, // les groupes dont le cycle publié est dépassé : { base, proc } (le cycle « AANN » ou null)
     picked: new Set(), // États des procédures cochés (aucun par défaut)
     codes: '', // le champ des types OACI des appareils (vide : les types de la flotte)
     codesBad: [], // les types refusés au dernier geste (dits dans le panneau, aucun appel)
@@ -1722,7 +2040,16 @@ export async function mount(el, ctx) {
   if (S !== me) return; // démonté pendant la lecture
   S.journal = M.journalList(journal);
   S.known = known;
+  const open = M.openChain(S.journal); // un repère de chaîne sans fin : la page a été rechargée en route, la chaîne ne survit pas
+  if (open) {
+    journalWrite({
+      ...open,
+      result: 'interrupted'
+    }, true);
+    S.chainNote = true;
+  }
   await load();
+  if (open) S.ctx.notify(tt(TX.chainReload), 'warn');
   follow(); // un travail de la base en cours sur le lanceur (page rechargée) se suit ; le dernier terminé dit sa fin
 }
 

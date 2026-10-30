@@ -1,6 +1,9 @@
 """Area L - the Données module: a read-only screen and its first action, Construire (modules/data/SPEC.md sections 3, 5.4, 6.2, 6.5, 9; INTEGRATION.md section 2).
 
 Rules covered
+  * L18 « Tout mettre à jour » (SPEC § 5.3) against the fake launcher: the plan question and its No, the eight jobs in the published order then ONE sync with the
+    gesture and one notification, the stop at the first failure (nothing published), Arrêter mid-chain, the skipped sets with their reasons, the chain interrupted by a
+    reload, the attention mark of a published cycle gone by on Construire and on the button.
   * L16 / L17 (V3 § 10.34, lot A1: the same panel for every group): L16 the pure functions (the SETS table, the verbs a launcher knows and the
     old-launcher fallback, the grey reason of a panel, the States offered, the ICAO types field, the arguments, the view and the end of any set's job,
     the sheets plan, the journal entries); L17 the panels against the fake launcher (regen/verbs, proc build / purge, VAC and aircraft grey, one
@@ -38,7 +41,7 @@ Rules covered
     (shared-fr, kept-tracked), No does nothing, Yes sends the real job without dry, the end sentences, one journal entry, an empty plan without a question;
     one operation at a time (the other verbs grey while any runs); a running download found at mount is followed with its own lines.
 
-Cases: L1 .. L17.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
+Cases: L1 .. L18.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
 """
 import datetime
 import json
@@ -1703,6 +1706,17 @@ _L16_JS = r"""async () => {
     M.setOutcome('proc', 'build', { set: 'proc', verb: 'build', state: 'error', states: {}, result: { ok: false, reason: 'merge-pending' } }).out.kind,
     (o => [o.kind, o.level])(M.sheetsOutcome({ state: 'error', result: { ok: false, reason: 'merge-pending' } })),
     M.journalEntry({ at: 0, zones: ['fr'], seconds: 1, out: M.outcome({ state: 'error', zones: {}, result: { ok: false, reason: 'merge-pending' } }) }).reason];
+  // « Tout mettre à jour »: the verdict on the end of a job, the stale groups, the journal marker of a chain
+  out.chainOrder = [M.CHAIN_SETS, M.CHAIN_VERBS];
+  out.verdict = [['fetch', { kind: 'done' }], ['fetch', { kind: 'nothing' }], ['fetch', { kind: 'not-published' }], ['fetch', { kind: 'partial' }], ['fetch', { kind: 'cancelled' }],
+    ['build', { kind: 'done' }], ['build', { kind: 'nothing' }], ['build', { kind: 'not-published' }], ['build', { kind: 'merge-pending' }], ['build', { kind: 'no-cache' }], ['fetch', null]].map(([v, o]) => M.chainVerdict(v, o));
+  out.stale = M.staleGroups([{ id: 'base', rows: [{ state: 'ok', cycle: '2611' }, { state: 'stale-cycle', cycle: '2610' }], more: [{ state: 'stale-cycle', cycle: '2609' }] },
+    { id: 'proc', rows: [{ state: 'ok', cycle: '2611' }], more: [] }, { id: 'aircraft', rows: [{ state: 'stale-cycle', cycle: '2600' }], more: [] }]);
+  out.staleNone = [M.staleGroups(null), M.staleGroups([])];
+  const jl = [{ at: 'a', verb: 'x', job: 'j1', result: 'running' }, { at: 'b', verb: 'y' }];
+  out.jset = [M.journalSet(jl, { at: 'c', verb: 'x', job: 'j1', result: 'done' }).map(e => e.result ?? e.verb), M.journalSet(jl, { at: 'd', verb: 'z', job: 'j2' }).map(e => e.at), M.journalSet(jl, { at: 'e', verb: 'z' }, 2).map(e => e.at)];
+  out.chainEntry = M.chainEntry({ at: Date.parse('2026-10-30T10:00:00Z'), items: [{ set: 'base', result: 'done', why: 'x' }, { set: 'proc', result: 'skipped' }], seconds: 12.6, result: 'failed', job: 'chain-1' });
+  out.open = [M.openChain([{ set: 'all', verb: 'update', result: 'done', job: 'a' }, { set: 'all', verb: 'update', result: 'running', job: 'b' }, { set: 'base', verb: 'build', result: 'running' }])?.job, M.openChain([]), M.openChain([{ set: 'all', verb: 'update', result: 'interrupted' }])];
   out.verbOfBase = [{ set: 'base', verb: 'fetch', zones: {} }, { set: 'proc', verb: 'fetch', states: {} }].map(M.viewVerb);
   return out;
 }"""
@@ -1782,6 +1796,14 @@ def l16(c):
          'proc/fetch: fetched and unchanged are numbers of aerodromes (counts), or lists of States as before; one State failing is a partial end', what='proc fetch')
     c.eq(r['merge'], ['merge-pending', 'merge-pending', 'merge-pending', ['merge-pending', 'err'], 'merge-pending'],
          'merge-pending (nothing written while a merge waits in data/) is one end for every set: base, vfr, proc, the sheets; the journal keeps it as the reason', what='merge-pending')
+    c.eq(r['chainOrder'], [['base', 'proc', 'vfr', 'aircraft'], ['fetch', 'build']], 'the chain: the published order (SPEC 4.5), download then build; never a purge, never aircraft/publish', what='CHAIN')
+    c.eq(r['verdict'], ['ok', 'nothing', 'nothing', 'stop', 'stop', 'ok', 'stop', 'stop', 'stop', 'stop', 'stop'],
+         'a job\'s end: done goes on; a download with nothing new (nothing, not-published) goes on; anything else stops (partial, cancelled, merge-pending, no-cache, an unreadable end)', what='chainVerdict')
+    c.eq([r['stale'], r['staleNone']], [{'base': '2609', 'proc': None}, [{'base': None, 'proc': None}] * 2], 'the groups whose published cycle is gone by (the oldest one, rows and « autres jeux »); the aircraft group is not concerned', what='staleGroups')
+    c.eq(r['jset'], [['done', 'y'], ['a', 'b', 'd'], ['b', 'e']], 'the journal replaces the entry of the same job (the chain\'s end replaces its start), else appends, bounded', what='journalSet')
+    c.eq(r['chainEntry'], {'at': '2026-10-30T10:00:00.000Z', 'set': 'all', 'verb': 'update', 'items': [{'set': 'base', 'result': 'done'}, {'set': 'proc', 'result': 'skipped'}], 'seconds': 13, 'result': 'failed', 'job': 'chain-1'},
+         'the chain\'s journal entry: set all, verb update, each set\'s result', what='chainEntry')
+    c.eq(r['open'], ['b', None, None], 'a start marker without its end is the last « running » entry of the chain', what='openChain')
     c.eq(r['vfrView'], [[['2026-10-29', 'built']], [['2026-10-29', 'done']], [['2026-10-29', 'building']], [['2026-10-29', 'failed']]],
          'the cycle\'s entry of the view (`cycles`) as the launcher gives it: « done » of a build is a built cycle', what='normView vfr cycles')
     cnt = lambda f, u, n: {'fetched': f, 'unchanged': u, 'notPublished': n}
@@ -2199,3 +2221,214 @@ def l17(c):
 def _unit(key, lang, n):
     """A unit noun of texts.js (`unit: { <key>: [[singular…], [plural…]] }`), in the language, for the count n."""
     return _trow(key, lang, 'unit: {', 0 if n == 1 else 1)
+
+
+# ------------------------------------------------------------------------------------------------------ L18
+_FRESH_JS = """(() => { try { if (sessionStorage.getItem('__freshFr') && window.__stub) { const b = window.__stub.publication.base; b.fr = b.es } } catch {} })()"""
+
+
+def _chain_views(cyc):
+    """The eight scripted jobs of a clean chain, in order, each already ended: base fetch, base build, proc fetch, proc build, vfr fetch, vfr build, aircraft fetch,
+    aircraft build (each answers the follower's first poll; the shapes are the launcher's)."""
+    s3 = {'types': {'state': 'done'}, 'apd': {'state': 'done'}, 'simbrief': {'state': 'done'}}
+    return [
+        _fview({'fr': _fz('done', 3, 3), 'gb': _fz('done', 2, 2)}, state='done', verb='fetch', jid='c1', done=2,
+               result={'ok': True, 'fetched': ['fr', 'gb'], 'unchanged': [], 'failed': [], 'manual': [], 'outside_sync': 0, 'warnings': []}),
+        _fview({'fr': _zs('built', 4, 4), 'gb': _zs('built', 5, 5)}, state='done', verb='build', jid='c2', done=2, result={'built': ['fr', 'gb'], 'failed': [], 'commits': []}),
+        _sview('proc', 'fetch', 'states', {'K': {'state': 'done'}, 'LF': {'state': 'done'}}, state='done', jid='c3', unit='states', done=2,
+               result={'ok': True, 'cycle': cyc, 'fetched': 12, 'unchanged': 3, 'failed': []}),
+        _sview('proc', 'build', 'states', {'K': {'state': 'done'}, 'LF': {'state': 'done'}}, state='done', jid='c4', unit='states', done=2,
+               result={'ok': True, 'cycle': cyc, 'built': {'K': 10, 'LF': 20}, 'commits': {'K': 'a1', 'LF': 'b2'}, 'failed': []}),
+        _sview('vfr', 'fetch', 'cycles', {cyc: {'state': 'done', 'done': 40, 'total': 40}}, state='done', jid='c5', unit='aerodromes', done=40, total=40,
+               result={'ok': True, 'cycle': cyc, 'fetched': 12, 'unchanged': 25, 'notPublished': 3, 'failed': []}),
+        _sview('vfr', 'build', 'cycles', {cyc: {'state': 'done', 'done': 3, 'total': 3}}, state='done', jid='c6', unit='steps', done=3, total=3,
+               result={'ok': True, 'cycle': cyc, 'summary': {'aerodromes': 300}, 'commit': 'abc1234', 'failed': []}),
+        _sview('aircraft', 'fetch', 'steps', s3, state='done', jid='c7', unit='steps', done=3, total=3,
+               result={'ok': True, 'codes': [], 'steps': ['types', 'apd', 'simbrief'], 'failed': [], 'commit': None}),
+        _sview('aircraft', 'build', 'steps', s3, state='done', jid='c8', unit='steps', done=3, total=3,
+               result={'ok': True, 'codes': [], 'steps': ['types', 'apd', 'simbrief'], 'failed': [], 'commit': None})]
+
+
+def _card_ok(c, what):
+    """The « Tout mettre à jour » card: no horizontal scroll, nothing beyond the right edge, 44 px buttons."""
+    m = c.js("""() => { const b = document.querySelector('[data-update-all]'); return { sw: document.documentElement.scrollWidth, iw: window.innerWidth,
+      over: [...b.querySelectorAll('*')].filter(e => e.getBoundingClientRect().width && e.getBoundingClientRect().right > window.innerWidth + 1).slice(0, 3).map(e => e.tagName + '.' + e.className),
+      hs: [...b.querySelectorAll('button')].map(e => Math.round(e.getBoundingClientRect().height)) } }""")
+    c.le(m['sw'], m['iw'], f'{what}: no horizontal scroll', what='scrollWidth')
+    c.ok(not m['over'], m['over'], f'{what}: nothing beyond the right edge')
+    c.ge(min(m['hs']), 44, f'{what}: the buttons are 44 px', what='touch height')
+
+
+def _bv(c):
+    """The base panel's three verb buttons (not Arrêter), each with ':off' when grey."""
+    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
+
+
+def _chain_rows(c):
+    """The sets listed by the chain: [[set, result]]."""
+    return c.js("[...document.querySelectorAll('[data-update-all] [data-chain-set]')].map(l => [l.dataset.chainSet, l.dataset.result])")
+
+
+@case('L18', 'Données: « Tout mettre à jour » against a fake launcher (plan question, the published order, one Publier, stop at the first failure, Arrêter, skipped sets, attention mark, reload)',
+      'L', tags=('data',), langs4=True, designs=('standard',),
+      rule='modules/data/SPEC 5.3 (plan first, one question; downloads and builds in the published order; stop at the first failure; one Publier at the end), 6.3 (end of cycle)')
+def l18(c):
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    T = lambda key, after=None, row=0: _trow(key, lang, after, row)
+    label = lambda s: T(s, 'setLabel: {')
+    base_label = T('base', 'groups: {')
+    sm = lambda key: T(key, 'setSum: {')
+    cfg, _ = _fixture()
+    today, cur, prev, nxt = _cycles()
+    cyc = cur.isoformat()
+    K_NAMES = ['États-Unis', 'United States', 'Vereinigte Staaten', 'Estados Unidos']
+    name = lambda p: K_NAMES[li] if p == 'K' else cfg['states'][p]['names'][li]
+    ORDER = {'fr': ['K', 'LF'], 'en': ['LF', 'K'], 'de': ['LF', 'K'], 'es': ['K', 'LF']}[lang]
+    n_sets = lambda n: f"{n} {_unit('set', lang, n)}"
+    stopped = _fview({'fr': _fz('done', 3, 3), 'gb': _fz('cancelled')}, state='cancelled', verb='fetch', jid='c1', done=1,
+                     result={'ok': False, 'fetched': ['fr'], 'unchanged': [], 'failed': [], 'manual': [], 'reason': 'cancelled'})
+    views = _chain_views(cyc)
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    _sync_cfg(c, True, None)
+    st = _launcher(c, views, verbs=ALL_VERBS, cancel_view=stopped, sync={'changes': 3, 'ahead': 0, 'merging': False, 'last': None})
+    c.page.add_init_script(_SYNC_JS)
+    _open(c, cfg)
+    c.page.add_init_script(_FRESH_JS)   # after the aerodb stub's own script: it may then change what the stub publishes
+    _all_open(c)
+    # ---- A: the card, the count of sets, the attention mark of a published cycle gone by (fr is one cycle behind)
+    c.eq([norm(c.text('[data-update-all] [data-verb=all]')), c.js("document.querySelector('[data-update-all] [data-verb=all]').disabled")],
+         [norm(T('updateAllN').replace('{n}', n_sets(3))), False], 'the button, with the count of sets it will touch: base (all zones ticked), VAC points, aircraft (the fleet); no State ticked yet', what='button 3')
+    c.tap('[data-set-panel=proc] [data-item=K]')
+    c.tap('[data-set-panel=proc] [data-item=LF]')
+    _untick(c, 'ca', 'es', 'us')
+    c.eq([norm(c.text('[data-update-all] [data-verb=all]')), c.js("document.querySelector('[data-update-all] [data-verb=all]').disabled")],
+         [norm(T('updateAllN').replace('{n}', n_sets(4))), False], 'four sets once the States are ticked', what='button 4')
+    c.eq(c.js("(() => { const a = document.querySelector('[data-update-all]'), g = document.querySelector('details.f-group'); return !!(a.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING) })()"), True,
+         'the card sits above the groups', what='position')
+    c.eq([c.count('[data-build] [data-verb=build] [data-attn]'), c.count('[data-update-all] [data-verb=all] [data-attn]'), c.count('[data-set-panel=proc] [data-verb=build] [data-attn]')], [1, 1, 0],
+         'the attention mark on the base\'s Construire and on « Tout mettre à jour » (fr published one cycle behind); none on the procedures', what='attention')
+    c.eq(norm(c.text('[data-update-all] [data-stale=base]')), norm(T('staleCycle').replace('{x}', _name(prev)).replace('{y}', _name(cur))), 'cycle X out of date, to rebuild for Y, in words', what='stale line')
+    _card_ok(c, 'before')
+    # ---- B: the plan, ONE question; No calls nothing
+    ask_sets = ' ; '.join([f"{base_label} : 2 {_unit('zone', lang, 2)} ({', '.join(z['names'][li] for z in cfg['zones'] if z['id'] in ('fr', 'gb'))})",
+                           f"{label('proc')} : 2 {_unit('state', lang, 2)} ({', '.join(name(k) for k in ORDER)})", f"{label('vfr')} : {T('cycle').replace('{c}', _name(cur))}",
+                           f"{label('aircraft')} : {T('chainFleet')}"])
+    ask = T('chainAsk').replace('{c}', _name(cur)).replace('{sets}', ask_sets).replace('{skipped}', '')
+    posts0 = len(st['posts'])
+    c.tap('[data-update-all] [data-verb=all]')
+    q = _ask_text(c)
+    c.eq([norm(q['text']), norm(q['ok']), q['no'], len(st['posts']) - posts0], [norm(ask), norm(T('updateAll')), True, 0], 'ONE question: the cycle, the sets in the published order with what each touches, the downloads\' size unknown, no purge, one publication',
+         what='question')
+    c.eq([_bv(c), _pv(c, 'proc'), c.js("document.querySelector('[data-update-all] [data-verb=all]').disabled")], [['download:off', 'build:off', 'purge:off'], ['download:off', 'build:off', 'purge:off'], True],
+         'every button is grey while the question is open', what='during the question')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the window closes')
+    c.wait(300)
+    c.eq([len(st['posts']) - posts0, _bv(c), c.js("document.querySelector('[data-update-all] [data-verb=all]').disabled"), c.count('[data-chain]')], [0, ['download', 'build', 'purge'], False, 0],
+         'No: nothing is called, the buttons are live again', what='after No')
+    # ---- C: Yes: the eight jobs in the published order, then ONE sync with the gesture
+    n_notes = len(c.note_log())
+    st['views'], st['i'] = views, 0
+    c.tap('[data-update-all] [data-verb=all]')
+    _ask_text(c)
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-update-all] [data-chain]')", timeout=8000, what='the chain line is drawn')
+    c.eq([norm(c.text('[data-chain-count]')), norm(c.text('[data-chain-step]'))], [norm(T('chainCount').replace('{n}', '1').replace('{m}', '4')), norm(f"{base_label} : {T('download')}")],
+         'the chain line: « 1 / 4 jeux » and the running set and step', what='chain line')
+    c.eq([_bv(c), _pv(c, 'proc'), _pv(c, 'vfr'), _pv(c, 'aircraft'), _pv(c, 'sheets'), c.js("document.querySelector('[data-update-all] [data-verb=all]').disabled"), c.js("document.querySelector('[data-publish] [data-verb=publish]').disabled")],
+         [['download:off', 'build:off', 'purge:off']] * 4 + [['publish-sheets:off'], True, True], 'all the other buttons are grey while the chain runs', what='all grey')
+    _card_ok(c, 'running')
+    c.until("!!document.querySelector('[data-update-all] [data-chain-result]')", timeout=60000, what='the end of the chain')
+    order = [(p['set'], p['verb']) for p in st['posts'][posts0:]]
+    c.eq(order, [('base', 'fetch'), ('base', 'build'), ('proc', 'fetch'), ('proc', 'build'), ('vfr', 'fetch'), ('vfr', 'build'), ('aircraft', 'fetch'), ('aircraft', 'build')],
+         'download then build for each set in the published order; no purge, no aircraft/publish', what='order')
+    args = [p['args'] for p in st['posts'][posts0:]]
+    c.eq([args[0], args[1], args[2], args[4], args[6]], [{'zones': ['fr', 'gb'], 'personal': []}, {'zones': ['fr', 'gb'], 'personal': []}, {'states': ['K', 'LF']}, {'cycle': cyc}, {'codes': []}],
+         'each set with its panel\'s choices: the ticked zones, the States, the cycle in force, the fleet\'s types', what='bodies')
+    c.eq(c.js('window.__sync.calls'), [{'gesture': True}], 'ONE publication, with the gesture, once the eight jobs succeeded', what='sync')
+    pubdone = T('pubDone').replace('{c}', '3').replace('{r}', '1')
+    done = T('chainDone').replace('{n}', n_sets(4)).replace('{p}', pubdone)
+    c.eq([c.attr('[data-chain-result]', 'data-result'), _line(c, '[data-chain-result] b'), _chain_rows(c)], ['done', norm(done), [['base', 'done'], ['proc', 'done'], ['vfr', 'done'], ['aircraft', 'done']]],
+         'the end: every set done, the publication said', what='chain end')
+    c.eq(len(c.note_log()) - n_notes, 1, 'ONE notification for the whole chain (none per job, none for the publication)', what='notifications')
+    c.eq([_bv(c), c.js("document.querySelector('[data-update-all] [data-verb=all]').disabled")], [['download', 'build', 'purge'], False], 'the buttons are live again', what='live again')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and any(o.get('set') == 'all' and o.get('result') == 'done' for o in d.get('ops', []))), what='the chain is journaled')
+    ops = doc['ops']
+    al = [o for o in ops if o.get('set') == 'all']
+    c.eq([[o['verb'], o['result'], [(i['set'], i['result']) for i in o['items']], o['job'].startswith('chain-')] for o in al],
+         [['update', 'done', [('base', 'done'), ('proc', 'done'), ('vfr', 'done'), ('aircraft', 'done')], True]], 'ONE journal entry for the chain, with each set\'s result (the start marker is replaced by the end)', what='journal')
+    c.eq([o['verb'] for o in ops if o.get('set') != 'all'], ['publish'], 'the jobs themselves are not journaled one by one: the chain\'s entry and the publication', what='other entries')
+    _card_ok(c, 'at the end')
+    # ---- D: a failing proc build: the chain stops, the others are not run, nothing is published
+    part = _sview('proc', 'build', 'states', {'K': {'state': 'done'}, 'LF': {'state': 'failed', 'error': 'no-cache'}}, state='error', jid='c4', unit='states', done=2,
+                  result={'ok': False, 'cycle': cyc, 'built': {'K': 10}, 'commits': {'K': 'a1'}, 'failed': [{'state': 'LF', 'error': 'no-cache'}], 'reason': 'partial'})
+    st['views'], st['i'] = views[:3] + [part], 0
+    posts1, syncs1, n_notes = len(st['posts']), len(c.js('window.__sync.calls')), len(c.note_log())
+    c.tap('[data-update-all] [data-verb=all]')
+    _ask_text(c)
+    c.tap('.f-modal [data-ok]')
+    c.until("document.querySelector('[data-update-all] [data-chain-result]')?.dataset.result === 'failed'", timeout=60000, what='the chain stops')
+    reason = sm('buildPartial').replace('{s}', label('proc')).replace('{built}', f"1 {_unit('state', lang, 1)}").replace('{failed}', '1').replace('{items}', name('LF'))
+    want = T('chainFailed').replace('{s}', label('proc')).replace('{r}', reason)
+    c.eq([_line(c, '[data-chain-result] b'), _chain_rows(c), [(p['set'], p['verb']) for p in st['posts'][posts1:]], len(c.js('window.__sync.calls')) - syncs1, len(c.note_log()) - n_notes],
+         [norm(want), [['base', 'done'], ['proc', 'failed'], ['vfr', 'notrun'], ['aircraft', 'notrun']], [('base', 'fetch'), ('base', 'build'), ('proc', 'fetch'), ('proc', 'build')], 0, 1],
+         'stopped at the proc build: the set and the reason said, the next sets not run, nothing published, one notification', what='failure')
+    c.eq(c.count('[data-update-all] [data-chain]'), 0, 'the chain line is gone', what='chain line')
+    al = [o for o in c.doc('cache/data/journal.json')['ops'] if o.get('set') == 'all']
+    c.eq([o['result'] for o in al], ['done', 'failed'], 'journaled: failed', what='journal')
+    # ---- E: Arrêter mid-chain: the current job is cancelled, the chain stops, nothing is published
+    run = _fview({'fr': _fz('fetching', 1, 3), 'gb': _fz('waiting')}, step='Zone fr', verb='fetch', jid='c1')
+    st['views'], st['i'], st['cancelled'] = [run], 0, False
+    posts2, syncs2, n_notes = len(st['posts']), len(c.js('window.__sync.calls')), len(c.note_log())
+    c.tap('[data-update-all] [data-verb=all]')
+    _ask_text(c)
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-build] [data-running][data-op=fetch]') && !!document.querySelector('[data-update-all] [data-verb=stop-chain]')", timeout=8000, what='the base download runs')
+    c.eq(c.count('[data-update-all] [data-verb=stop-chain]'), 1, 'one « Arrêter » for the whole chain', what='stop button')
+    c.tap('[data-update-all] [data-verb=stop-chain]')
+    c.until("document.querySelector('[data-update-all] [data-chain-result]')?.dataset.result === 'cancelled'", timeout=30000, what='the chain stops')
+    c.eq([st['cancels'], [(p['set'], p['verb']) for p in st['posts'][posts2:]], len(c.js('window.__sync.calls')) - syncs2, len(c.note_log()) - n_notes],
+         [[{'id': 'j1'}], [('base', 'fetch')], 0, 1], 'the running job was cancelled, no other job started, nothing published, one notification', what='stop')
+    c.eq([_line(c, '[data-chain-result] b'), _chain_rows(c)], [norm(T('chainStopped').replace('{s}', base_label)), [['base', 'cancelled'], ['proc', 'notrun'], ['vfr', 'notrun'], ['aircraft', 'notrun']]],
+         'stopped by the user: said, what is built is kept', what='stop end')
+    c.eq(_bv(c), ['download', 'build', 'purge'], 'the buttons are live again', what='live again')
+    # ---- F: a chain running at the reload: the job is followed as usual, the chain says it was interrupted
+    st['cancelled'] = False
+    st['views'], st['i'], st['current'] = [run], 0, None
+    c.tap('[data-update-all] [data-verb=all]')
+    _ask_text(c)
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-build] [data-running][data-op=fetch]')", timeout=8000, what='the base download runs')
+    st['current'] = run
+    c.page.reload(wait_until='load')
+    _head(c)
+    c.until("!!document.querySelector('[data-update-all] [data-chain-note]')", timeout=8000, what='the interrupted chain is said')
+    c.eq([_line(c, '[data-update-all] [data-chain-note]'), len(_notes_with(c, T('chainReload')))], [norm(T('chainReload')), 1], '« chaîne interrompue par le rechargement : relancez « Tout mettre à jour » », in the card and once as a notification', what='reload note')
+    c.until("!!document.querySelector('[data-build] [data-running][data-op=fetch]')", timeout=8000, what='the running job is followed as before')
+    al = [o for o in c.doc('cache/data/journal.json')['ops'] if o.get('set') == 'all']
+    c.eq([o['result'] for o in al], ['done', 'failed', 'cancelled', 'interrupted'], 'the start marker without its end is journaled « interrupted »', what='journal')
+    # ---- G: skipped sets with their reasons: nothing ticked in the States, the launcher does not know the aircraft verbs
+    st['current'] = None
+    st['verbs'] = BASE3 + PROC3 + VFR3
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    c.eq(norm(c.text('[data-update-all] [data-verb=all]')), norm(T('updateAllN').replace('{n}', n_sets(2))), 'two sets: the base (all its zones ticked) and the VAC points', what='button 2')
+    c.tap('[data-update-all] [data-verb=all]')
+    q = _ask_text(c)
+    names_all = ', '.join(z['names'][li] for z in cfg['zones'] if z['id'] in ('ca', 'es', 'fr', 'gb', 'us'))
+    skipped = T('chainSkipped').replace('{s}', f"{label('proc')} ({T('no-state', 'greyReason: {')}), {label('aircraft')} ({T('unknown-verb', 'greyReason: {')})")
+    ask = T('chainAsk').replace('{c}', _name(cur)).replace('{sets}', f"{base_label} : 5 {_unit('zone', lang, 5)} ({names_all}) ; {label('vfr')} : {T('cycle').replace('{c}', _name(cur))}").replace('{skipped}', ' ' + skipped)
+    c.eq(norm(q['text']), norm(ask), 'the skipped sets are listed with their reason (nothing ticked, verb unknown to this launcher)', what='skipped question')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the window closes')
+    # ---- H: nothing gone by: no attention mark
+    c.page.evaluate("sessionStorage.setItem('__freshFr', '1')")
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    c.eq([c.count('[data-build] [data-verb=build] [data-attn]'), c.count('[data-update-all] [data-verb=all] [data-attn]'), c.count('[data-update-all] [data-stale]')], [0, 0, 0],
+         'every published cycle is the one in force: no attention mark, no line', what='no attention')
+    _card_ok(c, 'fresh')
+    c.check_errors()

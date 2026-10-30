@@ -697,6 +697,8 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 
 <a id="data-aircraft-sheets"></a>**Las fichas publicadas de la compañía.** Bajo las Aeronaves, «Publicar» copia las fichas de la compañía al repositorio de datos. Calcula primero un plan sin cambiar nada y luego hace una sola pregunta (fichas por copiar, fichas por retirar, tamaño total); si acepta, la copia, el commit y el envío se hacen en un solo gesto. Hace falta su trigrama (Ajustes › Identidad); sin él, la pantalla lo dice y no se envía nada. Si no hay nada que copiar ni retirar: «Nada que publicar».
 
+<a id="data-update-all"></a>**Actualizar todo.** Bajo la cobertura, el botón «Actualizar todo (n conjuntos)» rehace de un gesto lo que han elegido los paneles: para cada conjunto, en el orden publicado (la base aeronáutica, los procedimientos, los puntos VFR, las aeronaves), «Descargar» y luego «Construir»; nunca una purga, nunca las fichas publicadas. Primero un plan y una sola pregunta: el ciclo AIRAC, los conjuntos con lo que toca cada uno (zonas, Estados, ciclo, tipos o los tipos de la flota), el tamaño de las descargas (no se conoce de antemano); un conjunto sin nada marcado, con tipos rechazados o cuyos verbos el lanzador no conoce se omite, con su motivo. Después una línea de cadena dice el conjunto y el paso en curso («2 / 4 conjuntos») con un solo «Detener» para toda la cadena; los demás botones quedan en gris. La cadena se detiene en el primer fallo (aunque sea parcial), en la parada pedida o si una fusión espera en data/: lo ya construido sigue con commit en el equipo, no se publica nada, y la pantalla dice qué conjunto y por qué. Una descarga sin novedades («nada que descargar», cartas aún no publicadas) no la detiene. Si todo salió bien, sale una sola publicación, sin más pregunta que el plan; si es imposible (el marco no sabe publicar, nada que enviar), la cadena lo dice. El diario guarda una línea para toda la cadena, con el resultado de cada conjunto; una sola notificación al final. Si la página se recarga por el camino, se vuelve a encontrar el trabajo en curso del lanzador, pero la cadena no continúa: «Cadena interrumpida por la recarga: vuelva a lanzar «Actualizar todo»». Un punto de atención marca «Construir» de la base y «Actualizar todo» cuando el ciclo publicado es más antiguo que el vigente («Ciclo 2610 superado, reconstruir para 2611»).
+
 <a id="data-journal"></a>**El diario.** Al pie de la pantalla, las últimas 50 operaciones de este dispositivo: hora UTC, verbo, zonas, resultado.
 
 ## Casos particulares
@@ -704,7 +706,7 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 - **Sin lanzador**: la pantalla se lee igual; muestra lo que está publicado.
 - **Una lectura que falla**: la sección lo dice en una línea y el resto de la pantalla se dibuja.
 
-<!-- fr: 9f245db28c48 -->
+<!-- fr: 0d093c558a98 -->
 
 <!-- chapter: aircraft -->
 # Aeronaves

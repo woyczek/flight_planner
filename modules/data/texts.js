@@ -109,6 +109,10 @@ export const TX = {
       ['étape', 'step', 'Schritt', 'paso'],
       ['étapes', 'steps', 'Schritte', 'pasos']
     ],
+    set: [
+      ['jeu', 'data set', 'Datensatz', 'conjunto'],
+      ['jeux', 'data sets', 'Datensätze', 'conjuntos']
+    ],
     chart: [
       ['carte', 'chart', 'Karte', 'carta'],
       ['cartes', 'charts', 'Karten', 'cartas']
@@ -200,6 +204,10 @@ export const TX = {
       'Hay otra operación en curso'
     ],
     'no-zone': ['Cochez au moins une zone', 'Tick at least one zone', 'Mindestens eine Zone ankreuzen', 'Marque al menos una zona'],
+    'no-set': ['Rien à mettre à jour : cochez des zones ou des États', 'Nothing to update: tick some zones or States',
+      'Nichts zu aktualisieren: Zonen oder Staaten ankreuzen', 'Nada que actualizar: marque zonas o Estados'
+    ],
+    'bad-codes': ['types OACI refusés', 'ICAO types refused', 'ICAO-Muster abgelehnt', 'tipos OACI rechazados'],
     'no-state': ['Cochez au moins un État', 'Tick at least one State', 'Mindestens einen Staat ankreuzen', 'Marque al menos un Estado'],
     // le lanceur ne connaît pas le verbe (regen/verbs) : écrit une fois par panneau
     'unknown-verb': ['Le lanceur de ce poste ne connaît pas encore cette opération',
@@ -772,6 +780,51 @@ export const TX = {
     'Assistenten der Ersteinrichtung öffnen',
     'Abrir el asistente de primera instalación'
   ],
+  // « Tout mettre à jour » (SPEC § 5.3) : le bouton, la question, la chaîne, la fin
+  updateAll: ['Tout mettre à jour', 'Update all', 'Alle aktualisieren', 'Actualizar todo'],
+  updateAllN: ['Tout mettre à jour ({n})', 'Update all ({n})', 'Alle aktualisieren ({n})', 'Actualizar todo ({n})'],
+  staleCycle: ['Cycle {x} dépassé, à reconstruire pour {y}', 'Cycle {x} out of date, rebuild for {y}',
+    'Zyklus {x} überholt, für {y} neu aufbauen',
+    'Ciclo {x} superado, reconstruir para {y}'
+  ],
+  chainAsk: [
+    'Tout mettre à jour, cycle AIRAC {c} : {sets}. Pour chaque jeu, télécharger puis construire, dans cet ordre ; la taille des téléchargements n’est pas connue d’avance ; aucune purge. Puis une seule publication, si tout a réussi.{skipped}',
+    'Update all, AIRAC cycle {c}: {sets}. For each data set, download then build, in this order; the size of the downloads is not known beforehand; no purge. Then one publication, if everything succeeded.{skipped}',
+    'Alle aktualisieren, AIRAC-Zyklus {c}: {sets}. Für jeden Datensatz zuerst herunterladen, dann aufbauen, in dieser Reihenfolge; die Größe der Downloads ist vorab nicht bekannt; keine Bereinigung. Danach eine einzige Veröffentlichung, wenn alles gelungen ist.{skipped}',
+    'Actualizar todo, ciclo AIRAC {c}: {sets}. Para cada conjunto, descargar y luego construir, en este orden; el tamaño de las descargas no se conoce de antemano; ninguna purga. Después una sola publicación, si todo salió bien.{skipped}'
+  ],
+  chainSkipped: ['Ignorés : {s}.', 'Skipped: {s}.', 'Übersprungen: {s}.', 'Omitidos: {s}.'],
+  chainFleet: ['types de la flotte', 'the fleet’s types', 'Muster der Flotte', 'tipos de la flota'],
+  chainCount: ['{n} / {m} jeux', '{n} / {m} data sets', '{n} / {m} Datensätze', '{n} / {m} conjuntos'],
+  chainWord: {
+    done: ['fait', 'done', 'erledigt', 'hecho'],
+    nothing: ['rien de neuf', 'nothing new', 'nichts Neues', 'nada nuevo'],
+    failed: ['échec', 'failed', 'fehlgeschlagen', 'fallo'],
+    cancelled: ['arrêté', 'stopped', 'angehalten', 'detenido'],
+    skipped: ['ignoré', 'skipped', 'übersprungen', 'omitido'],
+    notrun: ['non lancé', 'not started', 'nicht gestartet', 'no iniciado'],
+    running: ['en cours', 'running', 'läuft', 'en curso'],
+    waiting: ['en attente', 'waiting', 'wartet', 'en espera']
+  },
+  chainDone: ['Tout mettre à jour terminé : {n}. {p}', 'Update all finished: {n}. {p}', 'Alle aktualisieren abgeschlossen: {n}. {p}',
+    'Actualizar todo terminado: {n}. {p}'
+  ],
+  chainFailed: ['Tout mettre à jour arrêté ({s}) : {r}. Ce qui est déjà construit est gardé sur le poste ; rien n’est publié.',
+    'Update all stopped ({s}): {r}. What is already built is kept on this workstation; nothing is published.',
+    'Alle aktualisieren angehalten ({s}): {r}. Was bereits erstellt ist, bleibt auf dem Rechner erhalten; nichts wird veröffentlicht.',
+    'Actualizar todo se detuvo ({s}): {r}. Lo ya construido se conserva en el equipo; no se publica nada.'
+  ],
+  chainStopped: ['Tout mettre à jour arrêté par vos soins ({s}). Ce qui est déjà construit est gardé sur le poste ; rien n’est publié.',
+    'Update all stopped by you ({s}). What is already built is kept on this workstation; nothing is published.',
+    'Alle aktualisieren von Ihnen angehalten ({s}). Was bereits erstellt ist, bleibt auf dem Rechner erhalten; nichts wird veröffentlicht.',
+    'Actualizar todo detenido por usted ({s}). Lo ya construido se conserva en el equipo; no se publica nada.'
+  ],
+  chainNotPublished: ['Non publié : {r}.', 'Not published: {r}.', 'Nicht veröffentlicht: {r}.', 'No publicado: {r}.'],
+  chainReload: ['Chaîne interrompue par le rechargement : relancez « Tout mettre à jour ».',
+    'Chain interrupted by the reload: start “Update all” again.',
+    'Kette durch das Neuladen unterbrochen: starten Sie „Alle aktualisieren“ erneut.',
+    'Cadena interrumpida por la recarga: vuelva a lanzar «Actualizar todo».'
+  ],
   // le journal des opérations
   journal: ['Journal', 'Journal', 'Protokoll', 'Diario'],
   journalEmpty: ['Aucune opération pour le moment.', 'No operation yet.', 'Noch kein Vorgang.', 'Ninguna operación por ahora.'],
@@ -779,9 +832,11 @@ export const TX = {
     build: ['Construire', 'Build', 'Aufbauen', 'Construir'],
     download: ['Télécharger', 'Download', 'Herunterladen', 'Descargar'],
     purge: ['Purger', 'Purge', 'Bereinigen', 'Purgar'],
-    publish: ['Publier', 'Publish', 'Veröffentlichen', 'Publicar']
+    publish: ['Publier', 'Publish', 'Veröffentlichen', 'Publicar'],
+    update: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar']
   },
   opResult: {
+    running: ['en cours', 'running', 'läuft', 'en curso'],
     done: ['terminée', 'done', 'abgeschlossen', 'terminada'],
     partial: ['partielle', 'partial', 'teilweise', 'parcial'],
     failed: ['échec', 'failed', 'fehlgeschlagen', 'fallo'],

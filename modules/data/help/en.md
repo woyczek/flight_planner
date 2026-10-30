@@ -42,6 +42,8 @@ What the airline publishes for the app — the aeronautical base, the procedures
 
 <a id="data-aircraft-sheets"></a>**The airline's published sheets.** Under the Aircraft, "Publish" copies the airline's sheets to the data repository. It first works out a plan without changing anything, then asks one question (sheets to copy, sheets to remove, total size); if you accept, the copy, the commit and the sending are done in one gesture. It needs your trigram (Settings › Identity); without it the screen says so and nothing is sent. With nothing to copy or remove: "Nothing to publish".
 
+<a id="data-update-all"></a>**Update all.** Under the coverage, the "Update all (n data sets)" button redoes in one gesture what the panels have chosen: for each data set, in the published order (the aeronautical base, the procedures, the VFR points, the aircraft), "Download" then "Build"; never a purge, never the published sheets. A plan first and one question: the AIRAC cycle, the data sets with what each touches (zones, States, cycle, types or the fleet's types), the size of the downloads (not known beforehand); a data set with nothing ticked, with refused types or whose verbs the launcher does not know is skipped, with its reason. Then a chain line says the data set and the step under way ("2 / 4 data sets") with a single "Stop" for the whole chain; the other buttons are greyed. The chain stops at the first failure (even a partial one), at the requested stop, or if a merge is waiting in data/: what is already built stays committed on the workstation, nothing is published, and the screen says which data set and why. A download with nothing new ("nothing to download", charts not published yet) does not stop it. If everything succeeded, one publication goes, with no question other than the plan; if it is impossible (the frame cannot publish, nothing to send), the chain says so. The journal keeps one line for the whole chain, with each data set's result; one notification at the end. If the page is reloaded on the way, the launcher's running job is found again, but the chain does not go on: "Chain interrupted by the reload: start "Update all" again". An attention dot marks the base's "Build" and "Update all" when the published cycle is older than the cycle in force ("Cycle 2610 out of date, rebuild for 2611").
+
 <a id="data-journal"></a>**The journal.** At the foot of the screen, the last 50 operations of this device: UTC time, verb, zones, result.
 
 ## Special cases
@@ -49,4 +51,4 @@ What the airline publishes for the app — the aeronautical base, the procedures
 - **Without a launcher**: the screen reads the same way; it shows what is published.
 - **A read that fails**: the section says so in one line, the rest of the screen is drawn.
 
-<!-- fr: 9f245db28c48 -->
+<!-- fr: 0d093c558a98 -->

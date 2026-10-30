@@ -227,7 +227,10 @@ Rules (V3 § 10.34, 30 Oct 2026):
   workstation; nothing is published. A set waiting for the user (a file to pick) is a stop too, said as such.
 - **One Publier at the end** (the frame's gesture sync, INTEGRATION § 1.3), only when every set succeeded; no purge in
   the chain (Purger stays its own gesture, plan first).
-- Journal: one entry for the chain, with each set's result under it.
+- Journal: one entry for the chain, `{ set: 'all', verb: 'update', items: [{ set, result }], result }`, written as a marker
+  (`result: 'running'`) at the start and replaced at the end; a marker found without its end at the opening is said
+  « chaîne interrompue par le rechargement » (the chain itself does not survive a reload, its running job does). The sets'
+  own entries are not written during the chain.
 
 ### 5.5 The same four verbs for every set (V3 § 10.34, lot A1)
 

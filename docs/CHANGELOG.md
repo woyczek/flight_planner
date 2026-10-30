@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: « Update all »** (`modules/data/`; help ×4; noreg L18): one button under the coverage with the count of data sets; a plan first and ONE question (the AIRAC cycle, the data sets in the published order with what each touches, downloads' size unknown, no purge, skipped sets with their reason); then, through the ordinary follower and one operation at a time, Download then Build for the base, the procedures, the VFR points and the aircraft, a chain line « n / m data sets » with one « Stop », stop at the first failure (partial, stopped, merge-pending…) with what is built kept and nothing published, and ONE publication at the end without its own question; one journal entry (`set: 'all'`, `verb: 'update'`) and one notification; a chain cut by a reload is said; the attention dot on the base's Build and on the button when a published cycle is gone by.
 - **Refonte — R-F4b, la sortie de SID entre une fois** (`frame/lib/procedures.js` `endsOf`; Fuel's `procsToText`, `autoAirways`,
   `knownPoints`; `flight_path.js` `routingChain` removed; fuel DECISIONS) — the text and Auto take the ends of the procedures from
   one rule, Auto brings the text up to date first. One wanted fix: with a SID point already in the text, Auto joins there instead of
