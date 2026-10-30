@@ -122,3 +122,9 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   background one; the gesture rule (`sync_gesture`, 1c2506a41) holds back only `sia/base/` files not committed (half written,
   a build under way). « Publier » therefore sends what is committed right away, and says what stayed. Written in the help's
   Publier paragraph.
+- **30 Oct 2026 — Every set gets the base's four verbs; « Tout mettre à jour » stops at the first failure** (user: « j'attends
+  une carte réellement utilisable, et un module d'admin », V3 § 10.34 lot A1): one panel per group with one choice of items
+  and Télécharger · Construire · Purger, Publier shared; the same rules as the base (one operation at a time, journal, dry
+  purge with its plan, nothing committed by fetch or purge). « Tout mettre à jour »: a plan and one question first, the
+  sets in the published order, stop at the first failure with nothing published, one Publier at the end, no purge in the
+  chain. The V2 maintenance page leaves the Maintenance rail when every set has its four verbs.

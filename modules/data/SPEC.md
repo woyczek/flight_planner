@@ -6,7 +6,13 @@ data set at a time or all of them, from one screen. Written on 28 October 2026 f
 [`docs/technique/V3_DONNEES_REGENERATION.md`](../../docs/technique/V3_DONNEES_REGENERATION.md) (inventory of the 17
 sources, the chains, the launcher's routes) and the user's answers of the same day (its § 5.1). This document describes
 the **final state**; the order in which it is built is [ROADMAP.md](ROADMAP.md); what the module asks of the frame and of
-aerodb is [INTEGRATION.md](INTEGRATION.md); why, [DECISIONS.md](DECISIONS.md). No code exists yet.
+aerodb is [INTEGRATION.md](INTEGRATION.md); why, [DECISIONS.md](DECISIONS.md).
+
+**State (30 Oct 2026)**: the module lives in the Maintenance application (`/frame/?app=maintenance`). Delivered: the
+read-only screen (cycle, coverage with « Ajouter un pays », States in three colours, four groups), and the **Base
+aéronautique** group's four verbs Télécharger · Construire · Publier · Purger on the launcher's `base/*` verbs, cases
+L1–L15. **In progress (V3 § 10.34, lot A1)**: the same four verbs for every other set (§ 5.5) and « Tout mettre à jour »
+(§ 5.3), so that the V2 maintenance page can leave the Maintenance rail.
 
 **As a prompt**: give this document, `INTEGRATION.md`, `frame/INTEGRATION.md` and `frame/aerodb/INTEGRATION.md`, and ask
 for `modules/data/module.js` and its files. Every rule below is a requirement.
@@ -210,6 +216,43 @@ waits for the user (a file to pick) and says so. One plan question for Publier a
 Every data set of the coverage, in the order of § 4.5, the publications grouped into one; a set waiting for the user is
 skipped and listed at the end (« 2 jeux attendent votre geste »). It is V2's « Activer » and « Tout récupérer et
 recalculer », with the publication and the purge added, its builds run in parallel by zone (§ 5.4).
+
+Rules (V3 § 10.34, 30 Oct 2026):
+- **A plan first, one question**: the sets that will run, in order, with what each will change (zones, States, types,
+  the AIRAC cycle of what is built), the sizes known (downloads, outputs) and the files a purge would leave; « Tout mettre
+  à jour » runs only after the answer.
+- **Downloads and builds in the published order** (§ 4.5), each set with its own verbs (§ 5.5), one operation at a time,
+  the running set and step shown, « Arrêter » for the whole chain.
+- **Stop at the first failure**: the failing set and its reason said; what was built before it stays committed on the
+  workstation; nothing is published. A set waiting for the user (a file to pick) is a stop too, said as such.
+- **One Publier at the end** (the frame's gesture sync, INTEGRATION § 1.3), only when every set succeeded; no purge in
+  the chain (Purger stays its own gesture, plan first).
+- Journal: one entry for the chain, with each set's result under it.
+
+### 5.5 The same four verbs for every set (V3 § 10.34, lot A1)
+
+Every group has the panel the Base aéronautique has (§ 3, rule « In the Base aéronautique group… »): **one choice of
+items** (zones for the base, States for the procedures, the cycle for the VAC points, types for the aircraft, the
+sheets for the company's published sheets), then **Télécharger · Construire · Purger**, then **Publier** (the one gesture
+sync of the frame, shared by every group: it sends whatever is committed). The same rules for all: one operation at a
+time whatever its set and verb, found again at the opening; the journal; Purger runs dry first and asks once with its
+plan; **nothing committed by Télécharger or Purger** (the raw sources are never published, 0d2f031d3); Construire
+commits its outputs on the workstation (the launcher's `commit_outputs`); a grey button says its reason once.
+
+| Group | Items | Télécharger | Construire | Purger | Today in V2 |
+|---|---|---|---|---|---|
+| Base aéronautique | zones | `base/fetch` | `base/build` | `base/purge` | delivered |
+| Procédures | States (EAD_STATES ; LF by the SIA's eAIP, the US by the CIFP); « Relire » of one aerodrome as today | `proc/fetch` | `proc/build` | `proc/purge` | per aerodrome only (`proc/eaip-fetch`, `proc/ead-fetch`) |
+| Points VFR des cartes VAC | the cycle (France) | `vfr/fetch` | `vfr/build` | `vfr/purge` | `/__setup/vfr-import` (a compiled file picked in the page) |
+| Appareils (types et performances) | ICAO types (the fleet's by default) | `aircraft/fetch` | `aircraft/build` | `aircraft/purge` | `/__setup/aircraft-db` |
+| Fiches publiées de la compagnie | the sheets | — | `aircraft/publish` (plan, then the copy) | — | `/__setup/aircraft-publish` |
+
+The launcher's verbs are asked of their owners (V3 Frame: `tools/launch.py`, `tools/regen/`; aerodb: `tools/regen/proc.py`),
+each with the base's contract: `regen/job { set, verb, args: { <items> } }`, a view with `<items>` at its root (state,
+done / total, error code), a result with what changed, failed, and a reason; `dry: true` for a purge; Télécharger and
+Purger never commit. A verb not yet on the launcher: its button grey, « Le lanceur de ce poste ne connaît pas encore
+cette opération ». **The V2 maintenance page link leaves the Maintenance rail when every row of this table has its four
+verbs.**
 
 ### 5.4 Building on the launcher: one process per zone
 

@@ -56,6 +56,11 @@ the synchronised data said; the purge first run dry, its plan in the one questio
 every zone, the tracked files kept), then the real run; one operation at a time whatever its verb, found again at the
 opening; journal; cases L14–L15. With them the Base group has its four verbs.
 
+**A1 (V3 § 10.34, 30 Oct)**: the four verbs for every set (SPEC § 5.5) and « Tout mettre à jour » (§ 5.3: plan first, stop at
+the first failure, one Publier at the end), one set per commit: Procédures, VAC points, aircraft, the company's sheets, then
+« Tout mettre à jour », then the V2 link leaves the Maintenance rail. Launcher verbs asked of V3 Frame (`vfr/*`,
+`aircraft/*`) and aerodb (`proc/fetch|build|purge`).
+
 Existing guards kept green throughout: K1–K9, A12, A15, A19, A20, I4, I6, I7.
 
 ## Answers of the ergonomics session (28 October 2026), applied to SPEC and INTEGRATION
