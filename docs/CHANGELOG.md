@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: the keys panel's link to the IVAO application assistant says its own text** (`frame/settings/launcher.js`) — the key
+  `ivaoAppLink` was defined twice in the shared texts (settings.js and launcher.js), the later loaded won and the keys panel showed the
+  IVAO account card's wording; the panel's key is now `ivaoAppSteps` (« Créer l'application IVAO des pilotes : pas à pas » ×4).
 - **Refonte, sans changement de comportement — R-F5, une seule liste de complétion** (`modules/fuel/suggest.js`
   `createSuggestList`, used by `adnames.js` and `routecomplete.js`, which keep their sources; cases F44–F47, F75).
 - **Refonte — R-F4c, un seul écrivain du texte de route** (`frame/lib/route_text.js` `textFromPoints` through `textFromTokens({ dct:

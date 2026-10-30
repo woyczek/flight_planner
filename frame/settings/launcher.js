@@ -382,7 +382,7 @@
       'Der API-Schlüssel der Anwendung (secrets/ivao.json, Tracker-Abfrage der Fluggesellschaft) ist eine andere Einstellung; eine neue Anwendung hat ihren eigenen API-Schlüssel, den Sie oben unter „IVAO-Schlüssel“ eintragen können.',
       'La clave API de la aplicación (secrets/ivao.json, lectura del tracker por la compañía) es otro ajuste; una aplicación nueva tiene su propia clave API, que puede trasladar a «Clave IVAO» más arriba.'
     ],
-    ivaoAppLink: ['Créer l’application IVAO des pilotes : pas à pas', 'Create the pilots’ IVAO application: step by step',
+    ivaoAppSteps: ['Créer l’application IVAO des pilotes : pas à pas', 'Create the pilots’ IVAO application: step by step',
       'IVAO-Anwendung der Piloten anlegen: Schritt für Schritt', 'Crear la aplicación IVAO de los pilotos: paso a paso'
     ],
     // volet « Dossiers du poste » (A3) : un dossier par ligne, son chemin en lecture seule, d'où il vient, « Ouvrir »
@@ -536,7 +536,7 @@
       <div data-card="ead"><h3>${esc(t(T.eadTitle))}</h3><p class="f-msg" data-kind="warn">${esc(t(T.eadNotice))}</p><p class="f-muted">${esc(t(T.eadHint))}</p>
         <p><b data-ead>…</b></p>${fld('eadUser', T.eadUser, '')}${fld('eadPassword', T.eadPassword, '', { type: 'password' })}<p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="eadSave">${esc(t(T.save))}</button><button type="button" data-act="eadErase">${esc(t(T.erase))}</button></div></div>
-      <p><a href="#settings?card=ivaoapp" data-ivaoapp-link>${esc(t(T.ivaoAppLink))}</a></p></div>`;
+      <p><a href="#settings?card=ivaoapp" data-ivaoapp-link>${esc(t(T.ivaoAppSteps))}</a></p></div>`;
   }
   /** Carte « Application IVAO (connexion des pilotes) » (assistant pas à pas qui écrit secrets/ivao_oauth.json par le
    *  lanceur) : étapes chez IVAO, adresses de retour à y déclarer (remplies par paintKeys), état, Client ID et Client
