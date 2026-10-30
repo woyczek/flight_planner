@@ -196,13 +196,17 @@ def d31(c):
     c.ready('maps', sheet=True)
     hook_map(c)
     want = [norm(t) for t in c.js(_ETA_JS, f)]
-    c.until("(window.__mpTexts || []).some(t => /^ETA /.test(t))", timeout=6000, what='ETA labels drawn in a close view')
+    # under load the first labels may come from a draw before the flight's times: wait for LUGEN's own, not for any ETA
+    c.until(f"(window.__mpTexts || []).some(t => t.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === {json.dumps(want[1])})", timeout=10000,
+            what='the ETA of LUGEN drawn in a close view')
     got = set(texts(c, 'ETA '))
     c.ok(norm(want[1]) in got, f'drawn {sorted(got)}', f'the ETA of LUGEN is etaOf\'s ({want[1]})')
     c.ok(not c.shown('[data-mp="follow"]'), 'Follow shown for a flight not started', 'Follow hidden')
     # (c) a progress object but started null: not started
     g = _legs_flight(planned=now() + datetime.timedelta(hours=2), started=None, progress={'plannedPos': {'lat': 46, 'lon': 1}, 'phase': 'cruise'})
     c.open('maps', docs=fdocs(g))
+    c.until(f"(document.querySelector('.f-sheet-head .f-sheet-grip') || {{}}).title.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes({json.dumps(norm(row(c, 'stPlanned')))})",
+            timeout=10000, what='the grip says the flight is planned')
     c.ok(norm(row(c, 'stPlanned')) in norm(c.grip()), f'grip {c.grip()!r}', 'a progress object does not make the flight started')
     c.ok(not c.shown('[data-mp="follow"]'), 'Follow shown', 'Follow hidden without started.at')
     # (b) started 20 min ago: the planned aircraft is drawn with its label, Follow shown, the GPS button in the notes
@@ -1956,7 +1960,7 @@ _FAR_TMA = {'type': 'TMA', 'cls': 'D', 'name': 'TMA FARVILLE', 'lower': 'FL200',
             'rings': [[[43.2, 0.3], [43.2, 0.9], [43.7, 0.9], [43.7, 0.3], [43.2, 0.3]]]}
 _CORR_STATE = """async () => { const S = window.__mp.S, V = await import('/modules/maps/sheet_view.js'); S.legend = true; V.legendSync();
   return { corridor: S.data ? S.data.corridor : null, far: ((S.data && S.data.data.airspaces) || []).some(a => a.name === 'TMA FARVILLE'),
-    legend: S.legendEl.textContent.replace(/\s+/g, ' ').trim() } }"""
+    legend: S.legendEl.textContent.replace(/\\s+/g, ' ').trim() } }"""
 _TEXT_HOOK = """() => { window.__chT = []; const o = CanvasRenderingContext2D.prototype.fillText;
   if (!o.__ch) { CanvasRenderingContext2D.prototype.fillText = function (t, x, y, w) { window.__chT.push(String(t)); return o.call(this, t, x, y, w) };
     CanvasRenderingContext2D.prototype.fillText.__ch = true } return true }"""
@@ -1981,7 +1985,7 @@ def d75(c):
     c.until("() => !!document.querySelector('.mp-layer-set input[data-layer]')", what='the Layers content')
     first = c.js("() => document.querySelector('.mp-layer-set input[data-layer]').dataset.layer")
     c.eq(first, 'corridor', '"Around the flight only" is the first box of Layers', what='first box')
-    lab = c.js("() => document.querySelector('.mp-layer-set input[data-layer=corridor]').closest('label').textContent.replace(/\s+/g, ' ').trim()")
+    lab = c.js("() => document.querySelector('.mp-layer-set input[data-layer=corridor]').closest('label').textContent.replace(/\\s+/g, ' ').trim()")
     c.ok(norm(tx(M, 'corridor', c.lang, after='layerNames: {')) in norm(lab) and norm(tx(M, 'corrSub', c.lang)) in norm(lab), lab,
          'its label and sub-label')
     title = c.js("() => document.querySelector('.mp-dtitle').textContent")
