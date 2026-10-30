@@ -4,6 +4,10 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — § 10.30, the rules first** (the Map's pane depends on them): `runwayOf` and `firstServing` added to
+  frame/lib/procedures.js; frame/lib/wind.js `components()` (head / tail and cross wind on a runway, true directions, rounded to the
+  knot; null for a missing or variable wind). Benches procedures.html (F32) and wind.html (F62); wind.js in frame/sw.js. Fuel's
+  consumption of several keys in one trip and the wind suffix of its runway list come next.
 - **30 Oct 2026 — control characters out of the .pln** (security review of 99d28acd0): `escText` of frame/lib/fms.js removes the
   characters XML 1.0 forbids (U+0000–U+0008, U+000B, U+000C, U+000E–U+001F) before escaping, so a damaged aerodrome or point
   name never makes a file MSFS refuses (`escAttr` goes through it). Bench fms.html: one more check (fails without the change).

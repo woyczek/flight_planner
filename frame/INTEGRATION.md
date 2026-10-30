@@ -220,6 +220,12 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   Fuel's lists and the Map's choose mode — `servesRwy`, `sameRwy`, `nameOf`, `conflictsOf` and `orderProcedures` (the ⚠ marks and the
   order of the lists, as data), `transitionsOf`, `appChoices`, `runwayChoices`; no state, no text. Bench `frame/lib/test/procedures.html`
   (F32). `conflictsOf` and `orderProcedures` are still re-exported by `flight_path.js` (hence `current_flight.js`) during the transition.
+  Since § 10.30 (30 Oct 2026): `runwayOf(proc)` (the single runway a procedure serves, else null) and `firstServing(list, rwy)` (the
+  first of the group that serves the runway: « Choisir OKRIX5B »).
+- **The wind on a runway** (`frame/lib/wind.js`, 30 Oct 2026, § 10.30): `components(runwayTrueHeading, windDirTrue, windKt)` →
+  `{ head, cross, side }` (knots rounded, `head` negative for a tail wind, `side` 'L' | 'R' or null) or null when a value is missing
+  (a VRB wind has no direction: nothing invented). Pure, shared by the Map's pane and Fuel's runway list. Bench
+  `frame/lib/test/wind.html` (F62).
 - Offline is normal. The application starts offline once visited, and your module's files (entry point and
   `meta.files`) are kept from the first visit: draw from `ctx.data` first, and treat a 503 from `ctx.net` as "not now", not as an error.
 - `ctx.notify(text, kind)`, `ctx.ask(text)`, `ctx.askText(text, { value })`: the frame's notifications and question

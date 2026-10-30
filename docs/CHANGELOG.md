@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: wind components on a runway, and the runway a procedure serves** (`frame/lib/wind.js`, `frame/lib/procedures.js`;
+  benches F62, F32) — the rules the Map's pane and Fuel share for § 10.30.
 - **Tests: D61 is deterministic** (`tests/v3/cases/maps_recode.py`). Its reread was stamped `updated_at` in whole seconds; on a
   warm browser the write could fall in the same second as the flight's own stamp, and the Map, which rereads only a strictly
   newer record (a correct rule: real writers stamp milliseconds), rightly ignored it — one run in seven under load. The reread
