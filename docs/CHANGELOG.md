@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **base/pickup: with `zips`, only the sources it names are taken** (`tools/regen/base_sources.py`; aerodb INTEGRATION;
+  noreg I24) — Sécurisation's line 109: a source missing at the plan whose zip arrived during the question is refused
+  (`not-shown`), nothing written for it; `zips: {}` shows nothing; without `zips`, as before.
 - **Map: one collision pass over every label, by the closed priority list (R-M2 + R-M5 c, § 10.33)** (`modules/maps/lib/aero_symbols.js`
   `SiaAero.pass`, `render.js` `RANK`, `render_route.js`, `render_airspace.js`, `draw.js`, `procs.js`, `choose.js`, `profile_view.js`,
   `profile.js`, `lib/vertical_profile.js`; SPEC § 3, § 5, § 8.4, § 13.2; DECISIONS; help ×4; noreg D80 adapted, D85). The drawing is

@@ -643,7 +643,7 @@ def check_pickup(a):
                 or not isinstance(z['size'], int) or isinstance(z['size'], bool) or z['size'] < 0:
             return None
         shown[s] = {'name': z['name'], 'size': z['size']}
-    return {'zones': zones, 'dry': dry, **({'zips': shown} if shown else {})}
+    return {'zones': zones, 'dry': dry, **({'zips': shown} if 'zips' in a else {})}  # zips: {} dit « rien de montré »
 
 
 def _latest(dirs, pattern):
@@ -661,7 +661,8 @@ def _latest(dirs, pattern):
 def pickup(job, args, ctx):
     """Verbe base/pickup : pour chaque zone, ses sources à déposer à la main que le lanceur sait prendre (PICKUP). Rend
     { ok, dry, taken: [{ zone, source, zip, files: [noms], bytes }], missing: [{ zone, source, expected }], failed:
-    [{ zone, source, error }], reason? } ; missing : aucun fichier au nom attendu dans Téléchargements (le motif dit lequel)."""
+    [{ zone, source, error }], reason? } ; error 'changed' (un autre zip que celui montré), 'not-shown' (avec zips, une source
+    que le plan n'a pas montrée) ; missing : aucun fichier au nom attendu dans Téléchargements (le motif dit lequel)."""
     data, dry = ctx['data'], args['dry']
     dirs = list((ctx.get('downloads') or (lambda: []))())
     base = os.path.realpath(data)
@@ -672,6 +673,11 @@ def pickup(job, args, ctx):
             break
         p = PICKUP[s]
         _step(job, n, len(todo))
+        if 'zips' in args and s not in args['zips']:
+            # avec zips, seules les sources que le plan a montrées sont prises : une source « manquante » au plan dont le zip
+            # est arrivé pendant la question n'est pas prise sans contrôle (relecture Sécurisation, ligne 109)
+            failed.append({'zone': z, 'source': s, 'error': 'not-shown'})
+            continue
         zp = _latest(dirs, p['zip'])
         if not zp:
             missing.append({'zone': z, 'source': s, 'expected': p['zip']})

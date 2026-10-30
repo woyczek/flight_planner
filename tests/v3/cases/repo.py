@@ -1686,6 +1686,11 @@ def i24(c):
              json.dumps(r)[:300], 'zips names no file: the launcher keeps its own choice (the latest) and only compares; the older zip named is never taken')
         c.eq((B.check_pickup({'zones': ['fr'], 'zips': {'sia': {'name': 'a.zip', 'size': -1}}}), B.check_pickup({'zones': ['fr'], 'zips': {'sia': {'name': 'a.zip', 'size': 1, 'path': 'x'}}}),
               B.check_pickup({'zones': ['fr'], 'zips': ['sia']})), (None, None, None), 'zips: a dict, a size ≥ 0, no other key (400)', what='zips shape')
+        # with zips, only the sources it names are taken: a source missing from the plan whose zip arrived since is not
+        r = B.pickup(RJ.Job('base', 'pickup', {}), B.check_pickup({'zones': ['gb'], 'dry': False, 'zips': {'sia': shown['sia']}}), ctx)
+        r2 = B.pickup(RJ.Job('base', 'pickup', {}), B.check_pickup({'zones': ['fr'], 'dry': False, 'zips': {}}), ctx)
+        c.ok([f['error'] for f in r['failed']] == ['not-shown'] and [f['error'] for f in r2['failed']] == ['not-shown'] and not r['taken'] and not r2['taken']
+             and not (data / 'sia').exists(), json.dumps([r, r2])[:300], 'zips present, a source not in it: « not-shown », nothing written (zips: {} shows nothing)')
         r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['fr', 'gb'], 'dry': False, 'zips': shown}, ctx)
         sia, gb = data / 'sia', data / 'sia' / 'zones' / 'gb'
         c.ok(r['ok'] and (sia / 'AIXM4.5_all_FR_OM_2026-10-29.xml').read_text() == '<aixm/>' and (sia / 'XML_SIA_2026-10-29.xml').is_file()
